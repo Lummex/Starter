@@ -1,8 +1,8 @@
-# Truck Inventory Tracker — Build Spec
+# Chas Roberts Truck Inventory — Build Spec
 
 ## Summary
 
-A phone-friendly web app for plumbing and air-conditioning service techs to keep track of the parts on their truck. Parts can be added by typing, by talking (where the browser supports voice), or by taking a photo and tapping each part to count it. When parts are used on a job — or turn out to be bad — the tech records it and the truck's counts update automatically. A complete, printable Parts List shows everything on the truck grouped by category, alongside a restock list and downloadable reports.
+**Chas Roberts Truck Inventory** is a phone-friendly web app for plumbing and air-conditioning service techs to keep track of the parts on their truck. Parts can be added by typing, by talking (where the browser supports voice), or by taking a photo and tapping each part to count it. When parts are used on a job — or turn out to be bad — the tech records it and the truck's counts update automatically. A complete, printable Parts List shows everything on the truck grouped by category, alongside a restock list and downloadable reports.
 
 ## Technical ground rules
 
@@ -16,6 +16,7 @@ A phone-friendly web app for plumbing and air-conditioning service techs to keep
   - `#/use` → Use Parts
   - `#/restock` → Restock List
   - `#/reports` → Reports
+- The browser tab title (`<title>`) is exactly **"Chas Roberts Truck Inventory"** on every page.
 - The page must include a favicon (a file or inline data-URI) so there are no 404 console errors on load.
 - No uncaught JavaScript errors and no console errors on any page.
 - Success messages are shown in an element with `role="status"`; error messages in an element with `role="alert"`. Messages are plain visible text.
@@ -44,8 +45,9 @@ Quick Add and Use Parts both read free text like `add 3 angle stops and 2 90 deg
 
 ### Navigation (all pages)
 
-1. A top header with the app title text **"Truck Inventory Tracker"** and a `<nav>` element containing seven links, in this order: **"Inventory"**, **"Parts List"**, **"Quick Add"**, **"Photo Count"**, **"Use Parts"**, **"Restock"**, **"Reports"**. The current page's link is visually highlighted. The app title is **not** an `<h1>`; each page has exactly one `<h1>` (its main heading below).
-2. On phones, all seven links stay available without a hamburger menu (wrapping onto two rows or a horizontally scrollable bar are both fine). The page itself must never scroll sideways.
+1. A top-level `<header>` element (a direct child of `<body>` or the app root, not inside `<main>`, so it has the "banner" role) containing the company logo image and the app name text **"Chas Roberts Truck Inventory"**, plus a `<nav>` element containing seven links, in this order: **"Inventory"**, **"Parts List"**, **"Quick Add"**, **"Photo Count"**, **"Use Parts"**, **"Restock"**, **"Reports"**. The current page's link is visually highlighted. The app title is **not** an `<h1>`; each page has exactly one `<h1>` (its main heading below).
+2. **Logo:** the owner's logo is meant to live at `brand/chas-roberts-logo.png` in the repository root. The builder copies it into the app (e.g. `public/chas-roberts-logo.png`) so it ships in `dist/`, and shows it in the header as an `<img>` with alt text exactly **"Chas Roberts logo"**, about 40–56px tall on desktop (smaller is fine on phones), aspect ratio preserved, to the left of the app name. The image must actually load (no broken image, no 404). **If that file is not present in the repository when building** (it was not present when this spec was written), the builder creates a simple placeholder PNG at the same app path and file name (`chas-roberts-logo.png`, e.g. generated with a small Node script; it can be a simple blue-and-red banner with or without text) ideally the text "CHAS ROBERTS" in blue `#0073BB` with a red `#E0144C` accent), uses the same alt text, and notes in its build notes that the real logo file should be dropped in to replace it — the app code must not need any change when the real PNG is added.
+3. On phones, all seven links stay available without a hamburger menu (wrapping onto two rows or a horizontally scrollable bar are both fine). The page itself must never scroll sideways.
 
 ### Page 1 — Inventory (`#/`)
 
@@ -140,15 +142,20 @@ The owner asked for "a complete parts list of what's in the inventory". This pag
 
 ## Look & feel
 
-- Rugged, work-truck feel: clean and high-contrast so it's readable in sunlight and with dirty gloves.
-- Colors: dark navy header `#1F2A44` with white text; primary buttons safety orange `#F26B1D` with white text; page background `#F5F6F8`; cards white with subtle shadow; "Low" badge and error text red `#C62828`; success text green `#2E7D32`.
-- Font: "Inter" from Google Fonts with system sans-serif fallback; base size 16px or larger.
+- Branded for Chas Roberts using the logo's red and blue, on a clean white background. Clean and high-contrast so it's readable in sunlight and with dirty gloves.
+- Colors (exact values):
+  - **Main color — blue `#0073BB`**: the `<nav>` bar background (white link text), headings (h1/h2) text color, the app name text in the header, and table header row accents.
+  - **Highlight / buttons — red `#E0144C`**: background of all primary action buttons (e.g. "Add part", "Read list", "Save to inventory", "Record", "Add to inventory", "Mark replaced", "Print parts list", download buttons) with white text; the highlighted (current) nav link indicator (e.g. a red underline or red background); the "Low" badge.
+  - **Background — white `#FFFFFF`** for the page `<body>`; the header area above the nav is also white so the logo sits on white. Cards/sections are white with a light grey border or subtle shadow.
+  - Secondary buttons (e.g. "Cancel", "Edit", "Undo last tap", "Clear taps") are white with a blue `#0073BB` border and blue text. "Delete" may be red outline.
+  - Error text: dark red `#B0103C` (readable on white). Success text: green `#2E7D32`.
+- Font: "Inter" from Google Fonts (optional) with system sans-serif fallback; base size 16px or larger.
 - Big tap targets: buttons and inputs at least 44px tall.
-- Responsive: works from 360px phone width to desktop. On phones, forms stack in one column and wide tables scroll inside their own container — the page itself never scrolls sideways.
+- Responsive: works from 360px phone width to desktop. On phones, forms stack in one column and wide tables scroll inside their own container — the page itself never scrolls sideways. The logo and app name may shrink or wrap on phones but must stay visible.
 
 ## Acceptance criteria
 
-1. The app loads at `/` showing heading "Truck Inventory", "Total items on truck: 0" and "No parts yet. Add your first part above.", with no uncaught errors or console errors.
+1. The app loads at `/` showing the header name "Chas Roberts Truck Inventory", heading "Truck Inventory", "Total items on truck: 0" and "No parts yet. Add your first part above.", with no uncaught errors or console errors.
 2. The seven nav links each open their page with the correct heading (Truck Inventory, Parts List, Quick Add, Photo Count, Use Parts, Restock List, Reports).
 3. Adding a part with name, quantity and low-stock alert shows it in the table with the right "On truck" number, a success message, and an updated total.
 4. The add form rejects an empty name and an invalid quantity with the specified error messages, and saves nothing.
@@ -170,6 +177,7 @@ The owner asked for "a complete parts list of what's in the inventory". This pag
 20. The Parts List page shows every part in the inventory — including parts with 0 left — grouped under category headings, with "Different parts: N", "Total items: T", per-category subtotals, and an Out/Low/OK status; it starts with "No parts yet. Add parts on the Inventory page." when empty.
 21. The Parts List updates after parts are used on a job, and its "Search parts list" box filters rows and shows "No parts match your search." when nothing matches.
 22. The Parts List has a "Print parts list" button that opens the browser's print dialog.
+23. Branding: the browser tab title is "Chas Roberts Truck Inventory"; the header shows the app name and a logo image (alt "Chas Roberts logo") that loads; the page background is white, the nav bar is blue `#0073BB`, and primary buttons (e.g. "Add part") are red `#E0144C`.
 
 ## Out of scope / limitations
 
@@ -188,6 +196,9 @@ The owner asked for "a complete parts list of what's in the inventory". This pag
 - A bad part is removed from the truck count and goes on a restock list, but is never charged to a job number; the replacement part used is recorded normally as "Used on job".
 - "Mark replaced" means the tech got a new part from the supply house and put it back on the truck.
 - Categories are limited to Plumbing, Air conditioning, Electrical, Other.
+- The logo file `brand/chas-roberts-logo.png` was not found in the repository when this spec was written. The builder uses it if present; otherwise a placeholder logo file is used at the same app path so the owner can drop in the real logo later without code changes.
+- The owner's blue/red/white theme replaces the earlier navy/orange/grey theme. Blue is used for the nav bar and headings, red for buttons and highlights. Error text uses a slightly darker red than the button red so error messages don't look like buttons.
+- The page heading on the first page stays "Truck Inventory"; the full name "Chas Roberts Truck Inventory" appears in the header and browser tab.
 - The app starts empty (no sample data).
 - "A complete parts list of what's in the inventory" was read as a dedicated, read-only, printable page listing every part on the truck grouped by category with totals — rather than a pre-loaded master catalog. The Inventory page stays the place to add/edit/delete.
 - A part is "low" at or below its alert number, so with the default alert of 0, a part with 0 left shows as Low.

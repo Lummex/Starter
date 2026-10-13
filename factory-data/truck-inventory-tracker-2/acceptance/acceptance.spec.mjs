@@ -59,7 +59,7 @@ test('AC1: app loads with empty inventory and no errors', async ({ page }) => {
 
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1, name: 'Truck Inventory', exact: true })).toBeVisible();
-  await expect(page.getByText('Truck Inventory Tracker').first()).toBeVisible();
+  await expect(page.getByRole('banner').getByText('Chas Roberts Truck Inventory').first()).toBeVisible();
   await expect(page.getByText('Total items on truck: 0')).toBeVisible();
   await expect(page.getByText('No parts yet. Add your first part above.')).toBeVisible();
 
@@ -556,4 +556,38 @@ test('AC22: Parts List print button opens the print dialog', async ({ page }) =>
   await goTo(page, 'Parts List');
   await page.getByRole('button', { name: 'Print parts list', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__printCalls)).toBe(1);
+});
+
+test('AC23: branding shows the Chas Roberts name, logo and red/blue theme', async ({ page }) => {
+  const failedImages = [];
+  page.on('response', (res) => {
+    if (/logo/i.test(res.url()) && res.status() >= 400) failedImages.push(res.url());
+  });
+  await page.goto('/');
+  await expect(page).toHaveTitle('Chas Roberts Truck Inventory');
+
+  const header = page.getByRole('banner');
+  await expect(header.getByText('Chas Roberts Truck Inventory').first()).toBeVisible();
+  const logo = header.getByRole('img', { name: 'Chas Roberts logo' });
+  await expect(logo).toBeVisible();
+  await expect
+    .poll(() => logo.evaluate((img) => img.complete && img.naturalWidth > 0))
+    .toBe(true);
+  expect(failedImages).toEqual([]);
+
+  const bodyBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(bodyBg).toBe('rgb(255, 255, 255)');
+
+  const navBg = await page.getByRole('navigation').evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(navBg).toBe('rgb(0, 115, 187)');
+
+  const btnBg = await page
+    .getByRole('button', { name: 'Add part', exact: true })
+    .evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(btnBg).toBe('rgb(224, 20, 76)');
+
+  // Title stays the same on other pages.
+  await goTo(page, 'Parts List');
+  await expect(page.getByRole('heading', { level: 1, name: 'Parts List' })).toBeVisible();
+  await expect(page).toHaveTitle('Chas Roberts Truck Inventory');
 });
