@@ -2,7 +2,7 @@
 
 ## Summary
 
-A phone-friendly web app for plumbing and air-conditioning service techs to keep track of the parts on their truck. Parts can be added by typing, by talking (where the browser supports voice), or by taking a photo and tapping each part to count it. When parts are used on a job — or turn out to be bad — the tech records it and the truck's counts update automatically, with a restock list and downloadable reports.
+A phone-friendly web app for plumbing and air-conditioning service techs to keep track of the parts on their truck. Parts can be added by typing, by talking (where the browser supports voice), or by taking a photo and tapping each part to count it. When parts are used on a job — or turn out to be bad — the tech records it and the truck's counts update automatically. A complete, printable Parts List shows everything on the truck grouped by category, alongside a restock list and downloadable reports.
 
 ## Technical ground rules
 
@@ -10,6 +10,7 @@ A phone-friendly web app for plumbing and air-conditioning service techs to keep
 - All data is saved in the browser's `localStorage` (key `truck-inventory-v1`) and must survive a page reload. Photos are **not** saved (too large for browser storage).
 - Hash-based routing so it works on any static host:
   - `#/` (and empty hash) → Inventory
+  - `#/parts-list` → Parts List
   - `#/quick-add` → Quick Add
   - `#/photo` → Photo Count
   - `#/use` → Use Parts
@@ -43,8 +44,8 @@ Quick Add and Use Parts both read free text like `add 3 angle stops and 2 90 deg
 
 ### Navigation (all pages)
 
-1. A top header with the app title text **"Truck Inventory Tracker"** and a `<nav>` element containing six links, in this order: **"Inventory"**, **"Quick Add"**, **"Photo Count"**, **"Use Parts"**, **"Restock"**, **"Reports"**. The current page's link is visually highlighted. The app title is **not** an `<h1>`; each page has exactly one `<h1>` (its main heading below).
-2. On phones, all six links stay available without a hamburger menu (wrapping onto two rows or a horizontally scrollable bar are both fine). The page itself must never scroll sideways.
+1. A top header with the app title text **"Truck Inventory Tracker"** and a `<nav>` element containing seven links, in this order: **"Inventory"**, **"Parts List"**, **"Quick Add"**, **"Photo Count"**, **"Use Parts"**, **"Restock"**, **"Reports"**. The current page's link is visually highlighted. The app title is **not** an `<h1>`; each page has exactly one `<h1>` (its main heading below).
+2. On phones, all seven links stay available without a hamburger menu (wrapping onto two rows or a horizontally scrollable bar are both fine). The page itself must never scroll sideways.
 
 ### Page 1 — Inventory (`#/`)
 
@@ -67,6 +68,23 @@ Quick Add and Use Parts both read free text like `add 3 angle stops and 2 90 deg
 9. **Edit** opens a dialog (`role="dialog"`, e.g. a native `<dialog>`) with heading **"Edit part"**, the same four fields pre-filled ("Part name", "Quantity", "Low-stock alert at", "Category"), and buttons **"Save changes"** and **"Cancel"**. Same validation as the add form. Saving updates the part; if the quantity changed, a history entry of type `Count changed` is recorded with the new quantity. The dialog closes after saving or cancelling.
 10. **Delete** asks for confirmation with the browser's `confirm()` dialog, text **"Delete NAME from the truck?"**. If confirmed, the part is removed and a `Removed` history entry is recorded. If cancelled, nothing changes.
 11. When there are no parts, instead of table rows show **"No parts yet. Add your first part above."** When a search matches nothing, show **"No parts match your search."**
+
+### Page 1b — Parts List (`#/parts-list`)
+
+The owner asked for "a complete parts list of what's in the inventory". This page is a clean, read-only, printable list of **every** part on the truck (including parts with 0 left), grouped by category. Editing stays on the Inventory page.
+
+1. Main heading (h1): **"Parts List"**. Intro text: "Every part in your truck inventory, grouped by category."
+2. Two summary lines: **"Different parts: N"** (number of parts in the inventory) and **"Total items: T"** (sum of all quantities). Both show `0` when empty.
+3. One section per category that has at least one part, in this fixed order: Plumbing, Air conditioning, Electrical, Other. Each section has an `<h2>` heading with the category name exactly (e.g. **"Plumbing"**, **"Air conditioning"**). Categories with no parts are not shown.
+4. Each section has a table with column headers exactly: **"Part"**, **"On truck"**, **"Low at"**, **"Status"**, one row per part in that category, sorted by part name A→Z. Status text is exactly:
+   - **"Out"** when the quantity is 0,
+   - **"Low"** when the quantity is above 0 and at or below its low-stock alert,
+   - **"OK"** otherwise.
+5. Under each section's table, a subtotal line **"CATEGORY total: T items"** (e.g. `Plumbing total: 5 items`; use "item" when T is 1: `Plumbing total: 1 item`).
+6. A search box with placeholder **"Search parts list"** filters rows across all sections as you type (case-insensitive, matches anywhere in the name); sections with no matching rows are hidden. When nothing matches, show **"No parts match your search."** The summary lines always show the whole inventory (not filtered).
+7. Button **"Print parts list"** calls `window.print()`. A print stylesheet (`@media print`) hides the header/nav, the search box and buttons, so the printout is just the heading, summary and tables.
+8. When there are no parts at all, show **"No parts yet. Add parts on the Inventory page."** (no sections, summary lines still show 0).
+9. The list always reflects the current inventory (after adding, using, bad parts, edits, deletes) — it reads from the same saved data.
 
 ### Page 2 — Quick Add (`#/quick-add`)
 
@@ -131,7 +149,7 @@ Quick Add and Use Parts both read free text like `add 3 angle stops and 2 90 deg
 ## Acceptance criteria
 
 1. The app loads at `/` showing heading "Truck Inventory", "Total items on truck: 0" and "No parts yet. Add your first part above.", with no uncaught errors or console errors.
-2. The six nav links each open their page with the correct heading (Truck Inventory, Quick Add, Photo Count, Use Parts, Restock List, Reports).
+2. The seven nav links each open their page with the correct heading (Truck Inventory, Parts List, Quick Add, Photo Count, Use Parts, Restock List, Reports).
 3. Adding a part with name, quantity and low-stock alert shows it in the table with the right "On truck" number, a success message, and an updated total.
 4. The add form rejects an empty name and an invalid quantity with the specified error messages, and saves nothing.
 5. Adding a part whose name matches an existing one (e.g. "angle stops" vs "Angle stop") adds to the existing quantity instead of creating a second row.
@@ -148,7 +166,10 @@ Quick Add and Use Parts both read free text like `add 3 angle stops and 2 90 deg
 16. The Restock page lists parts that are running low.
 17. Reports shows the history with types and job numbers, and filtering by job number shows only that job's entries plus "Parts used on job JOB: N".
 18. Reports can download the inventory and history as CSV files with the specified headers.
-19. On a phone-sized screen (390×844) the nav links work, a part can be added, and the page does not scroll sideways.
+19. On a phone-sized screen (390×844) the nav links work, a part can be added, and the page does not scroll sideways (including on the Parts List page).
+20. The Parts List page shows every part in the inventory — including parts with 0 left — grouped under category headings, with "Different parts: N", "Total items: T", per-category subtotals, and an Out/Low/OK status; it starts with "No parts yet. Add parts on the Inventory page." when empty.
+21. The Parts List updates after parts are used on a job, and its "Search parts list" box filters rows and shows "No parts match your search." when nothing matches.
+22. The Parts List has a "Print parts list" button that opens the browser's print dialog.
 
 ## Out of scope / limitations
 
@@ -156,6 +177,7 @@ Quick Add and Use Parts both read free text like `add 3 angle stops and 2 90 deg
 - **Voice** uses the browser's built-in speech recognition. It works in Chrome, Edge and Safari (including iPhone Safari) but not in Firefox; those users can type instead. Speech-to-text quality depends on the browser.
 - No user accounts, no syncing between phones or between multiple trucks, no cloud backup. Data lives on one device/browser; clearing browser data erases it. (CSV download is the backup/report path.)
 - Photos are not stored.
+- The Parts List is a list of what is in **this** truck's inventory; it does not come pre-loaded with a catalog of every plumbing/HVAC part made (no free public parts catalog exists that the app could use without a key). Printing uses the browser's own print dialog (which can also "Save as PDF").
 - No barcode scanning, no supplier ordering, no pricing/costs, no invoicing to customers.
 - Name matching is simple (one trailing "s"), so irregular plurals like "boxes"/"box" won't match each other.
 
@@ -167,4 +189,5 @@ Quick Add and Use Parts both read free text like `add 3 angle stops and 2 90 deg
 - "Mark replaced" means the tech got a new part from the supply house and put it back on the truck.
 - Categories are limited to Plumbing, Air conditioning, Electrical, Other.
 - The app starts empty (no sample data).
+- "A complete parts list of what's in the inventory" was read as a dedicated, read-only, printable page listing every part on the truck grouped by category with totals — rather than a pre-loaded master catalog. The Inventory page stays the place to add/edit/delete.
 - A part is "low" at or below its alert number, so with the default alert of 0, a part with 0 left shows as Low.

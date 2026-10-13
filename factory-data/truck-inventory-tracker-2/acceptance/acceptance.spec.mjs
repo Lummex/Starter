@@ -72,6 +72,7 @@ test('AC2: navigation links open each page', async ({ page }) => {
   page.on('pageerror', (err) => pageErrors.push(err.message));
   await page.goto('/');
   const pages = [
+    ['Parts List', 'Parts List'],
     ['Quick Add', 'Quick Add'],
     ['Photo Count', 'Photo Count'],
     ['Use Parts', 'Use Parts'],
@@ -426,10 +427,133 @@ test.describe('phone viewport', () => {
     await addPart(page, 'Angle stop', 2, 0);
     await expect(page.getByText('Total items on truck: 2')).toBeVisible();
 
-    const overflow = await page.evaluate(
+    let overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+
+    await goTo(page, 'Parts List');
+    await expect(page.getByRole('heading', { level: 1, name: 'Parts List', exact: true })).toBeVisible();
+    await expect(page.getByText('Total items: 2')).toBeVisible();
+
+    overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth
     );
     expect(overflow).toBeLessThanOrEqual(1);
     expect(pageErrors).toEqual([]);
   });
+});
+
+// Returns the cell in a given column for a part's row on the Parts List page.
+async function partsListCell(page, name, column) {
+  const row = page.getByRole('row').filter({ hasText: name });
+  await expect(row).toHaveCount(1);
+  const table = page.getByRole('table').filter({ has: row });
+  const headers = await table.getByRole('columnheader').allTextContents();
+  const idx = headers.findIndex((h) => h.trim() === column);
+  expect(idx).toBeGreaterThanOrEqual(0);
+  return row.locator('td').nth(idx);
+}
+
+async function addPartWithCategory(page, name, qty, low, category) {
+  await page.getByRole('textbox', { name: 'Part name', exact: true }).fill(name);
+  await page.getByRole('spinbutton', { name: 'Quantity', exact: true }).fill(String(qty));
+  await page.getByRole('spinbutton', { name: 'Low-stock alert at', exact: true }).fill(String(low));
+  await page.getByRole('combobox', { name: 'Category', exact: true }).selectOption(category);
+  await page.getByRole('button', { name: 'Add part', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: `to ${name}` })).toBeVisible();
+}
+
+test('AC20: Parts List shows every part grouped by category with totals', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await page.goto('/');
+  await goTo(page, 'Parts List');
+  await expect(page.getByRole('heading', { level: 1, name: 'Parts List', exact: true })).toBeVisible();
+  await expect(page.getByText('No parts yet. Add parts on the Inventory page.')).toBeVisible();
+  await expect(page.getByText('Different parts: 0')).toBeVisible();
+  await expect(page.getByText('Total items: 0')).toBeVisible();
+
+  await goTo(page, 'Inventory');
+  await addPartWithCategory(page, 'Angle stop', 3, 1, 'Plumbing');
+  await addPartWithCategory(page, 'Copper coupling', 2, 2, 'Plumbing');
+  await addPartWithCategory(page, 'Capacitor', 1, 0, 'Air conditioning');
+  await addPartWithCategory(page, 'Wire nut', 0, 0, 'Electrical');
+
+  await goTo(page, 'Parts List');
+  await expect(page.getByRole('heading', { level: 1, name: 'Parts List', exact: true })).toBeVisible();
+  await expect(page.getByText('No parts yet. Add parts on the Inventory page.')).toHaveCount(0);
+  await expect(page.getByText('Different parts: 4')).toBeVisible();
+  await expect(page.getByText('Total items: 6')).toBeVisible();
+
+  await expect(page.getByRole('heading', { level: 2, name: 'Plumbing', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Air conditioning', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Electrical', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Other', exact: true })).toHaveCount(0);
+
+  await expect(page.getByText('Plumbing total: 5 items')).toBeVisible();
+  await expect(page.getByText('Air conditioning total: 1 item', { exact: true })).toBeVisible();
+  await expect(page.getByText('Electrical total: 0 items')).toBeVisible();
+
+  // Wire nut has 0 left but is still listed.
+  await expect(await partsListCell(page, 'Wire nut', 'On truck')).toHaveText('0');
+  await expect(await partsListCell(page, 'Wire nut', 'Status')).toHaveText('Out');
+  await expect(await partsListCell(page, 'Copper coupling', 'Status')).toHaveText('Low');
+  await expect(await partsListCell(page, 'Angle stop', 'Status')).toHaveText('OK');
+  await expect(await partsListCell(page, 'Angle stop', 'On truck')).toHaveText('3');
+  await expect(await partsListCell(page, 'Angle stop', 'Low at')).toHaveText('1');
+
+  // Angle stop and Copper coupling are in the same (Plumbing) table, A→Z.
+  const plumbingTable = page.getByRole('table').filter({ hasText: 'Angle stop' });
+  await expect(plumbingTable.getByRole('row').filter({ hasText: 'Copper coupling' })).toHaveCount(1);
+  await expect(plumbingTable.getByRole('row').filter({ hasText: 'Capacitor' })).toHaveCount(0);
+  const plumbingText = await plumbingTable.innerText();
+  expect(plumbingText.indexOf('Angle stop')).toBeLessThan(plumbingText.indexOf('Copper coupling'));
+
+  // Persists after reload.
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1, name: 'Parts List', exact: true })).toBeVisible();
+  await expect(page.getByText('Different parts: 4')).toBeVisible();
+  expect(pageErrors).toEqual([]);
+});
+
+test('AC21: Parts List updates after use and can be searched', async ({ page }) => {
+  await page.goto('/');
+  await addPart(page, 'Angle stop', 5, 1);
+  await addPart(page, '90 degree elbow', 4, 1);
+  await usePartsRecord(page, { job: '1001', text: '2 angle stops and 2 90 degree elbows' });
+  await expect(page.getByText(/Recorded for job 1001/)).toBeVisible();
+
+  await goTo(page, 'Parts List');
+  await expect(page.getByRole('heading', { level: 1, name: 'Parts List', exact: true })).toBeVisible();
+  await expect(page.getByText('Total items: 5')).toBeVisible();
+  await expect(await partsListCell(page, 'Angle stop', 'On truck')).toHaveText('3');
+  await expect(await partsListCell(page, '90 degree elbow', 'On truck')).toHaveText('2');
+
+  const search = page.getByPlaceholder('Search parts list');
+  await search.fill('ELBOW');
+  await expect(page.getByRole('row').filter({ hasText: '90 degree elbow' })).toHaveCount(1);
+  await expect(page.getByRole('row').filter({ hasText: 'Angle stop' })).toHaveCount(0);
+  await expect(page.getByText('Total items: 5')).toBeVisible();
+
+  await search.fill('zzz-nothing');
+  await expect(page.getByText('No parts match your search.')).toBeVisible();
+  await expect(page.getByRole('row').filter({ hasText: '90 degree elbow' })).toHaveCount(0);
+
+  await search.fill('');
+  await expect(page.getByRole('row').filter({ hasText: 'Angle stop' })).toHaveCount(1);
+});
+
+test('AC22: Parts List print button opens the print dialog', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__printCalls = 0;
+    window.print = () => {
+      window.__printCalls += 1;
+    };
+  });
+  await page.goto('/');
+  await addPart(page, 'Angle stop', 2, 0);
+  await goTo(page, 'Parts List');
+  await page.getByRole('button', { name: 'Print parts list', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.__printCalls)).toBe(1);
 });
