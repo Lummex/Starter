@@ -1,6 +1,6 @@
 # Automated check results
 
-19 of 19 checks passed after 3 build round(s).
+22 of 22 checks passed after 1 build round(s).
 
 - ✅ phone viewport › AC19: works on a phone-sized screen
 - ✅ AC1: app loads with empty inventory and no errors
@@ -21,3 +21,6 @@
 - ✅ AC16: Restock page lists parts running low
 - ✅ AC17: Reports shows history and filters by job number
 - ✅ AC18: Reports downloads inventory and history CSV files
+- ✅ AC20: Parts List shows every part grouped by category with totals
+- ✅ AC21: Parts List updates after use and can be searched
+- ✅ AC22: Parts List print button opens the print dialog

@@ -1,23 +1,24 @@
 ## What was built
-A phone-friendly web app for plumbing and air-conditioning techs to track parts on their truck. It has six pages: Inventory, Quick Add (type or speak a list), Photo Count (tap each part on a photo to count it), Use Parts (record parts used on a job or bad parts), Restock list, and Reports with CSV downloads. Everything is saved in the browser on that device.
+A phone-friendly truck parts tracker for plumbing and A/C techs. You can add parts by typing, by voice, or by tapping parts on a photo to count them. You can record parts used on a job or bad parts, and the counts update. It also has a printable Parts List grouped by category, a restock list, and downloadable CSV reports.
 
 ## Try these things
-- On Inventory, add a part such as "Angle stop", quantity 3, then add "angle stops" and check it merges into one row.
-- Set a low-stock alert at or above a part's quantity and look for the red "Low" badge. Try Edit and Delete too.
-- On Quick Add, type "add 3 angle stops and 2 90 degree elbows", tap "Read list", then "Save to inventory".
-- On Photo Count, choose a photo, tap on parts to see numbered markers, then name the part and add it.
-- On Use Parts, enter a job number and record "2 angle stops". Then record one as a bad part and mark it replaced on the Restock page.
-- On Reports, filter by your job number and download both CSV files. Open the preview on your phone as well.
+- On Inventory, add "Angle stop", quantity 3, then add "angle stops" and check that it merges into one row.
+- On Quick Add, type "add 3 angle stops and 2 90 degree elbows", tap Read list, then Save to inventory.
+- On Use Parts, enter job number 1001 and record "2 angle stops". Then record one as a Bad part and look at Restock for "Mark replaced".
+- Open Parts List, try the search box, and tap Print parts list.
+- On Photo Count, choose a photo, tap parts to count them, and add the count to a part.
+- On Reports, filter by job number and download both CSV files.
+- Open the preview on your phone and check that all seven menu links work.
 
 ## Automated checks
-19 of 19 checks passed. The checks covered every page and the phone-sized screen.
+22 of 22 checks passed. They cover every page, validation messages, saving after reload, and the phone-size layout. No errors were logged.
 
 ## Things to know
-- Automatic part recognition from photos is not included. You tap each part to count it yourself. This was an expected limit of version 1 because it needs a paid AI service.
-- Voice input uses the browser's built-in speech feature. It works in Chrome, Edge and Safari but not Firefox. I did not hear it tested with a real microphone.
-- Data lives only on one device. Clearing browser data erases it, so use the CSV downloads as a backup. Photos are not saved.
-- The builder skipped the Inter font and uses the phone's standard font instead. This is a small visual difference.
-- The screenshots show only the Inventory page, empty, on desktop and phone. It looks styled and tidy, with the navy header and orange buttons. On the phone, the parts table is wider than the screen and scrolls within its own box, which is as intended. I did not see screenshots of the other pages.
+- The app can't recognize parts in a photo automatically. That needs a paid AI service. You tap each part to count it instead.
+- Voice works in Chrome, Edge and Safari, but not Firefox. Other browsers show a "type instead" note. The automated checks can't test real speech, so try it on your phone.
+- Data is stored only in that one browser. Clearing browser data erases it, so use the CSV downloads as a backup. Photos aren't saved.
+- The builder chose not to load the Inter font from Google, so the app uses the phone's standard font. This is a cosmetic difference only.
+- I only saw screenshots of the Inventory page (desktop and phone). They look clean and match the colors asked for. On the phone, the parts table is slightly wider than the screen and scrolls inside its own box, which is intended. I didn't see screenshots of the other pages.
 
 ## Recommendation
 Ready to approve
