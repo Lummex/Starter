@@ -1,0 +1,26 @@
+name: Tidy repository root
+
+# Removes stray files from the top level of the repository (only README.md and .gitignore belong there).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove stray top-level files
+        run: |
+          strays=$(git ls-files | grep -v '/' | grep -vxE 'README\.md|\.gitignore' || true)
+          if [ -z "$strays" ]; then echo "Nothing to tidy."; exit 0; fi
+          echo "Removing:"; echo "$strays"
+          echo "$strays" | while IFS= read -r f; do git rm -q -- "$f"; done
+          git config user.name "factory-bot"
+          git config user.email "factory-bot@users.noreply.github.com"
+          git commit -m "Tidy: remove stray top-level files"
+          git push
