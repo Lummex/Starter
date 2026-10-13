@@ -176,7 +176,7 @@ function inventoryPage() {
   </section>
   <section class="card">
     <div class="field"><label for="search">Search parts</label><input type="search" id="search" placeholder="Search parts" autocomplete="off"></div>
-    <div class="table-wrap"><table><thead><tr><th>Part</th><th>Category</th><th>On truck</th><th>Low at</th><th>Actions</th></tr></thead><tbody id="rows"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th scope="col">Part</th><th scope="col">Category</th><th scope="col">On truck</th><th scope="col">Low at</th><th scope="col">Actions</th></tr></thead><tbody id="rows"></tbody></table></div>
   </section>
   <dialog id="edit-dlg" role="dialog" aria-labelledby="edit-h">
     <form id="edit-form" novalidate>
@@ -285,7 +285,7 @@ function quickAddPage() {
       return err('I couldn\'t find any parts in that. Try something like "3 angle stops".');
     }
     setMsg('');
-    pv.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Part</th><th>Quantity</th><th>Status</th></tr></thead><tbody>${items.map((it) => {
+    pv.innerHTML = `<div class="table-wrap"><table><thead><tr><th scope="col">Part</th><th scope="col">Quantity</th><th scope="col">Status</th></tr></thead><tbody>${items.map((it) => {
       const ex = findPart(it.name);
       return `<tr><td>${esc(ex ? ex.name : capFirst(it.name))}</td><td>${it.qty}</td><td>${ex ? 'Already on truck' : 'New part'}</td></tr>`;
     }).join('')}</tbody></table></div><div class="btn-row"><button type="button" id="save-qa" class="primary">Save to inventory</button></div>`;
@@ -308,7 +308,7 @@ let photoUrl = null;
 function photoPage() {
   app.innerHTML = `
   <h1>Photo Count</h1>
-  <p>Snap a photo of a bin or shelf, then tap each part in the photo to count it.</p>
+  <p id="photo-intro">Snap a photo of a bin or shelf, then tap each part in the photo to count it.</p>
   <section class="card">
     <div class="field"><label for="photo-in">Take or choose a photo</label><input type="file" id="photo-in" accept="image/*" capture="environment"></div>
     <div id="photo-area" hidden>
@@ -341,7 +341,7 @@ function photoPage() {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
     photoUrl = URL.createObjectURL(f);
     img.src = photoUrl;
-    area.hidden = false;
+    area.hidden = false; $('#photo-intro').hidden = true;
     taps = [];
     setMsg('');
     draw();
@@ -460,7 +460,7 @@ function reportsPage() {
   <section class="card">
     <div class="field"><label for="f-job">Filter by job number</label><input type="text" id="f-job" autocomplete="off"></div>
     <p id="job-total"></p>
-    <div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Part</th><th>Qty</th><th>Job number</th></tr></thead><tbody id="hist"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th scope="col">Date</th><th scope="col">Type</th><th scope="col">Part</th><th scope="col">Qty</th><th scope="col">Job number</th></tr></thead><tbody id="hist"></tbody></table></div>
   </section>
   <section class="card"><div class="btn-row"><button type="button" id="dl-inv" class="primary">Download inventory CSV</button><button type="button" id="dl-hist" class="primary">Download history CSV</button></div></section>`;
   const draw = () => {
