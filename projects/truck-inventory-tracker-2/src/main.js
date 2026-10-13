@@ -341,7 +341,7 @@ function photoPage() {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
     photoUrl = URL.createObjectURL(f);
     img.src = photoUrl;
-    area.hidden = false; $('#photo-intro').hidden = true;
+    area.hidden = false; const pi = $('#photo-intro'); if (pi) pi.remove();
     taps = [];
     setMsg('');
     draw();
