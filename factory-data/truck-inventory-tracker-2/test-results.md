@@ -1,6 +1,6 @@
 # Automated check results
 
-22 of 22 checks passed after 1 build round(s).
+23 of 23 checks passed after 1 build round(s).
 
 - ✅ phone viewport › AC19: works on a phone-sized screen
 - ✅ AC1: app loads with empty inventory and no errors
@@ -24,3 +24,4 @@
 - ✅ AC20: Parts List shows every part grouped by category with totals
 - ✅ AC21: Parts List updates after use and can be searched
 - ✅ AC22: Parts List print button opens the print dialog
+- ✅ AC23: branding shows the Chas Roberts name, logo and red/blue theme
