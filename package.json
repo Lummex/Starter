@@ -1,6 +1,0 @@
-{
-  "name": "factory-dashboard",
-  "private": true,
-  "type": "module",
-  "engines": { "node": ">=20" }
-}
