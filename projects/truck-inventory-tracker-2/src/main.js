@@ -414,6 +414,39 @@ function usePage() {
   });
 }
 
+function partsListPage() {
+  app.innerHTML = `
+  <h1>Parts List</h1>
+  <p>Every part in your truck inventory, grouped by category.</p>
+  <p id="pl-diff"></p>
+  <p id="pl-total"></p>
+  <div class="card no-print">
+    <div class="field"><label for="pl-search">Search parts list</label><input type="search" id="pl-search" placeholder="Search parts list" autocomplete="off"></div>
+    <button type="button" class="primary" id="pl-print">Print parts list</button>
+  </div>
+  <div id="pl-body"></div>`;
+  const statusOf = (p) => (p.qty === 0 ? 'Out' : isLow(p) ? 'Low' : 'OK');
+  function draw() {
+    $('#pl-diff').textContent = `Different parts: ${state.parts.length}`;
+    $('#pl-total').textContent = `Total items: ${total()}`;
+    const body = $('#pl-body');
+    if (!state.parts.length) { body.innerHTML = '<p>No parts yet. Add parts on the Inventory page.</p>'; return; }
+    const q = $('#pl-search').value.trim().toLowerCase();
+    let html = '';
+    for (const c of CATS) {
+      const all = state.parts.filter((p) => p.category === c);
+      const list = all.filter((p) => p.name.toLowerCase().includes(q)).sort(byName);
+      if (!list.length) continue;
+      const t = list.reduce((a, p) => a + p.qty, 0);
+      html += `<section class="card"><h2>${esc(c)}</h2><div class="table-wrap"><table><thead><tr><th scope="col">Part</th><th scope="col">On truck</th><th scope="col">Low at</th><th scope="col">Status</th></tr></thead><tbody>${list.map((p) => `<tr><td>${esc(p.name)}</td><td>${p.qty}</td><td>${p.low}</td><td>${statusOf(p)}</td></tr>`).join('')}</tbody></table></div><p class="muted">${esc(c)} total: ${t} ${t === 1 ? 'item' : 'items'}</p></section>`;
+    }
+    body.innerHTML = html || '<p>No parts match your search.</p>';
+  }
+  draw();
+  $('#pl-search').addEventListener('input', draw);
+  $('#pl-print').addEventListener('click', () => window.print());
+}
+
 function restockPage() {
   app.innerHTML = `
   <h1>Restock List</h1>
@@ -477,7 +510,7 @@ function reportsPage() {
 }
 
 // ---------- router ----------
-const routes = { '/': inventoryPage, '/quick-add': quickAddPage, '/photo': photoPage, '/use': usePage, '/restock': restockPage, '/reports': reportsPage };
+const routes = { '/': inventoryPage, '/parts-list': partsListPage, '/quick-add': quickAddPage, '/photo': photoPage, '/use': usePage, '/restock': restockPage, '/reports': reportsPage };
 function route() {
   let path = location.hash.replace(/^#/, '') || '/';
   if (!routes[path]) path = '/';
