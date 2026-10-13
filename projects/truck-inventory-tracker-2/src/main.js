@@ -455,7 +455,7 @@ function restockPage() {
   const draw = () => {
     const low = state.parts.filter(isLow).sort(byName);
     $('#low').innerHTML = low.length ? `<ul class="plain">${low.map((p) => `<li>${esc(p.name)}: have ${p.qty}, alert at ${p.low}</li>`).join('')}</ul>` : '<p>Nothing is running low.</p>';
-    $('#bad').innerHTML = state.bad.length ? `<ul class="plain">${state.bad.map((b) => `<li><span>${esc(b.name)} × ${b.qty}</span><button type="button" data-id="${b.id}">Mark replaced</button></li>`).join('')}</ul>` : '<p>No bad parts to replace.</p>';
+    $('#bad').innerHTML = state.bad.length ? `<ul class="plain">${state.bad.map((b) => `<li><span>${esc(b.name)} × ${b.qty}</span><button type="button" class="primary" data-id="${b.id}">Mark replaced</button></li>`).join('')}</ul>` : '<p>No bad parts to replace.</p>';
   };
   draw();
   $('#bad').addEventListener('click', (e) => {
