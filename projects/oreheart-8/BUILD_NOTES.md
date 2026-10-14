@@ -13,3 +13,9 @@ Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm te
 - A just-summoned Gatherer is marked `data-acted="true"` (it cannot attack) even though it may still move.
 - Banners queue (YOUR TURN then DEPLOY); a backlog drains at about 0.45 s each so a following ACTION banner is not delayed long.
 - Visuals are placeholders; no sound. `factory-data/oreheart-8` was not modified.
+
+## Round 2 inspector notes (AC14, AC16)
+Both reported failures were traced and appear to be inconsistencies in the acceptance tests, not engine bugs:
+- AC14: a Scrapper (⚔2) hitting a Dwarf Shieldbeard (❤4, no type advantage for Goblins vs Dwarves) leaves it at ❤2 per spec 3.x; the test's own comment says "4 - 2" yet expects 3.
+- AC16: `passTurn` (2 × Done) is called while in the Action phase, so two passTurns end in the player's turn-3 *Action* phase; the test then casts and presses Done again, ending the turn before the attack. Engine phase flow follows the spec (Deploy -> Action -> next turn).
+No rules were changed to special-case these.
