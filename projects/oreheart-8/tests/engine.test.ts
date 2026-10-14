@@ -10,7 +10,7 @@ const O = (cardId: string, row: number, col: number, extra: any = {}) => ({ card
 const at = (s: any, r: number, c: number) => creatureAt(s, r, c);
 const mine = (s: any, r: number, c: number, row: number, col: number) => act(s, { type: 'mine', creatureUid: at(s, r, c).uid, row, col });
 const pool = (s: any, w = 'player') => s.players[w].crystals;
-const total = (s: any, w = 'player') => Object.values(pool(s, w)).reduce((a: any, b: any) => a + b, 0);
+const total = (s: any, w = 'player') => s.players[w].crystals as number;
 
 describe('content and board', () => {
   it('starter decks: 40 creatures, 6 spells incl. Fizzle, 4 Crystal cards', () => {
@@ -32,7 +32,7 @@ describe('content and board', () => {
       expect(s.sites.map((x: any) => x.row * 100 + x.col)).toEqual([...s.sites.map((x: any) => x.row * 100 + x.col)].sort((a, b) => a - b));
     }
     expect(() => createMatch({ mines: [{ row: 2, col: 1 }, { row: 3, col: 5 }, { row: 5, col: 5 }] })).toThrow();
-    expect(createMatch({ seed: 1 }).players.player.crystals).toEqual({ green: 0, blue: 0, purple: 0, white: 0 });
+    expect(createMatch({ seed: 1 }).players.player.crystals).toBe(0);
   });
   it('13x7 bounds: no move off the board', () => {
     const s = mk({ board: [P('goblin-grunt', 7, 13)] });
@@ -47,13 +47,13 @@ describe('mining', () => {
     s = done(s);
     s = mine(s, 6, 6, 5, 6);
     s = mine(s, 5, 5, 5, 6);
-    expect(s.players.player.flow.white + s.players.player.flow.green).toBe(3);
+    expect(s.players.player.flow).toBe(3);
     expect(incomePreview(s, 'player')).toBe(3);
     s = done(s); // enemy turn 2
     expect(total(s)).toBe(0);
     s = done(s, 2);
     expect(s.activePlayer).toBe('player');
-    expect(pool(s)).toEqual({ green: 3, blue: 0, purple: 0, white: 0 });
+    expect(pool(s)).toBe(3);
     expect(s.players.player.minedLastTurn).toBe(3);
     // not mining gives nothing, pool replaced not added
     s = done(s, 4);
@@ -130,7 +130,7 @@ describe('economy extras', () => {
     expect(s.sites[1].controller).toBe('opponent');
     s = done(s, 2);
     expect(s.activePlayer).toBe('player');
-    expect(pool(s)).toEqual({ green: 2, blue: 0, purple: 0, white: 0 });
+    expect(pool(s)).toBe(2);
   });
   it('pool cap 16', () => {
     const board = [] as any[];
@@ -142,47 +142,48 @@ describe('economy extras', () => {
 });
 
 describe('revision 6', () => {
-  const B = (g = 0, w = 0) => ({ green: g, blue: 0, purple: 0, white: w });
+  const B = (g = 0, w = 0) => g + w;
   it('starter decks: 5 basic Miners and 3 Smith Miners each', () => {
     const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner'], gnomes: ['gnome-prospector', 'gnome-smith-miner'], dwarves: ['dwarf-miner', 'dwarf-smith-miner'] };
     for (const [f, [b, sm]] of Object.entries<any>(pairs)) {
       expect(STARTER_DECKS[f].filter((x) => x === b).length).toBe(5);
       expect(STARTER_DECKS[f].filter((x) => x === sm).length).toBe(3);
     }
-    expect(CARDS['goblin-scrounger'].name).toBe('Goblin Miner');
+    expect(CARDS['goblin-scrounger'].name).toBe('Grubgrabber Miner');
   });
-  it('Smith +1 Attack / +1 Health persist and heal to the new max', () => {
-    let s = mk({ playerHand: ['goblin-smith-miner', 'goblin-smith-miner'], playerCrystals: B(4), board: [P('goblin-grunt', 7, 2, { damage: 0 })] });
+  it('Smith +1/+1 and basic Miner +1 Health persist and heal to the new max', () => {
+    let s = mk({ playerHand: ['goblin-smith-miner', 'goblin-scrounger'], playerCrystals: B(4), board: [P('goblin-grunt', 7, 2, { damage: 0 })] });
     const u = at(s, 7, 2).uid;
-    s = act(s, { type: 'smith', uid: s.players.player.hand[0].uid, creatureUid: u, stat: 'attack' });
-    s = act(s, { type: 'smith', uid: s.players.player.hand[0].uid, creatureUid: u, stat: 'health' });
-    const c = at(s, 7, 2);
+    s = act(s, { type: 'minerUpgrade', uid: s.players.player.hand[0].uid, creatureUid: u });
+    let c = at(s, 7, 2);
     expect([c.attack, c.health, c.maxHealth, c.upgrades]).toEqual([3, 2, 2, { attack: 1, health: 1 }]);
+    s = act(s, { type: 'minerUpgrade', uid: s.players.player.hand[0].uid, creatureUid: u });
+    c = at(s, 7, 2);
+    expect([c.attack, c.maxHealth, c.upgrades]).toEqual([3, 3, { attack: 1, health: 2 }]);
     expect(s.phase).toBe('deploy');
-    expect(s.players.player.crystals.green).toBe(2);
-    s = done(s, 2);
-    s = done(s, 2);
-    expect([at(s, 7, 2).attack, at(s, 7, 2).maxHealth]).toEqual([3, 2]);
+    expect(s.players.player.crystals).toBe(2);
+    s = done(s, 4);
+    expect([at(s, 7, 2).attack, at(s, 7, 2).maxHealth]).toEqual([3, 3]);
   });
   it('Crystal card goes to the Bank without ending the phase; Bank is spent after Flow', () => {
     let s = mk({ playerHand: ['crystal-cluster', 'goblin-slinger'], playerCrystals: B(2) });
     s = act(s, { type: 'playCrystal', uid: s.players.player.hand[0].uid });
     expect([s.phase, s.activePlayer, s.turn]).toEqual(['deploy', 'player', 1]);
-    expect(s.players.player.bank.green).toBe(2);
-    expect(s.players.player.crystals.green).toBe(2);
+    expect(s.players.player.bank).toBe(2);
+    expect(s.players.player.crystals).toBe(2);
     // second Crystal card is not allowed in the same round
     const slinger = s.players.player.hand[0].uid; // cost 4, Grubnak 3
     s = act(s, { type: 'summon', uid: slinger, row: 7, col: 2 });
-    expect([s.players.player.crystals.green, s.players.player.bank.green]).toEqual([0, 1]);
+    expect([s.players.player.crystals, s.players.player.bank]).toEqual([0, 1]);
   });
   it('Flow 2 + Bank 3 pays a Goblin Slinger leaving Bank 2', () => {
     let s = mk({ playerHand: ['goblin-slinger'], playerCrystals: B(2), playerBank: B(3) });
     s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 2 });
-    expect([s.players.player.crystals.green, s.players.player.bank.green]).toEqual([0, 2]);
+    expect([s.players.player.crystals, s.players.player.bank]).toEqual([0, 2]);
   });
   it('Crystal card works in the Respond window and funds a counterspell', () => {
     let s: any;
-    s = createMatch({ playerCommander: 'borgo', opponentCommander: 'sproingle', mines: MINES, setup: { firstPlayer: 'opponent', opponentHand: ['fireball'], opponentCrystals: { green: 0, blue: 6, purple: 0, white: 0 }, playerHand: ['fizzle', 'crystal-cluster'], playerCrystals: { green: 0, blue: 0, purple: 1, white: 0 }, board: [P('goblin-grunt', 6, 2)] } });
+    s = createMatch({ playerCommander: 'borgo', opponentCommander: 'sproingle', mines: MINES, setup: { firstPlayer: 'opponent', opponentHand: ['fireball'], opponentCrystals: 6, playerHand: ['fizzle', 'crystal-cluster'], playerCrystals: 1, board: [P('goblin-grunt', 6, 2)] } });
     const fb = s.players.opponent.hand[0].uid;
     s = act(s, { type: 'cast', uid: fb, target: { row: 6, col: 2 } });
     expect(s.pendingResponse.responder).toBe('player');
@@ -195,17 +196,17 @@ describe('revision 6', () => {
     expect(at(s, 6, 2)).toBeTruthy();
   });
   it('window opens even when the Instant is unaffordable', () => {
-    let s = createMatch({ playerCommander: 'borgo', opponentCommander: 'sproingle', mines: MINES, setup: { firstPlayer: 'opponent', opponentHand: ['fireball'], opponentCrystals: { green: 0, blue: 6, purple: 0, white: 0 }, playerHand: ['fizzle'], board: [P('goblin-grunt', 6, 2)] } });
+    let s = createMatch({ playerCommander: 'borgo', opponentCommander: 'sproingle', mines: MINES, setup: { firstPlayer: 'opponent', opponentHand: ['fireball'], opponentCrystals: 6, playerHand: ['fizzle'], board: [P('goblin-grunt', 6, 2)] } });
     s = act(s, { type: 'cast', uid: s.players.opponent.hand[0].uid, target: { row: 6, col: 2 } });
     expect(s.pendingResponse.responder).toBe('player');
     expect(legalActions(s).some((a: any) => a.type === 'respond')).toBe(false);
     expect(legalActions(s).some((a: any) => a.type === 'pass')).toBe(true);
   });
   it('free Miner only when Flow + Bank cannot pay and no Miner on the battlefield', () => {
-    const cost = (s: any) => { const l = legalActions(s).find((a: any) => a.type === 'summon'); const before = s; const r = act(before, l); return Number(total(before)) - Number(total(r)); };
+    const cost = (s: any) => { const l = legalActions(s).find((a: any) => a.type === 'summon'); const before = s; const r = act(before, l); return Number(total(before) + before.players.player.bank) - Number(total(r) + r.players.player.bank); };
     let s = mk({ playerHand: ['goblin-scrounger'] });
     expect(cost(s)).toBe(0);
-    s = mk({ playerHand: ['goblin-scrounger'], playerCrystals: B(0, 1) });
+    s = mk({ playerHand: ['goblin-scrounger'], playerCrystals: 0 });
     expect(legalActions(s).some((a: any) => a.type === 'summon')).toBe(true);
     expect(cost(s)).toBe(0);
     s = mk({ playerHand: ['goblin-scrounger'], playerCrystals: B(1) });
@@ -213,9 +214,9 @@ describe('revision 6', () => {
     s = mk({ playerHand: ['goblin-scrounger'], board: [P('goblin-scrounger', 7, 5)] });
     expect(legalActions(s).some((a: any) => a.type === 'summon')).toBe(false);
     s = mk({ playerHand: ['goblin-scrounger'], playerBank: B(1) });
-    expect(s.players.player.bank.green).toBe(1);
+    expect(s.players.player.bank).toBe(1);
     const r = act(s, legalActions(s).find((a: any) => a.type === 'summon'));
-    expect(r.players.player.bank.green).toBe(0);
+    expect(r.players.player.bank).toBe(0);
   });
   it('Tunnel only works while behind on mines', () => {
     const near = (s: any) => legalActions(s).filter((a: any) => a.type === 'summon' && a.row < 7);
@@ -229,5 +230,74 @@ describe('revision 6', () => {
     // Smith Miners never tunnel
     s = mk({ playerHand: ['goblin-smith-miner'], playerCrystals: B(2), board: [O('gnome-prospector', 4, 9, { minedMine: { row: 4, col: 10 } })] });
     expect(near(s).length).toBe(0);
+  });
+});
+
+describe('revision 7', () => {
+  it('Flow 2 + Bank 3, cost 3 (Grubnak Slinger) -> Flow 0, Bank 2', () => {
+    let s = mk({ playerHand: ['goblin-slinger'], playerCrystals: 2, playerBank: 3 });
+    s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 2 });
+    expect([s.players.player.crystals, s.players.player.bank]).toEqual([0, 2]);
+  });
+  it('enemy-owned mine pays half: Miner 1, Fighter 0; example 1 Gemsinger vs 2 Grubgrabbers', () => {
+    let s = mk({ firstPlayer: 'opponent', board: [
+      P('gnome-prospector', 4, 9), O('goblin-scrounger', 5, 9), O('goblin-scrounger', 3, 9),
+    ] });
+    const set = (r: number, c: number) => at(s, r, c);
+    s = done(s); // opponent Deploy -> Action
+    s = act(s, { type: 'mine', creatureUid: set(5, 9).uid, row: 4, col: 10 });
+    s = act(s, { type: 'mine', creatureUid: set(3, 9).uid, row: 4, col: 10 });
+    s = done(s); // opponent Action -> end; player turn 2 begins
+    expect(s.activePlayer).toBe('player');
+    s = done(s); // player Deploy -> Action
+    s = act(s, { type: 'mine', creatureUid: set(4, 9).uid, row: 4, col: 10 });
+    expect(s.sites[1].controller).toBe('opponent');
+    expect(s.players.opponent.flow).toBe(4);
+    expect(s.players.player.flow).toBe(1);
+  });
+  it('Fighter at an enemy-owned mine pays 0', () => {
+    let s = mk({ board: [P('goblin-grunt', 4, 9), O('gnome-prospector', 3, 9, { minedMine: { row: 4, col: 10 } }), O('gnome-prospector', 5, 9, { minedMine: { row: 4, col: 10 } })] });
+    s = done(s);
+    s = mine(s, 4, 9, 4, 10);
+    expect(s.players.player.flow).toBe(0);
+  });
+  it('Miner at an enemy-owned mine pays 1', () => {
+    let s = mk({ board: [P('goblin-scrounger', 4, 9), O('gnome-prospector', 3, 9, { minedMine: { row: 4, col: 10 } }), O('gnome-prospector', 5, 9, { minedMine: { row: 4, col: 10 } })] });
+    s = done(s);
+    s = mine(s, 4, 9, 4, 10);
+    expect(s.players.player.flow).toBe(1);
+    expect(s.players.opponent.flow).toBe(4);
+  });
+  it('nothing mines from 2 spaces away, even Ranged', () => {
+    const s = done(mk({ board: [P('goblin-slinger', 4, 8), P('goblin-scrounger', 7, 6), P('goblin-scrounger', 5, 8)] }));
+    const ms = legalActions(s).filter((a: any) => a.type === 'mine');
+    expect(ms.some((a: any) => a.creatureUid === at(s, 4, 8).uid)).toBe(false);
+    expect(ms.some((a: any) => a.creatureUid === at(s, 7, 6).uid)).toBe(false);
+    expect(ms.some((a: any) => a.creatureUid === at(s, 5, 8).uid)).toBe(false);
+  });
+  it('Heart of the Fallen gives 4 Bank; Desperate Plunder gives 3 Flow', () => {
+    let s = mk({ playerHand: ['heart-of-the-fallen'] });
+    s = act(s, { type: 'playCrystal', uid: s.players.player.hand[0].uid });
+    expect(s.players.player.bank).toBe(4);
+    expect(CARDS['prospectors-prayer'].name).toBe('Desperate Plunder');
+  });
+  it('Mine All mines exactly the eligible Miners (not Fighters, not summoned-and-moved)', () => {
+    let s = mk({ board: [P('goblin-scrounger', 4, 9), P('gnome-prospector', 5, 5), P('goblin-grunt', 3, 7), P('goblin-scrounger', 7, 1), P('goblin-scrounger', 3, 5, { }) ] });
+    s = done(s);
+    const la = legalActions(s);
+    expect(la.some((a: any) => a.type === 'mineAll')).toBe(true);
+    s = act(s, { type: 'mineAll' });
+    expect(s.players.player.flow).toBe(6);
+    expect(at(s, 4, 9).hasMined).toBe(true);
+    expect(at(s, 3, 7).hasMined).toBe(false);
+    expect(at(s, 7, 1).hasMined).toBe(false);
+    expect(legalActions(s).some((a: any) => a.type === 'mineAll')).toBe(false);
+  });
+  it('the free Miner never upgrades; card names and text are renamed', () => {
+    const s = mk({ playerHand: ['goblin-scrounger'], board: [P('goblin-grunt', 7, 2)] });
+    expect(legalActions(s).some((a: any) => a.type === 'minerUpgrade')).toBe(false);
+    expect(CARDS['shieldbeard'].text).toMatch(/Guard/);
+    expect(CARDS['dwarf-smith-miner'].text).toMatch(/\+1 Attack and \+1 Health/);
+    for (const c of Object.values<any>(CARDS)) expect((c.text || '').length).toBeGreaterThan(5);
   });
 });

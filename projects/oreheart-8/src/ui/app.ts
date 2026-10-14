@@ -1,5 +1,5 @@
 import { Game } from '../game';
-import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, creatureValue, spellCost, hasMovesLeft, incomePreview, nextPool, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
+import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMiners, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
 import tutorialJson from '../content/tutorial.json';
 import { createBoardView, createFlatView, BoardView } from './scene';
 
@@ -10,7 +10,21 @@ const PHASE: Record<string, string> = { deploy: 'Deploy', action: 'Action', mull
 const ACTIVE = ['deploy', 'action'];
 const BW: number = CONFIG.boardWidth, BH: number = CONFIG.boardHeight;
 const SH = { player: { row: CONFIG.strongholds.player[0], col: CONFIG.strongholds.player[1] }, opponent: { row: CONFIG.strongholds.opponent[0], col: CONFIG.strongholds.opponent[1] } };
-const COLOR_NAMES = ['green', 'blue', 'purple', 'white'];
+const shortName = (id: string) => id.toUpperCase();
+/** Font scale (in card-widths) that fits `len` characters of ability text in a card's text box. */
+const textScale = (len: number) => Math.min(0.1, 0.6 / Math.sqrt(Math.max(1, len)));
+/** Full card face (cost, name, art symbol, stats, complete ability text). */
+function faceKids(c: any, cost?: number): El[] {
+  const tf = textScale((c.text || '').length);
+  const kids: (El | null)[] = [
+    h('span', { class: 'cost', 'aria-hidden': 'true' }, c.type === 'crystal' ? '◆' : String(cost ?? c.cost)),
+    h('span', { class: 'nm', 'aria-hidden': 'true' }, c.name),
+    h('span', { class: 'ty', 'aria-hidden': 'true' }, c.type === 'creature' ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
+    h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `${roleBadge(c)} ⚔️${c.attack}${c.abilities?.includes('ranged') ? '🏹' : ''} ❤️${c.health}` : c.rarity),
+    h('span', { class: 'tx', style: `--tf:${tf.toFixed(4)}` }, c.text || ''),
+  ];
+  return kids.filter(Boolean) as El[];
+}
 const roleBadge = (c: any) => (c.role === 'Smith' ? '⚒️' : isMiner(c) ? '⛏️' : '⚔️');
 const COLOR_HEX: Record<string, string> = { green: '#3ee06a', blue: '#3fa9ff', purple: '#b45cff', white: '#f2f6ff' };
 
@@ -45,6 +59,9 @@ export class App {
   handScroll = 0;
   handKey = '';
   tokens = new Map<string, El>();
+  dialogCard = '';
+  respStart = 0;
+  respSig = '';
   lastTap = { uid: '', t: 0 };
   tapTimer: any = null;
   dialogs: El[] = [];
@@ -64,6 +81,15 @@ export class App {
     const b = btn(this.gfxLabel(), '', () => {
       localStorage.setItem('oreheart.graphics', this.low ? 'high' : 'low');
       b.textContent = this.gfxLabel();
+    });
+    return b;
+  }
+
+  revealButton(): El {
+    const label = () => 'Card reveals: ' + (localStorage.getItem('oreheart.reveal') === 'fast' ? 'Fast' : 'Normal');
+    const b = btn(label(), '', () => {
+      localStorage.setItem('oreheart.reveal', localStorage.getItem('oreheart.reveal') === 'fast' ? 'normal' : 'fast');
+      b.textContent = label();
     });
     return b;
   }
@@ -109,7 +135,7 @@ export class App {
     this.clear();
     this.root.append(h('main', { class: 'screen center' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), btn('Back', '', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), btn('Back', '', () => this.showMenu()))));
   }
 
   showSetup() {
@@ -163,10 +189,10 @@ export class App {
       h('h1', { class: 'section cinzel' }, 'Rules'),
       sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
       sec('The Board', 'A hidden grid 13 spaces wide and 7 deep. The enemy is at the top, you are at the bottom. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
-      sec('Crystals', 'Mining: on your turn drag a creature standing next to a mine onto the mine. Mining is the creature\'s action for the turn (it cannot also move or attack): a Miner mines 2 crystals, a Fighter 1. Standing near a mine without mining gives nothing. At the start of your next turn your Flow is SET to what you mined, it is not added, and Flow never holds more than 16. Unspent crystals stay usable during the enemy turn. Bank: crystals from Crystal cards go to your Bank, which never resets and has no limit. Flow is spent first, then Bank. The side with more miners at a mine gives it its color (green, blue or purple); a tie makes it neutral white. All crystals from a mine come in the mine\'s color. Creatures get full value from crystals of their own color but only half from other colors or white (rounded down); spells take any color at full value, and the game pays the cheapest way. You start with 0 crystals. The Stronghold makes none. If you hold no mine while the enemy holds one you get 2 bonus crystals of your color. The plus-N-next-turn counter shows your coming pool, and tapping a mine shows who holds it, its color and each side\'s flow.', crystals),
-      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, play Crystal cards (one per round, also at Instant speed while you respond) and Smith Miners. A Smith Miner played on an empty back-row space is a Miner; played on one of your own creatures it gives a permanent +1 Attack or +1 Health (Smith upgrades have no limit). Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves one space OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places (only the dragged creature uses its action). Tap Done to finish a phase; phases with no moves left end by themselves. After 40 seconds a 10-second countdown starts, and at 0 the phase ends. Miner swap: once a turn, with no Miner in hand, discard a card to pull a basic Miner from your deck. Free Miner: if your Flow and Bank cannot pay for a basic Miner and you have no Miner on the battlefield, it is free. Tunnel (basic Miners only) lets a Miner be summoned next to a mine, but ONLY while you are behind on mines (the enemy\'s color holds more mines than yours). At the start of your turn all your creatures heal back to full Health.'),
+      sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). The "Mine All" button (or the M key) makes every ready Miner next to a mine mine at once. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and tapping a mine shows who owns it and what it pays.', crystals),
+      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (one per round, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
       sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
-      sec('Spells & Instants', 'Spells are cast by your Commander using crystals of any color. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet; a Crystal card plus a counterspell can be played together to pay for it. Counterspells cancel spells or summons.'),
+      sec('Spells & Instants', 'Spells are cast by your Commander using crystals (Flow first, then Bank). Commanders never attack. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet: you can play a Crystal card on its own or together with a counterspell to pay for it. Counterspells cancel spells or summons.'),
       h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Back', '', () => this.showMenu())));
     this.root.append(s);
   }
@@ -198,12 +224,13 @@ export class App {
       rows.push(['Health', creature ? `${creature.health}/${creature.maxHealth}` : String(c.health)]);
       rows.push(['Movement', String(c.move)]);
       rows.push(['Role', `${roleBadge(c)} ${c.role === 'Smith' ? 'Smith Miner' : isMiner(c) ? 'Miner' : 'Fighter'}`]);
-      if (creature && creature.upgrades.attack + creature.upgrades.health) rows.push(['Smith upgrades', `+${creature.upgrades.attack} Attack, +${creature.upgrades.health} Health`]);
+      if (creature && creature.upgrades.attack + creature.upgrades.health) rows.push(['Miner upgrades', `+${creature.upgrades.attack} Attack, +${creature.upgrades.health} Health`]);
     }
     const dl = h('dl', {});
     for (const [k, v] of rows) dl.append(h('dt', {}, k), h('dd', {}, v));
     const ab = c.type === 'creature' ? (c.abilities || []).map((a: string) => `${ABILITIES[a].name}: ${ABILITIES[a].text}`).join(' ') : c.text;
-    const d = this.dialog(c.name, [h('div', { class: 'card-view' }, h('div', { class: 'cv-name' }, c.name), dl, h('p', {}, ab || ''),
+    void ab;
+    const d = this.dialog(c.name, [h('div', { class: 'card-view' }, h('div', { class: 'cv-name' }, c.name), dl, h('p', { class: 'tx' }, c.text || ''),
       h('div', { class: 'row' }, btn('Close', 'primary', () => d.close())))]);
   }
 
@@ -243,7 +270,11 @@ export class App {
     this.handKey = '';
     this.clear();
     const r = this.r;
-    const crystalChip = (c: string) => (r['cr_' + c] = h('span', { class: 'cr ' + c, role: 'img', 'aria-label': `Your ${c} crystals` }, 'Flow 0 · Bank 0'));
+    const fcol = FACTIONS[this.game.state.players.player.faction].crystal;
+    r.crFlow = h('span', { class: 'cr flow ' + fcol, role: 'img', 'aria-label': 'Your Flow crystals' }, '⛏️ 0');
+    r.crBank = h('span', { class: 'cr bank ' + fcol, role: 'img', 'aria-label': 'Your Bank crystals' }, '🏦 0');
+    r.mineAll = btn('⛏️ Mine All (0)', 'mineall-btn', () => this.mineAll());
+    r.mineAll.hidden = true;
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
     r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, '0');
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
@@ -261,13 +292,13 @@ export class App {
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
     const menuBtn = btn('Menu', 'menu-btn', () => this.showMatchMenu());
     r.tip = h('aside', { class: 'tip', 'aria-label': 'Tutorial tip', hidden: true });
-    const crystals = h('div', { class: 'crystals' }, crystalChip('green'), crystalChip('blue'), crystalChip('purple'), crystalChip('white'));
+    const crystals = h('div', { class: 'crystals' }, r.crFlow, r.crBank);
     const match = h('main', { class: 'match' },
       r.board,
       h('div', { class: 'hud hud-left' }, crystals, r.income,
         r.swap),
       h('div', { class: 'hud hud-top' }, r.enemyHand),
-      r.enemyDeck, r.myDeck,
+      r.enemyDeck, r.myDeck, r.mineAll,
       r.phase,
       h('div', { class: 'hud hud-right' }, r.done, menuBtn),
       r.tip, r.hand, r.timer);
@@ -308,6 +339,8 @@ export class App {
     r.board.addEventListener('pointerdown', (e: PointerEvent) => this.boardPointerDown(e));
     r.hand.addEventListener('wheel', (e: WheelEvent) => { e.preventDefault(); this.handScroll += (e.deltaY || e.deltaX) / 80; this.layoutHand(); }, { passive: false });
     window.addEventListener('resize', this.onResize);
+    window.removeEventListener('keydown', this.onKey);
+    window.addEventListener('keydown', this.onKey);
     clearInterval(this.timerId);
     this.timerId = setInterval(() => { this.tick(); this.pumpBanner(); }, 100);
     requestAnimationFrame(() => this.layout());
@@ -371,6 +404,41 @@ export class App {
     el.style.left = rc.x + 'px'; el.style.top = rc.y + 'px'; el.style.width = rc.w + 'px'; el.style.height = rc.h + 'px';
   }
 
+  /** Pop a hand card out of the fan at 2x size, kept fully on screen. */
+  popCard(el: El, on: boolean) {
+    if (!on) {
+      el.classList.remove('popped');
+      (this.r.hand as El)?.classList.remove('has-pop');
+      el.style.transform = el.dataset.fan || '';
+      el.style.zIndex = el.dataset.z || '';
+      return;
+    }
+    if (el.classList.contains('dragging')) return;
+    const host = this.root.querySelector('.match') as El;
+    if (!host) return;
+    el.dataset.fan = el.dataset.fan || el.style.transform;
+    el.dataset.z = el.style.zIndex;
+    const hr = host.getBoundingClientRect();
+    const hand = this.r.hand as El;
+    const hb = hand.getBoundingClientRect();
+    const w = el.offsetWidth, hgt = el.offsetHeight;
+    const left = hb.left + (parseFloat(el.style.left) || 0);
+    const top = hb.top + (el.offsetTop || 0);
+    // centre of the un-fanned card, scale 2 about the centre
+    let dx = 0, dy = 0;
+    const cx = left + w / 2, cy = top + hgt / 2;
+    const minX = hr.left + w + 2, maxX = hr.right - w - 2;
+    const targetX = Math.max(minX, Math.min(maxX, cx));
+    dx = targetX - cx;
+    const maxY = hr.bottom - hgt - 2, minY = hr.top + hgt + 2;
+    const targetY = Math.max(minY > maxY ? maxY : minY, Math.min(maxY, cy));
+    dy = targetY - cy;
+    el.classList.add('popped');
+    hand.classList.add('has-pop');
+    el.style.zIndex = '600';
+    el.style.transform = `translate(${dx}px,${dy}px) scale(2)`;
+  }
+
   layoutHand() {
     const hand = this.r.hand as El;
     if (!hand) return;
@@ -390,7 +458,9 @@ export class App {
       const y = t * t * cw * 1.2;
       c.style.left = x + 'px';
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
+      c.dataset.fan = c.style.transform;
       c.style.zIndex = String(i + 1);
+      c.dataset.z = String(i + 1);
     });
   }
 
@@ -403,11 +473,10 @@ export class App {
     this.setHeart(r.myHealth, me.health);
     r.enemyDeck.replaceChildren(String(en.deck.length));
     r.myDeck.textContent = String(me.deck.length);
-    for (const c of COLOR_NAMES) {
-      r['cr_' + c].textContent = `Flow ${me.crystals[c]} · Bank ${me.bank[c]}`;
-      const nxt = st.phase === 'mulligan' ? 0 : nextPool(st, 'player')[c];
-      r['cr_' + c].dataset.flow = nxt ? `+${nxt}` : '';
-    }
+    r.crFlow.textContent = `⛏️ ${me.crystals}`;
+    r.crBank.textContent = `🏦 ${me.bank}`;
+    const nxt = st.phase === 'mulligan' ? 0 : incomePreview(st, 'player');
+    r.crFlow.dataset.flow = nxt ? `+${nxt}` : '';
     r.income.textContent = `+${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')} next turn`;
     // enemy hand arc
     const n = en.hand.length;
@@ -442,6 +511,10 @@ export class App {
     r.done.disabled = !mine;
     const canSwap = mine && st.phase === 'deploy' && this.game.legalActions().some((a: any) => a.type === 'gathererSwap');
     r.swap.hidden = !canSwap;
+    const nMine = mine && st.phase === 'action' ? readyMiners(st, 'player').length : 0;
+    r.mineAll.hidden = !(mine && st.phase === 'action');
+    r.mineAll.disabled = nMine === 0;
+    r.mineAll.textContent = `⛏️ Mine All (${nMine})`;
     if (!canSwap) this.swapping = false;
     // board overlays
     this.renderTip(st);
@@ -492,6 +565,88 @@ export class App {
   movesDlg: { close: () => void } | null = null;
   swapping = false;
   get remindMoves() { return localStorage.getItem('oreheart.movesReminder') !== 'off'; }
+  mineAll() {
+    const a = this.game.legalActions().find((x: any) => x.type === 'mineAll');
+    if (a) this.game.act(a);
+  }
+  onKey = (e: KeyboardEvent) => {
+    if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey && this.r.mineAll && !this.r.mineAll.hidden && !this.r.mineAll.disabled && !this.dialogs.length) this.mineAll();
+  };
+
+  // ------------------------------------------------------------ callouts, reveals and spell effects
+  revealSeconds() { return localStorage.getItem('oreheart.reveal') === 'fast' ? CONFIG.revealFastSeconds : CONFIG.revealSeconds; }
+  callout(player: string, cardId: string) {
+    if (!this.r.fx) return;
+    const sh = SH[player as 'player' | 'opponent'];
+    const p = this.center(sh.row, sh.col);
+    const id = this.game.state.players[player].commanderId;
+    const f = h('div', { class: 'callout ' + player, role: 'status' }, `${shortName(id)} CASTS ${CARDS[cardId].name.toUpperCase()}!`);
+    f.style.left = p.x + 'px'; f.style.top = p.y + 'px';
+    this.r.fx.append(f);
+    setTimeout(() => f.remove(), 1700);
+  }
+  /** Big card in the middle of the screen, then it drops onto its space (or flies away). */
+  reveal(cardId: string, at?: { row: number; col: number } | null) {
+    if (this.test || !this.r.board) return;
+    const c = CARDS[cardId];
+    const secs = this.revealSeconds();
+    const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true' }, ...faceKids(c));
+    const host = this.root.querySelector('.match') as El;
+    host.append(el);
+    let done = false;
+    const finish = () => {
+      if (done) return; done = true;
+      let dx = 0, dy = 0;
+      if (at && this.view) {
+        const pc = this.center(at.row, at.col);
+        const br = this.r.board.getBoundingClientRect(), hr = host.getBoundingClientRect(), er = el.getBoundingClientRect();
+        dx = br.left - hr.left + pc.x - (er.left - hr.left + er.width / 2);
+        dy = br.top - hr.top + pc.y - (er.top - hr.top + er.height / 2);
+      }
+      const anim = el.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.15)`, opacity: 0.2 }], { duration: Math.min(500, secs * 700), easing: 'ease-in', fill: 'forwards' });
+      anim.onfinish = () => el.remove();
+    };
+    el.addEventListener('pointerdown', finish);
+    setTimeout(finish, secs * 1000);
+  }
+  spellFx(e: any) {
+    if (!this.r.fx || !this.view) return;
+    const card = CARDS[e.cardId];
+    const sh = SH[e.player as 'player' | 'opponent'];
+    const t = e.target && e.target.row ? e.target : e.target && e.target.commander ? SH[e.target.commander as 'player' | 'opponent'] : null;
+    const spawn = (cls: string, text: string, row: number, col: number, ms = 1100) => {
+      const p = this.center(row, col);
+      const f = h('div', { class: 'fx-' + cls, 'aria-hidden': 'true' }, text);
+      f.style.left = p.x + 'px'; f.style.top = p.y + 'px';
+      this.r.fx.append(f);
+      setTimeout(() => f.remove(), ms);
+    };
+    switch (card.effect) {
+      case 'damage': if (t) { spawn('orb', '🔥', t.row, t.col, 900); spawn('boom', 'KA-BOOM!', t.row, t.col); } break;
+      case 'areaDamage': if (t) {
+        spawn('meteor', '☄️', t.row, t.col, 1000);
+        this.r.board.classList.remove('shake'); void this.r.board.offsetWidth; this.r.board.classList.add('shake');
+        setTimeout(() => this.r.board.classList.remove('shake'), 800);
+      } break;
+      case 'shield': if (t) spawn('bubble', '', t.row, t.col, 1400); break;
+      case 'heal': case 'healCommander': if (t) spawn('beam', '✨', t.row, t.col, 1200); break;
+      case 'buffAttack': { const f = h('div', { class: 'fx-redglow', 'aria-hidden': 'true' }); this.r.fx.append(f); setTimeout(() => f.remove(), 1300); break; }
+      case 'gainCrystals': spawn('beam', '💎', sh.row, sh.col, 1200); break;
+      default: spawn('beam', '✨', sh.row, sh.col, 1000);
+    }
+  }
+  shatter(player: string) {
+    const sh = SH[player === 'player' ? 'opponent' : 'player'];
+    const p = this.center(sh.row, sh.col);
+    for (let i = 0; i < 8; i++) {
+      const f = h('div', { class: 'fx-shard', 'aria-hidden': 'true' });
+      f.style.left = p.x + 'px'; f.style.top = p.y + 'px';
+      f.style.setProperty('--a', String(i * 45));
+      this.r.fx.append(f);
+      setTimeout(() => f.remove(), 1000);
+    }
+  }
+
   pressDone() {
     const st = this.game.state;
     if (!st || this.movesDlg) return;
@@ -621,7 +776,7 @@ export class App {
     const tunnel = sitesControlled(st, 'opponent') > sitesControlled(st, 'player');
     const hidden = st.phase === 'mulligan';
     const costOf = (c: any) => (c.type === 'creature' ? creatureCost(st, 'player', c) : c.type === 'spell' ? spellCost(st, 'player', c) : 0);
-    const affordable = (c: any) => (c.type === 'creature' ? creatureValue(me, c.faction) >= costOf(c) : c.type === 'spell' ? tot >= costOf(c) : true);
+    const affordable = (c: any) => (c.type === 'creature' ? tot >= costOf(c) : c.type === 'spell' ? tot >= costOf(c) : true);
     const key = hidden ? 'x' : me.hand.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId]) + ':' + tunnel).join(',');
     if (key === this.handKey) return;
     this.handKey = key;
@@ -631,12 +786,13 @@ export class App {
       const c = CARDS[hc.cardId];
       const cost = costOf(c);
       const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id },
-        h('span', { class: 'cost', 'aria-hidden': 'true' }, c.type === 'crystal' ? '◆' : String(cost)),
-        h('span', { class: 'nm', 'aria-hidden': 'true' }, c.name),
-        h('span', { class: 'ty', 'aria-hidden': 'true' }, c.type === 'creature' ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
-        h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `${roleBadge(c)} ⚔️${c.attack}${c.abilities?.includes('ranged') ? '🏹' : ''} ❤️${c.health}` : c.rarity),
+        ...faceKids(c, cost),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
+      el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') this.popCard(el, true); });
+      el.addEventListener('pointerleave', () => this.popCard(el, false));
+      el.addEventListener('focus', () => this.popCard(el, true));
+      el.addEventListener('blur', () => this.popCard(el, false));
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));
       el.addEventListener('click', (e: MouseEvent) => { if (e.detail === 0) this.showCard(c.id); });
       hand.append(el);
@@ -652,7 +808,13 @@ export class App {
     if (needMull && !this.mullDlg) this.openMulligan(st);
     if (!needMull && this.mullDlg) { this.mullDlg.close(); this.mullDlg = null; }
     const needResp = !!st.pendingResponse && st.pendingResponse.responder === 'player' && st.phase !== 'over';
-    if (needResp && !this.respDlg && !this.pick) this.openRespond(st);
+    if (needResp && !this.respDlg && !this.pick) { this.respStart = Date.now(); this.respSig = this.respondSig(st); this.openRespond(st); }
+    else if (needResp && this.respDlg && this.respSig !== this.respondSig(st)) {
+      // the player's own plays (e.g. a Crystal card) change what is affordable: rebuild the buttons, keep the clock
+      this.respSig = this.respondSig(st);
+      this.respDlg.close(); this.respDlg = null;
+      this.openRespond(st);
+    }
     if (!needResp && this.respDlg) { this.respDlg.close(); this.respDlg = null; clearTimeout(this.respondTimer); }
     if (!needResp && this.pick && this.pick.cells.length === 0) this.pick = null;
   }
@@ -666,7 +828,7 @@ export class App {
       const b = h('button', { type: 'button', class: 'mull-card', 'aria-pressed': 'false', 'aria-label': c.name, 'data-uid': hc.uid, onclick: () => {
         if (selected.has(hc.uid)) selected.delete(hc.uid); else selected.add(hc.uid);
         b.setAttribute('aria-pressed', String(selected.has(hc.uid)));
-      } }, h('span', { 'aria-hidden': 'true' }, String(c.type === 'crystal' ? '◆' : c.cost)), h('span', { 'aria-hidden': 'true' }, c.name), h('span', { 'aria-hidden': 'true' }, c.type === 'creature' ? `${c.attack}/${c.health}` : c.type === 'spell' ? '✨' : '💎'));
+      } }, h('span', { 'aria-hidden': 'true' }, String(c.type === 'crystal' ? '◆' : c.cost)), h('span', { 'aria-hidden': 'true' }, c.name), h('span', { 'aria-hidden': 'true' }, c.type === 'creature' ? `${c.attack}/${c.health}` : c.type === 'spell' ? '✨' : '💎'), h('span', { class: 'tx', style: `--tf:${Math.min(0.075, textScale((c.text || '').length) * 0.8)}` }, c.text || ''));
       wrap.append(b);
     }
     const go = (uids: string[]) => this.game.act({ type: 'mulligan', uids });
@@ -676,9 +838,13 @@ export class App {
     this.mullDlg = d;
   }
 
+  respondSig(st: any) {
+    return JSON.stringify(this.game.legalActions()) + '|' + st.players.player.crystals + '|' + st.players.player.bank;
+  }
   openRespond(st: any) {
     const pend = st.pendingResponse;
-    const legal = this.game.legalActions().filter((a: any) => a.type === 'respond');
+    const legalAll = this.game.legalActions();
+    const legal = legalAll.filter((a: any) => a.type === 'respond');
     const needs = respondNeeds(st, 'player', pend);
     const tgt = pend.target && pend.target.row ? st.board.creatures.find((c: any) => c.row === pend.target.row && c.col === pend.target.col) : null;
     const tname = tgt ? (tgt.owner === 'player' ? `your ${CARDS[tgt.cardId].name}` : `their ${CARDS[tgt.cardId].name}`) : pend.target && pend.target.commander ? 'your Commander' : '';
@@ -711,12 +877,15 @@ export class App {
         this.game.act(chosen);
       }, { 'data-uid': n.uid }));
     }
+    for (const a of legalAll.filter((x: any) => x.type === 'playCrystal')) {
+      const hc = st.players.player.hand.find((x: any) => x.uid === a.uid);
+      if (hc) buttons.push(btn(`Play ${CARDS[hc.cardId].name}`, '', () => { const r = this.game.act(a); if (r && !r.ok) this.flash(r.error); }, { 'data-uid': a.uid }));
+    }
     const ec = pend.card ? CARDS[pend.card.cardId] : null;
-    const cardBox = ec ? h('div', { class: `enemy-card ${ec.type} f-${ec.faction}` },
-      h('span', { class: 'cost', 'aria-hidden': 'true' }, String(ec.cost)), h('span', { class: 'nm' }, ec.name),
-      h('span', { class: 'ty' }, ec.type === 'creature' ? `${roleBadge(ec)} ⚔️${ec.attack} ❤️${ec.health}` : ec.rarity), h('span', { class: 'tx' }, ec.text || '')) : null;
+    if (ec) this.dialogCard = ec.id + pend.actor;
+    const cardBox = ec ? h('div', { class: `enemy-card hand-card static ${ec.type} f-${ec.faction}` }, ...faceKids(ec)) : null;
     const bar = h('div', { class: 'respond-bar', role: 'progressbar', 'aria-label': 'Respond time left', 'aria-valuemin': '0', 'aria-valuemax': String(CONFIG.respondWindowSeconds), 'aria-valuenow': String(CONFIG.respondWindowSeconds) }, h('div', { class: 'fill' }));
-    if (!this.test) (bar.firstChild as El).style.animationDuration = CONFIG.respondWindowSeconds + 's';
+    if (!this.test) { (bar.firstChild as El).style.animationDuration = CONFIG.respondWindowSeconds + 's'; (bar.firstChild as El).style.animationDelay = -((Date.now() - this.respStart) / 1000) + 's'; }
     else (bar.firstChild as El).style.animation = 'none';
     const d = this.dialog('Respond?', [h('h2', {}, 'Respond?'), bar, cardBox, h('p', { class: 'resp-what', style: 'text-align:center;margin:0 0 6px' }, what),
       h('div', { class: 'menu-list' }, ...buttons, btn('Let it happen', 'primary', () => { finish(); this.game.act({ type: 'pass' }); }))]);
@@ -724,7 +893,7 @@ export class App {
     this.respDlg = d;
     clearTimeout(this.respondTimer);
     if (!this.test) {
-      const t0 = Date.now();
+      const t0 = this.respStart;
       const iv = setInterval(() => {
         if (this.respDlg !== d) { clearInterval(iv); return; }
         const left = Math.max(0, CONFIG.respondWindowSeconds - (Date.now() - t0) / 1000);
@@ -800,7 +969,21 @@ export class App {
         this.burst('POOF!', e.row, e.col);
         this.emote(e.owner, 'groan');
         this.emote(e.owner === 'player' ? 'opponent' : 'player', 'cheer');
-      } else if (e.type === 'spell') this.emote(e.player, 'cast');
+      } else if (e.type === 'cast') {
+        this.callout(e.player, e.cardId);
+        const respondable = st.pendingResponse && st.pendingResponse.responder === 'player' && e.player === 'opponent';
+        if (!respondable) this.reveal(e.cardId);
+      } else if (e.type === 'respond') {
+        this.callout(e.player, e.cardId);
+      } else if (e.type === 'counter') this.shatter(e.player);
+      else if (e.type === 'spell') { this.emote(e.player, 'cast'); this.spellFx(e); }
+      else if (e.type === 'summon') {
+        if (this.dialogCard === e.cardId + e.owner) this.dialogCard = ''; else this.reveal(e.cardId, e);
+      } else if (e.type === 'playCrystal') this.reveal(e.cardId);
+      else if (e.type === 'minerUpgrade') {
+        this.reveal(e.cardId, e);
+        this.floatText(`+${e.attack ? '1 ATK ' : ''}+1 HP ✨`, 'heal', e.row, e.col);
+      }
       else if (e.type === 'income' && e.player === 'player' && e.amount > 0) this.flash(`+${e.amount} crystals`);
       else if (e.type === 'siteControl' && e.controller) this.flash('THE CRYSTAL. HAS. FALLEN.');
     }
@@ -908,8 +1091,8 @@ export class App {
 
   cardPointerDown(e: PointerEvent, hc: any, el: El) {
     if (e.pointerType !== 'mouse') {
-      const t = setTimeout(() => el.classList.add('popped'), 180);
-      const off = () => { clearTimeout(t); el.classList.remove('popped'); window.removeEventListener('pointerup', off); window.removeEventListener('pointercancel', off); };
+      const t = setTimeout(() => this.popCard(el, true), 180);
+      const off = () => { clearTimeout(t); this.popCard(el, false); window.removeEventListener('pointerup', off); window.removeEventListener('pointercancel', off); };
       window.addEventListener('pointerup', off); window.addEventListener('pointercancel', off);
     }
     const st = this.game.state;
@@ -920,6 +1103,7 @@ export class App {
       touchSwipe: (dx) => { this.handScroll -= dx / 40; this.layoutHand(); },
       onStart: () => {
         if (this.pick || this.respDlg) return false;
+        this.popCard(el, false);
         el.classList.add('dragging');
         const legal = this.game.legalActions().filter((a: any) => a.uid === hc.uid);
         if (!legal.length) { this.flash(this.explain(card)); }
@@ -928,7 +1112,7 @@ export class App {
         let any = false;
         for (const a of legal) {
           if (a.type === 'summon') cells.push({ row: a.row, col: a.col });
-          else if (a.type === 'smith') { const o = st.board.creatures.find((x: any) => x.uid === a.creatureUid); if (o) smithCells.push({ row: o.row, col: o.col }); }
+          else if (a.type === 'minerUpgrade') { const o = st.board.creatures.find((x: any) => x.uid === a.creatureUid); if (o) smithCells.push({ row: o.row, col: o.col }); }
           else if (a.type === 'cast') { if (!a.target) any = true; else if (!a.to || true) cells.push(this.cellOfTarget(a.target)); }
           else if (a.type === 'playCrystal') any = true;
         }
@@ -962,8 +1146,8 @@ export class App {
   dropCard(hc: any, card: any, cell: { row: number; col: number }, x?: number, y?: number) {
     const legal = this.game.legalActions().filter((a: any) => a.uid === hc.uid);
     if (!legal.length) { this.flash(this.explain(card)); return; }
-    const smiths = legal.filter((a: any) => a.type === 'smith');
-    if (smiths.length) {
+    const ups = legal.filter((a: any) => a.type === 'minerUpgrade');
+    if (ups.length) {
       let own = this.game.state.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col && c.owner === 'player');
       if (!own && x != null && y != null) {
         // the stat badge hangs below a token: a drop on the figure or its badge counts as a drop on that creature
@@ -974,16 +1158,16 @@ export class App {
           if (x >= r.left - 16 && x <= r.right + 16 && y >= r.top - 16 && y <= r.bottom + 16) { own = c; break; }
         }
       }
-      if (own) { this.smithDialog(card, smiths.filter((a: any) => a.creatureUid === own.uid)); return; }
+      const up = own && ups.find((a: any) => a.creatureUid === own.uid);
+      if (up) { const r = this.game.act(up); if (r && !r.ok) this.flash(r.error); return; }
     }
-    const t = legal.find((a: any) => a.type !== 'smith')?.type || legal[0].type;
+    const t = legal.find((a: any) => a.type !== 'minerUpgrade')?.type || legal[0].type;
     const res = (r: any) => { if (r && !r.ok) this.flash(r.error); };
     if (t === 'summon') {
       const a = legal.find((x: any) => x.row === cell.row && x.col === cell.col);
       if (a) res(this.game.act(a)); else this.flash("Can't summon there");
     } else if (t === 'playCrystal') {
-      if (legal.length === 1) res(this.game.act(legal[0]));
-      else this.chooseColors(legal);
+      res(this.game.act(legal[0]));
     } else if (t === 'cast') {
       if (!legal[0].target) { res(this.game.act(legal[0])); return; }
       const cands = legal.filter((o: any) => { const c = this.cellOfTarget(o.target); return c.row === cell.row && c.col === cell.col; });
@@ -993,19 +1177,6 @@ export class App {
       this.setGlow(this.pick.cells, 'glow');
       this.flash('Tap where to move it');
     }
-  }
-
-  smithDialog(card: any, acts: any[]) {
-    const d: any = this.dialog('Smith upgrade', [h('h2', {}, 'Smith upgrade'), h('p', { style: 'text-align:center;margin:0 0 6px' }, `${card.name}: a permanent upgrade for this creature.`),
-      h('div', { class: 'menu-list' },
-        ...acts.map((a: any) => btn(a.stat === 'attack' ? '+1 Attack' : '+1 Health', 'primary', () => { d.close(); const r = this.game.act(a); if (!r.ok) this.flash(r.error!); }, { 'data-stat': a.stat })),
-        btn('Cancel', '', () => d.close()))]);
-  }
-
-  chooseColors(legal: any[]) {
-    const d: any = this.dialog('Choose crystals', [h('h2', {}, 'Choose crystals'), h('div', { class: 'row' },
-      ...legal.map((a: any) => h('button', { type: 'button', class: 'combo', onclick: () => { d.close(); this.game.act(a); } },
-        COLOR_NAMES.filter((c) => a.colors[c]).map((c) => `${a.colors[c]} ${c}`).join(' + '))))]);
   }
 
   boardPointerDown(e: PointerEvent) {

@@ -73,7 +73,7 @@ function scoreCast(s: any, who: string, a: any): number {
   const card = CARDS[hand.cardId];
   const foe = other(who as any);
   const t = a.target && a.target.row ? creatureAt(s, a.target.row, a.target.col) : null;
-  const left = Object.values(s.players[who].crystals).reduce((x: number, y: any) => x + y, 0) as number - spellCost(s, who as any, card);
+  const left = s.players[who].crystals + s.players[who].bank - spellCost(s, who as any, card);
   switch (card.effect) {
     case 'damage': {
       if (a.target.commander) return s.players[foe].health <= card.params.amount ? 10000 : s.players[foe].health <= 8 ? 40 : 18;
@@ -119,7 +119,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
     }
     const acts = legal.filter((a: any) => a.type !== 'done' && a.type !== 'gathererSwap');
     if (!acts.length || rand() < 0.12) return done;
-    const w = (a: any) => (a.type === 'summon' || a.type === 'attack' || a.type === 'mine' ? 3 : a.type === 'playCrystal' ? 2 : a.type === 'smith' ? 0.3 : 1);
+    const w = (a: any) => (a.type === 'summon' || a.type === 'attack' || a.type === 'mine' ? 3 : a.type === 'playCrystal' ? 2 : a.type === 'minerUpgrade' ? 0.3 : 1);
     let tot = acts.reduce((x: number, a: any) => x + w(a), 0);
     let r = rand() * tot;
     for (const a of acts) { r -= w(a); if (r <= 0) return a; }
@@ -129,11 +129,9 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
   if (s.pendingResponse) return pickBest(legal.map((a: any) => [scoreRespond(s, who, a), a]), 0.5) || { type: 'pass' };
 
   const scored: [number, any][] = [];
-  const fcol = FACTIONS[s.players[who].faction].crystal;
   for (const a of legal) {
     if (a.type === 'playCrystal') {
       const card = CARDS[s.players[who].hand.find((h: any) => h.uid === a.uid).cardId];
-      if (card.effect === 'chooseColors' && a.colors[fcol] !== card.params.amount) continue;
       scored.push([100, a]);
     } else if (a.type === 'summon') {
       const h = s.players[who].hand.find((x: any) => x.uid === a.uid);
@@ -143,15 +141,17 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
       const h = a.discardUid ? s.players[who].hand.find((x: any) => x.uid === a.discardUid) : null;
       const dc = h ? CARDS[h.cardId] : null;
       scored.push([dc ? 30 - (dc.type === 'crystal' ? 0 : dc.cost * 2) - (dc.cost <= 2 ? 10 : 0) : 30, a]);
-    } else if (a.type === 'smith') {
-      // upgrade a strong fighter when nothing better can be summoned; Smith cards otherwise come down as Miners
+    } else if (a.type === 'minerUpgrade') {
+      // upgrade a strong fighter when nothing better can be summoned; Miner cards otherwise come down as Miners
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const cc = CARDS[c.cardId];
-      scored.push([!isMiner(cc) && cc.cost >= 4 ? 28 + cc.cost + (a.stat === 'attack' ? 1 : 0) + rand() : 0, a]);
+      scored.push([!isMiner(cc) && cc.cost >= 4 ? 28 + cc.cost + rand() : 0, a]);
     } else if (a.type === 'cast') scored.push([scoreCast(s, who, a), a]);
     else if (a.type === 'mine') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
-      scored.push([isMiner(CARDS[c.cardId]) ? 60 + rand() : (s.turn >= 5 ? 1 : 14) + rand(), a]);
+      const site = s.sites.find((x: any) => x.row === a.row && x.col === a.col);
+      const enemyOwned = site && site.controller === other(who as any);
+      scored.push([(isMiner(CARDS[c.cardId]) ? (enemyOwned ? 45 : 60) : (s.turn >= 5 ? 1 : 14)) + rand(), a]);
     } else if (a.type === 'move') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const card = CARDS[c.cardId];

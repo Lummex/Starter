@@ -68,5 +68,7 @@
  "sprocketShield": 1,
  "boardWidth": 13,
  "boardHeight": 7,
- "mineCount": 3
+ "mineCount": 3,
+ "revealSeconds": 1.5,
+ "revealFastSeconds": 0.6
 }

@@ -1,7 +1,7 @@
 [
  {
   "id": "grubnak",
-  "name": "Grubnak the Goblin Boss",
+  "name": "Grubnak Rotgut, King of the Junkpile",
   "faction": "goblins",
   "health": 20,
   "abilityText": "Goblin creatures cost 1 less crystal (minimum 1).",
@@ -14,7 +14,7 @@
  },
  {
   "id": "sproingle",
-  "name": "Professor Sproingle",
+  "name": "Archmagister Sproingle the Unfathomable",
   "faction": "gnomes",
   "health": 20,
   "abilityText": "Your spells cost 1 less crystal (minimum 1).",
@@ -26,7 +26,7 @@
  },
  {
   "id": "sprocket",
-  "name": "Madame Sprocket",
+  "name": "Madame Sprocket, Mistress of Gears",
   "faction": "gnomes",
   "health": 20,
   "playable": false,
@@ -39,7 +39,7 @@
  },
  {
   "id": "borgo",
-  "name": "Thane Borgo Anvilbottom",
+  "name": "Thane Borgo Gravelgrim",
   "faction": "dwarves",
   "health": 20,
   "abilityText": "Your creatures get +1 Health.",

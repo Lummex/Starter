@@ -1,3 +1,27 @@
+# Oreheart — Phase 1a build notes (Revision 7)
+
+Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 34 tests).
+
+## Revision 7 — what was built
+- **One crystal type**: `players.X.crystals` (Flow, cap 16) and `bank` are plain numbers; color pools/payment removed. Flow is spent first, then Bank. HUD: two counters in the faction color ("Your Flow crystals" ⛏️, "Your Bank crystals" 🏦) plus "+N next turn". `setup.*Crystals/*Bank` accept numbers (old color objects are summed).
+- **Mining**: owner = side with more creatures that mined it; mining at an enemy-owned mine pays half, rounded down (Miner 1, Fighter 0). Underdog +2, Geodes, Desperate Plunder (+3 Flow), Heart of the Fallen (4 Bank).
+- **Miner upgrades**: `{type:'minerUpgrade', uid, creatureUid}` replaces `smith`: basic Miner on an own creature = +1 Health, Smith Miner = +1 Attack and +1 Health, no pop-up; never free; on an empty back-row space it is summoned as a Miner.
+- **Mine All**: `{type:'mineAll'}`, the "⛏️ Mine All (N)" button left of the deck (own Action phase, disabled at 0), M key. Tutorial gains a `mineAll` step.
+- **Respond pop-up**: standalone "Play <Crystal card>" buttons; the dialog rebuilds after a Crystal card, the clock keeps running.
+- **Spell callouts** ("GRUBNAK CASTS INFERNAL ORB!") over the caster's Stronghold, also in test mode; CSS spell effects (orb, meteor + board shake, bubble, beam, red glow, shattering shards).
+- **Card reveal** in the center (1.5 s / 0.6 s Fast, tap to skip, skipped in test mode), then it flies to the target space. Settings: "Card reveals: Normal/Fast".
+- **Full ability text** (`getCard().text`, `.tx` element) on hand cards, card view, mulligan cards, Respond card and reveals; font shrinks with text length.
+- **Hand hover/hold**: card pops out at 2× and is clamped on-screen.
+- **Renames** applied to cards, Commanders, tutorial, Rules, dialogs (ids unchanged). Rules page rewritten.
+- AI uses Miner upgrades, values enemy-owned mines at half, mines with all ready Miners.
+
+## Notes / gaps
+- The reveal is a fly/shrink; no flip/glow-rise onto the 3D figure.
+- Hand cards sit low on screen, so text is fully readable when popped out (always present as DOM text).
+- Spell visuals are not tested automatically.
+
+---
+
 # Oreheart — Phase 1a build notes (Revision 6)
 
 Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 26 tests).

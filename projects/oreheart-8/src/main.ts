@@ -27,7 +27,7 @@ if (test) {
       if (!c) return null;
       const cr = c.type === 'creature';
       return { id: c.id, name: c.name, type: c.type, faction: c.faction === 'any' ? null : c.faction, rarity: c.rarity, role: cr ? String(c.role).toLowerCase() : null,
-        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null };
+        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text };
     },
     getConfig: () => JSON.parse(JSON.stringify(CONFIG)),
     setPhaseTimeLeft: (n: number) => app.setPhaseTimeLeft(n),

@@ -67,16 +67,17 @@
   ]
  },
  "tips": {
-  "summon": "Welcome! Drag a Miner (Goblin Miner) from your hand onto your back row (the bottom row, next to your Stronghold) to summon it. You have no crystals, but a basic Miner is free when you are broke.",
+  "summon": "Welcome! Drag a Miner (Grubgrabber Miner) from your hand onto your back row (the bottom row, next to your Stronghold) to summon it. You have no crystals, but a basic Miner is free when you are broke.",
   "move": "Nice! Now march it next to a crystal mine: press Done to reach the Action phase, then drag your Miner onto an empty space beside the glowing mine in the middle. Miners may move the turn they appear. Each troop does one thing per turn: move OR attack OR mine.",
   "swap": "Now swap places: in the Action phase drag one of your troops onto another of yours (within its move range) to trade places.",
-  "spend": "Your Flow at the start of your turn is set to what you mined last turn, so spend it! Summon a troop. Crystals of other colors are worth only half toward troops. Crystal cards fill your Bank, which never resets and can be played even while the enemy acts.",
+  "spend": "Spend your crystals! Your Flow at the start of your turn is set to what you mined last turn. Summon a troop or cast a spell. Crystal cards fill your Bank, which never resets and can be played even while the enemy acts.",
   "fight": "Time to fight! In the Action phase drag a troop onto the enemy troop. Melee hits are simultaneous: both strike. Damage heals at the start of your next turn.",
-  "spell": "Cast a spell! Drag Fireball from your hand onto an enemy (spells cost crystals of any color).",
+  "spell": "Cast a spell! Drag Infernal Orb from your hand onto an enemy. Spells cost soul crystals (Flow first, then Bank).",
   "commander": "Finally, move next to the enemy Stronghold and attack the Commander. Each hit removes health equal to the attacker's Attack. Make them retreat!",
   "complete": "Tutorial complete!",
   "mine": "Mining is an action! Next turn, in the Action phase, drag your Miner onto the mine next to it. A Miner mines 2 crystals, a Fighter 1. Watch the mine change to your color. Standing nearby without mining gives nothing.",
-  "smith": "Smith time! Drag the Goblin Smith Miner from your hand onto one of your own creatures in the Deploy phase and choose +1 Attack or +1 Health. The Smith upgrade is permanent."
+  "smith": "Smith time! Drag the Scrapsmith Miner from your hand onto one of your own creatures in the Deploy phase: it gets a permanent +1 Attack and +1 Health. (A basic Miner played this way gives +1 Health.)",
+  "mineAll": "Now the shortcut: next turn, in the Action phase, press the ⛏️ Mine All button (bottom right, left of your deck, or press M). Every ready Miner next to a mine mines at once."
  },
  "mines": [
   {

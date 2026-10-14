@@ -1,7 +1,7 @@
 [
  {
   "id": "goblin-scrounger",
-  "name": "Goblin Miner",
+  "name": "Grubgrabber Miner",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Common",
@@ -15,12 +15,12 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Miner: Mines 2 crystals from a mine it stands next to (Fighters mine 1). Tunnel: While the enemy holds more mines than you, it can be summoned next to a mine.",
+  "text": "Miner: Mines 2 crystals from a mine it stands next to (1 at an enemy-owned mine). Tunnel: While the enemy owns more mines than you, it can be summoned next to a mine. Play it on one of your own creatures for a permanent +1 Health.",
   "flavor": "Scrounger, Taker of Shiny Things"
  },
  {
   "id": "goblin-scrapper",
-  "name": "Goblin Scrapper",
+  "name": "Gutripper Brawler",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Common",
@@ -37,7 +37,7 @@
  },
  {
   "id": "goblin-slinger",
-  "name": "Goblin Slinger",
+  "name": "Skullflinger",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Common",
@@ -54,7 +54,7 @@
  },
  {
   "id": "goblin-bomber",
-  "name": "Goblin Bomber",
+  "name": "Boomfist Lunatic",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Rare",
@@ -71,7 +71,7 @@
  },
  {
   "id": "goblin-sneak",
-  "name": "Goblin Sneak",
+  "name": "Backstab Weasel",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Rare",
@@ -88,7 +88,7 @@
  },
  {
   "id": "wolf-rider",
-  "name": "Wolf Rider",
+  "name": "Mangewolf Rider",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Ultra Rare",
@@ -105,7 +105,7 @@
  },
  {
   "id": "grubnaks-big-boss-troll",
-  "name": "Grubnak's Big Boss Troll",
+  "name": "Gutcrusher the Troll Tyrant",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Collector",
@@ -122,7 +122,7 @@
  },
  {
   "id": "shard-guzzler",
-  "name": "Shard Guzzler",
+  "name": "Shardguzzler the Bottomless",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Uncommon",
@@ -139,7 +139,7 @@
  },
  {
   "id": "gnome-prospector",
-  "name": "Gnome Miner",
+  "name": "Gemsinger Miner",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Common",
@@ -153,12 +153,12 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Miner: Mines 2 crystals from a mine it stands next to (Fighters mine 1). Tunnel: While the enemy holds more mines than you, it can be summoned next to a mine.",
+  "text": "Miner: Mines 2 crystals from a mine it stands next to (1 at an enemy-owned mine). Tunnel: While the enemy owns more mines than you, it can be summoned next to a mine. Play it on one of your own creatures for a permanent +1 Health.",
   "flavor": "Prospector of Profound Patience"
  },
  {
   "id": "gnome-tinker",
-  "name": "Gnome Tinker",
+  "name": "Aegis Tinkerer",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Common",
@@ -175,7 +175,7 @@
  },
  {
   "id": "spark-gnome",
-  "name": "Spark Gnome",
+  "name": "Stormcaller Savant",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Common",
@@ -192,7 +192,7 @@
  },
  {
   "id": "clockwork-beetle",
-  "name": "Clockwork Beetle",
+  "name": "Iron Scarab Automaton",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Rare",
@@ -209,7 +209,7 @@
  },
  {
   "id": "gnome-illusionist",
-  "name": "Gnome Illusionist",
+  "name": "Mirrorveil Illusionist",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Rare",
@@ -226,7 +226,7 @@
  },
  {
   "id": "gyrocopter-ace",
-  "name": "Gyrocopter Ace",
+  "name": "Thunderwing Gyronaut",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Ultra Rare",
@@ -244,7 +244,7 @@
  },
  {
   "id": "the-great-steam-golem",
-  "name": "The Great Steam Golem",
+  "name": "The Arcane Colossus",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Collector",
@@ -261,7 +261,7 @@
  },
  {
   "id": "overclocked-conduit",
-  "name": "Overclocked Conduit",
+  "name": "Overclocked Aethervein",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Rare",
@@ -278,7 +278,7 @@
  },
  {
   "id": "dwarf-miner",
-  "name": "Dwarf Miner",
+  "name": "Stonebreaker Miner",
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Common",
@@ -292,12 +292,12 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Miner: Mines 2 crystals from a mine it stands next to (Fighters mine 1). Tunnel: While the enemy holds more mines than you, it can be summoned next to a mine.",
+  "text": "Miner: Mines 2 crystals from a mine it stands next to (1 at an enemy-owned mine). Tunnel: While the enemy owns more mines than you, it can be summoned next to a mine. Play it on one of your own creatures for a permanent +1 Health.",
   "flavor": "Has never met a rock he respected"
  },
  {
   "id": "shieldbeard",
-  "name": "Shieldbeard",
+  "name": "Ironwall Shieldbeard",
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Common",
@@ -314,7 +314,7 @@
  },
  {
   "id": "axe-thrower",
-  "name": "Axe Thrower",
+  "name": "Grudge Hurler",
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Common",
@@ -331,7 +331,7 @@
  },
  {
   "id": "ironhammer-berserker",
-  "name": "Ironhammer Berserker",
+  "name": "Bloodbeard Berserker",
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Rare",
@@ -348,7 +348,7 @@
  },
  {
   "id": "brewmaster",
-  "name": "Brewmaster",
+  "name": "Forgefire Brewlord",
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Rare",
@@ -365,7 +365,7 @@
  },
  {
   "id": "ram-rider",
-  "name": "Ram Rider",
+  "name": "Thunderhorn Ram Rider",
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Ultra Rare",
@@ -382,7 +382,7 @@
  },
  {
   "id": "queen-brunhilda-stonebeard",
-  "name": "Queen Brunhilda Stonebeard",
+  "name": "Queen Brunhilda Ironheart, the Unbroken",
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Collector",
@@ -399,7 +399,7 @@
  },
  {
   "id": "crystal-drunk-delver",
-  "name": "Crystal-Drunk Delver",
+  "name": "Gemdrunk Deepdelver",
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Rare",
@@ -416,7 +416,7 @@
  },
  {
   "id": "goblin-grunt",
-  "name": "Goblin Grunt",
+  "name": "Snotskull Grunt",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Common",
@@ -427,11 +427,11 @@
   "move": 1,
   "abilities": [],
   "unique": false,
-  "text": "A plain, honest fighter. "
+  "text": "A plain, honest fighter."
  },
  {
   "id": "goblin-pebbler",
-  "name": "Goblin Pebbler",
+  "name": "Boneknocker",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Common",
@@ -442,11 +442,11 @@
   "move": 1,
   "abilities": [],
   "unique": false,
-  "text": "A plain, honest fighter. "
+  "text": "A plain, honest fighter."
  },
  {
   "id": "gnome-cogger",
-  "name": "Gnome Cogger",
+  "name": "Voltwright",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Common",
@@ -457,11 +457,11 @@
   "move": 1,
   "abilities": [],
   "unique": false,
-  "text": "A plain, honest fighter. "
+  "text": "A plain, honest fighter."
  },
  {
   "id": "gnome-widget",
-  "name": "Gnome Widget",
+  "name": "Hexgear Adept",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Common",
@@ -472,11 +472,11 @@
   "move": 1,
   "abilities": [],
   "unique": false,
-  "text": "A plain, honest fighter. "
+  "text": "A plain, honest fighter."
  },
  {
   "id": "dwarf-pickman",
-  "name": "Dwarf Pickman",
+  "name": "Ironjaw Raider",
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Common",
@@ -487,11 +487,11 @@
   "move": 1,
   "abilities": [],
   "unique": false,
-  "text": "A plain, honest fighter. "
+  "text": "A plain, honest fighter."
  },
  {
   "id": "dwarf-stoneback",
-  "name": "Dwarf Stoneback",
+  "name": "Granite Oathkeeper",
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Common",
@@ -502,11 +502,11 @@
   "move": 1,
   "abilities": [],
   "unique": false,
-  "text": "A plain, honest fighter. "
+  "text": "A plain, honest fighter."
  },
  {
   "id": "prospectors-prayer",
-  "name": "Prospector's Prayer",
+  "name": "Desperate Plunder",
   "type": "spell",
   "faction": "any",
   "rarity": "Common",
@@ -517,11 +517,11 @@
    "amount": 3,
    "needFewerSites": true
   },
-  "text": "Regular spell. Can only be cast if fewer mines are in your color than in the enemy color: gain 3 crystals of your own color."
+  "text": "Regular spell. Can only be cast while the enemy owns more mines than you: gain 3 Flow crystals."
  },
  {
   "id": "tunnel-rush",
-  "name": "Tunnel Rush",
+  "name": "Burrow Ambush",
   "type": "spell",
   "faction": "any",
   "rarity": "Uncommon",
@@ -533,7 +533,7 @@
  },
  {
   "id": "fireball",
-  "name": "Fireball",
+  "name": "Infernal Orb",
   "type": "spell",
   "faction": "any",
   "rarity": "Rare",
@@ -547,7 +547,7 @@
  },
  {
   "id": "battle-cry",
-  "name": "Battle Cry",
+  "name": "Warhowl",
   "type": "spell",
   "faction": "any",
   "rarity": "Rare",
@@ -561,7 +561,7 @@
  },
  {
   "id": "meteor-strike",
-  "name": "Meteor Strike",
+  "name": "Skyfall Annihilation",
   "type": "spell",
   "faction": "any",
   "rarity": "Ultra Rare",
@@ -575,7 +575,7 @@
  },
  {
   "id": "healing-light",
-  "name": "Healing Light",
+  "name": "Mending Light",
   "type": "spell",
   "faction": "any",
   "rarity": "Common",
@@ -589,7 +589,7 @@
  },
  {
   "id": "shield-bubble",
-  "name": "Shield Bubble",
+  "name": "Bastion Ward",
   "type": "spell",
   "faction": "any",
   "rarity": "Uncommon",
@@ -601,7 +601,7 @@
  },
  {
   "id": "second-wind",
-  "name": "Second Wind",
+  "name": "Last Stand",
   "type": "spell",
   "faction": "any",
   "rarity": "Ultra Rare",
@@ -615,7 +615,7 @@
  },
  {
   "id": "fizzle",
-  "name": "Fizzle",
+  "name": "Snuff Out",
   "type": "spell",
   "faction": "any",
   "rarity": "Uncommon",
@@ -629,7 +629,7 @@
  },
  {
   "id": "hold-it",
-  "name": "Hold It!",
+  "name": "Not Today!",
   "type": "spell",
   "faction": "any",
   "rarity": "Rare",
@@ -641,7 +641,7 @@
  },
  {
   "id": "spell-snap",
-  "name": "Spell Snap",
+  "name": "Arcane Severance",
   "type": "spell",
   "faction": "any",
   "rarity": "Rare",
@@ -653,7 +653,7 @@
  },
  {
   "id": "mirror-hex",
-  "name": "Mirror Hex",
+  "name": "Hex Reversal",
   "type": "spell",
   "faction": "any",
   "rarity": "Ultra Rare",
@@ -675,11 +675,11 @@
    "amount": 1
   },
   "unique": false,
-  "text": "Crystal card (free, Instant speed, one per round). Add 1 crystal of your faction color to your Bank."
+  "text": "Crystal card (free, Instant speed, one per round). Add 1 crystal to your Bank."
  },
  {
   "id": "crystal-cluster",
-  "name": "Crystal Cluster",
+  "name": "Soul Cluster",
   "type": "crystal",
   "faction": "any",
   "rarity": "Uncommon",
@@ -689,11 +689,11 @@
    "amount": 2
   },
   "unique": false,
-  "text": "Crystal card (free, Instant speed, one per round). Add 2 crystals of your faction color to your Bank."
+  "text": "Crystal card (free, Instant speed, one per round). Add 2 crystals to your Bank."
  },
  {
   "id": "glowing-geode",
-  "name": "Glowing Geode",
+  "name": "Wellspring Geode",
   "type": "crystal",
   "faction": "any",
   "rarity": "Rare",
@@ -701,7 +701,7 @@
   "effect": "geode",
   "params": {},
   "unique": true,
-  "text": "Crystal card (free, Instant speed, one per round). Place a small crystal beside your Stronghold: +1 crystal at the start of each of your turns for the rest of the match. Unique."
+  "text": "Crystal card (free, Instant speed, one per round). Place a small crystal beside your Stronghold: +1 Flow crystal at the start of each of your turns for the rest of the match. Unique."
  },
  {
   "id": "heart-of-the-fallen",
@@ -710,12 +710,12 @@
   "faction": "any",
   "rarity": "Ultra Rare",
   "cost": 0,
-  "effect": "chooseColors",
+  "effect": "gain",
   "params": {
    "amount": 4
   },
   "unique": false,
-  "text": "Crystal card (free, Instant speed, one per round). Add 4 crystals of any colors you choose."
+  "text": "Crystal card (free, Instant speed, one per round). Add 4 crystals to your Bank."
  },
  {
   "id": "motherlode",
@@ -730,11 +730,11 @@
    "discount": 2
   },
   "unique": false,
-  "text": "Crystal card (free, Instant speed, one per round). Add 3 crystals now, and your next creature this turn costs 2 less."
+  "text": "Crystal card (free, Instant speed, one per round). Add 3 crystals to your Bank, and your next creature this turn costs 2 less."
  },
  {
   "id": "goblin-smith-miner",
-  "name": "Goblin Smith Miner",
+  "name": "Scrapsmith Miner",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Common",
@@ -747,11 +747,11 @@
    "smith"
   ],
   "unique": false,
-  "text": "Smith: Summon it as a Miner on your back row, or play it on one of your own creatures for a permanent +1 Attack or +1 Health (no limit)."
+  "text": "Smith Miner: Mines 2 crystals from a mine it stands next to (1 at an enemy-owned mine). Play it on one of your own creatures for a permanent +1 Attack and +1 Health (no limit)."
  },
  {
   "id": "gnome-smith-miner",
-  "name": "Gnome Smith Miner",
+  "name": "Arcsmith Miner",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Common",
@@ -764,11 +764,11 @@
    "smith"
   ],
   "unique": false,
-  "text": "Smith: Summon it as a Miner on your back row, or play it on one of your own creatures for a permanent +1 Attack or +1 Health (no limit)."
+  "text": "Smith Miner: Mines 2 crystals from a mine it stands next to (1 at an enemy-owned mine). Play it on one of your own creatures for a permanent +1 Attack and +1 Health (no limit)."
  },
  {
   "id": "dwarf-smith-miner",
-  "name": "Dwarf Smith Miner",
+  "name": "Anvilsworn Miner",
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Common",
@@ -781,6 +781,6 @@
    "smith"
   ],
   "unique": false,
-  "text": "Smith: Summon it as a Miner on your back row, or play it on one of your own creatures for a permanent +1 Attack or +1 Health (no limit)."
+  "text": "Smith Miner: Mines 2 crystals from a mine it stands next to (1 at an enemy-owned mine). Play it on one of your own creatures for a permanent +1 Attack and +1 Health (no limit)."
  }
 ]

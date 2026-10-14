@@ -1,5 +1,5 @@
 // Oreheart rules engine. Pure: no DOM, no timers, no Math.random. State is plain JSON data.
-import { CARDS, COMMANDERS, FACTIONS, STARTER_DECKS, CONFIG, COLOR_ORDER } from './content';
+import { CARDS, COMMANDERS, FACTIONS, STARTER_DECKS, CONFIG } from './content';
 import { nextRand, shuffle } from './rng';
 
 export type Side = 'player' | 'opponent';
@@ -47,11 +47,8 @@ const makeCard = (s: any, cardId: string) => ({ uid: 'k' + s.nextUid++, cardId }
 export const isMiner = (card: any) => card.role === 'Gatherer' || card.role === 'Smith';
 export const basicGatherer = (faction: string): string => CONFIG.basicGatherers[faction];
 export const basicMiner = basicGatherer;
-const ALL_COLORS = ['green', 'blue', 'purple', 'white'];
-const sum = (st: any) => st.green + st.blue + st.purple + st.white;
-const total = (pl: any) => sum(pl.crystals);
-/** Flow + Bank: what a spell can spend. */
-export const funds = (pl: any) => sum(pl.crystals) + sum(pl.bank || { green: 0, blue: 0, purple: 0, white: 0 });
+/** Flow + Bank: everything a player can spend. */
+export const funds = (pl: any) => pl.crystals + pl.bank;
 const baseCost = (s: any, p: Side, card: any) => {
   let c = card.cost;
   const d = bonusOf(s, p, 'creatureDiscount');
@@ -63,7 +60,7 @@ const baseCost = (s: any, p: Side, card: any) => {
 /** A basic Miner is free when Flow + Bank can't pay for it and no Miner stands on the battlefield. */
 const goesFree = (s: any, p: Side, card: any) =>
   card.id === basicGatherer(card.faction) && !s.board.creatures.some((c: any) => c.owner === p && isMiner(CARDS[c.cardId])) &&
-  !canPayCreature(s.players[p], card.faction, baseCost(s, p, card));
+  funds(s.players[p]) < baseCost(s, p, card);
 export function creatureCost(s: any, p: Side, card: any) {
   return goesFree(s, p, card) ? 0 : baseCost(s, p, card);
 }
@@ -71,72 +68,18 @@ export function spellCost(s: any, p: Side, card: any) {
   const d = bonusOf(s, p, 'spellDiscount');
   return d ? Math.max(1, card.cost - d.amount) : card.cost;
 }
-/** Off-color crystals in payment order: white, then green/blue/purple skipping the own color. */
-const offOrder = (faction: string) => ['white'].concat(COLOR_ORDER.filter((c) => c !== faction));
-const flowValue = (st: any, fc: string) => st[fc] + Math.floor((sum(st) - st[fc]) / 2);
-/** Crystals toward a creature: own color 1 each, everything else ½ each (rounded down in total), Flow and Bank together. */
-export function creatureValue(pl: any, faction: string) {
-  const fc = FACTIONS[faction].crystal;
-  const bank = pl.bank || { green: 0, blue: 0, purple: 0, white: 0 };
-  const own = pl.crystals[fc] + bank[fc];
-  return own + Math.floor((total(pl) + sum(bank) - own) / 2);
+export const canPayCreature = (pl: any, _faction: string, cost: number) => funds(pl) >= cost;
+/** Pays from Flow first, then Bank. */
+function pay(pl: any, cost: number) {
+  const f = Math.min(pl.crystals, cost);
+  pl.crystals -= f;
+  pl.bank -= cost - f;
 }
-export const canPayCreature = (pl: any, faction: string, cost: number) => creatureValue(pl, faction) >= cost;
-function spendOff(st: any, fc: string, n: number) {
-  for (const col of offOrder(fc)) {
-    const t = Math.min(st[col], n);
-    st[col] -= t;
-    n -= t;
-  }
-}
-/** Pays from Flow first; only if Flow alone can't cover it, all usable Flow goes and the rest comes from Bank. */
-function payCreature(pl: any, faction: string, cost: number) {
-  const fc = FACTIONS[faction].crystal;
-  const f = pl.crystals;
-  if (flowValue(f, fc) >= cost) {
-    const own = Math.min(f[fc], cost);
-    f[fc] -= own;
-    spendOff(f, fc, (cost - own) * 2);
-    return;
-  }
-  const offF = sum(f) - f[fc];
-  let rem = cost - f[fc] - Math.floor(offF / 2);
-  f[fc] = 0;
-  spendOff(f, fc, Math.floor(offF / 2) * 2);
-  const ownB = Math.min(pl.bank[fc], rem);
-  pl.bank[fc] -= ownB;
-  rem -= ownB;
-  if (rem > 0) {
-    let need = rem * 2;
-    if (offF % 2 === 1) { spendOff(f, fc, 1); need -= 1; }
-    spendOff(pl.bank, fc, need);
-  }
-}
-/** Spells take any color at full value: Flow first, then Bank; white first, then off-colors, then the own color. */
-function paySpell(pl: any, faction: string, cost: number) {
-  const order = offOrder(FACTIONS[faction].crystal).concat(FACTIONS[faction].crystal);
-  let left = cost;
-  for (const st of [pl.crystals, pl.bank]) for (const col of order) {
-    const t = Math.min(st[col], left);
-    st[col] -= t;
-    left -= t;
-  }
-}
-/** Pool cap: excess comes off white first, then off-colors, then the own color. */
-function capPool(pl: any, faction: string) {
-  const fc = FACTIONS[faction].crystal;
-  let over = total(pl) - CONFIG.poolCap;
-  for (const col of offOrder(fc).concat(fc)) {
-    if (over <= 0) break;
-    const t = Math.min(pl.crystals[col], over);
-    pl.crystals[col] -= t;
-    over -= t;
-  }
-}
-const gain = (s: any, p: Side, color: string, n: number) => {
+const payCreature = (pl: any, _faction: string, cost: number) => pay(pl, cost);
+const paySpell = (pl: any, _faction: string, cost: number) => pay(pl, cost);
+const gain = (s: any, p: Side, n: number) => {
   const pl = s.players[p];
-  pl.crystals[color] += n;
-  capPool(pl, pl.faction);
+  pl.crystals = Math.min(CONFIG.poolCap, pl.crystals + n);
 };
 
 // ---------------------------------------------------------------- mines
@@ -163,7 +106,6 @@ function randomMines(seed: number) {
   return [{ row: 3, col: 3 }, { row: 5, col: 3 }, { row: 4, col: 9 }];
 }
 const sortMines = (m: any[]) => m.map((x) => ({ row: x.row, col: x.col })).sort((a, b) => a.row - b.row || a.col - b.col);
-const emptyFlow = () => ({ green: 0, blue: 0, purple: 0, white: 0 });
 
 // ---------------------------------------------------------------- creation
 export function createMatch(opts: any = {}) {
@@ -185,7 +127,7 @@ export function createMatch(opts: any = {}) {
     const cmd = who === 'player' ? pcmd : ocmd;
     s.players[who] = {
       commanderId: cmd.id, faction: cmd.faction, health: cmd.health, maxHealth: cmd.health,
-      crystals: { green: 0, blue: 0, purple: 0, white: 0 }, bank: { green: 0, blue: 0, purple: 0, white: 0 }, flow: { green: 0, blue: 0, purple: 0, white: 0 }, hand: [], deck: [], discard: [], geodes: 0, minedLastTurn: 0,
+      crystals: 0, bank: 0, flow: 0, hand: [], deck: [], discard: [], geodes: 0, minedLastTurn: 0,
     };
   });
   for (const who of ['player', 'opponent'] as Side[]) {
@@ -197,7 +139,7 @@ export function createMatch(opts: any = {}) {
   if (!setup) {
     for (const who of ['player', 'opponent'] as Side[]) {
       const pl = s.players[who];
-      pl.crystals[colorOf(s, who)] = CONFIG.startingCrystals;
+      pl.crystals = CONFIG.startingCrystals;
       for (let i = 0; i < CONFIG.openingHandSize; i++) pl.hand.push(pl.deck.shift());
     }
     if (opts.skipMulligan) {
@@ -211,10 +153,9 @@ export function createMatch(opts: any = {}) {
   for (const who of ['player', 'opponent'] as Side[]) {
     const pl = s.players[who];
     pl.hand = (setup[who + 'Hand'] || []).map((id: string) => makeCard(s, id));
-    const cr = setup[who + 'Crystals'] || {};
-    pl.crystals = { green: cr.green || 0, blue: cr.blue || 0, purple: cr.purple || 0, white: cr.white || 0 };
-    const bk = setup[who + 'Bank'] || {};
-    pl.bank = { green: bk.green || 0, blue: bk.blue || 0, purple: bk.purple || 0, white: bk.white || 0 };
+    const num = (v: any) => (typeof v === 'number' ? v : v && typeof v === 'object' ? (v.green || 0) + (v.blue || 0) + (v.purple || 0) + (v.white || 0) : 0);
+    pl.crystals = num(setup[who + 'Crystals']);
+    pl.bank = num(setup[who + 'Bank']);
     const h = setup[who + 'Health'];
     if (h != null) { pl.health = h; if (h > pl.maxHealth) pl.maxHealth = h; }
   }
@@ -261,8 +202,8 @@ function drawCard(s: any, who: Side, ev: any[]) {
 
 /** Creatures of `who` that mined a mine and still stand next to it. */
 const miningNow = (s: any, who?: Side) => s.board.creatures.filter((c: any) => c.minedMine && (!who || c.owner === who) && cheb(c, c.minedMine) <= 1);
-const yieldOf = (c: any) => (isMiner(CARDS[c.cardId]) ? CONFIG.gathererFlow : CONFIG.fighterFlow);
-/** Colors each mine would have from the creatures that mined it right now. */
+const fullYield = (c: any) => (isMiner(CARDS[c.cardId]) ? CONFIG.gathererFlow : CONFIG.fighterFlow);
+/** Ownership of each mine from the creatures that mined it right now (tie or none = neutral). */
 function mineColors(s: any) {
   return s.sites.map((site: any) => {
     const n = { player: 0, opponent: 0 };
@@ -271,7 +212,12 @@ function mineColors(s: any) {
     return { ctl, color: ctl ? colorOf(s, ctl) : 'white', n };
   });
 }
-
+/** What `c` pays when mining `site` given current mine owners: half (rounded down) at an enemy-owned mine. */
+function yieldAt(s: any, c: any, mc: any[], site: { row: number; col: number }) {
+  const i = s.sites.findIndex((x: any) => x.row === site.row && x.col === site.col);
+  const full = fullYield(c);
+  return i >= 0 && mc[i].ctl && mc[i].ctl !== c.owner ? Math.floor(full / 2) : full;
+}
 /** Set each mine's controller and color from the creatures that mined it (Draw phases and match creation only). */
 function recolorMines(s: any, ev: any[]) {
   const mc = mineColors(s);
@@ -281,19 +227,12 @@ function recolorMines(s: any, ev: any[]) {
     site.color = mc[i].color;
   });
 }
-
-/** Mining payout `who` would get if their Draw phase happened now (colors recomputed from current miners). */
+/** Mining payout `who` would get if their Draw phase happened now. */
 function payout(s: any, who: Side) {
   const mc = mineColors(s);
-  const out = emptyFlow();
   let mined = 0;
-  for (const c of miningNow(s, who)) {
-    const i = s.sites.findIndex((x: any) => x.row === c.minedMine.row && x.col === c.minedMine.col);
-    if (i < 0) continue;
-    out[mc[i].color as keyof typeof out] += yieldOf(c);
-    mined += yieldOf(c);
-  }
-  return { out, mined, mc };
+  for (const c of miningNow(s, who)) mined += yieldAt(s, c, mc, c.minedMine);
+  return { mined, mc };
 }
 
 /** Per-mine and per-player preview numbers from the current board. State `sites[i].controller/color` are not touched. */
@@ -305,36 +244,29 @@ export function recomputeSites(s: any, _ev: any[]) {
   });
   for (const c of miningNow(s)) {
     const site = s.sites.find((x: any) => x.row === c.minedMine.row && x.col === c.minedMine.col);
-    if (site) site.flow[c.owner as Side] += yieldOf(c);
+    if (site) site.flow[c.owner as Side] += yieldAt(s, c, mc, site);
   }
-  for (const who of ['player', 'opponent'] as Side[]) {
-    const f = payout(s, who).out;
-    f[colorOf(s, who) as keyof typeof f] += s.players[who].geodes * CONFIG.geodeIncome;
-    s.players[who].flow = f;
-  }
+  for (const who of ['player', 'opponent'] as Side[]) s.players[who].flow = payout(s, who).mined + s.players[who].geodes * CONFIG.geodeIncome;
 }
 
-/** Underdog bonus applies when no mine is in the player's color and at least one is in the enemy's color. */
+/** Underdog bonus applies when you own no mine and the enemy owns at least one. */
 const underdog = (colors: any[], s: any, who: Side) => !colors.some((x) => x.ctl === who) && colors.some((x) => x.ctl === other(who));
 
-/** Pool `who` gets at the start of their next turn if the board stayed as it is now (mining + Geodes + underdog, capped). */
-export function nextPool(s: any, who: Side) {
+/** Flow `who` gets at the start of their next turn if the board stayed as it is now (mining + Geodes + underdog, capped). */
+export function nextPool(s: any, who: Side): number {
   const pl = s.players[who];
-  const { out, mc } = payout(s, who);
-  out[colorOf(s, who) as keyof typeof out] += pl.geodes * CONFIG.geodeIncome;
-  if (underdog(mc, s, who)) out[colorOf(s, who) as keyof typeof out] += CONFIG.underdogBonus;
-  const tmp = { crystals: out };
-  capPool(tmp, pl.faction);
-  return tmp.crystals;
+  const { mined, mc } = payout(s, who);
+  let n = mined + pl.geodes * CONFIG.geodeIncome;
+  if (underdog(mc, s, who)) n += CONFIG.underdogBonus;
+  return Math.min(CONFIG.poolCap, n);
 }
 
-/** Total crystals `who` would have at the start of their next turn (the "+N next turn" number). */
+/** The "+N next turn" number. */
 export function incomePreview(s: any, who: Side) {
-  const c = nextPool(s, who);
-  return c.green + c.blue + c.purple + c.white;
+  return nextPool(s, who);
 }
 
-/** What a mine makes for its controller's side per turn (that side's flow at the mine). */
+/** What a mine makes for its owner's side per turn (that side's flow at the mine). */
 export function sitePays(s: any, site: any) {
   return site.controller ? site.flow[site.controller] : 0;
 }
@@ -344,7 +276,7 @@ function collectIncome(s: any, who: Side, ev: any[]) {
   pl.minedLastTurn = payout(s, who).mined;
   pl.crystals = nextPool(s, who);
   for (const c of s.board.creatures) if (c.owner === who) { c.minedMine = null; c.hasMined = false; }
-  ev.push({ type: 'income', player: who, amount: total(pl), crystals: { ...pl.crystals } });
+  ev.push({ type: 'income', player: who, amount: pl.crystals, crystals: pl.crystals });
 }
 
 function startTurn(s: any, ev: any[]) {
@@ -596,7 +528,7 @@ function resolveSpell(s: any, p: Side, card: any, target: any, to: any, ev: any[
   const pl = s.players[p];
   const t = target && target.row ? creatureAt(s, target.row, target.col) : null;
   switch (card.effect) {
-    case 'gainCrystals': gain(s, p, colorOf(s, p), card.params.amount); break;
+    case 'gainCrystals': gain(s, p, card.params.amount); break;
     case 'tunnelMove': {
       if (!t || t.owner !== p) break;
       const dest = to && emptyCell(s, to.row, to.col) ? to : tunnelCells(s)[0];
@@ -628,7 +560,7 @@ const pendingTargetCreature = (s: any, pend: any) => {
 const hasEater = (s: any, p: Side) => s.board.creatures.some((c: any) => c.owner === p && CARDS[c.cardId].abilities?.some((a: string) => a.startsWith('eater')));
 const crystalOk = (s: any, p: Side) => s.flags.crystalsPlayed[p] < CONFIG.crystalCardsPerTurn || hasEater(s, p);
 /** Crystals a Crystal card adds to the Bank right now (Geode adds none). */
-const crystalAmount = (card: any) => (['gain', 'chooseColors', 'motherlode'].includes(card.effect) ? card.params.amount : 0);
+const crystalAmount = (card: any) => (['gain', 'motherlode'].includes(card.effect) ? card.params.amount : 0);
 
 /** Instants in the responder's hand whose effect could apply to `pend`, affordable or not. */
 export function respondMatches(s: any, responder: Side, pend: any): { h: any; card: any; opts: any[] }[] {
@@ -713,13 +645,6 @@ function finishPending(s: any, pend: any, ev: any[], cancelled: boolean) {
 
 // ---------------------------------------------------------------- legal actions
 
-function heartCombos() {
-  const n = CARDS['heart-of-the-fallen'].params.amount;
-  const out: any[] = [];
-  for (let g = 0; g <= n; g++) for (let b = 0; g + b <= n; b++) for (let p = 0; g + b + p <= n; p++) out.push({ green: g, blue: b, purple: p, white: n - g - b - p });
-  return out;
-}
-
 function crystalPlays(s: any, who: Side): any[] {
   const pl = s.players[who];
   const out: any[] = [];
@@ -728,12 +653,17 @@ function crystalPlays(s: any, who: Side): any[] {
     const card = CARDS[h.cardId];
     if (card.type !== 'crystal') continue;
     if (card.effect === 'geode' && pl.geodes >= 1) continue;
-    if (card.effect === 'chooseColors') for (const colors of heartCombos()) out.push({ type: 'playCrystal', uid: h.uid, colors });
-    else out.push({ type: 'playCrystal', uid: h.uid });
+    out.push({ type: 'playCrystal', uid: h.uid });
   }
   return out;
 }
 
+/** Basic Miners and Smith Miners can upgrade one of your own creatures. */
+export const upgradeCard = (card: any) => card.type === 'creature' && (card.role === 'Smith' || (card.role === 'Gatherer' && card.abilities?.includes('gather')));
+/** Miner-role creatures of `p` that could take a mine action now. */
+export function readyMiners(s: any, p: Side) {
+  return s.board.creatures.filter((c: any) => c.owner === p && isMiner(CARDS[c.cardId]) && mineTargets(s, c).length > 0);
+}
 export function legalActions(s: any): any[] {
   if (s.phase === 'over' || !s.priority) return [];
   const who: Side = s.priority;
@@ -757,10 +687,10 @@ export function legalActions(s: any): any[] {
   for (const h of pl.hand) {
     const card = CARDS[h.cardId];
     if (card.type === 'creature' && ph === 'deploy') {
+      if (upgradeCard(card) && funds(pl) >= baseCost(s, who, card)) for (const c of s.board.creatures) if (c.owner === who) out.push({ type: 'minerUpgrade', uid: h.uid, creatureUid: c.uid });
       if (!canPayCreature(pl, card.faction, creatureCost(s, who, card))) continue;
       if (card.unique && s.board.creatures.some((c: any) => c.owner === who && c.cardId === card.id)) continue;
       for (const sp of summonSpaces(s, who, card)) out.push({ type: 'summon', uid: h.uid, row: sp.row, col: sp.col });
-      if (card.role === 'Smith') for (const c of s.board.creatures) if (c.owner === who) for (const stat of ['attack', 'health']) out.push({ type: 'smith', uid: h.uid, creatureUid: c.uid, stat });
     } else if (card.type === 'spell' && card.spellKind !== 'counter' && ['deploy', 'action'].includes(ph)) {
       if (funds(pl) < spellCost(s, who, card)) continue;
       for (const o of spellTargets(s, who, card)) out.push({ type: 'cast', uid: h.uid, ...o });
@@ -770,6 +700,7 @@ export function legalActions(s: any): any[] {
   if (ph === 'deploy') out.push(...crystalPlays(s, who));
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of moveDests(s, c)) out.push({ type: 'move', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of mineTargets(s, c)) out.push({ type: 'mine', creatureUid: c.uid, row: d.row, col: d.col });
+  if (ph === 'action' && readyMiners(s, who).length) out.push({ type: 'mineAll' });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const t of attackTargets(s, c)) out.push({ type: 'attack', creatureUid: c.uid, target: t });
   if (ph === 'deploy' && !s.flags.swapped && !pl.hand.some((h: any) => isMiner(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
     if (pl.hand.length) for (const h of pl.hand) out.push({ type: 'gathererSwap', discardUid: h.uid });
@@ -789,7 +720,7 @@ export function hasMovesLeft(s: any): boolean {
   if (s.phase === 'over' || !s.priority || s.pendingResponse || !['deploy', 'action'].includes(s.phase) || s.priority !== s.activePlayer) return false;
   const pl = s.players[s.priority];
   return legalActions(s).some((a: any) => {
-    if (['done', 'surrender', 'smith', 'gathererSwap', 'pass', 'respond'].includes(a.type)) return false;
+    if (['done', 'surrender', 'minerUpgrade', 'gathererSwap', 'pass', 'respond'].includes(a.type)) return false;
     if (a.type === 'cast') {
       const h = pl.hand.find((x: any) => x.uid === a.uid);
       return !h || CARDS[h.cardId].spellKind === 'regular';
@@ -800,16 +731,8 @@ export function hasMovesLeft(s: any): boolean {
 
 // ---------------------------------------------------------------- apply
 const eq = (a: any, b: any) => JSON.stringify(a) === JSON.stringify(b);
-const OPTIONAL = new Set(['target', 'to', 'colors']);
-function normalize(a: any) {
-  if (a && a.type === 'playCrystal' && Array.isArray(a.colors)) {
-    const colors = { green: 0, blue: 0, purple: 0, white: 0 };
-    for (const c of a.colors) if (c in colors) (colors as any)[c]++;
-    return { ...a, colors };
-  }
-  if (a && a.type === 'playCrystal' && a.colors) return { ...a, colors: { green: a.colors.green || 0, blue: a.colors.blue || 0, purple: a.colors.purple || 0, white: a.colors.white || 0 } };
-  return a;
-}
+const OPTIONAL = new Set(['target', 'to']);
+const normalize = (a: any) => a;
 function matchLegal(s: any, a: any): any | null {
   if (a.type === 'mulligan') {
     const uids = Array.isArray(a.uids) ? a.uids : null;
@@ -831,10 +754,9 @@ function matchLegal(s: any, a: any): any | null {
   return null;
 }
 
-function playCrystalCard(s: any, who: Side, h: any, colors: any, ev: any[]) {
+function playCrystalCard(s: any, who: Side, h: any, ev: any[]) {
   const pl = s.players[who];
   const card = CARDS[h.cardId];
-  const fc = colorOf(s, who);
   if (s.flags.crystalsPlayed[who] >= CONFIG.crystalCardsPerTurn) {
     for (const c of [...s.board.creatures]) {
       if (c.owner !== who) continue;
@@ -846,13 +768,9 @@ function playCrystalCard(s: any, who: Side, h: any, colors: any, ev: any[]) {
   s.flags.crystalsPlayed[who]++;
   pl.discard.push(h);
   // Crystal cards fill the Bank: it never resets and has no cap
-  if (card.effect === 'gain') pl.bank[fc] += card.params.amount;
+  if (card.effect === 'gain') pl.bank += card.params.amount;
   else if (card.effect === 'geode') pl.geodes++;
-  else if (card.effect === 'motherlode') { pl.bank[fc] += card.params.amount; s.flags.discount[who] += card.params.discount; }
-  else if (card.effect === 'chooseColors') {
-    const cols = colors || { [fc]: card.params.amount };
-    for (const k of ALL_COLORS) pl.bank[k] += cols[k] || 0;
-  }
+  else if (card.effect === 'motherlode') { pl.bank += card.params.amount; s.flags.discount[who] += card.params.discount; }
   ev.push({ type: 'playCrystal', player: who, cardId: card.id });
 }
 
@@ -893,7 +811,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     case 'pass': finishPending(s, s.pendingResponse, ev, false); break;
     case 'respond': {
       const pend = s.pendingResponse;
-      if (l.crystalUid) playCrystalCard(s, who, takeHand(l.crystalUid), null, ev);
+      if (l.crystalUid) playCrystalCard(s, who, takeHand(l.crystalUid), ev);
       const card = CARDS[hand(l.uid).cardId];
       paySpell(pl, pl.faction, spellCost(s, who, card));
       const used = takeHand(l.uid);
@@ -927,24 +845,37 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       const h = takeHand(l.uid);
       const card = CARDS[h.cardId];
       paySpell(pl, pl.faction, spellCost(s, who, card));
+      ev.push({ type: 'cast', player: who, cardId: card.id, target: l.target || null });
       openWindow(s, { kind: 'cast', actor: who, card: h, target: l.target || null, to: l.to || null }, ev);
       break;
     }
     case 'playCrystal': {
-      playCrystalCard(s, who, takeHand(l.uid), act.colors, ev);
+      playCrystalCard(s, who, takeHand(l.uid), ev);
       break;
     }
-    case 'smith': {
+    case 'minerUpgrade': {
       const h = takeHand(l.uid);
       const card = CARDS[h.cardId];
       const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
-      payCreature(pl, card.faction, creatureCost(s, who, card));
+      pay(pl, baseCost(s, who, card));
       if (s.flags.discount[who]) s.flags.discount[who] = 0;
       pl.discard.push(h);
-      c.upgrades[l.stat]++;
-      if (l.stat === 'attack') c.attack += 1;
-      else { c.maxHealth += 1; c.health += 1; }
-      ev.push({ type: 'smith', uid: c.uid, stat: l.stat, row: c.row, col: c.col });
+      const atk = card.role === 'Smith' ? 1 : 0;
+      c.upgrades.attack += atk; c.upgrades.health += 1;
+      c.attack += atk; c.maxHealth += 1; c.health += 1;
+      ev.push({ type: 'minerUpgrade', uid: c.uid, cardId: card.id, attack: atk, health: 1, row: c.row, col: c.col });
+      break;
+    }
+    case 'mineAll': {
+      for (const m of readyMiners(s, who)) {
+        const mc = mineColors(s);
+        const opts = mineTargets(s, m);
+        const full = (x: any) => yieldAt(s, m, mc, x) >= fullYield(m);
+        const t = opts.find(full) || opts[0];
+        const amount = yieldAt(s, m, mc, t);
+        m.hasMined = true; m.minedMine = { row: t.row, col: t.col };
+        ev.push({ type: 'mine', uid: m.uid, row: t.row, col: t.col, amount });
+      }
       break;
     }
     case 'move': {
@@ -962,8 +893,9 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     }
     case 'mine': {
       const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
+      const amount = yieldAt(s, c, mineColors(s), l);
       c.hasMined = true; c.minedMine = { row: l.row, col: l.col };
-      ev.push({ type: 'mine', uid: c.uid, row: l.row, col: l.col, amount: yieldOf(c) });
+      ev.push({ type: 'mine', uid: c.uid, row: l.row, col: l.col, amount });
       break;
     }
     case 'attack': {
@@ -1010,7 +942,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
   return { ok: true, state: s, events: ev };
 }
 
-const TUTORIAL_ORDER = ['summon', 'move', 'mine', 'spend', 'smith', 'swap', 'fight', 'spell', 'commander', 'complete'];
+const TUTORIAL_ORDER = ['summon', 'move', 'mine', 'mineAll', 'spend', 'smith', 'swap', 'fight', 'spell', 'commander', 'complete'];
 function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
   const t = s.tutorial;
   if (!t || t.step === 'complete') return;
@@ -1021,7 +953,11 @@ function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
     case 'move': if (mine && act.type === 'move') next(); break;
     case 'mine': if (mine && act.type === 'mine') next(); break;
     case 'spend': if (mine && ['summon', 'cast'].includes(act.type)) next(); break;
-    case 'smith': if (mine && act.type === 'smith') next(); break;
+    case 'mineAll':
+      if (mine && ['summon', 'cast', 'minerUpgrade'].includes(act.type)) t.spent = true;
+      if (mine && act.type === 'mineAll') { next(); if (t.spent) next(); }
+      break;
+    case 'smith': if (mine && act.type === 'minerUpgrade') next(); break;
     case 'swap': if (mine && events.some((e: any) => e.type === 'swap')) next(); break;
     case 'fight': if (mine && act.type === 'attack' && act.target && act.target.row) next(); break;
     case 'spell': if (mine && act.type === 'cast') next(); break;
