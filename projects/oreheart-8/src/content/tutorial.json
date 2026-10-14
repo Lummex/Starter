@@ -61,19 +61,34 @@
     "cardId": "gnome-prospector",
     "owner": "opponent",
     "row": 2,
-    "col": 6
+    "col": 8
    }
   ]
  },
  "tips": {
-  "summon": "Welcome! Drag a troop from your hand onto your back row (the bottom row, next to your Stronghold) to summon it. You have 0 crystals, but a Gatherer is free when you are broke.",
-  "move": "Nice! Now march it forward: press Done to reach the Action phase, then drag your troop to an empty space. Gatherers may move the turn they appear. Each troop either moves OR attacks.",
-  "swap": "Next turn, play your Crystal card for 1 crystal and summon a second Gatherer. Then in the Action phase drag one of your troops onto the other to swap places (it must be within its move range).",
+  "summon": "Welcome! Drag a Miner (Goblin Scrounger) from your hand onto your back row (the bottom row, next to your Stronghold) to summon it. You have 0 crystals, but a Gatherer is free when you are broke.",
+  "move": "Nice! Now march it next to a crystal mine: press Done to reach the Action phase, then drag your Miner onto an empty space beside the glowing mine in the middle. Gatherers may move the turn they appear. Each troop does one thing per turn: move OR attack OR mine.",
+  "swap": "Now swap places: in the Action phase drag one of your troops onto another of yours (within its move range) to trade places. Play your Crystal card in Deploy if you need more crystals.",
   "capture": "Walk next to a crystal mine in the middle. Have more troops around it than the enemy and it turns your color. Every troop around a mine makes flow: Gatherer 2, Fighter 1, and your pool is set to your flow each turn.",
-  "spend": "Crystals are your money. Your pool resets to your flow every turn, so spend them! Summon a troop or upgrade one. Crystals of other colors are worth only half toward troops.",
+  "spend": "Your crystal pool at the start of your turn is set to what you mined last turn, so spend it! Summon a troop or upgrade one. Crystals of other colors are worth only half toward troops.",
   "fight": "Time to fight! In the Action phase drag a troop onto the enemy troop. Melee hits are simultaneous: both strike. Damage heals at the start of your next turn.",
   "spell": "Cast a spell! Drag Fireball from your hand onto an enemy (spells cost crystals of any color).",
   "commander": "Finally, move next to the enemy Stronghold and attack the Commander. Each hit removes health equal to the attacker's Attack. Make them retreat!",
-  "complete": "Tutorial complete!"
- }
+  "complete": "Tutorial complete!",
+  "mine": "Mining is an action! Next turn, in the Action phase, drag your Miner onto the mine next to it. A Gatherer mines 2 crystals, a Fighter 1. Watch the mine change to your color. Standing nearby without mining gives nothing."
+ },
+ "mines": [
+  {
+   "row": 3,
+   "col": 6
+  },
+  {
+   "row": 4,
+   "col": 10
+  },
+  {
+   "row": 5,
+   "col": 6
+  }
+ ]
 }

@@ -1,3 +1,22 @@
+# Oreheart — Phase 1a build notes (Revision 5)
+
+Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm test` → Vitest (engine + AI).
+
+## Revision 5 — what was built
+- **Board 13×7**, Strongholds at (1,7)/(7,7), `boardWidth/boardHeight/mineCount` in config. **3 random mirrored mines** per match (seeded; rows 3–5; spacing ≥ 2); `newMatch({ mines })` override (illegal layout throws/rejects); tutorial uses a fixed layout from `tutorial.json`.
+- **Mining action** `{type:'mine', creatureUid, row, col}`: Gatherer 2, Fighter 1, one action per creature (no move/attack after, no mine after moving). Gatherers are never summoning-sick for move/mine. `minedMine` pays out at the owner's next Draw (pool SET, cap 16, underdog +2, Geodes), mine colors recomputed only at Draw phases / creation from miners only; `minedLastTurn`; `players.X.flow`, `sites[i].flow/miners` are previews; "+N next turn" uses them. Setup board accepts `minedMine` and `summonedThisTurn`.
+- **UI**: drag onto a mine (amber pickaxe glow), "N miners haven't mined" line in the Moves pop-up, yellow/dark-grey creature rings (`data-acted`, `data-mining`), 🏹 on Ranged cards/labels + bow on 3D figures, hand pop-out on hover/touch-and-hold, full-size deck piles (yours bottom-right, enemy top-left), glowing Commander hearts with damage pop-ups, "Crystal site, row R, column C" / "Mine flow, row R, column C" labels, Rules text.
+- **Tutorial** steps: summon, move, mine, spend, swap, fight, spell, commander, complete.
+- **AI** mines (Gatherers first) and reads mine positions from state.
+- Tests in `tests/engine.test.ts` were rewritten for the new board (mining, layouts for 30 seeds, bounds, colors, free Gatherer, underdog).
+
+## Notes / gaps
+- Free Gatherer still also requires an empty pool or an enemy-held mine (kept from round 2).
+- The old per-revision test suites for the 7×7 board were replaced, not ported one by one.
+- Visuals are placeholders; no sound.
+
+---
+
 # Oreheart — Phase 1a build notes (Revision 4)
 
 Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 64 tests).

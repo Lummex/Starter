@@ -1,6 +1,9 @@
 // Placeholder 3D battlefield (Three.js). Returns null when WebGL is unavailable (the UI then shows a 2D board).
 import * as THREE from 'three';
-import { COLORS, FACTIONS, CARDS, isActed } from '../engine';
+import { COLORS, FACTIONS, CARDS, CONFIG, isActed } from '../engine';
+
+const BW: number = CONFIG.boardWidth, BH: number = CONFIG.boardHeight;
+const SHP = CONFIG.strongholds as Record<string, number[]>;
 
 export interface Rect { x: number; y: number; w: number; h: number }
 export interface BoardView {
@@ -14,7 +17,7 @@ export interface BoardView {
 
 const SYMBOL: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
 const hexOf = (id: string | null) => (id && id !== 'white' ? COLORS[id].hex : COLORS.neutral.hex);
-const world = (row: number, col: number) => new THREE.Vector3(col - 4, 0, row - 4);
+const world = (row: number, col: number) => new THREE.Vector3(col - (BW + 1) / 2, 0, row - (BH + 1) / 2);
 
 const symCache: Record<string, THREE.Texture> = {};
 function symbolSprite(sym: string, size = 0.55) {
@@ -84,8 +87,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   const sun = new THREE.DirectionalLight(0xfff0d0, 1.6);
   sun.position.set(-4, 9, 5);
   sun.castShadow = !low;
-  sun.shadow.mapSize.set(1024, 1024);
-  Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 });
+  sun.shadow.mapSize.set(2048, 1024);
+  Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 7, bottom: -7 });
   scene.add(sun);
 
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 60), new THREE.MeshStandardMaterial({ map: groundTexture(), roughness: 1 }));
@@ -96,9 +99,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   // crystal formations
   const crystals: { mats: THREE.MeshStandardMaterial[]; sprite: THREE.Sprite | null; group: THREE.Group; ctl: any }[] = [];
   const sparkles: THREE.Points[] = [];
-  for (const col of [2, 4, 6]) {
+  for (let mi = 0; mi < CONFIG.mineCount; mi++) {
     const grp = new THREE.Group();
-    grp.position.copy(world(4, col));
     const mats: THREE.MeshStandardMaterial[] = [];
     [[0, 0, 1.15, 0.28], [-0.28, 0.1, 0.75, 0.2], [0.28, -0.08, 0.6, 0.18]].forEach(([x, z, h, r]) => {
       const m = new THREE.MeshStandardMaterial({ color: COLORS.neutral.hex, emissive: COLORS.neutral.hex, emissiveIntensity: 0.55, roughness: 0.15, metalness: 0.3 });
@@ -126,7 +128,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   const cmd: Record<string, { group: THREE.Group; body: THREE.Mesh; fig: THREE.Group; emote: { kind: string; t: number } | null; faction: string }> = {};
   for (const side of ['player', 'opponent'] as const) {
     const g = new THREE.Group();
-    const p = world(side === 'player' ? 7 : 1, 4);
+    const p = world(SHP[side][0], SHP[side][1]);
     g.position.copy(p);
     const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.55, 0.55, 10), new THREE.MeshStandardMaterial({ color: 0x77706a, roughness: 0.9 }));
     tower.position.y = 0.27;
@@ -163,10 +165,20 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     if (card.faction === 'goblins') [-1, 1].forEach((s) => { const e = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.22, 6), mat); e.position.set(s * 0.22, 0.78, 0); e.rotation.z = -s * 1.2; g.add(e); });
     if (card.faction === 'gnomes') { const h = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.32, 10), new THREE.MeshStandardMaterial({ color: 0xd04040 })); h.position.y = 1.0; g.add(h); }
     if (card.faction === 'dwarves') { const b = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.24, 0.1), new THREE.MeshStandardMaterial({ color: 0x8a5a2a })); b.position.set(0, 0.6, 0.17); g.add(b); }
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.04, 6, 20), new THREE.MeshBasicMaterial({ color: c.owner === 'player' ? 0xe3b54a : 0x7a1f1f }));
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 6, 24), new THREE.MeshBasicMaterial({ color: 0xffd400 }));
+    ring.name = 'acting-ring';
     ring.rotation.x = Math.PI / 2;
     ring.position.y = 0.04;
     g.add(ring);
+    if (card.abilities.includes('ranged')) {
+      const bow = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.03, 6, 14, Math.PI), new THREE.MeshStandardMaterial({ color: 0x8a5a2a }));
+      bow.position.set(0.3, 0.5, 0.12); bow.rotation.z = -Math.PI / 2;
+      const str = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.52, 0.012), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      str.position.set(0.3, 0.5, 0.12);
+      const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.2, 6), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
+      arrow.position.set(0.3, 0.5, 0.28); arrow.rotation.x = Math.PI / 2;
+      g.add(bow, str, arrow);
+    }
     const sp = symbolSprite(f.symbol, 0.42);
     sp.position.y = 1.2;
     g.add(sp);
@@ -180,6 +192,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const now = performance.now();
     st.sites.forEach((s: any, i: number) => {
       const cr = crystals[i];
+      cr.group.position.copy(world(s.row, s.col));
       if (cr.ctl === s.color) return;
       cr.ctl = s.color;
       const hex = hexOf(s.color);
@@ -218,6 +231,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       if (f.acted !== acted) {
         f.acted = acted;
         f.group.traverse((o: any) => {
+          if (o.name === 'acting-ring') { o.material.color.set(acted ? 0x3a3d44 : 0xffd400); return; }
           const m = o.material;
           if (!m || !m.color || o.isSprite || m.isMeshBasicMaterial) return;
           if (!m.userData.base) m.userData.base = m.color.clone();
@@ -232,7 +246,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     for (const e of events) {
       if (e.type === 'attack' && figs.get(e.uid)) {
         const f = figs.get(e.uid)!;
-        const to = e.target.commander ? world(e.target.commander === 'player' ? 7 : 1, 4) : world(e.target.row, e.target.col);
+        const to = e.target.commander ? world(SHP[e.target.commander][0], SHP[e.target.commander][1]) : world(e.target.row, e.target.col);
         f.lunge = to.clone().sub(f.target).multiplyScalar(0.45);
         f.lungeT = now;
         if (!e.target.commander && !e.ranged) {
@@ -250,7 +264,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     camera.aspect = w / h;
     const el = (60 * Math.PI) / 180;
     const y0 = 0.03 * h, y1 = 0.9 * h;
-    const corners = [[-3.6, -3.6], [3.6, -3.6], [3.6, 3.6], [-3.6, 3.6]];
+    const hx = BW / 2 + 0.05, hz = BH / 2 + 0.05;
+    const corners = [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]];
     const fit = (dist: number) => {
       camera.clearViewOffset();
       camera.position.set(0, Math.sin(el) * dist, Math.cos(el) * dist);
@@ -269,7 +284,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     for (let i = 0; i < 22; i++) {
       const mid = (lo + hi) / 2;
       const f = fit(mid);
-      if (f.bot - f.top <= y1 - y0 && f.right - f.left <= w * 0.98) hi = mid; else lo = mid;
+      if (f.bot - f.top <= y1 - y0 && f.right - f.left <= w) hi = mid; else lo = mid;
     }
     const f = fit(hi);
     // slide the view so the enemy Stronghold row sits at the top edge
@@ -364,8 +379,8 @@ export function createFlatView(container: HTMLElement): BoardView {
     setState() {},
     cellRect(row, col) {
       const w = container.clientWidth || 390, h = container.clientHeight || 420;
-      const cs = Math.min((h * 0.87) / 7, w / 7);
-      const x0 = (w - cs * 7) / 2, y0 = h * 0.03;
+      const cs = Math.min((h * 0.87) / BH, w / BW);
+      const x0 = (w - cs * BW) / 2, y0 = h * 0.03;
       return { x: x0 + (col - 1) * cs, y: y0 + (row - 1) * cs, w: cs, h: cs };
     },
     resize() {},

@@ -13,30 +13,30 @@ export function makeRand(seed: number): Rand {
 }
 
 const cheb = (a: any, b: any) => Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
-const SITES = (CONFIG.sites as number[][]).map(([row, col]) => ({ row, col }));
 const sh = (p: string) => ({ row: CONFIG.strongholds[p][0], col: CONFIG.strongholds[p][1] });
 
 function posValue(s: any, who: string, card: any, row: number, col: number, uid?: string) {
   const foe = other(who as any);
   const here = { row, col };
+  const SITES = s.sites.map((x: any) => ({ row: x.row, col: x.col }));
   const enemies = s.board.creatures.filter((c: any) => c.owner === foe);
   let v = 0;
   if (card.role === 'Gatherer') {
-    const adj = SITES.map((x, i) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
+    const adj = SITES.map((x: any, i: number) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
     if (adj.length) {
       v += 30 + adj.length * 5 + (adj.some(({ i }) => s.sites[i].controller !== foe) ? 8 : 0);
       // don't pile up: a crowded mine (beyond 3 own creatures) is worth less so Fighters can get through
       const crowd = Math.max(...adj.map(({ x }) => s.board.creatures.filter((c: any) => c.owner === who && cheb(c, x) <= 1 && !(c.row === row && c.col === col)).length));
       v -= 7 * Math.max(0, crowd - 2);
     }
-    else v -= 3 * Math.min(...SITES.map((x) => cheb(here, x)));
+    else v -= 3 * Math.min(...SITES.map((x: any) => cheb(here, x)));
     v -= 12 * enemies.filter((e: any) => cheb(e, here) <= 2).length;
   } else {
     const e = sh(foe);
     v -= 2 * cheb(here, e);
     if (cheb(here, e) <= 1) v += 40;
     if (card.abilities.includes('ranged') && cheb(here, e) <= 2) v += 30;
-    const adj = SITES.map((x, i) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
+    const adj = SITES.map((x: any, i: number) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
     if (adj.some(({ i }) => s.sites[i].controller !== who)) v += 8;
   }
   void uid;
@@ -119,7 +119,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
     }
     const acts = legal.filter((a: any) => a.type !== 'done' && a.type !== 'gathererSwap');
     if (!acts.length || rand() < 0.12) return done;
-    const w = (a: any) => (a.type === 'summon' || a.type === 'attack' ? 3 : a.type === 'playCrystal' ? 2 : a.type === 'upgrade' ? 0.3 : 1);
+    const w = (a: any) => (a.type === 'summon' || a.type === 'attack' || a.type === 'mine' ? 3 : a.type === 'playCrystal' ? 2 : a.type === 'upgrade' ? 0.3 : 1);
     let tot = acts.reduce((x: number, a: any) => x + w(a), 0);
     let r = rand() * tot;
     for (const a of acts) { r -= w(a); if (r <= 0) return a; }
@@ -149,7 +149,10 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
       const left = creatureValue(s.players[who], s.players[who].faction) - CONFIG.upgradeCosts[u];
       scored.push([left >= 0 && (u === 'heavy-armor' || u === 'sharpened-weapons') && CARDS[c.cardId].role === 'Fighter' ? 12 + rand() : 0, a]);
     } else if (a.type === 'cast') scored.push([scoreCast(s, who, a), a]);
-    else if (a.type === 'move') {
+    else if (a.type === 'mine') {
+      const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
+      scored.push([CARDS[c.cardId].role === 'Gatherer' ? 60 + rand() : 14 + rand(), a]);
+    } else if (a.type === 'move') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const card = CARDS[c.cardId];
       const mate = creatureAt(s, a.row, a.col);

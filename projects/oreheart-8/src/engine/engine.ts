@@ -5,8 +5,8 @@ import { nextRand, shuffle } from './rng';
 export type Side = 'player' | 'opponent';
 export const other = (p: Side): Side => (p === 'player' ? 'opponent' : 'player');
 const cheb = (a: any, b: any) => Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
-const N = CONFIG.boardSize;
-const SITES: number[][] = CONFIG.sites;
+const W: number = CONFIG.boardWidth;
+const H: number = CONFIG.boardHeight;
 const stronghold = (p: Side) => ({ row: CONFIG.strongholds[p][0], col: CONFIG.strongholds[p][1] });
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 const colorOf = (s: any, p: Side) => FACTIONS[s.players[p].faction].crystal as string;
@@ -18,10 +18,10 @@ export const maxMove = (c: any) => (c.upgrade === 'veteran' ? Math.max(2, CARDS[
 // ---------------------------------------------------------------- board helpers
 export const creatureAt = (s: any, row: number, col: number) => s.board.creatures.find((c: any) => c.row === row && c.col === col);
 const isStronghold = (row: number, col: number) => (['player', 'opponent'] as Side[]).some((p) => stronghold(p).row === row && stronghold(p).col === col);
-const isSite = (row: number, col: number) => SITES.some(([r, c]) => r === row && c === col);
-const inBounds = (row: number, col: number) => row >= 1 && row <= N && col >= 1 && col <= N;
-export const emptyCell = (s: any, row: number, col: number) => inBounds(row, col) && !isStronghold(row, col) && !isSite(row, col) && !creatureAt(s, row, col);
-const nearSite = (row: number, col: number) => SITES.some(([r, c]) => cheb({ row, col }, { row: r, col: c }) <= 1 && !(r === row && c === col));
+const isSite = (s: any, row: number, col: number) => s.sites.some((x: any) => x.row === row && x.col === col);
+const inBounds = (row: number, col: number) => row >= 1 && row <= H && col >= 1 && col <= W;
+export const emptyCell = (s: any, row: number, col: number) => inBounds(row, col) && !isStronghold(row, col) && !isSite(s, row, col) && !creatureAt(s, row, col);
+const nearSite = (s: any, row: number, col: number) => s.sites.some((x: any) => cheb({ row, col }, x) <= 1 && !(x.row === row && x.col === col));
 const adjacentCreatures = (s: any, c: any) => s.board.creatures.filter((o: any) => o !== c && cheb(o, c) === 1);
 const bonusOf = (s: any, p: Side, type: string) => {
   const a = COMMANDERS[s.players[p].commanderId].ability;
@@ -35,7 +35,7 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
   const maxHealth = card.health + (bh ? bh.amount : 0);
   const c = {
     uid: uid || 'u' + s.nextUid++, cardId, owner, row, col, attack: card.attack, health: maxHealth - damage, maxHealth,
-    upgrade: null as any, summonedThisTurn: false, hasMoved: false, hasAttacked: false, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0,
+    upgrade: null as any, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0,
   };
   s.board.creatures.push(c);
   return c;
@@ -47,9 +47,8 @@ const isGatherer = (card: any) => card.role === 'Gatherer';
 export const basicGatherer = (faction: string): string => CONFIG.basicGatherers[faction];
 const ALL_COLORS = ['green', 'blue', 'purple', 'white'];
 const total = (pl: any) => pl.crystals.green + pl.crystals.blue + pl.crystals.purple + pl.crystals.white;
-const flowTotal = (f: any) => f.green + f.blue + f.purple + f.white;
 const goesFree = (s: any, p: Side, card: any) =>
-  card.id === basicGatherer(card.faction) && flowTotal(s.players[p].flow) === 0 && sitesControlled(s, p) === 0 &&
+  card.id === basicGatherer(card.faction) && s.players[p].minedLastTurn === 0 && sitesControlled(s, p) === 0 &&
   !s.board.creatures.some((c: any) => c.owner === p && isGatherer(CARDS[c.cardId])) &&
   (total(s.players[p]) === 0 || sitesControlled(s, p === 'player' ? 'opponent' : 'player') > 0);
 export function creatureCost(s: any, p: Side, card: any) {
@@ -111,6 +110,32 @@ const gain = (s: any, p: Side, color: string, n: number) => {
   capPool(pl, pl.faction);
 };
 
+// ---------------------------------------------------------------- mines
+/** Legal layout: 3 mines in rows 3-5, mirrored between halves, at least 2 apart (Chebyshev), on the board. */
+export function legalMines(m: any): boolean {
+  if (!Array.isArray(m) || m.length !== CONFIG.mineCount) return false;
+  for (const x of m) if (!x || !Number.isInteger(x.row) || !Number.isInteger(x.col) || x.row < 3 || x.row > 5 || x.col < 1 || x.col > W) return false;
+  for (let i = 0; i < m.length; i++) for (let j = i + 1; j < m.length; j++) if (cheb(m[i], m[j]) < 2) return false;
+  for (const x of m) {
+    if (x.row === 4) continue;
+    if (!m.some((y: any) => y.col === x.col && y.row === 8 - x.row)) return false;
+  }
+  return true;
+}
+function randomMines(seed: number) {
+  const r = { rng: (seed ^ 0x2f6e2b1) | 0 };
+  for (let tries = 0; tries < 1000; tries++) {
+    const pick = () => 1 + Math.floor(nextRand(r) * W);
+    let m: any[];
+    if (nextRand(r) < 0.6) { const c = pick(); m = [{ row: 3, col: c }, { row: 5, col: c }, { row: 4, col: pick() }]; }
+    else m = [{ row: 4, col: pick() }, { row: 4, col: pick() }, { row: 4, col: pick() }];
+    if (legalMines(m)) return m;
+  }
+  return [{ row: 3, col: 3 }, { row: 5, col: 3 }, { row: 4, col: 9 }];
+}
+const sortMines = (m: any[]) => m.map((x) => ({ row: x.row, col: x.col })).sort((a, b) => a.row - b.row || a.col - b.col);
+const emptyFlow = () => ({ green: 0, blue: 0, purple: 0, white: 0 });
+
 // ---------------------------------------------------------------- creation
 export function createMatch(opts: any = {}) {
   const pcmd = COMMANDERS[opts.playerCommander ?? 'grubnak'];
@@ -118,17 +143,20 @@ export function createMatch(opts: any = {}) {
   const s: any = {
     turn: 0, activePlayer: 'player', priority: 'player', phase: 'mulligan', winner: null,
     players: {}, board: { creatures: [] },
-    sites: SITES.map(([row, col]) => ({ row, col, controller: null, color: 'white', flow: { player: 0, opponent: 0 } })),
+    sites: [] as any[],
     pendingResponse: null, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
     mulliganDone: { player: false, opponent: false }, tutorial: opts.tutorial ? { step: 'summon' } : null,
     flags: { battleCry: null, crystalsPlayed: 0, swapped: false, discount: { player: 0, opponent: 0 } },
   };
   const setup = opts.setup;
+  const mines = opts.mines ? opts.mines :  randomMines((opts.seed ?? 1) | 0);
+  if (!legalMines(mines)) throw new Error('Illegal mine layout');
+  s.sites = sortMines(mines).map((m: any) => ({ ...m, controller: null, color: 'white', flow: { player: 0, opponent: 0 }, miners: { player: 0, opponent: 0 } }));
   (['player', 'opponent'] as Side[]).forEach((who) => {
     const cmd = who === 'player' ? pcmd : ocmd;
     s.players[who] = {
       commanderId: cmd.id, faction: cmd.faction, health: cmd.health, maxHealth: cmd.health,
-      crystals: { green: 0, blue: 0, purple: 0, white: 0 }, flow: { green: 0, blue: 0, purple: 0, white: 0 }, hand: [], deck: [], discard: [], geodes: 0,
+      crystals: { green: 0, blue: 0, purple: 0, white: 0 }, flow: { green: 0, blue: 0, purple: 0, white: 0 }, hand: [], deck: [], discard: [], geodes: 0, minedLastTurn: 0,
     };
   });
   for (const who of ['player', 'opponent'] as Side[]) {
@@ -159,13 +187,18 @@ export function createMatch(opts: any = {}) {
     const h = setup[who + 'Health'];
     if (h != null) { pl.health = h; if (h > pl.maxHealth) pl.maxHealth = h; }
   }
-  for (const b of setup.board || []) { const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0; }
+  for (const b of setup.board || []) {
+    const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0;
+    if (b.minedMine) { c.minedMine = { row: b.minedMine.row, col: b.minedMine.col }; }
+    if (b.summonedThisTurn) c.summonedThisTurn = true;
+  }
   s.mulliganDone = { player: true, opponent: true };
   s.firstPlayer = setup.firstPlayer || 'player';
   s.turn = 1;
   s.activePlayer = s.firstPlayer;
   s.priority = s.firstPlayer;
   s.phase = 'deploy';
+  recolorMines(s, []);
   recomputeSites(s, []);
   return s;
 }
@@ -195,62 +228,71 @@ function drawCard(s: any, who: Side, ev: any[]) {
   ev.push({ type: 'draw', player: who, uid: card.uid, cardId: card.cardId });
 }
 
-/** Assign each creature standing around a mine to one mine (a creature touching two counts at only one). */
-function assignMines(s: any) {
-  const n = SITES.length;
-  const count = SITES.map(() => ({ player: 0, opponent: 0 }));
-  const assigned: { c: any; i: number }[] = [];
-  const shared: any[] = [];
-  const sorted = [...s.board.creatures].sort((a: any, b: any) => a.row - b.row || a.col - b.col);
-  for (const c of sorted) {
-    const near: number[] = [];
-    for (let i = 0; i < n; i++) if (cheb(c, { row: SITES[i][0], col: SITES[i][1] }) <= 1) near.push(i);
-    if (near.length === 1) { count[near[0]][c.owner as Side]++; assigned.push({ c, i: near[0] }); }
-    else if (near.length > 1) shared.push({ c, near });
-  }
-  for (const { c, near } of shared) {
-    const me = c.owner as Side, foe = other(me);
-    let best = near[0];
-    for (const i of near.slice(1)) {
-      const b = count[best], x = count[i];
-      if (x[me] > b[me] || (x[me] === b[me] && x[foe] > b[foe])) best = i;
-    }
-    count[best][me]++;
-    assigned.push({ c, i: best });
-  }
-  return { count, assigned };
+/** Creatures of `who` that mined a mine and still stand next to it. */
+const miningNow = (s: any, who?: Side) => s.board.creatures.filter((c: any) => c.minedMine && (!who || c.owner === who) && cheb(c, c.minedMine) <= 1);
+const yieldOf = (c: any) => (CARDS[c.cardId].role === 'Gatherer' ? CONFIG.gathererFlow : CONFIG.fighterFlow);
+/** Colors each mine would have from the creatures that mined it right now. */
+function mineColors(s: any) {
+  return s.sites.map((site: any) => {
+    const n = { player: 0, opponent: 0 };
+    for (const c of miningNow(s)) if (c.minedMine.row === site.row && c.minedMine.col === site.col) n[c.owner as Side]++;
+    const ctl: Side | null = n.player > n.opponent ? 'player' : n.opponent > n.player ? 'opponent' : null;
+    return { ctl, color: ctl ? colorOf(s, ctl) : 'white', n };
+  });
 }
 
-/** Recompute mine colors, per-mine flow and each player's flow from the current board. */
-export function recomputeSites(s: any, ev: any[]) {
-  const { count, assigned } = assignMines(s);
-  const flow: any = { player: { green: 0, blue: 0, purple: 0, white: 0 }, opponent: { green: 0, blue: 0, purple: 0, white: 0 } };
-  const site = (i: number) => s.sites[i];
-  for (let i = 0; i < s.sites.length; i++) {
-    const ctl: Side | null = count[i].player > count[i].opponent ? 'player' : count[i].opponent > count[i].player ? 'opponent' : null;
-    const color = ctl ? colorOf(s, ctl) : 'white';
-    if (ctl !== site(i).controller) ev.push({ type: 'siteControl', row: site(i).row, col: site(i).col, controller: ctl, color });
-    site(i).controller = ctl;
-    site(i).color = color;
-    site(i).flow = { player: 0, opponent: 0 };
+/** Set each mine's controller and color from the creatures that mined it (Draw phases and match creation only). */
+function recolorMines(s: any, ev: any[]) {
+  const mc = mineColors(s);
+  s.sites.forEach((site: any, i: number) => {
+    if (mc[i].ctl !== site.controller) ev.push({ type: 'siteControl', row: site.row, col: site.col, controller: mc[i].ctl, color: mc[i].color });
+    site.controller = mc[i].ctl;
+    site.color = mc[i].color;
+  });
+}
+
+/** Mining payout `who` would get if their Draw phase happened now (colors recomputed from current miners). */
+function payout(s: any, who: Side) {
+  const mc = mineColors(s);
+  const out = emptyFlow();
+  let mined = 0;
+  for (const c of miningNow(s, who)) {
+    const i = s.sites.findIndex((x: any) => x.row === c.minedMine.row && x.col === c.minedMine.col);
+    if (i < 0) continue;
+    out[mc[i].color as keyof typeof out] += yieldOf(c);
+    mined += yieldOf(c);
   }
-  for (const { c, i } of assigned) {
-    const f = CARDS[c.cardId].role === 'Gatherer' ? CONFIG.gathererFlow : CONFIG.fighterFlow;
-    site(i).flow[c.owner as Side] += f;
-    flow[c.owner as Side][site(i).color] += f;
+  return { out, mined, mc };
+}
+
+/** Per-mine and per-player preview numbers from the current board. State `sites[i].controller/color` are not touched. */
+export function recomputeSites(s: any, _ev: any[]) {
+  const mc = mineColors(s);
+  s.sites.forEach((site: any, i: number) => {
+    site.flow = { player: 0, opponent: 0 };
+    site.miners = { player: mc[i].n.player, opponent: mc[i].n.opponent };
+  });
+  for (const c of miningNow(s)) {
+    const site = s.sites.find((x: any) => x.row === c.minedMine.row && x.col === c.minedMine.col);
+    if (site) site.flow[c.owner as Side] += yieldOf(c);
   }
   for (const who of ['player', 'opponent'] as Side[]) {
-    flow[who][colorOf(s, who)] += s.players[who].geodes * CONFIG.geodeIncome;
-    s.players[who].flow = flow[who];
+    const f = payout(s, who).out;
+    f[colorOf(s, who) as keyof typeof f] += s.players[who].geodes * CONFIG.geodeIncome;
+    s.players[who].flow = f;
   }
 }
 
-/** Pool `who` gets at the start of their next turn if the board stayed as it is now (flow + underdog, capped). */
+/** Underdog bonus applies when no mine is in the player's color and at least one is in the enemy's color. */
+const underdog = (colors: any[], s: any, who: Side) => !colors.some((x) => x.ctl === who) && colors.some((x) => x.ctl === other(who));
+
+/** Pool `who` gets at the start of their next turn if the board stayed as it is now (mining + Geodes + underdog, capped). */
 export function nextPool(s: any, who: Side) {
   const pl = s.players[who];
-  const tmp = { crystals: { ...pl.flow } };
-  const enemy = s.sites.filter((x: any) => x.controller === other(who)).length;
-  if (sitesControlled(s, who) === 0 && enemy > 0) tmp.crystals[colorOf(s, who)] += CONFIG.underdogBonus;
+  const { out, mc } = payout(s, who);
+  out[colorOf(s, who) as keyof typeof out] += pl.geodes * CONFIG.geodeIncome;
+  if (underdog(mc, s, who)) out[colorOf(s, who) as keyof typeof out] += CONFIG.underdogBonus;
+  const tmp = { crystals: out };
   capPool(tmp, pl.faction);
   return tmp.crystals;
 }
@@ -268,7 +310,9 @@ export function sitePays(s: any, site: any) {
 
 function collectIncome(s: any, who: Side, ev: any[]) {
   const pl = s.players[who];
+  pl.minedLastTurn = payout(s, who).mined;
   pl.crystals = nextPool(s, who);
+  for (const c of s.board.creatures) if (c.owner === who) { c.minedMine = null; c.hasMined = false; }
   ev.push({ type: 'income', player: who, amount: total(pl), crystals: { ...pl.crystals } });
 }
 
@@ -282,7 +326,6 @@ function startTurn(s: any, ev: any[]) {
   s.flags = { battleCry: null, crystalsPlayed: 0, swapped: false, discount: { player: 0, opponent: 0 } };
   for (const c of s.board.creatures) if (c.owner === who) { c.summonedThisTurn = false; c.hasMoved = false; c.hasAttacked = false; c.movedDistance = 0; }
   ev.push({ type: 'turnStart', player: who, turn: s.turn });
-  recomputeSites(s, ev);
   // creatures heal to full, lose leftover Shield and expired Hearty Ale
   for (const c of s.board.creatures) {
     if (c.owner !== who) continue;
@@ -302,7 +345,9 @@ function startTurn(s: any, ev: any[]) {
   }
   if (s.turn > 1) drawCard(s, who, ev);
   if (s.winner) return;
+  recolorMines(s, ev);
   collectIncome(s, who, ev);
+  recomputeSites(s, ev);
   s.phase = 'deploy';
   s.priority = who;
 }
@@ -380,7 +425,7 @@ export function atkValue(s: any, c: any, target?: any) {
 const canAct = (s: any, c: any) => (!c.summonedThisTurn || has(c, 'haste')) && s.turn >= c.lockedUntil;
 
 export function attackTargets(s: any, c: any): any[] {
-  if (c.hasAttacked || !canAct(s, c) || (c.hasMoved && !has(c, 'charge'))) return [];
+  if (c.hasAttacked || c.hasMined || !canAct(s, c) || (c.hasMoved && !has(c, 'charge'))) return [];
   const enemy = other(c.owner);
   const sh = stronghold(enemy);
   const out: any[] = [];
@@ -426,17 +471,24 @@ export function summonSpaces(s: any, p: Side, card: any): { row: number; col: nu
   const out: any[] = [];
   const seen = new Set<string>();
   const add = (row: number, col: number) => { const k = row + ',' + col; if (!seen.has(k) && emptyCell(s, row, col)) { seen.add(k); out.push({ row, col }); } };
-  const rowCells = (row: number) => { const o: number[] = []; for (let col = 1; col <= N; col++) if (!isStronghold(row, col) && !isSite(row, col)) o.push(col); return o; };
+  const rowCells = (row: number) => { const o: number[] = []; for (let col = 1; col <= W; col++) if (!isStronghold(row, col) && !isSite(s, row, col)) o.push(col); return o; };
   const back = CONFIG.backRow[p], front = CONFIG.frontRow[p];
   for (const col of rowCells(back)) add(back, col);
   if (out.length === 0) for (const col of rowCells(front)) add(front, col);
-  if (card.abilities?.includes('tunnel') && sitesControlled(s, other(p)) > sitesControlled(s, p)) for (let r = 1; r <= N; r++) for (let c = 1; c <= N; c++) if (nearSite(r, c)) add(r, c);
+  if (card.abilities?.includes('tunnel') && sitesControlled(s, other(p)) > sitesControlled(s, p)) for (let r = 1; r <= H; r++) for (let c = 1; c <= W; c++) if (nearSite(s, r, c)) add(r, c);
   return out;
+}
+
+/** Mines `c` can mine this turn (one action: afterwards it can't move or attack). */
+export function mineTargets(s: any, c: any): { row: number; col: number }[] {
+  if (c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil) return [];
+  if (c.summonedThisTurn && !has(c, 'haste') && CARDS[c.cardId].role !== 'Gatherer') return [];
+  return s.sites.filter((x: any) => cheb(c, x) <= 1).map((x: any) => ({ row: x.row, col: x.col }));
 }
 
 /** Spaces `c` can move to; a space held by one of its own creatures is a swap. */
 export function moveDests(s: any, c: any): { row: number; col: number }[] {
-  if (c.hasMoved || c.hasAttacked || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && CARDS[c.cardId].role !== 'Gatherer')) return [];
+  if (c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && CARDS[c.cardId].role !== 'Gatherer')) return [];
   const m = maxMove(c);
   const out: any[] = [];
   for (let dr = -m; dr <= m; dr++) for (let dc = -m; dc <= m; dc++) {
@@ -460,7 +512,7 @@ export function moveDests(s: any, c: any): { row: number; col: number }[] {
 // ---------------------------------------------------------------- spells
 const tunnelCells = (s: any) => {
   const o: any[] = [];
-  for (let r = 1; r <= N; r++) for (let c = 1; c <= N; c++) if (nearSite(r, c) && emptyCell(s, r, c)) o.push({ row: r, col: c });
+  for (let r = 1; r <= H; r++) for (let c = 1; c <= W; c++) if (nearSite(s, r, c) && emptyCell(s, r, c)) o.push({ row: r, col: c });
   return o;
 };
 
@@ -479,7 +531,7 @@ export function spellTargets(s: any, p: Side, card: any): any[] {
     case 'buffAttack': return [{}];
     case 'areaDamage': {
       const o: any[] = [];
-      for (let r = 1; r <= N; r++) for (let c = 1; c <= N; c++) o.push({ target: { row: r, col: c } });
+      for (let r = 1; r <= H; r++) for (let c = 1; c <= W; c++) o.push({ target: { row: r, col: c } });
       return o;
     }
     case 'heal': return own.filter((c: any) => c.health < c.maxHealth).map((c: any) => ({ target: pos(c) }));
@@ -646,6 +698,7 @@ export function legalActions(s: any): any[] {
       for (const u of Object.keys(CONFIG.upgradeCosts)) if (canPayCreature(pl, pl.faction, upgradeCost(u))) out.push({ type: 'upgrade', creatureUid: c.uid, upgrade: u });
   }
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of moveDests(s, c)) out.push({ type: 'move', creatureUid: c.uid, row: d.row, col: d.col });
+  if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of mineTargets(s, c)) out.push({ type: 'mine', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const t of attackTargets(s, c)) out.push({ type: 'attack', creatureUid: c.uid, target: t });
   if (ph === 'deploy' && !s.flags.swapped && !pl.hand.some((h: any) => isGatherer(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
     if (pl.hand.length) for (const h of pl.hand) out.push({ type: 'gathererSwap', discardUid: h.uid });
@@ -828,6 +881,12 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       c.row = l.row; c.col = l.col; c.hasMoved = true;
       break;
     }
+    case 'mine': {
+      const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
+      c.hasMined = true; c.minedMine = { row: l.row, col: l.col };
+      ev.push({ type: 'mine', uid: c.uid, row: l.row, col: l.col, amount: yieldOf(c) });
+      break;
+    }
     case 'attack': {
       const a = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
       if (l.target.row) {
@@ -872,7 +931,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
   return { ok: true, state: s, events: ev };
 }
 
-const TUTORIAL_ORDER = ['summon', 'move', 'swap', 'capture', 'spend', 'fight', 'spell', 'commander', 'complete'];
+const TUTORIAL_ORDER = ['summon', 'move', 'mine', 'spend', 'swap', 'fight', 'spell', 'commander', 'complete'];
 function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
   const t = s.tutorial;
   if (!t || t.step === 'complete') return;
@@ -881,9 +940,9 @@ function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
   switch (t.step) {
     case 'summon': if (mine && act.type === 'summon') next(); break;
     case 'move': if (mine && act.type === 'move') next(); break;
-    case 'swap': if (mine && events.some((e: any) => e.type === 'swap')) next(); break;
-    case 'capture': if (s.sites.some((x: any) => x.controller === 'player')) next(); break;
+    case 'mine': if (mine && act.type === 'mine') next(); break;
     case 'spend': if (mine && ['summon', 'upgrade', 'cast'].includes(act.type)) next(); break;
+    case 'swap': if (mine && events.some((e: any) => e.type === 'swap')) next(); break;
     case 'fight': if (mine && act.type === 'attack' && act.target && act.target.row) next(); break;
     case 'spell': if (mine && act.type === 'cast') next(); break;
     case 'commander': if (s.winner === 'player') next(); break;
@@ -899,5 +958,5 @@ export function applyAction(state: any, action: any): { ok: boolean; state: any;
 
 /** True when a creature has acted this turn, or cannot act yet (shown darker in the UI). */
 export function isActed(s: any, c: any): boolean {
-  return c.hasMoved || c.hasAttacked || (c.summonedThisTurn && !has(c, 'haste')) || s.turn < c.lockedUntil;
+  return c.hasMoved || c.hasAttacked || c.hasMined || (c.summonedThisTurn && !has(c, 'haste') && CARDS[c.cardId].role !== 'Gatherer') || s.turn < c.lockedUntil;
 }

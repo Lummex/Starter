@@ -1,5 +1,5 @@
 import { Game } from '../game';
-import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, creatureValue, spellCost, hasMovesLeft, incomePreview, nextPool, maxMove, isActed } from '../engine';
+import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, creatureValue, spellCost, hasMovesLeft, incomePreview, nextPool, maxMove, isActed, mineTargets } from '../engine';
 import tutorialJson from '../content/tutorial.json';
 import { createBoardView, createFlatView, BoardView } from './scene';
 
@@ -8,6 +8,8 @@ const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '�
 const FSYM = (f: string) => SYM[FACTIONS[f]?.symbol] || '✦';
 const PHASE: Record<string, string> = { deploy: 'Deploy', action: 'Action', mulligan: 'Mulligan', draw: 'Draw', end: 'End', over: 'Over' };
 const ACTIVE = ['deploy', 'action'];
+const BW: number = CONFIG.boardWidth, BH: number = CONFIG.boardHeight;
+const SH = { player: { row: CONFIG.strongholds.player[0], col: CONFIG.strongholds.player[1] }, opponent: { row: CONFIG.strongholds.opponent[0], col: CONFIG.strongholds.opponent[1] } };
 const COLOR_NAMES = ['green', 'blue', 'purple', 'white'];
 const COLOR_HEX: Record<string, string> = { green: '#3ee06a', blue: '#3fa9ff', purple: '#b45cff', white: '#f2f6ff' };
 
@@ -159,9 +161,9 @@ export class App {
     const s = h('main', { class: 'screen howto' },
       h('h1', { class: 'section cinzel' }, 'Rules'),
       sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
-      sec('The Board', 'A hidden 7×7 grid. The enemy is at the top, you are at the bottom. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal sites sit in the middle.', board),
-      sec('Crystals', 'Crystal Flow: every creature standing on the 8 spaces around a mine makes flow each turn, a Gatherer 2 and a Fighter 1 (a creature touching two mines counts at only one). At the start of your turn your pool is SET to your flow, it is not added, and the pool never holds more than 16. Unspent crystals stay usable during the enemy turn. The side with more creatures at a mine gives it its color (green, blue or purple); a tie makes it neutral white. All creatures at a mine make crystals in that mine\'s color. Creatures and upgrades get full value from crystals of their own color but only half from other colors or white (rounded down); spells take any color at full value, and the game pays the cheapest way. You start with 0 crystals. The Stronghold makes none. If you hold no mine while the enemy holds one you get 2 bonus crystals of your color. The plus-N-next-turn counter shows your coming pool, and tapping a mine shows who holds it, its color and each side\'s flow.', crystals),
-      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, play one Crystal card and upgrade creatures. Gatherers can move (but not attack) the turn they are summoned. Action: each creature either moves one space OR attacks, never both (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places (only the dragged creature uses its action). Tap Done to finish a phase; phases with no moves left end by themselves. After 40 seconds a 10-second countdown starts, and at 0 the phase ends. Gatherer swap: once a turn, with no Gatherer in hand, discard a card to pull a basic Gatherer from your deck. Free Gatherer: with no flow, no mine in your color and no Gatherer on the battlefield, a basic Gatherer is free. At the start of your turn all your creatures heal back to full Health.'),
+      sec('The Board', 'A hidden grid 13 spaces wide and 7 deep. The enemy is at the top, you are at the bottom. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
+      sec('Crystals', 'Mining: on your turn drag a creature standing next to a mine onto the mine. Mining is the creature\'s action for the turn (it cannot also move or attack): a Gatherer mines 2 crystals, a Fighter 1. Standing near a mine without mining gives nothing. At the start of your next turn your pool is SET to what you mined, it is not added, and the pool never holds more than 16. Unspent crystals stay usable during the enemy turn. The side with more miners at a mine gives it its color (green, blue or purple); a tie makes it neutral white. All crystals from a mine come in the mine\'s color. Creatures and upgrades get full value from crystals of their own color but only half from other colors or white (rounded down); spells take any color at full value, and the game pays the cheapest way. You start with 0 crystals. The Stronghold makes none. If you hold no mine while the enemy holds one you get 2 bonus crystals of your color. The plus-N-next-turn counter shows your coming pool, and tapping a mine shows who holds it, its color and each side\'s flow.', crystals),
+      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, play one Crystal card and upgrade creatures. Gatherers (miners) can move or mine, but not attack, the turn they are summoned. Action: each creature either moves one space OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places (only the dragged creature uses its action). Tap Done to finish a phase; phases with no moves left end by themselves. After 40 seconds a 10-second countdown starts, and at 0 the phase ends. Gatherer swap: once a turn, with no Gatherer in hand, discard a card to pull a basic Gatherer from your deck. Free Gatherer: if you mined nothing last turn, with no mine in your color and no Gatherer on the battlefield, a basic Gatherer is free. At the start of your turn all your creatures heal back to full Health.'),
       sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals of any color. Instants can answer the enemy during a "Respond?" window, and counterspells cancel spells or summons.'),
       h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Back', '', () => this.showMenu())));
@@ -241,12 +243,12 @@ export class App {
     const crystalChip = (c: string) => (r['cr_' + c] = h('span', { class: 'cr ' + c, role: 'img', 'aria-label': `Your ${c} crystals` }, '0'));
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
     r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, '0');
-    r.enemyHealth = h('div', { class: 'health', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
+    r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
     r.timer = h('div', { class: 'countdown', role: 'timer', 'aria-label': 'Phase timer', hidden: true }, '10');
     r.board = h('div', { class: 'board', role: 'application', 'aria-label': 'Battlefield' });
     r.fx = h('div', { class: 'fx' });
-    r.myHealth = h('div', { class: 'health mine', role: 'img', 'aria-label': 'Your Commander health' }, '20');
+    r.myHealth = h('div', { class: 'heart mine', role: 'img', 'aria-label': 'Your Commander health' }, '20');
     r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, '0');
     r.income = h('div', { class: 'income', 'aria-label': 'Your income next turn' }, '+0 next turn');
     r.done = btn('Done', 'primary done-btn', () => this.pressDone());
@@ -259,10 +261,10 @@ export class App {
     const match = h('main', { class: 'match' },
       r.board,
       h('div', { class: 'hud hud-left' }, crystals, r.income,
-        h('div', { class: 'piles' }, h('div', { class: 'pile-wrap' }, h('span', { class: 'lbl' }, 'You'), r.myDeck), h('div', { class: 'pile-wrap' }, h('span', { class: 'lbl' }, 'Foe'), r.enemyDeck)),
         r.swap),
       h('div', { class: 'hud hud-top' }, r.enemyHand),
-      h('div', { class: 'hud hud-right' }, r.phase, r.enemyHealth, r.done, r.myHealth, menuBtn),
+      r.enemyDeck, r.myDeck,
+      h('div', { class: 'hud hud-right' }, r.phase, r.done, menuBtn),
       r.tip, r.hand, r.timer);
     this.root.append(match);
     // board layers
@@ -273,18 +275,18 @@ export class App {
     r.view = null;
     try { this.view = createBoardView(r.board, this.low); } catch { this.view = null; }
     if (!this.view) this.view = createFlatView(r.board);
-    for (let row = 1; row <= 7; row++) for (let col = 1; col <= 7; col++) {
+    for (let row = 1; row <= BH; row++) for (let col = 1; col <= BW; col++) {
       const c = h('div', { class: 'cell', 'data-row': row, 'data-col': col });
       r.cells.set(row + ',' + col, c);
       r.board.append(c);
     }
-    (CONFIG.sites as number[][]).forEach(([row, col], i) => {
+    (this.game.state.sites as any[]).forEach(({ row, col }, i) => {
       const ring = h('div', { class: 'mine-ring', 'aria-hidden': 'true' });
       ring.dataset.row = String(row); ring.dataset.col = String(col);
-      const fl = h('div', { class: 'mine-flow', role: 'img', 'aria-label': `Mine flow, column ${col}` }, '+0 / +0');
+      const fl = h('div', { class: 'mine-flow', role: 'img', 'aria-label': `Mine flow, row ${row}, column ${col}` }, '+0 / +0');
       fl.dataset.row = String(row); fl.dataset.col = String(col);
       r.rings.push(ring); r.flows.push(fl); r.board.append(ring, fl);
-      const m = h('button', { type: 'button', class: 'site-mark', 'aria-label': `Crystal site, column ${col}`, onclick: () => this.openSite(i) });
+      const m = h('button', { type: 'button', class: 'site-mark', 'aria-label': `Crystal site, row ${row}, column ${col}`, onclick: () => this.openSite(i) });
       m.dataset.row = String(row); m.dataset.col = String(col);
       m.addEventListener('pointerdown', (e) => e.stopPropagation());
       r.sites.push(m); r.board.append(m);
@@ -294,7 +296,7 @@ export class App {
       const s = h('div', { class: 'stronghold ' + side, role: 'img', 'aria-label': side === 'player' ? 'Your Stronghold' : 'Enemy Stronghold' }, '🏰');
       r.strong[side] = s; r.board.append(s);
     }
-    r.board.append(r.fx);
+    r.board.append(r.enemyHealth, r.myHealth, r.fx);
     const ro = new ResizeObserver(() => this.layout());
     ro.observe(r.board);
     this.unsub = this.game.subscribe((st, ev) => this.update(st, ev));
@@ -317,17 +319,29 @@ export class App {
     }
     r.sites.forEach((m: El) => this.place(m, +m.dataset.row!, +m.dataset.col!));
     r.rings.forEach((m: El, i: number) => {
-      const col = +m.dataset.col!;
-      const a = this.view.cellRect(3, col - 1), b = this.view.cellRect(5, col + 1), c = this.view.cellRect(3, col + 1), d = this.view.cellRect(5, col - 1);
+      const col = +m.dataset.col!, row = +m.dataset.row!;
+      const a = this.view.cellRect(row - 1, col - 1), b = this.view.cellRect(row + 1, col + 1), c = this.view.cellRect(row - 1, col + 1), d = this.view.cellRect(row + 1, col - 1);
       const x0 = Math.min(a.x, d.x), x1 = Math.max(c.x + c.w, b.x + b.w), y0 = Math.min(a.y, c.y), y1 = Math.max(b.y + b.h, d.y + d.h);
       m.style.left = x0 + 'px'; m.style.top = y0 + 'px'; m.style.width = x1 - x0 + 'px'; m.style.height = y1 - y0 + 'px';
       const f = r.flows[i] as El;
       f.style.left = (x0 + x1) / 2 + 'px'; f.style.top = y0 + 'px';
     });
-    this.place(r.strong.player, 7, 4);
-    this.place(r.strong.opponent, 1, 4);
+    this.place(r.strong.player, SH.player.row, SH.player.col);
+    this.place(r.strong.opponent, SH.opponent.row, SH.opponent.col);
+    this.placeHeart(r.myHealth, 'player');
+    this.placeHeart(r.enemyHealth, 'opponent');
     for (const el of this.tokens.values()) this.place(el, +el.dataset.row!, +el.dataset.col!);
     this.layoutHand();
+  }
+  /** Heart above your Commander; beside the enemy's so it stays on screen. */
+  placeHeart(el: El, side: 'player' | 'opponent') {
+    const sh = SH[side];
+    const rc = this.view!.cellRect(sh.row, sh.col);
+    const s = Math.max(40, Math.min(70, rc.h * 1.1));
+    el.style.width = s + 'px'; el.style.height = s + 'px';
+    const cx = side === 'player' ? rc.x + rc.w / 2 : rc.x + rc.w * 1.5 + 4;
+    const cy = side === 'player' ? rc.y - s * 0.35 : rc.y + rc.h * 0.55;
+    el.style.left = cx - s / 2 + 'px'; el.style.top = cy - s / 2 + 'px';
   }
   place(el: El, row: number, col: number) {
     const rc = this.view!.cellRect(row, col);
@@ -362,8 +376,8 @@ export class App {
     if (!r.board || !st) return;
     const me = st.players.player, en = st.players.opponent;
     this.view && this.view.setState(st, events);
-    r.enemyHealth.textContent = String(en.health);
-    r.myHealth.textContent = String(me.health);
+    this.setHeart(r.enemyHealth, en.health);
+    this.setHeart(r.myHealth, me.health);
     r.enemyDeck.replaceChildren(String(en.deck.length));
     r.myDeck.textContent = String(me.deck.length);
     for (const c of COLOR_NAMES) {
@@ -414,6 +428,11 @@ export class App {
     this.tick();
   }
 
+  setHeart(el: El, n: number) {
+    el.textContent = String(n);
+    el.dataset.low = String(n <= 7);
+  }
+
   // ------------------------------------------------------------ banners
   bannerQ: string[] = [];
   bannerEl: El | null = null;
@@ -453,7 +472,9 @@ export class App {
     if (!st || this.movesDlg) return;
     if (this.remindMoves && hasMovesLeft(st)) {
       const name = 'Moves still available! Continue to the next phase?';
+      const miners = new Set(this.game.legalActions().filter((a: any) => a.type === 'mine').map((a: any) => a.creatureUid)).size;
       const d: any = this.dialog(name, [h('h2', {}, name),
+        miners ? h('p', { class: 'miners-note', style: 'text-align:center;margin:0' }, miners === 1 ? "1 miner hasn't mined" : `${miners} miners haven't mined`) : null as any,
         h('div', { class: 'row' }, btn('Continue', 'primary', () => { d.close(); this.movesDlg = null; this.game.act({ type: 'done' }); }),
           btn('Go back', '', () => { d.close(); this.movesDlg = null; }))], () => { this.movesDlg = null; });
       this.movesDlg = d;
@@ -551,7 +572,8 @@ export class App {
       el.dataset.uid = c.uid; el.dataset.row = String(c.row); el.dataset.col = String(c.col);
       (el.querySelector('.a') as El).textContent = `⚔️${c.attack}`;
       (el.querySelector('.h') as El).textContent = `❤️${c.health}`;
-      (el.querySelector('.m') as El).textContent = `👟${maxMove(c)}`;
+      (el.querySelector('.m') as El).textContent = `👟${maxMove(c)}${CARDS[c.cardId].abilities.includes('ranged') ? ' 🏹' : ''}`;
+      el.dataset.mining = String(!!c.minedMine);
       const sh = el.querySelector('.sh') as El;
       sh.textContent = c.shield > 0 ? ` 🛡${c.shield}` : '';
       el.dataset.damaged = String(c.health < c.maxHealth);
@@ -582,7 +604,7 @@ export class App {
         h('span', { class: 'cost', 'aria-hidden': 'true' }, c.type === 'crystal' ? '◆' : String(cost)),
         h('span', { class: 'nm', 'aria-hidden': 'true' }, c.name),
         h('span', { class: 'ty', 'aria-hidden': 'true' }, c.type === 'creature' ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
-        h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `⚔️${c.attack} ❤️${c.health}` : c.rarity));
+        h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `⚔️${c.attack}${c.abilities.includes('ranged') ? '🏹' : ''} ❤️${c.health}` : c.rarity));
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));
       el.addEventListener('click', (e: MouseEvent) => { if (e.detail === 0) this.showCard(c.id); });
       hand.append(el);
@@ -685,6 +707,16 @@ export class App {
     this.r.fx.append(f);
     setTimeout(() => f.remove(), 1000);
   }
+  /** Red damage number over a Commander's heart, and the heart shakes. */
+  heartPop(owner: string, amount: number) {
+    const el = (owner === 'player' ? this.r.myHealth : this.r.enemyHealth) as El;
+    if (!el) return;
+    const f = h('div', { class: 'float dmg' }, '-' + amount);
+    f.style.left = el.offsetLeft + el.offsetWidth / 2 + 'px'; f.style.top = el.offsetTop + 'px';
+    this.r.fx.append(f);
+    setTimeout(() => f.remove(), 1000);
+    el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit');
+  }
   burst(text: string, row: number, col: number) {
     const p = this.center(row, col);
     const f = h('div', { class: 'burst' }, text);
@@ -701,9 +733,9 @@ export class App {
       if (e.type === 'damage') {
         const owner = e.commander;
         if (owner) {
-          const row = owner === 'player' ? 7 : 1;
-          this.floatText('-' + e.amount, 'dmg', row, 4);
-          this.burst(e.amount >= 3 ? 'KA-BOOM!' : 'CRUNCH!', row, 4);
+          const row = SH[owner as 'player' | 'opponent'].row, col = SH[owner as 'player' | 'opponent'].col;
+          this.heartPop(owner, e.amount);
+          this.burst(e.amount >= 3 ? 'KA-BOOM!' : 'CRUNCH!', row, col);
           this.emote(owner, 'flinch');
           this.emote(owner === 'player' ? 'opponent' : 'player', 'cheer');
         } else if (e.amount > 0) {
@@ -714,7 +746,7 @@ export class App {
         this.burst('BLOCK!', e.row, e.col);
       } else if (e.type === 'heal' && e.amount > 0) {
         if (e.row) this.floatText('+' + e.amount, 'heal', e.row, e.col);
-        else this.floatText('+' + e.amount, 'heal', e.commander === 'player' ? 7 : 1, 4);
+        else this.floatText('+' + e.amount, 'heal', SH[e.commander as 'player' | 'opponent'].row, SH[e.commander as 'player' | 'opponent'].col);
       } else if (e.type === 'defeat') {
         this.burst('POOF!', e.row, e.col);
         this.emote(e.owner, 'groan');
@@ -760,7 +792,7 @@ export class App {
     const bb = (this.r.board as El).getBoundingClientRect();
     const px = x - bb.left, py = y - bb.top;
     let best: any = null, bd = 1e9;
-    for (let row = 1; row <= 7; row++) for (let col = 1; col <= 7; col++) {
+    for (let row = 1; row <= BH; row++) for (let col = 1; col <= BW; col++) {
       const rc = this.view!.cellRect(row, col);
       if (px < rc.x || px > rc.x + rc.w || py < rc.y || py > rc.y + rc.h) continue;
       const d = Math.hypot(px - rc.x - rc.w / 2, py - rc.y - rc.h / 2);
@@ -776,10 +808,10 @@ export class App {
     }
   }
   clearGlow() {
-    for (const el of this.r.cells.values() as Iterable<El>) el.classList.remove('glow', 'glow-attack', 'glow-swap', 'hover');
+    for (const el of this.r.cells.values() as Iterable<El>) el.classList.remove('glow', 'glow-attack', 'glow-swap', 'glow-mine', 'hover');
     this.r.board.classList.remove('drop-any');
   }
-  cellOfTarget(t: any) { return t.commander ? { row: t.commander === 'player' ? 7 : 1, col: 4 } : { row: t.row, col: t.col }; }
+  cellOfTarget(t: any) { return t.commander ? SH[t.commander as 'player' | 'opponent'] : { row: t.row, col: t.col }; }
 
   // ------------------------------------------------------------ pointer interactions
   drag(e: PointerEvent, opts: { ghost: El; onStart: () => boolean | void; onDrop: (cell: { row: number; col: number } | null, x: number, y: number) => void; onTap: () => void; touchSwipe?: (dx: number) => void }) {
@@ -826,6 +858,11 @@ export class App {
   }
 
   cardPointerDown(e: PointerEvent, hc: any, el: El) {
+    if (e.pointerType !== 'mouse') {
+      const t = setTimeout(() => el.classList.add('popped'), 180);
+      const off = () => { clearTimeout(t); el.classList.remove('popped'); window.removeEventListener('pointerup', off); window.removeEventListener('pointercancel', off); };
+      window.addEventListener('pointerup', off); window.addEventListener('pointercancel', off);
+    }
     const st = this.game.state;
     const card = CARDS[hc.cardId];
     const ghost = h('div', { class: 'ghost' }, card.type === 'creature' ? FSYM(card.faction) : card.type === 'spell' ? '✨' : '💎');
@@ -923,15 +960,17 @@ export class App {
         this.setGlow(legal.filter((a: any) => isMove(a) && !swapAt(a)).map((a: any) => ({ row: a.row, col: a.col })), 'glow');
         this.setGlow(legal.filter((a: any) => isMove(a) && swapAt(a)).map((a: any) => ({ row: a.row, col: a.col })), 'glow-swap');
         this.setGlow(legal.filter((a: any) => a.type === 'attack').map((a: any) => this.cellOfTarget(a.target)), 'glow-attack');
-        if (!legal.some((a: any) => a.type === 'move' || a.type === 'attack')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves OR attacks)' : 'Creatures move and attack in the Action phase');
+        this.setGlow(legal.filter((a: any) => a.type === 'mine').map((a: any) => ({ row: a.row, col: a.col })), 'glow-mine');
+        if (!legal.some((a: any) => a.type === 'move' || a.type === 'attack' || a.type === 'mine')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves, attacks OR mines)' : 'Creatures move and attack in the Action phase');
         return true;
       },
       onDrop: (c) => {
         if (!c || !c.row) return;
         const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
-        const atk = legal.find((a: any) => a.type === 'attack' && ((a.target.commander && c.row === (a.target.commander === 'player' ? 7 : 1) && c.col === 4) || (a.target.row === c.row && a.target.col === c.col)));
+        const atk = legal.find((a: any) => a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col)));
         const mv = legal.find((a: any) => a.type === 'move' && a.row === c.row && a.col === c.col);
-        const a = atk || mv;
+        const mn = legal.find((a: any) => a.type === 'mine' && a.row === c.row && a.col === c.col);
+        const a = atk || mn || mv;
         if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); } else this.flash("Can't go there");
       },
       onTap: () => {

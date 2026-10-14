@@ -71,29 +71,14 @@
  "eaterGuzzlerDamage": 2,
  "eaterConduitDamage": 1,
  "eaterDelverPenalty": 1,
- "boardSize": 7,
- "sites": [
-  [
-   4,
-   2
-  ],
-  [
-   4,
-   4
-  ],
-  [
-   4,
-   6
-  ]
- ],
  "strongholds": {
   "player": [
    7,
-   4
+   7
   ],
   "opponent": [
    1,
-   4
+   7
   ]
  },
  "backRow": {
@@ -106,5 +91,8 @@
  },
  "shieldFixit": 1,
  "aleBonus": 1,
- "sprocketShield": 1
+ "sprocketShield": 1,
+ "boardWidth": 13,
+ "boardHeight": 7,
+ "mineCount": 3
 }

@@ -52,7 +52,7 @@ export class Game {
 
   startTutorial() {
     const t: any = tutorialJson;
-    return this.newMatch({ playerCommander: t.playerCommander, opponentCommander: t.opponentCommander, setup: t.setup, tutorial: true, seed: 1, difficulty: 'easy' });
+    return this.newMatch({ playerCommander: t.playerCommander, opponentCommander: t.opponentCommander, setup: t.setup, mines: t.mines, tutorial: true, seed: 1, difficulty: 'easy' });
   }
 
   getState() {
