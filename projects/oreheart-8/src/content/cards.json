@@ -15,7 +15,7 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Gatherer: Gathers +2 next to a site you control. Tunnel: Can be summoned onto any empty space next to a crystal site."
+  "text": "Gatherer: Makes 2 crystal flow next to a mine (Fighters make 1). Tunnel: Can be summoned onto any empty space next to a crystal site."
  },
  {
   "id": "goblin-scrapper",
@@ -152,7 +152,7 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Gatherer: Gathers +2 next to a site you control. Tunnel: Can be summoned onto any empty space next to a crystal site."
+  "text": "Gatherer: Makes 2 crystal flow next to a mine (Fighters make 1). Tunnel: Can be summoned onto any empty space next to a crystal site."
  },
  {
   "id": "gnome-tinker",
@@ -290,7 +290,7 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Gatherer: Gathers +2 next to a site you control. Tunnel: Can be summoned onto any empty space next to a crystal site."
+  "text": "Gatherer: Makes 2 crystal flow next to a mine (Fighters make 1). Tunnel: Can be summoned onto any empty space next to a crystal site."
  },
  {
   "id": "shieldbeard",
@@ -508,13 +508,13 @@
   "faction": "any",
   "rarity": "Common",
   "spellKind": "regular",
-  "cost": 4,
+  "cost": 1,
   "effect": "gainCrystals",
   "params": {
-   "amount": 7,
+   "amount": 3,
    "needFewerSites": true
   },
-  "text": "Regular spell. Can only be cast if you control fewer sites than the enemy: gain 7 crystals of your faction color."
+  "text": "Regular spell. Can only be cast if fewer mines are in your color than in the enemy color: gain 3 crystals of your own color."
  },
  {
   "id": "tunnel-rush",
@@ -523,7 +523,7 @@
   "faction": "any",
   "rarity": "Uncommon",
   "spellKind": "regular",
-  "cost": 4,
+  "cost": 2,
   "effect": "tunnelMove",
   "params": {},
   "text": "Regular spell. Move one of your creatures to any empty space next to a crystal site; it can still attack this turn."
@@ -535,7 +535,7 @@
   "faction": "any",
   "rarity": "Rare",
   "spellKind": "regular",
-  "cost": 5,
+  "cost": 3,
   "effect": "damage",
   "params": {
    "amount": 3
@@ -549,7 +549,7 @@
   "faction": "any",
   "rarity": "Rare",
   "spellKind": "regular",
-  "cost": 7,
+  "cost": 4,
   "effect": "buffAttack",
   "params": {
    "amount": 1
@@ -563,7 +563,7 @@
   "faction": "any",
   "rarity": "Ultra Rare",
   "spellKind": "regular",
-  "cost": 12,
+  "cost": 7,
   "effect": "areaDamage",
   "params": {
    "amount": 2
@@ -577,7 +577,7 @@
   "faction": "any",
   "rarity": "Common",
   "spellKind": "instant",
-  "cost": 4,
+  "cost": 2,
   "effect": "heal",
   "params": {
    "amount": 3
@@ -591,7 +591,7 @@
   "faction": "any",
   "rarity": "Uncommon",
   "spellKind": "instant",
-  "cost": 5,
+  "cost": 2,
   "effect": "shield",
   "params": {},
   "text": "Instant. Your creature takes no damage from the next hit this turn."
@@ -603,7 +603,7 @@
   "faction": "any",
   "rarity": "Ultra Rare",
   "spellKind": "instant",
-  "cost": 9,
+  "cost": 5,
   "effect": "healCommander",
   "params": {
    "amount": 4
@@ -617,12 +617,12 @@
   "faction": "any",
   "rarity": "Uncommon",
   "spellKind": "counter",
-  "cost": 5,
+  "cost": 3,
   "effect": "cancelSpell",
   "params": {
-   "maxCost": 5
+   "maxCost": 3
   },
-  "text": "Counterspell (Instant). Cancel an enemy spell that costs 5 or less."
+  "text": "Counterspell (Instant). Cancel an enemy spell that costs 3 or less."
  },
  {
   "id": "hold-it",
@@ -631,7 +631,7 @@
   "faction": "any",
   "rarity": "Rare",
   "spellKind": "counter",
-  "cost": 6,
+  "cost": 4,
   "effect": "cancelSummon",
   "params": {},
   "text": "Counterspell (Instant). Cancel an enemy creature as it's summoned; the card goes back to their hand."
@@ -643,7 +643,7 @@
   "faction": "any",
   "rarity": "Rare",
   "spellKind": "counter",
-  "cost": 8,
+  "cost": 5,
   "effect": "cancelSpell",
   "params": {},
   "text": "Counterspell (Instant). Cancel any enemy spell."
@@ -655,7 +655,7 @@
   "faction": "any",
   "rarity": "Ultra Rare",
   "spellKind": "counter",
-  "cost": 11,
+  "cost": 7,
   "effect": "mirror",
   "params": {},
   "text": "Counterspell (Instant). Cancel an enemy spell, then cast a free copy of it yourself."

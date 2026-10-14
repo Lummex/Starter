@@ -11,7 +11,7 @@ out('crystal-colors', [
   { id: 'green', hex: '#3ee06a', faction: 'goblins' },
   { id: 'blue', hex: '#3fa9ff', faction: 'gnomes' },
   { id: 'purple', hex: '#b45cff', faction: 'dwarves' },
-  { id: 'neutral', hex: '#dfe3ea', faction: null },
+  { id: 'neutral', hex: '#f2f6ff', faction: null },
 ]);
 out('commanders', [
   { id: 'grubnak', name: 'Grubnak the Goblin Boss', faction: 'goblins', health: 20, abilityText: 'Goblin creatures cost 1 less crystal (minimum 1).', ability: { type: 'creatureDiscount', faction: 'goblins', amount: 1 }, blurb: 'Scrappy, sneaky, chaotic. Cheap swarms and explosions.' },
@@ -20,7 +20,7 @@ out('commanders', [
   { id: 'borgo', name: 'Thane Borgo Anvilbottom', faction: 'dwarves', health: 20, abilityText: 'Your creatures get +1 Health.', ability: { type: 'bonusHealth', amount: 1 }, blurb: 'Tough, proud miners. Big health, heavy hits, holding ground.' },
 ]);
 out('abilities', {
-  gather: { name: 'Gatherer', text: 'Gathers +2 next to a site you control.' },
+  gather: { name: 'Gatherer', text: 'Makes 2 crystal flow next to a mine (Fighters make 1).' },
   tunnel: { name: 'Tunnel', text: 'Can be summoned onto any empty space next to a crystal site.' },
   frenzy: { name: 'Frenzy', text: '+1 Attack when next to another Goblin.' },
   ranged: { name: 'Ranged', text: 'Hits any enemy within 2 spaces in any direction, even over other creatures. No strike back.' },
@@ -84,18 +84,18 @@ const cards = C.map(([id, name, faction, rarity, role, cost, attack, health, mov
 }));
 // spells: id,name,rarity,kind,cost,effect,params,text
 const S = [
-  ['prospectors-prayer', "Prospector's Prayer", 'Common', 'regular', 4, 'gainCrystals', { amount: 7, needFewerSites: true }, 'Can only be cast if you control fewer sites than the enemy: gain 7 crystals of your faction color.'],
-  ['tunnel-rush', 'Tunnel Rush', 'Uncommon', 'regular', 4, 'tunnelMove', {}, 'Move one of your creatures to any empty space next to a crystal site; it can still attack this turn.'],
-  ['fireball', 'Fireball', 'Rare', 'regular', 5, 'damage', { amount: 3 }, '3 damage to one creature or the enemy Commander.'],
-  ['battle-cry', 'Battle Cry', 'Rare', 'regular', 7, 'buffAttack', { amount: 1 }, 'All your creatures get +1 Attack this turn.'],
-  ['meteor-strike', 'Meteor Strike', 'Ultra Rare', 'regular', 12, 'areaDamage', { amount: 2 }, '2 damage to every creature in a 3 x 3 area.'],
-  ['healing-light', 'Healing Light', 'Common', 'instant', 4, 'heal', { amount: 3 }, 'Heal one of your creatures by 3.'],
-  ['shield-bubble', 'Shield Bubble', 'Uncommon', 'instant', 5, 'shield', {}, 'Your creature takes no damage from the next hit this turn.'],
-  ['second-wind', 'Second Wind', 'Ultra Rare', 'instant', 9, 'healCommander', { amount: 4 }, 'Your Commander heals 4.'],
-  ['fizzle', 'Fizzle', 'Uncommon', 'counter', 5, 'cancelSpell', { maxCost: 5 }, 'Cancel an enemy spell that costs 5 or less.'],
-  ['hold-it', 'Hold It!', 'Rare', 'counter', 6, 'cancelSummon', {}, "Cancel an enemy creature as it's summoned; the card goes back to their hand."],
-  ['spell-snap', 'Spell Snap', 'Rare', 'counter', 8, 'cancelSpell', {}, 'Cancel any enemy spell.'],
-  ['mirror-hex', 'Mirror Hex', 'Ultra Rare', 'counter', 11, 'mirror', {}, 'Cancel an enemy spell, then cast a free copy of it yourself.'],
+  ['prospectors-prayer', "Prospector's Prayer", 'Common', 'regular', 1, 'gainCrystals', { amount: 3, needFewerSites: true }, 'Can only be cast if fewer mines are in your color than in the enemy color: gain 3 crystals of your own color.'],
+  ['tunnel-rush', 'Tunnel Rush', 'Uncommon', 'regular', 2, 'tunnelMove', {}, 'Move one of your creatures to any empty space next to a crystal site; it can still attack this turn.'],
+  ['fireball', 'Fireball', 'Rare', 'regular', 3, 'damage', { amount: 3 }, '3 damage to one creature or the enemy Commander.'],
+  ['battle-cry', 'Battle Cry', 'Rare', 'regular', 4, 'buffAttack', { amount: 1 }, 'All your creatures get +1 Attack this turn.'],
+  ['meteor-strike', 'Meteor Strike', 'Ultra Rare', 'regular', 7, 'areaDamage', { amount: 2 }, '2 damage to every creature in a 3 x 3 area.'],
+  ['healing-light', 'Healing Light', 'Common', 'instant', 2, 'heal', { amount: 3 }, 'Heal one of your creatures by 3.'],
+  ['shield-bubble', 'Shield Bubble', 'Uncommon', 'instant', 2, 'shield', {}, 'Your creature takes no damage from the next hit this turn.'],
+  ['second-wind', 'Second Wind', 'Ultra Rare', 'instant', 5, 'healCommander', { amount: 4 }, 'Your Commander heals 4.'],
+  ['fizzle', 'Fizzle', 'Uncommon', 'counter', 3, 'cancelSpell', { maxCost: 3 }, 'Cancel an enemy spell that costs 3 or less.'],
+  ['hold-it', 'Hold It!', 'Rare', 'counter', 4, 'cancelSummon', {}, "Cancel an enemy creature as it's summoned; the card goes back to their hand."],
+  ['spell-snap', 'Spell Snap', 'Rare', 'counter', 5, 'cancelSpell', {}, 'Cancel any enemy spell.'],
+  ['mirror-hex', 'Mirror Hex', 'Ultra Rare', 'counter', 7, 'mirror', {}, 'Cancel an enemy spell, then cast a free copy of it yourself.'],
 ];
 for (const [id, name, rarity, kind, cost, effect, params, t] of S)
   cards.push({ id, name, type: 'spell', faction: 'any', rarity, spellKind: kind, cost, effect, params, text: (kind === 'regular' ? 'Regular spell. ' : kind === 'instant' ? 'Instant. ' : 'Counterspell (Instant). ') + t });
@@ -130,12 +130,12 @@ out('starter-decks', decks);
 
 out('game-config', {
   phaseTimerSeconds: 50, timerHiddenSeconds: 40, countdownSeconds: 10, respondWindowSeconds: 5, autoSkipDelaySeconds: 1,
-  startingCrystals: 1, basicGatherers: { goblins: 'goblin-scrounger', gnomes: 'gnome-prospector', dwarves: 'dwarf-miner' }, siteIncome: 1, gathererBonus: 2, underdogBonus: 2, geodeIncome: 1,
+  startingCrystals: 0, basicGatherers: { goblins: 'goblin-scrounger', gnomes: 'gnome-prospector', dwarves: 'dwarf-miner' }, gathererFlow: 2, fighterFlow: 1, poolCap: 16, underdogBonus: 2, geodeIncome: 1,
   deckSize: 50, starterDeckMix: { creatures: 40, spells: 6, crystals: 4, basicGatherers: 8 }, openingHandSize: 5, secondPlayerExtraCards: 1,
   copyLimits: { Common: null, Uncommon: null, Rare: 3, 'Ultra Rare': 3, Collector: 3 },
   crystalCardLimit: 10, commanderHealth: 20, deckOutDamage: 1,
   crystalCardsPerTurn: 1,
-  upgradeCosts: { 'sharpened-weapons': 6, 'heavy-armor': 6, veteran: 10, 'champions-crown': 15 },
+  upgradeCosts: { 'sharpened-weapons': 3, 'heavy-armor': 3, veteran: 5, 'champions-crown': 8 },
   upgrades: { 'sharpened-weapons': { name: 'Sharpened Weapons', attack: 1 }, 'heavy-armor': { name: 'Heavy Armor', maxHealth: 3, heal: 3 }, veteran: { name: 'Veteran', move: 2 }, 'champions-crown': { name: "Champion's Crown", attack: 2, maxHealth: 3, heal: 3 } },
   typeAdvantageBonus: 1, rageBonus: 2,  frenzyBonus: 1, rallyBonus: 1, kaboomDamage: 2, overloadDamage: 1,
   eaterGuzzlerDamage: 2, eaterConduitDamage: 1, eaterDelverPenalty: 1,
@@ -146,17 +146,18 @@ out('tutorial', {
   playerCommander: 'grubnak', opponentCommander: 'sproingle',
   setup: {
     firstPlayer: 'player',
-    playerCrystals: { green: 1 }, opponentHealth: 6,
+    opponentHealth: 6,
     playerHand: ['goblin-scrounger', 'goblin-grunt', 'goblin-scrounger', 'soul-shard', 'fireball'],
     playerDeck: Array.from({ length: 20 }, (_, i) => ['goblin-grunt', 'goblin-pebbler', 'soul-shard', 'goblin-slinger', 'crystal-cluster', 'goblin-scrounger'][i % 6]),
     opponentHand: [], opponentDeck: Array(20).fill('gnome-prospector'),
     board: [{ cardId: 'gnome-prospector', owner: 'opponent', row: 2, col: 6 }],
   },
   tips: {
-    summon: 'Welcome! Drag a troop from your hand onto your back row (the bottom row, next to your Stronghold) to summon it. You have 1 crystal, enough for a cost-1 troop.',
-    move: 'Nice! Now march it forward: next turn, press Done to reach the Action phase, then drag your troop to an empty space. Each troop either moves OR attacks.',
-    capture: 'Walk next to a glowing crystal site in the middle. Have more troops around it than the enemy to take it, and watch it change to your color!',
-    spend: 'Crystals are your money. Summon another troop, cast a spell or upgrade one by tapping it in the Deploy phase to spend them. Your Gatherers next to a site you hold earn the most.',
+    summon: 'Welcome! Drag a troop from your hand onto your back row (the bottom row, next to your Stronghold) to summon it. You have 0 crystals, but a Gatherer is free when you are broke.',
+    move: 'Nice! Now march it forward: press Done to reach the Action phase, then drag your troop to an empty space. Gatherers may move the turn they appear. Each troop either moves OR attacks.',
+    swap: 'Next turn, play your Crystal card for 1 crystal and summon a second Gatherer. Then in the Action phase drag one of your troops onto the other to swap places (it must be within its move range).',
+    capture: 'Walk next to a crystal mine in the middle. Have more troops around it than the enemy and it turns your color. Every troop around a mine makes flow: Gatherer 2, Fighter 1, and your pool is set to your flow each turn.',
+    spend: 'Crystals are your money. Your pool resets to your flow every turn, so spend them! Summon a troop or upgrade one. Crystals of other colors are worth only half toward troops.',
     fight: 'Time to fight! In the Action phase drag a troop onto the enemy troop. Melee hits are simultaneous: both strike. Damage heals at the start of your next turn.',
     spell: 'Cast a spell! Drag Fireball from your hand onto an enemy (spells cost crystals of any color).',
     commander: 'Finally, move next to the enemy Stronghold and attack the Commander. Each hit removes health equal to the attacker\'s Attack. Make them retreat!',

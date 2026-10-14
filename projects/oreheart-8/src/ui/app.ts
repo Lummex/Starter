@@ -1,5 +1,5 @@
 import { Game } from '../game';
-import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, sitePays, maxMove, isActed } from '../engine';
+import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, creatureValue, spellCost, hasMovesLeft, incomePreview, nextPool, maxMove, isActed } from '../engine';
 import tutorialJson from '../content/tutorial.json';
 import { createBoardView, createFlatView, BoardView } from './scene';
 
@@ -8,7 +8,8 @@ const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '�
 const FSYM = (f: string) => SYM[FACTIONS[f]?.symbol] || '✦';
 const PHASE: Record<string, string> = { deploy: 'Deploy', action: 'Action', mulligan: 'Mulligan', draw: 'Draw', end: 'End', over: 'Over' };
 const ACTIVE = ['deploy', 'action'];
-const COLOR_NAMES = ['green', 'blue', 'purple'];
+const COLOR_NAMES = ['green', 'blue', 'purple', 'white'];
+const COLOR_HEX: Record<string, string> = { green: '#3ee06a', blue: '#3fa9ff', purple: '#b45cff', white: '#f2f6ff' };
 
 function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string | Node | null | undefined)[]): El {
   const e = document.createElement(tag);
@@ -147,7 +148,7 @@ export class App {
     };
     const board = svg('Picture of the board: enemy Stronghold at the top, three crystal sites in the middle, your Stronghold at the bottom',
       '<rect width="240" height="110" rx="10" fill="#4b3b2b"/><rect x="100" y="6" width="40" height="18" rx="4" fill="#77706a"/><text x="120" y="19" font-size="10" fill="#f4e9d0" text-anchor="middle">Enemy</text>' +
-      '<polygon points="50,46 60,56 50,70 40,56" fill="#3ee06a"/><polygon points="120,46 130,56 120,70 110,56" fill="#dfe3ea"/><polygon points="190,46 200,56 190,70 180,56" fill="#b45cff"/>' +
+      '<polygon points="50,46 60,56 50,70 40,56" fill="#3ee06a"/><polygon points="120,46 130,56 120,70 110,56" fill="#f2f6ff"/><polygon points="190,46 200,56 190,70 180,56" fill="#b45cff"/>' +
       '<rect x="100" y="88" width="40" height="18" rx="4" fill="#77706a"/><text x="120" y="101" font-size="10" fill="#f4e9d0" text-anchor="middle">You</text>');
     const crystals = svg('Picture of three crystals: green for Goblins, blue for Gnomes, purple for Dwarves',
       '<rect width="240" height="110" rx="10" fill="#26232f"/><polygon points="40,20 65,55 40,95 15,55" fill="#3ee06a"/><polygon points="120,20 145,55 120,95 95,55" fill="#3fa9ff"/><polygon points="200,20 225,55 200,95 175,55" fill="#b45cff"/>' +
@@ -159,8 +160,8 @@ export class App {
       h('h1', { class: 'section cinzel' }, 'Rules'),
       sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
       sec('The Board', 'A hidden 7×7 grid. The enemy is at the top, you are at the bottom. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal sites sit in the middle.', board),
-      sec('Crystals', 'Control a site by having more creatures around it than the enemy. Each site you control gives 1 crystal, and your Gatherers next to it give 2 more. The Stronghold gives nothing, so you start the match with 1 crystal (enough for a cost-1 Gatherer). You get 2 extra if you control no sites while the enemy holds one. The plus-N-next-turn counter shows your coming income, and tapping a crystal site shows who holds it and what it pays.', crystals),
-      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, play one Crystal card and upgrade creatures. Gatherers can move (but not attack) the turn they are summoned. Action: each creature either moves one space OR attacks, never both (Charge creatures can do both). Tap Done to finish a phase; phases with no moves left end by themselves. After 40 seconds a 10-second countdown starts, and at 0 the phase ends. Gatherer swap: once a turn, with no Gatherer in hand, discard a card to pull a basic Gatherer from your deck. Free Gatherer: with 0 crystals, no site and no Gatherer on the battlefield, a basic Gatherer is free. At the start of your turn all your creatures heal back to full Health.'),
+      sec('Crystals', 'Crystal Flow: every creature standing on the 8 spaces around a mine makes flow each turn, a Gatherer 2 and a Fighter 1 (a creature touching two mines counts at only one). At the start of your turn your pool is SET to your flow, it is not added, and the pool never holds more than 16. Unspent crystals stay usable during the enemy turn. The side with more creatures at a mine gives it its color (green, blue or purple); a tie makes it neutral white. All creatures at a mine make crystals in that mine\'s color. Creatures and upgrades get full value from crystals of their own color but only half from other colors or white (rounded down); spells take any color at full value, and the game pays the cheapest way. You start with 0 crystals. The Stronghold makes none. If you hold no mine while the enemy holds one you get 2 bonus crystals of your color. The plus-N-next-turn counter shows your coming pool, and tapping a mine shows who holds it, its color and each side\'s flow.', crystals),
+      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, play one Crystal card and upgrade creatures. Gatherers can move (but not attack) the turn they are summoned. Action: each creature either moves one space OR attacks, never both (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places (only the dragged creature uses its action). Tap Done to finish a phase; phases with no moves left end by themselves. After 40 seconds a 10-second countdown starts, and at 0 the phase ends. Gatherer swap: once a turn, with no Gatherer in hand, discard a card to pull a basic Gatherer from your deck. Free Gatherer: with no flow, no mine in your color and no Gatherer on the battlefield, a basic Gatherer is free. At the start of your turn all your creatures heal back to full Health.'),
       sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals of any color. Instants can answer the enemy during a "Respond?" window, and counterspells cancel spells or summons.'),
       h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Back', '', () => this.showMenu())));
@@ -254,7 +255,7 @@ export class App {
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
     const menuBtn = btn('Menu', 'menu-btn', () => this.showMatchMenu());
     r.tip = h('aside', { class: 'tip', 'aria-label': 'Tutorial tip', hidden: true });
-    const crystals = h('div', { class: 'crystals' }, crystalChip('green'), crystalChip('blue'), crystalChip('purple'));
+    const crystals = h('div', { class: 'crystals' }, crystalChip('green'), crystalChip('blue'), crystalChip('purple'), crystalChip('white'));
     const match = h('main', { class: 'match' },
       r.board,
       h('div', { class: 'hud hud-left' }, crystals, r.income,
@@ -267,6 +268,8 @@ export class App {
     // board layers
     r.cells = new Map<string, El>();
     r.sites = [];
+    r.rings = [];
+    r.flows = [];
     r.view = null;
     try { this.view = createBoardView(r.board, this.low); } catch { this.view = null; }
     if (!this.view) this.view = createFlatView(r.board);
@@ -276,6 +279,11 @@ export class App {
       r.board.append(c);
     }
     (CONFIG.sites as number[][]).forEach(([row, col], i) => {
+      const ring = h('div', { class: 'mine-ring', 'aria-hidden': 'true' });
+      ring.dataset.row = String(row); ring.dataset.col = String(col);
+      const fl = h('div', { class: 'mine-flow', role: 'img', 'aria-label': `Mine flow, column ${col}` }, '+0 / +0');
+      fl.dataset.row = String(row); fl.dataset.col = String(col);
+      r.rings.push(ring); r.flows.push(fl); r.board.append(ring, fl);
       const m = h('button', { type: 'button', class: 'site-mark', 'aria-label': `Crystal site, column ${col}`, onclick: () => this.openSite(i) });
       m.dataset.row = String(row); m.dataset.col = String(col);
       m.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -308,6 +316,14 @@ export class App {
       this.place(el, row, col);
     }
     r.sites.forEach((m: El) => this.place(m, +m.dataset.row!, +m.dataset.col!));
+    r.rings.forEach((m: El, i: number) => {
+      const col = +m.dataset.col!;
+      const a = this.view.cellRect(3, col - 1), b = this.view.cellRect(5, col + 1), c = this.view.cellRect(3, col + 1), d = this.view.cellRect(5, col - 1);
+      const x0 = Math.min(a.x, d.x), x1 = Math.max(c.x + c.w, b.x + b.w), y0 = Math.min(a.y, c.y), y1 = Math.max(b.y + b.h, d.y + d.h);
+      m.style.left = x0 + 'px'; m.style.top = y0 + 'px'; m.style.width = x1 - x0 + 'px'; m.style.height = y1 - y0 + 'px';
+      const f = r.flows[i] as El;
+      f.style.left = (x0 + x1) / 2 + 'px'; f.style.top = y0 + 'px';
+    });
     this.place(r.strong.player, 7, 4);
     this.place(r.strong.opponent, 1, 4);
     for (const el of this.tokens.values()) this.place(el, +el.dataset.row!, +el.dataset.col!);
@@ -350,7 +366,11 @@ export class App {
     r.myHealth.textContent = String(me.health);
     r.enemyDeck.replaceChildren(String(en.deck.length));
     r.myDeck.textContent = String(me.deck.length);
-    for (const c of COLOR_NAMES) r['cr_' + c].textContent = String(me.crystals[c]);
+    for (const c of COLOR_NAMES) {
+      r['cr_' + c].textContent = String(me.crystals[c]);
+      const nxt = st.phase === 'mulligan' ? 0 : nextPool(st, 'player')[c];
+      r['cr_' + c].dataset.flow = nxt ? `+${nxt}` : '';
+    }
     r.income.textContent = `+${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')} next turn`;
     // enemy hand arc
     const n = en.hand.length;
@@ -451,8 +471,10 @@ export class App {
     if (!st) return;
     const s = st.sites[i];
     const who = s.controller === 'player' ? 'You' : s.controller === 'opponent' ? 'Enemy' : 'Nobody';
-    this.dialog('Crystal site', [h('h2', {}, 'Crystal site'), h('p', { style: 'text-align:center;margin:4px 0' }, `Controlled by: ${who}`),
-      h('p', { style: 'text-align:center;margin:4px 0' }, `Pays +${sitePays(st, s)} per turn`),
+    const color = s.color.charAt(0).toUpperCase() + s.color.slice(1);
+    const line = (t: string) => h('p', { style: 'text-align:center;margin:4px 0' }, t);
+    this.dialog('Crystal site', [h('h2', {}, 'Crystal site'), line(`Controlled by: ${who}`), line(`Color: ${color}`),
+      line(`Your flow: +${s.flow.player}`), line(`Enemy flow: +${s.flow.opponent}`),
       h('div', { class: 'row' }, btn('Close', 'primary', () => this.dialogs[this.dialogs.length - 1]?.remove()))]);
   }
 
@@ -506,7 +528,10 @@ export class App {
       const m = this.r.sites[i] as El;
       const sym = s.controller ? FSYM(st.players[s.controller].faction) : '';
       m.textContent = this.view?.is3D ? sym : '💎' + sym;
-      m.style.color = s.color ? ({ green: '#3ee06a', blue: '#3fa9ff', purple: '#b45cff' } as any)[s.color] : '#dfe3ea';
+      m.style.color = COLOR_HEX[s.color] || COLOR_HEX.white;
+      const ring = this.r.rings[i] as El;
+      ring.style.setProperty('--mine', COLOR_HEX[s.color] || COLOR_HEX.white);
+      this.r.flows[i].textContent = `+${s.flow.player} / +${s.flow.opponent}`;
     });
   }
 
@@ -541,11 +566,10 @@ export class App {
   renderHand(st: any) {
     const me = st.players.player;
     const hand = this.r.hand as El;
-    const fcol = FACTIONS[me.faction].crystal;
-    const tot = me.crystals.green + me.crystals.blue + me.crystals.purple;
+    const tot = me.crystals.green + me.crystals.blue + me.crystals.purple + me.crystals.white;
     const hidden = st.phase === 'mulligan';
     const costOf = (c: any) => (c.type === 'creature' ? creatureCost(st, 'player', c) : c.type === 'spell' ? spellCost(st, 'player', c) : 0);
-    const affordable = (c: any) => (c.type === 'creature' ? me.crystals[fcol] >= costOf(c) : c.type === 'spell' ? tot >= costOf(c) : true);
+    const affordable = (c: any) => (c.type === 'creature' ? creatureValue(me, c.faction) >= costOf(c) : c.type === 'spell' ? tot >= costOf(c) : true);
     const key = hidden ? 'x' : me.hand.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId])).join(',');
     if (key === this.handKey) return;
     this.handKey = key;
@@ -752,7 +776,7 @@ export class App {
     }
   }
   clearGlow() {
-    for (const el of this.r.cells.values() as Iterable<El>) el.classList.remove('glow', 'glow-attack', 'hover');
+    for (const el of this.r.cells.values() as Iterable<El>) el.classList.remove('glow', 'glow-attack', 'glow-swap', 'hover');
     this.r.board.classList.remove('drop-any');
   }
   cellOfTarget(t: any) { return t.commander ? { row: t.commander === 'player' ? 7 : 1, col: 4 } : { row: t.row, col: t.col }; }
@@ -894,7 +918,10 @@ export class App {
       onStart: () => {
         if (!mine || this.respDlg) return false;
         const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
-        this.setGlow(legal.filter((a: any) => a.type === 'move').map((a: any) => ({ row: a.row, col: a.col })), 'glow');
+        const isMove = (a: any) => a.type === 'move';
+        const swapAt = (a: any) => st.board.creatures.some((o: any) => o.row === a.row && o.col === a.col);
+        this.setGlow(legal.filter((a: any) => isMove(a) && !swapAt(a)).map((a: any) => ({ row: a.row, col: a.col })), 'glow');
+        this.setGlow(legal.filter((a: any) => isMove(a) && swapAt(a)).map((a: any) => ({ row: a.row, col: a.col })), 'glow-swap');
         this.setGlow(legal.filter((a: any) => a.type === 'attack').map((a: any) => this.cellOfTarget(a.target)), 'glow-attack');
         if (!legal.some((a: any) => a.type === 'move' || a.type === 'attack')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves OR attacks)' : 'Creatures move and attack in the Action phase');
         return true;

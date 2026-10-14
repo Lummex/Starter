@@ -45,8 +45,11 @@ const makeCard = (s: any, cardId: string) => ({ uid: 'k' + s.nextUid++, cardId }
 // ---------------------------------------------------------------- costs
 const isGatherer = (card: any) => card.role === 'Gatherer';
 export const basicGatherer = (faction: string): string => CONFIG.basicGatherers[faction];
+const ALL_COLORS = ['green', 'blue', 'purple', 'white'];
+const total = (pl: any) => pl.crystals.green + pl.crystals.blue + pl.crystals.purple + pl.crystals.white;
+const flowTotal = (f: any) => f.green + f.blue + f.purple + f.white;
 const goesFree = (s: any, p: Side, card: any) =>
-  card.id === basicGatherer(card.faction) && total(s.players[p]) === 0 && sitesControlled(s, p) === 0 &&
+  card.id === basicGatherer(card.faction) && flowTotal(s.players[p].flow) === 0 && sitesControlled(s, p) === 0 &&
   !s.board.creatures.some((c: any) => c.owner === p && isGatherer(CARDS[c.cardId]));
 export function creatureCost(s: any, p: Side, card: any) {
   if (goesFree(s, p, card)) return 0;
@@ -61,9 +64,28 @@ export function spellCost(s: any, p: Side, card: any) {
   const d = bonusOf(s, p, 'spellDiscount');
   return d ? Math.max(1, card.cost - d.amount) : card.cost;
 }
-const total = (pl: any) => pl.crystals.green + pl.crystals.blue + pl.crystals.purple;
+/** Off-color crystals in payment order: white, then green/blue/purple skipping the own color. */
+const offOrder = (faction: string) => ['white'].concat(COLOR_ORDER.filter((c) => c !== faction));
+/** Crystals toward a creature or upgrade: own color 1 each, everything else ½ each (rounded down in total). */
+export function creatureValue(pl: any, faction: string) {
+  const own = pl.crystals[FACTIONS[faction].crystal];
+  return own + Math.floor((total(pl) - own) / 2);
+}
+export const canPayCreature = (pl: any, faction: string, cost: number) => creatureValue(pl, faction) >= cost;
+function payCreature(pl: any, faction: string, cost: number) {
+  const fc = FACTIONS[faction].crystal;
+  const own = Math.min(pl.crystals[fc], cost);
+  pl.crystals[fc] -= own;
+  let others = (cost - own) * 2;
+  for (const col of offOrder(fc)) {
+    const t = Math.min(pl.crystals[col], others);
+    pl.crystals[col] -= t;
+    others -= t;
+  }
+}
+/** Spells take any color at full value: white first, then off-colors, then the own color. */
 function paySpell(pl: any, faction: string, cost: number) {
-  const order = COLOR_ORDER.filter((c) => c !== faction).concat(faction);
+  const order = offOrder(FACTIONS[faction].crystal).concat(FACTIONS[faction].crystal);
   let left = cost;
   for (const col of order) {
     const t = Math.min(pl.crystals[col], left);
@@ -71,6 +93,22 @@ function paySpell(pl: any, faction: string, cost: number) {
     left -= t;
   }
 }
+/** Pool cap: excess comes off white first, then off-colors, then the own color. */
+function capPool(pl: any, faction: string) {
+  const fc = FACTIONS[faction].crystal;
+  let over = total(pl) - CONFIG.poolCap;
+  for (const col of offOrder(fc).concat(fc)) {
+    if (over <= 0) break;
+    const t = Math.min(pl.crystals[col], over);
+    pl.crystals[col] -= t;
+    over -= t;
+  }
+}
+const gain = (s: any, p: Side, color: string, n: number) => {
+  const pl = s.players[p];
+  pl.crystals[color] += n;
+  capPool(pl, pl.faction);
+};
 
 // ---------------------------------------------------------------- creation
 export function createMatch(opts: any = {}) {
@@ -79,7 +117,7 @@ export function createMatch(opts: any = {}) {
   const s: any = {
     turn: 0, activePlayer: 'player', priority: 'player', phase: 'mulligan', winner: null,
     players: {}, board: { creatures: [] },
-    sites: SITES.map(([row, col]) => ({ row, col, controller: null, color: null })),
+    sites: SITES.map(([row, col]) => ({ row, col, controller: null, color: 'white', flow: { player: 0, opponent: 0 } })),
     pendingResponse: null, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
     mulliganDone: { player: false, opponent: false }, tutorial: opts.tutorial ? { step: 'summon' } : null,
     flags: { battleCry: null, crystalsPlayed: 0, swapped: false, discount: { player: 0, opponent: 0 } },
@@ -89,7 +127,7 @@ export function createMatch(opts: any = {}) {
     const cmd = who === 'player' ? pcmd : ocmd;
     s.players[who] = {
       commanderId: cmd.id, faction: cmd.faction, health: cmd.health, maxHealth: cmd.health,
-      crystals: { green: 0, blue: 0, purple: 0 }, hand: [], deck: [], discard: [], geodes: 0,
+      crystals: { green: 0, blue: 0, purple: 0, white: 0 }, flow: { green: 0, blue: 0, purple: 0, white: 0 }, hand: [], deck: [], discard: [], geodes: 0,
     };
   });
   for (const who of ['player', 'opponent'] as Side[]) {
@@ -116,7 +154,7 @@ export function createMatch(opts: any = {}) {
     const pl = s.players[who];
     pl.hand = (setup[who + 'Hand'] || []).map((id: string) => makeCard(s, id));
     const cr = setup[who + 'Crystals'] || {};
-    pl.crystals = { green: cr.green || 0, blue: cr.blue || 0, purple: cr.purple || 0 };
+    pl.crystals = { green: cr.green || 0, blue: cr.blue || 0, purple: cr.purple || 0, white: cr.white || 0 };
     const h = setup[who + 'Health'];
     if (h != null) { pl.health = h; if (h > pl.maxHealth) pl.maxHealth = h; }
   }
@@ -130,6 +168,7 @@ export function createMatch(opts: any = {}) {
   recomputeSites(s, []);
   return s;
 }
+
 
 function finishSetup(s: any, ev: any[]) {
   const coin = nextRand(s);
@@ -155,61 +194,81 @@ function drawCard(s: any, who: Side, ev: any[]) {
   ev.push({ type: 'draw', player: who, uid: card.uid, cardId: card.cardId });
 }
 
-function controllersNow(s: any): (Side | null)[] {
-  return s.sites.map((site: any) => {
-    const n = { player: 0, opponent: 0 };
-    for (const c of s.board.creatures) if (cheb(c, site) <= 1) n[c.owner as Side]++;
-    return n.player > n.opponent ? 'player' : n.opponent > n.player ? 'opponent' : null;
-  });
+/** Assign each creature standing around a mine to one mine (a creature touching two counts at only one). */
+function assignMines(s: any) {
+  const n = SITES.length;
+  const count = SITES.map(() => ({ player: 0, opponent: 0 }));
+  const assigned: { c: any; i: number }[] = [];
+  const shared: any[] = [];
+  const sorted = [...s.board.creatures].sort((a: any, b: any) => a.row - b.row || a.col - b.col);
+  for (const c of sorted) {
+    const near: number[] = [];
+    for (let i = 0; i < n; i++) if (cheb(c, { row: SITES[i][0], col: SITES[i][1] }) <= 1) near.push(i);
+    if (near.length === 1) { count[near[0]][c.owner as Side]++; assigned.push({ c, i: near[0] }); }
+    else if (near.length > 1) shared.push({ c, near });
+  }
+  for (const { c, near } of shared) {
+    const me = c.owner as Side, foe = other(me);
+    let best = near[0];
+    for (const i of near.slice(1)) {
+      const b = count[best], x = count[i];
+      if (x[me] > b[me] || (x[me] === b[me] && x[foe] > b[foe])) best = i;
+    }
+    count[best][me]++;
+    assigned.push({ c, i: best });
+  }
+  return { count, assigned };
 }
 
+/** Recompute mine colors, per-mine flow and each player's flow from the current board. */
 export function recomputeSites(s: any, ev: any[]) {
-  const ctls = controllersNow(s);
+  const { count, assigned } = assignMines(s);
+  const flow: any = { player: { green: 0, blue: 0, purple: 0, white: 0 }, opponent: { green: 0, blue: 0, purple: 0, white: 0 } };
+  const site = (i: number) => s.sites[i];
   for (let i = 0; i < s.sites.length; i++) {
-    const site = s.sites[i];
-    const ctl: Side | null = ctls[i];
-    const color = ctl ? colorOf(s, ctl) : null;
-    if (ctl !== site.controller) ev.push({ type: 'siteControl', row: site.row, col: site.col, controller: ctl, color });
-    site.controller = ctl;
-    site.color = color;
+    const ctl: Side | null = count[i].player > count[i].opponent ? 'player' : count[i].opponent > count[i].player ? 'opponent' : null;
+    const color = ctl ? colorOf(s, ctl) : 'white';
+    if (ctl !== site(i).controller) ev.push({ type: 'siteControl', row: site(i).row, col: site(i).col, controller: ctl, color });
+    site(i).controller = ctl;
+    site(i).color = color;
+    site(i).flow = { player: 0, opponent: 0 };
+  }
+  for (const { c, i } of assigned) {
+    const f = CARDS[c.cardId].role === 'Gatherer' ? CONFIG.gathererFlow : CONFIG.fighterFlow;
+    site(i).flow[c.owner as Side] += f;
+    flow[c.owner as Side][site(i).color] += f;
+  }
+  for (const who of ['player', 'opponent'] as Side[]) {
+    flow[who][colorOf(s, who)] += s.players[who].geodes * CONFIG.geodeIncome;
+    s.players[who].flow = flow[who];
   }
 }
 
-function incomeFor(s: any, who: Side, ctls: (Side | null)[]) {
-  let inc = 0;
-  let controlled = 0;
-  let enemy = 0;
-  s.sites.forEach((site: any, i: number) => {
-    if (ctls[i] === other(who)) enemy++;
-    if (ctls[i] !== who) return;
-    controlled++;
-    inc += CONFIG.siteIncome;
-    for (const c of s.board.creatures)
-      if (c.owner === who && CARDS[c.cardId].role === 'Gatherer' && cheb(c, site) <= 1) inc += CONFIG.gathererBonus;
-  });
-  if (controlled === 0 && enemy > 0) inc += CONFIG.underdogBonus;
-  inc += s.players[who].geodes * CONFIG.geodeIncome;
-  return inc;
+/** Pool `who` gets at the start of their next turn if the board stayed as it is now (flow + underdog, capped). */
+export function nextPool(s: any, who: Side) {
+  const pl = s.players[who];
+  const tmp = { crystals: { ...pl.flow } };
+  const enemy = s.sites.filter((x: any) => x.controller === other(who)).length;
+  if (sitesControlled(s, who) === 0 && enemy > 0) tmp.crystals[colorOf(s, who)] += CONFIG.underdogBonus;
+  capPool(tmp, pl.faction);
+  return tmp.crystals;
 }
 
-/** Income `who` would collect if their next turn started with the board as it is now. */
+/** Total crystals `who` would have at the start of their next turn (the "+N next turn" number). */
 export function incomePreview(s: any, who: Side) {
-  return incomeFor(s, who, controllersNow(s));
+  const c = nextPool(s, who);
+  return c.green + c.blue + c.purple + c.white;
 }
 
-/** What a site pays its controller per turn (1 + 2 per adjacent own Gatherer; 0 when uncontrolled). */
+/** What a mine makes for its controller's side per turn (that side's flow at the mine). */
 export function sitePays(s: any, site: any) {
-  if (!site.controller) return 0;
-  let n = CONFIG.siteIncome;
-  for (const c of s.board.creatures) if (c.owner === site.controller && CARDS[c.cardId].role === 'Gatherer' && cheb(c, site) <= 1) n += CONFIG.gathererBonus;
-  return n;
+  return site.controller ? site.flow[site.controller] : 0;
 }
 
 function collectIncome(s: any, who: Side, ev: any[]) {
   const pl = s.players[who];
-  const inc = incomeFor(s, who, s.sites.map((x: any) => x.controller));
-  pl.crystals[colorOf(s, who)] += inc;
-  ev.push({ type: 'income', player: who, amount: inc, color: colorOf(s, who) });
+  pl.crystals = nextPool(s, who);
+  ev.push({ type: 'income', player: who, amount: total(pl), crystals: { ...pl.crystals } });
 }
 
 function startTurn(s: any, ev: any[]) {
@@ -374,6 +433,7 @@ export function summonSpaces(s: any, p: Side, card: any): { row: number; col: nu
   return out;
 }
 
+/** Spaces `c` can move to; a space held by one of its own creatures is a swap. */
 export function moveDests(s: any, c: any): { row: number; col: number }[] {
   if (c.hasMoved || c.hasAttacked || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && CARDS[c.cardId].role !== 'Gatherer')) return [];
   const m = maxMove(c);
@@ -381,7 +441,9 @@ export function moveDests(s: any, c: any): { row: number; col: number }[] {
   for (let dr = -m; dr <= m; dr++) for (let dc = -m; dc <= m; dc++) {
     if (!dr && !dc) continue;
     const row = c.row + dr, col = c.col + dc;
-    if (!emptyCell(s, row, col)) continue;
+    const there = creatureAt(s, row, col);
+    const free = emptyCell(s, row, col);
+    if (!free && !(there && there.owner === c.owner && inBounds(row, col))) continue;
     const d = Math.max(Math.abs(dr), Math.abs(dc));
     if (d === 1) { out.push({ row, col }); continue; }
     let ok = false;
@@ -448,7 +510,7 @@ function resolveSpell(s: any, p: Side, card: any, target: any, to: any, ev: any[
   const pl = s.players[p];
   const t = target && target.row ? creatureAt(s, target.row, target.col) : null;
   switch (card.effect) {
-    case 'gainCrystals': pl.crystals[colorOf(s, p)] += card.params.amount; break;
+    case 'gainCrystals': gain(s, p, colorOf(s, p), card.params.amount); break;
     case 'tunnelMove': {
       if (!t || t.owner !== p) break;
       const dest = to && emptyCell(s, to.row, to.col) ? to : tunnelCells(s)[0];
@@ -537,7 +599,7 @@ const hasEater = (s: any, p: Side) => s.board.creatures.some((c: any) => c.owner
 function heartCombos() {
   const n = CARDS['heart-of-the-fallen'].params.amount;
   const out: any[] = [];
-  for (let g = 0; g <= n; g++) for (let b = 0; g + b <= n; b++) out.push({ green: g, blue: b, purple: n - g - b });
+  for (let g = 0; g <= n; g++) for (let b = 0; g + b <= n; b++) for (let p = 0; g + b + p <= n; p++) out.push({ green: g, blue: b, purple: p, white: n - g - b - p });
   return out;
 }
 
@@ -560,12 +622,11 @@ export function legalActions(s: any): any[] {
   }
   if (who !== s.activePlayer) return [surrender];
   const ph = s.phase;
-  const fcol = colorOf(s, who);
   const seenCards = new Set<string>();
   for (const h of pl.hand) {
     const card = CARDS[h.cardId];
     if (card.type === 'creature' && ph === 'deploy') {
-      if (pl.crystals[fcol] < creatureCost(s, who, card)) continue;
+      if (!canPayCreature(pl, card.faction, creatureCost(s, who, card))) continue;
       if (card.unique && s.board.creatures.some((c: any) => c.owner === who && c.cardId === card.id)) continue;
       for (const sp of summonSpaces(s, who, card)) out.push({ type: 'summon', uid: h.uid, row: sp.row, col: sp.col });
     } else if (card.type === 'spell' && card.spellKind !== 'counter' && ['deploy', 'action'].includes(ph)) {
@@ -581,7 +642,7 @@ export function legalActions(s: any): any[] {
   }
   if (ph === 'deploy') {
     for (const c of s.board.creatures) if (c.owner === who && !c.upgrade)
-      for (const u of Object.keys(CONFIG.upgradeCosts)) if (pl.crystals[fcol] >= upgradeCost(u)) out.push({ type: 'upgrade', creatureUid: c.uid, upgrade: u });
+      for (const u of Object.keys(CONFIG.upgradeCosts)) if (canPayCreature(pl, pl.faction, upgradeCost(u))) out.push({ type: 'upgrade', creatureUid: c.uid, upgrade: u });
   }
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of moveDests(s, c)) out.push({ type: 'move', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const t of attackTargets(s, c)) out.push({ type: 'attack', creatureUid: c.uid, target: t });
@@ -617,11 +678,11 @@ const eq = (a: any, b: any) => JSON.stringify(a) === JSON.stringify(b);
 const OPTIONAL = new Set(['target', 'to', 'colors']);
 function normalize(a: any) {
   if (a && a.type === 'playCrystal' && Array.isArray(a.colors)) {
-    const colors = { green: 0, blue: 0, purple: 0 };
+    const colors = { green: 0, blue: 0, purple: 0, white: 0 };
     for (const c of a.colors) if (c in colors) (colors as any)[c]++;
     return { ...a, colors };
   }
-  if (a && a.type === 'playCrystal' && a.colors) return { ...a, colors: { green: a.colors.green || 0, blue: a.colors.blue || 0, purple: a.colors.purple || 0 } };
+  if (a && a.type === 'playCrystal' && a.colors) return { ...a, colors: { green: a.colors.green || 0, blue: a.colors.blue || 0, purple: a.colors.purple || 0, white: a.colors.white || 0 } };
   return a;
 }
 function matchLegal(s: any, a: any): any | null {
@@ -682,7 +743,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     case 'respond': {
       const pend = s.pendingResponse;
       const card = CARDS[hand(l.uid).cardId];
-      pl.crystals && paySpell(pl, colorOf(s, who), spellCost(s, who, card));
+      paySpell(pl, pl.faction, spellCost(s, who, card));
       const used = takeHand(l.uid);
       pl.discard.push(used);
       ev.push({ type: 'respond', player: who, cardId: card.id });
@@ -705,7 +766,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     case 'summon': {
       const h = takeHand(l.uid);
       const card = CARDS[h.cardId];
-      pl.crystals[colorOf(s, who)] -= creatureCost(s, who, card);
+      payCreature(pl, card.faction, creatureCost(s, who, card));
       if (s.flags.discount[who]) s.flags.discount[who] = 0;
       openWindow(s, { kind: 'summon', actor: who, card: h, row: l.row, col: l.col }, ev);
       break;
@@ -713,7 +774,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     case 'cast': {
       const h = takeHand(l.uid);
       const card = CARDS[h.cardId];
-      paySpell(pl, colorOf(s, who), spellCost(s, who, card));
+      paySpell(pl, pl.faction, spellCost(s, who, card));
       openWindow(s, { kind: 'cast', actor: who, card: h, target: l.target || null, to: l.to || null }, ev);
       break;
     }
@@ -731,12 +792,13 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       }
       s.flags.crystalsPlayed++;
       pl.discard.push(h);
-      if (card.effect === 'gain') pl.crystals[fc] += card.params.amount;
+      if (card.effect === 'gain') gain(s, who, fc, card.params.amount);
       else if (card.effect === 'geode') pl.geodes++;
-      else if (card.effect === 'motherlode') { pl.crystals[fc] += card.params.amount; s.flags.discount[who] += card.params.discount; }
+      else if (card.effect === 'motherlode') { gain(s, who, fc, card.params.amount); s.flags.discount[who] += card.params.discount; }
       else if (card.effect === 'chooseColors') {
         const cols = act.colors || { [fc]: card.params.amount };
-        for (const k of COLOR_ORDER) pl.crystals[k] += cols[k] || 0;
+        for (const k of ALL_COLORS) pl.crystals[k] += cols[k] || 0;
+        capPool(pl, pl.faction);
       }
       ev.push({ type: 'playCrystal', player: who, cardId: card.id });
       break;
@@ -744,7 +806,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     case 'upgrade': {
       const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
       const u = CONFIG.upgrades[l.upgrade];
-      pl.crystals[colorOf(s, who)] -= upgradeCost(l.upgrade);
+      payCreature(pl, pl.faction, upgradeCost(l.upgrade));
       c.upgrade = l.upgrade;
       if (u.attack) c.attack += u.attack;
       if (u.maxHealth) c.maxHealth += u.maxHealth;
@@ -754,7 +816,13 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     }
     case 'move': {
       const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
-      ev.push({ type: 'move', uid: c.uid, from: { row: c.row, col: c.col }, to: { row: l.row, col: l.col } });
+      const from = { row: c.row, col: c.col };
+      const mate = creatureAt(s, l.row, l.col);
+      ev.push({ type: 'move', uid: c.uid, from, to: { row: l.row, col: l.col } });
+      if (mate) {
+        ev.push({ type: 'move', uid: mate.uid, from: { row: mate.row, col: mate.col }, to: from }, { type: 'swap', uid: c.uid, withUid: mate.uid });
+        mate.row = from.row; mate.col = from.col;
+      }
       c.movedDistance = cheb(c, l);
       c.row = l.row; c.col = l.col; c.hasMoved = true;
       break;
@@ -799,11 +867,12 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       break;
     }
   }
+  recomputeSites(s, ev);
   return { ok: true, state: s, events: ev };
 }
 
-const TUTORIAL_ORDER = ['summon', 'move', 'capture', 'spend', 'fight', 'spell', 'commander', 'complete'];
-function advanceTutorial(s: any, act: any, actor: Side) {
+const TUTORIAL_ORDER = ['summon', 'move', 'swap', 'capture', 'spend', 'fight', 'spell', 'commander', 'complete'];
+function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
   const t = s.tutorial;
   if (!t || t.step === 'complete') return;
   const next = () => { t.step = TUTORIAL_ORDER[TUTORIAL_ORDER.indexOf(t.step) + 1]; };
@@ -811,6 +880,7 @@ function advanceTutorial(s: any, act: any, actor: Side) {
   switch (t.step) {
     case 'summon': if (mine && act.type === 'summon') next(); break;
     case 'move': if (mine && act.type === 'move') next(); break;
+    case 'swap': if (mine && events.some((e: any) => e.type === 'swap')) next(); break;
     case 'capture': if (s.sites.some((x: any) => x.controller === 'player')) next(); break;
     case 'spend': if (mine && ['summon', 'upgrade', 'cast'].includes(act.type)) next(); break;
     case 'fight': if (mine && act.type === 'attack' && act.target && act.target.row) next(); break;
@@ -822,7 +892,7 @@ function advanceTutorial(s: any, act: any, actor: Side) {
 export function applyAction(state: any, action: any): { ok: boolean; state: any; events: any[]; error?: string } {
   const actor: Side = state && state.priority;
   const r = applyActionInner(state, action);
-  if (r.ok && r.state.tutorial) { advanceTutorial(r.state, action, actor); if (r.state.winner === 'player') r.state.tutorial.step = 'complete'; }
+  if (r.ok && r.state.tutorial) { advanceTutorial(r.state, action, actor, r.events); if (r.state.winner === 'player') r.state.tutorial.step = 'complete'; }
   return r;
 }
 

@@ -1,5 +1,5 @@
 // Computer opponent. Uses only legalActions() and read-only engine helpers; never mutates state.
-import { legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt } from '../engine';
+import { legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, creatureValue } from '../engine';
 
 export type Rand = () => number;
 export function makeRand(seed: number): Rand {
@@ -23,7 +23,12 @@ function posValue(s: any, who: string, card: any, row: number, col: number, uid?
   let v = 0;
   if (card.role === 'Gatherer') {
     const adj = SITES.map((x, i) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
-    if (adj.length) v += 30 + adj.length * 5 + (adj.some(({ i }) => s.sites[i].controller !== foe) ? 8 : 0);
+    if (adj.length) {
+      v += 30 + adj.length * 5 + (adj.some(({ i }) => s.sites[i].controller !== foe) ? 8 : 0);
+      // don't pile up: a crowded mine (beyond 3 own creatures) is worth less so Fighters can get through
+      const crowd = Math.max(...adj.map(({ x }) => s.board.creatures.filter((c: any) => c.owner === who && cheb(c, x) <= 1 && !(c.row === row && c.col === col)).length));
+      v -= 7 * Math.max(0, crowd - 2);
+    }
     else v -= 3 * Math.min(...SITES.map((x) => cheb(here, x)));
     v -= 12 * enemies.filter((e: any) => cheb(e, here) <= 2).length;
   } else {
@@ -32,7 +37,7 @@ function posValue(s: any, who: string, card: any, row: number, col: number, uid?
     if (cheb(here, e) <= 1) v += 40;
     if (card.abilities.includes('ranged') && cheb(here, e) <= 2) v += 30;
     const adj = SITES.map((x, i) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
-    if (adj.length) v += 6 + (adj.some(({ i }) => s.sites[i].controller !== who) ? 6 : 0);
+    if (adj.some(({ i }) => s.sites[i].controller !== who)) v += 8;
   }
   void uid;
   return v;
@@ -141,13 +146,19 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
     } else if (a.type === 'upgrade') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const u = a.upgrade;
-      const left = s.players[who].crystals[fcol] - CONFIG.upgradeCosts[u];
+      const left = creatureValue(s.players[who], s.players[who].faction) - CONFIG.upgradeCosts[u];
       scored.push([left >= 0 && (u === 'heavy-armor' || u === 'sharpened-weapons') && CARDS[c.cardId].role === 'Fighter' ? 12 + rand() : 0, a]);
     } else if (a.type === 'cast') scored.push([scoreCast(s, who, a), a]);
     else if (a.type === 'move') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const card = CARDS[c.cardId];
-      scored.push([posValue(s, who, card, a.row, a.col) - posValue(s, who, card, c.row, c.col) + rand() * 0.1, a]);
+      const mate = creatureAt(s, a.row, a.col);
+      let v = posValue(s, who, card, a.row, a.col) - posValue(s, who, card, c.row, c.col) + rand() * 0.1;
+      if (mate) {
+        const mc = CARDS[mate.cardId];
+        v += posValue(s, who, mc, c.row, c.col) - posValue(s, who, mc, mate.row, mate.col) - 1;
+      }
+      scored.push([v, a]);
     } else if (a.type === 'attack') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       if (a.target.commander) { scored.push([200 + atkValue(s, c) + (s.players[other(who as any)].health <= atkValue(s, c) ? 10000 : 0), a]); continue; }

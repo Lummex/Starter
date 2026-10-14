@@ -24,7 +24,7 @@ describe('content', () => {
   it('printed creature Health is at most 6', () => {
     for (const c of Object.values(CARDS)) if (c.type === 'creature') expect(c.health).toBeLessThanOrEqual(6);
     expect(['grubnaks-big-boss-troll', 'the-great-steam-golem', 'queen-brunhilda-stonebeard'].map((id) => CARDS[id].health)).toEqual([6, 6, 6]);
-    expect([CONFIG.phaseTimerSeconds, CONFIG.timerHiddenSeconds, CONFIG.countdownSeconds, CONFIG.startingCrystals]).toEqual([50, 40, 10, 1]);
+    expect([CONFIG.phaseTimerSeconds, CONFIG.timerHiddenSeconds, CONFIG.countdownSeconds, CONFIG.startingCrystals]).toEqual([50, 40, 10, 0]);
     expect(CONFIG.strongholdIncome).toBeUndefined();
   });
 });
@@ -36,17 +36,17 @@ describe('setup and opening', () => {
     expect(JSON.parse(JSON.stringify(a))).toEqual(a);
     expect(a.players.player.hand.length + a.players.player.deck.length).toBe(50);
   });
-  it('turn 1 gives exactly 1 crystal; second player has 6 cards, then 7 and 1 crystal on turn 2', () => {
+  it('turn 1 gives exactly 0 crystals; second player has 6 cards, then 7 and 0 crystals on turn 2', () => {
     let s = createMatch({ seed: 1, skipMulligan: true, firstPlayer: 'player' });
     expect(s.turn).toBe(1);
-    expect(s.players.player.crystals).toEqual({ green: 1, blue: 0, purple: 0 });
+    expect(s.players.player.crystals).toEqual({ green: 0, blue: 0, purple: 0, white: 0 });
     expect(s.players.player.hand.length).toBe(5);
     expect(s.players.opponent.hand.length).toBe(6);
     expect(s.players.player.health).toBe(20);
     s = done(s, 2);
     expect(s.activePlayer).toBe('opponent');
     expect(s.players.opponent.hand.length).toBe(7);
-    expect(s.players.opponent.crystals).toEqual({ green: 0, blue: 1, purple: 0 });
+    expect(s.players.opponent.crystals).toEqual({ green: 0, blue: 0, purple: 0, white: 0 });
   });
 });
 
@@ -58,10 +58,10 @@ describe('site control and income', () => {
     expect(s.sites[0].color).toBe('green');
     expect(s.sites[1].color).toBe('blue');
   });
-  it('income: site 1 + Gatherer 2 = 3 (no Stronghold income)', () => {
+  it('flow: a Gatherer at a mine makes 2 (no Stronghold or site income)', () => {
     const s = toPlayerTurn3(mk({ board: [P('goblin-scrounger', 5, 2)] }));
     expect(s.activePlayer).toBe('player');
-    expect(s.players.player.crystals.green).toBe(3);
+    expect(s.players.player.crystals.green).toBe(2);
   });
   it('underdog +2 only when the enemy controls a site', () => {
     expect(toPlayerTurn3(mk({ board: [O('gnome-tinker', 3, 2)] })).players.player.crystals.green).toBe(2);
@@ -247,7 +247,7 @@ describe('spells, upgrades and Crystal cards', () => {
     let s = mk({ playerHand: ['fireball'], playerCrystals: { blue: 5 } });
     s = act(s, { type: 'cast', uid: uidOf(s, 'player', 'fireball'), target: { commander: 'opponent' } });
     expect(s.players.opponent.health).toBe(17);
-    expect(s.players.player.crystals.blue).toBe(0);
+    expect(s.players.player.crystals.blue).toBe(2);
   });
   it('only one Crystal card per turn', () => {
     let s = mk({ playerHand: ['soul-shard', 'soul-shard'] });
@@ -259,15 +259,15 @@ describe('spells, upgrades and Crystal cards', () => {
     expect(r.ok).toBe(false);
     expect(JSON.stringify(s)).toBe(before);
   });
-  it('upgrades: Heavy Armor +3 Health costs 6, one per creature; Sharpened Weapons +1 Attack', () => {
-    let s = mk({ playerCrystals: { green: 12 }, board: [P('goblin-scrapper', 7, 1)] });
+  it('upgrades: Heavy Armor +3 Health costs 3, one per creature; Sharpened Weapons +1 Attack', () => {
+    let s = mk({ playerCrystals: { green: 6 }, board: [P('goblin-scrapper', 7, 1)] });
     const uid = creatureAt(s, 7, 1).uid;
     s = act(s, { type: 'upgrade', creatureUid: uid, upgrade: 'heavy-armor' });
     expect(creatureAt(s, 7, 1).health).toBe(6);
     expect(creatureAt(s, 7, 1).maxHealth).toBe(6);
-    expect(s.players.player.crystals.green).toBe(6);
+    expect(s.players.player.crystals.green).toBe(3);
     expect(legalActions(s).some((a) => a.type === 'upgrade' && a.creatureUid === uid)).toBe(false);
-    s = mk({ playerCrystals: { green: 6 }, board: [P('goblin-scrapper', 7, 1)] });
+    s = mk({ playerCrystals: { green: 3 }, board: [P('goblin-scrapper', 7, 1)] });
     s = act(s, { type: 'upgrade', creatureUid: creatureAt(s, 7, 1).uid, upgrade: 'sharpened-weapons' });
     expect(creatureAt(s, 7, 1).attack).toBe(3);
     expect(s.players.player.crystals.green).toBe(0);
@@ -276,7 +276,7 @@ describe('spells, upgrades and Crystal cards', () => {
 
 describe('Instants and counterspells', () => {
   it('Fizzle cancels Fireball, crystals still spent', () => {
-    let s = mk({ playerHand: ['fireball'], playerCrystals: { green: 5 }, opponentHand: ['fizzle'], opponentCrystals: { blue: 4 } });
+    let s = mk({ playerHand: ['fireball'], playerCrystals: { green: 3 }, opponentHand: ['fizzle'], opponentCrystals: { blue: 4 } });
     s = act(s, { type: 'cast', uid: uidOf(s, 'player', 'fireball'), target: { commander: 'opponent' } });
     expect(s.pendingResponse.responder).toBe('opponent');
     s = act(s, { type: 'respond', uid: uidOf(s, 'opponent', 'fizzle') });
@@ -290,7 +290,7 @@ describe('Instants and counterspells', () => {
     s = act(s, { type: 'respond', uid: uidOf(s, 'opponent', 'hold-it') });
     expect(s.board.creatures.length).toBe(0);
     expect(s.players.player.hand.map((h: any) => h.cardId)).toEqual(['goblin-scrounger']);
-    expect(s.players.player.crystals.green).toBe(0);
+    expect(s.players.player.crystals.green).toBe(1); // the broke player's Gatherer was free
   });
 });
 
@@ -320,7 +320,7 @@ describe('deck-out, winning, tutorial', () => {
     const t: any = tutorialJson;
     let s = createMatch({ ...t, tutorial: true });
     expect(s.tutorial.step).toBe('summon');
-    expect(s.players.player.crystals.green).toBe(1);
+    expect(s.players.player.crystals.green).toBe(0);
     const sums = legalActions(s).filter((a) => a.type === 'summon');
     expect(sums.length).toBeGreaterThan(0);
     expect(sums.every((a) => a.row === 7)).toBe(true);
@@ -347,12 +347,12 @@ describe('revision 3', () => {
     const b = mk({ board: [P('shieldbeard', 7, 1)] }, { playerCommander: 'borgo' });
     expect([creatureAt(b, 7, 1).attack, creatureAt(b, 7, 1).health]).toEqual([2, 5]);
   });
-  it('start with 1 crystal, no Stronghold income', () => {
+  it('start with 0 crystals, no Stronghold income', () => {
     let s = createMatch({ seed: 1, skipMulligan: true, firstPlayer: 'player' });
-    expect(s.players.player.crystals.green).toBe(1);
+    expect(s.players.player.crystals.green).toBe(0);
     s = done(s, 4);
     expect(s.turn).toBe(3);
-    expect(s.players.player.crystals.green).toBe(1);
+    expect(s.players.player.crystals.green).toBe(0);
   });
   it('income preview', () => {
     const s = mk({ board: [P('goblin-scrounger', 5, 2), P('goblin-scrapper', 5, 1)] });
@@ -414,5 +414,112 @@ describe('revision 3', () => {
     expect(l.some((a) => a.type === 'move' && a.creatureUid === g.uid)).toBe(true);
     expect(l.some((a) => a.type === 'attack' && a.creatureUid === g.uid)).toBe(false);
     expect(l.some((a) => a.creatureUid === f.uid)).toBe(false);
+  });
+});
+
+describe('revision 4: Crystal Flow', () => {
+  const white = (n: number) => ({ white: n });
+  it('(a) 1 Gnome Miner vs 2 Goblin Miners: mine green, Goblins 4 green, Gnomes 2 green worth 1 toward a Gnome creature', () => {
+    const s = createMatch({ playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { board: [P('gnome-prospector', 5, 2), O('goblin-scrounger', 3, 2), O('goblin-scrounger', 4, 1)] } });
+    expect(s.sites[0].color).toBe('green');
+    expect(s.sites[0].controller).toBe('opponent');
+    expect(s.players.opponent.flow).toEqual({ green: 4, blue: 0, purple: 0, white: 0 });
+    expect(s.players.player.flow).toEqual({ green: 2, blue: 0, purple: 0, white: 0 });
+    expect(s.sites[0].flow).toEqual({ player: 2, opponent: 4 });
+    const t = createMatch({ playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { playerHand: ['gnome-prospector'], playerCrystals: { green: 2 }, board: [P('gnome-prospector', 7, 1), O('goblin-scrounger', 3, 2), O('goblin-scrounger', 4, 1)] } });
+    const sum = legalActions(t).find((a) => a.type === 'summon')!;
+    const after = act(t, sum);
+    expect(after.board.creatures.length).toBe(4);
+    expect(after.players.player.crystals.green).toBe(0);
+  });
+  it('(b) 2 vs 2: neutral, 4 white each; worth 2 toward creatures and 4 toward spells', () => {
+    const s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', setup: { playerHand: ['goblin-sneak', 'goblin-slinger', 'fireball'], playerCrystals: white(4), board: [P('goblin-scrounger', 5, 2), P('goblin-scrounger', 5, 1), O('gnome-prospector', 3, 2), O('gnome-prospector', 3, 1)] } });
+    expect(s.sites[0].color).toBe('white');
+    expect(s.sites[0].controller).toBeNull();
+    expect(s.players.player.flow.white).toBe(4);
+    expect(s.players.opponent.flow.white).toBe(4);
+    expect(legalActions(s).some((a) => a.type === 'summon' && a.uid === uidOf(s, 'player', 'goblin-sneak'))).toBe(false); // cost 6 > 2
+    expect(legalActions(s).some((a) => a.type === 'summon' && a.uid === uidOf(s, 'player', 'goblin-slinger'))).toBe(false); // cost 3 after discount > 2
+    expect(legalActions(s).some((a) => a.type === 'cast')).toBe(true);
+  });
+  it('white crystals: four pay a 4-cost spell, only two pay creatures', () => {
+    let s = mk({ playerHand: ['battle-cry'], playerCrystals: white(4) });
+    s = act(s, { type: 'cast', uid: uidOf(s, 'player', 'battle-cry') });
+    expect(s.players.player.crystals.white).toBe(0);
+    s = mk({ playerHand: ['goblin-scrounger', 'goblin-scrounger', 'goblin-scrounger'], playerCrystals: white(4), board: [P('goblin-scrounger', 7, 1)] });
+    s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 2 });
+    expect(s.players.player.crystals.white).toBe(2);
+  });
+  it('(c) 3 own Miners at an own-color mine: pool 6; one dies, next turn 4', () => {
+    let s = mk({ board: [P('goblin-scrounger', 5, 2), P('goblin-scrounger', 5, 1), P('goblin-scrounger', 3, 2)] });
+    expect(s.players.player.flow.green).toBe(6);
+    s = done(s, 4);
+    expect(s.players.player.crystals.green).toBe(6);
+    s = mk({ board: [P('goblin-scrounger', 5, 2), P('goblin-scrounger', 5, 1)] });
+    expect(s.players.player.flow.green).toBe(4);
+    expect(incomePreview(s, 'player')).toBe(4);
+  });
+  it('(d) unspent crystals stay through the enemy turn, then reset to flow (not added)', () => {
+    let s = mk({ playerCrystals: { green: 5 }, board: [P('goblin-scrounger', 5, 2)] });
+    s = done(s, 2);
+    expect(s.activePlayer).toBe('opponent');
+    expect(s.players.player.crystals.green).toBe(5);
+    s = done(s, 2);
+    expect(s.activePlayer).toBe('player');
+    expect(s.players.player.crystals.green).toBe(2);
+  });
+  it('(e) the pool never exceeds 16', () => {
+    const board = Array.from({ length: 10 }, (_, i) => P('goblin-scrounger', 5, 1 + (i % 3)));
+    let s = mk({ board: [P('goblin-scrounger', 5, 2), P('goblin-scrounger', 5, 1), P('goblin-scrounger', 3, 2), P('goblin-scrounger', 3, 1), P('goblin-scrounger', 4, 1), P('goblin-scrounger', 3, 3), P('goblin-scrounger', 5, 3), P('goblin-scrounger', 4, 3), P('goblin-scrounger', 3, 5), P('goblin-scrounger', 4, 5)] });
+    void board;
+    expect(s.players.player.flow.green).toBe(20);
+    s = done(s, 4);
+    expect(s.players.player.crystals.green).toBe(16);
+    s = mk({ playerHand: ['crystal-cluster'], playerCrystals: { green: 15 } });
+    s = act(s, { type: 'playCrystal', uid: uidOf(s, 'player', 'crystal-cluster') });
+    expect(s.players.player.crystals.green).toBe(16);
+  });
+  it('off-color halves round down: 9 green = 4 toward a Gnome creature', () => {
+    const s = createMatch({ playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { playerHand: ['gnome-tinker', 'dwarf-miner'], playerCrystals: { green: 9 } } });
+    expect(legalActions(s).some((a) => a.type === 'summon' && a.uid === uidOf(s, 'player', 'gnome-tinker'))).toBe(false); // cost 5 > 4
+    const t = createMatch({ playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { playerHand: ['gnome-tinker'], playerCrystals: { green: 9, blue: 1 } } });
+    const r = act(t, legalActions(t).find((a) => a.type === 'summon')!);
+    expect(r.players.player.crystals).toEqual({ green: 1, blue: 0, purple: 0, white: 0 });
+  });
+  it('a creature touching two mines counts at only one', () => {
+    const s = mk({ board: [P('goblin-scrounger', 4, 3)] });
+    expect(s.players.player.flow.green + s.players.player.flow.white).toBe(2);
+    expect(s.sites[0].flow.player + s.sites[1].flow.player).toBe(2);
+  });
+  it('swapping places with an own creature uses only the dragged creature action', () => {
+    let s = mk({ board: [P('goblin-grunt', 5, 4), P('goblin-scrapper', 5, 5)] });
+    s = done(s);
+    const a = creatureAt(s, 5, 4), b = creatureAt(s, 5, 5);
+    s = act(s, { type: 'move', creatureUid: a.uid, row: 5, col: 5 });
+    expect(creatureAt(s, 5, 5).uid).toBe(a.uid);
+    expect(creatureAt(s, 5, 4).uid).toBe(b.uid);
+    expect(creatureAt(s, 5, 5).hasMoved).toBe(true);
+    expect(creatureAt(s, 5, 4).hasMoved).toBe(false);
+    expect(legalActions(s).some((x) => x.type === 'move' && x.creatureUid === b.uid)).toBe(true);
+    const e = mk({ board: [P('goblin-grunt', 5, 4), O('goblin-scrapper', 5, 5)] });
+    expect(legalActions(done(e)).some((x) => x.type === 'move' && x.row === 5 && x.col === 5)).toBe(false);
+  });
+  it('new spell and upgrade costs; Fizzle only cancels spells costing 3 or less', () => {
+    expect(['prospectors-prayer', 'tunnel-rush', 'healing-light', 'shield-bubble', 'fireball', 'fizzle', 'battle-cry', 'hold-it', 'second-wind', 'spell-snap', 'meteor-strike', 'mirror-hex'].map((id) => CARDS[id].cost)).toEqual([1, 2, 2, 2, 3, 3, 4, 4, 5, 5, 7, 7]);
+    expect(Object.values(CONFIG.upgradeCosts)).toEqual([3, 3, 5, 8]);
+    const s = mk({ playerHand: ['battle-cry'], playerCrystals: { green: 4 }, opponentHand: ['fizzle'], opponentCrystals: { blue: 5 } });
+    const r = act(s, { type: 'cast', uid: uidOf(s, 'player', 'battle-cry') });
+    expect(r.pendingResponse).toBeNull();
+  });
+  it('Prospector\'s Prayer: gain 3 of your own color only while you have fewer mines than the enemy', () => {
+    let s = mk({ playerHand: ['prospectors-prayer'], playerCrystals: { green: 1 }, board: [O('gnome-prospector', 3, 2)] });
+    s = act(s, { type: 'cast', uid: uidOf(s, 'player', 'prospectors-prayer') });
+    expect(s.players.player.crystals.green).toBe(3);
+    expect(legalActions(mk({ playerHand: ['prospectors-prayer'], playerCrystals: { green: 1 } })).some((a) => a.type === 'cast')).toBe(false);
+  });
+  it('underdog bonus: +2 own color only when the enemy holds a mine and you hold none', () => {
+    const s = mk({ board: [O('gnome-prospector', 3, 2)] });
+    expect(incomePreview(s, 'player')).toBe(2);
+    expect(incomePreview(mk({}), 'player')).toBe(0);
   });
 });

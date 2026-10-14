@@ -4,14 +4,15 @@
  "countdownSeconds": 10,
  "respondWindowSeconds": 5,
  "autoSkipDelaySeconds": 1,
- "startingCrystals": 1,
+ "startingCrystals": 0,
  "basicGatherers": {
   "goblins": "goblin-scrounger",
   "gnomes": "gnome-prospector",
   "dwarves": "dwarf-miner"
  },
- "siteIncome": 1,
- "gathererBonus": 2,
+ "gathererFlow": 2,
+ "fighterFlow": 1,
+ "poolCap": 16,
  "underdogBonus": 2,
  "geodeIncome": 1,
  "deckSize": 50,
@@ -35,10 +36,10 @@
  "deckOutDamage": 1,
  "crystalCardsPerTurn": 1,
  "upgradeCosts": {
-  "sharpened-weapons": 6,
-  "heavy-armor": 6,
-  "veteran": 10,
-  "champions-crown": 15
+  "sharpened-weapons": 3,
+  "heavy-armor": 3,
+  "veteran": 5,
+  "champions-crown": 8
  },
  "upgrades": {
   "sharpened-weapons": {

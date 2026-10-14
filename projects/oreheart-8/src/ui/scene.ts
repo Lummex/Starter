@@ -13,7 +13,7 @@ export interface BoardView {
 }
 
 const SYMBOL: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
-const hexOf = (id: string | null) => (id ? COLORS[id].hex : COLORS.neutral.hex);
+const hexOf = (id: string | null) => (id && id !== 'white' ? COLORS[id].hex : COLORS.neutral.hex);
 const world = (row: number, col: number) => new THREE.Vector3(col - 4, 0, row - 4);
 
 const symCache: Record<string, THREE.Texture> = {};

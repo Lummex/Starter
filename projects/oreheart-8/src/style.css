@@ -173,3 +173,11 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 @media (max-height:520px){.dialog{padding:10px}.dialog h2{font-size:1.1rem;margin-bottom:6px}}
 .tk-body::before{content:attr(data-sym)}
 .hand{bottom:calc(var(--cw) * -0.16)}
+
+/* Revision 4: Crystal Flow */
+.cr.white{border-color:#f2f6ff}.cr.white::before{background:#f2f6ff}
+.cr[data-flow]:not([data-flow=""])::after{content:attr(data-flow);font-size:.6rem;font-weight:700;opacity:.85;margin-left:2px}
+.cell.glow-swap{background:radial-gradient(circle,#e3b54acc 0,#e3b54a44 60%,transparent 72%);box-shadow:inset 0 0 0 2px #e3b54a}
+.mine-ring{position:absolute;pointer-events:none;border:3px solid var(--mine,#f2f6ff);border-radius:50%;box-shadow:0 0 14px var(--mine,#f2f6ff),inset 0 0 14px #0006;opacity:.75;z-index:2}
+.mine-flow{position:absolute;pointer-events:none;transform:translate(-50%,-70%);z-index:3;font-weight:900;font-size:.8rem;padding:1px 7px;border-radius:9px;background:#000b;border:1px solid var(--gold);color:var(--parch);white-space:nowrap}
+@media (max-height:420px){.cr{min-height:26px;font-size:.9rem}.crystals{gap:3px}}

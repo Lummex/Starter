@@ -1,3 +1,20 @@
+# Oreheart — Phase 1a build notes (Revision 4)
+
+Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 64 tests).
+
+## Revision 4 — what was built (on top of revision 3, below)
+- **Crystal Flow** (`src/engine/engine.ts`): mine assignment (a creature touching two mines counts at one), mine color from the side with more creatures (tie = white), per-mine and per-player flow in state, pool set to flow at the Draw phase (+ underdog bonus only when the enemy holds a mine and you hold none), 4-color pool, cap 16 (excess removed white first), starting crystals 0. Creatures/upgrades: own color 1, others ½ (rounded down); spells: any color. Free Gatherer keyed to flow 0 / no mine in your color / no Gatherer on board. New spell costs, upgrade costs 3/3/5/8, Fizzle cancels cost ≤3, Prospector's Prayer +3.
+- **Swapping**: a `move` onto an own creature within move range swaps (only the dragged creature gets `hasMoved`; `swap` event); in legal actions, AI and tutorial (new `swap` step).
+- **UI**: white crystal counter with next-turn flow per color (CSS `data-flow` label so the counter text is just the number), "+N next turn", mine rings, `Mine flow, column C` overlays, site dialog (Controlled by / Color / Your flow / Enemy flow), gold swap glow, Rules and tutorial text.
+- **AI**: swaps, spreads Fighters off crowded mines, half-value upgrade affordability.
+- Tests: brief examples (a)–(e), half rounding, two-mine creature, swap, costs, Prayer, underdog.
+
+## Notes / gaps
+- The spec example "1 blue + 8 green pays a 5-cost Gnome, leaving 1 green" conflicts with its own rounding rule (1 + 8/2 = 5 uses all 8 green); the engine follows the rule.
+- A swap counts as a move for auto-skip, as the spec says "any move".
+
+---
+
 # Oreheart — Phase 1a build notes (Revision 3)
 
 Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 52 tests).

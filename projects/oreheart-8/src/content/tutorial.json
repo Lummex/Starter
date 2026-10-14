@@ -3,9 +3,6 @@
  "opponentCommander": "sproingle",
  "setup": {
   "firstPlayer": "player",
-  "playerCrystals": {
-   "green": 1
-  },
   "opponentHealth": 6,
   "playerHand": [
    "goblin-scrounger",
@@ -69,10 +66,11 @@
   ]
  },
  "tips": {
-  "summon": "Welcome! Drag a troop from your hand onto your back row (the bottom row, next to your Stronghold) to summon it. You have 1 crystal, enough for a cost-1 troop.",
-  "move": "Nice! Now march it forward: next turn, press Done to reach the Action phase, then drag your troop to an empty space. Each troop either moves OR attacks.",
-  "capture": "Walk next to a glowing crystal site in the middle. Have more troops around it than the enemy to take it, and watch it change to your color!",
-  "spend": "Crystals are your money. Summon another troop, cast a spell or upgrade one by tapping it in the Deploy phase to spend them. Your Gatherers next to a site you hold earn the most.",
+  "summon": "Welcome! Drag a troop from your hand onto your back row (the bottom row, next to your Stronghold) to summon it. You have 0 crystals, but a Gatherer is free when you are broke.",
+  "move": "Nice! Now march it forward: press Done to reach the Action phase, then drag your troop to an empty space. Gatherers may move the turn they appear. Each troop either moves OR attacks.",
+  "swap": "Next turn, play your Crystal card for 1 crystal and summon a second Gatherer. Then in the Action phase drag one of your troops onto the other to swap places (it must be within its move range).",
+  "capture": "Walk next to a crystal mine in the middle. Have more troops around it than the enemy and it turns your color. Every troop around a mine makes flow: Gatherer 2, Fighter 1, and your pool is set to your flow each turn.",
+  "spend": "Crystals are your money. Your pool resets to your flow every turn, so spend them! Summon a troop or upgrade one. Crystals of other colors are worth only half toward troops.",
   "fight": "Time to fight! In the Action phase drag a troop onto the enemy troop. Melee hits are simultaneous: both strike. Damage heals at the start of your next turn.",
   "spell": "Cast a spell! Drag Fireball from your hand onto an enemy (spells cost crystals of any color).",
   "commander": "Finally, move next to the enemy Stronghold and attack the Commander. Each hit removes health equal to the attacker's Attack. Make them retreat!",
