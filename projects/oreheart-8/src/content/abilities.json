@@ -33,7 +33,7 @@
  },
  "fixit": {
   "name": "Fix-it",
-  "text": "Heals 1 Health from each adjacent ally at the start of your turn."
+  "text": "At the start of your turn, each adjacent ally gets Shield 1."
  },
  "armored": {
   "name": "Armored",
@@ -61,7 +61,7 @@
  },
  "charge": {
   "name": "Charge",
-  "text": "+2 Attack if it moved 2 spaces this turn."
+  "text": "Can move and attack in the same turn."
  },
  "unbreakable": {
   "name": "Unbreakable",
@@ -69,7 +69,7 @@
  },
  "heartyale": {
   "name": "Hearty Ale",
-  "text": "Heals 1 Health from each adjacent ally at the start of your turn."
+  "text": "At the start of your turn, each adjacent ally gets +1 Health until your next turn."
  },
  "eaterGuzzler": {
   "name": "Crystal Eater",

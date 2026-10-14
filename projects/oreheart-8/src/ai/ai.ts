@@ -82,7 +82,7 @@ function scoreCast(s: any, who: string, a: any): number {
       return v > 12 ? v : 0;
     }
     case 'buffAttack': {
-      if (s.phase !== 'attack') return 0;
+      if (s.phase !== 'action') return 0;
       const n = s.board.creatures.filter((c: any) => c.owner === who && !c.hasAttacked && legalActions(s).some((x: any) => x.type === 'attack' && x.creatureUid === c.uid)).length;
       return n >= 2 ? 30 + n * 5 : 0;
     }

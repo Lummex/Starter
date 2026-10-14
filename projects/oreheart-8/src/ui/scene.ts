@@ -58,6 +58,8 @@ function groundTexture() {
   }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(4, 3);
   return t;
 }
 
@@ -86,7 +88,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 });
   scene.add(sun);
 
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshStandardMaterial({ map: groundTexture(), roughness: 1 }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 22), new THREE.MeshStandardMaterial({ map: groundTexture(), roughness: 1 }));
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
@@ -222,6 +224,9 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         const to = e.target.commander ? world(e.target.commander === 'player' ? 7 : 1, 4) : world(e.target.row, e.target.col);
         f.lunge = to.clone().sub(f.target).multiplyScalar(0.45);
         f.lungeT = now;
+        if (!e.target.commander && !e.ranged) {
+          for (const d of figs.values()) if (d !== f && d.target.distanceTo(to) < 0.1) { d.lunge = f.target.clone().sub(d.target).multiplyScalar(0.3); d.lungeT = now; }
+        }
       }
     }
   }
@@ -234,10 +239,10 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     camera.aspect = w / h;
     const vfov = (camera.fov * Math.PI) / 180;
     const hHalf = Math.atan(Math.tan(vfov / 2) * camera.aspect);
-    const dist = Math.max(Math.min(4.6 / Math.tan(hHalf), 4.4 / Math.tan(vfov / 2)), 9);
+    const dist = Math.max(4.6 / Math.tan(hHalf), 3.6 / Math.tan(vfov / 2), 8);
     const el = (64 * Math.PI) / 180;
     camera.position.set(0, Math.sin(el) * dist, Math.cos(el) * dist + 0.2);
-    camera.lookAt(0, 0, 0.1);
+    camera.lookAt(0, 0.35, 0.05);
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
   }

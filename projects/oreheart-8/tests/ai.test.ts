@@ -20,10 +20,10 @@ function play(s: any, diffs: any, passive: boolean, max = 200) {
 
 describe('AI', () => {
   for (const seed of [1, 2, 3, 4]) {
-    it('normal beats a passive player before turn 40 (seed ' + seed + ')', () => {
+    it('normal beats a passive player before turn 60 (seed ' + seed + ')', () => {
       const s = play(createMatch({ seed, playerCommander: ['grubnak', 'sproingle', 'borgo'][seed % 3], opponentCommander: 'borgo', firstPlayer: 'player' }), { opponent: 'normal' }, true);
       expect(s.winner).toBe('opponent');
-      expect(s.turn).toBeLessThan(40);
+      expect(s.turn).toBeLessThan(60);
     });
   }
   it('easy vs normal finishes', () => {

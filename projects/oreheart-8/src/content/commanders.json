@@ -25,6 +25,19 @@
   "blurb": "Clever tinkerers and spark-mages. Gadgets, healing and ranged sparks."
  },
  {
+  "id": "sprocket",
+  "name": "Madame Sprocket",
+  "faction": "gnomes",
+  "health": 20,
+  "playable": false,
+  "abilityText": "At the start of your turn, your creature with the lowest Health gets Shield 1.",
+  "ability": {
+   "type": "lowestShield",
+   "amount": 1
+  },
+  "blurb": "Not playable in phase 1a."
+ },
+ {
   "id": "borgo",
   "name": "Thane Borgo Anvilbottom",
   "faction": "dwarves",

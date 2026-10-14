@@ -35,7 +35,7 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
   const maxHealth = card.health + (bh ? bh.amount : 0);
   const c = {
     uid: uid || 'u' + s.nextUid++, cardId, owner, row, col, attack: card.attack, health: maxHealth - damage, maxHealth,
-    upgrade: null as any, summonedThisTurn: false, hasMoved: false, hasAttacked: false, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: false,
+    upgrade: null as any, summonedThisTurn: false, hasMoved: false, hasAttacked: false, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0,
   };
   s.board.creatures.push(c);
   return c;
@@ -75,7 +75,7 @@ export function createMatch(opts: any = {}) {
     players: {}, board: { creatures: [] },
     sites: SITES.map(([row, col]) => ({ row, col, controller: null, color: null })),
     pendingResponse: null, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
-    mulliganDone: { player: false, opponent: false },
+    mulliganDone: { player: false, opponent: false }, tutorial: opts.tutorial ? { step: 'summon' } : null,
     flags: { battleCry: null, crystalsPlayed: 0, discount: { player: 0, opponent: 0 } },
   };
   const setup = opts.setup;
@@ -114,13 +114,14 @@ export function createMatch(opts: any = {}) {
     const h = setup[who + 'Health'];
     if (h != null) { pl.health = h; if (h > pl.maxHealth) pl.maxHealth = h; }
   }
-  for (const b of setup.board || []) spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0);
+  for (const b of setup.board || []) { const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0; }
   s.mulliganDone = { player: true, opponent: true };
   s.firstPlayer = setup.firstPlayer || 'player';
   s.turn = 1;
   s.activePlayer = s.firstPlayer;
   s.priority = s.firstPlayer;
   s.phase = 'deploy';
+  recomputeSites(s, []);
   return s;
 }
 
@@ -171,7 +172,7 @@ function collectIncome(s: any, who: Side, ev: any[]) {
     for (const c of s.board.creatures)
       if (c.owner === who && CARDS[c.cardId].role === 'Gatherer' && cheb(c, site) <= 1) inc += CONFIG.gathererBonus;
   }
-  if (controlled === 0) inc += CONFIG.underdogBonus;
+  if (controlled === 0 && sitesControlled(s, other(who)) > 0) inc += CONFIG.underdogBonus;
   inc += pl.geodes * CONFIG.geodeIncome;
   pl.crystals[colorOf(s, who)] += inc;
   ev.push({ type: 'income', player: who, amount: inc, color: colorOf(s, who) });
@@ -188,20 +189,33 @@ function startTurn(s: any, ev: any[]) {
   for (const c of s.board.creatures) { c.summonedThisTurn = false; c.hasMoved = false; c.hasAttacked = false; c.movedDistance = 0; }
   ev.push({ type: 'turnStart', player: who, turn: s.turn });
   recomputeSites(s, ev);
+  // creatures heal to full, lose leftover Shield and expired Hearty Ale
+  for (const c of s.board.creatures) {
+    if (c.owner !== who) continue;
+    c.maxHealth -= c.ale; c.ale = 0;
+    if (c.health < c.maxHealth) healCreature(s, c, c.maxHealth - c.health, ev);
+    c.health = c.maxHealth;
+    c.shield = 0;
+  }
+  for (const c of [...s.board.creatures]) {
+    if (c.owner !== who) continue;
+    if (has(c, 'fixit')) for (const a of adjacentCreatures(s, c)) if (a.owner === who) a.shield += CONFIG.shieldFixit;
+    if (has(c, 'heartyale')) for (const a of adjacentCreatures(s, c)) if (a.owner === who) { a.maxHealth += CONFIG.aleBonus; a.health += CONFIG.aleBonus; a.ale += CONFIG.aleBonus; }
+  }
+  if (bonusOf(s, who, 'lowestShield')) {
+    const mine = s.board.creatures.filter((c: any) => c.owner === who);
+    if (mine.length) mine.reduce((a: any, b: any) => (b.health < a.health ? b : a)).shield += bonusOf(s, who, 'lowestShield').amount;
+  }
   if (s.turn > 1) drawCard(s, who, ev);
   if (s.winner) return;
   collectIncome(s, who, ev);
-  for (const c of [...s.board.creatures]) {
-    if (c.owner === who && (has(c, 'fixit') || has(c, 'heartyale')))
-      for (const a of adjacentCreatures(s, c)) if (a.owner === who && a.health < a.maxHealth) healCreature(s, a, 1, ev);
-  }
   s.phase = 'deploy';
   s.priority = who;
 }
 
 function endTurn(s: any, ev: any[]) {
   s.phase = 'end';
-  for (const c of s.board.creatures) c.shield = false;
+  for (const c of s.board.creatures) c.bubble = false;
   ev.push({ type: 'turnEnd', player: s.activePlayer });
   startTurn(s, ev);
 }
@@ -226,15 +240,21 @@ function damageCommander(s: any, who: Side, n: number, ev: any[]) {
   }
 }
 
-function dealDamage(s: any, c: any, amount: number, ev: any[], raw = false) {
+function hurt(s: any, c: any, amount: number, ev: any[], raw = false) {
   let d = amount;
   if (!raw) {
     if (has(c, 'armored')) d = Math.max(0, d - 1);
     if (has(c, 'unbreakable')) d = Math.min(d, 3);
-    if (c.shield && d > 0) { c.shield = false; d = 0; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col }); }
+    if (c.bubble && d > 0) { c.bubble = false; d = 0; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col }); }
+    if (c.shield > 0 && d > 0) { const b = Math.min(c.shield, d); c.shield -= b; d -= b; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col, amount: b }); }
   }
   c.health -= d;
   ev.push({ type: 'damage', uid: c.uid, row: c.row, col: c.col, amount: d });
+  return d;
+}
+
+function dealDamage(s: any, c: any, amount: number, ev: any[], raw = false) {
+  const d = hurt(s, c, amount, ev, raw);
   if (c.health <= 0) defeat(s, c, ev);
   return d;
 }
@@ -258,7 +278,6 @@ export function atkValue(s: any, c: any, target?: any) {
   if (has(c, 'frenzy') && s.board.creatures.some((o: any) => o !== c && o.owner === c.owner && CARDS[o.cardId].faction === 'goblins' && cheb(o, c) === 1)) v += CONFIG.frenzyBonus;
   if (card.faction === 'goblins' && s.board.creatures.some((o: any) => o.owner === c.owner && has(o, 'rally'))) v += CONFIG.rallyBonus;
   if (has(c, 'rage') && c.health * 2 < c.maxHealth) v += CONFIG.rageBonus;
-  if (has(c, 'charge') && c.movedDistance >= 2) v += CONFIG.chargeBonus;
   if (s.flags.battleCry === c.owner) v += 1;
   if (target && ADV(card.faction, CARDS[target.cardId].faction)) v += CONFIG.typeAdvantageBonus;
   return Math.max(0, v);
@@ -267,7 +286,7 @@ export function atkValue(s: any, c: any, target?: any) {
 const canAct = (s: any, c: any) => (!c.summonedThisTurn || has(c, 'haste')) && s.turn >= c.lockedUntil;
 
 export function attackTargets(s: any, c: any): any[] {
-  if (c.hasAttacked || !canAct(s, c)) return [];
+  if (c.hasAttacked || !canAct(s, c) || (c.hasMoved && !has(c, 'charge'))) return [];
   const enemy = other(c.owner);
   const sh = stronghold(enemy);
   const out: any[] = [];
@@ -305,39 +324,30 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   const melee = cheb(attacker, def) === 1;
   ev.push({ type: 'attack', uid: attacker.uid, from: { row: attacker.row, col: attacker.col }, target: { row: def.row, col: def.col }, ranged: !melee });
   const pos = { row: def.row, col: def.col };
-  dealDamage(s, def, atkValue(s, attacker, def), ev);
+  const strikes = melee && !has(attacker, 'sneaky');
+  const back = strikes ? atkValue(s, def, attacker) : 0;
+  hurt(s, def, atkValue(s, attacker, def), ev);
+  if (strikes) { ev.push({ type: 'counter', uid: def.uid }); hurt(s, attacker, back, ev); }
   if (has(attacker, 'overload'))
-    for (const o of [...s.board.creatures]) if (o.owner === def.owner && o !== def && cheb(o, pos) === 1) dealDamage(s, o, CONFIG.overloadDamage, ev);
-  if (s.board.creatures.includes(def) && melee && !has(attacker, 'sneaky') && s.board.creatures.includes(attacker)) {
-    ev.push({ type: 'counter', uid: def.uid });
-    dealDamage(s, attacker, atkValue(s, def, attacker), ev);
-  }
+    for (const o of [...s.board.creatures]) if (o.owner === def.owner && o !== def && cheb(o, pos) === 1) hurt(s, o, CONFIG.overloadDamage, ev);
+  for (const c of [def, attacker, ...s.board.creatures]) if (c.health <= 0 && s.board.creatures.includes(c)) defeat(s, c, ev);
 }
 
 // ---------------------------------------------------------------- spawning / movement helpers
 export function summonSpaces(s: any, p: Side, card: any): { row: number; col: number }[] {
-  const sh = stronghold(p);
   const out: any[] = [];
   const seen = new Set<string>();
   const add = (row: number, col: number) => { const k = row + ',' + col; if (!seen.has(k) && emptyCell(s, row, col)) { seen.add(k); out.push({ row, col }); } };
-  let enemyHome = false;
-  for (const row of CONFIG.homeRows[p]) for (let col = 1; col <= N; col++) {
-    if (row === sh.row && col === sh.col) continue;
-    const cr = creatureAt(s, row, col);
-    if (!cr) add(row, col);
-    else if (cr.owner !== p) enemyHome = true;
-  }
-  const homeFull = out.length === 0;
-  if (card.abilities?.includes('tunnel')) for (let r = 1; r <= N; r++) for (let c = 1; c <= N; c++) if (nearSite(r, c)) add(r, c);
-  if (homeFull && enemyHome) {
-    const R = CONFIG.blockedHomeSummonRange;
-    for (let r = sh.row - R; r <= sh.row + R; r++) for (let c = sh.col - R; c <= sh.col + R; c++) add(r, c);
-  }
+  const rowCells = (row: number) => { const o: number[] = []; for (let col = 1; col <= N; col++) if (!isStronghold(row, col) && !isSite(row, col)) o.push(col); return o; };
+  const back = CONFIG.backRow[p], front = CONFIG.frontRow[p];
+  for (const col of rowCells(back)) add(back, col);
+  if (out.length === 0) for (const col of rowCells(front)) add(front, col);
+  if (card.abilities?.includes('tunnel') && sitesControlled(s, other(p)) > sitesControlled(s, p)) for (let r = 1; r <= N; r++) for (let c = 1; c <= N; c++) if (nearSite(r, c)) add(r, c);
   return out;
 }
 
 export function moveDests(s: any, c: any): { row: number; col: number }[] {
-  if (c.hasMoved || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste'))) return [];
+  if (c.hasMoved || c.hasAttacked || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste'))) return [];
   const m = maxMove(c);
   const out: any[] = [];
   for (let dr = -m; dr <= m; dr++) for (let dc = -m; dc <= m; dc++) {
@@ -428,7 +438,7 @@ function resolveSpell(s: any, p: Side, card: any, target: any, to: any, ev: any[
       if (target) for (const c of [...s.board.creatures]) if (cheb(c, target) <= 1) dealDamage(s, c, card.params.amount, ev);
       break;
     case 'heal': if (t && t.owner === p) healCreature(s, t, card.params.amount, ev); break;
-    case 'shield': if (t && t.owner === p) t.shield = true; break;
+    case 'shield': if (t && t.owner === p) t.bubble = true; break;
     case 'healCommander': pl.health = Math.min(pl.maxHealth, pl.health + card.params.amount); ev.push({ type: 'heal', commander: p, amount: card.params.amount }); break;
   }
 }
@@ -530,7 +540,7 @@ export function legalActions(s: any): any[] {
       if (pl.crystals[fcol] < creatureCost(s, who, card)) continue;
       if (card.unique && s.board.creatures.some((c: any) => c.owner === who && c.cardId === card.id)) continue;
       for (const sp of summonSpaces(s, who, card)) out.push({ type: 'summon', uid: h.uid, row: sp.row, col: sp.col });
-    } else if (card.type === 'spell' && card.spellKind !== 'counter' && ['deploy', 'movement', 'attack'].includes(ph)) {
+    } else if (card.type === 'spell' && card.spellKind !== 'counter' && ['deploy', 'action'].includes(ph)) {
       if (total(pl) < spellCost(s, who, card)) continue;
       for (const o of spellTargets(s, who, card)) out.push({ type: 'cast', uid: h.uid, ...o });
     } else if (card.type === 'crystal' && ph === 'deploy') {
@@ -545,9 +555,9 @@ export function legalActions(s: any): any[] {
     for (const c of s.board.creatures) if (c.owner === who && !c.upgrade)
       for (const u of Object.keys(CONFIG.upgradeCosts)) if (pl.crystals[fcol] >= upgradeCost(u)) out.push({ type: 'upgrade', creatureUid: c.uid, upgrade: u });
   }
-  if (ph === 'movement') for (const c of s.board.creatures) if (c.owner === who) for (const d of moveDests(s, c)) out.push({ type: 'move', creatureUid: c.uid, row: d.row, col: d.col });
-  if (ph === 'attack') for (const c of s.board.creatures) if (c.owner === who) for (const t of attackTargets(s, c)) out.push({ type: 'attack', creatureUid: c.uid, target: t });
-  if (['deploy', 'movement', 'attack'].includes(ph)) {
+  if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of moveDests(s, c)) out.push({ type: 'move', creatureUid: c.uid, row: d.row, col: d.col });
+  if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const t of attackTargets(s, c)) out.push({ type: 'attack', creatureUid: c.uid, target: t });
+  if (['deploy', 'action'].includes(ph)) {
     for (const c of s.board.creatures) if (c.owner === who && has(c, 'blink') && !c.blinkUsed)
       for (const o of s.board.creatures) if (o !== c && o.owner === who) out.push({ type: 'ability', creatureUid: c.uid, ability: 'blink', target: { row: o.row, col: o.col } });
     out.push({ type: 'done' });
@@ -588,7 +598,7 @@ function matchLegal(s: any, a: any): any | null {
   return null;
 }
 
-export function applyAction(state: any, action: any): { ok: boolean; state: any; events: any[]; error?: string } {
+function applyActionInner(state: any, action: any): { ok: boolean; state: any; events: any[]; error?: string } {
   const fail = (error: string) => ({ ok: false, state, events: [], error });
   if (!action || typeof action.type !== 'string') return fail('Invalid action');
   if (state.phase === 'over') return fail('The match is over');
@@ -728,12 +738,35 @@ export function applyAction(state: any, action: any): { ok: boolean; state: any;
       break;
     }
     case 'done': {
-      if (s.phase === 'deploy') s.phase = 'movement';
-      else if (s.phase === 'movement') s.phase = 'attack';
+      if (s.phase === 'deploy') s.phase = 'action';
       else endTurn(s, ev);
       ev.push({ type: 'phase', phase: s.phase });
       break;
     }
   }
   return { ok: true, state: s, events: ev };
+}
+
+const TUTORIAL_ORDER = ['summon', 'move', 'capture', 'spend', 'fight', 'spell', 'commander', 'complete'];
+function advanceTutorial(s: any, act: any, actor: Side) {
+  const t = s.tutorial;
+  if (!t || t.step === 'complete') return;
+  const next = () => { t.step = TUTORIAL_ORDER[TUTORIAL_ORDER.indexOf(t.step) + 1]; };
+  const mine = actor === 'player';
+  switch (t.step) {
+    case 'summon': if (mine && act.type === 'summon') next(); break;
+    case 'move': if (mine && act.type === 'move') next(); break;
+    case 'capture': if (s.sites.some((x: any) => x.controller === 'player')) next(); break;
+    case 'spend': if (mine && ['summon', 'upgrade', 'cast'].includes(act.type)) next(); break;
+    case 'fight': if (mine && act.type === 'attack' && act.target && act.target.row) next(); break;
+    case 'spell': if (mine && act.type === 'cast') next(); break;
+    case 'commander': if (s.winner === 'player') next(); break;
+  }
+}
+
+export function applyAction(state: any, action: any): { ok: boolean; state: any; events: any[]; error?: string } {
+  const actor: Side = state && state.priority;
+  const r = applyActionInner(state, action);
+  if (r.ok && r.state.tutorial) { advanceTutorial(r.state, action, actor); if (r.state.winner === 'player') r.state.tutorial.step = 'complete'; }
+  return r;
 }

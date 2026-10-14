@@ -1,11 +1,13 @@
 import { Game } from '../game';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost } from '../engine';
+import tutorialJson from '../content/tutorial.json';
 import { createBoardView, createFlatView, BoardView } from './scene';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
 const FSYM = (f: string) => SYM[FACTIONS[f]?.symbol] || '✦';
-const PHASE: Record<string, string> = { deploy: 'Deploy', movement: 'Movement', attack: 'Attack', mulligan: 'Mulligan', draw: 'Draw', end: 'End', over: 'Over' };
+const PHASE: Record<string, string> = { deploy: 'Deploy', action: 'Action', mulligan: 'Mulligan', draw: 'Draw', end: 'End', over: 'Over' };
+const ACTIVE = ['deploy', 'action'];
 const COLOR_NAMES = ['green', 'blue', 'purple'];
 
 function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string | Node | null | undefined)[]): El {
@@ -74,11 +76,27 @@ export class App {
     const s = h('main', { class: 'screen center' },
       h('h1', { class: 'title' }, 'Oreheart'),
       h('p', { class: 'tagline' }, 'Goblins, Gnomes and Dwarves fight over the Soul Crystals.'),
-      h('div', { class: 'stack' },
+      h('nav', { class: 'stack menu-grid', 'aria-label': 'Main menu' },
         btn('Play', 'primary', () => this.showSetup()),
-        btn('How to Play', '', () => this.showHowTo()),
-        this.gfxButton()));
+        btn('Tutorial', '', () => this.beginTutorial()),
+        btn('Rules', '', () => this.showRules()),
+        btn('Settings', '', () => this.showSettings())));
     this.root.append(s);
+    if (!this.test && !localStorage.getItem('oreheart.tutorialSeen')) {
+      const d: any = this.dialog('Welcome to Oreheart!', [h('h2', {}, 'Welcome to Oreheart!'),
+        h('p', { style: 'text-align:center;margin:0' }, 'New here? A short guided match teaches you the basics.'),
+        h('div', { class: 'row' },
+          btn('Start Tutorial', 'primary', () => { localStorage.setItem('oreheart.tutorialSeen', '1'); d.close(); this.beginTutorial(); }),
+          btn('Skip', '', () => { localStorage.setItem('oreheart.tutorialSeen', '1'); d.close(); }))]);
+      d.el.dataset.sticky = '1';
+    }
+  }
+
+  showSettings() {
+    this.clear();
+    this.root.append(h('main', { class: 'screen center' },
+      h('h1', { class: 'section cinzel' }, 'Settings'),
+      h('div', { class: 'stack' }, this.gfxButton(), btn('Back', '', () => this.showMenu()))));
   }
 
   showSetup() {
@@ -89,7 +107,7 @@ export class App {
       cmdBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === cmd)));
       diffBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === diff)));
     };
-    for (const c of Object.values(COMMANDERS) as any[]) {
+    for (const c of (Object.values(COMMANDERS) as any[]).filter((x) => x.playable !== false)) {
       const f = FACTIONS[c.faction];
       cmdBtns.push(h('button', { type: 'button', class: 'cmd-btn', 'data-id': c.id, onclick: () => { cmd = c.id; sel(); } },
         h('span', { class: 'nm' }, c.name),
@@ -98,12 +116,12 @@ export class App {
     for (const d of ['easy', 'normal']) diffBtns.push(btn(d === 'easy' ? 'Easy' : 'Normal', '', () => { diff = d; sel(); }, { 'data-id': d }));
     sel();
     const s = h('main', { class: 'screen' },
-      h('h1', { class: 'section cinzel', style: 'font-size:1.6rem;color:#e3b54a;margin:8px 0 14px;text-align:center' }, 'Choose Your Commander'),
-      h('div', { class: 'stack', style: 'max-width:340px' }, ...cmdBtns),
-      h('div', { class: 'row', style: 'margin:16px 0' }, ...diffBtns),
-      h('div', { class: 'stack' },
+      h('h1', { class: 'section cinzel' }, 'Choose Your Commander'),
+      h('div', { class: 'cmds' }, ...cmdBtns),
+      h('div', { class: 'row', style: 'margin:10px 0' }, ...diffBtns),
+      h('div', { class: 'row' },
         btn('Start Match', 'primary', () => {
-          const others = Object.keys(COMMANDERS).filter((k) => k !== cmd);
+          const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
           const opp = others[Math.floor(Math.random() * others.length)];
           this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff });
         }),
@@ -111,7 +129,7 @@ export class App {
     this.root.append(s);
   }
 
-  showHowTo() {
+  showRules() {
     this.clear();
     const svg = (label: string, body: string) => {
       const d = document.createElement('div');
@@ -127,14 +145,14 @@ export class App {
       '<text x="40" y="106" font-size="9" fill="#f4e9d0" text-anchor="middle">Goblins</text><text x="120" y="106" font-size="9" fill="#f4e9d0" text-anchor="middle">Gnomes</text><text x="200" y="106" font-size="9" fill="#f4e9d0" text-anchor="middle">Dwarves</text>');
     const combat = svg('Picture of type advantage: Dwarves beat Goblins, Goblins beat Gnomes, Gnomes beat Dwarves',
       '<rect width="240" height="110" rx="10" fill="#26232f"/><text x="120" y="30" font-size="16" fill="#f4e9d0" text-anchor="middle">🔨 → 💀 → ⚙️ → 🔨</text><text x="120" y="62" font-size="11" fill="#e3b54a" text-anchor="middle">+1 Attack on a type advantage</text><text x="120" y="86" font-size="11" fill="#f4e9d0" text-anchor="middle">Dwarves › Goblins › Gnomes › Dwarves</text>');
-    const sec = (t: string, ...k: (string | El)[]) => h('section', {}, h('h3', {}, t), ...k.map((x) => (typeof x === 'string' ? h('p', {}, x) : x)));
+    const sec = (t: string, ...k: (string | El)[]) => h('section', {}, h('h2', {}, t), ...k.map((x) => (typeof x === 'string' ? h('p', {}, x) : x)));
     const s = h('main', { class: 'screen howto' },
-      h('h1', { class: 'section cinzel', style: 'font-size:1.8rem;color:#e3b54a;margin:8px 0 14px' }, 'How to Play'),
-      sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat!'),
-      sec('The Board', 'A hidden 7×7 grid. The enemy is at the top, you are at the bottom. Summon creatures in your two home rows. Three crystal sites sit in the middle.', board),
-      sec('Crystals', 'Control a site by having more creatures around it than the enemy. Each site you control gives 1 crystal, and your Gatherers next to it give 2 more. Your Stronghold gives 1 more every turn, and 2 extra if you control no sites.', crystals),
-      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play one Crystal card. Movement: drag creatures one space. Attack: drag creatures onto enemies, or onto the enemy Stronghold. Tap Done to finish a phase.'),
-      sec('Combat', 'Creatures hit with their Attack; survivors strike back in melee. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit 2 spaces away.', combat),
+      h('h1', { class: 'section cinzel' }, 'Rules'),
+      sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
+      sec('The Board', 'A hidden 7×7 grid. The enemy is at the top, you are at the bottom. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal sites sit in the middle.', board),
+      sec('Crystals', 'Control a site by having more creatures around it than the enemy. Each site you control gives 1 crystal, and your Gatherers next to it give 2 more. Your Stronghold gives 1 every turn, and 2 extra if you control no sites while the enemy holds one. You start with 0 crystals, so turn 1 gives exactly 1.', crystals),
+      sec('Your Turn', 'Deploy (30 seconds): drag cards onto the board to summon creatures or cast spells, play one Crystal card and upgrade creatures. Action (45 seconds): each creature either moves one space OR attacks, never both (Charge creatures can do both). Tap Done to finish a phase. At the start of your turn all your creatures heal back to full Health.'),
+      sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit 2 spaces away and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals of any color. Instants can answer the enemy during a "Respond?" window, and counterspells cancel spells or summons.'),
       h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Back', '', () => this.showMenu())));
     this.root.append(s);
@@ -185,6 +203,13 @@ export class App {
     return state;
   }
 
+  beginTutorial() {
+    const state = this.game.startTutorial();
+    this.showMatch();
+    this.update(this.game.state, []);
+    return state;
+  }
+
   teardownMatch() {
     clearInterval(this.timerId);
     clearTimeout(this.respondTimer);
@@ -202,27 +227,35 @@ export class App {
   showMatch() {
     this.clear();
     const r = this.r;
-    const crystalChip = (c: string) => (r['cr_' + c] = h('span', { class: 'cr ' + c, 'aria-label': `Your ${c} crystals` }, '0'));
-    r.enemyHand = h('div', { class: 'enemy-hand', 'aria-label': 'Enemy hand' });
-    r.enemyDeck = h('div', { class: 'pile', 'aria-label': 'Enemy deck' }, '0');
-    r.enemyHealth = h('div', { class: 'health', 'aria-label': 'Enemy Commander health' }, '20');
-    r.phase = h('div', { class: 'phase', 'aria-label': 'Current phase', 'aria-live': 'polite' });
-    r.timer = h('div', { class: 'timer', 'aria-label': 'Phase timer' }, '30');
+    const crystalChip = (c: string) => (r['cr_' + c] = h('span', { class: 'cr ' + c, role: 'img', 'aria-label': `Your ${c} crystals` }, '0'));
+    r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
+    r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, '0');
+    r.enemyHealth = h('div', { class: 'health', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
+    r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
+    r.timer = h('div', { class: 'timer', role: 'timer', 'aria-label': 'Phase timer' }, '30');
     r.rope = h('div', { class: 'rope hidden' }, h('i'));
     r.board = h('div', { class: 'board' });
     r.fx = h('div', { class: 'fx' });
-    r.myHealth = h('div', { class: 'health mine', 'aria-label': 'Your Commander health' }, '20');
-    r.myDeck = h('div', { class: 'pile', 'aria-label': 'Your deck' }, '0');
-    r.done = btn('Done', 'primary', () => this.game.act({ type: 'done' }));
+    r.myHealth = h('div', { class: 'health mine', role: 'img', 'aria-label': 'Your Commander health' }, '20');
+    r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, '0');
+    r.done = btn('Done', 'primary done-btn', () => this.game.act({ type: 'done' }));
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
-    const menuBtn = btn('Menu', '', () => this.showMatchMenu());
+    const menuBtn = btn('Menu', 'menu-btn', () => this.showMatchMenu());
+    r.tip = h('aside', { class: 'tip', 'aria-label': 'Tutorial tip', hidden: true });
+    const crystals = h('div', { class: 'crystals' }, crystalChip('green'), crystalChip('blue'), crystalChip('purple'));
     const match = h('main', { class: 'match' },
-      h('div', { class: 'hud-top' }, r.enemyDeck, r.enemyHand, r.enemyHealth),
-      h('div', { class: 'topbar' }, r.phase, r.timer, menuBtn, r.rope),
-      r.board,
-      h('div', { class: 'hud-bottom' }, r.myHealth, crystalChip('green'), crystalChip('blue'), crystalChip('purple'), h('span', { class: 'spacer' }), r.myDeck, r.done),
-      r.hand);
+      h('div', { class: 'side left' }, crystals,
+        h('div', { class: 'piles' }, h('div', { class: 'pile-wrap' }, h('span', { class: 'lbl' }, 'You'), r.myDeck), h('div', { class: 'pile-wrap' }, h('span', { class: 'lbl' }, 'Foe'), r.enemyDeck))),
+      h('div', { class: 'center' },
+        h('div', { class: 'hud-top' }, r.enemyHand),
+        r.board,
+        r.hand),
+      h('div', { class: 'side right' },
+        r.enemyHealth,
+        h('div', { class: 'phase-box' }, r.phase, r.timer, r.rope),
+        r.done, r.myHealth, menuBtn));
     this.root.append(match);
+    r.board.append(r.tip);
     // board layers
     r.cells = new Map<string, El>();
     r.sites = [];
@@ -323,16 +356,32 @@ export class App {
     const whose = st.activePlayer === 'player' ? 'Your turn' : 'Enemy turn';
     r.phase.textContent = st.phase === 'mulligan' ? 'Mulligan' : st.phase === 'over' ? 'Match over' : `${whose} · ${PHASE[st.phase]}`;
     const key = `${st.turn}|${st.phase}|${st.priority}|${st.pendingResponse ? 1 : 0}`;
-    if (key !== this.phaseKey) { this.phaseKey = key; this.deadline = Date.now() + CONFIG.phaseTimerSeconds * 1000; }
-    const mine = st.priority === 'player' && st.activePlayer === 'player' && ['deploy', 'movement', 'attack'].includes(st.phase) && !st.pendingResponse;
+    if (key !== this.phaseKey) { this.phaseKey = key; this.deadline = Date.now() + this.phaseSeconds(st) * 1000; }
+    const mine = st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase) && !st.pendingResponse;
     r.done.disabled = !mine;
     // board overlays
+    this.renderTip(st);
     this.renderSites(st);
     this.renderTokens(st);
     this.renderHand(st);
     this.handleDialogs(st);
     this.animate(st, events);
     this.tick();
+  }
+
+  phaseSeconds(st: any) {
+    return st.phase === 'action' ? CONFIG.actionTimerSeconds : CONFIG.deployTimerSeconds;
+  }
+
+  renderTip(st: any) {
+    const tip = this.r.tip as El;
+    if (!st.tutorial) { tip.hidden = true; return; }
+    const step = st.tutorial.step;
+    tip.hidden = false;
+    tip.dataset.step = step;
+    tip.replaceChildren(h('div', { class: 'tip-text' }, (tutorialJson as any).tips[step] || ''),
+      btn('Skip Tutorial', 'tip-skip', () => this.showMenu()));
+    this.r.timer.hidden = true;
   }
 
   renderSites(st: any) {
@@ -354,14 +403,20 @@ export class App {
       let el = this.tokens.get(c.uid);
       if (!el) {
         el = h('div', { class: `token f-${card.faction} ${c.owner === 'player' ? 'mine' : 'theirs'}`, role: 'img' },
-          h('div', { class: 'tk-body' }, FSYM(card.faction)), h('div', { class: 'tk-stats' }, h('b', { class: 'a' }), h('b', { class: 'h' })));
+          h('div', { class: 'tk-body' }, FSYM(card.faction)),
+          h('div', { class: 'tk-stats' }, h('b', { class: 'a' }), h('b', { class: 'h' }), h('b', { class: 'sh' })));
         this.tokens.set(c.uid, el);
         this.r.board.insertBefore(el, this.r.fx);
       }
       el.dataset.uid = c.uid; el.dataset.row = String(c.row); el.dataset.col = String(c.col);
       (el.querySelector('.a') as El).textContent = String(c.attack);
       (el.querySelector('.h') as El).textContent = String(c.health);
-      el.setAttribute('aria-label', `${card.name}, ${c.owner === 'player' ? 'yours' : 'enemy'}, attack ${c.attack}, health ${c.health} of ${c.maxHealth}, row ${c.row} column ${c.col}`);
+      const sh = el.querySelector('.sh') as El;
+      sh.textContent = c.shield > 0 ? `🛡${c.shield}` : '';
+      sh.hidden = !(c.shield > 0);
+      el.dataset.damaged = String(c.health < c.maxHealth);
+      el.setAttribute('aria-label', `${card.name}, row ${c.row}, column ${c.col}`);
+      el.title = `${card.name}: Attack ${c.attack}, Health ${c.health}/${c.maxHealth}${c.shield > 0 ? `, Shield ${c.shield}` : ''}`;
       this.place(el, c.row, c.col);
     }
     for (const [uid, el] of this.tokens) if (!seen.has(uid)) { el.remove(); this.tokens.delete(uid); }
@@ -469,7 +524,7 @@ export class App {
 
   showMatchMenu() {
     const d: any = this.dialog('Menu', [h('h2', {}, 'Menu'), h('div', { class: 'menu-list' },
-      btn('Resume', 'primary', () => d.close()), this.gfxButton(),
+      btn('Resume', 'primary', () => d.close()),
       btn('Surrender', 'danger', () => {
         d.close();
         const c: any = this.dialog('Surrender this match?', [h('h2', {}, 'Surrender this match?'),
@@ -481,13 +536,13 @@ export class App {
   tick() {
     const st = this.game.state, r = this.r;
     if (!st || !r.timer) return;
-    const total = CONFIG.phaseTimerSeconds;
+    const total = this.phaseSeconds(st);
     const left = this.test || this.game.paused ? total : Math.max(0, Math.ceil((this.deadline - Date.now()) / 1000));
     r.timer.textContent = String(left);
-    const warn = !this.test && left <= CONFIG.ropeWarningSeconds && st.phase !== 'over' && st.phase !== 'mulligan';
+    const warn = !this.test && !st.tutorial && left <= CONFIG.ropeWarningSeconds && st.phase !== 'over' && st.phase !== 'mulligan';
     r.rope.classList.toggle('hidden', !warn);
     if (warn) (r.rope.firstChild as El).style.transform = `scaleX(${Math.max(0, (this.deadline - Date.now()) / (CONFIG.ropeWarningSeconds * 1000))})`;
-    if (!this.test && left <= 0 && st.priority === 'player' && st.activePlayer === 'player' && ['deploy', 'movement', 'attack'].includes(st.phase) && !st.pendingResponse) {
+    if (!this.test && !st.tutorial && left <= 0 && st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase) && !st.pendingResponse) {
       this.deadline = Date.now() + total * 1000;
       this.game.act({ type: 'done' });
     }
@@ -530,6 +585,8 @@ export class App {
           this.floatText('-' + e.amount, 'dmg', e.row, e.col);
           if (e.amount >= 3) this.burst('KA-BOOM!', e.row, e.col);
         }
+      } else if (e.type === 'shieldBlock') {
+        this.burst('BLOCK!', e.row, e.col);
       } else if (e.type === 'heal' && e.amount > 0) {
         if (e.row) this.floatText('+' + e.amount, 'heal', e.row, e.col);
         else this.floatText('+' + e.amount, 'heal', e.commander === 'player' ? 7 : 1, 4);
@@ -729,7 +786,7 @@ export class App {
         const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
         this.setGlow(legal.filter((a: any) => a.type === 'move').map((a: any) => ({ row: a.row, col: a.col })), 'glow');
         this.setGlow(legal.filter((a: any) => a.type === 'attack').map((a: any) => this.cellOfTarget(a.target)), 'glow-attack');
-        if (!legal.some((a: any) => a.type === 'move' || a.type === 'attack')) this.flash(st.phase === 'movement' || st.phase === 'attack' ? 'This creature cannot act now' : 'Move in the Movement phase, attack in the Attack phase');
+        if (!legal.some((a: any) => a.type === 'move' || a.type === 'attack')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves OR attacks)' : 'Creatures move and attack in the Action phase');
         return true;
       },
       onDrop: (c) => {

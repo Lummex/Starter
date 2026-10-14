@@ -19,5 +19,17 @@ if (test) {
       try { return game.act(action, true); } catch (e: any) { return { ok: false, error: String(e && e.message || e) }; }
     },
     newMatch: (options: any = {}) => app.beginMatch(options),
+    startTutorial: () => app.beginTutorial(),
   };
 }
+
+// "Please rotate" overlay: shown whenever the window is portrait and narrower than 900px.
+const rotate = document.createElement('div');
+rotate.className = 'rotate-overlay';
+rotate.setAttribute('role', 'alert');
+rotate.innerHTML = '<div class="rot-icon" aria-hidden="true">📱</div><p>Please rotate your phone</p>';
+document.body.append(rotate);
+const checkRotate = () => { rotate.hidden = !(window.innerHeight > window.innerWidth && window.innerWidth < 900); };
+checkRotate();
+window.addEventListener('resize', checkRotate);
+window.addEventListener('orientationchange', checkRotate);

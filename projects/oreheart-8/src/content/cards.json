@@ -111,7 +111,7 @@
   "role": "Fighter",
   "cost": 6,
   "attack": 5,
-  "health": 7,
+  "health": 6,
   "move": 2,
   "abilities": [
    "rally"
@@ -169,7 +169,7 @@
    "fixit"
   ],
   "unique": false,
-  "text": "Fix-it: Heals 1 Health from each adjacent ally at the start of your turn."
+  "text": "Fix-it: At the start of your turn, each adjacent ally gets Shield 1."
  },
  {
   "id": "spark-gnome",
@@ -249,7 +249,7 @@
   "role": "Fighter",
   "cost": 7,
   "attack": 5,
-  "health": 8,
+  "health": 6,
   "move": 2,
   "abilities": [
    "overload"
@@ -358,7 +358,7 @@
    "heartyale"
   ],
   "unique": false,
-  "text": "Hearty Ale: Heals 1 Health from each adjacent ally at the start of your turn."
+  "text": "Hearty Ale: At the start of your turn, each adjacent ally gets +1 Health until your next turn."
  },
  {
   "id": "ram-rider",
@@ -375,7 +375,7 @@
    "charge"
   ],
   "unique": false,
-  "text": "Charge: +2 Attack if it moved 2 spaces this turn."
+  "text": "Charge: Can move and attack in the same turn."
  },
  {
   "id": "queen-brunhilda-stonebeard",
@@ -386,7 +386,7 @@
   "role": "Fighter",
   "cost": 7,
   "attack": 5,
-  "health": 9,
+  "health": 6,
   "move": 2,
   "abilities": [
    "unbreakable"

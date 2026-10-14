@@ -1,6 +1,7 @@
 // Match controller: owns the engine state, runs the computer opponent, and notifies the UI.
 import { createMatch, applyAction, legalActions, other } from './engine';
 import { aiChoose, makeRand, Rand } from './ai/ai';
+import tutorialJson from './content/tutorial.json';
 
 export type Listener = (state: any, events: any[]) => void;
 
@@ -9,6 +10,7 @@ export class Game {
   options: any = {};
   testMode: boolean;
   ai = true;
+  scripted = false;
   difficulty = 'normal';
   private listeners: Listener[] = [];
   private rand: Rand = makeRand(1);
@@ -33,6 +35,8 @@ export class Game {
     clearTimeout(this.aiTimer);
     this.options = options;
     this.ai = options.ai !== false;
+    this.scripted = !!options.tutorial;
+    if (this.scripted) this.ai = true;
     this.difficulty = options.difficulty === 'easy' ? 'easy' : 'normal';
     const seed = options.seed ?? (this.testMode ? 1 : (Date.now() ^ (Math.random() * 1e9)) | 0);
     this.rand = makeRand(seed + 977);
@@ -40,6 +44,11 @@ export class Game {
     this.emit([{ type: 'newMatch' }]);
     this.afterAction();
     return JSON.parse(JSON.stringify(this.state));
+  }
+
+  startTutorial() {
+    const t: any = tutorialJson;
+    return this.newMatch({ playerCommander: t.playerCommander, opponentCommander: t.opponentCommander, setup: t.setup, tutorial: true, seed: 1, difficulty: 'easy' });
   }
 
   getState() {
@@ -89,7 +98,7 @@ export class Game {
   private aiStep() {
     const s = this.state;
     if (this.aiTurn !== s.turn) { this.aiTurn = s.turn; this.aiCount = 0; }
-    let a = aiChoose(s, this.difficulty, this.rand);
+    let a = this.scripted ? (s.pendingResponse ? { type: 'pass' } : { type: 'done' }) : aiChoose(s, this.difficulty, this.rand);
     if (++this.aiCount > 60 && !s.pendingResponse && s.phase !== 'mulligan') a = { type: 'done' };
     let r = applyAction(s, a);
     if (!r.ok) r = applyAction(s, s.pendingResponse ? { type: 'pass' } : s.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' });
