@@ -1,10 +1,29 @@
-# OreHeart — Phase 1a Build Spec (Revision 2)
+# OreHeart — Phase 1a Build Spec (Revision 3)
 
 ## Summary
 
-Oreheart is a comic-style fantasy card battle in the browser. Goblins, Gnomes and Dwarves fight over three crystal sites on a hidden 7×7 grid, and you win by bringing the enemy Commander from 20 Health to 0. Phase 1a delivers **one complete, playable match against a computer opponent (Easy or Normal) plus a guided tutorial match**. It is built on a pure, data-driven rules engine that could later run on a server, and uses simple placeholder 3D visuals on a **landscape** screen. Rules, numbers and cards come from `factory-design/design/oreheart-gdd-v2.md` (the GDD). Scope comes from `factory-design/design/oreheart-phase-1a-brief.md` (the brief, including its "Revision 2" section). Where this spec and the GDD disagree, **this spec wins**, because it settles GDD gaps for testing.
+Oreheart is a comic-style fantasy card battle in the browser. Goblins, Gnomes and Dwarves fight over three crystal sites on a hidden 7×7 grid, and you win by bringing the enemy Commander from 20 Health to 0. Phase 1a delivers **one complete, playable match against a computer opponent (Easy or Normal) plus a guided tutorial match**. It is built on a pure, data-driven rules engine that could later run on a server, and uses simple placeholder 3D visuals on a **landscape** screen. Rules, numbers and cards come from `factory-design/design/oreheart-gdd-v2.md` (the GDD). Scope comes from `factory-design/design/oreheart-phase-1a-brief.md` (the brief, including its "Revision 3" and "Revision 2" sections). Where this spec and the GDD disagree, **this spec wins**, because it settles GDD gaps for testing.
 
 Tech: Vite + TypeScript (vanilla or React), Three.js for the 3D scene, static `dist/` output, no backend.
+
+### Revision 3 changes (summary for builders who saw revision 2)
+
+These come from the owner's second playtest. Where an older line below disagrees, the Revision 3 rule wins.
+- The battlefield fills the whole landscape screen (no black bars). Everything else (hand, card backs, counters, phase, Done, Commander Health) floats over it. Your Stronghold sits just behind your hand; the enemy's is at the top edge.
+- Hand cards are bigger, and the hand slides down out of the way while you drag.
+- There is no faction picker: the Commander decides the faction and deck.
+- Thane Borgo's +1 Health must really work in the engine (a summoned Dwarf Miner is 1/2).
+- Big center banners: "YOUR TURN", "DEPLOY", "ACTION", "ENEMY TURN". Auto-skipped phases get no banner.
+- Auto-skip: when no moves are left, the phase ends by itself after about 1 second. Instants, upgrades and the Gatherer swap don't count as moves.
+- No Stronghold income. Starting crystals = 1.
+- Creatures show Attack, Health and Movement. Creatures that acted, or can't act yet, turn darker (not grey).
+- New creature costs (exact table in 2.1). Basic Gatherers are 1/1 for 1. The starter decks are rebuilt.
+- Ranged reaches any space within 2 (Chebyshev distance ≤ 2), over creatures, including the Commander.
+- Pressing Done while moves are left shows a "Moves still available!" pop-up.
+- Phase timer: 50 seconds per timed phase. It is hidden for 40 seconds, then a 10-second center countdown runs, and at 0 the phase ends.
+- Gatherer swap and free Gatherer when broke. Gatherers can move (not attack) the turn they're summoned.
+- Income preview "+N next turn". Tapping a site shows its owner and what it pays.
+- Overlay order: confirm pop-up, then countdown, then banners.
 
 ### Revision 2 changes (summary for builders who saw revision 1)
 
@@ -30,17 +49,17 @@ The menu is now Play / Tutorial / Rules / Settings ("How to Play" is gone, and t
 1.1 **Rules engine** in `src/engine/`, pure TypeScript: no DOM, no `window`, no timers, no rendering, no `Math.random`. All randomness (shuffles, coin flip) comes from a seeded RNG passed in. State is plain JSON-serializable data. The engine exposes `createMatch(options)`, `legalActions(state)` and `applyAction(state, action)`. `applyAction` returns the new state plus events, which drive the animations: summon, move, attack, damage, shieldBlock, defeat, heal, spell, counter, siteControl, income, draw, deckOut, retreat, and so on.
 
 1.2 **Content as data** in `src/content/` as JSON: `factions.json`, `crystal-colors.json`, `commanders.json`, `cards.json`, `abilities.json`, `starter-decks.json`, `tutorial.json`, `game-config.json`. `game-config.json` holds every tunable number, at least:
-- `deployTimerSeconds: 30`, `actionTimerSeconds: 45`, `ropeWarningSeconds: 10`, `respondWindowSeconds: 5`
-- `startingCrystals: 0`, `strongholdIncome: 1`, `siteIncome: 1`, `gathererBonus: 2`, `underdogBonus: 2`
+- `phaseTimerSeconds: 50`, `timerHiddenSeconds: 40`, `countdownSeconds: 10`, `respondWindowSeconds: 5`, `autoSkipDelaySeconds: 1`
+- `startingCrystals: 1`, `siteIncome: 1`, `gathererBonus: 2`, `underdogBonus: 2` (there is **no** Stronghold income and no `strongholdIncome` key, or it is 0)
 - `deckSize: 50`, `openingHandSize: 5`, `copyLimits` (Common/Uncommon unlimited; Rare/Ultra Rare/Collector 3), `crystalCardLimit: 10`
-- `starterDeckMix: { creatures: 40, spells: 6, crystals: 4 }`
+- `starterDeckMix: { creatures: 40, spells: 6, crystals: 4, basicGatherers: 8 }`
 - `commanderHealth: 20`, upgrade costs (6/6/10/15), `deckOutDamage: 1`
 
 Nothing balance-related is hard-coded in the engine.
 
 1.3 **Unit tests** for the engine (Vitest; `npm test` runs them) must cover, with exact numbers:
 - site control
-- income, including the turn-1 opening: exactly 1 crystal
+- income, including the turn-1 opening: exactly 1 crystal (the starting crystal) and no Stronghold income ever
 - the underdog bonus and the Tunnel condition
 - back-row summoning
 - simultaneous combat
@@ -50,10 +69,11 @@ Nothing balance-related is hard-coded in the engine.
 - Instants/counterspells
 - Crystal card limits
 - win/retreat
+- Revision 3, with exact numbers: Thane Borgo's +1 Health (summoned Dwarf Miner = 1/2, Shieldbeard = 2/5), auto-skip / "moves left" detection, no Stronghold income (starting 1, turn 3 still 1 if nothing held and nothing spent), sample costs (Scrounger 1, Scrapper 6, Shieldbeard 7, Ram Rider 11, Big Boss Troll 13), Ranged at Chebyshev distance 2 over creatures and onto the Commander, the Gatherer swap, the free Gatherer when broke, and Gatherers moving (not attacking) on their summon turn
 
 ### 2. Cards and Commanders
 
-2.1 All **41 starter cards** from the GDD, with exactly the GDD's (revision 2) stats, rarity, cost and abilities. **Printed creature Health is at most 6.** Big Boss Troll, Steam Golem and Queen Brunhilda have Health 6. Card ids are fixed because the tests use them:
+2.1 All **41 starter cards** from the GDD, with exactly the GDD's (revision 3) stats, rarity, cost and abilities. **Printed creature Health is at most 6.** Big Boss Troll, Steam Golem and Queen Brunhilda have Health 6. Card ids are fixed because the tests use them:
 
 - Goblins: `goblin-scrounger`, `goblin-scrapper`, `goblin-slinger`, `goblin-bomber`, `goblin-sneak`, `wolf-rider`, `grubnaks-big-boss-troll`
 - Gnomes: `gnome-prospector`, `gnome-tinker`, `spark-gnome`, `clockwork-beetle`, `gnome-illusionist`, `gyrocopter-ace`, `the-great-steam-golem`
@@ -61,6 +81,8 @@ Nothing balance-related is hard-coded in the engine.
 - Crystal Eaters: `shard-guzzler`, `overclocked-conduit`, `crystal-drunk-delver`
 - Spells: `prospectors-prayer`, `tunnel-rush`, `fireball`, `battle-cry`, `meteor-strike`, `healing-light`, `shield-bubble`, `second-wind`, `fizzle`, `hold-it`, `spell-snap`, `mirror-hex`
 - Crystal cards: `soul-shard`, `crystal-cluster`, `glowing-geode`, `heart-of-the-fallen`, `motherlode`
+
+**Creature costs (revision 3, exact):** Goblin Scrounger 1, Goblin Scrapper 6, Goblin Slinger 4, Goblin Bomber 5, Goblin Sneak 6, Wolf Rider 9, Grubnak's Big Boss Troll 13; Gnome Prospector 1, Gnome Tinker 5, Spark Gnome 5, Clockwork Beetle 8, Gnome Illusionist 6, Gyrocopter Ace 8, The Great Steam Golem 13; Dwarf Miner 1, Shieldbeard 7, Axe Thrower 6, Ironhammer Berserker 8, Brewmaster 7, Ram Rider 11, Queen Brunhilda Stonebeard 13; Shard Guzzler 5, Overclocked Conduit 5, Crystal-Drunk Delver 7. The three **basic Gatherers** (Goblin Scrounger, Gnome Prospector, Dwarf Miner) are **⚔1 ❤1, cost 1**. Extra Commons follow the GDD formula: Attack + Health, +1 for a small ability, +2 for a big one.
 
 Reworked cards (revision 2):
 - **Gnome Tinker** (Fix-it): at the start of your turn, each adjacent ally gets Shield 1.
@@ -71,12 +93,14 @@ Reworked cards (revision 2):
 2.2 **Commanders** (ids fixed). All have 20 Health.
 - `grubnak` (Grubnak the Goblin Boss, goblins): Goblin creatures cost 1 less, minimum 1.
 - `sproingle` (Professor Sproingle, gnomes): your spells cost 1 less, minimum 1.
-- `borgo` (Thane Borgo Anvilbottom, dwarves): your creatures get +1 Health, applied to max and current Health on entering the battlefield.
+- `borgo` (Thane Borgo Anvilbottom, dwarves): your creatures get +1 Health, applied to max and current Health on entering the battlefield (summoned or placed by `setup`). Example: a summoned Dwarf Miner is ⚔1 ❤2 and a Shieldbeard is ⚔2 ❤5. This must be implemented in the engine, not faked in the UI.
 
 2.3 **Starter decks**: one 50-card deck per faction in `starter-decks.json`. Each deck has:
 - exactly **40 creatures** of that faction (including each of its 7 starter creatures and its Crystal Eater at least once; the rest are Commons)
 - exactly **6 spells** from the spell list, including **at least 1 Fizzle**
 - exactly **4 Crystal cards**
+- exactly **8 copies of the faction's basic Gatherer** (Goblin Scrounger / Gnome Prospector / Dwarf Miner)
+- plenty of cheap creatures: at least **16 of the 40 creatures cost 4 or less**
 - at most 3 copies of any Rare/Ultra Rare/Collector card
 
 Extra original Common **creatures** may be added. Use original names only, never names from Warcraft, Warhammer, Magic, Hearthstone, Pokémon or any other game. Their printed Health must also be ≤ 6. A player's deck is their Commander's faction deck.
@@ -96,13 +120,15 @@ Extra original Common **creatures** may be added. Use original names only, never
 - A newly controlled site switches to the controller's faction color.
 
 3.3 **Income** (Draw phase, active player only), all in the player's faction color:
-- +1 Stronghold trickle
+- **no Stronghold income** (revision 3)
 - +1 per controlled site
 - +2 per own Gatherer on a surrounding space of each controlled site (a Gatherer touching two controlled sites gives +2 for each)
 - +1 per own Glowing Geode
 - **+2 underdog bonus only if the player controls no sites AND the enemy controls at least one site**
 
-**Starting crystals are 0**, and income also applies on turn 1. So the first player starts turn 1 with exactly **1** crystal, and the second player has exactly 1 on turn 2 (if nobody holds a site).
+**Each player starts the match with 1 crystal** of their faction color (`startingCrystals: 1`). Income also runs on turn 1, but with no sites held it is 0. So the first player has exactly **1** crystal on turn 1, the second player has exactly 1 on turn 2, and a player who spends nothing and holds no site still has exactly 1 on their next turn.
+
+**Income preview:** the "next turn" amount is the income the player would collect if their next turn started with the board as it is now (site control recomputed from the current board, then the rules above, plus Glowing Geodes).
 
 3.4 **Setup**:
 1. Each deck is shuffled with the seeded RNG, and each player draws 5.
@@ -114,11 +140,13 @@ Turn 1 is the first player's first turn, and on it they skip their draw.
 
 3.5 **Turn phases**: Draw → Deploy → Action → End → the other player's turn.
 - **Draw** (automatic): all the active player's creatures heal to full and lose leftover Shield from last turn. Then start-of-turn abilities happen (Fix-it, Hearty Ale), the player draws 1 card, site control is recomputed and income is collected.
-- **Deploy** (timed, 30 s).
-- **Action** (timed, 45 s).
+- **Deploy** (timed, 50 s).
+- **Action** (timed, 50 s).
 - **End** (automatic: end-of-turn effects).
 
-The `done` action ends the current timed phase. `turn` counts every turn of either player (turn 1 = first player, turn 2 = second player, …).
+The `done` action ends the current timed phase.
+
+**Moves left / auto-skip:** a player has *moves left* in a phase if `legalActions()` contains at least one action other than `done`, `surrender`, `upgrade`, `gathererSwap` and casting an Instant. In Deploy that means an affordable, placeable summon, a playable Crystal card, a castable Regular spell or a usable activated ability. In Action it means any move, attack, ability or Regular spell. The engine exposes this as `hasMovesLeft(state)`. When the active player has no moves left (and no Respond window is open), the app ends the phase by itself after `autoSkipDelaySeconds` (about 1 s). This applies to the human and the AI alike. `turn` counts every turn of either player (turn 1 = first player, turn 2 = second player, …).
 
 3.6 **Costs & payment**:
 - Creatures cost crystals of their faction color only.
@@ -137,16 +165,19 @@ The `done` action ends the current timed phase. `turn` counts every turn of eith
   - Heavy Armor 6: +3 Health, max and current
   - Veteran 10: move 2
   - Champion's Crown 15: +2 Attack and +3 Health
+- **Gatherer swap** (action `gathererSwap`): once per turn, in your Deploy phase, if your hand holds **no Gatherer-role card**, you may discard one hand card (`discardUid`; none if the hand is empty) to move your **cheapest basic Gatherer** (Scrounger/Prospector/Miner of your faction; Crystal Eaters don't count) from your deck into your hand. It is free. Not legal if the deck has no basic Gatherer, if you already swapped this turn, or with an empty hand unless `discardUid` is omitted. The deck is not reshuffled.
+- **Free Gatherer when broke:** if at the moment of summoning you have **0 crystals in total**, control **no site** and have **no Gatherer-role creature on the battlefield**, you may summon one **basic Gatherer** for free (it costs 0). Normal placement rules apply. After that, you have a Gatherer on the battlefield, so a second free one isn't possible.
 - **Unique cards:** only one copy of that card on your battlefield at a time.
 - **Regular spells** may be cast in the Deploy or Action phase of your turn.
 
 3.8 **Action phase: each creature either moves OR attacks, never both**, except creatures with **Charge** (Ram Rider), which may move and then attack in the same turn. Once a creature has attacked, it can't move.
 - **Move:** 1 space in 8 directions onto an empty space. Ultra Rare, Collector and Veteran creatures move up to 2; the path can't pass through creatures, Strongholds or sites unless the creature has Flying.
-- Creatures summoned this turn can't act unless their ability says so (Wolf Rider can).
+- Creatures summoned this turn can't act unless their ability says so (Wolf Rider can). **Gatherer-role creatures may move (but not attack) on the turn they are summoned.**
 
 3.9 **Combat** (Action phase):
-- **Melee** reaches the 8 surrounding spaces. **Ranged** creatures can also hit exactly 2 spaces away in a straight or diagonal line, with an empty space in between.
-- Attacking the enemy Commander requires being adjacent to the enemy Stronghold, or a Ranged creature at distance 2 in line with a clear middle space.
+- **Melee** reaches the 8 surrounding spaces. **Ranged** creatures can hit any enemy creature at **Chebyshev distance ≤ 2** (max(|Δrow|, |Δcol|) ≤ 2, so all 24 spaces of the surrounding 5×5 square, including knight-move angles), **even over other creatures**. Every Ranged attack, adjacent or not, gets no strike back.
+- Attacking the enemy Commander requires being adjacent to the enemy Stronghold, or a Ranged creature within Chebyshev distance 2 of the enemy Stronghold space (e.g. a player Ranged creature on row 3, columns 2–6).
+- Guard only affects melee attacks.
 - **Melee hits are simultaneous:** the defender strikes back with its own Attack at the same moment, **even if the hit defeats it**. Both damages are applied, then defeats are checked.
   - Example: ⚔1 ❤2 vs ⚔1 ❤1 → the 1/1 dies and the 1/2 survives at 1. Two 1/1s defeat each other.
   - No strike back against Ranged attacks or Sneaky attackers.
@@ -180,7 +211,8 @@ Other Instants:
 ### 4. Test mode and `window.oreheart` (required exactly as written)
 
 4.1 The URL `?test=1` turns on test mode:
-- Phase timers are paused: no auto-advance, and the timer shows the full phase length.
+- Phase timers are paused at their full length (they only change through `setPhaseTimeLeft`).
+- **Auto-skip is off** unless the match was started with `newMatch({ autoSkip: true })`.
 - The AI acts immediately, with no animation waits.
 - The shuffle seed is fixed: `?seed=N` sets it, and the default seed is `1`.
 - The first-time tutorial offer is **not** shown.
@@ -194,6 +226,10 @@ Without `?test=1`, `window.oreheart` is **undefined**.
 - `act(action)` → `{ ok: true, events: [...] }` if the action is legal and applied; `{ ok: false, error: "<message>" }` if it is illegal (state unchanged, never throws). The screen updates to match.
 - `newMatch(options)` → starts a new match, shows the match screen and returns the state.
 - `startTutorial()` → starts the tutorial match (section 5.9), shows it and returns the state.
+- `movesLeft()` → `true`/`false`: whether the priority player has moves left in the current phase (the rule in 3.5).
+- `getCard(cardId)` → the card's data: `{ id, name, type: "creature"|"spell"|"crystal", faction, rarity, role: "gatherer"|"fighter"|null, cost, attack, health, move }` (creature fields are `null` for non-creatures). These are printed values, without Commander effects.
+- `getConfig()` → a copy of `game-config.json`.
+- `setPhaseTimeLeft(seconds)` → sets the remaining seconds of the current timed phase, and the screen updates at once (the countdown shows if `seconds ≤ countdownSeconds`). In test mode the clock then stays frozen at that value. `setPhaseTimeLeft(0)` makes the phase time out right away, exactly as a real timeout: the current phase ends (Deploy → Action, Action → End/next turn), and no "Moves still available" pop-up is shown.
 
 4.3 **`newMatch` options** (all optional):
 
@@ -206,6 +242,7 @@ Without `?test=1`, `window.oreheart` is **undefined**.
 | `ai` | `true` = computer plays the opponent; `false` = the opponent is also driven through `act()` | `true` |
 | `firstPlayer` | `"player"`, `"opponent"` | seeded coin flip |
 | `skipMulligan` | `true` = both keep their opening hands | `false` |
+| `autoSkip` | `true` = auto-skip phases with no moves left (as in normal play) | `false` in test mode |
 | `setup` | object, see 4.4 | none |
 
 The same seed and options always produce the same starting state.
@@ -213,7 +250,7 @@ The same seed and options always produce the same starting state.
 4.4 **`setup`** (for tests): when given, the mulligan is skipped and the match begins directly in the **Deploy phase of turn 1** of `setup.firstPlayer` (default `"player"`). There is **no** draw, income or start-of-turn healing for that turn, but site control **is** computed from the setup board. Fields (all optional):
 - `playerHand`, `opponentHand`: arrays of card ids (default `[]`).
 - `playerDeck`, `opponentDeck`: arrays of card ids, top first (default: that faction's starter deck, shuffled by seed).
-- `playerCrystals`, `opponentCrystals`: `{ green, blue, purple }` (missing colors = 0; default all 0).
+- `playerCrystals`, `opponentCrystals`: `{ green, blue, purple }` (missing colors = 0; default all 0, so the starting crystal is **not** added in setup matches).
 - `playerHealth`, `opponentHealth`: Commander Health (default 20).
 - `board`: array of `{ cardId, owner: "player"|"opponent", row, col, damage?, shield? }`. These creatures are not "summoned this turn", so they can act. Commander abilities apply (e.g. Borgo's +1 Health), and `damage` is subtracted after that.
 
@@ -256,6 +293,7 @@ The same seed and options always produce the same starting state.
 - `{ type: "attack", creatureUid, target }`
 - `{ type: "ability", creatureUid, ability, target? }`: activated abilities, e.g. Blink.
 - `{ type: "respond", uid, target? }` and `{ type: "pass" }`: during a Respond window.
+- `{ type: "gathererSwap", discardUid? }`: the Gatherer swap (3.7). `legalActions()` lists one entry per hand card that could be discarded, or a single entry without `discardUid` if the hand is empty.
 - `{ type: "done" }`: end the current timed phase (Deploy → Action → End/next turn).
 - `{ type: "surrender" }`
 
@@ -267,9 +305,9 @@ The same seed and options always produce the same starting state.
 
 5.2 **First-time tutorial offer**: the first time the main menu is shown (outside test mode), a dialog appears (`role="dialog"`, name **"Welcome to Oreheart!"**) with the buttons **"Start Tutorial"** and **"Skip"**. Either choice is saved in localStorage, so the offer never appears again after a reload. "Start Tutorial" starts the tutorial match.
 
-5.3 **Settings screen**: heading **"Settings"**, a graphics toggle button labelled **"Graphics: High"** / **"Graphics: Low"** and a **"Back"** button to the main menu.
-- Clicking the toggle switches it. The default is High.
-- The choice is saved in localStorage and restored on reload.
+5.3 **Settings screen**: heading **"Settings"**, a graphics toggle button labelled **"Graphics: High"** / **"Graphics: Low"**, a moves-reminder toggle button labelled **"Moves reminder: On"** / **"Moves reminder: Off"** (default On; Off disables the pop-up in 5.6) and a **"Back"** button to the main menu.
+- Clicking a toggle switches it.  Graphics defaults to High.
+- Both choices are saved in localStorage and restored on reload (also in test mode).
 - Low cuts particles, shadows and pixel ratio.
 
 5.4 **Play setup screen**: heading **"Choose Your Commander"**.
@@ -277,36 +315,42 @@ The same seed and options always produce the same starting state.
 - Difficulty buttons **"Easy"** and **"Normal"**. The selected one has `aria-pressed="true"`, and the default is Normal.
 - Buttons **"Start Match"** and **"Back"**.
 - The computer picks a different Commander at random.
+- There is **no faction picker** anywhere: no "Choose Your Faction" step and no buttons named "Goblins", "Gnomes" or "Dwarves". The faction (and starter deck) come from the Commander.
 
 5.5 **Mulligan**: when a match starts from the UI, a dialog (`role="dialog"`, name **"Mulligan"**) shows the 5-card hand. Tapping cards marks them. Buttons: **"Keep Hand"** and **"Redraw Selected"**.
 
-5.6 **Match screen: landscape** (designed at 844×390, scales up to desktop). It is laid out like the mockup but for a wide screen:
-- **Center:** the battlefield, viewed at an angle like a tabletop. The enemy Stronghold is at the far side and yours at the near side.
+5.6 **Match screen: landscape, full screen** (designed at 844×390; must also work at 740×360 and 667×375, and scales up to desktop).
+- **Battlefield = the whole screen.** The 3D battlefield is an element with `aria-label="Battlefield"` that covers the entire viewport, edge to edge: no black bars, no letterboxing, no page margins. The camera views the board at a tabletop angle and is zoomed as large as possible while keeping the whole 7×7 board visible. The enemy Stronghold sits right at the top edge. Your Stronghold and Commander sit as low as possible, just behind your hand cards but still visible.
   - Three.js scene with painted ground and no grid lines.
   - Three glowing crystal formations, recolored by controller and showing the faction symbol (Goblin skull, Gnome gear, Dwarf hammer).
   - Two Strongholds, each with a simple Commander figure (top half) that emotes: cheer, groan, flinch.
   - Creatures are simple placeholder 3D figures in faction color, with the faction symbol.
-  - Valid spaces glow while dragging.
-  - If WebGL is unavailable, the match still works with a simple 2D board and no uncaught errors.
+  - Valid spaces glow while dragging (for summons: the back row; for Ranged attacks: every enemy within range).
+  - If WebGL is unavailable, the match still works with a simple 2D board (still full screen) and no uncaught errors.
+- **Everything else floats over the battlefield** (absolutely positioned HTML on top of it, never beside it):
+  - **Top edge:** enemy card backs fanned in an arc (`aria-label="Enemy hand"`; its text or label includes the count).
+  - **Left side:** crystal counters (`aria-label="Your green crystals"`, `"Your blue crystals"`, `"Your purple crystals"`; text = number), the **income preview** (`aria-label="Your income next turn"`, text exactly **"+N next turn"**, e.g. "+3 next turn" or "+0 next turn", computed as in 3.3), your deck pile (`aria-label="Your deck"`; text = cards left) and the enemy deck pile (`aria-label="Enemy deck"`).
+  - **Right side:** current phase (`aria-label="Current phase"`; text contains **"Deploy"** or **"Action"**, prefixed with **"Your turn"** or **"Enemy turn"**; it stays visible small), the **"Done"** button, your Commander Health (`aria-label="Your Commander health"`) and Enemy Commander Health (`aria-label="Enemy Commander health"`; text contains the number), and a **"Menu"** button.
+  - **Bottom edge:** your hand.
+- **Hand:** real HTML buttons fanned in a rainbow arc; each button's accessible name is the card's name (e.g. "Fireball"). Cards are big enough to read on a phone: at 844×390 every hand card button is **at least 60 px wide and 90 px tall**, showing cost, name, and Attack/Health for creatures. Swipe or mouse wheel scrolls the fan; hand size is unlimited. **While you drag a card or a creature, the hand slides down off-screen** so the back row can be reached, and slides back when you let go.
 - **Creature labels:** each creature on the board has a real HTML overlay element.
-  - Its accessible name is **"<Card Name>, row R, column C"** (e.g. "Shieldbeard, row 5, column 4"), and its text shows its Attack and current Health numbers.
-  - When `health < maxHealth`, the element has the attribute `data-damaged="true"` and the Health number is shown in **red** (`#ff4040`) until it heals. Otherwise it has `data-damaged="false"`.
+  - Its accessible name is **"<Card Name>, row R, column C"** (e.g. "Shieldbeard, row 5, column 4").
+  - Its text shows **Attack, Health and Movement, in that order**, as "⚔️A ❤️H 👟M" (e.g. a Wolf Rider shows "⚔️3 ❤️4 👟2"). Health is the current Health.
+  - When `health < maxHealth`, the element has `data-damaged="true"` and the Health number is shown in **red** (`#ff4040`) until it heals. Otherwise `data-damaged="false"`.
+  - **Acted / can't act:** when the creature has moved or attacked this turn, or can't act yet (summoned this turn without an ability allowing it), the element has `data-acted="true"` and the 3D figure and label turn **darker and duller (lower brightness, a bit less saturation), not grey**. It returns to full color (`data-acted="false"`) at the start of its owner's turn. Creatures of the player whose turn it isn't show `data-acted="false"` unless they are still marked from their own turn.
   - Shield shows as a small shield icon with its number.
-- **Top edge:** enemy card backs fanned in an arc (element with `aria-label="Enemy hand"`; its text or label includes the count).
-- **Left side:** crystal counters (`aria-label="Your green crystals"`, `"Your blue crystals"`, `"Your purple crystals"`; text = number), your deck pile (`aria-label="Your deck"`; text = cards left) and the enemy deck pile (`aria-label="Enemy deck"`).
-- **Right side:**
-  - Current phase (`aria-label="Current phase"`): text contains **"Deploy"** or **"Action"**, prefixed with **"Your turn"** or **"Enemy turn"**.
-  - Phase timer (`aria-label="Phase timer"`): text = seconds remaining, starting at **30** in Deploy and **45** in Action. A burning-rope bar shows in the last 10 seconds. At 0 the phase ends automatically, except in test mode.
-  - The **"Done"** button.
-  - Your Commander Health (`aria-label="Your Commander health"`) and Enemy Commander Health (`aria-label="Enemy Commander health"`); text contains the number.
-  - A **"Menu"** button.
-- **Bottom edge:** your hand, as real HTML buttons fanned in a rainbow arc. Each button's accessible name is the card's name (e.g. "Fireball"). Swipe or mouse wheel scrolls the fan. Hand size is unlimited.
+- **Crystal sites:** each site has a real HTML overlay button with the accessible name **"Crystal site, column C"** (C = 2, 4 or 6). Tapping it opens a small info dialog (`role="dialog"`, name **"Crystal site"**) showing **"Controlled by: You"**, **"Controlled by: Enemy"** or **"Controlled by: Nobody"**, and what it pays its controller per turn as **"Pays +N per turn"** (1 + 2 per adjacent Gatherer of the controller; "Pays +0 per turn" when nobody controls it). It has a **"Close"** button and also closes on tapping elsewhere.
+- **Phase banners:** a big, center-screen, comic-style banner (`aria-label="Phase banner"`) with the text **"YOUR TURN"** at the start of your turn, **"DEPLOY"** and **"ACTION"** when those phases of your turn begin, and **"ENEMY TURN"** when the enemy's turn begins. It shows for about 1.5 seconds and then fades and is removed or hidden. A phase that is auto-skipped (no moves left when it begins) shows **no** banner. Banners also show in test mode.
+- **Phase timer (countdown):** each timed phase lasts `phaseTimerSeconds` (50). For the first `timerHiddenSeconds` (40) nothing is shown. When `countdownSeconds` (10) or fewer remain, a big center-screen countdown (`aria-label="Phase timer"`, text = whole seconds left, 10 → 0) appears. At 0 the current phase ends (not the whole turn), without any pop-up. The old burning rope is removed. No timer runs in the tutorial or in test mode (except through `setPhaseTimeLeft`). The Respond window pauses the phase timer.
+- **"Moves still available" pop-up:** when you press Done while you still have moves left (3.5), a center pop-up (`role="dialog"`, name **"Moves still available! Continue to the next phase?"**) appears with the buttons **"Continue"** (ends the phase) and **"Go back"** (closes it, phase unchanged). It never appears when the timer runs out, when no moves are left, or when "Moves reminder: Off" is set. The `done` action through `window.oreheart.act` never shows it.
+- **Overlay order:** the pop-up is on top of the countdown, and the countdown is on top of phase banners, so the pop-up's buttons can always be clicked. A banner waits until no pop-up or countdown is showing.
 - **Card view:** clicking or tapping a hand card (without dragging) opens a dialog named with the card's name. It shows cost, Attack/Health (creatures), movement, role, rarity and ability text, and has a **"Close"** button. Double-tapping a creature on the board opens the same view.
 - **Interactions:**
-  - Drag a card onto the battlefield to summon or cast. Valid spaces glow; for summons that is the back row.
+  - Drag a card onto the battlefield to summon or cast. Valid spaces glow.
   - Press and drag a creature to move it, or drag it onto an enemy or the enemy Stronghold to attack.
   - Tap your creature in the Deploy phase to get an **"Upgrade"** option listing the affordable upgrades.
-- **Animations:** summon rise, walk, attack lunge (both creatures hit together), floating damage numbers, shield-block flash, defeat poof, and a retreat scene at match end. The Done button and all key elements stay usable during animations.
+  - In Deploy, if the Gatherer swap is legal, a button **"Swap for a Gatherer"** is shown; pressing it asks you to tap the card to discard (or does the swap at once if your hand is empty).
+- **Animations:** summon rise, walk, attack lunge (both creatures hit together), ranged projectile, floating damage numbers, shield-block flash, defeat poof, and a retreat scene at match end. The Done button and all key elements stay usable during animations.
 
 5.7 **Rotate overlay**: whenever the window is portrait (height > width) **and** narrower than 900 px, a full-screen overlay shows the text **"Please rotate your phone"**, on every screen. It disappears when the window is landscape.
 
@@ -332,7 +376,7 @@ The same seed and options always produce the same starting state.
 
 5.11 **End screen**: after the retreat scene, heading **"Victory!"** (you won) or **"Defeat"** (you lost or surrendered), a one-line flavor message and a **"Back to Menu"** button, which returns to the main menu.
 
-5.12 **Rules screen**: heading **"Rules"**, short sections (Goal, The Board, Crystals, Your Turn, Combat, Spells & Instants) and at least 3 simple pictures (`<img>` with alt text, or inline SVG with `role="img"` and an aria-label). A **"Back"** button returns to the main menu. The text must reflect revision 2 rules: back-row summoning, move OR attack, simultaneous hits, healing each turn, and Shield.
+5.12 **Rules screen**: heading **"Rules"**, short sections (Goal, The Board, Crystals, Your Turn, Combat, Spells & Instants) and at least 3 simple pictures (`<img>` with alt text, or inline SVG with `role="img"` and an aria-label). A **"Back"** button returns to the main menu. The text must reflect the revision 2 and 3 rules: starting with 1 crystal and no Stronghold income, back-row summoning, move OR attack, Gatherers moving on their first turn, simultaneous hits, healing each turn, Shield, Ranged reaching 2 spaces in any direction, the Gatherer swap and the free Gatherer.
 
 ### 6. Computer opponent
 
@@ -345,6 +389,8 @@ The same seed and options always produce the same starting state.
   - makes favourable trades, considering simultaneous strike back
   - casts damage spells on good targets
   - uses Instants and counterspells when the Respond window offers a good one
+  - uses the Gatherer swap and the free Gatherer when they are available
+- Both levels end a phase when they have nothing left to do (auto-skip), and the AI's turns follow the same rules as the player's.
 
 Each AI turn completes within 3 seconds of computation on a mid-range phone: instantly in test mode, plus animations otherwise. The AI handles its own mulligan.
 
@@ -368,18 +414,18 @@ Each AI turn completes within 3 seconds of computation on a mid-range phone: ins
 ## Acceptance criteria
 
 1. The main menu loads with heading "Oreheart" and exactly the buttons "Play", "Tutorial", "Rules", "Settings". No other button or link contains "Play". There are no uncaught page errors on load, or when starting a test-mode match.
-2. Play → "Choose Your Commander" shows all three Commanders and Easy/Normal. Choosing Professor Sproingle + Normal and clicking "Start Match" opens the Mulligan dialog. "Keep Hand" reaches the match screen with the Done button, and the player's Commander is Sproingle.
+2. Play → "Choose Your Commander" shows all three Commanders and Easy/Normal. Choosing Professor Sproingle + Normal and clicking "Start Match" opens the Mulligan dialog. "Keep Hand" reaches the match screen with the Done button, and the player's Commander is Sproingle (faction gnomes). No faction picker appears at any point.
 3. Rules shows its heading and at least one picture, and "Back" returns to the main menu.
 4. Settings has the graphics toggle, which switches between "Graphics: High" and "Graphics: Low" and remembers the choice after reload. "Back" returns to the menu.
 5. `window.oreheart` exists only with `?test=1`, and the same seed gives the same starting hands.
-6. Each starter deck has 50 cards: exactly 40 creatures, 6 spells (including at least 1 Fizzle) and 4 Crystal cards, with ≤3 copies of each Rare/Ultra Rare/Collector card. Both Commanders start with 20 Health and an opening hand of 5.
-7. Opening: the first player starts turn 1 with exactly 1 crystal of their color and 5 cards. The second player has 6 cards after mulligans, then 7 cards and exactly 1 crystal on turn 2.
-8. The match screen shows the phase name, phase timer (30 in Deploy, 45 in Action), Done button, crystal counters and both Commander Healths with the specified labels. Done advances Deploy → Action → Enemy turn.
-9. Site control and income: majority control, ties = nobody, and shared columns count for both sites. The Gatherer bonus gives exact totals. The underdog bonus (+2) applies only when the enemy controls a site; with no sites held it gives exactly 1.
-10. Summoning happens on the back row only, and on the row in front only when the back row is full; with both full, there are no summons. Faction crystals are spent (Grubnak's discount applies). Summoned creatures can't act that turn (except Wolf Rider). Unique cards are limited to one, and Borgo gives +1 Health.
+6. Each starter deck has 50 cards: exactly 40 creatures (including exactly 8 of the faction's basic Gatherer and at least 16 creatures costing 4 or less), 6 spells (including at least 1 Fizzle) and 4 Crystal cards, with ≤3 copies of each Rare/Ultra Rare/Collector card. Both Commanders start with 20 Health and an opening hand of 5.
+7. Opening: both players start with exactly 1 crystal of their color, and there is no Stronghold income. The first player has exactly 1 crystal and 5 cards on turn 1. The second player has 6 cards after mulligans, then 7 cards and exactly 1 crystal on turn 2. If nothing was spent and no site is held, the first player still has exactly 1 crystal on turn 3. The config has `startingCrystals` 1, `phaseTimerSeconds` 50, `timerHiddenSeconds` 40 and `countdownSeconds` 10.
+8. The match screen shows the phase name, Done button, crystal counters and both Commander Healths with the specified labels, and no phase timer while more than 10 seconds remain. Done advances Deploy → Action → Enemy turn.
+9. Site control and income: majority control, ties = nobody, and shared columns count for both sites. The Gatherer bonus gives exact totals (site + Gatherer = 3). The underdog bonus (+2) applies only when the enemy controls a site; with no sites held income is exactly 0.
+10. Summoning happens on the back row only, and on the row in front only when the back row is full; with both full, there are no summons. Faction crystals are spent (Grubnak's discount applies). Summoned creatures can't act that turn (except Wolf Rider). Unique cards are limited to one. Thane Borgo gives +1 Health in the engine (a summoned Dwarf Miner is 1/2, a Shieldbeard 2/5).
 11. Tunnel creatures can be summoned next to a site only while the enemy controls more sites than you.
 12. Movement goes 1 space in 8 directions onto empty spaces, and move-2 creatures can go 2. In the Action phase a creature either moves or attacks, never both, except Ram Rider (Charge).
-13. Combat is simultaneous: a defender strikes back even when defeated (exact numbers: 1/2 vs 1/1, two 1/1s, Shieldbeard vs Scrapper). Type advantage, Guard and Ranged (no strike back) work, and defeated creatures go to the discard pile.
+13. Combat is simultaneous: a defender strikes back even when defeated (exact numbers: 1/2 vs 1/1, two 1/1s, Shieldbeard vs Scrapper). Type advantage and Guard work, and defeated creatures go to the discard pile. Ranged hits any enemy within Chebyshev distance 2, even over creatures and at knight-move angles, and the enemy Commander from 2 away, with no strike back (an Axe Thrower 2 spaces from an enemy can attack it).
 14. Creatures heal to full at the start of their owner's turn (not the opponent's turn). A damaged creature's label is marked damaged (red Health) until it heals.
 15. Shield: Gnome Tinker gives adjacent allies Shield 1 at the start of its owner's turn, and it blocks exactly 1 damage.
 16. A creature attacking the Commander removes exactly its Attack (Queen Brunhilda deals 5, a Scrapper deals 2, and Battle Cry adds 1). Commander damage never resets.
@@ -390,9 +436,20 @@ Each AI turn completes within 3 seconds of computation on a mid-range phone: ins
 21. Computer opponent: Easy and Normal each complete their turn and hand it back. A Normal AI beats a player who never acts before turn 60.
 22. Hand cards are buttons named after their cards, and tapping one opens a readable card view with a Close button.
 23. Illegal actions are rejected without changing the state.
-24. Landscape: at 844×390, the menu and match screen fit without horizontal scrolling, and Done, the phase and both Commander Healths are visible. At 390×844 (portrait), "Please rotate your phone" is shown.
+24. Landscape: at 844×390, 740×360 and 667×375, the menu and match screen fit without scrolling. The battlefield covers the whole viewport (no black bars), Done, the phase and both Commander Healths are visible on top of it, and hand cards are at least 60×90 px. At 390×844 (portrait), "Please rotate your phone" is shown.
 25. Tutorial: the first visit offers "Welcome to Oreheart!" (Skip is remembered). The Tutorial button opens the guided match with a tip and "Skip Tutorial". The tutorial starts at step `summon`, only allows back-row summons, and advances to `move` after a summon.
 26. Every starter creature has printed Health ≤ 6, and Big Boss Troll, Steam Golem and Queen Brunhilda have exactly 6.
+27. Creature costs match the table in 2.1 exactly, both in `getCard` and when summoning (e.g. under Borgo: Miner 1, Shieldbeard 7, Axe Thrower 6, Ram Rider 11). Basic Gatherers are 1/1. Under Grubnak, Scrounger costs 1 and Scrapper 5.
+28. Phase banners: pressing Done in Deploy shows the "ACTION" banner. In an auto-skipped turn, no "DEPLOY" or "ACTION" banner appears, while "ENEMY TURN" does.
+29. Auto-skip: `movesLeft()` ignores Instants, upgrades and the Gatherer swap. With `autoSkip: true`, a turn with no moves left passes to the enemy by itself, and a phase with moves left does not end by itself.
+30. Creature labels show Attack, Health and Movement in order (Wolf Rider "3 … 4 … 2"). A creature that moved, attacked or was just summoned is marked `data-acted="true"` until its owner's next turn starts.
+31. "Moves still available! Continue to the next phase?" appears when pressing Done with moves left. "Go back" keeps the phase, and "Continue" ends it. It does not appear with no moves left, on timeout, or after "Moves reminder: Off" is set in Settings (remembered after reload).
+32. Phase timer: hidden while more than 10 seconds remain. `setPhaseTimeLeft(10)` and `setPhaseTimeLeft(3)` show the countdown "10" and "3". `setPhaseTimeLeft(0)` ends only the current phase (Deploy → Action of the same turn), with no pop-up.
+33. Gatherer swap: with no Gatherer in hand, discarding a card moves exactly one basic Gatherer from the deck to the hand (hand size unchanged, discarded card in the discard pile, deck one smaller). It works with an empty hand, only once per turn, only in Deploy, and not while a Gatherer is in hand.
+34. Free Gatherer: with 0 crystals, no site and no Gatherer on the battlefield, a basic Gatherer can be summoned for 0 (crystals stay 0), and only one. With a site controlled it is not free.
+35. A Gatherer summoned this turn can move but not attack in the Action phase. A summoned Fighter can do neither.
+36. Income preview shows "+3 next turn" with a Gatherer and a Fighter holding a site, and "+0 next turn" with nothing. Tapping "Crystal site, column 2" shows "Controlled by: You" and "Pays +3 per turn".
+37. Overlay order: with the countdown showing, the "Moves still available" pop-up can still be clicked (Continue works).
 
 ---
 
@@ -417,7 +474,13 @@ Each AI turn completes within 3 seconds of computation on a mid-range phone: ins
 - Deck-out damage is a flat 1 per failed draw (not escalating), and it is configurable.
 - Spells are paid with non-faction colors first. Fizzle checks the printed cost.
 - Guard forces melee attackers adjacent to a Guard creature to target a Guard creature. It does not block Ranged attacks.
-- Ranged creatures may attack the enemy Commander from 2 spaces away in a clear straight or diagonal line.
+- Ranged creatures may attack the enemy Commander when within Chebyshev distance 2 of the enemy Stronghold space. All Ranged attacks (even adjacent ones) get no strike back.
+- "Moves left" (for auto-skip and the pop-up) also ignores surrender. Casting a Regular spell counts as a move; casting an Instant doesn't.
+- The free Gatherer applies only to the three basic Gatherers (not Crystal Eaters), so it can't be used to get an expensive Gatherer for free. "0 crystals" means 0 of every color.
+- The Gatherer swap takes the first basic Gatherer found from the top of the deck. All three factions have only one basic Gatherer, so "cheapest" is always that card.
+- Phase banners are shown only for the human's own phases plus "ENEMY TURN"; the enemy's individual phases get no banner.
+- The income preview uses the current board positions, because creatures may still move before the next turn.
+- Auto-skip is off by default in test mode so that tests can set up a position and inspect it. It is on in normal play and in the tutorial.
 - "Back row full" counts all 6 non-Stronghold spaces of the row, occupied by either side.
 - Charge creatures may move and then attack. A creature that attacked can't move afterwards.
 - Shield points stack and leftover Shield ends at the start of the owner's next turn. Shield Bubble remains its own effect (it stops the next hit this turn).
