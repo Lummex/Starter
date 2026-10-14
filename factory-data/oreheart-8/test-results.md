@@ -1,11 +1,13 @@
 # Automated check results
 
-70 of 73 checks passed after 3 build round(s).
+78 of 78 checks passed after 2 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
 - ✅ landscape phone viewport 667x375 › AC24: menu and full-screen match fit a 667x375 landscape phone
 - ✅ portrait phone viewport › AC24: upright phone shows the rotate message
+- ✅ landscape layout details › AC43: hovering a hand card slides it up out of the fan
+- ✅ landscape layout details › AC44: deck piles on each player's right and Commander hearts
 - ✅ AC1: main menu has exactly Play, Tutorial, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -22,21 +24,21 @@
 - ✅ AC9: example (b) — 2 vs 2 tie: mine is white, 4 white is worth 2 toward creatures and 4 toward spells
 - ✅ AC9: examples (c) and (d) — pool is set to flow, unspent crystals last through the enemy turn
 - ✅ AC9: example (e) — the pool never goes above 16
-- ✅ AC9: a creature touching two mines counts at only one
+- ✅ AC39: mining is an action — Gatherer 2, Fighter 1, nothing without mining; pool set to last turn's mining
 - ✅ AC10: back-row summoning, Grubnak discount, summoning sickness, Wolf Rider
 - ✅ AC10: row in front only when the back row is full; nothing when both are full
 - ✅ AC10: Unique card limited to one on the battlefield; Borgo +1 Health
 - ✅ AC11: Tunnel only while more mines are in the enemy color
-- ❌ AC12: movement in 8 directions, move 2 only for move-2 creatures
+- ✅ AC12: movement in 8 directions, move 2 only for move-2 creatures
 - ✅ AC12: each creature moves OR attacks, never both; Ram Rider (Charge) can do both
 - ✅ AC13: simultaneous hits — 1/2 beats 1/1, two 1/1s defeat each other
 - ✅ AC13: Shieldbeard vs Scrapper — type advantage defeats it, strike back still lands
 - ✅ AC13: strike back with type advantage defeats the attacker
 - ✅ AC13: Guard forces adjacent melee attackers to hit it
 - ✅ AC13: Ranged hits anything within 2 spaces, over creatures, with no strike back
-- ❌ AC14: creatures heal at the start of their owner's turn; damaged Health is marked
+- ✅ AC14: creatures heal at the start of their owner's turn; damaged Health is marked
 - ✅ AC15: Gnome Tinker gives Shield 1, which blocks exactly 1 damage
-- ❌ AC16: Commander damage equals Attack and never resets
+- ✅ AC16: Commander damage equals Attack and never resets
 - ✅ AC17: Fireball deals 3 damage and can be paid with any color
 - ✅ AC17: only one Crystal card per turn
 - ✅ AC17: Prospector's Prayer costs 1 and gives 3 own-color crystals only when behind on mines
@@ -70,52 +72,11 @@
 - ✅ AC31: no pop-up on timeout, and Settings can turn it off
 - ✅ AC32: countdown appears only in the last 10 seconds; 0 ends just the phase
 - ✅ AC33: Gatherer swap moves one basic Gatherer from deck to hand, once per turn
-- ✅ AC34: free Gatherer when broke (flow 0, no mine in your color, no Gatherer)
-- ✅ AC35: a Gatherer summoned this turn can move but not attack
+- ✅ AC34: free Gatherer when broke (mined nothing, no mine in your color, no Gatherer)
+- ✅ AC35: a Gatherer summoned this turn can move or mine but not attack; a Fighter can do nothing
 - ✅ AC36: flow preview, mine ring numbers and mine info
 - ✅ AC38: swapping places with your own creature uses only the dragged creature's action
 - ✅ AC37: the confirm pop-up sits above the countdown
-
-## Failures
-
-```
-✗ AC12: movement in 8 directions, move 2 only for move-2 creatures
-Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: false
-Received: true
-
-  506 |   const moves = (await legal(page)).filter((a) => a.type === 'move');
-  507 |   expect(moves.some((a) => a.creatureUid === scrap && a.row === 5 && a.col === 1)).toBe(true);
-> 508 |   expect(moves.some((a) => a.creatureUid === scrap && a.row === 5 && a.col === 2)).toBe(false);
-      |                                                                                    ^
-  509 |   expect(moves.some((a) => a.creatureUid === scrap && a.row === 4 && a.col === 2)).toBe(false);
-  510 |   expect(moves.some((a) => a.creatureUid === wolf && a.row === 4 && a.col === 6)).toBe(false);
-  511 |   expect(moves.some((a) => a.creatureUid === wolf && a.row === 4 && a.col === 7)).toBe(true);
-✗ AC14: creatures heal at the start of their owner's turn; damaged Health is marked
-Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: 3
-Received: 2
-
-  685 |   s = await getState(page);
-  686 |   expect(at(s, 5, 4).health).toBe(3);
-> 687 |   expect(at(s, 2, 6).health).toBe(3); // opponent Shieldbeard: 4 - 2 (Grubnak gives no Health)
-      |                              ^
-  688 |   await expect(label).toHaveAttribute('data-damaged', 'true');
-  689 |   await expect(label).toContainText('3');
-  690 |   await done(page); // -> opponent's turn 2
-✗ AC16: Commander damage equals Attack and never resets
-Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: true
-Received: false
-
-  765 |   expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
-  766 |   await done(page);
-> 767 |   expect((await act(page, { type: 'attack', creatureUid: queen, target: { commander: 'opponent' } })).ok).toBe(true);
-      |                                                                                                           ^
-  768 |   expect((await act(page, { type: 'attack', creatureUid: scrap, target: { commander: 'opponent' } })).ok).toBe(true);
-  769 |   s = await getState(page);
-  770 |   expect(s.players.opponent.health).toBe(4); // 13 - 6 - 3
-```
+- ✅ AC40: 13 x 7 board; 3 random, mirrored mines from the seed; fixed tutorial layout
+- ✅ AC41: the moves pop-up names miners that have not mined
+- ✅ AC42: Ranged creatures show the bow icon on the board and in the hand

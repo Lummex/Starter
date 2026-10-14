@@ -1,25 +1,23 @@
 ## What was built
-Oreheart, a fantasy card battle in the browser. You play one full match against a computer opponent (Easy or Normal), or a guided tutorial match. The newest rules are in: crystals come from creatures standing next to mines, mines change color, and you can swap places with your own creatures. The game is meant for a phone held sideways.
+Oreheart, a browser card battle: Goblins, Gnomes and Dwarves fight over three crystal mines on a 13×7 board. You play one full match against a computer opponent (Easy or Normal), or a guided tutorial. This round added a "mine" action, random mirrored mine positions, and new on-screen touches (ranged-weapon icons, Commander hearts, deck piles, hand pop-out).
 
 ## Try these things
-- Open the preview and choose "Start Tutorial" in the welcome pop-up. Follow the tips through the first steps: summon, move, swap.
-- Press Play, pick a Commander and difficulty, then Start Match. Keep your hand and play a few turns.
-- Drag a card onto your back row to summon it. Then drag a creature next to a mine and watch the mine's color and the "+N next turn" number change.
-- Tap a crystal site to see who controls it and what it pays.
-- Check Rules and Settings (the Graphics toggle). Turn your phone upright to see the "rotate" message.
+- Open the preview and press **Tutorial**. Follow the tips: summon a miner, march it to a mine, drag it onto the mine, and watch the mine change color.
+- Press **Play**, pick a Commander, choose Easy, and play a match. Check that the computer takes its turns.
+- Drag a creature next to a mine onto the mine. It should glow amber, and your crystals should show up next turn.
+- Hover over a card in your hand (on desktop). It should slide up.
+- Tap a mine and read its info box.
+- Turn your phone sideways. Upright, it should ask you to rotate.
 
 ## Automated checks
-70 of 73 checks passed. Three failed:
-- **Movement test (AC12):** it expects that you can't move onto your own creature. The newer swap rule says you can, so the test appears to conflict with the spec.
-- **Healing test (AC14):** it expects a creature to have 3 Health left, but the correct figure under the rules is 2. The test's own numbers look wrong.
-- **Commander damage test (AC16):** the test presses Done once too often, so its attack is correctly refused.
-
-The builder believes all three are mistakes in the tests, not in the game. I couldn't confirm that independently.
+78 of 78 checks passed, after 2 build rounds. They cover the rules, the menus, the tutorial start, the phone screen sizes and the new mining and board features.
 
 ## Things to know
-- The only screenshots available show the menu welcome pop-up and the "rotate your phone" screen. Both look clean. There are no screenshots of the match screen, so its look, its layout and the 3D battlefield are unchecked here. Judge them in the preview.
-- A just-summoned Gatherer looks "darkened" even though it can still move.
-- Visuals are simple placeholders and there is no sound.
+- I could only see two screenshots: the welcome pop-up on desktop and the "rotate your phone" screen on a portrait phone. Both look fine. I saw no screenshots of an actual match, so how the board, hand and hearts look is not visually confirmed. Please check that yourself in the preview.
+- No page errors were recorded.
+- Visuals are simple placeholders, and there is no sound.
+- The builder's notes say a "free starter miner" rule also requires an empty crystal pool. This is a small departure from the spec.
+- Earlier builder notes say several older test expectations conflicted with the spec. Those tests are no longer in the final results.
 
 ## Recommendation
-Request changes: the three failing checks are unresolved, and no match-screen screenshots were available to confirm the layout. Approve only if the preview looks and plays well.
+Ready to approve, once you have looked at a real match in the preview. The screenshots did not show one.
