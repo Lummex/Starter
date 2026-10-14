@@ -1,25 +1,25 @@
 ## What was built
-Oreheart is a fantasy card battle for the browser. You pick a Commander (Goblin, Gnome or Dwarf), then play one full match against a computer opponent on Easy or Normal. There is also a guided tutorial match, plus Rules and Settings screens. The battlefield fills the whole landscape screen, and your hand and counters float over it.
+Oreheart, a fantasy card battle in the browser. You play one full match against a computer opponent (Easy or Normal), or a guided tutorial match. The newest rules are in: crystals come from creatures standing next to mines, mines change color, and you can swap places with your own creatures. The game is meant for a phone held sideways.
 
 ## Try these things
-- Open the preview, choose "Start Tutorial" in the welcome pop-up, and follow the tips: summon a troop, move it, take a crystal site.
-- From the menu, press Play, pick Professor Sproingle on Normal, and press Start Match. Keep your hand and check that the match screen appears.
-- In a match, drag a hand card onto your back row. Tap a card without dragging to read it.
-- Press Done while you still have moves left. A "Moves still available!" pop-up should appear.
+- Open the preview and choose "Start Tutorial" in the welcome pop-up. Follow the tips through the first steps: summon, move, swap.
+- Press Play, pick a Commander and difficulty, then Start Match. Keep your hand and play a few turns.
+- Drag a card onto your back row to summon it. Then drag a creature next to a mine and watch the mine's color and the "+N next turn" number change.
 - Tap a crystal site to see who controls it and what it pays.
-- Open Settings and switch Graphics between High and Low. Open Rules and read the pictures and text.
-- On a phone, turn it upright. It should say "Please rotate your phone".
+- Check Rules and Settings (the Graphics toggle). Turn your phone upright to see the "rotate" message.
 
 ## Automated checks
-66 of 68 checks passed. Two failed:
-- **Healing check (AC14):** a Goblin Scrapper hit a Dwarf Shieldbeard and left it on 2 Health. The test expected 3. The builder says the game is right and the test's arithmetic is wrong. I can't confirm that.
-- **Commander damage check (AC16):** the test's attack on the enemy Commander was refused. The builder says the test ends the turn too early. Commander damage itself wasn't proven by this test, so try attacking a Commander in the preview.
+70 of 73 checks passed. Three failed:
+- **Movement test (AC12):** it expects that you can't move onto your own creature. The newer swap rule says you can, so the test appears to conflict with the spec.
+- **Healing test (AC14):** it expects a creature to have 3 Health left, but the correct figure under the rules is 2. The test's own numbers look wrong.
+- **Commander damage test (AC16):** the test presses Done once too often, so its attack is correctly refused.
+
+The builder believes all three are mistakes in the tests, not in the game. I couldn't confirm that independently.
 
 ## Things to know
-- The only screenshots are the menu pages. The welcome pop-up looks fine on desktop, and the phone rotate message looks fine. I saw no screenshot of the match screen, so I couldn't check how it looks.
-- No page errors were recorded.
-- A just-summoned Gatherer shows as "acted" (darker) even though it can still move.
-- Visuals are simple placeholders, and there is no sound.
+- The only screenshots available show the menu welcome pop-up and the "rotate your phone" screen. Both look clean. There are no screenshots of the match screen, so its look, its layout and the 3D battlefield are unchecked here. Judge them in the preview.
+- A just-summoned Gatherer looks "darkened" even though it can still move.
+- Visuals are simple placeholders and there is no sound.
 
 ## Recommendation
-Request changes: two checks failed, and I can't confirm from screenshots that the match screen looks right. Try the preview first. If those two rules work in play, it may be fine to approve.
+Request changes: the three failing checks are unresolved, and no match-screen screenshots were available to confirm the layout. Approve only if the preview looks and plays well.

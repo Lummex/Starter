@@ -1,6 +1,6 @@
 # Automated check results
 
-66 of 68 checks passed after 3 build round(s).
+70 of 73 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -15,17 +15,19 @@
 - ✅ AC6: grubnak starter deck is 40 creatures, 6 spells (with Fizzle), 4 Crystal cards
 - ✅ AC6: sproingle starter deck is 40 creatures, 6 spells (with Fizzle), 4 Crystal cards
 - ✅ AC6: borgo starter deck is 40 creatures, 6 spells (with Fizzle), 4 Crystal cards
-- ✅ AC7: opening — start with 1 crystal, no Stronghold income, extra card for second player
+- ✅ AC7: opening — start with 0 crystals, pool resets to flow, extra card for second player
 - ✅ AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy turn
-- ✅ AC9: majority control with Gatherer bonus (exact income)
-- ✅ AC9: tie means nobody controls; no underdog bonus while nobody holds a site
-- ✅ AC9: underdog bonus +2 when the enemy controls a site
-- ✅ AC9: shared column 3 counts for two sites
+- ✅ AC9: example (a) — 1 Gnome Miner vs 2 Goblin Miners: mine is green, Goblins get 4 green, Gnomes 2 green
+- ✅ AC9: off-color crystals are worth half toward creatures (rounded down)
+- ✅ AC9: example (b) — 2 vs 2 tie: mine is white, 4 white is worth 2 toward creatures and 4 toward spells
+- ✅ AC9: examples (c) and (d) — pool is set to flow, unspent crystals last through the enemy turn
+- ✅ AC9: example (e) — the pool never goes above 16
+- ✅ AC9: a creature touching two mines counts at only one
 - ✅ AC10: back-row summoning, Grubnak discount, summoning sickness, Wolf Rider
 - ✅ AC10: row in front only when the back row is full; nothing when both are full
 - ✅ AC10: Unique card limited to one on the battlefield; Borgo +1 Health
-- ✅ AC11: Tunnel only while the enemy controls more sites
-- ✅ AC12: movement in 8 directions, move 2 only for move-2 creatures
+- ✅ AC11: Tunnel only while more mines are in the enemy color
+- ❌ AC12: movement in 8 directions, move 2 only for move-2 creatures
 - ✅ AC12: each creature moves OR attacks, never both; Ram Rider (Charge) can do both
 - ✅ AC13: simultaneous hits — 1/2 beats 1/1, two 1/1s defeat each other
 - ✅ AC13: Shieldbeard vs Scrapper — type advantage defeats it, strike back still lands
@@ -37,8 +39,10 @@
 - ❌ AC16: Commander damage equals Attack and never resets
 - ✅ AC17: Fireball deals 3 damage and can be paid with any color
 - ✅ AC17: only one Crystal card per turn
-- ✅ AC17: upgrades cost 6, one per creature; Heavy Armor adds +3 Health
+- ✅ AC17: Prospector's Prayer costs 1 and gives 3 own-color crystals only when behind on mines
+- ✅ AC17: upgrades cost 3 / 3 / 5 / 8 paid like creatures, one per creature; Heavy Armor adds +3 Health
 - ✅ AC18: Fizzle counters Fireball; crystals still spent
+- ✅ AC18: Fizzle cannot cancel a spell costing more than 3
 - ✅ AC18: Hold It! returns a summoned creature to hand
 - ✅ AC18: Respond dialog — Let it happen
 - ✅ AC18: Respond dialog — cast Shield Bubble saves the creature
@@ -66,38 +70,52 @@
 - ✅ AC31: no pop-up on timeout, and Settings can turn it off
 - ✅ AC32: countdown appears only in the last 10 seconds; 0 ends just the phase
 - ✅ AC33: Gatherer swap moves one basic Gatherer from deck to hand, once per turn
-- ✅ AC34: free Gatherer when broke
+- ✅ AC34: free Gatherer when broke (flow 0, no mine in your color, no Gatherer)
 - ✅ AC35: a Gatherer summoned this turn can move but not attack
-- ✅ AC36: income preview and site info
+- ✅ AC36: flow preview, mine ring numbers and mine info
+- ✅ AC38: swapping places with your own creature uses only the dragged creature's action
 - ✅ AC37: the confirm pop-up sits above the countdown
 
 ## Failures
 
 ```
+✗ AC12: movement in 8 directions, move 2 only for move-2 creatures
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: false
+Received: true
+
+  506 |   const moves = (await legal(page)).filter((a) => a.type === 'move');
+  507 |   expect(moves.some((a) => a.creatureUid === scrap && a.row === 5 && a.col === 1)).toBe(true);
+> 508 |   expect(moves.some((a) => a.creatureUid === scrap && a.row === 5 && a.col === 2)).toBe(false);
+      |                                                                                    ^
+  509 |   expect(moves.some((a) => a.creatureUid === scrap && a.row === 4 && a.col === 2)).toBe(false);
+  510 |   expect(moves.some((a) => a.creatureUid === wolf && a.row === 4 && a.col === 6)).toBe(false);
+  511 |   expect(moves.some((a) => a.creatureUid === wolf && a.row === 4 && a.col === 7)).toBe(true);
 ✗ AC14: creatures heal at the start of their owner's turn; damaged Health is marked
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: 3
 Received: 2
 
-  596 |   s = await getState(page);
-  597 |   expect(at(s, 5, 4).health).toBe(3);
-> 598 |   expect(at(s, 2, 6).health).toBe(3); // opponent Shieldbeard: 4 - 2 (Grubnak gives no Health)
+  685 |   s = await getState(page);
+  686 |   expect(at(s, 5, 4).health).toBe(3);
+> 687 |   expect(at(s, 2, 6).health).toBe(3); // opponent Shieldbeard: 4 - 2 (Grubnak gives no Health)
       |                              ^
-  599 |   await expect(label).toHaveAttribute('data-damaged', 'true');
-  600 |   await expect(label).toContainText('3');
-  601 |   await done(page); // -> opponent's turn 2
+  688 |   await expect(label).toHaveAttribute('data-damaged', 'true');
+  689 |   await expect(label).toContainText('3');
+  690 |   await done(page); // -> opponent's turn 2
 ✗ AC16: Commander damage equals Attack and never resets
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  674 |   expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
-  675 |   await done(page);
-> 676 |   expect((await act(page, { type: 'attack', creatureUid: queen, target: { commander: 'opponent' } })).ok).toBe(true);
+  765 |   expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
+  766 |   await done(page);
+> 767 |   expect((await act(page, { type: 'attack', creatureUid: queen, target: { commander: 'opponent' } })).ok).toBe(true);
       |                                                                                                           ^
-  677 |   expect((await act(page, { type: 'attack', creatureUid: scrap, target: { commander: 'opponent' } })).ok).toBe(true);
-  678 |   s = await getState(page);
-  679 |   expect(s.players.opponent.health).toBe(4); // 13 - 6 - 3
+  768 |   expect((await act(page, { type: 'attack', creatureUid: scrap, target: { commander: 'opponent' } })).ok).toBe(true);
+  769 |   s = await getState(page);
+  770 |   expect(s.players.opponent.health).toBe(4); // 13 - 6 - 3
 ```
