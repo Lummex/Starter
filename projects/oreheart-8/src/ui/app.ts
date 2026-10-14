@@ -202,7 +202,7 @@ export class App {
     }
     const dl = h('dl', {});
     for (const [k, v] of rows) dl.append(h('dt', {}, k), h('dd', {}, v));
-    const ab = c.type === 'creature' ? c.abilities.map((a: string) => `${ABILITIES[a].name}: ${ABILITIES[a].text}`).join(' ') : c.text;
+    const ab = c.type === 'creature' ? (c.abilities || []).map((a: string) => `${ABILITIES[a].name}: ${ABILITIES[a].text}`).join(' ') : c.text;
     const d = this.dialog(c.name, [h('div', { class: 'card-view' }, h('div', { class: 'cv-name' }, c.name), dl, h('p', {}, ab || ''),
       h('div', { class: 'row' }, btn('Close', 'primary', () => d.close())))]);
   }
@@ -595,7 +595,7 @@ export class App {
       el.dataset.uid = c.uid; el.dataset.row = String(c.row); el.dataset.col = String(c.col);
       (el.querySelector('.a') as El).textContent = `⚔️${c.attack}`;
       (el.querySelector('.h') as El).textContent = `❤️${c.health}`;
-      (el.querySelector('.m') as El).textContent = `👟${maxMove(c)}${isMiner(CARDS[c.cardId]) ? ' ⛏️' : ''}${CARDS[c.cardId].abilities.includes('ranged') ? ' 🏹' : ''}`;
+      (el.querySelector('.m') as El).textContent = `👟${maxMove(c)}${isMiner(CARDS[c.cardId]) ? ' ⛏️' : ''}${CARDS[c.cardId].abilities?.includes('ranged') ? ' 🏹' : ''}`;
       el.dataset.mining = String(!!c.minedMine);
       const up = c.upgrades.attack + c.upgrades.health;
       el.dataset.upgrades = String(up);
@@ -632,9 +632,9 @@ export class App {
         h('span', { class: 'cost', 'aria-hidden': 'true' }, c.type === 'crystal' ? '◆' : String(cost)),
         h('span', { class: 'nm', 'aria-hidden': 'true' }, c.name),
         h('span', { class: 'ty', 'aria-hidden': 'true' }, c.type === 'creature' ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
-        h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `${roleBadge(c)} ⚔️${c.attack}${c.abilities.includes('ranged') ? '🏹' : ''} ❤️${c.health}` : c.rarity),
+        h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `${roleBadge(c)} ⚔️${c.attack}${c.abilities?.includes('ranged') ? '🏹' : ''} ❤️${c.health}` : c.rarity),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
-        tunnel && c.abilities.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
+        tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));
       el.addEventListener('click', (e: MouseEvent) => { if (e.detail === 0) this.showCard(c.id); });
       hand.append(el);

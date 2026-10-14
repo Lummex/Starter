@@ -92,3 +92,7 @@ Re-ran the acceptance file locally; the engine follows the spec, so no rules cha
 - AC12 expects a move onto a space held by an own creature to be absent from `legalActions()`, but AC38 and the spec's swapping rule require that swap to be a legal `move`.
 - AC14: enemy Shieldbeard (4 Health) hit by a 2-Attack Scrapper (no type advantage) is at 2, not 3.
 - AC16: the test's four `done`s leave the player in Action on turn 3; its next `done` ends the turn, so the following attack is correctly refused.
+
+## Round 2 fixes
+- Spell/crystal cards have no `abilities`; all `.abilities.includes/some` calls are now null-safe (fixed hand-render crash that broke AC9/17/46/50).
+- AI: fighters stop mining after turn 5 so they advance; Normal AI beats a passive player well before turn 60.

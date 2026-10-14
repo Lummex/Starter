@@ -170,7 +170,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     ring.rotation.x = Math.PI / 2;
     ring.position.y = 0.04;
     g.add(ring);
-    if (card.abilities.includes('ranged')) {
+    if (card.abilities?.includes('ranged')) {
       const bow = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.03, 6, 14, Math.PI), new THREE.MeshStandardMaterial({ color: 0x8a5a2a }));
       bow.position.set(0.3, 0.5, 0.12); bow.rotation.z = -Math.PI / 2;
       const str = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.52, 0.012), new THREE.MeshBasicMaterial({ color: 0xffffff }));

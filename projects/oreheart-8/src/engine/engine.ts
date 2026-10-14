@@ -625,7 +625,7 @@ const pendingTargetCreature = (s: any, pend: any) => {
   return t && t.row ? creatureAt(s, t.row, t.col) : null;
 };
 
-const hasEater = (s: any, p: Side) => s.board.creatures.some((c: any) => c.owner === p && CARDS[c.cardId].abilities.some((a: string) => a.startsWith('eater')));
+const hasEater = (s: any, p: Side) => s.board.creatures.some((c: any) => c.owner === p && CARDS[c.cardId].abilities?.some((a: string) => a.startsWith('eater')));
 const crystalOk = (s: any, p: Side) => s.flags.crystalsPlayed[p] < CONFIG.crystalCardsPerTurn || hasEater(s, p);
 /** Crystals a Crystal card adds to the Bank right now (Geode adds none). */
 const crystalAmount = (card: any) => (['gain', 'chooseColors', 'motherlode'].includes(card.effect) ? card.params.amount : 0);

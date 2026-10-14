@@ -35,7 +35,7 @@ function posValue(s: any, who: string, card: any, row: number, col: number, uid?
     const e = sh(foe);
     v -= 2 * cheb(here, e);
     if (cheb(here, e) <= 1) v += 40;
-    if (card.abilities.includes('ranged') && cheb(here, e) <= 2) v += 30;
+    if (card.abilities?.includes('ranged') && cheb(here, e) <= 2) v += 30;
     const adj = SITES.map((x: any, i: number) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
     if (adj.some(({ i }) => s.sites[i].controller !== who)) v += 8;
   }
@@ -78,7 +78,7 @@ function scoreCast(s: any, who: string, a: any): number {
     case 'damage': {
       if (a.target.commander) return s.players[foe].health <= card.params.amount ? 10000 : s.players[foe].health <= 8 ? 40 : 18;
       if (!t) return 0;
-      const kills = t.health <= card.params.amount - (CARDS[t.cardId].abilities.includes('armored') ? 1 : 0);
+      const kills = t.health <= card.params.amount - (CARDS[t.cardId].abilities?.includes('armored') ? 1 : 0);
       return kills ? 50 + CARDS[t.cardId].cost * 6 : 5;
     }
     case 'areaDamage': {
@@ -138,7 +138,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
     } else if (a.type === 'summon') {
       const h = s.players[who].hand.find((x: any) => x.uid === a.uid);
       const card = CARDS[h.cardId];
-      scored.push([(card.role === 'Smith' ? 26 : 40) + card.cost * 2 + posValue(s, who, card, a.row, a.col) * 0.5 + rand(), a]);
+      scored.push([(card.role === 'Smith' ? 26 : isMiner(card) ? 40 : 40) + card.cost * 2 + posValue(s, who, card, a.row, a.col) * 0.5 + rand(), a]);
     } else if (a.type === 'gathererSwap') {
       const h = a.discardUid ? s.players[who].hand.find((x: any) => x.uid === a.discardUid) : null;
       const dc = h ? CARDS[h.cardId] : null;
@@ -151,7 +151,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
     } else if (a.type === 'cast') scored.push([scoreCast(s, who, a), a]);
     else if (a.type === 'mine') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
-      scored.push([isMiner(CARDS[c.cardId]) ? 60 + rand() : 14 + rand(), a]);
+      scored.push([isMiner(CARDS[c.cardId]) ? 60 + rand() : (s.turn >= 5 ? 1 : 14) + rand(), a]);
     } else if (a.type === 'move') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const card = CARDS[c.cardId];
@@ -167,9 +167,9 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
       if (a.target.commander) { scored.push([200 + atkValue(s, c) + (s.players[other(who as any)].health <= atkValue(s, c) ? 10000 : 0), a]); continue; }
       const d = creatureAt(s, a.target.row, a.target.col);
       const dmg = atkValue(s, c, d);
-      const kills = dmg - (CARDS[d.cardId].abilities.includes('armored') ? 1 : 0) >= d.health;
-      const melee = cheb(c, d) === 1 && !CARDS[c.cardId].abilities.includes('ranged');
-      const strike = melee && !CARDS[c.cardId].abilities.includes('sneaky') ? atkValue(s, d, c) : 0;
+      const kills = dmg - (CARDS[d.cardId].abilities?.includes('armored') ? 1 : 0) >= d.health;
+      const melee = cheb(c, d) === 1 && !CARDS[c.cardId].abilities?.includes('ranged');
+      const strike = melee && !CARDS[c.cardId].abilities?.includes('sneaky') ? atkValue(s, d, c) : 0;
       const dies = strike >= c.health;
       scored.push([dmg * 8 + (kills ? 40 + CARDS[d.cardId].cost * 6 : 0) - strike * 6 - (dies ? 10 + CARDS[c.cardId].cost * 8 : 0), a]);
     }
