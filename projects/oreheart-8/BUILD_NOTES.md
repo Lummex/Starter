@@ -14,3 +14,8 @@ Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm te
 - Champion's Crown also adds +3 current Health. Glowing Geode is Unique.
 - `factory-data/oreheart-8` (spec and acceptance tests) was not modified, per instructions.
 - Visuals are placeholders; no sound.
+
+## Round 2 inspector review (AC14, AC16)
+Both failures were traced to the acceptance tests, not the engine. No engine change was made, because a change would break the spec.
+- AC14: the test expects the opponent Shieldbeard (4 Health) to be at 3 after one hit from a 2-Attack Goblin Scrapper. Its own comment says "4 - 2", which is 2. The spec has no type advantage for Goblins over Dwarves, so the engine correctly leaves it at 2.
+- AC16: `passTurn` is two `done` calls, which only ends a whole turn when it starts in Deploy. The test calls it twice from the Action phase, so the player ends up in Action when it casts Battle Cry. The following `done` then ends the turn, and the later attack is correctly rejected as not the player's turn.
