@@ -1,3 +1,25 @@
+# Oreheart — Phase 1a build notes (Revision 6)
+
+Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 26 tests).
+
+## Revision 6 — what was built
+- **Miner rename**: basic Miners are "Goblin/Gnome/Dwarf Miner" (ids unchanged, old names as `flavor`), ⛏️/⚔️/⚒️ badges on hand cards, card view and board labels, pickaxe on Miner figures, hammer + anvil on Smith figures. "Gatherer" no longer appears in visible text.
+- **Smith Miners** (`*-smith-miner`, cost 2, role `Smith`): summon as a Miner, or the new `smith` action (`uid, creatureUid, stat`) in Deploy for a permanent +1 Attack / +1 Health (`upgrades` on the creature, `data-upgrades` + pips on labels). Drag glow: blue spaces, gold creatures; "Smith upgrade" dialog. Old upgrades/Upgrade button/`upgradeCosts` removed. Decks: 5 basic Miners + 3 Smith each.
+- **Crystal Bank**: `players.X.bank` (no cap, never resets), Crystal cards fill it, Flow spent first (exact pairing rule of R6.4), `setup.playerBank/opponentBank`, counters read "Flow N · Bank M". `playCrystal` never changes phase/turn; legal in own Deploy and as responder in a Respond window; one per round per player (counter resets in own Draw).
+- **Free Miner**: basic Miner costs 0 only if Flow + Bank can't pay and no Miner is on the battlefield. **Tunnel** only for basic Miners while behind on mines; "Tunnel!" tag on the hand card.
+- **Respond window**: opens for any matching Instant (affordable or not); 12 s countdown bar (`progressbar` "Respond time left", frozen full in test mode); buttons: card name / "Crystal X + Instant" combo (`respond` with `crystalUid`) / disabled "… — need N more"; enemy card shown full size with a target line; "Let it happen".
+- **UI**: turn display top-right (no box, big outlined text, two lines), hearts on each Stronghold's bottom wall shrunk to avoid label overlap, Rules page rewritten, tutorial gains a `smith` step.
+- **AI**: uses Smith upgrades on strong Fighters, summons Smiths as Miners otherwise, plays Crystal cards in Deploy.
+- Tests added for Smith persistence, Bank order, Crystal in Respond, unaffordable window, free Miner, Tunnel.
+
+## Notes / gaps
+- `scripts/gen-content.mjs` was stale (7×7 board) and has been removed; content JSON is edited directly.
+- Standalone Crystal-card play during a Respond window is available through the API (`playCrystal`); the dialog only offers the Crystal + Instant combos.
+- Heart overlap avoidance is geometric (shrinks the heart); verified at 844×390 only.
+- Visuals are placeholders; no sound.
+
+---
+
 # Oreheart — Phase 1a build notes (Revision 5)
 
 Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm test` → Vitest (engine + AI).

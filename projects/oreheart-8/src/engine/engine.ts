@@ -13,7 +13,7 @@ const colorOf = (s: any, p: Side) => FACTIONS[s.players[p].faction].crystal as s
 
 export const cardOf = (c: any) => CARDS[c.cardId];
 const has = (c: any, a: string) => CARDS[c.cardId].abilities?.includes(a);
-export const maxMove = (c: any) => (c.upgrade === 'veteran' ? Math.max(2, CARDS[c.cardId].move) : CARDS[c.cardId].move);
+export const maxMove = (c: any) => CARDS[c.cardId].move;
 
 // ---------------------------------------------------------------- board helpers
 export const creatureAt = (s: any, row: number, col: number) => s.board.creatures.find((c: any) => c.row === row && c.col === col);
@@ -35,7 +35,7 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
   const maxHealth = card.health + (bh ? bh.amount : 0);
   const c = {
     uid: uid || 'u' + s.nextUid++, cardId, owner, row, col, attack: card.attack, health: maxHealth - damage, maxHealth,
-    upgrade: null as any, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0,
+    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0,
   };
   s.board.creatures.push(c);
   return c;
@@ -43,22 +43,29 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
 const makeCard = (s: any, cardId: string) => ({ uid: 'k' + s.nextUid++, cardId });
 
 // ---------------------------------------------------------------- costs
-const isGatherer = (card: any) => card.role === 'Gatherer';
+/** Miner = basic Miner, Smith Miner or Crystal Eater. */
+export const isMiner = (card: any) => card.role === 'Gatherer' || card.role === 'Smith';
 export const basicGatherer = (faction: string): string => CONFIG.basicGatherers[faction];
+export const basicMiner = basicGatherer;
 const ALL_COLORS = ['green', 'blue', 'purple', 'white'];
-const total = (pl: any) => pl.crystals.green + pl.crystals.blue + pl.crystals.purple + pl.crystals.white;
-const goesFree = (s: any, p: Side, card: any) =>
-  card.id === basicGatherer(card.faction) && s.players[p].minedLastTurn === 0 && sitesControlled(s, p) === 0 &&
-  !s.board.creatures.some((c: any) => c.owner === p && isGatherer(CARDS[c.cardId])) &&
-  (total(s.players[p]) === 0 || sitesControlled(s, p === 'player' ? 'opponent' : 'player') > 0);
-export function creatureCost(s: any, p: Side, card: any) {
-  if (goesFree(s, p, card)) return 0;
+const sum = (st: any) => st.green + st.blue + st.purple + st.white;
+const total = (pl: any) => sum(pl.crystals);
+/** Flow + Bank: what a spell can spend. */
+export const funds = (pl: any) => sum(pl.crystals) + sum(pl.bank || { green: 0, blue: 0, purple: 0, white: 0 });
+const baseCost = (s: any, p: Side, card: any) => {
   let c = card.cost;
   const d = bonusOf(s, p, 'creatureDiscount');
   if (d && d.faction === card.faction) c = Math.max(1, c - d.amount);
   const disc = s.flags.discount[p];
   if (disc) c = Math.max(0, c - disc);
   return c;
+};
+/** A basic Miner is free when Flow + Bank can't pay for it and no Miner stands on the battlefield. */
+const goesFree = (s: any, p: Side, card: any) =>
+  card.id === basicGatherer(card.faction) && !s.board.creatures.some((c: any) => c.owner === p && isMiner(CARDS[c.cardId])) &&
+  !canPayCreature(s.players[p], card.faction, baseCost(s, p, card));
+export function creatureCost(s: any, p: Side, card: any) {
+  return goesFree(s, p, card) ? 0 : baseCost(s, p, card);
 }
 export function spellCost(s: any, p: Side, card: any) {
   const d = bonusOf(s, p, 'spellDiscount');
@@ -66,30 +73,52 @@ export function spellCost(s: any, p: Side, card: any) {
 }
 /** Off-color crystals in payment order: white, then green/blue/purple skipping the own color. */
 const offOrder = (faction: string) => ['white'].concat(COLOR_ORDER.filter((c) => c !== faction));
-/** Crystals toward a creature or upgrade: own color 1 each, everything else ½ each (rounded down in total). */
+const flowValue = (st: any, fc: string) => st[fc] + Math.floor((sum(st) - st[fc]) / 2);
+/** Crystals toward a creature: own color 1 each, everything else ½ each (rounded down in total), Flow and Bank together. */
 export function creatureValue(pl: any, faction: string) {
-  const own = pl.crystals[FACTIONS[faction].crystal];
-  return own + Math.floor((total(pl) - own) / 2);
+  const fc = FACTIONS[faction].crystal;
+  const bank = pl.bank || { green: 0, blue: 0, purple: 0, white: 0 };
+  const own = pl.crystals[fc] + bank[fc];
+  return own + Math.floor((total(pl) + sum(bank) - own) / 2);
 }
 export const canPayCreature = (pl: any, faction: string, cost: number) => creatureValue(pl, faction) >= cost;
-function payCreature(pl: any, faction: string, cost: number) {
-  const fc = FACTIONS[faction].crystal;
-  const own = Math.min(pl.crystals[fc], cost);
-  pl.crystals[fc] -= own;
-  let others = (cost - own) * 2;
+function spendOff(st: any, fc: string, n: number) {
   for (const col of offOrder(fc)) {
-    const t = Math.min(pl.crystals[col], others);
-    pl.crystals[col] -= t;
-    others -= t;
+    const t = Math.min(st[col], n);
+    st[col] -= t;
+    n -= t;
   }
 }
-/** Spells take any color at full value: white first, then off-colors, then the own color. */
+/** Pays from Flow first; only if Flow alone can't cover it, all usable Flow goes and the rest comes from Bank. */
+function payCreature(pl: any, faction: string, cost: number) {
+  const fc = FACTIONS[faction].crystal;
+  const f = pl.crystals;
+  if (flowValue(f, fc) >= cost) {
+    const own = Math.min(f[fc], cost);
+    f[fc] -= own;
+    spendOff(f, fc, (cost - own) * 2);
+    return;
+  }
+  const offF = sum(f) - f[fc];
+  let rem = cost - f[fc] - Math.floor(offF / 2);
+  f[fc] = 0;
+  spendOff(f, fc, Math.floor(offF / 2) * 2);
+  const ownB = Math.min(pl.bank[fc], rem);
+  pl.bank[fc] -= ownB;
+  rem -= ownB;
+  if (rem > 0) {
+    let need = rem * 2;
+    if (offF % 2 === 1) { spendOff(f, fc, 1); need -= 1; }
+    spendOff(pl.bank, fc, need);
+  }
+}
+/** Spells take any color at full value: Flow first, then Bank; white first, then off-colors, then the own color. */
 function paySpell(pl: any, faction: string, cost: number) {
   const order = offOrder(FACTIONS[faction].crystal).concat(FACTIONS[faction].crystal);
   let left = cost;
-  for (const col of order) {
-    const t = Math.min(pl.crystals[col], left);
-    pl.crystals[col] -= t;
+  for (const st of [pl.crystals, pl.bank]) for (const col of order) {
+    const t = Math.min(st[col], left);
+    st[col] -= t;
     left -= t;
   }
 }
@@ -146,7 +175,7 @@ export function createMatch(opts: any = {}) {
     sites: [] as any[],
     pendingResponse: null, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
     mulliganDone: { player: false, opponent: false }, tutorial: opts.tutorial ? { step: 'summon' } : null,
-    flags: { battleCry: null, crystalsPlayed: 0, swapped: false, discount: { player: 0, opponent: 0 } },
+    flags: { battleCry: null, crystalsPlayed: { player: 0, opponent: 0 }, swapped: false, discount: { player: 0, opponent: 0 } },
   };
   const setup = opts.setup;
   const mines = opts.mines ? opts.mines :  randomMines((opts.seed ?? 1) | 0);
@@ -156,7 +185,7 @@ export function createMatch(opts: any = {}) {
     const cmd = who === 'player' ? pcmd : ocmd;
     s.players[who] = {
       commanderId: cmd.id, faction: cmd.faction, health: cmd.health, maxHealth: cmd.health,
-      crystals: { green: 0, blue: 0, purple: 0, white: 0 }, flow: { green: 0, blue: 0, purple: 0, white: 0 }, hand: [], deck: [], discard: [], geodes: 0, minedLastTurn: 0,
+      crystals: { green: 0, blue: 0, purple: 0, white: 0 }, bank: { green: 0, blue: 0, purple: 0, white: 0 }, flow: { green: 0, blue: 0, purple: 0, white: 0 }, hand: [], deck: [], discard: [], geodes: 0, minedLastTurn: 0,
     };
   });
   for (const who of ['player', 'opponent'] as Side[]) {
@@ -184,6 +213,8 @@ export function createMatch(opts: any = {}) {
     pl.hand = (setup[who + 'Hand'] || []).map((id: string) => makeCard(s, id));
     const cr = setup[who + 'Crystals'] || {};
     pl.crystals = { green: cr.green || 0, blue: cr.blue || 0, purple: cr.purple || 0, white: cr.white || 0 };
+    const bk = setup[who + 'Bank'] || {};
+    pl.bank = { green: bk.green || 0, blue: bk.blue || 0, purple: bk.purple || 0, white: bk.white || 0 };
     const h = setup[who + 'Health'];
     if (h != null) { pl.health = h; if (h > pl.maxHealth) pl.maxHealth = h; }
   }
@@ -230,7 +261,7 @@ function drawCard(s: any, who: Side, ev: any[]) {
 
 /** Creatures of `who` that mined a mine and still stand next to it. */
 const miningNow = (s: any, who?: Side) => s.board.creatures.filter((c: any) => c.minedMine && (!who || c.owner === who) && cheb(c, c.minedMine) <= 1);
-const yieldOf = (c: any) => (CARDS[c.cardId].role === 'Gatherer' ? CONFIG.gathererFlow : CONFIG.fighterFlow);
+const yieldOf = (c: any) => (isMiner(CARDS[c.cardId]) ? CONFIG.gathererFlow : CONFIG.fighterFlow);
 /** Colors each mine would have from the creatures that mined it right now. */
 function mineColors(s: any) {
   return s.sites.map((site: any) => {
@@ -323,7 +354,9 @@ function startTurn(s: any, ev: any[]) {
   s.phase = 'draw';
   s.priority = null;
   s.pendingResponse = null;
-  s.flags = { battleCry: null, crystalsPlayed: 0, swapped: false, discount: { player: 0, opponent: 0 } };
+  const cp = s.flags.crystalsPlayed;
+  cp[who] = 0;
+  s.flags = { battleCry: null, crystalsPlayed: cp, swapped: false, discount: { player: 0, opponent: 0 } };
   for (const c of s.board.creatures) if (c.owner === who) { c.summonedThisTurn = false; c.hasMoved = false; c.hasAttacked = false; c.movedDistance = 0; }
   ev.push({ type: 'turnStart', player: who, turn: s.turn });
   // creatures heal to full, lose leftover Shield and expired Hearty Ale
@@ -482,13 +515,13 @@ export function summonSpaces(s: any, p: Side, card: any): { row: number; col: nu
 /** Mines `c` can mine this turn (one action: afterwards it can't move or attack). */
 export function mineTargets(s: any, c: any): { row: number; col: number }[] {
   if (c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil) return [];
-  if (c.summonedThisTurn && !has(c, 'haste') && CARDS[c.cardId].role !== 'Gatherer') return [];
+  if (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) return [];
   return s.sites.filter((x: any) => cheb(c, x) <= 1).map((x: any) => ({ row: x.row, col: x.col }));
 }
 
 /** Spaces `c` can move to; a space held by one of its own creatures is a swap. */
 export function moveDests(s: any, c: any): { row: number; col: number }[] {
-  if (c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && CARDS[c.cardId].role !== 'Gatherer')) return [];
+  if (c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId]))) return [];
   const m = maxMove(c);
   const out: any[] = [];
   for (let dr = -m; dr <= m; dr++) for (let dc = -m; dc <= m; dc++) {
@@ -592,33 +625,66 @@ const pendingTargetCreature = (s: any, pend: any) => {
   return t && t.row ? creatureAt(s, t.row, t.col) : null;
 };
 
-export function respondActions(s: any, responder: Side, pend: any): any[] {
+const hasEater = (s: any, p: Side) => s.board.creatures.some((c: any) => c.owner === p && CARDS[c.cardId].abilities.some((a: string) => a.startsWith('eater')));
+const crystalOk = (s: any, p: Side) => s.flags.crystalsPlayed[p] < CONFIG.crystalCardsPerTurn || hasEater(s, p);
+/** Crystals a Crystal card adds to the Bank right now (Geode adds none). */
+const crystalAmount = (card: any) => (['gain', 'chooseColors', 'motherlode'].includes(card.effect) ? card.params.amount : 0);
+
+/** Instants in the responder's hand whose effect could apply to `pend`, affordable or not. */
+export function respondMatches(s: any, responder: Side, pend: any): { h: any; card: any; opts: any[] }[] {
   const out: any[] = [];
   const pl = s.players[responder];
+  const pt = pendingTargetCreature(s, pend);
   for (const h of pl.hand) {
     const card = CARDS[h.cardId];
     if (card.type !== 'spell' || card.spellKind === 'regular') continue;
-    if (total(pl) < spellCost(s, responder, card)) continue;
+    let opts: any[] = [];
     if (card.spellKind === 'counter') {
-      if (card.effect === 'cancelSummon' && pend.kind === 'summon') out.push({ type: 'respond', uid: h.uid });
+      if (card.effect === 'cancelSummon' && pend.kind === 'summon') opts = [{}];
       else if ((card.effect === 'cancelSpell' || card.effect === 'mirror') && pend.kind === 'cast') {
         if (card.params.maxCost && CARDS[pend.card.cardId].cost > card.params.maxCost) continue;
-        out.push({ type: 'respond', uid: h.uid });
+        opts = [{}];
       }
-      continue;
-    }
-    if (card.effect === 'shield') {
-      const t = pendingTargetCreature(s, pend);
-      if (t && t.owner === responder) out.push({ type: 'respond', uid: h.uid, target: { row: t.row, col: t.col } });
-    } else for (const o of spellTargets(s, responder, card)) out.push({ type: 'respond', uid: h.uid, ...o });
+    } else if (card.effect === 'shield') {
+      if (pt && pt.owner === responder) opts = [{ target: { row: pt.row, col: pt.col } }];
+    } else if (card.effect === 'heal') {
+      if (pt && pt.owner === responder) opts = spellTargets(s, responder, card);
+    } else if (card.effect === 'healCommander') {
+      if (pend.kind === 'cast' && pend.target && pend.target.commander === responder) opts = spellTargets(s, responder, card);
+    } else opts = spellTargets(s, responder, card);
+    if (opts.length) out.push({ h, card, opts });
   }
   return out;
 }
 
+export function respondActions(s: any, responder: Side, pend: any): any[] {
+  const out: any[] = [];
+  const pl = s.players[responder];
+  const have = funds(pl);
+  for (const m of respondMatches(s, responder, pend)) {
+    const cost = spellCost(s, responder, m.card);
+    let combo: any = null;
+    if (have < cost && crystalOk(s, responder)) {
+      combo = pl.hand.filter((x: any) => CARDS[x.cardId].type === 'crystal' && crystalAmount(CARDS[x.cardId]) > 0 && have + crystalAmount(CARDS[x.cardId]) >= cost)
+        .sort((a: any, b: any) => crystalAmount(CARDS[a.cardId]) - crystalAmount(CARDS[b.cardId]))[0] || null;
+    }
+    for (const o of m.opts) {
+      if (have >= cost) out.push({ type: 'respond', uid: m.h.uid, ...o });
+      else if (combo) out.push({ type: 'respond', uid: m.h.uid, ...o, crystalUid: combo.uid });
+    }
+  }
+  return out;
+}
+
+/** What the responder is missing for each matching Instant (for the Respond dialog). */
+export function respondNeeds(s: any, responder: Side, pend: any): { uid: string; cardId: string; need: number }[] {
+  const have = funds(s.players[responder]);
+  return respondMatches(s, responder, pend).map((m) => ({ uid: m.h.uid, cardId: m.card.id, need: Math.max(0, spellCost(s, responder, m.card) - have) }));
+}
+
 function openWindow(s: any, pend: any, ev: any[]) {
   const responder = other(pend.actor);
-  const opts = respondActions(s, responder, { ...pend, responder });
-  if (opts.length) {
+  if (respondMatches(s, responder, { ...pend, responder }).length) {
     s.pendingResponse = { ...pend, responder };
     s.priority = responder;
   } else finishPending(s, pend, ev, false);
@@ -646,13 +712,25 @@ function finishPending(s: any, pend: any, ev: any[], cancelled: boolean) {
 }
 
 // ---------------------------------------------------------------- legal actions
-const upgradeCost = (u: string) => CONFIG.upgradeCosts[u];
-const hasEater = (s: any, p: Side) => s.board.creatures.some((c: any) => c.owner === p && CARDS[c.cardId].abilities.some((a: string) => a.startsWith('eater')));
 
 function heartCombos() {
   const n = CARDS['heart-of-the-fallen'].params.amount;
   const out: any[] = [];
   for (let g = 0; g <= n; g++) for (let b = 0; g + b <= n; b++) for (let p = 0; g + b + p <= n; p++) out.push({ green: g, blue: b, purple: p, white: n - g - b - p });
+  return out;
+}
+
+function crystalPlays(s: any, who: Side): any[] {
+  const pl = s.players[who];
+  const out: any[] = [];
+  if (!crystalOk(s, who)) return out;
+  for (const h of pl.hand) {
+    const card = CARDS[h.cardId];
+    if (card.type !== 'crystal') continue;
+    if (card.effect === 'geode' && pl.geodes >= 1) continue;
+    if (card.effect === 'chooseColors') for (const colors of heartCombos()) out.push({ type: 'playCrystal', uid: h.uid, colors });
+    else out.push({ type: 'playCrystal', uid: h.uid });
+  }
   return out;
 }
 
@@ -663,7 +741,7 @@ export function legalActions(s: any): any[] {
   const out: any[] = [];
   const surrender = { type: 'surrender' };
   if (s.pendingResponse) {
-    out.push(...respondActions(s, who, s.pendingResponse), { type: 'pass' }, surrender);
+    out.push(...respondActions(s, who, s.pendingResponse), ...crystalPlays(s, who), { type: 'pass' }, surrender);
     return out;
   }
   if (s.phase === 'mulligan') {
@@ -682,25 +760,18 @@ export function legalActions(s: any): any[] {
       if (!canPayCreature(pl, card.faction, creatureCost(s, who, card))) continue;
       if (card.unique && s.board.creatures.some((c: any) => c.owner === who && c.cardId === card.id)) continue;
       for (const sp of summonSpaces(s, who, card)) out.push({ type: 'summon', uid: h.uid, row: sp.row, col: sp.col });
+      if (card.role === 'Smith') for (const c of s.board.creatures) if (c.owner === who) for (const stat of ['attack', 'health']) out.push({ type: 'smith', uid: h.uid, creatureUid: c.uid, stat });
     } else if (card.type === 'spell' && card.spellKind !== 'counter' && ['deploy', 'action'].includes(ph)) {
-      if (total(pl) < spellCost(s, who, card)) continue;
+      if (funds(pl) < spellCost(s, who, card)) continue;
       for (const o of spellTargets(s, who, card)) out.push({ type: 'cast', uid: h.uid, ...o });
-    } else if (card.type === 'crystal' && ph === 'deploy') {
-      if (s.flags.crystalsPlayed >= CONFIG.crystalCardsPerTurn && !hasEater(s, who)) continue;
-      if (card.effect === 'geode' && pl.geodes >= 1) continue;
-      if (card.effect === 'chooseColors') for (const colors of heartCombos()) out.push({ type: 'playCrystal', uid: h.uid, colors });
-      else out.push({ type: 'playCrystal', uid: h.uid });
     }
     seenCards.add(h.uid);
   }
-  if (ph === 'deploy') {
-    for (const c of s.board.creatures) if (c.owner === who && !c.upgrade)
-      for (const u of Object.keys(CONFIG.upgradeCosts)) if (canPayCreature(pl, pl.faction, upgradeCost(u))) out.push({ type: 'upgrade', creatureUid: c.uid, upgrade: u });
-  }
+  if (ph === 'deploy') out.push(...crystalPlays(s, who));
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of moveDests(s, c)) out.push({ type: 'move', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of mineTargets(s, c)) out.push({ type: 'mine', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const t of attackTargets(s, c)) out.push({ type: 'attack', creatureUid: c.uid, target: t });
-  if (ph === 'deploy' && !s.flags.swapped && !pl.hand.some((h: any) => isGatherer(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
+  if (ph === 'deploy' && !s.flags.swapped && !pl.hand.some((h: any) => isMiner(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
     if (pl.hand.length) for (const h of pl.hand) out.push({ type: 'gathererSwap', discardUid: h.uid });
     else out.push({ type: 'gathererSwap' });
   }
@@ -718,7 +789,7 @@ export function hasMovesLeft(s: any): boolean {
   if (s.phase === 'over' || !s.priority || s.pendingResponse || !['deploy', 'action'].includes(s.phase) || s.priority !== s.activePlayer) return false;
   const pl = s.players[s.priority];
   return legalActions(s).some((a: any) => {
-    if (['done', 'surrender', 'upgrade', 'gathererSwap', 'pass', 'respond'].includes(a.type)) return false;
+    if (['done', 'surrender', 'smith', 'gathererSwap', 'pass', 'respond'].includes(a.type)) return false;
     if (a.type === 'cast') {
       const h = pl.hand.find((x: any) => x.uid === a.uid);
       return !h || CARDS[h.cardId].spellKind === 'regular';
@@ -748,6 +819,7 @@ function matchLegal(s: any, a: any): any | null {
   }
   for (const l of legalActions(s)) {
     if (l.type !== a.type) continue;
+    if (a.crystalUid && !l.crystalUid) continue;
     let ok = true;
     for (const k of Object.keys(l)) {
       if (k === 'type') continue;
@@ -757,6 +829,31 @@ function matchLegal(s: any, a: any): any | null {
     if (ok) return l;
   }
   return null;
+}
+
+function playCrystalCard(s: any, who: Side, h: any, colors: any, ev: any[]) {
+  const pl = s.players[who];
+  const card = CARDS[h.cardId];
+  const fc = colorOf(s, who);
+  if (s.flags.crystalsPlayed[who] >= CONFIG.crystalCardsPerTurn) {
+    for (const c of [...s.board.creatures]) {
+      if (c.owner !== who) continue;
+      if (has(c, 'eaterGuzzler')) dealDamage(s, c, CONFIG.eaterGuzzlerDamage, ev, true);
+      else if (has(c, 'eaterConduit')) { c.lockedUntil = s.turn + 2; dealDamage(s, c, CONFIG.eaterConduitDamage, ev, true); }
+      else if (has(c, 'eaterDelver')) c.attack = Math.max(0, c.attack - CONFIG.eaterDelverPenalty);
+    }
+  }
+  s.flags.crystalsPlayed[who]++;
+  pl.discard.push(h);
+  // Crystal cards fill the Bank: it never resets and has no cap
+  if (card.effect === 'gain') pl.bank[fc] += card.params.amount;
+  else if (card.effect === 'geode') pl.geodes++;
+  else if (card.effect === 'motherlode') { pl.bank[fc] += card.params.amount; s.flags.discount[who] += card.params.discount; }
+  else if (card.effect === 'chooseColors') {
+    const cols = colors || { [fc]: card.params.amount };
+    for (const k of ALL_COLORS) pl.bank[k] += cols[k] || 0;
+  }
+  ev.push({ type: 'playCrystal', player: who, cardId: card.id });
 }
 
 function applyActionInner(state: any, action: any): { ok: boolean; state: any; events: any[]; error?: string } {
@@ -796,6 +893,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     case 'pass': finishPending(s, s.pendingResponse, ev, false); break;
     case 'respond': {
       const pend = s.pendingResponse;
+      if (l.crystalUid) playCrystalCard(s, who, takeHand(l.crystalUid), null, ev);
       const card = CARDS[hand(l.uid).cardId];
       paySpell(pl, pl.faction, spellCost(s, who, card));
       const used = takeHand(l.uid);
@@ -833,39 +931,20 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       break;
     }
     case 'playCrystal': {
-      const h = takeHand(l.uid);
-      const card = CARDS[h.cardId];
-      const fc = colorOf(s, who);
-      if (s.flags.crystalsPlayed >= CONFIG.crystalCardsPerTurn) {
-        for (const c of [...s.board.creatures]) {
-          if (c.owner !== who) continue;
-          if (has(c, 'eaterGuzzler')) dealDamage(s, c, CONFIG.eaterGuzzlerDamage, ev, true);
-          else if (has(c, 'eaterConduit')) { c.lockedUntil = s.turn + 2; dealDamage(s, c, CONFIG.eaterConduitDamage, ev, true); }
-          else if (has(c, 'eaterDelver')) c.attack = Math.max(0, c.attack - CONFIG.eaterDelverPenalty);
-        }
-      }
-      s.flags.crystalsPlayed++;
-      pl.discard.push(h);
-      if (card.effect === 'gain') gain(s, who, fc, card.params.amount);
-      else if (card.effect === 'geode') pl.geodes++;
-      else if (card.effect === 'motherlode') { gain(s, who, fc, card.params.amount); s.flags.discount[who] += card.params.discount; }
-      else if (card.effect === 'chooseColors') {
-        const cols = act.colors || { [fc]: card.params.amount };
-        for (const k of ALL_COLORS) pl.crystals[k] += cols[k] || 0;
-        capPool(pl, pl.faction);
-      }
-      ev.push({ type: 'playCrystal', player: who, cardId: card.id });
+      playCrystalCard(s, who, takeHand(l.uid), act.colors, ev);
       break;
     }
-    case 'upgrade': {
+    case 'smith': {
+      const h = takeHand(l.uid);
+      const card = CARDS[h.cardId];
       const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
-      const u = CONFIG.upgrades[l.upgrade];
-      payCreature(pl, pl.faction, upgradeCost(l.upgrade));
-      c.upgrade = l.upgrade;
-      if (u.attack) c.attack += u.attack;
-      if (u.maxHealth) c.maxHealth += u.maxHealth;
-      if (u.heal) c.health = Math.min(c.maxHealth, c.health + u.heal);
-      ev.push({ type: 'upgrade', uid: c.uid, upgrade: l.upgrade });
+      payCreature(pl, card.faction, creatureCost(s, who, card));
+      if (s.flags.discount[who]) s.flags.discount[who] = 0;
+      pl.discard.push(h);
+      c.upgrades[l.stat]++;
+      if (l.stat === 'attack') c.attack += 1;
+      else { c.maxHealth += 1; c.health += 1; }
+      ev.push({ type: 'smith', uid: c.uid, stat: l.stat, row: c.row, col: c.col });
       break;
     }
     case 'move': {
@@ -931,7 +1010,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
   return { ok: true, state: s, events: ev };
 }
 
-const TUTORIAL_ORDER = ['summon', 'move', 'mine', 'spend', 'swap', 'fight', 'spell', 'commander', 'complete'];
+const TUTORIAL_ORDER = ['summon', 'move', 'mine', 'spend', 'smith', 'swap', 'fight', 'spell', 'commander', 'complete'];
 function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
   const t = s.tutorial;
   if (!t || t.step === 'complete') return;
@@ -941,7 +1020,8 @@ function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
     case 'summon': if (mine && act.type === 'summon') next(); break;
     case 'move': if (mine && act.type === 'move') next(); break;
     case 'mine': if (mine && act.type === 'mine') next(); break;
-    case 'spend': if (mine && ['summon', 'upgrade', 'cast'].includes(act.type)) next(); break;
+    case 'spend': if (mine && ['summon', 'cast'].includes(act.type)) next(); break;
+    case 'smith': if (mine && act.type === 'smith') next(); break;
     case 'swap': if (mine && events.some((e: any) => e.type === 'swap')) next(); break;
     case 'fight': if (mine && act.type === 'attack' && act.target && act.target.row) next(); break;
     case 'spell': if (mine && act.type === 'cast') next(); break;
@@ -958,5 +1038,5 @@ export function applyAction(state: any, action: any): { ok: boolean; state: any;
 
 /** True when a creature has acted this turn, or cannot act yet (shown darker in the UI). */
 export function isActed(s: any, c: any): boolean {
-  return c.hasMoved || c.hasAttacked || c.hasMined || (c.summonedThisTurn && !has(c, 'haste') && CARDS[c.cardId].role !== 'Gatherer') || s.turn < c.lockedUntil;
+  return c.hasMoved || c.hasAttacked || c.hasMined || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) || s.turn < c.lockedUntil;
 }

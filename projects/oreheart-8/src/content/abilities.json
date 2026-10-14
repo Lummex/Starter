@@ -1,11 +1,11 @@
 {
  "gather": {
-  "name": "Gatherer",
-  "text": "Makes 2 crystal flow next to a mine (Fighters make 1)."
+  "name": "Miner",
+  "text": "Mines 2 crystals from a mine it stands next to (Fighters mine 1)."
  },
  "tunnel": {
   "name": "Tunnel",
-  "text": "Can be summoned onto any empty space next to a crystal site."
+  "text": "While the enemy holds more mines than you, it can be summoned onto any empty space next to a mine."
  },
  "frenzy": {
   "name": "Frenzy",
@@ -82,5 +82,9 @@
  "eaterDelver": {
   "name": "Crystal Eater",
   "text": "Each extra Crystal card you play this turn gives it -1 Attack for the rest of the match."
+ },
+ "smith": {
+  "name": "Smith",
+  "text": "Summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health."
  }
 }

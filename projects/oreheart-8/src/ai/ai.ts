@@ -1,5 +1,5 @@
 // Computer opponent. Uses only legalActions() and read-only engine helpers; never mutates state.
-import { legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, creatureValue } from '../engine';
+import { legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner } from '../engine';
 
 export type Rand = () => number;
 export function makeRand(seed: number): Rand {
@@ -21,7 +21,7 @@ function posValue(s: any, who: string, card: any, row: number, col: number, uid?
   const SITES = s.sites.map((x: any) => ({ row: x.row, col: x.col }));
   const enemies = s.board.creatures.filter((c: any) => c.owner === foe);
   let v = 0;
-  if (card.role === 'Gatherer') {
+  if (isMiner(card)) {
     const adj = SITES.map((x: any, i: number) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
     if (adj.length) {
       v += 30 + adj.length * 5 + (adj.some(({ i }) => s.sites[i].controller !== foe) ? 8 : 0);
@@ -93,7 +93,7 @@ function scoreCast(s: any, who: string, a: any): number {
     }
     case 'gainCrystals': return left >= 0 ? 35 : 0;
     case 'tunnelMove': {
-      if (!t || CARDS[t.cardId].role !== 'Gatherer') return 0;
+      if (!t || !isMiner(CARDS[t.cardId])) return 0;
       return posValue(s, who, CARDS[t.cardId], a.to.row, a.to.col) - posValue(s, who, CARDS[t.cardId], t.row, t.col) - 15;
     }
     case 'heal': return t && t.maxHealth - t.health >= 3 && left >= 3 ? 12 : 0;
@@ -119,7 +119,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
     }
     const acts = legal.filter((a: any) => a.type !== 'done' && a.type !== 'gathererSwap');
     if (!acts.length || rand() < 0.12) return done;
-    const w = (a: any) => (a.type === 'summon' || a.type === 'attack' || a.type === 'mine' ? 3 : a.type === 'playCrystal' ? 2 : a.type === 'upgrade' ? 0.3 : 1);
+    const w = (a: any) => (a.type === 'summon' || a.type === 'attack' || a.type === 'mine' ? 3 : a.type === 'playCrystal' ? 2 : a.type === 'smith' ? 0.3 : 1);
     let tot = acts.reduce((x: number, a: any) => x + w(a), 0);
     let r = rand() * tot;
     for (const a of acts) { r -= w(a); if (r <= 0) return a; }
@@ -138,20 +138,20 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
     } else if (a.type === 'summon') {
       const h = s.players[who].hand.find((x: any) => x.uid === a.uid);
       const card = CARDS[h.cardId];
-      scored.push([40 + card.cost * 2 + posValue(s, who, card, a.row, a.col) * 0.5 + rand(), a]);
+      scored.push([(card.role === 'Smith' ? 26 : 40) + card.cost * 2 + posValue(s, who, card, a.row, a.col) * 0.5 + rand(), a]);
     } else if (a.type === 'gathererSwap') {
       const h = a.discardUid ? s.players[who].hand.find((x: any) => x.uid === a.discardUid) : null;
       const dc = h ? CARDS[h.cardId] : null;
       scored.push([dc ? 30 - (dc.type === 'crystal' ? 0 : dc.cost * 2) - (dc.cost <= 2 ? 10 : 0) : 30, a]);
-    } else if (a.type === 'upgrade') {
+    } else if (a.type === 'smith') {
+      // upgrade a strong fighter when nothing better can be summoned; Smith cards otherwise come down as Miners
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
-      const u = a.upgrade;
-      const left = creatureValue(s.players[who], s.players[who].faction) - CONFIG.upgradeCosts[u];
-      scored.push([left >= 0 && (u === 'heavy-armor' || u === 'sharpened-weapons') && CARDS[c.cardId].role === 'Fighter' ? 12 + rand() : 0, a]);
+      const cc = CARDS[c.cardId];
+      scored.push([!isMiner(cc) && cc.cost >= 4 ? 28 + cc.cost + (a.stat === 'attack' ? 1 : 0) + rand() : 0, a]);
     } else if (a.type === 'cast') scored.push([scoreCast(s, who, a), a]);
     else if (a.type === 'mine') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
-      scored.push([CARDS[c.cardId].role === 'Gatherer' ? 60 + rand() : 14 + rand(), a]);
+      scored.push([isMiner(CARDS[c.cardId]) ? 60 + rand() : 14 + rand(), a]);
     } else if (a.type === 'move') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const card = CARDS[c.cardId];

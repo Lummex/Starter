@@ -179,6 +179,30 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       arrow.position.set(0.3, 0.5, 0.28); arrow.rotation.x = Math.PI / 2;
       g.add(bow, str, arrow);
     }
+    if (card.role === 'Gatherer' || card.role === 'Smith') {
+      // big pickaxe: wooden handle plus a curved iron head
+      const wood = new THREE.MeshStandardMaterial({ color: 0x8a5a2a });
+      const iron = new THREE.MeshStandardMaterial({ color: 0xb8bcc8, metalness: 0.4, roughness: 0.4 });
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6), wood);
+      handle.position.set(-0.34, 0.55, 0.1); handle.rotation.z = 0.35;
+      const head = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.045, 6, 14, Math.PI), iron);
+      head.position.set(-0.45, 0.93, 0.1); head.rotation.z = -0.35 + Math.PI;
+      head.name = 'pickaxe';
+      g.add(handle, head);
+    }
+    if (card.role === 'Smith') {
+      const iron = new THREE.MeshStandardMaterial({ color: 0x555a66, metalness: 0.5, roughness: 0.5 });
+      const hh = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.14), iron);
+      hh.position.set(0.34, 0.95, 0.12);
+      const hs = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.55, 6), new THREE.MeshStandardMaterial({ color: 0x8a5a2a }));
+      hs.position.set(0.34, 0.65, 0.12);
+      const anvilBase = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.18), iron);
+      anvilBase.position.set(0.0, 0.05, 0.36);
+      const anvilTop = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.08, 0.2), iron);
+      anvilTop.position.set(0.0, 0.14, 0.36);
+      hh.name = 'hammer';
+      g.add(hh, hs, anvilBase, anvilTop);
+    }
     const sp = symbolSprite(f.symbol, 0.42);
     sp.position.y = 1.2;
     g.add(sp);

@@ -2,7 +2,7 @@
  "phaseTimerSeconds": 50,
  "timerHiddenSeconds": 40,
  "countdownSeconds": 10,
- "respondWindowSeconds": 5,
+ "respondWindowSeconds": 12,
  "autoSkipDelaySeconds": 1,
  "startingCrystals": 0,
  "basicGatherers": {
@@ -20,7 +20,8 @@
   "creatures": 40,
   "spells": 6,
   "crystals": 4,
-  "basicGatherers": 8
+  "basicGatherers": 5,
+  "smithMiners": 3
  },
  "openingHandSize": 5,
  "secondPlayerExtraCards": 1,
@@ -35,33 +36,6 @@
  "commanderHealth": 20,
  "deckOutDamage": 1,
  "crystalCardsPerTurn": 1,
- "upgradeCosts": {
-  "sharpened-weapons": 3,
-  "heavy-armor": 3,
-  "veteran": 5,
-  "champions-crown": 8
- },
- "upgrades": {
-  "sharpened-weapons": {
-   "name": "Sharpened Weapons",
-   "attack": 1
-  },
-  "heavy-armor": {
-   "name": "Heavy Armor",
-   "maxHealth": 3,
-   "heal": 3
-  },
-  "veteran": {
-   "name": "Veteran",
-   "move": 2
-  },
-  "champions-crown": {
-   "name": "Champion's Crown",
-   "attack": 2,
-   "maxHealth": 3,
-   "heal": 3
-  }
- },
  "typeAdvantageBonus": 1,
  "rageBonus": 2,
  "frenzyBonus": 1,

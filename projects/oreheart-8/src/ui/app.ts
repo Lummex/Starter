@@ -1,5 +1,5 @@
 import { Game } from '../game';
-import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, creatureValue, spellCost, hasMovesLeft, incomePreview, nextPool, maxMove, isActed, mineTargets } from '../engine';
+import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, creatureValue, spellCost, hasMovesLeft, incomePreview, nextPool, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
 import tutorialJson from '../content/tutorial.json';
 import { createBoardView, createFlatView, BoardView } from './scene';
 
@@ -11,6 +11,7 @@ const ACTIVE = ['deploy', 'action'];
 const BW: number = CONFIG.boardWidth, BH: number = CONFIG.boardHeight;
 const SH = { player: { row: CONFIG.strongholds.player[0], col: CONFIG.strongholds.player[1] }, opponent: { row: CONFIG.strongholds.opponent[0], col: CONFIG.strongholds.opponent[1] } };
 const COLOR_NAMES = ['green', 'blue', 'purple', 'white'];
+const roleBadge = (c: any) => (c.role === 'Smith' ? '⚒️' : isMiner(c) ? '⛏️' : '⚔️');
 const COLOR_HEX: Record<string, string> = { green: '#3ee06a', blue: '#3fa9ff', purple: '#b45cff', white: '#f2f6ff' };
 
 function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string | Node | null | undefined)[]): El {
@@ -162,10 +163,10 @@ export class App {
       h('h1', { class: 'section cinzel' }, 'Rules'),
       sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
       sec('The Board', 'A hidden grid 13 spaces wide and 7 deep. The enemy is at the top, you are at the bottom. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
-      sec('Crystals', 'Mining: on your turn drag a creature standing next to a mine onto the mine. Mining is the creature\'s action for the turn (it cannot also move or attack): a Gatherer mines 2 crystals, a Fighter 1. Standing near a mine without mining gives nothing. At the start of your next turn your pool is SET to what you mined, it is not added, and the pool never holds more than 16. Unspent crystals stay usable during the enemy turn. The side with more miners at a mine gives it its color (green, blue or purple); a tie makes it neutral white. All crystals from a mine come in the mine\'s color. Creatures and upgrades get full value from crystals of their own color but only half from other colors or white (rounded down); spells take any color at full value, and the game pays the cheapest way. You start with 0 crystals. The Stronghold makes none. If you hold no mine while the enemy holds one you get 2 bonus crystals of your color. The plus-N-next-turn counter shows your coming pool, and tapping a mine shows who holds it, its color and each side\'s flow.', crystals),
-      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, play one Crystal card and upgrade creatures. Gatherers (miners) can move or mine, but not attack, the turn they are summoned. Action: each creature either moves one space OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places (only the dragged creature uses its action). Tap Done to finish a phase; phases with no moves left end by themselves. After 40 seconds a 10-second countdown starts, and at 0 the phase ends. Gatherer swap: once a turn, with no Gatherer in hand, discard a card to pull a basic Gatherer from your deck. Free Gatherer: if you mined nothing last turn, with no mine in your color and no Gatherer on the battlefield, a basic Gatherer is free. At the start of your turn all your creatures heal back to full Health.'),
+      sec('Crystals', 'Mining: on your turn drag a creature standing next to a mine onto the mine. Mining is the creature\'s action for the turn (it cannot also move or attack): a Miner mines 2 crystals, a Fighter 1. Standing near a mine without mining gives nothing. At the start of your next turn your Flow is SET to what you mined, it is not added, and Flow never holds more than 16. Unspent crystals stay usable during the enemy turn. Bank: crystals from Crystal cards go to your Bank, which never resets and has no limit. Flow is spent first, then Bank. The side with more miners at a mine gives it its color (green, blue or purple); a tie makes it neutral white. All crystals from a mine come in the mine\'s color. Creatures get full value from crystals of their own color but only half from other colors or white (rounded down); spells take any color at full value, and the game pays the cheapest way. You start with 0 crystals. The Stronghold makes none. If you hold no mine while the enemy holds one you get 2 bonus crystals of your color. The plus-N-next-turn counter shows your coming pool, and tapping a mine shows who holds it, its color and each side\'s flow.', crystals),
+      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, play Crystal cards (one per round, also at Instant speed while you respond) and Smith Miners. A Smith Miner played on an empty back-row space is a Miner; played on one of your own creatures it gives a permanent +1 Attack or +1 Health (Smith upgrades have no limit). Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves one space OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places (only the dragged creature uses its action). Tap Done to finish a phase; phases with no moves left end by themselves. After 40 seconds a 10-second countdown starts, and at 0 the phase ends. Miner swap: once a turn, with no Miner in hand, discard a card to pull a basic Miner from your deck. Free Miner: if your Flow and Bank cannot pay for a basic Miner and you have no Miner on the battlefield, it is free. Tunnel (basic Miners only) lets a Miner be summoned next to a mine, but ONLY while you are behind on mines (the enemy\'s color holds more mines than yours). At the start of your turn all your creatures heal back to full Health.'),
       sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
-      sec('Spells & Instants', 'Spells are cast by your Commander using crystals of any color. Instants can answer the enemy during a "Respond?" window, and counterspells cancel spells or summons.'),
+      sec('Spells & Instants', 'Spells are cast by your Commander using crystals of any color. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet; a Crystal card plus a counterspell can be played together to pay for it. Counterspells cancel spells or summons.'),
       h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Back', '', () => this.showMenu())));
     this.root.append(s);
   }
@@ -195,9 +196,9 @@ export class App {
     if (c.type === 'creature') {
       rows.push(['Attack', String(creature ? creature.attack : c.attack)]);
       rows.push(['Health', creature ? `${creature.health}/${creature.maxHealth}` : String(c.health)]);
-      rows.push(['Movement', String(creature?.upgrade === 'veteran' ? Math.max(2, c.move) : c.move)]);
-      rows.push(['Role', c.role]);
-      if (creature?.upgrade) rows.push(['Upgrade', CONFIG.upgrades[creature.upgrade].name]);
+      rows.push(['Movement', String(c.move)]);
+      rows.push(['Role', `${roleBadge(c)} ${c.role === 'Smith' ? 'Smith Miner' : isMiner(c) ? 'Miner' : 'Fighter'}`]);
+      if (creature && creature.upgrades.attack + creature.upgrades.health) rows.push(['Smith upgrades', `+${creature.upgrades.attack} Attack, +${creature.upgrades.health} Health`]);
     }
     const dl = h('dl', {});
     for (const [k, v] of rows) dl.append(h('dt', {}, k), h('dd', {}, v));
@@ -240,11 +241,12 @@ export class App {
   showMatch() {
     this.clear();
     const r = this.r;
-    const crystalChip = (c: string) => (r['cr_' + c] = h('span', { class: 'cr ' + c, role: 'img', 'aria-label': `Your ${c} crystals` }, '0'));
+    const crystalChip = (c: string) => (r['cr_' + c] = h('span', { class: 'cr ' + c, role: 'img', 'aria-label': `Your ${c} crystals` }, 'Flow 0 · Bank 0'));
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
     r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, '0');
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
+    r.phase.append(h('div', { class: 'ph-turn' }), h('div', { class: 'ph-name' }));
     r.timer = h('div', { class: 'countdown', role: 'timer', 'aria-label': 'Phase timer', hidden: true }, '10');
     r.board = h('div', { class: 'board', role: 'application', 'aria-label': 'Battlefield' });
     r.fx = h('div', { class: 'fx' });
@@ -252,7 +254,7 @@ export class App {
     r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, '0');
     r.income = h('div', { class: 'income', 'aria-label': 'Your income next turn' }, '+0 next turn');
     r.done = btn('Done', 'primary done-btn', () => this.pressDone());
-    r.swap = btn('Swap for a Gatherer', 'swap-btn', () => this.startSwap());
+    r.swap = btn('Swap for a Miner', 'swap-btn', () => this.startSwap());
     r.swap.hidden = true;
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
     const menuBtn = btn('Menu', 'menu-btn', () => this.showMatchMenu());
@@ -264,7 +266,8 @@ export class App {
         r.swap),
       h('div', { class: 'hud hud-top' }, r.enemyHand),
       r.enemyDeck, r.myDeck,
-      h('div', { class: 'hud hud-right' }, r.phase, r.done, menuBtn),
+      r.phase,
+      h('div', { class: 'hud hud-right' }, r.done, menuBtn),
       r.tip, r.hand, r.timer);
     this.root.append(match);
     // board layers
@@ -328,20 +331,38 @@ export class App {
     });
     this.place(r.strong.player, SH.player.row, SH.player.col);
     this.place(r.strong.opponent, SH.opponent.row, SH.opponent.col);
-    this.placeHeart(r.myHealth, 'player');
-    this.placeHeart(r.enemyHealth, 'opponent');
     for (const el of this.tokens.values()) this.place(el, +el.dataset.row!, +el.dataset.col!);
+    this.fitHearts();
     this.layoutHand();
   }
-  /** Heart above your Commander; beside the enemy's so it stays on screen. */
+  /** Heart on the Stronghold's wall facing the camera (bottom of its cell), shrunk so it never covers a creature label. */
   placeHeart(el: El, side: 'player' | 'opponent') {
     const sh = SH[side];
     const rc = this.view!.cellRect(sh.row, sh.col);
-    const s = Math.max(40, Math.min(70, rc.h * 1.1));
+    const s = Math.max(20, Math.min(54, rc.w * 0.8, rc.h * 1.05));
+    el.dataset.size = String(s);
     el.style.width = s + 'px'; el.style.height = s + 'px';
-    const cx = side === 'player' ? rc.x + rc.w / 2 : rc.x + rc.w * 1.5 + 4;
-    const cy = side === 'player' ? rc.y - s * 0.35 : rc.y + rc.h * 0.55;
-    el.style.left = cx - s / 2 + 'px'; el.style.top = cy - s / 2 + 'px';
+    el.style.left = rc.x + rc.w / 2 - s / 2 + 'px';
+    el.style.top = rc.y + rc.h - s - 1 + 'px';
+    el.style.fontSize = Math.max(10, s * 0.38) + 'px';
+  }
+  fitHearts() {
+    const r = this.r;
+    if (!r.board || !this.view || !r.myHealth) return;
+    this.placeHeart(r.myHealth, 'player');
+    this.placeHeart(r.enemyHealth, 'opponent');
+    const labels = [...this.tokens.values()].map((t) => (t.querySelector('.tk-stats') as El).getBoundingClientRect());
+    for (const el of [r.myHealth, r.enemyHealth] as El[]) {
+      for (let i = 0; i < 12; i++) {
+        const hb = el.getBoundingClientRect();
+        if (!labels.some((l) => l.width && hb.left < l.right && hb.right > l.left && hb.top < l.bottom && hb.bottom > l.top)) break;
+        const w = el.offsetWidth - 3;
+        if (w < 12) break;
+        el.style.width = el.style.height = w + 'px';
+        el.style.left = el.offsetLeft + 1.5 + 'px';
+        el.style.top = el.offsetTop + 3 + 'px';
+      }
+    }
   }
   place(el: El, row: number, col: number) {
     const rc = this.view!.cellRect(row, col);
@@ -381,7 +402,7 @@ export class App {
     r.enemyDeck.replaceChildren(String(en.deck.length));
     r.myDeck.textContent = String(me.deck.length);
     for (const c of COLOR_NAMES) {
-      r['cr_' + c].textContent = String(me.crystals[c]);
+      r['cr_' + c].textContent = `Flow ${me.crystals[c]} · Bank ${me.bank[c]}`;
       const nxt = st.phase === 'mulligan' ? 0 : nextPool(st, 'player')[c];
       r['cr_' + c].dataset.flow = nxt ? `+${nxt}` : '';
     }
@@ -398,8 +419,10 @@ export class App {
     }
     r.enemyHand.append(h('span', { class: 'count' }, String(n)));
     // phase
-    const whose = st.activePlayer === 'player' ? 'Your turn' : 'Enemy turn';
-    r.phase.textContent = st.phase === 'mulligan' ? 'Mulligan' : st.phase === 'over' ? 'Match over' : `${whose} · ${PHASE[st.phase]}`;
+    const whose = st.activePlayer === 'player' ? 'YOUR TURN' : 'ENEMY TURN';
+    r.phase.dataset.side = st.activePlayer === 'player' ? 'you' : 'enemy';
+    (r.phase.querySelector('.ph-turn') as El).textContent = st.phase === 'mulligan' ? 'MULLIGAN' : st.phase === 'over' ? 'MATCH OVER' : whose;
+    (r.phase.querySelector('.ph-name') as El).textContent = st.phase === 'mulligan' || st.phase === 'over' ? '' : PHASE[st.phase];
     const key = `${st.turn}|${st.phase}|${st.priority}|${st.pendingResponse ? 1 : 0}`;
     if (key !== this.phaseKey) {
       const phaseChanged = !this.phaseKey || key.split('|').slice(0, 2).join() !== this.phaseKey.split('|').slice(0, 2).join();
@@ -463,7 +486,7 @@ export class App {
     this.bannerAt = now;
   }
 
-  // ------------------------------------------------------------ Done, Gatherer swap, site info
+  // ------------------------------------------------------------ Done, Miner swap, site info
   movesDlg: { close: () => void } | null = null;
   swapping = false;
   get remindMoves() { return localStorage.getItem('oreheart.movesReminder') !== 'off'; }
@@ -565,15 +588,18 @@ export class App {
       if (!el) {
         el = h('div', { class: `token f-${card.faction} ${c.owner === 'player' ? 'mine' : 'theirs'}`, role: 'img' },
           h('div', { class: 'tk-body', 'data-sym': FSYM(card.faction), 'aria-hidden': 'true' }),
-          h('div', { class: 'tk-stats' }, h('span', { class: 'a' }), ' ', h('span', { class: 'h' }), ' ', h('span', { class: 'm' }), h('span', { class: 'sh' })));
+          h('div', { class: 'tk-stats' }, h('span', { class: 'a' }), ' ', h('span', { class: 'h' }), ' ', h('span', { class: 'm' }), h('span', { class: 'sh' })), h('div', { class: 'pips', 'aria-hidden': 'true' }));
         this.tokens.set(c.uid, el);
         this.r.board.insertBefore(el, this.r.fx);
       }
       el.dataset.uid = c.uid; el.dataset.row = String(c.row); el.dataset.col = String(c.col);
       (el.querySelector('.a') as El).textContent = `⚔️${c.attack}`;
       (el.querySelector('.h') as El).textContent = `❤️${c.health}`;
-      (el.querySelector('.m') as El).textContent = `👟${maxMove(c)}${CARDS[c.cardId].abilities.includes('ranged') ? ' 🏹' : ''}`;
+      (el.querySelector('.m') as El).textContent = `👟${maxMove(c)}${isMiner(CARDS[c.cardId]) ? ' ⛏️' : ''}${CARDS[c.cardId].abilities.includes('ranged') ? ' 🏹' : ''}`;
       el.dataset.mining = String(!!c.minedMine);
+      const up = c.upgrades.attack + c.upgrades.health;
+      el.dataset.upgrades = String(up);
+      (el.querySelector('.pips') as El).textContent = up ? '●'.repeat(Math.min(up, 8)) : '';
       const sh = el.querySelector('.sh') as El;
       sh.textContent = c.shield > 0 ? ` 🛡${c.shield}` : '';
       el.dataset.damaged = String(c.health < c.maxHealth);
@@ -583,16 +609,18 @@ export class App {
       this.place(el, c.row, c.col);
     }
     for (const [uid, el] of this.tokens) if (!seen.has(uid)) { el.remove(); this.tokens.delete(uid); }
+    this.fitHearts();
   }
 
   renderHand(st: any) {
     const me = st.players.player;
     const hand = this.r.hand as El;
-    const tot = me.crystals.green + me.crystals.blue + me.crystals.purple + me.crystals.white;
+    const tot = funds(me);
+    const tunnel = sitesControlled(st, 'opponent') > sitesControlled(st, 'player');
     const hidden = st.phase === 'mulligan';
     const costOf = (c: any) => (c.type === 'creature' ? creatureCost(st, 'player', c) : c.type === 'spell' ? spellCost(st, 'player', c) : 0);
     const affordable = (c: any) => (c.type === 'creature' ? creatureValue(me, c.faction) >= costOf(c) : c.type === 'spell' ? tot >= costOf(c) : true);
-    const key = hidden ? 'x' : me.hand.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId])).join(',');
+    const key = hidden ? 'x' : me.hand.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId]) + ':' + tunnel).join(',');
     if (key === this.handKey) return;
     this.handKey = key;
     hand.replaceChildren();
@@ -604,7 +632,9 @@ export class App {
         h('span', { class: 'cost', 'aria-hidden': 'true' }, c.type === 'crystal' ? '◆' : String(cost)),
         h('span', { class: 'nm', 'aria-hidden': 'true' }, c.name),
         h('span', { class: 'ty', 'aria-hidden': 'true' }, c.type === 'creature' ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
-        h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `⚔️${c.attack}${c.abilities.includes('ranged') ? '🏹' : ''} ❤️${c.health}` : c.rarity));
+        h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `${roleBadge(c)} ⚔️${c.attack}${c.abilities.includes('ranged') ? '🏹' : ''} ❤️${c.health}` : c.rarity),
+        c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
+        tunnel && c.abilities.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));
       el.addEventListener('click', (e: MouseEvent) => { if (e.detail === 0) this.showCard(c.id); });
       hand.append(el);
@@ -647,27 +677,29 @@ export class App {
   openRespond(st: any) {
     const pend = st.pendingResponse;
     const legal = this.game.legalActions().filter((a: any) => a.type === 'respond');
-    const byCard = new Map<string, any[]>();
-    for (const a of legal) {
-      const hc = st.players.player.hand.find((x: any) => x.uid === a.uid);
-      if (!hc) continue;
-      if (!byCard.has(a.uid)) byCard.set(a.uid, []);
-      byCard.get(a.uid)!.push(a);
-    }
-    const what = pend.kind === 'summon' ? `Enemy summons ${CARDS[pend.card.cardId].name}.` : pend.kind === 'cast' ? `Enemy casts ${CARDS[pend.card.cardId].name}.` : 'Enemy attacks one of your creatures.';
+    const needs = respondNeeds(st, 'player', pend);
+    const tgt = pend.target && pend.target.row ? st.board.creatures.find((c: any) => c.row === pend.target.row && c.col === pend.target.col) : null;
+    const tname = tgt ? (tgt.owner === 'player' ? `your ${CARDS[tgt.cardId].name}` : `their ${CARDS[tgt.cardId].name}`) : pend.target && pend.target.commander ? 'your Commander' : '';
+    const what = pend.kind === 'summon' ? `Enemy summons ${CARDS[pend.card.cardId].name}.` : pend.kind === 'cast' ? `Enemy casts ${CARDS[pend.card.cardId].name}${tname ? ' at ' + tname : ''}.` : `Enemy attacks ${tname || 'one of your creatures'}.`;
     const buttons: El[] = [];
     const finish = () => { this.respDlg && this.respDlg.close(); this.respDlg = null; clearTimeout(this.respondTimer); };
-    for (const [uid, opts] of byCard) {
-      const hc = st.players.player.hand.find((x: any) => x.uid === uid);
-      const card = CARDS[hc.cardId];
-      buttons.push(btn(card.name, '', () => {
+    for (const n of needs) {
+      const card = CARDS[n.cardId];
+      const opts = legal.filter((a: any) => a.uid === n.uid);
+      if (!opts.length) {
+        buttons.push(btn(`${card.name} — need ${n.need} more`, '', undefined, { disabled: true, 'data-uid': n.uid }));
+        continue;
+      }
+      const cr = opts[0].crystalUid ? st.players.player.hand.find((x: any) => x.uid === opts[0].crystalUid) : null;
+      const label = cr ? `${CARDS[cr.cardId].name} + ${card.name}` : card.name;
+      buttons.push(btn(label, '', () => {
         let chosen = opts[0];
         if (opts.length > 1) {
-          const tc = pend.target && pend.target.row ? opts.find((o) => o.target && o.target.row === pend.target.row && o.target.col === pend.target.col) : null;
+          const tc = pend.target && pend.target.row ? opts.find((o: any) => o.target && o.target.row === pend.target.row && o.target.col === pend.target.col) : null;
           if (tc) chosen = tc;
           else {
             finish();
-            this.pick = { cells: opts.map((o) => o.target), done: (cell) => { this.pick = null; this.clearGlow(); this.game.act(opts.find((o) => o.target.row === cell.row && o.target.col === cell.col)); } };
+            this.pick = { cells: opts.map((o: any) => o.target), done: (cell) => { this.pick = null; this.clearGlow(); this.game.act(opts.find((o: any) => o.target.row === cell.row && o.target.col === cell.col)); } };
             this.setGlow(this.pick.cells, 'glow');
             this.flash('Tap a target');
             return;
@@ -675,14 +707,29 @@ export class App {
         }
         finish();
         this.game.act(chosen);
-      }, { 'data-uid': uid }));
+      }, { 'data-uid': n.uid }));
     }
-    const d = this.dialog('Respond?', [h('h2', {}, 'Respond?'), h('p', { style: 'text-align:center;margin:0 0 6px' }, what),
+    const ec = pend.card ? CARDS[pend.card.cardId] : null;
+    const cardBox = ec ? h('div', { class: `enemy-card ${ec.type} f-${ec.faction}` },
+      h('span', { class: 'cost', 'aria-hidden': 'true' }, String(ec.cost)), h('span', { class: 'nm' }, ec.name),
+      h('span', { class: 'ty' }, ec.type === 'creature' ? `${roleBadge(ec)} ⚔️${ec.attack} ❤️${ec.health}` : ec.rarity), h('span', { class: 'tx' }, ec.text || '')) : null;
+    const bar = h('div', { class: 'respond-bar', role: 'progressbar', 'aria-label': 'Respond time left', 'aria-valuemin': '0', 'aria-valuemax': String(CONFIG.respondWindowSeconds), 'aria-valuenow': String(CONFIG.respondWindowSeconds) }, h('div', { class: 'fill' }));
+    if (!this.test) (bar.firstChild as El).style.animationDuration = CONFIG.respondWindowSeconds + 's';
+    else (bar.firstChild as El).style.animation = 'none';
+    const d = this.dialog('Respond?', [h('h2', {}, 'Respond?'), bar, cardBox, h('p', { class: 'resp-what', style: 'text-align:center;margin:0 0 6px' }, what),
       h('div', { class: 'menu-list' }, ...buttons, btn('Let it happen', 'primary', () => { finish(); this.game.act({ type: 'pass' }); }))]);
     d.el.dataset.sticky = '1';
     this.respDlg = d;
     clearTimeout(this.respondTimer);
-    if (!this.test) this.respondTimer = setTimeout(() => { if (this.respDlg === d) { finish(); this.game.act({ type: 'pass' }); } }, CONFIG.respondWindowSeconds * 1000);
+    if (!this.test) {
+      const t0 = Date.now();
+      const iv = setInterval(() => {
+        if (this.respDlg !== d) { clearInterval(iv); return; }
+        const left = Math.max(0, CONFIG.respondWindowSeconds - (Date.now() - t0) / 1000);
+        bar.setAttribute('aria-valuenow', left.toFixed(1));
+        if (left <= 0) { clearInterval(iv); finish(); this.game.act({ type: 'pass' }); }
+      }, 100);
+    }
   }
 
   showMatchMenu() {
@@ -875,13 +922,16 @@ export class App {
         const legal = this.game.legalActions().filter((a: any) => a.uid === hc.uid);
         if (!legal.length) { this.flash(this.explain(card)); }
         const cells: any[] = [];
+        const smithCells: any[] = [];
         let any = false;
         for (const a of legal) {
           if (a.type === 'summon') cells.push({ row: a.row, col: a.col });
+          else if (a.type === 'smith') { const o = st.board.creatures.find((x: any) => x.uid === a.creatureUid); if (o) smithCells.push({ row: o.row, col: o.col }); }
           else if (a.type === 'cast') { if (!a.target) any = true; else if (!a.to || true) cells.push(this.cellOfTarget(a.target)); }
           else if (a.type === 'playCrystal') any = true;
         }
         this.setGlow(cells, 'glow');
+        this.setGlow(smithCells, 'glow-swap');
         if (any) this.r.board.classList.add('drop-any');
         return true;
       },
@@ -903,14 +953,19 @@ export class App {
     const st = this.game.state;
     if (st.activePlayer !== 'player') return "It's not your turn";
     if (card.type === 'creature' && st.phase !== 'deploy') return 'Creatures are summoned in the Deploy phase';
-    if (card.type === 'crystal') return st.phase !== 'deploy' ? 'Crystal cards are played in the Deploy phase' : 'Only one Crystal card per turn';
+    if (card.type === 'crystal') return st.phase !== 'deploy' ? 'Crystal cards are played in the Deploy phase or when you respond' : 'Only one Crystal card per round';
     return "You can't play that right now";
   }
 
   dropCard(hc: any, card: any, cell: { row: number; col: number }) {
     const legal = this.game.legalActions().filter((a: any) => a.uid === hc.uid);
     if (!legal.length) { this.flash(this.explain(card)); return; }
-    const t = legal[0].type;
+    const smiths = legal.filter((a: any) => a.type === 'smith');
+    if (smiths.length) {
+      const own = this.game.state.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col && c.owner === 'player');
+      if (own) { this.smithDialog(card, smiths.filter((a: any) => a.creatureUid === own.uid)); return; }
+    }
+    const t = legal.find((a: any) => a.type !== 'smith')?.type || legal[0].type;
     const res = (r: any) => { if (r && !r.ok) this.flash(r.error); };
     if (t === 'summon') {
       const a = legal.find((x: any) => x.row === cell.row && x.col === cell.col);
@@ -927,6 +982,13 @@ export class App {
       this.setGlow(this.pick.cells, 'glow');
       this.flash('Tap where to move it');
     }
+  }
+
+  smithDialog(card: any, acts: any[]) {
+    const d: any = this.dialog('Smith upgrade', [h('h2', {}, 'Smith upgrade'), h('p', { style: 'text-align:center;margin:0 0 6px' }, `${card.name}: a permanent upgrade for this creature.`),
+      h('div', { class: 'menu-list' },
+        ...acts.map((a: any) => btn(a.stat === 'attack' ? '+1 Attack' : '+1 Health', 'primary', () => { d.close(); const r = this.game.act(a); if (!r.ok) this.flash(r.error!); }, { 'data-stat': a.stat })),
+        btn('Cancel', '', () => d.close()))]);
   }
 
   chooseColors(legal: any[]) {
@@ -983,24 +1045,7 @@ export class App {
         }
         this.lastTap = { uid: cr.uid, t: now };
         clearTimeout(this.tapTimer);
-        this.tapTimer = setTimeout(() => { if (mine) this.upgradeMenu(cr); }, 400);
       },
     });
-  }
-
-  upgradeMenu(cr: any) {
-    const st = this.game.state;
-    if (!st || st.phase !== 'deploy' || st.activePlayer !== 'player' || st.priority !== 'player' || this.dialogs.length) return;
-    const card = CARDS[cr.cardId];
-    const legal = this.game.legalActions().filter((a: any) => a.type === 'upgrade' && a.creatureUid === cr.uid);
-    const list = h('div', { class: 'menu-list' });
-    if (cr.upgrade) list.append(h('p', { style: 'text-align:center;margin:0' }, `Already upgraded: ${CONFIG.upgrades[cr.upgrade].name}`));
-    else if (!legal.length) list.append(h('p', { style: 'text-align:center;margin:0' }, 'Not enough crystals for an upgrade.'));
-    const d: any = this.dialog(`${card.name}`, [h('h2', {}, card.name), h('button', { type: 'button', class: 'btn primary', 'aria-expanded': 'true' }, 'Upgrade'), list,
-      h('div', { class: 'row' }, btn('Cancel', '', () => d.close()))]);
-    for (const a of legal) {
-      const u = CONFIG.upgrades[a.upgrade];
-      list.append(btn(`${u.name} (${CONFIG.upgradeCosts[a.upgrade]})`, '', () => { d.close(); const r = this.game.act(a); if (!r.ok) this.flash(r.error!); }, { 'data-upgrade': a.upgrade }));
-    }
   }
 }
