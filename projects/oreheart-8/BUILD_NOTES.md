@@ -96,3 +96,4 @@ Re-ran the acceptance file locally; the engine follows the spec, so no rules cha
 ## Round 2 fixes
 - Spell/crystal cards have no `abilities`; all `.abilities.includes/some` calls are now null-safe (fixed hand-render crash that broke AC9/17/46/50).
 - AI: fighters stop mining after turn 5 so they advance; Normal AI beats a passive player well before turn 60.
+- Round 3: fixed stale hand cache on new match (Tunnel! tag) and Smith drops landing on a creature's stat badge (Smith upgrade dialog).

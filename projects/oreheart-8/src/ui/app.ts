@@ -236,9 +236,11 @@ export class App {
     this.endShown = false;
     this.pick = null;
     this.phaseKey = '';
+    this.handKey = '';
   }
 
   showMatch() {
+    this.handKey = '';
     this.clear();
     const r = this.r;
     const crystalChip = (c: string) => (r['cr_' + c] = h('span', { class: 'cr ' + c, role: 'img', 'aria-label': `Your ${c} crystals` }, 'Flow 0 · Bank 0'));
@@ -935,7 +937,7 @@ export class App {
         if (any) this.r.board.classList.add('drop-any');
         return true;
       },
-      onDrop: (cell) => { if (cell && cell.row) this.dropCard(hc, card, cell); },
+      onDrop: (cell, x, y) => { if (cell && cell.row) this.dropCard(hc, card, cell, x, y); },
       onTap: () => {
         if (this.swapping) {
           this.swapping = false;
@@ -957,12 +959,21 @@ export class App {
     return "You can't play that right now";
   }
 
-  dropCard(hc: any, card: any, cell: { row: number; col: number }) {
+  dropCard(hc: any, card: any, cell: { row: number; col: number }, x?: number, y?: number) {
     const legal = this.game.legalActions().filter((a: any) => a.uid === hc.uid);
     if (!legal.length) { this.flash(this.explain(card)); return; }
     const smiths = legal.filter((a: any) => a.type === 'smith');
     if (smiths.length) {
-      const own = this.game.state.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col && c.owner === 'player');
+      let own = this.game.state.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col && c.owner === 'player');
+      if (!own && x != null && y != null) {
+        // the stat badge hangs below a token: a drop on the figure or its badge counts as a drop on that creature
+        for (const [uid, el] of this.tokens) {
+          const c = this.game.state.board.creatures.find((k: any) => k.uid === uid);
+          if (!c || c.owner !== 'player') continue;
+          const r = el.getBoundingClientRect();
+          if (x >= r.left - 16 && x <= r.right + 16 && y >= r.top - 16 && y <= r.bottom + 16) { own = c; break; }
+        }
+      }
       if (own) { this.smithDialog(card, smiths.filter((a: any) => a.creatureUid === own.uid)); return; }
     }
     const t = legal.find((a: any) => a.type !== 'smith')?.type || legal[0].type;
