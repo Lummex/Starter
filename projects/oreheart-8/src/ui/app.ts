@@ -76,7 +76,7 @@ export class App {
       h('p', { class: 'tagline' }, 'Goblins, Gnomes and Dwarves fight over the Soul Crystals.'),
       h('div', { class: 'stack' },
         btn('Play', 'primary', () => this.showSetup()),
-        btn('How to Play', '', () => this.showHowTo(), { role: 'link' }),
+        btn('How to Play', '', () => this.showHowTo()),
         this.gfxButton()));
     this.root.append(s);
   }
