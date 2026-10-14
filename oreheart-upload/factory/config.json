@@ -1,0 +1,15 @@
+{
+  "models": {
+    "planner": "opus",
+    "builder": "sonnet",
+    "reviewer": "sonnet"
+  },
+  "budgetsUsd": {
+    "planner": 3,
+    "builderPerRound": 12,
+    "reviewer": 1.5,
+    "maxPerRun": 35
+  },
+  "maxBuildRounds": 3,
+  "port": 4173
+}
