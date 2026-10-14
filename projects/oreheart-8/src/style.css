@@ -172,7 +172,7 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .retreat{z-index:310}
 @media (max-height:520px){.dialog{padding:10px}.dialog h2{font-size:1.1rem;margin-bottom:6px}}
 .tk-body::before{content:attr(data-sym)}
-.hand{bottom:calc(var(--cw) * -0.16)}
+.hand{bottom:calc(var(--cw) * 0.06)}
 
 /* Revision 4: Crystal Flow */
 .cr.white{border-color:#f2f6ff}.cr.white::before{background:#f2f6ff}

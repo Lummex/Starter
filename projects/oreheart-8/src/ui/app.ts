@@ -455,7 +455,7 @@ export class App {
       const x = W / 2 + off * spacing - cw / 2;
       const t = (off * spacing) / (W / 2);
       const rot = Math.max(-6, Math.min(6, t * 12));
-      const y = t * t * cw * 1.2;
+      const y = t * t * cw * 0.4;
       c.style.left = x + 'px';
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
       c.dataset.fan = c.style.transform;
