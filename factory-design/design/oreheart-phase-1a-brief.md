@@ -2,6 +2,24 @@
 
 Read this brief first, then the full design document: `factory-design/design/oreheart-gdd-v2.md` (the source of truth for every rule, number and card). The screen layout reference is `factory-design/design/oreheart-mockup.jpg`.
 
+## Revision 5 (third owner playtest) — read this first
+
+The design document is the source of truth; where anything disagrees, the design doc wins, then this section, then Revision 4, 3 and 2.
+
+1. **Hand cards pop out:** on mouse hover, the card slides up out of the fan by about 1 inch (~60 px at phone landscape scale), slightly larger and in front; on touch, press-and-hold does the same before a drag.
+2. **Summoning sickness:** creatures placed this turn can't move, attack or mine (unless their ability says so), and show darkened with a grey ring. **Gatherers (Miners) have no summoning sickness:** they can move or mine (not attack) the turn they're placed, and stay bright with a yellow ring. (The last build wrongly darkened fresh Gatherers.)
+3. **Fix the 3 faulty acceptance tests** from the last report: AC12 (moving onto your own creature is now a legal swap), AC14 (expected Health should be 2, not 3), AC16 (the test pressed Done once too often). Re-derive their expectations from the spec; don't weaken the game.
+4. **Creature ring:** yellow = can still act this turn; dark grey = has acted (moved, attacked or mined) or can't act yet. Resets at the start of its owner's turn, together with the darkening.
+5. **Ranged markers:** a 🏹 icon next to Attack on Ranged cards (and "Ranged" in the ability text); Ranged 3D figures carry a visible ranged weapon and show 🏹 in their floating stats.
+6. **Mining is an action, every turn:** in the Action phase a creature on one of the 8 spaces around a mine can be dragged onto that mine to MINE, as its one action (instead of move or attack). Each mining action makes 2 crystals (Gatherer) or 1 (Fighter) in the mine's color; the player's pool at the start of their next turn is SET to what was mined on their previous turn (cap 16). Creatures standing next to a mine without mining make nothing. Mining creatures show a pickaxe icon until their owner's next turn. Add MINE to the engine's legal actions, the AI and the tutorial.
+7. **Mine color counts miners only:** at the start of each turn, the side with more creatures that mined that mine on their owner's last turn (and are still adjacent) sets its color; tie or no miners = neutral white. Remove the old "a creature touching two mines counts at only one" rule: the player chooses the mine by dragging.
+8. **Board 13 wide × 7 deep:** Strongholds at the center of rows 1 and 7 (column 7); home rows 1–2 and 6–7 as before. **3 mines placed at random each match** in rows 3–5 only, mirrored between halves (row 3 ↔ row 5, same column): either one on row 4 plus a mirrored pair on rows 3 and 5, or all three on row 4. Mines at least 2 spaces apart and never adjacent to a Stronghold. Use the match's seeded RNG (so `?seed=` reproduces the layout); the tutorial uses a fixed layout. The camera still fits the whole board edge to edge in landscape.
+9. **Mining glow and warnings:** when a creature that can mine is picked up, its mine glows with a pickaxe (a third color, distinct from blue move spaces and red attack targets). Mining counts as a move left for auto-skip and for the "Moves still available" pop-up, which names miners that haven't mined. Free Gatherer when broke: "mined nothing on your last turn" replaces "flow 0".
+10. **Deck piles:** each player's deck pile at full hand-card size on that player's right: yours bottom-right (Done button and phase name move up above it), the enemy's top-left as seen from your side (enemy card backs shift right to make room). Show the card count.
+11. **Commander Health by the Commander:** a big glowing heart with the number floating right by each Commander (above your Commander's head; beside the enemy Commander so it never goes off-screen), shaking and popping red damage numbers when hit. Keep the accessible HTML Health readouts (they can be small).
+
+Unit tests with exact numbers: mining yields (Gatherer 2, Fighter 1, nothing without the mine action), pool set to last turn's mining, mine color from miners only, Gatherer can move/mine but not attack on its summon turn while a Fighter can do nothing, mirrored mine layout for several seeds (always 3 mines in rows 3–5, mirrored, spacing rules), 13 × 7 board bounds.
+
 ## Revision 4 (economy redesign: Crystal Flow) — read this first
 
 Revision 4 replaces the crystal economy and adds swapping. The design document ("Crystals and site control: Crystal Flow") is the source of truth; where anything disagrees, the design doc wins, then this section, then Revision 3, then Revision 2.
