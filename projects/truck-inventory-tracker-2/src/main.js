@@ -1,4 +1,5 @@
 import './style.css';
+import { keyOf, strictFind, smartLookup, searchMatch, parseList, ambiguousMessage } from './names.js';
 
 const KEY = 'truck-inventory-v1';
 const CATS = ['Plumbing', 'Air conditioning', 'Electrical', 'Other'];
@@ -8,7 +9,7 @@ let state = load();
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s && Array.isArray(s.parts)) return { parts: s.parts, history: s.history || [], bad: s.bad || [] };
+    if (s && Array.isArray(s.parts)) return { parts: s.parts.map((p) => ({ ...p, other: Array.isArray(p.other) ? p.other : [] })), history: s.history || [], bad: s.bad || [] };
   } catch (e) { /* ignore */ }
   return { parts: [], history: [], bad: [] };
 }
@@ -21,8 +22,9 @@ const nextId = () => ++uid;
 // ---------- helpers ----------
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = (sel, root = document) => root.querySelector(sel);
-const keyOf = (n) => String(n).toLowerCase().trim().replace(/\s+/g, ' ').replace(/s$/, '');
-const findPart = (name) => state.parts.find((p) => keyOf(p.name) === keyOf(name));
+const findPart = (name) => strictFind(state.parts, name);
+const parseOther = (t) => { const seen = new Set(); const out = []; for (const x of String(t).split(',')) { const v = x.trim(); if (v && !seen.has(v.toLowerCase())) { seen.add(v.toLowerCase()); out.push(v); } } return out; };
+const mergeOther = (p, list) => { for (const o of list) if (!p.other.some((x) => x.toLowerCase() === o.toLowerCase())) p.other.push(o); };
 const capFirst = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const isLow = (p) => p.qty <= p.low;
 const whole = (v) => /^\d+$/.test(String(v).trim());
@@ -32,11 +34,11 @@ const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 
 function log(type, part, qty, job = '') {
   state.history.push({ ts: new Date().toISOString(), type, part, qty, job });
 }
-function addQty(name, qty, category = 'Other', low = 0) {
-  let p = findPart(name);
-  if (p) p.qty += qty;
+function addQty(name, qty, category = 'Other', low = 0, other = [], part = null) {
+  let p = part || findPart(name);
+  if (p) { p.qty += qty; mergeOther(p, other); }
   else {
-    p = { id: nextId(), name: capFirst(name.trim()), category, qty, low };
+    p = { id: nextId(), name: capFirst(name.trim()), category, qty, low, other: [...other] };
     state.parts.push(p);
   }
   return p;
@@ -49,7 +51,7 @@ function fmtDate(iso) {
 
 // message area: exactly one element with role status/alert when there is a message
 function setMsg(text, kind = 'status', root = document) {
-  const box = $('.msg-box', root);
+  const box = root.classList && root.classList.contains('msg-box') ? root : $('.msg-box', root);
   if (!box) return;
   box.innerHTML = '';
   if (!text) return;
@@ -61,64 +63,45 @@ function setMsg(text, kind = 'status', root = document) {
 const ok = (t, r) => setMsg(t, 'status', r);
 const err = (t, r) => setMsg(t, 'error', r);
 
-// ---------- parsing ----------
-const NUMWORDS = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20 };
-const FILLER = /^(?:i['’]m using|im using|i used|we used|i have|there are|add|used|using|plus)(?![a-z0-9])\s*/i;
-
-function parseList(text) {
-  const chunks = text.split(/\r?\n|,|;|&|\band\b/i);
-  const out = [];
-  for (let c of chunks) {
-    c = c.trim().replace(/\.$/, '').trim();
-    for (let i = 0; i < 4; i++) {
-      const n = c.replace(FILLER, '');
-      if (n === c) break;
-      c = n.trim();
-    }
-    let qty = 1;
-    let name = c;
-    let m = c.match(/^(\d+)\s*(.*)$/s);
-    if (m) {
-      if (/^(°|degrees?\b|deg\b)/i.test(m[2])) { qty = 1; name = c; }
-      else { qty = parseInt(m[1], 10); name = m[2]; }
-    } else {
-      m = c.match(/^([a-z]+)\s+(.*)$/is);
-      if (m && Object.prototype.hasOwnProperty.call(NUMWORDS, m[1].toLowerCase())) {
-        qty = NUMWORDS[m[1].toLowerCase()];
-        name = m[2];
-      }
-    }
-    name = name.trim().replace(/\s+/g, ' ');
-    if (!name || qty < 1) continue;
-    const k = keyOf(name);
-    const ex = out.find((o) => o.key === k);
-    if (ex) ex.qty += qty;
-    else out.push({ key: k, name, qty });
+// ---------- resolving typed/spoken names to truck parts ----------
+// returns { items: [{ name, qty, part|null, key }] } or { error }
+function resolveItems(text) {
+  const items = [];
+  for (const it of parseList(text)) {
+    const r = smartLookup(state.parts, it.name);
+    if (r.ambiguous) return { error: ambiguousMessage(it.name, r.ambiguous) };
+    const part = r.part || null;
+    const key = part ? 'p' + part.id : 'n' + keyOf(it.name);
+    const ex = items.find((o) => o.key === key);
+    if (ex) ex.qty += it.qty;
+    else items.push({ name: it.name, qty: it.qty, part, key });
   }
-  return out;
+  return { items };
 }
 
 // ---------- voice ----------
-function voiceBlock(textarea) {
+const VOICE_ERR = "Couldn't hear you. Check microphone permission and try again.";
+// onText(text) receives the recognized text. Returns null when voice isn't supported.
+function voiceButton(idleText, onText) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
   const wrap = document.createElement('div');
-  if (!SR) {
-    wrap.innerHTML = '<p class="muted">Voice input isn\'t supported in this browser. Type instead.</p>';
-    return wrap;
-  }
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.textContent = 'Start talking';
-  wrap.appendChild(btn);
+  btn.textContent = idleText;
+  const box = document.createElement('div');
+  box.className = 'msg-box';
+  wrap.append(btn, box);
   let rec = null;
   let listening = false;
-  const stop = () => { listening = false; btn.textContent = 'Start talking'; };
+  const stop = () => { listening = false; btn.textContent = idleText; };
   btn.addEventListener('click', () => {
     if (listening && rec) {
       try { rec.stop(); } catch (e) { /* ignore */ }
       stop();
       return;
     }
+    setMsg('', 'status', box);
     try {
       rec = new SR();
       rec.lang = 'en-US';
@@ -126,21 +109,40 @@ function voiceBlock(textarea) {
       rec.continuous = false;
       rec.onresult = (ev) => {
         let t = '';
-        for (let i = ev.resultIndex; i < ev.results.length; i++) t += ev.results[i][0].transcript;
+        for (let i = ev.resultIndex || 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
         t = t.trim();
-        if (t) textarea.value = textarea.value.trim() ? textarea.value.trim() + ', ' + t : t;
+        if (t) onText(t);
       };
-      rec.onerror = () => { stop(); err("Couldn't hear you. Check microphone permission and try again."); };
+      rec.onerror = () => { stop(); setMsg(VOICE_ERR, 'error', box); };
       rec.onend = stop;
       rec.start();
       listening = true;
       btn.textContent = 'Stop talking';
     } catch (e) {
       stop();
-      err("Couldn't hear you. Check microphone permission and try again.");
+      setMsg(VOICE_ERR, 'error', box);
     }
   });
   return wrap;
+}
+
+function voiceBlock(textarea) {
+  const wrap = voiceButton('Start talking', (t) => {
+    textarea.value = textarea.value.trim() ? textarea.value.trim() + ', ' + t : t;
+  });
+  if (wrap) return wrap;
+  const p = document.createElement('p');
+  p.className = 'muted';
+  p.textContent = "Voice input isn't supported in this browser. Type instead.";
+  return p;
+}
+
+function searchVoice(slot, input) {
+  const w = voiceButton('Search by voice', (t) => {
+    input.value = t.replace(/\.$/, '').trim();
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  if (w) slot.appendChild(w);
 }
 
 // ---------- pages ----------
@@ -169,13 +171,15 @@ function inventoryPage() {
         <div class="field"><label for="p-qty">Quantity</label><input type="number" id="p-qty" min="0" step="1" inputmode="numeric"></div>
         <div class="field"><label for="p-low">Low-stock alert at</label><input type="number" id="p-low" min="0" step="1" value="0" inputmode="numeric"></div>
         <div class="field"><label for="p-cat">Category</label><select id="p-cat">${catOptions()}</select></div>
+        <div class="field"><label for="p-other">Other names</label><input type="text" id="p-other" autocomplete="off" aria-describedby="p-other-help"><p class="helper" id="p-other-help">Optional. Other names the crew uses, separated by commas, e.g. stop valve, supply stop</p></div>
       </div>
       <button type="submit" class="primary">Add part</button>
     </form>
     <div class="msg-box"></div>
   </section>
   <section class="card">
-    <div class="field"><label for="search">Search parts</label><input type="search" id="search" placeholder="Search parts" autocomplete="off"></div>
+    <div class="field"><label for="search">Search parts</label><input type="search" id="search" placeholder="Search parts" aria-label="Search parts" autocomplete="off"></div>
+    <div id="search-voice"></div>
     <div class="table-wrap"><table><thead><tr><th scope="col">Part</th><th scope="col">Category</th><th scope="col">On truck</th><th scope="col">Low at</th><th scope="col">Actions</th></tr></thead><tbody id="rows"></tbody></table></div>
   </section>
   <dialog id="edit-dlg" role="dialog" aria-labelledby="edit-h">
@@ -185,6 +189,7 @@ function inventoryPage() {
       <div class="field"><label for="e-qty">Quantity</label><input type="number" id="e-qty" min="0" step="1"></div>
       <div class="field"><label for="e-low">Low-stock alert at</label><input type="number" id="e-low" min="0" step="1"></div>
       <div class="field"><label for="e-cat">Category</label><select id="e-cat">${catOptions()}</select></div>
+      <div class="field"><label for="e-other">Other names</label><input type="text" id="e-other" autocomplete="off"></div>
       <div class="msg-box"></div>
       <div class="btn-row"><button type="submit" class="primary">Save changes</button><button type="button" id="e-cancel">Cancel</button></div>
     </form>
@@ -196,17 +201,18 @@ function inventoryPage() {
 
   function draw() {
     $('#total').textContent = `Total items on truck: ${total()}`;
-    const q = $('#search').value.trim().toLowerCase();
-    const list = state.parts.filter((p) => p.name.toLowerCase().includes(q)).sort(byName);
+    const q = $('#search').value;
+    const list = state.parts.filter((p) => searchMatch(p, q)).sort(byName);
     if (!list.length) {
       rows.innerHTML = `<tr><td colspan="5">${state.parts.length ? 'No parts match your search.' : 'No parts yet. Add your first part above.'}</td></tr>`;
       return;
     }
-    rows.innerHTML = list.map((p) => `<tr data-id="${p.id}"><td>${esc(p.name)}${isLow(p) ? '<span class="badge">Low</span>' : ''}</td><td>${esc(p.category)}</td><td>${p.qty}</td><td>${p.low}</td><td><div class="btn-row" style="margin:0"><button type="button" data-act="edit">Edit</button><button type="button" class="danger" data-act="del">Delete</button></div></td></tr>`).join('');
+    rows.innerHTML = list.map((p) => `<tr data-id="${p.id}"><td>${esc(p.name)}${isLow(p) ? '<span class="badge">Low</span>' : ''}${p.other.length ? `<div class="also">Also called: ${esc(p.other.join(', '))}</div>` : ''}</td><td>${esc(p.category)}</td><td>${p.qty}</td><td>${p.low}</td><td><div class="btn-row" style="margin:0"><button type="button" data-act="edit">Edit</button><button type="button" class="danger" data-act="del">Delete</button></div></td></tr>`).join('');
   }
   draw();
 
   $('#search').addEventListener('input', draw);
+  searchVoice($('#search-voice'), $('#search'));
 
   $('#add-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -214,10 +220,10 @@ function inventoryPage() {
     const m = validatePart(name, qty, low);
     if (m) return err(m);
     const q = parseInt(qty, 10);
-    const p = addQty(name, q, $('#p-cat').value, parseInt(low, 10));
+    const p = addQty(name, q, $('#p-cat').value, parseInt(low, 10), parseOther($('#p-other').value));
     log('Added', p.name, q);
     save();
-    $('#p-name').value = ''; $('#p-qty').value = ''; $('#p-low').value = '0'; $('#p-cat').value = 'Plumbing';
+    $('#p-name').value = ''; $('#p-qty').value = ''; $('#p-low').value = '0'; $('#p-cat').value = 'Plumbing'; $('#p-other').value = '';
     draw();
     ok(`Added ${q} to ${p.name} (now ${p.qty}).`);
   });
@@ -229,7 +235,7 @@ function inventoryPage() {
     if (!p) return;
     if (b.dataset.act === 'edit') {
       editing = p;
-      $('#e-name').value = p.name; $('#e-qty').value = p.qty; $('#e-low').value = p.low; $('#e-cat').value = p.category;
+      $('#e-name').value = p.name; $('#e-qty').value = p.qty; $('#e-low').value = p.low; $('#e-cat').value = p.category; $('#e-other').value = p.other.join(', ');
       setMsg('', 'status', dlg);
       dlg.showModal();
     } else if (window.confirm(`Delete ${p.name} from the truck?`)) {
@@ -255,6 +261,7 @@ function inventoryPage() {
     editing.qty = q;
     editing.low = parseInt(low, 10);
     editing.category = $('#e-cat').value;
+    editing.other = parseOther($('#e-other').value);
     if (changed) log('Count changed', editing.name, q);
     save();
     dlg.close();
@@ -278,20 +285,19 @@ function quickAddPage() {
   $('#voice').appendChild(voiceBlock(ta));
   let items = [];
   $('#read').addEventListener('click', () => {
-    items = parseList(ta.value);
     const pv = $('#preview');
+    const r = resolveItems(ta.value);
+    if (r.error) { pv.innerHTML = ''; items = []; return err(r.error); }
+    items = r.items;
     if (!items.length) {
       pv.innerHTML = '';
       return err('I couldn\'t find any parts in that. Try something like "3 angle stops".');
     }
     setMsg('');
-    pv.innerHTML = `<div class="table-wrap"><table><thead><tr><th scope="col">Part</th><th scope="col">Quantity</th><th scope="col">Status</th></tr></thead><tbody>${items.map((it) => {
-      const ex = findPart(it.name);
-      return `<tr><td>${esc(ex ? ex.name : capFirst(it.name))}</td><td>${it.qty}</td><td>${ex ? 'Already on truck' : 'New part'}</td></tr>`;
-    }).join('')}</tbody></table></div><div class="btn-row"><button type="button" id="save-qa" class="primary">Save to inventory</button></div>`;
+    pv.innerHTML = `<div class="table-wrap"><table><thead><tr><th scope="col">Part</th><th scope="col">Quantity</th><th scope="col">Status</th></tr></thead><tbody>${items.map((it) => `<tr><td>${esc(it.part ? it.part.name : capFirst(it.name))}</td><td>${it.qty}</td><td>${it.part ? 'Already on truck' : 'New part'}</td></tr>`).join('')}</tbody></table></div><div class="btn-row"><button type="button" id="save-qa" class="primary">Save to inventory</button></div>`;
     $('#save-qa').addEventListener('click', () => {
       for (const it of items) {
-        const p = addQty(it.name, it.qty);
+        const p = addQty(it.name, it.qty, 'Other', 0, [], it.part);
         log('Added', p.name, it.qty);
       }
       save();
@@ -359,7 +365,9 @@ function photoPage() {
     const name = $('#ph-name').value;
     if (!name.trim()) return err('Please enter a part name.');
     const n = taps.length;
-    const p = addQty(name.trim().replace(/\s+/g, ' '), n);
+    const r = smartLookup(state.parts, name);
+    if (r.ambiguous) return err(ambiguousMessage(name.trim(), r.ambiguous));
+    const p = addQty(name.trim().replace(/\s+/g, ' '), n, 'Other', 0, [], r.part || null);
     log('Added', p.name, n);
     save();
     taps = [];
@@ -387,20 +395,22 @@ function usePage() {
   const ta = $('#u-text');
   $('#voice').appendChild(voiceBlock(ta));
   $('#record').addEventListener('click', () => {
-    const items = parseList(ta.value);
     const job = $('#job').value.trim();
     const bad = $('#r-bad').checked;
-    if (!items.length) return err('Please list the parts you used.');
+    if (!ta.value.trim()) return err('Please list the parts you used.');
+    const r = resolveItems(ta.value);
     if (!bad && !job) return err('Please enter a job number.');
-    const missing = items.filter((it) => !findPart(it.name));
+    if (r.error) return err(r.error);
+    const items = r.items;
+    if (!items.length) return err('Please list the parts you used.');
+    const missing = items.filter((it) => !it.part);
     if (missing.length) return err(`Not on your truck: ${missing.map((m) => m.name).join(', ')}. Add it on the Inventory page first.`);
     for (const it of items) {
-      const p = findPart(it.name);
-      if (p.qty < it.qty) return err(`Not enough ${p.name} on the truck (have ${p.qty}, need ${it.qty}).`);
+      if (it.part.qty < it.qty) return err(`Not enough ${it.part.name} on the truck (have ${it.part.qty}, need ${it.qty}).`);
     }
     const parts = [];
     for (const it of items) {
-      const p = findPart(it.name);
+      const p = it.part;
       p.qty -= it.qty;
       parts.push(`${it.qty} × ${p.name}`);
       if (bad) {
@@ -422,6 +432,7 @@ function partsListPage() {
   <p id="pl-total"></p>
   <div class="card no-print">
     <div class="field"><label for="pl-search">Search parts list</label><input type="search" id="pl-search" placeholder="Search parts list" autocomplete="off"></div>
+    <div id="pl-voice"></div>
     <button type="button" class="primary" id="pl-print">Print parts list</button>
   </div>
   <div id="pl-body"></div>`;
@@ -431,11 +442,11 @@ function partsListPage() {
     $('#pl-total').textContent = `Total items: ${total()}`;
     const body = $('#pl-body');
     if (!state.parts.length) { body.innerHTML = '<p>No parts yet. Add parts on the Inventory page.</p>'; return; }
-    const q = $('#pl-search').value.trim().toLowerCase();
+    const q = $('#pl-search').value;
     let html = '';
     for (const c of CATS) {
       const all = state.parts.filter((p) => p.category === c);
-      const list = all.filter((p) => p.name.toLowerCase().includes(q)).sort(byName);
+      const list = all.filter((p) => searchMatch(p, q)).sort(byName);
       if (!list.length) continue;
       const t = list.reduce((a, p) => a + p.qty, 0);
       html += `<section class="card"><h2>${esc(c)}</h2><div class="table-wrap"><table><thead><tr><th scope="col">Part</th><th scope="col">On truck</th><th scope="col">Low at</th><th scope="col">Status</th></tr></thead><tbody>${list.map((p) => `<tr><td>${esc(p.name)}</td><td>${p.qty}</td><td>${p.low}</td><td>${statusOf(p)}</td></tr>`).join('')}</tbody></table></div><p class="muted">${esc(c)} total: ${t} ${t === 1 ? 'item' : 'items'}</p></section>`;
@@ -444,6 +455,7 @@ function partsListPage() {
   }
   draw();
   $('#pl-search').addEventListener('input', draw);
+  searchVoice($('#pl-voice'), $('#pl-search'));
   $('#pl-print').addEventListener('click', () => window.print());
 }
 
