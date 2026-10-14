@@ -1,6 +1,6 @@
 # Automated check results
 
-23 of 23 checks passed after 1 build round(s).
+29 of 29 checks passed after 1 build round(s).
 
 - ✅ phone viewport › AC19: works on a phone-sized screen
 - ✅ AC1: app loads with empty inventory and no errors
@@ -25,3 +25,9 @@
 - ✅ AC21: Parts List updates after use and can be searched
 - ✅ AC22: Parts List print button opens the print dialog
 - ✅ AC23: branding shows the Chas Roberts name, logo and red/blue theme
+- ✅ AC24: Use Parts understands half inch, ninety and parts called by a shorter name
+- ✅ AC25: searching "half inch" or 1/2" finds the half-inch parts
+- ✅ AC26: "half inch" names merge into the existing 1/2" part when adding
+- ✅ AC27: a name that fits more than one part asks for more detail and changes nothing
+- ✅ AC28: parts can have other names that work for using and searching
+- ✅ AC29: voice input fills the parts box and the search box
