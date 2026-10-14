@@ -2,7 +2,7 @@
 
 ## Summary
 
-**Chas Roberts Truck Inventory** is a phone-friendly web app for plumbing and air-conditioning service techs to keep track of the parts on their truck. Parts can be added by typing, by talking (where the browser supports voice), or by taking a photo and tapping each part to count it. When parts are used on a job — or turn out to be bad — the tech records it and the truck's counts update automatically. A complete, printable Parts List shows everything on the truck grouped by category, alongside a restock list and downloadable reports.
+**Chas Roberts Truck Inventory** is a phone-friendly web app for plumbing and air-conditioning service techs to keep track of the parts on their truck. Parts can be added by typing, by talking (where the browser supports voice), or by taking a photo and tapping each part to count it. It understands the different ways techs name parts — "half inch" means `1/2"`, "ninety" means 90, word order doesn't matter, and each part can have its own nicknames — for typing, talking and searching. When parts are used on a job — or turn out to be bad — the tech records it and the truck's counts update automatically. A complete, printable Parts List shows everything on the truck grouped by category, alongside a restock list and downloadable reports.
 
 ## Technical ground rules
 
@@ -25,9 +25,61 @@
 
 ## Shared behavior: parts and names
 
-- A **part** has: name, category, quantity on truck (whole number ≥ 0), and "low-stock alert at" (whole number ≥ 0).
-- **Name matching** (used everywhere a part name is typed or spoken): two names are the same part if they are equal after: lowercasing, trimming, collapsing repeated spaces into one, and removing one trailing letter "s" if present. So "Angle stop", "angle stops" and "ANGLE  STOPS" are the same part. "90 degree elbow" and "90 degree elbows" are the same part.
-- Adding a part whose name matches an existing part **adds to the existing quantity** instead of creating a duplicate. The existing part keeps its original name.
+- A **part** has: name, category, quantity on truck (whole number ≥ 0), "low-stock alert at" (whole number ≥ 0), and **other names** (a list of optional alternative names the crew uses for it, e.g. "stop valve", "supply stop"; may be empty). Parts saved by earlier versions without other names are treated as having an empty list.
+- Adding a part whose name matches an existing part (strict match, below) **adds to the existing quantity** instead of creating a duplicate. The existing part keeps its original name.
+
+## Shared behavior: understanding part names (sizes, number words, nicknames)
+
+Techs say and type the same part many ways: `1/2" ProPress 90 degree elbow`, "half inch ProPress ninety", "90 degree ProPress", "ninety-degree ProPress half inch". The app must treat these as the same part. All of this works the same for typed text and for speech (speech is turned into text first, then the same rules apply).
+
+### A. Name key (normalizing a name)
+
+To compare names, each name is turned into a **key** by these steps, in order:
+
+1. Lowercase. Replace `½` with ` 1/2`, `¼` with ` 1/4`, `¾` with ` 3/4`. Replace curly/prime quotes (`”`, `″`, `“`) with `"`. Replace `°` with ` degree`. Replace hyphens `-` with spaces.
+2. **Sizes** become a canonical size token (`<size>in`). All of the following mean the same size (longest phrase wins; any case; "inch", "inches", "in" and `"` are all accepted after a number):
+
+   | Canonical token | Accepted ways to write / say it |
+   |---|---|
+   | `1/4in` | `1/4"`, `1/4 inch`, `1/4 in`, `1/4`, `quarter inch`, `a quarter inch` |
+   | `3/8in` | `3/8"`, `3/8 inch`, `3/8`, `three eighths inch`, `three eighth inch` |
+   | `1/2in` | `1/2"`, `1/2 inch`, `1/2 in`, `1/2`, `.5 inch`, `0.5 inch`, `half inch`, `half an inch`, `one half inch` |
+   | `5/8in` | `5/8"`, `5/8 inch`, `5/8`, `five eighths inch`, `five eighth inch` |
+   | `3/4in` | `3/4"`, `3/4 inch`, `3/4`, `three quarter inch`, `three quarters inch`, `three fourths inch` |
+   | `1in` | `1"`, `1 inch`, `one inch`, `an inch` |
+   | `1-1/4in` | `1-1/4"`, `1 1/4"`, `1 1/4 inch`, `1-1/4`, `1 1/4`, `one and a quarter inch`, `one and one quarter inch`, `inch and a quarter` |
+   | `1-1/2in` | `1-1/2"`, `1 1/2"`, `1 1/2 inch`, `1-1/2`, `1 1/2`, `one and a half inch`, `one and one half inch`, `inch and a half` |
+   | `2in`, `3in`, `4in` | `2"`, `2 inch`, `two inch` (and the same for 3/three, 4/four) |
+
+   A bare fraction (e.g. `1/2`, `3/4`) always counts as a size. A bare whole number (e.g. `90`, `2`) is **not** a size unless followed by `"`/inch/inches/in.
+3. Remove any remaining punctuation except `/` in fractions (so `elbow.` → `elbow`, `(copper)` → `copper`).
+4. **Word synonyms** (whole words/phrases, any case):
+   - `pro press`, `propress` → `propress`
+   - `shark bite`, `sharkbite` → `sharkbite`
+   - `ell`, `el` → `elbow`
+   - `coupler` → `coupling`
+   - `ninety` → `90`; `forty five` → `45`; `twenty two and a half` and `22.5` → `22.5`
+5. Remove these filler words: `degree`, `degrees`, `deg`, `the`, `of`, `a`, `an`. (So `90 degree`, `90°`, `90 deg`, `ninety degree` and plain `90` are all just `90`.)
+6. For each remaining word longer than 3 letters that ends in a single `s` (not `ss`), drop that `s` (so `stops` → `stop`, `elbows` → `elbow`, `couplings` → `coupling`; `brass` stays).
+7. Collapse spaces and trim. The result is the key; its words are the key's **tokens**.
+
+Examples: `1/2" ProPress 90 degree elbow` → `1/2in propress 90 elbow`. "ninety-degree ProPress half inch" → `90 propress 1/2in`. `Half inch copper couplings` → `1/2in copper coupling`. `Angle stops` → `angle stop`.
+
+### B. Strict match (used by the Inventory "Add part" form and the Edit dialog)
+
+Two names are the same part when their keys are exactly equal. So on the Inventory page, adding `half inch copper couplings` when `1/2" copper coupling` exists adds to `1/2" copper coupling`. "Angle stop", "angle stops" and "ANGLE  STOPS" are the same part. Other names are **not** used by the add form (to avoid accidental merges).
+
+### C. Smart lookup (used by Quick Add, Use Parts and Photo Count)
+
+To find which truck part a typed/spoken name refers to:
+
+1. **Exact:** a part whose name key — or the key of any of its other names — equals the spoken key. If exactly one part matches, use it.
+2. **Partial:** otherwise, a part matches if **every token** of the spoken key appears among the tokens of the part's name key, or among the tokens of one of its other-name keys (word order does not matter, extra words in the part's name are fine). Example: "90 degree ProPress" (`90 propress`) matches `1/2" ProPress 90 degree elbow`; "ninety-degree ProPress half inch" (`90 propress 1/2in`) matches it too.
+3. If exactly one part matches → that part. If no part matches → the name is **not on the truck** (Quick Add treats it as a new part; Use Parts shows the "Not on your truck" error). If **more than one** part matches (in step 1 or step 2) → the name is **ambiguous** and the app shows the error **"NAME could be more than one part: A, B. Say or type more of the name."** where NAME is the name as typed/spoken and A, B … are the matching parts' names sorted A→Z, joined with ", ". Nothing is saved when this error appears.
+
+### D. Search (Inventory "Search parts" and Parts List "Search parts list")
+
+A part is shown when **either** the search text (lowercased, trimmed) appears anywhere in the part's name or one of its other names (lowercased), **or** every token of the search text's key appears inside (as a substring of) some token of the part's name key or other-name keys. So searching `half inch`, `1/2"`, `1/2 inch` or `1/2` all find `1/2" copper coupling` and `1/2" ProPress 90 degree elbow` but not `3/4" copper coupling`; searching `ninety` finds `90 degree elbow`; searching `stop valve` finds a part whose other names include "stop valve".
 - A part is **low** when its quantity on truck is less than or equal to its "low-stock alert at" number.
 - Every change is recorded in a **history** log with: date/time, type, part name, quantity, job number (or blank). History types are exactly: `Added`, `Used on job`, `Bad part`, `Replaced`, `Count changed`, `Removed`.
 
@@ -35,11 +87,20 @@
 
 Quick Add and Use Parts both read free text like `add 3 angle stops and 2 90 degree elbows`. Rules:
 
-1. Split the text into chunks on: new lines, commas, semicolons, `&`, and the whole word `and` (any case).
+1. Split the text into chunks on: new lines, commas, semicolons, `&`, and the whole word `and` (any case) — **except** do not split on `and` when it is followed by `a half`, `a quarter`, `one half` or `one quarter` (so "one and a half inch" and "inch and a half" stay in one piece).
 2. In each chunk, trim it, drop a trailing period, and remove any of these leading filler phrases (any case): `add`, `i used`, `i'm using`, `im using`, `we used`, `used`, `using`, `i have`, `there are`, `plus`.
-3. Quantity: if the chunk starts with a number in digits (e.g. `3`) or a number word (`a`, `an`, `one` … `twenty`), that is the quantity and the rest is the part name — **except** when that number is immediately followed by the word `degree`/`deg` or the symbol `°`, in which case the number is part of the name and the quantity is 1. If there is no leading number, the quantity is 1. Only the **first** number is checked, so `2 90 degree elbows` means 2 × "90 degree elbows".
-4. Chunks with an empty name are ignored. Repeated parts in the same text are combined (quantities added).
+3. Quantity: if the chunk starts with a whole number in digits (e.g. `3`, followed by a space) or a number word (`a`, `an`, `one` … `twenty`), that is the quantity and the rest is the part name — **except** when that number is part of a size or angle, in which case it belongs to the name and the quantity is 1. A leading number is part of the name when it is: immediately followed by `degree`/`degrees`/`deg`/`°`; immediately followed by `"`/`inch`/`inches`/`in`; directly attached to `/`, `-` or `.` (e.g. `1/2"`, `1-1/2`, `0.5`); followed by a plain fraction (e.g. `1 1/2 inch` = size 1-1/2", quantity 1 — but a number followed by a dashed mixed size like `2 1-1/2"` is quantity 2 of `1-1/2"`); or part of a spoken size phrase (`one inch`, `one and a half inch`, `an inch`). If there is no leading quantity, the quantity is 1. Only the **first** number is checked, so `2 90 degree elbows` means 2 × "90 degree elbows", `two ninety-degree ProPress half inch` means 2 × "ninety-degree ProPress half inch", and `3 half inch copper couplings` means 3 × "half inch copper couplings". (`ninety`, `half`, `quarter` are never quantities.)
+4. Chunks with an empty name are ignored. Repeated parts in the same text (the same truck part after smart lookup, or the same key for new parts) are combined (quantities added).
 5. New part names are stored as written, with the first letter capitalized (e.g. `90 degree elbows`, `Copper couplings`).
+6. Each chunk's name is matched to a truck part with **smart lookup** (section C above).
+
+## Shared behavior: voice input
+
+- Voice is offered only when the browser has `window.SpeechRecognition` or `window.webkitSpeechRecognition`. Check for it when the page is shown (not cached at import time from a different window).
+- To listen: create a new recognizer with `new (window.SpeechRecognition || window.webkitSpeechRecognition)()`, set `lang = 'en-US'`, `interimResults = false`, `continuous = false`, attach handlers (either the `onresult` / `onerror` / `onend` properties or `addEventListener('result' | 'error' | 'end', …)` — both must work), then call `start()`.
+- The recognized text is the concatenation of `event.results[i][0].transcript` for each result `i` from `event.resultIndex` (default 0) to `event.results.length - 1`, trimmed. Use it exactly as recognized (the name-understanding rules above handle "half inch", "ninety", etc.).
+- When listening ends (`end` event) or the button is pressed again (call `stop()`), the button text goes back to its idle text.
+- Recognizer errors (`error` event, or `start()` throwing) show **"Couldn't hear you. Check microphone permission and try again."** in a `role="alert"` element and never cause uncaught errors.
 
 ## Pages & features
 
@@ -58,16 +119,17 @@ Quick Add and Use Parts both read free text like `add 3 angle stops and 2 90 deg
    - **"Quantity"** (number, default empty)
    - **"Low-stock alert at"** (number, default `0`)
    - **"Category"** (select with options exactly: `Plumbing`, `Air conditioning`, `Electrical`, `Other`; default `Plumbing`)
+   - **"Other names"** (text, optional; the label text is exactly "Other names"). Helper text below it (not inside the label): "Optional. Other names the crew uses, separated by commas, e.g. stop valve, supply stop". Saved as a list: split on commas, trim each, drop empties, drop duplicates (case-insensitive). When a part is merged into an existing part, any new other names are added to the existing part's list.
    - Button **"Add part"**
 4. Validation on "Add part" (nothing is saved if invalid):
    - Empty name → error **"Please enter a part name."**
    - Quantity empty, negative, or not a whole number → error **"Quantity must be a whole number of 0 or more."**
    - Low-stock alert at negative or not a whole number → same style error **"Low-stock alert must be a whole number of 0 or more."**
-5. On success: the part is added (or merged into a matching part — see name matching), a success message **"Added Q to NAME (now T)."** appears (e.g. `Added 3 to Angle stop (now 3).`), the form clears (Low-stock alert back to `0`, Category back to `Plumbing`), and a history entry of type `Added` is recorded.
-6. A search box with placeholder **"Search parts"** filters the table as you type (case-insensitive, matches anywhere in the name).
-7. A parts table with column headers exactly: **"Part"**, **"Category"**, **"On truck"**, **"Low at"**, **"Actions"**. Sorted by part name A→Z. In the Part cell of a low part, show a small badge with the text **"Low"** (red/orange).
+5. On success: the part is added (or merged into a matching part — strict match, section B), a success message **"Added Q to NAME (now T)."** appears (e.g. `Added 3 to Angle stop (now 3).`, or `Added 2 to 1/2" copper coupling (now 8).` when `half inch copper couplings` was typed), the form clears (Low-stock alert back to `0`, Category back to `Plumbing`, Other names empty), and a history entry of type `Added` is recorded.
+6. A search box with placeholder **"Search parts"** (accessible name "Search parts", e.g. via `aria-label`) filters the table as you type, using the search rules in section D (so "half inch" finds `1/2"` parts). Next to it, when voice is supported, a button **"Search by voice"** (reads **"Stop talking"** while listening): the recognized speech **replaces** the search box text (trailing period removed) and the table filters immediately. When voice isn't supported, the button is simply not shown (no notice needed here).
+7. A parts table with column headers exactly: **"Part"**, **"Category"**, **"On truck"**, **"Low at"**, **"Actions"**. Sorted by part name A→Z. In the Part cell of a low part, show a small badge with the text **"Low"** (red/orange). If the part has other names, the Part cell also shows a smaller grey line **"Also called: NAME1, NAME2"** (other names as entered, joined with ", ").
 8. Each row's Actions cell has two buttons: **"Edit"** and **"Delete"**.
-9. **Edit** opens a dialog (`role="dialog"`, e.g. a native `<dialog>`) with heading **"Edit part"**, the same four fields pre-filled ("Part name", "Quantity", "Low-stock alert at", "Category"), and buttons **"Save changes"** and **"Cancel"**. Same validation as the add form. Saving updates the part; if the quantity changed, a history entry of type `Count changed` is recorded with the new quantity. The dialog closes after saving or cancelling.
+9. **Edit** opens a dialog (`role="dialog"`, e.g. a native `<dialog>`) with heading **"Edit part"**, the same five fields pre-filled ("Part name", "Quantity", "Low-stock alert at", "Category", "Other names" — other names shown joined with ", "), and buttons **"Save changes"** and **"Cancel"**. Same validation as the add form. Saving updates the part; if the quantity changed, a history entry of type `Count changed` is recorded with the new quantity. The dialog closes after saving or cancelling.
 10. **Delete** asks for confirmation with the browser's `confirm()` dialog, text **"Delete NAME from the truck?"**. If confirmed, the part is removed and a `Removed` history entry is recorded. If cancelled, nothing changes.
 11. When there are no parts, instead of table rows show **"No parts yet. Add your first part above."** When a search matches nothing, show **"No parts match your search."**
 
@@ -83,7 +145,7 @@ The owner asked for "a complete parts list of what's in the inventory". This pag
    - **"Low"** when the quantity is above 0 and at or below its low-stock alert,
    - **"OK"** otherwise.
 5. Under each section's table, a subtotal line **"CATEGORY total: T items"** (e.g. `Plumbing total: 5 items`; use "item" when T is 1: `Plumbing total: 1 item`).
-6. A search box with placeholder **"Search parts list"** filters rows across all sections as you type (case-insensitive, matches anywhere in the name); sections with no matching rows are hidden. When nothing matches, show **"No parts match your search."** The summary lines always show the whole inventory (not filtered).
+6. A search box with placeholder **"Search parts list"** filters rows across all sections as you type (search rules in section D, so "half inch" finds `1/2"` parts), with the same **"Search by voice"** button as the Inventory page when voice is supported; sections with no matching rows are hidden. When nothing matches, show **"No parts match your search."** The summary lines always show the whole inventory (not filtered).
 7. Button **"Print parts list"** calls `window.print()`. A print stylesheet (`@media print`) hides the header/nav, the search box and buttons, so the printout is just the heading, summary and tables.
 8. When there are no parts at all, show **"No parts yet. Add parts on the Inventory page."** (no sections, summary lines still show 0).
 9. The list always reflects the current inventory (after adding, using, bad parts, edits, deletes) — it reads from the same saved data.
@@ -94,7 +156,7 @@ The owner asked for "a complete parts list of what's in the inventory". This pag
 2. A textarea labelled **"What do you want to add?"**.
 3. Voice: if the browser supports the Web Speech API (`SpeechRecognition` or `webkitSpeechRecognition`), show a button **"Start talking"**. While listening it reads **"Stop talking"**. Recognized speech is appended to the textarea (separated by a comma if the textarea isn't empty). If speech isn't supported, show instead the text **"Voice input isn't supported in this browser. Type instead."** Speech errors (e.g. microphone permission denied) show an error message **"Couldn't hear you. Check microphone permission and try again."** and must not throw uncaught errors.
 4. Button **"Read list"** parses the text (see parsing rules) and shows a preview table with headers **"Part"**, **"Quantity"**, **"Status"**. Part shows the existing part's name if it matches one, otherwise the new name. Status is **"Already on truck"** or **"New part"**.
-5. If nothing could be read → error **"I couldn't find any parts in that. Try something like "3 angle stops"."** and no preview.
+5. If nothing could be read → error **"I couldn't find any parts in that. Try something like "3 angle stops"."** and no preview. If any name is ambiguous (smart lookup) → the "could be more than one part" error and no preview.
 6. Below the preview, button **"Save to inventory"**. Saving adds each quantity to the truck (new parts are created with category `Other` and low-stock alert `0`), records `Added` history entries, shows **"Saved N parts to inventory."** (N = number of preview rows), and clears the textarea and the preview.
 
 ### Page 3 — Photo Count (`#/photo`)
@@ -107,7 +169,8 @@ The owner asked for "a complete parts list of what's in the inventory". This pag
 6. A **"Part name"** text field (with suggestions of existing part names via a `<datalist>`) and a button **"Add to inventory"**.
    - No photo or count of 0 → error **"Tap the photo to count at least one part."**
    - Empty name → error **"Please enter a part name."**
-   - Success → adds the count to the matching part (or creates a new one with category `Other`, low-stock alert `0`), records an `Added` history entry, shows **"Added N to NAME (now T)."**, and clears the markers and name (the photo may stay).
+   - Ambiguous name (smart lookup) → the "could be more than one part" error.
+   - Success → adds the count to the matching part found by smart lookup (or creates a new one with category `Other`, low-stock alert `0`), records an `Added` history entry, shows **"Added N to NAME (now T)."**, and clears the markers and name (the photo may stay).
 7. Choosing a new photo resets the count to 0.
 
 ### Page 4 — Use Parts (`#/use`)
@@ -119,9 +182,10 @@ The owner asked for "a complete parts list of what's in the inventory". This pag
 5. Button **"Record"**. Validation (nothing changes if any error):
    - Empty parts text → **"Please list the parts you used."**
    - "Used on job" selected and job number empty → **"Please enter a job number."**
+   - Any name that is ambiguous (smart lookup) → **"NAME could be more than one part: A, B. Say or type more of the name."** (if several, show the first one)
    - Any part that doesn't match a part on the truck → **"Not on your truck: NAME1, NAME2. Add it on the Inventory page first."** (names as typed)
    - Any part with not enough quantity → **"Not enough NAME on the truck (have H, need N)."** (NAME = the inventory name; if several, show the first one)
-6. **Used on job** success: subtract the quantities from the truck, record one `Used on job` history entry per part with the job number, show **"Recorded for job JOB: Q × NAME, Q × NAME."** (e.g. `Recorded for job 1001: 2 × Angle stop, 2 × 90 degree elbow.`), and clear the parts text (the job number stays, so the tech can record more for the same job).
+6. **Used on job** success: subtract the quantities from the truck, record one `Used on job` history entry per part with the job number, show **"Recorded for job JOB: Q × NAME, Q × NAME."** (e.g. `Recorded for job 1001: 2 × Angle stop, 2 × 90 degree elbow.`) — NAME is always the truck part's saved name, even when it was found by another name (e.g. saying "two ninety-degree ProPress half inch" records `2 × 1/2" ProPress 90 degree elbow`), and clear the parts text (the job number stays, so the tech can record more for the same job).
 7. **Bad part** success: subtract the quantities from the truck, record one `Bad part` history entry per part with **no job number** (even if one is typed), add each to the restock "Replace bad parts" list, and show **"Recorded bad part: Q × NAME. Added to your restock list."** The idea: the bad part is not charged to the job; the replacement part that *was* used is recorded separately as "Used on job".
 
 ### Page 5 — Restock List (`#/restock`)
@@ -178,6 +242,12 @@ The owner asked for "a complete parts list of what's in the inventory". This pag
 21. The Parts List updates after parts are used on a job, and its "Search parts list" box filters rows and shows "No parts match your search." when nothing matches.
 22. The Parts List has a "Print parts list" button that opens the browser's print dialog.
 23. Branding: the browser tab title is "Chas Roberts Truck Inventory"; the header shows the app name and a logo image (alt "Chas Roberts logo") that loads; the page background is white, the nav bar is blue `#0073BB`, and primary buttons (e.g. "Add part") are red `#E0144C`.
+24. Use Parts understands sizes and different wording: with `1/2" ProPress 90 degree elbow` on the truck, "2 ninety-degree ProPress half inch" and "1 90 degree ProPress" both subtract from it (confirmation shows the saved name), and "3 half inch copper couplings" subtracts from `1/2" copper coupling` but not `3/4" copper coupling`.
+25. Searching "half inch", `1/2"` or "1/2 inch" on the Inventory page finds the `1/2"` parts and hides the `3/4"` part; "half inch" works the same on the Parts List search.
+26. On the Inventory add form, adding "half inch copper couplings" adds to the existing `1/2" copper coupling`; in Quick Add, "add 2 half inch copper couplings" previews `1/2" copper coupling` as "Already on truck".
+27. When a spoken/typed name fits more than one part (e.g. "90 degree ProPress" with both 1/2" and 3/4" ProPress elbows), Use Parts shows "… could be more than one part: … Say or type more of the name." and nothing changes.
+28. A part can be given "Other names"; they show as "Also called: …", the part can be used on a job by one of those names, and searching by one finds it.
+29. Voice: with speech available, "Start talking" on Use Parts puts what was said (e.g. "two ninety-degree ProPress half inch") into the parts box and recording it subtracts from the right part; "Search by voice" on the Inventory page puts "half inch" into the search box and filters to the 1/2" parts.
 
 ## Out of scope / limitations
 
@@ -187,7 +257,9 @@ The owner asked for "a complete parts list of what's in the inventory". This pag
 - Photos are not stored.
 - The Parts List is a list of what is in **this** truck's inventory; it does not come pre-loaded with a catalog of every plumbing/HVAC part made (no free public parts catalog exists that the app could use without a key). Printing uses the browser's own print dialog (which can also "Save as PDF").
 - No barcode scanning, no supplier ordering, no pricing/costs, no invoicing to customers.
-- Name matching is simple (one trailing "s"), so irregular plurals like "boxes"/"box" won't match each other.
+- Name understanding uses fixed rules (size words, number words, a short synonym list, and the "Other names" each part is given), not AI. It drops a single trailing "s", so irregular plurals like "boxes"/"box" won't match each other; other nicknames work once they're added under "Other names".
+- A whole number followed by a plain fraction is read as one size, not a quantity: "1 1/2 inch PVC" means one 1-1/2" PVC part. To record two of them, write the size with a dash after the quantity: "2 1-1/2\" PVC" (or "two 1-1/2 inch PVC").
+- Voice accuracy depends on the browser's speech recognition; whatever text it produces is run through the same rules.
 
 ## Assumptions
 
@@ -201,4 +273,9 @@ The owner asked for "a complete parts list of what's in the inventory". This pag
 - The page heading on the first page stays "Truck Inventory"; the full name "Chas Roberts Truck Inventory" appears in the header and browser tab.
 - The app starts empty (no sample data).
 - "A complete parts list of what's in the inventory" was read as a dedicated, read-only, printable page listing every part on the truck grouped by category with totals — rather than a pre-loaded master catalog. The Inventory page stays the place to add/edit/delete.
+- "Half inch", `1/2"`, `1/2 inch`, `½"` and a bare `1/2` all mean the same size, everywhere (typing, speaking, searching). The same goes for the other common plumbing/HVAC sizes in the size table.
+- "Calling a part by a different name" is handled three ways: word order doesn't matter and partial names are fine (smart lookup), a short built-in synonym list (ProPress, ell/elbow, ninety/90, degree dropped…), and a per-part "Other names" list the owner fills in for shop nicknames.
+- If a partial name could mean more than one part, the app asks the tech to be more specific rather than guessing.
+- The Inventory "Add part" form uses only the strict match (not partial names or other names), so adding a new size or variant never gets merged into a different part by accident.
+- CSV exports keep their existing columns (other names are not exported).
 - A part is "low" at or below its alert number, so with the default alert of 0, a part with 0 left shows as Low.

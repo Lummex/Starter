@@ -591,3 +591,240 @@ test('AC23: branding shows the Chas Roberts name, logo and red/blue theme', asyn
   await expect(page.getByRole('heading', { level: 1, name: 'Parts List' })).toBeVisible();
   await expect(page).toHaveTitle('Chas Roberts Truck Inventory');
 });
+
+// ---------- Part-name understanding: sizes, number words, other names, voice ----------
+
+const HALF_ELBOW = '1/2" ProPress 90 degree elbow';
+const THREE_Q_ELBOW = '3/4" ProPress 90 degree elbow';
+const HALF_COUPLING = '1/2" copper coupling';
+const THREE_Q_COUPLING = '3/4" copper coupling';
+
+async function addPartWithOtherNames(page, name, qty, otherNames) {
+  await page.getByRole('textbox', { name: 'Part name', exact: true }).fill(name);
+  await page.getByRole('spinbutton', { name: 'Quantity', exact: true }).fill(String(qty));
+  await page.getByRole('textbox', { name: 'Other names', exact: true }).fill(otherNames);
+  await page.getByRole('button', { name: 'Add part', exact: true }).click();
+}
+
+async function seedSizedParts(page) {
+  await page.goto('/');
+  await addPart(page, HALF_ELBOW, 10, 0);
+  await expect(page.getByText(`Added 10 to ${HALF_ELBOW} (now 10).`)).toBeVisible();
+  await addPart(page, HALF_COUPLING, 6, 0);
+  await addPart(page, THREE_Q_COUPLING, 4, 0);
+  await expect(page.getByText('Total items on truck: 20')).toBeVisible();
+}
+
+// A fake browser speech recognizer: whatever is in window.__speech is "heard".
+async function installFakeSpeech(page) {
+  await page.addInitScript(() => {
+    window.__speech = '';
+    class FakeRecognition extends EventTarget {
+      constructor() {
+        super();
+        this.lang = '';
+        this.continuous = false;
+        this.interimResults = false;
+        this.maxAlternatives = 1;
+        this.onresult = null;
+        this.onerror = null;
+        this.onend = null;
+        this.onstart = null;
+        this._ended = false;
+      }
+      _fire(type, extra) {
+        const ev = new Event(type);
+        Object.assign(ev, extra || {});
+        const handler = this['on' + type];
+        if (typeof handler === 'function') handler.call(this, ev);
+        this.dispatchEvent(ev);
+      }
+      start() {
+        this._ended = false;
+        setTimeout(() => {
+          this._fire('start');
+          const alt = { transcript: window.__speech, confidence: 0.95 };
+          const result = { 0: alt, length: 1, isFinal: true, item: (i) => (i === 0 ? alt : undefined) };
+          const results = { 0: result, length: 1, item: (i) => (i === 0 ? result : undefined) };
+          this._fire('result', { results, resultIndex: 0 });
+          this._end();
+        }, 50);
+      }
+      _end() {
+        if (this._ended) return;
+        this._ended = true;
+        this._fire('end');
+      }
+      stop() {
+        setTimeout(() => this._end(), 0);
+      }
+      abort() {
+        setTimeout(() => this._end(), 0);
+      }
+    }
+    for (const key of ['SpeechRecognition', 'webkitSpeechRecognition']) {
+      Object.defineProperty(window, key, { value: FakeRecognition, configurable: true, writable: true });
+    }
+  });
+}
+
+test('AC24: Use Parts understands half inch, ninety and parts called by a shorter name', async ({ page }) => {
+  await seedSizedParts(page);
+
+  await usePartsRecord(page, { job: '1001', text: 'two ninety-degree ProPress half inch' });
+  await expect(page.getByText(`Recorded for job 1001: 2 × ${HALF_ELBOW}.`)).toBeVisible();
+
+  await usePartsRecord(page, { job: '1001', text: '1 90 degree ProPress' });
+  await expect(page.getByText(`Recorded for job 1001: 1 × ${HALF_ELBOW}.`)).toBeVisible();
+
+  await usePartsRecord(page, { job: '1001', text: '3 half inch copper couplings' });
+  await expect(page.getByText(`Recorded for job 1001: 3 × ${HALF_COUPLING}.`)).toBeVisible();
+
+  await goTo(page, 'Inventory');
+  await expectOnTruck(page, HALF_ELBOW, 7);
+  await expectOnTruck(page, HALF_COUPLING, 3);
+  await expectOnTruck(page, THREE_Q_COUPLING, 4);
+  await expect(page.getByText('Total items on truck: 14')).toBeVisible();
+
+  await goTo(page, 'Reports');
+  const usedRows = page.getByRole('row').filter({ hasText: 'Used on job' });
+  await expect(usedRows).toHaveCount(3);
+  await expect(usedRows.filter({ hasText: HALF_ELBOW })).toHaveCount(2);
+});
+
+test('AC25: searching "half inch" or 1/2" finds the half-inch parts', async ({ page }) => {
+  await seedSizedParts(page);
+  const search = page.getByPlaceholder('Search parts', { exact: true });
+
+  for (const query of ['half inch', '1/2"', '1/2 inch', 'Half Inch']) {
+    await search.fill(query);
+    await expect(partRow(page, HALF_COUPLING)).toHaveCount(1);
+    await expect(partRow(page, HALF_ELBOW)).toHaveCount(1);
+    await expect(partRow(page, THREE_Q_COUPLING)).toHaveCount(0);
+  }
+
+  await search.fill('three quarter inch coupling');
+  await expect(partRow(page, THREE_Q_COUPLING)).toHaveCount(1);
+  await expect(partRow(page, HALF_COUPLING)).toHaveCount(0);
+
+  await search.fill('ninety degree');
+  await expect(partRow(page, HALF_ELBOW)).toHaveCount(1);
+  await expect(partRow(page, HALF_COUPLING)).toHaveCount(0);
+
+  await search.fill('');
+  await expect(partRow(page, THREE_Q_COUPLING)).toHaveCount(1);
+
+  await goTo(page, 'Parts List');
+  await expect(page.getByRole('heading', { level: 1, name: 'Parts List', exact: true })).toBeVisible();
+  await page.getByPlaceholder('Search parts list').fill('half inch');
+  await expect(page.getByRole('row').filter({ hasText: HALF_COUPLING })).toHaveCount(1);
+  await expect(page.getByRole('row').filter({ hasText: HALF_ELBOW })).toHaveCount(1);
+  await expect(page.getByRole('row').filter({ hasText: THREE_Q_COUPLING })).toHaveCount(0);
+});
+
+test('AC26: "half inch" names merge into the existing 1/2" part when adding', async ({ page }) => {
+  await seedSizedParts(page);
+
+  await addPart(page, 'half inch copper couplings', 2, 0);
+  await expect(page.getByText(`Added 2 to ${HALF_COUPLING} (now 8).`)).toBeVisible();
+  await expect(page.getByRole('row').filter({ hasText: /copper coupling/i })).toHaveCount(2);
+  await expectOnTruck(page, HALF_COUPLING, 8);
+  await expectOnTruck(page, THREE_Q_COUPLING, 4);
+
+  await goTo(page, 'Quick Add');
+  await page.getByRole('textbox', { name: 'What do you want to add?' }).fill('add 2 half inch copper couplings');
+  await page.getByRole('button', { name: 'Read list', exact: true }).click();
+  const row = page.getByRole('row').filter({ hasText: HALF_COUPLING });
+  await expect(row).toHaveCount(1);
+  await expect(row).toContainText('2');
+  await expect(row).toContainText('Already on truck');
+  await page.getByRole('button', { name: 'Save to inventory', exact: true }).click();
+  await expect(page.getByText('Saved 1 parts to inventory.')).toBeVisible();
+
+  await goTo(page, 'Inventory');
+  await expectOnTruck(page, HALF_COUPLING, 10);
+  await expect(page.getByText('Total items on truck: 24')).toBeVisible();
+});
+
+test('AC27: a name that fits more than one part asks for more detail and changes nothing', async ({ page }) => {
+  await page.goto('/');
+  await addPart(page, HALF_ELBOW, 5, 0);
+  await addPart(page, THREE_Q_ELBOW, 5, 0);
+
+  await usePartsRecord(page, { job: '1001', text: '1 90 degree ProPress' });
+  await expect(
+    page.getByText(
+      `90 degree ProPress could be more than one part: ${HALF_ELBOW}, ${THREE_Q_ELBOW}. Say or type more of the name.`
+    )
+  ).toBeVisible();
+
+  // Adding the size makes it specific.
+  await usePartsRecord(page, { job: '1001', text: '1 90 degree ProPress three quarter inch' });
+  await expect(page.getByText(`Recorded for job 1001: 1 × ${THREE_Q_ELBOW}.`)).toBeVisible();
+
+  await goTo(page, 'Inventory');
+  await expectOnTruck(page, HALF_ELBOW, 5);
+  await expectOnTruck(page, THREE_Q_ELBOW, 4);
+});
+
+test('AC28: parts can have other names that work for using and searching', async ({ page }) => {
+  await page.goto('/');
+  await addPartWithOtherNames(page, 'Angle stop', 5, 'stop valve, supply stop');
+  await expect(page.getByText('Added 5 to Angle stop (now 5).')).toBeVisible();
+  await expect(partRow(page, 'Angle stop').getByText('Also called: stop valve, supply stop')).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Other names', exact: true })).toHaveValue('');
+
+  const search = page.getByPlaceholder('Search parts', { exact: true });
+  await search.fill('stop valve');
+  await expect(partRow(page, 'Angle stop')).toHaveCount(1);
+  await search.fill('');
+
+  await usePartsRecord(page, { job: '2002', text: '2 supply stops' });
+  await expect(page.getByText('Recorded for job 2002: 2 × Angle stop.')).toBeVisible();
+
+  await goTo(page, 'Inventory');
+  await expectOnTruck(page, 'Angle stop', 3);
+
+  // Other names survive a reload and appear in the Edit dialog.
+  await page.reload();
+  await expect(partRow(page, 'Angle stop').getByText('Also called: stop valve, supply stop')).toBeVisible();
+  await partRow(page, 'Angle stop').getByRole('button', { name: 'Edit', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('textbox', { name: 'Other names', exact: true })).toHaveValue('stop valve, supply stop');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('AC29: voice input fills the parts box and the search box', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  await installFakeSpeech(page);
+  await seedSizedParts(page);
+
+  // Search by voice on the Inventory page.
+  await page.evaluate(() => {
+    window.__speech = 'half inch';
+  });
+  await page.getByRole('button', { name: 'Search by voice' }).click();
+  await expect(page.getByPlaceholder('Search parts', { exact: true })).toHaveValue('half inch');
+  await expect(partRow(page, HALF_COUPLING)).toHaveCount(1);
+  await expect(partRow(page, THREE_Q_COUPLING)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Search by voice' })).toBeVisible();
+
+  // Talking on the Use Parts page.
+  await goTo(page, 'Use Parts');
+  await page.getByRole('textbox', { name: 'Job number', exact: true }).fill('3003');
+  await page.evaluate(() => {
+    window.__speech = 'two ninety-degree ProPress half inch';
+  });
+  await page.getByRole('button', { name: 'Start talking' }).click();
+  const box = page.getByRole('textbox', { name: 'Parts used', exact: true });
+  await expect(box).toHaveValue(/two ninety-degree ProPress half inch/);
+  await expect(page.getByRole('button', { name: 'Start talking' })).toBeVisible();
+  await page.getByRole('button', { name: 'Record', exact: true }).click();
+  await expect(page.getByText(`Recorded for job 3003: 2 × ${HALF_ELBOW}.`)).toBeVisible();
+
+  await goTo(page, 'Inventory');
+  await expectOnTruck(page, HALF_ELBOW, 8);
+  expect(pageErrors).toEqual([]);
+});
