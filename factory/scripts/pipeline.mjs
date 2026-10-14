@@ -29,14 +29,30 @@ function commitAll(message) {
   if (staged) git('commit', '-q', '-m', message);
 }
 
+// GitHub occasionally answers with a temporary server error; retry with growing pauses before giving up.
 function push() {
   if (FAKE) return log('(fake) git push');
-  git('push', '-q', '--force-with-lease', 'origin', `HEAD:${branch}`);
+  const waits = [0, 15, 30, 60, 120]; // seconds
+  let last = '';
+  for (let i = 0; i < waits.length; i++) {
+    if (waits[i]) { log(`push failed, retrying in ${waits[i]}s (attempt ${i + 1} of ${waits.length})`); sleep(waits[i]); }
+    // The factory branch belongs to the factory, so a plain force push is safe on later attempts.
+    const lease = i < 2 ? ['--force-with-lease'] : ['--force'];
+    const r = sh('git', ['push', '-q', ...lease, 'origin', `HEAD:${branch}`], { check: false });
+    if (r.status === 0) return;
+    last = `${r.stderr}${r.stdout}`.trim();
+    sh('git', ['fetch', '-q', 'origin'], { check: false });
+  }
+  throw new Error(`GitHub would not accept the factory's work after ${waits.length} tries. This is usually a temporary GitHub problem — press Try again in a few minutes.\n\n${last.slice(-1500)}`);
 }
+
+function sleep(seconds) { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, seconds * 1000); }
 
 // Undo anything an agent changed outside the folder it was allowed to touch.
 function confineTo(allowedRel) {
-  const inside = (f) => f === allowedRel || f.startsWith(`${allowedRel}/`);
+  // Tool installs (node_modules, lock files) are never treated as agent changes.
+  const tooling = (f) => /(^|\/)(node_modules|dist)\//.test(f) || f === 'factory/package-lock.json' || f.startsWith('factory/.run-tests/');
+  const inside = (f) => tooling(f) || f === allowedRel || f.startsWith(`${allowedRel}/`);
   const changed = sh('git', ['diff', '--name-only', 'HEAD'], { check: false }).stdout.split('\n').filter(Boolean);
   const reverted = changed.filter((f) => !inside(f));
   if (reverted.length) sh('git', ['checkout', 'HEAD', '--', ...reverted], { check: false });
@@ -50,7 +66,11 @@ function checkoutBranch() {
   if (FAKE) return;
   const exists = sh('git', ['ls-remote', '--exit-code', '--heads', 'origin', branch], { check: false }).status === 0;
   if (exists) {
-    git('fetch', '-q', 'origin', `${branch}:${branch}`);
+    for (let i = 0; i < 4; i++) {
+      if (sh('git', ['fetch', '-q', 'origin', `${branch}:${branch}`], { check: false }).status === 0) break;
+      if (i === 3) throw new Error('Could not download this project\'s previous work from GitHub (temporary GitHub problem?). Press Try again in a few minutes.');
+      sleep(15 * (i + 1));
+    }
     git('checkout', '-q', branch);
     // Pick up factory improvements made on main since this project started.
     sh('git', ['merge', '-q', '--no-edit', '-X', 'theirs', 'origin/main'], { check: false });

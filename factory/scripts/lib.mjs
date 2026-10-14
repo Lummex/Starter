@@ -116,6 +116,14 @@ export function runAgent(role, prompt, budgetUsd) {
   spent += cost;
   log(`agent ${role} finished: ${out.subtype || r.status}, cost $${cost.toFixed(2)}, run total $${spent.toFixed(2)}`);
   if (out.result) log(`agent ${role} says: ${String(out.result).slice(0, 1500)}`);
+  // Account problems: stop right away with a plain-English explanation instead of a confusing later error.
+  const said = String(out.result || r.stdout || '');
+  if (/invalid api key|not logged in|please run \/login|authentication_error/i.test(said) && cost === 0) {
+    throw new Error('Anthropic rejected the API key. Make a new key at console.anthropic.com → API Keys, then paste it into GitHub → Starter → Settings → Secrets and variables → Actions → ANTHROPIC_API_KEY (pencil icon → Update secret).');
+  }
+  if (/credit balance|billing|insufficient.*credit|quota/i.test(said) && cost === 0) {
+    throw new Error('Your Anthropic account is out of credits. Add credits at console.anthropic.com → Billing, then press Try again.');
+  }
   return { ok: r.status === 0 && !out.is_error, cost, result: out.result, subtype: out.subtype };
 }
 
