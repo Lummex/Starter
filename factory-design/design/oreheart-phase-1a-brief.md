@@ -2,6 +2,82 @@
 
 Read this brief first, then the full design document: `factory-design/design/oreheart-gdd-v2.md` (the source of truth for every rule, number and card). The screen layout reference is `factory-design/design/oreheart-mockup.jpg`.
 
+## Revision 7 (fifth owner playtest) — read this first
+
+The design document is the source of truth; where anything disagrees, the design doc wins, then this section, then Revisions 6, 5, 4, 3 and 2.
+
+1. **One soul crystal type.** Remove all per-color crystal pools and color payment rules: every card costs plain soul crystals. A player has exactly two numbers: **Flow** (reset at the start of their turn to what they mined, cap 16) and **Bank** (Crystal cards, no limit, never resets); pay Flow first, then Bank. The top-left shows only two counters in the player's faction color: a Flow crystal ⛏️ and a Bank crystal with a vault 🏦. Mines are still owned by the player with more creatures that mined them (tie/no miners = neutral white) and glow in that player's color; a mining action at a mine you own or a neutral one pays full (Miner 2, Fighter 1); at an enemy-owned mine it pays half, rounded down (Miner 1, Fighter 0). Heart of the Fallen gives 4 crystals to the Bank; Desperate Plunder gives 3 Flow.
+2. **Respond pop-up:** add a standalone "Play [Crystal card]" button (still one Crystal card per round), in addition to the Crystal + spell combo buttons.
+3. **Mining range test:** add an acceptance check that a creature 2 spaces from a mine (including a Ranged one) cannot mine it; only the 8 adjacent spaces can.
+4. **Spell callouts:** when a spell is cast, comic text over the caster's Stronghold: "[COMMANDER FIRST NAME] CASTS [SPELL NAME]!". Commanders never attack.
+5. **Card reveal:** every card played by either player flies to the screen center, big, for ~1.5 s; then a creature drops onto its space and flips/glows/rises into its 3D figure; a spell turns into its effect; a Crystal card flies into the Bank counter; a Miner upgrade flies onto its creature with gold sparkles. A respondable enemy play flows straight into the Respond pop-up (no double display). Settings: "Card reveals: Normal (1.5 s) / Fast (0.6 s)"; tap to skip; skipped in test mode.
+6. **Spell visual effects** for every spell (see "Spell effects" in the design doc).
+7. **Full ability text on every card, always:** each card prints its complete ability in plain words in a text box (keywords explained: Ranged, Guard, Charge, Flying, Sneaky, Shield, Frenzy, Tunnel, Crystal Eater, Smith, Unique, etc.); never truncated; long text shrinks to fit. Everywhere cards appear. Acceptance check: for every card, the rendered card contains its full ability text.
+8. **Hand hover/hold:** the card pops up out of the fan and renders at 2× size, in front of everything, clamped to stay fully on-screen.
+9. **Renames (display names only; keep internal ids):**
+
+| Old name | New name |
+| --- | --- |
+| Grubnak's Big Boss Troll | Gutcrusher the Troll Tyrant |
+| Grubnak the Goblin Boss | Grubnak Rotgut, King of the Junkpile |
+| Queen Skreeka the Shiny | Queen Skreeka, Hoarder of Shinies |
+| Professor Sproingle | Archmagister Sproingle the Unfathomable |
+| Madame Sprocket | Madame Sprocket, Mistress of Gears |
+| Thane Borgo Anvilbottom | Thane Borgo Gravelgrim |
+| Old Grumblebeard the Unkillable | Grumblebeard the Unkillable |
+| Goblin Smith Miner | Scrapsmith Miner |
+| Gnome Smith Miner | Arcsmith Miner |
+| Dwarf Smith Miner | Anvilsworn Miner |
+| Goblin Miner | Grubgrabber Miner |
+| Gnome Miner | Gemsinger Miner |
+| Dwarf Miner | Stonebreaker Miner |
+| Goblin Slinger | Skullflinger |
+| Goblin Scrapper | Gutripper Brawler |
+| Shard Guzzler | Shardguzzler the Bottomless |
+| Goblin Bomber | Boomfist Lunatic |
+| Goblin Sneak | Backstab Weasel |
+| Wolf Rider | Mangewolf Rider |
+| Gnome Tinker | Aegis Tinkerer |
+| Spark Gnome | Stormcaller Savant |
+| Overclocked Conduit | Overclocked Aethervein |
+| Gnome Illusionist | Mirrorveil Illusionist |
+| Clockwork Beetle | Iron Scarab Automaton |
+| Gyrocopter Ace | Thunderwing Gyronaut |
+| The Great Steam Golem | The Arcane Colossus |
+| Axe Thrower | Grudge Hurler |
+| Crystal-Drunk Delver | Gemdrunk Deepdelver |
+| Brewmaster | Forgefire Brewlord |
+| Ironhammer Berserker | Bloodbeard Berserker |
+| Ram Rider | Thunderhorn Ram Rider |
+| Queen Brunhilda Stonebeard | Queen Brunhilda Ironheart, the Unbroken |
+| Prospector's Prayer | Desperate Plunder |
+| Tunnel Rush | Burrow Ambush |
+| Fireball | Infernal Orb |
+| Battle Cry | Warhowl |
+| Meteor Strike | Skyfall Annihilation |
+| Healing Light | Mending Light |
+| Shield Bubble | Bastion Ward |
+| Second Wind | Last Stand |
+| Fizzle | Snuff Out |
+| Hold It! | Not Today! |
+| Spell Snap | Arcane Severance |
+| Mirror Hex | Hex Reversal |
+| Crystal Cluster | Soul Cluster |
+| Glowing Geode | Wellspring Geode |
+| Shieldbeard | Ironwall Shieldbeard |
+| Goblin Grunt | Snotskull Grunt |
+| Goblin Pebbler | Boneknocker |
+| Gnome Cogger | Voltwright |
+| Gnome Widget | Hexgear Adept |
+| Dwarf Pickman | Ironjaw Raider |
+| Dwarf Stoneback | Granite Oathkeeper |
+
+Update every place names appear: cards, Commander picker, tutorial, Rules, pop-ups, callouts.
+10. **Miner upgrades:** a **basic Miner** card played onto one of your own creatures gives a permanent **+1 Health**; a **Smith Miner** card gives **+1 Attack and +1 Health** (no choice pop-up any more). Played onto an empty back-row space, either is summoned as a normal Miner. The free Miner (summoned directly) never upgrades. Unlimited stacking.
+11. **Mine All button:** "⛏️ Mine All (N)" just left of the player's deck, Action phase only, greyed out when N = 0. Makes every ready Miner-role creature (basic, Smith, Crystal Eater) adjacent to a mine perform the mine action at once, skipping creatures that already moved/attacked/mined or can't act; Fighters are never included. A Miner touching two mines prefers a mine paying full value. Keyboard shortcut M on desktop. After Mine All, auto-skip re-evaluates. Tutorial: manual mining first, then Mine All. AI mines with all ready Miners.
+
+Right-side layout: turn text top-right corner, Done below it, Mine All just left of the deck at the bottom-right. Unit tests with exact numbers: Flow/Bank single pool and spending order; enemy-owned mine pays half (Miner 1); Miner upgrade +1 Health and Smith +1/+1 persist; Mine All mines exactly the eligible Miners.
+
 ## Revision 6 (fourth owner playtest) — read this first
 
 The design document is the source of truth; where anything disagrees, the design doc wins, then this section, then Revisions 5, 4, 3 and 2. The role formerly called "Gatherer" is now called **Miner** everywhere (cards, UI, Rules, code names may stay as they are).
