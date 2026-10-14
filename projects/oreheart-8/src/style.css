@@ -211,3 +211,4 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .token[data-acted="true"]::before{border-color:#3a3d44;box-shadow:none}
 .token[data-mining="true"]::after{content:'⛏️';position:absolute;top:-6%;right:6%;font-size:.9rem}
 .mine-flow{white-space:nowrap}
+.hand-card:hover::after,.hand-card.popped::after{content:'';position:absolute;left:0;right:0;top:100%;height:calc(var(--cw) * 1.3)}
