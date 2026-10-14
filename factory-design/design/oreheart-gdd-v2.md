@@ -44,9 +44,9 @@ The great heroes of the world fought each other until almost none were left. The
 
 ## Look and feel
 
-Everything is 3D in a comic-book style, beautiful and polished, in the style of the mockup image, but in landscape (phone held sideways). The battlefield fills the **whole screen, edge to edge, with no black bars**, viewed at an angle like a tabletop and zoomed as large as possible so the game works on small phones. The enemy's Stronghold sits right at the top edge; yours sits at the bottom, just behind your hand cards and still visible. Everything else floats over the battlefield: your hand of large, readable cards fanned along the bottom (they slide down out of the way while you drag a card or creature), the enemy's card backs along the top, your crystal counters (with an income preview such as "+3 next turn") on the left, the phase name and Done button on the right, and each player's deck pile on their own right-hand side at full hand-card size (yours bottom-right, the enemy's top-left as seen from your side, with the enemy's card backs shifted right to make room). Each Commander's Health floats as a big glowing heart right by the Commander (above your Commander's head; beside the enemy Commander so it never leaves the screen); it shakes and pops red numbers when hit.
+Everything is 3D in a comic-book style, beautiful and polished, in the style of the mockup image, but in landscape (phone held sideways). The battlefield fills the **whole screen, edge to edge, with no black bars**, viewed at an angle like a tabletop and zoomed as large as possible so the game works on small phones. The enemy's Stronghold sits right at the top edge; yours sits at the bottom, just behind your hand cards and still visible. Everything else floats over the battlefield: your hand of large, readable cards fanned along the bottom (they slide down out of the way while you drag a card or creature), the enemy's card backs along the top, your crystal counters (with an income preview such as "+3 next turn") on the left, the phase name and Done button on the right, and each player's deck pile on their own right-hand side at full hand-card size (yours bottom-right, the enemy's top-left as seen from your side, with the enemy's card backs shifted right to make room). Each Commander's Health is a big glowing heart attached to their own Stronghold wall facing you (on the back wall of your Stronghold, on the front wall of the enemy's), never floating over a battlefield space; it shakes and pops red numbers when hit. Creature stat badges (Attack, Health, Movement) are always drawn on top of everything else on the battlefield, and a heart shrinks or slides along its wall rather than ever covering them. The current turn and phase are shown in the top-right corner as large, fancy comic-style text with a thick outline and soft glow, no box ("YOUR TURN / Deploy", "ENEMY TURN" in a different color).
 
-- **Phase banners:** at the start of each turn and phase, a big comic-style banner pops up in the center ("YOUR TURN", "DEPLOY", "ACTION", "ENEMY TURN") for about 1.5 seconds, then fades. Phases skipped automatically show no banner; the current phase stays visible small in the corner.
+- **Phase banners:** at the start of each turn and phase, a big comic-style banner pops up in the center ("YOUR TURN", "DEPLOY", "ACTION", "ENEMY TURN") for about 1.5 seconds, then fades. Phases skipped automatically show no banner; the turn and phase also stay shown in the top-right corner.
 - **Creatures show their numbers:** every creature on the battlefield shows ⚔️ Attack, ❤️ Health and 👟 Movement.
 - **Ready or done:** each creature stands on a ring. **Yellow** = it can still act this turn. Once it has moved, attacked or mined (or if it can't act yet because it was just summoned), the ring turns **dark grey** and the creature turns darker and duller (not grey); both reset at the start of its owner's turn. Miners summoned this turn stay bright, since they can still move or mine.
 - **Hand cards pop out:** moving the mouse over a card in your hand slides it up out of the fan by about an inch, slightly bigger and in front, so you can see which card you're on; on a phone, touch and hold does the same.
@@ -114,16 +114,17 @@ The drawing shows the invisible spaces; in the game the ground is painted. Each 
 The only resource is soul crystal (crystal for short), in three flashy colors (green for Goblins, blue for Gnomes, purple for Dwarves) plus neutral white. Crystals come from **Crystal Flow**: your creatures **mine** at the three mines, and what they mine arrives at the start of your next turn.
 
 - **Mining is an action:** in the Action phase, drag a creature that stands on one of the 8 spaces around a mine onto that mine. That is its action for the turn (instead of moving or attacking), and it shows a little pickaxe icon until your next turn. A creature between two mines mines the one you drag it onto.
-- **You mine every turn:** a creature only makes crystals on turns when it spends its action mining. Each mining action makes **2 crystals for a Gatherer (Miner)** and **1 for a Fighter**.
+- **You mine every turn:** a creature only makes crystals on turns when it spends its action mining. Each mining action makes **2 crystals for a Miner** and **1 for a Fighter**.
 - **The pool resets, it doesn't stack:** at the start of your turn, your crystal pool is set to what your creatures mined on your previous turn. Crystals you don't spend stay available through the enemy's turn (for Instants and counterspells), and are replaced at the start of your next turn.
-- **Cap:** your pool can never go above **16** crystals, whatever the source (flow, Crystal cards, abilities). Owner setting.
+- **Cap:** your Flow can never go above **16** crystals. Owner setting.
+- **Crystal Bank:** crystals from **Crystal cards** go into your **Bank**, which never resets and has no limit: Bank crystals stay until you spend them. The game always spends Flow first (it would vanish anyway) and Bank second. The crystal counters show both per color, for example "Flow 4 · Bank 3", with a little vault icon on Bank crystals. Flow and Bank are both usable on your turn and during the enemy's turn.
 - **Mine color:** at the start of each turn, the side with **more creatures mining it** sets its color (creatures that mined it on their owner's last turn and are still standing next to it; creatures merely standing nearby don't count; in a mixed-faction deck, the faction with the most miners there). On a tie, or when nobody mines it, the mine is **neutral** (white). When a mine changes color, its crystals burst and regrow in the new color, with sparkles and light beams.
 - **Crystals come in the mine's color:** every side's miners at a mine produce crystals of that mine's color. Example: you have 1 Gnome Miner and the enemy has 2 Goblin Miners mining a mine, so it's green: the enemy gets 4 green and you get 2 green. At a 2-vs-2 tie, the mine is neutral and both sides get 4 white.
-- **Paying:** for a **creature** (or upgrade), crystals of the creature's own color pay full value; every other color and neutral pays **half** (halves add up, then round down). Example: 2 green crystals are worth 1 toward a Gnome creature. **Spells** can be paid with any color at full value. The game always pays automatically in the cheapest way (creatures use their own color first; spells use off-color and neutral crystals first), and cards you can afford glow in your hand.
-- **Starting crystals:** 0. Turn 1 is always "send out a Miner" (see Free Gatherer below).
+- **Paying:** for a **creature** (including a Smith upgrade), crystals of the creature's own color pay full value; every other color and neutral pays **half** (halves add up, then round down). Example: 2 green crystals are worth 1 toward a Gnome creature. **Spells** can be paid with any color at full value. The game always pays automatically in the cheapest way (creatures use their own color first; spells use off-color and neutral crystals first), and cards you can afford glow in your hand.
+- **Starting crystals:** 0. Turn 1 is always "send out a Miner" (see Free Miner below).
 - **Income preview:** next to your crystal counters you always see next turn's flow per color; each mine shows a ring in its current color and floating numbers for both sides (for example "+4 green / +1 green").
 - **Endless mines:** mines never run out. Long games are ended by deck-out damage and sudden death instead.
-- **Card costs:** creatures cost 1–13 (see Cards for the formula); spells cost 1–7; upgrades 3–8.
+- **Card costs:** creatures cost 1–13 (see Cards for the formula); spells cost 1–7.
 - **Look:** big, glossy, glowing gems with bright neon-saturated colors, light rays and floating sparkles.
 
 **Spread out or stack up.** Deciding where to send your minions is the core strategy: Miners at every mine for a little of everything, or a crowd at one mine to own its color. Holding a mine in your own color doubles what your miners there are worth to you, and every turn each creature must choose: mine, move or fight.
@@ -131,9 +132,9 @@ The only resource is soul crystal (crystal for short), in three flashy colors (g
 **Never locked out.** A player who loses every mine early always has ways back in:
 
 - **Underdog bonus:** if no mine is in your color at the start of your turn **and at least one is in the enemy's color**, you get +2 crystals of your own color that turn. It never applies while nobody holds a site, so it doesn't speed up the opening.
-- **Gatherer swap:** once per turn, during your Deploy phase, if you have no Gatherer in your hand you can discard a card (or none, if your hand is empty) to take your cheapest basic Gatherer from your deck into your hand, for free. Crystal Eaters don't count as basic Gatherers.
-- **Free Gatherer when broke:** if your creatures mined nothing on your last turn, no mine is in your color and you have no Gatherer on the battlefield, you can summon one Gatherer for free that turn.
-- **Tunnelers:** each faction has Gatherer creatures with the Tunnel ability: when more mines are in the enemy's color than in yours, they can be summoned straight onto any empty space next to a crystal site instead of your back row.
+- **Miner swap:** once per turn, during your Deploy phase, if you have no Miner in your hand you can discard a card (or none, if your hand is empty) to take your cheapest basic Miner from your deck into your hand, for free. Crystal Eaters don't count as basic Miners.
+- **Free Miner when broke:** if your Flow plus Bank can't pay for a basic Miner and you have no Miner on the battlefield, you can summon one basic Miner for free that turn.
+- **Tunnelers:** each faction's basic Miner has the Tunnel ability (Smith Miners don't); it only works as a comeback, and otherwise every Miner is summoned on your back row like any creature: when more mines are in the enemy's color than in yours, they can be summoned straight onto any empty space next to a crystal site instead of your back row.
 - **Comeback spells:** cheap spells built to break a lockout (see Prospector's Prayer and Tunnel Rush in the spell list).
 - **Ties neutralize a mine:** one creature sneaking in to tie the count turns the mine white, halving the enemy's income from it.
 
@@ -152,7 +153,7 @@ Three factions, each paying with its own crystal color: Goblins use green, Gnome
 
 **Two kinds of creature in every faction:**
 
-- **Gatherers (Miners):** strong at mining (2 crystals per mining action), no summoning sickness, weak in a fight.
+- **Miners:** strong at mining (2 crystals per mining action), no summoning sickness, weak in a fight.
 - **Fighters:** strong in a fight; only 1 crystal per mining action.
 
 **Type advantage:** +1 Attack when Dwarves hit Goblins, Goblins hit Gnomes, or Gnomes hit Dwarves.
@@ -182,20 +183,20 @@ A creature card shows its cost, Attack, Health, movement and one special ability
 - **Cost** (top-left, in the faction's crystals): Attack + Health, +1 for a small ability (Ranged, Guard, Frenzy, Armored and the like) and +2 for a big one (Flying, Charge, moving 2, acting the turn it's played, Collector powers). A 1/1 costs 1. Gathering and drawbacks add nothing. Example: a 2/2 costs 4, a 2/3 costs 5, a 3/4 costs 7.
 - **⚔️ Attack** and **❤️ Health:** Attack 1–5, Health 2–6 (printed on the card; upgrades and abilities can raise it).
 - **Movement:** 1 space per turn; Ultra Rare and Collector characters can move 2.
-- **Role:** Gatherer or Fighter, shown by a pickaxe or sword badge.
+- **Role:** every card shows its role: **Miner** (⛏️ pickaxe badge, and the word Miner in the name of basic Miners), **Smith Miner** (⚒️ hammer-and-pickaxe badge and a gold "SMITH" banner) or **Fighter** (⚔️ sword badge). On the battlefield, Miners carry a big pickaxe and Smith Miners also a smithing hammer with a little anvil on their back; both show a ⛏️ icon in their floating stats.
 - **Special ability:** every creature has one, in one short line.
 
 **Card types:**
 
 1. **Creatures:** played onto the battlefield, where they become 3D characters.
 2. **Spells:** cast by your Commander, who launches them from the Stronghold (a fireball arcs out of his hands, a shield of light drops over a creature). Regular spells can be cast in any phase of your own turn. Instant spells (marked with a lightning bolt) can be cast at any time, even during the opponent's turn, for example to save a creature as it's attacked. Counterspells are Instants that cancel an enemy spell or summon as it happens.
-3. **Crystal cards:** free to play, they give you bonus soul crystals of your faction's color to summon bigger minions and cast spells sooner. You can play only one Crystal card per turn, during your Deploy phase, unless a Crystal Eater creature lets you play more, at a price.
+3. **Crystal cards:** free to play, they put bonus soul crystals of your faction's color into your **Bank** (see Crystal Flow), where they stay until spent. They work at Instant speed: play them in your Deploy phase or during the enemy's turn in the Respond window, and the crystals are usable immediately. Playing a Crystal card never ends your turn or phase. You can play only one Crystal card between the start of your turn and the start of your next one, unless a Crystal Eater creature lets you play more, at a price.
 
 **Rarity** (a gem on the card): Common (gray), Uncommon (bronze), Rare (silver), Ultra Rare (gold), Collector (shimmering rainbow prism). The best cards are the hardest to get.
 
 **Deck rules:** 50 cards (the owner can change this). Common and Uncommon cards have no copy limit; Rare, Ultra Rare and Collector cards are limited to 3 copies each. Especially powerful cards are marked Unique: you can have only one of that card on your battlefield at a time (extra copies wait in your hand). A deck can hold at most 10 Crystal cards in total, whatever their rarity.
 
-**Starter decks** (one per faction, 50 cards): 40 creatures, 6 spells (including 1 counterspell, Fizzle) and 4 Crystal cards. Mostly Commons, with about 8 Gatherers and plenty of cheap creatures so there's always something to play; the owner can change the mix in the settings file. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander and your deck.
+**Starter decks** (one per faction, 50 cards): 40 creatures, 6 spells (including 1 counterspell, Fizzle) and 4 Crystal cards. Mostly Commons, with about 8 Miners (about 5 basic Miners and 3 Smith Miners) and plenty of cheap creatures so there's always something to play; the owner can change the mix in the settings file. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander and your deck.
 
 ## Turns and phases
 
@@ -208,15 +209,15 @@ Every turn runs through the same phases, each with a 50-second timer. For the fi
 **The phases of a turn:**
 
 1. **Draw phase** (automatic): all your creatures heal back to full Health, you draw 1 card (no hand limit), mine colors update, and your crystal pool resets to your Crystal Flow.
-2. **Deploy phase** (timed): drag creature cards onto empty spaces in your back row, play up to one Crystal card, upgrade creatures, and cast spells (Regular spells work in any phase of your turn, Instants at any time). If your back row is full, you can summon onto the row in front of it; if both are full, the card waits in your hand.
-3. **Action phase** (timed): each of your creatures does **one** thing: **move, attack or mine**. Drag it to an empty space to move, onto an enemy (or the enemy Stronghold) to attack, or onto a mine next to it to mine. Creatures placed this turn can't act unless their ability says so; **Miners (Gatherers) have no summoning sickness**: they can move or mine (but not attack) the turn they're placed.
+2. **Deploy phase** (timed): drag creature cards onto empty spaces in your back row, play Crystal cards and Smith upgrades, and cast spells (Regular spells work in any phase of your turn, Instants at any time). If your back row is full, you can summon onto the row in front of it; if both are full, the card waits in your hand.
+3. **Action phase** (timed): each of your creatures does **one** thing: **move, attack or mine**. Drag it to an empty space to move, onto an enemy (or the enemy Stronghold) to attack, or onto a mine next to it to mine. Creatures placed this turn can't act unless their ability says so; **Miners have no summoning sickness**: they can move or mine (but not attack) the turn they're placed.
 4. **End phase** (automatic): end-of-turn abilities happen, then it's the other player's turn.
 
 You can tap a "Done" button to finish a phase early. If you still have something you could do, a center pop-up asks "Moves still available! Continue to the next phase?" with Continue and Go back, and names creatures that could still mine (for example "2 miners haven't mined"), since skipping mining costs crystals next turn. It can be turned off in Settings, and never appears when the timer runs out.
 
-**Auto-skip:** when you have nothing left you can do in a phase (no card you can afford and place, no creature that can still move, attack or mine), the game moves on by itself after about a second. Instants, upgrades and the Gatherer swap don't count as moves left.
+**Auto-skip:** when you have nothing left you can do in a phase (no card you can afford and place, no creature that can still move, attack or mine), the game moves on by itself after about a second. Instants, upgrades and the Miner swap don't count as moves left.
 
-**Responding with Instants:** when the opponent attacks one of your creatures or casts a spell, and you hold an Instant you can afford, a short "Respond?" window pops up (about 5 seconds; owner setting). Tap an Instant to cast it before the attack or spell resolves, or let the window close. You can also cast Instants freely during your own turn.
+**Responding with Instants:** when the opponent attacks one of your creatures or casts a spell or summons, and you hold a matching Instant or counterspell, a "Respond?" pop-up appears in the center for **12 seconds** (owner setting) with a visible shrinking countdown bar, and the game waits while it's open. It shows the enemy's card full size ("Enemy casts Fireball at your Shieldbeard") and lists your Instants and counterspells. If one is only affordable together with a Crystal card from your hand, it offers both in one tap ("Crystal Cluster + Fizzle"); ones you can't afford are shown greyed out with "need 2 more". The pop-up appears whenever you hold a matching Instant or counterspell, even if you can't afford it yet. Tap one to cast it before the attack or spell resolves, or let the window close. You can also cast Instants freely during your own turn.
 
 **Time bank (online):** each player also has a total time bank of about 10 minutes per match, so a match can't drag on forever. **Sudden death** (to be tuned after playtesting): after a set number of turns, both Commanders lose Health every turn, so skilled players can finish fast while close games still end. Both numbers are owner settings.
 
@@ -240,23 +241,20 @@ Attacks subtract Attack from Health; a creature at 0 Health is defeated. Every c
 - **Shield X:** the next X damage to that creature is blocked; a shield lasts until the start of your next turn.
 - **Type advantage:** +1 Attack when Dwarves hit Goblins, Goblins hit Gnomes, or Gnomes hit Dwarves.
 - **Attacking the Commander:** a creature next to the enemy Stronghold can attack the Commander, removing Health equal to its Attack. The Commander never strikes back.
-- **Defeated creatures** go to the discard pile and lose any upgrades.
+- **Defeated creatures** go to the discard pile and lose any Smith upgrades.
 
 **Example:** a Dwarf Shieldbeard (⚔️2 ❤️4) attacks a Goblin Scrapper (⚔️2 ❤️3). Dwarves beat Goblins, so it hits for 3 and the Scrapper is defeated, but it strikes back at the same moment for 2. The Shieldbeard survives at ❤️2 and heals back to ❤️4 at the start of its owner's next turn.
 
-## Upgrades
+## Smith Miners (upgrades)
 
-Upgrades are powerful but expensive, a big decision rather than a routine one. During your Deploy phase, tap one of your creatures on the battlefield, then Upgrade; it doesn't stop the creature from moving or attacking.
+Upgrading is done only with **Smith Miner** cards; there are no crystal-bought upgrades.
 
-| Upgrade | Cost (paid like a creature) | Effect |
-| --- | --- | --- |
-| Sharpened Weapons | 3 | ⚔️ +1 |
-| Heavy Armor | 3 | ❤️ +3 |
-| Veteran | 5 | Moves 2 spaces |
-| Champion's Crown | 8 | ⚔️ +2 and ❤️ +3 |
-
-- **Limit:** 1 upgrade per creature.
-- Upgrades show on the 3D character (a glinting blade, armor plates, a crown) and are lost when it's defeated.
+- **Play a Smith Miner card onto an empty space** in your back row: it's summoned as a normal Miner (no summoning sickness, mines for 2).
+- **Play it onto one of your own creatures** (any Fighter or Miner, anywhere on the battlefield): it is not summoned. A small pop-up asks **+1 Attack or +1 Health**, and that creature keeps the boost **permanently** (it also counts as part of its full Health when it heals). The Smith card goes to the discard pile.
+- You pay the card's normal cost either way. There is **no limit** to how many times a creature can be upgraded (owner setting, to watch in playtests).
+- While you drag a Smith card, empty summon spaces glow blue and your creatures glow gold, so you can see what each drop will do. Upgraded creatures show small gold pips for each upgrade.
+- Upgrades are lost when the creature is defeated.
+- The free Miner and the Miner swap only ever give **basic** Miners, never Smith Miners.
 - There are no walls or ballistas in this version.
 
 ## Winning and losing
@@ -270,13 +268,14 @@ The only way to win is to bring the enemy Commander from 20 Health to 0, which m
 
 ## Starter card list
 
-These 41 cards set the style and balance; the factory expands them into a Core Set of about 120 cards (about 35 per faction plus spells), giving plenty of variety to collect. Move 2 is reserved for Ultra Rare and Collector characters (and creatures with the Veteran upgrade). In the full set the factory also adds Uncommon cards.
+These 44 cards set the style and balance; the factory expands them into a Core Set of about 120 cards (about 35 per faction plus spells), giving plenty of variety to collect. Move 2 is reserved for Ultra Rare and Collector characters. In the full set the factory also adds Uncommon cards.
 
 **Goblins (green crystals)**
 
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Goblin Scrounger | Common | Gatherer | 1 | 1 | 1 | 1 | Miner: 2 flow at a mine; Tunnel: can be summoned onto any empty space next to a crystal site |
+| Goblin Miner | Common | Miner | 1 | 1 | 1 | 1 | "Scrounger, Taker of Shiny Things." Mines for 2; Tunnel (comeback only) |
+| Goblin Smith Miner | Common | Smith Miner | 2 | 1 | 1 | 1 | Smith: play it onto one of your creatures instead of summoning, and that creature permanently gets +1 Attack or +1 Health (your choice). Summoned, it's a normal Miner (mines for 2). No Tunnel |
 | Goblin Scrapper | Common | Fighter | 6 | 2 | 3 | 1 | Frenzy: +1 Attack when next to another Goblin |
 | Goblin Slinger | Common | Fighter | 4 | 1 | 2 | 1 | Ranged |
 | Goblin Bomber | Rare | Fighter | 5 | 2 | 2 | 1 | Ka-boom: when defeated, deals 2 damage to all adjacent enemies |
@@ -288,7 +287,8 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Gnome Prospector | Common | Gatherer | 1 | 1 | 1 | 1 | Miner: 2 flow at a mine; Tunnel: can be summoned onto any empty space next to a crystal site |
+| Gnome Miner | Common | Miner | 1 | 1 | 1 | 1 | "Prospector of Profound Patience." Mines for 2; Tunnel (comeback only) |
+| Gnome Smith Miner | Common | Smith Miner | 2 | 1 | 1 | 1 | Smith: play it onto one of your creatures instead of summoning, and that creature permanently gets +1 Attack or +1 Health (your choice). Summoned, it's a normal Miner (mines for 2). No Tunnel |
 | Gnome Tinker | Common | Fighter | 5 | 1 | 3 | 1 | Fix-it: at the start of your turn, each adjacent ally gets Shield 1 |
 | Spark Gnome | Common | Fighter | 5 | 2 | 2 | 1 | Ranged |
 | Clockwork Beetle | Rare | Fighter | 8 | 2 | 5 | 1 | Armored: takes 1 less damage from every hit |
@@ -300,7 +300,8 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Dwarf Miner | Common | Gatherer | 1 | 1 | 1 | 1 | Miner: 2 flow at a mine; Tunnel: can be summoned onto any empty space next to a crystal site |
+| Dwarf Miner | Common | Miner | 1 | 1 | 1 | 1 | "Has never met a rock he respected." Mines for 2; Tunnel (comeback only) |
+| Dwarf Smith Miner | Common | Smith Miner | 2 | 1 | 1 | 1 | Smith: play it onto one of your creatures instead of summoning, and that creature permanently gets +1 Attack or +1 Health (your choice). Summoned, it's a normal Miner (mines for 2). No Tunnel |
 | Shieldbeard | Common | Fighter | 7 | 2 | 4 | 1 | Guard: adjacent enemies must attack it first |
 | Axe Thrower | Common | Fighter | 6 | 2 | 3 | 1 | Ranged |
 | Ironhammer Berserker | Rare | Fighter | 8 | 3 | 4 | 1 | Rage: +2 Attack while below half Health |
@@ -325,7 +326,7 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 | Spell Snap | Rare | Counterspell | 5 | Cancel any enemy spell |
 | Mirror Hex | Ultra Rare | Counterspell | 7 | Cancel an enemy spell, then cast a free copy of it yourself |
 
-**Crystal cards** (free to play; one per turn; at most 10 per deck)
+**Crystal cards** (free to play; Instant speed; crystals go into your Bank; one per round; at most 10 per deck)
 
 | Card | Rarity | Effect |
 | --- | --- | --- |
@@ -339,9 +340,9 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 
 | Card | Faction | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Shard Guzzler | Goblins | Uncommon | Gatherer | 5 | 1 | 4 | 1 | Crystal Eater: each extra Crystal card you play this turn deals 2 damage to it |
-| Overclocked Conduit | Gnomes | Rare | Gatherer | 5 | 1 | 4 | 1 | Crystal Eater: each extra Crystal card you play this turn means it can't move or attack until your next turn, and it takes 1 damage |
-| Crystal-Drunk Delver | Dwarves | Rare | Gatherer | 7 | 2 | 5 | 1 | Crystal Eater: each extra Crystal card you play this turn gives it -1 Attack for the rest of the match |
+| Shard Guzzler | Goblins | Uncommon | Miner | 5 | 1 | 4 | 1 | Crystal Eater: each extra Crystal card you play this turn deals 2 damage to it |
+| Overclocked Conduit | Gnomes | Rare | Miner | 5 | 1 | 4 | 1 | Crystal Eater: each extra Crystal card you play this turn means it can't move or attack until your next turn, and it takes 1 damage |
+| Crystal-Drunk Delver | Dwarves | Rare | Miner | 7 | 2 | 5 | 1 | Crystal Eater: each extra Crystal card you play this turn gives it -1 Attack for the rest of the match |
 
 If a Crystal Eater is defeated by its own drawback, its Commander gasps dramatically.
 
@@ -367,7 +368,7 @@ New players start with basic cards and some booster packs; better cards come fro
 
 Once online play exists, the owner changes these in the Owner Console; until then, they're edited in the settings file.
 
-**Computer opponent:** Easy (for kids; obvious moves, some mistakes), Normal (fights for sites sensibly), Hard (protects Gatherers, focuses fire, times spells well).
+**Computer opponent:** Easy (for kids; obvious moves, some mistakes), Normal (fights for sites sensibly), Hard (protects Miners, focuses fire, times spells well).
 
 **Helper features:** selecting a creature makes its move and attack spaces glow; an optional hint button and undo for the last move (single-player only; online matches have no hints or undo).
 
