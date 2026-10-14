@@ -1,8 +1,10 @@
 # Automated check results
 
-49 of 51 checks passed after 3 build round(s).
+66 of 68 checks passed after 3 build round(s).
 
-- ✅ landscape phone viewport › AC24: menu and match fit a landscape phone screen
+- ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
+- ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
+- ✅ landscape phone viewport 667x375 › AC24: menu and full-screen match fit a 667x375 landscape phone
 - ✅ portrait phone viewport › AC24: upright phone shows the rotate message
 - ✅ AC1: main menu has exactly Play, Tutorial, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
@@ -13,8 +15,8 @@
 - ✅ AC6: grubnak starter deck is 40 creatures, 6 spells (with Fizzle), 4 Crystal cards
 - ✅ AC6: sproingle starter deck is 40 creatures, 6 spells (with Fizzle), 4 Crystal cards
 - ✅ AC6: borgo starter deck is 40 creatures, 6 spells (with Fizzle), 4 Crystal cards
-- ✅ AC7: opening — 0 starting crystals, turn 1 gives exactly 1, extra card for second player
-- ✅ AC8: HUD elements, 30/45 second timers, Done advances Deploy -> Action -> Enemy turn
+- ✅ AC7: opening — start with 1 crystal, no Stronghold income, extra card for second player
+- ✅ AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy turn
 - ✅ AC9: majority control with Gatherer bonus (exact income)
 - ✅ AC9: tie means nobody controls; no underdog bonus while nobody holds a site
 - ✅ AC9: underdog bonus +2 when the enemy controls a site
@@ -29,7 +31,7 @@
 - ✅ AC13: Shieldbeard vs Scrapper — type advantage defeats it, strike back still lands
 - ✅ AC13: strike back with type advantage defeats the attacker
 - ✅ AC13: Guard forces adjacent melee attackers to hit it
-- ✅ AC13: Ranged hits 2 away with no strike back, blocked by a creature in between
+- ✅ AC13: Ranged hits anything within 2 spaces, over creatures, with no strike back
 - ❌ AC14: creatures heal at the start of their owner's turn; damaged Health is marked
 - ✅ AC15: Gnome Tinker gives Shield 1, which blocks exactly 1 damage
 - ❌ AC16: Commander damage equals Attack and never resets
@@ -53,6 +55,21 @@
 - ✅ AC25: Tutorial button opens the guided match with tips and Skip Tutorial
 - ✅ AC25: tutorial steps start at summon and advance after a back-row summon
 - ✅ AC26: printed creature Health is at most 6
+- ✅ AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 for 1
+- ✅ AC27: summoning spends exactly the new costs
+- ✅ AC28: phase banner appears when a phase begins
+- ✅ AC28: auto-skipped phases show no banner; ENEMY TURN does
+- ✅ AC29: moves left ignores Instants, upgrades and the Gatherer swap
+- ✅ AC29: with auto-skip on, an empty turn passes by itself; a phase with moves left does not
+- ✅ AC30: creature labels show Attack, Health, Movement and darken after acting
+- ✅ AC31: Moves still available pop-up — Go back and Continue
+- ✅ AC31: no pop-up on timeout, and Settings can turn it off
+- ✅ AC32: countdown appears only in the last 10 seconds; 0 ends just the phase
+- ✅ AC33: Gatherer swap moves one basic Gatherer from deck to hand, once per turn
+- ✅ AC34: free Gatherer when broke
+- ✅ AC35: a Gatherer summoned this turn can move but not attack
+- ✅ AC36: income preview and site info
+- ✅ AC37: the confirm pop-up sits above the countdown
 
 ## Failures
 
@@ -63,24 +80,24 @@ Error: expect(received).toBe(expected) // Object.is equality
 Expected: 3
 Received: 2
 
-  571 |   s = await getState(page);
-  572 |   expect(at(s, 5, 4).health).toBe(3);
-> 573 |   expect(at(s, 2, 6).health).toBe(3); // opponent Shieldbeard: 4 - 2 (Grubnak gives no Health)
+  596 |   s = await getState(page);
+  597 |   expect(at(s, 5, 4).health).toBe(3);
+> 598 |   expect(at(s, 2, 6).health).toBe(3); // opponent Shieldbeard: 4 - 2 (Grubnak gives no Health)
       |                              ^
-  574 |   await expect(label).toHaveAttribute('data-damaged', 'true');
-  575 |   await expect(label).toContainText('3');
-  576 |   await done(page); // -> opponent's turn 2
+  599 |   await expect(label).toHaveAttribute('data-damaged', 'true');
+  600 |   await expect(label).toContainText('3');
+  601 |   await done(page); // -> opponent's turn 2
 ✗ AC16: Commander damage equals Attack and never resets
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  649 |   expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
-  650 |   await done(page);
-> 651 |   expect((await act(page, { type: 'attack', creatureUid: queen, target: { commander: 'opponent' } })).ok).toBe(true);
+  674 |   expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
+  675 |   await done(page);
+> 676 |   expect((await act(page, { type: 'attack', creatureUid: queen, target: { commander: 'opponent' } })).ok).toBe(true);
       |                                                                                                           ^
-  652 |   expect((await act(page, { type: 'attack', creatureUid: scrap, target: { commander: 'opponent' } })).ok).toBe(true);
-  653 |   s = await getState(page);
-  654 |   expect(s.players.opponent.health).toBe(4); // 13 - 6 - 3
+  677 |   expect((await act(page, { type: 'attack', creatureUid: scrap, target: { commander: 'opponent' } })).ok).toBe(true);
+  678 |   s = await getState(page);
+  679 |   expect(s.players.opponent.health).toBe(4); // 13 - 6 - 3
 ```

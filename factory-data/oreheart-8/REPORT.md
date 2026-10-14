@@ -1,27 +1,25 @@
 ## What was built
-Oreheart, a fantasy card battle in the browser. You pick a Commander (Goblin, Gnome or Dwarf) and play one full match against a computer opponent on Easy or Normal. There is also a guided tutorial match, a Rules page and a Settings page with a graphics toggle. The screen is landscape, and a phone held upright shows "Please rotate your phone". The visuals are simple placeholders.
+Oreheart is a fantasy card battle for the browser. You pick a Commander (Goblin, Gnome or Dwarf), then play one full match against a computer opponent on Easy or Normal. There is also a guided tutorial match, plus Rules and Settings screens. The battlefield fills the whole landscape screen, and your hand and counters float over it.
 
 ## Try these things
-- On first visit, the "Welcome to Oreheart!" box appears. Try "Start Tutorial" and follow the tips.
-- Click Play, choose Professor Sproingle and Normal, then Start Match. Keep your hand and play a few turns: drop a creature on your back row, move it toward a crystal and press Done.
-- Click a card in your hand to read it. Drag it onto the board to summon or cast it.
-- Open Settings and switch Graphics between High and Low. Reload and check it is remembered.
-- Open Rules and read the sections and pictures.
-- Open Menu in a match and try Surrender. You should see "Defeat" and "Back to Menu".
+- Open the preview, choose "Start Tutorial" in the welcome pop-up, and follow the tips: summon a troop, move it, take a crystal site.
+- From the menu, press Play, pick Professor Sproingle on Normal, and press Start Match. Keep your hand and check that the match screen appears.
+- In a match, drag a hand card onto your back row. Tap a card without dragging to read it.
+- Press Done while you still have moves left. A "Moves still available!" pop-up should appear.
+- Tap a crystal site to see who controls it and what it pays.
+- Open Settings and switch Graphics between High and Low. Open Rules and read the pictures and text.
+- On a phone, turn it upright. It should say "Please rotate your phone".
 
 ## Automated checks
-49 of 51 checks passed. Two failed:
-- **Healing and damaged-Health marking:** the test expected a Dwarf creature to have 3 Health after taking 2 damage from 4. The game shows 2, which is correct arithmetic. The builder believes the test is wrong.
-- **Commander damage:** the test ended turns in the wrong order, so its attack happened on the opponent's turn and was refused. The builder believes the test is wrong and the game is right.
-
-I couldn't confirm either claim independently. Neither failure shows a visible problem in the game.
+66 of 68 checks passed. Two failed:
+- **Healing check (AC14):** a Goblin Scrapper hit a Dwarf Shieldbeard and left it on 2 Health. The test expected 3. The builder says the game is right and the test's arithmetic is wrong. I can't confirm that.
+- **Commander damage check (AC16):** the test's attack on the enemy Commander was refused. The builder says the test ends the turn too early. Commander damage itself wasn't proven by this test, so try attacking a Commander in the preview.
 
 ## Things to know
-- The screenshots only show the main menu with the welcome box, and the rotate message on a phone. I saw no screenshots of the match screen, so its look and layout are unchecked by me. Please look at it in the preview.
-- The menu text behind the welcome box looks dim, which is normal while the box is open.
-- Starter decks repeat many Common cards, and no new card names were added.
-- Champion's Crown also adds +3 current Health, and Glowing Geode is one-per-board. These are builder choices.
-- There is no sound, and the art is placeholder.
+- The only screenshots are the menu pages. The welcome pop-up looks fine on desktop, and the phone rotate message looks fine. I saw no screenshot of the match screen, so I couldn't check how it looks.
+- No page errors were recorded.
+- A just-summoned Gatherer shows as "acted" (darker) even though it can still move.
+- Visuals are simple placeholders, and there is no sound.
 
 ## Recommendation
-Ready to approve, provided the match screen looks and plays acceptably in the preview.
+Request changes: two checks failed, and I can't confirm from screenshots that the match screen looks right. Try the preview first. If those two rules work in play, it may be fine to approve.
