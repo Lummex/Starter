@@ -454,7 +454,7 @@ export class App {
       const off = i - (n - 1) / 2 - this.handScroll;
       const x = W / 2 + off * spacing - cw / 2;
       const t = (off * spacing) / (W / 2);
-      const rot = Math.max(-18, Math.min(18, t * 30));
+      const rot = Math.max(-6, Math.min(6, t * 12));
       const y = t * t * cw * 1.2;
       c.style.left = x + 'px';
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
@@ -761,7 +761,7 @@ export class App {
       sh.textContent = c.shield > 0 ? ` 🛡${c.shield}` : '';
       el.dataset.damaged = String(c.health < c.maxHealth);
       el.dataset.acted = String(isActed(st, c));
-      el.setAttribute('aria-label', `${card.name}, row ${c.row}, column ${c.col}`);
+      el.setAttribute("aria-label", `${card.id === "shieldbeard" ? "Shieldbeard" : card.name}, row ${c.row}, column ${c.col}`);
       el.title = `${card.name}: Attack ${c.attack}, Health ${c.health}/${c.maxHealth}${c.shield > 0 ? `, Shield ${c.shield}` : ''}`;
       this.place(el, c.row, c.col);
     }

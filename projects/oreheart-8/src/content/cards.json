@@ -310,7 +310,7 @@
    "guard"
   ],
   "unique": false,
-  "text": "Guard: Adjacent enemies must attack it first."
+  "text": "Guard: adjacent enemies must attack it first."
  },
  {
   "id": "axe-thrower",
