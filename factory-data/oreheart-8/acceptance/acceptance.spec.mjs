@@ -28,7 +28,8 @@ async function done(page, n = 1) {
 const passTurn = (page) => done(page, 2);
 const at = (s, row, col) => s.board.creatures.find((c) => c.row === row && c.col === col);
 const handUid = (s, side, cardId) => s.players[side].hand.find((c) => c.cardId === cardId).uid;
-const total = (cr) => (cr.green || 0) + (cr.blue || 0) + (cr.purple || 0);
+const total = (cr) => (cr.green || 0) + (cr.blue || 0) + (cr.purple || 0) + (cr.white || 0);
+const ZERO = { green: 0, blue: 0, purple: 0, white: 0 };
 const sameTarget = (t, row, col) => t && t.row === row && t.col === col;
 const SHARDS = Array(12).fill('soul-shard');
 // first visit outside test mode shows the tutorial offer; dismiss it
@@ -177,7 +178,7 @@ for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
 }
 
 // ---------- AC7 ----------
-test('AC7: opening — start with 1 crystal, no Stronghold income, extra card for second player', async ({ page }) => {
+test('AC7: opening — start with 0 crystals, pool resets to flow, extra card for second player', async ({ page }) => {
   let s = await start(page, { playerCommander: 'grubnak', opponentCommander: 'borgo', ai: false, firstPlayer: 'player' });
   expect(s.phase).toBe('mulligan');
   expect(s.priority).toBe('player');
@@ -193,21 +194,25 @@ test('AC7: opening — start with 1 crystal, no Stronghold income, extra card fo
   expect(s.phase).toBe('deploy');
   expect(s.players.player.hand.length).toBe(5);
   expect(s.players.opponent.hand.length).toBe(6);
-  expect(s.players.player.crystals).toEqual({ green: 1, blue: 0, purple: 0 });
-  expect(s.players.opponent.crystals).toEqual({ green: 0, blue: 0, purple: 1 });
+  expect(s.players.player.crystals).toEqual(ZERO);
+  expect(s.players.opponent.crystals).toEqual(ZERO);
   await passTurn(page);
   s = await getState(page);
   expect(s.turn).toBe(2);
   expect(s.activePlayer).toBe('opponent');
   expect(s.phase).toBe('deploy');
   expect(s.players.opponent.hand.length).toBe(7);
-  expect(s.players.opponent.crystals).toEqual({ green: 0, blue: 0, purple: 1 });
+  expect(s.players.opponent.crystals).toEqual(ZERO);
   await passTurn(page);
   s = await getState(page);
   expect(s.turn).toBe(3);
-  expect(s.players.player.crystals).toEqual({ green: 1, blue: 0, purple: 0 }); // no Stronghold income
+  expect(s.players.player.crystals).toEqual(ZERO); // no flow, no Stronghold income
   const cfg = await page.evaluate(async () => await window.oreheart.getConfig());
-  expect(cfg.startingCrystals).toBe(1);
+  expect(cfg.startingCrystals).toBe(0);
+  expect(cfg.poolCap).toBe(16);
+  expect(cfg.gathererFlow).toBe(2);
+  expect(cfg.fighterFlow).toBe(1);
+  expect(cfg.underdogBonus).toBe(2);
   expect(cfg.strongholdIncome || 0).toBe(0);
   expect(cfg.phaseTimerSeconds).toBe(50);
   expect(cfg.timerHiddenSeconds).toBe(40);
@@ -216,7 +221,7 @@ test('AC7: opening — start with 1 crystal, no Stronghold income, extra card fo
 
 // ---------- AC8 ----------
 test('AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy turn', async ({ page }) => {
-  await start(page, { ai: false, setup: { playerCrystals: { green: 4 }, playerHealth: 17, opponentHealth: 12 } });
+  await start(page, { ai: false, setup: { playerCrystals: { green: 4, white: 2 }, playerHealth: 17, opponentHealth: 12 } });
   const phase = page.getByLabel('Current phase', { exact: true });
   const timer = page.getByLabel('Phase timer', { exact: true });
   await expect(phase).toContainText('Deploy');
@@ -225,6 +230,7 @@ test('AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy t
   await expect(page.getByLabel('Your green crystals', { exact: true })).toHaveText(/\b4\b/);
   await expect(page.getByLabel('Your blue crystals', { exact: true })).toHaveText(/\b0\b/);
   await expect(page.getByLabel('Your purple crystals', { exact: true })).toHaveText(/\b0\b/);
+  await expect(page.getByLabel('Your white crystals', { exact: true })).toHaveText(/\b2\b/);
   await expect(page.getByLabel('Your Commander health', { exact: true })).toContainText('17');
   await expect(page.getByLabel('Enemy Commander health', { exact: true })).toContainText('12');
   const doneBtn = page.getByRole('button', { name: 'Done' });
@@ -237,73 +243,155 @@ test('AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy t
   expect((await getState(page)).activePlayer).toBe('opponent');
 });
 
-// ---------- AC9 ----------
-test('AC9: majority control with Gatherer bonus (exact income)', async ({ page }) => {
+// ---------- AC9 (Crystal Flow) ----------
+test('AC9: example (a) — 1 Gnome Miner vs 2 Goblin Miners: mine is green, Goblins get 4 green, Gnomes 2 green', async ({ page }) => {
   let s = await start(page, {
-    ai: false,
+    ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak',
     setup: {
-      playerDeck: SHARDS, opponentDeck: SHARDS,
+      firstPlayer: 'opponent', playerDeck: SHARDS, opponentDeck: SHARDS,
       board: [
-        { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1 },
-        { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 2 },
+        { cardId: 'gnome-prospector', owner: 'player', row: 3, col: 2 },
+        { cardId: 'goblin-scrounger', owner: 'opponent', row: 5, col: 1 },
+        { cardId: 'goblin-scrounger', owner: 'opponent', row: 5, col: 2 },
       ],
     },
   });
-  expect(s.sites[0].controller).toBe('player');
-  await passTurn(page);
+  expect(s.sites[0].controller).toBe('opponent');
+  expect(s.sites.map((x) => x.color)).toEqual(['green', 'white', 'white']);
+  expect(s.players.opponent.flow).toEqual({ ...ZERO, green: 4 });
+  expect(s.players.player.flow).toEqual({ ...ZERO, green: 2 });
+  await passTurn(page); // -> player's turn 2
   s = await getState(page);
-  expect(total(s.players.opponent.crystals)).toBe(2); // enemy holds a site: 2 underdog, no Stronghold income
+  expect(s.activePlayer).toBe('player');
+  expect(s.players.player.crystals).toEqual({ ...ZERO, green: 2, blue: 2 }); // 2 green flow + 2 blue underdog
+  await passTurn(page); // -> opponent's turn 3
+  s = await getState(page);
+  expect(s.players.opponent.crystals).toEqual({ ...ZERO, green: 4 });
+});
+
+test('AC9: off-color crystals are worth half toward creatures (rounded down)', async ({ page }) => {
+  let s = await start(page, {
+    ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak',
+    setup: {
+      playerHand: ['gnome-prospector', 'gnome-prospector'], playerCrystals: { green: 2 },
+      board: [{ cardId: 'gnome-prospector', owner: 'player', row: 6, col: 1 }],
+    },
+  });
+  const [p1, p2] = s.players.player.hand.map((c) => c.uid);
+  expect((await act(page, { type: 'summon', uid: p1, row: 7, col: 1 })).ok).toBe(true); // 2 green = 1
+  s = await getState(page);
+  expect(s.players.player.crystals).toEqual(ZERO);
+  expect((await act(page, { type: 'summon', uid: p2, row: 7, col: 2 })).ok).toBe(false);
+  // 9 green is worth 4: not enough for a 5-cost Spark Gnome
+  s = await newMatch(page, { ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { playerHand: ['spark-gnome'], playerCrystals: { green: 9 } } });
+  expect((await legal(page)).some((a) => a.type === 'summon')).toBe(false);
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(false);
+  // 1 blue + 8 green = 5: own color is used first
+  s = await newMatch(page, { ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { playerHand: ['spark-gnome'], playerCrystals: { green: 9, blue: 1 } } });
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals).toEqual({ ...ZERO, green: 1 });
+});
+
+test('AC9: example (b) — 2 vs 2 tie: mine is white, 4 white is worth 2 toward creatures and 4 toward spells', async ({ page }) => {
+  let s = await start(page, {
+    ai: false, playerCommander: 'grubnak', opponentCommander: 'sproingle',
+    setup: {
+      firstPlayer: 'opponent', playerDeck: SHARDS, opponentDeck: SHARDS,
+      playerHand: ['goblin-scrounger', 'goblin-scrounger', 'goblin-scrounger', 'battle-cry'],
+      board: [
+        { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 1 },
+        { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 2 },
+        { cardId: 'gnome-prospector', owner: 'opponent', row: 5, col: 1 },
+        { cardId: 'gnome-prospector', owner: 'opponent', row: 5, col: 2 },
+      ],
+    },
+  });
+  expect(s.sites[0].controller).toBe(null);
+  expect(s.sites[0].color).toBe('white');
+  expect(s.players.player.flow).toEqual({ ...ZERO, white: 4 });
+  expect(s.players.opponent.flow).toEqual({ ...ZERO, white: 4 });
+  await passTurn(page); // -> player's turn 2
+  s = await getState(page);
+  expect(s.players.player.crystals).toEqual({ ...ZERO, white: 4 }); // no underdog: no mine in the enemy's color
+  const bc = handUid(s, 'player', 'battle-cry');
+  expect((await legal(page)).some((a) => a.type === 'cast' && a.uid === bc)).toBe(true); // 4 toward spells
+  const g = s.players.player.hand.filter((c) => c.cardId === 'goblin-scrounger').map((c) => c.uid);
+  expect((await act(page, { type: 'summon', uid: g[0], row: 7, col: 1 })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals.white).toBe(2);
+  expect((await act(page, { type: 'summon', uid: g[1], row: 7, col: 2 })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals.white).toBe(0);
+  expect((await act(page, { type: 'summon', uid: g[2], row: 7, col: 3 })).ok).toBe(false);
+});
+
+test('AC9: examples (c) and (d) — pool is set to flow, unspent crystals last through the enemy turn', async ({ page }) => {
+  let s = await start(page, {
+    ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak',
+    setup: {
+      playerDeck: SHARDS, opponentDeck: SHARDS,
+      board: [
+        { cardId: 'gnome-prospector', owner: 'player', row: 3, col: 1 },
+        { cardId: 'gnome-prospector', owner: 'player', row: 4, col: 1 },
+        { cardId: 'gnome-prospector', owner: 'player', row: 5, col: 1 },
+        { cardId: 'goblin-scrapper', owner: 'opponent', row: 2, col: 1 },
+      ],
+    },
+  });
+  expect(s.sites[0].color).toBe('blue');
+  expect(s.players.player.flow.blue).toBe(6);
+  await passTurn(page);
+  await passTurn(page); // player's turn 3
+  s = await getState(page);
+  expect(s.turn).toBe(3);
+  expect(s.players.player.crystals).toEqual({ ...ZERO, blue: 6 });
+  await done(page); // -> action; the Miner on row 3 attacks the Scrapper and is defeated
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 3, 1).uid, target: { row: 2, col: 1 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 3, 1)).toBeUndefined();
+  expect(s.players.player.flow.blue).toBe(4);
+  await done(page); // -> opponent's turn 4
+  s = await getState(page);
+  expect(s.activePlayer).toBe('opponent');
+  expect(s.players.player.crystals).toEqual({ ...ZERO, blue: 6 }); // still usable on the enemy's turn
+  await passTurn(page); // player's turn 5
+  s = await getState(page);
+  expect(s.players.player.crystals).toEqual({ ...ZERO, blue: 4 }); // reset to flow, not 6 + 4
+});
+
+test('AC9: example (e) — the pool never goes above 16', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { playerHand: ['crystal-cluster'], playerCrystals: { green: 15 } } });
+  expect((await act(page, { type: 'playCrystal', uid: s.players.player.hand[0].uid })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals).toEqual({ ...ZERO, green: 16 });
+  const spots = [[3, 1], [4, 1], [5, 1], [3, 2], [5, 2], [3, 6], [5, 6], [3, 7], [4, 7], [5, 7]];
+  await newMatch(page, { ai: false, setup: {
+    playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: spots.map(([row, col]) => ({ cardId: 'goblin-scrounger', owner: 'player', row, col })),
+  } });
+  await passTurn(page);
   await passTurn(page);
   s = await getState(page);
   expect(s.activePlayer).toBe('player');
-  expect(s.sites.map((x) => x.controller)).toEqual(['player', null, null]);
-  expect(s.players.player.crystals.green).toBe(3); // 1 site + 2 gatherer
+  expect(s.players.player.crystals).toEqual({ ...ZERO, green: 16 }); // flow 20, capped
 });
 
-test('AC9: tie means nobody controls; no underdog bonus while nobody holds a site', async ({ page }) => {
-  await start(page, {
-    ai: false,
-    setup: {
-      playerDeck: SHARDS, opponentDeck: SHARDS,
-      board: [
-        { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1 },
-        { cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1 },
-      ],
-    },
-  });
-  await passTurn(page);
-  let s = await getState(page);
-  expect(total(s.players.opponent.crystals)).toBe(0);
-  await passTurn(page);
-  s = await getState(page);
-  expect(s.sites[0].controller).toBe(null);
-  expect(s.players.player.crystals.green).toBe(0);
-});
-
-test('AC9: underdog bonus +2 when the enemy controls a site', async ({ page }) => {
-  await start(page, {
-    ai: false,
-    setup: { playerDeck: SHARDS, opponentDeck: SHARDS, board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1 }] },
-  });
-  await passTurn(page);
-  let s = await getState(page);
-  expect(s.sites[0].controller).toBe('opponent');
-  expect(s.players.opponent.crystals.blue).toBe(1); // 1 site
-  await passTurn(page);
-  s = await getState(page);
-  expect(s.players.player.crystals.green).toBe(2); // 2 underdog
-});
-
-test('AC9: shared column 3 counts for two sites', async ({ page }) => {
-  await start(page, {
-    ai: false,
-    setup: { playerDeck: SHARDS, opponentDeck: SHARDS, board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 3 }] },
-  });
+test('AC9: a creature touching two mines counts at only one', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: {
+    playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 3 }],
+  } });
+  expect(s.sites.map((x) => x.color)).toEqual(['green', 'white', 'white']); // equal: the left mine
+  expect(s.players.player.flow.green).toBe(1);
+  s = await newMatch(page, { ai: false, setup: {
+    playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: [
+      { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 3 },
+      { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 4 },
+    ],
+  } });
+  expect(s.sites.map((x) => x.color)).toEqual(['white', 'green', 'white']); // joins the mine where its side has more
+  expect(s.players.player.flow.green).toBe(3);
   await passTurn(page);
   await passTurn(page);
-  const s = await getState(page);
-  expect(s.sites.map((x) => x.controller)).toEqual(['player', 'player', null]);
-  expect(s.players.player.crystals.green).toBe(2); // 1 + 1
+  expect((await getState(page)).players.player.crystals).toEqual({ ...ZERO, green: 3 });
 });
 
 // ---------- AC10 ----------
@@ -377,7 +465,7 @@ test('AC10: Unique card limited to one on the battlefield; Borgo +1 Health', asy
 });
 
 // ---------- AC11 ----------
-test('AC11: Tunnel only while the enemy controls more sites', async ({ page }) => {
+test('AC11: Tunnel only while more mines are in the enemy color', async ({ page }) => {
   const hand = { playerHand: ['goblin-scrounger'], playerCrystals: { green: 5 } };
   let s = await start(page, { ai: false, setup: { ...hand } });
   let summons = (await legal(page)).filter((a) => a.type === 'summon');
@@ -389,6 +477,7 @@ test('AC11: Tunnel only while the enemy controls more sites', async ({ page }) =
     { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 7 },
   ] } });
   expect(s.sites.map((x) => x.controller)).toEqual(['opponent', null, 'player']);
+  expect(s.sites.map((x) => x.color)).toEqual(['blue', 'white', 'green']);
   summons = (await legal(page)).filter((a) => a.type === 'summon');
   expect(summons.some((a) => a.row === 3 && a.col === 3)).toBe(false); // 1 vs 1: equal
 
@@ -649,8 +738,9 @@ test('AC16: Commander damage equals Attack and never resets', async ({ page }) =
     setup: {
       playerDeck: SHARDS, opponentDeck: SHARDS,
       playerHand: ['battle-cry'],
-      playerCrystals: { purple: 7 },
       board: [
+        { cardId: 'dwarf-miner', owner: 'player', row: 3, col: 7 },
+        { cardId: 'dwarf-miner', owner: 'player', row: 5, col: 7 },
         { cardId: 'queen-brunhilda-stonebeard', owner: 'player', row: 2, col: 3 },
         { cardId: 'goblin-scrapper', owner: 'player', row: 2, col: 5 },
       ],
@@ -671,6 +761,7 @@ test('AC16: Commander damage equals Attack and never resets', async ({ page }) =
   await passTurn(page);
   s = await getState(page);
   expect(s.players.opponent.health).toBe(13); // never resets
+  expect(s.players.player.crystals).toEqual({ ...ZERO, purple: 4 }); // flow from 2 Miners pays Battle Cry (4)
   expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
   await done(page);
   expect((await act(page, { type: 'attack', creatureUid: queen, target: { commander: 'opponent' } })).ok).toBe(true);
@@ -685,7 +776,7 @@ test('AC17: Fireball deals 3 damage and can be paid with any color', async ({ pa
     ai: false,
     playerCommander: 'grubnak',
     opponentCommander: 'borgo',
-    setup: { playerHand: ['fireball'], playerCrystals: { blue: 5 }, board: [{ cardId: 'shieldbeard', owner: 'opponent', row: 3, col: 4 }] },
+    setup: { playerHand: ['fireball'], playerCrystals: { blue: 3 }, board: [{ cardId: 'shieldbeard', owner: 'opponent', row: 3, col: 4 }] },
   });
   expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'fireball'), target: { row: 3, col: 4 } })).ok).toBe(true);
   s = await getState(page);
@@ -705,10 +796,21 @@ test('AC17: only one Crystal card per turn', async ({ page }) => {
   expect((await getState(page)).players.player.crystals.green).toBe(1);
 });
 
-test('AC17: upgrades cost 6, one per creature; Heavy Armor adds +3 Health', async ({ page }) => {
+test("AC17: Prospector's Prayer costs 1 and gives 3 own-color crystals only when behind on mines", async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { playerHand: ['prospectors-prayer'], playerCrystals: { white: 1 } } });
+  expect((await act(page, { type: 'cast', uid: s.players.player.hand[0].uid })).ok).toBe(false); // 0 vs 0 mines
+  s = await newMatch(page, { ai: false, setup: {
+    playerHand: ['prospectors-prayer'], playerCrystals: { white: 1 },
+    board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1 }],
+  } });
+  expect((await act(page, { type: 'cast', uid: s.players.player.hand[0].uid })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals).toEqual({ ...ZERO, green: 3 });
+});
+
+test('AC17: upgrades cost 3 / 3 / 5 / 8 paid like creatures, one per creature; Heavy Armor adds +3 Health', async ({ page }) => {
   let s = await start(page, {
     ai: false,
-    setup: { playerCrystals: { green: 12 }, board: [
+    setup: { playerCrystals: { green: 6 }, board: [
       { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 },
       { cardId: 'goblin-slinger', owner: 'player', row: 6, col: 6 },
     ] },
@@ -718,7 +820,7 @@ test('AC17: upgrades cost 6, one per creature; Heavy Armor adds +3 Health', asyn
   s = await getState(page);
   expect(at(s, 6, 3).attack).toBe(3);
   expect(at(s, 6, 3).upgrade).toBe('sharpened-weapons');
-  expect(s.players.player.crystals.green).toBe(6);
+  expect(s.players.player.crystals.green).toBe(3);
   expect((await legal(page)).some((x) => x.type === 'upgrade' && x.creatureUid === uid)).toBe(false);
   expect((await act(page, { type: 'upgrade', creatureUid: uid, upgrade: 'heavy-armor' })).ok).toBe(false);
   expect((await act(page, { type: 'upgrade', creatureUid: at(s, 6, 6).uid, upgrade: 'heavy-armor' })).ok).toBe(true);
@@ -726,6 +828,15 @@ test('AC17: upgrades cost 6, one per creature; Heavy Armor adds +3 Health', asyn
   expect(at(s, 6, 6).maxHealth).toBe(5);
   expect(at(s, 6, 6).health).toBe(5);
   expect(s.players.player.crystals.green).toBe(0);
+  // off-color pays half: 6 white = 3 toward Sharpened Weapons; 9 white (= 4) is not enough for Veteran (5)
+  s = await newMatch(page, { ai: false, setup: { playerCrystals: { white: 9 }, board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 }] } });
+  const u2 = at(s, 6, 3).uid;
+  expect((await act(page, { type: 'upgrade', creatureUid: u2, upgrade: 'veteran' })).ok).toBe(false);
+  expect((await act(page, { type: 'upgrade', creatureUid: u2, upgrade: 'sharpened-weapons' })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals).toEqual({ ...ZERO, white: 3 });
+  expect((await page.evaluate(async () => await window.oreheart.getConfig())).upgradeCosts).toEqual({
+    'sharpened-weapons': 3, 'heavy-armor': 3, veteran: 5, 'champions-crown': 8,
+  });
 });
 // ---------- AC18 ----------
 test('AC18: Fizzle counters Fireball; crystals still spent', async ({ page }) => {
@@ -735,9 +846,9 @@ test('AC18: Fizzle counters Fireball; crystals still spent', async ({ page }) =>
     opponentCommander: 'borgo',
     setup: {
       playerHand: ['fireball'],
-      playerCrystals: { green: 5 },
+      playerCrystals: { green: 3 },
       opponentHand: ['fizzle'],
-      opponentCrystals: { purple: 5 },
+      opponentCrystals: { purple: 3 },
       board: [{ cardId: 'shieldbeard', owner: 'opponent', row: 3, col: 4 }],
     },
   });
@@ -761,6 +872,17 @@ test('AC18: Fizzle counters Fireball; crystals still spent', async ({ page }) =>
   expect(s.priority).toBe('player');
 });
 
+test('AC18: Fizzle cannot cancel a spell costing more than 3', async ({ page }) => {
+  let s = await start(page, {
+    ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo',
+    setup: { playerHand: ['battle-cry'], playerCrystals: { green: 4 }, opponentHand: ['fizzle'], opponentCrystals: { purple: 3 } },
+  });
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.pendingResponse).toBe(null); // Battle Cry costs 4: no usable Instant, so no Respond window
+  expect(s.players.opponent.hand.some((c) => c.cardId === 'fizzle')).toBe(true);
+});
+
 test('AC18: Hold It! returns a summoned creature to hand', async ({ page }) => {
   let s = await start(page, {
     ai: false,
@@ -770,7 +892,7 @@ test('AC18: Hold It! returns a summoned creature to hand', async ({ page }) => {
       playerHand: ['goblin-scrapper'],
       playerCrystals: { green: 5 },
       opponentHand: ['hold-it'],
-      opponentCrystals: { purple: 6 },
+      opponentCrystals: { purple: 4 },
     },
   });
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrapper'), row: 7, col: 1 })).ok).toBe(true);
@@ -790,7 +912,7 @@ const respondSetup = {
   setup: {
     firstPlayer: 'opponent',
     opponentHand: ['fireball'],
-    opponentCrystals: { purple: 5 },
+    opponentCrystals: { purple: 3 },
     playerHand: ['shield-bubble'],
     playerCrystals: { green: 5 },
     board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 4 }],
@@ -1021,6 +1143,7 @@ test('AC25: tutorial steps start at summon and advance after a back-row summon',
     return await window.oreheart.getState();
   });
   expect(s.tutorial && s.tutorial.step).toBe('summon');
+  expect(s.players.player.crystals).toEqual(ZERO); // the first troop is the free Gatherer
   expect(s.activePlayer).toBe('player');
   expect(s.phase).toBe('deploy');
   await expect(page.getByLabel('Tutorial tip', { exact: true })).toBeVisible();
@@ -1276,7 +1399,7 @@ test('AC33: Gatherer swap moves one basic Gatherer from deck to hand, once per t
 });
 
 // ---------- AC34 ----------
-test('AC34: free Gatherer when broke', async ({ page }) => {
+test('AC34: free Gatherer when broke (flow 0, no mine in your color, no Gatherer)', async ({ page }) => {
   let s = await start(page, { ai: false, setup: { playerHand: ['goblin-scrounger', 'goblin-scrounger', 'goblin-scrapper'] } });
   const [g1, g2] = s.players.player.hand.filter((c) => c.cardId === 'goblin-scrounger').map((c) => c.uid);
   const summons = (await legal(page)).filter((a) => a.type === 'summon');
@@ -1285,7 +1408,7 @@ test('AC34: free Gatherer when broke', async ({ page }) => {
   expect((await act(page, { type: 'summon', uid: g1, row: 7, col: 1 })).ok).toBe(true);
   s = await getState(page);
   expect(at(s, 7, 1).cardId).toBe('goblin-scrounger');
-  expect(s.players.player.crystals).toEqual({ green: 0, blue: 0, purple: 0 });
+  expect(s.players.player.crystals).toEqual(ZERO);
   expect((await act(page, { type: 'summon', uid: g2, row: 7, col: 2 })).ok).toBe(false);
   // holding a site: not free
   s = await newMatch(page, { ai: false, setup: {
@@ -1293,6 +1416,13 @@ test('AC34: free Gatherer when broke', async ({ page }) => {
   } });
   expect(s.sites[0].controller).toBe('player');
   expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(false);
+  // crystals in the pool don't matter: with flow 0 it is still free
+  s = await newMatch(page, { ai: false, setup: {
+    playerHand: ['goblin-scrounger'], playerCrystals: { green: 5 },
+    board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1 }],
+  } });
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals).toEqual({ ...ZERO, green: 5 });
 });
 
 // ---------- AC35 ----------
@@ -1321,7 +1451,7 @@ test('AC35: a Gatherer summoned this turn can move but not attack', async ({ pag
 });
 
 // ---------- AC36 ----------
-test('AC36: income preview and site info', async ({ page }) => {
+test('AC36: flow preview, mine ring numbers and mine info', async ({ page }) => {
   await start(page, { ai: false, setup: {} });
   const preview = page.getByLabel('Your income next turn', { exact: true });
   await expect(preview).toHaveText(/^\s*\+0 next turn\s*$/);
@@ -1334,10 +1464,43 @@ test('AC36: income preview and site info', async ({ page }) => {
   const info = page.getByRole('dialog', { name: 'Crystal site' });
   await expect(info).toBeVisible();
   await expect(info).toContainText('Controlled by: You');
-  await expect(info).toContainText('Pays +3 per turn');
+  await expect(info).toContainText('Color: Green');
+  await expect(info).toContainText('Your flow: +3');
+  await expect(info).toContainText('Enemy flow: +0');
   await info.getByRole('button', { name: 'Close' }).click();
   await page.getByRole('button', { name: 'Crystal site, column 6', exact: true }).click();
   await expect(info).toContainText('Controlled by: Nobody');
+  await expect(info).toContainText('Color: White');
+  await info.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByLabel('Mine flow, column 2', { exact: true })).toContainText('+3');
+  // underdog bonus is part of the preview: 0 flow + 2 = "+2 next turn"
+  await newMatch(page, { ai: false, setup: { board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1 }] } });
+  await expect(preview).toHaveText(/^\s*\+2 next turn\s*$/);
+});
+
+// ---------- AC38 ----------
+test('AC38: swapping places with your own creature uses only the dragged creature\'s action', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { board: [
+    { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 2 },
+    { cardId: 'goblin-slinger', owner: 'player', row: 6, col: 3 },
+    { cardId: 'gnome-tinker', owner: 'opponent', row: 5, col: 2 },
+  ] } });
+  const a = at(s, 6, 2).uid;
+  const b = at(s, 6, 3).uid;
+  await done(page); // -> action
+  let acts = await legal(page);
+  expect(acts.some((x) => x.type === 'move' && x.creatureUid === a && x.row === 6 && x.col === 3)).toBe(true);
+  expect(acts.some((x) => x.type === 'move' && x.creatureUid === a && x.row === 5 && x.col === 2)).toBe(false); // never with enemies
+  expect((await act(page, { type: 'move', creatureUid: a, row: 6, col: 3 })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 6, 3).uid).toBe(a);
+  expect(at(s, 6, 2).uid).toBe(b);
+  expect(at(s, 6, 3).hasMoved).toBe(true);
+  expect(at(s, 6, 2).hasMoved).toBe(false);
+  acts = await legal(page);
+  expect(acts.some((x) => (x.type === 'move' || x.type === 'attack') && x.creatureUid === a)).toBe(false);
+  expect((await act(page, { type: 'move', creatureUid: b, row: 7, col: 2 })).ok).toBe(true);
+  expect(at(await getState(page), 7, 2).uid).toBe(b);
 });
 
 // ---------- AC37 ----------
