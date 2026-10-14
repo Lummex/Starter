@@ -1,6 +1,6 @@
 # Oreheart — Game Design Document
 
-Version 2 · October 2026 · Owner: Ken
+Oct 13, 2026 · @Ken
 
 ## Overview
 
@@ -9,7 +9,7 @@ Oreheart is a 3D comic-style fantasy card battle: Goblins, Gnomes and Dwarves fi
 - **Players:** you against a computer opponent (Easy, Normal, Hard) first; online player vs player comes in a later phase.
 - **You are the Commander:** your avatar sits in your Stronghold, reacts to the battle with funny emotes, and casts all your spells. You have 20 health; lose it and you lose.
 - **Audience:** kids, teens and adults. Easy to learn, hard to master.
-- **Platform:** Android phone, installed to the home screen (PWA), full screen, offline, portrait. Also playable with a mouse on a computer.
+- **Platform:** Android phone, installed to the home screen (PWA), full screen, offline, landscape (phone held sideways) for a wider view of the battlefield; it asks the player to rotate if the phone is upright. Also playable with a mouse on a computer.
 - **Version 2 note:** this replaces the first design. Directional attack arrows, walls and ballistas, and the Kingdom win are gone.
 
 ## Lore: the Age of the Last Commanders
@@ -44,7 +44,7 @@ The great heroes of the world fought each other until almost none were left. The
 
 ## Look and feel
 
-Everything is 3D in a comic-book style, beautiful and polished, laid out like the mockup image: enemy at the top, you at the bottom, the battle in the middle, your cards along the bottom edge.
+Everything is 3D in a comic-book style, beautiful and polished, in the style of the mockup image, but in landscape: the battlefield fills the center of a wide screen, viewed at an angle like a tabletop, with the enemy's Stronghold at the far side and yours at the near side. Your hand fans along the bottom edge, the enemy's card backs along the top edge, your crystal counters and deck pile on the left, and the phase, timer, Done button and Commander Health on the right.
 
 - **Battlefield:** a painted 3D sandbox scene (dirt, grass, rocks, and three giant glowing crystal formations). No visible checkerboard.
 - **Cards become characters:** a card dragged onto the battlefield flips, glows and rises up as a 3D character standing on that spot.
@@ -72,7 +72,7 @@ You move creatures by picking them up and dragging them, with a finger or the mo
 
 - **Drag to move:** press and hold a creature and it's lifted into the air, legs dangling and wriggling. The spaces it can reach glow. Drag it there and let go: it drops with a little dust puff and a thud. Let go anywhere invalid and it floats back to where it was.
 - **Drag to attack:** drag a creature onto an enemy it can reach and it charges in and attacks.
-- **Drag cards from your hand** onto your home rows to summon; the card flips and rises up as the 3D character.
+- **Drag cards from your hand** onto your back row to summon; the card flips and rises up as the 3D character.
 - **Haptics:** a short vibration on pick-up, drop, hits and defeats (on phones that support it; can be turned off in Settings).
 - **Tap to poke:** tapping a creature without dragging makes it react with a random personality animation: a victory dance, a flex, an angry stomp and shaking fist, a startled jump, a yawn. Poke it several times in a row and it gets increasingly annoyed. Each faction has its own style: Goblins cackle and rude-dance, Gnomes fiddle with gadgets, Dwarves stroke their beards and grumble.
 - **Tap to inspect:** double-tap a creature (or tap a card in your hand) to see its card full size with stats and ability.
@@ -81,22 +81,22 @@ You move creatures by picking them up and dragging them, with a finger or the mo
 
 Under the painted ground is an invisible 7 × 7 grid of spaces. Players never see the grid; when you select a creature, the spaces it can move to or attack glow softly on the ground.
 
-- **Rows 1–2 (top):** enemy home rows, where the enemy summons. The enemy Stronghold, with its Commander, stands at the center of row 1.
+- **Rows 1–2 (top):** enemy home rows. The enemy summons on row 1, its back row (row 2 only when row 1 is full). The enemy Stronghold, with its Commander, stands at the center of row 1.
 - **Rows 3–5:** the resource zone. Row 4 holds three resource sites at columns 2, 4 and 6. The sites can't be stood on.
-- **Rows 6–7 (bottom):** your home rows. Your Stronghold stands at the center of row 7.
+- **Rows 6–7 (bottom):** your home rows. You summon on row 7, your back row (row 6 only when row 7 is full), so new minions always have to march forward. Your Stronghold stands at the center of row 7.
 - **Spaces around a site:** the 8 spaces touching a site count toward controlling it. Spaces in columns 3 and 5 touch two sites and count for both.
 - **Attacking a Stronghold:** a creature must stand on a space next to the enemy Stronghold to attack the Commander inside.
 
 ```
 Board: invisible 7 x 7 grid (enemy at top, you at bottom)
    col: 1 2 3 4 5 6 7
-row 1:  . . . S . . .   <- enemy Stronghold + Commander (enemy home rows 1-2)
-row 2:  . . . . . . .
+row 1:  b b b S b b b   <- enemy Stronghold + Commander; b = enemy back row (enemy summons here)
+row 2:  . . . . . . .   <- enemy summons here only when row 1 is full
 row 3:  z z z z z z z   <- crystal zone
 row 4:  z C z C z C z   <- C = crystal site (cannot be stood on)
 row 5:  z z z z z z z   <- crystal zone
-row 6:  . . . . . . .
-row 7:  . . . S . . .   <- your Stronghold + Commander (your home rows 6-7)
+row 6:  . . . . . . .   <- you summon here only when row 7 is full
+row 7:  b b b S b b b   <- your Stronghold + Commander; b = your back row (you summon here)
 Columns 3 and 5 touch two sites and count for both.
 ```
 
@@ -110,7 +110,7 @@ The only resource is soul crystal (crystal for short), in three flashy colors: g
 - **Switching color:** when you take control of a site, its crystals burst and regrow in your faction's color (you pick, if your deck mixes factions), with sparkles and light beams.
 - **Income per turn:** each site you control gives 1 crystal, plus 2 more for each of your Gatherers next to it. Fighters count toward control but gather nothing extra.
 - **Commander's trickle:** your Stronghold gives +1 crystal of your faction's color every turn, so you're never stuck.
-- **Starting crystals:** 3 of your faction's color.
+- **Starting crystals:** 0. Your first turn's Stronghold trickle gives you 1 crystal: just enough for one weak (cost 1) troop. Both numbers are owner settings.
 - **Endless sites:** sites never run out; they can be mined forever. Long games are ended by deck-out damage and sudden death instead.
 - **Card costs:** creatures cost 1–7 crystals of their faction color; spells cost 4–12 crystals of any color.
 - **Look:** big, glossy, glowing gems with bright neon-saturated colors, light rays and floating sparkles.
@@ -119,8 +119,8 @@ The only resource is soul crystal (crystal for short), in three flashy colors: g
 
 **Never locked out.** A player who loses every site early always has ways back in:
 
-- **Underdog bonus:** if you control no sites at the start of your turn, your Stronghold gives +2 extra crystals that turn (on top of the normal +1).
-- **Tunnelers:** each faction has Gatherer creatures with the Tunnel ability: they can be summoned straight onto any empty space next to a crystal site instead of your home rows.
+- **Underdog bonus:** if you control no sites at the start of your turn **and the enemy controls at least one**, your Stronghold gives +2 extra crystals that turn (on top of the normal +1). It never applies while nobody holds a site, so it doesn't speed up the opening.
+- **Tunnelers:** each faction has Gatherer creatures with the Tunnel ability: when the enemy controls more sites than you, they can be summoned straight onto any empty space next to a crystal site instead of your back row.
 - **Comeback spells:** cheap spells built to break a lockout (see Prospector's Prayer and Tunnel Rush in the spell list).
 - **Ties freeze a site:** one creature sneaking in to tie the count is enough to stop the enemy's income from that site.
 
@@ -132,7 +132,7 @@ Three factions, each paying with its own crystal color: Goblins use green, Gnome
 | --- | --- | --- | --- |
 | Crystal color | Green | Blue | Purple |
 | Personality | Scrappy, sneaky, chaotic | Clever tinkerers and spark-mages | Tough, proud miners and warriors |
-| Playstyle | Cheap swarms, explosions, tricks | Gadgets, healing, ranged sparks | Big health, heavy hits, holding ground |
+| Playstyle | Cheap swarms, explosions, tricks | Gadgets, shields, ranged sparks | Big health, heavy hits, holding ground |
 | Strength | Numbers and speed of play | Support and surprises | Hard to kill |
 | Weakness | Fragile | Weak in close combat | Expensive |
 | Commander | Grubnak the Goblin Boss | Professor Sproingle | Thane Borgo Anvilbottom |
@@ -156,7 +156,7 @@ You pick your Commander before each match. Each faction has one starter Commande
 | Grubnak the Goblin Boss | Goblins | Starter | Goblin creatures cost 1 less crystal (minimum 1) |
 | Queen Skreeka the Shiny | Goblins | Booster pack | Gain 1 extra crystal whenever one of your creatures is defeated |
 | Professor Sproingle | Gnomes | Starter | Your spells cost 1 less crystal (minimum 1) |
-| Madame Sprocket | Gnomes | Booster pack | At the start of your turn, heal your most damaged creature by 1 |
+| Madame Sprocket | Gnomes | Booster pack | At the start of your turn, your creature with the lowest Health gets Shield 1 |
 | Thane Borgo Anvilbottom | Dwarves | Starter | Your creatures get +1 Health |
 | Old Grumblebeard the Unkillable | Dwarves | Booster pack | Your Commander starts with 25 Health instead of 20 |
 
@@ -167,7 +167,7 @@ The factory adds more unlockable Commanders over time in the same style.
 A creature card shows its cost, Attack, Health, movement and one special ability. Numbers stay low so the math is easy.
 
 - **Cost:** 1–7 of the faction's resource, top-left.
-- **⚔️ Attack** and **❤️ Health:** Attack 1–5, Health 2–9.
+- **⚔️ Attack** and **❤️ Health:** Attack 1–5, Health 2–6 (printed on the card; upgrades and abilities can raise it).
 - **Movement:** 1 space per turn; Ultra Rare and Collector characters can move 2.
 - **Role:** Gatherer or Fighter, shown by a pickaxe or sword badge.
 - **Special ability:** every creature has one, in one short line.
@@ -175,16 +175,18 @@ A creature card shows its cost, Attack, Health, movement and one special ability
 **Card types:**
 
 1. **Creatures:** played onto the battlefield, where they become 3D characters.
-2. **Spells:** cast by your Commander, who launches them from the Stronghold (a fireball arcs out of his hands, a heal rains down as light). Regular spells can be cast in any phase of your own turn. Instant spells (marked with a lightning bolt) can be cast at any time, even during the opponent's turn, for example to save a creature as it's attacked. Counterspells are Instants that cancel an enemy spell or summon as it happens.
+2. **Spells:** cast by your Commander, who launches them from the Stronghold (a fireball arcs out of his hands, a shield of light drops over a creature). Regular spells can be cast in any phase of your own turn. Instant spells (marked with a lightning bolt) can be cast at any time, even during the opponent's turn, for example to save a creature as it's attacked. Counterspells are Instants that cancel an enemy spell or summon as it happens.
 3. **Crystal cards:** free to play, they give you bonus soul crystals of your faction's color to summon bigger minions and cast spells sooner. You can play only one Crystal card per turn, during your Deploy phase, unless a Crystal Eater creature lets you play more, at a price.
 
 **Rarity** (a gem on the card): Common (gray), Uncommon (bronze), Rare (silver), Ultra Rare (gold), Collector (shimmering rainbow prism). The best cards are the hardest to get.
 
-**Deck rules:** 50 cards (the owner can change this). Common and Uncommon cards have no copy limit; Rare, Ultra Rare and Collector cards are limited to 3 copies each. Especially powerful cards are marked Unique: you can have only one of that card on your battlefield at a time (extra copies wait in your hand). A deck can hold at most 10 Crystal cards in total, whatever their rarity. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander (which sets your faction) and your deck.
+**Deck rules:** 50 cards (the owner can change this). Common and Uncommon cards have no copy limit; Rare, Ultra Rare and Collector cards are limited to 3 copies each. Especially powerful cards are marked Unique: you can have only one of that card on your battlefield at a time (extra copies wait in your hand). A deck can hold at most 10 Crystal cards in total, whatever their rarity.
+
+**Starter decks** (one per faction, 50 cards): 40 creatures, 6 spells (including 1 counterspell, Fizzle) and 4 Crystal cards. Mostly Commons; the owner can change the mix in the settings file. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander (which sets your faction) and your deck.
 
 ## Turns and phases
 
-Every turn runs through the same phases, each with its own timer (30 seconds to start; the owner can change it in the Owner Console). A burning rope creeps across the screen in the last 10 seconds of a phase; when it burns out, the phase ends automatically.
+Every turn runs through the same phases, each with its own timer (Deploy 30 seconds, Action 45 seconds to start; the owner can change each in the Owner Console). A burning rope creeps across the screen in the last 10 seconds of a phase; when it burns out, the phase ends automatically.
 
 **Setup:** pick your Commander and deck. The deck is shuffled and you draw 5 cards; once, you may shuffle back any you don't want and redraw them. A coin flip decides who goes first; the first player skips their first draw, and the second player draws 1 extra card.
 
@@ -192,11 +194,10 @@ Every turn runs through the same phases, each with its own timer (30 seconds to 
 
 **The phases of a turn:**
 
-1. **Draw phase** (automatic): draw 1 card (no hand limit) and collect crystals from your Stronghold and the sites you control.
-2. **Deploy phase** (timed): drag creature cards onto empty spaces in your home rows, and cast spells (Regular spells work in any phase of your turn, Instants at any time). If enemies fill your home rows, you can summon onto any empty space within 2 spaces of your Stronghold; if there's none, the card waits in your hand.
-3. **Movement phase** (timed): drag your creatures to move them. Creatures placed this turn can't move or attack this turn unless their ability says so.
-4. **Attack phase** (timed): drag your creatures onto enemies, or the enemy Stronghold, to attack. Each creature attacks once.
-5. **End phase** (automatic): end-of-turn abilities happen, then it's the other player's turn.
+1. **Draw phase** (automatic): all your creatures heal back to full Health, you draw 1 card (no hand limit), and you collect crystals from your Stronghold and the sites you control.
+2. **Deploy phase** (timed): drag creature cards onto empty spaces in your back row, play up to one Crystal card, upgrade creatures, and cast spells (Regular spells work in any phase of your turn, Instants at any time). If your back row is full, you can summon onto the row in front of it; if both are full, the card waits in your hand.
+3. **Action phase** (timed): each of your creatures either **moves or attacks**, never both. Drag it to an empty space to move, or onto an enemy (or the enemy Stronghold) to attack. Creatures placed this turn can't act unless their ability says so.
+4. **End phase** (automatic): end-of-turn abilities happen, then it's the other player's turn.
 
 You can tap a "Done" button to finish a phase early.
 
@@ -212,15 +213,19 @@ You can tap a "Done" button to finish a phase early.
 
 Attacks subtract Attack from Health; a creature at 0 Health is defeated. Every creature can attack in any direction: up, down, left, right or diagonal.
 
+**Fights are simultaneous:** in melee, both creatures hit each other at the same time, so a defender strikes back even if the hit defeats it. A ⚔️1 ❤️2 beats a ⚔️1 ❤️1 and survives; two ⚔️1 ❤️1 creatures defeat each other.
+
 - **Melee:** attack an enemy on any of the 8 spaces around you.
 - **Ranged:** creatures with the Ranged ability can also hit an enemy (or the enemy Stronghold) exactly 2 spaces away in a straight or diagonal line, if nothing stands in between; they can still attack adjacent enemies in melee. Guard only affects melee attacks.
-- **Strike back:** a creature hit in melee that survives strikes back with its own Attack. Ranged attacks get no strike back. Type advantage also applies to strike backs.
-- **Damage stays** until healed (by spells or healing abilities). Healing never raises a creature or Commander above its starting Health.
+- **Strike back:** a creature hit in melee always strikes back with its own Attack, at the same moment, even if the hit defeats it. Ranged attacks get no strike back. Type advantage also applies to strike backs.
+- **Creatures heal every turn:** a creature's damage lasts until the start of its owner's next turn, then it heals back to full. A ⚔️1 ❤️2 is always a ⚔️1 ❤️2 again on your next turn. Several of your creatures can still team up on one enemy in the same turn, and a creature hurt while attacking stays hurt through the opponent's turn. A damaged creature shows its current Health in red.
+- **Commander damage stays:** the Commander never heals by itself; only cards that say so (like Second Wind) restore its Health, never above its starting Health.
+- **Shield X:** the next X damage to that creature is blocked; a shield lasts until the start of your next turn.
 - **Type advantage:** +1 Attack when Dwarves hit Goblins, Goblins hit Gnomes, or Gnomes hit Dwarves.
 - **Attacking the Commander:** a creature next to the enemy Stronghold can attack the Commander, removing Health equal to its Attack. The Commander never strikes back.
 - **Defeated creatures** go to the discard pile and lose any upgrades.
 
-**Example:** a Dwarf Shieldbeard (⚔️2 ❤️4) attacks a Goblin Scrapper (⚔️2 ❤️3). Dwarves beat Goblins, so it hits for 3: the Scrapper drops to 0 and is defeated, so it can't strike back.
+**Example:** a Dwarf Shieldbeard (⚔️2 ❤️4) attacks a Goblin Scrapper (⚔️2 ❤️3). Dwarves beat Goblins, so it hits for 3 and the Scrapper is defeated, but it strikes back at the same moment for 2. The Shieldbeard survives at ❤️2 and heals back to ❤️4 at the start of its owner's next turn.
 
 ## Upgrades
 
@@ -229,7 +234,7 @@ Upgrades are powerful but expensive, a big decision rather than a routine one. D
 | Upgrade | Cost (your faction's resource) | Effect |
 | --- | --- | --- |
 | Sharpened Weapons | 6 | ⚔️ +1 |
-| Heavy Armor | 6 | ❤️ +3 (and heals 3) |
+| Heavy Armor | 6 | ❤️ +3 |
 | Veteran | 10 | Moves 2 spaces |
 | Champion's Crown | 15 | ⚔️ +2 and ❤️ +3 |
 
@@ -260,19 +265,19 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 | Goblin Bomber | Rare | Fighter | 3 | 2 | 2 | 1 | Ka-boom: when defeated, deals 2 damage to all adjacent enemies |
 | Goblin Sneak | Rare | Fighter | 3 | 3 | 2 | 1 | Sneaky: enemies can't strike back at it |
 | Wolf Rider | Ultra Rare | Fighter | 4 | 3 | 4 | 2 | Can act the turn it's played |
-| Grubnak's Big Boss Troll | Collector | Fighter | 6 | 5 | 7 | 2 | Unique. Rally: all your Goblins get +1 Attack |
+| Grubnak's Big Boss Troll | Collector | Fighter | 6 | 5 | 6 | 2 | Unique. Rally: all your Goblins get +1 Attack |
 
 **Gnomes (blue crystals)**
 
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Gnome Prospector | Common | Gatherer | 1 | 1 | 2 | 1 | Gathers +2 next to a site you control; Tunnel: can be summoned onto any empty space next to a crystal site |
-| Gnome Tinker | Common | Fighter | 2 | 1 | 3 | 1 | Fix-it: heals 1 Health from each adjacent ally at the start of your turn |
+| Gnome Tinker | Common | Fighter | 2 | 1 | 3 | 1 | Fix-it: at the start of your turn, each adjacent ally gets Shield 1 |
 | Spark Gnome | Common | Fighter | 2 | 2 | 2 | 1 | Ranged |
 | Clockwork Beetle | Rare | Fighter | 3 | 2 | 5 | 1 | Armored: takes 1 less damage from every hit |
 | Gnome Illusionist | Rare | Fighter | 3 | 2 | 3 | 1 | Blink: once, swap places with any of your creatures |
 | Gyrocopter Ace | Ultra Rare | Fighter | 4 | 3 | 3 | 2 | Flying: moves over other creatures; Ranged |
-| The Great Steam Golem | Collector | Fighter | 7 | 5 | 8 | 2 | Unique. Overload: its attack also hits every enemy next to the target for 1 |
+| The Great Steam Golem | Collector | Fighter | 7 | 5 | 6 | 2 | Unique. Overload: its attack also hits every enemy next to the target for 1 |
 
 **Dwarves (purple crystals)**
 
@@ -282,9 +287,9 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 | Shieldbeard | Common | Fighter | 2 | 2 | 4 | 1 | Guard: adjacent enemies must attack it first |
 | Axe Thrower | Common | Fighter | 2 | 2 | 3 | 1 | Ranged |
 | Ironhammer Berserker | Rare | Fighter | 3 | 3 | 4 | 1 | Rage: +2 Attack while below half Health |
-| Brewmaster | Rare | Fighter | 3 | 2 | 4 | 1 | Hearty Ale: heals 1 Health from each adjacent ally at the start of your turn |
-| Ram Rider | Ultra Rare | Fighter | 5 | 4 | 5 | 2 | Charge: +2 Attack if it moved 2 spaces this turn |
-| Queen Brunhilda Stonebeard | Collector | Fighter | 7 | 5 | 9 | 2 | Unique. Unbreakable: never takes more than 3 damage from one hit |
+| Brewmaster | Rare | Fighter | 3 | 2 | 4 | 1 | Hearty Ale: at the start of your turn, each adjacent ally gets +1 Health until your next turn |
+| Ram Rider | Ultra Rare | Fighter | 5 | 4 | 5 | 2 | Charge: can move and attack in the same turn |
+| Queen Brunhilda Stonebeard | Collector | Fighter | 7 | 5 | 6 | 2 | Unique. Unbreakable: never takes more than 3 damage from one hit |
 
 **Commander spells** (cast from your Stronghold; cost soul crystals of any color)
 
@@ -295,7 +300,7 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 | Fireball | Rare | Regular | 5 | 3 damage to one creature or the enemy Commander |
 | Battle Cry | Rare | Regular | 7 | All your creatures get +1 Attack this turn |
 | Meteor Strike | Ultra Rare | Regular | 12 | 2 damage to every creature in a 3 × 3 area |
-| Healing Light | Common | Instant | 4 | Heal one of your creatures by 3 |
+| Healing Light | Common | Instant | 4 | Heal one of your creatures by 3 right now (useful during the enemy's turn, before your creatures heal) |
 | Shield Bubble | Uncommon | Instant | 5 | Your creature takes no damage from the next hit this turn |
 | Second Wind | Ultra Rare | Instant | 9 | Your Commander heals 4 |
 | Fizzle | Uncommon | Counterspell | 5 | Cancel an enemy spell that costs 5 or less |
@@ -318,7 +323,7 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 | Card | Faction | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Shard Guzzler | Goblins | Uncommon | Gatherer | 2 | 1 | 4 | 1 | Crystal Eater: each extra Crystal card you play this turn deals 2 damage to it |
-| Overclocked Conduit | Gnomes | Rare | Gatherer | 3 | 1 | 4 | 1 | Crystal Eater: each extra Crystal card you play this turn means it can't move or attack until your next turn, and it loses 1 Health |
+| Overclocked Conduit | Gnomes | Rare | Gatherer | 3 | 1 | 4 | 1 | Crystal Eater: each extra Crystal card you play this turn means it can't move or attack until your next turn, and it takes 1 damage |
 | Crystal-Drunk Delver | Dwarves | Rare | Gatherer | 3 | 2 | 5 | 1 | Crystal Eater: each extra Crystal card you play this turn gives it -1 Attack for the rest of the match |
 
 If a Crystal Eater is defeated by its own drawback, its Commander gasps dramatically.
@@ -349,7 +354,9 @@ Once online play exists, the owner changes these in the Owner Console; until the
 
 **Helper features:** selecting a creature makes its move and attack spaces glow; an optional hint button and undo for the last move (single-player only; online matches have no hints or undo).
 
-**Screens:** Main menu, Play (pick Commander, deck and difficulty), Collection, Deck Builder, Shop (packs), How to Play (a guided tutorial match), Settings (sound, music, reset progress).
+**Screens:** Main menu, Play (pick Commander, deck and difficulty), Collection, Deck Builder, Shop (packs), Tutorial (a guided match), Rules (how to play, with pictures), Settings (sound, music, reset progress).
+
+**Tutorial match:** offered the first time the game starts, and any time from the Tutorial button. A short, fixed match against a harmless opponent (same Commander and cards every time, no timers) where pop-up tips walk you through each step in order: summon a troop on your back row, march it forward, take a crystal site and watch it change color, spend crystals, fight an enemy (simultaneous hits, healing next turn), cast a spell, and finally attack the enemy Commander until they retreat. Each tip waits until you've done the step. It can be skipped and replayed.
 
 ## Built to grow: expansions, seasons and leagues
 
