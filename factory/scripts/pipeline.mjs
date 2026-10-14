@@ -194,7 +194,17 @@ function deploy(prod) {
   const token = process.env.VERCEL_TOKEN;
   if (!token) throw new Error('VERCEL_TOKEN secret is missing.');
   fs.rmSync(path.join(appDir, 'node_modules'), { recursive: true, force: true });
-  const args = ['--yes', 'vercel@latest', 'deploy', '--yes', '--token', token];
+  // Only the factory deploys projects: turn off Vercel's own auto-deploy on every GitHub push
+  // (otherwise old project folders show up in Vercel as "Deployment failed").
+  const vjFile = path.join(appDir, 'vercel.json');
+  let vj = {};
+  try { if (fs.existsSync(vjFile)) vj = JSON.parse(fs.readFileSync(vjFile, 'utf8')) || {}; } catch { vj = null; }
+  if (vj && vj.git?.deploymentEnabled !== false) {
+    vj.git = { ...(vj.git || {}), deploymentEnabled: false };
+    fs.writeFileSync(vjFile, JSON.stringify(vj, null, 2) + '\n');
+    git('add', '-f', path.join(appRel, 'vercel.json'));
+  }
+  const args =['--yes', 'vercel@latest', 'deploy', '--yes', '--token', token];
   if (prod) args.push('--prod');
   const r = sh('npx', args, { cwd: appDir, check: false });
   const out = (r.stdout || '') + '\n' + (r.stderr || '');
