@@ -50,7 +50,8 @@ const total = (pl: any) => pl.crystals.green + pl.crystals.blue + pl.crystals.pu
 const flowTotal = (f: any) => f.green + f.blue + f.purple + f.white;
 const goesFree = (s: any, p: Side, card: any) =>
   card.id === basicGatherer(card.faction) && flowTotal(s.players[p].flow) === 0 && sitesControlled(s, p) === 0 &&
-  !s.board.creatures.some((c: any) => c.owner === p && isGatherer(CARDS[c.cardId]));
+  !s.board.creatures.some((c: any) => c.owner === p && isGatherer(CARDS[c.cardId])) &&
+  (total(s.players[p]) === 0 || sitesControlled(s, p === 'player' ? 'opponent' : 'player') > 0);
 export function creatureCost(s: any, p: Side, card: any) {
   if (goesFree(s, p, card)) return 0;
   let c = card.cost;

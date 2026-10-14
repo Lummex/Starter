@@ -290,7 +290,7 @@ describe('Instants and counterspells', () => {
     s = act(s, { type: 'respond', uid: uidOf(s, 'opponent', 'hold-it') });
     expect(s.board.creatures.length).toBe(0);
     expect(s.players.player.hand.map((h: any) => h.cardId)).toEqual(['goblin-scrounger']);
-    expect(s.players.player.crystals.green).toBe(1); // the broke player's Gatherer was free
+    expect(s.players.player.crystals.green).toBe(0); // pool crystals present, so the Gatherer was paid (not free); Hold It! does not refund
   });
 });
 

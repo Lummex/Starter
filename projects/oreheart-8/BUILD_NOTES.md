@@ -9,6 +9,10 @@ Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm te
 - **AI**: swaps, spreads Fighters off crowded mines, half-value upgrade affordability.
 - Tests: brief examples (a)–(e), half rounding, two-mine creature, swap, costs, Prayer, underdog.
 
+## Round 2 fixes
+- Free Gatherer now also requires an empty pool **or** an enemy-held mine (so a player holding crystals with no opposing mine pays the normal cost; still free with 0 crystals, and still free with crystals when the enemy holds a mine).
+- Unresolved (believed inconsistent with spec/other tests): AC12 expects no move onto an own creature directly ahead (conflicts with swapping, 3.8); AC14 expects 1 damage from a Scrapper (Attack 2); AC16 attacks after one `done` too many in the turn flow.
+
 ## Notes / gaps
 - The spec example "1 blue + 8 green pays a 5-cost Gnome, leaving 1 green" conflicts with its own rounding rule (1 + 8/2 = 5 uses all 8 green); the engine follows the rule.
 - A swap counts as a move for auto-skip, as the spec says "any move".
