@@ -45,3 +45,9 @@ No rules were changed to special-case these.
 I re-ran both tests and traced the failures. The engine follows the spec, so I changed no rules.
 - AC14: a Scrapper (2 Attack) hitting an opponent Shieldbeard (4 Health, no Health bonus from Grubnak) leaves it at 2. The test expects 3, but it later expects the creature to heal back to 4, which needs 2 damage.
 - AC16: the test calls `passTurn` (2 `done`s) twice from the Action phase. Those 4 `done`s end the player's turn and the opponent's turn and leave the player in Action. The test's next `done` then ends the player's turn, so the following attack is correctly refused.
+
+## Round 4 triage (AC12, AC14, AC16)
+Re-ran the acceptance file locally; the engine follows the spec, so no rules changed.
+- AC12 expects a move onto a space held by an own creature to be absent from `legalActions()`, but AC38 and the spec's swapping rule require that swap to be a legal `move`.
+- AC14: enemy Shieldbeard (4 Health) hit by a 2-Attack Scrapper (no type advantage) is at 2, not 3.
+- AC16: the test's four `done`s leave the player in Action on turn 3; its next `done` ends the turn, so the following attack is correctly refused.
