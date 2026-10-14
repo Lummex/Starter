@@ -1,6 +1,6 @@
 # Automated check results
 
-78 of 78 checks passed after 2 build round(s).
+90 of 90 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -8,6 +8,9 @@
 - ✅ portrait phone viewport › AC24: upright phone shows the rotate message
 - ✅ landscape layout details › AC43: hovering a hand card slides it up out of the fan
 - ✅ landscape layout details › AC44: deck piles on each player's right and Commander hearts
+- ✅ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
+- ✅ hearts and turn display 740x360 › AC51: Commander hearts never cover creature labels; turn display top-right (740x360)
+- ✅ hearts and turn display 667x375 › AC51: Commander hearts never cover creature labels; turn display top-right (667x375)
 - ✅ AC1: main menu has exactly Play, Tutorial, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -40,9 +43,9 @@
 - ✅ AC15: Gnome Tinker gives Shield 1, which blocks exactly 1 damage
 - ✅ AC16: Commander damage equals Attack and never resets
 - ✅ AC17: Fireball deals 3 damage and can be paid with any color
-- ✅ AC17: only one Crystal card per turn
+- ✅ AC17: only one Crystal card per round; it goes to the Bank
 - ✅ AC17: Prospector's Prayer costs 1 and gives 3 own-color crystals only when behind on mines
-- ✅ AC17: upgrades cost 3 / 3 / 5 / 8 paid like creatures, one per creature; Heavy Armor adds +3 Health
+- ✅ AC17: crystal-bought upgrades are gone
 - ✅ AC18: Fizzle counters Fireball; crystals still spent
 - ✅ AC18: Fizzle cannot cancel a spell costing more than 3
 - ✅ AC18: Hold It! returns a summoned creature to hand
@@ -65,14 +68,14 @@
 - ✅ AC27: summoning spends exactly the new costs
 - ✅ AC28: phase banner appears when a phase begins
 - ✅ AC28: auto-skipped phases show no banner; ENEMY TURN does
-- ✅ AC29: moves left ignores Instants, upgrades and the Gatherer swap
+- ✅ AC29: moves left ignores Instants and the Miner swap
 - ✅ AC29: with auto-skip on, an empty turn passes by itself; a phase with moves left does not
 - ✅ AC30: creature labels show Attack, Health, Movement and darken after acting
 - ✅ AC31: Moves still available pop-up — Go back and Continue
 - ✅ AC31: no pop-up on timeout, and Settings can turn it off
 - ✅ AC32: countdown appears only in the last 10 seconds; 0 ends just the phase
 - ✅ AC33: Gatherer swap moves one basic Gatherer from deck to hand, once per turn
-- ✅ AC34: free Gatherer when broke (mined nothing, no mine in your color, no Gatherer)
+- ✅ AC34: free Miner only when Flow + Bank cannot pay and no Miner is on the battlefield
 - ✅ AC35: a Gatherer summoned this turn can move or mine but not attack; a Fighter can do nothing
 - ✅ AC36: flow preview, mine ring numbers and mine info
 - ✅ AC38: swapping places with your own creature uses only the dragged creature's action
@@ -80,3 +83,12 @@
 - ✅ AC40: 13 x 7 board; 3 random, mirrored mines from the seed; fixed tutorial layout
 - ✅ AC41: the moves pop-up names miners that have not mined
 - ✅ AC42: Ranged creatures show the bow icon on the board and in the hand
+- ✅ AC45: Miner names, roles and badges
+- ✅ AC46: Smith Miner upgrades stack, persist and heal; summoned Smith is a Miner
+- ✅ AC46: dropping a Smith Miner on your creature asks +1 Attack or +1 Health
+- ✅ AC47: Crystal Bank persists, has no cap and is spent after Flow
+- ✅ AC48: playing a Crystal card never ends the phase or turn
+- ✅ AC49: Respond window opens even when the counterspell is unaffordable
+- ✅ AC49: "Crystal Cluster + Fizzle" plays both and cancels the enemy spell
+- ✅ AC49: a Crystal card played alone in the Respond window keeps it open and funds the counterspell
+- ✅ AC50: Smith Miners never Tunnel; the Tunnel! tag shows only when behind

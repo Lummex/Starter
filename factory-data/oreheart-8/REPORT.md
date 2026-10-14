@@ -1,23 +1,23 @@
 ## What was built
-Oreheart, a browser card battle: Goblins, Gnomes and Dwarves fight over three crystal mines on a 13×7 board. You play one full match against a computer opponent (Easy or Normal), or a guided tutorial. This round added a "mine" action, random mirrored mine positions, and new on-screen touches (ranged-weapon icons, Commander hearts, deck piles, hand pop-out).
+Oreheart is a comic-style fantasy card battle you play in the browser. You pick a Commander (Goblins, Gnomes or Dwarves) and fight a computer opponent over three crystal mines. This round added Smith Miners (cards that permanently strengthen your creatures), a Crystal Bank for saved crystals, a 12-second "Respond" window for counter-spells, and a rewritten tutorial and Rules page.
 
 ## Try these things
-- Open the preview and press **Tutorial**. Follow the tips: summon a miner, march it to a mine, drag it onto the mine, and watch the mine change color.
-- Press **Play**, pick a Commander, choose Easy, and play a match. Check that the computer takes its turns.
-- Drag a creature next to a mine onto the mine. It should glow amber, and your crystals should show up next turn.
-- Hover over a card in your hand (on desktop). It should slide up.
-- Tap a mine and read its info box.
-- Turn your phone sideways. Upright, it should ask you to rotate.
+- Open the preview and tap **Start Tutorial**. Follow the tips through summoning, mining and the new Smith step.
+- Play a normal match (Play, then pick a Commander). Drag a Miner card onto your back row, then drag it next to a mine and onto the mine to mine crystals.
+- Drag a **Smith Miner** card onto one of your own creatures. A "Smith upgrade" box should offer +1 Attack or +1 Health.
+- Check the crystal counters. They should read "Flow N · Bank M" after you play a Crystal card.
+- Open **Rules** and confirm it talks about Miners, Bank, and Smith, and never about "Gatherers".
+- Turn your phone upright. It should ask you to rotate.
 
 ## Automated checks
-78 of 78 checks passed, after 2 build rounds. They cover the rules, the menus, the tutorial start, the phone screen sizes and the new mining and board features.
+90 of 90 checks passed. They cover rules, the computer opponent, the tutorial, and layout on three small landscape phone sizes. No page errors were reported.
 
 ## Things to know
-- I could only see two screenshots: the welcome pop-up on desktop and the "rotate your phone" screen on a portrait phone. Both look fine. I saw no screenshots of an actual match, so how the board, hand and hearts look is not visually confirmed. Please check that yourself in the preview.
-- No page errors were recorded.
+- The screenshots only show the welcome pop-up (desktop) and the "please rotate" screen (phone). Neither shows a match, so I couldn't visually check the board, cards or hearts. The tests say these fit on the phone sizes.
+- The welcome pop-up is dimmed over the menu, which is intended.
+- The builder says the spacing between Commander hearts and creature labels was checked by hand only at one phone size. The automated tests did cover three sizes.
 - Visuals are simple placeholders, and there is no sound.
-- The builder's notes say a "free starter miner" rule also requires an empty crystal pool. This is a small departure from the spec.
-- Earlier builder notes say several older test expectations conflicted with the spec. Those tests are no longer in the final results.
+- The builder flagged that, in the Respond pop-up, playing a Crystal card on its own is only possible through the test tools. The pop-up offers only the combined "Crystal + Spell" buttons.
 
 ## Recommendation
-Ready to approve, once you have looked at a real match in the preview. The screenshots did not show one.
+Ready to approve
