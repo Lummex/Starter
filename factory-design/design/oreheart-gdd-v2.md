@@ -89,7 +89,7 @@ Under the painted ground is an invisible 7 × 7 grid of spaces. Players never se
 - **Rows 1–2 (top):** enemy home rows. The enemy summons on row 1, its back row (row 2 only when row 1 is full). The enemy Stronghold, with its Commander, stands at the center of row 1.
 - **Rows 3–5:** the resource zone. Row 4 holds three resource sites at columns 2, 4 and 6. The sites can't be stood on.
 - **Rows 6–7 (bottom):** your home rows. You summon on row 7, your back row (row 6 only when row 7 is full), so new minions always have to march forward. Your Stronghold stands at the center of row 7.
-- **Spaces around a site:** the 8 spaces touching a site count toward controlling it. Spaces in columns 3 and 5 touch two sites and count for both.
+- **Spaces around a mine:** only the 8 spaces touching a mine count as being at it (see Crystal Flow). A creature on a space touching two mines counts at only one.
 - **Attacking a Stronghold:** a creature must stand on a space next to the enemy Stronghold to attack the Commander inside.
 
 ```
@@ -102,34 +102,38 @@ row 4:  z C z C z C z   <- C = crystal site (cannot be stood on)
 row 5:  z z z z z z z   <- crystal zone
 row 6:  . . . . . . .   <- you summon here only when row 7 is full
 row 7:  b b b S b b b   <- your Stronghold + Commander; b = your back row (you summon here)
-Columns 3 and 5 touch two sites and count for both.
+Spaces in columns 3 and 5 next to row 4 touch two mines; a creature there counts at only one.
 ```
 
-The drawing shows the invisible spaces; in the game the ground is painted. Each site's crystals glow in the color of whoever controls it.
+The drawing shows the invisible spaces; in the game the ground is painted. Each mine's crystals glow in the color of the side with more creatures around it (white on a tie).
 
-## Crystals and site control
+## Crystals and site control: Crystal Flow
 
-The only resource is soul crystal (crystal for short), in three flashy colors: green for Goblins, blue for Gnomes, purple for Dwarves. You earn crystals by controlling the three crystal sites, and a site you control glows in your color and produces your crystals.
+The only resource is soul crystal (crystal for short), in three flashy colors (green for Goblins, blue for Gnomes, purple for Dwarves) plus neutral white. Crystals come from **Crystal Flow**: your creatures standing at the three mines (crystal sites) keep crystals flowing to you every turn.
 
-- **Control:** at the start of your turn, you control a site if you have more creatures on its 8 surrounding spaces than the enemy. Ties mean nobody controls it.
-- **Switching color:** when you take control of a site, its crystals burst and regrow in your faction's color (you pick, if your deck mixes factions), with sparkles and light beams.
-- **Income per turn:** each site you control gives 1 crystal, plus 2 more for each of your Gatherers next to it. Fighters count toward control but gather nothing extra.
-- **Starting crystals:** 1, enough for one Gatherer. The Stronghold produces nothing; after the first turn, crystals only come from sites, Gatherers and Crystal cards. Owner setting.
-- **Income preview:** next to your crystal counter you always see what you'll collect next turn (for example "+3 next turn"); tapping a site shows who controls it and what it pays.
-- **Endless sites:** sites never run out; they can be mined forever. Long games are ended by deck-out damage and sudden death instead.
-- **Card costs:** creatures cost 1–13 crystals of their faction color (see Cards for the formula); spells cost 4–12 crystals of any color.
+- **At a mine:** only the 8 spaces directly around a mine count (one space out in every direction, diagonals included). A creature touching two mines (the spaces between them) counts at only one: the mine where its side has more creatures (if equal, the one with fewer of your creatures already producing).
+- **Flow per creature:** each of your creatures at a mine makes **2 crystals if it's a Gatherer (Miner)** and **1 if it's a Fighter**, every turn, for as long as it stays there. If it leaves or is defeated, that flow stops.
+- **The pool resets, it doesn't stack:** at the start of your turn, your crystal pool is set to your current flow. Crystals you don't spend stay available through the enemy's turn (for Instants and counterspells), and are replaced at the start of your next turn.
+- **Cap:** your pool can never go above **16** crystals, whatever the source (flow, Crystal cards, abilities). Owner setting.
+- **Mine color:** at the start of each turn, the side with **more creatures** around a mine sets its color (count creatures, not flow; in a mixed-faction deck, the faction with the most creatures there). On a tie the mine turns **neutral** (white). When a mine changes color, its crystals burst and regrow in the new color, with sparkles and light beams.
+- **Crystals come in the mine's color:** every side's creatures at a mine produce crystals of that mine's color. Example: you have 1 Gnome Miner and the enemy has 2 Goblin Miners at a mine, so it's green: the enemy gets 4 green and you get 2 green. At a 2-vs-2 tie, the mine is neutral and both sides get 4 white.
+- **Paying:** for a **creature** (or upgrade), crystals of the creature's own color pay full value; every other color and neutral pays **half** (halves add up, then round down). Example: 2 green crystals are worth 1 toward a Gnome creature. **Spells** can be paid with any color at full value. The game always pays automatically in the cheapest way (creatures use their own color first; spells use off-color and neutral crystals first), and cards you can afford glow in your hand.
+- **Starting crystals:** 0. Turn 1 is always "send out a Miner" (see Free Gatherer below).
+- **Income preview:** next to your crystal counters you always see next turn's flow per color; each mine shows a ring in its current color and floating numbers for both sides (for example "+4 green / +1 green").
+- **Endless mines:** mines never run out. Long games are ended by deck-out damage and sudden death instead.
+- **Card costs:** creatures cost 1–13 (see Cards for the formula); spells cost 1–7; upgrades 3–8.
 - **Look:** big, glossy, glowing gems with bright neon-saturated colors, light rays and floating sparkles.
 
-**Spread out or stack up.** Deciding where to send your minions is the core strategy: one Gatherer at each site to grab a little everywhere, or three creatures on one site to lock it down. Since a faction only needs its own color, holding just one site can be enough to win.
+**Spread out or stack up.** Deciding where to send your minions is the core strategy: Miners at every mine for a little of everything, or a crowd at one mine to own its color. Holding a mine in your own color doubles what your creatures there are worth to you.
 
-**Never locked out.** A player who loses every site early always has ways back in:
+**Never locked out.** A player who loses every mine early always has ways back in:
 
-- **Underdog bonus:** if you control no sites at the start of your turn **and the enemy controls at least one**, you get +2 crystals that turn. It never applies while nobody holds a site, so it doesn't speed up the opening.
+- **Underdog bonus:** if no mine is in your color at the start of your turn **and at least one is in the enemy's color**, you get +2 crystals of your own color that turn. It never applies while nobody holds a site, so it doesn't speed up the opening.
 - **Gatherer swap:** once per turn, during your Deploy phase, if you have no Gatherer in your hand you can discard a card (or none, if your hand is empty) to take your cheapest basic Gatherer from your deck into your hand, for free. Crystal Eaters don't count as basic Gatherers.
-- **Free Gatherer when broke:** if you have 0 crystals, control no site and have no Gatherer on the battlefield, you can summon one Gatherer for free that turn.
-- **Tunnelers:** each faction has Gatherer creatures with the Tunnel ability: when the enemy controls more sites than you, they can be summoned straight onto any empty space next to a crystal site instead of your back row.
+- **Free Gatherer when broke:** if your flow is 0, no mine is in your color and you have no Gatherer on the battlefield, you can summon one Gatherer for free that turn.
+- **Tunnelers:** each faction has Gatherer creatures with the Tunnel ability: when more mines are in the enemy's color than in yours, they can be summoned straight onto any empty space next to a crystal site instead of your back row.
 - **Comeback spells:** cheap spells built to break a lockout (see Prospector's Prayer and Tunnel Rush in the spell list).
-- **Ties freeze a site:** one creature sneaking in to tie the count is enough to stop the enemy's income from that site.
+- **Ties neutralize a mine:** one creature sneaking in to tie the count turns the mine white, halving the enemy's income from it.
 
 ## Factions
 
@@ -146,8 +150,8 @@ Three factions, each paying with its own crystal color: Goblins use green, Gnome
 
 **Two kinds of creature in every faction:**
 
-- **Gatherers:** strong at gathering (+2 crystals per turn next to a site you control), weak in a fight.
-- **Fighters:** strong in a fight, gather nothing extra.
+- **Gatherers:** strong at gathering (2 crystals of flow per turn at a mine), weak in a fight.
+- **Fighters:** strong in a fight; only 1 crystal of flow per turn at a mine.
 
 **Type advantage:** +1 Attack when Dwarves hit Goblins, Goblins hit Gnomes, or Gnomes hit Dwarves.
 
@@ -161,7 +165,7 @@ You pick your Commander before each match. Each faction has one starter Commande
 | Commander | Faction | How you get it | Special ability |
 | --- | --- | --- | --- |
 | Grubnak the Goblin Boss | Goblins | Starter | Goblin creatures cost 1 less crystal (minimum 1) |
-| Queen Skreeka the Shiny | Goblins | Booster pack | Gain 1 extra crystal whenever one of your creatures is defeated |
+| Queen Skreeka the Shiny | Goblins | Booster pack | Gain 1 crystal of your color whenever one of your creatures is defeated (pool cap still applies) |
 | Professor Sproingle | Gnomes | Starter | Your spells cost 1 less crystal (minimum 1) |
 | Madame Sprocket | Gnomes | Booster pack | At the start of your turn, your creature with the lowest Health gets Shield 1 |
 | Thane Borgo Anvilbottom | Dwarves | Starter | Your creatures get +1 Health |
@@ -201,7 +205,7 @@ Every turn runs through the same phases, each with a 50-second timer. For the fi
 
 **The phases of a turn:**
 
-1. **Draw phase** (automatic): all your creatures heal back to full Health, you draw 1 card (no hand limit), and you collect crystals from the sites you control.
+1. **Draw phase** (automatic): all your creatures heal back to full Health, you draw 1 card (no hand limit), mine colors update, and your crystal pool resets to your Crystal Flow.
 2. **Deploy phase** (timed): drag creature cards onto empty spaces in your back row, play up to one Crystal card, upgrade creatures, and cast spells (Regular spells work in any phase of your turn, Instants at any time). If your back row is full, you can summon onto the row in front of it; if both are full, the card waits in your hand.
 3. **Action phase** (timed): each of your creatures either **moves or attacks**, never both. Drag it to an empty space to move, or onto an enemy (or the enemy Stronghold) to attack. Creatures placed this turn can't act unless their ability says so; Gatherers can move (but not attack) the turn they're placed.
 4. **End phase** (automatic): end-of-turn abilities happen, then it's the other player's turn.
@@ -215,6 +219,8 @@ You can tap a "Done" button to finish a phase early. If you still have something
 **Time bank (online):** each player also has a total time bank of about 10 minutes per match, so a match can't drag on forever. **Sudden death** (to be tuned after playtesting): after a set number of turns, both Commanders lose Health every turn, so skilled players can finish fast while close games still end. Both numbers are owner settings.
 
 **Moving:** 1 space in any of the 8 directions (up, down, left, right, diagonal) onto an empty space. Ultra Rare and Collector characters can move 2. Creatures can't walk through each other.
+
+**Swapping places:** instead of moving into an empty space, you can drag a creature onto one of **your own** creatures within its move range: they trade places. Only the dragged creature uses its action; the other one can still act. You can never swap with an enemy. Ally spaces you can swap with glow in a different color from empty spaces. (The Gnome Illusionist's Blink is still special: it swaps with any of your creatures anywhere.)
 
 **Running out of cards:** if your deck is empty when you draw, your Commander takes 1 damage instead, and 1 more each turn after.
 
@@ -240,12 +246,12 @@ Attacks subtract Attack from Health; a creature at 0 Health is defeated. Every c
 
 Upgrades are powerful but expensive, a big decision rather than a routine one. During your Deploy phase, tap one of your creatures on the battlefield, then Upgrade; it doesn't stop the creature from moving or attacking.
 
-| Upgrade | Cost (your faction's resource) | Effect |
+| Upgrade | Cost (paid like a creature) | Effect |
 | --- | --- | --- |
-| Sharpened Weapons | 6 | ⚔️ +1 |
-| Heavy Armor | 6 | ❤️ +3 |
-| Veteran | 10 | Moves 2 spaces |
-| Champion's Crown | 15 | ⚔️ +2 and ❤️ +3 |
+| Sharpened Weapons | 3 | ⚔️ +1 |
+| Heavy Armor | 3 | ❤️ +3 |
+| Veteran | 5 | Moves 2 spaces |
+| Champion's Crown | 8 | ⚔️ +2 and ❤️ +3 |
 
 - **Limit:** 1 upgrade per creature.
 - Upgrades show on the 3D character (a glinting blade, armor plates, a crown) and are lost when it's defeated.
@@ -268,7 +274,7 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Goblin Scrounger | Common | Gatherer | 1 | 1 | 1 | 1 | Gathers +2 next to a site you control; Tunnel: can be summoned onto any empty space next to a crystal site |
+| Goblin Scrounger | Common | Gatherer | 1 | 1 | 1 | 1 | Miner: 2 flow at a mine; Tunnel: can be summoned onto any empty space next to a crystal site |
 | Goblin Scrapper | Common | Fighter | 6 | 2 | 3 | 1 | Frenzy: +1 Attack when next to another Goblin |
 | Goblin Slinger | Common | Fighter | 4 | 1 | 2 | 1 | Ranged |
 | Goblin Bomber | Rare | Fighter | 5 | 2 | 2 | 1 | Ka-boom: when defeated, deals 2 damage to all adjacent enemies |
@@ -280,7 +286,7 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Gnome Prospector | Common | Gatherer | 1 | 1 | 1 | 1 | Gathers +2 next to a site you control; Tunnel: can be summoned onto any empty space next to a crystal site |
+| Gnome Prospector | Common | Gatherer | 1 | 1 | 1 | 1 | Miner: 2 flow at a mine; Tunnel: can be summoned onto any empty space next to a crystal site |
 | Gnome Tinker | Common | Fighter | 5 | 1 | 3 | 1 | Fix-it: at the start of your turn, each adjacent ally gets Shield 1 |
 | Spark Gnome | Common | Fighter | 5 | 2 | 2 | 1 | Ranged |
 | Clockwork Beetle | Rare | Fighter | 8 | 2 | 5 | 1 | Armored: takes 1 less damage from every hit |
@@ -292,7 +298,7 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Dwarf Miner | Common | Gatherer | 1 | 1 | 1 | 1 | Gathers +2 next to a site you control; Tunnel: can be summoned onto any empty space next to a crystal site |
+| Dwarf Miner | Common | Gatherer | 1 | 1 | 1 | 1 | Miner: 2 flow at a mine; Tunnel: can be summoned onto any empty space next to a crystal site |
 | Shieldbeard | Common | Fighter | 7 | 2 | 4 | 1 | Guard: adjacent enemies must attack it first |
 | Axe Thrower | Common | Fighter | 6 | 2 | 3 | 1 | Ranged |
 | Ironhammer Berserker | Rare | Fighter | 8 | 3 | 4 | 1 | Rage: +2 Attack while below half Health |
@@ -304,18 +310,18 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 
 | Card | Rarity | Type | Cost (soul crystals) | Effect |
 | --- | --- | --- | --- | --- |
-| Prospector's Prayer | Common | Regular | 4 | Can only be cast if you control fewer sites than the enemy: gain 7 crystals of your faction's color (a net gain of 3) |
-| Tunnel Rush | Uncommon | Regular | 4 | Move one of your creatures to any empty space next to a crystal site; it can still attack this turn |
-| Fireball | Rare | Regular | 5 | 3 damage to one creature or the enemy Commander |
-| Battle Cry | Rare | Regular | 7 | All your creatures get +1 Attack this turn |
-| Meteor Strike | Ultra Rare | Regular | 12 | 2 damage to every creature in a 3 × 3 area |
-| Healing Light | Common | Instant | 4 | Heal one of your creatures by 3 right now (useful during the enemy's turn, before your creatures heal) |
-| Shield Bubble | Uncommon | Instant | 5 | Your creature takes no damage from the next hit this turn |
-| Second Wind | Ultra Rare | Instant | 9 | Your Commander heals 4 |
-| Fizzle | Uncommon | Counterspell | 5 | Cancel an enemy spell that costs 5 or less |
-| Hold It! | Rare | Counterspell | 6 | Cancel an enemy creature as it's summoned; the card goes back to their hand |
-| Spell Snap | Rare | Counterspell | 8 | Cancel any enemy spell |
-| Mirror Hex | Ultra Rare | Counterspell | 11 | Cancel an enemy spell, then cast a free copy of it yourself |
+| Prospector's Prayer | Common | Regular | 1 | Can only be cast if fewer mines are in your color than in the enemy's: gain 3 crystals of your own color this turn |
+| Tunnel Rush | Uncommon | Regular | 2 | Move one of your creatures to any empty space next to a crystal site; it can still attack this turn |
+| Fireball | Rare | Regular | 3 | 3 damage to one creature or the enemy Commander |
+| Battle Cry | Rare | Regular | 4 | All your creatures get +1 Attack this turn |
+| Meteor Strike | Ultra Rare | Regular | 7 | 2 damage to every creature in a 3 × 3 area |
+| Healing Light | Common | Instant | 2 | Heal one of your creatures by 3 right now (useful during the enemy's turn, before your creatures heal) |
+| Shield Bubble | Uncommon | Instant | 2 | Your creature takes no damage from the next hit this turn |
+| Second Wind | Ultra Rare | Instant | 5 | Your Commander heals 4 |
+| Fizzle | Uncommon | Counterspell | 3 | Cancel an enemy spell that costs 3 or less |
+| Hold It! | Rare | Counterspell | 4 | Cancel an enemy creature as it's summoned; the card goes back to their hand |
+| Spell Snap | Rare | Counterspell | 5 | Cancel any enemy spell |
+| Mirror Hex | Ultra Rare | Counterspell | 7 | Cancel an enemy spell, then cast a free copy of it yourself |
 
 **Crystal cards** (free to play; one per turn; at most 10 per deck)
 
@@ -323,7 +329,7 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 | --- | --- | --- |
 | Soul Shard | Common | Gain 1 crystal of your faction's color |
 | Crystal Cluster | Uncommon | Gain 2 crystals of your faction's color |
-| Glowing Geode | Rare | Place a small crystal beside your Stronghold: +1 crystal at the start of each of your turns for the rest of the match (Unique) |
+| Glowing Geode | Rare | Place a small crystal beside your Stronghold: +1 flow of your own color every turn for the rest of the match (Unique) |
 | Heart of the Fallen | Ultra Rare | Gain 4 crystals of any colors you choose |
 | Motherlode | Collector | Gain 3 crystals now, and your next creature this turn costs 2 less |
 
@@ -337,7 +343,7 @@ These 41 cards set the style and balance; the factory expands them into a Core S
 
 If a Crystal Eater is defeated by its own drawback, its Commander gasps dramatically.
 
-Spells are deliberately expensive: they're powerful Commander magic, so you have to hold enough sites to afford them. Counterspells are Instants that cancel what the opponent is doing as they do it, using the "Respond?" window. A countered spell or creature still costs its owner the crystals.
+Spells are powerful Commander magic paid from your crystal pool with any color at full value, so off-color and neutral crystals are best spent on spells. Because unspent crystals stay in your pool through the enemy's turn, saving crystals for an Instant or counterspell means not spending them on your own turn. Counterspells are Instants that cancel what the opponent is doing as they do it, using the "Respond?" window. A countered spell or creature still costs its owner the crystals.
 
 ## Collection, rarity and screens
 
