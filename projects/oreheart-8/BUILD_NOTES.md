@@ -19,3 +19,8 @@ Both reported failures were traced and appear to be inconsistencies in the accep
 - AC14: a Scrapper (⚔2) hitting a Dwarf Shieldbeard (❤4, no type advantage for Goblins vs Dwarves) leaves it at ❤2 per spec 3.x; the test's own comment says "4 - 2" yet expects 3.
 - AC16: `passTurn` (2 × Done) is called while in the Action phase, so two passTurns end in the player's turn-3 *Action* phase; the test then casts and presses Done again, ending the turn before the attack. Engine phase flow follows the spec (Deploy -> Action -> next turn).
 No rules were changed to special-case these.
+
+## Round 3 re-check (AC14, AC16)
+I re-ran both tests and traced the failures. The engine follows the spec, so I changed no rules.
+- AC14: a Scrapper (2 Attack) hitting an opponent Shieldbeard (4 Health, no Health bonus from Grubnak) leaves it at 2. The test expects 3, but it later expects the creature to heal back to 4, which needs 2 damage.
+- AC16: the test calls `passTurn` (2 `done`s) twice from the Action phase. Those 4 `done`s end the player's turn and the opponent's turn and leave the player in Action. The test's next `done` then ends the player's turn, so the following attack is correctly refused.
