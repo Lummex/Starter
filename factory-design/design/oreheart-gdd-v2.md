@@ -44,11 +44,13 @@ The great heroes of the world fought each other until almost none were left. The
 
 ## Look and feel
 
-Everything is 3D in a comic-book style, beautiful and polished, in the style of the mockup image, but in landscape (phone held sideways). The battlefield fills the **whole screen, edge to edge, with no black bars**, viewed at an angle like a tabletop and zoomed as large as possible so the game works on small phones. The enemy's Stronghold sits right at the top edge; yours sits at the bottom, just behind your hand cards and still visible. Everything else floats over the battlefield: your hand of large, readable cards fanned along the bottom (they slide down out of the way while you drag a card or creature), the enemy's card backs along the top, your crystal counters (with an income preview such as "+3 next turn") and deck pile on the left, and the phase, Done button and Commander Health on the right.
+Everything is 3D in a comic-book style, beautiful and polished, in the style of the mockup image, but in landscape (phone held sideways). The battlefield fills the **whole screen, edge to edge, with no black bars**, viewed at an angle like a tabletop and zoomed as large as possible so the game works on small phones. The enemy's Stronghold sits right at the top edge; yours sits at the bottom, just behind your hand cards and still visible. Everything else floats over the battlefield: your hand of large, readable cards fanned along the bottom (they slide down out of the way while you drag a card or creature), the enemy's card backs along the top, your crystal counters (with an income preview such as "+3 next turn") on the left, the phase name and Done button on the right, and each player's deck pile on their own right-hand side at full hand-card size (yours bottom-right, the enemy's top-left as seen from your side, with the enemy's card backs shifted right to make room). Each Commander's Health floats as a big glowing heart right by the Commander (above your Commander's head; beside the enemy Commander so it never leaves the screen); it shakes and pops red numbers when hit.
 
 - **Phase banners:** at the start of each turn and phase, a big comic-style banner pops up in the center ("YOUR TURN", "DEPLOY", "ACTION", "ENEMY TURN") for about 1.5 seconds, then fades. Phases skipped automatically show no banner; the current phase stays visible small in the corner.
 - **Creatures show their numbers:** every creature on the battlefield shows ⚔️ Attack, ❤️ Health and 👟 Movement.
-- **Already acted:** a creature that has moved or attacked, or can't act yet this turn, turns darker and duller (not grey), and gets its full color back at the start of its owner's turn.
+- **Ready or done:** each creature stands on a ring. **Yellow** = it can still act this turn. Once it has moved, attacked or mined (or if it can't act yet because it was just summoned), the ring turns **dark grey** and the creature turns darker and duller (not grey); both reset at the start of its owner's turn. Miners summoned this turn stay bright, since they can still move or mine.
+- **Hand cards pop out:** moving the mouse over a card in your hand slides it up out of the fan by about an inch, slightly bigger and in front, so you can see which card you're on; on a phone, touch and hold does the same.
+- **Ranged is easy to spot:** Ranged cards show a 🏹 icon next to Attack (and the word Ranged in the ability text); Ranged 3D figures carry a visible ranged weapon (sling, throwing axes, spark wand, crossbow) and show the 🏹 icon in their stats.
 - **Pop-ups never pile up:** the "Are you sure?" pop-up sits on top, then the countdown, then phase banners (a banner waits until nothing else is showing).
 
 - **Battlefield:** a painted 3D sandbox scene (dirt, grass, rocks, and three giant glowing crystal formations). No visible checkerboard.
@@ -84,39 +86,39 @@ You move creatures by picking them up and dragging them, with a finger or the mo
 
 ## The board
 
-Under the painted ground is an invisible 7 × 7 grid of spaces. Players never see the grid; when you select a creature, the spaces it can move to or attack glow softly on the ground.
+Under the painted ground is an invisible grid **13 spaces wide and 7 deep**. Players never see the grid; when you select a creature, the spaces it can move to (blue), attack (red) or mine (a pickaxe glow on the mine) light up softly.
 
-- **Rows 1–2 (top):** enemy home rows. The enemy summons on row 1, its back row (row 2 only when row 1 is full). The enemy Stronghold, with its Commander, stands at the center of row 1.
-- **Rows 3–5:** the resource zone. Row 4 holds three resource sites at columns 2, 4 and 6. The sites can't be stood on.
-- **Rows 6–7 (bottom):** your home rows. You summon on row 7, your back row (row 6 only when row 7 is full), so new minions always have to march forward. Your Stronghold stands at the center of row 7.
-- **Spaces around a mine:** only the 8 spaces touching a mine count as being at it (see Crystal Flow). A creature on a space touching two mines counts at only one.
-- **Attacking a Stronghold:** a creature must stand on a space next to the enemy Stronghold to attack the Commander inside.
+- **Rows 1–2 (far side):** enemy home rows. The enemy summons on row 1, its back row (row 2 only when row 1 is full). The enemy Stronghold, with its Commander, stands at the center of row 1 (column 7).
+- **Rows 3–5:** the middle of the battlefield, where the **3 mines** are placed at random at the start of every match. Mines can't be stood on.
+- **Rows 6–7 (near side):** your home rows. You summon on row 7, your back row (row 6 only when row 7 is full), so new minions always have to march forward. Your Stronghold stands at the center of row 7 (column 7).
+- **Random but fair mines:** the layout is always mirrored between the two halves (row 3 ↔ row 5, same column), so both sides are equally close to the same mines: either one mine on row 4 plus a mirrored pair on rows 3 and 5, or all three on row 4. Mines are never in the home rows, never next to each other (at least 2 spaces apart) and never next to a Stronghold. The layout comes from the match's shuffle seed; the tutorial uses a fixed layout.
+- **Spaces around a mine:** only the 8 spaces touching a mine count as being at it.
+- **Attacking a Stronghold:** a creature must stand on a space next to the enemy Stronghold to attack the Commander inside (Ranged creatures can also hit it from 2 spaces away).
 
 ```
-Board: invisible 7 x 7 grid (enemy at top, you at bottom)
-   col: 1 2 3 4 5 6 7
-row 1:  b b b S b b b   <- enemy Stronghold + Commander; b = enemy back row (enemy summons here)
-row 2:  . . . . . . .   <- enemy summons here only when row 1 is full
-row 3:  z z z z z z z   <- crystal zone
-row 4:  z C z C z C z   <- C = crystal site (cannot be stood on)
-row 5:  z z z z z z z   <- crystal zone
-row 6:  . . . . . . .   <- you summon here only when row 7 is full
-row 7:  b b b S b b b   <- your Stronghold + Commander; b = your back row (you summon here)
-Spaces in columns 3 and 5 next to row 4 touch two mines; a creature there counts at only one.
+Board: invisible 13 x 7 grid (enemy at the far side, you at the near side) - one example mine layout
+   col: 1 2 3 4 5 6 7 8 9 0 1 2 3
+row 1:  b b b b b b S b b b b b b   <- enemy Stronghold + Commander; b = enemy back row
+row 2:  . . . . . . . . . . . . .   <- enemy summons here only when row 1 is full
+row 3:  . . . M . . . . . . . . .   <- M = mine (mirrored pair: row 3 and row 5, same column)
+row 4:  . . . . . . . . . M . . .   <- one mine on the center row
+row 5:  . . . M . . . . . . . . .
+row 6:  . . . . . . . . . . . . .   <- you summon here only when row 7 is full
+row 7:  b b b b b b S b b b b b b   <- your Stronghold + Commander; b = your back row
 ```
 
-The drawing shows the invisible spaces; in the game the ground is painted. Each mine's crystals glow in the color of the side with more creatures around it (white on a tie).
+The drawing shows the invisible spaces; in the game the ground is painted. Each mine's crystals glow in the color of the side with more creatures mining it (white on a tie or when nobody mines it).
 
 ## Crystals and site control: Crystal Flow
 
-The only resource is soul crystal (crystal for short), in three flashy colors (green for Goblins, blue for Gnomes, purple for Dwarves) plus neutral white. Crystals come from **Crystal Flow**: your creatures standing at the three mines (crystal sites) keep crystals flowing to you every turn.
+The only resource is soul crystal (crystal for short), in three flashy colors (green for Goblins, blue for Gnomes, purple for Dwarves) plus neutral white. Crystals come from **Crystal Flow**: your creatures **mine** at the three mines, and what they mine arrives at the start of your next turn.
 
-- **At a mine:** only the 8 spaces directly around a mine count (one space out in every direction, diagonals included). A creature touching two mines (the spaces between them) counts at only one: the mine where its side has more creatures (if equal, the one with fewer of your creatures already producing).
-- **Flow per creature:** each of your creatures at a mine makes **2 crystals if it's a Gatherer (Miner)** and **1 if it's a Fighter**, every turn, for as long as it stays there. If it leaves or is defeated, that flow stops.
-- **The pool resets, it doesn't stack:** at the start of your turn, your crystal pool is set to your current flow. Crystals you don't spend stay available through the enemy's turn (for Instants and counterspells), and are replaced at the start of your next turn.
+- **Mining is an action:** in the Action phase, drag a creature that stands on one of the 8 spaces around a mine onto that mine. That is its action for the turn (instead of moving or attacking), and it shows a little pickaxe icon until your next turn. A creature between two mines mines the one you drag it onto.
+- **You mine every turn:** a creature only makes crystals on turns when it spends its action mining. Each mining action makes **2 crystals for a Gatherer (Miner)** and **1 for a Fighter**.
+- **The pool resets, it doesn't stack:** at the start of your turn, your crystal pool is set to what your creatures mined on your previous turn. Crystals you don't spend stay available through the enemy's turn (for Instants and counterspells), and are replaced at the start of your next turn.
 - **Cap:** your pool can never go above **16** crystals, whatever the source (flow, Crystal cards, abilities). Owner setting.
-- **Mine color:** at the start of each turn, the side with **more creatures** around a mine sets its color (count creatures, not flow; in a mixed-faction deck, the faction with the most creatures there). On a tie the mine turns **neutral** (white). When a mine changes color, its crystals burst and regrow in the new color, with sparkles and light beams.
-- **Crystals come in the mine's color:** every side's creatures at a mine produce crystals of that mine's color. Example: you have 1 Gnome Miner and the enemy has 2 Goblin Miners at a mine, so it's green: the enemy gets 4 green and you get 2 green. At a 2-vs-2 tie, the mine is neutral and both sides get 4 white.
+- **Mine color:** at the start of each turn, the side with **more creatures mining it** sets its color (creatures that mined it on their owner's last turn and are still standing next to it; creatures merely standing nearby don't count; in a mixed-faction deck, the faction with the most miners there). On a tie, or when nobody mines it, the mine is **neutral** (white). When a mine changes color, its crystals burst and regrow in the new color, with sparkles and light beams.
+- **Crystals come in the mine's color:** every side's miners at a mine produce crystals of that mine's color. Example: you have 1 Gnome Miner and the enemy has 2 Goblin Miners mining a mine, so it's green: the enemy gets 4 green and you get 2 green. At a 2-vs-2 tie, the mine is neutral and both sides get 4 white.
 - **Paying:** for a **creature** (or upgrade), crystals of the creature's own color pay full value; every other color and neutral pays **half** (halves add up, then round down). Example: 2 green crystals are worth 1 toward a Gnome creature. **Spells** can be paid with any color at full value. The game always pays automatically in the cheapest way (creatures use their own color first; spells use off-color and neutral crystals first), and cards you can afford glow in your hand.
 - **Starting crystals:** 0. Turn 1 is always "send out a Miner" (see Free Gatherer below).
 - **Income preview:** next to your crystal counters you always see next turn's flow per color; each mine shows a ring in its current color and floating numbers for both sides (for example "+4 green / +1 green").
@@ -124,13 +126,13 @@ The only resource is soul crystal (crystal for short), in three flashy colors (g
 - **Card costs:** creatures cost 1–13 (see Cards for the formula); spells cost 1–7; upgrades 3–8.
 - **Look:** big, glossy, glowing gems with bright neon-saturated colors, light rays and floating sparkles.
 
-**Spread out or stack up.** Deciding where to send your minions is the core strategy: Miners at every mine for a little of everything, or a crowd at one mine to own its color. Holding a mine in your own color doubles what your creatures there are worth to you.
+**Spread out or stack up.** Deciding where to send your minions is the core strategy: Miners at every mine for a little of everything, or a crowd at one mine to own its color. Holding a mine in your own color doubles what your miners there are worth to you, and every turn each creature must choose: mine, move or fight.
 
 **Never locked out.** A player who loses every mine early always has ways back in:
 
 - **Underdog bonus:** if no mine is in your color at the start of your turn **and at least one is in the enemy's color**, you get +2 crystals of your own color that turn. It never applies while nobody holds a site, so it doesn't speed up the opening.
 - **Gatherer swap:** once per turn, during your Deploy phase, if you have no Gatherer in your hand you can discard a card (or none, if your hand is empty) to take your cheapest basic Gatherer from your deck into your hand, for free. Crystal Eaters don't count as basic Gatherers.
-- **Free Gatherer when broke:** if your flow is 0, no mine is in your color and you have no Gatherer on the battlefield, you can summon one Gatherer for free that turn.
+- **Free Gatherer when broke:** if your creatures mined nothing on your last turn, no mine is in your color and you have no Gatherer on the battlefield, you can summon one Gatherer for free that turn.
 - **Tunnelers:** each faction has Gatherer creatures with the Tunnel ability: when more mines are in the enemy's color than in yours, they can be summoned straight onto any empty space next to a crystal site instead of your back row.
 - **Comeback spells:** cheap spells built to break a lockout (see Prospector's Prayer and Tunnel Rush in the spell list).
 - **Ties neutralize a mine:** one creature sneaking in to tie the count turns the mine white, halving the enemy's income from it.
@@ -150,8 +152,8 @@ Three factions, each paying with its own crystal color: Goblins use green, Gnome
 
 **Two kinds of creature in every faction:**
 
-- **Gatherers:** strong at gathering (2 crystals of flow per turn at a mine), weak in a fight.
-- **Fighters:** strong in a fight; only 1 crystal of flow per turn at a mine.
+- **Gatherers (Miners):** strong at mining (2 crystals per mining action), no summoning sickness, weak in a fight.
+- **Fighters:** strong in a fight; only 1 crystal per mining action.
 
 **Type advantage:** +1 Attack when Dwarves hit Goblins, Goblins hit Gnomes, or Gnomes hit Dwarves.
 
@@ -207,12 +209,12 @@ Every turn runs through the same phases, each with a 50-second timer. For the fi
 
 1. **Draw phase** (automatic): all your creatures heal back to full Health, you draw 1 card (no hand limit), mine colors update, and your crystal pool resets to your Crystal Flow.
 2. **Deploy phase** (timed): drag creature cards onto empty spaces in your back row, play up to one Crystal card, upgrade creatures, and cast spells (Regular spells work in any phase of your turn, Instants at any time). If your back row is full, you can summon onto the row in front of it; if both are full, the card waits in your hand.
-3. **Action phase** (timed): each of your creatures either **moves or attacks**, never both. Drag it to an empty space to move, or onto an enemy (or the enemy Stronghold) to attack. Creatures placed this turn can't act unless their ability says so; Gatherers can move (but not attack) the turn they're placed.
+3. **Action phase** (timed): each of your creatures does **one** thing: **move, attack or mine**. Drag it to an empty space to move, onto an enemy (or the enemy Stronghold) to attack, or onto a mine next to it to mine. Creatures placed this turn can't act unless their ability says so; **Miners (Gatherers) have no summoning sickness**: they can move or mine (but not attack) the turn they're placed.
 4. **End phase** (automatic): end-of-turn abilities happen, then it's the other player's turn.
 
-You can tap a "Done" button to finish a phase early. If you still have something you could do, a center pop-up asks "Moves still available! Continue to the next phase?" with Continue and Go back (it can be turned off in Settings, and never appears when the timer runs out).
+You can tap a "Done" button to finish a phase early. If you still have something you could do, a center pop-up asks "Moves still available! Continue to the next phase?" with Continue and Go back, and names creatures that could still mine (for example "2 miners haven't mined"), since skipping mining costs crystals next turn. It can be turned off in Settings, and never appears when the timer runs out.
 
-**Auto-skip:** when you have nothing left you can do in a phase (no card you can afford and place, no creature that can still move or attack), the game moves on by itself after about a second. Instants, upgrades and the Gatherer swap don't count as moves left.
+**Auto-skip:** when you have nothing left you can do in a phase (no card you can afford and place, no creature that can still move, attack or mine), the game moves on by itself after about a second. Instants, upgrades and the Gatherer swap don't count as moves left.
 
 **Responding with Instants:** when the opponent attacks one of your creatures or casts a spell, and you hold an Instant you can afford, a short "Respond?" window pops up (about 5 seconds; owner setting). Tap an Instant to cast it before the attack or spell resolves, or let the window close. You can also cast Instants freely during your own turn.
 
@@ -371,7 +373,7 @@ Once online play exists, the owner changes these in the Owner Console; until the
 
 **Screens:** Main menu, Play (pick Commander, deck and difficulty), Collection, Deck Builder, Shop (packs), Tutorial (a guided match), Rules (how to play, with pictures), Settings (sound, music, reset progress).
 
-**Tutorial match:** offered the first time the game starts, and any time from the Tutorial button. A short, fixed match against a harmless opponent (same Commander and cards every time, no timers) where pop-up tips walk you through each step in order: summon a troop on your back row, march it forward, take a crystal site and watch it change color, spend crystals, fight an enemy (simultaneous hits, healing next turn), cast a spell, and finally attack the enemy Commander until they retreat. Each tip waits until you've done the step. It can be skipped and replayed.
+**Tutorial match:** offered the first time the game starts, and any time from the Tutorial button. A short, fixed match against a harmless opponent (same Commander, cards and mine layout every time, no timers) where pop-up tips walk you through each step in order: summon a Miner on your back row, march it next to a mine, drag it onto the mine to mine and watch the mine change color, spend the crystals next turn, swap two of your creatures, fight an enemy (simultaneous hits, healing next turn), cast a spell, and finally attack the enemy Commander until they retreat. Each tip waits until you've done the step. It can be skipped and replayed.
 
 ## Built to grow: expansions, seasons and leagues
 
