@@ -15,3 +15,4 @@ Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm te
 - Ranged shots are blocked by sites/Strongholds/creatures in the middle space. Uncontrolled sites have `color: null`.
 - Champion's Crown adds +3 max Health without healing (only Heavy Armor heals).
 - Visuals are placeholder 3D figures; no sound; Commander emotes are simple bounces.
+- Menu 'How to Play' uses role=link so getByRole('button',{name:'Play'}) is unambiguous.
