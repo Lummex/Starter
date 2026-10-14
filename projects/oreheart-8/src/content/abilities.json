@@ -1,0 +1,86 @@
+{
+ "gather": {
+  "name": "Gatherer",
+  "text": "Gathers +2 next to a site you control."
+ },
+ "tunnel": {
+  "name": "Tunnel",
+  "text": "Can be summoned onto any empty space next to a crystal site."
+ },
+ "frenzy": {
+  "name": "Frenzy",
+  "text": "+1 Attack when next to another Goblin."
+ },
+ "ranged": {
+  "name": "Ranged",
+  "text": "Also hits an enemy exactly 2 spaces away in a straight or diagonal line."
+ },
+ "kaboom": {
+  "name": "Ka-boom",
+  "text": "When defeated, deals 2 damage to all adjacent enemies."
+ },
+ "sneaky": {
+  "name": "Sneaky",
+  "text": "Enemies cannot strike back at it."
+ },
+ "haste": {
+  "name": "Haste",
+  "text": "Can act the turn it is played."
+ },
+ "rally": {
+  "name": "Rally",
+  "text": "All your Goblins get +1 Attack."
+ },
+ "fixit": {
+  "name": "Fix-it",
+  "text": "Heals 1 Health from each adjacent ally at the start of your turn."
+ },
+ "armored": {
+  "name": "Armored",
+  "text": "Takes 1 less damage from every hit."
+ },
+ "blink": {
+  "name": "Blink",
+  "text": "Once, swap places with any of your creatures."
+ },
+ "flying": {
+  "name": "Flying",
+  "text": "Moves over other creatures."
+ },
+ "overload": {
+  "name": "Overload",
+  "text": "Its attack also hits every enemy next to the target for 1."
+ },
+ "guard": {
+  "name": "Guard",
+  "text": "Adjacent enemies must attack it first."
+ },
+ "rage": {
+  "name": "Rage",
+  "text": "+2 Attack while below half Health."
+ },
+ "charge": {
+  "name": "Charge",
+  "text": "+2 Attack if it moved 2 spaces this turn."
+ },
+ "unbreakable": {
+  "name": "Unbreakable",
+  "text": "Never takes more than 3 damage from one hit."
+ },
+ "heartyale": {
+  "name": "Hearty Ale",
+  "text": "Heals 1 Health from each adjacent ally at the start of your turn."
+ },
+ "eaterGuzzler": {
+  "name": "Crystal Eater",
+  "text": "Each extra Crystal card you play this turn deals 2 damage to it."
+ },
+ "eaterConduit": {
+  "name": "Crystal Eater",
+  "text": "Each extra Crystal card you play this turn means it can't move or attack until your next turn, and it loses 1 Health."
+ },
+ "eaterDelver": {
+  "name": "Crystal Eater",
+  "text": "Each extra Crystal card you play this turn gives it -1 Attack for the rest of the match."
+ }
+}

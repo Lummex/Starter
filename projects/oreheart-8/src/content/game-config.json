@@ -1,0 +1,97 @@
+{
+ "phaseTimerSeconds": 30,
+ "ropeWarningSeconds": 10,
+ "respondWindowSeconds": 5,
+ "startingCrystals": 3,
+ "strongholdIncome": 1,
+ "siteIncome": 1,
+ "gathererBonus": 2,
+ "underdogBonus": 2,
+ "geodeIncome": 1,
+ "deckSize": 50,
+ "openingHandSize": 5,
+ "secondPlayerExtraCards": 1,
+ "copyLimits": {
+  "Common": null,
+  "Uncommon": null,
+  "Rare": 3,
+  "Ultra Rare": 3,
+  "Collector": 3
+ },
+ "crystalCardLimit": 10,
+ "commanderHealth": 20,
+ "deckOutDamage": 1,
+ "crystalCardsPerTurn": 1,
+ "upgradeCosts": {
+  "sharpened-weapons": 6,
+  "heavy-armor": 6,
+  "veteran": 10,
+  "champions-crown": 15
+ },
+ "upgrades": {
+  "sharpened-weapons": {
+   "name": "Sharpened Weapons",
+   "attack": 1
+  },
+  "heavy-armor": {
+   "name": "Heavy Armor",
+   "maxHealth": 3,
+   "heal": 3
+  },
+  "veteran": {
+   "name": "Veteran",
+   "move": 2
+  },
+  "champions-crown": {
+   "name": "Champion's Crown",
+   "attack": 2,
+   "maxHealth": 3
+  }
+ },
+ "typeAdvantageBonus": 1,
+ "rageBonus": 2,
+ "chargeBonus": 2,
+ "frenzyBonus": 1,
+ "rallyBonus": 1,
+ "kaboomDamage": 2,
+ "overloadDamage": 1,
+ "eaterGuzzlerDamage": 2,
+ "eaterConduitDamage": 1,
+ "eaterDelverPenalty": 1,
+ "boardSize": 7,
+ "sites": [
+  [
+   4,
+   2
+  ],
+  [
+   4,
+   4
+  ],
+  [
+   4,
+   6
+  ]
+ ],
+ "strongholds": {
+  "player": [
+   7,
+   4
+  ],
+  "opponent": [
+   1,
+   4
+  ]
+ },
+ "homeRows": {
+  "player": [
+   6,
+   7
+  ],
+  "opponent": [
+   1,
+   2
+  ]
+ },
+ "blockedHomeSummonRange": 2
+}

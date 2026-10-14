@@ -1,0 +1,642 @@
+[
+ {
+  "id": "goblin-scrounger",
+  "name": "Goblin Scrounger",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Gatherer",
+  "cost": 1,
+  "attack": 1,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "gather",
+   "tunnel"
+  ],
+  "unique": false,
+  "text": "Gatherer: Gathers +2 next to a site you control. Tunnel: Can be summoned onto any empty space next to a crystal site."
+ },
+ {
+  "id": "goblin-scrapper",
+  "name": "Goblin Scrapper",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "frenzy"
+  ],
+  "unique": false,
+  "text": "Frenzy: +1 Attack when next to another Goblin."
+ },
+ {
+  "id": "goblin-slinger",
+  "name": "Goblin Slinger",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 1,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged: Also hits an enemy exactly 2 spaces away in a straight or diagonal line."
+ },
+ {
+  "id": "goblin-bomber",
+  "name": "Goblin Bomber",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "kaboom"
+  ],
+  "unique": false,
+  "text": "Ka-boom: When defeated, deals 2 damage to all adjacent enemies."
+ },
+ {
+  "id": "goblin-sneak",
+  "name": "Goblin Sneak",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 3,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "sneaky"
+  ],
+  "unique": false,
+  "text": "Sneaky: Enemies cannot strike back at it."
+ },
+ {
+  "id": "wolf-rider",
+  "name": "Wolf Rider",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Ultra Rare",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 3,
+  "health": 4,
+  "move": 2,
+  "abilities": [
+   "haste"
+  ],
+  "unique": false,
+  "text": "Haste: Can act the turn it is played."
+ },
+ {
+  "id": "grubnaks-big-boss-troll",
+  "name": "Grubnak's Big Boss Troll",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 5,
+  "health": 7,
+  "move": 2,
+  "abilities": [
+   "rally"
+  ],
+  "unique": true,
+  "text": "Unique. Rally: All your Goblins get +1 Attack."
+ },
+ {
+  "id": "shard-guzzler",
+  "name": "Shard Guzzler",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Uncommon",
+  "role": "Gatherer",
+  "cost": 2,
+  "attack": 1,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "eaterGuzzler"
+  ],
+  "unique": false,
+  "text": "Crystal Eater: Each extra Crystal card you play this turn deals 2 damage to it."
+ },
+ {
+  "id": "gnome-prospector",
+  "name": "Gnome Prospector",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Gatherer",
+  "cost": 1,
+  "attack": 1,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "gather",
+   "tunnel"
+  ],
+  "unique": false,
+  "text": "Gatherer: Gathers +2 next to a site you control. Tunnel: Can be summoned onto any empty space next to a crystal site."
+ },
+ {
+  "id": "gnome-tinker",
+  "name": "Gnome Tinker",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 1,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "fixit"
+  ],
+  "unique": false,
+  "text": "Fix-it: Heals 1 Health from each adjacent ally at the start of your turn."
+ },
+ {
+  "id": "spark-gnome",
+  "name": "Spark Gnome",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged: Also hits an enemy exactly 2 spaces away in a straight or diagonal line."
+ },
+ {
+  "id": "clockwork-beetle",
+  "name": "Clockwork Beetle",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 2,
+  "health": 5,
+  "move": 1,
+  "abilities": [
+   "armored"
+  ],
+  "unique": false,
+  "text": "Armored: Takes 1 less damage from every hit."
+ },
+ {
+  "id": "gnome-illusionist",
+  "name": "Gnome Illusionist",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "blink"
+  ],
+  "unique": false,
+  "text": "Blink: Once, swap places with any of your creatures."
+ },
+ {
+  "id": "gyrocopter-ace",
+  "name": "Gyrocopter Ace",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Ultra Rare",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 3,
+  "health": 3,
+  "move": 2,
+  "abilities": [
+   "flying",
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Flying: Moves over other creatures. Ranged: Also hits an enemy exactly 2 spaces away in a straight or diagonal line."
+ },
+ {
+  "id": "the-great-steam-golem",
+  "name": "The Great Steam Golem",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 7,
+  "attack": 5,
+  "health": 8,
+  "move": 2,
+  "abilities": [
+   "overload"
+  ],
+  "unique": true,
+  "text": "Unique. Overload: Its attack also hits every enemy next to the target for 1."
+ },
+ {
+  "id": "overclocked-conduit",
+  "name": "Overclocked Conduit",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Rare",
+  "role": "Gatherer",
+  "cost": 3,
+  "attack": 1,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "eaterConduit"
+  ],
+  "unique": false,
+  "text": "Crystal Eater: Each extra Crystal card you play this turn means it can't move or attack until your next turn, and it loses 1 Health."
+ },
+ {
+  "id": "dwarf-miner",
+  "name": "Dwarf Miner",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Gatherer",
+  "cost": 1,
+  "attack": 1,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "gather",
+   "tunnel"
+  ],
+  "unique": false,
+  "text": "Gatherer: Gathers +2 next to a site you control. Tunnel: Can be summoned onto any empty space next to a crystal site."
+ },
+ {
+  "id": "shieldbeard",
+  "name": "Shieldbeard",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 2,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "guard"
+  ],
+  "unique": false,
+  "text": "Guard: Adjacent enemies must attack it first."
+ },
+ {
+  "id": "axe-thrower",
+  "name": "Axe Thrower",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged: Also hits an enemy exactly 2 spaces away in a straight or diagonal line."
+ },
+ {
+  "id": "ironhammer-berserker",
+  "name": "Ironhammer Berserker",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 3,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "rage"
+  ],
+  "unique": false,
+  "text": "Rage: +2 Attack while below half Health."
+ },
+ {
+  "id": "brewmaster",
+  "name": "Brewmaster",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 2,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "heartyale"
+  ],
+  "unique": false,
+  "text": "Hearty Ale: Heals 1 Health from each adjacent ally at the start of your turn."
+ },
+ {
+  "id": "ram-rider",
+  "name": "Ram Rider",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Ultra Rare",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 4,
+  "health": 5,
+  "move": 2,
+  "abilities": [
+   "charge"
+  ],
+  "unique": false,
+  "text": "Charge: +2 Attack if it moved 2 spaces this turn."
+ },
+ {
+  "id": "queen-brunhilda-stonebeard",
+  "name": "Queen Brunhilda Stonebeard",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 7,
+  "attack": 5,
+  "health": 9,
+  "move": 2,
+  "abilities": [
+   "unbreakable"
+  ],
+  "unique": true,
+  "text": "Unique. Unbreakable: Never takes more than 3 damage from one hit."
+ },
+ {
+  "id": "crystal-drunk-delver",
+  "name": "Crystal-Drunk Delver",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Rare",
+  "role": "Gatherer",
+  "cost": 3,
+  "attack": 2,
+  "health": 5,
+  "move": 1,
+  "abilities": [
+   "eaterDelver"
+  ],
+  "unique": false,
+  "text": "Crystal Eater: Each extra Crystal card you play this turn gives it -1 Attack for the rest of the match."
+ },
+ {
+  "id": "prospectors-prayer",
+  "name": "Prospector's Prayer",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Common",
+  "spellKind": "regular",
+  "cost": 4,
+  "effect": "gainCrystals",
+  "params": {
+   "amount": 7,
+   "needFewerSites": true
+  },
+  "text": "Regular spell. Can only be cast if you control fewer sites than the enemy: gain 7 crystals of your faction color."
+ },
+ {
+  "id": "tunnel-rush",
+  "name": "Tunnel Rush",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Uncommon",
+  "spellKind": "regular",
+  "cost": 4,
+  "effect": "tunnelMove",
+  "params": {},
+  "text": "Regular spell. Move one of your creatures to any empty space next to a crystal site; it can still attack this turn."
+ },
+ {
+  "id": "fireball",
+  "name": "Fireball",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Rare",
+  "spellKind": "regular",
+  "cost": 5,
+  "effect": "damage",
+  "params": {
+   "amount": 3
+  },
+  "text": "Regular spell. 3 damage to one creature or the enemy Commander."
+ },
+ {
+  "id": "battle-cry",
+  "name": "Battle Cry",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Rare",
+  "spellKind": "regular",
+  "cost": 7,
+  "effect": "buffAttack",
+  "params": {
+   "amount": 1
+  },
+  "text": "Regular spell. All your creatures get +1 Attack this turn."
+ },
+ {
+  "id": "meteor-strike",
+  "name": "Meteor Strike",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Ultra Rare",
+  "spellKind": "regular",
+  "cost": 12,
+  "effect": "areaDamage",
+  "params": {
+   "amount": 2
+  },
+  "text": "Regular spell. 2 damage to every creature in a 3 x 3 area."
+ },
+ {
+  "id": "healing-light",
+  "name": "Healing Light",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Common",
+  "spellKind": "instant",
+  "cost": 4,
+  "effect": "heal",
+  "params": {
+   "amount": 3
+  },
+  "text": "Instant. Heal one of your creatures by 3."
+ },
+ {
+  "id": "shield-bubble",
+  "name": "Shield Bubble",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Uncommon",
+  "spellKind": "instant",
+  "cost": 5,
+  "effect": "shield",
+  "params": {},
+  "text": "Instant. Your creature takes no damage from the next hit this turn."
+ },
+ {
+  "id": "second-wind",
+  "name": "Second Wind",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Ultra Rare",
+  "spellKind": "instant",
+  "cost": 9,
+  "effect": "healCommander",
+  "params": {
+   "amount": 4
+  },
+  "text": "Instant. Your Commander heals 4."
+ },
+ {
+  "id": "fizzle",
+  "name": "Fizzle",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Uncommon",
+  "spellKind": "counter",
+  "cost": 5,
+  "effect": "cancelSpell",
+  "params": {
+   "maxCost": 5
+  },
+  "text": "Counterspell (Instant). Cancel an enemy spell that costs 5 or less."
+ },
+ {
+  "id": "hold-it",
+  "name": "Hold It!",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Rare",
+  "spellKind": "counter",
+  "cost": 6,
+  "effect": "cancelSummon",
+  "params": {},
+  "text": "Counterspell (Instant). Cancel an enemy creature as it's summoned; the card goes back to their hand."
+ },
+ {
+  "id": "spell-snap",
+  "name": "Spell Snap",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Rare",
+  "spellKind": "counter",
+  "cost": 8,
+  "effect": "cancelSpell",
+  "params": {},
+  "text": "Counterspell (Instant). Cancel any enemy spell."
+ },
+ {
+  "id": "mirror-hex",
+  "name": "Mirror Hex",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Ultra Rare",
+  "spellKind": "counter",
+  "cost": 11,
+  "effect": "mirror",
+  "params": {},
+  "text": "Counterspell (Instant). Cancel an enemy spell, then cast a free copy of it yourself."
+ },
+ {
+  "id": "soul-shard",
+  "name": "Soul Shard",
+  "type": "crystal",
+  "faction": "any",
+  "rarity": "Common",
+  "cost": 0,
+  "effect": "gain",
+  "params": {
+   "amount": 1
+  },
+  "unique": false,
+  "text": "Crystal card (free, one per turn). Gain 1 crystal of your faction color."
+ },
+ {
+  "id": "crystal-cluster",
+  "name": "Crystal Cluster",
+  "type": "crystal",
+  "faction": "any",
+  "rarity": "Uncommon",
+  "cost": 0,
+  "effect": "gain",
+  "params": {
+   "amount": 2
+  },
+  "unique": false,
+  "text": "Crystal card (free, one per turn). Gain 2 crystals of your faction color."
+ },
+ {
+  "id": "glowing-geode",
+  "name": "Glowing Geode",
+  "type": "crystal",
+  "faction": "any",
+  "rarity": "Rare",
+  "cost": 0,
+  "effect": "geode",
+  "params": {},
+  "unique": true,
+  "text": "Crystal card (free, one per turn). Place a small crystal beside your Stronghold: +1 crystal at the start of each of your turns for the rest of the match. Unique."
+ },
+ {
+  "id": "heart-of-the-fallen",
+  "name": "Heart of the Fallen",
+  "type": "crystal",
+  "faction": "any",
+  "rarity": "Ultra Rare",
+  "cost": 0,
+  "effect": "chooseColors",
+  "params": {
+   "amount": 4
+  },
+  "unique": false,
+  "text": "Crystal card (free, one per turn). Gain 4 crystals of any colors you choose."
+ },
+ {
+  "id": "motherlode",
+  "name": "Motherlode",
+  "type": "crystal",
+  "faction": "any",
+  "rarity": "Collector",
+  "cost": 0,
+  "effect": "motherlode",
+  "params": {
+   "amount": 3,
+   "discount": 2
+  },
+  "unique": false,
+  "text": "Crystal card (free, one per turn). Gain 3 crystals now, and your next creature this turn costs 2 less."
+ }
+]

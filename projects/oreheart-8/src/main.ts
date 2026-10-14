@@ -1,0 +1,23 @@
+import './style.css';
+import { Game } from './game';
+import { App } from './ui/app';
+
+const params = new URLSearchParams(location.search);
+const test = params.get('test') === '1';
+const seedParam = params.get('seed');
+const seed = seedParam != null && seedParam !== '' && !isNaN(+seedParam) ? Math.trunc(+seedParam) : 1;
+
+const game = new Game(test);
+const app = new App(document.getElementById('app')!, game, test, test ? seed : undefined);
+app.showMenu();
+
+if (test) {
+  (window as any).oreheart = {
+    getState: () => game.getState(),
+    legalActions: () => game.legalActions(),
+    act: (action: any) => {
+      try { return game.act(action, true); } catch (e: any) { return { ok: false, error: String(e && e.message || e) }; }
+    },
+    newMatch: (options: any = {}) => app.beginMatch(options),
+  };
+}

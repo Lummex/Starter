@@ -1,0 +1,29 @@
+[
+ {
+  "id": "goblins",
+  "name": "Goblins",
+  "faith": "The Shiny Horde",
+  "crystal": "green",
+  "symbol": "skull",
+  "motto": "Mine! Also mine!",
+  "beats": "gnomes"
+ },
+ {
+  "id": "gnomes",
+  "name": "Gnomes",
+  "faith": "The Cogwork Congregation",
+  "crystal": "blue",
+  "symbol": "gear",
+  "motto": "Everything is fixable. Especially you.",
+  "beats": "dwarves"
+ },
+ {
+  "id": "dwarves",
+  "name": "Dwarves",
+  "faith": "The Order of the Anvil",
+  "crystal": "purple",
+  "symbol": "hammer",
+  "motto": "We were here first. Get off our rock.",
+  "beats": "goblins"
+ }
+]

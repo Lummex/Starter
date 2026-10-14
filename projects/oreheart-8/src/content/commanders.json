@@ -1,0 +1,39 @@
+[
+ {
+  "id": "grubnak",
+  "name": "Grubnak the Goblin Boss",
+  "faction": "goblins",
+  "health": 20,
+  "abilityText": "Goblin creatures cost 1 less crystal (minimum 1).",
+  "ability": {
+   "type": "creatureDiscount",
+   "faction": "goblins",
+   "amount": 1
+  },
+  "blurb": "Scrappy, sneaky, chaotic. Cheap swarms and explosions."
+ },
+ {
+  "id": "sproingle",
+  "name": "Professor Sproingle",
+  "faction": "gnomes",
+  "health": 20,
+  "abilityText": "Your spells cost 1 less crystal (minimum 1).",
+  "ability": {
+   "type": "spellDiscount",
+   "amount": 1
+  },
+  "blurb": "Clever tinkerers and spark-mages. Gadgets, healing and ranged sparks."
+ },
+ {
+  "id": "borgo",
+  "name": "Thane Borgo Anvilbottom",
+  "faction": "dwarves",
+  "health": 20,
+  "abilityText": "Your creatures get +1 Health.",
+  "ability": {
+   "type": "bonusHealth",
+   "amount": 1
+  },
+  "blurb": "Tough, proud miners. Big health, heavy hits, holding ground."
+ }
+]
