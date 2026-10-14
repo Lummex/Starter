@@ -30,7 +30,7 @@ function posValue(s: any, who: string, card: any, row: number, col: number, uid?
     const e = sh(foe);
     v -= 2 * cheb(here, e);
     if (cheb(here, e) <= 1) v += 40;
-    if (card.abilities.includes('ranged') && (Math.abs(row - e.row) === 2 || false) && (col === e.col || Math.abs(col - e.col) === 2)) v += 30;
+    if (card.abilities.includes('ranged') && cheb(here, e) <= 2) v += 30;
     const adj = SITES.map((x, i) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
     if (adj.length) v += 6 + (adj.some(({ i }) => s.sites[i].controller !== who) ? 6 : 0);
   }
@@ -112,7 +112,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
       const r = legal.filter((a: any) => a.type === 'respond');
       return r.length && rand() < 0.3 ? r[Math.floor(rand() * r.length)] : { type: 'pass' };
     }
-    const acts = legal.filter((a: any) => a.type !== 'done');
+    const acts = legal.filter((a: any) => a.type !== 'done' && a.type !== 'gathererSwap');
     if (!acts.length || rand() < 0.12) return done;
     const w = (a: any) => (a.type === 'summon' || a.type === 'attack' ? 3 : a.type === 'playCrystal' ? 2 : a.type === 'upgrade' ? 0.3 : 1);
     let tot = acts.reduce((x: number, a: any) => x + w(a), 0);
@@ -134,6 +134,10 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
       const h = s.players[who].hand.find((x: any) => x.uid === a.uid);
       const card = CARDS[h.cardId];
       scored.push([40 + card.cost * 2 + posValue(s, who, card, a.row, a.col) * 0.5 + rand(), a]);
+    } else if (a.type === 'gathererSwap') {
+      const h = a.discardUid ? s.players[who].hand.find((x: any) => x.uid === a.discardUid) : null;
+      const dc = h ? CARDS[h.cardId] : null;
+      scored.push([dc ? 30 - (dc.type === 'crystal' ? 0 : dc.cost * 2) - (dc.cost <= 2 ? 10 : 0) : 30, a]);
     } else if (a.type === 'upgrade') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const u = a.upgrade;
@@ -150,8 +154,8 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
       const d = creatureAt(s, a.target.row, a.target.col);
       const dmg = atkValue(s, c, d);
       const kills = dmg - (CARDS[d.cardId].abilities.includes('armored') ? 1 : 0) >= d.health;
-      const melee = cheb(c, d) === 1;
-      const strike = melee && !kills && !CARDS[c.cardId].abilities.includes('sneaky') ? atkValue(s, d, c) : 0;
+      const melee = cheb(c, d) === 1 && !CARDS[c.cardId].abilities.includes('ranged');
+      const strike = melee && !CARDS[c.cardId].abilities.includes('sneaky') ? atkValue(s, d, c) : 0;
       const dies = strike >= c.health;
       scored.push([dmg * 8 + (kills ? 40 + CARDS[d.cardId].cost * 6 : 0) - strike * 6 - (dies ? 10 + CARDS[c.cardId].cost * 8 : 0), a]);
     }

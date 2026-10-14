@@ -1,5 +1,5 @@
 // Match controller: owns the engine state, runs the computer opponent, and notifies the UI.
-import { createMatch, applyAction, legalActions, other } from './engine';
+import { createMatch, applyAction, legalActions, hasMovesLeft, other, CONFIG } from './engine';
 import { aiChoose, makeRand, Rand } from './ai/ai';
 import tutorialJson from './content/tutorial.json';
 
@@ -17,6 +17,8 @@ export class Game {
   private aiTimer: any = null;
   private epoch = 0;
   paused = false;
+  autoSkip = true;
+  private skipTimer: any = null;
 
   constructor(testMode: boolean) {
     this.testMode = testMode;
@@ -36,6 +38,8 @@ export class Game {
     this.options = options;
     this.ai = options.ai !== false;
     this.scripted = !!options.tutorial;
+    this.autoSkip = !this.scripted && (this.testMode ? options.autoSkip === true : options.autoSkip !== false);
+    clearTimeout(this.skipTimer);
     if (this.scripted) this.ai = true;
     this.difficulty = options.difficulty === 'easy' ? 'easy' : 'normal';
     const seed = options.seed ?? (this.testMode ? 1 : (Date.now() ^ (Math.random() * 1e9)) | 0);
@@ -76,7 +80,29 @@ export class Game {
     return { ok: true, events: JSON.parse(JSON.stringify(r.events)) };
   }
 
+  movesLeft() {
+    return !!this.state && hasMovesLeft(this.state);
+  }
+
+  /** Human phases with no moves left end by themselves after a short delay. */
+  private scheduleAutoSkip() {
+    clearTimeout(this.skipTimer);
+    const s = this.state;
+    if (!this.autoSkip || !s || s.phase === 'over' || s.pendingResponse) return;
+    if (!['deploy', 'action'].includes(s.phase) || s.priority !== s.activePlayer) return;
+    if (this.ai && s.priority === 'opponent') return;
+    if (hasMovesLeft(s)) return;
+    const key = `${s.turn}|${s.phase}`;
+    const ep = this.epoch;
+    this.skipTimer = setTimeout(() => {
+      const c = this.state;
+      if (ep !== this.epoch || !c || `${c.turn}|${c.phase}` !== key || c.pendingResponse || this.paused || hasMovesLeft(c)) return;
+      this.act({ type: 'done' });
+    }, (this.testMode ? 0.4 : CONFIG.autoSkipDelaySeconds) * 1000);
+  }
+
   private afterAction() {
+    this.scheduleAutoSkip();
     if (!this.ai || !this.state || this.state.phase === 'over' || this.state.priority !== 'opponent') return;
     if (this.testMode) {
       let n = 0;

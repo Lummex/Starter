@@ -13,7 +13,7 @@
  },
  "ranged": {
   "name": "Ranged",
-  "text": "Also hits an enemy exactly 2 spaces away in a straight or diagonal line."
+  "text": "Hits any enemy within 2 spaces in any direction, even over other creatures. No strike back."
  },
  "kaboom": {
   "name": "Ka-boom",

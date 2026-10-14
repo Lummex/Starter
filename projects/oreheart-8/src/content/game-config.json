@@ -1,10 +1,15 @@
 {
- "deployTimerSeconds": 30,
- "actionTimerSeconds": 45,
- "ropeWarningSeconds": 10,
+ "phaseTimerSeconds": 50,
+ "timerHiddenSeconds": 40,
+ "countdownSeconds": 10,
  "respondWindowSeconds": 5,
- "startingCrystals": 0,
- "strongholdIncome": 1,
+ "autoSkipDelaySeconds": 1,
+ "startingCrystals": 1,
+ "basicGatherers": {
+  "goblins": "goblin-scrounger",
+  "gnomes": "gnome-prospector",
+  "dwarves": "dwarf-miner"
+ },
  "siteIncome": 1,
  "gathererBonus": 2,
  "underdogBonus": 2,
@@ -13,7 +18,8 @@
  "starterDeckMix": {
   "creatures": 40,
   "spells": 6,
-  "crystals": 4
+  "crystals": 4,
+  "basicGatherers": 8
  },
  "openingHandSize": 5,
  "secondPlayerExtraCards": 1,

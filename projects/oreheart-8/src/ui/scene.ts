@@ -1,6 +1,6 @@
 // Placeholder 3D battlefield (Three.js). Returns null when WebGL is unavailable (the UI then shows a 2D board).
 import * as THREE from 'three';
-import { COLORS, FACTIONS, CARDS } from '../engine';
+import { COLORS, FACTIONS, CARDS, isActed } from '../engine';
 
 export interface Rect { x: number; y: number; w: number; h: number }
 export interface BoardView {
@@ -59,7 +59,7 @@ function groundTexture() {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(4, 3);
+  t.repeat.set(10, 8);
   return t;
 }
 
@@ -88,7 +88,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 });
   scene.add(sun);
 
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 22), new THREE.MeshStandardMaterial({ map: groundTexture(), roughness: 1 }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 60), new THREE.MeshStandardMaterial({ map: groundTexture(), roughness: 1 }));
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
@@ -145,7 +145,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   // creatures
-  type Fig = { group: THREE.Group; target: THREE.Vector3; born: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string };
+  type Fig = { group: THREE.Group; target: THREE.Vector3; born: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean };
   const figs = new Map<string, Fig>();
   function makeFigure(c: any): THREE.Group {
     const card = CARDS[c.cardId];
@@ -214,6 +214,17 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         figs.set(c.uid, f);
       }
       f.target.copy(tgt);
+      const acted = isActed(st, c);
+      if (f.acted !== acted) {
+        f.acted = acted;
+        f.group.traverse((o: any) => {
+          const m = o.material;
+          if (!m || !m.color || o.isSprite || m.isMeshBasicMaterial) return;
+          if (!m.userData.base) m.userData.base = m.color.clone();
+          m.color.copy(m.userData.base);
+          if (acted) { const hsl: any = {}; m.color.getHSL(hsl); m.color.setHSL(hsl.h, hsl.s * 0.8, hsl.l * 0.5); }
+        });
+      }
       const mv = events.find((e) => e.type === 'move' && e.uid === c.uid);
       if (mv && mv.teleport) f.group.position.copy(tgt);
     }
@@ -237,12 +248,32 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     camera.aspect = w / h;
-    const vfov = (camera.fov * Math.PI) / 180;
-    const hHalf = Math.atan(Math.tan(vfov / 2) * camera.aspect);
-    const dist = Math.max(4.6 / Math.tan(hHalf), 3.6 / Math.tan(vfov / 2), 8);
-    const el = (64 * Math.PI) / 180;
-    camera.position.set(0, Math.sin(el) * dist, Math.cos(el) * dist + 0.2);
-    camera.lookAt(0, 0.35, 0.05);
+    const el = (60 * Math.PI) / 180;
+    const y0 = 0.03 * h, y1 = 0.9 * h;
+    const corners = [[-3.6, -3.6], [3.6, -3.6], [3.6, 3.6], [-3.6, 3.6]];
+    const fit = (dist: number) => {
+      camera.clearViewOffset();
+      camera.position.set(0, Math.sin(el) * dist, Math.cos(el) * dist);
+      camera.lookAt(0, 0, 0);
+      camera.updateProjectionMatrix();
+      camera.updateMatrixWorld();
+      let top = 1e9, bot = -1e9, left = 1e9, right = -1e9;
+      for (const [x, z] of corners) {
+        const v = new THREE.Vector3(x, 0, z).project(camera);
+        const sx = (v.x * 0.5 + 0.5) * w, sy = (-v.y * 0.5 + 0.5) * h;
+        top = Math.min(top, sy); bot = Math.max(bot, sy); left = Math.min(left, sx); right = Math.max(right, sx);
+      }
+      return { top, bot, left, right };
+    };
+    let lo = 4, hi = 80;
+    for (let i = 0; i < 22; i++) {
+      const mid = (lo + hi) / 2;
+      const f = fit(mid);
+      if (f.bot - f.top <= y1 - y0 && f.right - f.left <= w * 0.98) hi = mid; else lo = mid;
+    }
+    const f = fit(hi);
+    // slide the view so the enemy Stronghold row sits at the top edge
+    camera.setViewOffset(w, h, 0, -(y0 - f.top), w, h);
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
   }
@@ -333,7 +364,9 @@ export function createFlatView(container: HTMLElement): BoardView {
     setState() {},
     cellRect(row, col) {
       const w = container.clientWidth || 390, h = container.clientHeight || 420;
-      return { x: ((col - 1) / 7) * w, y: ((row - 1) / 7) * h, w: w / 7, h: h / 7 };
+      const cs = Math.min((h * 0.87) / 7, w / 7);
+      const x0 = (w - cs * 7) / 2, y0 = h * 0.03;
+      return { x: x0 + (col - 1) * cs, y: y0 + (row - 1) * cs, w: cs, h: cs };
     },
     resize() {},
     emote(side, kind) {

@@ -43,7 +43,13 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
 const makeCard = (s: any, cardId: string) => ({ uid: 'k' + s.nextUid++, cardId });
 
 // ---------------------------------------------------------------- costs
+const isGatherer = (card: any) => card.role === 'Gatherer';
+export const basicGatherer = (faction: string): string => CONFIG.basicGatherers[faction];
+const goesFree = (s: any, p: Side, card: any) =>
+  card.id === basicGatherer(card.faction) && total(s.players[p]) === 0 && sitesControlled(s, p) === 0 &&
+  !s.board.creatures.some((c: any) => c.owner === p && isGatherer(CARDS[c.cardId]));
 export function creatureCost(s: any, p: Side, card: any) {
+  if (goesFree(s, p, card)) return 0;
   let c = card.cost;
   const d = bonusOf(s, p, 'creatureDiscount');
   if (d && d.faction === card.faction) c = Math.max(1, c - d.amount);
@@ -76,7 +82,7 @@ export function createMatch(opts: any = {}) {
     sites: SITES.map(([row, col]) => ({ row, col, controller: null, color: null })),
     pendingResponse: null, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
     mulliganDone: { player: false, opponent: false }, tutorial: opts.tutorial ? { step: 'summon' } : null,
-    flags: { battleCry: null, crystalsPlayed: 0, discount: { player: 0, opponent: 0 } },
+    flags: { battleCry: null, crystalsPlayed: 0, swapped: false, discount: { player: 0, opponent: 0 } },
   };
   const setup = opts.setup;
   (['player', 'opponent'] as Side[]).forEach((who) => {
@@ -149,11 +155,19 @@ function drawCard(s: any, who: Side, ev: any[]) {
   ev.push({ type: 'draw', player: who, uid: card.uid, cardId: card.cardId });
 }
 
-export function recomputeSites(s: any, ev: any[]) {
-  for (const site of s.sites) {
+function controllersNow(s: any): (Side | null)[] {
+  return s.sites.map((site: any) => {
     const n = { player: 0, opponent: 0 };
     for (const c of s.board.creatures) if (cheb(c, site) <= 1) n[c.owner as Side]++;
-    const ctl: Side | null = n.player > n.opponent ? 'player' : n.opponent > n.player ? 'opponent' : null;
+    return n.player > n.opponent ? 'player' : n.opponent > n.player ? 'opponent' : null;
+  });
+}
+
+export function recomputeSites(s: any, ev: any[]) {
+  const ctls = controllersNow(s);
+  for (let i = 0; i < s.sites.length; i++) {
+    const site = s.sites[i];
+    const ctl: Side | null = ctls[i];
     const color = ctl ? colorOf(s, ctl) : null;
     if (ctl !== site.controller) ev.push({ type: 'siteControl', row: site.row, col: site.col, controller: ctl, color });
     site.controller = ctl;
@@ -161,19 +175,39 @@ export function recomputeSites(s: any, ev: any[]) {
   }
 }
 
-function collectIncome(s: any, who: Side, ev: any[]) {
-  const pl = s.players[who];
-  let inc = CONFIG.strongholdIncome;
+function incomeFor(s: any, who: Side, ctls: (Side | null)[]) {
+  let inc = 0;
   let controlled = 0;
-  for (const site of s.sites) {
-    if (site.controller !== who) continue;
+  let enemy = 0;
+  s.sites.forEach((site: any, i: number) => {
+    if (ctls[i] === other(who)) enemy++;
+    if (ctls[i] !== who) return;
     controlled++;
     inc += CONFIG.siteIncome;
     for (const c of s.board.creatures)
       if (c.owner === who && CARDS[c.cardId].role === 'Gatherer' && cheb(c, site) <= 1) inc += CONFIG.gathererBonus;
-  }
-  if (controlled === 0 && sitesControlled(s, other(who)) > 0) inc += CONFIG.underdogBonus;
-  inc += pl.geodes * CONFIG.geodeIncome;
+  });
+  if (controlled === 0 && enemy > 0) inc += CONFIG.underdogBonus;
+  inc += s.players[who].geodes * CONFIG.geodeIncome;
+  return inc;
+}
+
+/** Income `who` would collect if their next turn started with the board as it is now. */
+export function incomePreview(s: any, who: Side) {
+  return incomeFor(s, who, controllersNow(s));
+}
+
+/** What a site pays its controller per turn (1 + 2 per adjacent own Gatherer; 0 when uncontrolled). */
+export function sitePays(s: any, site: any) {
+  if (!site.controller) return 0;
+  let n = CONFIG.siteIncome;
+  for (const c of s.board.creatures) if (c.owner === site.controller && CARDS[c.cardId].role === 'Gatherer' && cheb(c, site) <= 1) n += CONFIG.gathererBonus;
+  return n;
+}
+
+function collectIncome(s: any, who: Side, ev: any[]) {
+  const pl = s.players[who];
+  const inc = incomeFor(s, who, s.sites.map((x: any) => x.controller));
   pl.crystals[colorOf(s, who)] += inc;
   ev.push({ type: 'income', player: who, amount: inc, color: colorOf(s, who) });
 }
@@ -185,8 +219,8 @@ function startTurn(s: any, ev: any[]) {
   s.phase = 'draw';
   s.priority = null;
   s.pendingResponse = null;
-  s.flags = { battleCry: null, crystalsPlayed: 0, discount: { player: 0, opponent: 0 } };
-  for (const c of s.board.creatures) { c.summonedThisTurn = false; c.hasMoved = false; c.hasAttacked = false; c.movedDistance = 0; }
+  s.flags = { battleCry: null, crystalsPlayed: 0, swapped: false, discount: { player: 0, opponent: 0 } };
+  for (const c of s.board.creatures) if (c.owner === who) { c.summonedThisTurn = false; c.hasMoved = false; c.hasAttacked = false; c.movedDistance = 0; }
   ev.push({ type: 'turnStart', player: who, turn: s.turn });
   recomputeSites(s, ev);
   // creatures heal to full, lose leftover Shield and expired Hearty Ale
@@ -290,24 +324,18 @@ export function attackTargets(s: any, c: any): any[] {
   const enemy = other(c.owner);
   const sh = stronghold(enemy);
   const out: any[] = [];
+  if (has(c, 'ranged')) {
+    // any enemy within Chebyshev distance 2, over creatures; Guard only affects melee
+    for (const o of s.board.creatures) if (o.owner === enemy && cheb(o, c) <= 2) out.push({ row: o.row, col: o.col });
+    if (cheb(c, sh) <= 2) out.push({ commander: enemy });
+    return out;
+  }
   const adj = s.board.creatures.filter((o: any) => o.owner === enemy && cheb(o, c) === 1);
   const guards = adj.filter((o: any) => has(o, 'guard'));
   if (guards.length) guards.forEach((g: any) => out.push({ row: g.row, col: g.col }));
   else {
     adj.forEach((o: any) => out.push({ row: o.row, col: o.col }));
     if (cheb(c, sh) <= 1) out.push({ commander: enemy });
-  }
-  if (has(c, 'ranged')) {
-    for (const dr of [-2, 0, 2]) for (const dc of [-2, 0, 2]) {
-      if (!dr && !dc) continue;
-      const tr = c.row + dr, tc = c.col + dc;
-      if (!inBounds(tr, tc)) continue;
-      const mr = c.row + dr / 2, mc = c.col + dc / 2;
-      if (!emptyCell(s, mr, mc)) continue;
-      const t = creatureAt(s, tr, tc);
-      if (t && t.owner === enemy) out.push({ row: tr, col: tc });
-      else if (!t && tr === sh.row && tc === sh.col) out.push({ commander: enemy });
-    }
   }
   return out;
 }
@@ -321,7 +349,7 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
     return;
   }
   const def = creatureAt(s, target.row, target.col);
-  const melee = cheb(attacker, def) === 1;
+  const melee = cheb(attacker, def) === 1 && !has(attacker, 'ranged');
   ev.push({ type: 'attack', uid: attacker.uid, from: { row: attacker.row, col: attacker.col }, target: { row: def.row, col: def.col }, ranged: !melee });
   const pos = { row: def.row, col: def.col };
   const strikes = melee && !has(attacker, 'sneaky');
@@ -347,7 +375,7 @@ export function summonSpaces(s: any, p: Side, card: any): { row: number; col: nu
 }
 
 export function moveDests(s: any, c: any): { row: number; col: number }[] {
-  if (c.hasMoved || c.hasAttacked || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste'))) return [];
+  if (c.hasMoved || c.hasAttacked || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && CARDS[c.cardId].role !== 'Gatherer')) return [];
   const m = maxMove(c);
   const out: any[] = [];
   for (let dr = -m; dr <= m; dr++) for (let dc = -m; dc <= m; dc++) {
@@ -557,6 +585,10 @@ export function legalActions(s: any): any[] {
   }
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of moveDests(s, c)) out.push({ type: 'move', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const t of attackTargets(s, c)) out.push({ type: 'attack', creatureUid: c.uid, target: t });
+  if (ph === 'deploy' && !s.flags.swapped && !pl.hand.some((h: any) => isGatherer(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
+    if (pl.hand.length) for (const h of pl.hand) out.push({ type: 'gathererSwap', discardUid: h.uid });
+    else out.push({ type: 'gathererSwap' });
+  }
   if (['deploy', 'action'].includes(ph)) {
     for (const c of s.board.creatures) if (c.owner === who && has(c, 'blink') && !c.blinkUsed)
       for (const o of s.board.creatures) if (o !== c && o.owner === who) out.push({ type: 'ability', creatureUid: c.uid, ability: 'blink', target: { row: o.row, col: o.col } });
@@ -564,6 +596,20 @@ export function legalActions(s: any): any[] {
   }
   out.push(surrender);
   return out;
+}
+
+/** True if the priority player has a real move left (ignores done, surrender, upgrades, Gatherer swap and Instants). */
+export function hasMovesLeft(s: any): boolean {
+  if (s.phase === 'over' || !s.priority || s.pendingResponse || !['deploy', 'action'].includes(s.phase) || s.priority !== s.activePlayer) return false;
+  const pl = s.players[s.priority];
+  return legalActions(s).some((a: any) => {
+    if (['done', 'surrender', 'upgrade', 'gathererSwap', 'pass', 'respond'].includes(a.type)) return false;
+    if (a.type === 'cast') {
+      const h = pl.hand.find((x: any) => x.uid === a.uid);
+      return !h || CARDS[h.cardId].spellKind === 'regular';
+    }
+    return true;
+  });
 }
 
 // ---------------------------------------------------------------- apply
@@ -737,6 +783,15 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       ev.push({ type: 'move', uid: a.uid, from: pa, to: pb, teleport: true }, { type: 'move', uid: b.uid, from: pb, to: pa, teleport: true });
       break;
     }
+    case 'gathererSwap': {
+      if (l.discardUid) pl.discard.push(takeHand(l.discardUid));
+      const idx = pl.deck.findIndex((d: any) => d.cardId === basicGatherer(pl.faction));
+      const g = pl.deck.splice(idx, 1)[0];
+      pl.hand.push(g);
+      s.flags.swapped = true;
+      ev.push({ type: 'gathererSwap', player: who, uid: g.uid, cardId: g.cardId });
+      break;
+    }
     case 'done': {
       if (s.phase === 'deploy') s.phase = 'action';
       else endTurn(s, ev);
@@ -769,4 +824,9 @@ export function applyAction(state: any, action: any): { ok: boolean; state: any;
   const r = applyActionInner(state, action);
   if (r.ok && r.state.tutorial) { advanceTutorial(r.state, action, actor); if (r.state.winner === 'player') r.state.tutorial.step = 'complete'; }
   return r;
+}
+
+/** True when a creature has acted this turn, or cannot act yet (shown darker in the UI). */
+export function isActed(s: any, c: any): boolean {
+  return c.hasMoved || c.hasAttacked || (c.summonedThisTurn && !has(c, 'haste')) || s.turn < c.lockedUntil;
 }

@@ -1,5 +1,5 @@
 import { Game } from '../game';
-import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost } from '../engine';
+import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, sitePays, maxMove, isActed } from '../engine';
 import tutorialJson from '../content/tutorial.json';
 import { createBoardView, createFlatView, BoardView } from './scene';
 
@@ -64,6 +64,15 @@ export class App {
     return b;
   }
 
+  remindButton(): El {
+    const label = () => 'Moves reminder: ' + (this.remindMoves ? 'On' : 'Off');
+    const b = btn(label(), '', () => {
+      localStorage.setItem('oreheart.movesReminder', this.remindMoves ? 'off' : 'on');
+      b.textContent = label();
+    });
+    return b;
+  }
+
   clear() {
     this.teardownMatch();
     this.root.replaceChildren();
@@ -96,7 +105,7 @@ export class App {
     this.clear();
     this.root.append(h('main', { class: 'screen center' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), btn('Back', '', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), btn('Back', '', () => this.showMenu()))));
   }
 
   showSetup() {
@@ -150,9 +159,9 @@ export class App {
       h('h1', { class: 'section cinzel' }, 'Rules'),
       sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
       sec('The Board', 'A hidden 7×7 grid. The enemy is at the top, you are at the bottom. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal sites sit in the middle.', board),
-      sec('Crystals', 'Control a site by having more creatures around it than the enemy. Each site you control gives 1 crystal, and your Gatherers next to it give 2 more. Your Stronghold gives 1 every turn, and 2 extra if you control no sites while the enemy holds one. You start with 0 crystals, so turn 1 gives exactly 1.', crystals),
-      sec('Your Turn', 'Deploy (30 seconds): drag cards onto the board to summon creatures or cast spells, play one Crystal card and upgrade creatures. Action (45 seconds): each creature either moves one space OR attacks, never both (Charge creatures can do both). Tap Done to finish a phase. At the start of your turn all your creatures heal back to full Health.'),
-      sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit 2 spaces away and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
+      sec('Crystals', 'Control a site by having more creatures around it than the enemy. Each site you control gives 1 crystal, and your Gatherers next to it give 2 more. The Stronghold gives nothing, so you start the match with 1 crystal (enough for a cost-1 Gatherer). You get 2 extra if you control no sites while the enemy holds one. The plus-N-next-turn counter shows your coming income, and tapping a crystal site shows who holds it and what it pays.', crystals),
+      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, play one Crystal card and upgrade creatures. Gatherers can move (but not attack) the turn they are summoned. Action: each creature either moves one space OR attacks, never both (Charge creatures can do both). Tap Done to finish a phase; phases with no moves left end by themselves. After 40 seconds a 10-second countdown starts, and at 0 the phase ends. Gatherer swap: once a turn, with no Gatherer in hand, discard a card to pull a basic Gatherer from your deck. Free Gatherer: with 0 crystals, no site and no Gatherer on the battlefield, a basic Gatherer is free. At the start of your turn all your creatures heal back to full Health.'),
+      sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals of any color. Instants can answer the enemy during a "Respond?" window, and counterspells cancel spells or summons.'),
       h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Back', '', () => this.showMenu())));
     this.root.append(s);
@@ -163,6 +172,7 @@ export class App {
     const dlg = h('div', { class: 'dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': name }, ...content);
     const ov = h('div', { class: 'overlay' }, dlg);
     const close = () => { ov.remove(); this.dialogs = this.dialogs.filter((d) => d !== ov); onClose && onClose(); };
+    ov.addEventListener('pointerdown', (e: any) => { if (e.target === ov && !ov.dataset.sticky) close(); });
     ov.addEventListener('keydown', (e: any) => { if (e.key === 'Escape' && !ov.dataset.sticky) close(); });
     (this.root.querySelector('.match') || this.root).append(ov);
     this.dialogs.push(ov);
@@ -232,30 +242,28 @@ export class App {
     r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, '0');
     r.enemyHealth = h('div', { class: 'health', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
-    r.timer = h('div', { class: 'timer', role: 'timer', 'aria-label': 'Phase timer' }, '30');
-    r.rope = h('div', { class: 'rope hidden' }, h('i'));
-    r.board = h('div', { class: 'board' });
+    r.timer = h('div', { class: 'countdown', role: 'timer', 'aria-label': 'Phase timer', hidden: true }, '10');
+    r.board = h('div', { class: 'board', role: 'application', 'aria-label': 'Battlefield' });
     r.fx = h('div', { class: 'fx' });
     r.myHealth = h('div', { class: 'health mine', role: 'img', 'aria-label': 'Your Commander health' }, '20');
     r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, '0');
-    r.done = btn('Done', 'primary done-btn', () => this.game.act({ type: 'done' }));
+    r.income = h('div', { class: 'income', 'aria-label': 'Your income next turn' }, '+0 next turn');
+    r.done = btn('Done', 'primary done-btn', () => this.pressDone());
+    r.swap = btn('Swap for a Gatherer', 'swap-btn', () => this.startSwap());
+    r.swap.hidden = true;
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
     const menuBtn = btn('Menu', 'menu-btn', () => this.showMatchMenu());
     r.tip = h('aside', { class: 'tip', 'aria-label': 'Tutorial tip', hidden: true });
     const crystals = h('div', { class: 'crystals' }, crystalChip('green'), crystalChip('blue'), crystalChip('purple'));
     const match = h('main', { class: 'match' },
-      h('div', { class: 'side left' }, crystals,
-        h('div', { class: 'piles' }, h('div', { class: 'pile-wrap' }, h('span', { class: 'lbl' }, 'You'), r.myDeck), h('div', { class: 'pile-wrap' }, h('span', { class: 'lbl' }, 'Foe'), r.enemyDeck))),
-      h('div', { class: 'center' },
-        h('div', { class: 'hud-top' }, r.enemyHand),
-        r.board,
-        r.hand),
-      h('div', { class: 'side right' },
-        r.enemyHealth,
-        h('div', { class: 'phase-box' }, r.phase, r.timer, r.rope),
-        r.done, r.myHealth, menuBtn));
+      r.board,
+      h('div', { class: 'hud hud-left' }, crystals, r.income,
+        h('div', { class: 'piles' }, h('div', { class: 'pile-wrap' }, h('span', { class: 'lbl' }, 'You'), r.myDeck), h('div', { class: 'pile-wrap' }, h('span', { class: 'lbl' }, 'Foe'), r.enemyDeck)),
+        r.swap),
+      h('div', { class: 'hud hud-top' }, r.enemyHand),
+      h('div', { class: 'hud hud-right' }, r.phase, r.enemyHealth, r.done, r.myHealth, menuBtn),
+      r.tip, r.hand, r.timer);
     this.root.append(match);
-    r.board.append(r.tip);
     // board layers
     r.cells = new Map<string, El>();
     r.sites = [];
@@ -267,11 +275,12 @@ export class App {
       r.cells.set(row + ',' + col, c);
       r.board.append(c);
     }
-    for (const [row, col] of CONFIG.sites as number[][]) {
-      const m = h('div', { class: 'site-mark', role: 'img', 'aria-label': 'Crystal site' });
+    (CONFIG.sites as number[][]).forEach(([row, col], i) => {
+      const m = h('button', { type: 'button', class: 'site-mark', 'aria-label': `Crystal site, column ${col}`, onclick: () => this.openSite(i) });
       m.dataset.row = String(row); m.dataset.col = String(col);
+      m.addEventListener('pointerdown', (e) => e.stopPropagation());
       r.sites.push(m); r.board.append(m);
-    }
+    });
     r.strong = {} as any;
     for (const side of ['player', 'opponent']) {
       const s = h('div', { class: 'stronghold ' + side, role: 'img', 'aria-label': side === 'player' ? 'Your Stronghold' : 'Enemy Stronghold' }, '🏰');
@@ -285,7 +294,7 @@ export class App {
     r.hand.addEventListener('wheel', (e: WheelEvent) => { e.preventDefault(); this.handScroll += (e.deltaY || e.deltaX) / 80; this.layoutHand(); }, { passive: false });
     window.addEventListener('resize', this.onResize);
     clearInterval(this.timerId);
-    this.timerId = setInterval(() => this.tick(), 250);
+    this.timerId = setInterval(() => { this.tick(); this.pumpBanner(); }, 100);
     requestAnimationFrame(() => this.layout());
   }
   onResize = () => { this.layout(); };
@@ -314,17 +323,18 @@ export class App {
     if (!hand) return;
     const cards = [...hand.querySelectorAll('.hand-card')] as El[];
     const n = cards.length;
-    const W = hand.clientWidth || 390;
-    const spacing = n > 1 ? Math.max(32, Math.min(52, (W - 72) / (n - 1))) : 52;
-    const overflow = Math.max(0, (n - 1) * spacing - (W - 72));
+    const W = hand.clientWidth || 800;
+    const cw = cards[0]?.offsetWidth || 66;
+    const spacing = n > 1 ? Math.max(cw * 0.58, Math.min(cw * 0.78, (W - cw * 1.4) / (n - 1))) : cw;
+    const overflow = Math.max(0, (n - 1) * spacing - (W - cw * 1.4));
     const maxScroll = overflow / 2 / spacing;
     this.handScroll = Math.max(-maxScroll, Math.min(maxScroll, this.handScroll));
     cards.forEach((c, i) => {
       const off = i - (n - 1) / 2 - this.handScroll;
-      const x = W / 2 + off * spacing - 28;
+      const x = W / 2 + off * spacing - cw / 2;
       const t = (off * spacing) / (W / 2);
-      const rot = t * 16;
-      const y = t * t * 26;
+      const rot = Math.max(-18, Math.min(18, t * 30));
+      const y = t * t * cw * 1.2;
       c.style.left = x + 'px';
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
       c.style.zIndex = String(i + 1);
@@ -341,6 +351,7 @@ export class App {
     r.enemyDeck.replaceChildren(String(en.deck.length));
     r.myDeck.textContent = String(me.deck.length);
     for (const c of COLOR_NAMES) r['cr_' + c].textContent = String(me.crystals[c]);
+    r.income.textContent = `+${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')} next turn`;
     // enemy hand arc
     const n = en.hand.length;
     r.enemyHand.replaceChildren();
@@ -356,9 +367,23 @@ export class App {
     const whose = st.activePlayer === 'player' ? 'Your turn' : 'Enemy turn';
     r.phase.textContent = st.phase === 'mulligan' ? 'Mulligan' : st.phase === 'over' ? 'Match over' : `${whose} · ${PHASE[st.phase]}`;
     const key = `${st.turn}|${st.phase}|${st.priority}|${st.pendingResponse ? 1 : 0}`;
-    if (key !== this.phaseKey) { this.phaseKey = key; this.deadline = Date.now() + this.phaseSeconds(st) * 1000; }
+    if (key !== this.phaseKey) {
+      const phaseChanged = !this.phaseKey || key.split('|').slice(0, 2).join() !== this.phaseKey.split('|').slice(0, 2).join();
+      this.phaseKey = key;
+      if (phaseChanged) {
+        this.deadline = Date.now() + CONFIG.phaseTimerSeconds * 1000;
+        this.testLeft = null;
+        this.movesDlg && this.movesDlg.close();
+        this.movesDlg = null;
+        this.swapping = false;
+        this.queueBanners(st);
+      }
+    }
     const mine = st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase) && !st.pendingResponse;
     r.done.disabled = !mine;
+    const canSwap = mine && st.phase === 'deploy' && this.game.legalActions().some((a: any) => a.type === 'gathererSwap');
+    r.swap.hidden = !canSwap;
+    if (!canSwap) this.swapping = false;
     // board overlays
     this.renderTip(st);
     this.renderSites(st);
@@ -369,8 +394,101 @@ export class App {
     this.tick();
   }
 
-  phaseSeconds(st: any) {
-    return st.phase === 'action' ? CONFIG.actionTimerSeconds : CONFIG.deployTimerSeconds;
+  // ------------------------------------------------------------ banners
+  bannerQ: string[] = [];
+  bannerEl: El | null = null;
+  bannerAt = 0;
+  queueBanners(st: any) {
+    if (st.phase !== 'deploy' && st.phase !== 'action') return;
+    const skipped = this.game.autoSkip && !hasMovesLeft(st);
+    if (st.activePlayer !== 'player') { if (st.phase === 'deploy') this.bannerQ.push('ENEMY TURN'); return; }
+    if (st.phase === 'deploy') this.bannerQ.push('YOUR TURN');
+    if (!skipped) this.bannerQ.push(st.phase === 'deploy' ? 'DEPLOY' : 'ACTION');
+  }
+  pumpBanner() {
+    const r = this.r;
+    if (!r.board) return;
+    const now = Date.now();
+    if (this.bannerEl) {
+      const life = this.bannerQ.length ? 450 : 1500;
+      if (now - this.bannerAt < life) return;
+      this.bannerEl.remove();
+      this.bannerEl = null;
+    }
+    if (!this.bannerQ.length) return;
+    const blocked = this.dialogs.length > 0 || !(r.timer as El).hidden;
+    if (blocked) return;
+    const text = this.bannerQ.shift()!;
+    this.bannerEl = h('div', { class: 'banner', role: 'status', 'aria-label': 'Phase banner' }, text);
+    this.root.querySelector('.match')?.append(this.bannerEl);
+    this.bannerAt = now;
+  }
+
+  // ------------------------------------------------------------ Done, Gatherer swap, site info
+  movesDlg: { close: () => void } | null = null;
+  swapping = false;
+  get remindMoves() { return localStorage.getItem('oreheart.movesReminder') !== 'off'; }
+  pressDone() {
+    const st = this.game.state;
+    if (!st || this.movesDlg) return;
+    if (this.remindMoves && hasMovesLeft(st)) {
+      const name = 'Moves still available! Continue to the next phase?';
+      const d: any = this.dialog(name, [h('h2', {}, name),
+        h('div', { class: 'row' }, btn('Continue', 'primary', () => { d.close(); this.movesDlg = null; this.game.act({ type: 'done' }); }),
+          btn('Go back', '', () => { d.close(); this.movesDlg = null; }))], () => { this.movesDlg = null; });
+      this.movesDlg = d;
+    } else this.game.act({ type: 'done' });
+  }
+  startSwap() {
+    const acts = this.game.legalActions().filter((a: any) => a.type === 'gathererSwap');
+    if (!acts.length) return;
+    if (!acts[0].discardUid) { this.game.act(acts[0]); return; }
+    this.swapping = true;
+    this.flash('Tap the card you want to discard');
+  }
+  openSite(i: number) {
+    const st = this.game.state;
+    if (!st) return;
+    const s = st.sites[i];
+    const who = s.controller === 'player' ? 'You' : s.controller === 'opponent' ? 'Enemy' : 'Nobody';
+    this.dialog('Crystal site', [h('h2', {}, 'Crystal site'), h('p', { style: 'text-align:center;margin:4px 0' }, `Controlled by: ${who}`),
+      h('p', { style: 'text-align:center;margin:4px 0' }, `Pays +${sitePays(st, s)} per turn`),
+      h('div', { class: 'row' }, btn('Close', 'primary', () => this.dialogs[this.dialogs.length - 1]?.remove()))]);
+  }
+
+  // ------------------------------------------------------------ timer
+  testLeft: number | null = null;
+  lastTick = Date.now();
+  timedNow(st: any) {
+    return !st.tutorial && st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase);
+  }
+  setPhaseTimeLeft(n: number) {
+    const st = this.game.state;
+    if (!st) return;
+    n = Math.max(0, +n || 0);
+    if (n <= 0) { if (st.priority === st.activePlayer && ACTIVE.includes(st.phase) && !st.pendingResponse) this.game.act({ type: 'done' }); return; }
+    this.testLeft = n;
+    this.deadline = Date.now() + n * 1000;
+    this.tick();
+  }
+  tick() {
+    const st = this.game.state, r = this.r;
+    const now = Date.now();
+    const dt = now - this.lastTick;
+    this.lastTick = now;
+    if (!st || !r.timer) return;
+    if (st.pendingResponse || this.game.paused) this.deadline += dt;
+    const timed = this.timedNow(st);
+    const total = CONFIG.phaseTimerSeconds;
+    const frozen = this.test;
+    const left = frozen ? (this.testLeft ?? total) : Math.max(0, Math.ceil((this.deadline - now) / 1000));
+    const show = timed && left <= CONFIG.countdownSeconds && !st.pendingResponse;
+    r.timer.hidden = !show;
+    if (show) r.timer.textContent = String(left);
+    if (!frozen && timed && left <= 0 && !st.pendingResponse) {
+      this.deadline = now + total * 1000;
+      this.game.act({ type: 'done' });
+    }
   }
 
   renderTip(st: any) {
@@ -381,17 +499,14 @@ export class App {
     tip.dataset.step = step;
     tip.replaceChildren(h('div', { class: 'tip-text' }, (tutorialJson as any).tips[step] || ''),
       btn('Skip Tutorial', 'tip-skip', () => this.showMenu()));
-    this.r.timer.hidden = true;
   }
 
   renderSites(st: any) {
     st.sites.forEach((s: any, i: number) => {
       const m = this.r.sites[i] as El;
-      const who = s.controller === 'player' ? 'you' : s.controller === 'opponent' ? 'the enemy' : 'nobody';
-      m.textContent = s.controller ? FSYM(st.players[s.controller].faction) : '';
-      m.setAttribute('aria-label', `Crystal site, controlled by ${who}`);
+      const sym = s.controller ? FSYM(st.players[s.controller].faction) : '';
+      m.textContent = this.view?.is3D ? sym : '💎' + sym;
       m.style.color = s.color ? ({ green: '#3ee06a', blue: '#3fa9ff', purple: '#b45cff' } as any)[s.color] : '#dfe3ea';
-      if (!this.view?.is3D) m.textContent = '💎' + (s.controller ? FSYM(st.players[s.controller].faction) : '');
     });
   }
 
@@ -403,18 +518,19 @@ export class App {
       let el = this.tokens.get(c.uid);
       if (!el) {
         el = h('div', { class: `token f-${card.faction} ${c.owner === 'player' ? 'mine' : 'theirs'}`, role: 'img' },
-          h('div', { class: 'tk-body' }, FSYM(card.faction)),
-          h('div', { class: 'tk-stats' }, h('b', { class: 'a' }), h('b', { class: 'h' }), h('b', { class: 'sh' })));
+          h('div', { class: 'tk-body', 'data-sym': FSYM(card.faction), 'aria-hidden': 'true' }),
+          h('div', { class: 'tk-stats' }, h('span', { class: 'a' }), ' ', h('span', { class: 'h' }), ' ', h('span', { class: 'm' }), h('span', { class: 'sh' })));
         this.tokens.set(c.uid, el);
         this.r.board.insertBefore(el, this.r.fx);
       }
       el.dataset.uid = c.uid; el.dataset.row = String(c.row); el.dataset.col = String(c.col);
-      (el.querySelector('.a') as El).textContent = String(c.attack);
-      (el.querySelector('.h') as El).textContent = String(c.health);
+      (el.querySelector('.a') as El).textContent = `⚔️${c.attack}`;
+      (el.querySelector('.h') as El).textContent = `❤️${c.health}`;
+      (el.querySelector('.m') as El).textContent = `👟${maxMove(c)}`;
       const sh = el.querySelector('.sh') as El;
-      sh.textContent = c.shield > 0 ? `🛡${c.shield}` : '';
-      sh.hidden = !(c.shield > 0);
+      sh.textContent = c.shield > 0 ? ` 🛡${c.shield}` : '';
       el.dataset.damaged = String(c.health < c.maxHealth);
+      el.dataset.acted = String(isActed(st, c));
       el.setAttribute('aria-label', `${card.name}, row ${c.row}, column ${c.col}`);
       el.title = `${card.name}: Attack ${c.attack}, Health ${c.health}/${c.maxHealth}${c.shield > 0 ? `, Shield ${c.shield}` : ''}`;
       this.place(el, c.row, c.col);
@@ -428,20 +544,21 @@ export class App {
     const fcol = FACTIONS[me.faction].crystal;
     const tot = me.crystals.green + me.crystals.blue + me.crystals.purple;
     const hidden = st.phase === 'mulligan';
-    const key = hidden ? 'x' : me.hand.map((c: any) => c.uid + ':' + (CARDS[c.cardId].type === 'creature' ? me.crystals[fcol] >= creatureCost(st, 'player', CARDS[c.cardId]) : tot >= spellCost(st, 'player', CARDS[c.cardId]))).join(',') + '|' + st.flags.discount.player;
+    const costOf = (c: any) => (c.type === 'creature' ? creatureCost(st, 'player', c) : c.type === 'spell' ? spellCost(st, 'player', c) : 0);
+    const affordable = (c: any) => (c.type === 'creature' ? me.crystals[fcol] >= costOf(c) : c.type === 'spell' ? tot >= costOf(c) : true);
+    const key = hidden ? 'x' : me.hand.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId])).join(',');
     if (key === this.handKey) return;
     this.handKey = key;
     hand.replaceChildren();
     if (hidden) return;
     for (const hc of me.hand) {
       const c = CARDS[hc.cardId];
-      const cost = c.type === 'creature' ? creatureCost(st, 'player', c) : c.type === 'spell' ? spellCost(st, 'player', c) : 0;
-      const aff = c.type === 'creature' ? me.crystals[fcol] >= cost : c.type === 'spell' ? tot >= cost : true;
-      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${aff ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id },
+      const cost = costOf(c);
+      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id },
         h('span', { class: 'cost', 'aria-hidden': 'true' }, c.type === 'crystal' ? '◆' : String(cost)),
         h('span', { class: 'nm', 'aria-hidden': 'true' }, c.name),
         h('span', { class: 'ty', 'aria-hidden': 'true' }, c.type === 'creature' ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
-        h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `${c.attack}/${c.health}` : c.rarity.slice(0, 1)));
+        h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `⚔️${c.attack} ❤️${c.health}` : c.rarity));
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));
       el.addEventListener('click', (e: MouseEvent) => { if (e.detail === 0) this.showCard(c.id); });
       hand.append(el);
@@ -530,22 +647,6 @@ export class App {
         const c: any = this.dialog('Surrender this match?', [h('h2', {}, 'Surrender this match?'),
           h('div', { class: 'row' }, btn('Yes, surrender', 'danger', () => { c.close(); this.game.act({ type: 'surrender' }); }), btn('Cancel', '', () => c.close()))]);
       }))]);
-  }
-
-  // ------------------------------------------------------------ timer
-  tick() {
-    const st = this.game.state, r = this.r;
-    if (!st || !r.timer) return;
-    const total = this.phaseSeconds(st);
-    const left = this.test || this.game.paused ? total : Math.max(0, Math.ceil((this.deadline - Date.now()) / 1000));
-    r.timer.textContent = String(left);
-    const warn = !this.test && !st.tutorial && left <= CONFIG.ropeWarningSeconds && st.phase !== 'over' && st.phase !== 'mulligan';
-    r.rope.classList.toggle('hidden', !warn);
-    if (warn) (r.rope.firstChild as El).style.transform = `scaleX(${Math.max(0, (this.deadline - Date.now()) / (CONFIG.ropeWarningSeconds * 1000))})`;
-    if (!this.test && !st.tutorial && left <= 0 && st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase) && !st.pendingResponse) {
-      this.deadline = Date.now() + total * 1000;
-      this.game.act({ type: 'done' });
-    }
   }
 
   // ------------------------------------------------------------ animations / fx
@@ -665,7 +766,7 @@ export class App {
       const dx = ev.clientX - x0, dy = ev.clientY - y0;
       if (!dragging && !swiping && Math.hypot(dx, dy) > 8) {
         if (ev.pointerType !== 'mouse' && opts.touchSwipe && Math.abs(dx) > Math.abs(dy)) swiping = true;
-        else if (opts.onStart() !== false) { dragging = true; opts.ghost.style.left = ev.clientX + 'px'; document.body.append(opts.ghost); }
+        else if (opts.onStart() !== false) { dragging = true; this.r.hand?.classList.add('away'); opts.ghost.style.left = ev.clientX + 'px'; document.body.append(opts.ghost); }
         else cleanup();
       }
       if (swiping) { opts.touchSwipe!(ev.clientX - lastX); lastX = ev.clientX; }
@@ -690,6 +791,7 @@ export class App {
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up2);
       opts.ghost.remove();
+      this.r.hand?.classList.remove('away');
       this.clearGlow();
       this.r.hand?.querySelectorAll('.dragging').forEach((x: El) => x.classList.remove('dragging'));
     };
@@ -723,7 +825,15 @@ export class App {
         return true;
       },
       onDrop: (cell) => { if (cell && cell.row) this.dropCard(hc, card, cell); },
-      onTap: () => this.showCard(card.id),
+      onTap: () => {
+        if (this.swapping) {
+          this.swapping = false;
+          const a = this.game.legalActions().find((x: any) => x.type === 'gathererSwap' && x.discardUid === hc.uid);
+          if (a) this.game.act(a);
+          return;
+        }
+        this.showCard(card.id);
+      },
     });
     void st;
   }

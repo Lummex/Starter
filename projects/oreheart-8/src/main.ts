@@ -1,6 +1,7 @@
 import './style.css';
 import { Game } from './game';
 import { App } from './ui/app';
+import { CARDS, CONFIG } from './engine';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
@@ -20,6 +21,16 @@ if (test) {
     },
     newMatch: (options: any = {}) => app.beginMatch(options),
     startTutorial: () => app.beginTutorial(),
+    movesLeft: () => game.movesLeft(),
+    getCard: (id: string) => {
+      const c: any = CARDS[id];
+      if (!c) return null;
+      const cr = c.type === 'creature';
+      return { id: c.id, name: c.name, type: c.type, faction: c.faction === 'any' ? null : c.faction, rarity: c.rarity, role: cr ? String(c.role).toLowerCase() : null,
+        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null };
+    },
+    getConfig: () => JSON.parse(JSON.stringify(CONFIG)),
+    setPhaseTimeLeft: (n: number) => app.setPhaseTimeLeft(n),
   };
 }
 
