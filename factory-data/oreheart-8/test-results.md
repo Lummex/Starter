@@ -1,6 +1,6 @@
 # Automated check results
 
-90 of 90 checks passed after 3 build round(s).
+102 of 102 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -11,46 +11,48 @@
 - ✅ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
 - ✅ hearts and turn display 740x360 › AC51: Commander hearts never cover creature labels; turn display top-right (740x360)
 - ✅ hearts and turn display 667x375 › AC51: Commander hearts never cover creature labels; turn display top-right (667x375)
+- ✅ hand pop-out at 2x › AC59: a hovered hand card doubles in size and stays fully on-screen
 - ✅ AC1: main menu has exactly Play, Tutorial, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
 - ✅ AC3: Rules page with pictures and Back
 - ✅ AC4: Settings graphics toggle switches and persists
 - ✅ AC5: window.oreheart only in test mode; seeds are deterministic
-- ✅ AC6: grubnak starter deck is 40 creatures, 6 spells (with Fizzle), 4 Crystal cards
-- ✅ AC6: sproingle starter deck is 40 creatures, 6 spells (with Fizzle), 4 Crystal cards
-- ✅ AC6: borgo starter deck is 40 creatures, 6 spells (with Fizzle), 4 Crystal cards
+- ✅ AC6: grubnak starter deck is 40 creatures, 6 spells (with Snuff Out), 4 Crystal cards
+- ✅ AC6: sproingle starter deck is 40 creatures, 6 spells (with Snuff Out), 4 Crystal cards
+- ✅ AC6: borgo starter deck is 40 creatures, 6 spells (with Snuff Out), 4 Crystal cards
 - ✅ AC7: opening — start with 0 crystals, pool resets to flow, extra card for second player
 - ✅ AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy turn
-- ✅ AC9: example (a) — 1 Gnome Miner vs 2 Goblin Miners: mine is green, Goblins get 4 green, Gnomes 2 green
-- ✅ AC9: off-color crystals are worth half toward creatures (rounded down)
-- ✅ AC9: example (b) — 2 vs 2 tie: mine is white, 4 white is worth 2 toward creatures and 4 toward spells
+- ✅ AC9: example (a) — 1 Gemsinger Miner vs 2 Grubgrabber Miners: enemy owns the mine, enemy gets 4, you get 1 (+2 underdog)
+- ✅ AC9: one crystal type — every card costs plain crystals, Flow is a single number
+- ✅ AC9: example (b) — 2 vs 2 tie: mine is neutral, each side gets the full 4
+- ✅ AC9: mining at an enemy-owned mine pays half — Miner 1, Fighter 0; own or neutral pays full
 - ✅ AC9: examples (c) and (d) — pool is set to flow, unspent crystals last through the enemy turn
 - ✅ AC9: example (e) — the pool never goes above 16
 - ✅ AC39: mining is an action — Gatherer 2, Fighter 1, nothing without mining; pool set to last turn's mining
-- ✅ AC10: back-row summoning, Grubnak discount, summoning sickness, Wolf Rider
+- ✅ AC10: back-row summoning, Grubnak discount, summoning sickness, Mangewolf Rider
 - ✅ AC10: row in front only when the back row is full; nothing when both are full
 - ✅ AC10: Unique card limited to one on the battlefield; Borgo +1 Health
 - ✅ AC11: Tunnel only while more mines are in the enemy color
 - ✅ AC12: movement in 8 directions, move 2 only for move-2 creatures
-- ✅ AC12: each creature moves OR attacks, never both; Ram Rider (Charge) can do both
+- ✅ AC12: each creature moves OR attacks, never both; Thunderhorn Ram Rider (Charge) can do both
 - ✅ AC13: simultaneous hits — 1/2 beats 1/1, two 1/1s defeat each other
 - ✅ AC13: Shieldbeard vs Scrapper — type advantage defeats it, strike back still lands
 - ✅ AC13: strike back with type advantage defeats the attacker
 - ✅ AC13: Guard forces adjacent melee attackers to hit it
 - ✅ AC13: Ranged hits anything within 2 spaces, over creatures, with no strike back
 - ✅ AC14: creatures heal at the start of their owner's turn; damaged Health is marked
-- ✅ AC15: Gnome Tinker gives Shield 1, which blocks exactly 1 damage
+- ✅ AC15: Aegis Tinkerer gives Shield 1, which blocks exactly 1 damage
 - ✅ AC16: Commander damage equals Attack and never resets
-- ✅ AC17: Fireball deals 3 damage and can be paid with any color
+- ✅ AC17: Infernal Orb deals 3 damage for 3 crystals
 - ✅ AC17: only one Crystal card per round; it goes to the Bank
-- ✅ AC17: Prospector's Prayer costs 1 and gives 3 own-color crystals only when behind on mines
+- ✅ AC17: Desperate Plunder costs 1 and gives 3 Flow only when behind on mines
 - ✅ AC17: crystal-bought upgrades are gone
-- ✅ AC18: Fizzle counters Fireball; crystals still spent
-- ✅ AC18: Fizzle cannot cancel a spell costing more than 3
-- ✅ AC18: Hold It! returns a summoned creature to hand
+- ✅ AC18: Snuff Out counters Infernal Orb; crystals still spent
+- ✅ AC18: Snuff Out cannot cancel a spell costing more than 3
+- ✅ AC18: Not Today! returns a summoned creature to hand
 - ✅ AC18: Respond dialog — Let it happen
-- ✅ AC18: Respond dialog — cast Shield Bubble saves the creature
+- ✅ AC18: Respond dialog — cast Bastion Ward saves the creature
 - ✅ AC19: deck-out deals 1 damage per failed draw
 - ✅ AC20: reducing enemy Commander to 0 shows Victory!
 - ✅ AC20: surrender from the match menu shows Defeat
@@ -84,11 +86,21 @@
 - ✅ AC41: the moves pop-up names miners that have not mined
 - ✅ AC42: Ranged creatures show the bow icon on the board and in the hand
 - ✅ AC45: Miner names, roles and badges
-- ✅ AC46: Smith Miner upgrades stack, persist and heal; summoned Smith is a Miner
-- ✅ AC46: dropping a Smith Miner on your creature asks +1 Attack or +1 Health
+- ✅ AC46: Miner upgrades — Smith gives +1 Attack and +1 Health, basic Miner +1 Health; they stack, persist and heal
+- ✅ AC46: a basic Miner played onto your creature gives exactly +1 Health; the free Miner can never upgrade
+- ✅ AC46: dropping a Smith Miner on your creature upgrades it at once (no choice pop-up)
 - ✅ AC47: Crystal Bank persists, has no cap and is spent after Flow
 - ✅ AC48: playing a Crystal card never ends the phase or turn
 - ✅ AC49: Respond window opens even when the counterspell is unaffordable
-- ✅ AC49: "Crystal Cluster + Fizzle" plays both and cancels the enemy spell
+- ✅ AC49: "Soul Cluster + Snuff Out" plays both and cancels the enemy spell
 - ✅ AC49: a Crystal card played alone in the Respond window keeps it open and funds the counterspell
 - ✅ AC50: Smith Miners never Tunnel; the Tunnel! tag shows only when behind
+- ✅ AC52: one crystal type — two counters only; Heart of the Fallen puts 4 into the Bank
+- ✅ AC53: the Respond pop-up has a standalone "Play Soul Cluster" button that keeps it open
+- ✅ AC54: nothing can mine from 2 spaces away — only the 8 adjacent spaces
+- ✅ AC55: casting a spell shows "GRUBNAK CASTS INFERNAL ORB!" over the Stronghold; Commanders never attack
+- ✅ AC56: Settings has "Card reveals: Normal" / "Fast", saved across reloads
+- ✅ AC57: every card shows its full ability text, in the hand and in the card view; names follow the rename table
+- ✅ AC57: the Commander picker uses the new Commander names
+- ✅ AC58: Mine All mines exactly the ready Miners next to a mine, preferring full value
+- ✅ AC58: the M key and the mineAll action do the same
