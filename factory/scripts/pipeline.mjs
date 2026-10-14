@@ -204,16 +204,68 @@ function deploy(prod) {
     fs.writeFileSync(vjFile, JSON.stringify(vj, null, 2) + '\n');
     git('add', '-f', path.join(appRel, 'vercel.json'));
   }
+  // If Vercel linked this project to the GitHub repo, unlink it: every push would otherwise
+  // start an extra Vercel build and use up the free plan's daily deployment limit.
+  if (fs.existsSync(path.join(appDir, '.vercel', 'project.json'))) {
+    sh('npx', ['--yes', 'vercel@latest', 'git', 'disconnect', '--yes', '--token', token], { cwd: appDir, check: false });
+  }
   const args =['--yes', 'vercel@latest', 'deploy', '--yes', '--token', token];
   if (prod) args.push('--prod');
   const r = sh('npx', args, { cwd: appDir, check: false });
   const out = (r.stdout || '') + '\n' + (r.stderr || '');
-  if (r.status !== 0) throw new Error(`Vercel deploy failed:\n${out.slice(-3000)}`);
+  if (r.status !== 0) {
+    // Free-plan limit reached: publish the preview on GitHub Pages instead, so the owner can still test.
+    if (!prod && /resource is limited|api-deployments|rate.?limit|too many|exceeded/i.test(out)) {
+      log('Vercel refused (daily limit); publishing the preview to GitHub Pages instead');
+      return deployPages();
+    }
+    throw new Error(`Vercel deploy failed:\n${out.slice(-3000)}`);
+  }
   const url = (r.stdout.match(/https:\/\/\S+/g) || []).pop();
   if (!url) throw new Error(`Could not find the deployment URL in Vercel's output:\n${out.slice(-2000)}`);
   // Keep the project link so approval deploys to the same Vercel project.
   if (fs.existsSync(path.join(appDir, '.vercel', 'project.json'))) git('add', '-f', path.join(appRel, '.vercel', 'project.json'));
   return url;
+}
+
+// Backup preview host: copies the built site to the gh-pages branch under previews/<slug>/.
+// Needs GitHub Pages turned on (Settings → Pages → Deploy from a branch → gh-pages).
+function deployPages() {
+  const dist = path.join(appDir, 'dist');
+  if (!fs.existsSync(path.join(dist, 'index.html'))) throw new Error('No built site to publish.');
+  const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
+  const wt = path.join(process.env.RUNNER_TEMP || os.tmpdir(), 'factory-pages');
+  fs.rmSync(wt, { recursive: true, force: true });
+  sh('git', ['worktree', 'prune'], { check: false });
+  const exists = sh('git', ['ls-remote', '--exit-code', '--heads', 'origin', 'gh-pages'], { check: false }).status === 0;
+  if (exists) {
+    git('fetch', '-q', 'origin', '+gh-pages:refs/remotes/origin/gh-pages');
+    git('worktree', 'add', '-q', '-f', '-B', 'factory-gh-pages', wt, 'refs/remotes/origin/gh-pages');
+  } else {
+    git('worktree', 'add', '-q', '--detach', wt);
+    sh('git', ['checkout', '-q', '--orphan', 'factory-gh-pages'], { cwd: wt });
+    sh('git', ['rm', '-rq', '--cached', '.'], { cwd: wt, check: false });
+    for (const f of fs.readdirSync(wt)) if (f !== '.git') fs.rmSync(path.join(wt, f), { recursive: true, force: true });
+  }
+  const target = path.join(wt, 'previews', slug);
+  fs.rmSync(target, { recursive: true, force: true });
+  fs.mkdirSync(target, { recursive: true });
+  fs.cpSync(dist, target, { recursive: true });
+  // Make root-relative asset links work under the /<repo>/previews/<slug>/ sub-path.
+  const idx = path.join(target, 'index.html');
+  fs.writeFileSync(idx, fs.readFileSync(idx, 'utf8').replace(/(src|href)="\/(?!\/)/g, '$1="./'));
+  fs.writeFileSync(path.join(wt, '.nojekyll'), '');
+  sh('git', ['add', '-A'], { cwd: wt });
+  const staged = sh('git', ['diff', '--cached', '--quiet'], { cwd: wt, check: false }).status !== 0;
+  if (staged) sh('git', ['commit', '-q', '-m', `factory: preview for #${issue}`], { cwd: wt });
+  let ok = false;
+  for (const wait of [0, 15, 30, 60]) {
+    if (wait) sleep(wait);
+    if (sh('git', ['push', '-q', '--force', 'origin', 'factory-gh-pages:gh-pages'], { cwd: wt, check: false }).status === 0) { ok = true; break; }
+  }
+  sh('git', ['worktree', 'remove', '--force', wt], { check: false });
+  if (!ok) throw new Error('Vercel hit its daily limit, and the backup preview on GitHub Pages could not be saved either. Press Try again later.');
+  return `https://${owner.toLowerCase()}.github.io/${repo}/previews/${slug}/`;
 }
 
 function ensurePullRequest() {
