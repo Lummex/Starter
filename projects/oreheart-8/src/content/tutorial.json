@@ -77,7 +77,7 @@
   "complete": "Tutorial complete!",
   "mine": "Mining is an action! Next turn, in the Action phase, drag your Miner onto the mine next to it. A Miner mines 2 crystals, a Fighter 1. Watch the mine change to your color. Standing nearby without mining gives nothing.",
   "smith": "Smith time! Drag the Scrapsmith Miner from your hand onto one of your own creatures in the Deploy phase: it gets a permanent +1 Attack and +1 Health. (A basic Miner played this way gives +1 Health.)",
-  "mineAll": "Now the shortcut: next turn, in the Action phase, press the ⛏️ Mine All button (bottom right, left of your deck, or press M). Every ready Miner next to a mine mines at once."
+  "mineTap": "Now the shortcut: next turn, in the Action phase, tap a pulsing mine (it shows ⛏️ and a number). Tap the mine and every ready Miner next to it mines at once. Press and hold a mine to see its info."
  },
  "mines": [
   {

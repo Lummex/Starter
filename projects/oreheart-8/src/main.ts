@@ -1,7 +1,7 @@
 import './style.css';
 import { Game } from './game';
 import { App } from './ui/app';
-import { CARDS, CONFIG } from './engine';
+import { CARDS, CONFIG, weaponOf } from './engine';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
@@ -27,7 +27,7 @@ if (test) {
       if (!c) return null;
       const cr = c.type === 'creature';
       return { id: c.id, name: c.name, type: c.type, faction: c.faction === 'any' ? null : c.faction, rarity: c.rarity, role: cr ? String(c.role).toLowerCase() : null,
-        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text };
+        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text, weapon: weaponOf(c) };
     },
     getConfig: () => JSON.parse(JSON.stringify(CONFIG)),
     setPhaseTimeLeft: (n: number) => app.setPhaseTimeLeft(n),

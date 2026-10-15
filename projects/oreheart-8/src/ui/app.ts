@@ -1,6 +1,7 @@
 import { Game } from '../game';
-import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMiners, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
+import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
 import tutorialJson from '../content/tutorial.json';
+import { showDecks, loadDecks, deckLegal } from './decks';
 import { createBoardView, createFlatView, BoardView } from './scene';
 
 type El = HTMLElement;
@@ -28,7 +29,7 @@ function faceKids(c: any, cost?: number): El[] {
 const roleBadge = (c: any) => (c.role === 'Smith' ? '⚒️' : isMiner(c) ? '⛏️' : '⚔️');
 const COLOR_HEX: Record<string, string> = { green: '#3ee06a', blue: '#3fa9ff', purple: '#b45cff', white: '#f2f6ff' };
 
-function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string | Node | null | undefined)[]): El {
+export function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string | Node | null | undefined)[]): El {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
     if (v == null || v === false) continue;
@@ -39,7 +40,7 @@ function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string | Node
   for (const k of kids) if (k != null) e.append(k instanceof Node ? k : document.createTextNode(k));
   return e;
 }
-const btn = (label: string, cls = '', onclick?: (e: Event) => void, attrs: Record<string, any> = {}) => h('button', { type: 'button', class: 'btn ' + cls, onclick, ...attrs }, label);
+export const btn = (label: string, cls = '', onclick?: (e: Event) => void, attrs: Record<string, any> = {}) => h('button', { type: 'button', class: 'btn ' + cls, onclick, ...attrs }, label);
 
 export class App {
   root: El;
@@ -118,6 +119,7 @@ export class App {
       h('nav', { class: 'stack menu-grid', 'aria-label': 'Main menu' },
         btn('Play', 'primary', () => this.showSetup()),
         btn('Tutorial', '', () => this.beginTutorial()),
+        btn('Decks', '', () => showDecks(this)),
         btn('Rules', '', () => this.showRules()),
         btn('Settings', '', () => this.showSettings())));
     this.root.append(s);
@@ -154,15 +156,20 @@ export class App {
     }
     for (const d of ['easy', 'normal']) diffBtns.push(btn(d === 'easy' ? 'Easy' : 'Normal', '', () => { diff = d; sel(); }, { 'data-id': d }));
     sel();
+    const decks = loadDecks();
+    const deckSel = h('select', { id: 'deck-choice' }, h('option', { value: '' }, 'Starter deck'),
+      ...decks.map((d, i) => { const ok = deckLegal(d); return h('option', { value: String(i), disabled: ok ? null : true }, ok ? d.name : `${d.name} (not legal)`); })) as HTMLSelectElement;
     const s = h('main', { class: 'screen' },
       h('h1', { class: 'section cinzel' }, 'Choose Your Commander'),
       h('div', { class: 'cmds' }, ...cmdBtns),
       h('div', { class: 'row', style: 'margin:10px 0' }, ...diffBtns),
+      h('div', { class: 'row f-field' }, h('label', { for: 'deck-choice' }, 'Deck'), deckSel),
       h('div', { class: 'row' },
         btn('Start Match', 'primary', () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
           const opp = others[Math.floor(Math.random() * others.length)];
-          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff });
+          const pick = deckSel.value === '' ? null : decks[+deckSel.value];
+          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, ...(pick ? { playerDeck: pick.cards.slice() } : {}) });
         }),
         btn('Back', '', () => this.showMenu())));
     this.root.append(s);
@@ -189,7 +196,8 @@ export class App {
       h('h1', { class: 'section cinzel' }, 'Rules'),
       sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
       sec('The Board', 'A hidden grid 13 spaces wide and 7 deep. The enemy is at the top, you are at the bottom. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
-      sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). The "Mine All" button (or the M key) makes every ready Miner next to a mine mine at once. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and tapping a mine shows who owns it and what it pays.', crystals),
+      sec('Decks and auto-skip', 'The Decks screen on the main menu is a testing deck builder: every card is unlocked and you can save up to 5 decks of 50 cards (Rare, Ultra Rare and Collector cards max 3 copies, at most 10 Crystal cards). Pick a saved deck or the starter deck before a match. Your Deploy phase ends by itself when no card in your hand can be both paid for and placed, and your Action phase ends by itself when no creature can move, attack or mine.', crystals),
+      sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
       sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (one per round, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
       sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals (Flow first, then Bank). Commanders never attack. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet: you can play a Crystal card on its own or together with a counterspell to pay for it. Counterspells cancel spells or summons.'),
@@ -273,8 +281,6 @@ export class App {
     const fcol = FACTIONS[this.game.state.players.player.faction].crystal;
     r.crFlow = h('span', { class: 'cr flow ' + fcol, role: 'img', 'aria-label': 'Your Flow crystals' }, '⛏️ 0');
     r.crBank = h('span', { class: 'cr bank ' + fcol, role: 'img', 'aria-label': 'Your Bank crystals' }, '🏦 0');
-    r.mineAll = btn('⛏️ Mine All (0)', 'mineall-btn', () => this.mineAll());
-    r.mineAll.hidden = true;
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
     r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, '0');
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
@@ -298,7 +304,7 @@ export class App {
       h('div', { class: 'hud hud-left' }, crystals, r.income,
         r.swap),
       h('div', { class: 'hud hud-top' }, r.enemyHand),
-      r.enemyDeck, r.myDeck, r.mineAll,
+      r.enemyDeck, r.myDeck,
       r.phase,
       h('div', { class: 'hud hud-right' }, r.done, menuBtn),
       r.tip, r.hand, r.timer);
@@ -322,9 +328,21 @@ export class App {
       const fl = h('div', { class: 'mine-flow', role: 'img', 'aria-label': `Mine flow, row ${row}, column ${col}` }, '+0 / +0');
       fl.dataset.row = String(row); fl.dataset.col = String(col);
       r.rings.push(ring); r.flows.push(fl); r.board.append(ring, fl);
-      const m = h('button', { type: 'button', class: 'site-mark', 'aria-label': `Crystal site, row ${row}, column ${col}`, onclick: () => this.openSite(i) });
+      const m = h('button', { type: 'button', class: 'site-mark', 'aria-label': `Crystal site, row ${row}, column ${col}`, onclick: () => this.tapSite(i) });
       m.dataset.row = String(row); m.dataset.col = String(col);
-      m.addEventListener('pointerdown', (e) => e.stopPropagation());
+      m.dataset.readyMiners = '0';
+      m.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        this.holdFired = false;
+        clearTimeout(this.holdTimer);
+        this.holdTimer = setTimeout(() => { this.holdFired = true; this.openSite(i, 'hold'); }, 500);
+      });
+      const endHold = () => clearTimeout(this.holdTimer);
+      m.addEventListener('pointerup', endHold);
+      m.addEventListener('pointercancel', endHold);
+      m.addEventListener('pointerleave', endHold);
+      m.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') this.openSite(i, 'hover'); });
+      m.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType === 'mouse' && this.siteTipMode === 'hover') this.closeSiteTip(); });
       r.sites.push(m); r.board.append(m);
     });
     r.strong = {} as any;
@@ -338,6 +356,7 @@ export class App {
     this.unsub = this.game.subscribe((st, ev) => this.update(st, ev));
     r.board.addEventListener('pointerdown', (e: PointerEvent) => this.boardPointerDown(e));
     r.hand.addEventListener('wheel', (e: WheelEvent) => { e.preventDefault(); this.handScroll += (e.deltaY || e.deltaX) / 80; this.layoutHand(); }, { passive: false });
+    document.addEventListener('pointerdown', this.tuckOutside, true);
     window.addEventListener('resize', this.onResize);
     window.removeEventListener('keydown', this.onKey);
     window.addEventListener('keydown', this.onKey);
@@ -404,6 +423,16 @@ export class App {
     el.style.left = rc.x + 'px'; el.style.top = rc.y + 'px'; el.style.width = rc.w + 'px'; el.style.height = rc.h + 'px';
   }
 
+  handTimer: any = null;
+  /** The hand rests tucked half below the screen edge; hovering (or tapping on phones) slides it up. */
+  openHand(on: boolean) {
+    clearTimeout(this.handTimer);
+    const hand = this.r.hand as El;
+    if (!hand) return;
+    if (on) hand.classList.add('open');
+    else this.handTimer = setTimeout(() => hand.classList.remove('open'), 120);
+  }
+
   /** Pop a hand card out of the fan at 2x size, kept fully on screen. */
   popCard(el: El, on: boolean) {
     if (!on) {
@@ -455,7 +484,7 @@ export class App {
       const x = W / 2 + off * spacing - cw / 2;
       const t = (off * spacing) / (W / 2);
       const rot = Math.max(-6, Math.min(6, t * 12));
-      const y = t * t * cw * 0.4;
+      const y = t * t * cw * 0.08;
       c.style.left = x + 'px';
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
       c.dataset.fan = c.style.transform;
@@ -511,10 +540,6 @@ export class App {
     r.done.disabled = !mine;
     const canSwap = mine && st.phase === 'deploy' && this.game.legalActions().some((a: any) => a.type === 'gathererSwap');
     r.swap.hidden = !canSwap;
-    const nMine = mine && st.phase === 'action' ? readyMiners(st, 'player').length : 0;
-    r.mineAll.hidden = !(mine && st.phase === 'action');
-    r.mineAll.disabled = nMine === 0;
-    r.mineAll.textContent = `⛏️ Mine All (${nMine})`;
     if (!canSwap) this.swapping = false;
     // board overlays
     this.renderTip(st);
@@ -565,13 +590,11 @@ export class App {
   movesDlg: { close: () => void } | null = null;
   swapping = false;
   get remindMoves() { return localStorage.getItem('oreheart.movesReminder') !== 'off'; }
-  mineAll() {
-    const a = this.game.legalActions().find((x: any) => x.type === 'mineAll');
-    if (a) this.game.act(a);
-  }
-  onKey = (e: KeyboardEvent) => {
-    if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey && this.r.mineAll && !this.r.mineAll.hidden && !this.r.mineAll.disabled && !this.dialogs.length) this.mineAll();
+  tuckOutside = (e: PointerEvent) => {
+    const hand = this.r.hand as El | undefined;
+    if (hand && e.pointerType !== 'mouse' && !hand.contains(e.target as Node)) { clearTimeout(this.handTimer); hand.classList.remove('open'); }
   };
+  onKey = (_e: KeyboardEvent) => { /* no keyboard shortcuts */ };
 
   // ------------------------------------------------------------ callouts, reveals and spell effects
   revealSeconds() { return localStorage.getItem('oreheart.reveal') === 'fast' ? CONFIG.revealFastSeconds : CONFIG.revealSeconds; }
@@ -602,6 +625,26 @@ export class App {
         const br = this.r.board.getBoundingClientRect(), hr = host.getBoundingClientRect(), er = el.getBoundingClientRect();
         dx = br.left - hr.left + pc.x - (er.left - hr.left + er.width / 2);
         dy = br.top - hr.top + pc.y - (er.top - hr.top + er.height / 2);
+      }
+      if (c.type === 'creature' && at && this.view) {
+        // drop onto the space, flip, glow, then rise into the 3D creature with a dust puff
+        const T = (x: number, y: number, sc: number, ry: number) => `translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) perspective(600px) rotateY(${ry}deg) scale(${sc})`;
+        const gl = '0 0 40px #ffd45aaa,0 10px 30px #000', glow = '0 0 70px 22px #fff2a0,0 0 30px 10px #ffd45a';
+        const dur = Math.min(1500, secs * 1000);
+        const anim = el.animate([
+          { transform: T(0, 0, 1, 0), opacity: 1, boxShadow: gl, offset: 0 },
+          { transform: T(dx, dy, 0.42, 0), opacity: 1, boxShadow: gl, offset: 0.35 },
+          { transform: T(dx, dy, 0.42, 180), opacity: 1, boxShadow: glow, offset: 0.6 },
+          { transform: T(dx, dy, 0.42, 360), opacity: 1, boxShadow: glow, offset: 0.75 },
+          { transform: T(dx, dy - 40, 0.18, 360), opacity: 0, boxShadow: glow, offset: 1 },
+        ], { duration: dur, easing: 'ease-in-out', fill: 'forwards' });
+        const puff = h('div', { class: 'dust-puff', 'aria-hidden': 'true' });
+        const pc = this.center(at.row, at.col);
+        puff.style.left = `${pc.x}px`; puff.style.top = `${pc.y}px`;
+        setTimeout(() => this.r.board?.append(puff), dur * 0.8);
+        setTimeout(() => puff.remove(), dur * 0.8 + 700);
+        anim.onfinish = () => el.remove();
+        return;
       }
       const anim = el.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.15)`, opacity: 0.2 }], { duration: Math.min(500, secs * 700), easing: 'ease-in', fill: 'forwards' });
       anim.onfinish = () => el.remove();
@@ -667,16 +710,44 @@ export class App {
     this.swapping = true;
     this.flash('Tap the card you want to discard');
   }
-  openSite(i: number) {
+  holdTimer: any = null;
+  holdFired = false;
+  siteTip: El | null = null;
+  siteTipMode = '';
+  closeSiteTip() { this.siteTip?.remove(); this.siteTip = null; this.siteTipMode = ''; }
+  /** Tap a mine: all ready Miners next to it mine; with none ready it shows the info instead. */
+  tapSite(i: number) {
+    if (this.holdFired) { this.holdFired = false; return; }
+    const m = this.r.sites[i] as El;
+    if (+(m.dataset.readyMiners || 0) > 0) {
+      this.closeSiteTip();
+      const s = this.game.state.sites[i];
+      this.game.act({ type: 'mineAt', row: s.row, col: s.col });
+      return;
+    }
+    this.openSite(i, 'tap');
+  }
+  openSite(i: number, mode = 'tap') {
     const st = this.game.state;
     if (!st) return;
+    this.closeSiteTip();
     const s = st.sites[i];
     const who = s.controller === 'player' ? 'You' : s.controller === 'opponent' ? 'Enemy' : 'Nobody';
     const color = s.color.charAt(0).toUpperCase() + s.color.slice(1);
-    const line = (t: string) => h('p', { style: 'text-align:center;margin:4px 0' }, t);
-    this.dialog('Crystal site', [h('h2', {}, 'Crystal site'), line(`Controlled by: ${who}`), line(`Color: ${color}`),
-      line(`Your flow: +${s.flow.player}`), line(`Enemy flow: +${s.flow.opponent}`),
-      h('div', { class: 'row' }, btn('Close', 'primary', () => this.dialogs[this.dialogs.length - 1]?.remove()))]);
+    const line = (t: string) => h('p', { style: 'text-align:center;margin:2px 0' }, t);
+    const tip = h('div', { class: 'site-tip', role: 'dialog', 'aria-label': 'Crystal site' }, h('h2', {}, 'Crystal site'), line(`Controlled by: ${who}`), line(`Color: ${color}`),
+      line(`Your flow: +${s.flow.player}`), line(`Enemy flow: +${s.flow.opponent}`));
+    if (mode !== 'hover') tip.append(btn('Close', 'small', () => this.closeSiteTip()));
+    const m = this.r.sites[i] as El;
+    const rr = this.root.getBoundingClientRect(), mr = m.getBoundingClientRect();
+    tip.style.left = `${Math.max(4, Math.min(rr.width - 190, mr.left - rr.left + mr.width / 2 - 90))}px`;
+    tip.style.bottom = `${Math.max(4, rr.bottom - mr.top + 6)}px`;
+    this.root.append(tip);
+    this.siteTip = tip; this.siteTipMode = mode;
+    if (mode !== 'hover') {
+      const off = (e: Event) => { if (!tip.contains(e.target as Node)) { this.closeSiteTip(); document.removeEventListener('pointerdown', off, true); } };
+      setTimeout(() => document.addEventListener('pointerdown', off, true), 0);
+    }
   }
 
   // ------------------------------------------------------------ timer
@@ -728,7 +799,11 @@ export class App {
     st.sites.forEach((s: any, i: number) => {
       const m = this.r.sites[i] as El;
       const sym = s.controller ? FSYM(st.players[s.controller].faction) : '';
-      m.textContent = this.view?.is3D ? sym : '💎' + sym;
+      const myAction = st.phase === 'action' && st.priority === 'player' && st.activePlayer === 'player' && !st.pendingResponse;
+      const n = myAction ? readyMinersAt(st, 'player', s).length : 0;
+      m.dataset.readyMiners = String(n);
+      m.classList.toggle('ready', n > 0);
+      m.textContent = n > 0 ? `⛏️${n}` : this.view?.is3D ? sym : '💎' + sym;
       m.style.color = COLOR_HEX[s.color] || COLOR_HEX.white;
       const ring = this.r.rings[i] as El;
       ring.style.setProperty('--mine', COLOR_HEX[s.color] || COLOR_HEX.white);
@@ -750,7 +825,7 @@ export class App {
         this.r.board.insertBefore(el, this.r.fx);
       }
       el.dataset.uid = c.uid; el.dataset.row = String(c.row); el.dataset.col = String(c.col);
-      (el.querySelector('.a') as El).textContent = `⚔️${c.attack}`;
+      (el.querySelector('.a') as El).textContent = `⚔️${c.attack + junkBonus(st, c)}`;
       (el.querySelector('.h') as El).textContent = `❤️${c.health}`;
       (el.querySelector('.m') as El).textContent = `👟${maxMove(c)}${isMiner(CARDS[c.cardId]) ? ' ⛏️' : ''}${CARDS[c.cardId].abilities?.includes('ranged') ? ' 🏹' : ''}`;
       el.dataset.mining = String(!!c.minedMine);
@@ -789,8 +864,9 @@ export class App {
         ...faceKids(c, cost),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
-      el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') this.popCard(el, true); });
-      el.addEventListener('pointerleave', () => this.popCard(el, false));
+      el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { this.openHand(true); this.popCard(el, true); } });
+      el.addEventListener('pointerleave', (e: PointerEvent) => { this.popCard(el, false); if (e.pointerType === 'mouse') this.openHand(false); });
+      el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);
       el.addEventListener('focus', () => this.popCard(el, true));
       el.addEventListener('blur', () => this.popCard(el, false));
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));

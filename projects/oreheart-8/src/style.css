@@ -251,9 +251,6 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .enemy-card.hand-card.static{--cw:130px;width:130px;height:195px;margin:0 auto 6px;font-size:inherit}
 .reveal{--cw:min(230px,48vh);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:520;pointer-events:auto!important;cursor:pointer;box-shadow:0 0 40px #ffd45aaa,0 10px 30px #000;animation:revealIn .25s ease-out}
 @keyframes revealIn{from{transform:translate(-50%,-50%) scale(.3) rotate(-8deg);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
-.mineall-btn{position:absolute;z-index:23;right:calc(max(6px,env(safe-area-inset-right)) + var(--cw) + 10px);bottom:6px;min-width:0;min-height:44px;padding:4px 10px;font-size:.85rem;white-space:nowrap;background:linear-gradient(#ffb347,#c46a00);color:#2a1500;font-weight:900;border:2px solid #000;border-radius:10px;box-shadow:0 2px 0 #000}
-.mineall-btn[hidden]{display:none}
-.mineall-btn:disabled{filter:grayscale(.8);opacity:.5}
 .callout{position:absolute;z-index:60;transform:translate(-50%,-120%);pointer-events:none;font-family:'Cinzel',serif;font-weight:900;font-size:clamp(.8rem,3.4vh,1.3rem);color:#fff6dc;-webkit-text-stroke:2px #1a0f05;paint-order:stroke fill;text-shadow:0 0 12px #ffb347,0 3px 0 #000;white-space:nowrap;animation:calloutPop 1.7s ease-out forwards;background:#2a0f4acc;padding:2px 12px;border-radius:12px;border:2px solid #ffd45a}
 .callout.opponent{color:#ffd0c8;border-color:#ff6a5a}
 @keyframes calloutPop{0%{opacity:0;transform:translate(-50%,-60%) scale(.5)}12%{opacity:1;transform:translate(-50%,-120%) scale(1.15)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-160%) scale(1)}}
@@ -278,3 +275,17 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .hand-card .nm{font-size:calc(var(--cw) * .145)}
 .hand-card .st{font-size:calc(var(--cw) * .14)}
 .hand-card .tx{min-height:0;flex:1 1 0}
+
+.site-mark.ready{animation:minepulse 1s ease-in-out infinite;font-weight:900;color:#ffd36b!important;text-shadow:0 0 6px #000,0 0 10px #ffb347}
+@keyframes minepulse{50%{transform:scale(1.25)}}
+.site-tip{position:absolute;z-index:120;width:180px;background:#241b33f2;border:2px solid var(--gold);border-radius:10px;padding:6px 8px;color:var(--parch);font-size:.8rem;pointer-events:auto}
+.site-tip h2{margin:0 0 2px;font-size:.9rem;text-align:center}
+
+/* Revision 8: tucked hand */
+.match .hand{bottom:calc(var(--cw) * 0.06);transform:translateY(calc(var(--cw) * .67));transition:transform .25s ease-out}
+.match .hand.open,.match .hand.has-pop{transform:none}
+.match .hand.away{transform:translateY(130%)}
+.test .match .hand{transition:none}
+.token .tk-stats{bottom:34%;padding:1px 4px;max-width:110px;font-size:clamp(.55rem,2.4vh,.72rem);word-spacing:-.15em;letter-spacing:-.02em;overflow:hidden}
+.dust-puff{position:absolute;z-index:40;width:10px;height:10px;margin:-5px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,#e8d8b8cc,#b89c6a66 60%,transparent 70%);animation:puff .7s ease-out forwards}
+@keyframes puff{to{transform:scale(9);opacity:0}}

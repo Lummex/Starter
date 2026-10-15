@@ -782,5 +782,260 @@
   ],
   "unique": false,
   "text": "Smith Miner: Mines 2 crystals from a mine it stands next to (1 at an enemy-owned mine). Play it on one of your own creatures for a permanent +1 Attack and +1 Health (no limit)."
+ },
+ {
+  "id": "rotgut-grenadier",
+  "name": "Rotgut Grenadier",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged: Hits any enemy within 2 spaces in any direction, even over other creatures. No strike back."
+ },
+ {
+  "id": "shiv-rat",
+  "name": "Shiv Rat",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 2,
+  "health": 1,
+  "move": 1,
+  "abilities": [
+   "sneaky"
+  ],
+  "unique": false,
+  "text": "Sneaky: Enemies cannot strike back at it."
+ },
+ {
+  "id": "skullbasher-rusher",
+  "name": "Skullbasher Rusher",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "charge"
+  ],
+  "unique": false,
+  "text": "Charge: Can move and attack in the same turn."
+ },
+ {
+  "id": "junk-shaman",
+  "name": "Junk Shaman",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 1,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "junkBoost"
+  ],
+  "unique": false,
+  "text": "Junk Boost: On your turn, adjacent Goblins get +1 Attack."
+ },
+ {
+  "id": "blastrat-sapper",
+  "name": "Blastrat Sapper",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 2,
+  "health": 1,
+  "move": 1,
+  "abilities": [
+   "kaboom1"
+  ],
+  "unique": false,
+  "text": "Ka-boom 1: When defeated, deals 1 damage to every adjacent enemy creature."
+ },
+ {
+  "id": "hexwright-apprentice",
+  "name": "Hexwright Apprentice",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 1,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged: Hits any enemy within 2 spaces in any direction, even over other creatures. No strike back."
+ },
+ {
+  "id": "gearward-sentinel",
+  "name": "Gearward Sentinel",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 1,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "guard"
+  ],
+  "unique": false,
+  "text": "Guard: Adjacent enemies must attack it first."
+ },
+ {
+  "id": "runic-siphoner",
+  "name": "Runic Siphoner",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "siphon"
+  ],
+  "unique": false,
+  "text": "Siphon: When it defeats a creature, your Bank gets +1 crystal."
+ },
+ {
+  "id": "phase-stalker",
+  "name": "Phase Stalker",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "blink"
+  ],
+  "unique": false,
+  "text": "Blink: Once, swap places with any of your creatures."
+ },
+ {
+  "id": "glyphshield-warden",
+  "name": "Glyphshield Warden",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "glyphShield"
+  ],
+  "unique": false,
+  "text": "Glyph Shield: At the start of your turn it gets Shield 1."
+ },
+ {
+  "id": "oathbound-pikeman",
+  "name": "Oathbound Pikeman",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "guard"
+  ],
+  "unique": false,
+  "text": "Guard: Adjacent enemies must attack it first."
+ },
+ {
+  "id": "deepforge-crossbowman",
+  "name": "Deepforge Crossbowman",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged: Hits any enemy within 2 spaces in any direction, even over other creatures. No strike back."
+ },
+ {
+  "id": "barrelback-courier",
+  "name": "Barrelback Courier",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 1,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "haste"
+  ],
+  "unique": false,
+  "text": "Haste: Can act the turn it is played."
+ },
+ {
+  "id": "rune-splitter",
+  "name": "Rune-Splitter",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 7,
+  "attack": 3,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "armored"
+  ],
+  "unique": false,
+  "text": "Armored: Takes 1 less damage from every hit."
+ },
+ {
+  "id": "grimhold-ravager",
+  "name": "Grimhold Ravager",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 8,
+  "attack": 3,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "rage"
+  ],
+  "unique": false,
+  "text": "Rage: +2 Attack while below half Health."
  }
 ]

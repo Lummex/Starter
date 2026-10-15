@@ -1,3 +1,23 @@
+# Oreheart — Phase 1a build notes (Revision 8)
+
+`npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 37 tests).
+
+## Revision 8 — what was built
+- **Deck Builder** (`src/ui/decks.ts`, "Decks" on the menu): all cards as "Add <Name>" tiles with full text, Faction/Type/Cost/Rarity filters (list is filtered, not hidden), deck list with "Remove <Name>", live counts, problem messages (`deckProblems` in `src/engine/decks.ts`), save/rename/delete (confirm), max 5 decks in localStorage (try/catch). "Deck" select on the Choose Your Commander screen; illegal decks disabled "(not legal)". `newMatch({ playerDeck })` shuffles a custom deck for the player.
+- **Starter decks** rebuilt (5 basic + 3 Smith Miners, ≤4 of any other card, new cards included, 40/6/4).
+- **15 new cards** + fillers in `cards.json`; engine abilities `kaboom1`, `junkBoost` (situational +1, shown on labels via `junkBonus`), `siphon` (+1 Bank on a kill, also by strike back), `glyphShield`; Blink/Guard/Armored/Rage/Haste/Charge/Sneaky/Ranged reuse existing code.
+- **Tap a mine**: `mineAt {row,col}` replaces `mineAll`/M key; site buttons carry `data-ready-miners`, pulse and show "⛏️N"; info on hover or 0.5 s hold (non-modal `role=dialog` "Crystal site" above the mine). Tutorial step `mineTap`.
+- **Strict auto-skip**: `hasMovesLeft` ignores Crystal cards, Instants, abilities, swap and upgrades; delay 0.5 s.
+- **Tucked hand**: fan sits ~37–45% below the screen edge, slides up on hover / tap (tap elsewhere tucks); 2× pop-out kept.
+- **Weapons**: `weaponOf` (also `getCard().weapon`) and a distinct 3D weapon per type in `scene.ts`.
+- **Stat pill** tucked under the feet, max 110 px.
+- **Card reveal**: creature cards drop onto the space, flip, glow, rise with a dust puff (visual only, skipped in test mode).
+
+## Gaps
+- Weapons and the reveal animation were only checked by eye in a headless browser.
+
+---
+
 # Oreheart — Phase 1a build notes (Revision 7)
 
 Vite + TypeScript (vanilla DOM) + Three.js. `npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 34 tests).

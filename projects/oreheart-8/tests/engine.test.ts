@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createMatch, applyAction, legalActions, creatureAt, CARDS, CONFIG, STARTER_DECKS, incomePreview, hasMovesLeft, legalMines } from '../src/engine';
+import { createMatch, applyAction, legalActions, creatureAt, CARDS, CONFIG, STARTER_DECKS, incomePreview, hasMovesLeft, legalMines, weaponOf, deckProblems, atkValue } from '../src/engine';
 
 const act = (s: any, a: any) => { const r = applyAction(s, a); if (!r.ok) throw new Error(r.error); return r.state; };
 const done = (s: any, n = 1) => { for (let i = 0; i < n; i++) s = act(s, { type: 'done' }); return s; };
@@ -281,17 +281,55 @@ describe('revision 7', () => {
     expect(s.players.player.bank).toBe(4);
     expect(CARDS['prospectors-prayer'].name).toBe('Desperate Plunder');
   });
-  it('Mine All mines exactly the eligible Miners (not Fighters, not summoned-and-moved)', () => {
-    let s = mk({ board: [P('goblin-scrounger', 4, 9), P('gnome-prospector', 5, 5), P('goblin-grunt', 3, 7), P('goblin-scrounger', 7, 1), P('goblin-scrounger', 3, 5, { }) ] });
+  it('tapping a mine (mineAt) mines with exactly the eligible Miners; mineAll is gone', () => {
+    let s = mk({ board: [P('goblin-scrounger', 4, 9), P('gnome-prospector', 5, 5), P('goblin-grunt', 3, 7), P('goblin-scrounger', 3, 5), P('goblin-scrounger', 7, 1)] });
     s = done(s);
     const la = legalActions(s);
-    expect(la.some((a: any) => a.type === 'mineAll')).toBe(true);
-    s = act(s, { type: 'mineAll' });
+    expect(la.some((a: any) => a.type === 'mineAll')).toBe(false);
+    expect(la.filter((a: any) => a.type === 'mineAt').length).toBe(3);
+    expect(applyAction(s, { type: 'mineAll' }).ok).toBe(false);
+    s = act(s, { type: 'mineAt', row: 3, col: 6 });
+    expect(at(s, 3, 5).hasMined && at(s, 3, 7).hasMined === false).toBe(true);
+    expect(at(s, 5, 5).hasMined).toBe(false);
+    s = act(s, { type: 'mineAt', row: 4, col: 10 });
+    s = act(s, { type: 'mineAt', row: 5, col: 6 });
     expect(s.players.player.flow).toBe(6);
-    expect(at(s, 4, 9).hasMined).toBe(true);
-    expect(at(s, 3, 7).hasMined).toBe(false);
     expect(at(s, 7, 1).hasMined).toBe(false);
-    expect(legalActions(s).some((a: any) => a.type === 'mineAll')).toBe(false);
+    expect(legalActions(s).some((a: any) => a.type === 'mineAt')).toBe(false);
+  });
+  it('R8 new cards: stats, abilities and weapons', () => {
+    const c = (id: string) => CARDS[id];
+    expect([c('rotgut-grenadier').cost, c('rotgut-grenadier').attack, c('rotgut-grenadier').health]).toEqual([5, 2, 2]);
+    expect([c('grimhold-ravager').cost, c('grimhold-ravager').rarity]).toEqual([8, 'Uncommon']);
+    expect(Object.values(CARDS).filter((x: any) => x.type === 'creature').length).toBe(48);
+    expect([weaponOf(c('goblin-scrounger')), weaponOf(c('goblin-smith-miner')), weaponOf(c('shard-guzzler')), weaponOf(c('goblin-scrapper')), weaponOf(c('goblin-slinger')), weaponOf(c('hexwright-apprentice')),
+      weaponOf(c('deepforge-crossbowman')), weaponOf(c('axe-thrower')), weaponOf(c('shieldbeard')), weaponOf(c('ram-rider')), weaponOf(c('gyrocopter-ace')), weaponOf(c('the-great-steam-golem')), weaponOf(c('fireball'))])
+      .toEqual(['pick', 'pick-hammer', 'pick-crystal', 'sword', 'sling', 'wand', 'crossbow', 'axes', 'sword-shield', 'lance', 'signature'.replace('signature', 'gyro'), 'signature', null]);
+    for (const deck of Object.values(STARTER_DECKS)) {
+      for (const id of deck) { const n = deck.filter((x) => x === id).length; if (!/miner|prospector|scrounger/.test(id)) expect(n).toBeLessThanOrEqual(4); }
+      expect(deck.filter((id) => CARDS[id].role === 'Smith').length).toBe(3);
+      expect(deckProblems(deck)).toEqual([]);
+    }
+  });
+  it('Shiv Rat takes no strike back; Siphoner adds Bank; Ravager hits for 5 when hurt; Rune-Splitter takes 1 less', () => {
+    let s = mk({ board: [P('shiv-rat', 4, 8), O('goblin-grunt', 4, 9)] });
+    s = act(done(s), { type: 'attack', creatureUid: at(s, 4, 8).uid, target: { row: 4, col: 9 } });
+    expect(at(s, 4, 8).health).toBe(1);
+    let t = mk({ board: [P('runic-siphoner', 4, 8), O('goblin-grunt', 4, 9)] });
+    t = act(done(t), { type: 'attack', creatureUid: at(t, 4, 8).uid, target: { row: 4, col: 9 } });
+    expect(t.players.player.bank).toBe(1);
+    let u = mk({ board: [P('rune-splitter', 4, 8), O('goblin-grunt', 4, 9)] });
+    u = act(done(u), { type: 'attack', creatureUid: at(u, 4, 8).uid, target: { row: 4, col: 9 } });
+    expect(at(u, 4, 8).health).toBe(2);
+    const v = mk({ board: [P('grimhold-ravager', 4, 8, { damage: 3 })] });
+    expect(atkValue(v, at(v, 4, 8))).toBe(5);
+  });
+  it('deck rules and strict auto-skip', () => {
+    const bad = [...Array(4).fill('wolf-rider'), ...Array(11).fill('soul-shard')];
+    expect(deckProblems(bad)).toEqual(['Needs exactly 50 cards (now 15).', 'Mangewolf Rider: at most 3 copies (now 4).', 'At most 10 Crystal cards (now 11).'].map((x) => x).sort((a, b) => deckProblems(bad).indexOf(a) - deckProblems(bad).indexOf(b)));
+    expect(deckProblems(Array(50).fill('goblin-scrounger'))).toEqual([]);
+    expect(hasMovesLeft(mk({ playerHand: ['heart-of-the-fallen', 'fizzle'] }))).toBe(false);
+    expect(hasMovesLeft(mk({ playerHand: ['goblin-scrounger'] }))).toBe(true);
   });
   it('the free Miner never upgrades; card names and text are renamed', () => {
     const s = mk({ playerHand: ['goblin-scrounger'], board: [P('goblin-grunt', 7, 2)] });

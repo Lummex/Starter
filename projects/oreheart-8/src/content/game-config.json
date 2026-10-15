@@ -3,7 +3,7 @@
  "timerHiddenSeconds": 40,
  "countdownSeconds": 10,
  "respondWindowSeconds": 12,
- "autoSkipDelaySeconds": 1,
+ "autoSkipDelaySeconds": 0.5,
  "startingCrystals": 0,
  "basicGatherers": {
   "goblins": "goblin-scrounger",
@@ -33,6 +33,7 @@
   "Collector": 3
  },
  "crystalCardLimit": 10,
+ "maxCrystalCards": 10,
  "commanderHealth": 20,
  "deckOutDamage": 1,
  "crystalCardsPerTurn": 1,

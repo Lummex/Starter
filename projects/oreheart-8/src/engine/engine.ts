@@ -134,6 +134,7 @@ export function createMatch(opts: any = {}) {
     const pl = s.players[who];
     const given = setup && setup[who + 'Deck'];
     if (given) pl.deck = given.map((id: string) => makeCard(s, id));
+    else if (who === 'player' && opts.playerDeck) pl.deck = shuffle(s, opts.playerDeck.map((id: string) => makeCard(s, id)));
     else pl.deck = shuffle(s, STARTER_DECKS[pl.faction].map((id: string) => makeCard(s, id)));
   }
   if (!setup) {
@@ -301,6 +302,7 @@ function startTurn(s: any, ev: any[]) {
   }
   for (const c of [...s.board.creatures]) {
     if (c.owner !== who) continue;
+    if (has(c, 'glyphShield')) c.shield += 1;
     if (has(c, 'fixit')) for (const a of adjacentCreatures(s, c)) if (a.owner === who) a.shield += CONFIG.shieldFixit;
     if (has(c, 'heartyale')) for (const a of adjacentCreatures(s, c)) if (a.owner === who) { a.maxHealth += CONFIG.aleBonus; a.health += CONFIG.aleBonus; a.ale += CONFIG.aleBonus; }
   }
@@ -369,6 +371,9 @@ function defeat(s: any, c: any, ev: any[]) {
   s.board.creatures.splice(i, 1);
   s.players[c.owner].discard.push({ uid: c.uid, cardId: c.cardId });
   ev.push({ type: 'defeat', uid: c.uid, cardId: c.cardId, owner: c.owner, row: c.row, col: c.col });
+  if (has(c, 'kaboom1')) {
+    for (const o of [...s.board.creatures]) if (o.owner !== c.owner && cheb(o, c) === 1) dealDamage(s, o, 1, ev);
+  }
   if (has(c, 'kaboom')) {
     for (const o of [...s.board.creatures]) if (o.owner !== c.owner && cheb(o, c) === 1) dealDamage(s, o, CONFIG.kaboomDamage, ev);
   }
@@ -376,11 +381,17 @@ function defeat(s: any, c: any, ev: any[]) {
 
 // ---------------------------------------------------------------- combat
 const ADV = (a: string, d: string) => FACTIONS[a]?.beats === d;
+/** Junk Shaman's situational +1 Attack for adjacent Goblins on their owner's turn. */
+export function junkBonus(s: any, c: any): number {
+  if (CARDS[c.cardId].faction !== 'goblins' || s.activePlayer !== c.owner) return 0;
+  return s.board.creatures.some((o: any) => o !== c && o.owner === c.owner && has(o, 'junkBoost') && cheb(o, c) === 1) ? 1 : 0;
+}
 export function atkValue(s: any, c: any, target?: any) {
   const card = CARDS[c.cardId];
   let v = c.attack;
   if (has(c, 'frenzy') && s.board.creatures.some((o: any) => o !== c && o.owner === c.owner && CARDS[o.cardId].faction === 'goblins' && cheb(o, c) === 1)) v += CONFIG.frenzyBonus;
   if (card.faction === 'goblins' && s.board.creatures.some((o: any) => o.owner === c.owner && has(o, 'rally'))) v += CONFIG.rallyBonus;
+  v += junkBonus(s, c);
   if (has(c, 'rage') && c.health * 2 < c.maxHealth) v += CONFIG.rageBonus;
   if (s.flags.battleCry === c.owner) v += 1;
   if (target && ADV(card.faction, CARDS[target.cardId].faction)) v += CONFIG.typeAdvantageBonus;
@@ -428,6 +439,8 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   if (strikes) { ev.push({ type: 'counter', uid: def.uid }); hurt(s, attacker, back, ev); }
   if (has(attacker, 'overload'))
     for (const o of [...s.board.creatures]) if (o.owner === def.owner && o !== def && cheb(o, pos) === 1) hurt(s, o, CONFIG.overloadDamage, ev);
+  if (def.health <= 0 && has(attacker, 'siphon')) s.players[attacker.owner].bank += 1;
+  if (attacker.health <= 0 && strikes && has(def, 'siphon')) s.players[def.owner].bank += 1;
   for (const c of [def, attacker, ...s.board.creatures]) if (c.health <= 0 && s.board.creatures.includes(c)) defeat(s, c, ev);
 }
 
@@ -664,6 +677,10 @@ export const upgradeCard = (card: any) => card.type === 'creature' && (card.role
 export function readyMiners(s: any, p: Side) {
   return s.board.creatures.filter((c: any) => c.owner === p && isMiner(CARDS[c.cardId]) && mineTargets(s, c).length > 0);
 }
+/** Ready Miner-role creatures of `p` next to site `x`, in reading order. */
+export function readyMinersAt(s: any, p: Side, x: { row: number; col: number }) {
+  return readyMiners(s, p).filter((c: any) => cheb(c, x) <= 1).sort((a: any, b: any) => a.row - b.row || a.col - b.col);
+}
 export function legalActions(s: any): any[] {
   if (s.phase === 'over' || !s.priority) return [];
   const who: Side = s.priority;
@@ -700,7 +717,7 @@ export function legalActions(s: any): any[] {
   if (ph === 'deploy') out.push(...crystalPlays(s, who));
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of moveDests(s, c)) out.push({ type: 'move', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of mineTargets(s, c)) out.push({ type: 'mine', creatureUid: c.uid, row: d.row, col: d.col });
-  if (ph === 'action' && readyMiners(s, who).length) out.push({ type: 'mineAll' });
+  if (ph === 'action') for (const x of s.sites) if (readyMinersAt(s, who, x).length) out.push({ type: 'mineAt', row: x.row, col: x.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const t of attackTargets(s, c)) out.push({ type: 'attack', creatureUid: c.uid, target: t });
   if (ph === 'deploy' && !s.flags.swapped && !pl.hand.some((h: any) => isMiner(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
     if (pl.hand.length) for (const h of pl.hand) out.push({ type: 'gathererSwap', discardUid: h.uid });
@@ -720,7 +737,7 @@ export function hasMovesLeft(s: any): boolean {
   if (s.phase === 'over' || !s.priority || s.pendingResponse || !['deploy', 'action'].includes(s.phase) || s.priority !== s.activePlayer) return false;
   const pl = s.players[s.priority];
   return legalActions(s).some((a: any) => {
-    if (['done', 'surrender', 'minerUpgrade', 'gathererSwap', 'pass', 'respond'].includes(a.type)) return false;
+    if (['done', 'surrender', 'minerUpgrade', 'gathererSwap', 'pass', 'respond', 'playCrystal', 'ability'].includes(a.type)) return false;
     if (a.type === 'cast') {
       const h = pl.hand.find((x: any) => x.uid === a.uid);
       return !h || CARDS[h.cardId].spellKind === 'regular';
@@ -866,16 +883,11 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       ev.push({ type: 'minerUpgrade', uid: c.uid, cardId: card.id, attack: atk, health: 1, row: c.row, col: c.col });
       break;
     }
-    case 'mineAll': {
-      for (const m of readyMiners(s, who)) {
-        const mc = mineColors(s);
-        const opts = mineTargets(s, m);
-        const full = (x: any) => yieldAt(s, m, mc, x) >= fullYield(m);
-        const t = opts.find(full) || opts[0];
-        const amount = yieldAt(s, m, mc, t);
-        m.hasMined = true; m.minedMine = { row: t.row, col: t.col };
-        ev.push({ type: 'mine', uid: m.uid, row: t.row, col: t.col, amount });
-      }
+    case 'mineAt': {
+      const group = readyMinersAt(s, who, l);
+      for (const m of group) { m.hasMined = true; m.minedMine = { row: l.row, col: l.col }; }
+      const mc = mineColors(s);
+      for (const m of group) ev.push({ type: 'mine', uid: m.uid, row: l.row, col: l.col, amount: yieldAt(s, m, mc, l) });
       break;
     }
     case 'move': {
@@ -942,7 +954,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
   return { ok: true, state: s, events: ev };
 }
 
-const TUTORIAL_ORDER = ['summon', 'move', 'mine', 'mineAll', 'spend', 'smith', 'swap', 'fight', 'spell', 'commander', 'complete'];
+const TUTORIAL_ORDER = ['summon', 'move', 'mine', 'mineTap', 'spend', 'smith', 'swap', 'fight', 'spell', 'commander', 'complete'];
 function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
   const t = s.tutorial;
   if (!t || t.step === 'complete') return;
@@ -953,9 +965,9 @@ function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
     case 'move': if (mine && act.type === 'move') next(); break;
     case 'mine': if (mine && act.type === 'mine') next(); break;
     case 'spend': if (mine && ['summon', 'cast'].includes(act.type)) next(); break;
-    case 'mineAll':
+    case 'mineTap':
       if (mine && ['summon', 'cast', 'minerUpgrade'].includes(act.type)) t.spent = true;
-      if (mine && act.type === 'mineAll') { next(); if (t.spent) next(); }
+      if (mine && act.type === 'mineAt') { next(); if (t.spent) next(); }
       break;
     case 'smith': if (mine && act.type === 'minerUpgrade') next(); break;
     case 'swap': if (mine && events.some((e: any) => e.type === 'swap')) next(); break;

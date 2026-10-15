@@ -1,6 +1,6 @@
 // Placeholder 3D battlefield (Three.js). Returns null when WebGL is unavailable (the UI then shows a 2D board).
 import * as THREE from 'three';
-import { COLORS, FACTIONS, CARDS, CONFIG, isActed } from '../engine';
+import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
 
 const BW: number = CONFIG.boardWidth, BH: number = CONFIG.boardHeight;
 const SHP = CONFIG.strongholds as Record<string, number[]>;
@@ -64,6 +64,89 @@ function groundTexture() {
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.repeat.set(10, 8);
   return t;
+}
+
+
+const M = (color: number, extra: any = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.5, ...extra });
+const WOOD = 0x8a5a2a, IRON = 0xc4c8d4;
+/** Big comic-style weapon for a creature's figure, chosen by type (see weaponOf). */
+function addWeapon(g: THREE.Group, weapon: string | null, faction: string) {
+  const add = (m: THREE.Object3D, x: number, y: number, z: number, rx = 0, rz = 0) => { m.position.set(x, y, z); m.rotation.x = rx; m.rotation.z = rz; g.add(m); return m; };
+  const rod = (len: number, x: number, y: number, z: number, rz = 0, color = WOOD, r = 0.03) => add(new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 6), M(color)), x, y, z, 0, rz);
+  const box = (w: number, h: number, d: number, x: number, y: number, z: number, color = IRON, rz = 0) => add(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(color, { metalness: 0.4 })), x, y, z, 0, rz);
+  const pick = (x: number) => {
+    rod(0.9, x, 0.6, 0.12, 0.3);
+    const head = add(new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.055, 6, 14, Math.PI), M(IRON, { metalness: 0.4 })), x - 0.1, 1.05, 0.12, 0, -0.3 + Math.PI);
+    head.name = 'pickaxe';
+  };
+  const sword = (x: number) => {
+    if (faction === 'goblins') { box(0.2, 0.7, 0.05, x, 0.85, 0.14, 0x9aa0a8, -0.2); box(0.1, 0.2, 0.06, x - 0.02, 0.45, 0.14, WOOD, -0.2); }
+    else if (faction === 'gnomes') { box(0.08, 0.85, 0.05, x, 0.9, 0.14, 0x6fd0ff, -0.15); box(0.3, 0.05, 0.06, x + 0.02, 0.5, 0.14, 0xd0a030); }
+    else { box(0.18, 0.85, 0.05, x, 0.9, 0.14, 0xd8dce6, -0.1); box(0.34, 0.07, 0.07, x + 0.01, 0.5, 0.14, 0x7a5a20); }
+  };
+  switch (weapon) {
+    case 'pick': pick(-0.34); break;
+    case 'pick-hammer':
+      pick(-0.34);
+      box(0.3, 0.2, 0.2, 0.36, 1.0, 0.12, 0x555a66); rod(0.7, 0.36, 0.62, 0.12);
+      box(0.42, 0.08, 0.22, 0, 0.14, 0.4, 0x555a66); box(0.3, 0.1, 0.18, 0, 0.05, 0.4, 0x555a66);
+      break;
+    case 'pick-crystal': {
+      pick(-0.34);
+      const cr = add(new THREE.Mesh(new THREE.OctahedronGeometry(0.2), M(0x7affc8, { emissive: 0x20a070, emissiveIntensity: 0.8 })), 0.38, 0.8, 0.14);
+      cr.scale.y = 1.4;
+      break;
+    }
+    case 'sword': sword(0.36); break;
+    case 'sword-shield': {
+      sword(0.36);
+      const sh = add(new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.07, 14), M(0xb08a30, { metalness: 0.4 })), -0.3, 0.55, 0.22, Math.PI / 2, 0);
+      sh.rotation.y = 0.3;
+      break;
+    }
+    case 'lance': {
+      rod(1.6, 0.36, 0.7, 0.1, 0.0, WOOD, 0.035);
+      add(new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.3, 8), M(IRON, { metalness: 0.5 })), 0.36, 1.65, 0.1);
+      add(new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.2), M(0xd02828, { side: THREE.DoubleSide })), 0.5, 1.3, 0.1);
+      break;
+    }
+    case 'sling': {
+      rod(0.5, 0.34, 0.55, 0.12, 0.0, WOOD);
+      add(new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 6, 14), M(0x6a4a20)), 0.34, 0.95, 0.12);
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), M(0x888888)), 0.34, 0.95, 0.12);
+      break;
+    }
+    case 'wand': {
+      rod(0.85, 0.36, 0.7, 0.12, -0.15, 0x6a3aa0, 0.035);
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), M(0x9ad0ff, { emissive: 0x3a80ff, emissiveIntensity: 1 })), 0.3, 1.18, 0.12);
+      break;
+    }
+    case 'crossbow': {
+      box(0.6, 0.06, 0.08, 0.3, 0.6, 0.2, WOOD);
+      box(0.07, 0.06, 0.6, 0.3, 0.6, 0.0 + 0.2, WOOD);
+      add(new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.03, 6, 14, Math.PI), M(0x444444)), 0.3, 0.6, 0.45, 0, Math.PI / 2 * 0).rotation.y = Math.PI / 2;
+      add(new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.22, 6), M(0xdddddd)), 0.3, 0.6, 0.55, Math.PI / 2, 0);
+      break;
+    }
+    case 'axes':
+      for (const [x, rz] of [[-0.36, 0.2], [0.36, -0.2]] as [number, number][]) {
+        rod(0.7, x, 0.7, 0.12, rz);
+        add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 3), M(IRON, { metalness: 0.4 })), x + (x < 0 ? -0.12 : 0.12), 1.02, 0.12, Math.PI / 2, 0);
+      }
+      break;
+    case 'gyro': {
+      rod(0.3, 0, 1.0, 0, 0, 0x444444, 0.03);
+      const bl = box(1.2, 0.03, 0.12, 0, 1.18, 0, 0x888888); bl.name = 'rotor';
+      box(0.12, 0.03, 1.2, 0, 1.18, 0, 0x888888);
+      break;
+    }
+    case 'signature': {
+      sword(0.4);
+      const crown = add(new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.3, 6), M(0xffd45a, { emissive: 0xaa7a00, emissiveIntensity: 0.7 })), 0, 1.05, 0);
+      crown.scale.set(1, 0.7, 1);
+      break;
+    }
+  }
 }
 
 export function createBoardView(container: HTMLElement, low: boolean): BoardView | null {
@@ -170,39 +253,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     ring.rotation.x = Math.PI / 2;
     ring.position.y = 0.04;
     g.add(ring);
-    if (card.abilities?.includes('ranged')) {
-      const bow = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.03, 6, 14, Math.PI), new THREE.MeshStandardMaterial({ color: 0x8a5a2a }));
-      bow.position.set(0.3, 0.5, 0.12); bow.rotation.z = -Math.PI / 2;
-      const str = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.52, 0.012), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-      str.position.set(0.3, 0.5, 0.12);
-      const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.2, 6), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
-      arrow.position.set(0.3, 0.5, 0.28); arrow.rotation.x = Math.PI / 2;
-      g.add(bow, str, arrow);
-    }
-    if (card.role === 'Gatherer' || card.role === 'Smith') {
-      // big pickaxe: wooden handle plus a curved iron head
-      const wood = new THREE.MeshStandardMaterial({ color: 0x8a5a2a });
-      const iron = new THREE.MeshStandardMaterial({ color: 0xb8bcc8, metalness: 0.4, roughness: 0.4 });
-      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6), wood);
-      handle.position.set(-0.34, 0.55, 0.1); handle.rotation.z = 0.35;
-      const head = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.045, 6, 14, Math.PI), iron);
-      head.position.set(-0.45, 0.93, 0.1); head.rotation.z = -0.35 + Math.PI;
-      head.name = 'pickaxe';
-      g.add(handle, head);
-    }
-    if (card.role === 'Smith') {
-      const iron = new THREE.MeshStandardMaterial({ color: 0x555a66, metalness: 0.5, roughness: 0.5 });
-      const hh = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.14), iron);
-      hh.position.set(0.34, 0.95, 0.12);
-      const hs = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.55, 6), new THREE.MeshStandardMaterial({ color: 0x8a5a2a }));
-      hs.position.set(0.34, 0.65, 0.12);
-      const anvilBase = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.18), iron);
-      anvilBase.position.set(0.0, 0.05, 0.36);
-      const anvilTop = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.08, 0.2), iron);
-      anvilTop.position.set(0.0, 0.14, 0.36);
-      hh.name = 'hammer';
-      g.add(hh, hs, anvilBase, anvilTop);
-    }
+    addWeapon(g, weaponOf(card), card.faction);
     const sp = symbolSprite(f.symbol, 0.42);
     sp.position.y = 1.2;
     g.add(sp);

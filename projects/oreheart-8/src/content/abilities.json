@@ -86,5 +86,21 @@
  "smith": {
   "name": "Smith",
   "text": "Summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health."
+ },
+ "kaboom1": {
+  "name": "Ka-boom 1",
+  "text": "When defeated, deals 1 damage to every adjacent enemy creature."
+ },
+ "junkBoost": {
+  "name": "Junk Boost",
+  "text": "On your turn, adjacent Goblins get +1 Attack."
+ },
+ "siphon": {
+  "name": "Siphon",
+  "text": "When it defeats a creature, your Bank gets +1 crystal."
+ },
+ "glyphShield": {
+  "name": "Glyph Shield",
+  "text": "At the start of your turn it gets Shield 1."
  }
 }
