@@ -3,14 +3,14 @@
  "opponentCommander": "sproingle",
  "setup": {
   "firstPlayer": "player",
-  "opponentHealth": 6,
+  "opponentHealth": 2,
   "playerHand": [
    "goblin-scrounger",
-   "goblin-grunt",
    "goblin-scrounger",
    "goblin-smith-miner",
-   "soul-shard",
-   "fireball"
+   "crystal-cluster",
+   "fireball",
+   "goblin-grunt"
   ],
   "playerDeck": [
    "goblin-smith-miner",
@@ -63,21 +63,35 @@
     "owner": "opponent",
     "row": 2,
     "col": 8
+   },
+   {
+    "cardId": "gnome-prospector",
+    "owner": "opponent",
+    "row": 2,
+    "col": 4
+   },
+   {
+    "cardId": "goblin-pebbler",
+    "owner": "player",
+    "row": 3,
+    "col": 8
    }
   ]
  },
  "tips": {
   "summon": "Welcome! Drag a Miner (Grubgrabber Miner) from your hand onto your back row (the bottom row, next to your Stronghold) to summon it. You have no crystals, but a basic Miner is free when you are broke.",
-  "move": "Nice! Now march it next to a crystal mine: press Done to reach the Action phase, then drag your Miner onto an empty space beside the glowing mine in the middle. Miners may move the turn they appear. Each troop does one thing per turn: move OR attack OR mine.",
-  "swap": "Now swap places: in the Action phase drag one of your troops onto another of yours (within its move range) to trade places.",
-  "spend": "Spend your crystals! Your Flow at the start of your turn is set to what you mined last turn. Summon a troop or cast a spell. Crystal cards fill your Bank, which never resets and can be played even while the enemy acts.",
-  "fight": "Time to fight! In the Action phase drag a troop onto the enemy troop. Melee hits are simultaneous: both strike. Damage heals at the start of your next turn.",
-  "spell": "Cast a spell! Drag Infernal Orb from your hand onto an enemy. Spells cost soul crystals (Flow first, then Bank).",
-  "commander": "Finally, move next to the enemy Stronghold and attack the Commander. Each hit removes health equal to the attacker's Attack. Make them retreat!",
-  "complete": "Tutorial complete!",
-  "mine": "Mining is an action! Next turn, in the Action phase, drag your Miner onto the mine next to it. A Miner mines 2 crystals, a Fighter 1. Watch the mine change to your color. Standing nearby without mining gives nothing.",
-  "smith": "Smith time! Drag the Scrapsmith Miner from your hand onto one of your own creatures in the Deploy phase: it gets a permanent +1 Attack and +1 Health. (A basic Miner played this way gives +1 Health.)",
-  "mineTap": "Now the shortcut: next turn, in the Action phase, tap a pulsing mine (it shows ⛏️ and a number). Tap the mine and every ready Miner next to it mines at once. Press and hold a mine to see its info."
+  "move": "Nice! Press Done to reach the Action phase, then drag your Miner onto an empty space beside the middle mine. Miners may move the turn they appear. Each troop does one thing per turn: move OR attack OR mine.",
+  "mine": "Mining is an action! On your next Action phase, drag your Miner onto the mine beside it. A Miner mines 2 crystals, a Fighter 1. Standing nearby without mining gives nothing.",
+  "mineTap": "Now the shortcut. Next turn, in the Action phase, tap the mine: every ready Miner beside it mines at once. Tap the mine now (press and hold a mine to see its info).",
+  "spend": "What you mined becomes your Flow at the start of your next turn. Spend your Flow: summon a Miner or another troop in the Deploy phase. (The tutorial tops up your Bank so you can keep playing.)",
+  "crystal": "Crystal cards fill your Bank. Bank crystals never reset and can be spent any time, even while the enemy acts. Play a Crystal card from your hand now.",
+  "upgrade": "Upgrade time! In the Deploy phase, drag a Miner card from your hand onto one of your own troops to upgrade it. A basic Miner gives +1 Health, a Smith Miner gives +1 Attack and +1 Health, for good.",
+  "swap": "Swap places: in the Action phase drag one of your troops onto another of yours (within its move range) to trade places.",
+  "fight": "Time to fight! In the Action phase drag your Boneknocker onto the enemy troop. A box shows You deal and You take before you let go. Melee hits are simultaneous: both strike. Damage heals at the start of your next turn.",
+  "spell": "Cast a spell! Drag Infernal Orb from your hand onto an enemy troop. Spells cost soul crystals (Flow first, then Bank).",
+  "savings": "Saving up: if you end your turn with 10 or more Flow, every 10 Flow becomes 1 banked crystal. You have plenty of Flow right now, so just press Done and watch it get banked.",
+  "commander": "Finally, march a fighter next to the enemy Stronghold and attack the Commander. Each hit removes Health equal to the attacker's Attack. Bring them to 0!",
+  "complete": "Tutorial complete!"
  },
  "mines": [
   {
@@ -92,5 +106,19 @@
    "row": 5,
    "col": 6
   }
- ]
+ ],
+ "gifts": {
+  "spend": {
+   "bank": 2
+  },
+  "upgrade": {
+   "bank": 2
+  },
+  "spell": {
+   "bank": 3
+  },
+  "savings": {
+   "flow": 12
+  }
+ }
 }

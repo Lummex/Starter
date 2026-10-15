@@ -2,6 +2,7 @@ import { Game } from '../game';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
 import tutorialJson from '../content/tutorial.json';
 import { showDecks, loadDecks, deckLegal } from './decks';
+import { deckProblems, previewAttack } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
 
 type El = HTMLElement;
@@ -58,6 +59,8 @@ export class App {
   respondTimer: any = null;
   pick: { cells: { row: number; col: number }[]; done: (c: { row: number; col: number }) => void } | null = null;
   handScroll = 0;
+  lastOptions: any = {};
+  lastTutorial = false;
   handKey = '';
   tokens = new Map<string, El>();
   dialogCard = '';
@@ -142,37 +145,65 @@ export class App {
 
   showSetup() {
     this.clear();
-    let cmd = 'grubnak', diff = 'normal';
-    const cmdBtns: El[] = [], diffBtns: El[] = [];
+    let picks: any = {};
+    try { picks = JSON.parse(localStorage.getItem('oreheart.picks') || '{}') || {}; } catch { picks = {}; }
+    const cmds = (Object.values(COMMANDERS) as any[]).filter((x) => x.playable !== false);
+    let cmd = cmds.some((c) => c.id === picks.cmd) ? picks.cmd : 'grubnak';
+    let diff = ['easy', 'normal', 'hard'].includes(picks.diff) ? picks.diff : 'normal';
+    const decks = loadDecks();
+    // deck index: -1 = starter deck
+    let deckIx = typeof picks.deck === 'string' && picks.deck !== '' ? decks.findIndex((d) => d.name === picks.deck && deckLegal(d)) : -1;
+    const cmdBtns: El[] = [], diffBtns: El[] = [], stacks: El[] = [];
+    const msg = h('p', { class: 'deck-msg', 'aria-label': 'Deck message', role: 'status' });
     const sel = () => {
       cmdBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === cmd)));
       diffBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === diff)));
+      stacks.forEach((b) => b.setAttribute('aria-pressed', String(+(b.dataset.ix as string) === deckIx)));
     };
-    for (const c of (Object.values(COMMANDERS) as any[]).filter((x) => x.playable !== false)) {
+    for (const c of cmds) {
       const f = FACTIONS[c.faction];
-      cmdBtns.push(h('button', { type: 'button', class: 'cmd-btn', 'data-id': c.id, onclick: () => { cmd = c.id; sel(); } },
+      cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { cmd = c.id; sel(); } },
+        h('span', { class: 'portrait', 'aria-hidden': 'true' }, FSYM(c.faction)),
         h('span', { class: 'nm' }, c.name),
-        h('span', { class: 'ds' }, `${FSYM(c.faction)} ${f.name} (${f.crystal}). ${c.blurb} ${c.abilityText}`)));
+        h('span', { class: 'fa' }, `${f.name} · ${f.faith}`),
+        h('span', { class: 'ds' }, c.abilityText)));
     }
-    for (const d of ['easy', 'normal']) diffBtns.push(btn(d === 'easy' ? 'Easy' : 'Normal', '', () => { diff = d; sel(); }, { 'data-id': d }));
+    for (const d of ['easy', 'normal', 'hard']) diffBtns.push(btn(d[0].toUpperCase() + d.slice(1), 'diff', () => { diff = d; sel(); }, { 'data-id': d }));
+    const stack = (label: string, n: number, ok: boolean, ix: number, onpick: () => void) => {
+      const b = h('button', { type: 'button', class: `dstack${ok ? '' : ' bad'}`, 'data-ix': String(ix), 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', onclick: onpick },
+        h('span', { class: 'ds-name', 'aria-hidden': 'true' }, label), h('span', { class: 'ds-n', 'aria-hidden': 'true' }, `${n} cards ${ok ? '✔' : '⚠'}`));
+      stacks.push(b);
+      return b;
+    };
+    const row = h('div', { class: 'deck-row', 'aria-label': 'Deck choice', role: 'group' });
+    row.append(stack('Starter deck', CONFIG.deckSize, true, -1, () => { deckIx = -1; msg.textContent = ''; sel(); }));
+    decks.forEach((d, i) => {
+      const ok = deckLegal(d);
+      row.append(stack(d.name, d.cards.length, ok, i, () => {
+        if (!ok) { msg.textContent = deckProblems(d.cards.filter((id) => CARDS[id]))[0] || 'This deck is not ready.'; return; }
+        deckIx = i; msg.textContent = ''; sel();
+      }));
+    });
+    row.append(h('button', { type: 'button', class: 'dstack newdeck', onclick: () => showDecks(this) }, '+ New Deck'));
     sel();
-    const decks = loadDecks();
-    const deckSel = h('select', { id: 'deck-choice' }, h('option', { value: '' }, 'Starter deck'),
-      ...decks.map((d, i) => { const ok = deckLegal(d); return h('option', { value: String(i), disabled: ok ? null : true }, ok ? d.name : `${d.name} (not legal)`); })) as HTMLSelectElement;
-    const s = h('main', { class: 'screen' },
+    const scroll = (dir: number) => row.scrollBy({ left: dir * 220, behavior: 'smooth' });
+    this.root.append(h('main', { class: 'screen setup' },
       h('h1', { class: 'section cinzel' }, 'Choose Your Commander'),
       h('div', { class: 'cmds' }, ...cmdBtns),
-      h('div', { class: 'row', style: 'margin:10px 0' }, ...diffBtns),
-      h('div', { class: 'row f-field' }, h('label', { for: 'deck-choice' }, 'Deck'), deckSel),
-      h('div', { class: 'row' },
-        btn('Start Match', 'primary', () => {
+      h('div', { class: 'deck-wrap' },
+        btn('◀', 'small scroll', () => scroll(-1), { 'aria-label': 'Scroll decks left' }), row,
+        btn('▶', 'small scroll', () => scroll(1), { 'aria-label': 'Scroll decks right' })),
+      msg,
+      h('div', { class: 'row setup-actions' },
+        h('div', { class: 'row', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns),
+        btn('Fight!', 'primary', () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
           const opp = others[Math.floor(Math.random() * others.length)];
-          const pick = deckSel.value === '' ? null : decks[+deckSel.value];
+          const pick = deckIx < 0 ? null : decks[deckIx];
+          try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, deck: pick ? pick.name : '' })); } catch { /* storage unavailable */ }
           this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, ...(pick ? { playerDeck: pick.cards.slice() } : {}) });
         }),
-        btn('Back', '', () => this.showMenu())));
-    this.root.append(s);
+        btn('Back', '', () => this.showMenu()))));
   }
 
   showRules() {
@@ -200,6 +231,7 @@ export class App {
       sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
       sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (one per round, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
       sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
+      sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals (Flow first, then Bank). Commanders never attack. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet: you can play a Crystal card on its own or together with a counterspell to pay for it. Counterspells cancel spells or summons.'),
       h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Back', '', () => this.showMenu())));
     this.root.append(s);
@@ -209,7 +241,11 @@ export class App {
   dialog(name: string, content: (El | string)[], onClose?: () => void): { close: () => void; el: El } {
     const dlg = h('div', { class: 'dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': name }, ...content);
     const ov = h('div', { class: 'overlay' }, dlg);
-    const close = () => { ov.remove(); this.dialogs = this.dialogs.filter((d) => d !== ov); onClose && onClose(); };
+    // on plain screens (no match) the page behind a dialog is hidden from assistive tech, so only the dialog's buttons are found
+    const host = this.root.querySelector('.match') || this.root;
+    const behind = host === this.root ? ([...this.root.children] as El[]).filter((x) => !x.classList.contains('overlay') && x.getAttribute('aria-hidden') !== 'true') : [];
+    behind.forEach((x) => x.setAttribute('aria-hidden', 'true'));
+    const close = () => { ov.remove(); behind.forEach((x) => x.removeAttribute('aria-hidden')); this.dialogs = this.dialogs.filter((d) => d !== ov); onClose && onClose(); };
     ov.addEventListener('pointerdown', (e: any) => { if (e.target === ov && !ov.dataset.sticky) close(); });
     ov.addEventListener('keydown', (e: any) => { if (e.key === 'Escape' && !ov.dataset.sticky) close(); });
     (this.root.querySelector('.match') || this.root).append(ov);
@@ -246,6 +282,8 @@ export class App {
   beginMatch(options: any = {}) {
     const o = { ...options };
     if (o.seed == null && this.test && this.seed != null) o.seed = this.seed;
+    this.lastOptions = options;
+    this.lastTutorial = false;
     const state = this.game.newMatch(o);
     this.showMatch();
     this.update(this.game.state, []);
@@ -253,6 +291,7 @@ export class App {
   }
 
   beginTutorial() {
+    this.lastTutorial = true;
     const state = this.game.startTutorial();
     this.showMatch();
     this.update(this.game.state, []);
@@ -297,6 +336,7 @@ export class App {
     r.swap.hidden = true;
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
     const menuBtn = btn('Menu', 'menu-btn', () => this.showMatchMenu());
+    r.last = btn('Last turn', 'last-btn', () => this.showLastTurn());
     r.tip = h('aside', { class: 'tip', 'aria-label': 'Tutorial tip', hidden: true });
     const crystals = h('div', { class: 'crystals' }, r.crFlow, r.crBank);
     const match = h('main', { class: 'match' },
@@ -304,7 +344,7 @@ export class App {
       h('div', { class: 'hud hud-left' }, crystals, r.income,
         r.swap),
       h('div', { class: 'hud hud-top' }, r.enemyHand),
-      r.enemyDeck, r.myDeck,
+      r.enemyDeck, r.last, r.myDeck,
       r.phase,
       h('div', { class: 'hud hud-right' }, r.done, menuBtn),
       r.tip, r.hand, r.timer);
@@ -498,6 +538,7 @@ export class App {
     if (!r.board || !st) return;
     const me = st.players.player, en = st.players.opponent;
     this.view && this.view.setState(st, events);
+    this.record(st, events);
     this.setHeart(r.enemyHealth, en.health);
     this.setHeart(r.myHealth, me.health);
     r.enemyDeck.replaceChildren(String(en.deck.length));
@@ -548,8 +589,61 @@ export class App {
     this.renderHand(st);
     this.handleDialogs(st);
     this.animate(st, events);
+    this.prevCreatures = st.board.creatures.map((c: any) => ({ uid: c.uid, cardId: c.cardId, row: c.row, col: c.col }));
     this.tick();
   }
+
+  // ------------------------------------------------------------ enemy turn recap (R9.7)
+  prevCreatures: any[] = [];
+  enemyLog: { text: string; cardId: string; row: number; col: number }[] = [];
+  recording = false;
+  record(st: any, events: any[]) {
+    if (events.some((e) => e.type === 'newMatch')) { this.enemyLog = []; this.recording = false; this.prevCreatures = []; return; }
+    const find = (uid: string) => this.prevCreatures.find((c) => c.uid === uid) || st.board.creatures.find((c: any) => c.uid === uid);
+    const swapMates = new Set(events.filter((e) => e.type === 'swap').map((e) => e.withUid));
+    for (const e of events) {
+      if (e.type === 'turnStart') {
+        if (e.player === 'opponent') { this.enemyLog = []; this.recording = true; } else this.recording = false;
+        continue;
+      }
+      if (!this.recording) continue;
+      if (e.type === 'summon' && e.owner === 'opponent') this.enemyLog.push({ text: `Summoned ${CARDS[e.cardId].name}`, cardId: e.cardId, row: e.row, col: e.col });
+      else if (e.type === 'move' && !swapMates.has(e.uid)) {
+        const cr = st.board.creatures.find((c: any) => c.uid === e.uid);
+        if (cr && cr.owner === 'opponent') this.enemyLog.push({ text: `Moved ${CARDS[cr.cardId].name}`, cardId: cr.cardId, row: e.to.row, col: e.to.col });
+      } else if (e.type === 'attack') {
+        const a = find(e.uid);
+        if (!a || !this.prevCreatures.some((c) => c.uid === e.uid)) continue;
+        const att = st.board.creatures.find((c: any) => c.uid === e.uid);
+        if (att && att.owner === 'player') continue;
+        let tn = 'your Commander', pos: any = SH.player;
+        if (e.target.row) { const d = this.prevCreatures.find((c) => c.row === e.target.row && c.col === e.target.col); tn = d ? CARDS[d.cardId].name : 'a creature'; pos = e.target; }
+        this.enemyLog.push({ text: `${CARDS[a.cardId].name} attacked ${tn}`, cardId: a.cardId, row: pos.row, col: pos.col });
+      } else if (e.type === 'cast' && e.player === 'opponent') this.enemyLog.push({ text: `Cast ${CARDS[e.cardId].name}`, cardId: e.cardId, row: SH.opponent.row, col: SH.opponent.col });
+      else if (e.type === 'playCrystal' && e.player === 'opponent') this.enemyLog.push({ text: `Played ${CARDS[e.cardId].name}`, cardId: e.cardId, row: SH.opponent.row, col: SH.opponent.col });
+      else if (e.type === 'mine') {
+        const cr = st.board.creatures.find((c: any) => c.uid === e.uid);
+        if (cr && cr.owner === 'opponent') this.enemyLog.push({ text: `Mined +${e.amount}`, cardId: cr.cardId, row: e.row, col: e.col });
+      }
+    }
+  }
+  showLastTurn() {
+    const lines = this.enemyLog.map((l) => {
+      const c = CARDS[l.cardId];
+      return h('li', {}, h('button', { type: 'button', class: 'recap-line', onclick: () => this.highlight(l.row, l.col) },
+        h('span', { class: `mini f-${c?.faction}`, 'aria-hidden': 'true', 'data-sym': c?.type === 'creature' ? (isMiner(c) ? '⛏️' : '⚔️') : c?.type === 'spell' ? '✨' : '💎' }), l.text));
+    });
+    const d: any = this.dialog('Last turn', [h('h2', {}, 'Last turn'),
+      lines.length ? h('ul', { class: 'recap' }, ...lines) : h('p', { style: 'text-align:center' }, 'Nothing yet.'),
+      h('div', { class: 'row' }, btn('Close', 'primary', () => d.close()))]);
+  }
+  highlight(row: number, col: number) {
+    const el = this.r.cells?.get(row + ',' + col) as El | undefined;
+    if (!el) return;
+    el.classList.add('recap-hl');
+    setTimeout(() => el.classList.remove('recap-hl'), 1600);
+  }
+
 
   setHeart(el: El, n: number) {
     el.textContent = String(n);
@@ -803,7 +897,12 @@ export class App {
       const n = myAction ? readyMinersAt(st, 'player', s).length : 0;
       m.dataset.readyMiners = String(n);
       m.classList.toggle('ready', n > 0);
-      m.textContent = n > 0 ? `⛏️${n}` : this.view?.is3D ? sym : '💎' + sym;
+      const mk = n > 0 ? `x${n}` : this.view?.is3D ? sym : '💎' + sym;
+      if (m.dataset.mk !== mk) {
+        m.dataset.mk = mk;
+        if (n > 0) m.replaceChildren(h('span', { class: 'pickaxe', 'aria-hidden': 'true' }, h('i', { class: 'pk-h' }), h('i', { class: 'pk-head' }), h('i', { class: 'pk-spark' })), `×${n}`);
+        else m.textContent = this.view?.is3D ? sym : '💎' + sym;
+      }
       m.style.color = COLOR_HEX[s.color] || COLOR_HEX.white;
       const ring = this.r.rings[i] as El;
       ring.style.setProperty('--mine', COLOR_HEX[s.color] || COLOR_HEX.white);
@@ -1060,6 +1159,7 @@ export class App {
         this.reveal(e.cardId, e);
         this.floatText(`+${e.attack ? '1 ATK ' : ''}+1 HP ✨`, 'heal', e.row, e.col);
       }
+      else if (e.type === 'savings' && e.player === 'player') this.bankFly(e.amount);
       else if (e.type === 'income' && e.player === 'player' && e.amount > 0) this.flash(`+${e.amount} crystals`);
       else if (e.type === 'siteControl' && e.controller) this.flash('THE CRYSTAL. HAS. FALLEN.');
     }
@@ -1074,6 +1174,18 @@ export class App {
       setTimeout(() => this.showEnd(winner), t);
     }
   }
+  /** "+N banked" text that flies into the Bank counter and stays at least 1.5 s (R9.2). */
+  bankFly(n: number) {
+    const bank = this.r.crBank as El;
+    if (!bank) return;
+    const rr = this.root.getBoundingClientRect(), br = bank.getBoundingClientRect();
+    const f = h('div', { class: 'banked', role: 'status' }, `+${n} banked`);
+    f.style.setProperty('--dx', `${br.left - rr.left + br.width / 2 - rr.width / 2}px`);
+    f.style.setProperty('--dy', `${br.top - rr.top + br.height / 2 - rr.height / 2}px`);
+    (this.root.querySelector('.match') || this.root).append(f);
+    bank.classList.remove('bump'); void bank.offsetWidth; bank.classList.add('bump');
+    setTimeout(() => f.remove(), 2600);
+  }
   flash(text: string) {
     const r = this.r;
     if (!r.board) return;
@@ -1085,14 +1197,31 @@ export class App {
 
   showEnd(winner: string) {
     if (!this.game.state || this.game.state.phase !== 'over') return;
+    const st = this.game.state;
     this.clear();
     const win = winner === 'player';
-    const surrendered = this.game.state.winner === 'opponent';
-    void surrendered;
+    const sx = st.stats || { mined: { player: 0, opponent: 0 }, summoned: { player: 0, opponent: 0 }, lost: { player: 0, opponent: 0 }, damage: {} };
+    let mvp = 'None';
+    const best = Object.entries(sx.damage as Record<string, number>).sort((a, b) => b[1] - a[1])[0];
+    if (best && best[1] > 0) {
+      const uid = best[0];
+      const id = (sx.cards || {})[uid];
+      if (id) mvp = `${CARDS[id].name} — ${best[1]} damage`;
+    }
+    const rowOf = (label: string, you: string, foe?: string) => h('tr', {}, h('th', { scope: 'row' }, label), h('td', {}, foe == null ? you : `You ${you} · Enemy ${foe}`));
+    const table = h('table', { class: 'summary', 'aria-label': 'Match summary' },
+      rowOf('Crystals mined', String(sx.mined.player), String(sx.mined.opponent)),
+      rowOf('Creatures summoned', String(sx.summoned.player), String(sx.summoned.opponent)),
+      rowOf('Creatures lost', String(sx.lost.player), String(sx.lost.opponent)),
+      rowOf('Turns', String(st.turn)),
+      rowOf('MVP', mvp));
     this.root.append(h('main', { class: 'screen center end' },
       h('h1', {}, win ? 'Victory!' : 'Defeat'),
       h('p', {}, win ? 'The enemy Commander fled screaming that this was all part of the plan.' : 'Your Commander escaped at the last second, shouting that this was all part of the plan.'),
-      h('div', { class: 'stack' }, btn('Back to Menu', 'primary', () => this.showMenu()))));
+      table,
+      h('div', { class: 'row' },
+        btn('Play again', 'primary', () => { if (this.lastTutorial) this.beginTutorial(); else { const o = { ...this.lastOptions }; this.beginMatch(o); } }),
+        btn('Menu', '', () => this.showMenu()))));
   }
 
   // ------------------------------------------------------------ board geometry / hit testing
@@ -1122,7 +1251,7 @@ export class App {
   cellOfTarget(t: any) { return t.commander ? SH[t.commander as 'player' | 'opponent'] : { row: t.row, col: t.col }; }
 
   // ------------------------------------------------------------ pointer interactions
-  drag(e: PointerEvent, opts: { ghost: El; onStart: () => boolean | void; onDrop: (cell: { row: number; col: number } | null, x: number, y: number) => void; onTap: () => void; touchSwipe?: (dx: number) => void }) {
+  drag(e: PointerEvent, opts: { ghost: El; onStart: () => boolean | void; onDrop: (cell: { row: number; col: number } | null, x: number, y: number) => void; onTap: () => void; touchSwipe?: (dx: number) => void; onHover?: (cell: { row: number; col: number } | null, x: number, y: number) => void; onEnd?: () => void }) {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     const x0 = e.clientX, y0 = e.clientY;
     let dragging = false, swiping = false, lastX = x0;
@@ -1139,6 +1268,7 @@ export class App {
         const c = this.cellAt(ev.clientX, ev.clientY);
         for (const el of this.r.cells.values() as Iterable<El>) el.classList.remove('hover');
         if (c) this.r.cells.get(c.row + ',' + c.col)?.classList.add('hover');
+        opts.onHover && opts.onHover(c, ev.clientX, ev.clientY);
       }
     };
     const up = (ev: PointerEvent) => {
@@ -1155,6 +1285,7 @@ export class App {
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up2);
       opts.ghost.remove();
+      opts.onEnd && opts.onEnd();
       this.r.hand?.classList.remove('away');
       this.clearGlow();
       this.r.hand?.querySelectorAll('.dragging').forEach((x: El) => x.classList.remove('dragging'));
@@ -1258,7 +1389,9 @@ export class App {
   boardPointerDown(e: PointerEvent) {
     const st = this.game.state;
     if (!st) return;
-    const cell = this.cellAt(e.clientX, e.clientY);
+    const lab = (e.target as El).closest?.('.tk-stats');
+    const labUid = lab ? (lab.closest('.token') as El | null)?.dataset.uid : null;
+    const cell = labUid ? (() => { const c0 = st.board.creatures.find((c: any) => c.uid === labUid); return c0 ? { row: c0.row, col: c0.col } : null; })() : this.cellAt(e.clientX, e.clientY);
     if (!cell) return;
     if (this.pick) {
       const p = this.pick.cells.find((c) => c.row === cell.row && c.col === cell.col);
@@ -1270,8 +1403,20 @@ export class App {
     const card = CARDS[cr.cardId];
     const ghost = h('div', { class: 'ghost tk' }, FSYM(card.faction));
     const mine = cr.owner === 'player';
+    let box: El | null = null;
+    const atkAt = (c: { row: number; col: number }) => this.game.legalActions().find((a: any) => a.creatureUid === cr.uid && a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col)));
     this.drag(e, {
       ghost,
+      onHover: (c, x, y) => {
+        const a = mine && c ? atkAt(c) : null;
+        const pv: any = a ? previewAttack(this.game.state, cr.uid, a.target) : null;
+        if (!pv) { box?.remove(); box = null; return; }
+        if (!box) { box = h('div', { class: 'atk-preview', 'aria-label': 'Attack preview', role: 'status' }); document.body.append(box); }
+        const dead = pv.targetDefeated || pv.attackerDefeated;
+        box.replaceChildren(`You deal ${pv.youDeal} / You take ${pv.youTake}`, ...(dead ? [h('span', { class: 'skull' }, ` ${pv.targetDefeated ? '💀' : ''}${pv.attackerDefeated ? '💀' : ''}`)] : []));
+        box.style.left = x + 'px'; box.style.top = y + 'px';
+      },
+      onEnd: () => { box?.remove(); box = null; },
       onStart: () => {
         if (!mine || this.respDlg) return false;
         const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);

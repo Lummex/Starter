@@ -104,7 +104,7 @@ function scoreCast(s: any, who: string, a: any): number {
 export function aiChoose(s: any, difficulty: string, rand: Rand): any {
   const who = s.priority as string;
   const legal = legalActions(s).filter((a: any) => a.type !== 'surrender');
-  if (s.phase === 'mulligan') return { type: 'mulligan', uids: difficulty === 'normal' ? mulliganUids(s, who) : [] };
+  if (s.phase === 'mulligan') return { type: 'mulligan', uids: difficulty !== 'easy' ? mulliganUids(s, who) : [] };
   const pickBest = (scored: [number, any][], min: number) => {
     let best: any = null, bv = min;
     for (const [v, a] of scored) if (v > bv || (v === bv && best && rand() < 0.3)) { best = a; bv = v; }
@@ -128,6 +128,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
 
   if (s.pendingResponse) return pickBest(legal.map((a: any) => [scoreRespond(s, who, a), a]), 0.5) || { type: 'pass' };
 
+  const hard = difficulty === 'hard';
   const scored: [number, any][] = [];
   for (const a of legal) {
     if (a.type === 'playCrystal') {
@@ -151,7 +152,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const site = s.sites.find((x: any) => x.row === a.row && x.col === a.col);
       const enemyOwned = site && site.controller === other(who as any);
-      scored.push([(isMiner(CARDS[c.cardId]) ? (enemyOwned ? 45 : 60) : (s.turn >= 5 ? 1 : 14)) + rand(), a]);
+      scored.push([(isMiner(CARDS[c.cardId]) ? (enemyOwned ? 45 : 60) + (hard ? 15 : 0) : (s.turn >= 5 ? 1 : 14)) + rand(), a]);
     } else if (a.type === 'move') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const card = CARDS[c.cardId];
@@ -164,14 +165,14 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
       scored.push([v, a]);
     } else if (a.type === 'attack') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
-      if (a.target.commander) { scored.push([200 + atkValue(s, c) + (s.players[other(who as any)].health <= atkValue(s, c) ? 10000 : 0), a]); continue; }
+      if (a.target.commander) { scored.push([200 + atkValue(s, c) + (s.players[other(who as any)].health <= atkValue(s, c) ? 10000 : 0) + (hard && s.players[other(who as any)].health <= atkValue(s, c) * 2 ? 60 : 0), a]); continue; }
       const d = creatureAt(s, a.target.row, a.target.col);
       const dmg = atkValue(s, c, d);
       const kills = dmg - (CARDS[d.cardId].abilities?.includes('armored') ? 1 : 0) >= d.health;
       const melee = cheb(c, d) === 1 && !CARDS[c.cardId].abilities?.includes('ranged');
       const strike = melee && !CARDS[c.cardId].abilities?.includes('sneaky') ? atkValue(s, d, c) : 0;
       const dies = strike >= c.health;
-      scored.push([dmg * 8 + (kills ? 40 + CARDS[d.cardId].cost * 6 : 0) - strike * 6 - (dies ? 10 + CARDS[c.cardId].cost * 8 : 0), a]);
+      scored.push([dmg * 8 + (kills ? 40 + CARDS[d.cardId].cost * 6 : 0) + (hard && d.health < d.maxHealth ? 12 : 0) + (hard && isMiner(CARDS[d.cardId]) ? 8 : 0) - strike * 6 - (dies ? 10 + CARDS[c.cardId].cost * 8 : 0), a]);
     }
   }
   return pickBest(scored, 0.5) || done;

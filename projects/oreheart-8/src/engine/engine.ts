@@ -321,6 +321,13 @@ function startTurn(s: any, ev: any[]) {
 
 function endTurn(s: any, ev: any[]) {
   s.phase = 'end';
+  const own = s.players[s.activePlayer];
+  const per = CONFIG.savingsPerCrystal;
+  if (per && own.crystals >= per) {
+    const saved = Math.floor(own.crystals / per);
+    own.crystals -= saved; own.bank += saved;
+    ev.push({ type: 'savings', player: s.activePlayer, amount: saved });
+  }
   for (const c of s.board.creatures) c.bubble = false;
   ev.push({ type: 'turnEnd', player: s.activePlayer });
   startTurn(s, ev);
@@ -735,15 +742,28 @@ export function legalActions(s: any): any[] {
 /** True if the priority player has a real move left (ignores done, surrender, upgrades, Gatherer swap and Instants). */
 export function hasMovesLeft(s: any): boolean {
   if (s.phase === 'over' || !s.priority || s.pendingResponse || !['deploy', 'action'].includes(s.phase) || s.priority !== s.activePlayer) return false;
-  const pl = s.players[s.priority];
-  return legalActions(s).some((a: any) => {
-    if (['done', 'surrender', 'minerUpgrade', 'gathererSwap', 'pass', 'respond', 'playCrystal', 'ability'].includes(a.type)) return false;
-    if (a.type === 'cast') {
-      const h = pl.hand.find((x: any) => x.uid === a.uid);
-      return !h || CARDS[h.cardId].spellKind === 'regular';
-    }
-    return true;
-  });
+  // Rev 9: spells, Instants, Crystal cards, upgrades, abilities and the swap never count.
+  const kinds = s.phase === 'deploy' ? ['summon'] : ['move', 'mine', 'mineAt', 'attack'];
+  return legalActions(s).some((a: any) => kinds.includes(a.type));
+}
+
+/** Preview of an attack, computed by running the real attack code on a copy of the state. */
+export function previewAttack(state: any, attackerUid: string, target: any) {
+  const s = JSON.parse(JSON.stringify(state));
+  const a = s.board.creatures.find((x: any) => x.uid === attackerUid);
+  if (!a) return null;
+  const def = target && target.row ? creatureAt(s, target.row, target.col) : null;
+  const ev: any[] = [];
+  resolveAttack(s, a, target, ev);
+  let youDeal = 0, youTake = 0;
+  for (const e of ev) {
+    if (e.type !== 'damage') continue;
+    if (e.commander) youDeal += e.amount;
+    else if (def && e.uid === def.uid) youDeal += e.amount;
+    else if (e.uid === a.uid) youTake += e.amount;
+  }
+  const alive = (u: string) => s.board.creatures.some((x: any) => x.uid === u);
+  return { youDeal, youTake, targetDefeated: def ? !alive(def.uid) : s.winner === a.owner, attackerDefeated: !alive(a.uid) };
 }
 
 // ---------------------------------------------------------------- apply
@@ -954,32 +974,145 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
   return { ok: true, state: s, events: ev };
 }
 
-const TUTORIAL_ORDER = ['summon', 'move', 'mine', 'mineTap', 'spend', 'smith', 'swap', 'fight', 'spell', 'commander', 'complete'];
+import tutorialJson from '../content/tutorial.json';
+const tutorialGifts = () => (tutorialJson as any).gifts || {};
+const TUTORIAL_ORDER = ['summon', 'move', 'mine', 'mineTap', 'spend', 'crystal', 'upgrade', 'swap', 'fight', 'spell', 'savings', 'commander', 'complete'];
 function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
   const t = s.tutorial;
   if (!t || t.step === 'complete') return;
-  const next = () => { t.step = TUTORIAL_ORDER[TUTORIAL_ORDER.indexOf(t.step) + 1]; };
+  const did = t.did || (t.did = {});
+  const gifts: any = tutorialGifts();
+  const enter = (step: string) => {
+    t.step = step;
+    const g = gifts[step];
+    if (g) {
+      const pl = s.players.player;
+      if (g.bank != null) pl.bank = Math.max(pl.bank, g.bank);
+      if (g.flow != null) pl.crystals = Math.max(pl.crystals, g.flow);
+    }
+  };
+  const next = () => {
+    enter(TUTORIAL_ORDER[TUTORIAL_ORDER.indexOf(t.step) + 1]);
+    // out-of-order moves already made are not asked for twice
+    while (did[t.step] && !['complete', 'commander', 'savings'].includes(t.step)) enter(TUTORIAL_ORDER[TUTORIAL_ORDER.indexOf(t.step) + 1]);
+  };
   const mine = actor === 'player';
+  const swapped = events.some((e: any) => e.type === 'swap');
+  if (mine && TUTORIAL_ORDER.indexOf(t.step) >= TUTORIAL_ORDER.indexOf('mineTap')) {
+    if (['summon', 'cast'].includes(act.type)) did.spend = true;
+    if (act.type === 'playCrystal') did.crystal = true;
+    if (act.type === 'minerUpgrade') did.upgrade = true;
+    if (swapped) did.swap = true;
+    if (act.type === 'attack' && act.target && act.target.row) did.fight = true;
+    if (act.type === 'cast') did.spell = true;
+  }
   switch (t.step) {
     case 'summon': if (mine && act.type === 'summon') next(); break;
     case 'move': if (mine && act.type === 'move') next(); break;
     case 'mine': if (mine && act.type === 'mine') next(); break;
+    case 'mineTap': if (mine && act.type === 'mineAt') next(); break;
     case 'spend': if (mine && ['summon', 'cast'].includes(act.type)) next(); break;
-    case 'mineTap':
-      if (mine && ['summon', 'cast', 'minerUpgrade'].includes(act.type)) t.spent = true;
-      if (mine && act.type === 'mineAt') { next(); if (t.spent) next(); }
-      break;
-    case 'smith': if (mine && act.type === 'minerUpgrade') next(); break;
-    case 'swap': if (mine && events.some((e: any) => e.type === 'swap')) next(); break;
+    case 'crystal': if (mine && act.type === 'playCrystal') next(); break;
+    case 'upgrade': if (mine && act.type === 'minerUpgrade') next(); break;
+    case 'swap': if (mine && swapped) next(); break;
     case 'fight': if (mine && act.type === 'attack' && act.target && act.target.row) next(); break;
     case 'spell': if (mine && act.type === 'cast') next(); break;
+    case 'savings': if (events.some((e: any) => e.type === 'savings' && e.player === 'player')) next(); break;
     case 'commander': if (s.winner === 'player') next(); break;
+  }
+}
+
+const dist2 = (a: any, b: any) => (a.row - b.row) ** 2 + (a.col - b.col) ** 2;
+/** A legal action that makes progress on the current tutorial step; { type: 'done' } when the phase must end; null when complete. */
+export function tutorialAction(s: any): any | null {
+  if (!s.tutorial || s.tutorial.step === 'complete' || s.phase === 'over') return null;
+  if (s.pendingResponse) return { type: 'pass' };
+  const legal = legalActions(s);
+  const step = s.tutorial.step;
+  const pl = s.players.player;
+  const cardOfUid = (uid: string) => CARDS[pl.hand.find((h: any) => h.uid === uid)?.cardId];
+  const first = (f: (a: any) => boolean) => legal.find(f);
+  const mineSpots = s.sites;
+  const nearestMine = (p: any) => Math.min(...mineSpots.map((m: any) => dist2(p, m)));
+  const enemySh = stronghold('opponent');
+  let a: any;
+  switch (step) {
+    case 'summon': {
+      const opts = legal.filter((x: any) => x.type === 'summon' && isMiner(cardOfUid(x.uid)));
+      a = opts.sort((x: any, y: any) => nearestMine(x) - nearestMine(y))[0];
+      break;
+    }
+    case 'move': {
+      const isM = (x: any) => isMiner(CARDS[s.board.creatures.find((o: any) => o.uid === x.creatureUid).cardId]);
+      const opts = legal.filter((x: any) => x.type === 'move' && !creatureAt(s, x.row, x.col) && isM(x));
+      a = opts.sort((x: any, y: any) => nearestMine(x) - nearestMine(y))[0];
+      break;
+    }
+    case 'mine': a = first((x: any) => x.type === 'mine' && isMiner(CARDS[s.board.creatures.find((o: any) => o.uid === x.creatureUid).cardId])); break;
+    case 'mineTap': a = first((x: any) => x.type === 'mineAt'); break;
+    case 'spend': {
+      const opts = legal.filter((x: any) => x.type === 'summon');
+      a = opts.sort((x: any, y: any) => cardOfUid(x.uid).cost - cardOfUid(y.uid).cost || nearestMine(x) - nearestMine(y))[0];
+      break;
+    }
+    case 'crystal': a = first((x: any) => x.type === 'playCrystal'); break;
+    case 'upgrade': a = first((x: any) => x.type === 'minerUpgrade'); break;
+    case 'swap': a = first((x: any) => x.type === 'move' && creatureAt(s, x.row, x.col)); break;
+    case 'fight': {
+      a = first((x: any) => x.type === 'attack' && x.target.row);
+      if (!a) a = stepToward(s, legal, (c: any) => s.board.creatures.filter((o: any) => o.owner === 'opponent').reduce((m: number, o: any) => Math.min(m, dist2(c, o)), 1e9));
+      break;
+    }
+    case 'spell': {
+      const casts = legal.filter((x: any) => x.type === 'cast');
+      a = casts.find((x: any) => x.row) || casts[0];
+      break;
+    }
+    case 'commander': {
+      a = first((x: any) => x.type === 'attack' && x.target.commander);
+      if (!a) a = first((x: any) => x.type === 'attack');
+      if (!a) a = stepToward(s, legal, (c: any) => dist2(c, enemySh));
+      break;
+    }
+  }
+  return a || { type: 'done' };
+}
+function stepToward(s: any, legal: any[], score: (c: any) => number) {
+  let best: any = null, bv = 1e9;
+  for (const x of legal) {
+    if (x.type !== 'move' || creatureAt(s, x.row, x.col)) continue;
+    const c = s.board.creatures.find((o: any) => o.uid === x.creatureUid);
+    if (isMiner(CARDS[c.cardId])) continue;
+    const v = score({ row: x.row, col: x.col }) - score(c);
+    if (v < bv) { bv = v; best = x; }
+  }
+  return bv < 0 ? best : null;
+}
+
+/** Match-end summary numbers (R9.11): mined, summoned, lost and per-creature damage. */
+function trackStats(s: any, ev: any[]) {
+  const st = s.stats || (s.stats = { mined: { player: 0, opponent: 0 }, summoned: { player: 0, opponent: 0 }, lost: { player: 0, opponent: 0 }, damage: {}, cards: {} });
+  for (const c of s.board.creatures) st.cards[c.uid] = c.cardId;
+  for (const e of ev) if (e.type === 'summon' || e.type === 'defeat') st.cards[e.uid] = e.cardId;
+  let att: any = null;
+  const credit = (u: string, n: number) => { st.damage[u] = (st.damage[u] || 0) + n; };
+  for (const e of ev) {
+    if (e.type === 'summon') st.summoned[e.owner]++;
+    else if (e.type === 'defeat') st.lost[e.owner]++;
+    else if (e.type === 'mine') { const c = s.board.creatures.find((x: any) => x.uid === e.uid); if (c) st.mined[c.owner] += e.amount; }
+    else if (e.type === 'attack') att = { uid: e.uid, target: e.target };
+    else if (e.type === 'damage' && att && e.amount > 0) {
+      if (e.commander) credit(att.uid, e.amount);
+      else if (e.uid === att.uid) { const d = s.board.creatures.find((x: any) => x.row === att.target.row && x.col === att.target.col); void d; if (att.defUid) credit(att.defUid, e.amount); }
+      else { att.defUid = e.uid; credit(att.uid, e.amount); }
+    }
   }
 }
 
 export function applyAction(state: any, action: any): { ok: boolean; state: any; events: any[]; error?: string } {
   const actor: Side = state && state.priority;
   const r = applyActionInner(state, action);
+  if (r.ok) trackStats(r.state, r.events);
   if (r.ok && r.state.tutorial) { advanceTutorial(r.state, action, actor, r.events); if (r.state.winner === 'player') r.state.tutorial.step = 'complete'; }
   return r;
 }

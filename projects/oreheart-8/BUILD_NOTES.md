@@ -1,3 +1,26 @@
+# Oreheart — Phase 1a build notes (Revision 9)
+
+`npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 42 tests).
+
+## Revision 9 — what was built
+- **Visual Deck Builder** (`src/ui/decks.ts`): card-face grid ("All cards", each face `role=button`, named exactly by the card), single click = enlarged view (300 ms double-click window), double-click or drag onto the pile adds, copy limits respected. Right column: "Deck pile" (name + "N/50"), counts, "Cost chart" bars ("Cost C: N cards"), problems, "Deck list" with `N × Name` + "Add"/"Remove" buttons, Auto-fill / Save / Rename (dialog) / New Deck, "My decks", 5-deck limit. `autoFill` keeps existing cards and returns a legal 50-card deck.
+- **Savings**: `savingsPerCrystal: 10`; `endTurn` moves `floor(Flow/10)` to the Bank and emits `savings`; the UI flies "+N banked" into the Bank counter (≥1.5 s, also in test mode).
+- **Moves left**: Deploy counts only `summon`; Action counts `move/mine/mineAt/attack`. Spells, Instants, counterspells and Crystal cards never count.
+- **Select screen**: no `<select>`; 3 Commander cards, scrolling "Deck choice" row of stacks (Starter deck, saved decks, "+ New Deck"), illegal stacks `aria-disabled` + "Deck message", Easy/Normal/Hard, "Fight!". Last picks remembered in localStorage (`oreheart.picks`).
+- **Pickaxe** above mines with ready Miners (CSS swing + spark), button text "×N", `data-ready-miners`.
+- **previewAttack** (engine, runs the real attack on a copy) + `window.oreheart.previewAttack`; drag shows "You deal X / You take Y" with 💀. The stat label is a drag handle.
+- **Last turn** button + dialog from the enemy's event log.
+- **Hard AI** (`difficulty: "hard"`, `state.difficulty`): always mines, focuses fire, prefers lethal Commander hits.
+- **Tutorial rewritten** (summon, move, mine, mineTap, spend, crystal, upgrade, swap, fight, spell, savings, commander, complete) with `tutorialAction()` hook; the tutorial tops up Bank/Flow at certain steps (`gifts` in `tutorial.json`) so every step is reachable.
+- **Match-end summary** (mined / summoned / lost / turns / MVP from `state.stats`), "Play again" and "Menu".
+- On plain screens a dialog hides the page behind it from assistive tech (avoids button-name clashes).
+
+## Gaps
+- Hard AI's Miner protection/Guard placement is only approximated by scoring tweaks.
+- Visuals (pickaxe, deck builder layout) were only checked in a headless browser at 844×390.
+
+---
+
 # Oreheart — Phase 1a build notes (Revision 8)
 
 `npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 37 tests).

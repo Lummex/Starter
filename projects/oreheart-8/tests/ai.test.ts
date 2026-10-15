@@ -26,6 +26,12 @@ describe('AI', () => {
       expect(s.turn).toBeLessThan(60);
     });
   }
+  it('hard vs normal finishes and hard beats a passive player', () => {
+    const s = play(createMatch({ seed: 5, skipMulligan: true }), { player: 'hard', opponent: 'normal' }, false, 120);
+    expect(s.turn).toBeGreaterThan(2);
+    const w = play(createMatch({ seed: 6, playerCommander: 'borgo', opponentCommander: 'grubnak' }), { opponent: 'hard' }, true);
+    expect(w.winner).toBe('opponent');
+  });
   it('easy vs normal finishes', () => {
     const s = play(createMatch({ seed: 9, skipMulligan: true }), { player: 'easy', opponent: 'normal' }, false, 120);
     expect(s.turn).toBeGreaterThan(2);

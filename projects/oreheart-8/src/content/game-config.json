@@ -13,6 +13,7 @@
  "gathererFlow": 2,
  "fighterFlow": 1,
  "poolCap": 16,
+ "savingsPerCrystal": 10,
  "underdogBonus": 2,
  "geodeIncome": 1,
  "deckSize": 50,

@@ -41,10 +41,11 @@ export class Game {
     this.autoSkip = !this.scripted && (this.testMode ? options.autoSkip === true : options.autoSkip !== false);
     clearTimeout(this.skipTimer);
     if (this.scripted) this.ai = true;
-    this.difficulty = options.difficulty === 'easy' ? 'easy' : 'normal';
+    this.difficulty = options.difficulty === 'easy' ? 'easy' : options.difficulty === 'hard' ? 'hard' : 'normal';
     const seed = options.seed ?? (this.testMode ? 1 : (Date.now() ^ (Math.random() * 1e9)) | 0);
     this.rand = makeRand(seed + 977);
     this.state = createMatch({ ...options, seed });
+    this.state.difficulty = this.difficulty;
     this.emit([{ type: 'newMatch' }]);
     this.afterAction();
     return JSON.parse(JSON.stringify(this.state));

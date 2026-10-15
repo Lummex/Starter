@@ -1,7 +1,7 @@
 import './style.css';
 import { Game } from './game';
 import { App } from './ui/app';
-import { CARDS, CONFIG, weaponOf } from './engine';
+import { CARDS, CONFIG, weaponOf, previewAttack, tutorialAction } from './engine';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
@@ -22,6 +22,8 @@ if (test) {
     newMatch: (options: any = {}) => app.beginMatch(options),
     startTutorial: () => app.beginTutorial(),
     movesLeft: () => game.movesLeft(),
+    previewAttack: (uid: string, target: any) => (game.state ? previewAttack(game.state, uid, target) : null),
+    tutorialAction: () => (game.state ? tutorialAction(game.state) : null),
     getCard: (id: string) => {
       const c: any = CARDS[id];
       if (!c) return null;

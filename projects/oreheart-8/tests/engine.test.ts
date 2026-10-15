@@ -339,3 +339,41 @@ describe('revision 7', () => {
     for (const c of Object.values<any>(CARDS)) expect((c.text || '').length).toBeGreaterThan(5);
   });
 });
+
+import { previewAttack, tutorialAction } from '../src/engine';
+import tutorialJson from '../src/content/tutorial.json';
+describe('revision 9', () => {
+  const t: any = tutorialJson;
+  it('savings: 9 -> 0, 10 -> 1, 16 -> 1', () => {
+    for (const [f, fl, bk] of [[9, 9, 0], [10, 9, 1], [16, 15, 1]]) {
+      let s = mk({ playerCrystals: f, board: [P('goblin-grunt', 6, 3)] });
+      s = done(s, 2);
+      expect([s.players.player.crystals, s.players.player.bank]).toEqual([fl, bk]);
+    }
+    expect(CONFIG.savingsPerCrystal).toBe(10);
+  });
+  it('spells never count as moves', () => {
+    const s = mk({ playerHand: ['fireball', 'battle-cry'], playerCrystals: 10, board: [O('gnome-prospector', 2, 8)] });
+    expect(hasMovesLeft(s)).toBe(false);
+    expect(legalActions(s).some((a: any) => a.type === 'cast')).toBe(true);
+  });
+  it('previewAttack matches the real attack', () => {
+    const s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { board: [P('shieldbeard', 4, 3), O('goblin-scrapper', 3, 3)] } });
+    const a = at(s, 4, 3);
+    expect(previewAttack(s, a.uid, { row: 3, col: 3 })).toEqual({ youDeal: 3, youTake: 2, targetDefeated: true, attackerDefeated: false });
+  });
+  it('tutorial runs to Victory via tutorialAction', () => {
+    let s = createMatch({ playerCommander: t.playerCommander, opponentCommander: t.opponentCommander, setup: t.setup, mines: t.mines, tutorial: true, seed: 1 });
+    const seen: string[] = [];
+    for (let i = 0; i < 200 && s.tutorial.step !== 'complete'; i++) {
+      if (seen[seen.length - 1] !== s.tutorial.step) seen.push(s.tutorial.step);
+      const who = s.priority;
+      const a = who === 'player' ? tutorialAction(s) : s.pendingResponse ? { type: 'pass' } : { type: 'done' };
+      const r = applyAction(s, a);
+      if (!r.ok) throw new Error(JSON.stringify(a) + r.error + ' @' + s.tutorial.step);
+      s = r.state;
+    }
+    expect(seen).toEqual(['summon', 'move', 'mine', 'mineTap', 'spend', 'crystal', 'upgrade', 'swap', 'fight', 'spell', 'savings', 'commander']);
+    expect(s.winner).toBe('player');
+  });
+});
