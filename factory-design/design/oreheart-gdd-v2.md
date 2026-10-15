@@ -47,9 +47,11 @@ The great heroes of the world fought each other until almost none were left. The
 Everything is 3D in a comic-book style, beautiful and polished, in the style of the mockup image, but in landscape (phone held sideways). The battlefield fills the **whole screen, edge to edge, with no black bars**, viewed at an angle like a tabletop and zoomed as large as possible so the game works on small phones. The enemy's Stronghold sits right at the top edge; yours sits at the bottom, just behind your hand cards and still visible. Everything else floats over the battlefield: your hand of large, readable cards fanned along the bottom (they slide down out of the way while you drag a card or creature), the enemy's card backs along the top, your crystal counters (with an income preview such as "+3 next turn") on the left, the phase name and Done button on the right, and each player's deck pile on their own right-hand side at full hand-card size (yours bottom-right, the enemy's top-left as seen from your side, with the enemy's card backs shifted right to make room). Each Commander's Health is a big glowing heart attached to their own Stronghold wall facing you (on the back wall of your Stronghold, on the front wall of the enemy's), never floating over a battlefield space; it shakes and pops red numbers when hit. Creature stat badges (Attack, Health, Movement) are always drawn on top of everything else on the battlefield, and a heart shrinks or slides along its wall rather than ever covering them. The current turn and phase are shown in the top-right corner as large, fancy comic-style text with a thick outline and soft glow, no box ("YOUR TURN / Deploy", "ENEMY TURN" in a different color).
 
 - **Phase banners:** at the start of each turn and phase, a big comic-style banner pops up in the center ("YOUR TURN", "DEPLOY", "ACTION", "ENEMY TURN") for about 1.5 seconds, then fades. Phases skipped automatically show no banner; the turn and phase also stay shown in the top-right corner.
-- **Creatures show their numbers:** every creature on the battlefield shows ⚔️ Attack, ❤️ Health and 👟 Movement.
+- **Creatures show their numbers:** every creature shows ⚔️ Attack, ❤️ Health and 👟 Movement in one **compact** pill tucked right under its feet, just above its ring (same readable number size, tight spacing, about half the old width).
+- **Weapons show the type:** every 3D creature holds a big, comic-style weapon readable on a small phone: Miners a **mining pick**; Smith Miners a pick plus a smithing hammer (anvil on the back); Crystal Eaters a pick and a glowing crystal chunk; melee Fighters a **sword** in their faction's style (jagged cleaver-sword for Goblins, rune-blade for Gnomes, broadsword for Dwarves); Ranged creatures their ranged weapon (sling for Goblins, spark wand for Gnomes, crossbow or throwing axes for Dwarves); Guard creatures a sword and a big shield; riders and Charge creatures a lance on their mount; Flying creatures their gyro-machine; Collector creatures an oversized signature weapon.
 - **Ready or done:** each creature stands on a ring. **Yellow** = it can still act this turn. Once it has moved, attacked or mined (or if it can't act yet because it was just summoned), the ring turns **dark grey** and the creature turns darker and duller (not grey); both reset at the start of its owner's turn. Miners summoned this turn stay bright, since they can still move or mine.
-- **Hand cards pop out:** moving the mouse over a card in your hand (or touching and holding it on a phone) makes it pop up out of the fan, well above the other cards, and **double in size**, in front of everything, so its full text is easy to read; a card near a screen edge grows inward so it's never cut off. It shrinks back into the fan when you move off.
+- **Hand tucked away:** your hand normally sits **half below the bottom edge** of the screen (only the top half of each card, with name and cost, shows), leaving the battlefield clear. Moving the mouse anywhere over the hand slides the whole fan up to full view; moving away tucks it back. On a phone, tap the hand strip to slide it up; you can also drag a card straight out of the tucked hand.
+- **Hand cards pop out:** once the hand is up, the card under the mouse (or touched and held on a phone) pops up out of the fan, well above the others, and **doubles in size**, in front of everything, so its full text is easy to read; a card near a screen edge grows inward so it's never cut off. It shrinks back into the fan when you move off.
 - **Full ability text on every card:** each card prints its complete ability in plain words in a text box under the picture (for example "Crystal Eater: you may play extra Crystal cards this round; each extra one deals 2 damage to this creature"), never just a keyword and never cut off; long text shrinks a little to fit. This applies everywhere a card is shown. Creatures on the battlefield show a small ability icon; tap one to see its full card.
 - **Card reveal:** whenever either player plays a card, it flies to the **center of the screen** and stays there, big, for about 1.5 seconds so both players can read it. Then a creature card drops onto its space and flips, glows and rises into the 3D creature; a spell turns into its effect; a Crystal card flies into the Bank crystal; a Miner upgrade flies onto its creature and sparkles gold. When the enemy plays something you can respond to, the reveal flows straight into the Respond pop-up. Settings: Card reveals Normal (1.5 s) or Fast (0.6 s); tap a reveal to skip it.
 - **Spell effects:** every spell has its own visual. Infernal Orb: a blazing ball arcs from the caster's Stronghold, then a KA-BOOM burst. Skyfall Annihilation: a meteor crashes down with screen shake over the 3 × 3 area. Bastion Ward and Shield: a shimmering bubble. Mending Light: a beam of light from above. Warhowl: red glow and a roar across your creatures. Counterspells: the countered card shatters like glass with a burst. A comic callout appears over the caster's Stronghold, for example "GRUBNAK CASTS INFERNAL ORB!". Commanders never attack; they only cast spells.
@@ -124,9 +126,9 @@ The only resource is **soul crystal** (crystal for short): one kind, shown in yo
 - **Mine color:** at the start of each turn, the player with **more creatures mining it** owns it, and it glows in that player's color (creatures that mined it on their owner's last turn and are still standing next to it; creatures merely standing nearby don't count). On a tie, or when nobody mines it, the mine is **neutral** (white). When a mine changes color, its crystals burst and regrow in the new color, with sparkles and light beams.
 - **What a mining action pays:** at a mine your side owns, or a neutral one, a mining action pays the full amount (Miner 2, Fighter 1). At a mine the **enemy** owns, it pays **half**, rounded down (Miner 1, Fighter 0). Example: you have 1 Miner and the enemy has 2 Miners mining a mine, so the enemy owns it: the enemy gets 4, you get 1.
 - **Paying:** every card simply costs soul crystals; there are no color requirements. The game spends Flow first, then Bank, and cards you can afford glow in your hand.
-- **Mine All:** a ⛏️ **Mine All** button just left of your deck (Action phase only) shows how many can mine ("Mine All (3)") and is greyed out when none can. One tap makes every ready Miner (basic, Smith or Crystal Eater) standing next to a mine mine instantly; creatures that already moved, attacked or mined are skipped, and Fighters are never included (drag them yourself). A Miner touching two mines picks one that pays full value. On a computer, the M key does the same.
+- **Tap a mine to mine:** in your Action phase, tapping a mine makes **every one of your ready Miners next to it** (basic, Smith or Crystal Eater) mine it at once; creatures that already moved, attacked or mined are skipped, and Fighters are never included (drag a Fighter onto the mine to mine with it). A mine where you have ready Miners pulses softly with a ⛏️ and a number ("⛏️3"). **Press and hold** a mine (or hover with a mouse) to see who owns it and what it pays. There is no Mine All button.
 - **Starting crystals:** 0. Turn 1 is always "send out a Miner" (see Free Miner below).
-- **Income preview:** next to your crystal counters you always see next turn's Flow; each mine shows a ring in its owner's color and floating numbers for both sides (for example "+4 / +1").
+- **Income preview:** next to your crystal counters you always see next turn's Flow; each mine shows a ring in its owner's color and floating numbers for both sides (for example "+4 / +1"); press and hold a mine for its details.
 - **Endless mines:** mines never run out. Long games are ended by deck-out damage and sudden death instead.
 - **Card costs:** creatures cost 1–13 (see Cards for the formula); spells cost 1–7.
 - **Look:** big, glossy, glowing gems with bright neon-saturated colors, light rays and floating sparkles.
@@ -200,7 +202,7 @@ A creature card shows its cost, Attack, Health, movement and one special ability
 
 **Deck rules:** 50 cards (the owner can change this). Common and Uncommon cards have no copy limit; Rare, Ultra Rare and Collector cards are limited to 3 copies each. Especially powerful cards are marked Unique: you can have only one of that card on your battlefield at a time (extra copies wait in your hand). A deck can hold at most 10 Crystal cards in total, whatever their rarity.
 
-**Starter decks** (one per faction, 50 cards): 40 creatures, 6 spells (including 1 counterspell, Snuff Out) and 4 Crystal cards. Mostly Commons, with about 8 Miners (about 5 basic Miners and 3 Smith Miners) and plenty of cheap creatures so there's always something to play; the owner can change the mix in the settings file. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander and your deck.
+**Starter decks** (one per faction, 50 cards): 40 creatures, 6 spells (including 1 counterspell, Snuff Out) and 4 Crystal cards. Mostly Commons, with about 8 Miners (about 5 basic Miners and 3 Smith Miners), at most 4 copies of any other card for variety (including the newer cards), and plenty of cheap creatures so there's always something to play; the owner can change the mix in the settings file. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander and your deck.
 
 ## Turns and phases
 
@@ -219,7 +221,7 @@ Every turn runs through the same phases, each with a 50-second timer. For the fi
 
 You can tap a "Done" button to finish a phase early. If you still have something you could do, a center pop-up asks "Moves still available! Continue to the next phase?" with Continue and Go back, and names creatures that could still mine (for example "2 miners haven't mined"), since skipping mining costs crystals next turn. It can be turned off in Settings, and never appears when the timer runs out.
 
-**Auto-skip:** when you have nothing left you can do in a phase (no card you can afford and place, no creature that can still move, attack or mine), the game moves on by itself after about a second. Instants, upgrades and the Miner swap don't count as moves left.
+**Auto-skip:** if you have nothing you can do in a phase, the game moves on by itself after about half a second, with no click and no confirmation. In the Deploy phase that means no card you can both afford and place; Crystal cards, Instants, the Miner swap and cards with no legal space don't hold it up. In the Action phase it means no creature can move, attack or mine. The "Moves still available" pop-up only appears when you press Done while you really could still play a card, move, attack or mine. Auto-skip pauses during tutorial steps that wait for you.
 
 **Responding with Instants:** when the opponent attacks one of your creatures or casts a spell or summons, and you hold a matching Instant or counterspell, a "Respond?" pop-up appears in the center for **12 seconds** (owner setting) with a visible shrinking countdown bar, and the game waits while it's open. It shows the enemy's card full size ("Enemy casts Infernal Orb at your Ironwall Shieldbeard") and lists your Instants and counterspells. If one is only affordable together with a Crystal card from your hand, it offers both in one tap ("Soul Cluster + Snuff Out"); ones you can't afford are shown greyed out with "need 2 more". The pop-up appears whenever you hold a matching Instant or counterspell, even if you can't afford it yet. Tap one to cast it before the attack or spell resolves, or let the window close. You can also cast Instants freely during your own turn.
 
@@ -247,7 +249,7 @@ Attacks subtract Attack from Health; a creature at 0 Health is defeated. Every c
 - **Attacking the Commander:** a creature next to the enemy Stronghold can attack the Commander, removing Health equal to its Attack. The Commander never strikes back.
 - **Defeated creatures** go to the discard pile and lose any Smith upgrades.
 
-**Example:** a Dwarf Ironwall Shieldbeard (⚔️2 ❤️4) attacks a Gutripper Brawler (⚔️2 ❤️3). Dwarves beat Goblins, so it hits for 3 and the Scrapper is defeated, but it strikes back at the same moment for 2. The Ironwall Shieldbeard survives at ❤️2 and heals back to ❤️4 at the start of its owner's next turn.
+**Example:** a Dwarf Ironwall Shieldbeard (⚔️2 ❤️4) attacks a Gutripper Brawler (⚔️2 ❤️3). Dwarves beat Goblins, so it hits for 3 and the Brawler is defeated, but it strikes back at the same moment for 2. The Ironwall Shieldbeard survives at ❤️2 and heals back to ❤️4 at the start of its owner's next turn.
 
 ## Miner upgrades
 
@@ -276,7 +278,7 @@ The only way to win is to bring the enemy Commander from 20 Health to 0, which m
 
 ## Starter card list
 
-These 44 cards set the style and balance; the factory expands them into a Core Set of about 120 cards (about 35 per faction plus spells), giving plenty of variety to collect. Move 2 is reserved for Ultra Rare and Collector characters. In the full set the factory also adds Uncommon cards.
+These 65 cards set the style and balance; the factory expands them into a Core Set of about 120 cards (about 35 per faction plus spells), giving plenty of variety to collect. Move 2 is reserved for Ultra Rare and Collector characters. In the full set the factory also adds Uncommon cards.
 
 **Goblins (green crystals)**
 
@@ -290,6 +292,13 @@ These 44 cards set the style and balance; the factory expands them into a Core S
 | Backstab Weasel | Rare | Fighter | 6 | 3 | 2 | 1 | Sneaky: enemies can't strike back at it |
 | Mangewolf Rider | Ultra Rare | Fighter | 9 | 3 | 4 | 2 | Can act the turn it's played |
 | Gutcrusher the Troll Tyrant | Collector | Fighter | 13 | 5 | 6 | 2 | Unique. Rally: all your Goblins get +1 Attack |
+| Snotskull Grunt | Common | Fighter | 3 | 2 | 1 | 1 | No special ability |
+| Boneknocker | Common | Fighter | 3 | 1 | 2 | 1 | No special ability |
+| Rotgut Grenadier | Common | Fighter | 5 | 2 | 2 | 1 | Ranged: attacks up to 2 spaces away |
+| Shiv Rat | Common | Fighter | 4 | 2 | 1 | 1 | Sneaky: enemies can't strike back at it |
+| Skullbasher Rusher | Uncommon | Fighter | 6 | 2 | 2 | 1 | Charge: can move and attack in the same turn |
+| Junk Shaman | Uncommon | Fighter | 5 | 1 | 3 | 1 | At the start of your turn, adjacent Goblins get +1 Attack this turn |
+| Blastrat Sapper | Uncommon | Fighter | 4 | 2 | 1 | 1 | Ka-boom: when defeated, deals 1 damage to all adjacent enemies |
 
 **Gnomes (blue crystals)**
 
@@ -303,6 +312,13 @@ These 44 cards set the style and balance; the factory expands them into a Core S
 | Mirrorveil Illusionist | Rare | Fighter | 6 | 2 | 3 | 1 | Blink: once, swap places with any of your creatures |
 | Thunderwing Gyronaut | Ultra Rare | Fighter | 8 | 3 | 3 | 2 | Flying: moves over other creatures; Ranged |
 | The Arcane Colossus | Collector | Fighter | 13 | 5 | 6 | 2 | Unique. Overload: its attack also hits every enemy next to the target for 1 |
+| Voltwright | Common | Fighter | 3 | 2 | 1 | 1 | No special ability |
+| Hexgear Adept | Common | Fighter | 3 | 1 | 2 | 1 | No special ability |
+| Hexwright Apprentice | Common | Fighter | 4 | 1 | 2 | 1 | Ranged: attacks up to 2 spaces away |
+| Gearward Sentinel | Common | Fighter | 6 | 1 | 4 | 1 | Guard: enemies next to it must attack it first |
+| Runic Siphoner | Uncommon | Fighter | 5 | 2 | 2 | 1 | When it defeats a creature, put 1 crystal in your Bank |
+| Phase Stalker | Uncommon | Fighter | 6 | 2 | 3 | 1 | Blink: once per match, swap places with any of your creatures |
+| Glyphshield Warden | Uncommon | Fighter | 6 | 2 | 3 | 1 | At the start of your turn, it gets Shield 1 |
 
 **Dwarves (purple crystals)**
 
@@ -316,6 +332,13 @@ These 44 cards set the style and balance; the factory expands them into a Core S
 | Forgefire Brewlord | Rare | Fighter | 7 | 2 | 4 | 1 | Hearty Ale: at the start of your turn, each adjacent ally gets +1 Health until your next turn |
 | Thunderhorn Ram Rider | Ultra Rare | Fighter | 11 | 4 | 5 | 2 | Charge: can move and attack in the same turn |
 | Queen Brunhilda Ironheart, the Unbroken | Collector | Fighter | 13 | 5 | 6 | 2 | Unique. Unbreakable: never takes more than 3 damage from one hit |
+| Ironjaw Raider | Common | Fighter | 3 | 2 | 1 | 1 | No special ability |
+| Granite Oathkeeper | Common | Fighter | 3 | 1 | 2 | 1 | No special ability |
+| Oathbound Pikeman | Common | Fighter | 6 | 2 | 3 | 1 | Guard: enemies next to it must attack it first |
+| Deepforge Crossbowman | Common | Fighter | 5 | 2 | 2 | 1 | Ranged: attacks up to 2 spaces away |
+| Barrelback Courier | Common | Fighter | 6 | 1 | 3 | 1 | Can act the turn it's played |
+| Rune-Splitter | Uncommon | Fighter | 7 | 3 | 3 | 1 | Armored: takes 1 less damage from every hit |
+| Grimhold Ravager | Uncommon | Fighter | 8 | 3 | 4 | 1 | Rage: +2 Attack while below half Health |
 
 **Commander spells** (cast from your Stronghold; cost soul crystals)
 
@@ -365,7 +388,7 @@ New players start with basic cards and some booster packs; better cards come fro
 - **Starting collection:** a basic starter deck for each faction (Commons only) plus 5 free booster packs, opened right after the tutorial.
 - **Gold:** earned by winning (Easy 10, Normal 20, Hard 35; half for a loss). No gold for matches that end before turn 5, except for the winner when the opponent surrenders; this stops gold farming, and the owner can change the turn number. Can also be bought with real money (later phase). Spent on booster packs and cosmetics.
 - **Booster pack:** 50 gold for 12 random cards with a card-flip opening animation; rarer cards get a bigger, flashier reveal.
-- **Deck builder:** save up to 5 decks; filter the collection by faction, rarity, role and cost.
+- **Deck builder:** save up to 5 decks; filter the collection by faction, rarity, role and cost. **Testing version (now):** until packs and the Collection exist, every card is unlocked in unlimited supply; the builder enforces the deck rules (50 cards, copy limits, at most 10 Crystal cards, Unique), shows a live count of creatures, spells and Crystal cards, and saves decks on the device. Before each match you pick one of your decks or the starter deck.
 
 **Owner-controlled rarity (back files, not in the game):** all rarity numbers live in one settings file in the code, for example `game-config.json`. Players can never see or change it. It holds:
 
