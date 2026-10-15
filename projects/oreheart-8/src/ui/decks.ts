@@ -29,13 +29,15 @@ const kindOf = (c: any) => (c.type === 'creature' ? (c.role === 'Smith' ? 'Smith
 /** A real card face: cost, name, art, stats, rarity, role and the complete ability text. */
 export function cardFace(c: any, big = false) {
   const cr = c.type === 'creature';
-  return h('div', { class: `face f-${c.faction} ${c.type}${big ? ' big' : ''}` },
+  const pic = c.type === 'creature' && c.faction === 'goblins' ? `/art/cards/${c.id}.webp` : null;
+  return h('div', { class: `face f-${c.faction} ${c.type}${big ? ' big' : ''}`, 'data-card-id': c.id, 'data-rarity': ({ Common: 'common', Uncommon: 'uncommon', Rare: 'rare', 'Ultra Rare': 'ultra-rare', Collector: 'collector' } as any)[c.rarity] || 'common' },
     h('span', { class: 'fc-cost' }, c.type === 'crystal' ? '◆' : String(c.cost)),
     h('strong', { class: 'fc-name' }, c.name),
-    h('span', { class: 'fc-art' }, cr ? (isMiner(c) ? (c.role === 'Smith' ? '⚒️' : '⛏️') : '⚔️') : c.type === 'spell' ? '✨' : '💎', h('small', {}, FSYMS[c.faction])),
+    pic ? h('img', { class: 'fc-pic', src: pic, alt: '' }) : h('span', { class: 'fc-art' }, cr ? (isMiner(c) ? (c.role === 'Smith' ? '⚒️' : '⛏️') : '⚔️') : c.type === 'spell' ? '✨' : '💎', h('small', {}, FSYMS[c.faction])),
     cr ? h('span', { class: 'fc-stats' }, `⚔️${c.attack}${c.abilities?.includes('ranged') ? '🏹' : ''} ❤️${c.health} 👟${c.move}`) : null,
     h('span', { class: 'fc-meta' }, `${kindOf(c)} · ${c.rarity}`),
-    h('span', { class: 'fc-text' }, c.text || ''));
+    h('span', { class: 'fc-text' }, c.text || ''),
+    big ? h('span', { class: 'fc-flavor' }, c.tagline + ' — ' + c.flavor) : null);
 }
 
 /** Completes `deck` to exactly 50 cards without removing anything (R9.1). */

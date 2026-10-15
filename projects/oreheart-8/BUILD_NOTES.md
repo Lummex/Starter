@@ -1,3 +1,27 @@
+# Oreheart — Phase 1B Round 1 build notes (art and sound style test)
+
+`npm run build` → `dist/`; `npm test` → Vitest. No rule, number, layout position or accessible name was changed.
+
+## What was built
+- **Art pipeline** (`src/ui/art.ts`, `src/ui/scene.ts`): PBR materials (no toon, no outlines), dark fog, cool rim light, bloom (`UnrealBloomPass`, off on Low), a point light + light beam + sparkles + embers from each mine, soft shadows on High.
+- **Goblin rig** (`makeGoblin`): hunched body, huge ears, glowing eyes, grin with pointy teeth, big hands; 16 distinct Goblin figures (helmets, armor, bombs, bandoliers, wolf, keg, gem belly…) with the type weapon on a swinging pivot. Rare+ are bigger, Ultra Rare and Collector get a glow disc; upgrades add gold pips and shinier armor. Animations: idle, walk, melee/ranged swing, hit (red flash + flinch), defeat (stars + dust, spin-out), mining (pick swing + sparks), summon (rises + dust) and three pokes (cackle, rude dance, angry stomp) when you tap a Goblin (no game action).
+- **Grubnak** (`makeGrubnak`): crown with purple gems, fur-trimmed purple cape, gold chain and armor; reactions: belly laugh + pound, sulk, fastball throw, flinch + fist shake. **Retreat**: rocket barrel with gold skull and flame trail, Stronghold shakes/crumbles, comic **KA-BOOM!** starburst (CSS halftone + red/orange burst).
+- **Strongholds** (all three, `makeStronghold`): stacked stone, gold trim, crenellations, spikes, banners, glowing faction gem (dims as Health drops); Goblin scrap, Gnome gears/telescope/coil, Dwarf runes/door/braziers. Sproingle and Borgo keep placeholder Commander figures.
+- **Battlefield**: charred rock texture with faint glowing ore cracks, stones, spiked palisade fences, mine carts and rails around the border only.
+- **Mines**: faceted crystal clusters in spiked palisades, owner-colored (white neutral), burst-and-regrow on owner change. The Rev 9 DOM pickaxe was restyled as a metal-and-wood pick with a spark.
+- **Menu and logo**: `menu screen.jpg` layout (logo cut from `main logo.jpg`, tagline, glowing PLAY, Tutorial/Decks/Rules/Settings plaques with icons) over a Grok-painted cavern (`public/art/menu-bg.webp`). Icon link uses the logo.
+- **Cards**: new frame (hex cost gem, rarity diamond, rarity trim, faction color, picture, rules box, tagline + flavor on pop-out/reveal/card view/deck builder); `data-card-id` / `data-rarity` everywhere; 16 Goblin pictures via the xAI Grok image API (`tools/gen-card-art.mjs`, `src/content/card-art.json`, `public/art/cards/*.webp`, all generated, no fallbacks). Every card has a tagline and flavor (`src/content/card-flavor.json`).
+- **Sound** (`src/ui/audio.ts`): all effects and Goblin/Grubnak gibberish synthesized with Web Audio; nothing runs before the first gesture; Settings sliders "Sound effects" and "Voices" (default 80, saved); match-screen "Mute sound"/"Unmute sound" button (saved). No music.
+- **Hooks** (test mode): `listCards`, `getCard` (+tagline, flavor), `getArtInfo`, `getAudioState`, `getRenderStats`, `poke`.
+- `CREDITS.md` lists fonts, pictures and code-made assets; no outside files are in `public/assets/external/`.
+
+## Gaps
+- Gnome/Dwarf figures, Sproingle/Borgo, unique spell effects and hit starbursts are later rounds.
+- Frame rate on real phones was not measured (headless software GL only).
+- Card pictures were not individually checked for stray text or limbs beyond a spot check.
+
+---
+
 # Oreheart — Phase 1a build notes (Revision 9)
 
 `npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 42 tests).
@@ -171,3 +195,5 @@ Re-ran the acceptance file locally; the engine follows the spec, so no rules cha
 - AI: fighters stop mining after turn 5 so they advance; Normal AI beats a passive player well before turn 60.
 - Round 3: fixed stale hand cache on new match (Tunnel! tag) and Smith drops landing on a creature's stat badge (Smith upgrade dialog).
 - Round 3: hand fan now sits fully on-screen (previously cards overhung the bottom edge so hover could not reach them).
+
+Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand pop-out, deck builder).

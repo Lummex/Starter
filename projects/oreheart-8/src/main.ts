@@ -2,6 +2,8 @@ import './style.css';
 import { Game } from './game';
 import { App } from './ui/app';
 import { CARDS, CONFIG, weaponOf, previewAttack, tutorialAction } from './engine';
+import { audio } from './ui/audio';
+import { pictureOf } from './ui/app';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
@@ -29,8 +31,17 @@ if (test) {
       if (!c) return null;
       const cr = c.type === 'creature';
       return { id: c.id, name: c.name, type: c.type, faction: c.faction === 'any' ? null : c.faction, rarity: c.rarity, role: cr ? String(c.role).toLowerCase() : null,
-        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text, weapon: weaponOf(c) };
+        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text, weapon: weaponOf(c), tagline: c.tagline, flavor: c.flavor };
     },
+    listCards: () => Object.keys(CARDS).map((id) => (window as any).oreheart.getCard(id)),
+    getArtInfo: (id: string) => {
+      const c: any = CARDS[id];
+      if (!c) return null;
+      return { figure: c.type !== 'creature' ? null : c.faction === 'goblins' ? 'finished' : 'placeholder', picture: pictureOf(c) };
+    },
+    getAudioState: () => audio.state(),
+    getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
+    poke: (uid: string) => (app.view ? app.view.poke(uid) : null),
     getConfig: () => JSON.parse(JSON.stringify(CONFIG)),
     setPhaseTimeLeft: (n: number) => app.setPhaseTimeLeft(n),
   };
