@@ -1,22 +1,23 @@
 ## What was built
-Oreheart is a comic-style fantasy card battle in the browser: you play one full match against a computer opponent (Easy, Normal or Hard), or a guided tutorial. This round (the final test round) adds a visual Deck Builder, a new Commander and deck select screen, a savings rule (10 spare crystals move to the Bank), swinging pickaxes on mines, an attack preview, a "Last turn" recap, and a match-end summary.
+Phase 1B Round 1, the art and sound style test. Oreheart now has a dark-fantasy look: a new logo and main menu, finished 3D Goblins, Grubnak with his rocket-barrel retreat, all three Strongholds, a darker battlefield, glowing mines, and a new card design. Goblin card pictures were generated with the Grok image tool. Sound effects and Goblin voices are included, with no music. No game rules were changed.
 
 ## Try these things
-- Open the menu, press **Tutorial**, and follow the tips all the way to Victory.
-- Press **Decks**: single-click a card to enlarge it, double-click to add it, try **Auto-fill**, then **Save**.
-- Press **Play**, pick a Commander, pick a deck (or "+ New Deck"), choose **Hard**, then **Fight!**
-- In a match, drag one of your creatures over an enemy and check the "You deal / You take" box. Let go elsewhere to cancel.
-- Finish your turn with 10 or more crystals and watch "+1 banked" fly into the Bank. After the enemy moves, press **Last turn**.
-- Win or surrender, then check the summary and press **Play again**.
+- Open the main menu and check that the logo and the five buttons look right and match your reference images. Click anywhere first, because sound only starts after a tap.
+- Start a match as Grubnak and look at the Goblin creatures. Tap one to see its funny reaction.
+- Look at the cards in your hand. Do the new frames and Goblin pictures look right?
+- Open Decks and scroll through the cards to see the new card design for every faction.
+- Attack Grubnak's opponent to defeat the Commander and watch the rocket-barrel retreat and KA-BOOM.
+- Open Settings and try the "Sound effects" and "Voices" sliders. In a match, try the mute button.
 
 ## Automated checks
-129 of 129 checks passed. No page errors were recorded.
+142 of 142 checks passed. The checks cover the old game rules and the new art, card and sound features.
 
 ## Things to know
-- The Hard computer opponent's Miner protection and Guard placement is only approximated, so Hard may feel less clever than the spec describes.
-- The builder only checked the pickaxe and Deck Builder layouts in a headless browser at one phone size (844×390).
-- The only screenshots available show the welcome pop-up on the menu (desktop) and the "please rotate your phone" screen (upright phone). Both look fine. I could not see the Deck Builder, select screen or match visually, so please check those yourself in the preview.
-- Visuals are still placeholders and there is no sound.
+- Gnome and Dwarf creatures, Sproingle and Borgo still use plain placeholder figures. This was planned.
+- Gnome and Dwarf cards keep their old pictures inside the new frame.
+- I could only see two screenshots: the main menu on desktop and the "rotate your phone" screen. The menu looks polished, but the welcome pop-up hides part of it. I did not see any in-match screenshots, so I could not check the 3D art myself. Please judge it in the preview.
+- The sounds are synthesized, not recorded, so they may sound simple.
+- The build notes include older "visuals are placeholders; no sound" lines. They are leftovers from earlier rounds.
 
 ## Recommendation
 Ready to approve

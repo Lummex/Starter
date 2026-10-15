@@ -4,6 +4,7 @@ import tutorialJson from '../content/tutorial.json';
 import { showDecks, loadDecks, deckLegal } from './decks';
 import { deckProblems, previewAttack } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
+import { audio } from './audio';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -16,14 +17,22 @@ const shortName = (id: string) => id.toUpperCase();
 /** Font scale (in card-widths) that fits `len` characters of ability text in a card's text box. */
 const textScale = (len: number) => Math.min(0.1, 0.6 / Math.sqrt(Math.max(1, len)));
 /** Full card face (cost, name, art symbol, stats, complete ability text). */
+const RARITY_KEY: Record<string, string> = { Common: 'common', Uncommon: 'uncommon', Rare: 'rare', 'Ultra Rare': 'ultra-rare', Collector: 'collector' };
+export const rarityKey = (c: any) => RARITY_KEY[c.rarity] || 'common';
+/** Picture path of a card (Goblin creatures have a generated painting). */
+export const pictureOf = (c: any): string | null => (c && c.type === 'creature' && c.faction === 'goblins' ? `/art/cards/${c.id}.webp` : null);
 function faceKids(c: any, cost?: number): El[] {
   const tf = textScale((c.text || '').length);
+  const pic = pictureOf(c);
   const kids: (El | null)[] = [
     h('span', { class: 'cost', 'aria-hidden': 'true' }, c.type === 'crystal' ? '◆' : String(cost ?? c.cost)),
+    h('span', { class: 'rar', 'aria-hidden': 'true', title: c.rarity }, '◆'),
     h('span', { class: 'nm', 'aria-hidden': 'true' }, c.name),
-    h('span', { class: 'ty', 'aria-hidden': 'true' }, c.type === 'creature' ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
+    h('span', { class: 'tg', 'aria-hidden': 'true' }, c.tagline || ''),
+    pic ? h('img', { class: 'pic', src: pic, alt: '', draggable: 'false', loading: 'eager' }) : h('span', { class: 'ty', 'aria-hidden': 'true' }, c.type === 'creature' ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
     h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `${roleBadge(c)} ⚔️${c.attack}${c.abilities?.includes('ranged') ? '🏹' : ''} ❤️${c.health}` : c.rarity),
     h('span', { class: 'tx', style: `--tf:${tf.toFixed(4)}` }, c.text || ''),
+    h('span', { class: 'fl', 'aria-hidden': 'true' }, c.flavor || ''),
   ];
   return kids.filter(Boolean) as El[];
 }
@@ -76,6 +85,7 @@ export class App {
     this.test = test;
     this.seed = seed;
     if (test) document.body.classList.add('test');
+    root.addEventListener('click', (e) => { if ((e.target as El).closest?.('button')) audio.play('click'); }, true);
   }
 
   // ------------------------------------------------------------ graphics setting
@@ -98,6 +108,13 @@ export class App {
     return b;
   }
 
+  slider(label: string, id: string, value: number, on: (v: number) => void): El {
+    const inp = h('input', { type: 'range', id, min: '0', max: '100', step: '1', value: String(value) }) as HTMLInputElement;
+    inp.addEventListener('input', () => on(+inp.value));
+    inp.addEventListener('change', () => audio.play('chime'));
+    return h('div', { class: 'slider' }, h('label', { for: id }, label), inp);
+  }
+
   remindButton(): El {
     const label = () => 'Moves reminder: ' + (this.remindMoves ? 'On' : 'Off');
     const b = btn(label(), '', () => {
@@ -116,15 +133,19 @@ export class App {
   // ------------------------------------------------------------ simple screens
   showMenu() {
     this.clear();
-    const s = h('main', { class: 'screen center' },
-      h('h1', { class: 'title' }, 'Oreheart'),
-      h('p', { class: 'tagline' }, 'Goblins, Gnomes and Dwarves fight over the Soul Crystals.'),
+    const ico = (n: string) => h('span', { class: 'mi mi-' + n, 'aria-hidden': 'true' });
+    const mbtn = (label: string, cls: string, icon: string, fn: () => void) => { const b = btn(label, cls, fn); if (icon) b.prepend(ico(icon)); return b; };
+    const s = h('main', { class: 'screen menu-screen' },
+      h('div', { class: 'menu-bg', 'aria-hidden': 'true' }),
+      h('div', { class: 'menu-head' },
+        h('h1', { class: 'title logo' }, h('img', { src: '/art/logo.webp', alt: 'Oreheart', class: 'logo-img' })),
+        h('p', { class: 'tagline' }, 'Goblins, Gnomes and Dwarves fight over the Soul Crystals.')),
       h('nav', { class: 'stack menu-grid', 'aria-label': 'Main menu' },
-        btn('Play', 'primary', () => this.showSetup()),
-        btn('Tutorial', '', () => this.beginTutorial()),
-        btn('Decks', '', () => showDecks(this)),
-        btn('Rules', '', () => this.showRules()),
-        btn('Settings', '', () => this.showSettings())));
+        mbtn('Play', 'primary play-big', '', () => this.showSetup()),
+        mbtn('Tutorial', 'plaque', 'book', () => this.beginTutorial()),
+        mbtn('Decks', 'plaque', 'cards', () => showDecks(this)),
+        mbtn('Rules', 'plaque', 'scroll', () => this.showRules()),
+        mbtn('Settings', 'plaque', 'gear', () => this.showSettings())));
     this.root.append(s);
     if (!this.test && !localStorage.getItem('oreheart.tutorialSeen')) {
       const d: any = this.dialog('Welcome to Oreheart!', [h('h2', {}, 'Welcome to Oreheart!'),
@@ -140,7 +161,7 @@ export class App {
     this.clear();
     this.root.append(h('main', { class: 'screen center' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), btn('Back', '', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), btn('Back', '', () => this.showMenu()))));
   }
 
   showSetup() {
@@ -270,7 +291,8 @@ export class App {
     for (const [k, v] of rows) dl.append(h('dt', {}, k), h('dd', {}, v));
     const ab = c.type === 'creature' ? (c.abilities || []).map((a: string) => `${ABILITIES[a].name}: ${ABILITIES[a].text}`).join(' ') : c.text;
     void ab;
-    const d = this.dialog(c.name, [h('div', { class: 'card-view' }, h('div', { class: 'cv-name' }, c.name), dl, h('p', { class: 'tx' }, c.text || ''),
+    const pic = pictureOf(c);
+    const d = this.dialog(c.name, [h('div', { class: `card-view f-${c.faction}`, 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, h('div', { class: 'cv-name' }, c.name), h('div', { class: 'cv-tag' }, c.tagline || ''), pic ? h('img', { class: 'cv-pic', src: pic, alt: '' }) : null, dl, h('p', { class: 'tx' }, c.text || ''), h('p', { class: 'cv-flavor' }, c.flavor || ''),
       h('div', { class: 'row' }, btn('Close', 'primary', () => d.close())))]);
   }
 
@@ -332,6 +354,12 @@ export class App {
     r.swap.hidden = true;
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
     const menuBtn = btn('Menu', 'menu-btn', () => this.showMatchMenu());
+    const muteLabel = () => (audio.muted ? 'Unmute sound' : 'Mute sound');
+    const muteBtn = btn(muteLabel(), 'mute-btn', () => { audio.setMuted(!audio.muted); muteBtn.textContent = muteLabel(); muteBtn.setAttribute('aria-pressed', String(audio.muted)); if (!audio.muted) audio.play('click'); });
+    muteBtn.setAttribute('aria-pressed', String(audio.muted));
+    muteBtn.innerHTML = '';
+    muteBtn.append(h('span', { class: 'mute-ico', 'aria-hidden': 'true' }, audio.muted ? '🔇' : '🔊'), h('span', { class: 'sr-only' }, muteLabel()));
+    muteBtn.addEventListener('click', () => { muteBtn.replaceChildren(h('span', { class: 'mute-ico', 'aria-hidden': 'true' }, audio.muted ? '🔇' : '🔊'), h('span', { class: 'sr-only' }, muteLabel())); });
     r.last = btn('Last turn', 'last-btn', () => this.showLastTurn());
     r.tip = h('aside', { class: 'tip', 'aria-label': 'Tutorial tip', hidden: true });
     const crystals = h('div', { class: 'crystals' }, r.crFlow, r.crBank);
@@ -340,7 +368,7 @@ export class App {
       h('div', { class: 'hud hud-left' }, crystals, r.income,
         r.swap),
       h('div', { class: 'hud hud-top' }, r.enemyHand),
-      r.enemyDeck, r.last, r.myDeck,
+      r.enemyDeck, r.last, muteBtn, r.myDeck,
       r.phase,
       h('div', { class: 'hud hud-right' }, r.done, menuBtn),
       r.tip, r.hand, r.timer);
@@ -703,7 +731,7 @@ export class App {
     if (this.test || !this.r.board) return;
     const c = CARDS[cardId];
     const secs = this.revealSeconds();
-    const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true' }, ...faceKids(c));
+    const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true', 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, ...faceKids(c));
     const host = this.root.querySelector('.match') as El;
     host.append(el);
     let done = false;
@@ -868,7 +896,7 @@ export class App {
     const left = frozen ? (this.testLeft ?? total) : Math.max(0, Math.ceil((this.deadline - now) / 1000));
     const show = timed && left <= CONFIG.countdownSeconds && !st.pendingResponse;
     r.timer.hidden = !show;
-    if (show) r.timer.textContent = String(left);
+    if (show) { if (r.timer.textContent !== String(left)) audio.play('tick'); r.timer.textContent = String(left); }
     if (!frozen && timed && left <= 0 && !st.pendingResponse) {
       this.deadline = now + total * 1000;
       this.game.act({ type: 'done' });
@@ -963,7 +991,7 @@ export class App {
     for (const hc of me.hand) {
       const c = CARDS[hc.cardId];
       const cost = costOf(c);
-      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id },
+      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id, 'data-card-id': c.id, 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
@@ -1004,7 +1032,7 @@ export class App {
     const hand = st.players.player.hand;
     for (const hc of hand) {
       const c = CARDS[hc.cardId];
-      const b = h('button', { type: 'button', class: 'mull-card', 'aria-pressed': 'false', 'aria-label': c.name, 'data-uid': hc.uid, onclick: () => {
+      const b = h('button', { type: 'button', class: 'mull-card', 'aria-pressed': 'false', 'aria-label': c.name, 'data-uid': hc.uid, 'data-card-id': c.id, 'data-rarity': rarityKey(c), onclick: () => {
         if (selected.has(hc.uid)) selected.delete(hc.uid); else selected.add(hc.uid);
         b.setAttribute('aria-pressed', String(selected.has(hc.uid)));
       } }, h('span', { 'aria-hidden': 'true' }, String(c.type === 'crystal' ? '◆' : c.cost)), h('span', { 'aria-hidden': 'true' }, c.name), h('span', { 'aria-hidden': 'true' }, c.type === 'creature' ? `${c.attack}/${c.health}` : c.type === 'spell' ? '✨' : '💎'), h('span', { class: 'tx', style: `--tf:${Math.min(0.075, textScale((c.text || '').length) * 0.8)}` }, c.text || ''));
@@ -1139,7 +1167,10 @@ export class App {
           this.floatText('-' + e.amount, 'dmg', e.row, e.col);
           if (e.amount >= 3) this.burst('KA-BOOM!', e.row, e.col);
         }
+      } else if (e.type === 'draw' && (e.player === 'player' || e.owner === 'player')) {
+        audio.play('draw');
       } else if (e.type === 'shieldBlock') {
+        audio.play('bubble');
         this.burst('BLOCK!', e.row, e.col);
       } else if (e.type === 'heal' && e.amount > 0) {
         if (e.row) this.floatText('+' + e.amount, 'heal', e.row, e.col);
@@ -1154,9 +1185,14 @@ export class App {
         if (!respondable) this.reveal(e.cardId);
       } else if (e.type === 'respond') {
         this.callout(e.player, e.cardId);
-      } else if (e.type === 'counter') this.shatter(e.player);
-      else if (e.type === 'spell') { this.emote(e.player, 'cast'); this.spellFx(e); }
+      } else if (e.type === 'counter') { this.shatter(e.player); audio.play('shatter'); }
+      else if (e.type === 'spell') {
+        this.emote(e.player, 'cast'); this.spellFx(e);
+        const id = String(e.cardId);
+        audio.play(id === 'fireball' ? 'fireball' : id === 'meteor-strike' ? 'meteor' : id === 'healing-light' || id === 'second-wind' ? 'heal' : id === 'shield-bubble' ? 'bubble' : 'spell');
+      }
       else if (e.type === 'summon') {
+        audio.play('cardPlay');
         if (this.dialogCard === e.cardId + e.owner) this.dialogCard = ''; else this.reveal(e.cardId, e);
       } else if (e.type === 'playCrystal') this.reveal(e.cardId);
       else if (e.type === 'minerUpgrade') {
@@ -1172,7 +1208,9 @@ export class App {
       const loser = st.winner === 'player' ? 'opponent' : 'player';
       const esc = FACTIONS[st.players[loser].faction].symbol === 'skull' ? '🚀' : FACTIONS[st.players[loser].faction].symbol === 'gear' ? '💨' : '🕳️';
       const t = this.test ? 120 : 1600;
-      const ov = h('div', { class: 'retreat', 'aria-hidden': 'true' }, h('div', { class: 'big' }, 'KA-BOOM!'), h('div', { class: 'esc' }, esc));
+      this.view?.retreat(loser);
+      audio.play(st.winner === 'player' ? 'win' : 'lose');
+      const ov = h('div', { class: 'retreat', 'aria-hidden': 'true' }, h('div', { class: 'burstbox' }, h('div', { class: 'big' }, 'KA-BOOM!')), h('div', { class: 'esc' }, st.players[loser].commanderId === 'grubnak' ? '' : esc));
       this.root.querySelector('.match')?.append(ov);
       const winner = st.winner;
       setTimeout(() => this.showEnd(winner), t);
@@ -1452,6 +1490,7 @@ export class App {
         }
         this.lastTap = { uid: cr.uid, t: now };
         clearTimeout(this.tapTimer);
+        this.view?.poke(cr.uid);
       },
     });
   }
