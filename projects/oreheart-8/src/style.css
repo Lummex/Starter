@@ -277,7 +277,7 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .hand-card .tx{min-height:0;flex:1 1 0}
 
 .site-mark.ready{animation:minepulse 1s ease-in-out infinite;font-weight:900;color:#ffd36b!important;text-shadow:0 0 6px #000,0 0 10px #ffb347}
-@keyframes minepulse{50%{transform:scale(1.25)}}
+@keyframes minepulse{50%{text-shadow:0 0 12px #ffd36b,0 0 22px #ffb347}}
 .site-tip{position:absolute;z-index:120;width:180px;background:#241b33f2;border:2px solid var(--gold);border-radius:10px;padding:6px 8px;color:var(--parch);font-size:.8rem;pointer-events:auto}
 .site-tip h2{margin:0 0 2px;font-size:.9rem;text-align:center}
 

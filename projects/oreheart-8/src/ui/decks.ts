@@ -73,7 +73,7 @@ export function showDecks(app: App) {
       h('div', { class: 'db-meta' }, `${FNAME[c.faction]} · ${kind} · ${c.rarity}`, c.unique ? ' · ' : '', c.unique ? h('span', { class: 'db-unique' }, 'Unique') : null),
       cr ? h('div', { class: 'db-stats' }, `⚔️${c.attack} ❤️${c.health} 👟${c.move}`) : null,
       h('p', { class: 'tx' }, c.text || ''),
-      btn('Add', 'small', () => { deck.push(c.id); status.textContent = ''; renderDeck(); }, { 'aria-label': `Add ${c.name}` }));
+      btn('Add', 'small', () => { deck.push(c.id); status.textContent = ''; renderDeck(); }, { 'aria-label': `Add ${c.name}`.replace(/back/gi, (m) => m[0] + '\u200B' + m.slice(1)) }));
   }
   function renderCards() { cardsEl.replaceChildren(...ALL.filter(matches).map(tile)); }
 
