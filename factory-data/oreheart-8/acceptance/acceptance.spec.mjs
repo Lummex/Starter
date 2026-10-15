@@ -102,7 +102,7 @@ test('AC2: menu -> choose Commander -> mulligan -> match', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('button', { name: 'Easy', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Normal', exact: true }).click();
-  await page.getByRole('button', { name: 'Start Match' }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
   const mull = page.getByRole('dialog', { name: 'Mulligan' });
   await expect(mull).toBeVisible();
   await mull.getByRole('button', { name: 'Keep Hand' }).click();
@@ -1044,7 +1044,7 @@ test('AC20: reducing enemy Commander to 0 shows Victory!', async ({ page }) => {
   expect(s.winner).toBe('player');
   expect(s.phase).toBe('over');
   await expect(page.getByRole('heading', { name: 'Victory!' })).toBeVisible({ timeout: 15000 });
-  await page.getByRole('button', { name: 'Back to Menu' }).click();
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });
 
@@ -1068,8 +1068,8 @@ test('AC20: surrender action via API', async ({ page }) => {
 });
 
 // ---------- AC21 ----------
-for (const difficulty of ['easy', 'normal']) {
-  test(`AC21: ${difficulty} AI completes its turn and hands it back`, async ({ page }) => {
+for (const difficulty of ['easy', 'normal', 'hard']) {
+  test(`${difficulty === 'hard' ? 'AC78' : 'AC21'}: ${difficulty} AI completes its turn and hands it back`, async ({ page }) => {
     await start(page, { ai: true, difficulty, skipMulligan: true, firstPlayer: 'player' });
     await passTurn(page);
     await expect
@@ -2250,59 +2250,75 @@ test.describe('hand pop-out at 2x', () => {
 });
 
 // ---------- Revision 8 ----------
-async function openDecks(page) {
-  await page.goto('/?test=1');
+async function openDecks(page, url = '/?test=1') {
+  await page.goto(url);
   await page.getByRole('button', { name: 'Decks', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
 }
-const addCard = async (page, name, n = 1) => {
-  const btn = page.getByLabel('All cards', { exact: true }).getByRole('button', { name: `Add ${name}`, exact: true });
-  for (let i = 0; i < n; i++) await btn.click();
-};
+const allCards = (page) => page.getByLabel('All cards', { exact: true });
+const deckList = (page) => page.getByLabel('Deck list', { exact: true });
+// first copy by double-click on the card face, further copies with the + button
+async function addCard(page, name, n = 1) {
+  const plus = deckList(page).getByRole('button', { name: `Add ${name}`, exact: true });
+  if ((await plus.count()) === 0) {
+    await allCards(page).getByRole('button', { name, exact: true }).dblclick();
+    await expect(plus).toBeVisible();
+    n -= 1;
+  }
+  for (let i = 0; i < n; i++) await plus.click();
+}
+async function renameDeck(page, name) {
+  await page.getByRole('button', { name: 'Rename', exact: true }).click();
+  const dlg = page.getByRole('dialog', { name: 'Rename deck' });
+  await dlg.getByLabel('Deck name', { exact: true }).fill(name);
+  await dlg.getByRole('button', { name: 'OK', exact: true }).click();
+  await expect(page.getByLabel('Deck pile', { exact: true })).toContainText(name);
+}
+async function saveDeck(page) {
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+}
 
-test('AC60: Deck Builder lists every card with full text and filters it', async ({ page }) => {
+test('AC60: Deck Builder shows card faces with full text and filters them', async ({ page }) => {
   await openDecks(page);
-  const all = page.getByLabel('All cards', { exact: true });
+  const all = allCards(page);
   for (const n of ['Rotgut Grenadier', 'Shiv Rat', 'Phase Stalker', 'Grimhold Ravager', 'Snotskull Grunt', 'Infernal Orb', 'Soul Cluster', 'Gutcrusher the Troll Tyrant']) {
-    await expect(all.getByRole('button', { name: `Add ${n}`, exact: true })).toHaveCount(1);
+    await expect(all.getByRole('button', { name: n, exact: true })).toHaveCount(1);
   }
   await expect(all).toContainText('Guard: adjacent enemies must attack it first');
   await page.getByLabel('Faction', { exact: true }).selectOption('Dwarves');
-  await expect(all.getByRole('button', { name: 'Add Ironjaw Raider', exact: true })).toBeVisible();
-  await expect(all.getByRole('button', { name: 'Add Snotskull Grunt', exact: true })).toHaveCount(0);
+  await expect(all.getByRole('button', { name: 'Ironjaw Raider', exact: true })).toBeVisible();
+  await expect(all.getByRole('button', { name: 'Snotskull Grunt', exact: true })).toHaveCount(0);
   await page.getByLabel('Faction', { exact: true }).selectOption('All');
   await page.getByLabel('Type', { exact: true }).selectOption('Spells');
-  await expect(all.getByRole('button', { name: 'Add Infernal Orb', exact: true })).toBeVisible();
-  await expect(all.getByRole('button', { name: 'Add Ironjaw Raider', exact: true })).toHaveCount(0);
+  await expect(all.getByRole('button', { name: 'Infernal Orb', exact: true })).toBeVisible();
+  await expect(all.getByRole('button', { name: 'Ironjaw Raider', exact: true })).toHaveCount(0);
   await page.getByLabel('Type', { exact: true }).selectOption('All');
   await page.getByLabel('Rarity', { exact: true }).selectOption('Collector');
-  await expect(all.getByRole('button', { name: 'Add Gutcrusher the Troll Tyrant', exact: true })).toBeVisible();
-  await expect(all.getByRole('button', { name: 'Add Snotskull Grunt', exact: true })).toHaveCount(0);
+  await expect(all.getByRole('button', { name: 'Gutcrusher the Troll Tyrant', exact: true })).toBeVisible();
+  await expect(all.getByRole('button', { name: 'Snotskull Grunt', exact: true })).toHaveCount(0);
   await page.getByLabel('Rarity', { exact: true }).selectOption('All');
   await page.getByLabel('Cost', { exact: true }).selectOption('7+');
-  await expect(all.getByRole('button', { name: 'Add Mangewolf Rider', exact: true })).toBeVisible();
-  await expect(all.getByRole('button', { name: 'Add Shiv Rat', exact: true })).toHaveCount(0);
+  await expect(all.getByRole('button', { name: 'Mangewolf Rider', exact: true })).toBeVisible();
+  await expect(all.getByRole('button', { name: 'Shiv Rat', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });
 
-test('AC61: Deck Builder reports illegal decks with exact messages and counts', async ({ page }) => {
+test('AC61: Deck Builder problems use the exact messages and counts', async ({ page }) => {
   await openDecks(page);
-  await addCard(page, 'Mangewolf Rider', 4);
+  await addCard(page, 'Mangewolf Rider', 3);
   await addCard(page, 'Soul Shard', 11);
   const counts = page.getByLabel('Deck counts', { exact: true });
   const problems = page.getByLabel('Deck problems', { exact: true });
-  await expect(counts).toContainText('Cards: 15/50');
-  await expect(counts).toContainText('Creatures: 4');
+  await expect(counts).toContainText('Cards: 14/50');
+  await expect(counts).toContainText('Creatures: 3');
   await expect(counts).toContainText('Spells: 0');
   await expect(counts).toContainText('Crystal cards: 11');
-  await expect(problems).toContainText('Needs exactly 50 cards (now 15).');
-  await expect(problems).toContainText('Mangewolf Rider: at most 3 copies (now 4).');
+  await expect(problems).toContainText('Needs exactly 50 cards (now 14).');
   await expect(problems).toContainText('At most 10 Crystal cards (now 11).');
-  await expect(page.getByLabel('Deck list', { exact: true })).toContainText('4× Mangewolf Rider');
-  await page.getByLabel('Deck list', { exact: true }).getByRole('button', { name: 'Remove Mangewolf Rider', exact: true }).click();
-  await page.getByLabel('Deck list', { exact: true }).getByRole('button', { name: 'Remove Soul Shard', exact: true }).click();
-  await expect(problems).not.toContainText('Mangewolf Rider: at most');
+  await expect(deckList(page)).toContainText('3 × Mangewolf Rider');
+  await deckList(page).getByRole('button', { name: 'Remove Soul Shard', exact: true }).click();
   await expect(problems).not.toContainText('At most 10 Crystal cards');
   await expect(problems).toContainText('Needs exactly 50 cards (now 13).');
   await addCard(page, 'Snotskull Grunt', 37);
@@ -2310,18 +2326,17 @@ test('AC61: Deck Builder reports illegal decks with exact messages and counts', 
   await expect(problems).toContainText('Deck is legal');
 });
 
-test('AC62: up to 5 saved decks persist; a saved legal deck is used in a match', async ({ page }) => {
+test('AC62: up to 5 saved decks persist after a reload', async ({ page }) => {
   await openDecks(page);
-  await page.getByLabel('Deck name', { exact: true }).fill('Miner Rush');
+  await renameDeck(page, 'Miner Rush');
   await addCard(page, 'Grubgrabber Miner', 50);
   await expect(page.getByLabel('Deck problems', { exact: true })).toContainText('Deck is legal');
-  await page.getByRole('button', { name: 'Save Deck' }).click();
-  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+  await saveDeck(page);
   for (const name of ['Too Small', 'Deck C', 'Deck D', 'Deck E']) {
-    await page.getByRole('button', { name: 'New Deck' }).click();
-    await page.getByLabel('Deck name', { exact: true }).fill(name);
+    await page.getByRole('button', { name: 'New Deck', exact: true }).click();
+    await renameDeck(page, name);
     await addCard(page, 'Shiv Rat');
-    await page.getByRole('button', { name: 'Save Deck' }).click();
+    await saveDeck(page);
   }
   await page.reload();
   await page.getByRole('button', { name: 'Decks', exact: true }).click();
@@ -2329,27 +2344,8 @@ test('AC62: up to 5 saved decks persist; a saved legal deck is used in a match',
   for (const name of ['Miner Rush', 'Too Small', 'Deck C', 'Deck D', 'Deck E']) {
     await expect(mine.getByRole('button', { name: new RegExp(`^${name}`) })).toHaveCount(1);
   }
-  await expect(page.getByRole('button', { name: 'New Deck' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'New Deck', exact: true })).toBeDisabled();
   await expect(page.getByText('You can save up to 5 decks.')).toBeVisible();
-  await page.getByRole('button', { name: 'Back' }).click();
-  await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' }).click();
-  const deckSel = page.getByLabel('Deck', { exact: true });
-  await expect(deckSel.locator('option').first()).toHaveText('Starter deck');
-  await expect(deckSel.locator('option', { hasText: 'Too Small (not legal)' })).toBeDisabled();
-  await deckSel.selectOption({ label: 'Miner Rush' });
-  await page.getByRole('button', { name: 'Start Match' }).click();
-  const mull = page.getByRole('dialog', { name: 'Mulligan' });
-  await expect(mull).toBeVisible();
-  await mull.getByRole('button', { name: 'Keep Hand' }).click();
-  await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
-  const s = await getState(page);
-  const ids = [...s.players.player.hand, ...s.players.player.deck, ...s.players.player.discard].map((c) => c.cardId);
-  const onBoard = s.board.creatures.filter((c) => c.owner === 'player').map((c) => c.cardId);
-  expect(ids.length + onBoard.length).toBe(50);
-  expect([...ids, ...onBoard].every((id) => id === 'goblin-scrounger')).toBe(true);
-  const opp = [...s.players.opponent.hand, ...s.players.opponent.deck].map((c) => c.cardId);
-  expect(opp.some((id) => id !== 'goblin-scrounger')).toBe(true); // the computer uses a starter deck
 });
 
 const NEW_CARDS = {
@@ -2487,4 +2483,319 @@ test.describe('compact stat pill', () => {
     }
     await expect(page.getByLabel('Mangewolf Rider, row 5, column 6', { exact: true })).toHaveText(/3\D+4\D+2/);
   });
+});
+
+// ---------- Revision 9 ----------
+for (const [flow, saved] of [[9, 0], [10, 1], [16, 1]]) {
+  test(`AC67: ending your turn with ${flow} Flow saves ${saved} into the Bank`, async ({ page }) => {
+    let s = await start(page, { ai: false, setup: { playerCrystals: flow } });
+    expect((await page.evaluate(async () => (await window.oreheart.getConfig()).savingsPerCrystal))).toBe(10);
+    await passTurn(page);
+    s = await getState(page);
+    expect(s.activePlayer).toBe('opponent');
+    expect(s.players.player.crystals).toBe(flow - saved);
+    expect(s.players.player.bank).toBe(saved);
+    if (saved > 0) await expect(page.getByText(`+${saved} banked`)).toBeVisible();
+    // the enemy's turn end never saves the player's Flow
+    await passTurn(page);
+    s = await getState(page);
+    expect(s.activePlayer).toBe('player');
+    expect(s.players.player.bank).toBe(saved);
+  });
+}
+
+test('AC67: savings applies to the opponent at the end of its own turn', async ({ page }) => {
+  await start(page, { ai: false, setup: { firstPlayer: 'opponent', opponentCrystals: 12 } });
+  let s = await getState(page);
+  expect(s.activePlayer).toBe('opponent');
+  expect(s.players.opponent.bank).toBe(0);
+  await passTurn(page);
+  s = await getState(page);
+  expect(s.activePlayer).toBe('player');
+  expect(s.players.opponent.crystals).toBe(11);
+  expect(s.players.opponent.bank).toBe(1);
+});
+
+const spellsOnly = { playerHand: ['fireball', 'fireball'], playerCrystals: 10,
+  board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 4 }] };
+test('AC68: a hand of only affordable spells does not count as moves left', async ({ page }) => {
+  await start(page, { ai: false, opponentCommander: 'grubnak', setup: spellsOnly });
+  expect(await page.evaluate(async () => await window.oreheart.movesLeft())).toBe(false);
+  expect((await legal(page)).some((a) => a.type === 'cast')).toBe(true);
+  await page.getByRole('button', { name: 'Done' }).click();
+  await expect.poll(async () => (await getState(page)).phase).toBe('action');
+  await expect(page.getByRole('dialog', { name: /Moves still available/ })).toHaveCount(0);
+});
+
+test('AC68: with auto-skip on, a spells-only turn passes by itself', async ({ page }) => {
+  await start(page, { ai: false, autoSkip: true, opponentCommander: 'grubnak', setup: spellsOnly });
+  await expect.poll(async () => (await getState(page)).activePlayer, { timeout: 8000 }).toBe('opponent');
+  await expect(page.getByRole('dialog', { name: /Moves still available/ })).toHaveCount(0);
+});
+
+const previewSetup = { board: [
+  { cardId: 'shieldbeard', owner: 'player', row: 5, col: 4 },
+  { cardId: 'goblin-scrapper', owner: 'opponent', row: 4, col: 3 },
+  { cardId: 'axe-thrower', owner: 'player', row: 3, col: 7 },
+  { cardId: 'goblin-scrounger', owner: 'opponent', row: 3, col: 9 },
+] };
+const preview = (page, uid, target) => page.evaluate(async ([u, t]) => await window.oreheart.previewAttack(u, t), [uid, target]);
+test('AC69: previewAttack matches the real attack exactly', async ({ page }) => {
+  let s = await start(page, { ai: false, playerCommander: 'borgo', opponentCommander: 'grubnak', setup: previewSetup });
+  await done(page);
+  s = await getState(page);
+  const sb = at(s, 5, 4); const hurler = at(s, 3, 7); const scr = at(s, 3, 9);
+  const p1 = await preview(page, sb.uid, { row: 4, col: 3 });
+  expect(p1).toMatchObject({ youDeal: 3, youTake: 2, targetDefeated: true, attackerDefeated: false });
+  const pc = await preview(page, hurler.uid, { commander: 'opponent' });
+  expect(pc).toMatchObject({ youDeal: hurler.attack, youTake: 0, targetDefeated: false, attackerDefeated: false });
+  const p2 = await preview(page, hurler.uid, { row: 3, col: 9 });
+  expect(p2.youTake).toBe(0);
+  expect(JSON.stringify(await getState(page))).toBe(JSON.stringify(s)); // preview never changes the state
+  expect((await act(page, { type: 'attack', creatureUid: sb.uid, target: { row: 4, col: 3 } })).ok).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: hurler.uid, target: { row: 3, col: 9 } })).ok).toBe(true);
+  const after = await getState(page);
+  expect(at(after, 4, 3)).toBeUndefined();
+  expect(at(after, 5, 4).health).toBe(sb.health - p1.youTake);
+  expect(at(after, 3, 7).health).toBe(hurler.health);
+  const scrAfter = at(after, 3, 9);
+  if (p2.targetDefeated) expect(scrAfter).toBeUndefined();
+  else expect(scrAfter.health).toBe(scr.health - p2.youDeal);
+});
+
+test('AC69: dragging a creature over an enemy shows the attack preview; letting go elsewhere cancels', async ({ page }) => {
+  await start(page, { ai: false, playerCommander: 'borgo', opponentCommander: 'grubnak', setup: previewSetup });
+  await done(page);
+  const from = await page.getByLabel('Ironwall Shieldbeard, row 5, column 4', { exact: true }).boundingBox();
+  const to = await page.getByLabel('Gutripper Brawler, row 4, column 3', { exact: true }).boundingBox();
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+  const box = page.getByLabel('Attack preview', { exact: true });
+  await expect(box).toBeVisible();
+  await expect(box).toContainText('You deal 3 / You take 2');
+  await expect(box).toContainText('💀');
+  await page.mouse.move(5, 5, { steps: 12 });
+  await page.mouse.up();
+  await expect(box).toBeHidden();
+  const s = await getState(page);
+  expect(at(s, 4, 3)).toBeDefined();
+  expect(at(s, 5, 4).hasAttacked).toBe(false);
+});
+
+test('AC70: double-click and + add cards; single click only enlarges; copy limit and cost chart', async ({ page }) => {
+  await openDecks(page);
+  const all = allCards(page);
+  await all.getByRole('button', { name: 'Shiv Rat', exact: true }).click();
+  const view = page.getByRole('dialog', { name: 'Shiv Rat' });
+  await expect(view).toBeVisible();
+  await view.getByRole('button', { name: 'Close' }).click();
+  await expect(deckList(page)).not.toContainText('Shiv Rat');
+  await all.getByRole('button', { name: 'Grubgrabber Miner', exact: true }).dblclick();
+  await expect(deckList(page)).toContainText('1 × Grubgrabber Miner');
+  await deckList(page).getByRole('button', { name: 'Add Grubgrabber Miner', exact: true }).click();
+  await expect(deckList(page)).toContainText('2 × Grubgrabber Miner');
+  await expect(page.getByLabel('Cost chart', { exact: true }).getByLabel('Cost 1: 2 cards', { exact: true })).toHaveCount(1);
+  await expect(page.getByLabel('Deck pile', { exact: true })).toContainText('2/50');
+  await addCard(page, 'Mangewolf Rider', 3);
+  await expect(deckList(page)).toContainText('3 × Mangewolf Rider');
+  await expect(deckList(page).getByRole('button', { name: 'Add Mangewolf Rider', exact: true })).toBeDisabled();
+  await all.getByRole('button', { name: 'Mangewolf Rider', exact: true }).dblclick();
+  await expect(deckList(page)).toContainText('3 × Mangewolf Rider');
+  await deckList(page).getByRole('button', { name: 'Remove Grubgrabber Miner', exact: true }).click();
+  await deckList(page).getByRole('button', { name: 'Remove Grubgrabber Miner', exact: true }).click();
+  await expect(deckList(page)).not.toContainText('Grubgrabber Miner');
+  await expect(page.getByLabel('Deck pile', { exact: true })).toContainText('3/50');
+});
+
+test('AC71: Auto-fill completes a legal deck; Rename and Save', async ({ page }) => {
+  await openDecks(page);
+  await renameDeck(page, 'Rat Pack');
+  await addCard(page, 'Shiv Rat', 2);
+  await page.getByRole('button', { name: 'Auto-fill', exact: true }).click();
+  const counts = page.getByLabel('Deck counts', { exact: true });
+  await expect(counts).toContainText('Cards: 50/50');
+  await expect(page.getByLabel('Deck problems', { exact: true })).toContainText('Deck is legal');
+  const rat = (await deckList(page).innerText()).match(/(\d+) × Shiv Rat/);
+  expect(rat && Number(rat[1])).toBeGreaterThanOrEqual(2);
+  const crystals = Number((await counts.innerText()).match(/Crystal cards: (\d+)/)[1]);
+  expect(crystals).toBeLessThanOrEqual(4);
+  await expect(deckList(page)).toContainText('Miner');
+  await saveDeck(page);
+  await expect(page.getByLabel('My decks', { exact: true }).getByRole('button', { name: /^Rat Pack/ })).toHaveCount(1);
+});
+
+async function makeSelectDecks(page) {
+  await openDecks(page);
+  await renameDeck(page, 'Miner Rush');
+  await addCard(page, 'Grubgrabber Miner', 50);
+  await saveDeck(page);
+  await page.getByRole('button', { name: 'New Deck', exact: true }).click();
+  await renameDeck(page, 'Too Small');
+  await addCard(page, 'Shiv Rat');
+  await saveDeck(page);
+  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+}
+const deckRow = (page) => page.getByLabel('Deck choice', { exact: true });
+async function keepAndGetState(page) {
+  const mull = page.getByRole('dialog', { name: 'Mulligan' });
+  await expect(mull).toBeVisible();
+  await mull.getByRole('button', { name: 'Keep Hand' }).click();
+  await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
+  return getState(page);
+}
+const allIds = (s, side) => [...s.players[side].hand, ...s.players[side].deck, ...s.players[side].discard].map((c) => c.cardId)
+  .concat(s.board.creatures.filter((c) => c.owner === side).map((c) => c.cardId));
+
+test('AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)', async ({ page }) => {
+  await makeSelectDecks(page);
+  await expect(page.locator('select')).toHaveCount(0);
+  for (const n of ['Grubnak Rotgut, King of the Junkpile', 'Archmagister Sproingle the Unfathomable', 'Thane Borgo Gravelgrim']) {
+    await expect(page.getByRole('button', { name: n, exact: true })).toBeVisible();
+  }
+  const stacks = deckRow(page).getByRole('button', { name: /cards, (ready|not ready)$/ });
+  await expect(stacks.first()).toHaveAccessibleName('Starter deck, 50 cards, ready');
+  await expect(deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })).toHaveCount(1);
+  const small = deckRow(page).getByRole('button', { name: /^Too Small, 1 cards?, not ready$/ });
+  await expect(small).toHaveAttribute('aria-disabled', 'true');
+  await small.click({ force: true });
+  await expect(page.getByLabel('Deck message', { exact: true })).toContainText('Needs exactly 50 cards (now 1).');
+  await expect(small).not.toHaveAttribute('aria-pressed', 'true');
+  for (const d of ['Easy', 'Normal', 'Hard']) await expect(page.getByRole('button', { name: d, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Normal', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile', exact: true }).click();
+  await deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true }).click();
+  await expect(deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Hard', exact: true }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  const s = await keepAndGetState(page);
+  expect(s.difficulty).toBe('hard');
+  const ids = allIds(s, 'player');
+  expect(ids.length).toBe(50);
+  expect(ids.every((id) => id === 'goblin-scrounger')).toBe(true);
+  expect(allIds(s, 'opponent').some((id) => id !== 'goblin-scrounger')).toBe(true);
+});
+
+test('AC72: "+ New Deck" on the select screen opens the Deck Builder', async ({ page }) => {
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await deckRow(page).getByRole('button', { name: '+ New Deck', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+});
+
+test('AC73: the select screen remembers the last Commander, deck and difficulty', async ({ page }) => {
+  await makeSelectDecks(page);
+  await page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable', exact: true }).click();
+  await deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true }).click();
+  await page.getByRole('button', { name: 'Hard', exact: true }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await keepAndGetState(page);
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Hard', exact: true })).toHaveAttribute('aria-pressed', 'true');
+});
+
+async function surrenderViaMenu(page) {
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await page.getByRole('button', { name: 'Surrender', exact: true }).click();
+  await page.getByRole('button', { name: 'Yes, surrender' }).click();
+  await expect(page.getByRole('heading', { name: 'Defeat' })).toBeVisible({ timeout: 15000 });
+}
+test('AC74: match-end summary, Play again with the same choices, and Menu', async ({ page }) => {
+  await page.goto('/?test=1&seed=5');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await page.getByRole('button', { name: 'Thane Borgo Gravelgrim', exact: true }).click();
+  await deckRow(page).getByRole('button', { name: 'Starter deck, 50 cards, ready', exact: true }).click();
+  await page.getByRole('button', { name: 'Hard', exact: true }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await keepAndGetState(page);
+  await surrenderViaMenu(page);
+  const sum = page.getByLabel('Match summary', { exact: true });
+  await expect(sum).toBeVisible();
+  for (const t of ['Crystals mined', 'Creatures summoned', 'Creatures lost', 'Turns', 'MVP']) await expect(sum).toContainText(t);
+  await page.getByRole('button', { name: 'Play again', exact: true }).click();
+  const s = await keepAndGetState(page);
+  expect(s.players.player.commanderId).toBe('borgo');
+  expect(s.difficulty).toBe('hard');
+  expect(s.winner).toBeNull();
+  expect(allIds(s, 'player').length).toBe(50);
+  await surrenderViaMenu(page);
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+});
+
+const TUTORIAL_STEPS = ['summon', 'move', 'mine', 'mineTap', 'spend', 'crystal', 'upgrade', 'swap', 'fight', 'spell', 'savings', 'commander'];
+const TUTORIAL_WORDS = { summon: /back row/i, mineTap: /Tap the mine/i, spend: /Flow/, crystal: /Bank/, upgrade: /upgrade/i,
+  fight: /You deal/, savings: /banked/i, commander: /Commander/ };
+test('AC75: the tutorial runs to the end, teaching only the current rules', async ({ page }) => {
+  test.setTimeout(180000);
+  await openTest(page);
+  await page.evaluate(async () => await window.oreheart.startTutorial());
+  const tip = page.getByLabel('Tutorial tip', { exact: true });
+  const seen = [];
+  let s;
+  for (let i = 0, actions = 0; i < 600 && actions < 200; i++) {
+    s = await getState(page);
+    if (s.phase === 'over' || s.tutorial.step === 'complete') break;
+    const step = s.tutorial.step;
+    if (!seen.includes(step)) {
+      seen.push(step);
+      if (TUTORIAL_WORDS[step]) await expect(tip).toContainText(TUTORIAL_WORDS[step]);
+      expect(await tip.innerText()).not.toMatch(/off-color|Gatherer|Mine All|green crystals?|purple crystals?|blue crystals?|white crystals?/i);
+    }
+    if (s.priority !== 'player') { await page.waitForTimeout(150); continue; }
+    if (s.pendingResponse) { await act(page, { type: 'pass' }); continue; }
+    const a = await page.evaluate(async () => await window.oreheart.tutorialAction());
+    if (!a) break;
+    const r = await act(page, a);
+    expect(r.ok, `${step}: ${JSON.stringify(a)} -> ${JSON.stringify(r)}`).toBe(true);
+    actions++;
+  }
+  expect(seen).toEqual(TUTORIAL_STEPS);
+  await expect.poll(async () => (await getState(page)).tutorial.step, { timeout: 10000 }).toBe('complete');
+  expect((await getState(page)).winner).toBe('player');
+  await expect(page.getByRole('heading', { name: 'Victory!' })).toBeVisible({ timeout: 15000 });
+});
+
+test('AC76: the Last turn recap lists what the enemy did', async ({ page }) => {
+  let s = await start(page, { ai: false, opponentCommander: 'grubnak', setup: {
+    opponentHand: ['goblin-scrapper'], opponentCrystals: 10,
+    board: [{ cardId: 'goblin-scrounger', owner: 'opponent', row: 2, col: 11 }] } });
+  const btn = page.getByRole('button', { name: 'Last turn', exact: true });
+  await btn.click();
+  const dlg = page.getByRole('dialog', { name: 'Last turn' });
+  await expect(dlg).toContainText('Nothing yet.');
+  await dlg.getByRole('button', { name: 'Close' }).click();
+  await passTurn(page);
+  const summon = (await legal(page)).find((a) => a.type === 'summon');
+  expect((await act(page, summon)).ok).toBe(true);
+  await done(page);
+  s = await getState(page);
+  const mv = (await legal(page)).find((a) => a.type === 'move' && a.creatureUid === at(s, 2, 11).uid);
+  expect((await act(page, mv)).ok).toBe(true);
+  await done(page);
+  expect((await getState(page)).activePlayer).toBe('player');
+  await btn.click();
+  await expect(dlg).toContainText('Summoned Gutripper Brawler');
+  await expect(dlg).toContainText('Moved Grubgrabber Miner');
+});
+
+test('AC77: a mine with ready Miners shows the swinging pickaxe count; it goes once they mined', async ({ page }) => {
+  await start(page, { ai: false, setup: { board: [
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1 },
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 2 },
+  ] } });
+  await done(page);
+  const m1 = page.getByRole('button', { name: `Crystal site, row ${M1.row}, column ${M1.col}`, exact: true });
+  await expect(m1).toHaveAttribute('data-ready-miners', '2');
+  await expect(m1).toContainText('×2');
+  await m1.click();
+  await expect(m1).toHaveAttribute('data-ready-miners', '0');
+  await expect(m1).not.toContainText('×');
+  const s = await getState(page);
+  expect(at(s, 5, 1).hasMined && at(s, 5, 2).hasMined).toBe(true);
 });
