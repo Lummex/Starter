@@ -1,6 +1,6 @@
 # Automated check results
 
-129 of 129 checks passed after 2 build round(s).
+142 of 142 checks passed after 1 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -13,6 +13,7 @@
 - ✅ hearts and turn display 667x375 › AC51: Commander hearts never cover creature labels; turn display top-right (667x375)
 - ✅ hand pop-out at 2x › AC59: a hovered hand card doubles in size and stays fully on-screen
 - ✅ compact stat pill › AC66: creature labels are compact pills with Attack, Health, Movement
+- ✅ phone-size match screenshot › AC90: the match screen renders full screen at 844x390 with no page errors
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -131,3 +132,15 @@
 - ✅ AC75: the tutorial runs to the end, teaching only the current rules
 - ✅ AC76: the Last turn recap lists what the enemy did
 - ✅ AC77: a mine with ready Miners shows the swinging pickaxe count; it goes once they mined
+- ✅ AC79: main menu shows the logo as the h1, the tagline and the five plaques
+- ✅ AC80: every Goblin creature has a finished figure; Gnomes and Dwarves are placeholders
+- ✅ AC81: every Goblin creature has a committed WebP card picture and an art entry
+- ✅ AC82: every card has a tagline and a flavor line
+- ✅ AC83: a Goblin hand card uses the new card face with its picture and rarity
+- ✅ AC84: finished Goblin figures, Grubnak, Strongholds and mines on the battlefield
+- ✅ AC85: poking a Goblin figure plays a reaction and changes nothing
+- ✅ AC86: CREDITS.md lists fonts, card pictures and every outside asset file
+- ✅ AC87: sound stays locked until the first tap
+- ✅ AC88: volume sliders and the match mute button are remembered
+- ✅ AC89: Low graphics turns off bloom, shadows and particles and uses fewer draw calls
+- ✅ AC90: the built dist folder stays under 40 MB
