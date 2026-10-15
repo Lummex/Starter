@@ -2,6 +2,25 @@
 
 Read this brief first, then the full design document: `factory-design/design/oreheart-gdd-v2.md` (the source of truth for every rule, number and card). The screen layout reference is `factory-design/design/oreheart-mockup.jpg`.
 
+## Revision 9 (seventh owner playtest, final Phase 1a revision) — read this first
+
+The design document is the source of truth; where anything disagrees, the design doc wins, then this section, then the earlier revisions.
+
+1. **Visual deck builder** (replaces the list-style one): left, a scrolling grid of real card faces; right, the deck shown as a named card pile (a drop target) with its count. Drag a card onto the pile or double-click/double-tap it to add one copy; single click/tap only enlarges. Under the pile, the deck list sorted by cost with **+** and **−** per line (respecting limits). Show counts, a small cost bar chart, problems in red, and buttons **Auto-fill**, **Save**, **Rename**. Phone landscape: grid ~2/3 width, deck ~1/3.
+2. **Savings rule:** at the end of a player's own turn, if unspent Flow ≥ 10, move floor(Flow / 10) from Flow to Bank (new `game-config.json` value `savingsPerCrystal: 10`), with an animated "+1 banked". Applies to the AI too.
+3. **Spells never count as moves left:** for auto-skip and the "Moves still available" pop-up, Regular spells, Instants, counterspells and Crystal cards are ignored even if affordable. Test: a Deploy phase with a hand of only affordable spells auto-skips.
+4. **Commander and deck select screen** (no dropdowns): the 3 Commanders as big cards (portrait, name, faction, ability; tap to select, it lifts and glows); below, a horizontally scrollable row of deck stacks (3D-looking piles, deck name on the top card, count, ✔/⚠): starter deck first, saved decks, then "+ New Deck". Illegal decks greyed out with the reason on tap.
+5. **Big swinging pickaxe on mines:** replaces the soft "⛏️N" pulse. A large pickaxe (about a creature's head in size) above any mine with ready Miners, looping a hammering swing with a spark on each hit, plus "×N"; it disappears once they've mined.
+6. **Attack preview:** while dragging a creature over an enemy or the enemy Stronghold, show "You deal X / You take Y" and a 💀 on anything that would die, computed by the engine (type advantage, Shield, Armored, Rage, Sneaky, ranged no-strike-back). Add a pure engine function `previewAttack(state, attacker, target)` and unit-test it against real attacks.
+7. **Enemy turn recap:** a small "Last turn" button top-left listing the enemy's last-turn events (from the engine event log) with mini card pictures; tapping a line highlights the space.
+8. **Remember my picks:** the select screen preselects the last Commander, deck and difficulty (localStorage, try/catch).
+9. **Difficulty buttons** Easy / Normal / Hard on the select screen, plus a big **Fight!** button. If Hard isn't built yet, build it: protects Miners, focuses fire, times spells well.
+10. **Deck builder helpers:** cost bar chart and **Auto-fill** (Miners, good cost curve, a few spells, up to 4 Crystal cards; legal result).
+11. **Tutorial update:** rewrite the tutorial steps to teach the current rules exactly as in the design doc (tap-to-mine, Flow and Bank, Crystal card into the Bank, Miner upgrade, attack preview, savings). Remove anything left from older rules (color payments, Mine All).
+12. **Match-end screen:** after the win/loss scene, a summary (crystals mined, creatures summoned and lost per side, turns, MVP creature by damage dealt) with **Play again** (same Commander, deck, difficulty) and **Menu**.
+
+Unit/acceptance tests: savings rule with exact numbers (9 → 0 saved, 10 → 1, 16 → 1); spells-only hand auto-skips; previewAttack matches the real result; a deck can be added to by double-click and the + button; Play again starts a new match with the same choices; the tutorial runs to the end with the current rules.
+
 ## Revision 8 (sixth owner playtest) — read this first
 
 The design document is the source of truth; where anything disagrees, the design doc wins, then this section, then the earlier revisions.
