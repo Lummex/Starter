@@ -1,23 +1,22 @@
 ## What was built
-Oreheart is a browser card battle where Goblins, Gnomes and Dwarves fight over crystal mines. This round (revision 8) adds a Deck Builder, 15 new cards, and tapping a mine to mine with it. It also adds a tucked-away hand, smarter auto-skipping of turns, a weapon for each creature type, smaller stat labels and a finished card-drop animation.
+Oreheart is a comic-style fantasy card battle in the browser: you play one full match against a computer opponent (Easy, Normal or Hard), or a guided tutorial. This round (the final test round) adds a visual Deck Builder, a new Commander and deck select screen, a savings rule (10 spare crystals move to the Bank), swinging pickaxes on mines, an attack preview, a "Last turn" recap, and a match-end summary.
 
 ## Try these things
-- On the main menu, check there are five buttons: Play, Tutorial, Decks, Rules, Settings. A welcome pop-up may cover some of them on your first visit.
-- Open **Decks**. Add cards, try the filters, and watch the counts and problem messages. Save a deck, reload the page, and check it is still there.
-- Choose a Commander, pick your saved deck in the "Deck" dropdown (illegal decks are greyed out), and start a match.
-- In a match, hover over your hand (on a phone, tap it). It should slide up from the bottom edge.
-- During your Action phase, tap a mine that has a pulsing "⛏️N" on it. Your Miners next to it should mine. Hover over a mine to see its info.
-- Play a creature and watch the card drop, flip and rise into a 3D figure holding a weapon.
+- Open the menu, press **Tutorial**, and follow the tips all the way to Victory.
+- Press **Decks**: single-click a card to enlarge it, double-click to add it, try **Auto-fill**, then **Save**.
+- Press **Play**, pick a Commander, pick a deck (or "+ New Deck"), choose **Hard**, then **Fight!**
+- In a match, drag one of your creatures over an enemy and check the "You deal / You take" box. Let go elsewhere to cancel.
+- Finish your turn with 10 or more crystals and watch "+1 banked" fly into the Bank. After the enemy moves, press **Last turn**.
+- Win or surrender, then check the summary and press **Play again**.
 
 ## Automated checks
-111 of 111 checks passed.
+129 of 129 checks passed. No page errors were recorded.
 
 ## Things to know
-- The only screenshots taken were of the home screen, not the match, Deck Builder or hand. I couldn't judge the new visuals from them.
-- The desktop screenshot shows the tutorial welcome pop-up over the menu. This is expected for a first visit.
-- The phone screenshot shows only the "Please rotate your phone" message, which is correct for an upright phone.
-- The builder says the weapons and the card-drop animation were only checked by eye, not by automated tests. Please look at them yourself.
-- No page errors were recorded.
+- The Hard computer opponent's Miner protection and Guard placement is only approximated, so Hard may feel less clever than the spec describes.
+- The builder only checked the pickaxe and Deck Builder layouts in a headless browser at one phone size (844×390).
+- The only screenshots available show the welcome pop-up on the menu (desktop) and the "please rotate your phone" screen (upright phone). Both look fine. I could not see the Deck Builder, select screen or match visually, so please check those yourself in the preview.
+- Visuals are still placeholders and there is no sound.
 
 ## Recommendation
 Ready to approve

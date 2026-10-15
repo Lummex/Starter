@@ -1,6 +1,6 @@
 # Automated check results
 
-111 of 111 checks passed after 3 build round(s).
+129 of 129 checks passed after 2 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -60,6 +60,7 @@
 - ✅ AC20: surrender action via API
 - ✅ AC21: easy AI completes its turn and hands it back
 - ✅ AC21: normal AI completes its turn and hands it back
+- ✅ AC78: hard AI completes its turn and hands it back
 - ✅ AC21: Normal AI defeats a passive player before turn 60
 - ✅ AC22: hand cards are buttons and open a card view
 - ✅ AC23: illegal actions are rejected and state is unchanged
@@ -105,11 +106,28 @@
 - ✅ AC57: the Commander picker uses the new Commander names
 - ✅ AC58: tapping a mine mines with exactly the ready Miners next to it
 - ✅ AC58: mineAt action matches the tap; hovering a mine only shows its info
-- ✅ AC60: Deck Builder lists every card with full text and filters it
-- ✅ AC61: Deck Builder reports illegal decks with exact messages and counts
-- ✅ AC62: up to 5 saved decks persist; a saved legal deck is used in a match
+- ✅ AC60: Deck Builder shows card faces with full text and filters them
+- ✅ AC61: Deck Builder problems use the exact messages and counts
+- ✅ AC62: up to 5 saved decks persist after a reload
 - ✅ AC63: the 15 new cards have the exact printed stats
 - ✅ AC63: new card abilities with exact numbers
 - ✅ AC64: Deploy auto-skips with an unplayable hand; Action skips once nothing can act
 - ✅ AC64: Done with only a Crystal card, an Instant or an unplaceable card shows no pop-up
 - ✅ AC65: every creature carries the weapon of its type
+- ✅ AC67: ending your turn with 9 Flow saves 0 into the Bank
+- ✅ AC67: ending your turn with 10 Flow saves 1 into the Bank
+- ✅ AC67: ending your turn with 16 Flow saves 1 into the Bank
+- ✅ AC67: savings applies to the opponent at the end of its own turn
+- ✅ AC68: a hand of only affordable spells does not count as moves left
+- ✅ AC68: with auto-skip on, a spells-only turn passes by itself
+- ✅ AC69: previewAttack matches the real attack exactly
+- ✅ AC69: dragging a creature over an enemy shows the attack preview; letting go elsewhere cancels
+- ✅ AC70: double-click and + add cards; single click only enlarges; copy limit and cost chart
+- ✅ AC71: Auto-fill completes a legal deck; Rename and Save
+- ✅ AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)
+- ✅ AC72: "+ New Deck" on the select screen opens the Deck Builder
+- ✅ AC73: the select screen remembers the last Commander, deck and difficulty
+- ✅ AC74: match-end summary, Play again with the same choices, and Menu
+- ✅ AC75: the tutorial runs to the end, teaching only the current rules
+- ✅ AC76: the Last turn recap lists what the enemy did
+- ✅ AC77: a mine with ready Miners shows the swinging pickaxe count; it goes once they mined
