@@ -1,18 +1,19 @@
 # Automated check results
 
-102 of 102 checks passed after 3 build round(s).
+111 of 111 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
 - ✅ landscape phone viewport 667x375 › AC24: menu and full-screen match fit a 667x375 landscape phone
 - ✅ portrait phone viewport › AC24: upright phone shows the rotate message
-- ✅ landscape layout details › AC43: hovering a hand card slides it up out of the fan
+- ✅ landscape layout details › AC43: the hand rests tucked half below the edge and slides up on hover
 - ✅ landscape layout details › AC44: deck piles on each player's right and Commander hearts
 - ✅ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
 - ✅ hearts and turn display 740x360 › AC51: Commander hearts never cover creature labels; turn display top-right (740x360)
 - ✅ hearts and turn display 667x375 › AC51: Commander hearts never cover creature labels; turn display top-right (667x375)
 - ✅ hand pop-out at 2x › AC59: a hovered hand card doubles in size and stays fully on-screen
-- ✅ AC1: main menu has exactly Play, Tutorial, Rules, Settings and no page errors
+- ✅ compact stat pill › AC66: creature labels are compact pills with Attack, Health, Movement
+- ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
 - ✅ AC3: Rules page with pictures and Back
@@ -70,7 +71,7 @@
 - ✅ AC27: summoning spends exactly the new costs
 - ✅ AC28: phase banner appears when a phase begins
 - ✅ AC28: auto-skipped phases show no banner; ENEMY TURN does
-- ✅ AC29: moves left ignores Instants and the Miner swap
+- ✅ AC29: moves left ignores Instants, Crystal cards and the Miner swap
 - ✅ AC29: with auto-skip on, an empty turn passes by itself; a phase with moves left does not
 - ✅ AC30: creature labels show Attack, Health, Movement and darken after acting
 - ✅ AC31: Moves still available pop-up — Go back and Continue
@@ -102,5 +103,13 @@
 - ✅ AC56: Settings has "Card reveals: Normal" / "Fast", saved across reloads
 - ✅ AC57: every card shows its full ability text, in the hand and in the card view; names follow the rename table
 - ✅ AC57: the Commander picker uses the new Commander names
-- ✅ AC58: Mine All mines exactly the ready Miners next to a mine, preferring full value
-- ✅ AC58: the M key and the mineAll action do the same
+- ✅ AC58: tapping a mine mines with exactly the ready Miners next to it
+- ✅ AC58: mineAt action matches the tap; hovering a mine only shows its info
+- ✅ AC60: Deck Builder lists every card with full text and filters it
+- ✅ AC61: Deck Builder reports illegal decks with exact messages and counts
+- ✅ AC62: up to 5 saved decks persist; a saved legal deck is used in a match
+- ✅ AC63: the 15 new cards have the exact printed stats
+- ✅ AC63: new card abilities with exact numbers
+- ✅ AC64: Deploy auto-skips with an unplayable hand; Action skips once nothing can act
+- ✅ AC64: Done with only a Crystal card, an Instant or an unplaceable card shows no pop-up
+- ✅ AC65: every creature carries the weapon of its type
