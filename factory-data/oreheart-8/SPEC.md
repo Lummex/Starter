@@ -2,11 +2,21 @@
 
 ## Summary
 
-Oreheart is a comic-style fantasy card battle in the browser. Goblins, Gnomes and Dwarves fight over three randomly placed crystal mines on a hidden 13×7 grid, and you win by bringing the enemy Commander from 20 Health to 0. Phase 1a delivers **one complete, playable match against a computer opponent (Easy, Normal or Hard) plus a guided tutorial match and a testing deck builder**. It is built on a pure, data-driven rules engine that could later run on a server, and uses simple placeholder 3D visuals on a **landscape** screen. Rules, numbers and cards come from `factory-design/design/oreheart-gdd-v2.md` (the GDD). Scope comes from `factory-design/design/oreheart-phase-1a-brief.md` (the brief, including its "Revision 9", "Revision 8", "Revision 7", "Revision 6", "Revision 5", "Revision 4", "Revision 3" and "Revision 2" sections). Where this spec and the GDD disagree, **this spec wins**, because it settles GDD gaps for testing.
+Oreheart is a comic-style fantasy card battle in the browser. Goblins, Gnomes and Dwarves fight over three randomly placed crystal mines on a hidden 13×7 grid, and you win by bringing the enemy Commander from 20 Health to 0. Phase 1a delivers **one complete, playable match against a computer opponent (Easy, Normal or Hard) plus a guided tutorial match and a testing deck builder**. It is built on a pure, data-driven rules engine that could later run on a server, on a **landscape** screen. **Phase 1B Round 1** (this build) adds finished dark-fantasy art for the Goblins, Grubnak, all Strongholds, the battlefield, mines, menu, logo and card design, plus sound effects, without changing any rule or layout (see the Phase 1B section first). Rules, numbers and cards come from `factory-design/design/oreheart-gdd-v2.md` (the GDD). Scope comes from `factory-design/design/oreheart-phase-1a-brief.md` (the brief, including its "Revision 9", "Revision 8", "Revision 7", "Revision 6", "Revision 5", "Revision 4", "Revision 3" and "Revision 2" sections). Where this spec and the GDD disagree, **this spec wins**, because it settles GDD gaps for testing.
 
 Tech: Vite + TypeScript (vanilla or React), Three.js for the 3D scene, static `dist/` output, no backend.
 
-### Revision 9 changes (summary for builders who saw revision 8) — READ FIRST
+### Phase 1B, Round 1 (art and sound style test) — READ FIRST
+
+Phase 1a (everything below, all revisions) is finished, approved and live. Phase 1B Round 1 **replaces placeholder art and adds sound without changing any game rule, number, layout position, button label, accessible name or test hook**. Every existing acceptance test (AC1–AC78) must keep passing unchanged. Full details are in section 7 ("Phase 1B Round 1: art and sound") and the new criteria AC79–AC90. Sources, in order of authority for the look:
+
+1. `factory-design/design/references/` (binding): `menu ref image.jpg` = Grubnak's look, his rocket-barrel retreat and the comic sound-word style; `arena-ref1.jpg` = creature, Stronghold, leaning-out Commander, heart badge, stat-badge and crystal look (but the board stays dark and moody, not sunny grass; do not copy its card-back swirl); `card-ref2.jpg` = the card design for every card; `main logo.jpg` = the Oreheart logo; `menu screen.jpg` = the main menu.
+2. `factory-design/design/oreheart-mockup.jpg` (binding mood): rich dark-fantasy painted look, glowing crystal mines in spiked palisades lighting a dark battlefield, dark spiked Strongholds, dark-iron-and-gold UI frames. **No toon shading and no thick cartoon ink outlines.** Its layout, numbers and labels ("ORE", "END TURN", health bars, three-colored mines) are illustration only.
+3. `factory-design/design/oreheart-phase-1b-brief.md` (Round 1 scope and the AI image pipeline).
+
+Round 1 finishes: the art pipeline in code; **all Goblin creatures** as finished 3D figures with animations and poke reactions; **Grubnak Rotgut** finished in his Stronghold with reactions and the rocket-barrel retreat (KA-BOOM); **all three Strongholds**; the dark battlefield; finished mines and pickaxe; the **main menu and logo**; the **new card design** for every card (Goblin card pictures generated with the Grok/xAI image API; Gnome and Dwarf cards keep their old pictures inside the new frame); the card back; dark-iron-and-gold UI frames; **sound effects for the whole game** plus Goblin and Grubnak gibberish voices (**no music**); performance limits; and `CREDITS.md`. Gnome and Dwarf creatures, Sproingle and Borgo keep their placeholder figures (they must not break).
+
+### Revision 9 changes (summary for builders who saw revision 8)
 
 Revision 9 is the owner's seventh and final Phase 1a playtest. **Where any older line in this spec disagrees, Revision 9 (this section) wins**, then Revision 8, 7, 6, 5, 4, 3, 2. Card ids, action names and config keys stay the same unless stated.
 
@@ -567,8 +577,69 @@ Each AI turn completes within 3 seconds of computation on a mid-range phone: ins
 
 ---
 
+### 7. Phase 1B Round 1: art and sound (new)
+
+Paths below are relative to the app folder `projects/oreheart-8/`. Nothing here changes a rule, a number, a layout position, an accessible name or an existing hook.
+
+7.1 **Art pipeline (code, reused by later rounds).** Three.js materials and lighting matching the references: stylized PBR or hand-painted textures, strong rim light, colored light and soft fog from each glowing mine, glowing eyes and gems, bloom on glows, soft contact shadows. **No toon/cel shading and no thick ink outlines.** A shared **Goblin body rig** (skinny, hunched, long arms, huge ears, big grin with pointy teeth, big hands, small legs) with swappable heads, armor, weapons and colors so every Goblin card has a distinct figure. Models are built procedurally in code and/or start from CC0 packs (recorded in `CREDITS.md`, 7.10). Nothing may copy another game's characters, logos, UI or fonts.
+
+7.2 **Goblin figures.** Every creature card with faction `goblins` (currently: goblin-scrounger, goblin-scrapper, goblin-slinger, goblin-bomber, goblin-sneak, wolf-rider, grubnaks-big-boss-troll, shard-guzzler, goblin-grunt, goblin-pebbler, goblin-smith-miner, rotgut-grenadier, shiv-rat, skullbasher-rusher, junk-shaman, blastrat-sapper, and any other Goblin creature in `cards.json`) gets a finished, distinct figure: scrap metal, rusty nails, patched leather, bottle caps, bones, toxic-green accents; the weapon of its type (R8 "Weapons show the type"; Miners carry a real pickaxe model). Rare is slightly bigger; Ultra Rare and Collector noticeably bigger with a soft glow. Upgrades add gold pips and shinier armor. Figures stand on the existing yellow / dark-grey rings (R5.10); stat pills (R8.9) stay as they are.
+- Animations for every creature (Goblin figures fully; placeholders at least idle/move/hit/defeat as before): **idle, walk, melee or ranged attack, hit** (flinch + red flash), **defeat** (comic poof with stars and a bouncing helmet, no blood), **mining** (pick swing + gem sparks), **summon** (rises out of the card with a dust puff).
+- **Poke reactions:** tapping/clicking your own or an enemy Goblin figure (without dragging) plays one of three reactions: **cackle, rude dance, angry stomp** (with a voice grunt). Poking never performs a game action and never opens a dialog.
+
+7.3 **Grubnak Rotgut** (Commander `grubnak`), waist-up leaning out of his Stronghold, exactly as in `menu ref image.jpg`: green goblin, big pointed ears, furious shouting face, gold crown with purple gems, fur-trimmed tattered purple cape, gold chain with a purple gem, purple-and-gold armor. Reactions: belly-laugh and throne pound when his side hits the enemy Commander; sulks and kicks a crate when one of his creatures dies; a fastball throw when his side casts a spell; flinch and fist-shake when he is hit. **Retreat** (when his Health reaches 0, before the end screen): he blasts off on a rocket barrel with a gold skull emblem and flame trail while his Stronghold crumbles, with a **"KA-BOOM!"** comic starburst (chunky yellow/white lettering, thick dark outline, red/orange starburst, halftone dots, speed lines). In test mode the retreat may be instant, but the end screen must still appear exactly as before. Sproingle and Borgo keep simple placeholder figures.
+
+7.4 **Strongholds (all three finished):** dark stacked stone with gold trim, spikes, faction banners, crenellations and a big glowing gem. Goblin: spiked, crooked, patched with scrap, green banners. Gnome: brass gears, telescopes, blue-crackling coils. Dwarf: carved runes, heavy iron doors, purple braziers. The Health heart (R6.7) stays mounted on the wall facing the player, never covers stat pills, and shows more cracks as Health drops (cracked at ≤ 14, more at ≤ 7). Positions are unchanged.
+
+7.5 **Battlefield:** dark, moody charred earth and rock, cracks glowing faintly with ore, scattered stones, spiked palisade fences, mine carts and broken rails **only around the border** (never on one of the 13×7 playable spaces). The grid stays invisible. The mines are the main light sources; creatures stay readable (rim light).
+
+7.6 **Mines:** big clusters of glowing faceted crystals inside spiked wooden palisade fences, glowing in the controller's color (green/blue/purple, white when neutral), light rays rising, slow sparkles, a burst-and-regrow when the controller changes; mined crystals stream as motes to the Flow counter. The R9.5 swinging pickaxe becomes a metal-and-wood pickaxe model with a spark per strike (its "×N" text and `data-ready-miners` stay).
+
+7.7 **Main menu and logo** (layout as `menu screen.jpg`, landscape):
+- The h1 contains the **logo image** (from `main logo.jpg`: gold OREHEART lettering under a glowing crystal heart, Goblin/Gnome/Dwarf silhouettes, ornate gold frame, cut cleanly from its dark background or rebuilt as layered art) with `alt="Oreheart"`, so the h1's accessible name is still exactly **"Oreheart"**. The same logo is used on the loading screen and as the app icon (`<link rel="icon">`).
+- Under it the tagline text **"Goblins, Gnomes and Dwarves fight over the Soul Crystals."**
+- A big glowing gold **"Play"** button, then **"Tutorial"**, **"Decks"**, **"Rules"**, **"Settings"** as dark plaques with gold trim and small icons. Icons are decorative (CSS background or `aria-hidden` images with no text), so each button's visible text and accessible name stay exactly the word; still exactly five buttons (AC1).
+- Background: a painted dark cavern scene (Goblin + green crystals left, Gnome + blue crystals middle, Dwarf + white crystals right); it may be an AI-generated image with no text in it, with real HTML buttons on top.
+- The Commander/deck select screen, Deck Builder, Rules, Settings, dialogs, turn text, Done button, Flow/Bank counters, banners and pop-ups use the **dark-iron-and-gold frames**: near-black iron panels, ornate gold trim and corner filigree, gold serif display lettering with a soft glow.
+
+7.8 **Card design (every card, as `card-ref2.jpg`):** hexagon cost gem top-left in the faction color; the card name in white serif capitals with a short gold **tagline** under it; a rarity diamond with the rarity word top-right; a large picture in a rounded frame; a keyword bar with the role/ability icon in a circle; a dark rules-text box with the full ability text (R7.7, never truncated); an italic **flavor line** in faction color under a gold divider; Attack in a red gem with a sword bottom-left; Health in a blue shield with a heart bottom-right; a small boot badge for Movement; an ornate silver filigree frame with faction-color vines and gem accents. Rarity trims: Common plain iron, Uncommon silver, Rare gold, Ultra Rare gold shimmer, Collector animated foil. Neutral cards use a neutral grey-silver frame.
+- Text, cost and stats are always drawn by the game on top of the picture, never baked into it.
+- Every card in `cards.json` gets a short witty **tagline** and **flavor** line (returned by `getCard`, 7.11).
+- Wherever a card face is shown (hand, card view, mulligan, Deck Builder, reveal), the card element has `data-card-id="<cardId>"` and `data-rarity` = `common` | `uncommon` | `rare` | `ultra-rare` | `collector`, and the picture is an `<img>` whose `src` is the card's picture file (7.9) for Goblin creatures. Hand buttons keep their accessible names (card display name).
+- **Card back** (enemy hand, deck piles): an original design of dark iron with gold filigree and a glowing ore-heart (no swirl copied from the reference).
+
+7.9 **Card pictures (AI image pipeline):**
+- `tools/gen-card-art.mjs` and `src/content/card-art.json`, one entry per Goblin creature card (at least): `{ "cardId", "prompt", "file", "seed"? }`, where `file` is `"art/cards/<cardId>.webp"`. Pictures are stored at `public/art/cards/<cardId>.webp` (about 512×512, compressed WebP, under 200 KB each) and **committed**, so they are served at `/art/cards/<cardId>.webp`.
+- The script reads `XAI_API_KEY` from the environment, calls `https://api.x.ai/v1/images/generations` (current Grok image model; check xAI docs for model name and sizes), crops/resizes to the picture shape, and only generates entries whose file is missing or whose prompt hash changed. It never prints, logs or commits the key. At most 2 retries per card (text in the image, extra limbs, wrong faction look).
+- Prompt style (each prompt contains it): "dark fantasy trading card game character art, richly painted, stylized chunky proportions, dramatic rim lighting, glowing eyes and gems, moody [faction color] glow, [faction look], [the creature in action, holding its weapon, with a hint of humor], dark atmospheric background, no text, no letters, no logos, no watermark, original character". Never name other games, companies, characters or artists. Each picture matches its 3D figure (colors, weapon, silhouette).
+- If the key is missing or the API fails, the script saves a dramatic render of the card's 3D figure as the WebP instead, and the build report says which cards used the fallback.
+- Gnome, Dwarf and neutral cards keep their previous pictures this round (inside the new frame).
+
+7.10 **`CREDITS.md`** at the app root (`projects/oreheart-8/CREDITS.md`), listing every outside asset with its source URL and license: every model, texture, sound, font and image not made in code. **Every outside asset file is stored under `public/assets/external/`** (any subfolders) and its **file name appears in `CREDITS.md`**. It also lists the Google Fonts used (by name: "Cinzel", "Cinzel Decorative", "Nunito", and any others) and a line for the card pictures (`public/art/cards/`, generated with the xAI Grok image API, plus any fallback renders). Only CC0 / public-domain / OFL (fonts) assets are allowed.
+
+7.11 **New test hooks** (added to `window.oreheart`, test mode only; may return Promises):
+- `listCards()` → array of every card in `cards.json`, each in the `getCard` format.
+- `getCard(cardId)` now also returns `tagline` and `flavor` (non-empty strings).
+- `getArtInfo(cardId)` → `{ figure: "finished" | "placeholder" | null, picture: string | null }`. `figure` is `"finished"` for every Goblin creature, `"placeholder"` for Gnome/Dwarf/neutral creatures this round, `null` for non-creatures. `picture` is the URL path of the card's picture (`"/art/cards/<cardId>.webp"` for Goblin creatures).
+- `getAudioState()` → `{ unlocked, muted, sfxVolume, voiceVolume }`. `unlocked` is `false` until the first user tap/click/key press anywhere (before that no sound plays and no AudioContext is running); `muted` mirrors the match-screen mute button; volumes are 0–100 from Settings.
+- `getRenderStats()` → waits for at least two rendered frames, then returns `{ webgl, graphics: "high"|"low", drawCalls, triangles, bloom, shadows, particles, figures, commanders, strongholds, mines }` where `drawCalls`/`triangles` are totals for one complete frame (all render passes, including bloom), `bloom`/`shadows`/`particles` are booleans for what is active now, `figures` = `[{ uid, cardId, model: "finished"|"placeholder" }]` for every creature on the board, `commanders` = `{ player: { commanderId, model }, opponent: { commanderId, model } }`, `strongholds` = `{ player: "finished", opponent: "finished" }`, `mines` = `"finished"`. If WebGL is unavailable: `webgl: false`, `drawCalls: 0`.
+- In test mode, `/?test=1` still shows the main menu first (without the tutorial offer) until `newMatch`/`startTutorial` is called, and audio is gated exactly as in normal play.
+- `poke(uid)` → plays a poke reaction on that creature's figure and returns its name: `"cackle"`, `"rude dance"` or `"angry stomp"` for Goblin figures (`null` for placeholders). It never changes the game state.
+
+7.12 **Sound (whole game, all factions; no music):** card draw, card play, summon whoosh, footsteps per faction, melee hits, ranged shots, pick strikes and gem chimes, counter ticks, every spell, shield bubble, glass shatter, Stronghold hit, KA-BOOM, button clicks, countdown ticks, victory and defeat stings (short stings, **not music**). Gibberish voice grunts/cackles for Goblins and Grubnak (other factions may use generic grunts this round). Sources: CC0 libraries (files in `public/assets/external/`, listed in `CREDITS.md`) and/or synthesized in code with Web Audio.
+- **Audio starts only after the first user gesture** (tap, click or key). Before that, nothing plays and no AudioContext is created/resumed (no autoplay warnings, no page errors).
+- **Settings** gets two sliders (`<input type="range">`, 0–100, step 1, default **80**) with visible labels **"Sound effects"** and **"Voices"**, saved in localStorage and restored on reload. Existing Settings toggles stay.
+- **Match screen** gets a button **"Mute sound"**, which toggles to **"Unmute sound"** (mutes all sound effects and voices), saved in localStorage. It floats over the battlefield in a corner that doesn't cover existing HUD items (e.g. next to "Menu"), ≥ 44 px touch target.
+
+7.13 **Performance and Low graphics:** total size of `dist/` under **40 MB**; 60 fps on a mid-range Android phone in Chrome, 30 fps on old phones; compressed textures, low-poly models. **"Graphics: Low"** turns off bloom, shadows and particles and simplifies distant detail, so a Low frame uses **fewer draw calls** than a High frame for the same match state.
+
+7.14 **Screenshots:** the build report includes match-screen screenshots at phone size **844×390** (the acceptance run also attaches one).
+
+---
+
 ## Look & feel
 
+- **Phase 1B (overrides older lines below where they conflict):** rich dark-fantasy painted look as in the owner's mockup and `references/` images: chunky, detailed stylized characters with heavy armor, spikes and horns, strong rim light, glowing eyes and gems; a dark, moody battlefield lit by glowing crystal mines with colored light, fog, light beams, sparkles and embers; dark spiked Strongholds; near-black iron UI frames with ornate gold trim (`#e3b54a`) and corner filigree, gold serif display lettering with a soft glow. No toon shading and no thick cartoon outlines. Humor stays in poses, faces and reactions, and comic sound-word starbursts (KA-BOOM!) follow `menu ref image.jpg`. Everything is original. The old "dirt, grass" ground is replaced by charred dark earth and rock.
 - Comic-book fantasy with a dark painted battlefield as in the mockup: dirt, grass and rock ground, no grid lines.
 - Glossy neon gems: green `#3ee06a` (Goblins), blue `#3fa9ff` (Gnomes), purple `#b45cff` (Dwarves). Neutral (tied) mines and white crystals are a pale glowing white `#f2f6ff`.
 - UI frames in dark slate `#1b1a22` with gold trim `#e3b54a` and parchment text `#f4e9d0`. Damaged Health is red `#ff4040`.
@@ -664,6 +735,18 @@ Each AI turn completes within 3 seconds of computation on a mid-range phone: ins
 76. (Rev 9) Last turn (R9.7): before the enemy's first turn the "Last turn" dialog says "Nothing yet."; after the enemy summons a Gutripper Brawler and moves a creature, it lists "Summoned Gutripper Brawler" and "Moved …".
 77. (Rev 9) Pickaxe (R9.5): a mine with 2 ready Miners shows "×2" and `data-ready-miners="2"`; after tapping it the "×" text is gone.
 78. (Rev 9) Hard AI: a Hard match completes its turn and hands it back (AC21 loop includes "hard").
+79. (Phase 1B) Main menu (7.7): the h1 "Oreheart" is the logo image (`alt="Oreheart"`, loaded), the tagline "Goblins, Gnomes and Dwarves fight over the Soul Crystals." is visible, the page has an icon link, and the five buttons keep their exact names (AC1 still passes). No page errors.
+80. (Phase 1B) Every Goblin creature has a finished 3D figure (`getArtInfo(...).figure === "finished"`); Gnome and Dwarf creatures report "placeholder"; non-creatures report `null`.
+81. (Phase 1B) Every Goblin creature has a card picture: `getArtInfo(...).picture` is `/art/cards/<cardId>.webp`, which loads as a WebP image under 200 KB; `src/content/card-art.json` has an entry for each with a prompt containing "no text"; `tools/gen-card-art.mjs` exists; the app source never contains the API key value.
+82. (Phase 1B) Every card has a non-empty tagline and flavor line (`getCard`).
+83. (Phase 1B) Card faces (7.8): a Goblin creature in the hand is a button with its display name, `data-card-id`, a valid `data-rarity`, and an `<img>` showing `/art/cards/<cardId>.webp`.
+84. (Phase 1B) On the battlefield, Goblin creatures use finished figures and Gnome creatures placeholders; Grubnak is a finished Commander, Sproingle a placeholder; both Strongholds and the mines report "finished".
+85. (Phase 1B) Poking a Goblin figure returns "cackle", "rude dance" or "angry stomp" and leaves the game state unchanged.
+86. (Phase 1B) `CREDITS.md` exists at the app root, names the fonts (Cinzel, Nunito), mentions the card pictures (`art/cards` and xAI/Grok), and every file under `dist/assets/external/` is named in it.
+87. (Phase 1B) Sound is locked until the first tap: on load `getAudioState().unlocked` is false; after a click it is true. No page errors.
+88. (Phase 1B) Settings has "Sound effects" and "Voices" sliders (default 80) that are remembered after reload; the match screen has "Mute sound" ↔ "Unmute sound", reflected in `getAudioState().muted` and remembered after reload.
+89. (Phase 1B) "Graphics: Low" turns off bloom, shadows and particles and gives fewer draw calls than High for the same match setup.
+90. (Phase 1B) The built `dist/` folder is under 40 MB, and the match screen at 844×390 renders full screen with no page errors (a screenshot is attached).
 
 Revision 9 notes on older criteria: AC2, AC57 and AC62 use the new select screen ("Fight!" instead of "Start Match", deck stacks instead of the "Deck" dropdown). AC20 uses "Menu" instead of "Back to Menu". AC25's tutorial still starts at `summon` with 0 crystals and advances to `move`. AC60–AC62 now add cards by double-click and the "Add <Name>" + buttons, list lines read "N × <Name>", the name is set via "Rename", and saving uses "Save"; the copy-limit problem message remains for decks that somehow exceed it, but the UI now prevents it. AC58's pulse text "⛏️N" is replaced by "×N".
 
@@ -678,18 +761,25 @@ Revision 5 notes on older criteria: AC9 and the other mine examples use creature
 - (Rev 7) Spell visual effects (R7.6) and card-reveal animations are checked by eye only; automated tests skip reveals in test mode.
 
 - (Rev 8) The deck builder is a testing version: every card unlocked, no collection, packs or gold. Card reveal flips, spell effects, weapons on figures and the hand slide are checked by eye beyond the listed tests.
-- Not included: booster packs, collection, the collection-based deck builder, gold, shards, shop, the full 120-card Core Set, polished art, poke reactions, sound and music, online play, accounts, Owner Console, cosmetics, daily quests, taunts, rankings, notifications, Hard AI, hint/undo buttons, time bank, sudden death (unresolved in the GDD), colorblind color picker, haptics settings, and PWA install/offline. The brief excludes them, or they need a backend.
-- Settings only has the graphics toggle, because sound, music and progress don't exist yet in 1a.
+- (Phase 1B Round 1) Not yet: finished Gnome and Dwarf figures, finished Sproingle and Borgo, Gnome/Dwarf card pictures (Round 2); unique spell visual effects, WHAM!/KRAK!/ZZAP! hit starbursts, living menu scene, 3D Flow/Bank crystals, iron Done button (Round 3); music (later phase). The look (style match, animation quality, frame rate on real phones) is judged by the owner from screenshots and the preview; tests only check that the parts exist, sound is gated, Low reduces draw calls and size limits hold.
+- (Phase 1B) The card-picture script needs the `XAI_API_KEY` secret at build time only; the app itself never calls an API or holds a key. Pictures are committed files.
+- Not included: booster packs, collection, the collection-based deck builder, gold, shards, shop, the full 120-card Core Set, music, online play, accounts, Owner Console, cosmetics, daily quests, taunts, rankings, notifications, Hard AI, hint/undo buttons, time bank, sudden death (unresolved in the GDD), colorblind color picker, haptics settings, and PWA install/offline. The brief excludes them, or they need a backend.
+- (Phase 1B) Settings has the graphics, moves-reminder and card-reveal toggles plus the two volume sliders; there is no music volume because there is no music yet.
 - Unlockable Commanders (Queen Skreeka, Madame Sprocket, Old Grumblebeard) are not playable. Only the 3 starter Commanders are.
 - There are no response chains (only one Respond level).
 - (Rev 6) The crystal-bought upgrades (Sharpened Weapons, Heavy Armor, Veteran, Champion's Crown) are removed from the game, not just hidden.
 - (Rev 8) Mixed-faction decks are allowed in the Deck Builder; a mine still glows in its controller's Commander faction color.
-- Mine-change effects (burst, regrow, light beams) are simple placeholder particles.
 - The page can't force the phone to rotate. It only shows the rotate message.
 
 ---
 
 ## Assumptions
+
+- (Phase 1B) "Goblin cards" for figures and pictures means every creature card with faction `goblins`; Goblin-faction spells/Crystal cards (if any) and neutral cards keep their old pictures this round.
+- (Phase 1B) The arena reference shows stat badges above creatures; the approved R8.9 compact stat pill under each creature stays (layout and tests are frozen), restyled with the dark badge look and sword/heart/boot icons.
+- (Phase 1B) Outside assets live under `public/assets/external/` so the credits check can find them; assets made in code need no credit.
+- (Phase 1B) Volume sliders default to 80; mute is a match-screen button only (the main menu keeps exactly five buttons).
+- (Phase 1B) Stronghold heart cracks appear at Health ≤ 14 and grow at ≤ 7.
 
 - (Rev 9) Savings moves floor(Flow/10) crystals (1 for 10–19), so Flow drops by the amount saved, not by 10 per crystal: "1 crystal for every 10 moves from your Flow into your Bank".
 - (Rev 9) The deck builder now blocks adding beyond a card's copy limit (the brief says + "respects limits"); the Crystal-card total is reported as a problem rather than blocked, so the R8 message still appears.

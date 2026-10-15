@@ -2799,3 +2799,260 @@ test('AC77: a mine with ready Miners shows the swinging pickaxe count; it goes o
   const s = await getState(page);
   expect(at(s, 5, 1).hasMined && at(s, 5, 2).hasMined).toBe(true);
 });
+
+// =====================================================================
+// Phase 1B, Round 1 — art and sound (AC79–AC90)
+// =====================================================================
+async function appDir() {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    process.env.APP_DIR && path.resolve(process.env.APP_DIR),
+    path.resolve(here, '../../../projects/oreheart-8'),
+    path.resolve(process.cwd(), 'projects/oreheart-8'),
+    path.resolve(process.cwd(), '../projects/oreheart-8'),
+  ].filter(Boolean);
+  const dir = candidates.find((d) => fs.existsSync(path.join(d, 'package.json')));
+  expect(dir, `app folder not found in ${candidates.join(', ')}`).toBeTruthy();
+  return { fs, path, dir };
+}
+function walk(fs, path, dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(dir, e.name);
+    return e.isDirectory() ? walk(fs, path, p) : [p];
+  });
+}
+const goblinCreatures = async (page) =>
+  (await page.evaluate(async () => await window.oreheart.listCards()))
+    .filter((c) => c.faction === 'goblins' && c.type === 'creature');
+
+test('AC79: main menu shows the logo as the h1, the tagline and the five plaques', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await openMenu(page);
+  const h1 = page.getByRole('heading', { level: 1, name: 'Oreheart' });
+  await expect(h1).toBeVisible();
+  const logo = h1.getByRole('img', { name: 'Oreheart' });
+  await expect(logo).toBeVisible();
+  await expect.poll(() => logo.evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
+  await expect(page.getByText('Goblins, Gnomes and Dwarves fight over the Soul Crystals.', { exact: true })).toBeVisible();
+  expect(await page.locator('link[rel~="icon"]').count()).toBeGreaterThan(0);
+  const names = (await page.getByRole('button').allInnerTexts()).map((t) => t.trim());
+  expect(names).toEqual(['Play', 'Tutorial', 'Decks', 'Rules', 'Settings']);
+  expect(errors).toEqual([]);
+});
+
+test('AC80: every Goblin creature has a finished figure; Gnomes and Dwarves are placeholders', async ({ page }) => {
+  await openTest(page);
+  const all = await page.evaluate(async () => await window.oreheart.listCards());
+  const goblins = all.filter((c) => c.faction === 'goblins' && c.type === 'creature');
+  expect(goblins.length).toBeGreaterThanOrEqual(16);
+  for (const id of ['goblin-scrounger', 'goblin-scrapper', 'goblin-smith-miner', 'shard-guzzler', 'blastrat-sapper']) {
+    expect(goblins.map((c) => c.id)).toContain(id);
+  }
+  for (const c of all) {
+    const info = await page.evaluate(async (id) => await window.oreheart.getArtInfo(id), c.id);
+    if (c.type !== 'creature') expect(info.figure, c.id).toBeNull();
+    else if (c.faction === 'goblins') expect(info.figure, c.id).toBe('finished');
+    else if (c.faction === 'gnomes' || c.faction === 'dwarves') expect(info.figure, c.id).toBe('placeholder');
+  }
+});
+
+test('AC81: every Goblin creature has a committed WebP card picture and an art entry', async ({ page }) => {
+  await openTest(page);
+  const goblins = await goblinCreatures(page);
+  const { fs, path, dir } = await appDir();
+  const art = JSON.parse(fs.readFileSync(path.join(dir, 'src/content/card-art.json'), 'utf8'));
+  const entries = Array.isArray(art) ? art : art.entries || Object.values(art);
+  expect(fs.existsSync(path.join(dir, 'tools/gen-card-art.mjs'))).toBe(true);
+  for (const c of goblins) {
+    const info = await page.evaluate(async (id) => await window.oreheart.getArtInfo(id), c.id);
+    expect(info.picture, c.id).toBe(`/art/cards/${c.id}.webp`);
+    const res = await page.request.get(info.picture);
+    expect(res.status(), c.id).toBe(200);
+    const body = await res.body();
+    expect(body.length, c.id).toBeLessThan(200 * 1024);
+    expect(body.subarray(0, 4).toString('latin1'), c.id).toBe('RIFF');
+    expect(body.subarray(8, 12).toString('latin1'), c.id).toBe('WEBP');
+    const entry = entries.find((e) => e.cardId === c.id);
+    expect(entry, `card-art.json entry for ${c.id}`).toBeTruthy();
+    expect(entry.file).toBe(`art/cards/${c.id}.webp`);
+    expect(entry.prompt.toLowerCase()).toContain('no text');
+  }
+  const key = process.env.XAI_API_KEY;
+  if (key) {
+    for (const f of walk(fs, path, path.join(dir, 'src')).concat(walk(fs, path, path.join(dir, 'dist')))) {
+      if (/\.(js|ts|mjs|json|html|css)$/.test(f)) expect(fs.readFileSync(f, 'utf8').includes(key), f).toBe(false);
+    }
+  }
+});
+
+test('AC82: every card has a tagline and a flavor line', async ({ page }) => {
+  await openTest(page);
+  const all = await page.evaluate(async () => await window.oreheart.listCards());
+  expect(all.length).toBeGreaterThan(40);
+  for (const c of all) {
+    expect(typeof c.tagline === 'string' && c.tagline.trim().length > 0, `${c.id} tagline`).toBe(true);
+    expect(typeof c.flavor === 'string' && c.flavor.trim().length > 0, `${c.id} flavor`).toBe(true);
+  }
+  const one = await page.evaluate(async () => await window.oreheart.getCard('goblin-scrapper'));
+  expect(one.tagline.trim().length).toBeGreaterThan(0);
+  expect(one.flavor.trim().length).toBeGreaterThan(0);
+});
+
+test('AC83: a Goblin hand card uses the new card face with its picture and rarity', async ({ page }) => {
+  await start(page, { ai: false, setup: { playerHand: ['goblin-scrapper'] } });
+  const hand = page.getByLabel('Your hand', { exact: true });
+  const btn = hand.getByRole('button', { name: 'Gutripper Brawler' });
+  await expect(btn).toBeVisible();
+  const face = hand.locator('[data-card-id="goblin-scrapper"]').first();
+  await expect(face).toBeAttached();
+  const rarity = await face.getAttribute('data-rarity');
+  expect(['common', 'uncommon', 'rare', 'ultra-rare', 'collector']).toContain(rarity);
+  const img = face.locator('img[src*="/art/cards/goblin-scrapper.webp"]');
+  await expect(img.first()).toBeAttached();
+});
+
+test('AC84: finished Goblin figures, Grubnak, Strongholds and mines on the battlefield', async ({ page }) => {
+  await start(page, {
+    ai: false, playerCommander: 'grubnak', opponentCommander: 'sproingle',
+    setup: { board: [
+      { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 },
+      { cardId: 'goblin-scrounger', owner: 'player', row: 6, col: 5 },
+      { cardId: 'gnome-tinker', owner: 'opponent', row: 0, col: 4 },
+    ] },
+  });
+  const r = await page.evaluate(async () => await window.oreheart.getRenderStats());
+  const s = await getState(page);
+  expect(r.figures.length).toBe(3);
+  for (const f of r.figures) {
+    const c = s.board.creatures.find((x) => x.uid === f.uid);
+    expect(c, f.uid).toBeTruthy();
+    expect(f.model, f.cardId).toBe(c.cardId.startsWith('gnome') ? 'placeholder' : 'finished');
+  }
+  expect(r.commanders.player).toMatchObject({ commanderId: 'grubnak', model: 'finished' });
+  expect(r.commanders.opponent).toMatchObject({ commanderId: 'sproingle', model: 'placeholder' });
+  expect(r.strongholds).toEqual({ player: 'finished', opponent: 'finished' });
+  expect(r.mines).toBe('finished');
+});
+
+test('AC85: poking a Goblin figure plays a reaction and changes nothing', async ({ page }) => {
+  await start(page, { ai: false, setup: { board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 }] } });
+  const before = await getState(page);
+  const uid = before.board.creatures[0].uid;
+  const seen = new Set();
+  for (let i = 0; i < 6; i++) {
+    const r = await page.evaluate(async (u) => await window.oreheart.poke(u), uid);
+    expect(['cackle', 'rude dance', 'angry stomp']).toContain(r);
+    seen.add(r);
+  }
+  expect(await getState(page)).toEqual(before);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('AC86: CREDITS.md lists fonts, card pictures and every outside asset file', async () => {
+  const { fs, path, dir } = await appDir();
+  const credits = path.join(dir, 'CREDITS.md');
+  expect(fs.existsSync(credits), 'CREDITS.md').toBe(true);
+  const text = fs.readFileSync(credits, 'utf8');
+  expect(text).toContain('Cinzel');
+  expect(text).toContain('Nunito');
+  expect(text).toContain('art/cards');
+  expect(/xai|grok/i.test(text)).toBe(true);
+  const files = walk(fs, path, path.join(dir, 'public/assets/external')).concat(walk(fs, path, path.join(dir, 'dist/assets/external')));
+  for (const f of files) expect(text.includes(path.basename(f)), `${path.basename(f)} in CREDITS.md`).toBe(true);
+});
+
+test('AC87: sound stays locked until the first tap', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await openTest(page);
+  const a = await page.evaluate(async () => await window.oreheart.getAudioState());
+  expect(a.unlocked).toBe(false);
+  await page.mouse.click(5, 5); // a tap anywhere counts as the first gesture
+  await expect.poll(async () => (await page.evaluate(async () => await window.oreheart.getAudioState())).unlocked).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('AC88: volume sliders and the match mute button are remembered', async ({ page }) => {
+  await openMenu(page);
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  const sfx = page.getByLabel('Sound effects', { exact: true });
+  const voices = page.getByLabel('Voices', { exact: true });
+  await expect(sfx).toHaveValue('80');
+  await expect(voices).toHaveValue('80');
+  await sfx.fill('35');
+  await voices.fill('10');
+  await page.reload();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByLabel('Sound effects', { exact: true })).toHaveValue('35');
+  await expect(page.getByLabel('Voices', { exact: true })).toHaveValue('10');
+
+  await start(page, { ai: false });
+  let a = await page.evaluate(async () => await window.oreheart.getAudioState());
+  expect(a).toMatchObject({ muted: false, sfxVolume: 35, voiceVolume: 10 });
+  await page.getByRole('button', { name: 'Mute sound', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Unmute sound', exact: true })).toBeVisible();
+  a = await page.evaluate(async () => await window.oreheart.getAudioState());
+  expect(a.muted).toBe(true);
+  await start(page, { ai: false });
+  await expect(page.getByRole('button', { name: 'Unmute sound', exact: true })).toBeVisible();
+  expect((await page.evaluate(async () => await window.oreheart.getAudioState())).muted).toBe(true);
+  await page.getByRole('button', { name: 'Unmute sound', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Mute sound', exact: true })).toBeVisible();
+});
+
+test('AC89: Low graphics turns off bloom, shadows and particles and uses fewer draw calls', async ({ page }) => {
+  const setup = { ai: false, seed: 7, mines: OLD_MINES, setup: { board: [
+    { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 },
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 2 },
+    { cardId: 'gnome-tinker', owner: 'opponent', row: 0, col: 4 },
+  ] } };
+  await start(page, setup);
+  const high = await page.evaluate(async () => await window.oreheart.getRenderStats());
+  expect(high.graphics).toBe('high');
+  expect(high.webgl).toBe(true);
+  expect(high.drawCalls).toBeGreaterThan(0);
+
+  await openMenu(page);
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Graphics: High' }).click();
+  await expect(page.getByRole('button', { name: 'Graphics: Low' })).toBeVisible();
+
+  await start(page, setup);
+  const low = await page.evaluate(async () => await window.oreheart.getRenderStats());
+  expect(low.graphics).toBe('low');
+  expect(low).toMatchObject({ bloom: false, shadows: false, particles: false });
+  expect(low.drawCalls).toBeLessThan(high.drawCalls);
+});
+
+test('AC90: the built dist folder stays under 40 MB', async () => {
+  const { fs, path, dir } = await appDir();
+  const dist = path.join(dir, 'dist');
+  expect(fs.existsSync(path.join(dist, 'index.html')), 'dist/index.html').toBe(true);
+  const bytes = walk(fs, path, dist).reduce((n, f) => n + fs.statSync(f).size, 0);
+  expect(bytes).toBeLessThan(40 * 1024 * 1024);
+});
+
+test.describe('phone-size match screenshot', () => {
+  test.use({ viewport: { width: 844, height: 390 } });
+  test('AC90: the match screen renders full screen at 844x390 with no page errors', async ({ page }, testInfo) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await start(page, { ai: false, setup: { playerHand: ['goblin-scrapper', 'goblin-scrounger', 'goblin-slinger'], board: [
+      { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 },
+      { cardId: 'gnome-tinker', owner: 'opponent', row: 0, col: 4 },
+    ] } });
+    const field = page.getByLabel('Battlefield', { exact: true });
+    await expect(field).toBeVisible();
+    const box = await field.boundingBox();
+    expect(box.width).toBeGreaterThanOrEqual(840);
+    expect(box.height).toBeGreaterThanOrEqual(386);
+    await page.evaluate(async () => await window.oreheart.getRenderStats());
+    await testInfo.attach('match-844x390', { body: await page.screenshot(), contentType: 'image/png' });
+    expect(errors).toEqual([]);
+  });
+});
