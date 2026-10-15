@@ -1,0 +1,76 @@
+{
+ "phaseTimerSeconds": 50,
+ "timerHiddenSeconds": 40,
+ "countdownSeconds": 10,
+ "respondWindowSeconds": 12,
+ "autoSkipDelaySeconds": 0.5,
+ "startingCrystals": 0,
+ "basicGatherers": {
+  "goblins": "goblin-scrounger",
+  "gnomes": "gnome-prospector",
+  "dwarves": "dwarf-miner"
+ },
+ "gathererFlow": 2,
+ "fighterFlow": 1,
+ "poolCap": 16,
+ "savingsPerCrystal": 10,
+ "underdogBonus": 2,
+ "geodeIncome": 1,
+ "deckSize": 50,
+ "starterDeckMix": {
+  "creatures": 40,
+  "spells": 6,
+  "crystals": 4,
+  "basicGatherers": 5,
+  "smithMiners": 3
+ },
+ "openingHandSize": 5,
+ "secondPlayerExtraCards": 1,
+ "copyLimits": {
+  "Common": null,
+  "Uncommon": null,
+  "Rare": 3,
+  "Ultra Rare": 3,
+  "Collector": 3
+ },
+ "crystalCardLimit": 10,
+ "maxCrystalCards": 10,
+ "commanderHealth": 20,
+ "deckOutDamage": 1,
+ "crystalCardsPerTurn": 1,
+ "typeAdvantageBonus": 1,
+ "rageBonus": 2,
+ "frenzyBonus": 1,
+ "rallyBonus": 1,
+ "kaboomDamage": 2,
+ "overloadDamage": 1,
+ "eaterGuzzlerDamage": 2,
+ "eaterConduitDamage": 1,
+ "eaterDelverPenalty": 1,
+ "strongholds": {
+  "player": [
+   7,
+   7
+  ],
+  "opponent": [
+   1,
+   7
+  ]
+ },
+ "backRow": {
+  "player": 7,
+  "opponent": 1
+ },
+ "frontRow": {
+  "player": 6,
+  "opponent": 2
+ },
+ "shieldFixit": 1,
+ "aleBonus": 1,
+ "sprocketShield": 1,
+ "boardWidth": 13,
+ "boardHeight": 7,
+ "mineCount": 3,
+ "revealSeconds": 1.5,
+ "revealFastSeconds": 0.6
+}

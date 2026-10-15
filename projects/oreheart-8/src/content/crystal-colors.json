@@ -1,0 +1,22 @@
+[
+ {
+  "id": "green",
+  "hex": "#3ee06a",
+  "faction": "goblins"
+ },
+ {
+  "id": "blue",
+  "hex": "#3fa9ff",
+  "faction": "gnomes"
+ },
+ {
+  "id": "purple",
+  "hex": "#b45cff",
+  "faction": "dwarves"
+ },
+ {
+  "id": "neutral",
+  "hex": "#f2f6ff",
+  "faction": null
+ }
+]

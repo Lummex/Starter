@@ -1,0 +1,2801 @@
+import { test, expect } from '@playwright/test';
+
+// ---------- helpers ----------
+async function openTest(page, seed = 123) {
+  await page.goto(`/?test=1&seed=${seed}`);
+  await page.waitForFunction(() => !!window.oreheart);
+}
+// fixed mine layout used by setup tests (a legal "all three on row 4" layout)
+const OLD_MINES = [{ row: 4, col: 2 }, { row: 4, col: 4 }, { row: 4, col: 6 }];
+const [M1, M2, M3] = OLD_MINES;
+async function newMatch(page, opts) {
+  const withMines = opts && opts.setup && !opts.mines ? { ...opts, mines: OLD_MINES } : opts;
+  return page.evaluate(async (o) => {
+    await window.oreheart.newMatch(o);
+    return await window.oreheart.getState();
+  }, withMines);
+}
+async function start(page, opts) {
+  await openTest(page);
+  return newMatch(page, opts);
+}
+const getState = (page) => page.evaluate(async () => await window.oreheart.getState());
+const legal = (page) => page.evaluate(async () => await window.oreheart.legalActions());
+const act = (page, a) => page.evaluate(async (x) => await window.oreheart.act(x), a);
+async function done(page, n = 1) {
+  for (let i = 0; i < n; i++) {
+    const r = await act(page, { type: 'done' });
+    expect(r.ok, JSON.stringify(r)).toBe(true);
+  }
+}
+// ends the active player's whole turn (Deploy -> Action -> next turn)
+const passTurn = (page) => done(page, 2);
+const at = (s, row, col) => s.board.creatures.find((c) => c.row === row && c.col === col);
+const handUid = (s, side, cardId) => s.players[side].hand.find((c) => c.cardId === cardId).uid;
+const total = (n) => n; // Revision 7: Flow and Bank are plain numbers
+const ZERO = 0;
+const sameTarget = (t, row, col) => t && t.row === row && t.col === col;
+const SHARDS = Array(12).fill('soul-shard');
+// first visit outside test mode shows the tutorial offer; dismiss it
+async function openMenu(page) {
+  await page.goto('/');
+  const offer = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
+  await expect(offer).toBeVisible();
+  await offer.getByRole('button', { name: 'Skip' }).click();
+  await expect(offer).toBeHidden();
+}
+
+const LIMITED = new Set([
+  'goblin-bomber', 'goblin-sneak', 'wolf-rider', 'grubnaks-big-boss-troll',
+  'clockwork-beetle', 'gnome-illusionist', 'gyrocopter-ace', 'the-great-steam-golem',
+  'ironhammer-berserker', 'brewmaster', 'ram-rider', 'queen-brunhilda-stonebeard',
+  'overclocked-conduit', 'crystal-drunk-delver', 'fireball', 'battle-cry', 'meteor-strike',
+  'second-wind', 'hold-it', 'spell-snap', 'mirror-hex', 'glowing-geode', 'heart-of-the-fallen', 'motherlode',
+]);
+const NEW_BY_FACTION = {
+  grubnak: ['rotgut-grenadier', 'shiv-rat', 'skullbasher-rusher', 'junk-shaman', 'blastrat-sapper'],
+  sproingle: ['hexwright-apprentice', 'gearward-sentinel', 'runic-siphoner', 'phase-stalker', 'glyphshield-warden'],
+  borgo: ['oathbound-pikeman', 'deepforge-crossbowman', 'barrelback-courier', 'rune-splitter', 'grimhold-ravager'],
+};
+const CRYSTALS = new Set(['soul-shard', 'crystal-cluster', 'glowing-geode', 'heart-of-the-fallen', 'motherlode']);
+const SPELLS = new Set(['prospectors-prayer', 'tunnel-rush', 'fireball', 'battle-cry', 'meteor-strike', 'healing-light',
+  'shield-bubble', 'second-wind', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex']);
+const CREATURES = ['goblin-scrounger', 'goblin-scrapper', 'goblin-slinger', 'goblin-bomber', 'goblin-sneak', 'wolf-rider',
+  'grubnaks-big-boss-troll', 'gnome-prospector', 'gnome-tinker', 'spark-gnome', 'clockwork-beetle', 'gnome-illusionist',
+  'gyrocopter-ace', 'the-great-steam-golem', 'dwarf-miner', 'shieldbeard', 'axe-thrower', 'ironhammer-berserker',
+  'brewmaster', 'ram-rider', 'queen-brunhilda-stonebeard', 'shard-guzzler', 'overclocked-conduit', 'crystal-drunk-delver'];
+
+// ---------- AC1 ----------
+test('AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await openMenu(page);
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+  const buttons = page.getByRole('button');
+  await expect(buttons).toHaveCount(5);
+  const names = (await buttons.allInnerTexts()).map((t) => t.trim());
+  expect(names).toEqual(['Play', 'Tutorial', 'Decks', 'Rules', 'Settings']);
+  await expect(page.getByRole('button', { name: /play/i })).toHaveCount(1);
+  await expect(page.getByRole('link', { name: /play/i })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('AC1: starting a test-mode match causes no page errors', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await start(page, { ai: false, skipMulligan: true, firstPlayer: 'player' });
+  await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
+  await page.waitForTimeout(1000);
+  expect(errors).toEqual([]);
+});
+
+// ---------- AC2 ----------
+test('AC2: menu -> choose Commander -> mulligan -> match', async ({ page }) => {
+  await page.goto('/?test=1&seed=7');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Thane Borgo Gravelgrim' })).toBeVisible();
+  await page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable' }).click();
+  await expect(page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Easy', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Normal', exact: true }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  const mull = page.getByRole('dialog', { name: 'Mulligan' });
+  await expect(mull).toBeVisible();
+  await mull.getByRole('button', { name: 'Keep Hand' }).click();
+  await expect(mull).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
+  const s = await getState(page);
+  expect(s.players.player.commanderId).toBe('sproingle');
+  expect(s.players.player.faction).toBe('gnomes');
+  await expect(page.getByRole('button', { name: /^(Goblins|Gnomes|Dwarves)$/ })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /faction/i })).toHaveCount(0);
+});
+
+// ---------- AC3 ----------
+test('AC3: Rules page with pictures and Back', async ({ page }) => {
+  await openMenu(page);
+  await page.getByRole('button', { name: 'Rules', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
+  expect(await page.getByRole('img').count()).toBeGreaterThanOrEqual(1);
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+});
+
+// ---------- AC4 ----------
+test('AC4: Settings graphics toggle switches and persists', async ({ page }) => {
+  await openMenu(page);
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await page.getByRole('button', { name: 'Graphics: High' }).click();
+  await expect(page.getByRole('button', { name: 'Graphics: Low' })).toBeVisible();
+  await page.reload();
+  const settingsBtn = page.getByRole('button', { name: 'Settings', exact: true });
+  if (await settingsBtn.isVisible()) await settingsBtn.click();
+  await expect(page.getByRole('button', { name: 'Graphics: Low' })).toBeVisible();
+  await page.getByRole('button', { name: 'Graphics: Low' }).click();
+  await expect(page.getByRole('button', { name: 'Graphics: High' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+});
+
+// ---------- AC5 ----------
+test('AC5: window.oreheart only in test mode; seeds are deterministic', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeAttached();
+  expect(await page.evaluate(() => typeof window.oreheart)).toBe('undefined');
+  const hands = async (seedUrl, opts) => {
+    await openTest(page, seedUrl);
+    const s = await newMatch(page, opts);
+    return [s.players.player.hand.map((c) => c.cardId), s.players.opponent.hand.map((c) => c.cardId)];
+  };
+  expect(await hands(42, { ai: false, firstPlayer: 'player' })).toEqual(await hands(42, { ai: false, firstPlayer: 'player' }));
+  expect(await hands(1, { ai: false, firstPlayer: 'player', seed: 99 })).toEqual(await hands(5, { ai: false, firstPlayer: 'player', seed: 99 }));
+});
+
+// ---------- AC6 ----------
+for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
+  test(`AC6: ${cmd} starter deck is 40 creatures, 6 spells (with Snuff Out), 4 Crystal cards`, async ({ page }) => {
+    const s = await start(page, { playerCommander: cmd, ai: false, firstPlayer: 'player' });
+    expect(s.phase).toBe('mulligan');
+    const p = s.players.player;
+    expect(p.health).toBe(20);
+    expect(s.players.opponent.health).toBe(20);
+    expect(p.hand.length).toBe(5);
+    const all = [...p.deck, ...p.hand].map((c) => c.cardId);
+    expect(all.length).toBe(50);
+    expect(all.filter((id) => CRYSTALS.has(id)).length).toBe(4);
+    expect(all.filter((id) => SPELLS.has(id)).length).toBe(6);
+    expect(all.includes('fizzle')).toBe(true);
+    expect(all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id)).length).toBe(40);
+    const counts = {};
+    for (const id of all) counts[id] = (counts[id] || 0) + 1;
+    for (const [id, n] of Object.entries(counts)) if (LIMITED.has(id)) expect(n, id).toBeLessThanOrEqual(3);
+    const basic = { grubnak: 'goblin-scrounger', sproingle: 'gnome-prospector', borgo: 'dwarf-miner' }[cmd];
+    expect(counts[basic]).toBe(5);
+    const smith = { grubnak: 'goblin-smith-miner', sproingle: 'gnome-smith-miner', borgo: 'dwarf-smith-miner' }[cmd];
+    expect(counts[smith]).toBe(3);
+    for (const [id, n] of Object.entries(counts)) if (id !== basic && id !== smith) expect(n, id).toBeLessThanOrEqual(4);
+    for (const id of NEW_BY_FACTION[cmd]) expect(counts[id] || 0, id).toBeGreaterThanOrEqual(1);
+    const creatureIds = all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id));
+    const costs = await page.evaluate(async (ids) => {
+      const out = [];
+      for (const id of ids) out.push((await window.oreheart.getCard(id)).cost);
+      return out;
+    }, creatureIds);
+    expect(costs.filter((c) => c <= 4).length).toBeGreaterThanOrEqual(16);
+  });
+}
+
+// ---------- AC7 ----------
+test('AC7: opening — start with 0 crystals, pool resets to flow, extra card for second player', async ({ page }) => {
+  let s = await start(page, { playerCommander: 'grubnak', opponentCommander: 'borgo', ai: false, firstPlayer: 'player' });
+  expect(s.phase).toBe('mulligan');
+  expect(s.priority).toBe('player');
+  expect((await act(page, { type: 'mulligan', uids: [] })).ok).toBe(true);
+  s = await getState(page);
+  if (s.phase === 'mulligan') {
+    expect(s.priority).toBe('opponent');
+    expect((await act(page, { type: 'mulligan', uids: [] })).ok).toBe(true);
+    s = await getState(page);
+  }
+  expect(s.turn).toBe(1);
+  expect(s.activePlayer).toBe('player');
+  expect(s.phase).toBe('deploy');
+  expect(s.players.player.hand.length).toBe(5);
+  expect(s.players.opponent.hand.length).toBe(6);
+  expect(s.players.player.crystals).toEqual(ZERO);
+  expect(s.players.opponent.crystals).toEqual(ZERO);
+  await passTurn(page);
+  s = await getState(page);
+  expect(s.turn).toBe(2);
+  expect(s.activePlayer).toBe('opponent');
+  expect(s.phase).toBe('deploy');
+  expect(s.players.opponent.hand.length).toBe(7);
+  expect(s.players.opponent.crystals).toEqual(ZERO);
+  await passTurn(page);
+  s = await getState(page);
+  expect(s.turn).toBe(3);
+  expect(s.players.player.crystals).toEqual(ZERO); // no flow, no Stronghold income
+  const cfg = await page.evaluate(async () => await window.oreheart.getConfig());
+  expect(cfg.startingCrystals).toBe(0);
+  expect(cfg.poolCap).toBe(16);
+  expect(cfg.gathererFlow).toBe(2);
+  expect(cfg.fighterFlow).toBe(1);
+  expect(cfg.underdogBonus).toBe(2);
+  expect(cfg.strongholdIncome || 0).toBe(0);
+  expect(cfg.phaseTimerSeconds).toBe(50);
+  expect(cfg.timerHiddenSeconds).toBe(40);
+  expect(cfg.countdownSeconds).toBe(10);
+  expect(cfg.boardWidth).toBe(13);
+  expect(cfg.boardHeight).toBe(7);
+  expect(cfg.mineCount).toBe(3);
+});
+
+// ---------- AC8 ----------
+test('AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy turn', async ({ page }) => {
+  await start(page, { ai: false, setup: { playerCrystals: 4, playerBank: 2, playerHealth: 17, opponentHealth: 12 } });
+  const phase = page.getByLabel('Current phase', { exact: true });
+  const timer = page.getByLabel('Phase timer', { exact: true });
+  await expect(phase).toContainText('Deploy');
+  await expect(phase).toContainText(/Your turn/i);
+  await expect(timer).toBeHidden();
+  await expect(page.getByLabel('Your Flow crystals', { exact: true })).toHaveText(/\b4\b/);
+  await expect(page.getByLabel('Your Bank crystals', { exact: true })).toHaveText(/\b2\b/);
+  // Revision 7: one crystal type, no per-color counters
+  await expect(page.getByLabel(/^Your (green|blue|purple|white) crystals$/)).toHaveCount(0);
+  await expect(page.getByLabel('Your Commander health', { exact: true })).toContainText('17');
+  await expect(page.getByLabel('Enemy Commander health', { exact: true })).toContainText('12');
+  const doneBtn = page.getByRole('button', { name: 'Done' });
+  await doneBtn.click();
+  await expect(phase).toContainText('Action');
+  await expect(timer).toBeHidden();
+  expect((await getState(page)).phase).toBe('action');
+  await doneBtn.click();
+  await expect(phase).toContainText(/Enemy turn/i);
+  expect((await getState(page)).activePlayer).toBe('opponent');
+});
+
+// ---------- AC9 (Crystal Flow) ----------
+test('AC9: example (a) — 1 Gemsinger Miner vs 2 Grubgrabber Miners: enemy owns the mine, enemy gets 4, you get 1 (+2 underdog)', async ({ page }) => {
+  let s = await start(page, {
+    ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak',
+    setup: {
+      firstPlayer: 'opponent', playerDeck: SHARDS, opponentDeck: SHARDS,
+      board: [
+        { cardId: 'gnome-prospector', owner: 'player', row: 3, col: 2, minedMine: M1 },
+        { cardId: 'goblin-scrounger', owner: 'opponent', row: 5, col: 1, minedMine: M1 },
+        { cardId: 'goblin-scrounger', owner: 'opponent', row: 5, col: 2, minedMine: M1 },
+      ],
+    },
+  });
+  expect(s.sites[0].controller).toBe('opponent');
+  expect(s.sites.map((x) => x.color)).toEqual(['green', 'white', 'white']);
+  expect(s.players.opponent.flow).toBe(4);
+  expect(s.players.player.flow).toBe(1); // half at an enemy-owned mine
+  expect(s.sites[0].flow).toEqual({ player: 1, opponent: 4 });
+  await passTurn(page); // -> player's turn 2
+  s = await getState(page);
+  expect(s.activePlayer).toBe('player');
+  expect(s.players.player.crystals).toBe(3); // 1 mined + 2 underdog
+  await passTurn(page); // -> opponent's turn 3
+  s = await getState(page);
+  expect(s.players.opponent.crystals).toBe(4);
+});
+
+test('AC9: one crystal type — every card costs plain crystals, Flow is a single number', async ({ page }) => {
+  let s = await start(page, {
+    ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak',
+    setup: { playerHand: ['gnome-prospector', 'gnome-prospector', 'spark-gnome'], playerCrystals: 6 },
+  });
+  expect(typeof s.players.player.crystals).toBe('number');
+  expect(typeof s.players.player.bank).toBe('number');
+  expect(typeof s.players.player.flow).toBe('number');
+  const [p1] = s.players.player.hand.filter((c) => c.cardId === 'gnome-prospector').map((c) => c.uid);
+  expect((await act(page, { type: 'summon', uid: p1, row: 7, col: 1 })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals).toBe(5);
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'spark-gnome'), row: 7, col: 2 })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.crystals).toBe(0); // 6 - 1 - 5
+  // a Gnome player can pay a Goblin card at full value (decks may mix factions)
+  s = await newMatch(page, { ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { playerHand: ['goblin-slinger'], playerCrystals: 4 } });
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals).toBe(0);
+});
+
+test('AC9: example (b) — 2 vs 2 tie: mine is neutral, each side gets the full 4', async ({ page }) => {
+  let s = await start(page, {
+    ai: false, playerCommander: 'grubnak', opponentCommander: 'sproingle',
+    setup: {
+      firstPlayer: 'opponent', playerDeck: SHARDS, opponentDeck: SHARDS,
+      playerHand: ['goblin-scrounger', 'goblin-scrounger', 'goblin-scrounger', 'goblin-scrounger', 'goblin-scrounger', 'battle-cry'],
+      board: [
+        { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 1, minedMine: M1 },
+        { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 2, minedMine: M1 },
+        { cardId: 'gnome-prospector', owner: 'opponent', row: 5, col: 1, minedMine: M1 },
+        { cardId: 'gnome-prospector', owner: 'opponent', row: 5, col: 2, minedMine: M1 },
+      ],
+    },
+  });
+  expect(s.sites[0].controller).toBe(null);
+  expect(s.sites[0].color).toBe('white');
+  expect(s.players.player.flow).toBe(4);
+  expect(s.players.opponent.flow).toBe(4);
+  await passTurn(page); // -> player's turn 2
+  s = await getState(page);
+  expect(s.players.player.crystals).toBe(4); // no underdog: the enemy owns no mine
+  const bc = handUid(s, 'player', 'battle-cry');
+  expect((await legal(page)).some((a) => a.type === 'cast' && a.uid === bc)).toBe(true);
+  const g = s.players.player.hand.filter((c) => c.cardId === 'goblin-scrounger').map((c) => c.uid);
+  for (let i = 0; i < 4; i++) expect((await act(page, { type: 'summon', uid: g[i], row: 7, col: i + 1 })).ok).toBe(true); // 1 each (Grubnak minimum 1)
+  expect((await getState(page)).players.player.crystals).toBe(0);
+  expect((await act(page, { type: 'summon', uid: g[4], row: 7, col: 5 })).ok).toBe(false);
+});
+
+test('AC9: mining at an enemy-owned mine pays half — Miner 1, Fighter 0; own or neutral pays full', async ({ page }) => {
+  let s = await start(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: {
+    playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: [
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 5, col: 1, minedMine: M1 },
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 5, col: 2, minedMine: M1 },
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 5, col: 3, minedMine: M1 },
+      { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 1 },
+      { cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 2 },
+      { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 4 },
+    ],
+  } });
+  expect(s.sites[0].controller).toBe('opponent');
+  await done(page); // -> action
+  expect((await act(page, { type: 'mine', creatureUid: at(s, 3, 1).uid, row: 4, col: 2 })).ok).toBe(true);
+  expect((await act(page, { type: 'mine', creatureUid: at(s, 3, 2).uid, row: 4, col: 2 })).ok).toBe(true);
+  expect((await act(page, { type: 'mine', creatureUid: at(s, 3, 4).uid, row: 4, col: 4 })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.sites[0].controller).toBe('opponent'); // 3 enemy miners vs 2
+  expect(s.sites.map((x) => x.flow.player)).toEqual([1, 2, 0]); // Miner 1 + Fighter 0 at the enemy mine; Miner 2 at the neutral one
+  expect(s.players.player.flow).toBe(3);
+});
+
+test('AC9: examples (c) and (d) — pool is set to flow, unspent crystals last through the enemy turn', async ({ page }) => {
+  let s = await start(page, {
+    ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak',
+    setup: {
+      playerDeck: SHARDS, opponentDeck: SHARDS,
+      board: [
+        { cardId: 'gnome-prospector', owner: 'player', row: 3, col: 1, minedMine: M1 },
+        { cardId: 'gnome-prospector', owner: 'player', row: 4, col: 1, minedMine: M1 },
+        { cardId: 'gnome-prospector', owner: 'player', row: 5, col: 1, minedMine: M1 },
+        { cardId: 'goblin-scrapper', owner: 'opponent', row: 2, col: 1 },
+      ],
+    },
+  });
+  expect(s.sites[0].color).toBe('blue');
+  expect(s.players.player.flow).toBe(6);
+  await passTurn(page);
+  await passTurn(page); // player's turn 3
+  s = await getState(page);
+  expect(s.turn).toBe(3);
+  expect(s.players.player.crystals).toEqual(6);
+  expect(s.players.player.flow).toEqual(ZERO); // last turn's mining is paid out; nobody has mined yet
+  await done(page); // -> action; the Miner on row 3 attacks the Scrapper and is defeated
+  const m2 = at(s, 4, 1).uid;
+  const m3 = at(s, 5, 1).uid;
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 3, 1).uid, target: { row: 2, col: 1 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 3, 1)).toBeUndefined();
+  // the two remaining Miners mine again
+  expect((await act(page, { type: 'mine', creatureUid: m2, row: 4, col: 2 })).ok).toBe(true);
+  expect((await act(page, { type: 'mine', creatureUid: m3, row: 4, col: 2 })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.flow).toBe(4);
+  await done(page); // -> opponent's turn 4
+  s = await getState(page);
+  expect(s.activePlayer).toBe('opponent');
+  expect(s.players.player.crystals).toEqual(6); // still usable on the enemy's turn
+  await passTurn(page); // player's turn 5
+  s = await getState(page);
+  expect(s.players.player.crystals).toEqual(4); // reset to flow, not 6 + 4
+});
+
+test('AC9: example (e) — the pool never goes above 16', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { playerHand: ['crystal-cluster'], playerCrystals: 15 } });
+  expect((await act(page, { type: 'playCrystal', uid: s.players.player.hand[0].uid })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.crystals).toEqual(15); // Crystal cards go to the Bank (R6.4)
+  expect(s.players.player.bank).toEqual(2);
+  const spots = [[3, 1], [4, 1], [5, 1], [3, 2], [5, 2], [3, 6], [5, 6], [3, 7], [4, 7], [5, 7]];
+  await newMatch(page, { ai: false, setup: {
+    playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: spots.map(([row, col]) => ({ cardId: 'goblin-scrounger', owner: 'player', row, col, minedMine: col <= 3 ? M1 : M3 })),
+  } });
+  await passTurn(page);
+  await passTurn(page);
+  s = await getState(page);
+  expect(s.activePlayer).toBe('player');
+  expect(s.players.player.crystals).toEqual(16); // flow 20, capped
+});
+
+// ---------- AC39 ----------
+test('AC39: mining is an action — Gatherer 2, Fighter 1, nothing without mining; pool set to last turn\'s mining', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: {
+    playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: [
+      { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1 },
+      { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 3 }, // touches mines (4,2) and (4,4)
+      { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 6 }, // next to (4,6)
+    ],
+  } });
+  expect(s.sites.map((x) => [x.row, x.col])).toEqual([[4, 2], [4, 4], [4, 6]]);
+  expect(s.sites.map((x) => x.color)).toEqual(['white', 'white', 'white']); // standing nearby doesn't count
+  expect(s.players.player.flow).toEqual(ZERO);
+  await done(page); // -> action
+  const g = at(s, 5, 1).uid;
+  const f = at(s, 5, 3).uid;
+  const idle = at(s, 3, 6).uid;
+  let acts = await legal(page);
+  const canMine = (uid, row, col) => acts.some((a) => a.type === 'mine' && a.creatureUid === uid && a.row === row && a.col === col);
+  expect(canMine(g, 4, 2)).toBe(true);
+  expect(canMine(g, 4, 4)).toBe(false); // not adjacent
+  expect(canMine(f, 4, 2)).toBe(true);
+  expect(canMine(f, 4, 4)).toBe(true); // between two mines: the player chooses
+  expect((await act(page, { type: 'mine', creatureUid: g, row: 4, col: 4 })).ok).toBe(false);
+  expect((await act(page, { type: 'mine', creatureUid: g, row: 4, col: 2 })).ok).toBe(true);
+  expect((await act(page, { type: 'mine', creatureUid: f, row: 4, col: 4 })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 5, 1).hasMined).toBe(true);
+  expect(at(s, 5, 1).minedMine).toMatchObject({ row: 4, col: 2 });
+  expect(s.players.player.flow).toEqual(3); // Gatherer 2 + Fighter 1; the idle Scrounger makes 0
+  expect(s.sites.map((x) => x.flow.player)).toEqual([2, 1, 0]);
+  // mining is the creature's one action
+  acts = await legal(page);
+  expect(acts.some((a) => ['move', 'attack', 'mine'].includes(a.type) && a.creatureUid === g)).toBe(false);
+  expect((await act(page, { type: 'move', creatureUid: g, row: 6, col: 1 })).ok).toBe(false);
+  // a creature that moved can't mine
+  expect((await act(page, { type: 'move', creatureUid: idle, row: 3, col: 7 })).ok).toBe(true);
+  expect((await act(page, { type: 'mine', creatureUid: idle, row: 4, col: 6 })).ok).toBe(false);
+  const label = page.getByLabel('Grubgrabber Miner, row 5, column 1', { exact: true });
+  await expect(label).toHaveAttribute('data-mining', 'true');
+  await expect(label).toHaveAttribute('data-acted', 'true');
+  await done(page); // -> opponent's turn 2
+  s = await getState(page);
+  expect(s.activePlayer).toBe('opponent');
+  expect(s.sites.map((x) => x.color)).toEqual(['green', 'green', 'white']); // colored by miners only
+  expect(s.sites[0].controller).toBe('player');
+  expect(s.players.player.crystals).toEqual(ZERO); // paid out on the player's own turn
+  await passTurn(page); // -> player's turn 3
+  s = await getState(page);
+  expect(s.turn).toBe(3);
+  expect(s.players.player.crystals).toEqual(3); // set to what was mined
+  expect(s.players.player.flow).toEqual(ZERO);
+  await expect(label).toHaveAttribute('data-mining', 'false');
+  // nobody mines on turn 3 -> the pool on turn 5 is 0 and the mines are white again
+  await passTurn(page);
+  await passTurn(page);
+  s = await getState(page);
+  expect(s.turn).toBe(5);
+  expect(s.players.player.crystals).toEqual(ZERO);
+  expect(s.sites.map((x) => x.color)).toEqual(['white', 'white', 'white']);
+});
+
+// ---------- AC10 ----------
+test('AC10: back-row summoning, Grubnak discount, summoning sickness, Mangewolf Rider', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'grubnak',
+    setup: { playerHand: ['goblin-scrapper', 'goblin-scrounger', 'wolf-rider'], playerCrystals: 20 },
+  });
+  const scrapper = handUid(s, 'player', 'goblin-scrapper');
+  const scrounger = handUid(s, 'player', 'goblin-scrounger');
+  const wolf = handUid(s, 'player', 'wolf-rider');
+  const summons = (await legal(page)).filter((a) => a.type === 'summon');
+  expect(summons.length).toBeGreaterThan(0);
+  expect(summons.every((a) => a.row === 7)).toBe(true); // back row only; no Tunnel (no sites held)
+  expect(summons.some((a) => a.uid === scrapper && a.row === 7 && a.col === 1)).toBe(true);
+  expect(summons.some((a) => a.row === 7 && a.col === 7)).toBe(false); // stronghold
+  expect(summons.some((a) => a.uid === scrounger && a.row === 3)).toBe(false);
+  expect((await act(page, { type: 'summon', uid: scrapper, row: 6, col: 1 })).ok).toBe(false);
+  expect((await act(page, { type: 'summon', uid: scrapper, row: 7, col: 1 })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 7, 1).cardId).toBe('goblin-scrapper');
+  expect(at(s, 7, 1).summonedThisTurn).toBe(true);
+  expect(s.players.player.crystals).toBe(15); // Scrapper 6 - 1 Grubnak
+  expect((await act(page, { type: 'summon', uid: wolf, row: 7, col: 2 })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.crystals).toBe(7); // Mangewolf Rider 9 - 1
+  await done(page); // -> action
+  const acts = await legal(page);
+  expect(acts.some((a) => (a.type === 'move' || a.type === 'attack') && a.creatureUid === at(s, 7, 1).uid)).toBe(false);
+  expect(acts.some((a) => a.type === 'move' && a.creatureUid === at(s, 7, 2).uid)).toBe(true);
+});
+
+test('AC10: row in front only when the back row is full; nothing when both are full', async ({ page }) => {
+  const row7 = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13].map((col, i) => ({ cardId: 'goblin-scrapper', owner: i === 0 ? 'opponent' : 'player', row: 7, col }));
+  let s = await start(page, { ai: false, setup: { playerHand: ['goblin-slinger'], playerCrystals: 5, board: row7 } });
+  let summons = (await legal(page)).filter((a) => a.type === 'summon');
+  expect(summons.some((a) => a.row === 6 && a.col === 1)).toBe(true);
+  expect(summons.every((a) => a.row === 6)).toBe(true);
+  const row6 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((col) => ({ cardId: 'goblin-scrapper', owner: 'player', row: 6, col }));
+  s = await newMatch(page, { ai: false, setup: { playerHand: ['goblin-slinger'], playerCrystals: 5, board: [...row7, ...row6] } });
+  summons = (await legal(page)).filter((a) => a.type === 'summon');
+  expect(summons.length).toBe(0);
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 5, col: 1 })).ok).toBe(false);
+});
+
+test('AC10: Unique card limited to one on the battlefield; Borgo +1 Health', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'borgo',
+    setup: {
+      playerHand: ['queen-brunhilda-stonebeard', 'shieldbeard', 'dwarf-miner'],
+      playerCrystals: 20,
+      board: [{ cardId: 'queen-brunhilda-stonebeard', owner: 'player', row: 6, col: 7 }],
+    },
+  });
+  const queen = handUid(s, 'player', 'queen-brunhilda-stonebeard');
+  expect((await legal(page)).some((a) => a.type === 'summon' && a.uid === queen)).toBe(false);
+  expect((await act(page, { type: 'summon', uid: queen, row: 7, col: 1 })).ok).toBe(false);
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'shieldbeard'), row: 7, col: 2 })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 7, 2).maxHealth).toBe(5);
+  expect(at(s, 7, 2).health).toBe(5);
+  expect(at(s, 6, 7).maxHealth).toBe(7);
+  expect(at(s, 7, 2).attack).toBe(2);
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'dwarf-miner'), row: 7, col: 3 })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 7, 3).attack).toBe(1);
+  expect(at(s, 7, 3).maxHealth).toBe(2); // Stonebreaker Miner 1/1 + Borgo = 1/2
+  expect(at(s, 7, 3).health).toBe(2);
+});
+
+// ---------- AC11 ----------
+test('AC11: Tunnel only while more mines are in the enemy color', async ({ page }) => {
+  const hand = { playerHand: ['goblin-scrounger'], playerCrystals: 5 };
+  let s = await start(page, { ai: false, setup: { ...hand } });
+  let summons = (await legal(page)).filter((a) => a.type === 'summon');
+  expect(summons.some((a) => a.row === 3 && a.col === 3)).toBe(false);
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 3, col: 3 })).ok).toBe(false);
+
+  s = await newMatch(page, { ai: false, setup: { ...hand, board: [
+    { cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1, minedMine: M1 },
+    { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 7, minedMine: M3 },
+  ] } });
+  expect(s.sites.map((x) => x.controller)).toEqual(['opponent', null, 'player']);
+  expect(s.sites.map((x) => x.color)).toEqual(['blue', 'white', 'green']);
+  summons = (await legal(page)).filter((a) => a.type === 'summon');
+  expect(summons.some((a) => a.row === 3 && a.col === 3)).toBe(false); // 1 vs 1: equal
+
+  s = await newMatch(page, { ai: false, setup: { ...hand, board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1, minedMine: M1 }] } });
+  summons = (await legal(page)).filter((a) => a.type === 'summon');
+  expect(summons.some((a) => a.row === 3 && a.col === 3)).toBe(true);
+  expect(summons.some((a) => a.row === 5 && a.col === 4)).toBe(true);
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 3, col: 3 })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 3, 3).cardId).toBe('goblin-scrounger');
+});
+
+// ---------- AC12 ----------
+test('AC12: movement in 8 directions, move 2 only for move-2 creatures', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    setup: { board: [
+      { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 2 },
+      { cardId: 'wolf-rider', owner: 'player', row: 6, col: 6 },
+      { cardId: 'goblin-slinger', owner: 'player', row: 5, col: 2 },
+      { cardId: 'gnome-tinker', owner: 'opponent', row: 7, col: 1 },
+    ] },
+  });
+  await done(page); // -> action
+  const scrap = at(s, 6, 2).uid;
+  const wolf = at(s, 6, 6).uid;
+  const moves = (await legal(page)).filter((a) => a.type === 'move');
+  expect(moves.some((a) => a.creatureUid === scrap && a.row === 5 && a.col === 1)).toBe(true);
+  expect(moves.some((a) => a.creatureUid === scrap && a.row === 5 && a.col === 2)).toBe(true); // own creature: a legal swap
+  expect(moves.some((a) => a.creatureUid === scrap && a.row === 7 && a.col === 1)).toBe(false); // enemy: never
+  expect(moves.some((a) => a.creatureUid === scrap && a.row === 4 && a.col === 2)).toBe(false);
+  expect(moves.some((a) => a.creatureUid === wolf && a.row === 4 && a.col === 6)).toBe(false);
+  expect(moves.some((a) => a.creatureUid === wolf && a.row === 4 && a.col === 7)).toBe(true);
+  expect((await act(page, { type: 'move', creatureUid: scrap, row: 4, col: 1 })).ok).toBe(false);
+  expect((await act(page, { type: 'move', creatureUid: scrap, row: 6, col: 3 })).ok).toBe(true);
+  expect((await act(page, { type: 'move', creatureUid: wolf, row: 4, col: 7 })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 6, 3).uid).toBe(scrap);
+  expect(at(s, 4, 7).uid).toBe(wolf);
+  expect((await act(page, { type: 'move', creatureUid: scrap, row: 6, col: 4 })).ok).toBe(false);
+});
+
+test('AC12: each creature moves OR attacks, never both; Thunderhorn Ram Rider (Charge) can do both', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'borgo',
+    setup: { board: [
+      { cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 3 },
+      { cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 5 },
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 2, col: 4 },
+      { cardId: 'ram-rider', owner: 'player', row: 4, col: 7 },
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 2, col: 6 },
+    ] },
+  });
+  await done(page);
+  const a = at(s, 3, 3).uid;
+  const b = at(s, 3, 5).uid;
+  const ram = at(s, 4, 7).uid;
+  // A moves (still next to the Miner) -> may no longer attack
+  expect((await act(page, { type: 'move', creatureUid: a, row: 2, col: 3 })).ok).toBe(true);
+  let acts = await legal(page);
+  expect(acts.some((x) => x.type === 'attack' && x.creatureUid === a)).toBe(false);
+  expect((await act(page, { type: 'attack', creatureUid: a, target: { row: 2, col: 4 } })).ok).toBe(false);
+  // B attacks -> may no longer move
+  expect((await act(page, { type: 'attack', creatureUid: b, target: { row: 2, col: 4 } })).ok).toBe(true);
+  acts = await legal(page);
+  expect(acts.some((x) => x.type === 'move' && x.creatureUid === b)).toBe(false);
+  expect((await act(page, { type: 'move', creatureUid: b, row: 4, col: 5 })).ok).toBe(false);
+  // Thunderhorn Ram Rider moves next to the second Miner, then attacks
+  expect((await act(page, { type: 'move', creatureUid: ram, row: 3, col: 7 })).ok).toBe(true);
+  acts = await legal(page);
+  expect(acts.some((x) => x.type === 'attack' && x.creatureUid === ram && sameTarget(x.target, 2, 6))).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: ram, target: { row: 2, col: 6 } })).ok).toBe(true);
+});
+
+// ---------- AC13 ----------
+test('AC13: simultaneous hits — 1/2 beats 1/1, two 1/1s defeat each other', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'sproingle',
+    opponentCommander: 'sproingle',
+    setup: { board: [
+      { cardId: 'gnome-tinker', owner: 'player', row: 5, col: 1, damage: 1 }, // 1/3 damaged to 1/2
+      { cardId: 'gnome-prospector', owner: 'opponent', row: 4, col: 1 }, // 1/1
+      { cardId: 'gnome-prospector', owner: 'player', row: 5, col: 7 },
+      { cardId: 'gnome-prospector', owner: 'opponent', row: 4, col: 7 },
+    ] },
+  });
+  expect(at(s, 5, 1).health).toBe(2);
+  expect(at(s, 4, 1).health).toBe(1);
+  await done(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 1).uid, target: { row: 4, col: 1 } })).ok).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 7).uid, target: { row: 4, col: 7 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 1)).toBeUndefined();
+  expect(at(s, 5, 1).health).toBe(1); // struck back even though defeated
+  expect(at(s, 4, 7)).toBeUndefined();
+  expect(at(s, 5, 7)).toBeUndefined();
+  expect(s.players.opponent.discard.filter((c) => c.cardId === 'gnome-prospector').length).toBe(2);
+  expect(s.players.player.discard.filter((c) => c.cardId === 'gnome-prospector').length).toBe(1);
+});
+
+test('AC13: Shieldbeard vs Scrapper — type advantage defeats it, strike back still lands', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'borgo',
+    opponentCommander: 'grubnak',
+    setup: { board: [
+      { cardId: 'shieldbeard', owner: 'player', row: 5, col: 4 },
+      { cardId: 'goblin-scrapper', owner: 'opponent', row: 4, col: 3 },
+    ] },
+  });
+  await done(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 4).uid, target: { row: 4, col: 3 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 3)).toBeUndefined();
+  expect(at(s, 5, 4).health).toBe(3); // 4 + 1 Borgo - 2 strike back
+  expect(s.players.opponent.discard.some((c) => c.cardId === 'goblin-scrapper')).toBe(true);
+});
+
+test('AC13: strike back with type advantage defeats the attacker', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'grubnak',
+    opponentCommander: 'borgo',
+    setup: { board: [
+      { cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 5 },
+      { cardId: 'shieldbeard', owner: 'opponent', row: 2, col: 5 },
+    ] },
+  });
+  await done(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 3, 5).uid, target: { row: 2, col: 5 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 2, 5).health).toBe(3); // 5 - 2
+  expect(at(s, 3, 5)).toBeUndefined(); // strike back 2 + 1 = 3
+  expect(s.players.player.discard.some((c) => c.cardId === 'goblin-scrapper')).toBe(true);
+});
+
+test('AC13: Guard forces adjacent melee attackers to hit it', async ({ page }) => {
+  const s = await start(page, {
+    ai: false,
+    opponentCommander: 'borgo',
+    setup: { board: [
+      { cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 4 },
+      { cardId: 'shieldbeard', owner: 'opponent', row: 2, col: 3 },
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 2, col: 5 },
+    ] },
+  });
+  await done(page);
+  const atk = (await legal(page)).filter((a) => a.type === 'attack' && a.creatureUid === at(s, 3, 4).uid);
+  expect(atk.some((a) => sameTarget(a.target, 2, 3))).toBe(true);
+  expect(atk.some((a) => sameTarget(a.target, 2, 5))).toBe(false);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 3, 4).uid, target: { row: 2, col: 5 } })).ok).toBe(false);
+});
+
+test('AC13: Ranged hits anything within 2 spaces, over creatures, with no strike back', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'borgo',
+    opponentCommander: 'borgo',
+    setup: { board: [
+      { cardId: 'axe-thrower', owner: 'player', row: 5, col: 7 },
+      { cardId: 'shieldbeard', owner: 'opponent', row: 4, col: 7 }, // in between
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 3, col: 7 }, // 2 straight ahead, behind the Shieldbeard
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 3, col: 6 }, // knight-move angle
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 2, col: 7 }, // 3 away: out of range
+      { cardId: 'goblin-slinger', owner: 'player', row: 3, col: 9 }, // 2 from the enemy Stronghold (1,7)
+    ] },
+  });
+  await done(page);
+  const axe = at(s, 5, 7).uid;
+  const acts = (await legal(page)).filter((a) => a.type === 'attack');
+  expect(acts.some((a) => a.creatureUid === axe && sameTarget(a.target, 3, 7))).toBe(true);
+  expect(acts.some((a) => a.creatureUid === axe && sameTarget(a.target, 3, 6))).toBe(true);
+  expect(acts.some((a) => a.creatureUid === axe && sameTarget(a.target, 4, 7))).toBe(true);
+  expect(acts.some((a) => a.creatureUid === axe && sameTarget(a.target, 2, 7))).toBe(false);
+  const sling = at(s, 3, 9).uid;
+  expect(acts.some((a) => a.creatureUid === sling && a.target && a.target.commander === 'opponent')).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: axe, target: { row: 4, col: 7 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 7).health).toBe(3); // Shieldbeard 4 + 1 Borgo - 2
+  expect(at(s, 5, 7).health).toBe(4); // Axe Thrower 3 + 1 Borgo, no strike back
+  expect((await act(page, { type: 'attack', creatureUid: sling, target: { commander: 'opponent' } })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.opponent.health).toBe(19); // exactly 1
+  expect(at(s, 3, 9).health).toBe(3); // Slinger 2 + 1 Borgo, untouched
+});
+
+// ---------- AC14 ----------
+test('AC14: creatures heal at the start of their owner\'s turn; damaged Health is marked', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'borgo',
+    opponentCommander: 'grubnak',
+    setup: { playerDeck: SHARDS, opponentDeck: SHARDS, board: [
+      { cardId: 'shieldbeard', owner: 'player', row: 5, col: 4 },
+      { cardId: 'goblin-scrapper', owner: 'opponent', row: 4, col: 3 },
+      { cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 6 },
+      { cardId: 'shieldbeard', owner: 'opponent', row: 2, col: 6, damage: 0 },
+    ] },
+  });
+  const label = page.getByLabel('Shieldbeard, row 5, column 4', { exact: true });
+  await expect(label).toHaveAttribute('data-damaged', 'false');
+  await done(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 4).uid, target: { row: 4, col: 3 } })).ok).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 3, 6).uid, target: { row: 2, col: 6 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 5, 4).health).toBe(3);
+  expect(at(s, 2, 6).health).toBe(2); // opponent Shieldbeard: 4 - 2 (Grubnak gives no Health)
+  await expect(label).toHaveAttribute('data-damaged', 'true');
+  await expect(label).toContainText('3');
+  await done(page); // -> opponent's turn 2
+  s = await getState(page);
+  expect(s.activePlayer).toBe('opponent');
+  expect(at(s, 2, 6).health).toBe(4); // opponent's creature healed at its owner's turn
+  expect(at(s, 5, 4).health).toBe(3); // ours stays damaged during the enemy turn
+  await passTurn(page); // -> player's turn 3
+  s = await getState(page);
+  expect(s.activePlayer).toBe('player');
+  expect(at(s, 5, 4).health).toBe(5);
+  await expect(label).toHaveAttribute('data-damaged', 'false');
+});
+
+// ---------- AC15 ----------
+test('AC15: Aegis Tinkerer gives Shield 1, which blocks exactly 1 damage', async ({ page }) => {
+  await start(page, {
+    ai: false,
+    playerCommander: 'sproingle',
+    opponentCommander: 'borgo',
+    setup: { playerDeck: SHARDS, opponentDeck: SHARDS, board: [
+      { cardId: 'gnome-tinker', owner: 'player', row: 6, col: 1 },
+      { cardId: 'spark-gnome', owner: 'player', row: 6, col: 2 },
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 5, col: 3 },
+    ] },
+  });
+  let s = await getState(page);
+  expect(at(s, 6, 2).shield).toBe(0);
+  await passTurn(page);
+  await passTurn(page); // player's turn 3: Fix-it
+  s = await getState(page);
+  expect(at(s, 6, 2).shield).toBe(1);
+  expect(at(s, 6, 1).shield).toBe(0);
+  await passTurn(page); // opponent's turn 4: shield still there
+  s = await getState(page);
+  expect(s.activePlayer).toBe('opponent');
+  expect(at(s, 6, 2).shield).toBe(1);
+  await done(page); // -> action
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 3).uid, target: { row: 6, col: 2 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 6, 2).health).toBe(2); // 1 damage fully blocked
+  expect(at(s, 6, 2).shield).toBe(0);
+  expect(at(s, 5, 3)).toBeUndefined(); // Miner 1 + 1 Borgo = 2, struck back for 2 + 1 type advantage
+});
+
+// ---------- AC16 ----------
+test('AC16: Commander damage equals Attack and never resets', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'borgo',
+    setup: {
+      playerDeck: SHARDS, opponentDeck: SHARDS,
+      playerHand: ['battle-cry'],
+      board: [
+        { cardId: 'dwarf-miner', owner: 'player', row: 3, col: 7, minedMine: M3 },
+        { cardId: 'dwarf-miner', owner: 'player', row: 5, col: 7, minedMine: M3 },
+        { cardId: 'queen-brunhilda-stonebeard', owner: 'player', row: 2, col: 6 },
+        { cardId: 'goblin-scrapper', owner: 'player', row: 2, col: 8 },
+      ],
+    },
+  });
+  const queen = at(s, 2, 6).uid;
+  const scrap = at(s, 2, 8).uid;
+  await done(page);
+  expect((await legal(page)).some((a) => a.type === 'attack' && a.creatureUid === queen && a.target && a.target.commander === 'opponent')).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: queen, target: { commander: 'opponent' } })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.opponent.health).toBe(15); // exactly 5
+  await expect(page.getByLabel('Enemy Commander health', { exact: true })).toContainText('15');
+  expect((await act(page, { type: 'attack', creatureUid: scrap, target: { commander: 'opponent' } })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.opponent.health).toBe(13); // exactly 2
+  await done(page); // end the player's Action phase -> opponent's turn 2
+  await passTurn(page); // -> player's turn 3, Deploy phase
+  s = await getState(page);
+  expect(s.phase).toBe('deploy');
+  expect(s.players.opponent.health).toBe(13); // never resets
+  expect(s.players.player.crystals).toEqual(4); // 2 Miners mined 2 each on turn 1: pays Warhowl (4)
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
+  await done(page);
+  expect((await act(page, { type: 'attack', creatureUid: queen, target: { commander: 'opponent' } })).ok).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: scrap, target: { commander: 'opponent' } })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.opponent.health).toBe(4); // 13 - 6 - 3
+});
+
+// ---------- AC17 ----------
+test('AC17: Infernal Orb deals 3 damage for 3 crystals', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'grubnak',
+    opponentCommander: 'borgo',
+    setup: { playerHand: ['fireball'], playerCrystals: 3, board: [{ cardId: 'shieldbeard', owner: 'opponent', row: 3, col: 4 }] },
+  });
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'fireball'), target: { row: 3, col: 4 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 3, 4).health).toBe(2);
+  expect(total(s.players.player.crystals)).toBe(0);
+  expect(s.players.player.discard.some((c) => c.cardId === 'fireball')).toBe(true);
+});
+
+test('AC17: only one Crystal card per round; it goes to the Bank', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { playerHand: ['soul-shard', 'soul-shard'], playerDeck: SHARDS, opponentDeck: SHARDS } });
+  const [a, b] = s.players.player.hand.map((c) => c.uid);
+  expect((await act(page, { type: 'playCrystal', uid: a })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.bank).toBe(1);
+  expect(s.players.player.crystals).toEqual(ZERO);
+  expect((await legal(page)).some((x) => x.type === 'playCrystal')).toBe(false);
+  expect((await act(page, { type: 'playCrystal', uid: b })).ok).toBe(false);
+  await passTurn(page);
+  await passTurn(page);
+  s = await getState(page);
+  expect(s.activePlayer).toBe('player');
+  expect(s.phase).toBe('deploy');
+  expect((await legal(page)).some((x) => x.type === 'playCrystal' && x.uid === b)).toBe(true);
+  expect((await act(page, { type: 'playCrystal', uid: b })).ok).toBe(true);
+  expect((await getState(page)).players.player.bank).toBe(2);
+});
+test("AC17: Desperate Plunder costs 1 and gives 3 Flow only when behind on mines", async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { playerHand: ['prospectors-prayer'], playerCrystals: 1 } });
+  expect((await act(page, { type: 'cast', uid: s.players.player.hand[0].uid })).ok).toBe(false); // 0 vs 0 mines
+  s = await newMatch(page, { ai: false, setup: {
+    playerHand: ['prospectors-prayer'], playerCrystals: 1,
+    board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1, minedMine: M1 }],
+  } });
+  expect((await act(page, { type: 'cast', uid: s.players.player.hand[0].uid })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals).toEqual(3);
+});
+
+test('AC17: crystal-bought upgrades are gone', async ({ page }) => {
+  await start(page, { ai: false, setup: { playerCrystals: 10, board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 }] } });
+  expect((await legal(page)).some((x) => x.type === 'upgrade')).toBe(false);
+  const s = await getState(page);
+  expect((await act(page, { type: 'upgrade', creatureUid: at(s, 6, 3).uid, upgrade: 'sharpened-weapons' })).ok).toBe(false);
+  expect((await page.evaluate(async () => await window.oreheart.getConfig())).upgradeCosts).toBeUndefined();
+  await expect(page.getByRole('button', { name: 'Upgrade', exact: true })).toHaveCount(0);
+});
+// ---------- AC18 ----------
+test('AC18: Snuff Out counters Infernal Orb; crystals still spent', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'grubnak',
+    opponentCommander: 'borgo',
+    setup: {
+      playerHand: ['fireball'],
+      playerCrystals: 3,
+      opponentHand: ['fizzle'],
+      opponentCrystals: 3,
+      board: [{ cardId: 'shieldbeard', owner: 'opponent', row: 3, col: 4 }],
+    },
+  });
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'fireball'), target: { row: 3, col: 4 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.pendingResponse).not.toBe(null);
+  expect(s.pendingResponse.responder).toBe('opponent');
+  expect(s.priority).toBe('opponent');
+  const fizzle = handUid(s, 'opponent', 'fizzle');
+  const acts = await legal(page);
+  expect(acts.some((a) => a.type === 'pass')).toBe(true);
+  expect(acts.some((a) => a.type === 'respond' && a.uid === fizzle)).toBe(true);
+  expect((await act(page, { type: 'respond', uid: fizzle })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.pendingResponse).toBe(null);
+  expect(at(s, 3, 4).health).toBe(5);
+  expect(total(s.players.player.crystals)).toBe(0);
+  expect(total(s.players.opponent.crystals)).toBe(0);
+  expect(s.players.player.discard.some((c) => c.cardId === 'fireball')).toBe(true);
+  expect(s.players.opponent.discard.some((c) => c.cardId === 'fizzle')).toBe(true);
+  expect(s.priority).toBe('player');
+});
+
+test('AC18: Snuff Out cannot cancel a spell costing more than 3', async ({ page }) => {
+  let s = await start(page, {
+    ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo',
+    setup: { playerHand: ['battle-cry'], playerCrystals: 4, opponentHand: ['fizzle'], opponentCrystals: 3 },
+  });
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.pendingResponse).toBe(null); // Warhowl costs 4: no usable Instant, so no Respond window
+  expect(s.players.opponent.hand.some((c) => c.cardId === 'fizzle')).toBe(true);
+});
+
+test('AC18: Not Today! returns a summoned creature to hand', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'grubnak',
+    opponentCommander: 'borgo',
+    setup: {
+      playerHand: ['goblin-scrapper'],
+      playerCrystals: 5,
+      opponentHand: ['hold-it'],
+      opponentCrystals: 4,
+    },
+  });
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrapper'), row: 7, col: 1 })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.pendingResponse && s.pendingResponse.responder).toBe('opponent');
+  expect((await act(page, { type: 'respond', uid: handUid(s, 'opponent', 'hold-it') })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 7, 1)).toBeUndefined();
+  expect(s.players.player.hand.some((c) => c.cardId === 'goblin-scrapper')).toBe(true);
+  expect(s.players.player.crystals).toBe(0); // Scrapper 6 - 1 Grubnak, still spent
+});
+
+const respondSetup = {
+  ai: false,
+  playerCommander: 'grubnak',
+  opponentCommander: 'borgo',
+  setup: {
+    firstPlayer: 'opponent',
+    opponentHand: ['fireball'],
+    opponentCrystals: 3,
+    playerHand: ['shield-bubble'],
+    playerCrystals: 5,
+    board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 4 }],
+  },
+};
+
+test('AC18: Respond dialog — Let it happen', async ({ page }) => {
+  let s = await start(page, respondSetup);
+  expect(s.activePlayer).toBe('opponent');
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'opponent', 'fireball'), target: { row: 6, col: 4 } })).ok).toBe(true);
+  const dlg = page.getByRole('dialog', { name: 'Respond?' });
+  await expect(dlg).toBeVisible();
+  await expect(dlg.getByRole('button', { name: 'Bastion Ward' })).toBeVisible();
+  await dlg.getByRole('button', { name: 'Let it happen' }).click();
+  await expect(dlg).toBeHidden();
+  await expect.poll(async () => at(await getState(page), 6, 4)).toBeUndefined();
+});
+
+test('AC18: Respond dialog — cast Bastion Ward saves the creature', async ({ page }) => {
+  let s = await start(page, respondSetup);
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'opponent', 'fireball'), target: { row: 6, col: 4 } })).ok).toBe(true);
+  const dlg = page.getByRole('dialog', { name: 'Respond?' });
+  await expect(dlg).toBeVisible();
+  await dlg.getByRole('button', { name: 'Bastion Ward' }).click();
+  await expect(dlg).toBeHidden();
+  await expect.poll(async () => (await getState(page)).pendingResponse).toBe(null);
+  s = await getState(page);
+  expect(at(s, 6, 4).health).toBe(3);
+  expect(s.players.player.discard.some((c) => c.cardId === 'shield-bubble')).toBe(true);
+});
+
+// ---------- AC19 ----------
+test('AC19: deck-out deals 1 damage per failed draw', async ({ page }) => {
+  await start(page, { ai: false, setup: { playerDeck: [] } });
+  await passTurn(page);
+  await passTurn(page);
+  let s = await getState(page);
+  expect(s.players.player.health).toBe(19);
+  await passTurn(page);
+  await passTurn(page);
+  s = await getState(page);
+  expect(s.players.player.health).toBe(18);
+});
+
+// ---------- AC20 ----------
+test('AC20: reducing enemy Commander to 0 shows Victory!', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    setup: { opponentHealth: 2, board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 2, col: 7 }] },
+  });
+  await done(page);
+  const acts = await legal(page);
+  expect(acts.some((a) => a.type === 'attack' && a.target && a.target.commander === 'opponent')).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 2, 7).uid, target: { commander: 'opponent' } })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.opponent.health).toBe(0);
+  expect(s.winner).toBe('player');
+  expect(s.phase).toBe('over');
+  await expect(page.getByRole('heading', { name: 'Victory!' })).toBeVisible({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+});
+
+test('AC20: surrender from the match menu shows Defeat', async ({ page }) => {
+  await start(page, { ai: false, skipMulligan: true, firstPlayer: 'player' });
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'Surrender' }).click();
+  await expect(page.getByText('Surrender this match?')).toBeVisible();
+  await page.getByRole('button', { name: 'Yes, surrender' }).click();
+  await expect(page.getByRole('heading', { name: 'Defeat' })).toBeVisible({ timeout: 15000 });
+  const s = await getState(page);
+  expect(s.winner).toBe('opponent');
+});
+
+test('AC20: surrender action via API', async ({ page }) => {
+  await start(page, { ai: false, skipMulligan: true, firstPlayer: 'player' });
+  expect((await act(page, { type: 'surrender' })).ok).toBe(true);
+  const s = await getState(page);
+  expect(s.winner).toBe('opponent');
+  expect(s.phase).toBe('over');
+});
+
+// ---------- AC21 ----------
+for (const difficulty of ['easy', 'normal', 'hard']) {
+  test(`${difficulty === 'hard' ? 'AC78' : 'AC21'}: ${difficulty} AI completes its turn and hands it back`, async ({ page }) => {
+    await start(page, { ai: true, difficulty, skipMulligan: true, firstPlayer: 'player' });
+    await passTurn(page);
+    await expect
+      .poll(async () => {
+        const s = await getState(page);
+        if (s.pendingResponse && s.priority === 'player') await act(page, { type: 'pass' });
+        return `${s.activePlayer}|${s.phase}|${s.turn}`;
+      }, { timeout: 15000 })
+      .toBe('player|deploy|3');
+  });
+}
+
+test('AC21: Normal AI defeats a passive player before turn 60', async ({ page }) => {
+  test.setTimeout(180000);
+  await start(page, { ai: true, difficulty: 'normal', skipMulligan: true, firstPlayer: 'player', opponentCommander: 'grubnak', playerCommander: 'sproingle' });
+  const result = await page.evaluate(async () => {
+    const o = window.oreheart;
+    const deadline = Date.now() + 160000;
+    while (Date.now() < deadline) {
+      const s = await o.getState();
+      if (s.winner) return { winner: s.winner, turn: s.turn };
+      if (s.priority === 'player') {
+        const acts = await o.legalActions();
+        const a = acts.find((x) => x.type === 'pass') || acts.find((x) => x.type === 'done') || acts.find((x) => x.type === 'mulligan');
+        if (a) await o.act(a);
+        else await new Promise((r) => setTimeout(r, 20));
+      } else {
+        await new Promise((r) => setTimeout(r, 20));
+      }
+    }
+    const s = await o.getState();
+    return { winner: s.winner, turn: s.turn };
+  });
+  expect(result.winner).toBe('opponent');
+  expect(result.turn).toBeLessThan(60);
+});
+
+// ---------- AC22 ----------
+test('AC22: hand cards are buttons and open a card view', async ({ page }) => {
+  await start(page, { ai: false, setup: { playerHand: ['fireball', 'goblin-scrapper'] } });
+  const card = page.getByRole('button', { name: 'Infernal Orb', exact: true });
+  await expect(card).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Gutripper Brawler', exact: true })).toBeVisible();
+  await card.click();
+  const view = page.getByRole('dialog', { name: 'Infernal Orb' });
+  await expect(view).toBeVisible();
+  await expect(view).toContainText('3 damage');
+  await view.getByRole('button', { name: 'Close' }).click();
+  await expect(view).toBeHidden();
+});
+
+// ---------- AC23 ----------
+test('AC23: illegal actions are rejected and state is unchanged', async ({ page }) => {
+  await start(page, { ai: false, setup: { playerHand: ['wolf-rider'], playerCrystals: 1 } });
+  const before = await getState(page);
+  const uid = before.players.player.hand[0].uid;
+  const r1 = await act(page, { type: 'summon', uid, row: 6, col: 1 }); // can't afford
+  expect(r1.ok).toBe(false);
+  expect(typeof r1.error).toBe('string');
+  const r2 = await act(page, { type: 'move', creatureUid: 'nope', row: 1, col: 1 });
+  expect(r2.ok).toBe(false);
+  const r3 = await act(page, { type: 'attack', creatureUid: 'nope', target: { commander: 'opponent' } });
+  expect(r3.ok).toBe(false);
+  const after = await getState(page);
+  expect(after).toEqual(before);
+});
+
+// ---------- AC24 ----------
+for (const [w, h] of [[844, 390], [740, 360], [667, 375]]) {
+  test.describe(`landscape phone viewport ${w}x${h}`, () => {
+    test.use({ viewport: { width: w, height: h } });
+
+    test(`AC24: menu and full-screen match fit a ${w}x${h} landscape phone`, async ({ page }) => {
+      await page.goto('/?test=1');
+      await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeInViewport();
+      await expect(page.getByText('Please rotate your phone')).toBeHidden();
+      let overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow).toBeLessThanOrEqual(1);
+      await page.waitForFunction(() => !!window.oreheart);
+      await newMatch(page, { ai: false, setup: { playerHand: ['fireball', 'goblin-scrapper', 'goblin-slinger'] } });
+      const field = page.getByLabel('Battlefield', { exact: true });
+      await expect(field).toBeVisible();
+      const box = await field.boundingBox();
+      expect(box.x).toBeLessThanOrEqual(1);
+      expect(box.y).toBeLessThanOrEqual(1);
+      expect(box.x + box.width).toBeGreaterThanOrEqual(w - 1);
+      expect(box.y + box.height).toBeGreaterThanOrEqual(h - 1);
+      await expect(page.getByRole('button', { name: 'Done' })).toBeInViewport();
+      await expect(page.getByLabel('Your Commander health', { exact: true })).toBeInViewport();
+      await expect(page.getByLabel('Enemy Commander health', { exact: true })).toBeInViewport();
+      await expect(page.getByLabel('Current phase', { exact: true })).toBeInViewport();
+      if (w === 844) {
+        const card = await page.getByRole('button', { name: 'Infernal Orb', exact: true }).boundingBox();
+        expect(card.width).toBeGreaterThanOrEqual(60);
+        expect(card.height).toBeGreaterThanOrEqual(90);
+      }
+      overflow = await page.evaluate(() => Math.max(document.documentElement.scrollWidth - window.innerWidth,
+        document.documentElement.scrollHeight - window.innerHeight));
+      expect(overflow).toBeLessThanOrEqual(1);
+    });
+  });
+}
+
+test.describe('portrait phone viewport', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('AC24: upright phone shows the rotate message', async ({ page }) => {
+    await page.goto('/?test=1');
+    await expect(page.getByText('Please rotate your phone')).toBeVisible();
+    await page.waitForFunction(() => !!window.oreheart);
+    await newMatch(page, { ai: false, skipMulligan: true, firstPlayer: 'player' });
+    await expect(page.getByText('Please rotate your phone')).toBeVisible();
+  });
+});
+
+// ---------- AC25 ----------
+test('AC25: first visit offers the tutorial; Skip is remembered', async ({ page }) => {
+  await page.goto('/');
+  const offer = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
+  await expect(offer).toBeVisible();
+  await expect(offer.getByRole('button', { name: 'Start Tutorial' })).toBeVisible();
+  await offer.getByRole('button', { name: 'Skip' }).click();
+  await expect(offer).toBeHidden();
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+  await page.waitForTimeout(500);
+  await expect(offer).toBeHidden();
+});
+
+test('AC25: Tutorial button opens the guided match with tips and Skip Tutorial', async ({ page }) => {
+  await openMenu(page);
+  await page.getByRole('button', { name: 'Tutorial', exact: true }).click();
+  const tip = page.getByLabel('Tutorial tip', { exact: true });
+  await expect(tip).toBeVisible();
+  await expect(tip).toContainText(/back row/i);
+  await page.getByRole('button', { name: 'Skip Tutorial' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+});
+
+test('AC25: tutorial steps start at summon and advance after a back-row summon', async ({ page }) => {
+  await openTest(page);
+  let s = await page.evaluate(async () => {
+    await window.oreheart.startTutorial();
+    return await window.oreheart.getState();
+  });
+  expect(s.tutorial && s.tutorial.step).toBe('summon');
+  expect(s.players.player.crystals).toEqual(ZERO); // the first troop is the free Gatherer
+  expect(s.activePlayer).toBe('player');
+  expect(s.phase).toBe('deploy');
+  await expect(page.getByLabel('Tutorial tip', { exact: true })).toBeVisible();
+  const summons = (await legal(page)).filter((a) => a.type === 'summon');
+  expect(summons.length).toBeGreaterThan(0);
+  expect(summons.every((a) => a.row === 7)).toBe(true);
+  expect((await act(page, summons[0])).ok).toBe(true);
+  s = await getState(page);
+  expect(s.tutorial.step).toBe('move');
+});
+
+// ---------- AC26 ----------
+test('AC26: printed creature Health is at most 6', async ({ page }) => {
+  const spaces = [];
+  for (const row of [2, 3, 5, 6]) for (let col = 1; col <= 7; col++) spaces.push({ row, col });
+  const board = CREATURES.map((cardId, i) => ({ cardId, owner: 'player', ...spaces[i] }));
+  const s = await start(page, { ai: false, playerCommander: 'sproingle', setup: { board } });
+  expect(s.board.creatures.length).toBe(CREATURES.length);
+  for (const c of s.board.creatures) {
+    expect(c.maxHealth, c.cardId).toBeLessThanOrEqual(6);
+    expect(c.health, c.cardId).toBe(c.maxHealth);
+  }
+  for (const id of ['grubnaks-big-boss-troll', 'the-great-steam-golem', 'queen-brunhilda-stonebeard']) {
+    expect(s.board.creatures.find((c) => c.cardId === id).maxHealth, id).toBe(6);
+  }
+});
+
+// ---------- AC27 ----------
+const COSTS = {
+  'goblin-scrounger': 1, 'goblin-scrapper': 6, 'goblin-slinger': 4, 'goblin-bomber': 5, 'goblin-sneak': 6, 'wolf-rider': 9,
+  'grubnaks-big-boss-troll': 13, 'gnome-prospector': 1, 'gnome-tinker': 5, 'spark-gnome': 5, 'clockwork-beetle': 8,
+  'gnome-illusionist': 6, 'gyrocopter-ace': 8, 'the-great-steam-golem': 13, 'dwarf-miner': 1, 'shieldbeard': 7,
+  'axe-thrower': 6, 'ironhammer-berserker': 8, 'brewmaster': 7, 'ram-rider': 11, 'queen-brunhilda-stonebeard': 13,
+  'shard-guzzler': 5, 'overclocked-conduit': 5, 'crystal-drunk-delver': 7,
+};
+test('AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 for 1', async ({ page }) => {
+  await openTest(page);
+  const cards = await page.evaluate(async (ids) => {
+    const out = {};
+    for (const id of ids) out[id] = await window.oreheart.getCard(id);
+    return out;
+  }, Object.keys(COSTS));
+  for (const [id, cost] of Object.entries(COSTS)) expect(cards[id].cost, id).toBe(cost);
+  for (const id of ['goblin-scrounger', 'gnome-prospector', 'dwarf-miner']) {
+    expect(cards[id].attack, id).toBe(1);
+    expect(cards[id].health, id).toBe(1);
+  }
+});
+
+test('AC27: summoning spends exactly the new costs', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'borgo',
+    setup: { playerHand: ['dwarf-miner', 'shieldbeard', 'axe-thrower', 'ram-rider'], playerCrystals: 30 },
+  });
+  const steps = [['dwarf-miner', 1, 29], ['shieldbeard', 2, 22], ['axe-thrower', 3, 16], ['ram-rider', 5, 5]];
+  for (const [id, col, left] of steps) {
+    expect((await act(page, { type: 'summon', uid: handUid(s, 'player', id), row: 7, col })).ok, id).toBe(true);
+    s = await getState(page);
+    expect(s.players.player.crystals, id).toBe(left);
+  }
+  s = await newMatch(page, {
+    ai: false, playerCommander: 'grubnak',
+    setup: { playerHand: ['goblin-scrounger', 'goblin-scrapper'], playerCrystals: 6 },
+  });
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 7, col: 1 })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals).toBe(5); // minimum 1
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrapper'), row: 7, col: 2 })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals).toBe(0); // 6 - 1
+});
+
+// ---------- AC28 ----------
+test('AC28: phase banner appears when a phase begins', async ({ page }) => {
+  await start(page, { ai: false, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 1 } });
+  await page.waitForTimeout(2500); // let opening banners finish
+  await page.getByRole('button', { name: 'Done' }).click();
+  const dlg = page.getByRole('dialog', { name: /Moves still available/ });
+  if (await dlg.isVisible()) await dlg.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByLabel('Phase banner', { exact: true })).toContainText('ACTION');
+});
+
+test('AC28: auto-skipped phases show no banner; ENEMY TURN does', async ({ page }) => {
+  await openTest(page);
+  await page.evaluate(() => {
+    window.__banners = [];
+    setInterval(() => {
+      const e = document.querySelector('[aria-label="Phase banner"]');
+      if (e && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden') {
+        const t = e.textContent.trim().toUpperCase();
+        if (t && !window.__banners.includes(t)) window.__banners.push(t);
+      }
+    }, 50);
+  });
+  await newMatch(page, { ai: false, autoSkip: true, setup: { playerDeck: SHARDS, opponentDeck: SHARDS } });
+  await expect.poll(async () => (await getState(page)).activePlayer, { timeout: 15000 }).toBe('opponent');
+  await expect.poll(async () => page.evaluate(() => window.__banners), { timeout: 5000 }).toContain('ENEMY TURN');
+  const seen = await page.evaluate(() => window.__banners);
+  expect(seen).not.toContain('DEPLOY');
+  expect(seen).not.toContain('ACTION');
+});
+
+// ---------- AC29 ----------
+const movesLeft = (page) => page.evaluate(async () => await window.oreheart.movesLeft());
+test('AC29: moves left ignores Instants, Crystal cards and the Miner swap', async ({ page }) => {
+  await start(page, {
+    ai: false,
+    setup: {
+      playerHand: ['healing-light', 'soul-shard'], playerCrystals: 10, playerDeck: ['goblin-scrounger', ...SHARDS],
+      board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 2 }],
+    },
+  });
+  const acts = await legal(page);
+  expect(acts.some((a) => a.type === 'gathererSwap')).toBe(true);
+  expect(await movesLeft(page)).toBe(false);
+  await done(page);
+  expect(await movesLeft(page)).toBe(true); // the Scrapper can move
+  await start(page, { ai: false, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 1 } });
+  expect(await movesLeft(page)).toBe(true);
+});
+
+test('AC29: with auto-skip on, an empty turn passes by itself; a phase with moves left does not', async ({ page }) => {
+  await openTest(page);
+  await newMatch(page, { ai: false, autoSkip: true, setup: { playerDeck: SHARDS, opponentDeck: SHARDS } });
+  await expect.poll(async () => (await getState(page)).activePlayer, { timeout: 15000 }).toBe('opponent');
+  let s = await getState(page);
+  expect(s.turn).toBe(2);
+  expect(s.phase).toBe('deploy'); // the opponent's phases are never auto-skipped (R8.9)
+  await newMatch(page, { ai: false, autoSkip: true, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 1 } });
+  await page.waitForTimeout(3000);
+  s = await getState(page);
+  expect(s.activePlayer).toBe('player');
+  expect(s.phase).toBe('deploy');
+});
+
+// ---------- AC30 ----------
+test('AC30: creature labels show Attack, Health, Movement and darken after acting', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    setup: {
+      playerDeck: SHARDS, opponentDeck: SHARDS, playerHand: ['goblin-scrapper'], playerCrystals: 6,
+      board: [{ cardId: 'wolf-rider', owner: 'player', row: 6, col: 6 }],
+    },
+  });
+  const wolf = page.getByLabel('Mangewolf Rider, row 6, column 6', { exact: true });
+  await expect(wolf).toHaveText(/3\D+4\D+2/);
+  await expect(wolf).toHaveAttribute('data-acted', 'false');
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrapper'), row: 7, col: 1 })).ok).toBe(true);
+  const scrap = page.getByLabel('Gutripper Brawler, row 7, column 1', { exact: true });
+  await expect(scrap).toHaveAttribute('data-acted', 'true');
+  await expect(scrap).toHaveText(/2\D+3\D+1/);
+  await done(page);
+  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 6).uid, row: 5, col: 6 })).ok).toBe(true);
+  const moved = page.getByLabel('Mangewolf Rider, row 5, column 6', { exact: true });
+  await expect(moved).toHaveAttribute('data-acted', 'true');
+  await done(page); // enemy turn
+  await expect(moved).toHaveAttribute('data-acted', 'true');
+  await passTurn(page); // player's turn 3
+  await expect(moved).toHaveAttribute('data-acted', 'false');
+  await expect(scrap).toHaveAttribute('data-acted', 'false');
+});
+
+// ---------- AC31 ----------
+test('AC31: Moves still available pop-up — Go back and Continue', async ({ page }) => {
+  await start(page, { ai: false, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 1 } });
+  const doneBtn = page.getByRole('button', { name: 'Done' });
+  const dlg = page.getByRole('dialog', { name: 'Moves still available! Continue to the next phase?' });
+  await doneBtn.click();
+  await expect(dlg).toBeVisible();
+  await dlg.getByRole('button', { name: 'Go back' }).click();
+  await expect(dlg).toBeHidden();
+  expect((await getState(page)).phase).toBe('deploy');
+  await doneBtn.click();
+  await dlg.getByRole('button', { name: 'Continue' }).click();
+  await expect(dlg).toBeHidden();
+  expect((await getState(page)).phase).toBe('action');
+  await doneBtn.click(); // no creatures: no moves left, no pop-up
+  await expect.poll(async () => (await getState(page)).activePlayer).toBe('opponent');
+  await expect(dlg).toBeHidden();
+});
+
+test('AC31: no pop-up on timeout, and Settings can turn it off', async ({ page }) => {
+  await start(page, { ai: false, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 1 } });
+  const dlg = page.getByRole('dialog', { name: /Moves still available/ });
+  await page.evaluate(async () => await window.oreheart.setPhaseTimeLeft(0));
+  await expect.poll(async () => (await getState(page)).phase).toBe('action');
+  await expect(dlg).toBeHidden();
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Moves reminder: On' }).click();
+  await expect(page.getByRole('button', { name: 'Moves reminder: Off' })).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Moves reminder: Off' })).toBeVisible();
+  await page.waitForFunction(() => !!window.oreheart);
+  await newMatch(page, { ai: false, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 1 } });
+  await page.getByRole('button', { name: 'Done' }).click();
+  await expect.poll(async () => (await getState(page)).phase).toBe('action');
+  await expect(dlg).toBeHidden();
+});
+
+// ---------- AC32 ----------
+test('AC32: countdown appears only in the last 10 seconds; 0 ends just the phase', async ({ page }) => {
+  await start(page, { ai: false, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 1 } });
+  const timer = page.getByLabel('Phase timer', { exact: true });
+  const setLeft = (n) => page.evaluate(async (x) => await window.oreheart.setPhaseTimeLeft(x), n);
+  await expect(timer).toBeHidden();
+  await setLeft(11);
+  await expect(timer).toBeHidden();
+  await setLeft(10);
+  await expect(timer).toBeVisible();
+  await expect(timer).toHaveText(/\b10\b/);
+  await setLeft(3);
+  await expect(timer).toHaveText(/\b3\b/);
+  await setLeft(0);
+  await expect.poll(async () => (await getState(page)).phase).toBe('action');
+  const s = await getState(page);
+  expect(s.turn).toBe(1);
+  expect(s.activePlayer).toBe('player');
+  await expect(timer).toBeHidden();
+});
+
+// ---------- AC33 ----------
+test('AC33: Gatherer swap moves one basic Gatherer from deck to hand, once per turn', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    playerCommander: 'grubnak',
+    setup: { playerHand: ['fireball', 'goblin-scrapper'], playerDeck: ['soul-shard', 'goblin-scrounger', 'goblin-scrapper', 'goblin-scrounger'] },
+  });
+  const fireball = handUid(s, 'player', 'fireball');
+  const swaps = (await legal(page)).filter((a) => a.type === 'gathererSwap');
+  expect(swaps.length).toBe(2); // one per discardable card
+  expect((await act(page, { type: 'gathererSwap', discardUid: fireball })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.hand.map((c) => c.cardId).sort()).toEqual(['goblin-scrapper', 'goblin-scrounger']);
+  expect(s.players.player.deck.map((c) => c.cardId)).toEqual(['soul-shard', 'goblin-scrapper', 'goblin-scrounger']);
+  expect(s.players.player.discard.map((c) => c.cardId)).toEqual(['fireball']);
+  expect((await legal(page)).some((a) => a.type === 'gathererSwap')).toBe(false);
+  expect((await act(page, { type: 'gathererSwap', discardUid: handUid(s, 'player', 'goblin-scrapper') })).ok).toBe(false);
+  // empty hand: swap without discarding; not in the Action phase
+  s = await newMatch(page, { ai: false, setup: { playerDeck: ['soul-shard', 'goblin-scrounger'] } });
+  expect((await legal(page)).filter((a) => a.type === 'gathererSwap').length).toBe(1);
+  await done(page);
+  expect((await act(page, { type: 'gathererSwap' })).ok).toBe(false);
+  s = await newMatch(page, { ai: false, setup: { playerDeck: ['soul-shard', 'goblin-scrounger'] } });
+  expect((await act(page, { type: 'gathererSwap' })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.hand.map((c) => c.cardId)).toEqual(['goblin-scrounger']);
+  expect(s.players.player.deck.length).toBe(1);
+  // a Gatherer already in hand: no swap
+  await newMatch(page, { ai: false, setup: { playerHand: ['goblin-scrounger', 'fireball'], playerDeck: ['goblin-scrounger'] } });
+  expect((await legal(page)).some((a) => a.type === 'gathererSwap')).toBe(false);
+});
+
+// ---------- AC34 ----------
+test('AC34: free Miner only when Flow + Bank cannot pay and no Miner is on the battlefield', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { playerHand: ['goblin-scrounger', 'goblin-scrounger', 'goblin-scrapper'] } });
+  const [g1, g2] = s.players.player.hand.filter((c) => c.cardId === 'goblin-scrounger').map((c) => c.uid);
+  const summons = (await legal(page)).filter((a) => a.type === 'summon');
+  expect(summons.some((a) => a.uid === g1)).toBe(true);
+  expect(summons.some((a) => a.uid === handUid(s, 'player', 'goblin-scrapper'))).toBe(false);
+  expect((await act(page, { type: 'summon', uid: g1, row: 7, col: 1 })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 7, 1).cardId).toBe('goblin-scrounger');
+  expect(s.players.player.crystals).toEqual(ZERO);
+  expect((await act(page, { type: 'summon', uid: g2, row: 7, col: 2 })).ok).toBe(false); // a Miner is now on the battlefield
+  // 1 Flow pays for it: not free
+  s = await newMatch(page, { ai: false, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 1 } });
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true);
+  expect((await getState(page)).players.player.crystals).toEqual(ZERO);
+  // 1 Bank pays for it: not free
+  s = await newMatch(page, { ai: false, setup: { playerHand: ['goblin-scrounger'], playerBank: 1 } });
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true);
+  expect((await getState(page)).players.player.bank).toEqual(ZERO);
+  // a mine in your color doesn't matter any more
+  s = await newMatch(page, { ai: false, setup: {
+    playerHand: ['goblin-scrounger'], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 1, minedMine: M1 }],
+  } });
+  expect(s.sites[0].controller).toBe('player');
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true);
+  // a Smith Miner on the battlefield counts as a Miner: not free
+  s = await newMatch(page, { ai: false, setup: {
+    playerHand: ['goblin-scrounger'], board: [{ cardId: 'goblin-smith-miner', owner: 'player', row: 6, col: 1 }],
+  } });
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(false);
+  // a Smith Miner card is never free
+  s = await newMatch(page, { ai: false, setup: { playerHand: ['goblin-smith-miner'] } });
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(false);
+});
+// ---------- AC35 ----------
+test('AC35: a Gatherer summoned this turn can move or mine but not attack; a Fighter can do nothing', async ({ page }) => {
+  let s = await start(page, {
+    ai: false,
+    setup: {
+      playerHand: ['goblin-scrounger', 'goblin-slinger'], playerCrystals: 4,
+      board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 6, col: 2 }],
+    },
+  });
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 7, col: 1 })).ok).toBe(true);
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-slinger'), row: 7, col: 3 })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.crystals).toBe(0); // Scrounger 1 + Slinger 4 - 1 Grubnak
+  await expect(page.getByLabel('Grubgrabber Miner, row 7, column 1', { exact: true })).toHaveAttribute('data-acted', 'false'); // stays bright
+  await expect(page.getByLabel('Skullflinger, row 7, column 3', { exact: true })).toHaveAttribute('data-acted', 'true'); // summoning sickness
+  await done(page);
+  const g = at(s, 7, 1).uid;
+  const sl = at(s, 7, 3).uid;
+  const acts = await legal(page);
+  expect(acts.some((a) => a.type === 'move' && a.creatureUid === g && a.row === 6 && a.col === 1)).toBe(true);
+  expect(acts.some((a) => a.type === 'attack' && a.creatureUid === g)).toBe(false);
+  expect(acts.some((a) => (a.type === 'move' || a.type === 'attack') && a.creatureUid === sl)).toBe(false);
+  expect((await act(page, { type: 'attack', creatureUid: g, target: { row: 6, col: 2 } })).ok).toBe(false);
+  expect((await act(page, { type: 'move', creatureUid: g, row: 6, col: 1 })).ok).toBe(true);
+  expect(at(await getState(page), 6, 1).uid).toBe(g);
+  // freshly summoned next to a mine: the Gatherer may mine, the Fighter may not
+  s = await newMatch(page, { ai: false, setup: { board: [
+    { cardId: 'goblin-scrounger', owner: 'player', row: 4, col: 1, summonedThisTurn: true },
+    { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 3, summonedThisTurn: true },
+  ] } });
+  await done(page);
+  const acts2 = await legal(page);
+  expect(acts2.some((a) => a.type === 'mine' && a.creatureUid === at(s, 4, 1).uid && a.row === 4 && a.col === 2)).toBe(true);
+  expect(acts2.some((a) => ['move', 'attack', 'mine'].includes(a.type) && a.creatureUid === at(s, 5, 3).uid)).toBe(false);
+  expect((await act(page, { type: 'mine', creatureUid: at(s, 4, 1).uid, row: 4, col: 2 })).ok).toBe(true);
+});
+
+// ---------- AC36 ----------
+test('AC36: flow preview, mine ring numbers and mine info', async ({ page }) => {
+  await start(page, { ai: false, setup: {} });
+  const preview = page.getByLabel('Your income next turn', { exact: true });
+  await expect(preview).toHaveText(/^\s*\+0 next turn\s*$/);
+  await newMatch(page, { ai: false, setup: { board: [
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
+    { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 2, minedMine: M1 },
+    { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 6 }, // next to a mine but not mining
+  ] } });
+  await expect(preview).toHaveText(/^\s*\+3 next turn\s*$/);
+  await page.getByRole('button', { name: 'Crystal site, row 4, column 2', exact: true }).click();
+  const info = page.getByRole('dialog', { name: 'Crystal site' });
+  await expect(info).toBeVisible();
+  await expect(info).toContainText('Controlled by: You');
+  await expect(info).toContainText('Color: Green');
+  await expect(info).toContainText('Your flow: +3');
+  await expect(info).toContainText('Enemy flow: +0');
+  await info.getByRole('button', { name: 'Close' }).click();
+  await page.getByRole('button', { name: 'Crystal site, row 4, column 6', exact: true }).click();
+  await expect(info).toContainText('Controlled by: Nobody');
+  await expect(info).toContainText('Color: White');
+  await info.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByLabel('Mine flow, row 4, column 2', { exact: true })).toContainText('+3');
+  // underdog bonus is part of the preview: 0 flow + 2 = "+2 next turn"
+  await newMatch(page, { ai: false, setup: { board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1, minedMine: M1 }] } });
+  await expect(preview).toHaveText(/^\s*\+2 next turn\s*$/);
+});
+
+// ---------- AC38 ----------
+test('AC38: swapping places with your own creature uses only the dragged creature\'s action', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { board: [
+    { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 2 },
+    { cardId: 'goblin-slinger', owner: 'player', row: 6, col: 3 },
+    { cardId: 'gnome-tinker', owner: 'opponent', row: 5, col: 2 },
+  ] } });
+  const a = at(s, 6, 2).uid;
+  const b = at(s, 6, 3).uid;
+  await done(page); // -> action
+  let acts = await legal(page);
+  expect(acts.some((x) => x.type === 'move' && x.creatureUid === a && x.row === 6 && x.col === 3)).toBe(true);
+  expect(acts.some((x) => x.type === 'move' && x.creatureUid === a && x.row === 5 && x.col === 2)).toBe(false); // never with enemies
+  expect((await act(page, { type: 'move', creatureUid: a, row: 6, col: 3 })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 6, 3).uid).toBe(a);
+  expect(at(s, 6, 2).uid).toBe(b);
+  expect(at(s, 6, 3).hasMoved).toBe(true);
+  expect(at(s, 6, 2).hasMoved).toBe(false);
+  acts = await legal(page);
+  expect(acts.some((x) => (x.type === 'move' || x.type === 'attack') && x.creatureUid === a)).toBe(false);
+  expect((await act(page, { type: 'move', creatureUid: b, row: 7, col: 2 })).ok).toBe(true);
+  expect(at(await getState(page), 7, 2).uid).toBe(b);
+});
+
+// ---------- AC37 ----------
+test('AC37: the confirm pop-up sits above the countdown', async ({ page }) => {
+  await start(page, { ai: false, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 1 } });
+  await page.evaluate(async () => await window.oreheart.setPhaseTimeLeft(5));
+  await expect(page.getByLabel('Phase timer', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Done' }).click();
+  const dlg = page.getByRole('dialog', { name: 'Moves still available! Continue to the next phase?' });
+  await expect(dlg).toBeVisible();
+  await dlg.getByRole('button', { name: 'Continue' }).click(); // fails if covered by the countdown
+  await expect.poll(async () => (await getState(page)).phase).toBe('action');
+});
+
+// ---------- AC40 ----------
+test('AC40: 13 x 7 board; 3 random, mirrored mines from the seed; fixed tutorial layout', async ({ page }) => {
+  await openTest(page);
+  const cheb = (a, b) => Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
+  const layouts = [];
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+    const s = await newMatch(page, { ai: false, seed, skipMulligan: true });
+    const m = s.sites.map((x) => ({ row: x.row, col: x.col }));
+    expect(m.length, `seed ${seed}`).toBe(3);
+    for (const a of m) {
+      expect(a.row >= 3 && a.row <= 5 && a.col >= 1 && a.col <= 13, `seed ${seed}`).toBe(true);
+      expect(m.some((b) => b.row === 8 - a.row && b.col === a.col), `mirror, seed ${seed}`).toBe(true);
+      expect(cheb(a, { row: 1, col: 7 }) >= 2 && cheb(a, { row: 7, col: 7 }) >= 2).toBe(true);
+    }
+    for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) expect(cheb(m[i], m[j]), `spacing, seed ${seed}`).toBeGreaterThanOrEqual(2);
+    expect([1, 3]).toContain(m.filter((a) => a.row === 4).length);
+    const sorted = [...m].sort((a, b) => a.row - b.row || a.col - b.col);
+    expect(m).toEqual(sorted); // reading order
+    const again = await newMatch(page, { ai: false, seed, skipMulligan: true });
+    expect(again.sites.map((x) => ({ row: x.row, col: x.col }))).toEqual(m);
+    layouts.push(JSON.stringify(m));
+  }
+  expect(new Set(layouts).size).toBeGreaterThan(1);
+  // board bounds: columns 1-13, Stronghold at column 7
+  const s = await newMatch(page, { ai: false, setup: { playerHand: ['goblin-scrounger'] } });
+  const summons = (await legal(page)).filter((a) => a.type === 'summon');
+  expect(summons.some((a) => a.row === 7 && a.col === 13)).toBe(true);
+  expect(summons.some((a) => a.row === 7 && a.col === 7)).toBe(false);
+  expect(summons.every((a) => a.col >= 1 && a.col <= 13)).toBe(true);
+  const uid = s.players.player.hand[0].uid;
+  expect((await act(page, { type: 'summon', uid, row: 7, col: 14 })).ok).toBe(false);
+  expect((await act(page, { type: 'summon', uid, row: 7, col: 13 })).ok).toBe(true);
+  // the tutorial always uses the same layout
+  const tut = async () => page.evaluate(async () => {
+    await window.oreheart.startTutorial();
+    return (await window.oreheart.getState()).sites.map((x) => [x.row, x.col]);
+  });
+  const t1 = await tut();
+  await openTest(page, 999);
+  expect(await tut()).toEqual(t1);
+});
+
+// ---------- AC41 ----------
+test('AC41: the moves pop-up names miners that have not mined', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { board: [
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1 },
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 2 },
+  ] } });
+  await done(page); // -> action
+  expect(await movesLeft(page)).toBe(true);
+  const doneBtn = page.getByRole('button', { name: 'Done' });
+  const dlg = page.getByRole('dialog', { name: 'Moves still available! Continue to the next phase?' });
+  await doneBtn.click();
+  await expect(dlg).toBeVisible();
+  await expect(dlg).toContainText("2 miners haven't mined");
+  await dlg.getByRole('button', { name: 'Go back' }).click();
+  await expect(dlg).toBeHidden();
+  expect((await act(page, { type: 'mine', creatureUid: at(s, 5, 1).uid, row: 4, col: 2 })).ok).toBe(true);
+  await doneBtn.click();
+  await expect(dlg).toContainText("1 miner hasn't mined");
+  await dlg.getByRole('button', { name: 'Continue' }).click();
+  await expect.poll(async () => (await getState(page)).activePlayer).toBe('opponent');
+});
+
+// ---------- AC42 ----------
+test('AC42: Ranged creatures show the bow icon on the board and in the hand', async ({ page }) => {
+  await start(page, { ai: false, setup: {
+    playerHand: ['goblin-slinger', 'goblin-scrapper'],
+    board: [
+      { cardId: 'goblin-slinger', owner: 'player', row: 6, col: 1 },
+      { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 },
+    ],
+  } });
+  await expect(page.getByLabel('Skullflinger, row 6, column 1', { exact: true })).toContainText('🏹');
+  await expect(page.getByLabel('Gutripper Brawler, row 6, column 3', { exact: true })).not.toContainText('🏹');
+  const hand = page.getByLabel('Your hand', { exact: true });
+  await expect(hand.getByRole('button', { name: 'Skullflinger' })).toContainText('🏹');
+  await expect(hand.getByRole('button', { name: 'Gutripper Brawler' })).not.toContainText('🏹');
+});
+
+test.describe('landscape layout details', () => {
+  test.use({ viewport: { width: 844, height: 390 } });
+
+  // ---------- AC43 ----------
+  test('AC43: the hand rests tucked half below the edge and slides up on hover', async ({ page }) => {
+    await start(page, { ai: false, setup: { playerHand: ['fireball', 'goblin-scrapper', 'goblin-slinger'] } });
+    const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler' });
+    await expect(card).toBeAttached();
+    await page.mouse.move(422, 120);
+    await page.waitForTimeout(800);
+    const tucked = await card.boundingBox();
+    expect(tucked.y).toBeLessThan(390);
+    const hidden = (tucked.y + tucked.height - 390) / tucked.height;
+    expect(hidden).toBeGreaterThanOrEqual(0.33);
+    expect(hidden).toBeLessThanOrEqual(0.52);
+    await page.mouse.move(tucked.x + tucked.width / 2, tucked.y + 8);
+    await expect.poll(async () => tucked.y - (await card.boundingBox()).y).toBeGreaterThanOrEqual(30);
+    await expect.poll(async () => { const b = await card.boundingBox(); return b.y + b.height; }).toBeLessThanOrEqual(391);
+    await page.mouse.move(422, 120);
+    await expect.poll(async () => { const b = await card.boundingBox(); return b.y + b.height; }).toBeGreaterThan(395);
+  });
+
+  // ---------- AC44 ----------
+  test('AC44: deck piles on each player\'s right and Commander hearts', async ({ page }) => {
+    await start(page, { ai: false, setup: { playerDeck: SHARDS, opponentDeck: SHARDS.slice(0, 5) } });
+    const mine = page.getByLabel('Your deck', { exact: true });
+    const theirs = page.getByLabel('Enemy deck', { exact: true });
+    await expect(mine).toBeVisible();
+    await expect(theirs).toBeVisible();
+    await expect(mine).toContainText('12');
+    await expect(theirs).toContainText('5');
+    const a = await mine.boundingBox();
+    const b = await theirs.boundingBox();
+    expect(a.x + a.width / 2).toBeGreaterThan(422); // bottom-right
+    expect(a.y + a.height / 2).toBeGreaterThan(195);
+    expect(b.x + b.width / 2).toBeLessThan(422); // top-left
+    expect(b.y + b.height / 2).toBeLessThan(195);
+    await expect(page.getByLabel('Your Commander health', { exact: true })).toContainText('20');
+    await expect(page.getByLabel('Enemy Commander health', { exact: true })).toContainText('20');
+  });
+});
+
+// ---------- Revision 6 (AC45–AC51) ----------
+test('AC45: Miner names, roles and badges', async ({ page }) => {
+  await start(page, { ai: false, setup: {
+    playerHand: ['goblin-scrounger', 'goblin-scrapper', 'goblin-smith-miner'],
+    board: [
+      { cardId: 'goblin-scrounger', owner: 'player', row: 6, col: 1 },
+      { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 2 },
+    ],
+  } });
+  const cards = await page.evaluate(async () => {
+    const out = {};
+    for (const id of ['goblin-scrounger', 'gnome-prospector', 'dwarf-miner', 'goblin-smith-miner', 'gnome-smith-miner', 'dwarf-smith-miner']) {
+      out[id] = await window.oreheart.getCard(id);
+    }
+    return out;
+  });
+  expect(cards['goblin-scrounger'].name).toBe('Grubgrabber Miner');
+  expect(cards['gnome-prospector'].name).toBe('Gemsinger Miner');
+  expect(cards['dwarf-miner'].name).toBe('Stonebreaker Miner');
+  for (const [id, name, faction] of [['goblin-smith-miner', 'Scrapsmith Miner', 'goblins'], ['gnome-smith-miner', 'Arcsmith Miner', 'gnomes'], ['dwarf-smith-miner', 'Anvilsworn Miner', 'dwarves']]) {
+    expect(cards[id].name).toBe(name);
+    expect(cards[id].faction).toBe(faction);
+    expect(cards[id].role).toBe('smith');
+    expect(cards[id].type).toBe('creature');
+    expect([cards[id].cost, cards[id].attack, cards[id].health, cards[id].move]).toEqual([2, 1, 1, 1]);
+  }
+  const hand = page.getByLabel('Your hand', { exact: true });
+  await expect(hand.getByRole('button', { name: 'Grubgrabber Miner', exact: true })).toContainText('⛏');
+  await expect(hand.getByRole('button', { name: 'Gutripper Brawler', exact: true })).toContainText('⚔');
+  await expect(hand.getByRole('button', { name: 'Gutripper Brawler', exact: true })).not.toContainText('⛏');
+  const smith = hand.getByRole('button', { name: 'Scrapsmith Miner', exact: true });
+  await expect(smith).toContainText('⚒');
+  await expect(smith).toContainText('SMITH');
+  await expect(page.getByLabel('Grubgrabber Miner, row 6, column 1', { exact: true })).toContainText('⛏');
+  await expect(page.getByLabel('Gutripper Brawler, row 6, column 2', { exact: true })).not.toContainText('⛏');
+});
+
+const smithSetup = (n, blue) => ({
+  ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak',
+  setup: {
+    playerHand: Array(n).fill('gnome-smith-miner'), playerCrystals: blue,
+    playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: [{ cardId: 'gnome-tinker', owner: 'player', row: 6, col: 3, damage: 1 }],
+  },
+});
+
+test('AC46: Miner upgrades — Smith gives +1 Attack and +1 Health, basic Miner +1 Health; they stack, persist and heal', async ({ page }) => {
+  let s = await start(page, smithSetup(4, 10));
+  const base = await page.evaluate(async () => await window.oreheart.getCard('gnome-tinker'));
+  const tinker = at(s, 6, 3).uid;
+  const smiths = s.players.player.hand.map((c) => c.uid);
+  expect(at(s, 6, 3).upgrades).toEqual({ attack: 0, health: 0 });
+  expect((await legal(page)).some((a) => a.type === 'minerUpgrade' && a.uid === smiths[0] && a.creatureUid === tinker)).toBe(true);
+  expect((await legal(page)).some((a) => a.type === 'smith')).toBe(false); // the old choice action is gone
+  expect(await page.evaluate(async () => await window.oreheart.movesLeft())).toBe(true); // the summon counts, not the upgrade
+  expect((await act(page, { type: 'minerUpgrade', uid: smiths[0], creatureUid: tinker })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 6, 3).attack).toBe(base.attack + 1);
+  expect(at(s, 6, 3).maxHealth).toBe(base.health + 1);
+  expect(at(s, 6, 3).health).toBe(base.health); // was damaged by 1, +1 Health
+  expect(s.players.player.crystals).toBe(8);
+  expect((await act(page, { type: 'minerUpgrade', uid: smiths[1], creatureUid: tinker })).ok).toBe(true);
+  s = await getState(page);
+  const t = at(s, 6, 3);
+  expect(t.attack).toBe(base.attack + 2);
+  expect(t.maxHealth).toBe(base.health + 2);
+  expect(t.upgrades).toEqual({ attack: 2, health: 2 });
+  expect(s.board.creatures.length).toBe(1);
+  expect(s.players.player.crystals).toBe(6);
+  expect(s.players.player.discard.filter((c) => c.cardId === 'gnome-smith-miner').length).toBe(2);
+  await expect(page.getByLabel('Aegis Tinkerer, row 6, column 3', { exact: true })).toHaveAttribute('data-upgrades', '4');
+  // summoned on the back row: a normal Miner that may move this turn
+  expect((await act(page, { type: 'summon', uid: smiths[2], row: 7, col: 1 })).ok).toBe(true);
+  s = await getState(page);
+  const sm = at(s, 7, 1);
+  expect(sm.cardId).toBe('gnome-smith-miner');
+  expect(s.players.player.crystals).toBe(4);
+  await done(page);
+  expect((await legal(page)).some((a) => a.type === 'move' && a.creatureUid === sm.uid)).toBe(true);
+  expect((await legal(page)).some((a) => a.type === 'attack' && a.creatureUid === sm.uid)).toBe(false);
+  expect((await act(page, { type: 'minerUpgrade', uid: smiths[3], creatureUid: tinker })).ok).toBe(false); // Deploy only
+  await done(page);
+  await passTurn(page);
+  s = await getState(page);
+  expect(s.activePlayer).toBe('player');
+  const t2 = at(s, 6, 3);
+  expect(t2.attack).toBe(base.attack + 2);
+  expect(t2.maxHealth).toBe(base.health + 2);
+  expect(t2.health).toBe(base.health + 2); // healed up to the raised max
+  expect(t2.upgrades).toEqual({ attack: 2, health: 2 });
+});
+
+test('AC46: a basic Miner played onto your creature gives exactly +1 Health; the free Miner can never upgrade', async ({ page }) => {
+  let s = await start(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'sproingle', setup: {
+    playerHand: ['goblin-scrounger', 'goblin-scrounger'], playerCrystals: 1, playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 }],
+  } });
+  const base = await page.evaluate(async () => await window.oreheart.getCard('goblin-scrapper'));
+  const scrap = at(s, 6, 3).uid;
+  const [g1, g2] = s.players.player.hand.map((c) => c.uid);
+  expect((await act(page, { type: 'minerUpgrade', uid: g1, creatureUid: scrap })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 6, 3).attack).toBe(base.attack);
+  expect(at(s, 6, 3).maxHealth).toBe(base.health + 1);
+  expect(at(s, 6, 3).upgrades).toEqual({ attack: 0, health: 1 });
+  expect(s.players.player.crystals).toBe(0); // paid its normal cost (1)
+  // now broke with no Miner on the battlefield: the second one could be a free Miner, but only as a summon
+  expect((await legal(page)).some((a) => a.type === 'minerUpgrade' && a.uid === g2)).toBe(false);
+  expect((await act(page, { type: 'minerUpgrade', uid: g2, creatureUid: scrap })).ok).toBe(false);
+  expect((await act(page, { type: 'summon', uid: g2, row: 7, col: 1 })).ok).toBe(true); // free Miner
+});
+
+test('AC46: dropping a Smith Miner on your creature upgrades it at once (no choice pop-up)', async ({ page }) => {
+  let s = await start(page, smithSetup(1, 2));
+  const base = await page.evaluate(async () => await window.oreheart.getCard('gnome-tinker'));
+  await page.waitForTimeout(2000); // let opening banners finish
+  const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Arcsmith Miner', exact: true });
+  const label = page.getByLabel('Aegis Tinkerer, row 6, column 3', { exact: true });
+  const a = await card.boundingBox();
+  const b = await label.boundingBox();
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height + 12, { steps: 15 });
+  await page.mouse.up();
+  await expect.poll(async () => at(await getState(page), 6, 3).attack).toBe(base.attack + 1);
+  expect(at(await getState(page), 6, 3).maxHealth).toBe(base.health + 1);
+  await expect(page.getByRole('dialog', { name: 'Smith upgrade' })).toHaveCount(0);
+});
+
+test('AC47: Crystal Bank persists, has no cap and is spent after Flow', async ({ page }) => {
+  let s = await start(page, { ai: false, playerCommander: 'grubnak', setup: {
+    playerHand: ['goblin-slinger'], playerCrystals: 2, playerBank: 3,
+    playerDeck: SHARDS, opponentDeck: SHARDS,
+  } });
+  expect(s.players.player.bank).toEqual(3);
+  await expect(page.getByLabel('Your Flow crystals', { exact: true })).toHaveText(/\b2\b/);
+  await expect(page.getByLabel('Your Bank crystals', { exact: true })).toHaveText(/\b3\b/);
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true); // 4 - 1 Grubnak = 3
+  s = await getState(page);
+  expect(s.players.player.crystals).toEqual(ZERO);
+  expect(s.players.player.bank).toEqual(2);
+  await passTurn(page);
+  await passTurn(page);
+  s = await getState(page);
+  expect(s.activePlayer).toBe('player');
+  expect(s.players.player.crystals).toEqual(ZERO); // Flow reset to last turn's mining
+  expect(s.players.player.bank).toEqual(2); // Bank kept
+  await expect(page.getByLabel('Your Bank crystals', { exact: true })).toHaveText(/\b2\b/);
+  // no cap on the Bank
+  s = await newMatch(page, { ai: false, setup: { playerHand: ['crystal-cluster'], playerBank: 20 } });
+  expect((await act(page, { type: 'playCrystal', uid: s.players.player.hand[0].uid })).ok).toBe(true);
+  expect((await getState(page)).players.player.bank).toEqual(22);
+});
+
+test('AC48: playing a Crystal card never ends the phase or turn', async ({ page }) => {
+  let s = await start(page, { ai: false, autoSkip: true, setup: { playerHand: ['soul-shard', 'goblin-scrapper'], playerCrystals: 4 } });
+  const before = { turn: s.turn, phase: s.phase, activePlayer: s.activePlayer };
+  expect(before.phase).toBe('deploy');
+  expect((await act(page, { type: 'playCrystal', uid: handUid(s, 'player', 'soul-shard') })).ok).toBe(true);
+  s = await getState(page);
+  expect({ turn: s.turn, phase: s.phase, activePlayer: s.activePlayer }).toEqual(before);
+  await page.waitForTimeout(2000);
+  s = await getState(page);
+  expect({ turn: s.turn, phase: s.phase, activePlayer: s.activePlayer }).toEqual(before);
+  expect((await legal(page)).some((a) => a.type === 'summon')).toBe(true); // 4 Flow + 1 Bank pays the Scrapper (6 - 1)
+  // not in your own Action phase
+  s = await newMatch(page, { ai: false, setup: { playerHand: ['soul-shard'], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 }] } });
+  await done(page);
+  expect((await getState(page)).phase).toBe('action');
+  expect((await legal(page)).some((a) => a.type === 'playCrystal')).toBe(false);
+  expect((await act(page, { type: 'playCrystal', uid: s.players.player.hand[0].uid })).ok).toBe(false);
+});
+
+const respondR6 = (playerHand, playerCrystals) => ({
+  ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo',
+  setup: {
+    firstPlayer: 'opponent', opponentHand: ['fireball'], opponentCrystals: 3,
+    playerHand, playerCrystals,
+    board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 4 }],
+  },
+});
+const castFireball = async (page, s) =>
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'opponent', 'fireball'), target: { row: 6, col: 4 } })).ok).toBe(true);
+
+test('AC49: Respond window opens even when the counterspell is unaffordable', async ({ page }) => {
+  let s = await start(page, respondR6(['fizzle'], 0));
+  expect((await page.evaluate(async () => await window.oreheart.getConfig())).respondWindowSeconds).toBe(12);
+  await castFireball(page, s);
+  s = await getState(page);
+  expect(s.pendingResponse && s.pendingResponse.responder).toBe('player');
+  const acts = await legal(page);
+  expect(acts.some((a) => a.type === 'pass')).toBe(true);
+  expect(acts.some((a) => a.type === 'respond')).toBe(false);
+  const dlg = page.getByRole('dialog', { name: 'Respond?' });
+  await expect(dlg).toBeVisible();
+  await expect(dlg).toContainText('need 3 more');
+  await expect(dlg.getByRole('button', { name: /^Snuff Out/ })).toBeDisabled();
+  await expect(page.getByRole('progressbar', { name: 'Respond time left' })).toBeVisible();
+  await dlg.getByRole('button', { name: 'Let it happen' }).click();
+  await expect(dlg).toBeHidden();
+  await expect.poll(async () => at(await getState(page), 6, 4)).toBeUndefined();
+});
+
+test('AC49: "Soul Cluster + Snuff Out" plays both and cancels the enemy spell', async ({ page }) => {
+  let s = await start(page, respondR6(['fizzle', 'crystal-cluster'], 1));
+  await castFireball(page, s);
+  s = await getState(page);
+  const fizzle = handUid(s, 'player', 'fizzle');
+  const cluster = handUid(s, 'player', 'crystal-cluster');
+  expect((await legal(page)).some((a) => a.type === 'respond' && a.uid === fizzle && a.crystalUid === cluster)).toBe(true);
+  expect((await legal(page)).some((a) => a.type === 'respond' && a.uid === fizzle && !a.crystalUid)).toBe(false);
+  const dlg = page.getByRole('dialog', { name: 'Respond?' });
+  await expect(dlg).toBeVisible();
+  await dlg.getByRole('button', { name: 'Soul Cluster + Snuff Out', exact: true }).click();
+  await expect(dlg).toBeHidden();
+  await expect.poll(async () => (await getState(page)).pendingResponse).toBe(null);
+  s = await getState(page);
+  expect(at(s, 6, 4)).toBeDefined(); // Infernal Orb was cancelled
+  expect(s.players.player.crystals).toEqual(ZERO); // 1 Flow + 2 Bank paid Snuff Out (3)
+  expect(s.players.player.bank).toEqual(ZERO);
+  expect(s.players.player.discard.map((c) => c.cardId).sort()).toEqual(['crystal-cluster', 'fizzle']);
+  expect(s.players.opponent.discard.some((c) => c.cardId === 'fireball')).toBe(true);
+  expect(s.activePlayer).toBe('opponent');
+});
+
+test('AC49: a Crystal card played alone in the Respond window keeps it open and funds the counterspell', async ({ page }) => {
+  let s = await start(page, respondR6(['fizzle', 'crystal-cluster'], 1));
+  await castFireball(page, s);
+  s = await getState(page);
+  expect((await act(page, { type: 'playCrystal', uid: handUid(s, 'player', 'crystal-cluster') })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.pendingResponse && s.pendingResponse.responder).toBe('player');
+  expect(s.priority).toBe('player');
+  expect(s.players.player.bank).toEqual(2);
+  expect((await act(page, { type: 'respond', uid: handUid(s, 'player', 'fizzle') })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.pendingResponse).toBe(null);
+  expect(at(s, 6, 4)).toBeDefined();
+  expect(total(s.players.player.crystals) + total(s.players.player.bank)).toBe(0);
+});
+
+test('AC50: Smith Miners never Tunnel; the Tunnel! tag shows only when behind', async ({ page }) => {
+  const hand = { playerHand: ['goblin-smith-miner', 'goblin-scrounger'], playerCrystals: 5 };
+  let s = await start(page, { ai: false, setup: { ...hand, board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1, minedMine: M1 }] } });
+  expect(s.sites[0].color).toBe('blue');
+  const smith = handUid(s, 'player', 'goblin-smith-miner');
+  const summons = (await legal(page)).filter((a) => a.type === 'summon');
+  expect(summons.some((a) => a.uid === smith && a.row === 3 && a.col === 3)).toBe(false);
+  expect(summons.some((a) => a.uid === smith && a.row === 7)).toBe(true);
+  expect((await act(page, { type: 'summon', uid: smith, row: 3, col: 3 })).ok).toBe(false);
+  const hb = page.getByLabel('Your hand', { exact: true });
+  await expect(hb.getByRole('button', { name: 'Grubgrabber Miner', exact: true })).toContainText('Tunnel!');
+  await expect(hb.getByRole('button', { name: 'Scrapsmith Miner', exact: true })).not.toContainText('Tunnel!');
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 3, col: 3 })).ok).toBe(true);
+  await newMatch(page, { ai: false, setup: { ...hand } });
+  await expect(page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Grubgrabber Miner', exact: true })).not.toContainText('Tunnel!');
+});
+
+const STRONGHOLD_CROWD = [
+  ...[[7, 6], [7, 8], [6, 6], [6, 7], [6, 8]].map(([row, col]) => ({ cardId: 'goblin-scrapper', owner: 'player', row, col })),
+  ...[[1, 6], [1, 8], [2, 6], [2, 7], [2, 8]].map(([row, col]) => ({ cardId: 'gnome-tinker', owner: 'opponent', row, col })),
+];
+for (const [w, h] of [[844, 390], [740, 360], [667, 375]]) {
+  test.describe(`hearts and turn display ${w}x${h}`, () => {
+    test.use({ viewport: { width: w, height: h } });
+    test(`AC51: Commander hearts never cover creature labels; turn display top-right (${w}x${h})`, async ({ page }) => {
+      await start(page, { ai: false, setup: { board: STRONGHOLD_CROWD } });
+      await expect(page.getByLabel('Your Commander health', { exact: true })).toBeVisible();
+      await expect(page.getByLabel('Enemy Commander health', { exact: true })).toBeVisible();
+      await expect(page.getByLabel('Gutripper Brawler, row 6, column 7', { exact: true })).toBeVisible();
+      await page.waitForTimeout(1500);
+      const overlaps = await page.evaluate(() => {
+        const hearts = ['Your Commander health', 'Enemy Commander health']
+          .map((n) => document.querySelector(`[aria-label="${n}"]`).getBoundingClientRect());
+        const labels = [...document.querySelectorAll('[aria-label*=", row "]')]
+          .filter((e) => !/^(Crystal site|Mine flow)/.test(e.getAttribute('aria-label')) && e.getClientRects().length)
+          .map((e) => [e.getAttribute('aria-label'), e.getBoundingClientRect()]);
+        const out = [];
+        for (const hr of hearts) for (const [name, r] of labels) {
+          const ox = Math.min(hr.right, r.right) - Math.max(hr.left, r.left);
+          const oy = Math.min(hr.bottom, r.bottom) - Math.max(hr.top, r.top);
+          if (ox > 1 && oy > 1) out.push(name);
+        }
+        return { out, count: labels.length };
+      });
+      expect(overlaps.count).toBeGreaterThanOrEqual(10);
+      expect(overlaps.out).toEqual([]);
+      if (w === 844) {
+        const phase = page.getByLabel('Current phase', { exact: true });
+        await expect(phase).toContainText(/your turn/i);
+        await expect(phase).toContainText(/deploy/i);
+        const b = await phase.boundingBox();
+        expect(b.x + b.width / 2).toBeGreaterThan(w * 2 / 3);
+        expect(b.y + b.height / 2).toBeLessThan(h / 2);
+      }
+    });
+  });
+}
+
+// ---------- Revision 7 ----------
+const RENAMES = {
+  'goblin-scrounger': 'Grubgrabber Miner', 'goblin-scrapper': 'Gutripper Brawler', 'goblin-slinger': 'Skullflinger',
+  'goblin-bomber': 'Boomfist Lunatic', 'goblin-sneak': 'Backstab Weasel', 'wolf-rider': 'Mangewolf Rider',
+  'grubnaks-big-boss-troll': 'Gutcrusher the Troll Tyrant', 'gnome-prospector': 'Gemsinger Miner', 'gnome-tinker': 'Aegis Tinkerer',
+  'spark-gnome': 'Stormcaller Savant', 'clockwork-beetle': 'Iron Scarab Automaton', 'gnome-illusionist': 'Mirrorveil Illusionist',
+  'gyrocopter-ace': 'Thunderwing Gyronaut', 'the-great-steam-golem': 'The Arcane Colossus', 'dwarf-miner': 'Stonebreaker Miner',
+  'shieldbeard': 'Ironwall Shieldbeard', 'axe-thrower': 'Grudge Hurler', 'ironhammer-berserker': 'Bloodbeard Berserker',
+  'brewmaster': 'Forgefire Brewlord', 'ram-rider': 'Thunderhorn Ram Rider', 'queen-brunhilda-stonebeard': 'Queen Brunhilda Ironheart, the Unbroken',
+  'shard-guzzler': 'Shardguzzler the Bottomless', 'overclocked-conduit': 'Overclocked Aethervein', 'crystal-drunk-delver': 'Gemdrunk Deepdelver',
+  'goblin-smith-miner': 'Scrapsmith Miner', 'gnome-smith-miner': 'Arcsmith Miner', 'dwarf-smith-miner': 'Anvilsworn Miner',
+  'prospectors-prayer': 'Desperate Plunder', 'tunnel-rush': 'Burrow Ambush', 'fireball': 'Infernal Orb', 'battle-cry': 'Warhowl',
+  'meteor-strike': 'Skyfall Annihilation', 'healing-light': 'Mending Light', 'shield-bubble': 'Bastion Ward', 'second-wind': 'Last Stand',
+  'fizzle': 'Snuff Out', 'hold-it': 'Not Today!', 'spell-snap': 'Arcane Severance', 'mirror-hex': 'Hex Reversal',
+  'soul-shard': 'Soul Shard', 'crystal-cluster': 'Soul Cluster', 'glowing-geode': 'Wellspring Geode', 'heart-of-the-fallen': 'Heart of the Fallen',
+  'motherlode': 'Motherlode',
+};
+
+test('AC52: one crystal type — two counters only; Heart of the Fallen puts 4 into the Bank', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { playerHand: ['heart-of-the-fallen'], playerCrystals: 3 } });
+  await expect(page.getByLabel('Your Flow crystals', { exact: true })).toHaveText(/\b3\b/);
+  await expect(page.getByLabel('Your Bank crystals', { exact: true })).toHaveText(/\b0\b/);
+  await expect(page.getByLabel(/^Your (green|blue|purple|white) crystals$/)).toHaveCount(0);
+  const acts = (await legal(page)).filter((a) => a.type === 'playCrystal');
+  expect(acts.length).toBe(1);
+  expect(acts[0].colors).toBeUndefined();
+  expect((await act(page, { type: 'playCrystal', uid: s.players.player.hand[0].uid })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.bank).toBe(4);
+  expect(s.players.player.crystals).toBe(3);
+  await expect(page.getByLabel('Your Bank crystals', { exact: true })).toHaveText(/\b4\b/);
+});
+
+test('AC53: the Respond pop-up has a standalone "Play Soul Cluster" button that keeps it open', async ({ page }) => {
+  let s = await start(page, respondR6(['fizzle', 'crystal-cluster'], 1));
+  await castFireball(page, s);
+  const dlg = page.getByRole('dialog', { name: 'Respond?' });
+  await expect(dlg).toBeVisible();
+  await expect(dlg.getByRole('button', { name: 'Soul Cluster + Snuff Out', exact: true })).toBeVisible();
+  await dlg.getByRole('button', { name: 'Play Soul Cluster', exact: true }).click();
+  await expect.poll(async () => (await getState(page)).players.player.bank).toBe(2);
+  await expect(dlg).toBeVisible();
+  await expect(dlg.getByRole('button', { name: 'Play Soul Cluster', exact: true })).toHaveCount(0); // used up / limit reached
+  const snuff = dlg.getByRole('button', { name: 'Snuff Out', exact: true });
+  await expect(snuff).toBeEnabled();
+  await snuff.click();
+  await expect(dlg).toBeHidden();
+  await expect.poll(async () => (await getState(page)).pendingResponse).toBe(null);
+  expect(at(await getState(page), 6, 4)).toBeDefined();
+});
+
+test('AC54: nothing can mine from 2 spaces away — only the 8 adjacent spaces', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: {
+    board: [
+      { cardId: 'goblin-scrounger', owner: 'player', row: 6, col: 2 }, // 2 below mine (4,2)
+      { cardId: 'goblin-slinger', owner: 'player', row: 2, col: 4 }, // Ranged, 2 above mine (4,4)
+      { cardId: 'goblin-scrounger', owner: 'player', row: 4, col: 8 }, // 2 right of mine (4,6)
+      { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 6 }, // diagonal distance 2 from (4,4) and 2 from (4,6)
+    ],
+  } });
+  await done(page);
+  const acts = await legal(page);
+  expect(acts.some((a) => a.type === 'mine')).toBe(false);
+  for (const c of s.board.creatures) {
+    for (const m of [M1, M2, M3]) expect((await act(page, { type: 'mine', creatureUid: c.uid, row: m.row, col: m.col })).ok).toBe(false);
+  }
+  expect(acts.some((a) => a.type === 'mineAt')).toBe(false);
+  for (const m of [M1, M2, M3]) {
+    await expect(page.getByRole('button', { name: `Crystal site, row ${m.row}, column ${m.col}`, exact: true })).toHaveAttribute('data-ready-miners', '0');
+  }
+});
+
+test('AC55: casting a spell shows "GRUBNAK CASTS INFERNAL ORB!" over the Stronghold; Commanders never attack', async ({ page }) => {
+  let s = await start(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: {
+    playerHand: ['fireball'], playerCrystals: 3, board: [{ cardId: 'shieldbeard', owner: 'opponent', row: 3, col: 4 }],
+  } });
+  const acts = await legal(page);
+  const uids = new Set(s.board.creatures.map((c) => c.uid));
+  expect(acts.filter((a) => a.type === 'attack').every((a) => uids.has(a.creatureUid))).toBe(true);
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'fireball'), target: { row: 3, col: 4 } })).ok).toBe(true);
+  await expect(page.getByText(/GRUBNAK CASTS INFERNAL ORB!/i)).toBeVisible();
+});
+
+test('AC56: Settings has "Card reveals: Normal" / "Fast", saved across reloads', async ({ page }) => {
+  await openMenu(page);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const btn = page.getByRole('button', { name: /^Card reveals: (Normal|Fast)/ });
+  await expect(btn).toHaveText(/Card reveals: Normal/);
+  await btn.click();
+  await expect(btn).toHaveText(/Card reveals: Fast/);
+  await page.reload();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByRole('button', { name: /^Card reveals: Fast/ })).toBeVisible();
+});
+
+test('AC57: every card shows its full ability text, in the hand and in the card view; names follow the rename table', async ({ page }) => {
+  const ids = Object.keys(RENAMES);
+  await start(page, { ai: false, setup: { playerHand: ids } });
+  const cards = await page.evaluate(async (list) => {
+    const out = {};
+    for (const id of list) out[id] = await window.oreheart.getCard(id);
+    return out;
+  }, ids);
+  const hand = page.getByLabel('Your hand', { exact: true });
+  for (const id of ids) {
+    expect(cards[id].name, id).toBe(RENAMES[id]);
+    expect(typeof cards[id].text, id).toBe('string');
+    if (cards[id].type !== 'creature' || !/Miner$/.test(cards[id].name) || cards[id].role !== 'gatherer') {
+      expect(cards[id].text.length, id).toBeGreaterThan(8);
+    }
+    const btn = hand.getByRole('button', { name: RENAMES[id], exact: true });
+    await expect(btn, id).toHaveCount(1);
+    await expect(btn, id).toContainText(cards[id].text);
+  }
+  expect(cards['shieldbeard'].text).toContain('Guard: adjacent enemies must attack it first');
+  expect(cards['goblin-slinger'].text).toContain('Ranged');
+  expect(cards['goblin-smith-miner'].text).toContain('+1 Attack and +1 Health');
+  expect(cards['goblin-scrounger'].text).toContain('+1 Health');
+  await hand.getByRole('button', { name: 'Ironwall Shieldbeard', exact: true }).click();
+  const view = page.getByRole('dialog', { name: 'Ironwall Shieldbeard' });
+  await expect(view).toBeVisible();
+  await expect(view).toContainText(cards['shieldbeard'].text);
+});
+
+test('AC57: the Commander picker uses the new Commander names', async ({ page }) => {
+  await openMenu(page);
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  for (const n of ['Grubnak Rotgut, King of the Junkpile', 'Archmagister Sproingle the Unfathomable', 'Thane Borgo Gravelgrim']) {
+    await expect(page.getByRole('button', { name: n })).toBeVisible();
+  }
+});
+
+async function mineAllSetup(page) {
+  return start(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'sproingle', setup: {
+    playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: [
+      { cardId: 'gnome-prospector', owner: 'opponent', row: 5, col: 1, minedMine: M1 },
+      { cardId: 'gnome-prospector', owner: 'opponent', row: 5, col: 2, minedMine: M1 },
+      { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 1 }, // A: M1 only (enemy-owned)
+      { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 3 }, // B: M1 (half) or M2 (neutral, full)
+      { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 6 }, // C: will move first
+      { cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 5 }, // D: Fighter, never included
+      { cardId: 'goblin-scrounger', owner: 'player', row: 7, col: 9 }, // E: not next to a mine
+      { cardId: 'shard-guzzler', owner: 'player', row: 5, col: 7 }, // F: Crystal Eater next to M3
+    ],
+  } });
+}
+
+const siteBtn = (page, m) => page.getByRole('button', { name: `Crystal site, row ${m.row}, column ${m.col}`, exact: true });
+test('AC58: tapping a mine mines with exactly the ready Miners next to it', async ({ page }) => {
+  let s = await mineAllSetup(page);
+  await expect(page.getByRole('button', { name: /Mine All/ })).toHaveCount(0);
+  for (const m of [M1, M2, M3]) await expect(siteBtn(page, m)).toHaveAttribute('data-ready-miners', '0'); // Deploy
+  await done(page);
+  await expect(siteBtn(page, M1)).toHaveAttribute('data-ready-miners', '2'); // A, B
+  await expect(siteBtn(page, M2)).toHaveAttribute('data-ready-miners', '1'); // B (D is a Fighter)
+  await expect(siteBtn(page, M3)).toHaveAttribute('data-ready-miners', '2'); // C, F
+  expect((await act(page, { type: 'mineAll' })).ok).toBe(false);
+  const mineAts = (await legal(page)).filter((a) => a.type === 'mineAt');
+  expect(mineAts.length).toBe(3);
+  expect((await act(page, { type: 'move', creatureUid: at(s, 3, 6).uid, row: 2, col: 6 })).ok).toBe(true);
+  await expect(siteBtn(page, M3)).toHaveAttribute('data-ready-miners', '1');
+  await siteBtn(page, M1).click();
+  await expect.poll(async () => at(await getState(page), 3, 1).hasMined).toBe(true);
+  s = await getState(page);
+  expect(at(s, 3, 1).minedMine).toMatchObject(M1);
+  expect(at(s, 5, 3).minedMine).toMatchObject(M1); // the tapped mine
+  expect(at(s, 5, 7).hasMined).toBe(false);
+  await expect(siteBtn(page, M2)).toHaveAttribute('data-ready-miners', '0');
+  await siteBtn(page, M3).click();
+  await expect.poll(async () => at(await getState(page), 5, 7).hasMined).toBe(true);
+  s = await getState(page);
+  expect(at(s, 5, 7).minedMine).toMatchObject(M3);
+  expect(at(s, 3, 5).hasMined).toBe(false); // Fighter
+  expect(at(s, 7, 9).hasMined).toBe(false); // not next to a mine
+  expect(at(s, 2, 6).hasMined).toBe(false); // already moved
+  expect(s.players.player.flow).toBe(6); // M1 now 2 vs 2 = neutral: 2 + 2, plus F 2
+  expect((await legal(page)).some((a) => a.type === 'mineAt')).toBe(false);
+});
+
+test('AC58: mineAt action matches the tap; hovering a mine only shows its info', async ({ page }) => {
+  let s = await mineAllSetup(page);
+  await done(page);
+  await siteBtn(page, M1).hover();
+  const info = page.getByRole('dialog', { name: 'Crystal site' });
+  await expect(info).toBeVisible();
+  await expect(info).toContainText('Controlled by: Enemy');
+  await page.mouse.move(5, 200);
+  s = await getState(page);
+  expect(s.board.creatures.some((c) => c.hasMined)).toBe(false);
+  await page.keyboard.press('m'); // the M shortcut is gone
+  await page.waitForTimeout(500);
+  expect((await getState(page)).board.creatures.some((c) => c.hasMined)).toBe(false);
+  expect((await act(page, { type: 'mineAt', row: M3.row, col: M3.col })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 3, 6).hasMined && at(s, 5, 7).hasMined).toBe(true);
+  expect(at(s, 3, 5).hasMined).toBe(false);
+  expect((await act(page, { type: 'mineAt', row: M3.row, col: M3.col })).ok).toBe(false); // nobody left there
+});
+
+test.describe('hand pop-out at 2x', () => {
+  test.use({ viewport: { width: 844, height: 390 } });
+  test('AC59: a hovered hand card doubles in size and stays fully on-screen', async ({ page }) => {
+    await start(page, { ai: false, setup: { playerHand: ['goblin-scrapper', 'fireball', 'soul-shard', 'goblin-slinger', 'goblin-scrounger'] } });
+    await page.waitForTimeout(2000);
+    for (const name of ['Gutripper Brawler', 'Grubgrabber Miner']) {
+      const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name, exact: true });
+      const before = await card.boundingBox();
+      await page.mouse.move(before.x + before.width / 2, before.y + 8); // the visible top of the tucked card
+      await expect.poll(async () => (await card.boundingBox()).width).toBeGreaterThan(before.width * 1.8);
+      const b = await card.boundingBox();
+      expect(b.x).toBeGreaterThanOrEqual(-1);
+      expect(b.y).toBeGreaterThanOrEqual(-1);
+      expect(b.x + b.width).toBeLessThanOrEqual(845);
+      expect(b.y + b.height).toBeLessThanOrEqual(391);
+      await page.mouse.move(422, 100);
+    }
+  });
+});
+
+// ---------- Revision 8 ----------
+async function openDecks(page, url = '/?test=1') {
+  await page.goto(url);
+  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+}
+const allCards = (page) => page.getByLabel('All cards', { exact: true });
+const deckList = (page) => page.getByLabel('Deck list', { exact: true });
+// first copy by double-click on the card face, further copies with the + button
+async function addCard(page, name, n = 1) {
+  const plus = deckList(page).getByRole('button', { name: `Add ${name}`, exact: true });
+  if ((await plus.count()) === 0) {
+    await allCards(page).getByRole('button', { name, exact: true }).dblclick();
+    await expect(plus).toBeVisible();
+    n -= 1;
+  }
+  for (let i = 0; i < n; i++) await plus.click();
+}
+async function renameDeck(page, name) {
+  await page.getByRole('button', { name: 'Rename', exact: true }).click();
+  const dlg = page.getByRole('dialog', { name: 'Rename deck' });
+  await dlg.getByLabel('Deck name', { exact: true }).fill(name);
+  await dlg.getByRole('button', { name: 'OK', exact: true }).click();
+  await expect(page.getByLabel('Deck pile', { exact: true })).toContainText(name);
+}
+async function saveDeck(page) {
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+}
+
+test('AC60: Deck Builder shows card faces with full text and filters them', async ({ page }) => {
+  await openDecks(page);
+  const all = allCards(page);
+  for (const n of ['Rotgut Grenadier', 'Shiv Rat', 'Phase Stalker', 'Grimhold Ravager', 'Snotskull Grunt', 'Infernal Orb', 'Soul Cluster', 'Gutcrusher the Troll Tyrant']) {
+    await expect(all.getByRole('button', { name: n, exact: true })).toHaveCount(1);
+  }
+  await expect(all).toContainText('Guard: adjacent enemies must attack it first');
+  await page.getByLabel('Faction', { exact: true }).selectOption('Dwarves');
+  await expect(all.getByRole('button', { name: 'Ironjaw Raider', exact: true })).toBeVisible();
+  await expect(all.getByRole('button', { name: 'Snotskull Grunt', exact: true })).toHaveCount(0);
+  await page.getByLabel('Faction', { exact: true }).selectOption('All');
+  await page.getByLabel('Type', { exact: true }).selectOption('Spells');
+  await expect(all.getByRole('button', { name: 'Infernal Orb', exact: true })).toBeVisible();
+  await expect(all.getByRole('button', { name: 'Ironjaw Raider', exact: true })).toHaveCount(0);
+  await page.getByLabel('Type', { exact: true }).selectOption('All');
+  await page.getByLabel('Rarity', { exact: true }).selectOption('Collector');
+  await expect(all.getByRole('button', { name: 'Gutcrusher the Troll Tyrant', exact: true })).toBeVisible();
+  await expect(all.getByRole('button', { name: 'Snotskull Grunt', exact: true })).toHaveCount(0);
+  await page.getByLabel('Rarity', { exact: true }).selectOption('All');
+  await page.getByLabel('Cost', { exact: true }).selectOption('7+');
+  await expect(all.getByRole('button', { name: 'Mangewolf Rider', exact: true })).toBeVisible();
+  await expect(all.getByRole('button', { name: 'Shiv Rat', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+});
+
+test('AC61: Deck Builder problems use the exact messages and counts', async ({ page }) => {
+  await openDecks(page);
+  await addCard(page, 'Mangewolf Rider', 3);
+  await addCard(page, 'Soul Shard', 11);
+  const counts = page.getByLabel('Deck counts', { exact: true });
+  const problems = page.getByLabel('Deck problems', { exact: true });
+  await expect(counts).toContainText('Cards: 14/50');
+  await expect(counts).toContainText('Creatures: 3');
+  await expect(counts).toContainText('Spells: 0');
+  await expect(counts).toContainText('Crystal cards: 11');
+  await expect(problems).toContainText('Needs exactly 50 cards (now 14).');
+  await expect(problems).toContainText('At most 10 Crystal cards (now 11).');
+  await expect(deckList(page)).toContainText('3 × Mangewolf Rider');
+  await deckList(page).getByRole('button', { name: 'Remove Soul Shard', exact: true }).click();
+  await expect(problems).not.toContainText('At most 10 Crystal cards');
+  await expect(problems).toContainText('Needs exactly 50 cards (now 13).');
+  await addCard(page, 'Snotskull Grunt', 37);
+  await expect(counts).toContainText('Cards: 50/50');
+  await expect(problems).toContainText('Deck is legal');
+});
+
+test('AC62: up to 5 saved decks persist after a reload', async ({ page }) => {
+  await openDecks(page);
+  await renameDeck(page, 'Miner Rush');
+  await addCard(page, 'Grubgrabber Miner', 50);
+  await expect(page.getByLabel('Deck problems', { exact: true })).toContainText('Deck is legal');
+  await saveDeck(page);
+  for (const name of ['Too Small', 'Deck C', 'Deck D', 'Deck E']) {
+    await page.getByRole('button', { name: 'New Deck', exact: true }).click();
+    await renameDeck(page, name);
+    await addCard(page, 'Shiv Rat');
+    await saveDeck(page);
+  }
+  await page.reload();
+  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  const mine = page.getByLabel('My decks', { exact: true });
+  for (const name of ['Miner Rush', 'Too Small', 'Deck C', 'Deck D', 'Deck E']) {
+    await expect(mine.getByRole('button', { name: new RegExp(`^${name}`) })).toHaveCount(1);
+  }
+  await expect(page.getByRole('button', { name: 'New Deck', exact: true })).toBeDisabled();
+  await expect(page.getByText('You can save up to 5 decks.')).toBeVisible();
+});
+
+const NEW_CARDS = {
+  'rotgut-grenadier': ['Rotgut Grenadier', 'goblins', 'Common', 5, 2, 2, /Ranged/],
+  'shiv-rat': ['Shiv Rat', 'goblins', 'Common', 4, 2, 1, /Sneaky/],
+  'skullbasher-rusher': ['Skullbasher Rusher', 'goblins', 'Uncommon', 6, 2, 2, /Charge/],
+  'junk-shaman': ['Junk Shaman', 'goblins', 'Uncommon', 5, 1, 3, /\+1 Attack/],
+  'blastrat-sapper': ['Blastrat Sapper', 'goblins', 'Uncommon', 4, 2, 1, /Ka-boom/i],
+  'hexwright-apprentice': ['Hexwright Apprentice', 'gnomes', 'Common', 4, 1, 2, /Ranged/],
+  'gearward-sentinel': ['Gearward Sentinel', 'gnomes', 'Common', 6, 1, 4, /Guard/],
+  'runic-siphoner': ['Runic Siphoner', 'gnomes', 'Uncommon', 5, 2, 2, /Bank/],
+  'phase-stalker': ['Phase Stalker', 'gnomes', 'Uncommon', 6, 2, 3, /Blink/],
+  'glyphshield-warden': ['Glyphshield Warden', 'gnomes', 'Uncommon', 6, 2, 3, /Shield/],
+  'oathbound-pikeman': ['Oathbound Pikeman', 'dwarves', 'Common', 6, 2, 3, /Guard/],
+  'deepforge-crossbowman': ['Deepforge Crossbowman', 'dwarves', 'Common', 5, 2, 2, /Ranged/],
+  'barrelback-courier': ['Barrelback Courier', 'dwarves', 'Common', 6, 1, 3, /turn it.s played/],
+  'rune-splitter': ['Rune-Splitter', 'dwarves', 'Uncommon', 7, 3, 3, /Armored/],
+  'grimhold-ravager': ['Grimhold Ravager', 'dwarves', 'Uncommon', 8, 3, 4, /Rage/],
+};
+
+test('AC63: the 15 new cards have the exact printed stats', async ({ page }) => {
+  await openTest(page);
+  for (const [id, [name, faction, rarity, cost, atk, hp, re]] of Object.entries(NEW_CARDS)) {
+    const c = await page.evaluate(async (x) => await window.oreheart.getCard(x), id);
+    expect(c, id).toMatchObject({ id, name, type: 'creature', faction, rarity, role: 'fighter', cost, attack: atk, health: hp, move: 1 });
+    expect(c.text, id).toMatch(re);
+  }
+});
+
+test('AC63: new card abilities with exact numbers', async ({ page }) => {
+  const fight = async (board, extra = {}) => {
+    const s = await start(page, { ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { playerDeck: SHARDS, opponentDeck: SHARDS, board, ...extra } });
+    await done(page);
+    return s;
+  };
+  // Shiv Rat: Sneaky, no strike back
+  let s = await fight([{ cardId: 'shiv-rat', owner: 'player', row: 5, col: 4 }, { cardId: 'goblin-grunt', owner: 'opponent', row: 4, col: 4 }]);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 4).uid, target: { row: 4, col: 4 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 4)).toBeUndefined();
+  expect(at(s, 5, 4).health).toBe(1);
+  // Blastrat Sapper: dies to the strike back, Ka-boom 1 finishes the adjacent Grunt
+  s = await fight([
+    { cardId: 'blastrat-sapper', owner: 'player', row: 5, col: 4 },
+    { cardId: 'goblin-pebbler', owner: 'opponent', row: 4, col: 4 },
+    { cardId: 'goblin-grunt', owner: 'opponent', row: 4, col: 5 },
+  ]);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 4).uid, target: { row: 4, col: 4 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 5, 4)).toBeUndefined();
+  expect(at(s, 4, 4)).toBeUndefined();
+  expect(at(s, 4, 5)).toBeUndefined();
+  // Rune-Splitter: Armored takes 1 less (2 -> 1)
+  s = await fight([{ cardId: 'dwarf-pickman', owner: 'player', row: 5, col: 4 }, { cardId: 'rune-splitter', owner: 'opponent', row: 4, col: 4 }]);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 4).uid, target: { row: 4, col: 4 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 4).health).toBe(2);
+  expect(at(s, 5, 4)).toBeUndefined();
+  // Grimhold Ravager: below half Health it hits for 3 + 2 = 5
+  s = await fight([
+    { cardId: 'grimhold-ravager', owner: 'player', row: 5, col: 4, damage: 3 },
+    { cardId: 'grimhold-ravager', owner: 'opponent', row: 4, col: 4 },
+  ]);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 4).uid, target: { row: 4, col: 4 } })).ok).toBe(true);
+  expect(at(await getState(page), 4, 4)).toBeUndefined();
+  // Runic Siphoner: defeating a creature puts 1 in the Bank
+  s = await fight([{ cardId: 'runic-siphoner', owner: 'player', row: 5, col: 4 }, { cardId: 'gnome-widget', owner: 'opponent', row: 4, col: 4 }]);
+  expect(s.players.player.bank).toBe(0);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 4).uid, target: { row: 4, col: 4 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 4)).toBeUndefined();
+  expect(at(s, 5, 4).health).toBe(1);
+  expect(s.players.player.bank).toBe(1);
+  // Glyphshield Warden: Shield 1 at the start of its owner's turn
+  s = await fight([{ cardId: 'glyphshield-warden', owner: 'player', row: 6, col: 4 }]);
+  await done(page); // end player turn 1
+  await passTurn(page); // opponent turn 2
+  s = await getState(page);
+  expect(s.activePlayer).toBe('player');
+  expect(at(s, 6, 4).shield).toBe(1);
+  // Barrelback Courier: can move the turn it's played
+  s = await start(page, { ai: false, playerCommander: 'sproingle', setup: { playerHand: ['barrelback-courier'], playerCrystals: 6 } });
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'barrelback-courier'), row: 7, col: 3 })).ok).toBe(true);
+  await done(page);
+  const c = at(await getState(page), 7, 3);
+  expect((await legal(page)).some((a) => a.type === 'move' && a.creatureUid === c.uid)).toBe(true);
+});
+
+const strictSetup = { playerHand: ['grubnaks-big-boss-troll', 'soul-shard', 'healing-light'], playerCrystals: 20,
+  board: [{ cardId: 'grubnaks-big-boss-troll', owner: 'player', row: 6, col: 3 }] };
+
+test('AC64: Deploy auto-skips with an unplayable hand; Action skips once nothing can act', async ({ page }) => {
+  let s = await start(page, { ai: false, playerCommander: 'grubnak', setup: strictSetup });
+  expect(await page.evaluate(async () => await window.oreheart.movesLeft())).toBe(false);
+  s = await newMatch(page, { ai: false, autoSkip: true, playerCommander: 'grubnak', setup: strictSetup });
+  await expect.poll(async () => (await getState(page)).phase, { timeout: 5000 }).toBe('action');
+  await expect(page.getByRole('dialog', { name: /Moves still available/ })).toHaveCount(0);
+  await page.waitForTimeout(2000);
+  s = await getState(page);
+  expect(s.phase).toBe('action'); // the Troll can still move
+  expect(s.activePlayer).toBe('player');
+  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 3).uid, row: 5, col: 3 })).ok).toBe(true);
+  await expect.poll(async () => (await getState(page)).activePlayer, { timeout: 5000 }).toBe('opponent');
+});
+
+test('AC64: Done with only a Crystal card, an Instant or an unplaceable card shows no pop-up', async ({ page }) => {
+  await start(page, { ai: false, playerCommander: 'grubnak', setup: strictSetup });
+  await page.getByRole('button', { name: 'Done' }).click();
+  await expect.poll(async () => (await getState(page)).phase).toBe('action');
+  await expect(page.getByRole('dialog', { name: /Moves still available/ })).toHaveCount(0);
+});
+
+test('AC65: every creature carries the weapon of its type', async ({ page }) => {
+  await openTest(page);
+  const expected = {
+    'goblin-scrounger': 'pick', 'goblin-smith-miner': 'pick-hammer', 'shard-guzzler': 'pick-crystal',
+    'goblin-scrapper': 'sword', 'goblin-slinger': 'sling', 'hexwright-apprentice': 'wand',
+    'deepforge-crossbowman': 'crossbow', 'axe-thrower': 'axes', 'shieldbeard': 'sword-shield',
+    'ram-rider': 'lance', 'skullbasher-rusher': 'lance', 'gyrocopter-ace': 'gyro',
+    'grubnaks-big-boss-troll': 'signature', 'fireball': null, 'soul-shard': null,
+  };
+  for (const [id, w] of Object.entries(expected)) {
+    expect((await page.evaluate(async (x) => await window.oreheart.getCard(x), id)).weapon, id).toBe(w);
+  }
+});
+
+test.describe('compact stat pill', () => {
+  test.use({ viewport: { width: 844, height: 390 } });
+  test('AC66: creature labels are compact pills with Attack, Health, Movement', async ({ page }) => {
+    await start(page, { ai: false, setup: { board: [{ cardId: 'wolf-rider', owner: 'player', row: 5, col: 6 }, { cardId: 'goblin-slinger', owner: 'player', row: 5, col: 8 }] } });
+    for (const name of ['Mangewolf Rider, row 5, column 6', 'Skullflinger, row 5, column 8']) {
+      const label = page.getByLabel(name, { exact: true });
+      await expect(label).toBeVisible();
+      expect((await label.boundingBox()).width, name).toBeLessThanOrEqual(110);
+    }
+    await expect(page.getByLabel('Mangewolf Rider, row 5, column 6', { exact: true })).toHaveText(/3\D+4\D+2/);
+  });
+});
+
+// ---------- Revision 9 ----------
+for (const [flow, saved] of [[9, 0], [10, 1], [16, 1]]) {
+  test(`AC67: ending your turn with ${flow} Flow saves ${saved} into the Bank`, async ({ page }) => {
+    let s = await start(page, { ai: false, setup: { playerCrystals: flow } });
+    expect((await page.evaluate(async () => (await window.oreheart.getConfig()).savingsPerCrystal))).toBe(10);
+    await passTurn(page);
+    s = await getState(page);
+    expect(s.activePlayer).toBe('opponent');
+    expect(s.players.player.crystals).toBe(flow - saved);
+    expect(s.players.player.bank).toBe(saved);
+    if (saved > 0) await expect(page.getByText(`+${saved} banked`)).toBeVisible();
+    // the enemy's turn end never saves the player's Flow
+    await passTurn(page);
+    s = await getState(page);
+    expect(s.activePlayer).toBe('player');
+    expect(s.players.player.bank).toBe(saved);
+  });
+}
+
+test('AC67: savings applies to the opponent at the end of its own turn', async ({ page }) => {
+  await start(page, { ai: false, setup: { firstPlayer: 'opponent', opponentCrystals: 12 } });
+  let s = await getState(page);
+  expect(s.activePlayer).toBe('opponent');
+  expect(s.players.opponent.bank).toBe(0);
+  await passTurn(page);
+  s = await getState(page);
+  expect(s.activePlayer).toBe('player');
+  expect(s.players.opponent.crystals).toBe(11);
+  expect(s.players.opponent.bank).toBe(1);
+});
+
+const spellsOnly = { playerHand: ['fireball', 'fireball'], playerCrystals: 10,
+  board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 4 }] };
+test('AC68: a hand of only affordable spells does not count as moves left', async ({ page }) => {
+  await start(page, { ai: false, opponentCommander: 'grubnak', setup: spellsOnly });
+  expect(await page.evaluate(async () => await window.oreheart.movesLeft())).toBe(false);
+  expect((await legal(page)).some((a) => a.type === 'cast')).toBe(true);
+  await page.getByRole('button', { name: 'Done' }).click();
+  await expect.poll(async () => (await getState(page)).phase).toBe('action');
+  await expect(page.getByRole('dialog', { name: /Moves still available/ })).toHaveCount(0);
+});
+
+test('AC68: with auto-skip on, a spells-only turn passes by itself', async ({ page }) => {
+  await start(page, { ai: false, autoSkip: true, opponentCommander: 'grubnak', setup: spellsOnly });
+  await expect.poll(async () => (await getState(page)).activePlayer, { timeout: 8000 }).toBe('opponent');
+  await expect(page.getByRole('dialog', { name: /Moves still available/ })).toHaveCount(0);
+});
+
+const previewSetup = { board: [
+  { cardId: 'shieldbeard', owner: 'player', row: 5, col: 4 },
+  { cardId: 'goblin-scrapper', owner: 'opponent', row: 4, col: 3 },
+  { cardId: 'axe-thrower', owner: 'player', row: 3, col: 7 },
+  { cardId: 'goblin-scrounger', owner: 'opponent', row: 3, col: 9 },
+] };
+const preview = (page, uid, target) => page.evaluate(async ([u, t]) => await window.oreheart.previewAttack(u, t), [uid, target]);
+test('AC69: previewAttack matches the real attack exactly', async ({ page }) => {
+  let s = await start(page, { ai: false, playerCommander: 'borgo', opponentCommander: 'grubnak', setup: previewSetup });
+  await done(page);
+  s = await getState(page);
+  const sb = at(s, 5, 4); const hurler = at(s, 3, 7); const scr = at(s, 3, 9);
+  const p1 = await preview(page, sb.uid, { row: 4, col: 3 });
+  expect(p1).toMatchObject({ youDeal: 3, youTake: 2, targetDefeated: true, attackerDefeated: false });
+  const pc = await preview(page, hurler.uid, { commander: 'opponent' });
+  expect(pc).toMatchObject({ youDeal: hurler.attack, youTake: 0, targetDefeated: false, attackerDefeated: false });
+  const p2 = await preview(page, hurler.uid, { row: 3, col: 9 });
+  expect(p2.youTake).toBe(0);
+  expect(JSON.stringify(await getState(page))).toBe(JSON.stringify(s)); // preview never changes the state
+  expect((await act(page, { type: 'attack', creatureUid: sb.uid, target: { row: 4, col: 3 } })).ok).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: hurler.uid, target: { row: 3, col: 9 } })).ok).toBe(true);
+  const after = await getState(page);
+  expect(at(after, 4, 3)).toBeUndefined();
+  expect(at(after, 5, 4).health).toBe(sb.health - p1.youTake);
+  expect(at(after, 3, 7).health).toBe(hurler.health);
+  const scrAfter = at(after, 3, 9);
+  if (p2.targetDefeated) expect(scrAfter).toBeUndefined();
+  else expect(scrAfter.health).toBe(scr.health - p2.youDeal);
+});
+
+test('AC69: dragging a creature over an enemy shows the attack preview; letting go elsewhere cancels', async ({ page }) => {
+  await start(page, { ai: false, playerCommander: 'borgo', opponentCommander: 'grubnak', setup: previewSetup });
+  await done(page);
+  const from = await page.getByLabel('Ironwall Shieldbeard, row 5, column 4', { exact: true }).boundingBox();
+  const to = await page.getByLabel('Gutripper Brawler, row 4, column 3', { exact: true }).boundingBox();
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+  const box = page.getByLabel('Attack preview', { exact: true });
+  await expect(box).toBeVisible();
+  await expect(box).toContainText('You deal 3 / You take 2');
+  await expect(box).toContainText('💀');
+  await page.mouse.move(5, 5, { steps: 12 });
+  await page.mouse.up();
+  await expect(box).toBeHidden();
+  const s = await getState(page);
+  expect(at(s, 4, 3)).toBeDefined();
+  expect(at(s, 5, 4).hasAttacked).toBe(false);
+});
+
+test('AC70: double-click and + add cards; single click only enlarges; copy limit and cost chart', async ({ page }) => {
+  await openDecks(page);
+  const all = allCards(page);
+  await all.getByRole('button', { name: 'Shiv Rat', exact: true }).click();
+  const view = page.getByRole('dialog', { name: 'Shiv Rat' });
+  await expect(view).toBeVisible();
+  await view.getByRole('button', { name: 'Close' }).click();
+  await expect(deckList(page)).not.toContainText('Shiv Rat');
+  await all.getByRole('button', { name: 'Grubgrabber Miner', exact: true }).dblclick();
+  await expect(deckList(page)).toContainText('1 × Grubgrabber Miner');
+  await deckList(page).getByRole('button', { name: 'Add Grubgrabber Miner', exact: true }).click();
+  await expect(deckList(page)).toContainText('2 × Grubgrabber Miner');
+  await expect(page.getByLabel('Cost chart', { exact: true }).getByLabel('Cost 1: 2 cards', { exact: true })).toHaveCount(1);
+  await expect(page.getByLabel('Deck pile', { exact: true })).toContainText('2/50');
+  await addCard(page, 'Mangewolf Rider', 3);
+  await expect(deckList(page)).toContainText('3 × Mangewolf Rider');
+  await expect(deckList(page).getByRole('button', { name: 'Add Mangewolf Rider', exact: true })).toBeDisabled();
+  await all.getByRole('button', { name: 'Mangewolf Rider', exact: true }).dblclick();
+  await expect(deckList(page)).toContainText('3 × Mangewolf Rider');
+  await deckList(page).getByRole('button', { name: 'Remove Grubgrabber Miner', exact: true }).click();
+  await deckList(page).getByRole('button', { name: 'Remove Grubgrabber Miner', exact: true }).click();
+  await expect(deckList(page)).not.toContainText('Grubgrabber Miner');
+  await expect(page.getByLabel('Deck pile', { exact: true })).toContainText('3/50');
+});
+
+test('AC71: Auto-fill completes a legal deck; Rename and Save', async ({ page }) => {
+  await openDecks(page);
+  await renameDeck(page, 'Rat Pack');
+  await addCard(page, 'Shiv Rat', 2);
+  await page.getByRole('button', { name: 'Auto-fill', exact: true }).click();
+  const counts = page.getByLabel('Deck counts', { exact: true });
+  await expect(counts).toContainText('Cards: 50/50');
+  await expect(page.getByLabel('Deck problems', { exact: true })).toContainText('Deck is legal');
+  const rat = (await deckList(page).innerText()).match(/(\d+) × Shiv Rat/);
+  expect(rat && Number(rat[1])).toBeGreaterThanOrEqual(2);
+  const crystals = Number((await counts.innerText()).match(/Crystal cards: (\d+)/)[1]);
+  expect(crystals).toBeLessThanOrEqual(4);
+  await expect(deckList(page)).toContainText('Miner');
+  await saveDeck(page);
+  await expect(page.getByLabel('My decks', { exact: true }).getByRole('button', { name: /^Rat Pack/ })).toHaveCount(1);
+});
+
+async function makeSelectDecks(page) {
+  await openDecks(page);
+  await renameDeck(page, 'Miner Rush');
+  await addCard(page, 'Grubgrabber Miner', 50);
+  await saveDeck(page);
+  await page.getByRole('button', { name: 'New Deck', exact: true }).click();
+  await renameDeck(page, 'Too Small');
+  await addCard(page, 'Shiv Rat');
+  await saveDeck(page);
+  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+}
+const deckRow = (page) => page.getByLabel('Deck choice', { exact: true });
+async function keepAndGetState(page) {
+  const mull = page.getByRole('dialog', { name: 'Mulligan' });
+  await expect(mull).toBeVisible();
+  await mull.getByRole('button', { name: 'Keep Hand' }).click();
+  await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
+  return getState(page);
+}
+const allIds = (s, side) => [...s.players[side].hand, ...s.players[side].deck, ...s.players[side].discard].map((c) => c.cardId)
+  .concat(s.board.creatures.filter((c) => c.owner === side).map((c) => c.cardId));
+
+test('AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)', async ({ page }) => {
+  await makeSelectDecks(page);
+  await expect(page.locator('select')).toHaveCount(0);
+  for (const n of ['Grubnak Rotgut, King of the Junkpile', 'Archmagister Sproingle the Unfathomable', 'Thane Borgo Gravelgrim']) {
+    await expect(page.getByRole('button', { name: n, exact: true })).toBeVisible();
+  }
+  const stacks = deckRow(page).getByRole('button', { name: /cards, (ready|not ready)$/ });
+  await expect(stacks.first()).toHaveAccessibleName('Starter deck, 50 cards, ready');
+  await expect(deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })).toHaveCount(1);
+  const small = deckRow(page).getByRole('button', { name: /^Too Small, 1 cards?, not ready$/ });
+  await expect(small).toHaveAttribute('aria-disabled', 'true');
+  await small.click({ force: true });
+  await expect(page.getByLabel('Deck message', { exact: true })).toContainText('Needs exactly 50 cards (now 1).');
+  await expect(small).not.toHaveAttribute('aria-pressed', 'true');
+  for (const d of ['Easy', 'Normal', 'Hard']) await expect(page.getByRole('button', { name: d, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Normal', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile', exact: true }).click();
+  await deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true }).click();
+  await expect(deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Hard', exact: true }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  const s = await keepAndGetState(page);
+  expect(s.difficulty).toBe('hard');
+  const ids = allIds(s, 'player');
+  expect(ids.length).toBe(50);
+  expect(ids.every((id) => id === 'goblin-scrounger')).toBe(true);
+  expect(allIds(s, 'opponent').some((id) => id !== 'goblin-scrounger')).toBe(true);
+});
+
+test('AC72: "+ New Deck" on the select screen opens the Deck Builder', async ({ page }) => {
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await deckRow(page).getByRole('button', { name: '+ New Deck', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+});
+
+test('AC73: the select screen remembers the last Commander, deck and difficulty', async ({ page }) => {
+  await makeSelectDecks(page);
+  await page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable', exact: true }).click();
+  await deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true }).click();
+  await page.getByRole('button', { name: 'Hard', exact: true }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await keepAndGetState(page);
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Hard', exact: true })).toHaveAttribute('aria-pressed', 'true');
+});
+
+async function surrenderViaMenu(page) {
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await page.getByRole('button', { name: 'Surrender', exact: true }).click();
+  await page.getByRole('button', { name: 'Yes, surrender' }).click();
+  await expect(page.getByRole('heading', { name: 'Defeat' })).toBeVisible({ timeout: 15000 });
+}
+test('AC74: match-end summary, Play again with the same choices, and Menu', async ({ page }) => {
+  await page.goto('/?test=1&seed=5');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await page.getByRole('button', { name: 'Thane Borgo Gravelgrim', exact: true }).click();
+  await deckRow(page).getByRole('button', { name: 'Starter deck, 50 cards, ready', exact: true }).click();
+  await page.getByRole('button', { name: 'Hard', exact: true }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await keepAndGetState(page);
+  await surrenderViaMenu(page);
+  const sum = page.getByLabel('Match summary', { exact: true });
+  await expect(sum).toBeVisible();
+  for (const t of ['Crystals mined', 'Creatures summoned', 'Creatures lost', 'Turns', 'MVP']) await expect(sum).toContainText(t);
+  await page.getByRole('button', { name: 'Play again', exact: true }).click();
+  const s = await keepAndGetState(page);
+  expect(s.players.player.commanderId).toBe('borgo');
+  expect(s.difficulty).toBe('hard');
+  expect(s.winner).toBeNull();
+  expect(allIds(s, 'player').length).toBe(50);
+  await surrenderViaMenu(page);
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+});
+
+const TUTORIAL_STEPS = ['summon', 'move', 'mine', 'mineTap', 'spend', 'crystal', 'upgrade', 'swap', 'fight', 'spell', 'savings', 'commander'];
+const TUTORIAL_WORDS = { summon: /back row/i, mineTap: /Tap the mine/i, spend: /Flow/, crystal: /Bank/, upgrade: /upgrade/i,
+  fight: /You deal/, savings: /banked/i, commander: /Commander/ };
+test('AC75: the tutorial runs to the end, teaching only the current rules', async ({ page }) => {
+  test.setTimeout(180000);
+  await openTest(page);
+  await page.evaluate(async () => await window.oreheart.startTutorial());
+  const tip = page.getByLabel('Tutorial tip', { exact: true });
+  const seen = [];
+  let s;
+  for (let i = 0, actions = 0; i < 600 && actions < 200; i++) {
+    s = await getState(page);
+    if (s.phase === 'over' || s.tutorial.step === 'complete') break;
+    const step = s.tutorial.step;
+    if (!seen.includes(step)) {
+      seen.push(step);
+      if (TUTORIAL_WORDS[step]) await expect(tip).toContainText(TUTORIAL_WORDS[step]);
+      expect(await tip.innerText()).not.toMatch(/off-color|Gatherer|Mine All|green crystals?|purple crystals?|blue crystals?|white crystals?/i);
+    }
+    if (s.priority !== 'player') { await page.waitForTimeout(150); continue; }
+    if (s.pendingResponse) { await act(page, { type: 'pass' }); continue; }
+    const a = await page.evaluate(async () => await window.oreheart.tutorialAction());
+    if (!a) break;
+    const r = await act(page, a);
+    expect(r.ok, `${step}: ${JSON.stringify(a)} -> ${JSON.stringify(r)}`).toBe(true);
+    actions++;
+  }
+  expect(seen).toEqual(TUTORIAL_STEPS);
+  await expect.poll(async () => (await getState(page)).tutorial.step, { timeout: 10000 }).toBe('complete');
+  expect((await getState(page)).winner).toBe('player');
+  await expect(page.getByRole('heading', { name: 'Victory!' })).toBeVisible({ timeout: 15000 });
+});
+
+test('AC76: the Last turn recap lists what the enemy did', async ({ page }) => {
+  let s = await start(page, { ai: false, opponentCommander: 'grubnak', setup: {
+    opponentHand: ['goblin-scrapper'], opponentCrystals: 10,
+    board: [{ cardId: 'goblin-scrounger', owner: 'opponent', row: 2, col: 11 }] } });
+  const btn = page.getByRole('button', { name: 'Last turn', exact: true });
+  await btn.click();
+  const dlg = page.getByRole('dialog', { name: 'Last turn' });
+  await expect(dlg).toContainText('Nothing yet.');
+  await dlg.getByRole('button', { name: 'Close' }).click();
+  await passTurn(page);
+  const summon = (await legal(page)).find((a) => a.type === 'summon');
+  expect((await act(page, summon)).ok).toBe(true);
+  await done(page);
+  s = await getState(page);
+  const mv = (await legal(page)).find((a) => a.type === 'move' && a.creatureUid === at(s, 2, 11).uid);
+  expect((await act(page, mv)).ok).toBe(true);
+  await done(page);
+  expect((await getState(page)).activePlayer).toBe('player');
+  await btn.click();
+  await expect(dlg).toContainText('Summoned Gutripper Brawler');
+  await expect(dlg).toContainText('Moved Grubgrabber Miner');
+});
+
+test('AC77: a mine with ready Miners shows the swinging pickaxe count; it goes once they mined', async ({ page }) => {
+  await start(page, { ai: false, setup: { board: [
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1 },
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 2 },
+  ] } });
+  await done(page);
+  const m1 = page.getByRole('button', { name: `Crystal site, row ${M1.row}, column ${M1.col}`, exact: true });
+  await expect(m1).toHaveAttribute('data-ready-miners', '2');
+  await expect(m1).toContainText('×2');
+  await m1.click();
+  await expect(m1).toHaveAttribute('data-ready-miners', '0');
+  await expect(m1).not.toContainText('×');
+  const s = await getState(page);
+  expect(at(s, 5, 1).hasMined && at(s, 5, 2).hasMined).toBe(true);
+});

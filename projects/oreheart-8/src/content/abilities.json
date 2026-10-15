@@ -1,0 +1,106 @@
+{
+ "gather": {
+  "name": "Miner",
+  "text": "Mines 2 crystals from a mine it stands next to (Fighters mine 1)."
+ },
+ "tunnel": {
+  "name": "Tunnel",
+  "text": "While the enemy holds more mines than you, it can be summoned onto any empty space next to a mine."
+ },
+ "frenzy": {
+  "name": "Frenzy",
+  "text": "+1 Attack when next to another Goblin."
+ },
+ "ranged": {
+  "name": "Ranged",
+  "text": "Hits any enemy within 2 spaces in any direction, even over other creatures. No strike back."
+ },
+ "kaboom": {
+  "name": "Ka-boom",
+  "text": "When defeated, deals 2 damage to all adjacent enemies."
+ },
+ "sneaky": {
+  "name": "Sneaky",
+  "text": "Enemies cannot strike back at it."
+ },
+ "haste": {
+  "name": "Haste",
+  "text": "Can act the turn it is played."
+ },
+ "rally": {
+  "name": "Rally",
+  "text": "All your Goblins get +1 Attack."
+ },
+ "fixit": {
+  "name": "Fix-it",
+  "text": "At the start of your turn, each adjacent ally gets Shield 1."
+ },
+ "armored": {
+  "name": "Armored",
+  "text": "Takes 1 less damage from every hit."
+ },
+ "blink": {
+  "name": "Blink",
+  "text": "Once, swap places with any of your creatures."
+ },
+ "flying": {
+  "name": "Flying",
+  "text": "Moves over other creatures."
+ },
+ "overload": {
+  "name": "Overload",
+  "text": "Its attack also hits every enemy next to the target for 1."
+ },
+ "guard": {
+  "name": "Guard",
+  "text": "Adjacent enemies must attack it first."
+ },
+ "rage": {
+  "name": "Rage",
+  "text": "+2 Attack while below half Health."
+ },
+ "charge": {
+  "name": "Charge",
+  "text": "Can move and attack in the same turn."
+ },
+ "unbreakable": {
+  "name": "Unbreakable",
+  "text": "Never takes more than 3 damage from one hit."
+ },
+ "heartyale": {
+  "name": "Hearty Ale",
+  "text": "At the start of your turn, each adjacent ally gets +1 Health until your next turn."
+ },
+ "eaterGuzzler": {
+  "name": "Crystal Eater",
+  "text": "Each extra Crystal card you play this turn deals 2 damage to it."
+ },
+ "eaterConduit": {
+  "name": "Crystal Eater",
+  "text": "Each extra Crystal card you play this turn means it can't move or attack until your next turn, and it loses 1 Health."
+ },
+ "eaterDelver": {
+  "name": "Crystal Eater",
+  "text": "Each extra Crystal card you play this turn gives it -1 Attack for the rest of the match."
+ },
+ "smith": {
+  "name": "Smith",
+  "text": "Summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health."
+ },
+ "kaboom1": {
+  "name": "Ka-boom 1",
+  "text": "When defeated, deals 1 damage to every adjacent enemy creature."
+ },
+ "junkBoost": {
+  "name": "Junk Boost",
+  "text": "On your turn, adjacent Goblins get +1 Attack."
+ },
+ "siphon": {
+  "name": "Siphon",
+  "text": "When it defeats a creature, your Bank gets +1 crystal."
+ },
+ "glyphShield": {
+  "name": "Glyph Shield",
+  "text": "At the start of your turn it gets Shield 1."
+ }
+}
