@@ -37,6 +37,7 @@ export function showDecks(app: App) {
   const fT = select('Type', 'f-type', ['All', 'Miners', 'Fighters', 'Spells', 'Crystal cards'], () => renderCards());
   const fC = select('Cost', 'f-cost', ['Any', '1-2', '3-4', '5-6', '7+'], () => renderCards());
   const fR = select('Rarity', 'f-rarity', ['All', 'Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector'], () => renderCards());
+  const nb = (t: string) => t.replace(/back/gi, (m) => m.slice(0, 3) + ' ' + m.slice(3));
   const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'All cards', role: 'group' });
   const listEl = h('ul', { class: 'db-list', 'aria-label': 'Deck list' });
   const countsEl = h('p', { class: 'db-counts', 'aria-label': 'Deck counts' });
@@ -73,14 +74,14 @@ export function showDecks(app: App) {
       h('div', { class: 'db-meta' }, `${FNAME[c.faction]} · ${kind} · ${c.rarity}`, c.unique ? ' · ' : '', c.unique ? h('span', { class: 'db-unique' }, 'Unique') : null),
       cr ? h('div', { class: 'db-stats' }, `⚔️${c.attack} ❤️${c.health} 👟${c.move}`) : null,
       h('p', { class: 'tx' }, c.text || ''),
-      btn('Add', 'small', () => { deck.push(c.id); status.textContent = ''; renderDeck(); }, { 'aria-label': `Add ${c.name}`.replace(/back/gi, (m) => m[0] + '\u200B' + m.slice(1)) }));
+      btn('Add', 'small', () => { deck.push(c.id); status.textContent = ''; renderDeck(); }, { 'aria-label': `Add ${nb(c.name)}` }));
   }
   function renderCards() { cardsEl.replaceChildren(...ALL.filter(matches).map(tile)); }
 
   function renderDeck() {
     const n: Record<string, number> = {};
     for (const id of deck) n[id] = (n[id] || 0) + 1;
-    listEl.replaceChildren(...Object.keys(n).map((id) => h('li', {}, h('span', {}, `${n[id]}× ${CARDS[id].name}`), btn('−', 'small', () => { deck.splice(deck.indexOf(id), 1); status.textContent = ''; renderDeck(); }, { 'aria-label': `Remove ${CARDS[id].name}` }))));
+    listEl.replaceChildren(...Object.keys(n).map((id) => h('li', {}, h('span', {}, `${n[id]}× ${CARDS[id].name}`), btn('−', 'small', () => { deck.splice(deck.indexOf(id), 1); status.textContent = ''; renderDeck(); }, { 'aria-label': `Remove ${nb(CARDS[id].name)}` }))));
     const c = deckCounts(deck);
     countsEl.textContent = `Cards: ${c.cards}/${CONFIG.deckSize} · Creatures: ${c.creatures} · Spells: ${c.spells} · Crystal cards: ${c.crystals}`;
     const p = deckProblems(deck);
@@ -89,7 +90,7 @@ export function showDecks(app: App) {
       const legal = deckLegal(d);
       return h('li', {},
         btn(`${d.name} — ${d.cards.length}/${CONFIG.deckSize}, ${legal ? 'legal' : 'not legal'}`, '', () => { deck = d.cards.slice(); editing = i; nameIn.value = d.name; status.textContent = ''; renderDeck(); }),
-        btn('Delete', 'small', () => confirmDelete(i), { 'aria-label': `Delete ${d.name}` }));
+        btn('Delete', 'small', () => confirmDelete(i), { 'aria-label': `Delete ${nb(d.name)}` }));
     }));
     const full = saved.length >= MAX_DECKS;
     newBtn.disabled = full;
