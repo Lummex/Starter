@@ -2,6 +2,22 @@
 
 Read this brief first, then the full design document: `factory-design/design/oreheart-gdd-v2.md` (the source of truth for every rule, number and card). The screen layout reference is `factory-design/design/oreheart-mockup.jpg`.
 
+## Revision 8 (sixth owner playtest) — read this first
+
+The design document is the source of truth; where anything disagrees, the design doc wins, then this section, then the earlier revisions.
+
+1. **Testing deck builder** (new screen from the main menu: "Decks"): every card unlocked in unlimited supply (no collection yet). Enforce the deck rules from the design doc (50 cards; Commons/Uncommons unlimited; Rare/Ultra Rare max 3; Collector 1; Unique; at most 10 Crystal cards) with clear messages. Filters by faction, type/role, cost and rarity; live counts of creatures, spells and Crystal cards; full card text visible. Save up to 5 decks on the device (localStorage, wrapped in try/catch). Before each match, pick one of your decks or the starter deck for the chosen Commander; the computer uses a starter deck. Mixed-faction decks are allowed.
+2. **Starter decks rebuilt:** ~5 basic Miners, 3 Smith Miners, at most 4 copies of any other card, include the new cards, 40 creatures / 6 spells / 4 Crystal cards.
+3. **Finish the card reveal** (the last build only flies and shrinks the card): after the ~1.5 s center display, a creature card drops onto its space, flips, glows and rises into the 3D creature with a dust puff.
+4. **15 new cards** exactly as listed in the design doc tables (Rotgut Grenadier, Shiv Rat, Skullbasher Rusher, Junk Shaman, Blastrat Sapper, Hexwright Apprentice, Gearward Sentinel, Runic Siphoner, Phase Stalker, Glyphshield Warden, Oathbound Pikeman, Deepforge Crossbowman, Barrelback Courier, Rune-Splitter, Grimhold Ravager). The design-doc tables now also list the six existing filler Commons. The AI must be able to use them.
+5. **Tucked hand:** the hand rests half below the bottom screen edge (top half of each card visible); hovering anywhere over it slides the whole fan up to full view, leaving tucks it back. Phone: tap the strip to slide up; dragging a card straight out of the tucked hand also works. The 2× pop-out of the hovered/held card stays.
+6. **Tap a mine to mine** (replaces the Mine All button; remove it and the M shortcut): in the Action phase, tapping a mine makes all of the player's ready Miner-role creatures adjacent to it mine at once (skip creatures that already acted or can't act; never Fighters). Mines with ready Miners pulse with "⛏️N". Mine info moves to press-and-hold (or mouse hover).
+7. **Strict auto-skip:** Deploy skips automatically (~0.5 s, no confirmation) when the player has no card they can both afford and legally place; Crystal cards, Instants, the Miner swap and unplaceable cards do not prevent the skip. Action skips when no creature can move, attack or mine. The "Moves still available" pop-up appears only when the player presses Done while a real card play/move/attack/mine remains. Paused during tutorial steps. Add tests.
+8. **Weapons on 3D creatures:** big readable weapons by type as listed in the design doc ("Weapons show the type").
+9. **Compact stat pill:** ⚔️/❤️/👟 numbers keep their size but sit tightly together in one small pill tucked right under the creature's feet, just above its ring.
+
+Unit/acceptance tests: deck builder rejects illegal decks and a saved deck can be used in a match; Deploy auto-skips with an unplayable hand; tapping a mine mines with exactly the eligible Miners.
+
 ## Revision 7 (fifth owner playtest) — read this first
 
 The design document is the source of truth; where anything disagrees, the design doc wins, then this section, then Revisions 6, 5, 4, 3 and 2.
