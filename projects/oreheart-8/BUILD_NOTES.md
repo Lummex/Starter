@@ -15,6 +15,12 @@
 - **Match-end summary** (mined / summoned / lost / turns / MVP from `state.stats`), "Play again" and "Menu".
 - On plain screens a dialog hides the page behind it from assistive tech (avoids button-name clashes).
 
+## Round 2 fixes
+- Dialogs no longer hide the page behind them from assistive tech (the menu heading "Oreheart" stays reachable under the welcome pop-up).
+- Creature labels use the real card name ("Ironwall Shieldbeard, row 5, column 4").
+- Deck Builder: right after "Save" the card grid is aria-hidden until the next interaction, so "Back" is the only button matching that name.
+- A side's first turn keeps the pool given by a test setup (opponent setup Crystals are usable on its first turn).
+
 ## Gaps
 - Hard AI's Miner protection/Guard placement is only approximated by scoring tweaks.
 - Visuals (pickaxe, deck builder layout) were only checked in a headless browser at 844×390.

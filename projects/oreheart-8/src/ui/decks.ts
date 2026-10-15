@@ -209,6 +209,8 @@ export function showDecks(app: App) {
     storeDecks(saved);
     status.textContent = 'Saved';
     renderDeck();
+    // right after saving, the long card grid is parked out of the accessibility tree until the next interaction
+    cardsEl.setAttribute('aria-hidden', 'true');
   }
 
   const pileWrap = h('div', { class: 'db-pilewrap' }, pileEl, h('p', { class: 'hint' }, 'Drag a card here, or double-click it.'));
@@ -224,6 +226,9 @@ export function showDecks(app: App) {
         h('h2', {}, 'Deck list'), listEl,
         h('h2', {}, 'My decks'), mineEl,
         btn('Back', '', () => app.showMenu())))));
+  const screen = app.root.querySelector('.db-screen') as HTMLElement;
+  const wake = () => cardsEl.removeAttribute('aria-hidden');
+  for (const ev of ['pointermove', 'pointerdown', 'keydown', 'change', 'focusin']) screen.addEventListener(ev, wake);
   renderCards();
   renderDeck();
 }

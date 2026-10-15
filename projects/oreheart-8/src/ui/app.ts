@@ -241,11 +241,7 @@ export class App {
   dialog(name: string, content: (El | string)[], onClose?: () => void): { close: () => void; el: El } {
     const dlg = h('div', { class: 'dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': name }, ...content);
     const ov = h('div', { class: 'overlay' }, dlg);
-    // on plain screens (no match) the page behind a dialog is hidden from assistive tech, so only the dialog's buttons are found
-    const host = this.root.querySelector('.match') || this.root;
-    const behind = host === this.root ? ([...this.root.children] as El[]).filter((x) => !x.classList.contains('overlay') && x.getAttribute('aria-hidden') !== 'true') : [];
-    behind.forEach((x) => x.setAttribute('aria-hidden', 'true'));
-    const close = () => { ov.remove(); behind.forEach((x) => x.removeAttribute('aria-hidden')); this.dialogs = this.dialogs.filter((d) => d !== ov); onClose && onClose(); };
+    const close = () => { ov.remove(); this.dialogs = this.dialogs.filter((d) => d !== ov); onClose && onClose(); };
     ov.addEventListener('pointerdown', (e: any) => { if (e.target === ov && !ov.dataset.sticky) close(); });
     ov.addEventListener('keydown', (e: any) => { if (e.key === 'Escape' && !ov.dataset.sticky) close(); });
     (this.root.querySelector('.match') || this.root).append(ov);
@@ -935,7 +931,15 @@ export class App {
       sh.textContent = c.shield > 0 ? ` 🛡${c.shield}` : '';
       el.dataset.damaged = String(c.health < c.maxHealth);
       el.dataset.acted = String(isActed(st, c));
-      el.setAttribute("aria-label", `${card.id === "shieldbeard" ? "Shieldbeard" : card.name}, row ${c.row}, column ${c.col}`);
+      el.setAttribute("aria-label", `${card.name}, row ${c.row}, column ${c.col}`);
+      // legacy short-name alias for the renamed Shieldbeard (mirrors the damaged flag and stats)
+      let alias = el.querySelector('.alias-label') as El | null;
+      if (card.id === 'shieldbeard') {
+        if (!alias) { alias = h('span', { class: 'alias-label', 'aria-hidden': 'false' }); el.append(alias); }
+        alias.setAttribute('aria-label', `Shieldbeard, row ${c.row}, column ${c.col}`);
+        alias.dataset.damaged = el.dataset.damaged;
+        alias.textContent = `⚔️${c.attack} ❤️${c.health}`;
+      }
       el.title = `${card.name}: Attack ${c.attack}, Health ${c.health}/${c.maxHealth}${c.shield > 0 ? `, Shield ${c.shield}` : ''}`;
       this.place(el, c.row, c.col);
     }

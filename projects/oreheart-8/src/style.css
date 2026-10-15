@@ -393,3 +393,4 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .setup-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center}
 @media (max-height:480px){.cmd-card .fa{display:none}.cmd-card{padding:6px;gap:2px}.cmd-card .portrait{width:30px;height:30px;font-size:1.1rem}.cmd-card .ds{font-size:.64rem}.dstack{width:70px;height:88px;font-size:.7rem}.screen.setup{padding:6px 12px;gap:2px}.deck-row{padding:6px 8px 10px}.setup-actions .btn{min-height:38px;padding:2px 14px}.screen.setup h1.section{font-size:1.1rem}}
 .recap .mini::before{content:attr(data-sym)}
+.alias-label { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }

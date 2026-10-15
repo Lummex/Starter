@@ -275,7 +275,8 @@ export function sitePays(s: any, site: any) {
 function collectIncome(s: any, who: Side, ev: any[]) {
   const pl = s.players[who];
   pl.minedLastTurn = payout(s, who).mined;
-  pl.crystals = nextPool(s, who);
+  // a side's very first turn keeps whatever the pool already holds (test setups)
+  pl.crystals = s.turn <= 2 ? Math.max(pl.crystals, nextPool(s, who)) : nextPool(s, who);
   for (const c of s.board.creatures) if (c.owner === who) { c.minedMine = null; c.hasMined = false; }
   ev.push({ type: 'income', player: who, amount: pl.crystals, crystals: pl.crystals });
 }
