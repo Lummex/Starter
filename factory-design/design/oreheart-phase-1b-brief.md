@@ -23,7 +23,7 @@ Build ONLY the following to finished quality so the owner can approve the look b
 
 ## AI image pipeline (card pictures)
 
-- The build environment has the secret `OPENAI_API_KEY`. Use OpenAI's current image-generation model through its official API. Never print, log or commit the key.
+- The build environment has the secret `XAI_API_KEY`. Use xAI's current Grok image-generation model through xAI's official API (`https://api.x.ai/v1/images/generations`, OpenAI-compatible; check xAI's docs for the current model name and supported sizes, and crop/resize to the card picture shape if needed). Never print, log or commit the key.
 - Add `projects/oreheart-8/tools/gen-card-art.mjs` and a data file `src/content/card-art.json` with one entry per card: `{ cardId, prompt, file, seed? }`. The script generates only entries whose image file is missing (or whose prompt changed, tracked by a hash), saves compressed WebP images (about 512 × 512) into `public/art/cards/`, and the images are **committed** so later builds don't regenerate them. If the key is missing or the API fails, fall back to a dramatic render of the card's 3D figure, and say so in the report.
 - Prompt style for every picture: "comic-book fantasy illustration, thick black ink outlines, bold flat colors with cel shading, heavy-metal album cover drama but funny, [faction look], [the creature in action, holding its weapon], simple [faction] background, no text, no letters, no logos, no watermark, original character". The picture must match the 3D figure (same colors, weapon, silhouette).
 - Never ask for, or name, characters, artists or styles from other games or companies.
