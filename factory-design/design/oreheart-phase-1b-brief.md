@@ -4,7 +4,24 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 2 (Build A) — owner playtest of round 1 — read this first
+## Round 3a — board and rules (owner playtest of Build A) — read this first
+
+The design doc was updated (corner Strongholds, 50–100 card decks, 20 Crystal cards, nine starter decks) and is the source of truth for rules. Everything else from Build A stays. Round 3b (visual polish of cards and controls, Build A leftovers) and Build B (Meshy 3D models) come later; do not start them here.
+
+1. **Camera: straight-on with road perspective.** Undo Build A's strong diagonal rotation. The board faces the player straight on and **fills the whole phone screen**; the grid is top-down with even squares, but with depth like looking down a road (near rows wider, far rows narrower). Keep zoom and pan.
+2. **Strongholds in the corners** (rule change, engine + AI + tutorial + tests): the player's Stronghold/Commander on row 7 **column 2** (column 1 empty), the enemy's on row 1 **column 12** (column 13 empty). Mines mirror **corner-to-corner** (row 3 col c ↔ row 5 col 14 − c; row 4 col c ↔ col 14 − c; a single center-row mine is always at col 7), never next to a Stronghold. Update the computer opponent's movement and attack planning, the tutorial's fixed layout, and every test that assumed column 7.
+3. **Oversized Commanders and Strongholds:** drawn noticeably larger (exaggerated) but still occupying only their one space; creatures can still stand in all spaces around them; spread spaces slightly if needed.
+4. **Hands placed around the Commanders:** player's hand fan shifted **right** along the bottom, clear of the player's Commander at the bottom-left; player's deck pile at the bottom-right. Enemy card backs shifted **left** along the top, clear of the enemy Commander at the top-right; enemy deck pile at the top-left. **The enemy card backs are not visible in Build A: they must always be clearly visible** (including the lift when the AI browses). Add a check that the enemy hand is on-screen.
+5. **Hand width cap:** the player's fan shows at most about 7 cards in a fixed comfortable width (never stretched across the screen); with more (e.g. 15) the player swipes / scrolls / drags through the fan, with small arrows or a fade at the ends and a card count. The enemy fan follows the same cap, smaller.
+6. **Creature card pop-up size:** hovering or tapping a creature shows its card at the **same size as a hovered hand card** (about double size), fully on-screen.
+7. **HUD around the corners:** the player's counters (Flow, Bank, heart, Last turn) beside/above the player's Commander without covering him; the enemy's beside theirs. Far-row tap targets slightly larger than they look.
+8. **Deck size 50–100 and up to 20 Crystal cards** (owner settings `deckMin` 50, `deckMax` 100, `crystalCardLimit` 20): deck builder shows e.g. "62 cards (50–100)", validation and Auto-fill (to 50) updated.
+9. **Nine starter decks** (three per faction, 50 cards, legal): Warband (40 creatures with ~8 Miners, 6 spells incl. 1 counterspell, 4 Crystal cards), Arcane Hoard (26 creatures with ~12 Miners, 16 spells incl. counterspells, 8 Crystal cards), The Horde (46 creatures with ~14 Miners, no spells, 4 Crystal cards). Named per faction ("Goblin Warband"...), shown in the deck picker as deck-image stacks with name plates; the AI picks among them. Test the AI plays all three styles to the end of a match.
+10. **Fix the failing "spells play step by step" check** from Build A (Infernal Orb vs a creature with a +1 Health bonus): make the test match the real rules.
+
+Tests: all existing checks pass (update those this round intentionally changes); add checks for Stronghold columns 2/12, corner-mirrored mines, deck size 50 and 100 legal and 49/101 illegal, 20 Crystal card limit, nine legal starter decks, enemy hand visible, hand cap. Include phone-size (844 × 390) screenshots of a match in progress (both hands visible) and the deck picker in the report.
+
+## Round 2 (Build A, done) — owner playtest of round 1
 
 Round 1 is built. This round reworks the cards, screens, layout and effects. **Not in this round:** new 3D creature models (the owner rated the current 3D units poor; they will be replaced in Build B with AI-made models from Meshy, including Run animations) and the deck-builder 3D viewer (Build B). Keep the current figures working; do not spend effort polishing them. The design doc (updated: short card text, 3 mulligans, Respond only when playable) is the source of truth for rules; everything else stays as in Phase 1A and round 1.
 
