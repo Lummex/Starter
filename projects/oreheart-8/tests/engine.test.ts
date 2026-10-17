@@ -195,12 +195,11 @@ describe('revision 6', () => {
     expect(s.pendingResponse).toBeNull();
     expect(at(s, 6, 2)).toBeTruthy();
   });
-  it('window opens even when the Instant is unaffordable', () => {
+  it('no window opens when nothing can be played (R2.18)', () => {
     let s = createMatch({ playerCommander: 'borgo', opponentCommander: 'sproingle', mines: MINES, setup: { firstPlayer: 'opponent', opponentHand: ['fireball'], opponentCrystals: 6, playerHand: ['fizzle'], board: [P('goblin-grunt', 6, 2)] } });
     s = act(s, { type: 'cast', uid: s.players.opponent.hand[0].uid, target: { row: 6, col: 2 } });
-    expect(s.pendingResponse.responder).toBe('player');
-    expect(legalActions(s).some((a: any) => a.type === 'respond')).toBe(false);
-    expect(legalActions(s).some((a: any) => a.type === 'pass')).toBe(true);
+    expect(s.pendingResponse).toBeNull();
+    expect(at(s, 6, 2)).toBeFalsy();
   });
   it('free Miner only when Flow + Bank cannot pay and no Miner on the battlefield', () => {
     const cost = (s: any) => { const l = legalActions(s).find((a: any) => a.type === 'summon'); const before = s; const r = act(before, l); return Number(total(before) + before.players.player.bank) - Number(total(r) + r.players.player.bank); };
@@ -334,8 +333,8 @@ describe('revision 7', () => {
   it('the free Miner never upgrades; card names and text are renamed', () => {
     const s = mk({ playerHand: ['goblin-scrounger'], board: [P('goblin-grunt', 7, 2)] });
     expect(legalActions(s).some((a: any) => a.type === 'minerUpgrade')).toBe(false);
-    expect(CARDS['shieldbeard'].text).toMatch(/Guard/);
-    expect(CARDS['dwarf-smith-miner'].text).toMatch(/\+1 Attack and \+1 Health/);
+    expect(CARDS['shieldbeard'].longText).toMatch(/Guard: adjacent enemies must attack it first/);
+    expect(CARDS['dwarf-smith-miner'].longText).toMatch(/\+1 Attack and \+1 Health/);
     for (const c of Object.values<any>(CARDS)) expect((c.text || '').length).toBeGreaterThan(5);
   });
 });
@@ -375,5 +374,48 @@ describe('revision 9', () => {
     }
     expect(seen).toEqual(['summon', 'move', 'mine', 'mineTap', 'spend', 'crystal', 'upgrade', 'swap', 'fight', 'spell', 'savings', 'commander']);
     expect(s.winner).toBe('player');
+  });
+});
+
+describe('round 2', () => {
+  it('mulligans go 5 -> 5 -> 4 -> 3 and a 4th is rejected', () => {
+    let s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', seed: 5 });
+    const sw = (n: number) => act(s, { type: 'mulligan', uids: s.players.player.hand.slice(0, n).map((h: any) => h.uid) });
+    s = sw(5); expect(s.players.player.hand.length).toBe(5); expect(s.players.player.mulligans).toBe(1);
+    s = sw(2); expect(s.players.player.hand.length).toBe(4); expect(s.players.player.mulligans).toBe(2);
+    expect(s.priority).toBe('player');
+    s = sw(1); expect(s.players.player.hand.length).toBe(3); expect(s.players.player.mulligans).toBe(3);
+    expect(s.mulliganDone.player).toBe(true);
+    expect(applyAction(s, { type: 'mulligan', uids: [s.players.player.hand[0].uid] }).ok).toBe(false);
+  });
+  it('keeping the hand ends the mulligan', () => {
+    let s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', seed: 5 });
+    s = act(s, { type: 'mulligan', uids: [] });
+    expect(s.mulliganDone.player).toBe(true);
+  });
+  it('every card has shortText (<= 80) and longText with an example; text equals shortText', () => {
+    for (const c of Object.values<any>(CARDS)) {
+      expect(c.shortText.length).toBeLessThanOrEqual(80);
+      expect(c.longText).toMatch(/Example:/);
+      expect(c.longText.length).toBeGreaterThan(c.shortText.length);
+      expect(c.text).toBe(c.shortText);
+    }
+  });
+  it('a window opens when a Crystal card makes the counterspell playable', () => {
+    let s = mk({ firstPlayer: 'opponent', opponentHand: ['fireball'], opponentCrystals: 6, playerHand: ['fizzle', 'crystal-cluster'], playerCrystals: 1, board: [P('goblin-grunt', 6, 2)] });
+    s = act(s, { type: 'cast', uid: s.players.opponent.hand[0].uid, target: { row: 6, col: 2 } });
+    expect(s.pendingResponse && s.pendingResponse.responder).toBe('player');
+  });
+  it('counter events name the countered card; a held summon bounces', () => {
+    let s: any = mk({ firstPlayer: 'opponent', opponentHand: ['fireball', 'goblin-grunt'], opponentCrystals: 9, playerHand: ['fizzle', 'hold-it'], playerCrystals: 5, board: [P('goblin-grunt', 6, 2)] });
+    const r1 = applyAction(s, { type: 'cast', uid: s.players.opponent.hand[0].uid, target: { row: 6, col: 2 } });
+    const c = legalActions(r1.state).find((a: any) => a.type === 'respond' && CARDS[s.players.player.hand.find((h: any) => h.uid === a.uid).cardId].id === 'fizzle');
+    const r2 = applyAction(r1.state, c);
+    expect(r2.events.find((e: any) => e.type === 'counter').countered).toBe('fireball');
+    s = mk({ firstPlayer: 'opponent', opponentHand: ['goblin-grunt'], opponentCrystals: 9, playerHand: ['hold-it'], playerCrystals: 5 });
+    const g = s.players.opponent.hand[0];
+    const q1 = applyAction(s, legalActions(s).find((a: any) => a.type === 'summon' && a.uid === g.uid));
+    const q2 = applyAction(q1.state, legalActions(q1.state).find((a: any) => a.type === 'respond'));
+    expect(q2.events.find((e: any) => e.type === 'bounce').uid).toBe(g.uid);
   });
 });

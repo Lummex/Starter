@@ -104,7 +104,7 @@ function scoreCast(s: any, who: string, a: any): number {
 export function aiChoose(s: any, difficulty: string, rand: Rand): any {
   const who = s.priority as string;
   const legal = legalActions(s).filter((a: any) => a.type !== 'surrender');
-  if (s.phase === 'mulligan') return { type: 'mulligan', uids: difficulty !== 'easy' ? mulliganUids(s, who) : [] };
+  if (s.phase === 'mulligan') return { type: 'mulligan', uids: difficulty !== 'easy' && !s.players[who].mulligans ? mulliganUids(s, who) : [] };
   const pickBest = (scored: [number, any][], min: number) => {
     let best: any = null, bv = min;
     for (const [v, a] of scored) if (v > bv || (v === bv && best && rand() < 0.3)) { best = a; bv = v; }

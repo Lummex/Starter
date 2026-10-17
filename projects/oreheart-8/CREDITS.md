@@ -15,3 +15,8 @@ Everything in the game is made in code or generated for this project. There are 
 ## Made in code
 - 3D figures, Strongholds, mines, ground and effects (`src/ui/art.ts`, `src/ui/scene.ts`) use Three.js (MIT, https://threejs.org/) with procedural geometry and canvas textures.
 - All sound effects and Goblin / Grubnak voice grunts are synthesized at run time with the Web Audio API (`src/ui/audio.ts`). No audio files; no music.
+
+## Round 2 additions
+- Card frames `public/art/frames/*.webp`: the owner's `card-frame-goblin/gnome/dwarf.jpg` (neutral is a grey recolor made in code).
+- Deck image `public/art/deck/deck-image.webp`: the owner's `Deck_image.jpg`, cut out to alpha in code.
+- Commander portraits `public/art/commanders/*.webp`: generated with the xAI Grok image API (`tools/gen-commanders.mjs`).

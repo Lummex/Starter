@@ -17,6 +17,7 @@ export interface BoardView {
   setState(state: any, events: any[]): void;
   cellRect(row: number, col: number): Rect;
   resize(): void;
+  setCamera(c: { zoom: number; x: number; y: number }): void;
   emote(side: 'player' | 'opponent', kind: 'cheer' | 'groan' | 'flinch' | 'cast'): void;
   poke(uid: string): string | null;
   retreat(side: 'player' | 'opponent'): void;
@@ -287,6 +288,23 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       parts = { body, head };
       g.scale.setScalar(big);
     }
+    const hasBomb = (card.abilities || []).some((a: string) => a === 'kaboom' || a === 'kaboom1');
+    if (hasBomb) {
+      // big round bomb with a lit fuse carried at the creature's side (R2.17)
+      const bomb = new THREE.Group();
+      bomb.name = 'bomb';
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 12), new THREE.MeshStandardMaterial({ color: 0x15151a, roughness: 0.35, metalness: 0.5 }));
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.07, 8), new THREE.MeshStandardMaterial({ color: 0x8a6a2a, metalness: 0.5 }));
+      cap.position.y = 0.2;
+      const fuse = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.16, 5), new THREE.MeshBasicMaterial({ color: 0xc9a46a }));
+      fuse.position.set(0.04, 0.3, 0); fuse.rotation.z = -0.5;
+      const spark = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffb020 }));
+      spark.position.set(0.1, 0.38, 0); spark.name = 'bomb-spark';
+      bomb.add(ball, cap, fuse, spark);
+      bomb.position.set(-0.34, 0.55, 0.1);
+      g.add(bomb);
+    }
+    (g as any).userData.bomb = hasBomb;
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 6, 24), ringMat());
     ring.name = 'acting-ring';
     ring.rotation.x = Math.PI / 2;
@@ -387,6 +405,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     }
   }
 
+  const cam = { zoom: 1, x: 0, y: 0 };
+  const YAW = (33 * Math.PI) / 180;
   function resize() {
     const w = container.clientWidth || 390, h = container.clientHeight || 420;
     renderer.setSize(w, h, false);
@@ -395,13 +415,14 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     camera.aspect = w / h;
-    const el = (60 * Math.PI) / 180;
-    const y0 = 0.03 * h, y1 = 0.9 * h;
+    const el = (40 * Math.PI) / 180;
+    const y0 = 0.02 * h, y1 = 0.97 * h;
     const hx = BW / 2 + 0.05, hz = BH / 2 + 0.05;
     const corners = [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]];
     const fit = (dist: number) => {
       camera.clearViewOffset();
-      camera.position.set(0, Math.sin(el) * dist, Math.cos(el) * dist);
+      camera.zoom = 1;
+      camera.position.set(Math.sin(YAW) * Math.cos(el) * dist, Math.sin(el) * dist, Math.cos(YAW) * Math.cos(el) * dist);
       camera.lookAt(0, 0, 0);
       camera.updateProjectionMatrix();
       camera.updateMatrixWorld();
@@ -421,7 +442,9 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     }
     const f = fit(hi);
     // slide the view so the enemy Stronghold row sits at the top edge
-    camera.setViewOffset(w, h, 0, -(y0 - f.top), w, h);
+    const baseX = -((w - (f.right - f.left)) / 2 - f.left), baseY = -(y0 - f.top);
+    camera.setViewOffset(w, h, baseX - cam.x, baseY - cam.y, w, h);
+    camera.zoom = cam.zoom;
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
   }
@@ -592,7 +615,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
           resolve({
             webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
             bloom: !!bloomPass, shadows: renderer.shadowMap.enabled, particles: !!embers,
-            figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder' })),
+            figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub ? 'finished' : 'placeholder' }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub ? 'finished' : 'placeholder' } },
             strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished',
           });
@@ -603,7 +626,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   return {
-    is3D: true, setState, cellRect, resize, emote, poke, retreat, stats,
+    is3D: true, setState, cellRect, resize, setCamera(c) { Object.assign(cam, c); resize(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);
@@ -618,14 +641,17 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
 /** Flat board used when WebGL is not available. */
 export function createFlatView(container: HTMLElement): BoardView {
   container.classList.add('flat');
+  const cam = { zoom: 1, x: 0, y: 0 };
   return {
     is3D: false,
     setState() {},
+    setCamera(c) { Object.assign(cam, c); },
     cellRect(row, col) {
       const w = container.clientWidth || 390, h = container.clientHeight || 420;
       const cs = Math.min((h * 0.87) / BH, w / BW);
       const x0 = (w - cs * BW) / 2, y0 = h * 0.03;
-      return { x: x0 + (col - 1) * cs, y: y0 + (row - 1) * cs, w: cs, h: cs };
+      const x = x0 + (col - 1) * cs, y = y0 + (row - 1) * cs, z = cam.zoom;
+      return { x: (x - w / 2) * z + w / 2 + cam.x, y: (y - h / 2) * z + h / 2 + cam.y, w: cs * z, h: cs * z };
     },
     resize() {},
     poke: () => null,

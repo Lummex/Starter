@@ -21,18 +21,40 @@ const RARITY_KEY: Record<string, string> = { Common: 'common', Uncommon: 'uncomm
 export const rarityKey = (c: any) => RARITY_KEY[c.rarity] || 'common';
 /** Picture path of a card (Goblin creatures have a generated painting). */
 export const pictureOf = (c: any): string | null => (c && c.type === 'creature' && c.faction === 'goblins' ? `/art/cards/${c.id}.webp` : null);
-function faceKids(c: any, cost?: number): El[] {
-  const tf = textScale((c.text || '').length);
+const FRAME: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
+export const frameOf = (c: any) => `card-frame-${FRAME[c.faction] || 'neutral'}`;
+export function typeOf(c: any): { icon: string; name: string } {
+  if (c.type === 'spell') return { icon: '🪄', name: c.spellKind === 'counter' ? 'Counterspell' : c.spellKind === 'instant' ? 'Instant' : 'Spell' };
+  if (c.type === 'crystal') return { icon: '💎', name: 'Crystal card' };
+  const ab: string[] = c.abilities || [];
+  if (c.role === 'Smith') return { icon: '⚒️', name: 'Smith Miner' };
+  if (isMiner(c)) return { icon: '⛏️', name: 'Miner' };
+  if (ab.includes('kaboom') || ab.includes('kaboom1')) return { icon: '💣', name: 'Bomb' };
+  if (ab.includes('ranged')) return { icon: '🏹', name: 'Ranged' };
+  if (ab.includes('guard')) return { icon: '🛡️', name: 'Guard' };
+  return { icon: '⚔️', name: 'Fighter' };
+}
+export const RARITY_WORD: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Collector' };
+/** Card face on the owner's faction frame: cost, Attack, Health, Movement, type icon, picture, name, short text, rarity. */
+export function faceKids(c: any, cost?: number, cur?: { attack?: number; health?: number; move?: number }): El[] {
+  const tf = Math.min(0.07, 0.46 / Math.sqrt(Math.max(1, (c.shortText || c.text || '').length)));
   const pic = pictureOf(c);
+  const cr = c.type === 'creature';
+  const ty = typeOf(c);
+  const rk = rarityKey(c);
   const kids: (El | null)[] = [
-    h('span', { class: 'cost', 'aria-hidden': 'true' }, c.type === 'crystal' ? '◆' : String(cost ?? c.cost)),
-    h('span', { class: 'rar', 'aria-hidden': 'true', title: c.rarity }, '◆'),
-    h('span', { class: 'nm', 'aria-hidden': 'true' }, c.name),
-    h('span', { class: 'tg', 'aria-hidden': 'true' }, c.tagline || ''),
-    pic ? h('img', { class: 'pic', src: pic, alt: '', draggable: 'false', loading: 'eager' }) : h('span', { class: 'ty', 'aria-hidden': 'true' }, c.type === 'creature' ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
-    h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `${roleBadge(c)} ⚔️${c.attack}${c.abilities?.includes('ranged') ? '🏹' : ''} ❤️${c.health}` : c.rarity),
-    h('span', { class: 'tx', style: `--tf:${tf.toFixed(4)}` }, c.text || ''),
-    h('span', { class: 'fl', 'aria-hidden': 'true' }, c.flavor || ''),
+    h('img', { class: 'frame', src: `/art/frames/${frameOf(c)}.webp`, alt: '', draggable: 'false', 'data-frame': frameOf(c) }),
+    pic ? h('img', { class: 'pic', src: pic, alt: '', draggable: 'false', loading: 'eager' }) : h('span', { class: 'ty', 'aria-hidden': 'true' }, cr ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
+    h('span', { class: 'cost', role: 'img', 'aria-label': `Cost ${cost ?? c.cost}` }, c.type === 'crystal' ? '◆' : String(cost ?? c.cost)),
+    cr ? h('span', { class: 'atk', role: 'img', 'aria-label': `Attack ${cur?.attack ?? c.attack}` }, String(cur?.attack ?? c.attack)) : null,
+    cr ? h('span', { class: 'hp', role: 'img', 'aria-label': `Health ${cur?.health ?? c.health}` }, String(cur?.health ?? c.health)) : null,
+    cr ? h('span', { class: 'mv', role: 'img', 'aria-label': `Movement ${cur?.move ?? c.move}` }, String(cur?.move ?? c.move)) : null,
+    h('span', { class: 'tyi', role: 'img', 'aria-label': `Type: ${ty.name}`, title: ty.name }, ty.icon),
+    h('span', { class: 'nm', style: `--nf:${Math.min(0.078, 0.98 / Math.max(8, c.name.length)).toFixed(4)}` }, c.name),
+    h('span', { class: 'tx', style: `--tf:${tf.toFixed(4)}` }, c.shortText || c.text || ''),
+    h('span', { class: 'fl' }, c.flavor || ''),
+    h('span', { class: `gem g-${rk}`, 'aria-hidden': 'true' }),
+    h('span', { class: `rw r-${rk}`, role: 'img', 'aria-label': `Rarity: ${c.rarity}` }, c.rarity),
   ];
   return kids.filter(Boolean) as El[];
 }
@@ -66,6 +88,36 @@ export class App {
   phaseKey = '';
   endShown = false;
   respondTimer: any = null;
+  fxLog: any[] = [];
+  fxReal = false;
+  get popups() { return localStorage.getItem('oreheart.popups') !== 'off'; }
+  /** Step-by-step visual log (R2.16): one entry per reveal, effect, impact, damage, defeat, bounce, shatter and bomb step. */
+  logFx(st: any, events: any[]) {
+    const L = (kind: string, d: any = {}) => this.fxLog.push({ kind, ...d });
+    const pop = this.popups;
+    for (const e of events) {
+      if (e.type === 'cast') {
+        const respondable = st.pendingResponse && st.pendingResponse.responder === 'player' && e.player === 'opponent';
+        if (pop && !respondable) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId); }
+      } else if (e.type === 'respond') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId); } }
+      else if (e.type === 'summon') { if (pop) { L('reveal', { cardId: e.cardId, uid: e.uid }); if (this.dialogCard === e.cardId + e.owner) this.dialogCard = ''; else this.reveal(e.cardId, e); } }
+      else if (e.type === 'playCrystal') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId); } }
+      else if (e.type === 'minerUpgrade') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, e); } }
+      else if (e.type === 'spell') { L('effect', { cardId: e.cardId }); L('impact', { cardId: e.cardId }); }
+      else if (e.type === 'damage') L('damage', { uid: e.uid, amount: e.amount, commander: e.commander });
+      else if (e.type === 'defeat') {
+        L('defeat', { uid: e.uid, cardId: e.cardId });
+        const ab: string[] = CARDS[e.cardId]?.abilities || [];
+        if (ab.includes('kaboom') || ab.includes('kaboom1')) { L('bombDrop', { uid: e.uid }); L('boom', { uid: e.uid }); this.bombBoom(e); }
+      }
+      else if (e.type === 'bounce') L('bounce', { uid: e.uid, cardId: e.cardId });
+      else if (e.type === 'counter' && e.countered) L('shatter', { cardId: e.countered });
+    }
+  }
+  bombBoom(e: any) {
+    if (!this.r.fx || !this.view) return;
+    this.burst('KA-BOOM!', e.row, e.col);
+  }
   pick: { cells: { row: number; col: number }[]; done: (c: { row: number; col: number }) => void } | null = null;
   handScroll = 0;
   lastOptions: any = {};
@@ -83,6 +135,8 @@ export class App {
     this.root = root;
     this.game = game;
     this.test = test;
+    App.applyDisplay();
+    this.fxReal = test && /[?&]fx=1/.test(location.search);
     this.seed = seed;
     if (test) document.body.classList.add('test');
     root.addEventListener('click', (e) => { if ((e.target as El).closest?.('button')) audio.play('click'); }, true);
@@ -95,6 +149,35 @@ export class App {
     const b = btn(this.gfxLabel(), '', () => {
       localStorage.setItem('oreheart.graphics', this.low ? 'high' : 'low');
       b.textContent = this.gfxLabel();
+    });
+    return b;
+  }
+
+  static applyDisplay() {
+    const m = localStorage.getItem('oreheart.display') || 'auto';
+    document.documentElement.dataset.display = m;
+    window.dispatchEvent(new Event('resize'));
+  }
+  /** Display mode (R2.9): Auto fills the screen, PC locks 16:9, Phone locks about 19.5:9. */
+  displayModeGroup(): El {
+    const cur = localStorage.getItem('oreheart.display') || 'auto';
+    const fs = h('fieldset', { class: 'display-mode', role: 'radiogroup', 'aria-label': 'Display mode' }, h('legend', {}, 'Display mode'));
+    for (const [v, label] of [['auto', 'Auto'], ['pc', 'PC'], ['phone', 'Phone']]) {
+      const id = `dm-${v}-${Math.random().toString(36).slice(2, 6)}`;
+      const inp = h('input', { type: 'radio', name: 'display-mode', id, value: v, ...(cur === v ? { checked: true } : {}) }) as HTMLInputElement;
+      inp.addEventListener('change', () => { if (inp.checked) { localStorage.setItem('oreheart.display', v); App.applyDisplay(); } });
+      fs.append(h('span', { class: 'dm-opt' }, inp, h('label', { for: id }, label)));
+    }
+    return fs;
+  }
+
+  popupsSwitch(): El {
+    const label = 'Card pop-ups';
+    const b = h('button', { type: 'button', class: 'sw-btn', role: 'switch', 'aria-label': label, 'aria-checked': String(this.popups), title: label }, h('span', { 'aria-hidden': 'true' }, '🃏'), h('span', { class: 'sw-t', 'aria-hidden': 'true' }, this.popups ? 'ON' : 'OFF'));
+    b.addEventListener('click', () => {
+      localStorage.setItem('oreheart.popups', this.popups ? 'off' : 'on');
+      b.setAttribute('aria-checked', String(this.popups));
+      (b.querySelector('.sw-t') as El).textContent = this.popups ? 'ON' : 'OFF';
     });
     return b;
   }
@@ -145,7 +228,8 @@ export class App {
         mbtn('Tutorial', 'plaque', 'book', () => this.beginTutorial()),
         mbtn('Decks', 'plaque', 'cards', () => showDecks(this)),
         mbtn('Rules', 'plaque', 'scroll', () => this.showRules()),
-        mbtn('Settings', 'plaque', 'gear', () => this.showSettings())));
+        mbtn('Settings', 'plaque', 'gear', () => this.showSettings())),
+      h('div', { class: 'menu-opts' }, this.displayModeGroup(), this.popupsSwitch()));
     this.root.append(s);
     if (!this.test && !localStorage.getItem('oreheart.tutorialSeen')) {
       const d: any = this.dialog('Welcome to Oreheart!', [h('h2', {}, 'Welcome to Oreheart!'),
@@ -161,7 +245,7 @@ export class App {
     this.clear();
     this.root.append(h('main', { class: 'screen center' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), btn('Back', '', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), btn('Back', '', () => this.showMenu()))));
   }
 
   showSetup() {
@@ -184,14 +268,16 @@ export class App {
     for (const c of cmds) {
       const f = FACTIONS[c.faction];
       cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { cmd = c.id; sel(); } },
-        h('span', { class: 'portrait', 'aria-hidden': 'true' }, FSYM(c.faction)),
-        h('span', { class: 'nm' }, c.name),
-        h('span', { class: 'fa' }, `${f.name} · ${f.faith}`),
-        h('span', { class: 'ds' }, c.abilityText)));
+        h('img', { class: 'portrait-img', src: `/art/commanders/${c.id}.webp`, alt: '', draggable: 'false' }),
+        h('span', { class: 'cmd-win' },
+          h('span', { class: 'nm' }, c.name),
+          h('span', { class: 'fa' }, `${f.name} · ${f.faith}`),
+          h('span', { class: 'ds' }, c.abilityText))));
     }
     for (const d of ['easy', 'normal', 'hard']) diffBtns.push(btn(d[0].toUpperCase() + d.slice(1), 'diff', () => { diff = d; sel(); }, { 'data-id': d }));
     const stack = (label: string, n: number, ok: boolean, ix: number, onpick: () => void) => {
       const b = h('button', { type: 'button', class: `dstack${ok ? '' : ' bad'}`, 'data-ix': String(ix), 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', onclick: onpick },
+        h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }),
         h('span', { class: 'ds-name', 'aria-hidden': 'true' }, label), h('span', { class: 'ds-n', 'aria-hidden': 'true' }, `${n} cards ${ok ? '✔' : '⚠'}`));
       stacks.push(b);
       return b;
@@ -250,6 +336,7 @@ export class App {
       sec('The Board', 'A hidden grid 13 spaces wide and 7 deep. The enemy is at the top, you are at the bottom. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
       sec('Decks and auto-skip', 'The Decks screen on the main menu is a testing deck builder: every card is unlocked and you can save up to 5 decks of 50 cards (Rare, Ultra Rare and Collector cards max 3 copies, at most 10 Crystal cards). Pick a saved deck or the starter deck before a match. Your Deploy phase ends by itself when no card in your hand can be both paid for and placed, and your Action phase ends by itself when no creature can move, attack or mine.', crystals),
       sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
+      sec('Mulligan and Camera', 'Before the match you may mulligan up to 3 times: tap cards, then Redraw Selected. Your first mulligan redraws as many cards as you swap; each later one redraws one fewer (5, then 4, then 3 cards). On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and press Re-center to reset. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
       sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (one per round, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
       sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
@@ -287,13 +374,21 @@ export class App {
       rows.push(['Role', `${roleBadge(c)} ${c.role === 'Smith' ? 'Smith Miner' : isMiner(c) ? 'Miner' : 'Fighter'}`]);
       if (creature && creature.upgrades.attack + creature.upgrades.health) rows.push(['Miner upgrades', `+${creature.upgrades.attack} Attack, +${creature.upgrades.health} Health`]);
     }
-    const dl = h('dl', {});
+    const dl = h('dl', { class: 'sr-only' });
     for (const [k, v] of rows) dl.append(h('dt', {}, k), h('dd', {}, v));
-    const ab = c.type === 'creature' ? (c.abilities || []).map((a: string) => `${ABILITIES[a].name}: ${ABILITIES[a].text}`).join(' ') : c.text;
-    void ab;
-    const pic = pictureOf(c);
-    const d = this.dialog(c.name, [h('div', { class: `card-view f-${c.faction}`, 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, h('div', { class: 'cv-name' }, c.name), h('div', { class: 'cv-tag' }, c.tagline || ''), pic ? h('img', { class: 'cv-pic', src: pic, alt: '' }) : null, dl, h('p', { class: 'tx' }, c.text || ''), h('p', { class: 'cv-flavor' }, c.flavor || ''),
-      h('div', { class: 'row' }, btn('Close', 'primary', () => d.close())))]);
+    const cur = creature ? { attack: creature.attack, health: creature.health, move: c.move } : undefined;
+    const face = h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, ...faceKids(c, cost, cur));
+    const tx = face.querySelector('.tx') as El;
+    const tb = h('button', { type: 'button', class: 'tx', style: tx.getAttribute('style') || '', 'aria-label': 'Full explanation' }, tx.textContent || '');
+    tx.replaceWith(tb);
+    tb.addEventListener('click', () => this.fullExplanation(c));
+    const d = this.dialog(c.name, [h('div', { class: 'card-view-face' }, face), dl, h('p', { class: 'cv-hint' }, 'Tap the text for the full explanation.'), h('div', { class: 'row' }, btn('Close', 'primary', () => d.close()))]);
+    return d;
+  }
+  fullExplanation(c: any) {
+    const d: any = this.dialog(`${c.name}: full explanation`, [h('h2', {}, c.name), h('p', { class: 'long-text' }, c.longText || c.text || ''), h('div', { class: 'row' }, btn('Close', 'primary', () => d.close()))]);
+    d.el.addEventListener('pointerdown', (e: any) => { if (e.target.closest('.long-text')) d.close(); });
+    return d;
   }
 
   // ------------------------------------------------------------ match
@@ -302,6 +397,7 @@ export class App {
     if (o.seed == null && this.test && this.seed != null) o.seed = this.seed;
     this.lastOptions = options;
     this.lastTutorial = false;
+    this.fxLog = [];
     const state = this.game.newMatch(o);
     this.showMatch();
     this.update(this.game.state, []);
@@ -310,6 +406,7 @@ export class App {
 
   beginTutorial() {
     this.lastTutorial = true;
+    this.fxLog = [];
     const state = this.game.startTutorial();
     this.showMatch();
     this.update(this.game.state, []);
@@ -339,7 +436,7 @@ export class App {
     r.crFlow = h('span', { class: 'cr flow ' + fcol, role: 'img', 'aria-label': 'Your Flow crystals' }, '⛏️ 0');
     r.crBank = h('span', { class: 'cr bank ' + fcol, role: 'img', 'aria-label': 'Your Bank crystals' }, '🏦 0');
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
-    r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, '0');
+    r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
     r.phase.append(h('div', { class: 'ph-turn' }), h('div', { class: 'ph-name' }));
@@ -347,9 +444,10 @@ export class App {
     r.board = h('div', { class: 'board', role: 'application', 'aria-label': 'Battlefield' });
     r.fx = h('div', { class: 'fx' });
     r.myHealth = h('div', { class: 'heart mine', role: 'img', 'aria-label': 'Your Commander health' }, '20');
-    r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, '0');
+    r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.income = h('div', { class: 'income', 'aria-label': 'Your income next turn' }, '+0 next turn');
     r.done = btn('Done', 'primary done-btn', () => this.pressDone());
+    r.recenter = btn('Re-center', 'recenter-btn', () => this.resetCam());
     r.swap = btn('Swap for a Miner', 'swap-btn', () => this.startSwap());
     r.swap.hidden = true;
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
@@ -365,12 +463,12 @@ export class App {
     const crystals = h('div', { class: 'crystals' }, r.crFlow, r.crBank);
     const match = h('main', { class: 'match' },
       r.board,
-      h('div', { class: 'hud hud-left' }, crystals, r.income,
-        r.swap),
+      h('div', { class: 'hud hud-left' }, crystals, r.income, r.swap, r.last),
       h('div', { class: 'hud hud-top' }, r.enemyHand),
-      r.enemyDeck, r.last, muteBtn, r.myDeck,
+      r.enemyDeck, muteBtn, r.myDeck,
       r.phase,
-      h('div', { class: 'hud hud-right' }, r.done, menuBtn),
+      h('div', { class: 'hud hud-menu' }, menuBtn),
+      h('div', { class: 'hud hud-right' }, r.done, this.popupsSwitch(), r.recenter),
       r.tip, r.hand, r.timer);
     this.root.append(match);
     // board layers
@@ -418,7 +516,29 @@ export class App {
     const ro = new ResizeObserver(() => this.layout());
     ro.observe(r.board);
     this.unsub = this.game.subscribe((st, ev) => this.update(st, ev));
-    r.board.addEventListener('pointerdown', (e: PointerEvent) => this.boardPointerDown(e));
+    this.cam = { zoom: 1, x: 0, y: 0 };
+    this.setupCamera();
+    let hoverT: any = null, hoverEl: El | null = null, hoverKey = '';
+    const clearHover = () => { clearTimeout(hoverT); hoverEl?.remove(); hoverEl = null; hoverKey = ''; };
+    r.board.addEventListener('pointermove', (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || e.buttons) { clearHover(); return; }
+      const c = this.cellAt(e.clientX, e.clientY);
+      const cr = c && this.game.state?.board.creatures.find((x: any) => x.row === c.row && x.col === c.col);
+      const key = cr ? cr.uid : '';
+      if (key === hoverKey) return;
+      clearHover(); hoverKey = key;
+      if (!cr || !this.popups) return;
+      hoverT = setTimeout(() => {
+        const card = CARDS[cr.cardId];
+        const rc = this.view!.cellRect(cr.row, cr.col);
+        const el = h('div', { class: `hand-card static hover-card ${card.type} f-${card.faction}`, 'aria-hidden': 'true', 'data-card-id': card.id, 'data-rarity': rarityKey(card) }, ...faceKids(card, card.cost, { attack: cr.attack, health: cr.health, move: card.move }));
+        el.style.left = rc.x + rc.w / 2 + 'px'; el.style.top = Math.max(4, rc.y - 4) + 'px';
+        r.board.append(el); hoverEl = el;
+      }, 400);
+    });
+    r.board.addEventListener('pointerleave', clearHover);
+    r.board.addEventListener('pointerdown', clearHover, true);
+    r.board.addEventListener('pointerdown', (e: PointerEvent) => { if (this.touches.size < 2) this.boardPointerDown(e); });
     r.hand.addEventListener('wheel', (e: WheelEvent) => { e.preventDefault(); this.handScroll += (e.deltaY || e.deltaX) / 80; this.layoutHand(); }, { passive: false });
     document.addEventListener('pointerdown', this.tuckOutside, true);
     window.addEventListener('resize', this.onResize);
@@ -429,6 +549,66 @@ export class App {
     requestAnimationFrame(() => this.layout());
   }
   onResize = () => { this.layout(); };
+
+  // ------------------------------------------------------------ camera zoom and pan (R2.19)
+  cam = { zoom: 1, x: 0, y: 0 };
+  getCamera() { return { ...this.cam }; }
+  applyCam() {
+    const w = (this.r.board as El).clientWidth || 400, hh = (this.r.board as El).clientHeight || 300;
+    this.cam.zoom = Math.max(1, Math.min(2.5, this.cam.zoom));
+    const mx = ((this.cam.zoom - 1) * w) / 2 + 40, my = ((this.cam.zoom - 1) * hh) / 2 + 40;
+    this.cam.x = this.cam.zoom === 1 ? 0 : Math.max(-mx, Math.min(mx, this.cam.x));
+    this.cam.y = this.cam.zoom === 1 ? 0 : Math.max(-my, Math.min(my, this.cam.y));
+    this.view?.setCamera({ ...this.cam });
+    this.layout();
+  }
+  resetCam() { this.cam = { zoom: 1, x: 0, y: 0 }; this.applyCam(); }
+  zoomBy(f: number) { this.cam.zoom *= f; this.applyCam(); }
+  startPan(e: PointerEvent) {
+    const x0 = e.clientX, y0 = e.clientY, cx = this.cam.x, cy = this.cam.y;
+    let moved = false;
+    const move = (ev: PointerEvent) => {
+      if (Math.hypot(ev.clientX - x0, ev.clientY - y0) > 5) moved = true;
+      if (moved && this.cam.zoom > 1) { this.cam.x = cx + ev.clientX - x0; this.cam.y = cy + ev.clientY - y0; this.applyCam(); }
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+      if (!moved) {
+        const now = Date.now();
+        if (now - this.lastGround < 350) { this.resetCam(); this.lastGround = 0; } else this.lastGround = now;
+      }
+    };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+  }
+  lastGround = 0;
+  touches = new Map<number, { x: number; y: number }>();
+  setupCamera() {
+    const b = this.r.board as El;
+    (b.parentElement as El).addEventListener('wheel', (e: WheelEvent) => { if ((e.target as El).closest?.('.hand,.dialog,.hud,.reveal')) return; e.preventDefault(); this.zoomBy(Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+    b.addEventListener('contextmenu', (e) => e.preventDefault());
+    b.addEventListener('pointerdown', (e: PointerEvent) => {
+      if (e.pointerType === 'mouse') { if (e.button === 1 || e.button === 2) { e.preventDefault(); this.startPan(e); } return; }
+      this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.touches.size === 2) {
+        const pts = [...this.touches.values()];
+        let d0 = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), mx0 = (pts[0].x + pts[1].x) / 2, my0 = (pts[0].y + pts[1].y) / 2;
+        const move = (ev: PointerEvent) => {
+          if (!this.touches.has(ev.pointerId)) return;
+          this.touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+          const q = [...this.touches.values()];
+          if (q.length < 2) return;
+          const d = Math.hypot(q[0].x - q[1].x, q[0].y - q[1].y), mx = (q[0].x + q[1].x) / 2, my = (q[0].y + q[1].y) / 2;
+          this.cam.zoom *= d / (d0 || 1); this.cam.x += mx - mx0; this.cam.y += my - my0;
+          d0 = d; mx0 = mx; my0 = my;
+          this.applyCam();
+        };
+        const end = (ev: PointerEvent) => { this.touches.delete(ev.pointerId); if (this.touches.size < 2) { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', end); window.removeEventListener('pointercancel', end); } };
+        window.addEventListener('pointermove', move); window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
+      }
+    }, true);
+    const rm = (e: PointerEvent) => this.touches.delete(e.pointerId);
+    b.addEventListener('pointerup', rm); b.addEventListener('pointercancel', rm);
+  }
 
   layout() {
     const r = this.r;
@@ -563,10 +743,14 @@ export class App {
     const me = st.players.player, en = st.players.opponent;
     this.view && this.view.setState(st, events);
     this.record(st, events);
+    this.logFx(st, events);
     this.setHeart(r.enemyHealth, en.health);
     this.setHeart(r.myHealth, me.health);
-    r.enemyDeck.replaceChildren(String(en.deck.length));
-    r.myDeck.textContent = String(me.deck.length);
+    (r.enemyDeck.querySelector('.pile-n') as El).textContent = String(en.deck.length);
+    (r.myDeck.querySelector('.pile-n') as El).textContent = String(me.deck.length);
+    r.enemyDeck.style.setProperty('--fill', String(Math.max(0.55, Math.min(1, 0.55 + en.deck.length / 60))));
+    r.myDeck.style.setProperty('--fill', String(Math.max(0.55, Math.min(1, 0.55 + me.deck.length / 60))));
+    r.enemyHand.classList.toggle('browsing', st.activePlayer === 'opponent' && st.phase !== 'over' && st.phase !== 'mulligan');
     r.crFlow.textContent = `⛏️ ${me.crystals}`;
     r.crBank.textContent = `🏦 ${me.bank}`;
     const nxt = st.phase === 'mulligan' ? 0 : incomePreview(st, 'player');
@@ -728,10 +912,10 @@ export class App {
   }
   /** Big card in the middle of the screen, then it drops onto its space (or flies away). */
   reveal(cardId: string, at?: { row: number; col: number } | null) {
-    if (this.test || !this.r.board) return;
+    if ((this.test && !this.fxReal) || !this.r.board) return;
     const c = CARDS[cardId];
     const secs = this.revealSeconds();
-    const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true', 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, ...faceKids(c));
+    const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, ...faceKids(c));
     const host = this.root.querySelector('.match') as El;
     host.append(el);
     let done = false;
@@ -767,8 +951,16 @@ export class App {
       const anim = el.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.15)`, opacity: 0.2 }], { duration: Math.min(500, secs * 700), easing: 'ease-in', fill: 'forwards' });
       anim.onfinish = () => el.remove();
     };
-    el.addEventListener('pointerdown', finish);
-    setTimeout(finish, secs * 1000);
+    // tap pins the card so it stays readable while play continues; tap again dismisses it
+    let timer: any = null;
+    el.addEventListener('pointerdown', (ev: Event) => {
+      ev.stopPropagation();
+      if (el.dataset.pinned === 'true') { done = true; el.remove(); return; }
+      if (done) return;
+      clearTimeout(timer);
+      el.dataset.pinned = 'true';
+    });
+    timer = setTimeout(finish, secs * 1000);
   }
   spellFx(e: any) {
     if (!this.r.fx || !this.view) return;
@@ -1012,6 +1204,7 @@ export class App {
   respDlg: { close: () => void } | null = null;
   handleDialogs(st: any) {
     const needMull = st.phase === 'mulligan' && st.priority === 'player' && !st.mulliganDone.player;
+    if (needMull && this.mullDlg && (this.mullDlg as any).el.dataset.mulligans !== String(st.players.player.mulligans || 0)) { this.mullDlg.close(); this.mullDlg = null; }
     if (needMull && !this.mullDlg) this.openMulligan(st);
     if (!needMull && this.mullDlg) { this.mullDlg.close(); this.mullDlg = null; }
     const needResp = !!st.pendingResponse && st.pendingResponse.responder === 'player' && st.phase !== 'over';
@@ -1030,18 +1223,23 @@ export class App {
     const selected = new Set<string>();
     const wrap = h('div', { class: 'mull-hand' });
     const hand = st.players.player.hand;
+    const left = 3 - (st.players.player.mulligans || 0);
+    const redraw = btn('Redraw Selected', '', () => go([...selected]), { disabled: true });
     for (const hc of hand) {
       const c = CARDS[hc.cardId];
+      const face = h('div', { class: `hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true', 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, ...faceKids(c));
       const b = h('button', { type: 'button', class: 'mull-card', 'aria-pressed': 'false', 'aria-label': c.name, 'data-uid': hc.uid, 'data-card-id': c.id, 'data-rarity': rarityKey(c), onclick: () => {
         if (selected.has(hc.uid)) selected.delete(hc.uid); else selected.add(hc.uid);
         b.setAttribute('aria-pressed', String(selected.has(hc.uid)));
-      } }, h('span', { 'aria-hidden': 'true' }, String(c.type === 'crystal' ? '◆' : c.cost)), h('span', { 'aria-hidden': 'true' }, c.name), h('span', { 'aria-hidden': 'true' }, c.type === 'creature' ? `${c.attack}/${c.health}` : c.type === 'spell' ? '✨' : '💎'), h('span', { class: 'tx', style: `--tf:${Math.min(0.075, textScale((c.text || '').length) * 0.8)}` }, c.text || ''));
+        (redraw as HTMLButtonElement).disabled = selected.size === 0;
+      } }, face);
       wrap.append(b);
     }
     const go = (uids: string[]) => this.game.act({ type: 'mulligan', uids });
-    const d = this.dialog('Mulligan', [h('h2', {}, 'Mulligan'), h('p', { style: 'text-align:center;margin:0 0 10px' }, 'Tap cards you want to shuffle back and redraw.'), wrap,
-      h('div', { class: 'row' }, btn('Keep Hand', 'primary', () => go([])), btn('Redraw Selected', '', () => go([...selected])))]);
+    const d = this.dialog('Mulligan', [h('h2', {}, 'Mulligan'), h('p', { class: 'mull-left', style: 'text-align:center;margin:0 0 10px' }, `Mulligans left: ${left}`), h('p', { class: 'mull-hint', style: 'text-align:center;margin:0 0 6px' }, 'Tap cards you want to shuffle back and redraw (your first redraw keeps 5 cards, then 4, then 3).'), wrap,
+      h('div', { class: 'row' }, btn('Keep Hand', 'primary', () => go([])), redraw)]);
     d.el.dataset.sticky = '1';
+    d.el.dataset.mulligans = String(st.players.player.mulligans || 0);
     this.mullDlg = d;
   }
 
@@ -1181,8 +1379,6 @@ export class App {
         this.emote(e.owner === 'player' ? 'opponent' : 'player', 'cheer');
       } else if (e.type === 'cast') {
         this.callout(e.player, e.cardId);
-        const respondable = st.pendingResponse && st.pendingResponse.responder === 'player' && e.player === 'opponent';
-        if (!respondable) this.reveal(e.cardId);
       } else if (e.type === 'respond') {
         this.callout(e.player, e.cardId);
       } else if (e.type === 'counter') { this.shatter(e.player); audio.play('shatter'); }
@@ -1193,10 +1389,8 @@ export class App {
       }
       else if (e.type === 'summon') {
         audio.play('cardPlay');
-        if (this.dialogCard === e.cardId + e.owner) this.dialogCard = ''; else this.reveal(e.cardId, e);
-      } else if (e.type === 'playCrystal') this.reveal(e.cardId);
+      } else if (e.type === 'playCrystal') audio.play('cardPlay');
       else if (e.type === 'minerUpgrade') {
-        this.reveal(e.cardId, e);
         this.floatText(`+${e.attack ? '1 ATK ' : ''}+1 HP ✨`, 'heal', e.row, e.col);
       }
       else if (e.type === 'savings' && e.player === 'player') this.bankFly(e.amount);
@@ -1434,14 +1628,14 @@ export class App {
     const lab = (e.target as El).closest?.('.tk-stats');
     const labUid = lab ? (lab.closest('.token') as El | null)?.dataset.uid : null;
     const cell = labUid ? (() => { const c0 = st.board.creatures.find((c: any) => c.uid === labUid); return c0 ? { row: c0.row, col: c0.col } : null; })() : this.cellAt(e.clientX, e.clientY);
-    if (!cell) return;
+    if (!cell) { if (!this.pick && (e.pointerType !== 'mouse' || e.button === 0)) this.startPan(e); return; }
     if (this.pick) {
       const p = this.pick.cells.find((c) => c.row === cell.row && c.col === cell.col);
       if (p) this.pick.done(p); else { this.pick = null; this.clearGlow(); this.flash('Cancelled'); }
       return;
     }
     const cr = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col);
-    if (!cr) return;
+    if (!cr) { if (e.pointerType !== 'mouse' || e.button === 0) this.startPan(e); return; }
     const card = CARDS[cr.cardId];
     const ghost = h('div', { class: 'ghost tk' }, FSYM(card.faction));
     const mine = cr.owner === 'player';
@@ -1481,16 +1675,8 @@ export class App {
         if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); } else this.flash("Can't go there");
       },
       onTap: () => {
-        const now = Date.now();
-        if (this.lastTap.uid === cr.uid && now - this.lastTap.t < 380) {
-          clearTimeout(this.tapTimer);
-          this.lastTap = { uid: '', t: 0 };
-          this.showCard(cr.cardId, cr);
-          return;
-        }
-        this.lastTap = { uid: cr.uid, t: now };
-        clearTimeout(this.tapTimer);
         this.view?.poke(cr.uid);
+        if (this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);
       },
     });
   }

@@ -1,6 +1,6 @@
 // Testing deck builder: every card unlocked and unlimited; up to 5 decks saved on the device.
 import { CARDS, FACTIONS, CONFIG, isMiner, deckCounts, deckProblems, basicMiner } from '../engine';
-import { h, btn, App } from './app';
+import { h, btn, App, faceKids, rarityKey } from './app';
 
 export interface SavedDeck { name: string; cards: string[] }
 const KEY = 'oreheart.decks';
@@ -28,16 +28,35 @@ const kindOf = (c: any) => (c.type === 'creature' ? (c.role === 'Smith' ? 'Smith
 
 /** A real card face: cost, name, art, stats, rarity, role and the complete ability text. */
 export function cardFace(c: any, big = false) {
-  const cr = c.type === 'creature';
-  const pic = c.type === 'creature' && c.faction === 'goblins' ? `/art/cards/${c.id}.webp` : null;
-  return h('div', { class: `face f-${c.faction} ${c.type}${big ? ' big' : ''}`, 'data-card-id': c.id, 'data-rarity': ({ Common: 'common', Uncommon: 'uncommon', Rare: 'rare', 'Ultra Rare': 'ultra-rare', Collector: 'collector' } as any)[c.rarity] || 'common' },
-    h('span', { class: 'fc-cost' }, c.type === 'crystal' ? '◆' : String(c.cost)),
-    h('strong', { class: 'fc-name' }, c.name),
-    pic ? h('img', { class: 'fc-pic', src: pic, alt: '' }) : h('span', { class: 'fc-art' }, cr ? (isMiner(c) ? (c.role === 'Smith' ? '⚒️' : '⛏️') : '⚔️') : c.type === 'spell' ? '✨' : '💎', h('small', {}, FSYMS[c.faction])),
-    cr ? h('span', { class: 'fc-stats' }, `⚔️${c.attack}${c.abilities?.includes('ranged') ? '🏹' : ''} ❤️${c.health} 👟${c.move}`) : null,
-    h('span', { class: 'fc-meta' }, `${kindOf(c)} · ${c.rarity}`),
-    h('span', { class: 'fc-text' }, c.text || ''),
-    big ? h('span', { class: 'fc-flavor' }, c.tagline + ' — ' + c.flavor) : null);
+  return h('div', { class: `face hand-card static f-${c.faction} ${c.type}${big ? ' big' : ''}`, 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, ...faceKids(c));
+}
+
+/** Smart search (R2.20): plain words against name, text, keywords, faction, role, type, rarity and cost. */
+const STOP = new Set(['card', 'cards', 'with', 'and', 'the', 'a', 'than', 'cost', 'costing', 'that', 'are', 'of']);
+export function smartMatch(c: any, query: string): boolean {
+  const words = query.toLowerCase().replace(/[^a-z0-9+ ]/g, ' ').split(/\s+/).filter((w) => w && !STOP.has(w));
+  const ab: string[] = c.abilities || [];
+  const hay = [c.name, c.shortText, c.longText, ab.join(' '), FNAME[c.faction], c.role || '', c.type, c.rarity, c.spellKind || '', String(c.cost)].join(' ').toLowerCase();
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const num = (j: number) => { const n = parseInt(words[j], 10); return isNaN(n) ? null : n; };
+    if (w === 'cheap') { if (!(c.cost <= 3)) return false; }
+    else if (w === 'under' || w === 'below' || w === 'less') { const n = num(i + 1); if (n == null) continue; i++; if (!(c.cost < n)) return false; }
+    else if (w === 'over' || w === 'above' || w === 'more') { const n = num(i + 1); if (n == null) continue; i++; if (!(c.cost > n)) return false; }
+    else if (/^goblins?$/.test(w)) { if (c.faction !== 'goblins') return false; }
+    else if (/^gnomes?$/.test(w)) { if (c.faction !== 'gnomes') return false; }
+    else if (/^(dwarf|dwarves|dwarfs)$/.test(w)) { if (c.faction !== 'dwarves') return false; }
+    else if (/^miners?$/.test(w)) { if (!(c.type === 'creature' && isMiner(c))) return false; }
+    else if (/^fighters?$/.test(w)) { if (!(c.type === 'creature' && !isMiner(c))) return false; }
+    else if (/^ranged$/.test(w)) { if (!ab.includes('ranged')) return false; }
+    else if (/^bombs?$/.test(w)) { if (!(ab.includes('kaboom') || ab.includes('kaboom1'))) return false; }
+    else if (/^guards?$/.test(w)) { if (!ab.includes('guard')) return false; }
+    else if (/^spells?$/.test(w)) { if (c.type !== 'spell') return false; }
+    else if (/^crystals?$/.test(w)) { if (c.type !== 'crystal') return false; }
+    else if (/^\d+$/.test(w)) { if (c.cost !== +w) return false; }
+    else if (!hay.includes(w.replace(/s$/, '')) && !hay.includes(w)) return false;
+  }
+  return true;
 }
 
 /** Completes `deck` to exactly 50 cards without removing anything (R9.1). */
@@ -84,6 +103,8 @@ export function showDecks(app: App) {
   const fT = sel('Type', 'f-type', ['All', 'Miners', 'Fighters', 'Spells', 'Crystal cards']);
   const fC = sel('Cost', 'f-cost', ['Any', '1-2', '3-4', '5-6', '7+']);
   const fR = sel('Rarity', 'f-rarity', ['All', 'Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector']);
+  let query = '';
+  let perRow = Math.max(1, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
   const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'All cards', role: 'group' });
   const pileEl = h('div', { class: 'db-pile', 'aria-label': 'Deck pile', role: 'group' });
   const listEl = h('ul', { class: 'db-list', 'aria-label': 'Deck list' });
@@ -96,6 +117,7 @@ export function showDecks(app: App) {
   const newBtn = btn('New Deck', '', () => { deck = []; editing = -1; name = defaultName(); status.textContent = ''; renderDeck(); }) as HTMLButtonElement;
 
   const matches = (c: any) => {
+    if (query && !smartMatch(c, query)) return false;
     const f = fF.sel.value, t = fT.sel.value, co = fC.sel.value, r = fR.sel.value;
     if (f !== 'All' && FNAME[c.faction] !== f) return false;
     if (t === 'Miners' && !(c.type === 'creature' && isMiner(c))) return false;
@@ -111,12 +133,23 @@ export function showDecks(app: App) {
     return true;
   };
   const count = (id: string) => deck.filter((x) => x === id).length;
-  const addCard = (id: string) => { if (count(id) >= copyLimit(id)) return; deck.push(id); status.textContent = ''; renderDeck(); };
+  const fly = (id: string, from?: DOMRect | null) => {
+    const src = from || (cardsEl.querySelector(`[data-card="${id}"]`) as HTMLElement | null)?.getBoundingClientRect();
+    if (!src) return;
+    const ghost = cardFace(CARDS[id]); ghost.classList.add('db-fly');
+    ghost.style.setProperty('--cw', src.width + 'px');
+    ghost.style.left = src.left + 'px'; ghost.style.top = src.top + 'px';
+    document.body.append(ghost);
+    const to = pileEl.getBoundingClientRect();
+    const dx = to.left + to.width / 2 - (src.left + src.width / 2), dy = to.top + to.height / 2 - (src.top + src.height / 2);
+    const a = ghost.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${dx}px,${dy}px) scale(.3)`, opacity: 0.3 }], { duration: 380, easing: 'ease-in' });
+    a.onfinish = () => ghost.remove();
+    setTimeout(() => ghost.remove(), 700);
+  };
+  const addCard = (id: string, from?: DOMRect | null) => { if (count(id) >= copyLimit(id)) return; fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };
   const removeCard = (id: string) => { const i = deck.indexOf(id); if (i >= 0) deck.splice(i, 1); status.textContent = ''; renderDeck(); };
 
-  function enlarge(c: any) {
-    const d: any = app.dialog(c.name, [h('div', { class: 'db-enlarged' }, cardFace(c, true)), h('div', { class: 'row' }, btn('Close', 'primary', () => d.close()))]);
-  }
+  function enlarge(c: any) { app.showCard(c.id); }
   function drag(e: PointerEvent, c: any, el: HTMLElement) {
     if (e.button !== 0) return;
     const sx = e.clientX, sy = e.clientY;
@@ -131,7 +164,7 @@ export function showDecks(app: App) {
     };
     const up = (m: PointerEvent) => {
       document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
-      if (ghost) { ghost.remove(); pileEl.classList.remove('hot'); if (m.type === 'pointerup' && over(m.clientX, m.clientY)) addCard(c.id); setTimeout(() => { (el as any)._dragged = false; }, 50); }
+      if (ghost) { ghost.remove(); pileEl.classList.remove('hot'); if (m.type === 'pointerup' && over(m.clientX, m.clientY)) addCard(c.id, new DOMRect(m.clientX - 30, m.clientY - 45, 60, 90)); setTimeout(() => { (el as any)._dragged = false; }, 50); }
     };
     document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
   }
@@ -147,7 +180,52 @@ export function showDecks(app: App) {
     el.addEventListener('pointerdown', (e: PointerEvent) => drag(e, c, el));
     return el;
   }
-  function renderCards() { cardsEl.replaceChildren(...ALL.filter(matches).map(tile)); }
+  function fitRow() {
+    cardsEl.style.gridTemplateColumns = `repeat(${perRow},minmax(0,1fr))`;
+    const w = cardsEl.clientWidth || (app.root as HTMLElement).clientWidth * 0.6;
+    cardsEl.style.setProperty('--cw', Math.max(40, (w - 8 - (perRow - 1) * 10) / perRow) + 'px');
+  }
+  function setPerRow(n: number) {
+    perRow = Math.max(1, Math.min(8, Math.round(n)));
+    try { localStorage.setItem('oreheart.cardsPerRow', String(perRow)); } catch { /* storage unavailable */ }
+    slider.value = String(perRow);
+    fitRow();
+  }
+  function renderCards() { cardsEl.replaceChildren(...ALL.filter(matches).map(tile)); fitRow(); }
+  const slider = h('input', { type: 'range', id: 'cards-per-row', min: '1', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
+  slider.addEventListener('input', () => setPerRow(+slider.value));
+  const searchInp = h('input', { type: 'search', id: 'card-search', role: 'searchbox', 'aria-label': 'Search cards', placeholder: 'Search: "cheap goblin miners", "ranged under 4"…', autocomplete: 'off' }) as HTMLInputElement;
+  searchInp.addEventListener('input', () => { query = searchInp.value.trim(); renderCards(); });
+  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const voiceBtn = SR ? btn('🎤', 'small voice-btn', () => {
+    try {
+      const rec = new SR(); rec.lang = 'en-US'; rec.interimResults = false;
+      rec.onresult = (ev: any) => { searchInp.value = ev.results[0][0].transcript; query = searchInp.value.trim(); renderCards(); };
+      rec.start();
+    } catch { /* microphone unavailable */ }
+  }, { 'aria-label': 'Voice search' }) : null;
+  cardsEl.addEventListener('wheel', (e: WheelEvent) => { if (e.ctrlKey) { e.preventDefault(); setPerRow(perRow + (e.deltaY > 0 ? 1 : -1)); } }, { passive: false });
+  const tp = new Map<number, number[]>();
+  let pinch0 = 0;
+  cardsEl.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType === 'touch') { tp.set(e.pointerId, [e.clientX, e.clientY]); pinch0 = 0; } }, true);
+  cardsEl.addEventListener('pointermove', (e: PointerEvent) => {
+    if (!tp.has(e.pointerId)) return;
+    tp.set(e.pointerId, [e.clientX, e.clientY]);
+    if (tp.size === 2) {
+      const [a, b] = [...tp.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (!pinch0) pinch0 = d;
+      else if (d > pinch0 * 1.35) { setPerRow(perRow - 1); pinch0 = d; } else if (d < pinch0 / 1.35) { setPerRow(perRow + 1); pinch0 = d; }
+    }
+  });
+  const endTouch = (e: PointerEvent) => { tp.delete(e.pointerId); pinch0 = 0; };
+  cardsEl.addEventListener('pointerup', endTouch); cardsEl.addEventListener('pointercancel', endTouch);
+  window.addEventListener('resize', fitRow);
+  // cards tilt slightly toward the pointer
+  cardsEl.addEventListener('pointermove', (e: PointerEvent) => {
+    const r = cardsEl.getBoundingClientRect();
+    cardsEl.style.setProperty('--ry', (((e.clientX - r.left) / r.width - 0.5) * 4).toFixed(2) + 'deg');
+    cardsEl.style.setProperty('--rx', ((0.5 - (e.clientY - r.top) / Math.max(1, r.height)) * 2).toFixed(2) + 'deg');
+  });
 
   function renderDeck() {
     const n: Record<string, number> = {};
@@ -160,7 +238,7 @@ export function showDecks(app: App) {
       return h('li', {}, h('span', {}, `${n[id]} × ${nm}`), plus, btn('−', 'small', () => removeCard(id), { 'aria-label': `Remove ${nm}` }));
     }));
     const c = deckCounts(deck);
-    pileEl.replaceChildren(h('div', { class: 'pile-top' }, h('strong', {}, name), h('span', { class: 'pile-n' }, `${c.cards}/${CONFIG.deckSize}`)));
+    pileEl.replaceChildren(h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('div', { class: 'pile-top' }, h('strong', {}, name), h('span', { class: 'pile-n' }, `${c.cards}/${CONFIG.deckSize}`)));
     countsEl.textContent = `Cards: ${c.cards}/${CONFIG.deckSize} · Creatures: ${c.creatures} · Spells: ${c.spells} · Crystal cards: ${c.crystals}`;
     const buckets = [1, 2, 3, 4, 5, 6, 7].map((k) => deck.filter((id) => CARDS[id].type !== 'crystal' && (k === 7 ? CARDS[id].cost >= 7 : CARDS[id].cost === k)).length);
     const mx = Math.max(4, ...buckets);
@@ -217,7 +295,9 @@ export function showDecks(app: App) {
 
   const pileWrap = h('div', { class: 'db-pilewrap' }, pileEl, h('p', { class: 'hint' }, 'Drag a card here, or double-click it.'));
   app.root.append(h('main', { class: 'screen db-screen' },
+    h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' }),
     h('h1', { class: 'section cinzel' }, 'Deck Builder'),
+    h('div', { class: 'db-search' }, searchInp, ...(voiceBtn ? [voiceBtn] : []), h('div', { class: 'f-field' }, h('label', { for: 'cards-per-row' }, 'Cards per row'), slider)),
     h('div', { class: 'db-filters' }, fF.wrap, fT.wrap, fC.wrap, fR.wrap),
     h('div', { class: 'db-cols' },
       h('section', { class: 'db-left' }, h('h2', {}, 'All cards'), cardsEl),
@@ -233,4 +313,5 @@ export function showDecks(app: App) {
   for (const ev of ['pointermove', 'pointerdown', 'keydown', 'change', 'focusin']) screen.addEventListener(ev, wake);
   renderCards();
   renderDeck();
+  requestAnimationFrame(fitRow);
 }

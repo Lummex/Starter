@@ -126,7 +126,7 @@ export function createMatch(opts: any = {}) {
   (['player', 'opponent'] as Side[]).forEach((who) => {
     const cmd = who === 'player' ? pcmd : ocmd;
     s.players[who] = {
-      commanderId: cmd.id, faction: cmd.faction, health: cmd.health, maxHealth: cmd.health,
+      commanderId: cmd.id, mulligans: 0, faction: cmd.faction, health: cmd.health, maxHealth: cmd.health,
       crystals: 0, bank: 0, flow: 0, hand: [], deck: [], discard: [], geodes: 0, minedLastTurn: 0,
     };
   });
@@ -637,7 +637,7 @@ export function respondNeeds(s: any, responder: Side, pend: any): { uid: string;
 
 function openWindow(s: any, pend: any, ev: any[]) {
   const responder = other(pend.actor);
-  if (respondMatches(s, responder, { ...pend, responder }).length) {
+  if (respondActions(s, responder, { ...pend, responder }).length) {
     s.pendingResponse = { ...pend, responder };
     s.priority = responder;
   } else finishPending(s, pend, ev, false);
@@ -648,7 +648,7 @@ function finishPending(s: any, pend: any, ev: any[], cancelled: boolean) {
   s.priority = s.activePlayer;
   const actor: Side = pend.actor;
   if (pend.kind === 'summon') {
-    if (cancelled) s.players[actor].hand.push(pend.card);
+    if (cancelled) { s.players[actor].hand.push(pend.card); ev.push({ type: 'bounce', uid: pend.card.uid, cardId: pend.card.cardId, owner: actor, row: pend.row, col: pend.col }); }
     else {
       const c = spawn(s, actor, pend.card.cardId, pend.row, pend.col, 0, pend.card.uid);
       c.summonedThisTurn = true;
@@ -701,8 +701,10 @@ export function legalActions(s: any): any[] {
   }
   if (s.phase === 'mulligan') {
     if (s.mulliganDone[who]) return [surrender];
-    out.push({ type: 'mulligan', uids: [] }, { type: 'mulligan', uids: pl.hand.map((h: any) => h.uid) });
-    for (const h of pl.hand) out.push({ type: 'mulligan', uids: [h.uid] });
+    out.push({ type: 'mulligan', uids: [] });
+    if ((pl.mulligans || 0) < 3 && pl.hand.length) out.push({ type: 'mulligan', uids: pl.hand.map((h: any) => h.uid) });
+    if ((pl.mulligans || 0) < 3) for (const h of pl.hand) out.push({ type: 'mulligan', uids: [h.uid] });
+    if ((pl.mulligans || 0) < 3 && pl.hand.length > 1) out.push({ type: 'mulligan', uids: pl.hand.slice(0, 2).map((h: any) => h.uid) });
     out.push(surrender);
     return out;
   }
@@ -776,6 +778,7 @@ function matchLegal(s: any, a: any): any | null {
     const uids = Array.isArray(a.uids) ? a.uids : null;
     const hand = s.players[s.priority].hand.map((h: any) => h.uid);
     if (!uids || new Set(uids).size !== uids.length || !uids.every((u: string) => hand.includes(u))) return null;
+    if (uids.length && (s.players[s.priority].mulligans || 0) >= 3) return null;
     return s.phase === 'mulligan' && !s.pendingResponse && !s.mulliganDone[s.priority] ? a : null;
   }
   for (const l of legalActions(s)) {
@@ -836,12 +839,16 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
   switch (act.type) {
     case 'mulligan': {
       const n = act.uids.length;
+      const k = (pl.mulligans || 0) + (n ? 1 : 0);
       const back = act.uids.map((u: string) => takeHand(u));
       pl.deck.push(...back);
       if (n) shuffle(s, pl.deck);
-      for (let i = 0; i < n; i++) pl.hand.push(pl.deck.shift());
+      const draw = n && k >= 2 ? n - 1 : n;
+      for (let i = 0; i < draw; i++) pl.hand.push(pl.deck.shift());
+      pl.mulligans = k;
+      ev.push({ type: 'mulligan', player: who, count: n, mulligans: k });
+      if (n && k < 3) break;
       s.mulliganDone[who] = true;
-      ev.push({ type: 'mulligan', player: who, count: n });
       if (who === 'player') s.priority = 'opponent';
       else finishSetup(s, ev);
       break;
@@ -858,7 +865,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       s.pendingResponse = null;
       s.priority = s.activePlayer;
       if (card.spellKind === 'counter') {
-        ev.push({ type: 'counter', cardId: card.id, player: who });
+        ev.push({ type: 'counter', cardId: card.id, player: who, countered: pend.card ? pend.card.cardId : null, ckind: pend.kind });
         if (card.effect === 'mirror') {
           finishPending(s, pend, ev, true);
           const orig = CARDS[pend.card.cardId];

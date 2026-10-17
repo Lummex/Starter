@@ -31,7 +31,7 @@ if (test) {
       if (!c) return null;
       const cr = c.type === 'creature';
       return { id: c.id, name: c.name, type: c.type, faction: c.faction === 'any' ? null : c.faction, rarity: c.rarity, role: cr ? String(c.role).toLowerCase() : null,
-        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text, weapon: weaponOf(c), tagline: c.tagline, flavor: c.flavor };
+        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text, shortText: c.shortText, longText: c.longText, weapon: weaponOf(c), tagline: c.tagline, flavor: c.flavor };
     },
     listCards: () => Object.keys(CARDS).map((id) => (window as any).oreheart.getCard(id)),
     getArtInfo: (id: string) => {
@@ -41,6 +41,9 @@ if (test) {
     },
     getAudioState: () => audio.state(),
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
+    getFxLog: () => JSON.parse(JSON.stringify((app as any).fxLog)),
+    clearFxLog: () => { (app as any).fxLog = []; },
+    getCamera: () => app.getCamera(),
     poke: (uid: string) => (app.view ? app.view.poke(uid) : null),
     getConfig: () => JSON.parse(JSON.stringify(CONFIG)),
     setPhaseTimeLeft: (n: number) => app.setPhaseTimeLeft(n),
