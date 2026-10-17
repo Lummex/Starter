@@ -8,5 +8,5 @@ if (!r.ok) { console.log('failed', r.status); process.exit(1); }
 const j = await r.json();
 const buf = Buffer.from(j.data[0].b64_json, 'base64');
 fs.mkdirSync('public/art', { recursive: true });
-fs.writeFileSync('public/art/menu-bg.webp', await sharp(buf).resize(1280, 720, { fit: 'cover' }).webp({ quality: 72 }).toBuffer());
+fs.writeFileSync('public/art/menu-cavern.webp', await sharp(buf).resize(1280, 720, { fit: 'cover' }).webp({ quality: 72 }).toBuffer());
 console.log('ok');

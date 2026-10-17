@@ -92,8 +92,8 @@
    "sneaky"
   ],
   "unique": false,
-  "text": "Enemies can't strike back at it.",
-  "shortText": "Enemies can't strike back at it.",
+  "text": "Sneaky. Enemies can't strike back at it.",
+  "shortText": "Sneaky. Enemies can't strike back at it.",
   "longText": "Fighter creature. Cost 6, Attack 3, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Sneaky: enemies cannot strike back at it. Example: It attacks a Guard and takes no damage back."
  },
  {
@@ -111,8 +111,8 @@
    "haste"
   ],
   "unique": false,
-  "text": "Can act the turn it is played.",
-  "shortText": "Can act the turn it is played.",
+  "text": "Can act the turn it's played.",
+  "shortText": "Can act the turn it's played.",
   "longText": "Fighter creature. Cost 9, Attack 3, Health 4, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Haste: can act the turn it is played. Example: Summon it and attack in the same turn."
  },
  {
@@ -227,8 +227,8 @@
    "armored"
   ],
   "unique": false,
-  "text": "Takes 1 less damage from each hit.",
-  "shortText": "Takes 1 less damage from each hit.",
+  "text": "Armored: takes 1 less damage from each hit.",
+  "shortText": "Armored: takes 1 less damage from each hit.",
   "longText": "Fighter creature. Cost 8, Attack 2, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Armored: takes 1 less damage from every hit. Example: A 3-damage hit only deals 2."
  },
  {
@@ -246,8 +246,8 @@
    "blink"
   ],
   "unique": false,
-  "text": "Once: swap places with any of your creatures.",
-  "shortText": "Once: swap places with any of your creatures.",
+  "text": "Blink: once, swap places with any of your creatures.",
+  "shortText": "Blink: once, swap places with any of your creatures.",
   "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Blink: once, swap places with any of your creatures. Example: Swap into a gap in your line to reach a distant enemy."
  },
  {
@@ -382,9 +382,9 @@
    "rage"
   ],
   "unique": false,
-  "text": "+2 Attack while below half Health.",
-  "shortText": "+2 Attack while below half Health.",
-  "longText": "Fighter creature. Cost 8, Attack 3, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rage: +2 Attack while below half Health. Example: At half Health or less it hits twice as hard."
+  "text": "Rage: +2 Attack while below half Health.",
+  "shortText": "Rage: +2 Attack while below half Health.",
+  "longText": "Fighter creature. Cost 8, Attack 3, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rage: Rage: +2 Attack while below half Health. Example: At half Health or less it hits twice as hard."
  },
  {
   "id": "brewmaster",
@@ -671,7 +671,7 @@
   "params": {},
   "text": "Instant. A creature takes no damage from the next hit.",
   "shortText": "Instant. A creature takes no damage from the next hit.",
-  "longText": "Instant: play it in your turn or when you respond. One of your creatures takes no damage from the next hit this turn. Example: The enemy attacks your Shieldbeard: respond and the hit does nothing."
+  "longText": "Instant: play it in your turn or when you respond. One of your creatures takes no damage from the next hit this turn, even a Ranged one. Example: The enemy attacks your Shieldbeard: respond and the hit does nothing."
  },
  {
   "id": "second-wind",
@@ -917,8 +917,8 @@
    "sneaky"
   ],
   "unique": false,
-  "text": "Enemies can't strike back at it.",
-  "shortText": "Enemies can't strike back at it.",
+  "text": "Sneaky. Enemies can't strike back at it.",
+  "shortText": "Sneaky. Enemies can't strike back at it.",
   "longText": "Fighter creature. Cost 4, Attack 2, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Sneaky: enemies cannot strike back at it. Example: It attacks a Guard and takes no damage back."
  },
  {
@@ -974,8 +974,8 @@
    "kaboom1"
   ],
   "unique": false,
-  "text": "When defeated, 1 damage to adjacent enemies.",
-  "shortText": "When defeated, 1 damage to adjacent enemies.",
+  "text": "Ka-boom: 1 damage to adjacent enemies when defeated.",
+  "shortText": "Ka-boom: 1 damage to adjacent enemies when defeated.",
   "longText": "Fighter creature. Cost 4, Attack 2, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ka-boom 1: when defeated, deals 1 damage to every adjacent enemy creature. Example: It is defeated beside two enemies and each takes 1 damage."
  },
  {
@@ -1050,8 +1050,8 @@
    "blink"
   ],
   "unique": false,
-  "text": "Once: swap places with any of your creatures.",
-  "shortText": "Once: swap places with any of your creatures.",
+  "text": "Blink: once, swap places with any of your creatures.",
+  "shortText": "Blink: once, swap places with any of your creatures.",
   "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Blink: once, swap places with any of your creatures. Example: Swap into a gap in your line to reach a distant enemy."
  },
  {
@@ -1126,8 +1126,8 @@
    "haste"
   ],
   "unique": false,
-  "text": "Can act the turn it is played.",
-  "shortText": "Can act the turn it is played.",
+  "text": "Can act the turn it's played.",
+  "shortText": "Can act the turn it's played.",
   "longText": "Fighter creature. Cost 6, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Haste: can act the turn it is played. Example: Summon it and attack in the same turn."
  },
  {
@@ -1145,8 +1145,8 @@
    "armored"
   ],
   "unique": false,
-  "text": "Takes 1 less damage from each hit.",
-  "shortText": "Takes 1 less damage from each hit.",
+  "text": "Armored: takes 1 less damage from each hit.",
+  "shortText": "Armored: takes 1 less damage from each hit.",
   "longText": "Fighter creature. Cost 7, Attack 3, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Armored: takes 1 less damage from every hit. Example: A 3-damage hit only deals 2."
  },
  {
@@ -1164,8 +1164,8 @@
    "rage"
   ],
   "unique": false,
-  "text": "+2 Attack while below half Health.",
-  "shortText": "+2 Attack while below half Health.",
-  "longText": "Fighter creature. Cost 8, Attack 3, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rage: +2 Attack while below half Health. Example: At half Health or less it hits twice as hard."
+  "text": "Rage: +2 Attack while below half Health.",
+  "shortText": "Rage: +2 Attack while below half Health.",
+  "longText": "Fighter creature. Cost 8, Attack 3, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rage: Rage: +2 Attack while below half Health. Example: At half Health or less it hits twice as hard."
  }
 ]

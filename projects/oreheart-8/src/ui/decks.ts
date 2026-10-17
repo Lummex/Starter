@@ -1,6 +1,6 @@
 // Testing deck builder: every card unlocked and unlimited; up to 5 decks saved on the device.
 import { CARDS, FACTIONS, CONFIG, isMiner, deckCounts, deckProblems, basicMiner } from '../engine';
-import { h, btn, App, faceKids, rarityKey } from './app';
+import { h, btn, App, faceKids, rarityKey, FRAME } from './app';
 
 export interface SavedDeck { name: string; cards: string[] }
 const KEY = 'oreheart.decks';
@@ -28,7 +28,7 @@ const kindOf = (c: any) => (c.type === 'creature' ? (c.role === 'Smith' ? 'Smith
 
 /** A real card face: cost, name, art, stats, rarity, role and the complete ability text. */
 export function cardFace(c: any, big = false) {
-  return h('div', { class: `face hand-card static f-${c.faction} ${c.type}${big ? ' big' : ''}`, 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, ...faceKids(c));
+  return h('div', { class: `face hand-card static f-${c.faction} ${c.type}${big ? ' big' : ''}`, 'data-card-id': c.id, 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c) }, ...faceKids(c));
 }
 
 /** Smart search (R2.20): plain words against name, text, keywords, faction, role, type, rarity and cost. */
@@ -48,7 +48,7 @@ export function smartMatch(c: any, query: string): boolean {
     else if (/^(dwarf|dwarves|dwarfs)$/.test(w)) { if (c.faction !== 'dwarves') return false; }
     else if (/^miners?$/.test(w)) { if (!(c.type === 'creature' && isMiner(c))) return false; }
     else if (/^fighters?$/.test(w)) { if (!(c.type === 'creature' && !isMiner(c))) return false; }
-    else if (/^ranged$/.test(w)) { if (!ab.includes('ranged')) return false; }
+    else if (/^ranged$/.test(w)) { if (!ab.includes('ranged') && !/ranged/i.test(c.shortText + ' ' + c.longText)) return false; }
     else if (/^bombs?$/.test(w)) { if (!(ab.includes('kaboom') || ab.includes('kaboom1'))) return false; }
     else if (/^guards?$/.test(w)) { if (!ab.includes('guard')) return false; }
     else if (/^spells?$/.test(w)) { if (c.type !== 'spell') return false; }

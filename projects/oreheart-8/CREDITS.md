@@ -9,7 +9,7 @@ Everything in the game is made in code or generated for this project. There are 
 
 ## Pictures
 - **Card pictures** (`public/art/cards/*.webp`, the 16 Goblin creatures): generated with the xAI Grok image API (`grok-imagine-image`, https://docs.x.ai/) by `tools/gen-card-art.mjs` from the prompts in `src/content/card-art.json`. Generated once and committed. No fallback renders were needed.
-- **Main menu background** (`public/art/menu-bg.webp`): generated with the xAI Grok image API by `tools/gen-menu-bg.mjs` (no text in the image).
+- **Main menu background** (`public/art/menu-cavern.webp`): generated with the xAI Grok image API by `tools/gen-menu-bg.mjs` (no text in the image).
 - **Logo** (`public/art/logo.webp`, `logo-wide.webp`, `icon-192.png`): cut from the owner's logo reference (`factory-design/design/references/main logo.jpg`) by `tools/cut-logo.mjs`.
 
 ## Made in code

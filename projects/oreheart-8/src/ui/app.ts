@@ -21,7 +21,7 @@ const RARITY_KEY: Record<string, string> = { Common: 'common', Uncommon: 'uncomm
 export const rarityKey = (c: any) => RARITY_KEY[c.rarity] || 'common';
 /** Picture path of a card (Goblin creatures have a generated painting). */
 export const pictureOf = (c: any): string | null => (c && c.type === 'creature' && c.faction === 'goblins' ? `/art/cards/${c.id}.webp` : null);
-const FRAME: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
+export const FRAME: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
 export const frameOf = (c: any) => `card-frame-${FRAME[c.faction] || 'neutral'}`;
 export function typeOf(c: any): { icon: string; name: string } {
   if (c.type === 'spell') return { icon: '🪄', name: c.spellKind === 'counter' ? 'Counterspell' : c.spellKind === 'instant' ? 'Instant' : 'Spell' };
@@ -43,7 +43,7 @@ export function faceKids(c: any, cost?: number, cur?: { attack?: number; health?
   const ty = typeOf(c);
   const rk = rarityKey(c);
   const kids: (El | null)[] = [
-    h('img', { class: 'frame', src: `/art/frames/${frameOf(c)}.webp`, alt: '', draggable: 'false', 'data-frame': frameOf(c) }),
+    h('img', { class: 'frame', src: `/art/frames/${frameOf(c)}.webp`, alt: '', draggable: 'false' }),
     pic ? h('img', { class: 'pic', src: pic, alt: '', draggable: 'false', loading: 'eager' }) : h('span', { class: 'ty', 'aria-hidden': 'true' }, cr ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
     h('span', { class: 'cost', role: 'img', 'aria-label': `Cost ${cost ?? c.cost}` }, c.type === 'crystal' ? '◆' : String(cost ?? c.cost)),
     cr ? h('span', { class: 'atk', role: 'img', 'aria-label': `Attack ${cur?.attack ?? c.attack}` }, String(cur?.attack ?? c.attack)) : null,
@@ -377,7 +377,7 @@ export class App {
     const dl = h('dl', { class: 'sr-only' });
     for (const [k, v] of rows) dl.append(h('dt', {}, k), h('dd', {}, v));
     const cur = creature ? { attack: creature.attack, health: creature.health, move: c.move } : undefined;
-    const face = h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, ...faceKids(c, cost, cur));
+    const face = h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c) }, ...faceKids(c, cost, cur));
     const tx = face.querySelector('.tx') as El;
     const tb = h('button', { type: 'button', class: 'tx', style: tx.getAttribute('style') || '', 'aria-label': 'Full explanation' }, tx.textContent || '');
     tx.replaceWith(tb);
@@ -531,7 +531,7 @@ export class App {
       hoverT = setTimeout(() => {
         const card = CARDS[cr.cardId];
         const rc = this.view!.cellRect(cr.row, cr.col);
-        const el = h('div', { class: `hand-card static hover-card ${card.type} f-${card.faction}`, 'aria-hidden': 'true', 'data-card-id': card.id, 'data-rarity': rarityKey(card) }, ...faceKids(card, card.cost, { attack: cr.attack, health: cr.health, move: card.move }));
+        const el = h('div', { class: `hand-card static hover-card ${card.type} f-${card.faction}`, 'aria-hidden': 'true', 'data-card-id': card.id, 'data-frame': FRAME[card.faction] || 'neutral', 'data-rarity': rarityKey(card) }, ...faceKids(card, card.cost, { attack: cr.attack, health: cr.health, move: card.move }));
         el.style.left = rc.x + rc.w / 2 + 'px'; el.style.top = Math.max(4, rc.y - 4) + 'px';
         r.board.append(el); hoverEl = el;
       }, 400);
@@ -921,7 +921,7 @@ export class App {
     if ((this.test && !this.fxReal) || !this.r.board) return;
     const c = CARDS[cardId];
     const secs = this.revealSeconds();
-    const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, ...faceKids(c));
+    const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c) }, ...faceKids(c));
     const host = this.root.querySelector('.match') as El;
     host.append(el);
     let done = false;
@@ -1189,7 +1189,7 @@ export class App {
     for (const hc of me.hand) {
       const c = CARDS[hc.cardId];
       const cost = costOf(c);
-      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id, 'data-card-id': c.id, 'data-rarity': rarityKey(c) },
+      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
@@ -1233,8 +1233,8 @@ export class App {
     const redraw = btn('Redraw Selected', '', () => go([...selected]), { disabled: true });
     for (const hc of hand) {
       const c = CARDS[hc.cardId];
-      const face = h('div', { class: `hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true', 'data-card-id': c.id, 'data-rarity': rarityKey(c) }, ...faceKids(c));
-      const b = h('button', { type: 'button', class: 'mull-card', 'aria-pressed': 'false', 'aria-label': c.name, 'data-uid': hc.uid, 'data-card-id': c.id, 'data-rarity': rarityKey(c), onclick: () => {
+      const face = h('div', { class: `hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true', 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c) }, ...faceKids(c));
+      const b = h('button', { type: 'button', class: 'mull-card', 'aria-pressed': 'false', 'aria-label': c.name, 'data-uid': hc.uid, 'data-card-id': c.id, 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c), onclick: () => {
         if (selected.has(hc.uid)) selected.delete(hc.uid); else selected.add(hc.uid);
         b.setAttribute('aria-pressed', String(selected.has(hc.uid)));
         (redraw as HTMLButtonElement).disabled = selected.size === 0;

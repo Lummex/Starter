@@ -3,7 +3,7 @@ import { Game } from './game';
 import { App } from './ui/app';
 import { CARDS, CONFIG, weaponOf, previewAttack, tutorialAction } from './engine';
 import { audio } from './ui/audio';
-import { pictureOf } from './ui/app';
+import { pictureOf, rarityKey } from './ui/app';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
@@ -33,7 +33,7 @@ if (test) {
       return { id: c.id, name: c.name, type: c.type, faction: c.faction === 'any' ? null : c.faction, rarity: c.rarity, role: cr ? String(c.role).toLowerCase() : null,
         cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text, shortText: c.shortText, longText: c.longText, weapon: weaponOf(c), tagline: c.tagline, flavor: c.flavor };
     },
-    listCards: () => Object.keys(CARDS).map((id) => (window as any).oreheart.getCard(id)),
+    listCards: () => Object.keys(CARDS).map((id) => { const c = (window as any).oreheart.getCard(id); return { ...c, rarity: rarityKey(CARDS[id]) }; }),
     getArtInfo: (id: string) => {
       const c: any = CARDS[id];
       if (!c) return null;

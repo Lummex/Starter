@@ -228,3 +228,11 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 
 ## Round 2 fixes
 - Enemy card backs carry data-card-back; tokens use narrow boxes so hearts never overlap labels; auto-skip never fires on opponent turns; deck builder tiles include hidden long text; getCamera reports panX/panY.
+
+## Fix round (after inspector rejection)
+- Short texts now name their keyword (Sneaky, Ka-boom, Blink, Armored, Rage; Courier "it's played").
+- `data-frame` is on the card face (`goblin|gnome|dwarf|neutral`); `listCards` returns lowercase rarity keys (`getCard` keeps display names).
+- Mulligan: only the button carries `data-card-id` (5 per row, not 10).
+- Deck Builder: "ranged" search also matches cards whose text mentions Ranged (Shield Bubble long text); tiles no longer move on hover (glow instead).
+- Menu background renamed `menu-cavern.webp`.
+- Known: AC100 expects a 3-damage Infernal Orb to defeat a Borgo-boosted (4 Health) Gutripper Brawler; that contradicts AC17/AC13 Borgo +1 Health, so the engine is unchanged.
