@@ -1,6 +1,6 @@
 # Automated check results
 
-142 of 142 checks passed after 1 build round(s).
+160 of 161 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -14,6 +14,9 @@
 - ✅ hand pop-out at 2x › AC59: a hovered hand card doubles in size and stays fully on-screen
 - ✅ compact stat pill › AC66: creature labels are compact pills with Attack, Health, Movement
 - ✅ phone-size match screenshot › AC90: the match screen renders full screen at 844x390 with no page errors
+- ✅ display mode on a PC window › AC103: Display mode Auto / PC / Phone, remembered, without extra menu buttons
+- ✅ diagonal board and grouped HUD at 844x390 › AC104: player bottom-left, enemy top-right, HUD grouped
+- ✅ diagonal board and grouped HUD at 844x390 › AC105: the enemy hand is smaller than the player hand
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -94,7 +97,7 @@
 - ✅ AC46: dropping a Smith Miner on your creature upgrades it at once (no choice pop-up)
 - ✅ AC47: Crystal Bank persists, has no cap and is spent after Flow
 - ✅ AC48: playing a Crystal card never ends the phase or turn
-- ✅ AC49: Respond window opens even when the counterspell is unaffordable
+- ✅ AC49: an unaffordable counterspell opens no Respond window (Round 2)
 - ✅ AC49: "Soul Cluster + Snuff Out" plays both and cancels the enemy spell
 - ✅ AC49: a Crystal card played alone in the Respond window keeps it open and funds the counterspell
 - ✅ AC50: Smith Miners never Tunnel; the Tunnel! tag shows only when behind
@@ -144,3 +147,37 @@
 - ✅ AC88: volume sliders and the match mute button are remembered
 - ✅ AC89: Low graphics turns off bloom, shadows and particles and uses fewer draw calls
 - ✅ AC90: the built dist folder stays under 40 MB
+- ✅ AC91: card faces use the faction frame, stat slots, type icon and rarity colors
+- ✅ AC92: every card has short and long text; Full explanation shows the long text
+- ✅ AC93: the cut-out deck image is used on every deck pile
+- ✅ AC94: Commander select shows borderless full-art Commander cards without stats
+- ✅ AC95: up to 3 mulligans — 5 -> 5 -> 4 -> 3, then no more
+- ✅ AC95: the Mulligan screen shows one straight row and counts mulligans left
+- ✅ AC96: dialogs float with no box; buttons are ornate
+- ✅ AC97: card reveals never block the game and can be pinned
+- ✅ AC98: tapping a creature shows its card and changes nothing
+- ✅ AC99: the Card pop-ups switch skips reveals but never effects, and is remembered
+- ❌ AC100: spells play step by step and nothing vanishes without a cause
+- ✅ AC101: Blastrat Sapper carries a bomb: drop, KA-BOOM, then 1 damage to the adjacent enemy
+- ✅ AC102: the Respond pop-up only lists playable options
+- ✅ AC106: zoom in, drag-to-attack still works, Re-center resets
+- ✅ AC107: Deck Builder logo, smart search and cards per row
+- ✅ AC108: title screen uses the painted cavern background with the logo, without errors
+
+## Failures
+
+```
+✗ AC100: spells play step by step and nothing vanishes without a cause
+Error: expect(received).toBeUndefined()
+
+Received: {"ale": 0, "attack": 2, "blinkUsed": false, "bubble": false, "cardId": "goblin-scrapper", "col": 3, "hasAttacked": false, "hasMined": false, "hasMoved": false, "health": 1, "lockedUntil": 0, "maxHealth": 4, "minedMine": null, "movedDistance": 0, "owner": "opponent", "row": 3, "shield": 0, "summonedThisTurn": false, "uid": "u103", "upgrades": {"attack": 0, "health": 0}}
+
+  3315 |   await clearFx(page);
+  3316 |   await castOrb(page, 3, 3);
+> 3317 |   expect(at(await getState(page), 3, 3)).toBeUndefined();
+       |                                          ^
+  3318 |   let log = await fxLog(page);
+  3319 |   const e = idx(log, (x) => x.kind === 'effect' && x.cardId === 'fireball');
+  3320 |   const i = idx(log, (x) => x.kind === 'impact', e);
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:3317:42
+```
