@@ -552,7 +552,7 @@ export class App {
 
   // ------------------------------------------------------------ camera zoom and pan (R2.19)
   cam = { zoom: 1, x: 0, y: 0 };
-  getCamera() { return { ...this.cam }; }
+  getCamera() { return { ...this.cam, panX: this.cam.x, panY: this.cam.y }; }
   applyCam() {
     const w = (this.r.board as El).clientWidth || 400, hh = (this.r.board as El).clientHeight || 300;
     this.cam.zoom = Math.max(1, Math.min(2.5, this.cam.zoom));
@@ -629,7 +629,7 @@ export class App {
     });
     this.place(r.strong.player, SH.player.row, SH.player.col);
     this.place(r.strong.opponent, SH.opponent.row, SH.opponent.col);
-    for (const el of this.tokens.values()) this.place(el, +el.dataset.row!, +el.dataset.col!);
+    for (const el of this.tokens.values()) this.placeToken(el, +el.dataset.row!, +el.dataset.col!);
     this.fitHearts();
     this.layoutHand();
   }
@@ -649,7 +649,7 @@ export class App {
     if (!r.board || !this.view || !r.myHealth) return;
     this.placeHeart(r.myHealth, 'player');
     this.placeHeart(r.enemyHealth, 'opponent');
-    const labels = [...this.tokens.values()].map((t) => (t.querySelector('.tk-stats') as El).getBoundingClientRect());
+    const labels = [...this.tokens.values()].flatMap((t) => [(t.querySelector('.tk-stats') as El).getBoundingClientRect(), t.getBoundingClientRect()]);
     for (const el of [r.myHealth, r.enemyHealth] as El[]) {
       for (let i = 0; i < 12; i++) {
         const hb = el.getBoundingClientRect();
@@ -661,6 +661,12 @@ export class App {
         el.style.top = el.offsetTop + 3 + 'px';
       }
     }
+  }
+  /** Token boxes are a narrow strip around the figure, so Commander hearts on neighbouring Strongholds never sit under them. */
+  placeToken(el: El, row: number, col: number) {
+    const rc = this.view!.cellRect(row, col);
+    const w = rc.w * 0.5;
+    el.style.left = rc.x + (rc.w - w) / 2 + 'px'; el.style.top = rc.y + 'px'; el.style.width = w + 'px'; el.style.height = rc.h + 'px';
   }
   place(el: El, row: number, col: number) {
     const rc = this.view!.cellRect(row, col);
@@ -762,7 +768,7 @@ export class App {
     const shown = Math.min(n, 12);
     for (let i = 0; i < shown; i++) {
       const t = shown > 1 ? i / (shown - 1) - 0.5 : 0;
-      const b = h('div', { class: 'back', 'aria-hidden': 'true' });
+      const b = h('div', { class: 'back', 'data-card-back': '', 'aria-hidden': 'true' });
       b.style.transform = `rotate(${t * 70}deg)`;
       r.enemyHand.append(b);
     }
@@ -1161,7 +1167,7 @@ export class App {
         alias.textContent = `⚔️${c.attack} ❤️${c.health}`;
       }
       el.title = `${card.name}: Attack ${c.attack}, Health ${c.health}/${c.maxHealth}${c.shield > 0 ? `, Shield ${c.shield}` : ''}`;
-      this.place(el, c.row, c.col);
+      this.placeToken(el, c.row, c.col);
     }
     for (const [uid, el] of this.tokens) if (!seen.has(uid)) { el.remove(); this.tokens.delete(uid); }
     this.fitHearts();

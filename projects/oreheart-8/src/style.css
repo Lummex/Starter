@@ -159,7 +159,7 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .token[data-damaged="true"] .tk-stats .h{color:#ff4040}
 .token[data-acted="true"] .tk-stats{filter:brightness(.62) saturate(.8)}
 .token[data-acted="true"] .tk-body{filter:brightness(.55) saturate(.8)}
-.token .tk-body{inset:8% 14% 30% 14%}
+.token .tk-body{inset:8% -10% 30% -10%}
 .hand{position:absolute;left:0;right:0;bottom:calc(var(--cw) * -0.26);height:calc(var(--cw) * 1.5);z-index:30;pointer-events:none;transition:transform .22s ease-out}
 .hand.away{transform:translateY(130%)}
 .test .hand{transition:none}
@@ -207,7 +207,7 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 @keyframes shake{20%{transform:translateX(-6px) scale(1.15)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
 .cell.glow-mine{background:radial-gradient(circle,#ffb347aa 0,#ffb34744 60%,transparent 72%);box-shadow:inset 0 0 0 2px #ffb347}
 .cell.glow-mine::after{content:'⛏️';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:1.5rem}
-.token::before{content:'';position:absolute;left:14%;right:14%;bottom:18%;height:22%;border-radius:50%;border:4px solid #ffd400;box-shadow:0 0 8px #ffd400aa}
+.token::before{content:'';position:absolute;left:-8%;right:-8%;bottom:18%;height:22%;border-radius:50%;border:4px solid #ffd400;box-shadow:0 0 8px #ffd400aa}
 .token[data-acted="true"]::before{border-color:#3a3d44;box-shadow:none}
 .token[data-mining="true"]::after{content:'⛏️';position:absolute;top:-6%;right:6%;font-size:.9rem}
 .mine-flow{white-space:nowrap}

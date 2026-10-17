@@ -225,3 +225,6 @@ Re-ran the acceptance file locally; the engine follows the spec, so no rules cha
 - Round 3: hand fan now sits fully on-screen (previously cards overhung the bottom edge so hover could not reach them).
 
 Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand pop-out, deck builder).
+
+## Round 2 fixes
+- Enemy card backs carry data-card-back; tokens use narrow boxes so hearts never overlap labels; auto-skip never fires on opponent turns; deck builder tiles include hidden long text; getCamera reports panX/panY.

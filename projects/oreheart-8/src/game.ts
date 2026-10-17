@@ -91,7 +91,7 @@ export class Game {
     const s = this.state;
     if (!this.autoSkip || !s || s.phase === 'over' || s.pendingResponse) return;
     if (!['deploy', 'action'].includes(s.phase) || s.priority !== s.activePlayer) return;
-    if (this.ai && s.priority === 'opponent') return;
+    if (s.activePlayer !== 'player' || s.priority !== 'player') return; // the opponent's phases are never auto-skipped
     if (hasMovesLeft(s)) return;
     const key = `${s.turn}|${s.phase}`;
     const ep = this.epoch;
