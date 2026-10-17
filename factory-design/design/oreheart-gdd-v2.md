@@ -93,23 +93,23 @@ You move creatures by picking them up and dragging them, with a finger or the mo
 
 Under the painted ground is an invisible grid **13 spaces wide and 7 deep**. Players never see the grid; when you select a creature, the spaces it can move to (blue), attack (red) or mine (a pickaxe glow on the mine) light up softly.
 
-- **Rows 1–2 (far side):** enemy home rows. The enemy summons on row 1, its back row (row 2 only when row 1 is full). The enemy Stronghold, with its Commander, stands at the center of row 1 (column 7).
+- **Rows 1–2 (far side):** enemy home rows. The enemy summons on row 1, its back row (row 2 only when row 1 is full). The enemy Stronghold, with its Commander, stands on row 1 in **column 12** (one empty space, column 13, beside it on the enemy's far right as you see it).
 - **Rows 3–5:** the middle of the battlefield, where the **3 mines** are placed at random at the start of every match. Mines can't be stood on.
-- **Rows 6–7 (near side):** your home rows. You summon on row 7, your back row (row 6 only when row 7 is full), so new minions always have to march forward. Your Stronghold stands at the center of row 7 (column 7).
-- **Random but fair mines:** the layout is always mirrored between the two halves (row 3 ↔ row 5, same column), so both sides are equally close to the same mines: either one mine on row 4 plus a mirrored pair on rows 3 and 5, or all three on row 4. Mines are never in the home rows, never next to each other (at least 2 spaces apart) and never next to a Stronghold. The layout comes from the match's shuffle seed; the tutorial uses a fixed layout.
+- **Rows 6–7 (near side):** your home rows. You summon on row 7, your back row (row 6 only when row 7 is full), so new minions always have to march forward. Your Stronghold stands on row 7 in **column 2** (one empty space, column 1, beside it on your left). The two Strongholds sit in opposite corners, so seen from your side your Commander is at the bottom-left and the enemy's at the top-right.
+- **Random but fair mines:** the layout is always mirrored corner-to-corner between the two halves (a mine at row 3, column c always has a twin at row 5, column 14 − c; on row 4, column c pairs with column 14 − c), so both sides are equally close to the same mines: either one mine at the exact center (row 4, column 7) plus a mirrored pair on rows 3 and 5, or all three on row 4 (the center plus a mirrored pair). Mines are never in the home rows, never next to each other (at least 2 spaces apart) and never next to a Stronghold. The layout comes from the match's shuffle seed; the tutorial uses a fixed layout.
 - **Spaces around a mine:** only the 8 spaces touching a mine count as being at it.
 - **Attacking a Stronghold:** a creature must stand on a space next to the enemy Stronghold to attack the Commander inside (Ranged creatures can also hit it from 2 spaces away).
 
 ```
 Board: invisible 13 x 7 grid (enemy at the far side, you at the near side) - one example mine layout
    col: 1 2 3 4 5 6 7 8 9 0 1 2 3
-row 1:  b b b b b b S b b b b b b   <- enemy Stronghold + Commander; b = enemy back row
+row 1:  b b b b b b b b b b b S b   <- enemy Stronghold + Commander (column 12); b = enemy back row
 row 2:  . . . . . . . . . . . . .   <- enemy summons here only when row 1 is full
-row 3:  . . . M . . . . . . . . .   <- M = mine (mirrored pair: row 3 and row 5, same column)
-row 4:  . . . . . . . . . M . . .   <- one mine on the center row
-row 5:  . . . M . . . . . . . . .
+row 3:  . . . M . . . . . . . . .   <- M = mine (corner-mirrored pair: row 3 col 4 and row 5 col 10)
+row 4:  . . . . . . M . . . . . .   <- one mine at the exact center
+row 5:  . . . . . . . . . M . . .
 row 6:  . . . . . . . . . . . . .   <- you summon here only when row 7 is full
-row 7:  b b b b b b S b b b b b b   <- your Stronghold + Commander; b = your back row
+row 7:  b S b b b b b b b b b b b   <- your Stronghold + Commander (column 2); b = your back row
 ```
 
 The drawing shows the invisible spaces; in the game the ground is painted. Each mine's crystals glow in the color of the side with more creatures mining it (white on a tie or when nobody mines it).
@@ -201,9 +201,14 @@ A creature card shows its cost, Attack, Health, movement and one special ability
 
 **Rarity** (a gem on the card): Common (gray), Uncommon (bronze), Rare (silver), Ultra Rare (gold), Collector (shimmering rainbow prism). The best cards are the hardest to get.
 
-**Deck rules:** 50 cards (the owner can change this). Common and Uncommon cards have no copy limit; Rare, Ultra Rare and Collector cards are limited to 3 copies each. Especially powerful cards are marked Unique: you can have only one of that card on your battlefield at a time (extra copies wait in your hand). A deck can hold at most 10 Crystal cards in total, whatever their rarity.
+**Deck rules:** **50 to 100 cards** (owner settings: minimum 50, maximum 100). Common and Uncommon cards have no copy limit; Rare, Ultra Rare and Collector cards are limited to 3 copies each. Especially powerful cards are marked Unique: you can have only one of that card on your battlefield at a time (extra copies wait in your hand). A deck can hold at most **20 Crystal cards** in total, whatever their rarity (owner setting).
 
-**Starter decks** (one per faction, 50 cards): 40 creatures, 6 spells (including 1 counterspell, Snuff Out) and 4 Crystal cards. Mostly Commons, with about 8 Miners (about 5 basic Miners and 3 Smith Miners), at most 4 copies of any other card for variety (including the newer cards), and plenty of cheap creatures so there's always something to play; the owner can change the mix in the settings file. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander and your deck.
+**Starter decks** (three per faction, nine in total, 50 cards each), named per faction (for example "Goblin Warband"):
+- **Warband** (standard): 40 creatures (about 8 Miners), 6 spells (including 1 counterspell, Snuff Out) and 4 Crystal cards.
+- **Arcane Hoard** (spells and Miners): 26 creatures (about 12 Miners), 16 spells (including counterspells) and 8 Crystal cards.
+- **The Horde** (no spells; Miners and creatures): 46 creatures (about 14 Miners), no spells and 4 Crystal cards.
+
+The computer opponent picks among them for variety. For the Warband: Mostly Commons, with about 8 Miners (about 5 basic Miners and 3 Smith Miners), at most 4 copies of any other card for variety (including the newer cards), and plenty of cheap creatures so there's always something to play; the owner can change the mix in the settings file. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander and your deck.
 
 ## Turns and phases
 
@@ -360,7 +365,7 @@ These 65 cards set the style and balance; the factory expands them into a Core S
 | Arcane Severance | Rare | Counterspell | 5 | Cancel any enemy spell |
 | Hex Reversal | Ultra Rare | Counterspell | 7 | Cancel an enemy spell, then cast a free copy of it yourself |
 
-**Crystal cards** (free to play; Instant speed; crystals go into your Bank; one per round; at most 10 per deck)
+**Crystal cards** (free to play; Instant speed; crystals go into your Bank; one per round; at most 20 per deck)
 
 | Card | Rarity | Effect |
 | --- | --- | --- |
@@ -391,7 +396,7 @@ New players start with basic cards and some booster packs; better cards come fro
 - **Starting collection:** a basic starter deck for each faction (Commons only) plus 5 free booster packs, opened right after the tutorial.
 - **Gold:** earned by winning (Easy 10, Normal 20, Hard 35; half for a loss). No gold for matches that end before turn 5, except for the winner when the opponent surrenders; this stops gold farming, and the owner can change the turn number. Can also be bought with real money (later phase). Spent on booster packs and cosmetics.
 - **Booster pack:** 50 gold for 12 random cards with a card-flip opening animation; rarer cards get a bigger, flashier reveal.
-- **Deck builder:** save up to 5 decks; filter the collection by faction, rarity, role and cost. **Testing version (now):** until packs and the Collection exist, every card is unlocked in unlimited supply; the builder enforces the deck rules (50 cards, copy limits, at most 10 Crystal cards, Unique), shows a live count of creatures, spells and Crystal cards, and saves decks on the device. Before each match you pick one of your decks or the starter deck.
+- **Deck builder:** save up to 5 decks; filter the collection by faction, rarity, role and cost. **Testing version (now):** until packs and the Collection exist, every card is unlocked in unlimited supply; the builder enforces the deck rules (50–100 cards, copy limits, at most 20 Crystal cards, Unique), shows a live count of creatures, spells and Crystal cards, and saves decks on the device. Before each match you pick one of your decks or one of the starter decks.
 - **How the deck builder looks:** the left side is a scrolling grid of **card pictures** (the real card faces, full text readable); the right side shows **your deck as a card pile** with its name and count ("37/50"). **Drag** a card onto the pile, or **double-click** (double-tap) it, to add one copy; a single click/tap only enlarges the card. Under the pile is the **deck list**, sorted by cost, one line per card ("3 × Snotskull Grunt") with **+** and **−** buttons (+ greys out at the copy limit; − at 0 removes the line). Above the list: counts of creatures, spells and Crystal cards, a small **cost bar chart** (how many cards at each cost), and any problems in red ("13 more cards needed", "Too many Crystal cards"). Buttons: **Auto-fill** (completes a part-built deck with sensible cards: Miners, a good cost curve, a few spells, Crystal cards up to 4), **Save** and **Rename**. On a phone (landscape) the grid takes about two-thirds of the width and the deck about one-third.
 
 **Owner-controlled rarity (back files, not in the game):** all rarity numbers live in one settings file in the code, for example `game-config.json`. Players can never see or change it. It holds:
