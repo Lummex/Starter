@@ -119,13 +119,13 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   let perRow = Math.max(2, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
   const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'All cards', role: 'group' });
   const pileEl = h('div', { class: 'db-pile', 'aria-label': 'Deck pile', role: 'group' });
-  const carEl = h('div', { class: 'db-car', 'aria-label': 'My decks', role: 'group' });
+  const carEl = h('div', { class: 'db-car' });
   const track = h('div', { class: 'db-track' });
   carEl.append(track);
   const nameEl = h('p', { class: 'db-name', 'data-part': 'deck-name' });
   const sizeEl = h('p', { class: 'db-size', 'data-part': 'deck-size' });
   let cur = -1;
-  const listEl = h('ul', { class: 'db-list', 'aria-label': 'Deck list' });
+  const listEl = h('ul', { class: 'db-list', 'aria-label': 'Deck cards' });
   const countsEl = h('p', { class: 'db-counts', 'aria-label': 'Deck counts' });
   const chartEl = h('div', { class: 'db-chart', 'aria-label': 'Cost chart', role: 'group' });
   const probEl = h('ul', { class: 'db-problems', 'aria-label': 'Deck problems' });
@@ -278,6 +278,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     renderCarousel();
     const full = saved.length >= MAX_DECKS;
     limitMsg.textContent = full ? 'You can save up to 5 decks.' : '';
+    newBtn.disabled = full;
   }
   // ---- deck carousel (saved decks only, plus the "+ New Deck" slot)
   let carDrag = false;
@@ -365,11 +366,11 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     cardsEl.setAttribute('aria-hidden', 'true');
   }
 
-  pileEl.append(h('div', { class: 'db-carwrap' }, btn('◀', 'small scroll', () => setCur(cur - 1), { 'aria-label': 'Previous deck' }), carEl, btn('▶', 'small scroll', () => setCur(cur + 1), { 'aria-label': 'Next deck' })), nameEl, sizeEl);
+  pileEl.append(h('div', { class: 'db-carwrap', 'aria-label': 'My decks', role: 'group' }, btn('◀', 'small scroll', () => setCur(cur - 1), { 'aria-label': 'Previous deck' }), carEl, btn('▶', 'small scroll', () => setCur(cur + 1), { 'aria-label': 'Next deck' })), nameEl, sizeEl);
   app.root.append(h('main', { class: 'screen db-screen', 'data-screen': 'deck-builder' },
     h('section', { class: 'db-left' },
       h('div', { class: 'db-head' }, h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' })),
-      h('div', { class: 'db-search' }, searchInp, ...(voiceBtn ? [voiceBtn] : []), h('div', { class: 'f-field' }, h('label', { for: 'cards-per-row' }, 'Cards per row'), slider)),
+      h('div', { class: 'db-search' }, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), h('div', { class: 'f-field' }, h('label', { for: 'cards-per-row' }, 'Cards per row'), slider)),
       h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap),
       h('h2', {}, 'All cards'), cardsEl),
     h('aside', { class: 'db-right', 'aria-label': 'Deck panel' },
@@ -379,7 +380,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
       btn('Back', 'db-back', () => app.showMenu()),
       h('p', { class: 'db-msgs' }, status, limitMsg),
       h('div', { class: 'db-listwrap' },
-        h('h2', {}, 'Deck list'), countsEl, probEl, chartEl, listEl))));
+        countsEl, probEl, chartEl, h('div', { class: 'db-deck-list', 'aria-label': 'Deck list', role: 'group' }, h('h2', {}, 'Deck list'), listEl)))));
   const screen = app.root.querySelector('.db-screen') as HTMLElement;
   const wake = () => cardsEl.removeAttribute('aria-hidden');
   for (const ev of ['pointermove', 'pointerdown', 'keydown', 'change', 'focusin']) screen.addEventListener(ev, wake);

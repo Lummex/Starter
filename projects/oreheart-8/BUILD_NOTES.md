@@ -343,3 +343,6 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 - Metal lettering is tagged synchronously, so no text is ever seen unstyled (AC133).
 - Spell cards: cost number fits its orb; rarity word sits below the crystal (AC118/119). CREDITS.md notes the retired Nunito font (AC86).
 - Not satisfiable: AC72/AC74 expect both 100-card and 50-card starter decks; AC130 expects `aria-disabled` tiles to accept a plain double-click. They contradict the spec and each other, so they were left as is.
+
+## Round 5a fix-up
+- New Deck disabled at 5 saved decks; "My decks" group wraps arrows + carousel; "Deck list" group holds heading + rows; search/slider stacked and left-aligned; cards never get a min-height stretch; card lettering keeps a thin dark outline; menu buttons carry an invisible border-image; CREDITS lists the font files.

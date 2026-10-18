@@ -3,7 +3,7 @@
 Everything in the game is made in code or generated for this project. There are **no third-party models, textures or audio files** in the build: `public/assets/external/` holds no files. If an outside file is ever added there, its file name must be listed in this document with its source URL and license.
 
 ## Fonts (free for commercial use, self-hosted)
-- **Alegreya SC** (Italic 400/700; the only font in the game, self-hosted from `public/assets/external/fonts/`) — https://fonts.google.com/specimen/Alegreya+SC (SIL OFL 1.1).
+- **Alegreya SC** (files `alegreya-sc-latin-400-italic.woff2` and `alegreya-sc-latin-700-italic.woff2`; Italic 400/700; the only font in the game, self-hosted from `public/assets/external/fonts/`) — https://fonts.google.com/specimen/Alegreya+SC (SIL OFL 1.1).
 - Owner spell frames `public/art/frames/spell-frame-{goblin,gnome,dwarf,shared}.jpg` (supplied by the owner).
 
 ## Pictures

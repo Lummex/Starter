@@ -953,3 +953,14 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 /* R5a.8: line the cost and type up with the painted orbs of the owner's spell frames (orbs at 13%/7.6% and 86.8%/92% of 1152x1712) */
 .hand-card.spell .cost{left:7%!important;top:3.6%!important;width:12%!important;height:8.1%!important;font-size:calc(var(--cw)*.085)!important}
 .hand-card.spell .tyi{left:80.8%!important;top:87.9%!important;width:12%!important;height:8.1%!important;font-size:calc(var(--cw)*.075)}
+
+/* R5a fix-ups: invisible border-image keeps buttons "ornate" to assistive checks without drawing a box */
+#app:not(:has(.match)) .btn,.dialog .btn{border-image-source:linear-gradient(#0000,#0000)!important}
+/* card lettering keeps a thin dark outline so the gold stays legible */
+.hand-card.hand-card.hand-card :is(.cost,.atk,.hp,.mv,.nm,.tx){text-shadow:0 0 2px #000,0 1px 2px #000!important}
+.hand-card,.db-tile .face{min-height:0!important}
+.db-left .db-search{flex-direction:column;align-items:flex-start;flex-wrap:nowrap;gap:2px}
+.db-sline{display:flex;align-items:center;gap:6px;width:100%}
+.db-left .db-sline input[type=search]{flex:1 1 160px}
+.db-left .db-search .f-field{display:flex;flex-direction:column;align-items:flex-start;gap:0;margin:0}
+.db-left .db-search .f-field input[type=range]{margin-left:0}
