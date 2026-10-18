@@ -150,9 +150,9 @@ export function showDecks(app: App) {
     document.body.append(ghost);
     const to = pileEl.getBoundingClientRect();
     const dx = to.left + to.width / 2 - (src.left + src.width / 2), dy = to.top + to.height / 2 - (src.top + src.height / 2);
-    const a = ghost.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${dx}px,${dy}px) scale(.3)`, opacity: 0.3 }], { duration: 380, easing: 'ease-in' });
+    const a = ghost.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${dx}px,${dy}px) scale(.3)`, opacity: 0.3 }], { duration: 200, easing: 'ease-in' });
     a.onfinish = () => ghost.remove();
-    setTimeout(() => ghost.remove(), 700);
+    setTimeout(() => ghost.remove(), 400);
   };
   const lockedFor = (id: string) => { const c = CARDS[id]; return c.type === 'spell' && c.faction !== 'any' && c.faction !== COMMANDERS[cmdId].faction; };
   const addCard = (id: string, from?: DOMRect | null) => { if (lockedFor(id)) { status.textContent = `Only for ${SING[CARDS[id].faction]} Commanders`; return; } if (count(id) >= copyLimit(id)) return; fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };

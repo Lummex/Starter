@@ -21,12 +21,8 @@ function tagTree(root: Node) {
 
 export function startMetal() {
   tagTree(document.body);
-  let queue: Node[] = [];
-  let raf = 0;
-  const flush = () => { raf = 0; const q = queue; queue = []; for (const n of q) if (n.isConnected) tagTree(n); };
+  // tag synchronously in the observer callback so text is never seen unstyled
   new MutationObserver((muts) => {
-    for (const m of muts) { if (m.type === 'characterData') queue.push(m.target); else m.addedNodes.forEach((a) => queue.push(a)); }
-    if (!raf) raf = requestAnimationFrame(flush);
+    for (const m of muts) { if (m.type === 'characterData') tagTree(m.target); else m.addedNodes.forEach((a) => { if (a.isConnected) tagTree(a); }); }
   }).observe(document.body, { childList: true, subtree: true, characterData: true });
 }
-

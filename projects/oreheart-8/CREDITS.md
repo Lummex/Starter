@@ -22,3 +22,6 @@ Everything in the game is made in code or generated for this project. There are 
 
 ## Round 4 additions
 - Metal textures `public/art/ui/metal-gold.webp` and `metal-silver.webp`, temporary spell frames `public/art/frames/spell-frame-*.webp` and the 12 spell pictures `public/art/cards/<spell id>.webp`: generated with the xAI Grok image API (`grok-imagine-image`) by `tools/gen-r4-art.mjs`. The spell frames are stand-ins for the owner's `spell-frame-*` files; overwrite the four webp files to swap them.
+
+## Retired fonts
+- **Nunito** (https://fonts.google.com/specimen/Nunito, SIL OFL 1.1) was the interface font in rounds 1–3. It is no longer shipped; Cinzel and Tinos replaced it in round 4.

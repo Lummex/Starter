@@ -310,3 +310,13 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 ## Round 3b fix-up
 - Deck Builder card tiles are now role=button named exactly by card name.
 - Deploy auto-skip no longer skips when playing a Crystal card would fund a summon.
+
+---
+
+# Round 4 fixes after inspection
+- Hand pop-out no longer blocks neighbours: a popped card only catches the pointer where no other card sits (clip-path holes), so hover/drag on the next card works (AC134, AC46).
+- Gnome and Dwarf Warband decks now hold ≥16 fighters costing ≤4 (AC6); copies of the cheapest cards go up to 8.
+- Deck Builder tiles no longer tilt (the 3D tilt made double-click miss tiles, AC61); the fly animation is shorter.
+- Metal lettering is tagged synchronously, so no text is ever seen unstyled (AC133).
+- Spell cards: cost number fits its orb; rarity word sits below the crystal (AC118/119). CREDITS.md notes the retired Nunito font (AC86).
+- Not satisfiable: AC72/AC74 expect both 100-card and 50-card starter decks; AC130 expects `aria-disabled` tiles to accept a plain double-click. They contradict the spec and each other, so they were left as is.

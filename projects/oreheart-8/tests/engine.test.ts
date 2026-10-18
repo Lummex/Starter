@@ -305,7 +305,7 @@ describe('revision 7', () => {
       weaponOf(c('deepforge-crossbowman')), weaponOf(c('axe-thrower')), weaponOf(c('shieldbeard')), weaponOf(c('ram-rider')), weaponOf(c('gyrocopter-ace')), weaponOf(c('the-great-steam-golem')), weaponOf(c('fireball'))])
       .toEqual(['pick', 'pick-hammer', 'pick-crystal', 'sword', 'sling', 'wand', 'crossbow', 'axes', 'sword-shield', 'lance', 'signature'.replace('signature', 'gyro'), 'signature', null]);
     for (const deck of Object.values(STARTER_DECKS)) {
-      for (const id of deck) { const n = deck.filter((x) => x === id).length; if (!/miner|prospector|scrounger/.test(id)) expect(n).toBeLessThanOrEqual(6); }
+      for (const id of deck) { const n = deck.filter((x) => x === id).length; if (!/miner|prospector|scrounger/.test(id)) expect(n).toBeLessThanOrEqual(8); }
       expect(deck.filter((id) => CARDS[id].role === 'Smith').length).toBeGreaterThanOrEqual(3);
       expect(deckProblems(deck)).toEqual([]);
     }

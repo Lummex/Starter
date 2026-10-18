@@ -753,8 +753,47 @@ export class App {
     else this.handTimer = setTimeout(() => hand.classList.remove('open'), 120);
   }
 
+  popWatch: any = null;
+  /** A popped card only catches the pointer on its top half; the document watcher decides when the mouse has really left it. */
+  watchPop(el: El) {
+    if (this.popWatch) document.removeEventListener('pointermove', this.popWatch);
+    const fn = (e: PointerEvent) => {
+      if (!el.isConnected || !el.classList.contains('popped')) { document.removeEventListener('pointermove', fn); if (this.popWatch === fn) this.popWatch = null; return; }
+      const hb = (this.r.hand as El).getBoundingClientRect();
+      const inBox = (c: El, x: number, y: number) => { const l = hb.left + (parseFloat(c.style.left) || 0), t = hb.top + (c.offsetTop || 0); return x >= l && x <= l + c.offsetWidth && y >= t && y <= t + c.offsetHeight; };
+      const inBase = inBox(el, e.clientX, e.clientY);
+      const r = el.getBoundingClientRect();
+      const inPopped = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      const other = [...(this.r.hand as El).querySelectorAll('.hand-card')].some((c) => c !== el && inBox(c as El, e.clientX, e.clientY));
+      const inHit = inPopped && !other;
+      if (!inBase && !inHit) { this.popCard(el, false); this.openHand(false); }
+    };
+    this.popWatch = fn;
+    document.addEventListener('pointermove', fn);
+    // the popped card's hit area leaves holes over the other cards so the pointer can always reach them
+    const clip = () => {
+      if (!el.isConnected || !el.classList.contains('popped')) return;
+      const hit = el.querySelector('.pop-hit') as El;
+      const pr = hit?.getBoundingClientRect();
+      if (hit && pr && pr.width) {
+        const pts = [`0 0,100% 0,100% 100%,0 100%,0 0`];
+        for (const c of (this.r.hand as El).querySelectorAll('.hand-card')) {
+          if (c === el) continue;
+          const r = (c as El).getBoundingClientRect();
+          const x0 = ((r.left - pr.left) / pr.width) * 100, x1 = ((r.right - pr.left) / pr.width) * 100, y0 = ((r.top - pr.top) / pr.height) * 100, y1 = ((r.bottom - pr.top) / pr.height) * 100;
+          if (x1 < 0 || x0 > 100 || y1 < 0 || y0 > 100) continue;
+          pts.push(`${x0}% ${y0}%,${x1}% ${y0}%,${x1}% ${y1}%,${x0}% ${y1}%,${x0}% ${y0}%,0 0`);
+        }
+        hit.style.clipPath = `polygon(evenodd,${pts.join(',')})`;
+      }
+      requestAnimationFrame(clip);
+    };
+    requestAnimationFrame(clip);
+  }
+
   /** Pop a hand card out of the fan at 2x size, kept fully on screen. */
   popCard(el: El, on: boolean) {
+    if (on) { const cur = this.root.querySelector('.hand-card.popped') as El; if (cur && cur !== el) this.popCard(cur, false); }
     if (!on) {
       el.classList.remove('popped');
       (this.r.hand as El)?.classList.remove('has-pop');
@@ -786,6 +825,7 @@ export class App {
     hand.classList.add('has-pop');
     el.style.zIndex = '600';
     el.style.transform = `translate(${dx}px,${dy}px) scale(2)`;
+    this.watchPop(el);
   }
 
   /** The fan shows about 7 cards in a fixed width; more cards scroll (R3.7). */
@@ -1318,7 +1358,8 @@ export class App {
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
       el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { this.openHand(true); this.popCard(el, true); } });
-      el.addEventListener('pointerleave', (e: PointerEvent) => { this.popCard(el, false); if (e.pointerType === 'mouse') this.openHand(false); });
+      el.append(h('span', { class: 'pop-hit', 'aria-hidden': 'true' }));
+      el.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.popCard(el, false); });
       el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);
       el.addEventListener('focus', () => this.popCard(el, true));
       el.addEventListener('blur', () => this.popCard(el, false));
