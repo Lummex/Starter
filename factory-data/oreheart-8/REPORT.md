@@ -1,21 +1,29 @@
 ## What was built
-This round is visual polish only; no game rules changed. Cards now have smaller gold numbers, a faceted rarity crystal, gold names and text. The Deck Builder has a new painted background, and its filters are custom gold dropdowns. Buttons, sliders, switches and scrollbars share one ornate gold style. The title screen was reworked.
+Round 4 of Oreheart. The mulligan cards are twice as big. All nine starter decks now have 100 cards. Each faction has its own spells, including a new poison spell, Venom Shiv. Spells use new card frames. All text now has a gold or silver metal look in two new fonts, Cinzel and Tinos.
 
 ## Try these things
-- Open the title screen. Check that the logo, the five buttons and the "Welcome to Oreheart!" message don't collide, and try Display mode (Auto, PC, Phone).
-- Open Decks. Look at the new background, then use the Faction, Type, Cost and Rarity dropdowns. Press Escape to close one.
-- In the Deck Builder, click a card to enlarge it. Check that the numbers sit neatly in their circles and the rarity crystal glows at the bottom.
-- Drag the "Cards per row" slider and scroll the card grid to see the gold scrollbar.
-- Start a match and cast a spell to see its step-by-step visual. Start the Tutorial and read the updated tips.
+- Start a match and look at the mulligan screen: the five cards should be large, in one row, and fit on screen.
+- Open Decks, pick a Commander (Grubnak, Sproingle or Borgo), and check that other factions' spells are dimmed and locked with a 🔒.
+- Pick a starter deck on the select screen. The names should read like "Goblin Warband, 100 cards, ready".
+- Cast Venom Shiv as a Goblin. The enemy creature should show a green drop with turns left and lose 1 Health each of its turns.
+- Browse the menu, Rules and Settings screens for the gold lettering, and check that it stays readable.
+- Look at spell cards from each faction. Check the frame colors and the cost and type circles.
 
 ## Automated checks
-179 of 181 checks passed. The 2 failures are the same check (AC123) run at two screen sizes. It checks that the welcome message doesn't cover the logo or Tutorial button, and that gold ornaments frame every screen. The test stopped partway, in the Deck Builder, because its "Back" button lookup also matched two card names. That looks like a flaw in the test, not the game. It does mean the welcome-message and ornament checks were never confirmed on the later screens.
+186 of 189 checks passed. Three failed:
+- **Deck picker check (AC72):** it looks for a deck named "…50 cards, ready". The new spec says 100 cards, so the test looks out of date.
+- **Match summary check (AC74):** it expects a 50-card deck and found 100. This also looks like an out-of-date test.
+- **Locked spell tiles check (AC130):** it tries to double-click a spell that is meant to be locked, so it can't work. The lock itself seems to be doing its job.
+
+The builder says these three tests contradict the spec. I did not verify that myself.
 
 ## Things to know
-- The title screenshot looks good. The welcome message sits at the bottom, clear of the logo and the Tutorial button.
-- The phone screenshot only shows "Please rotate your phone", because it was taken in portrait. It tells you nothing about the landscape layout. Check that on a real phone.
-- I did not review the phone-size close-up card, Deck Builder or spell screenshots. They weren't in the folder I was given.
-- Sound and touch gestures were tested only in a simulated browser, not on a real phone.
+- The owner's spell frame files weren't uploaded. The builder made temporary stand-in frames, and the painted circles only roughly line up with the cost and type numbers.
+- The 3D pop-up text in battle, such as "KA-BOOM!", doesn't have the new metal look.
+- The Meshy 3D models are still not done.
+- The phone screenshot shows only the "Please rotate your phone" message. That is correct for an upright phone, but it means the phone-size match, mulligan and card screenshots weren't in the set I could see.
+- The desktop menu looks good and nothing is cramped. The "Start Tutorial" button text is a bit tight inside its frame.
+- The builder checked its own work and did not run the full hidden test suite.
 
 ## Recommendation
-Ready to approve, provided the preview shows the ornaments and the welcome message correctly on the Deck Builder, Rules and Settings screens.
+Ready to approve

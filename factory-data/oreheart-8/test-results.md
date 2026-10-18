@@ -1,6 +1,6 @@
 # Automated check results
 
-179 of 181 checks passed after 3 build round(s).
+186 of 189 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -20,18 +20,19 @@
 - ✅ both hands at 844x390 › AC115: the enemy hand is always on-screen and the hand shows about 7 cards, then scrolls
 - ✅ both hands at 844x390 › AC116: a tapped creature shows its card at hovered-hand-card size, fully on-screen
 - ✅ both hands at 844x390 › AC117: the deck picker shows the nine starter decks as named stacks
-- ❌ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (844x390)
-- ❌ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (1280x720)
+- ✅ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (844x390)
+- ✅ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (1280x720)
 - ✅ round 3b phone screenshots (844x390) › AC126: close-up cards, deck builder, title and a spell being cast render without errors
+- ✅ round 4 phone screenshots (844x390) › AC134: mulligan, spell cards per faction, a creature close-up and a menu screen render without errors
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
 - ✅ AC3: Rules page with pictures and Back
 - ✅ AC4: Settings graphics toggle switches and persists
 - ✅ AC5: window.oreheart only in test mode; seeds are deterministic
-- ✅ AC6: grubnak starter deck is 40 creatures, 6 spells (with Snuff Out), 4 Crystal cards
-- ✅ AC6: sproingle starter deck is 40 creatures, 6 spells (with Snuff Out), 4 Crystal cards
-- ✅ AC6: borgo starter deck is 40 creatures, 6 spells (with Snuff Out), 4 Crystal cards
+- ✅ AC6: grubnak Warband starter deck is 100 cards: 30 + 20 Miners, 38 Fighters, 7 spells, 5 Crystal cards
+- ✅ AC6: sproingle Warband starter deck is 100 cards: 30 + 20 Miners, 38 Fighters, 7 spells, 5 Crystal cards
+- ✅ AC6: borgo Warband starter deck is 100 cards: 30 + 20 Miners, 38 Fighters, 7 spells, 5 Crystal cards
 - ✅ AC7: opening — start with 0 crystals, pool resets to flow, extra card for second player
 - ✅ AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy turn
 - ✅ AC9: example (a) — 1 Gemsinger Miner vs 2 Grubgrabber Miners: enemy owns the mine, enemy gets 4, you get 1 (+2 underdog)
@@ -55,15 +56,15 @@
 - ✅ AC14: creatures heal at the start of their owner's turn; damaged Health is marked
 - ✅ AC15: Aegis Tinkerer gives Shield 1, which blocks exactly 1 damage
 - ✅ AC16: Commander damage equals Attack and never resets
-- ✅ AC17: Infernal Orb deals 3 damage for 3 crystals
+- ✅ AC17: Searing Arcane Orb deals 3 damage for 3 crystals
 - ✅ AC17: only one Crystal card per round; it goes to the Bank
 - ✅ AC17: Desperate Plunder costs 1 and gives 3 Flow only when behind on mines
 - ✅ AC17: crystal-bought upgrades are gone
-- ✅ AC18: Snuff Out counters Infernal Orb; crystals still spent
+- ✅ AC18: Snuff Out counters Searing Arcane Orb; crystals still spent
 - ✅ AC18: Snuff Out cannot cancel a spell costing more than 3
-- ✅ AC18: Not Today! returns a summoned creature to hand
+- ✅ AC18: Pickpocket! returns a summoned creature to hand
 - ✅ AC18: Respond dialog — Let it happen
-- ✅ AC18: Respond dialog — cast Bastion Ward saves the creature
+- ✅ AC18: Respond dialog — cast Ironclad Bulwark saves the creature
 - ✅ AC19: deck-out deals 1 damage per failed draw
 - ✅ AC20: reducing enemy Commander to 0 shows Victory!
 - ✅ AC20: surrender from the match menu shows Defeat
@@ -110,7 +111,7 @@
 - ✅ AC52: one crystal type — two counters only; Heart of the Fallen puts 4 into the Bank
 - ✅ AC53: the Respond pop-up has a standalone "Play Soul Cluster" button that keeps it open
 - ✅ AC54: nothing can mine from 2 spaces away — only the 8 adjacent spaces
-- ✅ AC55: casting a spell shows "GRUBNAK CASTS INFERNAL ORB!" over the Stronghold; Commanders never attack
+- ✅ AC55: casting a spell shows "GRUBNAK CASTS SEARING ARCANE ORB!" over the Stronghold; Commanders never attack
 - ✅ AC56: Settings has "Card reveals: Normal" / "Fast", saved across reloads
 - ✅ AC57: every card shows its full ability text, in the hand and in the card view; names follow the rename table
 - ✅ AC57: the Commander picker uses the new Commander names
@@ -134,10 +135,10 @@
 - ✅ AC69: dragging a creature over an enemy shows the attack preview; letting go elsewhere cancels
 - ✅ AC70: double-click and + add cards; single click only enlarges; copy limit and cost chart
 - ✅ AC71: Auto-fill completes a legal deck; Rename and Save
-- ✅ AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)
+- ❌ AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)
 - ✅ AC72: "+ New Deck" on the select screen opens the Deck Builder
 - ✅ AC73: the select screen remembers the last Commander, deck and difficulty
-- ✅ AC74: match-end summary, Play again with the same choices, and Menu
+- ❌ AC74: match-end summary, Play again with the same choices, and Menu
 - ✅ AC75 + AC125: the tutorial runs to the end, teaching only the current rules
 - ✅ AC76: the Last turn recap lists what the enemy did
 - ✅ AC77: a mine with ready Miners shows the swinging pickaxe count; it goes once they mined
@@ -172,7 +173,7 @@
 - ✅ AC109: Strongholds stand in the corners: player (7,2), enemy (1,12)
 - ✅ AC110: random mines are always corner-mirrored, fair and away from both Strongholds
 - ✅ AC111: decks of 50 to 100 cards and at most 20 Crystal cards
-- ✅ AC112: nine legal starter decks: Warband, Arcane Hoard and Horde for each faction
+- ✅ AC112/AC128: nine legal 100-card starter decks: Warband, Arcane Hoard and Horde for each faction
 - ✅ AC113: matches use the chosen starter decks; the opponent deck can be any of the three
 - ✅ AC114: the computer plays the Warband style to the end of a match
 - ✅ AC114: the computer plays the Arcane Hoard style to the end of a match
@@ -183,34 +184,54 @@
 - ✅ AC121: Deck Builder deck art has no frame; painted background
 - ✅ AC122: one ornate control style everywhere: no default browser controls or scrollbars
 - ✅ AC124: every spell has its own visual, played step by step
+- ✅ AC127: mulligan cards are double size, one row, on-screen (1280x720)
+- ✅ AC127: mulligan cards are double size, one row, on-screen (844x390)
+- ✅ AC129: faction spells — names, factions, deck validation and the casting lock
+- ❌ AC130: Deck Commander locks other factions’ spells in the Deck Builder
+- ✅ AC131: Venom Shiv poisons for exactly 3 of the owner’s turns, then the creature heals; Hex Reversal is disabled
+- ✅ AC132: spell frames per faction with the cost and type orbs
+- ✅ AC133: metal lettering in Cinzel/Tinos on every screen; the gold and silver textures load
 
 ## Failures
 
 ```
-✗ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (844x390)
-Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Back' }) resolved to 3 elements:
-    1) <div tabindex="0" role="button" class="db-tile" data-card="goblin-sneak" aria-label="Backstab Weasel">…</div> aka getByRole('button', { name: 'Backstab Weasel' })
-    2) <div tabindex="0" role="button" class="db-tile" data-card="barrelback-courier" aria-label="Barrelback Courier">…</div> aka getByRole('button', { name: 'Barrelback Courier' })
-    3) <button class="btn " type="button">Back</button> aka getByRole('button', { name: 'Back', exact: true })
+✗ AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)
+Error: expect(locator).toHaveCount(expected) failed
+
+Locator:  getByLabel('Deck choice', { exact: true }).getByRole('button', { name: 'Goblin Warband, 50 cards, ready', exact: true })
+Expected: 1
+Received: 0
+Timeout:  7000ms
 
 Call log:
-  - waiting for getByRole('button', { name: 'Back' })
+  - Expect "toHaveCount" with timeout 7000ms
+  - waiting for getByLabel('Deck choice', { exact: true }).getByRole('button', { name: 'Goblin Warband, 50 cards, ready', exact: true })
+    11 × locator resolved to 0 elements
+       - unexpected value "0"
+✗ AC74: match-end summary, Play again with the same choices, and Menu
+Error: expect(received).toBe(expected) // Object.is equality
 
+Expected: 50
+Received: 100
 
-  4054 |       await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
-  4055 |       expect(await page.locator('[data-ornament="frame"]').count(), 'deck builder ornaments').toBeGreaterThan(0);
-> 4056 |       await page.getByRole('button', { name: 'Back' }).click();
-✗ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (1280x720)
-Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Back' }) resolved to 3 elements:
-    1) <div tabindex="0" role="button" class="db-tile" data-card="goblin-sneak" aria-label="Backstab Weasel">…</div> aka getByRole('button', { name: 'Backstab Weasel' })
-    2) <div tabindex="0" role="button" class="db-tile" data-card="barrelback-courier" aria-label="Barrelback Courier">…</div> aka getByRole('button', { name: 'Barrelback Courier' })
-    3) <button class="btn " type="button">Back</button> aka getByRole('button', { name: 'Back', exact: true })
-
+  2732 |   expect(s.difficulty).toBe('hard');
+  2733 |   expect(s.winner).toBeNull();
+> 2734 |   expect(allIds(s, 'player').length).toBe(50);
+       |                                      ^
+  2735 |   await surrenderViaMenu(page);
+  2736 |   await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  2737 |   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+✗ AC130: Deck Commander locks other factions’ spells in the Deck Builder
+TimeoutError: locator.dblclick: Timeout 10000ms exceeded.
 Call log:
-  - waiting for getByRole('button', { name: 'Back' })
-
-
-  4054 |       await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
-  4055 |       expect(await page.locator('[data-ornament="frame"]').count(), 'deck builder ornaments').toBeGreaterThan(0);
-> 4056 |       await page.getByRole('button', { name: 'Back' }).click();
+  - waiting for getByRole('button', { name: 'Searing Arcane Orb', exact: true }).first()
+    - locator resolved to <div tabindex="0" role="button" aria-disabled="true" data-card="fireball" class="db-tile locked" aria-label="Searing Arcane Orb">…</div>
+  - attempting dblclick action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying dblclick action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying dblclick action
 ```
