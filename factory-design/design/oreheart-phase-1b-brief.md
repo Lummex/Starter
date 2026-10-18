@@ -4,7 +4,23 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 3a — board and rules (owner playtest of Build A) — read this first
+## Round 3b — visual polish (owner playtest of Build A) — read this first
+
+Round 3a (board and rules) is done; keep everything from it. Build B (Meshy 3D models) comes later; do not start it here. Rules are unchanged this round.
+
+1. **Card numbers** (cost, Attack, Health, Movement): smaller so each sits fully inside its frame slot, precisely centered in the circle, shield, heart and the notch under the boot; **3D metallic gold** matching the frame gold (bevel, highlight, thin dark outline).
+2. **Rarity crystal** (bottom center): a fancy faceted art crystal like the mine crystal nodes, **smaller** than now, glowing in the rarity color (Common white, Uncommon blue, Rare purple, Ultra Rare red, Collector rainbow metallic gold); the rarity word smaller and centered just below the crystal.
+3. **Card names:** 3D gold in the OREHEART logo lettering style, **one uniform size** on every card (shrink only for very long names), thin dark outline.
+4. **Text box:** one universal size on every card, **thinner (not bold)**, stylized gold with a thin dark outline. This replaces the earlier "card text in the frame's faction color" rule: all card text is gold now.
+5. **Deck builder polish:** the deck artwork (`Deck_image.jpg`) has **no border, box or frame**, floating with only a soft glow; the background becomes a rich painted scene in the game's style (generate with the image API, no text; e.g. a dark war-room or forge cavern lit by glowing crystals).
+6. **One consistent ornate control style everywhere:** every button, slider (cards per row, volume…: gold filigree track with a gem/crest handle), toggle, tab, dropdown (opens as a floating list, no box), search bar, checkbox, +/− stepper and **scrollbar** (ornate gold filigree thumb on a thin dark-gold track, never the white/grey browser scrollbar) uses the same intricate gold filigree, gem accents, glow and press animation. No default browser controls anywhere; add a check that every input is styled.
+7. **Build A leftovers:** finish the gold filigree ornaments framing every screen and the title layout; fix the "Welcome to Oreheart!" text overlapping the logo and the Tutorial button; give every spell its own step-by-step visual (card pops up, turns into the effect, result lands) instead of the reused old effects; rewrite the tutorial text for all features added since Phase 1A.
+
+8. **Update the two outdated tests from round 3a** (AC9 example (b) and AC27 summoning costs): they summon onto row 7 column 2, which is now the player's Stronghold. Move them to a free back-row space; the rule that nothing can be placed on a Stronghold space stays.
+
+Tests: keep all checks passing. Include phone-size (844 × 390) screenshots of several cards up close (one per faction and one per rarity), the deck builder, the title screen and a spell being cast in the report.
+
+## Round 3a (done) — board and rules
 
 The design doc was updated (corner Strongholds, 50–100 card decks, 20 Crystal cards, nine starter decks) and is the source of truth for rules. Everything else from Build A stays. Round 3b (visual polish of cards and controls, Build A leftovers) and Build B (Meshy 3D models) come later; do not start them here.
 
