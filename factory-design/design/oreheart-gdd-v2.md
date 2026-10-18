@@ -54,7 +54,7 @@ Everything is 3D in a comic-book style, beautiful and polished, in the style of 
 - **Hand cards pop out:** once the hand is up, the card under the mouse (or touched and held on a phone) pops up out of the fan, well above the others, and **doubles in size**, in front of everything, so its full text is easy to read; a card near a screen edge grows inward so it's never cut off. It shrinks back into the fan when you move off.
 - **Short card text, tap for more:** each card prints a short, simple version of its ability that is still understandable on its own (for example "Ranged. Enemies can't strike back."), never cut off. Tapping the text on an enlarged or popped-up card opens a floating deeper explanation: the full rules, every keyword explained, when it can be played (Deploy, any time, as a response), what it counts as (role, faction, rarity, Unique), limits and a short example. Creatures on the battlefield show a small ability icon; tap a creature to see its card.
 - **Card reveal:** whenever either player plays a card, it flies to the **center of the screen** and stays there, big, for about 1.5 seconds so both players can read it. Then a creature card drops onto its space and flips, glows and rises into the 3D creature; a spell turns into its effect; a Crystal card flies into the Bank crystal; a Miner upgrade flies onto its creature and sparkles gold. When the enemy plays something you can respond to, the reveal flows straight into the Respond pop-up. Settings: Card reveals Normal (1.5 s) or Fast (0.6 s); tap a reveal to skip it.
-- **Spell effects:** every spell has its own visual. Infernal Orb: a blazing ball arcs from the caster's Stronghold, then a KA-BOOM burst. Skyfall Annihilation: a meteor crashes down with screen shake over the 3 × 3 area. Bastion Ward and Shield: a shimmering bubble. Mending Light: a beam of light from above. Warhowl: red glow and a roar across your creatures. Counterspells: the countered card shatters like glass with a burst. A comic callout appears over the caster's Stronghold, for example "GRUBNAK CASTS INFERNAL ORB!". Commanders never attack; they only cast spells.
+- **Spell effects:** every spell has its own visual. Searing Arcane Orb: a blazing arcane ball arcs from the caster's Stronghold, then a KA-BOOM burst. Starfall Cataclysm: a meteor crashes down with screen shake over the 3 × 3 area. Ironclad Bulwark: a clanking steel shield device unfolds over the creature. Field Bandage: bandages wrap the creature with a soft glow. Thunderhorn Blast: a huge steam war horn blasts and your creatures glow red. Emergency Repairs: gears and wrenches patch the Stronghold. Venom Shiv: a dagger flies in and the target turns sickly green with dripping poison bubbles. Rat-Tunnel Ambush: rats burrow and the creature pops out of a hole. Pickpocket!: a goblin hand snatches the summoned card away. Counterspells: the countered card shatters like glass with a burst. A comic callout appears over the caster's Stronghold, for example "SPROINGLE CASTS SEARING ARCANE ORB!". Commanders never attack; they only cast spells.
 - **Ranged is easy to spot:** Ranged cards show a 🏹 icon next to Attack (and the word Ranged in the ability text); Ranged 3D figures carry a visible ranged weapon (sling, throwing axes, spark wand, crossbow) and show the 🏹 icon in their stats.
 - **Pop-ups never pile up:** the "Are you sure?" pop-up sits on top, then the countdown, then phase banners (a banner waits until nothing else is showing).
 
@@ -152,8 +152,8 @@ Three factions, each with its own color: Goblins green, Gnomes blue, Dwarves pur
 |  | Goblins | Gnomes | Dwarves |
 | --- | --- | --- | --- |
 | Color | Green | Blue | Purple |
-| Personality | Scrappy, sneaky, chaotic | Clever tinkerers and spark-mages | Tough, proud miners and warriors |
-| Playstyle | Cheap swarms, explosions, tricks | Gadgets, shields, ranged sparks | Big health, heavy hits, holding ground |
+| Personality | Scrappy, sneaky, backstabbing poisoners | Clever, magical spellcasters | Tough, proud miners and mechanical engineers |
+| Playstyle | Cheap swarms, explosions, poison and tricks | Magic, fireballs, counter-magic, ranged sparks | Big health, heavy hits, war machines, holding ground |
 | Strength | Numbers and speed of play | Support and surprises | Hard to kill |
 | Weakness | Fragile | Weak in close combat | Expensive |
 | Commander | Grubnak Rotgut, King of the Junkpile | Archmagister Sproingle the Unfathomable | Thane Borgo Gravelgrim |
@@ -203,12 +203,12 @@ A creature card shows its cost, Attack, Health, movement and one special ability
 
 **Deck rules:** **50 to 100 cards** (owner settings: minimum 50, maximum 100). Common and Uncommon cards have no copy limit; Rare, Ultra Rare and Collector cards are limited to 3 copies each. Especially powerful cards are marked Unique: you can have only one of that card on your battlefield at a time (extra copies wait in your hand). A deck can hold at most **20 Crystal cards** in total, whatever their rarity (owner setting).
 
-**Starter decks** (three per faction, nine in total, 50 cards each), named per faction (for example "Goblin Warband"):
-- **Warband** (standard): 40 creatures (about 8 Miners), 6 spells (including 1 counterspell, Snuff Out) and 4 Crystal cards.
-- **Arcane Hoard** (spells and Miners): 26 creatures (about 12 Miners), 16 spells (including counterspells) and 8 Crystal cards.
-- **The Horde** (no spells; Miners and creatures): 46 creatures (about 14 Miners), no spells and 4 Crystal cards.
+**Starter decks** (three per faction, nine in total, **100 cards each**), named per faction (for example "Goblin Warband"). Every starter deck has **50 Miners: 30 of the faction's basic Miner and 20 of its Smith Miner**; the other 50 cards depend on the style (spells are that faction's own plus the shared ones):
+- **Warband** (balanced): 38 Fighters, 7 spells (including counterspells) and 5 Crystal cards.
+- **Arcane Hoard** (spells): 18 Fighters, 24 spells (including counterspells) and 8 Crystal cards.
+- **The Horde** (no spells): 46 Fighters, no spells and 4 Crystal cards.
 
-The computer opponent picks among them for variety. For the Warband: Mostly Commons, with about 8 Miners (about 5 basic Miners and 3 Smith Miners), at most 4 copies of any other card for variety (including the newer cards), and plenty of cheap creatures so there's always something to play; the owner can change the mix in the settings file. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander and your deck.
+The computer opponent picks among them for variety. Fighters are mostly Commons, with plenty of cheap creatures so there's always something to play; the owner can change the mix in the settings file. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander and your deck.
 
 ## Turns and phases
 
@@ -350,20 +350,24 @@ These 65 cards set the style and balance; the factory expands them into a Core S
 
 **Commander spells** (cast from your Stronghold; cost soul crystals)
 
-| Card | Rarity | Type | Cost (soul crystals) | Effect |
-| --- | --- | --- | --- | --- |
-| Desperate Plunder | Common | Regular | 1 | Can only be cast if the enemy owns more mines than you: gain 3 crystals of Flow this turn |
-| Burrow Ambush | Uncommon | Regular | 2 | Move one of your creatures to any empty space next to a crystal site; it can still attack this turn |
-| Infernal Orb | Rare | Regular | 3 | 3 damage to one creature or the enemy Commander |
-| Warhowl | Rare | Regular | 4 | All your creatures get +1 Attack this turn |
-| Skyfall Annihilation | Ultra Rare | Regular | 7 | 2 damage to every creature in a 3 × 3 area |
-| Mending Light | Common | Instant | 2 | Heal one of your creatures by 3 right now (useful during the enemy's turn, before your creatures heal) |
-| Bastion Ward | Uncommon | Instant | 2 | Your creature takes no damage from the next hit this turn |
-| Last Stand | Ultra Rare | Instant | 5 | Your Commander heals 4 |
-| Snuff Out | Uncommon | Counterspell | 3 | Cancel an enemy spell that costs 3 or less |
-| Not Today! | Rare | Counterspell | 4 | Cancel an enemy creature as it's summoned; the card goes back to their hand |
-| Arcane Severance | Rare | Counterspell | 5 | Cancel any enemy spell |
-| Hex Reversal | Ultra Rare | Counterspell | 7 | Cancel an enemy spell, then cast a free copy of it yourself |
+**Faction spells:** each faction has three spells of its own, which can only be put in a deck (and cast) when your Commander belongs to that faction; three shared spells can be used by anyone. Goblins fight dirty (poison, ambushes, theft), Gnomes are the magic faction, Dwarves the mechanical one.
+
+| Card | Faction | Rarity | Type | Cost (soul crystals) | Effect |
+| --- | --- | --- | --- | --- | --- |
+| Venom Shiv | Goblins | Uncommon | Regular | 2 | Poison an enemy creature: it takes 1 damage at the start of each of its owner's next 3 turns and can't heal during that time |
+| Rat-Tunnel Ambush | Goblins | Uncommon | Regular | 2 | Move one of your creatures to any empty space next to a crystal site; it can still attack this turn |
+| Pickpocket! | Goblins | Rare | Counterspell | 4 | Cancel an enemy creature as it's summoned; the card goes back to their hand |
+| Searing Arcane Orb | Gnomes | Rare | Regular | 3 | 3 damage to one creature or the enemy Commander |
+| Starfall Cataclysm | Gnomes | Ultra Rare | Regular | 7 | 2 damage to every creature in a 3 × 3 area |
+| Unweave | Gnomes | Rare | Counterspell | 5 | Cancel any enemy spell |
+| Ironclad Bulwark | Dwarves | Uncommon | Instant | 2 | Your creature takes no damage from the next hit this turn |
+| Thunderhorn Blast | Dwarves | Rare | Regular | 4 | All your creatures get +1 Attack this turn |
+| Emergency Repairs | Dwarves | Ultra Rare | Instant | 5 | Your Commander heals 4 |
+| Field Bandage | Shared | Common | Instant | 2 | Heal one of your creatures by 3 right now (useful during the enemy's turn, before your creatures heal) |
+| Snuff Out | Shared | Uncommon | Counterspell | 3 | Cancel an enemy spell that costs 3 or less |
+| Desperate Plunder | Shared | Common | Regular | 1 | Can only be cast if the enemy owns more mines than you: gain 3 crystals of Flow this turn |
+
+Hex Reversal (cancel an enemy spell, then cast a free copy) is set aside for a later card set.
 
 **Crystal cards** (free to play; Instant speed; crystals go into your Bank; one per round; at most 20 per deck)
 
