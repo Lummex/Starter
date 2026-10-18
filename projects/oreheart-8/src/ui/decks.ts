@@ -14,7 +14,11 @@ export function loadDecks(): SavedDeck[] {
     return Array.isArray(v) ? v.filter((d) => d && typeof d.name === 'string' && Array.isArray(d.cards)).slice(0, MAX_DECKS) : [];
   } catch { return []; }
 }
-function storeDecks(d: SavedDeck[]) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch { /* storage unavailable */ } }
+export function hiddenStarters(): string[] {
+  try { const v = JSON.parse(localStorage.getItem('oreheart.hiddenStarters') || '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []; } catch { return []; }
+}
+export function setHiddenStarters(v: string[]) { try { localStorage.setItem('oreheart.hiddenStarters', JSON.stringify(v)); } catch { /* storage unavailable */ } }
+export function storeDecks(d: SavedDeck[]) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch { /* storage unavailable */ } }
 /** The faction most of a deck's creatures belong to: it decides which faction spells the deck may hold. */
 export function deckMainFaction(ids: string[]): string | undefined {
   const t: Record<string, number> = {};
@@ -96,7 +100,7 @@ export function autoFill(deck: string[], faction?: string): string[] {
   return out;
 }
 
-export function showDecks(app: App) {
+export function showDecks(app: App, opts: { focus?: number } = {}) {
   app.clear();
   let saved = loadDecks();
   let deck: string[] = [];
@@ -112,17 +116,22 @@ export function showDecks(app: App) {
   let cmdId = 'grubnak';
   const fCmd = combo('Deck Commander', 'f-commander', ['Grubnak', 'Sproingle', 'Borgo'], () => { cmdId = CMD_BY_NAME[fCmd.sel.value] || 'grubnak'; renderCards(); renderDeck(); });
   let query = '';
-  let perRow = Math.max(1, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
+  let perRow = Math.max(2, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
   const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'All cards', role: 'group' });
   const pileEl = h('div', { class: 'db-pile', 'aria-label': 'Deck pile', role: 'group' });
+  const carEl = h('div', { class: 'db-car', 'aria-label': 'My decks', role: 'group' });
+  const track = h('div', { class: 'db-track' });
+  carEl.append(track);
+  const nameEl = h('p', { class: 'db-name', 'data-part': 'deck-name' });
+  const sizeEl = h('p', { class: 'db-size', 'data-part': 'deck-size' });
+  let cur = -1;
   const listEl = h('ul', { class: 'db-list', 'aria-label': 'Deck list' });
   const countsEl = h('p', { class: 'db-counts', 'aria-label': 'Deck counts' });
   const chartEl = h('div', { class: 'db-chart', 'aria-label': 'Cost chart', role: 'group' });
   const probEl = h('ul', { class: 'db-problems', 'aria-label': 'Deck problems' });
-  const mineEl = h('ul', { class: 'db-mine', 'aria-label': 'My decks' });
   const status = h('p', { class: 'db-status', role: 'status' });
   const limitMsg = h('p', { class: 'db-status' });
-  const newBtn = btn('New Deck', '', () => { deck = []; editing = -1; cmdId = 'grubnak'; fCmd.set('Grubnak'); renderCards(); name = defaultName(); status.textContent = ''; renderDeck(); }) as HTMLButtonElement;
+  const newBtn = btn('New Deck', '', () => { if (saved.length >= MAX_DECKS) { status.textContent = ''; limitMsg.textContent = 'You can save up to 5 decks.'; return; } setCur(saved.length); }) as HTMLButtonElement;
 
   const matches = (c: any) => {
     if (query && !smartMatch(c, query)) return false;
@@ -159,14 +168,19 @@ export function showDecks(app: App) {
   const removeCard = (id: string) => { const i = deck.indexOf(id); if (i >= 0) deck.splice(i, 1); status.textContent = ''; renderDeck(); };
 
   function enlarge(c: any) { app.showCard(c.id); }
+  const ghostW = () => Math.max(40, ((cardsEl.clientWidth || 300) - 8 - 2 * 10) / 3);
   function drag(e: PointerEvent, c: any, el: HTMLElement) {
     if (e.button !== 0) return;
     const sx = e.clientX, sy = e.clientY;
     let ghost: HTMLElement | null = null;
-    const over = (x: number, y: number) => { const r = pileEl.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; };
+    const inside = (n: Element, x: number, y: number) => { const r = n.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; };
+    const over = (x: number, y: number) => inside(pileEl, x, y) || inside(listEl, x, y);
     const mv = (m: PointerEvent) => {
       if (!ghost && Math.hypot(m.clientX - sx, m.clientY - sy) > 8) {
-        ghost = cardFace(c); ghost.classList.add('ghost'); document.body.append(ghost);
+        ghost = cardFace(c); ghost.setAttribute('data-drag-ghost', '1');
+        const gw = ghostW();
+        ghost.style.setProperty('--cw', gw + 'px'); ghost.style.setProperty('width', gw + 'px', 'important');
+        document.body.append(ghost);
         (el as any)._dragged = true;
       }
       if (ghost) { ghost.style.left = m.clientX + 'px'; ghost.style.top = m.clientY + 'px'; pileEl.classList.toggle('hot', over(m.clientX, m.clientY)); }
@@ -195,13 +209,13 @@ export function showDecks(app: App) {
     cardsEl.style.setProperty('--cw', Math.max(40, (w - 8 - (perRow - 1) * 10) / perRow) + 'px');
   }
   function setPerRow(n: number) {
-    perRow = Math.max(1, Math.min(8, Math.round(n)));
+    perRow = Math.max(2, Math.min(8, Math.round(n)));
     try { localStorage.setItem('oreheart.cardsPerRow', String(perRow)); } catch { /* storage unavailable */ }
     slider.value = String(perRow);
     fitRow();
   }
   function renderCards() { cardsEl.replaceChildren(...ALL.filter((c) => !c.disabled && matches(c)).map(tile)); fitRow(); }
-  const slider = h('input', { type: 'range', id: 'cards-per-row', min: '1', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
+  const slider = h('input', { type: 'range', id: 'cards-per-row', min: '2', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
   slider.addEventListener('input', () => setPerRow(+slider.value));
   const searchInp = h('input', { type: 'search', id: 'card-search', role: 'searchbox', 'aria-label': 'Search cards', placeholder: 'Search: "cheap goblin miners", "ranged under 4"…', autocomplete: 'off' }) as HTMLInputElement;
   searchInp.addEventListener('input', () => { query = searchInp.value.trim(); renderCards(); });
@@ -229,6 +243,7 @@ export function showDecks(app: App) {
   const endTouch = (e: PointerEvent) => { tp.delete(e.pointerId); pinch0 = 0; };
   cardsEl.addEventListener('pointerup', endTouch); cardsEl.addEventListener('pointercancel', endTouch);
   window.addEventListener('resize', fitRow);
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => fitRow()).observe(cardsEl);
   // cards tilt slightly toward the pointer
   cardsEl.addEventListener('pointermove', (e: PointerEvent) => {
     const r = cardsEl.getBoundingClientRect();
@@ -247,7 +262,8 @@ export function showDecks(app: App) {
       return h('li', {}, h('span', {}, `${n[id]} × ${nm}`), plus, btn('−', 'small', () => removeCard(id), { 'aria-label': `Remove ${nm}` }));
     }));
     const c = deckCounts(deck);
-    pileEl.replaceChildren(h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('div', { class: 'pile-top' }, h('strong', {}, name), h('span', { class: 'pile-n' }, `${c.cards} cards (${CONFIG.deckMin}–${CONFIG.deckMax})`)));
+    nameEl.textContent = name;
+    sizeEl.textContent = `${c.cards} cards (${CONFIG.deckMin}–${CONFIG.deckMax})`;
     countsEl.textContent = `Cards: ${c.cards} (${CONFIG.deckMin}–${CONFIG.deckMax}) · Creatures: ${c.creatures} · Spells: ${c.spells} · Crystal cards: ${c.crystals}`;
     const buckets = [1, 2, 3, 4, 5, 6, 7].map((k) => deck.filter((id) => CARDS[id].type !== 'crystal' && (k === 7 ? CARDS[id].cost >= 7 : CARDS[id].cost === k)).length);
     const mx = Math.max(4, ...buckets);
@@ -259,26 +275,72 @@ export function showDecks(app: App) {
     }));
     const p = deckProblems(deck, cmdId);
     probEl.replaceChildren(...(p.length ? p : ['Deck is legal']).map((m) => h('li', { class: p.length ? 'bad' : 'good' }, m)));
-    mineEl.replaceChildren(...saved.map((d, i) => {
-      const legal = deckLegal(d, d.commander || 'grubnak');
-      return h('li', {},
-        btn(`${d.name} — ${d.cards.length} cards, ${legal ? 'legal' : 'not legal'}`, '', () => { deck = d.cards.slice(); editing = i; name = d.name; cmdId = d.commander && CMD_NAMES[d.commander] ? d.commander : 'grubnak'; fCmd.set(CMD_NAMES[cmdId]); renderCards(); status.textContent = ''; renderDeck(); }),
-        btn('Delete', 'small', () => confirmDelete(i), { 'aria-label': `Delete ${d.name}` }));
-    }));
+    renderCarousel();
     const full = saved.length >= MAX_DECKS;
-    newBtn.disabled = full;
     limitMsg.textContent = full ? 'You can save up to 5 decks.' : '';
   }
-  function confirmDelete(i: number) {
-    const d: any = app.dialog('Delete this deck?', [h('h2', {}, 'Delete this deck?'), h('p', { style: 'text-align:center' }, saved[i].name),
-      h('div', { class: 'row' },
-        btn('Delete', 'primary', () => {
-          saved.splice(i, 1); storeDecks(saved); d.close();
-          if (editing === i) editing = -1; else if (editing > i) editing--;
-          renderDeck();
-        }),
-        btn('Cancel', '', () => d.close()))]);
+  // ---- deck carousel (saved decks only, plus the "+ New Deck" slot)
+  let carDrag = false;
+  const baseShift = () => {
+    const it = track.children[cur] as HTMLElement | undefined;
+    return it ? carEl.clientWidth / 2 - (it.offsetLeft + it.offsetWidth / 2) : 0;
+  };
+  function place(extra = 0, animate = true) {
+    track.style.transition = animate ? 'transform .25s ease' : 'none';
+    track.style.transform = `translateX(${baseShift() + extra}px)`;
   }
+  function setCur(i: number, load = true) {
+    cur = Math.max(0, Math.min(saved.length, i));
+    if (load) {
+      if (cur < saved.length) {
+        const d = saved[cur];
+        deck = d.cards.slice(); editing = cur; name = d.name;
+        cmdId = d.commander && CMD_NAMES[d.commander] ? d.commander : 'grubnak';
+      } else { deck = []; editing = -1; name = defaultName(); cmdId = 'grubnak'; }
+      fCmd.set(CMD_NAMES[cmdId]);
+      status.textContent = ''; limitMsg.textContent = '';
+      renderCards();
+    }
+    renderDeck();
+  }
+  function renderCarousel() {
+    const items = saved.map((d, i) => h('button', { type: 'button', class: 'db-deck', 'aria-label': `${d.name}, ${d.cards.length} ${d.cards.length === 1 ? 'card' : 'cards'}`, 'aria-current': i === cur ? 'true' : null, tabindex: i === cur ? '0' : '-1', 'data-i': String(i) },
+      h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, d.name)));
+    items.push(h('button', { type: 'button', class: 'db-deck new', 'aria-label': '+ New Deck', 'aria-current': cur === saved.length ? 'true' : null, tabindex: cur === saved.length ? '0' : '-1', 'data-i': String(saved.length) },
+      h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, '+ New Deck')));
+    items.forEach((b, i) => {
+      b.addEventListener('click', () => { if (carDrag) return; if (i !== cur) setCur(i); });
+      b.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault();
+        setCur(cur + (e.key === 'ArrowRight' ? 1 : -1));
+        (track.children[cur] as HTMLElement | undefined)?.focus();
+      });
+    });
+    track.replaceChildren(...items);
+    place(0, false);
+    requestAnimationFrame(() => place(0, false));
+  }
+  carEl.addEventListener('pointerdown', (e: PointerEvent) => {
+    if (e.button !== 0) return;
+    const sx = e.clientX;
+    let moved = false;
+    const mv = (m: PointerEvent) => { const dx = m.clientX - sx; if (Math.abs(dx) > 5) { moved = true; carDrag = true; } if (moved) place(dx, false); };
+    const up = (m: PointerEvent) => {
+      document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
+      if (moved) {
+        const dx = m.clientX - sx;
+        const it = track.children[0] as HTMLElement | undefined;
+        const iw = it ? (track.children[1] ? (track.children[1] as HTMLElement).offsetLeft - it.offsetLeft : it.offsetWidth) : 100;
+        const thr = Math.min(120, iw / 2);
+        if (Math.abs(dx) >= thr) { const steps = Math.max(1, Math.round(Math.abs(dx) / iw)); setCur(cur - Math.sign(dx) * steps); } else place(0, true);
+        setTimeout(() => { carDrag = false; }, 0);
+      }
+    };
+    document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
+  });
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => place(0, false)).observe(carEl);
+
   function rename() {
     const input = h('input', { id: 'deck-name', type: 'text', maxlength: '30' }) as HTMLInputElement;
     input.value = name;
@@ -297,30 +359,30 @@ export function showDecks(app: App) {
     editing = idx;
     storeDecks(saved);
     status.textContent = 'Saved';
+    cur = idx;
     renderDeck();
     // right after saving, the long card grid is parked out of the accessibility tree until the next interaction
     cardsEl.setAttribute('aria-hidden', 'true');
   }
 
-  const pileWrap = h('div', { class: 'db-pilewrap' }, pileEl, h('p', { class: 'hint' }, 'Drag a card here, or double-click it.'));
-  app.root.append(h('main', { class: 'screen db-screen' },
-    h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' }),
-    h('h1', { class: 'section cinzel' }, 'Deck Builder'),
-    h('div', { class: 'db-search' }, searchInp, ...(voiceBtn ? [voiceBtn] : []), h('div', { class: 'f-field' }, h('label', { for: 'cards-per-row' }, 'Cards per row'), slider)),
-    h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap),
-    h('div', { class: 'db-cols' },
-      h('section', { class: 'db-left' }, h('h2', {}, 'All cards'), cardsEl),
-      h('section', { class: 'db-right' },
-        pileWrap, countsEl, chartEl, probEl,
-        h('div', { class: 'row' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), btn('Rename', '', rename), newBtn),
-        status, limitMsg,
-        h('h2', {}, 'Deck list'), listEl,
-        h('h2', {}, 'My decks'), mineEl,
-        btn('Back', '', () => app.showMenu())))));
+  pileEl.append(h('div', { class: 'db-carwrap' }, btn('◀', 'small scroll', () => setCur(cur - 1), { 'aria-label': 'Previous deck' }), carEl, btn('▶', 'small scroll', () => setCur(cur + 1), { 'aria-label': 'Next deck' })), nameEl, sizeEl);
+  app.root.append(h('main', { class: 'screen db-screen', 'data-screen': 'deck-builder' },
+    h('section', { class: 'db-left' },
+      h('div', { class: 'db-head' }, h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' })),
+      h('div', { class: 'db-search' }, searchInp, ...(voiceBtn ? [voiceBtn] : []), h('div', { class: 'f-field' }, h('label', { for: 'cards-per-row' }, 'Cards per row'), slider)),
+      h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap),
+      h('h2', {}, 'All cards'), cardsEl),
+    h('aside', { class: 'db-right', 'aria-label': 'Deck panel' },
+      h('h1', { class: 'section cinzel' }, 'Deck Builder'),
+      pileEl,
+      h('div', { class: 'row db-actions' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), btn('Rename', '', rename), newBtn),
+      btn('Back', 'db-back', () => app.showMenu()),
+      h('p', { class: 'db-msgs' }, status, limitMsg),
+      h('div', { class: 'db-listwrap' },
+        h('h2', {}, 'Deck list'), countsEl, probEl, chartEl, listEl))));
   const screen = app.root.querySelector('.db-screen') as HTMLElement;
   const wake = () => cardsEl.removeAttribute('aria-hidden');
   for (const ev of ['pointermove', 'pointerdown', 'keydown', 'change', 'focusin']) screen.addEventListener(ev, wake);
-  renderCards();
-  renderDeck();
+  setCur(opts.focus != null && opts.focus >= 0 && opts.focus < saved.length ? opts.focus : saved.length);
   requestAnimationFrame(fitRow);
 }

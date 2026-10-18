@@ -2,7 +2,7 @@ import { Game } from '../game';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
 import { SPELL_VISUALS } from '../content/spell-visuals';
 import tutorialJson from '../content/tutorial.json';
-import { showDecks, loadDecks, deckLegal } from './decks';
+import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters } from './decks';
 import { deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
 import { audio } from './audio';
@@ -23,7 +23,7 @@ export const rarityKey = (c: any) => RARITY_KEY[c.rarity] || 'common';
 /** Picture path of a card (Goblin creatures have a generated painting). */
 export const pictureOf = (c: any): string | null => (c && ((c.type === 'creature' && c.faction === 'goblins') || (c.type === 'spell' && !c.disabled)) ? `/art/cards/${c.id}.webp` : null);
 export const FRAME: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
-/** Spell frames: one line per faction (owner files replace the temporary generated ones by overwriting `public/art/frames/spell-frame-*.webp`). */
+/** Spell frames: one line per faction (owner files replace the temporary generated ones by overwriting `public/art/frames/spell-frame-*.jpg`). */
 export const SPELL_FRAME_FILE = (key: string) => `spell-frame-${key}`;
 export const frameKey = (c: any) => (c.type === 'spell' ? `spell-${FRAME[c.faction] || 'shared'}` : FRAME[c.faction] || 'neutral');
 export const frameOf = (c: any) => (c.type === 'spell' ? SPELL_FRAME_FILE(FRAME[c.faction] || 'shared') : `card-frame-${FRAME[c.faction] || 'neutral'}`);
@@ -52,7 +52,7 @@ export function faceKids(c: any, cost?: number, cur?: { attack?: number; health?
   rw.innerHTML = CRYSTAL_SVG;
   rw.append(h('span', { class: 'rwt' }, c.rarity));
   const kids: (El | null)[] = [
-    h('img', { class: 'frame', src: `/art/frames/${frameOf(c)}.webp`, alt: '', draggable: 'false' }),
+    h('img', { class: 'frame', src: `/art/frames/${frameOf(c)}${c.type === 'spell' ? '.jpg' : '.webp'}`, alt: '', draggable: 'false' }),
     pic ? h('img', { class: 'pic', src: pic, alt: '', draggable: 'false', loading: 'eager' }) : h('span', { class: 'ty', 'aria-hidden': 'true' }, cr ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
     h('span', { class: 'cost', role: 'img', 'aria-label': `Cost ${cost ?? c.cost}` }, String(cost ?? c.cost)),
     cr ? h('span', { class: 'atk', role: 'img', 'aria-label': `Attack ${cur?.attack ?? c.attack}` }, String(cur?.attack ?? c.attack)) : null,
@@ -259,7 +259,7 @@ export class App {
     this.clear();
     const ico = (n: string) => h('span', { class: 'mi mi-' + n, 'aria-hidden': 'true' });
     const mbtn = (label: string, cls: string, icon: string, fn: () => void) => { const b = btn(label, cls, fn); if (icon) b.prepend(ico(icon)); return b; };
-    const s = h('main', { class: 'screen menu-screen' },
+    const s = h('main', { class: 'screen menu-screen', 'data-screen': 'title' },
       h('div', { class: 'menu-bg', 'aria-hidden': 'true' }),
       h('div', { class: 'menu-head' },
         h('h1', { class: 'title logo' }, h('img', { src: '/art/logo.webp', alt: 'Oreheart', class: 'logo-img' })),
@@ -286,9 +286,9 @@ export class App {
 
   showSettings() {
     this.clear();
-    this.root.append(h('main', { class: 'screen center' },
+    this.root.append(h('main', { class: 'screen center', 'data-screen': 'settings' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), btn('Back', '', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), btn('Back', '', () => this.showMenu()))));
   }
 
   showSetup() {
@@ -321,46 +321,67 @@ export class App {
           h('span', { class: 'ds' }, c.abilityText))));
     }
     for (const d of ['easy', 'normal', 'hard']) diffBtns.push(btn(d[0].toUpperCase() + d.slice(1), 'diff', () => { diff = d; sel(); }, { 'data-id': d }));
-    const stack = (label: string, n: number, ok: boolean, key: string, onpick: () => void) => {
+    const FCMD: Record<string, string> = { goblins: 'grubnak', gnomes: 'sproingle', dwarves: 'borgo' };
+    const visibleCount = () => STARTER_DECK_LIST.filter((d) => !hiddenStarters().includes(d.id)).length + decks.length;
+    const confirmRemove = (label: string, doIt: () => void) => {
+      const d: any = this.dialog('Remove deck?', [h('h2', {}, 'Remove deck?'), h('p', { style: 'text-align:center' }, `Remove ${label} from the deck picker?`),
+        h('div', { class: 'row' }, btn('Remove', 'primary', () => { doIt(); d.close(); buildRow(); sel(); }), btn('Cancel', '', () => d.close()))]);
+    };
+    const stack = (label: string, n: number, ok: boolean, key: string, onpick: () => void, starterId?: string, savedIdx?: number) => {
       const b = h('button', { type: 'button', class: `dstack${ok ? '' : ' bad'}`, 'data-key': key, 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', onclick: onpick },
         h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }),
         h('span', { class: 'ds-name', 'aria-hidden': 'true' }, label), h('span', { class: 'ds-n', 'aria-hidden': 'true' }, `${n} cards ${ok ? '✔' : '⚠'}`));
       stacks.push(b);
-      return b;
+      const rm = btn('Remove', 'small tx-act', () => confirmRemove(label, () => {
+        if (starterId) setHiddenStarters([...hiddenStarters(), starterId]); else if (savedIdx != null) { decks.splice(savedIdx, 1); storeDecks(decks); }
+        if (deckSel === key || deckSel.startsWith('saved:')) { const first = STARTER_DECK_LIST.find((d) => !hiddenStarters().includes(d.id)); deckSel = first ? 'starter:' + first.id : decks.length ? 'saved:0' : deckSel; }
+      }), { 'aria-label': `Remove ${label}` }) as HTMLButtonElement;
+      if (visibleCount() <= 1) { rm.disabled = true; rm.setAttribute('aria-disabled', 'true'); }
+      const acts: El[] = [rm];
+      if (starterId) acts.push(btn('Copy to my decks', 'small tx-act', () => {
+        const sd: any = STARTER_DECK_LIST.find((x) => x.id === starterId)!;
+        if (decks.length >= 5) { msg.textContent = 'You can save up to 5 decks.'; return; }
+        decks.push({ name: `${label} (copy)`, cards: sd.cards.slice(), commander: FCMD[sd.faction] || 'grubnak' });
+        storeDecks(decks);
+        showDecks(this, { focus: decks.length - 1 });
+      }, { 'aria-label': `Copy ${label} to my decks` }));
+      return h('div', { class: 'dslot' }, b, h('div', { class: 'ds-acts' }, ...acts));
     };
     const row = h('div', { class: 'deck-row', 'aria-label': 'Deck choice', role: 'group' });
     const buildRow = () => {
       stacks.length = 0;
       const fac = COMMANDERS[cmd].faction;
       const order = ['goblins', 'gnomes', 'dwarves'];
-      const list = [...STARTER_DECK_LIST.filter((d) => d.faction === fac), ...order.filter((f) => f !== fac).flatMap((f) => STARTER_DECK_LIST.filter((d) => d.faction === f))];
-      const items: El[] = list.map((d) => stack(d.name, d.cards.length, true, 'starter:' + d.id, () => { deckSel = 'starter:' + d.id; msg.textContent = ''; sel(); }));
+      const hid = hiddenStarters();
+      const list = [...STARTER_DECK_LIST.filter((d) => d.faction === fac), ...order.filter((f) => f !== fac).flatMap((f) => STARTER_DECK_LIST.filter((d) => d.faction === f))].filter((d) => !hid.includes(d.id));
+      const items: El[] = list.map((d) => stack(d.name, d.cards.length, true, 'starter:' + d.id, () => { deckSel = 'starter:' + d.id; msg.textContent = ''; sel(); }, d.id));
       decks.forEach((d, i) => {
         const ok = deckLegal(d, cmd);
         items.push(stack(d.name, d.cards.length, ok, 'saved:' + i, () => {
           if (!ok) { msg.textContent = deckProblems(d.cards.filter((id) => CARDS[id]), cmd)[0] || 'This deck is not ready.'; return; }
           deckSel = 'saved:' + i; msg.textContent = ''; sel();
-        }));
+        }, undefined, i));
       });
-      items.push(h('button', { type: 'button', class: 'dstack newdeck', onclick: () => showDecks(this) }, '+ New Deck'));
+      items.push(h('div', { class: 'dslot' }, h('button', { type: 'button', class: 'dstack newdeck', onclick: () => showDecks(this) }, '+ New Deck')));
       row.replaceChildren(...items);
     };
     const onCmd = () => {
-      if (deckSel.startsWith('starter:')) deckSel = 'starter:' + warband();
+      if (deckSel.startsWith('starter:') && !hiddenStarters().includes(warband())) deckSel = 'starter:' + warband();
       buildRow(); sel();
     };
     void FN;
     buildRow();
     sel();
     const scroll = (dir: number) => row.scrollBy({ left: dir * 220, behavior: 'smooth' });
-    this.root.append(h('main', { class: 'screen setup' },
+    this.root.append(h('main', { class: 'screen setup', 'data-screen': 'select' },
       h('h1', { class: 'section cinzel' }, 'Choose Your Commander'),
-      h('div', { class: 'cmds' }, ...cmdBtns),
+      h('div', { class: 'cmds' }, h('div', { class: 'cmd-wall', 'aria-hidden': 'true' }), ...cmdBtns),
       h('div', { class: 'deck-wrap' },
         btn('◀', 'small scroll', () => scroll(-1), { 'aria-label': 'Scroll decks left' }), row,
         btn('▶', 'small scroll', () => scroll(1), { 'aria-label': 'Scroll decks right' })),
       msg,
       h('div', { class: 'row setup-actions' },
+        btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }),
         h('div', { class: 'row', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns),
         btn('Fight!', 'primary', () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
@@ -390,7 +411,7 @@ export class App {
     const combat = svg('Picture of type advantage: Dwarves beat Goblins, Goblins beat Gnomes, Gnomes beat Dwarves',
       '<rect width="240" height="110" rx="10" fill="#26232f"/><text x="120" y="30" font-size="16" fill="#f4e9d0" text-anchor="middle">🔨 → 💀 → ⚙️ → 🔨</text><text x="120" y="62" font-size="11" fill="#e3b54a" text-anchor="middle">+1 Attack on a type advantage</text><text x="120" y="86" font-size="11" fill="#f4e9d0" text-anchor="middle">Dwarves › Goblins › Gnomes › Dwarves</text>');
     const sec = (t: string, ...k: (string | El)[]) => h('section', {}, h('h2', {}, t), ...k.map((x) => (typeof x === 'string' ? h('p', {}, x) : x)));
-    const s = h('main', { class: 'screen howto' },
+    const s = h('main', { class: 'screen howto', 'data-screen': 'rules' },
       h('h1', { class: 'section cinzel' }, 'Rules'),
       sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
       sec('The Board', 'A hidden grid 13 spaces wide and 7 deep. Your Stronghold sits in the bottom-left corner (row 7, column 2) and the enemy Stronghold in the top-right corner (row 1, column 12); the mines mirror from corner to corner. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),

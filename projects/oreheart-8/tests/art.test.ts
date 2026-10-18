@@ -39,20 +39,19 @@ describe('spell visuals (R3b.7)', () => {
 });
 
 describe('Round 4 assets', () => {
-  it('spell frames, metal textures and spell pictures exist', () => {
-    for (const f of ['goblin', 'gnome', 'dwarf', 'shared']) expect(fs.existsSync(`public/art/frames/spell-frame-${f}.webp`), f).toBe(true);
-    for (const f of ['gold', 'silver']) expect(fs.existsSync(`public/art/ui/metal-${f}.webp`), f).toBe(true);
+  it('owner spell frames (1152x1712 jpg) and spell pictures exist', () => {
+    for (const f of ['goblin', 'gnome', 'dwarf', 'shared']) expect(fs.existsSync(`public/art/frames/spell-frame-${f}.jpg`), f).toBe(true);
     for (const c of Object.values(CARDS)) if (c.type === 'spell' && !c.disabled) expect(fs.existsSync(`public/art/cards/${c.id}.webp`), c.id).toBe(true);
   });
-  it('metal lettering css: fonts, no Cinzel Decorative, metal rules', () => {
+  it('one plain gold font: Alegreya SC italic, self-hosted, no metal fills', () => {
     const css = fs.readFileSync('src/style.css', 'utf8');
-    expect(css).not.toContain('Cinzel Decorative');
-    expect(css).toContain('[data-metal]');
-    expect(css).toContain('metal-gold.webp');
-    expect(css).toContain('metal-silver.webp');
-    const credits = fs.readFileSync('CREDITS.md', 'utf8');
-    expect(credits).toContain('Cinzel');
-    expect(credits).toContain('Tinos');
+    expect(css).not.toContain('background-clip:text');
+    expect(css).not.toContain('metal-gold');
+    expect(css).not.toContain('metal-silver');
+    expect(css).not.toContain('fonts.googleapis.com');
+    expect(css).toContain('@font-face{font-family:"Alegreya SC"');
+    expect(fs.existsSync('public/assets/external/fonts/alegreya-sc-latin-400-italic.woff2')).toBe(true);
+    expect(fs.readFileSync('CREDITS.md', 'utf8')).toContain('Alegreya SC');
   });
   it('mulligan cards are doubled in css', () => {
     expect(fs.readFileSync('src/style.css', 'utf8')).toContain('calc(2*min(15vw,22vh,120px))');

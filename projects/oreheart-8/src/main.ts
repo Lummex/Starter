@@ -1,14 +1,9 @@
-import '@fontsource/cinzel/700.css';
-import '@fontsource/cinzel/900.css';
-import '@fontsource/tinos/400.css';
-import '@fontsource/tinos/700.css';
 import './style.css';
 import { Game } from './game';
 import { App } from './ui/app';
 import { CARDS, CONFIG, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
 import { audio } from './ui/audio';
-import { startMetal } from './ui/metal';
 import { pictureOf, rarityKey } from './ui/app';
 
 const params = new URLSearchParams(location.search);
@@ -68,4 +63,3 @@ const checkRotate = () => { rotate.hidden = !(window.innerHeight > window.innerW
 checkRotate();
 window.addEventListener('resize', checkRotate);
 window.addEventListener('orientationchange', checkRotate);
-startMetal();

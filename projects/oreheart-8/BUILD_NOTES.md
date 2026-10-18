@@ -1,3 +1,26 @@
+# Oreheart — Phase 1B Round 5a build notes (menus, deck builder, lettering)
+
+`npm run build` → `dist/`; `npm test` → Vitest (64 tests). Screenshots at 1920×1080 and 844×390 in `screenshots/r5a-*`: `select`, `deck-builder`, and one spell card per faction (`spell-goblins`, `spell-gnomes`, `spell-dwarves`, `spell-any`; the other factions' spells show locked under a Goblin Commander).
+
+## What was built
+- **Lettering (R5a.1)**: all metal textures, `background-clip:text` rules, `src/ui/metal.ts` and the Cinzel/Tinos packages are gone. One self-hosted font, Alegreya SC italic 400/700 (`public/assets/external/fonts/`, `@font-face`, no Google requests), plain `#FFD700`. A final CSS block forces family/style/weight everywhere; weights above 400 were folded to 400. Checked on title, Rules, Settings, Deck Builder, select and match: every visible text node is Alegreya SC italic, no element has `background-clip:text`.
+- **Cards never stretched (R5a.2)**: card faces keep 1152:1712 (hand, mulligan, Deck Builder at any per-row count, drag ghost); checked on the match and Deck Builder.
+- **Text menu buttons (R5a.3)**: on every non-match screen (and their dialogs) `.btn` has no border, background, shadow or outline; hover gives a gold glow, scale and pointer; chosen options use a stronger glow plus underline. In-match controls are unchanged.
+- **`data-screen` (R5a.4)**: `title`, `select`, `deck-builder`, `settings`, `rules` roots fill the window exactly (the display-mode letterbox no longer applies on menu screens); the page never scrolls.
+- **Deck Builder (R5a.5)**: left column = logo, left-aligned search, "Cards per row" slider (2–8) and filters over the card grid; right "Deck panel" from the top edge: big title, "Deck pile" (My decks carousel of saved decks plus "+ New Deck", Previous/Next deck, ArrowLeft/Right, pointer drag; big `deck-name` and smaller `deck-size`), Auto-fill/Save/Rename/New Deck with Back under, then "Deck list" (counts, problems, taller cost chart, rows). The list gets first claim on height (10 of 12 rows fully visible at 844×390, 9 at 1280×720 and 1920×1080). Cards are dragged with a `data-drag-ghost` at the 3-per-row width; dropping on the pile or the list adds a copy. The old "My decks" list with Delete moved to the deck picker.
+- **Deck picker (R5a.6)**: Remove (in-game "Remove deck?" dialog) and "Copy to my decks" under each stack; removed starter decks are hidden in localStorage (`oreheart.hiddenStarters`); the last remaining deck's Remove is disabled; "Restore starter decks" on the select screen and in Settings; Copy saves "<Deck> (copy)" and opens the Deck Builder with it centered (message "You can save up to 5 decks." at the limit).
+- **Choose Your Commander (R5a.7)**: Commander cards ≈ 37 % of the window height with faction glows (selected strongest), a blurred `.cmd-wall` behind them, bigger deck stacks and text, Fight! on-screen without scroll at 844×390 and 1280×720.
+- **Spell frames (R5a.8)**: the owner's `spell-frame-*.jpg` are installed (full size 1152×1712); the cost and type icon now sit on the painted orbs.
+- **R5a.9**: outdated Round 4 unit tests (metal textures, `.webp` frames) replaced; CREDITS.md lists Alegreya SC.
+
+## Gaps
+- Checked with my own Playwright scripts and unit tests, not the hidden acceptance suite.
+- At 844×390 the Deck Builder is dense: row and chart text is small (9–10 px) to satisfy the 7-visible-rows rule.
+- The pause and match-end menus inside a match keep their old button look.
+- Canvas callouts use the existing canvas fonts. Round 5b (match screen) and Build B not started.
+
+---
+
 # Oreheart — Phase 1B Round 4 build notes (spells, starter decks, lettering)
 
 `npm run build` → `dist/`; `npm test` → Vitest (64 tests). Phone-size (844 × 390) screenshots in `screenshots/r4-*`: `r4-mulligan`, `r4-match`, `r4-menu`, `r4-spells` (Deck Builder spell tiles for all four frames) and `r4-spell-cards` (close-up).
