@@ -1,25 +1,24 @@
 ## What was built
-This round gives Oreheart a big visual and feel upgrade. Cards now use your three coloured frames, with short text and a "Full explanation" tap. The title screen, Commander select, three-mulligan screen, diagonal battlefield camera, zoom and pan, grouped on-screen counters and a remade Deck Builder with search are all in. Bombs on exploding creatures and card reveals that don't slow play were added too. New 3D creature models are not part of this round.
+This round changes the board and the deck rules. The camera now looks straight down the board like a road. Each Stronghold sits in its own corner: yours at the bottom-left and the enemy's at the top-right. Mines are placed as mirror images corner to corner. Decks can now hold 50–100 cards, with up to 20 Crystal cards. There are nine ready-made starter decks, three per faction (Warband, Arcane Hoard, Horde), and the computer picks one of its own faction's. Both hands were also moved clear of the Commanders.
 
 ## Try these things
-- On the title screen, switch Display mode between Auto, PC and Phone and reload to see it remembered.
-- Press Play, pick a Commander, then Fight!. In the Mulligan screen, mark cards and redraw up to three times.
-- In a match, tap a creature to see its card, then tap "Full explanation". Tap a card reveal to pin it.
-- Scroll the mouse wheel over the battlefield to zoom, drag to pan, then press "Re-center".
-- Open Decks. Type "ranged under 4" in search and move the "Cards per row" slider.
-- Cast a spell, such as Infernal Orb, on an enemy creature and watch whether the effect looks right.
+- Start a match and check that the board looks straight-on, with your Commander at the bottom-left and the enemy's at the top-right.
+- Look at your hand along the bottom and the enemy's card backs along the top. Scroll your hand with the left and right buttons, and check that no enemy card is cut off.
+- On the Commander select screen, pick each Commander and check the deck row. You should see that faction's three decks first, then the other six.
+- Tap a creature and check that its card pops up at a readable size.
+- Open Decks and try Auto-fill. Check the new "50 to 100 cards" and "20 Crystal cards" messages.
+- Play the Tutorial all the way through, because its layout was redrawn.
 
 ## Automated checks
-160 of 161 checks passed.
-
-The one failure is the "spells play step by step" check. After an Infernal Orb cast, an enemy Gutripper Brawler was still on the board with 1 Health. The builder says the check expects the Orb to kill a creature that has a +1 Health bonus from Borgo. That would contradict other rules, so the builder left the rules unchanged. This is probably a test mistake, but it was not confirmed. The step-by-step spell visuals could not be fully verified automatically.
+170 of 172 checks passed. Two failed:
+- **AC9 example (b)** and **AC27 (summoning costs)**. Both are older tests that summon a creature on row 7, column 2. That space is now your Stronghold, and the new rules say nothing can be placed there. The builder believes these are outdated tests rather than game bugs. The summoning cost rules themselves were not what failed.
 
 ## Things to know
-- The builder says the fancy gold decorations around the screens and the title layout are only partly done.
-- Spell visuals reuse the older effects. There is no new unique art per spell.
-- The tutorial text was not rewritten for the new features.
-- Pinch and hold gestures were only tested with simulated touches, not on a real phone.
-- Screenshots show only the title screen on a PC and the "rotate your phone" message for an upright phone. The title looks good and styled. Behind the welcome pop-up, the "Welcome to Oreheart!" heading overlaps the logo and the Tutorial button. Match and card screens were not in the screenshots, so they were not visually checked.
+- The two failing tests were not fixed. They need updating by someone, or the owner could decide the rule should work differently.
+- The screenshot folder only contains the title screen (desktop and phone). The phone-size match and deck-picker screenshots were not there, so I couldn't inspect them. The phone image shows only "Please rotate your phone".
+- The desktop title screen has a "Welcome" pop-up whose text overlaps the Tutorial menu button. This is cosmetic.
+- The builder says the oversized Commanders slightly overlap neighbouring spaces, though creatures there can still be tapped.
+- Visual polish and the new 3D models are not part of this round.
 
 ## Recommendation
-Request changes: one spell check fails, and the match, card and Deck Builder screens could not be checked in the screenshots. Review those in the preview before approving.
+Request changes: two older tests fail because they conflict with the new Stronghold rule, and the match and deck-picker screenshots needed to check the new layout weren't available.

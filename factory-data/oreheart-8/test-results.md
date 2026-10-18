@@ -1,6 +1,6 @@
 # Automated check results
 
-160 of 161 checks passed after 3 build round(s).
+170 of 172 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -15,8 +15,11 @@
 - ✅ compact stat pill › AC66: creature labels are compact pills with Attack, Health, Movement
 - ✅ phone-size match screenshot › AC90: the match screen renders full screen at 844x390 with no page errors
 - ✅ display mode on a PC window › AC103: Display mode Auto / PC / Phone, remembered, without extra menu buttons
-- ✅ diagonal board and grouped HUD at 844x390 › AC104: player bottom-left, enemy top-right, HUD grouped
-- ✅ diagonal board and grouped HUD at 844x390 › AC105: the enemy hand is smaller than the player hand
+- ✅ straight-on road board and corner HUD at 844x390 › AC104: straight-on road perspective, Commanders in the corners, HUD around them
+- ✅ straight-on road board and corner HUD at 844x390 › AC105: the enemy hand is smaller than the player hand
+- ✅ both hands at 844x390 › AC115: the enemy hand is always on-screen and the hand shows about 7 cards, then scrolls
+- ✅ both hands at 844x390 › AC116: a tapped creature shows its card at hovered-hand-card size, fully on-screen
+- ✅ both hands at 844x390 › AC117: the deck picker shows the nine starter decks as named stacks
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -30,7 +33,7 @@
 - ✅ AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy turn
 - ✅ AC9: example (a) — 1 Gemsinger Miner vs 2 Grubgrabber Miners: enemy owns the mine, enemy gets 4, you get 1 (+2 underdog)
 - ✅ AC9: one crystal type — every card costs plain crystals, Flow is a single number
-- ✅ AC9: example (b) — 2 vs 2 tie: mine is neutral, each side gets the full 4
+- ❌ AC9: example (b) — 2 vs 2 tie: mine is neutral, each side gets the full 4
 - ✅ AC9: mining at an enemy-owned mine pays half — Miner 1, Fighter 0; own or neutral pays full
 - ✅ AC9: examples (c) and (d) — pool is set to flow, unspent crystals last through the enemy turn
 - ✅ AC9: example (e) — the pool never goes above 16
@@ -73,7 +76,7 @@
 - ✅ AC25: tutorial steps start at summon and advance after a back-row summon
 - ✅ AC26: printed creature Health is at most 6
 - ✅ AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 for 1
-- ✅ AC27: summoning spends exactly the new costs
+- ❌ AC27: summoning spends exactly the new costs
 - ✅ AC28: phase banner appears when a phase begins
 - ✅ AC28: auto-skipped phases show no banner; ENEMY TURN does
 - ✅ AC29: moves left ignores Instants, Crystal cards and the Miner swap
@@ -88,7 +91,7 @@
 - ✅ AC36: flow preview, mine ring numbers and mine info
 - ✅ AC38: swapping places with your own creature uses only the dragged creature's action
 - ✅ AC37: the confirm pop-up sits above the countdown
-- ✅ AC40: 13 x 7 board; 3 random, mirrored mines from the seed; fixed tutorial layout
+- ✅ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
 - ✅ AC41: the moves pop-up names miners that have not mined
 - ✅ AC42: Ranged creatures show the bow icon on the board and in the hand
 - ✅ AC45: Miner names, roles and badges
@@ -157,27 +160,48 @@
 - ✅ AC97: card reveals never block the game and can be pinned
 - ✅ AC98: tapping a creature shows its card and changes nothing
 - ✅ AC99: the Card pop-ups switch skips reveals but never effects, and is remembered
-- ❌ AC100: spells play step by step and nothing vanishes without a cause
+- ✅ AC100: spells play step by step and nothing vanishes without a cause
 - ✅ AC101: Blastrat Sapper carries a bomb: drop, KA-BOOM, then 1 damage to the adjacent enemy
 - ✅ AC102: the Respond pop-up only lists playable options
 - ✅ AC106: zoom in, drag-to-attack still works, Re-center resets
 - ✅ AC107: Deck Builder logo, smart search and cards per row
 - ✅ AC108: title screen uses the painted cavern background with the logo, without errors
+- ✅ AC109: Strongholds stand in the corners: player (7,2), enemy (1,12)
+- ✅ AC110: random mines are always corner-mirrored, fair and away from both Strongholds
+- ✅ AC111: decks of 50 to 100 cards and at most 20 Crystal cards
+- ✅ AC112: nine legal starter decks: Warband, Arcane Hoard and Horde for each faction
+- ✅ AC113: matches use the chosen starter decks; the opponent deck can be any of the three
+- ✅ AC114: the computer plays the Warband style to the end of a match
+- ✅ AC114: the computer plays the Arcane Hoard style to the end of a match
+- ✅ AC114: the computer plays the Horde style to the end of a match
 
 ## Failures
 
 ```
-✗ AC100: spells play step by step and nothing vanishes without a cause
-Error: expect(received).toBeUndefined()
+✗ AC9: example (b) — 2 vs 2 tie: mine is neutral, each side gets the full 4
+Error: expect(received).toBe(expected) // Object.is equality
 
-Received: {"ale": 0, "attack": 2, "blinkUsed": false, "bubble": false, "cardId": "goblin-scrapper", "col": 3, "hasAttacked": false, "hasMined": false, "hasMoved": false, "health": 1, "lockedUntil": 0, "maxHealth": 4, "minedMine": null, "movedDistance": 0, "owner": "opponent", "row": 3, "shield": 0, "summonedThisTurn": false, "uid": "u103", "upgrades": {"attack": 0, "health": 0}}
+Expected: true
+Received: false
 
-  3315 |   await clearFx(page);
-  3316 |   await castOrb(page, 3, 3);
-> 3317 |   expect(at(await getState(page), 3, 3)).toBeUndefined();
-       |                                          ^
-  3318 |   let log = await fxLog(page);
-  3319 |   const e = idx(log, (x) => x.kind === 'effect' && x.cardId === 'fireball');
-  3320 |   const i = idx(log, (x) => x.kind === 'impact', e);
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:3317:42
+  331 |   expect((await legal(page)).some((a) => a.type === 'cast' && a.uid === bc)).toBe(true);
+  332 |   const g = s.players.player.hand.filter((c) => c.cardId === 'goblin-scrounger').map((c) => c.uid);
+> 333 |   for (let i = 0; i < 4; i++) expect((await act(page, { type: 'summon', uid: g[i], row: 7, col: i + 1 })).ok).toBe(true); // 1 each (Grubnak minimum 1)
+      |                                                                                                               ^
+  334 |   expect((await getState(page)).players.player.crystals).toBe(0);
+  335 |   expect((await act(page, { type: 'summon', uid: g[4], row: 7, col: 5 })).ok).toBe(false);
+  336 | });
+✗ AC27: summoning spends exactly the new costs
+Error: shieldbeard
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+  1275 |   const steps = [['dwarf-miner', 1, 29], ['shieldbeard', 2, 22], ['axe-thrower', 3, 16], ['ram-rider', 5, 5]];
+  1276 |   for (const [id, col, left] of steps) {
+> 1277 |     expect((await act(page, { type: 'summon', uid: handUid(s, 'player', id), row: 7, col })).ok, id).toBe(true);
+       |                                                                                                      ^
+  1278 |     s = await getState(page);
 ```
