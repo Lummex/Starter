@@ -25,3 +25,7 @@ Everything in the game is made in code or generated for this project. There are 
 
 ## Retired fonts
 - **Nunito** (https://fonts.google.com/specimen/Nunito, SIL OFL 1.1) was the interface font in rounds 1–3. It is no longer shipped; Cinzel and Tinos replaced it in round 4.
+
+## Round 5b additions
+- `public/art/ui/ruby-heart.png`: glossy ruby heart (no text). Drawn in code (SVG rendered with headless Chromium by `tools/make-ruby-heart.mjs`); original work, no outside asset and no image-API call.
+- Soul-crystal HUD gems and the bank-building icon are inline SVG / emoji drawn in code. Painted sky and mountains are generated on a canvas in `src/ui/scene.ts`.

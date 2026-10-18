@@ -18,6 +18,9 @@ export interface BoardView {
   cellRect(row: number, col: number): Rect;
   resize(): void;
   setCamera(c: { zoom: number; x: number; y: number }): void;
+  screenRects(): any;
+  setFlowMode(m: string): void;
+  pulseFlow(side: string): void;
   emote(side: 'player' | 'opponent', kind: 'cheer' | 'groan' | 'flinch' | 'cast'): void;
   poke(uid: string): string | null;
   retreat(side: 'player' | 'opponent'): void;
@@ -27,6 +30,23 @@ export interface BoardView {
 
 const SYMBOL: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
 const hexOf = (id: string | null) => (id && id !== 'white' ? COLORS[id].hex : COLORS.neutral.hex);
+const CMD_H = 2.4, CREATURE_H = 1.1;
+/** Height of the solid meshes in a group (sprites, beams and transparent effects ignored), in world units. */
+function measureBox(o: THREE.Object3D): THREE.Box3 {
+  const b = new THREE.Box3();
+  o.updateMatrixWorld(true);
+  o.traverse((m: any) => {
+    if (!m.isMesh || m.name === 'bomb-spark' || (m.material && m.material.transparent && m.material.opacity < 0.5)) return;
+    let p: THREE.Object3D | null = m, skip = false;
+    while (p) { if (p.name === 'bomb' || p.name === 'acting-ring') skip = true; p = p.parent; }
+    if (!skip) b.expandByObject(m);
+  });
+  return b;
+}
+function measureHeight(o: THREE.Object3D): number {
+  const b = measureBox(o);
+  return b.isEmpty() ? 0 : b.max.y - Math.max(b.min.y, 0);
+}
 const world = (row: number, col: number) => new THREE.Vector3(col - (BW + 1) / 2, 0, row - (BH + 1) / 2);
 
 const symCache: Record<string, THREE.Texture> = {};
@@ -148,8 +168,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   container.prepend(canvas);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x15101c, 0.012);
-  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+  scene.fog = new THREE.FogExp2(0x3a2840, 0.014);
+  const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 400);
   // dark moody base light; the glowing mines are the main light sources, cool rim light keeps creatures readable
   scene.add(new THREE.HemisphereLight(0x8a8cba, 0x2a2030, 1.3));
   const sun = new THREE.DirectionalLight(0xc8d0ff, 1.6);
@@ -162,10 +182,34 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   rim.position.set(3, 4, -8);
   scene.add(rim);
 
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 60), new THREE.MeshStandardMaterial({ map: darkGround(), roughness: 1, color: 0x9a9aa0 }));
+  const gtex = darkGround();
+  gtex.wrapS = gtex.wrapT = THREE.MirroredRepeatWrapping;
+  gtex.repeat.set(5, 2);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 40), new THREE.MeshStandardMaterial({ map: gtex, roughness: 1, color: 0xb0a8a8 }));
   ground.rotation.x = -Math.PI / 2;
+  ground.position.z = 15.2;
   ground.receiveShadow = true;
   scene.add(ground);
+  // painted dusk sky and distant mountains behind the far side (fills every pixel above the board)
+  {
+    const c = document.createElement('canvas');
+    c.width = 1024; c.height = 256;
+    const g = c.getContext('2d')!;
+    const sk = g.createLinearGradient(0, 0, 0, 256);
+    sk.addColorStop(0, '#2a2358'); sk.addColorStop(0.4, '#7a4a78'); sk.addColorStop(0.72, '#f0905a'); sk.addColorStop(1, '#6a3f50');
+    g.fillStyle = sk; g.fillRect(0, 0, 1024, 256);
+    const peaks = (base: number, amp: number, col: string, seed: number) => {
+      g.fillStyle = col; g.beginPath(); g.moveTo(0, 256);
+      for (let x = 0; x <= 1024; x += 16) g.lineTo(x, base - amp * (0.5 + 0.5 * Math.sin(x * 0.011 + seed) * Math.cos(x * 0.027 + seed * 2)) - ((x * 7 + seed * 13) % 23));
+      g.lineTo(1024, 256); g.closePath(); g.fill();
+    };
+    peaks(190, 80, '#6a5a88', 1); peaks(220, 55, '#46385f', 4);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(300, 24), new THREE.MeshBasicMaterial({ map: t, fog: false }));
+    wall.position.set(0, 9, -4.8);
+    scene.add(wall);
+    scene.background = new THREE.Color(0x2a2358);
+  }
   scene.add(borderDecor(BW, BH, low));
 
   let composer: EffectComposer | null = null;
@@ -201,8 +245,60 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     scene.add(embers);
   }
 
+  // Round 5b: soul crystal flow particles (mines stream into their owner's Stronghold; neutral mines swirl)
+  const FN = 16;
+  let flowMode = (() => { try { return localStorage.getItem('oreheart.flow') || ''; } catch { return ''; } })() || (low ? 'reduced' : 'on');
+  const pulseAt: Record<string, number> = { player: 0, opponent: 0 };
+  const flowGeo = new THREE.BufferGeometry();
+  flowGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(CONFIG.mineCount * FN * 3), 3));
+  flowGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(CONFIG.mineCount * FN * 3), 3));
+  const flowMat = new THREE.PointsMaterial({ size: 0.17, vertexColors: true, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, map: (() => { const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d')!; const gr = g.createRadialGradient(16, 16, 1, 16, 16, 15); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,0.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); return new THREE.CanvasTexture(c); })() });
+  const flowPts = new THREE.Points(flowGeo, flowMat);
+  flowPts.frustumCulled = false;
+  flowPts.renderOrder = -1;
+  scene.add(flowPts);
+  const flowOwner: string[] = [];
+  const flowCol: Record<string, THREE.Color> = { player: new THREE.Color(0x66ccff), opponent: new THREE.Color(0xff5a4a), neutral: new THREE.Color(0xe8e8ff) };
+  const bez = new THREE.Vector3();
+  function updateFlow(now: number) {
+    const n = flowMode === 'off' ? 0 : flowMode === 'reduced' ? 6 : FN;
+    flowPts.visible = n > 0;
+    if (!n) return;
+    const pos = flowGeo.getAttribute('position') as THREE.BufferAttribute, col = flowGeo.getAttribute('color') as THREE.BufferAttribute;
+    const t = now / 1000;
+    let pulse = 0;
+    for (const sd of ['player', 'opponent']) pulse = Math.max(pulse, 1 - Math.min(1, (now - pulseAt[sd]) / 1000));
+    flowMat.size = 0.17 + pulse * 0.1;
+    mines.forEach((m, mi) => {
+      const owner = flowOwner[mi] || 'neutral';
+      const a = m.group.position;
+      const dest = owner === 'neutral' ? null : cmd[owner].group.position;
+      const c = flowCol[owner];
+      for (let i = 0; i < FN; i++) {
+        const k = mi * FN + i;
+        if (i >= n) { pos.setXYZ(k, 0, -50, 0); continue; }
+        if (dest) {
+          const u = (t * 0.32 + i / n) % 1;
+          const sx = a.x, sy = 1.5, sz = a.z, ex = dest.x, ey = CMD_H * 0.55, ez = dest.z;
+          const cx = (sx + ex) / 2, cy = 3.4, cz = (sz + ez) / 2;
+          const w = 1 - u;
+          bez.set(w * w * sx + 2 * w * u * cx + u * u * ex, w * w * sy + 2 * w * u * cy + u * u * ey, w * w * sz + 2 * w * u * cz + u * u * ez);
+          bez.x += Math.sin(t * 3 + i) * 0.06; bez.z += Math.cos(t * 3 + i * 1.7) * 0.06;
+          pos.setXYZ(k, bez.x, bez.y, bez.z);
+          const fade = Math.min(1, u * 6, (1 - u) * 4) * (0.8 + pulse * 0.6);
+          col.setXYZ(k, c.r * fade, c.g * fade, c.b * fade);
+        } else {
+          const ang = t * 1.1 + (i / n) * Math.PI * 2, r = 0.38 + 0.12 * Math.sin(t * 1.7 + i);
+          pos.setXYZ(k, a.x + Math.cos(ang) * r, 1.45 + 0.25 * Math.sin(t * 1.3 + i * 2) + (i % 3) * 0.12, a.z + Math.sin(ang) * r);
+          col.setXYZ(k, c.r * 0.8, c.g * 0.8, c.b * 0.8);
+        }
+      }
+    });
+    pos.needsUpdate = true; col.needsUpdate = true;
+  }
+
   // strongholds + commanders
-  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null };
+  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null };
   const cmd: Record<string, Cmd> = {};
   for (const side of ['player', 'opponent'] as const) {
     const g = new THREE.Group();
@@ -210,7 +306,6 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     g.position.copy(p);
     const body = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 12), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
     const fig = new THREE.Group();
-    g.scale.setScalar(1.4);
     scene.add(g);
     cmd[side] = { group: g, keep: null, fig, grub: null, body, emote: null, faction: '', id: '', retreat: null };
   }
@@ -236,6 +331,18 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     if (side === 'opponent') cm.fig.rotation.y = Math.PI;
     cm.group.add(cm.fig);
     cm.faction = faction; cm.id = id;
+    flowCol[side] = new THREE.Color(hexOf(FACTIONS[faction].crystal)).lerp(new THREE.Color(0xffffff), 0.25);
+    // Round 5b: Commander + Stronghold about 2.4 spaces tall, feet to head
+    cm.group.scale.setScalar(1);
+    cm.group.updateMatrixWorld(true);
+    const bx = measureBox(cm.group), nat = bx.isEmpty() ? 0 : bx.max.y - Math.max(bx.min.y, 0);
+    if (nat > 0.5) {
+      // tall and narrow: 2.4 spaces high, but still inside its one space (about 1.3 wide)
+      const k = CMD_H / nat, wide = Math.max(bx.max.x - bx.min.x, bx.max.z - bx.min.z, 0.1);
+      const sxz = Math.min(k, 1.3 / wide);
+      cm.group.scale.set(sxz, k, sxz);
+    }
+    cm.baseK = cm.group.scale.y;
   }
 
   // creatures
@@ -306,6 +413,12 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       g.add(bomb);
     }
     (g as any).userData.bomb = hasBomb;
+    // Round 5b: every creature stands about 1.1 spaces tall
+    g.scale.setScalar(1);
+    g.updateMatrixWorld(true);
+    const nat = measureHeight(g);
+    if (nat > 0.05) baseScale = (CREATURE_H / nat) * (card.rarity === 'Collector' ? 1.1 : 1);
+    g.scale.setScalar(baseScale);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 6, 24), ringMat());
     ring.name = 'acting-ring';
     ring.rotation.x = Math.PI / 2;
@@ -325,6 +438,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       if (cr.ctl === s.color) return;
       const first = cr.ctl === undefined;
       cr.ctl = s.color;
+      flowOwner[i] = s.controller || 'neutral';
       cr.art.recolor(hexOf(s.color));
       if (!first) cr.art.burst();
       if (cr.sprite) cr.art.group.remove(cr.sprite);
@@ -407,47 +521,88 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   const cam = { zoom: 1, x: 0, y: 0 };
-  const YAW = 0;
+  // Round 5b: the owner's camera fit (tilt 51, fov 48, zoom 107 %, 16 % sky, board up 12 % and right 1 %, 2 % bottom margin)
+  const CAMN = { tilt: 51, fov: 48, zoom: 107, sky: 16, hand: 2, panX: 0.02, panY: 0.24 };
+  const keyPts: THREE.Vector3[] = [];
+  {
+    const hx = BW / 2, hz = BH / 2;
+    for (const [x, z] of [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]]) keyPts.push(new THREE.Vector3(x, 0, z));
+    for (const side of ['player', 'opponent']) { const p = world(SHP[side][0], SHP[side][1]); keyPts.push(new THREE.Vector3(p.x, CMD_H, p.z)); }
+  }
+    /** Commander + Stronghold silhouette: the one-space footprint at the feet and the narrower head top at 2.4 spaces. */
+  const figPts = (side: string): THREE.Vector3[] => {
+    const p = world(SHP[side][0], SHP[side][1]), out: THREE.Vector3[] = [];
+    for (const [dx, dz] of [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]) out.push(new THREE.Vector3(p.x + dx, 0, p.z + dz));
+    for (const [dx, dz] of [[-0.3, -0.3], [0.3, -0.3], [0.3, 0.3], [-0.3, 0.3]]) out.push(new THREE.Vector3(p.x + dx, CMD_H, p.z + dz));
+    return out;
+  };
+  let vw = 390, vh = 420;
   function resize() {
-    const w = container.clientWidth || 390, h = container.clientHeight || 420;
-    renderer.setSize(w, h, false);
-    composer?.setSize(w, h);
-    bloomPass?.resolution.set(Math.max(64, w / 2), Math.max(64, h / 2));
+    const W = vw = container.clientWidth || 390, H = vh = container.clientHeight || 420;
+    renderer.setSize(W, H, false);
+    composer?.setSize(W, H);
+    bloomPass?.resolution.set(Math.max(64, W / 2), Math.max(64, H / 2));
     canvas.style.width = '100%';
     canvas.style.height = '100%';
-    camera.aspect = w / h;
-    const el = (60 * Math.PI) / 180;
-    const y0 = 0.085 * h, y1 = 0.99 * h;
-    const hx = BW / 2 + 0.05, hz = BH / 2 + 0.05;
-    const corners = [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]];
-    const fit = (dist: number) => {
-      camera.clearViewOffset();
-      camera.zoom = 1;
-      camera.position.set(Math.sin(YAW) * Math.cos(el) * dist, Math.sin(el) * dist, Math.cos(YAW) * Math.cos(el) * dist);
-      camera.lookAt(0, 0, 0);
-      camera.updateProjectionMatrix();
-      camera.updateMatrixWorld();
-      let top = 1e9, bot = -1e9, left = 1e9, right = -1e9;
-      for (const [x, z] of corners) {
-        const v = new THREE.Vector3(x, 0, z).project(camera);
-        const sx = (v.x * 0.5 + 0.5) * w, sy = (-v.y * 0.5 + 0.5) * h;
-        top = Math.min(top, sy); bot = Math.max(bot, sy); left = Math.min(left, sx); right = Math.max(right, sx);
-      }
-      return { top, bot, left, right };
+    const S = CAMN;
+    const place = (d: number) => {
+      const t = (S.tilt * Math.PI) / 180;
+      camera.clearViewOffset(); camera.zoom = 1;
+      camera.fov = S.fov; camera.aspect = W / H; camera.updateProjectionMatrix();
+      camera.position.set(0, Math.sin(t) * d, Math.cos(t) * d);
+      camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
     };
-    let lo = 4, hi = 80;
-    for (let i = 0; i < 22; i++) {
-      const mid = (lo + hi) / 2;
-      const f = fit(mid);
-      if (f.bot - f.top <= y1 - y0 && f.right - f.left <= w) hi = mid; else lo = mid;
-    }
-    const f = fit(hi);
-    // slide the view so the enemy Stronghold row sits at the top edge
-    const baseX = -((w - (f.right - f.left)) / 2 - f.left), baseY = -(y0 - f.top);
-    camera.setViewOffset(w, h, baseX - cam.x, baseY - cam.y, w, h);
+    const ext = (d: number) => {
+      place(d);
+      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+      for (const p of keyPts) { const q = p.clone().project(camera); x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); }
+      return { x0, x1, y0, y1 };
+    };
+    // solve(): the owner's fit for a given bottom margin; returns the distance and the image shift
+    const solve = (hand: number) => {
+      const avail = 2 - (2 * S.sky) / 100 - (2 * hand) / 100;
+      let lo = 4, hi = 300;
+      for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2, e = ext(m); if (e.x1 - e.x0 <= 1.96 && e.y1 - e.y0 <= avail) hi = m; else lo = m; }
+      const shiftOf = (dd: number) => { const ee = ext(dd); return { ee, ddy: -1 + (2 * hand) / 100 - ee.y0, ddx: -(ee.x0 + ee.x1) / 2 }; };
+      const nx = (v: THREE.Vector3, sh: { ddx: number; ddy: number }) => { const q = v.clone().project(camera); return [q.x + sh.ddx + S.panX, q.y + sh.ddy + S.panY]; };
+      const inside = (dd: number) => {
+        const sh = shiftOf(dd);
+        for (const q of [...figPts('player'), ...figPts('opponent')]) { const [x, y] = nx(q, sh); if (x < -0.995 || x > 0.995 || y < -0.995 || y > 0.995) return false; }
+        return true;
+      };
+      // 107 % zoom (the owner's look crops the board's side edges slightly), backing off only if a Commander would not be whole
+      let dd = hi / (S.zoom / 100);
+      for (let i = 0; i < 120 && !inside(dd); i++) dd *= 1.006;
+      const sh = shiftOf(dd);
+      // pixel box of the player's Commander (to keep the resting hand off him)
+      let bx1 = -1e9, by1 = -1e9;
+      for (const q of figPts('player')) { const [x, y] = nx(q, sh); bx1 = Math.max(bx1, (x * 0.5 + 0.5) * W); by1 = Math.max(by1, (-y * 0.5 + 0.5) * H); }
+      return { d: dd, e: sh.ee, dx: sh.ddx, dy: sh.ddy, bx1, by1 };
+    };
+    // the resting hand starts 14 % from the left and is ~23 % of the height tall (≈4 % of it below the edge)
+    const handTop = H * (1 - 0.23 + 0.01), handLeft = 0.14 * W;
+    let fit = solve(S.hand);
+    for (let h2 = S.hand + 1; h2 <= 16 && fit.bx1 > handLeft && fit.by1 > handTop - 4; h2 += 1) fit = solve(h2);
+    const { d: _d, dx, dy } = fit;
+    void _d;
+    camera.setViewOffset(W, H, -(dx + S.panX) * (W / 2) - cam.x, (dy + S.panY) * (H / 2) - cam.y, W, H);
     camera.zoom = cam.zoom;
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
+  }
+  function screenRects() {
+    const W = vw, H = vh;
+    const box = (pts: THREE.Vector3[]) => {
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (const p of pts) { const v = p.clone().project(camera); const sx = (v.x * 0.5 + 0.5) * W, sy = (-v.y * 0.5 + 0.5) * H; x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy); }
+      return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+    };
+    const cmdBox = (side: string) => box(figPts(side));
+    const hx = BW / 2, hz = BH / 2;
+    // the board box is what is visible: the owner's 107 % zoom crops the outer side edges a little, so it is clipped to the window
+    const bb = box([new THREE.Vector3(-hx, 0, -hz), new THREE.Vector3(hx, 0, -hz), new THREE.Vector3(hx, 0, hz), new THREE.Vector3(-hx, 0, hz)]);
+    const cx0 = Math.max(0, bb.x), cx1 = Math.min(W, bb.x + bb.width);
+    return { playerCommander: cmdBox('player'), opponentCommander: cmdBox('opponent'), board: { x: cx0, y: bb.y, width: cx1 - cx0, height: bb.height } };
   }
 
   function cellRect(row: number, col: number): Rect {
@@ -598,6 +753,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       }
     }
     mines.forEach((m) => m.update(now));
+    updateFlow(now);
     if (embers) { const a = embers.geometry.getAttribute('position') as THREE.BufferAttribute; for (let i = 0; i < a.count; i++) { let y = a.getY(i) + 0.004; if (y > 2.4) y = 0; a.setY(i, y); a.setX(i, a.getX(i) + Math.sin(now / 900 + i) * 0.001); } a.needsUpdate = true; }
     renderer.info.reset();
     if (composer) composer.render(); else renderer.render(scene, camera);
@@ -627,7 +783,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   return {
-    is3D: true, setState, cellRect, resize, setCamera(c) { Object.assign(cam, c); resize(); }, emote, poke, retreat, stats,
+    is3D: true, setState, cellRect, resize, setCamera(c) { Object.assign(cam, c); resize(); }, screenRects, setFlowMode(m) { flowMode = m; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);
@@ -647,6 +803,9 @@ export function createFlatView(container: HTMLElement): BoardView {
     is3D: false,
     setState() {},
     setCamera(c) { Object.assign(cam, c); },
+    screenRects: () => ({ playerCommander: { x: 0, y: 0, width: 0, height: 0 }, opponentCommander: { x: 0, y: 0, width: 0, height: 0 }, board: { x: 0, y: 0, width: 0, height: 0 } }),
+    setFlowMode() {},
+    pulseFlow() {},
     cellRect(row, col) {
       const w = container.clientWidth || 390, h = container.clientHeight || 420;
       const cs = Math.min((h * 0.87) / BH, w / BW);

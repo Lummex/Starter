@@ -140,7 +140,7 @@ export function makeMine(low: boolean, idx: number): MineArt {
     ...(low ? [] : ([[0.28, 0.26, 0.5, 0.13, 0.35], [-0.36, -0.12, 0.45, 0.12, -0.4]] as [number, number, number, number, number][])),
   ];
   for (const [x, z, h, r, tilt] of spec) {
-    const m = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.15, metalness: 0.2, transparent: true, opacity: 0.92, flatShading: true });
+    const m = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.7, roughness: 0.15, metalness: 0.2, transparent: true, opacity: 0.92, flatShading: true });
     const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.2, r, h, 6, 1), m); // faceted hexagonal shard
     mesh.position.set(x, h * 0.5, z);
     mesh.rotation.z = tilt * 0.4; mesh.rotation.x = tilt * 0.3;
@@ -166,7 +166,7 @@ export function makeMine(low: boolean, idx: number): MineArt {
   group.add(base);
   let light: THREE.PointLight | null = null, beam: THREE.Mesh | null = null, sparks: THREE.Points | null = null;
   if (!low) {
-    light = new THREE.PointLight(0xffffff, 7, 6.5, 1.4);
+    light = new THREE.PointLight(0xffffff, 12, 7.5, 1.4);
     light.position.y = 1.0;
     group.add(light);
     beam = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.42, 2.6, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.09, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
@@ -191,7 +191,7 @@ export function makeMine(low: boolean, idx: number): MineArt {
     burst() { burstT = performance.now(); },
     update(now) {
       const w = now / 420 + idx;
-      mats.forEach((m, i) => (m.emissiveIntensity = 0.55 + Math.sin(w + i) * 0.15));
+      mats.forEach((m, i) => (m.emissiveIntensity = 0.7 + Math.sin(w + i) * 0.15));
       if (sparks) { sparks.rotation.y = now / 2200 + idx; sparks.position.y = Math.sin(now / 900 + idx) * 0.06; }
       if (beam) (beam.material as THREE.MeshBasicMaterial).opacity = 0.08 + Math.sin(w * 0.7) * 0.03;
       if (burstT) {

@@ -112,6 +112,7 @@ export function ornament(): El {
   o.innerHTML = ORNAMENT + ['tl', 'tr', 'bl', 'br'].map((k) => `<i class="orn orn-${k}"></i>`).join('') + '<i class="orn-mid orn-top"></i><i class="orn-mid orn-bot"></i>';
   return o;
 }
+const svgEl = (tag: string, attrs: Record<string, string> = {}): El => { const e = document.createElementNS('http://www.w3.org/2000/svg', tag) as unknown as El; for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
 export const btn = (label: string, cls = '', onclick?: (e: Event) => void, attrs: Record<string, any> = {}) => h('button', { type: 'button', class: 'btn ' + cls, onclick, ...attrs }, label);
 
 export class App {
@@ -212,13 +213,26 @@ export class App {
     return fs;
   }
 
+  /** Flow particles (R5b.3): On / Reduced / Off, remembered; Reduced is the default on slow devices. */
+  flowGroup(): El {
+    const cur = localStorage.getItem('oreheart.flow') || (this.low ? 'reduced' : 'on');
+    const fs = h('fieldset', { class: 'display-mode flow-mode', role: 'radiogroup', 'aria-label': 'Flow particles' }, h('legend', {}, 'Flow particles'));
+    for (const [v, label] of [['on', 'On'], ['reduced', 'Reduced'], ['off', 'Off']]) {
+      const id = `fp-${v}-${Math.random().toString(36).slice(2, 6)}`;
+      const inp = h('input', { type: 'radio', name: 'flow-particles', id, value: v, ...(cur === v ? { checked: true } : {}) }) as HTMLInputElement;
+      inp.addEventListener('change', () => { if (inp.checked) { localStorage.setItem('oreheart.flow', v); this.view?.setFlowMode(v); } });
+      fs.append(h('span', { class: 'dm-opt' }, inp, h('label', { for: id }, label)));
+    }
+    return fs;
+  }
+
   popupsSwitch(): El {
     const label = 'Card pop-ups';
-    const b = h('button', { type: 'button', class: 'sw-btn', role: 'switch', 'aria-label': label, 'aria-checked': String(this.popups), title: label }, h('span', { 'aria-hidden': 'true' }, '🃏'), h('span', { class: 'sw-t', 'aria-hidden': 'true' }, this.popups ? 'ON' : 'OFF'));
+    const b = h('button', { type: 'button', class: 'sw-btn', role: 'switch', 'aria-label': label, 'aria-checked': String(this.popups), title: label }, h('span', { class: 'sw-t', 'aria-hidden': 'true' }, this.popups ? 'Pop-ups On' : 'Pop-ups Off'));
     b.addEventListener('click', () => {
       localStorage.setItem('oreheart.popups', this.popups ? 'off' : 'on');
       b.setAttribute('aria-checked', String(this.popups));
-      (b.querySelector('.sw-t') as El).textContent = this.popups ? 'ON' : 'OFF';
+      (b.querySelector('.sw-t') as El).textContent = this.popups ? 'Pop-ups On' : 'Pop-ups Off';
     });
     return b;
   }
@@ -288,7 +302,7 @@ export class App {
     this.clear();
     this.root.append(h('main', { class: 'screen center', 'data-screen': 'settings' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), btn('Back', '', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.flowGroup(), this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), btn('Back', '', () => this.showMenu()))));
   }
 
   showSetup() {
@@ -414,10 +428,10 @@ export class App {
     const s = h('main', { class: 'screen howto', 'data-screen': 'rules' },
       h('h1', { class: 'section cinzel' }, 'Rules'),
       sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
-      sec('The Board', 'A hidden grid 13 spaces wide and 7 deep. Your Stronghold sits in the bottom-left corner (row 7, column 2) and the enemy Stronghold in the top-right corner (row 1, column 12); the mines mirror from corner to corner. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
+      sec('The Board', 'Your crystal (Flow on the gem, Bank below it) is at the top-left, the enemy crystal at the top, the phase tracker at the top-right, your hand along the bottom and your deck at the bottom-right. A hidden grid 13 spaces wide and 7 deep. Your Stronghold sits in the bottom-left corner (row 7, column 2) and the enemy Stronghold in the top-right corner (row 1, column 12); the mines mirror from corner to corner. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
       sec('Decks and auto-skip', 'The Decks screen on the main menu is a testing deck builder: every card is unlocked and you can save up to 5 decks of 50 to 100 cards (Rare, Ultra Rare and Collector cards max 3 copies, at most 20 Crystal cards). Pick a saved deck or the starter deck before a match. Your Deploy phase ends by itself when no card in your hand can be both paid for and placed, and your Action phase ends by itself when no creature can move, attack or mine.', crystals),
       sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
-      sec('Mulligan and Camera', 'Before the match you may mulligan up to 3 times: tap cards, then Redraw Selected. Your first mulligan redraws as many cards as you swap; each later one redraws one fewer (5, then 4, then 3 cards). On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and press Re-center to reset. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
+      sec('Mulligan and Camera', 'Before the match you may mulligan up to 3 times: tap cards, then Redraw Selected. Your first mulligan redraws as many cards as you swap; each later one redraws one fewer (5, then 4, then 3 cards). On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and choose Recenter in the Menu (right side) to reset. The Menu also holds Last turn, Mute, the Card pop-ups switch and Surrender. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
       sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (one per round, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
       sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
@@ -514,21 +528,38 @@ export class App {
     this.clear();
     const r = this.r;
     const fcol = FACTIONS[this.game.state.players.player.faction].crystal;
-    r.crFlow = h('span', { class: 'cr flow ' + fcol, role: 'img', 'aria-label': 'Your Flow crystals' }, '⛏️ 0');
-    r.crBank = h('span', { class: 'cr bank ' + fcol, role: 'img', 'aria-label': 'Your Bank crystals' }, '🏦 0');
+    void fcol;
+    const crystalHud = (side: 'mine' | 'theirs') => {
+      const you = side === 'mine';
+      const gem = svgEl('svg', { class: 'cry-gem', viewBox: '0 0 100 130', role: 'img', 'aria-label': you ? 'Your soul crystal' : 'Enemy soul crystal' });
+      const gid = 'cg' + side;
+      gem.innerHTML = `<defs><linearGradient id="${gid}a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${you ? '#d8f6ff' : '#ffd0c8'}"/><stop offset=".5" stop-color="${you ? '#3fb4ff' : '#ff4a3a'}"/><stop offset="1" stop-color="${you ? '#1a3f9a' : '#7a1010'}"/></linearGradient><linearGradient id="${gid}b" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${you ? '#8fe0ff' : '#ff9a88'}"/><stop offset="1" stop-color="${you ? '#12306e' : '#5a0a0a'}"/></linearGradient><filter id="${gid}g" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="5"/></filter></defs><polygon points="50,4 88,40 76,118 50,126 24,118 12,40" fill="${you ? '#4fc8ff' : '#ff5a4a'}" filter="url(#${gid}g)" opacity=".7"/><polygon points="50,4 88,40 50,52" fill="url(#${gid}a)"/><polygon points="50,4 12,40 50,52" fill="url(#${gid}b)" opacity=".9"/><polygon points="12,40 50,52 24,118" fill="url(#${gid}a)" opacity=".85"/><polygon points="88,40 50,52 76,118" fill="url(#${gid}b)"/><polygon points="50,52 24,118 50,126 76,118" fill="url(#${gid}a)" opacity=".95"/><polyline points="50,4 50,52 50,126" fill="none" stroke="#ffffff88" stroke-width="1.5"/><polygon points="40,18 52,14 46,34" fill="#fff" opacity=".7"/>`;
+      const flow = h('span', { class: 'cry-flow', 'aria-label': you ? 'Your Flow crystals' : 'Enemy Flow crystals' }, '0');
+      const bankN = h('span', { class: 'cry-bank-n' }, '0');
+      const bank = h('span', { class: 'cry-bank', 'aria-label': you ? 'Your Bank crystals' : 'Enemy Bank crystals' }, h('span', { class: 'bank-ico', 'aria-hidden': 'true' }, '🏛️'), bankN);
+      const name = h('span', { class: 'cry-name' }, '');
+      const next = h('span', { class: 'cry-next', 'aria-label': you ? 'Your income next turn' : 'Enemy income next turn' }, 'Next +0');
+      const el = h('div', { class: 'crystal-hud ' + side, role: 'group', 'aria-label': you ? 'Your crystal' : 'Enemy crystal' },
+        h('div', { class: 'cry-img' }, gem, flow, bank),
+        h('div', { class: 'cry-text' }, name, h('span', { class: 'cry-word' }, 'Flow'), next));
+      return { el, flow, bank: bankN, name, next };
+    };
+    const yc = crystalHud('mine'), ec = crystalHud('theirs');
+    r.crFlow = yc.flow; r.crBank = yc.bank; r.income = yc.next; r.myName = yc.name;
+    r.eFlow = ec.flow; r.eBank = ec.bank; r.eNext = ec.next; r.eName = ec.name;
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
     r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
-    r.phase.append(h('div', { class: 'ph-turn' }), h('div', { class: 'ph-name' }));
+    r.phase.append(h('div', { class: 'ph-turn' }), h('div', { class: 'ph-steps' }, ...['draw', 'deploy', 'action', 'end'].map((k) => h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k]), ), ), h('div', { class: 'ph-time' }));
+    (r.phase.querySelector('.ph-steps') as El).replaceChildren(...['draw', 'deploy', 'action', 'end'].flatMap((k, i) => (i ? [h('span', { class: 'ph-sep', 'aria-hidden': 'true' }, '›'), h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k])] : [h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k])])));
     r.timer = h('div', { class: 'countdown', role: 'timer', 'aria-label': 'Phase timer', hidden: true }, '10');
     r.board = h('div', { class: 'board', role: 'application', 'aria-label': 'Battlefield' });
     r.fx = h('div', { class: 'fx' });
     r.myHealth = h('div', { class: 'heart mine', role: 'img', 'aria-label': 'Your Commander health' }, '20');
     r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
-    r.income = h('div', { class: 'income', 'aria-label': 'Your income next turn' }, '+0 next turn');
     r.done = btn('Done', 'primary done-btn', () => this.pressDone());
-    r.recenter = btn('Re-center', 'recenter-btn', () => this.resetCam());
+    r.recenter = btn('Recenter', 'recenter-btn', () => { this.resetCam(); this.menuOpen(false); });
     r.swap = btn('Swap for a Miner', 'swap-btn', () => this.startSwap());
     r.swap.hidden = true;
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
@@ -536,24 +567,28 @@ export class App {
     r.handLeft = btn('◀', 'hand-scroll left', () => { this.handScroll = Math.max(0, Math.round(this.handScroll) - 3); this.layoutHand(); }, { 'aria-label': 'Scroll hand left' });
     r.handRight = btn('▶', 'hand-scroll right', () => { this.handScroll = Math.round(this.handScroll) + 3; this.layoutHand(); }, { 'aria-label': 'Scroll hand right' });
     r.handLeft.hidden = true; r.handRight.hidden = true;
-    const menuBtn = btn('Menu', 'menu-btn', () => this.showMatchMenu());
-    const muteLabel = () => (audio.muted ? 'Unmute sound' : 'Mute sound');
-    const muteBtn = btn(muteLabel(), 'mute-btn', () => { audio.setMuted(!audio.muted); muteBtn.textContent = muteLabel(); muteBtn.setAttribute('aria-pressed', String(audio.muted)); if (!audio.muted) audio.play('click'); });
+    const menuBtn = btn('Menu', 'menu-btn', () => { this.menuPinned = !this.menuPinned; this.menuOpen(this.menuPinned); }, { 'aria-expanded': 'false' });
+    const muteBtn = btn('Mute', 'mute-btn', () => { audio.setMuted(!audio.muted); muteBtn.setAttribute('aria-pressed', String(audio.muted)); if (!audio.muted) audio.play('click'); });
     muteBtn.setAttribute('aria-pressed', String(audio.muted));
-    muteBtn.innerHTML = '';
-    muteBtn.append(h('span', { class: 'mute-ico', 'aria-hidden': 'true' }, audio.muted ? '🔇' : '🔊'), h('span', { class: 'sr-only' }, muteLabel()));
-    muteBtn.addEventListener('click', () => { muteBtn.replaceChildren(h('span', { class: 'mute-ico', 'aria-hidden': 'true' }, audio.muted ? '🔇' : '🔊'), h('span', { class: 'sr-only' }, muteLabel())); });
-    r.last = btn('Last turn', 'last-btn', () => this.showLastTurn());
+    r.last = btn('Last turn', 'last-btn', () => { this.menuOpen(false); this.showLastTurn(); });
+    const surrenderBtn = btn('Surrender', 'surrender-btn', () => {
+      this.menuOpen(false);
+      const c: any = this.dialog('Surrender this match?', [h('h2', {}, 'Surrender this match?'),
+        h('div', { class: 'row' }, btn('Yes, surrender', 'danger', () => { c.close(); this.game.act({ type: 'surrender' }); }), btn('Cancel', '', () => c.close()))]);
+    });
+    r.menuPanel = h('div', { class: 'menu-panel', id: 'match-menu-panel', hidden: true }, r.last, muteBtn, this.popupsSwitch(), r.recenter, surrenderBtn);
+    r.menuBtn = menuBtn;
+    r.menuWrap = h('div', { class: 'hud-menu', 'aria-label': 'Match menu', role: 'group' }, menuBtn, r.menuPanel);
+    r.menuWrap.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') this.menuOpen(true); });
+    r.menuWrap.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType === 'mouse' && !this.menuPinned) this.menuOpen(false); });
     r.tip = h('aside', { class: 'tip', 'aria-label': 'Tutorial tip', hidden: true });
-    const crystals = h('div', { class: 'crystals' }, r.crFlow, r.crBank);
     const match = h('main', { class: 'match' },
       r.board,
-      h('div', { class: 'hud hud-left' }, crystals, r.income, r.swap, r.last),
-      h('div', { class: 'hud hud-top' }, r.enemyHand),
-      r.enemyDeck, muteBtn, r.myDeck,
+      yc.el, ec.el,
+      r.enemyHand, r.enemyDeck, r.myDeck,
       r.phase,
-      h('div', { class: 'hud hud-menu' }, menuBtn),
-      h('div', { class: 'hud hud-right' }, r.done, this.popupsSwitch(), r.recenter),
+      r.menuWrap,
+      r.swap, r.done,
       r.tip, r.hand, r.handCount, r.handLeft, r.handRight, r.timer);
     this.root.append(match);
     // board layers
@@ -638,10 +673,37 @@ export class App {
     requestAnimationFrame(() => this.layout());
   }
   onResize = () => { this.layout(); };
+  /** Short title shown; the rest of the full display name stays in the text for screen readers. */
+  setCmdName(el: El, full: string) {
+    if (el.dataset.full === full) return;
+    el.dataset.full = full;
+    const m = full.match(/^(.*?)(,| the )(.*)$/);
+    el.replaceChildren(m ? h('span', {}, m[1]) : full, m ? h('span', { class: 'sr-only' }, m[2] + m[3]) : '' as any);
+  }
+  menuPinned = false;
+  flowKey = '';
+  flowTurn = -1;
+  menuOpen(on: boolean) {
+    const r = this.r;
+    if (!r.menuPanel) return;
+    if (!on) this.menuPinned = false;
+    r.menuPanel.hidden = !on;
+    r.menuBtn.setAttribute('aria-expanded', String(on));
+    r.menuWrap.classList.toggle('open', on);
+  }
+  /** "Done" is shown only during the player's own Deploy/Action phase with priority and no dialog open. */
+  syncDone() {
+    const r = this.r, st = this.game.state;
+    if (!r.done || !st) return;
+    const mine = st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase) && !st.pendingResponse && !this.movesDlg && !this.root.querySelector('.overlay, .dialog');
+    r.done.hidden = !mine;
+    r.done.disabled = !mine;
+  }
 
   // ------------------------------------------------------------ camera zoom and pan (R2.19)
   cam = { zoom: 1, x: 0, y: 0 };
-  getCamera() { return { ...this.cam, panX: this.cam.x, panY: this.cam.y }; }
+  getCamera() { return { ...this.cam, panX: this.cam.x, panY: this.cam.y, tilt: 51, fov: 48, fitZoom: 1.07, sky: 0.16, shiftX: 0.01, shiftY: 0.12 }; }
+  screenRects() { return this.view ? this.view.screenRects() : null; }
   applyCam() {
     const w = (this.r.board as El).clientWidth || 400, hh = (this.r.board as El).clientHeight || 300;
     this.cam.zoom = Math.max(1, Math.min(2.5, this.cam.zoom));
@@ -726,12 +788,12 @@ export class App {
   placeHeart(el: El, side: 'player' | 'opponent') {
     const sh = SH[side];
     const rc = this.view!.cellRect(sh.row, sh.col);
-    const s = Math.max(20, Math.min(54, rc.w * 0.8, rc.h * 1.05));
+    const s = Math.max(28, Math.min(54, rc.w * 0.8, rc.h * 1.05));
     el.dataset.size = String(s);
     el.style.width = s + 'px'; el.style.height = s + 'px';
     el.style.left = rc.x + rc.w / 2 - s / 2 + 'px';
     el.style.top = rc.y + rc.h - s - 1 + 'px';
-    el.style.fontSize = Math.max(10, s * 0.38) + 'px';
+    el.style.fontSize = Math.max(14, s * 0.4) + 'px';
   }
   fitHearts() {
     const r = this.r;
@@ -744,7 +806,7 @@ export class App {
         const hb = el.getBoundingClientRect();
         if (!labels.some((l) => l.width && hb.left < l.right && hb.right > l.left && hb.top < l.bottom && hb.bottom > l.top)) break;
         const w = el.offsetWidth - 3;
-        if (w < 12) break;
+        if (w < 26) break;
         el.style.width = el.style.height = w + 'px';
         el.style.left = el.offsetLeft + 1.5 + 'px';
         el.style.top = el.offsetTop + 3 + 'px';
@@ -877,7 +939,7 @@ export class App {
     const start = Math.round(this.handScroll);
     const shown = Math.min(n, VIS);
     const spacing = shown > 1 ? Math.min(cw * 0.8, (W - cw) / (shown - 1)) : cw;
-    const x0 = (W - (cw + (shown - 1) * spacing)) / 2;
+    const x0 = 0;
     let moved = false;
     cards.forEach((c, i) => {
       const k = i - start;
@@ -921,11 +983,18 @@ export class App {
     r.enemyDeck.style.setProperty('--fill', String(Math.max(0.55, Math.min(1, 0.55 + en.deck.length / 60))));
     r.myDeck.style.setProperty('--fill', String(Math.max(0.55, Math.min(1, 0.55 + me.deck.length / 60))));
     r.enemyHand.classList.toggle('browsing', st.activePlayer === 'opponent' && st.phase !== 'over' && st.phase !== 'mulligan');
-    r.crFlow.textContent = `⛏️ ${me.crystals}`;
-    r.crBank.textContent = `🏦 ${me.bank}`;
-    const nxt = st.phase === 'mulligan' ? 0 : incomePreview(st, 'player');
-    r.crFlow.dataset.flow = nxt ? `+${nxt}` : '';
-    r.income.textContent = `+${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')} next turn`;
+    r.crFlow.textContent = String(me.crystals);
+    r.crBank.textContent = String(me.bank);
+    r.eFlow.textContent = String(en.crystals);
+    r.eBank.textContent = String(en.bank);
+    this.setCmdName(r.myName, COMMANDERS[me.commanderId]?.name || '');
+    this.setCmdName(r.eName, COMMANDERS[en.commanderId]?.name || '');
+    r.income.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')}`;
+    r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;
+    const pm = `${me.crystals}|${en.crystals}`;
+    if (this.flowKey !== pm && this.flowKey !== '' && st.turn !== this.flowTurn) this.view?.pulseFlow(st.activePlayer);
+    if (st.turn !== this.flowTurn) { this.flowTurn = st.turn; this.view?.pulseFlow(st.activePlayer); }
+    this.flowKey = pm;
     // enemy hand arc
     const n = en.hand.length;
     r.enemyHand.replaceChildren();
@@ -938,10 +1007,15 @@ export class App {
     }
     r.enemyHand.append(h('span', { class: 'count' }, String(n)));
     // phase
-    const whose = st.activePlayer === 'player' ? 'YOUR TURN' : 'ENEMY TURN';
+    const whose = st.activePlayer === 'player' ? 'Your turn' : 'Enemy turn';
     r.phase.dataset.side = st.activePlayer === 'player' ? 'you' : 'enemy';
-    (r.phase.querySelector('.ph-turn') as El).textContent = st.phase === 'mulligan' ? 'MULLIGAN' : st.phase === 'over' ? 'MATCH OVER' : whose;
-    (r.phase.querySelector('.ph-name') as El).textContent = st.phase === 'mulligan' || st.phase === 'over' ? '' : PHASE[st.phase];
+    (r.phase.querySelector('.ph-turn') as El).textContent = st.phase === 'mulligan' ? 'Mulligan' : st.phase === 'over' ? 'Match over' : `${whose} · Turn ${st.turn}`;
+    r.phase.querySelectorAll('.ph-step').forEach((el: El) => {
+      const order = ['draw', 'deploy', 'action', 'end'], k = el.dataset.phase!, cur = order.indexOf(st.phase);
+      const here = st.phase === k;
+      if (here) el.setAttribute('aria-current', 'step'); else el.removeAttribute('aria-current');
+      el.classList.toggle('done', cur > order.indexOf(k) && cur >= 0);
+    });
     const key = `${st.turn}|${st.phase}|${st.priority}|${st.pendingResponse ? 1 : 0}`;
     if (key !== this.phaseKey) {
       const phaseChanged = !this.phaseKey || key.split('|').slice(0, 2).join() !== this.phaseKey.split('|').slice(0, 2).join();
@@ -956,7 +1030,7 @@ export class App {
       }
     }
     const mine = st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase) && !st.pendingResponse;
-    r.done.disabled = !mine;
+    this.syncDone();
     const canSwap = mine && st.phase === 'deploy' && this.game.legalActions().some((a: any) => a.type === 'gathererSwap');
     r.swap.hidden = !canSwap;
     if (!canSwap) this.swapping = false;
@@ -1271,6 +1345,9 @@ export class App {
     const left = frozen ? (this.testLeft ?? total) : Math.max(0, Math.ceil((this.deadline - now) / 1000));
     const show = timed && left <= CONFIG.countdownSeconds && !st.pendingResponse;
     r.timer.hidden = !show;
+    const pt = r.phase?.querySelector('.ph-time') as El | null;
+    if (pt) pt.textContent = timed && !st.pendingResponse ? `${left}s left` : '';
+    this.syncDone();
     if (show) { if (r.timer.textContent !== String(left)) audio.play('tick'); r.timer.textContent = String(left); }
     if (!frozen && timed && left <= 0 && !st.pendingResponse) {
       this.deadline = now + total * 1000;
@@ -1365,7 +1442,9 @@ export class App {
     const hidden = st.phase === 'mulligan';
     const costOf = (c: any) => (c.type === 'creature' ? creatureCost(st, 'player', c) : c.type === 'spell' ? spellCost(st, 'player', c) : 0);
     const affordable = (c: any) => (c.type === 'creature' ? tot >= costOf(c) : c.type === 'spell' ? tot >= costOf(c) : true);
-    const key = hidden ? 'x' : me.hand.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId]) + ':' + tunnel).join(',');
+    const playableUids = new Set<string>();
+    if (!hidden && st.priority === 'player') for (const a of this.game.legalActions() as any[]) if (a.uid && a.type !== 'pass' && a.type !== 'done') playableUids.add(a.uid);
+    const key = hidden ? 'x' : me.hand.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId]) + ':' + tunnel + ':' + (playableUids.has(hc.uid) ? 1 : 0)).join(',');
     if (key === this.handKey) return;
     this.handKey = key;
     hand.replaceChildren();
@@ -1373,7 +1452,7 @@ export class App {
     for (const hc of me.hand) {
       const c = CARDS[hc.cardId];
       const cost = costOf(c);
-      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
+      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid)), 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         h('span', { class: 'cid', hidden: true, 'data-card-id': c.id }),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
@@ -1500,7 +1579,7 @@ export class App {
     }
   }
 
-  showMatchMenu() {
+  showMatchMenuOld() {
     const d: any = this.dialog('Menu', [h('h2', {}, 'Menu'), h('div', { class: 'menu-list' },
       btn('Resume', 'primary', () => d.close()),
       btn('Surrender', 'danger', () => {

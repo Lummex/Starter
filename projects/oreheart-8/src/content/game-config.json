@@ -70,8 +70,8 @@
  "boardWidth": 13,
  "boardHeight": 7,
  "mineCount": 3,
- "revealSeconds": 1.5,
- "revealFastSeconds": 0.6,
+ "revealSeconds": 5.5,
+ "revealFastSeconds": 2.75,
  "playerStronghold": {
   "row": 7,
   "col": 2

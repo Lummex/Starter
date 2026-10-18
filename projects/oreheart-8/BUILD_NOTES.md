@@ -346,3 +346,15 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 
 ## Round 5a fix-up
 - New Deck disabled at 5 saved decks; "My decks" group wraps arrows + carousel; "Deck list" group holds heading + rows; search/slider stacked and left-aligned; cards never get a min-height stretch; card lettering keeps a thin dark outline; menu buttons carry an invisible border-image; CREDITS lists the font files.
+
+---
+
+# Round 5b: match screen (owner camera and layout)
+- Camera (`src/ui/scene.ts`): the owner's `place`/`ext` fit code, tilt 51°, FOV 48°, zoom 107 %, sky 16 %, board up 12 % and right 1 %, 2 % bottom margin; live re-fit on resize. `getCamera()` reports tilt/fov/fitZoom/sky/shiftX/shiftY; `screenRects()` reports projected Commander (footprint + head top) and board boxes. Painted dusk sky and mountains sit behind the far side, so no black bars.
+- Nudges (allowed by the brief): the fit backs off only if a Commander would not be whole, and the bottom margin grows (up to 16 %) so the player's Commander stays clear of the resting hand. `screenRects().board` is clipped to the window because the owner's 107 % zoom crops the outer side edges slightly.
+- Sizes: creatures ~1.1 spaces tall, Commander + Stronghold 2.4 tall and about 1.3 wide (measured and scaled in code), mines ~1.5 with stronger glow.
+- Flow particles: capped GPU points per mine; streams curve into the owner's Stronghold, neutral mines swirl; pulse at turn start; Settings "Flow particles" On / Reduced / Off (saved, Reduced default on Low graphics).
+- HUD at the owner's positions: your/enemy crystal (Flow on the gem, bank badge, name / Flow / Next), phase tracker (Draw › Deploy › Action › End, `aria-current="step"`), enemy hand and deck, pop-out Menu (hover or click: Last turn, Mute, Pop-ups On/Off, Recenter, Surrender), your deck, hand from 14 % at about 23 % of the height. `data-playable` plus a golden halo on playable cards. "Done" floats in the middle and shows only when needed.
+- Ruby heart picture `public/art/ui/ruby-heart.png` (drawn in code, no image API). Card reveals 5.5 s (Fast 2.75 s).
+- Phone text: nothing under 14 px outside card faces; short screens (select, deck builder) scroll.
+- Not satisfied exactly: on a phone the enemy crystal's text and the phase tracker share the top-right and overlap a little (the tracker has a dark fade behind it). The enemy Commander can sit partly under the enemy crystal because of the owner's fixed positions.
