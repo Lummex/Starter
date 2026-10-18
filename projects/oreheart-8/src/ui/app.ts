@@ -2,7 +2,7 @@ import { Game } from '../game';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
 import tutorialJson from '../content/tutorial.json';
 import { showDecks, loadDecks, deckLegal } from './decks';
-import { deckProblems, previewAttack } from '../engine';
+import { deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
 import { audio } from './audio';
 
@@ -256,18 +256,21 @@ export class App {
     let cmd = cmds.some((c) => c.id === picks.cmd) ? picks.cmd : 'grubnak';
     let diff = ['easy', 'normal', 'hard'].includes(picks.diff) ? picks.diff : 'normal';
     const decks = loadDecks();
-    // deck index: -1 = starter deck
-    let deckIx = typeof picks.deck === 'string' && picks.deck !== '' ? decks.findIndex((d) => d.name === picks.deck && deckLegal(d)) : -1;
+    const FN: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
+    const warband = () => warbandOf(COMMANDERS[cmd].faction);
+    let deckSel = 'starter:' + warband();
+    if (typeof picks.deck === 'string' && picks.deck !== '') { const i = decks.findIndex((d) => d.name === picks.deck && deckLegal(d)); if (i >= 0) deckSel = 'saved:' + i; }
+    else if (typeof picks.deckId === 'string' && STARTER_DECKS[picks.deckId]) deckSel = 'starter:' + picks.deckId;
     const cmdBtns: El[] = [], diffBtns: El[] = [], stacks: El[] = [];
     const msg = h('p', { class: 'deck-msg', 'aria-label': 'Deck message', role: 'status' });
     const sel = () => {
       cmdBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === cmd)));
       diffBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === diff)));
-      stacks.forEach((b) => b.setAttribute('aria-pressed', String(+(b.dataset.ix as string) === deckIx)));
+      stacks.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.key === deckSel)));
     };
     for (const c of cmds) {
       const f = FACTIONS[c.faction];
-      cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { cmd = c.id; sel(); } },
+      cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { cmd = c.id; onCmd(); } },
         h('img', { class: 'portrait-img', src: `/art/commanders/${c.id}.webp`, alt: '', draggable: 'false' }),
         h('span', { class: 'cmd-win' },
           h('span', { class: 'nm' }, c.name),
@@ -275,23 +278,36 @@ export class App {
           h('span', { class: 'ds' }, c.abilityText))));
     }
     for (const d of ['easy', 'normal', 'hard']) diffBtns.push(btn(d[0].toUpperCase() + d.slice(1), 'diff', () => { diff = d; sel(); }, { 'data-id': d }));
-    const stack = (label: string, n: number, ok: boolean, ix: number, onpick: () => void) => {
-      const b = h('button', { type: 'button', class: `dstack${ok ? '' : ' bad'}`, 'data-ix': String(ix), 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', onclick: onpick },
+    const stack = (label: string, n: number, ok: boolean, key: string, onpick: () => void) => {
+      const b = h('button', { type: 'button', class: `dstack${ok ? '' : ' bad'}`, 'data-key': key, 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', onclick: onpick },
         h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }),
         h('span', { class: 'ds-name', 'aria-hidden': 'true' }, label), h('span', { class: 'ds-n', 'aria-hidden': 'true' }, `${n} cards ${ok ? '✔' : '⚠'}`));
       stacks.push(b);
       return b;
     };
     const row = h('div', { class: 'deck-row', 'aria-label': 'Deck choice', role: 'group' });
-    row.append(stack('Starter deck', CONFIG.deckSize, true, -1, () => { deckIx = -1; msg.textContent = ''; sel(); }));
-    decks.forEach((d, i) => {
-      const ok = deckLegal(d);
-      row.append(stack(d.name, d.cards.length, ok, i, () => {
-        if (!ok) { msg.textContent = deckProblems(d.cards.filter((id) => CARDS[id]))[0] || 'This deck is not ready.'; return; }
-        deckIx = i; msg.textContent = ''; sel();
-      }));
-    });
-    row.append(h('button', { type: 'button', class: 'dstack newdeck', onclick: () => showDecks(this) }, '+ New Deck'));
+    const buildRow = () => {
+      stacks.length = 0;
+      const fac = COMMANDERS[cmd].faction;
+      const order = ['goblins', 'gnomes', 'dwarves'];
+      const list = [...STARTER_DECK_LIST.filter((d) => d.faction === fac), ...order.filter((f) => f !== fac).flatMap((f) => STARTER_DECK_LIST.filter((d) => d.faction === f))];
+      const items: El[] = list.map((d) => stack(d.name, d.cards.length, true, 'starter:' + d.id, () => { deckSel = 'starter:' + d.id; msg.textContent = ''; sel(); }));
+      decks.forEach((d, i) => {
+        const ok = deckLegal(d);
+        items.push(stack(d.name, d.cards.length, ok, 'saved:' + i, () => {
+          if (!ok) { msg.textContent = deckProblems(d.cards.filter((id) => CARDS[id]))[0] || 'This deck is not ready.'; return; }
+          deckSel = 'saved:' + i; msg.textContent = ''; sel();
+        }));
+      });
+      items.push(h('button', { type: 'button', class: 'dstack newdeck', onclick: () => showDecks(this) }, '+ New Deck'));
+      row.replaceChildren(...items);
+    };
+    const onCmd = () => {
+      if (deckSel.startsWith('starter:')) deckSel = 'starter:' + warband();
+      buildRow(); sel();
+    };
+    void FN;
+    buildRow();
     sel();
     const scroll = (dir: number) => row.scrollBy({ left: dir * 220, behavior: 'smooth' });
     this.root.append(h('main', { class: 'screen setup' },
@@ -306,9 +322,10 @@ export class App {
         btn('Fight!', 'primary', () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
           const opp = others[Math.floor(Math.random() * others.length)];
-          const pick = deckIx < 0 ? null : decks[deckIx];
-          try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, deck: pick ? pick.name : '' })); } catch { /* storage unavailable */ }
-          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, ...(pick ? { playerDeck: pick.cards.slice() } : {}) });
+          const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
+          const deckId = pick ? '' : deckSel.slice(8);
+          try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
+          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
         }),
         btn('Back', '', () => this.showMenu()))));
   }
@@ -333,8 +350,8 @@ export class App {
     const s = h('main', { class: 'screen howto' },
       h('h1', { class: 'section cinzel' }, 'Rules'),
       sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
-      sec('The Board', 'A hidden grid 13 spaces wide and 7 deep. The enemy is at the top, you are at the bottom. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
-      sec('Decks and auto-skip', 'The Decks screen on the main menu is a testing deck builder: every card is unlocked and you can save up to 5 decks of 50 cards (Rare, Ultra Rare and Collector cards max 3 copies, at most 10 Crystal cards). Pick a saved deck or the starter deck before a match. Your Deploy phase ends by itself when no card in your hand can be both paid for and placed, and your Action phase ends by itself when no creature can move, attack or mine.', crystals),
+      sec('The Board', 'A hidden grid 13 spaces wide and 7 deep. Your Stronghold sits in the bottom-left corner (row 7, column 2) and the enemy Stronghold in the top-right corner (row 1, column 12); the mines mirror from corner to corner. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
+      sec('Decks and auto-skip', 'The Decks screen on the main menu is a testing deck builder: every card is unlocked and you can save up to 5 decks of 50 to 100 cards (Rare, Ultra Rare and Collector cards max 3 copies, at most 20 Crystal cards). Pick a saved deck or the starter deck before a match. Your Deploy phase ends by itself when no card in your hand can be both paid for and placed, and your Action phase ends by itself when no creature can move, attack or mine.', crystals),
       sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
       sec('Mulligan and Camera', 'Before the match you may mulligan up to 3 times: tap cards, then Redraw Selected. Your first mulligan redraws as many cards as you swap; each later one redraws one fewer (5, then 4, then 3 cards). On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and press Re-center to reset. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
       sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (one per round, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
@@ -451,6 +468,10 @@ export class App {
     r.swap = btn('Swap for a Miner', 'swap-btn', () => this.startSwap());
     r.swap.hidden = true;
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
+    r.handCount = h('div', { class: 'hand-count', role: 'img', 'aria-label': 'Hand count' }, '0 cards');
+    r.handLeft = btn('◀', 'hand-scroll left', () => { this.handScroll = Math.max(0, Math.round(this.handScroll) - 3); this.layoutHand(); }, { 'aria-label': 'Scroll hand left' });
+    r.handRight = btn('▶', 'hand-scroll right', () => { this.handScroll = Math.round(this.handScroll) + 3; this.layoutHand(); }, { 'aria-label': 'Scroll hand right' });
+    r.handLeft.hidden = true; r.handRight.hidden = true;
     const menuBtn = btn('Menu', 'menu-btn', () => this.showMatchMenu());
     const muteLabel = () => (audio.muted ? 'Unmute sound' : 'Mute sound');
     const muteBtn = btn(muteLabel(), 'mute-btn', () => { audio.setMuted(!audio.muted); muteBtn.textContent = muteLabel(); muteBtn.setAttribute('aria-pressed', String(audio.muted)); if (!audio.muted) audio.play('click'); });
@@ -469,7 +490,7 @@ export class App {
       r.phase,
       h('div', { class: 'hud hud-menu' }, menuBtn),
       h('div', { class: 'hud hud-right' }, r.done, this.popupsSwitch(), r.recenter),
-      r.tip, r.hand, r.timer);
+      r.tip, r.hand, r.handCount, r.handLeft, r.handRight, r.timer);
     this.root.append(match);
     // board layers
     r.cells = new Map<string, El>();
@@ -532,8 +553,12 @@ export class App {
         const card = CARDS[cr.cardId];
         const rc = this.view!.cellRect(cr.row, cr.col);
         const el = h('div', { class: `hand-card static hover-card ${card.type} f-${card.faction}`, 'aria-hidden': 'true', 'data-card-id': card.id, 'data-frame': FRAME[card.faction] || 'neutral', 'data-rarity': rarityKey(card) }, ...faceKids(card, card.cost, { attack: cr.attack, health: cr.health, move: card.move }));
-        el.style.left = rc.x + rc.w / 2 + 'px'; el.style.top = Math.max(4, rc.y - 4) + 'px';
         r.board.append(el); hoverEl = el;
+        const bw = r.board.clientWidth, bh = r.board.clientHeight, cw2 = el.offsetWidth, ch2 = el.offsetHeight;
+        el.style.left = Math.max(cw2 / 2 + 4, Math.min(bw - cw2 / 2 - 4, rc.x + rc.w / 2)) + 'px';
+        let top = rc.y - 4;
+        if (top - ch2 < 4) top = rc.y + rc.h + ch2 + 4;
+        el.style.top = Math.max(ch2 + 4, Math.min(bh - 4, top)) + 'px';
       }, 400);
     });
     r.board.addEventListener('pointerleave', clearHover);
@@ -670,7 +695,9 @@ export class App {
   }
   place(el: El, row: number, col: number) {
     const rc = this.view!.cellRect(row, col);
-    el.style.left = rc.x + 'px'; el.style.top = rc.y + 'px'; el.style.width = rc.w + 'px'; el.style.height = rc.h + 'px';
+    // far-row tap targets are a little bigger than they look
+    const w = el.classList.contains('cell') ? Math.max(rc.w, 38) : rc.w, hh = el.classList.contains('cell') ? Math.max(rc.h, 34) : rc.h;
+    el.style.left = rc.x - (w - rc.w) / 2 + 'px'; el.style.top = rc.y - (hh - rc.h) / 2 + 'px'; el.style.width = w + 'px'; el.style.height = hh + 'px';
   }
 
   handTimer: any = null;
@@ -718,29 +745,41 @@ export class App {
     el.style.transform = `translate(${dx}px,${dy}px) scale(2)`;
   }
 
+  /** The fan shows about 7 cards in a fixed width; more cards scroll (R3.7). */
   layoutHand() {
     const hand = this.r.hand as El;
     if (!hand) return;
     const cards = [...hand.querySelectorAll('.hand-card')] as El[];
     const n = cards.length;
-    const W = hand.clientWidth || 800;
+    const VIS = 7;
+    const W = hand.clientWidth || 400;
     const cw = cards[0]?.offsetWidth || 66;
-    const spacing = n > 1 ? Math.max(cw * 0.58, Math.min(cw * 0.78, (W - cw * 1.4) / (n - 1))) : cw;
-    const overflow = Math.max(0, (n - 1) * spacing - (W - cw * 1.4));
-    const maxScroll = overflow / 2 / spacing;
-    this.handScroll = Math.max(-maxScroll, Math.min(maxScroll, this.handScroll));
+    const maxScroll = Math.max(0, n - VIS);
+    this.handScroll = Math.max(0, Math.min(maxScroll, this.handScroll));
+    const start = Math.round(this.handScroll);
+    const shown = Math.min(n, VIS);
+    const spacing = shown > 1 ? Math.min(cw * 0.8, (W - cw) / (shown - 1)) : cw;
+    const x0 = (W - (cw + (shown - 1) * spacing)) / 2;
     cards.forEach((c, i) => {
-      const off = i - (n - 1) / 2 - this.handScroll;
-      const x = W / 2 + off * spacing - cw / 2;
+      const k = i - start;
+      if (k < 0 || k >= VIS) { c.classList.add('offhand'); c.style.left = '-5000px'; c.style.transform = ''; c.dataset.fan = ''; c.tabIndex = -1; return; }
+      c.classList.remove('offhand'); c.tabIndex = 0;
+      const off = k - (shown - 1) / 2;
       const t = (off * spacing) / (W / 2);
       const rot = Math.max(-6, Math.min(6, t * 12));
-      const y = t * t * cw * 0.08;
-      c.style.left = x + 'px';
+      const y = t * t * cw * 0.12;
+      c.style.left = x0 + k * spacing + 'px';
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
       c.dataset.fan = c.style.transform;
-      c.style.zIndex = String(i + 1);
-      c.dataset.z = String(i + 1);
+      c.style.zIndex = String(k + 1);
+      c.dataset.z = String(k + 1);
     });
+    const hc = this.r.handCount as El;
+    if (hc) hc.textContent = `${n} ${n === 1 ? 'card' : 'cards'}`;
+    const hl = this.r.handLeft as El, hr = this.r.handRight as El;
+    if (hl) { hl.hidden = !(n > VIS && start > 0); hr.hidden = !(n > VIS && start < maxScroll); }
+    hand.classList.toggle('more-left', start > 0);
+    hand.classList.toggle('more-right', n > VIS && start < maxScroll);
   }
 
   update(st: any, events: any[]) {
@@ -765,7 +804,7 @@ export class App {
     // enemy hand arc
     const n = en.hand.length;
     r.enemyHand.replaceChildren();
-    const shown = Math.min(n, 12);
+    const shown = Math.min(n, 8);
     for (let i = 0; i < shown; i++) {
       const t = shown > 1 ? i / (shown - 1) - 0.5 : 0;
       const b = h('div', { class: 'back', 'data-card-back': '', 'aria-hidden': 'true' });

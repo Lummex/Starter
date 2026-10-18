@@ -37,3 +37,13 @@ describe('AI', () => {
     expect(s.turn).toBeGreaterThan(2);
   });
 });
+
+describe('Round 3a: deck styles', () => {
+  for (const style of ['warband', 'arcane-hoard', 'horde']) {
+    it(`AI plays the Goblin ${style} against the Gnome ${style} to a winner`, () => {
+      const s = play(createMatch({ seed: 21, playerCommander: 'grubnak', opponentCommander: 'sproingle', playerDeckId: `goblin-${style}`, opponentDeckId: `gnome-${style}`, testMode: true }), { player: 'normal', opponent: 'normal' }, false, 400);
+      expect(s.phase).toBe('over');
+      expect(s.winner).toBeTruthy();
+    });
+  }
+});

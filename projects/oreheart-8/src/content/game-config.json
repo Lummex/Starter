@@ -16,7 +16,6 @@
  "savingsPerCrystal": 10,
  "underdogBonus": 2,
  "geodeIncome": 1,
- "deckSize": 50,
  "starterDeckMix": {
   "creatures": 40,
   "spells": 6,
@@ -33,8 +32,8 @@
   "Ultra Rare": 3,
   "Collector": 3
  },
- "crystalCardLimit": 10,
- "maxCrystalCards": 10,
+ "crystalCardLimit": 20,
+ "maxCrystalCards": 20,
  "commanderHealth": 20,
  "deckOutDamage": 1,
  "crystalCardsPerTurn": 1,
@@ -50,11 +49,11 @@
  "strongholds": {
   "player": [
    7,
-   7
+   2
   ],
   "opponent": [
    1,
-   7
+   12
   ]
  },
  "backRow": {
@@ -72,5 +71,15 @@
  "boardHeight": 7,
  "mineCount": 3,
  "revealSeconds": 1.5,
- "revealFastSeconds": 0.6
+ "revealFastSeconds": 0.6,
+ "playerStronghold": {
+  "row": 7,
+  "col": 2
+ },
+ "opponentStronghold": {
+  "row": 1,
+  "col": 12
+ },
+ "deckMin": 50,
+ "deckMax": 100
 }

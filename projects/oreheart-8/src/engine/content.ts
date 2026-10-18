@@ -13,7 +13,10 @@ export const COMMANDERS: Record<string, any> = Object.fromEntries((commandersJso
 export const FACTIONS: Record<string, any> = Object.fromEntries((factionsJson as any[]).map((c) => [c.id, c]));
 export const COLORS: Record<string, any> = Object.fromEntries((colorsJson as any[]).map((c) => [c.id, c]));
 export const ABILITIES: Record<string, any> = abilitiesJson as any;
-export const STARTER_DECKS: Record<string, string[]> = decksJson as any;
+export const STARTER_DECK_LIST: { id: string; name: string; faction: string; style: string; cards: string[] }[] = Object.entries(decksJson as any).map(([id, d]: any) => ({ id, ...d }));
+export const STARTER_DECKS: Record<string, string[]> = Object.fromEntries(STARTER_DECK_LIST.map((d) => [d.id, d.cards]));
+/** The default (Warband) deck id for a faction id such as "goblins". */
+export const warbandOf = (faction: string) => STARTER_DECK_LIST.find((d) => d.faction === faction && d.style === 'warband')!.id;
 export const CONFIG: any = configJson;
 export const COLOR_ORDER = ['green', 'blue', 'purple'];
 

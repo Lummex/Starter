@@ -1,3 +1,22 @@
+# Oreheart — Phase 1B Round 3a build notes (board and rules)
+
+`npm run build` → `dist/`; `npm test` → Vitest (56 tests). Phone-size (844 × 390) screenshots: `screenshots/r3a-match-both-hands-844x390.png`, `screenshots/r3a-deck-picker-844x390.png`.
+
+## What was built
+- **Straight-on road camera (R3.1)**: yaw 0, 60° elevation, board fitted edge to edge (row 7 columns 3→11 span ≈1.3× row 1's). Zoom/pan kept.
+- **Corner Strongholds (R3.2)**: config `strongholds` player (7,2), opponent (1,12) (+ `playerStronghold`/`opponentStronghold`), `state.strongholds`; summoning, Commander attacks and Ranged distance all follow it. Commanders/Strongholds drawn 1.4×.
+- **Corner-mirrored mines (R3.3)**: random layouts always contain the center (4,7) and twins at (8−r, 14−c); the test-only `mines` option only needs rows 3–5, ≥2 apart, not next to a Stronghold. Tutorial layout redrawn ((3,5),(4,7),(5,9)); `tutorialAction` still completes.
+- **Decks (R3.10–R3.13)**: `deckMin` 50, `deckMax` 100, `crystalCardLimit` 20, new messages and builder counts ("Cards: N (50–100) · …", pile "N cards (50–100)"); Auto-fill completes to 50. Nine starter decks in `starter-decks.json` (Warband 40/6/4, Arcane Hoard 26/16/8, Horde 46/0/4), `playerDeckId`/`opponentDeckId`, `players[side].deckId`, `listStarterDecks()`, `validateDeck()`, `getCard().speed`, `aiBoth`. The AI picks one of its faction's three decks (seeded) in normal play; the test-mode default is Warband.
+- **Deck picker (R3.12)**: the chosen faction's three decks first, then the other six, saved decks, "+ New Deck"; each stack is "<Name>, 50 cards, ready"; the selection follows the Commander (starter decks only); remembered.
+- **Hands (R3.6, R3.7)**: player fan shifted right (30–80 % of the width), ~7 cards visible, others off-hand; "Scroll hand left/right", "Hand count"; enemy backs top-left, always on-screen (lift goes downward), decks at bottom-right and top-left.
+- **Creature card pop-up (R3.8)** and hover card are 2× a resting hand card, clamped on-screen. HUD counters sit above the player's Commander; Menu/mute moved clear of the enemy Commander; far-row cells have a 38×34 px minimum tap size.
+
+## Gaps
+- R3.14 (AC100 step-by-step spell) needed no engine change; the hidden test just has to expect Infernal Orb = 3 with Borgo's bonus.
+- The oversized Commander overlaps the neighbouring spaces slightly; creatures there stay tappable. Round 3b polish and Build B models are not started.
+
+---
+
 # Oreheart — Phase 1B Round 2 (Build A) build notes
 
 `npm run build` → `dist/`; `npm test` → Vitest (engine + AI, 50 tests). Phone-size (844 × 390) screenshots: `screenshots/title-`, `select-`, `mulligan-`, `match-`, `deck-builder-844x390.png`.

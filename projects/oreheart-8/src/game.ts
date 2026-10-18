@@ -10,6 +10,7 @@ export class Game {
   options: any = {};
   testMode: boolean;
   ai = true;
+  aiBoth = false;
   scripted = false;
   difficulty = 'normal';
   private listeners: Listener[] = [];
@@ -37,6 +38,7 @@ export class Game {
     clearTimeout(this.aiTimer);
     this.options = options;
     this.ai = options.ai !== false;
+    this.aiBoth = this.testMode && options.aiBoth === true;
     this.scripted = !!options.tutorial;
     this.autoSkip = !this.scripted && (this.testMode ? options.autoSkip === true : options.autoSkip !== false);
     clearTimeout(this.skipTimer);
@@ -44,11 +46,26 @@ export class Game {
     this.difficulty = options.difficulty === 'easy' ? 'easy' : options.difficulty === 'hard' ? 'hard' : 'normal';
     const seed = options.seed ?? (this.testMode ? 1 : (Date.now() ^ (Math.random() * 1e9)) | 0);
     this.rand = makeRand(seed + 977);
-    this.state = createMatch({ ...options, seed });
+    this.state = createMatch({ ...options, seed, testMode: this.testMode });
     this.state.difficulty = this.difficulty;
     this.emit([{ type: 'newMatch' }]);
-    this.afterAction();
+    if (this.aiBoth) this.runBoth(); else this.afterAction();
     return JSON.parse(JSON.stringify(this.state));
+  }
+
+  /** Test mode: the computer plays both sides immediately until the match ends. */
+  private runBoth() {
+    let n = 0, turn = -1, cnt = 0;
+    while (this.state.phase !== 'over' && n++ < 20000) {
+      if (turn !== this.state.turn) { turn = this.state.turn; cnt = 0; }
+      let a: any = aiChoose(this.state, this.difficulty, this.rand);
+      if (++cnt > 60 && !this.state.pendingResponse && this.state.phase !== 'mulligan') a = { type: 'done' };
+      let r: any = applyAction(this.state, a);
+      if (!r.ok) r = applyAction(this.state, this.state.pendingResponse ? { type: 'pass' } : this.state.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' });
+      if (!r.ok) break;
+      this.state = r.state;
+    }
+    this.emit([{ type: 'sync' }]);
   }
 
   startTutorial() {

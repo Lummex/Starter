@@ -14,7 +14,7 @@ const total = (s: any, w = 'player') => s.players[w].crystals as number;
 
 describe('content and board', () => {
   it('starter decks: 40 creatures, 6 spells incl. Fizzle, 4 Crystal cards', () => {
-    for (const deck of Object.values(STARTER_DECKS)) {
+    for (const deck of Object.entries(STARTER_DECKS).filter(([k]) => k.endsWith('-warband')).map(([, v]) => v)) {
       const t = (ty: string) => deck.filter((id) => CARDS[id].type === ty).length;
       expect([t('creature'), t('spell'), t('crystal')]).toEqual([40, 6, 4]);
       expect(deck).toContain('fizzle');
@@ -27,7 +27,7 @@ describe('content and board', () => {
       const m = s.sites.map((x: any) => ({ row: x.row, col: x.col }));
       expect(m.length).toBe(3);
       expect(legalMines(m)).toBe(true);
-      for (const x of m) { expect(x.row >= 3 && x.row <= 5 && x.col >= 1 && x.col <= 13).toBe(true); if (x.row !== 4) expect(m.some((y: any) => y.col === x.col && y.row === 8 - x.row)).toBe(true); }
+      for (const x of m) { expect(x.row >= 3 && x.row <= 5 && x.col >= 1 && x.col <= 13).toBe(true); expect(m.some((y: any) => y.col === 14 - x.col && y.row === 8 - x.row)).toBe(true); }
       expect(createMatch({ seed }).sites).toEqual(s.sites);
       expect(s.sites.map((x: any) => x.row * 100 + x.col)).toEqual([...s.sites.map((x: any) => x.row * 100 + x.col)].sort((a, b) => a - b));
     }
@@ -103,9 +103,9 @@ describe('mining', () => {
 
 describe('combat basics', () => {
   it('Commander damage equals Attack', () => {
-    let s = mk({ board: [P('goblin-grunt', 2, 7)], opponentHealth: 20 });
+    let s = mk({ board: [P('goblin-grunt', 2, 11)], opponentHealth: 20 });
     s = done(s);
-    s = act(s, { type: 'attack', creatureUid: at(s, 2, 7).uid, target: { commander: 'opponent' } });
+    s = act(s, { type: 'attack', creatureUid: at(s, 2, 11).uid, target: { commander: 'opponent' } });
     expect(s.players.opponent.health).toBe(20 - CARDS['goblin-grunt'].attack);
   });
   it('simultaneous melee strikes', () => {
@@ -146,8 +146,8 @@ describe('revision 6', () => {
   it('starter decks: 5 basic Miners and 3 Smith Miners each', () => {
     const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner'], gnomes: ['gnome-prospector', 'gnome-smith-miner'], dwarves: ['dwarf-miner', 'dwarf-smith-miner'] };
     for (const [f, [b, sm]] of Object.entries<any>(pairs)) {
-      expect(STARTER_DECKS[f].filter((x) => x === b).length).toBe(5);
-      expect(STARTER_DECKS[f].filter((x) => x === sm).length).toBe(3);
+      expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === b).length).toBe(5);
+      expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === sm).length).toBe(3);
     }
     expect(CARDS['goblin-scrounger'].name).toBe('Grubgrabber Miner');
   });
@@ -173,12 +173,12 @@ describe('revision 6', () => {
     expect(s.players.player.crystals).toBe(2);
     // second Crystal card is not allowed in the same round
     const slinger = s.players.player.hand[0].uid; // cost 4, Grubnak 3
-    s = act(s, { type: 'summon', uid: slinger, row: 7, col: 2 });
+    s = act(s, { type: 'summon', uid: slinger, row: 7, col: 3 });
     expect([s.players.player.crystals, s.players.player.bank]).toEqual([0, 1]);
   });
   it('Flow 2 + Bank 3 pays a Goblin Slinger leaving Bank 2', () => {
     let s = mk({ playerHand: ['goblin-slinger'], playerCrystals: B(2), playerBank: B(3) });
-    s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 2 });
+    s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 3 });
     expect([s.players.player.crystals, s.players.player.bank]).toEqual([0, 2]);
   });
   it('Crystal card works in the Respond window and funds a counterspell', () => {
@@ -235,7 +235,7 @@ describe('revision 6', () => {
 describe('revision 7', () => {
   it('Flow 2 + Bank 3, cost 3 (Grubnak Slinger) -> Flow 0, Bank 2', () => {
     let s = mk({ playerHand: ['goblin-slinger'], playerCrystals: 2, playerBank: 3 });
-    s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 2 });
+    s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 3 });
     expect([s.players.player.crystals, s.players.player.bank]).toEqual([0, 2]);
   });
   it('enemy-owned mine pays half: Miner 1, Fighter 0; example 1 Gemsinger vs 2 Grubgrabbers', () => {
@@ -306,7 +306,7 @@ describe('revision 7', () => {
       .toEqual(['pick', 'pick-hammer', 'pick-crystal', 'sword', 'sling', 'wand', 'crossbow', 'axes', 'sword-shield', 'lance', 'signature'.replace('signature', 'gyro'), 'signature', null]);
     for (const deck of Object.values(STARTER_DECKS)) {
       for (const id of deck) { const n = deck.filter((x) => x === id).length; if (!/miner|prospector|scrounger/.test(id)) expect(n).toBeLessThanOrEqual(4); }
-      expect(deck.filter((id) => CARDS[id].role === 'Smith').length).toBe(3);
+      expect(deck.filter((id) => CARDS[id].role === 'Smith').length).toBeGreaterThanOrEqual(3);
       expect(deckProblems(deck)).toEqual([]);
     }
   });
@@ -325,8 +325,12 @@ describe('revision 7', () => {
   });
   it('deck rules and strict auto-skip', () => {
     const bad = [...Array(4).fill('wolf-rider'), ...Array(11).fill('soul-shard')];
-    expect(deckProblems(bad)).toEqual(['Needs exactly 50 cards (now 15).', 'Mangewolf Rider: at most 3 copies (now 4).', 'At most 10 Crystal cards (now 11).'].map((x) => x).sort((a, b) => deckProblems(bad).indexOf(a) - deckProblems(bad).indexOf(b)));
+    expect(deckProblems(bad)).toEqual(['Needs 50 to 100 cards (now 15).', 'Mangewolf Rider: at most 3 copies (now 4).'].map((x) => x).sort((a, b) => deckProblems(bad).indexOf(a) - deckProblems(bad).indexOf(b)));
     expect(deckProblems(Array(50).fill('goblin-scrounger'))).toEqual([]);
+    expect(deckProblems(Array(100).fill('goblin-scrounger'))).toEqual([]);
+    expect(deckProblems(Array(101).fill('goblin-scrounger'))).toEqual(['Needs 50 to 100 cards (now 101).']);
+    expect(deckProblems([...Array(30).fill('goblin-scrounger'), ...Array(20).fill('soul-shard')])).toEqual([]);
+    expect(deckProblems([...Array(29).fill('goblin-scrounger'), ...Array(21).fill('soul-shard')])).toEqual(['At most 20 Crystal cards (now 21).']);
     expect(hasMovesLeft(mk({ playerHand: ['heart-of-the-fallen', 'fizzle'] }))).toBe(false);
     expect(hasMovesLeft(mk({ playerHand: ['goblin-scrounger'] }))).toBe(true);
   });
@@ -417,5 +421,32 @@ describe('round 2', () => {
     const q1 = applyAction(s, legalActions(s).find((a: any) => a.type === 'summon' && a.uid === g.uid));
     const q2 = applyAction(q1.state, legalActions(q1.state).find((a: any) => a.type === 'respond'));
     expect(q2.events.find((e: any) => e.type === 'bounce').uid).toBe(g.uid);
+  });
+});
+
+describe('Round 3a', () => {
+  it('Strongholds in the corners', () => {
+    const s = mk({ playerHand: ['goblin-scrounger', 'goblin-scrounger', 'goblin-scrounger'] });
+    expect(s.strongholds).toEqual({ player: { row: 7, col: 2 }, opponent: { row: 1, col: 12 } });
+    const sum = legalActions(s).filter((a: any) => a.type === 'summon');
+    expect(sum.some((a: any) => a.row === 7 && a.col === 2)).toBe(false);
+    expect(sum.some((a: any) => a.row === 7 && a.col === 1)).toBe(true);
+    expect(sum.some((a: any) => a.row === 7 && a.col === 13)).toBe(true);
+  });
+  it('corner-mirrored mines with the center mine', () => {
+    for (let seed = 11; seed <= 40; seed++) {
+      const m = createMatch({ seed, playerCommander: 'grubnak', opponentCommander: 'sproingle' }).sites;
+      expect(m.some((x: any) => x.row === 4 && x.col === 7)).toBe(true);
+      for (const x of m) expect(m.some((y: any) => y.row === 8 - x.row && y.col === 14 - x.col)).toBe(true);
+      expect(legalMines(m)).toBe(true);
+    }
+  });
+  it('nine legal starter decks', () => {
+    const ids = Object.keys(STARTER_DECKS);
+    expect(ids.length).toBe(9);
+    for (const id of ids) { expect(STARTER_DECKS[id].length).toBe(50); expect(deckProblems(STARTER_DECKS[id])).toEqual([]); }
+    const s = createMatch({ seed: 3, playerCommander: 'sproingle', playerDeckId: 'gnome-horde', opponentDeckId: 'goblin-arcane-hoard', skipMulligan: true });
+    expect(s.players.player.deckId).toBe('gnome-horde');
+    expect(s.players.opponent.deckId).toBe('goblin-arcane-hoard');
   });
 });

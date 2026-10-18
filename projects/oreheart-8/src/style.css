@@ -615,3 +615,30 @@ html[data-display=phone] body,html[data-display=pc] body{background:transparent}
 @keyframes embers{from{transform:translateY(8%);opacity:0}15%{opacity:1}to{transform:translateY(-14%);opacity:0}}
 @media (prefers-reduced-motion:reduce){.menu-bg,.menu-screen::before,.menu-screen::after{animation:none}}
 .dstack .ds-name{max-width:none!important;overflow:visible!important;font-size:.56rem!important}
+
+/* ---- Round 3a: straight-on board, corner Strongholds, hands around the Commanders ---- */
+.hand-scroll[hidden]{display:none}
+.match .hand{left:30%;right:auto;width:50%}
+.match .hand-card.offhand{pointer-events:none!important;opacity:0}
+.hand-count{position:absolute;z-index:31;left:calc(80% + 6px);bottom:calc(var(--cw) * .9);font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:.8rem;color:#ffd45a;text-shadow:0 0 4px #000,0 0 8px #000;pointer-events:none}
+.hand-scroll{position:absolute;z-index:32;min-width:0!important;width:38px;height:38px;min-height:0!important;padding:0!important;border-radius:50%;font-size:1rem;bottom:calc(var(--cw) * .1)}
+.hand-scroll.left{left:calc(30% - 44px)}
+.hand-scroll.right{left:calc(80% + 6px)}
+.match .hud-top{left:calc(var(--cw) * .8 + 20px);right:auto;top:4px;width:clamp(150px,24%,230px);height:44px;transform:none}
+.match .enemy-hand{left:50%;top:4px;width:120px;height:44px}
+.match .enemy-hand .back{top:4px}
+.match .enemy-hand .count{top:30px}
+.match .pile[aria-label="Enemy deck"]{left:max(6px,env(safe-area-inset-left));right:auto;top:6px}
+.match .pile[aria-label="Your deck"]{right:max(6px,env(safe-area-inset-right));left:auto;bottom:6px}
+.match .hud-menu{left:240px;top:6px;width:64px}
+.match .hud-menu .btn{min-height:34px;padding:2px 6px;font-size:.8rem}
+.match .mute-btn{left:308px;top:6px;width:38px;height:38px;min-width:38px;min-height:38px}
+.match .hud-left{top:84px;bottom:auto;left:max(6px,env(safe-area-inset-left));width:118px;gap:2px}
+.match .hud-left .crystals{display:flex;gap:8px;flex-direction:row}
+.match .hud-left .last-btn{min-height:30px}
+.card-view-face .hand-card{--cw:calc(clamp(64px,17vh,120px) * 2)}
+.hover-card{--cw:calc(clamp(64px,17vh,120px) * 2)}
+.dstack{width:70px!important}
+.deck-wrap{margin-bottom:6px}
+.deck-row{gap:18px!important}
+.dstack .ds-name{white-space:normal!important;text-align:center;line-height:1.05;width:96%;max-width:96%!important;overflow:visible!important;font-size:.58rem!important;padding:1px 4px!important;margin-bottom:-4px!important}

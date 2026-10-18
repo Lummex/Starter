@@ -210,6 +210,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     g.position.copy(p);
     const body = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 12), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
     const fig = new THREE.Group();
+    g.scale.setScalar(1.4);
     scene.add(g);
     cmd[side] = { group: g, keep: null, fig, grub: null, body, emote: null, faction: '', id: '', retreat: null };
   }
@@ -406,7 +407,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   const cam = { zoom: 1, x: 0, y: 0 };
-  const YAW = (33 * Math.PI) / 180;
+  const YAW = 0;
   function resize() {
     const w = container.clientWidth || 390, h = container.clientHeight || 420;
     renderer.setSize(w, h, false);
@@ -415,8 +416,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     camera.aspect = w / h;
-    const el = (40 * Math.PI) / 180;
-    const y0 = 0.02 * h, y1 = 0.97 * h;
+    const el = (60 * Math.PI) / 180;
+    const y0 = 0.085 * h, y1 = 0.99 * h;
     const hx = BW / 2 + 0.05, hz = BH / 2 + 0.05;
     const corners = [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]];
     const fit = (dist: number) => {

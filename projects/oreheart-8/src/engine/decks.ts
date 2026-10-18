@@ -13,7 +13,7 @@ export function deckCounts(ids: string[]) {
 /** Problem messages for a deck; an empty list means the deck is legal. */
 export function deckProblems(ids: string[]): string[] {
   const out: string[] = [];
-  if (ids.length !== CONFIG.deckSize) out.push(`Needs exactly ${CONFIG.deckSize} cards (now ${ids.length}).`);
+  if (ids.length < CONFIG.deckMin || ids.length > CONFIG.deckMax) out.push(`Needs ${CONFIG.deckMin} to ${CONFIG.deckMax} cards (now ${ids.length}).`);
   const n: Record<string, number> = {};
   for (const id of ids) n[id] = (n[id] || 0) + 1;
   for (const [id, k] of Object.entries(n)) {
@@ -21,6 +21,12 @@ export function deckProblems(ids: string[]): string[] {
     if (lim != null && k > lim) out.push(`${CARDS[id].name}: at most ${lim} copies (now ${k}).`);
   }
   const cr = deckCounts(ids).crystals;
-  if (cr > CONFIG.maxCrystalCards) out.push(`At most ${CONFIG.maxCrystalCards} Crystal cards (now ${cr}).`);
+  if (cr > CONFIG.crystalCardLimit) out.push(`At most ${CONFIG.crystalCardLimit} Crystal cards (now ${cr}).`);
   return out;
+}
+
+/** Test hook: legality and problem messages for a list of card ids. */
+export function validateDeck(ids: string[]) {
+  const problems = deckProblems(ids);
+  return { legal: problems.length === 0, problems };
 }

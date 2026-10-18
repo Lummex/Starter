@@ -1,5 +1,5 @@
 // Oreheart rules engine. Pure: no DOM, no timers, no Math.random. State is plain JSON data.
-import { CARDS, COMMANDERS, FACTIONS, STARTER_DECKS, CONFIG } from './content';
+import { CARDS, COMMANDERS, FACTIONS, STARTER_DECKS, STARTER_DECK_LIST, warbandOf, CONFIG } from './content';
 import { nextRand, shuffle } from './rng';
 
 export type Side = 'player' | 'opponent';
@@ -83,27 +83,25 @@ const gain = (s: any, p: Side, n: number) => {
 };
 
 // ---------------------------------------------------------------- mines
-/** Legal layout: 3 mines in rows 3-5, mirrored between halves, at least 2 apart (Chebyshev), on the board. */
+/** Legal test-layout: 3 mines in rows 3-5, at least 2 apart (Chebyshev), not adjacent to a Stronghold, on the board. */
 export function legalMines(m: any): boolean {
   if (!Array.isArray(m) || m.length !== CONFIG.mineCount) return false;
   for (const x of m) if (!x || !Number.isInteger(x.row) || !Number.isInteger(x.col) || x.row < 3 || x.row > 5 || x.col < 1 || x.col > W) return false;
   for (let i = 0; i < m.length; i++) for (let j = i + 1; j < m.length; j++) if (cheb(m[i], m[j]) < 2) return false;
-  for (const x of m) {
-    if (x.row === 4) continue;
-    if (!m.some((y: any) => y.col === x.col && y.row === 8 - x.row)) return false;
-  }
+  for (const x of m) for (const p of ['player', 'opponent'] as Side[]) if (cheb(x, stronghold(p)) < 2) return false;
   return true;
 }
+/** Random layouts mirror corner to corner: (r, c) <-> (8 - r, 14 - c). */
 function randomMines(seed: number) {
   const r = { rng: (seed ^ 0x2f6e2b1) | 0 };
+  const pick = () => 1 + Math.floor(nextRand(r) * W);
   for (let tries = 0; tries < 1000; tries++) {
-    const pick = () => 1 + Math.floor(nextRand(r) * W);
     let m: any[];
-    if (nextRand(r) < 0.6) { const c = pick(); m = [{ row: 3, col: c }, { row: 5, col: c }, { row: 4, col: pick() }]; }
-    else m = [{ row: 4, col: pick() }, { row: 4, col: pick() }, { row: 4, col: pick() }];
+    if (nextRand(r) < 0.6) { const c = pick(); m = [{ row: 3, col: c }, { row: 5, col: W + 1 - c }, { row: 4, col: 7 }]; }
+    else { const c = pick(); m = [{ row: 4, col: 7 }, { row: 4, col: c }, { row: 4, col: W + 1 - c }]; }
     if (legalMines(m)) return m;
   }
-  return [{ row: 3, col: 3 }, { row: 5, col: 3 }, { row: 4, col: 9 }];
+  return [{ row: 3, col: 3 }, { row: 4, col: 7 }, { row: 5, col: 11 }];
 }
 const sortMines = (m: any[]) => m.map((x) => ({ row: x.row, col: x.col })).sort((a, b) => a.row - b.row || a.col - b.col);
 
@@ -114,7 +112,7 @@ export function createMatch(opts: any = {}) {
   const s: any = {
     turn: 0, activePlayer: 'player', priority: 'player', phase: 'mulligan', winner: null,
     players: {}, board: { creatures: [] },
-    sites: [] as any[],
+    sites: [] as any[], strongholds: { player: { ...stronghold('player') }, opponent: { ...stronghold('opponent') } },
     pendingResponse: null, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
     mulliganDone: { player: false, opponent: false }, tutorial: opts.tutorial ? { step: 'summon' } : null,
     flags: { battleCry: null, crystalsPlayed: { player: 0, opponent: 0 }, swapped: false, discount: { player: 0, opponent: 0 } },
@@ -134,8 +132,14 @@ export function createMatch(opts: any = {}) {
     const pl = s.players[who];
     const given = setup && setup[who + 'Deck'];
     if (given) pl.deck = given.map((id: string) => makeCard(s, id));
-    else if (who === 'player' && opts.playerDeck) pl.deck = shuffle(s, opts.playerDeck.map((id: string) => makeCard(s, id)));
-    else pl.deck = shuffle(s, STARTER_DECKS[pl.faction].map((id: string) => makeCard(s, id)));
+    else if (who === 'player' && opts.playerDeck && !opts.playerDeckId) { pl.deckId = null; pl.deck = shuffle(s, opts.playerDeck.map((id: string) => makeCard(s, id))); }
+    else {
+      let id = who === 'player' ? opts.playerDeckId : opts.opponentDeckId;
+      if (!id || !STARTER_DECKS[id]) id = who === 'opponent' && !opts.testMode && !opts.setup ? STARTER_DECK_LIST.filter((d) => d.faction === pl.faction)[Math.floor(nextRand(s) * 3)].id : warbandOf(pl.faction);
+      pl.deckId = id;
+      pl.deck = shuffle(s, STARTER_DECKS[id].map((cid: string) => makeCard(s, cid)));
+    }
+    if (pl.deckId === undefined) pl.deckId = null;
   }
   if (!setup) {
     for (const who of ['player', 'opponent'] as Side[]) {

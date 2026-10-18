@@ -63,7 +63,7 @@ export function smartMatch(c: any, query: string): boolean {
 export function autoFill(deck: string[]): string[] {
   const out = deck.slice();
   const n = () => { const m: Record<string, number> = {}; for (const id of out) m[id] = (m[id] || 0) + 1; return m; };
-  const room = () => CONFIG.deckSize - out.length;
+  const room = () => CONFIG.deckMin - out.length;
   const count = (id: string) => n()[id] || 0;
   const tally: Record<string, number> = {};
   for (const id of out) if (CARDS[id].type === 'creature' && CARDS[id].faction !== 'any') tally[CARDS[id].faction] = (tally[CARDS[id].faction] || 0) + 1;
@@ -238,8 +238,8 @@ export function showDecks(app: App) {
       return h('li', {}, h('span', {}, `${n[id]} × ${nm}`), plus, btn('−', 'small', () => removeCard(id), { 'aria-label': `Remove ${nm}` }));
     }));
     const c = deckCounts(deck);
-    pileEl.replaceChildren(h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('div', { class: 'pile-top' }, h('strong', {}, name), h('span', { class: 'pile-n' }, `${c.cards}/${CONFIG.deckSize}`)));
-    countsEl.textContent = `Cards: ${c.cards}/${CONFIG.deckSize} · Creatures: ${c.creatures} · Spells: ${c.spells} · Crystal cards: ${c.crystals}`;
+    pileEl.replaceChildren(h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('div', { class: 'pile-top' }, h('strong', {}, name), h('span', { class: 'pile-n' }, `${c.cards} cards (${CONFIG.deckMin}–${CONFIG.deckMax})`)));
+    countsEl.textContent = `Cards: ${c.cards} (${CONFIG.deckMin}–${CONFIG.deckMax}) · Creatures: ${c.creatures} · Spells: ${c.spells} · Crystal cards: ${c.crystals}`;
     const buckets = [1, 2, 3, 4, 5, 6, 7].map((k) => deck.filter((id) => CARDS[id].type !== 'crystal' && (k === 7 ? CARDS[id].cost >= 7 : CARDS[id].cost === k)).length);
     const mx = Math.max(4, ...buckets);
     chartEl.replaceChildren(...buckets.map((v, i) => {
@@ -253,7 +253,7 @@ export function showDecks(app: App) {
     mineEl.replaceChildren(...saved.map((d, i) => {
       const legal = deckLegal(d);
       return h('li', {},
-        btn(`${d.name} — ${d.cards.length}/${CONFIG.deckSize}, ${legal ? 'legal' : 'not legal'}`, '', () => { deck = d.cards.slice(); editing = i; name = d.name; status.textContent = ''; renderDeck(); }),
+        btn(`${d.name} — ${d.cards.length} cards, ${legal ? 'legal' : 'not legal'}`, '', () => { deck = d.cards.slice(); editing = i; name = d.name; status.textContent = ''; renderDeck(); }),
         btn('Delete', 'small', () => confirmDelete(i), { 'aria-label': `Delete ${d.name}` }));
     }));
     const full = saved.length >= MAX_DECKS;
