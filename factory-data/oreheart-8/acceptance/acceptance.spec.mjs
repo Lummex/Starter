@@ -123,7 +123,7 @@ test('AC3: Rules page with pictures and Back', async ({ page }) => {
   await page.getByRole('button', { name: 'Rules', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
   expect(await page.getByRole('img').count()).toBeGreaterThanOrEqual(1);
-  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });
 
@@ -140,7 +140,7 @@ test('AC4: Settings graphics toggle switches and persists', async ({ page }) => 
   await expect(page.getByRole('button', { name: 'Graphics: Low' })).toBeVisible();
   await page.getByRole('button', { name: 'Graphics: Low' }).click();
   await expect(page.getByRole('button', { name: 'Graphics: High' })).toBeVisible();
-  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });
 
@@ -2304,7 +2304,7 @@ test('AC60: Deck Builder shows card faces with full text and filters them', asyn
   await chooseFilter(page, 'Cost', '7+');
   await expect(all.getByRole('button', { name: 'Mangewolf Rider', exact: true })).toBeVisible();
   await expect(all.getByRole('button', { name: 'Shiv Rat', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });
 
@@ -2640,7 +2640,7 @@ async function makeSelectDecks(page) {
   await renameDeck(page, 'Too Small');
   await addCard(page, 'Shiv Rat');
   await saveDeck(page);
-  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
 }
@@ -2664,7 +2664,7 @@ test('AC72: select screen — Commander cards, deck stacks, difficulty and Fight
   const stacks = deckRow(page).getByRole('button', { name: /cards, (ready|not ready)$/ });
   await expect(stacks.first()).toHaveAccessibleName('Goblin Warband, 100 cards, ready');
   for (const f of ['Goblin', 'Gnome', 'Dwarf']) for (const st of ['Warband', 'Arcane Hoard', 'Horde']) {
-    await expect(deckRow(page).getByRole('button', { name: `${f} ${st}, 50 cards, ready`, exact: true })).toHaveCount(1);
+    await expect(deckRow(page).getByRole('button', { name: `${f} ${st}, 100 cards, ready`, exact: true })).toHaveCount(1);
   }
   await expect(deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })).toHaveCount(1);
   const small = deckRow(page).getByRole('button', { name: /^Too Small, 1 cards?, not ready$/ });
@@ -2731,7 +2731,7 @@ test('AC74: match-end summary, Play again with the same choices, and Menu', asyn
   expect(s.players.player.commanderId).toBe('borgo');
   expect(s.difficulty).toBe('hard');
   expect(s.winner).toBeNull();
-  expect(allIds(s, 'player').length).toBe(50);
+  expect(allIds(s, 'player').length).toBe(100);
   await surrenderViaMenu(page);
   await page.getByRole('button', { name: 'Menu', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
@@ -2971,8 +2971,7 @@ test('AC86: CREDITS.md lists fonts, card pictures and every outside asset file',
   const credits = path.join(dir, 'CREDITS.md');
   expect(fs.existsSync(credits), 'CREDITS.md').toBe(true);
   const text = fs.readFileSync(credits, 'utf8');
-  expect(text).toContain('Cinzel');
-  expect(text).toContain('Nunito');
+  expect(text).toContain('Alegreya SC'); // Round 5a: the one bundled font
   expect(text).toContain('art/cards');
   expect(/xai|grok/i.test(text)).toBe(true);
   const files = walk(fs, path, path.join(dir, 'public/assets/external')).concat(walk(fs, path, path.join(dir, 'dist/assets/external')));
@@ -4218,7 +4217,8 @@ test('AC130: Deck Commander locks other factions’ spells in the Deck Builder',
   const orb = page.getByRole('button', { name: 'Searing Arcane Orb', exact: true }).first();
   await orb.scrollIntoViewIfNeeded();
   await expect(orb).toHaveAttribute('aria-disabled', 'true');
-  await orb.dblclick();
+  // Round 5a: the locked tile is aria-disabled, so force the double-click past Playwright's enabled check
+  await orb.dblclick({ force: true });
   await expect(counts).toHaveText(before);
   const shiv = page.getByRole('button', { name: 'Venom Shiv', exact: true }).first();
   await expect(shiv).not.toHaveAttribute('aria-disabled', 'true');
@@ -4300,61 +4300,7 @@ test('AC132: spell frames per faction with the cost and type orbs', async ({ pag
   }
 });
 
-async function plainText(page) {
-  return page.evaluate(() => {
-    const bad = [];
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    while (walker.nextNode()) {
-      const n = walker.currentNode;
-      if (!/[\p{L}\p{N}]/u.test(n.textContent)) continue;
-      const el = n.parentElement;
-      if (!el || el.closest('[aria-hidden="true"], canvas, svg, script, style, noscript, textarea, option')) continue;
-      const r = el.getBoundingClientRect();
-      const cs = getComputedStyle(el);
-      if (r.width === 0 || r.height === 0 || cs.visibility === 'hidden' || !el.checkVisibility({ opacityProperty: true })) continue;
-      const m = el.closest('[data-metal="gold"], [data-metal="silver"]');
-      const ms = m && getComputedStyle(m);
-      const clip = ms && (ms.backgroundClip === 'text' || ms.webkitBackgroundClip === 'text');
-      const font = ms && /^["']?(Cinzel|Tinos)\b/.test(ms.fontFamily);
-      if (!m || !clip || !font || ms.backgroundImage === 'none') bad.push(`${n.textContent.trim().slice(0, 30)} [${m ? `${ms.fontFamily}/${ms.backgroundClip}` : 'no data-metal'}]`);
-    }
-    return bad.slice(0, 15);
-  });
-}
-
-test('AC133: metal lettering in Cinzel/Tinos on every screen; the gold and silver textures load', async ({ page }) => {
-  for (const tex of ['/art/ui/metal-gold.webp', '/art/ui/metal-silver.webp']) {
-    const r = await page.request.get(tex);
-    expect(r.status(), tex).toBe(200);
-    expect(r.headers()['content-type'] || '', tex).toMatch(/image/);
-  }
-  await openMenu(page);
-  await page.waitForTimeout(500);
-  expect(await plainText(page), 'title').toEqual([]);
-  expect(await page.evaluate(() => [...document.querySelectorAll('*')].some((e) => getComputedStyle(e).backgroundImage.includes('metal-gold')))).toBe(true);
-  await page.getByRole('button', { name: 'Rules', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
-  expect(await plainText(page), 'rules').toEqual([]);
-  await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
-  await page.waitForTimeout(500);
-  expect(await plainText(page), 'deck builder').toEqual([]);
-  await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Fight!' })).toBeVisible();
-  expect(await plainText(page), 'select').toEqual([]);
-  await page.goto('/');
-  const again = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
-  if (await again.isVisible()) await again.getByRole('button', { name: 'Skip' }).click();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Settings' }).first()).toBeVisible();
-  expect(await plainText(page), 'settings').toEqual([]);
-  await openTest(page);
-  await newMatch(page, quiet({ playerHand: ['goblin-scrapper', 'venom-shiv', 'soul-shard'] }));
-  await page.waitForTimeout(800);
-  expect(await plainText(page), 'match').toEqual([]);
-});
+// AC133 (Round 4 metal lettering) was retired in Round 5a; AC135 checks the new plain gold Alegreya SC lettering.
 
 test.describe('round 4 phone screenshots (844x390)', () => {
   test.use({ viewport: { width: 844, height: 390 } });
@@ -4382,3 +4328,527 @@ test.describe('round 4 phone screenshots (844x390)', () => {
     expect(errors).toEqual([]);
   });
 });
+
+// ---------- Phase 1B Round 5a (menus, deck builder, lettering) ----------
+const deckPile = (page) => page.getByLabel('Deck pile', { exact: true });
+const myDecks = (page) => page.getByLabel('My decks', { exact: true });
+const deckName = (page) => deckPile(page).locator('[data-part="deck-name"]');
+const deckSize = (page) => deckPile(page).locator('[data-part="deck-size"]');
+const STARTERS = ['Goblin', 'Gnome', 'Dwarf'].flatMap((f) => ['Warband', 'Arcane Hoard', 'Horde'].map((st) => `${f} ${st}`));
+const px = async (loc, prop = 'fontSize') => loc.evaluate((e, p) => parseFloat(getComputedStyle(e)[p]), prop);
+const box = async (loc) => loc.boundingBox();
+async function toTitle(page) {
+  await page.goto('/?test=1');
+  await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+}
+async function toSelect(page) {
+  await toTitle(page);
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+}
+
+// every visible text node: Alegreya SC italic, weight 400/700, no textured / clipped letters
+async function letteringProblems(page) {
+  return page.evaluate(() => {
+    const bad = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const n = walker.currentNode;
+      if (!/[\p{L}\p{N}]/u.test(n.textContent)) continue;
+      const el = n.parentElement;
+      if (!el || el.closest('[aria-hidden="true"], canvas, svg, script, style, noscript, textarea')) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0 || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+      const cs = getComputedStyle(el);
+      const t = n.textContent.trim().slice(0, 30);
+      if (!/^["']?Alegreya SC\b/.test(cs.fontFamily)) bad.push(`${t} [font ${cs.fontFamily}]`);
+      else if (cs.fontStyle !== 'italic') bad.push(`${t} [style ${cs.fontStyle}]`);
+      else if (!['400', '700'].includes(cs.fontWeight)) bad.push(`${t} [weight ${cs.fontWeight}]`);
+    }
+    for (const e of document.querySelectorAll('body *')) {
+      const s = getComputedStyle(e);
+      if (s.backgroundClip === 'text' || s.webkitBackgroundClip === 'text') bad.push(`background-clip:text on ${e.tagName} "${(e.textContent || '').trim().slice(0, 20)}"`);
+      if (/metal-(gold|silver)/.test(s.backgroundImage)) bad.push(`metal texture on ${e.tagName}`);
+    }
+    return bad.slice(0, 15);
+  });
+}
+
+test('AC135: one font everywhere: plain gold Alegreya SC Italic, bundled, no metal or textured letters', async ({ page }) => {
+  const remote = [];
+  page.on('request', (r) => { if (/fonts\.(googleapis|gstatic)\.com/.test(r.url())) remote.push(r.url()); });
+  await openMenu(page);
+  await page.evaluate(async () => { await document.fonts.ready; });
+  expect(await page.evaluate(() => document.fonts.check('italic 400 20px "Alegreya SC"'))).toBe(true);
+  expect(await letteringProblems(page), 'title').toEqual([]);
+  await expect(page.getByRole('button', { name: 'Play', exact: true })).toHaveCSS('color', 'rgb(255, 215, 0)');
+  await page.getByRole('button', { name: 'Rules', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
+  expect(await letteringProblems(page), 'rules').toEqual([]);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Settings' }).first()).toBeVisible();
+  expect(await letteringProblems(page), 'settings').toEqual([]);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+  await page.waitForTimeout(500);
+  expect(await letteringProblems(page), 'deck builder').toEqual([]);
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toHaveCSS('color', 'rgb(255, 215, 0)');
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+  expect(await letteringProblems(page), 'select').toEqual([]);
+  await openTest(page);
+  await newMatch(page, quiet({ playerHand: ['goblin-scrapper', 'venom-shiv', 'soul-shard'] }));
+  await page.waitForTimeout(800);
+  expect(await letteringProblems(page), 'match').toEqual([]);
+  expect(remote, 'font is self-hosted').toEqual([]);
+});
+
+// every visible card face keeps its frame's exact proportions (never stretched)
+async function stretchedFaces(page) {
+  return page.evaluate(() => {
+    const out = { checked: 0, bad: [] };
+    for (const face of document.querySelectorAll('[data-card-id]')) {
+      if (!face.checkVisibility({ opacityProperty: true, visibilityProperty: true }) || face.offsetWidth < 10) continue;
+      const img = [...face.querySelectorAll('img')].find((i) => /frame/.test(i.src) && i.naturalWidth > 0);
+      if (!img) continue;
+      out.checked++;
+      const want = img.naturalWidth / img.naturalHeight;
+      const id = face.getAttribute('data-card-id');
+      const faceR = face.offsetWidth / face.offsetHeight;
+      const imgR = img.offsetWidth / img.offsetHeight;
+      if (Math.abs(faceR / want - 1) > 0.03) out.bad.push(`${id} face ${faceR.toFixed(3)} vs ${want.toFixed(3)}`);
+      if (Math.abs(imgR / want - 1) > 0.03) out.bad.push(`${id} frame img ${imgR.toFixed(3)} vs ${want.toFixed(3)}`);
+      for (let e = face; e && e !== document.body; e = e.parentElement) {
+        const m = new DOMMatrix(getComputedStyle(e).transform === 'none' ? undefined : getComputedStyle(e).transform);
+        const sx = Math.hypot(m.a, m.b), sy = Math.hypot(m.c, m.d);
+        if (Math.abs(sx / sy - 1) > 0.03) { out.bad.push(`${id} non-uniform scale ${sx.toFixed(2)}/${sy.toFixed(2)}`); break; }
+      }
+    }
+    out.bad = out.bad.slice(0, 10);
+    return out;
+  });
+}
+test('AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulligan, hand) at several window sizes', async ({ page }) => {
+  for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(vp);
+    await openDecks(page);
+    for (const n of ['2', '8']) {
+      await page.getByLabel('Cards per row', { exact: true }).fill(n);
+      await page.waitForTimeout(400);
+      const r = await stretchedFaces(page);
+      expect(r.checked, `${vp.width} ${n}/row faces`).toBeGreaterThan(1);
+      expect(r.bad, `${vp.width}x${vp.height} ${n} per row`).toEqual([]);
+    }
+  }
+  await openMulligan(page);
+  await page.waitForTimeout(500);
+  let r = await stretchedFaces(page);
+  expect(r.checked).toBeGreaterThan(1);
+  expect(r.bad, 'mulligan').toEqual([]);
+  await openTest(page);
+  await newMatch(page, quiet({ playerHand: ['venom-shiv', 'fireball', 'goblin-scrapper', 'soul-shard'] }));
+  await page.waitForTimeout(800);
+  r = await stretchedFaces(page);
+  expect(r.checked).toBeGreaterThan(1);
+  expect(r.bad, 'hand').toEqual([]);
+});
+
+// menu actions are plain gold text: no border, box color, box image, shadow or outline at rest
+async function boxedButtons(page, names) {
+  await page.mouse.move(1, 1);
+  await page.evaluate(() => document.activeElement && document.activeElement.blur && document.activeElement.blur());
+  await page.waitForTimeout(300);
+  const bad = [];
+  for (const name of names) {
+    const b = page.getByRole('button', { name, exact: true }).first();
+    await expect(b, name).toBeVisible();
+    const s = await b.evaluate((e) => {
+      const c = getComputedStyle(e);
+      return { border: ['Top', 'Right', 'Bottom', 'Left'].map((k) => (c[`border${k}Style`] === 'none' ? 0 : parseFloat(c[`border${k}Width`]))),
+        bgc: c.backgroundColor, bgi: c.backgroundImage, shadow: c.boxShadow, outline: c.outlineStyle === 'none' ? 0 : parseFloat(c.outlineWidth), color: c.color };
+    });
+    if (!s.border.every((w) => w === 0)) bad.push(`${name} border ${s.border}`);
+    if (!CLEAR.test(s.bgc)) bad.push(`${name} background ${s.bgc}`);
+    if (s.bgi !== 'none') bad.push(`${name} background-image`);
+    if (s.shadow !== 'none') bad.push(`${name} box-shadow`);
+    if (s.outline !== 0) bad.push(`${name} outline`);
+    if (s.color !== 'rgb(255, 215, 0)') bad.push(`${name} color ${s.color}`);
+  }
+  return bad;
+}
+test('AC137: menu buttons are plain gold text with a hover glow, no boxes or borders', async ({ page }) => {
+  await toTitle(page);
+  expect(await boxedButtons(page, ['Play', 'Tutorial', 'Decks', 'Rules', 'Settings']), 'title').toEqual([]);
+  const play = page.getByRole('button', { name: 'Play', exact: true });
+  const look = () => play.evaluate((e) => { const c = getComputedStyle(e); return [c.textShadow, c.filter, c.transform, c.backgroundImage, c.color, c.fontSize].join('|'); });
+  const rest = await look();
+  await play.hover();
+  await expect.poll(look).not.toBe(rest);
+  await expect(play).toHaveCSS('cursor', 'pointer');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  expect(await boxedButtons(page, ['Back', 'Restore starter decks']), 'settings').toEqual([]);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Rules', exact: true }).click();
+  expect(await boxedButtons(page, ['Back']), 'rules').toEqual([]);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  expect(await boxedButtons(page, ['Auto-fill', 'Save', 'Rename', 'New Deck', 'Back']), 'deck builder').toEqual([]);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await page.getByRole('button', { name: 'Normal', exact: true }).click();
+  expect(await boxedButtons(page, ['Easy', 'Hard', 'Fight!', 'Remove Goblin Warband', 'Copy Goblin Warband to my decks', 'Restore starter decks']), 'select').toEqual([]);
+});
+
+async function fillsWindow(page, screen, where) {
+  const r = await page.evaluate((sc) => {
+    const el = document.querySelector(`[data-screen="${sc}"]`);
+    if (!el) return { missing: true };
+    const b = el.getBoundingClientRect();
+    const d = document.documentElement;
+    return { x: b.left, y: b.top, w: b.width, h: b.height, W: innerWidth, H: innerHeight, sw: d.scrollWidth, sh: d.scrollHeight };
+  }, screen);
+  expect(r.missing, `${where}: data-screen="${screen}"`).toBeUndefined();
+  expect(Math.abs(r.x) <= 2 && Math.abs(r.y) <= 2, `${where} at the top-left corner`).toBe(true);
+  expect(Math.abs(r.w - r.W) <= 2 && Math.abs(r.h - r.H) <= 2, `${where} ${r.w}x${r.h} fills ${r.W}x${r.H}`).toBe(true);
+  expect(r.sw <= r.W + 1 && r.sh <= r.H + 1, `${where}: the page itself never scrolls`).toBe(true);
+}
+test('AC138: every menu screen fills the window edge to edge at 844x390, 1280x720, 1920x1080 and rescales live', async ({ page }) => {
+  for (const vp of [{ width: 844, height: 390 }, { width: 1280, height: 720 }, { width: 1920, height: 1080 }]) {
+    await page.setViewportSize(vp);
+    const at = `${vp.width}x${vp.height}`;
+    await toTitle(page);
+    await fillsWindow(page, 'title', `title ${at}`);
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await fillsWindow(page, 'settings', `settings ${at}`);
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Rules', exact: true }).click();
+    await fillsWindow(page, 'rules', `rules ${at}`);
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Decks', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+    await fillsWindow(page, 'deck-builder', `deck builder ${at}`);
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+    await fillsWindow(page, 'select', `select ${at}`);
+  }
+  // live resize without a reload
+  await toSelect(page);
+  for (const vp of [{ width: 1100, height: 600 }, { width: 844, height: 390 }, { width: 1600, height: 900 }]) {
+    await page.setViewportSize(vp);
+    await page.waitForTimeout(400);
+    await fillsWindow(page, 'select', `select live ${vp.width}x${vp.height}`);
+  }
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  for (const vp of [{ width: 1280, height: 720 }, { width: 844, height: 390 }, { width: 1920, height: 1080 }]) {
+    await page.setViewportSize(vp);
+    await page.waitForTimeout(400);
+    await fillsWindow(page, 'deck-builder', `deck builder live ${vp.width}x${vp.height}`);
+  }
+});
+
+const left = async (loc) => (await box(loc)).x;
+test('AC139: Deck Builder layout: big title, logo, deck name, left-aligned panel at the top, text actions with Back under them', async ({ page }) => {
+  for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) {
+    await page.setViewportSize(vp);
+    await openDecks(page);
+    for (const n of ['Shiv Rat', 'Snotskull Grunt', 'Soul Shard']) await addCard(page, n);
+    const W = vp.width, H = vp.height, at = `${W}x${H}`;
+    const panel = page.getByLabel('Deck panel', { exact: true });
+    const pb = await box(panel);
+    expect(pb.y, `${at} panel touches the top`).toBeLessThanOrEqual(2);
+    expect(pb.x, `${at} panel on the right`).toBeGreaterThanOrEqual(W * 0.45);
+    const title = panel.getByRole('heading', { name: 'Deck Builder' });
+    const tb = await box(title);
+    expect(tb.y - pb.y, `${at} title at the top of the panel`).toBeLessThanOrEqual(H * 0.15);
+    const logo = page.getByRole('img', { name: 'Oreheart' }).first();
+    const lb = await box(logo);
+    expect(lb.y, `${at} logo at the top`).toBeLessThanOrEqual(H * 0.15);
+    expect(lb.height, `${at} logo is big`).toBeGreaterThanOrEqual(H * 0.12);
+    const lc = lb.x + lb.width / 2;
+    expect(lc >= W * 0.2 && lc <= W * 0.65, `${at} logo top middle`).toBe(true);
+    const overlap = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+    const search = page.getByRole('searchbox', { name: 'Search cards' });
+    const slider = page.getByLabel('Cards per row', { exact: true });
+    for (const [n, l] of [['panel', panel], ['search', search], ['slider', slider]]) expect(overlap(lb, await box(l)), `${at} logo covers ${n}`).toBe(false);
+    expect(Math.abs((await left(search)) - (await left(slider))), `${at} left controls aligned`).toBeLessThanOrEqual(24);
+    expect(await left(search), `${at} controls on the left`).toBeLessThanOrEqual(W * 0.4);
+    const acts = ['Auto-fill', 'Save', 'Rename', 'New Deck'].map((n) => panel.getByRole('button', { name: n, exact: true }));
+    const ab = [];
+    for (const a of acts) ab.push(await box(a));
+    for (let i = 1; i < ab.length; i++) {
+      expect(Math.abs(ab[i].y - ab[0].y), `${at} actions in one row`).toBeLessThanOrEqual(8);
+      expect(ab[i].x, `${at} action order`).toBeGreaterThan(ab[i - 1].x);
+    }
+    const back = panel.getByRole('button', { name: 'Back', exact: true });
+    const bb = await box(back);
+    expect(bb.y, `${at} Back under the actions`).toBeGreaterThanOrEqual(ab[0].y + ab[0].height - 2);
+    expect(await px(back), `${at} Back is large`).toBeGreaterThanOrEqual(await px(acts[0]));
+    const list = deckList(page);
+    const listHead = list.getByRole('heading', { name: 'Deck list' });
+    expect((await box(listHead)).y, `${at} Back above the deck list`).toBeGreaterThanOrEqual(bb.y + bb.height - 2);
+    const name = deckName(page);
+    const lefts = [await left(title), await left(name), ab[0].x, bb.x, await left(listHead)];
+    expect(Math.max(...lefts) - Math.min(...lefts), `${at} panel left-aligned ${lefts}`).toBeLessThanOrEqual(24);
+    const [tf, nf, sf, hf] = [await px(title), await px(name), await px(deckSize(page)), await px(listHead)];
+    expect(nf, `${at} name at least twice the count line`).toBeGreaterThanOrEqual(2 * sf);
+    expect(tf, `${at} title biggest`).toBeGreaterThan(nf);
+    await expect(deckSize(page)).toContainText(/3 cards \(50[–-]100\)/);
+    if (W === 1920) {
+      expect(tf, 'title size').toBeGreaterThanOrEqual(48);
+      expect(nf, 'deck name size').toBeGreaterThanOrEqual(32);
+      expect(hf, '"Deck list" heading size').toBeGreaterThanOrEqual(32);
+      const row = list.getByRole('listitem').first();
+      expect((await box(row)).height, 'list row height').toBeGreaterThanOrEqual(40);
+      expect(await px(row), 'list entry size').toBeGreaterThanOrEqual(20);
+    }
+  }
+});
+
+test('AC140: the cards-per-row slider goes from 2 to 8', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openDecks(page);
+  const slider = page.getByLabel('Cards per row', { exact: true });
+  await expect(slider).toHaveAttribute('min', '2');
+  await expect(slider).toHaveAttribute('max', '8');
+  const perRow = () => allCards(page).locator('[data-card-id]').evaluateAll((els) => {
+    const tops = els.slice(0, 12).map((e) => Math.round(e.getBoundingClientRect().top));
+    return tops.filter((t) => Math.abs(t - tops[0]) <= 2).length;
+  });
+  for (const n of [2, 8]) {
+    await slider.fill(String(n));
+    await expect.poll(perRow).toBe(n);
+  }
+});
+
+test('AC141: the deck carousel shows only my decks plus a New Deck slot; arrows, keys and dragging pick the deck', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await openDecks(page);
+  const car = myDecks(page);
+  await expect(car.getByRole('button', { name: '+ New Deck', exact: true })).toBeVisible();
+  for (const st of STARTERS) await expect(car.getByRole('button', { name: new RegExp(st) })).toHaveCount(0);
+  await renameDeck(page, 'Alpha');
+  await addCard(page, 'Shiv Rat');
+  await saveDeck(page);
+  await page.getByRole('button', { name: 'New Deck', exact: true }).click();
+  await renameDeck(page, 'Beta');
+  await addCard(page, 'Snotskull Grunt');
+  await saveDeck(page);
+  await expect(car.getByRole('button', { name: /^Beta/ })).toHaveAttribute('aria-current', 'true');
+  await expect(deckName(page)).toHaveText('Beta');
+  await car.getByRole('button', { name: 'Previous deck', exact: true }).click();
+  await expect(deckName(page)).toHaveText('Alpha');
+  await expect(car.getByRole('button', { name: /^Alpha/ })).toHaveAttribute('aria-current', 'true');
+  await expect(deckList(page)).toContainText('1 × Shiv Rat');
+  await car.getByRole('button', { name: /^Alpha/ }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(deckName(page)).toHaveText('Beta');
+  // drag right with the mouse: the earlier deck (Alpha) comes to the center
+  const cb = await box(car);
+  const y = cb.y + cb.height / 2, x = cb.x + cb.width / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  for (let i = 1; i <= 10; i++) await page.mouse.move(x + i * 20, y);
+  await page.mouse.up();
+  await expect(deckName(page)).toHaveText('Alpha');
+  await expect(car.getByRole('button', { name: /^Alpha/ })).toHaveAttribute('aria-current', 'true');
+});
+
+test('AC142: a card dragged from the grid shows at its 3-per-row size and lands in the deck', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await openDecks(page);
+  const slider = page.getByLabel('Cards per row', { exact: true });
+  await slider.fill('3');
+  await page.waitForTimeout(400);
+  const tile = allCards(page).getByRole('button', { name: 'Shiv Rat', exact: true });
+  await tile.scrollIntoViewIfNeeded();
+  const w3 = (await box(tile)).width;
+  await slider.fill('8');
+  await page.waitForTimeout(400);
+  await tile.scrollIntoViewIfNeeded();
+  const tb = await box(tile);
+  expect(tb.width).toBeLessThan(w3 * 0.8);
+  await page.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2);
+  await page.mouse.down();
+  for (let i = 1; i <= 6; i++) await page.mouse.move(tb.x + tb.width / 2 + i * 10, tb.y + tb.height / 2 + i * 5);
+  const ghost = page.locator('[data-drag-ghost]');
+  await expect(ghost).toBeVisible();
+  const gw = (await box(ghost)).width;
+  expect(Math.abs(gw / w3 - 1), `ghost ${gw} vs 3-per-row ${w3}`).toBeLessThanOrEqual(0.1);
+  const pb = await box(deckPile(page));
+  for (let i = 1; i <= 10; i++) await page.mouse.move(tb.x + (pb.x + pb.width / 2 - tb.x) * i / 10, tb.y + (pb.y + pb.height / 2 - tb.y) * i / 10);
+  await page.mouse.up();
+  await expect(deckList(page)).toContainText('1 × Shiv Rat');
+  await expect(ghost).toHaveCount(0);
+});
+
+const TWELVE = ['Shiv Rat', 'Grubgrabber Miner', 'Mangewolf Rider', 'Snotskull Grunt', 'Rotgut Grenadier', 'Skullbasher Rusher',
+  'Soul Shard', 'Soul Cluster', 'Phase Stalker', 'Grimhold Ravager', 'Ironjaw Raider', 'Skullflinger'];
+async function visibleRows(page) {
+  return deckList(page).evaluate((list) => {
+    const items = [...list.querySelectorAll('li, [role="listitem"]')];
+    let sc = items[0] && items[0].parentElement;
+    while (sc && sc !== list.parentElement && !(sc.scrollHeight > sc.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(sc).overflowY))) sc = sc.parentElement;
+    const view = (sc && sc !== list.parentElement ? sc : list).getBoundingClientRect();
+    const top = Math.max(view.top, 0), bottom = Math.min(view.bottom, innerHeight);
+    return items.filter((i) => { const b = i.getBoundingClientRect(); return b.height > 0 && b.top >= top - 1 && b.bottom <= bottom + 1; }).length;
+  });
+}
+test('AC143: the deck list always shows about 8 rows; it scrolls inside its panel', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await openDecks(page);
+  for (const n of TWELVE) await addCard(page, n);
+  await expect(deckList(page).getByRole('listitem')).toHaveCount(12);
+  expect(await visibleRows(page), '1280x720').toBeGreaterThanOrEqual(8);
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.waitForTimeout(500);
+  expect(await visibleRows(page), '844x390').toBeGreaterThanOrEqual(7);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true);
+});
+
+test('AC144: starter decks can be removed (in-game confirm) and restored; at least one deck always remains', async ({ page }) => {
+  test.setTimeout(120000);
+  page.on('dialog', (d) => { throw new Error(`browser dialog used: ${d.message()}`); });
+  await toSelect(page);
+  const row = deckRow(page);
+  const removeDeck = async (name) => {
+    await row.getByRole('button', { name: `Remove ${name}`, exact: true }).click();
+    const dlg = page.getByRole('dialog', { name: 'Remove deck?' });
+    await expect(dlg).toBeVisible();
+    await expect(dlg).toContainText(name);
+    await dlg.getByRole('button', { name: 'Remove', exact: true }).click();
+    await expect(row.getByRole('button', { name: `${name}, 100 cards, ready`, exact: true })).toHaveCount(0);
+  };
+  await row.getByRole('button', { name: 'Remove Goblin Horde', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Remove deck?' }).getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(row.getByRole('button', { name: 'Goblin Horde, 100 cards, ready', exact: true })).toHaveCount(1);
+  await removeDeck('Goblin Horde');
+  await page.reload();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(row.getByRole('button', { name: 'Goblin Horde, 100 cards, ready', exact: true })).toHaveCount(0);
+  await expect(row.getByRole('button', { name: 'Goblin Warband, 100 cards, ready', exact: true })).toHaveCount(1);
+  // Restore from Settings
+  await toTitle(page);
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Restore starter decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(row.getByRole('button', { name: 'Goblin Horde, 100 cards, ready', exact: true })).toHaveCount(1);
+  // remove all but one: the last deck can't be removed
+  for (const st of STARTERS.slice(0, 8)) await removeDeck(st);
+  await expect(row.getByRole('button', { name: 'Remove Dwarf Horde', exact: true })).toBeDisabled();
+  await expect(row.getByRole('button', { name: 'Dwarf Horde, 100 cards, ready', exact: true })).toHaveCount(1);
+  // Restore from the deck picker
+  await page.getByRole('button', { name: 'Restore starter decks', exact: true }).click();
+  for (const st of STARTERS) await expect(row.getByRole('button', { name: `${st}, 100 cards, ready`, exact: true })).toHaveCount(1);
+});
+
+test('AC145: Copy to my decks makes an editable saved copy and leaves the starter deck unchanged; my decks can be removed', async ({ page }) => {
+  page.on('dialog', (d) => { throw new Error(`browser dialog used: ${d.message()}`); });
+  await toSelect(page);
+  await deckRow(page).getByRole('button', { name: 'Copy Goblin Warband to my decks', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+  await expect(deckName(page)).toHaveText('Goblin Warband (copy)');
+  await expect(deckSize(page)).toContainText(/100 cards \(50[–-]100\)/);
+  await expect(myDecks(page).getByRole('button', { name: /^Goblin Warband \(copy\)/ })).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByLabel('Deck problems', { exact: true })).toContainText('Deck is legal');
+  await renameDeck(page, 'My Warband');
+  await deckList(page).getByRole('button', { name: 'Remove Grubgrabber Miner', exact: true }).click();
+  await saveDeck(page);
+  const starters = await page.evaluate(async () => await window.oreheart.listStarterDecks());
+  expect(starters.find((d) => d.name === 'Goblin Warband').cards.length).toBe(100);
+  await page.reload();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(deckRow(page).getByRole('button', { name: 'Goblin Warband, 100 cards, ready', exact: true })).toHaveCount(1);
+  await expect(deckRow(page).getByRole('button', { name: 'My Warband, 99 cards, ready', exact: true })).toHaveCount(1);
+  await deckRow(page).getByRole('button', { name: 'Remove My Warband', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Remove deck?' }).getByRole('button', { name: 'Remove', exact: true }).click();
+  await expect(deckRow(page).getByRole('button', { name: /^My Warband,/ })).toHaveCount(0);
+  await toTitle(page);
+  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await expect(myDecks(page).getByRole('button', { name: /^My Warband/ })).toHaveCount(0);
+});
+
+const COMMANDERS = ['Grubnak Rotgut, King of the Junkpile', 'Archmagister Sproingle the Unfathomable', 'Thane Borgo Gravelgrim'];
+test('AC146: Choose Your Commander: big glowing Commander cards that stand out, big decks and text, filling the screen', async ({ page }) => {
+  for (const vp of [{ width: 1280, height: 720 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(vp);
+    await toSelect(page);
+    const W = vp.width, H = vp.height, at = `${W}x${H}`;
+    await page.getByRole('button', { name: COMMANDERS[1], exact: true }).click();
+    const boxes = [];
+    for (const n of COMMANDERS) {
+      const b = await box(page.getByRole('button', { name: n, exact: true }));
+      boxes.push(b);
+      expect(b.height, `${at} ${n} height`).toBeGreaterThanOrEqual(H * 0.3);
+      expect(b.x >= -1 && b.y >= -1 && b.x + b.width <= W + 1 && b.y + b.height <= H + 1, `${at} ${n} on-screen`).toBe(true);
+    }
+    expect(boxes[2].x + boxes[2].width - boxes[0].x, `${at} Commander row spreads out`).toBeGreaterThanOrEqual(W * 0.45);
+    const stack = deckRow(page).getByRole('button', { name: 'Goblin Warband, 100 cards, ready', exact: true });
+    expect((await box(stack)).height, `${at} deck stack size`).toBeGreaterThanOrEqual(H * 0.15);
+    const glow = (n) => page.getByRole('button', { name: n, exact: true }).evaluate((e) => {
+      for (const x of [e, ...e.querySelectorAll('*')]) {
+        const c = getComputedStyle(x);
+        if (c.boxShadow !== 'none' || /drop-shadow/.test(c.filter)) return `${c.boxShadow}|${c.filter}`;
+      }
+      return null;
+    });
+    for (const n of COMMANDERS) expect(await glow(n), `${at} ${n} glows`).not.toBeNull();
+    expect(await glow(COMMANDERS[1]), `${at} selected glows strongest`).not.toBe(await glow(COMMANDERS[0]));
+    const blurred = await page.evaluate(() => [...document.querySelectorAll('*')].some((e) => {
+      const c = getComputedStyle(e);
+      return /blur\(/.test(c.backdropFilter || c.webkitBackdropFilter || '') || /blur\(/.test(c.filter);
+    }));
+    expect(blurred, `${at} dimmed/blurred wall behind the cards`).toBe(true);
+    const fb = await box(page.getByRole('button', { name: 'Fight!', exact: true }));
+    expect(fb.y + fb.height, `${at} Fight! on-screen`).toBeLessThanOrEqual(H + 1);
+    if (W === 1280) expect(await px(page.getByRole('heading', { name: 'Choose Your Commander' })), 'heading 2x').toBeGreaterThanOrEqual(28);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true);
+  }
+});
+
+test('AC147: spell cards use the owner\'s real spell frames per faction', async ({ page }) => {
+  await openTest(page);
+  const want = { 'venom-shiv': 'goblin', fireball: 'gnome', 'shield-bubble': 'dwarf', fizzle: 'shared' };
+  await newMatch(page, quiet({ playerHand: Object.keys(want) }));
+  const hand = page.getByLabel('Your hand', { exact: true });
+  for (const [id, f] of Object.entries(want)) {
+    const face = hand.locator(`[data-card-id="${id}"]`).first();
+    const img = face.locator(`img[src*="spell-frame-${f}"]`).first();
+    await expect(img, id).toHaveCount(1);
+    const nat = await img.evaluate(async (i) => { await i.decode().catch(() => {}); return [i.naturalWidth, i.naturalHeight]; });
+    expect(nat[1], `${id} full-size owner art`).toBeGreaterThanOrEqual(1000);
+    expect(Math.abs(nat[0] / nat[1] - 1152 / 1712), `${id} owner frame proportions`).toBeLessThanOrEqual(0.01);
+  }
+});
+
+for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
+  test.describe(`round 5a screenshots (${vp.width}x${vp.height})`, () => {
+    test.use({ viewport: vp });
+    test(`AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (${vp.width}x${vp.height})`, async ({ page }, testInfo) => {
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await openDecks(page);
+      await page.waitForTimeout(600);
+      await testInfo.attach(`deck-builder-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+      await toSelect(page);
+      await page.waitForTimeout(600);
+      await testInfo.attach(`choose-commander-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+      await openTest(page);
+      const ids = ['venom-shiv', 'fireball', 'battle-cry', 'fizzle'];
+      await newMatch(page, quiet({ playerHand: ids }));
+      await page.waitForTimeout(800);
+      const hand = page.getByLabel('Your hand', { exact: true });
+      for (const id of ids) {
+        await hand.locator(`[data-card-id="${id}"]`).first().hover();
+        await page.waitForTimeout(400);
+        await testInfo.attach(`spell-${id}-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+      }
+      expect(errors).toEqual([]);
+    });
+  });
+}
