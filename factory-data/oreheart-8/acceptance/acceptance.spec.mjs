@@ -330,9 +330,10 @@ test('AC9: example (b) — 2 vs 2 tie: mine is neutral, each side gets the full 
   const bc = handUid(s, 'player', 'battle-cry');
   expect((await legal(page)).some((a) => a.type === 'cast' && a.uid === bc)).toBe(true);
   const g = s.players.player.hand.filter((c) => c.cardId === 'goblin-scrounger').map((c) => c.uid);
-  for (let i = 0; i < 4; i++) expect((await act(page, { type: 'summon', uid: g[i], row: 7, col: i + 1 })).ok).toBe(true); // 1 each (Grubnak minimum 1)
+  const freeCols = [1, 3, 4, 5]; // Round 3b: skip (7,2), the player's Stronghold
+  for (let i = 0; i < 4; i++) expect((await act(page, { type: 'summon', uid: g[i], row: 7, col: freeCols[i] })).ok).toBe(true); // 1 each (Grubnak minimum 1)
   expect((await getState(page)).players.player.crystals).toBe(0);
-  expect((await act(page, { type: 'summon', uid: g[4], row: 7, col: 5 })).ok).toBe(false);
+  expect((await act(page, { type: 'summon', uid: g[4], row: 7, col: 6 })).ok).toBe(false);
 });
 
 test('AC9: mining at an enemy-owned mine pays half — Miner 1, Fighter 0; own or neutral pays full', async ({ page }) => {
@@ -1272,7 +1273,7 @@ test('AC27: summoning spends exactly the new costs', async ({ page }) => {
     playerCommander: 'borgo',
     setup: { playerHand: ['dwarf-miner', 'shieldbeard', 'axe-thrower', 'ram-rider'], playerCrystals: 30 },
   });
-  const steps = [['dwarf-miner', 1, 29], ['shieldbeard', 2, 22], ['axe-thrower', 3, 16], ['ram-rider', 5, 5]];
+  const steps = [['dwarf-miner', 1, 29], ['shieldbeard', 3, 22], ['axe-thrower', 4, 16], ['ram-rider', 5, 5]]; // Round 3b: (7,2) is the Stronghold
   for (const [id, col, left] of steps) {
     expect((await act(page, { type: 'summon', uid: handUid(s, 'player', id), row: 7, col })).ok, id).toBe(true);
     s = await getState(page);
@@ -2252,6 +2253,12 @@ async function openDecks(page, url = '/?test=1') {
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
 }
 const allCards = (page) => page.getByLabel('All cards', { exact: true });
+// Round 3b: filters are custom ornate dropdowns (combobox -> floating listbox of options)
+async function chooseFilter(page, label, option) {
+  await page.getByRole('combobox', { name: label, exact: true }).click();
+  await page.getByRole('listbox', { name: label, exact: true }).getByRole('option', { name: option, exact: true }).click();
+  await expect(page.getByRole('combobox', { name: label, exact: true })).toContainText(option);
+}
 const deckList = (page) => page.getByLabel('Deck list', { exact: true });
 // first copy by double-click on the card face, further copies with the + button
 async function addCard(page, name, n = 1) {
@@ -2282,19 +2289,19 @@ test('AC60: Deck Builder shows card faces with full text and filters them', asyn
     await expect(all.getByRole('button', { name: n, exact: true })).toHaveCount(1);
   }
   await expect(all).toContainText('Guard: adjacent enemies must attack it first');
-  await page.getByLabel('Faction', { exact: true }).selectOption('Dwarves');
+  await chooseFilter(page, 'Faction', 'Dwarves');
   await expect(all.getByRole('button', { name: 'Ironjaw Raider', exact: true })).toBeVisible();
   await expect(all.getByRole('button', { name: 'Snotskull Grunt', exact: true })).toHaveCount(0);
-  await page.getByLabel('Faction', { exact: true }).selectOption('All');
-  await page.getByLabel('Type', { exact: true }).selectOption('Spells');
+  await chooseFilter(page, 'Faction', 'All');
+  await chooseFilter(page, 'Type', 'Spells');
   await expect(all.getByRole('button', { name: 'Infernal Orb', exact: true })).toBeVisible();
   await expect(all.getByRole('button', { name: 'Ironjaw Raider', exact: true })).toHaveCount(0);
-  await page.getByLabel('Type', { exact: true }).selectOption('All');
-  await page.getByLabel('Rarity', { exact: true }).selectOption('Collector');
+  await chooseFilter(page, 'Type', 'All');
+  await chooseFilter(page, 'Rarity', 'Collector');
   await expect(all.getByRole('button', { name: 'Gutcrusher the Troll Tyrant', exact: true })).toBeVisible();
   await expect(all.getByRole('button', { name: 'Snotskull Grunt', exact: true })).toHaveCount(0);
-  await page.getByLabel('Rarity', { exact: true }).selectOption('All');
-  await page.getByLabel('Cost', { exact: true }).selectOption('7+');
+  await chooseFilter(page, 'Rarity', 'All');
+  await chooseFilter(page, 'Cost', '7+');
   await expect(all.getByRole('button', { name: 'Mangewolf Rider', exact: true })).toBeVisible();
   await expect(all.getByRole('button', { name: 'Shiv Rat', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Back' }).click();
@@ -2733,7 +2740,9 @@ test('AC74: match-end summary, Play again with the same choices, and Menu', asyn
 const TUTORIAL_STEPS = ['summon', 'move', 'mine', 'mineTap', 'spend', 'crystal', 'upgrade', 'swap', 'fight', 'spell', 'savings', 'commander'];
 const TUTORIAL_WORDS = { summon: /back row/i, mineTap: /Tap the mine/i, spend: /Flow/, crystal: /Bank/, upgrade: /upgrade/i,
   fight: /You deal/, savings: /banked/i, commander: /Commander/ };
-test('AC75: the tutorial runs to the end, teaching only the current rules', async ({ page }) => {
+// Round 3b (AC125): rewritten tips also teach the features added since Phase 1A
+const TUTORIAL_WORDS_3B = { summon: /corner/i, move: /zoom/i, spell: /Full explanation/i, savings: /Last turn/i };
+test('AC75 + AC125: the tutorial runs to the end, teaching only the current rules', async ({ page }) => {
   test.setTimeout(180000);
   await openTest(page);
   await page.evaluate(async () => await window.oreheart.startTutorial());
@@ -2747,6 +2756,8 @@ test('AC75: the tutorial runs to the end, teaching only the current rules', asyn
     if (!seen.includes(step)) {
       seen.push(step);
       if (TUTORIAL_WORDS[step]) await expect(tip).toContainText(TUTORIAL_WORDS[step]);
+      if (TUTORIAL_WORDS_3B[step]) await expect(tip).toContainText(TUTORIAL_WORDS_3B[step]);
+      expect(await tip.innerText()).not.toMatch(/column 7|top of the screen|bottom center/i);
       expect(await tip.innerText()).not.toMatch(/off-color|Gatherer|Mine All|green crystals?|purple crystals?|blue crystals?|white crystals?/i);
     }
     if (s.priority !== 'player') { await page.waitForTimeout(150); continue; }
@@ -3801,5 +3812,305 @@ test.describe('both hands at 844x390', () => {
     await page.getByRole('button', { name: 'Keep Hand' }).click();
     const s = await page.evaluate(async () => await window.oreheart.getState());
     expect(s.players.player.deckId).toBe('gnome-horde');
+  });
+});
+
+// ================= Phase 1B Round 3b: visual polish =================
+const faceStyle = (e) => {
+  const st = getComputedStyle(e);
+  return { color: st.color, fill: st.webkitTextFillColor, bg: st.backgroundImage, shadow: st.textShadow,
+    stroke: st.webkitTextStrokeWidth, filter: st.filter, weight: st.fontWeight, size: parseFloat(st.fontSize) };
+};
+const CLEAR = /rgba\(0, 0, 0, 0\)|transparent/;
+const isGold = (st) => {
+  if (/gradient/.test(st.bg) && (CLEAR.test(st.fill) || CLEAR.test(st.color))) return true;
+  const [r, g, b] = rgb(st.fill && !CLEAR.test(st.fill) ? st.fill : st.color);
+  return r >= 150 && g >= 100 && r >= g && g - b >= 30;
+};
+const hasOutline = (st) => (st.shadow && st.shadow !== 'none') || parseFloat(st.stroke) > 0 || /drop-shadow/.test(st.filter);
+// one card face per faction, per rarity, plus a spell and a Crystal card, shown in the Deck Builder grid
+async function sampleFaces(page) {
+  await openDecks(page);
+  const cards = await page.evaluate(async () => await window.oreheart.listCards());
+  const pick = new Map();
+  for (const f of ['goblins', 'gnomes', 'dwarves']) { const c = cards.find((x) => x.faction === f && x.type === 'creature'); if (c) pick.set(c.id, c); }
+  for (const r of Object.keys(RARITY_WORD)) { const c = cards.find((x) => x.rarity === r); if (c) pick.set(c.id, c); }
+  for (const id of ['fireball', 'soul-shard']) pick.set(id, cards.find((x) => x.id === id));
+  return { cards, pick };
+}
+const gridFace = (page, id) => allCards(page).locator(`[data-card-id="${id}"]`).first();
+
+test('AC118: card numbers sit centered inside their slots in 3D gold', async ({ page }) => {
+  const { pick } = await sampleFaces(page);
+  for (const [id] of pick) {
+    const face = gridFace(page, id);
+    await face.scrollIntoViewIfNeeded();
+    const slots = face.getByLabel(/^(Cost|Attack|Health|Movement) \d+$/);
+    const n = await slots.count();
+    expect(n, id).toBeGreaterThan(0);
+    const faceBox = await face.boundingBox();
+    for (let i = 0; i < n; i++) {
+      const m = await slots.nth(i).evaluate((el, fs) => {
+        const label = el.getAttribute('aria-label');
+        const digits = label.match(/\d+$/)[0];
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        let node = null;
+        while (walker.nextNode()) if (walker.currentNode.textContent.trim() === digits) { node = walker.currentNode; break; }
+        if (!node) return { label, missing: true };
+        const range = document.createRange(); range.selectNodeContents(node);
+        const t = range.getBoundingClientRect(); const s = el.getBoundingClientRect();
+        return { label, t: { l: t.left, r: t.right, tp: t.top, b: t.bottom }, s: { l: s.left, r: s.right, tp: s.top, b: s.bottom }, st: eval(`(${fs})`)(node.parentElement) };
+      }, faceStyle.toString());
+      expect(m.missing, `${id} ${m.label}: number is DOM text`).toBeFalsy();
+      const { t, s, st } = m;
+      expect(t.l >= s.l - 1 && t.r <= s.r + 1 && t.tp >= s.tp - 1 && t.b <= s.b + 1, `${id} ${m.label} inside its slot`).toBe(true);
+      const sw = s.r - s.l, sh = s.b - s.tp;
+      expect(Math.abs((t.l + t.r) / 2 - (s.l + s.r) / 2), `${id} ${m.label} centered x`).toBeLessThanOrEqual(0.2 * sw + 1);
+      expect(Math.abs((t.tp + t.b) / 2 - (s.tp + s.b) / 2), `${id} ${m.label} centered y`).toBeLessThanOrEqual(0.2 * sh + 1);
+      expect(st.size, `${id} ${m.label} small`).toBeLessThanOrEqual(0.1 * faceBox.height + 0.5);
+      expect(isGold(st), `${id} ${m.label} gold`).toBe(true);
+      expect(hasOutline(st), `${id} ${m.label} outline/bevel`).toBe(true);
+    }
+  }
+});
+
+test('AC119: the rarity crystal is a small art crystal with the rarity word centered below', async ({ page }) => {
+  const { pick } = await sampleFaces(page);
+  for (const [id, c] of pick) {
+    const face = gridFace(page, id);
+    await face.scrollIntoViewIfNeeded();
+    const word = RARITY_WORD[c.rarity];
+    const gem = face.getByLabel(`Rarity: ${word}`, { exact: true });
+    await expect(gem, id).toHaveCount(1);
+    const m = await gem.evaluate((el, w) => {
+      const crystal = el.querySelector('svg, img');
+      if (!crystal) return null;
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let node = null;
+      while (walker.nextNode()) if (walker.currentNode.textContent.trim() === w) { node = walker.currentNode; break; }
+      if (!node) return { noWord: true };
+      const range = document.createRange(); range.selectNodeContents(node);
+      const t = range.getBoundingClientRect(); const k = crystal.getBoundingClientRect();
+      return { k: { cx: (k.left + k.right) / 2, cy: (k.top + k.bottom) / 2, h: k.height }, t: { cx: (t.left + t.right) / 2, top: t.top } };
+    }, word);
+    expect(m, `${id}: crystal svg/img inside the rarity element`).not.toBeNull();
+    expect(m.noWord, `${id}: rarity word as text`).toBeFalsy();
+    const fb = await face.boundingBox();
+    expect(m.k.h, `${id} crystal small`).toBeLessThanOrEqual(0.12 * fb.height);
+    expect(m.k.h, `${id} crystal visible`).toBeGreaterThanOrEqual(0.03 * fb.height);
+    expect(Math.abs(m.k.cx - (fb.x + fb.width / 2)), `${id} crystal bottom center`).toBeLessThanOrEqual(0.08 * fb.width);
+    expect(m.k.cy, `${id} crystal in the lower part`).toBeGreaterThan(fb.y + fb.height * 0.75);
+    expect(m.t.top, `${id} word below crystal`).toBeGreaterThanOrEqual(m.k.cy);
+    expect(Math.abs(m.t.cx - m.k.cx), `${id} word centered under crystal`).toBeLessThanOrEqual(0.06 * fb.width);
+  }
+});
+
+test('AC120: card names and text boxes use one size, gold lettering, thin text', async ({ page }) => {
+  await openDecks(page);
+  const faces = allCards(page).locator('[data-card-id]');
+  const data = await faces.evaluateAll((els, fs) => {
+    const f = eval(`(${fs})`);
+    return els.map((e) => {
+      const name = e.querySelector('[data-part="name"]');
+      const text = e.querySelector('[data-part="text"]');
+      return {
+        id: e.getAttribute('data-card-id'),
+        name: name && { txt: name.textContent.trim(), st: f(name), over: name.scrollWidth > name.clientWidth + 1 },
+        text: text && { st: f(text), over: text.scrollHeight > text.clientHeight + 1 },
+      };
+    });
+  }, faceStyle.toString());
+  expect(data.length).toBeGreaterThan(20);
+  const shortNames = [];
+  const textSizes = new Set();
+  for (const d of data) {
+    expect(d.name, `${d.id}: data-part="name"`).toBeTruthy();
+    expect(d.text, `${d.id}: data-part="text"`).toBeTruthy();
+    expect(isGold(d.name.st), `${d.id} name gold`).toBe(true);
+    expect(hasOutline(d.name.st), `${d.id} name outline`).toBe(true);
+    expect(d.name.over, `${d.id} name fits`).toBe(false);
+    if (d.name.txt.length <= 16) shortNames.push(d.name.st.size);
+    expect(isGold(d.text.st), `${d.id} text gold`).toBe(true);
+    expect(hasOutline(d.text.st), `${d.id} text outline`).toBe(true);
+    expect(Number(d.text.st.weight), `${d.id} text not bold`).toBeLessThanOrEqual(500);
+    textSizes.add(d.text.st.size.toFixed(1));
+  }
+  const maxName = Math.max(...shortNames);
+  expect(new Set(shortNames.map((x) => x.toFixed(1))).size, 'names up to 16 letters share one size').toBe(1);
+  for (const d of data) expect(d.name.st.size, `${d.id} long names shrink only a little`).toBeGreaterThanOrEqual(0.6 * maxName);
+  expect(textSizes.size, 'one text box size on every card').toBe(1);
+});
+
+test('AC121: Deck Builder deck art has no frame; painted background', async ({ page }) => {
+  await openDecks(page);
+  const pile = page.getByLabel('Deck pile', { exact: true });
+  const img = pile.locator('img[src*="deck-image"]').first();
+  await expect(img).toBeVisible();
+  const boxes = await img.evaluate((el) => {
+    const pileEl = el.closest('[aria-label="Deck pile"]');
+    const out = [];
+    for (let e = el; e; e = e.parentElement) {
+      const s = getComputedStyle(e);
+      out.push({ tag: e.tagName, border: ['Top', 'Right', 'Bottom', 'Left'].map((k) => parseFloat(s[`border${k}Width`]) * (s[`border${k}Style`] === 'none' ? 0 : 1)), bgc: s.backgroundColor, bgi: s.backgroundImage, shadow: s.boxShadow, outline: s.outlineStyle === 'none' ? 0 : parseFloat(s.outlineWidth) });
+      if (e === pileEl) break;
+    }
+    return out;
+  });
+  for (const b of boxes) {
+    expect(b.border.every((w) => w === 0), `${b.tag} has no border`).toBe(true);
+    expect(CLEAR.test(b.bgc), `${b.tag} has no box color`).toBe(true);
+    expect(b.bgi, `${b.tag} has no box image`).toBe('none');
+    expect(b.shadow, `${b.tag} has no box shadow (use drop-shadow glow)`).toBe('none');
+    expect(b.outline, `${b.tag} has no outline`).toBe(0);
+  }
+  const painted = await page.evaluate(() =>
+    [...document.querySelectorAll('img')].some((i) => /deck-builder-bg/.test(i.src)) ||
+    [...document.querySelectorAll('*')].some((e) => /deck-builder-bg/.test(getComputedStyle(e).backgroundImage)));
+  expect(painted).toBe(true);
+});
+
+// every visible native control is restyled; no native <select>; every scrollbar is gold
+async function checkControls(page, where) {
+  const r = await page.evaluate(() => {
+    const bad = [];
+    const vis = (e) => { const b = e.getBoundingClientRect(); return b.width > 2 && b.height > 2 && e.checkVisibility({ opacityProperty: true, visibilityProperty: true }); };
+    for (const e of document.querySelectorAll('button, input, select, textarea')) {
+      if (!vis(e) || e.type === 'hidden') continue;
+      if (e.tagName === 'SELECT') bad.push(`native select ${e.getAttribute('aria-label') || e.name}`);
+      const a = getComputedStyle(e).appearance;
+      if (a !== 'none') bad.push(`${e.tagName.toLowerCase()}[${e.type}] "${(e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 30)}" appearance ${a}`);
+    }
+    for (const e of [document.documentElement, ...document.querySelectorAll('body *')]) {
+      const s = getComputedStyle(e);
+      const y = /auto|scroll/.test(s.overflowY) && e.scrollHeight > e.clientHeight + 1;
+      const x = /auto|scroll/.test(s.overflowX) && e.scrollWidth > e.clientWidth + 1;
+      const root = e === document.documentElement && (e.scrollHeight > innerHeight + 1 || e.scrollWidth > innerWidth + 1);
+      if (!(x || y || root)) continue;
+      if (/none/.test(s.scrollbarWidth)) continue; // hidden scrollbar (e.g. hand fan with arrows) is fine
+      const c = s.scrollbarColor;
+      const [r1, g1, b1] = (c.match(/[\d.]+/g) || []).map(Number);
+      if (c === 'auto' || !(r1 >= 120 && r1 >= g1 && g1 > b1)) bad.push(`scrollbar ${e.tagName.toLowerCase()} "${e.getAttribute('aria-label') || ''}" color ${c}`);
+    }
+    return bad;
+  });
+  expect(r, where).toEqual([]);
+}
+
+test('AC122: one ornate control style everywhere: no default browser controls or scrollbars', async ({ page }) => {
+  await page.goto('/?test=1');
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+  await checkControls(page, 'title');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('switch', { name: 'Card pop-ups' })).toBeVisible();
+  await checkControls(page, 'settings');
+  await openDecks(page);
+  await checkControls(page, 'deck builder');
+  await page.getByRole('combobox', { name: 'Faction', exact: true }).click();
+  await expect(page.getByRole('listbox', { name: 'Faction', exact: true })).toBeVisible();
+  await checkControls(page, 'deck builder with an open dropdown');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('slider', { name: 'Cards per row' })).toBeVisible();
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Fight!' })).toBeVisible();
+  await checkControls(page, 'commander and deck select');
+  await newMatch(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'soul-shard'] }));
+  await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
+  await checkControls(page, 'match');
+});
+
+test.describe('title layout and ornaments', () => {
+  for (const vp of [{ width: 844, height: 390 }, { width: 1280, height: 720 }]) {
+    test(`AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (${vp.width}x${vp.height})`, async ({ page }) => {
+      await page.setViewportSize(vp);
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.goto('/');
+      const offer = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
+      await expect(offer).toBeVisible();
+      await page.waitForTimeout(800); // let entrance animations settle
+      const logo = await page.getByRole('heading', { level: 1, name: 'Oreheart' }).getByRole('img', { name: 'Oreheart' }).boundingBox();
+      const tut = await page.getByRole('button', { name: 'Tutorial', exact: true }).boundingBox();
+      const texts = await offer.evaluate((d) => {
+        const out = [];
+        const walker = document.createTreeWalker(d, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+          const n = walker.currentNode;
+          if (!n.textContent.trim() || n.parentElement.closest('button')) continue;
+          const r = document.createRange(); r.selectNodeContents(n);
+          for (const b of r.getClientRects()) out.push({ txt: n.textContent.trim().slice(0, 30), x: b.left, y: b.top, width: b.width, height: b.height });
+        }
+        return out;
+      });
+      expect(texts.length).toBeGreaterThan(0);
+      const hit = (a, b) => a && b && a.x < b.x + b.width - 1 && b.x < a.x + a.width - 1 && a.y < b.y + b.height - 1 && b.y < a.y + a.height - 1;
+      for (const t of texts) {
+        expect(hit(t, logo), `"${t.txt}" overlaps the logo`).toBe(false);
+        expect(hit(t, tut), `"${t.txt}" overlaps the Tutorial button`).toBe(false);
+      }
+      expect(await page.locator('[data-ornament="frame"]').count(), 'title ornaments').toBeGreaterThan(0);
+      await offer.getByRole('button', { name: 'Skip' }).click();
+      await page.getByRole('button', { name: 'Decks', exact: true }).click();
+      await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+      expect(await page.locator('[data-ornament="frame"]').count(), 'deck builder ornaments').toBeGreaterThan(0);
+      await page.getByRole('button', { name: 'Back' }).click();
+      await page.getByRole('button', { name: 'Play', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Fight!' })).toBeVisible();
+      expect(await page.locator('[data-ornament="frame"]').count(), 'select screen ornaments').toBeGreaterThan(0);
+      expect(errors).toEqual([]);
+    });
+  }
+});
+
+test('AC124: every spell has its own visual, played step by step', async ({ page }) => {
+  await openTest(page);
+  const cards = await page.evaluate(async () => await window.oreheart.listCards());
+  const spells = cards.filter((c) => c.type === 'spell');
+  expect(spells.length).toBeGreaterThan(5);
+  const info = await cardInfo(page, spells.map((c) => c.id));
+  const visuals = spells.map((c) => info[c.id].visual);
+  for (const c of spells) {
+    expect(typeof info[c.id].visual, c.id).toBe('string');
+    expect(info[c.id].visual, c.id).not.toMatch(/^(generic|default|none|)$/);
+  }
+  expect(new Set(visuals).size, 'no two spells share a visual').toBe(spells.length);
+  await newMatch(page, orbSetup);
+  await clearFx(page);
+  await castOrb(page, 3, 3);
+  const log = await fxLog(page);
+  const r = idx(log, (e) => e.kind === 'reveal' && e.cardId === 'fireball');
+  const e = idx(log, (x) => x.kind === 'effect' && x.cardId === 'fireball', Math.max(r, 0));
+  expect(r).toBeGreaterThanOrEqual(0);
+  expect(e).toBeGreaterThan(r);
+  expect(log[e].visual).toBe(info.fireball.visual);
+  expect(idx(log, (x) => x.kind === 'impact', e)).toBeGreaterThan(e);
+});
+
+test.describe('round 3b phone screenshots (844x390)', () => {
+  test.use({ viewport: { width: 844, height: 390 } });
+  test('AC126: close-up cards, deck builder, title and a spell being cast render without errors', async ({ page }, testInfo) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/');
+    const offer = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
+    await expect(offer).toBeVisible();
+    await offer.getByRole('button', { name: 'Skip' }).click();
+    await page.waitForTimeout(800);
+    await testInfo.attach('title-844x390', { body: await page.screenshot(), contentType: 'image/png' });
+    const { pick } = await sampleFaces(page);
+    await page.getByLabel('Cards per row', { exact: true }).fill('2');
+    await testInfo.attach('deck-builder-844x390', { body: await page.screenshot(), contentType: 'image/png' });
+    for (const [id, c] of pick) {
+      const face = gridFace(page, id);
+      await face.scrollIntoViewIfNeeded();
+      await testInfo.attach(`card-${c.faction || 'neutral'}-${c.rarity}-${id}`, { body: await face.screenshot(), contentType: 'image/png' });
+    }
+    await openTest(page);
+    await newMatch(page, orbSetup);
+    await page.waitForTimeout(1500);
+    await castOrb(page, 3, 3);
+    await page.waitForTimeout(400);
+    await testInfo.attach('spell-cast-844x390', { body: await page.screenshot(), contentType: 'image/png' });
+    expect(errors).toEqual([]);
   });
 });
