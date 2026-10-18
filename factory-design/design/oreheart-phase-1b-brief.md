@@ -4,7 +4,44 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 5a — menus, deck builder and lettering (owner playtest of round 4) — read this first
+## Round 5b — match screen: owner camera and layout (owner playtest of round 5a) — read this first
+
+Round 5a (menus, deck builder, lettering) is done; keep everything from it. Build B (Meshy 3D models) comes later; do not start it here. Rules are unchanged this round. The owner designed this screen himself in an interactive camera tester; the numbers and positions below come from it. **Match them.**
+
+1. **Camera (owner's exact numbers, 16:9):** the camera looks at the board center from **51° above the ground** with a **48° vertical field of view**. Fit it as the tester does: find the distance at which the full board width and both Commanders (head to feet) fit, then zoom to **107%**; leave **16% of the screen height** for painted sky / distant mountains above the far side; shift the board image **up 12% of the screen height and right 1%** of the width; bottom margin 2%. Re-fit with the same rules for every window shape (16:10, 21:9, 4:3, phone) so both Commanders stay whole. Polished 3D animated-film look: rich warm light, soft shadows, haze in the distance, glowing crystals. The match always fills the whole window, no black bars, live re-fit on resize. Zoom and pan stay available; "Recenter" returns to these numbers.
+   Camera fit used by the owner's tester (three.js; board spaces 1 unit, 13 × 7 board centered at the origin, rows along z, row 1 = far side; keyPts = the 4 board corners at y 0 plus both Commanders' head tops):
+   ```js
+   // S = {tilt:51, fov:48, zoom:107, sky:16, hand:2, panX:0.02, panY:0.24}  (panX/panY in NDC: 1% of width = 0.02, 12% of height = 0.24)
+   function place(d){const t=S.tilt*Math.PI/180;camera.clearViewOffset();camera.fov=S.fov;camera.aspect=W/H;camera.updateProjectionMatrix();
+     camera.position.set(0,Math.sin(t)*d,Math.cos(t)*d);camera.lookAt(0,0,0);camera.updateMatrixWorld();}
+   function ext(d){place(d);let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const p of keyPts){const q=p.clone().project(camera);
+     x0=Math.min(x0,q.x);x1=Math.max(x1,q.x);y0=Math.min(y0,q.y);y1=Math.max(y1,q.y);}return{x0,x1,y0,y1};}
+   const avail=2-2*S.sky/100-2*S.hand/100; let lo=4,hi=300;
+   for(let i=0;i<40;i++){const m=(lo+hi)/2,e=ext(m);(e.x1-e.x0<=1.96&&e.y1-e.y0<=avail)?hi=m:lo=m;}
+   const d=hi/(S.zoom/100), e=ext(d), dy=(-1+2*S.hand/100)-e.y0, dx=-(e.x0+e.x1)/2;
+   camera.setViewOffset(W,H,-(dx+S.panX)*W/2,(dy+S.panY)*H/2,W,H); camera.updateProjectionMatrix();
+   ```
+2. **Figure sizes (1 board space = 1):** creatures about **1.1 spaces tall**; each Commander standing on his Stronghold about **2.4 spaces tall** in total; crystal mines about **1.5 spaces tall** with a strong glow. Commanders still occupy one space each.
+3. **Soul crystal flow particles:** a mine you own streams glowing particles from the top of its crystals in a smooth curving ribbon into your Stronghold (your color); enemy mines stream into the enemy's Stronghold (his color); neutral mines have particles gently swirling above the crystals. Streams redirect when a mine changes owner and pulse brighter when crystals are collected at the start of a turn. Light on performance (GPU particles, capped), passing under units and HUD; Settings toggle on / reduced / off (reduced automatically on slow devices).
+4. **HUD layout (owner's positions, % of the screen from each piece's top-left; scale everything with the window):**
+   - **Your crystal, top-left (0%, 1%):** a large glowing faceted crystal; your **Flow number big, white with a dark outline, ON the crystal**; just below it on the crystal a **bank badge**: a small gold bank-building icon with the **banked number on top of it** (number larger than the icon). Beside the crystal: your Commander's name, the word **"Flow" in golden yellow**, and **"Next +N"** (crystals coming next turn). Name and Next lines in a warm pale rose (#f0cdbf). No separate Bank or Mines lines.
+   - **Enemy crystal, (70%, 0%)**, slightly smaller, same design in red (Flow on the crystal, bank badge, name / Flow / Next beside it).
+   - **Phase tracker, top-right (80%, 0%):** "Your turn · Turn N" (red "Enemy turn" on his turn), then **Draw › Deploy › Action › End** with the current phase lit, finished ones dimmed, and the time left below; all text right-aligned with a soft dark fade behind it on the right. The big center phase banners stay as in the design doc.
+   - **Enemy hand:** card backs peeking down from the top edge at (29%, 3%), about 1.3× the current size; a small card count to its lower-left.
+   - **Enemy deck:** a card pile peeking from the top edge at (34%, −3%), with the cards-left number on the pile (no label).
+   - **Menu, right side (89%, 15%):** only the word "Menu" shows; on hover (tap on a phone) **Last turn, Mute, Pop-ups On/Off, Recenter** slide out, and hide again when the pointer leaves. Plain text with hover glow, no boxes.
+   - **Your deck, bottom-right (93%, 83%):** a card pile (your deck picture) with the cards-left number on it, no label.
+   - **Your hand, along the bottom starting 14% from the left:** cards about **23% of the screen height**, resting **nearly fully visible** at the bottom edge (this replaces the earlier "tucked, top third" idea). Hovering or tapping still pops it out: the hand rises fully and the hovered card enlarges to read it, always on-screen. The "N cards" count sits to the right of the hand, small. About 7 cards shown, swipe for more.
+   - Nothing may cover either Commander or a board space a creature can stand on; nudge the camera fit if needed, never the owner's HUD positions.
+5. **Playable cards glow:** every card you can play right now has a glowing golden halo; others none; updates instantly.
+6. **Health hearts:** replace the current hearts (HUD and on-board markers) with a glossy painted ruby heart (image API, no text) with the number in white with a thin dark outline. The hearts painted in the owner's card frames stay.
+7. **In-match controls as text:** Done, Respond, Pass, mulligan choices, pause and **match-end menus** (5a missed these) become plain gold text with a hover glow that changes color, no boxes. **"Done" appears only when needed**, floating in the center of the screen.
+8. **Played-card reveals stay up 3× longer** (about 5–6 s, owner setting `revealSeconds`; Fast option about half); the game keeps going underneath; tap to pin or dismiss.
+9. **Readable sizes (5a leftover):** no text in the game below about 14 px at 844 × 390; where space is short (deck builder list/chart on a phone) show fewer rows and scroll instead of shrinking text.
+
+Tests: keep all checks passing; add: camera numbers match (51°, 48°, both Commanders fully on-screen at 16:9, 16:10, 21:9, 4:3 and 844 × 390), no black bars at any shape, HUD pieces at the owner positions (within a few %), Flow and bank numbers on both crystals, menu items hidden until hover, playable-card halo, Done hidden when not needed, no text under 14 px at phone size. Include screenshots of a match at 1920 × 1080, 2560 × 1080 (21:9) and 844 × 390, plus the menu popped out and the hand popped out.
+
+## Round 5a (done) — menus, deck builder and lettering
 
 The design doc was updated (deck builder layout, "cards are never stretched" rule, lettering) and is the source of truth. Keep everything from earlier rounds unless an item below replaces it. Round 5b (match screen: perspective camera, corner layout, crystal display, hearts, hand size, flow particles, longer card reveals) comes next; do not start it here. Build B (Meshy 3D models) comes later.
 
