@@ -751,7 +751,16 @@ export function hasMovesLeft(s: any): boolean {
   if (s.phase === 'over' || !s.priority || s.pendingResponse || !['deploy', 'action'].includes(s.phase) || s.priority !== s.activePlayer) return false;
   // Rev 9: spells, Instants, Crystal cards, upgrades, abilities and the swap never count.
   const kinds = s.phase === 'deploy' ? ['summon'] : ['move', 'mine', 'mineAt', 'attack'];
-  return legalActions(s).some((a: any) => kinds.includes(a.type));
+  const la = legalActions(s);
+  if (la.some((a: any) => kinds.includes(a.type))) return true;
+  // a Crystal card is never a move itself, but playing it may fund a summon that was out of reach
+  if (s.phase === 'deploy') {
+    for (const c of la.filter((a: any) => a.type === 'playCrystal')) {
+      const r = applyAction(s, c);
+      if (r.ok && legalActions(r.state).some((a: any) => a.type === 'summon')) return true;
+    }
+  }
+  return false;
 }
 
 /** Preview of an attack, computed by running the real attack code on a copy of the state. */

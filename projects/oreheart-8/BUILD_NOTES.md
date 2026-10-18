@@ -287,3 +287,7 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 - Welcome offer no longer overlaps the logo (logo shrinks and top-aligns while it shows).
 - Card number fonts shrunk so text boxes sit inside their slots.
 - Deck Builder tiles use role=group so only one "Back" button exists.
+
+## Round 3b fix-up
+- Deck Builder card tiles are now role=button named exactly by card name.
+- Deploy auto-skip no longer skips when playing a Crystal card would fund a summon.

@@ -166,7 +166,7 @@ export function showDecks(app: App) {
     document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
   }
   function tile(c: any) {
-    const el = h('div', { class: 'db-tile', role: 'group', tabindex: '0', 'aria-roledescription': 'card', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), h('span', { hidden: '' }, c.longText || '')) as any;
+    const el = h('div', { class: 'db-tile', role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), h('span', { hidden: '' }, c.longText || '')) as any;
     let timer: any = null;
     el.addEventListener('click', () => {
       if (el._dragged) return;
