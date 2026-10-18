@@ -81,6 +81,7 @@ function scoreCast(s: any, who: string, a: any): number {
       const kills = t.health <= card.params.amount - (CARDS[t.cardId].abilities?.includes('armored') ? 1 : 0);
       return kills ? 50 + CARDS[t.cardId].cost * 6 : 5;
     }
+    case 'poison': return t && !t.poison ? 8 + CARDS[t.cardId].cost * 3 : 0;
     case 'areaDamage': {
       let v = 0;
       for (const c of s.board.creatures) if (cheb(c, a.target) <= 1) v += (c.owner === who ? -1 : 1) * (CARDS[c.cardId].cost * 3 + (c.health <= 2 ? 10 : 2));
@@ -137,7 +138,9 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
     } else if (a.type === 'summon') {
       const h = s.players[who].hand.find((x: any) => x.uid === a.uid);
       const card = CARDS[h.cardId];
-      scored.push([(card.role === 'Smith' ? 26 : isMiner(card) ? 40 : 40) + card.cost * 2 + posValue(s, who, card, a.row, a.col) * 0.5 + rand(), a]);
+      const myMiners = s.board.creatures.filter((c: any) => c.owner === who && isMiner(CARDS[c.cardId])).length;
+      const flood = isMiner(card) ? Math.max(0, myMiners - 4) * 9 : 0; // 100-card decks hold 50 Miners: keep fighters coming
+      scored.push([(card.role === 'Smith' ? 26 : 40) - flood + card.cost * 2 + posValue(s, who, card, a.row, a.col) * 0.5 + rand(), a]);
     } else if (a.type === 'gathererSwap') {
       const h = a.discardUid ? s.players[who].hand.find((x: any) => x.uid === a.discardUid) : null;
       const dc = h ? CARDS[h.cardId] : null;

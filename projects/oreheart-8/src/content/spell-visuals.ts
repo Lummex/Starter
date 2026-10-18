@@ -2,6 +2,7 @@
 export interface SpellVisual { glyph: string; land: string; fly: boolean; ms: number }
 export const SPELL_VISUALS: Record<string, SpellVisual & { id: string }> = {
   'prospectors-prayer': { id: 'prayer-light-column', glyph: '🙏', land: '+CRYSTALS!', fly: false, ms: 1300 },
+  'venom-shiv': { id: 'venom-dagger-drip', glyph: '🗡️', land: 'POISONED!', fly: true, ms: 1200 },
   'tunnel-rush': { id: 'tunnel-dust-burrow', glyph: '🕳️', land: 'RUSH!', fly: true, ms: 1100 },
   fireball: { id: 'fireball-arc', glyph: '🔥', land: 'BURN!', fly: true, ms: 1000 },
   'battle-cry': { id: 'battle-cry-shockwave', glyph: '📣', land: 'ATTACK UP!', fly: false, ms: 1300 },

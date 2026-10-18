@@ -9,7 +9,7 @@
       "goblin-scrounger",
       "goblin-smith-miner",
       "crystal-cluster",
-      "fireball",
+      "venom-shiv",
       "goblin-grunt"
     ],
     "playerDeck": [
@@ -88,7 +88,7 @@
     "upgrade": "Upgrade time! In the Deploy phase, drag a Miner card from your hand onto one of your own troops to upgrade it. A basic Miner gives +1 Health, a Smith Miner gives +1 Attack and +1 Health, for good.",
     "swap": "Swap places: in the Action phase drag one of your troops onto another of yours (within its move range) to trade places.",
     "fight": "Time to fight! In the Action phase drag your Boneknocker onto the enemy troop. A preview shows You deal and You take before you let go. Melee hits are simultaneous: both strike. Damage heals at the start of your next turn.",
-    "spell": "Cast a spell! Drag Infernal Orb from your hand onto an enemy troop and watch the card turn into the effect. Spells cost soul crystals (Flow first, then Bank). Tap a card's text for the Full explanation.",
+    "spell": "Cast a spell! Drag Venom Shiv from your hand onto an enemy troop: it is poisoned for 3 turns. Spells cost soul crystals (Flow first, then Bank). Tap a card's text for the Full explanation.",
     "savings": "Saving up: if you end your turn with 10 or more Flow, every 10 Flow becomes 1 banked crystal. You have plenty of Flow right now, so just press Done and watch it get banked. After the enemy moves, press Last turn to see what it did.",
     "commander": "Finally, march a fighter next to the enemy Stronghold and attack the Commander. Each hit removes Health equal to the attacker's Attack. Bring them to 0!",
     "complete": "Tutorial complete!"

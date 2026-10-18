@@ -1,3 +1,22 @@
+# Oreheart — Phase 1B Round 4 build notes (spells, starter decks, lettering)
+
+`npm run build` → `dist/`; `npm test` → Vitest (64 tests). Phone-size (844 × 390) screenshots in `screenshots/r4-*`: `r4-mulligan`, `r4-match`, `r4-menu`, `r4-spells` (Deck Builder spell tiles for all four frames) and `r4-spell-cards` (close-up).
+
+## What was built
+- **Mulligan ×2 (R4.1)**: card width is twice the old size, then capped to fit one row (gaps shrink first); about 160 × 237 px at 844×390, 240 px wide at 1280×720.
+- **Nine 100-card starter decks (R4.2)**: 30 basic + 20 Smith Miners each; Warband 38/7/5, Arcane Hoard 18/24/8, Horde 46/0/4 (Fighters/spells/Crystal cards); Rare+ at most 3 copies; own + shared spells. The AI no longer floods the board with Miners.
+- **Faction spells (R4.3)**: 12 spells renamed (ids kept) and new `venom-shiv` (`poison` = 3 on the creature; 1 damage at the start of each owner turn; no healing while poisoned; `poison` event and fx log `poison`; green 💧N marker with `aria-label "Poisoned, N turns left"`). `spellUsable()` locks faction spells by Commander for casting, Respond and `act()`; test option `factionLock:false`. `validateDeck(ids, commanderId?)` gives the spec messages; Hex Reversal is `disabled` (not in `listCards`, Deck Builder or decks). The Deck Builder has a saved "Deck Commander" dropdown and locks other factions' spell tiles (`aria-disabled`, 🔒 hint). The select screen marks a saved deck "not ready" for a Commander that can't use it. The AI scores poison.
+- **Spell frames (R4.4)**: the owner's `spell-frame-*` files were not uploaded, so four temporary frames were generated (`tools/gen-r4-art.mjs` → `public/art/frames/spell-frame-<goblin|gnome|dwarf|shared>.webp`; overwrite the files to swap). Spell faces use `data-frame="spell-<x>"`, a full-art painting (12 generated pictures), cost top-left, type orb bottom-right (🪄 SPELL / ⚡ INSTANT).
+- **Metal lettering (R4.5)**: Cinzel and Tinos self-hosted via `@fontsource`; generated `metal-gold.webp` / `metal-silver.webp`; `src/ui/metal.ts` tags every text-bearing element with `data-metal="gold|silver"` (kept current by a MutationObserver) and the CSS fills letters with the metal. Checked on title, Rules, Settings, Deck Builder, select, mulligan and match: every visible text node has a metal ancestor with Cinzel/Tinos and `background-clip: text`.
+- **R4.6**: `data-ornament="frame"` confirmed on Deck Builder, Rules and Settings.
+
+## Gaps
+- Checked with my own scripts and unit tests, not the hidden acceptance suite.
+- Spell frames are generated stand-ins; their painted orbs only roughly match the cost/type positions.
+- 3D canvas callouts were not restyled with metal. Build B (Meshy models) not started.
+
+---
+
 # Oreheart — Phase 1B Round 3b build notes (visual polish)
 
 `npm run build` → `dist/`; `npm test` → Vitest. Phone-size (844 × 390) screenshots in `screenshots/r3b-*`: title, deck builder, a close-up card per faction (goblin, gnomes, dwarves) and per rarity (uncommon, rare, ultra-rare, collector; common = the goblin one), and `r3b-spell-cast` (Bastion Ward mid-cast).

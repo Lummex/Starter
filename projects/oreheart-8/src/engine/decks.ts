@@ -1,5 +1,5 @@
 // Deck rules shared by the Deck Builder and the match setup.
-import { CARDS, CONFIG } from './content';
+import { CARDS, CONFIG, COMMANDERS, FACTIONS } from './content';
 
 export function deckCounts(ids: string[]) {
   let creatures = 0, spells = 0, crystals = 0;
@@ -10,9 +10,18 @@ export function deckCounts(ids: string[]) {
   return { cards: ids.length, creatures, spells, crystals };
 }
 
+const SING: Record<string, string> = { goblins: 'Goblin', gnomes: 'Gnome', dwarves: 'Dwarf' };
 /** Problem messages for a deck; an empty list means the deck is legal. */
-export function deckProblems(ids: string[]): string[] {
+export function deckProblems(ids: string[], commander?: string): string[] {
   const out: string[] = [];
+  const fac = commander ? (COMMANDERS[commander]?.faction ?? (FACTIONS[commander] ? commander : null)) : null;
+  const seen = new Set<string>();
+  for (const id of ids) {
+    const c = CARDS[id];
+    if (!c || seen.has(id)) continue;
+    if (c.disabled) { seen.add(id); out.push(`${c.name} is not available yet.`); }
+    else if (fac && c.type === 'spell' && c.faction !== 'any' && c.faction !== fac) { seen.add(id); out.push(`${c.name}: only for ${SING[c.faction] ?? c.faction} Commanders.`); }
+  }
   if (ids.length < CONFIG.deckMin || ids.length > CONFIG.deckMax) out.push(`Needs ${CONFIG.deckMin} to ${CONFIG.deckMax} cards (now ${ids.length}).`);
   const n: Record<string, number> = {};
   for (const id of ids) n[id] = (n[id] || 0) + 1;
@@ -26,7 +35,7 @@ export function deckProblems(ids: string[]): string[] {
 }
 
 /** Test hook: legality and problem messages for a list of card ids. */
-export function validateDeck(ids: string[]) {
-  const problems = deckProblems(ids);
+export function validateDeck(ids: string[], commander?: string) {
+  const problems = deckProblems(ids, commander);
   return { legal: problems.length === 0, problems };
 }

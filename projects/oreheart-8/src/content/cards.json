@@ -582,10 +582,27 @@
   "longText": "Regular spell. You can cast it only while the enemy owns more mines than you. You gain 3 Flow crystals right away. Example: You own 1 mine, the enemy owns 2: cast it in Deploy to get 3 extra crystals this turn."
  },
  {
-  "id": "tunnel-rush",
-  "name": "Burrow Ambush",
+  "id": "venom-shiv",
+  "name": "Venom Shiv",
   "type": "spell",
-  "faction": "any",
+  "faction": "goblins",
+  "rarity": "Uncommon",
+  "spellKind": "regular",
+  "cost": 2,
+  "effect": "poison",
+  "params": {
+   "turns": 3,
+   "amount": 1
+  },
+  "text": "Spell. Poison an enemy creature: 1 damage each of its next 3 turns; no healing.",
+  "shortText": "Spell. Poison an enemy creature: 1 damage each of its next 3 turns; no healing.",
+  "longText": "Regular spell, cast in your Deploy phase. Poison one enemy creature: it takes 1 damage at the start of each of its owner's next 3 turns and cannot heal during that time. A green marker with a turn counter shows the poison. Example: Poison a 4-Health creature and it is down to 1 after three turns, with no healing in between."
+ },
+ {
+  "id": "tunnel-rush",
+  "name": "Rat-Tunnel Ambush",
+  "type": "spell",
+  "faction": "goblins",
   "rarity": "Uncommon",
   "spellKind": "regular",
   "cost": 2,
@@ -597,9 +614,9 @@
  },
  {
   "id": "fireball",
-  "name": "Infernal Orb",
+  "name": "Searing Arcane Orb",
   "type": "spell",
-  "faction": "any",
+  "faction": "gnomes",
   "rarity": "Rare",
   "spellKind": "regular",
   "cost": 3,
@@ -613,9 +630,9 @@
  },
  {
   "id": "battle-cry",
-  "name": "Warhowl",
+  "name": "Thunderhorn Blast",
   "type": "spell",
-  "faction": "any",
+  "faction": "dwarves",
   "rarity": "Rare",
   "spellKind": "regular",
   "cost": 4,
@@ -629,9 +646,9 @@
  },
  {
   "id": "meteor-strike",
-  "name": "Skyfall Annihilation",
+  "name": "Starfall Cataclysm",
   "type": "spell",
-  "faction": "any",
+  "faction": "gnomes",
   "rarity": "Ultra Rare",
   "spellKind": "regular",
   "cost": 7,
@@ -645,7 +662,7 @@
  },
  {
   "id": "healing-light",
-  "name": "Mending Light",
+  "name": "Field Bandage",
   "type": "spell",
   "faction": "any",
   "rarity": "Common",
@@ -657,13 +674,13 @@
   },
   "text": "Instant. Heal one of your creatures by 3.",
   "shortText": "Instant. Heal one of your creatures by 3.",
-  "longText": "Instant: play it in your turn or when you respond. It heals one of your creatures by 3, up to its full Health. Example: A creature at 1 Health is hit by a Fireball: respond and heal it first."
+  "longText": "Instant: play it in your turn or when you respond. It heals one of your creatures by 3, up to its full Health. Example: A creature at 1 Health is hit by a Searing Arcane Orb: respond and heal it first."
  },
  {
   "id": "shield-bubble",
-  "name": "Bastion Ward",
+  "name": "Ironclad Bulwark",
   "type": "spell",
-  "faction": "any",
+  "faction": "dwarves",
   "rarity": "Uncommon",
   "spellKind": "instant",
   "cost": 2,
@@ -675,9 +692,9 @@
  },
  {
   "id": "second-wind",
-  "name": "Last Stand",
+  "name": "Emergency Repairs",
   "type": "spell",
-  "faction": "any",
+  "faction": "dwarves",
   "rarity": "Ultra Rare",
   "spellKind": "instant",
   "cost": 5,
@@ -703,13 +720,13 @@
   },
   "text": "Counterspell. Cancel a spell costing 3 or less.",
   "shortText": "Counterspell. Cancel a spell costing 3 or less.",
-  "longText": "Counterspell (Instant): play it when the enemy casts a spell that costs 3 or less. The spell is cancelled and the caster's card is lost. Example: The enemy casts a 3-cost Fireball: respond and it shatters."
+  "longText": "Counterspell (Instant): play it when the enemy casts a spell that costs 3 or less. The spell is cancelled and the caster's card is lost. Example: The enemy casts a 3-cost Searing Arcane Orb: respond and it shatters."
  },
  {
   "id": "hold-it",
-  "name": "Not Today!",
+  "name": "Pickpocket!",
   "type": "spell",
-  "faction": "any",
+  "faction": "goblins",
   "rarity": "Rare",
   "spellKind": "counter",
   "cost": 4,
@@ -721,9 +738,9 @@
  },
  {
   "id": "spell-snap",
-  "name": "Arcane Severance",
+  "name": "Unweave",
   "type": "spell",
-  "faction": "any",
+  "faction": "gnomes",
   "rarity": "Rare",
   "spellKind": "counter",
   "cost": 5,
@@ -731,7 +748,7 @@
   "params": {},
   "text": "Counterspell. Cancel any enemy spell.",
   "shortText": "Counterspell. Cancel any enemy spell.",
-  "longText": "Counterspell (Instant): play it when the enemy casts any spell, whatever it costs. The spell is cancelled. Example: The enemy casts Meteor Strike: respond and it is cancelled."
+  "longText": "Counterspell (Instant): play it when the enemy casts any spell, whatever it costs. The spell is cancelled. Example: The enemy casts Starfall Cataclysm: respond and it is cancelled."
  },
  {
   "id": "mirror-hex",
@@ -745,7 +762,8 @@
   "params": {},
   "text": "Counterspell. Cancel a spell, then cast a free copy.",
   "shortText": "Counterspell. Cancel a spell, then cast a free copy.",
-  "longText": "Counterspell (Instant): play it when the enemy casts a spell. It is cancelled, and you cast a free copy of it yourself. Example: The enemy casts Fireball at you: cancel it and Fireball their Commander."
+  "longText": "Counterspell (Instant): play it when the enemy casts a spell. It is cancelled, and you cast a free copy of it yourself. Example: The enemy casts Searing Arcane Orb at you: cancel it and Searing Arcane Orb their Commander.",
+  "disabled": true
  },
  {
   "id": "soul-shard",

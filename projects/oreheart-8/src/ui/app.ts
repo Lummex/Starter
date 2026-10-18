@@ -21,11 +21,14 @@ const textScale = (len: number) => Math.min(0.1, 0.6 / Math.sqrt(Math.max(1, len
 const RARITY_KEY: Record<string, string> = { Common: 'common', Uncommon: 'uncommon', Rare: 'rare', 'Ultra Rare': 'ultra-rare', Collector: 'collector' };
 export const rarityKey = (c: any) => RARITY_KEY[c.rarity] || 'common';
 /** Picture path of a card (Goblin creatures have a generated painting). */
-export const pictureOf = (c: any): string | null => (c && c.type === 'creature' && c.faction === 'goblins' ? `/art/cards/${c.id}.webp` : null);
+export const pictureOf = (c: any): string | null => (c && ((c.type === 'creature' && c.faction === 'goblins') || (c.type === 'spell' && !c.disabled)) ? `/art/cards/${c.id}.webp` : null);
 export const FRAME: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
-export const frameOf = (c: any) => `card-frame-${FRAME[c.faction] || 'neutral'}`;
+/** Spell frames: one line per faction (owner files replace the temporary generated ones by overwriting `public/art/frames/spell-frame-*.webp`). */
+export const SPELL_FRAME_FILE = (key: string) => `spell-frame-${key}`;
+export const frameKey = (c: any) => (c.type === 'spell' ? `spell-${FRAME[c.faction] || 'shared'}` : FRAME[c.faction] || 'neutral');
+export const frameOf = (c: any) => (c.type === 'spell' ? SPELL_FRAME_FILE(FRAME[c.faction] || 'shared') : `card-frame-${FRAME[c.faction] || 'neutral'}`);
 export function typeOf(c: any): { icon: string; name: string } {
-  if (c.type === 'spell') return { icon: '🪄', name: c.spellKind === 'counter' ? 'Counterspell' : c.spellKind === 'instant' ? 'Instant' : 'Spell' };
+  if (c.type === 'spell') return c.spellKind === 'regular' ? { icon: '🪄', name: 'Spell' } : { icon: '⚡', name: 'Instant' };
   if (c.type === 'crystal') return { icon: '💎', name: 'Crystal card' };
   const ab: string[] = c.abilities || [];
   if (c.role === 'Smith') return { icon: '⚒️', name: 'Smith Miner' };
@@ -55,7 +58,7 @@ export function faceKids(c: any, cost?: number, cur?: { attack?: number; health?
     cr ? h('span', { class: 'atk', role: 'img', 'aria-label': `Attack ${cur?.attack ?? c.attack}` }, String(cur?.attack ?? c.attack)) : null,
     cr ? h('span', { class: 'hp', role: 'img', 'aria-label': `Health ${cur?.health ?? c.health}` }, String(cur?.health ?? c.health)) : null,
     cr ? h('span', { class: 'mv', role: 'img', 'aria-label': `Movement ${cur?.move ?? c.move}` }, String(cur?.move ?? c.move)) : null,
-    h('span', { class: 'tyi', role: 'img', 'aria-label': `Type: ${ty.name}`, title: ty.name }, ty.icon),
+    h('span', { class: 'tyi', role: 'img', 'aria-label': `Type: ${ty.name}`, title: ty.name }, ty.icon, c.type === 'spell' ? h('span', { class: 'tyw' }, c.spellKind === 'regular' ? 'SPELL' : 'INSTANT') : null),
     h('span', { class: `nm${len > 24 ? ' two' : ''}`, 'data-part': 'name', style: `--nf:${nf.toFixed(4)}` }, c.name),
     h('span', { class: 'tx', 'data-part': 'text' }, c.shortText || c.text || '', h('span', { class: 'fl' }, c.flavor || '')),
     rw,
@@ -100,7 +103,7 @@ export function combo(label: string, id: string, opts: string[], onchange: () =>
   cb.addEventListener('click', open);
   cb.addEventListener('keydown', (e: any) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowDown' && !lb) { e.preventDefault(); open(); } });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && lb) close(); });
-  return { wrap: h('div', { class: 'f-field' }, h('span', { class: 'f-label', 'aria-hidden': 'true' }, label), cb), sel: state };
+  return { wrap: h('div', { class: 'f-field' }, h('span', { class: 'f-label', 'aria-hidden': 'true' }, label), cb), sel: state, set: (v: string) => { state.value = v; cb.textContent = v; } };
 }
 const ORNAMENT = '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><defs><linearGradient id="og" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".5" stop-color="#c9a24a"/><stop offset="1" stop-color="#7a5410"/></linearGradient></defs><rect x=".6" y=".6" width="98.8" height="98.8" rx="2" fill="none" stroke="url(#og)" stroke-width=".35" vector-effect="non-scaling-stroke"/></svg>';
 /** Decorative gold filigree frame laid over a screen (R3b.7). */
@@ -141,6 +144,7 @@ export class App {
       else if (e.type === 'playCrystal') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId); } }
       else if (e.type === 'minerUpgrade') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, e); } }
       else if (e.type === 'spell') { L('effect', { cardId: e.cardId, visual: SPELL_VISUALS[e.cardId]?.id }); L('impact', { cardId: e.cardId }); }
+      else if (e.type === 'poison') L('poison', { uid: e.uid, amount: 1 });
       else if (e.type === 'damage') L('damage', { uid: e.uid, amount: e.amount, commander: e.commander });
       else if (e.type === 'defeat') {
         L('defeat', { uid: e.uid, cardId: e.cardId });
@@ -298,7 +302,7 @@ export class App {
     const FN: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
     const warband = () => warbandOf(COMMANDERS[cmd].faction);
     let deckSel = 'starter:' + warband();
-    if (typeof picks.deck === 'string' && picks.deck !== '') { const i = decks.findIndex((d) => d.name === picks.deck && deckLegal(d)); if (i >= 0) deckSel = 'saved:' + i; }
+    if (typeof picks.deck === 'string' && picks.deck !== '') { const i = decks.findIndex((d) => d.name === picks.deck && deckLegal(d, cmd)); if (i >= 0) deckSel = 'saved:' + i; }
     else if (typeof picks.deckId === 'string' && STARTER_DECKS[picks.deckId]) deckSel = 'starter:' + picks.deckId;
     const cmdBtns: El[] = [], diffBtns: El[] = [], stacks: El[] = [];
     const msg = h('p', { class: 'deck-msg', 'aria-label': 'Deck message', role: 'status' });
@@ -332,9 +336,9 @@ export class App {
       const list = [...STARTER_DECK_LIST.filter((d) => d.faction === fac), ...order.filter((f) => f !== fac).flatMap((f) => STARTER_DECK_LIST.filter((d) => d.faction === f))];
       const items: El[] = list.map((d) => stack(d.name, d.cards.length, true, 'starter:' + d.id, () => { deckSel = 'starter:' + d.id; msg.textContent = ''; sel(); }));
       decks.forEach((d, i) => {
-        const ok = deckLegal(d);
+        const ok = deckLegal(d, cmd);
         items.push(stack(d.name, d.cards.length, ok, 'saved:' + i, () => {
-          if (!ok) { msg.textContent = deckProblems(d.cards.filter((id) => CARDS[id]))[0] || 'This deck is not ready.'; return; }
+          if (!ok) { msg.textContent = deckProblems(d.cards.filter((id) => CARDS[id]), cmd)[0] || 'This deck is not ready.'; return; }
           deckSel = 'saved:' + i; msg.textContent = ''; sel();
         }));
       });
@@ -433,7 +437,7 @@ export class App {
     const dl = h('dl', { class: 'sr-only' });
     for (const [k, v] of rows) dl.append(h('dt', {}, k), h('dd', {}, v));
     const cur = creature ? { attack: creature.attack, health: creature.health, move: c.move } : undefined;
-    const face = h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c) }, ...faceKids(c, cost, cur));
+    const face = h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, cost, cur));
     const tx = face.querySelector('.tx') as El;
     const tb = h('button', { type: 'button', class: 'tx', style: tx.getAttribute('style') || '', 'aria-label': 'Full explanation' }, tx.textContent || '');
     tx.replaceWith(tb);
@@ -591,7 +595,7 @@ export class App {
       hoverT = setTimeout(() => {
         const card = CARDS[cr.cardId];
         const rc = this.view!.cellRect(cr.row, cr.col);
-        const el = h('div', { class: `hand-card static hover-card ${card.type} f-${card.faction}`, 'aria-hidden': 'true', 'data-card-id': card.id, 'data-frame': FRAME[card.faction] || 'neutral', 'data-rarity': rarityKey(card) }, ...faceKids(card, card.cost, { attack: cr.attack, health: cr.health, move: card.move }));
+        const el = h('div', { class: `hand-card static hover-card ${card.type} f-${card.faction}`, 'aria-hidden': 'true', 'data-card-id': card.id, 'data-frame': frameKey(card), 'data-rarity': rarityKey(card) }, ...faceKids(card, card.cost, { attack: cr.attack, health: cr.health, move: card.move }));
         r.board.append(el); hoverEl = el;
         const bw = r.board.clientWidth, bh = r.board.clientHeight, cw2 = el.offsetWidth, ch2 = el.offsetHeight;
         el.style.left = Math.max(cw2 / 2 + 4, Math.min(bw - cw2 / 2 - 4, rc.x + rc.w / 2)) + 'px';
@@ -1020,7 +1024,7 @@ export class App {
     if ((this.test && !this.fxReal) || !this.r.board) return;
     const c = CARDS[cardId];
     const secs = this.revealSeconds();
-    const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c) }, ...faceKids(c));
+    const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c));
     const host = this.root.querySelector('.match') as El;
     host.append(el);
     let done = false;
@@ -1266,7 +1270,14 @@ export class App {
       el.dataset.upgrades = String(up);
       (el.querySelector('.pips') as El).textContent = up ? '●'.repeat(Math.min(up, 8)) : '';
       const sh = el.querySelector('.sh') as El;
-      sh.textContent = c.shield > 0 ? ` 🛡${c.shield}` : '';
+      sh.textContent = (c.shield > 0 ? ` 🛡${c.shield}` : '');
+      el.dataset.poison = String(c.poison || 0);
+      let pm = el.querySelector('.poison-mark') as El | null;
+      if (c.poison > 0) {
+        if (!pm) { pm = h('span', { class: 'poison-mark', role: 'img' }); sh.after(pm); }
+        pm.setAttribute('aria-label', `Poisoned, ${c.poison} turns left`);
+        pm.textContent = `💧${c.poison}`;
+      } else if (pm) pm.remove();
       el.dataset.damaged = String(c.health < c.maxHealth);
       el.dataset.acted = String(isActed(st, c));
       el.setAttribute("aria-label", `${card.name}, row ${c.row}, column ${c.col}`);
@@ -1278,7 +1289,7 @@ export class App {
         alias.dataset.damaged = el.dataset.damaged;
         alias.textContent = `⚔️${c.attack} ❤️${c.health}`;
       }
-      el.title = `${card.name}: Attack ${c.attack}, Health ${c.health}/${c.maxHealth}${c.shield > 0 ? `, Shield ${c.shield}` : ''}`;
+      el.title = `${card.name}: Attack ${c.attack}, Health ${c.health}/${c.maxHealth}${c.shield > 0 ? `, Shield ${c.shield}` : ''}${c.poison > 0 ? `, Poisoned for ${c.poison} more turns` : ''}`;
       this.placeToken(el, c.row, c.col);
     }
     for (const [uid, el] of this.tokens) if (!seen.has(uid)) { el.remove(); this.tokens.delete(uid); }
@@ -1301,7 +1312,7 @@ export class App {
     for (const hc of me.hand) {
       const c = CARDS[hc.cardId];
       const cost = costOf(c);
-      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c) },
+      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         h('span', { class: 'cid', hidden: true, 'data-card-id': c.id }),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
@@ -1340,14 +1351,14 @@ export class App {
 
   openMulligan(st: any) {
     const selected = new Set<string>();
-    const wrap = h('div', { class: 'mull-hand' });
     const hand = st.players.player.hand;
+    const wrap = h('div', { class: 'mull-hand', style: `--n:${Math.max(5, hand.length)}` });
     const left = 3 - (st.players.player.mulligans || 0);
     const redraw = btn('Redraw Selected', '', () => go([...selected]), { disabled: true });
     for (const hc of hand) {
       const c = CARDS[hc.cardId];
-      const face = h('div', { class: `hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true', 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c) }, ...faceKids(c));
-      const b = h('button', { type: 'button', class: 'mull-card', 'aria-pressed': 'false', 'aria-label': c.name, 'data-uid': hc.uid, 'data-card-id': c.id, 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c), onclick: () => {
+      const face = h('div', { class: `hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true', 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c));
+      const b = h('button', { type: 'button', class: 'mull-card', 'aria-pressed': 'false', 'aria-label': c.name, 'data-uid': hc.uid, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c), onclick: () => {
         if (selected.has(hc.uid)) selected.delete(hc.uid); else selected.add(hc.uid);
         b.setAttribute('aria-pressed', String(selected.has(hc.uid)));
         (redraw as HTMLButtonElement).disabled = selected.size === 0;
@@ -1489,6 +1500,8 @@ export class App {
       } else if (e.type === 'shieldBlock') {
         audio.play('bubble');
         this.burst('BLOCK!', e.row, e.col);
+      } else if (e.type === 'poison') {
+        this.floatText('☠ 1', 'dmg', e.row, e.col);
       } else if (e.type === 'heal' && e.amount > 0) {
         if (e.row) this.floatText('+' + e.amount, 'heal', e.row, e.col);
         else this.floatText('+' + e.amount, 'heal', SH[e.commander as 'player' | 'opponent'].row, SH[e.commander as 'player' | 'opponent'].col);

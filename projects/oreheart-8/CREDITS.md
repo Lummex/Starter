@@ -2,10 +2,9 @@
 
 Everything in the game is made in code or generated for this project. There are **no third-party models, textures or audio files** in the build: `public/assets/external/` holds no files. If an outside file is ever added there, its file name must be listed in this document with its source URL and license.
 
-## Fonts (SIL Open Font License, loaded from Google Fonts)
-- **Cinzel** — https://fonts.google.com/specimen/Cinzel (OFL 1.1)
-- **Cinzel Decorative** — https://fonts.google.com/specimen/Cinzel+Decorative (OFL 1.1)
-- **Nunito** — https://fonts.google.com/specimen/Nunito (OFL 1.1)
+## Fonts (free for commercial use, self-hosted)
+- **Cinzel** (bold carved serif, weights 700/900; stat numbers, names, titles, headings, buttons) — https://fonts.google.com/specimen/Cinzel (SIL OFL 1.1), self-hosted through the npm package `@fontsource/cinzel`.
+- **Tinos** (Times New Roman-style serif; card text, menus, rules, settings, all other text) — https://fonts.google.com/specimen/Tinos (Apache 2.0), self-hosted through `@fontsource/tinos`.
 
 ## Pictures
 - **Card pictures** (`public/art/cards/*.webp`, the 16 Goblin creatures): generated with the xAI Grok image API (`grok-imagine-image`, https://docs.x.ai/) by `tools/gen-card-art.mjs` from the prompts in `src/content/card-art.json`. Generated once and committed. No fallback renders were needed.
@@ -20,3 +19,6 @@ Everything in the game is made in code or generated for this project. There are 
 - Card frames `public/art/frames/*.webp`: the owner's `card-frame-goblin/gnome/dwarf.jpg` (neutral is a grey recolor made in code).
 - Deck image `public/art/deck/deck-image.webp`: the owner's `Deck_image.jpg`, cut out to alpha in code.
 - Commander portraits `public/art/commanders/*.webp`: generated with the xAI Grok image API (`tools/gen-commanders.mjs`).
+
+## Round 4 additions
+- Metal textures `public/art/ui/metal-gold.webp` and `metal-silver.webp`, temporary spell frames `public/art/frames/spell-frame-*.webp` and the 12 spell pictures `public/art/cards/<spell id>.webp`: generated with the xAI Grok image API (`grok-imagine-image`) by `tools/gen-r4-art.mjs`. The spell frames are stand-ins for the owner's `spell-frame-*` files; overwrite the four webp files to swap them.

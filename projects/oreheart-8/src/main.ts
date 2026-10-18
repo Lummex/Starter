@@ -1,9 +1,14 @@
+import '@fontsource/cinzel/700.css';
+import '@fontsource/cinzel/900.css';
+import '@fontsource/tinos/400.css';
+import '@fontsource/tinos/700.css';
 import './style.css';
 import { Game } from './game';
 import { App } from './ui/app';
 import { CARDS, CONFIG, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
 import { audio } from './ui/audio';
+import { startMetal } from './ui/metal';
 import { pictureOf, rarityKey } from './ui/app';
 
 const params = new URLSearchParams(location.search);
@@ -31,17 +36,17 @@ if (test) {
       const c: any = CARDS[id];
       if (!c) return null;
       const cr = c.type === 'creature';
-      return { id: c.id, name: c.name, type: c.type, faction: c.faction === 'any' ? null : c.faction, rarity: c.rarity, role: cr ? String(c.role).toLowerCase() : null,
+      return { id: c.id, name: c.name, type: c.type, faction: c.faction === 'any' ? null : c.faction, disabled: !!c.disabled, rarity: c.rarity, role: cr ? String(c.role).toLowerCase() : null,
         cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text, shortText: c.shortText, longText: c.longText, weapon: weaponOf(c), tagline: c.tagline, visual: c.type === 'spell' ? (SPELL_VISUALS[c.id]?.id ?? null) : null, flavor: c.flavor, speed: c.type === 'spell' ? (c.spellKind === 'counter' ? 'counter' : c.spellKind === 'instant' ? 'instant' : 'regular') : null };
     },
-    listCards: () => Object.keys(CARDS).map((id) => { const c = (window as any).oreheart.getCard(id); return { ...c, rarity: rarityKey(CARDS[id]) }; }),
+    listCards: () => Object.keys(CARDS).filter((id) => !CARDS[id].disabled).map((id) => { const c = (window as any).oreheart.getCard(id); return { ...c, rarity: rarityKey(CARDS[id]) }; }),
     getArtInfo: (id: string) => {
       const c: any = CARDS[id];
       if (!c) return null;
       return { figure: c.type !== 'creature' ? null : c.faction === 'goblins' ? 'finished' : 'placeholder', picture: pictureOf(c) };
     },
     listStarterDecks: () => STARTER_DECK_LIST.map((d) => ({ id: d.id, name: d.name, faction: d.faction, style: d.style, cards: d.cards.slice() })),
-    validateDeck: (ids: string[]) => validateDeck(Array.isArray(ids) ? ids : []),
+    validateDeck: (ids: string[], commander?: string) => validateDeck(Array.isArray(ids) ? ids : [], commander),
     getAudioState: () => audio.state(),
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
     getFxLog: () => JSON.parse(JSON.stringify((app as any).fxLog)),
@@ -63,3 +68,4 @@ const checkRotate = () => { rotate.hidden = !(window.innerHeight > window.innerW
 checkRotate();
 window.addEventListener('resize', checkRotate);
 window.addEventListener('orientationchange', checkRotate);
+startMetal();

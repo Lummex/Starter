@@ -1,8 +1,10 @@
 // Testing deck builder: every card unlocked and unlimited; up to 5 decks saved on the device.
-import { CARDS, FACTIONS, CONFIG, isMiner, deckCounts, deckProblems, basicMiner } from '../engine';
+import { CARDS, FACTIONS, COMMANDERS, CONFIG, isMiner, deckCounts, deckProblems, basicMiner } from '../engine';
 import { h, btn, combo, App, faceKids, rarityKey, FRAME } from './app';
 
-export interface SavedDeck { name: string; cards: string[] }
+export interface SavedDeck { name: string; cards: string[]; commander?: string }
+const CMD_NAMES: Record<string, string> = { grubnak: 'Grubnak', sproingle: 'Sproingle', borgo: 'Borgo' };
+const CMD_BY_NAME: Record<string, string> = { Grubnak: 'grubnak', Sproingle: 'sproingle', Borgo: 'borgo' };
 const KEY = 'oreheart.decks';
 const MAX_DECKS = 5;
 
@@ -13,13 +15,20 @@ export function loadDecks(): SavedDeck[] {
   } catch { return []; }
 }
 function storeDecks(d: SavedDeck[]) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch { /* storage unavailable */ } }
-export const deckLegal = (d: SavedDeck) => d.cards.every((id) => CARDS[id]) && deckProblems(d.cards).length === 0;
+/** The faction most of a deck's creatures belong to: it decides which faction spells the deck may hold. */
+export function deckMainFaction(ids: string[]): string | undefined {
+  const t: Record<string, number> = {};
+  for (const id of ids) { const c = CARDS[id]; if (c && c.type === 'creature' && c.faction !== 'any') t[c.faction] = (t[c.faction] || 0) + 1; }
+  return Object.keys(t).sort((a, b) => t[b] - t[a])[0];
+}
+export const deckLegal = (d: SavedDeck, commander?: string) => d.cards.every((id) => CARDS[id]) && deckProblems(d.cards, commander).length === 0;
 
 const ORDER = ['goblins', 'gnomes', 'dwarves', 'any'];
 const ALL = (Object.values(CARDS) as any[]).slice().sort((a, b) => {
   const t = (c: any) => (c.type === 'creature' ? 0 : c.type === 'spell' ? 1 : 2);
   return t(a) - t(b) || ORDER.indexOf(a.faction) - ORDER.indexOf(b.faction) || a.cost - b.cost || a.name.localeCompare(b.name);
 });
+const SING: Record<string, string> = { goblins: 'Goblin', gnomes: 'Gnome', dwarves: 'Dwarf' };
 const FNAME: Record<string, string> = { goblins: 'Goblins', gnomes: 'Gnomes', dwarves: 'Dwarves', any: 'Neutral' };
 const FSYMS: Record<string, string> = { goblins: '💀', gnomes: '⚙️', dwarves: '🔨', any: '✦' };
 
@@ -60,14 +69,14 @@ export function smartMatch(c: any, query: string): boolean {
 }
 
 /** Completes `deck` to exactly 50 cards without removing anything (R9.1). */
-export function autoFill(deck: string[]): string[] {
+export function autoFill(deck: string[], faction?: string): string[] {
   const out = deck.slice();
   const n = () => { const m: Record<string, number> = {}; for (const id of out) m[id] = (m[id] || 0) + 1; return m; };
   const room = () => CONFIG.deckMin - out.length;
   const count = (id: string) => n()[id] || 0;
   const tally: Record<string, number> = {};
   for (const id of out) if (CARDS[id].type === 'creature' && CARDS[id].faction !== 'any') tally[CARDS[id].faction] = (tally[CARDS[id].faction] || 0) + 1;
-  const main = Object.keys(tally).sort((a, b) => tally[b] - tally[a])[0] || 'goblins';
+  const main = faction || Object.keys(tally).sort((a, b) => tally[b] - tally[a])[0] || 'goblins';
   const add = (id: string, cap: number) => { if (room() > 0 && count(id) < Math.min(cap, copyLimit(id))) { out.push(id); return true; } return false; };
   const basic = basicMiner(main);
   while (count(basic) < 5 && add(basic, 5));
@@ -100,6 +109,8 @@ export function showDecks(app: App) {
   const fT = sel('Type', 'f-type', ['All', 'Miners', 'Fighters', 'Spells', 'Crystal cards']);
   const fC = sel('Cost', 'f-cost', ['Any', '1-2', '3-4', '5-6', '7+']);
   const fR = sel('Rarity', 'f-rarity', ['All', 'Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector']);
+  let cmdId = 'grubnak';
+  const fCmd = combo('Deck Commander', 'f-commander', ['Grubnak', 'Sproingle', 'Borgo'], () => { cmdId = CMD_BY_NAME[fCmd.sel.value] || 'grubnak'; renderCards(); renderDeck(); });
   let query = '';
   let perRow = Math.max(1, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
   const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'All cards', role: 'group' });
@@ -111,7 +122,7 @@ export function showDecks(app: App) {
   const mineEl = h('ul', { class: 'db-mine', 'aria-label': 'My decks' });
   const status = h('p', { class: 'db-status', role: 'status' });
   const limitMsg = h('p', { class: 'db-status' });
-  const newBtn = btn('New Deck', '', () => { deck = []; editing = -1; name = defaultName(); status.textContent = ''; renderDeck(); }) as HTMLButtonElement;
+  const newBtn = btn('New Deck', '', () => { deck = []; editing = -1; cmdId = 'grubnak'; fCmd.set('Grubnak'); renderCards(); name = defaultName(); status.textContent = ''; renderDeck(); }) as HTMLButtonElement;
 
   const matches = (c: any) => {
     if (query && !smartMatch(c, query)) return false;
@@ -143,7 +154,8 @@ export function showDecks(app: App) {
     a.onfinish = () => ghost.remove();
     setTimeout(() => ghost.remove(), 700);
   };
-  const addCard = (id: string, from?: DOMRect | null) => { if (count(id) >= copyLimit(id)) return; fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };
+  const lockedFor = (id: string) => { const c = CARDS[id]; return c.type === 'spell' && c.faction !== 'any' && c.faction !== COMMANDERS[cmdId].faction; };
+  const addCard = (id: string, from?: DOMRect | null) => { if (lockedFor(id)) { status.textContent = `Only for ${SING[CARDS[id].faction]} Commanders`; return; } if (count(id) >= copyLimit(id)) return; fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };
   const removeCard = (id: string) => { const i = deck.indexOf(id); if (i >= 0) deck.splice(i, 1); status.textContent = ''; renderDeck(); };
 
   function enlarge(c: any) { app.showCard(c.id); }
@@ -166,7 +178,7 @@ export function showDecks(app: App) {
     document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
   }
   function tile(c: any) {
-    const el = h('div', { class: 'db-tile', role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), h('span', { hidden: '' }, c.longText || '')) as any;
+    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : ''), 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, h('span', { hidden: '' }, c.longText || '')) as any;
     let timer: any = null;
     el.addEventListener('click', () => {
       if (el._dragged) return;
@@ -188,7 +200,7 @@ export function showDecks(app: App) {
     slider.value = String(perRow);
     fitRow();
   }
-  function renderCards() { cardsEl.replaceChildren(...ALL.filter(matches).map(tile)); fitRow(); }
+  function renderCards() { cardsEl.replaceChildren(...ALL.filter((c) => !c.disabled && matches(c)).map(tile)); fitRow(); }
   const slider = h('input', { type: 'range', id: 'cards-per-row', min: '1', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
   slider.addEventListener('input', () => setPerRow(+slider.value));
   const searchInp = h('input', { type: 'search', id: 'card-search', role: 'searchbox', 'aria-label': 'Search cards', placeholder: 'Search: "cheap goblin miners", "ranged under 4"…', autocomplete: 'off' }) as HTMLInputElement;
@@ -245,12 +257,12 @@ export function showDecks(app: App) {
         h('div', { class: 'bar', role: 'img', 'aria-label': `Cost ${lab}: ${v} ${v === 1 ? 'card' : 'cards'}`, style: `height:${Math.round((v / mx) * 100)}%` }),
         h('span', { class: 'bar-l', 'aria-hidden': 'true' }, lab));
     }));
-    const p = deckProblems(deck);
+    const p = deckProblems(deck, cmdId);
     probEl.replaceChildren(...(p.length ? p : ['Deck is legal']).map((m) => h('li', { class: p.length ? 'bad' : 'good' }, m)));
     mineEl.replaceChildren(...saved.map((d, i) => {
-      const legal = deckLegal(d);
+      const legal = deckLegal(d, d.commander || 'grubnak');
       return h('li', {},
-        btn(`${d.name} — ${d.cards.length} cards, ${legal ? 'legal' : 'not legal'}`, '', () => { deck = d.cards.slice(); editing = i; name = d.name; status.textContent = ''; renderDeck(); }),
+        btn(`${d.name} — ${d.cards.length} cards, ${legal ? 'legal' : 'not legal'}`, '', () => { deck = d.cards.slice(); editing = i; name = d.name; cmdId = d.commander && CMD_NAMES[d.commander] ? d.commander : 'grubnak'; fCmd.set(CMD_NAMES[cmdId]); renderCards(); status.textContent = ''; renderDeck(); }),
         btn('Delete', 'small', () => confirmDelete(i), { 'aria-label': `Delete ${d.name}` }));
     }));
     const full = saved.length >= MAX_DECKS;
@@ -280,7 +292,7 @@ export function showDecks(app: App) {
     let idx = editing;
     if (idx < 0) idx = saved.findIndex((d) => d.name === name);
     if (idx < 0 && saved.length >= MAX_DECKS) { status.textContent = ''; limitMsg.textContent = 'You can save up to 5 decks.'; return; }
-    const rec = { name, cards: deck.slice() };
+    const rec = { name, cards: deck.slice(), commander: cmdId };
     if (idx >= 0) saved[idx] = rec; else { saved.push(rec); idx = saved.length - 1; }
     editing = idx;
     storeDecks(saved);
@@ -295,12 +307,12 @@ export function showDecks(app: App) {
     h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' }),
     h('h1', { class: 'section cinzel' }, 'Deck Builder'),
     h('div', { class: 'db-search' }, searchInp, ...(voiceBtn ? [voiceBtn] : []), h('div', { class: 'f-field' }, h('label', { for: 'cards-per-row' }, 'Cards per row'), slider)),
-    h('div', { class: 'db-filters' }, fF.wrap, fT.wrap, fC.wrap, fR.wrap),
+    h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap),
     h('div', { class: 'db-cols' },
       h('section', { class: 'db-left' }, h('h2', {}, 'All cards'), cardsEl),
       h('section', { class: 'db-right' },
         pileWrap, countsEl, chartEl, probEl,
-        h('div', { class: 'row' }, btn('Auto-fill', '', () => { deck = autoFill(deck); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), btn('Rename', '', rename), newBtn),
+        h('div', { class: 'row' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), btn('Rename', '', rename), newBtn),
         status, limitMsg,
         h('h2', {}, 'Deck list'), listEl,
         h('h2', {}, 'My decks'), mineEl,

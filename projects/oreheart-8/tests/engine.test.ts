@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createMatch, applyAction, legalActions, creatureAt, CARDS, CONFIG, STARTER_DECKS, incomePreview, hasMovesLeft, legalMines, weaponOf, deckProblems, atkValue } from '../src/engine';
+import { createMatch, applyAction, legalActions, creatureAt, CARDS, CONFIG, STARTER_DECKS, incomePreview, hasMovesLeft, legalMines, weaponOf, deckProblems, atkValue, validateDeck, STARTER_DECK_LIST } from '../src/engine';
 
 const act = (s: any, a: any) => { const r = applyAction(s, a); if (!r.ok) throw new Error(r.error); return r.state; };
 const done = (s: any, n = 1) => { for (let i = 0; i < n; i++) s = act(s, { type: 'done' }); return s; };
@@ -16,7 +16,7 @@ describe('content and board', () => {
   it('starter decks: 40 creatures, 6 spells incl. Fizzle, 4 Crystal cards', () => {
     for (const deck of Object.entries(STARTER_DECKS).filter(([k]) => k.endsWith('-warband')).map(([, v]) => v)) {
       const t = (ty: string) => deck.filter((id) => CARDS[id].type === ty).length;
-      expect([t('creature'), t('spell'), t('crystal')]).toEqual([40, 6, 4]);
+      expect([t('creature'), t('spell'), t('crystal')]).toEqual([88, 7, 5]);
       expect(deck).toContain('fizzle');
     }
     expect([CONFIG.boardWidth, CONFIG.boardHeight, CONFIG.mineCount]).toEqual([13, 7, 3]);
@@ -146,8 +146,8 @@ describe('revision 6', () => {
   it('starter decks: 5 basic Miners and 3 Smith Miners each', () => {
     const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner'], gnomes: ['gnome-prospector', 'gnome-smith-miner'], dwarves: ['dwarf-miner', 'dwarf-smith-miner'] };
     for (const [f, [b, sm]] of Object.entries<any>(pairs)) {
-      expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === b).length).toBe(5);
-      expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === sm).length).toBe(3);
+      expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === b).length).toBe(30);
+      expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === sm).length).toBe(20);
     }
     expect(CARDS['goblin-scrounger'].name).toBe('Grubgrabber Miner');
   });
@@ -305,7 +305,7 @@ describe('revision 7', () => {
       weaponOf(c('deepforge-crossbowman')), weaponOf(c('axe-thrower')), weaponOf(c('shieldbeard')), weaponOf(c('ram-rider')), weaponOf(c('gyrocopter-ace')), weaponOf(c('the-great-steam-golem')), weaponOf(c('fireball'))])
       .toEqual(['pick', 'pick-hammer', 'pick-crystal', 'sword', 'sling', 'wand', 'crossbow', 'axes', 'sword-shield', 'lance', 'signature'.replace('signature', 'gyro'), 'signature', null]);
     for (const deck of Object.values(STARTER_DECKS)) {
-      for (const id of deck) { const n = deck.filter((x) => x === id).length; if (!/miner|prospector|scrounger/.test(id)) expect(n).toBeLessThanOrEqual(4); }
+      for (const id of deck) { const n = deck.filter((x) => x === id).length; if (!/miner|prospector|scrounger/.test(id)) expect(n).toBeLessThanOrEqual(6); }
       expect(deck.filter((id) => CARDS[id].role === 'Smith').length).toBeGreaterThanOrEqual(3);
       expect(deckProblems(deck)).toEqual([]);
     }
@@ -356,7 +356,7 @@ describe('revision 9', () => {
     expect(CONFIG.savingsPerCrystal).toBe(10);
   });
   it('spells never count as moves', () => {
-    const s = mk({ playerHand: ['fireball', 'battle-cry'], playerCrystals: 10, board: [O('gnome-prospector', 2, 8)] });
+    const s = mk({ playerHand: ['venom-shiv', 'tunnel-rush'], playerCrystals: 10, board: [O('gnome-prospector', 2, 8)] });
     expect(hasMovesLeft(s)).toBe(false);
     expect(legalActions(s).some((a: any) => a.type === 'cast')).toBe(true);
   });
@@ -444,9 +444,66 @@ describe('Round 3a', () => {
   it('nine legal starter decks', () => {
     const ids = Object.keys(STARTER_DECKS);
     expect(ids.length).toBe(9);
-    for (const id of ids) { expect(STARTER_DECKS[id].length).toBe(50); expect(deckProblems(STARTER_DECKS[id])).toEqual([]); }
+    for (const id of ids) { expect(STARTER_DECKS[id].length).toBe(100); expect(deckProblems(STARTER_DECKS[id])).toEqual([]); }
     const s = createMatch({ seed: 3, playerCommander: 'sproingle', playerDeckId: 'gnome-horde', opponentDeckId: 'goblin-arcane-hoard', skipMulligan: true });
     expect(s.players.player.deckId).toBe('gnome-horde');
     expect(s.players.opponent.deckId).toBe('goblin-arcane-hoard');
+  });
+});
+
+describe('round 4', () => {
+  it('nine starter decks: 30 basic + 20 Smith Miners, style mix, legal for their Commander', () => {
+    const mix: any = { warband: [38, 7, 5], 'arcane-hoard': [18, 24, 8], horde: [46, 0, 4] };
+    const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner', 'grubnak'], gnomes: ['gnome-prospector', 'gnome-smith-miner', 'sproingle'], dwarves: ['dwarf-miner', 'dwarf-smith-miner', 'borgo'] };
+    for (const d of STARTER_DECK_LIST) {
+      const [b, sm, cmd] = pairs[d.faction];
+      expect(d.cards.length).toBe(100);
+      expect(d.cards.filter((x) => x === b).length).toBe(30);
+      expect(d.cards.filter((x) => x === sm).length).toBe(20);
+      const fighters = d.cards.filter((x) => CARDS[x].type === 'creature' && CARDS[x].role === 'Fighter').length;
+      const spells = d.cards.filter((x) => CARDS[x].type === 'spell').length;
+      const crystals = d.cards.filter((x) => CARDS[x].type === 'crystal').length;
+      expect([fighters, spells, crystals]).toEqual(mix[d.style]);
+      expect(validateDeck(d.cards, cmd).legal).toBe(true);
+    }
+  });
+  it('faction spells are locked by Commander in deck validation and in casting', () => {
+    const base = [...Array(50).fill('goblin-scrounger'), 'fireball'];
+    expect(validateDeck(base).legal).toBe(true);
+    expect(validateDeck(base, 'grubnak').legal).toBe(false);
+    expect(validateDeck(base, 'sproingle').legal).toBe(true);
+    expect(validateDeck([...Array(50).fill('goblin-scrounger'), 'mirror-hex']).legal).toBe(false);
+    expect(validateDeck([...Array(50).fill('goblin-scrounger'), 'fizzle'], 'borgo').legal).toBe(true);
+    const s = mk({ playerHand: ['fireball', 'venom-shiv'], playerCrystals: 10, board: [O('gnome-prospector', 2, 8)] });
+    const casts = legalActions(s).filter((a: any) => a.type === 'cast');
+    expect(casts.length).toBeGreaterThan(0);
+    expect(casts.every((a: any) => s.players.player.hand.find((h: any) => h.uid === a.uid).cardId === 'venom-shiv')).toBe(true);
+  });
+  it('Venom Shiv poisons for 3 of the owner turns and blocks healing', () => {
+    let s = mk({ playerHand: ['venom-shiv', 'healing-light'], playerCrystals: 10, board: [O('shieldbeard', 2, 8)] });
+    const target = at(s, 2, 8);
+    const hp = target.health;
+    s = act(s, { type: 'cast', uid: s.players.player.hand[0].uid, target: { row: 2, col: 8 } });
+    if (s.pendingResponse) s = act(s, { type: 'pass' });
+    expect(at(s, 2, 8).poison).toBe(3);
+    const seen: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      s = done(s, 2);
+      seen.push(at(s, 2, 8).health);
+      s = done(s, 2);
+    }
+    expect(seen).toEqual([hp - 1, hp - 2, hp - 3]);
+    expect(at(s, 2, 8).poison).toBe(0);
+  });
+  it('casting lock: act() rejects a locked cast; factionLock:false allows it', () => {
+    const setup = { playerHand: ['fireball'], playerCrystals: 10, board: [O('gnome-prospector', 2, 8)] };
+    let s = mk(setup);
+    const uid = s.players.player.hand[0].uid;
+    const r = applyAction(s, { type: 'cast', uid, target: { row: 2, col: 8 } });
+    expect(r.ok).toBe(false);
+    s = mk(setup, { factionLock: false });
+    expect(applyAction(s, { type: 'cast', uid: s.players.player.hand[0].uid, target: { row: 2, col: 8 } }).ok).toBe(true);
+    expect(validateDeck([...Array(50).fill('goblin-scrounger'), 'fireball'], 'grubnak').problems).toContain('Searing Arcane Orb: only for Gnome Commanders.');
+    expect(validateDeck([...Array(50).fill('goblin-scrounger'), 'mirror-hex']).problems).toContain('Hex Reversal is not available yet.');
   });
 });

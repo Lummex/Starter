@@ -35,7 +35,7 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
   const maxHealth = card.health + (bh ? bh.amount : 0);
   const c = {
     uid: uid || 'u' + s.nextUid++, cardId, owner, row, col, attack: card.attack, health: maxHealth - damage, maxHealth,
-    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0,
+    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0,
   };
   s.board.creatures.push(c);
   return c;
@@ -113,7 +113,7 @@ export function createMatch(opts: any = {}) {
     turn: 0, activePlayer: 'player', priority: 'player', phase: 'mulligan', winner: null,
     players: {}, board: { creatures: [] },
     sites: [] as any[], strongholds: { player: { ...stronghold('player') }, opponent: { ...stronghold('opponent') } },
-    pendingResponse: null, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
+    pendingResponse: null, factionLock: opts.factionLock !== false, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
     mulliganDone: { player: false, opponent: false }, tutorial: opts.tutorial ? { step: 'summon' } : null,
     flags: { battleCry: null, crystalsPlayed: { player: 0, opponent: 0 }, swapped: false, discount: { player: 0, opponent: 0 } },
   };
@@ -301,9 +301,18 @@ function startTurn(s: any, ev: any[]) {
   for (const c of s.board.creatures) {
     if (c.owner !== who) continue;
     c.maxHealth -= c.ale; c.ale = 0;
-    if (c.health < c.maxHealth) healCreature(s, c, c.maxHealth - c.health, ev);
-    c.health = c.maxHealth;
+    if (!c.poison) {
+      if (c.health < c.maxHealth) healCreature(s, c, c.maxHealth - c.health, ev);
+      c.health = c.maxHealth;
+    }
     c.shield = 0;
+  }
+  // poison: 1 damage at the start of its owner's turn, for the remaining turns
+  for (const c of [...s.board.creatures]) {
+    if (c.owner !== who || !(c.poison > 0)) continue;
+    c.poison -= 1;
+    ev.push({ type: 'poison', uid: c.uid, row: c.row, col: c.col, left: c.poison });
+    dealDamage(s, c, CONFIG.poisonDamage ?? 1, ev, true);
   }
   for (const c of [...s.board.creatures]) {
     if (c.owner !== who) continue;
@@ -340,6 +349,7 @@ function endTurn(s: any, ev: any[]) {
 
 // ---------------------------------------------------------------- damage
 function healCreature(s: any, c: any, n: number, ev: any[]) {
+  if (c.poison > 0) return;
   const before = c.health;
   c.health = Math.min(c.maxHealth, c.health + n);
   ev.push({ type: 'heal', uid: c.uid, row: c.row, col: c.col, amount: c.health - before });
@@ -506,8 +516,16 @@ const tunnelCells = (s: any) => {
   return o;
 };
 
+/** Faction spells need a Commander of that faction; shared spells ('any') are open to all; disabled cards never. */
+export function spellUsable(s: any, p: Side, card: any): boolean {
+  if (card.disabled) return false;
+  if (s.factionLock === false) return true;
+  return card.faction === 'any' || !card.faction || card.faction === s.players[p].faction;
+}
+
 /** All target options for casting `card` as `p`. `[{}]` = castable with no target; `[]` = not castable. */
 export function spellTargets(s: any, p: Side, card: any): any[] {
+  if (!spellUsable(s, p, card)) return [];
   const own = s.board.creatures.filter((c: any) => c.owner === p);
   const foe = s.board.creatures.filter((c: any) => c.owner !== p);
   const pos = (c: any) => ({ row: c.row, col: c.col });
@@ -518,6 +536,7 @@ export function spellTargets(s: any, p: Side, card: any): any[] {
       return own.flatMap((c: any) => cells.map((to: any) => ({ target: pos(c), to })));
     }
     case 'damage': return [...foe.map((c: any) => ({ target: pos(c) })), { target: { commander: other(p) } }];
+    case 'poison': return foe.map((c: any) => ({ target: pos(c) }));
     case 'buffAttack': return [{}];
     case 'areaDamage': {
       const o: any[] = [];
@@ -537,6 +556,7 @@ function autoTarget(s: any, p: Side, card: any) {
   const score = (o: any) => {
     const t = o.target && o.target.row ? creatureAt(s, o.target.row, o.target.col) : null;
     if (card.effect === 'damage') return t ? t.attack + CARDS[t.cardId].cost : 0.5;
+    if (card.effect === 'poison') return t ? t.attack + CARDS[t.cardId].cost + t.maxHealth : 0;
     if (card.effect === 'heal') return t ? t.maxHealth - t.health : 0;
     if (card.effect === 'areaDamage') {
       let v = 0;
@@ -566,6 +586,7 @@ function resolveSpell(s: any, p: Side, card: any, target: any, to: any, ev: any[
       if (target && target.commander) damageCommander(s, target.commander, card.params.amount, ev);
       else if (t) dealDamage(s, t, card.params.amount, ev);
       break;
+    case 'poison': if (t && t.owner !== p) { t.poison = card.params.turns; ev.push({ type: 'poisoned', uid: t.uid, row: t.row, col: t.col, turns: t.poison }); } break;
     case 'buffAttack': s.flags.battleCry = p; break;
     case 'areaDamage':
       if (target) for (const c of [...s.board.creatures]) if (cheb(c, target) <= 1) dealDamage(s, c, card.params.amount, ev);
@@ -594,7 +615,7 @@ export function respondMatches(s: any, responder: Side, pend: any): { h: any; ca
   const pt = pendingTargetCreature(s, pend);
   for (const h of pl.hand) {
     const card = CARDS[h.cardId];
-    if (card.type !== 'spell' || card.spellKind === 'regular') continue;
+    if (card.type !== 'spell' || card.spellKind === 'regular' || !spellUsable(s, responder, card)) continue;
     let opts: any[] = [];
     if (card.spellKind === 'counter') {
       if (card.effect === 'cancelSummon' && pend.kind === 'summon') opts = [{}];
