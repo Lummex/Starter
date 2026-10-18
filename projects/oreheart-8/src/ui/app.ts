@@ -536,9 +536,9 @@ export class App {
       gem.innerHTML = `<defs><linearGradient id="${gid}a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${you ? '#d8f6ff' : '#ffd0c8'}"/><stop offset=".5" stop-color="${you ? '#3fb4ff' : '#ff4a3a'}"/><stop offset="1" stop-color="${you ? '#1a3f9a' : '#7a1010'}"/></linearGradient><linearGradient id="${gid}b" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${you ? '#8fe0ff' : '#ff9a88'}"/><stop offset="1" stop-color="${you ? '#12306e' : '#5a0a0a'}"/></linearGradient><filter id="${gid}g" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="5"/></filter></defs><polygon points="50,4 88,40 76,118 50,126 24,118 12,40" fill="${you ? '#4fc8ff' : '#ff5a4a'}" filter="url(#${gid}g)" opacity=".7"/><polygon points="50,4 88,40 50,52" fill="url(#${gid}a)"/><polygon points="50,4 12,40 50,52" fill="url(#${gid}b)" opacity=".9"/><polygon points="12,40 50,52 24,118" fill="url(#${gid}a)" opacity=".85"/><polygon points="88,40 50,52 76,118" fill="url(#${gid}b)"/><polygon points="50,52 24,118 50,126 76,118" fill="url(#${gid}a)" opacity=".95"/><polyline points="50,4 50,52 50,126" fill="none" stroke="#ffffff88" stroke-width="1.5"/><polygon points="40,18 52,14 46,34" fill="#fff" opacity=".7"/>`;
       const flow = h('span', { class: 'cry-flow', 'aria-label': you ? 'Your Flow crystals' : 'Enemy Flow crystals' }, '0');
       const bankN = h('span', { class: 'cry-bank-n' }, '0');
-      const bank = h('span', { class: 'cry-bank', 'aria-label': you ? 'Your Bank crystals' : 'Enemy Bank crystals' }, h('span', { class: 'bank-ico', 'aria-hidden': 'true' }, '🏛️'), bankN);
+      const bank = h('span', { class: 'cry-bank', 'aria-label': you ? 'Your Bank crystals' : 'Enemy Bank crystals' }, bankN);
       const name = h('span', { class: 'cry-name' }, '');
-      const next = h('span', { class: 'cry-next', 'aria-label': you ? 'Your income next turn' : 'Enemy income next turn' }, 'Next +0');
+      const next = h('span', { class: 'cry-next', 'aria-label': you ? 'Your income next turn' : 'Enemy income next turn' }, '+0 next turn');
       const el = h('div', { class: 'crystal-hud ' + side, role: 'group', 'aria-label': you ? 'Your crystal' : 'Enemy crystal' },
         h('div', { class: 'cry-img' }, gem, flow, bank),
         h('div', { class: 'cry-text' }, name, h('span', { class: 'cry-word' }, 'Flow'), next));
@@ -568,8 +568,9 @@ export class App {
     r.handRight = btn('▶', 'hand-scroll right', () => { this.handScroll = Math.round(this.handScroll) + 3; this.layoutHand(); }, { 'aria-label': 'Scroll hand right' });
     r.handLeft.hidden = true; r.handRight.hidden = true;
     const menuBtn = btn('Menu', 'menu-btn', () => { this.menuPinned = !this.menuPinned; this.menuOpen(this.menuPinned); }, { 'aria-expanded': 'false' });
-    const muteBtn = btn('Mute', 'mute-btn', () => { audio.setMuted(!audio.muted); muteBtn.setAttribute('aria-pressed', String(audio.muted)); if (!audio.muted) audio.play('click'); });
-    muteBtn.setAttribute('aria-pressed', String(audio.muted));
+    const syncMute = () => { muteBtn.setAttribute('aria-pressed', String(audio.muted)); muteBtn.setAttribute('aria-label', audio.muted ? 'Unmute sound' : 'Mute sound'); muteBtn.textContent = audio.muted ? 'Unmute' : 'Mute'; };
+    const muteBtn = btn('Mute', 'mute-btn', () => { audio.setMuted(!audio.muted); syncMute(); if (!audio.muted) audio.play('click'); });
+    syncMute();
     r.last = btn('Last turn', 'last-btn', () => { this.menuOpen(false); this.showLastTurn(); });
     const surrenderBtn = btn('Surrender', 'surrender-btn', () => {
       this.menuOpen(false);
@@ -666,6 +667,8 @@ export class App {
     r.hand.addEventListener('wheel', (e: WheelEvent) => { e.preventDefault(); this.handScroll += (e.deltaY || e.deltaX) / 80; this.layoutHand(); }, { passive: false });
     document.addEventListener('pointerdown', this.tuckOutside, true);
     window.addEventListener('resize', this.onResize);
+    window.addEventListener('resize', () => this.placeEnemyCrystal());
+    setInterval(() => this.placeEnemyCrystal(), 400);
     window.removeEventListener('keydown', this.onKey);
     window.addEventListener('keydown', this.onKey);
     clearInterval(this.timerId);
@@ -703,6 +706,15 @@ export class App {
   // ------------------------------------------------------------ camera zoom and pan (R2.19)
   cam = { zoom: 1, x: 0, y: 0 };
   getCamera() { return { ...this.cam, panX: this.cam.x, panY: this.cam.y, tilt: 51, fov: 48, fitZoom: 1.07, sky: 0.16, shiftX: 0.01, shiftY: 0.12 }; }
+  placeEnemyCrystal() {
+    const hud = this.r.board?.isConnected ? (document.querySelector('.crystal-hud.theirs') as HTMLElement | null) : null;
+    const rc: any = this.view?.screenRects();
+    if (!hud || !rc || !rc.opponentCommander.width) return;
+    const W = window.innerWidth, o = rc.opponentCommander;
+    const w = hud.getBoundingClientRect().width || 0;
+    const left = Math.max(W * 0.4, Math.min(W * 0.7, o.x - w - 6));
+    hud.style.left = `${(left / W) * 100}%`;
+  }
   screenRects() { return this.view ? this.view.screenRects() : null; }
   applyCam() {
     const w = (this.r.board as El).clientWidth || 400, hh = (this.r.board as El).clientHeight || 300;
@@ -977,6 +989,7 @@ export class App {
     this.record(st, events);
     this.logFx(st, events);
     this.setHeart(r.enemyHealth, en.health);
+    this.placeEnemyCrystal();
     this.setHeart(r.myHealth, me.health);
     (r.enemyDeck.querySelector('.pile-n') as El).textContent = String(en.deck.length);
     (r.myDeck.querySelector('.pile-n') as El).textContent = String(me.deck.length);
@@ -989,8 +1002,8 @@ export class App {
     r.eBank.textContent = String(en.bank);
     this.setCmdName(r.myName, COMMANDERS[me.commanderId]?.name || '');
     this.setCmdName(r.eName, COMMANDERS[en.commanderId]?.name || '');
-    r.income.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')}`;
-    r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;
+    r.income.textContent = `+${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')} next turn`;
+    r.eNext.textContent = `+${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')} next turn`;
     const pm = `${me.crystals}|${en.crystals}`;
     if (this.flowKey !== pm && this.flowKey !== '' && st.turn !== this.flowTurn) this.view?.pulseFlow(st.activePlayer);
     if (st.turn !== this.flowTurn) { this.flowTurn = st.turn; this.view?.pulseFlow(st.activePlayer); }

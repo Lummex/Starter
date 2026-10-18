@@ -358,3 +358,10 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 - Ruby heart picture `public/art/ui/ruby-heart.png` (drawn in code, no image API). Card reveals 5.5 s (Fast 2.75 s).
 - Phone text: nothing under 14 px outside card faces; short screens (select, deck builder) scroll.
 - Not satisfied exactly: on a phone the enemy crystal's text and the phase tracker share the top-right and overlap a little (the tracker has a dark fade behind it). The enemy Commander can sit partly under the enemy crystal because of the owner's fixed positions.
+
+## Inspector fix pass (round 5b, attempt 2)
+- Hand cards ≥ 61×90 px at 844×390; stat pills ≥ 14 px; Fight! fits on-screen at 844×390.
+- Enemy crystal HUD is repositioned beside (left of) the enemy Commander so it never covers it.
+- Bank badge text is the number only (icon via CSS); income preview reads "+N next turn".
+- Match Mute button is labelled "Mute sound" / "Unmute sound".
+- Known conflict: spec text says "Next +N" for the income preview, older AC36 expects "+N next turn"; the latter is used.
