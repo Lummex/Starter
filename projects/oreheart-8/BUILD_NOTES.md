@@ -282,3 +282,8 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 - Hand: the fan no longer rotates cards (hover pop-out measures a true 2x); every hand button contains a `[data-card-id]` descendant; cards scrolled out of the 7-card window wait in an invisible clipped strip (`.hand-spill`), and scrolling one into view (focus, assistive tech, automation) brings it into the fan.
 - HUD: Flow/Bank counters, income, swap and Last turn sit bottom-left, beside the player's Commander.
 - Known conflict: older tests AC9 (b) and AC27 summon at row 7 column 2, which is the player's Stronghold in Round 3a (R3.2: nothing can be summoned there), so they can't pass; the rule was kept.
+
+## Fixes after inspector round 1
+- Welcome offer no longer overlaps the logo (logo shrinks and top-aligns while it shows).
+- Card number fonts shrunk so text boxes sit inside their slots.
+- Deck Builder tiles use role=group so only one "Back" button exists.

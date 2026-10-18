@@ -776,3 +776,12 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 #app:has(.match) .ornament .orn-mid,.match .btn::before,.match .btn::after{display:none!important}
 .ornament .orn-top{top:-9px}.ornament .orn-bot{bottom:-9px}
 .hand-card .cost,.hand-card .atk,.hand-card .hp,.hand-card .mv{-webkit-background-clip:text!important;background-clip:text!important;background-color:transparent!important;clip-path:none!important}
+
+/* welcome offer: keep the logo clear of the bottom strip */
+@media (orientation:landscape) and (min-width:701px){.menu-screen.welcome-on .menu-head{align-self:start;padding-top:4px}.menu-screen.welcome-on .logo-img{height:min(54vh,330px)}}
+
+/* card numbers: font boxes always fit inside their slots */
+.hand-card .cost{font-size:calc(var(--cw)*.105)!important}
+.hand-card .atk{font-size:calc(var(--cw)*.09)!important}
+.hand-card .hp{font-size:calc(var(--cw)*.072)!important}
+.hand-card .mv{font-size:calc(var(--cw)*.056)!important}
