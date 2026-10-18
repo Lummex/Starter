@@ -1,6 +1,6 @@
 # Automated check results
 
-170 of 172 checks passed after 3 build round(s).
+179 of 181 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -20,6 +20,9 @@
 - ✅ both hands at 844x390 › AC115: the enemy hand is always on-screen and the hand shows about 7 cards, then scrolls
 - ✅ both hands at 844x390 › AC116: a tapped creature shows its card at hovered-hand-card size, fully on-screen
 - ✅ both hands at 844x390 › AC117: the deck picker shows the nine starter decks as named stacks
+- ❌ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (844x390)
+- ❌ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (1280x720)
+- ✅ round 3b phone screenshots (844x390) › AC126: close-up cards, deck builder, title and a spell being cast render without errors
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -33,7 +36,7 @@
 - ✅ AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy turn
 - ✅ AC9: example (a) — 1 Gemsinger Miner vs 2 Grubgrabber Miners: enemy owns the mine, enemy gets 4, you get 1 (+2 underdog)
 - ✅ AC9: one crystal type — every card costs plain crystals, Flow is a single number
-- ❌ AC9: example (b) — 2 vs 2 tie: mine is neutral, each side gets the full 4
+- ✅ AC9: example (b) — 2 vs 2 tie: mine is neutral, each side gets the full 4
 - ✅ AC9: mining at an enemy-owned mine pays half — Miner 1, Fighter 0; own or neutral pays full
 - ✅ AC9: examples (c) and (d) — pool is set to flow, unspent crystals last through the enemy turn
 - ✅ AC9: example (e) — the pool never goes above 16
@@ -76,7 +79,7 @@
 - ✅ AC25: tutorial steps start at summon and advance after a back-row summon
 - ✅ AC26: printed creature Health is at most 6
 - ✅ AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 for 1
-- ❌ AC27: summoning spends exactly the new costs
+- ✅ AC27: summoning spends exactly the new costs
 - ✅ AC28: phase banner appears when a phase begins
 - ✅ AC28: auto-skipped phases show no banner; ENEMY TURN does
 - ✅ AC29: moves left ignores Instants, Crystal cards and the Miner swap
@@ -135,7 +138,7 @@
 - ✅ AC72: "+ New Deck" on the select screen opens the Deck Builder
 - ✅ AC73: the select screen remembers the last Commander, deck and difficulty
 - ✅ AC74: match-end summary, Play again with the same choices, and Menu
-- ✅ AC75: the tutorial runs to the end, teaching only the current rules
+- ✅ AC75 + AC125: the tutorial runs to the end, teaching only the current rules
 - ✅ AC76: the Last turn recap lists what the enemy did
 - ✅ AC77: a mine with ready Miners shows the swinging pickaxe count; it goes once they mined
 - ✅ AC79: main menu shows the logo as the h1, the tagline and the five plaques
@@ -174,34 +177,40 @@
 - ✅ AC114: the computer plays the Warband style to the end of a match
 - ✅ AC114: the computer plays the Arcane Hoard style to the end of a match
 - ✅ AC114: the computer plays the Horde style to the end of a match
+- ✅ AC118: card numbers sit centered inside their slots in 3D gold
+- ✅ AC119: the rarity crystal is a small art crystal with the rarity word centered below
+- ✅ AC120: card names and text boxes use one size, gold lettering, thin text
+- ✅ AC121: Deck Builder deck art has no frame; painted background
+- ✅ AC122: one ornate control style everywhere: no default browser controls or scrollbars
+- ✅ AC124: every spell has its own visual, played step by step
 
 ## Failures
 
 ```
-✗ AC9: example (b) — 2 vs 2 tie: mine is neutral, each side gets the full 4
-Error: expect(received).toBe(expected) // Object.is equality
+✗ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (844x390)
+Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Back' }) resolved to 3 elements:
+    1) <div tabindex="0" role="button" class="db-tile" data-card="goblin-sneak" aria-label="Backstab Weasel">…</div> aka getByRole('button', { name: 'Backstab Weasel' })
+    2) <div tabindex="0" role="button" class="db-tile" data-card="barrelback-courier" aria-label="Barrelback Courier">…</div> aka getByRole('button', { name: 'Barrelback Courier' })
+    3) <button class="btn " type="button">Back</button> aka getByRole('button', { name: 'Back', exact: true })
 
-Expected: true
-Received: false
+Call log:
+  - waiting for getByRole('button', { name: 'Back' })
 
-  331 |   expect((await legal(page)).some((a) => a.type === 'cast' && a.uid === bc)).toBe(true);
-  332 |   const g = s.players.player.hand.filter((c) => c.cardId === 'goblin-scrounger').map((c) => c.uid);
-> 333 |   for (let i = 0; i < 4; i++) expect((await act(page, { type: 'summon', uid: g[i], row: 7, col: i + 1 })).ok).toBe(true); // 1 each (Grubnak minimum 1)
-      |                                                                                                               ^
-  334 |   expect((await getState(page)).players.player.crystals).toBe(0);
-  335 |   expect((await act(page, { type: 'summon', uid: g[4], row: 7, col: 5 })).ok).toBe(false);
-  336 | });
-✗ AC27: summoning spends exactly the new costs
-Error: shieldbeard
 
-expect(received).toBe(expected) // Object.is equality
+  4054 |       await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+  4055 |       expect(await page.locator('[data-ornament="frame"]').count(), 'deck builder ornaments').toBeGreaterThan(0);
+> 4056 |       await page.getByRole('button', { name: 'Back' }).click();
+✗ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (1280x720)
+Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Back' }) resolved to 3 elements:
+    1) <div tabindex="0" role="button" class="db-tile" data-card="goblin-sneak" aria-label="Backstab Weasel">…</div> aka getByRole('button', { name: 'Backstab Weasel' })
+    2) <div tabindex="0" role="button" class="db-tile" data-card="barrelback-courier" aria-label="Barrelback Courier">…</div> aka getByRole('button', { name: 'Barrelback Courier' })
+    3) <button class="btn " type="button">Back</button> aka getByRole('button', { name: 'Back', exact: true })
 
-Expected: true
-Received: false
+Call log:
+  - waiting for getByRole('button', { name: 'Back' })
 
-  1275 |   const steps = [['dwarf-miner', 1, 29], ['shieldbeard', 2, 22], ['axe-thrower', 3, 16], ['ram-rider', 5, 5]];
-  1276 |   for (const [id, col, left] of steps) {
-> 1277 |     expect((await act(page, { type: 'summon', uid: handUid(s, 'player', id), row: 7, col })).ok, id).toBe(true);
-       |                                                                                                      ^
-  1278 |     s = await getState(page);
+
+  4054 |       await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+  4055 |       expect(await page.locator('[data-ornament="frame"]').count(), 'deck builder ornaments').toBeGreaterThan(0);
+> 4056 |       await page.getByRole('button', { name: 'Back' }).click();
 ```

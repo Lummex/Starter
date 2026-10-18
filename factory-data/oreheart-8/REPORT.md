@@ -1,24 +1,21 @@
 ## What was built
-This round changes the board and the deck rules. The camera now looks straight down the board like a road. Each Stronghold sits in its own corner: yours at the bottom-left and the enemy's at the top-right. Mines are placed as mirror images corner to corner. Decks can now hold 50–100 cards, with up to 20 Crystal cards. There are nine ready-made starter decks, three per faction (Warband, Arcane Hoard, Horde), and the computer picks one of its own faction's. Both hands were also moved clear of the Commanders.
+This round is visual polish only; no game rules changed. Cards now have smaller gold numbers, a faceted rarity crystal, gold names and text. The Deck Builder has a new painted background, and its filters are custom gold dropdowns. Buttons, sliders, switches and scrollbars share one ornate gold style. The title screen was reworked.
 
 ## Try these things
-- Start a match and check that the board looks straight-on, with your Commander at the bottom-left and the enemy's at the top-right.
-- Look at your hand along the bottom and the enemy's card backs along the top. Scroll your hand with the left and right buttons, and check that no enemy card is cut off.
-- On the Commander select screen, pick each Commander and check the deck row. You should see that faction's three decks first, then the other six.
-- Tap a creature and check that its card pops up at a readable size.
-- Open Decks and try Auto-fill. Check the new "50 to 100 cards" and "20 Crystal cards" messages.
-- Play the Tutorial all the way through, because its layout was redrawn.
+- Open the title screen. Check that the logo, the five buttons and the "Welcome to Oreheart!" message don't collide, and try Display mode (Auto, PC, Phone).
+- Open Decks. Look at the new background, then use the Faction, Type, Cost and Rarity dropdowns. Press Escape to close one.
+- In the Deck Builder, click a card to enlarge it. Check that the numbers sit neatly in their circles and the rarity crystal glows at the bottom.
+- Drag the "Cards per row" slider and scroll the card grid to see the gold scrollbar.
+- Start a match and cast a spell to see its step-by-step visual. Start the Tutorial and read the updated tips.
 
 ## Automated checks
-170 of 172 checks passed. Two failed:
-- **AC9 example (b)** and **AC27 (summoning costs)**. Both are older tests that summon a creature on row 7, column 2. That space is now your Stronghold, and the new rules say nothing can be placed there. The builder believes these are outdated tests rather than game bugs. The summoning cost rules themselves were not what failed.
+179 of 181 checks passed. The 2 failures are the same check (AC123) run at two screen sizes. It checks that the welcome message doesn't cover the logo or Tutorial button, and that gold ornaments frame every screen. The test stopped partway, in the Deck Builder, because its "Back" button lookup also matched two card names. That looks like a flaw in the test, not the game. It does mean the welcome-message and ornament checks were never confirmed on the later screens.
 
 ## Things to know
-- The two failing tests were not fixed. They need updating by someone, or the owner could decide the rule should work differently.
-- The screenshot folder only contains the title screen (desktop and phone). The phone-size match and deck-picker screenshots were not there, so I couldn't inspect them. The phone image shows only "Please rotate your phone".
-- The desktop title screen has a "Welcome" pop-up whose text overlaps the Tutorial menu button. This is cosmetic.
-- The builder says the oversized Commanders slightly overlap neighbouring spaces, though creatures there can still be tapped.
-- Visual polish and the new 3D models are not part of this round.
+- The title screenshot looks good. The welcome message sits at the bottom, clear of the logo and the Tutorial button.
+- The phone screenshot only shows "Please rotate your phone", because it was taken in portrait. It tells you nothing about the landscape layout. Check that on a real phone.
+- I did not review the phone-size close-up card, Deck Builder or spell screenshots. They weren't in the folder I was given.
+- Sound and touch gestures were tested only in a simulated browser, not on a real phone.
 
 ## Recommendation
-Request changes: two older tests fail because they conflict with the new Stronghold rule, and the match and deck-picker screenshots needed to check the new layout weren't available.
+Ready to approve, provided the preview shows the ornaments and the welcome message correctly on the Deck Builder, Rules and Settings screens.
