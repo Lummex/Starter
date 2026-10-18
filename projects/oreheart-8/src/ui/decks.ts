@@ -1,6 +1,6 @@
 // Testing deck builder: every card unlocked and unlimited; up to 5 decks saved on the device.
 import { CARDS, FACTIONS, CONFIG, isMiner, deckCounts, deckProblems, basicMiner } from '../engine';
-import { h, btn, App, faceKids, rarityKey, FRAME } from './app';
+import { h, btn, combo, App, faceKids, rarityKey, FRAME } from './app';
 
 export interface SavedDeck { name: string; cards: string[] }
 const KEY = 'oreheart.decks';
@@ -95,10 +95,7 @@ export function showDecks(app: App) {
   const defaultName = () => { for (let i = 1; ; i++) if (!saved.some((d) => d.name === `Deck ${i}`)) return `Deck ${i}`; };
   let name = defaultName();
 
-  const sel = (label: string, id: string, opts: string[]) => {
-    const s = h('select', { id, onchange: () => renderCards() }, ...opts.map((o) => h('option', { value: o }, o))) as HTMLSelectElement;
-    return { wrap: h('div', { class: 'f-field' }, h('label', { for: id }, label), s), sel: s };
-  };
+  const sel = (label: string, id: string, opts: string[]) => combo(label, id, opts, () => renderCards());
   const fF = sel('Faction', 'f-faction', ['All', 'Goblins', 'Gnomes', 'Dwarves', 'Neutral']);
   const fT = sel('Type', 'f-type', ['All', 'Miners', 'Fighters', 'Spells', 'Crystal cards']);
   const fC = sel('Cost', 'f-cost', ['Any', '1-2', '3-4', '5-6', '7+']);

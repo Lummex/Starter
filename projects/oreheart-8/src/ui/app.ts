@@ -1,5 +1,6 @@
 import { Game } from '../game';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
+import { SPELL_VISUALS } from '../content/spell-visuals';
 import tutorialJson from '../content/tutorial.json';
 import { showDecks, loadDecks, deckLegal } from './decks';
 import { deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
@@ -35,26 +36,29 @@ export function typeOf(c: any): { icon: string; name: string } {
   return { icon: '⚔️', name: 'Fighter' };
 }
 export const RARITY_WORD: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Collector' };
+const CRYSTAL_SVG = '<svg viewBox="0 0 24 32" focusable="false" aria-hidden="true" class="rc"><polygon points="12,1 20,10 12,31 4,10" fill="currentColor"/><polygon points="12,1 4,10 12,13" fill="#fff" fill-opacity=".62"/><polygon points="12,1 20,10 12,13" fill="#fff" fill-opacity=".25"/><polygon points="4,10 12,13 12,31" fill="#000" fill-opacity=".18"/><polygon points="20,10 12,13 12,31" fill="#000" fill-opacity=".42"/><polyline points="12,1 20,10 12,31 4,10 12,1" fill="none" stroke="#1a0f06" stroke-width="1.1" stroke-linejoin="round"/><polyline points="4,10 12,13 20,10 M12,13 12,31" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".6"/></svg>';
 /** Card face on the owner's faction frame: cost, Attack, Health, Movement, type icon, picture, name, short text, rarity. */
 export function faceKids(c: any, cost?: number, cur?: { attack?: number; health?: number; move?: number }): El[] {
-  const tf = Math.min(0.07, 0.46 / Math.sqrt(Math.max(1, (c.shortText || c.text || '').length)));
   const pic = pictureOf(c);
   const cr = c.type === 'creature';
   const ty = typeOf(c);
   const rk = rarityKey(c);
+  const len = c.name.length;
+  const nf = 0.06 * (len <= 16 ? 1 : Math.max(0.6, 16 / len));
+  const rw = h('span', { class: `rw r-${rk}`, role: 'img', 'aria-label': `Rarity: ${c.rarity}` });
+  rw.innerHTML = CRYSTAL_SVG;
+  rw.append(h('span', { class: 'rwt' }, c.rarity));
   const kids: (El | null)[] = [
     h('img', { class: 'frame', src: `/art/frames/${frameOf(c)}.webp`, alt: '', draggable: 'false' }),
     pic ? h('img', { class: 'pic', src: pic, alt: '', draggable: 'false', loading: 'eager' }) : h('span', { class: 'ty', 'aria-hidden': 'true' }, cr ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
-    h('span', { class: 'cost', role: 'img', 'aria-label': `Cost ${cost ?? c.cost}` }, c.type === 'crystal' ? '◆' : String(cost ?? c.cost)),
+    h('span', { class: 'cost', role: 'img', 'aria-label': `Cost ${cost ?? c.cost}` }, String(cost ?? c.cost)),
     cr ? h('span', { class: 'atk', role: 'img', 'aria-label': `Attack ${cur?.attack ?? c.attack}` }, String(cur?.attack ?? c.attack)) : null,
     cr ? h('span', { class: 'hp', role: 'img', 'aria-label': `Health ${cur?.health ?? c.health}` }, String(cur?.health ?? c.health)) : null,
     cr ? h('span', { class: 'mv', role: 'img', 'aria-label': `Movement ${cur?.move ?? c.move}` }, String(cur?.move ?? c.move)) : null,
     h('span', { class: 'tyi', role: 'img', 'aria-label': `Type: ${ty.name}`, title: ty.name }, ty.icon),
-    h('span', { class: 'nm', style: `--nf:${Math.min(0.078, 0.98 / Math.max(8, c.name.length)).toFixed(4)}` }, c.name),
-    h('span', { class: 'tx', style: `--tf:${tf.toFixed(4)}` }, c.shortText || c.text || ''),
-    h('span', { class: 'fl' }, c.flavor || ''),
-    h('span', { class: `gem g-${rk}`, 'aria-hidden': 'true' }),
-    h('span', { class: `rw r-${rk}`, role: 'img', 'aria-label': `Rarity: ${c.rarity}` }, c.rarity),
+    h('span', { class: `nm${len > 24 ? ' two' : ''}`, 'data-part': 'name', style: `--nf:${nf.toFixed(4)}` }, c.name),
+    h('span', { class: 'tx', 'data-part': 'text' }, c.shortText || c.text || '', h('span', { class: 'fl' }, c.flavor || '')),
+    rw,
   ];
   return kids.filter(Boolean) as El[];
 }
@@ -71,6 +75,39 @@ export function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string
   }
   for (const k of kids) if (k != null) e.append(k instanceof Node ? k : document.createTextNode(k));
   return e;
+}
+/** Ornate custom dropdown (ARIA combobox + floating listbox). `sel.value` holds the current choice; `onchange` fires on selection. */
+export function combo(label: string, id: string, opts: string[], onchange: () => void) {
+  const state = { value: opts[0] };
+  const cb = h('button', { type: 'button', class: 'combo', id, role: 'combobox', 'aria-label': label, 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-controls': id + '-list' }, opts[0]);
+  let lb: El | null = null;
+  const close = () => { lb?.remove(); lb = null; cb.setAttribute('aria-expanded', 'false'); document.removeEventListener('pointerdown', away, true); };
+  const away = (e: Event) => { if (lb && !lb.contains(e.target as Node) && e.target !== cb) close(); };
+  const pick = (o: string) => { state.value = o; cb.textContent = o; close(); onchange(); cb.focus(); };
+  const open = () => {
+    if (lb) return close();
+    lb = h('ul', { class: 'combo-list', id: id + '-list', role: 'listbox', 'aria-label': label },
+      ...opts.map((o) => h('li', { role: 'option', tabindex: '0', 'aria-selected': String(o === state.value), class: o === state.value ? 'on' : '', onclick: () => pick(o), onkeydown: (e: any) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(o); } else if (e.key === 'Escape') { close(); cb.focus(); } else if (e.key === 'ArrowDown') (e.target.nextElementSibling as El)?.focus(); else if (e.key === 'ArrowUp') (e.target.previousElementSibling as El)?.focus(); } }, o)));
+    const r = cb.getBoundingClientRect();
+    lb.style.left = r.left + 'px'; lb.style.top = r.bottom + 2 + 'px'; lb.style.minWidth = r.width + 'px';
+    document.body.append(lb);
+    const room = window.innerHeight - r.bottom - 8;
+    if (room < 160) { lb.style.top = 'auto'; lb.style.bottom = window.innerHeight - r.top + 2 + 'px'; lb.style.maxHeight = r.top - 8 + 'px'; } else lb.style.maxHeight = room + 'px';
+    cb.setAttribute('aria-expanded', 'true');
+    document.addEventListener('pointerdown', away, true);
+    (lb.querySelector('.on') as El | null)?.focus();
+  };
+  cb.addEventListener('click', open);
+  cb.addEventListener('keydown', (e: any) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowDown' && !lb) { e.preventDefault(); open(); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && lb) close(); });
+  return { wrap: h('div', { class: 'f-field' }, h('span', { class: 'f-label', 'aria-hidden': 'true' }, label), cb), sel: state };
+}
+const ORNAMENT = '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><defs><linearGradient id="og" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".5" stop-color="#c9a24a"/><stop offset="1" stop-color="#7a5410"/></linearGradient></defs><rect x=".6" y=".6" width="98.8" height="98.8" rx="2" fill="none" stroke="url(#og)" stroke-width=".35" vector-effect="non-scaling-stroke"/></svg>';
+/** Decorative gold filigree frame laid over a screen (R3b.7). */
+export function ornament(): El {
+  const o = h('div', { class: 'ornament', 'data-ornament': 'frame', 'aria-hidden': 'true' });
+  o.innerHTML = ORNAMENT + ['tl', 'tr', 'bl', 'br'].map((k) => `<i class="orn orn-${k}"></i>`).join('') + '<i class="orn-mid orn-top"></i><i class="orn-mid orn-bot"></i>';
+  return o;
 }
 export const btn = (label: string, cls = '', onclick?: (e: Event) => void, attrs: Record<string, any> = {}) => h('button', { type: 'button', class: 'btn ' + cls, onclick, ...attrs }, label);
 
@@ -103,7 +140,7 @@ export class App {
       else if (e.type === 'summon') { if (pop) { L('reveal', { cardId: e.cardId, uid: e.uid }); if (this.dialogCard === e.cardId + e.owner) this.dialogCard = ''; else this.reveal(e.cardId, e); } }
       else if (e.type === 'playCrystal') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId); } }
       else if (e.type === 'minerUpgrade') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, e); } }
-      else if (e.type === 'spell') { L('effect', { cardId: e.cardId }); L('impact', { cardId: e.cardId }); }
+      else if (e.type === 'spell') { L('effect', { cardId: e.cardId, visual: SPELL_VISUALS[e.cardId]?.id }); L('impact', { cardId: e.cardId }); }
       else if (e.type === 'damage') L('damage', { uid: e.uid, amount: e.amount, commander: e.commander });
       else if (e.type === 'defeat') {
         L('defeat', { uid: e.uid, cardId: e.cardId });
@@ -209,7 +246,7 @@ export class App {
 
   clear() {
     this.teardownMatch();
-    this.root.replaceChildren();
+    this.root.replaceChildren(ornament());
     this.dialogs = [];
   }
 
@@ -236,8 +273,10 @@ export class App {
         h('p', { style: 'text-align:center;margin:0' }, 'New here? A short guided match teaches you the basics.'),
         h('div', { class: 'row' },
           btn('Start Tutorial', 'primary', () => { localStorage.setItem('oreheart.tutorialSeen', '1'); d.close(); this.beginTutorial(); }),
-          btn('Skip', '', () => { localStorage.setItem('oreheart.tutorialSeen', '1'); d.close(); }))]);
+          btn('Skip', '', () => { localStorage.setItem('oreheart.tutorialSeen', '1'); d.close(); }))], () => s.classList.remove('welcome-on'));
+      s.classList.add('welcome-on');
       d.el.dataset.sticky = '1';
+      d.el.classList.add('welcome');
     }
   }
 
@@ -1040,19 +1079,32 @@ export class App {
       this.r.fx.append(f);
       setTimeout(() => f.remove(), ms);
     };
-    switch (card.effect) {
-      case 'damage': if (t) { spawn('orb', '🔥', t.row, t.col, 900); spawn('boom', 'KA-BOOM!', t.row, t.col); } break;
-      case 'areaDamage': if (t) {
-        spawn('meteor', '☄️', t.row, t.col, 1000);
-        this.r.board.classList.remove('shake'); void this.r.board.offsetWidth; this.r.board.classList.add('shake');
-        setTimeout(() => this.r.board.classList.remove('shake'), 800);
-      } break;
-      case 'shield': if (t) spawn('bubble', '', t.row, t.col, 1400); break;
-      case 'heal': case 'healCommander': if (t) spawn('beam', '✨', t.row, t.col, 1200); break;
-      case 'buffAttack': { const f = h('div', { class: 'fx-redglow', 'aria-hidden': 'true' }); this.r.fx.append(f); setTimeout(() => f.remove(), 1300); break; }
-      case 'gainCrystals': spawn('beam', '💎', sh.row, sh.col, 1200); break;
-      default: spawn('beam', '✨', sh.row, sh.col, 1000);
-    }
+    const v = SPELL_VISUALS[e.cardId];
+    if (!v) return;
+    const target = t || SH[e.player === 'player' ? 'opponent' : 'player'];
+    const from = this.center(sh.row, sh.col);
+    const at = v.fly ? this.center(target.row, target.col) : this.center((t || sh).row, (t || sh).col);
+    // step 1: the card flies out of the caster's Stronghold
+    const chip = h('div', { class: 'fxv-card', 'aria-hidden': 'true' }, v.glyph);
+    chip.style.left = from.x + 'px'; chip.style.top = from.y + 'px';
+    this.r.fx.append(chip);
+    requestAnimationFrame(() => { chip.style.left = (v.fly ? at.x : from.x) + 'px'; chip.style.top = (v.fly ? at.y : from.y - 30) + 'px'; chip.classList.add('go'); });
+    // step 2: it turns into the effect; step 3: the result lands
+    setTimeout(() => {
+      chip.remove();
+      const f = h('div', { class: `fxv fxv-${v.id}`, 'data-visual': v.id, 'aria-hidden': 'true' }, h('span', { class: 'fxv-g' }, v.glyph), h('span', { class: 'fxv-g2' }, v.glyph), h('span', { class: 'fxv-g3' }, v.glyph));
+      const pt = at;
+      f.style.left = pt.x + 'px'; f.style.top = pt.y + 'px';
+      this.r.fx.append(f);
+      if (e.cardId === 'meteor-strike') { this.r.board.classList.remove('shake'); void this.r.board.offsetWidth; this.r.board.classList.add('shake'); setTimeout(() => this.r.board.classList.remove('shake'), 800); }
+      setTimeout(() => {
+        const r = h('div', { class: 'fxv-result', 'aria-hidden': 'true' }, v.land);
+        r.style.left = pt.x + 'px'; r.style.top = pt.y + 'px';
+        this.r.fx.append(r);
+        setTimeout(() => r.remove(), 1100);
+      }, 320);
+      setTimeout(() => f.remove(), v.ms);
+    }, v.fly ? 650 : 450);
   }
   shatter(player: string) {
     const sh = SH[player === 'player' ? 'opponent' : 'player'];
@@ -1448,7 +1500,7 @@ export class App {
         this.callout(e.player, e.cardId);
       } else if (e.type === 'respond') {
         this.callout(e.player, e.cardId);
-      } else if (e.type === 'counter') { this.shatter(e.player); audio.play('shatter'); }
+      } else if (e.type === 'counter') { this.shatter(e.player); audio.play('shatter'); if (e.cardId) this.spellFx({ cardId: e.cardId, player: e.player, target: null }); }
       else if (e.type === 'spell') {
         this.emote(e.player, 'cast'); this.spellFx(e);
         const id = String(e.cardId);

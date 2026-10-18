@@ -2,6 +2,7 @@ import './style.css';
 import { Game } from './game';
 import { App } from './ui/app';
 import { CARDS, CONFIG, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
+import { SPELL_VISUALS } from './content/spell-visuals';
 import { audio } from './ui/audio';
 import { pictureOf, rarityKey } from './ui/app';
 
@@ -31,7 +32,7 @@ if (test) {
       if (!c) return null;
       const cr = c.type === 'creature';
       return { id: c.id, name: c.name, type: c.type, faction: c.faction === 'any' ? null : c.faction, rarity: c.rarity, role: cr ? String(c.role).toLowerCase() : null,
-        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text, shortText: c.shortText, longText: c.longText, weapon: weaponOf(c), tagline: c.tagline, flavor: c.flavor, speed: c.type === 'spell' ? (c.spellKind === 'counter' ? 'counter' : c.spellKind === 'instant' ? 'instant' : 'regular') : null };
+        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text, shortText: c.shortText, longText: c.longText, weapon: weaponOf(c), tagline: c.tagline, visual: c.type === 'spell' ? (SPELL_VISUALS[c.id]?.id ?? null) : null, flavor: c.flavor, speed: c.type === 'spell' ? (c.spellKind === 'counter' ? 'counter' : c.spellKind === 'instant' ? 'instant' : 'regular') : null };
     },
     listCards: () => Object.keys(CARDS).map((id) => { const c = (window as any).oreheart.getCard(id); return { ...c, rarity: rarityKey(CARDS[id]) }; }),
     getArtInfo: (id: string) => {

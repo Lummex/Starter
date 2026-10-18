@@ -1,3 +1,25 @@
+# Oreheart — Phase 1B Round 3b build notes (visual polish)
+
+`npm run build` → `dist/`; `npm test` → Vitest. Phone-size (844 × 390) screenshots in `screenshots/r3b-*`: title, deck builder, a close-up card per faction (goblin, gnomes, dwarves) and per rarity (uncommon, rare, ultra-rare, collector; common = the goblin one), and `r3b-spell-cast` (Bastion Ward mid-cast).
+
+## What was built
+- **Card numbers (R3b.1)**: Cost/Attack/Health/Movement elements are the whole frame slot (circle, shield, heart, boot notch) with the number flex-centered inside; font ≤ 10 % of card height; gold gradient clipped to text + dark stroke + drop-shadow bevel.
+- **Rarity crystal (R3b.2)**: inline faceted SVG crystal (6–7 % of face height) at bottom center, glowing in the rarity color (Collector hue-cycles gold), the rarity word centered below it, all inside the `Rarity: <Word>` element.
+- **Names and text (R3b.3, R3b.4)**: `data-part="name"` in 3D gold Cinzel Decorative, one size for names ≤ 16 characters (longer ones scale down to ≥ 60 %, 25+ characters wrap to two lines); `data-part="text"` holds the short text plus the flavor line (flavor shown only on big/reveal faces), one universal size, weight 500, gold with dark outline.
+- **Deck Builder (R3b.5)**: painted `/art/ui/deck-builder-bg.webp` (xAI image API, `tools/gen-deck-bg.mjs`); the deck pile art has no border, background or box-shadow (glow via `drop-shadow`).
+- **One ornate control style (R3b.6)**: global `appearance: none`, gold gem-tipped buttons with press animation, filigree range sliders with gem thumb, diamond radio/checkbox, ornate search bar, pill switches, gold `scrollbar-color` plus webkit scrollbar art. Faction/Type/Cost/Rarity are now custom ARIA comboboxes (`combo()` in `src/ui/app.ts`) with a floating listbox (Escape closes); no native `<select>` remains.
+- **Ornaments and welcome (R3b.7)**: every screen gets a `data-ornament="frame"` gold filigree overlay (added in `App.clear()`, pointer-events none; center gems hidden during a match). The welcome message sits in a bottom-left strip below the logo, away from the menu and Tutorial button.
+- **Unique spell visuals (R3b.7)**: `src/content/spell-visuals.ts` gives each of the 12 spells its own id (`getCard(id).visual`, also on the fx log `effect` entry) and its own animation: the card chip flies out, turns into the effect, and a result word lands. Counterspells use the same flow.
+- **Tutorial text** rewritten (corner, zoom, Full explanation, Last turn).
+- **R3b.8**: the existing unit tests already summon away from the Stronghold space; no engine or rule change.
+
+## Gaps
+- Round-3b criteria were checked with my own headless scripts (computed styles, screenshots), not the hidden acceptance suite (its file was not available).
+- The ornament frame is a thin gold rectangle with gem corners, simpler than a full hand-drawn filigree.
+- Build B (Meshy models, 3D viewer) not started.
+
+---
+
 # Oreheart — Phase 1B Round 3a build notes (board and rules)
 
 `npm run build` → `dist/`; `npm test` → Vitest (56 tests). Phone-size (844 × 390) screenshots: `screenshots/r3a-match-both-hands-844x390.png`, `screenshots/r3a-deck-picker-844x390.png`.

@@ -26,3 +26,14 @@ describe('Phase 1B content', () => {
     for (const w of ['Cinzel', 'Nunito', 'art/cards', 'Grok']) expect(t).toContain(w);
   });
 });
+
+import { SPELL_VISUALS } from '../src/content/spell-visuals';
+import { CARDS as ALLCARDS } from '../src/engine';
+describe('spell visuals (R3b.7)', () => {
+  it('every spell has its own unique visual id', () => {
+    const spells = Object.values(ALLCARDS as any).filter((c: any) => c.type === 'spell') as any[];
+    const ids = spells.map((c) => SPELL_VISUALS[c.id]?.id);
+    expect(ids.every((i) => typeof i === 'string' && i.length > 0 && !['generic', 'default', 'none'].includes(i))).toBe(true);
+    expect(new Set(ids).size).toBe(spells.length);
+  });
+});
