@@ -38,6 +38,12 @@ const total = (n) => n; // Revision 7: Flow and Bank are plain numbers
 const ZERO = 0;
 const sameTarget = (t, row, col) => t && t.row === row && t.col === col;
 const SHARDS = Array(12).fill('soul-shard');
+// Round 5b: Last turn, Mute, Card pop-ups and Recenter live in the pop-out match Menu
+async function openMatchMenu(page) {
+  if (await page.getByRole('button', { name: 'Last turn', exact: true }).isVisible()) return;
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Last turn', exact: true })).toBeVisible();
+}
 // first visit outside test mode shows the tutorial offer; dismiss it
 async function openMenu(page) {
   await page.goto('/');
@@ -1698,22 +1704,23 @@ test.describe('landscape layout details', () => {
   test.use({ viewport: { width: 844, height: 390 } });
 
   // ---------- AC43 ----------
-  test('AC43: the hand rests tucked half below the edge and slides up on hover', async ({ page }) => {
+  test('AC43: the hand rests nearly fully visible at the bottom and pops out on hover (Round 5b)', async ({ page }) => {
     await start(page, { ai: false, setup: { playerHand: ['fireball', 'goblin-scrapper', 'goblin-slinger'] } });
     const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler' });
     await expect(card).toBeAttached();
     await page.mouse.move(422, 120);
     await page.waitForTimeout(800);
-    const tucked = await card.boundingBox();
-    expect(tucked.y).toBeLessThan(390);
-    const hidden = (tucked.y + tucked.height - 390) / tucked.height;
-    expect(hidden).toBeGreaterThanOrEqual(0.33);
-    expect(hidden).toBeLessThanOrEqual(0.52);
-    await page.mouse.move(tucked.x + tucked.width / 2, tucked.y + 8);
-    await expect.poll(async () => tucked.y - (await card.boundingBox()).y).toBeGreaterThanOrEqual(30);
+    const rest = await card.boundingBox();
+    expect(rest.y).toBeLessThan(390);
+    const hidden = Math.max(0, (rest.y + rest.height - 390) / rest.height);
+    expect(hidden).toBeLessThanOrEqual(0.15);
+    expect(rest.height).toBeGreaterThanOrEqual(390 * 0.19);
+    expect(rest.height).toBeLessThanOrEqual(390 * 0.27);
+    await page.mouse.move(rest.x + rest.width / 2, rest.y + rest.height / 2);
+    await expect.poll(async () => (await card.boundingBox()).height).toBeGreaterThan(rest.height * 1.3);
     await expect.poll(async () => { const b = await card.boundingBox(); return b.y + b.height; }).toBeLessThanOrEqual(391);
     await page.mouse.move(422, 120);
-    await expect.poll(async () => { const b = await card.boundingBox(); return b.y + b.height; }).toBeGreaterThan(395);
+    await expect.poll(async () => Math.abs((await card.boundingBox()).height - rest.height)).toBeLessThanOrEqual(3);
   });
 
   // ---------- AC44 ----------
@@ -2017,9 +2024,8 @@ for (const [w, h] of [[844, 390], [740, 360], [667, 375]]) {
         await expect(phase).toContainText(/your turn/i);
         await expect(phase).toContainText(/deploy/i);
         const b = await phase.boundingBox();
-        expect(b.x + b.width / 2).toBeGreaterThan(w / 3); // Round 2: top center
-        expect(b.x + b.width / 2).toBeLessThan(w * 2 / 3);
-        expect(b.y + b.height / 2).toBeLessThan(h / 4);
+        expect(b.x).toBeGreaterThanOrEqual(w * 0.74); // Round 5b: top-right (80 %, 0 %)
+        expect(b.y).toBeLessThanOrEqual(h * 0.04);
       }
     });
   });
@@ -2779,6 +2785,7 @@ test('AC76: the Last turn recap lists what the enemy did', async ({ page }) => {
     opponentHand: ['goblin-scrapper'], opponentCrystals: 10,
     board: [{ cardId: 'goblin-scrounger', owner: 'opponent', row: 2, col: 11 }] } });
   const btn = page.getByRole('button', { name: 'Last turn', exact: true });
+  await openMatchMenu(page);
   await btn.click();
   const dlg = page.getByRole('dialog', { name: 'Last turn' });
   await expect(dlg).toContainText('Nothing yet.');
@@ -2792,6 +2799,7 @@ test('AC76: the Last turn recap lists what the enemy did', async ({ page }) => {
   expect((await act(page, mv)).ok).toBe(true);
   await done(page);
   expect((await getState(page)).activePlayer).toBe('player');
+  await openMatchMenu(page);
   await btn.click();
   await expect(dlg).toContainText('Summoned Gutripper Brawler');
   await expect(dlg).toContainText('Moved Grubgrabber Miner');
@@ -3253,7 +3261,7 @@ test('AC96: dialogs float with no box; buttons are ornate', async ({ page }) => 
   expect(b.alpha).toBeLessThanOrEqual(0.35);
   expect(b.image).toBe('none');
   await newMatch(page, quiet({ playerHand: ['fireball'] }));
-  expect(await ornate(page.getByRole('button', { name: 'Done' }))).toBe(true);
+  expect(await boxedButtons(page, ['Done'])).toEqual([]); // Round 5b: plain text
   await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Searing Arcane Orb', exact: true }).click();
   const view = page.getByRole('dialog', { name: 'Searing Arcane Orb', exact: true });
   await expect(view).toBeVisible();
@@ -3309,6 +3317,7 @@ const castOrb = async (page, row, col) => {
 test('AC99: the Card pop-ups switch skips reveals but never effects, and is remembered', async ({ page }) => {
   await start(page, orbSetup);
   const sw = page.getByRole('switch', { name: 'Card pop-ups' });
+  await openMatchMenu(page);
   await expect(sw).toBeVisible();
   await expect(sw).toHaveAttribute('aria-checked', 'true');
   await clearFx(page);
@@ -3318,6 +3327,7 @@ test('AC99: the Card pop-ups switch skips reveals but never effects, and is reme
   expect(r).toBeGreaterThanOrEqual(0);
   expect(idx(log, (e) => e.kind === 'effect' && e.cardId === 'fireball', r)).toBeGreaterThan(r);
   expect(idx(log, (e) => e.kind === 'impact')).toBeGreaterThan(r);
+  if (!(await sw.isVisible())) await openMatchMenu(page);
   await sw.click();
   await expect(sw).toHaveAttribute('aria-checked', 'false');
   await clearFx(page);
@@ -3463,44 +3473,38 @@ test.describe('straight-on road board and corner HUD at 844x390', () => {
     const bf = await page.getByLabel('Battlefield', { exact: true }).boundingBox();
     expect(bf.width).toBeGreaterThanOrEqual(W - 2);
     expect(bf.height).toBeGreaterThanOrEqual(H - 2);
-    for (const n of ['Your Flow crystals', 'Your Bank crystals', 'Your Commander health']) {
+    // Round 5b: owner HUD layout (crystals along the top, phase tracker top-right, Menu on the right)
+    for (const n of ['Your Flow crystals', 'Your Bank crystals']) {
       const c = await center(page.getByLabel(n, { exact: true }));
-      expect(c.x, n).toBeLessThan(W / 2);
-      expect(c.y, n).toBeGreaterThan(H / 2);
-    }
-    const last = await center(page.getByRole('button', { name: 'Last turn' }));
-    expect(last.x).toBeLessThan(W / 2);
-    expect(last.y).toBeGreaterThan(H / 2);
-    for (const n of ['Enemy Commander health']) {
-      const c = await center(page.getByLabel(n, { exact: true }));
-      expect(c.x, n).toBeGreaterThan(W / 2);
+      expect(c.x, n).toBeLessThan(W * 0.3);
       expect(c.y, n).toBeLessThan(H / 2);
     }
-    // Round 3a: enemy card backs shifted left along the top, enemy deck top-left; player hand shifted right, deck bottom-right
+    const myHeart0 = await center(page.getByLabel('Your Commander health', { exact: true }));
+    expect(myHeart0.x).toBeLessThan(W / 2);
+    expect(myHeart0.y).toBeGreaterThan(H / 2);
+    const theirHeart0 = await center(page.getByLabel('Enemy Commander health', { exact: true }));
+    expect(theirHeart0.x).toBeGreaterThan(W / 2);
+    expect(theirHeart0.y).toBeLessThan(H / 2);
     const eh = await center(page.getByLabel('Enemy hand', { exact: true }));
     expect(eh.x).toBeLessThan(W / 2);
-    expect(eh.y).toBeLessThan(H / 2);
+    expect(eh.y).toBeLessThan(H / 4);
     const ed = await center(page.getByLabel('Enemy deck', { exact: true }));
-    expect(ed.x).toBeLessThan(W / 3);
-    expect(ed.y).toBeLessThan(H / 2);
+    expect(ed.x).toBeLessThan(W / 2);
+    expect(ed.y).toBeLessThan(H / 4);
     const yd = await center(page.getByLabel('Your deck', { exact: true }));
-    expect(yd.x).toBeGreaterThan(W * 2 / 3);
-    expect(yd.y).toBeGreaterThan(H / 2);
-    const yh = await center(page.getByLabel('Your hand', { exact: true }));
-    expect(yh.x).toBeGreaterThan(W / 2);
-    const myHeart = await center(page.getByLabel('Your Commander health', { exact: true }));
-    expect(myHeart.x).toBeLessThan(W * 0.4);
-    const theirHeart = await center(page.getByLabel('Enemy Commander health', { exact: true }));
-    expect(theirHeart.x).toBeGreaterThan(W * 0.6);
-    const ph = await center(page.getByLabel('Current phase', { exact: true }));
-    expect(ph.x).toBeGreaterThan(W / 3);
-    expect(ph.x).toBeLessThan(W * 2 / 3);
-    expect(ph.y).toBeLessThan(H / 4);
-    for (const loc of [page.getByRole('button', { name: 'Done' }), page.getByRole('switch', { name: 'Card pop-ups' }), page.getByRole('button', { name: 'Re-center' })]) {
+    expect(yd.x).toBeGreaterThan(W * 0.85);
+    expect(yd.y).toBeGreaterThan(H * 0.7);
+    const yh = (await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox());
+    expect(yh.x).toBeGreaterThanOrEqual(W * 0.1);
+    const ph = await page.getByLabel('Current phase', { exact: true }).boundingBox();
+    expect(ph.x).toBeGreaterThanOrEqual(W * 0.74);
+    expect(ph.y).toBeLessThanOrEqual(H * 0.04);
+    const menu = await center(page.getByRole('button', { name: 'Menu', exact: true }));
+    expect(menu.x).toBeGreaterThan(W * 0.8);
+    await openMatchMenu(page);
+    for (const loc of [page.getByRole('button', { name: 'Last turn', exact: true }), page.getByRole('switch', { name: 'Card pop-ups' }), page.getByRole('button', { name: 'Recenter', exact: true })]) {
       const c = await center(loc);
-      expect(c.x).toBeGreaterThan(W * 0.8);
-      expect(c.y).toBeGreaterThan(H * 0.25);
-      expect(c.y).toBeLessThan(H * 0.75);
+      expect(c.x).toBeGreaterThan(W * 0.7);
     }
     await page.mouse.move(W / 2, 120);
     await page.waitForTimeout(800);
@@ -3546,7 +3550,8 @@ test('AC106: zoom in, drag-to-attack still works, Re-center resets', async ({ pa
   await page.mouse.up();
   await expect.poll(async () => at(await getState(page), 5, 4).hasAttacked).toBe(true);
   expect((await camera(page)).zoom).toBeGreaterThan(1);
-  await page.getByRole('button', { name: 'Re-center' }).click();
+  await openMatchMenu(page);
+  await page.getByRole('button', { name: 'Recenter', exact: true }).click();
   await expect.poll(async () => (await camera(page)).zoom).toBe(1);
   const c = await camera(page);
   expect(c.panX).toBe(0);
@@ -4848,6 +4853,334 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
         await page.waitForTimeout(400);
         await testInfo.attach(`spell-${id}-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
       }
+      expect(errors).toEqual([]);
+    });
+  });
+}
+
+// ---------- Phase 1B Round 5b (match screen: owner camera and layout) ----------
+const SHAPES_5B = [[1920, 1080], [1920, 1200], [2560, 1080], [1600, 1200], [844, 390]];
+const rects5b = (page) => page.evaluate(async () => await window.oreheart.screenRects());
+const insideWin = (r, W, H) => r.x >= -1 && r.y >= -1 && r.x + r.width <= W + 1 && r.y + r.height <= H + 1;
+const overlapShare = (a, b) => {
+  const ox = Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
+  const oy = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+  return (ox * oy) / Math.max(1, b.width * b.height);
+};
+const BOARD_5B = [
+  { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 },
+  { cardId: 'gnome-tinker', owner: 'opponent', row: 2, col: 11 },
+];
+
+test('AC149: camera uses the owner\'s numbers and keeps both Commanders whole at every window shape', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await start(page, quiet({ playerHand: ['goblin-scrapper', 'fireball'], board: BOARD_5B }));
+  const c = await camera(page);
+  expect(c.tilt).toBe(51);
+  expect(c.fov).toBe(48);
+  expect(c.fitZoom).toBeCloseTo(1.07, 5);
+  expect(c.sky).toBeCloseTo(0.16, 5);
+  expect(c.shiftX).toBeCloseTo(0.01, 5);
+  expect(c.shiftY).toBeCloseTo(0.12, 5);
+  for (const [W, H] of SHAPES_5B) {
+    await page.setViewportSize({ width: W, height: H });
+    await expect.poll(async () => {
+      const r = await rects5b(page);
+      return insideWin(r.playerCommander, W, H) && insideWin(r.opponentCommander, W, H)
+        && r.board.width <= W + 1 && r.board.y > 0;
+    }, { message: `${W}x${H}: both Commanders whole, board fits under the sky` }).toBe(true);
+  }
+});
+
+async function blackEdges(page) {
+  const buf = await page.screenshot();
+  return page.evaluate(async (b64) => {
+    const img = new Image();
+    img.src = 'data:image/png;base64,' + b64;
+    await img.decode();
+    const cv = document.createElement('canvas');
+    cv.width = img.width; cv.height = img.height;
+    const g = cv.getContext('2d');
+    g.drawImage(img, 0, 0);
+    const W = img.width, H = img.height, n = 40;
+    const black = ([x, y]) => { const d = g.getImageData(x, y, 1, 1).data; return Math.max(d[0], d[1], d[2]) <= 6; };
+    const xs = [...Array(n)].map((_, i) => Math.floor(((i + 0.5) * W) / n));
+    const ys = [...Array(n)].map((_, i) => Math.floor(((i + 0.5) * H) / n));
+    const out = [];
+    if (xs.map((x) => [x, 2]).every(black)) out.push('top');
+    if (xs.map((x) => [x, H - 3]).every(black)) out.push('bottom');
+    if (ys.map((y) => [2, y]).every(black)) out.push('left');
+    if (ys.map((y) => [W - 3, y]).every(black)) out.push('right');
+    return out;
+  }, buf.toString('base64'));
+}
+
+test('AC150: no black bars at any window shape', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await start(page, quiet({ playerHand: ['goblin-scrapper'], board: BOARD_5B }));
+  for (const [W, H] of SHAPES_5B) {
+    await page.setViewportSize({ width: W, height: H });
+    await page.waitForTimeout(800);
+    const bf = await page.getByLabel('Battlefield', { exact: true }).boundingBox();
+    expect(bf.x <= 1 && bf.y <= 1 && bf.width >= W - 2 && bf.height >= H - 2, `${W}x${H} battlefield fills the window`).toBe(true);
+    expect(await blackEdges(page), `${W}x${H} black bars`).toEqual([]);
+  }
+});
+
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`owner HUD layout ${W}x${H}`, () => {
+    test.use({ viewport: { width: W, height: H } });
+    test(`AC151: HUD pieces sit at the owner's positions and never cover a Commander (${W}x${H})`, async ({ page }) => {
+      await start(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'goblin-slinger'], opponentHand: ['goblin-scrapper', 'fireball', 'soul-shard'], board: BOARD_5B }));
+      await page.mouse.move(W / 2, H * 0.45);
+      await page.waitForTimeout(1000);
+      const box = async (loc) => { await expect(loc).toBeVisible(); return loc.boundingBox(); };
+      const tol = 0.05;
+      const pieces = {
+        'Your crystal': [await box(page.getByLabel('Your crystal', { exact: true })), 0, 0.01],
+        'Enemy crystal': [await box(page.getByLabel('Enemy crystal', { exact: true })), 0.70, 0],
+        'Current phase': [await box(page.getByLabel('Current phase', { exact: true })), 0.80, 0],
+        'Enemy hand': [await box(page.getByLabel('Enemy hand', { exact: true })), 0.29, null],
+        'Enemy deck': [await box(page.getByLabel('Enemy deck', { exact: true })), 0.34, null],
+        Menu: [await box(page.getByRole('button', { name: 'Menu', exact: true })), 0.89, 0.15],
+        'Your deck': [await box(page.getByLabel('Your deck', { exact: true })), 0.93, 0.83],
+      };
+      for (const [name, [b, px, py]] of Object.entries(pieces)) {
+        expect(Math.abs(b.x / W - px), `${name} x ${b.x / W}`).toBeLessThanOrEqual(tol);
+        if (py !== null) expect(Math.abs(b.y / H - py), `${name} y ${b.y / H}`).toBeLessThanOrEqual(tol);
+      }
+      expect(pieces['Enemy hand'][0].y / H).toBeLessThanOrEqual(0.06);
+      expect(pieces['Enemy deck'][0].y / H).toBeLessThanOrEqual(0.02);
+      const first = await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox();
+      expect(Math.abs(first.x / W - 0.14), `hand starts at ${first.x / W}`).toBeLessThanOrEqual(0.04);
+      expect(first.height / H).toBeGreaterThanOrEqual(0.19);
+      expect(first.height / H).toBeLessThanOrEqual(0.27);
+      expect(Math.max(0, first.y + first.height - H) / first.height).toBeLessThanOrEqual(0.15);
+      const r = await rects5b(page);
+      const all = { ...Object.fromEntries(Object.entries(pieces).map(([k, v]) => [k, v[0]])), 'Your hand card': first };
+      for (const [name, b] of Object.entries(all)) {
+        for (const side of ['playerCommander', 'opponentCommander']) {
+          expect(overlapShare(b, r[side]), `${name} covers ${side}`).toBeLessThanOrEqual(0.1);
+        }
+      }
+    });
+  });
+}
+
+test('AC152: Flow and bank numbers sit on both crystals with name, Flow and Next beside them', async ({ page }) => {
+  await start(page, quiet({ playerCrystals: 7, playerBank: 3, opponentCrystals: 5, opponentBank: 2 }));
+  const centerIn = async (label, img) => {
+    const a = await page.getByLabel(label, { exact: true }).boundingBox();
+    const b = await page.getByRole('img', { name: img, exact: true }).boundingBox();
+    const cx = a.x + a.width / 2, cy = a.y + a.height / 2;
+    return cx >= b.x && cx <= b.x + b.width && cy >= b.y && cy <= b.y + b.height;
+  };
+  for (const [label, n, img] of [['Your Flow crystals', '7', 'Your soul crystal'], ['Your Bank crystals', '3', 'Your soul crystal'],
+    ['Enemy Flow crystals', '5', 'Enemy soul crystal'], ['Enemy Bank crystals', '2', 'Enemy soul crystal']]) {
+    await expect(page.getByLabel(label, { exact: true })).toHaveText(new RegExp(`^\\s*${n}\\s*$`));
+    expect(await centerIn(label, img), `${label} on ${img}`).toBe(true);
+  }
+  const mine = page.getByLabel('Your crystal', { exact: true });
+  const theirs = page.getByLabel('Enemy crystal', { exact: true });
+  await expect(mine).toContainText(/Grubnak/);
+  await expect(mine).toContainText('Flow');
+  await expect(theirs).toContainText(/Borgo/);
+  await expect(theirs).toContainText('Flow');
+  await expect(page.getByLabel('Your income next turn', { exact: true })).toHaveText(/Next \+\d+/);
+  await expect(page.getByLabel('Enemy income next turn', { exact: true })).toHaveText(/Next \+\d+/);
+});
+
+test('AC153: the phase tracker shows whose turn, the turn number and the current phase', async ({ page }) => {
+  await start(page, quiet({}));
+  const ph = page.getByLabel('Current phase', { exact: true });
+  await expect(ph).toContainText('Your turn');
+  await expect(ph).toContainText('Turn 1');
+  for (const w of ['Draw', 'Deploy', 'Action', 'End']) await expect(ph).toContainText(w);
+  await expect(ph.locator('[aria-current="step"]')).toHaveText(/Deploy/);
+  await done(page);
+  await expect(ph.locator('[aria-current="step"]')).toHaveText(/Action/);
+  await done(page);
+  await expect(ph).toContainText('Enemy turn');
+});
+
+test('AC154: the match Menu hides its items until hovered or tapped; Mute and Recenter work', async ({ page }) => {
+  await start(page, quiet({ board: BOARD_5B }));
+  const menu = page.getByRole('button', { name: 'Menu', exact: true });
+  const items = [page.getByRole('button', { name: 'Last turn', exact: true }), page.getByRole('button', { name: 'Mute', exact: true }),
+    page.getByRole('switch', { name: 'Card pop-ups' }), page.getByRole('button', { name: 'Recenter', exact: true })];
+  await expect(menu).toBeVisible();
+  for (const it of items) await expect(it).toBeHidden();
+  await menu.hover();
+  for (const it of items) await expect(it).toBeVisible();
+  const vp = page.viewportSize();
+  await page.mouse.move(vp.width * 0.3, vp.height * 0.5);
+  for (const it of items) await expect(it).toBeHidden();
+  await menu.click();
+  await page.mouse.move(vp.width * 0.3, vp.height * 0.5);
+  await page.waitForTimeout(500);
+  for (const it of items) await expect(it).toBeVisible();
+  const mute = items[1];
+  const was = await mute.getAttribute('aria-pressed');
+  await mute.click();
+  await openMatchMenu(page);
+  await expect(mute).toHaveAttribute('aria-pressed', was === 'true' ? 'false' : 'true');
+  await page.keyboard.press('Escape');
+  const field = await page.getByLabel('Battlefield', { exact: true }).boundingBox();
+  await page.mouse.move(field.x + field.width / 2, field.y + field.height / 2);
+  await page.mouse.wheel(0, -200);
+  await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(1);
+  await openMatchMenu(page);
+  await page.getByRole('button', { name: 'Recenter', exact: true }).click();
+  await expect.poll(async () => (await camera(page)).zoom).toBe(1);
+});
+
+const halo = (loc) => loc.evaluate((e) => [e, ...e.querySelectorAll('[data-card-id]')].some((x) => {
+  const c = getComputedStyle(x);
+  return (c.boxShadow && c.boxShadow !== 'none') || /drop-shadow/.test(c.filter);
+}));
+test('AC155: playable hand cards glow, the others do not, and it updates at once', async ({ page }) => {
+  await openTest(page);
+  const cost = (id) => page.evaluate(async (i) => (await window.oreheart.getCard(i)).cost, id);
+  const cheap = await cost('goblin-scrapper');
+  expect(await cost('grubnaks-big-boss-troll')).toBeGreaterThan(cheap);
+  await newMatch(page, quiet({ playerHand: ['goblin-scrapper', 'grubnaks-big-boss-troll'], playerCrystals: cheap }));
+  const hand = page.getByLabel('Your hand', { exact: true });
+  const yes = hand.getByRole('button', { name: 'Gutripper Brawler', exact: true });
+  const no = hand.locator('button:has([data-card-id="grubnaks-big-boss-troll"])').first();
+  await expect(yes).toHaveAttribute('data-playable', 'true');
+  await expect(no).toHaveAttribute('data-playable', 'false');
+  await page.mouse.move(5, 5);
+  await expect.poll(() => halo(yes)).toBe(true);
+  expect(await halo(no)).toBe(false);
+  await done(page);
+  await expect(yes).toHaveAttribute('data-playable', 'false');
+  await expect.poll(() => halo(yes)).toBe(false);
+});
+
+test('AC156: Done shows only when needed, centered, as plain text', async ({ page }) => {
+  await start(page, { ai: false, firstPlayer: 'player' });
+  await expect(page.getByRole('dialog', { name: 'Mulligan' })).toBeVisible();
+  const doneBtn = page.getByRole('button', { name: 'Done' });
+  await expect(doneBtn).toBeHidden();
+  await newMatch(page, quiet({ playerHand: ['goblin-scrapper'] }));
+  await expect(doneBtn).toBeVisible();
+  const W = page.viewportSize().width;
+  const b = await doneBtn.boundingBox();
+  expect((b.x + b.width / 2) / W).toBeGreaterThanOrEqual(0.4);
+  expect((b.x + b.width / 2) / W).toBeLessThanOrEqual(0.6);
+  expect(await boxedButtons(page, ['Done'])).toEqual([]);
+  await done(page);
+  await expect(doneBtn).toBeVisible();
+  await done(page);
+  expect((await getState(page)).activePlayer).toBe('opponent');
+  await expect(doneBtn).toBeHidden();
+});
+
+test('AC157: mulligan, Respond, surrender and match-end controls are plain text', async ({ page }) => {
+  await start(page, { ai: false, firstPlayer: 'player' });
+  await expect(page.getByRole('dialog', { name: 'Mulligan' })).toBeVisible();
+  expect(await boxedButtons(page, ['Keep Hand'])).toEqual([]);
+  const s = await newMatch(page, respondR6(['fizzle', 'crystal-cluster'], 1));
+  await castFireball(page, s);
+  await expect(page.getByRole('dialog', { name: 'Respond?' })).toBeVisible();
+  expect(await boxedButtons(page, ['Let it happen'])).toEqual([]);
+  await newMatch(page, quiet({}));
+  await openMatchMenu(page);
+  await page.getByRole('button', { name: 'Surrender', exact: true }).click();
+  expect(await boxedButtons(page, ['Yes, surrender'])).toEqual([]);
+  await page.getByRole('button', { name: 'Yes, surrender' }).click();
+  await expect(page.getByRole('heading', { name: 'Defeat' })).toBeVisible({ timeout: 15000 });
+  expect(await boxedButtons(page, ['Play again', 'Menu'])).toEqual([]);
+});
+
+async function smallText(page) {
+  await page.waitForTimeout(500);
+  return page.evaluate(() => {
+    const bad = [];
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (w.nextNode()) {
+      const t = w.currentNode;
+      const txt = t.textContent.trim();
+      const el = t.parentElement;
+      if (!txt || !el || el.closest('[data-card-id],[data-card-back],[aria-hidden="true"]')) continue;
+      if (el.checkVisibility && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width <= 2 || r.height <= 2 || r.right <= 0 || r.bottom <= 0 || r.left >= innerWidth || r.top >= innerHeight) continue;
+      const fs = parseFloat(getComputedStyle(el).fontSize);
+      if (fs < 13.5) bad.push(`${txt.slice(0, 30)} (${fs}px)`);
+    }
+    return bad.slice(0, 12);
+  });
+}
+test.describe('readable sizes at 844x390', () => {
+  test.use({ viewport: { width: 844, height: 390 } });
+  test('AC158: no text below about 14 px on any screen at phone size', async ({ page }) => {
+    await page.goto('/?test=1');
+    await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+    expect(await smallText(page), 'title').toEqual([]);
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    expect(await smallText(page), 'settings').toEqual([]);
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Rules', exact: true }).click();
+    expect(await smallText(page), 'rules').toEqual([]);
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Decks', exact: true }).click();
+    await expect(page.getByRole('slider', { name: 'Cards per row' })).toBeVisible();
+    expect(await smallText(page), 'deck builder').toEqual([]);
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Fight!' })).toBeVisible();
+    expect(await smallText(page), 'select').toEqual([]);
+    await page.waitForFunction(() => !!window.oreheart);
+    await newMatch(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'soul-shard'], board: BOARD_5B }));
+    await page.waitForTimeout(800);
+    expect(await smallText(page), 'match').toEqual([]);
+  });
+});
+
+test('AC159: longer card reveals, ruby hearts with white numbers, Flow particles setting', async ({ page }) => {
+  await openTest(page);
+  expect((await page.evaluate(async () => await window.oreheart.getConfig())).revealSeconds).toBe(5.5);
+  await newMatch(page, quiet({}));
+  for (const n of ['Your Commander health', 'Enemy Commander health']) {
+    const heart = page.getByLabel(n, { exact: true });
+    await expect(heart).toBeVisible();
+    const r = await heart.evaluate((e) => {
+      const els = [e, ...e.querySelectorAll('*')];
+      const ruby = /ruby-heart/.test(e.outerHTML) || els.some((x) => /ruby-heart/.test(getComputedStyle(x).backgroundImage));
+      const num = els.find((x) => x.children.length === 0 && /^\d+$/.test(x.textContent.trim()));
+      return { ruby, color: num ? getComputedStyle(num).color : null };
+    });
+    expect(r.ruby, `${n} uses the ruby heart`).toBe(true);
+    expect(r.color, `${n} number is white`).toBe('rgb(255, 255, 255)');
+  }
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  const g = page.getByRole('radiogroup', { name: 'Flow particles' });
+  for (const o of ['On', 'Reduced', 'Off']) await expect(g.getByRole('radio', { name: o, exact: true })).toBeAttached();
+  await g.getByRole('radio', { name: 'Reduced', exact: true }).check();
+  await page.reload();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('radiogroup', { name: 'Flow particles' }).getByRole('radio', { name: 'Reduced', exact: true })).toBeChecked();
+});
+
+for (const vp of [{ width: 1920, height: 1080 }, { width: 2560, height: 1080 }, { width: 844, height: 390 }]) {
+  test.describe(`round 5b screenshots (${vp.width}x${vp.height})`, () => {
+    test.use({ viewport: vp });
+    test(`AC160: match, Menu popped out and hand popped out render without errors (${vp.width}x${vp.height})`, async ({ page }, testInfo) => {
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await start(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'soul-shard', 'goblin-slinger', 'venom-shiv'],
+        opponentHand: ['goblin-scrapper', 'fireball', 'soul-shard'], playerCrystals: 4, playerBank: 2, opponentCrystals: 3, board: BOARD_5B }));
+      await page.mouse.move(vp.width / 2, vp.height * 0.45);
+      await page.waitForTimeout(1200);
+      await testInfo.attach(`match-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+      await page.getByRole('button', { name: 'Menu', exact: true }).hover();
+      await page.waitForTimeout(500);
+      await testInfo.attach(`menu-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+      await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true }).hover();
+      await page.waitForTimeout(600);
+      await testInfo.attach(`hand-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
       expect(errors).toEqual([]);
     });
   });
