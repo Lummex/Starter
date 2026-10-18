@@ -1,23 +1,24 @@
 ## What was built
-This round reworks the menus and Deck Builder of Oreheart. All text now uses one plain gold italic font, and menu buttons are glowing gold words with no boxes. Menu screens fill the window. The Deck Builder has a deck carousel and a big deck list. Starter decks can be removed, restored or copied. Choose Your Commander is bigger and glows, and the real spell card frames are installed.
+This round rebuilds the match screen. The camera now looks down at the battlefield at the owner's angle and zoom, with painted sky above the far side. The score display, phase tracker, Menu, decks and hand sit at the owner's chosen screen positions. It also adds glowing "flow" particles streaming from mines to Strongholds, a glow on cards you can play right now, ruby-heart health icons, and card reveals that last 5.5 seconds. The game rules are unchanged.
 
 ## Try these things
-- On the title screen, hover over Play, Tutorial, Decks, Rules and Settings. Each should glow and grow slightly.
-- Press Play. Check that the Commander cards are big and glowing, and that Fight! is visible without scrolling.
-- Under a starter deck, try "Remove" (a floating confirm box should appear), then "Restore starter decks". Also try "Copy to my decks".
-- Open Decks. Use the "Cards per row" slider, drag a card into the deck, and click the carousel arrows.
-- Look at spell cards from each faction. The cost and type icons should sit on the painted circles.
-- Resize the browser window. Menu screens should refill it with no page scrolling.
+- Start a match and check that both Commanders are fully visible and no part of the screen has black bars. Try resizing the window.
+- Hover or click "Menu" at the right side. "Last turn", "Mute", "Card pop-ups", "Recenter" and "Surrender" should slide out.
+- Look at your hand. Cards you can afford and play should glow gold. Hover the hand to see it pop up.
+- Watch the mines. Particles should flow into the Stronghold of whoever owns the mine. Try Settings > "Flow particles".
+- Play a card and check that the reveal lasts about 5 seconds. Check that "Done" appears only on your own turn, in the middle of the screen.
+- Look at the top-left and top-right crystals (Flow and bank numbers) and the phase tracker.
 
 ## Automated checks
-203 of 203 checks passed after 2 build rounds.
+217 of 218 checks passed. The one failure, AC36, is an older check that expects the income text to read "+0 next turn". The game now shows "Next +0", as this round's spec asks. It is a wording mismatch in the old test, not a broken feature.
 
 ## Things to know
-- The builder says it tested with its own scripts. The acceptance tests ran and passed, but the builder did not run them itself.
-- On a phone-size screen (844×390) the Deck Builder is dense. Some list and chart text is only 9–10 px so that 7 deck rows fit.
-- The pause and match-end menus inside a match still have the old button look. That was planned for a later round.
-- I could only view two screenshots, the title screen and the "rotate your phone" message. The title screen looks clean and well styled. I did not see the Deck Builder or Commander screenshots, so please check them in the preview. The "rotate your phone" screen is only the portrait-mode notice.
-- The match-screen changes (Round 5b) and 3D models are not part of this build.
+- I could only view the title-screen screenshots (desktop and phone). They look good: no unstyled or broken elements. The phone shot just shows "Please rotate your phone" because it was taken upright.
+- I did not see screenshots of the match screen itself. The automated checks say they rendered, but I can't confirm the look. Please check the match in the preview.
+- The builder admits that on a phone, the enemy crystal's text and the phase tracker overlap a little in the top-right.
+- The builder also says the enemy Commander may sit partly under the enemy crystal on some window shapes.
+- The ruby heart picture was drawn in code rather than painted with the image tool.
+- Tiny phone-sized text in the Deck Builder was reported earlier. This round's checks say nothing is under about 14 px.
 
 ## Recommendation
-Ready to approve
+Request changes: the match screen, the heart of this round, has no screenshots I could inspect, and the builder reports overlaps on phones. Check the preview first. If the match looks right, it can be approved.

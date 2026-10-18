@@ -1,12 +1,12 @@
 # Automated check results
 
-203 of 203 checks passed after 2 build round(s).
+217 of 218 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
 - ✅ landscape phone viewport 667x375 › AC24: menu and full-screen match fit a 667x375 landscape phone
 - ✅ portrait phone viewport › AC24: upright phone shows the rotate message
-- ✅ landscape layout details › AC43: the hand rests tucked half below the edge and slides up on hover
+- ✅ landscape layout details › AC43: the hand rests nearly fully visible at the bottom and pops out on hover (Round 5b)
 - ✅ landscape layout details › AC44: deck piles on each player's right and Commander hearts
 - ✅ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
 - ✅ hearts and turn display 740x360 › AC51: Commander hearts never cover creature labels; turn display top-right (740x360)
@@ -26,6 +26,12 @@
 - ✅ round 4 phone screenshots (844x390) › AC134: mulligan, spell cards per faction, a creature close-up and a menu screen render without errors
 - ✅ round 5a screenshots (1920x1080) › AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (1920x1080)
 - ✅ round 5a screenshots (844x390) › AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (844x390)
+- ✅ owner HUD layout 1920x1080 › AC151: HUD pieces sit at the owner's positions and never cover a Commander (1920x1080)
+- ✅ owner HUD layout 844x390 › AC151: HUD pieces sit at the owner's positions and never cover a Commander (844x390)
+- ✅ readable sizes at 844x390 › AC158: no text below about 14 px on any screen at phone size
+- ✅ round 5b screenshots (1920x1080) › AC160: match, Menu popped out and hand popped out render without errors (1920x1080)
+- ✅ round 5b screenshots (2560x1080) › AC160: match, Menu popped out and hand popped out render without errors (2560x1080)
+- ✅ round 5b screenshots (844x390) › AC160: match, Menu popped out and hand popped out render without errors (844x390)
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -94,7 +100,7 @@
 - ✅ AC33: Gatherer swap moves one basic Gatherer from deck to hand, once per turn
 - ✅ AC34: free Miner only when Flow + Bank cannot pay and no Miner is on the battlefield
 - ✅ AC35: a Gatherer summoned this turn can move or mine but not attack; a Fighter can do nothing
-- ✅ AC36: flow preview, mine ring numbers and mine info
+- ❌ AC36: flow preview, mine ring numbers and mine info
 - ✅ AC38: swapping places with your own creature uses only the dragged creature's action
 - ✅ AC37: the confirm pop-up sits above the countdown
 - ✅ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
@@ -205,3 +211,30 @@
 - ✅ AC145: Copy to my decks makes an editable saved copy and leaves the starter deck unchanged; my decks can be removed
 - ✅ AC146: Choose Your Commander: big glowing Commander cards that stand out, big decks and text, filling the screen
 - ✅ AC147: spell cards use the owner's real spell frames per faction
+- ✅ AC149: camera uses the owner's numbers and keeps both Commanders whole at every window shape
+- ✅ AC150: no black bars at any window shape
+- ✅ AC152: Flow and bank numbers sit on both crystals with name, Flow and Next beside them
+- ✅ AC153: the phase tracker shows whose turn, the turn number and the current phase
+- ✅ AC154: the match Menu hides its items until hovered or tapped; Mute and Recenter work
+- ✅ AC155: playable hand cards glow, the others do not, and it updates at once
+- ✅ AC156: Done shows only when needed, centered, as plain text
+- ✅ AC157: mulligan, Respond, surrender and match-end controls are plain text
+- ✅ AC159: longer card reveals, ruby hearts with white numbers, Flow particles setting
+
+## Failures
+
+```
+✗ AC36: flow preview, mine ring numbers and mine info
+Error: expect(locator).toHaveText(expected) failed
+
+Locator: getByLabel('Your income next turn', { exact: true })
+Expected pattern: /^\s*\+0 next turn\s*$/
+Received string:  "Next +0"
+Timeout: 7000ms
+
+Call log:
+  - Expect "toHaveText" with timeout 7000ms
+  - waiting for getByLabel('Your income next turn', { exact: true })
+    9 × locator resolved to <span class="cry-next" aria-label="Your income next turn">Next +0</span>
+      - unexpected value "Next +0"
+```
