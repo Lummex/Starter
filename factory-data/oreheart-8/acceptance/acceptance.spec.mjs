@@ -9,7 +9,9 @@ async function openTest(page, seed = 123) {
 const OLD_MINES = [{ row: 4, col: 2 }, { row: 4, col: 4 }, { row: 4, col: 6 }];
 const [M1, M2, M3] = OLD_MINES;
 async function newMatch(page, opts) {
-  const withMines = opts && opts.setup && !opts.mines ? { ...opts, mines: OLD_MINES } : opts;
+  let withMines = opts && opts.setup && !opts.mines ? { ...opts, mines: OLD_MINES } : opts;
+  // Round 4: older setup-based tests hand-pick spells for any Commander; they run with the faction lock off
+  if (withMines && withMines.setup && withMines.factionLock === undefined) withMines = { ...withMines, factionLock: false };
   return page.evaluate(async (o) => {
     await window.oreheart.newMatch(o);
     return await window.oreheart.getState();
@@ -59,7 +61,7 @@ const NEW_BY_FACTION = {
 };
 const CRYSTALS = new Set(['soul-shard', 'crystal-cluster', 'glowing-geode', 'heart-of-the-fallen', 'motherlode']);
 const SPELLS = new Set(['prospectors-prayer', 'tunnel-rush', 'fireball', 'battle-cry', 'meteor-strike', 'healing-light',
-  'shield-bubble', 'second-wind', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex']);
+  'shield-bubble', 'second-wind', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex', 'venom-shiv']);
 const CREATURES = ['goblin-scrounger', 'goblin-scrapper', 'goblin-slinger', 'goblin-bomber', 'goblin-sneak', 'wolf-rider',
   'grubnaks-big-boss-troll', 'gnome-prospector', 'gnome-tinker', 'spark-gnome', 'clockwork-beetle', 'gnome-illusionist',
   'gyrocopter-ace', 'the-great-steam-golem', 'dwarf-miner', 'shieldbeard', 'axe-thrower', 'ironhammer-berserker',
@@ -158,7 +160,7 @@ test('AC5: window.oreheart only in test mode; seeds are deterministic', async ({
 
 // ---------- AC6 ----------
 for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
-  test(`AC6: ${cmd} starter deck is 40 creatures, 6 spells (with Snuff Out), 4 Crystal cards`, async ({ page }) => {
+  test(`AC6: ${cmd} Warband starter deck is 100 cards: 30 + 20 Miners, 38 Fighters, 7 spells, 5 Crystal cards`, async ({ page }) => {
     const s = await start(page, { playerCommander: cmd, ai: false, firstPlayer: 'player' });
     expect(s.phase).toBe('mulligan');
     const p = s.players.player;
@@ -166,21 +168,19 @@ for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
     expect(s.players.opponent.health).toBe(20);
     expect(p.hand.length).toBe(5);
     const all = [...p.deck, ...p.hand].map((c) => c.cardId);
-    expect(all.length).toBe(50);
-    expect(all.filter((id) => CRYSTALS.has(id)).length).toBe(4);
-    expect(all.filter((id) => SPELLS.has(id)).length).toBe(6);
-    expect(all.includes('fizzle')).toBe(true);
-    expect(all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id)).length).toBe(40);
+    expect(all.length).toBe(100);
+    expect(all.filter((id) => CRYSTALS.has(id)).length).toBe(5);
+    expect(all.filter((id) => SPELLS.has(id)).length).toBe(7);
+    expect(all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id)).length).toBe(88);
     const counts = {};
     for (const id of all) counts[id] = (counts[id] || 0) + 1;
     for (const [id, n] of Object.entries(counts)) if (LIMITED.has(id)) expect(n, id).toBeLessThanOrEqual(3);
     const basic = { grubnak: 'goblin-scrounger', sproingle: 'gnome-prospector', borgo: 'dwarf-miner' }[cmd];
-    expect(counts[basic]).toBe(5);
+    expect(counts[basic]).toBe(30);
     const smith = { grubnak: 'goblin-smith-miner', sproingle: 'gnome-smith-miner', borgo: 'dwarf-smith-miner' }[cmd];
-    expect(counts[smith]).toBe(3);
-    for (const [id, n] of Object.entries(counts)) if (id !== basic && id !== smith) expect(n, id).toBeLessThanOrEqual(4);
+    expect(counts[smith]).toBe(20);
     for (const id of NEW_BY_FACTION[cmd]) expect(counts[id] || 0, id).toBeGreaterThanOrEqual(1);
-    const creatureIds = all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id));
+    const creatureIds = all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id) && id !== basic && id !== smith);
     const costs = await page.evaluate(async (ids) => {
       const out = [];
       for (const id of ids) out.push((await window.oreheart.getCard(id)).cost);
@@ -850,7 +850,7 @@ test('AC16: Commander damage equals Attack and never resets', async ({ page }) =
   s = await getState(page);
   expect(s.phase).toBe('deploy');
   expect(s.players.opponent.health).toBe(13); // never resets
-  expect(s.players.player.crystals).toEqual(4); // 2 Miners mined 2 each on turn 1: pays Warhowl (4)
+  expect(s.players.player.crystals).toEqual(4); // 2 Miners mined 2 each on turn 1: pays Thunderhorn Blast (4)
   expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
   await done(page);
   expect((await act(page, { type: 'attack', creatureUid: queen, target: { commander: 'opponent' } })).ok).toBe(true);
@@ -860,7 +860,7 @@ test('AC16: Commander damage equals Attack and never resets', async ({ page }) =
 });
 
 // ---------- AC17 ----------
-test('AC17: Infernal Orb deals 3 damage for 3 crystals', async ({ page }) => {
+test('AC17: Searing Arcane Orb deals 3 damage for 3 crystals', async ({ page }) => {
   let s = await start(page, {
     ai: false,
     playerCommander: 'grubnak',
@@ -912,7 +912,7 @@ test('AC17: crystal-bought upgrades are gone', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Upgrade', exact: true })).toHaveCount(0);
 });
 // ---------- AC18 ----------
-test('AC18: Snuff Out counters Infernal Orb; crystals still spent', async ({ page }) => {
+test('AC18: Snuff Out counters Searing Arcane Orb; crystals still spent', async ({ page }) => {
   let s = await start(page, {
     ai: false,
     playerCommander: 'grubnak',
@@ -952,11 +952,11 @@ test('AC18: Snuff Out cannot cancel a spell costing more than 3', async ({ page 
   });
   expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
   s = await getState(page);
-  expect(s.pendingResponse).toBe(null); // Warhowl costs 4: no usable Instant, so no Respond window
+  expect(s.pendingResponse).toBe(null); // Thunderhorn Blast costs 4: no usable Instant, so no Respond window
   expect(s.players.opponent.hand.some((c) => c.cardId === 'fizzle')).toBe(true);
 });
 
-test('AC18: Not Today! returns a summoned creature to hand', async ({ page }) => {
+test('AC18: Pickpocket! returns a summoned creature to hand', async ({ page }) => {
   let s = await start(page, {
     ai: false,
     playerCommander: 'grubnak',
@@ -998,18 +998,18 @@ test('AC18: Respond dialog — Let it happen', async ({ page }) => {
   expect((await act(page, { type: 'cast', uid: handUid(s, 'opponent', 'fireball'), target: { row: 6, col: 4 } })).ok).toBe(true);
   const dlg = page.getByRole('dialog', { name: 'Respond?' });
   await expect(dlg).toBeVisible();
-  await expect(dlg.getByRole('button', { name: 'Bastion Ward' })).toBeVisible();
+  await expect(dlg.getByRole('button', { name: 'Ironclad Bulwark' })).toBeVisible();
   await dlg.getByRole('button', { name: 'Let it happen' }).click();
   await expect(dlg).toBeHidden();
   await expect.poll(async () => at(await getState(page), 6, 4)).toBeUndefined();
 });
 
-test('AC18: Respond dialog — cast Bastion Ward saves the creature', async ({ page }) => {
+test('AC18: Respond dialog — cast Ironclad Bulwark saves the creature', async ({ page }) => {
   let s = await start(page, respondSetup);
   expect((await act(page, { type: 'cast', uid: handUid(s, 'opponent', 'fireball'), target: { row: 6, col: 4 } })).ok).toBe(true);
   const dlg = page.getByRole('dialog', { name: 'Respond?' });
   await expect(dlg).toBeVisible();
-  await dlg.getByRole('button', { name: 'Bastion Ward' }).click();
+  await dlg.getByRole('button', { name: 'Ironclad Bulwark' }).click();
   await expect(dlg).toBeHidden();
   await expect.poll(async () => (await getState(page)).pendingResponse).toBe(null);
   s = await getState(page);
@@ -1111,11 +1111,11 @@ test('AC21: Normal AI defeats a passive player before turn 60', async ({ page })
 // ---------- AC22 ----------
 test('AC22: hand cards are buttons and open a card view', async ({ page }) => {
   await start(page, { ai: false, setup: { playerHand: ['fireball', 'goblin-scrapper'] } });
-  const card = page.getByRole('button', { name: 'Infernal Orb', exact: true });
+  const card = page.getByRole('button', { name: 'Searing Arcane Orb', exact: true });
   await expect(card).toBeVisible();
   await expect(page.getByRole('button', { name: 'Gutripper Brawler', exact: true })).toBeVisible();
   await card.click();
-  const view = page.getByRole('dialog', { name: 'Infernal Orb' });
+  const view = page.getByRole('dialog', { name: 'Searing Arcane Orb' });
   await expect(view).toBeVisible();
   await expect(view).toContainText('3 damage');
   await view.getByRole('button', { name: 'Close' }).click();
@@ -1163,7 +1163,7 @@ for (const [w, h] of [[844, 390], [740, 360], [667, 375]]) {
       await expect(page.getByLabel('Enemy Commander health', { exact: true })).toBeInViewport();
       await expect(page.getByLabel('Current phase', { exact: true })).toBeInViewport();
       if (w === 844) {
-        const card = await page.getByRole('button', { name: 'Infernal Orb', exact: true }).boundingBox();
+        const card = await page.getByRole('button', { name: 'Searing Arcane Orb', exact: true }).boundingBox();
         expect(card.width).toBeGreaterThanOrEqual(60);
         expect(card.height).toBeGreaterThanOrEqual(90);
       }
@@ -1942,7 +1942,7 @@ test('AC49: "Soul Cluster + Snuff Out" plays both and cancels the enemy spell', 
   await expect(dlg).toBeHidden();
   await expect.poll(async () => (await getState(page)).pendingResponse).toBe(null);
   s = await getState(page);
-  expect(at(s, 6, 4)).toBeDefined(); // Infernal Orb was cancelled
+  expect(at(s, 6, 4)).toBeDefined(); // Searing Arcane Orb was cancelled
   expect(s.players.player.crystals).toEqual(ZERO); // 1 Flow + 2 Bank paid Snuff Out (3)
   expect(s.players.player.bank).toEqual(ZERO);
   expect(s.players.player.discard.map((c) => c.cardId).sort()).toEqual(['crystal-cluster', 'fizzle']);
@@ -2036,9 +2036,9 @@ const RENAMES = {
   'brewmaster': 'Forgefire Brewlord', 'ram-rider': 'Thunderhorn Ram Rider', 'queen-brunhilda-stonebeard': 'Queen Brunhilda Ironheart, the Unbroken',
   'shard-guzzler': 'Shardguzzler the Bottomless', 'overclocked-conduit': 'Overclocked Aethervein', 'crystal-drunk-delver': 'Gemdrunk Deepdelver',
   'goblin-smith-miner': 'Scrapsmith Miner', 'gnome-smith-miner': 'Arcsmith Miner', 'dwarf-smith-miner': 'Anvilsworn Miner',
-  'prospectors-prayer': 'Desperate Plunder', 'tunnel-rush': 'Burrow Ambush', 'fireball': 'Infernal Orb', 'battle-cry': 'Warhowl',
-  'meteor-strike': 'Skyfall Annihilation', 'healing-light': 'Mending Light', 'shield-bubble': 'Bastion Ward', 'second-wind': 'Last Stand',
-  'fizzle': 'Snuff Out', 'hold-it': 'Not Today!', 'spell-snap': 'Arcane Severance', 'mirror-hex': 'Hex Reversal',
+  'prospectors-prayer': 'Desperate Plunder', 'tunnel-rush': 'Rat-Tunnel Ambush', 'fireball': 'Searing Arcane Orb', 'battle-cry': 'Thunderhorn Blast',
+  'meteor-strike': 'Starfall Cataclysm', 'healing-light': 'Field Bandage', 'shield-bubble': 'Ironclad Bulwark', 'second-wind': 'Emergency Repairs',
+  'fizzle': 'Snuff Out', 'hold-it': 'Pickpocket!', 'spell-snap': 'Unweave', 'mirror-hex': 'Hex Reversal',
   'soul-shard': 'Soul Shard', 'crystal-cluster': 'Soul Cluster', 'glowing-geode': 'Wellspring Geode', 'heart-of-the-fallen': 'Heart of the Fallen',
   'motherlode': 'Motherlode',
 };
@@ -2097,7 +2097,7 @@ test('AC54: nothing can mine from 2 spaces away — only the 8 adjacent spaces',
   }
 });
 
-test('AC55: casting a spell shows "GRUBNAK CASTS INFERNAL ORB!" over the Stronghold; Commanders never attack', async ({ page }) => {
+test('AC55: casting a spell shows "GRUBNAK CASTS SEARING ARCANE ORB!" over the Stronghold; Commanders never attack', async ({ page }) => {
   let s = await start(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: {
     playerHand: ['fireball'], playerCrystals: 3, board: [{ cardId: 'shieldbeard', owner: 'opponent', row: 3, col: 4 }],
   } });
@@ -2105,7 +2105,7 @@ test('AC55: casting a spell shows "GRUBNAK CASTS INFERNAL ORB!" over the Strongh
   const uids = new Set(s.board.creatures.map((c) => c.uid));
   expect(acts.filter((a) => a.type === 'attack').every((a) => uids.has(a.creatureUid))).toBe(true);
   expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'fireball'), target: { row: 3, col: 4 } })).ok).toBe(true);
-  await expect(page.getByText(/GRUBNAK CASTS INFERNAL ORB!/i)).toBeVisible();
+  await expect(page.getByText(/GRUBNAK CASTS SEARING ARCANE ORB!/i)).toBeVisible();
 });
 
 test('AC56: Settings has "Card reveals: Normal" / "Fast", saved across reloads', async ({ page }) => {
@@ -2285,7 +2285,7 @@ async function saveDeck(page) {
 test('AC60: Deck Builder shows card faces with full text and filters them', async ({ page }) => {
   await openDecks(page);
   const all = allCards(page);
-  for (const n of ['Rotgut Grenadier', 'Shiv Rat', 'Phase Stalker', 'Grimhold Ravager', 'Snotskull Grunt', 'Infernal Orb', 'Soul Cluster', 'Gutcrusher the Troll Tyrant']) {
+  for (const n of ['Rotgut Grenadier', 'Shiv Rat', 'Phase Stalker', 'Grimhold Ravager', 'Snotskull Grunt', 'Searing Arcane Orb', 'Soul Cluster', 'Gutcrusher the Troll Tyrant']) {
     await expect(all.getByRole('button', { name: n, exact: true })).toHaveCount(1);
   }
   await expect(all).toContainText('Guard: adjacent enemies must attack it first');
@@ -2294,7 +2294,7 @@ test('AC60: Deck Builder shows card faces with full text and filters them', asyn
   await expect(all.getByRole('button', { name: 'Snotskull Grunt', exact: true })).toHaveCount(0);
   await chooseFilter(page, 'Faction', 'All');
   await chooseFilter(page, 'Type', 'Spells');
-  await expect(all.getByRole('button', { name: 'Infernal Orb', exact: true })).toBeVisible();
+  await expect(all.getByRole('button', { name: 'Searing Arcane Orb', exact: true })).toBeVisible();
   await expect(all.getByRole('button', { name: 'Ironjaw Raider', exact: true })).toHaveCount(0);
   await chooseFilter(page, 'Type', 'All');
   await chooseFilter(page, 'Rarity', 'Collector');
@@ -2662,7 +2662,7 @@ test('AC72: select screen — Commander cards, deck stacks, difficulty and Fight
     await expect(page.getByRole('button', { name: n, exact: true })).toBeVisible();
   }
   const stacks = deckRow(page).getByRole('button', { name: /cards, (ready|not ready)$/ });
-  await expect(stacks.first()).toHaveAccessibleName('Goblin Warband, 50 cards, ready');
+  await expect(stacks.first()).toHaveAccessibleName('Goblin Warband, 100 cards, ready');
   for (const f of ['Goblin', 'Gnome', 'Dwarf']) for (const st of ['Warband', 'Arcane Hoard', 'Horde']) {
     await expect(deckRow(page).getByRole('button', { name: `${f} ${st}, 50 cards, ready`, exact: true })).toHaveCount(1);
   }
@@ -2718,7 +2718,7 @@ test('AC74: match-end summary, Play again with the same choices, and Menu', asyn
   await page.goto('/?test=1&seed=5');
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Thane Borgo Gravelgrim', exact: true }).click();
-  await deckRow(page).getByRole('button', { name: 'Dwarf Warband, 50 cards, ready', exact: true }).click();
+  await deckRow(page).getByRole('button', { name: 'Dwarf Warband, 100 cards, ready', exact: true }).click();
   await page.getByRole('button', { name: 'Hard', exact: true }).click();
   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
   await keepAndGetState(page);
@@ -3091,9 +3091,10 @@ test('AC91: card faces use the faction frame, stat slots, type icon and rarity c
   for (const [id, c] of pick) {
     const face = hand.locator(`[data-card-id="${id}"]`).first();
     await expect(face, id).toBeAttached();
-    const frame = FRAME[c.faction] || 'neutral';
-    await expect(face, id).toHaveAttribute('data-frame', frame);
-    expect(await face.locator(`img[src*="card-frame-${frame}"]`).count(), id).toBeGreaterThan(0);
+    const spell = c.type === 'spell'; // Round 4: spells use the spell frames
+    const frame = spell ? (FRAME[c.faction] || 'shared') : (FRAME[c.faction] || 'neutral');
+    await expect(face, id).toHaveAttribute('data-frame', spell ? `spell-${frame}` : frame);
+    expect(await face.locator(`img[src*="${spell ? 'spell' : 'card'}-frame-${frame}"]`).count(), id).toBeGreaterThan(0);
     await expect(face.getByLabel(/^Cost \d+$/), id).toHaveCount(1); // may show a Commander discount
     await expect(face.getByLabel(/^Type: /), id).toHaveCount(1);
     if (c.type === 'creature') {
@@ -3254,8 +3255,8 @@ test('AC96: dialogs float with no box; buttons are ornate', async ({ page }) => 
   expect(b.image).toBe('none');
   await newMatch(page, quiet({ playerHand: ['fireball'] }));
   expect(await ornate(page.getByRole('button', { name: 'Done' }))).toBe(true);
-  await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Infernal Orb', exact: true }).click();
-  const view = page.getByRole('dialog', { name: 'Infernal Orb', exact: true });
+  await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Searing Arcane Orb', exact: true }).click();
+  const view = page.getByRole('dialog', { name: 'Searing Arcane Orb', exact: true });
   await expect(view).toBeVisible();
   b = await boxless(view);
   expect(b.alpha).toBeLessThanOrEqual(0.35);
@@ -3276,7 +3277,7 @@ test('AC97: card reveals never block the game and can be pinned', async ({ page 
   await castFireball(page, s);
   const reveal = page.getByLabel('Card reveal', { exact: true });
   await expect(reveal).toBeVisible();
-  await expect(reveal).toContainText('Infernal Orb');
+  await expect(reveal).toContainText('Searing Arcane Orb');
   expect(at(await getState(page), 6, 4)).toBeUndefined(); // already resolved underneath
   await reveal.click();
   await expect(reveal).toHaveAttribute('data-pinned', 'true');
@@ -3338,7 +3339,7 @@ test('AC100: spells play step by step and nothing vanishes without a cause', asy
   const before = at(s, 3, 3).health; // includes Commander bonuses (Borgo: +1 Health)
   await castOrb(page, 3, 3);
   s = await getState(page);
-  if (before > 3) { // Infernal Orb deals exactly 3: it survives, so a second Orb finishes it
+  if (before > 3) { // Searing Arcane Orb deals exactly 3: it survives, so a second Orb finishes it
     expect(at(s, 3, 3).health).toBe(before - 3);
     await castOrb(page, 3, 3);
   }
@@ -3357,7 +3358,7 @@ test('AC100: spells play step by step and nothing vanishes without a cause', asy
   expect((await act(page, { type: 'respond', uid: handUid(s, 'player', 'fizzle'), crystalUid: handUid(s, 'player', 'crystal-cluster') })).ok).toBe(true);
   log = await fxLog(page);
   expect(log.some((x) => x.kind === 'shatter' && x.cardId === 'fireball')).toBe(true);
-  // Not Today!: the returned creature gets a bounce
+  // Pickpocket!: the returned creature gets a bounce
   s = await start(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo',
     setup: { playerHand: ['goblin-scrapper'], playerCrystals: 5, opponentHand: ['hold-it'], opponentCrystals: 4 } });
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrapper'), row: 7, col: 1 })).ok).toBe(true);
@@ -3605,7 +3606,7 @@ const cardInfo = (page, ids) => page.evaluate(async (list) => {
   for (const id of list) out[id] = await window.oreheart.getCard(id);
   return out;
 }, ids);
-const validate = (page, ids) => page.evaluate(async (l) => await window.oreheart.validateDeck(l), ids);
+const validate = (page, ids, cmd) => page.evaluate(async ([l, c]) => await (c ? window.oreheart.validateDeck(l, c) : window.oreheart.validateDeck(l)), [ids, cmd]);
 
 test('AC109: Strongholds stand in the corners: player (7,2), enemy (1,12)', async ({ page }) => {
   let s = await start(page, quiet({ playerHand: ['goblin-scrounger'], board: [
@@ -3687,7 +3688,7 @@ test('AC111: decks of 50 to 100 cards and at most 20 Crystal cards', async ({ pa
 
 const STYLES = { warband: 'Warband', 'arcane-hoard': 'Arcane Hoard', horde: 'Horde' };
 const FACTIONS = { goblin: 'Goblin', gnome: 'Gnome', dwarf: 'Dwarf' };
-test('AC112: nine legal starter decks: Warband, Arcane Hoard and Horde for each faction', async ({ page }) => {
+test('AC112/AC128: nine legal 100-card starter decks: Warband, Arcane Hoard and Horde for each faction', async ({ page }) => {
   await openTest(page);
   const decks = await page.evaluate(async () => await window.oreheart.listStarterDecks());
   expect(decks.length).toBe(9);
@@ -3698,7 +3699,7 @@ test('AC112: nine legal starter decks: Warband, Arcane Hoard and Horde for each 
     expect(d, `${f}-${st}`).toBeTruthy();
     expect(d.name).toBe(`${fname} ${sname}`);
     expect(d.style).toBe(st);
-    expect(d.cards.length).toBe(50);
+    expect(d.cards.length).toBe(100);
     expect((await validate(page, d.cards)).legal, d.id).toBe(true);
     const of = (pred) => d.cards.filter((id) => pred(info[id])).length;
     const creatures = of((c) => c.type === 'creature');
@@ -3706,11 +3707,17 @@ test('AC112: nine legal starter decks: Warband, Arcane Hoard and Horde for each 
     const crystals = of((c) => c.type === 'crystal');
     const miners = of((c) => c.type === 'creature' && (c.role === 'gatherer' || c.role === 'smith'));
     const counters = of((c) => c.type === 'spell' && c.speed === 'counter');
-    const want = { warband: [40, 6, 4, 7, 9], 'arcane-hoard': [26, 16, 8, 10, 14], horde: [46, 0, 4, 12, 16] }[st];
-    expect([creatures, spells, crystals], d.id).toEqual(want.slice(0, 3));
-    expect(miners, `${d.id} Miners`).toBeGreaterThanOrEqual(want[3]);
-    expect(miners, `${d.id} Miners`).toBeLessThanOrEqual(want[4]);
-    if (st === 'warband') expect(d.cards.includes('fizzle'), d.id).toBe(true);
+    const want = { warband: [88, 7, 5], 'arcane-hoard': [68, 24, 8], horde: [96, 0, 4] }[st];
+    expect([creatures, spells, crystals], d.id).toEqual(want);
+    expect(miners, `${d.id} Miners`).toBe(50);
+    const basic = { goblin: 'goblin-scrounger', gnome: 'gnome-prospector', dwarf: 'dwarf-miner' }[f];
+    expect(d.cards.filter((id) => id === basic).length, `${d.id} basic Miners`).toBe(30);
+    expect(d.cards.filter((id) => id === `${f}-smith-miner`).length, `${d.id} Smith Miners`).toBe(20);
+    const faction = { goblin: 'goblins', gnome: 'gnomes', dwarf: 'dwarves' }[f];
+    for (const id of d.cards) if (info[id].type === 'spell') expect([faction, null, 'neutral'], `${d.id} ${id}`).toContain(info[id].faction ?? null);
+    const cmd = { goblin: 'grubnak', gnome: 'sproingle', dwarf: 'borgo' }[f];
+    expect((await validate(page, d.cards, cmd)).legal, `${d.id} with ${cmd}`).toBe(true);
+    if (st === 'warband') expect(counters, d.id).toBeGreaterThanOrEqual(1);
     if (st === 'arcane-hoard') expect(counters, d.id).toBeGreaterThanOrEqual(2);
   }
 });
@@ -3798,16 +3805,16 @@ test.describe('both hands at 844x390', () => {
     await page.getByRole('button', { name: 'Play', exact: true }).click();
     await page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable', exact: true }).click();
     const row = page.getByLabel('Deck choice', { exact: true });
-    const stacks = row.getByRole('button', { name: /, 50 cards, ready$/ });
-    await expect(stacks.first()).toHaveAccessibleName('Gnome Warband, 50 cards, ready');
-    await expect(stacks.nth(1)).toHaveAccessibleName('Gnome Arcane Hoard, 50 cards, ready');
-    await expect(stacks.nth(2)).toHaveAccessibleName('Gnome Horde, 50 cards, ready');
-    await expect(row.getByRole('button', { name: 'Goblin Horde, 50 cards, ready', exact: true })).toHaveCount(1);
-    await expect(row.getByRole('button', { name: 'Dwarf Arcane Hoard, 50 cards, ready', exact: true })).toHaveCount(1);
+    const stacks = row.getByRole('button', { name: /, 100 cards, ready$/ });
+    await expect(stacks.first()).toHaveAccessibleName('Gnome Warband, 100 cards, ready');
+    await expect(stacks.nth(1)).toHaveAccessibleName('Gnome Arcane Hoard, 100 cards, ready');
+    await expect(stacks.nth(2)).toHaveAccessibleName('Gnome Horde, 100 cards, ready');
+    await expect(row.getByRole('button', { name: 'Goblin Horde, 100 cards, ready', exact: true })).toHaveCount(1);
+    await expect(row.getByRole('button', { name: 'Dwarf Arcane Hoard, 100 cards, ready', exact: true })).toHaveCount(1);
     await expect(row.locator('img[src*="deck-image"]').first()).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('deck-picker-844x390.png') });
-    await row.getByRole('button', { name: 'Gnome Horde, 50 cards, ready', exact: true }).click();
-    await expect(row.getByRole('button', { name: 'Gnome Horde, 50 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await row.getByRole('button', { name: 'Gnome Horde, 100 cards, ready', exact: true }).click();
+    await expect(row.getByRole('button', { name: 'Gnome Horde, 100 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Fight!', exact: true }).click();
     await page.getByRole('button', { name: 'Keep Hand' }).click();
     const s = await page.evaluate(async () => await window.oreheart.getState());
@@ -4053,10 +4060,20 @@ test.describe('title layout and ornaments', () => {
       await page.getByRole('button', { name: 'Decks', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
       expect(await page.locator('[data-ornament="frame"]').count(), 'deck builder ornaments').toBeGreaterThan(0);
-      await page.getByRole('button', { name: 'Back' }).click();
+      await page.getByRole('button', { name: 'Back', exact: true }).click();
+      await page.getByRole('button', { name: 'Rules', exact: true }).click();
+      await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
+      expect(await page.locator('[data-ornament="frame"]').count(), 'Rules ornaments').toBeGreaterThan(0);
+      await page.getByRole('button', { name: 'Back', exact: true }).click();
       await page.getByRole('button', { name: 'Play', exact: true }).click();
       await expect(page.getByRole('button', { name: 'Fight!' })).toBeVisible();
       expect(await page.locator('[data-ornament="frame"]').count(), 'select screen ornaments').toBeGreaterThan(0);
+      await page.goto('/');
+      const again = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
+      if (await again.isVisible()) await again.getByRole('button', { name: 'Skip' }).click();
+      await page.getByRole('button', { name: 'Settings', exact: true }).click();
+      await expect(page.getByRole('heading', { name: 'Settings' }).first()).toBeVisible();
+      expect(await page.locator('[data-ornament="frame"]').count(), 'Settings ornaments').toBeGreaterThan(0);
       expect(errors).toEqual([]);
     });
   }
@@ -4111,6 +4128,257 @@ test.describe('round 3b phone screenshots (844x390)', () => {
     await castOrb(page, 3, 3);
     await page.waitForTimeout(400);
     await testInfo.attach('spell-cast-844x390', { body: await page.screenshot(), contentType: 'image/png' });
+    expect(errors).toEqual([]);
+  });
+});
+
+// ================= Phase 1B, Round 4 =================
+const R4_SPELLS = {
+  'venom-shiv': ['Venom Shiv', 'goblins', 2], 'tunnel-rush': ['Rat-Tunnel Ambush', 'goblins', 2], 'hold-it': ['Pickpocket!', 'goblins', 4],
+  fireball: ['Searing Arcane Orb', 'gnomes', 3], 'meteor-strike': ['Starfall Cataclysm', 'gnomes', 7], 'spell-snap': ['Unweave', 'gnomes', 5],
+  'shield-bubble': ['Ironclad Bulwark', 'dwarves', 2], 'battle-cry': ['Thunderhorn Blast', 'dwarves', 4], 'second-wind': ['Emergency Repairs', 'dwarves', 5],
+  'healing-light': ['Field Bandage', null, 2], fizzle: ['Snuff Out', null, 3], 'prospectors-prayer': ['Desperate Plunder', null, 1],
+};
+async function openMulligan(page, seed = 7) {
+  await page.goto(`/?test=1&seed=${seed}`);
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  const mull = page.getByRole('dialog', { name: 'Mulligan' });
+  await expect(mull).toBeVisible();
+  return mull;
+}
+
+for (const vp of [{ width: 1280, height: 720, min: 300 }, { width: 844, height: 390, min: 165 }]) {
+  test(`AC127: mulligan cards are double size, one row, on-screen (${vp.width}x${vp.height})`, async ({ page }) => {
+    await page.setViewportSize({ width: vp.width, height: vp.height });
+    const mull = await openMulligan(page);
+    const faces = mull.locator('[data-card-id]');
+    await expect(faces).toHaveCount(5);
+    await page.waitForTimeout(600);
+    const boxes = [];
+    for (let i = 0; i < 5; i++) boxes.push(await faces.nth(i).boundingBox());
+    boxes.sort((a, b) => a.x - b.x);
+    for (const [i, b] of boxes.entries()) {
+      expect(b.height, `face ${i} height`).toBeGreaterThanOrEqual(vp.min);
+      expect(b.x).toBeGreaterThanOrEqual(-1);
+      expect(b.y).toBeGreaterThanOrEqual(-1);
+      expect(b.x + b.width).toBeLessThanOrEqual(vp.width + 1);
+      expect(b.y + b.height).toBeLessThanOrEqual(vp.height + 1);
+      if (i > 0) {
+        expect(Math.abs(b.y - boxes[0].y)).toBeLessThanOrEqual(2);
+        expect(b.x).toBeGreaterThanOrEqual(boxes[i - 1].x + boxes[i - 1].width - 1);
+      }
+    }
+  });
+}
+
+test('AC129: faction spells — names, factions, deck validation and the casting lock', async ({ page }) => {
+  await openTest(page);
+  const info = await cardInfo(page, Object.keys(R4_SPELLS));
+  for (const [id, [name, faction, cost]] of Object.entries(R4_SPELLS)) {
+    expect(info[id].name, id).toBe(name);
+    expect(info[id].faction ?? null, id).toBe(faction);
+    expect(info[id].cost, id).toBe(cost);
+    expect(info[id].type, id).toBe('spell');
+  }
+  expect(info['venom-shiv'].speed).toBe('regular');
+  expect(info['hold-it'].speed).toBe('counter');
+  const deck = [...Array(30).fill('goblin-scrounger'), ...Array(20).fill('goblin-smith-miner'), 'fireball'];
+  const bad = await validate(page, deck, 'grubnak');
+  expect(bad.legal).toBe(false);
+  expect(bad.problems).toContain('Searing Arcane Orb: only for Gnome Commanders.');
+  expect((await validate(page, deck, 'sproingle')).legal).toBe(true);
+  const shared = [...deck.slice(0, 50), 'fizzle', 'healing-light', 'prospectors-prayer', 'venom-shiv'];
+  expect((await validate(page, shared, 'grubnak')).legal).toBe(true);
+  expect((await validate(page, shared, 'borgo')).problems).toContain('Venom Shiv: only for Goblin Commanders.');
+  const board = [{ cardId: 'shieldbeard', owner: 'opponent', row: 3, col: 4 }];
+  const setup = { playerHand: ['fireball', 'venom-shiv'], opponentHand: [], playerCrystals: 6, board };
+  let s = await newMatch(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', factionLock: true, setup });
+  let acts = await legal(page);
+  const orbUid = handUid(s, 'player', 'fireball');
+  expect(acts.some((a) => a.type === 'cast' && a.uid === orbUid)).toBe(false);
+  expect(acts.some((a) => a.type === 'cast' && a.uid === handUid(s, 'player', 'venom-shiv'))).toBe(true);
+  expect((await act(page, { type: 'cast', uid: orbUid, target: { row: 3, col: 4 } })).ok).toBe(false);
+  s = await newMatch(page, { ai: false, playerCommander: 'sproingle', opponentCommander: 'borgo', factionLock: true, setup });
+  acts = await legal(page);
+  expect(acts.some((a) => a.type === 'cast' && a.uid === handUid(s, 'player', 'venom-shiv'))).toBe(false);
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'fireball'), target: { row: 3, col: 4 } })).ok).toBe(true);
+  await expect(page.getByText(/SPROINGLE CASTS SEARING ARCANE ORB!/i)).toBeVisible();
+});
+
+test('AC130: Deck Commander locks other factions’ spells in the Deck Builder', async ({ page }) => {
+  await openMenu(page);
+  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+  const cmd = page.getByRole('combobox', { name: 'Deck Commander' });
+  await expect(cmd).toContainText('Grubnak');
+  const counts = page.getByText(/^Cards: \d+ \(50–100\)/);
+  const before = await counts.innerText();
+  const orb = page.getByRole('button', { name: 'Searing Arcane Orb', exact: true }).first();
+  await orb.scrollIntoViewIfNeeded();
+  await expect(orb).toHaveAttribute('aria-disabled', 'true');
+  await orb.dblclick();
+  await expect(counts).toHaveText(before);
+  const shiv = page.getByRole('button', { name: 'Venom Shiv', exact: true }).first();
+  await expect(shiv).not.toHaveAttribute('aria-disabled', 'true');
+  await cmd.click();
+  await page.getByRole('option', { name: 'Sproingle' }).click();
+  await expect(cmd).toContainText('Sproingle');
+  await expect(orb).not.toHaveAttribute('aria-disabled', 'true');
+  await expect(shiv).toHaveAttribute('aria-disabled', 'true');
+  await orb.dblclick();
+  await expect(counts).not.toHaveText(before);
+});
+
+test('AC131: Venom Shiv poisons for exactly 3 of the owner’s turns, then the creature heals; Hex Reversal is disabled', async ({ page }) => {
+  await openTest(page);
+  const hex = await page.evaluate(async () => await window.oreheart.getCard('mirror-hex'));
+  expect(hex.disabled).toBe(true);
+  expect((await page.evaluate(async () => await window.oreheart.getCard('fireball'))).disabled).toBe(false);
+  const ids = (await page.evaluate(async () => await window.oreheart.listCards())).map((c) => c.id);
+  expect(ids).not.toContain('mirror-hex');
+  expect(ids).toContain('venom-shiv');
+  let s = await newMatch(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'grubnak', firstPlayer: 'player', factionLock: true,
+    setup: { playerHand: ['venom-shiv'], opponentHand: [], playerCrystals: 2, board: [{ cardId: 'grimhold-ravager', owner: 'opponent', row: 2, col: 4 }] } });
+  const H = at(s, 2, 4).health;
+  expect(H).toBeGreaterThanOrEqual(4);
+  expect(at(s, 2, 4).poison).toBe(0);
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'venom-shiv'), target: { row: 2, col: 4 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 2, 4).health).toBe(H);
+  expect(at(s, 2, 4).poison).toBe(3);
+  expect(s.players.player.crystals).toBe(0);
+  const toTurnOf = async (side) => {
+    for (let i = 0; i < 8; i++) {
+      const st = await getState(page);
+      if (st.activePlayer === side && st.phase === 'deploy') return st;
+      await done(page);
+    }
+    throw new Error('turn not reached');
+  };
+  await passTurn(page);
+  s = await toTurnOf('opponent');
+  expect([at(s, 2, 4).health, at(s, 2, 4).poison]).toEqual([H - 1, 2]);
+  await passTurn(page);
+  s = await toTurnOf('player');
+  expect(at(s, 2, 4).health).toBe(H - 1);
+  await passTurn(page);
+  s = await toTurnOf('opponent');
+  expect([at(s, 2, 4).health, at(s, 2, 4).poison]).toEqual([H - 2, 1]);
+  await passTurn(page); await toTurnOf('player'); await passTurn(page);
+  s = await toTurnOf('opponent');
+  expect([at(s, 2, 4).health, at(s, 2, 4).poison]).toEqual([H - 3, 0]);
+  await passTurn(page); await toTurnOf('player'); await passTurn(page);
+  s = await toTurnOf('opponent');
+  expect(at(s, 2, 4).health).toBe(H);
+});
+
+test('AC132: spell frames per faction with the cost and type orbs', async ({ page }) => {
+  await openTest(page);
+  const want = { 'venom-shiv': ['spell-goblin', 'Spell', 'SPELL'], fireball: ['spell-gnome', 'Spell', 'SPELL'],
+    'shield-bubble': ['spell-dwarf', 'Instant', 'INSTANT'], fizzle: ['spell-shared', 'Instant', 'INSTANT'] };
+  await newMatch(page, quiet({ playerHand: Object.keys(want) }));
+  const hand = page.getByLabel('Your hand', { exact: true });
+  for (const [id, [frame, type, word]] of Object.entries(want)) {
+    const face = hand.locator(`[data-card-id="${id}"]`).first();
+    await expect(face, id).toHaveAttribute('data-frame', frame);
+    expect(await face.locator(`img[src*="${frame.replace('spell-', 'spell-frame-')}"]`).count(), id).toBeGreaterThan(0);
+    expect(await face.locator('img[src*="card-frame-"]').count(), id).toBe(0);
+    await expect(face.getByLabel(/^(Attack|Health|Movement) \d+$/), id).toHaveCount(0);
+    const fb = await face.boundingBox();
+    const cost = await face.getByLabel(/^Cost \d+$/).boundingBox();
+    const typeEl = face.getByLabel(`Type: ${type}`, { exact: true });
+    await expect(typeEl, id).toContainText(word);
+    const tb = await typeEl.boundingBox();
+    const cx = (b) => (b.x + b.width / 2 - fb.x) / fb.width;
+    const cy = (b) => (b.y + b.height / 2 - fb.y) / fb.height;
+    expect(cx(cost), `${id} cost x`).toBeLessThanOrEqual(0.3);
+    expect(cy(cost), `${id} cost y`).toBeLessThanOrEqual(0.25);
+    expect(cx(tb), `${id} type x`).toBeGreaterThanOrEqual(0.7);
+    expect(cy(tb), `${id} type y`).toBeGreaterThanOrEqual(0.7);
+  }
+});
+
+async function plainText(page) {
+  return page.evaluate(() => {
+    const bad = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const n = walker.currentNode;
+      if (!/[\p{L}\p{N}]/u.test(n.textContent)) continue;
+      const el = n.parentElement;
+      if (!el || el.closest('[aria-hidden="true"], canvas, svg, script, style, noscript, textarea, option')) continue;
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      if (r.width === 0 || r.height === 0 || cs.visibility === 'hidden' || !el.checkVisibility({ opacityProperty: true })) continue;
+      const m = el.closest('[data-metal="gold"], [data-metal="silver"]');
+      const ms = m && getComputedStyle(m);
+      const clip = ms && (ms.backgroundClip === 'text' || ms.webkitBackgroundClip === 'text');
+      const font = ms && /^["']?(Cinzel|Tinos)\b/.test(ms.fontFamily);
+      if (!m || !clip || !font || ms.backgroundImage === 'none') bad.push(`${n.textContent.trim().slice(0, 30)} [${m ? `${ms.fontFamily}/${ms.backgroundClip}` : 'no data-metal'}]`);
+    }
+    return bad.slice(0, 15);
+  });
+}
+
+test('AC133: metal lettering in Cinzel/Tinos on every screen; the gold and silver textures load', async ({ page }) => {
+  for (const tex of ['/art/ui/metal-gold.webp', '/art/ui/metal-silver.webp']) {
+    const r = await page.request.get(tex);
+    expect(r.status(), tex).toBe(200);
+    expect(r.headers()['content-type'] || '', tex).toMatch(/image/);
+  }
+  await openMenu(page);
+  await page.waitForTimeout(500);
+  expect(await plainText(page), 'title').toEqual([]);
+  expect(await page.evaluate(() => [...document.querySelectorAll('*')].some((e) => getComputedStyle(e).backgroundImage.includes('metal-gold')))).toBe(true);
+  await page.getByRole('button', { name: 'Rules', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
+  expect(await plainText(page), 'rules').toEqual([]);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+  await page.waitForTimeout(500);
+  expect(await plainText(page), 'deck builder').toEqual([]);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Fight!' })).toBeVisible();
+  expect(await plainText(page), 'select').toEqual([]);
+  await page.goto('/');
+  const again = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
+  if (await again.isVisible()) await again.getByRole('button', { name: 'Skip' }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Settings' }).first()).toBeVisible();
+  expect(await plainText(page), 'settings').toEqual([]);
+  await openTest(page);
+  await newMatch(page, quiet({ playerHand: ['goblin-scrapper', 'venom-shiv', 'soul-shard'] }));
+  await page.waitForTimeout(800);
+  expect(await plainText(page), 'match').toEqual([]);
+});
+
+test.describe('round 4 phone screenshots (844x390)', () => {
+  test.use({ viewport: { width: 844, height: 390 } });
+  test('AC134: mulligan, spell cards per faction, a creature close-up and a menu screen render without errors', async ({ page }, testInfo) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await openMenu(page);
+    await page.waitForTimeout(500);
+    await testInfo.attach('menu-844x390', { body: await page.screenshot(), contentType: 'image/png' });
+    const mull = await openMulligan(page);
+    await page.waitForTimeout(600);
+    await testInfo.attach('mulligan-844x390', { body: await page.screenshot(), contentType: 'image/png' });
+    await openTest(page);
+    const ids = ['venom-shiv', 'fireball', 'battle-cry', 'fizzle', 'goblin-scrapper'];
+    await newMatch(page, quiet({ playerHand: ids }));
+    await page.waitForTimeout(800);
+    const hand = page.getByLabel('Your hand', { exact: true });
+    for (const id of ids) {
+      const face = hand.locator(`[data-card-id="${id}"]`).first();
+      await face.hover();
+      await page.waitForTimeout(400);
+      await testInfo.attach(`card-${id}`, { body: await page.screenshot(), contentType: 'image/png' });
+    }
+    expect(mull).toBeTruthy();
     expect(errors).toEqual([]);
   });
 });
