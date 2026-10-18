@@ -752,6 +752,20 @@ export class App {
     const cards = [...hand.querySelectorAll('.hand-card')] as El[];
     const n = cards.length;
     const VIS = 7;
+    // Off-hand cards wait in an invisible clipped strip; if anything scrolls one into view (focus, assistive tech) the fan follows.
+    let spill = hand.querySelector('.hand-spill') as El;
+    if (!spill) {
+      spill = h('div', { class: 'hand-spill', 'aria-hidden': 'false' }) as El;
+      spill.addEventListener('scroll', () => {
+        if (!spill.scrollLeft) return;
+        const sr = spill.getBoundingClientRect();
+        const all = [...hand.querySelectorAll('.hand-card')] as El[];
+        const idx = all.findIndex((c) => { if (c.parentElement !== spill) return false; const b = c.getBoundingClientRect(); const m = b.left + b.width / 2; return m >= sr.left && m <= sr.right; });
+        spill.scrollLeft = 0;
+        if (idx >= 0) { this.handScroll = idx - 3; this.layoutHand(); }
+      });
+      hand.prepend(spill);
+    }
     const W = hand.clientWidth || 400;
     const cw = cards[0]?.offsetWidth || 66;
     const maxScroll = Math.max(0, n - VIS);
@@ -760,13 +774,19 @@ export class App {
     const shown = Math.min(n, VIS);
     const spacing = shown > 1 ? Math.min(cw * 0.8, (W - cw) / (shown - 1)) : cw;
     const x0 = (W - (cw + (shown - 1) * spacing)) / 2;
+    let moved = false;
     cards.forEach((c, i) => {
       const k = i - start;
-      if (k < 0 || k >= VIS) { c.classList.add('offhand'); c.style.left = '-5000px'; c.style.transform = ''; c.dataset.fan = ''; c.tabIndex = -1; return; }
+      if (k < 0 || k >= VIS) {
+        c.classList.add('offhand'); c.style.left = W + 20 + (i + 1) * (cw + 10) + 'px'; c.style.transform = ''; c.dataset.fan = ''; c.tabIndex = -1;
+        if (c.parentElement !== spill) spill.append(c);
+        return;
+      }
+      if (c.parentElement === spill) { hand.append(c); moved = true; }
       c.classList.remove('offhand'); c.tabIndex = 0;
       const off = k - (shown - 1) / 2;
       const t = (off * spacing) / (W / 2);
-      const rot = Math.max(-6, Math.min(6, t * 12));
+      const rot = 0;
       const y = t * t * cw * 0.12;
       c.style.left = x0 + k * spacing + 'px';
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
@@ -774,6 +794,7 @@ export class App {
       c.style.zIndex = String(k + 1);
       c.dataset.z = String(k + 1);
     });
+    if (moved) for (const c of cards) if (c.parentElement === hand) hand.append(c);
     const hc = this.r.handCount as El;
     if (hc) hc.textContent = `${n} ${n === 1 ? 'card' : 'cards'}`;
     const hl = this.r.handLeft as El, hr = this.r.handRight as El;
@@ -1230,6 +1251,7 @@ export class App {
       const cost = costOf(c);
       const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
+        h('span', { class: 'cid', hidden: true, 'data-card-id': c.id }),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
       el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { this.openHand(true); this.popCard(el, true); } });

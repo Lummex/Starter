@@ -255,3 +255,8 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 - Deck Builder: "ranged" search also matches cards whose text mentions Ranged (Shield Bubble long text); tiles no longer move on hover (glow instead).
 - Menu background renamed `menu-cavern.webp`.
 - Known: AC100 expects a 3-damage Infernal Orb to defeat a Borgo-boosted (4 Health) Gutripper Brawler; that contradicts AC17/AC13 Borgo +1 Health, so the engine is unchanged.
+
+## Round 3a fix pass
+- Hand: the fan no longer rotates cards (hover pop-out measures a true 2x); every hand button contains a `[data-card-id]` descendant; cards scrolled out of the 7-card window wait in an invisible clipped strip (`.hand-spill`), and scrolling one into view (focus, assistive tech, automation) brings it into the fan.
+- HUD: Flow/Bank counters, income, swap and Last turn sit bottom-left, beside the player's Commander.
+- Known conflict: older tests AC9 (b) and AC27 summon at row 7 column 2, which is the player's Stronghold in Round 3a (R3.2: nothing can be summoned there), so they can't pass; the rule was kept.

@@ -633,7 +633,7 @@ html[data-display=phone] body,html[data-display=pc] body{background:transparent}
 .match .hud-menu{left:240px;top:6px;width:64px}
 .match .hud-menu .btn{min-height:34px;padding:2px 6px;font-size:.8rem}
 .match .mute-btn{left:308px;top:6px;width:38px;height:38px;min-width:38px;min-height:38px}
-.match .hud-left{top:84px;bottom:auto;left:max(6px,env(safe-area-inset-left));width:118px;gap:2px}
+.match .hud-left{top:auto;bottom:6px;left:calc(max(6px,env(safe-area-inset-left)) + clamp(110px,17vw,150px));width:118px;gap:2px}
 .match .hud-left .crystals{display:flex;gap:8px;flex-direction:row}
 .match .hud-left .last-btn{min-height:30px}
 .card-view-face .hand-card{--cw:calc(clamp(64px,17vh,120px) * 2)}
@@ -642,3 +642,6 @@ html[data-display=phone] body,html[data-display=pc] body{background:transparent}
 .deck-wrap{margin-bottom:6px}
 .deck-row{gap:18px!important}
 .dstack .ds-name{white-space:normal!important;text-align:center;line-height:1.05;width:96%;max-width:96%!important;overflow:visible!important;font-size:.58rem!important;padding:1px 4px!important;margin-bottom:-4px!important}
+
+.hand-spill{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.hand-spill .hand-card{pointer-events:none!important;opacity:0}
