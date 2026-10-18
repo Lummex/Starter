@@ -1,6 +1,6 @@
 # Automated check results
 
-186 of 189 checks passed after 3 build round(s).
+203 of 203 checks passed after 2 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -24,6 +24,8 @@
 - ✅ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (1280x720)
 - ✅ round 3b phone screenshots (844x390) › AC126: close-up cards, deck builder, title and a spell being cast render without errors
 - ✅ round 4 phone screenshots (844x390) › AC134: mulligan, spell cards per faction, a creature close-up and a menu screen render without errors
+- ✅ round 5a screenshots (1920x1080) › AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (1920x1080)
+- ✅ round 5a screenshots (844x390) › AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (844x390)
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -135,10 +137,10 @@
 - ✅ AC69: dragging a creature over an enemy shows the attack preview; letting go elsewhere cancels
 - ✅ AC70: double-click and + add cards; single click only enlarges; copy limit and cost chart
 - ✅ AC71: Auto-fill completes a legal deck; Rename and Save
-- ❌ AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)
+- ✅ AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)
 - ✅ AC72: "+ New Deck" on the select screen opens the Deck Builder
 - ✅ AC73: the select screen remembers the last Commander, deck and difficulty
-- ❌ AC74: match-end summary, Play again with the same choices, and Menu
+- ✅ AC74: match-end summary, Play again with the same choices, and Menu
 - ✅ AC75 + AC125: the tutorial runs to the end, teaching only the current rules
 - ✅ AC76: the Last turn recap lists what the enemy did
 - ✅ AC77: a mine with ready Miners shows the swinging pickaxe count; it goes once they mined
@@ -187,51 +189,19 @@
 - ✅ AC127: mulligan cards are double size, one row, on-screen (1280x720)
 - ✅ AC127: mulligan cards are double size, one row, on-screen (844x390)
 - ✅ AC129: faction spells — names, factions, deck validation and the casting lock
-- ❌ AC130: Deck Commander locks other factions’ spells in the Deck Builder
+- ✅ AC130: Deck Commander locks other factions’ spells in the Deck Builder
 - ✅ AC131: Venom Shiv poisons for exactly 3 of the owner’s turns, then the creature heals; Hex Reversal is disabled
 - ✅ AC132: spell frames per faction with the cost and type orbs
-- ✅ AC133: metal lettering in Cinzel/Tinos on every screen; the gold and silver textures load
-
-## Failures
-
-```
-✗ AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)
-Error: expect(locator).toHaveCount(expected) failed
-
-Locator:  getByLabel('Deck choice', { exact: true }).getByRole('button', { name: 'Goblin Warband, 50 cards, ready', exact: true })
-Expected: 1
-Received: 0
-Timeout:  7000ms
-
-Call log:
-  - Expect "toHaveCount" with timeout 7000ms
-  - waiting for getByLabel('Deck choice', { exact: true }).getByRole('button', { name: 'Goblin Warband, 50 cards, ready', exact: true })
-    11 × locator resolved to 0 elements
-       - unexpected value "0"
-✗ AC74: match-end summary, Play again with the same choices, and Menu
-Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: 50
-Received: 100
-
-  2732 |   expect(s.difficulty).toBe('hard');
-  2733 |   expect(s.winner).toBeNull();
-> 2734 |   expect(allIds(s, 'player').length).toBe(50);
-       |                                      ^
-  2735 |   await surrenderViaMenu(page);
-  2736 |   await page.getByRole('button', { name: 'Menu', exact: true }).click();
-  2737 |   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
-✗ AC130: Deck Commander locks other factions’ spells in the Deck Builder
-TimeoutError: locator.dblclick: Timeout 10000ms exceeded.
-Call log:
-  - waiting for getByRole('button', { name: 'Searing Arcane Orb', exact: true }).first()
-    - locator resolved to <div tabindex="0" role="button" aria-disabled="true" data-card="fireball" class="db-tile locked" aria-label="Searing Arcane Orb">…</div>
-  - attempting dblclick action
-    2 × waiting for element to be visible, enabled and stable
-      - element is not enabled
-    - retrying dblclick action
-    - waiting 20ms
-    2 × waiting for element to be visible, enabled and stable
-      - element is not enabled
-    - retrying dblclick action
-```
+- ✅ AC135: one font everywhere: plain gold Alegreya SC Italic, bundled, no metal or textured letters
+- ✅ AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulligan, hand) at several window sizes
+- ✅ AC137: menu buttons are plain gold text with a hover glow, no boxes or borders
+- ✅ AC138: every menu screen fills the window edge to edge at 844x390, 1280x720, 1920x1080 and rescales live
+- ✅ AC139: Deck Builder layout: big title, logo, deck name, left-aligned panel at the top, text actions with Back under them
+- ✅ AC140: the cards-per-row slider goes from 2 to 8
+- ✅ AC141: the deck carousel shows only my decks plus a New Deck slot; arrows, keys and dragging pick the deck
+- ✅ AC142: a card dragged from the grid shows at its 3-per-row size and lands in the deck
+- ✅ AC143: the deck list always shows about 8 rows; it scrolls inside its panel
+- ✅ AC144: starter decks can be removed (in-game confirm) and restored; at least one deck always remains
+- ✅ AC145: Copy to my decks makes an editable saved copy and leaves the starter deck unchanged; my decks can be removed
+- ✅ AC146: Choose Your Commander: big glowing Commander cards that stand out, big decks and text, filling the screen
+- ✅ AC147: spell cards use the owner's real spell frames per faction

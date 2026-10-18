@@ -1,29 +1,23 @@
 ## What was built
-Round 4 of Oreheart. The mulligan cards are twice as big. All nine starter decks now have 100 cards. Each faction has its own spells, including a new poison spell, Venom Shiv. Spells use new card frames. All text now has a gold or silver metal look in two new fonts, Cinzel and Tinos.
+This round reworks the menus and Deck Builder of Oreheart. All text now uses one plain gold italic font, and menu buttons are glowing gold words with no boxes. Menu screens fill the window. The Deck Builder has a deck carousel and a big deck list. Starter decks can be removed, restored or copied. Choose Your Commander is bigger and glows, and the real spell card frames are installed.
 
 ## Try these things
-- Start a match and look at the mulligan screen: the five cards should be large, in one row, and fit on screen.
-- Open Decks, pick a Commander (Grubnak, Sproingle or Borgo), and check that other factions' spells are dimmed and locked with a 🔒.
-- Pick a starter deck on the select screen. The names should read like "Goblin Warband, 100 cards, ready".
-- Cast Venom Shiv as a Goblin. The enemy creature should show a green drop with turns left and lose 1 Health each of its turns.
-- Browse the menu, Rules and Settings screens for the gold lettering, and check that it stays readable.
-- Look at spell cards from each faction. Check the frame colors and the cost and type circles.
+- On the title screen, hover over Play, Tutorial, Decks, Rules and Settings. Each should glow and grow slightly.
+- Press Play. Check that the Commander cards are big and glowing, and that Fight! is visible without scrolling.
+- Under a starter deck, try "Remove" (a floating confirm box should appear), then "Restore starter decks". Also try "Copy to my decks".
+- Open Decks. Use the "Cards per row" slider, drag a card into the deck, and click the carousel arrows.
+- Look at spell cards from each faction. The cost and type icons should sit on the painted circles.
+- Resize the browser window. Menu screens should refill it with no page scrolling.
 
 ## Automated checks
-186 of 189 checks passed. Three failed:
-- **Deck picker check (AC72):** it looks for a deck named "…50 cards, ready". The new spec says 100 cards, so the test looks out of date.
-- **Match summary check (AC74):** it expects a 50-card deck and found 100. This also looks like an out-of-date test.
-- **Locked spell tiles check (AC130):** it tries to double-click a spell that is meant to be locked, so it can't work. The lock itself seems to be doing its job.
-
-The builder says these three tests contradict the spec. I did not verify that myself.
+203 of 203 checks passed after 2 build rounds.
 
 ## Things to know
-- The owner's spell frame files weren't uploaded. The builder made temporary stand-in frames, and the painted circles only roughly line up with the cost and type numbers.
-- The 3D pop-up text in battle, such as "KA-BOOM!", doesn't have the new metal look.
-- The Meshy 3D models are still not done.
-- The phone screenshot shows only the "Please rotate your phone" message. That is correct for an upright phone, but it means the phone-size match, mulligan and card screenshots weren't in the set I could see.
-- The desktop menu looks good and nothing is cramped. The "Start Tutorial" button text is a bit tight inside its frame.
-- The builder checked its own work and did not run the full hidden test suite.
+- The builder says it tested with its own scripts. The acceptance tests ran and passed, but the builder did not run them itself.
+- On a phone-size screen (844×390) the Deck Builder is dense. Some list and chart text is only 9–10 px so that 7 deck rows fit.
+- The pause and match-end menus inside a match still have the old button look. That was planned for a later round.
+- I could only view two screenshots, the title screen and the "rotate your phone" message. The title screen looks clean and well styled. I did not see the Deck Builder or Commander screenshots, so please check them in the preview. The "rotate your phone" screen is only the portrait-mode notice.
+- The match-screen changes (Round 5b) and 3D models are not part of this build.
 
 ## Recommendation
 Ready to approve
