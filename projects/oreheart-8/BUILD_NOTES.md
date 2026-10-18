@@ -365,3 +365,8 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 - Bank badge text is the number only (icon via CSS); income preview reads "+N next turn".
 - Match Mute button is labelled "Mute sound" / "Unmute sound".
 - Known conflict: spec text says "Next +N" for the income preview, older AC36 expects "+N next turn"; the latter is used.
+
+## Round 5b fix pass
+- Enemy crystal HUD hangs left of a tiny anchor at ~67% width: at the owner's position, never covering the enemy Commander (AC151).
+- Income text is now "Next +N" on both crystals (AC152). The older AC36 expects "+N next turn"; the brief's "Next +N" wins, so AC36 will fail.
+- The Menu's "Mute" button keeps its name and toggles aria-pressed (AC154). A small always-visible speaker button named "Mute sound"/"Unmute sound" stays in the match (AC88).

@@ -538,10 +538,11 @@ export class App {
       const bankN = h('span', { class: 'cry-bank-n' }, '0');
       const bank = h('span', { class: 'cry-bank', 'aria-label': you ? 'Your Bank crystals' : 'Enemy Bank crystals' }, bankN);
       const name = h('span', { class: 'cry-name' }, '');
-      const next = h('span', { class: 'cry-next', 'aria-label': you ? 'Your income next turn' : 'Enemy income next turn' }, '+0 next turn');
+      const next = h('span', { class: 'cry-next', 'aria-label': you ? 'Your income next turn' : 'Enemy income next turn' }, 'Next +0');
       const el = h('div', { class: 'crystal-hud ' + side, role: 'group', 'aria-label': you ? 'Your crystal' : 'Enemy crystal' },
-        h('div', { class: 'cry-img' }, gem, flow, bank),
-        h('div', { class: 'cry-text' }, name, h('span', { class: 'cry-word' }, 'Flow'), next));
+        h('div', { class: 'cry-inner' },
+          h('div', { class: 'cry-img' }, gem, flow, bank),
+          h('div', { class: 'cry-text' }, name, h('span', { class: 'cry-word' }, 'Flow'), next)));
       return { el, flow, bank: bankN, name, next };
     };
     const yc = crystalHud('mine'), ec = crystalHud('theirs');
@@ -568,8 +569,13 @@ export class App {
     r.handRight = btn('▶', 'hand-scroll right', () => { this.handScroll = Math.round(this.handScroll) + 3; this.layoutHand(); }, { 'aria-label': 'Scroll hand right' });
     r.handLeft.hidden = true; r.handRight.hidden = true;
     const menuBtn = btn('Menu', 'menu-btn', () => { this.menuPinned = !this.menuPinned; this.menuOpen(this.menuPinned); }, { 'aria-expanded': 'false' });
-    const syncMute = () => { muteBtn.setAttribute('aria-pressed', String(audio.muted)); muteBtn.setAttribute('aria-label', audio.muted ? 'Unmute sound' : 'Mute sound'); muteBtn.textContent = audio.muted ? 'Unmute' : 'Mute'; };
-    const muteBtn = btn('Mute', 'mute-btn', () => { audio.setMuted(!audio.muted); syncMute(); if (!audio.muted) audio.play('click'); });
+    const syncMute = () => {
+      muteBtn.setAttribute('aria-pressed', String(audio.muted)); muteBtn.setAttribute('aria-label', 'Mute'); muteBtn.textContent = audio.muted ? 'Muted' : 'Mute';
+      spk.setAttribute('aria-pressed', String(audio.muted)); spk.setAttribute('aria-label', audio.muted ? 'Unmute sound' : 'Mute sound'); spk.textContent = audio.muted ? '🔇' : '🔊';
+    };
+    const toggleMute = () => { audio.setMuted(!audio.muted); syncMute(); if (!audio.muted) audio.play('click'); };
+    const muteBtn = btn('Mute', 'mute-btn', toggleMute);
+    const spk = btn('🔊', 'spk-btn', toggleMute);
     syncMute();
     r.last = btn('Last turn', 'last-btn', () => { this.menuOpen(false); this.showLastTurn(); });
     const surrenderBtn = btn('Surrender', 'surrender-btn', () => {
@@ -588,7 +594,7 @@ export class App {
       yc.el, ec.el,
       r.enemyHand, r.enemyDeck, r.myDeck,
       r.phase,
-      r.menuWrap,
+      r.menuWrap, spk,
       r.swap, r.done,
       r.tip, r.hand, r.handCount, r.handLeft, r.handRight, r.timer);
     this.root.append(match);
@@ -712,7 +718,8 @@ export class App {
     if (!hud || !rc || !rc.opponentCommander.width) return;
     const W = window.innerWidth, o = rc.opponentCommander;
     const w = hud.getBoundingClientRect().width || 0;
-    const left = Math.max(W * 0.4, Math.min(W * 0.7, o.x - w - 6));
+    void w;
+    const left = Math.max(W * 0.4, Math.min(W * 0.67, o.x - 6));
     hud.style.left = `${(left / W) * 100}%`;
   }
   screenRects() { return this.view ? this.view.screenRects() : null; }
@@ -1002,8 +1009,8 @@ export class App {
     r.eBank.textContent = String(en.bank);
     this.setCmdName(r.myName, COMMANDERS[me.commanderId]?.name || '');
     this.setCmdName(r.eName, COMMANDERS[en.commanderId]?.name || '');
-    r.income.textContent = `+${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')} next turn`;
-    r.eNext.textContent = `+${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')} next turn`;
+    r.income.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')}`;
+    r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;
     const pm = `${me.crystals}|${en.crystals}`;
     if (this.flowKey !== pm && this.flowKey !== '' && st.turn !== this.flowTurn) this.view?.pulseFlow(st.activePlayer);
     if (st.turn !== this.flowTurn) { this.flowTurn = st.turn; this.view?.pulseFlow(st.activePlayer); }
