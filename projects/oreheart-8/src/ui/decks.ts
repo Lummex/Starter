@@ -114,6 +114,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const fC = sel('Cost', 'f-cost', ['Any', '1-2', '3-4', '5-6', '7+']);
   const fR = sel('Rarity', 'f-rarity', ['All', 'Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector']);
   let cmdId = 'grubnak';
+  const viewBtn = app.viewerButton();
   const fCmd = combo('Deck Commander', 'f-commander', ['Grubnak', 'Sproingle', 'Borgo'], () => { cmdId = CMD_BY_NAME[fCmd.sel.value] || 'grubnak'; renderCards(); renderDeck(); });
   let query = '';
   let perRow = Math.max(2, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
@@ -319,9 +320,9 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   }
   function renderCarousel() {
     const items = saved.map((d, i) => h('button', { type: 'button', class: 'db-deck', 'aria-label': `${d.name}, ${d.cards.length} ${d.cards.length === 1 ? 'card' : 'cards'}`, 'aria-current': i === cur ? 'true' : null, tabindex: i === cur ? '0' : '-1', 'data-i': String(i) },
-      h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, d.name)));
+      h('img', { class: 'deck-img', src: '/art/deck/deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, d.name)));
     items.push(h('button', { type: 'button', class: 'db-deck new', 'aria-label': '+ New Deck', 'aria-current': cur === saved.length ? 'true' : null, tabindex: cur === saved.length ? '0' : '-1', 'data-i': String(saved.length) },
-      h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, '+ New Deck')));
+      h('img', { class: 'deck-img', src: '/art/deck/deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, '+ New Deck')));
     items.forEach((b, i) => {
       b.addEventListener('click', () => { if (carDrag) return; if (i !== cur) setCur(i); });
       b.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -384,7 +385,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     h('section', { class: 'db-left' },
       h('div', { class: 'db-head' }, h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' })),
       h('div', { class: 'db-search' }, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), h('div', { class: 'f-field' }, h('label', { for: 'cards-per-row' }, 'Cards per row'), slider)),
-      h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap),
+      h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap, viewBtn),
       cardsEl),
     h('aside', { class: 'db-right', 'aria-label': 'Deck panel' },
       h('h1', { class: 'section cinzel' }, 'Deck Builder'),

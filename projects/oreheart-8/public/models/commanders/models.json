@@ -1,0 +1,43 @@
+{
+ "generated": "2026-10-19T22:36:04.497Z",
+ "tasks": {
+  "character": "01a15647-4efe-7313-be5b-d3dd83a2cc95",
+  "rig": "01a1564a-5468-7633-b1c4-55d61854951a",
+  "animations": "01a1564a-be44-71f5-a304-23e1196a132f",
+  "fortress": "01a1564b-3ed6-70b2-a33b-0c9968fdd220",
+  "scepter": "01a1564d-9e78-7603-9f69-3b06968624f2"
+ },
+ "polycounts": {
+  "character": 30532,
+  "fortress": 10324,
+  "scepter": 3138,
+  "note": "triangles as measured in the saved files"
+ },
+ "fileSizes": {
+  "grubnak.glb": 4537484,
+  "grubnak-fortress.glb": 1304372,
+  "grubnak-scepter.glb": 675216
+ },
+ "animationActions": {
+  "idle": 0,
+  "laugh": 88,
+  "point": 29,
+  "celebrate": 403,
+  "surprised": 179,
+  "cast": 129,
+  "hit": 178,
+  "defeat": 8
+ },
+ "clipNames": {
+  "idle": "Idle",
+  "laugh": "Chest_Pound_Taunt",
+  "point": "Call_Gesture",
+  "celebrate": "Victory_Fist_Pump",
+  "surprised": "Hit_Reaction_1",
+  "cast": "mage_soell_cast",
+  "hit": "Hit_Reaction",
+  "defeat": "Dead"
+ },
+ "textureNote": "Textures re-encoded to WebP (character 2048, fortress and scepter 1024) with gltf-transform after download.",
+ "meshyCreditsSpent": 119
+}

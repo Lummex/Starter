@@ -6,6 +6,8 @@ import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenS
 import { deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
 import { audio } from './audio';
+import { loadGrubnak3d } from './grubnak3d';
+import { openGrubnakViewer } from './viewer3d';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -112,6 +114,8 @@ export function ornament(): El {
 const svgEl = (tag: string, attrs: Record<string, string> = {}): El => { const e = document.createElementNS('http://www.w3.org/2000/svg', tag) as unknown as El; for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
 export const btn = (label: string, cls = '', onclick?: (e: Event) => void, attrs: Record<string, any> = {}) => h('button', { type: 'button', class: 'btn ' + cls, onclick, ...attrs }, label);
 
+const GLOW_COLOR: Record<string, string> = { goblins: '#b45cff', gnomes: '#3fa9ff', dwarves: '#ffcf3a', any: '#fff0c2' };
+export const GLOW_PEAK = 0.9;
 export class App {
   root: El;
   game: Game;
@@ -340,7 +344,7 @@ export class App {
     };
     const stack = (label: string, n: number, ok: boolean, key: string, onpick: () => void, starterId?: string, savedIdx?: number) => {
       const b = h('button', { type: 'button', class: `dstack${ok ? '' : ' bad'}`, 'data-key': key, 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', onclick: onpick },
-        h('img', { class: 'deck-img', 'data-card-back': '', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }),
+        h('img', { class: 'deck-img', src: '/art/deck/deck-pile.png', alt: '', draggable: 'false' }),
         h('span', { class: 'ds-name', 'aria-hidden': 'true' }, label), h('span', { class: 'ds-n', 'aria-hidden': 'true' }, `${n} cards ${ok ? '✔' : '⚠'}`));
       stacks.push(b);
       const rm = btn('Remove', 'small tx-act', () => confirmRemove(label, () => {
@@ -393,6 +397,7 @@ export class App {
       msg,
       h('div', { class: 'row setup-actions' },
         btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }),
+        this.viewerButton(),
         h('div', { class: 'row', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns),
         btn('Fight!', 'primary', () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
@@ -438,6 +443,14 @@ export class App {
   }
 
   // ------------------------------------------------------------ dialogs
+  /** Plain-text button that opens the Grubnak 3D viewer (hidden until the saved models load). */
+  viewerButton(): El {
+    const b = btn('View Grubnak in 3D', 'viewer-btn', () => { void openGrubnakViewer(this.root); }, { 'data-grubnak-viewer-btn': '' });
+    b.hidden = true;
+    loadGrubnak3d().then((a) => { if (a) b.hidden = false; });
+    return b;
+  }
+
   dialog(name: string, content: (El | string)[], onClose?: () => void): { close: () => void; el: El } {
     const dlg = h('div', { class: 'dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': name }, ...content);
     const ov = h('div', { class: 'overlay' }, dlg);
@@ -558,7 +571,7 @@ export class App {
     r.crFlow = yc.flow; r.crBank = yc.bank; r.income = yc.next; r.myName = yc.name;
     r.eFlow = ec.flow; r.eBank = ec.bank; r.eNext = ec.next; r.eName = ec.name;
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
-    r.enemyDeck = h('div', { class: 'pile', 'data-card-back': '', role: 'img', 'aria-label': 'Enemy deck' }, h('img', { class: 'deck-img', 'data-card-back': '', src: '/art/ui/oreheart-card-back.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
+    r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
     r.phase.append(h('div', { class: 'ph-turn' }), h('div', { class: 'ph-steps' }, ...['draw', 'deploy', 'action', 'end'].map((k) => h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k]), ), ), h('div', { class: 'ph-time' }));
@@ -567,7 +580,7 @@ export class App {
     r.board = h('div', { class: 'board', role: 'application', 'aria-label': 'Battlefield' });
     r.fx = h('div', { class: 'fx' });
     r.myHealth = h('div', { class: 'heart mine', role: 'img', 'aria-label': 'Your Commander health' }, '20');
-    r.myDeck = h('div', { class: 'pile', 'data-card-back': '', role: 'img', 'aria-label': 'Your deck' }, h('img', { class: 'deck-img', 'data-card-back': '', src: '/art/ui/oreheart-card-back.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
+    r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.done = btn('Done', 'primary done-btn', () => this.pressDone());
     r.recenter = btn('Recenter', 'recenter-btn', () => { this.resetCam(); this.menuOpen(false); });
     r.swap = btn('Swap for a Miner', 'swap-btn', () => this.startSwap());
@@ -856,20 +869,24 @@ export class App {
   handTimer: any = null;
   /** The hand rests tucked half below the screen edge; hovering (or tapping on phones) slides it up. */
   openHand(on: boolean) {
-    clearTimeout(this.handTimer);
     const hand = this.r.hand as El;
     if (!hand) return;
-    if (on) hand.classList.add('open');
-    else this.handTimer = setTimeout(() => hand.classList.remove('open'), 120);
+    if (on) { clearTimeout(this.handTimer); this.handTimer = null; hand.classList.add('open'); }
+    else if (!this.handTimer) this.handTimer = setTimeout(() => { this.handTimer = null; hand.classList.remove('open'); }, 90);
   }
 
   /** Pop a hand card out of the fan as a big close-up (about 87 % of the screen height) on the very top layer, kept fully on screen. */
   popCard(el: El, on: boolean) {
-    if (on) { const cur = this.root.querySelector('.hand-card.popped:not(.popclone)') as El; if (cur && cur !== el) this.popCard(cur, false); }
+    this.installPopSafety();
+    if (on && el.classList.contains('popped')) return;
+    if (on) this.clearPops(el);
     if (!on) {
       (el as any)._ph?.remove(); (el as any)._clone?.remove();
+      (el as any)._ph = (el as any)._clone = null;
       el.classList.remove('popped');
-      (this.r.hand as El)?.classList.remove('has-pop');
+      el.style.removeProperty('--gs');
+      const hd = this.r.hand as El;
+      if (hd && !hd.querySelector('.hand-card.popped:not(.popclone)')) { hd.classList.remove('has-pop'); hd.querySelectorAll('.popclone,.pop-ph').forEach((x) => x.remove()); }
       el.style.transform = el.dataset.fan || '';
       el.style.zIndex = el.dataset.z || '';
       return;
@@ -912,14 +929,82 @@ export class App {
     (el as any)._clone = clone;
     hand.append(clone);
     el.style.zIndex = '9000';
+    el.style.setProperty('--gs', String(S));
     el.style.transform = `translate(${targetX - cx}px,${targetY - cy}px) scale(${S})`;
     const cl = (el as any)._clone as El;
     if (cl) { cl.style.cssText = el.style.cssText; cl.style.zIndex = '8999'; }
     this.watchPop(el);
   }
 
+  /** Test hook: glow state of every card in the player's hand, in hand order. */
+  getHandGlow() {
+    const st = this.game.state;
+    const me = st?.players?.player;
+    if (!me) return [];
+    return me.hand.map((hc: any) => {
+      const c = CARDS[hc.cardId];
+      const el = this.r.hand?.querySelector(`[data-uid="${hc.uid}"]`) as El | null;
+      const g = el?.querySelector('[data-card-glow]') as El | null;
+      const glowing = !!g && getComputedStyle(g).display !== 'none';
+      let t = 0;
+      if (el && g && glowing) { const a = el.getBoundingClientRect(), b = g.getBoundingClientRect(); t = Math.round(((a.left - b.left) + (b.right - a.right) + (a.top - b.top) + (b.bottom - a.bottom)) / 4 * 10) / 10; }
+      return { uid: hc.uid, cardId: hc.cardId, faction: c.faction === 'any' ? 'shared' : c.faction, glowing, popped: !!el?.classList.contains('popped'), thicknessPx: t, opacity: glowing ? GLOW_PEAK : 0, color: GLOW_COLOR[c.faction] || GLOW_COLOR.any };
+    });
+  }
+
   popWatch: ((e: PointerEvent) => void) | null = null;
-  /** While a card is popped it ignores the pointer, so a document watcher uses the fan's resting boxes to decide which card the mouse is really over. */
+  lastPtr = { x: -1, y: -1, type: 'mouse', down: false };
+  popSafety = false;
+  /** Which fan card (by its resting box, not its popped one) the point is over. */
+  hitCard(x: number, y: number): El | null {
+    const hand = this.r.hand as El;
+    if (!hand) return null;
+    const ty = new DOMMatrix(getComputedStyle(hand).transform).m42;
+    const hb = hand.getBoundingClientRect();
+    const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')].filter((c) => !c.classList.contains('offhand')) as El[];
+    const cw = cards[0]?.offsetWidth || 0;
+    let hit: El | null = null;
+    for (const c of cards) {
+      const l = hb.left + (parseFloat(c.style.left) || 0), t = hb.top - ty - 0.03 * cw + (c.offsetTop || 0);
+      if (x >= l && x <= l + c.offsetWidth && y >= t && y <= t + c.offsetHeight) hit = c;
+    }
+    return hit;
+  }
+  /** Return every popped card to the fan and tuck the hand; nothing may stay raised. */
+  clearPops(except?: El) {
+    const hand = this.r?.hand as El;
+    if (!hand) return;
+    hand.querySelectorAll('.hand-card.popped:not(.popclone)').forEach((c) => { if (c !== except) this.popCard(c as El, false); });
+    if (!except) { hand.classList.remove('has-pop'); hand.querySelectorAll('.popclone,.pop-ph').forEach((x) => x.remove()); }
+  }
+  installPopSafety() {
+    if (this.popSafety) return;
+    this.popSafety = true;
+    const retract = () => { this.clearPops(); this.openHand(false); };
+    document.addEventListener('pointermove', (e) => { this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: this.lastPtr.down }; }, true);
+    document.addEventListener('pointerdown', (e) => { this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: true }; }, true);
+    const up = () => { this.lastPtr.down = false; if (this.lastPtr.type !== 'mouse') retract(); };
+    window.addEventListener('pointerup', up, true); window.addEventListener('pointercancel', up, true);
+    window.addEventListener('blur', retract);
+    document.documentElement.addEventListener('mouseleave', retract);
+    document.addEventListener('visibilitychange', retract);
+    setInterval(() => {
+      const hand = this.r?.hand as El;
+      if (!hand || !hand.isConnected) return;
+      const cur = hand.querySelector('.hand-card.popped:not(.popclone)') as El;
+      if (!cur) {
+        const orphan = hand.querySelector('.popclone,.pop-ph'); if (orphan) this.clearPops();
+        // a mouse that has left the hand area tucks it back (nothing may stay raised)
+        if (hand.classList.contains('open') && this.lastPtr.type === 'mouse' && !this.root.querySelector('.hand-card.dragging')) {
+          const hb = hand.getBoundingClientRect(), { x, y } = this.lastPtr;
+          if (!(x >= hb.left && x <= hb.right && y >= hb.top && y <= hb.bottom)) this.openHand(false);
+        }
+        return;
+      }
+      if (this.lastPtr.type === 'mouse') { if (this.hitCard(this.lastPtr.x, this.lastPtr.y) !== cur && !cur.classList.contains('dragging') && !cur.matches(':focus-visible')) retract(); }
+      else if (!this.lastPtr.down) retract();
+    }, 80);
+  }
   watchPop(first: El) {
     if (this.popWatch) document.removeEventListener('pointermove', this.popWatch);
     const fn = (e: PointerEvent) => {
@@ -927,15 +1012,7 @@ export class App {
       const cur = this.root.querySelector('.hand-card.popped:not(.popclone)') as El;
       if (!hand || !cur || !cur.isConnected) { document.removeEventListener('pointermove', fn); if (this.popWatch === fn) this.popWatch = null; return; }
       if (e.pointerType !== 'mouse') return;
-      const ty = new DOMMatrix(getComputedStyle(hand).transform).m42;
-      const hb = hand.getBoundingClientRect();
-      const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')].filter((c) => !c.classList.contains('offhand')) as El[];
-      const cw = cards[0]?.offsetWidth || 0;
-      let hit: El | null = null;
-      for (const c of cards) {
-        const l = hb.left + (parseFloat(c.style.left) || 0), t = hb.top - ty - 0.03 * cw + (c.offsetTop || 0);
-        if (e.clientX >= l && e.clientX <= l + c.offsetWidth && e.clientY >= t && e.clientY <= t + c.offsetHeight) hit = c;
-      }
+      const hit = this.hitCard(e.clientX, e.clientY);
       if (hit === cur) return;
       this.popCard(cur, false);
       if (hit) this.popCard(hit, true); else { document.removeEventListener('pointermove', fn); this.popWatch = null; this.openHand(false); }
@@ -1478,20 +1555,22 @@ export class App {
     const key = hidden ? 'x' : me.hand.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId]) + ':' + tunnel + ':' + (playableUids.has(hc.uid) ? 1 : 0)).join(',');
     if (key === this.handKey) return;
     this.handKey = key;
+    this.clearPops();
     hand.replaceChildren();
     if (hidden) return;
     for (const hc of me.hand) {
       const c = CARDS[hc.cardId];
       const cost = costOf(c);
-      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid)), 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
+      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid)), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         h('span', { class: 'cid', hidden: true, 'data-card-id': c.id }),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
+        playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
       el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { this.openHand(true); this.popCard(el, true); } });
       el.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.popCard(el, false); });
       el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);
-      el.addEventListener('focus', () => this.popCard(el, true));
+      el.addEventListener('focus', () => { if (el.matches(':focus-visible')) this.popCard(el, true); });
       el.addEventListener('blur', () => this.popCard(el, false));
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));
       (el as any)._down = (e: PointerEvent) => this.cardPointerDown(e, hc, el);

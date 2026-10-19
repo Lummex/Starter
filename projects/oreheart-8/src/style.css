@@ -1097,7 +1097,7 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 .heart,.heart *{color:var(--white)!important;-webkit-text-fill-color:var(--white)!important}
 .hand-card .rw .rwt{color:var(--rc,var(--white))}
 /* ----- match: hand 2x, tucked halfway, overlapping fan ----- */
-.match{--hcw:max(30.66vh,122px)}
+.match{--hcw:max(27.6vh,110px)}
 .match .hand{--cw:var(--hcw);left:calc(50% - var(--hcw) * 2.2);right:auto;width:calc(var(--hcw) * 4.4);bottom:0;height:calc(var(--hcw) * 1.5);transform:translateY(calc(var(--hcw) * .75));transition:transform .25s ease-out;z-index:30}
 .match .hand.open,.match .hand.has-pop{transform:translateY(calc(var(--hcw) * -.03))}
 .match .hand.has-pop{z-index:9000}
@@ -1117,8 +1117,8 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 .match .pile[aria-label="Enemy deck"]{left:calc(50% - 20.3vh);right:auto;top:.5vh;bottom:auto}
 .match .crystal-hud.theirs{left:72%}
 /* ----- original Oreheart card back ----- */
-.match .pile{background:#120a1e;overflow:hidden;border:.25vh solid var(--gold-brown-lt)}
-.match .pile .deck-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;pointer-events:none}
+.match .pile{background:none!important;overflow:visible;border:0!important;box-shadow:none!important}
+.match .pile .deck-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 .4vh .6vh #000)}
 .match .enemy-hand .back,.mull-back,[data-card-back]:not(.pile){background:#120a1e url(/art/ui/oreheart-card-back.webp) center/cover no-repeat!important;border-color:var(--gold-brown-lt)!important}
 .match .pile .pile-n{z-index:2;color:var(--gold-bright);text-shadow:0 0 .6vh var(--ink),0 0 1.2vh var(--ink),0 0 2vh var(--ink)}
 
@@ -1149,3 +1149,20 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 .ph-step,.ph-step.done{color:var(--text-soft)!important}
 /* round 6a fix: card rules text is pale gold (AC120), still bright and readable */
 .card .tx,.hand-card .tx,.mull-card .tx,[data-card-id] .tx,[data-part="text"]{color:#FFE7A0!important;-webkit-text-fill-color:#FFE7A0!important;font-weight:400!important;text-shadow:0 0 2px #000,0 1px 2px #000!important}
+
+/* ===== Round 7: popped-card glow has the same screen thickness and opacity as at rest ===== */
+.match .hand .hand-card[data-playable=true]{box-shadow:0 4px 10px #000a!important}
+.hand-card .card-glow{--gt:max(7px,1.3vh);position:absolute!important;inset:calc(var(--gt) / var(--gs,1) * -1)!important;z-index:0!important;border-radius:calc(var(--cw) * .05 + var(--gt) / var(--gs,1));pointer-events:none;opacity:.9;box-shadow:inset 0 0 calc(var(--gt) / var(--gs,1) * .9) calc(var(--gt) / var(--gs,1) * .15) var(--gc,#fff0c2),0 0 calc(var(--gt) / var(--gs,1) * .35) var(--gc,#fff0c2)}
+.hand-card .card-glow::after{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(115deg,transparent 35%,#ffffff88 50%,transparent 65%) 0 0/250% 100%;mix-blend-mode:screen;animation:glowshim 3.2s linear infinite;opacity:.55}
+@keyframes glowshim{from{background-position:150% 0}to{background-position:-50% 0}}
+.hand-card .frame{z-index:2}
+
+/* ===== Round 7 Part B: Grubnak 3D viewer ===== */
+.overlay.viewer-overlay{position:fixed!important;inset:0!important;z-index:20000!important;display:flex!important;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,#2a1d38f2,#07050bf7)!important}
+.dialog.viewer3d{display:flex!important;flex-direction:column;align-items:center;gap:6px;background:none!important;border:0!important;box-shadow:none!important;max-height:98vh;max-width:98vw;padding:0!important}
+.viewer3d h2{margin:0;font-size:clamp(1.2rem,4.5vh,2rem)}
+.viewer-canvas{width:min(94vw,760px);height:min(58vh,560px);cursor:grab;display:block;outline:none}
+.viewer-canvas:active{cursor:grabbing}
+.viewer-anims{display:flex;flex-wrap:wrap;gap:2px 18px;justify-content:center;max-width:94vw}
+.viewer-status{margin:0;font-size:.95rem;color:#FFE7A0}
+.btn.viewer-btn{white-space:nowrap}

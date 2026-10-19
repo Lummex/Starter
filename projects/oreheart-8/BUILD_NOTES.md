@@ -1,3 +1,27 @@
+# Oreheart — Phase 1B Round 7 build notes (hand fixes + Grubnak in 3D)
+
+`npm run build` → `dist/`; `npm test` → Vitest (66 tests). Screenshots in `screenshots/r7-*` (1920×1080 match, 3D viewer, popped hand card with glow).
+
+## Part A (fixes)
+- **Hand retract (A1)**: the causes were focus-pop (a clicked card kept focus and stayed popped), re-popping an already popped card (leaked clone/proxy copies) and the tuck timer being reset. `popCard` is idempotent; `clearPops()` runs on hand rebuild, drag start, window blur, mouse leaving the window, visibility change and touch release; a safety interval retracts any pop or open hand when the mouse is not over the fan. Checked in a browser at 1920×1080 and 844×390: hovering five cards in turn pops only that one (87 % of the height), the others stay at rest size, and everything returns after leaving the hand, after a drag dropped back, after a card is played while popped, and after a click.
+- **Smaller hand (A2)**: `--hcw` is `max(27.6vh,110px)` (cards 41–42 % of the height, still tucked halfway).
+- **Owner art (A3)**: `public/art/ui/oreheart-card-back.webp` is the owner's `card backs.jpg` (1184×1664, converted to WebP, no redraw) on every enemy hand card; `public/art/deck/deck-pile.png` (1155×1313, transparent) is used for both match piles, the deck picker and the Deck Builder. `deck-image.webp` and its generator are removed.
+- **Popped glow (A4)**: playable hand cards carry one `[data-card-glow]` element whose outset is a fixed screen thickness (about 1.3 vh, min 7 px) and opacity 0.9, divided by the pop scale so it is identical at rest and popped; colours Goblins purple, Gnomes blue, Dwarves yellow-gold, shared warm white-gold; a slow shimmer runs along the rim. `window.oreheart.getHandGlow()` (test mode) reports `{uid, cardId, faction, glowing, popped, thicknessPx, opacity, color}`.
+- **AC172 (A5)**: the mine is scaled from its measured bounding box to exactly 1.5 tall.
+
+## Part B (Grubnak in 3D, Meshy)
+- `tools/gen-grubnak-3d.mjs` ran the Meshy jobs once (multi-image-to-3D from the four A-pose views, humanoid rigging, 8 animations in one task, fortress and scepter image-to-3D) and saved `public/models/commanders/{grubnak,grubnak-fortress,grubnak-scepter}.glb` plus `models.json` (task ids, polycounts, file sizes, clip names). It skips itself when `models.json` exists. Credits spent: 119. Textures were re-encoded to WebP afterwards (character 4.5 MB, fortress 1.3 MB, scepter 0.7 MB).
+- Animation mapping (Meshy library ids): idle 0, laugh = Chest Pound Taunt 88, point = Call Gesture 29, celebrate = Victory Fist Pump 403, surprised = Hit Reaction 1 179, cast = Mage Spell Cast 129, hit = Hit Reaction 178, defeat = Dead 8.
+- In matches (`scene.ts`, `grubnak3d.ts`): Grubnak stands on his fortress, 2.4 spaces tall, footprint about 1.3, idle always; cast on his spells, hit when his Stronghold is damaged, laugh or point (70 % of the time) when his creature defeats an enemy, surprised when his creature dies, celebrate when the other Commander retreats, defeat then the rocket barrel when he loses. The scepter is attached to his right-hand bone. `getRenderStats().commanders.<side>` adds `model3d`, `heightSpaces`, `footprint`, `animations`, `animation`. He turns toward the opponent (only a third of the way for the player, so his face stays visible).
+- 3D viewer (`viewer3d.ts`): "View Grubnak in 3D" text button on Choose Your Commander and in the Deck Builder filter row; drag to spin, wheel or pinch to zoom, Idle/Laugh/Point/Celebrate/Surprised/Cast/Hit/Defeat buttons, Close, Escape.
+
+## Gaps
+- Checked with my own Playwright scripts, not the hidden acceptance suite; no Playwright tests were added to the repo.
+- The in-match Grubnak looks soft and is strongly foreshortened by the 51° camera; the cast/hit/laugh clips are wired but were only checked by code path and in the viewer, not triggered in a recorded match.
+- The console `<polyline>` SVG warning is pre-existing.
+
+---
+
 # Oreheart — Phase 1B Round 5a build notes (menus, deck builder, lettering)
 
 `npm run build` → `dist/`; `npm test` → Vitest (64 tests). Screenshots at 1920×1080 and 844×390 in `screenshots/r5a-*`: `select`, `deck-builder`, and one spell card per faction (`spell-goblins`, `spell-gnomes`, `spell-dwarves`, `spell-any`; the other factions' spells show locked under a Goblin Commander).

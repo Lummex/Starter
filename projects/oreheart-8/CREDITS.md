@@ -17,7 +17,7 @@ Everything in the game is made in code or generated for this project. There are 
 
 ## Round 2 additions
 - Card frames `public/art/frames/*.webp`: the owner's `card-frame-goblin/gnome/dwarf.jpg` (neutral is a grey recolor made in code).
-- Deck image `public/art/deck/deck-image.webp`: the owner's `Deck_image.jpg`, cut out to alpha in code.
+- Deck pile `public/art/deck/deck-pile.png`: the owner's `deck-pile.png`, used as is. Card back `public/art/ui/oreheart-card-back.webp`: the owner's `card backs.jpg`, converted to WebP at full size.
 - Commander portraits `public/art/commanders/*.webp`: generated with the xAI Grok image API (`tools/gen-commanders.mjs`).
 
 ## Round 4 additions
@@ -35,3 +35,4 @@ Everything in the game is made in code or generated for this project. There are 
 - `public/art/ui/ruby-heart.png`: ruby heart painted with the xAI image API (black background keyed to transparent) by `tools/gen-r6a-art.mjs`.
 - `public/assets/models/crystal-mine-placeholder.gltf`: owner-supplied placeholder crystal mine model.
 - Alegreya SC Italic weights 500 and 800 (SIL OFL, from @fontsource/alegreya-sc) added to the bundled fonts.
+- Grubnak 3D models `public/models/commanders/*.glb`: generated once with the Meshy API (multi-image-to-3D, rigging, animation library, image-to-3D) from the owner's Grubnak reference images; see `models.json`.

@@ -42,6 +42,7 @@ if (test) {
     },
     listStarterDecks: () => STARTER_DECK_LIST.map((d) => ({ id: d.id, name: d.name, faction: d.faction, style: d.style, cards: d.cards.slice() })),
     validateDeck: (ids: string[], commander?: string) => validateDeck(Array.isArray(ids) ? ids : [], commander),
+    getHandGlow: () => app.getHandGlow(),
     getAudioState: () => audio.state(),
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
     getFxLog: () => JSON.parse(JSON.stringify((app as any).fxLog)),

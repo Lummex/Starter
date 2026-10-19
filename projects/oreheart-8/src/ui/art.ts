@@ -149,7 +149,7 @@ export function makeMine(low: boolean, idx: number): MineArt {
   const applyTint = () => tinted.forEach(({ m, k }) => { m.color.set(tint as any).multiplyScalar(0.55 + 0.45 * k); m.emissive.set(tint as any); });
   loadMineModel().then((src) => {
     const model = src.clone(true);
-    model.scale.setScalar(MINE_HEIGHT / MINE_NATIVE_HEIGHT);
+    { const nb = new THREE.Box3().setFromObject(model); const nh = nb.max.y - nb.min.y; model.scale.setScalar(MINE_HEIGHT / (nh > 0.01 ? nh : MINE_NATIVE_HEIGHT)); }
     model.traverse((o: any) => {
       if (!o.isMesh) return;
       const name = String(o.material?.name || '');

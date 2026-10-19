@@ -5,6 +5,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
+import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, G3D } from './grubnak3d';
 import { MINE_MODEL, darkGround, borderDecor, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
 import { audio } from './audio';
 
@@ -39,7 +40,7 @@ function measureBox(o: THREE.Object3D): THREE.Box3 {
     if (!m.isMesh || m.name === 'bomb-spark' || (m.material && m.material.transparent && m.material.opacity < 0.5)) return;
     let p: THREE.Object3D | null = m, skip = false;
     while (p) { if (p.name === 'bomb' || p.name === 'acting-ring') skip = true; p = p.parent; }
-    if (!skip) b.expandByObject(m);
+    if (!skip) { if (m.isSkinnedMesh) { m.skeleton.update(); m.boundingBox = null; m.computeBoundingBox(); b.union(m.boundingBox.clone().applyMatrix4(m.matrixWorld)); } else b.expandByObject(m); }
   });
   return b;
 }
@@ -298,7 +299,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   // strongholds + commanders
-  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null };
+  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; g3d: G3D | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null };
   const cmd: Record<string, Cmd> = {};
   for (const side of ['player', 'opponent'] as const) {
     const g = new THREE.Group();
@@ -307,16 +308,21 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const body = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 12), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
     const fig = new THREE.Group();
     scene.add(g);
-    cmd[side] = { group: g, keep: null, fig, grub: null, body, emote: null, faction: '', id: '', retreat: null };
+    cmd[side] = { group: g, keep: null, fig, grub: null, g3d: null, body, emote: null, faction: '', id: '', retreat: null };
   }
   function buildCommander(side: 'player' | 'opponent', faction: string, id: string) {
     const cm = cmd[side];
     cm.group.clear();
-    cm.keep = makeStronghold(faction, low);
-    cm.group.add(cm.keep.group);
+    cm.g3d = null;
+    const a3 = id === 'grubnak' ? grubnak3dReady() : null;
+    if (a3) { cm.keep = null; cm.retreat = null; } else { cm.keep = makeStronghold(faction, low); cm.group.add(cm.keep.group); }
     cm.fig = new THREE.Group();
     cm.grub = null;
-    if (id === 'grubnak') {
+    if (a3) {
+      // Round 7 Part B: the Meshy 3D Grubnak on his own fortress
+      cm.g3d = makeGrubnak3d(a3);
+      cm.fig = cm.g3d.group;
+    } else if (id === 'grubnak') {
       cm.grub = makeGrubnak(low);
       cm.grub.group.position.y = 0.8;
       cm.grub.group.scale.setScalar(0.85);
@@ -328,22 +334,30 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       head.position.y = 1.55;
       cm.fig.add(body, head);
     }
-    if (side === 'opponent') cm.fig.rotation.y = Math.PI;
+    if (cm.g3d) {
+      // face the opposing Commander (the model looks down +Z)
+      const me = world(SHP[side][0], SHP[side][1]), you = world(SHP[side === 'player' ? 'opponent' : 'player'][0], SHP[side === 'player' ? 'opponent' : 'player'][1]);
+      // the player's Grubnak (near the camera) turns about half-way toward the camera so his face stays visible
+      const yaw = Math.atan2(you.x - me.x, you.z - me.z);
+      cm.fig.rotation.y = side === 'player' ? yaw * 0.35 : yaw;
+    } else if (side === 'opponent') cm.fig.rotation.y = Math.PI;
     cm.group.add(cm.fig);
     cm.faction = faction; cm.id = id;
     flowCol[side] = new THREE.Color(hexOf(FACTIONS[faction].crystal)).lerp(new THREE.Color(0xffffff), 0.25);
     // Round 5b: Commander + Stronghold about 2.4 spaces tall, feet to head
     cm.group.scale.setScalar(1);
+    cm.g3d?.update(0.05);
     cm.group.updateMatrixWorld(true);
     const bx = measureBox(cm.group), nat = bx.isEmpty() ? 0 : bx.max.y - Math.max(bx.min.y, 0);
     if (nat > 0.5) {
       // tall and narrow: 2.4 spaces high, but still inside its one space (about 1.3 wide)
       const k = CMD_H / nat, wide = Math.max(bx.max.x - bx.min.x, bx.max.z - bx.min.z, 0.1);
-      const sxz = Math.min(k, 1.3 / wide);
+      const sxz = cm.g3d ? k : Math.min(k, 1.3 / wide);
       cm.group.scale.set(sxz, k, sxz);
     }
     cm.baseK = cm.group.scale.y;
   }
+  loadGrubnak3d().then((a) => { if (a && !disposed) for (const side of ['player', 'opponent'] as const) if (cmd[side].id === 'grubnak' && !cmd[side].g3d) buildCommander(side, cmd[side].faction, 'grubnak'); });
 
   // creatures
   type Fig = {
@@ -619,6 +633,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
 
   function emote(side: 'player' | 'opponent', kind: string) {
     cmd[side].emote = { kind, t: performance.now() };
+    const g3 = cmd[side].g3d;
+    if (g3) g3.play(kind === 'cheer' ? (Math.random() < 0.7 ? (Math.random() < 0.5 ? 'laugh' : 'point') : 'idle') : kind === 'flinch' ? 'hit' : kind === 'cast' ? 'cast' : kind === 'groan' ? 'surprised' : 'idle');
     if (cmd[side].id === 'grubnak') audio.voiceLine(kind === 'cheer' ? 'laugh' : kind === 'groan' ? 'sulk' : kind === 'flinch' ? 'yell' : 'grunt');
   }
 
@@ -638,11 +654,29 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const barrel = makeRocketBarrel();
     barrel.position.set(0, 1.0, 0);
     cm.group.add(barrel);
+    const other = cmd[side === 'player' ? 'opponent' : 'player'];
+    other.g3d?.play('celebrate', { loop: true });
+    if (cm.g3d) {
+      cm.g3d.play('defeat');
+      barrel.visible = false;
+      cm.retreat = { t: performance.now() + 1400, barrel };
+      setTimeout(() => { if (cm.g3d) cm.g3d.figure.visible = false; barrel.visible = true; }, 1400);
+      audio.play('kaboom');
+      return;
+    }
     if (cm.grub) cm.fig.visible = false;
     cm.retreat = { t: performance.now(), barrel };
     audio.play('kaboom');
   }
 
+  /** Test info for the Meshy 3D Grubnak: measured height in board spaces, footprint, animations. */
+  function c3(side: 'player' | 'opponent') {
+    const cm = cmd[side];
+    if (!cm.g3d) return {};
+    cm.group.updateMatrixWorld(true);
+    const b = measureBox(cm.group);
+    return { model3d: 'meshy', heightSpaces: +(b.max.y - Math.max(b.min.y, 0)).toFixed(2), footprint: +Math.max(b.max.x - b.min.x, b.max.z - b.min.z).toFixed(2), animations: cm.g3d.clipNames, animation: cm.g3d.current() };
+  }
   let lastRender = 0;
   let lastFrame = { calls: 0, tris: 0 };
   let frames = 0;
@@ -720,7 +754,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     }
     for (const side of ['player', 'opponent'] as const) {
       const cm = cmd[side];
-      cm.fig.position.y = Math.sin(now / 600 + (side === 'player' ? 0 : 2)) * 0.02;
+      cm.fig.position.y = cm.g3d ? 0 : Math.sin(now / 600 + (side === 'player' ? 0 : 2)) * 0.02;
+      if (cm.g3d) cm.g3d.update(Math.min(0.1, Math.max(0, (now - (cm.g3d as any)._t || 0) / 1000))), ((cm.g3d as any)._t = now);
       cm.fig.rotation.z = 0;
       const gr = cm.grub;
       if (gr) { gr.armL.rotation.set(0, 0, 0); gr.armR.rotation.set(0, 0, 0); gr.head.rotation.set(0, 0, 0); gr.mouth.scale.y = 1; }
@@ -743,7 +778,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         }
       }
       if (cm.retreat) {
-        const k = (now - cm.retreat.t) / 2200;
+        const k = Math.max(0, (now - cm.retreat.t) / 2200);
         cm.retreat.barrel.position.set(Math.sin(k * 6) * 0.1, 1.0 + k * k * 14, -k * 2);
         cm.retreat.barrel.rotation.x = -k * 0.6;
         const fl = cm.retreat.barrel.getObjectByName('flame');
@@ -773,7 +808,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
             webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
             bloom: !!bloomPass, shadows: renderer.shadowMap.enabled, particles: !!embers,
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
-            commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub ? 'finished' : 'placeholder' }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub ? 'finished' : 'placeholder' } },
+            commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
             strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => ({ source: MINE_MODEL, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' })), mineModel: mines.every((m) => m.group.userData.mineModel === 'gltf') ? 'gltf' : 'loading',
           });
         } else setTimeout(wait, 30);
