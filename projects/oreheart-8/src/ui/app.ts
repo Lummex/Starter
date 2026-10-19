@@ -868,9 +868,10 @@ export class App {
 
   handTimer: any = null;
   /** The hand rests tucked half below the screen edge; hovering (or tapping on phones) slides it up. */
-  openHand(on: boolean) {
+  openHand(on: boolean, immediate = false) {
     const hand = this.r.hand as El;
     if (!hand) return;
+    if (!on && immediate) { clearTimeout(this.handTimer); this.handTimer = null; hand.classList.remove('open'); return; }
     if (on) { clearTimeout(this.handTimer); this.handTimer = null; hand.classList.add('open'); }
     else if (!this.handTimer) this.handTimer = setTimeout(() => { this.handTimer = null; hand.classList.remove('open'); }, 90);
   }
@@ -980,7 +981,7 @@ export class App {
   installPopSafety() {
     if (this.popSafety) return;
     this.popSafety = true;
-    const retract = () => { this.clearPops(); this.openHand(false); };
+    const retract = () => { this.clearPops(); this.openHand(false, true); };
     document.addEventListener('pointermove', (e) => { this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: this.lastPtr.down }; }, true);
     document.addEventListener('pointerdown', (e) => { this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: true }; }, true);
     const up = () => { this.lastPtr.down = false; if (this.lastPtr.type !== 'mouse') retract(); };
@@ -997,7 +998,12 @@ export class App {
         // a mouse that has left the hand area tucks it back (nothing may stay raised)
         if (hand.classList.contains('open') && this.lastPtr.type === 'mouse' && !this.root.querySelector('.hand-card.dragging')) {
           const hb = hand.getBoundingClientRect(), { x, y } = this.lastPtr;
-          if (!(x >= hb.left && x <= hb.right && y >= hb.top && y <= hb.bottom)) this.openHand(false);
+          if (!(x >= hb.left && x <= hb.right && y >= hb.top && y <= hb.bottom)) this.openHand(false, true);
+        }
+        // a resting mouse over a card that never got its hover event (the card moved under it) still pops that card
+        if (this.lastPtr.type === 'mouse' && this.lastPtr.x >= 0 && !this.lastPtr.down && !this.root.querySelector('.hand-card.dragging')) {
+          const hit = this.hitCard(this.lastPtr.x, this.lastPtr.y);
+          if (hit && this.root.querySelector('.match')) { this.openHand(true); this.popCard(hit, true); }
         }
         return;
       }
@@ -1015,7 +1021,7 @@ export class App {
       const hit = this.hitCard(e.clientX, e.clientY);
       if (hit === cur) return;
       this.popCard(cur, false);
-      if (hit) this.popCard(hit, true); else { document.removeEventListener('pointermove', fn); this.popWatch = null; this.openHand(false); }
+      if (hit) this.popCard(hit, true); else { document.removeEventListener('pointermove', fn); this.popWatch = null; this.openHand(false, true); }
     };
     this.popWatch = fn;
     document.addEventListener('pointermove', fn);
@@ -1563,11 +1569,11 @@ export class App {
       const cost = costOf(c);
       const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid)), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
-        h('span', { class: 'cid', hidden: true, 'data-card-id': c.id }),
+        h('span', { class: 'cid', 'data-card-id': c.id }),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
-      el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { this.openHand(true); this.popCard(el, true); } });
+      el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { if (this.hitCard(e.clientX, e.clientY) !== el) return; this.openHand(true); this.popCard(el, true); } });
       el.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.popCard(el, false); });
       el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);
       el.addEventListener('focus', () => { if (el.matches(':focus-visible')) this.popCard(el, true); });

@@ -453,7 +453,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       const first = cr.ctl === undefined;
       cr.ctl = s.color;
       flowOwner[i] = s.controller || 'neutral';
-      cr.art.recolor(hexOf(s.color));
+      cr.art.recolor(s.controller === 'player' ? '#3fa9ff' : s.controller === 'opponent' ? '#ff6a3f' : hexOf(null));
       if (!first) cr.art.burst();
       if (cr.sprite) cr.art.group.remove(cr.sprite);
       cr.sprite = null;
@@ -678,6 +678,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     return { model3d: 'meshy', heightSpaces: +(b.max.y - Math.max(b.min.y, 0)).toFixed(2), footprint: +Math.max(b.max.x - b.min.x, b.max.z - b.min.z).toFixed(2), animations: cm.g3d.clipNames, animation: cm.g3d.current() };
   }
   let lastRender = 0;
+  let lastDur = 0;
   let lastFrame = { calls: 0, tris: 0 };
   let frames = 0;
   let raf = 0;
@@ -687,7 +688,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     if (disposed) return;
     raf = requestAnimationFrame(frame);
     const now = performance.now();
-    if (testMode && now - lastRender < 150) return; // automated runs use software GL: keep the page responsive
+    if (testMode && now - lastRender < Math.max(300, lastDur * 5)) return; // automated runs use software GL: keep the page responsive
     lastRender = now;
     for (const [uid, f] of figs) {
       const g = f.group;
@@ -791,7 +792,9 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     updateFlow(now);
     if (embers) { const a = embers.geometry.getAttribute('position') as THREE.BufferAttribute; for (let i = 0; i < a.count; i++) { let y = a.getY(i) + 0.004; if (y > 2.4) y = 0; a.setY(i, y); a.setX(i, a.getX(i) + Math.sin(now / 900 + i) * 0.001); } a.needsUpdate = true; }
     renderer.info.reset();
+    const t0 = performance.now();
     if (composer) composer.render(); else renderer.render(scene, camera);
+    lastDur = performance.now() - t0;
     lastFrame = { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
     frames++;
   }

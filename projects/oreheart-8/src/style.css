@@ -1166,3 +1166,9 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 .viewer-anims{display:flex;flex-wrap:wrap;gap:2px 18px;justify-content:center;max-width:94vw}
 .viewer-status{margin:0;font-size:.95rem;color:#FFE7A0}
 .btn.viewer-btn{white-space:nowrap}
+/* R7: the enemy deck is smaller than yours */
+.match .pile[aria-label="Enemy deck"]{width:8.6vh!important;height:13vh!important;left:calc(50% - 18vh)}
+.hand-card .cid{position:absolute;inset:0;pointer-events:none;visibility:hidden}
+/* R7: cheap shimmer (opacity only, no blend mode or background animation) so a popped card never stalls the page */
+.hand-card .card-glow::after{mix-blend-mode:normal;background:radial-gradient(ellipse at 50% 50%,transparent 55%,#ffffff66 100%);animation:glowpulse 3.2s ease-in-out infinite;opacity:.15;will-change:opacity}
+@keyframes glowpulse{0%,100%{opacity:.08}50%{opacity:.4}}

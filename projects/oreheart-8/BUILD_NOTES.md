@@ -420,3 +420,9 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 ## Round 6a fixes (inspector round 2)
 - AC120: card rules text is now pale gold (#FFE7A0, thin, outlined) on every card face.
 - AC172: `getRenderStats()` now returns `mineModels` (source, height ≈1.5, owner, tint per mine) and waits for the glTF to load.
+
+## Round 7 inspector fixes
+- AC172: crystal-mine glTF tint now follows the owner (player blue, enemy red, neutral white) instead of the faction color.
+- AC176: the enemy deck pile is smaller than yours.
+- AC177: the hidden `.cid` marker in each hand card now spans the card so the glow outset is measured against the card; the glow shimmer is opacity-only (no blend mode or background animation), which also keeps a popped card cheap to render.
+- AC174: hand pop logic hardened (immediate tuck when the pointer leaves, hover only pops the card under the pointer, a resting mouse over a card pops it); test-mode WebGL rendering is throttled adaptively so software GL doesn't starve the page.
