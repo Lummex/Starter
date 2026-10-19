@@ -117,7 +117,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const fCmd = combo('Deck Commander', 'f-commander', ['Grubnak', 'Sproingle', 'Borgo'], () => { cmdId = CMD_BY_NAME[fCmd.sel.value] || 'grubnak'; renderCards(); renderDeck(); });
   let query = '';
   let perRow = Math.max(2, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
-  const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'Card collection', role: 'group' });
+  const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'All cards', role: 'group' });
   const pileEl = h('div', { class: 'db-pile', 'aria-label': 'Deck pile', role: 'group' });
   const carEl = h('div', { class: 'db-car' });
   const track = h('div', { class: 'db-track' });
@@ -255,12 +255,25 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     const n: Record<string, number> = {};
     for (const id of deck) n[id] = (n[id] || 0) + 1;
     const ids = Object.keys(n).sort((a, b) => CARDS[a].cost - CARDS[b].cost || CARDS[a].name.localeCompare(CARDS[b].name));
-    listEl.replaceChildren(...ids.map((id) => {
-      const nm = CARDS[id].name;
-      const plus = btn('+', 'small', () => addCard(id, null, true), { 'aria-label': `Add ${nm}` }) as HTMLButtonElement;
-      plus.disabled = n[id] >= copyLimit(id);
-      return h('li', {}, h('span', { class: 'db-cnt' }, `${n[id]} × `), h('span', { class: 'db-nm' }, nm), plus, btn('−', 'small', () => removeCard(id), { 'aria-label': `Remove ${nm}` }));
-    }));
+    // keyed in-place update: rows (and their + / − buttons) survive a click, so nothing lags or shifts
+    const rows = ((listEl as any)._rows ||= new Map()) as Map<string, HTMLElement>;
+    for (const [id, li] of rows) if (!n[id]) { li.remove(); rows.delete(id); }
+    ids.forEach((id, i) => {
+      let li = rows.get(id);
+      if (!li) {
+        const nm = CARDS[id].name;
+        const cnt = h('span', { class: 'db-cnt' }, '');
+        const plus = btn('+', 'small', () => addCard(id, null, true), { 'aria-label': `Add ${nm}` }) as HTMLButtonElement;
+        li = h('li', {}, h('span', { class: 'db-lbl' }, cnt, ' ', h('span', { class: 'db-nm' }, nm)), plus, btn('−', 'small', () => removeCard(id), { 'aria-label': `Remove ${nm}` })) as HTMLElement;
+        (li as any)._cnt = cnt; (li as any)._plus = plus;
+        rows.set(id, li);
+      }
+      const cnt = (li as any)._cnt as HTMLElement;
+      const txt = `${n[id]} ×`;
+      if (cnt.textContent !== txt) cnt.textContent = txt;
+      (li as any)._plus.disabled = n[id] >= copyLimit(id);
+      if (listEl.children[i] !== li) listEl.insertBefore(li, listEl.children[i] || null);
+    });
     const c = deckCounts(deck);
     nameEl.textContent = name;
     sizeEl.textContent = `${c.cards} cards (${CONFIG.deckMin}–${CONFIG.deckMax})`;

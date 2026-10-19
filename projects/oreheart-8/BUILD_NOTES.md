@@ -386,3 +386,9 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 - Ruby heart repainted with the image API.
 - Not done: the old AC36 text is in the acceptance file which I may not edit; the build already shows "Next +N".
 - Known: the glTF's neutral tint reads quite bright; the light beam over mines is unchanged from earlier rounds.
+
+## Round 6a fixes (inspector round 1)
+- Hand: fan step is 0.56 of a card width (hand strip widened to 4.4 cards) so every card's centre stays clickable; the popped card keeps the pointer only on its top ~77 % (clip-path) with a pointer-less copy painting the rest, plus a proxy at its resting spot, so neighbouring cards stay hoverable.
+- Done is right-aligned to the deck's right edge (never off-screen); enemy hand centre nudged 4 px left.
+- Creature card view is larger (min(300px, 52vh) wide); card zoom face accepts the dismiss click.
+- Card grid in the deck builder has aria-label "All cards" again (no visible label); deck list rows update in place and read "N × Name".

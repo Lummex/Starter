@@ -14,7 +14,7 @@ if (which === 'back') {
   const base = await sharp(buf).resize(W, H, { fit: 'cover' }).toBuffer();
   const logo = await sharp('public/art/logo.webp').resize({ width: Math.round(W * 0.74), fit: 'inside' }).toBuffer();
   const out = await sharp(base).composite([{ input: logo, gravity: 'centre' }]).webp({ quality: 82 }).toBuffer();
-  fs.writeFileSync('public/art/ui/card-back.webp', out);
+  fs.writeFileSync('public/art/ui/oreheart-card-back.webp', out);
   console.log('back ok');
 } else {
   const buf = await gen('a single glossy faceted ruby heart gem icon, deep red with bright highlights and a thin gold rim, centered on a plain pure black background, painted fantasy game icon, no text');

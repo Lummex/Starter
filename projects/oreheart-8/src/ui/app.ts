@@ -340,7 +340,7 @@ export class App {
     };
     const stack = (label: string, n: number, ok: boolean, key: string, onpick: () => void, starterId?: string, savedIdx?: number) => {
       const b = h('button', { type: 'button', class: `dstack${ok ? '' : ' bad'}`, 'data-key': key, 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', onclick: onpick },
-        h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }),
+        h('img', { class: 'deck-img', 'data-card-back': '', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }),
         h('span', { class: 'ds-name', 'aria-hidden': 'true' }, label), h('span', { class: 'ds-n', 'aria-hidden': 'true' }, `${n} cards ${ok ? '✔' : '⚠'}`));
       stacks.push(b);
       const rm = btn('Remove', 'small tx-act', () => confirmRemove(label, () => {
@@ -558,7 +558,7 @@ export class App {
     r.crFlow = yc.flow; r.crBank = yc.bank; r.income = yc.next; r.myName = yc.name;
     r.eFlow = ec.flow; r.eBank = ec.bank; r.eNext = ec.next; r.eName = ec.name;
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
-    r.enemyDeck = h('div', { class: 'pile', 'data-card-back': '', role: 'img', 'aria-label': 'Enemy deck' }, h('img', { class: 'deck-img', src: '/art/ui/card-back.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
+    r.enemyDeck = h('div', { class: 'pile', 'data-card-back': '', role: 'img', 'aria-label': 'Enemy deck' }, h('img', { class: 'deck-img', 'data-card-back': '', src: '/art/ui/oreheart-card-back.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
     r.phase.append(h('div', { class: 'ph-turn' }), h('div', { class: 'ph-steps' }, ...['draw', 'deploy', 'action', 'end'].map((k) => h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k]), ), ), h('div', { class: 'ph-time' }));
@@ -567,7 +567,7 @@ export class App {
     r.board = h('div', { class: 'board', role: 'application', 'aria-label': 'Battlefield' });
     r.fx = h('div', { class: 'fx' });
     r.myHealth = h('div', { class: 'heart mine', role: 'img', 'aria-label': 'Your Commander health' }, '20');
-    r.myDeck = h('div', { class: 'pile', 'data-card-back': '', role: 'img', 'aria-label': 'Your deck' }, h('img', { class: 'deck-img', src: '/art/ui/card-back.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
+    r.myDeck = h('div', { class: 'pile', 'data-card-back': '', role: 'img', 'aria-label': 'Your deck' }, h('img', { class: 'deck-img', 'data-card-back': '', src: '/art/ui/oreheart-card-back.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.done = btn('Done', 'primary done-btn', () => this.pressDone());
     r.recenter = btn('Recenter', 'recenter-btn', () => { this.resetCam(); this.menuOpen(false); });
     r.swap = btn('Swap for a Miner', 'swap-btn', () => this.startSwap());
@@ -865,8 +865,9 @@ export class App {
 
   /** Pop a hand card out of the fan as a big close-up (about 87 % of the screen height) on the very top layer, kept fully on screen. */
   popCard(el: El, on: boolean) {
-    if (on) { const cur = this.root.querySelector('.hand-card.popped') as El; if (cur && cur !== el) this.popCard(cur, false); }
+    if (on) { const cur = this.root.querySelector('.hand-card.popped:not(.popclone)') as El; if (cur && cur !== el) this.popCard(cur, false); }
     if (!on) {
+      (el as any)._ph?.remove(); (el as any)._clone?.remove();
       el.classList.remove('popped');
       (this.r.hand as El)?.classList.remove('has-pop');
       el.style.transform = el.dataset.fan || '';
@@ -894,8 +895,26 @@ export class App {
     const targetY = hr.top + hr.height / 2;
     el.classList.add('popped');
     hand.classList.add('has-pop');
+    // The popped card ignores the pointer; a transparent proxy keeps its resting spot clickable and draggable.
+    const ph = h('span', { class: 'pop-ph', 'aria-hidden': 'true' }) as El;
+    ph.style.cssText = `position:absolute;left:${el.style.left};top:${el.offsetTop}px;width:${w}px;height:${hgt}px;transform:${el.dataset.fan || ''};z-index:${el.dataset.z || 1};pointer-events:auto;cursor:grab`;
+    ph.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);
+    ph.addEventListener('pointerdown', (e: PointerEvent) => (el as any)._down?.(e));
+    (el as any)._ph = ph;
+    hand.append(ph);
+    // Only the top ~77 % of the popped card takes the pointer (clip-path), so the fan's other cards stay hoverable below it;
+    // a pointer-less copy paints the clipped lower part.
+    const clone = el.cloneNode(true) as El;
+    clone.classList.add('popclone');
+    clone.removeAttribute('aria-label'); clone.removeAttribute('data-card-id'); clone.removeAttribute('data-card'); clone.removeAttribute('data-uid');
+    clone.setAttribute('aria-hidden', 'true'); clone.tabIndex = -1;
+    clone.querySelectorAll('[data-card-id]').forEach((x: El) => x.removeAttribute('data-card-id'));
+    (el as any)._clone = clone;
+    hand.append(clone);
     el.style.zIndex = '9000';
     el.style.transform = `translate(${targetX - cx}px,${targetY - cy}px) scale(${S})`;
+    const cl = (el as any)._clone as El;
+    if (cl) { cl.style.cssText = el.style.cssText; cl.style.zIndex = '8999'; }
     this.watchPop(el);
   }
 
@@ -905,12 +924,12 @@ export class App {
     if (this.popWatch) document.removeEventListener('pointermove', this.popWatch);
     const fn = (e: PointerEvent) => {
       const hand = this.r.hand as El;
-      const cur = this.root.querySelector('.hand-card.popped') as El;
+      const cur = this.root.querySelector('.hand-card.popped:not(.popclone)') as El;
       if (!hand || !cur || !cur.isConnected) { document.removeEventListener('pointermove', fn); if (this.popWatch === fn) this.popWatch = null; return; }
       if (e.pointerType !== 'mouse') return;
       const ty = new DOMMatrix(getComputedStyle(hand).transform).m42;
       const hb = hand.getBoundingClientRect();
-      const cards = [...hand.querySelectorAll('.hand-card')].filter((c) => !c.classList.contains('offhand')) as El[];
+      const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')].filter((c) => !c.classList.contains('offhand')) as El[];
       const cw = cards[0]?.offsetWidth || 0;
       let hit: El | null = null;
       for (const c of cards) {
@@ -929,7 +948,7 @@ export class App {
   layoutHand() {
     const hand = this.r.hand as El;
     if (!hand) return;
-    const cards = [...hand.querySelectorAll('.hand-card')] as El[];
+    const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')] as El[];
     const n = cards.length;
     const VIS = 7;
     // Off-hand cards wait in an invisible clipped strip; if anything scrolls one into view (focus, assistive tech) the fan follows.
@@ -939,7 +958,7 @@ export class App {
       spill.addEventListener('scroll', () => {
         if (!spill.scrollLeft) return;
         const sr = spill.getBoundingClientRect();
-        const all = [...hand.querySelectorAll('.hand-card')] as El[];
+        const all = [...hand.querySelectorAll('.hand-card:not(.popclone)')] as El[];
         const idx = all.findIndex((c) => { if (c.parentElement !== spill) return false; const b = c.getBoundingClientRect(); const m = b.left + b.width / 2; return m >= sr.left && m <= sr.right; });
         spill.scrollLeft = 0;
         if (idx >= 0) { this.handScroll = idx - 3; this.layoutHand(); }
@@ -952,7 +971,7 @@ export class App {
     this.handScroll = Math.max(0, Math.min(maxScroll, this.handScroll));
     const start = Math.round(this.handScroll);
     const shown = Math.min(n, VIS);
-    const spacing = shown > 1 ? Math.min(cw * 0.8, (W - cw) / (shown - 1)) : cw;
+    const spacing = shown > 1 ? Math.min(cw * 0.56, (W - cw) / (shown - 1)) : cw;
     const x0 = 0;
     let moved = false;
     cards.forEach((c, i) => {
@@ -1475,6 +1494,7 @@ export class App {
       el.addEventListener('focus', () => this.popCard(el, true));
       el.addEventListener('blur', () => this.popCard(el, false));
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));
+      (el as any)._down = (e: PointerEvent) => this.cardPointerDown(e, hc, el);
       el.addEventListener('click', (e: MouseEvent) => { if (e.detail === 0) this.showCard(c.id); });
       hand.append(el);
     }
