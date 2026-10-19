@@ -4,7 +4,33 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 5b — match screen: owner camera and layout (owner playtest of round 5a) — read this first
+## Round 6a — owner playtest of 5b: match fixes, card back, text palette, deck builder — read this first
+
+Round 5b is done; keep everything from it except where an item below replaces it. Build B (Meshy 3D models, starting with Grubnak) is round 6b, next; do not start it here. Rules are unchanged.
+
+1. **"Done" moves to the bottom-right corner, directly under the player's deck pile** (nudge the deck up slightly so it fits; don't shrink Done). It still appears only when needed. It must never sit in the middle of the screen; today it blocks clicking and dragging creatures there. Make sure nothing invisible (a hit area, an empty overlay) blocks board clicks anywhere.
+2. **Remove the hand card counts** for both players (the "N cards" text by the player's hand and the enemy's count). Deck cards-left numbers stay.
+3. **Player's hand twice as big** (cards about 46% of the screen height at 16:9), **tucked halfway** below the bottom edge at rest (top half of each card visible; replaces the 5b "nearly fully visible" rest state). The cards fan with roughly half-card overlap so about 7 fit in about two-thirds of the screen width. Hover or tap the hand: it slides up fully. Move away: it tucks back. While dragging a card or creature, the hand drops out of the way.
+4. **Hovered card pop-out twice as big:** a big readable close-up about 85–90% of the screen height (never off-screen, never covering the whole screen), drawn on the very top layer above every other card, the HUD and the board. Bug today: neighboring cards cover the popped card.
+5. **Original Oreheart card back** for the enemy hand, both deck piles and any face-down card, replacing the generic purple back. The OREHEART logo (from `factory-design/design/references/main logo.jpg`) sits in the middle of a dark, rich back with a gold filigree border and a glowing crystal motif; generate the artwork with the image API, with no other text. It must not resemble any other game's card back.
+6. **Enemy hand centered at the top**, mirrored opposite the center of the player's hand. The **enemy deck pile** (with its cards-left number) sits **just to the left** of the enemy hand. This replaces the 5b enemy hand and deck positions. Nothing may ever cover either Commander: the 5b report said the enemy crystal can cover the enemy Commander on some window shapes, and the phase tracker overlaps the enemy crystal text on a phone. Nudge the enemy crystal or phase tracker sideways as needed.
+7. **Shared text palette and weights** for every menu and the match screen, defined once (CSS variables / theme file). **This replaces the round 5a "all text plain golden yellow" rule.**
+   - Bright gold **#FFD700**: titles, screen headings, main actions (Menu, Done, Fight!), important numbers.
+   - Natural brown-gold **#B8862B** (lighter **#D4A94F** where it needs more contrast on dark): secondary labels, section headings, captions, inactive tabs, flavor lines.
+   - White **#FFFFFF** (soft **#F4ECDC** for long text): body text, card rules text, list entries, numbers on crystals and hearts.
+   - Black **#000000** / near-black **#1A1208**: outlines and shadows behind light text; text on gold or light surfaces.
+   - Keep the meaning colors: player blue, enemy red, warning orange-red, success green.
+   - Weights (Alegreya SC Italic): **Bold 700–800** for titles, screen headings, card names, Commander names, big numbers and main actions; **Medium 500** for labels and buttons; **Regular 400** for body and rules text. Check contrast at 844 × 390.
+8. **Deck builder card close-up** (single click on a card): the card fills the screen from top to bottom with tiny margins (about 4–5× the current close-up), proportions kept, **no scrollbar of any kind**, **no Close button**. Clicking the card again, clicking anywhere, or pressing Esc dismisses it.
+9. **Deck list "+" bug:** "+" is slow and makes the row or list shift left with a strange movement, while "−" is instant. Make "+" behave exactly like "−": instant count change, no animation, no layout shift or re-sort jump under the pointer (fixed-width counts and buttons), and rapid repeated clicks all register.
+10. **Remove the "All cards" label** on the left side of the deck builder.
+11. **Remove the rings / corner ornaments** in the four corners of the deck builder and every other screen. This cancels the round 3b "gold filigree ornaments framing every screen" rule.
+12. **Placeholder crystal mine model (owner-supplied):** use `factory-design/design/models/crystal-mine-placeholder.gltf` (embedded glTF; load with three.js GLTFLoader; copy it into the game's assets) for every crystal mine instead of the procedural crystals. Scale it to about 1.5 spaces tall (the file is about 1.32 tall, origin at base center, Y-up, faces +Z). Tint by owner: blue for the player, red for the enemy, pale/neutral when unowned (swap the crystal materials' color and emissive). Keep the glow and flow particles. Keep the model swap a one-line change so a final Meshy model can replace it.
+13. **5b report leftovers:** update old check AC36 ("+0 next turn" → "Next +0"). Repaint the ruby hearts with the image API (the owner asked for painted art; 5b drew them in code). The Menu's "Surrender" item stays.
+
+Tests: keep all checks passing (update those this round intentionally changes). Add: Done not in the screen center and board clicks unblocked there; no hand counts; hand tucked halfway at rest and fully up on hover; pop-out card on the top layer and about 85–90% of the screen height; enemy hand centered with the deck to its left; card backs use the new art; palette variables used (no stray text colors); deck builder close-up has no scrollbar and dismisses on click; "+" and "−" change counts instantly without layout shift; no "All cards" text; no corner ornaments; mines use the glTF placeholder. Include screenshots of a match at 1920 × 1080 and 844 × 390 (hand at rest, hand hovered with a pop-out), the deck builder with a card close-up, and a card back.
+
+## Round 5b (done) — match screen: owner camera and layout
 
 Round 5a (menus, deck builder, lettering) is done; keep everything from it. Build B (Meshy 3D models) comes later; do not start it here. Rules are unchanged this round. The owner designed this screen himself in an interactive camera tester; the numbers and positions below come from it. **Match them.**
 
