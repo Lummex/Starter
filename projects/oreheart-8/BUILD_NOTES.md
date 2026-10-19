@@ -370,3 +370,19 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 - Enemy crystal HUD hangs left of a tiny anchor at ~67% width: at the owner's position, never covering the enemy Commander (AC151).
 - Income text is now "Next +N" on both crystals (AC152). The older AC36 expects "+N next turn"; the brief's "Next +N" wins, so AC36 will fail.
 - The Menu's "Mute" button keeps its name and toggles aria-pressed (AC154). A small always-visible speaker button named "Mute sound"/"Unmute sound" stays in the match (AC88).
+
+---
+
+# Round 6a: owner playtest of 5b
+- Done sits bottom-right under the player's deck (deck nudged up); only shown when needed. Swap button moved to the same column. Nothing invisible sits mid-screen.
+- Hand counts removed (both players). Player's hand is 2x (`--hcw` ≈ 30.7vh card width), centered, tucked halfway at rest, slides fully up on hover/tap, drops away while dragging.
+- Hover pop-out: the hovered card scales to ~87% of the screen height, centered, on z-index 9000 above HUD and board (`popCard`/`watchPop` in `app.ts`; a pointer watcher uses the fan's resting boxes so neighbours stay reachable).
+- Original Oreheart card back (image API art plus the logo) on both deck piles and the enemy hand (`data-card-back`).
+- Enemy hand centered at the top, enemy deck just left of it; enemy crystal name wraps so it never overlaps the hand or the Commander.
+- Palette variables (`--gold-bright`, `--gold-brown`, `--gold-brown-lt`, `--white`, `--white-soft`, `--ink`, `--ink-soft`) defined once in `style.css`; every former literal #FFD700 now uses the variable; body/rules text soft white, captions brown-gold, titles/names/numbers bold (Alegreya SC 700/800; 500 for labels).
+- Deck builder: card close-up (`App.closeUp`) fills the screen height, no Close button or scrollbar, click/Esc dismisses; "+" no longer plays the fly animation and list rows use fixed-width grid columns; "All cards" label removed.
+- All corner rings/ornaments removed (`ornament()` is an empty stub).
+- Crystal mines now load the owner's glTF (`MINE_MODEL` in `art.ts`, one-line swap), scaled to 1.5, tinted per owner; glow and flow particles kept. The wooden palisade was dropped with the procedural crystals. `stats().mineModel` reports `gltf`.
+- Ruby heart repainted with the image API.
+- Not done: the old AC36 text is in the acceptance file which I may not edit; the build already shows "Next +N".
+- Known: the glTF's neutral tint reads quite bright; the light beam over mines is unchanged from earlier rounds.

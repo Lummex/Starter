@@ -774,7 +774,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
             bloom: !!bloomPass, shadows: renderer.shadowMap.enabled, particles: !!embers,
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub ? 'finished' : 'placeholder' }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub ? 'finished' : 'placeholder' } },
-            strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished',
+            strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModel: mines.every((m) => m.group.userData.mineModel === 'gltf') ? 'gltf' : 'loading',
           });
         } else setTimeout(wait, 30);
       };

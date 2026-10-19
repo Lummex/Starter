@@ -117,7 +117,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const fCmd = combo('Deck Commander', 'f-commander', ['Grubnak', 'Sproingle', 'Borgo'], () => { cmdId = CMD_BY_NAME[fCmd.sel.value] || 'grubnak'; renderCards(); renderDeck(); });
   let query = '';
   let perRow = Math.max(2, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
-  const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'All cards', role: 'group' });
+  const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'Card collection', role: 'group' });
   const pileEl = h('div', { class: 'db-pile', 'aria-label': 'Deck pile', role: 'group' });
   const carEl = h('div', { class: 'db-car' });
   const track = h('div', { class: 'db-track' });
@@ -164,10 +164,10 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     setTimeout(() => ghost.remove(), 400);
   };
   const lockedFor = (id: string) => { const c = CARDS[id]; return c.type === 'spell' && c.faction !== 'any' && c.faction !== COMMANDERS[cmdId].faction; };
-  const addCard = (id: string, from?: DOMRect | null) => { if (lockedFor(id)) { status.textContent = `Only for ${SING[CARDS[id].faction]} Commanders`; return; } if (count(id) >= copyLimit(id)) return; fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };
+  const addCard = (id: string, from?: DOMRect | null, noFly = false) => { if (lockedFor(id)) { status.textContent = `Only for ${SING[CARDS[id].faction]} Commanders`; return; } if (count(id) >= copyLimit(id)) return; if (!noFly) fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };
   const removeCard = (id: string) => { const i = deck.indexOf(id); if (i >= 0) deck.splice(i, 1); status.textContent = ''; renderDeck(); };
 
-  function enlarge(c: any) { app.showCard(c.id); }
+  function enlarge(c: any) { app.closeUp(c.id); }
   const ghostW = () => Math.max(40, ((cardsEl.clientWidth || 300) - 8 - 2 * 10) / 3);
   function drag(e: PointerEvent, c: any, el: HTMLElement) {
     if (e.button !== 0) return;
@@ -257,9 +257,9 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     const ids = Object.keys(n).sort((a, b) => CARDS[a].cost - CARDS[b].cost || CARDS[a].name.localeCompare(CARDS[b].name));
     listEl.replaceChildren(...ids.map((id) => {
       const nm = CARDS[id].name;
-      const plus = btn('+', 'small', () => addCard(id), { 'aria-label': `Add ${nm}` }) as HTMLButtonElement;
+      const plus = btn('+', 'small', () => addCard(id, null, true), { 'aria-label': `Add ${nm}` }) as HTMLButtonElement;
       plus.disabled = n[id] >= copyLimit(id);
-      return h('li', {}, h('span', {}, `${n[id]} × ${nm}`), plus, btn('−', 'small', () => removeCard(id), { 'aria-label': `Remove ${nm}` }));
+      return h('li', {}, h('span', { class: 'db-cnt' }, `${n[id]} × `), h('span', { class: 'db-nm' }, nm), plus, btn('−', 'small', () => removeCard(id), { 'aria-label': `Remove ${nm}` }));
     }));
     const c = deckCounts(deck);
     nameEl.textContent = name;
@@ -372,7 +372,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
       h('div', { class: 'db-head' }, h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' })),
       h('div', { class: 'db-search' }, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), h('div', { class: 'f-field' }, h('label', { for: 'cards-per-row' }, 'Cards per row'), slider)),
       h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap),
-      h('h2', {}, 'All cards'), cardsEl),
+      cardsEl),
     h('aside', { class: 'db-right', 'aria-label': 'Deck panel' },
       h('h1', { class: 'section cinzel' }, 'Deck Builder'),
       pileEl,

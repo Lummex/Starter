@@ -105,12 +105,9 @@ export function combo(label: string, id: string, opts: string[], onchange: () =>
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && lb) close(); });
   return { wrap: h('div', { class: 'f-field' }, h('span', { class: 'f-label', 'aria-hidden': 'true' }, label), cb), sel: state, set: (v: string) => { state.value = v; cb.textContent = v; } };
 }
-const ORNAMENT = '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><defs><linearGradient id="og" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".5" stop-color="#c9a24a"/><stop offset="1" stop-color="#7a5410"/></linearGradient></defs><rect x=".6" y=".6" width="98.8" height="98.8" rx="2" fill="none" stroke="url(#og)" stroke-width=".35" vector-effect="non-scaling-stroke"/></svg>';
-/** Decorative gold filigree frame laid over a screen (R3b.7). */
+/** Round 6a: corner rings and filigree frames are gone; kept as an empty hidden stub so imports stay valid. */
 export function ornament(): El {
-  const o = h('div', { class: 'ornament', 'data-ornament': 'frame', 'aria-hidden': 'true' });
-  o.innerHTML = ORNAMENT + ['tl', 'tr', 'bl', 'br'].map((k) => `<i class="orn orn-${k}"></i>`).join('') + '<i class="orn-mid orn-top"></i><i class="orn-mid orn-bot"></i>';
-  return o;
+  return h('div', { class: 'ornament-none', 'aria-hidden': 'true', hidden: true });
 }
 const svgEl = (tag: string, attrs: Record<string, string> = {}): El => { const e = document.createElementNS('http://www.w3.org/2000/svg', tag) as unknown as El; for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
 export const btn = (label: string, cls = '', onclick?: (e: Event) => void, attrs: Record<string, any> = {}) => h('button', { type: 'button', class: 'btn ' + cls, onclick, ...attrs }, label);
@@ -264,7 +261,7 @@ export class App {
 
   clear() {
     this.teardownMatch();
-    this.root.replaceChildren(ornament());
+    this.root.replaceChildren();
     this.dialogs = [];
   }
 
@@ -480,6 +477,18 @@ export class App {
     const d = this.dialog(c.name, [h('div', { class: 'card-view-face' }, face), dl, h('p', { class: 'cv-hint' }, 'Tap the text for the full explanation.'), h('div', { class: 'row' }, btn('Close', 'primary', () => d.close()))]);
     return d;
   }
+  /** Deck builder close-up: the card fills the screen top to bottom; no Close button, no scrollbar; click anywhere or Esc dismisses. */
+  closeUp(cardId: string) {
+    const c = CARDS[cardId];
+    const face = h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, c.type === 'crystal' ? 0 : c.cost));
+    const ov = h('div', { class: 'cardzoom', role: 'dialog', 'aria-modal': 'true', 'aria-label': c.name }, face);
+    const close = () => { ov.remove(); document.removeEventListener('keydown', onKey, true); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+    ov.addEventListener('click', close);
+    document.addEventListener('keydown', onKey, true);
+    document.body.append(ov);
+    return { close, el: ov };
+  }
   fullExplanation(c: any) {
     const d: any = this.dialog(`${c.name}: full explanation`, [h('h2', {}, c.name), h('p', { class: 'long-text' }, c.longText || c.text || ''), h('div', { class: 'row' }, btn('Close', 'primary', () => d.close()))]);
     d.el.addEventListener('pointerdown', (e: any) => { if (e.target.closest('.long-text')) d.close(); });
@@ -549,7 +558,7 @@ export class App {
     r.crFlow = yc.flow; r.crBank = yc.bank; r.income = yc.next; r.myName = yc.name;
     r.eFlow = ec.flow; r.eBank = ec.bank; r.eNext = ec.next; r.eName = ec.name;
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
-    r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
+    r.enemyDeck = h('div', { class: 'pile', 'data-card-back': '', role: 'img', 'aria-label': 'Enemy deck' }, h('img', { class: 'deck-img', src: '/art/ui/card-back.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
     r.phase.append(h('div', { class: 'ph-turn' }), h('div', { class: 'ph-steps' }, ...['draw', 'deploy', 'action', 'end'].map((k) => h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k]), ), ), h('div', { class: 'ph-time' }));
@@ -558,13 +567,12 @@ export class App {
     r.board = h('div', { class: 'board', role: 'application', 'aria-label': 'Battlefield' });
     r.fx = h('div', { class: 'fx' });
     r.myHealth = h('div', { class: 'heart mine', role: 'img', 'aria-label': 'Your Commander health' }, '20');
-    r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-image.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
+    r.myDeck = h('div', { class: 'pile', 'data-card-back': '', role: 'img', 'aria-label': 'Your deck' }, h('img', { class: 'deck-img', src: '/art/ui/card-back.webp', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.done = btn('Done', 'primary done-btn', () => this.pressDone());
     r.recenter = btn('Recenter', 'recenter-btn', () => { this.resetCam(); this.menuOpen(false); });
     r.swap = btn('Swap for a Miner', 'swap-btn', () => this.startSwap());
     r.swap.hidden = true;
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
-    r.handCount = h('div', { class: 'hand-count', role: 'img', 'aria-label': 'Hand count' }, '0 cards');
     r.handLeft = btn('◀', 'hand-scroll left', () => { this.handScroll = Math.max(0, Math.round(this.handScroll) - 3); this.layoutHand(); }, { 'aria-label': 'Scroll hand left' });
     r.handRight = btn('▶', 'hand-scroll right', () => { this.handScroll = Math.round(this.handScroll) + 3; this.layoutHand(); }, { 'aria-label': 'Scroll hand right' });
     r.handLeft.hidden = true; r.handRight.hidden = true;
@@ -596,7 +604,7 @@ export class App {
       r.phase,
       r.menuWrap, spk,
       r.swap, r.done,
-      r.tip, r.hand, r.handCount, r.handLeft, r.handRight, r.timer);
+      r.tip, r.hand, r.handLeft, r.handRight, r.timer);
     this.root.append(match);
     // board layers
     r.cells = new Map<string, El>();
@@ -855,45 +863,7 @@ export class App {
     else this.handTimer = setTimeout(() => hand.classList.remove('open'), 120);
   }
 
-  popWatch: any = null;
-  /** A popped card only catches the pointer on its top half; the document watcher decides when the mouse has really left it. */
-  watchPop(el: El) {
-    if (this.popWatch) document.removeEventListener('pointermove', this.popWatch);
-    const fn = (e: PointerEvent) => {
-      if (!el.isConnected || !el.classList.contains('popped')) { document.removeEventListener('pointermove', fn); if (this.popWatch === fn) this.popWatch = null; return; }
-      const hb = (this.r.hand as El).getBoundingClientRect();
-      const inBox = (c: El, x: number, y: number) => { const l = hb.left + (parseFloat(c.style.left) || 0), t = hb.top + (c.offsetTop || 0); return x >= l && x <= l + c.offsetWidth && y >= t && y <= t + c.offsetHeight; };
-      const inBase = inBox(el, e.clientX, e.clientY);
-      const r = el.getBoundingClientRect();
-      const inPopped = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-      const other = [...(this.r.hand as El).querySelectorAll('.hand-card')].some((c) => c !== el && inBox(c as El, e.clientX, e.clientY));
-      const inHit = inPopped && !other;
-      if (!inBase && !inHit) { this.popCard(el, false); this.openHand(false); }
-    };
-    this.popWatch = fn;
-    document.addEventListener('pointermove', fn);
-    // the popped card's hit area leaves holes over the other cards so the pointer can always reach them
-    const clip = () => {
-      if (!el.isConnected || !el.classList.contains('popped')) return;
-      const hit = el.querySelector('.pop-hit') as El;
-      const pr = hit?.getBoundingClientRect();
-      if (hit && pr && pr.width) {
-        const pts = [`0 0,100% 0,100% 100%,0 100%,0 0`];
-        for (const c of (this.r.hand as El).querySelectorAll('.hand-card')) {
-          if (c === el) continue;
-          const r = (c as El).getBoundingClientRect();
-          const x0 = ((r.left - pr.left) / pr.width) * 100, x1 = ((r.right - pr.left) / pr.width) * 100, y0 = ((r.top - pr.top) / pr.height) * 100, y1 = ((r.bottom - pr.top) / pr.height) * 100;
-          if (x1 < 0 || x0 > 100 || y1 < 0 || y0 > 100) continue;
-          pts.push(`${x0}% ${y0}%,${x1}% ${y0}%,${x1}% ${y1}%,${x0}% ${y1}%,${x0}% ${y0}%,0 0`);
-        }
-        hit.style.clipPath = `polygon(evenodd,${pts.join(',')})`;
-      }
-      requestAnimationFrame(clip);
-    };
-    requestAnimationFrame(clip);
-  }
-
-  /** Pop a hand card out of the fan at 2x size, kept fully on screen. */
+  /** Pop a hand card out of the fan as a big close-up (about 87 % of the screen height) on the very top layer, kept fully on screen. */
   popCard(el: El, on: boolean) {
     if (on) { const cur = this.root.querySelector('.hand-card.popped') as El; if (cur && cur !== el) this.popCard(cur, false); }
     if (!on) {
@@ -903,31 +873,56 @@ export class App {
       el.style.zIndex = el.dataset.z || '';
       return;
     }
-    if (el.classList.contains('dragging')) return;
+    if (el.classList.contains('dragging') || el.classList.contains('offhand')) return;
     const host = this.root.querySelector('.match') as El;
     if (!host) return;
     el.dataset.fan = el.dataset.fan || el.style.transform;
     el.dataset.z = el.style.zIndex;
     const hr = host.getBoundingClientRect();
     const hand = this.r.hand as El;
-    const hb = hand.getBoundingClientRect();
     const w = el.offsetWidth, hgt = el.offsetHeight;
+    // the hand is animating up; measure from its un-transformed layout box plus the final (open) offset
+    const ty = new DOMMatrix(getComputedStyle(hand).transform).m42;
+    const hb = hand.getBoundingClientRect();
+    const openY = -0.03 * w;
     const left = hb.left + (parseFloat(el.style.left) || 0);
-    const top = hb.top + (el.offsetTop || 0);
-    // centre of the un-fanned card, scale 2 about the centre
-    let dx = 0, dy = 0;
+    const top = hb.top - ty + openY + (el.offsetTop || 0);
+    const S = Math.max(1, Math.min((hr.height * 0.87) / hgt, (hr.width - 8) / w));
     const cx = left + w / 2, cy = top + hgt / 2;
-    const minX = hr.left + w + 2, maxX = hr.right - w - 2;
-    const targetX = Math.max(minX, Math.min(maxX, cx));
-    dx = targetX - cx;
-    const maxY = hr.bottom - hgt - 2, minY = hr.top + hgt + 2;
-    const targetY = Math.max(minY > maxY ? maxY : minY, Math.min(maxY, cy));
-    dy = targetY - cy;
+    const halfW = (w * S) / 2, halfH = (hgt * S) / 2;
+    const targetX = Math.max(hr.left + halfW + 2, Math.min(hr.right - halfW - 2, cx));
+    const targetY = hr.top + hr.height / 2;
     el.classList.add('popped');
     hand.classList.add('has-pop');
-    el.style.zIndex = '600';
-    el.style.transform = `translate(${dx}px,${dy}px) scale(2)`;
+    el.style.zIndex = '9000';
+    el.style.transform = `translate(${targetX - cx}px,${targetY - cy}px) scale(${S})`;
     this.watchPop(el);
+  }
+
+  popWatch: ((e: PointerEvent) => void) | null = null;
+  /** While a card is popped it ignores the pointer, so a document watcher uses the fan's resting boxes to decide which card the mouse is really over. */
+  watchPop(first: El) {
+    if (this.popWatch) document.removeEventListener('pointermove', this.popWatch);
+    const fn = (e: PointerEvent) => {
+      const hand = this.r.hand as El;
+      const cur = this.root.querySelector('.hand-card.popped') as El;
+      if (!hand || !cur || !cur.isConnected) { document.removeEventListener('pointermove', fn); if (this.popWatch === fn) this.popWatch = null; return; }
+      if (e.pointerType !== 'mouse') return;
+      const ty = new DOMMatrix(getComputedStyle(hand).transform).m42;
+      const hb = hand.getBoundingClientRect();
+      const cards = [...hand.querySelectorAll('.hand-card')].filter((c) => !c.classList.contains('offhand')) as El[];
+      const cw = cards[0]?.offsetWidth || 0;
+      let hit: El | null = null;
+      for (const c of cards) {
+        const l = hb.left + (parseFloat(c.style.left) || 0), t = hb.top - ty - 0.03 * cw + (c.offsetTop || 0);
+        if (e.clientX >= l && e.clientX <= l + c.offsetWidth && e.clientY >= t && e.clientY <= t + c.offsetHeight) hit = c;
+      }
+      if (hit === cur) return;
+      this.popCard(cur, false);
+      if (hit) this.popCard(hit, true); else { document.removeEventListener('pointermove', fn); this.popWatch = null; this.openHand(false); }
+    };
+    this.popWatch = fn;
+    document.addEventListener('pointermove', fn);
   }
 
   /** The fan shows about 7 cards in a fixed width; more cards scroll (R3.7). */
@@ -951,8 +946,8 @@ export class App {
       });
       hand.prepend(spill);
     }
-    const W = hand.clientWidth || 400;
     const cw = cards[0]?.offsetWidth || 66;
+    const W = hand.clientWidth || cw * 4;
     const maxScroll = Math.max(0, n - VIS);
     this.handScroll = Math.max(0, Math.min(maxScroll, this.handScroll));
     const start = Math.round(this.handScroll);
@@ -980,8 +975,6 @@ export class App {
       c.dataset.z = String(k + 1);
     });
     if (moved) for (const c of cards) if (c.parentElement === hand) hand.append(c);
-    const hc = this.r.handCount as El;
-    if (hc) hc.textContent = `${n} ${n === 1 ? 'card' : 'cards'}`;
     const hl = this.r.handLeft as El, hr = this.r.handRight as El;
     if (hl) { hl.hidden = !(n > VIS && start > 0); hr.hidden = !(n > VIS && start < maxScroll); }
     hand.classList.toggle('more-left', start > 0);
@@ -1025,7 +1018,6 @@ export class App {
       b.style.transform = `rotate(${t * 70}deg)`;
       r.enemyHand.append(b);
     }
-    r.enemyHand.append(h('span', { class: 'count' }, String(n)));
     // phase
     const whose = st.activePlayer === 'player' ? 'Your turn' : 'Enemy turn';
     r.phase.dataset.side = st.activePlayer === 'player' ? 'you' : 'enemy';
@@ -1478,7 +1470,6 @@ export class App {
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
       el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { this.openHand(true); this.popCard(el, true); } });
-      el.append(h('span', { class: 'pop-hit', 'aria-hidden': 'true' }));
       el.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.popCard(el, false); });
       el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);
       el.addEventListener('focus', () => this.popCard(el, true));

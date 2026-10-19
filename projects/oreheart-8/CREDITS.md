@@ -29,3 +29,9 @@ Everything in the game is made in code or generated for this project. There are 
 ## Round 5b additions
 - `public/art/ui/ruby-heart.png`: glossy ruby heart (no text). Drawn in code (SVG rendered with headless Chromium by `tools/make-ruby-heart.mjs`); original work, no outside asset and no image-API call.
 - Soul-crystal HUD gems and the bank-building icon are inline SVG / emoji drawn in code. Painted sky and mountains are generated on a canvas in `src/ui/scene.ts`.
+
+## Round 6a additions
+- `public/art/ui/card-back.webp`: dark card back with gold filigree and crystal motif generated with the xAI image API (no text); the OREHEART logo (`public/art/logo.webp`, owner's logo) is composited in the middle by `tools/gen-r6a-art.mjs`.
+- `public/art/ui/ruby-heart.png`: ruby heart painted with the xAI image API (black background keyed to transparent) by `tools/gen-r6a-art.mjs`.
+- `public/assets/models/crystal-mine-placeholder.gltf`: owner-supplied placeholder crystal mine model.
+- Alegreya SC Italic weights 500 and 800 (SIL OFL, from @fontsource/alegreya-sc) added to the bundled fonts.

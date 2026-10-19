@@ -1,6 +1,7 @@
 // Procedural dark-fantasy art for the 3D board: Goblin rig, Grubnak, Strongholds, mines, ground.
 // Painted-PBR look: rough/metal materials, rim light and glowing gems. No toon shading, no outlines.
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export interface Mats { list: THREE.MeshStandardMaterial[] }
 
@@ -131,39 +132,39 @@ export interface MineArt {
   update(now: number): void;
 }
 
+export const MINE_MODEL = '/assets/models/crystal-mine-placeholder.gltf';
+const MINE_HEIGHT = 1.5, MINE_NATIVE_HEIGHT = 1.32;
+let mineModelP: Promise<THREE.Object3D> | null = null;
+function loadMineModel(): Promise<THREE.Object3D> {
+  return (mineModelP ||= new GLTFLoader().loadAsync(MINE_MODEL).then((g) => g.scene));
+}
+
 export function makeMine(low: boolean, idx: number): MineArt {
   const group = new THREE.Group();
   const crystals = new THREE.Group();
   const mats: THREE.MeshStandardMaterial[] = [];
-  const spec: [number, number, number, number, number][] = [
-    [0, 0, 1.35, 0.3, 0], [-0.3, 0.12, 0.95, 0.22, 0.25], [0.3, -0.06, 0.8, 0.2, -0.3], [0.08, 0.3, 0.6, 0.16, 0.5], [-0.14, -0.28, 0.7, 0.17, -0.2],
-    ...(low ? [] : ([[0.28, 0.26, 0.5, 0.13, 0.35], [-0.36, -0.12, 0.45, 0.12, -0.4]] as [number, number, number, number, number][])),
-  ];
-  for (const [x, z, h, r, tilt] of spec) {
-    const m = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.7, roughness: 0.15, metalness: 0.2, transparent: true, opacity: 0.92, flatShading: true });
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.2, r, h, 6, 1), m); // faceted hexagonal shard
-    mesh.position.set(x, h * 0.5, z);
-    mesh.rotation.z = tilt * 0.4; mesh.rotation.x = tilt * 0.3;
-    const tip = new THREE.Mesh(new THREE.ConeGeometry(r * 0.22, r * 0.9, 6), m);
-    tip.position.y = h * 0.5 + r * 0.4;
-    mesh.add(tip);
-    crystals.add(mesh);
-    mats.push(m);
-  }
+  // Round 6a: the crystal model is the owner's glTF placeholder (swap MINE_MODEL for the final Meshy model).
+  const tinted: { m: THREE.MeshStandardMaterial; k: number }[] = [];
+  let tint: string | number = 0xffffff;
+  const applyTint = () => tinted.forEach(({ m, k }) => { m.color.set(tint as any).multiplyScalar(0.55 + 0.45 * k); m.emissive.set(tint as any); });
+  loadMineModel().then((src) => {
+    const model = src.clone(true);
+    model.scale.setScalar(MINE_HEIGHT / MINE_NATIVE_HEIGHT);
+    model.traverse((o: any) => {
+      if (!o.isMesh) return;
+      const name = String(o.material?.name || '');
+      if (/crystal|shard|nodule/.test(name)) {
+        const m = (o.material as THREE.MeshStandardMaterial).clone();
+        m.emissiveIntensity = 0.9; m.roughness = 0.2;
+        const k = Math.min(1, (m.color.r + m.color.g + m.color.b) / 1.6);
+        o.material = m; tinted.push({ m, k }); mats.push(m);
+      }
+    });
+    group.userData.mineModel = 'gltf';
+    crystals.add(model);
+    applyTint();
+  }).catch(() => {});
   group.add(crystals);
-  // spiked wooden palisade
-  const wood = new THREE.MeshStandardMaterial({ color: 0x3d2b1b, roughness: 0.95 });
-  const posts = low ? 8 : 14;
-  for (let i = 0; i < posts; i++) {
-    const a = (i / posts) * Math.PI * 2;
-    const p = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.5 + (i % 3) * 0.08, 5), wood);
-    p.position.set(Math.cos(a) * 0.62, 0.25, Math.sin(a) * 0.62);
-    p.rotation.set(Math.sin(a) * 0.15, 0, -Math.cos(a) * 0.15);
-    group.add(p);
-  }
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.08, 14), new THREE.MeshStandardMaterial({ color: 0x1b181d, roughness: 1 }));
-  base.position.y = 0.03;
-  group.add(base);
   let light: THREE.PointLight | null = null, beam: THREE.Mesh | null = null, sparks: THREE.Points | null = null;
   if (!low) {
     light = new THREE.PointLight(0xffffff, 12, 7.5, 1.4);
@@ -183,7 +184,7 @@ export function makeMine(low: boolean, idx: number): MineArt {
   return {
     group, mats, light, beam, sparks, crystals,
     recolor(hex) {
-      mats.forEach((m) => { m.color.set(hex as any); m.emissive.set(hex as any); });
+      tint = hex; applyTint();
       light?.color.set(hex as any);
       (beam?.material as THREE.MeshBasicMaterial | undefined)?.color.set(hex as any);
       (sparks?.material as THREE.PointsMaterial | undefined)?.color.set(hex as any);
