@@ -1,6 +1,6 @@
 # Automated check results
 
-235 of 236 checks passed after 3 build round(s).
+249 of 249 checks passed after 2 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -42,6 +42,11 @@
 - ✅ round 6a match layout 844x390 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (844x390)
 - ✅ round 6a screenshots (1920x1080) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (1920x1080)
 - ✅ round 6a screenshots (844x390) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (844x390)
+- ✅ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
+- ✅ round 7 hand (1920x1080) › AC175: hand cards are about 10% smaller (36-46% of the height), still tucked halfway (1920x1080)
+- ✅ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
+- ✅ round 7 hand (844x390) › AC175: hand cards are about 10% smaller (36-46% of the height), still tucked halfway (844x390)
+- ✅ round 7 screenshots (1920x1080) › AC184: Grubnak in a match and in the 3D viewer render without errors
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -237,22 +242,12 @@
 - ✅ AC169: Deck Builder close-up fills the height, has no scrollbar or Close, and dismisses on click or Esc
 - ✅ AC170: deck list + and - change counts at once, without moving the row; rapid clicks all count
 - ✅ AC171: no "All cards" text and no corner ornaments on any screen
-- ❌ AC172: crystal mines use the owner's glTF placeholder, about 1.5 tall, tinted by owner
-
-## Failures
-
-```
-✗ AC172: crystal mines use the owner's glTF placeholder, about 1.5 tall, tinted by owner
-Error: expect(received).toBeLessThanOrEqual(expected)
-
-Expected: <= 1.6
-Received:    1.6068582677028393
-
-  5574 |     expect(m.source).toMatch(/crystal-mine-placeholder\.gltf$/);
-  5575 |     expect(m.height).toBeGreaterThanOrEqual(1.4);
-> 5576 |     expect(m.height).toBeLessThanOrEqual(1.6);
-       |                      ^
-  5577 |     expect(['player', 'opponent', 'neutral']).toContain(m.owner);
-  5578 |     expect(m.tint).toMatch(/^#[0-9a-f]{6}$/i);
-  5579 |     const [R, , B] = rgb(m.tint);
-```
+- ✅ AC172: crystal mines use the owner's glTF placeholder, exactly 1.5 tall, tinted by owner
+- ✅ AC176: the owner's card back and deck-pile pictures are used exactly
+- ✅ AC177: a popped card keeps the at-rest glow thickness and opacity
+- ✅ AC178: glow colors contrast with each faction frame
+- ✅ AC179: crystal mines are exactly 1.5 spaces tall
+- ✅ AC180: Grubnak model files are saved once with models.json; the game never calls Meshy
+- ✅ AC181: Grubnak is the Meshy model on his fortress with the scepter, about 2.4 tall, idling
+- ✅ AC182: Grubnak plays cast, defeat and celebrate at the right moments
+- ✅ AC183: the Grubnak 3D viewer opens from Choose Your Commander and the Deck Builder

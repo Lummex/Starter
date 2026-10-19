@@ -1,21 +1,23 @@
 ## What was built
-This round (6a) reworks the Oreheart match screen and deck builder. Your hand of cards now sits tucked halfway at the bottom and slides up when you hover over it. A hovered card pops out large on top of everything. Cards have a new card back, the text colours and weights follow one shared style, and the Deck Builder has a full-height close-up view. Crystal mines now use a 3D placeholder model tinted by owner.
+This round fixes the playtest problems with your hand of cards and adds Grubnak as a real 3D character. Hovered cards now always shrink back, the hand is about 10% smaller, and your own card-back and deck-pile art is used. The glow on playable cards stays the same thickness when a card pops up, and the mines are exactly 1.5 spaces tall. Grubnak is a 3D model standing on his fortress with his scepter, and he has eight animations. There is also a "View Grubnak in 3D" viewer.
 
 ## Try these things
-- Start a match and hover your hand. It should slide up, and the hovered card should pop out large.
-- Check that the enemy hand is centred, with its deck to the left. Nothing should cover a Commander.
-- Look at the "Done" button at bottom-right. It should only show when needed.
-- Open Decks, click a card for the close-up, then click anywhere or press Esc to dismiss it. Use + and − on the deck list and check the counts update.
-- Look at the crystal mines on the board and check they look right and are tinted by owner.
-- Try it on a phone held sideways, and also with the phone upright. Upright should show "Please rotate your phone".
+- Start a match and sweep the mouse across your hand. Only one card should pop up at a time, and all of them should drop back when you move away.
+- Click a card, then move off it. It should not stay stuck up.
+- Look at the playable-card glow when a card is popped up compared with when it rests.
+- Pick Grubnak in a match. Check that he looks right on his fortress, and cast a spell to see his casting animation.
+- On Choose Your Commander or in the Deck Builder, click "View Grubnak in 3D". Drag to spin, scroll to zoom, and try each animation button.
+- Check that the card backs and deck piles show your artwork.
 
 ## Automated checks
-235 of 236 checks passed. One failed: the check that crystal mines are about 1.5 tall (AC172). The mine measured 1.607 against a 1.6 limit, so it is about 0.4% too tall. This is almost certainly invisible to the eye, but it is technically out of spec.
+249 of 249 checks passed.
 
 ## Things to know
-- The saved screenshots only cover the title screen (desktop) and the upright phone view. I could not see the match screen, hand pop-out or mines in them, so I am relying on the automated checks for those.
-- The desktop title screen looks clean: logo, five menu items and the welcome text are all readable and don't overlap. The upright phone view shows only the rotate message, as intended.
-- The spec file was very large and I did not read all of it. No build notes exist for this round, only older ones.
+- The builder says Grubnak looks a bit soft in a match, because the camera looks down at him steeply.
+- The laugh, point and hit animations are wired up but were only tested in the viewer, not in a recorded match.
+- The builder used 119 Meshy credits on the models.
+- The screenshots only show the title screen, and it looks fine. The phone screenshot shows the "Please rotate your phone" message, which is expected in portrait. I did not see screenshots of the match or the 3D viewer.
+- Phone performance was not measured on a real device.
 
 ## Recommendation
-Request changes: one mine-size check fails by a tiny margin (1.607 vs 1.6 max). It is a quick fix, and otherwise the build looks solid.
+Ready to approve
