@@ -1715,8 +1715,8 @@ test.describe('landscape layout details', () => {
     const shown = (390 - rest.y) / rest.height;
     expect(shown).toBeGreaterThanOrEqual(0.35);
     expect(shown).toBeLessThanOrEqual(0.65);
-    expect(rest.height).toBeGreaterThanOrEqual(390 * 0.38);
-    expect(rest.height).toBeLessThanOrEqual(390 * 0.54);
+    expect(rest.height).toBeGreaterThanOrEqual(390 * 0.36);
+    expect(rest.height).toBeLessThanOrEqual(390 * 0.46);
     await page.mouse.move(rest.x + rest.width / 2, rest.y + rest.height * 0.2);
     await expect.poll(async () => { const b = await card.boundingBox(); return b.y + b.height; }).toBeLessThanOrEqual(391);
     await expect.poll(async () => (await card.boundingBox()).y).toBeGreaterThanOrEqual(-1);
@@ -3154,7 +3154,7 @@ test('AC92: every card has short and long text; Full explanation shows the long 
 });
 
 async function expectDeckImage(loc, label) {
-  const img = loc.locator('img[src*="deck-image"]').first();
+  const img = loc.locator('img[src*="deck-pile"]').first();
   await expect(img, label).toBeAttached();
   await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth > 0), { message: label }).toBe(true);
   const corners = await img.evaluate((i) => {
@@ -3167,7 +3167,7 @@ async function expectDeckImage(loc, label) {
   expect(corners, label).toEqual([0, 0, 0, 0]);
 }
 test('AC93: the cut-out deck image is used on every deck pile outside the match', async ({ page }) => {
-  // Round 6a: the in-match deck piles show the Oreheart card back instead (AC165)
+  // Round 7: the owner's deck-pile.png is used on every deck pile (the match piles are checked in AC176)
   await openDecks(page);
   await expectDeckImage(page.getByLabel('Deck pile', { exact: true }), 'Deck pile');
   await page.goto('/?test=1');
@@ -3815,7 +3815,7 @@ test.describe('both hands at 844x390', () => {
     await expect(stacks.nth(2)).toHaveAccessibleName('Gnome Horde, 100 cards, ready');
     await expect(row.getByRole('button', { name: 'Goblin Horde, 100 cards, ready', exact: true })).toHaveCount(1);
     await expect(row.getByRole('button', { name: 'Dwarf Arcane Hoard, 100 cards, ready', exact: true })).toHaveCount(1);
-    await expect(row.locator('img[src*="deck-image"]').first()).toBeVisible();
+    await expect(row.locator('img[src*="deck-pile"]').first()).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('deck-picker-844x390.png') });
     await row.getByRole('button', { name: 'Gnome Horde, 100 cards, ready', exact: true }).click();
     await expect(row.getByRole('button', { name: 'Gnome Horde, 100 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -3955,7 +3955,7 @@ test('AC120: card names and text boxes use one size, gold lettering, thin text',
 test('AC121: Deck Builder deck art has no frame; painted background', async ({ page }) => {
   await openDecks(page);
   const pile = page.getByLabel('Deck pile', { exact: true });
-  const img = pile.locator('img[src*="deck-image"]').first();
+  const img = pile.locator('img[src*="deck-pile"]').first();
   await expect(img).toBeVisible();
   const boxes = await img.evaluate((el) => {
     const pileEl = el.closest('[aria-label="Deck pile"]');
@@ -4972,8 +4972,8 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       expect((ed.x + ed.width - eh.x) / W, 'enemy deck right edge vs enemy hand left edge').toBeLessThanOrEqual(0.02);
       expect((eh.x - (ed.x + ed.width)) / W, 'enemy deck just left of the enemy hand').toBeLessThanOrEqual(0.12);
       const first = await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox();
-      expect(first.height / H).toBeGreaterThanOrEqual(0.38);
-      expect(first.height / H).toBeLessThanOrEqual(0.54);
+      expect(first.height / H).toBeGreaterThanOrEqual(0.36);
+      expect(first.height / H).toBeLessThanOrEqual(0.46);
       const shown = (H - first.y) / first.height;
       expect(shown).toBeGreaterThanOrEqual(0.35);
       expect(shown).toBeLessThanOrEqual(0.65);
@@ -5254,8 +5254,8 @@ for (const [W, H] of SHAPES_6A) {
       const boxes = [];
       for (let i = 0; i < 5; i++) boxes.push(await cards.nth(i).boundingBox());
       for (const b of boxes) {
-        expect(b.height / H).toBeGreaterThanOrEqual(0.38);
-        expect(b.height / H).toBeLessThanOrEqual(0.54);
+        expect(b.height / H).toBeGreaterThanOrEqual(0.36);
+        expect(b.height / H).toBeLessThanOrEqual(0.46);
         const shown = (H - b.y) / b.height;
         expect(shown, 'tucked halfway').toBeGreaterThanOrEqual(0.35);
         expect(shown, 'tucked halfway').toBeLessThanOrEqual(0.65);
@@ -5367,7 +5367,7 @@ test('AC165: face-down cards use the original Oreheart card back', async ({ page
   await start(page, quiet({ opponentHand: ['goblin-scrapper', 'fireball', 'soul-shard'], playerDeck: SHARDS, opponentDeck: SHARDS.slice(0, 5) }));
   await page.waitForTimeout(800);
   const srcs = new Set();
-  for (const label of ['Enemy hand', 'Enemy deck', 'Your deck']) {
+  for (const label of ['Enemy hand']) { // Round 7: the match deck piles show deck-pile.png (AC176)
     const backs = page.getByLabel(label, { exact: true }).locator('[data-card-back]');
     const n = await backs.count();
     expect(n, `${label} has card backs`).toBeGreaterThan(0);
@@ -5559,7 +5559,7 @@ test('AC171: no "All cards" text and no corner ornaments on any screen', async (
   await noOrnaments('match');
 });
 
-test('AC172: crystal mines use the owner\'s glTF placeholder, about 1.5 tall, tinted by owner', async ({ page }) => {
+test('AC172: crystal mines use the owner\'s glTF placeholder, exactly 1.5 tall, tinted by owner', async ({ page }) => {
   await start(page, quiet({ board: [
     { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
     { cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 6, minedMine: M3 },
@@ -5572,8 +5572,8 @@ test('AC172: crystal mines use the owner\'s glTF placeholder, about 1.5 tall, ti
   const neutral = new Set();
   for (const m of r.mineModels) {
     expect(m.source).toMatch(/crystal-mine-placeholder\.gltf$/);
-    expect(m.height).toBeGreaterThanOrEqual(1.4);
-    expect(m.height).toBeLessThanOrEqual(1.6);
+    expect(m.height).toBeGreaterThanOrEqual(1.47);
+    expect(m.height).toBeLessThanOrEqual(1.53);
     expect(['player', 'opponent', 'neutral']).toContain(m.owner);
     expect(m.tint).toMatch(/^#[0-9a-f]{6}$/i);
     const [R, , B] = rgb(m.tint);
@@ -5613,3 +5613,354 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
     });
   });
 }
+
+// ---------- Round 7 ----------
+const handCards7 = (page) => page.getByLabel('Your hand', { exact: true }).getByRole('button').filter({ has: page.locator('[data-card-id]') });
+// a point inside the card's visible part where the card itself receives the pointer
+const hoverPointOf = (card) => card.evaluate((el) => {
+  const b = el.getBoundingClientRect();
+  for (const fy of [0.08, 0.15, 0.25, 0.35, 0.5]) for (const fx of [0.15, 0.3, 0.5, 0.7, 0.85]) {
+    const x = b.left + b.width * fx; const y = Math.min(innerHeight - 3, b.top + b.height * fy);
+    if (x < 1 || x > innerWidth - 1 || y < 1) continue;
+    const e = document.elementFromPoint(x, y);
+    if (e && (e === el || el.contains(e))) return [x, y];
+  }
+  return null;
+});
+const HAND_R7 = ['goblin-scrapper', 'fireball', 'goblin-slinger', 'soul-shard', 'goblin-scrounger'];
+
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`round 7 hand (${W}x${H})`, () => {
+    test.use({ viewport: { width: W, height: H } });
+
+    test(`AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (${W}x${H})`, async ({ page }) => {
+    test.setTimeout(120000);
+      await start(page, quiet({ playerHand: HAND_R7, playerCrystals: 6 }));
+      const away = () => page.mouse.move(W / 2, H * 0.3, { steps: 3 });
+      await away();
+      await page.waitForTimeout(1200);
+      const cards = handCards7(page);
+      await expect(cards).toHaveCount(5);
+      const heights = async () => {
+        const n = await cards.count(); const out = [];
+        for (let i = 0; i < n; i++) out.push((await cards.nth(i).boundingBox()).height / H);
+        return out;
+      };
+      const allRest = (msg) => expect.poll(async () => (await heights()).filter((h) => h > 0.47).length, { message: msg, timeout: 4000 }).toBe(0);
+      const onlyPopped = (i, msg) => expect.poll(async () => (await heights()).every((h, j) => (j === i ? h >= 0.8 : h <= 0.47)), { message: msg, timeout: 4000 }).toBe(true);
+      for (let i = 0; i < 5; i++) {
+        const pt = await hoverPointOf(cards.nth(i));
+        expect(pt, `card ${i} can be hovered`).not.toBeNull();
+        await page.mouse.move(pt[0], pt[1], { steps: 4 });
+        await onlyPopped(i, `only card ${i} is popped`);
+        await away();
+        await allRest(`card ${i} retracts after the pointer leaves`);
+      }
+      // moving straight from one card to another retracts the first (when the second can be reached)
+      let pt = await hoverPointOf(cards.nth(0));
+      await page.mouse.move(pt[0], pt[1], { steps: 4 });
+      await onlyPopped(0, 'card 0 popped');
+      const pt4 = await hoverPointOf(cards.nth(4));
+      if (pt4) {
+        await page.mouse.move(pt4[0], pt4[1], { steps: 4 });
+        await onlyPopped(4, 'card 4 popped, card 0 retracted');
+      }
+      await away();
+      await allRest('all cards back after leaving the hand');
+      await expect.poll(async () => {
+        const n = await cards.count(); const shown = [];
+        for (let i = 0; i < n; i++) { const b = await cards.nth(i).boundingBox(); shown.push((H - b.y) / b.height); }
+        return shown.every((s) => s >= 0.35 && s <= 0.65);
+      }, { message: 'hand tucked halfway again' }).toBe(true);
+      // a drag dropped back on the hand leaves nothing stuck
+      pt = await hoverPointOf(cards.nth(2));
+      await page.mouse.move(pt[0], pt[1], { steps: 3 });
+      await page.mouse.down();
+      await page.mouse.move(W / 2, H * 0.5, { steps: 8 });
+      await page.mouse.move(pt[0], pt[1], { steps: 8 });
+      await page.mouse.up();
+      await away();
+      await allRest('nothing stuck after a drag dropped back on the hand');
+      await page.waitForTimeout(500);
+      const before = await cards.count();
+      // playing a card while one is popped leaves nothing stuck
+      const s = await getState(page);
+      const uid = handUid(s, 'player', 'goblin-scrapper');
+      const summon = (await legal(page)).find((a) => a.type === 'summon' && a.uid === uid);
+      expect(summon, 'the scrapper can be summoned').toBeTruthy();
+      const scrapper = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true });
+      pt = await hoverPointOf(scrapper);
+      await page.mouse.move(pt[0], pt[1], { steps: 3 });
+      await expect.poll(async () => (await scrapper.boundingBox()).height / H).toBeGreaterThanOrEqual(0.8);
+      expect((await act(page, summon)).ok).toBe(true);
+      await expect(cards).toHaveCount(before - 1);
+      await page.waitForTimeout(600);
+      expect((await heights()).filter((h) => h > 0.47).length, 'at most one card popped after playing').toBeLessThanOrEqual(1);
+      await away();
+      await allRest('nothing stuck after a card was played');
+    });
+
+    test(`AC175: hand cards are about 10% smaller (36-46% of the height), still tucked halfway (${W}x${H})`, async ({ page }) => {
+      await start(page, quiet({ playerHand: HAND_R7 }));
+      await page.mouse.move(W / 2, H * 0.3);
+      await page.waitForTimeout(1200);
+      const cards = handCards7(page);
+      await expect(cards).toHaveCount(5);
+      for (let i = 0; i < 5; i++) {
+        const b = await cards.nth(i).boundingBox();
+        expect(b.height / H).toBeGreaterThanOrEqual(0.36);
+        expect(b.height / H).toBeLessThanOrEqual(0.46);
+        const shown = (H - b.y) / b.height;
+        expect(shown).toBeGreaterThanOrEqual(0.35);
+        expect(shown).toBeLessThanOrEqual(0.65);
+      }
+    });
+  });
+}
+
+const oldDeckArt = (page) => page.evaluate(() => {
+  const bad = [];
+  for (const e of document.querySelectorAll('*')) {
+    const src = e.tagName === 'IMG' ? e.getAttribute('src') || '' : '';
+    const bg = getComputedStyle(e).backgroundImage || '';
+    if (/deck-image|Deck_image/i.test(src + ' ' + bg)) bad.push(src || bg);
+  }
+  return bad;
+});
+const pileSize = (pile) => pile.locator('img[src*="deck-pile"]').first().evaluate((i) => [i.naturalWidth, i.naturalHeight]);
+
+test('AC176: the owner\'s card back and deck-pile pictures are used exactly', async ({ page }) => {
+  await start(page, quiet({ opponentHand: ['goblin-scrapper', 'fireball', 'soul-shard'], playerDeck: SHARDS, opponentDeck: SHARDS.slice(0, 5) }));
+  await page.waitForTimeout(800);
+  const backs = page.getByLabel('Enemy hand', { exact: true }).locator('[data-card-back]');
+  expect(await backs.count()).toBeGreaterThan(0);
+  const size = await backs.first().evaluate(async (e) => {
+    let src = null;
+    const img = e.matches('img') ? e : e.querySelector('img[src*="oreheart-card-back"]');
+    if (img && /oreheart-card-back/.test(img.src)) src = img.src;
+    if (!src) for (const x of [e, ...e.querySelectorAll('*')]) {
+      const m = /url\(["']?([^"')]*oreheart-card-back[^"')]*)/.exec(getComputedStyle(x).backgroundImage);
+      if (m) { src = new URL(m[1], location.href).href; break; }
+    }
+    if (!src) return null;
+    const i = new Image(); i.src = src; await i.decode();
+    return [i.naturalWidth, i.naturalHeight];
+  });
+  expect(size, 'owner card back (1184x1664)').toEqual([1184, 1664]);
+  for (const label of ['Your deck', 'Enemy deck']) {
+    const pile = page.getByLabel(label, { exact: true });
+    await expectDeckImage(pile, label);
+    expect(await pileSize(pile), label).toEqual([1155, 1313]);
+    await expect(pile.locator('[data-card-back]'), `${label} uses deck-pile.png, not card backs`).toHaveCount(0);
+  }
+  await expect(page.getByLabel('Your deck', { exact: true })).toContainText('12');
+  await expect(page.getByLabel('Enemy deck', { exact: true })).toContainText('5');
+  const yd = await page.getByLabel('Your deck', { exact: true }).boundingBox();
+  const ed = await page.getByLabel('Enemy deck', { exact: true }).boundingBox();
+  expect(ed.width * ed.height, 'enemy deck smaller than yours').toBeLessThan(yd.width * yd.height);
+  expect(await oldDeckArt(page), 'match').toEqual([]);
+  await openDecks(page);
+  const dp = page.getByLabel('Deck pile', { exact: true });
+  await expectDeckImage(dp, 'Deck pile');
+  expect(await pileSize(dp)).toEqual([1155, 1313]);
+  expect(await oldDeckArt(page), 'deck builder').toEqual([]);
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expectDeckImage(page.getByLabel('Deck choice', { exact: true }), 'Deck choice');
+  expect(await oldDeckArt(page), 'deck picker').toEqual([]);
+});
+
+const handGlow = (page) => page.evaluate(async () => await window.oreheart.getHandGlow());
+const glowOutset = (card) => card.evaluate((el) => {
+  const g = el.querySelector('[data-card-glow]'); const f = el.querySelector('[data-card-id]');
+  if (!g || !f) return null;
+  const a = g.getBoundingClientRect(); const b = f.getBoundingClientRect();
+  return ((b.left - a.left) + (a.right - b.right) + (b.top - a.top) + (a.bottom - b.bottom)) / 4;
+});
+
+test('AC177: a popped card keeps the at-rest glow thickness and opacity', async ({ page }) => {
+  await start(page, quiet({ playerHand: ['goblin-scrapper', 'goblin-slinger', 'goblin-scrounger'], playerCrystals: 10 }));
+  await page.mouse.move(640, 200);
+  await page.waitForTimeout(1200);
+  const g0 = await handGlow(page);
+  expect(g0).toHaveLength(3);
+  const idx = g0.findIndex((g) => g.glowing);
+  expect(idx, 'a playable card glows').toBeGreaterThanOrEqual(0);
+  const card = handCards7(page).nth(idx);
+  const rest = await glowOutset(card);
+  expect(rest, 'glow element present').not.toBeNull();
+  expect(rest).toBeGreaterThan(0);
+  const pt = await hoverPointOf(card);
+  await page.mouse.move(pt[0], pt[1], { steps: 3 });
+  await expect.poll(async () => (await handGlow(page))[idx].popped).toBe(true);
+  await page.waitForTimeout(500);
+  const popped = await glowOutset(card);
+  const g1 = (await handGlow(page))[idx];
+  expect(Math.abs(popped - rest), `glow ${rest}px at rest vs ${popped}px popped`).toBeLessThanOrEqual(2);
+  expect(popped).toBeLessThan(rest * 2 + 2);
+  expect(Math.abs(g1.thicknessPx - g0[idx].thicknessPx)).toBeLessThanOrEqual(2);
+  expect(Math.abs(g1.opacity - g0[idx].opacity)).toBeLessThanOrEqual(0.05);
+});
+
+test('AC178: glow colors contrast with each faction frame', async ({ page }) => {
+  await start(page, quiet({ playerHand: ['goblin-scrapper', 'gnome-tinker', 'ironhammer-berserker', 'healing-light'], playerCrystals: 10 }));
+  await page.waitForTimeout(800);
+  const g = await handGlow(page);
+  expect(new Set(g.map((x) => x.faction))).toEqual(new Set(['goblins', 'gnomes', 'dwarves', 'shared']));
+  const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  for (const x of g) {
+    expect(x.color).toMatch(/^#[0-9a-f]{6}$/i);
+    const [R, G, B] = rgb(x.color);
+    const msg = `${x.cardId} ${x.color}`;
+    if (x.faction === 'goblins') { expect(B - G, msg).toBeGreaterThan(30); expect(R - G, msg).toBeGreaterThan(30); }
+    if (x.faction === 'gnomes') { expect(B - R, msg).toBeGreaterThan(30); expect(B - G, msg).toBeGreaterThan(30); }
+    if (x.faction === 'dwarves') { expect(R - B, msg).toBeGreaterThan(40); expect(G - B, msg).toBeGreaterThan(40); }
+    if (x.faction === 'shared') { expect(Math.min(R, G, B), msg).toBeGreaterThanOrEqual(170); expect(R, msg).toBeGreaterThanOrEqual(B); }
+  }
+});
+
+test('AC179: crystal mines are exactly 1.5 spaces tall', async ({ page }) => {
+  await start(page, quiet({}));
+  const r = await page.evaluate(async () => await window.oreheart.getRenderStats());
+  if (!r.webgl) test.skip(true, 'WebGL unavailable');
+  expect(r.mineModels).toHaveLength(3);
+  for (const m of r.mineModels) {
+    expect(m.height).toBeGreaterThanOrEqual(1.47);
+    expect(m.height).toBeLessThanOrEqual(1.53);
+  }
+});
+
+// Part B (Meshy). Skips itself when the builder could not deliver the models (owner allowed Part B to fail).
+const CANON_ANIMS = ['idle', 'laugh', 'point', 'celebrate', 'surprised', 'cast', 'hit', 'defeat'];
+async function grubnakModels(request) {
+  const res = await request.get('/models/commanders/models.json');
+  if (!res.ok()) return null;
+  try { const j = await res.json(); return j && j.grubnak ? j : null; } catch { return null; }
+}
+const renderStats = (page) => page.evaluate(async () => await window.oreheart.getRenderStats());
+const grubnakEntry = async (page, side) => (await renderStats(page)).commanderModels.find((c) => c.side === side);
+
+test('AC180: Grubnak model files are saved once with models.json; the game never calls Meshy', async ({ page, request }) => {
+  const m = await grubnakModels(request);
+  test.skip(!m, 'Part B not delivered (no models.json)');
+  for (const k of CANON_ANIMS) expect(typeof m.grubnak.animations[k], `animation ${k}`).toBe('string');
+  for (const [key, file, max] of [['grubnak', 'grubnak.glb', 10.5 * 1024 * 1024], ['fortress', 'grubnak-fortress.glb', 5.25 * 1024 * 1024], ['scepter', 'grubnak-scepter.glb', 5.25 * 1024 * 1024]]) {
+    expect(m[key].file).toBe(file);
+    const res = await request.get(`/models/commanders/${file}`);
+    expect(res.ok(), file).toBe(true);
+    const body = await res.body();
+    expect(body.subarray(0, 4).toString('latin1'), `${file} is a GLB`).toBe('glTF');
+    expect(body.length, `${file} bytes`).toBe(m[key].bytes);
+    expect(body.length, `${file} size`).toBeLessThanOrEqual(max);
+  }
+  const meshy = [];
+  page.on('request', (r) => { try { if (/meshy\.ai$/i.test(new URL(r.url()).hostname)) meshy.push(r.url()); } catch { /* ignore */ } });
+  await start(page, quiet({}));
+  await renderStats(page);
+  await page.waitForTimeout(1000);
+  expect(meshy).toEqual([]);
+});
+
+test('AC181: Grubnak is the Meshy model on his fortress with the scepter, about 2.4 tall, idling', async ({ page, request }) => {
+  test.skip(!(await grubnakModels(request)), 'Part B not delivered (no models.json)');
+  for (const side of ['player', 'opponent']) {
+    await openTest(page);
+    await newMatch(page, { ai: false, playerCommander: side === 'player' ? 'grubnak' : 'borgo', opponentCommander: side === 'player' ? 'borgo' : 'grubnak', setup: { opponentHand: [] } });
+    const r = await renderStats(page);
+    if (!r.webgl) test.skip(true, 'WebGL unavailable');
+    const g = r.commanderModels.find((c) => c.side === side);
+    expect(g, `${side} commander model`).toBeTruthy();
+    expect(g.commanderId).toBe('grubnak');
+    expect(g.source).toMatch(/grubnak\.glb$/);
+    expect(g.fortress).toMatch(/grubnak-fortress\.glb$/);
+    expect(g.scepter).toMatch(/grubnak-scepter\.glb$/);
+    expect(g.scepterBone).toMatch(/hand|wrist|palm/i);
+    expect(g.scepterBone).toMatch(/right|(^|[^a-z])r([^a-z]|$)/i);
+    expect(g.height).toBeGreaterThanOrEqual(2.2);
+    expect(g.height).toBeLessThanOrEqual(2.6);
+    for (const a of CANON_ANIMS) expect(g.animations).toContain(a);
+    expect(g.currentAnimation).toBe('idle');
+  }
+});
+
+test('AC182: Grubnak plays cast, defeat and celebrate at the right moments', async ({ page, request }) => {
+  test.setTimeout(120000);
+  test.skip(!(await grubnakModels(request)), 'Part B not delivered (no models.json)');
+  await start(page, quiet({ playerHand: ['fireball'], playerCrystals: 10, board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 4, col: 8 }] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await castOrb(page, 4, 8);
+  await expect.poll(async () => (await grubnakEntry(page, 'player')).animationLog, { timeout: 15000 }).toContain('cast');
+  await surrenderViaMenu(page);
+  await expect.poll(async () => (await grubnakEntry(page, 'player')).animationLog, { timeout: 15000 }).toContain('defeat');
+  await openTest(page);
+  await newMatch(page, { ai: false, playerCommander: 'borgo', opponentCommander: 'grubnak', setup: { opponentHand: [] } });
+  await surrenderViaMenu(page);
+  await expect.poll(async () => (await grubnakEntry(page, 'opponent')).animationLog, { timeout: 15000 }).toContain('celebrate');
+});
+
+async function checkGrubnakViewer(page) {
+  await page.getByRole('button', { name: 'View Grubnak in 3D', exact: true }).click();
+  const dlg = page.getByRole('dialog', { name: 'Grubnak in 3D', exact: true });
+  await expect(dlg).toBeVisible();
+  const canvas = dlg.locator('canvas').first();
+  await expect(canvas).toBeVisible();
+  const vs = () => page.evaluate(async () => await window.oreheart.getViewerState());
+  await expect.poll(async () => (await vs()).open).toBe(true);
+  expect((await vs()).source).toMatch(/grubnak\.glb$/);
+  for (const name of CANON_ANIMS) {
+    const label = name[0].toUpperCase() + name.slice(1);
+    const b = dlg.getByRole('button', { name: label, exact: true });
+    await expect(b).toBeVisible();
+    await b.click();
+    await expect.poll(async () => (await vs()).animation, { message: label }).toBe(name);
+  }
+  const cb = await canvas.boundingBox();
+  const r0 = (await vs()).rotationY;
+  await page.mouse.move(cb.x + cb.width / 2, cb.y + cb.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(cb.x + cb.width / 2 + Math.min(150, cb.width / 3), cb.y + cb.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect.poll(async () => Math.abs((await vs()).rotationY - r0), { message: 'drag spins' }).toBeGreaterThan(0.1);
+  const z0 = (await vs()).zoom;
+  await page.mouse.move(cb.x + cb.width / 2, cb.y + cb.height / 2);
+  await page.mouse.wheel(0, -400);
+  await expect.poll(async () => (await vs()).zoom, { message: 'wheel zooms' }).not.toBe(z0);
+  await dlg.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(dlg).toBeHidden();
+  await page.getByRole('button', { name: 'View Grubnak in 3D', exact: true }).click();
+  await expect(dlg).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dlg).toBeHidden();
+}
+
+test('AC183: the Grubnak 3D viewer opens from Choose Your Commander and the Deck Builder', async ({ page, request }) => {
+  test.setTimeout(120000);
+  test.skip(!(await grubnakModels(request)), 'Part B not delivered (no models.json)');
+  await page.goto('/?test=1');
+  await page.waitForFunction(() => !!window.oreheart);
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await checkGrubnakViewer(page);
+  await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+  await openDecks(page);
+  await checkGrubnakViewer(page);
+});
+
+test.describe('round 7 screenshots (1920x1080)', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC184: Grubnak in a match and in the 3D viewer render without errors', async ({ page, request }, testInfo) => {
+    test.skip(!(await grubnakModels(request)), 'Part B not delivered (no models.json)');
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await start(page, quiet({ playerHand: HAND_R7, playerCrystals: 4, board: BOARD_5B }));
+    await page.mouse.move(960, 300);
+    await page.waitForTimeout(1500);
+    await testInfo.attach('r7-grubnak-match-1920x1080', { body: await page.screenshot(), contentType: 'image/png' });
+    await page.goto('/?test=1');
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    await page.getByRole('button', { name: 'View Grubnak in 3D', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Grubnak in 3D', exact: true })).toBeVisible();
+    await page.waitForTimeout(1500);
+    await testInfo.attach('r7-grubnak-viewer-1920x1080', { body: await page.screenshot(), contentType: 'image/png' });
+    expect(errors).toEqual([]);
+  });
+});
