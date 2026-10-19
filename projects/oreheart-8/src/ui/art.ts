@@ -162,6 +162,8 @@ export function makeMine(low: boolean, idx: number): MineArt {
     });
     group.userData.mineModel = 'gltf';
     crystals.add(model);
+    const bb = new THREE.Box3().setFromObject(model);
+    group.userData.mineHeight = bb.max.y - bb.min.y;
     applyTint();
   }).catch(() => {});
   group.add(crystals);
@@ -185,6 +187,7 @@ export function makeMine(low: boolean, idx: number): MineArt {
     group, mats, light, beam, sparks, crystals,
     recolor(hex) {
       tint = hex; applyTint();
+      group.userData.tintHex = '#' + new THREE.Color(hex as any).getHexString();
       light?.color.set(hex as any);
       (beam?.material as THREE.MeshBasicMaterial | undefined)?.color.set(hex as any);
       (sparks?.material as THREE.PointsMaterial | undefined)?.color.set(hex as any);

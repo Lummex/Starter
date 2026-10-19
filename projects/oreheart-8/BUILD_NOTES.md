@@ -392,3 +392,7 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 - Done is right-aligned to the deck's right edge (never off-screen); enemy hand centre nudged 4 px left.
 - Creature card view is larger (min(300px, 52vh) wide); card zoom face accepts the dismiss click.
 - Card grid in the deck builder has aria-label "All cards" again (no visible label); deck list rows update in place and read "N × Name".
+
+## Round 6a fixes (inspector round 2)
+- AC120: card rules text is now pale gold (#FFE7A0, thin, outlined) on every card face.
+- AC172: `getRenderStats()` now returns `mineModels` (source, height ≈1.5, owner, tint per mine) and waits for the glTF to load.

@@ -5,7 +5,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
-import { darkGround, borderDecor, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
+import { MINE_MODEL, darkGround, borderDecor, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
 import { audio } from './audio';
 
 const BW: number = CONFIG.boardWidth, BH: number = CONFIG.boardHeight;
@@ -765,16 +765,16 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   void state;
 
   function stats(): Promise<any> {
-    const f0 = frames;
+    const f0 = frames, t0 = Date.now();
     return new Promise((resolve) => {
       const wait = () => {
-        if (frames >= f0 + 2) {
+        if (frames >= f0 + 2 && (Date.now() - t0 > 4000 || mines.every((m) => m.group.userData.mineHeight))) {
           resolve({
             webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
             bloom: !!bloomPass, shadows: renderer.shadowMap.enabled, particles: !!embers,
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub ? 'finished' : 'placeholder' }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub ? 'finished' : 'placeholder' } },
-            strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModel: mines.every((m) => m.group.userData.mineModel === 'gltf') ? 'gltf' : 'loading',
+            strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => ({ source: MINE_MODEL, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' })), mineModel: mines.every((m) => m.group.userData.mineModel === 'gltf') ? 'gltf' : 'loading',
           });
         } else setTimeout(wait, 30);
       };
