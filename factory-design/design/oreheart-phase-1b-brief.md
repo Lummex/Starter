@@ -4,7 +4,32 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 6a — owner playtest of 5b: match fixes, card back, text palette, deck builder — read this first
+## Round 7 — fixes from the 6a playtest + Build B begins: Grubnak in 3D (Meshy) — read this first
+
+Round 6a is done; keep everything from it unless an item below replaces it. Rules are unchanged. **Part A (fixes) must ship even if Part B (Meshy) fails:** do Part A first, then B. If Meshy errors or runs out of credits, keep the current Grubnak figure, finish the round and explain what failed in the report.
+
+### Part A — fixes
+1. **Hand bug, top priority:** hovering makes cards pop up and stay up; they don't retract, and the raise/shuffle/in-out motion is broken (it worked well in 5b). When the pointer leaves a card, it returns to its place in the fan immediately. When the pointer leaves the hand area, the whole hand tucks back to halfway. Only one card can be popped at a time, and no card may get stuck raised: after a drag or cancel, after playing a card, on touch, when the pointer leaves the window, or when the hand contents change. Make the animation smooth and quick, like 5b. Add tests that hover in and out of several cards and then leave the hand, checking that every card returns.
+2. **Hand cards about 10% smaller than 6a** (about 41% of the screen height at 16:9), with the same tucked-halfway rest state.
+3. **Owner art, used exactly** (no redraw, no image API). There are **two different files:**
+   - **Single card back:** `factory-design/design/references/card backs.jpg`. This is ONE card: the Oreheart logo over the green/blue crystal heart in a gold frame, 1184 × 1664. Use it on every individual face-down card: each card in the enemy's hand, and any face-down or flipping card. Remove the 6a generated card back.
+   - **Deck (the pile you draw from):** `factory-design/design/references/deck-pile.png`. This is a STACK of those cards: the owner's Deck_image.jpg with its painted checkerboard background removed, as a transparent PNG, 1155 × 1313. Use it for BOTH players' deck piles (player bottom-right; enemy at the top just left of his hand, smaller), with the cards-left number on top, and for the deck pictures in the deck builder and deck picker. Do NOT use Deck_image.jpg itself; it has a fake checkerboard baked in.
+4. **Popped-out card glow bug:** the glow on cards resting in the hand is fine; keep it exactly. When a card pops out enlarged, its glow is blown out and far too wide, because the glow scales up with the card. The popped card's glow must have the **same thickness in screen pixels and the same opacity** as the glow at rest; do not scale the glow with the card. Its color contrasts with the faction frame: Goblins (green frame) **purple**, Gnomes (gold/blue frame) **blue**, Dwarves (purple frame) **yellow-gold**, shared cards **warm white-gold**. A subtle, slow swirl or shimmer moving along that thin rim is welcome, but not wider and not brighter. Keep it smooth at 60 fps on a phone.
+5. **AC172:** the mine measured 1.607 against a 1.6 maximum. Scale the mine to exactly 1.5.
+
+### Part B — Grubnak, Goblin Commander, as a real 3D model (Meshy)
+Meshy API key: env `MESHY_API_KEY` (from the repo secret MESHYKEY). Read the current Meshy API docs at https://docs.meshy.ai for the endpoints and fields. Reference images are public on GitHub at `https://raw.githubusercontent.com/Lummex/Starter/main/factory-design/design/references/commanders/grubnak/<file>` (URL-encode spaces).
+1. **Character:** Meshy **multi-image to 3D** from `grubnak-front.png`, `grubnak-left.png`, `grubnak-back.png`, `grubnak-right.png` (A-pose, one view each). Request PBR textures, a target of about 30k polygons, triangles. Then **auto-rig** it (humanoid) and add **animations** from Meshy's animation library, choosing the closest matches: idle (breathing), laugh, point, celebrate, surprised/react, cast (spell), hit (take damage), defeat. Download the rigged, animated GLB.
+2. **Fortress base:** image to 3D from `fortress-front.png` (static, no rig), about 10k polygons.
+3. **Scepter:** image to 3D from `scepter-front.png` (static, about 3k polygons), attached to Grubnak's right-hand bone so it moves with his animations.
+4. **Do not regenerate every round:** write a script `tools/gen-grubnak-3d.mjs` that runs the Meshy jobs **once** and saves the results into the game's assets (e.g. `public/models/commanders/grubnak.glb`, `grubnak-fortress.glb`, `grubnak-scepter.glb`) along with a small `models.json` (Meshy task ids, polycounts, file sizes, animation names). Later builds load those saved files and must not call Meshy again unless the owner asks. Downscale textures to 2048 or smaller and keep each file under about 10 MB (character) / 5 MB (others).
+5. **In the game:** wherever Grubnak is a Commander (player or enemy), replace the current Grubnak figure with the 3D model standing on his fortress. Total height is about 2.4 board spaces and the footprint is 1 × 1, facing the opponent. Play **idle** all the time; **cast** when he casts a spell; **hit** when his Stronghold takes damage; **laugh** or **point** when one of his creatures defeats an enemy (randomly, sometimes); **celebrate** on victory; **defeat** when he loses. Keep the owner camera and HUD layout; nothing may cover him.
+6. **See it:** on the Choose Your Commander screen and in the deck builder, add a **3D viewer** for Grubnak: drag to spin, scroll or pinch to zoom, and plain-text buttons that play each animation. Use the same text style as the other menus.
+7. **Report:** include screenshots of Grubnak in a match at 1920 × 1080, in the 3D viewer, and the Meshy credits spent.
+
+Tests: keep all checks passing. Add the hand-retract tests, card back and deck images loaded from the owner files, popped glow thickness equal to the at-rest glow, mine height 1.5, and (if Part B succeeded) the Grubnak model loaded, scaled about 2.4, with animations present, and the 3D viewer opening with working animation buttons.
+
+## Round 6a (done) — owner playtest of 5b: match fixes, card back, text palette, deck builder
 
 Round 5b is done; keep everything from it except where an item below replaces it. Build B (Meshy 3D models, starting with Grubnak) is round 6b, next; do not start it here. Rules are unchanged.
 
