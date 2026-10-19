@@ -1,12 +1,12 @@
 # Automated check results
 
-217 of 218 checks passed after 3 build round(s).
+235 of 236 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
 - ✅ landscape phone viewport 667x375 › AC24: menu and full-screen match fit a 667x375 landscape phone
 - ✅ portrait phone viewport › AC24: upright phone shows the rotate message
-- ✅ landscape layout details › AC43: the hand rests nearly fully visible at the bottom and pops out on hover (Round 5b)
+- ✅ landscape layout details › AC43: the hand rests tucked halfway at the bottom and slides up on hover (Round 6a)
 - ✅ landscape layout details › AC44: deck piles on each player's right and Commander hearts
 - ✅ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
 - ✅ hearts and turn display 740x360 › AC51: Commander hearts never cover creature labels; turn display top-right (740x360)
@@ -20,8 +20,8 @@
 - ✅ both hands at 844x390 › AC115: the enemy hand is always on-screen and the hand shows about 7 cards, then scrolls
 - ✅ both hands at 844x390 › AC116: a tapped creature shows its card at hovered-hand-card size, fully on-screen
 - ✅ both hands at 844x390 › AC117: the deck picker shows the nine starter decks as named stacks
-- ✅ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (844x390)
-- ✅ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; ornaments frame every screen (1280x720)
+- ✅ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; no frame ornaments on any screen (844x390)
+- ✅ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; no frame ornaments on any screen (1280x720)
 - ✅ round 3b phone screenshots (844x390) › AC126: close-up cards, deck builder, title and a spell being cast render without errors
 - ✅ round 4 phone screenshots (844x390) › AC134: mulligan, spell cards per faction, a creature close-up and a menu screen render without errors
 - ✅ round 5a screenshots (1920x1080) › AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (1920x1080)
@@ -32,6 +32,16 @@
 - ✅ round 5b screenshots (1920x1080) › AC160: match, Menu popped out and hand popped out render without errors (1920x1080)
 - ✅ round 5b screenshots (2560x1080) › AC160: match, Menu popped out and hand popped out render without errors (2560x1080)
 - ✅ round 5b screenshots (844x390) › AC160: match, Menu popped out and hand popped out render without errors (844x390)
+- ✅ round 6a match layout 1920x1080 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (1920x1080)
+- ✅ round 6a match layout 1920x1080 › AC163: the hand is 2x, centered, overlapping, tucked halfway and slides up on hover (1920x1080)
+- ✅ round 6a match layout 1920x1080 › AC164: the hovered card pops out at about 85-90% of the height on the top layer (1920x1080)
+- ✅ round 6a match layout 1920x1080 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (1920x1080)
+- ✅ round 6a match layout 844x390 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (844x390)
+- ✅ round 6a match layout 844x390 › AC163: the hand is 2x, centered, overlapping, tucked halfway and slides up on hover (844x390)
+- ✅ round 6a match layout 844x390 › AC164: the hovered card pops out at about 85-90% of the height on the top layer (844x390)
+- ✅ round 6a match layout 844x390 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (844x390)
+- ✅ round 6a screenshots (1920x1080) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (1920x1080)
+- ✅ round 6a screenshots (844x390) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (844x390)
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -100,7 +110,7 @@
 - ✅ AC33: Gatherer swap moves one basic Gatherer from deck to hand, once per turn
 - ✅ AC34: free Miner only when Flow + Bank cannot pay and no Miner is on the battlefield
 - ✅ AC35: a Gatherer summoned this turn can move or mine but not attack; a Fighter can do nothing
-- ❌ AC36: flow preview, mine ring numbers and mine info
+- ✅ AC36: flow preview, mine ring numbers and mine info
 - ✅ AC38: swapping places with your own creature uses only the dragged creature's action
 - ✅ AC37: the confirm pop-up sits above the countdown
 - ✅ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
@@ -164,7 +174,7 @@
 - ✅ AC90: the built dist folder stays under 40 MB
 - ✅ AC91: card faces use the faction frame, stat slots, type icon and rarity colors
 - ✅ AC92: every card has short and long text; Full explanation shows the long text
-- ✅ AC93: the cut-out deck image is used on every deck pile
+- ✅ AC93: the cut-out deck image is used on every deck pile outside the match
 - ✅ AC94: Commander select shows borderless full-art Commander cards without stats
 - ✅ AC95: up to 3 mulligans — 5 -> 5 -> 4 -> 3, then no more
 - ✅ AC95: the Mulligan screen shows one straight row and counts mulligans left
@@ -198,7 +208,7 @@
 - ✅ AC130: Deck Commander locks other factions’ spells in the Deck Builder
 - ✅ AC131: Venom Shiv poisons for exactly 3 of the owner’s turns, then the creature heals; Hex Reversal is disabled
 - ✅ AC132: spell frames per faction with the cost and type orbs
-- ✅ AC135: one font everywhere: plain gold Alegreya SC Italic, bundled, no metal or textured letters
+- ✅ AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textured letters
 - ✅ AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulligan, hand) at several window sizes
 - ✅ AC137: menu buttons are plain gold text with a hover glow, no boxes or borders
 - ✅ AC138: every menu screen fills the window edge to edge at 844x390, 1280x720, 1920x1080 and rescales live
@@ -217,24 +227,32 @@
 - ✅ AC153: the phase tracker shows whose turn, the turn number and the current phase
 - ✅ AC154: the match Menu hides its items until hovered or tapped; Mute and Recenter work
 - ✅ AC155: playable hand cards glow, the others do not, and it updates at once
-- ✅ AC156: Done shows only when needed, centered, as plain text
+- ✅ AC156: Done shows only when needed, bottom-right, as plain text
 - ✅ AC157: mulligan, Respond, surrender and match-end controls are plain text
 - ✅ AC159: longer card reveals, ruby hearts with white numbers, Flow particles setting
+- ✅ AC162: no hand counts for either player; deck numbers stay
+- ✅ AC165: face-down cards use the original Oreheart card back
+- ✅ AC167: one shared text palette, no stray text colors
+- ✅ AC168: bold titles and main actions, regular body text, only four weights
+- ✅ AC169: Deck Builder close-up fills the height, has no scrollbar or Close, and dismisses on click or Esc
+- ✅ AC170: deck list + and - change counts at once, without moving the row; rapid clicks all count
+- ✅ AC171: no "All cards" text and no corner ornaments on any screen
+- ❌ AC172: crystal mines use the owner's glTF placeholder, about 1.5 tall, tinted by owner
 
 ## Failures
 
 ```
-✗ AC36: flow preview, mine ring numbers and mine info
-Error: expect(locator).toHaveText(expected) failed
+✗ AC172: crystal mines use the owner's glTF placeholder, about 1.5 tall, tinted by owner
+Error: expect(received).toBeLessThanOrEqual(expected)
 
-Locator: getByLabel('Your income next turn', { exact: true })
-Expected pattern: /^\s*\+0 next turn\s*$/
-Received string:  "Next +0"
-Timeout: 7000ms
+Expected: <= 1.6
+Received:    1.6068582677028393
 
-Call log:
-  - Expect "toHaveText" with timeout 7000ms
-  - waiting for getByLabel('Your income next turn', { exact: true })
-    9 × locator resolved to <span class="cry-next" aria-label="Your income next turn">Next +0</span>
-      - unexpected value "Next +0"
+  5574 |     expect(m.source).toMatch(/crystal-mine-placeholder\.gltf$/);
+  5575 |     expect(m.height).toBeGreaterThanOrEqual(1.4);
+> 5576 |     expect(m.height).toBeLessThanOrEqual(1.6);
+       |                      ^
+  5577 |     expect(['player', 'opponent', 'neutral']).toContain(m.owner);
+  5578 |     expect(m.tint).toMatch(/^#[0-9a-f]{6}$/i);
+  5579 |     const [R, , B] = rgb(m.tint);
 ```

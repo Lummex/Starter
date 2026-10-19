@@ -1,24 +1,21 @@
 ## What was built
-This round rebuilds the match screen. The camera now looks down at the battlefield at the owner's angle and zoom, with painted sky above the far side. The score display, phase tracker, Menu, decks and hand sit at the owner's chosen screen positions. It also adds glowing "flow" particles streaming from mines to Strongholds, a glow on cards you can play right now, ruby-heart health icons, and card reveals that last 5.5 seconds. The game rules are unchanged.
+This round (6a) reworks the Oreheart match screen and deck builder. Your hand of cards now sits tucked halfway at the bottom and slides up when you hover over it. A hovered card pops out large on top of everything. Cards have a new card back, the text colours and weights follow one shared style, and the Deck Builder has a full-height close-up view. Crystal mines now use a 3D placeholder model tinted by owner.
 
 ## Try these things
-- Start a match and check that both Commanders are fully visible and no part of the screen has black bars. Try resizing the window.
-- Hover or click "Menu" at the right side. "Last turn", "Mute", "Card pop-ups", "Recenter" and "Surrender" should slide out.
-- Look at your hand. Cards you can afford and play should glow gold. Hover the hand to see it pop up.
-- Watch the mines. Particles should flow into the Stronghold of whoever owns the mine. Try Settings > "Flow particles".
-- Play a card and check that the reveal lasts about 5 seconds. Check that "Done" appears only on your own turn, in the middle of the screen.
-- Look at the top-left and top-right crystals (Flow and bank numbers) and the phase tracker.
+- Start a match and hover your hand. It should slide up, and the hovered card should pop out large.
+- Check that the enemy hand is centred, with its deck to the left. Nothing should cover a Commander.
+- Look at the "Done" button at bottom-right. It should only show when needed.
+- Open Decks, click a card for the close-up, then click anywhere or press Esc to dismiss it. Use + and − on the deck list and check the counts update.
+- Look at the crystal mines on the board and check they look right and are tinted by owner.
+- Try it on a phone held sideways, and also with the phone upright. Upright should show "Please rotate your phone".
 
 ## Automated checks
-217 of 218 checks passed. The one failure, AC36, is an older check that expects the income text to read "+0 next turn". The game now shows "Next +0", as this round's spec asks. It is a wording mismatch in the old test, not a broken feature.
+235 of 236 checks passed. One failed: the check that crystal mines are about 1.5 tall (AC172). The mine measured 1.607 against a 1.6 limit, so it is about 0.4% too tall. This is almost certainly invisible to the eye, but it is technically out of spec.
 
 ## Things to know
-- I could only view the title-screen screenshots (desktop and phone). They look good: no unstyled or broken elements. The phone shot just shows "Please rotate your phone" because it was taken upright.
-- I did not see screenshots of the match screen itself. The automated checks say they rendered, but I can't confirm the look. Please check the match in the preview.
-- The builder admits that on a phone, the enemy crystal's text and the phase tracker overlap a little in the top-right.
-- The builder also says the enemy Commander may sit partly under the enemy crystal on some window shapes.
-- The ruby heart picture was drawn in code rather than painted with the image tool.
-- Tiny phone-sized text in the Deck Builder was reported earlier. This round's checks say nothing is under about 14 px.
+- The saved screenshots only cover the title screen (desktop) and the upright phone view. I could not see the match screen, hand pop-out or mines in them, so I am relying on the automated checks for those.
+- The desktop title screen looks clean: logo, five menu items and the welcome text are all readable and don't overlap. The upright phone view shows only the rotate message, as intended.
+- The spec file was very large and I did not read all of it. No build notes exist for this round, only older ones.
 
 ## Recommendation
-Request changes: the match screen, the heart of this round, has no screenshots I could inspect, and the builder reports overlaps on phones. Check the preview first. If the match looks right, it can be approved.
+Request changes: one mine-size check fails by a tiny margin (1.607 vs 1.6 max). It is a quick fix, and otherwise the build looks solid.
