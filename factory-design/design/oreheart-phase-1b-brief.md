@@ -4,7 +4,58 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 8b — owner playtest of round 7 (Commander, cards, hand, deck builder, Choose Your Commander, text palette) — read this first
+## Round 9a — the owner's match-screen layout (Goblin theme), faction banks, 3D mines, Crystal Flow, hand motion, menu, music — read this first
+
+Round 8b is done; keep everything from rounds 8a and 8b unless an item below replaces it. Rules and numbers are unchanged; layout positions change only as the owner's layout file says (owner request). Round 9 is split: build only **9a** now; **9b** (the Owner Game Editor inside the game) is queued in `factory-design/round-9b-queued.md` and is not part of this round.
+
+**Owner files (binding, use exactly, no redraw):**
+- `factory-design/owner-layouts/final-draft/layout.json` + its pictures `img-*.webp` (same folder): the owner's finished match screen, made in the owner's Game Editor. The format is explained at the top of the file (`screen.units`) and below.
+- `factory-design/owner-layouts/themes/goblin/goblin-theme.json` + pictures: the same look grouped as the **Goblin theme** (corner frames, Flow crystals, bank, colors).
+- `factory-design/design/references/goblin-bank.png` (Goblin bank), `opponent-bank-placeholder.png` (opponent bank, placeholder), `first-fight.mp3` (match music), `tense-cycle.mp3` (intro/menu music).
+- `factory-design/owner-tools/game-editor-source.html`: the owner's Game Editor page. It is the **reference implementation** for everything below (how the layout is drawn, the 3D crystal mine model `buildMineModel`, the Crystal Flow effect `makeFlow`, the hand motion, the drop-down menu, the banks). Port the behavior and numbers from it; do not ship the editor page itself.
+
+**Layout format (from the editor):** HUD pieces (`hud`): `x, y, w, h` are % of their parent (the 16:9 screen, or the piece named in `parent`); text `size` is % of screen height (times `textScale`); `rot` degrees; `mirror` / `flipV` flip the picture only (numbers stay readable); `z` layer; `hidden`. Kinds: `text`, `pic`, `gem` (Flow crystal: picture `src` + number), `bank`, `fan` (enemy card backs), `hand`, `menu`. `role` names the game element each piece is (e.g. `player-flow-crystal`, `enemy-deck`, `done-button`). Pictures: `img:<id>` → `img-<id>.webp` in the layout folder; plain names are built-in game art. Board pieces (`pieces`): `cx` 0–13 columns, `cy` 0–7 rows from the far-left board corner; 3D size = Model Editor scale (1 unit = 1 board square: Grubnak 1.54, stronghold 0.67, mine fitted to 1.7 squares tall) × `scale` × `characterSizes` group sliders; `sx/sy/sz` stretch width/height/length; `turn` facing in degrees; `lean`. Effects (`effects`) and `effectMasters`, `arena`, `arenaLook`, `boardCorners`, `foregroundCutouts` use the Arena Editor format from round 8.
+
+### 1. The match screen matches the owner's layout exactly
+Place every HUD piece where `layout.json` puts it, at that size, rotation and layer, with its text, font, color, shadow and glow, at 1920 × 1080 and scaled for any 16:9 screen (other shapes: keep pieces anchored to their nearest screen edge). Highlights: your Flow crystal (green crystal-shard picture) large at the bottom-left with Flow / Next beside it; your name top-left; enemy name, Flow, Next, crystal (white shard picture, placeholder) top-right; enemy deck and card fan at the top, **upside down** (facing the opponent; the deck count stays readable); turn, phases, timer and Done grouped bottom-right; your deck bottom-right; the 3 **goblin corner frames** (top-left, bottom-left, bottom-right) exactly as placed. The HUD stays fixed while the board zooms and pans (round 8).
+
+### 2. Faction themes (new rule)
+The match screen's look follows each side's **Commander faction**, for the player and for the opponent: corner frames/borders, Flow crystal picture, bank picture and the color scheme (text, glows, menu, card glow/halo, Crystal Flow colors). The owner's layout is the **Goblin theme** (`goblin-theme.json`). Gnome and Dwarf themes will be supplied later; until then non-Goblin sides use the layout's placeholder pieces. Store themes as data (one theme file per faction) so new ones drop in without code changes. The goblin corner frames replace the old "no corner ornaments" rule **on the match screen for the Goblin theme**; update that check accordingly (other screens unchanged).
+
+### 3. Banks are their own pieces
+The Crystal Bank is no longer drawn on the Flow crystal. Each side has its own **bank** piece (`role: player-bank` / `enemy-bank`): the faction's bank picture with the **banked number on it** (owner number style in the layout). Goblins use `goblin-bank.png`; the opponent uses `opponent-bank-placeholder.png` until its faction's bank exists. The "+1 banked" animation flies into the bank piece.
+
+### 4. Drop-down Menu
+The Menu button (top-left) opens a drop-down with the owner's items in order: **Resume, Settings, How to play, Sound Effects, Background music, Give up match!**. Opens on click, downward, lined up with the button's left edge, words left-justified; animation "grow" with a springy ease (~260 ms), items appearing 50 ms apart; item look and hover (gold glow, slight grow, slide) and the dark panel exactly as in the layout's `menu` settings. Plain text items that glow on hover, no boxes. Click outside or Esc closes it. Sound Effects and Background music open their volume controls (item 8); Give up match! asks to confirm, then ends the match as a loss.
+
+### 5. Your hand
+Use the layout's `hand` settings (port the editor's behavior):
+- Fan of up to 10 cards: spacing (`overlap`), fan angle per card, curve (outer cards lower).
+- **Hover:** the card under the pointer **slides fully up out of the hand** (its whole card clears the bottom of the screen), straightens and grows to the pop-out size, smooth eased motion (~450 ms); **neighbor cards move aside**; moving the pointer across the hand **shuffles through the cards** one by one (hover is decided by pointer position over the hand, so a big popped card never blocks its neighbors). This replaces round 8's separate pop-out copy.
+- Glow and halo: playable glow on every card (green `#9dff3a`, owner strength/size), gold halo on the hovered card, from the layout (faction theme colors).
+- **Deal-in:** drawn cards slide up from below the screen into the hand one after another (owner timing: 700 ms per card, 130 ms apart).
+- Keep the tight hover zone from round 8 and all touch behavior.
+
+### 6. Board pieces
+Place and size the 3D pieces as in `pieces` and `characterSizes` (Grubnak and his stronghold, the enemy Commander and stronghold, mine sizes; turn, stretch). Keep round 8's camera and Commander facing rules; the owner's `turn` values are the resting facing. **Grubnak holds his scepter** exactly as the owner set it in the Model Editor (scepter GLB attached to the `RightHand` bone with position −4.404, 8.752, −3.774, rotation −109.365°, 5.199°, 154.757° (XYZ), scale 61.35) and plays his Idle animation. Health hearts as in the layout.
+
+### 7. New 3D crystal mines
+Replace the plain placeholder mine with the owner-approved mine from the editor (`buildMineModel` in `game-editor-source.html`: stone rubble ring, iron-and-gold pedestal with corner posts and gold caps, blue banner with gold diamond emblem, a tall glowing blue crystal with six smaller shards and a few on the rubble, a soft glow). Same size and colors (`mineColor` #3d8bff, `mineGlow` 1), crystals gently pulsing. Built in code, so no Meshy run.
+
+### 8. Arena effects and Crystal Flow
+All arena effects as in the layout (57, including per-type brightness/size/speed). **Crystal Flow** (new effect, port `makeFlow`): a stream of tumbling **crystal shards** (faceted, not round dots) that snakes in moving **S-curves** from a mine to a target, using the owner's numbers (count, speed, arc height, S-bends, S-bend size, slither speed, spread, trail, end glow, colors). In play: when Crystal Flow is gained at the start of a turn, a stream flows from each owned mine to that side's **bank piece**, in that side's faction colors; the layout's three flows show the owner's look. Drawn above the board, below the HUD.
+
+### 9. Music
+- **Intro and menus:** `tense-cycle.mp3` loops on the title/intro screen and every menu screen (main menu, deck builder, Choose Your Commander, settings, collection).
+- **Matches:** `first-fight.mp3` loops during matches; crossfade (~1.5 s) between the two when a match starts and ends.
+- Both start after the first click/tap (browser rules), sit under the sound effects, respect Mute, and share one **Music volume** slider (Menu → Background music, also in Settings). Sound Effects volume slider next to it.
+
+### 10. Fix the outdated check
+Update the round 8b "Miner Rush under Sproingle" deck-memory test to use a deck that belongs to the chosen Commander.
+
+**Tests:** keep all checks passing (update only those this round intentionally changes). Add: every HUD piece within 1% of its layout position/size at 1920 × 1080 (and anchored correctly at 844 × 390); enemy deck/fan upside down with readable count; no bank badge on the crystals and both bank pieces show their numbers; theme data loads per faction (a non-Goblin Commander gets the placeholder pieces); menu opens/closes, has the six items in order, and Give up asks first; hand: hovering a card raises the whole card above the screen bottom, neighbors move aside, moving across the hand changes the raised card, deal-in plays one card at a time; Grubnak has the scepter in his right hand; mines use the new model; a Crystal Flow stream appears from an owned mine to the bank when Flow is gained; menu music plays on menus, match music in matches, crossfade on start/end, Mute silences both. Report screenshots at 1920 × 1080 and 844 × 390: the match at rest, a raised card with neighbors aside, the open menu, and a Crystal Flow stream.
+
+## Round 8b (done) — owner playtest of round 7 (Commander, cards, hand, deck builder, Choose Your Commander, text palette)
 
 Round 8a is done; keep everything from it (painted arena board, view controls, crystal mine) and from round 7 unless an item below replaces it. Rules are unchanged. If Meshy fails (item 3), keep the current model, finish the round and explain in the report.
 
