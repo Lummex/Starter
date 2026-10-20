@@ -4,7 +4,77 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 7 — fixes from the 6a playtest + Build B begins: Grubnak in 3D (Meshy) — read this first
+## Round 8 — painted arena board with view controls, owner playtest of round 7, crystal mine in 3D — read this first
+
+Round 7 is done; keep everything from it unless an item below replaces it. Rules are unchanged. Do the items in order; if Meshy fails (item 2 or 3), keep the current model, finish the round and explain in the report.
+
+**Owner arena files (binding, use exactly, no redraw):** `factory-design/design/references/` → `skullfang-swamp-background.jpg` (1672 × 941, background), `skullfang-arena.png` (the Skullfang Arena painting, transparent outside the arena), `skullfang-arena-layout.json` (the owner's finished layout, "skull arena final draft") and `arena-editor-source.html` (the owner's Arena Editor; port every effect from its code so it looks the same). Read the `note` field in the layout file for the coordinate rules.
+
+### 1. The match board is the owner's painted arena, with 3D pieces on top
+- **Look:** the match board looks exactly like the owner's Arena Editor: the swamp background, the arena painting on top (placed by `arena.centerX/centerY/scale`), the arena look (`arenaLook`: brightness, contrast, saturation, hue, applied to both pictures), and every effect in `effects` (54: flames incl. two green ones, glows, a lantern, waterfalls with splash, acid pools with bubbles and smoke, waving banners, swaying plants, a water shimmer on the background lake, five firefly swarms), each with its own sliders and colors. Port the shaders and particle code from the editor; keep each effect's randomness (e.g. glows flicker independently). The two `foregroundCutouts` (the front fence row and the bottom-right post) are drawn over creatures standing behind them. This replaces the procedural battlefield surroundings and the on-hold arena GLB plan.
+- **2D board, 3D pieces:** the board and background are 2D paintings; creatures, Commanders, mines and their effects are 3D and move over them. Fit the 3D camera angle once so pieces stand correctly on the painted floor; never re-angle or orbit it. Round 5b's tilt/lens/zoom numbers no longer apply. The HUD layout stays exactly as it is.
+- **Squares:** draw **no grid lines**; the squares are painted into the arena. The 13 × 7 board maps onto the owner's four floor corners `boardCorners` (top-left, top-right, bottom-right, bottom-left, in arena-picture pixels) with a perspective (homography) mapping, the same math as the editor's `drawGrid`. Every square's center, click/tap area and highlight (playable squares, move and attack targets, hover) uses this mapping, so highlights sit exactly on the painted squares and appear only when needed. Pieces stand on their square centers.
+- **View controls (new):**
+  - Zoom: mouse scroll wheel (toward the cursor) and pinch on touch.
+  - Pan: drag empty board or background (left mouse, or one finger), right or middle drag, two-finger drag on touch, trackpad two-finger scroll, arrow keys and WASD.
+  - The painting, effects, 3D pieces and highlights move and zoom together as one picture (a 2D view transform of the whole match view, e.g. `camera.setViewOffset` / projection crop matched to the backdrop). The HUD stays fixed and does not zoom.
+  - **No black bars, ever.** Fully zoomed out, the painting fills the whole window at its true proportions, never stretched (cover-fit); if the window isn't 16:9, the extra strip on two sides is simply off-screen and reachable by panning. The view can never show anything beyond the painting's edges at any zoom; effects are clipped to the painting (two acid pools sit past the right edge: clip them).
+  - Zoom in down to about **2.5 screen pixels per painting pixel** (slightly soft is fine, blocky is not); smooth/mipmapped filtering, never nearest-neighbor.
+  - Smooth, eased motion at 60 fps on a phone. A **Recenter** text action (palette colors) and double-click / double-tap on empty board return to the full view. Dragging a card or creature never pans; dragging near a screen edge may nudge the view that way.
+
+### 2. Crystal mine in 3D (Meshy)
+Image to 3D from `factory-design/design/references/crystal-mine/crystal-mine-front.png` (tall glowing crystal over a stone shrine with a blue banner on a rocky base). About 10–15k polygons, PBR, textures 2048 or smaller. Generate **once** with a script in `tools/` (like the Grubnak one) and save the GLB plus its entry in `models.json`; never regenerate unless the owner asks. It replaces the placeholder mine everywhere: about 1.5 spaces tall, 1 × 1 footprint, tinted by owner as now (player blue, enemy red, unowned pale; swap the crystal and banner colors and emissive glow), keeping the glow and flow particles.
+
+### 3. Commander facing and look-back emotes
+- **Bug:** the player's Commander (Grubnak) faces the player (toward the camera). He must face the **opponent** (up the board) by default. The enemy Commander faces our side as now.
+- **Turning:** smooth whole-body turns of about 0.4–0.6 s, never snapping; he always returns to facing the opponent.
+- **Looks back at the player** when he is "talking to" them: at the start of the player's turn, when the player has nothing playable and should press Done, and briefly at random every 20–40 s while idle.
+- **Impatience:** on the player's turn, after about 20 s with no player action, he turns to the player and acts frustrated (crossed arms, foot or scepter tapping, shrug), repeating more annoyed about every 15 s until the player acts; any action ends it and he turns back.
+- **Faces forward** when acting against the opponent: casting spells, his creatures attacking, laughing or pointing when an enemy creature falls, taking hits.
+- **Animations:** use the saved set. Add one or two impatience/look-around clips **once** from Meshy's animation library on the already-rigged Grubnak (owner approves this small Meshy use); update the saved GLB and `models.json`; never regenerate the model. If nothing fits, build it from existing clips (surprised + point at the player + head shake). Make the behavior data-driven so every future Commander uses it.
+
+### 4. Card glow direction
+The glow is inverted: today the hard, bright edge is on the outside and it fades inward toward the card. Flip it: the brightest, crisp edge sits right at the card's border and fades **outward** to nothing. Applies to the playable-card halo in the hand and the popped-out card's rim. Keep round 7's thickness, opacity and colors.
+
+### 5. Hand hover zone
+Bug: grabbing a creature on the board raises the hand, because the hover trigger is a wide strip reaching far up the screen. Replace it with a box drawn tightly around the hand cards (only their visible tucked part at rest) that grows and shrinks with the number of cards and the fan width; while the hand is raised it covers the raised cards, and leaving it tucks the hand back. The hand never rises while dragging a creature or board piece or while panning the view, including when the pointer passes over the hand.
+
+### 6. Popped-out card
+(a) Smoother: eased scale and fade of about 150–200 ms, no jump or flicker when moving between neighboring cards; the pop-out glides from card to card. (b) **20% smaller** than round 7 (about 68–72% of the screen height instead of 85–90%). Still on the very top layer, never off-screen.
+
+### 7. Creature stat badges
+The bars under each creature are too big and dominating. Replace them with a compact row of small **painted icons** (sword = Attack, heart = Health, and the same style for Movement and any other stat shown today) with the **number drawn on top of each icon** (bold white, thin black outline, centered). Paint the icons with the image API in the same rich style as the round 6a ruby hearts, transparent background, original designs. About half the current footprint, still clearly readable at 844 × 390 and when zoomed out (never smaller than readable; they scale with the view zoom otherwise). Damaged Health red-orange, buffed values green. Hovering or tapping a creature may show a slightly larger version. Keep them on top of everything on the battlefield.
+
+### 8. Deck builder: drag cards into the deck list (regression)
+Dragging a card from the collection onto the deck list no longer works. Restore it: press and drag a card (shown at the 3-per-row size while dragging) and drop it on the list to add one copy, with the same limits as "+". A click without moving (under about 6 px) still opens the close-up (item 14); moving starts a drag. Mouse and touch.
+
+### 9. Deck builder: no layout shift when adding cards
+Double-clicking a card to add it makes the deck list panel "pop out" like the old 6a "+" bug: the frame shifts, the panel widens and pushes the card grid over, making the cards smaller. Adding a card by any method (double-click, drag, "+") must never change the size or position of the panel, the grid or the cards. Fix the root cause for every path: fixed panel width, scrollbar space reserved or overlay scrollbars (e.g. `scrollbar-gutter: stable`) so a list that grows past its height doesn't change widths, fixed-width count and name columns, no width animation on new rows.
+
+### 10. Choose Your Commander: uniform deck entries and colors
+- Deck entries (e.g. Goblin Warband, Goblin Arcane Horde, Goblin Horde) come out different sizes with different borders and shift around. Make every entry identical in size, border thickness and layout; all names the same font size; long names shrink to fit or wrap the same way and never resize the box. Selecting one glows; nothing changes size or moves.
+- Colors (item 13 palette): deck names and titles bright gold #FFD700 bold; "100 cards" and other secondary info brown-gold; actions ("Remove", "Copy to my decks", etc.) brown-gold that glows bright gold on hover (Remove turns warning orange-red on hover). Commander name and section headings bright gold; the Commander's description text brown-gold #D4A94F, not yellow.
+
+### 11. Choose Your Commander: picking a Commander
+- The three Commander cards (Grubnak, the Archmage, Thane Borgo) sit closer together, but their glows and faded edges must not overlap or blend.
+- Hover: the hovered card smoothly grows and the other two shrink slightly (about 200 ms, eased); nothing else moves.
+- Click: the other two fade out and disappear; the chosen card **enlarges and drops back to become a big backdrop** (dimmed, soft glow) in the center of the screen, and his **3D model pops up in front of it** (quick rise and scale-up with a small bounce, then idle with an occasional laugh or point). The card stays behind him while he is selected. Then only his decks populate underneath, laid out as today and uniform per item 10. Commanders without a 3D model yet (the Archmage, Thane Borgo) keep the enlarged card centered alone.
+- A **Change Commander** action under him, Esc, or clicking him again brings all three back to the row.
+
+### 12. Choose Your Commander: layout
+- **Fight!** moves to the bottom-right corner, the same spot as Done on the match screen (bright gold, bold, glows on hover).
+- Rearrange the other actions into a clean, balanced layout around the centered Commander (for example Back in a corner, Change Commander under him, deck actions with the deck list), all plain text actions in the palette colors.
+- **Remove** the "View Grubnak in 3D" button and viewer from this screen and from the deck builder's menu (item 14 replaces it).
+
+### 13. Text palette change, everywhere
+Body, description and list text on every menu and screen changes from white to **brown-gold** (#D4A94F on dark backgrounds; #B8862B for small or secondary text). Titles, headings, names and main actions stay bright gold #FFD700. White stays only for numbers on icons (crystals, hearts, the new stat badges) and for text printed on card faces. Change the shared palette variables once (the round 6a theme file), not per screen. Check contrast at 844 × 390. This replaces the round 6a "white body text" rule.
+
+### 14. Deck builder close-up with 3D viewer
+Clicking a card in the deck builder opens the full-height close-up (round 6a) with the **card on the left** and a **3D model viewer on the right**, side by side and centered as a pair on a dim overlay. The viewer works like round 7's: drag to rotate, scroll or pinch to zoom, plain-text buttons to play each animation, soft lighting. It appears for any card that has a 3D model (today Grubnak's Commander card; creatures later); cards without one show the close-up centered alone as now. Dismiss by clicking the card, clicking outside both, or Esc; dragging or clicking inside the viewer never closes it. No scrollbars; both fit the screen with small margins. No viewer anywhere else in the deck builder.
+
+**Tests:** keep all checks passing (update those this round intentionally changes). Add: arena pictures and layout loaded from the owner files; no grid lines drawn; square centers and highlights match the homography of the owner corners (check several squares); zoom limits (fully out fills the window with no bars at 16:9, 4:3 and 21:9; max zoom about 2.5 px per painting pixel); pan clamped to the painting edges; HUD unchanged while zoomed; Recenter works; dragging a card or creature never pans; mine model loaded with owner tints; player Commander faces the opponent by default and turns back after a look-back; impatience starts after about 20 s idle and stops on an action; glow brightest at the card edge and fading outward; hand does not rise while dragging a creature over it, and its hover box fits the cards for 1, 4 and 8 cards; pop-out about 70% of screen height; stat badges smaller than before and readable at 844 × 390; dragging a card into the deck list adds one copy and a plain click opens the close-up; panel, grid and first card bounding boxes unchanged after adding cards by double-click, drag and "+" until the list scrolls; Commander deck entries all the same size; choosing a Commander hides the other two and shows only his decks; Fight! in the bottom-right; no 3D viewer button on the Commander screen or deck builder menu; close-up shows the viewer for Grubnak and dismisses correctly; body text uses the brown-gold variable. Report screenshots at 1920 × 1080 and 844 × 390: the match fully zoomed out and zoomed in, the Commander screen before and after choosing Grubnak, the deck builder close-up with the viewer, and a creature with its new stat badges. Include Meshy credits spent.
+
+## Round 7 (done) — fixes from the 6a playtest + Build B begins: Grubnak in 3D (Meshy)
 
 Round 6a is done; keep everything from it unless an item below replaces it. Rules are unchanged. **Part A (fixes) must ship even if Part B (Meshy) fails:** do Part A first, then B. If Meshy errors or runs out of credits, keep the current Grubnak figure, finish the round and explain what failed in the report.
 
