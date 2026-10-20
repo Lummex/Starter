@@ -38,8 +38,8 @@ describe('painted arena (round 8a)', () => {
     expect(fit.pos[1]).toBeGreaterThan(3); expect(fit.pos[2]).toBeGreaterThan(0);
   });
   it('ships the Meshy crystal mine once', () => {
-    const j = JSON.parse(fs.readFileSync('public/models/mine/mine.json', 'utf8'));
+    const j = JSON.parse(fs.readFileSync('public/models/mines/models.json', 'utf8'));
     expect(j.task).toBeTruthy();
-    expect(fs.statSync('public/models/mine/crystal-mine.glb').size).toBeLessThan(4e6);
+    expect(fs.statSync('public/models/mines/crystal-mine.glb').size).toBeLessThan(4e6);
   });
 });

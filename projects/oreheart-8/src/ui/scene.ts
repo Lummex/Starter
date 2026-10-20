@@ -31,6 +31,9 @@ export interface BoardView {
   setFlowMode(m: string): void;
   pulseFlow(side: string): void;
   emote(side: 'player' | 'opponent', kind: 'cheer' | 'groan' | 'flinch' | 'cast'): void;
+  lookBack(side: 'player' | 'opponent', ms: number): void;
+  impatient(side: 'player' | 'opponent', level: number): void;
+  facing(side: 'player' | 'opponent'): any;
   poke(uid: string): string | null;
   retreat(side: 'player' | 'opponent'): void;
   stats(): Promise<any>;
@@ -264,7 +267,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   // strongholds + commanders
-  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; g3d: G3D | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null };
+  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; g3d: G3D | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null; baseYaw?: number; yaw?: number; lookUntil?: number; impatient?: number };
   const cmd: Record<string, Cmd> = {};
   for (const side of ['player', 'opponent'] as const) {
     const g = new THREE.Group();
@@ -304,7 +307,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       const me = world(SHP[side][0], SHP[side][1]), you = world(SHP[side === 'player' ? 'opponent' : 'player'][0], SHP[side === 'player' ? 'opponent' : 'player'][1]);
       // the player's Grubnak (near the camera) turns about half-way toward the camera so his face stays visible
       const yaw = Math.atan2(you.x - me.x, you.z - me.z);
-      cm.fig.rotation.y = side === 'player' ? yaw * 0.35 : yaw;
+      cm.baseYaw = yaw; cm.yaw = yaw; cm.lookUntil = 0; cm.impatient = 0;
+      cm.fig.rotation.y = yaw;
     } else if (side === 'opponent') cm.fig.rotation.y = Math.PI;
     cm.group.add(cm.fig);
     cm.faction = faction; cm.id = id;
@@ -686,9 +690,26 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
 
   function emote(side: 'player' | 'opponent', kind: string) {
     cmd[side].emote = { kind, t: performance.now() };
+    if (kind !== 'look') { cmd[side].lookUntil = 0; cmd[side].impatient = 0; }
     const g3 = cmd[side].g3d;
     if (g3) g3.play(kind === 'cheer' ? (Math.random() < 0.7 ? (Math.random() < 0.5 ? 'laugh' : 'point') : 'idle') : kind === 'flinch' ? 'hit' : kind === 'cast' ? 'cast' : kind === 'groan' ? 'surprised' : 'idle');
     if (cmd[side].id === 'grubnak') audio.voiceLine(kind === 'cheer' ? 'laugh' : kind === 'groan' ? 'sulk' : kind === 'flinch' ? 'yell' : 'grunt');
+  }
+
+  /** Turn toward the player/camera for a moment (ms), then back to the opponent. */
+  function lookBack(side: 'player' | 'opponent', ms: number) { cmd[side].lookUntil = performance.now() + ms; }
+  /** Impatience: face the player and fidget (level 0 = stop). */
+  function impatient(side: 'player' | 'opponent', level: number) {
+    const cm = cmd[side];
+    cm.impatient = level;
+    if (!level) { cm.lookUntil = 0; return; }
+    cm.lookUntil = performance.now() + 4000;
+    cm.g3d?.play(level % 2 ? 'surprised' : 'point');
+  }
+  function facing(side: 'player' | 'opponent') {
+    const cm = cmd[side];
+    const d = Math.abs(Math.atan2(Math.sin((cm.yaw ?? 0) - (cm.baseYaw ?? 0)), Math.cos((cm.yaw ?? 0) - (cm.baseYaw ?? 0))));
+    return { facing: d < 0.2 ? 'opponent' : 'player', yaw: +(cm.yaw ?? 0).toFixed(3), baseYaw: +(cm.baseYaw ?? 0).toFixed(3), impatience: cm.impatient || 0 };
   }
 
   const POKES = ['cackle', 'rude dance', 'angry stomp'];
@@ -728,7 +749,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     if (!cm.g3d) return {};
     cm.group.updateMatrixWorld(true);
     const b = measureBox(cm.group);
-    return { model3d: 'meshy', heightSpaces: +(b.max.y - Math.max(b.min.y, 0)).toFixed(2), footprint: +Math.max(b.max.x - b.min.x, b.max.z - b.min.z).toFixed(2), animations: cm.g3d.clipNames, animation: cm.g3d.current() };
+    return { ...facing(cm === cmd.player ? 'player' : 'opponent'), model3d: 'meshy', heightSpaces: +(b.max.y - Math.max(b.min.y, 0)).toFixed(2), footprint: +Math.max(b.max.x - b.min.x, b.max.z - b.min.z).toFixed(2), animations: cm.g3d.clipNames, animation: cm.g3d.current() };
   }
   let lastRender = 0;
   let lastDur = 0;
@@ -811,6 +832,15 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       cm.fig.position.y = cm.g3d ? 0 : Math.sin(now / 600 + (side === 'player' ? 0 : 2)) * 0.02;
       if (cm.g3d) cm.g3d.update(Math.min(0.1, Math.max(0, (now - (cm.g3d as any)._t || 0) / 1000))), ((cm.g3d as any)._t = now);
       cm.fig.rotation.z = 0;
+      if (cm.g3d && cm.baseYaw !== undefined) {
+        const dt = Math.min(0.1, Math.max(0, (now - ((cm as any)._yt || now)) / 1000)); (cm as any)._yt = now;
+        const want = now < (cm.lookUntil || 0) ? 0 : cm.baseYaw;
+        let d = Math.atan2(Math.sin(want - cm.yaw!), Math.cos(want - cm.yaw!));
+        if (Math.abs(d) < 0.01) cm.yaw = want; else cm.yaw = cm.yaw! + d * (1 - Math.exp(-dt * 7.5)) + Math.sign(d) * Math.min(Math.abs(d), 0.4 * dt);
+        cm.fig.rotation.y = cm.yaw!;
+        // fidgeting when impatient: sway and head shake without any new clip
+        if (cm.impatient) { cm.fig.rotation.z = Math.sin(now / 160) * 0.05 * Math.min(2, cm.impatient); cm.fig.rotation.y += Math.sin(now / 130) * 0.08; }
+      }
       const gr = cm.grub;
       if (gr) { gr.armL.rotation.set(0, 0, 0); gr.armR.rotation.set(0, 0, 0); gr.head.rotation.set(0, 0, 0); gr.mouth.scale.y = 1; }
       if (cm.keep) cm.keep.flags.forEach((fl, i) => { fl.rotation.y = Math.sin(now / 500 + i) * 0.3; });
@@ -876,7 +906,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   const api: BoardView = {
-    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, squareCenter, arenaDetails, screenRects, setFlowMode(m) { flowMode = m; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, facing, squareCenter, arenaDetails, screenRects, setFlowMode(m) { flowMode = m; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);
@@ -912,6 +942,7 @@ export function createFlatView(container: HTMLElement): BoardView {
     },
     resize() {},
     poke: () => null,
+    lookBack() {}, impatient() {}, facing: () => ({}),
     retreat() { /* flat board: the overlay shows the retreat */ },
     stats: async () => ({ webgl: false, graphics: 'low', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
     emote(side, kind) {

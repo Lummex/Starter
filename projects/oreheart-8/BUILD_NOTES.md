@@ -1,3 +1,23 @@
+# Oreheart — Phase 1B Round 8b build notes (owner playtest of round 7)
+
+`npm run build` → `dist/`; `npm test` → Vitest (74 tests). Screenshots in `screenshots/r8b-*` (844×390 and 1920×1080: Commander screen before/after choosing Grubnak, deck-builder close-up with viewer, match, creature with new stat icons). **Meshy credits spent this round: 0** (item 3 uses the fallback allowed in the brief, see below).
+
+- **3 Commander facing**: Grubnak now faces the opponent (`baseYaw`); smooth exponential turns (about 0.4 s). Looks back at the player ~3 s into the player's turn and randomly every 20–40 s; impatience after ~20 s idle (then every 15 s, level rises) turns him to the player with the saved surprised/point clips plus a procedural sway and head shake (no new Meshy clip); any pointer/key action or a new phase stops it; acting emotes (cast, cheer, flinch) face forward. Data-driven in `scene.ts` (`lookBack`, `impatient`, `facing`); `getRenderStats().commanders.player` adds `facing`, `yaw`, `baseYaw`, `impatience`. Test hook `oreheart.setIdleMs(n)`.
+- **4 Glow**: `.card-glow::before` draws the crisp edge at the card border fading outward (same thickness/opacity/colours).
+- **5 Hand hover zone**: `handBoxes()` = one tight box per visible fan card (only the tucked part at rest, whole card when raised); `getHandHoverBox()` test hook. A pointer-down anywhere off the hand (creature drag, pan) or a wheel zoom/pan disables hand hovering until release and tucks the hand.
+- **6 Pop-out**: 70 % of the screen height, 180 ms eased glide.
+- **7 Stat badges**: painted sword / ruby heart / boot icons (`tools/make-stat-icons.mjs`, same SVG-to-PNG method as the ruby heart; **not** the image API) with bold white outlined numbers; damaged Health orange-red, buffed green; no pill background.
+- **8/9 Deck builder**: dragging works again (native drag blocked, 6 px threshold, drop anywhere on the pile or list panel; touch drags only when horizontal). The layout shift came from the fly-to-pile ghost being `position:relative` in the flex body; it is now fixed. Panels have fixed 58/42 % widths, no outer scrollbars, stable scrollbar gutters.
+- **10–12 Choose Your Commander**: uniform deck entries; palette colours; hover grow/shrink; click hides the others, card becomes a dimmed backdrop and the 3D Grubnak pops up (bare viewer with occasional laugh/point); only his faction's starter decks (and saved decks for him) show; Change Commander / Esc / click the card to undo; Fight! bottom-right, Back bottom-left; the View-in-3D buttons are gone.
+- **13 Palette**: `--text-body #D4A94F`, `--text-body-sm #B8862B` applied to body/list/label text; titles stay bright gold.
+- **14 Close-up viewer**: the deck builder shows a Commander-card thumbnail next to the logo (`.db-cmdcard`); clicking it opens the close-up with Grubnak's card on the left and the 3D viewer (drag, wheel/pinch, animation buttons) on the right. Normal cards open the close-up alone.
+
+## Gaps
+- Checked with my own Playwright probes (`tools/probe-facing.mjs`, `tools/shot-r8b.mjs`), not the hidden suite. The deck builder grid has no Commander card, so the viewer is reached through the thumbnail.
+- Impatience uses existing clips (no new Meshy animation). Stat icons are painted SVG renders, not image-API art. Pop-out measured 66–70 % of the height.
+
+---
+
 # Oreheart — Phase 1B Round 8a build notes (painted arena board + view controls, Meshy crystal mine)
 
 `npm run build` → `dist/`; `npm test` → Vitest (70 tests, 4 new in `tests/arena.test.ts`). Only round 8a items 1 and 2 were built; round 8b items (Commander facing/emotes, card glow, hand hover box, pop-out size, stat icons, deck builder, Choose Your Commander, brown-gold body text, close-up viewer) are untouched and keep round 7 behaviour.

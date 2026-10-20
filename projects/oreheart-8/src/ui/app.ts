@@ -7,7 +7,7 @@ import { deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandO
 import { createBoardView, createFlatView, BoardView } from './scene';
 import { audio } from './audio';
 import { loadGrubnak3d } from './grubnak3d';
-import { openGrubnakViewer } from './viewer3d';
+import { mountGrubnakViewer } from './viewer3d';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -328,7 +328,7 @@ export class App {
     };
     for (const c of cmds) {
       const f = FACTIONS[c.faction];
-      cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { cmd = c.id; onCmd(); } },
+      cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { if (picked && cmd === c.id) unpick(); else { cmd = c.id; onCmd(); pick(); } } },
         h('img', { class: 'portrait-img', src: `/art/commanders/${c.id}.webp`, alt: '', draggable: 'false' }),
         h('span', { class: 'cmd-win' },
           h('span', { class: 'nm' }, c.name),
@@ -368,9 +368,11 @@ export class App {
       const fac = COMMANDERS[cmd].faction;
       const order = ['goblins', 'gnomes', 'dwarves'];
       const hid = hiddenStarters();
-      const list = [...STARTER_DECK_LIST.filter((d) => d.faction === fac), ...order.filter((f) => f !== fac).flatMap((f) => STARTER_DECK_LIST.filter((d) => d.faction === f))].filter((d) => !hid.includes(d.id));
+      void order;
+      const list = STARTER_DECK_LIST.filter((d) => d.faction === fac).filter((d) => !hid.includes(d.id));
       const items: El[] = list.map((d) => stack(d.name, d.cards.length, true, 'starter:' + d.id, () => { deckSel = 'starter:' + d.id; msg.textContent = ''; sel(); }, d.id));
       decks.forEach((d, i) => {
+        if (d.commander && d.commander !== cmd) return;
         const ok = deckLegal(d, cmd);
         items.push(stack(d.name, d.cards.length, ok, 'saved:' + i, () => {
           if (!ok) { msg.textContent = deckProblems(d.cards.filter((id) => CARDS[id]), cmd)[0] || 'This deck is not ready.'; return; }
@@ -380,6 +382,33 @@ export class App {
       items.push(h('div', { class: 'dslot' }, h('button', { type: 'button', class: 'dstack newdeck', onclick: () => showDecks(this) }, '+ New Deck')));
       row.replaceChildren(...items);
     };
+    // round 8b item 11: choosing a Commander hides the others; the card drops back as a backdrop and the 3D model pops up in front
+    let picked = false, stopStage: (() => void) | null = null;
+    const stage = h('div', { class: 'cmd-stage', 'aria-hidden': 'true' }) as El;
+    const cmdsEl = h('div', { class: 'cmds' }, h('div', { class: 'cmd-wall', 'aria-hidden': 'true' }), ...cmdBtns, stage) as El;
+    const changeBtn = btn('Change Commander', 'change-cmd tx-act', () => unpick()) as El;
+    changeBtn.hidden = true;
+    const mainRef: { el: El | null } = { el: null };
+    const pick = () => {
+      picked = true;
+      cmdsEl.classList.add('picked'); changeBtn.hidden = false;
+      mainRef.el?.setAttribute('data-picked', cmd);
+      cmdBtns.forEach((b) => b.classList.toggle('backdrop', b.dataset.id === cmd));
+      stopStage?.(); stopStage = null; stage.replaceChildren();
+      if (cmd === 'grubnak') {
+        const mine = cmd;
+        void mountGrubnakViewer(stage, { bare: true }).then((stop) => { if (!stop) return; if (!picked || cmd !== mine) { stop(); return; } stopStage = stop; stage.classList.add('pop'); });
+      }
+    };
+    const unpick = () => {
+      picked = false;
+      stopStage?.(); stopStage = null; stage.replaceChildren(); stage.classList.remove('pop');
+      cmdsEl.classList.remove('picked'); changeBtn.hidden = true;
+      mainRef.el?.removeAttribute('data-picked');
+      cmdBtns.forEach((b) => b.classList.remove('backdrop'));
+    };
+    const onEsc = (e: KeyboardEvent) => { if (!document.querySelector('[data-screen="select"]')) { document.removeEventListener('keydown', onEsc); return; } if (e.key === 'Escape' && picked) { e.stopPropagation(); unpick(); } };
+    document.addEventListener('keydown', onEsc);
     const onCmd = () => {
       if (deckSel.startsWith('starter:') && !hiddenStarters().includes(warband())) deckSel = 'starter:' + warband();
       buildRow(); sel();
@@ -388,18 +417,17 @@ export class App {
     buildRow();
     sel();
     const scroll = (dir: number) => row.scrollBy({ left: dir * 220, behavior: 'smooth' });
-    this.root.append(h('main', { class: 'screen setup', 'data-screen': 'select' },
+    const mainEl = h('main', { class: 'screen setup', 'data-screen': 'select' },
       h('h1', { class: 'section cinzel' }, 'Choose Your Commander'),
-      h('div', { class: 'cmds' }, h('div', { class: 'cmd-wall', 'aria-hidden': 'true' }), ...cmdBtns),
+      cmdsEl, changeBtn,
       h('div', { class: 'deck-wrap' },
         btn('◀', 'small scroll', () => scroll(-1), { 'aria-label': 'Scroll decks left' }), row,
         btn('▶', 'small scroll', () => scroll(1), { 'aria-label': 'Scroll decks right' })),
       msg,
       h('div', { class: 'row setup-actions' },
         btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }),
-        this.viewerButton(),
         h('div', { class: 'row', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns),
-        btn('Fight!', 'primary', () => {
+        btn('Fight!', 'primary fight-btn', () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
           const opp = others[Math.floor(Math.random() * others.length)];
           const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
@@ -407,7 +435,9 @@ export class App {
           try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
           this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
         }),
-        btn('Back', '', () => this.showMenu()))));
+        btn('Back', 'back-btn', () => this.showMenu())));
+    mainRef.el = mainEl as El;
+    this.root.append(mainEl);
   }
 
   showRules() {
@@ -443,14 +473,6 @@ export class App {
   }
 
   // ------------------------------------------------------------ dialogs
-  /** Plain-text button that opens the Grubnak 3D viewer (hidden until the saved models load). */
-  viewerButton(): El {
-    const b = btn('View Grubnak in 3D', 'viewer-btn', () => { void openGrubnakViewer(this.root); }, { 'data-grubnak-viewer-btn': '' });
-    b.hidden = true;
-    loadGrubnak3d().then((a) => { if (a) b.hidden = false; });
-    return b;
-  }
-
   dialog(name: string, content: (El | string)[], onClose?: () => void): { close: () => void; el: El } {
     const dlg = h('div', { class: 'dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': name }, ...content);
     const ov = h('div', { class: 'overlay' }, dlg);
@@ -491,11 +513,21 @@ export class App {
     return d;
   }
   /** Deck builder close-up: the card fills the screen top to bottom; no Close button, no scrollbar; click anywhere or Esc dismisses. */
-  closeUp(cardId: string) {
-    const c = CARDS[cardId];
-    const face = h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, c.type === 'crystal' ? 0 : c.cost));
+  closeUp(cardId: string, withViewer = false) {
+    const isCmd = cardId.startsWith('cmd:');
+    const c = isCmd ? ({ name: COMMANDERS[cardId.slice(4)].name, id: cardId, type: 'commander', faction: 'any' } as any) : CARDS[cardId];
+    const face = isCmd ? h('img', { class: 'cz-img', src: `/art/commanders/${cardId.slice(4)}.webp`, alt: c.name, draggable: 'false', 'data-card-id': cardId }) : h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, c.type === 'crystal' ? 0 : c.cost));
     const ov = h('div', { class: 'cardzoom', role: 'dialog', 'aria-modal': 'true', 'aria-label': c.name }, face);
-    const close = () => { ov.remove(); document.removeEventListener('keydown', onKey, true); };
+    let stopViewer: (() => void) | null = null, closed = false;
+    const close = () => { closed = true; stopViewer?.(); ov.remove(); document.removeEventListener('keydown', onKey, true); };
+    // round 8b item 14: cards with a 3D model (Grubnak) show it in a viewer beside the card
+    if (withViewer && cardId === 'cmd:grubnak') {
+      void mountGrubnakViewer(ov).then((stop) => {
+        if (!stop) return;
+        if (closed) { stop(); return; }
+        stopViewer = stop; ov.classList.add('with-viewer');
+      });
+    }
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
     ov.addEventListener('click', close);
     document.addEventListener('keydown', onKey, true);
@@ -813,6 +845,7 @@ export class App {
     (b.parentElement as El).addEventListener('wheel', (e: WheelEvent) => {
       if ((e.target as El).closest?.('.hand,.dialog,.hud,.reveal')) return;
       e.preventDefault();
+      this.noHand = true; clearTimeout((this as any)._nh); (this as any)._nh = setTimeout(() => { if (!this.lastPtr.down) this.noHand = false; }, 350);
       const rc = b.getBoundingClientRect();
       // a mouse wheel (or a trackpad pinch) zooms toward the cursor; a trackpad two-finger scroll pans
       const wheel = e.ctrlKey || e.deltaMode !== 0 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 40);
@@ -939,7 +972,7 @@ export class App {
     else if (!this.handTimer) this.handTimer = setTimeout(() => { this.handTimer = null; hand.classList.remove('open'); }, 90);
   }
 
-  /** Pop a hand card out of the fan as a big close-up (about 87 % of the screen height) on the very top layer, kept fully on screen. */
+  /** Pop a hand card out of the fan as a big close-up (about 70 % of the screen height) on the very top layer, kept fully on screen. */
   popCard(el: El, on: boolean) {
     this.installPopSafety();
     if (on && el.classList.contains('popped')) return;
@@ -969,7 +1002,7 @@ export class App {
     const openY = -0.03 * w;
     const left = hb.left + (parseFloat(el.style.left) || 0);
     const top = hb.top - ty + openY + (el.offsetTop || 0);
-    const S = Math.max(1, Math.min((hr.height * 0.87) / hgt, (hr.width - 8) / w));
+    const S = Math.max(1, Math.min((hr.height * 0.70) / hgt, (hr.width - 8) / w));
     const cx = left + w / 2, cy = top + hgt / 2;
     const halfW = (w * S) / 2, halfH = (hgt * S) / 2;
     const targetX = Math.max(hr.left + halfW + 2, Math.min(hr.right - halfW - 2, cx));
@@ -1021,18 +1054,38 @@ export class App {
   popSafety = false;
   /** Which fan card (by its resting box, not its popped one) the point is over. */
   hitCard(x: number, y: number): El | null {
-    const hand = this.r.hand as El;
-    if (!hand) return null;
+    if (this.noHand) return null;
+    let hit: El | null = null;
+    for (const b of this.handBoxes()) if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) hit = b.c;
+    return hit;
+  }
+  noHand = false;
+  /** Tight hover boxes: only the visible part of each fan card (tucked), or the whole card while the hand is raised. */
+  handBoxes(): { c: El; l: number; t: number; w: number; h: number }[] {
+    const hand = this.r?.hand as El;
+    if (!hand) return [];
     const ty = new DOMMatrix(getComputedStyle(hand).transform).m42;
     const hb = hand.getBoundingClientRect();
     const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')].filter((c) => !c.classList.contains('offhand')) as El[];
     const cw = cards[0]?.offsetWidth || 0;
-    let hit: El | null = null;
+    const raised = hand.classList.contains('open') || hand.classList.contains('has-pop');
+    const base = hb.top - ty + (raised ? -0.03 * cw : 0.75 * cw);
+    const vh = window.innerHeight;
+    const out = [];
     for (const c of cards) {
-      const l = hb.left + (parseFloat(c.style.left) || 0), t = hb.top - ty - 0.03 * cw + (c.offsetTop || 0);
-      if (x >= l && x <= l + c.offsetWidth && y >= t && y <= t + c.offsetHeight) hit = c;
+      const l = hb.left + (parseFloat(c.style.left) || 0), t = base + (c.offsetTop || 0);
+      const hh = Math.min(c.offsetHeight, vh - t);
+      if (hh > 0) out.push({ c, l, t, w: c.offsetWidth, h: hh });
     }
-    return hit;
+    return out;
+  }
+  /** Test hook: union box of the hand's hover boxes. */
+  getHandHoverBox() {
+    const bs = this.handBoxes();
+    if (!bs.length) return null;
+    const l = Math.min(...bs.map((x) => x.l)), t = Math.min(...bs.map((x) => x.t));
+    const r = Math.max(...bs.map((x) => x.l + x.w)), bt = Math.max(...bs.map((x) => x.t + x.h));
+    return { left: l, top: t, width: r - l, height: bt - t, cards: bs.length, raised: !!(this.r?.hand as El)?.classList.contains('open') };
   }
   /** Return every popped card to the fan and tuck the hand; nothing may stay raised. */
   clearPops(except?: El) {
@@ -1046,8 +1099,13 @@ export class App {
     this.popSafety = true;
     const retract = () => { this.clearPops(); this.openHand(false, true); };
     document.addEventListener('pointermove', (e) => { this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: this.lastPtr.down }; }, true);
-    document.addEventListener('pointerdown', (e) => { this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: true }; }, true);
-    const up = () => { this.lastPtr.down = false; if (this.lastPtr.type !== 'mouse') retract(); };
+    document.addEventListener('pointerdown', (e) => {
+      this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: true };
+      const onHand = !!(e.target as Element)?.closest?.('.hand, .hand-card, .hand-scroll');
+      this.noHand = !onHand;
+      if (this.noHand) { this.clearPops(); this.openHand(false, true); }
+    }, true);
+    const up = () => { this.lastPtr.down = false; this.noHand = false; if (this.lastPtr.type !== 'mouse') retract(); };
     window.addEventListener('pointerup', up, true); window.addEventListener('pointercancel', up, true);
     window.addEventListener('blur', retract);
     document.documentElement.addEventListener('mouseleave', retract);
@@ -1171,6 +1229,7 @@ export class App {
     r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;
     const pm = `${me.crystals}|${en.crystals}`;
     if (this.flowKey !== pm && this.flowKey !== '' && st.turn !== this.flowTurn) this.view?.pulseFlow(st.activePlayer);
+    this.cmdBehavior(st);
     if (st.turn !== this.flowTurn) { this.flowTurn = st.turn; this.view?.pulseFlow(st.activePlayer); }
     this.flowKey = pm;
     // enemy hand arc
@@ -1577,15 +1636,20 @@ export class App {
         this.r.board.insertBefore(el, this.r.fx);
       }
       el.dataset.uid = c.uid; el.dataset.row = String(c.row); el.dataset.col = String(c.col);
-      (el.querySelector('.a') as El).textContent = `⚔️${c.attack + junkBonus(st, c)}`;
-      (el.querySelector('.h') as El).textContent = `❤️${c.health}`;
-      (el.querySelector('.m') as El).textContent = `👟${maxMove(c)}${isMiner(CARDS[c.cardId]) ? ' ⛏️' : ''}${CARDS[c.cardId].abilities?.includes('ranged') ? ' 🏹' : ''}`;
+      const printed: any = CARDS[c.cardId];
+      const atkNow = c.attack + junkBonus(st, c);
+      const aEl = el.querySelector('.a') as El, hEl = el.querySelector('.h') as El, mEl = el.querySelector('.m') as El;
+      aEl.textContent = String(atkNow); aEl.dataset.buff = String(atkNow > printed.attack);
+      hEl.textContent = String(c.health); hEl.dataset.buff = String(c.health > printed.health);
+      mEl.textContent = String(maxMove(c));
+      aEl.title = 'Attack'; hEl.title = 'Health'; mEl.title = 'Movement';
+      el.dataset.extras = `${isMiner(printed) ? '⛏️' : ''}${printed.abilities?.includes('ranged') ? '🏹' : ''}`;
       el.dataset.mining = String(!!c.minedMine);
       const up = c.upgrades.attack + c.upgrades.health;
       el.dataset.upgrades = String(up);
       (el.querySelector('.pips') as El).textContent = up ? '●'.repeat(Math.min(up, 8)) : '';
       const sh = el.querySelector('.sh') as El;
-      sh.textContent = (c.shield > 0 ? ` 🛡${c.shield}` : '');
+      sh.textContent = `${el.dataset.extras || ''}${c.shield > 0 ? `🛡${c.shield}` : ''}`;
       el.dataset.poison = String(c.poison || 0);
       let pm = el.querySelector('.poison-mark') as El | null;
       if (c.poison > 0) {
@@ -1796,6 +1860,41 @@ export class App {
     f.style.left = p.x + 'px'; f.style.top = p.y - 10 + 'px';
     this.r.fx.append(f);
     setTimeout(() => f.remove(), 900);
+  }
+  // Commander behaviour (round 8b): faces the opponent, looks back at the player, gets impatient when the player idles
+  bhv = { key: '', lastAct: Date.now(), level: 0, nextLook: Date.now() + 20000 + Math.random() * 20000, timer: 0 as any, bound: false };
+  idleMs = 20000;
+  cmdBehavior(st: any) {
+    const b = this.bhv;
+    if (!b.bound) {
+      b.bound = true;
+      document.addEventListener('pointerdown', () => this.playerActed(), true);
+      document.addEventListener('keydown', () => this.playerActed(), true);
+      b.timer = setInterval(() => this.cmdTick(), 500);
+    }
+    const key = `${st.turn}|${st.activePlayer}|${st.phase}`;
+    if (key !== b.key) {
+      b.key = key;
+      this.playerActed();
+      if (st.activePlayer === 'player' && st.phase === 'deploy') setTimeout(() => { if (this.bhv.key === key && this.bhv.level === 0) this.view?.lookBack('player', 1800); }, 3000);
+    }
+  }
+  playerActed() {
+    const b = this.bhv;
+    b.lastAct = Date.now();
+    if (b.level) { b.level = 0; this.view?.impatient('player', 0); }
+  }
+  cmdTick() {
+    const st = this.game?.state;
+    const v = this.view;
+    if (!st || !v || !this.root.querySelector('.match')) return;
+    const b = this.bhv, now = Date.now();
+    const mine = st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') && !st.pendingResponse;
+    if (!mine) { if (b.level) { b.level = 0; v.impatient('player', 0); } return; }
+    const idle = now - b.lastAct;
+    const need = this.idleMs + b.level * 15000;
+    if (idle >= need) { b.level++; v.impatient('player', b.level); }
+    else if (!b.level && now >= b.nextLook) { b.nextLook = now + 20000 + Math.random() * 20000; v.lookBack('player', 1800); }
   }
   emote(side: string, kind: any) {
     this.view && this.view.emote(side as any, kind);

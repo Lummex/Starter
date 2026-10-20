@@ -5,17 +5,16 @@ import { h } from './app';
 
 const LABEL: Record<string, string> = { idle: 'Idle', laugh: 'Laugh', point: 'Point', celebrate: 'Celebrate', surprised: 'Surprised', cast: 'Cast', hit: 'Hit', defeat: 'Defeat' };
 
-/** Opens the viewer over `host`; resolves to false when the 3D files are not shipped. */
-export async function openGrubnakViewer(host: HTMLElement): Promise<boolean> {
+/** Mounts the viewer inside `host` (no overlay of its own); resolves to a destroy function, or null when the 3D files are not shipped. */
+export async function mountGrubnakViewer(host: HTMLElement, opts: { bare?: boolean } = {}): Promise<(() => void) | null> {
   const assets = await loadGrubnak3d();
-  if (!assets) return false;
+  if (!assets) return null;
   const canvas = h('canvas', { class: 'viewer-canvas', 'data-grubnak-viewer': '', 'aria-label': 'Grubnak 3D model, drag to spin' }) as HTMLCanvasElement;
   const status = h('p', { class: 'viewer-status', role: 'status', 'aria-live': 'polite' }, 'Playing: Idle');
   const row = h('div', { class: 'viewer-anims', role: 'group', 'aria-label': 'Animations' });
-  const close = h('button', { type: 'button', class: 'btn viewer-close' }, 'Close');
-  const dlg = h('div', { class: 'dialog viewer3d', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Grubnak 3D viewer' },
-    h('h2', {}, 'Grubnak Rotgut'), canvas, row, status, close);
-  const ov = h('div', { class: 'overlay viewer-overlay' }, dlg);
+  const ov = h('div', { class: 'viewer3d' + (opts.bare ? ' bare' : ''), role: 'group', 'aria-label': 'Grubnak 3D viewer', 'data-viewer3d': '' }, canvas, row, status);
+  ov.addEventListener('click', (e) => e.stopPropagation());
+  ov.addEventListener('pointerdown', (e) => e.stopPropagation());
   host.append(ov);
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -29,7 +28,7 @@ export async function openGrubnakViewer(host: HTMLElement): Promise<boolean> {
   scene.add(g3d.group);
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 50);
   const target = new THREE.Vector3(0, g3d.height * 0.5, 0);
-  let az = 0.4, el = 0.15, dist = g3d.height * 2.6;
+  let az = 0.4, el = 0.15, dist = g3d.height * (opts.bare ? 1.9 : 2.6);
   const place = () => {
     camera.position.set(target.x + dist * Math.sin(az) * Math.cos(el), target.y + dist * Math.sin(el), target.z + dist * Math.cos(az) * Math.cos(el));
     camera.lookAt(target);
@@ -67,7 +66,7 @@ export async function openGrubnakViewer(host: HTMLElement): Promise<boolean> {
   });
   const up = (e: PointerEvent) => { pts.delete(e.pointerId); pinch = 0; };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
-  canvas.addEventListener('wheel', (e) => { e.preventDefault(); dist = Math.max(g3d.height * 1.2, Math.min(g3d.height * 5, dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); e.stopPropagation(); dist = Math.max(g3d.height * 1.2, Math.min(g3d.height * 5, dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
 
   let raf = 0, last = performance.now(), open = true;
   const frame = (t: number) => {
@@ -79,10 +78,7 @@ export async function openGrubnakViewer(host: HTMLElement): Promise<boolean> {
     raf = requestAnimationFrame(frame);
   };
   raf = requestAnimationFrame(frame);
-  const shut = () => { open = false; cancelAnimationFrame(raf); renderer.dispose(); ov.remove(); };
-  close.addEventListener('click', shut);
-  ov.addEventListener('pointerdown', (e) => { if (e.target === ov) shut(); });
-  ov.addEventListener('keydown', (e: any) => { if (e.key === 'Escape') shut(); });
-  (btns[0] as HTMLElement).focus({ preventScroll: true });
-  return true;
+  const emoter = opts.bare ? setInterval(() => g3d.play(Math.random() < 0.5 ? 'laugh' : 'point'), 7000 + Math.random() * 4000) : 0;
+  const shut = () => { clearInterval(emoter as any); open = false; cancelAnimationFrame(raf); renderer.dispose(); ov.remove(); };
+  return shut;
 }

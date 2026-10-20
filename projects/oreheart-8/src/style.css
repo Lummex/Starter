@@ -1177,3 +1177,106 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 .token::before{box-shadow:0 0 0 2px #ffd40055}
 .token[data-acted="true"]::before{box-shadow:none}
 .heart,.heart.mine{filter:none}
+
+/* ===== Round 8b ===== */
+/* 4: glow is crisp at the card edge and fades outward (same thickness/opacity/colours as before) */
+.hand-card .card-glow{inset:calc(var(--gt) / var(--gs,1) * -1)!important;overflow:hidden;box-shadow:none!important;opacity:.9;border-radius:calc(var(--cw) * .05 + var(--gt) / var(--gs,1))}
+.hand-card .card-glow::before{content:'';position:absolute;inset:calc(var(--gt) / var(--gs,1));border-radius:calc(var(--cw) * .05);box-shadow:0 0 calc(var(--gt) / var(--gs,1) * .95) calc(var(--gt) / var(--gs,1) * .12) var(--gc,#fff0c2),0 0 0 calc(var(--gt) / var(--gs,1) * .08) var(--gc,#fff0c2)}
+.hand-card .card-glow::after{background:radial-gradient(ellipse at 50% 50%,transparent 70%,#ffffff55 100%)}
+/* 6: smoother pop-out glide */
+.match .hand .hand-card{transition:transform .18s cubic-bezier(.2,.7,.2,1),opacity .18s}
+.match .hand .hand-card.popped{transition:transform .18s cubic-bezier(.2,.7,.2,1),opacity .18s!important}
+.match .hand .hand-card.popclone{transition:none}
+/* 13: brown-gold body text (shared palette variables; titles stay bright gold) */
+:root{--body:var(--text-brown-light);--body-sm:var(--text-brown)}
+body{color:var(--body)}
+.rules p,.rules li,.rules dd,.howto p,.howto li,.settings label,.settings p,.dialog p,.dialog li,.screen p,.screen li,.screen label,.screen dd,.desc,.cmd-desc,.db-screen label,.db-screen p,.db-screen li,.db-screen small,.drow,.prob,.sub,.muted,.rank,.summary td,.summary li,.recap li,.recap p,.tip,.site-tip,.hint{color:var(--body)}
+small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
+:root{--text-body:#D4A94F;--text-body-sm:#B8862B}
+:is(p,li,dd,dt,label,.welcome,.combo,.combo-list li,.callout,.cmd-card .ds,.cmd-card .fa,.mine-flow,.cry-name,.cry-name .sr-only,.ph-time,.ph-step,.ph-step.done,.tip,.site-tip,.hint,.summary td,.recap li){color:var(--text-body)!important;-webkit-text-fill-color:var(--text-body)!important}
+:is(small,.dsize,.deck-size,.ds-n,.db-status,.mull-left){color:var(--text-body-sm)!important;-webkit-text-fill-color:var(--text-body-sm)!important}
+/* 7: compact painted stat icons with the number on top */
+.token .tk-stats{display:inline-flex;align-items:center;gap:1px;padding:0!important;background:none!important;border:0!important;border-radius:0!important;filter:drop-shadow(0 1px 2px #000);font-size:max(14px,2.3vh)!important;--si:max(21px,3.2vh)}
+.token .tk-stats .a,.token .tk-stats .h,.token .tk-stats .m{display:inline-flex;align-items:center;justify-content:center;width:var(--si);height:var(--si);background:center/contain no-repeat;color:#fff!important;-webkit-text-fill-color:#fff!important;font-weight:800;font-style:normal;font-size:max(13px,.62em);line-height:1;-webkit-text-stroke:.6px #000;paint-order:stroke fill;text-shadow:0 0 2px #000,0 0 2px #000,1px 1px 0 #000,-1px -1px 0 #000}
+.token .tk-stats .a{background-image:url(/art/ui/stat-sword.png)}
+.token .tk-stats .h{background-image:url(/art/ui/ruby-heart.png)}
+.token .tk-stats .m{background-image:url(/art/ui/stat-boot.png)}
+.token[data-damaged="true"] .tk-stats .h{color:#ff7a33!important;-webkit-text-fill-color:#ff7a33!important}
+.token .tk-stats [data-buff="true"]{color:#5dff7a!important;-webkit-text-fill-color:#5dff7a!important}
+.token .tk-stats .sh{font-size:max(12px,2vh);margin-left:1px}
+/* 14: card close-up with the 3D viewer beside it */
+.cardzoom .cz-img{height:calc(100vh - 16px);max-width:calc(100vw - 16px);width:auto;object-fit:contain;box-shadow:0 0 4vh #000;border-radius:2vh}
+.cardzoom.with-viewer{gap:2vw;padding:8px}
+.cardzoom.with-viewer .hand-card,.cardzoom.with-viewer .cz-img{flex:0 0 auto}
+.cardzoom.with-viewer .hand-card{--cw:min(calc((100vh - 16px) / 1.4861),calc(50vw - 16px))}
+.cardzoom.with-viewer .cz-img{max-width:calc(50vw - 16px)}
+.cardzoom .viewer3d{position:relative;flex:0 1 auto;width:min(calc(100vh * .9),calc(50vw - 24px));height:calc(100vh - 16px);display:flex;flex-direction:column;align-items:center;cursor:default;overflow:hidden}
+.cardzoom .viewer3d .viewer-canvas{flex:1 1 0;min-height:0;width:100%;touch-action:none;cursor:grab}
+.cardzoom .viewer3d .viewer-anims{display:flex;flex-wrap:wrap;gap:2px 10px;justify-content:center;padding:2px 0}
+.cardzoom .viewer3d .viewer-anim{min-height:0;min-width:0;padding:2px 6px;font-size:max(14px,2.4vh)}
+.cardzoom .viewer3d .viewer-status{margin:0;font-size:max(14px,2.2vh);color:var(--text-body-sm)}
+.db-head{display:flex;align-items:flex-end;gap:12px}
+.db-cmdcard{background:none;border:0;padding:0;cursor:pointer;height:clamp(46px,13vh,220px);flex:0 0 auto;filter:drop-shadow(0 0 6px #000)}
+.db-cmdcard img{height:100%;width:auto;display:block}
+.db-cmdcard:hover,.db-cmdcard:focus-visible{filter:drop-shadow(0 0 10px #ffd700);outline:none}
+/* 9: deck builder layout never shifts when the list grows */
+.screen.db-screen .db-left,.screen.db-screen .db-right{overflow:hidden!important}
+.db-left{flex:0 0 58%!important;width:58%!important}
+.db-right{flex:0 0 42%!important;width:42%!important}
+.db-left .db-cards,.db-listwrap{scrollbar-gutter:stable;overflow-y:auto;overflow-x:hidden}
+.db-list li,.db-list li *{transition:none!important;animation:none!important}
+.db-list li .db-cnt{width:2.6em}
+
+/* ===== Round 8b: Choose Your Commander ===== */
+.screen.setup{position:relative;overflow:hidden!important;justify-content:flex-start!important;gap:1vh!important;padding:1vh 3vw 0!important}
+.screen.setup .cmds{position:relative;flex:0 0 auto;width:min(94%,1100px);max-width:none;justify-content:center;gap:2.4vw;height:46vh;align-items:center;padding:0}
+.screen.setup .cmd-card{height:40vh!important;min-height:0!important;width:auto!important;aspect-ratio:3/4!important;flex:0 0 auto!important;transition:transform .2s ease,opacity .25s ease,box-shadow .2s ease!important;transform-origin:50% 60%}
+.screen.setup .cmds:not(.picked):has(.cmd-card:hover) .cmd-card:hover{transform:scale(1.1);z-index:3}
+.screen.setup .cmds:not(.picked):has(.cmd-card:hover) .cmd-card:not(:hover){transform:scale(.93)}
+.screen.setup .cmd-card:focus-visible{outline:none;transform:scale(1.08)}
+.screen.setup .cmds.picked .cmd-card:not(.backdrop){opacity:0;pointer-events:none;position:absolute;visibility:hidden;transition:opacity .25s ease,visibility 0s .25s!important}
+.screen.setup .cmds.picked .cmd-card.backdrop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(1.12);z-index:1;opacity:.5;filter:brightness(.55);cursor:pointer}
+.screen.setup[data-picked="sproingle"] .cmds.picked .cmd-card.backdrop,.screen.setup[data-picked="borgo"] .cmds.picked .cmd-card.backdrop{opacity:1;filter:none}
+.cmd-stage{position:absolute;left:50%;top:50%;width:min(36vh,40vw);height:46vh;transform:translate(-50%,-50%) scale(.3);opacity:0;z-index:2;pointer-events:none;transition:transform .45s cubic-bezier(.3,1.6,.5,1),opacity .25s}
+.cmd-stage.pop{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.cmd-stage .viewer3d{position:absolute;inset:0;display:flex}
+.cmd-stage .viewer3d .viewer-canvas{width:100%;height:100%}
+.viewer3d.bare .viewer-anims,.viewer3d.bare .viewer-status{display:none}
+.screen.setup .change-cmd{align-self:center;flex:0 0 auto}
+.screen.setup .deck-wrap{flex:1 1 auto;min-height:0;width:96%;margin:0}
+.screen.setup .deck-row{align-items:flex-start;gap:1.6vw!important;overflow-y:hidden;scrollbar-width:thin}
+/* 10: every deck entry is identical */
+.screen.setup .dslot{flex:0 0 auto;width:15vh;display:flex;flex-direction:column;align-items:center;gap:2px}
+.screen.setup .dslot .dstack{width:100%!important;height:auto!important;aspect-ratio:1184/1664;min-height:0;margin:0 0 6px;transform:none!important;border:0!important}
+.screen.setup .dslot .dstack .ds-name{box-sizing:border-box;width:94%!important;max-width:94%!important;height:2.5em;display:flex;align-items:center;justify-content:center;white-space:normal!important;overflow:hidden!important;text-align:center;line-height:1.05;font-size:max(14px,1.8vh)!important;font-weight:700!important;padding:0 4px!important;margin:0 0 -4px!important;border:1px solid #c9a24a!important;color:var(--text-gold)!important}
+.screen.setup .dslot .dstack .ds-n{position:static;margin-top:8px;font-size:max(14px,1.7vh)!important;color:var(--text-body-sm)!important;font-weight:400}
+.screen.setup .dstack[aria-pressed=true]{filter:drop-shadow(0 0 12px var(--gold-bright));transform:none!important}
+.screen.setup .dstack.newdeck{aspect-ratio:1184/1664;color:var(--text-gold)!important}
+/* actions in palette colours; Remove turns warning orange-red on hover */
+.screen.setup .btn.tx-act,.screen.setup .btn.change-cmd,.screen.setup .btn.back-btn,.screen.setup .setup-actions .btn:not(.primary):not(.diff){color:var(--text-body)!important;-webkit-text-fill-color:var(--text-body)!important;font-weight:400!important}
+.screen.setup .btn.tx-act:hover,.screen.setup .btn.change-cmd:hover,.screen.setup .btn.back-btn:hover,.screen.setup .setup-actions .btn:not(.primary):not(.diff):hover{color:var(--text-gold)!important;-webkit-text-fill-color:var(--text-gold)!important;text-shadow:0 0 10px #ffd700}
+.screen.setup .ds-acts .btn[aria-label^="Remove"]:hover:not(:disabled){color:var(--color-warning)!important;-webkit-text-fill-color:var(--color-warning)!important;text-shadow:0 0 10px var(--color-warning)}
+.screen.setup .cmd-card .nm{color:var(--text-gold)!important;font-weight:700!important}
+.screen.setup .cmd-card .ds{color:var(--text-body)!important;-webkit-text-fill-color:var(--text-body)!important}
+.screen.setup .cmd-card .fa{color:var(--text-body-sm)!important}
+/* 12: Fight! bottom-right, Back bottom-left */
+.screen.setup .btn.fight-btn{position:fixed;right:2vw;bottom:2vh;z-index:20;font-size:max(20px,4.4vh)!important;font-weight:800!important;color:var(--text-gold)!important;-webkit-text-fill-color:var(--text-gold)!important;text-shadow:0 0 10px #ffd70099,0 2px 3px #000;min-height:0!important;padding:4px 14px!important}
+.screen.setup .btn.fight-btn:hover{text-shadow:0 0 18px #ffd700,0 0 6px #ffd700}
+.screen.setup .btn.back-btn{position:fixed;left:2vw;bottom:2vh;z-index:20}
+.screen.setup .setup-actions{flex:0 0 auto;justify-content:center;gap:3vw;padding:0 14vw 1vh}
+.screen.setup .dslot{width:max(15vh,124px)}
+.screen.setup .dslot .dstack{width:15vh!important;min-width:56px}
+.screen.setup .btn.fight-btn{right:1vw;bottom:1vh}
+.screen.setup .cmds{height:40vh}.screen.setup .cmd-card{height:34vh!important}.cmd-stage{height:40vh;width:min(32vh,40vw)}
+@media (min-height:700px){.screen.setup .cmds{height:44vh}.screen.setup .cmd-card{height:38vh!important}.cmd-stage{height:44vh}}
+.screen.setup .cmds.picked .cmd-wall{opacity:0;transition:opacity .25s}
+.screen.setup .cmds.picked .cmd-card.backdrop{transform:translate(-50%,-50%) scale(1.22)!important;box-shadow:0 0 30px 6px #3ee06a66!important;opacity:.55}
+.cmd-stage{width:min(44vh,50vw)!important;height:48vh!important}
+.screen.setup .cmds{height:44vh}
+.screen.setup .cmd-card{height:33vh!important}
+@media (min-height:700px){.screen.setup .cmds{height:48vh}.screen.setup .cmd-card{height:36vh!important}.cmd-stage{height:52vh!important}}
+.screen.setup[data-picked="grubnak"] .cmd-card.backdrop .cmd-win{opacity:0}
+.screen.setup .dslot .dstack.newdeck,.screen.setup .dslot .dstack.newdeck *{font-size:max(14px,2.2vh)!important;font-weight:700}
+.cardzoom .viewer3d{width:min(calc(100vh * .8),calc(46vw - 16px))!important}
+.cardzoom.with-viewer{gap:1.5vw}
+.db-fly,.db-fly.hand-card,body>.db-fly{position:fixed!important;margin:0!important;left:0;top:0}

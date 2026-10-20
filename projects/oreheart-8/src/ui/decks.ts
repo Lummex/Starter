@@ -114,7 +114,6 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const fC = sel('Cost', 'f-cost', ['Any', '1-2', '3-4', '5-6', '7+']);
   const fR = sel('Rarity', 'f-rarity', ['All', 'Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector']);
   let cmdId = 'grubnak';
-  const viewBtn = app.viewerButton();
   const fCmd = combo('Deck Commander', 'f-commander', ['Grubnak', 'Sproingle', 'Borgo'], () => { cmdId = CMD_BY_NAME[fCmd.sel.value] || 'grubnak'; renderCards(); renderDeck(); });
   let query = '';
   let perRow = Math.max(2, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
@@ -168,16 +167,18 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const addCard = (id: string, from?: DOMRect | null, noFly = false) => { if (lockedFor(id)) { status.textContent = `Only for ${SING[CARDS[id].faction]} Commanders`; return; } if (count(id) >= copyLimit(id)) return; if (!noFly) fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };
   const removeCard = (id: string) => { const i = deck.indexOf(id); if (i >= 0) deck.splice(i, 1); status.textContent = ''; renderDeck(); };
 
-  function enlarge(c: any) { app.closeUp(c.id); }
+  function enlarge(c: any) { app.closeUp(c.id, true); }
   const ghostW = () => Math.max(40, ((cardsEl.clientWidth || 300) - 8 - 2 * 10) / 3);
   function drag(e: PointerEvent, c: any, el: HTMLElement) {
     if (e.button !== 0) return;
+    if (e.pointerType === 'mouse') e.preventDefault();
     const sx = e.clientX, sy = e.clientY;
     let ghost: HTMLElement | null = null;
     const inside = (n: Element, x: number, y: number) => { const r = n.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; };
-    const over = (x: number, y: number) => inside(pileEl, x, y) || inside(listEl, x, y);
+    const wrapEl = app.root.querySelector('.db-listwrap') as Element | null;
+    const over = (x: number, y: number) => inside(pileEl, x, y) || inside(listEl, x, y) || (!!wrapEl && inside(wrapEl, x, y));
     const mv = (m: PointerEvent) => {
-      if (!ghost && Math.hypot(m.clientX - sx, m.clientY - sy) > 8) {
+      if (!ghost && Math.hypot(m.clientX - sx, m.clientY - sy) > 6 && (e.pointerType !== 'touch' || Math.abs(m.clientX - sx) > Math.abs(m.clientY - sy))) {
         ghost = cardFace(c); ghost.setAttribute('data-drag-ghost', '1');
         const gw = ghostW();
         ghost.style.setProperty('--cw', gw + 'px'); ghost.style.setProperty('width', gw + 'px', 'important');
@@ -202,6 +203,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     });
     el.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enlarge(c); } });
     el.addEventListener('pointerdown', (e: PointerEvent) => drag(e, c, el));
+    el.addEventListener('dragstart', (e) => e.preventDefault());
     return el;
   }
   function fitRow() {
@@ -218,6 +220,8 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   function renderCards() { cardsEl.replaceChildren(...ALL.filter((c) => !c.disabled && matches(c)).map(tile)); fitRow(); }
   const slider = h('input', { type: 'range', id: 'cards-per-row', min: '2', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
   slider.addEventListener('input', () => setPerRow(+slider.value));
+  const cmdThumb = h('button', { type: 'button', class: 'db-cmdcard', 'aria-label': 'Commander card', onclick: () => app.closeUp('cmd:' + cmdId, true) }, h('img', { alt: '', draggable: 'false' })) as HTMLElement;
+  const syncThumb = () => { const im = cmdThumb.querySelector('img') as HTMLImageElement; im.src = `/art/commanders/${cmdId}.webp`; cmdThumb.setAttribute('aria-label', `${COMMANDERS[cmdId].name}, Commander card`); };
   const searchInp = h('input', { type: 'search', id: 'card-search', role: 'searchbox', 'aria-label': 'Search cards', placeholder: 'Search: "cheap goblin miners", "ranged under 4"…', autocomplete: 'off' }) as HTMLInputElement;
   searchInp.addEventListener('input', () => { query = searchInp.value.trim(); renderCards(); });
   const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -253,6 +257,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   });
 
   function renderDeck() {
+    syncThumb();
     const n: Record<string, number> = {};
     for (const id of deck) n[id] = (n[id] || 0) + 1;
     const ids = Object.keys(n).sort((a, b) => CARDS[a].cost - CARDS[b].cost || CARDS[a].name.localeCompare(CARDS[b].name));
@@ -383,9 +388,9 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   pileEl.append(h('div', { class: 'db-carwrap', 'aria-label': 'My decks', role: 'group' }, btn('◀', 'small scroll', () => setCur(cur - 1), { 'aria-label': 'Previous deck' }), carEl, btn('▶', 'small scroll', () => setCur(cur + 1), { 'aria-label': 'Next deck' })), nameEl, sizeEl);
   app.root.append(h('main', { class: 'screen db-screen', 'data-screen': 'deck-builder' },
     h('section', { class: 'db-left' },
-      h('div', { class: 'db-head' }, h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' })),
+      h('div', { class: 'db-head' }, h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' }), cmdThumb),
       h('div', { class: 'db-search' }, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), h('div', { class: 'f-field' }, h('label', { for: 'cards-per-row' }, 'Cards per row'), slider)),
-      h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap, viewBtn),
+      h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap),
       cardsEl),
     h('aside', { class: 'db-right', 'aria-label': 'Deck panel' },
       h('h1', { class: 'section cinzel' }, 'Deck Builder'),

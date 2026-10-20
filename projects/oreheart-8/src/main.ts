@@ -16,6 +16,7 @@ const app = new App(document.getElementById('app')!, game, test, test ? seed : u
 app.showMenu();
 
 if (test) {
+  (window as any).__app = app;
   (window as any).oreheart = {
     getState: () => game.getState(),
     legalActions: () => game.legalActions(),
@@ -42,7 +43,9 @@ if (test) {
     },
     listStarterDecks: () => STARTER_DECK_LIST.map((d) => ({ id: d.id, name: d.name, faction: d.faction, style: d.style, cards: d.cards.slice() })),
     validateDeck: (ids: string[], commander?: string) => validateDeck(Array.isArray(ids) ? ids : [], commander),
+    setIdleMs: (n: number) => { (app as any).idleMs = n; },
     getHandGlow: () => app.getHandGlow(),
+    getHandHoverBox: () => app.getHandHoverBox(),
     getAudioState: () => audio.state(),
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
     getFxLog: () => JSON.parse(JSON.stringify((app as any).fxLog)),
