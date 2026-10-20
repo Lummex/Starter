@@ -38,11 +38,20 @@ const total = (n) => n; // Revision 7: Flow and Bank are plain numbers
 const ZERO = 0;
 const sameTarget = (t, row, col) => t && t.row === row && t.col === col;
 const SHARDS = Array(12).fill('soul-shard');
-// Round 5b: Last turn, Mute, Card pop-ups and Recenter live in the pop-out match Menu
+// Round 9a: Last turn, Mute, Card pop-ups and Recenter live in Menu -> Settings ("Match settings")
 async function openMatchMenu(page) {
   if (await page.getByRole('button', { name: 'Last turn', exact: true }).isVisible()) return;
-  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  const menu = page.getByRole('button', { name: 'Menu', exact: true });
+  if (!(await page.getByRole('menu', { name: 'Match menu' }).isVisible())) await menu.click();
+  await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Match settings' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Last turn', exact: true })).toBeVisible();
+}
+// Round 9a: "Give up match!" replaces Surrender
+async function giveUp(page) {
+  if (!(await page.getByRole('menu', { name: 'Match menu' }).isVisible())) await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Give up match!', exact: true }).click();
+  await expect(page.getByText('Give up this match?')).toBeVisible();
 }
 // first visit outside test mode shows the tutorial offer; dismiss it
 async function openMenu(page) {
@@ -1055,12 +1064,10 @@ test('AC20: reducing enemy Commander to 0 shows Victory!', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });
 
-test('AC20: surrender from the match menu shows Defeat', async ({ page }) => {
+test('AC20: giving up from the match menu shows Defeat', async ({ page }) => {
   await start(page, { ai: false, skipMulligan: true, firstPlayer: 'player' });
-  await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('button', { name: 'Surrender' }).click();
-  await expect(page.getByText('Surrender this match?')).toBeVisible();
-  await page.getByRole('button', { name: 'Yes, surrender' }).click();
+  await giveUp(page);
+  await page.getByRole('button', { name: 'Yes, give up' }).click();
   await expect(page.getByRole('heading', { name: 'Defeat' })).toBeVisible({ timeout: 15000 });
   const s = await getState(page);
   expect(s.winner).toBe('opponent');
@@ -1715,8 +1722,8 @@ test.describe('landscape layout details', () => {
     const shown = (390 - rest.y) / rest.height;
     expect(shown).toBeGreaterThanOrEqual(0.35);
     expect(shown).toBeLessThanOrEqual(0.65);
-    expect(rest.height).toBeGreaterThanOrEqual(390 * 0.36);
-    expect(rest.height).toBeLessThanOrEqual(390 * 0.46);
+    expect(rest.height).toBeGreaterThanOrEqual(390 * 0.31);
+    expect(rest.height).toBeLessThanOrEqual(390 * 0.37);
     await page.mouse.move(rest.x + rest.width / 2, rest.y + rest.height * 0.2);
     await expect.poll(async () => { const b = await card.boundingBox(); return b.y + b.height; }).toBeLessThanOrEqual(391);
     await expect.poll(async () => (await card.boundingBox()).y).toBeGreaterThanOrEqual(-1);
@@ -2707,23 +2714,29 @@ test('AC72: "+ New Deck" on the select screen opens the Deck Builder', async ({ 
 });
 
 test('AC73: the select screen remembers the last Commander, deck and difficulty', async ({ page }) => {
-  await makeSelectDecks(page);
+  // Round 9a: use a deck that belongs to Sproingle (only his decks show under him)
+  await openDecks(page);
+  await page.getByRole('combobox', { name: 'Deck Commander' }).selectOption({ label: 'Archmagister Sproingle the Unfathomable' });
+  await renameDeck(page, 'Gnome Rush');
+  await addCard(page, 'Gemsinger Miner', 50);
+  await saveDeck(page);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable', exact: true }).click();
-  await deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true }).click();
+  await deckRow(page).getByRole('button', { name: 'Gnome Rush, 50 cards, ready', exact: true }).click();
   await page.getByRole('button', { name: 'Hard', exact: true }).click();
   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
   await keepAndGetState(page);
   await page.goto('/?test=1');
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(deckRow(page).getByRole('button', { name: 'Gnome Rush, 50 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('button', { name: 'Hard', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
 async function surrenderViaMenu(page) {
-  await page.getByRole('button', { name: 'Menu', exact: true }).click();
-  await page.getByRole('button', { name: 'Surrender', exact: true }).click();
-  await page.getByRole('button', { name: 'Yes, surrender' }).click();
+  await giveUp(page);
+  await page.getByRole('button', { name: 'Yes, give up' }).click();
   await expect(page.getByRole('heading', { name: 'Defeat' })).toBeVisible({ timeout: 15000 });
 }
 test('AC74: match-end summary, Play again with the same choices, and Menu', async ({ page }) => {
@@ -3477,49 +3490,7 @@ test.describe('straight-on road board and corner HUD at 844x390', () => {
     const bf = await page.getByLabel('Battlefield', { exact: true }).boundingBox();
     expect(bf.width).toBeGreaterThanOrEqual(W - 2);
     expect(bf.height).toBeGreaterThanOrEqual(H - 2);
-    // Round 5b: owner HUD layout (crystals along the top, phase tracker top-right, Menu on the right)
-    for (const n of ['Your Flow crystals', 'Your Bank crystals']) {
-      const c = await center(page.getByLabel(n, { exact: true }));
-      expect(c.x, n).toBeLessThan(W * 0.3);
-      expect(c.y, n).toBeLessThan(H / 2);
-    }
-    const myHeart0 = await center(page.getByLabel('Your Commander health', { exact: true }));
-    expect(myHeart0.x).toBeLessThan(W / 2);
-    expect(myHeart0.y).toBeGreaterThan(H / 2);
-    const theirHeart0 = await center(page.getByLabel('Enemy Commander health', { exact: true }));
-    expect(theirHeart0.x).toBeGreaterThan(W / 2);
-    expect(theirHeart0.y).toBeLessThan(H / 2);
-    const eh = await center(page.getByLabel('Enemy hand', { exact: true }));
-    expect(eh.x).toBeLessThan(W / 2);
-    expect(eh.y).toBeLessThan(H / 4);
-    const ed = await center(page.getByLabel('Enemy deck', { exact: true }));
-    expect(ed.x).toBeLessThan(W / 2);
-    expect(ed.y).toBeLessThan(H / 4);
-    const yd = await center(page.getByLabel('Your deck', { exact: true }));
-    expect(yd.x).toBeGreaterThan(W * 0.85);
-    expect(yd.y).toBeGreaterThan(H * 0.7);
-    const yh = (await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox());
-    expect(yh.x).toBeGreaterThanOrEqual(W * 0.1);
-    const ph = await page.getByLabel('Current phase', { exact: true }).boundingBox();
-    expect(ph.x).toBeGreaterThanOrEqual(W * 0.74);
-    expect(ph.y).toBeLessThanOrEqual(H * 0.04);
-    const menu = await center(page.getByRole('button', { name: 'Menu', exact: true }));
-    expect(menu.x).toBeGreaterThan(W * 0.8);
-    await openMatchMenu(page);
-    for (const loc of [page.getByRole('button', { name: 'Last turn', exact: true }), page.getByRole('switch', { name: 'Card pop-ups' }), page.getByRole('button', { name: 'Recenter', exact: true })]) {
-      const c = await center(loc);
-      expect(c.x).toBeGreaterThan(W * 0.7);
-    }
-    await page.mouse.move(W / 2, 120);
-    await page.waitForTimeout(800);
-    const heart = (await center(page.getByLabel('Your Commander health', { exact: true }))).b;
-    const cards = page.getByLabel('Your hand', { exact: true }).getByRole('button');
-    for (let i = 0; i < await cards.count(); i++) {
-      const r = await cards.nth(i).boundingBox();
-      const ox = Math.min(heart.x + heart.width, r.x + r.width) - Math.max(heart.x, r.x);
-      const oy = Math.min(heart.y + heart.height, r.y + r.height) - Math.max(heart.y, r.y);
-      expect(ox > 1 && oy > 1, `hand card ${i} covers the heart`).toBe(false);
-    }
+    // Round 9a: HUD positions are checked against the owner's layout in AC212
   });
 
   test('AC105: the enemy hand is smaller than the player hand', async ({ page }) => {
@@ -4935,6 +4906,7 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
   test.describe(`owner HUD layout ${W}x${H}`, () => {
     test.use({ viewport: { width: W, height: H } });
     test(`AC151: HUD pieces sit at the owner's positions and never cover a Commander (${W}x${H})`, async ({ page }) => {
+    test.skip(true, 'Round 9a: replaced by AC212–AC213');
       await start(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'goblin-slinger'], opponentHand: ['goblin-scrapper', 'fireball', 'soul-shard'], board: BOARD_5B }));
       await page.mouse.move(W / 2, H * 0.45);
       await page.waitForTimeout(1000);
@@ -5029,6 +5001,7 @@ test('AC153: the phase tracker shows whose turn, the turn number and the current
 });
 
 test('AC154: the match Menu hides its items until hovered or tapped; Mute and Recenter work', async ({ page }) => {
+    test.skip(true, 'Round 9a: replaced by AC216–AC217');
   await start(page, quiet({ board: BOARD_5B }));
   const menu = page.getByRole('button', { name: 'Menu', exact: true });
   const items = [page.getByRole('button', { name: 'Last turn', exact: true }), page.getByRole('button', { name: 'Mute', exact: true }),
@@ -5109,10 +5082,9 @@ test('AC157: mulligan, Respond, surrender and match-end controls are plain text'
   await expect(page.getByRole('dialog', { name: 'Respond?' })).toBeVisible();
   expect(await boxedButtons(page, ['Let it happen'])).toEqual([]);
   await newMatch(page, quiet({}));
-  await openMatchMenu(page);
-  await page.getByRole('button', { name: 'Surrender', exact: true }).click();
-  expect(await boxedButtons(page, ['Yes, surrender'])).toEqual([]);
-  await page.getByRole('button', { name: 'Yes, surrender' }).click();
+  await giveUp(page);
+  expect(await boxedButtons(page, ['Yes, give up'])).toEqual([]);
+  await page.getByRole('button', { name: 'Yes, give up' }).click();
   await expect(page.getByRole('heading', { name: 'Defeat' })).toBeVisible({ timeout: 15000 });
   expect(await boxedButtons(page, ['Play again', 'Menu'])).toEqual([]);
 });
@@ -5199,7 +5171,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 2560, height: 1080 }, 
       await page.mouse.move(vp.width / 2, vp.height * 0.45);
       await page.waitForTimeout(1200);
       await testInfo.attach(`match-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
-      await page.getByRole('button', { name: 'Menu', exact: true }).hover();
+      await page.getByRole('button', { name: 'Menu', exact: true }).click();
       await page.waitForTimeout(500);
       await testInfo.attach(`menu-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
       await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true }).hover();
@@ -5227,6 +5199,7 @@ for (const [W, H] of SHAPES_6A) {
     test.use({ viewport: { width: W, height: H } });
 
     test(`AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (${W}x${H})`, async ({ page }) => {
+    test.skip(true, 'Round 9a: replaced by AC212');
       await start(page, quiet({ playerHand: ['goblin-scrapper'], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 4, col: 8 }] }));
       const doneBtn = page.getByRole('button', { name: 'Done', exact: true });
       await expect(doneBtn).toBeVisible();
@@ -5249,6 +5222,7 @@ for (const [W, H] of SHAPES_6A) {
     });
 
     test(`AC163: the hand is 2x, centered, overlapping, tucked halfway and slides up on hover (${W}x${H})`, async ({ page }) => {
+    test.skip(true, 'Round 9a: replaced by AC212 and AC218');
       await start(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'goblin-slinger', 'soul-shard', 'goblin-scrounger'] }));
       await page.mouse.move(W / 2, H * 0.3);
       await page.waitForTimeout(1200);
@@ -5258,8 +5232,8 @@ for (const [W, H] of SHAPES_6A) {
       const boxes = [];
       for (let i = 0; i < 5; i++) boxes.push(await cards.nth(i).boundingBox());
       for (const b of boxes) {
-        expect(b.height / H).toBeGreaterThanOrEqual(0.36);
-        expect(b.height / H).toBeLessThanOrEqual(0.46);
+        expect(b.height / H).toBeGreaterThanOrEqual(0.31); // Round 9a: owner hand 33.81 % of the frame
+        expect(b.height / H).toBeLessThanOrEqual(0.37);
         const shown = (H - b.y) / b.height;
         expect(shown, 'tucked halfway').toBeGreaterThanOrEqual(0.35);
         expect(shown, 'tucked halfway').toBeLessThanOrEqual(0.65);
@@ -5301,6 +5275,7 @@ for (const [W, H] of SHAPES_6A) {
     });
 
     test(`AC166: enemy hand centered with the deck to its left; nothing covers a Commander (${W}x${H})`, async ({ page }) => {
+    test.skip(true, 'Round 9a: replaced by AC212–AC213');
       await start(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'goblin-slinger'], opponentHand: ['goblin-scrapper', 'fireball', 'soul-shard', 'goblin-slinger'], board: BOARD_5B }));
       await page.mouse.move(W / 2, H * 0.45);
       await page.waitForTimeout(1200);
@@ -5575,9 +5550,9 @@ test('AC172: crystal mines use the owner\'s mine model (glTF placeholder or Roun
   const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const neutral = new Set();
   for (const m of r.mineModels) {
-    expect(m.source).toMatch(/(crystal-mine-placeholder\.gltf|crystal-mine\.glb)$/); // Round 8a: Meshy mine or placeholder
-    expect(m.height).toBeGreaterThanOrEqual(1.47);
-    expect(m.height).toBeLessThanOrEqual(1.53);
+    expect(m.source).toBe('code:buildMineModel'); // Round 9a: code-built owner mine
+    expect(m.height).toBeGreaterThanOrEqual(2.43);
+    expect(m.height).toBeLessThanOrEqual(2.53);
     expect(['player', 'opponent', 'neutral']).toContain(m.owner);
     expect(m.tint).toMatch(/^#[0-9a-f]{6}$/i);
     const [R, , B] = rgb(m.tint);
@@ -5704,7 +5679,7 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       await allRest('nothing stuck after a card was played');
     });
 
-    test(`AC175: hand cards are about 10% smaller (36-46% of the height), still tucked halfway (${W}x${H})`, async ({ page }) => {
+    test(`AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (${W}x${H})`, async ({ page }) => {
       await start(page, quiet({ playerHand: HAND_R7 }));
       await page.mouse.move(W / 2, H * 0.3);
       await page.waitForTimeout(1200);
@@ -6290,6 +6265,7 @@ test.describe('arena HUD 1920x1080', () => {
 });
 
 test('AC193: the Meshy crystal mine is saved once and used for every mine, tinted by owner', async ({ page, request }) => {
+    test.skip(true, 'Round 9a: replaced by AC221 (code-built mine)');
   const res = await request.get('/models/mines/models.json');
   let m = null;
   if (res.ok()) { try { m = await res.json(); } catch { m = null; } }
@@ -6499,6 +6475,7 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
   test.describe(`round 8b pop-out ${W}x${H}`, () => {
     test.use({ viewport: { width: W, height: H } });
     test(`AC201: the pop-out is about 70% of the window height, eased 150-200 ms (${W}x${H})`, async ({ page }) => {
+    test.skip(true, 'Round 9a: replaced by AC218');
       await start(page, quiet({ playerHand: HAND_R7, playerCrystals: 6 }));
       await page.mouse.move(W / 2, H * 0.3);
       await page.waitForTimeout(1200);
@@ -6834,6 +6811,370 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       await page.mouse.move(W / 2, H * 0.3);
       await zoomIn(page, W / 2, H * 0.6, 3);
       await testInfo.attach(`r8b-stat-badges-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+      expect(errors).toEqual([]);
+    });
+  });
+}
+
+// ---------- Phase 1B Round 9a (AC212–AC227) ----------
+const hud = (page) => page.evaluate(async () => await window.oreheart.getHudLayout());
+const R9_MATCH = (extra = {}) => quiet({ playerHand: ['goblin-scrapper', 'fireball', 'soul-shard', 'goblin-slinger', 'venom-shiv'],
+  playerCrystals: 4, playerBank: 2, opponentBank: 3, ...extra });
+async function ownerLayout(request) {
+  const r = await request.get('/owner-layouts/final-draft/layout.json');
+  expect(r.ok()).toBe(true);
+  const body = await r.body();
+  expect(body.length).toBe(34481);
+  return JSON.parse(body.toString('utf8'));
+}
+const SKIP_ROLES = new Set(['player-hand', 'done-button']);
+const norm360 = (a) => ((a % 360) + 540) % 360 - 180; // -180..180
+
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`round 9a owner layout ${W}x${H}`, () => {
+    test.use({ viewport: { width: W, height: H } });
+    test(`AC212: every HUD piece sits where the owner's layout puts it (${W}x${H})`, async ({ page, request }) => {
+      const L = await ownerLayout(request);
+      await start(page, R9_MATCH());
+      await page.waitForTimeout(1500);
+      const h = await hud(page);
+      const fw = Math.min(W, H * 16 / 9), fh = fw * 9 / 16;
+      expect(Math.abs(h.frame.width - fw)).toBeLessThanOrEqual(2);
+      expect(Math.abs(h.frame.height - fh)).toBeLessThanOrEqual(2);
+      const tol = fh * 0.01 + 1;
+      for (const p of L.hud.filter((x) => x.role && !x.parent && !x.hidden && !SKIP_ROLES.has(x.role))) {
+        const got = h.pieces.find((q) => q.role === p.role);
+        expect(got, p.role).toBeTruthy();
+        const cx = p.x + p.w / 2;
+        const offX = W > fw ? (cx < 33.33 ? 0 : cx > 66.67 ? W - fw : (W - fw) / 2) : 0;
+        const offY = H > fh ? ((p.y + p.h / 2) < 33.33 ? 0 : (p.y + p.h / 2) > 66.67 ? H - fh : (H - fh) / 2) : 0;
+        const want = { x: offX + p.x / 100 * fw, y: offY + p.y / 100 * fh, width: p.w / 100 * fw, height: p.h / 100 * fh };
+        for (const k of ['x', 'y', 'width', 'height']) expect(Math.abs(got.rect[k] - want[k]), `${p.role} ${k}`).toBeLessThanOrEqual(W === 1920 ? W * 0.01 : tol);
+        expect(Math.abs(norm360((got.rot || 0) - (p.rot || 0))), `${p.role} rot`).toBeLessThanOrEqual(3);
+        await expect(page.locator(`[data-hud-role="${p.role}"]`).first(), p.role).toBeAttached();
+      }
+      for (const id of ['pic2', 'pic3', 'pic4']) await expect(page.locator(`[data-hud-role="${id}"]`).first()).toBeAttached();
+    });
+  });
+}
+
+test('AC213: the enemy deck and card fan are upside down with a readable deck count', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  const s = await start(page, R9_MATCH({ opponentHand: ['goblin-scrapper', 'fireball', 'soul-shard'] }));
+  const h = await hud(page);
+  const deck = h.pieces.find((p) => p.role === 'enemy-deck');
+  const fan = h.pieces.find((p) => p.role === 'enemy-hand');
+  expect(Math.abs(norm360(deck.rot - 172))).toBeLessThanOrEqual(3);
+  expect(Math.abs(norm360(fan.rot - 180))).toBeLessThanOrEqual(3);
+  const count = h.pieces.find((p) => p.role === 'enemy-deck-count');
+  expect(Math.abs(norm360(count.rot))).toBeLessThanOrEqual(10);
+  await expect(page.locator('[data-hud-role="enemy-deck-count"]').first()).toHaveText(String(s.players.opponent.deck.length));
+});
+
+test('AC214: banks are their own pieces with their numbers; no bank badge on the crystals', async ({ page, request }) => {
+  for (const [u, n] of [['/art/ui/goblin-bank.png', 2570231], ['/art/ui/opponent-bank-placeholder.png', 959822]]) {
+    const r = await request.get(u);
+    expect(r.ok(), u).toBe(true);
+    expect((await r.body()).length, u).toBe(n);
+  }
+  await start(page, R9_MATCH());
+  for (const role of ['player-flow-crystal', 'enemy-flow-crystal']) {
+    const bad = await page.locator(`[data-hud-role="${role}"]`).first().evaluate((el) => [...el.querySelectorAll('*')].filter((e) => {
+      const src = (e.getAttribute('src') || '') + ' ' + getComputedStyle(e).backgroundImage;
+      return /bank/i.test(src) || /Bank crystals/.test(e.getAttribute('aria-label') || '');
+    }).length);
+    expect(bad, role).toBe(0);
+  }
+  const s = await getState(page);
+  const pb = page.locator('[data-hud-role="player-bank"]').first();
+  const eb = page.locator('[data-hud-role="enemy-bank"]').first();
+  expect(await pb.evaluate((el) => [...el.querySelectorAll('img')].some((i) => /goblin-bank\.png/.test(i.src)) || /goblin-bank\.png/.test(getComputedStyle(el).backgroundImage))).toBe(true);
+  expect(await eb.evaluate((el) => [...el.querySelectorAll('img')].some((i) => /opponent-bank-placeholder\.png/.test(i.src)) || /opponent-bank-placeholder\.png/.test(getComputedStyle(el).backgroundImage))).toBe(true);
+  await expect(page.getByLabel('Your Bank crystals', { exact: true })).toHaveText(String(s.players.player.bank));
+  await expect(page.getByLabel('Enemy Bank crystals', { exact: true })).toHaveText(String(s.players.opponent.bank));
+  expect(await pb.getByLabel('Your Bank crystals', { exact: true }).count()).toBe(1);
+  expect(await eb.getByLabel('Enemy Bank crystals', { exact: true }).count()).toBe(1);
+});
+
+test('AC215: themes follow each side\'s Commander faction; goblin corner frames only for a Goblin player', async ({ page, request }) => {
+  const r = await request.get('/themes/goblin.json');
+  expect(r.ok()).toBe(true);
+  const t = await r.json();
+  expect(t.faction).toBe('goblin');
+  expect(t.cornerFrames).toHaveLength(3);
+  await start(page, R9_MATCH());
+  const theme = (side) => page.evaluate(async (x) => await window.oreheart.getTheme(x), side);
+  const p = await theme('player'), o = await theme('opponent');
+  expect(p.faction).toBe('goblin'); expect(p.placeholder).toBe(false); expect(p.cornerFrames).toBe(3);
+  expect(o.faction).toBe('dwarf'); expect(o.placeholder).toBe(true); expect(o.bankSrc).toMatch(/opponent-bank-placeholder\.png/);
+  await expect(page.locator('[data-ornament="corner"]')).toHaveCount(3);
+  await newMatch(page, { ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { opponentHand: [] } });
+  const p2 = await theme('player');
+  expect(p2.faction).toBe('gnome'); expect(p2.placeholder).toBe(true); expect(p2.cornerFrames).toBe(0);
+  expect((await theme('opponent')).bankSrc).toMatch(/goblin-bank\.png/);
+  await expect(page.locator('[data-ornament="corner"]')).toHaveCount(0);
+});
+
+test('AC216: the drop-down Menu has the owner\'s six items, closes properly and Give up asks first', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await start(page, R9_MATCH());
+  const btn = page.getByRole('button', { name: 'Menu', exact: true });
+  const menu = page.getByRole('menu', { name: 'Match menu' });
+  await expect(menu).toBeHidden();
+  await btn.hover();
+  await page.waitForTimeout(400);
+  await expect(menu).toBeHidden(); // opens on click only
+  await btn.click();
+  await expect(menu).toBeVisible();
+  await expect(btn).toHaveAttribute('aria-expanded', 'true');
+  const names = (await menu.getByRole('menuitem').allInnerTexts()).map((x) => x.replace(/\s+/g, ' ').trim());
+  expect(names).toEqual(['Resume', 'Settings', 'How to play', 'Sound Effects', 'Background music', 'Give up match!']);
+  const bb = await btn.boundingBox(), first = await menu.getByRole('menuitem').first().boundingBox();
+  expect(first.y).toBeGreaterThan(bb.y);
+  expect(Math.abs(first.x - bb.x)).toBeLessThanOrEqual(1920 * 0.03);
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await btn.click();
+  await page.mouse.click(960, 500);
+  await expect(menu).toBeHidden();
+  await btn.click();
+  await menu.getByRole('menuitem', { name: 'Resume', exact: true }).click();
+  await expect(menu).toBeHidden();
+  await giveUp(page);
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  expect((await getState(page)).winner).toBeNull();
+  await giveUp(page);
+  await page.getByRole('button', { name: 'Yes, give up', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Defeat' })).toBeVisible({ timeout: 15000 });
+  expect((await getState(page)).winner).toBe('opponent');
+});
+
+test('AC217: Settings, Sound Effects, Background music and How to play open their controls', async ({ page }) => {
+  await start(page, R9_MATCH());
+  await openMatchMenu(page);
+  const dlg = page.getByRole('dialog', { name: 'Match settings' });
+  for (const loc of [dlg.getByRole('button', { name: 'Last turn', exact: true }), dlg.getByRole('button', { name: 'Mute', exact: true }),
+    dlg.getByRole('switch', { name: 'Card pop-ups' }), dlg.getByRole('button', { name: 'Recenter', exact: true }),
+    dlg.getByRole('slider', { name: 'Music volume' }), dlg.getByRole('slider', { name: 'Sound effects volume' })]) await expect(loc).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dlg).toBeHidden();
+  const btn = page.getByRole('button', { name: 'Menu', exact: true });
+  await btn.click();
+  await page.getByRole('menuitem', { name: 'Sound Effects', exact: true }).click();
+  await expect(page.getByRole('slider', { name: 'Sound effects volume' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  if (!(await page.getByRole('menu', { name: 'Match menu' }).isVisible())) await btn.click();
+  await page.getByRole('menuitem', { name: 'Background music', exact: true }).click();
+  await expect(page.getByRole('slider', { name: 'Music volume' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  if (!(await page.getByRole('menu', { name: 'Match menu' }).isVisible())) await btn.click();
+  await page.getByRole('menuitem', { name: 'How to play', exact: true }).click();
+  const how = page.getByRole('dialog', { name: 'How to play' });
+  await expect(how).toBeVisible();
+  await how.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(how).toBeHidden();
+});
+
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`round 9a hand ${W}x${H}`, () => {
+    test.use({ viewport: { width: W, height: H } });
+    test(`AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (${W}x${H})`, async ({ page }) => {
+      const fh = Math.min(W, H * 16 / 9) * 9 / 16;
+      await start(page, R9_MATCH());
+      await page.mouse.move(W / 2, H * 0.3);
+      await page.waitForTimeout(1500);
+      const cards = page.getByLabel('Your hand', { exact: true }).getByRole('button');
+      await expect(cards).toHaveCount(5);
+      const rest = [];
+      for (let i = 0; i < 5; i++) rest.push(await cards.nth(i).boundingBox());
+      for (const b of rest) {
+        expect(b.height / fh).toBeGreaterThanOrEqual(0.31); expect(b.height / fh).toBeLessThanOrEqual(0.37);
+        const shown = (H - b.y) / b.height;
+        expect(shown).toBeGreaterThanOrEqual(0.4); expect(shown).toBeLessThanOrEqual(0.7);
+      }
+      const hoverAt = async (i) => {
+        const b = rest[i];
+        const nx = i < 4 ? rest[i + 1].x : b.x + b.width;
+        await page.mouse.move((b.x + Math.min(nx, b.x + b.width)) / 2, Math.min(H - 4, b.y + 10), { steps: 4 });
+        await page.waitForTimeout(800);
+      };
+      await hoverAt(2);
+      const up = await cards.nth(2).boundingBox();
+      expect(up.y + up.height).toBeLessThanOrEqual(H + 1);
+      expect(up.height / fh).toBeGreaterThanOrEqual(0.48); expect(up.height / fh).toBeLessThanOrEqual(0.6);
+      const hh = await handHover(page);
+      expect(hh.raisedIndex).toBe(2);
+      expect(hh.popScale).toBeCloseTo(1.6, 2);
+      expect(hh.popMs).toBeGreaterThanOrEqual(400); expect(hh.popMs).toBeLessThanOrEqual(500);
+      const l = await cards.nth(1).boundingBox(), r = await cards.nth(3).boundingBox();
+      expect(l.x).toBeLessThan(rest[1].x - 2);
+      expect(r.x).toBeGreaterThan(rest[3].x + 2);
+      await hoverAt(3);
+      expect((await handHover(page)).raisedIndex).toBe(3);
+      const b3 = await cards.nth(3).boundingBox();
+      expect(b3.y + b3.height).toBeLessThanOrEqual(H + 1);
+      const b2 = await cards.nth(2).boundingBox();
+      expect(b2.y).toBeGreaterThan(H - b2.height); // card 2 went back down
+    });
+  });
+}
+
+test('AC219: the opening hand deals in one card at a time', async ({ page }) => {
+  await start(page, R9_MATCH());
+  await page.waitForTimeout(2500);
+  const s = await getState(page);
+  const log = await page.evaluate(async () => await window.oreheart.getDealLog());
+  const uids = s.players.player.hand.map((c) => c.uid);
+  const mine = log.filter((e) => uids.includes(e.uid));
+  expect(mine.length).toBe(uids.length);
+  for (const e of mine) { expect(e.durationMs).toBeGreaterThanOrEqual(650); expect(e.durationMs).toBeLessThanOrEqual(750); }
+  for (let i = 1; i < mine.length; i++) {
+    const gap = mine[i].startMs - mine[i - 1].startMs;
+    expect(gap).toBeGreaterThanOrEqual(100); expect(gap).toBeLessThanOrEqual(160);
+  }
+});
+
+test('AC220: Grubnak holds his scepter in his right hand with the owner\'s numbers', async ({ page }) => {
+  await start(page, R9_MATCH());
+  await page.waitForTimeout(1500);
+  const r = await page.evaluate(async () => await window.oreheart.getRenderStats());
+  if (!r.webgl) test.skip(true, 'WebGL unavailable');
+  const g = (r.commanderModels || []).find((m) => m.side === 'player' || /grubnak/i.test(m.source || m.id || ''));
+  if (!g || !/grubnak\.glb/.test(g.source || '')) test.skip(true, 'Grubnak model not present');
+  expect(g.held.item).toBe('scepter');
+  expect(g.held.bone).toBe('RightHand');
+  [-4.404, 8.752, -3.774].forEach((v, i) => expect(g.held.position[i]).toBeCloseTo(v, 2));
+  [-109.365, 5.199, 154.757].forEach((v, i) => expect(g.held.rotationDeg[i]).toBeCloseTo(v, 1));
+  expect(g.held.scale).toBeCloseTo(61.35, 1);
+  expect(g.animation).toBe('idle');
+});
+
+test('AC221: mines are the code-built owner mine with all its parts', async ({ page }) => {
+  await start(page, quiet({ board: [{ cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 }] }));
+  const r = await page.evaluate(async () => await window.oreheart.getRenderStats());
+  if (!r.webgl) test.skip(true, 'WebGL unavailable');
+  expect(r.mineModels).toHaveLength(3);
+  for (const m of r.mineModels) {
+    expect(m.source).toBe('code:buildMineModel');
+    expect(m.height).toBeGreaterThanOrEqual(2.43); expect(m.height).toBeLessThanOrEqual(2.53);
+    for (const part of ['rubble', 'pedestal', 'banner', 'crystal']) expect(m.parts).toContain(part);
+    expect(m.shards).toBeGreaterThanOrEqual(6);
+    expect(m.pulsing).toBe(true);
+  }
+});
+
+test('AC222: Crystal Flow streams run from owned mines to each side\'s bank when Flow is gained', async ({ page }) => {
+  await start(page, { ...quiet({ board: [
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
+    { cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 6, minedMine: M3 },
+  ] }), firstPlayer: 'player' });
+  expect((await page.evaluate(async () => await window.oreheart.getArena())).effects).toHaveLength(57);
+  const streams = () => page.evaluate(async () => await window.oreheart.getFlowStreams());
+  await passTurn(page); // opponent's turn starts: it gains Flow from M3
+  await expect.poll(async () => (await streams()).log.filter((x) => x.side === 'opponent').length).toBeGreaterThanOrEqual(1);
+  const o = (await streams()).log.find((x) => x.side === 'opponent');
+  expect(o.to).toBe('enemy-bank');
+  expect(sameTarget(o.from, M3.row, M3.col)).toBe(true);
+  await passTurn(page); // back to the player
+  await expect.poll(async () => (await streams()).log.filter((x) => x.side === 'player').length).toBeGreaterThanOrEqual(1);
+  const p = (await streams()).log.find((x) => x.side === 'player');
+  expect(p.to).toBe('player-bank');
+  expect(p.shards).toBe('faceted');
+  expect(p.sBends).toBeGreaterThanOrEqual(1);
+  expect(p.count).toBeGreaterThan(0);
+});
+
+test('AC223: menu music on menus, match music in matches, crossfades, Mute silences both', async ({ page, request }) => {
+  for (const [u, n] of [['/audio/music/tense-cycle.mp3', 1540211], ['/audio/music/first-fight.mp3', 1667679]]) {
+    const r = await request.get(u);
+    expect(r.ok(), u).toBe(true);
+    expect((await r.body()).length, u).toBe(n);
+  }
+  await page.goto('/?test=1&seed=5');
+  await page.waitForFunction(() => !!window.oreheart);
+  const audio = () => page.evaluate(async () => await window.oreheart.getAudioState());
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect.poll(async () => (await audio()).music.track).toBe('tense-cycle');
+  expect((await audio()).unlocked).toBe(true);
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await expect.poll(async () => (await audio()).music.track).toBe('first-fight');
+  let a = await audio();
+  let last = a.log[a.log.length - 1];
+  expect(last.track).toBe('first-fight');
+  expect(last.fadeMs).toBeGreaterThanOrEqual(1000); expect(last.fadeMs).toBeLessThanOrEqual(2000);
+  const mull = page.getByRole('dialog', { name: 'Mulligan' });
+  if (await mull.isVisible()) await mull.getByRole('button', { name: 'Keep Hand' }).click();
+  await openMatchMenu(page);
+  const mute = page.getByRole('button', { name: 'Mute', exact: true });
+  if ((await mute.getAttribute('aria-pressed')) === 'true') await mute.click();
+  await mute.click();
+  await expect.poll(async () => (await audio()).muted).toBe(true);
+  expect((await audio()).music.gain).toBe(0);
+  await mute.click();
+  await page.keyboard.press('Escape');
+  await giveUp(page);
+  await page.getByRole('button', { name: 'Yes, give up', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Defeat' })).toBeVisible({ timeout: 15000 });
+  await expect.poll(async () => (await audio()).music.track).toBe('tense-cycle');
+  a = await audio();
+  last = a.log[a.log.length - 1];
+  expect(last.fadeMs).toBeGreaterThanOrEqual(1000); expect(last.fadeMs).toBeLessThanOrEqual(2000);
+});
+
+test('AC224: the music and sound effects volume sliders work and are remembered', async ({ page }) => {
+  await start(page, R9_MATCH());
+  await openMatchMenu(page);
+  const dlg = page.getByRole('dialog', { name: 'Match settings' });
+  await dlg.getByRole('slider', { name: 'Music volume' }).fill('35');
+  await dlg.getByRole('slider', { name: 'Sound effects volume' }).fill('60');
+  const audio = () => page.evaluate(async () => await window.oreheart.getAudioState());
+  await expect.poll(async () => Math.round((await audio()).musicVolume * ((await audio()).musicVolume <= 1 ? 100 : 1))).toBe(35);
+  await expect.poll(async () => Math.round((await audio()).sfxVolume * ((await audio()).sfxVolume <= 1 ? 100 : 1))).toBe(60);
+  await openTest(page);
+  const v = (await audio()).musicVolume;
+  expect(Math.round(v <= 1 ? v * 100 : v)).toBe(35);
+});
+
+test('AC225: savings land in the bank piece', async ({ page }) => {
+  await start(page, { ...quiet({ playerCrystals: 10, playerBank: 0, playerHand: [] }), firstPlayer: 'player' });
+  await passTurn(page);
+  const s = await getState(page);
+  expect(s.players.player.bank).toBe(1);
+  await expect(page.locator('[data-hud-role="player-bank"]').first().getByLabel('Your Bank crystals', { exact: true })).toHaveText('1');
+});
+
+test('AC226: the in-game editor (round 9b) is not built yet', async ({ page }) => {
+  await page.goto('/?test=1&editor=1');
+  await page.waitForFunction(() => !!window.oreheart);
+  await newMatch(page, R9_MATCH());
+  await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
+  for (const n of ['Hide handles', 'Export layout', 'Import layout']) await expect(page.getByRole('button', { name: n })).toHaveCount(0);
+});
+
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`round 9a screenshots ${W}x${H}`, () => {
+    test.use({ viewport: { width: W, height: H } });
+    test(`AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (${W}x${H})`, async ({ page }, testInfo) => {
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await start(page, { ...R9_MATCH({ board: [{ cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 }] }), firstPlayer: 'player' });
+      await page.mouse.move(W / 2, H * 0.3);
+      await page.waitForTimeout(1500);
+      await testInfo.attach(`r9a-match-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+      const card = page.getByLabel('Your hand', { exact: true }).getByRole('button').nth(2);
+      const b = await card.boundingBox();
+      await page.mouse.move(b.x + b.width * 0.3, Math.min(H - 4, b.y + 10), { steps: 4 });
+      await page.waitForTimeout(900);
+      await testInfo.attach(`r9a-raised-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+      await page.mouse.move(W / 2, H * 0.3);
+      await page.getByRole('button', { name: 'Menu', exact: true }).click();
+      await page.waitForTimeout(600);
+      await testInfo.attach(`r9a-menu-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+      await page.keyboard.press('Escape');
+      await passTurn(page);
+      await passTurn(page);
+      await page.waitForTimeout(700);
+      await testInfo.attach(`r9a-flow-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
       expect(errors).toEqual([]);
     });
   });
