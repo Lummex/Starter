@@ -1,6 +1,6 @@
 # Automated check results
 
-249 of 249 checks passed after 2 build round(s).
+263 of 263 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -47,6 +47,14 @@
 - ✅ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
 - ✅ round 7 hand (844x390) › AC175: hand cards are about 10% smaller (36-46% of the height), still tucked halfway (844x390)
 - ✅ round 7 screenshots (1920x1080) › AC184: Grubnak in a match and in the 3D viewer render without errors
+- ✅ arena homography 1920x1080 › AC188: square centers follow the homography of the owner's corners (1920x1080)
+- ✅ arena homography 844x390 › AC188: square centers follow the homography of the owner's corners (844x390)
+- ✅ arena highlights 1920x1080 › AC189: drag highlights are the legal summon squares on the painted floor; drop uses the mapping
+- ✅ arena pan 1920x1080 › AC191: keys, WASD and dragging empty board pan the view, always clamped to the painting
+- ✅ arena HUD 1920x1080 › AC192: the HUD stays fixed while zooming and panning; Recenter and double-click reset the view
+- ✅ arena drags 1920x1080 › AC194: dragging a hand card or a creature never pans the view
+- ✅ round 8a screenshots 1920x1080 › AC195: the painted arena match fully zoomed out and zoomed in renders without errors (1920x1080)
+- ✅ round 8a screenshots 844x390 › AC195: the painted arena match fully zoomed out and zoomed in renders without errors (844x390)
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -226,7 +234,7 @@
 - ✅ AC145: Copy to my decks makes an editable saved copy and leaves the starter deck unchanged; my decks can be removed
 - ✅ AC146: Choose Your Commander: big glowing Commander cards that stand out, big decks and text, filling the screen
 - ✅ AC147: spell cards use the owner's real spell frames per faction
-- ✅ AC149: camera uses the owner's numbers and keeps both Commanders whole at every window shape
+- ✅ AC149: the cover-fit painted view keeps both Commanders whole at every window shape (Round 8a)
 - ✅ AC150: no black bars at any window shape
 - ✅ AC152: Flow and bank numbers sit on both crystals with name, Flow and Next beside them
 - ✅ AC153: the phase tracker shows whose turn, the turn number and the current phase
@@ -242,7 +250,7 @@
 - ✅ AC169: Deck Builder close-up fills the height, has no scrollbar or Close, and dismisses on click or Esc
 - ✅ AC170: deck list + and - change counts at once, without moving the row; rapid clicks all count
 - ✅ AC171: no "All cards" text and no corner ornaments on any screen
-- ✅ AC172: crystal mines use the owner's glTF placeholder, exactly 1.5 tall, tinted by owner
+- ✅ AC172: crystal mines use the owner's mine model (glTF placeholder or Round 8a Meshy GLB), exactly 1.5 tall, tinted by owner
 - ✅ AC176: the owner's card back and deck-pile pictures are used exactly
 - ✅ AC177: a popped card keeps the at-rest glow thickness and opacity
 - ✅ AC178: glow colors contrast with each faction frame
@@ -251,3 +259,9 @@
 - ✅ AC181: Grubnak is the Meshy model on his fortress with the scepter, about 2.4 tall, idling
 - ✅ AC182: Grubnak plays cast, defeat and celebrate at the right moments
 - ✅ AC183: the Grubnak 3D viewer opens from Choose Your Commander and the Deck Builder
+- ✅ AC185: the owner's arena pictures and layout are loaded unchanged
+- ✅ AC186: all 54 effects are drawn, off-painting pools are clipped, two foreground cut-outs
+- ✅ AC187: no grid lines are drawn, even while dragging a card
+- ✅ AC190: cover-fit with no black bars at 16:9, 4:3, 21:9 and phone; max zoom about 2.5 px per painting pixel
+- ✅ AC191: at zoom 1 on a 4:3 window the view pans sideways but never past the edges
+- ✅ AC193: the Meshy crystal mine is saved once and used for every mine, tinted by owner
