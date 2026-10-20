@@ -1,13 +1,12 @@
 // Placeholder 3D battlefield (Three.js). Returns null when WebGL is unavailable (the UI then shows a 2D board).
 import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, G3D } from './grubnak3d';
-import { MINE_MODEL, darkGround, borderDecor, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
+import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
 import { audio } from './audio';
+import layoutJson from '../content/arena-layout.json';
+import { buildArena } from './arena-fx';
+import { boardHomography, cellGeometry, fitCamera, groundToPainting, BG, BOARD } from './arena-geo';
 
 const BW: number = CONFIG.boardWidth, BH: number = CONFIG.boardHeight;
 const SHP = CONFIG.strongholds as Record<string, number[]>;
@@ -19,6 +18,13 @@ export interface BoardView {
   cellRect(row: number, col: number): Rect;
   resize(): void;
   setCamera(c: { zoom: number; x: number; y: number }): void;
+  /** painted-arena view controls (round 8a) */
+  zoomAt(factor: number, sx?: number, sy?: number): void;
+  panBy(dx: number, dy: number): void;
+  recenter(): void;
+  getView(): any;
+  onViewChange?: () => void;
+  cellQuad(row: number, col: number): { x: number; y: number }[];
   screenRects(): any;
   setFlowMode(m: string): void;
   pulseFlow(side: string): void;
@@ -169,11 +175,10 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   container.prepend(canvas);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x3a2840, 0.014);
   const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 400);
   // dark moody base light; the glowing mines are the main light sources, cool rim light keeps creatures readable
-  scene.add(new THREE.HemisphereLight(0x8a8cba, 0x2a2030, 1.3));
-  const sun = new THREE.DirectionalLight(0xc8d0ff, 1.6);
+  scene.add(new THREE.HemisphereLight(0xa0a2cc, 0x3a3040, 1.9));
+  const sun = new THREE.DirectionalLight(0xd8dcff, 2.2);
   sun.position.set(-4, 9, 5);
   sun.castShadow = !low;
   sun.shadow.mapSize.set(1024, 512);
@@ -183,47 +188,14 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   rim.position.set(3, 4, -8);
   scene.add(rim);
 
-  const gtex = darkGround();
-  gtex.wrapS = gtex.wrapT = THREE.MirroredRepeatWrapping;
-  gtex.repeat.set(5, 2);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 40), new THREE.MeshStandardMaterial({ map: gtex, roughness: 1, color: 0xb0a8a8 }));
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.z = 15.2;
-  ground.receiveShadow = true;
-  scene.add(ground);
-  // painted dusk sky and distant mountains behind the far side (fills every pixel above the board)
-  {
-    const c = document.createElement('canvas');
-    c.width = 1024; c.height = 256;
-    const g = c.getContext('2d')!;
-    const sk = g.createLinearGradient(0, 0, 0, 256);
-    sk.addColorStop(0, '#2a2358'); sk.addColorStop(0.4, '#7a4a78'); sk.addColorStop(0.72, '#f0905a'); sk.addColorStop(1, '#6a3f50');
-    g.fillStyle = sk; g.fillRect(0, 0, 1024, 256);
-    const peaks = (base: number, amp: number, col: string, seed: number) => {
-      g.fillStyle = col; g.beginPath(); g.moveTo(0, 256);
-      for (let x = 0; x <= 1024; x += 16) g.lineTo(x, base - amp * (0.5 + 0.5 * Math.sin(x * 0.011 + seed) * Math.cos(x * 0.027 + seed * 2)) - ((x * 7 + seed * 13) % 23));
-      g.lineTo(1024, 256); g.closePath(); g.fill();
-    };
-    peaks(190, 80, '#6a5a88', 1); peaks(220, 55, '#46385f', 4);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-    const wall = new THREE.Mesh(new THREE.PlaneGeometry(300, 24), new THREE.MeshBasicMaterial({ map: t, fog: false }));
-    wall.position.set(0, 9, -4.8);
-    scene.add(wall);
-    scene.background = new THREE.Color(0x2a2358);
-  }
-  scene.add(borderDecor(BW, BH, low));
-
-  let composer: EffectComposer | null = null;
-  let bloomPass: UnrealBloomPass | null = null;
-  if (!low) {
-    try {
-      composer = new EffectComposer(renderer);
-      composer.addPass(new RenderPass(scene, camera));
-      bloomPass = new UnrealBloomPass(new THREE.Vector2(128, 128), 0.32, 0.5, 0.92);
-      composer.addPass(bloomPass);
-      composer.addPass(new OutputPass());
-    } catch { composer = null; bloomPass = null; }
-  }
+  // the painted arena is a 2D picture behind this canvas; the floor only catches the pieces' shadows
+  const catcher = new THREE.Mesh(new THREE.PlaneGeometry(60, 40), new THREE.ShadowMaterial({ opacity: 0.4 }));
+  catcher.rotation.x = -Math.PI / 2;
+  catcher.receiveShadow = true;
+  scene.add(catcher);
+  renderer.setClearColor(0x000000, 0);
+  renderer.autoClear = false;
+  const composer: null = null, bloomPass: null = null;
 
   // glowing crystal mines inside spiked palisades
   const mines: MineArt[] = [];
@@ -235,16 +207,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
   const crystals = mines.map((m) => ({ ctl: undefined as any, art: m, sprite: null as THREE.Sprite | null }));
 
-  // embers
-  let embers: THREE.Points | null = null;
-  if (!low) {
-    const n = 60, pos = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { pos[i * 3] = (Math.random() - 0.5) * 14; pos[i * 3 + 1] = Math.random() * 2.2; pos[i * 3 + 2] = (Math.random() - 0.5) * 8; }
-    const eg = new THREE.BufferGeometry();
-    eg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    embers = new THREE.Points(eg, new THREE.PointsMaterial({ color: 0xffa050, size: 0.05, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false }));
-    scene.add(embers);
-  }
+  const embers: null = null;
 
   // Round 5b: soul crystal flow particles (mines stream into their owner's Stronghold; neutral mines swirl)
   const FN = 16;
@@ -534,100 +497,158 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     }
   }
 
-  const cam = { zoom: 1, x: 0, y: 0 };
-  // Round 5b: the owner's camera fit (tilt 51, fov 48, zoom 107 %, 16 % sky, board up 12 % and right 1 %, 2 % bottom margin)
-  const CAMN = { tilt: 51, fov: 48, zoom: 107, sky: 16, hand: 2, panX: 0.02, panY: 0.24 };
-  const keyPts: THREE.Vector3[] = [];
+  // ---------------------------------------------------------------- painted arena (round 8a)
+  // 2D paintings (swamp + arena + the owner's effects) sit behind this canvas in a second WebGL canvas; the 3D pieces stand on
+  // the painted floor through a camera fitted to the owner's four floor corners (arena-geo.ts). One view transform (zoom and
+  // pan in painting pixels) moves the paintings, effects, pieces and highlights together.
+  const H0 = boardHomography();
+  const fit = fitCamera(H0);
+  const dprNow = () => (testMode ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+  const backCanvas = document.createElement('canvas');
+  backCanvas.className = 'board-canvas arena-canvas';
+  container.prepend(backCanvas);
+  let backRenderer: THREE.WebGLRenderer | null = null;
+  try {
+    backRenderer = new THREE.WebGLRenderer({ canvas: backCanvas, antialias: false, alpha: false });
+    backRenderer.setPixelRatio(testMode ? 0.5 : low ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+    backRenderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+    backRenderer.setClearColor(0x000000, 1);
+  } catch { backRenderer = null; }
+  let arena: ReturnType<typeof buildArena> | null = null;
+  const arenaInfo = { background: 'skullfang-swamp-background.jpg', picture: 'skullfang-arena.png', layout: 'skullfang-arena-layout.json', loaded: false, effects: 0, cutouts: 0, gridLines: false };
   {
-    const hx = BW / 2, hz = BH / 2;
-    for (const [x, z] of [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]]) keyPts.push(new THREE.Vector3(x, 0, z));
-    for (const side of ['player', 'opponent']) { const p = world(SHP[side][0], SHP[side][1]); keyPts.push(new THREE.Vector3(p.x, CMD_H, p.z)); }
-  }
-    /** Commander + Stronghold silhouette: the one-space footprint at the feet and the narrower head top at 2.4 spaces. */
-  const figPts = (side: string): THREE.Vector3[] => {
-    const p = world(SHP[side][0], SHP[side][1]), out: THREE.Vector3[] = [];
-    for (const [dx, dz] of [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]) out.push(new THREE.Vector3(p.x + dx, 0, p.z + dz));
-    for (const [dx, dz] of [[-0.3, -0.3], [0.3, -0.3], [0.3, 0.3], [-0.3, 0.3]]) out.push(new THREE.Vector3(p.x + dx, CMD_H, p.z + dz));
-    return out;
-  };
-  let vw = 390, vh = 420;
-  function resize() {
-    const W = vw = container.clientWidth || 390, H = vh = container.clientHeight || 420;
-    renderer.setSize(W, H, false);
-    composer?.setSize(W, H);
-    bloomPass?.resolution.set(Math.max(64, W / 2), Math.max(64, H / 2));
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    const S = CAMN;
-    const place = (d: number) => {
-      const t = (S.tilt * Math.PI) / 180;
-      camera.clearViewOffset(); camera.zoom = 1;
-      camera.fov = S.fov; camera.aspect = W / H; camera.updateProjectionMatrix();
-      camera.position.set(0, Math.sin(t) * d, Math.cos(t) * d);
-      camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
-    };
-    const ext = (d: number) => {
-      place(d);
-      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
-      for (const p of keyPts) { const q = p.clone().project(camera); x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); }
-      return { x0, x1, y0, y1 };
-    };
-    // solve(): the owner's fit for a given bottom margin; returns the distance and the image shift
-    const solve = (hand: number) => {
-      const avail = 2 - (2 * S.sky) / 100 - (2 * hand) / 100;
-      let lo = 4, hi = 300;
-      for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2, e = ext(m); if (e.x1 - e.x0 <= 1.96 && e.y1 - e.y0 <= avail) hi = m; else lo = m; }
-      const shiftOf = (dd: number) => { const ee = ext(dd); return { ee, ddy: -1 + (2 * hand) / 100 - ee.y0, ddx: -(ee.x0 + ee.x1) / 2 }; };
-      const nx = (v: THREE.Vector3, sh: { ddx: number; ddy: number }) => { const q = v.clone().project(camera); return [q.x + sh.ddx + S.panX, q.y + sh.ddy + S.panY]; };
-      const inside = (dd: number) => {
-        const sh = shiftOf(dd);
-        for (const q of [...figPts('player'), ...figPts('opponent')]) { const [x, y] = nx(q, sh); if (x < -0.995 || x > 0.995 || y < -0.995 || y > 0.995) return false; }
-        return true;
-      };
-      // 107 % zoom (the owner's look crops the board's side edges slightly), backing off only if a Commander would not be whole
-      let dd = hi / (S.zoom / 100);
-      for (let i = 0; i < 120 && !inside(dd); i++) dd *= 1.006;
-      const sh = shiftOf(dd);
-      // pixel box of the player's Commander (to keep the resting hand off him)
-      let bx1 = -1e9, by1 = -1e9;
-      for (const q of figPts('player')) { const [x, y] = nx(q, sh); bx1 = Math.max(bx1, (x * 0.5 + 0.5) * W); by1 = Math.max(by1, (-y * 0.5 + 0.5) * H); }
-      return { d: dd, e: sh.ee, dx: sh.ddx, dy: sh.ddy, bx1, by1 };
-    };
-    // the resting hand starts 14 % from the left and is ~23 % of the height tall (≈4 % of it below the edge)
-    const handTop = H * (1 - 0.23 + 0.01), handLeft = 0.14 * W;
-    let fit = solve(S.hand);
-    for (let h2 = S.hand + 1; h2 <= 16 && fit.bx1 > handLeft && fit.by1 > handTop - 4; h2 += 1) fit = solve(h2);
-    const { d: _d, dx, dy } = fit;
-    void _d;
-    camera.setViewOffset(W, H, -(dx + S.panX) * (W / 2) - cam.x, (dy + S.panY) * (H / 2) - cam.y, W, H);
-    camera.zoom = cam.zoom;
-    camera.updateProjectionMatrix();
-    camera.updateMatrixWorld();
-  }
-  function screenRects() {
-    const W = vw, H = vh;
-    const box = (pts: THREE.Vector3[]) => {
-      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-      for (const p of pts) { const v = p.clone().project(camera); const sx = (v.x * 0.5 + 0.5) * W, sy = (-v.y * 0.5 + 0.5) * H; x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy); }
-      return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
-    };
-    const cmdBox = (side: string) => box(figPts(side));
-    const hx = BW / 2, hz = BH / 2;
-    // the board box is what is visible: the owner's 107 % zoom crops the outer side edges a little, so it is clipped to the window
-    const bb = box([new THREE.Vector3(-hx, 0, -hz), new THREE.Vector3(hx, 0, -hz), new THREE.Vector3(hx, 0, hz), new THREE.Vector3(-hx, 0, hz)]);
-    const cx0 = Math.max(0, bb.x), cx1 = Math.min(W, bb.x + bb.width);
-    return { playerCommander: cmdBox('player'), opponentCommander: cmdBox('opponent'), board: { x: cx0, y: bb.y, width: cx1 - cx0, height: bb.height } };
+    const loader = new THREE.TextureLoader();
+    const aniso = backRenderer ? backRenderer.capabilities.getMaxAnisotropy() : 1;
+    const load = (url: string) => new Promise<THREE.Texture>((res, rej) => loader.load(url, (t) => { t.anisotropy = aniso; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.generateMipmaps = true; res(t); }, undefined, rej));
+    Promise.all([load('/art/arena/skullfang-swamp-background.jpg'), load('/art/arena/skullfang-arena.png')]).then(([bg, ar]) => {
+      if (disposed) return;
+      const prev = THREE.ColorManagement.enabled;
+      arena = buildArena(layoutJson, bg, ar, () => view.scale * (testMode ? 0.5 : low ? 1 : Math.min(window.devicePixelRatio || 1, 2)));
+      THREE.ColorManagement.enabled = prev;
+      Object.assign(arenaInfo, { loaded: true, effects: arena.effects.length, cutouts: arena.cuts.length });
+      applyView();
+    }).catch(() => {});
   }
 
+  // view: zoom 1 = the painting fills the window (cover-fit, never stretched); centre in painting pixels
+  const view = { zoom: 1, cx: BG.w / 2, cy: BG.h / 2, scale: 1, s0: 1, maxZoom: 2, W: 390, H: 420 };
+  const cam = { zoom: 1, x: 0, y: 0 };
+  function clampView() {
+    const { W, H } = view;
+    view.s0 = Math.max(W / BG.w, H / BG.h);
+    // at most 2.5 screen pixels per painting pixel (never less than a useful zoom range on very large screens)
+    const maxScale = Math.max(2.5 / dprNow(), view.s0 * 1.6);
+    view.maxZoom = maxScale / view.s0;
+    view.zoom = Math.min(view.maxZoom, Math.max(1, view.zoom));
+    view.scale = view.s0 * view.zoom;
+    const hw = W / (2 * view.scale), hh = H / (2 * view.scale);
+    view.cx = hw * 2 >= BG.w ? BG.w / 2 : Math.min(BG.w - hw, Math.max(hw, view.cx));
+    view.cy = hh * 2 >= BG.h ? BG.h / 2 : Math.min(BG.h - hh, Math.max(hh, view.cy));
+    cam.zoom = view.zoom; cam.x = (BG.w / 2 - view.cx) * view.scale; cam.y = (BG.h / 2 - view.cy) * view.scale;
+  }
+  const toScreen = (x: number, y: number): [number, number] => [(x - view.cx) * view.scale + view.W / 2, (y - view.cy) * view.scale + view.H / 2];
+  const tmpM = new THREE.Matrix4();
+  function applyView() {
+    clampView();
+    const { W, H, scale } = view;
+    const x0 = view.cx - W / (2 * scale), y0 = view.cy - H / (2 * scale), P = fit.P;
+    const n = 0.1, f = 300, A = (f + n) / (f - n), B = (-2 * f * n) / (f - n);
+    const row = (k: number) => { // rows of P: u (0), v (1), w (2), each over x, y, z, 1
+      return [P[k * 4], P[k * 4 + 1], P[k * 4 + 2], P[k * 4 + 3]];
+    };
+    const u = row(0), v = row(1), w = row(2);
+    const cxr = u.map((c, i) => ((2 * scale) / W) * (c - x0 * w[i]) - w[i]);
+    const cyr = v.map((c, i) => w[i] - ((2 * scale) / H) * (c - y0 * w[i]));
+    const czr = w.map((c, i) => A * c + (i === 3 ? B : 0));
+    camera.position.set(...fit.pos);
+    tmpM.makeBasis(new THREE.Vector3(...fit.right), new THREE.Vector3(...fit.up), new THREE.Vector3(...fit.back));
+    camera.quaternion.setFromRotationMatrix(tmpM);
+    camera.updateMatrixWorld(true);
+    camera.projectionMatrix.set(...([...cxr, ...cyr, ...czr, ...w] as [number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number])).multiply(camera.matrixWorld);
+    camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+    arena?.setView(x0, y0, W / scale, H / scale);
+  }
+  let lastT = performance.now();
+  function arenaFrame(now: number) {
+    const dt = Math.min(0.05, (now - lastT) / 1000);
+    lastT = now;
+    easeView(dt);
+    if (arena && backRenderer) { arena.update(now / 1000, dt); backRenderer.render(arena.scene, arena.cam); }
+  }
+  /** a point on the floor (or at a height) in screen pixels */
+  const projPt = (x: number, y: number, z: number): [number, number] => {
+    const P = fit.P;
+    const u = P[0] * x + P[1] * y + P[2] * z + P[3], v = P[4] * x + P[5] * y + P[6] * z + P[7], w = P[8] * x + P[9] * y + P[10] * z + P[11];
+    return toScreen(u / w, v / w);
+  };
+  /** Commander + Stronghold silhouette: the one-space footprint at the feet and the narrower head top at 2.4 spaces. */
+  const figPts = (side: string): [number, number][] => {
+    const p = world(SHP[side][0], SHP[side][1]), out: [number, number][] = [];
+    for (const [dx, dz] of [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]) out.push(projPt(p.x + dx, 0, p.z + dz));
+    for (const [dx, dz] of [[-0.3, -0.3], [0.3, -0.3], [0.3, 0.3], [-0.3, 0.3]]) out.push(projPt(p.x + dx, CMD_H, p.z + dz));
+    return out;
+  };
+  let sizedW = 0, sizedH = 0;
+  function resize() {
+    const W = container.clientWidth || 390, H = container.clientHeight || 420;
+    view.W = W; view.H = H;
+    if (W !== sizedW || H !== sizedH) { sizedW = W; sizedH = H; renderer.setSize(W, H, false); backRenderer?.setSize(W, H, false); }
+    canvas.style.width = '100%'; canvas.style.height = '100%';
+    backCanvas.style.width = '100%'; backCanvas.style.height = '100%';
+    applyView();
+  }
+  const tgt = { zoom: 1, cx: BG.w / 2, cy: BG.h / 2 };
+  let easing = false;
+  function setViewState(zoom: number, cx: number, cy: number) {
+    const prev = { zoom: view.zoom, cx: view.cx, cy: view.cy };
+    view.zoom = zoom; view.cx = cx; view.cy = cy; applyView();
+    Object.assign(tgt, { zoom: view.zoom, cx: view.cx, cy: view.cy });
+    if (!testMode) { Object.assign(view, prev); applyView(); easing = true; }
+  }
+  /** smooth, eased motion toward the target view (every frame; instant in automated runs) */
+  function easeView(dt: number) {
+    if (!easing) return;
+    const k = 1 - Math.exp(-dt * 16);
+    view.zoom *= Math.pow(tgt.zoom / view.zoom, k); view.cx += (tgt.cx - view.cx) * k; view.cy += (tgt.cy - view.cy) * k;
+    if (Math.abs(Math.log(tgt.zoom / view.zoom)) < 0.0015 && Math.hypot(tgt.cx - view.cx, tgt.cy - view.cy) * view.scale < 0.3) { view.zoom = tgt.zoom; view.cx = tgt.cx; view.cy = tgt.cy; easing = false; }
+    applyView();
+    api.onViewChange?.();
+  }
+  function zoomAt(factor: number, sx = view.W / 2, sy = view.H / 2) {
+    // keep the painting point under (sx, sy) fixed
+    const bx = view.cx + (sx - view.W / 2) / view.scale, by = view.cy + (sy - view.H / 2) / view.scale;
+    view.zoom *= factor; clampView();
+    setViewState(view.zoom, bx - (sx - view.W / 2) / view.scale, by - (sy - view.H / 2) / view.scale);
+  }
+  function panBy(dx: number, dy: number) { setViewState(view.zoom, view.cx - dx / view.scale, view.cy - dy / view.scale); }
+  function recenter() { setViewState(1, BG.w / 2, BG.h / 2); }
+  function getView() {
+    const homog = H0;
+    return {
+      zoom: view.zoom, maxZoom: view.maxZoom, centerX: view.cx, centerY: view.cy, scale: view.scale, coverScale: view.s0,
+      pxPerPaintingPx: view.scale * dprNow(), cssPxPerPaintingPx: view.scale, window: { w: view.W, h: view.H },
+      visible: { x0: view.cx - view.W / (2 * view.scale), y0: view.cy - view.H / (2 * view.scale), x1: view.cx + view.W / (2 * view.scale), y1: view.cy + view.H / (2 * view.scale) },
+      painting: { w: BG.w, h: BG.h }, arena: arenaInfo, homography: homog, corners: layoutJson.boardCorners,
+      cells: [[1, 1], [1, 13], [7, 13], [7, 1], [4, 7], [7, 2], [1, 12]].map(([r, c]) => ({ row: r, col: c, center: toScreen(...cellGeometry(H0, r, c).center), quad: cellGeometry(H0, r, c).quad.map(([x, y]) => toScreen(x, y)) })),
+    };
+  }
+  void groundToPainting; void BOARD;
+  function screenRects() {
+    const W = view.W, H = view.H;
+    const box = (pts: [number, number][]) => {
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (const [sx, sy] of pts) { x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy); }
+      return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+    };
+    const hx = BW / 2, hz = BH / 2;
+    const bb = box([projPt(-hx, 0, -hz), projPt(hx, 0, -hz), projPt(hx, 0, hz), projPt(-hx, 0, hz)]);
+    const cx0 = Math.max(0, bb.x), cx1 = Math.min(W, bb.x + bb.width), cy0 = Math.max(0, bb.y), cy1 = Math.min(H, bb.y + bb.height);
+    return { playerCommander: box(figPts('player')), opponentCommander: box(figPts('opponent')), board: { x: cx0, y: cy0, width: cx1 - cx0, height: cy1 - cy0 } };
+  }
+  function cellQuad(row: number, col: number) { return cellGeometry(H0, row, col).quad.map(([x, y]) => { const [sx, sy] = toScreen(x, y); return { x: sx, y: sy }; }); }
   function cellRect(row: number, col: number): Rect {
-    const c = world(row, col);
-    const w = container.clientWidth || 390, h = container.clientHeight || 420;
-    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (const [dx, dz] of [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]) {
-      const v = new THREE.Vector3(c.x + dx, 0, c.z + dz).project(camera);
-      const sx = (v.x * 0.5 + 0.5) * w, sy = (-v.y * 0.5 + 0.5) * h;
-      x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
-    }
+    const q = cellQuad(row, col);
+    const x0 = Math.min(...q.map((p) => p.x)), x1 = Math.max(...q.map((p) => p.x)), y0 = Math.min(...q.map((p) => p.y)), y1 = Math.max(...q.map((p) => p.y));
     return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   }
 
@@ -790,10 +811,12 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     }
     mines.forEach((m) => m.update(now));
     updateFlow(now);
-    if (embers) { const a = embers.geometry.getAttribute('position') as THREE.BufferAttribute; for (let i = 0; i < a.count; i++) { let y = a.getY(i) + 0.004; if (y > 2.4) y = 0; a.setY(i, y); a.setX(i, a.getX(i) + Math.sin(now / 900 + i) * 0.001); } a.needsUpdate = true; }
     renderer.info.reset();
     const t0 = performance.now();
-    if (composer) composer.render(); else renderer.render(scene, camera);
+    arenaFrame(now);
+    renderer.clear();
+    renderer.render(scene, camera);
+    if (arena) { renderer.clearDepth(); renderer.render(arena.fgScene, arena.cam); }
     lastDur = performance.now() - t0;
     lastFrame = { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
     frames++;
@@ -809,7 +832,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         if (frames >= f0 + 2 && (Date.now() - t0 > 4000 || mines.every((m) => m.group.userData.mineHeight))) {
           resolve({
             webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
-            bloom: !!bloomPass, shadows: renderer.shadowMap.enabled, particles: !!embers,
+            bloom: false, shadows: renderer.shadowMap.enabled, particles: false, arena: arenaInfo,
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
             strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => ({ source: MINE_MODEL, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' })), mineModel: mines.every((m) => m.group.userData.mineModel === 'gltf') ? 'gltf' : 'loading',
@@ -820,17 +843,20 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     });
   }
 
-  return {
-    is3D: true, setState, cellRect, resize, setCamera(c) { Object.assign(cam, c); resize(); }, screenRects, setFlowMode(m) { flowMode = m; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+  const api: BoardView = {
+    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, screenRects, setFlowMode(m) { flowMode = m; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);
-      composer?.dispose();
       renderer.dispose();
+      backRenderer?.dispose();
+      try { backRenderer?.forceContextLoss(); } catch { /* ignore */ }
+      backCanvas.remove();
       try { renderer.forceContextLoss(); } catch { /* ignore */ }
       canvas.remove();
     },
   };
+  return api;
 }
 
 /** Flat board used when WebGL is not available. */
@@ -841,6 +867,7 @@ export function createFlatView(container: HTMLElement): BoardView {
     is3D: false,
     setState() {},
     setCamera(c) { Object.assign(cam, c); },
+    zoomAt() {}, panBy() {}, recenter() {}, getView: () => ({}), cellQuad() { return []; },
     screenRects: () => ({ playerCommander: { x: 0, y: 0, width: 0, height: 0 }, opponentCommander: { x: 0, y: 0, width: 0, height: 0 }, board: { x: 0, y: 0, width: 0, height: 0 } }),
     setFlowMode() {},
     pulseFlow() {},

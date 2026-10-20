@@ -627,6 +627,7 @@ export class App {
     r.view = null;
     try { this.view = createBoardView(r.board, this.low); } catch { this.view = null; }
     if (!this.view) this.view = createFlatView(r.board);
+    this.view.onViewChange = () => this.layoutSoon();
     for (let row = 1; row <= BH; row++) for (let col = 1; col <= BW; col++) {
       const c = h('div', { class: 'cell', 'data-row': row, 'data-col': col });
       r.cells.set(row + ',' + col, c);
@@ -732,7 +733,7 @@ export class App {
 
   // ------------------------------------------------------------ camera zoom and pan (R2.19)
   cam = { zoom: 1, x: 0, y: 0 };
-  getCamera() { return { ...this.cam, panX: this.cam.x, panY: this.cam.y, tilt: 51, fov: 48, fitZoom: 1.07, sky: 0.16, shiftX: 0.01, shiftY: 0.12 }; }
+  getCamera() { return { ...this.cam, panX: this.cam.x, panY: this.cam.y, view: this.view?.getView?.() }; }
   placeEnemyCrystal() {
     const hud = this.r.board?.isConnected ? (document.querySelector('.crystal-hud.theirs') as HTMLElement | null) : null;
     const rc: any = this.view?.screenRects();
@@ -744,38 +745,43 @@ export class App {
     hud.style.left = `${(left / W) * 100}%`;
   }
   screenRects() { return this.view ? this.view.screenRects() : null; }
-  applyCam() {
-    const w = (this.r.board as El).clientWidth || 400, hh = (this.r.board as El).clientHeight || 300;
-    this.cam.zoom = Math.max(1, Math.min(2.5, this.cam.zoom));
-    const mx = ((this.cam.zoom - 1) * w) / 2 + 40, my = ((this.cam.zoom - 1) * hh) / 2 + 40;
-    this.cam.x = this.cam.zoom === 1 ? 0 : Math.max(-mx, Math.min(mx, this.cam.x));
-    this.cam.y = this.cam.zoom === 1 ? 0 : Math.max(-my, Math.min(my, this.cam.y));
-    this.view?.setCamera({ ...this.cam });
-    this.layout();
-  }
-  resetCam() { this.cam = { zoom: 1, x: 0, y: 0 }; this.applyCam(); }
-  zoomBy(f: number) { this.cam.zoom *= f; this.applyCam(); }
+  layoutQueued = false;
+  layoutSoon() { if (this.layoutQueued) return; this.layoutQueued = true; requestAnimationFrame(() => { this.layoutQueued = false; this.layout(); }); }
+  syncCam() { const v = this.view?.getView?.(); if (v && v.zoom) this.cam = { zoom: v.zoom, x: (v.painting.w / 2 - v.centerX) * v.scale, y: (v.painting.h / 2 - v.centerY) * v.scale }; }
+  applyCam() { this.syncCam(); this.layout(); }
+  resetCam() { this.view?.recenter(); this.applyCam(); }
+  zoomBy(f: number, sx?: number, sy?: number) { this.view?.zoomAt(f, sx, sy); this.applyCam(); }
+  panBy(dx: number, dy: number) { this.view?.panBy(dx, dy); this.applyCam(); }
   startPan(e: PointerEvent) {
-    const x0 = e.clientX, y0 = e.clientY, cx = this.cam.x, cy = this.cam.y;
-    let moved = false;
+    let lx = e.clientX, ly = e.clientY, moved = false;
+    const x0 = e.clientX, y0 = e.clientY;
     const move = (ev: PointerEvent) => {
-      if (Math.hypot(ev.clientX - x0, ev.clientY - y0) > 5) moved = true;
-      if (moved && this.cam.zoom > 1) { this.cam.x = cx + ev.clientX - x0; this.cam.y = cy + ev.clientY - y0; this.applyCam(); }
+      if (this.touches.size >= 2) return;
+      if (!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) > 5) { moved = true; lx = x0; ly = y0; }
+      if (moved) { this.panBy(ev.clientX - lx, ev.clientY - ly); lx = ev.clientX; ly = ev.clientY; }
     };
     const up = () => {
-      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
       if (!moved) {
         const now = Date.now();
         if (now - this.lastGround < 350) { this.resetCam(); this.lastGround = 0; } else this.lastGround = now;
       }
     };
-    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
   }
   lastGround = 0;
   touches = new Map<number, { x: number; y: number }>();
   setupCamera() {
     const b = this.r.board as El;
-    (b.parentElement as El).addEventListener('wheel', (e: WheelEvent) => { if ((e.target as El).closest?.('.hand,.dialog,.hud,.reveal')) return; e.preventDefault(); this.zoomBy(Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+    (b.parentElement as El).addEventListener('wheel', (e: WheelEvent) => {
+      if ((e.target as El).closest?.('.hand,.dialog,.hud,.reveal')) return;
+      e.preventDefault();
+      const rc = b.getBoundingClientRect();
+      // a mouse wheel (or a trackpad pinch) zooms toward the cursor; a trackpad two-finger scroll pans
+      const wheel = e.ctrlKey || e.deltaMode !== 0 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 40);
+      if (wheel) this.zoomBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : e.deltaMode ? 0.05 : 0.0015)), e.clientX - rc.left, e.clientY - rc.top);
+      else this.panBy(-e.deltaX, -e.deltaY);
+    }, { passive: false });
     b.addEventListener('contextmenu', (e) => e.preventDefault());
     b.addEventListener('pointerdown', (e: PointerEvent) => {
       if (e.pointerType === 'mouse') { if (e.button === 1 || e.button === 2) { e.preventDefault(); this.startPan(e); } return; }
@@ -789,7 +795,9 @@ export class App {
           const q = [...this.touches.values()];
           if (q.length < 2) return;
           const d = Math.hypot(q[0].x - q[1].x, q[0].y - q[1].y), mx = (q[0].x + q[1].x) / 2, my = (q[0].y + q[1].y) / 2;
-          this.cam.zoom *= d / (d0 || 1); this.cam.x += mx - mx0; this.cam.y += my - my0;
+          const rc = b.getBoundingClientRect();
+          this.view?.zoomAt(d / (d0 || 1), mx - rc.left, my - rc.top);
+          this.view?.panBy(mx - mx0, my - my0);
           d0 = d; mx0 = mx; my0 = my;
           this.applyCam();
         };
@@ -799,6 +807,18 @@ export class App {
     }, true);
     const rm = (e: PointerEvent) => this.touches.delete(e.pointerId);
     b.addEventListener('pointerup', rm); b.addEventListener('pointercancel', rm);
+    // arrow keys and WASD pan the view
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (!this.r.board?.isConnected || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+      if (document.querySelector('.dialog')) return;
+      const k = e.key.toLowerCase(), step = 60;
+      const d: Record<string, [number, number]> = { arrowleft: [step, 0], a: [step, 0], arrowright: [-step, 0], d: [-step, 0], arrowup: [0, step], w: [0, step], arrowdown: [0, -step], s: [0, -step] };
+      if (!d[k]) return;
+      e.preventDefault();
+      this.panBy(d[k][0], d[k][1]);
+    });
   }
 
   layout() {
@@ -864,6 +884,11 @@ export class App {
     // far-row tap targets are a little bigger than they look
     const w = el.classList.contains('cell') ? Math.max(rc.w, 38) : rc.w, hh = el.classList.contains('cell') ? Math.max(rc.h, 34) : rc.h;
     el.style.left = rc.x - (w - rc.w) / 2 + 'px'; el.style.top = rc.y - (hh - rc.h) / 2 + 'px'; el.style.width = w + 'px'; el.style.height = hh + 'px';
+    if (el.classList.contains('cell')) {
+      // highlights follow the painted square exactly (its perspective quad), not its bounding box
+      const q = this.view!.cellQuad(row, col);
+      if (q.length === 4) el.style.clipPath = `polygon(${q.map((p) => `${(p.x - (rc.x - (w - rc.w) / 2)).toFixed(1)}px ${(p.y - (rc.y - (hh - rc.h) / 2)).toFixed(1)}px`).join(',')})`;
+    }
   }
 
   handTimer: any = null;

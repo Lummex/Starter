@@ -132,39 +132,53 @@ export interface MineArt {
   update(now: number): void;
 }
 
-export const MINE_MODEL = '/assets/models/crystal-mine-placeholder.gltf';
-const MINE_HEIGHT = 1.5, MINE_NATIVE_HEIGHT = 1.32;
+export const MINE_MODEL = '/models/mine/crystal-mine.glb';
+const MINE_HEIGHT = 1.5, MINE_FOOTPRINT = 1;
 let mineModelP: Promise<THREE.Object3D> | null = null;
 function loadMineModel(): Promise<THREE.Object3D> {
   return (mineModelP ||= new GLTFLoader().loadAsync(MINE_MODEL).then((g) => g.scene));
 }
 
+/** Round 8a: the Meshy crystal mine. Blue crystal, banner and steel are re-coloured in the shader to the owner's tint (player blue, enemy red, unowned pale); the crystal glows. */
 export function makeMine(low: boolean, idx: number): MineArt {
   const group = new THREE.Group();
   const crystals = new THREE.Group();
   const mats: THREE.MeshStandardMaterial[] = [];
-  // Round 6a: the crystal model is the owner's glTF placeholder (swap MINE_MODEL for the final Meshy model).
-  const tinted: { m: THREE.MeshStandardMaterial; k: number }[] = [];
-  let tint: string | number = 0xffffff;
-  const applyTint = () => tinted.forEach(({ m, k }) => { m.color.set(tint as any).multiplyScalar(0.55 + 0.45 * k); m.emissive.set(tint as any); });
+  const uTint = { value: new THREE.Color(0xffffff) }, uGlow = { value: 0.9 };
+  const tintMaterial = (src: THREE.MeshStandardMaterial) => {
+    const m = src.clone();
+    m.roughness = 0.55; m.metalness = 0.1;
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uTint = uTint; sh.uniforms.uGlow = uGlow;
+      sh.fragmentShader = 'uniform vec3 uTint;uniform float uGlow;\n' + sh.fragmentShader
+        .replace('#include <map_fragment>', `#include <map_fragment>
+          float mnLum = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
+          float mnMask = smoothstep(0.012, 0.09, diffuseColor.b - diffuseColor.r);
+          float mnGlowMask = mnMask * smoothstep(0.06, 0.4, mnLum);
+          diffuseColor.rgb = mix(diffuseColor.rgb, uTint * (0.18 + 1.9 * mnLum), mnMask);`)
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+          totalEmissiveRadiance += uTint * mnGlowMask * (0.25 + 2.2 * mnLum) * uGlow;`);
+    };
+    return m;
+  };
   loadMineModel().then((src) => {
     const model = src.clone(true);
-    { const nb = new THREE.Box3().setFromObject(model); const nh = nb.max.y - nb.min.y; model.scale.setScalar(MINE_HEIGHT / (nh > 0.01 ? nh : MINE_NATIVE_HEIGHT)); }
     model.traverse((o: any) => {
       if (!o.isMesh) return;
-      const name = String(o.material?.name || '');
-      if (/crystal|shard|nodule/.test(name)) {
-        const m = (o.material as THREE.MeshStandardMaterial).clone();
-        m.emissiveIntensity = 0.9; m.roughness = 0.2;
-        const k = Math.min(1, (m.color.r + m.color.g + m.color.b) / 1.6);
-        o.material = m; tinted.push({ m, k }); mats.push(m);
-      }
+      o.material = tintMaterial(o.material as THREE.MeshStandardMaterial);
+      o.castShadow = !low;
     });
+    // exactly 1.5 spaces tall, footprint at most 1 x 1, standing on the ground in the middle of its square
+    const nb = new THREE.Box3().setFromObject(model);
+    const nh = nb.max.y - nb.min.y, nw = Math.max(nb.max.x - nb.min.x, nb.max.z - nb.min.z);
+    const sy = MINE_HEIGHT / nh, sxz = Math.min(sy, MINE_FOOTPRINT / nw);
+    model.scale.set(sxz, sy, sxz);
+    model.position.set(-((nb.max.x + nb.min.x) / 2) * sxz, -nb.min.y * sy, -((nb.max.z + nb.min.z) / 2) * sxz);
     group.userData.mineModel = 'gltf';
     crystals.add(model);
-    const bb = new THREE.Box3().setFromObject(model);
+    const bb = new THREE.Box3().setFromObject(crystals);
     group.userData.mineHeight = bb.max.y - bb.min.y;
-    applyTint();
+    group.userData.mineFootprint = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z);
   }).catch(() => {});
   group.add(crystals);
   let light: THREE.PointLight | null = null, beam: THREE.Mesh | null = null, sparks: THREE.Points | null = null;
@@ -186,7 +200,7 @@ export function makeMine(low: boolean, idx: number): MineArt {
   return {
     group, mats, light, beam, sparks, crystals,
     recolor(hex) {
-      tint = hex; applyTint();
+      uTint.value.set(hex as any);
       group.userData.tintHex = '#' + new THREE.Color(hex as any).getHexString();
       light?.color.set(hex as any);
       (beam?.material as THREE.MeshBasicMaterial | undefined)?.color.set(hex as any);
@@ -195,7 +209,7 @@ export function makeMine(low: boolean, idx: number): MineArt {
     burst() { burstT = performance.now(); },
     update(now) {
       const w = now / 420 + idx;
-      mats.forEach((m, i) => (m.emissiveIntensity = 0.7 + Math.sin(w + i) * 0.15));
+      uGlow.value = 0.95 + Math.sin(w) * 0.18;
       if (sparks) { sparks.rotation.y = now / 2200 + idx; sparks.position.y = Math.sin(now / 900 + idx) * 0.06; }
       if (beam) (beam.material as THREE.MeshBasicMaterial).opacity = 0.08 + Math.sin(w * 0.7) * 0.03;
       if (burstT) {

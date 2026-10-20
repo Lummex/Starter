@@ -1,3 +1,23 @@
+# Oreheart — Phase 1B Round 8a build notes (painted arena board + view controls, Meshy crystal mine)
+
+`npm run build` → `dist/`; `npm test` → Vitest (70 tests, 4 new in `tests/arena.test.ts`). Only round 8a items 1 and 2 were built; round 8b items (Commander facing/emotes, card glow, hand hover box, pop-out size, stat icons, deck builder, Choose Your Commander, brown-gold body text, close-up viewer) are untouched and keep round 7 behaviour.
+
+## 1. Painted arena board
+- Owner files used unchanged: `public/art/arena/skullfang-swamp-background.jpg`, `skullfang-arena.png`, `skullfang-arena-layout.json` (also imported as `src/content/arena-layout.json`).
+- `src/ui/arena-fx.ts` is the Arena Editor code ported: background + arena pictures with the `arenaLook` shader, all 54 effects (flames incl. green, glows, lantern, waterfalls with splash, acid pools with bubbles/smoke, banners, plants, water shimmer, five firefly swarms; each keeps its own randomness) and the 2 foreground cut-outs. It renders in its own WebGL canvas behind the 3D canvas; the cut-outs are drawn over the 3D pieces. Colour management is switched off around it so colours match the editor (three r147 → r170).
+- `src/ui/arena-geo.ts`: the 13 × 7 board maps onto `boardCorners` with the editor's homography. No grid is drawn. Every square centre, `cellRect`, click area and highlight uses it; highlights are clipped to the painted square's quad (`clip-path`). The 3D camera is fitted once from that homography (focal length from the orthogonal floor axes, principal point at the picture centre) and set as the projection matrix, so floor points land exactly on the painted squares (checked in tests); it comes out at about 52° tilt. The old procedural ground, sky, border, fog, embers and bloom are gone; a shadow-catcher floor remains.
+- View controls: wheel / ctrl-pinch zoom toward the cursor, drag empty board / right or middle drag / one finger pan, two-finger pinch + pan, trackpad two-finger scroll pans, arrows + WASD, Recenter (Menu) and double-click/tap on empty board. Zoom 1 = cover-fit (no black bars, never stretched; extra strip off-screen on non-16:9), pan clamped to the painting edges, max 2.5 screen px per painting px, eased motion (instant in `?test=1`). The HUD does not move. Dragging a card or creature never pans (pan only starts on empty board).
+- Test hook: `window.oreheart.getCamera().view` gives zoom, maxZoom, centre, `pxPerPaintingPx`, visible rectangle, corners, homography and screen quads/centres of sample squares; `getRenderStats().arena` reports `{loaded, effects:54, cutouts:2, gridLines:false}` and the picture/layout file names.
+
+## 2. Crystal mine in 3D (Meshy)
+- `tools/gen-mine-3d.mjs` ran once (image-to-3D from `crystal-mine-front.png`, 12k target, PBR); saved as `public/models/mine/crystal-mine.glb` (1.5 MB after texture shrink) with `mine.json` (task id). It replaces the placeholder in every match: exactly 1.5 spaces tall, footprint ≤ 1 × 1. Credits spent: about 30 (Meshy image-to-3D with texture; the balance was not queried).
+- Owner tints: the blue crystal, banner and steel are recoloured in the material shader (player blue, enemy red, unowned pale) and the crystal glows with an emissive term that pulses.
+
+## Gaps
+- Checked with my own Playwright runs (1920×1080 and 844×390), not the hidden suite. Screenshots in `screenshots/r8a-*`.
+- Without bloom the glow comes from emissive materials and the mine point lights only. The in-match Grubnak is still the round 7 model and looks dark/small near the bottom-left corner (round 8b covers him).
+- Dragging near a screen edge does not nudge the view (optional in the brief).
+
 # Oreheart — Phase 1B Round 7 build notes (hand fixes + Grubnak in 3D)
 
 `npm run build` → `dist/`; `npm test` → Vitest (66 tests). Screenshots in `screenshots/r7-*` (1920×1080 match, 3D viewer, popped hand card with glow).
