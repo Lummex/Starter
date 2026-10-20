@@ -4872,23 +4872,19 @@ const BOARD_5B = [
   { cardId: 'gnome-tinker', owner: 'opponent', row: 2, col: 11 },
 ];
 
-test('AC149: camera uses the owner\'s numbers and keeps both Commanders whole at every window shape', async ({ page }) => {
+test('AC149: the cover-fit painted view keeps both Commanders whole at every window shape (Round 8a)', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await start(page, quiet({ playerHand: ['goblin-scrapper', 'fireball'], board: BOARD_5B }));
-  const c = await camera(page);
-  expect(c.tilt).toBe(51);
-  expect(c.fov).toBe(48);
-  expect(c.fitZoom).toBeCloseTo(1.07, 5);
-  expect(c.sky).toBeCloseTo(0.16, 5);
-  expect(c.shiftX).toBeCloseTo(0.01, 5);
-  expect(c.shiftY).toBeCloseTo(0.12, 5);
   for (const [W, H] of SHAPES_5B) {
     await page.setViewportSize({ width: W, height: H });
     await expect.poll(async () => {
+      const c = await camera(page);
       const r = await rects5b(page);
-      return insideWin(r.playerCommander, W, H) && insideWin(r.opponentCommander, W, H)
-        && r.board.width <= W + 1 && r.board.y > 0;
-    }, { message: `${W}x${H}: both Commanders whole, board fits under the sky` }).toBe(true);
+      const cover = Math.max(W / 1672, H / 941);
+      return Math.abs(c.zoom - 1) < 1e-6 && Math.abs(c.minScale - cover) / cover < 0.01 && Math.abs(c.scale - c.minScale) / cover < 0.01
+        && c.view.x >= -0.5 && c.view.y >= -0.5 && c.view.y <= 1 && c.view.x + c.view.width <= 1672.5 && c.view.y + c.view.height <= 941.5
+        && insideWin(r.playerCommander, W, H) && insideWin(r.opponentCommander, W, H) && r.board.y > 0;
+    }, { message: `${W}x${H}: cover-fit default view, both Commanders whole` }).toBe(true);
   }
 });
 
@@ -5559,7 +5555,7 @@ test('AC171: no "All cards" text and no corner ornaments on any screen', async (
   await noOrnaments('match');
 });
 
-test('AC172: crystal mines use the owner\'s glTF placeholder, exactly 1.5 tall, tinted by owner', async ({ page }) => {
+test('AC172: crystal mines use the owner\'s mine model (glTF placeholder or Round 8a Meshy GLB), exactly 1.5 tall, tinted by owner', async ({ page }) => {
   await start(page, quiet({ board: [
     { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
     { cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 6, minedMine: M3 },
@@ -5571,7 +5567,7 @@ test('AC172: crystal mines use the owner\'s glTF placeholder, exactly 1.5 tall, 
   const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const neutral = new Set();
   for (const m of r.mineModels) {
-    expect(m.source).toMatch(/crystal-mine-placeholder\.gltf$/);
+    expect(m.source).toMatch(/(crystal-mine-placeholder\.gltf|crystal-mine\.glb)$/); // Round 8a: Meshy mine or placeholder
     expect(m.height).toBeGreaterThanOrEqual(1.47);
     expect(m.height).toBeLessThanOrEqual(1.53);
     expect(['player', 'opponent', 'neutral']).toContain(m.owner);
@@ -5964,3 +5960,413 @@ test.describe('round 7 screenshots (1920x1080)', () => {
     expect(errors).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 1B Round 8a: painted Skullfang Arena board, view controls, Meshy crystal mine
+// ---------------------------------------------------------------------------
+const arenaInfo = (page) => page.evaluate(async () => await window.oreheart.getArena());
+const sq2s = (page, row, col) => page.evaluate(async ([r, c]) => await window.oreheart.squareToScreen(r, c), [row, col]);
+const ARENA_FILES = ['skullfang-swamp-background.jpg', 'skullfang-arena.png', 'skullfang-arena-layout.json'];
+async function arenaLayout(request) {
+  const res = await request.get('/art/arena/skullfang-arena-layout.json');
+  expect(res.ok(), 'layout served from /art/arena/').toBe(true);
+  return res.json();
+}
+// Unit square (0,0)(1,0)(1,1)(0,1) -> quad p0..p3 (top-left, top-right, bottom-right, bottom-left)
+function homography([[x0, y0], [x1, y1], [x2, y2], [x3, y3]]) {
+  const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3;
+  const dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
+  const den = dx1 * dy2 - dx2 * dy1;
+  const g = (dx3 * dy2 - dx2 * dy3) / den, h = (dx1 * dy3 - dx3 * dy1) / den;
+  const a = x1 - x0 + g * x1, b = x3 - x0 + h * x3, d = y1 - y0 + g * y1, e = y3 - y0 + h * y3;
+  return (u, v) => { const w = g * u + h * v + 1; return [(a * u + b * v + x0) / w, (d * u + e * v + y0) / w]; };
+}
+// Expected window position of a square center from the layout and the current view
+function expectedCenter(layout, arenaPic, cam, row, col) {
+  const H = homography(layout.boardCorners);
+  const [ax, ay] = H((col - 0.5) / 13, (row - 0.5) / 7);
+  const bx = layout.arena.centerX + (ax - arenaPic.width / 2) * layout.arena.scale;
+  const by = layout.arena.centerY + (ay - arenaPic.height / 2) * layout.arena.scale;
+  return { x: (bx - cam.view.x) * cam.scale, y: (by - cam.view.y) * cam.scale };
+}
+const SAMPLE_SQUARES = [[1, 1], [1, 13], [7, 13], [7, 1], [4, 7], [2, 4], [6, 10], [3, 12], [5, 2]];
+async function checkSquares(page, layout) {
+  const ar = await arenaInfo(page);
+  const cam = await camera(page);
+  for (const [r, c] of SAMPLE_SQUARES) {
+    const got = await sq2s(page, r, c);
+    const want = expectedCenter(layout, ar.arenaPicture, cam, r, c);
+    const next = expectedCenter(layout, ar.arenaPicture, cam, r, c === 13 ? 12 : c + 1);
+    const tol = Math.max(3, 0.05 * Math.abs(next.x - want.x));
+    expect(Math.abs(got.x - want.x), `square ${r},${c} x`).toBeLessThanOrEqual(tol);
+    expect(Math.abs(got.y - want.y), `square ${r},${c} y`).toBeLessThanOrEqual(tol);
+  }
+}
+async function zoomIn(page, x, y, clicks = 4) {
+  await page.mouse.move(x, y);
+  for (let i = 0; i < clicks; i++) { await page.mouse.wheel(0, -240); await page.waitForTimeout(120); }
+  await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(1.2);
+  await page.waitForTimeout(600);
+}
+const viewOk = (v) => v.x >= -0.5 && v.y >= -0.5 && v.x + v.width <= 1672.5 && v.y + v.height <= 941.5;
+const ARENA_BOARD = [
+  { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 },
+  { cardId: 'gnome-tinker', owner: 'opponent', row: 2, col: 11 },
+];
+
+test('AC185: the owner\'s arena pictures and layout are loaded unchanged', async ({ page, request }) => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const here = path.dirname((await import('node:url')).fileURLToPath(import.meta.url));
+  const refDirs = [path.resolve(here, '../../../factory-design/design/references'), path.resolve(process.cwd(), 'factory-design/design/references')];
+  const refDir = refDirs.find((d) => fs.existsSync(path.join(d, 'skullfang-arena.png')));
+  for (const f of ARENA_FILES) {
+    const res = await request.get(`/art/arena/${f}`);
+    expect(res.ok(), `/art/arena/${f}`).toBe(true);
+    if (refDir) expect(Buffer.compare(await res.body(), fs.readFileSync(path.join(refDir, f))), `${f} byte-identical`).toBe(0);
+  }
+  const layout = await arenaLayout(request);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await start(page, quiet({ board: ARENA_BOARD }));
+  await expect.poll(async () => (await arenaInfo(page)).layoutName).toBe('skull arena final draft');
+  const a = await arenaInfo(page);
+  expect(a.background.src).toContain('/art/arena/skullfang-swamp-background.jpg');
+  expect(a.arenaPicture.src).toContain('/art/arena/skullfang-arena.png');
+  expect([a.background.width, a.background.height]).toEqual([1672, 941]);
+  expect([a.arenaPicture.width, a.arenaPicture.height]).toEqual([1672, 941]);
+  expect(a.arena).toEqual(layout.arena);
+  expect(a.boardCorners).toEqual(layout.boardCorners);
+  expect(a.look).toEqual(layout.arenaLook);
+});
+
+test('AC186: all 54 effects are drawn, off-painting pools are clipped, two foreground cut-outs', async ({ page, request }) => {
+  const layout = await arenaLayout(request);
+  await start(page, quiet({ board: ARENA_BOARD }));
+  await expect.poll(async () => (await arenaInfo(page)).effects.length).toBe(54);
+  const a = await arenaInfo(page);
+  expect(layout.effects).toHaveLength(54);
+  layout.effects.forEach((e, i) => {
+    expect(a.effects[i].type, `effect ${i} type`).toBe(e.type);
+    expect(a.effects[i].x, `effect ${i} x`).toBeCloseTo(e.x, 0);
+    expect(a.effects[i].y, `effect ${i} y`).toBeCloseTo(e.y, 0);
+  });
+  const outside = layout.effects.map((e, i) => [e, i]).filter(([e]) => e.type === 'pool' && e.x + (e.width || 0) / 2 > 1672);
+  expect(outside.length).toBe(2);
+  for (const [, i] of outside) expect(a.effects[i].clipped, `pool ${i} clipped`).toBe(true);
+  expect(a.foregroundCutouts).toBe(2);
+});
+
+test('AC187: no grid lines are drawn, even while dragging a card', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await start(page, quiet({ playerHand: ['goblin-scrapper'], playerCrystals: 5, board: ARENA_BOARD }));
+  expect((await arenaInfo(page)).gridLines).toBe(0);
+  await page.waitForTimeout(1500);
+  const card = await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox();
+  await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25);
+  await page.mouse.down();
+  const t = await sq2s(page, 7, 11);
+  await page.mouse.move(t.x, t.y - 40, { steps: 12 });
+  expect((await arenaInfo(page)).gridLines).toBe(0);
+  await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25, { steps: 8 });
+  await page.mouse.up();
+});
+
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`arena homography ${W}x${H}`, () => {
+    test.use({ viewport: { width: W, height: H } });
+    test(`AC188: square centers follow the homography of the owner's corners (${W}x${H})`, async ({ page, request }) => {
+      const layout = await arenaLayout(request);
+      await start(page, quiet({ board: ARENA_BOARD }));
+      await page.waitForTimeout(800);
+      await checkSquares(page, layout);
+      // creature labels stand on their squares
+      const cam = await camera(page);
+      const ar = await arenaInfo(page);
+      for (const [name, r, c] of [['goblin-scrapper', 6, 3], ['gnome-tinker', 2, 11]]) {
+        expect(at(await getState(page), r, c), `${name} on ${r},${c}`).toBeTruthy();
+        const lb = await page.getByLabel(new RegExp(`, row ${r}, column ${c}$`)).first().boundingBox();
+        const want = expectedCenter(layout, ar.arenaPicture, cam, r, c);
+        const next = expectedCenter(layout, ar.arenaPicture, cam, r, c + 1);
+        expect(Math.abs(lb.x + lb.width / 2 - want.x), `${name} label centered on its square`).toBeLessThanOrEqual(Math.abs(next.x - want.x) / 2);
+      }
+      // still exact after zooming and panning
+      await zoomIn(page, W * 0.45, H * 0.45, 3);
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('ArrowRight');
+      await page.waitForTimeout(800);
+      await checkSquares(page, layout);
+    });
+  });
+}
+
+test.describe('arena highlights 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC189: drag highlights are the legal summon squares on the painted floor; drop uses the mapping', async ({ page, request }) => {
+    const layout = await arenaLayout(request);
+    let s = await start(page, quiet({ playerHand: ['goblin-scrapper'], playerCrystals: 5, board: ARENA_BOARD }));
+    await page.waitForTimeout(1500);
+    const uid = s.players.player.hand[0].uid;
+    const legalSquares = (await legal(page)).filter((a) => a.type === 'summon' && a.uid === uid).map((a) => `${a.row},${a.col}`).sort();
+    expect(legalSquares.length).toBeGreaterThan(0);
+    const hand = page.getByLabel('Your hand', { exact: true }).getByRole('button').first();
+    let card = await hand.boundingBox();
+    const t = await sq2s(page, 7, 11);
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25);
+    await page.mouse.down();
+    await page.mouse.move(t.x, t.y - 60, { steps: 15 });
+    await page.waitForTimeout(300);
+    const a = await arenaInfo(page);
+    const cam = await camera(page);
+    const summon = a.highlights.filter((h) => h.kind === 'summon');
+    expect(summon.map((h) => `${h.row},${h.col}`).sort()).toEqual(legalSquares);
+    for (const h of summon) {
+      const want = expectedCenter(layout, a.arenaPicture, cam, h.row, h.col);
+      expect(Math.hypot(h.center.x - want.x, h.center.y - want.y), `highlight ${h.row},${h.col} on its painted square`).toBeLessThanOrEqual(6);
+    }
+    // cancel: back over the hand and release
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25, { steps: 10 });
+    await page.mouse.up();
+    const crystal = await page.getByLabel('Your crystal', { exact: true }).boundingBox();
+    await page.mouse.move(crystal.x + crystal.width / 2, crystal.y + crystal.height / 2);
+    await expect.poll(async () => (await arenaInfo(page)).highlights.length).toBe(0);
+    expect(at(await getState(page), 7, 11)).toBeFalsy();
+    // drop on the mapped square
+    card = await hand.boundingBox();
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25);
+    await page.mouse.down();
+    await page.mouse.move(t.x, t.y, { steps: 15 });
+    await page.mouse.up();
+    await expect.poll(async () => at(await getState(page), 7, 11)?.cardId).toBe('goblin-scrapper');
+  });
+});
+
+test('AC190: cover-fit with no black bars at 16:9, 4:3, 21:9 and phone; max zoom about 2.5 px per painting pixel', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await start(page, quiet({ board: ARENA_BOARD }));
+  for (const [W, H] of [[1920, 1080], [1600, 1200], [2560, 1080], [844, 390]]) {
+    await page.setViewportSize({ width: W, height: H });
+    await page.waitForTimeout(800);
+    const cover = Math.max(W / 1672, H / 941);
+    const c = await camera(page);
+    expect(c.zoom, `${W}x${H} zoom`).toBeCloseTo(1, 3);
+    expect(Math.abs(c.minScale - cover) / cover, `${W}x${H} cover scale`).toBeLessThanOrEqual(0.01);
+    expect(Math.abs(c.scale - cover) / cover).toBeLessThanOrEqual(0.01);
+    expect(viewOk(c.view), `${W}x${H} view inside painting`).toBe(true);
+    expect(c.view.y, `${W}x${H} view starts at the painting top`).toBeLessThanOrEqual(1);
+    expect(Math.abs(c.view.width - W / c.scale)).toBeLessThanOrEqual(2);
+    const bf = await page.getByLabel('Battlefield', { exact: true }).boundingBox();
+    expect(bf.x <= 1 && bf.y <= 1 && bf.width >= W - 2 && bf.height >= H - 2, `${W}x${H} battlefield fills the window`).toBe(true);
+    expect(await blackEdges(page), `${W}x${H} black bars`).toEqual([]);
+    const r = await rects5b(page);
+    expect(insideWin(r.playerCommander, W, H) && insideWin(r.opponentCommander, W, H), `${W}x${H} Commanders whole`).toBe(true);
+    // cannot zoom out past the cover fit
+    await page.mouse.move(W / 2, H / 2);
+    await page.mouse.wheel(0, 600);
+    await page.waitForTimeout(500);
+    expect((await camera(page)).zoom).toBeGreaterThanOrEqual(0.999);
+    expect(viewOk((await camera(page)).view)).toBe(true);
+  }
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.waitForTimeout(500);
+  await page.mouse.move(960, 500);
+  for (let i = 0; i < 40; i++) { await page.mouse.wheel(0, -400); await page.waitForTimeout(40); }
+  await page.waitForTimeout(1200);
+  const c = await camera(page);
+  expect(c.scale).toBeGreaterThanOrEqual(2.25);
+  expect(c.scale).toBeLessThanOrEqual(2.75);
+  expect(c.maxScale).toBeGreaterThanOrEqual(2.25);
+  expect(c.maxScale).toBeLessThanOrEqual(2.75);
+  expect(Math.abs(c.scale - c.maxScale)).toBeLessThanOrEqual(0.05);
+  expect(viewOk(c.view)).toBe(true);
+  expect(await blackEdges(page)).toEqual([]);
+});
+
+test.describe('arena pan 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC191: keys, WASD and dragging empty board pan the view, always clamped to the painting', async ({ page }) => {
+    await start(page, quiet({ board: ARENA_BOARD }));
+    await page.waitForTimeout(800);
+    await zoomIn(page, 960, 500, 4);
+    const before = (await camera(page)).view;
+    for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
+    await expect.poll(async () => (await camera(page)).view.x).toBeGreaterThan(before.x + 1);
+    const v1 = (await camera(page)).view;
+    for (let i = 0; i < 4; i++) await page.keyboard.press('a');
+    await expect.poll(async () => (await camera(page)).view.x).toBeLessThan(v1.x - 1);
+    const v2 = (await camera(page)).view;
+    for (let i = 0; i < 4; i++) await page.keyboard.press('s');
+    await expect.poll(async () => (await camera(page)).view.y).toBeGreaterThan(v2.y + 1);
+    for (const key of ['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'w', 'd']) {
+      for (let i = 0; i < 40; i++) await page.keyboard.press(key);
+      await page.waitForTimeout(700);
+      expect(viewOk((await camera(page)).view), `clamped after ${key}`).toBe(true);
+    }
+    // drag on an empty square pans; drag far stays clamped
+    await page.keyboard.press('ArrowUp');
+    for (let i = 0; i < 20; i++) await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(700);
+    const p = await sq2s(page, 6, 8);
+    const v3 = (await camera(page)).view;
+    await page.mouse.move(p.x, p.y);
+    await page.mouse.down();
+    await page.mouse.move(p.x - 200, p.y - 60, { steps: 12 });
+    await page.mouse.up();
+    await expect.poll(async () => Math.abs((await camera(page)).view.x - v3.x)).toBeGreaterThan(5);
+    const p2 = await sq2s(page, 6, 8);
+    await page.mouse.move(p2.x, p2.y);
+    await page.mouse.down({ button: 'middle' });
+    await page.mouse.move(p2.x + 3000, p2.y + 2000, { steps: 20 });
+    await page.mouse.up({ button: 'middle' });
+    await page.waitForTimeout(700);
+    expect(viewOk((await camera(page)).view)).toBe(true);
+  });
+});
+
+test('AC191: at zoom 1 on a 4:3 window the view pans sideways but never past the edges', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1200 });
+  await start(page, quiet({ board: ARENA_BOARD }));
+  await page.waitForTimeout(800);
+  const v0 = (await camera(page)).view;
+  for (let i = 0; i < 60; i++) await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(800);
+  const v1 = (await camera(page)).view;
+  expect(v1.x).toBeLessThan(v0.x - 20);
+  expect(v1.x).toBeGreaterThanOrEqual(-0.5);
+  for (let i = 0; i < 120; i++) await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(800);
+  const v2 = (await camera(page)).view;
+  expect(v2.x + v2.width).toBeLessThanOrEqual(1672.5);
+  expect(v2.x).toBeGreaterThan(v0.x + 20);
+  expect((await camera(page)).zoom).toBeCloseTo(1, 3);
+});
+
+test.describe('arena HUD 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC192: the HUD stays fixed while zooming and panning; Recenter and double-click reset the view', async ({ page }) => {
+    await start(page, quiet({ playerHand: ['goblin-scrapper', 'fireball'], opponentHand: ['goblin-scrapper'], board: ARENA_BOARD }));
+    await page.waitForTimeout(1500);
+    const pieces = {
+      'Your crystal': page.getByLabel('Your crystal', { exact: true }),
+      'Enemy crystal': page.getByLabel('Enemy crystal', { exact: true }),
+      'Current phase': page.getByLabel('Current phase', { exact: true }),
+      Menu: page.getByRole('button', { name: 'Menu', exact: true }),
+      'Your deck': page.getByLabel('Your deck', { exact: true }),
+      Done: page.getByRole('button', { name: 'Done', exact: true }),
+      'Your hand': page.getByLabel('Your hand', { exact: true }),
+    };
+    const boxes = async () => Object.fromEntries(await Promise.all(Object.entries(pieces).map(async ([k, l]) => [k, await l.boundingBox()])));
+    const crystal = await pieces['Your crystal'].boundingBox();
+    await page.mouse.move(crystal.x + crystal.width / 2, crystal.y + crystal.height / 2);
+    await page.waitForTimeout(500);
+    const b0 = await boxes();
+    await zoomIn(page, 960, 480, 4);
+    for (let i = 0; i < 6; i++) await page.keyboard.press('ArrowRight');
+    await page.mouse.move(crystal.x + crystal.width / 2, crystal.y + crystal.height / 2);
+    await page.waitForTimeout(800);
+    const b1 = await boxes();
+    for (const k of Object.keys(pieces)) {
+      expect(b1[k], k).toBeTruthy();
+      for (const f of ['x', 'y', 'width', 'height']) expect(Math.abs(b1[k][f] - b0[k][f]), `${k} ${f} unchanged`).toBeLessThanOrEqual(2);
+    }
+    await openMatchMenu(page);
+    await page.getByRole('button', { name: 'Recenter', exact: true }).click();
+    await expect.poll(async () => (await camera(page)).zoom).toBeCloseTo(1, 3);
+    await expect.poll(async () => { const c = await camera(page); return Math.abs(c.panX) + Math.abs(c.panY); }).toBeLessThanOrEqual(0.5);
+    expect((await camera(page)).view.y).toBeLessThanOrEqual(1);
+    // double-click on an empty square also recenters
+    await page.mouse.move(1500, 120);
+    await page.waitForTimeout(600);
+    await zoomIn(page, 960, 480, 3);
+    const e = await sq2s(page, 6, 8);
+    await page.mouse.dblclick(e.x, e.y);
+    await expect.poll(async () => (await camera(page)).zoom).toBeCloseTo(1, 3);
+    await expect.poll(async () => { const c = await camera(page); return Math.abs(c.panX) + Math.abs(c.panY); }).toBeLessThanOrEqual(0.5);
+  });
+});
+
+test('AC193: the Meshy crystal mine is saved once and used for every mine, tinted by owner', async ({ page, request }) => {
+  const res = await request.get('/models/mines/models.json');
+  let m = null;
+  if (res.ok()) { try { m = await res.json(); } catch { m = null; } }
+  test.skip(!(m && m.crystalMine), 'Meshy mine not delivered (no /models/mines/models.json)');
+  expect(m.crystalMine.file).toBe('crystal-mine.glb');
+  const glb = await request.get('/models/mines/crystal-mine.glb');
+  expect(glb.ok()).toBe(true);
+  const body = await glb.body();
+  expect(body.subarray(0, 4).toString('latin1')).toBe('glTF');
+  expect(body.length).toBe(m.crystalMine.bytes);
+  expect(body.length).toBeLessThanOrEqual(5.25 * 1024 * 1024);
+  const meshy = [];
+  page.on('request', (r) => { try { if (/meshy\.ai$/i.test(new URL(r.url()).hostname)) meshy.push(r.url()); } catch { /* ignore */ } });
+  await start(page, quiet({ board: [
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
+    { cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 6, minedMine: M3 },
+  ] }));
+  const r = await renderStats(page);
+  if (!r.webgl) test.skip(true, 'WebGL unavailable');
+  expect(r.mineModels).toHaveLength(3);
+  const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  for (const mm of r.mineModels) {
+    expect(mm.source).toMatch(/crystal-mine\.glb$/);
+    expect(mm.height).toBeGreaterThanOrEqual(1.47);
+    expect(mm.height).toBeLessThanOrEqual(1.53);
+    const [R, , B] = rgb(mm.tint);
+    if (mm.owner === 'player') expect(B).toBeGreaterThan(R);
+    if (mm.owner === 'opponent') expect(R).toBeGreaterThan(B);
+  }
+  await page.waitForTimeout(1000);
+  expect(meshy).toEqual([]);
+});
+
+test.describe('arena drags 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC194: dragging a hand card or a creature never pans the view', async ({ page }) => {
+    await start(page, quiet({ playerHand: ['goblin-scrapper'], playerCrystals: 5, board: ARENA_BOARD }));
+    await page.waitForTimeout(1500);
+    const lbl = page.getByLabel(/, row 6, column 3$/).first();
+    let lb = await lbl.boundingBox();
+    await zoomIn(page, lb.x + lb.width / 2, lb.y + lb.height / 2, 3);
+    const same = (a, b) => Math.abs(a.x - b.x) <= 1 && Math.abs(a.y - b.y) <= 1 && Math.abs(a.width - b.width) <= 1;
+    const v0 = (await camera(page)).view;
+    const card = await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox();
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25);
+    await page.mouse.down();
+    await page.mouse.move(960, 420, { steps: 10 });
+    await page.mouse.move(1100, 380, { steps: 10 });
+    expect(same((await camera(page)).view, v0), 'card drag does not pan').toBe(true);
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25, { steps: 10 });
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+    expect(same((await camera(page)).view, v0)).toBe(true);
+    await done(page); // to the Action phase
+    await page.waitForTimeout(1500);
+    lb = await lbl.boundingBox();
+    const v1 = (await camera(page)).view;
+    const to = await sq2s(page, 5, 3);
+    await page.mouse.move(lb.x + lb.width / 2, lb.y + lb.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 12 });
+    expect(same((await camera(page)).view, v1), 'creature drag does not pan').toBe(true);
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+    expect(same((await camera(page)).view, v1)).toBe(true);
+  });
+});
+
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`round 8a screenshots ${W}x${H}`, () => {
+    test.use({ viewport: { width: W, height: H } });
+    test(`AC195: the painted arena match fully zoomed out and zoomed in renders without errors (${W}x${H})`, async ({ page }, testInfo) => {
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await start(page, quiet({ playerHand: HAND_R7, playerCrystals: 4, board: ARENA_BOARD }));
+      await page.mouse.move(W * 0.5, H * 0.3);
+      await page.waitForTimeout(2000);
+      await testInfo.attach(`r8a-match-zoomed-out-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+      await zoomIn(page, W * 0.5, H * 0.45, 5);
+      await page.waitForTimeout(800);
+      await testInfo.attach(`r8a-match-zoomed-in-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+      expect(errors).toEqual([]);
+    });
+  });
+}
