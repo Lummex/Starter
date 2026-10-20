@@ -510,6 +510,7 @@ export class App {
 
   // ------------------------------------------------------------ match
   beginMatch(options: any = {}) {
+    this.enemyCrystalKey = "";
     const o = { ...options };
     if (o.seed == null && this.test && this.seed != null) o.seed = this.seed;
     this.lastOptions = options;
@@ -733,7 +734,40 @@ export class App {
 
   // ------------------------------------------------------------ camera zoom and pan (R2.19)
   cam = { zoom: 1, x: 0, y: 0 };
-  getCamera() { return { ...this.cam, panX: this.cam.x, panY: this.cam.y, view: this.view?.getView?.() }; }
+  getCamera() {
+    const v = this.view?.getView?.();
+    const vis = v?.visible;
+    return {
+      ...this.cam, panX: this.cam.x, panY: this.cam.y,
+      scale: v?.scale, minScale: v?.coverScale, maxScale: v ? v.coverScale * v.maxZoom : undefined,
+      view: vis ? { x: vis.x0, y: vis.y0, width: vis.x1 - vis.x0, height: vis.y1 - vis.y0 } : undefined,
+      detail: v,
+    };
+  }
+  getArena() {
+    const d = this.view?.arenaDetails?.();
+    if (!d) return null;
+    const bd = (this.r.board as El).getBoundingClientRect();
+    const dragCard = this.dragKind;
+    const highlights: any[] = [];
+    for (const [k, el] of this.r.cells as Map<string, El>) {
+      const kind = el.classList.contains('glow-attack') ? 'attack' : el.classList.contains('glow-swap') ? 'swap' : el.classList.contains('glow-mine') ? 'mine' : el.classList.contains('glow') ? (dragCard === 'spell' ? 'target' : 'summon') : null;
+      if (!kind) continue;
+      const [row, col] = k.split(',').map(Number);
+      const c = this.view!.squareCenter(row, col);
+      if (c) highlights.push({ kind, row, col, center: { x: c.x + bd.left, y: c.y + bd.top } });
+    }
+    return { ...d, highlights };
+  }
+  dragKind = '';
+  squareToScreen(row: number, col: number) {
+    const c = this.view?.squareCenter(row, col);
+    if (!c) return null;
+    const bd = (this.r.board as El).getBoundingClientRect();
+    return { x: c.x + bd.left, y: c.y + bd.top };
+  }
+  enemyCrystalKey = '';
+  enemyCrystalLeft = 0;
   placeEnemyCrystal() {
     const hud = this.r.board?.isConnected ? (document.querySelector('.crystal-hud.theirs') as HTMLElement | null) : null;
     const rc: any = this.view?.screenRects();
@@ -741,7 +775,10 @@ export class App {
     const W = window.innerWidth, o = rc.opponentCommander;
     const w = hud.getBoundingClientRect().width || 0;
     void w;
-    const left = Math.max(W * 0.4, Math.min(W * 0.67, o.x - 6));
+    // the HUD is fixed to the screen: it follows the enemy Commander of the home view only, never zooming or panning
+    const key = `${W}x${window.innerHeight}`;
+    if (this.enemyCrystalKey !== key) { this.enemyCrystalKey = key; this.enemyCrystalLeft = Math.max(W * 0.4, Math.min(W * 0.67, o.x - 6)); }
+    const left = this.enemyCrystalLeft;
     hud.style.left = `${(left / W) * 100}%`;
   }
   screenRects() { return this.view ? this.view.screenRects() : null; }
@@ -779,7 +816,7 @@ export class App {
       const rc = b.getBoundingClientRect();
       // a mouse wheel (or a trackpad pinch) zooms toward the cursor; a trackpad two-finger scroll pans
       const wheel = e.ctrlKey || e.deltaMode !== 0 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 40);
-      if (wheel) this.zoomBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : e.deltaMode ? 0.05 : 0.0015)), e.clientX - rc.left, e.clientY - rc.top);
+      if (wheel) this.zoomBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : e.deltaMode ? 0.05 : 0.0004)), e.clientX - rc.left, e.clientY - rc.top);
       else this.panBy(-e.deltaX, -e.deltaY);
     }, { passive: false });
     b.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -884,8 +921,9 @@ export class App {
     // far-row tap targets are a little bigger than they look
     const w = el.classList.contains('cell') ? Math.max(rc.w, 38) : rc.w, hh = el.classList.contains('cell') ? Math.max(rc.h, 34) : rc.h;
     el.style.left = rc.x - (w - rc.w) / 2 + 'px'; el.style.top = rc.y - (hh - rc.h) / 2 + 'px'; el.style.width = w + 'px'; el.style.height = hh + 'px';
-    if (el.classList.contains('cell')) {
-      // highlights follow the painted square exactly (its perspective quad), not its bounding box
+    // highlights follow the painted square exactly (its perspective quad), not its bounding box; only lit squares need the
+    // clip (a clip-path on every one of the 91 squares makes every pan expensive to paint)
+    if (el.classList.contains('cell') && /\b(glow|glow-attack|glow-swap|glow-mine|hover|recap-hl)\b/.test(el.className)) {
       const q = this.view!.cellQuad(row, col);
       if (q.length === 4) el.style.clipPath = `polygon(${q.map((p) => `${(p.x - (rc.x - (w - rc.w) / 2)).toFixed(1)}px ${(p.y - (rc.y - (hh - rc.h) / 2)).toFixed(1)}px`).join(',')})`;
     }
@@ -1891,11 +1929,13 @@ export class App {
     for (const c of cells) {
       const row = c.row;
       const col = c.col;
-      this.r.cells.get(row + ',' + col)?.classList.add(cls);
+      const el = this.r.cells.get(row + ',' + col) as El | undefined;
+      if (el) { el.classList.add(cls); this.place(el, row, col); }
     }
   }
   clearGlow() {
-    for (const el of this.r.cells.values() as Iterable<El>) el.classList.remove('glow', 'glow-attack', 'glow-swap', 'glow-mine', 'hover');
+    this.dragKind = '';
+    for (const el of this.r.cells.values() as Iterable<El>) { if (el.style.clipPath) el.style.clipPath = ''; el.classList.remove('glow', 'glow-attack', 'glow-swap', 'glow-mine', 'hover'); }
     this.r.board.classList.remove('drop-any');
   }
   cellOfTarget(t: any) { return t.commander ? SH[t.commander as 'player' | 'opponent'] : { row: t.row, col: t.col }; }
@@ -1973,6 +2013,7 @@ export class App {
           else if (a.type === 'cast') { if (!a.target) any = true; else if (!a.to || true) cells.push(this.cellOfTarget(a.target)); }
           else if (a.type === 'playCrystal') any = true;
         }
+        this.dragKind = card.type;
         this.setGlow(cells, 'glow');
         this.setGlow(smithCells, 'glow-swap');
         if (any) this.r.board.classList.add('drop-any');

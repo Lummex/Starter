@@ -178,7 +178,7 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .cr.white{border-color:#f2f6ff}.cr.white::before{background:#f2f6ff}
 .cr[data-flow]:not([data-flow=""])::after{content:attr(data-flow);font-size:.6rem;font-weight:400;opacity:.85;margin-left:2px}
 .cell.glow-swap{background:radial-gradient(circle,#e3b54acc 0,#e3b54a44 60%,transparent 72%);box-shadow:inset 0 0 0 2px #e3b54a}
-.mine-ring{position:absolute;pointer-events:none;border:3px solid var(--mine,#f2f6ff);border-radius:50%;box-shadow:0 0 14px var(--mine,#f2f6ff),inset 0 0 14px #0006;opacity:.75;z-index:2}
+.mine-ring{position:absolute;pointer-events:none;border:3px solid var(--mine,#f2f6ff);border-radius:50%;box-shadow:0 0 0 6px color-mix(in srgb,var(--mine,#f2f6ff) 30%,transparent),0 0 0 11px color-mix(in srgb,var(--mine,#f2f6ff) 12%,transparent);opacity:.75;z-index:2}
 .mine-flow{position:absolute;pointer-events:none;transform:translate(-50%,-70%);z-index:3;font-weight:400;font-size:.8rem;padding:1px 7px;border-radius:9px;background:#000b;border:1px solid var(--gold);color:var(--parch);white-space:nowrap}
 @media (max-height:420px){.cr{min-height:26px;font-size:.9rem}.crystals{gap:3px}}
 
@@ -1172,3 +1172,8 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 /* R7: cheap shimmer (opacity only, no blend mode or background animation) so a popped card never stalls the page */
 .hand-card .card-glow::after{mix-blend-mode:normal;background:radial-gradient(ellipse at 50% 50%,transparent 55%,#ffffff66 100%);animation:glowpulse 3.2s ease-in-out infinite;opacity:.15;will-change:opacity}
 @keyframes glowpulse{0%,100%{opacity:.08}50%{opacity:.4}}
+
+/* cheap overlays: blurred shadows and filters on every creature/heart are re-painted on every pan or zoom frame */
+.token::before{box-shadow:0 0 0 2px #ffd40055}
+.token[data-acted="true"]::before{box-shadow:none}
+.heart,.heart.mine{filter:none}

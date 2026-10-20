@@ -132,7 +132,7 @@ export interface MineArt {
   update(now: number): void;
 }
 
-export const MINE_MODEL = '/models/mine/crystal-mine.glb';
+export const MINE_MODEL = '/models/mines/crystal-mine.glb';
 const MINE_HEIGHT = 1.5, MINE_FOOTPRINT = 1;
 let mineModelP: Promise<THREE.Object3D> | null = null;
 function loadMineModel(): Promise<THREE.Object3D> {

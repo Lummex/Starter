@@ -48,6 +48,8 @@ if (test) {
     getFxLog: () => JSON.parse(JSON.stringify((app as any).fxLog)),
     clearFxLog: () => { (app as any).fxLog = []; },
     getCamera: () => app.getCamera(),
+    getArena: () => app.getArena(),
+    squareToScreen: (r: number, c: number) => app.squareToScreen(r, c),
     screenRects: () => app.screenRects(),
     poke: (uid: string) => (app.view ? app.view.poke(uid) : null),
     getConfig: () => JSON.parse(JSON.stringify(CONFIG)),

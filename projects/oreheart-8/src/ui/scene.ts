@@ -23,6 +23,8 @@ export interface BoardView {
   panBy(dx: number, dy: number): void;
   recenter(): void;
   getView(): any;
+  squareCenter(row: number, col: number): { x: number; y: number } | null;
+  arenaDetails(): any;
   onViewChange?: () => void;
   cellQuad(row: number, col: number): { x: number; y: number }[];
   screenRects(): any;
@@ -160,7 +162,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   try {
     const probe = document.createElement('canvas');
     if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) return null;
-    renderer = new THREE.WebGLRenderer({ antialias: !low, alpha: true });
+    renderer = new THREE.WebGLRenderer({ antialias: !low && !document.body.classList.contains('test'), alpha: true });
   } catch {
     return null;
   }
@@ -592,7 +594,9 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   function resize() {
     const W = container.clientWidth || 390, H = container.clientHeight || 420;
     view.W = W; view.H = H;
-    if (W !== sizedW || H !== sizedH) { sizedW = W; sizedH = H; renderer.setSize(W, H, false); backRenderer?.setSize(W, H, false); }
+    const resized = W !== sizedW || H !== sizedH;
+    if (resized) { sizedW = W; sizedH = H; renderer.setSize(W, H, false); backRenderer?.setSize(W, H, false); }
+    if (resized && view.zoom <= 1.0001 && !easing) { const [cx, cy] = homeCenter(); view.cx = cx; view.cy = cy; Object.assign(tgt, { zoom: 1, cx, cy }); }
     canvas.style.width = '100%'; canvas.style.height = '100%';
     backCanvas.style.width = '100%'; backCanvas.style.height = '100%';
     applyView();
@@ -621,7 +625,21 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     setViewState(view.zoom, bx - (sx - view.W / 2) / view.scale, by - (sy - view.H / 2) / view.scale);
   }
   function panBy(dx: number, dy: number) { setViewState(view.zoom, view.cx - dx / view.scale, view.cy - dy / view.scale); }
-  function recenter() { setViewState(1, BG.w / 2, BG.h / 2); }
+  /** home view: top of the painting at the window top; sideways, centred on the span of the two Commanders so both stay whole */
+  function homeCenter(): [number, number] {
+    const s0 = Math.max(view.W / BG.w, view.H / BG.h), hw = view.W / (2 * s0), hh = view.H / (2 * s0);
+    const xs: number[] = [];
+    for (const side of ['player', 'opponent']) {
+      const p = world(SHP[side][0], SHP[side][1]);
+      for (const [dx, dz, y] of [[-0.5, -0.5, 0], [0.5, 0.5, 0], [-0.3, -0.3, CMD_H], [0.3, 0.3, CMD_H]]) {
+        const q = fit.P; const x = p.x + dx, z = p.z + dz;
+        xs.push((q[0] * x + q[1] * y + q[2] * z + q[3]) / (q[8] * x + q[9] * y + q[10] * z + q[11]));
+      }
+    }
+    const mid = (Math.min(...xs) + Math.max(...xs)) / 2;
+    return [hw * 2 >= BG.w ? BG.w / 2 : Math.min(BG.w - hw, Math.max(hw, mid)), hh * 2 >= BG.h ? BG.h / 2 : hh];
+  }
+  function recenter() { const [cx, cy] = homeCenter(); setViewState(1, cx, cy); }
   function getView() {
     const homog = H0;
     return {
@@ -644,6 +662,20 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const bb = box([projPt(-hx, 0, -hz), projPt(hx, 0, -hz), projPt(hx, 0, hz), projPt(-hx, 0, hz)]);
     const cx0 = Math.max(0, bb.x), cx1 = Math.min(W, bb.x + bb.width), cy0 = Math.max(0, bb.y), cy1 = Math.min(H, bb.y + bb.height);
     return { playerCommander: box(figPts('player')), opponentCommander: box(figPts('opponent')), board: { x: cx0, y: cy0, width: cx1 - cx0, height: cy1 - cy0 } };
+  }
+  function squareCenter(row: number, col: number) { const [x, y] = toScreen(...cellGeometry(H0, row, col).center); return { x, y }; }
+  function arenaDetails() {
+    const effs = (arena?.effects || []).map((f: any) => {
+      const d = f.d || {};
+      return { type: d.type, x: d.x, y: d.y, width: d.width, height: d.height, clipped: d.type === 'pool' && d.x + (d.width || 0) / 2 > BG.w };
+    });
+    return {
+      layoutName: layoutJson.name,
+      background: { src: '/art/arena/skullfang-swamp-background.jpg', width: BG.w, height: BG.h },
+      arenaPicture: { src: '/art/arena/skullfang-arena.png', width: BG.w, height: BG.h },
+      arena: layoutJson.arena, boardCorners: layoutJson.boardCorners, look: (layoutJson as any).arenaLook,
+      effects: effs, foregroundCutouts: arena ? arena.cuts.length : 0, gridLines: 0,
+    };
   }
   function cellQuad(row: number, col: number) { return cellGeometry(H0, row, col).quad.map(([x, y]) => { const [sx, sy] = toScreen(x, y); return { x: sx, y: sy }; }); }
   function cellRect(row: number, col: number): Rect {
@@ -844,7 +876,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   const api: BoardView = {
-    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, screenRects, setFlowMode(m) { flowMode = m; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, squareCenter, arenaDetails, screenRects, setFlowMode(m) { flowMode = m; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);
@@ -867,7 +899,7 @@ export function createFlatView(container: HTMLElement): BoardView {
     is3D: false,
     setState() {},
     setCamera(c) { Object.assign(cam, c); },
-    zoomAt() {}, panBy() {}, recenter() {}, getView: () => ({}), cellQuad() { return []; },
+    zoomAt() {}, panBy() {}, recenter() {}, getView: () => ({}), squareCenter() { return null; }, arenaDetails() { return null; }, cellQuad() { return []; },
     screenRects: () => ({ playerCommander: { x: 0, y: 0, width: 0, height: 0 }, opponentCommander: { x: 0, y: 0, width: 0, height: 0 }, board: { x: 0, y: 0, width: 0, height: 0 } }),
     setFlowMode() {},
     pulseFlow() {},
