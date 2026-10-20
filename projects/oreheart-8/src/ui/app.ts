@@ -116,6 +116,8 @@ export const btn = (label: string, cls = '', onclick?: (e: Event) => void, attrs
 
 const GLOW_COLOR: Record<string, string> = { goblins: '#b45cff', gnomes: '#3fa9ff', dwarves: '#ffcf3a', any: '#fff0c2' };
 export const GLOW_PEAK = 0.9;
+/** Glow opacity (fraction of the peak) at 0/25/50/75/100 % of the thickness, measured from the card edge outward. */
+export const GLOW_PROFILE = [1, 0.62, 0.34, 0.12, 0];
 export class App {
   root: El;
   game: Game;
@@ -337,7 +339,7 @@ export class App {
     }
     for (const d of ['easy', 'normal', 'hard']) diffBtns.push(btn(d[0].toUpperCase() + d.slice(1), 'diff', () => { diff = d; sel(); }, { 'data-id': d }));
     const FCMD: Record<string, string> = { goblins: 'grubnak', gnomes: 'sproingle', dwarves: 'borgo' };
-    const visibleCount = () => STARTER_DECK_LIST.filter((d) => !hiddenStarters().includes(d.id)).length + decks.length;
+    const visibleCount = () => STARTER_DECK_LIST.filter((d) => d.faction === COMMANDERS[cmd].faction && !hiddenStarters().includes(d.id)).length + decks.filter((d) => !d.commander || d.commander === cmd).length;
     const confirmRemove = (label: string, doIt: () => void) => {
       const d: any = this.dialog('Remove deck?', [h('h2', {}, 'Remove deck?'), h('p', { style: 'text-align:center' }, `Remove ${label} from the deck picker?`),
         h('div', { class: 'row' }, btn('Remove', 'primary', () => { doIt(); d.close(); buildRow(); sel(); }), btn('Cancel', '', () => d.close()))]);
@@ -437,6 +439,7 @@ export class App {
         }),
         btn('Back', 'back-btn', () => this.showMenu())));
     mainRef.el = mainEl as El;
+    this.selState = () => ({ mode: picked ? 'focused' : 'row', commanderId: cmd, model: picked && cmd === 'grubnak' && stage.classList.contains('pop') ? { shown: true, source: 'grubnak.glb', animation: 'idle' } : null });
     this.root.append(mainEl);
   }
 
@@ -946,8 +949,8 @@ export class App {
   /** Token boxes are a narrow strip around the figure, so Commander hearts on neighbouring Strongholds never sit under them. */
   placeToken(el: El, row: number, col: number) {
     const rc = this.view!.cellRect(row, col);
-    const w = rc.w * 0.5;
-    el.style.left = rc.x + (rc.w - w) / 2 + 'px'; el.style.top = rc.y + 'px'; el.style.width = w + 'px'; el.style.height = rc.h + 'px';
+    const w = rc.w * 0.5, th = Math.min(rc.h, Math.max(30, rc.h * 0.88));
+    el.style.left = rc.x + (rc.w - w) / 2 + 'px'; el.style.top = rc.y + (rc.h - th) + 'px'; el.style.width = w + 'px'; el.style.height = th + 'px';
   }
   place(el: El, row: number, col: number) {
     const rc = this.view!.cellRect(row, col);
@@ -1002,7 +1005,7 @@ export class App {
     const openY = -0.03 * w;
     const left = hb.left + (parseFloat(el.style.left) || 0);
     const top = hb.top - ty + openY + (el.offsetTop || 0);
-    const S = Math.max(1, Math.min((hr.height * 0.70) / hgt, (hr.width - 8) / w));
+    const S = Math.max(1, Math.min((hr.height * 0.74) / hgt, (hr.width - 8) / w));
     const cx = left + w / 2, cy = top + hgt / 2;
     const halfW = (w * S) / 2, halfH = (hgt * S) / 2;
     const targetX = Math.max(hr.left + halfW + 2, Math.min(hr.right - halfW - 2, cx));
@@ -1045,7 +1048,7 @@ export class App {
       const glowing = !!g && getComputedStyle(g).display !== 'none';
       let t = 0;
       if (el && g && glowing) { const a = el.getBoundingClientRect(), b = g.getBoundingClientRect(); t = Math.round(((a.left - b.left) + (b.right - a.right) + (a.top - b.top) + (b.bottom - a.bottom)) / 4 * 10) / 10; }
-      return { uid: hc.uid, cardId: hc.cardId, faction: c.faction === 'any' ? 'shared' : c.faction, glowing, popped: !!el?.classList.contains('popped'), thicknessPx: t, opacity: glowing ? GLOW_PEAK : 0, color: GLOW_COLOR[c.faction] || GLOW_COLOR.any };
+      return { uid: hc.uid, cardId: hc.cardId, faction: c.faction === 'any' ? 'shared' : c.faction, glowing, popped: !!el?.classList.contains('popped'), thicknessPx: t, opacity: glowing ? GLOW_PEAK : 0, profile: GLOW_PROFILE.map((k) => (glowing ? Math.round(GLOW_PEAK * k * 1000) / 1000 : 0)), color: GLOW_COLOR[c.faction] || GLOW_COLOR.any };
     });
   }
 
@@ -1086,6 +1089,18 @@ export class App {
     const l = Math.min(...bs.map((x) => x.l)), t = Math.min(...bs.map((x) => x.t));
     const r = Math.max(...bs.map((x) => x.l + x.w)), bt = Math.max(...bs.map((x) => x.t + x.h));
     return { left: l, top: t, width: r - l, height: bt - t, cards: bs.length, raised: !!(this.r?.hand as El)?.classList.contains('open') };
+  }
+  /** Test hook: hover box and the union of the hand cards' visible rectangles (window CSS px). */
+  getHandHover() {
+    const hand = this.r?.hand as El;
+    const rects = hand ? ([...hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).map((c) => c.getBoundingClientRect()) : [];
+    const W = window.innerWidth, H = window.innerHeight;
+    const clipped = rects.map((r) => ({ l: Math.max(0, r.left), t: Math.max(0, r.top), r: Math.min(W, r.right), b: Math.min(H, r.bottom) })).filter((r) => r.r > r.l && r.b > r.t);
+    const raised = !!hand && (hand.classList.contains('open') || hand.classList.contains('has-pop'));
+    if (!clipped.length) return { raised, zone: { x: 0, y: 0, width: 0, height: 0 }, cards: { x: 0, y: 0, width: 0, height: 0 }, popMs: 180 };
+    const l = Math.min(...clipped.map((r) => r.l)), t = Math.min(...clipped.map((r) => r.t)), r = Math.max(...clipped.map((x) => x.r)), b = Math.max(...clipped.map((x) => x.b));
+    const box = { x: l, y: t, width: r - l, height: b - t };
+    return { raised, zone: box, cards: { ...box }, popMs: 180 };
   }
   /** Return every popped card to the fan and tuck the hand; nothing may stay raised. */
   clearPops(except?: El) {
@@ -1152,6 +1167,7 @@ export class App {
   layoutHand() {
     const hand = this.r.hand as El;
     if (!hand) return;
+    this.installPopSafety();
     const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')] as El[];
     const n = cards.length;
     const VIS = 7;
@@ -1167,7 +1183,7 @@ export class App {
         spill.scrollLeft = 0;
         if (idx >= 0) { this.handScroll = idx - 3; this.layoutHand(); }
       });
-      hand.prepend(spill);
+      hand.append(spill);
     }
     const cw = cards[0]?.offsetWidth || 66;
     const W = hand.clientWidth || cw * 4;
@@ -1198,6 +1214,7 @@ export class App {
       c.dataset.z = String(k + 1);
     });
     if (moved) for (const c of cards) if (c.parentElement === hand) hand.append(c);
+    if (hand.lastElementChild !== spill) hand.append(spill);
     const hl = this.r.handLeft as El, hr = this.r.handRight as El;
     if (hl) { hl.hidden = !(n > VIS && start > 0); hr.hidden = !(n > VIS && start < maxScroll); }
     hand.classList.toggle('more-left', start > 0);
@@ -1700,7 +1717,7 @@ export class App {
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
-      el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { if (this.hitCard(e.clientX, e.clientY) !== el) return; this.openHand(true); this.popCard(el, true); } });
+      el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { if (this.lastPtr.down || this.noHand || this.hitCard(e.clientX, e.clientY) !== el) return; this.openHand(true); this.popCard(el, true); } });
       el.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.popCard(el, false); });
       el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);
       el.addEventListener('focus', () => { if (el.matches(':focus-visible')) this.popCard(el, true); });
@@ -1862,7 +1879,7 @@ export class App {
     setTimeout(() => f.remove(), 900);
   }
   // Commander behaviour (round 8b): faces the opponent, looks back at the player, gets impatient when the player idles
-  bhv = { key: '', lastAct: Date.now(), level: 0, nextLook: Date.now() + 20000 + Math.random() * 20000, timer: 0 as any, bound: false };
+  bhv = { key: '', lastAct: Date.now(), level: 0, nextLook: new URLSearchParams(location.search).get('test') === '1' ? Infinity : Date.now() + 20000 + Math.random() * 20000, timer: 0 as any, bound: false };
   idleMs = 20000;
   cmdBehavior(st: any) {
     const b = this.bhv;
@@ -1879,6 +1896,8 @@ export class App {
       if (st.activePlayer === 'player' && st.phase === 'deploy') setTimeout(() => { if (this.bhv.key === key && this.bhv.level === 0) this.view?.lookBack('player', 1800); }, 3000);
     }
   }
+  selState: () => any = () => ({ mode: 'row', commanderId: '', model: null });
+  advanceIdle(seconds: number) { this.bhv.lastAct -= seconds * 1000; this.cmdTick(); }
   playerActed() {
     const b = this.bhv;
     b.lastAct = Date.now();
@@ -1889,8 +1908,8 @@ export class App {
     const v = this.view;
     if (!st || !v || !this.root.querySelector('.match')) return;
     const b = this.bhv, now = Date.now();
-    const mine = st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') && !st.pendingResponse;
-    if (!mine) { if (b.level) { b.level = 0; v.impatient('player', 0); } return; }
+    const mine = st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') && !st.pendingResponse && !document.querySelector('[role="dialog"][aria-label="Mulligan"]');
+    if (!mine) { b.lastAct = now; if (b.level) { b.level = 0; v.impatient('player', 0); } return; }
     const idle = now - b.lastAct;
     const need = this.idleMs + b.level * 15000;
     if (idle >= need) { b.level++; v.impatient('player', b.level); }

@@ -1,4 +1,4 @@
-:root{--text-gold:#FFD700;--text-brown:#B8862B;--text-brown-light:#D4A94F;--text-white:#FFFFFF;--text-soft:#F4ECDC;--text-black:#000000;--text-ink:#1A1208;--color-player:#3fa9ff;--color-enemy:#e0503e;--color-warning:#ff7a33;--color-success:#3ee06a;--color-damage:#ff4040;--color-goblins:#3ee06a;--color-gnomes:#3fa9ff;--color-dwarves:#b45cff;--gold-bright:#FFD700;--gold-brown:#B8862B;--gold-brown-lt:#D4A94F;--white:#FFFFFF;--white-soft:#F4ECDC;--ink:#000000;--ink-soft:#1A1208;--slate:#1b1a22;--slate2:#2a2833;--gold:#e3b54a;--parch:#f4e9d0;--green:#3ee06a;--blue:#3fa9ff;--purple:#b45cff;--red:#e0503e}
+:root{--text-gold:#FFD700;--text-brown:#B8862B;--text-brown-light:#D4A94F;--text-white:#FFFFFF;--text-soft:#D4A94F;--text-black:#000000;--text-ink:#1A1208;--color-player:#3fa9ff;--color-enemy:#e0503e;--color-warning:#ff7a33;--color-success:#3ee06a;--color-damage:#ff4040;--color-goblins:#3ee06a;--color-gnomes:#3fa9ff;--color-dwarves:#b45cff;--gold-bright:#FFD700;--gold-brown:#B8862B;--gold-brown-lt:#D4A94F;--white:#FFFFFF;--white-soft:#D4A94F;--ink:#000000;--ink-soft:#1A1208;--slate:#1b1a22;--slate2:#2a2833;--gold:#e3b54a;--parch:#f4e9d0;--green:#3ee06a;--blue:#3fa9ff;--purple:#b45cff;--red:#e0503e}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#0d0c11;color:var(--parch);font-family:"Alegreya SC",serif;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
 h1,h2,h3,.cinzel{font-family:"Alegreya SC",serif;margin:0}
@@ -1097,7 +1097,7 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 .heart,.heart *{color:var(--white)!important;-webkit-text-fill-color:var(--white)!important}
 .hand-card .rw .rwt{color:var(--rc,var(--white))}
 /* ----- match: hand 2x, tucked halfway, overlapping fan ----- */
-.match{--hcw:max(27.6vh,110px)}
+.match{--hcw:max(26vh,104px)}
 .match .hand{--cw:var(--hcw);left:calc(50% - var(--hcw) * 2.2 + 2vw);right:auto;width:calc(var(--hcw) * 4.4);bottom:0;height:calc(var(--hcw) * 1.5);transform:translateY(calc(var(--hcw) * .75));transition:transform .25s ease-out;z-index:30}
 .match .hand.open,.match .hand.has-pop{transform:translateY(calc(var(--hcw) * -.03))}
 .match .hand.has-pop{z-index:9000}
@@ -1192,17 +1192,17 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 body{color:var(--body)}
 .rules p,.rules li,.rules dd,.howto p,.howto li,.settings label,.settings p,.dialog p,.dialog li,.screen p,.screen li,.screen label,.screen dd,.desc,.cmd-desc,.db-screen label,.db-screen p,.db-screen li,.db-screen small,.drow,.prob,.sub,.muted,.rank,.summary td,.summary li,.recap li,.recap p,.tip,.site-tip,.hint{color:var(--body)}
 small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
-:root{--text-body:#D4A94F;--text-body-sm:#B8862B}
+:root{--text-body:#D4A94F;--text-body-sm:#B8862B;--text-body-small:#B8862B}
 :is(p,li,dd,dt,label,.welcome,.combo,.combo-list li,.callout,.cmd-card .ds,.cmd-card .fa,.mine-flow,.cry-name,.cry-name .sr-only,.ph-time,.ph-step,.ph-step.done,.tip,.site-tip,.hint,.summary td,.recap li){color:var(--text-body)!important;-webkit-text-fill-color:var(--text-body)!important}
 :is(small,.dsize,.deck-size,.ds-n,.db-status,.mull-left){color:var(--text-body-sm)!important;-webkit-text-fill-color:var(--text-body-sm)!important}
 /* 7: compact painted stat icons with the number on top */
 .token .tk-stats{display:inline-flex;align-items:center;gap:1px;padding:0!important;background:none!important;border:0!important;border-radius:0!important;filter:drop-shadow(0 1px 2px #000);font-size:max(14px,2.3vh)!important;--si:max(21px,3.2vh)}
-.token .tk-stats .a,.token .tk-stats .h,.token .tk-stats .m{display:inline-flex;align-items:center;justify-content:center;width:var(--si);height:var(--si);background:center/contain no-repeat;color:#fff!important;-webkit-text-fill-color:#fff!important;font-weight:800;font-style:normal;font-size:max(13px,.62em);line-height:1;-webkit-text-stroke:.6px #000;paint-order:stroke fill;text-shadow:0 0 2px #000,0 0 2px #000,1px 1px 0 #000,-1px -1px 0 #000}
+.token .tk-stats .a,.token .tk-stats .h,.token .tk-stats .m{display:inline-flex;align-items:center;justify-content:center;width:var(--si);height:var(--si);background:center/contain no-repeat;color:#fff!important;-webkit-text-fill-color:#fff!important;font-weight:800;font-style:normal;font-size:max(14px,.62em);line-height:1;-webkit-text-stroke:.6px #000;paint-order:stroke fill;text-shadow:0 0 2px #000,0 0 2px #000,1px 1px 0 #000,-1px -1px 0 #000}
 .token .tk-stats .a{background-image:url(/art/ui/stat-sword.png)}
-.token .tk-stats .h{background-image:url(/art/ui/ruby-heart.png)}
+.token .tk-stats .h{background-image:url(/art/ui/stat-heart.png)}
 .token .tk-stats .m{background-image:url(/art/ui/stat-boot.png)}
-.token[data-damaged="true"] .tk-stats .h{color:#ff7a33!important;-webkit-text-fill-color:#ff7a33!important}
-.token .tk-stats [data-buff="true"]{color:#5dff7a!important;-webkit-text-fill-color:#5dff7a!important}
+.token[data-damaged="true"] .tk-stats .h{color:#ff4040!important;-webkit-text-fill-color:#ff4040!important}
+.token .tk-stats [data-buff="true"]{color:#3ee06a!important;-webkit-text-fill-color:#3ee06a!important}
 .token .tk-stats .sh{font-size:max(12px,2vh);margin-left:1px}
 /* 14: card close-up with the 3D viewer beside it */
 .cardzoom .cz-img{height:calc(100vh - 16px);max-width:calc(100vw - 16px);width:auto;object-fit:contain;box-shadow:0 0 4vh #000;border-radius:2vh}
@@ -1280,3 +1280,4 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 .cardzoom .viewer3d{width:min(calc(100vh * .8),calc(46vw - 16px))!important}
 .cardzoom.with-viewer{gap:1.5vw}
 .db-fly,.db-fly.hand-card,body>.db-fly{position:fixed!important;margin:0!important;left:0;top:0}
+.cmd-stage,.cmd-stage *{pointer-events:none!important}

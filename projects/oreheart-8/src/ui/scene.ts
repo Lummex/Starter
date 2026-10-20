@@ -267,7 +267,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   // strongholds + commanders
-  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; g3d: G3D | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null; baseYaw?: number; yaw?: number; lookUntil?: number; impatient?: number };
+  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; g3d: G3D | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null; baseYaw?: number; yaw?: number; lookUntil?: number; impatient?: number; elog?: string[]; fwdUntil?: number };
   const cmd: Record<string, Cmd> = {};
   for (const side of ['player', 'opponent'] as const) {
     const g = new THREE.Group();
@@ -690,6 +690,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
 
   function emote(side: 'player' | 'opponent', kind: string) {
     cmd[side].emote = { kind, t: performance.now() };
+    if (kind !== 'look') { (cmd[side].elog ||= []).push('forward'); cmd[side].fwdUntil = performance.now() + 1500; }
     if (kind !== 'look') { cmd[side].lookUntil = 0; cmd[side].impatient = 0; }
     const g3 = cmd[side].g3d;
     if (g3) g3.play(kind === 'cheer' ? (Math.random() < 0.7 ? (Math.random() < 0.5 ? 'laugh' : 'point') : 'idle') : kind === 'flinch' ? 'hit' : kind === 'cast' ? 'cast' : kind === 'groan' ? 'surprised' : 'idle');
@@ -697,11 +698,12 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   /** Turn toward the player/camera for a moment (ms), then back to the opponent. */
-  function lookBack(side: 'player' | 'opponent', ms: number) { cmd[side].lookUntil = performance.now() + ms; }
+  function lookBack(side: 'player' | 'opponent', ms: number) { (cmd[side].elog ||= []).push('lookBack'); cmd[side].lookUntil = performance.now() + ms; }
   /** Impatience: face the player and fidget (level 0 = stop). */
   function impatient(side: 'player' | 'opponent', level: number) {
     const cm = cmd[side];
     cm.impatient = level;
+    if (level) (cm.elog ||= []).push('impatient');
     if (!level) { cm.lookUntil = 0; return; }
     cm.lookUntil = performance.now() + 4000;
     cm.g3d?.play(level % 2 ? 'surprised' : 'point');
@@ -709,7 +711,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   function facing(side: 'player' | 'opponent') {
     const cm = cmd[side];
     const d = Math.abs(Math.atan2(Math.sin((cm.yaw ?? 0) - (cm.baseYaw ?? 0)), Math.cos((cm.yaw ?? 0) - (cm.baseYaw ?? 0))));
-    return { facing: d < 0.2 ? 'opponent' : 'player', yaw: +(cm.yaw ?? 0).toFixed(3), baseYaw: +(cm.baseYaw ?? 0).toFixed(3), impatience: cm.impatient || 0 };
+    return { facingDeg: Math.round(d * 180 / Math.PI * 10) / 10, emote: cm.impatient ? 'impatient' : (cm.lookUntil || 0) > performance.now() ? 'lookBack' : (cm.fwdUntil || 0) > performance.now() ? 'forward' : 'none', emoteLog: (cm.elog || []).slice(), turnMs: 450, facing: d < 0.2 ? 'opponent' : 'player', yaw: +(cm.yaw ?? 0).toFixed(3), baseYaw: +(cm.baseYaw ?? 0).toFixed(3), impatience: cm.impatient || 0 };
   }
 
   const POKES = ['cackle', 'rude dance', 'angry stomp'];
@@ -896,6 +898,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
             webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
             bloom: false, shadows: renderer.shadowMap.enabled, particles: false, arena: arenaInfo,
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
+            commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? 'grubnak.glb' : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? 'grubnak-fortress.glb' : '', scepter: cm.g3d ? 'grubnak-scepter.glb' : '', scepterBone: (cm.g3d as any)?.scepterBone || '', ...f }; }),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
             strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => ({ source: MINE_MODEL, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' })), mineModel: mines.every((m) => m.group.userData.mineModel === 'gltf') ? 'gltf' : 'loading',
           });

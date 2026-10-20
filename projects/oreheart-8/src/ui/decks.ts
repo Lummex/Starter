@@ -221,7 +221,8 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const slider = h('input', { type: 'range', id: 'cards-per-row', min: '2', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
   slider.addEventListener('input', () => setPerRow(+slider.value));
   const cmdThumb = h('button', { type: 'button', class: 'db-cmdcard', 'aria-label': 'Commander card', onclick: () => app.closeUp('cmd:' + cmdId, true) }, h('img', { alt: '', draggable: 'false' })) as HTMLElement;
-  const syncThumb = () => { const im = cmdThumb.querySelector('img') as HTMLImageElement; im.src = `/art/commanders/${cmdId}.webp`; cmdThumb.setAttribute('aria-label', `${COMMANDERS[cmdId].name}, Commander card`); };
+  const cmdWrap = h('div', { class: 'db-cmdwrap', role: 'group', 'aria-label': 'Commander card' }, cmdThumb) as HTMLElement;
+  const syncThumb = () => { const im = cmdThumb.querySelector('img') as HTMLImageElement; im.src = `/art/commanders/${cmdId}.webp`; cmdThumb.setAttribute('aria-label', COMMANDERS[cmdId].name); };
   const searchInp = h('input', { type: 'search', id: 'card-search', role: 'searchbox', 'aria-label': 'Search cards', placeholder: 'Search: "cheap goblin miners", "ranged under 4"…', autocomplete: 'off' }) as HTMLInputElement;
   searchInp.addEventListener('input', () => { query = searchInp.value.trim(); renderCards(); });
   const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -362,7 +363,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => place(0, false)).observe(carEl);
 
   function rename() {
-    const input = h('input', { id: 'deck-name', type: 'text', maxlength: '30' }) as HTMLInputElement;
+    const input = h('input', { id: 'deck-name', type: 'text', maxlength: '60' }) as HTMLInputElement;
     input.value = name;
     const apply = () => { name = input.value.trim() || name; d.close(); renderDeck(); };
     const d: any = app.dialog('Rename deck', [h('h2', {}, 'Rename deck'), h('div', { class: 'f-field' }, h('label', { for: 'deck-name' }, 'Deck name'), input),
@@ -388,7 +389,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   pileEl.append(h('div', { class: 'db-carwrap', 'aria-label': 'My decks', role: 'group' }, btn('◀', 'small scroll', () => setCur(cur - 1), { 'aria-label': 'Previous deck' }), carEl, btn('▶', 'small scroll', () => setCur(cur + 1), { 'aria-label': 'Next deck' })), nameEl, sizeEl);
   app.root.append(h('main', { class: 'screen db-screen', 'data-screen': 'deck-builder' },
     h('section', { class: 'db-left' },
-      h('div', { class: 'db-head' }, h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' }), cmdThumb),
+      h('div', { class: 'db-head' }, h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' }), cmdWrap),
       h('div', { class: 'db-search' }, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), h('div', { class: 'f-field' }, h('label', { for: 'cards-per-row' }, 'Cards per row'), slider)),
       h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap),
       cardsEl),

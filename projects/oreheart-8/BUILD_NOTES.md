@@ -1,3 +1,11 @@
+# Round 8b fix pass (inspector round 1)
+
+Added the spec's test hooks (`getHandHover`, `getSelectState`, `advanceIdle`, `commanderModels` with `facingDeg`/`emote`/`emoteLog`/`turnMs`, glow `profile`). Fixes: hand pop-out 74% of the height with a slightly smaller resting hand (so it is at least 1.8x wide); stat label at most 30 px tall, painted heart icon named `stat-heart.png`, numbers at least 14 px, damaged Health `#ff4040`, buffs use the palette green; the hand never rises while dragging or panning (pop safety is installed at layout time); off-hand cards sit last in the DOM; the idle timer no longer runs during the mulligan; per-Commander "last deck" Remove rule; "Commander card" group in the deck builder; deck names up to 60 characters; `--text-soft` and `--text-body-small` palette values; the Commander stage no longer intercepts clicks.
+
+Known gap: AC73 clicks Sproingle and then picks a saved Grubnak-faction deck, which contradicts R8b.11 ("only the selected Commander's decks"); left as the spec says. Full local run: 273 of 283 passed before the last fixes; all failures except AC73 were then re-run green.
+
+---
+
 # Oreheart — Phase 1B Round 8b build notes (owner playtest of round 7)
 
 `npm run build` → `dist/`; `npm test` → Vitest (74 tests). Screenshots in `screenshots/r8b-*` (844×390 and 1920×1080: Commander screen before/after choosing Grubnak, deck-builder close-up with viewer, match, creature with new stat icons). **Meshy credits spent this round: 0** (item 3 uses the fallback allowed in the brief, see below).
