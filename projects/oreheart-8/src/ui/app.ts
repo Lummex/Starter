@@ -784,7 +784,7 @@ export class App {
   screenRects() { return this.view ? this.view.screenRects() : null; }
   layoutQueued = false;
   layoutSoon() { if (this.layoutQueued) return; this.layoutQueued = true; requestAnimationFrame(() => { this.layoutQueued = false; this.layout(); }); }
-  syncCam() { const v = this.view?.getView?.(); if (v && v.zoom) this.cam = { zoom: v.zoom, x: (v.painting.w / 2 - v.centerX) * v.scale, y: (v.painting.h / 2 - v.centerY) * v.scale }; }
+  syncCam() { const v = this.view?.getView?.(); if (v && v.zoom) this.cam = { zoom: v.zoom, x: ((v.home?.[0] ?? v.painting.w / 2) - v.centerX) * v.scale, y: ((v.home?.[1] ?? v.painting.h / 2) - v.centerY) * v.scale }; }
   applyCam() { this.syncCam(); this.layout(); }
   resetCam() { this.view?.recenter(); this.applyCam(); }
   zoomBy(f: number, sx?: number, sy?: number) { this.view?.zoomAt(f, sx, sy); this.applyCam(); }

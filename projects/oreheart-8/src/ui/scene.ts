@@ -643,7 +643,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   function getView() {
     const homog = H0;
     return {
-      zoom: view.zoom, maxZoom: view.maxZoom, centerX: view.cx, centerY: view.cy, scale: view.scale, coverScale: view.s0,
+      zoom: view.zoom, home: homeCenter(), maxZoom: view.maxZoom, centerX: view.cx, centerY: view.cy, scale: view.scale, coverScale: view.s0,
       pxPerPaintingPx: view.scale * dprNow(), cssPxPerPaintingPx: view.scale, window: { w: view.W, h: view.H },
       visible: { x0: view.cx - view.W / (2 * view.scale), y0: view.cy - view.H / (2 * view.scale), x1: view.cx + view.W / (2 * view.scale), y1: view.cy + view.H / (2 * view.scale) },
       painting: { w: BG.w, h: BG.h }, arena: arenaInfo, homography: homog, corners: layoutJson.boardCorners,
