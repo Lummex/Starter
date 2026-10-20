@@ -20,7 +20,7 @@ jobs:
       (github.event.label.name == 'factory:new' || github.event.label.name == 'factory:revise') &&
       github.event.sender.login == github.repository_owner
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
         with:

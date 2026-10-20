@@ -41,9 +41,11 @@ Last updated: 2026-10-20 (UTC). Written by Claude (Cowork session with the owner
 | 5b | Match screen: owner camera and HUD layout | done |
 | 6a | Owner playtest fixes, card back, text palette, deck builder | done (235/236 checks) |
 | 7 | 6a fixes + **Grubnak in 3D via Meshy** (8 animations, fortress, scepter; 119 Meshy credits) | done, all 249 checks passed. Preview: https://oreheart-8-96fm43q6c-lummex.vercel.app |
-| 8 | **Painted arena board + view controls**, crystal mine in 3D, round 7 playtest fixes (14 items) | **sent 2026-10-20 02:16 UTC, run 39357943271**; was still running at 1 h 45 min with no commits, at risk of the 120-min timeout |
+| 8 | Painted arena board + view controls, crystal mine in 3D, round 7 playtest fixes (14 items) | **timed out** (run 39357943271, 2026-10-20 04:16 UTC): reached 268/270 checks in its 3rd check pass, then hit the 120-min limit; nothing is pushed until the end, so nothing was saved. Ken chose to split it and raise the limit to 180 min. |
+| 8a | Items 1–2: painted arena board + view controls, crystal mine (top of the brief) | **ready, waiting for Ken's "send it"** |
+| 8b | Items 3–14, text in `factory-design/round-8b-queued.md` | queued; goes to the top of the brief after 8a is done |
 
-### Round 8 items (full text is in the brief, section "Round 8")
+### Round 8 items (8a full text is in the brief; 8b in `factory-design/round-8b-queued.md`)
 1. Match board = the owner's painted arena exactly as in the Arena Editor (swamp background + Skullfang Arena painting + 54 animated effects + 2 foreground cut-outs). 2D paintings, 3D pieces on top, 3D angle fitted once to the painted floor. **No grid lines**; the 13 × 7 squares map onto the owner's 4 painted floor corners by homography. **View controls:** scroll/pinch zoom, drag/arrows/WASD/two-finger pan, Recenter; fully zoomed out the painting fills the window (cover-fit, never stretched), **never black bars**, never past the painting edges; max zoom about 2.5 screen px per painting px. HUD stays fixed.
 2. Crystal mine in 3D via Meshy, generated once and saved, owner tints (player blue, enemy red, neutral pale).
 3. Player Commander must face the **opponent** (bug: faced the player). Looks back at the player when "talking" to him; impatience animation after ~20 s idle on the player's turn; faces forward when acting. Add 1–2 impatience clips from Meshy's animation library once.
@@ -59,8 +61,8 @@ Last updated: 2026-10-20 (UTC). Written by Claude (Cowork session with the owner
 13. Brown-gold body text everywhere (replaces white body text).
 14. Deck builder close-up: card on the left, 3D model viewer on the right.
 
-### If round 8 times out
-Agent's proposal (needs Ken's OK, not done yet): raise `timeout-minutes` (e.g. 180–240) and/or split into **8a** (items 1–2: arena board, view controls, mine) and **8b** (items 3–14).
+### Round 8 split (decided 2026-10-19)
+Done: `timeout-minutes` raised to 180, round 8a on top of the brief, 8b saved in `factory-design/round-8b-queued.md`. When sending 8a, the issue #8 comment must say it replaces the earlier round 8 request (that comment is still in the factory's feedback). Each agent step also has its own 45-min limit (`factory/scripts/lib.mjs`); in round 8 the second builder step was cut off by it (its work was still kept).
 
 ## 5. Owner tools (Claude artifacts; private to Ken)
 
@@ -70,7 +72,7 @@ Agent's proposal (needs Ken's OK, not done yet): raise `timeout-minutes` (e.g. 1
 
 ## 6. Open items / next steps
 
-- Check round 8 result (run 39357943271). If it succeeded: give Ken the preview link and compare the match board to his arena screenshot (owner's reference image of the arena with all effects). If it timed out: offer the timeout raise and/or 8a/8b split.
+- Send round 8a when Ken says "send it" (comment on issue #8 + label `factory:revise`; the label is stuck on `factory:building` from the timed-out run). Then 8b. After 8a: give Ken the preview link and compare the match board to his arena screenshot.
 - Ken is now building Commander setups in the Model Editor (scepter in Grubnak's right hand, Grubnak inside his fortress, slicing, glow areas). When he says it's ready, read his saved setup from the Model Editor and turn it into a brief item.
 - Meshy assets saved on `factory/issue-8`: `projects/oreheart-8/public/models/commanders/grubnak.glb` (rigged, 8 animations: Idle, Chest_Pound_Taunt, Call_Gesture, Victory_Fist_Pump, Hit_Reaction_1, mage_soell_cast, Hit_Reaction, Dead), `grubnak-fortress.glb`, `grubnak-scepter.glb`, `models.json`. Don't regenerate unless Ken asks.
 - On hold: the Skullfang arena 3D GLB (replaced by the 2D painted arena plan).
