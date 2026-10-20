@@ -1281,3 +1281,44 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 .cardzoom.with-viewer{gap:1.5vw}
 .db-fly,.db-fly.hand-card,body>.db-fly{position:fixed!important;margin:0!important;left:0;top:0}
 .cmd-stage,.cmd-stage *{pointer-events:none!important}
+
+/* ===== Round 9a: owner match layout (Goblin theme). Pieces are placed by owner-hud.ts through --pl/--pt/--pw/--ph. ===== */
+.match .o-piece{position:absolute!important;left:var(--pl)!important;top:var(--pt)!important;width:var(--pw)!important;height:var(--ph)!important;right:auto!important;bottom:auto!important;margin:0!important;padding:0!important;box-sizing:border-box;pointer-events:none;transform:none!important;rotate:var(--rot,0deg);background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;aspect-ratio:auto!important;min-width:0!important;min-height:0!important}
+.match .o-frame{pointer-events:none}
+.match .o-img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;user-select:none}
+.match .o-gem,.match .o-bank{display:block}
+.match .o-gem-n,.match .o-bank-n{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:"Alegreya SC",serif;font-weight:700;font-style:italic;color:#fff;text-shadow:0 2px 4px #000,0 0 .3em #000;line-height:1;background:none!important;border:0!important;width:auto;height:auto;padding:0!important;pointer-events:none}
+.match .o-text{display:flex;align-items:center;font-family:"Alegreya SC",serif;line-height:1;white-space:nowrap;text-transform:none!important;letter-spacing:0!important;overflow:visible;font-variant-caps:normal}
+.match .o-text.o-name{overflow:visible}
+.match .o-phase{display:contents!important}
+.match .o-phase .ph-step{opacity:.8;color:inherit}
+.match .o-phase .ph-step[aria-current=step]{opacity:1;color:#FFD700!important;text-shadow:0 0 .4em #FFD700,0 2px 3px #000}
+.match .o-phase .ph-step.done{opacity:.55}
+.match .o-phase .ph-sep{margin:0 .25em;opacity:.7}
+.match .o-phase .ph-turn[data-x]{}
+.match .o-deck .deck-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:none!important;filter:drop-shadow(0 4px 6px #000)}
+.match .o-deck .pile-n{position:absolute!important;display:flex;align-items:center;justify-content:center;bottom:auto!important;transform-origin:50% 50%;font-family:"Alegreya SC",serif;font-style:normal;line-height:1}
+.match .o-fan{display:block}
+.match .o-fan .back{position:absolute;left:50%;top:12%;width:30%;height:72%;margin-left:-15%;border-radius:4px;background:url('/art/ui/oreheart-card-back.webp') center/cover!important;border:1px solid #3a2a0a;transform-origin:50% 160%}
+.match .o-fan.browsing .back{animation:browse 2.4s ease-in-out infinite}
+.match .o-text.done-btn,.match .o-text.menu-btn{pointer-events:auto;cursor:pointer;background:none!important;border:0!important;box-shadow:none!important;outline-offset:4px;transition:text-shadow .15s,scale .15s}
+.match .o-text.done-btn:hover,.match .o-text.menu-btn:hover{scale:1.06;text-shadow:0 0 .35em #FFD700,0 2px 3px #000!important}
+.match .o-text.done-btn[hidden]{display:none!important}
+.match .o-menu{pointer-events:auto!important;overflow:visible}
+.match .o-menu .menu-btn{position:absolute;inset:0;width:100%;height:100%;display:flex;align-items:center;font-size:inherit}
+.match .o-menu-panel{position:absolute;left:0;width:var(--mw);display:flex;flex-direction:column;align-items:flex-start;gap:var(--mgap);padding:var(--mpad) calc(var(--mpad) * 1.4);border-radius:var(--mrad);background:color-mix(in srgb,var(--mbg) calc(var(--mbga) * 100%),transparent);border:1px solid #FFD70033;box-shadow:0 8px 24px #000a;transform-origin:0 0;z-index:70;pointer-events:auto;animation:omenu-grow var(--mspeed) cubic-bezier(.34,1.56,.64,1) both}
+.match .o-menu-panel[hidden]{display:none!important}
+.match .o-menu-item{all:unset;box-sizing:border-box;cursor:pointer;font-family:"Alegreya SC",serif;font-weight:700;font-style:italic;font-size:var(--mfs);line-height:1.1;color:var(--mc);text-shadow:0 .05em .1em #000;white-space:nowrap;transition:color .15s,text-shadow .15s,transform .15s;animation:omenu-item var(--mspeed) ease-out both;animation-delay:calc(var(--i) * var(--mstag))}
+.match .o-menu-item:hover,.match .o-menu-item:focus-visible{color:var(--mhc);text-shadow:0 0 calc(var(--mhgs) * .35em) var(--mhg),0 .05em .1em #000;transform:translateX(calc(var(--mslide) * 0.1em)) scale(var(--mgrow));transform-origin:0 50%}
+@keyframes omenu-grow{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes omenu-item{from{opacity:0;transform:translateY(-.4em)}to{opacity:1;transform:none}}
+.match .tip{z-index:30}
+.match .o-text,.match .o-text *,.match .o-text.ph-step{color:var(--oc,#fff)!important;-webkit-text-fill-color:var(--oc,#fff)!important;font-weight:700!important;font-style:italic}
+.match .o-phase .ph-step[aria-current=step]{color:#FFD700!important;-webkit-text-fill-color:#FFD700!important}
+.match .o-gem .o-gem-n,.match .o-bank .o-bank-n{position:absolute!important;left:0!important;top:0!important;transform:none!important;width:100%!important;height:100%!important;-webkit-text-stroke:0!important;color:#fff!important}
+.match .o-text.done-btn{font-style:italic}
+.match .o-menu .menu-btn{background:none!important;border:0!important;box-shadow:none!important;color:inherit!important;padding:0!important;font-size:inherit!important;min-height:0!important;width:100%;justify-content:flex-start}
+.match .o-deck .pile-n{color:#fff!important;-webkit-text-fill-color:#fff!important;font-weight:700!important}
+.match .hand .hand-card.dealt{animation:dealin 700ms cubic-bezier(.2,.8,.2,1) both}
+@keyframes dealin{from{translate:0 160%;opacity:.2}to{translate:0 0;opacity:1}}
+.match .hand.o-hand{left:var(--pl)!important;width:var(--pw)!important;right:auto!important}

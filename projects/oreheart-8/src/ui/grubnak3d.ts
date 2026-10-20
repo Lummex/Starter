@@ -57,7 +57,7 @@ export interface G3D {
   play(name: GrubnakAnim, opts?: { loop?: boolean }): void;
   current(): string;
   update(dt: number): void;
-  clipNames: string[];
+  clipNames: string[]; scepterBone?: string;
   /** native-units height of the whole assembly */
   height: number;
 }
@@ -99,18 +99,18 @@ export function makeGrubnak3d(a: G3DAssets): G3D {
   figure.add(ch);
   group.add(figure);
   // scepter in the right hand
+  let scepterBone = '';
   if (a.scepter) {
-    let hand: THREE.Object3D | null = null;
-    ch.traverse((o) => { if (!hand && o.type === 'Bone' && /right.?hand$|hand.?r$|r_?hand$/i.test(o.name)) hand = o; });
+    // Owner's Model Editor setup: scepter on the RightHand bone, position -4.404, 8.752, -3.774, rotation -109.365 / 5.199 / 154.757 degrees (XYZ), scale 61.35 (glb units)
+    const hand = ch.getObjectByName('RightHand') || (() => { let f: THREE.Object3D | null = null; ch.traverse((o) => { if (!f && o.type === 'Bone' && /right.?hand$|hand.?r$|r_?hand$/i.test(o.name)) f = o; }); return f; })();
     if (hand) {
-      const sc = a.scepter.clone(true);
-      const sb = box(sc);
-      const len = Math.max(sb.max.y - sb.min.y, 0.01);
-      // bones live in the (scaled) character's local space
-      const worldS = new THREE.Vector3(); (hand as THREE.Object3D).getWorldScale(worldS);
-      sc.scale.multiplyScalar((0.9 / len) / Math.max(worldS.x, 1e-4));
-      sc.position.set(0, 0, 0);
-      (hand as THREE.Object3D).add(sc);
+      const hold = new THREE.Group();
+      hold.position.set(-4.404, 8.752, -3.774);
+      hold.rotation.set(THREE.MathUtils.degToRad(-109.365), THREE.MathUtils.degToRad(5.199), THREE.MathUtils.degToRad(154.757), 'XYZ');
+      hold.scale.setScalar(61.35);
+      hold.add(a.scepter.clone(true));
+      hand.add(hold);
+      scepterBone = hand.name;
     }
   }
   const mixer = new THREE.AnimationMixer(ch);
@@ -138,5 +138,5 @@ export function makeGrubnak3d(a: G3DAssets): G3D {
   };
   play('idle');
   const total = box(group);
-  return { group, figure, fortress, mixer, play, current: () => cur, update: (dt) => mixer.update(dt), clipNames: Object.keys(actions), height: total.max.y - total.min.y };
+  return { group, figure, fortress, mixer, play, current: () => cur, update: (dt) => mixer.update(dt), clipNames: Object.keys(actions), scepterBone, height: total.max.y - total.min.y };
 }

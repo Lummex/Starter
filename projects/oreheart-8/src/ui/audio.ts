@@ -29,12 +29,52 @@ class AudioEngine {
         this.noiseBuf = b;
         void this.ctx.resume();
       } catch { this.ctx = null; }
+      this.musicTick();
       for (const e of ['pointerdown', 'keydown', 'click', 'touchstart']) window.removeEventListener(e, unlock, true);
     };
     for (const e of ['pointerdown', 'keydown', 'click', 'touchstart']) window.addEventListener(e, unlock, true);
   }
 
-  state() { return { unlocked: this.unlocked, muted: this.muted, sfxVolume: this.sfx, voiceVolume: this.voice }; }
+  music = LS('oreheart.musicVolume', 60);
+  musicMode: 'menu' | 'match' = 'menu';
+  musicOn = localStorage.getItem('oreheart.musicOff') !== '1';
+  private tracks: Record<string, HTMLAudioElement> = {};
+  private fadeT: any = null;
+  private trackEl(k: 'menu' | 'match') {
+    if (!this.tracks[k]) {
+      const a = new Audio(k === 'menu' ? '/music/tense-cycle.mp3' : '/music/first-fight.mp3');
+      a.loop = true; a.preload = 'auto'; a.volume = 0;
+      this.tracks[k] = a;
+    }
+    return this.tracks[k];
+  }
+  /** Target volume of a track (0..1) after music volume, mute and the on/off switch. */
+  private musicTarget(k: 'menu' | 'match') { return this.muted || !this.musicOn || !this.unlocked || k !== this.musicMode ? 0 : (this.music / 100) * 0.5; }
+  musicState() {
+    const v = (k: 'menu' | 'match') => { const a = this.tracks[k]; return a ? { playing: !a.paused, volume: a.volume } : { playing: false, volume: 0 }; };
+    return { mode: this.musicMode, on: this.musicOn, volume: this.music, menu: v('menu'), match: v('match'), muted: this.muted };
+  }
+  setMusicMode(m: 'menu' | 'match') { this.musicMode = m; this.musicTick(); }
+  setMusic(v: number) { this.music = v; localStorage.setItem('oreheart.musicVolume', String(v)); this.musicTick(); }
+  setMusicOn(on: boolean) { this.musicOn = on; localStorage.setItem('oreheart.musicOff', on ? '0' : '1'); this.musicTick(); }
+  /** Crossfades (about 1.5 s) towards the track for the current mode. */
+  musicTick() {
+    clearInterval(this.fadeT);
+    if (!this.unlocked) return;
+    for (const k of ['menu', 'match'] as const) { if (this.musicTarget(k) > 0) { const a = this.trackEl(k); if (a.paused) void a.play().catch(() => {}); } }
+    const step = () => {
+      let busy = false;
+      for (const k of ['menu', 'match'] as const) {
+        const a = this.tracks[k]; if (!a) continue;
+        const t = this.musicTarget(k), d = t - a.volume;
+        if (Math.abs(d) < 0.01) { a.volume = t; if (t === 0 && !a.paused) a.pause(); } else { a.volume = Math.max(0, Math.min(1, a.volume + Math.sign(d) * Math.max(0.0125, Math.abs(d) * 0.08))); busy = true; }
+      }
+      if (!busy) clearInterval(this.fadeT);
+    };
+    this.fadeT = setInterval(step, 50); step();
+  }
+
+  state() { return { unlocked: this.unlocked, muted: this.muted, sfxVolume: this.sfx, voiceVolume: this.voice, music: this.musicState() }; }
   applyVolumes() {
     if (!this.sfxGain || !this.voiceGain) return;
     this.sfxGain.gain.value = this.muted ? 0 : (this.sfx / 100) * 0.7;
@@ -42,7 +82,7 @@ class AudioEngine {
   }
   setSfx(v: number) { this.sfx = v; localStorage.setItem('oreheart.sfxVolume', String(v)); this.applyVolumes(); }
   setVoice(v: number) { this.voice = v; localStorage.setItem('oreheart.voiceVolume', String(v)); this.applyVolumes(); }
-  setMuted(m: boolean) { this.muted = m; localStorage.setItem('oreheart.muted', m ? '1' : '0'); this.applyVolumes(); }
+  setMuted(m: boolean) { this.muted = m; localStorage.setItem('oreheart.muted', m ? '1' : '0'); this.applyVolumes(); this.musicTick(); }
 
   private ok() { return !!(this.ctx && this.sfxGain && !this.muted); }
   private tone(f0: number, f1: number, dur: number, type: OscillatorType = 'sine', vol = 0.5, delay = 0, voice = false) {

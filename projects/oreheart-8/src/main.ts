@@ -49,6 +49,8 @@ if (test) {
     getHandHover: () => app.getHandHover(),
     advanceIdle: (n: number) => app.advanceIdle(n),
     getHandHoverBox: () => app.getHandHoverBox(),
+    getHud: () => app.getHud(),
+    getDealState: () => app.getDealState(),
     getAudioState: () => audio.state(),
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
     getFxLog: () => JSON.parse(JSON.stringify((app as any).fxLog)),

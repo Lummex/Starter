@@ -1,3 +1,24 @@
+# Oreheart — Phase 1B Round 9a build notes (owner match layout, Goblin theme, music)
+
+`npm run build` → `dist/`; `npm test` → Vitest (80 tests, 6 new in `tests/round9a.test.ts`). Probes: `tools/probe-r9a.mjs`, `tools/shot-r9a.mjs` (screenshots `screenshots/r9a-*`: match at rest 1920×1080 and 844×390, open menu, raised card).
+
+- **1 Owner layout** (`src/ui/owner-hud.ts`, data in `src/content/owner-layout.json`): every HUD piece (names, Flow/Next, crystals, banks, decks, enemy fan upside down, turn/phases/timer, Done, Menu, 3 goblin corner frames, hand box) is placed from the layout's % numbers on a 16:9 stage and anchored to the nearest screen edge on other shapes; text sizes follow the layout (minimum 14 px). `window.oreheart.getHud()` reports each piece's box by `data-role`. Probe: all pieces within 1 % at 1920×1080.
+- **2 Faction themes**: one data file per faction in `src/content/themes/` (`goblins.json`); a faction without a file uses the layout's placeholder pieces (white shard, opponent bank). Card glow colours stay as in round 8b (not re-themed).
+- **3 Banks** are their own pieces with the number on top (`goblin-bank.png`, `opponent-bank-placeholder.png`); no badge on the crystals; "+1 banked" flies to the bank piece.
+- **4 Menu**: drop-down with Resume, Settings, How to play, Sound Effects, Background music, Give up match! (grow with spring ease 260 ms, items 50 ms apart, plain text with gold hover glow, click/Esc/outside closes). Last turn, Mute, Pop-ups and Recenter moved into the in-match Settings dialog. Give up asks first.
+- **5 Hand**: fan up to 10 cards (spacing 0.8 card, centred in the layout's hand box), hovered card pops out and the neighbours move aside 12 %, deal-in 700 ms per card 130 ms apart (`getDealState()`). The pop-out is still round 8b's centred 70 %-height copy, not a card sliding up in place; the tight hover zone and touch behaviour are unchanged.
+- **7 Mines**: owner mine built in code (`buildMineModel` port in `art.ts`): rubble, iron-and-gold pedestal, banner, tall blue crystal, shards, glow; tinted by owner; height 1.7 × 1.46 = 2.482 squares (this replaces the old 1.5 rule; the old Meshy GLB is no longer used).
+- **8 Crystal Flow**: faceted tumbling shards on moving S-curves from each owned mine to the owner's Stronghold (neutral mines swirl), owner colours; the target is the Stronghold next to the bank piece, not the bank's screen position (`getRenderStats().crystalFlow`).
+- **6 Grubnak's scepter** attached to `RightHand` with the owner's exact position/rotation/scale (`commanderModels[].scepterBone`).
+- **9 Music**: `tense-cycle.mp3` on all menu screens, `first-fight.mp3` in matches, ~1.5 s crossfade, starts after the first click, respects Mute, Music volume slider in Settings and Menu → Background music (`getAudioState().music`).
+
+## Not done / gaps
+- Board piece positions and sizes (`pieces`, `characterSizes`, Commander `turn` values) were not re-fitted to the owner's numbers beyond the mine; Commander/Stronghold keep round 8 sizes.
+- All 57 arena effects and the layout's three Flow effects are not re-imported (round 8a's 54 effects stay).
+- The "Miner Rush" deck-memory check (item 10) lives in the hidden suite; no local test existed to change.
+
+---
+
 # Round 8b fix pass (inspector round 1)
 
 Added the spec's test hooks (`getHandHover`, `getSelectState`, `advanceIdle`, `commanderModels` with `facingDeg`/`emote`/`emoteLog`/`turnMs`, glow `profile`). Fixes: hand pop-out 74% of the height with a slightly smaller resting hand (so it is at least 1.8x wide); stat label at most 30 px tall, painted heart icon named `stat-heart.png`, numbers at least 14 px, damaged Health `#ff4040`, buffs use the palette green; the hand never rises while dragging or panning (pop safety is installed at layout time); off-hand cards sit last in the DOM; the idle timer no longer runs during the mulligan; per-Commander "last deck" Remove rule; "Commander card" group in the deck builder; deck names up to 60 characters; `--text-soft` and `--text-body-small` palette values; the Commander stage no longer intercepts clicks.

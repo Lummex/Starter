@@ -1,3 +1,4 @@
+import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
 import { SPELL_VISUALS } from '../content/spell-visuals';
@@ -266,6 +267,7 @@ export class App {
   }
 
   clear() {
+    audio.setMusicMode('menu');
     this.teardownMatch();
     this.root.replaceChildren();
     this.dialogs = [];
@@ -305,7 +307,7 @@ export class App {
     this.clear();
     this.root.append(h('main', { class: 'screen center', 'data-screen': 'settings' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.flowGroup(), this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), btn('Back', '', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.flowGroup(), this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), btn('Back', '', () => this.showMenu()))));
   }
 
   showSetup() {
@@ -579,11 +581,13 @@ export class App {
     this.pick = null;
     this.phaseKey = '';
     this.handKey = '';
+    this.seenHand = new Set();
   }
 
   showMatch() {
     this.handKey = '';
     this.clear();
+    audio.setMusicMode('match');
     const r = this.r;
     const fcol = FACTIONS[this.game.state.players.player.faction].crystal;
     void fcol;
@@ -625,7 +629,7 @@ export class App {
     r.handLeft = btn('◀', 'hand-scroll left', () => { this.handScroll = Math.max(0, Math.round(this.handScroll) - 3); this.layoutHand(); }, { 'aria-label': 'Scroll hand left' });
     r.handRight = btn('▶', 'hand-scroll right', () => { this.handScroll = Math.round(this.handScroll) + 3; this.layoutHand(); }, { 'aria-label': 'Scroll hand right' });
     r.handLeft.hidden = true; r.handRight.hidden = true;
-    const menuBtn = btn('Menu', 'menu-btn', () => { this.menuPinned = !this.menuPinned; this.menuOpen(this.menuPinned); }, { 'aria-expanded': 'false' });
+    const menuBtn = btn('Menu', 'menu-btn', () => { this.menuPinned = !this.menuPinned; this.menuOpen(this.menuPinned); }, { 'aria-expanded': 'false', 'aria-haspopup': 'menu' });
     const syncMute = () => {
       muteBtn.setAttribute('aria-pressed', String(audio.muted)); muteBtn.setAttribute('aria-label', 'Mute'); muteBtn.textContent = audio.muted ? 'Muted' : 'Mute';
       spk.setAttribute('aria-pressed', String(audio.muted)); spk.setAttribute('aria-label', audio.muted ? 'Unmute sound' : 'Mute sound'); spk.textContent = audio.muted ? '🔇' : '🔊';
@@ -640,21 +644,31 @@ export class App {
       const c: any = this.dialog('Surrender this match?', [h('h2', {}, 'Surrender this match?'),
         h('div', { class: 'row' }, btn('Yes, surrender', 'danger', () => { c.close(); this.game.act({ type: 'surrender' }); }), btn('Cancel', '', () => c.close()))]);
     });
-    r.menuPanel = h('div', { class: 'menu-panel', id: 'match-menu-panel', hidden: true }, r.last, muteBtn, this.popupsSwitch(), r.recenter, surrenderBtn);
+    r.menuPanel = h('div', { class: 'menu-panel', id: 'match-menu-panel', hidden: true });
     r.menuBtn = menuBtn;
     r.menuWrap = h('div', { class: 'hud-menu', 'aria-label': 'Match menu', role: 'group' }, menuBtn, r.menuPanel);
-    r.menuWrap.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') this.menuOpen(true); });
-    r.menuWrap.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType === 'mouse' && !this.menuPinned) this.menuOpen(false); });
+    void muteBtn; void surrenderBtn;
     r.tip = h('aside', { class: 'tip', 'aria-label': 'Tutorial tip', hidden: true });
     const match = h('main', { class: 'match' },
       r.board,
-      yc.el, ec.el,
-      r.enemyHand, r.enemyDeck, r.myDeck,
-      r.phase,
-      r.menuWrap, spk,
-      r.swap, r.done,
+      r.swap,
       r.tip, r.hand, r.handLeft, r.handRight, r.timer);
     this.root.append(match);
+    const ps = this.game.state.players;
+    applyOwnerHud(match, r, {
+      playerFaction: ps.player.faction, enemyFaction: ps.opponent.faction,
+      closeMenu: () => this.menuOpen(false),
+      menuItems: [
+        { label: 'Resume', run: () => {} },
+        { label: 'Settings', run: () => this.matchSettings() },
+        { label: 'How to play', run: () => this.matchHowTo() },
+        { label: 'Sound Effects', run: () => this.matchVolume('Sound Effects') },
+        { label: 'Background music', run: () => this.matchVolume('Background music') },
+        { label: 'Give up match!', run: () => { const c: any = this.dialog('Give up this match?', [h('h2', {}, 'Give up this match?'), h('div', { class: 'row' }, btn('Yes, give up', 'danger', () => { c.close(); this.game.act({ type: 'surrender' }); }), btn('Cancel', '', () => c.close()))]); } },
+      ],
+    });
+    document.addEventListener('pointerdown', (e) => { if (this.r.menuWrap?.classList.contains('open') && !(e.target as Element).closest?.('.o-menu')) this.menuOpen(false); }, true);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.r.menuWrap?.classList.contains('open')) { this.menuOpen(false); this.r.menuBtn?.focus(); } });
     // board layers
     r.cells = new Map<string, El>();
     r.sites = [];
@@ -750,6 +764,25 @@ export class App {
   menuPinned = false;
   flowKey = '';
   flowTurn = -1;
+  matchSettings() {
+    const c: any = this.dialog('Settings', [h('h2', {}, 'Settings'), h('div', { class: 'stack' },
+      this.popupsSwitch(),
+      btn('Last turn', 'last-btn', () => { c.close(); this.showLastTurn(); }),
+      btn('Recenter', 'recenter-btn', () => { this.resetCam(); c.close(); }),
+      btn(audio.muted ? 'Unmute' : 'Mute', 'mute-btn', (e) => { audio.setMuted(!audio.muted); (e.currentTarget as El).textContent = audio.muted ? 'Unmute' : 'Mute'; }),
+      btn('Close', '', () => c.close()))]);
+  }
+  matchHowTo() {
+    const c: any = this.dialog('How to play', [h('h2', {}, 'How to play'),
+      h('p', {}, 'Draw, Deploy, Action, End. Drag cards onto your back row to summon. Drag a creature to move or attack. Tap a mine to mine with every ready Miner next to it. Mined Flow resets each turn; Crystal cards go to the Bank and stay. Win by taking the enemy Commander to 0 Health.'),
+      h('div', { class: 'row' }, btn('Close', '', () => c.close()))]);
+  }
+  matchVolume(which: 'Sound Effects' | 'Background music') {
+    const c: any = this.dialog(which, [h('h2', {}, which),
+      which === 'Sound Effects' ? h('div', { class: 'stack' }, this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)))
+        : h('div', { class: 'stack' }, this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn(audio.musicOn ? 'Music: On' : 'Music: Off', 'music-toggle', (e) => { audio.setMusicOn(!audio.musicOn); (e.currentTarget as El).textContent = audio.musicOn ? 'Music: On' : 'Music: Off'; })),
+      h('div', { class: 'row' }, btn('Close', '', () => c.close()))]);
+  }
   menuOpen(on: boolean) {
     const r = this.r;
     if (!r.menuPanel) return;
@@ -989,6 +1022,7 @@ export class App {
       if (hd && !hd.querySelector('.hand-card.popped:not(.popclone)')) { hd.classList.remove('has-pop'); hd.querySelectorAll('.popclone,.pop-ph').forEach((x) => x.remove()); }
       el.style.transform = el.dataset.fan || '';
       el.style.zIndex = el.dataset.z || '';
+      this.asideNeighbors(null);
       return;
     }
     if (el.classList.contains('dragging') || el.classList.contains('offhand')) return;
@@ -1012,6 +1046,7 @@ export class App {
     const targetY = hr.top + hr.height / 2;
     el.classList.add('popped');
     hand.classList.add('has-pop');
+    this.asideNeighbors(el);
     // The popped card ignores the pointer; a transparent proxy keeps its resting spot clickable and draggable.
     const ph = h('span', { class: 'pop-ph', 'aria-hidden': 'true' }) as El;
     ph.style.cssText = `position:absolute;left:${el.style.left};top:${el.offsetTop}px;width:${w}px;height:${hgt}px;transform:${el.dataset.fan || ''};z-index:${el.dataset.z || 1};pointer-events:auto;cursor:grab`;
@@ -1170,7 +1205,7 @@ export class App {
     this.installPopSafety();
     const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')] as El[];
     const n = cards.length;
-    const VIS = 7;
+    const VIS = 10;
     // Off-hand cards wait in an invisible clipped strip; if anything scrolls one into view (focus, assistive tech) the fan follows.
     let spill = hand.querySelector('.hand-spill') as El;
     if (!spill) {
@@ -1191,8 +1226,8 @@ export class App {
     this.handScroll = Math.max(0, Math.min(maxScroll, this.handScroll));
     const start = Math.round(this.handScroll);
     const shown = Math.min(n, VIS);
-    const spacing = shown > 1 ? Math.min(cw * 0.56, (W - cw) / (shown - 1)) : cw;
-    const x0 = 0;
+    const spacing = shown > 1 ? Math.min(cw * 0.8, (W - cw) / (shown - 1)) : cw;
+    const x0 = Math.max(0, (W - (cw + (shown - 1) * spacing)) / 2);
     let moved = false;
     cards.forEach((c, i) => {
       const k = i - start;
@@ -1708,6 +1743,7 @@ export class App {
     this.clearPops();
     hand.replaceChildren();
     if (hidden) return;
+    let dealN = 0;
     for (const hc of me.hand) {
       const c = CARDS[hc.cardId];
       const cost = costOf(c);
@@ -1725,9 +1761,41 @@ export class App {
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));
       (el as any)._down = (e: PointerEvent) => this.cardPointerDown(e, hc, el);
       el.addEventListener('click', (e: MouseEvent) => { if (e.detail === 0) this.showCard(c.id); });
+      if (!this.seenHand.has(hc.uid)) { this.seenHand.add(hc.uid); const d = dealN++ * 130; el.classList.add('dealt'); el.style.animationDelay = d + 'ms'; this.dealLog.push({ uid: hc.uid, delayMs: d, durationMs: 700 }); setTimeout(() => el.classList.remove('dealt'), d + 760); }
       hand.append(el);
     }
     this.layoutHand();
+  }
+  /** Test hook: every owner-layout piece with its box, plus theme info. */
+  getHud() {
+    const m = this.root.querySelector('.match') as El | null;
+    if (!m) return null;
+    const pieces: any = {};
+    m.querySelectorAll('[data-role]').forEach((e: El) => { const b = e.getBoundingClientRect(); pieces[e.dataset.role!] = { x: b.left, y: b.top, w: b.width, h: b.height, text: e.textContent, rotation: getComputedStyle(e).rotate, hidden: !!(e as any).hidden }; });
+    const ps = this.game.state.players;
+    return { width: m.clientWidth, height: m.clientHeight, pieces, themes: { player: { faction: ps.player.faction, hasTheme: hasTheme(ps.player.faction) }, opponent: { faction: ps.opponent.faction, hasTheme: hasTheme(ps.opponent.faction) } },
+      bankPictures: { player: (m.querySelector('[data-role=player-bank] img') as HTMLImageElement | null)?.getAttribute('src'), opponent: (m.querySelector('[data-role=enemy-bank] img') as HTMLImageElement | null)?.getAttribute('src') },
+      gemPictures: { player: (m.querySelector('[data-role=player-flow-crystal] img') as HTMLImageElement | null)?.getAttribute('src'), opponent: (m.querySelector('[data-role=enemy-flow-crystal] img') as HTMLImageElement | null)?.getAttribute('src') },
+      cornerFrames: m.querySelectorAll('.o-frame').length,
+      bankBadgeOnCrystal: !!m.querySelector('.o-gem .o-bank-n, .o-gem .cry-bank'),
+      menu: { open: m.querySelector('.o-menu')?.classList.contains('open') || false, items: [...m.querySelectorAll('.o-menu-item')].map((x) => x.textContent) } };
+  }
+  /** Round 9a: drawn cards slide up from below the screen one after another (700 ms each, 130 ms apart). */
+  seenHand = new Set<string>();
+  dealLog: { uid: string; delayMs: number; durationMs: number }[] = [];
+  getDealState() { return { log: this.dealLog.slice(-20), dealing: !!this.r.hand?.querySelector('.hand-card.dealt') }; }
+  /** The neighbors of the raised card move aside (12 % of a card width). */
+  asideNeighbors(el: El | null) {
+    const hand = this.r.hand as El;
+    if (!hand) return;
+    const cards = [...hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[];
+    const idx = el ? cards.indexOf(el) : -1;
+    cards.forEach((c, i) => {
+      if (c === el) return;
+      const base = c.dataset.fan || '';
+      c.style.transform = idx < 0 || !el ? base : `${base} translateX(${(i < idx ? -1 : 1) * c.offsetWidth * 0.12 * (1 / Math.max(1, Math.abs(i - idx) * 0.6))}px)`;
+      c.dataset.aside = idx < 0 ? '' : i < idx ? 'left' : 'right';
+    });
   }
 
   // ------------------------------------------------------------ dialogs driven by state

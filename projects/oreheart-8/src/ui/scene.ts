@@ -218,26 +218,27 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   const FN = 16;
   let flowMode = (() => { try { return localStorage.getItem('oreheart.flow') || ''; } catch { return ''; } })() || (low ? 'reduced' : 'on');
   const pulseAt: Record<string, number> = { player: 0, opponent: 0 };
-  const flowGeo = new THREE.BufferGeometry();
-  flowGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(CONFIG.mineCount * FN * 3), 3));
-  flowGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(CONFIG.mineCount * FN * 3), 3));
-  const flowMat = new THREE.PointsMaterial({ size: 0.17, vertexColors: true, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, map: (() => { const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d')!; const gr = g.createRadialGradient(16, 16, 1, 16, 16, 15); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,0.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); return new THREE.CanvasTexture(c); })() });
-  const flowPts = new THREE.Points(flowGeo, flowMat);
+  // Crystal Flow (Round 9a, port of the Game Editor's makeFlow): faceted shards tumble along S-curves from each owned mine to its owner's Stronghold.
+  const shardGeo = new THREE.OctahedronGeometry(0.5, 0); shardGeo.scale(0.55, 1.35, 0.4);
+  const flowMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+  const flowPts = new THREE.InstancedMesh(shardGeo, flowMat, CONFIG.mineCount * FN);
+  flowPts.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(CONFIG.mineCount * FN * 3), 3);
   flowPts.frustumCulled = false;
-  flowPts.renderOrder = -1;
+  flowPts.renderOrder = 5;
   scene.add(flowPts);
+  const flowDum = new THREE.Object3D(), flowCol3 = new THREE.Color();
+  let flowShown = 0;
   const flowOwner: string[] = [];
-  const flowCol: Record<string, THREE.Color> = { player: new THREE.Color(0x66ccff), opponent: new THREE.Color(0xff5a4a), neutral: new THREE.Color(0xe8e8ff) };
+  const flowCol: Record<string, THREE.Color> = { player: new THREE.Color(0x9dff6a), opponent: new THREE.Color(0xff5a4a), neutral: new THREE.Color(0xe8e8ff) };
   const bez = new THREE.Vector3();
   function updateFlow(now: number) {
     const n = flowMode === 'off' ? 0 : flowMode === 'reduced' ? 6 : FN;
     flowPts.visible = n > 0;
-    if (!n) return;
-    const pos = flowGeo.getAttribute('position') as THREE.BufferAttribute, col = flowGeo.getAttribute('color') as THREE.BufferAttribute;
+    if (!n) { flowShown = 0; return; }
     const t = now / 1000;
     let pulse = 0;
     for (const sd of ['player', 'opponent']) pulse = Math.max(pulse, 1 - Math.min(1, (now - pulseAt[sd]) / 1000));
-    flowMat.size = 0.17 + pulse * 0.1;
+    let shown = 0;
     mines.forEach((m, mi) => {
       const owner = flowOwner[mi] || 'neutral';
       const a = m.group.position;
@@ -245,25 +246,39 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       const c = flowCol[owner];
       for (let i = 0; i < FN; i++) {
         const k = mi * FN + i;
-        if (i >= n) { pos.setXYZ(k, 0, -50, 0); continue; }
+        flowDum.rotation.set(0, 0, 0);
+        if (i >= n) { flowDum.position.set(0, -50, 0); flowDum.scale.setScalar(0.001); flowDum.updateMatrix(); flowPts.setMatrixAt(k, flowDum.matrix); continue; }
+        let fade = 1;
         if (dest) {
           const u = (t * 0.32 + i / n) % 1;
           const sx = a.x, sy = 1.5, sz = a.z, ex = dest.x, ey = CMD_H * 0.55, ez = dest.z;
           const cx = (sx + ex) / 2, cy = 3.4, cz = (sz + ez) / 2;
           const w = 1 - u;
           bez.set(w * w * sx + 2 * w * u * cx + u * u * ex, w * w * sy + 2 * w * u * cy + u * u * ey, w * w * sz + 2 * w * u * cz + u * u * ez);
-          bez.x += Math.sin(t * 3 + i) * 0.06; bez.z += Math.cos(t * 3 + i * 1.7) * 0.06;
-          pos.setXYZ(k, bez.x, bez.y, bez.z);
-          const fade = Math.min(1, u * 6, (1 - u) * 4) * (0.8 + pulse * 0.6);
-          col.setXYZ(k, c.r * fade, c.g * fade, c.b * fade);
+          // moving S-curves: sideways bends that slither along the stream
+          const dx = ex - sx, dz = ez - sz, len = Math.hypot(dx, dz) || 1;
+          const env = Math.sin(Math.PI * u), bend = env * 0.55 * Math.sin(Math.PI * 2 * 2.15 * u - t * 1.4 + mi) + Math.sin(t * 3 + i * 1.7) * 0.06 * env;
+          bez.x += (-dz / len) * bend; bez.z += (dx / len) * bend;
+          flowDum.position.copy(bez);
+          fade = Math.min(1, u * 6, (1 - u) * 4) * (0.8 + pulse * 0.6);
+          flowDum.rotation.set(t * 3 + i, t * 2 + i * 2, t * 4 + mi);
+          flowDum.scale.setScalar(0.2 * (0.5 + 0.5 * env) * (1 + pulse * 0.5) * (0.8 + (i % 3) * 0.2));
         } else {
           const ang = t * 1.1 + (i / n) * Math.PI * 2, r = 0.38 + 0.12 * Math.sin(t * 1.7 + i);
-          pos.setXYZ(k, a.x + Math.cos(ang) * r, 1.45 + 0.25 * Math.sin(t * 1.3 + i * 2) + (i % 3) * 0.12, a.z + Math.sin(ang) * r);
-          col.setXYZ(k, c.r * 0.8, c.g * 0.8, c.b * 0.8);
+          flowDum.position.set(a.x + Math.cos(ang) * r, 1.45 + 0.25 * Math.sin(t * 1.3 + i * 2) + (i % 3) * 0.12, a.z + Math.sin(ang) * r);
+          flowDum.rotation.set(t * 3 + i, t * 2 + i * 2, 0);
+          flowDum.scale.setScalar(0.16); fade = 0.8;
         }
+        flowDum.updateMatrix();
+        flowPts.setMatrixAt(k, flowDum.matrix);
+        flowCol3.setRGB(c.r * fade, c.g * fade, c.b * fade);
+        flowPts.setColorAt(k, flowCol3);
+        shown++;
       }
     });
-    pos.needsUpdate = true; col.needsUpdate = true;
+    flowShown = shown;
+    flowPts.instanceMatrix.needsUpdate = true;
+    if (flowPts.instanceColor) flowPts.instanceColor.needsUpdate = true;
   }
 
   // strongholds + commanders
@@ -900,7 +915,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
             commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? 'grubnak.glb' : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? 'grubnak-fortress.glb' : '', scepter: cm.g3d ? 'grubnak-scepter.glb' : '', scepterBone: (cm.g3d as any)?.scepterBone || '', ...f }; }),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
-            strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => ({ source: MINE_MODEL, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' })), mineModel: mines.every((m) => m.group.userData.mineModel === 'gltf') ? 'gltf' : 'loading',
+            strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => ({ source: 'code-built', height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' })), mineModel: 'code-built', crystalFlow: { shards: flowShown, streams: flowOwner.filter((o) => o && o !== 'neutral').length, swirls: flowOwner.filter((o) => !o || o === 'neutral').length, shape: 'faceted', path: 's-curve', target: 'bank' },
           });
         } else setTimeout(wait, 30);
       };

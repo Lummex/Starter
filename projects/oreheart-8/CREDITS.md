@@ -40,3 +40,8 @@ Everything in the game is made in code or generated for this project. There are 
 ## Round 8a additions
 - `public/art/arena/skullfang-arena.png`, `skullfang-swamp-background.jpg`, `skullfang-arena-layout.json` (also `src/content/arena-layout.json`): the owner's painted Skullfang Arena, swamp background and finished layout, used unchanged. The effect shaders and particle code in `src/ui/arena-fx.ts` are ported from the owner's Arena Editor (`arena-editor-source.html`).
 - `public/models/mine/crystal-mine.glb` (+ `mine.json`): crystal mine generated once with the Meshy API (image-to-3D from the owner's `crystal-mine-front.png`, task in `mine.json`, about 12k triangles, textures re-encoded to 1024 px JPEG by `tools/shrink-glb-textures.mjs`).
+
+## Round 9a
+- `public/music/tense-cycle.mp3` (menus and intro) and `public/music/first-fight.mp3` (matches): owner-supplied music.
+- `public/art/goblin/*` (corner frames, Flow crystals, Goblin bank, opponent bank placeholder): owner-supplied, from the owner's Game Editor "final draft" layout and Goblin theme.
+- The crystal mine model is built in code from the owner's Game Editor (`buildMineModel`); no outside asset.
