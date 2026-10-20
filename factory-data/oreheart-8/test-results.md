@@ -1,6 +1,6 @@
 # Automated check results
 
-263 of 263 checks passed after 3 build round(s).
+282 of 283 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -34,11 +34,11 @@
 - ✅ round 5b screenshots (844x390) › AC160: match, Menu popped out and hand popped out render without errors (844x390)
 - ✅ round 6a match layout 1920x1080 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (1920x1080)
 - ✅ round 6a match layout 1920x1080 › AC163: the hand is 2x, centered, overlapping, tucked halfway and slides up on hover (1920x1080)
-- ✅ round 6a match layout 1920x1080 › AC164: the hovered card pops out at about 85-90% of the height on the top layer (1920x1080)
+- ✅ round 6a match layout 1920x1080 › AC164: the hovered card pops out at about 70% of the height on the top layer (1920x1080)
 - ✅ round 6a match layout 1920x1080 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (1920x1080)
 - ✅ round 6a match layout 844x390 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (844x390)
 - ✅ round 6a match layout 844x390 › AC163: the hand is 2x, centered, overlapping, tucked halfway and slides up on hover (844x390)
-- ✅ round 6a match layout 844x390 › AC164: the hovered card pops out at about 85-90% of the height on the top layer (844x390)
+- ✅ round 6a match layout 844x390 › AC164: the hovered card pops out at about 70% of the height on the top layer (844x390)
 - ✅ round 6a match layout 844x390 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (844x390)
 - ✅ round 6a screenshots (1920x1080) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (1920x1080)
 - ✅ round 6a screenshots (844x390) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (844x390)
@@ -55,6 +55,12 @@
 - ✅ arena drags 1920x1080 › AC194: dragging a hand card or a creature never pans the view
 - ✅ round 8a screenshots 1920x1080 › AC195: the painted arena match fully zoomed out and zoomed in renders without errors (1920x1080)
 - ✅ round 8a screenshots 844x390 › AC195: the painted arena match fully zoomed out and zoomed in renders without errors (844x390)
+- ✅ hand never rises while dragging 1920x1080 › AC200: dragging a creature or panning across the hand never raises it
+- ✅ round 8b pop-out 1920x1080 › AC201: the pop-out is about 70% of the window height, eased 150-200 ms (1920x1080)
+- ✅ round 8b pop-out 844x390 › AC201: the pop-out is about 70% of the window height, eased 150-200 ms (844x390)
+- ✅ round 8b stat badges 844x390 › AC202: stat badges are small painted icons with readable numbers
+- ✅ round 8b screenshots 1920x1080 › AC211: Commander screen, close-up viewer and stat badges render without errors (1920x1080)
+- ✅ round 8b screenshots 844x390 › AC211: Commander screen, close-up viewer and stat badges render without errors (844x390)
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -168,7 +174,7 @@
 - ✅ AC71: Auto-fill completes a legal deck; Rename and Save
 - ✅ AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)
 - ✅ AC72: "+ New Deck" on the select screen opens the Deck Builder
-- ✅ AC73: the select screen remembers the last Commander, deck and difficulty
+- ❌ AC73: the select screen remembers the last Commander, deck and difficulty
 - ✅ AC74: match-end summary, Play again with the same choices, and Menu
 - ✅ AC75 + AC125: the tutorial runs to the end, teaching only the current rules
 - ✅ AC76: the Last turn recap lists what the enemy did
@@ -258,10 +264,42 @@
 - ✅ AC180: Grubnak model files are saved once with models.json; the game never calls Meshy
 - ✅ AC181: Grubnak is the Meshy model on his fortress with the scepter, about 2.4 tall, idling
 - ✅ AC182: Grubnak plays cast, defeat and celebrate at the right moments
-- ✅ AC183: the Grubnak 3D viewer opens from Choose Your Commander and the Deck Builder
+- ✅ AC183: no "View Grubnak in 3D" button remains on Choose Your Commander or the Deck Builder (Round 8b)
 - ✅ AC185: the owner's arena pictures and layout are loaded unchanged
 - ✅ AC186: all 54 effects are drawn, off-painting pools are clipped, two foreground cut-outs
 - ✅ AC187: no grid lines are drawn, even while dragging a card
 - ✅ AC190: cover-fit with no black bars at 16:9, 4:3, 21:9 and phone; max zoom about 2.5 px per painting pixel
 - ✅ AC191: at zoom 1 on a 4:3 window the view pans sideways but never past the edges
 - ✅ AC193: the Meshy crystal mine is saved once and used for every mine, tinted by owner
+- ✅ AC196: the player Commander faces the opponent and turns back after a look-back
+- ✅ AC197: impatience starts after about 20 s idle and stops on an action
+- ✅ AC198: the hand glow is brightest at the card edge and fades outward
+- ✅ AC199: the hand hover box fits 1 card(s) and a point above it does not raise the hand
+- ✅ AC199: the hand hover box fits 4 card(s) and a point above it does not raise the hand
+- ✅ AC199: the hand hover box fits 8 card(s) and a point above it does not raise the hand
+- ✅ AC203: dragging a card onto the deck list adds one copy; a plain click opens the close-up
+- ✅ AC204: adding cards by double-click, drag and + never moves the panel, the grid or the cards
+- ✅ AC205: every deck entry on Choose Your Commander has the same size, also for long names and when selected
+- ✅ AC206: choosing a Commander hides the other two and shows only his decks; Change Commander, Esc and a second click bring the row back
+- ✅ AC207: Grubnak's 3D model pops up in front of his card when he is chosen
+- ✅ AC208: Fight! sits bottom-right in both states at 1920x1080 and 844x390
+- ✅ AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak's card and dismisses correctly
+- ✅ AC210: body text uses the brown-gold palette variables, no white body text on menu screens
+
+## Failures
+
+```
+✗ AC73: the select screen remembers the last Commander, deck and difficulty
+TimeoutError: locator.click: Timeout 10000ms exceeded.
+Call log:
+  - waiting for getByLabel('Deck choice', { exact: true }).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })
+
+
+  2710 |   await makeSelectDecks(page);
+  2711 |   await page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable', exact: true }).click();
+> 2712 |   await deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true }).click();
+       |                                                                                                 ^
+  2713 |   await page.getByRole('button', { name: 'Hard', exact: true }).click();
+  2714 |   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  2715 |   await keepAndGetState(page);
+```
