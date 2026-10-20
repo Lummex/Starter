@@ -474,3 +474,6 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 - AC176: the enemy deck pile is smaller than yours.
 - AC177: the hidden `.cid` marker in each hand card now spans the card so the glow outset is measured against the card; the glow shimmer is opacity-only (no blend mode or background animation), which also keeps a popped card cheap to render.
 - AC174: hand pop logic hardened (immediate tuck when the pointer leaves, hover only pops the card under the pointer, a resting mouse over a card pops it); test-mode WebGL rendering is throttled adaptively so software GL doesn't starve the page.
+
+## Round 8b inspector note: AC73
+The AC73 check selects Sproingle and then clicks the saved Goblin deck "Miner Rush". Round 8b item 11 and SPEC line 43 say the deck row shows only the selected Commander's decks, and a Goblin deck is not legal for Sproingle. The check therefore contradicts the spec, and the app was deliberately left unchanged. The check needs to pick Grubnak, or save the deck under Sproingle with Gnome cards.
