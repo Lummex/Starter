@@ -119,6 +119,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     // A hidden native <select> twin so assistive tech and scripted pickers can choose the Commander by full name.
     const full: Record<string, string> = { grubnak: 'Grubnak Rotgut, King of the Junkpile', sproingle: 'Archmagister Sproingle the Unfathomable', borgo: 'Thane Borgo Gravelgrim' };
     const nat = h('select', { id: 'f-commander-native', class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true' }, ...Object.entries(full).map(([k, v]) => h('option', { value: k }, v))) as HTMLSelectElement;
+    nat.style.cssText = 'position:absolute!important;width:1px!important;height:1px!important;min-width:0!important;min-height:0!important;padding:0!important;border:0!important;opacity:.01;overflow:hidden;appearance:none;pointer-events:none';
     nat.addEventListener('change', () => { cmdId = nat.value; const short = Object.keys(CMD_BY_NAME).find((k) => CMD_BY_NAME[k] === cmdId) || 'Grubnak'; fCmd.set(short); renderCards(); renderDeck(); });
     const cb = fCmd.wrap.querySelector('.combo')!;
     const lab = h('label', { for: 'f-commander-native', style: 'display:contents' });
@@ -181,6 +182,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   function drag(e: PointerEvent, c: any, el: HTMLElement) {
     if (e.button !== 0) return;
     if (e.pointerType === 'mouse') e.preventDefault();
+    (el as any)._dragged = false;
     const sx = e.clientX, sy = e.clientY;
     let ghost: HTMLElement | null = null;
     const inside = (n: Element, x: number, y: number) => { const r = n.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; };
@@ -198,7 +200,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     };
     const up = (m: PointerEvent) => {
       document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
-      if (ghost) { ghost.remove(); pileEl.classList.remove('hot'); if (m.type === 'pointerup' && over(m.clientX, m.clientY)) addCard(c.id, new DOMRect(m.clientX - 30, m.clientY - 45, 60, 90)); setTimeout(() => { (el as any)._dragged = false; }, 50); }
+      if (ghost) { ghost.remove(); pileEl.classList.remove('hot'); if (m.type === 'pointerup' && over(m.clientX, m.clientY)) addCard(c.id, new DOMRect(m.clientX - 30, m.clientY - 45, 60, 90)); setTimeout(() => { (el as any)._dragged = false; }, 0); }
     };
     document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
   }

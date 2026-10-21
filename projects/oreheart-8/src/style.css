@@ -1323,7 +1323,7 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 @keyframes dealin{from{translate:0 160%;opacity:.2}to{translate:0 0;opacity:1}}
 .match .hand.o-hand{left:var(--pl)!important;width:var(--pw)!important;right:auto!important}
 /* Round 9a fix: resting hand card height = 34 % of the frame height; enemy fan stays on-screen */
-.match{--fh:min(100vh,56.25vw);--hcw:calc(var(--fh) * .229)}
+.match{--fh:min(100vh,56.25vw);--hcw:calc(var(--fh) * .2455)}
 .match .o-fan .back{top:-16%;height:60%}
 /* Round 9a: only the hovered card rises (the hand itself stays tucked); 450 ms ease */
 .match .hand.o-hand.open,.match .hand.o-hand.has-pop{transform:translateY(calc(var(--hcw) * .75))}

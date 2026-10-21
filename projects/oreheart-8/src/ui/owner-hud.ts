@@ -63,7 +63,7 @@ export function applyOwnerHud(match: El, r: any, hk: HudHooks) {
     el.append(im);
     el.style.zIndex = String(1 + i);
     add(el, '', { x: f.x, y: f.y, w: f.w, h: f.h });
-    el.dataset.role = 'corner-frame-' + (i + 1); el.dataset.hudRole = ['pic2', 'pic3', 'pic4'][i] || 'pic' + (i + 2); el.dataset.ornament = 'corner';
+    el.dataset.role = 'corner-frame-' + (i + 1); el.dataset.hudRole = ['pic2', 'pic3', 'pic4'][i] || 'pic' + (i + 2); el.dataset.cornerFrame = '1'; el.dataset.ornament = 'corner';
   });
 
   // Flow crystals (picture + number); the bank is its own piece
@@ -72,7 +72,8 @@ export function applyOwnerHud(match: El, r: any, hk: HudHooks) {
     const f = side === 'player' ? hk.playerFaction : hk.enemyFaction;
     const pic = goblin(f) ? themeOf(f).flowCrystal.player.picture[0] : themeOf(FALLBACK).flowCrystal.opponentPlaceholder.picture[0];
     const el = document.createElement('div'); el.className = 'o-gem'; el.setAttribute('role', 'group'); el.setAttribute('aria-label', label);
-    el.append(img(picUrl(pic)));
+    const gi = img(picUrl(pic)); gi.setAttribute('role', 'img'); gi.setAttribute('aria-label', side === 'player' ? 'Your soul crystal' : 'Enemy soul crystal'); gi.alt = gi.getAttribute('aria-label')!;
+    el.append(gi);
     numEl.classList.add('o-gem-n');
     numEl.style.fontSize = `max(14px, calc(var(--u) * ${spec.gem.numSize} * 9 / 100))`;
     el.append(numEl);
@@ -151,6 +152,8 @@ export function applyOwnerHud(match: El, r: any, hk: HudHooks) {
   placed.push({ el: r.menuWrap, spec: mb });
   r.menuWrap.classList.add('o-piece');
   r.menuWrap.style.zIndex = '60';
+  // small always-visible speaker (bottom-left corner of the screen) so sound can be muted without opening the Menu
+  if (r.spk) { r.spk.style.cssText = 'position:fixed;left:.5%;bottom:1%;top:auto;z-index:10000'; match.append(r.spk); }
   match.append(r.menuWrap);
 
   // drop-down menu

@@ -57,7 +57,7 @@ export interface G3D {
   play(name: GrubnakAnim, opts?: { loop?: boolean }): void;
   current(): string;
   update(dt: number): void;
-  clipNames: string[]; scepterBone?: string;
+  clipNames: string[]; scepterBone?: string; held?: any;
   /** native-units height of the whole assembly */
   height: number;
 }
@@ -138,5 +138,5 @@ export function makeGrubnak3d(a: G3DAssets): G3D {
   };
   play('idle');
   const total = box(group);
-  return { group, figure, fortress, mixer, play, current: () => cur, update: (dt) => mixer.update(dt), clipNames: Object.keys(actions), scepterBone, height: total.max.y - total.min.y };
+  return { group, figure, fortress, mixer, play, current: () => cur, update: (dt) => mixer.update(dt), clipNames: Object.keys(actions), scepterBone, held: scepterBone ? { item: 'scepter', bone: scepterBone, position: [-4.404, 8.752, -3.774], rotationDeg: [-109.365, 5.199, 154.757], scale: 61.35 } : null, height: total.max.y - total.min.y };
 }

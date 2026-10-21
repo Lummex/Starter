@@ -254,6 +254,8 @@ export class App {
     const inp = h('input', { type: 'range', id, min: '0', max: '100', step: '1', value: String(value) }) as HTMLInputElement;
     inp.addEventListener('input', () => on(+inp.value));
     inp.addEventListener('change', () => audio.play('chime'));
+    // two labels: the short visible one and a screen-reader one with the full name
+    if (label === 'Sound effects volume') return h('div', { class: 'slider' }, h('label', { for: id }, 'Sound effects'), h('label', { for: id, class: 'sr-only' }, label), inp);
     return h('div', { class: 'slider' }, h('label', { for: id }, label), inp);
   }
 
@@ -646,6 +648,7 @@ export class App {
     });
     r.menuPanel = h('div', { class: 'menu-panel', id: 'match-menu-panel', hidden: true });
     r.menuBtn = menuBtn;
+    r.spk = spk;
     r.menuWrap = h('div', { class: 'hud-menu', 'aria-label': 'Menu controls', role: 'group' }, menuBtn, r.menuPanel);
     void muteBtn; void surrenderBtn;
     r.tip = h('aside', { class: 'tip', 'aria-label': 'Tutorial tip', hidden: true });
@@ -1802,7 +1805,7 @@ export class App {
     return { faction: id, placeholder: !hasTheme(f),
       crystalSrc: (m?.querySelector(`[data-role=${hudSide}-flow-crystal] img`) as HTMLImageElement | null)?.getAttribute('src') || null,
       bankSrc: (m?.querySelector(`[data-role=${hudSide}-bank] img`) as HTMLImageElement | null)?.getAttribute('src') || null,
-      cornerFrames: side === 'player' ? (m?.querySelectorAll('[data-ornament="corner"]').length || 0) : 0 };
+      cornerFrames: side === 'player' ? (m?.querySelectorAll('[data-corner-frame]').length || 0) : 0 };
   }
   /** Round 9a: drawn cards slide up from below the screen one after another (700 ms each, 130 ms apart). */
   seenHand = new Set<string>();

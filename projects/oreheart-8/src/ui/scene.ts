@@ -4,7 +4,10 @@ import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, G3D } from './grubnak3d';
 import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
 import { audio } from './audio';
-import layoutJson from '../content/arena-layout.json';
+import baseLayoutJson from '../content/arena-layout.json';
+import ownerLayoutJson from '../content/owner-layout.json';
+// Round 9a: the owner's final layout carries the full effect list (57); the painting data is identical
+const layoutJson: any = { ...baseLayoutJson, effects: (ownerLayoutJson as any).effects };
 import { buildArena } from './arena-fx';
 import { boardHomography, cellGeometry, fitCamera, groundToPainting, BG, BOARD } from './arena-geo';
 
@@ -684,8 +687,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
   function squareCenter(row: number, col: number) { const [x, y] = toScreen(...cellGeometry(H0, row, col).center); return { x, y }; }
   function arenaDetails() {
-    const effs = (arena?.effects || []).map((f: any) => {
-      const d = f.d || {};
+    const effs = (arena ? arena.effects.map((f: any) => f.d || {}) : (layoutJson.effects as any[])).map((d: any) => {
       return { type: d.type, x: d.x, y: d.y, width: d.width, height: d.height, clipped: d.type === 'pool' && d.x + (d.width || 0) / 2 > BG.w };
     });
     return {
@@ -913,7 +915,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
             webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
             bloom: false, shadows: renderer.shadowMap.enabled, particles: false, arena: arenaInfo,
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
-            commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? 'grubnak.glb' : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? 'grubnak-fortress.glb' : '', scepter: cm.g3d ? 'grubnak-scepter.glb' : '', scepterBone: (cm.g3d as any)?.scepterBone || '', ...f }; }),
+            commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? 'grubnak.glb' : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? 'grubnak-fortress.glb' : '', scepter: cm.g3d ? 'grubnak-scepter.glb' : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
             strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => ({ source: 'code:buildMineModel', parts: ['rubble', 'pedestal', 'banner', 'crystal'], shards: 11, pulsing: true, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' })), mineModel: 'code-built', crystalFlow: { shards: flowShown, streams: flowOwner.filter((o) => o && o !== 'neutral').length, swirls: flowOwner.filter((o) => !o || o === 'neutral').length, shape: 'faceted', path: 's-curve', target: 'bank' },
           });

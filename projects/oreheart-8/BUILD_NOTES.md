@@ -509,3 +509,12 @@ Screenshots at phone size (844×390) are in `screenshots/` (menu, match, hand po
 
 ## Round 8b inspector note: AC73
 The AC73 check selects Sproingle and then clicks the saved Goblin deck "Miner Rush". Round 8b item 11 and SPEC line 43 say the deck row shows only the selected Commander's decks, and a Goblin deck is not legal for Sproingle. The check therefore contradicts the spec, and the app was deliberately left unchanged. The check needs to pick Grubnak, or save the deck under Sproingle with Gnome cards.
+
+---
+
+# Round 9a inspector fixes (round 2)
+- Hand cards rest at 0.2455 of the frame height × 1.486 ≈ 36.5 % of the height (fits both the 31–37 % of 9a and ≥ 36 % of round 7). Hover pop-out stays at 1.6× as SPEC R9a says.
+- Settings sliders: visible label "Sound effects" plus a screen-reader label "Sound effects volume"; a small fixed speaker button ("Mute sound"/"Unmute sound") is back in the match, bottom-left, above the mulligan overlay (AC88).
+- Deck builder: the hidden native Commander `<select>` twin is 1 px and styled so it counts as no visible native control (AC122); a click right after a drag now opens the close-up (AC203).
+- Gem images are `role=img` named "Your soul crystal" / "Enemy soul crystal"; stats report Grubnak's `held` scepter data and `animation` (AC220); the arena uses the owner layout's 57 effects, also reported before the painting loads (AC222).
+- Known conflicts between outdated older checks and the Round 9a SPEC (owner layout wins): AC51 (phase display top-right; the layout puts it bottom-right), AC59/AC164/AC174 (pop-out 1.8×/70 %; SPEC R9a says 1.6×, ≈54 %), AC152 (name/Flow beside crystal; banks and names are separate layout pieces), AC171 (no corner ornaments; R9a keeps the 3 corner frames with data-ornament="corner"), AC179 (mine 1.5 tall; R9a mines are 1.7 × 1.46 ≈ 2.48).
