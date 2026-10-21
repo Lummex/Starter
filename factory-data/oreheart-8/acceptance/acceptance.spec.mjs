@@ -574,29 +574,28 @@ test('AC10: Unique card limited to one on the battlefield; Borgo +1 Health', asy
 });
 
 // ---------- AC11 ----------
-test('AC11: Tunnel only while more mines are in the enemy color', async ({ page }) => {
+test('AC11: Tunnel works from turn 1 on every empty space next to any mine (Round 10)', async ({ page }) => {
   const hand = { playerHand: ['goblin-scrounger'], playerCrystals: 5 };
   let s = await start(page, { ai: false, setup: { ...hand } });
-  let summons = (await legal(page)).filter((a) => a.type === 'summon');
-  expect(summons.some((a) => a.row === 3 && a.col === 3)).toBe(false);
-  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 3, col: 3 })).ok).toBe(false);
-
-  s = await newMatch(page, { ai: false, setup: { ...hand, board: [
-    { cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1, minedMine: M1 },
-    { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 7, minedMine: M3 },
-  ] } });
-  expect(s.sites.map((x) => x.controller)).toEqual(['opponent', null, 'player']);
-  expect(s.sites.map((x) => x.color)).toEqual(['blue', 'white', 'green']);
-  summons = (await legal(page)).filter((a) => a.type === 'summon');
-  expect(summons.some((a) => a.row === 3 && a.col === 3)).toBe(false); // 1 vs 1: equal
-
-  s = await newMatch(page, { ai: false, setup: { ...hand, board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1, minedMine: M1 }] } });
-  summons = (await legal(page)).filter((a) => a.type === 'summon');
-  expect(summons.some((a) => a.row === 3 && a.col === 3)).toBe(true);
-  expect(summons.some((a) => a.row === 5 && a.col === 4)).toBe(true);
-  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 3, col: 3 })).ok).toBe(true);
+  expect(s.sites.every((x) => x.controller === null)).toBe(true);
+  const uid = s.players.player.hand[0].uid;
+  const summons = (await legal(page)).filter((a) => a.type === 'summon' && a.uid === uid);
+  const has = (r, c) => summons.some((a) => a.row === r && a.col === c);
+  const st = [s.strongholds.player, s.strongholds.opponent];
+  for (const m of s.sites) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+    const r = m.row + dr, c = m.col + dc;
+    if ((!dr && !dc) || r < 1 || r > 7 || c < 1 || c > 13) continue;
+    if (s.sites.some((x) => x.row === r && x.col === c) || st.some((x) => x.row === r && x.col === c) || at(s, r, c)) continue;
+    expect(has(r, c), `tunnel ${r},${c}`).toBe(true);
+  }
+  expect(has(3, 8)).toBe(false); // not next to a mine, not the back row
+  expect((await act(page, { type: 'summon', uid, row: 3, col: 3 })).ok).toBe(true);
   s = await getState(page);
   expect(at(s, 3, 3).cardId).toBe('goblin-scrounger');
+  // still works while ahead on mines
+  s = await newMatch(page, { ai: false, setup: { ...hand, board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 7, minedMine: M3 }] } });
+  expect(s.sites[2].controller).toBe('player');
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 5, col: 4 })).ok).toBe(true);
 });
 
 // ---------- AC12 ----------
@@ -742,28 +741,34 @@ test('AC13: Guard forces adjacent melee attackers to hit it', async ({ page }) =
   expect((await act(page, { type: 'attack', creatureUid: at(s, 3, 4).uid, target: { row: 2, col: 5 } })).ok).toBe(false);
 });
 
-test('AC13: Ranged hits anything within 2 spaces, over creatures, with no strike back', async ({ page }) => {
+test('AC13: Ranged shoots up to 5 squares in 8 straight lines, stops at the first unit, no strike back (Round 10)', async ({ page }) => {
   let s = await start(page, {
     ai: false,
     playerCommander: 'borgo',
     opponentCommander: 'borgo',
     setup: { board: [
       { cardId: 'axe-thrower', owner: 'player', row: 5, col: 7 },
-      { cardId: 'shieldbeard', owner: 'opponent', row: 4, col: 7 }, // in between
-      { cardId: 'dwarf-miner', owner: 'opponent', row: 3, col: 7 }, // 2 straight ahead, behind the Shieldbeard
-      { cardId: 'dwarf-miner', owner: 'opponent', row: 3, col: 6 }, // knight-move angle
-      { cardId: 'dwarf-miner', owner: 'opponent', row: 2, col: 7 }, // 3 away: out of range
-      { cardId: 'goblin-slinger', owner: 'player', row: 3, col: 11 }, // 2 from the enemy Stronghold (1,12)
+      { cardId: 'shieldbeard', owner: 'opponent', row: 4, col: 7 }, // first unit straight up
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 3, col: 7 }, // behind the Shieldbeard: blocked
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 3, col: 6 }, // knight-move: not a straight line
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 2, col: 10 }, // diagonal, 3 away, clear
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 5, col: 12 }, // same row, 5 away, clear
+      { cardId: 'dwarf-miner', owner: 'opponent', row: 5, col: 1 }, // same row, 6 away: out of range
+      { cardId: 'goblin-slinger', owner: 'player', row: 4, col: 12 }, // 3 straight below the enemy Stronghold (1,12)
     ] },
   });
   await done(page);
   const axe = at(s, 5, 7).uid;
   const acts = (await legal(page)).filter((a) => a.type === 'attack');
-  expect(acts.some((a) => a.creatureUid === axe && sameTarget(a.target, 3, 7))).toBe(true);
-  expect(acts.some((a) => a.creatureUid === axe && sameTarget(a.target, 3, 6))).toBe(true);
-  expect(acts.some((a) => a.creatureUid === axe && sameTarget(a.target, 4, 7))).toBe(true);
-  expect(acts.some((a) => a.creatureUid === axe && sameTarget(a.target, 2, 7))).toBe(false);
-  const sling = at(s, 3, 11).uid;
+  const can = (u, r, c) => acts.some((a) => a.creatureUid === u && sameTarget(a.target, r, c));
+  expect(can(axe, 4, 7)).toBe(true);
+  expect(can(axe, 3, 7)).toBe(false);
+  expect(can(axe, 3, 6)).toBe(false);
+  expect(can(axe, 2, 10)).toBe(true);
+  expect(can(axe, 5, 12)).toBe(true);
+  expect(can(axe, 5, 1)).toBe(false);
+  expect((await act(page, { type: 'attack', creatureUid: axe, target: { row: 3, col: 7 } })).ok).toBe(false);
+  const sling = at(s, 4, 12).uid;
   expect(acts.some((a) => a.creatureUid === sling && a.target && a.target.commander === 'opponent')).toBe(true);
   expect((await act(page, { type: 'attack', creatureUid: axe, target: { row: 4, col: 7 } })).ok).toBe(true);
   s = await getState(page);
@@ -772,7 +777,7 @@ test('AC13: Ranged hits anything within 2 spaces, over creatures, with no strike
   expect((await act(page, { type: 'attack', creatureUid: sling, target: { commander: 'opponent' } })).ok).toBe(true);
   s = await getState(page);
   expect(s.players.opponent.health).toBe(19); // exactly 1
-  expect(at(s, 3, 11).health).toBe(3); // Slinger 2 + 1 Borgo, untouched
+  expect(at(s, 4, 12).health).toBe(3); // Slinger 2 + 1 Borgo, untouched
 });
 
 // ---------- AC14 ----------
@@ -897,24 +902,29 @@ test('AC17: Searing Arcane Orb deals 3 damage for 3 crystals', async ({ page }) 
   expect(s.players.player.discard.some((c) => c.cardId === 'fireball')).toBe(true);
 });
 
-test('AC17: only one Crystal card per round; it goes to the Bank', async ({ page }) => {
-  let s = await start(page, { ai: false, setup: { playerHand: ['soul-shard', 'soul-shard'], playerDeck: SHARDS, opponentDeck: SHARDS } });
-  const [a, b] = s.players.player.hand.map((c) => c.uid);
+test('AC17: Crystal cards have no once-per-round limit; each goes to the Bank (Round 10)', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { playerHand: ['soul-shard', 'soul-shard', 'soul-shard'], playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 5 }] } }); // a creature keeps the Action phase open
+  const [a, b, c] = s.players.player.hand.map((x) => x.uid);
   expect((await act(page, { type: 'playCrystal', uid: a })).ok).toBe(true);
   s = await getState(page);
   expect(s.players.player.bank).toBe(1);
   expect(s.players.player.crystals).toEqual(ZERO);
-  expect((await legal(page)).some((x) => x.type === 'playCrystal')).toBe(false);
-  expect((await act(page, { type: 'playCrystal', uid: b })).ok).toBe(false);
-  await passTurn(page);
-  await passTurn(page);
-  s = await getState(page);
-  expect(s.activePlayer).toBe('player');
-  expect(s.phase).toBe('deploy');
   expect((await legal(page)).some((x) => x.type === 'playCrystal' && x.uid === b)).toBe(true);
   expect((await act(page, { type: 'playCrystal', uid: b })).ok).toBe(true);
-  expect((await getState(page)).players.player.bank).toBe(2);
+  s = await getState(page);
+  expect(s.players.player.bank).toBe(2);
+  expect(s.phase).toBe('deploy');
+  await done(page); // Action phase
+  s = await getState(page);
+  expect(s.phase).toBe('action');
+  expect((await act(page, { type: 'playCrystal', uid: c })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.bank).toBe(3);
+  expect(s.phase).toBe('action');
+  expect(s.activePlayer).toBe('player');
 });
+
 test("AC17: Desperate Plunder costs 1 and gives 3 Flow only when behind on mines", async ({ page }) => {
   let s = await start(page, { ai: false, setup: { playerHand: ['prospectors-prayer'], playerCrystals: 1 } });
   expect((await act(page, { type: 'cast', uid: s.players.player.hand[0].uid })).ok).toBe(false); // 0 vs 0 mines
@@ -1139,7 +1149,8 @@ test('AC22: hand cards are buttons and open a card view', async ({ page }) => {
   const view = page.getByRole('dialog', { name: 'Searing Arcane Orb' });
   await expect(view).toBeVisible();
   await expect(view).toContainText('3 damage');
-  await view.getByRole('button', { name: 'Close' }).click();
+  await expect(view.getByRole('button', { name: 'Close' })).toHaveCount(0); // Round 10: Esc / outside click
+  await page.keyboard.press('Escape');
   await expect(view).toBeHidden();
 });
 
@@ -1730,8 +1741,8 @@ test.describe('landscape layout details', () => {
     const rest = await card.boundingBox();
     expect(rest.y).toBeLessThan(390);
     const shown = (390 - rest.y) / rest.height;
-    expect(shown).toBeGreaterThanOrEqual(0.35);
-    expect(shown).toBeLessThanOrEqual(0.65);
+    expect(shown).toBeGreaterThanOrEqual(0.18); // Round 10: tucked to a quarter
+    expect(shown).toBeLessThanOrEqual(0.32);
     expect(rest.height).toBeGreaterThanOrEqual(390 * 0.31);
     expect(rest.height).toBeLessThanOrEqual(390 * 0.37);
     await page.mouse.move(rest.x + rest.width / 2, rest.y + rest.height * 0.2);
@@ -1991,10 +2002,9 @@ test('AC49: a Crystal card played alone in the Respond window keeps it open and 
   expect(total(s.players.player.crystals) + total(s.players.player.bank)).toBe(0);
 });
 
-test('AC50: Smith Miners never Tunnel; the Tunnel! tag shows only when behind', async ({ page }) => {
+test('AC50: Smith Miners never Tunnel; the Tunnel! tag shows from turn 1 (Round 10)', async ({ page }) => {
   const hand = { playerHand: ['goblin-smith-miner', 'goblin-scrounger'], playerCrystals: 5 };
-  let s = await start(page, { ai: false, setup: { ...hand, board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 1, minedMine: M1 }] } });
-  expect(s.sites[0].color).toBe('blue');
+  let s = await start(page, { ai: false, setup: { ...hand } });
   const smith = handUid(s, 'player', 'goblin-smith-miner');
   const summons = (await legal(page)).filter((a) => a.type === 'summon');
   expect(summons.some((a) => a.uid === smith && a.row === 3 && a.col === 3)).toBe(false);
@@ -2004,8 +2014,6 @@ test('AC50: Smith Miners never Tunnel; the Tunnel! tag shows only when behind', 
   await expect(hb.getByRole('button', { name: 'Grubgrabber Miner', exact: true })).toContainText('Tunnel!');
   await expect(hb.getByRole('button', { name: 'Scrapsmith Miner', exact: true })).not.toContainText('Tunnel!');
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 3, col: 3 })).ok).toBe(true);
-  await newMatch(page, { ai: false, setup: { ...hand } });
-  await expect(page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Grubgrabber Miner', exact: true })).not.toContainText('Tunnel!');
 });
 
 const STRONGHOLD_CROWD = [
@@ -3325,7 +3333,8 @@ test('AC98: tapping a creature shows its card and changes nothing', async ({ pag
   await expect(card).toBeVisible();
   await expect(card.locator('[data-card-id="goblin-scrapper"]')).toHaveCount(1);
   expect(await getState(page)).toEqual(before);
-  await card.getByRole('button', { name: 'Close' }).click();
+  await expect(card.getByRole('button', { name: 'Close' })).toHaveCount(0); // Round 10
+  await page.keyboard.press('Escape');
   await expect(card).toBeHidden();
 });
 
@@ -3622,7 +3631,7 @@ test('AC109: Strongholds stand in the corners: player (7,2), enemy (1,12)', asyn
   expect(opp.every((a) => a.row === 1)).toBe(true);
 });
 
-test('AC110: random mines are always corner-mirrored, fair and away from both Strongholds', async ({ page }) => {
+test('AC110: random mines are always corner-mirrored, fair, away from both Strongholds and never on the same square', async ({ page }) => {
   await openTest(page);
   const cheb = (a, b) => Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
   for (let seed = 11; seed <= 40; seed++) {
@@ -3636,7 +3645,7 @@ test('AC110: random mines are always corner-mirrored, fair and away from both St
       expect(cheb(a, s.strongholds.player), `seed ${seed}`).toBeGreaterThanOrEqual(2);
       expect(cheb(a, s.strongholds.opponent), `seed ${seed}`).toBeGreaterThanOrEqual(2);
     }
-    for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) expect(cheb(m[i], m[j])).toBeGreaterThanOrEqual(2);
+    for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) expect(cheb(m[i], m[j])).toBeGreaterThanOrEqual(1); // Round 10: may touch
     // fair: the sum of distances from each Stronghold to the mines is equal
     const dist = (st) => m.reduce((t, a) => t + cheb(a, st), 0);
     expect(dist(s.strongholds.player), `seed ${seed}`).toBe(dist(s.strongholds.opponent));
@@ -4961,8 +4970,8 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       expect(first.height / H).toBeGreaterThanOrEqual(0.36);
       expect(first.height / H).toBeLessThanOrEqual(0.46);
       const shown = (H - first.y) / first.height;
-      expect(shown).toBeGreaterThanOrEqual(0.35);
-      expect(shown).toBeLessThanOrEqual(0.65);
+      expect(shown).toBeGreaterThanOrEqual(0.18); // Round 10: tucked to a quarter
+      expect(shown).toBeLessThanOrEqual(0.32);
       const r = await rects5b(page);
       const all = { ...Object.fromEntries(Object.entries(pieces).map(([k, v]) => [k, v[0]])), 'Your hand card': first };
       for (const [name, b] of Object.entries(all)) {
@@ -5243,8 +5252,8 @@ for (const [W, H] of SHAPES_6A) {
         expect(b.height / H).toBeGreaterThanOrEqual(0.31); // Round 9a: owner hand 33.81 % of the frame
         expect(b.height / H).toBeLessThanOrEqual(0.37);
         const shown = (H - b.y) / b.height;
-        expect(shown, 'tucked halfway').toBeGreaterThanOrEqual(0.35);
-        expect(shown, 'tucked halfway').toBeLessThanOrEqual(0.65);
+        expect(shown, 'tucked to a quarter').toBeGreaterThanOrEqual(0.18);
+        expect(shown, 'tucked to a quarter').toBeLessThanOrEqual(0.32);
       }
       const xs = boxes.map((b) => b.x).sort((a, b) => a - b);
       for (let i = 1; i < xs.length; i++) {
@@ -5698,8 +5707,8 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
         expect(b.height / H).toBeGreaterThanOrEqual(0.36);
         expect(b.height / H).toBeLessThanOrEqual(0.46);
         const shown = (H - b.y) / b.height;
-        expect(shown).toBeGreaterThanOrEqual(0.35);
-        expect(shown).toBeLessThanOrEqual(0.65);
+        expect(shown).toBeGreaterThanOrEqual(0.18); // Round 10: tucked to a quarter
+        expect(shown).toBeLessThanOrEqual(0.32);
       }
     });
   });
@@ -6051,12 +6060,12 @@ test('AC187: no grid lines are drawn, even while dragging a card', async ({ page
   expect((await arenaInfo(page)).gridLines).toBe(0);
   await page.waitForTimeout(1500);
   const card = await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox();
-  await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25);
+  await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08);
   await page.mouse.down();
   const t = await sq2s(page, 7, 11);
   await page.mouse.move(t.x, t.y - 40, { steps: 12 });
   expect((await arenaInfo(page)).gridLines).toBe(0);
-  await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25, { steps: 8 });
+  await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08, { steps: 8 });
   await page.mouse.up();
 });
 
@@ -6100,7 +6109,7 @@ test.describe('arena highlights 1920x1080', () => {
     const hand = page.getByLabel('Your hand', { exact: true }).getByRole('button').first();
     let card = await hand.boundingBox();
     const t = await sq2s(page, 7, 11);
-    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25);
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08);
     await page.mouse.down();
     await page.mouse.move(t.x, t.y - 60, { steps: 15 });
     await page.waitForTimeout(300);
@@ -6113,7 +6122,7 @@ test.describe('arena highlights 1920x1080', () => {
       expect(Math.hypot(h.center.x - want.x, h.center.y - want.y), `highlight ${h.row},${h.col} on its painted square`).toBeLessThanOrEqual(6);
     }
     // cancel: back over the hand and release
-    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25, { steps: 10 });
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08, { steps: 10 });
     await page.mouse.up();
     const crystal = await page.getByLabel('Your crystal', { exact: true }).boundingBox();
     await page.mouse.move(crystal.x + crystal.width / 2, crystal.y + crystal.height / 2);
@@ -6121,7 +6130,7 @@ test.describe('arena highlights 1920x1080', () => {
     expect(at(await getState(page), 7, 11)).toBeFalsy();
     // drop on the mapped square
     card = await hand.boundingBox();
-    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25);
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08);
     await page.mouse.down();
     await page.mouse.move(t.x, t.y, { steps: 15 });
     await page.mouse.up();
@@ -6319,12 +6328,12 @@ test.describe('arena drags 1920x1080', () => {
     const same = (a, b) => Math.abs(a.x - b.x) <= 1 && Math.abs(a.y - b.y) <= 1 && Math.abs(a.width - b.width) <= 1;
     const v0 = (await camera(page)).view;
     const card = await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox();
-    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25);
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08);
     await page.mouse.down();
     await page.mouse.move(960, 420, { steps: 10 });
     await page.mouse.move(1100, 380, { steps: 10 });
     expect(same((await camera(page)).view, v0), 'card drag does not pan').toBe(true);
-    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.25, { steps: 10 });
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08, { steps: 10 });
     await page.mouse.up();
     await page.waitForTimeout(500);
     expect(same((await camera(page)).view, v0)).toBe(true);
@@ -6999,7 +7008,7 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       for (const b of rest) {
         expect(b.height / fh).toBeGreaterThanOrEqual(0.31); expect(b.height / fh).toBeLessThanOrEqual(0.37);
         const shown = (H - b.y) / b.height;
-        expect(shown).toBeGreaterThanOrEqual(0.4); expect(shown).toBeLessThanOrEqual(0.7);
+        expect(shown).toBeGreaterThanOrEqual(0.18); expect(shown).toBeLessThanOrEqual(0.32); // Round 10
       }
       const hoverAt = async (i) => {
         const b = rest[i];
@@ -7072,7 +7081,7 @@ test('AC221: mines are the code-built owner mine with all its parts', async ({ p
   }
 });
 
-test('AC222: Crystal Flow streams run from owned mines to each side\'s bank when Flow is gained', async ({ page }) => {
+test('AC222: Crystal Flow streams run from owned mines to each side\'s Flow crystal when Flow is gained', async ({ page }) => {
   await start(page, { ...quiet({ board: [
     { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
     { cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 6, minedMine: M3 },
@@ -7082,12 +7091,12 @@ test('AC222: Crystal Flow streams run from owned mines to each side\'s bank when
   await passTurn(page); // opponent's turn starts: it gains Flow from M3
   await expect.poll(async () => (await streams()).log.filter((x) => x.side === 'opponent').length).toBeGreaterThanOrEqual(1);
   const o = (await streams()).log.find((x) => x.side === 'opponent');
-  expect(o.to).toBe('enemy-bank');
+  expect(o.to).toBe('enemy-flow-crystal'); // Round 10
   expect(sameTarget(o.from, M3.row, M3.col)).toBe(true);
   await passTurn(page); // back to the player
   await expect.poll(async () => (await streams()).log.filter((x) => x.side === 'player').length).toBeGreaterThanOrEqual(1);
   const p = (await streams()).log.find((x) => x.side === 'player');
-  expect(p.to).toBe('player-bank');
+  expect(p.to).toBe('player-flow-crystal'); // Round 10
   expect(p.shards).toBe('faceted');
   expect(p.sBends).toBeGreaterThanOrEqual(1);
   expect(p.count).toBeGreaterThan(0);
@@ -7534,3 +7543,403 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
     });
   });
 }
+
+// ================= Round 10 =================
+const R10_GOBLIN = '#3ee06a';
+const R10_GNOME = '#9b4dff';
+const isRed = (hex) => { const n = parseInt(hex.slice(1), 16); return (n >> 16) >= 200 && ((n >> 8) & 255) <= 90 && (n & 255) <= 90; };
+const renderStats10 = (page) => page.evaluate(async () => await window.oreheart.getRenderStats());
+const inBox = (p, b, pad = 2) => p.x >= b.x - pad && p.x <= b.x + b.width + pad && p.y >= b.y - pad && p.y <= b.y + b.height + pad;
+
+test.describe('round 10 at 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+
+  test('AC243: drag highlights are bright in the faction color; attack squares are red', async ({ page }) => {
+    // summon drag, Goblin player
+    await start(page, quiet({ playerHand: ['goblin-scrapper'], playerCrystals: 5 }));
+    await page.waitForTimeout(1000);
+    const hand = page.getByLabel('Your hand', { exact: true }).getByRole('button').first();
+    let card = await hand.boundingBox();
+    let t = await sq2s(page, 7, 6);
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08);
+    await page.mouse.down();
+    await page.mouse.move(t.x, t.y - 40, { steps: 15 });
+    await page.waitForTimeout(300);
+    let hl = (await arenaInfo(page)).highlights;
+    expect(hl.filter((h) => h.kind === 'summon').length).toBeGreaterThan(0);
+    for (const h of hl) {
+      expect(h.color.toLowerCase()).toBe(R10_GOBLIN);
+      expect(h.fillAlpha).toBeGreaterThanOrEqual(0.45);
+      expect(h.glow).toBe(true);
+    }
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08, { steps: 10 });
+    await page.mouse.up();
+
+    // creature drag next to an enemy: move squares in faction color, attack square red
+    await newMatch(page, quiet({ board: [
+      { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 9 },
+      { cardId: 'gnome-tinker', owner: 'opponent', row: 4, col: 10 },
+    ] }));
+    await done(page);
+    await page.waitForTimeout(800);
+    const lbl = await page.getByLabel('Gutripper Brawler, row 5, column 9', { exact: true }).boundingBox();
+    const from = await sq2s(page, 5, 9);
+    const start0 = lbl ? { x: lbl.x + lbl.width / 2, y: lbl.y + lbl.height / 2 } : from;
+    t = await sq2s(page, 5, 8);
+    await page.mouse.move(start0.x, start0.y);
+    await page.mouse.down();
+    await page.mouse.move(t.x, t.y, { steps: 15 });
+    await page.waitForTimeout(300);
+    hl = (await arenaInfo(page)).highlights;
+    const moves = hl.filter((h) => h.kind === 'move');
+    const attacks = hl.filter((h) => h.kind === 'attack');
+    expect(moves.length).toBeGreaterThan(0);
+    for (const h of moves) expect(h.color.toLowerCase()).toBe(R10_GOBLIN);
+    expect(attacks.some((h) => h.row === 4 && h.col === 10)).toBe(true);
+    for (const h of attacks) { expect(isRed(h.color)).toBe(true); expect(h.fillAlpha).toBeGreaterThanOrEqual(0.45); }
+    await page.mouse.move(start0.x, start0.y, { steps: 5 });
+    await page.mouse.up();
+
+    // Gnome player: faction main color
+    await newMatch(page, { ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { opponentHand: [], playerHand: ['gnome-tinker'], playerCrystals: 5 } });
+    await page.waitForTimeout(1000);
+    card = await hand.boundingBox();
+    t = await sq2s(page, 7, 6);
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08);
+    await page.mouse.down();
+    await page.mouse.move(t.x, t.y - 40, { steps: 15 });
+    await page.waitForTimeout(300);
+    hl = (await arenaInfo(page)).highlights;
+    expect(hl.length).toBeGreaterThan(0);
+    for (const h of hl) expect(h.color.toLowerCase()).toBe(R10_GNOME);
+    await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08, { steps: 10 });
+    await page.mouse.up();
+  });
+
+  test('AC244: played cards pop up at the edges — player right, enemy left — stacked up to 3', async ({ page }) => {
+    const W = 1920, H = 1080;
+    await page.goto('/?test=1&seed=123&fx=1');
+    await page.waitForFunction(() => !!window.oreheart);
+    let s = await newMatch(page, { ...quiet({ playerHand: ['soul-shard', 'soul-shard', 'soul-shard', 'soul-shard'] }), firstPlayer: 'player' });
+    for (const c of s.players.player.hand) expect((await act(page, { type: 'playCrystal', uid: c.uid })).ok).toBe(true);
+    const mine = page.locator('[aria-label="Card reveal"][data-side="player"]');
+    await expect.poll(async () => (await mine.evaluateAll((els) => els.filter((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden').length))).toBe(3);
+    const info = await mine.evaluateAll((els) => els.filter((e) => e.getClientRects().length).map((e) => {
+      const b = e.getBoundingClientRect();
+      return { x: b.x, y: b.y, r: b.right, btm: b.bottom, idx: e.getAttribute('data-stack-index'), z: parseInt(getComputedStyle(e).zIndex) || 0 };
+    }));
+    for (const b of info) {
+      expect(b.r).toBeGreaterThanOrEqual(W * 0.94); expect(b.r).toBeLessThanOrEqual(W);
+      expect(b.x).toBeGreaterThanOrEqual(W * 0.65);
+      expect(b.y).toBeGreaterThanOrEqual(0); expect(b.btm).toBeLessThanOrEqual(H);
+      expect(inBox({ x: W / 2, y: H / 2 }, { x: b.x, y: b.y, width: b.r - b.x, height: b.btm - b.y }, 0)).toBe(false);
+    }
+    expect(info.map((b) => b.idx).sort()).toEqual(['0', '1', '2']);
+    const top = info.find((b) => b.idx === '0');
+    for (const b of info) expect(top.z).toBeGreaterThanOrEqual(b.z);
+
+    s = await newMatch(page, { ...quiet({ opponentHand: ['soul-shard'] }), firstPlayer: 'opponent' });
+    expect(s.activePlayer).toBe('opponent');
+    expect((await act(page, { type: 'playCrystal', uid: s.players.opponent.hand[0].uid })).ok).toBe(true);
+    const theirs = page.locator('[aria-label="Card reveal"][data-side="opponent"]').first();
+    await expect(theirs).toBeVisible();
+    const b = await theirs.boundingBox();
+    expect(b.x).toBeGreaterThanOrEqual(0); expect(b.x).toBeLessThanOrEqual(W * 0.06);
+    expect(b.x + b.width).toBeLessThanOrEqual(W * 0.35);
+  });
+
+  test('AC246: the whole mine model is clickable and clicking its crystal tip mines', async ({ page }) => {
+    await mineAllSetup(page);
+    await done(page);
+    await page.waitForTimeout(1000);
+    const r = await renderStats10(page);
+    if (!r.webgl) test.skip(true, 'WebGL unavailable');
+    for (const m of r.mineModels) {
+      const btn = await siteBtn(page, { row: m.row, col: m.col }).boundingBox();
+      const sb = m.screenBox;
+      expect(sb.width).toBeGreaterThan(0);
+      expect(btn.x).toBeLessThanOrEqual(sb.x + 2); expect(btn.y).toBeLessThanOrEqual(sb.y + 2);
+      expect(btn.x + btn.width).toBeGreaterThanOrEqual(sb.x + sb.width - 2);
+      expect(btn.y + btn.height).toBeGreaterThanOrEqual(sb.y + sb.height - 2);
+    }
+    const m1 = r.mineModels.find((m) => m.row === M1.row && m.col === M1.col).screenBox;
+    await page.mouse.click(m1.x + m1.width / 2, m1.y + m1.height * 0.1);
+    await expect.poll(async () => at(await getState(page), 3, 1).hasMined).toBe(true);
+  });
+
+  test('AC249: Crystal Flow streams end at the Flow crystal counters in faction colors', async ({ page }) => {
+    await start(page, { ...quiet({ board: [
+      { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
+      { cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 6, minedMine: M3 },
+    ] }), firstPlayer: 'player' });
+    const streams = () => page.evaluate(async () => await window.oreheart.getFlowStreams());
+    await passTurn(page);
+    await passTurn(page);
+    await expect.poll(async () => (await streams()).log.filter((x) => x.side === 'player').length).toBeGreaterThanOrEqual(1);
+    const log = (await streams()).log;
+    const p = log.find((x) => x.side === 'player');
+    expect(p.to).toBe('player-flow-crystal');
+    expect(p.colors[0].toLowerCase()).toBe(R10_GOBLIN);
+    expect(p.colors.map((c) => c.toLowerCase())).toContain('#b45cff');
+    const pc = await page.getByLabel('Your crystal', { exact: true }).boundingBox();
+    expect(inBox(p.toScreen, pc, 4)).toBe(true);
+    const o = log.find((x) => x.side === 'opponent');
+    expect(o.to).toBe('enemy-flow-crystal');
+    expect(o.colors[0].toLowerCase()).toBe('#2f5fd8'); // Borgo = Dwarves
+    const ec = await page.getByLabel('Enemy crystal', { exact: true }).boundingBox();
+    expect(inBox(o.toScreen, ec, 4)).toBe(true);
+  });
+
+  test('AC250: card close-up fills 80–100 % of the height, no scrollbar, no Close; outside click and Esc close it', async ({ page }) => {
+    const H = 1080;
+    await start(page, quiet({ playerHand: ['fireball'], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 5 }] }));
+    await page.waitForTimeout(800);
+    const check = async (dlg, id) => {
+      await expect(dlg).toBeVisible();
+      const face = await dlg.locator(`[data-card-id="${id}"]`).first().boundingBox();
+      expect(face.height / H).toBeGreaterThanOrEqual(0.8); expect(face.height / H).toBeLessThanOrEqual(1.0);
+      expect(face.y).toBeGreaterThanOrEqual(0); expect(face.y + face.height).toBeLessThanOrEqual(H + 1);
+      await expect(dlg.getByRole('button', { name: 'Close' })).toHaveCount(0);
+      await expect(dlg.getByText('Close', { exact: true })).toHaveCount(0);
+      const scroll = await dlg.evaluate((d) => [d, ...d.querySelectorAll('*')].filter((e) => e.clientHeight > 0 && e.scrollHeight > e.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(e).overflowY)).length);
+      expect(scroll).toBe(0);
+      return face;
+    };
+    await page.getByLabel('Gutripper Brawler, row 6, column 5', { exact: true }).click();
+    const dlg = page.getByRole('dialog', { name: 'Gutripper Brawler', exact: true });
+    const face = await check(dlg, 'goblin-scrapper');
+    await page.mouse.click(face.x > 40 ? 15 : 1905, H / 2);
+    await expect(dlg).toBeHidden();
+    await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Searing Arcane Orb', exact: true }).click();
+    const v = page.getByRole('dialog', { name: 'Searing Arcane Orb' });
+    await check(v, 'fireball');
+    await page.keyboard.press('Escape');
+    await expect(v).toBeHidden();
+  });
+
+  test('AC251: the resting hand shows about a quarter of each card; hovering raises it', async ({ page }) => {
+    const H = 1080;
+    await start(page, R9_MATCH());
+    await page.mouse.move(960, 300);
+    await page.waitForTimeout(1500);
+    const cards = page.getByLabel('Your hand', { exact: true }).getByRole('button');
+    const n = await cards.count();
+    expect(n).toBeGreaterThanOrEqual(3);
+    for (let i = 0; i < n; i++) {
+      const b = await cards.nth(i).boundingBox();
+      const shown = (H - b.y) / b.height;
+      expect(shown).toBeGreaterThanOrEqual(0.18); expect(shown).toBeLessThanOrEqual(0.32);
+    }
+    const b = await cards.nth(Math.floor(n / 2)).boundingBox();
+    await page.mouse.move(b.x + b.width / 2, b.y + 6, { steps: 4 });
+    await expect.poll(async () => { const c = await cards.nth(0).boundingBox(); return (H - c.y) / c.height; }, { timeout: 4000 }).toBeGreaterThanOrEqual(0.95);
+    await page.mouse.move(960, 300, { steps: 4 });
+    await expect.poll(async () => { const c = await cards.nth(0).boundingBox(); return (H - c.y) / c.height; }, { timeout: 4000 }).toBeLessThanOrEqual(0.32);
+  });
+
+  test('AC256: Round 10 screenshots render without errors', async ({ page }, testInfo) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    const shot = async (name) => testInfo.attach(`r10-${name}-1920x1080`, { body: await page.screenshot(), contentType: 'image/png' });
+    await start(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'soul-shard'], playerCrystals: 8, board: [
+      { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 9 },
+      { cardId: 'gnome-tinker', owner: 'opponent', row: 4, col: 10 },
+      { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
+    ] }));
+    await page.mouse.move(960, 300);
+    await page.waitForTimeout(1500);
+    await shot('hand-at-rest');
+    const card = await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox();
+    await page.mouse.move(card.x + card.width / 2, card.y + 6, { steps: 4 });
+    await page.waitForTimeout(800);
+    await shot('hand-raised');
+    await page.mouse.move(960, 300);
+    await done(page);
+    const lbl = await page.getByLabel('Gutripper Brawler, row 5, column 9', { exact: true }).boundingBox();
+    const t = await sq2s(page, 5, 8);
+    await page.mouse.move(lbl.x + lbl.width / 2, lbl.y + lbl.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(t.x, t.y, { steps: 12 });
+    await page.waitForTimeout(300);
+    await shot('drag-highlights');
+    await page.mouse.move(lbl.x + lbl.width / 2, lbl.y + lbl.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await page.getByLabel('Gutripper Brawler, row 5, column 9', { exact: true }).click();
+    await page.waitForTimeout(500);
+    await shot('close-up');
+    await page.keyboard.press('Escape');
+    await page.goto('/?test=1&seed=123&fx=1');
+    await page.waitForFunction(() => !!window.oreheart);
+    const s = await newMatch(page, { ...quiet({ playerHand: ['soul-shard', 'soul-shard'], board: [{ cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 }] }), firstPlayer: 'player' });
+    for (const c of s.players.player.hand) await act(page, { type: 'playCrystal', uid: c.uid });
+    await page.waitForTimeout(400);
+    await shot('played-card-stack');
+    await passTurn(page);
+    await page.waitForTimeout(600);
+    await shot('enemy-pop-up-and-flow');
+    await passTurn(page);
+    await page.waitForTimeout(600);
+    await shot('flow-stream');
+    expect(errors).toEqual([]);
+  });
+});
+
+test('AC245: random mines may touch; every layout keeps the placement rules', async ({ page }) => {
+  await openTest(page);
+  const cheb = (a, b) => Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
+  let touching = 0;
+  for (let seed = 1; seed <= 200; seed++) {
+    const s = await newMatch(page, { ai: false, seed, skipMulligan: true });
+    const m = s.sites;
+    expect(m.length).toBe(3);
+    for (const a of m) {
+      expect(a.row >= 3 && a.row <= 5, `seed ${seed}`).toBe(true);
+      expect(m.some((b) => b.row === 8 - a.row && b.col === 14 - a.col), `mirror, seed ${seed}`).toBe(true);
+      expect(cheb(a, s.strongholds.player)).toBeGreaterThanOrEqual(2);
+      expect(cheb(a, s.strongholds.opponent)).toBeGreaterThanOrEqual(2);
+    }
+    let t = false;
+    for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) {
+      expect(cheb(m[i], m[j]), `distinct squares, seed ${seed}`).toBeGreaterThanOrEqual(1);
+      if (cheb(m[i], m[j]) === 1) t = true;
+    }
+    if (t) touching++;
+  }
+  expect(touching, 'some layouts have touching mines').toBeGreaterThanOrEqual(1);
+});
+
+test('AC247: a basic Miner dying draws its owner a card; Smith Miners and upgrades do not', async ({ page }) => {
+  // basic Miner killed in combat
+  let s = await start(page, quiet({ playerDeck: SHARDS, opponentDeck: SHARDS, board: [
+    { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 5 },
+    { cardId: 'gnome-tinker', owner: 'opponent', row: 4, col: 5 },
+  ] }));
+  await done(page);
+  s = await getState(page);
+  let hand0 = s.players.opponent.hand.length, deck0 = s.players.opponent.deck.length;
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 5).uid, target: { row: 4, col: 5 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 5)).toBeFalsy();
+  expect(s.players.opponent.hand.length).toBe(hand0 + 1);
+  expect(s.players.opponent.deck.length).toBe(deck0 - 1);
+
+  // Smith Miner killed: no draw
+  s = await newMatch(page, quiet({ playerDeck: SHARDS, opponentDeck: SHARDS, board: [
+    { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 5 },
+    { cardId: 'goblin-smith-miner', owner: 'opponent', row: 4, col: 5 },
+  ] }));
+  await done(page);
+  s = await getState(page);
+  hand0 = s.players.opponent.hand.length; deck0 = s.players.opponent.deck.length;
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 5).uid, target: { row: 4, col: 5 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 5)).toBeFalsy();
+  expect(s.players.opponent.hand.length).toBe(hand0);
+  expect(s.players.opponent.deck.length).toBe(deck0);
+
+  // basic Miner used as an upgrade: no draw
+  s = await newMatch(page, quiet({ playerHand: ['goblin-scrounger'], playerCrystals: 5, playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 5 }] }));
+  const deckP = s.players.player.deck.length;
+  expect((await act(page, { type: 'minerUpgrade', uid: s.players.player.hand[0].uid, creatureUid: at(s, 6, 5).uid })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.hand.length).toBe(0);
+  expect(s.players.player.deck.length).toBe(deckP);
+});
+
+test('AC248: Ranged straight lines also apply to previewAttack and the Commander', async ({ page }) => {
+  let s = await start(page, quiet({ board: [
+    { cardId: 'goblin-slinger', owner: 'player', row: 6, col: 12 }, // 5 straight below the enemy Stronghold (1,12)
+    { cardId: 'goblin-slinger', owner: 'player', row: 3, col: 10 }, // diagonal 2 to (1,12), (2,11) empty
+    { cardId: 'goblin-slinger', owner: 'player', row: 4, col: 10 }, // (1,12) is off-line
+  ] }));
+  await done(page);
+  const acts = (await legal(page)).filter((a) => a.type === 'attack' && a.target && a.target.commander === 'opponent');
+  const can = (r, c) => acts.some((a) => a.creatureUid === at(s, r, c).uid);
+  expect(can(6, 12)).toBe(true);
+  expect(can(3, 10)).toBe(true);
+  expect(can(4, 10)).toBe(false);
+  const h0 = s.players.opponent.health;
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 6, 12).uid, target: { commander: 'opponent' } })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.opponent.health).toBe(h0 - 1);
+  const ranged = await page.evaluate(async () => await window.oreheart.getCard('goblin-slinger'));
+  expect(ranged.longText).toMatch(/5/);
+  expect(ranged.longText.toLowerCase()).toMatch(/straight line/);
+});
+
+test('AC252: mines have no ring, a flat glow-rubble decal tinted by owner, and sit level at equal height', async ({ page }) => {
+  await start(page, quiet({ board: [{ cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 }] }));
+  await page.waitForTimeout(800);
+  const r = await renderStats10(page);
+  if (!r.webgl) test.skip(true, 'WebGL unavailable');
+  const poses = await page.evaluate(async () => await window.oreheart.getPiecePoses());
+  expect(r.mineModels).toHaveLength(3);
+  const h0 = r.mineModels[0].height;
+  for (const m of r.mineModels) {
+    expect(m.ring).toBe(false);
+    expect(m.decal.kind).toBe('glow-rubble');
+    expect(m.decal.flat).toBe(true);
+    expect(m.tiltDeg).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(m.baseY - poses.boardY)).toBeLessThanOrEqual(0.02 * poses.square);
+    expect(Math.abs(m.height - h0)).toBeLessThanOrEqual(0.01);
+  }
+  const owned = r.mineModels.find((m) => m.owner === 'player');
+  expect(owned.decal.color.toLowerCase()).toBe(R10_GOBLIN);
+  await expect(page.getByLabel(`Mine flow, row ${M1.row}, column ${M1.col}`, { exact: true })).toHaveCount(1);
+});
+
+test('AC253: several Crystal cards in one turn, in Deploy and Action, never ending the phase', async ({ page }) => {
+  let s = await start(page, quiet({ playerHand: ['soul-shard', 'soul-shard', 'soul-shard', 'soul-shard'], playerDeck: SHARDS, opponentDeck: SHARDS,
+    board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 5 }] }));
+  const uids = s.players.player.hand.map((c) => c.uid);
+  expect((await act(page, { type: 'playCrystal', uid: uids[0] })).ok).toBe(true);
+  expect((await act(page, { type: 'playCrystal', uid: uids[1] })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.phase).toBe('deploy');
+  await done(page);
+  expect((await act(page, { type: 'playCrystal', uid: uids[2] })).ok).toBe(true);
+  expect((await act(page, { type: 'playCrystal', uid: uids[3] })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.phase).toBe('action');
+  expect(s.activePlayer).toBe('player');
+  expect(s.players.player.bank).toBe(4);
+  const card = await page.evaluate(async () => await window.oreheart.getCard('soul-shard'));
+  expect(`${card.shortText} ${card.longText}`.toLowerCase()).not.toMatch(/(once|one) per (round|turn)/);
+});
+
+test('AC254: Tunnel from turn 1 — drag-and-drop next to a mine works and the AI uses the same rule', async ({ page }) => {
+  let s = await start(page, quiet({ playerHand: ['goblin-scrounger'], playerCrystals: 5 }));
+  await page.waitForTimeout(1000);
+  await expect(page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Grubgrabber Miner', exact: true })).toContainText('Tunnel!');
+  const card = await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox();
+  const t = await sq2s(page, 5, 5); // next to M2 (4,4) and M3 (4,6)
+  await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08);
+  await page.mouse.down();
+  await page.mouse.move(t.x, t.y, { steps: 15 });
+  await page.mouse.up();
+  await expect.poll(async () => at(await getState(page), 5, 5)?.cardId).toBe('goblin-scrounger');
+  // opponent side: summon next to a mine on its turn 1
+  s = await newMatch(page, { ...quiet({ opponentHand: ['dwarf-miner'], opponentCrystals: 5 }), firstPlayer: 'opponent' });
+  expect((await act(page, { type: 'summon', uid: s.players.opponent.hand[0].uid, row: 3, col: 4 })).ok).toBe(true);
+});
+
+test('AC255: rule texts updated for Miner death draw, Ranged lines and Crystal cards', async ({ page }) => {
+  await openTest(page);
+  const cards = await page.evaluate(async () => {
+    const o = window.oreheart;
+    return Promise.all(['goblin-scrounger', 'gnome-tinker', 'dwarf-miner', 'goblin-slinger', 'axe-thrower', 'soul-shard'].map((id) => o.getCard(id)));
+  });
+  for (const c of cards.slice(0, 3)) {
+    expect(c.shortText.toLowerCase()).toMatch(/dies/);
+    expect(c.shortText.toLowerCase()).toMatch(/draw/);
+    expect(c.longText.toLowerCase()).toMatch(/draw/);
+    expect(c.longText.toLowerCase()).not.toMatch(/behind on mines|more mines than you/);
+  }
+  for (const c of cards.slice(3, 5)) {
+    expect(c.shortText).toMatch(/Ranged/);
+    expect(c.longText.toLowerCase()).toMatch(/straight line/);
+    expect(c.longText).toMatch(/5/);
+  }
+  expect(cards[5].longText.toLowerCase()).not.toMatch(/(once|one) per (round|turn)/);
+});
