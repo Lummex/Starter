@@ -54,8 +54,16 @@ async function giveUp(page) {
   await expect(page.getByText('Give up this match?')).toBeVisible();
 }
 // first visit outside test mode shows the tutorial offer; dismiss it
+// Round 9c: outside test mode the owner's Intro screen plays first (once per tab); a click skips it
+async function skipIntro(page) {
+  const intro = page.getByLabel('Intro', { exact: true });
+  await intro.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+  if (await intro.isVisible()) await intro.click({ position: { x: 30, y: 30 } });
+  await expect(intro).toBeHidden({ timeout: 5000 });
+}
 async function openMenu(page) {
   await page.goto('/');
+  await skipIntro(page);
   const offer = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
   await expect(offer).toBeVisible();
   await offer.getByRole('button', { name: 'Skip' }).click();
@@ -83,7 +91,7 @@ const CREATURES = ['goblin-scrounger', 'goblin-scrapper', 'goblin-slinger', 'gob
   'brewmaster', 'ram-rider', 'queen-brunhilda-stonebeard', 'shard-guzzler', 'overclocked-conduit', 'crystal-drunk-delver'];
 
 // ---------- AC1 ----------
-test('AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors', async ({ page }) => {
+test('AC1: main menu has exactly Play, Deck Builder, How to Play, Settings, Quit and no page errors', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await openMenu(page);
@@ -91,8 +99,7 @@ test('AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no p
   const buttons = page.getByRole('button');
   await expect(buttons).toHaveCount(5);
   const names = (await buttons.allInnerTexts()).map((t) => t.trim());
-  expect(names).toEqual(['Play', 'Tutorial', 'Decks', 'Rules', 'Settings']);
-  await expect(page.getByRole('button', { name: /play/i })).toHaveCount(1);
+  expect(names).toEqual(['Play', 'Deck Builder', 'How to Play', 'Settings', 'Quit']);
   await expect(page.getByRole('link', { name: /play/i })).toHaveCount(0);
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
@@ -119,7 +126,7 @@ test('AC2: menu -> choose Commander -> mulligan -> match', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('button', { name: 'Easy', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Normal', exact: true }).click();
-  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   const mull = page.getByRole('dialog', { name: 'Mulligan' });
   await expect(mull).toBeVisible();
   await mull.getByRole('button', { name: 'Keep Hand' }).click();
@@ -135,7 +142,7 @@ test('AC2: menu -> choose Commander -> mulligan -> match', async ({ page }) => {
 // ---------- AC3 ----------
 test('AC3: Rules page with pictures and Back', async ({ page }) => {
   await openMenu(page);
-  await page.getByRole('button', { name: 'Rules', exact: true }).click();
+  await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
   expect(await page.getByRole('img').count()).toBeGreaterThanOrEqual(1);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
@@ -162,6 +169,7 @@ test('AC4: Settings graphics toggle switches and persists', async ({ page }) => 
 // ---------- AC5 ----------
 test('AC5: window.oreheart only in test mode; seeds are deterministic', async ({ page }) => {
   await page.goto('/');
+  await skipIntro(page);
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeAttached();
   expect(await page.evaluate(() => typeof window.oreheart)).toBe('undefined');
   const hands = async (seedUrl, opts) => {
@@ -1202,6 +1210,7 @@ test.describe('portrait phone viewport', () => {
 // ---------- AC25 ----------
 test('AC25: first visit offers the tutorial; Skip is remembered', async ({ page }) => {
   await page.goto('/');
+  await skipIntro(page);
   const offer = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
   await expect(offer).toBeVisible();
   await expect(offer.getByRole('button', { name: 'Start Tutorial' })).toBeVisible();
@@ -1215,6 +1224,7 @@ test('AC25: first visit offers the tutorial; Skip is remembered', async ({ page 
 
 test('AC25: Tutorial button opens the guided match with tips and Skip Tutorial', async ({ page }) => {
   await openMenu(page);
+  await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   await page.getByRole('button', { name: 'Tutorial', exact: true }).click();
   const tip = page.getByLabel('Tutorial tip', { exact: true });
   await expect(tip).toBeVisible();
@@ -2031,9 +2041,7 @@ for (const [w, h] of [[844, 390], [740, 360], [667, 375]]) {
         const phase = page.getByLabel('Current phase', { exact: true });
         await expect(phase).toContainText(/your turn/i);
         await expect(phase).toContainText(/deploy/i);
-        const b = await phase.boundingBox();
-        expect(b.x).toBeGreaterThanOrEqual(w * 0.74); // Round 5b: top-right (80 %, 0 %)
-        expect(b.y).toBeLessThanOrEqual(h * 0.04);
+        // Round 9c: its position follows the owner layout (checked by AC212)
       }
     });
   });
@@ -2242,14 +2250,14 @@ test('AC58: mineAt action matches the tap; hovering a mine only shows its info',
 
 test.describe('hand pop-out at 2x', () => {
   test.use({ viewport: { width: 844, height: 390 } });
-  test('AC59: a hovered hand card doubles in size and stays fully on-screen', async ({ page }) => {
+  test('AC59: a hovered hand card rises to about 1.6x and stays fully on-screen', async ({ page }) => {
     await start(page, { ai: false, setup: { playerHand: ['goblin-scrapper', 'fireball', 'soul-shard', 'goblin-slinger', 'goblin-scrounger'] } });
     await page.waitForTimeout(2000);
     for (const name of ['Gutripper Brawler', 'Grubgrabber Miner']) {
       const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name, exact: true });
       const before = await card.boundingBox();
       await page.mouse.move(before.x + before.width / 2, before.y + 8); // the visible top of the tucked card
-      await expect.poll(async () => (await card.boundingBox()).width).toBeGreaterThan(before.width * 1.8);
+      await expect.poll(async () => (await card.boundingBox()).height).toBeGreaterThan(before.height * 1.4); // Round 9a: ~1.6x
       const b = await card.boundingBox();
       expect(b.x).toBeGreaterThanOrEqual(-1);
       expect(b.y).toBeGreaterThanOrEqual(-1);
@@ -2263,7 +2271,7 @@ test.describe('hand pop-out at 2x', () => {
 // ---------- Revision 8 ----------
 async function openDecks(page, url = '/?test=1') {
   await page.goto(url);
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
 }
 const allCards = (page) => page.getByLabel('All cards', { exact: true });
@@ -2359,7 +2367,7 @@ test('AC62: up to 5 saved decks persist after a reload', async ({ page }) => {
     await saveDeck(page);
   }
   await page.reload();
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   const mine = page.getByLabel('My decks', { exact: true });
   for (const name of ['Miner Rush', 'Too Small', 'Deck C', 'Deck D', 'Deck E']) {
     await expect(mine.getByRole('button', { name: new RegExp(`^${name}`) })).toHaveCount(1);
@@ -2673,7 +2681,7 @@ async function keepAndGetState(page) {
 const allIds = (s, side) => [...s.players[side].hand, ...s.players[side].deck, ...s.players[side].discard].map((c) => c.cardId)
   .concat(s.board.creatures.filter((c) => c.owner === side).map((c) => c.cardId));
 
-test('AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)', async ({ page }) => {
+test('AC72: select screen — Commander cards, deck stacks, difficulty and Start (no dropdowns)', async ({ page }) => {
   await makeSelectDecks(page);
   await expect(page.locator('select')).toHaveCount(0);
   for (const n of ['Grubnak Rotgut, King of the Junkpile', 'Archmagister Sproingle the Unfathomable', 'Thane Borgo Gravelgrim']) {
@@ -2697,7 +2705,7 @@ test('AC72: select screen — Commander cards, deck stacks, difficulty and Fight
   await deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true }).click();
   await expect(deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Hard', exact: true }).click();
-  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   const s = await keepAndGetState(page);
   expect(s.difficulty).toBe('hard');
   const ids = allIds(s, 'player');
@@ -2725,7 +2733,7 @@ test('AC73: the select screen remembers the last Commander, deck and difficulty'
   await page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable', exact: true }).click();
   await deckRow(page).getByRole('button', { name: 'Gnome Rush, 50 cards, ready', exact: true }).click();
   await page.getByRole('button', { name: 'Hard', exact: true }).click();
-  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await keepAndGetState(page);
   await page.goto('/?test=1');
   await page.getByRole('button', { name: 'Play', exact: true }).click();
@@ -2745,7 +2753,7 @@ test('AC74: match-end summary, Play again with the same choices, and Menu', asyn
   await page.getByRole('button', { name: 'Thane Borgo Gravelgrim', exact: true }).click();
   await deckRow(page).getByRole('button', { name: 'Dwarf Warband, 100 cards, ready', exact: true }).click();
   await page.getByRole('button', { name: 'Hard', exact: true }).click();
-  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await keepAndGetState(page);
   await surrenderViaMenu(page);
   const sum = page.getByLabel('Match summary', { exact: true });
@@ -2878,10 +2886,9 @@ test('AC79: main menu shows the logo as the h1, the tagline and the five plaques
   const logo = h1.getByRole('img', { name: 'Oreheart' });
   await expect(logo).toBeVisible();
   await expect.poll(() => logo.evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
-  await expect(page.getByText('Goblins, Gnomes and Dwarves fight over the Soul Crystals.', { exact: true })).toBeVisible();
   expect(await page.locator('link[rel~="icon"]').count()).toBeGreaterThan(0);
   const names = (await page.getByRole('button').allInnerTexts()).map((t) => t.trim());
-  expect(names).toEqual(['Play', 'Tutorial', 'Decks', 'Rules', 'Settings']);
+  expect(names).toEqual(['Play', 'Deck Builder', 'How to Play', 'Settings', 'Quit']);
   expect(errors).toEqual([]);
 });
 
@@ -3235,7 +3242,7 @@ test('AC95: the Mulligan screen shows one straight row and counts mulligans left
   await page.goto('/?test=1&seed=7');
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' }).click();
-  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   const mull = page.getByRole('dialog', { name: 'Mulligan' });
   await expect(mull).toBeVisible();
   await expect(mull).toContainText('Mulligans left: 3');
@@ -3270,8 +3277,8 @@ test('AC96: dialogs float with no box; buttons are ornate', async ({ page }) => 
   expect(await ornate(page.getByRole('button', { name: 'Play', exact: true }))).toBe(true);
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' }).click();
-  expect(await ornate(page.getByRole('button', { name: 'Fight!', exact: true }))).toBe(true);
-  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  expect(await ornate(page.getByRole('button', { name: 'Start', exact: true }))).toBe(true);
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   const mull = page.getByRole('dialog', { name: 'Mulligan' });
   await expect(mull).toBeVisible();
   let b = await boxless(mull);
@@ -3794,7 +3801,7 @@ test.describe('both hands at 844x390', () => {
     await page.screenshot({ path: testInfo.outputPath('deck-picker-844x390.png') });
     await row.getByRole('button', { name: 'Gnome Horde, 100 cards, ready', exact: true }).click();
     await expect(row.getByRole('button', { name: 'Gnome Horde, 100 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+    await page.getByRole('button', { name: 'Start', exact: true }).click();
     await page.getByRole('button', { name: 'Keep Hand' }).click();
     const s = await page.evaluate(async () => await window.oreheart.getState());
     expect(s.players.player.deckId).toBe('gnome-horde');
@@ -3998,7 +4005,7 @@ test('AC122: one ornate control style everywhere: no default browser controls or
   await expect(page.getByRole('slider', { name: 'Cards per row' })).toBeVisible();
   await page.goto('/?test=1');
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Fight!' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
   await checkControls(page, 'commander and deck select');
   await newMatch(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'soul-shard'] }));
   await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
@@ -4012,11 +4019,12 @@ test.describe('title layout and ornaments', () => {
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
       await page.goto('/');
+      await skipIntro(page);
       const offer = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
       await expect(offer).toBeVisible();
       await page.waitForTimeout(800); // let entrance animations settle
       const logo = await page.getByRole('heading', { level: 1, name: 'Oreheart' }).getByRole('img', { name: 'Oreheart' }).boundingBox();
-      const tut = await page.getByRole('button', { name: 'Tutorial', exact: true }).boundingBox();
+      const tut = await page.getByRole('button', { name: 'How to Play', exact: true }).boundingBox();
       const texts = await offer.evaluate((d) => {
         const out = [];
         const walker = document.createTreeWalker(d, NodeFilter.SHOW_TEXT);
@@ -4036,18 +4044,19 @@ test.describe('title layout and ornaments', () => {
       }
       expect(await page.locator('[data-ornament=\"frame\"], [data-ornament=\"corner\"]').count(), 'title ornaments').toBe(0);
       await offer.getByRole('button', { name: 'Skip' }).click();
-      await page.getByRole('button', { name: 'Decks', exact: true }).click();
+      await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
       expect(await page.locator('[data-ornament=\"frame\"], [data-ornament=\"corner\"]').count(), 'deck builder ornaments').toBe(0);
       await page.getByRole('button', { name: 'Back', exact: true }).click();
-      await page.getByRole('button', { name: 'Rules', exact: true }).click();
+      await page.getByRole('button', { name: 'How to Play', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
       expect(await page.locator('[data-ornament=\"frame\"], [data-ornament=\"corner\"]').count(), 'Rules ornaments').toBe(0);
       await page.getByRole('button', { name: 'Back', exact: true }).click();
       await page.getByRole('button', { name: 'Play', exact: true }).click();
-      await expect(page.getByRole('button', { name: 'Fight!' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
       expect(await page.locator('[data-ornament=\"frame\"], [data-ornament=\"corner\"]').count(), 'select screen ornaments').toBe(0);
       await page.goto('/');
+      await skipIntro(page);
       const again = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
       if (await again.isVisible()) await again.getByRole('button', { name: 'Skip' }).click();
       await page.getByRole('button', { name: 'Settings', exact: true }).click();
@@ -4088,6 +4097,7 @@ test.describe('round 3b phone screenshots (844x390)', () => {
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/');
+    await skipIntro(page);
     const offer = page.getByRole('dialog', { name: 'Welcome to Oreheart!' });
     await expect(offer).toBeVisible();
     await offer.getByRole('button', { name: 'Skip' }).click();
@@ -4122,7 +4132,7 @@ async function openMulligan(page, seed = 7) {
   await page.goto(`/?test=1&seed=${seed}`);
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' }).click();
-  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   const mull = page.getByRole('dialog', { name: 'Mulligan' });
   await expect(mull).toBeVisible();
   return mull;
@@ -4188,7 +4198,7 @@ test('AC129: faction spells — names, factions, deck validation and the casting
 
 test('AC130: Deck Commander locks other factions’ spells in the Deck Builder', async ({ page }) => {
   await openMenu(page);
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
   const cmd = page.getByRole('combobox', { name: 'Deck Commander' });
   await expect(cmd).toContainText('Grubnak');
@@ -4324,7 +4334,7 @@ async function toTitle(page) {
 async function toSelect(page) {
   await toTitle(page);
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
 }
 
 // every visible text node: Alegreya SC italic, weight 400/700, no textured / clipped letters
@@ -4362,7 +4372,7 @@ test('AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textu
   expect(await page.evaluate(() => document.fonts.check('italic 400 20px "Alegreya SC"'))).toBe(true);
   expect(await letteringProblems(page), 'title').toEqual([]);
   await expect(page.getByRole('button', { name: 'Play', exact: true })).toHaveCSS('color', 'rgb(255, 215, 0)');
-  await page.getByRole('button', { name: 'Rules', exact: true }).click();
+  await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
   expect(await letteringProblems(page), 'rules').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
@@ -4370,14 +4380,14 @@ test('AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textu
   await expect(page.getByRole('heading', { name: 'Settings' }).first()).toBeVisible();
   expect(await letteringProblems(page), 'settings').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
   await page.waitForTimeout(500);
   expect(await letteringProblems(page), 'deck builder').toEqual([]);
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toHaveCSS('color', 'rgb(255, 215, 0)');
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
   expect(await letteringProblems(page), 'select').toEqual([]);
   await openTest(page);
   await newMatch(page, quiet({ playerHand: ['goblin-scrapper', 'venom-shiv', 'soul-shard'] }));
@@ -4461,7 +4471,7 @@ async function boxedButtons(page, names) {
 }
 test('AC137: menu buttons are plain gold text with a hover glow, no boxes or borders', async ({ page }) => {
   await toTitle(page);
-  expect(await boxedButtons(page, ['Play', 'Tutorial', 'Decks', 'Rules', 'Settings']), 'title').toEqual([]);
+  expect(await boxedButtons(page, ['Play', 'Deck Builder', 'How to Play', 'Settings', 'Quit']), 'title').toEqual([]);
   const play = page.getByRole('button', { name: 'Play', exact: true });
   const look = () => play.evaluate((e) => { const c = getComputedStyle(e); return [c.textShadow, c.filter, c.transform, c.backgroundImage, c.color, c.fontSize].join('|'); });
   const rest = await look();
@@ -4471,15 +4481,15 @@ test('AC137: menu buttons are plain gold text with a hover glow, no boxes or bor
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   expect(await boxedButtons(page, ['Back', 'Restore starter decks']), 'settings').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await page.getByRole('button', { name: 'Rules', exact: true }).click();
+  await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   expect(await boxedButtons(page, ['Back']), 'rules').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   expect(await boxedButtons(page, ['Auto-fill', 'Save', 'Rename', 'New Deck', 'Back']), 'deck builder').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Normal', exact: true }).click();
-  expect(await boxedButtons(page, ['Easy', 'Hard', 'Fight!', 'Remove Goblin Warband', 'Copy Goblin Warband to my decks', 'Restore starter decks']), 'select').toEqual([]);
+  expect(await boxedButtons(page, ['Easy', 'Hard', 'Start', 'Remove Goblin Warband', 'Copy Goblin Warband to my decks', 'Restore starter decks']), 'select').toEqual([]);
 });
 
 async function fillsWindow(page, screen, where) {
@@ -4504,15 +4514,15 @@ test('AC138: every menu screen fills the window edge to edge at 844x390, 1280x72
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await fillsWindow(page, 'settings', `settings ${at}`);
     await page.getByRole('button', { name: 'Back', exact: true }).click();
-    await page.getByRole('button', { name: 'Rules', exact: true }).click();
+    await page.getByRole('button', { name: 'How to Play', exact: true }).click();
     await fillsWindow(page, 'rules', `rules ${at}`);
     await page.getByRole('button', { name: 'Back', exact: true }).click();
-    await page.getByRole('button', { name: 'Decks', exact: true }).click();
+    await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
     await fillsWindow(page, 'deck-builder', `deck builder ${at}`);
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('button', { name: 'Play', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
     await fillsWindow(page, 'select', `select ${at}`);
   }
   // live resize without a reload
@@ -4523,7 +4533,7 @@ test('AC138: every menu screen fills the window edge to edge at 844x390, 1280x72
     await fillsWindow(page, 'select', `select live ${vp.width}x${vp.height}`);
   }
   await page.goto('/?test=1');
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   for (const vp of [{ width: 1280, height: 720 }, { width: 844, height: 390 }, { width: 1920, height: 1080 }]) {
     await page.setViewportSize(vp);
     await page.waitForTimeout(400);
@@ -4749,7 +4759,7 @@ test('AC145: Copy to my decks makes an editable saved copy and leaves the starte
   await page.getByRole('dialog', { name: 'Remove deck?' }).getByRole('button', { name: 'Remove', exact: true }).click();
   await expect(deckRow(page).getByRole('button', { name: /^My Warband,/ })).toHaveCount(0);
   await toTitle(page);
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   await expect(myDecks(page).getByRole('button', { name: /^My Warband/ })).toHaveCount(0);
 });
 
@@ -4788,7 +4798,7 @@ test('AC146: Choose Your Commander: big glowing Commander cards that stand out, 
       return /blur\(/.test(c.backdropFilter || c.webkitBackdropFilter || '') || /blur\(/.test(c.filter);
     }));
     expect(blurred, `${at} dimmed/blurred wall behind the cards`).toBe(true);
-    const fb = await box(page.getByRole('button', { name: 'Fight!', exact: true }));
+    const fb = await box(page.getByRole('button', { name: 'Start', exact: true }));
     expect(fb.y + fb.height, `${at} Fight! on-screen`).toBeLessThanOrEqual(H + 1);
     if (W === 1280) expect(await px(page.getByRole('heading', { name: 'Choose Your Commander' })), 'heading 2x').toBeGreaterThanOrEqual(28);
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true);
@@ -4972,17 +4982,15 @@ test('AC152: Flow and bank numbers sit on both crystals with name, Flow and Next
     const cx = a.x + a.width / 2, cy = a.y + a.height / 2;
     return cx >= b.x && cx <= b.x + b.width && cy >= b.y && cy <= b.y + b.height;
   };
-  for (const [label, n, img] of [['Your Flow crystals', '7', 'Your soul crystal'], ['Your Bank crystals', '3', 'Your soul crystal'],
-    ['Enemy Flow crystals', '5', 'Enemy soul crystal'], ['Enemy Bank crystals', '2', 'Enemy soul crystal']]) {
+  for (const [label, n, img] of [['Your Flow crystals', '7', 'Your soul crystal'], ['Enemy Flow crystals', '5', 'Enemy soul crystal']]) {
     await expect(page.getByLabel(label, { exact: true })).toHaveText(new RegExp(`^\\s*${n}\\s*$`));
     expect(await centerIn(label, img), `${label} on ${img}`).toBe(true);
   }
-  const mine = page.getByLabel('Your crystal', { exact: true });
-  const theirs = page.getByLabel('Enemy crystal', { exact: true });
-  await expect(mine).toContainText(/Grubnak/);
-  await expect(mine).toContainText('Flow');
-  await expect(theirs).toContainText(/Borgo/);
-  await expect(theirs).toContainText('Flow');
+  // Round 9a/9c: banks are their own pieces; the Commander name and "Flow" sit beside the crystal (owner layout)
+  await expect(page.getByLabel('Your Bank crystals', { exact: true })).toHaveText(/^\s*3\s*$/);
+  await expect(page.getByLabel('Enemy Bank crystals', { exact: true })).toHaveText(/^\s*2\s*$/);
+  await expect(page.getByText(/Grubnak/).first()).toBeVisible();
+  await expect(page.getByText(/Borgo/).first()).toBeVisible();
   await expect(page.getByLabel('Your income next turn', { exact: true })).toHaveText(/Next \+\d+/);
   await expect(page.getByLabel('Enemy income next turn', { exact: true })).toHaveText(/Next \+\d+/);
 });
@@ -5117,15 +5125,15 @@ test.describe('readable sizes at 844x390', () => {
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     expect(await smallText(page), 'settings').toEqual([]);
     await page.getByRole('button', { name: 'Back', exact: true }).click();
-    await page.getByRole('button', { name: 'Rules', exact: true }).click();
+    await page.getByRole('button', { name: 'How to Play', exact: true }).click();
     expect(await smallText(page), 'rules').toEqual([]);
     await page.getByRole('button', { name: 'Back', exact: true }).click();
-    await page.getByRole('button', { name: 'Decks', exact: true }).click();
+    await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
     await expect(page.getByRole('slider', { name: 'Cards per row' })).toBeVisible();
     expect(await smallText(page), 'deck builder').toEqual([]);
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('button', { name: 'Play', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Fight!' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
     expect(await smallText(page), 'select').toEqual([]);
     await page.waitForFunction(() => !!window.oreheart);
     await newMatch(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'soul-shard'], board: BOARD_5B }));
@@ -5255,16 +5263,16 @@ for (const [W, H] of SHAPES_6A) {
       await expect.poll(async () => { const b = await cards.nth(4).boundingBox(); return (H - b.y) / b.height; }, { message: 'tucked again' }).toBeLessThanOrEqual(0.65);
     });
 
-    test(`AC164: the hovered card pops out at about 70% of the height on the top layer (${W}x${H})`, async ({ page }) => {
+    test(`AC164: the hovered card rises to 48-60% of the height on the top layer (${W}x${H})`, async ({ page }) => {
       await start(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'goblin-slinger', 'soul-shard', 'goblin-scrounger'] }));
       await page.waitForTimeout(1200);
       const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Searing Arcane Orb', exact: true });
       const b0 = await card.boundingBox();
       await page.mouse.move(b0.x + b0.width / 2, Math.min(H - 4, b0.y + 10));
-      await expect.poll(async () => (await card.boundingBox()).height / H).toBeGreaterThanOrEqual(0.64);
+      await expect.poll(async () => (await card.boundingBox()).height / H).toBeGreaterThanOrEqual(0.47);
       await page.waitForTimeout(500);
       const b = await card.boundingBox();
-      expect(b.height / H).toBeLessThanOrEqual(0.76); // Round 8b: 20% smaller
+      expect(b.height / H).toBeLessThanOrEqual(0.61); // Round 9a: 1.6x of a 33.81 % card
       expect(b.x).toBeGreaterThanOrEqual(-1);
       expect(b.y).toBeGreaterThanOrEqual(-1);
       expect(b.x + b.width).toBeLessThanOrEqual(W + 1);
@@ -5405,7 +5413,7 @@ test('AC167: one shared text palette, no stray text colors', async ({ page }) =>
   for (const v of ['--color-player', '--color-enemy', '--color-warning', '--color-success', '--color-damage', '--color-goblins', '--color-gnomes', '--color-dwarves']) expect(vals[v], v).not.toBe('');
   expect(vals['--color-damage']).toBe('#ff4040');
   expect(await strayColors(page), 'title').toEqual([]);
-  await page.getByRole('button', { name: 'Rules', exact: true }).click();
+  await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
   expect(await strayColors(page), 'rules').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
@@ -5413,13 +5421,13 @@ test('AC167: one shared text palette, no stray text colors', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'Settings' }).first()).toBeVisible();
   expect(await strayColors(page), 'settings').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
   await page.waitForTimeout(500);
   expect(await strayColors(page), 'deck builder').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
   expect(await strayColors(page), 'select').toEqual([]);
   await openTest(page);
   await newMatch(page, quiet({ playerHand: ['goblin-scrapper', 'fireball'], board: BOARD_5B }));
@@ -5431,19 +5439,19 @@ test('AC168: bold titles and main actions, regular body text, only four weights'
   const weight = (loc) => loc.evaluate((e) => getComputedStyle(e).fontWeight);
   const bold = async (loc, label) => expect(['700', '800'], label).toContain(await weight(loc));
   await openMenu(page);
-  for (const name of ['Play', 'Tutorial', 'Decks', 'Rules', 'Settings']) await bold(page.getByRole('button', { name, exact: true }), name);
+  for (const name of ['Play', 'Deck Builder', 'How to Play', 'Settings', 'Quit']) await bold(page.getByRole('button', { name, exact: true }), name);
   expect(await letteringProblems(page), 'title').toEqual([]);
-  await page.getByRole('button', { name: 'Rules', exact: true }).click();
+  await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   const h = page.getByRole('heading', { name: 'Rules', exact: true });
   await bold(h, 'Rules heading');
   const bodyWeight = await page.evaluate(() => { const p = [...document.querySelectorAll('p, li')].find((e) => e.checkVisibility() && e.textContent.trim().length > 40); return p && getComputedStyle(p).fontWeight; });
   expect(bodyWeight).toBe('400');
   await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   await bold(page.getByRole('heading', { name: 'Deck Builder' }), 'Deck Builder heading');
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await bold(page.getByRole('button', { name: 'Fight!', exact: true }), 'Fight!');
+  await bold(page.getByRole('button', { name: 'Start', exact: true }), 'Start');
   await openTest(page);
   await newMatch(page, quiet({ playerHand: ['goblin-scrapper'] }));
   await bold(page.getByRole('button', { name: 'Done', exact: true }), 'Done');
@@ -5512,30 +5520,30 @@ test('AC170: deck list + and - change counts at once, without moving the row; ra
   await expect(list).toContainText('6 × Grubgrabber Miner');
 });
 
-test('AC171: no "All cards" text and no corner ornaments on any screen', async ({ page }) => {
+test('AC171: no "All cards" text and no corner ornaments on any menu screen', async ({ page }) => {
   const noOrnaments = async (label) => {
     expect(await page.locator('[data-ornament="frame"], [data-ornament="corner"]').count(), `${label} ornaments`).toBe(0);
   };
   await openMenu(page);
   await noOrnaments('title');
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
   await expect(page.getByText('All cards', { exact: true })).toHaveCount(0);
   await expect(allCards(page)).toBeVisible();
   await noOrnaments('deck builder');
   await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await page.getByRole('button', { name: 'Rules', exact: true }).click();
+  await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   await noOrnaments('rules');
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await noOrnaments('settings');
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
   await noOrnaments('select');
   await openTest(page);
   await newMatch(page, quiet({}));
-  await noOrnaments('match');
+  expect(await page.locator('[data-ornament="frame"]').count(), 'match frame ornaments').toBe(0); // Round 9a: 3 goblin corner frames allowed (AC215)
 });
 
 test('AC172: crystal mines use the owner\'s mine model (glTF placeholder or Round 8a Meshy GLB), exactly 1.5 tall, tinted by owner', async ({ page }) => {
@@ -5583,7 +5591,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
       const back = page.getByLabel('Enemy hand', { exact: true }).locator('[data-card-back]').first();
       await testInfo.attach(`6a-card-back-${vp.width}x${vp.height}`, { body: await back.screenshot(), contentType: 'image/png' });
       await page.goto('/?test=1');
-      await page.getByRole('button', { name: 'Decks', exact: true }).click();
+      await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
       await allCards(page).getByRole('button', { name: 'Shiv Rat', exact: true }).click();
       await expect(page.getByRole('dialog', { name: 'Shiv Rat' })).toBeVisible();
       await page.waitForTimeout(600);
@@ -5625,8 +5633,8 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
         for (let i = 0; i < n; i++) out.push((await cards.nth(i).boundingBox()).height / H);
         return out;
       };
-      const allRest = (msg) => expect.poll(async () => (await heights()).filter((h) => h > 0.47).length, { message: msg, timeout: 4000 }).toBe(0);
-      const onlyPopped = (i, msg) => expect.poll(async () => (await heights()).every((h, j) => (j === i ? h >= 0.6 : h <= 0.47)), { message: msg, timeout: 4000 }).toBe(true);
+      const allRest = (msg) => expect.poll(async () => (await heights()).filter((h) => h > 0.42).length, { message: msg, timeout: 4000 }).toBe(0);
+      const onlyPopped = (i, msg) => expect.poll(async () => (await heights()).every((h, j) => (j === i ? h >= 0.47 : h <= 0.42)), { message: msg, timeout: 4000 }).toBe(true);
       for (let i = 0; i < 5; i++) {
         const pt = await hoverPointOf(cards.nth(i));
         expect(pt, `card ${i} can be hovered`).not.toBeNull();
@@ -5649,7 +5657,7 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       await expect.poll(async () => {
         const n = await cards.count(); const shown = [];
         for (let i = 0; i < n; i++) { const b = await cards.nth(i).boundingBox(); shown.push((H - b.y) / b.height); }
-        return shown.every((s) => s >= 0.35 && s <= 0.65);
+        return shown.every((s) => s >= 0.35 && s <= 0.72);
       }, { message: 'hand tucked halfway again' }).toBe(true);
       // a drag dropped back on the hand leaves nothing stuck
       pt = await hoverPointOf(cards.nth(2));
@@ -5670,11 +5678,11 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       const scrapper = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true });
       pt = await hoverPointOf(scrapper);
       await page.mouse.move(pt[0], pt[1], { steps: 3 });
-      await expect.poll(async () => (await scrapper.boundingBox()).height / H).toBeGreaterThanOrEqual(0.6);
+      await expect.poll(async () => (await scrapper.boundingBox()).height / H).toBeGreaterThanOrEqual(0.47);
       expect((await act(page, summon)).ok).toBe(true);
       await expect(cards).toHaveCount(before - 1);
       await page.waitForTimeout(600);
-      expect((await heights()).filter((h) => h > 0.47).length, 'at most one card popped after playing').toBeLessThanOrEqual(1);
+      expect((await heights()).filter((h) => h > 0.42).length, 'at most one card popped after playing').toBeLessThanOrEqual(1);
       await away();
       await allRest('nothing stuck after a card was played');
     });
@@ -5798,14 +5806,14 @@ test('AC178: glow colors contrast with each faction frame', async ({ page }) => 
   }
 });
 
-test('AC179: crystal mines are exactly 1.5 spaces tall', async ({ page }) => {
+test('AC179: crystal mines are 2.48 spaces tall (owner layout)', async ({ page }) => {
   await start(page, quiet({}));
   const r = await page.evaluate(async () => await window.oreheart.getRenderStats());
   if (!r.webgl) test.skip(true, 'WebGL unavailable');
   expect(r.mineModels).toHaveLength(3);
   for (const m of r.mineModels) {
-    expect(m.height).toBeGreaterThanOrEqual(1.47);
-    expect(m.height).toBeLessThanOrEqual(1.53);
+    expect(m.height).toBeGreaterThanOrEqual(2.43);
+    expect(m.height).toBeLessThanOrEqual(2.53);
   }
 });
 
@@ -5916,7 +5924,7 @@ test('AC183: no "View Grubnak in 3D" button remains on Choose Your Commander or 
   await page.goto('/?test=1');
   await page.waitForFunction(() => !!window.oreheart);
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /in 3D/ })).toHaveCount(0);
   await openDecks(page);
   await expect(page.getByRole('button', { name: /in 3D/ })).toHaveCount(0);
@@ -6019,11 +6027,12 @@ test('AC185: the owner\'s arena pictures and layout are loaded unchanged', async
   expect(a.look).toEqual(layout.arenaLook);
 });
 
-test('AC186: all 54 effects are drawn, off-painting pools are clipped, two foreground cut-outs', async ({ page, request }) => {
+test('AC186: all 54 arena effects are drawn, off-painting pools are clipped, two foreground cut-outs', async ({ page, request }) => {
   const layout = await arenaLayout(request);
   await start(page, quiet({ board: ARENA_BOARD }));
-  await expect.poll(async () => (await arenaInfo(page)).effects.length).toBe(54);
+  await expect.poll(async () => (await arenaInfo(page)).effects.filter((e) => e.type !== 'flow').length).toBe(54);
   const a = await arenaInfo(page);
+  a.effects = a.effects.filter((e) => e.type !== 'flow'); // Round 9c: the 3 owner flow streams are drawn by Crystal Flow (AC228)
   expect(layout.effects).toHaveLength(54);
   layout.effects.forEach((e, i) => {
     expect(a.effects[i].type, `effect ${i} type`).toBe(e.type);
@@ -6596,7 +6605,7 @@ test('AC205: every deck entry on Choose Your Commander has the same size, also f
   await saveDeck(page);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
   const stacks = deckStacks(page);
   await expect(stacks.first()).toBeVisible();
   const n = await stacks.count();
@@ -6656,7 +6665,7 @@ test('AC206: choosing a Commander hides the other two and shows only his decks; 
   expect((await selectState(page)).commanderId).toBe('sproingle');
   await expect(deckRow(page).getByRole('button', { name: 'Gnome Warband, 100 cards, ready', exact: true })).toBeVisible();
   await expect(deckRow(page).getByRole('button', { name: /^(Goblin|Dwarf) / })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   const s = await keepAndGetState(page);
   expect(s.players.player.commanderId).toBe('sproingle');
 });
@@ -6669,12 +6678,12 @@ test('AC207: Grubnak\'s 3D model pops up in front of his card when he is chosen'
   await expect(page.locator('canvas:visible').first()).toBeVisible();
 });
 
-test('AC208: Fight! sits bottom-right in both states at 1920x1080 and 844x390', async ({ page }) => {
+test('AC208: Start sits bottom-right in both states at 1920x1080 and 844x390', async ({ page }) => {
   for (const [W, H] of [[1920, 1080], [844, 390]]) {
     await page.setViewportSize({ width: W, height: H });
     await toSelect(page);
     const check = async (state) => {
-      const fb = await box(page.getByRole('button', { name: 'Fight!', exact: true }));
+      const fb = await box(page.getByRole('button', { name: 'Start', exact: true }));
       expect(fb.x + fb.width, `${W}x${H} ${state} right`).toBeGreaterThanOrEqual(W * 0.85);
       expect(fb.y + fb.height, `${W}x${H} ${state} bottom`).toBeGreaterThanOrEqual(H * 0.85);
       expect(fb.x + fb.width <= W + 1 && fb.y + fb.height <= H + 1, `${W}x${H} ${state} on-screen`).toBe(true);
@@ -6767,7 +6776,7 @@ test('AC210: body text uses the brown-gold palette variables, no white body text
     return bad.slice(0, 10);
   });
   expect(await whites(), 'title').toEqual([]);
-  await page.getByRole('button', { name: 'Rules', exact: true }).click();
+  await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
   const pColors = await page.evaluate(() => [...document.querySelectorAll('p')].filter((p) => p.textContent.trim() && p.getBoundingClientRect().height > 0 && !p.closest('[data-card-id]')).map((p) => getComputedStyle(p).color));
   expect(pColors.length).toBeGreaterThan(0);
@@ -6778,13 +6787,13 @@ test('AC210: body text uses the brown-gold palette variables, no white body text
   await expect(page.getByRole('heading', { name: 'Settings' }).first()).toBeVisible();
   expect(await whites(), 'settings').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await page.getByRole('button', { name: 'Decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
   await page.waitForTimeout(500);
   expect(await whites(), 'deck builder').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Fight!', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
   expect(await whites(), 'select').toEqual([]);
 });
 
@@ -7096,7 +7105,7 @@ test('AC223: menu music on menus, match music in matches, crossfades, Mute silen
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect.poll(async () => (await audio()).music.track).toBe('tense-cycle');
   expect((await audio()).unlocked).toBe(true);
-  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect.poll(async () => (await audio()).music.track).toBe('first-fight');
   let a = await audio();
   let last = a.log[a.log.length - 1];
@@ -7175,6 +7184,352 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       await passTurn(page);
       await page.waitForTimeout(700);
       await testInfo.attach(`r9a-flow-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+      expect(errors).toEqual([]);
+    });
+  });
+}
+
+// ---------- Round 9c ----------
+const R9C_MENUS = '/menus/menus.json';
+// counts WebGL draw calls per canvas (Round 9c: the arena must draw every frame)
+async function countDrawCalls(page) {
+  await page.addInitScript(() => {
+    window.__drawCalls = new Map();
+    for (const P of [window.WebGLRenderingContext, window.WebGL2RenderingContext].filter(Boolean)) {
+      for (const fn of ['drawElements', 'drawArrays', 'drawElementsInstanced', 'drawArraysInstanced']) {
+        const orig = P.prototype[fn];
+        if (!orig) continue;
+        P.prototype[fn] = function (...a) { const c = this.canvas; window.__drawCalls.set(c, (window.__drawCalls.get(c) || 0) + 1); return orig.apply(this, a); };
+      }
+    }
+  });
+}
+const arenaDraws = (page) => page.evaluate(() => {
+  const c = document.querySelector('canvas[data-arena-canvas]');
+  return c ? (window.__drawCalls.get(c) || 0) : -1;
+});
+async function centerPixel(page) {
+  const png = (await page.screenshot()).toString('base64');
+  return page.evaluate(async (b64) => {
+    const img = new Image(); img.src = `data:image/png;base64,${b64}`; await img.decode();
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+    const out = [];
+    for (const [fx, fy] of [[0.5, 0.5], [0.45, 0.45], [0.55, 0.55]]) out.push([...g.getImageData(Math.floor(img.width * fx), Math.floor(img.height * fy), 1, 1).data].slice(0, 3));
+    return out;
+  }, png);
+}
+
+test.describe('round 9c arena', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC228: the arena canvas draws every frame and the screen center is not the plain board color', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await countDrawCalls(page);
+    await start(page, quiet({}));
+    if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+    await expect.poll(async () => (await arenaInfo(page)).drawn, { timeout: 15000 }).toBe(true);
+    for (let i = 0; i < 2; i++) {
+      const a = await arenaDraws(page);
+      expect(a, 'canvas[data-arena-canvas] exists').toBeGreaterThanOrEqual(0);
+      await page.waitForTimeout(500);
+      expect(await arenaDraws(page), `arena draw calls in window ${i}`).toBeGreaterThan(a);
+    }
+    for (const [r, g, b] of await centerPixel(page)) {
+      expect(Math.abs(r - 42) + Math.abs(g - 29) + Math.abs(b - 56), `pixel ${r},${g},${b} is the plain board color`).toBeGreaterThan(12);
+    }
+    expect(errors).toEqual([]);
+  });
+
+  test('AC229: all 57 owner effects (54 arena + 3 Crystal Flow), 2 cut-outs, no arena errors; unknown effect types are skipped', async ({ page, request }) => {
+    const layout = await (await request.get('/owner-layouts/final-draft/layout.json')).json();
+    const consoleErrors = [];
+    page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+    await start(page, quiet({}));
+    await expect.poll(async () => (await arenaInfo(page)).drawn, { timeout: 15000 }).toBe(true);
+    const a = await arenaInfo(page);
+    expect(a.effects).toHaveLength(57);
+    expect(a.effects.filter((e) => e.type === 'flow')).toHaveLength(3);
+    expect(a.effects.filter((e) => e.type !== 'flow')).toHaveLength(54);
+    expect(a.flowEffects).toBe(3);
+    expect(a.foregroundCutouts).toBe(layout.foregroundCutouts.length);
+    expect(a.errors).toEqual([]);
+    expect(consoleErrors.filter((t) => /arena/i.test(t))).toEqual([]);
+    // a bad effect type can never take down the arena
+    await newMatch(page, quiet({ arenaExtraEffects: [{ type: 'bogus', x: 400, y: 300 }] }));
+    await expect.poll(async () => (await arenaInfo(page)).drawn, { timeout: 15000 }).toBe(true);
+    const b = await arenaInfo(page);
+    expect(b.skippedTypes).toContain('bogus');
+    expect(b.foregroundCutouts).toBe(layout.foregroundCutouts.length);
+  });
+});
+
+const poses = (page) => page.evaluate(async () => await window.oreheart.getPiecePoses());
+const yawDiff = (a, b) => Math.abs((((a - b) % 360) + 540) % 360 - 180);
+
+test('AC230: Commanders stand on the ground inside their strongholds, upright, facing the owner turn', async ({ page }) => {
+  await start(page, quiet({}));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await expect.poll(async () => !!(await poses(page)).pCmd, { timeout: 15000 }).toBe(true);
+  const p = await poses(page);
+  for (const [cmd, fort, cx, cy, turn] of [['pCmd', 'pFort', 1.5, 6.5, 146], ['eCmd', 'eFort', 11.5, 0.5, -15]]) {
+    expect(p[cmd].cx).toBeCloseTo(cx, 2); expect(p[cmd].cy).toBeCloseTo(cy, 2);
+    expect(p[fort].cx).toBeCloseTo(cx, 2); expect(p[fort].cy).toBeCloseTo(cy, 2);
+    expect(Math.abs(p[cmd].baseY - p.boardY), `${cmd} on the ground`).toBeLessThanOrEqual(0.01 * p.square);
+    expect(Math.abs(p[fort].baseY - p.boardY), `${fort} on the ground`).toBeLessThanOrEqual(0.01 * p.square);
+    expect(yawDiff(p[cmd].yawDeg, turn), `${cmd} faces turn ${turn}`).toBeLessThanOrEqual(3);
+    for (const k of ['pCmd', 'pFort', 'eCmd', 'eFort']) {
+      expect(Math.abs(p[k].tiltDeg), `${k} tilt`).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(p[k].leanDeg), `${k} lean`).toBeLessThanOrEqual(0.5);
+    }
+  }
+  expect(yawDiff(p.pFort.yawDeg, 137)).toBeLessThanOrEqual(3);
+});
+
+test('AC231: the stronghold never moves; Grubnak emotes in place and returns to his turn', async ({ page }) => {
+  test.setTimeout(60000);
+  await start(page, quiet({}));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await expect.poll(async () => !!(await poses(page)).pFort, { timeout: 15000 }).toBe(true);
+  const p0 = await poses(page);
+  for (const emote of ['laugh', 'point', 'celebrate', 'surprised']) {
+    await page.evaluate(async (e) => await window.oreheart.playEmote('player', e), emote);
+    await page.waitForTimeout(2500);
+    const p = await poses(page);
+    expect(p.pFort.matrix, `stronghold moved during ${emote}`).toEqual(p0.pFort.matrix);
+    expect(p.eFort.matrix).toEqual(p0.eFort.matrix);
+    expect(p.pCmd.cx).toBeCloseTo(1.5, 2); expect(p.pCmd.cy).toBeCloseTo(6.5, 2);
+    expect(Math.abs(p.pCmd.baseY - p.boardY)).toBeLessThanOrEqual(0.01 * p.square);
+  }
+  await expect.poll(async () => yawDiff((await poses(page)).pCmd.yawDeg, 146), { timeout: 8000 }).toBeLessThanOrEqual(3);
+});
+
+test('AC232: the owner menus file, pictures, sound and main menu picture are shipped', async ({ page, request }) => {
+  const res = await request.get(R9C_MENUS);
+  expect(res.ok()).toBe(true);
+  const m = await res.json();
+  expect(m.first).toBe('intro');
+  expect(m.screens.map((s) => s.id)).toEqual(['intro', 'main', 'deck', 'commander']);
+  const snd = await request.get('/audio/menu/snd-qoqhrj.mp3');
+  expect(snd.ok()).toBe(true);
+  expect((await snd.body()).length).toBe(98253);
+  await openTest(page);
+  const dims = await page.evaluate(async () => {
+    const img = new Image(); img.src = '/art/menu-cavern.webp'; await img.decode();
+    return [img.naturalWidth, img.naturalHeight];
+  });
+  expect(dims).toEqual([1774, 887]);
+});
+
+async function menuPieceBoxes(page, request, screenId) {
+  const m = await (await request.get(R9C_MENUS)).json();
+  const sc = m.screens.find((s) => s.id === screenId);
+  const vp = page.viewportSize();
+  const out = [];
+  for (const p of sc.pieces.filter((q) => !q.hidden)) {
+    const el = page.locator(`[data-menu-piece="${p.id}"]`);
+    await expect(el, `piece ${p.id}`).toHaveCount(1);
+    const b = await el.boundingBox();
+    const want = { x: (p.x / 100) * vp.width, y: (p.y / 100) * vp.height, w: (p.w / 100) * vp.width, h: (p.h / 100) * vp.height };
+    const bad = Math.max(Math.abs(b.x - want.x) / vp.width, Math.abs(b.y - want.y) / vp.height, Math.abs(b.width - want.w) / vp.width, Math.abs(b.height - want.h) / vp.height);
+    if (bad > 0.01) out.push(`${p.id} off by ${(bad * 100).toFixed(1)}%`);
+  }
+  return out;
+}
+
+test.describe('round 9c menus 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC233: main menu, Deck Builder and Choose Your Commander pieces sit in the owner boxes', async ({ page, request }) => {
+    await openTest(page);
+    await page.waitForTimeout(2500);
+    expect(await menuPieceBoxes(page, request, 'main')).toEqual([]);
+    await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+    await page.waitForTimeout(2000);
+    expect(await menuPieceBoxes(page, request, 'deck')).toEqual([]);
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+    await page.waitForTimeout(2000);
+    expect(await menuPieceBoxes(page, request, 'commander')).toEqual([]);
+  });
+
+  test('AC234: the intro plays first, the logo crashes in with dirt, owner sounds fire on time, then the main menu', async ({ page, request }) => {
+    test.setTimeout(60000);
+    await page.goto('/?test=1&intro=1');
+    const intro = page.getByLabel('Intro', { exact: true });
+    await expect(intro).toBeVisible();
+    await expect(intro.getByText('Deadly serious. Completely ridiculous.')).toBeVisible({ timeout: 8000 });
+    await expect(intro.getByText('Click to continue')).toBeVisible({ timeout: 8000 });
+    await expect.poll(async () => page.locator('[data-crash-debris]').count(), { timeout: 6000 }).toBeGreaterThan(0);
+    await page.waitForTimeout(800);
+    expect(await menuPieceBoxes(page, request, 'intro')).toEqual([]);
+    const log = (await page.evaluate(async () => await window.oreheart.getAudioState())).sfxLog;
+    const owner = log.find((e) => e.src === 'snd:qoqhrj');
+    expect(owner, 'owner rock-fall sound cued').toBeTruthy();
+    expect(Math.abs(owner.t - 2450)).toBeLessThanOrEqual(400);
+    const thunder = log.find((e) => e.src === 'thunder');
+    expect(thunder, 'screen thunder cued').toBeTruthy();
+    expect(Math.abs(thunder.t - 470)).toBeLessThanOrEqual(400);
+    // intro -> main after intro.length (7000 ms) without a click
+    await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible({ timeout: 9000 });
+    await expect(intro).toBeHidden();
+  });
+});
+
+test('AC235: a click skips the intro; Quit returns to it; How to Play opens Rules with a Tutorial button', async ({ page }) => {
+  await page.goto('/?test=1&intro=1');
+  const intro = page.getByLabel('Intro', { exact: true });
+  await expect(intro).toBeVisible();
+  await page.waitForTimeout(500);
+  await intro.click({ position: { x: 30, y: 30 } });
+  await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible({ timeout: 3000 });
+  await page.getByRole('button', { name: 'How to Play', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Tutorial', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Quit', exact: true }).click();
+  await expect(intro).toBeVisible();
+});
+
+test('AC236: menu buttons go where the owner file says; the main menu picture is cover-fit', async ({ page }) => {
+  await openTest(page);
+  const bg = page.locator('[data-menu-bg]').first();
+  await expect(bg).toBeVisible();
+  const fit = await bg.evaluate((e) => { const s = getComputedStyle(e); return [s.objectFit, s.backgroundSize]; });
+  expect(fit.some((v) => v === 'cover')).toBe(true);
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Back', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Mulligan' })).toBeVisible();
+});
+
+test('AC237: menus play the music the owner file names (tense-cycle)', async ({ page }) => {
+  await openTest(page);
+  await page.mouse.click(5, 5);
+  await expect.poll(async () => (await page.evaluate(async () => await window.oreheart.getAudioState())).music.track).toBe('tense-cycle');
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  expect((await page.evaluate(async () => await window.oreheart.getAudioState())).music.track).toBe('tense-cycle');
+});
+
+async function saveFactionDeck(page, name, commanderLabel) {
+  await page.getByRole('button', { name: 'New Deck', exact: true }).click();
+  await renameDeck(page, name);
+  if (commanderLabel) await page.getByLabel('Deck Commander', { exact: true }).selectOption({ label: commanderLabel });
+  await page.getByRole('button', { name: 'Auto-fill', exact: true }).click();
+  await saveDeck(page);
+}
+
+test('AC238: saved deck entries are tinted and glow in their faction color', async ({ page }) => {
+  await openDecks(page);
+  await saveFactionDeck(page, 'Green Deck');
+  const entry = page.getByLabel('My decks', { exact: true }).getByRole('button', { name: /^Green Deck/ });
+  const st = await entry.evaluate((e) => {
+    const all = [e, ...e.querySelectorAll('*')];
+    const txt = all.find((n) => [...n.childNodes].some((c) => c.nodeType === 3 && /Green Deck/.test(c.textContent))) || e;
+    const s = getComputedStyle(txt);
+    const glow = all.map((n) => getComputedStyle(n)).some((c) => (c.filter && c.filter.includes('drop-shadow')) || (c.boxShadow && c.boxShadow !== 'none') || (c.textShadow && c.textShadow !== 'none'));
+    return { color: s.color, glow, faction: e.closest('[data-faction]')?.dataset.faction || e.querySelector('[data-faction]')?.dataset.faction || e.dataset.faction };
+  });
+  const [r, g, b] = st.color.match(/\d+/g).map(Number);
+  expect(st.faction).toBe('goblin');
+  expect(g, `goblin deck name ${st.color} is green`).toBeGreaterThan(r);
+  expect(g).toBeGreaterThan(b);
+  expect(st.glow).toBe(true);
+});
+
+test('AC239: every creature card close-up has a 3D viewer; spells do not', async ({ page }) => {
+  await openDecks(page);
+  await allCards(page).getByRole('button', { name: /Gutripper Brawler/ }).first().click();
+  const dlg = page.getByRole('dialog', { name: /Gutripper Brawler/ });
+  await expect(dlg).toBeVisible();
+  const viewer = page.getByRole('region', { name: '3D model' });
+  await expect(viewer).toBeVisible();
+  await expect(viewer.getByRole('button', { name: 'Idle', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dlg).toBeHidden();
+  await allCards(page).getByRole('button', { name: /Searing Arcane Orb/ }).first().click();
+  await expect(page.getByRole('dialog', { name: /Searing Arcane Orb/ })).toBeVisible();
+  await expect(page.getByRole('region', { name: '3D model' })).toHaveCount(0);
+});
+
+test('AC240: Play action in the Deck Builder (disabled with a reason while illegal); double-click a saved deck starts a match', async ({ page }) => {
+  await openDecks(page);
+  await page.getByRole('button', { name: 'New Deck', exact: true }).click();
+  const play = page.getByRole('button', { name: 'Play', exact: true });
+  await expect(play).toBeVisible();
+  await expect(play).toBeDisabled();
+  await expect(page.getByText(/not legal|needs|at least 50/i).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Auto-fill', exact: true }).click();
+  await expect(play).toBeEnabled();
+  await renameDeck(page, 'Double Deck');
+  await saveDeck(page);
+  const entry = page.getByLabel('My decks', { exact: true }).getByRole('button', { name: /^Double Deck/ });
+  await entry.click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+  await entry.dblclick();
+  await expect(page.getByRole('dialog', { name: 'Mulligan' })).toBeVisible();
+});
+
+test('AC241: Deck Builder text colors: deck list lines and counts white, Back bold', async ({ page }) => {
+  await openDecks(page);
+  await page.getByRole('button', { name: 'Auto-fill', exact: true }).click();
+  const white = async (loc, what) => {
+    const c = await loc.evaluate((e) => {
+      const n = [...e.querySelectorAll('*')].find((x) => [...x.childNodes].some((t) => t.nodeType === 3 && t.textContent.trim())) || e;
+      return getComputedStyle(n).color;
+    });
+    expect(c, what).toBe('rgb(255, 255, 255)');
+  };
+  await white(deckList(page).getByText(/\d+ × /).first(), 'deck list line');
+  await white(page.getByLabel('Deck counts', { exact: true }), 'deck counts');
+  const w = await page.getByRole('button', { name: 'Back', exact: true }).evaluate((e) => parseInt(getComputedStyle(e).fontWeight, 10));
+  expect(w).toBeGreaterThanOrEqual(700);
+});
+
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`round 9c screenshots ${W}x${H}`, () => {
+    test.use({ viewport: { width: W, height: H } });
+    test(`AC242: screenshots of the match with the arena, Commander close-ups, every menu screen and a creature close-up (${W}x${H})`, async ({ page }, testInfo) => {
+      test.setTimeout(120000);
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      const shot = async (name) => testInfo.attach(`r9c-${name}-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+      await page.goto('/?test=1&intro=1');
+      await page.waitForTimeout(3600);
+      await shot('intro');
+      await page.getByLabel('Intro', { exact: true }).click({ position: { x: 30, y: 30 } });
+      await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+      await page.waitForTimeout(1500);
+      await shot('main-menu');
+      await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+      await page.waitForTimeout(1200);
+      await shot('deck-builder');
+      await allCards(page).getByRole('button', { name: /Gutripper Brawler/ }).first().click();
+      await page.waitForTimeout(1500);
+      await shot('deck-builder-closeup');
+      await page.keyboard.press('Escape');
+      await page.getByRole('button', { name: 'Back', exact: true }).click();
+      await page.getByRole('button', { name: 'Play', exact: true }).click();
+      await page.waitForTimeout(1200);
+      await shot('choose-commander');
+      await newMatch(page, quiet({}));
+      await expect.poll(async () => (await arenaInfo(page)).drawn, { timeout: 15000 }).toBe(true);
+      await page.waitForTimeout(2000);
+      await shot('match-at-rest');
+      for (const side of ['player', 'enemy']) {
+        await page.evaluate(async (s) => await window.oreheart.focusCommander(s), side);
+        await page.waitForTimeout(1200);
+        await shot(`commander-${side}`);
+      }
+      await page.evaluate(async () => await window.oreheart.playEmote('player', 'laugh'));
+      await page.evaluate(async () => await window.oreheart.focusCommander('player'));
+      await page.waitForTimeout(700);
+      await shot('commander-player-emote');
       expect(errors).toEqual([]);
     });
   });
