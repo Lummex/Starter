@@ -1460,3 +1460,13 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .match .hand.o-hand.open,.match .hand.o-hand.has-pop{transform:translateY(calc(var(--hcw) * .05))}
 .overlay.cardview{position:fixed;inset:0}
 .card-view-face .hand-card{--cw:min(700px,55.2vh)}
+
+/* Round 10 inspector fixes: dialogs above the hand, filters above the grid, menu hover glow on the button itself */
+.overlay.cardview{z-index:20000}
+.db-stage .db-filterbox{z-index:6}
+.mb-btn:hover,.mb-btn:focus-visible{text-shadow:0 0 .4em var(--hgc,#FFD700)}
+/* Round 10 fix: the deck carousel keeps a real size inside the owner's dDecks zone */
+.db-stage .db-decksbox .db-pile{height:100%!important;aspect-ratio:auto!important;width:100%!important;overflow:visible}
+.db-stage .db-decksbox .db-carwrap{flex:1 1 0;min-height:0;align-items:stretch;width:100%}
+.db-stage .db-decksbox .db-car{height:auto!important;align-self:stretch}
+.db-stage .db-decksbox .db-deck{height:calc(100% - 4px)!important}

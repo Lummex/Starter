@@ -563,3 +563,8 @@ Not verified in a browser: drag-highlight screenshot with attack squares, the en
 - Card close-up: fixed overlay (a scroll-into-view could push it off screen), 82 % of the screen height.
 - Rules: no once-per-round Crystal card limit (and no Eater punishment); Crystal cards playable in Deploy and Action; hand "Tunnel!" tag always shown.
 - Not satisfiable together with spec R10.12/R10.13/R10.3: older checks AC10, AC25 (every summon on row 7 although basic Miners can now Tunnel) and AC40 (mines at least 2 apart although mines may now touch).
+
+## Round 10 fix pass (inspector round 2)
+- Hand hover boxes now come from each card's real on-screen rectangle (a popped card uses its placeholder), so moving from one card to another retracts the first and a point above the tucked cards never raises the hand (AC174 retract steps, AC199).
+- Card close-up overlay is above the hand (z-index 20000) and clears any popped card; Deck Builder filters sit above the card grid (AC60); the deck carousel and "+ New Deck" keep a real size inside the owner's dDecks zone (AC121, AC141); menu buttons glow on hover on the button itself (AC137).
+- Not changed (conflict with the Round 10 rules): AC10/AC25 (Tunnel from turn 1 adds non-back-row summons), AC40 (mines may touch), AC48 (Crystal cards any time), AC109, AC174's last "tucked halfway" step and AC46's drag from the card centre (hand rests at a quarter), AC96/AC130/AC139 (contradict later owner rules). AC132 passes when run alone; it can fail only while the first card's deal-in animation is still running.

@@ -512,6 +512,7 @@ export class App {
   }
 
   showCard(cardId: string, creature?: any) {
+    this.clearPops(); this.openHand(false, true);
     const c = CARDS[cardId];
     const rows: [string, string][] = [];
     rows.push(['Type', c.type === 'creature' ? `${FSYM(c.faction)} ${FACTIONS[c.faction].name} creature` : c.type === 'spell' ? ({ regular: 'Spell', instant: 'Instant', counter: 'Counterspell' } as any)[c.spellKind] : 'Crystal card']);
@@ -1162,18 +1163,15 @@ export class App {
   handBoxes(): { c: El; l: number; t: number; w: number; h: number }[] {
     const hand = this.r?.hand as El;
     if (!hand) return [];
-    const ty = new DOMMatrix(getComputedStyle(hand).transform).m42;
-    const hb = hand.getBoundingClientRect();
     const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')].filter((c) => !c.classList.contains('offhand')) as El[];
-    const cw = cards[0]?.offsetWidth || 0;
-    const raised = hand.classList.contains('open') || hand.classList.contains('has-pop');
-    void raised; const base = hb.top - ty + 0.75 * cw;
-    const vh = window.innerHeight;
+    const vh = window.innerHeight, vw = window.innerWidth;
     const out = [];
     for (const c of cards) {
-      const l = hb.left + (parseFloat(c.style.left) || 0), t = base + (c.offsetTop || 0);
-      const hh = Math.min(c.offsetHeight, vh - t);
-      if (hh > 0) out.push({ c, l, t, w: c.offsetWidth, h: hh });
+      // the resting box: a popped card is measured by its placeholder (the fan spot it left)
+      const src = ((c as any)._ph as El | undefined)?.isConnected ? (c as any)._ph as El : c;
+      const r = src.getBoundingClientRect();
+      const l = Math.max(0, r.left), t = r.top, rr = Math.min(vw, r.right), bb = Math.min(vh, r.bottom);
+      if (rr > l && bb > t) out.push({ c, l, t, w: rr - l, h: bb - t });
     }
     return out;
   }
