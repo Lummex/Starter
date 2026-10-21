@@ -4,7 +4,52 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 9c — fix the broken arena, Commander pose and stronghold, owner menus (Menu Builder), deck builder items — read this first
+## Round 10 — owner playtest of 9c: highlights, played-card pop-ups, mines, rule changes (Miner draw, Ranged lines, Crystal cards, Tunnel), Crystal Flow, card close-up, hand — read this first
+
+Round 9c is done; keep everything from 8a–9c unless an item below replaces it. Build ONLY the 13 items below this round (the queued Menu Builder / deck builder / halls work stays queued). Faction color rule (owner, binding): Goblins = green #3ee06a with purple highlights #b45cff; Gnomes = purple #9b4dff with blue highlights #3fa9ff; Dwarves = navy blue #2f5fd8 with gold highlights #FFD700.
+
+### 1. Drag highlights
+When dragging a card to play it or moving a creature, the squares you can use are clearly brighter (strong fill + glowing outline, readable on the arena art) in the player's faction color. Squares where the move/drop would ATTACK are RED instead. Test: highlight alpha/brightness measurably higher than 9c; colors per faction; attack squares red.
+
+### 2. Played-card pop-ups
+When a card is played it still pops up and holds a few seconds, but: cards the ENEMY plays hover at the LEFT edge of the screen, cards the PLAYER plays at the RIGHT edge, each with a small margin, vertically centered above the hand, and they STACK (up to 3 visible, newest on top, slightly offset) instead of appearing in the center. They never cover the board center or the HUD crystals.
+
+### 3. Random mines can be close together
+Random mine placement may put mines next to each other / touching (adjacent squares allowed, never the same square, never overlapping models), so mining spots are fewer and contested. Keep all other placement rules (not on stronghold/home rows).
+
+### 4. Mine click area
+The whole mine site is clickable: crystal, banner, pedestal, rubble and the mining-pick icon — not only the low base (hit area = the mine model's screen bounding box, padded slightly). Clicking the mine or its pick icon = auto-mine with every miner of yours that can mine it this turn (existing auto-mine behavior).
+
+### 5. RULE CHANGE — Miner death draws a card
+When a basic Miner (role Gatherer, e.g. Grubgrabber Miner, Gemsinger Miner, Stonebreaker Miner) dies, its owner draws 1 card. If the Miner is used up as an upgrade (drag-played onto a creature), it does NOT draw. Smith Miners unchanged. Update the card text, longText, How to Play / tutorial text, AI evaluation, and engine tests.
+
+### 6. RULE CHANGE — Ranged attacks in straight lines, range 5
+Ranged creatures attack up to 5 squares away, but only along the 8 straight directions (up, down, left, right and the 4 diagonals) — not any square within range. The shot stops at the FIRST unit in the line (it can hit that unit; it cannot shoot past it). Highlights (item 1) show only legal lines. Update card text, longText, rules, AI and engine tests.
+
+### 7. Crystal Flow shards
+The shard streams use the new faction colors (stronger, clearly that faction's main color with highlight sparkles) and flow from each mine into that side's Flow CRYSTAL COUNTER on the HUD (screen position of the player-flow-crystal / enemy-flow-crystal piece), not into the castle.
+
+### 8. Card close-up
+Clicking a card opens the close-up at TWICE the current size (fit to the screen height if needed), with NO scroll bar (text sized to fit) and NO "Close" text/button. Clicking anywhere outside the card (or Esc) closes it.
+
+### 9. Hand at rest / hover
+At rest the hand tucks down so only about a QUARTER of each card shows above the bottom edge. Hovering the hand slides the cards up fully; while up, hovering a card enlarges it (current enlarge size is fine). Touch: tap the hand to raise it.
+
+### 10. Mine marker
+Remove the white ring/ellipse drawn around each mine. Replace it with a subtle ground decal lying flat on the board: a soft glow pool in the mine's crystal color under the mine plus a faint rubble/cracked-stone shadow; tinted in the owner's faction color once a side holds the mine. The small income tag stays.
+
+### 11. Mines sit flat
+Every mine model sits flat and level on the board: upright, base flush with the board surface, no lean or tilt, same size for all mines.
+
+### 12. RULE CHANGE (for now) — Crystal cards any time
+Crystal cards can be played at any time, with NO once-per-round limit (still free and Instant speed). Update card text, longText, rules, AI and engine tests.
+
+### 13. RULE CHANGE — Tunnel any time
+Tunnel (Grubgrabber Miner and every Tunnel card) works at ANY time from the start of the match: the creature can be summoned onto any empty space next to any mine; it no longer requires being behind on mines. Find and fix the cases where Tunnel placement fails. Update card text, longText, rules, AI and engine tests. (Desperate Plunder stays as it is: castable only while the enemy owns more mines.)
+
+**Tests:** keep all checks passing; add tests for every item (highlight colors, pop-up side/stack, adjacent mines allowed, mine hit area, Miner-death draw vs upgrade, ranged lines + blocking, flow target = HUD crystal, close-up size/no scroll/outside-click, hand tuck 25 %, no mine rings, mines level, unlimited crystal cards, Tunnel from turn 1). Screenshots 1920 × 1080: a drag with highlights (move + attack squares), played-card stacks on both sides, the close-up, the hand at rest and raised, a Crystal Flow stream into the counter.
+
+## Round 9c (done; unfinished parts queued) — fix the broken arena, Commander pose and stronghold, owner menus (Menu Builder), deck builder items
 
 Round 9a is done but the owner's playtest found the match **broken**: no arena picture, no arena effects, no foreground cut-outs. Build only **9c** now (9b, the in-game editor, stays queued). Keep everything from 8a/8b/9a unless an item below replaces it. Rules and numbers are unchanged.
 
