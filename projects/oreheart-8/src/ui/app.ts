@@ -1,3 +1,4 @@
+import { arenaOpts } from './arena-fx';
 import { drawMenuScreen, menuScreens } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
@@ -9,7 +10,7 @@ import { deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandO
 import { createBoardView, createFlatView, BoardView } from './scene';
 import { audio } from './audio';
 import { loadGrubnak3d } from './grubnak3d';
-import { mountGrubnakViewer } from './viewer3d';
+import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -282,11 +283,16 @@ export class App {
     this.clear();
     const sc = menuScreens.find((m) => m.id === id)!;
     const s = h('main', { class: 'screen menu-screen mb-screen', 'data-screen': dataScreen, 'aria-label': sc.name });
-    if (id === 'main') s.append(h('h1', { class: 'sr-only' }, 'Oreheart'));
     this.root.append(s);
     const handle = drawMenuScreen(s, id, { go: (t) => this.menuGo(t) });
     (s.querySelector('.mb-root') as HTMLElement).style.animation = `mb-fade ${sc.transition?.ms ?? 400}ms ease-out`;
     (s as any)._menu = handle;
+    if (id === 'main') {
+      const img = s.querySelector('.mb-pc[data-id="mainLogo"] img') as HTMLImageElement | null;
+      if (img) { const h1 = h('h1', { class: 'logo-h1' }); img.replaceWith(h1); img.alt = 'Oreheart'; h1.append(img); }
+      else s.append(h('h1', { class: 'sr-only' }, 'Oreheart'));
+      const dm = this.displayModeGroup(); dm.classList.add('title-display'); s.append(dm);
+    }
     return s;
   }
   menuGo(t: string) {
@@ -296,7 +302,7 @@ export class App {
     else if (t === 'commander') this.showSetup();
     else if (t === 'deck') showDecks(this);
     else if (t === 'action:settings-sound') this.showSettings();
-    else if (t === 'action:quit') { try { window.close(); } catch { /* ignore */ } const d: any = this.dialog('Quit', [h('h2', {}, 'Quit'), h('p', { style: 'text-align:center' }, 'You can close this tab to quit Oreheart.'), btn('OK', 'primary', () => d.close())], () => {}); }
+    else if (t === 'action:quit') this.showIntro();
     else if (t === 'action:start-match') this.showSetup();
   }
   showIntro() { this.menuScreen('intro', 'intro'); }
@@ -442,7 +448,7 @@ export class App {
       h('div', { class: 'row setup-actions' },
         btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }),
         h('div', { class: 'row', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns),
-        btn('Fight!', 'primary fight-btn', () => {
+        btn('Start', 'primary fight-btn', () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
           const opp = others[Math.floor(Math.random() * others.length)];
           const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
@@ -544,6 +550,13 @@ export class App {
         stopViewer = stop; ov.classList.add('with-viewer');
       });
     }
+    else if (withViewer && !isCmd && c.type === 'creature') {
+      void mountCreatureViewer(ov, c).then((stop) => {
+        if (!stop) return;
+        if (closed) { stop(); return; }
+        stopViewer = stop; ov.classList.add('with-viewer');
+      });
+    }
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
     ov.addEventListener('click', close);
     document.addEventListener('keydown', onKey, true);
@@ -564,6 +577,7 @@ export class App {
     this.lastOptions = options;
     this.lastTutorial = false;
     this.fxLog = [];
+    arenaOpts.extra = (o.setup && o.setup.arenaExtraEffects) || [];
     const state = this.game.newMatch(o);
     this.showMatch();
     this.update(this.game.state, []);
@@ -1035,6 +1049,7 @@ export class App {
       el.style.removeProperty('--gs');
       const hd = this.r.hand as El;
       if (hd && !hd.querySelector('.hand-card.popped:not(.popclone)')) { hd.classList.remove('has-pop'); hd.querySelectorAll('.popclone,.pop-ph').forEach((x) => x.remove()); }
+      el.style.translate = ''; el.style.scale = '';
       el.style.transform = el.dataset.fan || '';
       el.style.zIndex = el.dataset.z || '';
       this.asideNeighbors(null);
@@ -1081,7 +1096,10 @@ export class App {
     hand.append(clone);
     el.style.zIndex = '9000';
     el.style.setProperty('--gs', String(S));
-    el.style.transform = `translate(${targetX - cx}px,${targetY - cy}px) scale(${S})`;
+    // translate leads (fast) and the growth follows (slow), so the card never hangs below the screen edge mid-flight
+    el.style.transform = 'none';
+    el.style.translate = `${targetX - cx}px ${targetY - cy}px`;
+    el.style.scale = String(S);
     const cl = (el as any)._clone as El;
     if (cl) { cl.style.cssText = el.style.cssText; cl.style.zIndex = '8999'; }
     this.watchPop(el);

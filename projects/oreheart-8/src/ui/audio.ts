@@ -78,7 +78,8 @@ class AudioEngine {
     this.fadeT = setInterval(step, 50); step();
   }
 
-  state() { return { unlocked: this.unlocked, muted: this.muted, sfxVolume: this.sfx, musicVolume: this.music, voiceVolume: this.voice, music: this.musicState(), log: this.musicLog.slice() }; }
+  sfxLog: { src: string; screen: string; t: number }[] = [];
+  state() { return { sfxLog: this.sfxLog.slice(), unlocked: this.unlocked, muted: this.muted, sfxVolume: this.sfx, musicVolume: this.music, voiceVolume: this.voice, music: this.musicState(), log: this.musicLog.slice() }; }
   applyVolumes() {
     if (!this.sfxGain || !this.voiceGain) return;
     this.sfxGain.gain.value = this.muted ? 0 : (this.sfx / 100) * 0.7;

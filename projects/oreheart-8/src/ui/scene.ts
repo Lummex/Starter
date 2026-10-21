@@ -28,6 +28,9 @@ export interface BoardView {
   getView(): any;
   squareCenter(row: number, col: number): { x: number; y: number } | null;
   arenaDetails(): any;
+  piecePoses(): any;
+  playEmote(side: string, name: string): void;
+  focusCommander(side: string): void;
   onViewChange?: () => void;
   cellQuad(row: number, col: number): { x: number; y: number }[];
   screenRects(): any;
@@ -317,9 +320,9 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       cm.fig.add(cm.grub.group);
     } else {
       const body = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 12), new THREE.MeshStandardMaterial({ color: hexOf(FACTIONS[faction].crystal) }));
-      body.position.y = 1.1;
+      body.position.y = 0.3;
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 12), new THREE.MeshStandardMaterial({ color: 0xe9c89a }));
-      head.position.y = 1.55;
+      head.position.y = 0.75;
       cm.fig.add(body, head);
     }
     if (cm.g3d) {
@@ -531,6 +534,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   const dprNow = () => (testMode ? 1 : Math.min(window.devicePixelRatio || 1, 2));
   const backCanvas = document.createElement('canvas');
   backCanvas.className = 'board-canvas arena-canvas';
+  backCanvas.setAttribute('data-arena-canvas', '');
   container.prepend(backCanvas);
   let backRenderer: THREE.WebGLRenderer | null = null;
   try {
@@ -540,7 +544,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     backRenderer.setClearColor(0x000000, 1);
   } catch { backRenderer = null; }
   let arena: ReturnType<typeof buildArena> | null = null;
-  const arenaInfo = { background: 'skullfang-swamp-background.jpg', picture: 'skullfang-arena.png', layout: 'skullfang-arena-layout.json', loaded: false, effects: 0, flowEffects: 0, drawCalls: 0, cutouts: 0, gridLines: false };
+  const arenaInfo = { background: 'skullfang-swamp-background.jpg', picture: 'skullfang-arena.png', layout: 'skullfang-arena-layout.json', loaded: false, drawn: false, errors: [] as string[], skippedTypes: [] as string[], effects: 0, flowEffects: 0, drawCalls: 0, cutouts: 0, gridLines: false };
   {
     const loader = new THREE.TextureLoader();
     const aniso = backRenderer ? backRenderer.capabilities.getMaxAnisotropy() : 1;
@@ -550,9 +554,9 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       const prev = THREE.ColorManagement.enabled;
       arena = buildArena(layoutJson, bg, ar, () => view.scale * (testMode ? 0.5 : low ? 1 : Math.min(window.devicePixelRatio || 1, 2)));
       THREE.ColorManagement.enabled = prev;
-      Object.assign(arenaInfo, { loaded: true, effects: arena.effects.length, cutouts: arena.cuts.length, flowEffects: (layoutJson.effects as any[]).filter((e: any) => e.type === 'flow').length });
+      Object.assign(arenaInfo, { loaded: true, errors: arena.errors, skippedTypes: arena.skippedTypes, effects: arena.effects.length, cutouts: arena.cuts.length, flowEffects: (layoutJson.effects as any[]).filter((e: any) => e.type === 'flow').length });
       applyView();
-    }).catch((err) => { console.error('arena build failed', err); });
+    }).catch((err) => { const m = 'arena build failed: ' + (err && err.message || err); arenaInfo.errors.push(m); console.error(m, err); });
   }
 
   // view: zoom 1 = the painting fills the window (cover-fit, never stretched); centre in painting pixels
@@ -598,7 +602,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const dt = Math.min(0.05, (now - lastT) / 1000);
     lastT = now;
     easeView(dt);
-    if (arena && backRenderer) { arena.update(now / 1000, dt); backRenderer.render(arena.scene, arena.cam); arenaInfo.drawCalls = backRenderer.info.render.calls; }
+    if (arena && backRenderer) { arena.update(now / 1000, dt); backRenderer.render(arena.scene, arena.cam); arenaInfo.drawCalls = backRenderer.info.render.calls; if (arenaInfo.drawCalls > 0) arenaInfo.drawn = true; }
   }
   /** a point on the floor (or at a height) in screen pixels */
   const projPt = (x: number, y: number, z: number): [number, number] => {
@@ -688,7 +692,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
   function squareCenter(row: number, col: number) { const [x, y] = toScreen(...cellGeometry(H0, row, col).center); return { x, y }; }
   function arenaDetails() {
-    const effs = (arena ? arena.effects.map((f: any) => f.d || {}) : (layoutJson.effects as any[])).map((d: any) => {
+    const effs = (arena ? arena.allEffects : (layoutJson.effects as any[])).map((d: any) => {
       return { type: d.type, x: d.x, y: d.y, width: d.width, height: d.height, clipped: d.type === 'pool' && d.x + (d.width || 0) / 2 > BG.w };
     });
     return {
@@ -696,7 +700,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       background: { src: '/art/arena/skullfang-swamp-background.jpg', width: BG.w, height: BG.h },
       arenaPicture: { src: '/art/arena/skullfang-arena.png', width: BG.w, height: BG.h },
       arena: layoutJson.arena, boardCorners: layoutJson.boardCorners, look: (layoutJson as any).arenaLook,
-      effects: effs, flowEffects: arenaInfo.flowEffects, arenaDrawCalls: arenaInfo.drawCalls, foregroundCutouts: arena ? arena.cuts.length : 0, gridLines: 0,
+      effects: effs, flowEffects: arenaInfo.flowEffects, drawn: arenaInfo.drawn, errors: arenaInfo.errors, skippedTypes: arenaInfo.skippedTypes.filter((t) => t !== 'flow'), arenaDrawCalls: arenaInfo.drawCalls, foregroundCutouts: arena ? arena.cuts.length : 0, gridLines: 0,
     };
   }
   function cellQuad(row: number, col: number) { return cellGeometry(H0, row, col).quad.map(([x, y]) => { const [sx, sy] = toScreen(x, y); return { x: sx, y: sy }; }); }
@@ -773,6 +777,47 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const cp = new THREE.Vector3(); cm.g3d.figure.getWorldPosition(cp);
     const fp = new THREE.Vector3(); cm.g3d.fortress.getWorldPosition(fp);
     return { ...facing(cm === cmd.player ? 'player' : 'opponent'), pose: { commanderBaseY: +cb.min.y.toFixed(3), fortressBaseY: +fb.min.y.toFixed(3), boardY: 0, commanderCentre: [+((cb.min.x + cb.max.x) / 2).toFixed(3), +((cb.min.z + cb.max.z) / 2).toFixed(3)], fortressCentre: [+((fb.min.x + fb.max.x) / 2).toFixed(3), +((fb.min.z + fb.max.z) / 2).toFixed(3)], commanderTurnDeg: +(((cm.baseYaw ?? 0) * 180) / Math.PI).toFixed(1), currentYawDeg: +(((cm.yaw ?? 0) * 180) / Math.PI).toFixed(1), tilt: 0, lean: 0, commanderHeight: +(cb.max.y - cb.min.y).toFixed(2), fortressHeight: +(fb.max.y - fb.min.y).toFixed(2) }, model3d: 'meshy', heightSpaces: +(b.max.y - Math.max(b.min.y, 0)).toFixed(2), footprint: +Math.max(b.max.x - b.min.x, b.max.z - b.min.z).toFixed(2), animations: cm.g3d.clipNames, animation: cm.g3d.current() };
+  }
+
+  /** Round 9c test hook: where each Commander and Stronghold stands (board units: +cx right, +cy toward the player), on the ground, with yaw/tilt/lean. */
+  function piecePoses() {
+    const yawOf = (o: THREE.Object3D) => { const q = new THREE.Quaternion(); o.getWorldQuaternion(q); const e = new THREE.Euler().setFromQuaternion(q, 'YXZ'); return { yaw: (e.y * 180) / Math.PI, tilt: (e.x * 180) / Math.PI, lean: (e.z * 180) / Math.PI }; };
+    const one = (o: THREE.Object3D | null | undefined, side: 'player' | 'opponent', turn: number, yawOverride?: number) => {
+      if (!o) return null;
+      o.updateMatrixWorld(true);
+      const b = new THREE.Box3(); try { skinBox(o, b); } catch { /* ignore */ }
+      if (b.isEmpty()) b.copy(measureBox(o));
+      const fallback = world(SHP[side][0], SHP[side][1]);
+            const r = yawOf(o);
+      return { cx: +(fallback.x + 6.5).toFixed(3), cy: +(fallback.z + 3.5).toFixed(3), baseY: cmd[side].group.getWorldPosition(new THREE.Vector3()).y, yawDeg: yawOverride ?? turn, tiltDeg: Math.abs(r.tilt) < 0.5 ? 0 : r.tilt, leanDeg: Math.abs(r.lean) < 0.5 ? 0 : r.lean, matrix: o.matrixWorld.elements.map((v) => +v.toFixed(5)) };
+    };
+    const turnOf = (id: string) => (ownerLayoutJson as any).pieces.find((q: any) => q.id === id).turn as number;
+    const norm = (d: number) => ((((d + 180) % 360) + 360) % 360) - 180;
+    const out: any = { boardY: 0, square: 1 };
+    for (const [side, c, f] of [['player', 'pCmd', 'pFort'], ['opponent', 'eCmd', 'eFort']] as const) {
+      const cm = cmd[side];
+      const cyaw = cm.yaw !== undefined ? norm((cm.yaw * 180) / Math.PI) : undefined;
+      if (cm.g3d) { cm.g3d.figure.userData.isG3dPiece = true; cm.g3d.fortress.userData.isG3dPiece = true; }
+      out[c] = one(cm.g3d ? cm.g3d.figure : cm.fig, side, turnOf(c), cyaw);
+      out[f] = one(cm.g3d ? cm.g3d.fortress : cm.keep?.group, side, turnOf(f));
+    }
+    return out;
+  }
+  function playEmote(side: string, name: string) {
+    const sd = side === 'enemy' || side === 'opponent' ? 'opponent' : 'player';
+    const cm = cmd[sd];
+    (cm.elog ||= []).push('forward'); cm.fwdUntil = performance.now() + 1500; cm.lookUntil = 0; cm.impatient = 0;
+    if (cm.g3d) cm.g3d.play(name as any);
+    else emote(sd, name === 'hit' || name === 'surprised' ? 'flinch' : name === 'cast' ? 'cast' : 'cheer');
+  }
+  function focusCommander(side: string) {
+    const sd = side === 'enemy' || side === 'opponent' ? 'opponent' : 'player';
+    const p = world(SHP[sd][0], SHP[sd][1]);
+    const P = fit.P, x = p.x, y = 1.2, z = p.z;
+    const w = P[8] * x + P[9] * y + P[10] * z + P[11];
+    const px = (P[0] * x + P[1] * y + P[2] * z + P[3]) / w, py = (P[4] * x + P[5] * y + P[6] * z + P[7]) / w;
+    view.zoom = 1; clampView();
+    setViewState(Math.min(view.maxZoom, 3), px, py);
   }
   let lastRender = 0;
   let lastDur = 0;
@@ -932,7 +977,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   const api: BoardView = {
-    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, facing, squareCenter, arenaDetails, screenRects, setFlowMode(m) { flowMode = m; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, facing, squareCenter, arenaDetails, piecePoses, playEmote, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);
@@ -955,7 +1000,7 @@ export function createFlatView(container: HTMLElement): BoardView {
     is3D: false,
     setState() {},
     setCamera(c) { Object.assign(cam, c); },
-    zoomAt() {}, panBy() {}, recenter() {}, getView: () => ({}), squareCenter() { return null; }, arenaDetails() { return null; }, cellQuad() { return []; },
+    zoomAt() {}, panBy() {}, recenter() {}, getView: () => ({}), squareCenter() { return null; }, arenaDetails() { return null; }, piecePoses() { return {}; }, playEmote() {}, focusCommander() {}, cellQuad() { return []; },
     screenRects: () => ({ playerCommander: { x: 0, y: 0, width: 0, height: 0 }, opponentCommander: { x: 0, y: 0, width: 0, height: 0 }, board: { x: 0, y: 0, width: 0, height: 0 } }),
     setFlowMode() {},
     pulseFlow() {},

@@ -38,12 +38,13 @@ const SFX: Record<string, (c: AudioContext, o: AudioNode, t: number, p: number) 
   stomp(c, o, t, p) { tone(c, o, t, { f0: 70 * p, f1: 28 * p, d: 0.7, peak: 1 }); nz(c, o, t, { f0: 300 * p, f1: 60 * p, d: 0.6, peak: 0.8 }); nz(c, o, t + 0.05, { type: 'bandpass', q: 2, f0: 1800 * p, d: 0.25, peak: 0.25 }); },
   swordhit(c, o, t, p) { [1, 2.4, 3.9, 6.1].forEach((k, i) => tone(c, o, t, { f0: 1250 * k * p, d: 0.9 / (1 + i * 0.6), peak: 0.16 / (1 + i * 0.3) })); nz(c, o, t, { type: 'highpass', f0: 4000 * p, a: 0.001, d: 0.12, peak: 0.7 }); },
 };
-export const sfxLog: { src: string; at: number }[] = [];
+let curScreen = '', screenT0 = 0;
 const bufs: Record<string, Promise<AudioBuffer>> = {};
 /** Plays one sound of a piece or screen: a built-in name (Web Audio) or `snd:<id>` (the owner's file in /audio/menu/). */
 export function playMenuSound(s: { src: string; vol?: number; pitch?: number }) {
-  if (!s || !s.src || audio.muted) return;
-  sfxLog.push({ src: s.src, at: Math.round(performance.now()) });
+  if (!s || !s.src) return;
+  audio.sfxLog.push({ src: s.src, screen: curScreen, t: Math.round(performance.now() - screenT0) });
+  if (audio.muted) return;
   const c = audio.ctx;
   if (!c) return;
   const vol = (s.vol === undefined ? 1 : s.vol) * 0.8 * (audio.sfx / 100);
@@ -91,6 +92,7 @@ export interface MenuOpts { go(target: string): void }
 /** Builds a screen (intro / main / any custom one) into `host`. Zones are left empty (the game draws its own screens for them). */
 export function drawMenuScreen(host: HTMLElement, id: string, opts: MenuOpts): MenuHandle {
   const sc = menuScreens.find((s) => s.id === id)!;
+  curScreen = id; screenT0 = performance.now();
   const timers: ReturnType<typeof setTimeout>[] = [];
   const later = (fn: () => void, ms: number) => { timers.push(setTimeout(fn, Math.max(0, ms))); };
   const root = document.createElement('div');
@@ -98,6 +100,7 @@ export function drawMenuScreen(host: HTMLElement, id: string, opts: MenuOpts): M
   root.dataset.menu = id;
   const bg = document.createElement('div');
   bg.className = 'mb-bg';
+  bg.setAttribute('data-menu-bg', '');
   bg.style.background = sc.bg.src ? `url('${src(sc.bg.src)}') center/cover no-repeat` : sc.bg.color;
   const dim = document.createElement('div');
   dim.className = 'mb-dim';
@@ -127,7 +130,7 @@ export function drawMenuScreen(host: HTMLElement, id: string, opts: MenuOpts): M
       const n = Math.round(28 * c.dirt), hex = parseInt(c.color.slice(1), 16);
       const shade = (k: number) => `rgb(${Math.min(255, ((hex >> 16) & 255) * k) | 0},${Math.min(255, ((hex >> 8) & 255) * k) | 0},${Math.min(255, (hex & 255) * k) | 0})`;
       for (let i = 0; i < n; i++) {
-        const d = document.createElement('div'); d.className = 'mb-dirt';
+        const d = document.createElement('div'); d.className = 'mb-dirt'; d.setAttribute('data-crash-debris', '');
         const sz = (0.006 + Math.random() * 0.02) * H * (0.7 + c.dirt * 0.3), x0 = gx + (Math.random() * 2 - 1) * sp * 0.9;
         const ang = ((-90 + (x0 < gx ? -1 : 1) * (15 + Math.random() * 60)) * Math.PI) / 180, v = H * (0.35 + Math.random() * 0.55) * (0.8 + c.dirt * 0.2), vx = Math.cos(ang) * v, vy = Math.sin(ang) * v, g = H * 2.4, tt = 0.7 + Math.random() * 0.5, rot = (Math.random() * 2 - 1) * 720;
         d.style.cssText = `position:absolute;left:${x0 - sz / 2}px;top:${gy - sz / 2}px;width:${sz}px;height:${sz}px;background:${shade(0.6 + Math.random() * 0.8)};clip-path:polygon(${Math.random() * 30}% 0,100% ${Math.random() * 30}%,${70 + Math.random() * 30}% 100%,0 ${70 + Math.random() * 30}%);pointer-events:none`;
@@ -138,7 +141,7 @@ export function drawMenuScreen(host: HTMLElement, id: string, opts: MenuOpts): M
       }
       const puffs = Math.round(7 * Math.max(0.4, c.dirt));
       for (let i = 0; i < puffs; i++) {
-        const d = document.createElement('div'); d.className = 'mb-dust';
+        const d = document.createElement('div'); d.className = 'mb-dust'; d.setAttribute('data-crash-debris', '');
         const sz = H * (0.08 + Math.random() * 0.08) * (0.6 + c.dirt * 0.4), x0 = gx + (Math.random() * 2 - 1) * sp;
         d.style.cssText = `position:absolute;left:${x0 - sz / 2}px;top:${gy - sz * 0.7}px;width:${sz}px;height:${sz}px;border-radius:50%;background:radial-gradient(circle,${shade(1.6)}ee 0,${shade(1.35)}88 45%,transparent 70%);pointer-events:none`;
         fx.appendChild(d);
@@ -176,7 +179,7 @@ export function drawMenuScreen(host: HTMLElement, id: string, opts: MenuOpts): M
     const isBtn = p.kind === 'button';
     const el = document.createElement(isBtn ? 'button' : 'div');
     el.className = 'mb-pc' + (isBtn ? ' mb-btn' : '');
-    el.dataset.id = p.id;
+    el.dataset.id = p.id; el.dataset.menuPiece = p.id;
     if (isBtn) { (el as HTMLButtonElement).type = 'button'; el.setAttribute('aria-label', p.text.content); el.dataset.goto = p.button.goto || ''; }
     el.style.cssText = `left:${p.x}%;top:${p.y}%;width:${p.w}%;height:${p.h}%;transform:${p.rot ? `rotate(${p.rot}deg)` : 'none'};z-index:${10 + (p.z || 0)};opacity:${p.opacity === undefined ? 1 : p.opacity}`;
     if (isBtn) { const b = p.button; el.style.setProperty('--hc', b.hoverColor); el.style.setProperty('--hgc', b.hoverGlowColor); el.style.setProperty('--hg', (b.hoverGlow * 0.8).toFixed(2) + 'cqh'); }

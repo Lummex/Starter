@@ -245,7 +245,7 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .hand-card .ty{font-size:calc(var(--cw) * .2);line-height:1}
 .hand-card .tx,.mull-card .tx{display:block;width:100%;flex:1 1 auto;font-size:calc(var(--cw) * var(--tf,.08));line-height:1.12;font-weight:400;overflow:visible;word-break:normal;overflow-wrap:break-word;text-overflow:clip;white-space:normal;display:flex;align-items:center;justify-content:center;text-align:center;color:#f4e9d0}
 .mull-card .tx{font-size:calc(11px * var(--tf,.08) * 10)}
-.hand-card.popped{translate:none!important;scale:1!important;transition:transform .12s;box-shadow:0 10px 30px #000d;transform-origin:50% 50%}
+.hand-card.popped{transition:transform .12s;box-shadow:0 10px 30px #000d;transform-origin:50% 50%}
 .hand-card:hover{translate:none;scale:1}
 .hand-card.static{position:relative;left:auto;top:auto;transform:none;pointer-events:none;margin:0 auto}
 .enemy-card.hand-card.static{--cw:130px;width:130px;height:195px;margin:0 auto 6px;font-size:inherit}
@@ -1359,13 +1359,26 @@ div.combo{display:inline-block;cursor:pointer}
 @keyframes mb-lp-blink{0%,100%{opacity:1}50%{opacity:calc(1 - .8 * var(--la))}}
 
 /* ---- Round 9c deck builder: faction-coloured deck names with an outer glow, white deck text, bold Back, Play ---- */
-.db-deck[data-faction=goblins] .ds-name{color:#3ee06a;text-shadow:0 0 .5em #3ee06a,0 0 1.1em #3ee06a88,0 2px 3px #000}
-.db-deck[data-faction=gnomes] .ds-name{color:#3fa9ff;text-shadow:0 0 .5em #3fa9ff,0 0 1.1em #3fa9ff88,0 2px 3px #000}
-.db-deck[data-faction=dwarves] .ds-name{color:#b45cff;text-shadow:0 0 .5em #b45cff,0 0 1.1em #b45cff88,0 2px 3px #000}
-.db-deck[data-faction=goblins] .deck-img{filter:drop-shadow(0 0 .5em #3ee06a)}
-.db-deck[data-faction=gnomes] .deck-img{filter:drop-shadow(0 0 .5em #3fa9ff)}
-.db-deck[data-faction=dwarves] .deck-img{filter:drop-shadow(0 0 .5em #b45cff)}
+.db-deck[data-faction=goblin] .ds-name{color:#3ee06a;text-shadow:0 0 .5em #3ee06a,0 0 1.1em #3ee06a88,0 2px 3px #000}
+.db-deck[data-faction=gnome] .ds-name{color:#3fa9ff;text-shadow:0 0 .5em #3fa9ff,0 0 1.1em #3fa9ff88,0 2px 3px #000}
+.db-deck[data-faction=dwarf] .ds-name{color:#b45cff;text-shadow:0 0 .5em #b45cff,0 0 1.1em #b45cff88,0 2px 3px #000}
+.db-deck[data-faction=goblin] .deck-img{filter:drop-shadow(0 0 .5em #3ee06a)}
+.db-deck[data-faction=gnome] .deck-img{filter:drop-shadow(0 0 .5em #3fa9ff)}
+.db-deck[data-faction=dwarf] .deck-img{filter:drop-shadow(0 0 .5em #b45cff)}
 .db-list li .db-lbl,.db-list li .db-nm,.db-list li .db-cnt,.db-counts,.db-size,.db-size *{color:#fff!important}
 .db-back{font-weight:700!important}
 .db-play:disabled{opacity:.5;cursor:not-allowed}
 .mb-screen .mb-txt,.mb-screen .mb-btn .mb-txt{-webkit-text-fill-color:currentcolor!important}
+
+/* round 9c fixes: the logo's h1 wrapper does not change the owner layout; Display mode sits quietly at the title's bottom-left */
+.logo-h1 { display: contents; margin: 0; font-size: inherit; }
+.title-display { position: fixed; left: 8px; bottom: 6px; z-index: 40; margin: 0; padding: 0; border: 0; display: flex; gap: 10px; align-items: center; font-size: 14px; opacity: .85; }
+.title-display legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.title-display .dm-opt { display: inline-flex; align-items: center; gap: 4px; }
+.title-display label { font-size: 14px; }
+
+.match .hand .hand-card.popped:not(.popclone){transition:transform .3s,translate .1s ease-out,scale .45s cubic-bezier(.65,0,.35,1),opacity .18s!important}
+body .screen .db-counts,body .screen .db-counts *,body .screen .db-list li,body .screen .db-list li *,body .screen .db-size,body .screen .db-size *{color:#fff!important}
+body .screen .db-deck[data-faction=goblin] .ds-name{color:#3ee06a!important}
+body .screen .db-deck[data-faction=gnome] .ds-name{color:#3fa9ff!important}
+body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}

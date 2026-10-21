@@ -4,6 +4,7 @@
 // management) exactly as in the editor, so the pictures look identical.
 import * as THREE from 'three';
 
+export const arenaOpts = { extra: [] };
 export function buildArena(layout, bgTex, arTex, pxPerUnit) {
 const scene = new THREE.Scene();
 const fgScene = new THREE.Scene();
@@ -219,10 +220,12 @@ const MAKERS={fireflies:makeFireflies,shimmer:makeShimmer,plant:makePlant,testun
 function addEffect(d){d=Object.assign({},DEF[d.type],d);PAL[d.type].forEach(([k,,v])=>{if(!d[k])d[k]=v;});d.id=d.id||nextId++;nextId=Math.max(nextId,d.id+1);
  const fx=MAKERS[d.type](d);fx.d=d;fx.root.position.set(d.x,-d.y,0);scene.add(fx.root);effects.push(fx);return fx;}
 THREE.ColorManagement.enabled = false;
-layout.effects.forEach((d) => {
+const skippedTypes = [], errors = [];
+const allEffects = (layout.effects || []).concat(arenaOpts.extra || []);
+allEffects.forEach((d) => {
   // Types the arena builder does not make (e.g. 'flow', drawn by the Crystal Flow system) are skipped; one bad effect never breaks the arena.
-  if (!MAKERS[d.type] || !PAL[d.type]) return;
-  try { addEffect(Object.assign({}, d)); } catch (err) { console.error('arena effect failed', d.type, d.id, err); }
+  if (!MAKERS[d.type] || !PAL[d.type]) { if (d.type !== 'flow' && !skippedTypes.includes(d.type)) skippedTypes.push(d.type); else if (d.type === 'flow' && !skippedTypes.includes('flow')) skippedTypes.push('flow'); return; }
+  try { addEffect(Object.assign({}, d)); } catch (err) { const m = 'arena effect failed: ' + d.type + ' ' + d.id + ' ' + (err && err.message || err); errors.push(m); console.error(m, err); }
 });
 const cutVS='varying vec2 vW;void main(){vW=position.xy;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
 const cutFS=`varying vec2 vW;uniform sampler2D uTex;uniform vec3 uAr;uniform vec2 uAS;uniform float uBright,uContrast,uSat,uHue;
@@ -241,7 +244,7 @@ const cuts = layout.foregroundCutouts.map((pts) => {
 THREE.ColorManagement.enabled = true;
 const H = homog(layout.boardCorners.map(A2W));
 return {
-  scene, fgScene, cam, IW, IH, effects, cuts, homography: H,
+  scene, fgScene, cam, IW, IH, effects, cuts, skippedTypes, errors, allEffects, homography: H,
   setView(x0, y0, w, h) { cam.left = x0; cam.right = x0 + w; cam.top = -y0; cam.bottom = -(y0 + h); cam.updateProjectionMatrix(); },
   update(t, dt) { const cm = THREE.ColorManagement.enabled; THREE.ColorManagement.enabled = false; effects.forEach((f) => f.update(t, dt)); THREE.ColorManagement.enabled = cm; },
 };

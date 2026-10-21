@@ -16,7 +16,7 @@ describe('round 9c', () => {
   });
   it('arena failures are never swallowed', () => {
     expect(read('src/ui/scene.ts')).not.toMatch(/\}\)\.catch\(\(\) => \{\}\);\s*\n\s*\}\s*\n\s*\n\s*\/\/ view: zoom/);
-    expect(read('src/ui/scene.ts')).toMatch(/console\.error\('arena build failed'/);
+    expect(read('src/ui/scene.ts')).toMatch(/console\.error\(m, err\)/);
   });
   it('menus file: intro first, owner screens and buttons', () => {
     const m: any = menus;

@@ -82,3 +82,50 @@ export async function mountGrubnakViewer(host: HTMLElement, opts: { bare?: boole
   const shut = () => { clearInterval(emoter as any); open = false; cancelAnimationFrame(raf); renderer.dispose(); ov.remove(); };
   return shut;
 }
+
+/** Round 9c: a close-up 3D viewer for any creature card (the board placeholder or finished figure): drag to spin, wheel to zoom, "Idle" button. */
+export async function mountCreatureViewer(host: HTMLElement, card: any): Promise<(() => void) | null> {
+  const { makeGoblin } = await import('./art');
+  const canvas = h('canvas', { class: 'viewer-canvas', 'data-creature-viewer': '', 'aria-label': `${card.name} 3D model, drag to spin` }) as HTMLCanvasElement;
+  const row = h('div', { class: 'viewer-anims', role: 'group', 'aria-label': 'Animations' });
+  const ov = h('div', { class: 'viewer3d', role: 'region', 'aria-label': '3D model', 'data-viewer3d': '' }, canvas, row);
+  ov.addEventListener('click', (e) => e.stopPropagation());
+  ov.addEventListener('pointerdown', (e) => e.stopPropagation());
+  host.append(ov);
+  let renderer: THREE.WebGLRenderer | null = null;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch { renderer = null; }
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xcfd8ff, 0x3a2a40, 1.6));
+  const key = new THREE.DirectionalLight(0xfff0d0, 2.4); key.position.set(2, 4, 3); scene.add(key);
+  let fig: THREE.Group;
+  if (card.faction === 'goblins') fig = makeGoblin(card.id, card, () => {}, true).group;
+  else {
+    fig = new THREE.Group();
+    const col = card.faction === 'gnomes' ? 0x3fa9ff : 0xb45cff;
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.5, 12), new THREE.MeshStandardMaterial({ color: col, roughness: 0.55 })); body.position.y = 0.3;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 10), new THREE.MeshStandardMaterial({ color: 0xe8d3a8 })); head.position.y = 0.72;
+    fig.add(body, head);
+  }
+  scene.add(fig);
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 50);
+  let az = 0.4, dist = 3.2;
+  const idle = h('button', { type: 'button', class: 'btn viewer-anim', 'data-anim': 'idle', 'aria-pressed': 'true' }, 'Idle');
+  row.append(idle);
+  let drag: { x: number } | null = null;
+  canvas.style.touchAction = 'none';
+  canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); drag = { x: e.clientX }; });
+  canvas.addEventListener('pointermove', (e) => { if (drag) { az -= (e.clientX - drag.x) * 0.01; drag.x = e.clientX; } });
+  canvas.addEventListener('pointerup', () => { drag = null; });
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); e.stopPropagation(); dist = Math.max(1.6, Math.min(8, dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
+  let raf = 0, open = true;
+  const frame = (t: number) => {
+    if (!open) return;
+    if (!drag) az += 0.006;
+    fig.position.y = Math.sin(t / 700) * 0.01;
+    const w = canvas.clientWidth || 400, hh = canvas.clientHeight || 400;
+    if (renderer) { renderer.setSize(w, hh, false); camera.aspect = w / hh; camera.updateProjectionMatrix(); camera.position.set(dist * Math.sin(az), 1.2, dist * Math.cos(az)); camera.lookAt(0, 0.6, 0); renderer.render(scene, camera); }
+    raf = requestAnimationFrame(frame);
+  };
+  raf = requestAnimationFrame(frame);
+  return () => { open = false; cancelAnimationFrame(raf); renderer?.dispose(); ov.remove(); };
+}

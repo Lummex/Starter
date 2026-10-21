@@ -13,7 +13,8 @@ const seed = seedParam != null && seedParam !== '' && !isNaN(+seedParam) ? Math.
 
 const game = new Game(test);
 const app = new App(document.getElementById('app')!, game, test, test ? seed : undefined);
-app.showIntro();
+const wantIntro = params.get('intro') === '1' || (!test && !sessionStorage.getItem('oreheart.introSeen'));
+if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catch { /* ignore */ } app.showIntro(); } else app.showMenu();
 
 if (test) {
   (window as any).__app = app;
@@ -61,6 +62,9 @@ if (test) {
     clearFxLog: () => { (app as any).fxLog = []; },
     getCamera: () => app.getCamera(),
     getArena: () => app.getArena(),
+    getPiecePoses: () => (app.view ? app.view.piecePoses() : {}),
+    playEmote: (side: string, name: string) => app.view?.playEmote(side, name),
+    focusCommander: (side: string) => app.view?.focusCommander(side),
     squareToScreen: (r: number, c: number) => app.squareToScreen(r, c),
     screenRects: () => app.screenRects(),
     poke: (uid: string) => (app.view ? app.view.poke(uid) : null),
