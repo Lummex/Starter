@@ -42,7 +42,7 @@ class AudioEngine {
   private fadeT: any = null;
   private trackEl(k: 'menu' | 'match') {
     if (!this.tracks[k]) {
-      const a = new Audio(k === 'menu' ? '/music/tense-cycle.mp3' : '/music/first-fight.mp3');
+      const a = new Audio(k === 'menu' ? '/audio/music/tense-cycle.mp3' : '/audio/music/first-fight.mp3');
       a.loop = true; a.preload = 'auto'; a.volume = 0;
       this.tracks[k] = a;
     }
@@ -52,9 +52,13 @@ class AudioEngine {
   private musicTarget(k: 'menu' | 'match') { return this.muted || !this.musicOn || !this.unlocked || k !== this.musicMode ? 0 : (this.music / 100) * 0.5; }
   musicState() {
     const v = (k: 'menu' | 'match') => { const a = this.tracks[k]; return a ? { playing: !a.paused, volume: a.volume } : { playing: false, volume: 0 }; };
-    return { mode: this.musicMode, on: this.musicOn, volume: this.music, menu: v('menu'), match: v('match'), muted: this.muted };
+    const cur = this.tracks[this.musicMode];
+    return { mode: this.musicMode, on: this.musicOn, volume: this.music, menu: v('menu'), match: v('match'), muted: this.muted,
+      track: this.unlocked ? this.trackName(this.musicMode) : null, playing: !!cur && !cur.paused, gain: this.muted || !this.musicOn ? 0 : (this.music / 100) * 0.5, crossfadeMs: 1500 };
   }
-  setMusicMode(m: 'menu' | 'match') { this.musicMode = m; this.musicTick(); }
+  musicLog: { track: string; fadeMs: number }[] = [];
+  private trackName(m: 'menu' | 'match') { return m === 'match' ? 'first-fight' : 'tense-cycle'; }
+  setMusicMode(m: 'menu' | 'match') { if (m !== this.musicMode || !this.musicLog.length) this.musicLog.push({ track: this.trackName(m), fadeMs: 1500 }); this.musicMode = m; this.musicTick(); }
   setMusic(v: number) { this.music = v; localStorage.setItem('oreheart.musicVolume', String(v)); this.musicTick(); }
   setMusicOn(on: boolean) { this.musicOn = on; localStorage.setItem('oreheart.musicOff', on ? '0' : '1'); this.musicTick(); }
   /** Crossfades (about 1.5 s) towards the track for the current mode. */
@@ -74,7 +78,7 @@ class AudioEngine {
     this.fadeT = setInterval(step, 50); step();
   }
 
-  state() { return { unlocked: this.unlocked, muted: this.muted, sfxVolume: this.sfx, voiceVolume: this.voice, music: this.musicState() }; }
+  state() { return { unlocked: this.unlocked, muted: this.muted, sfxVolume: this.sfx, musicVolume: this.music, voiceVolume: this.voice, music: this.musicState(), log: this.musicLog.slice() }; }
   applyVolumes() {
     if (!this.sfxGain || !this.voiceGain) return;
     this.sfxGain.gain.value = this.muted ? 0 : (this.sfx / 100) * 0.7;

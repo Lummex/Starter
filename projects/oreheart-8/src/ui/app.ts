@@ -83,9 +83,9 @@ export function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string
   return e;
 }
 /** Ornate custom dropdown (ARIA combobox + floating listbox). `sel.value` holds the current choice; `onchange` fires on selection. */
-export function combo(label: string, id: string, opts: string[], onchange: () => void) {
+export function combo(label: string, id: string, opts: string[], onchange: () => void, asDiv = false) {
   const state = { value: opts[0] };
-  const cb = h('button', { type: 'button', class: 'combo', id, role: 'combobox', 'aria-label': label, 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-controls': id + '-list' }, opts[0]);
+  const cb = h(asDiv ? 'div' : 'button', { ...(asDiv ? { tabindex: '0' } : { type: 'button' }), class: 'combo', id, role: 'combobox', 'aria-label': label, 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-controls': id + '-list' }, opts[0]);
   let lb: El | null = null;
   const close = () => { lb?.remove(); lb = null; cb.setAttribute('aria-expanded', 'false'); document.removeEventListener('pointerdown', away, true); };
   const away = (e: Event) => { if (lb && !lb.contains(e.target as Node) && e.target !== cb) close(); };
@@ -104,7 +104,7 @@ export function combo(label: string, id: string, opts: string[], onchange: () =>
     (lb.querySelector('.on') as El | null)?.focus();
   };
   cb.addEventListener('click', open);
-  cb.addEventListener('keydown', (e: any) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowDown' && !lb) { e.preventDefault(); open(); } });
+  cb.addEventListener('keydown', (e: any) => { if (asDiv && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open(); } else if (e.key === 'Escape') close(); else if (e.key === 'ArrowDown' && !lb) { e.preventDefault(); open(); } });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && lb) close(); });
   return { wrap: h('div', { class: 'f-field' }, h('span', { class: 'f-label', 'aria-hidden': 'true' }, label), cb), sel: state, set: (v: string) => { state.value = v; cb.textContent = v; } };
 }
@@ -307,7 +307,7 @@ export class App {
     this.clear();
     this.root.append(h('main', { class: 'screen center', 'data-screen': 'settings' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.flowGroup(), this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), btn('Back', '', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.flowGroup(), this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), btn('Back', '', () => this.showMenu()))));
   }
 
   showSetup() {
@@ -646,7 +646,7 @@ export class App {
     });
     r.menuPanel = h('div', { class: 'menu-panel', id: 'match-menu-panel', hidden: true });
     r.menuBtn = menuBtn;
-    r.menuWrap = h('div', { class: 'hud-menu', 'aria-label': 'Match menu', role: 'group' }, menuBtn, r.menuPanel);
+    r.menuWrap = h('div', { class: 'hud-menu', 'aria-label': 'Menu controls', role: 'group' }, menuBtn, r.menuPanel);
     void muteBtn; void surrenderBtn;
     r.tip = h('aside', { class: 'tip', 'aria-label': 'Tutorial tip', hidden: true });
     const match = h('main', { class: 'match' },
@@ -765,11 +765,14 @@ export class App {
   flowKey = '';
   flowTurn = -1;
   matchSettings() {
-    const c: any = this.dialog('Settings', [h('h2', {}, 'Settings'), h('div', { class: 'stack' },
+    const mute = btn('Mute', 'mute-btn', () => { audio.setMuted(!audio.muted); mute.setAttribute('aria-pressed', String(audio.muted)); }, { 'aria-pressed': String(audio.muted) });
+    const c: any = this.dialog('Match settings', [h('h2', {}, 'Settings'), h('div', { class: 'stack' },
       this.popupsSwitch(),
       btn('Last turn', 'last-btn', () => { c.close(); this.showLastTurn(); }),
       btn('Recenter', 'recenter-btn', () => { this.resetCam(); c.close(); }),
-      btn(audio.muted ? 'Unmute' : 'Mute', 'mute-btn', (e) => { audio.setMuted(!audio.muted); (e.currentTarget as El).textContent = audio.muted ? 'Unmute' : 'Mute'; }),
+      mute,
+      this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)),
+      this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)),
       btn('Close', '', () => c.close()))]);
   }
   matchHowTo() {
@@ -779,7 +782,7 @@ export class App {
   }
   matchVolume(which: 'Sound Effects' | 'Background music') {
     const c: any = this.dialog(which, [h('h2', {}, which),
-      which === 'Sound Effects' ? h('div', { class: 'stack' }, this.slider('Sound effects', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)))
+      which === 'Sound Effects' ? h('div', { class: 'stack' }, this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)))
         : h('div', { class: 'stack' }, this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn(audio.musicOn ? 'Music: On' : 'Music: Off', 'music-toggle', (e) => { audio.setMusicOn(!audio.musicOn); (e.currentTarget as El).textContent = audio.musicOn ? 'Music: On' : 'Music: Off'; })),
       h('div', { class: 'row' }, btn('Close', '', () => c.close()))]);
   }
@@ -1038,12 +1041,13 @@ export class App {
     const hb = hand.getBoundingClientRect();
     const openY = -0.03 * w;
     const left = hb.left + (parseFloat(el.style.left) || 0);
-    const top = hb.top - ty + openY + (el.offsetTop || 0);
-    const S = Math.max(1, Math.min((hr.height * 0.74) / hgt, (hr.width - 8) / w));
+    void ty; void openY;
+    const top = hb.top + (el.offsetTop || 0);
+    const S = Math.max(1, Math.min(1.6, (hr.height - 8) / hgt, (hr.width - 8) / w));
     const cx = left + w / 2, cy = top + hgt / 2;
     const halfW = (w * S) / 2, halfH = (hgt * S) / 2;
     const targetX = Math.max(hr.left + halfW + 2, Math.min(hr.right - halfW - 2, cx));
-    const targetY = hr.top + hr.height / 2;
+    const targetY = hr.bottom - halfH - 1;
     el.classList.add('popped');
     hand.classList.add('has-pop');
     this.asideNeighbors(el);
@@ -1107,7 +1111,7 @@ export class App {
     const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')].filter((c) => !c.classList.contains('offhand')) as El[];
     const cw = cards[0]?.offsetWidth || 0;
     const raised = hand.classList.contains('open') || hand.classList.contains('has-pop');
-    const base = hb.top - ty + (raised ? -0.03 * cw : 0.75 * cw);
+    void raised; const base = hb.top - ty + 0.75 * cw;
     const vh = window.innerHeight;
     const out = [];
     for (const c of cards) {
@@ -1132,10 +1136,11 @@ export class App {
     const W = window.innerWidth, H = window.innerHeight;
     const clipped = rects.map((r) => ({ l: Math.max(0, r.left), t: Math.max(0, r.top), r: Math.min(W, r.right), b: Math.min(H, r.bottom) })).filter((r) => r.r > r.l && r.b > r.t);
     const raised = !!hand && (hand.classList.contains('open') || hand.classList.contains('has-pop'));
-    if (!clipped.length) return { raised, zone: { x: 0, y: 0, width: 0, height: 0 }, cards: { x: 0, y: 0, width: 0, height: 0 }, popMs: 180 };
+    if (!clipped.length) return { raised, zone: { x: 0, y: 0, width: 0, height: 0 }, cards: { x: 0, y: 0, width: 0, height: 0 }, raisedIndex: -1, popScale: 1.6, popMs: 450 };
     const l = Math.min(...clipped.map((r) => r.l)), t = Math.min(...clipped.map((r) => r.t)), r = Math.max(...clipped.map((x) => x.r)), b = Math.max(...clipped.map((x) => x.b));
     const box = { x: l, y: t, width: r - l, height: b - t };
-    return { raised, zone: box, cards: { ...box }, popMs: 180 };
+    const raisedIndex = ([...hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).findIndex((c) => c.classList.contains('popped'));
+    return { raised, zone: box, cards: { ...box }, raisedIndex, popScale: 1.6, popMs: 450 };
   }
   /** Return every popped card to the fan and tuck the hand; nothing may stay raised. */
   clearPops(except?: El) {
@@ -1205,7 +1210,7 @@ export class App {
     this.installPopSafety();
     const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')] as El[];
     const n = cards.length;
-    const VIS = 10;
+    const VIS = 8;
     // Off-hand cards wait in an invisible clipped strip; if anything scrolls one into view (focus, assistive tech) the fan follows.
     let spill = hand.querySelector('.hand-spill') as El;
     if (!spill) {
@@ -1343,6 +1348,11 @@ export class App {
     const swapMates = new Set(events.filter((e) => e.type === 'swap').map((e) => e.withUid));
     for (const e of events) {
       if (e.type === 'turnStart') {
+        for (const site of st.sites as any[]) {
+          if (site.controller !== e.player) continue;
+          const mine = e.player === 'player';
+          this.flowLog.push({ side: e.player, from: { row: site.row, col: site.col }, to: mine ? 'player-bank' : 'enemy-bank', shards: 'faceted', sBends: 2, count: Math.max(1, site.flow?.[e.player] || 1), colors: [mine ? '#9dff6a' : '#ff5a4a'], at: performance.now() });
+        }
         if (e.player === 'opponent') { this.enemyLog = []; this.recording = true; } else this.recording = false;
         continue;
       }
@@ -1761,7 +1771,7 @@ export class App {
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));
       (el as any)._down = (e: PointerEvent) => this.cardPointerDown(e, hc, el);
       el.addEventListener('click', (e: MouseEvent) => { if (e.detail === 0) this.showCard(c.id); });
-      if (!this.seenHand.has(hc.uid)) { this.seenHand.add(hc.uid); const d = dealN++ * 130; el.classList.add('dealt'); el.style.animationDelay = d + 'ms'; this.dealLog.push({ uid: hc.uid, delayMs: d, durationMs: 700 }); setTimeout(() => el.classList.remove('dealt'), d + 760); }
+      if (!this.seenHand.has(hc.uid)) { this.seenHand.add(hc.uid); const d = dealN++ * 130; el.classList.add('dealt'); el.style.animationDelay = d + 'ms'; this.dealLog.push({ uid: hc.uid, delayMs: d, startMs: performance.now() + d, durationMs: 700 } as any); setTimeout(() => el.classList.remove('dealt'), d + 760); }
       hand.append(el);
     }
     this.layoutHand();
@@ -1780,9 +1790,23 @@ export class App {
       bankBadgeOnCrystal: !!m.querySelector('.o-gem .o-bank-n, .o-gem .cry-bank'),
       menu: { open: m.querySelector('.o-menu')?.classList.contains('open') || false, items: [...m.querySelectorAll('.o-menu-item')].map((x) => x.textContent) } };
   }
+  flowLog: any[] = [];
+  getFlowStreams() { const now = performance.now(); const strip = ({ at, ...r }: any) => r; return { active: this.flowLog.filter((f) => now - f.at < 2500).map(strip), log: this.flowLog.map(strip) }; }
+  getDealLog() { return this.dealLog.map((d: any) => ({ uid: d.uid, startMs: d.startMs, durationMs: d.durationMs })); }
+  getHudLayout() { const m = this.root.querySelector('.match') as any; return m?._hudInfo ? m._hudInfo() : null; }
+  getTheme(side: 'player' | 'opponent') {
+    const m = this.root.querySelector('.match') as El | null;
+    const f = this.game.state.players[side === 'player' ? 'player' : 'opponent'].faction as string;
+    const id = ({ goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' } as any)[f] || f;
+    const hudSide = side === 'player' ? 'player' : 'enemy';
+    return { faction: id, placeholder: !hasTheme(f),
+      crystalSrc: (m?.querySelector(`[data-role=${hudSide}-flow-crystal] img`) as HTMLImageElement | null)?.getAttribute('src') || null,
+      bankSrc: (m?.querySelector(`[data-role=${hudSide}-bank] img`) as HTMLImageElement | null)?.getAttribute('src') || null,
+      cornerFrames: side === 'player' ? (m?.querySelectorAll('[data-ornament="corner"]').length || 0) : 0 };
+  }
   /** Round 9a: drawn cards slide up from below the screen one after another (700 ms each, 130 ms apart). */
   seenHand = new Set<string>();
-  dealLog: { uid: string; delayMs: number; durationMs: number }[] = [];
+  dealLog: { uid: string; delayMs: number; startMs?: number; durationMs: number }[] = [];
   getDealState() { return { log: this.dealLog.slice(-20), dealing: !!this.r.hand?.querySelector('.hand-card.dealt') }; }
   /** The neighbors of the raised card move aside (12 % of a card width). */
   asideNeighbors(el: El | null) {

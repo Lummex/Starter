@@ -1290,7 +1290,7 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 .match .o-gem-n,.match .o-bank-n{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:"Alegreya SC",serif;font-weight:700;font-style:italic;color:#fff;text-shadow:0 2px 4px #000,0 0 .3em #000;line-height:1;background:none!important;border:0!important;width:auto;height:auto;padding:0!important;pointer-events:none}
 .match .o-text{display:flex;align-items:center;font-family:"Alegreya SC",serif;line-height:1;white-space:nowrap;text-transform:none!important;letter-spacing:0!important;overflow:visible;font-variant-caps:normal}
 .match .o-text.o-name{overflow:visible}
-.match .o-phase{display:contents!important}
+.match .o-phase{display:block}
 .match .o-phase .ph-step{opacity:.8;color:inherit}
 .match .o-phase .ph-step[aria-current=step]{opacity:1;color:#FFD700!important;text-shadow:0 0 .4em #FFD700,0 2px 3px #000}
 .match .o-phase .ph-step.done{opacity:.55}
@@ -1322,3 +1322,10 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 .match .hand .hand-card.dealt{animation:dealin 700ms cubic-bezier(.2,.8,.2,1) both}
 @keyframes dealin{from{translate:0 160%;opacity:.2}to{translate:0 0;opacity:1}}
 .match .hand.o-hand{left:var(--pl)!important;width:var(--pw)!important;right:auto!important}
+/* Round 9a fix: resting hand card height = 34 % of the frame height; enemy fan stays on-screen */
+.match{--fh:min(100vh,56.25vw);--hcw:calc(var(--fh) * .229)}
+.match .o-fan .back{top:-16%;height:60%}
+/* Round 9a: only the hovered card rises (the hand itself stays tucked); 450 ms ease */
+.match .hand.o-hand.open,.match .hand.o-hand.has-pop{transform:translateY(calc(var(--hcw) * .75))}
+.match .hand .hand-card.popped{transition:transform .45s cubic-bezier(.2,.7,.2,1),opacity .18s!important}
+div.combo{display:inline-block;cursor:pointer}

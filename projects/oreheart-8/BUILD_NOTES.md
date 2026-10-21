@@ -1,3 +1,14 @@
+# Round 9a inspector fixes (round 1 rejection)
+- Owner files are served at the spec paths: `/owner-layouts/final-draft/*`, `/themes/goblin.json` (+ pictures), `/art/ui/goblin-bank.png`, `/art/ui/opponent-bank-placeholder.png`, `/audio/music/*.mp3`.
+- Menu: the drop-down is `role=menu` "Match menu" with `role=menuitem` items; Settings dialog is "Match settings" with Last turn, Mute (aria-pressed), Card pop-ups, Recenter and the Music / Sound effects volume sliders.
+- Bank numbers carry `aria-label="Your/Enemy Bank crystals"` inside the bank pieces; the phase display is a real box (union of turn/phase/timer pieces) so it has a size and text.
+- Owner-layout anchoring now follows the spec rule (left < 33.33 %, right > 66.67 %, else centered, same vertically); every piece has `data-hud-role`; hooks added: `getHudLayout`, `getTheme`, `getDealLog`, `getFlowStreams`; `getAudioState` gains `musicVolume`, `music.track/gain/crossfadeMs` and `log`.
+- Themes: corner frames only for a themed (Goblin) player; opponents never draw corner frames; bank/crystal pictures follow each side's faction.
+- Hand: resting cards are 34 % of the frame height; only the hovered card rises (1.6x, 450 ms) fully above the window bottom while the hand stays tucked and neighbors move aside; the hand shows 8 cards before scrolling (old AC115 expects 5-8).
+- Enemy fan sits fully on-screen at 844x390; bank/crystal numbers are at least 14 px.
+- Deck Builder "Deck Commander" is a combobox with a native hidden `<select>` twin (full Commander names) for scripted selection.
+- Known conflicts with older checks: AC51's "turn display at the top" contradicts the owner's layout (phase display bottom-right), so the layout wins.
+
 # Oreheart — Phase 1B Round 9a build notes (owner match layout, Goblin theme, music)
 
 `npm run build` → `dist/`; `npm test` → Vitest (80 tests, 6 new in `tests/round9a.test.ts`). Probes: `tools/probe-r9a.mjs`, `tools/shot-r9a.mjs` (screenshots `screenshots/r9a-*`: match at rest 1920×1080 and 844×390, open menu, raised card).

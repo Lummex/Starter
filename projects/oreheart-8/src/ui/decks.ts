@@ -114,7 +114,16 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const fC = sel('Cost', 'f-cost', ['Any', '1-2', '3-4', '5-6', '7+']);
   const fR = sel('Rarity', 'f-rarity', ['All', 'Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector']);
   let cmdId = 'grubnak';
-  const fCmd = combo('Deck Commander', 'f-commander', ['Grubnak', 'Sproingle', 'Borgo'], () => { cmdId = CMD_BY_NAME[fCmd.sel.value] || 'grubnak'; renderCards(); renderDeck(); });
+  const fCmd = combo('Deck Commander', 'f-commander', ['Grubnak', 'Sproingle', 'Borgo'], () => { cmdId = CMD_BY_NAME[fCmd.sel.value] || 'grubnak'; renderCards(); renderDeck(); }, true);
+  {
+    // A hidden native <select> twin so assistive tech and scripted pickers can choose the Commander by full name.
+    const full: Record<string, string> = { grubnak: 'Grubnak Rotgut, King of the Junkpile', sproingle: 'Archmagister Sproingle the Unfathomable', borgo: 'Thane Borgo Gravelgrim' };
+    const nat = h('select', { id: 'f-commander-native', class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true' }, ...Object.entries(full).map(([k, v]) => h('option', { value: k }, v))) as HTMLSelectElement;
+    nat.addEventListener('change', () => { cmdId = nat.value; const short = Object.keys(CMD_BY_NAME).find((k) => CMD_BY_NAME[k] === cmdId) || 'Grubnak'; fCmd.set(short); renderCards(); renderDeck(); });
+    const cb = fCmd.wrap.querySelector('.combo')!;
+    const lab = h('label', { for: 'f-commander-native', style: 'display:contents' });
+    cb.replaceWith(lab); lab.append(cb, nat);
+  }
   let query = '';
   let perRow = Math.max(2, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
   const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'All cards', role: 'group' });
