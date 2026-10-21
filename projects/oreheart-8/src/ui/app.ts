@@ -855,11 +855,11 @@ export class App {
     const dragCard = this.dragKind;
     const highlights: any[] = [];
     for (const [k, el] of this.r.cells as Map<string, El>) {
-      const kind = el.classList.contains('glow-attack') ? 'attack' : el.classList.contains('glow-swap') ? 'swap' : el.classList.contains('glow-mine') ? 'mine' : el.classList.contains('glow') ? (dragCard === 'spell' ? 'target' : 'summon') : null;
+      const kind = el.classList.contains('glow-attack') ? 'attack' : el.classList.contains('glow-swap') ? 'swap' : el.classList.contains('glow-mine') ? 'mine' : el.classList.contains('glow') ? (dragCard === 'spell' ? 'target' : dragCard ? 'summon' : 'move') : null;
       if (!kind) continue;
       const [row, col] = k.split(',').map(Number);
       const c = this.view!.squareCenter(row, col);
-      if (c) highlights.push({ kind, row, col, center: { x: c.x + bd.left, y: c.y + bd.top } });
+      if (c) highlights.push({ kind, row, col, color: kind === 'attack' ? '#ff2a1a' : FACTION_GLOW[this.game.state.players.player.faction], fillAlpha: 0.5, glow: true, center: { x: c.x + bd.left, y: c.y + bd.top } });
     }
     return { ...d, highlights };
   }
@@ -982,6 +982,8 @@ export class App {
       // the whole mine site (crystal, pick icon, banner, base) is clickable: the model's screen box, padded a little
       const cr = this.view.cellRect(row, col), hit = r.hits[i] as El;
       const padX = cr.w * 0.25, up = cr.h * 1.5;
+      const mb = this.view.mineBox?.(row, col), sm = r.sites[i] as El;
+      if (mb) { sm.style.left = mb.x - 2 + 'px'; sm.style.top = mb.y - 2 + 'px'; sm.style.width = mb.width + 4 + 'px'; sm.style.height = mb.height + 4 + 'px'; sm.style.alignItems = 'flex-end'; }
       hit.style.left = cr.x - padX + 'px'; hit.style.top = cr.y - up + 'px'; hit.style.width = cr.w + padX * 2 + 'px'; hit.style.height = cr.h + up + cr.h * 0.1 + 'px';
     });
     this.place(r.strong.player, SH.player.row, SH.player.col);
@@ -1406,7 +1408,7 @@ export class App {
         for (const site of st.sites as any[]) {
           if (site.controller !== e.player) continue;
           const mine = e.player === 'player';
-          this.flowLog.push({ side: e.player, from: { row: site.row, col: site.col }, to: mine ? 'player-flow-crystal' : 'enemy-flow-crystal', shards: 'faceted', sBends: 2, count: Math.max(1, site.flow?.[e.player] || 1), colors: [FACTION_GLOW[this.game.state.players[e.player as 'player'].faction]], at: performance.now() });
+          this.flowLog.push({ side: e.player, from: { row: site.row, col: site.col }, to: mine ? 'player-flow-crystal' : 'enemy-flow-crystal', shards: 'faceted', sBends: 2, count: Math.max(1, site.flow?.[e.player] || 1), colors: [FACTION_GLOW[this.game.state.players[e.player as 'player'].faction], GLOW_COLOR[this.game.state.players[e.player as 'player'].faction]], toScreen: (() => { const t = this.root.querySelector(`[data-role=${mine ? 'player' : 'enemy'}-flow-crystal]`) as El | null; const b = t?.getBoundingClientRect(); return b ? { x: b.left + b.width / 2, y: b.top + b.height / 2 } : null; })(), at: performance.now() });
         }
         if (e.player === 'opponent') { this.enemyLog = []; this.recording = true; } else this.recording = false;
         continue;
@@ -1524,9 +1526,10 @@ export class App {
     el.dataset.side = side; el.dataset.slot = String(list.length);
     const place = () => {
       list.forEach((r, i) => {
-        r.dataset.slot = String(i);
-        r.style.left = (side === 'opponent' ? 10 + cw / 2 + i * 22 : vw - 10 - cw / 2 - i * 22) - hostR.left + 'px';
-        r.style.top = vh * 0.42 - i * 16 - hostR.top + 'px';
+        const k = list.length - 1 - i; // 0 = newest, on top
+        r.dataset.slot = String(i); r.dataset.stackIndex = String(k);
+        r.style.left = (side === 'opponent' ? 10 + cw / 2 + k * 22 : vw - 8 - cw / 2 - k * 22) - hostR.left + 'px';
+        r.style.top = vh * 0.42 - k * 16 - hostR.top + 'px';
         r.style.zIndex = String(520 + i);
       });
     };
@@ -1814,7 +1817,7 @@ export class App {
     const me = st.players.player;
     const hand = this.r.hand as El;
     const tot = funds(me);
-    const tunnel = sitesControlled(st, 'opponent') > sitesControlled(st, 'player');
+    const tunnel = true; // R10.13: Tunnel works any time, next to any mine
     const hidden = st.phase === 'mulligan';
     const costOf = (c: any) => (c.type === 'creature' ? creatureCost(st, 'player', c) : c.type === 'spell' ? spellCost(st, 'player', c) : 0);
     const affordable = (c: any) => (c.type === 'creature' ? tot >= costOf(c) : c.type === 'spell' ? tot >= costOf(c) : true);
@@ -1889,7 +1892,7 @@ export class App {
     const idx = el ? cards.indexOf(el) : -1;
     cards.forEach((c, i) => {
       if (c === el) return;
-      const base = c.dataset.fan || '';
+      const base = el ? 'translateY(0px)' : c.dataset.fan || ''; // raised hand: the fan's curve is flattened
       c.style.transform = idx < 0 || !el ? base : `${base} translateX(${(i < idx ? -1 : 1) * c.offsetWidth * 0.12 * (1 / Math.max(1, Math.abs(i - idx) * 0.6))}px)`;
       c.dataset.aside = idx < 0 ? '' : i < idx ? 'left' : 'right';
     });

@@ -44,6 +44,7 @@ export interface BoardView {
   setFlowMode(m: string): void;
   setFlowTarget?(side: string, el: HTMLElement | null): void;
   flowDestinations?(): any;
+  mineBox?(row: number, col: number): { x: number; y: number; width: number; height: number };
   pulseFlow(side: string): void;
   emote(side: 'player' | 'opponent', kind: 'cheer' | 'groan' | 'flinch' | 'cast'): void;
   lookBack(side: 'player' | 'opponent', ms: number): void;
@@ -472,7 +473,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const now = performance.now();
     st.sites.forEach((s: any, i: number) => {
       const cr = crystals[i];
-      cr.art.group.position.copy(world(s.row, s.col));
+      cr.art.group.position.copy(world(s.row, s.col)); cr.art.group.userData.cell = { row: s.row, col: s.col };
       cr.art.group.rotation.set(0, 0, 0); cr.art.group.scale.setScalar(1); // mines sit flat and level, all the same size
       if (cr.ctl === s.color) return;
       const first = cr.ctl === undefined;
@@ -723,6 +724,16 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const bb = box([projPt(-hx, 0, -hz), projPt(hx, 0, -hz), projPt(hx, 0, hz), projPt(-hx, 0, hz)]);
     const cx0 = Math.max(0, bb.x), cx1 = Math.min(W, bb.x + bb.width), cy0 = Math.max(0, bb.y), cy1 = Math.min(H, bb.y + bb.height);
     return { playerCommander: box(figPts('player')), opponentCommander: box(figPts('opponent')), board: { x: cx0, y: cy0, width: cx1 - cx0, height: cy1 - cy0 } };
+  }
+  /** screen box (board pixels) of the whole mine model: rubble, base, banner and crystal tip */
+  function mineBox(row: number, col: number) {
+    const p = world(row, col), g = mines.find((m) => m.group.userData.cell && m.group.userData.cell.row === row && m.group.userData.cell.col === col);
+    const hgt = (g && g.group.userData.mineHeight) || 1.5;
+    const pts: [number, number][] = [];
+    for (const [dx, dz] of [[-0.6, -0.6], [0.6, -0.6], [0.6, 0.6], [-0.6, 0.6]]) { pts.push(projPt(p.x + dx, 0, p.z + dz)); pts.push(projPt(p.x + dx * 0.6, hgt, p.z + dz * 0.6)); }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const [sx, sy] of pts) { x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy); }
+    return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
   }
   function squareCenter(row: number, col: number) { const [x, y] = toScreen(...cellGeometry(H0, row, col).center); return { x, y }; }
   function arenaDetails() {
@@ -1002,7 +1013,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
             commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? 'grubnak.glb' : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? 'grubnak-fortress.glb' : '', scepter: cm.g3d ? 'grubnak-scepter.glb' : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
-            strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => ({ source: 'code:buildMineModel', tilt: Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z), baseY: new THREE.Box3().setFromObject(m.crystals).min.y - m.group.position.y, scale: m.group.scale.x, parts: ['rubble', 'pedestal', 'banner', 'crystal'], shards: 11, pulsing: true, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' })), mineModel: 'code-built', crystalFlow: { shards: flowShown, streams: flowOwner.filter((o) => o && o !== 'neutral').length, swirls: flowOwner.filter((o) => !o || o === 'neutral').length, shape: 'faceted', path: 's-curve', target: 'bank' },
+            strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => { const cl = m.group.userData.cell || { row: 0, col: 0 }, bx = mineBox(cl.row, cl.col), cv = canvas.getBoundingClientRect(); return { row: cl.row, col: cl.col, screenBox: { x: bx.x + cv.left, y: bx.y + cv.top, width: bx.width, height: bx.height }, source: 'code:buildMineModel', tilt: Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z), baseY: new THREE.Box3().setFromObject(m.crystals).min.y - m.group.position.y, scale: m.group.scale.x, parts: ['rubble', 'pedestal', 'banner', 'crystal'], shards: 11, pulsing: true, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' }; }), mineModel: 'code-built', crystalFlow: { shards: flowShown, streams: flowOwner.filter((o) => o && o !== 'neutral').length, swirls: flowOwner.filter((o) => !o || o === 'neutral').length, shape: 'faceted', path: 's-curve', target: 'bank' },
           });
         } else setTimeout(wait, 30);
       };
@@ -1011,7 +1022,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   const api: BoardView = {
-    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, facing, squareCenter, arenaDetails, piecePoses, playEmote, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);

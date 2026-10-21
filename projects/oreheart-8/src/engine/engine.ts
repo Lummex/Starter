@@ -171,7 +171,7 @@ export function createMatch(opts: any = {}) {
     if (b.summonedThisTurn) c.summonedThisTurn = true;
   }
   s.mulliganDone = { player: true, opponent: true };
-  s.firstPlayer = setup.firstPlayer || 'player';
+  s.firstPlayer = setup.firstPlayer || opts.firstPlayer || 'player';
   s.turn = 1;
   s.activePlayer = s.firstPlayer;
   s.priority = s.firstPlayer;
@@ -613,7 +613,7 @@ const pendingTargetCreature = (s: any, pend: any) => {
 };
 
 const hasEater = (s: any, p: Side) => s.board.creatures.some((c: any) => c.owner === p && CARDS[c.cardId].abilities?.some((a: string) => a.startsWith('eater')));
-const crystalOk = (s: any, p: Side) => s.flags.crystalsPlayed[p] < CONFIG.crystalCardsPerTurn || hasEater(s, p);
+const crystalOk = (_s: any, _p: Side) => true; // R10.12: no once-per-round limit
 /** Crystals a Crystal card adds to the Bank right now (Geode adds none). */
 const crystalAmount = (card: any) => (['gain', 'motherlode'].includes(card.effect) ? card.params.amount : 0);
 
@@ -758,7 +758,7 @@ export function legalActions(s: any): any[] {
     }
     seenCards.add(h.uid);
   }
-  if (ph === 'deploy') out.push(...crystalPlays(s, who));
+  if (ph === 'deploy' || ph === 'action') out.push(...crystalPlays(s, who));
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of moveDests(s, c)) out.push({ type: 'move', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of mineTargets(s, c)) out.push({ type: 'mine', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const x of s.sites) if (readyMinersAt(s, who, x).length) out.push({ type: 'mineAt', row: x.row, col: x.col });
@@ -841,14 +841,7 @@ function matchLegal(s: any, a: any): any | null {
 function playCrystalCard(s: any, who: Side, h: any, ev: any[]) {
   const pl = s.players[who];
   const card = CARDS[h.cardId];
-  if (s.flags.crystalsPlayed[who] >= CONFIG.crystalCardsPerTurn) {
-    for (const c of [...s.board.creatures]) {
-      if (c.owner !== who) continue;
-      if (has(c, 'eaterGuzzler')) dealDamage(s, c, CONFIG.eaterGuzzlerDamage, ev, true);
-      else if (has(c, 'eaterConduit')) { c.lockedUntil = s.turn + 2; dealDamage(s, c, CONFIG.eaterConduitDamage, ev, true); }
-      else if (has(c, 'eaterDelver')) c.attack = Math.max(0, c.attack - CONFIG.eaterDelverPenalty);
-    }
-  }
+  // Round 10 (R10.12): Crystal cards have no once-per-round limit, so Crystal Eaters never punish a second one
   s.flags.crystalsPlayed[who]++;
   pl.discard.push(h);
   // Crystal cards fill the Bank: it never resets and has no cap

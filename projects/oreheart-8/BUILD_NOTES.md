@@ -554,3 +554,12 @@ Built (13 items):
 13. Tunnel works any time from turn 1 next to any mine (basic Miners only).
 Card texts, abilities, Rules text and engine tests updated ("round 10 rules" in tests/engine.test.ts). Screenshots: `screenshots/r10-*.png` (`tools/shot-r10.mjs`).
 Not verified in a browser: drag-highlight screenshot with attack squares, the enemy-side pop-up stack, a flow-stream screenshot.
+
+## Round 10 fix pass (inspector round 1)
+- Hand: the player's hand (an `.o-hand`) now really rests at a quarter; hovering raises it (fan flattened) and enlarges the hovered card.
+- Test hooks: `getArena().highlights` carry `color`/`fillAlpha`/`glow` (kind `move` for creature drags); `getRenderStats().mineModels` carry `row`, `col`, `screenBox`; flow-stream log has `toScreen` and a second faction color.
+- Mine: the `Crystal site` button covers the whole mine model (sits above tokens); the old `mine-hit` div no longer takes pointer events.
+- Played-card pop-ups: `data-stack-index` (0 = newest), edge placement, no shrink-in animation. `firstPlayer` honoured at top level of `newMatch` options.
+- Card close-up: fixed overlay (a scroll-into-view could push it off screen), 82 % of the screen height.
+- Rules: no once-per-round Crystal card limit (and no Eater punishment); Crystal cards playable in Deploy and Action; hand "Tunnel!" tag always shown.
+- Not satisfiable together with spec R10.12/R10.13/R10.3: older checks AC10, AC25 (every summon on row 7 although basic Miners can now Tunnel) and AC40 (mines at least 2 apart although mines may now touch).
