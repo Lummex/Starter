@@ -1,22 +1,23 @@
 ## What was built
-This round fixes the battlefield drawing, poses Grubnak (the 3D Commander) standing on his stronghold, and adds a new animated intro (owner-made crash animation with sound) and main menu (Play, Deck Builder, How to Play, Settings, Quit). The game now opens on the intro.
+Round 10 of the Oreheart card game: stronger colored highlights when dragging, played cards popping up at the screen edges, touching mines, a clickable whole mine, and new rules (a dying basic Miner draws a card, Ranged shoots in straight lines up to 5 squares, Crystal cards and Tunnel usable any time). It also adds Crystal Flow into the HUD counters, a bigger card close-up, a lower-tucked hand, and flat mines with a ground glow.
 
 ## Try these things
-- Open the preview and watch the intro; click to skip it, or wait about 7 seconds for the main menu.
-- On the main menu, hover each button (glow) and click Play, then start a match against the computer.
-- In the match, check the battlefield looks fully drawn (crystals, rocks, effects) and Grubnak stands in place on his stronghold.
-- Open How to Play and try the tutorial match.
-- Open Deck Builder and look it over (it still has the older layout).
-- Hold a phone sideways (or use a small landscape window) and repeat the above.
+- Start a match, drag a hand card or creature: squares should glow in your faction color, and attack squares should be red.
+- Play a few cards: yours should pop up at the right edge, the enemy's at the left, stacking up to 3.
+- Click a mine anywhere on its model (even the crystal tip). It should mine.
+- Click a card: the close-up should fill most of the screen height. Click outside it, or press Esc, to close it.
+- Check the hand sits low with about a quarter showing, then rises when you hover it.
+- Pick Grubnak on "Choose Your Commander" and check the other Commanders hide and "Change Commander" works.
 
 ## Automated checks
-306 of 318 checks passed. The 12 failures are all in the Deck Builder and Choose Your Commander screens: card faces and filters, faction-locked spells, spell frames, plain-text menu buttons, deck carousel layout, Commander picking, the 3D close-up viewer, the Play button inside the Deck Builder, dialog styling, and body-text colours. In plain terms, these screens may not behave or look as specified.
+313 of 332 checks passed; 19 failed.
+- 8 failures come from older checks that contradict the new Round 10 rules (for example mines now may touch, Tunnel summons off the back row, and the hand now rests lower). Probably not real bugs.
+- Not explained by the rule changes: a dying basic Miner not drawing a card (AC247, a Round 10 feature); the Round 10 mine-glow details not reported (AC252); updated rule texts missing "dies/draw" wording (AC255).
+- Also failing: the Commander is turned about 79° off his intended facing (AC230); "Change Commander" is blocked by deck pictures covering it (AC206); the 3D viewer shows on a spell-like card close-up (AC209); some Deck Builder text isn't the right color (AC210); one mine test timed out (AC245).
 
 ## Things to know
-- The builder says the Deck Builder and Choose Your Commander screens were not moved to the new menu layout, and the owner's custom words, fonts and glows are not applied there.
-- Only Grubnak has the new pose. Other Commanders are placeholders using the old fit.
-- No 3D viewer for every creature card, and the Commander close-up screenshots were not taken.
-- The only screenshots supplied were a desktop image showing just the background art (no menu or game visible) and a phone portrait "Please rotate your phone" screen. I could not visually confirm the menus or match.
+- The only screenshots provided are the opening screen (an "I AM A GAME DEVELOPER" dirt-lettering intro, looking intact) and the phone-upright screen asking you to rotate. None show the new Round 10 features, so I couldn't confirm them visually.
+- The builder admitted the drag-highlight attack squares, enemy pop-up stack and flow stream were never checked in a browser.
 
 ## Recommendation
-Request changes: 12 checks fail in the Deck Builder and Commander screens, and part of the requested menu work is unfinished.
+Request changes: several Round 10 items (Miner death draw, rule texts, mine glow, Commander facing) fail their checks and weren't visually verified.
