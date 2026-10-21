@@ -1,4 +1,5 @@
 // Testing deck builder: every card unlocked and unlimited; up to 5 decks saved on the device.
+import { ownerBox, freeBox } from './menus';
 import { CARDS, FACTIONS, COMMANDERS, CONFIG, isMiner, deckCounts, deckProblems, basicMiner } from '../engine';
 import { h, btn, combo, App, faceKids, rarityKey, FRAME } from './app';
 
@@ -214,7 +215,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
   }
   function tile(c: any) {
-    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : ''), 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, h('span', { hidden: '' }, c.longText || '')) as any;
+    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : ''), 'data-locked': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, h('span', { hidden: '' }, c.longText || '')) as any;
     let timer: any = null;
     el.addEventListener('click', () => {
       if (el._dragged) return;
@@ -409,20 +410,25 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   }
 
   pileEl.append(h('div', { class: 'db-carwrap', 'aria-label': 'My decks', role: 'group' }, btn('◀', 'small scroll', () => setCur(cur - 1), { 'aria-label': 'Previous deck' }), carEl, btn('▶', 'small scroll', () => setCur(cur + 1), { 'aria-label': 'Next deck' })), nameEl, sizeEl);
-  app.root.append(h('main', { class: 'screen db-screen', 'data-screen': 'deck-builder' },
-    h('section', { class: 'db-left' },
-      h('div', { class: 'db-head' }, h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' }), cmdWrap),
-      h('div', { class: 'db-search' }, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), h('div', { class: 'f-field' }, h('label', { for: 'cards-per-row' }, 'Cards per row'), slider)),
-      h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap),
-      cardsEl),
-    h('aside', { class: 'db-right', 'aria-label': 'Deck panel' },
-      h('h1', { class: 'section cinzel' }, 'Deck Builder'),
-      pileEl,
-      h('div', { class: 'row db-actions' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), btn('Rename', '', rename), newBtn, playBtn),
-      btn('Back', 'db-back', () => app.showMenu()),
-      h('p', { class: 'db-msgs' }, status, limitMsg),
-      h('div', { class: 'db-listwrap' },
-        countsEl, probEl, chartEl, h('div', { class: 'db-deck-list', 'aria-label': 'Deck list', role: 'group' }, h('h2', {}, 'Deck list'), listEl)))));
+  const rowLab = h('label', { for: 'cards-per-row' }, 'Cards per row');
+  const logo = h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' });
+  const title = h('h1', { class: 'section cinzel db-title' }, 'Deck Builder');
+  const actions = h('div', { class: 'row db-actions' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), btn('Rename', '', rename), newBtn, playBtn);
+  const stage = h('div', { class: 'mb-stage db-stage', 'aria-label': 'Deck panel' },
+    ownerBox('deck', 'dTitle', title),
+    freeBox(33, 0.4, 8, 5, logo, 'db-logobox'),
+    freeBox(42, 0.4, 19, 5, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), 'db-searchbox'),
+    freeBox(62.2, 0.5, 4.6, 11.2, cmdWrap, 'db-cmdbox'),
+    ownerBox('deck', 'dFilters', h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap), 'db-filterbox'),
+    ownerBox('deck', 'dSlider', h('div', { class: 'f-field' }, rowLab, slider), 'db-sliderbox'),
+    ownerBox('deck', 'dGrid', cardsEl, 'db-gridbox'),
+    ownerBox('deck', 'dDecks', pileEl, 'db-decksbox'),
+    ownerBox('deck', 'dList', h('div', { class: 'db-listwrap' }, probEl, chartEl, h('div', { class: 'db-deck-list', 'aria-label': 'Deck list', role: 'group' }, h('h2', {}, 'Deck list'), listEl)), 'db-listbox'),
+    ownerBox('deck', 'dCount', countsEl, 'db-countbox'),
+    ownerBox('deck', 'dActions', actions, 'db-actionbox'),
+    freeBox(67, 89.2, 19, 8, h('p', { class: 'db-msgs' }, status, limitMsg), 'db-msgbox'),
+    ownerBox('deck', 'dBack', btn('Back', 'db-back', () => app.showMenu()), 'db-backbox'));
+  app.root.append(h('main', { class: 'screen db-screen', 'data-screen': 'deck-builder' }, stage));
   const screen = app.root.querySelector('.db-screen') as HTMLElement;
   const wake = () => cardsEl.removeAttribute('aria-hidden');
   for (const ev of ['pointermove', 'pointerdown', 'keydown', 'change', 'focusin']) screen.addEventListener(ev, wake);

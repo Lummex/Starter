@@ -7,7 +7,14 @@ import { audio } from './audio';
 import baseLayoutJson from '../content/arena-layout.json';
 import ownerLayoutJson from '../content/owner-layout.json';
 // Round 9a: the owner's final layout carries the full effect list (57); the painting data is identical
-const layoutJson: any = { ...baseLayoutJson, effects: (ownerLayoutJson as any).effects };
+// Positions of the 54 arena effects stay exactly the Arena Editor's (skullfang-arena-layout.json); the owner's per-effect looks are merged in
+let nonFlowIdx = 0;
+const mergedEffects = ((ownerLayoutJson as any).effects as any[]).map((e: any) => {
+  if (e.type === 'flow') return e;
+  const b: any = (baseLayoutJson as any).effects[nonFlowIdx++];
+  return b && b.type === e.type ? { ...e, x: b.x, y: b.y } : e;
+});
+const layoutJson: any = { ...baseLayoutJson, effects: mergedEffects };
 import { buildArena } from './arena-fx';
 import { boardHomography, cellGeometry, fitCamera, groundToPainting, BG, BOARD } from './arena-geo';
 

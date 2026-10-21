@@ -77,7 +77,7 @@ function haloHtml(t: any) {
   return `<div class="mb-halo" style="inset:-${s}% -${s * 0.6}%;background:radial-gradient(closest-side,${hexA(t.haloColor || '#FFD700', Math.min(1, t.halo * 0.55))},${hexA(t.haloColor || '#FFD700', Math.min(1, t.halo * 0.2))} 55%,transparent 100%)"></div>`;
 }
 function innerHtml(p: Piece) {
-  if (p.kind === 'text' || p.kind === 'button') return haloHtml(p.text) + `<div class="mb-txt" style="${textStyle(p.text)}">${esc(p.text.content)}</div>`;
+  if (p.kind === 'text' || p.kind === 'button') return haloHtml(p.text) + `<div class="mb-txt" style="${textStyle(p.kind === 'button' ? { ...p.text, color: '#FFD700', bold: true } : p.text)}">${esc(p.text.content)}</div>`;
   if (p.kind === 'pic') {
     const q = p.pic, u = src(q.src);
     return q.mode === 'frame' ? `<div class="mb-fr" style="border-width:${q.border}cqh;border-image:url('${u}') ${q.slice}% ${q.fill !== false ? 'fill' : ''} / ${q.border}cqh / 0 round"></div>` : `<img src="${u}" alt="" style="object-fit:${q.fit || 'contain'}">`;
@@ -182,6 +182,7 @@ export function drawMenuScreen(host: HTMLElement, id: string, opts: MenuOpts): M
     el.dataset.id = p.id; el.dataset.menuPiece = p.id;
     if (isBtn) { (el as HTMLButtonElement).type = 'button'; el.setAttribute('aria-label', p.text.content); el.dataset.goto = p.button.goto || ''; }
     el.style.cssText = `left:${p.x}%;top:${p.y}%;width:${p.w}%;height:${p.h}%;transform:${p.rot ? `rotate(${p.rot}deg)` : 'none'};z-index:${10 + (p.z || 0)};opacity:${p.opacity === undefined ? 1 : p.opacity}`;
+    if (isBtn) { el.style.setProperty('color', '#FFD700', 'important'); el.style.setProperty('font-weight', '700', 'important'); }
     if (isBtn) { const b = p.button; el.style.setProperty('--hc', b.hoverColor); el.style.setProperty('--hgc', b.hoverGlowColor); el.style.setProperty('--hg', (b.hoverGlow * 0.8).toFixed(2) + 'cqh'); }
     const inn = document.createElement('div');
     inn.className = 'mb-inner';
@@ -206,4 +207,24 @@ export function drawMenuScreen(host: HTMLElement, id: string, opts: MenuOpts): M
     if (sc.intro.skip) { root.classList.add('mb-skippable'); root.addEventListener('click', () => { done(); opts.go(sc.intro.next); }); }
   }
   return { stage, timers, destroy: done };
+}
+
+/** Round 9c: wraps a game-drawn element in a box placed exactly like the Menu Builder piece `pieceId` of screen `screenId` (% of the 16:9 stage). */
+export function ownerBox(screenId: string, pieceId: string, el: HTMLElement | HTMLElement[], cls = '', owner = true): HTMLElement {
+  const sc = menuScreens.find((m) => m.id === screenId)!;
+  const p = sc.pieces.find((q: Piece) => q.id === pieceId)!;
+  const d = document.createElement('div');
+  d.className = 'mb-zone ' + cls;
+  if (owner) d.dataset.menuPiece = pieceId;
+  d.style.cssText = `left:${p.x}%;top:${p.y}%;width:${p.w}%;height:${p.h}%`;
+  d.append(...(Array.isArray(el) ? el : [el]));
+  return d;
+}
+/** A free box (not an owner piece) in stage percentages. */
+export function freeBox(x: number, y: number, w: number, h: number, el: HTMLElement | HTMLElement[], cls = ''): HTMLElement {
+  const d = document.createElement('div');
+  d.className = 'mb-zone ' + cls;
+  d.style.cssText = `left:${x}%;top:${y}%;width:${w}%;height:${h}%`;
+  d.append(...(Array.isArray(el) ? el : [el]));
+  return d;
 }

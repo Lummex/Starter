@@ -1,5 +1,5 @@
 import { arenaOpts } from './arena-fx';
-import { drawMenuScreen, menuScreens } from './menus';
+import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
@@ -438,25 +438,26 @@ export class App {
     buildRow();
     sel();
     const scroll = (dir: number) => row.scrollBy({ left: dir * 220, behavior: 'smooth' });
-    const mainEl = h('main', { class: 'screen setup', 'data-screen': 'select' },
-      h('h1', { class: 'section cinzel' }, 'Choose Your Commander'),
-      cmdsEl, changeBtn,
-      h('div', { class: 'deck-wrap' },
-        btn('◀', 'small scroll', () => scroll(-1), { 'aria-label': 'Scroll decks left' }), row,
-        btn('▶', 'small scroll', () => scroll(1), { 'aria-label': 'Scroll decks right' })),
-      msg,
-      h('div', { class: 'row setup-actions' },
-        btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }),
-        h('div', { class: 'row', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns),
-        btn('Start', 'primary fight-btn', () => {
+    const startBtn = btn('Start', 'primary fight-btn', () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
           const opp = others[Math.floor(Math.random() * others.length)];
           const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
           const deckId = pick ? '' : deckSel.slice(8);
           try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
           this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
-        }),
-        btn('Back', 'back-btn', () => this.showMenu())));
+        });
+    const mainEl = h('main', { class: 'screen setup mb-setup', 'data-screen': 'select' },
+      h('div', { class: 'mb-stage' },
+        ownerBox('commander', 'cTitle', h('h1', { class: 'section cinzel cs-title' }, 'Choose Your Commander')),
+        ownerBox('commander', 'cCards', [cmdsEl, changeBtn], 'cs-cards'),
+        ownerBox('commander', 'cDecks', h('div', { class: 'deck-wrap' },
+          btn('◀', 'small scroll', () => scroll(-1), { 'aria-label': 'Scroll decks left' }), row,
+          btn('▶', 'small scroll', () => scroll(1), { 'aria-label': 'Scroll decks right' })), 'cs-decks'),
+        freeBox(22, 90, 56, 8, [msg, h('div', { class: 'row setup-actions' },
+          btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }),
+          h('div', { class: 'row', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns))], 'cs-extra'),
+        ownerBox('commander', 'cStart', startBtn, 'cs-start'),
+        ownerBox('commander', 'cBack', btn('Back', 'back-btn', () => this.showMenu()), 'cs-back')));
     mainRef.el = mainEl as El;
     this.selState = () => ({ mode: picked ? 'focused' : 'row', commanderId: cmd, model: picked && cmd === 'grubnak' && stage.classList.contains('pop') ? { shown: true, source: 'grubnak.glb', animation: 'idle' } : null });
     this.root.append(mainEl);
