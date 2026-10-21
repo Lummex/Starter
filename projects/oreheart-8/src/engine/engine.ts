@@ -87,7 +87,7 @@ const gain = (s: any, p: Side, n: number) => {
 export function legalMines(m: any): boolean {
   if (!Array.isArray(m) || m.length !== CONFIG.mineCount) return false;
   for (const x of m) if (!x || !Number.isInteger(x.row) || !Number.isInteger(x.col) || x.row < 3 || x.row > 5 || x.col < 1 || x.col > W) return false;
-  for (let i = 0; i < m.length; i++) for (let j = i + 1; j < m.length; j++) if (cheb(m[i], m[j]) < 2) return false;
+  for (let i = 0; i < m.length; i++) for (let j = i + 1; j < m.length; j++) if (m[i].row === m[j].row && m[i].col === m[j].col) return false;
   for (const x of m) for (const p of ['player', 'opponent'] as Side[]) if (cheb(x, stronghold(p)) < 2) return false;
   return true;
 }
@@ -96,9 +96,10 @@ function randomMines(seed: number) {
   const r = { rng: (seed ^ 0x2f6e2b1) | 0 };
   const pick = () => 1 + Math.floor(nextRand(r) * W);
   for (let tries = 0; tries < 1000; tries++) {
-    let m: any[];
-    if (nextRand(r) < 0.6) { const c = pick(); m = [{ row: 3, col: c }, { row: 5, col: W + 1 - c }, { row: 4, col: 7 }]; }
-    else { const c = pick(); m = [{ row: 4, col: 7 }, { row: 4, col: c }, { row: 4, col: W + 1 - c }]; }
+    const row = 3 + Math.floor(nextRand(r) * 3);
+    const c = pick();
+    // two mirrored mines anywhere in rows 3-5 (they may touch each other or the centre mine) plus the centre mine
+    const m = [{ row, col: c }, { row: 8 - row, col: W + 1 - c }, { row: 4, col: 7 }];
     if (legalMines(m)) return m;
   }
   return [{ row: 3, col: 3 }, { row: 4, col: 7 }, { row: 5, col: 11 }];
@@ -392,6 +393,7 @@ function defeat(s: any, c: any, ev: any[]) {
   if (i < 0) return;
   s.board.creatures.splice(i, 1);
   s.players[c.owner].discard.push({ uid: c.uid, cardId: c.cardId });
+  const minerDraw = CARDS[c.cardId].role === 'Gatherer';
   ev.push({ type: 'defeat', uid: c.uid, cardId: c.cardId, owner: c.owner, row: c.row, col: c.col });
   if (has(c, 'kaboom1')) {
     for (const o of [...s.board.creatures]) if (o.owner !== c.owner && cheb(o, c) === 1) dealDamage(s, o, 1, ev);
@@ -399,6 +401,7 @@ function defeat(s: any, c: any, ev: any[]) {
   if (has(c, 'kaboom')) {
     for (const o of [...s.board.creatures]) if (o.owner !== c.owner && cheb(o, c) === 1) dealDamage(s, o, CONFIG.kaboomDamage, ev);
   }
+  if (minerDraw) drawCard(s, c.owner, ev);
 }
 
 // ---------------------------------------------------------------- combat
@@ -420,6 +423,7 @@ export function atkValue(s: any, c: any, target?: any) {
   return Math.max(0, v);
 }
 
+const DIRS8 = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
 const canAct = (s: any, c: any) => (!c.summonedThisTurn || has(c, 'haste')) && s.turn >= c.lockedUntil;
 
 export function attackTargets(s: any, c: any): any[] {
@@ -428,9 +432,14 @@ export function attackTargets(s: any, c: any): any[] {
   const sh = stronghold(enemy);
   const out: any[] = [];
   if (has(c, 'ranged')) {
-    // any enemy within Chebyshev distance 2, over creatures; Guard only affects melee
-    for (const o of s.board.creatures) if (o.owner === enemy && cheb(o, c) <= 2) out.push({ row: o.row, col: o.col });
-    if (cheb(c, sh) <= 2) out.push({ commander: enemy });
+    // 8 straight lines, up to CONFIG.rangedRange squares; the shot stops at the first unit (creature or Stronghold)
+    for (const [dr, dc] of DIRS8) for (let k = 1; k <= CONFIG.rangedRange; k++) {
+      const r = c.row + dr * k, cl = c.col + dc * k;
+      if (r < 1 || r > H || cl < 1 || cl > W) break;
+      if (isStronghold(r, cl)) { if (r === sh.row && cl === sh.col) out.push({ commander: enemy }); break; }
+      const o = creatureAt(s, r, cl);
+      if (o) { if (o.owner === enemy) out.push({ row: o.row, col: o.col }); break; }
+    }
     return out;
   }
   const adj = s.board.creatures.filter((o: any) => o.owner === enemy && cheb(o, c) === 1);
@@ -475,7 +484,7 @@ export function summonSpaces(s: any, p: Side, card: any): { row: number; col: nu
   const back = CONFIG.backRow[p], front = CONFIG.frontRow[p];
   for (const col of rowCells(back)) add(back, col);
   if (out.length === 0) for (const col of rowCells(front)) add(front, col);
-  if (card.abilities?.includes('tunnel') && sitesControlled(s, other(p)) > sitesControlled(s, p)) for (let r = 1; r <= H; r++) for (let c = 1; c <= W; c++) if (nearSite(s, r, c)) add(r, c);
+  if (card.abilities?.includes('tunnel')) for (let r = 1; r <= H; r++) for (let c = 1; c <= W; c++) if (nearSite(s, r, c)) add(r, c);
   return out;
 }
 

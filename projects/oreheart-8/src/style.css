@@ -42,8 +42,8 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .board-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .board.flat{background:radial-gradient(circle at 30% 30%,#4f6a35 0,transparent 35%),radial-gradient(circle at 75% 70%,#6b5a45 0,transparent 40%),radial-gradient(circle at 50% 50%,#5a4632,#3a2d20)}
 .cell{position:absolute;pointer-events:none;border-radius:10px}
-.cell.glow{background:radial-gradient(circle,#ffe58a99 0,#ffe58a33 60%,transparent 72%);box-shadow:inset 0 0 0 2px #ffe58aaa}
-.cell.glow-attack{background:radial-gradient(circle,#ff5a4a99 0,#ff5a4a33 60%,transparent 72%);box-shadow:inset 0 0 0 2px #ff7a6aaa}
+.cell.glow{background:radial-gradient(circle,color-mix(in srgb,var(--pfc,#3ee06a) 95%,transparent) 0,color-mix(in srgb,var(--pfc,#3ee06a) 70%,transparent) 65%,color-mix(in srgb,var(--pfc,#3ee06a) 50%,transparent) 100%);box-shadow:inset 0 0 0 4px var(--pfc,#3ee06a),inset 0 0 16px 4px #fffc;filter:drop-shadow(0 0 8px var(--pfc,#3ee06a))}
+.cell.glow-attack{background:radial-gradient(circle,#ff2a1ae6 0,#ff2a1ab3 65%,#ff2a1a80 100%);box-shadow:inset 0 0 0 4px #ff4a3a,inset 0 0 16px 4px #ffd0cacc;filter:drop-shadow(0 0 8px #ff2a1a)}
 .cell.hover{outline:2px solid #fff}
 .board.drop-any{box-shadow:inset 0 0 0 3px #ffe58acc}
 .token{position:absolute;pointer-events:none;display:flex;align-items:flex-end;justify-content:center;color:#fff}
@@ -178,7 +178,9 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .cr.white{border-color:#f2f6ff}.cr.white::before{background:#f2f6ff}
 .cr[data-flow]:not([data-flow=""])::after{content:attr(data-flow);font-size:.6rem;font-weight:400;opacity:.85;margin-left:2px}
 .cell.glow-swap{background:radial-gradient(circle,#e3b54acc 0,#e3b54a44 60%,transparent 72%);box-shadow:inset 0 0 0 2px #e3b54a}
-.mine-ring{position:absolute;pointer-events:none;border:3px solid var(--mine,#f2f6ff);border-radius:50%;box-shadow:0 0 0 6px color-mix(in srgb,var(--mine,#f2f6ff) 30%,transparent),0 0 0 11px color-mix(in srgb,var(--mine,#f2f6ff) 12%,transparent);opacity:.75;z-index:2}
+.mine-decal{position:absolute;pointer-events:none;border-radius:50%;z-index:2;opacity:.9;mix-blend-mode:screen;transform:scale(.62);background:radial-gradient(ellipse at 50% 55%,color-mix(in srgb,var(--mine,#f2f6ff) 55%,transparent) 0,color-mix(in srgb,var(--mine,#f2f6ff) 28%,transparent) 38%,transparent 68%)}
+.mine-decal::before{content:'';position:absolute;inset:6%;border-radius:50%;mix-blend-mode:normal;opacity:.55;background:radial-gradient(circle at 22% 38%,#0009 0 3%,transparent 4%),radial-gradient(circle at 70% 30%,#0009 0 2.5%,transparent 3.5%),radial-gradient(circle at 58% 72%,#000a 0 3.5%,transparent 4.5%),radial-gradient(circle at 30% 70%,#0008 0 2.5%,transparent 3.5%),radial-gradient(ellipse at 50% 55%,#0006 0,transparent 55%)}
+.mine-hit{position:absolute;z-index:3;cursor:pointer;background:transparent}
 .mine-flow{position:absolute;pointer-events:none;transform:translate(-50%,-70%);z-index:3;font-weight:400;font-size:.8rem;padding:1px 7px;border-radius:9px;background:#000b;border:1px solid var(--gold);color:var(--parch);white-space:nowrap}
 @media (max-height:420px){.cr{min-height:26px;font-size:.9rem}.crystals{gap:3px}}
 
@@ -1433,3 +1435,18 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .db-stage .db-filterbox .combo{min-width:0!important;padding-left:6px!important}
 .db-stage .db-title{font-size:max(14px,4.4cqh)}
 }
+
+/* round 10: card close-up at twice the old size (fits the screen height), no scroll bar, click outside closes */
+.card-view-face .hand-card{--cw:min(600px,64vh)}
+.overlay.cardview{cursor:pointer}
+.overlay.cardview .dialog{max-width:none;width:auto;max-height:none;overflow:visible;padding:0;pointer-events:none}
+.overlay.cardview .card-view-face .hand-card{pointer-events:auto;cursor:default}
+.overlay.cardview *{scrollbar-width:none}
+.overlay.cardview *::-webkit-scrollbar{display:none}
+
+/* round 10: the player's hand rests with only a quarter of each card above the bottom edge; hovering raises it fully */
+.match .hand:not(.o-hand){transform:translateY(calc(var(--hcw) * 1.13))}
+.match .hand:not(.o-hand).open,.match .hand:not(.o-hand).has-pop{transform:translateY(calc(var(--hcw) * -.03))}
+.overlay.cardview .dialog{overflow:hidden}
+.overlay.cardview .dialog .sr-only{position:absolute}
+.match .reveal.hand-card.static{position:absolute;margin:0;transform:translate(-50%,-50%);--cw:min(180px,30vh)}

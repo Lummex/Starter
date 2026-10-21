@@ -121,6 +121,8 @@ const GLOW_COLOR: Record<string, string> = { goblins: '#b45cff', gnomes: '#3fa9f
 export const GLOW_PEAK = 0.9;
 /** Glow opacity (fraction of the peak) at 0/25/50/75/100 % of the thickness, measured from the card edge outward. */
 export const GLOW_PROFILE = [1, 0.62, 0.34, 0.12, 0];
+/** Owner faction colors (round 10): Goblins green, Gnomes purple, Dwarves navy blue. */
+export const FACTION_GLOW: Record<string, string> = { goblins: '#3ee06a', gnomes: '#9b4dff', dwarves: '#2f5fd8' };
 export class App {
   root: El;
   game: Game;
@@ -145,11 +147,11 @@ export class App {
     for (const e of events) {
       if (e.type === 'cast') {
         const respondable = st.pendingResponse && st.pendingResponse.responder === 'player' && e.player === 'opponent';
-        if (pop && !respondable) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId); }
-      } else if (e.type === 'respond') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId); } }
-      else if (e.type === 'summon') { if (pop) { L('reveal', { cardId: e.cardId, uid: e.uid }); if (this.dialogCard === e.cardId + e.owner) this.dialogCard = ''; else this.reveal(e.cardId, e); } }
-      else if (e.type === 'playCrystal') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId); } }
-      else if (e.type === 'minerUpgrade') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, e); } }
+        if (pop && !respondable) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, null, e.player ?? e.owner); }
+      } else if (e.type === 'respond') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, null, e.player ?? e.owner); } }
+      else if (e.type === 'summon') { if (pop) { L('reveal', { cardId: e.cardId, uid: e.uid }); if (this.dialogCard === e.cardId + e.owner) this.dialogCard = ''; else this.reveal(e.cardId, e, e.player ?? e.owner); } }
+      else if (e.type === 'playCrystal') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, null, e.player ?? e.owner); } }
+      else if (e.type === 'minerUpgrade') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, e, e.player ?? e.owner); } }
       else if (e.type === 'spell') { L('effect', { cardId: e.cardId, visual: SPELL_VISUALS[e.cardId]?.id }); L('impact', { cardId: e.cardId }); }
       else if (e.type === 'poison') L('poison', { uid: e.uid, amount: 1 });
       else if (e.type === 'damage') L('damage', { uid: e.uid, amount: e.amount, commander: e.commander });
@@ -487,8 +489,8 @@ export class App {
       sec('Decks and auto-skip', 'The Decks screen on the main menu is a testing deck builder: every card is unlocked and you can save up to 5 decks of 50 to 100 cards (Rare, Ultra Rare and Collector cards max 3 copies, at most 20 Crystal cards). Pick a saved deck or the starter deck before a match. Your Deploy phase ends by itself when no card in your hand can be both paid for and placed, and your Action phase ends by itself when no creature can move, attack or mine.', crystals),
       sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
       sec('Mulligan and Camera', 'Before the match you may mulligan up to 3 times: tap cards, then Redraw Selected. Your first mulligan redraws as many cards as you swap; each later one redraws one fewer (5, then 4, then 3 cards). On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and choose Recenter in the Menu (right side) to reset. The Menu also holds Last turn, Mute, the Card pop-ups switch and Surrender. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
-      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (one per round, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
-      sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
+      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (any number, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
+      sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit the first enemy up to 5 spaces away in one of the 8 straight directions (they cannot shoot past a unit) and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals (Flow first, then Bank). Commanders never attack. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet: you can play a Crystal card on its own or together with a counterspell to pay for it. Counterspells cancel spells or summons.'),
       h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Tutorial', '', () => this.beginTutorial()), btn('Back', '', () => this.showMenu())));
@@ -532,7 +534,9 @@ export class App {
     const tb = h('button', { type: 'button', class: 'tx', style: tx.getAttribute('style') || '', 'aria-label': 'Full explanation' }, tx.textContent || '');
     tx.replaceWith(tb);
     tb.addEventListener('click', () => this.fullExplanation(c));
-    const d = this.dialog(c.name, [h('div', { class: 'card-view-face' }, face), dl, h('p', { class: 'cv-hint' }, 'Tap the text for the full explanation.'), h('div', { class: 'row' }, btn('Close', 'primary', () => d.close()))]);
+    // round 10: twice the old size, no scroll bar, no Close button; a click outside the card (or Esc) closes it
+    const d = this.dialog(c.name, [h('div', { class: 'card-view-face' }, face), dl]);
+    d.el.classList.add('cardview');
     return d;
   }
   /** Deck builder close-up: the card fills the screen top to bottom; no Close button, no scrollbar; click anywhere or Esc dismisses. */
@@ -699,7 +703,7 @@ export class App {
     // board layers
     r.cells = new Map<string, El>();
     r.sites = [];
-    r.rings = [];
+    r.rings = []; r.hits = [];
     r.flows = [];
     r.view = null;
     try { this.view = createBoardView(r.board, this.low); } catch { this.view = null; }
@@ -711,7 +715,9 @@ export class App {
       r.board.append(c);
     }
     (this.game.state.sites as any[]).forEach(({ row, col }, i) => {
-      const ring = h('div', { class: 'mine-ring', 'aria-hidden': 'true' });
+      const ring = h('div', { class: 'mine-decal', 'aria-hidden': 'true' });
+      const hit = h('div', { class: 'mine-hit', 'aria-hidden': 'true', onclick: () => { if (!this.holdFired) this.tapSite(i); } });
+      hit.dataset.row = String(row); hit.dataset.col = String(col); r.hits.push(hit); r.board.append(hit);
       ring.dataset.row = String(row); ring.dataset.col = String(col);
       const fl = h('div', { class: 'mine-flow', role: 'img', 'aria-label': `Mine flow, row ${row}, column ${col}` }, '+0 / +0');
       fl.dataset.row = String(row); fl.dataset.col = String(col);
@@ -804,7 +810,7 @@ export class App {
   }
   matchHowTo() {
     const c: any = this.dialog('How to play', [h('h2', {}, 'How to play'),
-      h('p', {}, 'Draw, Deploy, Action, End. Drag cards onto your back row to summon. Drag a creature to move or attack. Tap a mine to mine with every ready Miner next to it. Mined Flow resets each turn; Crystal cards go to the Bank and stay. Win by taking the enemy Commander to 0 Health.'),
+      h('p', {}, 'Draw, Deploy, Action, End. Drag cards onto your back row to summon. Drag a creature to move or attack. Tap a mine to mine with every ready Miner next to it. Mined Flow resets each turn; Crystal cards go to the Bank and stay. When a basic Miner is defeated you draw a card. Win by taking the enemy Commander to 0 Health.'),
       h('div', { class: 'row' }, btn('Close', '', () => c.close()))]);
   }
   matchVolume(which: 'Sound Effects' | 'Background music') {
@@ -973,6 +979,10 @@ export class App {
       m.style.left = x0 + 'px'; m.style.top = y0 + 'px'; m.style.width = x1 - x0 + 'px'; m.style.height = y1 - y0 + 'px';
       const f = r.flows[i] as El;
       f.style.left = (x0 + x1) / 2 + 'px'; f.style.top = y0 + 'px';
+      // the whole mine site (crystal, pick icon, banner, base) is clickable: the model's screen box, padded a little
+      const cr = this.view.cellRect(row, col), hit = r.hits[i] as El;
+      const padX = cr.w * 0.25, up = cr.h * 1.5;
+      hit.style.left = cr.x - padX + 'px'; hit.style.top = cr.y - up + 'px'; hit.style.width = cr.w + padX * 2 + 'px'; hit.style.height = cr.h + up + cr.h * 0.1 + 'px';
     });
     this.place(r.strong.player, SH.player.row, SH.player.col);
     this.place(r.strong.opponent, SH.opponent.row, SH.opponent.col);
@@ -1057,6 +1067,19 @@ export class App {
       return;
     }
     if (el.classList.contains('dragging') || el.classList.contains('offhand')) return;
+    {
+      // round 10: the hand rests a quarter showing; hovering it raises it first, then a hovered card enlarges
+      const hd0 = this.r.hand as El;
+      if (hd0 && !this.test && !hd0.classList.contains('open')) {
+        this.openHand(true);
+        setTimeout(() => {
+          if (!el.isConnected || !hd0.classList.contains('open') || el.classList.contains('popped')) return;
+          if (this.lastPtr.type === 'mouse' && this.hitCard(this.lastPtr.x, this.lastPtr.y) !== el) return;
+          this.popCard(el, true);
+        }, 280);
+        return;
+      }
+    }
     const host = this.root.querySelector('.match') as El;
     if (!host) return;
     el.dataset.fan = el.dataset.fan || el.style.transform;
@@ -1317,6 +1340,7 @@ export class App {
     r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;
     const pm = `${me.crystals}|${en.crystals}`;
     if (this.flowKey !== pm && this.flowKey !== '' && st.turn !== this.flowTurn) this.view?.pulseFlow(st.activePlayer);
+    { const m = this.root.querySelector('.match'); this.view?.setFlowTarget?.('player', m?.querySelector('[data-role=player-flow-crystal]') as El | null); this.view?.setFlowTarget?.('opponent', m?.querySelector('[data-role=enemy-flow-crystal]') as El | null); }
     this.cmdBehavior(st);
     if (st.turn !== this.flowTurn) { this.flowTurn = st.turn; this.view?.pulseFlow(st.activePlayer); }
     this.flowKey = pm;
@@ -1382,7 +1406,7 @@ export class App {
         for (const site of st.sites as any[]) {
           if (site.controller !== e.player) continue;
           const mine = e.player === 'player';
-          this.flowLog.push({ side: e.player, from: { row: site.row, col: site.col }, to: mine ? 'player-bank' : 'enemy-bank', shards: 'faceted', sBends: 2, count: Math.max(1, site.flow?.[e.player] || 1), colors: [mine ? '#9dff6a' : '#ff5a4a'], at: performance.now() });
+          this.flowLog.push({ side: e.player, from: { row: site.row, col: site.col }, to: mine ? 'player-flow-crystal' : 'enemy-flow-crystal', shards: 'faceted', sBends: 2, count: Math.max(1, site.flow?.[e.player] || 1), colors: [FACTION_GLOW[this.game.state.players[e.player as 'player'].faction]], at: performance.now() });
         }
         if (e.player === 'opponent') { this.enemyLog = []; this.recording = true; } else this.recording = false;
         continue;
@@ -1484,16 +1508,34 @@ export class App {
     setTimeout(() => f.remove(), 1700);
   }
   /** Big card in the middle of the screen, then it drops onto its space (or flies away). */
-  reveal(cardId: string, at?: { row: number; col: number } | null) {
+  reveals: { player: El[]; opponent: El[] } = { player: [], opponent: [] };
+  reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player') {
     if ((this.test && !this.fxReal) || !this.r.board) return;
     const c = CARDS[cardId];
     const secs = this.revealSeconds();
     const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c));
     const host = this.root.querySelector('.match') as El;
+    // round 10: enemy plays hover at the left edge, yours at the right edge; up to 3 stack (newest on top, offset)
+    const list = this.reveals[side];
+    const hostR = host.getBoundingClientRect(), vh = window.innerHeight, vw = window.innerWidth;
+    const cw = Math.min(180, vh * 0.3);
+    while (list.length >= 3) list.shift()!.remove();
+    el.style.setProperty('--cw', cw + 'px');
+    el.dataset.side = side; el.dataset.slot = String(list.length);
+    const place = () => {
+      list.forEach((r, i) => {
+        r.dataset.slot = String(i);
+        r.style.left = (side === 'opponent' ? 10 + cw / 2 + i * 22 : vw - 10 - cw / 2 - i * 22) - hostR.left + 'px';
+        r.style.top = vh * 0.42 - i * 16 - hostR.top + 'px';
+        r.style.zIndex = String(520 + i);
+      });
+    };
+    list.push(el); place();
     host.append(el);
     let done = false;
+    const unlist = () => { const i = list.indexOf(el); if (i >= 0) { list.splice(i, 1); place(); } };
     const finish = () => {
-      if (done) return; done = true;
+      if (done) return; done = true; unlist();
       let dx = 0, dy = 0;
       if (at && this.view) {
         const pc = this.center(at.row, at.col);
@@ -1528,7 +1570,7 @@ export class App {
     let timer: any = null;
     el.addEventListener('pointerdown', (ev: Event) => {
       ev.stopPropagation();
-      if (el.dataset.pinned === 'true') { done = true; el.remove(); return; }
+      if (el.dataset.pinned === 'true') { done = true; unlist(); el.remove(); return; }
       if (done) return;
       clearTimeout(timer);
       el.dataset.pinned = 'true';
@@ -1710,7 +1752,7 @@ export class App {
       }
       m.style.color = COLOR_HEX[s.color] || COLOR_HEX.white;
       const ring = this.r.rings[i] as El;
-      ring.style.setProperty('--mine', COLOR_HEX[s.color] || COLOR_HEX.white);
+      ring.style.setProperty('--mine', s.controller ? FACTION_GLOW[this.game.state.players[s.controller].faction] : COLOR_HEX[s.color] || COLOR_HEX.white);
       this.r.flows[i].textContent = `+${s.flow.player} / +${s.flow.opponent}`;
     });
   }
@@ -1822,7 +1864,7 @@ export class App {
       menu: { open: m.querySelector('.o-menu')?.classList.contains('open') || false, items: [...m.querySelectorAll('.o-menu-item')].map((x) => x.textContent) } };
   }
   flowLog: any[] = [];
-  getFlowStreams() { const now = performance.now(); const strip = ({ at, ...r }: any) => r; return { active: this.flowLog.filter((f) => now - f.at < 2500).map(strip), log: this.flowLog.map(strip) }; }
+  getFlowStreams() { const now = performance.now(); const strip = ({ at, ...r }: any) => r; return { active: this.flowLog.filter((f) => now - f.at < 2500).map(strip), log: this.flowLog.map(strip), targets: this.view?.flowDestinations?.() ?? null }; }
   getDealLog() { return this.dealLog.map((d: any) => ({ uid: d.uid, startMs: d.startMs, durationMs: d.durationMs })); }
   getHudLayout() { const m = this.root.querySelector('.match') as any; return m?._hudInfo ? m._hudInfo() : null; }
   getTheme(side: 'player' | 'opponent') {
@@ -2171,7 +2213,7 @@ export class App {
       const row = c.row;
       const col = c.col;
       const el = this.r.cells.get(row + ',' + col) as El | undefined;
-      if (el) { el.classList.add(cls); this.place(el, row, col); }
+      if (el) { el.classList.add(cls); el.style.setProperty('--pfc', FACTION_GLOW[(this.game.state.players.player.faction as string)] || '#3ee06a'); this.place(el, row, col); }
     }
   }
   clearGlow() {

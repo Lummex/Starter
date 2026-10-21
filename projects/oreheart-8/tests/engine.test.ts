@@ -171,7 +171,7 @@ describe('revision 6', () => {
     expect([s.phase, s.activePlayer, s.turn]).toEqual(['deploy', 'player', 1]);
     expect(s.players.player.bank).toBe(2);
     expect(s.players.player.crystals).toBe(2);
-    // second Crystal card is not allowed in the same round
+    // a second Crystal card is allowed (round 10)
     const slinger = s.players.player.hand[0].uid; // cost 4, Grubnak 3
     s = act(s, { type: 'summon', uid: slinger, row: 7, col: 3 });
     expect([s.players.player.crystals, s.players.player.bank]).toEqual([0, 1]);
@@ -217,17 +217,16 @@ describe('revision 6', () => {
     const r = act(s, legalActions(s).find((a: any) => a.type === 'summon'));
     expect(r.players.player.bank).toBe(0);
   });
-  it('Tunnel only works while behind on mines', () => {
+  it('Tunnel works from turn 1, any time (round 10)', () => {
     const near = (s: any) => legalActions(s).filter((a: any) => a.type === 'summon' && a.row < 7);
-    // all mines white (nobody mined): not behind
     let s = mk({ playerHand: ['goblin-scrounger'], playerCrystals: B(1) });
-    expect(near(s).length).toBe(0);
-    // enemy mined two mines with a lone Gnome each: behind
-    s = mk({ playerHand: ['goblin-scrounger'], playerCrystals: B(1), board: [O('gnome-prospector', 4, 9, { minedMine: { row: 4, col: 10 } }), O('gnome-prospector', 3, 5, { minedMine: { row: 3, col: 6 } })] });
-    expect(s.sites.filter((x: any) => x.controller === 'opponent').length).toBe(2);
     expect(near(s).length).toBeGreaterThan(0);
+    // every empty space next to every mine is offered
+    const cells = new Set(near(s).map((a: any) => a.row + ',' + a.col));
+    expect(cells.has('4,7')).toBe(true);
+    expect(cells.has('4,9')).toBe(true);
     // Smith Miners never tunnel
-    s = mk({ playerHand: ['goblin-smith-miner'], playerCrystals: B(2), board: [O('gnome-prospector', 4, 9, { minedMine: { row: 4, col: 10 } })] });
+    s = mk({ playerHand: ['goblin-smith-miner'], playerCrystals: B(2) });
     expect(near(s).length).toBe(0);
   });
 });
@@ -505,5 +504,53 @@ describe('round 4', () => {
     expect(applyAction(s, { type: 'cast', uid: s.players.player.hand[0].uid, target: { row: 2, col: 8 } }).ok).toBe(true);
     expect(validateDeck([...Array(50).fill('goblin-scrounger'), 'fireball'], 'grubnak').problems).toContain('Searing Arcane Orb: only for Gnome Commanders.');
     expect(validateDeck([...Array(50).fill('goblin-scrounger'), 'mirror-hex']).problems).toContain('Hex Reversal is not available yet.');
+  });
+});
+
+describe('round 10 rules', () => {
+  const targets = (s: any, r: number, c: number) => legalActions(s).filter((a: any) => a.type === 'attack' && at(s, r, c).uid === a.creatureUid);
+  const turnToAction = (s: any) => { s = done(s); return s; };
+  it('adjacent mines are legal, the same square is not', () => {
+    expect(legalMines([{ row: 3, col: 6 }, { row: 4, col: 7 }, { row: 5, col: 8 }])).toBe(true);
+    expect(legalMines([{ row: 4, col: 7 }, { row: 4, col: 7 }, { row: 5, col: 8 }])).toBe(false);
+    let adjacent = 0;
+    for (let seed = 1; seed <= 200; seed++) { const m = createMatch({ seed }).sites; for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) if (Math.max(Math.abs(m[i].row - m[j].row), Math.abs(m[i].col - m[j].col)) === 1) adjacent++; }
+    expect(adjacent).toBeGreaterThan(0);
+  });
+  it('Ranged: straight lines up to 5, first unit blocks, no knight-move targets', () => {
+    let s = turnToAction(mk({ board: [P('goblin-slinger', 4, 3), O('goblin-scrapper', 4, 8), O('goblin-scrapper', 2, 5), O('goblin-scrapper', 6, 4), O('goblin-scrapper', 1, 3), O('goblin-scrapper', 7, 3), O('goblin-scrapper', 7, 3 + 5)] }));
+    const t = targets(s, 4, 3).map((a: any) => a.target.row + ',' + a.target.col).sort();
+    expect(t).toContain('4,8'); // 5 along the row
+    expect(t).toContain('2,5'); // diagonal, 2 away
+    expect(t).not.toContain('6,4'); // knight move
+    expect(t).toContain('1,3'); // 3 up the column
+    expect(t).toContain('7,3'); // 3 down the column
+    // the first unit blocks: put an ally in front of the (4,8) target
+    s = turnToAction(mk({ board: [P('goblin-slinger', 4, 3), P('goblin-scrapper', 4, 5), O('goblin-scrapper', 4, 8), O('goblin-scrapper', 4, 4)] }));
+    expect(targets(s, 4, 3).map((a: any) => a.target.col)).toEqual([4]);
+    s = turnToAction(mk({ board: [P('goblin-slinger', 4, 3), P('goblin-scrapper', 4, 5), O('goblin-scrapper', 4, 8)] }));
+    expect(targets(s, 4, 3).length).toBe(0);
+    // range 5 only: 6 away is out
+    s = turnToAction(mk({ board: [P('goblin-slinger', 4, 2), O('goblin-scrapper', 4, 8)] }));
+    expect(targets(s, 4, 2).length).toBe(0);
+  });
+  it('basic Miner death draws a card; an upgrade Miner does not', () => {
+    let s = mk({ playerHand: ['goblin-scrounger'], playerCrystals: 5, board: [P('goblin-grunt', 7, 2), P('goblin-scrapper', 5, 9), O('gnome-prospector', 5, 10)] });
+    const n = s.players.opponent.hand.length, d = s.players.opponent.deck.length;
+    s = done(s);
+    s = act(s, { type: 'attack', creatureUid: at(s, 5, 9).uid, target: { row: 5, col: 10 } });
+    expect(at(s, 5, 10)).toBeUndefined();
+    expect(s.players.opponent.hand.length).toBe(n + 1);
+    expect(s.players.opponent.deck.length).toBe(d - 1);
+    // upgrade use: no draw for the owner
+    let u = mk({ playerHand: ['goblin-scrounger'], playerCrystals: 5, board: [P('goblin-grunt', 7, 2)] });
+    const h = u.players.player.hand.length - 1;
+    u = act(u, { type: 'minerUpgrade', uid: u.players.player.hand[0].uid, creatureUid: at(u, 7, 2).uid });
+    expect(u.players.player.hand.length).toBe(h);
+  });
+  it('Crystal cards: any number per turn', () => {
+    let s = mk({ playerHand: ['crystal-cluster', 'soul-shard', 'soul-shard'] });
+    for (let i = 0; i < 3; i++) s = act(s, { type: 'playCrystal', uid: s.players.player.hand[0].uid });
+    expect(s.players.player.bank).toBe(4);
   });
 });

@@ -5,7 +5,7 @@
  },
  "tunnel": {
   "name": "Tunnel",
-  "text": "While the enemy holds more mines than you, it can be summoned onto any empty space next to a mine."
+  "text": "It can be summoned any time onto any empty space next to any mine."
  },
  "frenzy": {
   "name": "Frenzy",
@@ -13,7 +13,7 @@
  },
  "ranged": {
   "name": "Ranged",
-  "text": "Hits any enemy within 2 spaces in any direction, even over other creatures. No strike back."
+  "text": "Hits the first unit up to 5 spaces away in a straight line (8 directions). Cannot shoot past a unit. No strike back."
  },
  "kaboom": {
   "name": "Ka-boom",

@@ -36,7 +36,7 @@
  "maxCrystalCards": 20,
  "commanderHealth": 20,
  "deckOutDamage": 1,
- "crystalCardsPerTurn": 1,
+ "crystalCardsPerTurn": 9999,
  "typeAdvantageBonus": 1,
  "rageBonus": 2,
  "frenzyBonus": 1,
@@ -81,5 +81,6 @@
   "col": 12
  },
  "deckMin": 50,
- "deckMax": 100
+ "deckMax": 100,
+ "rangedRange": 5
 }

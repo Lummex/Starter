@@ -536,3 +536,21 @@ The AC73 check selects Sproingle and then clicks the saved Goblin deck "Miner Ru
 - **AC186:** arena effect positions come from the Arena Editor layout (`skullfang-arena-layout.json`); the owner layout's per-effect looks (e.g. strength) are merged in.
 - **AC239:** locked spell tiles no longer carry `aria-disabled`, so they can be clicked to open the close-up (marked `data-locked`).
 - **Not changed (conflicting checks):** AC96 expects an ornate (bordered) main-menu Play button, which contradicts AC137 (plain text); AC209 expects no 3D viewer on a Shiv Rat close-up, which contradicts AC239/R9c.6 (every creature has one); AC210 forbids white text, while R9c.10/AC241 require white deck counts. The owner's R9c.10 rule was followed.
+
+# Round 10 (owner playtest of 9c)
+Built (13 items):
+1. Drag highlights: stronger fill + glowing outline in the player's faction color (Goblin green, Gnome purple, Dwarf navy); attack squares solid red.
+2. Played-card pop-ups: enemy plays at the left edge, yours at the right edge, up to 3 stacked and offset (newest on top), above the hand (`.reveal[data-side][data-slot]`).
+3. Random mines may touch (`legalMines` only forbids the same square and Stronghold-adjacent squares); still mirrored, rows 3-5.
+4. Whole mine site clickable (`.mine-hit` over the model's screen box) = auto-mine.
+5. Basic Miner (role Gatherer) death draws a card for its owner; upgrade use does not.
+6. Ranged: 5 squares (`CONFIG.rangedRange`) along the 8 straight lines, stopping at the first unit (creature or Stronghold).
+7. Crystal Flow shards use faction colors with highlight sparkles and fly to the HUD Flow crystal counters (`getFlowStreams().targets`).
+8. Card close-up is 2x (`--cw:min(600px,64vh)`), no Close button, no scrollbar; click outside or Esc closes.
+9. Hand rests with a quarter showing; hover raises it, then a hovered card enlarges.
+10. White ring replaced by a flat `.mine-decal` glow + rubble decal tinted by owner faction.
+11. Mines forced upright and equal size; `getRenderStats().mineModels[i]` reports tilt/baseY/scale.
+12. Crystal cards: no once-per-round limit (Crystal Eater penalties therefore never trigger for now).
+13. Tunnel works any time from turn 1 next to any mine (basic Miners only).
+Card texts, abilities, Rules text and engine tests updated ("round 10 rules" in tests/engine.test.ts). Screenshots: `screenshots/r10-*.png` (`tools/shot-r10.mjs`).
+Not verified in a browser: drag-highlight screenshot with attack squares, the enemy-side pop-up stack, a flow-stream screenshot.

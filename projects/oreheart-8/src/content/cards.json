@@ -15,10 +15,10 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Miner: mines 2. Tunnel. +1 Health upgrade.",
+  "text": "Miner: mines 2. Tunnel. +1 Health upgrade. Draw a card when it dies.",
   "flavor": "Scrounger, Taker of Shiny Things",
-  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade.",
-  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). Tunnel: while the enemy holds more mines than you, it can be summoned onto any empty space next to a mine. Example: With 1 mine to the enemy's 2, you can summon it onto an empty space beside a mine."
+  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade. Draw a card when it dies.",
+  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine."
  },
  {
   "id": "goblin-scrapper",
@@ -54,9 +54,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 2 spaces away; no strike back.",
-  "shortText": "Ranged. Hits 2 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits any enemy within 2 spaces in any direction, even over other creatures. No strike back. Example: A Ranged creature hits an enemy 2 spaces away over a creature standing between them."
+  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "goblin-bomber",
@@ -169,10 +169,10 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Miner: mines 2. Tunnel. +1 Health upgrade.",
+  "text": "Miner: mines 2. Tunnel. +1 Health upgrade. Draw a card when it dies.",
   "flavor": "Prospector of Profound Patience",
-  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade.",
-  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). Tunnel: while the enemy holds more mines than you, it can be summoned onto any empty space next to a mine. Example: With 1 mine to the enemy's 2, you can summon it onto an empty space beside a mine."
+  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade. Draw a card when it dies.",
+  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine."
  },
  {
   "id": "gnome-tinker",
@@ -208,9 +208,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 2 spaces away; no strike back.",
-  "shortText": "Ranged. Hits 2 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits any enemy within 2 spaces in any direction, even over other creatures. No strike back. Example: A Ranged creature hits an enemy 2 spaces away over a creature standing between them."
+  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "clockwork-beetle",
@@ -266,9 +266,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Flies over other creatures. Ranged. Hits 2 spaces away; no strike back.",
-  "shortText": "Flies over other creatures. Ranged. Hits 2 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flying: moves over other creatures. Ranged: hits any enemy within 2 spaces in any direction, even over other creatures. No strike back. Example: It flies across a wall of enemy creatures."
+  "text": "Flies over other creatures. Ranged. Hits 5 spaces in a line; no strike back.",
+  "shortText": "Flies over other creatures. Ranged. Hits 5 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flying: moves over other creatures. Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: It flies across a wall of enemy creatures."
  },
  {
   "id": "the-great-steam-golem",
@@ -324,10 +324,10 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Miner: mines 2. Tunnel. +1 Health upgrade.",
+  "text": "Miner: mines 2. Tunnel. +1 Health upgrade. Draw a card when it dies.",
   "flavor": "Has never met a rock he respected",
-  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade.",
-  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). Tunnel: while the enemy holds more mines than you, it can be summoned onto any empty space next to a mine. Example: With 1 mine to the enemy's 2, you can summon it onto an empty space beside a mine."
+  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade. Draw a card when it dies.",
+  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine."
  },
  {
   "id": "shieldbeard",
@@ -363,9 +363,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 2 spaces away; no strike back.",
-  "shortText": "Ranged. Hits 2 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits any enemy within 2 spaces in any direction, even over other creatures. No strike back. Example: A Ranged creature hits an enemy 2 spaces away over a creature standing between them."
+  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "ironhammer-berserker",
@@ -779,7 +779,7 @@
   "unique": false,
   "text": "Crystal card. Free. +1 to your Bank.",
   "shortText": "Crystal card. Free. +1 to your Bank.",
-  "longText": "Crystal card: free, played at Instant speed (also while you respond), one per round. It adds 1 crystal to your Bank, which never runs out until spent. Example: Play it just before a cost-5 creature when you have only 3 Flow."
+  "longText": "Crystal card: free, played at Instant speed (also while you respond). It adds 1 crystal to your Bank, which never runs out until spent. Example: Play it just before a cost-5 creature when you have only 3 Flow."
  },
  {
   "id": "crystal-cluster",
@@ -795,7 +795,7 @@
   "unique": false,
   "text": "Crystal card. Free. +2 to your Bank.",
   "shortText": "Crystal card. Free. +2 to your Bank.",
-  "longText": "Crystal card: free, played at Instant speed (also while you respond), one per round. It adds 2 crystals to your Bank, which never runs out until spent. Example: Play it just before a cost-5 creature when you have only 3 Flow."
+  "longText": "Crystal card: free, played at Instant speed (also while you respond). It adds 2 crystals to your Bank, which never runs out until spent. Example: Play it just before a cost-5 creature when you have only 3 Flow."
  },
  {
   "id": "glowing-geode",
@@ -809,7 +809,7 @@
   "unique": true,
   "text": "Crystal card. +1 Flow every turn, for good.",
   "shortText": "Crystal card. +1 Flow every turn, for good.",
-  "longText": "Crystal card: free, played at Instant speed (also while you respond), one per round. It places a small crystal by your Stronghold that gives +1 Flow at the start of each of your turns for the rest of the match. Unique: one copy per deck. Example: Play it on turn 2 and have 1 extra crystal on every later turn."
+  "longText": "Crystal card: free, played at Instant speed (also while you respond). It places a small crystal by your Stronghold that gives +1 Flow at the start of each of your turns for the rest of the match. Unique: one copy per deck. Example: Play it on turn 2 and have 1 extra crystal on every later turn."
  },
  {
   "id": "heart-of-the-fallen",
@@ -825,7 +825,7 @@
   "unique": false,
   "text": "Crystal card. Free. +4 to your Bank.",
   "shortText": "Crystal card. Free. +4 to your Bank.",
-  "longText": "Crystal card: free, played at Instant speed (also while you respond), one per round. It adds 4 crystals to your Bank, which never runs out until spent. Example: Play it just before a cost-5 creature when you have only 3 Flow."
+  "longText": "Crystal card: free, played at Instant speed (also while you respond). It adds 4 crystals to your Bank, which never runs out until spent. Example: Play it just before a cost-5 creature when you have only 3 Flow."
  },
  {
   "id": "motherlode",
@@ -842,7 +842,7 @@
   "unique": false,
   "text": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less.",
   "shortText": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less.",
-  "longText": "Crystal card: free, played at Instant speed (also while you respond), one per round. It adds 3 crystals to your Bank, which never runs out until spent. Your next creature this turn also costs 2 less. Example: Play it just before a cost-5 creature when you have only 3 Flow."
+  "longText": "Crystal card: free, played at Instant speed (also while you respond). It adds 3 crystals to your Bank, which never runs out until spent. Your next creature this turn also costs 2 less. Example: Play it just before a cost-5 creature when you have only 3 Flow."
  },
  {
   "id": "goblin-smith-miner",
@@ -916,9 +916,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 2 spaces away; no strike back.",
-  "shortText": "Ranged. Hits 2 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits any enemy within 2 spaces in any direction, even over other creatures. No strike back. Example: A Ranged creature hits an enemy 2 spaces away over a creature standing between them."
+  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "shiv-rat",
@@ -1011,9 +1011,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 2 spaces away; no strike back.",
-  "shortText": "Ranged. Hits 2 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits any enemy within 2 spaces in any direction, even over other creatures. No strike back. Example: A Ranged creature hits an enemy 2 spaces away over a creature standing between them."
+  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "gearward-sentinel",
@@ -1125,9 +1125,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 2 spaces away; no strike back.",
-  "shortText": "Ranged. Hits 2 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits any enemy within 2 spaces in any direction, even over other creatures. No strike back. Example: A Ranged creature hits an enemy 2 spaces away over a creature standing between them."
+  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "barrelback-courier",
