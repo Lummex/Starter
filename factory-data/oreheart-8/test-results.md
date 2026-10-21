@@ -1,6 +1,6 @@
 # Automated check results
 
-282 of 283 checks passed after 3 build round(s).
+292 of 302 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -8,10 +8,10 @@
 - ✅ portrait phone viewport › AC24: upright phone shows the rotate message
 - ✅ landscape layout details › AC43: the hand rests tucked halfway at the bottom and slides up on hover (Round 6a)
 - ✅ landscape layout details › AC44: deck piles on each player's right and Commander hearts
-- ✅ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
+- ❌ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
 - ✅ hearts and turn display 740x360 › AC51: Commander hearts never cover creature labels; turn display top-right (740x360)
 - ✅ hearts and turn display 667x375 › AC51: Commander hearts never cover creature labels; turn display top-right (667x375)
-- ✅ hand pop-out at 2x › AC59: a hovered hand card doubles in size and stays fully on-screen
+- ❌ hand pop-out at 2x › AC59: a hovered hand card doubles in size and stays fully on-screen
 - ✅ compact stat pill › AC66: creature labels are compact pills with Attack, Health, Movement
 - ✅ phone-size match screenshot › AC90: the match screen renders full screen at 844x390 with no page errors
 - ✅ display mode on a PC window › AC103: Display mode Auto / PC / Phone, remembered, without extra menu buttons
@@ -34,18 +34,18 @@
 - ✅ round 5b screenshots (844x390) › AC160: match, Menu popped out and hand popped out render without errors (844x390)
 - ✅ round 6a match layout 1920x1080 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (1920x1080)
 - ✅ round 6a match layout 1920x1080 › AC163: the hand is 2x, centered, overlapping, tucked halfway and slides up on hover (1920x1080)
-- ✅ round 6a match layout 1920x1080 › AC164: the hovered card pops out at about 70% of the height on the top layer (1920x1080)
+- ❌ round 6a match layout 1920x1080 › AC164: the hovered card pops out at about 70% of the height on the top layer (1920x1080)
 - ✅ round 6a match layout 1920x1080 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (1920x1080)
 - ✅ round 6a match layout 844x390 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (844x390)
 - ✅ round 6a match layout 844x390 › AC163: the hand is 2x, centered, overlapping, tucked halfway and slides up on hover (844x390)
-- ✅ round 6a match layout 844x390 › AC164: the hovered card pops out at about 70% of the height on the top layer (844x390)
+- ❌ round 6a match layout 844x390 › AC164: the hovered card pops out at about 70% of the height on the top layer (844x390)
 - ✅ round 6a match layout 844x390 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (844x390)
 - ✅ round 6a screenshots (1920x1080) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (1920x1080)
 - ✅ round 6a screenshots (844x390) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (844x390)
-- ✅ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
-- ✅ round 7 hand (1920x1080) › AC175: hand cards are about 10% smaller (36-46% of the height), still tucked halfway (1920x1080)
-- ✅ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
-- ✅ round 7 hand (844x390) › AC175: hand cards are about 10% smaller (36-46% of the height), still tucked halfway (844x390)
+- ❌ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
+- ✅ round 7 hand (1920x1080) › AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (1920x1080)
+- ❌ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
+- ✅ round 7 hand (844x390) › AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (844x390)
 - ✅ round 7 screenshots (1920x1080) › AC184: Grubnak in a match and in the 3D viewer render without errors
 - ✅ arena homography 1920x1080 › AC188: square centers follow the homography of the owner's corners (1920x1080)
 - ✅ arena homography 844x390 › AC188: square centers follow the homography of the owner's corners (844x390)
@@ -61,6 +61,12 @@
 - ✅ round 8b stat badges 844x390 › AC202: stat badges are small painted icons with readable numbers
 - ✅ round 8b screenshots 1920x1080 › AC211: Commander screen, close-up viewer and stat badges render without errors (1920x1080)
 - ✅ round 8b screenshots 844x390 › AC211: Commander screen, close-up viewer and stat badges render without errors (844x390)
+- ✅ round 9a owner layout 1920x1080 › AC212: every HUD piece sits where the owner's layout puts it (1920x1080)
+- ✅ round 9a owner layout 844x390 › AC212: every HUD piece sits where the owner's layout puts it (844x390)
+- ✅ round 9a hand 1920x1080 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (1920x1080)
+- ✅ round 9a hand 844x390 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (844x390)
+- ✅ round 9a screenshots 1920x1080 › AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (1920x1080)
+- ✅ round 9a screenshots 844x390 › AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (844x390)
 - ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -104,7 +110,7 @@
 - ✅ AC18: Respond dialog — cast Ironclad Bulwark saves the creature
 - ✅ AC19: deck-out deals 1 damage per failed draw
 - ✅ AC20: reducing enemy Commander to 0 shows Victory!
-- ✅ AC20: surrender from the match menu shows Defeat
+- ✅ AC20: giving up from the match menu shows Defeat
 - ✅ AC20: surrender action via API
 - ✅ AC21: easy AI completes its turn and hands it back
 - ✅ AC21: normal AI completes its turn and hands it back
@@ -174,7 +180,7 @@
 - ✅ AC71: Auto-fill completes a legal deck; Rename and Save
 - ✅ AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)
 - ✅ AC72: "+ New Deck" on the select screen opens the Deck Builder
-- ❌ AC73: the select screen remembers the last Commander, deck and difficulty
+- ✅ AC73: the select screen remembers the last Commander, deck and difficulty
 - ✅ AC74: match-end summary, Play again with the same choices, and Menu
 - ✅ AC75 + AC125: the tutorial runs to the end, teaching only the current rules
 - ✅ AC76: the Last turn recap lists what the enemy did
@@ -242,7 +248,7 @@
 - ✅ AC147: spell cards use the owner's real spell frames per faction
 - ✅ AC149: the cover-fit painted view keeps both Commanders whole at every window shape (Round 8a)
 - ✅ AC150: no black bars at any window shape
-- ✅ AC152: Flow and bank numbers sit on both crystals with name, Flow and Next beside them
+- ❌ AC152: Flow and bank numbers sit on both crystals with name, Flow and Next beside them
 - ✅ AC153: the phase tracker shows whose turn, the turn number and the current phase
 - ✅ AC154: the match Menu hides its items until hovered or tapped; Mute and Recenter work
 - ✅ AC155: playable hand cards glow, the others do not, and it updates at once
@@ -255,18 +261,18 @@
 - ✅ AC168: bold titles and main actions, regular body text, only four weights
 - ✅ AC169: Deck Builder close-up fills the height, has no scrollbar or Close, and dismisses on click or Esc
 - ✅ AC170: deck list + and - change counts at once, without moving the row; rapid clicks all count
-- ✅ AC171: no "All cards" text and no corner ornaments on any screen
+- ❌ AC171: no "All cards" text and no corner ornaments on any screen
 - ✅ AC172: crystal mines use the owner's mine model (glTF placeholder or Round 8a Meshy GLB), exactly 1.5 tall, tinted by owner
 - ✅ AC176: the owner's card back and deck-pile pictures are used exactly
 - ✅ AC177: a popped card keeps the at-rest glow thickness and opacity
 - ✅ AC178: glow colors contrast with each faction frame
-- ✅ AC179: crystal mines are exactly 1.5 spaces tall
+- ❌ AC179: crystal mines are exactly 1.5 spaces tall
 - ✅ AC180: Grubnak model files are saved once with models.json; the game never calls Meshy
 - ✅ AC181: Grubnak is the Meshy model on his fortress with the scepter, about 2.4 tall, idling
 - ✅ AC182: Grubnak plays cast, defeat and celebrate at the right moments
 - ✅ AC183: no "View Grubnak in 3D" button remains on Choose Your Commander or the Deck Builder (Round 8b)
 - ✅ AC185: the owner's arena pictures and layout are loaded unchanged
-- ✅ AC186: all 54 effects are drawn, off-painting pools are clipped, two foreground cut-outs
+- ❌ AC186: all 54 effects are drawn, off-painting pools are clipped, two foreground cut-outs
 - ✅ AC187: no grid lines are drawn, even while dragging a card
 - ✅ AC190: cover-fit with no black bars at 16:9, 4:3, 21:9 and phone; max zoom about 2.5 px per painting pixel
 - ✅ AC191: at zoom 1 on a 4:3 window the view pans sideways but never past the edges
@@ -285,21 +291,151 @@
 - ✅ AC208: Fight! sits bottom-right in both states at 1920x1080 and 844x390
 - ✅ AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak's card and dismisses correctly
 - ✅ AC210: body text uses the brown-gold palette variables, no white body text on menu screens
+- ✅ AC213: the enemy deck and card fan are upside down with a readable deck count
+- ✅ AC214: banks are their own pieces with their numbers; no bank badge on the crystals
+- ✅ AC215: themes follow each side's Commander faction; goblin corner frames only for a Goblin player
+- ✅ AC216: the drop-down Menu has the owner's six items, closes properly and Give up asks first
+- ✅ AC217: Settings, Sound Effects, Background music and How to play open their controls
+- ✅ AC219: the opening hand deals in one card at a time
+- ✅ AC220: Grubnak holds his scepter in his right hand with the owner's numbers
+- ✅ AC221: mines are the code-built owner mine with all its parts
+- ✅ AC222: Crystal Flow streams run from owned mines to each side's bank when Flow is gained
+- ✅ AC223: menu music on menus, match music in matches, crossfades, Mute silences both
+- ✅ AC224: the music and sound effects volume sliders work and are remembered
+- ✅ AC225: savings land in the bank piece
+- ✅ AC226: the in-game editor (round 9b) is not built yet
 
 ## Failures
 
 ```
-✗ AC73: the select screen remembers the last Commander, deck and difficulty
-TimeoutError: locator.click: Timeout 10000ms exceeded.
+✗ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
+Error: expect(received).toBeLessThanOrEqual(expected)
+
+Expected: <= 15.6
+Received:    312.53125
+
+  2034 |         const b = await phase.boundingBox();
+  2035 |         expect(b.x).toBeGreaterThanOrEqual(w * 0.74); // Round 5b: top-right (80 %, 0 %)
+> 2036 |         expect(b.y).toBeLessThanOrEqual(h * 0.04);
+       |                     ^
+  2037 |       }
+  2038 |     });
+  2039 |   });
+✗ hand pop-out at 2x › AC59: a hovered hand card doubles in size and stays fully on-screen
+Error: expect(received).toBeGreaterThan(expected)
+
+Expected: > 172.321875
+Received:   153.17498779296875
+
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  2250 |       const before = await card.boundingBox();
+  2251 |       await page.mouse.move(before.x + before.width / 2, before.y + 8); // the visible top of the tucked card
+> 2252 |       await expect.poll(async () => (await card.boundingBox()).width).toBeGreaterThan(before.width * 1.8);
+       |       ^
+✗ round 6a match layout 1920x1080 › AC164: the hovered card pops out at about 70% of the height on the top layer (1920x1080)
+Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 0.64
+Received:    0.5837037263093171
+
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  5262 |       const b0 = await card.boundingBox();
+  5263 |       await page.mouse.move(b0.x + b0.width / 2, Math.min(H - 4, b0.y + 10));
+> 5264 |       await expect.poll(async () => (await card.boundingBox()).height / H).toBeGreaterThanOrEqual(0.64);
+       |       ^
+✗ round 6a match layout 844x390 › AC164: the hovered card pops out at about 70% of the height on the top layer (844x390)
+Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 0.64
+Received:    0.5836538461538462
+
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  5262 |       const b0 = await card.boundingBox();
+  5263 |       await page.mouse.move(b0.x + b0.width / 2, Math.min(H - 4, b0.y + 10));
+> 5264 |       await expect.poll(async () => (await card.boundingBox()).height / H).toBeGreaterThanOrEqual(0.64);
+       |       ^
+✗ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
+Error: only card 0 is popped
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+Call Log:
+- Timeout 4000ms exceeded while waiting on the predicate
+
+  5632 |         expect(pt, `card ${i} can be hovered`).not.toBeNull();
+  5633 |         await page.mouse.move(pt[0], pt[1], { steps: 4 });
+✗ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
+Error: only card 0 is popped
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+Call Log:
+- Timeout 4000ms exceeded while waiting on the predicate
+
+  5632 |         expect(pt, `card ${i} can be hovered`).not.toBeNull();
+  5633 |         await page.mouse.move(pt[0], pt[1], { steps: 4 });
+✗ AC152: Flow and bank numbers sit on both crystals with name, Flow and Next beside them
+Error: expect(locator).toContainText(expected) failed
+
+Locator: getByLabel('Your crystal', { exact: true })
+Expected pattern: /Grubnak/
+Received string:  "7"
+Timeout: 7000ms
+
 Call log:
-  - waiting for getByLabel('Deck choice', { exact: true }).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })
+  - Expect "toContainText" with timeout 7000ms
+  - waiting for getByLabel('Your crystal', { exact: true })
+    10 × locator resolved to <div role="group" class="o-gem o-piece" aria-label="Your crystal" data-role="player-flow-crystal" data-hud-role="player-flow-crystal">…</div>
+       - unexpected value "7"
+✗ AC171: no "All cards" text and no corner ornaments on any screen
+Error: match ornaments
 
+expect(received).toBe(expected) // Object.is equality
 
-  2710 |   await makeSelectDecks(page);
-  2711 |   await page.getByRole('button', { name: 'Archmagister Sproingle the Unfathomable', exact: true }).click();
-> 2712 |   await deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true }).click();
-       |                                                                                                 ^
-  2713 |   await page.getByRole('button', { name: 'Hard', exact: true }).click();
-  2714 |   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
-  2715 |   await keepAndGetState(page);
+Expected: 0
+Received: 3
+
+  5515 | test('AC171: no "All cards" text and no corner ornaments on any screen', async ({ page }) => {
+  5516 |   const noOrnaments = async (label) => {
+> 5517 |     expect(await page.locator('[data-ornament="frame"], [data-ornament="corner"]').count(), `${label} ornaments`).toBe(0);
+       |                                                                                                                   ^
+  5518 |   };
+✗ AC179: crystal mines are exactly 1.5 spaces tall
+Error: expect(received).toBeLessThanOrEqual(expected)
+
+Expected: <= 1.53
+Received:    2.4819999999999998
+
+  5806 |   for (const m of r.mineModels) {
+  5807 |     expect(m.height).toBeGreaterThanOrEqual(1.47);
+> 5808 |     expect(m.height).toBeLessThanOrEqual(1.53);
+       |                      ^
+  5809 |   }
+  5810 | });
+  5811 |
+✗ AC186: all 54 effects are drawn, off-painting pools are clipped, two foreground cut-outs
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 54
+Received: 57
+
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  6023 |   const layout = await arenaLayout(request);
+  6024 |   await start(page, quiet({ board: ARENA_BOARD }));
+> 6025 |   await expect.poll(async () => (await arenaInfo(page)).effects.length).toBe(54);
+       |   ^
 ```

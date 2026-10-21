@@ -1,22 +1,26 @@
 ## What was built
-This round (8b) reworks the game after your playtest. Your Commander now faces the enemy and turns to look at you, and gets impatient if you wait too long. Cards in your hand glow differently, pop out smaller and more smoothly, and creatures show small painted sword, heart and boot icons. The Deck Builder lets you drag cards into the deck list without the layout jumping. "Choose Your Commander" is redone, and body text is now brown-gold.
+The match screen was rebuilt to match your layout file, with the Goblin look (corner frames, green Flow crystal, separate bank pieces). It also adds a drop-down Menu, a new hand that slides up card by card, new 3D crystal mines, shard streams that flow from mines to the bank, and background music that crossfades between menus and matches.
 
 ## Try these things
-- Start a match and wait about 20 seconds without clicking. Grubnak should turn to you and look annoyed. Click anywhere and he should turn back.
-- Hover over your hand. Check that only that card pops out, at roughly 70% of the screen height, and that it glides smoothly. Then drag a creature across the hand. The hand should not rise.
-- Look at a creature on the board. The stats should be small icons with white numbers on them.
-- Open Decks, then drag a card onto the deck list. The panels should not shift. Click a card to see the close-up.
-- On Choose Your Commander, click Grubnak. The other two should disappear, his 3D model should pop up, and only his decks should show. Check that Fight! is bottom-right, then try "Change Commander" or Esc.
-- Check that menu text looks brown-gold rather than white.
+- Start a match and check that the screen matches your layout: names, crystals, banks, turn and phase box, and the three goblin corner frames.
+- Hover slowly across your hand. Each card should slide fully up while its neighbours move aside. Check that no card gets stuck up.
+- Click Menu. A drop-down should open with six items. Try Settings, the two volume sliders, and "Give up match!", which should ask first.
+- Look at the mines. They should be tall and blue on a pedestal, with glowing shards streaming to the bank at the start of a turn.
+- Listen for the music. It should change when a match starts and ends, and Mute should silence it.
 
 ## Automated checks
-282 of 283 checks passed. The one failure is a test that clicks Sproingle and then picks a saved Grubnak-faction deck, "Miner Rush". Under your new rule, Sproingle only shows his own decks, so that deck is correctly missing. The builder believes the test is out of date, not the game. The check is about the select screen remembering your last choices, so please try that yourself: pick a Commander, deck and difficulty, start a match, then return to the menu.
+292 of 302 checks passed. The 10 failures:
+- **Hand pop-out (4 checks, hand sizes and "only one card pops"):** these are old size rules from earlier rounds, and the new hand behaves differently on purpose. One failure says the second card didn't pop when hovered. That could be a real problem with moving across the hand, so please test it.
+- **Turn display at top-right:** it now sits bottom-right, as your layout says. This is an old rule.
+- **Mine height (1.5 vs 2.48) and 54 vs 57 effects:** the new spec changed both numbers. These are old checks.
+- **Corner ornaments:** the old check wanted none, but your layout wants three on the match screen.
+- **Flow crystal label:** the test expected the Commander name inside the crystal. It showed only "7". The name may sit beside it instead.
 
 ## Things to know
-- The two screenshots I could review show only the title menu and the "rotate your phone" message. They look fine, but they don't show the new features, so I couldn't confirm those visually.
-- No new Commander animation was bought. Impatience reuses existing clips (surprised, point, head shake), so it may look less polished than a dedicated animation.
-- The stat icons are painted by the builder's own script, not by the image service.
-- At phone size the Deck Builder was noted earlier as dense, with small text.
+- The screenshots I received show only the title screen and the "rotate your phone" message. They don't show the match, so I couldn't check the match layout by eye.
+- Board piece sizes (other than mines) were not fitted to your numbers.
+- Only 54 of the 57 arena effects are drawn.
+- The builder says some of the older checks conflict with the new spec.
 
 ## Recommendation
-Ready to approve
+Request changes: I couldn't see the match screen in the screenshots, and the hand-hover failure may be a real bug in the main new feature. Please check the hand in the preview.
