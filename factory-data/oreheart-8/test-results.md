@@ -1,6 +1,6 @@
 # Automated check results
 
-292 of 302 checks passed after 3 build round(s).
+306 of 318 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -8,10 +8,10 @@
 - ✅ portrait phone viewport › AC24: upright phone shows the rotate message
 - ✅ landscape layout details › AC43: the hand rests tucked halfway at the bottom and slides up on hover (Round 6a)
 - ✅ landscape layout details › AC44: deck piles on each player's right and Commander hearts
-- ❌ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
+- ✅ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
 - ✅ hearts and turn display 740x360 › AC51: Commander hearts never cover creature labels; turn display top-right (740x360)
 - ✅ hearts and turn display 667x375 › AC51: Commander hearts never cover creature labels; turn display top-right (667x375)
-- ❌ hand pop-out at 2x › AC59: a hovered hand card doubles in size and stays fully on-screen
+- ✅ hand pop-out at 2x › AC59: a hovered hand card rises to about 1.6x and stays fully on-screen
 - ✅ compact stat pill › AC66: creature labels are compact pills with Attack, Health, Movement
 - ✅ phone-size match screenshot › AC90: the match screen renders full screen at 844x390 with no page errors
 - ✅ display mode on a PC window › AC103: Display mode Auto / PC / Phone, remembered, without extra menu buttons
@@ -34,17 +34,17 @@
 - ✅ round 5b screenshots (844x390) › AC160: match, Menu popped out and hand popped out render without errors (844x390)
 - ✅ round 6a match layout 1920x1080 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (1920x1080)
 - ✅ round 6a match layout 1920x1080 › AC163: the hand is 2x, centered, overlapping, tucked halfway and slides up on hover (1920x1080)
-- ❌ round 6a match layout 1920x1080 › AC164: the hovered card pops out at about 70% of the height on the top layer (1920x1080)
+- ✅ round 6a match layout 1920x1080 › AC164: the hovered card rises to 48-60% of the height on the top layer (1920x1080)
 - ✅ round 6a match layout 1920x1080 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (1920x1080)
 - ✅ round 6a match layout 844x390 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (844x390)
 - ✅ round 6a match layout 844x390 › AC163: the hand is 2x, centered, overlapping, tucked halfway and slides up on hover (844x390)
-- ❌ round 6a match layout 844x390 › AC164: the hovered card pops out at about 70% of the height on the top layer (844x390)
+- ✅ round 6a match layout 844x390 › AC164: the hovered card rises to 48-60% of the height on the top layer (844x390)
 - ✅ round 6a match layout 844x390 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (844x390)
 - ✅ round 6a screenshots (1920x1080) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (1920x1080)
 - ✅ round 6a screenshots (844x390) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (844x390)
-- ❌ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
+- ✅ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
 - ✅ round 7 hand (1920x1080) › AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (1920x1080)
-- ❌ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
+- ✅ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
 - ✅ round 7 hand (844x390) › AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (844x390)
 - ✅ round 7 screenshots (1920x1080) › AC184: Grubnak in a match and in the 3D viewer render without errors
 - ✅ arena homography 1920x1080 › AC188: square centers follow the homography of the owner's corners (1920x1080)
@@ -67,7 +67,13 @@
 - ✅ round 9a hand 844x390 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (844x390)
 - ✅ round 9a screenshots 1920x1080 › AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (1920x1080)
 - ✅ round 9a screenshots 844x390 › AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (844x390)
-- ✅ AC1: main menu has exactly Play, Tutorial, Decks, Rules, Settings and no page errors
+- ✅ round 9c arena › AC228: the arena canvas draws every frame and the screen center is not the plain board color
+- ✅ round 9c arena › AC229: all 57 owner effects (54 arena + 3 Crystal Flow), 2 cut-outs, no arena errors; unknown effect types are skipped
+- ✅ round 9c menus 1920x1080 › AC233: main menu, Deck Builder and Choose Your Commander pieces sit in the owner boxes
+- ✅ round 9c menus 1920x1080 › AC234: the intro plays first, the logo crashes in with dirt, owner sounds fire on time, then the main menu
+- ✅ round 9c screenshots 1920x1080 › AC242: screenshots of the match with the arena, Commander close-ups, every menu screen and a creature close-up (1920x1080)
+- ✅ round 9c screenshots 844x390 › AC242: screenshots of the match with the arena, Commander close-ups, every menu screen and a creature close-up (844x390)
+- ✅ AC1: main menu has exactly Play, Deck Builder, How to Play, Settings, Quit and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
 - ✅ AC3: Rules page with pictures and Back
@@ -160,7 +166,7 @@
 - ✅ AC57: the Commander picker uses the new Commander names
 - ✅ AC58: tapping a mine mines with exactly the ready Miners next to it
 - ✅ AC58: mineAt action matches the tap; hovering a mine only shows its info
-- ✅ AC60: Deck Builder shows card faces with full text and filters them
+- ❌ AC60: Deck Builder shows card faces with full text and filters them
 - ✅ AC61: Deck Builder problems use the exact messages and counts
 - ✅ AC62: up to 5 saved decks persist after a reload
 - ✅ AC63: the 15 new cards have the exact printed stats
@@ -178,7 +184,7 @@
 - ✅ AC69: dragging a creature over an enemy shows the attack preview; letting go elsewhere cancels
 - ✅ AC70: double-click and + add cards; single click only enlarges; copy limit and cost chart
 - ✅ AC71: Auto-fill completes a legal deck; Rename and Save
-- ✅ AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)
+- ✅ AC72: select screen — Commander cards, deck stacks, difficulty and Start (no dropdowns)
 - ✅ AC72: "+ New Deck" on the select screen opens the Deck Builder
 - ✅ AC73: the select screen remembers the last Commander, deck and difficulty
 - ✅ AC74: match-end summary, Play again with the same choices, and Menu
@@ -203,7 +209,7 @@
 - ✅ AC94: Commander select shows borderless full-art Commander cards without stats
 - ✅ AC95: up to 3 mulligans — 5 -> 5 -> 4 -> 3, then no more
 - ✅ AC95: the Mulligan screen shows one straight row and counts mulligans left
-- ✅ AC96: dialogs float with no box; buttons are ornate
+- ❌ AC96: dialogs float with no box; buttons are ornate
 - ✅ AC97: card reveals never block the game and can be pinned
 - ✅ AC98: tapping a creature shows its card and changes nothing
 - ✅ AC99: the Card pop-ups switch skips reveals but never effects, and is remembered
@@ -224,22 +230,22 @@
 - ✅ AC118: card numbers sit centered inside their slots in 3D gold
 - ✅ AC119: the rarity crystal is a small art crystal with the rarity word centered below
 - ✅ AC120: card names and text boxes use one size, gold lettering, thin text
-- ✅ AC121: Deck Builder deck art has no frame; painted background
+- ❌ AC121: Deck Builder deck art has no frame; painted background
 - ✅ AC122: one ornate control style everywhere: no default browser controls or scrollbars
 - ✅ AC124: every spell has its own visual, played step by step
 - ✅ AC127: mulligan cards are double size, one row, on-screen (1280x720)
 - ✅ AC127: mulligan cards are double size, one row, on-screen (844x390)
 - ✅ AC129: faction spells — names, factions, deck validation and the casting lock
-- ✅ AC130: Deck Commander locks other factions’ spells in the Deck Builder
+- ❌ AC130: Deck Commander locks other factions’ spells in the Deck Builder
 - ✅ AC131: Venom Shiv poisons for exactly 3 of the owner’s turns, then the creature heals; Hex Reversal is disabled
-- ✅ AC132: spell frames per faction with the cost and type orbs
+- ❌ AC132: spell frames per faction with the cost and type orbs
 - ✅ AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textured letters
 - ✅ AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulligan, hand) at several window sizes
-- ✅ AC137: menu buttons are plain gold text with a hover glow, no boxes or borders
+- ❌ AC137: menu buttons are plain gold text with a hover glow, no boxes or borders
 - ✅ AC138: every menu screen fills the window edge to edge at 844x390, 1280x720, 1920x1080 and rescales live
-- ✅ AC139: Deck Builder layout: big title, logo, deck name, left-aligned panel at the top, text actions with Back under them
+- ❌ AC139: Deck Builder layout: big title, logo, deck name, left-aligned panel at the top, text actions with Back under them
 - ✅ AC140: the cards-per-row slider goes from 2 to 8
-- ✅ AC141: the deck carousel shows only my decks plus a New Deck slot; arrows, keys and dragging pick the deck
+- ❌ AC141: the deck carousel shows only my decks plus a New Deck slot; arrows, keys and dragging pick the deck
 - ✅ AC142: a card dragged from the grid shows at its 3-per-row size and lands in the deck
 - ✅ AC143: the deck list always shows about 8 rows; it scrolls inside its panel
 - ✅ AC144: starter decks can be removed (in-game confirm) and restored; at least one deck always remains
@@ -248,7 +254,7 @@
 - ✅ AC147: spell cards use the owner's real spell frames per faction
 - ✅ AC149: the cover-fit painted view keeps both Commanders whole at every window shape (Round 8a)
 - ✅ AC150: no black bars at any window shape
-- ❌ AC152: Flow and bank numbers sit on both crystals with name, Flow and Next beside them
+- ✅ AC152: Flow and bank numbers sit on both crystals with name, Flow and Next beside them
 - ✅ AC153: the phase tracker shows whose turn, the turn number and the current phase
 - ✅ AC154: the match Menu hides its items until hovered or tapped; Mute and Recenter work
 - ✅ AC155: playable hand cards glow, the others do not, and it updates at once
@@ -261,18 +267,18 @@
 - ✅ AC168: bold titles and main actions, regular body text, only four weights
 - ✅ AC169: Deck Builder close-up fills the height, has no scrollbar or Close, and dismisses on click or Esc
 - ✅ AC170: deck list + and - change counts at once, without moving the row; rapid clicks all count
-- ❌ AC171: no "All cards" text and no corner ornaments on any screen
+- ✅ AC171: no "All cards" text and no corner ornaments on any menu screen
 - ✅ AC172: crystal mines use the owner's mine model (glTF placeholder or Round 8a Meshy GLB), exactly 1.5 tall, tinted by owner
 - ✅ AC176: the owner's card back and deck-pile pictures are used exactly
 - ✅ AC177: a popped card keeps the at-rest glow thickness and opacity
 - ✅ AC178: glow colors contrast with each faction frame
-- ❌ AC179: crystal mines are exactly 1.5 spaces tall
+- ✅ AC179: crystal mines are 2.48 spaces tall (owner layout)
 - ✅ AC180: Grubnak model files are saved once with models.json; the game never calls Meshy
 - ✅ AC181: Grubnak is the Meshy model on his fortress with the scepter, about 2.4 tall, idling
 - ✅ AC182: Grubnak plays cast, defeat and celebrate at the right moments
 - ✅ AC183: no "View Grubnak in 3D" button remains on Choose Your Commander or the Deck Builder (Round 8b)
 - ✅ AC185: the owner's arena pictures and layout are loaded unchanged
-- ❌ AC186: all 54 effects are drawn, off-painting pools are clipped, two foreground cut-outs
+- ✅ AC186: all 54 arena effects are drawn, off-painting pools are clipped, two foreground cut-outs
 - ✅ AC187: no grid lines are drawn, even while dragging a card
 - ✅ AC190: cover-fit with no black bars at 16:9, 4:3, 21:9 and phone; max zoom about 2.5 px per painting pixel
 - ✅ AC191: at zoom 1 on a 4:3 window the view pans sideways but never past the edges
@@ -286,11 +292,11 @@
 - ✅ AC203: dragging a card onto the deck list adds one copy; a plain click opens the close-up
 - ✅ AC204: adding cards by double-click, drag and + never moves the panel, the grid or the cards
 - ✅ AC205: every deck entry on Choose Your Commander has the same size, also for long names and when selected
-- ✅ AC206: choosing a Commander hides the other two and shows only his decks; Change Commander, Esc and a second click bring the row back
+- ❌ AC206: choosing a Commander hides the other two and shows only his decks; Change Commander, Esc and a second click bring the row back
 - ✅ AC207: Grubnak's 3D model pops up in front of his card when he is chosen
-- ✅ AC208: Fight! sits bottom-right in both states at 1920x1080 and 844x390
-- ✅ AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak's card and dismisses correctly
-- ✅ AC210: body text uses the brown-gold palette variables, no white body text on menu screens
+- ✅ AC208: Start sits bottom-right in both states at 1920x1080 and 844x390
+- ❌ AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak's card and dismisses correctly
+- ❌ AC210: body text uses the brown-gold palette variables, no white body text on menu screens
 - ✅ AC213: the enemy deck and card fan are upside down with a readable deck count
 - ✅ AC214: banks are their own pieces with their numbers; no bank badge on the crystals
 - ✅ AC215: themes follow each side's Commander faction; goblin corner frames only for a Goblin player
@@ -304,138 +310,174 @@
 - ✅ AC224: the music and sound effects volume sliders work and are remembered
 - ✅ AC225: savings land in the bank piece
 - ✅ AC226: the in-game editor (round 9b) is not built yet
+- ✅ AC230: Commanders stand on the ground inside their strongholds, upright, facing the owner turn
+- ✅ AC231: the stronghold never moves; Grubnak emotes in place and returns to his turn
+- ✅ AC232: the owner menus file, pictures, sound and main menu picture are shipped
+- ✅ AC235: a click skips the intro; Quit returns to it; How to Play opens Rules with a Tutorial button
+- ✅ AC236: menu buttons go where the owner file says; the main menu picture is cover-fit
+- ✅ AC237: menus play the music the owner file names (tense-cycle)
+- ✅ AC238: saved deck entries are tinted and glow in their faction color
+- ✅ AC239: every creature card close-up has a 3D viewer; spells do not
+- ❌ AC240: Play action in the Deck Builder (disabled with a reason while illegal); double-click a saved deck starts a match
+- ✅ AC241: Deck Builder text colors: deck list lines and counts white, Back bold
 
 ## Failures
 
 ```
-✗ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
-Error: expect(received).toBeLessThanOrEqual(expected)
-
-Expected: <= 15.6
-Received:    312.53125
-
-  2034 |         const b = await phase.boundingBox();
-  2035 |         expect(b.x).toBeGreaterThanOrEqual(w * 0.74); // Round 5b: top-right (80 %, 0 %)
-> 2036 |         expect(b.y).toBeLessThanOrEqual(h * 0.04);
-       |                     ^
-  2037 |       }
-  2038 |     });
-  2039 |   });
-✗ hand pop-out at 2x › AC59: a hovered hand card doubles in size and stays fully on-screen
-Error: expect(received).toBeGreaterThan(expected)
-
-Expected: > 172.321875
-Received:   153.17498779296875
-
-Call Log:
-- Timeout 7000ms exceeded while waiting on the predicate
-
-  2250 |       const before = await card.boundingBox();
-  2251 |       await page.mouse.move(before.x + before.width / 2, before.y + 8); // the visible top of the tucked card
-> 2252 |       await expect.poll(async () => (await card.boundingBox()).width).toBeGreaterThan(before.width * 1.8);
-       |       ^
-✗ round 6a match layout 1920x1080 › AC164: the hovered card pops out at about 70% of the height on the top layer (1920x1080)
-Error: expect(received).toBeGreaterThanOrEqual(expected)
-
-Expected: >= 0.64
-Received:    0.5837037263093171
-
-Call Log:
-- Timeout 7000ms exceeded while waiting on the predicate
-
-  5262 |       const b0 = await card.boundingBox();
-  5263 |       await page.mouse.move(b0.x + b0.width / 2, Math.min(H - 4, b0.y + 10));
-> 5264 |       await expect.poll(async () => (await card.boundingBox()).height / H).toBeGreaterThanOrEqual(0.64);
-       |       ^
-✗ round 6a match layout 844x390 › AC164: the hovered card pops out at about 70% of the height on the top layer (844x390)
-Error: expect(received).toBeGreaterThanOrEqual(expected)
-
-Expected: >= 0.64
-Received:    0.5836538461538462
-
-Call Log:
-- Timeout 7000ms exceeded while waiting on the predicate
-
-  5262 |       const b0 = await card.boundingBox();
-  5263 |       await page.mouse.move(b0.x + b0.width / 2, Math.min(H - 4, b0.y + 10));
-> 5264 |       await expect.poll(async () => (await card.boundingBox()).height / H).toBeGreaterThanOrEqual(0.64);
-       |       ^
-✗ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
-Error: only card 0 is popped
-
-expect(received).toBe(expected) // Object.is equality
-
-Expected: true
-Received: false
-
-Call Log:
-- Timeout 4000ms exceeded while waiting on the predicate
-
-  5632 |         expect(pt, `card ${i} can be hovered`).not.toBeNull();
-  5633 |         await page.mouse.move(pt[0], pt[1], { steps: 4 });
-✗ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
-Error: only card 0 is popped
-
-expect(received).toBe(expected) // Object.is equality
-
-Expected: true
-Received: false
-
-Call Log:
-- Timeout 4000ms exceeded while waiting on the predicate
-
-  5632 |         expect(pt, `card ${i} can be hovered`).not.toBeNull();
-  5633 |         await page.mouse.move(pt[0], pt[1], { steps: 4 });
-✗ AC152: Flow and bank numbers sit on both crystals with name, Flow and Next beside them
-Error: expect(locator).toContainText(expected) failed
-
-Locator: getByLabel('Your crystal', { exact: true })
-Expected pattern: /Grubnak/
-Received string:  "7"
-Timeout: 7000ms
-
+✗ AC60: Deck Builder shows card faces with full text and filters them
+TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
-  - Expect "toContainText" with timeout 7000ms
-  - waiting for getByLabel('Your crystal', { exact: true })
-    10 × locator resolved to <div role="group" class="o-gem o-piece" aria-label="Your crystal" data-role="player-flow-crystal" data-hud-role="player-flow-crystal">…</div>
-       - unexpected value "7"
-✗ AC171: no "All cards" text and no corner ornaments on any screen
-Error: match ornaments
-
-expect(received).toBe(expected) // Object.is equality
-
-Expected: 0
-Received: 3
-
-  5515 | test('AC171: no "All cards" text and no corner ornaments on any screen', async ({ page }) => {
-  5516 |   const noOrnaments = async (label) => {
-> 5517 |     expect(await page.locator('[data-ornament="frame"], [data-ornament="corner"]').count(), `${label} ornaments`).toBe(0);
-       |                                                                                                                   ^
-  5518 |   };
-✗ AC179: crystal mines are exactly 1.5 spaces tall
-Error: expect(received).toBeLessThanOrEqual(expected)
-
-Expected: <= 1.53
-Received:    2.4819999999999998
-
-  5806 |   for (const m of r.mineModels) {
-  5807 |     expect(m.height).toBeGreaterThanOrEqual(1.47);
-> 5808 |     expect(m.height).toBeLessThanOrEqual(1.53);
-       |                      ^
-  5809 |   }
-  5810 | });
-  5811 |
-✗ AC186: all 54 effects are drawn, off-painting pools are clipped, two foreground cut-outs
+  - waiting for getByRole('combobox', { name: 'Rarity', exact: true })
+    - locator resolved to <button type="button" class="combo" id="f-rarity" role="combobox" aria-label="Rarity" aria-expanded="false" aria-haspopup="listbox" aria-controls="f-rarity-list">All</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <div role="group" class="db-cards" aria-label="All cards">…</div> from <div data-menu-piece="dGrid" class="mb-zone db-gridbox">…</div> subtree intercepts pointer events
+    - retrying click action
+    - waiting 20ms
+✗ AC96: dialogs float with no box; buttons are ornate
 Error: expect(received).toBe(expected) // Object.is equality
 
-Expected: 54
-Received: 57
+Expected: true
+Received: false
+
+  3275 | test('AC96: dialogs float with no box; buttons are ornate', async ({ page }) => {
+  3276 |   await page.goto('/?test=1&seed=7');
+> 3277 |   expect(await ornate(page.getByRole('button', { name: 'Play', exact: true }))).toBe(true);
+       |                                                                                 ^
+  3278 |   await page.getByRole('button', { name: 'Play', exact: true }).click();
+  3279 |   await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' }).click();
+  3280 |   expect(await ornate(page.getByRole('button', { name: 'Start', exact: true }))).toBe(true);
+✗ AC121: Deck Builder deck art has no frame; painted background
+Error: expect(locator).toBeVisible() failed
+
+Locator:  getByLabel('Deck pile', { exact: true }).locator('img[src*="deck-pile"]').first()
+Expected: visible
+Received: hidden
+Timeout:  7000ms
+
+Call log:
+  - Expect "toBeVisible" with timeout 7000ms
+  - waiting for getByLabel('Deck pile', { exact: true }).locator('img[src*="deck-pile"]').first()
+    11 × locator resolved to <img alt="" class="deck-img" draggable="false" src="/art/deck/deck-pile.png"/>
+       - unexpected value "hidden"
+✗ AC130: Deck Commander locks other factions’ spells in the Deck Builder
+Error: expect(locator).toHaveAttribute(expected) failed
+
+Locator:  getByRole('button', { name: 'Searing Arcane Orb', exact: true }).first()
+Expected: "true"
+Received: ""
+Timeout:  7000ms
+
+Call log:
+  - Expect "toHaveAttribute" with timeout 7000ms
+  - waiting for getByRole('button', { name: 'Searing Arcane Orb', exact: true }).first()
+    11 × locator resolved to <div tabindex="0" role="button" data-locked="true" data-card="fireball" class="db-tile locked" aria-label="Searing Arcane Orb">…</div>
+       - unexpected value "null"
+✗ AC132: spell frames per faction with the cost and type orbs
+Error: venom-shiv type y
+
+expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 0.7
+Received:    0.6180349773200476
+
+  4287 |     expect(cy(cost), `${id} cost y`).toBeLessThanOrEqual(0.25);
+  4288 |     expect(cx(tb), `${id} type x`).toBeGreaterThanOrEqual(0.7);
+> 4289 |     expect(cy(tb), `${id} type y`).toBeGreaterThanOrEqual(0.7);
+       |                                    ^
+  4290 |   }
+✗ AC137: menu buttons are plain gold text with a hover glow, no boxes or borders
+Error: expect(received).not.toBe(expected) // Object.is equality
+
+Expected: not "none|none|none|none|rgb(255, 215, 0)|16.32px"
 
 Call Log:
 - Timeout 7000ms exceeded while waiting on the predicate
 
-  6023 |   const layout = await arenaLayout(request);
-  6024 |   await start(page, quiet({ board: ARENA_BOARD }));
-> 6025 |   await expect.poll(async () => (await arenaInfo(page)).effects.length).toBe(54);
+  4477 |   const rest = await look();
+  4478 |   await play.hover();
+> 4479 |   await expect.poll(look).not.toBe(rest);
        |   ^
+  4480 |   await expect(play).toHaveCSS('cursor', 'pointer');
+✗ AC139: Deck Builder layout: big title, logo, deck name, left-aligned panel at the top, text actions with Back under them
+Error: 1920x1080 panel on the right
+
+expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 864
+Received:    0
+
+  4552 |     const pb = await box(panel);
+  4553 |     expect(pb.y, `${at} panel touches the top`).toBeLessThanOrEqual(2);
+> 4554 |     expect(pb.x, `${at} panel on the right`).toBeGreaterThanOrEqual(W * 0.45);
+       |                                              ^
+  4555 |     const title = panel.getByRole('heading', { name: 'Deck Builder' });
+✗ AC141: the deck carousel shows only my decks plus a New Deck slot; arrows, keys and dragging pick the deck
+Error: expect(locator).toBeVisible() failed
+
+Locator:  getByLabel('My decks', { exact: true }).getByRole('button', { name: '+ New Deck', exact: true })
+Expected: visible
+Received: hidden
+Timeout:  7000ms
+
+Call log:
+  - Expect "toBeVisible" with timeout 7000ms
+  - waiting for getByLabel('My decks', { exact: true }).getByRole('button', { name: '+ New Deck', exact: true })
+    11 × locator resolved to <button data-i="0" tabindex="0" type="button" class="db-deck new" aria-current="true" aria-label="+ New Deck">…</button>
+       - unexpected value "hidden"
+✗ AC206: choosing a Commander hides the other two and shows only his decks; Change Commander, Esc and a second click bring the row back
+TimeoutError: locator.click: Timeout 10000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: 'Change Commander', exact: true })
+    - locator resolved to <button type="button" class="btn change-cmd tx-act">Change Commander</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <button type="button" class="dstack" aria-pressed="false" data-key="starter:goblin-horde" aria-label="Goblin Horde, 100 cards, ready">…</button> from <div class="mb-zone cs-decks" data-menu-piece="cDecks">…</div> subtree intercepts pointer events
+    - retrying click action
+    - waiting 20ms
+✗ AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak's card and dismisses correctly
+Error: expect(locator).toHaveCount(expected) failed
+
+Locator:  getByRole('dialog', { name: 'Shiv Rat' }).getByLabel('3D model', { exact: true })
+Expected: 0
+Received: 1
+Timeout:  7000ms
+
+Call log:
+  - Expect "toHaveCount" with timeout 7000ms
+  - waiting for getByRole('dialog', { name: 'Shiv Rat' }).getByLabel('3D model', { exact: true })
+    11 × locator resolved to 1 element
+       - unexpected value "1"
+✗ AC210: body text uses the brown-gold palette variables, no white body text on menu screens
+Error: deck builder
+
+expect(received).toEqual(expected) // deep equality
+
+- Expected  - 1
++ Received  + 4
+
+- Array []
++ Array [
++   "0 cards (50–100)",
++   "Cards: 0 (50–100) · Creatures:",
++ ]
+✗ AC240: Play action in the Deck Builder (disabled with a reason while illegal); double-click a saved deck starts a match
+TimeoutError: locator.click: Timeout 10000ms exceeded.
+Call log:
+  - waiting for getByLabel('My decks', { exact: true }).getByRole('button', { name: /^Double Deck/ })
+    - locator resolved to <button data-i="0" tabindex="0" type="button" class="db-deck" aria-current="true" data-faction="goblin" aria-label="Double Deck, 50 cards">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not visible
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not visible
+    - retrying click action
 ```
