@@ -1,7 +1,7 @@
 // Placeholder 3D battlefield (Three.js). Returns null when WebGL is unavailable (the UI then shows a 2D board).
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
-import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, G3D } from './grubnak3d';
+import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D } from './grubnak3d';
 import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
 import { audio } from './audio';
 import baseLayoutJson from '../content/arena-layout.json';
@@ -306,8 +306,10 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     cm.grub = null;
     if (a3) {
       // Round 7 Part B: the Meshy 3D Grubnak on his own fortress
-      cm.g3d = makeGrubnak3d(a3);
-      cm.fig = cm.g3d.group;
+      const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
+      const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
+      cm.g3d = makeGrubnak3d(a3, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1) });
+      cm.fig = cm.g3d.figure;
     } else if (id === 'grubnak') {
       cm.grub = makeGrubnak(low);
       cm.grub.group.position.y = 0.8;
@@ -321,14 +323,12 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       cm.fig.add(body, head);
     }
     if (cm.g3d) {
-      // face the opposing Commander (the model looks down +Z)
-      const me = world(SHP[side][0], SHP[side][1]), you = world(SHP[side === 'player' ? 'opponent' : 'player'][0], SHP[side === 'player' ? 'opponent' : 'player'][1]);
-      // the player's Grubnak (near the camera) turns about half-way toward the camera so his face stays visible
-      const yaw = Math.atan2(you.x - me.x, you.z - me.z);
+      // facing = the owner's `turn` (board frame: facing direction (sin t, cos t); models look down +Z), never an automatic rule
+      const yaw = ((ownerLayoutJson as any).pieces.find((q: any) => q.id === (side === 'player' ? 'pCmd' : 'eCmd')).turn) * Math.PI / 180;
       cm.baseYaw = yaw; cm.yaw = yaw; cm.lookUntil = 0; cm.impatient = 0;
       cm.fig.rotation.y = yaw;
     } else if (side === 'opponent') cm.fig.rotation.y = Math.PI;
-    cm.group.add(cm.fig);
+    if (cm.g3d) cm.group.add(cm.g3d.group); else cm.group.add(cm.fig);
     cm.faction = faction; cm.id = id;
     flowCol[side] = new THREE.Color(hexOf(FACTIONS[faction].crystal)).lerp(new THREE.Color(0xffffff), 0.25);
     // Round 5b: Commander + Stronghold about 2.4 spaces tall, feet to head
@@ -336,12 +336,13 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     cm.g3d?.update(0.05);
     cm.group.updateMatrixWorld(true);
     const bx = measureBox(cm.group), nat = bx.isEmpty() ? 0 : bx.max.y - Math.max(bx.min.y, 0);
-    if (nat > 0.5) {
+    if (nat > 0.5 && !cm.g3d) {
       // tall and narrow: 2.4 spaces high, but still inside its one space (about 1.3 wide)
       const k = CMD_H / nat, wide = Math.max(bx.max.x - bx.min.x, bx.max.z - bx.min.z, 0.1);
       const sxz = cm.g3d ? k : Math.min(k, 1.3 / wide);
       cm.group.scale.set(sxz, k, sxz);
     }
+    if (cm.g3d) cm.group.scale.setScalar(1);
     cm.baseK = cm.group.scale.y;
   }
   loadGrubnak3d().then((a) => { if (a && !disposed) for (const side of ['player', 'opponent'] as const) if (cmd[side].id === 'grubnak' && !cmd[side].g3d) buildCommander(side, cmd[side].faction, 'grubnak'); });
@@ -539,7 +540,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     backRenderer.setClearColor(0x000000, 1);
   } catch { backRenderer = null; }
   let arena: ReturnType<typeof buildArena> | null = null;
-  const arenaInfo = { background: 'skullfang-swamp-background.jpg', picture: 'skullfang-arena.png', layout: 'skullfang-arena-layout.json', loaded: false, effects: 0, cutouts: 0, gridLines: false };
+  const arenaInfo = { background: 'skullfang-swamp-background.jpg', picture: 'skullfang-arena.png', layout: 'skullfang-arena-layout.json', loaded: false, effects: 0, flowEffects: 0, drawCalls: 0, cutouts: 0, gridLines: false };
   {
     const loader = new THREE.TextureLoader();
     const aniso = backRenderer ? backRenderer.capabilities.getMaxAnisotropy() : 1;
@@ -549,9 +550,9 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       const prev = THREE.ColorManagement.enabled;
       arena = buildArena(layoutJson, bg, ar, () => view.scale * (testMode ? 0.5 : low ? 1 : Math.min(window.devicePixelRatio || 1, 2)));
       THREE.ColorManagement.enabled = prev;
-      Object.assign(arenaInfo, { loaded: true, effects: arena.effects.length, cutouts: arena.cuts.length });
+      Object.assign(arenaInfo, { loaded: true, effects: arena.effects.length, cutouts: arena.cuts.length, flowEffects: (layoutJson.effects as any[]).filter((e: any) => e.type === 'flow').length });
       applyView();
-    }).catch(() => {});
+    }).catch((err) => { console.error('arena build failed', err); });
   }
 
   // view: zoom 1 = the painting fills the window (cover-fit, never stretched); centre in painting pixels
@@ -597,7 +598,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const dt = Math.min(0.05, (now - lastT) / 1000);
     lastT = now;
     easeView(dt);
-    if (arena && backRenderer) { arena.update(now / 1000, dt); backRenderer.render(arena.scene, arena.cam); }
+    if (arena && backRenderer) { arena.update(now / 1000, dt); backRenderer.render(arena.scene, arena.cam); arenaInfo.drawCalls = backRenderer.info.render.calls; }
   }
   /** a point on the floor (or at a height) in screen pixels */
   const projPt = (x: number, y: number, z: number): [number, number] => {
@@ -695,7 +696,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       background: { src: '/art/arena/skullfang-swamp-background.jpg', width: BG.w, height: BG.h },
       arenaPicture: { src: '/art/arena/skullfang-arena.png', width: BG.w, height: BG.h },
       arena: layoutJson.arena, boardCorners: layoutJson.boardCorners, look: (layoutJson as any).arenaLook,
-      effects: effs, foregroundCutouts: arena ? arena.cuts.length : 0, gridLines: 0,
+      effects: effs, flowEffects: arenaInfo.flowEffects, arenaDrawCalls: arenaInfo.drawCalls, foregroundCutouts: arena ? arena.cuts.length : 0, gridLines: 0,
     };
   }
   function cellQuad(row: number, col: number) { return cellGeometry(H0, row, col).quad.map(([x, y]) => { const [sx, sy] = toScreen(x, y); return { x: sx, y: sy }; }); }
@@ -768,7 +769,10 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     if (!cm.g3d) return {};
     cm.group.updateMatrixWorld(true);
     const b = measureBox(cm.group);
-    return { ...facing(cm === cmd.player ? 'player' : 'opponent'), model3d: 'meshy', heightSpaces: +(b.max.y - Math.max(b.min.y, 0)).toFixed(2), footprint: +Math.max(b.max.x - b.min.x, b.max.z - b.min.z).toFixed(2), animations: cm.g3d.clipNames, animation: cm.g3d.current() };
+    const fb = skinBox(cm.g3d.fortress, new THREE.Box3()), cb = skinBox(cm.g3d.figure, new THREE.Box3());
+    const cp = new THREE.Vector3(); cm.g3d.figure.getWorldPosition(cp);
+    const fp = new THREE.Vector3(); cm.g3d.fortress.getWorldPosition(fp);
+    return { ...facing(cm === cmd.player ? 'player' : 'opponent'), pose: { commanderBaseY: +cb.min.y.toFixed(3), fortressBaseY: +fb.min.y.toFixed(3), boardY: 0, commanderCentre: [+((cb.min.x + cb.max.x) / 2).toFixed(3), +((cb.min.z + cb.max.z) / 2).toFixed(3)], fortressCentre: [+((fb.min.x + fb.max.x) / 2).toFixed(3), +((fb.min.z + fb.max.z) / 2).toFixed(3)], commanderTurnDeg: +(((cm.baseYaw ?? 0) * 180) / Math.PI).toFixed(1), currentYawDeg: +(((cm.yaw ?? 0) * 180) / Math.PI).toFixed(1), tilt: 0, lean: 0, commanderHeight: +(cb.max.y - cb.min.y).toFixed(2), fortressHeight: +(fb.max.y - fb.min.y).toFixed(2) }, model3d: 'meshy', heightSpaces: +(b.max.y - Math.max(b.min.y, 0)).toFixed(2), footprint: +Math.max(b.max.x - b.min.x, b.max.z - b.min.z).toFixed(2), animations: cm.g3d.clipNames, animation: cm.g3d.current() };
   }
   let lastRender = 0;
   let lastDur = 0;
@@ -858,7 +862,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         if (Math.abs(d) < 0.01) cm.yaw = want; else cm.yaw = cm.yaw! + d * (1 - Math.exp(-dt * 7.5)) + Math.sign(d) * Math.min(Math.abs(d), 0.4 * dt);
         cm.fig.rotation.y = cm.yaw!;
         // fidgeting when impatient: sway and head shake without any new clip
-        if (cm.impatient) { cm.fig.rotation.z = Math.sin(now / 160) * 0.05 * Math.min(2, cm.impatient); cm.fig.rotation.y += Math.sin(now / 130) * 0.08; }
+        if (cm.impatient) { cm.fig.rotation.y += Math.sin(now / 130) * 0.08; }
       }
       const gr = cm.grub;
       if (gr) { gr.armL.rotation.set(0, 0, 0); gr.armR.rotation.set(0, 0, 0); gr.head.rotation.set(0, 0, 0); gr.mouth.scale.y = 1; }
@@ -880,6 +884,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
           if (gr) gr.armR.rotation.x = -Math.sin(k * Math.PI) * 2.4; // fastball throw
         }
       }
+      // owner pose: 3D Commander and stronghold stay on the ground, upright (emotes are the animation clips, never a hop or a lean)
+      if (cm.g3d) { cm.fig.position.y = 0; cm.fig.rotation.z = 0; }
       if (cm.retreat) {
         const k = Math.max(0, (now - cm.retreat.t) / 2200);
         cm.retreat.barrel.position.set(Math.sin(k * 6) * 0.1, 1.0 + k * k * 14, -k * 2);

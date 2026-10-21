@@ -1329,3 +1329,43 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 .match .hand.o-hand.open,.match .hand.o-hand.has-pop{transform:translateY(calc(var(--hcw) * .75))}
 .match .hand .hand-card.popped{transition:transform .45s cubic-bezier(.2,.7,.2,1),opacity .18s!important}
 div.combo{display:inline-block;cursor:pointer}
+
+/* ---- Round 9c: the owner's Menu Builder screens (intro, main) on a 16:9 stage ---- */
+.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.menu-screen.mb-screen{display:block;padding:0;grid-template-columns:none;background:#000;position:relative;overflow:hidden;width:100%;height:100%}
+.mb-root{position:absolute;inset:0;overflow:hidden}
+.mb-bg,.mb-dim{position:absolute;inset:0;pointer-events:none}
+.mb-stage{position:absolute;left:50%;top:50%;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;transform:translate(-50%,-50%);container-type:size}
+.mb-root{width:100%;height:100%}
+.mb-layer,.mb-fx{position:absolute;inset:0}
+.mb-fx{pointer-events:none;z-index:9000;overflow:hidden}
+.mb-pc{position:absolute;box-sizing:border-box;user-select:none;-webkit-user-select:none;background:none;border:0;padding:0;margin:0;color:inherit;font:inherit}
+.mb-inner{position:absolute;inset:0}
+.mb-txt{position:absolute;inset:0;display:flex;white-space:pre-wrap;line-height:1.05;pointer-events:none}
+.mb-pc img{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;-webkit-user-drag:none}
+.mb-fr{position:absolute;inset:0;box-sizing:border-box;border-style:solid;pointer-events:none}
+.mb-halo{position:absolute;pointer-events:none;filter:blur(.6cqh)}
+.mb-btn{cursor:pointer}
+.mb-btn .mb-txt{transition:color .15s,filter .15s}
+.mb-btn:hover .mb-txt,.mb-btn:focus-visible .mb-txt{color:var(--hc)!important;filter:drop-shadow(0 0 var(--hg) var(--hgc))}
+.mb-btn:focus-visible{outline:0}
+.mb-skippable{cursor:pointer}
+@keyframes mb-fade{from{opacity:0}to{opacity:1}}
+@keyframes mb-lp-float{0%,100%{translate:0 0}50%{translate:0 calc(-1cqh * var(--la))}}
+@keyframes mb-lp-pulse{0%,100%{scale:1}50%{scale:calc(1 + .06 * var(--la))}}
+@keyframes mb-lp-glow{0%,100%{filter:drop-shadow(0 0 0 var(--lc))}50%{filter:drop-shadow(0 0 calc(1.6cqh * var(--la)) var(--lc))}}
+@keyframes mb-lp-spin{to{rotate:360deg}}
+@keyframes mb-lp-sway{0%,100%{rotate:calc(-3deg * var(--la))}50%{rotate:calc(3deg * var(--la))}}
+@keyframes mb-lp-blink{0%,100%{opacity:1}50%{opacity:calc(1 - .8 * var(--la))}}
+
+/* ---- Round 9c deck builder: faction-coloured deck names with an outer glow, white deck text, bold Back, Play ---- */
+.db-deck[data-faction=goblins] .ds-name{color:#3ee06a;text-shadow:0 0 .5em #3ee06a,0 0 1.1em #3ee06a88,0 2px 3px #000}
+.db-deck[data-faction=gnomes] .ds-name{color:#3fa9ff;text-shadow:0 0 .5em #3fa9ff,0 0 1.1em #3fa9ff88,0 2px 3px #000}
+.db-deck[data-faction=dwarves] .ds-name{color:#b45cff;text-shadow:0 0 .5em #b45cff,0 0 1.1em #b45cff88,0 2px 3px #000}
+.db-deck[data-faction=goblins] .deck-img{filter:drop-shadow(0 0 .5em #3ee06a)}
+.db-deck[data-faction=gnomes] .deck-img{filter:drop-shadow(0 0 .5em #3fa9ff)}
+.db-deck[data-faction=dwarves] .deck-img{filter:drop-shadow(0 0 .5em #b45cff)}
+.db-list li .db-lbl,.db-list li .db-nm,.db-list li .db-cnt,.db-counts,.db-size,.db-size *{color:#fff!important}
+.db-back{font-weight:700!important}
+.db-play:disabled{opacity:.5;cursor:not-allowed}
+.mb-screen .mb-txt,.mb-screen .mb-btn .mb-txt{-webkit-text-fill-color:currentcolor!important}

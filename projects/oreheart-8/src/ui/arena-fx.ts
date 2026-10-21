@@ -219,7 +219,11 @@ const MAKERS={fireflies:makeFireflies,shimmer:makeShimmer,plant:makePlant,testun
 function addEffect(d){d=Object.assign({},DEF[d.type],d);PAL[d.type].forEach(([k,,v])=>{if(!d[k])d[k]=v;});d.id=d.id||nextId++;nextId=Math.max(nextId,d.id+1);
  const fx=MAKERS[d.type](d);fx.d=d;fx.root.position.set(d.x,-d.y,0);scene.add(fx.root);effects.push(fx);return fx;}
 THREE.ColorManagement.enabled = false;
-layout.effects.forEach((d) => addEffect(Object.assign({}, d)));
+layout.effects.forEach((d) => {
+  // Types the arena builder does not make (e.g. 'flow', drawn by the Crystal Flow system) are skipped; one bad effect never breaks the arena.
+  if (!MAKERS[d.type] || !PAL[d.type]) return;
+  try { addEffect(Object.assign({}, d)); } catch (err) { console.error('arena effect failed', d.type, d.id, err); }
+});
 const cutVS='varying vec2 vW;void main(){vW=position.xy;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
 const cutFS=`varying vec2 vW;uniform sampler2D uTex;uniform vec3 uAr;uniform vec2 uAS;uniform float uBright,uContrast,uSat,uHue;
 vec3 adj(vec3 c){c+=uBright;c=(c-.5)*uContrast+.5;float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,uSat);

@@ -1,3 +1,4 @@
+import { drawMenuScreen, menuScreens } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
@@ -276,23 +277,31 @@ export class App {
   }
 
   // ------------------------------------------------------------ simple screens
-  showMenu() {
+  /** Round 9c: the owner's Intro and Main menu screens (Menu Builder data), drawn by menus.ts. */
+  private menuScreen(id: string, dataScreen: string) {
     this.clear();
-    const ico = (n: string) => h('span', { class: 'mi mi-' + n, 'aria-hidden': 'true' });
-    const mbtn = (label: string, cls: string, icon: string, fn: () => void) => { const b = btn(label, cls, fn); if (icon) b.prepend(ico(icon)); return b; };
-    const s = h('main', { class: 'screen menu-screen', 'data-screen': 'title' },
-      h('div', { class: 'menu-bg', 'aria-hidden': 'true' }),
-      h('div', { class: 'menu-head' },
-        h('h1', { class: 'title logo' }, h('img', { src: '/art/logo.webp', alt: 'Oreheart', class: 'logo-img' })),
-        h('p', { class: 'tagline' }, 'Goblins, Gnomes and Dwarves fight over the Soul Crystals.')),
-      h('nav', { class: 'stack menu-grid', 'aria-label': 'Main menu' },
-        mbtn('Play', 'primary play-big', '', () => this.showSetup()),
-        mbtn('Tutorial', 'plaque', 'book', () => this.beginTutorial()),
-        mbtn('Decks', 'plaque', 'cards', () => showDecks(this)),
-        mbtn('Rules', 'plaque', 'scroll', () => this.showRules()),
-        mbtn('Settings', 'plaque', 'gear', () => this.showSettings())),
-      h('div', { class: 'menu-opts' }, this.displayModeGroup(), this.popupsSwitch()));
+    const sc = menuScreens.find((m) => m.id === id)!;
+    const s = h('main', { class: 'screen menu-screen mb-screen', 'data-screen': dataScreen, 'aria-label': sc.name });
+    if (id === 'main') s.append(h('h1', { class: 'sr-only' }, 'Oreheart'));
     this.root.append(s);
+    const handle = drawMenuScreen(s, id, { go: (t) => this.menuGo(t) });
+    (s.querySelector('.mb-root') as HTMLElement).style.animation = `mb-fade ${sc.transition?.ms ?? 400}ms ease-out`;
+    (s as any)._menu = handle;
+    return s;
+  }
+  menuGo(t: string) {
+    if (!t) { this.showRules(); return; }
+    if (t === 'intro') this.showIntro();
+    else if (t === 'main') this.showMenu();
+    else if (t === 'commander') this.showSetup();
+    else if (t === 'deck') showDecks(this);
+    else if (t === 'action:settings-sound') this.showSettings();
+    else if (t === 'action:quit') { try { window.close(); } catch { /* ignore */ } const d: any = this.dialog('Quit', [h('h2', {}, 'Quit'), h('p', { style: 'text-align:center' }, 'You can close this tab to quit Oreheart.'), btn('OK', 'primary', () => d.close())], () => {}); }
+    else if (t === 'action:start-match') this.showSetup();
+  }
+  showIntro() { this.menuScreen('intro', 'intro'); }
+  showMenu() {
+    const s = this.menuScreen('main', 'title');
     if (!this.test && !localStorage.getItem('oreheart.tutorialSeen')) {
       const d: any = this.dialog('Welcome to Oreheart!', [h('h2', {}, 'Welcome to Oreheart!'),
         h('p', { style: 'text-align:center;margin:0' }, 'New here? A short guided match teaches you the basics.'),
@@ -475,7 +484,7 @@ export class App {
       sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals (Flow first, then Bank). Commanders never attack. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet: you can play a Crystal card on its own or together with a counterspell to pay for it. Counterspells cancel spells or summons.'),
-      h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Back', '', () => this.showMenu())));
+      h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Tutorial', '', () => this.beginTutorial()), btn('Back', '', () => this.showMenu())));
     this.root.append(s);
   }
 

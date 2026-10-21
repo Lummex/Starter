@@ -75,7 +75,46 @@ export function skinBox(o: THREE.Object3D, into = new THREE.Box3()): THREE.Box3 
 }
 const box = (o: THREE.Object3D) => skinBox(o, new THREE.Box3());
 
-export function makeGrubnak3d(a: G3DAssets): G3D {
+export interface OwnerPose { fort: { scale: number; sx?: number; sy?: number; sz?: number; turn: number }; cmd: { scale: number; turn: number }; groups?: number }
+const OWNER_FORT_K = 0.67, OWNER_CMD_K = 1.54;
+const D2R = Math.PI / 180;
+
+/** Owner's Game Editor pose: each model's bounding-box bottom-centre sits at the piece's board point (y = 0), scaled by Model Editor scale x piece scale, stretched in its own axes, then turned (no tilt, no lean). */
+function makeGrubnakOwner(a: G3DAssets, pose: OwnerPose): G3D {
+  const group = new THREE.Group();
+  const figure = new THREE.Group(); // yaw holder (the scene turns this one for look-backs)
+  const place = (obj: THREE.Object3D, k: number, st: { sx?: number; sy?: number; sz?: number }, idle?: THREE.AnimationClip) => {
+    let b = box(obj);
+    if (idle) {
+      // stand on the ground through the whole Idle loop: use the lowest point over the clip, bottom-centre from the first frame
+      const m = new THREE.AnimationMixer(obj); m.clipAction(idle).play();
+      let lo = Infinity;
+      for (let i = 0; i < 8; i++) { m.setTime((idle.duration * i) / 8); lo = Math.min(lo, box(obj).min.y); if (i === 0) b = box(obj); }
+      m.stopAllAction(); m.uncacheRoot(obj);
+      b = b.clone(); b.min.y = lo;
+    }
+    obj.position.set(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
+    const sc = new THREE.Group();
+    sc.scale.set(k * (st.sx ?? 1), k * (st.sy ?? 1), k * (st.sz ?? 1));
+    sc.add(obj);
+    return sc;
+  };
+  const fortress = a.fortress.clone(true);
+  fortress.updateMatrixWorld(true);
+  const fYaw = new THREE.Group();
+  fYaw.rotation.y = pose.fort.turn * D2R;
+  fYaw.add(place(fortress, OWNER_FORT_K * pose.fort.scale * (pose.groups ?? 1), pose.fort));
+  group.add(fYaw);
+  const ch = skeletonClone(a.char) as THREE.Object3D;
+  ch.traverse((o: any) => { if (o.isMesh || o.isSkinnedMesh) { o.frustumCulled = false; o.castShadow = false; } });
+  figure.add(place(ch, OWNER_CMD_K * pose.cmd.scale * (pose.groups ?? 1), {}, a.clips.idle));
+  figure.rotation.y = pose.cmd.turn * D2R;
+  group.add(figure);
+  return finish(a, group, figure, fortress, ch);
+}
+
+export function makeGrubnak3d(a: G3DAssets, pose?: OwnerPose): G3D {
+  if (pose) return makeGrubnakOwner(a, pose);
   const group = new THREE.Group();
   const figure = new THREE.Group();
   // fortress: footprint 1 x 1, standing on y = 0
@@ -98,6 +137,10 @@ export function makeGrubnak3d(a: G3DAssets): G3D {
   ch.position.set(-(cb.max.x + cb.min.x) / 2, top - cb.min.y, -(cb.max.z + cb.min.z) / 2);
   figure.add(ch);
   group.add(figure);
+  return finish(a, group, figure, fortress, ch);
+}
+
+function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress: THREE.Object3D, ch: THREE.Object3D): G3D {
   // scepter in the right hand
   let scepterBone = '';
   if (a.scepter) {

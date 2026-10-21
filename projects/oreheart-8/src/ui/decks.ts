@@ -141,6 +141,15 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const probEl = h('ul', { class: 'db-problems', 'aria-label': 'Deck problems' });
   const status = h('p', { class: 'db-status', role: 'status' });
   const limitMsg = h('p', { class: 'db-status' });
+  // Round 9c: Play starts a match with the deck on screen (disabled, with a short reason, while the deck is not legal)
+  const startWith = (cards: string[], commander: string) => {
+    let diff = 'normal';
+    try { diff = JSON.parse(localStorage.getItem('oreheart.picks') || '{}').diff || 'normal'; } catch { /* ignore */ }
+    const others = Object.keys(COMMANDERS).filter((k) => k !== commander);
+    app.beginMatch({ playerCommander: commander, opponentCommander: others[Math.floor(Math.random() * others.length)], difficulty: diff, playerDeck: cards.slice() });
+  };
+  const playBtn = btn('Play', 'db-play', () => { if (!deckProblems(deck, cmdId).length) startWith(deck, cmdId); }) as HTMLButtonElement;
+  const syncPlay = () => { const pr = deckProblems(deck, cmdId); playBtn.disabled = pr.length > 0; playBtn.title = pr.length ? pr[0] : 'Start a match with this deck'; playBtn.setAttribute('aria-disabled', pr.length ? 'true' : 'false'); };
   const newBtn = btn('New Deck', '', () => { if (saved.length >= MAX_DECKS) { status.textContent = ''; limitMsg.textContent = 'You can save up to 5 decks.'; return; } setCur(saved.length); }) as HTMLButtonElement;
 
   const matches = (c: any) => {
@@ -269,6 +278,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   });
 
   function renderDeck() {
+    syncPlay();
     syncThumb();
     const n: Record<string, number> = {};
     for (const id of deck) n[id] = (n[id] || 0) + 1;
@@ -336,12 +346,13 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     renderDeck();
   }
   function renderCarousel() {
-    const items = saved.map((d, i) => h('button', { type: 'button', class: 'db-deck', 'aria-label': `${d.name}, ${d.cards.length} ${d.cards.length === 1 ? 'card' : 'cards'}`, 'aria-current': i === cur ? 'true' : null, tabindex: i === cur ? '0' : '-1', 'data-i': String(i) },
+    const items = saved.map((d, i) => h('button', { type: 'button', class: 'db-deck', 'aria-label': `${d.name}, ${d.cards.length} ${d.cards.length === 1 ? 'card' : 'cards'}`, 'aria-current': i === cur ? 'true' : null, tabindex: i === cur ? '0' : '-1', 'data-i': String(i), 'data-faction': (COMMANDERS[d.commander || cmdId] || {}).faction || '' },
       h('img', { class: 'deck-img', src: '/art/deck/deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, d.name)));
     items.push(h('button', { type: 'button', class: 'db-deck new', 'aria-label': '+ New Deck', 'aria-current': cur === saved.length ? 'true' : null, tabindex: cur === saved.length ? '0' : '-1', 'data-i': String(saved.length) },
       h('img', { class: 'deck-img', src: '/art/deck/deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, '+ New Deck')));
     items.forEach((b, i) => {
       b.addEventListener('click', () => { if (carDrag) return; if (i !== cur) setCur(i); });
+      b.addEventListener('dblclick', () => { const d = saved[i]; if (!d || carDrag) return; const cm = d.commander || cmdId; if (!deckProblems(d.cards, cm).length) startWith(d.cards, cm); });
       b.addEventListener('keydown', (e: KeyboardEvent) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
         e.preventDefault();
@@ -407,7 +418,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     h('aside', { class: 'db-right', 'aria-label': 'Deck panel' },
       h('h1', { class: 'section cinzel' }, 'Deck Builder'),
       pileEl,
-      h('div', { class: 'row db-actions' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), btn('Rename', '', rename), newBtn),
+      h('div', { class: 'row db-actions' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), btn('Rename', '', rename), newBtn, playBtn),
       btn('Back', 'db-back', () => app.showMenu()),
       h('p', { class: 'db-msgs' }, status, limitMsg),
       h('div', { class: 'db-listwrap' },

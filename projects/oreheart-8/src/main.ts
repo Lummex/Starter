@@ -13,7 +13,7 @@ const seed = seedParam != null && seedParam !== '' && !isNaN(+seedParam) ? Math.
 
 const game = new Game(test);
 const app = new App(document.getElementById('app')!, game, test, test ? seed : undefined);
-app.showMenu();
+app.showIntro();
 
 if (test) {
   (window as any).__app = app;
