@@ -4,7 +4,48 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 11 — owner playtest of round 10: intro sound & music, main menu, highlights + settings, mines, pop-ups, hand drag & reorder, unit rings, fixes, Ranged 7 — read this first
+## Round 12a — QUICK round: drag-to-play fix, hand layout, owner Goblin card paintings ONLY — read this first
+
+The first round 12 run hit the 3-hour job limit and saved nothing (it tried to build 5 new 3D models). The owner split it. Build ONLY these items from the Round 12 list below, and COMMIT/PUSH working progress early (after item 1 works) so a timeout never loses everything:
+- Round 12 item 1 (BLOCKER: drag a hand card onto the board to play it; real pointer-event tests).
+- Round 12 item 2 (hand layout: even fan, never covers the board).
+- Card paintings only from items 3–7: `goblin-miner-card-art.png` → Grubgrabber Miner, `boneknocker-card-art.png` → Boneknocker, `shiv-rat-card-art.png` → Shiv Rat, `scrapsmith-miner-card-art.png` → Scrapsmith Miner, `grubnak-on-throne-art.png` → Grubnak's commander portrait (Choose Your Commander, HUD portrait). Use exactly, in cards, close-ups, deck builder and menus.
+NOT this round: NO 3D models, NO Meshy, NO throne. All model work in items 3–7 is ROUND 12b (next run). Target well under 90 minutes.
+
+## Round 12 (full list; split into 12a now + 12b models next) — owner playtest of round 11: card drag-to-play is broken (BLOCKER), hand layout, owner Goblin art + 3D models (Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner, Grubnak + throne)
+
+Round 11 is done; keep everything from 8a–11 unless an item below replaces it. Build ONLY the 7 items below (queued Menu Builder / deck builder / halls / card template work stays queued). Faction color rule: Goblins green #3ee06a + purple #b45cff; Gnomes purple #9b4dff + blue #3fa9ff; Dwarves navy #2f5fd8 + gold #FFD700. Owner art in `factory-design/goblin-art/` is BINDING: use it exactly. Meshy runs ONCE per model from the owner sheet; never regenerate unless the owner asks.
+
+### 1. BLOCKER — cards cannot be played by dragging
+Verified on the round 11 preview (Chrome, 1568×782 viewport, turn 1, 60 legal summons available): every drag of a hand card onto a legal home-row square only REORDERS the hand (round 11 item 7 swallows the drag) and nothing is summoned; a drag started from the tucked hand also summons nothing. Fix: a drag that leaves the hand band upward (or moves more vertically than sideways) is a PLAY drag: the hand tucks fully off the board, the real card follows the pointer (round 11 item 8 float), legal squares highlight, releasing on a legal square summons / casts / plays exactly as `legalActions()` allows; releasing elsewhere returns the card. Reordering happens ONLY while the pointer stays inside the hand band and moves sideways. Same for spells, crystals, upgrades and Tunnel targets. Touch works the same.
+
+### 2. Hand layout
+When the hand is raised it must never cover the board rows (especially the player's home/deploy row). The cards are laid out as an even fan, every card fully on screen, none squeezed, clipped or hidden behind the hovered card; the hovered card enlarges upward without covering board squares or pushing neighbours off. Must work at 1920×1080 and smaller windows (1568×782, 1366×768).
+
+### 3. OWNER ART — Grubgrabber Miner (goblin-scrounger)
+- `goblin-miner-card-art.png` = the card painting (replaces current art; card, close-up, deck builder, menus).
+- `goblin-miner-tpose-sheet.png` = 3D model source: T-pose front/side/back, head views, pickaxe, helmet with lamp, backpack front/side/back.
+- `goblin-miner-assembled-reference.png` = how the model must be assembled: crystal backpack with lantern worn on the back, helmet lamp lit and glowing, pickaxe held in both hands.
+- `goblin-miner-wide-art.png` = extra look reference only (not shown in game).
+Rig + idle, move, attack (pickaxe swing) and mine animations. Replaces the current model on the board and in the 3D viewer.
+
+### 4. OWNER ART — Boneknocker (goblin-pebbler)
+`boneknocker-card-art.png` = card painting. `boneknocker-model-sheet.png` = 3D model (hooded goblin, spiked wooden club); the bottom row of the sheet is the attack swing: use those poses for the attack animation. Idle + move too.
+
+### 5. OWNER ART — Shiv Rat (shiv-rat)
+`shiv-rat-card-art.png` = card painting. `shiv-rat-model-sheet.png` = 3D model (hooded goblin with a rusty dagger in hand; sheet includes palette and detail views). Idle, move, stab attack.
+
+### 6. OWNER ART — Scrapsmith Miner (goblin-smith-miner)
+`scrapsmith-miner-card-art.png` = card painting. `apron-goblin-model-sheet-UNASSIGNED.png` = the Scrapsmith Miner 3D model (leather apron, red scarf, helmet lamp, backpack, carries pick + hammer); its walk cycle row and smash/mine poses drive the move, attack and mine animations.
+
+### 7. OWNER ART — Grubnak Rotgut + his junk throne
+- `grubnak-model-sheet.png` = new Grubnak 3D model (spiked crown with purple gems, fur-collar purple robe with the crowned-skull emblem, crystal-tipped staff). The small miner on the sheet shows scale: Grubnak is much bigger than a normal goblin.
+- `grubnak-on-throne-art.png` = his commander portrait / Choose Your Commander art.
+- NEW: Grubnak no longer stands on the castle/stand. He SITS on his junk throne (`grubnak-throne-model-sheet.png`: front, side, back views + wireframe) which replaces the castle/stand model in the Goblin stronghold spot. Seated pose holding the staff, facing the board (keep the owner 146° facing rule). Throne sits flat on the ground, sized to the stronghold footprint.
+
+**Tests:** keep all checks passing (update outdated ones); add tests for every item. Item 1 MUST be tested with REAL pointer events (pointerdown, several pointermoves, pointerup on the square's screen position) at 1920×1080 and 1568×782: dragging a Miner from the hand onto a legal home-row square summons it; a sideways drag inside the hand reorders; the raised hand never overlaps board squares. Art tests: the 4 card paintings equal the owner files; the new models load (Grubnak seated on the throne; Miner wears the backpack, lamp on). Screenshots 1920×1080: a drag onto the board with highlights, the raised hand, each new model on the board and in the 3D viewer, Grubnak on his throne, the 4 new cards.
+
+## Round 11 (done) — owner playtest of round 10: intro sound & music, main menu, highlights + settings, mines, pop-ups, hand drag & reorder, unit rings, fixes, Ranged 7
 
 Round 10 is done; keep everything from 8a–10 unless an item below replaces it. Build ONLY the 17 items below (queued Menu Builder / deck builder / halls / card template work stays queued). Faction color rule: Goblins green #3ee06a + purple #b45cff; Gnomes purple #9b4dff + blue #3fa9ff; Dwarves navy #2f5fd8 + gold #FFD700.
 
