@@ -1,0 +1,41 @@
+name: Art machine (ChatGPT pictures)
+
+# Runs when Claude adds an art request file from the Oreheart Art Studio.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'factory-design/art-requests/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: art-machine
+  cancel-in-progress: false
+
+jobs:
+  paint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install picture tools
+        run: npm install --no-save --no-package-lock sharp@0.33.5
+      - name: Make the pictures
+        env:
+          OPENAI_API_KEY: ${{ secrets.CHAT_GPT_KEY }}
+        run: node factory/scripts/art-machine.mjs
+      - name: Save the pictures to the repository
+        run: |
+          git config user.name "oreheart-art-machine"
+          git config user.email "art-machine@users.noreply.github.com"
+          git add factory-design/art-made
+          if git diff --cached --quiet; then echo "Nothing new"; exit 0; fi
+          git commit -m "Art machine: new pictures"
+          for i in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0; sleep 5; done
+          exit 1
