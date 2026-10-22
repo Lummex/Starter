@@ -1,4 +1,5 @@
 // Placeholder 3D battlefield (Three.js). Returns null when WebGL is unavailable (the UI then shows a 2D board).
+import { ringColor, getRings } from './fx-settings';
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D } from './grubnak3d';
@@ -386,6 +387,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
 
   // creatures
   type Fig = {
+    ringColor?: string; ringGreyed?: boolean;
     group: THREE.Group; target: THREE.Vector3; born: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
     uid: string; cardId: string; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number;
   };
@@ -460,6 +462,9 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     g.scale.setScalar(baseScale);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 6, 24), ringMat());
     ring.name = 'acting-ring';
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.16, 6, 24), new THREE.MeshBasicMaterial({ color: 0xffd400, transparent: true, opacity: 0.25, depthWrite: false }));
+    halo.name = 'ring-halo';
+    ring.add(halo);
     ring.rotation.x = Math.PI / 2;
     ring.position.y = 0.04;
     ring.scale.setScalar(1 / baseScale);
@@ -468,6 +473,18 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   let state: any = null;
+  /** Round 11: ring in the side's faction color (player settings), grey once the unit has acted. */
+  function applyRing(f: any, c: any, acted: boolean, st: any) {
+    const ring = f.group.getObjectByName('acting-ring') as THREE.Mesh | undefined;
+    if (!ring) return;
+    const col = ringColor(c.owner, st.players[c.owner].faction, acted), rs = getRings();
+    f.ringColor = col; f.ringGreyed = acted;
+    (ring.material as THREE.MeshBasicMaterial).color.set(col);
+    (ring.material as THREE.MeshBasicMaterial).opacity = rs.opacity; (ring.material as THREE.MeshBasicMaterial).transparent = rs.opacity < 1;
+    ring.scale.set(1 / f.baseScale, 1 / f.baseScale, rs.thickness / f.baseScale);
+    const halo = ring.getObjectByName('ring-halo') as THREE.Mesh | undefined;
+    if (halo) { (halo.material as THREE.MeshBasicMaterial).color.set(col); (halo.material as THREE.MeshBasicMaterial).opacity = rs.glow * 0.5 * rs.opacity; halo.visible = rs.glow > 0; }
+  }
   function setState(st: any, events: any[]) {
     state = st;
     const now = performance.now();
@@ -524,7 +541,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       if (f.acted !== acted) {
         f.acted = acted;
         f.group.traverse((o: any) => {
-          if (o.name === 'acting-ring') { o.material.color.set(acted ? 0x3a3d44 : 0xffd400); return; }
+          if (o.name === 'acting-ring' || o.name === 'ring-halo') return;
           const m = o.material;
           if (!m || !m.color || o.isSprite || m.isMeshBasicMaterial || m.isPointsMaterial) return;
           if (!m.userData.base) m.userData.base = m.color.clone();
@@ -532,6 +549,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
           if (acted) { const hsl: any = {}; m.color.getHSL(hsl); m.color.setHSL(hsl.h, hsl.s * 0.8, hsl.l * 0.5); }
         });
       }
+      applyRing(f, c, acted, st);
       const mv = events.find((e) => e.type === 'move' && e.uid === c.uid);
       if (mv && mv.teleport) f.group.position.copy(tgt);
     }
@@ -841,7 +859,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const out: any = { boardY: 0, square: 1 };
     for (const [side, c, f] of [['player', 'pCmd', 'pFort'], ['opponent', 'eCmd', 'eFort']] as const) {
       const cm = cmd[side];
-      const cyaw = cm.yaw !== undefined ? norm((cm.yaw * 180) / Math.PI) : undefined;
+      const cyaw = cm.baseYaw !== undefined ? norm((cm.baseYaw * 180) / Math.PI) : undefined; // the posed (owner turn) facing; look-backs are transient
       if (cm.g3d) { cm.g3d.figure.userData.isG3dPiece = true; cm.g3d.fortress.userData.isG3dPiece = true; }
       out[c] = one(cm.g3d ? cm.g3d.figure : cm.fig, side, turnOf(c), cyaw);
       out[f] = one(cm.g3d ? cm.g3d.fortress : cm.keep?.group, side, turnOf(f));
@@ -1010,6 +1028,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
           resolve({
             webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
             bloom: false, shadows: renderer.shadowMap.enabled, particles: false, arena: arenaInfo,
+            unitRings: [...figs.values()].filter((f) => !f.dying).map((f) => { const rs = getRings(); return { uid: f.uid, side: f.owner, color: f.ringColor || '', greyed: !!f.ringGreyed, thickness: rs.thickness, glow: rs.glow, opacity: rs.opacity }; }),
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
             commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? 'grubnak.glb' : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? 'grubnak-fortress.glb' : '', scepter: cm.g3d ? 'grubnak-scepter.glb' : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },

@@ -45,3 +45,4 @@ Everything in the game is made in code or generated for this project. There are 
 - `public/music/tense-cycle.mp3` (menus and intro) and `public/music/first-fight.mp3` (matches): owner-supplied music.
 - `public/art/goblin/*` (corner frames, Flow crystals, Goblin bank, opponent bank placeholder): owner-supplied, from the owner's Game Editor "final draft" layout and Goblin theme.
 - The crystal mine model is built in code from the owner's Game Editor (`buildMineModel`); no outside asset.
+- Alegreya SC upright 400/700 (OFL, from @fontsource/alegreya-sc) for the owner's menu text styles.

@@ -9,6 +9,7 @@ import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenS
 import { deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
 import { audio } from './audio';
+import { getHighlights, setHighlights, resetHighlights, getRings, setRings, resetRings, edgeOf, glowOf, mainOf, ringColor, applyHighlightVars } from './fx-settings';
 import { loadGrubnak3d } from './grubnak3d';
 import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
 
@@ -44,7 +45,7 @@ export function typeOf(c: any): { icon: string; name: string } {
   return { icon: '⚔️', name: 'Fighter' };
 }
 export const RARITY_WORD: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Collector' };
-const CRYSTAL_SVG = '<svg viewBox="0 0 24 32" focusable="false" aria-hidden="true" class="rc"><polygon points="12,1 20,10 12,31 4,10" fill="currentColor"/><polygon points="12,1 4,10 12,13" fill="#fff" fill-opacity=".62"/><polygon points="12,1 20,10 12,13" fill="#fff" fill-opacity=".25"/><polygon points="4,10 12,13 12,31" fill="#000" fill-opacity=".18"/><polygon points="20,10 12,13 12,31" fill="#000" fill-opacity=".42"/><polyline points="12,1 20,10 12,31 4,10 12,1" fill="none" stroke="#1a0f06" stroke-width="1.1" stroke-linejoin="round"/><polyline points="4,10 12,13 20,10 M12,13 12,31" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".6"/></svg>';
+const CRYSTAL_SVG = '<svg viewBox="0 0 24 32" focusable="false" aria-hidden="true" class="rc"><polygon points="12,1 20,10 12,31 4,10" fill="currentColor"/><polygon points="12,1 4,10 12,13" fill="#fff" fill-opacity=".62"/><polygon points="12,1 20,10 12,13" fill="#fff" fill-opacity=".25"/><polygon points="4,10 12,13 12,31" fill="#000" fill-opacity=".18"/><polygon points="20,10 12,13 12,31" fill="#000" fill-opacity=".42"/><polyline points="12,1 20,10 12,31 4,10 12,1" fill="none" stroke="#1a0f06" stroke-width="1.1" stroke-linejoin="round"/><path d="M4,10 L12,13 L20,10 M12,13 L12,31" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".6"/></svg>';
 /** Card face on the owner's faction frame: cost, Attack, Health, Movement, type icon, picture, name, short text, rarity. */
 export function faceKids(c: any, cost?: number, cur?: { attack?: number; health?: number; move?: number }): El[] {
   const pic = pictureOf(c);
@@ -307,7 +308,17 @@ export class App {
     else if (t === 'action:quit') this.showIntro();
     else if (t === 'action:start-match') this.showSetup();
   }
-  showIntro() { this.menuScreen('intro', 'intro'); }
+  showIntro() {
+    // real visitors always get the gate (audio needs a click); automated browsers go straight to the intro unless ?begin=1
+    const gated = !audio.unlocked && (new URLSearchParams(location.search).get('begin') === '1' || (!this.test && !navigator.webdriver));
+    if (!gated) { this.menuScreen('intro', 'intro'); return; }
+    // Browsers block audio until the first click/tap: a short gate, then the intro (crash sound, thunder) and the music can play
+    this.clear();
+    const go = h('button', { type: 'button', class: 'begin-btn', onclick: () => { audio.setMusicMode('menu'); this.menuScreen('intro', 'intro'); } }, 'Click to begin');
+    this.root.append(h('main', { class: 'screen center begin-gate', 'data-screen': 'begin', 'aria-label': 'Begin' },
+      h('img', { class: 'begin-logo', src: '/art/logo-wide.webp', alt: 'Oreheart', draggable: 'false' }), go));
+    go.focus();
+  }
   showMenu() {
     const s = this.menuScreen('main', 'title');
     if (!this.test && !localStorage.getItem('oreheart.tutorialSeen')) {
@@ -326,7 +337,58 @@ export class App {
     this.clear();
     this.root.append(h('main', { class: 'screen center', 'data-screen': 'settings' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.flowGroup(), this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), btn('Back', '', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.flowGroup(), this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), ...this.fxPanels(), btn('Back', '', () => this.showMenu()))));
+  }
+
+  /** The faction of the last picked Commander (defaults to Goblins): the default highlight / ring colors. */
+  pickedFaction(): string { try { const p = JSON.parse(localStorage.getItem('oreheart.picks') || '{}'); return (COMMANDERS as any)[p.cmd]?.faction || 'goblins'; } catch { return 'goblins'; } }
+  fxPanels(): El[] {
+    const fac = this.pickedFaction();
+    const ctl = (label: string, type: string, attrs: Record<string, any>, on: (v: any, el: HTMLInputElement) => void) => {
+      const id = 'fx-' + label.toLowerCase().replace(/[^a-z]+/g, '-');
+      const inp = h('input', { type, id, ...attrs }) as HTMLInputElement;
+      inp.addEventListener('input', () => on(type === 'checkbox' ? inp.checked : type === 'range' ? +inp.value : inp.value, inp));
+      return h('div', { class: 'slider fx-row' }, h('label', { for: id }, label), inp);
+    };
+    // square highlights
+    const hv = getHighlights();
+    const hlPrev = h('div', { class: 'hl-prev', 'aria-label': 'Highlight preview', role: 'img' }, h('div', { class: 'cell glow hl-prev-sq' }), h('div', { class: 'cell glow-attack hl-prev-sq' }));
+    const hlSet = (p: any) => { setHighlights(p); applyHighlightVars(fac); };
+    applyHighlightVars(fac);
+    const hlPanel = h('section', { class: 'fx-panel', role: 'region', 'aria-label': 'Square highlights' }, h('h2', { class: 'section' }, 'Square highlights'), hlPrev,
+      ctl('Edge color', 'color', { value: edgeOf(fac) }, (v) => hlSet({ edgeColor: v })),
+      ctl('Glow color', 'color', { value: glowOf(fac) }, (v) => hlSet({ glowColor: v })),
+      ctl('Attack color', 'color', { value: hv.attackColor }, (v) => hlSet({ attackColor: v })),
+      ctl('Strength', 'range', { min: '0.2', max: '1', step: '0.05', value: String(hv.strength) }, (v) => hlSet({ strength: v })),
+      ctl('Glow size', 'range', { min: '4', max: '60', step: '1', value: String(hv.glowSize) }, (v) => hlSet({ glowSize: v })),
+      ctl('Edge thickness', 'range', { min: '1', max: '10', step: '1', value: String(hv.edgeThickness) }, (v) => hlSet({ edgeThickness: v })),
+      ctl('Inner fill', 'range', { min: '0', max: '100', step: '1', value: String(hv.fill) }, (v) => hlSet({ fill: v })),
+      ctl('Pulse', 'checkbox', hv.pulse ? { checked: '' } : {}, (v) => hlSet({ pulse: v })),
+      ctl('Pulse speed', 'range', { min: '0.3', max: '3', step: '0.1', value: String(hv.pulseSpeed) }, (v) => hlSet({ pulseSpeed: v })),
+      btn('Reset to default', '', () => { resetHighlights(); applyHighlightVars(fac); this.showSettings(); }));
+    // unit rings
+    const rv = getRings();
+    const ringEl = (cls: string) => h('div', { class: 'ring-prev-dot ' + cls });
+    const mine = ringEl('mine'), theirs = ringEl('theirs'), moved = ringEl('moved');
+    const paint = () => {
+      const r = getRings();
+      for (const [el, c] of [[mine, ringColor('player', fac, false)], [theirs, ringColor('opponent', fac === 'goblins' ? 'dwarves' : 'goblins', false)], [moved, ringColor('player', fac, true)]] as [El, string][]) {
+        el.style.borderColor = c; el.style.borderWidth = 2 + r.thickness * 3 + 'px'; el.style.opacity = String(r.opacity); el.style.boxShadow = `0 0 ${r.glow * 24}px ${c}, inset 0 0 ${r.glow * 14}px ${c}`;
+      }
+    };
+    const rgSet = (p: any) => { setRings(p); paint(); };
+    const ringPanel = h('section', { class: 'fx-panel', role: 'region', 'aria-label': 'Unit rings' }, h('h2', { class: 'section' }, 'Unit rings'),
+      h('div', { class: 'ring-prev', 'aria-label': 'Ring preview', role: 'img' }, mine, theirs, moved),
+      ctl('My ring color', 'color', { value: rv.myColor || mainOf(fac) }, (v) => rgSet({ myColor: v })),
+      ctl('Enemy ring color', 'color', { value: rv.enemyColor || '#2f5fd8' }, (v) => rgSet({ enemyColor: v })),
+      ctl('Moved color', 'color', { value: rv.movedColor || '#808080' }, (v) => rgSet({ movedColor: v })),
+      ctl('Grey amount', 'range', { min: '0', max: '1', step: '0.05', value: String(rv.greyAmount) }, (v) => rgSet({ greyAmount: v })),
+      ctl('Ring thickness', 'range', { min: '0.5', max: '3', step: '0.1', value: String(rv.thickness) }, (v) => rgSet({ thickness: v })),
+      ctl('Ring glow', 'range', { min: '0', max: '1', step: '0.05', value: String(rv.glow) }, (v) => rgSet({ glow: v })),
+      ctl('Ring opacity', 'range', { min: '0.2', max: '1', step: '0.05', value: String(rv.opacity) }, (v) => rgSet({ opacity: v })),
+      btn('Reset to default', '', () => { resetRings(); this.showSettings(); }));
+    paint();
+    return [hlPanel, ringPanel];
   }
 
   showSetup() {
@@ -490,7 +552,7 @@ export class App {
       sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
       sec('Mulligan and Camera', 'Before the match you may mulligan up to 3 times: tap cards, then Redraw Selected. Your first mulligan redraws as many cards as you swap; each later one redraws one fewer (5, then 4, then 3 cards). On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and choose Recenter in the Menu (right side) to reset. The Menu also holds Last turn, Mute, the Card pop-ups switch and Surrender. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
       sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (any number, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
-      sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit the first enemy up to 5 spaces away in one of the 8 straight directions (they cannot shoot past a unit) and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
+      sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit the first enemy up to 7 spaces away in one of the 8 straight directions (they cannot shoot past a unit) and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals (Flow first, then Bank). Commanders never attack. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet: you can play a Crystal card on its own or together with a counterspell to pay for it. Counterspells cancel spells or summons.'),
       h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Tutorial', '', () => this.beginTutorial()), btn('Back', '', () => this.showMenu())));
@@ -585,6 +647,7 @@ export class App {
     this.fxLog = [];
     arenaOpts.extra = (o.setup && o.setup.arenaExtraEffects) || [];
     const state = this.game.newMatch(o);
+    applyHighlightVars(this.game.state.players.player.faction);
     this.showMatch();
     this.update(this.game.state, []);
     return state;
@@ -594,6 +657,7 @@ export class App {
     this.lastTutorial = true;
     this.fxLog = [];
     const state = this.game.startTutorial();
+    applyHighlightVars(this.game.state.players.player.faction);
     this.showMatch();
     this.update(this.game.state, []);
     return state;
@@ -700,6 +764,7 @@ export class App {
       ],
     });
     document.addEventListener('pointerdown', (e) => { if (this.r.menuWrap?.classList.contains('open') && !(e.target as Element).closest?.('.o-menu')) this.menuOpen(false); }, true);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.selectedUid = null; });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.r.menuWrap?.classList.contains('open')) { this.menuOpen(false); this.r.menuBtn?.focus(); } });
     // board layers
     r.cells = new Map<string, El>();
@@ -855,16 +920,25 @@ export class App {
     const bd = (this.r.board as El).getBoundingClientRect();
     const dragCard = this.dragKind;
     const highlights: any[] = [];
+    const hs = getHighlights(), pf = this.game.state.players.player.faction;
     for (const [k, el] of this.r.cells as Map<string, El>) {
       const kind = el.classList.contains('glow-attack') ? 'attack' : el.classList.contains('glow-swap') ? 'swap' : el.classList.contains('glow-mine') ? 'mine' : el.classList.contains('glow') ? (dragCard === 'spell' ? 'target' : dragCard ? 'summon' : 'move') : null;
       if (!kind) continue;
       const [row, col] = k.split(',').map(Number);
       const c = this.view!.squareCenter(row, col);
-      if (c) highlights.push({ kind, row, col, color: kind === 'attack' ? '#ff2a1a' : FACTION_GLOW[this.game.state.players.player.faction], fillAlpha: 0.5, glow: true, center: { x: c.x + bd.left, y: c.y + bd.top } });
+      if (c) highlights.push({ kind, row, col, color: kind === 'attack' ? hs.attackColor : edgeOf(pf), glowColor: kind === 'attack' ? hs.attackColor : glowOf(pf), style: 'edge-glow', edgeAlpha: Math.min(1, 0.55 + hs.strength * 0.45), centerAlpha: (hs.fill / 100) * hs.strength, fillAlpha: hs.fill / 100, strength: hs.strength, glow: true, glowSize: hs.glowSize, edgeThickness: hs.edgeThickness, center: { x: c.x + bd.left, y: c.y + bd.top } });
     }
     return { ...d, highlights };
   }
   dragKind = '';
+  selectedUid: string | null = null;
+  /** Test hook: the four screen corners (CSS px) of a board square. */
+  squareQuad(row: number, col: number) {
+    const q = this.view?.cellQuad(row, col);
+    if (!q || !q.length) return null;
+    const bd = (this.r.board as El).getBoundingClientRect();
+    return q.map((p: any) => ({ x: p.x + bd.left, y: p.y + bd.top }));
+  }
   squareToScreen(row: number, col: number) {
     const c = this.view?.squareCenter(row, col);
     if (!c) return null;
@@ -984,7 +1058,11 @@ export class App {
       const cr = this.view.cellRect(row, col), hit = r.hits[i] as El;
       const padX = cr.w * 0.25, up = cr.h * 1.5;
       const mb = this.view.mineBox?.(row, col), sm = r.sites[i] as El;
-      if (mb) { sm.style.left = mb.x - 2 + 'px'; sm.style.top = mb.y - 2 + 'px'; sm.style.width = mb.width + 4 + 'px'; sm.style.height = mb.height + 4 + 'px'; sm.style.alignItems = 'flex-end'; }
+      void mb;
+      // round 11: the click area is only the mine's own square (its screen quad), so units standing behind the mine stay selectable
+      { const q = this.view.cellQuad(row, col), xs = q.map((p: any) => p.x), ys = q.map((p: any) => p.y), qx = Math.min(...xs), qy = Math.min(...ys);
+        sm.style.minWidth = '0'; sm.style.minHeight = '0'; sm.style.left = qx + 'px'; sm.style.top = qy + 'px'; sm.style.width = Math.max(...xs) - qx + 'px'; sm.style.height = Math.max(...ys) - qy + 'px'; sm.style.alignItems = 'center';
+        sm.style.clipPath = `polygon(${q.map((p: any) => `${(p.x - qx).toFixed(1)}px ${(p.y - qy).toFixed(1)}px`).join(',')})`; }
       hit.style.left = cr.x - padX + 'px'; hit.style.top = cr.y - up + 'px'; hit.style.width = cr.w + padX * 2 + 'px'; hit.style.height = cr.h + up + cr.h * 0.1 + 'px';
     });
     this.place(r.strong.player, SH.player.row, SH.player.col);
@@ -1154,6 +1232,9 @@ export class App {
   /** Which fan card (by its resting box, not its popped one) the point is over. */
   hitCard(x: number, y: number): El | null {
     if (this.noHand) return null;
+    // the enlarged (popped) card is part of its hover zone: moving up onto it to grab it never retracts it
+    const pop = this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)') as El | null;
+    if (pop && !pop.classList.contains('dragging')) { const r = pop.getBoundingClientRect(); if (x >= r.left && x <= r.right && y >= r.top && y <= r.top + r.height * 0.77) return pop; }
     let hit: El | null = null;
     for (const b of this.handBoxes()) if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) hit = b.c;
     return hit;
@@ -1511,6 +1592,7 @@ export class App {
   reveals: { player: El[]; opponent: El[] } = { player: [], opponent: [] };
   reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player') {
     if ((this.test && !this.fxReal) || !this.r.board) return;
+    if (side === 'player') return; // round 11: only the opponent's played cards pop up
     const c = CARDS[cardId];
     const secs = this.revealSeconds();
     const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c));
@@ -2225,7 +2307,7 @@ export class App {
   cellOfTarget(t: any) { return t.commander ? SH[t.commander as 'player' | 'opponent'] : { row: t.row, col: t.col }; }
 
   // ------------------------------------------------------------ pointer interactions
-  drag(e: PointerEvent, opts: { ghost: El; onStart: () => boolean | void; onDrop: (cell: { row: number; col: number } | null, x: number, y: number) => void; onTap: () => void; touchSwipe?: (dx: number) => void; onHover?: (cell: { row: number; col: number } | null, x: number, y: number) => void; onEnd?: () => void }) {
+  drag(e: PointerEvent, opts: { ghost: El; onStart: () => boolean | void; onDrop: (cell: { row: number; col: number } | null, x: number, y: number) => void; onTap: () => void; touchSwipe?: (dx: number) => void; onHover?: (cell: { row: number; col: number } | null, x: number, y: number) => void; onEnd?: () => void; manualHand?: boolean; onMove?: (dx: number, x: number, y: number) => void }) {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     const x0 = e.clientX, y0 = e.clientY;
     let dragging = false, swiping = false, lastX = x0;
@@ -2233,12 +2315,13 @@ export class App {
       const dx = ev.clientX - x0, dy = ev.clientY - y0;
       if (!dragging && !swiping && Math.hypot(dx, dy) > 8) {
         if (ev.pointerType !== 'mouse' && opts.touchSwipe && Math.abs(dx) > Math.abs(dy)) swiping = true;
-        else if (opts.onStart() !== false) { dragging = true; this.r.hand?.classList.add('away'); opts.ghost.style.left = ev.clientX + 'px'; document.body.append(opts.ghost); }
+        else if (opts.onStart() !== false) { dragging = true; if (!opts.manualHand) this.r.hand?.classList.add('away'); opts.ghost.style.left = ev.clientX + 'px'; opts.ghost.style.top = ev.clientY + 'px'; document.body.append(opts.ghost); lastX = ev.clientX; }
         else cleanup();
       }
       if (swiping) { opts.touchSwipe!(ev.clientX - lastX); lastX = ev.clientX; }
       if (dragging) {
         opts.ghost.style.left = ev.clientX + 'px'; opts.ghost.style.top = ev.clientY + 'px';
+        opts.onMove && opts.onMove(ev.clientX - lastX, ev.clientX, ev.clientY); lastX = ev.clientX;
         const c = this.cellAt(ev.clientX, ev.clientY);
         for (const el of this.r.cells.values() as Iterable<El>) el.classList.remove('hover');
         if (c) this.r.cells.get(c.row + ',' + c.col)?.classList.add('hover');
@@ -2278,10 +2361,34 @@ export class App {
     }
     const st = this.game.state;
     const card = CARDS[hc.cardId];
-    const ghost = h('div', { class: 'ghost' }, card.type === 'creature' ? FSYM(card.faction) : card.type === 'spell' ? '✨' : '💎');
+    // round 11: the drag shows the real card face, floating and tilting with the movement
+    const ghost = h('div', { class: `hand-card static dragged-card ${card.type} f-${card.faction}`, role: 'group', 'aria-label': 'Dragged card', 'data-tilt': '0', 'data-card-id': card.id, 'data-frame': frameKey(card), 'data-rarity': rarityKey(card) }, ...faceKids(card, card.type === 'crystal' ? 0 : card.cost));
+    let tilt = 0, mode: 'reorder' | 'play' | '' = '';
+    // reordering while the pointer stays near its grab height / inside the raised hand; moving clearly above both = playing the card
+    const handTop = (this.r.hand as El).getBoundingClientRect().top - 12, startY = e.clientY;
+    const inReorder = (y: number) => y >= handTop || Math.abs(y - startY) < 45;
+    let plan: { cells: any[]; smith: any[]; any: boolean } = { cells: [], smith: [], any: false };
+    const setMode = (m: 'reorder' | 'play') => {
+      if (m === mode) return;
+      mode = m;
+      const hd = this.r.hand as El;
+      this.clearGlow();
+      if (m === 'reorder') { hd.classList.remove('away'); return; }
+      hd.classList.add('away'); // tuck the hand away over the board
+      this.dragKind = card.type;
+      this.setGlow(plan.cells, 'glow');
+      this.setGlow(plan.smith, 'glow-swap');
+      if (plan.any) this.r.board.classList.add('drop-any');
+    };
     this.drag(e, {
       ghost,
+      manualHand: true,
       touchSwipe: (dx) => { this.handScroll -= dx / 40; this.layoutHand(); },
+      onMove: (dx, _x, y) => {
+        tilt = Math.max(-14, Math.min(14, tilt * 0.8 + dx * 0.9));
+        ghost.dataset.tilt = tilt.toFixed(2); ghost.style.setProperty('--tilt', tilt.toFixed(2) + 'deg');
+        setMode(inReorder(y) ? 'reorder' : 'play');
+      },
       onStart: () => {
         if (this.pick || this.respDlg) return false;
         this.popCard(el, false);
@@ -2297,13 +2404,14 @@ export class App {
           else if (a.type === 'cast') { if (!a.target) any = true; else if (!a.to || true) cells.push(this.cellOfTarget(a.target)); }
           else if (a.type === 'playCrystal') any = true;
         }
-        this.dragKind = card.type;
-        this.setGlow(cells, 'glow');
-        this.setGlow(smithCells, 'glow-swap');
-        if (any) this.r.board.classList.add('drop-any');
+        plan = { cells, smith: smithCells, any };
+        setMode('reorder');
         return true;
       },
-      onDrop: (cell, x, y) => { if (cell && cell.row) this.dropCard(hc, card, cell, x, y); },
+      onDrop: (cell, x, y) => {
+        if (mode === 'reorder') { this.reorderHand(hc.uid, x); return; }
+        if (cell && cell.row) this.dropCard(hc, card, cell, x, y);
+      },
       onTap: () => {
         if (this.swapping) {
           this.swapping = false;
@@ -2315,6 +2423,26 @@ export class App {
       },
     });
     void st;
+  }
+
+  /** Round 11: drop a dragged hand card at pointer x: it takes the place among the other cards (order kept for the match). */
+  reorderHand(uid: string, x: number) {
+    const hand = this.game.state?.players?.player?.hand as any[] | undefined;
+    if (!hand) return;
+    const others = ([...(this.r.hand as El).querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).filter((c) => c.dataset.uid !== uid);
+    let idx = 0;
+    for (const c of others) { const b = c.getBoundingClientRect(); if (x > b.left + b.width / 2) idx++; }
+    const from = hand.findIndex((k) => k.uid === uid);
+    if (from < 0) return;
+    const rest = hand.filter((k) => k.uid !== uid);
+    const ordered = others.map((c) => rest.find((k) => k.uid === c.dataset.uid)).filter(Boolean) as any[];
+    const tail = rest.filter((k) => !ordered.includes(k));
+    ordered.splice(Math.min(idx, ordered.length), 0, hand[from]);
+    const next = [...ordered, ...tail];
+    if (next.every((k, i) => k === hand[i])) return;
+    hand.splice(0, hand.length, ...next);
+    this.handKey = '';
+    this.update(this.game.state, []);
   }
 
   explain(card: any) {
@@ -2375,6 +2503,7 @@ export class App {
     }
     const cr = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col);
     if (!cr) { if (e.pointerType !== 'mouse' || e.button === 0) this.startPan(e); return; }
+    this.selectedUid = cr.uid; // round 11: the tapped creature counts as selected (Esc clears it)
     const card = CARDS[cr.cardId];
     const ghost = h('div', { class: 'ghost tk' }, FSYM(card.faction));
     const mine = cr.owner === 'player';

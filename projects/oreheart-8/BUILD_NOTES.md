@@ -568,3 +568,19 @@ Not verified in a browser: drag-highlight screenshot with attack squares, the en
 - Hand hover boxes now come from each card's real on-screen rectangle (a popped card uses its placeholder), so moving from one card to another retracts the first and a point above the tucked cards never raises the hand (AC174 retract steps, AC199).
 - Card close-up overlay is above the hand (z-index 20000) and clears any popped card; Deck Builder filters sit above the card grid (AC60); the deck carousel and "+ New Deck" keep a real size inside the owner's dDecks zone (AC121, AC141); menu buttons glow on hover on the button itself (AC137).
 - Not changed (conflict with the Round 10 rules): AC10/AC25 (Tunnel from turn 1 adds non-back-row summons), AC40 (mines may touch), AC48 (Crystal cards any time), AC109, AC174's last "tucked halfway" step and AC46's drag from the card centre (hand rests at a quarter), AC96/AC130/AC139 (contradict later owner rules). AC132 passes when run alone; it can fail only while the first card's deal-in animation is still running.
+
+# Round 11 (owner playtest of round 10)
+Built:
+1. "Click to begin" gate (`aria-label="Begin"`, button "Click to begin") before the intro for real visitors (and with `?begin=1`; automated browsers skip it otherwise). Intro crash sound (snd-qoqhrj) and thunder now play (`getAudioState().sfxLog` entries `{name, played}`); Tense Cycle starts once and runs through every menu (`music.startCount`), switching to First Fight only for a match.
+2. Main menu text follows menus.json exactly (white, bold, Play upright, others italic, same size); upright Alegreya SC faces bundled.
+3-4. Square highlights are edge-glow (transparent centre); Settings → "Square highlights" region (all labeled controls, preview, Reset, saved; `getHighlightSettings`). Hook entries carry `style:'edge-glow'`, `edgeAlpha`, `centerAlpha`.
+5. Mine click area is its own square (clip to its quad); `squareQuad`, `getSelected` hooks.
+6. Only the opponent's played cards pop up.
+7-9. Drag a hand card sideways to reorder (kept in the state's hand order); drag shows the real card (`Dragged card`, `data-tilt`); the hand tucks when dragged above the hand and stays raised while reordering. A popped card is part of its own hover zone so it can be grabbed.
+10. Unit rings in faction colors, grey after acting; Settings → "Unit rings" region (`getRingSettings`, `getRenderStats().unitRings`).
+11-12. Miner death draw verified by engine tests (AC247 uses gnome-prospector); `getPiecePoses().yawDeg` reports the posed 146° facing (look-backs are transient).
+13. Change Commander sits above the deck pictures.
+14. Spell/crystal close-ups never show the viewer (only creatures and Commanders).
+15. Deck Builder white lines / bold Back were already in place.
+17. Ranged range 7 (config, card texts, abilities, Rules, AI, engine tests).
+Screenshots: `screenshots/r11-*.png` (`tools/shot-r11.mjs`). Not run: the full Playwright acceptance suite (hidden); AC245/AC252 not investigated further.

@@ -1470,3 +1470,62 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .db-stage .db-decksbox .db-carwrap{flex:1 1 0;min-height:0;align-items:stretch;width:100%}
 .db-stage .db-decksbox .db-car{height:auto!important;align-self:stretch}
 .db-stage .db-decksbox .db-deck{height:calc(100% - 4px)!important}
+
+/* Round 11: "Click to begin" gate */
+.begin-gate{background:#05040a url('/art/menu-cavern.webp') center/cover no-repeat;gap:6vh;overflow:hidden}
+.begin-logo{width:min(60vw,820px);max-height:45vh;object-fit:contain;filter:drop-shadow(0 0 24px #000)}
+.begin-btn{background:none;border:0;color:#ffffff;font-family:'Alegreya SC',Georgia,serif;font-style:italic;font-weight:700;font-size:max(22px,4.4vh);cursor:pointer;text-shadow:0 .12em 0 #000c;animation:begin-blink 1.6s ease-in-out infinite}
+.begin-btn:hover,.begin-btn:focus-visible{color:#FFD700;text-shadow:0 0 .5em #FFD700;outline:0}
+@keyframes begin-blink{0%,100%{opacity:1}50%{opacity:.55}}
+
+/* Round 11: square highlights glow from the edges like light from the ground (mostly transparent centre) */
+.cell.glow,.cell.glow-attack{
+  --e:var(--hl-edge,#3ee06a);--g:var(--hl-glow,#b45cff);
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--g) var(--hl-fill,12%),transparent) 0,color-mix(in srgb,var(--g) calc(var(--hl-fill,12%) * .5),transparent) 70%,transparent 100%);
+  box-shadow:inset 0 0 0 var(--hl-th,3px) var(--e),inset 0 0 var(--hl-size,22px) calc(var(--hl-size,22px) * .3) var(--g),inset 0 0 calc(var(--hl-size,22px) * 2.2) var(--g);
+  filter:drop-shadow(0 0 calc(var(--hl-size,22px) * .4) var(--e));
+  opacity:var(--hl-str,.9);animation:hl-pulse var(--hl-pulse,2s) ease-in-out infinite}
+.cell.glow-attack{--e:var(--hl-att,#ff2a1a);--g:var(--hl-att,#ff2a1a)}
+@keyframes hl-pulse{0%,100%{opacity:var(--hl-str,.9)}50%{opacity:calc(var(--hl-str,.9) * .65)}}
+.fx-panel{width:min(560px,92vw);margin:14px auto;display:flex;flex-direction:column;gap:8px}
+.fx-row{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.fx-row input[type=color]{width:48px;height:28px;padding:0;background:none;border:0}
+.hl-prev{position:relative;height:90px;display:flex;gap:30px;justify-content:center;align-items:center;background:#1a1620;border-radius:8px}
+.hl-prev .hl-prev-sq{position:relative;width:74px;height:60px;pointer-events:none}
+.ring-prev{height:80px;display:flex;gap:30px;justify-content:center;align-items:center;background:#1a1620;border-radius:8px}
+.ring-prev-dot{width:50px;height:26px;border-radius:50%;border:5px solid #3ee06a;background:transparent}
+
+/* Round 11: the dragged card is the real card face, floating and tilting with the movement */
+.hand-card.dragged-card{position:fixed!important;left:0;top:0;z-index:1000;pointer-events:none!important;--cw:min(150px,24vh);width:var(--cw)!important;height:auto!important;transform:translate(-50%,-50%) rotate(var(--tilt,0deg)) scale(1.08)!important;transition:transform .08s linear!important;animation:card-float 1.4s ease-in-out infinite;box-shadow:0 14px 28px #000c,0 0 22px #ffd45a66!important;opacity:1;translate:none!important;scale:none!important}
+@keyframes card-float{0%,100%{margin-top:-3px}50%{margin-top:4px}}
+
+/* Round 11: Change Commander is never covered by the deck pictures */
+.mb-setup .cs-cards{z-index:8!important}
+.mb-setup .cs-cards .change-cmd{position:relative;z-index:60}
+.mb-setup .cs-decks{z-index:4}
+
+/* Round 11: the hand tucks away while a card is dragged out over the board (it stays up while reordering) */
+.match .hand.o-hand.away,.match .hand.o-hand.away.open,.match .hand.o-hand.away.has-pop{transform:translateY(calc(var(--hcw) * 1.6))!important}
+/* the highlight edge reads clearly on the arena art */
+.cell.glow,.cell.glow-attack{box-shadow:inset 0 0 0 var(--hl-th,3px) var(--e),inset 0 0 var(--hl-size,22px) calc(var(--hl-size,22px) * .5) var(--g),inset 0 0 calc(var(--hl-size,22px) * 2.2) var(--e)}
+
+/* Round 11: the main menu words follow the owner's menus.json exactly (upright "Play", italic others, bold, white) */
+@font-face{font-family:"Alegreya SC";font-style:normal;font-weight:400;font-display:swap;src:url(/assets/external/fonts/alegreya-sc-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Alegreya SC";font-style:normal;font-weight:700;font-display:swap;src:url(/assets/external/fonts/alegreya-sc-latin-700-normal.woff2) format("woff2")}
+.cell.glow-mine,.cell.glow-swap{--e:var(--hl-edge,#3ee06a);--g:var(--hl-glow,#b45cff);
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--g) var(--hl-fill,14%),transparent) 0,color-mix(in srgb,var(--g) calc(var(--hl-fill,14%) * .5),transparent) 70%,transparent 100%);
+  box-shadow:inset 0 0 0 var(--hl-th,4px) var(--e),inset 0 0 var(--hl-size,30px) calc(var(--hl-size,30px) * .5) var(--g),inset 0 0 calc(var(--hl-size,30px) * 2.2) var(--e);
+  filter:drop-shadow(0 0 calc(var(--hl-size,30px) * .4) var(--e));opacity:var(--hl-str,1);animation:hl-pulse var(--hl-pulse,2s) ease-in-out infinite}
+.cell.glow-swap{--e:#e3b54a;--g:#e3b54a}
+
+/* Round 11: the Settings screen scrolls from the top; panels never overlap */
+.screen[data-screen=settings]{justify-content:flex-start!important;overflow-y:auto;padding-bottom:40px}
+.screen[data-screen=settings] .stack{flex:0 0 auto;width:100%;align-items:center}
+.screen[data-screen=settings] .stack>*{flex:0 0 auto}
+.fx-panel{flex:0 0 auto;min-height:max-content}
+.fx-panel>*{flex:0 0 auto}
+.fx-row{min-height:44px;flex-direction:row!important}
+.fx-row label{position:static!important;margin:0}
+.fx-row input[type=range]{flex:1 1 200px;max-width:300px}
+.fx-panel{position:relative!important;inset:auto!important}
+.screen[data-screen=settings] .stack{height:auto!important;max-height:none!important;min-height:max-content;overflow:visible;gap:14px}

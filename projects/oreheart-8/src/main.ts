@@ -4,6 +4,7 @@ import { App } from './ui/app';
 import { CARDS, CONFIG, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
 import { audio } from './ui/audio';
+import { getHighlights, getRings } from './ui/fx-settings';
 import { pictureOf, rarityKey } from './ui/app';
 
 const params = new URLSearchParams(location.search);
@@ -56,6 +57,9 @@ if (test) {
     getDealLog: () => app.getDealLog(),
     getFlowStreams: () => app.getFlowStreams(),
     getDealState: () => app.getDealState(),
+    getHighlightSettings: () => getHighlights(),
+    getRingSettings: () => getRings(),
+    getSelected: () => app.selectedUid,
     getAudioState: () => audio.state(),
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
     getFxLog: () => JSON.parse(JSON.stringify((app as any).fxLog)),
@@ -65,6 +69,7 @@ if (test) {
     getPiecePoses: () => (app.view ? app.view.piecePoses() : {}),
     playEmote: (side: string, name: string) => app.view?.playEmote(side, name),
     focusCommander: (side: string) => app.view?.focusCommander(side),
+    squareQuad: (r: number, c: number) => app.squareQuad(r, c),
     squareToScreen: (r: number, c: number) => app.squareToScreen(r, c),
     screenRects: () => app.screenRects(),
     poke: (uid: string) => (app.view ? app.view.poke(uid) : null),

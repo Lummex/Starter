@@ -40,11 +40,13 @@ class AudioEngine {
   musicOn = localStorage.getItem('oreheart.musicOff') !== '1';
   private tracks: Record<string, HTMLAudioElement> = {};
   private fadeT: any = null;
+  private starts: Record<string, number> = {};
   private trackEl(k: 'menu' | 'match') {
     if (!this.tracks[k]) {
       const a = new Audio(k === 'menu' ? '/audio/music/tense-cycle.mp3' : '/audio/music/first-fight.mp3');
       a.loop = true; a.preload = 'auto'; a.volume = 0;
       this.tracks[k] = a;
+      a.addEventListener('play', () => { this.starts[k] = (this.starts[k] || 0) + 1; });
     }
     return this.tracks[k];
   }
@@ -54,7 +56,7 @@ class AudioEngine {
     const v = (k: 'menu' | 'match') => { const a = this.tracks[k]; return a ? { playing: !a.paused, volume: a.volume } : { playing: false, volume: 0 }; };
     const cur = this.tracks[this.musicMode];
     return { mode: this.musicMode, on: this.musicOn, volume: this.music, menu: v('menu'), match: v('match'), muted: this.muted,
-      track: this.unlocked ? this.trackName(this.musicMode) : null, playing: !!cur && !cur.paused, gain: this.muted || !this.musicOn ? 0 : (this.music / 100) * 0.5, crossfadeMs: 1500 };
+      track: this.unlocked ? this.trackName(this.musicMode) : null, playing: !!cur && !cur.paused, gain: this.muted || !this.musicOn ? 0 : (this.music / 100) * 0.5, crossfadeMs: 1500, startCount: this.starts[this.musicMode] || 0 };
   }
   musicLog: { track: string; fadeMs: number }[] = [];
   private trackName(m: 'menu' | 'match') { return m === 'match' ? 'first-fight' : 'tense-cycle'; }
@@ -78,7 +80,7 @@ class AudioEngine {
     this.fadeT = setInterval(step, 50); step();
   }
 
-  sfxLog: { src: string; screen: string; t: number }[] = [];
+  sfxLog: { name: string; src: string; screen: string; t: number; played: boolean }[] = [];
   state() { return { sfxLog: this.sfxLog.slice(), unlocked: this.unlocked, muted: this.muted, sfxVolume: this.sfx, musicVolume: this.music, voiceVolume: this.voice, music: this.musicState(), log: this.musicLog.slice() }; }
   applyVolumes() {
     if (!this.sfxGain || !this.voiceGain) return;

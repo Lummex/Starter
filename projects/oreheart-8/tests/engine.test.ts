@@ -517,7 +517,7 @@ describe('round 10 rules', () => {
     for (let seed = 1; seed <= 200; seed++) { const m = createMatch({ seed }).sites; for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) if (Math.max(Math.abs(m[i].row - m[j].row), Math.abs(m[i].col - m[j].col)) === 1) adjacent++; }
     expect(adjacent).toBeGreaterThan(0);
   });
-  it('Ranged: straight lines up to 5, first unit blocks, no knight-move targets', () => {
+  it('Ranged: straight lines up to 7, first unit blocks, no knight-move targets', () => {
     let s = turnToAction(mk({ board: [P('goblin-slinger', 4, 3), O('goblin-scrapper', 4, 8), O('goblin-scrapper', 2, 5), O('goblin-scrapper', 6, 4), O('goblin-scrapper', 1, 3), O('goblin-scrapper', 7, 3), O('goblin-scrapper', 7, 3 + 5)] }));
     const t = targets(s, 4, 3).map((a: any) => a.target.row + ',' + a.target.col).sort();
     expect(t).toContain('4,8'); // 5 along the row
@@ -530,8 +530,10 @@ describe('round 10 rules', () => {
     expect(targets(s, 4, 3).map((a: any) => a.target.col)).toEqual([4]);
     s = turnToAction(mk({ board: [P('goblin-slinger', 4, 3), P('goblin-scrapper', 4, 5), O('goblin-scrapper', 4, 8)] }));
     expect(targets(s, 4, 3).length).toBe(0);
-    // range 5 only: 6 away is out
-    s = turnToAction(mk({ board: [P('goblin-slinger', 4, 2), O('goblin-scrapper', 4, 8)] }));
+    // round 11: range 7 -- 7 away is in, 8 away is out
+    s = turnToAction(mk({ board: [P('goblin-slinger', 4, 2), O('goblin-scrapper', 4, 9)] }));
+    expect(targets(s, 4, 2).length).toBe(1);
+    s = turnToAction(mk({ board: [P('goblin-slinger', 4, 2), O('goblin-scrapper', 4, 10)] }));
     expect(targets(s, 4, 2).length).toBe(0);
   });
   it('basic Miner death draws a card; an upgrade Miner does not', () => {

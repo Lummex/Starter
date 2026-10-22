@@ -54,9 +54,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
+  "text": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 6 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "goblin-bomber",
@@ -208,9 +208,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
+  "text": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 6 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "clockwork-beetle",
@@ -266,9 +266,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Flies over other creatures. Ranged. Hits 5 spaces in a line; no strike back.",
-  "shortText": "Flies over other creatures. Ranged. Hits 5 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flying: moves over other creatures. Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: It flies across a wall of enemy creatures."
+  "text": "Flies over other creatures. Ranged. Hits 7 spaces in a line; no strike back.",
+  "shortText": "Flies over other creatures. Ranged. Hits 7 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flying: moves over other creatures. Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: It flies across a wall of enemy creatures."
  },
  {
   "id": "the-great-steam-golem",
@@ -363,9 +363,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
+  "text": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 6 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "ironhammer-berserker",
@@ -916,9 +916,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
+  "text": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 6 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "shiv-rat",
@@ -1011,9 +1011,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
+  "text": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 6 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "gearward-sentinel",
@@ -1125,9 +1125,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "shortText": "Ranged. Hits 5 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 5 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 4 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
+  "text": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "shortText": "Ranged. Hits 7 spaces in a line; no strike back.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 6 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
  },
  {
   "id": "barrelback-courier",

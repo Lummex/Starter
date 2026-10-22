@@ -43,7 +43,8 @@ const bufs: Record<string, Promise<AudioBuffer>> = {};
 /** Plays one sound of a piece or screen: a built-in name (Web Audio) or `snd:<id>` (the owner's file in /audio/menu/). */
 export function playMenuSound(s: { src: string; vol?: number; pitch?: number }) {
   if (!s || !s.src) return;
-  audio.sfxLog.push({ src: s.src, screen: curScreen, t: Math.round(performance.now() - screenT0) });
+  const entry = { name: s.src, src: s.src, screen: curScreen, t: Math.round(performance.now() - screenT0), played: false };
+  audio.sfxLog.push(entry);
   if (audio.muted) return;
   const c = audio.ctx;
   if (!c) return;
@@ -55,12 +56,12 @@ export function playMenuSound(s: { src: string; vol?: number; pitch?: number }) 
   if (s.src.startsWith('snd:')) {
     const url = `/audio/menu/snd-${s.src.slice(4)}.mp3`;
     (bufs[url] ||= fetch(url).then((r) => r.arrayBuffer()).then((ab) => new Promise<AudioBuffer>((res, rej) => { const pr: any = c.decodeAudioData(ab, res, rej); if (pr && pr.then) pr.then(res, rej); })))
-      .then((b) => { const n = c.createBufferSource(); n.buffer = b; n.playbackRate.value = p; n.connect(g); n.start(); })
-      .catch(() => { try { const a = new Audio(url); a.volume = Math.min(1, vol); void a.play(); } catch { /* ignore */ } });
+      .then((b) => { const n = c.createBufferSource(); n.buffer = b; n.playbackRate.value = p; n.connect(g); n.start(); entry.played = true; })
+      .catch(() => { try { const a = new Audio(url); a.volume = Math.min(1, vol); void a.play(); entry.played = true; } catch { /* ignore */ } });
     return;
   }
   const f = SFX[s.src];
-  if (f) f(c, g, c.currentTime + 0.01, p);
+  if (f) { f(c, g, c.currentTime + 0.01, p); entry.played = true; }
 }
 
 // ------------------------------------------------------------------ drawing
@@ -69,7 +70,7 @@ function textStyle(t: any) {
   const sh: string[] = [];
   if ((t.shadow || 0) > 0) sh.push(`0 ${(0.12 * sz).toFixed(2)}cqh 0 rgba(0,0,0,${t.shadow})`, `0 0 ${(0.25 * sz).toFixed(2)}cqh rgba(0,0,0,${t.shadow * 0.8})`);
   if ((t.glow || 0) > 0) sh.push(`0 0 ${(0.5 * sz * t.glow + 0.2).toFixed(2)}cqh ${t.glowColor || '#FFD700'}`, `0 0 ${(0.18 * sz * t.glow + 0.1).toFixed(2)}cqh ${t.glowColor || '#FFD700'}`);
-  return `font-family:${FONT};font-size:${sz}cqh;color:${t.color};font-weight:${t.bold ? 700 : 400};font-style:${t.italic ? 'italic' : 'normal'};letter-spacing:${t.spacing || 0}em;justify-content:${t.align === 'center' ? 'center' : t.align === 'right' ? 'flex-end' : 'flex-start'};text-align:${t.align};align-items:${t.valign === 'top' ? 'flex-start' : t.valign === 'bottom' ? 'flex-end' : 'center'};text-shadow:${sh.join(',') || 'none'}`;
+  return `font-family:${FONT};font-size:${sz}cqh;color:${t.color};font-weight:${t.bold ? 700 : 400} !important;font-style:${t.italic ? 'italic' : 'normal'} !important;letter-spacing:${t.spacing || 0}em;justify-content:${t.align === 'center' ? 'center' : t.align === 'right' ? 'flex-end' : 'flex-start'};text-align:${t.align};align-items:${t.valign === 'top' ? 'flex-start' : t.valign === 'bottom' ? 'flex-end' : 'center'};text-shadow:${sh.join(',') || 'none'}`;
 }
 function haloHtml(t: any) {
   if (!(t.halo > 0)) return '';
@@ -77,7 +78,7 @@ function haloHtml(t: any) {
   return `<div class="mb-halo" style="inset:-${s}% -${s * 0.6}%;background:radial-gradient(closest-side,${hexA(t.haloColor || '#FFD700', Math.min(1, t.halo * 0.55))},${hexA(t.haloColor || '#FFD700', Math.min(1, t.halo * 0.2))} 55%,transparent 100%)"></div>`;
 }
 function innerHtml(p: Piece) {
-  if (p.kind === 'text' || p.kind === 'button') return haloHtml(p.text) + `<div class="mb-txt" style="${textStyle(p.kind === 'button' ? { ...p.text, color: '#FFD700', bold: true } : p.text)}">${esc(p.text.content)}</div>`;
+  if (p.kind === 'text' || p.kind === 'button') return haloHtml(p.text) + `<div class="mb-txt" style="${textStyle(p.text)}">${esc(p.text.content)}</div>`;
   if (p.kind === 'pic') {
     const q = p.pic, u = src(q.src);
     return q.mode === 'frame' ? `<div class="mb-fr" style="border-width:${q.border}cqh;border-image:url('${u}') ${q.slice}% ${q.fill !== false ? 'fill' : ''} / ${q.border}cqh / 0 round"></div>` : `<img src="${u}" alt="" style="object-fit:${q.fit || 'contain'}">`;
@@ -182,7 +183,6 @@ export function drawMenuScreen(host: HTMLElement, id: string, opts: MenuOpts): M
     el.dataset.id = p.id; el.dataset.menuPiece = p.id;
     if (isBtn) { (el as HTMLButtonElement).type = 'button'; el.setAttribute('aria-label', p.text.content); el.dataset.goto = p.button.goto || ''; }
     el.style.cssText = `left:${p.x}%;top:${p.y}%;width:${p.w}%;height:${p.h}%;transform:${p.rot ? `rotate(${p.rot}deg)` : 'none'};z-index:${10 + (p.z || 0)};opacity:${p.opacity === undefined ? 1 : p.opacity}`;
-    if (isBtn) { el.style.setProperty('color', '#FFD700', 'important'); el.style.setProperty('font-weight', '700', 'important'); }
     if (isBtn) { const b = p.button; el.style.setProperty('--hc', b.hoverColor); el.style.setProperty('--hgc', b.hoverGlowColor); el.style.setProperty('--hg', (b.hoverGlow * 0.8).toFixed(2) + 'cqh'); }
     const inn = document.createElement('div');
     inn.className = 'mb-inner';
