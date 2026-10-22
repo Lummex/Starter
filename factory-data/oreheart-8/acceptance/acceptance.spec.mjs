@@ -36,6 +36,8 @@ const at = (s, row, col) => s.board.creatures.find((c) => c.row === row && c.col
 const handUid = (s, side, cardId) => s.players[side].hand.find((c) => c.cardId === cardId).uid;
 const total = (n) => n; // Revision 7: Flow and Bank are plain numbers
 const ZERO = 0;
+// Round 12a: owner card paintings (factory-design/goblin-art/), used unchanged
+const OWNER_CARD_ART = { 'goblin-scrounger': 'goblin-miner-card-art.png', 'goblin-pebbler': 'boneknocker-card-art.png', 'shiv-rat': 'shiv-rat-card-art.png', 'goblin-smith-miner': 'scrapsmith-miner-card-art.png' };
 const sameTarget = (t, row, col) => t && t.row === row && t.col === col;
 const SHARDS = Array(12).fill('soul-shard');
 // Round 9a: Last turn, Mute, Card pop-ups and Recenter live in Menu -> Settings ("Match settings")
@@ -2945,6 +2947,10 @@ test('AC81: every Goblin creature has a committed WebP card picture and an art e
   expect(fs.existsSync(path.join(dir, 'tools/gen-card-art.mjs'))).toBe(true);
   for (const c of goblins) {
     const info = await page.evaluate(async (id) => await window.oreheart.getArtInfo(id), c.id);
+    if (OWNER_CARD_ART[c.id]) { // Round 12a: owner paintings replace the generated WebP (AC273)
+      expect(info.picture, c.id).toBe(`/art/owner/goblin/${OWNER_CARD_ART[c.id]}`);
+      continue;
+    }
     expect(info.picture, c.id).toBe(`/art/cards/${c.id}.webp`);
     const res = await page.request.get(info.picture);
     expect(res.status(), c.id).toBe(200);
@@ -3234,7 +3240,8 @@ test('AC94: Commander select shows borderless full-art Commander cards without s
     ['Archmagister Sproingle the Unfathomable', 'sproingle', 'Gnomes'], ['Thane Borgo Gravelgrim', 'borgo', 'Dwarves']]) {
     const btn = page.getByRole('button', { name });
     await expect(btn).toBeVisible();
-    const img = btn.locator(`img[src*="/art/commanders/${id}.webp"]`);
+    // Round 12a: Grubnak's portrait is the owner's on-throne painting
+    const img = btn.locator(id === 'grubnak' ? 'img[src*="grubnak-on-throne-art"]' : `img[src*="/art/commanders/${id}.webp"]`);
     await expect(img).toHaveCount(1);
     await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth > 0)).toBe(true);
     await expect(btn).toContainText(faction);
@@ -8277,3 +8284,235 @@ test.describe('round 11 at 1920x1080', () => {
     expect(errors).toEqual([]);
   });
 });
+
+// ================= Round 12a =================
+const homeRowBottom = (page) => page.evaluate(async () => {
+  let y = -Infinity;
+  for (let c = 1; c <= 13; c++) for (const p of await window.oreheart.squareQuad(7, c)) y = Math.max(y, p.y);
+  return y;
+});
+const handButtons = (page) => page.getByLabel('Your hand', { exact: true }).getByRole('button').filter({ has: page.locator('[data-card-id]') });
+// real mouse drag: press on the card, several moves, release at the target point
+async function realDrag(page, from, to, steps = 12) {
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x, from.y - 10, { steps: 2 });
+  await page.mouse.move(to.x, to.y, { steps });
+  await page.waitForTimeout(150);
+  await page.mouse.up();
+}
+const MINER_HAND = ['goblin-scrounger', 'goblin-scrapper', 'goblin-slinger', 'fireball', 'soul-shard'];
+
+for (const vp of [{ width: 1920, height: 1080 }, { width: 1568, height: 782 }]) {
+  test.describe(`round 12a drag-to-play at ${vp.width}x${vp.height}`, () => {
+    test.use({ viewport: vp });
+
+    test(`AC269: dragging Grubgrabber Miner from the raised hand onto a legal home-row square summons it (${vp.width}x${vp.height})`, async ({ page }) => {
+      let s = await start(page, quiet({ playerHand: MINER_HAND, playerCrystals: 9 }));
+      await page.waitForTimeout(800);
+      const uid = handUid(s, 'player', 'goblin-scrounger');
+      const spot = (await legal(page)).find((a) => a.type === 'summon' && a.uid === uid && a.row === 7 && !at(s, a.row, a.col));
+      expect(spot, 'a legal home-row summon').toBeTruthy();
+      const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Grubgrabber Miner', exact: true });
+      const p = await raiseHandAt(page, card);
+      const t = await sq2s(page, spot.row, spot.col);
+      await page.mouse.down();
+      await page.mouse.move(p.x, p.y - 12, { steps: 2 });
+      await page.mouse.move(t.x, t.y, { steps: 14 });
+      await expect(page.getByLabel('Dragged card', { exact: true })).toBeVisible();
+      await expect.poll(async () => (await page.evaluate(async () => (await window.oreheart.getArena()).highlights))
+        .some((h) => h.row === spot.row && h.col === spot.col)).toBe(true);
+      await page.mouse.up();
+      await expect.poll(async () => { const c = at(await getState(page), spot.row, spot.col); return c && c.cardId; }).toBe('goblin-scrounger');
+      s = await getState(page);
+      expect(s.players.player.hand.length).toBe(MINER_HAND.length - 1);
+      expect(s.players.player.hand.some((c) => c.uid === uid)).toBe(false);
+      await expect(page.getByLabel('Dragged card', { exact: true })).toBeHidden();
+    });
+
+    test(`AC270: a drag from the tucked hand also plays; a drop back in the hand or on an illegal square plays nothing (${vp.width}x${vp.height})`, async ({ page }) => {
+      let s = await start(page, quiet({ playerHand: MINER_HAND, playerCrystals: 9 }));
+      await page.waitForTimeout(800);
+      const H = vp.height;
+      const uid = handUid(s, 'player', 'goblin-scrapper');
+      const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true });
+      const b = await card.boundingBox();
+      const from = { x: b.x + b.width / 2, y: Math.min(b.y + 8, H - 3) };
+      // illegal: the enemy back row
+      const bad = await sq2s(page, 1, 7);
+      await realDrag(page, from, bad);
+      await page.waitForTimeout(400);
+      s = await getState(page);
+      expect(s.players.player.hand.length).toBe(MINER_HAND.length);
+      expect(s.board.creatures.filter((c) => c.owner === 'player').length).toBe(0);
+      // back into the hand band
+      const b2 = await card.boundingBox();
+      await realDrag(page, { x: b2.x + b2.width / 2, y: Math.min(b2.y + 8, H - 3) }, { x: b2.x + b2.width / 2, y: H - 4 }, 6);
+      await page.waitForTimeout(400);
+      expect((await getState(page)).players.player.hand.length).toBe(MINER_HAND.length);
+      // legal, started straight from the tucked strip (move the mouse away first so the hand is tucked)
+      await page.mouse.move(vp.width / 2, vp.height * 0.3);
+      await page.waitForTimeout(700);
+      const spot = (await legal(page)).find((a) => a.type === 'summon' && a.uid === uid && a.row === 7);
+      const t = await sq2s(page, spot.row, spot.col);
+      const b3 = await card.boundingBox();
+      await realDrag(page, { x: b3.x + b3.width / 2, y: Math.min(b3.y + 6, H - 2) }, t);
+      await expect.poll(async () => { const c = at(await getState(page), spot.row, spot.col); return c && c.cardId; }).toBe('goblin-scrapper');
+    });
+  });
+}
+
+test.describe('round 12a at 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+
+  test('AC271: dragging a targeted spell onto an enemy casts it there; a Crystal card dragged over the board is played', async ({ page }) => {
+    let s = await start(page, quiet({ playerHand: ['fireball', 'soul-shard', 'goblin-scrapper'], playerCrystals: 9,
+      board: [{ cardId: 'dwarf-stoneback', owner: 'opponent', row: 4, col: 7 }] }));
+    await page.waitForTimeout(800);
+    const hand = page.getByLabel('Your hand', { exact: true });
+    const target = at(s, 4, 7);
+    const fb = await hand.getByRole('button', { name: 'Infernal Orb', exact: true }).boundingBox();
+    await realDrag(page, { x: fb.x + fb.width / 2, y: Math.min(fb.y + 8, 1077) }, await sq2s(page, 4, 7));
+    await expect.poll(async () => (await getState(page)).players.player.hand.some((c) => c.cardId === 'fireball')).toBe(false);
+    s = await getState(page);
+    const after = s.board.creatures.find((c) => c.uid === target.uid);
+    expect(!after || after.health < target.health).toBe(true);
+    const bank0 = s.players.player.bank;
+    const cb = await hand.getByRole('button', { name: 'Soul Shard', exact: true }).boundingBox();
+    await realDrag(page, { x: cb.x + cb.width / 2, y: Math.min(cb.y + 8, 1077) }, await sq2s(page, 4, 4));
+    await expect.poll(async () => (await getState(page)).players.player.bank).toBe(bank0 + 1);
+    expect((await getState(page)).players.player.hand.some((c) => c.cardId === 'soul-shard')).toBe(false);
+  });
+
+  test('AC273: owner card paintings and Grubnak\'s on-throne portrait are used unchanged', async ({ page, request }) => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const here = path.dirname((await import('node:url')).fileURLToPath(import.meta.url));
+    const dirs = [path.resolve(here, '../../../factory-design/goblin-art'), path.resolve(process.cwd(), 'factory-design/goblin-art')];
+    const ref = dirs.find((d) => fs.existsSync(path.join(d, 'grubnak-on-throne-art.png')));
+    for (const f of [...Object.values(OWNER_CARD_ART), 'grubnak-on-throne-art.png']) {
+      const res = await request.get(`/art/owner/goblin/${f}`);
+      expect(res.ok(), f).toBe(true);
+      if (ref) expect(Buffer.compare(await res.body(), fs.readFileSync(path.join(ref, f))), `${f} byte-identical`).toBe(0);
+    }
+    await openTest(page);
+    for (const [id, f] of Object.entries(OWNER_CARD_ART)) {
+      const info = await page.evaluate(async (x) => await window.oreheart.getArtInfo(x), id);
+      expect(info.picture, id).toBe(`/art/owner/goblin/${f}`);
+    }
+    // hand faces
+    await newMatch(page, quiet({ playerHand: Object.keys(OWNER_CARD_ART), playerCrystals: 9 }));
+    await page.waitForTimeout(800);
+    const hand = page.getByLabel('Your hand', { exact: true });
+    for (const [id, f] of Object.entries(OWNER_CARD_ART)) {
+      const img = hand.locator(`[data-card-id="${id}"] img[src*="${f}"]`).first();
+      await expect(img, id).toHaveCount(1);
+      await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth > 0)).toBe(true);
+      const ratio = await img.evaluate((i) => { const r = i.getBoundingClientRect(); const fit = getComputedStyle(i).objectFit;
+        return { box: r.width / r.height, nat: i.naturalWidth / i.naturalHeight, fit }; });
+      if (!['cover', 'contain'].includes(ratio.fit)) expect(Math.abs(ratio.box - ratio.nat) / ratio.nat, `${id} not stretched`).toBeLessThanOrEqual(0.03);
+    }
+    // Deck Builder close-up
+    await openDecks(page);
+    for (const name of ['Grubgrabber Miner', 'Boneknocker', 'Shiv Rat', 'Scrapsmith Miner']) {
+      const tile = allCards(page).getByRole('button', { name, exact: true });
+      await tile.scrollIntoViewIfNeeded();
+      const id = { 'Grubgrabber Miner': 'goblin-scrounger', 'Boneknocker': 'goblin-pebbler', 'Shiv Rat': 'shiv-rat', 'Scrapsmith Miner': 'goblin-smith-miner' }[name];
+      await expect(tile.locator(`img[src*="${OWNER_CARD_ART[id]}"]`).first()).toHaveCount(1);
+      await tile.click();
+      const view = page.getByRole('dialog', { name });
+      await expect(view).toBeVisible();
+      await expect(view.locator(`img[src*="${OWNER_CARD_ART[id]}"]`).first()).toHaveCount(1);
+      await page.keyboard.press('Escape');
+      await expect(view).toBeHidden();
+    }
+    // Grubnak select card
+    await page.goto('/?test=1');
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    const g = page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' });
+    const gi = g.locator('img[src*="grubnak-on-throne-art"]');
+    await expect(gi).toHaveCount(1);
+    await expect.poll(() => gi.evaluate((i) => i.complete && i.naturalWidth > 0)).toBe(true);
+  });
+
+  test('AC274: Round 12a screenshots render without errors', async ({ page }, testInfo) => {
+    test.setTimeout(120000);
+    const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+    const shot = async (n) => testInfo.attach(n, { body: await page.screenshot(), contentType: 'image/png' });
+    await start(page, quiet({ playerHand: [...Object.keys(OWNER_CARD_ART), 'fireball'], playerCrystals: 9 }));
+    await page.waitForTimeout(800);
+    const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Grubgrabber Miner', exact: true });
+    const p = await raiseHandAt(page, card);
+    await shot('r12a-hand-raised');
+    const t = await sq2s(page, 7, 6);
+    await page.mouse.down();
+    await page.mouse.move(p.x, p.y - 12, { steps: 2 });
+    await page.mouse.move(t.x, t.y, { steps: 14 });
+    await shot('r12a-drag-highlights');
+    await page.mouse.move(p.x, 1076, { steps: 8 });
+    await page.mouse.up();
+    await openDecks(page);
+    for (const name of ['Grubgrabber Miner', 'Boneknocker', 'Shiv Rat', 'Scrapsmith Miner']) {
+      await allCards(page).getByRole('button', { name, exact: true }).click();
+      await expect(page.getByRole('dialog', { name })).toBeVisible();
+      await page.waitForTimeout(300);
+      await shot(`r12a-card-${name.toLowerCase().replace(/ /g, '-')}`);
+      await page.keyboard.press('Escape');
+    }
+    await page.goto('/?test=1');
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    await page.waitForTimeout(800);
+    await shot('r12a-grubnak-select');
+    expect(errors).toEqual([]);
+  });
+});
+
+for (const vp of [{ width: 1920, height: 1080 }, { width: 1568, height: 782 }, { width: 1366, height: 768 }]) {
+  test.describe(`round 12a hand layout at ${vp.width}x${vp.height}`, () => {
+    test.use({ viewport: vp });
+
+    test(`AC272: the raised hand never covers the board, is an even fan fully on screen, hovered card bigger (${vp.width}x${vp.height})`, async ({ page }) => {
+      const { width: W, height: H } = vp;
+      await start(page, quiet({ playerHand: ['goblin-scrounger', 'goblin-scrapper', 'goblin-slinger', 'fireball', 'soul-shard', 'goblin-pebbler', 'shiv-rat'], playerCrystals: 9 }));
+      await page.waitForTimeout(800);
+      const minH = W >= 1920 ? 120 : 90;
+      const rowBottom = await homeRowBottom(page);
+      const btns = handButtons(page);
+      const n = await btns.count();
+      expect(n).toBe(7);
+      // even fan (measured before any hover): equal spacing between neighbour centers
+      const rest = [];
+      for (let i = 0; i < n; i++) rest.push(await btns.nth(i).boundingBox());
+      const centers = rest.map((b) => b.x + b.width / 2).sort((a, c) => a - c);
+      const gaps = centers.slice(1).map((c, i) => c - centers[i]);
+      expect(Math.max(...gaps) - Math.min(...gaps), `gaps ${gaps.map((g) => g.toFixed(0))}`).toBeLessThanOrEqual(4);
+      for (const b of rest) { expect(b.x).toBeGreaterThanOrEqual(-1); expect(b.x + b.width).toBeLessThanOrEqual(W + 1); }
+      const middle = btns.nth(3);
+      await raiseHandAt(page, middle);
+      await page.waitForTimeout(500);
+      const boxes = [];
+      for (let i = 0; i < n; i++) boxes.push(await btns.nth(i).boundingBox());
+      const order = boxes.map((b, i) => ({ b, i })).sort((a, c) => a.b.x - c.b.x);
+      const hovered = boxes[3];
+      const others = boxes.filter((_, i) => i !== 3);
+      for (const b of boxes) {
+        expect(b.y, 'card top below the home row').toBeGreaterThanOrEqual(rowBottom - 2);
+        expect(b.x).toBeGreaterThanOrEqual(-1);
+        expect(b.x + b.width).toBeLessThanOrEqual(W + 1);
+        expect(b.y).toBeGreaterThanOrEqual(-1);
+        expect(b.y + b.height, 'card bottom on screen').toBeLessThanOrEqual(H + 1);
+      }
+      for (const b of others) expect(b.height).toBeGreaterThanOrEqual(minH);
+      expect(hovered.height).toBeGreaterThanOrEqual(1.1 * Math.max(...others.map((b) => b.height)) - 1);
+      // nobody hidden behind the hovered card
+      for (let k = 0; k < order.length; k++) {
+        const { b, i } = order[k];
+        if (i === 3) continue;
+        const lo = b.x, hi = b.x + b.width;
+        // the part not covered by the hovered card
+        const covered = Math.max(0, Math.min(hi, hovered.x + hovered.width) - Math.max(lo, hovered.x));
+        expect((b.width - covered) / b.width, `card ${i} visible width`).toBeGreaterThanOrEqual(0.35);
+      }
+    });
+  });
+}

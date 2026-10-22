@@ -1,4 +1,4 @@
-# OreHeart — Build Spec (Phase 1B, Round 11 — intro sound & music, main menu, highlight + ring settings, mine clicks, hand drag & reorder, fixes, Ranged 7)
+# OreHeart — Build Spec (Phase 1B, Round 12a — drag-to-play fix, hand layout, owner Goblin card paintings)
 
 ## Summary
 
@@ -10,9 +10,41 @@ Oreheart is a comic-style fantasy card battle in the browser. Goblins, Gnomes an
 
 **Phase 1B Round 11** (this build) applies the owner's round 10 playtest: a "Click to begin" gate so the intro sounds and continuous menu music really play, main menu text exactly as the owner's menus file, glowing edge-light square highlights and unit rings with their own Settings panels, mine clicks limited to the mine's own square, opponent-only card pop-ups, a draggable/reorderable hand that shows the real card while dragging, five fixes, and the Ranged range raised to 7 (still straight lines, blocked by the first unit). Where older sections say Ranged range 5, R11.17 wins.
 
+**Phase 1B Round 12a** (this build) fixes the blocker that dragging a hand card onto the board never played it, lays the raised hand out as an even fan that never covers the board, and installs the owner's own card paintings for Grubgrabber Miner, Boneknocker, Shiv Rat and Scrapsmith Miner plus Grubnak's on-throne portrait. No 3D models, Meshy or throne this round (Round 12b).
+
 Tech: Vite + TypeScript (vanilla or React), Three.js for the 3D scene, static `dist/` output, no backend.
 
-### Phase 1B, Round 11 (owner playtest of round 10: intro sound & music, main menu, highlights + settings, mines, pop-ups, hand drag & reorder, unit rings, fixes, Ranged 7) — READ FIRST
+### Phase 1B, Round 12a (drag-to-play fix, hand layout, owner Goblin card paintings) — READ FIRST
+
+Source: the "Round 12a" and "Round 12" sections at the top of `factory-design/design/oreheart-phase-1b-brief.md` (binding) and the GDD. Keep **everything** from Rounds 8a–11 unless an item below replaces it. **Build only these three items.** NOT this round: no new 3D models, no Meshy calls, no junk throne, no change to Grubnak's figure or stronghold (all Round 12b). Rules are unchanged. Keep the job short (target well under 90 minutes) and **commit working progress early** (right after R12a.1 works).
+
+**R12a.1 BLOCKER — drag a hand card onto the board to play it.** Today every drag of a hand card only reorders the hand and nothing is summoned. New gesture rules (mouse, pen and touch alike, built on pointer events):
+- A press on a hand card (raised **or** still tucked: pressing the visible tucked strip works without waiting for the raise) starts a drag after the pointer moves ≥ 6 px.
+- **Play drag:** as soon as the pointer leaves the hand band upward, or has moved more vertically than sideways, the drag is a play drag: the rest of the hand tucks off the board (R11.9, shown fraction ≤ 0.32), the "Dragged card" (R11.8: real face, `data-card-id`, `data-tilt`) follows the pointer, and the legal squares for that card highlight (`getArena().highlights`). Releasing over a legal square does exactly the matching `legalActions()` action: creature → `summon` on that square (incl. Tunnel squares and Miner upgrades onto your own creature → `minerUpgrade`), targeted spell → `cast` with that target. Crystal cards and untargeted spells play when released **anywhere over the board** above the hand band (`playCrystal` / `cast`). Releasing on an illegal square, or back in the hand band, plays nothing and the card returns to its place. After a successful play the floating card disappears and the hand shows one card fewer.
+- **Reorder drag:** only while the pointer stays inside the hand band and moves mostly sideways (R11.7 unchanged; AC264 still holds). A reorder never plays a card.
+- The drag must work with real browser input (Playwright `page.mouse` down → several moves → up at the square's screen point from `squareToScreen(row, col)`), not only through test hooks. No `act()` call is needed.
+
+**R12a.2 Hand layout.** When the hand is raised (hover or drag-reorder) at the default view (after Recenter, zoom 1), at 1920 × 1080, 1568 × 782 and 1366 × 768:
+- **Never covers the board:** the top of every hand card button is at or below the lowest screen point of the player's home row (`max y` of the corners of `squareQuad(7, c)` for c = 1…13), 2 px tolerance. Pick the card size and/or the default board framing (still cover-fit, never stretched, no black bars) so a band below the board holds the hand.
+- **Even fan, fully on screen:** every hand card button lies completely inside the window (left ≥ 0, right ≤ width, top ≥ 0, bottom ≤ height, 1 px tolerance); with no card hovered, the distance between neighbouring card centers is the same for all neighbours (± 4 px) and every card lies horizontally inside the window; each card is at least 120 px tall at 1920 × 1080 and 90 px at 1568 × 782 / 1366 × 768; no card is hidden behind the hovered card (each non-hovered card shows ≥ 35 % of its width).
+- **Hovered card** enlarges upward (its button height ≥ 1.1 × a non-hovered card's) yet still obeys the two rules above; neighbours may slide aside (R9a) but never move off screen. The large top-layer pop-out preview (R8b.6), if shown, is a separate preview element and is not a hand card button.
+- At rest the R10.9 quarter tuck stays.
+
+**R12a.3 Owner card paintings (binding, used exactly).** Copy these files from `factory-design/goblin-art/` **unchanged (byte-identical), same names**, into `public/art/owner/goblin/` (served at `/art/owner/goblin/<file>`), list them in CREDITS.md as owner-supplied, and use them as the pictures:
+| Owner file (1024 × 1536) | Used as |
+|---|---|
+| `goblin-miner-card-art.png` | Grubgrabber Miner (`goblin-scrounger`) card painting |
+| `boneknocker-card-art.png` | Boneknocker (`goblin-pebbler`) card painting |
+| `shiv-rat-card-art.png` | Shiv Rat (`shiv-rat`) card painting |
+| `scrapsmith-miner-card-art.png` | Scrapsmith Miner (`goblin-smith-miner`) card painting |
+| `grubnak-on-throne-art.png` | Grubnak's Commander portrait |
+- `getArtInfo(id).picture` for the four cards = `/art/owner/goblin/<owner file>` (the old generated `/art/cards/<id>.webp` is no longer used for them; other Goblin cards unchanged). Every face of these cards (hand, Dragged card, opponent reveal, card close-up, Deck Builder grid/close-up, mulligan) contains an `<img>` whose `src` contains the owner file name, shown in the frame window (cover/fit, **never stretched**: displayed aspect = drawn aspect, R5a.2).
+- Grubnak's portrait: the Choose Your Commander card "Grubnak Rotgut, King of the Junkpile" contains an `<img>` whose `src` contains `grubnak-on-throne-art`, and every other place that shows Grubnak's portrait picture (focused Commander backdrop, any HUD portrait) uses the same file. Sproingle and Borgo keep `/art/commanders/<id>.webp`.
+- The other owner files in that folder (model sheets, assembled reference, wide art, throne sheet) are **not** used this round.
+
+**R12a.4 Report:** screenshots at 1920 × 1080: a drag onto the board with highlights, the raised hand, and the 4 new cards (close-ups or Deck Builder) plus the Grubnak select card.
+
+### Phase 1B, Round 11 (owner playtest of round 10: intro sound & music, main menu, highlights + settings, mines, pop-ups, hand drag & reorder, unit rings, fixes, Ranged 7) — done
 
 Source: the "Round 11" section at the top of `factory-design/design/oreheart-phase-1b-brief.md` (binding), `factory-design/round9c/menus.json` and the GDD. Keep **everything** from Rounds 8a–10 unless an item below replaces it. **Build only these 17 items**; queued Menu Builder / deck builder / halls / card template work stays queued. Faction colors (owner, binding): Goblins main **#3ee06a** + highlight #b45cff; Gnomes main **#9b4dff** + highlight #3fa9ff; Dwarves main **#2f5fd8** + highlight #FFD700.
 
@@ -1438,11 +1470,21 @@ Round 8a notes on older criteria: AC149 now checks the R8a cover-fit camera (`mi
 267. (Round 11) Screenshots at 1920 × 1080 of the begin screen, Intro, main menu, Settings panels and a drag with highlights render without page errors (R11.18).
 268. (Round 11) Fixes: basic Miner death draws a card (AC247, using the real Gnome Miner `gnome-prospector`), rule texts (AC255), Commander yaw 146° (AC230), Change Commander clickable (AC206), no 3D viewer on spell/crystal close-ups (AC209), Deck Builder white text and bold Back (AC210, AC241), and the outdated checks listed in R11.16 pass.
 
+269. (Round 12a) At 1920 × 1080 and 1568 × 782, dragging Grubgrabber Miner from the hand with real mouse input (down, several moves, up) onto a legal home-row square summons it on exactly that square; the floating card disappears and the hand has one card fewer (R12a.1).
+270. (Round 12a) A drag started on the still-tucked hand (no hover wait) onto a legal square also summons; a drag released back in the hand or on an illegal square plays nothing (R12a.1).
+271. (Round 12a) Dragging Infernal Orb onto an enemy creature casts it on that creature; dragging Soul Shard over the board plays it (Bank +1) (R12a.1).
+272. (Round 12a) At 1920 × 1080, 1568 × 782 and 1366 × 768 the raised hand never covers the home row, is an even fan fully on screen, and the hovered card is bigger without breaking either rule (R12a.2).
+273. (Round 12a) The four owner card paintings and Grubnak's on-throne portrait are served byte-identical at `/art/owner/goblin/…` and shown on the cards (hand, close-up, Deck Builder) and the Grubnak select card, not stretched (R12a.3).
+274. (Round 12a) Screenshots at 1920 × 1080 of a drag with highlights, the raised hand, the 4 new cards and the Grubnak card render without page errors (R12a.4).
+
+Round 12a notes on older criteria: AC81 exempts the four owner-painted cards from the generated-WebP checks (their picture is the owner PNG, AC273); AC94 expects Grubnak's portrait `grubnak-on-throne-art` (Sproingle and Borgo unchanged).
+
 Round 10 notes on older criteria: AC11 and AC50 now check Tunnel from turn 1 (R10.13); AC13 checks the straight-line Ranged rule (R10.6); AC17's "one Crystal card per round" becomes "several per turn" (R10.12); AC22 and AC98 close the card with Esc/outside click (R10.8); AC43, AC152-era and AC175/AC218 hand checks use the quarter tuck (R10.9); AC110 allows touching mines (R10.3); AC222 checks streams ending at the Flow crystal counters (R10.7).
 
 Round 9a notes on older criteria: AC20, AC74 and the in-match text-control check use "Give up match!" → "Yes, give up" (was Surrender); every test that used the pop-out Menu items opens Menu → Settings first ("Match settings"); AC73 uses a Sproingle deck (R9a.10); AC104 keeps its perspective and corner checks but its R5b HUD-position checks are replaced by AC212; AC151, AC161, AC163 and AC166 (R5b/R6a HUD positions) are replaced by AC212–AC213 and AC218; AC154 (hover pop-out Menu) is replaced by AC216–AC217; AC160 opens the Menu by click; AC172 checks the code-built mine at 2.43–2.53 tall; AC175 expects 31–37 % hand cards; AC193 (Meshy mine) is retired; AC201 is replaced by AC218 (raise to 1.6 ×, 400–500 ms).
 
 ## Out of scope / limitations
+- (Round 12a) New 3D models for Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner and Grubnak, his junk throne and any Meshy call are Round 12b, not this build.
 
 - (Round 11) Not in this round: the queued Menu Builder, deck builder, halls and card template work (Round 9b and queued 9c parts). Highlight/ring settings are per browser, not per account (no accounts exist).
 
