@@ -4,7 +4,64 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 10 — owner playtest of 9c: highlights, played-card pop-ups, mines, rule changes (Miner draw, Ranged lines, Crystal cards, Tunnel), Crystal Flow, card close-up, hand — read this first
+## Round 11 — owner playtest of round 10: intro sound & music, main menu, highlights + settings, mines, pop-ups, hand drag & reorder, unit rings, fixes, Ranged 7 — read this first
+
+Round 10 is done; keep everything from 8a–10 unless an item below replaces it. Build ONLY the 17 items below (queued Menu Builder / deck builder / halls / card template work stays queued). Faction color rule: Goblins green #3ee06a + purple #b45cff; Gnomes purple #9b4dff + blue #3fa9ff; Dwarves navy #2f5fd8 + gold #FFD700.
+
+### 1. Intro sound and music
+Intro has no sound: the logo crash sound (owner ElevenLabs snd-qoqhrj, at the crash animation start, vol 2) and the thunder (at 470 ms) do not play. Music (Tense Cycle) must start on the intro and play continuously through every menu until a match starts (no restart between menus). Browsers block audio until the first click/tap: add a short "Click to begin" gate (title + logo, owner style) before the intro so the intro sounds and music can play, OR start everything on the first interaction — must work on a fresh page load.
+
+### 2. Main menu matches the owner file
+Main menu text does not match the owner's Menu Builder file: button words must be WHITE (#ffffff) with the owner's font/size/glow/hover as in factory-design/round9c/menus.json (all text pieces: exact color, font, size, bold/italic, shadow, glow, halo). Still gold/yellow in the build.
+
+### 3. Square highlights look
+Placement / move highlight: not a flat solid color fill. Make it look like light emanating from the ground — glowing edges/rim light with a soft inner falloff (mostly transparent center), in the faction color; attack squares red glow the same way.
+
+### 4. Settings: Square highlights panel
+Settings → "Square highlights" panel (fully customizable, live preview square, saved per player, "Reset to default"): edge/rim color and inner glow color (two color pickers; default = player's faction main + highlight colors), attack color (default red), opacity/strength, glow size/softness, edge thickness, inner fill amount (0 = edges only), pulse on/off + speed. Applies to placement, move and attack highlights.
+
+### 5. Mine click area
+Mine click area = exactly the mine's own board square (its screen quad on the ground), nothing outside it: the tall crystal/banner drawn over the square above must NOT capture clicks there, so creatures standing behind/above a mine are selectable. Clicking anywhere in the mine's own square (or its pick icon) still auto-mines with all miners.
+
+### 6. Played-card pop-ups: opponent only
+Played-card pop-ups: show ONLY the opponent's played cards (left edge, stacking). Remove the pop-up for the player's own cards.
+
+### 7. Rearrange the hand
+Rearrange hand: click-drag a card sideways within the hand and release to reorder it (order kept for the match).
+
+### 8. Dragging a card
+Dragging a card to play: the drag shows the ACTUAL card (full face), not the grey skull placeholder. While held it floats/bobs gently and tilts subtly in the direction of movement (springy, "fidget" feel).
+
+### 9. Hand while dragging
+While dragging a card out onto the board, the hand tucks down so it never blocks squares; while dragging within the hand (reordering, P7) the hand stays up.
+
+### 10. Unit rings
+Unit ring: the ring under each creature uses the side's faction color by default (owner color rule) and greys out once that unit has moved/acted this turn. In Settings, next to Square highlights, a "Unit rings" panel: ring color for my units (default my faction color), enemy ring color (default their faction color), "already moved" color/grey amount, thickness, glow, opacity, Reset to default; saved per player, live preview.
+
+### 11. RULE FIX — Miner death draws a card
+Round 10 item 5 is not working (test AC247): when a basic Miner (role Gatherer) dies, its owner draws 1 card; not when used up as an upgrade. Update the rules texts with the dies/draw wording (AC255).
+
+### 12. Commander facing
+Grubnak is ~79° off (AC230): use the owner's turn 146° exactly as defined in round 9c item 2 (facing direction = (cx: sin t, cy: cos t), +cy toward the player).
+
+### 13. Change Commander button
+"Change Commander" on Choose Your Commander is covered by the deck pictures (AC206): it must be visible and clickable.
+
+### 14. Close-ups without 3D viewer
+Spell and crystal card close-ups must not show the 3D viewer (AC209).
+
+### 15. Deck Builder text colors
+Deck list card lines, the counts summary and the "0 of 50–100 cards" line are WHITE; + / − unchanged; "Back" bold (AC210).
+
+### 16. Outdated checks
+Update the 8 old checks that contradict the round 10 rules (mines may touch, Tunnel off the back row, lower hand rest, etc.) and investigate the mine test timeout (AC245) and mine-glow report (AC252).
+
+### 17. RULE CHANGE — Ranged range 7
+RULE CHANGE: Ranged range 5 → 7 squares, still only the 8 straight directions, and the shot still stops at the FIRST unit in the line (yours or the enemy's; cannot shoot past/over any unit). Update card text, longText, rules, AI, tests.
+
+**Tests:** keep all checks passing; add tests for every item (intro audio plays after the begin click and music continues across menus without restarting; main menu colors equal menus.json; highlight + ring settings persist and apply; mine hit area limited to its own square; only opponent pop-ups; hand reorder; drag shows the real card; hand tucks while dragging onto the board but stays up while reordering; ring faction colors and grey after moving; Miner draw; Commander yaw 146°; Ranged 7 with blocking). Screenshots 1920 × 1080: the begin screen, intro, main menu, a drag with highlights, the Settings highlight and ring panels, a unit behind a mine selected, an opponent pop-up stack.
+
+## Round 10 (done) — owner playtest of 9c: highlights, played-card pop-ups, mines, rule changes (Miner draw, Ranged lines, Crystal cards, Tunnel), Crystal Flow, card close-up, hand
 
 Round 9c is done; keep everything from 8a–9c unless an item below replaces it. Build ONLY the 13 items below this round (the queued Menu Builder / deck builder / halls work stays queued). Faction color rule (owner, binding): Goblins = green #3ee06a with purple highlights #b45cff; Gnomes = purple #9b4dff with blue highlights #3fa9ff; Dwarves = navy blue #2f5fd8 with gold highlights #FFD700.
 
