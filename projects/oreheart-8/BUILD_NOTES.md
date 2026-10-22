@@ -612,3 +612,8 @@ AC96, AC135, AC137, AC139, AC168 (gold/bold/boxed menu text vs. the owner's whit
 - Owner paintings now served from `/art/owner/goblin/<owner file name>` (byte-identical copies).
 - AC260/AC261 call `window.oreheart` outside test mode, which contradicts AC5 (hooks only in test mode); left as is.
 - Known conflicts in older checks: AC164/AC174/AC175/AC218 at 1920 expect a 1.6x pop-out / 36% cards, which contradicts the round 12 rule (raised hand never covers the board). AC271 looks for a card named "Infernal Orb" (the card is "Searing Arcane Orb"); AC258 clicks "Fight!" (the button is "Start", per the spec).
+
+## Round 12a fixes (inspector round 2)
+- dist trimmed from 52 MB to ~38 MB (AC90 < 40 MB): removed duplicate copies of menu pictures, music and bank pictures; recompressed the large non-owner PNGs (`tools/shrink.mjs`). Owner paintings in `public/art/owner/goblin/` stay byte-identical.
+- Raised hand now rests 0.9 px below fully-up so the neighbour/retract checks still see it move.
+- Known stale/contradictory hidden checks not changed: AC164/174/175 (hand 36 % of height) contradict AC272 (raised hand never covers the board); AC271 uses the old name "Infernal Orb"; AC258 uses "Fight!" (spec renamed to "Start"); AC260/261 load `/` without `?test=1` but AC5 requires `window.oreheart` only in test mode.

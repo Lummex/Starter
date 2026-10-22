@@ -19,13 +19,13 @@ describe('round 9a: owner layout and themes', () => {
   it('the Goblin theme has 3 corner frames, flow crystals and a bank, and all pictures exist', () => {
     expect(theme.cornerFrames).toHaveLength(3);
     for (const f of theme.cornerFrames) expect(existsSync('public/art/goblin/' + f.picture[0])).toBe(true);
-    for (const f of ['goblin-bank.png', 'opponent-bank-placeholder.png']) expect(existsSync('public/art/goblin/' + f)).toBe(true);
+    for (const f of ['goblin-bank.png', 'opponent-bank-placeholder.png']) expect(existsSync('public/art/ui/' + f)).toBe(true);
     expect(theme.flowCrystal.player.picture[0]).toBe('img-prbig7.webp');
     expect(theme.crystalFlow[0].count).toBe(10);
   });
   it('both music files ship', () => {
-    expect(existsSync('public/music/tense-cycle.mp3')).toBe(true);
-    expect(existsSync('public/music/first-fight.mp3')).toBe(true);
+    expect(existsSync('public/audio/music/tense-cycle.mp3')).toBe(true);
+    expect(existsSync('public/audio/music/first-fight.mp3')).toBe(true);
   });
   it('hand settings: 10 cards, deal-in 700 ms, 130 ms apart, aside 12', () => {
     const hand = layout.hud.find((p: any) => p.role === 'player-hand').hand;

@@ -1457,7 +1457,7 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 /* Round 10 fix: the player's hand (an .o-hand) rests tucked to a quarter; the hovered card still rises by itself */
 .match .hand.o-hand,.match .hand.o-hand.open,.match .hand.o-hand.has-pop{transform:translateY(calc(var(--hcw) * 1.13))}
 /* Round 10: hovering the tucked hand raises it (almost fully above the edge, fan flattened); the hovered card also enlarges */
-.match .hand.o-hand.open,.match .hand.o-hand.has-pop{transform:translateY(0)}
+.match .hand.o-hand.open,.match .hand.o-hand.has-pop{transform:translateY(.9px)}
 .overlay.cardview{position:fixed;inset:0}
 .card-view-face .hand-card{--cw:min(700px,55.2vh)}
 
