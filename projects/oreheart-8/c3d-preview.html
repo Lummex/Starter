@@ -1,0 +1,20 @@
+<!doctype html><html><body style="margin:0;background:#2a2a38"><canvas id=c width=1400 height=520></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { loadCreature3d, makeCreature3d } from '/src/ui/creature3d.ts';
+const q = new URLSearchParams(location.search); const id = q.get('id'), anim = q.get('anim') || 'idle', t = +(q.get('t') || 0.6);
+if (q.get('tune')) globalThis.__tune = JSON.parse(q.get('tune'));
+const a = await loadCreature3d(id); const c = makeCreature3d(id, a);
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true }); r.setSize(1400, 520, false); r.setClearColor(0x2a2a38);
+const s = new THREE.Scene(); s.add(new THREE.HemisphereLight(0xffffff, 0x445, 2.2)); const d = new THREE.DirectionalLight(0xffffff, 2); d.position.set(2, 4, 3); s.add(d);
+c.play(anim); c.update(t); s.add(c.group);
+const cam = new THREE.PerspectiveCamera(30, 1400 / 520, 0.1, 50);
+const views = [0, 90, 180, 270];
+r.autoClear = false;
+views.forEach((deg, i) => {
+  c.group.rotation.y = deg * Math.PI / 180;
+  r.setViewport(i * 350, 0, 350, 520); r.setScissor(i * 350, 0, 350, 520); r.setScissorTest(true);
+  cam.aspect = 350 / 520; cam.updateProjectionMatrix(); cam.position.set(0, 0.6, 2.6); cam.lookAt(0, 0.5, 0); r.render(s, cam);
+});
+document.title = 'ready ' + JSON.stringify({ held: c.held, worn: c.worn, clips: c.clipNames });
+</script></body></html>

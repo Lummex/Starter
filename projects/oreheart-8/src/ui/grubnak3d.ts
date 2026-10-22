@@ -1,9 +1,11 @@
 // Grubnak Rotgut as a real 3D model (Meshy, generated once by tools/gen-grubnak-3d.mjs and saved under public/models/commanders).
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { attachPart } from './creature3d';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
-const BASE = '/models/commanders/';
+const BASE = '/models/creatures/grubnak/';
 export const GRUBNAK_ANIMS = ['idle', 'laugh', 'point', 'celebrate', 'surprised', 'cast', 'hit', 'defeat'] as const;
 export type GrubnakAnim = (typeof GRUBNAK_ANIMS)[number];
 
@@ -26,11 +28,11 @@ export function loadGrubnak3d(): Promise<G3DAssets | null> {
       const r = await fetch(BASE + 'models.json');
       if (!r.ok) return null;
       const info = await r.json();
-      const gl = new GLTFLoader();
+      const gl = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
       const [c, f, s] = await Promise.all([
-        gl.loadAsync(BASE + 'grubnak.glb'),
-        gl.loadAsync(BASE + 'grubnak-fortress.glb'),
-        gl.loadAsync(BASE + 'grubnak-scepter.glb').catch(() => null),
+        gl.loadAsync(BASE + 'char.glb'),
+        gl.loadAsync(BASE + 'throne.glb'),
+        gl.loadAsync(BASE + 'scepter.glb').catch(() => null),
       ]);
       const clips: Record<string, THREE.AnimationClip> = {};
       const names: Record<string, string> = info.clipNames || {};
@@ -75,87 +77,53 @@ export function skinBox(o: THREE.Object3D, into = new THREE.Box3()): THREE.Box3 
 }
 const box = (o: THREE.Object3D) => skinBox(o, new THREE.Box3());
 
-export interface OwnerPose { fort: { scale: number; sx?: number; sy?: number; sz?: number; turn: number }; cmd: { scale: number; turn: number }; groups?: number }
-const OWNER_FORT_K = 0.67, OWNER_CMD_K = 1.54;
-const D2R = Math.PI / 180;
 
-/** Owner's Game Editor pose: each model's bounding-box bottom-centre sits at the piece's board point (y = 0), scaled by Model Editor scale x piece scale, stretched in its own axes, then turned (no tilt, no lean). */
-function makeGrubnakOwner(a: G3DAssets, pose: OwnerPose): G3D {
-  const group = new THREE.Group();
-  const figure = new THREE.Group(); // yaw holder (the scene turns this one for look-backs)
-  const place = (obj: THREE.Object3D, k: number, st: { sx?: number; sy?: number; sz?: number }, idle?: THREE.AnimationClip) => {
-    let b = box(obj);
-    if (idle) {
-      // stand on the ground through the whole Idle loop: use the lowest point over the clip, bottom-centre from the first frame
-      const m = new THREE.AnimationMixer(obj); m.clipAction(idle).play();
-      let lo = Infinity;
-      for (let i = 0; i < 8; i++) { m.setTime((idle.duration * i) / 8); lo = Math.min(lo, box(obj).min.y); if (i === 0) b = box(obj); }
-      m.stopAllAction(); m.uncacheRoot(obj);
-      b = b.clone(); b.min.y = lo;
-    }
-    obj.position.set(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
-    const sc = new THREE.Group();
-    sc.scale.set(k * (st.sx ?? 1), k * (st.sy ?? 1), k * (st.sz ?? 1));
-    sc.add(obj);
-    return sc;
-  };
-  const fortress = a.fortress.clone(true);
-  fortress.updateMatrixWorld(true);
-  const fYaw = new THREE.Group();
-  fYaw.rotation.y = pose.fort.turn * D2R;
-  fYaw.add(place(fortress, OWNER_FORT_K * pose.fort.scale * (pose.groups ?? 1), pose.fort));
-  group.add(fYaw);
-  const ch = skeletonClone(a.char) as THREE.Object3D;
-  ch.traverse((o: any) => { if (o.isMesh || o.isSkinnedMesh) { o.frustumCulled = false; o.castShadow = false; } });
-  figure.add(place(ch, OWNER_CMD_K * pose.cmd.scale * (pose.groups ?? 1), {}, a.clips.idle));
-  figure.rotation.y = pose.cmd.turn * D2R;
-  group.add(figure);
-  return finish(a, group, figure, fortress, ch);
-}
+const D2R = Math.PI / 180;
+/** Round 12b-1: Grubnak SEATED on his junk throne (the throne replaces the castle/stand). The throne stands flat on the board point; he sits in it holding the staff,
+ *  both turned to the owner's `turn` (146 deg = toward the enemy corner). `figure` (the seated Grubnak) turns alone for look-backs. */
+const THRONE_H = 1.5, SEAT = { k: 0.55, y: 0.17, z: 0.1 };
+export interface OwnerPose { fort: { scale: number; sx?: number; sy?: number; sz?: number; turn: number }; cmd: { scale: number; turn: number }; groups?: number }
 
 export function makeGrubnak3d(a: G3DAssets, pose?: OwnerPose): G3D {
-  if (pose) return makeGrubnakOwner(a, pose);
+  const turn = (pose?.cmd.turn ?? 0) * D2R;
   const group = new THREE.Group();
   const figure = new THREE.Group();
-  // fortress: footprint 1 x 1, standing on y = 0
-  const fortress = a.fortress.clone(true);
-  let fb = box(fortress);
-  const fw = Math.max(fb.max.x - fb.min.x, fb.max.z - fb.min.z, 0.01);
-  fortress.scale.multiplyScalar(1 / fw);
-  fb = box(fortress);
-  fortress.position.set(-(fb.max.x + fb.min.x) / 2, -fb.min.y, -(fb.max.z + fb.min.z) / 2);
-  group.add(fortress);
-  const top = box(fortress).max.y;
-  // character: about 1.5 tall, standing on the fortress top
+  const tH = THRONE_H * (pose?.groups ?? 1);
+  // throne: bottom-centre on the board point, upright, turned with Grubnak
+  const throne = a.fortress.clone(true);
+  let tb = box(throne);
+  const tk = tH / Math.max(tb.max.y - tb.min.y, 0.01);
+  const tsc = new THREE.Group(); tsc.scale.setScalar(tk);
+  throne.position.set(-(tb.min.x + tb.max.x) / 2, -tb.min.y, -(tb.min.z + tb.max.z) / 2);
+  tsc.add(throne);
+  const tYaw = new THREE.Group(); tYaw.rotation.y = turn; tYaw.add(tsc);
+  group.add(tYaw);
+  // Grubnak
   const ch = skeletonClone(a.char) as THREE.Object3D;
   ch.traverse((o: any) => { if (o.isMesh || o.isSkinnedMesh) { o.frustumCulled = false; o.castShadow = false; } });
-  const cb0 = box(ch);
-  const H = 1.5;
-  ch.scale.multiplyScalar(H / Math.max(cb0.max.y - cb0.min.y, 0.01));
+  const idle = a.clips.idle;
+  const m0 = new THREE.AnimationMixer(ch); if (idle) { m0.clipAction(idle).play(); m0.setTime(0); }
   ch.updateMatrixWorld(true);
-  const cb = box(ch);
-  ch.position.set(-(cb.max.x + cb.min.x) / 2, top - cb.min.y, -(cb.max.z + cb.min.z) / 2);
-  figure.add(ch);
-  group.add(figure);
-  return finish(a, group, figure, fortress, ch);
-}
-
-function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress: THREE.Object3D, ch: THREE.Object3D): G3D {
-  // scepter in the right hand
+  const cb0 = box(ch);
+  const H0 = cb0.max.y - cb0.min.y;
   let scepterBone = '';
   if (a.scepter) {
-    // Owner's Model Editor setup: scepter on the RightHand bone, position -4.404, 8.752, -3.774, rotation -109.365 / 5.199 / 154.757 degrees (XYZ), scale 61.35 (glb units)
-    const hand = ch.getObjectByName('RightHand') || (() => { let f: THREE.Object3D | null = null; ch.traverse((o) => { if (!f && o.type === 'Bone' && /right.?hand$|hand.?r$|r_?hand$/i.test(o.name)) f = o; }); return f; })();
-    if (hand) {
-      const hold = new THREE.Group();
-      hold.position.set(-4.404, 8.752, -3.774);
-      hold.rotation.set(THREE.MathUtils.degToRad(-109.365), THREE.MathUtils.degToRad(5.199), THREE.MathUtils.degToRad(154.757), 'XYZ');
-      hold.scale.setScalar(61.35);
-      hold.add(a.scepter.clone(true));
-      hand.add(hold);
-      scepterBone = hand.name;
-    }
+    const pcfg = { name: 'scepter', file: '', bone: ['RightHand'], len: 1.05, grip: 0.12, rot: [90, 0, 0] as [number, number, number], axis: 'y' as const };
+    scepterBone = attachPart(ch, pcfg, a.scepter, H0, () => {});
   }
+  m0.stopAllAction(); m0.uncacheRoot(ch);
+  const ck = (SEAT.k * tH) / Math.max(H0, 0.01);
+  const sc = new THREE.Group(); sc.scale.setScalar(ck);
+  ch.position.set(-(cb0.min.x + cb0.max.x) / 2, -cb0.min.y, -(cb0.min.z + cb0.max.z) / 2);
+  sc.add(ch);
+  figure.add(sc);
+  figure.position.set(Math.sin(turn) * SEAT.z * tH, SEAT.y * tH, Math.cos(turn) * SEAT.z * tH);
+  figure.rotation.y = turn;
+  group.add(figure);
+  return finish(a, group, figure, throne, ch, scepterBone);
+}
+
+function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress: THREE.Object3D, ch: THREE.Object3D, scepterBone: string): G3D {
   const mixer = new THREE.AnimationMixer(ch);
   const actions: Record<string, THREE.AnimationAction> = {};
   for (const k of Object.keys(a.clips)) actions[k] = mixer.clipAction(a.clips[k]);
@@ -181,5 +149,5 @@ function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress:
   };
   play('idle');
   const total = box(group);
-  return { group, figure, fortress, mixer, play, current: () => cur, update: (dt) => mixer.update(dt), clipNames: Object.keys(actions), scepterBone, held: scepterBone ? { item: 'scepter', bone: scepterBone, position: [-4.404, 8.752, -3.774], rotationDeg: [-109.365, 5.199, 154.757], scale: 61.35 } : null, height: total.max.y - total.min.y };
+  return { group, figure, fortress, mixer, play, current: () => cur, update: (dt) => mixer.update(dt), clipNames: Object.keys(actions), scepterBone, held: scepterBone ? { item: 'scepter', bone: scepterBone } : null, height: total.max.y - total.min.y };
 }

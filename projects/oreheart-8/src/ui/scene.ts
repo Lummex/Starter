@@ -2,6 +2,7 @@
 import { ringColor, getRings } from './fx-settings';
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
+import { loadCreature3d, creature3dReady, makeCreature3d, type C3D } from './creature3d';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D } from './grubnak3d';
 import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
 import { audio } from './audio';
@@ -390,7 +391,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   type Fig = {
     ringColor?: string; ringGreyed?: boolean;
     group: THREE.Group; target: THREE.Vector3; born: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
-    uid: string; cardId: string; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number;
+    uid: string; cardId: string; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number;
   };
   const figs = new Map<string, Fig>();
   const fx: { obj: THREE.Object3D; t: number; kind: string; vel?: THREE.Vector3 }[] = [];
@@ -414,7 +415,16 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const ringMat = () => new THREE.MeshBasicMaterial({ color: 0xffd400 });
     let g: THREE.Group;
     let finished = false, mats: THREE.MeshStandardMaterial[] = [], parts: any = null, baseScale = 1;
-    if (card.faction === 'goblins') {
+    const a3 = card.faction === 'goblins' ? creature3dReady(card.id) : null;
+    if (a3) {
+      // owner-sheet Meshy model (rigged, animated); dummy parts keep the procedural reactions harmless
+      const c3 = makeCreature3d(card.id, a3);
+      g = new THREE.Group(); g.add(c3.group);
+      const dm = () => new THREE.Group();
+      parts = { armL: dm(), armR: dm(), head: dm(), body: dm(), weapon: dm(), legL: dm(), legR: dm(), aura: null };
+      finished = true; mats = c3.mats; baseScale = CREATURE_H;
+      (g as any).userData.c3d = c3;
+    } else if (card.faction === 'goblins') {
       const gf = makeGoblin(card.id, card, (wg) => addWeapon(wg, weaponOf(card), 'goblins'), low);
       g = gf.group; finished = true; mats = gf.mats.list; parts = gf.parts; baseScale = gf.baseScale;
       (g as any).userData.goblin = gf;
@@ -458,7 +468,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     // Round 5b: every creature stands about 1.1 spaces tall
     g.scale.setScalar(1);
     g.updateMatrixWorld(true);
-    const nat = measureHeight(g);
+    const nat = (g as any).userData.c3d ? 0 : measureHeight(g);
     if (nat > 0.05) baseScale = (CREATURE_H / nat) * (card.rarity === 'Collector' ? 1.1 : 1);
     g.scale.setScalar(baseScale);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 6, 24), ringMat());
@@ -473,6 +483,12 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     return { group: g, finished, mats, parts, baseScale };
   }
 
+  for (const id of ['goblin-scrounger', 'goblin-pebbler', 'shiv-rat', 'goblin-smith-miner']) loadCreature3d(id).then((a) => {
+    // figures built before the model arrived are rebuilt with it
+    if (!a || disposed) return;
+    for (const [uid, f] of figs) if (f.cardId === id && !f.c3d) { scene.remove(f.group); figs.delete(uid); }
+    if (state) setState(state, []);
+  });
   let state: any = null;
   /** Round 11: ring in the side's faction color (player settings), grey once the unit has acted. */
   function applyRing(f: any, c: any, acted: boolean, st: any) {
@@ -526,7 +542,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         const born = events.some((e) => e.type === 'summon' && e.uid === c.uid) ? now : 0;
         m.group.position.copy(tgt);
         scene.add(m.group);
-        f = { group: m.group, target: tgt.clone(), born, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0 };
+        f = { group: m.group, target: tgt.clone(), born, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0, c3d: (m.group as any).userData.c3d || null };
         figs.set(c.uid, f);
         if (born) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }
         // creatures face the enemy
@@ -927,6 +943,13 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         const on = k < 1;
         for (const m of f.mats) { const e0 = m.userData.e0; if (on) { m.emissive.setHex(0xff1a1a); m.emissiveIntensity = 0.9 * (1 - k); } else { m.emissive.setHex(e0.hex); m.emissiveIntensity = e0.i; } }
         if (on) g.rotation.z = Math.sin(k * 24) * 0.18 * (1 - k); else { g.rotation.z = 0; f.hitT = 0; }
+      }
+      if (f.c3d) {
+        const dt = Math.min(0.1, (now - (f.lastT || now)) / 1000); f.lastT = now;
+        const mk3 = (now - f.mineT) / 900, ak3 = (now - f.shootT) / 380;
+        f.c3d.play(walking ? 'walk' : f.shootT && ak3 < 1 ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : f.hitT && now - f.hitT < 320 ? 'hit' : 'idle');
+        f.c3d.update(dt);
+        g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
       }
       const p = f.parts;
       if (f.finished && p) {

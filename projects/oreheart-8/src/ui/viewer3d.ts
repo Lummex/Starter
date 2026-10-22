@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { loadGrubnak3d, makeGrubnak3d, GRUBNAK_ANIMS, G3D } from './grubnak3d';
 import { h } from './app';
+import { loadCreature3d, makeCreature3d, type C3D } from './creature3d';
 
 const LABEL: Record<string, string> = { idle: 'Idle', laugh: 'Laugh', point: 'Point', celebrate: 'Celebrate', surprised: 'Surprised', cast: 'Cast', hit: 'Hit', defeat: 'Defeat' };
 
@@ -98,7 +99,10 @@ export async function mountCreatureViewer(host: HTMLElement, card: any): Promise
   scene.add(new THREE.HemisphereLight(0xcfd8ff, 0x3a2a40, 1.6));
   const key = new THREE.DirectionalLight(0xfff0d0, 2.4); key.position.set(2, 4, 3); scene.add(key);
   let fig: THREE.Group;
-  if (card.faction === 'goblins') fig = makeGoblin(card.id, card, () => {}, true).group;
+  const a3 = card.faction === 'goblins' ? await loadCreature3d(card.id) : null;
+  let c3: C3D | null = null;
+  if (a3) { c3 = makeCreature3d(card.id, a3); fig = new THREE.Group(); fig.add(c3.group); c3.group.scale.setScalar(1.5); canvas.dataset.model3d = card.id; }
+  else if (card.faction === 'goblins') fig = makeGoblin(card.id, card, () => {}, true).group;
   else {
     fig = new THREE.Group();
     const col = card.faction === 'gnomes' ? 0x3fa9ff : 0xb45cff;
@@ -111,17 +115,27 @@ export async function mountCreatureViewer(host: HTMLElement, card: any): Promise
   let az = 0.4, dist = 3.2;
   const idle = h('button', { type: 'button', class: 'btn viewer-anim', 'data-anim': 'idle', 'aria-pressed': 'true' }, 'Idle');
   row.append(idle);
+  if (c3) {
+    const LAB: Record<string, string> = { idle: 'Idle', walk: 'Walk', attack: 'Attack', mine: 'Mine', hit: 'Hit', defeat: 'Defeat' };
+    const bs: HTMLElement[] = [idle];
+    for (const n of c3.clipNames.filter((x) => x !== 'idle')) {
+      const b = h('button', { type: 'button', class: 'btn viewer-anim', 'data-anim': n, 'aria-pressed': 'false', onclick: () => { c3!.play(n as any); canvas.dataset.anim = n; bs.forEach((x) => x.setAttribute('aria-pressed', String(x === b))); } }, LAB[n] || n);
+      bs.push(b); row.append(b);
+    }
+    idle.addEventListener('click', () => { c3!.play('idle'); canvas.dataset.anim = 'idle'; bs.forEach((x) => x.setAttribute('aria-pressed', String(x === idle))); });
+  }
   let drag: { x: number } | null = null;
   canvas.style.touchAction = 'none';
   canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); drag = { x: e.clientX }; });
   canvas.addEventListener('pointermove', (e) => { if (drag) { az -= (e.clientX - drag.x) * 0.01; drag.x = e.clientX; } });
   canvas.addEventListener('pointerup', () => { drag = null; });
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); e.stopPropagation(); dist = Math.max(1.6, Math.min(8, dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
-  let raf = 0, open = true;
+  let raf = 0, open = true, lastT = performance.now();
   const frame = (t: number) => {
     if (!open) return;
     if (!drag) az += 0.006;
     fig.position.y = Math.sin(t / 700) * 0.01;
+    if (c3) { c3.update(Math.min(0.1, (t - lastT) / 1000)); lastT = t; }
     const w = canvas.clientWidth || 400, hh = canvas.clientHeight || 400;
     if (renderer) { renderer.setSize(w, hh, false); camera.aspect = w / hh; camera.updateProjectionMatrix(); camera.position.set(dist * Math.sin(az), 1.2, dist * Math.cos(az)); camera.lookAt(0, 0.6, 0); renderer.render(scene, camera); }
     raf = requestAnimationFrame(frame);

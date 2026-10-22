@@ -617,3 +617,12 @@ AC96, AC135, AC137, AC139, AC168 (gold/bold/boxed menu text vs. the owner's whit
 - dist trimmed from 52 MB to ~38 MB (AC90 < 40 MB): removed duplicate copies of menu pictures, music and bank pictures; recompressed the large non-owner PNGs (`tools/shrink.mjs`). Owner paintings in `public/art/owner/goblin/` stay byte-identical.
 - Raised hand now rests 0.9 px below fully-up so the neighbour/retract checks still see it move.
 - Known stale/contradictory hidden checks not changed: AC164/174/175 (hand 36 % of height) contradict AC272 (raised hand never covers the board); AC271 uses the old name "Infernal Orb"; AC258 uses "Fight!" (spec renamed to "Start"); AC260/261 load `/` without `?test=1` but AC5 requires `window.oreheart` only in test mode.
+
+## Round 12b-1 — Goblin 3D models from the owner sheets
+- Meshy ran ONCE per model (`tools/gen-creature-3d.mjs <card id>`, state in `tools/.state-*.json`; one extra Miner pickaxe job because the first crop caught a neighbouring drawing). Saved under `public/models/creatures/<card id>/` (char.glb = rigged + animated, parts as separate GLBs, `models.json`); textures shrunk and meshopt-compressed (dist stays under 40 MB).
+- Grubgrabber Miner (`goblin-scrounger`): crystal backpack + lantern on the back, lit helmet lamp, pickaxe in the right hand; clips idle, walk, attack (axe chop), mine (hammer swing), hit, defeat.
+- Boneknocker (`goblin-pebbler`): spiked club; Shiv Rat (`shiv-rat`): dagger; Scrapsmith Miner (`goblin-smith-miner`): pick + hammer, apron/scarf/lamp/backpack from the sheet.
+- Board: `src/ui/creature3d.ts` loads and attaches the parts; `scene.ts` plays walk/attack/mine/hit/idle from the game's existing move/attack/mine events and rebuilds figures that were created before the model finished loading. The 3D viewer (close-ups, deck builder) shows these models with animation buttons.
+- Grubnak: new Meshy model SEATED (Chair_Sit idle) on his junk throne, which replaces the castle/stand (`public/models/commanders` removed). Staff in his right hand, throne + Grubnak turned to the owner's pose (137°/146°). Emotes keep the old clip set (they play standing poses in place).
+- Tests: `tests/round12b.test.ts` (models saved, rigged, animated); screenshots `screenshots/r12b-*.png`.
+- Not tuned: staff angle and hand grips are set by eye; the other creatures' weapon rotations are untested beyond the idle pose; attack clips carry some root motion.

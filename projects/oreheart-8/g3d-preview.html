@@ -1,0 +1,15 @@
+<!doctype html><html><body style="margin:0;background:#2a2a38"><canvas id=c width=1400 height=520></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { loadGrubnak3d, makeGrubnak3d } from '/src/ui/grubnak3d.ts';
+const q = new URLSearchParams(location.search);
+if (q.get('tune')) globalThis.__tune = JSON.parse(q.get('tune'));
+const a = await loadGrubnak3d(); const g = makeGrubnak3d(a, { fort: { scale: 1, turn: 0 }, cmd: { scale: 1, turn: 0 } });
+g.play(q.get('anim') || 'idle'); g.update(+(q.get('t') || 0.5));
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true }); r.setSize(1400, 520, false); r.setClearColor(0x2a2a38);
+const s = new THREE.Scene(); s.add(new THREE.HemisphereLight(0xffffff, 0x445, 2.2)); const d = new THREE.DirectionalLight(0xffffff, 2); d.position.set(2, 4, 3); s.add(d);
+s.add(g.group);
+const cam = new THREE.PerspectiveCamera(30, 350/520, 0.1, 50); r.autoClear = false;
+[0, 35, 90, 180].forEach((deg, i) => { g.group.rotation.y = deg * Math.PI / 180; r.setViewport(i*350,0,350,520); r.setScissor(i*350,0,350,520); r.setScissorTest(true); cam.position.set(0, 1.2, 6.2); cam.lookAt(0, 1.0, 0); r.render(s, cam); });
+document.title = 'ready ' + JSON.stringify({ held: g.held, h: g.height, clips: g.clipNames });
+</script></body></html>

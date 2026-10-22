@@ -46,3 +46,5 @@ Everything in the game is made in code or generated for this project. There are 
 - `public/art/goblin/*` (corner frames, Flow crystals, Goblin bank, opponent bank placeholder): owner-supplied, from the owner's Game Editor "final draft" layout and Goblin theme.
 - The crystal mine model is built in code from the owner's Game Editor (`buildMineModel`); no outside asset.
 - Alegreya SC upright 400/700 (OFL, from @fontsource/alegreya-sc; files `alegreya-sc-latin-400-normal.woff2` and `alegreya-sc-latin-700-normal.woff2`) for the owner's menu text styles.
+
+- Round 12b-1 models: Goblin creatures (Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner), Grubnak, his junk throne and staff were generated with the Meshy API from the owner's model sheets (`factory-design/goblin-art/`); animations from Meshy's animation library.
