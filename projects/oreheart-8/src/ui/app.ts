@@ -27,7 +27,10 @@ const textScale = (len: number) => Math.min(0.1, 0.6 / Math.sqrt(Math.max(1, len
 const RARITY_KEY: Record<string, string> = { Common: 'common', Uncommon: 'uncommon', Rare: 'rare', 'Ultra Rare': 'ultra-rare', Collector: 'collector' };
 export const rarityKey = (c: any) => RARITY_KEY[c.rarity] || 'common';
 /** Picture path of a card (Goblin creatures have a generated painting). */
-export const pictureOf = (c: any): string | null => (c && ((c.type === 'creature' && c.faction === 'goblins') || (c.type === 'spell' && !c.disabled)) ? `/art/cards/${c.id}.webp` : null);
+/** Owner-supplied paintings (round 12a) override the generated art. */
+export const OWNER_ART: Record<string, string> = { 'goblin-scrounger': '/art/owner/goblin-scrounger.png', 'goblin-pebbler': '/art/owner/goblin-pebbler.png', 'shiv-rat': '/art/owner/shiv-rat.png', 'goblin-smith-miner': '/art/owner/goblin-smith-miner.png' };
+export const commanderPortrait = (id: string) => (id === 'grubnak' ? '/art/owner/grubnak-commander.png' : `/art/commanders/${id}.webp`);
+export const pictureOf = (c: any): string | null => (c && ((c.type === 'creature' && c.faction === 'goblins') || (c.type === 'spell' && !c.disabled)) ? OWNER_ART[c.id] || `/art/cards/${c.id}.webp` : null);
 export const FRAME: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
 /** Spell frames: one line per faction (owner files replace the temporary generated ones by overwriting `public/art/frames/spell-frame-*.jpg`). */
 export const SPELL_FRAME_FILE = (key: string) => `spell-frame-${key}`;
@@ -414,7 +417,7 @@ export class App {
     for (const c of cmds) {
       const f = FACTIONS[c.faction];
       cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { if (picked && cmd === c.id) unpick(); else { cmd = c.id; onCmd(); pick(); } } },
-        h('img', { class: 'portrait-img', src: `/art/commanders/${c.id}.webp`, alt: '', draggable: 'false' }),
+        h('img', { class: 'portrait-img', src: commanderPortrait(c.id), alt: '', draggable: 'false' }),
         h('span', { class: 'cmd-win' },
           h('span', { class: 'nm' }, c.name),
           h('span', { class: 'fa' }, `${f.name} · ${f.faith}`),
@@ -606,7 +609,7 @@ export class App {
   closeUp(cardId: string, withViewer = false) {
     const isCmd = cardId.startsWith('cmd:');
     const c = isCmd ? ({ name: COMMANDERS[cardId.slice(4)].name, id: cardId, type: 'commander', faction: 'any' } as any) : CARDS[cardId];
-    const face = isCmd ? h('img', { class: 'cz-img', src: `/art/commanders/${cardId.slice(4)}.webp`, alt: c.name, draggable: 'false', 'data-card-id': cardId }) : h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, c.type === 'crystal' ? 0 : c.cost));
+    const face = isCmd ? h('img', { class: 'cz-img', src: commanderPortrait(cardId.slice(4)), alt: c.name, draggable: 'false', 'data-card-id': cardId }) : h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, c.type === 'crystal' ? 0 : c.cost));
     const ov = h('div', { class: 'cardzoom', role: 'dialog', 'aria-modal': 'true', 'aria-label': c.name }, face);
     let stopViewer: (() => void) | null = null, closed = false;
     const close = () => { closed = true; stopViewer?.(); ov.remove(); document.removeEventListener('keydown', onKey, true); };
@@ -2369,7 +2372,9 @@ export class App {
     let tilt = 0, mode: 'reorder' | 'play' | '' = '';
     // reordering while the pointer stays near its grab height / inside the raised hand; moving clearly above both = playing the card
     const handTop = (this.r.hand as El).getBoundingClientRect().top - 12, startY = e.clientY;
-    const inReorder = (y: number) => y >= handTop || Math.abs(y - startY) < 45;
+    // round 12a: a pointer over the board that is not inside the hand band is always a play drag (grab height no longer decides)
+    const overBoard = (x: number, y: number) => { const bb = (this.r.board as El).getBoundingClientRect(); return y < handTop && x >= bb.left && x <= bb.right && y >= bb.top && y <= bb.bottom; };
+    const inReorder = (y: number, x = 0) => y >= handTop || (Math.abs(y - startY) < 45 && !overBoard(x, y));
     let plan: { cells: any[]; smith: any[]; any: boolean } = { cells: [], smith: [], any: false };
     const setMode = (m: 'reorder' | 'play') => {
       if (m === mode) return;
@@ -2387,10 +2392,10 @@ export class App {
       ghost,
       manualHand: true,
       touchSwipe: (dx) => { this.handScroll -= dx / 40; this.layoutHand(); },
-      onMove: (dx, _x, y) => {
+      onMove: (dx, px, y) => {
         tilt = Math.max(-14, Math.min(14, tilt * 0.8 + dx * 0.9));
         ghost.dataset.tilt = tilt.toFixed(2); ghost.style.setProperty('--tilt', tilt.toFixed(2) + 'deg');
-        setMode(inReorder(y) || !(plan.cells.length || plan.smith.length || plan.any) ? 'reorder' : 'play'); // an unplayable card can only be reordered
+        setMode(inReorder(y, px) || !(plan.cells.length || plan.smith.length || plan.any) ? 'reorder' : 'play'); // an unplayable card can only be reordered
       },
       onStart: () => {
         if (this.pick || this.respDlg) return false;
@@ -2412,7 +2417,7 @@ export class App {
         return true;
       },
       onDrop: (cell, x, y) => {
-        if (mode === 'reorder') { this.reorderHand(hc.uid, x); return; }
+        if (mode === 'reorder' && !(cell && cell.row && overBoard(x, y))) { this.reorderHand(hc.uid, x); return; }
         if (cell && cell.row) this.dropCard(hc, card, cell, x, y);
       },
       onTap: () => {

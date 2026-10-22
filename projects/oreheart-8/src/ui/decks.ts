@@ -1,7 +1,7 @@
 // Testing deck builder: every card unlocked and unlimited; up to 5 decks saved on the device.
 import { ownerBox, freeBox } from './menus';
 import { CARDS, FACTIONS, COMMANDERS, CONFIG, isMiner, deckCounts, deckProblems, basicMiner } from '../engine';
-import { h, btn, combo, App, faceKids, rarityKey, FRAME } from './app';
+import { h, btn, combo, App, faceKids, rarityKey, FRAME, commanderPortrait } from './app';
 
 export interface SavedDeck { name: string; cards: string[]; commander?: string }
 const CMD_NAMES: Record<string, string> = { grubnak: 'Grubnak', sproingle: 'Sproingle', borgo: 'Borgo' };
@@ -243,7 +243,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   slider.addEventListener('input', () => setPerRow(+slider.value));
   const cmdThumb = h('button', { type: 'button', class: 'db-cmdcard', 'aria-label': 'Commander card', onclick: () => app.closeUp('cmd:' + cmdId, true) }, h('img', { alt: '', draggable: 'false' })) as HTMLElement;
   const cmdWrap = h('div', { class: 'db-cmdwrap', role: 'group', 'aria-label': 'Commander card' }, cmdThumb) as HTMLElement;
-  const syncThumb = () => { const im = cmdThumb.querySelector('img') as HTMLImageElement; im.src = `/art/commanders/${cmdId}.webp`; cmdThumb.setAttribute('aria-label', COMMANDERS[cmdId].name); };
+  const syncThumb = () => { const im = cmdThumb.querySelector('img') as HTMLImageElement; im.src = commanderPortrait(cmdId); cmdThumb.setAttribute('aria-label', COMMANDERS[cmdId].name); };
   const searchInp = h('input', { type: 'search', id: 'card-search', role: 'searchbox', 'aria-label': 'Search cards', placeholder: 'Search: "cheap goblin miners", "ranged under 4"…', autocomplete: 'off' }) as HTMLInputElement;
   searchInp.addEventListener('input', () => { query = searchInp.value.trim(); renderCards(); });
   const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
