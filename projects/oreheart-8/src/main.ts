@@ -18,7 +18,7 @@ const wantIntro = params.get('intro') === '1' || (!test && !sessionStorage.getIt
 if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catch { /* ignore */ } app.showIntro(); } else app.showMenu();
 
 if (test) (window as any).__app = app;
-{
+if (test) {
   (window as any).oreheart = {
     getState: () => game.getState(),
     legalActions: () => game.legalActions(),

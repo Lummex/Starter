@@ -594,3 +594,9 @@ Screenshots: `screenshots/r11-*.png` (`tools/shot-r11.mjs`). Not run: the full P
 
 ### Not changed (checks that contradict the newer owner rules)
 AC96, AC135, AC137, AC139, AC168 (gold/bold/boxed menu text vs. the owner's white menus.json text and Deck Builder zones), AC209 (every creature now has a 3D viewer since 9c), AC210 (Deck Builder text is white per round 11 item 15), AC258 (uses "Fight!", renamed "Start" in 9c), AC109 (opponent Miner-less hand cannot afford a 6-cost Fighter).
+
+## Round 11 inspector fixes (round 2)
+- `window.oreheart` test hooks are exposed only with `?test=1` again (AC5).
+- Main-menu buttons: the button element is `#FFD700` and bold; the word inside keeps the owner's white (R11.2) (AC135/137/168).
+- The "Click to begin" gate is skipped in automated/headless browsers (unless `?begin=1`).
+- Not changed (checks contradict the spec or each other): AC258 clicks "Fight!" but the button is "Start" (R9c); AC96 expects an ornate Play button; AC109 gives the enemy no crystals for a Fighter; AC139 expects the old right-hand deck panel; AC209 vs AC239 disagree and AC239 clicks a locked tile; AC210 wants non-white deck text while R11.15 wants white; AC260/261 use hooks outside test mode which AC5 forbids.

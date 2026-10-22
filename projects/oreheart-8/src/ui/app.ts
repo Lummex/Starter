@@ -310,7 +310,7 @@ export class App {
   }
   showIntro() {
     // real visitors always get the gate (audio needs a click); automated browsers go straight to the intro unless ?begin=1
-    const gated = !audio.unlocked && (new URLSearchParams(location.search).get('begin') === '1' || (!this.test && !navigator.webdriver));
+    const gated = !audio.unlocked && (new URLSearchParams(location.search).get('begin') === '1' || (!this.test && !navigator.webdriver && !/Headless|Playwright/i.test(navigator.userAgent)));
     if (!gated) { this.menuScreen('intro', 'intro'); return; }
     // Browsers block audio until the first click/tap: a short gate, then the intro (crash sound, thunder) and the music can play
     this.clear();

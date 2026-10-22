@@ -1529,3 +1529,4 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .fx-row input[type=range]{flex:1 1 200px;max-width:300px}
 .fx-panel{position:relative!important;inset:auto!important}
 .screen[data-screen=settings] .stack{height:auto!important;max-height:none!important;min-height:max-content;overflow:visible;gap:14px}
+.mb-pc.mb-btn{color:#FFD700;font-weight:700!important}
