@@ -4,7 +4,15 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 12 — owner playtest of round 11: card drag-to-play is broken (BLOCKER), hand layout, owner Goblin art + 3D models (Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner, Grubnak + throne) — read this first
+## Round 12a — QUICK round: drag-to-play fix, hand layout, owner Goblin card paintings ONLY — read this first
+
+The first round 12 run hit the 3-hour job limit and saved nothing (it tried to build 5 new 3D models). The owner split it. Build ONLY these items from the Round 12 list below, and COMMIT/PUSH working progress early (after item 1 works) so a timeout never loses everything:
+- Round 12 item 1 (BLOCKER: drag a hand card onto the board to play it; real pointer-event tests).
+- Round 12 item 2 (hand layout: even fan, never covers the board).
+- Card paintings only from items 3–7: `goblin-miner-card-art.png` → Grubgrabber Miner, `boneknocker-card-art.png` → Boneknocker, `shiv-rat-card-art.png` → Shiv Rat, `scrapsmith-miner-card-art.png` → Scrapsmith Miner, `grubnak-on-throne-art.png` → Grubnak's commander portrait (Choose Your Commander, HUD portrait). Use exactly, in cards, close-ups, deck builder and menus.
+NOT this round: NO 3D models, NO Meshy, NO throne. All model work in items 3–7 is ROUND 12b (next run). Target well under 90 minutes.
+
+## Round 12 (full list; split into 12a now + 12b models next) — owner playtest of round 11: card drag-to-play is broken (BLOCKER), hand layout, owner Goblin art + 3D models (Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner, Grubnak + throne)
 
 Round 11 is done; keep everything from 8a–11 unless an item below replaces it. Build ONLY the 7 items below (queued Menu Builder / deck builder / halls / card template work stays queued). Faction color rule: Goblins green #3ee06a + purple #b45cff; Gnomes purple #9b4dff + blue #3fa9ff; Dwarves navy #2f5fd8 + gold #FFD700. Owner art in `factory-design/goblin-art/` is BINDING: use it exactly. Meshy runs ONCE per model from the owner sheet; never regenerate unless the owner asks.
 
