@@ -4,7 +4,23 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 12a — QUICK round: drag-to-play fix, hand layout, owner Goblin card paintings ONLY — read this first
+## Round 12b-1 — Goblin 3D models from the owner's sheets (Round 12 items 3–7, models only) — read this first
+
+Round 12a is done (drag-to-play, hand fan, owner card paintings); keep everything from 8a–12a. This round builds ONLY the Goblin 3D models from Round 12 items 3–7 below. Owner sheets in `factory-design/goblin-art/` are BINDING: match them exactly (shapes, colors, gear). Meshy runs ONCE per model from the owner sheet (front view as the main image, other views as extra images if supported); never regenerate unless the owner asks.
+
+Because the last full round hit the 3-hour job limit and lost everything: build ONE model at a time and COMMIT + PUSH after each model works (order: 1 Grubgrabber Miner, 2 Boneknocker, 3 Shiv Rat, 4 Scrapsmith Miner, 5 Grubnak seated + junk throne). If time runs short, stop after the last finished model and report which are done. Keep tests short: one load/placement test per model plus the existing suite.
+
+1. **Grubgrabber Miner** (goblin-scrounger): `goblin-miner-tpose-sheet.png` + assembled like `goblin-miner-assembled-reference.png` (crystal backpack with lantern on the back, helmet lamp lit, pickaxe in both hands; `goblin-miner-wide-art.png` = look reference). Rig; idle, walk, pickaxe attack, mine.
+2. **Boneknocker** (goblin-pebbler): `boneknocker-model-sheet.png` (hooded goblin, spiked club); attack animation from the sheet's swing poses; idle, walk.
+3. **Shiv Rat** (shiv-rat): `shiv-rat-model-sheet.png` (hooded goblin, rusty dagger); idle, walk, stab.
+4. **Scrapsmith Miner** (goblin-smith-miner): `apron-goblin-model-sheet-UNASSIGNED.png` (leather apron, red scarf, helmet lamp, backpack, pick + hammer); walk cycle and smash/mine poses from the sheet.
+5. **Grubnak Rotgut**: `grubnak-model-sheet.png` (much bigger than a normal goblin) SEATED on his junk throne `grubnak-throne-model-sheet.png`, which REPLACES the castle/stand in the Goblin stronghold spot; seated idle holding the staff, facing the board (owner 146° rule); keep his existing reactions where they still fit.
+
+Each model replaces the old one on the board, in the 3D viewer and in the deck builder. Screenshots 1920×1080: each new model on the board and in the 3D viewer, Grubnak on his throne.
+
+NEXT (Round 12b-2, not this round): Gnome and Dwarf models from `factory-design/gnome-dwarf-art/` — Gemsinger Miner = `Crystal Miner Character Reference Sheet.png` (card art `Gnome Miner’s Crystal Strike.png`); Stonebreaker Miner card art = `Dwarf Miner’s Crystal Strike.png` (model sheet still to be uploaded by the owner); Archmagister Sproingle = `Purple Archmage Wizard Turnaround Sheet.png`, portrait `Archmage of the Crystal Cathedral.png`, seated on `Fantasy Crystal Throne Concept Sheet.png`; Thane Borgo Gravelgrim = `Gear-Crowned Dwarf Commander Turnaround.png`, seated on `Dwarven Police-King Throne Turnaround Sheet.png`.
+
+## Round 12a (done) — QUICK round: drag-to-play fix, hand layout, owner Goblin card paintings ONLY
 
 The first round 12 run hit the 3-hour job limit and saved nothing (it tried to build 5 new 3D models). The owner split it. Build ONLY these items from the Round 12 list below, and COMMIT/PUSH working progress early (after item 1 works) so a timeout never loses everything:
 - Round 12 item 1 (BLOCKER: drag a hand card onto the board to play it; real pointer-event tests).
