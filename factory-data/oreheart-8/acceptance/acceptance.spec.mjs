@@ -5872,7 +5872,11 @@ test('AC180: Grubnak model files are saved once with models.json; the game never
   const m = await grubnakModels(request);
   test.skip(!m, 'Part B not delivered (no models.json)');
   for (const k of CANON_ANIMS) expect(typeof m.grubnak.animations[k], `animation ${k}`).toBe('string');
-  for (const [key, file, max] of [['grubnak', 'grubnak.glb', 10.5 * 1024 * 1024], ['fortress', 'grubnak-fortress.glb', 5.25 * 1024 * 1024], ['scepter', 'grubnak-scepter.glb', 5.25 * 1024 * 1024]]) {
+  // Round 12b-1: a seated Grubnak sits on a throne instead of the fortress, with his staff instead of the scepter
+  const files = m.grubnak.pose === 'seated'
+    ? [['grubnak', 'grubnak.glb', 10.5 * 1024 * 1024], ['throne', 'grubnak-throne.glb', 5.25 * 1024 * 1024]]
+    : [['grubnak', 'grubnak.glb', 10.5 * 1024 * 1024], ['fortress', 'grubnak-fortress.glb', 5.25 * 1024 * 1024], ['scepter', 'grubnak-scepter.glb', 5.25 * 1024 * 1024]];
+  for (const [key, file, max] of files) {
     expect(m[key].file).toBe(file);
     const res = await request.get(`/models/commanders/${file}`);
     expect(res.ok(), file).toBe(true);
@@ -5890,7 +5894,9 @@ test('AC180: Grubnak model files are saved once with models.json; the game never
 });
 
 test('AC181: Grubnak is the Meshy model on his fortress with the scepter, about 2.4 tall, idling', async ({ page, request }) => {
-  test.skip(!(await grubnakModels(request)), 'Part B not delivered (no models.json)');
+  const gm = await grubnakModels(request);
+  test.skip(!gm, 'Part B not delivered (no models.json)');
+  test.skip(gm.grubnak.pose === 'seated', 'Round 12b-1 seated Grubnak is checked by AC280');
   for (const side of ['player', 'opponent']) {
     await openTest(page);
     await newMatch(page, { ai: false, playerCommander: side === 'player' ? 'grubnak' : 'borgo', opponentCommander: side === 'player' ? 'borgo' : 'grubnak', setup: { opponentHand: [] } });
@@ -6742,9 +6748,9 @@ test('AC208: Start sits bottom-right in both states at 1920x1080 and 844x390', a
 test('AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak\'s card and dismisses correctly', async ({ page, request }) => {
   test.setTimeout(120000);
   await openDecks(page);
-  // a card without a model: close-up alone
-  await allCards(page).getByRole('button', { name: 'Shiv Rat', exact: true }).click();
-  const shiv = page.getByRole('dialog', { name: 'Shiv Rat' });
+  // a card without a model (a spell; Round 12b-1 gives Shiv Rat a model): close-up alone
+  await allCards(page).getByRole('button', { name: /Searing Arcane Orb/ }).first().click();
+  const shiv = page.getByRole('dialog', { name: /Searing Arcane Orb/ });
   await expect(shiv).toBeVisible();
   await expect(shiv.getByLabel('3D model', { exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
@@ -7091,6 +7097,7 @@ test('AC220: Grubnak holds his scepter in his right hand with the owner\'s numbe
   if (!r.webgl) test.skip(true, 'WebGL unavailable');
   const g = (r.commanderModels || []).find((m) => m.side === 'player' || /grubnak/i.test(m.source || m.id || ''));
   if (!g || !/grubnak\.glb/.test(g.source || '')) test.skip(true, 'Grubnak model not present');
+  if (g.pose === 'seated') test.skip(true, 'Round 12b-1: the seated Grubnak holds his staff (AC280)');
   expect(g.held.item).toBe('scepter');
   expect(g.held.bone).toBe('RightHand');
   [-4.404, 8.752, -3.774].forEach((v, i) => expect(g.held.position[i]).toBeCloseTo(v, 2));
@@ -7316,7 +7323,9 @@ test('AC230: Commanders stand on the ground inside their strongholds, upright, f
   for (const [cmd, fort, cx, cy, turn] of [['pCmd', 'pFort', 1.5, 6.5, 146], ['eCmd', 'eFort', 11.5, 0.5, -15]]) {
     expect(p[cmd].cx).toBeCloseTo(cx, 2); expect(p[cmd].cy).toBeCloseTo(cy, 2);
     expect(p[fort].cx).toBeCloseTo(cx, 2); expect(p[fort].cy).toBeCloseTo(cy, 2);
-    expect(Math.abs(p[cmd].baseY - p.boardY), `${cmd} on the ground`).toBeLessThanOrEqual(0.01 * p.square);
+    // Round 12b-1: a seated Commander sits on his throne (above the ground); the throne stands on it
+    if (p[cmd].seated) expect(p[cmd].baseY, `${cmd} on the seat`).toBeGreaterThan(p.boardY);
+    else expect(Math.abs(p[cmd].baseY - p.boardY), `${cmd} on the ground`).toBeLessThanOrEqual(0.01 * p.square);
     expect(Math.abs(p[fort].baseY - p.boardY), `${fort} on the ground`).toBeLessThanOrEqual(0.01 * p.square);
     expect(yawDiff(p[cmd].yawDeg, turn), `${cmd} faces turn ${turn}`).toBeLessThanOrEqual(3);
     for (const k of ['pCmd', 'pFort', 'eCmd', 'eFort']) {
@@ -7324,7 +7333,7 @@ test('AC230: Commanders stand on the ground inside their strongholds, upright, f
       expect(Math.abs(p[k].leanDeg), `${k} lean`).toBeLessThanOrEqual(0.5);
     }
   }
-  expect(yawDiff(p.pFort.yawDeg, 137)).toBeLessThanOrEqual(3);
+  expect(yawDiff(p.pFort.yawDeg, p.pCmd.seated ? 146 : 137)).toBeLessThanOrEqual(3);
 });
 
 test('AC231: the stronghold never moves; Grubnak emotes in place and returns to his turn', async ({ page }) => {
@@ -7340,7 +7349,8 @@ test('AC231: the stronghold never moves; Grubnak emotes in place and returns to 
     expect(p.pFort.matrix, `stronghold moved during ${emote}`).toEqual(p0.pFort.matrix);
     expect(p.eFort.matrix).toEqual(p0.eFort.matrix);
     expect(p.pCmd.cx).toBeCloseTo(1.5, 2); expect(p.pCmd.cy).toBeCloseTo(6.5, 2);
-    expect(Math.abs(p.pCmd.baseY - p.boardY)).toBeLessThanOrEqual(0.01 * p.square);
+    if (p.pCmd.seated) expect(p.pCmd.baseY).toBeGreaterThan(p.boardY);
+    else expect(Math.abs(p.pCmd.baseY - p.boardY)).toBeLessThanOrEqual(0.01 * p.square);
   }
   await expect.poll(async () => yawDiff((await poses(page)).pCmd.yawDeg, 146), { timeout: 8000 }).toBeLessThanOrEqual(3);
 });
@@ -8516,3 +8526,222 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1568, height: 782 }, {
     });
   });
 }
+
+// ---------- Round 12b-1: Goblin 3D models from the owner's sheets ----------
+const R12B_MODELS = {
+  'goblin-scrounger': { name: 'Grubgrabber Miner', parts: ['backpack', 'lantern', 'helmetLamp', 'pickaxe'], anims: ['idle', 'walk', 'attack', 'mine'], miner: true },
+  'goblin-pebbler': { name: 'Boneknocker', parts: ['club'], anims: ['idle', 'walk', 'attack'], miner: false },
+  'shiv-rat': { name: 'Shiv Rat', parts: ['dagger'], anims: ['idle', 'walk', 'attack'], miner: false },
+  'goblin-smith-miner': { name: 'Scrapsmith Miner', parts: ['apron', 'scarf', 'helmetLamp', 'backpack', 'pickaxe', 'hammer'], anims: ['idle', 'walk', 'attack', 'mine'], miner: true },
+};
+async function creatureModels(request) {
+  const res = await request.get('/models/creatures/models.json');
+  if (!res.ok()) return null;
+  try { return await res.json(); } catch { return null; }
+}
+async function seatedGrubnak(request) {
+  const m = await grubnakModels(request);
+  return m && m.grubnak.pose === 'seated' ? m : null;
+}
+const figureOf = (r, cardId) => (r.figures || []).find((f) => f.cardId === cardId);
+
+test('AC275: creature model files are saved once with models.json; the game never calls Meshy', async ({ page, request }) => {
+  const m = await creatureModels(request);
+  test.skip(!m, 'no creature models delivered yet');
+  const delivered = Object.keys(R12B_MODELS).filter((id) => m[id]);
+  expect(delivered.length).toBeGreaterThan(0);
+  for (const id of delivered) {
+    expect(m[id].file).toBe(`${id}.glb`);
+    expect(typeof m[id].sheet).toBe('string');
+    const res = await request.get(`/models/creatures/${m[id].file}`);
+    expect(res.ok(), m[id].file).toBe(true);
+    const body = await res.body();
+    expect(body.subarray(0, 4).toString('latin1'), `${id} is a GLB`).toBe('glTF');
+    expect(body.length, `${id} bytes`).toBe(m[id].bytes);
+    expect(body.length).toBeLessThanOrEqual(6 * 1024 * 1024);
+    for (const a of R12B_MODELS[id].anims) expect(typeof m[id].animations[a], `${id} animation ${a}`).toBe('string');
+  }
+  const meshy = [];
+  page.on('request', (r) => { try { if (/meshy\.ai$/i.test(new URL(r.url()).hostname)) meshy.push(r.url()); } catch { /* ignore */ } });
+  await start(page, quiet({ board: delivered.map((cardId, i) => ({ cardId, owner: 'player', row: 6, col: 4 + i })) }));
+  await renderStats(page);
+  await page.waitForTimeout(1000);
+  expect(meshy).toEqual([]);
+});
+
+for (const [cardId, spec] of Object.entries(R12B_MODELS)) {
+  test(`AC276: ${spec.name} stands on the board as its new model with its gear and animations`, async ({ page, request }) => {
+    const m = await creatureModels(request);
+    test.skip(!m || !m[cardId], `${spec.name} model not delivered`);
+    await start(page, quiet({ board: [{ cardId, owner: 'player', row: 6, col: 5 }] }));
+    if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+    await expect.poll(async () => (figureOf(await renderStats(page), cardId) || {}).source, { timeout: 15000 }).toBe(`${cardId}.glb`);
+    const f = figureOf(await renderStats(page), cardId);
+    expect(f.row).toBe(6); expect(f.col).toBe(5);
+    expect(f.height).toBeGreaterThanOrEqual(0.9);
+    expect(f.height).toBeLessThanOrEqual(1.3);
+    for (const part of spec.parts) expect(f.parts, `part ${part}`).toContain(part);
+    for (const a of spec.anims) expect(f.animations, `animation ${a}`).toContain(a);
+    expect(f.currentAnimation).toBe('idle');
+    if (spec.miner) expect(f.lampLit).toBe(true);
+  });
+
+  test(`AC278: the Deck Builder 3D viewer shows the new ${spec.name} model with its animation buttons`, async ({ page, request }) => {
+    const m = await creatureModels(request);
+    test.skip(!m || !m[cardId], `${spec.name} model not delivered`);
+    await openDecks(page);
+    await allCards(page).getByRole('button', { name: spec.name, exact: true }).click();
+    const dlg = page.getByRole('dialog', { name: spec.name });
+    await expect(dlg).toBeVisible();
+    const viewer = page.getByRole('region', { name: '3D model' });
+    await expect(viewer).toBeVisible();
+    for (const label of ['Idle', 'Walk', 'Attack', ...(spec.miner ? ['Mine'] : [])]) {
+      await expect(viewer.getByRole('button', { name: label, exact: true })).toBeVisible();
+    }
+    const vs = () => page.evaluate(async () => await window.oreheart.getViewerState());
+    await expect.poll(async () => (await vs()).source, { timeout: 15000 }).toBe(`${cardId}.glb`);
+    await viewer.getByRole('button', { name: 'Attack', exact: true }).click();
+    await expect.poll(async () => (await vs()).animation, { timeout: 5000 }).toBe('attack');
+    await expect(dlg).toBeVisible();
+  });
+}
+
+test('AC277: Grubgrabber Miner plays its mine and walk animations', async ({ page, request }) => {
+  const m = await creatureModels(request);
+  test.skip(!m || !m['goblin-scrounger'], 'Grubgrabber Miner model not delivered');
+  // two Miners: one next to the mine at row 4 col 2, one free to walk
+  await start(page, quiet({ board: [
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 2 },
+    { cardId: 'goblin-scrounger', owner: 'player', row: 6, col: 8 },
+  ] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  let s = await getState(page);
+  const miner = s.board.find((c) => c.row === 5 && c.col === 2);
+  const walker = s.board.find((c) => c.row === 6 && c.col === 8);
+  let mineAct = null, moveAct = null;
+  for (let i = 0; i < 3 && !(mineAct && moveAct); i++) {
+    const l = await legal(page);
+    mineAct = l.find((a) => a.type === 'mine' && a.creatureUid === miner.uid);
+    moveAct = l.find((a) => a.type === 'move' && a.creatureUid === walker.uid);
+    if (!(mineAct && moveAct)) await done(page);
+  }
+  expect(mineAct && moveAct, 'mine and move are legal in the Action phase').toBeTruthy();
+  expect((await act(page, mineAct)).ok).toBe(true);
+  expect((await act(page, moveAct)).ok).toBe(true);
+  await expect.poll(async () => {
+    const r = await renderStats(page);
+    const a = (r.figures || []).find((f) => f.uid === miner.uid) || {};
+    const b = (r.figures || []).find((f) => f.uid === walker.uid) || {};
+    return (a.animationLog || []).includes('mine') && (b.animationLog || []).includes('walk');
+  }, { timeout: 10000 }).toBe(true);
+});
+
+test('AC279: seated Grubnak and his throne are saved once; the fortress and scepter are gone', async ({ request }) => {
+  const m = await seatedGrubnak(request);
+  test.skip(!m, 'seated Grubnak not delivered');
+  expect(m.fortress).toBeFalsy();
+  expect(m.scepter).toBeFalsy();
+  expect(m.grubnak.sheet).toBe('grubnak-model-sheet.png');
+  expect(m.throne.sheet).toBe('grubnak-throne-model-sheet.png');
+  for (const [key, file, max] of [['grubnak', 'grubnak.glb', 10 * 1024 * 1024], ['throne', 'grubnak-throne.glb', 5 * 1024 * 1024]]) {
+    expect(m[key].file).toBe(file);
+    const res = await request.get(`/models/commanders/${file}`);
+    expect(res.ok(), file).toBe(true);
+    const body = await res.body();
+    expect(body.subarray(0, 4).toString('latin1')).toBe('glTF');
+    expect(body.length).toBe(m[key].bytes);
+    expect(body.length).toBeLessThanOrEqual(max);
+  }
+  for (const a of CANON_ANIMS) expect(typeof m.grubnak.animations[a], `animation ${a}`).toBe('string');
+});
+
+test('AC280: Grubnak sits on his junk throne as player and as enemy Commander, holding his staff', async ({ page, request }) => {
+  test.skip(!(await seatedGrubnak(request)), 'seated Grubnak not delivered');
+  for (const side of ['player', 'opponent']) {
+    await openTest(page);
+    await newMatch(page, { ai: false, playerCommander: side === 'player' ? 'grubnak' : 'borgo', opponentCommander: side === 'player' ? 'borgo' : 'grubnak', setup: { opponentHand: [] } });
+    if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+    await expect.poll(async () => !!(await grubnakEntry(page, side)), { timeout: 15000 }).toBe(true);
+    const g = await grubnakEntry(page, side);
+    expect(g.commanderId).toBe('grubnak');
+    expect(g.source).toMatch(/grubnak\.glb$/);
+    expect(g.pose).toBe('seated');
+    expect(g.throne).toMatch(/grubnak-throne\.glb$/);
+    expect(g.fortress || null).toBeNull();
+    expect(g.height).toBeGreaterThanOrEqual(2.2);
+    expect(g.height).toBeLessThanOrEqual(2.6);
+    expect(g.characterHeight).toBeGreaterThanOrEqual(1.3);
+    expect(g.held.item).toBe('staff');
+    expect(g.held.bone).toMatch(/hand|wrist|palm|baked/i);
+    for (const a of CANON_ANIMS) expect(g.animations).toContain(a);
+    expect(g.currentAnimation).toBe('idle');
+  }
+});
+
+test('AC281: the throne stands on the ground in the stronghold spot facing 146 degrees; Grubnak sits on it', async ({ page, request }) => {
+  test.setTimeout(60000);
+  test.skip(!(await seatedGrubnak(request)), 'seated Grubnak not delivered');
+  await start(page, quiet({}));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await expect.poll(async () => !!(await poses(page)).pFort, { timeout: 15000 }).toBe(true);
+  const p0 = await poses(page);
+  expect(p0.pFort.cx).toBeCloseTo(1.5, 2); expect(p0.pFort.cy).toBeCloseTo(6.5, 2);
+  expect(Math.abs(p0.pFort.baseY - p0.boardY), 'throne on the ground').toBeLessThanOrEqual(0.01 * p0.square);
+  expect(yawDiff(p0.pFort.yawDeg, 146)).toBeLessThanOrEqual(3);
+  expect(Math.abs(p0.pFort.tiltDeg)).toBeLessThanOrEqual(0.5);
+  expect(Math.abs(p0.pFort.leanDeg)).toBeLessThanOrEqual(0.5);
+  expect(p0.pCmd.seated).toBe(true);
+  expect(p0.pCmd.cx).toBeCloseTo(1.5, 2); expect(p0.pCmd.cy).toBeCloseTo(6.5, 2);
+  expect(p0.pCmd.baseY, 'Grubnak sits above the ground').toBeGreaterThan(p0.boardY + 0.05 * p0.square);
+  expect(yawDiff(p0.pCmd.yawDeg, 146)).toBeLessThanOrEqual(3);
+  for (const emote of ['laugh', 'cast']) {
+    await page.evaluate(async (e) => await window.oreheart.playEmote('player', e), emote);
+    await page.waitForTimeout(2000);
+    expect((await poses(page)).pFort.matrix, `throne moved during ${emote}`).toEqual(p0.pFort.matrix);
+  }
+});
+
+test('AC282: Choose Your Commander and the Deck Builder viewer show the seated Grubnak', async ({ page, request }) => {
+  test.skip(!(await seatedGrubnak(request)), 'seated Grubnak not delivered');
+  await openDecks(page);
+  const tile = page.getByLabel('Commander card', { exact: true }).getByRole('button', { name: COMMANDERS[0], exact: true });
+  await tile.click();
+  await expect(page.getByRole('dialog', { name: COMMANDERS[0], exact: true }).getByLabel('3D model', { exact: true })).toBeVisible();
+  await expect.poll(async () => (await page.evaluate(async () => await window.oreheart.getViewerState())).source, { timeout: 15000 }).toMatch(/grubnak\.glb$/);
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
+  await expect.poll(async () => { const m = (await selectState(page)).model; return !!(m && m.shown && /grubnak\.glb$/.test(m.source)); }, { timeout: 15000 }).toBe(true);
+});
+
+test.describe('round 12b-1 screenshots at 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC283: new models on the board, in the 3D viewer and Grubnak on his throne render without errors', async ({ page, request }, testInfo) => {
+    test.setTimeout(180000);
+    const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+    const shot = async (n) => testInfo.attach(n, { body: await page.screenshot(), contentType: 'image/png' });
+    const m = (await creatureModels(request)) || {};
+    const ids = Object.keys(R12B_MODELS);
+    await start(page, quiet({ board: ids.map((cardId, i) => ({ cardId, owner: 'player', row: 6, col: 2 + i })) }));
+    await page.waitForTimeout(2500);
+    await shot('r12b-models-on-board');
+    const g = await sq2s(page, 7, 2);
+    await page.mouse.move(g.x, g.y);
+    await page.mouse.wheel(0, -800);
+    await page.waitForTimeout(1000);
+    await shot('r12b-grubnak-throne-closeup');
+    await openDecks(page);
+    for (const id of ids.filter((x) => m[x])) {
+      const name = R12B_MODELS[id].name;
+      await allCards(page).getByRole('button', { name, exact: true }).click();
+      await expect(page.getByRole('dialog', { name })).toBeVisible();
+      await page.waitForTimeout(1500);
+      await shot(`r12b-viewer-${id}`);
+      await page.keyboard.press('Escape');
+    }
+    await page.getByLabel('Commander card', { exact: true }).getByRole('button', { name: COMMANDERS[0], exact: true }).click();
+    await page.waitForTimeout(1500);
+    await shot('r12b-viewer-grubnak');
+    expect(errors).toEqual([]);
+  });
+});
