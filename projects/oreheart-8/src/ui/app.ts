@@ -1234,10 +1234,13 @@ export class App {
     if (this.noHand) return null;
     // the enlarged (popped) card is part of its hover zone: moving up onto it to grab it never retracts it
     const pop = this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)') as El | null;
-    if (pop && !pop.classList.contains('dragging')) { const r = pop.getBoundingClientRect(); if (x >= r.left && x <= r.right && y >= r.top && y <= r.top + r.height * 0.77) return pop; }
+    // a card's own resting box wins (so moving across the fan switches cards even under the enlarged one) ...
     let hit: El | null = null;
     for (const b of this.handBoxes()) if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) hit = b.c;
-    return hit;
+    if (hit) return hit;
+    // ... and the area of the enlarged card above the fan stays part of its zone
+    if (pop && !pop.classList.contains('dragging')) { const r = pop.getBoundingClientRect(); if (x >= r.left && x <= r.right && y >= r.top && y <= r.top + r.height * 0.77) return pop; }
+    return null;
   }
   noHand = false;
   /** Tight hover boxes: only the visible part of each fan card (tucked), or the whole card while the hand is raised. */
@@ -2362,7 +2365,7 @@ export class App {
     const st = this.game.state;
     const card = CARDS[hc.cardId];
     // round 11: the drag shows the real card face, floating and tilting with the movement
-    const ghost = h('div', { class: `hand-card static dragged-card ${card.type} f-${card.faction}`, role: 'group', 'aria-label': 'Dragged card', 'data-tilt': '0', 'data-card-id': card.id, 'data-frame': frameKey(card), 'data-rarity': rarityKey(card) }, ...faceKids(card, card.type === 'crystal' ? 0 : card.cost));
+    const ghost = h('div', { class: `hand-card static dragged-card ${card.type} f-${card.faction}`, role: 'group', 'aria-label': 'Dragged card', 'data-tilt': '0', 'data-card-id': card.id, 'data-frame': frameKey(card), 'data-rarity': rarityKey(card) }, h('span', { class: 'drag-id', 'aria-hidden': 'true', 'data-card-id': card.id, style: 'position:absolute;width:0;height:0;overflow:hidden' }), ...faceKids(card, card.type === 'crystal' ? 0 : card.cost));
     let tilt = 0, mode: 'reorder' | 'play' | '' = '';
     // reordering while the pointer stays near its grab height / inside the raised hand; moving clearly above both = playing the card
     const handTop = (this.r.hand as El).getBoundingClientRect().top - 12, startY = e.clientY;
@@ -2387,7 +2390,7 @@ export class App {
       onMove: (dx, _x, y) => {
         tilt = Math.max(-14, Math.min(14, tilt * 0.8 + dx * 0.9));
         ghost.dataset.tilt = tilt.toFixed(2); ghost.style.setProperty('--tilt', tilt.toFixed(2) + 'deg');
-        setMode(inReorder(y) ? 'reorder' : 'play');
+        setMode(inReorder(y) || !(plan.cells.length || plan.smith.length || plan.any) ? 'reorder' : 'play'); // an unplayable card can only be reordered
       },
       onStart: () => {
         if (this.pick || this.respDlg) return false;

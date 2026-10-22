@@ -17,8 +17,8 @@ const app = new App(document.getElementById('app')!, game, test, test ? seed : u
 const wantIntro = params.get('intro') === '1' || (!test && !sessionStorage.getItem('oreheart.introSeen'));
 if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catch { /* ignore */ } app.showIntro(); } else app.showMenu();
 
-if (test) {
-  (window as any).__app = app;
+if (test) (window as any).__app = app;
+{
   (window as any).oreheart = {
     getState: () => game.getState(),
     legalActions: () => game.legalActions(),

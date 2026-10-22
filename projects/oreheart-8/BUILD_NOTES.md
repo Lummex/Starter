@@ -584,3 +584,13 @@ Built:
 15. Deck Builder white lines / bold Back were already in place.
 17. Ranged range 7 (config, card texts, abilities, Rules, AI, engine tests).
 Screenshots: `screenshots/r11-*.png` (`tools/shot-r11.mjs`). Not run: the full Playwright acceptance suite (hidden); AC245/AC252 not investigated further.
+
+## Round 11 — inspector fixes (attempt 2)
+- Hand: a card's own resting box now wins over the enlarged popped neighbour, so moving across the fan switches cards (AC174).
+- Hand drag: the drag ghost exposes a `[data-card-id]` child; a card with no legal play can only be reordered, so the hand stays up (AC264/AC265).
+- Mines: flat glow-rubble decal (no ring), tinted in the owner's faction color; render stats report `ring`, `decal`, `tiltDeg` (AC252).
+- `window.oreheart` (read helpers incl. settings getters) is available outside test mode too (AC260/AC261).
+- Deck builder tiles of locked cards set `aria-disabled` (AC130); CREDITS.md lists the upright Alegreya files (AC86).
+
+### Not changed (checks that contradict the newer owner rules)
+AC96, AC135, AC137, AC139, AC168 (gold/bold/boxed menu text vs. the owner's white menus.json text and Deck Builder zones), AC209 (every creature now has a 3D viewer since 9c), AC210 (Deck Builder text is white per round 11 item 15), AC258 (uses "Fight!", renamed "Start" in 9c), AC109 (opponent Miner-less hand cannot afford a 6-cost Fighter).

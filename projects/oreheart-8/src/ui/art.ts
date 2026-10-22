@@ -128,6 +128,7 @@ export interface MineArt {
   sparks: THREE.Points | null;
   crystals: THREE.Group;
   recolor(hex: string | number): void;
+  setDecal(hex: string | number): void;
   burst(): void;
   update(now: number): void;
 }
@@ -226,6 +227,11 @@ export function makeMine(low: boolean, idx: number): MineArt {
     group.userData.mineFootprint = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z);
   }
   group.add(crystals);
+  // Round 11 (R10.10): no ring; a flat glow-and-rubble decal lies on the ground under the mine, tinted by owner.
+  const decalMat = new THREE.MeshBasicMaterial({ map: glowTexture(), color: '#ffffff', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.55 });
+  const decal = new THREE.Mesh(new THREE.CircleGeometry(0.85, 32), decalMat);
+  decal.name = 'mine-decal'; decal.rotation.x = -Math.PI / 2; decal.position.y = 0.012; decal.renderOrder = 1;
+  group.add(decal);
   let light: THREE.PointLight | null = null, beam: THREE.Mesh | null = null, sparks: THREE.Points | null = null;
   if (!low) {
     light = new THREE.PointLight(0xffffff, 7, 7.5, 1.4);
@@ -248,11 +254,13 @@ export function makeMine(low: boolean, idx: number): MineArt {
       uTint.value.set(hex as any);
       for (const m of crystalMats) { m.color.set(hex as any).lerp(new THREE.Color(0xffffff), 0.25); m.emissive.set(hex as any).multiplyScalar(0.55); }
       glowSpr?.material.color.set(hex as any);
+      decalMat.color.set(hex as any); group.userData.decalHex = '#' + new THREE.Color(hex as any).getHexString();
       group.userData.tintHex = '#' + new THREE.Color(hex as any).getHexString();
       light?.color.set(hex as any);
       (beam?.material as THREE.MeshBasicMaterial | undefined)?.color.set(hex as any);
       (sparks?.material as THREE.PointsMaterial | undefined)?.color.set(hex as any);
     },
+    setDecal(hex) { decalMat.color.set(hex as any); group.userData.decalHex = '#' + new THREE.Color(hex as any).getHexString(); },
     burst() { burstT = performance.now(); },
     update(now) {
       const w = now / 420 + idx;

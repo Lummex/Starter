@@ -215,7 +215,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
   }
   function tile(c: any) {
-    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : ''), 'data-locked': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, h('span', { hidden: '' }, c.longText || '')) as any;
+    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : ''), 'data-locked': lockedFor(c.id) ? 'true' : null, 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, h('span', { hidden: '' }, c.longText || '')) as any;
     let timer: any = null;
     el.addEventListener('click', () => {
       if (el._dragged) return;
