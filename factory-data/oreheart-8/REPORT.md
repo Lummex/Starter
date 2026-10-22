@@ -1,25 +1,25 @@
 ## What was built
-This is Round 11 of Oreheart, the card battle game. It adds a "Click to begin" screen so the intro sounds and music can play. It also adds new Settings panels for square highlights and unit rings, tighter mine clicking, a draggable and reorderable hand, and Ranged range raised to 7. The build notes I was given only cover earlier rounds, so I can't confirm from them what the builder says it finished this round.
+This round fixes the biggest problem from last time: dragging a card from your hand onto the board now actually plays it. The raised hand is also laid out as an even fan below the board, and the owner's own paintings are installed for four Goblin cards (Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner) plus Grubnak's on-throne portrait. No 3D models or rules changed.
 
 ## Try these things
-- Open the preview, click "Click to begin", and check that the intro crash sound and thunder play, then the main menu.
-- Click through Deck Builder, Settings and Choose Your Commander. Check that the menu music keeps playing without restarting.
-- Open Settings and look for "Square highlights" and "Unit rings". Change a colour, reload the page, and see if it stuck.
-- Start a match and drag cards sideways in your hand to reorder them. Check that the real card face follows your finger or mouse.
-- Click a creature standing behind a mine. It should be selected, not start mining. Then click the mine's own square, which should mine.
-- Check a Ranged unit: the shot should reach 7 squares and stop at the first unit.
+- Start a match and drag a Goblin creature from your hand onto a lit square in your home row. It should appear there.
+- Drag a card back into the hand, or onto a square that isn't lit. Nothing should be played and the card should return.
+- Drag a spell onto an enemy, and drag a Crystal card anywhere over the board.
+- Hover your hand. It should fan out evenly below the board without covering the squares. Try a smaller window too.
+- Open the four new Goblin cards (Deck Builder or a close-up) and check the paintings look right.
+- On Choose Your Commander, check Grubnak's card shows the throne portrait.
 
 ## Automated checks
-334 of 343 checks passed. Nine failed:
-- **Menu music (AC258):** the test couldn't find the "Fight!" button, so the music check never finished. Music may still work, but this wasn't confirmed.
-- **Square highlights settings (AC260):** the test hit an error reading the highlight settings, so the new panel isn't confirmed working.
-- **Unit rings settings (AC261):** after a page reload the game didn't come back up in the test, so saving the ring colour isn't confirmed.
-- **Six older checks (AC96, 109, 139, 209, 210, 239):** these concern button styling, Stronghold squares, Deck Builder layout, the 3D viewer and text colours. The build notes admit several conflict with newer owner layouts. Some are probably stale, but I couldn't verify that.
+334 of 353 checks passed. The 19 failures are almost all old checks that the builder says contradict this round's spec. They are not confirmed bugs.
+- Several hand-size checks at 1920×1080 expect a bigger hand that covers the board, which this round's rules forbid.
+- Some checks look for a card by an old name or button label ("Infernal Orb", "Fight!"), or for old layouts.
+- Two checks need the owner's menu file, which the test setup couldn't find, so menu positions and the intro are unverified.
+- Two drag-to-play checks failed at 1920×1080. One may be a stale card name. The other, a drag from the tucked hand, passed at 1568×782, so it needs a hands-on check.
 
 ## Things to know
-- The desktop screenshot shows the intro: dirt-textured "I AM A GAME DEVELOPER" lettering on a mine background. It looks intentional but is the owner's placeholder text. The phone screenshot is the "Please rotate your phone" message, which is expected in portrait.
-- Only two screenshots exist, both of the intro or gate. I saw no match, menu or Settings screenshots, so the new panels weren't visually checked.
-- The Deck Builder and Choose Your Commander screens still don't use the owner's menu layout, according to the notes.
+- The desktop screenshot shows only a dirt background with the words "I AM A GAME DEVELOPER". It looks like the intro, not a menu or match. It is odd, and no match screenshot was provided, so I couldn't confirm the new hand layout or card art visually.
+- The phone screenshot is only the "Please rotate your phone" message. It was taken in portrait, so it shows nothing of the game.
+- The hovered hand card can still cover some board squares at its enlarged size.
 
 ## Recommendation
-Request changes: three of the new Round 11 features (menu music, highlight settings, ring settings) failed their checks and weren't visually confirmed.
+Request changes: drag-to-play from the tucked hand failed at 1920×1080 and no screenshots show the match, hand or new card art. Please verify those in the preview first.

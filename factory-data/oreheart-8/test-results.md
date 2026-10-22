@@ -1,6 +1,6 @@
 # Automated check results
 
-334 of 343 checks passed after 3 build round(s).
+334 of 353 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -34,7 +34,7 @@
 - ✅ round 5b screenshots (844x390) › AC160: match, Menu popped out and hand popped out render without errors (844x390)
 - ✅ round 6a match layout 1920x1080 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (1920x1080)
 - ✅ round 6a match layout 1920x1080 › AC163: the hand is 2x, centered, overlapping, tucked halfway and slides up on hover (1920x1080)
-- ✅ round 6a match layout 1920x1080 › AC164: the hovered card rises to 48-60% of the height on the top layer (1920x1080)
+- ❌ round 6a match layout 1920x1080 › AC164: the hovered card rises to 48-60% of the height on the top layer (1920x1080)
 - ✅ round 6a match layout 1920x1080 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (1920x1080)
 - ✅ round 6a match layout 844x390 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (844x390)
 - ✅ round 6a match layout 844x390 › AC163: the hand is 2x, centered, overlapping, tucked halfway and slides up on hover (844x390)
@@ -42,8 +42,8 @@
 - ✅ round 6a match layout 844x390 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (844x390)
 - ✅ round 6a screenshots (1920x1080) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (1920x1080)
 - ✅ round 6a screenshots (844x390) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (844x390)
-- ✅ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
-- ✅ round 7 hand (1920x1080) › AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (1920x1080)
+- ❌ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
+- ❌ round 7 hand (1920x1080) › AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (1920x1080)
 - ✅ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
 - ✅ round 7 hand (844x390) › AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (844x390)
 - ✅ round 7 screenshots (1920x1080) › AC184: Grubnak in a match and in the 3D viewer render without errors
@@ -63,14 +63,14 @@
 - ✅ round 8b screenshots 844x390 › AC211: Commander screen, close-up viewer and stat badges render without errors (844x390)
 - ✅ round 9a owner layout 1920x1080 › AC212: every HUD piece sits where the owner's layout puts it (1920x1080)
 - ✅ round 9a owner layout 844x390 › AC212: every HUD piece sits where the owner's layout puts it (844x390)
-- ✅ round 9a hand 1920x1080 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (1920x1080)
+- ❌ round 9a hand 1920x1080 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (1920x1080)
 - ✅ round 9a hand 844x390 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (844x390)
 - ✅ round 9a screenshots 1920x1080 › AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (1920x1080)
 - ✅ round 9a screenshots 844x390 › AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (844x390)
 - ✅ round 9c arena › AC228: the arena canvas draws every frame and the screen center is not the plain board color
 - ✅ round 9c arena › AC229: all 57 owner effects (54 arena + 3 Crystal Flow), 2 cut-outs, no arena errors; unknown effect types are skipped
-- ✅ round 9c menus 1920x1080 › AC233: main menu, Deck Builder and Choose Your Commander pieces sit in the owner boxes
-- ✅ round 9c menus 1920x1080 › AC234: the intro plays first, the logo crashes in with dirt, owner sounds fire on time, then the main menu
+- ❌ round 9c menus 1920x1080 › AC233: main menu, Deck Builder and Choose Your Commander pieces sit in the owner boxes
+- ❌ round 9c menus 1920x1080 › AC234: the intro plays first, the logo crashes in with dirt, owner sounds fire on time, then the main menu
 - ✅ round 9c screenshots 1920x1080 › AC242: screenshots of the match with the arena, Commander close-ups, every menu screen and a creature close-up (1920x1080)
 - ✅ round 9c screenshots 844x390 › AC242: screenshots of the match with the arena, Commander close-ups, every menu screen and a creature close-up (844x390)
 - ✅ round 10 at 1920x1080 › AC243: drag highlights are bright in the faction color; attack squares are red
@@ -91,6 +91,16 @@
 - ✅ round 11 at 1920x1080 › AC265: dragging a card shows the real card face, floating and tilting; the hand tucks while over the board
 - ✅ round 11 at 1920x1080 › AC266: Ranged range 7 — the shot stops at the first unit, also your own
 - ✅ round 11 at 1920x1080 › AC267: Round 11 screenshots render without errors
+- ✅ round 12a drag-to-play at 1920x1080 › AC269: dragging Grubgrabber Miner from the raised hand onto a legal home-row square summons it (1920x1080)
+- ❌ round 12a drag-to-play at 1920x1080 › AC270: a drag from the tucked hand also plays; a drop back in the hand or on an illegal square plays nothing (1920x1080)
+- ✅ round 12a drag-to-play at 1568x782 › AC269: dragging Grubgrabber Miner from the raised hand onto a legal home-row square summons it (1568x782)
+- ✅ round 12a drag-to-play at 1568x782 › AC270: a drag from the tucked hand also plays; a drop back in the hand or on an illegal square plays nothing (1568x782)
+- ❌ round 12a at 1920x1080 › AC271: dragging a targeted spell onto an enemy casts it there; a Crystal card dragged over the board is played
+- ✅ round 12a at 1920x1080 › AC273: owner card paintings and Grubnak's on-throne portrait are used unchanged
+- ✅ round 12a at 1920x1080 › AC274: Round 12a screenshots render without errors
+- ✅ round 12a hand layout at 1920x1080 › AC272: the raised hand never covers the board, is an even fan fully on screen, hovered card bigger (1920x1080)
+- ✅ round 12a hand layout at 1568x782 › AC272: the raised hand never covers the board, is an even fan fully on screen, hovered card bigger (1568x782)
+- ✅ round 12a hand layout at 1366x768 › AC272: the raised hand never covers the board, is an even fan fully on screen, hovered card bigger (1366x768)
 - ✅ AC1: main menu has exactly Play, Deck Builder, How to Play, Settings, Quit and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -316,7 +326,7 @@
 - ❌ AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak's card and dismisses correctly
 - ❌ AC210: body text uses the brown-gold palette variables, no white body text on menu screens
 - ✅ AC213: the enemy deck and card fan are upside down with a readable deck count
-- ✅ AC214: banks are their own pieces with their numbers; no bank badge on the crystals
+- ❌ AC214: banks are their own pieces with their numbers; no bank badge on the crystals
 - ✅ AC215: themes follow each side's Commander faction; goblin corner frames only for a Goblin player
 - ✅ AC216: the drop-down Menu has the owner's six items, closes properly and Give up asks first
 - ✅ AC217: Settings, Sound Effects, Background music and How to play open their controls
@@ -330,7 +340,7 @@
 - ✅ AC226: the in-game editor (round 9b) is not built yet
 - ✅ AC230: Commanders stand on the ground inside their strongholds, upright, facing the owner turn
 - ✅ AC231: the stronghold never moves; Grubnak emotes in place and returns to his turn
-- ✅ AC232: the owner menus file, pictures, sound and main menu picture are shipped
+- ❌ AC232: the owner menus file, pictures, sound and main menu picture are shipped
 - ✅ AC235: a click skips the intro; Quit returns to it; How to Play opens Rules with a Tutorial button
 - ✅ AC236: menu buttons go where the owner file says; the main menu picture is cover-fit
 - ✅ AC237: menus play the music the owner file names (tense-cycle)
@@ -349,19 +359,95 @@
 ## Failures
 
 ```
+✗ round 6a match layout 1920x1080 › AC164: the hovered card rises to 48-60% of the height on the top layer (1920x1080)
+Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 0.47
+Received:    0.3316089206271701
+
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  5311 |       const b0 = await card.boundingBox();
+  5312 |       await page.mouse.move(b0.x + b0.width / 2, Math.min(H - 4, b0.y + 10));
+> 5313 |       await expect.poll(async () => (await card.boundingBox()).height / H).toBeGreaterThanOrEqual(0.47);
+       |       ^
+✗ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
+Error: only card 0 is popped
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+Call Log:
+- Timeout 4000ms exceeded while waiting on the predicate
+
+  5681 |         expect(pt, `card ${i} can be hovered`).not.toBeNull();
+  5682 |         await page.mouse.move(pt[0], pt[1], { steps: 4 });
+✗ round 7 hand (1920x1080) › AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (1920x1080)
+Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 0.36
+Received:    0.284837962962963
+
+  5737 |       for (let i = 0; i < 5; i++) {
+  5738 |         const b = await cards.nth(i).boundingBox();
+> 5739 |         expect(b.height / H).toBeGreaterThanOrEqual(0.36);
+       |                              ^
+  5740 |         expect(b.height / H).toBeLessThanOrEqual(0.46);
+  5741 |         const shown = (H - b.y) / b.height;
+  5742 |         expect(shown).toBeGreaterThanOrEqual(0.18); // Round 10: tucked to a quarter
+✗ round 9a hand 1920x1080 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (1920x1080)
+Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 0.31
+Received:    0.284837962962963
+
+  7039 |       for (let i = 0; i < 5; i++) rest.push(await cards.nth(i).boundingBox());
+  7040 |       for (const b of rest) {
+> 7041 |         expect(b.height / fh).toBeGreaterThanOrEqual(0.31); expect(b.height / fh).toBeLessThanOrEqual(0.37);
+       |                               ^
+  7042 |         const shown = (H - b.y) / b.height;
+  7043 |         expect(shown).toBeGreaterThanOrEqual(0.18); expect(shown).toBeLessThanOrEqual(0.32); // Round 10
+  7044 |       }
+✗ round 9c menus 1920x1080 › AC233: main menu, Deck Builder and Choose Your Commander pieces sit in the owner boxes
+SyntaxError: Unexpected token 'N', "Not found" is not valid JSON
+
+  7364 |
+  7365 | async function menuPieceBoxes(page, request, screenId) {
+> 7366 |   const m = await (await request.get(R9C_MENUS)).json();
+       |             ^
+  7367 |   const sc = m.screens.find((s) => s.id === screenId);
+  7368 |   const vp = page.viewportSize();
+  7369 |   const out = [];
+    at menuPieceBoxes (/home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7366:13)
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7386:12
+✗ round 9c menus 1920x1080 › AC234: the intro plays first, the logo crashes in with dirt, owner sounds fire on time, then the main menu
+SyntaxError: Unexpected token 'N', "Not found" is not valid JSON
+
+  7364 |
+  7365 | async function menuPieceBoxes(page, request, screenId) {
+> 7366 |   const m = await (await request.get(R9C_MENUS)).json();
+       |             ^
+  7367 |   const sc = m.screens.find((s) => s.id === screenId);
+  7368 |   const vp = page.viewportSize();
+  7369 |   const out = [];
+    at menuPieceBoxes (/home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7366:13)
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7407:12
 ✗ round 11 at 1920x1080 › AC258: Tense Cycle plays continuously through every menu and only changes when a match starts
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByRole('button', { name: 'Fight!', exact: true })
 
 
-  8032 |     await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
-  8033 |     await check();
-> 8034 |     await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  8039 |     await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+  8040 |     await check();
+> 8041 |     await page.getByRole('button', { name: 'Fight!', exact: true }).click();
        |                                                                     ^
-  8035 |     await expect.poll(async () => (await audioState(page)).music.track, { timeout: 10000 }).toBe('first-fight');
-  8036 |   });
-  8037 |
+  8042 |     await expect.poll(async () => (await audioState(page)).music.track, { timeout: 10000 }).toBe('first-fight');
+  8043 |   });
+  8044 |
 ✗ round 11 at 1920x1080 › AC260: Settings "Square highlights" panel: defaults, live preview, saved, applied in a match, Reset to default
 Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'getHighlightSettings')
     at eval (eval at evaluate (:290:30), <anonymous>:1:35)
@@ -370,44 +456,70 @@ Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'g
     at eval (eval at evaluate (:290:30), <anonymous>:1:35)
     at UtilityScript.evaluate (<anonymous>:292:16)
     at UtilityScript.<anonymous> (<anonymous>:1:44)
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:8067:25
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:8074:25
 ✗ round 11 at 1920x1080 › AC261: unit rings use faction colors, grey out after acting; "Unit rings" settings are saved and applied
 TimeoutError: page.waitForFunction: Timeout 10000ms exceeded.
 
-  8125 |     await panel.getByLabel('My ring color', { exact: true }).fill('#abcdef');
-  8126 |     await page.reload();
-> 8127 |     await page.waitForFunction(() => !!window.oreheart);
+  8132 |     await panel.getByLabel('My ring color', { exact: true }).fill('#abcdef');
+  8133 |     await page.reload();
+> 8134 |     await page.waitForFunction(() => !!window.oreheart);
        |                ^
-  8128 |     expect((await page.evaluate(async () => await window.oreheart.getRingSettings())).myColor).toBe('#abcdef');
-  8129 |     await start(page, quiet({ board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 6 }] }));
-  8130 |     r = await renderStats10(page);
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:8127:16
+  8135 |     expect((await page.evaluate(async () => await window.oreheart.getRingSettings())).myColor).toBe('#abcdef');
+  8136 |     await start(page, quiet({ board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 6 }] }));
+  8137 |     r = await renderStats10(page);
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:8134:16
+✗ round 12a drag-to-play at 1920x1080 › AC270: a drag from the tucked hand also plays; a drop back in the hand or on an illegal square plays nothing (1920x1080)
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: "goblin-scrapper"
+Received: undefined
+
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  8358 |       const b3 = await card.boundingBox();
+  8359 |       await realDrag(page, { x: b3.x + b3.width / 2, y: Math.min(b3.y + 6, H - 2) }, t);
+> 8360 |       await expect.poll(async () => { const c = at(await getState(page), spot.row, spot.col); return c && c.cardId; }).toBe('goblin-scrapper');
+       |       ^
+✗ round 12a at 1920x1080 › AC271: dragging a targeted spell onto an enemy casts it there; a Crystal card dragged over the board is played
+TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
+Call log:
+  - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Infernal Orb', exact: true })
+
+
+  8372 |     const hand = page.getByLabel('Your hand', { exact: true });
+  8373 |     const target = at(s, 4, 7);
+> 8374 |     const fb = await hand.getByRole('button', { name: 'Infernal Orb', exact: true }).boundingBox();
+       |                                                                                      ^
+  8375 |     await realDrag(page, { x: fb.x + fb.width / 2, y: Math.min(fb.y + 8, 1077) }, await sq2s(page, 4, 7));
+  8376 |     await expect.poll(async () => (await getState(page)).players.player.hand.some((c) => c.cardId === 'fireball')).toBe(false);
+  8377 |     s = await getState(page);
 ✗ AC96: dialogs float with no box; buttons are ornate
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  3303 | test('AC96: dialogs float with no box; buttons are ornate', async ({ page }) => {
-  3304 |   await page.goto('/?test=1&seed=7');
-> 3305 |   expect(await ornate(page.getByRole('button', { name: 'Play', exact: true }))).toBe(true);
+  3310 | test('AC96: dialogs float with no box; buttons are ornate', async ({ page }) => {
+  3311 |   await page.goto('/?test=1&seed=7');
+> 3312 |   expect(await ornate(page.getByRole('button', { name: 'Play', exact: true }))).toBe(true);
        |                                                                                 ^
-  3306 |   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  3307 |   await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' }).click();
-  3308 |   expect(await ornate(page.getByRole('button', { name: 'Start', exact: true }))).toBe(true);
+  3313 |   await page.getByRole('button', { name: 'Play', exact: true }).click();
+  3314 |   await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' }).click();
+  3315 |   expect(await ornate(page.getByRole('button', { name: 'Start', exact: true }))).toBe(true);
 ✗ AC109: Strongholds stand in the corners: player (7,2), enemy (1,12)
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  3652 |   s = await newMatch(page, { ai: false, setup: { firstPlayer: 'opponent', opponentHand: ['goblin-scrapper'] } }); // a Fighter: no Tunnel (Round 10)
-  3653 |   const opp = (await legal(page)).filter((a) => a.type === 'summon');
-> 3654 |   expect(opp.some((a) => a.row === 1 && a.col === 13)).toBe(true);
+  3659 |   s = await newMatch(page, { ai: false, setup: { firstPlayer: 'opponent', opponentHand: ['goblin-scrapper'] } }); // a Fighter: no Tunnel (Round 10)
+  3660 |   const opp = (await legal(page)).filter((a) => a.type === 'summon');
+> 3661 |   expect(opp.some((a) => a.row === 1 && a.col === 13)).toBe(true);
        |                                                        ^
-  3655 |   expect(opp.some((a) => a.row === 1 && a.col === 12)).toBe(false);
-  3656 |   expect(opp.every((a) => a.row === 1)).toBe(true);
-  3657 | });
+  3662 |   expect(opp.some((a) => a.row === 1 && a.col === 12)).toBe(false);
+  3663 |   expect(opp.every((a) => a.row === 1)).toBe(true);
+  3664 | });
 ✗ AC139: Deck Builder layout: big title, logo, deck name, left-aligned panel at the top, text actions with Back under them
 Error: 1920x1080 panel on the right
 
@@ -416,11 +528,11 @@ expect(received).toBeGreaterThanOrEqual(expected)
 Expected: >= 864
 Received:    0
 
-  4586 |     const pb = await box(panel);
-  4587 |     expect(pb.y, `${at} panel touches the top`).toBeLessThanOrEqual(2);
-> 4588 |     expect(pb.x, `${at} panel on the right`).toBeGreaterThanOrEqual(W * 0.45);
+  4593 |     const pb = await box(panel);
+  4594 |     expect(pb.y, `${at} panel touches the top`).toBeLessThanOrEqual(2);
+> 4595 |     expect(pb.x, `${at} panel on the right`).toBeGreaterThanOrEqual(W * 0.45);
        |                                              ^
-  4589 |     const title = panel.getByRole('heading', { name: 'Deck Builder' });
+  4596 |     const title = panel.getByRole('heading', { name: 'Deck Builder' });
 ✗ AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak's card and dismisses correctly
 Error: expect(locator).toHaveCount(expected) failed
 
@@ -447,6 +559,32 @@ expect(received).toEqual(expected) // deep equality
 +   "0 cards (50–100)",
 +   "Cards: 0 (50–100) · Creatures:",
 + ]
+✗ AC214: banks are their own pieces with their numbers; no bank badge on the crystals
+Error: /art/ui/goblin-bank.png
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 2570231
+Received: 641695
+
+  6926 |     const r = await request.get(u);
+  6927 |     expect(r.ok(), u).toBe(true);
+> 6928 |     expect((await r.body()).length, u).toBe(n);
+       |                                        ^
+  6929 |   }
+✗ AC232: the owner menus file, pictures, sound and main menu picture are shipped
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+  7348 | test('AC232: the owner menus file, pictures, sound and main menu picture are shipped', async ({ page, request }) => {
+  7349 |   const res = await request.get(R9C_MENUS);
+> 7350 |   expect(res.ok()).toBe(true);
+       |                    ^
+  7351 |   const m = await res.json();
+  7352 |   expect(m.first).toBe('intro');
+  7353 |   expect(m.screens.map((s) => s.id)).toEqual(['intro', 'main', 'deck', 'commander']);
 ✗ AC239: every creature card close-up has a 3D viewer; spells do not
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
