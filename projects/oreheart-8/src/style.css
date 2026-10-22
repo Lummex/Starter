@@ -1535,3 +1535,6 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .match .hand-scroll.left{left:calc(50% - var(--hcw) * 4.2 + 2vw - 44px)}
 .match .hand-scroll.right{left:calc(50% + var(--hcw) * 4.2 + 2vw + 6px)}
 .hand-card .pic{object-position:50% 30%}
+
+/* Round 12a: cards sit flush with the bottom edge when the hand is raised */
+.match .hand{height:calc(var(--hcw) * 1.4861)}

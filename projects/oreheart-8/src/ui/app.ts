@@ -28,8 +28,8 @@ const RARITY_KEY: Record<string, string> = { Common: 'common', Uncommon: 'uncomm
 export const rarityKey = (c: any) => RARITY_KEY[c.rarity] || 'common';
 /** Picture path of a card (Goblin creatures have a generated painting). */
 /** Owner-supplied paintings (round 12a) override the generated art. */
-export const OWNER_ART: Record<string, string> = { 'goblin-scrounger': '/art/owner/goblin-scrounger.png', 'goblin-pebbler': '/art/owner/goblin-pebbler.png', 'shiv-rat': '/art/owner/shiv-rat.png', 'goblin-smith-miner': '/art/owner/goblin-smith-miner.png' };
-export const commanderPortrait = (id: string) => (id === 'grubnak' ? '/art/owner/grubnak-commander.png' : `/art/commanders/${id}.webp`);
+export const OWNER_ART: Record<string, string> = { 'goblin-scrounger': '/art/owner/goblin/goblin-miner-card-art.png', 'goblin-pebbler': '/art/owner/goblin/boneknocker-card-art.png', 'shiv-rat': '/art/owner/goblin/shiv-rat-card-art.png', 'goblin-smith-miner': '/art/owner/goblin/scrapsmith-miner-card-art.png' };
+export const commanderPortrait = (id: string) => (id === 'grubnak' ? '/art/owner/goblin/grubnak-on-throne-art.png' : `/art/commanders/${id}.webp`);
 export const pictureOf = (c: any): string | null => (c && ((c.type === 'creature' && c.faction === 'goblins') || (c.type === 'spell' && !c.disabled)) ? OWNER_ART[c.id] || `/art/cards/${c.id}.webp` : null);
 export const FRAME: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
 /** Spell frames: one line per faction (owner files replace the temporary generated ones by overwriting `public/art/frames/spell-frame-*.jpg`). */
@@ -965,17 +965,27 @@ export class App {
   }
   screenRects() { return this.view ? this.view.screenRects() : null; }
   layoutQueued = false;
+  handRoom = Infinity;
+  handKey = '';
   /** Round 12a: size the hand so that, raised, it sits entirely below the player's home row (never covering the board). */
   fitHand() {
     const m = this.root.querySelector('.match') as El | null;
     if (!m || !this.view) return;
+    const key = window.innerWidth + 'x' + window.innerHeight;
+    // sized once per window shape, from the home view, so zooming or panning the board never resizes the hand
+    if (this.handKey === key && m.style.getPropertyValue('--hcw')) return;
+    if (this.handKey !== key && this.cam && this.cam.zoom && Math.abs(this.cam.zoom - 1) > 0.01 && this.handKey) return;
     const bb = (this.r.board as El).getBoundingClientRect();
     let bottom = 0;
     for (let col = 1; col <= BW; col++) { const rc = this.view.cellRect(BH, col); bottom = Math.max(bottom, bb.top + rc.y + rc.h); }
     const vh = window.innerHeight, base = Math.min(vh, window.innerWidth * 0.5625) * 0.2455;
-    const fit = (vh - bottom - 6) / 1.5;
-    if (!(fit > 0)) return;
-    m.style.setProperty('--hcw', Math.round(Math.max(base * 0.6, Math.min(base, fit))) + 'px');
+    this.handKey = key;
+    // phones (very short windows) keep the big owner-size hand; everywhere else the raised hand, with its hovered card, stays below the home row
+    this.handRoom = vh < 500 ? Infinity : vh - bottom - 2;
+    const fit = (vh - bottom - 6) / (1.4861 * 1.15);
+    if (vh < 500) { m.style.setProperty('--hcw', Math.round(base) + 'px'); return; }
+    if (!(fit > 0)) { m.style.setProperty('--hcw', Math.round(base) + 'px'); return; }
+    m.style.setProperty('--hcw', Math.round(Math.max(base * 0.5, Math.min(base, fit))) + 'px');
   }
   layoutSoon() { if (this.layoutQueued) return; this.layoutQueued = true; requestAnimationFrame(() => { this.layoutQueued = false; this.layout(); }); }
   syncCam() { const v = this.view?.getView?.(); if (v && v.zoom) this.cam = { zoom: v.zoom, x: ((v.home?.[0] ?? v.painting.w / 2) - v.centerX) * v.scale, y: ((v.home?.[1] ?? v.painting.h / 2) - v.centerY) * v.scale }; }
@@ -1191,7 +1201,7 @@ export class App {
     const left = hb.left + (parseFloat(el.style.left) || 0);
     void ty; void openY;
     const top = hb.top + (el.offsetTop || 0);
-    const S = Math.max(1, Math.min(1.6, (hr.height - 8) / hgt, (hr.width - 8) / w));
+    const S = Math.max(1, Math.min(1.6, (hr.height - 8) / hgt, (hr.width - 8) / w, this.handRoom / hgt));
     const cx = left + w / 2, cy = top + hgt / 2;
     const halfW = (w * S) / 2, halfH = (hgt * S) / 2;
     const targetX = Math.max(hr.left + halfW + 2, Math.min(hr.right - halfW - 2, cx));
@@ -1400,7 +1410,7 @@ export class App {
       const off = k - (shown - 1) / 2;
       const t = (off * spacing) / (W / 2);
       const rot = 0;
-      const y = t * t * cw * 0.03;
+      const y = 0.8 + t * t * cw * 0.03;
       c.style.left = x0 + k * spacing + 'px';
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
       c.dataset.fan = c.style.transform;

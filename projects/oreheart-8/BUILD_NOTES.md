@@ -606,3 +606,9 @@ AC96, AC135, AC137, AC139, AC168 (gold/bold/boxed menu text vs. the owner's whit
 - Hand layout: `fitHand()` sizes the hand so the raised hand sits below the home row; even, non-overlapping fan (wider strip), cards fully on screen. The hovered card still pops out at the enlarged size (it covers board squares by design of the earlier pop-out rule).
 - Owner paintings (`public/art/owner/*.png`, used as-is): Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner, and Grubnak's commander portrait.
 - Not done (round 12b): 3D models, Meshy, throne.
+
+## Round 12a fixes (inspector round 1)
+- Hand: card size is fitted once per window shape from the home view so the raised hand and its hovered card (enlarged only as far as the room below the home row allows) never cover board squares at 1366+ px; phones (<500 px tall) keep the big owner-size hand and 1.6x pop-out. Hand strip is bottom-flush; zoom/pan never resizes it.
+- Owner paintings now served from `/art/owner/goblin/<owner file name>` (byte-identical copies).
+- AC260/AC261 call `window.oreheart` outside test mode, which contradicts AC5 (hooks only in test mode); left as is.
+- Known conflicts in older checks: AC164/AC174/AC175/AC218 at 1920 expect a 1.6x pop-out / 36% cards, which contradicts the round 12 rule (raised hand never covers the board). AC271 looks for a card named "Infernal Orb" (the card is "Searing Arcane Orb"); AC258 clicks "Fight!" (the button is "Start", per the spec).
