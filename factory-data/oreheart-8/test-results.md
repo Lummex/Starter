@@ -1,6 +1,6 @@
 # Automated check results
 
-313 of 332 checks passed after 3 build round(s).
+334 of 343 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -42,9 +42,9 @@
 - ✅ round 6a match layout 844x390 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (844x390)
 - ✅ round 6a screenshots (1920x1080) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (1920x1080)
 - ✅ round 6a screenshots (844x390) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (844x390)
-- ❌ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
+- ✅ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
 - ✅ round 7 hand (1920x1080) › AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (1920x1080)
-- ❌ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
+- ✅ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
 - ✅ round 7 hand (844x390) › AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (844x390)
 - ✅ round 7 screenshots (1920x1080) › AC184: Grubnak in a match and in the 3D viewer render without errors
 - ✅ arena homography 1920x1080 › AC188: square centers follow the homography of the owner's corners (1920x1080)
@@ -74,12 +74,23 @@
 - ✅ round 9c screenshots 1920x1080 › AC242: screenshots of the match with the arena, Commander close-ups, every menu screen and a creature close-up (1920x1080)
 - ✅ round 9c screenshots 844x390 › AC242: screenshots of the match with the arena, Commander close-ups, every menu screen and a creature close-up (844x390)
 - ✅ round 10 at 1920x1080 › AC243: drag highlights are bright in the faction color; attack squares are red
-- ✅ round 10 at 1920x1080 › AC244: played cards pop up at the edges — player right, enemy left — stacked up to 3
-- ✅ round 10 at 1920x1080 › AC246: the whole mine model is clickable and clicking its crystal tip mines
+- ✅ round 10 at 1920x1080 › AC244: only the opponent's played cards pop up, at the left edge (Round 11)
+- ✅ round 10 at 1920x1080 › AC246: the mine click area is only its own square; clicking inside it mines (Round 11)
 - ✅ round 10 at 1920x1080 › AC249: Crystal Flow streams end at the Flow crystal counters in faction colors
 - ✅ round 10 at 1920x1080 › AC250: card close-up fills 80–100 % of the height, no scrollbar, no Close; outside click and Esc close it
 - ✅ round 10 at 1920x1080 › AC251: the resting hand shows about a quarter of each card; hovering raises it
 - ✅ round 10 at 1920x1080 › AC256: Round 10 screenshots render without errors
+- ✅ round 11 at 1920x1080 › AC257: "Click to begin" gate, then the intro crash sound and thunder actually play
+- ❌ round 11 at 1920x1080 › AC258: Tense Cycle plays continuously through every menu and only changes when a match starts
+- ✅ round 11 at 1920x1080 › AC259: main menu button words are white, bold and styled as in menus.json
+- ❌ round 11 at 1920x1080 › AC260: Settings "Square highlights" panel: defaults, live preview, saved, applied in a match, Reset to default
+- ❌ round 11 at 1920x1080 › AC261: unit rings use faction colors, grey out after acting; "Unit rings" settings are saved and applied
+- ✅ round 11 at 1920x1080 › AC262: a creature standing behind a mine can be selected by clicking it; the mine square still mines
+- ✅ round 11 at 1920x1080 › AC263: only the opponent's played cards pop up, left edge, at most 3 stacked
+- ✅ round 11 at 1920x1080 › AC264: dragging a card sideways in the hand reorders it, the hand stays up, and the order is kept
+- ✅ round 11 at 1920x1080 › AC265: dragging a card shows the real card face, floating and tilting; the hand tucks while over the board
+- ✅ round 11 at 1920x1080 › AC266: Ranged range 7 — the shot stops at the first unit, also your own
+- ✅ round 11 at 1920x1080 › AC267: Round 11 screenshots render without errors
 - ✅ AC1: main menu has exactly Play, Deck Builder, How to Play, Settings, Quit and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -98,7 +109,7 @@
 - ✅ AC9: examples (c) and (d) — pool is set to flow, unspent crystals last through the enemy turn
 - ✅ AC9: example (e) — the pool never goes above 16
 - ✅ AC39: mining is an action — Gatherer 2, Fighter 1, nothing without mining; pool set to last turn's mining
-- ❌ AC10: back-row summoning, Grubnak discount, summoning sickness, Mangewolf Rider
+- ✅ AC10: back-row summoning, Grubnak discount, summoning sickness, Mangewolf Rider
 - ✅ AC10: row in front only when the back row is full; nothing when both are full
 - ✅ AC10: Unique card limited to one on the battlefield; Borgo +1 Health
 - ✅ AC11: Tunnel works from turn 1 on every empty space next to any mine (Round 10)
@@ -108,7 +119,7 @@
 - ✅ AC13: Shieldbeard vs Scrapper — type advantage defeats it, strike back still lands
 - ✅ AC13: strike back with type advantage defeats the attacker
 - ✅ AC13: Guard forces adjacent melee attackers to hit it
-- ✅ AC13: Ranged shoots up to 5 squares in 8 straight lines, stops at the first unit, no strike back (Round 10)
+- ✅ AC13: Ranged shoots up to 7 squares in 8 straight lines, stops at the first unit, no strike back (Round 11)
 - ✅ AC14: creatures heal at the start of their owner's turn; damaged Health is marked
 - ✅ AC15: Aegis Tinkerer gives Shield 1, which blocks exactly 1 damage
 - ✅ AC16: Commander damage equals Attack and never resets
@@ -133,7 +144,7 @@
 - ✅ AC23: illegal actions are rejected and state is unchanged
 - ✅ AC25: first visit offers the tutorial; Skip is remembered
 - ✅ AC25: Tutorial button opens the guided match with tips and Skip Tutorial
-- ❌ AC25: tutorial steps start at summon and advance after a back-row summon
+- ✅ AC25: tutorial steps start at summon and advance after a back-row summon
 - ✅ AC26: printed creature Health is at most 6
 - ✅ AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 for 1
 - ✅ AC27: summoning spends exactly the new costs
@@ -151,15 +162,15 @@
 - ✅ AC36: flow preview, mine ring numbers and mine info
 - ✅ AC38: swapping places with your own creature uses only the dragged creature's action
 - ✅ AC37: the confirm pop-up sits above the countdown
-- ❌ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
+- ✅ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
 - ✅ AC41: the moves pop-up names miners that have not mined
 - ✅ AC42: Ranged creatures show the bow icon on the board and in the hand
 - ✅ AC45: Miner names, roles and badges
 - ✅ AC46: Miner upgrades — Smith gives +1 Attack and +1 Health, basic Miner +1 Health; they stack, persist and heal
 - ✅ AC46: a basic Miner played onto your creature gives exactly +1 Health; the free Miner can never upgrade
-- ❌ AC46: dropping a Smith Miner on your creature upgrades it at once (no choice pop-up)
+- ✅ AC46: dropping a Smith Miner on your creature upgrades it at once (no choice pop-up)
 - ✅ AC47: Crystal Bank persists, has no cap and is spent after Flow
-- ❌ AC48: playing a Crystal card never ends the phase or turn
+- ✅ AC48: playing a Crystal card never ends the phase or turn
 - ✅ AC49: an unaffordable counterspell opens no Respond window (Round 2)
 - ✅ AC49: "Soul Cluster + Snuff Out" plays both and cancels the enemy spell
 - ✅ AC49: a Crystal card played alone in the Respond window keeps it open and funds the counterspell
@@ -243,7 +254,7 @@
 - ✅ AC127: mulligan cards are double size, one row, on-screen (1280x720)
 - ✅ AC127: mulligan cards are double size, one row, on-screen (844x390)
 - ✅ AC129: faction spells — names, factions, deck validation and the casting lock
-- ❌ AC130: Deck Commander locks other factions’ spells in the Deck Builder
+- ✅ AC130: Deck Commander locks other factions’ spells in the Deck Builder
 - ✅ AC131: Venom Shiv poisons for exactly 3 of the owner’s turns, then the creature heals; Hex Reversal is disabled
 - ✅ AC132: spell frames per faction with the cost and type orbs
 - ✅ AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textured letters
@@ -299,7 +310,7 @@
 - ✅ AC203: dragging a card onto the deck list adds one copy; a plain click opens the close-up
 - ✅ AC204: adding cards by double-click, drag and + never moves the panel, the grid or the cards
 - ✅ AC205: every deck entry on Choose Your Commander has the same size, also for long names and when selected
-- ❌ AC206: choosing a Commander hides the other two and shows only his decks; Change Commander, Esc and a second click bring the row back
+- ✅ AC206: choosing a Commander hides the other two and shows only his decks; Change Commander, Esc and a second click bring the row back
 - ✅ AC207: Grubnak's 3D model pops up in front of his card when he is chosen
 - ✅ AC208: Start sits bottom-right in both states at 1920x1080 and 844x390
 - ❌ AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak's card and dismisses correctly
@@ -317,157 +328,86 @@
 - ✅ AC224: the music and sound effects volume sliders work and are remembered
 - ✅ AC225: savings land in the bank piece
 - ✅ AC226: the in-game editor (round 9b) is not built yet
-- ❌ AC230: Commanders stand on the ground inside their strongholds, upright, facing the owner turn
+- ✅ AC230: Commanders stand on the ground inside their strongholds, upright, facing the owner turn
 - ✅ AC231: the stronghold never moves; Grubnak emotes in place and returns to his turn
 - ✅ AC232: the owner menus file, pictures, sound and main menu picture are shipped
 - ✅ AC235: a click skips the intro; Quit returns to it; How to Play opens Rules with a Tutorial button
 - ✅ AC236: menu buttons go where the owner file says; the main menu picture is cover-fit
 - ✅ AC237: menus play the music the owner file names (tense-cycle)
 - ✅ AC238: saved deck entries are tinted and glow in their faction color
-- ✅ AC239: every creature card close-up has a 3D viewer; spells do not
+- ❌ AC239: every creature card close-up has a 3D viewer; spells do not
 - ✅ AC240: Play action in the Deck Builder (disabled with a reason while illegal); double-click a saved deck starts a match
 - ✅ AC241: Deck Builder text colors: deck list lines and counts white, Back bold
-- ❌ AC245: random mines may touch; every layout keeps the placement rules
-- ❌ AC247: a basic Miner dying draws its owner a card; Smith Miners and upgrades do not
+- ✅ AC245: random mines may touch; every layout keeps the placement rules
+- ✅ AC247: a basic Miner dying draws its owner a card; Smith Miners and upgrades do not
 - ✅ AC248: Ranged straight lines also apply to previewAttack and the Commander
-- ❌ AC252: mines have no ring, a flat glow-rubble decal tinted by owner, and sit level at equal height
+- ✅ AC252: mines have no ring, a flat glow-rubble decal tinted by owner, and sit level at equal height
 - ✅ AC253: several Crystal cards in one turn, in Deploy and Action, never ending the phase
 - ✅ AC254: Tunnel from turn 1 — drag-and-drop next to a mine works and the AI uses the same rule
-- ❌ AC255: rule texts updated for Miner death draw, Ranged lines and Crystal cards
+- ✅ AC255: rule texts updated for Miner death draw, Ranged lines (range 7) and Crystal cards
 
 ## Failures
 
 ```
-✗ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
-Error: hand tucked halfway again
+✗ round 11 at 1920x1080 › AC258: Tense Cycle plays continuously through every menu and only changes when a match starts
+TimeoutError: locator.click: Timeout 10000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: 'Fight!', exact: true })
 
-expect(received).toBe(expected) // Object.is equality
 
-Expected: true
-Received: false
-
-Call Log:
-- Timeout 7000ms exceeded while waiting on the predicate
-
-  5664 |       await away();
-  5665 |       await allRest('all cards back after leaving the hand');
-✗ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
-Error: hand tucked halfway again
-
-expect(received).toBe(expected) // Object.is equality
-
-Expected: true
-Received: false
-
-Call Log:
-- Timeout 7000ms exceeded while waiting on the predicate
-
-  5664 |       await away();
-  5665 |       await allRest('all cards back after leaving the hand');
-✗ AC10: back-row summoning, Grubnak discount, summoning sickness, Mangewolf Rider
-Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: true
-Received: false
-
-  516 |   const summons = (await legal(page)).filter((a) => a.type === 'summon');
-  517 |   expect(summons.length).toBeGreaterThan(0);
-> 518 |   expect(summons.every((a) => a.row === 7)).toBe(true); // back row only; no Tunnel (no sites held)
-      |                                             ^
-  519 |   expect(summons.some((a) => a.uid === scrapper && a.row === 7 && a.col === 1)).toBe(true);
-  520 |   expect(summons.some((a) => a.row === 7 && a.col === 2)).toBe(false); // Round 3a: player Stronghold at (7,2)
-  521 |   expect(summons.some((a) => a.uid === scrounger && a.row === 3)).toBe(false);
-✗ AC25: tutorial steps start at summon and advance after a back-row summon
-Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: true
-Received: false
-
-  1258 |   const summons = (await legal(page)).filter((a) => a.type === 'summon');
-  1259 |   expect(summons.length).toBeGreaterThan(0);
-> 1260 |   expect(summons.every((a) => a.row === 7)).toBe(true);
-       |                                             ^
-  1261 |   expect((await act(page, summons[0])).ok).toBe(true);
-  1262 |   s = await getState(page);
-  1263 |   expect(s.tutorial.step).toBe('move');
-✗ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
-Error: spacing, seed 4
-
-expect(received).toBeGreaterThanOrEqual(expected)
-
-Expected: >= 2
-Received:    1
-
-  1658 |       expect(cheb(a, { row: 1, col: 12 }) >= 2 && cheb(a, { row: 7, col: 2 }) >= 2, `Stronghold distance, seed ${seed}`).toBe(true);
-  1659 |     }
-> 1660 |     for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) expect(cheb(m[i], m[j]), `spacing, seed ${seed}`).toBeGreaterThanOrEqual(2);
-       |                                                                                                                   ^
-  1661 |     expect([1, 3]).toContain(m.filter((a) => a.row === 4).length);
-✗ AC46: dropping a Smith Miner on your creature upgrades it at once (no choice pop-up)
-Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: 2
-Received: 1
-
-Call Log:
-- Timeout 7000ms exceeded while waiting on the predicate
-
-  1895 |   await page.mouse.move(b.x + b.width / 2, b.y + b.height + 12, { steps: 15 });
-  1896 |   await page.mouse.up();
-> 1897 |   await expect.poll(async () => at(await getState(page), 6, 3).attack).toBe(base.attack + 1);
-       |   ^
-✗ AC48: playing a Crystal card never ends the phase or turn
-Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: false
-Received: true
-
-  1940 |   await done(page);
-  1941 |   expect((await getState(page)).phase).toBe('action');
-> 1942 |   expect((await legal(page)).some((a) => a.type === 'playCrystal')).toBe(false);
+  8032 |     await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+  8033 |     await check();
+> 8034 |     await page.getByRole('button', { name: 'Fight!', exact: true }).click();
        |                                                                     ^
-  1943 |   expect((await act(page, { type: 'playCrystal', uid: s.players.player.hand[0].uid })).ok).toBe(false);
-  1944 | });
-  1945 |
+  8035 |     await expect.poll(async () => (await audioState(page)).music.track, { timeout: 10000 }).toBe('first-fight');
+  8036 |   });
+  8037 |
+✗ round 11 at 1920x1080 › AC260: Settings "Square highlights" panel: defaults, live preview, saved, applied in a match, Reset to default
+Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'getHighlightSettings')
+    at eval (eval at evaluate (:290:30), <anonymous>:1:35)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at eval (eval at evaluate (:290:30), <anonymous>:1:35)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:8067:25
+✗ round 11 at 1920x1080 › AC261: unit rings use faction colors, grey out after acting; "Unit rings" settings are saved and applied
+TimeoutError: page.waitForFunction: Timeout 10000ms exceeded.
+
+  8125 |     await panel.getByLabel('My ring color', { exact: true }).fill('#abcdef');
+  8126 |     await page.reload();
+> 8127 |     await page.waitForFunction(() => !!window.oreheart);
+       |                ^
+  8128 |     expect((await page.evaluate(async () => await window.oreheart.getRingSettings())).myColor).toBe('#abcdef');
+  8129 |     await start(page, quiet({ board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 6 }] }));
+  8130 |     r = await renderStats10(page);
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:8127:16
 ✗ AC96: dialogs float with no box; buttons are ornate
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  3283 | test('AC96: dialogs float with no box; buttons are ornate', async ({ page }) => {
-  3284 |   await page.goto('/?test=1&seed=7');
-> 3285 |   expect(await ornate(page.getByRole('button', { name: 'Play', exact: true }))).toBe(true);
+  3303 | test('AC96: dialogs float with no box; buttons are ornate', async ({ page }) => {
+  3304 |   await page.goto('/?test=1&seed=7');
+> 3305 |   expect(await ornate(page.getByRole('button', { name: 'Play', exact: true }))).toBe(true);
        |                                                                                 ^
-  3286 |   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  3287 |   await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' }).click();
-  3288 |   expect(await ornate(page.getByRole('button', { name: 'Start', exact: true }))).toBe(true);
+  3306 |   await page.getByRole('button', { name: 'Play', exact: true }).click();
+  3307 |   await page.getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile' }).click();
+  3308 |   expect(await ornate(page.getByRole('button', { name: 'Start', exact: true }))).toBe(true);
 ✗ AC109: Strongholds stand in the corners: player (7,2), enemy (1,12)
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  3629 |   expect(opp.some((a) => a.row === 1 && a.col === 13)).toBe(true);
-  3630 |   expect(opp.some((a) => a.row === 1 && a.col === 12)).toBe(false);
-> 3631 |   expect(opp.every((a) => a.row === 1)).toBe(true);
-       |                                         ^
-  3632 | });
-  3633 |
-  3634 | test('AC110: random mines are always corner-mirrored, fair, away from both Strongholds and never on the same square', async ({ page }) => {
-✗ AC130: Deck Commander locks other factions’ spells in the Deck Builder
-Error: expect(locator).toHaveAttribute(expected) failed
-
-Locator:  getByRole('button', { name: 'Searing Arcane Orb', exact: true }).first()
-Expected: "true"
-Received: ""
-Timeout:  7000ms
-
-Call log:
-  - Expect "toHaveAttribute" with timeout 7000ms
-  - waiting for getByRole('button', { name: 'Searing Arcane Orb', exact: true }).first()
-    11 × locator resolved to <div tabindex="0" role="button" data-locked="true" data-card="fireball" class="db-tile locked" aria-label="Searing Arcane Orb">…</div>
-       - unexpected value "null"
+  3652 |   s = await newMatch(page, { ai: false, setup: { firstPlayer: 'opponent', opponentHand: ['goblin-scrapper'] } }); // a Fighter: no Tunnel (Round 10)
+  3653 |   const opp = (await legal(page)).filter((a) => a.type === 'summon');
+> 3654 |   expect(opp.some((a) => a.row === 1 && a.col === 13)).toBe(true);
+       |                                                        ^
+  3655 |   expect(opp.some((a) => a.row === 1 && a.col === 12)).toBe(false);
+  3656 |   expect(opp.every((a) => a.row === 1)).toBe(true);
+  3657 | });
 ✗ AC139: Deck Builder layout: big title, logo, deck name, left-aligned panel at the top, text actions with Back under them
 Error: 1920x1080 panel on the right
 
@@ -476,24 +416,11 @@ expect(received).toBeGreaterThanOrEqual(expected)
 Expected: >= 864
 Received:    0
 
-  4561 |     const pb = await box(panel);
-  4562 |     expect(pb.y, `${at} panel touches the top`).toBeLessThanOrEqual(2);
-> 4563 |     expect(pb.x, `${at} panel on the right`).toBeGreaterThanOrEqual(W * 0.45);
+  4586 |     const pb = await box(panel);
+  4587 |     expect(pb.y, `${at} panel touches the top`).toBeLessThanOrEqual(2);
+> 4588 |     expect(pb.x, `${at} panel on the right`).toBeGreaterThanOrEqual(W * 0.45);
        |                                              ^
-  4564 |     const title = panel.getByRole('heading', { name: 'Deck Builder' });
-✗ AC206: choosing a Commander hides the other two and shows only his decks; Change Commander, Esc and a second click bring the row back
-TimeoutError: locator.click: Timeout 10000ms exceeded.
-Call log:
-  - waiting for getByRole('button', { name: 'Change Commander', exact: true })
-    - locator resolved to <button type="button" class="btn change-cmd tx-act">Change Commander</button>
-  - attempting click action
-    2 × waiting for element to be visible, enabled and stable
-      - element is visible, enabled and stable
-      - scrolling into view if needed
-      - done scrolling
-      - <button type="button" class="dstack" aria-pressed="false" data-key="starter:goblin-horde" aria-label="Goblin Horde, 100 cards, ready">…</button> from <div class="mb-zone cs-decks" data-menu-piece="cDecks">…</div> subtree intercepts pointer events
-    - retrying click action
-    - waiting 20ms
+  4589 |     const title = panel.getByRole('heading', { name: 'Deck Builder' });
 ✗ AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak's card and dismisses correctly
 Error: expect(locator).toHaveCount(expected) failed
 
@@ -520,58 +447,17 @@ expect(received).toEqual(expected) // deep equality
 +   "0 cards (50–100)",
 +   "Cards: 0 (50–100) · Creatures:",
 + ]
-✗ AC230: Commanders stand on the ground inside their strongholds, upright, facing the owner turn
-Error: pCmd faces turn 146
-
-expect(received).toBeLessThanOrEqual(expected)
-
-Expected: <= 3
-Received:    79.32631448033521
-
-  7287 |     expect(Math.abs(p[cmd].baseY - p.boardY), `${cmd} on the ground`).toBeLessThanOrEqual(0.01 * p.square);
-  7288 |     expect(Math.abs(p[fort].baseY - p.boardY), `${fort} on the ground`).toBeLessThanOrEqual(0.01 * p.square);
-> 7289 |     expect(yawDiff(p[cmd].yawDeg, turn), `${cmd} faces turn ${turn}`).toBeLessThanOrEqual(3);
-       |                                                                       ^
-  7290 |     for (const k of ['pCmd', 'pFort', 'eCmd', 'eFort']) {
-✗ AC245: random mines may touch; every layout keeps the placement rules
-Test timeout of 30000ms exceeded.
-✗ AC247: a basic Miner dying draws its owner a card; Smith Miners and upgrades do not
-Error: expect(received).toBeFalsy()
-
-Received: {"ale": 0, "attack": 1, "blinkUsed": false, "bubble": false, "cardId": "gnome-tinker", "col": 5, "hasAttacked": false, "hasMined": false, "hasMoved": false, "health": 1, "lockedUntil": 0, "maxHealth": 4, "minedMine": null, "movedDistance": 0, "owner": "opponent", "poison": 0, "row": 4, "shield": 0, "summonedThisTurn": false, "uid": "u26", "upgrades": {"attack": 0, "health": 0}}
-
-  7820 |   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 5).uid, target: { row: 4, col: 5 } })).ok).toBe(true);
-  7821 |   s = await getState(page);
-> 7822 |   expect(at(s, 4, 5)).toBeFalsy();
-       |                       ^
-  7823 |   expect(s.players.opponent.hand.length).toBe(hand0 + 1);
-  7824 |   expect(s.players.opponent.deck.length).toBe(deck0 - 1);
-  7825 |
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7822:23
-✗ AC252: mines have no ring, a flat glow-rubble decal tinted by owner, and sit level at equal height
-Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: false
-Received: undefined
-
-  7878 |   const h0 = r.mineModels[0].height;
-  7879 |   for (const m of r.mineModels) {
-> 7880 |     expect(m.ring).toBe(false);
-       |                    ^
-  7881 |     expect(m.decal.kind).toBe('glow-rubble');
-  7882 |     expect(m.decal.flat).toBe(true);
-  7883 |     expect(m.tiltDeg).toBeLessThanOrEqual(0.5);
-✗ AC255: rule texts updated for Miner death draw, Ranged lines and Crystal cards
-Error: expect(received).toMatch(expected)
-
-Expected pattern: /dies/
-Received string:  "each turn, adjacent allies get shield 1."
-
-  7932 |   });
-  7933 |   for (const c of cards.slice(0, 3)) {
-> 7934 |     expect(c.shortText.toLowerCase()).toMatch(/dies/);
-       |                                       ^
-  7935 |     expect(c.shortText.toLowerCase()).toMatch(/draw/);
-  7936 |     expect(c.longText.toLowerCase()).toMatch(/draw/);
-  7937 |     expect(c.longText.toLowerCase()).not.toMatch(/behind on mines|more mines than you/);
+✗ AC239: every creature card close-up has a 3D viewer; spells do not
+TimeoutError: locator.click: Timeout 10000ms exceeded.
+Call log:
+  - waiting for getByLabel('All cards', { exact: true }).getByRole('button', { name: /Searing Arcane Orb/ }).first()
+    - locator resolved to <div tabindex="0" role="button" data-locked="true" aria-disabled="true" data-card="fireball" class="db-tile locked" aria-label="Searing Arcane Orb">…</div>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not enabled
+    - retrying click action
 ```
