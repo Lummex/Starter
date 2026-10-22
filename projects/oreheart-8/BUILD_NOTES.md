@@ -600,3 +600,9 @@ AC96, AC135, AC137, AC139, AC168 (gold/bold/boxed menu text vs. the owner's whit
 - Main-menu buttons: the button element is `#FFD700` and bold; the word inside keeps the owner's white (R11.2) (AC135/137/168).
 - The "Click to begin" gate is skipped in automated/headless browsers (unless `?begin=1`).
 - Not changed (checks contradict the spec or each other): AC258 clicks "Fight!" but the button is "Start" (R9c); AC96 expects an ornate Play button; AC109 gives the enemy no crystals for a Fighter; AC139 expects the old right-hand deck panel; AC209 vs AC239 disagree and AC239 clicks a locked tile; AC210 wants non-white deck text while R11.15 wants white; AC260/261 use hooks outside test mode which AC5 forbids.
+
+## Round 12a
+- Drag-to-play fixed: the old rule treated any drag released near the grab height as a hand reorder, so a card popped up mid-screen could never be played. A pointer over the board (and above the hand band) is now always a play drag; reorder only inside the hand band. Verified with real pointer events at 1920×1080 and 1568×782 (`tools/probe-r12a.mjs`).
+- Hand layout: `fitHand()` sizes the hand so the raised hand sits below the home row; even, non-overlapping fan (wider strip), cards fully on screen. The hovered card still pops out at the enlarged size (it covers board squares by design of the earlier pop-out rule).
+- Owner paintings (`public/art/owner/*.png`, used as-is): Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner, and Grubnak's commander portrait.
+- Not done (round 12b): 3D models, Meshy, throne.

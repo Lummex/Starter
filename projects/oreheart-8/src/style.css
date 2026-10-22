@@ -1457,7 +1457,7 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 /* Round 10 fix: the player's hand (an .o-hand) rests tucked to a quarter; the hovered card still rises by itself */
 .match .hand.o-hand,.match .hand.o-hand.open,.match .hand.o-hand.has-pop{transform:translateY(calc(var(--hcw) * 1.13))}
 /* Round 10: hovering the tucked hand raises it (almost fully above the edge, fan flattened); the hovered card also enlarges */
-.match .hand.o-hand.open,.match .hand.o-hand.has-pop{transform:translateY(calc(var(--hcw) * .05))}
+.match .hand.o-hand.open,.match .hand.o-hand.has-pop{transform:translateY(0)}
 .overlay.cardview{position:fixed;inset:0}
 .card-view-face .hand-card{--cw:min(700px,55.2vh)}
 
@@ -1530,3 +1530,8 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .fx-panel{position:relative!important;inset:auto!important}
 .screen[data-screen=settings] .stack{height:auto!important;max-height:none!important;min-height:max-content;overflow:visible;gap:14px}
 .mb-pc.mb-btn{color:#FFD700;font-weight:700!important}
+/* Round 12a: wider hand strip so up to 8 cards sit side by side (even fan, no overlap) */
+.match .hand{left:calc(50% - var(--hcw) * 4.2 + 2vw);width:calc(var(--hcw) * 8.4)}
+.match .hand-scroll.left{left:calc(50% - var(--hcw) * 4.2 + 2vw - 44px)}
+.match .hand-scroll.right{left:calc(50% + var(--hcw) * 4.2 + 2vw + 6px)}
+.hand-card .pic{object-position:50% 30%}

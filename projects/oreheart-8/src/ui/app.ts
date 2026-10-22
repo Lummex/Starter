@@ -965,6 +965,18 @@ export class App {
   }
   screenRects() { return this.view ? this.view.screenRects() : null; }
   layoutQueued = false;
+  /** Round 12a: size the hand so that, raised, it sits entirely below the player's home row (never covering the board). */
+  fitHand() {
+    const m = this.root.querySelector('.match') as El | null;
+    if (!m || !this.view) return;
+    const bb = (this.r.board as El).getBoundingClientRect();
+    let bottom = 0;
+    for (let col = 1; col <= BW; col++) { const rc = this.view.cellRect(BH, col); bottom = Math.max(bottom, bb.top + rc.y + rc.h); }
+    const vh = window.innerHeight, base = Math.min(vh, window.innerWidth * 0.5625) * 0.2455;
+    const fit = (vh - bottom - 6) / 1.5;
+    if (!(fit > 0)) return;
+    m.style.setProperty('--hcw', Math.round(Math.max(base * 0.6, Math.min(base, fit))) + 'px');
+  }
   layoutSoon() { if (this.layoutQueued) return; this.layoutQueued = true; requestAnimationFrame(() => { this.layoutQueued = false; this.layout(); }); }
   syncCam() { const v = this.view?.getView?.(); if (v && v.zoom) this.cam = { zoom: v.zoom, x: ((v.home?.[0] ?? v.painting.w / 2) - v.centerX) * v.scale, y: ((v.home?.[1] ?? v.painting.h / 2) - v.centerY) * v.scale }; }
   applyCam() { this.syncCam(); this.layout(); }
@@ -1050,6 +1062,7 @@ export class App {
       this.place(el, row, col);
     }
     r.sites.forEach((m: El) => this.place(m, +m.dataset.row!, +m.dataset.col!));
+    this.fitHand();
     r.rings.forEach((m: El, i: number) => {
       const col = +m.dataset.col!, row = +m.dataset.row!;
       const a = this.view.cellRect(row - 1, col - 1), b = this.view.cellRect(row + 1, col + 1), c = this.view.cellRect(row - 1, col + 1), d = this.view.cellRect(row + 1, col - 1);
@@ -1372,7 +1385,7 @@ export class App {
     this.handScroll = Math.max(0, Math.min(maxScroll, this.handScroll));
     const start = Math.round(this.handScroll);
     const shown = Math.min(n, VIS);
-    const spacing = shown > 1 ? Math.min(cw * 0.8, (W - cw) / (shown - 1)) : cw;
+    const spacing = shown > 1 ? Math.min(cw * 1.04, (W - cw) / (shown - 1)) : cw;
     const x0 = Math.max(0, (W - (cw + (shown - 1) * spacing)) / 2);
     let moved = false;
     cards.forEach((c, i) => {
@@ -1387,7 +1400,7 @@ export class App {
       const off = k - (shown - 1) / 2;
       const t = (off * spacing) / (W / 2);
       const rot = 0;
-      const y = t * t * cw * 0.12;
+      const y = t * t * cw * 0.03;
       c.style.left = x0 + k * spacing + 'px';
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
       c.dataset.fan = c.style.transform;
