@@ -10,7 +10,12 @@
    "faction": "goblins",
    "amount": 1
   },
-  "blurb": "Scrappy, sneaky, chaotic. Cheap swarms and explosions."
+  "blurb": "Scrappy, sneaky, chaotic. Cheap swarms and explosions.",
+  "artPos": {
+   "s": 0.95,
+   "x": -1.7,
+   "y": -4.8
+  }
  },
  {
   "id": "sproingle",
