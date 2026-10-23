@@ -398,7 +398,7 @@ export class App {
     for (const c of cmds) {
       const f = FACTIONS[c.faction];
       cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { if (picked && cmd === c.id) unpick(); else { cmd = c.id; onCmd(); pick(); } } },
-        h('span', { class: 'portrait-img oh-cmd' }, ohCardEl(commanderCard(c), commanderPortrait(c.id))),
+        h('span', { class: 'portrait-img oh-cmd', 'aria-hidden': 'true' }, ohCardEl(commanderCard(c), commanderPortrait(c.id))),
         h('span', { class: 'cmd-win' },
           h('span', { class: 'nm' }, c.name),
           h('span', { class: 'fa' }, `${f.name} · ${f.faith}`),

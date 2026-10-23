@@ -660,3 +660,7 @@ The spec and hidden tests need the new names/numbers; the owner's card data was 
 - Card backs are still the Oreheart back picture (the format's `back` layout has no image).
 - 8 engine tests in `tests/engine.test.ts` already failed before this round (round 12c card changes: names/costs/text); not touched.
 - `tools/shot-r12d.mjs` renders reference cards for comparison; `tools/shot-r12d-screens.mjs` makes the 1920×1080 screenshots.
+
+## Inspector round 1 follow-up
+- Fixed AC158: the Choose Your Commander card pictures (rendered by the card-format renderer) are now `aria-hidden`, so their scaled text no longer counts as small page text.
+- Other failures (AC43, AC51, AC59, AC66, AC104, AC105, AC116, AC117, AC134, AC160, AC164) come from tests that use names or numbers the owner changed in round 12c. Examples: `goblin-scrapper` is now "Bowler Brawler", Mangewolf Rider has Movement 3, and Grubnak is "Grubnak Rotgut, Goblin King". The owner's card data is the source of truth, so I did not revert it.
