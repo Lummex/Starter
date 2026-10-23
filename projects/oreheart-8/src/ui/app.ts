@@ -50,6 +50,8 @@ export function typeOf(c: any): { icon: string; name: string } {
 export const RARITY_WORD: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Collector' };
 const CRYSTAL_SVG = '<svg viewBox="0 0 24 32" focusable="false" aria-hidden="true" class="rc"><polygon points="12,1 20,10 12,31 4,10" fill="currentColor"/><polygon points="12,1 4,10 12,13" fill="#fff" fill-opacity=".62"/><polygon points="12,1 20,10 12,13" fill="#fff" fill-opacity=".25"/><polygon points="4,10 12,13 12,31" fill="#000" fill-opacity=".18"/><polygon points="20,10 12,13 12,31" fill="#000" fill-opacity=".42"/><polyline points="12,1 20,10 12,31 4,10 12,1" fill="none" stroke="#1a0f06" stroke-width="1.1" stroke-linejoin="round"/><path d="M4,10 L12,13 L20,10 M12,13 L12,31" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".6"/></svg>';
 /** Card face on the owner's faction frame: cost, Attack, Health, Movement, type icon, picture, name, short text, rarity. */
+/** Owner framing of the picture inside the art window: scale s, offset x/y in % of the window. */
+export const artPosStyle = (c: any) => { const a = c?.artPos; if (!a) return null; return `transform:translate(${a.x || 0}%,${a.y || 0}%) scale(${a.s || 1});transform-origin:50% 50%`; };
 export function faceKids(c: any, cost?: number, cur?: { attack?: number; health?: number; move?: number }): El[] {
   const pic = pictureOf(c);
   const cr = c.type === 'creature';
@@ -62,7 +64,7 @@ export function faceKids(c: any, cost?: number, cur?: { attack?: number; health?
   rw.append(h('span', { class: 'rwt' }, c.rarity));
   const kids: (El | null)[] = [
     h('img', { class: 'frame', src: `/art/frames/${frameOf(c)}${c.type === 'spell' ? '.jpg' : '.webp'}`, alt: '', draggable: 'false' }),
-    pic ? h('img', { class: 'pic', src: pic, alt: '', draggable: 'false', loading: 'eager' }) : h('span', { class: 'ty', 'aria-hidden': 'true' }, cr ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
+    pic ? h('span', { class: 'pic', 'data-art-pos': '1' }, h('img', { class: 'pi', src: pic, alt: '', draggable: 'false', loading: 'eager', style: artPosStyle(c) })) : h('span', { class: 'ty', 'aria-hidden': 'true' }, cr ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
     h('span', { class: 'cost', role: 'img', 'aria-label': `Cost ${cost ?? c.cost}` }, String(cost ?? c.cost)),
     cr ? h('span', { class: 'atk', role: 'img', 'aria-label': `Attack ${cur?.attack ?? c.attack}` }, String(cur?.attack ?? c.attack)) : null,
     cr ? h('span', { class: 'hp', role: 'img', 'aria-label': `Health ${cur?.health ?? c.health}` }, String(cur?.health ?? c.health)) : null,

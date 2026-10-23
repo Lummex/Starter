@@ -1,0 +1,17 @@
+{
+ "commanders": [
+  {
+   "id": "sprocket",
+   "name": "Betty Fizzlebottom, Mistress of Light",
+   "faction": "gnomes",
+   "health": 20,
+   "playable": false,
+   "abilityText": "At the start of your turn, your creature with the lowest Health gets Shield 1.",
+   "ability": {
+    "type": "lowestShield",
+    "amount": 1
+   },
+   "blurb": "Not playable in phase 1a."
+  }
+ ]
+}

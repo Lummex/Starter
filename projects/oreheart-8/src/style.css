@@ -813,7 +813,7 @@ body{color:#f6e3a4;font-size:1.02rem;line-height:1.35}
 input,textarea,button,select{font-family:"Alegreya SC",serif}
 .btn{font-family:"Alegreya SC",serif!important}
 /* spell cards: owner frames (temporary generated ones until the real files replace them), cost orb top-left, type orb bottom-right */
-.hand-card.spell .pic{left:13.5%!important;top:7.5%!important;width:73%!important;height:76%!important;border-radius:4%!important;-webkit-mask-image:linear-gradient(180deg,#000 0,#000 68%,transparent 96%)!important;mask-image:linear-gradient(180deg,#000 0,#000 68%,transparent 96%)!important}
+.hand-card.spell .pic,.hand-card.crystal .pic{left:13.5%!important;top:7.5%!important;width:73%!important;height:76%!important;border-radius:4%!important;-webkit-mask-image:linear-gradient(180deg,#000 0,#000 68%,transparent 96%)!important;mask-image:linear-gradient(180deg,#000 0,#000 68%,transparent 96%)!important}
 .hand-card.spell .ty{left:13.5%;top:7.5%;width:73%;height:76%}
 .hand-card.spell .cost{left:5%!important;top:4.6%!important;width:16%!important;height:11%!important;font-size:calc(var(--cw)*.105)!important}
 .hand-card.spell .tyi{left:87%!important;top:88%!important;width:12%!important;height:8.2%!important;font-size:calc(var(--cw)*.075);z-index:6}
@@ -1538,3 +1538,6 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 
 /* Round 12a: cards sit flush with the bottom edge when the hand is raised */
 .match .hand{height:calc(var(--hcw) * 1.4861)}
+
+.hand-card .pic{overflow:hidden;display:block}.hand-card .pic>.pi{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 30%;pointer-events:none;-webkit-user-drag:none}
+.hand-card.crystal .pic>.pi{object-position:50% 50%}
