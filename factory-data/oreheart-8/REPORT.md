@@ -1,25 +1,22 @@
 ## What was built
-This round fixes the biggest problem from last time: dragging a card from your hand onto the board now actually plays it. The raised hand is also laid out as an even fan below the board, and the owner's own paintings are installed for four Goblin cards (Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner) plus Grubnak's on-throne portrait. No 3D models or rules changed.
+Oreheart is a comic-style fantasy card battle for the browser. You play Goblins, Gnomes or Dwarves against a computer opponent (Easy, Normal or Hard), fighting over three crystal mines on a 13×7 board. This round's goal was to make every card actually do what its text says, including special abilities such as slides, shockwaves, wards and decoys, with new on-screen controls for aiming them.
 
 ## Try these things
-- Start a match and drag a Goblin creature from your hand onto a lit square in your home row. It should appear there.
-- Drag a card back into the hand, or onto a square that isn't lit. Nothing should be played and the card should return.
-- Drag a spell onto an enemy, and drag a Crystal card anywhere over the board.
-- Hover your hand. It should fan out evenly below the board without covering the squares. Try a smaller window too.
-- Open the four new Goblin cards (Deck Builder or a close-up) and check the paintings look right.
-- On Choose Your Commander, check Grubnak's card shows the throne portrait.
+- Start from the intro screen, then pick Play, choose a Commander and finish the mulligan.
+- Drag a creature card from your hand onto a glowing square on your side of the board.
+- Select a creature and try its special ability, using drag-to-aim or the tap menu.
+- Cast a spell card on an enemy and watch the result.
+- Open the Deck Builder and look at the starter decks.
+- Open the preview on a phone held sideways and check that the match fits the screen.
 
 ## Automated checks
-334 of 353 checks passed. The 19 failures are almost all old checks that the builder says contradict this round's spec. They are not confirmed bugs.
-- Several hand-size checks at 1920×1080 expect a bigger hand that covers the board, which this round's rules forbid.
-- Some checks look for a card by an old name or button label ("Infernal Orb", "Fight!"), or for old layouts.
-- Two checks need the owner's menu file, which the test setup couldn't find, so menu positions and the intro are unverified.
-- Two drag-to-play checks failed at 1920×1080. One may be a stale card name. The other, a drag from the tucked hand, passed at 1568×782, so it needs a hands-on check.
+281 of 394 checks passed, so 113 failed. The failures are spread across the board layout, hand pop-out, creature labels, Deck Builder, some menus, the Ranged attack and card text. They also include some basic rule checks (Shield, Commander damage, Snuff Out, Pickpocket) and two starter-deck card counts. The latest team note says the earlier failures are mostly old checks that no longer match the owner's updated card data, but I could not confirm that for each one. Treat the failures as unresolved. They may be outdated tests or real bugs.
 
 ## Things to know
-- The desktop screenshot shows only a dirt background with the words "I AM A GAME DEVELOPER". It looks like the intro, not a menu or match. It is odd, and no match screenshot was provided, so I couldn't confirm the new hand layout or card art visually.
-- The phone screenshot is only the "Please rotate your phone" message. It was taken in portrait, so it shows nothing of the game.
-- The hovered hand card can still cover some board squares at its enlarged size.
+- The desktop screenshot shows only the intro screen, with dirt lettering reading "I AM A GAME DEVELOPER". It looks like leftover placeholder text. It never shows an actual match, so I could not see the new abilities in the screenshots.
+- The phone screenshot is a "Please rotate your phone" message on a dark screen. That is expected in portrait, but it also shows no match.
+- No page errors were recorded.
+- The build notes I found are from an earlier round (9c), not this one. They say the Deck Builder and Commander screens don't fully use the owner's menu layouts yet.
 
 ## Recommendation
-Request changes: drag-to-play from the tucked hand failed at 1920×1080 and no screenshots show the match, hand or new card art. Please verify those in the preview first.
+Request changes: over a quarter of the checks fail, and the screenshots don't show the new abilities working. Please confirm which failures are outdated tests and which are real bugs, and replace the placeholder intro text.
