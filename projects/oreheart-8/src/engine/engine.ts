@@ -23,6 +23,21 @@ const inBounds = (row: number, col: number) => row >= 1 && row <= H && col >= 1 
 export const emptyCell = (s: any, row: number, col: number) => inBounds(row, col) && !isStronghold(row, col) && !isSite(s, row, col) && !creatureAt(s, row, col);
 const nearSite = (s: any, row: number, col: number) => s.sites.some((x: any) => cheb({ row, col }, x) <= 1 && !(x.row === row && x.col === col));
 const adjacentCreatures = (s: any, c: any) => s.board.creatures.filter((o: any) => o !== c && cheb(o, c) === 1);
+const sgn = Math.sign;
+const rint = (s: any, a: number, b: number) => a + Math.floor(nextRand(s) * (b - a + 1));
+/** Pushes `c` up to n spaces along (dr,dc); stops at the edge, a mine, a Stronghold or another unit. */
+function knock(s: any, c: any, dr: number, dc: number, n: number, ev: any[]) {
+  for (let i = 0; i < n; i++) {
+    const row = c.row + dr, col = c.col + dc;
+    if (!emptyCell(s, row, col)) break;
+    ev.push({ type: 'move', uid: c.uid, from: { row: c.row, col: c.col }, to: { row, col }, knock: true });
+    c.row = row; c.col = col;
+  }
+}
+const knockAway = (s: any, from: { row: number; col: number }, c: any, n: number, ev: any[]) => {
+  const dr = sgn(c.row - from.row), dc = sgn(c.col - from.col);
+  if (dr || dc) knock(s, c, dr, dc, n, ev);
+};
 const bonusOf = (s: any, p: Side, type: string) => {
   const a = COMMANDERS[s.players[p].commanderId].ability;
   return a.type === type ? a : null;
@@ -35,7 +50,7 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
   const maxHealth = card.health + (bh ? bh.amount : 0);
   const c = {
     uid: uid || 'u' + s.nextUid++, cardId, owner, row, col, attack: card.attack, health: maxHealth - damage, maxHealth,
-    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0,
+    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: card.abilities?.includes('riotShield') ? s.turn + 6 : 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0,
   };
   s.board.creatures.push(c);
   return c;
@@ -126,7 +141,7 @@ export function createMatch(opts: any = {}) {
     const cmd = who === 'player' ? pcmd : ocmd;
     s.players[who] = {
       commanderId: cmd.id, mulligans: 0, faction: cmd.faction, health: cmd.health, maxHealth: cmd.health,
-      crystals: 0, bank: 0, flow: 0, hand: [], deck: [], discard: [], geodes: 0, minedLastTurn: 0,
+      crystals: 0, bank: 0, flow: 0, hand: [], deck: [], discard: [], geodes: 0, plunder: 0, minedLastTurn: 0,
     };
   });
   for (const who of ['player', 'opponent'] as Side[]) {
@@ -167,6 +182,7 @@ export function createMatch(opts: any = {}) {
   }
   for (const b of setup.board || []) {
     const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0;
+    for (const k of ['attack', 'lastFight', 'kills']) if (b[k] != null) c[k] = b[k];
     if (b.minedMine) { c.minedMine = { row: b.minedMine.row, col: b.minedMine.col }; }
     if (b.summonedThisTurn) c.summonedThisTurn = true;
   }
@@ -263,6 +279,7 @@ export function nextPool(s: any, who: Side): number {
   const pl = s.players[who];
   const { mined, mc } = payout(s, who);
   let n = mined + pl.geodes * CONFIG.geodeIncome;
+  if (pl.plunder > 0 && s.players[other(who)].crystals > n) n += CONFIG.plunderFlow * pl.plunder;
   if (underdog(mc, s, who)) n += CONFIG.underdogBonus;
   return Math.min(CONFIG.poolCap, n);
 }
@@ -281,6 +298,7 @@ function collectIncome(s: any, who: Side, ev: any[]) {
   const pl = s.players[who];
   pl.minedLastTurn = payout(s, who).mined;
   // a side's very first turn keeps whatever the pool already holds (test setups)
+  if (pl.plunder > 0 && !(s.players[other(who)].crystals > payout(s, who).mined + pl.geodes * CONFIG.geodeIncome)) pl.plunder = 0;
   pl.crystals = s.turn <= 2 ? Math.max(pl.crystals, nextPool(s, who)) : nextPool(s, who);
   for (const c of s.board.creatures) if (c.owner === who) { c.minedMine = null; c.hasMined = false; }
   ev.push({ type: 'income', player: who, amount: pl.crystals, crystals: pl.crystals });
@@ -343,7 +361,6 @@ function endTurn(s: any, ev: any[]) {
     own.crystals -= saved; own.bank += saved;
     ev.push({ type: 'savings', player: s.activePlayer, amount: saved });
   }
-  for (const c of s.board.creatures) c.bubble = false;
   ev.push({ type: 'turnEnd', player: s.activePlayer });
   startTurn(s, ev);
 }
@@ -371,6 +388,7 @@ function damageCommander(s: any, who: Side, n: number, ev: any[]) {
 
 function hurt(s: any, c: any, amount: number, ev: any[], raw = false) {
   let d = amount;
+  if (has(c, 'riotShield') && s.turn < c.lockedUntil) d = 0;
   if (!raw) {
     if (has(c, 'armored')) d = Math.max(0, d - 1);
     if (has(c, 'unbreakable')) d = Math.min(d, 3);
@@ -395,6 +413,7 @@ function defeat(s: any, c: any, ev: any[]) {
   s.players[c.owner].discard.push({ uid: c.uid, cardId: c.cardId });
   const minerDraw = CARDS[c.cardId].role === 'Gatherer';
   ev.push({ type: 'defeat', uid: c.uid, cardId: c.cardId, owner: c.owner, row: c.row, col: c.col });
+  if (has(c, 'deathKnock')) for (const o of [...s.board.creatures]) if (cheb(o, c) === 1) knockAway(s, c, o, 1, ev);
   if (has(c, 'kaboom1')) {
     for (const o of [...s.board.creatures]) if (o.owner !== c.owner && cheb(o, c) === 1) dealDamage(s, o, 1, ev);
   }
@@ -417,6 +436,8 @@ export function atkValue(s: any, c: any, target?: any) {
   if (has(c, 'frenzy') && s.board.creatures.some((o: any) => o !== c && o.owner === c.owner && CARDS[o.cardId].faction === 'goblins' && cheb(o, c) === 1)) v += CONFIG.frenzyBonus;
   if (card.faction === 'goblins' && s.board.creatures.some((o: any) => o.owner === c.owner && has(o, 'rally'))) v += CONFIG.rallyBonus;
   v += junkBonus(s, c);
+  if (has(c, 'delver')) v += s.players[c.owner].bank;
+  if (has(c, 'brawler') && c.lastFight != null && s.turn - c.lastFight <= 2) v *= 2;
   if (has(c, 'rage') && c.health * 2 < c.maxHealth) v += CONFIG.rageBonus;
   if (s.flags.battleCry === c.owner) v += 1;
   if (target && ADV(card.faction, CARDS[target.cardId].faction)) v += CONFIG.typeAdvantageBonus;
@@ -431,6 +452,11 @@ export function attackTargets(s: any, c: any): any[] {
   const enemy = other(c.owner);
   const sh = stronghold(enemy);
   const out: any[] = [];
+  if (has(c, 'overwatch')) {
+    for (const o of s.board.creatures) if (o.owner === enemy) out.push({ row: o.row, col: o.col });
+    out.push({ commander: enemy });
+    return out;
+  }
   if (has(c, 'ranged')) {
     // 8 straight lines, up to CONFIG.rangedRange squares; the shot stops at the first unit (creature or Stronghold)
     for (const [dr, dc] of DIRS8) for (let k = 1; k <= (CARDS[c.cardId].range ?? CONFIG.rangedRange); k++) {
@@ -464,12 +490,38 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   const melee = cheb(attacker, def) === 1 && !has(attacker, 'ranged');
   ev.push({ type: 'attack', uid: attacker.uid, from: { row: attacker.row, col: attacker.col }, target: { row: def.row, col: def.col }, ranged: !melee });
   const pos = { row: def.row, col: def.col };
-  const strikes = melee && !has(attacker, 'sneaky');
+  const strikes = melee && !has(attacker, 'sneaky') && !has(attacker, 'overwatch');
   const back = strikes ? atkValue(s, def, attacker) : 0;
   hurt(s, def, atkValue(s, attacker, def), ev);
   if (strikes) { ev.push({ type: 'counter', uid: def.uid }); hurt(s, attacker, back, ev); }
   if (has(attacker, 'overload'))
     for (const o of [...s.board.creatures]) if (o.owner === def.owner && o !== def && cheb(o, pos) === 1) hurt(s, o, CONFIG.overloadDamage, ev);
+  const sdef = def.health > 0;
+  if (has(attacker, 'brawler')) attacker.lastFight = s.turn;
+  if (has(def, 'brawler')) def.lastFight = s.turn;
+  if (sdef && has(def, 'grit')) def.attack += 1;
+  if (!sdef && has(attacker, 'grit') && ((attacker.kills = (attacker.kills || 0) + 1) % 2 === 0)) attacker.attack += 1;
+  if (!sdef && has(attacker, 'thief')) {
+    const foe = s.players[def.owner], me = s.players[attacker.owner];
+    if (foe.crystals > 0) foe.crystals -= 1; else if (foe.bank > 0) foe.bank -= 1;
+    me.bank += 1; ev.push({ type: 'steal', uid: attacker.uid, from: def.owner });
+  }
+  if (sdef && melee && has(attacker, 'smack') && attacker.health > 0) knockAway(s, attacker, def, 2, ev);
+  if (sdef && has(attacker, 'hobble')) def.rootUntil = s.turn + 2;
+  if (melee && attacker.health > 0 && has(attacker, 'enforcer'))
+    for (const o of [...s.board.creatures]) if (o.owner !== attacker.owner && cheb(o, attacker) === 1) knockAway(s, attacker, o, rint(s, 1, 2), ev);
+  if (melee && attacker.health > 0 && has(attacker, 'splitter'))
+    for (const o of [...s.board.creatures]) if (o !== def && cheb(o, attacker) === 1) { const dir = DIRS8[rint(s, 0, 7)]; knock(s, o, dir[0], dir[1], rint(s, 1, 3), ev); }
+  if (attacker.health > 0 && !has(attacker, 'ranged'))
+    for (const g of [...s.board.creatures]) {
+      if (g.owner !== def.owner || g === def || !has(g, 'assist') || g.health <= 0 || cheb(g, def) <= 1 && cheb(g, attacker) <= 1) continue;
+      const spot = [-1, 0, 1].flatMap((dr) => [-1, 0, 1].map((dc) => ({ row: def.row + dr, col: def.col + dc }))).filter((q) => (q.row !== def.row || q.col !== def.col) && emptyCell(s, q.row, q.col) && cheb(q, attacker) <= 1)[0];
+      if (!spot) continue;
+      ev.push({ type: 'move', uid: g.uid, from: { row: g.row, col: g.col }, to: spot, teleport: true });
+      g.row = spot.row; g.col = spot.col;
+      hurt(s, attacker, atkValue(s, g, attacker), ev);
+      break;
+    }
   if (def.health <= 0 && has(attacker, 'siphon')) s.players[attacker.owner].bank += 1;
   if (attacker.health <= 0 && strikes && has(def, 'siphon')) s.players[def.owner].bank += 1;
   for (const c of [def, attacker, ...s.board.creatures]) if (c.health <= 0 && s.board.creatures.includes(c)) defeat(s, c, ev);
@@ -497,7 +549,7 @@ export function mineTargets(s: any, c: any): { row: number; col: number }[] {
 
 /** Spaces `c` can move to; a space held by one of its own creatures is a swap. */
 export function moveDests(s: any, c: any): { row: number; col: number }[] {
-  if (c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId]))) return [];
+  if (s.turn < (c.rootUntil || 0) || c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId]))) return [];
   const m = maxMove(c);
   const out: any[] = [];
   for (let dr = -m; dr <= m; dr++) for (let dc = -m; dc <= m; dc++) {
@@ -539,7 +591,8 @@ export function spellTargets(s: any, p: Side, card: any): any[] {
   const foe = s.board.creatures.filter((c: any) => c.owner !== p);
   const pos = (c: any) => ({ row: c.row, col: c.col });
   switch (card.effect) {
-    case 'gainCrystals': return card.params.needFewerSites && sitesControlled(s, p) >= sitesControlled(s, other(p)) ? [] : [{}];
+    case 'gainCrystals': case 'plunder': return [{}];
+    case 'rations': return [...(s.players[p].health < s.players[p].maxHealth ? [{ target: { commander: p } }] : []), ...own.filter((c: any) => c.health < c.maxHealth).map((c: any) => ({ target: pos(c) }))];
     case 'tunnelMove': {
       const cells = tunnelCells(s);
       return own.flatMap((c: any) => cells.map((to: any) => ({ target: pos(c), to })));
@@ -583,6 +636,8 @@ function resolveSpell(s: any, p: Side, card: any, target: any, to: any, ev: any[
   const t = target && target.row ? creatureAt(s, target.row, target.col) : null;
   switch (card.effect) {
     case 'gainCrystals': gain(s, p, card.params.amount); break;
+    case 'plunder': pl.plunder++; break;
+    case 'rations': if (target && target.commander) { pl.health = Math.min(pl.maxHealth, pl.health + 4); ev.push({ type: 'heal', commander: p, amount: 4 }); } else if (t && t.owner === p) healCreature(s, t, 4, ev); break;
     case 'tunnelMove': {
       if (!t || t.owner !== p) break;
       const dest = to && emptyCell(s, to.row, to.col) ? to : tunnelCells(s)[0];

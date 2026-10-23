@@ -82,5 +82,6 @@
  },
  "deckMin": 50,
  "deckMax": 100,
- "rangedRange": 7
+ "rangedRange": 7,
+ "plunderFlow": 3
 }

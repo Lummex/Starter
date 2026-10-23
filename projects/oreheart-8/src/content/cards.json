@@ -86,7 +86,9 @@
   "attack": 2,
   "health": 2,
   "move": 1,
-  "abilities": [],
+  "abilities": [
+   "deathKnock"
+  ],
   "unique": false,
   "text": "When defeated, he knocks all units around him back 1 space.",
   "shortText": "When defeated, he knocks all units around him back 1 space.",
@@ -110,7 +112,8 @@
   "health": 2,
   "move": 1,
   "abilities": [
-   "sneaky"
+   "sneaky",
+   "thief"
   ],
   "unique": false,
   "text": "Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats.",
@@ -408,8 +411,7 @@
   "health": 5,
   "move": 1,
   "abilities": [
-   "gather",
-   "tunnel"
+   "riotShield"
   ],
   "unique": false,
   "text": "Riot Shield. For 3 turns, can't move or attack. Can't be killed by anything.",
@@ -448,7 +450,8 @@
   "health": 3,
   "move": 1,
   "abilities": [
-   "ranged"
+   "ranged",
+   "hobble"
   ],
   "unique": false,
   "text": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
@@ -473,7 +476,7 @@
   "health": 4,
   "move": 1,
   "abilities": [
-   "rage"
+   "grit"
   ],
   "unique": false,
   "text": "Grit. Each time it survives an attack, it permanently gains +1 Attack. Every2 enemy's it kills gives it +1 Attack.",
@@ -570,7 +573,7 @@
   "health": 5,
   "move": 1,
   "abilities": [
-   "eaterDelver"
+   "delver"
   ],
   "unique": false,
   "text": "Each Crystal in your bank gives it +1 Attack for good.",
@@ -700,7 +703,9 @@
   "attack": 1,
   "health": 3,
   "move": 1,
-  "abilities": [],
+  "abilities": [
+   "enforcer"
+  ],
   "unique": false,
   "text": "Enforcer. When it attacks, knocks back all nearby enemies 1-2 spaces at random.",
   "shortText": "Enforcer. When it attacks, knocks back all nearby enemies 1-2 spaces at random.",
@@ -714,7 +719,7 @@
   "rarity": "Rare",
   "spellKind": "regular",
   "cost": 0,
-  "effect": "gainCrystals",
+  "effect": "plunder",
   "params": {
    "amount": 3,
    "needFewerSites": true
@@ -837,7 +842,7 @@
   "cost": 2,
   "effect": "heal",
   "params": {
-   "amount": 3
+   "amount": 99
   },
   "text": "Instant. Heal one of your creatures to full health.",
   "shortText": "Instant. Heal one of your creatures to full health.",
@@ -870,7 +875,7 @@
   "rarity": "Ultra Rare",
   "spellKind": "instant",
   "cost": 5,
-  "effect": "healCommander",
+  "effect": "rations",
   "params": {
    "amount": 4
   },
@@ -1115,7 +1120,9 @@
   "attack": 2,
   "health": 2,
   "move": 1,
-  "abilities": [],
+  "abilities": [
+   "smack"
+  ],
   "unique": false,
   "text": "Smack. When this attacks, the target is knocked back 2 spaces.",
   "shortText": "Smack. When this attacks, the target is knocked back 2 spaces.",
@@ -1262,7 +1269,8 @@
   "health": 4,
   "move": 1,
   "abilities": [
-   "guard"
+   "guard",
+   "assist"
   ],
   "unique": false,
   "text": "Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight.",
@@ -1353,7 +1361,7 @@
   "health": 3,
   "move": 1,
   "abilities": [
-   "guard"
+   "overwatch"
   ],
   "unique": false,
   "text": "Sneaky. Can attack any enemy on the board, at any distance.",
@@ -1422,7 +1430,8 @@
   "health": 3,
   "move": 1,
   "abilities": [
-   "armored"
+   "charge",
+   "splitter"
   ],
   "unique": false,
   "text": "Charge. Can charge in any direction, even diagonally. Blasts enemies out of its way. Knocks any unit, friend or foe, back 1, 2 or 3 spaces at random in a random direction.",
@@ -1442,7 +1451,7 @@
   "health": 4,
   "move": 1,
   "abilities": [
-   "rage"
+   "brawler"
   ],
   "unique": false,
   "text": "Brawler. If it attacked or was attacked last round, its Attack doubles this round.",

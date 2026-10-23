@@ -318,9 +318,9 @@ describe('revision 7', () => {
     expect(t.players.player.bank).toBe(1);
     let u = mk({ board: [P('rune-splitter', 4, 8), O('goblin-grunt', 4, 9)] });
     u = act(done(u), { type: 'attack', creatureUid: at(u, 4, 8).uid, target: { row: 4, col: 9 } });
-    expect(at(u, 4, 8).health).toBe(2);
-    const v = mk({ board: [P('grimhold-ravager', 4, 8, { damage: 3 })] });
-    expect(atkValue(v, at(v, 4, 8))).toBe(5);
+    expect(at(u, 4, 8).health).toBe(1); // round 12c: Door Splitter is no longer Armored
+    const v = mk({ board: [P('grimhold-ravager', 4, 8, { lastFight: 0 })] });
+    expect(atkValue(v, at(v, 4, 8))).toBe(6); // Brawler: doubles after a fight last round
   });
   it('deck rules and strict auto-skip', () => {
     const bad = [...Array(4).fill('wolf-rider'), ...Array(11).fill('soul-shard')];
