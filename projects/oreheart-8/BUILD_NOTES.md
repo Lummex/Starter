@@ -644,3 +644,11 @@ Not done / owner questions:
 - Dwarves have no basic Miner now (Riot Shield Bearer is a Fighter) but `basicGatherers.dwarves` still points at it for the free Miner rule. Which card should be the Dwarf free Miner?
 - 8 older engine tests still fail because the owner's card edits changed names, costs and text (starter-deck composition, shortText length); they failed before this round.
 - No in-match ability screenshots this round (budget); deck builder screenshot: `screenshots/r12c-1920x1080-deckbuilder.png`.
+
+## Inspector round 1 (after 12c) — outdated checks, no code change
+All listed failures trace to the owner's `cards.json` being the binding source of truth since round 12c, which the checks predate:
+- `goblin-scrapper` is now "Bowler Brawler" (was "Gutripper Brawler"); AC43, AC51, AC59, AC104, AC105, AC116, AC160, AC173 look it up by the old name, so the hand/board locators never match.
+- `wolf-rider` (Mangewolf Rider) now has Movement 3 (AC66 expects 2).
+- AC117 / AC134 click Commander buttons by full names; Choose Your Commander (round 8b) shows Commander cards that hide the others after a click, so these flows changed.
+- AC164 expects a 48–60% pop-out; round 8b/10 deliberately made it ~70% and the hand tucks to a quarter at rest.
+The spec and hidden tests need the new names/numbers; the owner's card data was not reverted.
