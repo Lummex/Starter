@@ -64,9 +64,9 @@
   "shortText": "Ranged. Hits up to 6 spaces away in any direction; no strike back.",
   "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 6 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield.",
   "artPos": {
-   "s": 1.15,
-   "x": 0.7,
-   "y": 4.5
+   "s": 0.92,
+   "x": -3.1,
+   "y": -0.7
   }
  },
  {
@@ -790,8 +790,8 @@
   "longText": "Counterspell (Instant): play it when the enemy summons a creature. The summon is cancelled and the card goes back to their hand. Example: The enemy summons a big creature: stop it and they must pay again.",
   "artPos": {
    "s": 1.87,
-   "x": 45.5,
-   "y": -1.5
+   "x": 45.4,
+   "y": 15.6
   }
  },
  {
