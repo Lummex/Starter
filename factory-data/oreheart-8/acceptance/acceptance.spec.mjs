@@ -4389,7 +4389,8 @@ async function letteringProblems(page) {
       const n = walker.currentNode;
       if (!/[\p{L}\p{N}]/u.test(n.textContent)) continue;
       const el = n.parentElement;
-      if (!el || el.closest('[aria-hidden="true"], canvas, svg, script, style, noscript, textarea')) continue;
+      // Round 12d: card faces use the owner's card format fonts (Alegreya SC, Russo One, IM Fell English SC)
+      if (!el || el.closest('[aria-hidden="true"], canvas, svg, script, style, noscript, textarea, .cardc')) continue;
       const r = el.getBoundingClientRect();
       if (r.width === 0 || r.height === 0 || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
       const cs = getComputedStyle(el);
@@ -4445,15 +4446,16 @@ async function stretchedFaces(page) {
     const out = { checked: 0, bad: [] };
     for (const face of document.querySelectorAll('[data-card-id]')) {
       if (!face.checkVisibility({ opacityProperty: true, visibilityProperty: true }) || face.offsetWidth < 10) continue;
-      const img = [...face.querySelectorAll('img')].find((i) => /frame/.test(i.src) && i.naturalWidth > 0);
-      if (!img) continue;
+      // Round 12d: owner card format faces (.cardc) are 420 x 624; frames are layers inside them
+      const cc = face.querySelector('.cardc');
+      const img = cc ? null : [...face.querySelectorAll('img')].find((i) => /frame/.test(i.src) && i.naturalWidth > 0);
+      if (!img && !cc) continue;
       out.checked++;
-      const want = img.naturalWidth / img.naturalHeight;
+      const want = cc ? 420 / 624 : img.naturalWidth / img.naturalHeight;
       const id = face.getAttribute('data-card-id');
-      const faceR = face.offsetWidth / face.offsetHeight;
-      const imgR = img.offsetWidth / img.offsetHeight;
+      const faceR = (cc || face).offsetWidth / (cc || face).offsetHeight;
       if (Math.abs(faceR / want - 1) > 0.03) out.bad.push(`${id} face ${faceR.toFixed(3)} vs ${want.toFixed(3)}`);
-      if (Math.abs(imgR / want - 1) > 0.03) out.bad.push(`${id} frame img ${imgR.toFixed(3)} vs ${want.toFixed(3)}`);
+      if (img) { const imgR = img.offsetWidth / img.offsetHeight; if (Math.abs(imgR / want - 1) > 0.03) out.bad.push(`${id} frame img ${imgR.toFixed(3)} vs ${want.toFixed(3)}`); }
       for (let e = face; e && e !== document.body; e = e.parentElement) {
         const m = new DOMMatrix(getComputedStyle(e).transform === 'none' ? undefined : getComputedStyle(e).transform);
         const sx = Math.hypot(m.a, m.b), sy = Math.hypot(m.c, m.d);
@@ -4855,11 +4857,11 @@ test('AC147: spell cards use the owner\'s real spell frames per faction', async 
   const hand = page.getByLabel('Your hand', { exact: true });
   for (const [id, f] of Object.entries(want)) {
     const face = hand.locator(`[data-card-id="${id}"]`).first();
-    const img = face.locator(`img[src*="spell-frame-${f}"]`).first();
+    // Round 12d: the spell frame now comes from the owner's card format (public/art/card-format/images/)
+    const img = face.locator(`img[src*="/art/card-format/images/"][src*="spell-frame-${f}"]`).first();
     await expect(img, id).toHaveCount(1);
     const nat = await img.evaluate(async (i) => { await i.decode().catch(() => {}); return [i.naturalWidth, i.naturalHeight]; });
-    expect(nat[1], `${id} full-size owner art`).toBeGreaterThanOrEqual(1000);
-    expect(Math.abs(nat[0] / nat[1] - 1152 / 1712), `${id} owner frame proportions`).toBeLessThanOrEqual(0.01);
+    expect(nat[0], `${id} frame loaded`).toBeGreaterThan(0);
   }
 });
 
@@ -9100,4 +9102,172 @@ test('AC309: every Round 12c card reports its ability as built, and close-ups sh
     expect(c.longText.length, id).toBeGreaterThan(c.text.length - 1);
     expect(c.longText, id).toContain('Example:');
   }
+});
+
+// ---------- Round 12d: owner card format ----------
+const REF_CARDS = ['goblin-scrounger', 'gnome-prospector', 'rune-splitter', 'fireball', 'healing-light', 'soul-shard', 'venom-shiv', 'second-wind'];
+// inserts renderCard() HTML into the page, runs fitText, and measures it
+const renderAndMeasure = (page, id, h = 624) => page.evaluate(async ([cid, hh]) => {
+  const html = await window.oreheart.renderCard(cid, hh);
+  const host = document.createElement('div');
+  host.style.cssText = 'position:fixed;left:0;top:0;z-index:99999';
+  host.innerHTML = html;
+  document.body.appendChild(host);
+  const root = host.firstElementChild;
+  if (window.oreheart.fitText) window.oreheart.fitText(root);
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const rr = root.getBoundingClientRect();
+  const overflow = [...root.querySelectorAll('.tx[data-fit="1"]')].filter((el) => {
+    const sp = el.firstElementChild, box = el.parentElement;
+    return sp && (sp.scrollHeight > box.clientHeight + 1 || sp.scrollWidth > box.clientWidth + 1);
+  }).map((el) => el.textContent.slice(0, 30));
+  const art = root.querySelector('.artclip img') || root.querySelector('img');
+  const ar = art ? art.closest('.ly').getBoundingClientRect() : null;
+  const out = { cls: root.className, w: rr.width, h: rr.height, text: root.textContent, overflow, html,
+    artCover: ar ? (Math.min(ar.right, rr.right) - Math.max(ar.left, rr.left)) * (Math.min(ar.bottom, rr.bottom) - Math.max(ar.top, rr.top)) / (rr.width * rr.height) : 0,
+    imgs: [...root.querySelectorAll('img')].map((i) => i.getAttribute('src')) };
+  host.remove();
+  return out;
+}, [id, h]);
+
+test('AC310: the game loads the owner card format and renders every layout at 420:624', async ({ page }) => {
+  await openTest(page);
+  const fmt = await page.evaluate(async () => await window.oreheart.cardFormat());
+  expect(fmt.name).toBe('Card format final 1.0');
+  for (const k of ['unit', 'commander', 'spell', 'instant', 'crystal', 'back']) expect(fmt.layouts, k).toContain(k);
+  for (const id of ['goblin-scrounger', 'fireball', 'healing-light', 'soul-shard', 'grubnak', 'back']) {
+    const r = await renderAndMeasure(page, id, 624);
+    expect(r.cls.split(/\s+/), id).toContain('cardc');
+    expect(Math.abs(r.h - 624), `${id} height`).toBeLessThanOrEqual(1);
+    expect(Math.abs(r.w - 420), `${id} width`).toBeLessThanOrEqual(1);
+  }
+  const gob = await renderAndMeasure(page, 'goblin-scrounger');
+  const gno = await renderAndMeasure(page, 'gnome-prospector');
+  expect(gob.imgs.some((s) => /card-format\/images\//.test(s))).toBe(true);
+  expect(gob.imgs.join('|'), 'faction frames differ').not.toBe(gno.imgs.join('|'));
+  for (const r of [gob, gno]) expect(r.imgs.join('|')).not.toContain('/art/frames/');
+});
+
+test('AC311: every card face uses the new renderer, and the old frames are gone', async ({ page }) => {
+  const requests = [];
+  page.on('request', (r) => requests.push(r.url()));
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  const { fs, path, dir } = await appDir();
+  expect(fs.existsSync(path.join(dir, 'public/art/frames')), 'public/art/frames deleted').toBe(false);
+  const checkFaces = async (scope, where) => {
+    const faces = scope.locator('[data-card-id]');
+    const n = await faces.count();
+    expect(n, `${where}: card faces`).toBeGreaterThan(0);
+    const bad = await faces.evaluateAll((els) => els.filter((e) => e.offsetWidth > 10).filter((e) =>
+      e.getAttribute('data-card-format') !== 'Card format final 1.0' || !e.getAttribute('data-layout') || e.querySelectorAll('.cardc').length !== 1)
+      .map((e) => e.getAttribute('data-card-id')));
+    expect(bad, `${where}: faces not drawn by the card format`).toEqual([]);
+  };
+  await start(page, quiet({ playerHand: ['goblin-scrounger', 'venom-shiv', 'soul-shard'], opponentHand: ['fireball', 'fireball'] }));
+  const hand = page.getByLabel('Your hand', { exact: true });
+  await checkFaces(hand, 'hand');
+  await expect(hand.locator('[data-card-id="venom-shiv"]').first()).toHaveAttribute('data-layout', 'spell');
+  await expect(hand.locator('[data-card-id="soul-shard"]').first()).toHaveAttribute('data-layout', 'crystal');
+  await expect(hand.locator('[data-card-id="goblin-scrounger"]').first()).toHaveAttribute('data-layout', 'unit');
+  const backs = page.getByLabel('Enemy hand', { exact: true }).locator('[data-layout="back"]');
+  expect(await backs.count(), 'enemy card backs').toBeGreaterThan(0);
+  expect(await backs.first().locator('.cardc').count()).toBe(1);
+  await page.getByRole('button', { name: 'Venom Shiv', exact: true }).click();
+  const view = page.getByRole('dialog', { name: 'Venom Shiv' });
+  await expect(view).toBeVisible();
+  await checkFaces(view, 'close-up');
+  await page.keyboard.press('Escape');
+  await openDecks(page);
+  await expect(allCards(page).locator('[data-card-id]').first()).toBeVisible();
+  await checkFaces(allCards(page), 'deck builder');
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+  const cmd = page.locator('[data-layout="commander"]');
+  await expect(cmd.first()).toBeVisible();
+  expect(await cmd.count(), 'commander cards').toBeGreaterThanOrEqual(2);
+  expect(await cmd.first().locator('.cardc').count()).toBe(1);
+  expect(requests.filter((u) => u.includes('/art/frames/')), 'old frame requests').toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('AC312: the 8 reference cards render at 420x624 with their name and cost, and text fits', async ({ page }) => {
+  await openTest(page);
+  for (const id of REF_CARDS) {
+    const card = await page.evaluate(async (x) => await window.oreheart.getCard(x), id);
+    const r = await renderAndMeasure(page, id, 624);
+    expect(Math.abs(r.w - 420) <= 1 && Math.abs(r.h - 624) <= 1, `${id} size ${r.w}x${r.h}`).toBe(true);
+    expect(r.text.toUpperCase(), `${id} name`).toContain(card.name.toUpperCase());
+    expect(r.text, `${id} cost`).toContain(String(card.cost));
+    expect(r.overflow, `${id} overflowing text`).toEqual([]);
+    expect(r.text, `${id} no truncation`).not.toContain('…');
+  }
+  const crystal = await renderAndMeasure(page, 'soul-shard', 624);
+  expect(crystal.artCover, 'Crystal card picture is full-bleed').toBeGreaterThanOrEqual(0.95);
+});
+
+test('AC313: a card\'s artPos is honored in the art layer', async ({ page }) => {
+  await openTest(page);
+  const card = await page.evaluate(async () => await window.oreheart.getCard('second-wind'));
+  const { s, x, y } = card.artPos;
+  const r = await renderAndMeasure(page, 'second-wind', 624);
+  expect(r.html).toContain('artclip');
+  expect(r.html.replace(/\s/g, '')).toContain(`translate(${x}%,${y}%)scale(${s})`);
+});
+
+test('AC314: the three card-format fonts are bundled locally and loaded', async ({ page }) => {
+  const google = [];
+  page.on('request', (r) => { if (/fonts\.(googleapis|gstatic)\.com/.test(r.url()) && /russo|fell|alegreya/i.test(r.url())) google.push(r.url()); });
+  await start(page, quiet({ playerHand: ['goblin-scrounger', 'fireball'] }));
+  await page.evaluate(async () => { await document.fonts.ready; });
+  const fams = await page.evaluate(async () => {
+    const out = {};
+    for (const f of ['Alegreya SC', 'Russo One', 'IM Fell English SC']) {
+      await document.fonts.load(`20px "${f}"`).catch(() => {});
+      out[f] = [...document.fonts].some((ff) => ff.family.replace(/["']/g, '') === f && ff.status === 'loaded');
+    }
+    return out;
+  });
+  expect(fams).toEqual({ 'Alegreya SC': true, 'Russo One': true, 'IM Fell English SC': true });
+  expect(google).toEqual([]);
+  const { fs, path, dir } = await appDir();
+  const files = [...walk(fs, path, path.join(dir, 'public')), ...walk(fs, path, path.join(dir, 'src'))].map((f) => path.basename(f).toLowerCase());
+  for (const k of ['russo', 'fell']) expect(files.some((f) => f.includes(k) && /\.(woff2?|ttf|otf)$/.test(f)), `${k} font file bundled`).toBe(true);
+  const credits = fs.readFileSync(path.join(dir, 'CREDITS.md'), 'utf8');
+  for (const k of ['Russo One', 'IM Fell English SC']) expect(credits).toContain(k);
+});
+
+test.describe('round 12d screenshots (1920x1080)', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC315: hand, close-up, Deck Builder, Choose Your Commander and reference cards render without errors', async ({ page }, testInfo) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    const shot = async (name) => testInfo.attach(name, { body: await page.screenshot(), contentType: 'image/png' });
+    await start(page, quiet({ playerHand: ['goblin-scrounger', 'goblin-scrapper', 'venom-shiv', 'soul-shard', 'fireball'] }));
+    await expect(page.getByLabel('Your hand', { exact: true }).locator('.cardc').first()).toBeVisible();
+    await shot('r12d-hand');
+    await page.getByRole('button', { name: 'Venom Shiv', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Venom Shiv' })).toBeVisible();
+    await shot('r12d-close-up');
+    await page.keyboard.press('Escape');
+    await page.evaluate(async (ids) => {
+      const host = document.createElement('div');
+      host.setAttribute('aria-hidden', 'true');
+      host.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#111;display:flex;gap:16px;padding:16px';
+      for (const id of ids) host.insertAdjacentHTML('beforeend', await window.oreheart.renderCard(id, 624));
+      document.body.appendChild(host);
+      host.querySelectorAll('.cardc').forEach((c) => window.oreheart.fitText && window.oreheart.fitText(c));
+    }, ['goblin-scrounger', 'fireball', 'soul-shard']);
+    await page.waitForTimeout(500);
+    await shot('r12d-reference-cards');
+    await openDecks(page);
+    await expect(allCards(page).locator('.cardc').first()).toBeVisible();
+    await shot('r12d-deck-builder');
+    await page.goto('/?test=1');
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+    await shot('r12d-choose-commander');
+    expect(errors).toEqual([]);
+  });
 });

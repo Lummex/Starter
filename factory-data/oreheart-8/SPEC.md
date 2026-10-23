@@ -1,4 +1,4 @@
-# OreHeart — Build Spec (Phase 1B, Round 12c — make every card do what its text says)
+# OreHeart — Build Spec (Phase 1B, Round 12d — card faces use the owner's card format)
 
 ## Summary
 
@@ -16,9 +16,31 @@ Oreheart is a comic-style fantasy card battle in the browser. Goblins, Gnomes an
 
 **Phase 1B Round 12c** (this build) makes every card do what the owner's card text in `cards.json` says (Goblins, Gnomes, Dwarves, neutral spells and Crystal cards), adds per-card Ranged ranges, `artPos` picture framing and full-size Crystal pictures, and archives Betty Fizzlebottom. Where an older section conflicts with a card's own text, R12c wins.
 
+**Phase 1B Round 12d** (this build) draws every card face in the game (hand, close-ups, Deck Builder, menus, played-card pop-ups, Choose Your Commander, card backs) with the owner's binding card format ("Card format final 1.0") and the owner's own renderer, and deletes the old frame art. Rules, abilities and layout are unchanged.
+
 Tech: Vite + TypeScript (vanilla or React), Three.js for the 3D scene, static `dist/` output, no backend.
 
-### Phase 1B, Round 12c (make every card do what its text says) — READ FIRST
+### Phase 1B, Round 12d (card faces use the owner's card format) — READ FIRST
+
+Source: "Round 12d" at the top of `factory-design/design/oreheart-phase-1b-brief.md` on `main` (binding) and `factory-design/card-format/README.md` (read it first). Keep everything from Rounds 8a–12c. **No new abilities, no rule changes, no 3D work, no Meshy.** Keep it small and **commit + push after each step** (1 port, 2 use everywhere, 3 compare with the references). If time runs short, stop after the last finished step and report what is done.
+
+Owner files (binding, use unchanged):
+- `projects/oreheart-8/public/art/card-format/format.json` (name `"Card format final 1.0"`; layouts `unit`, `commander`, `spell`, `instant`, `crystal`, `back`; `frames`, `images`, `builtin`, `factions`) and `public/art/card-format/images/` (frames, gems, cost badges, emblems).
+- On `main`: `factory-design/card-format/render.js` (the owner's Art Studio renderer: `makeOHRenderer(format)` → `{ cardHTML(card, artUrl, heightPx), fitText(el), groupOf(card) }`), `card.css`, and `reference/*.jpg` (goblin-scrounger, gnome-prospector, rune-splitter, fireball, healing-light, soul-shard, venom-shiv, second-wind).
+
+**R12d.1 Port the renderer.** Copy `render.js` and `card.css` into the game (a TypeScript wrapper around the same code is fine; do not re-invent the layout). At start-up the game loads `/art/card-format/format.json` once and builds the renderer from it. One layout per card type, chosen exactly as `groupOf`: creatures → `unit`, Commanders → `commander`, regular spells → `spell`, Instants → `instant`, Crystal cards → `crystal`, card backs → `back`. Faction looks come from the per-faction overrides in format.json (`fg`, `byFaction`, `frames`). The art layer honors the card's `artPos` `{s,x,y}` exactly as render.js does (translate x%, y%, scale s, clipped inside an `artclip` wrapper); Crystal cards use the format's full-bleed art. After a face is inserted into the page, `fitText` runs on it so overflowing text shrinks to fit (never clipped, never truncated with "…"). Fonts **Alegreya SC**, **Russo One** and **IM Fell English SC** are bundled as local font files in the app (self-hosted `@font-face`, no Google Fonts request for them) and listed in `CREDITS.md`.
+
+**Card face markup contract (tests rely on it).** Every card face element in the game (the element that carries `data-card-id="<card id>"`, as before) contains exactly one renderer root `div.cardc` (the class render.js emits) and carries two new attributes: `data-card-format="Card format final 1.0"` (the format's `name`) and `data-layout="unit|commander|spell|instant|crystal|back"`. The renderer root keeps the 420 : 624 proportions (never stretched). Card backs (enemy hand, deck piles that show a card back, mulligan backs if any) are elements with `data-layout="back"` containing a `div.cardc`, drawn from the `back` layout. Commander cards on Choose Your Commander and the Deck Builder "Commander card" tile are faces with `data-card-id="<commander id>"` and `data-layout="commander"`. The existing accessible labels stay on each face (`aria-label`s such as `Cost N`, `Attack N`, `Health N`, `Movement N`, `Type: …`, and `data-frame` where older checks use it); where a layout has no visible layer for one of them, the label sits on a visually hidden element inside the face. Card text inside `.cardc` uses the format's own fonts (the one-font rule R5a.1 applies to everything outside card faces).
+
+**New test hooks** on `window.oreheart` (test mode):
+- `cardFormat()` → `{ name, layouts: string[] }` from the loaded format.json (e.g. `{ name: "Card format final 1.0", layouts: ["unit","spell","crystal","commander","back","instant"] }`).
+- `renderCard(cardId, heightPx)` → Promise of the HTML string the ported renderer produces for that card (or Commander id) at that height, with the same art picture the game uses (`pictureOf` / `OWNER_ART` / Commander portrait). `renderCard("back", h)` renders the card back. `fitText(el)` runs the ported `fitText` on an element (so a test can insert `renderCard` HTML into the page and fit it). The game's `card.css` is loaded globally, so inserted HTML lays out exactly like in-game faces. The returned HTML's root is `<div class="cardc" style="width:Wpx;height:Hpx">` with W = H × 420 / 624.
+
+**R12d.2 Use it everywhere.** Hand cards, the hover pop-out, the dragged card, the card close-up (match and Deck Builder), the Deck Builder grid and deck pile, played-card pop-ups (`Card reveal`), the mulligan cards, How to Play / menu cards, Choose Your Commander cards, the Commander card tile and every card back are drawn by the new renderer. **Delete the old frame code and the old frame images** (`public/art/frames/` and any other old card-frame/spell-frame/rarity-trim images outside `public/art/card-format/`), so nothing can fall back to them: the folder `public/art/frames` no longer exists and the game never requests any URL containing `/art/frames/`.
+
+**R12d.3 Check against the references.** Render the 8 reference cards at 420 × 624 and compare with `factory-design/card-format/reference/*.jpg` (same frame, gem, cost badge, name/type/text positions and fonts); fix differences. (The reference renders used fallback fonts, so lettering may differ slightly; frames, layout, gems, icons and positions must match.) Report side-by-sides of 3 cards next to their references plus 1920 × 1080 screenshots of a hand, a card close-up, the Deck Builder and Choose Your Commander.
+
+### Phase 1B, Round 12c (make every card do what its text says) — done
 
 Source: "Round 12c" at the top of `factory-design/design/oreheart-phase-1b-brief.md` (binding). Keep everything from Rounds 8a–12b-1. **The owner's `cards.json` (names, numbers, rarities, roles, `text`, `artPos`) is now the source of truth and must not be edited by the builder.** No 3D models, no Meshy. Work in this order and **commit + push after each step**: 1 display fixes, 2 numbers and ranges, 3 Goblins, 4 Gnomes, 5 Dwarves, 6 neutral spells and Crystal cards. If time runs short, stop after the last finished step and report which cards are done.
 
@@ -1574,6 +1596,14 @@ Round 8a notes on older criteria: AC149 now checks the R8a cover-fit camera (`mi
 307. (Round 12c) Crystal cards: Bank +1/+2/+4/+3, Motherlode makes the next creature 2 cheaper, Geode gives +1 Flow each turn.
 308. (Round 12c) Desperate Plunder gives +3 Flow at turn start while the opponent has more Flow.
 309. (Round 12c) `getAbilityStatus()` reports "done" for every Round 12c card; `longText` still has "Example:".
+310. (Round 12d) The game loads the owner's card format: `cardFormat()` names "Card format final 1.0" with the six layouts, and `renderCard` returns a 420 : 624 `cardc` card for a creature, a spell, an Instant, a Crystal card, a Commander and the card back; Goblin and Gnome creatures get different faction frames.
+311. (Round 12d) Every card face in a match (hand, close-up, enemy card backs), the Deck Builder and Choose Your Commander is drawn by the new renderer (`div.cardc`, `data-card-format`, `data-layout`), and the old frames are gone: no `public/art/frames` folder and no request to `/art/frames/`.
+312. (Round 12d) The 8 reference cards render at 420 × 624 with their own name and cost, and no rules text overflows its box after `fitText`; the Crystal card (Soul Shard) picture covers the whole card.
+313. (Round 12d) A card's `artPos` is honored in the art layer (scale and offset inside an `artclip` wrapper).
+314. (Round 12d) Alegreya SC, Russo One and IM Fell English SC are bundled locally, loaded, and none of them is fetched from Google Fonts.
+315. (Round 12d) Report screenshots at 1920 × 1080 (hand, close-up, Deck Builder, Choose Your Commander, 3 reference cards) are taken without page errors.
+
+Round 12d notes on older criteria: AC147 now checks that each spell frame comes from `/art/card-format/images/` (the old 1152 × 1712 frame size check is retired with the old frames); the lettering check (AC135 and others using it) ignores text inside card faces (`.cardc`), which uses the format's fonts; the never-stretched check measures the `.cardc` root against 420 : 624.
 
 Round 12c notes on older criteria: AC6/AC112 (Dwarf starter decks have 0 basic + 50 Smith Miners), AC10 (Riot Shield Bearer 1/5 + Borgo = 6), AC18 (Bowler Brawler costs 6), AC27 (owner costs), AC45/AC51 (owner names), AC247 (the Smith Miner no-draw case now uses Arcsmith Miner) were updated for the owner's card data.
 
@@ -1586,6 +1616,7 @@ Round 10 notes on older criteria: AC11 and AC50 now check Tunnel from turn 1 (R1
 Round 9a notes on older criteria: AC20, AC74 and the in-match text-control check use "Give up match!" → "Yes, give up" (was Surrender); every test that used the pop-out Menu items opens Menu → Settings first ("Match settings"); AC73 uses a Sproingle deck (R9a.10); AC104 keeps its perspective and corner checks but its R5b HUD-position checks are replaced by AC212; AC151, AC161, AC163 and AC166 (R5b/R6a HUD positions) are replaced by AC212–AC213 and AC218; AC154 (hover pop-out Menu) is replaced by AC216–AC217; AC160 opens the Menu by click; AC172 checks the code-built mine at 2.43–2.53 tall; AC175 expects 31–37 % hand cards; AC193 (Meshy mine) is retired; AC201 is replaced by AC218 (raise to 1.6 ×, 400–500 ms).
 
 ## Out of scope / limitations
+- (Round 12d) No new abilities, rule or layout changes, 3D models or Meshy calls. The owner's card format and renderer are used as delivered; changes to format.json itself are the owner's (Art Studio). Pixel-exact comparison with the reference JPGs is a manual check in the report, not an automated test.
 - (Round 12b-1) Gnome and Dwarf models, Sproingle's and Borgo's thrones (Round 12b-2), other Goblin creatures' models and any rule or layout change are not in this round. Models not finished in time are reported and their checks skip.
 - (Round 12a) New 3D models for Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner and Grubnak, his junk throne and any Meshy call are Round 12b, not this build.
 
@@ -1631,6 +1662,7 @@ Round 9a notes on older criteria: AC20, AC74 and the in-match text-control check
 - (Round 8b) No new 3D models: only Grubnak's Commander card has a viewer; creatures, Sproingle and Borgo get models in later rounds. Meshy may be used only to add one or two clips to the existing rigged Grubnak.
 
 ## Assumptions
+- (Round 12d) Faces keep their old accessible labels (Cost, Attack, Health, Movement, Type, `data-frame`) so existing checks keep working; where the format has no layer for one (e.g. no type line on spells) the label sits on a visually hidden element. The card back everywhere is the format's `back` layout. Text inside card faces is exempt from the one-font rule because the owner's format sets its own fonts.
 
 - (Round 12c, owner questions — simplest reading chosen) Ranged cards whose text says "any direction" still use the straight-line rule; Rocket Rider's explosion hits friend and foe but not Commanders and costs nothing; Thief steals from Flow, then Bank; Gemdrunk's bonus follows the live Bank; Riot Shield lasts its owner's first 3 turns; Brawler Adept's "can't cast spells" has no game effect; Overclocked Aethervein's "extra Crystal cards" means the second and later Crystal card played in one turn; Dwarves have no basic Miner, so Dwarf starter decks use 50 Anvilsworn Miners; Gearward's assist deals its Attack to the attacker.
 - (Round 12b-1) The owner sheets show several views in one picture, so the builder crops them into separate images for Meshy's multi-image job. Props may be baked into the mesh or built as separate small props, as long as they are visible and match the sheet. The new seated Grubnak keeps the file name `grubnak.glb` so the existing viewer and select-screen checks still apply. The throne faces the same way as Grubnak (146°) because he sits in it. Any canonical animation Meshy can't supply for a seated figure is built in code (marked `procedural`).
