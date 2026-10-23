@@ -2563,7 +2563,8 @@ export class App {
         this.setGlow(legal.filter((a: any) => isMove(a) && swapAt(a)).map((a: any) => ({ row: a.row, col: a.col })), 'glow-swap');
         this.setGlow(legal.filter((a: any) => a.type === 'attack').map((a: any) => this.cellOfTarget(a.target)), 'glow-attack');
         this.setGlow(legal.filter((a: any) => a.type === 'mine').map((a: any) => ({ row: a.row, col: a.col })), 'glow-mine');
-        if (!legal.some((a: any) => a.type === 'move' || a.type === 'attack' || a.type === 'mine')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves, attacks OR mines)' : 'Creatures move and attack in the Action phase');
+        this.setGlow(legal.filter((a: any) => a.type === 'ability' && this.abilityCell(a, cr)).map((a: any) => this.abilityCell(a, cr)!), 'glow-swap');
+        if (!legal.some((a: any) => a.type === 'move' || (a.type === 'ability' && this.abilityCell(a, cr)) || a.type === 'attack' || a.type === 'mine')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves, attacks OR mines)' : 'Creatures move and attack in the Action phase');
         return true;
       },
       onDrop: (c) => {
@@ -2572,13 +2573,53 @@ export class App {
         const atk = legal.find((a: any) => a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col)));
         const mv = legal.find((a: any) => a.type === 'move' && a.row === c.row && a.col === c.col);
         const mn = legal.find((a: any) => a.type === 'mine' && a.row === c.row && a.col === c.col);
-        const a = atk || mn || mv;
+        const ab = legal.filter((a: any) => a.type === 'ability' && this.abilityCell(a, cr));
+        const abHere = ab.filter((a: any) => { const q = this.abilityCell(a, cr)!; return q.row === c.row && q.col === c.col; });
+        const abPick = (a0: any) => (a0.ability === 'shaman' ? this.bestShaman(abHere.filter((x: any) => x.ability === 'shaman'), cr) : a0);
+        const a = atk || mn || mv || (abHere[0] ? abPick(abHere[0]) : null);
         if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); } else this.flash("Can't go there");
       },
       onTap: () => {
         this.view?.poke(cr.uid);
+        if (mine) this.abilityMenu(cr);
         if (this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);
       },
     });
+  }
+
+  /** Board cell a special ability is aimed at when dragging its creature (null = chosen from the tap menu). */
+  abilityCell(a: any, cr: any): { row: number; col: number } | null {
+    switch (a.ability) {
+      case 'slide': case 'ramMove': case 'rocket': return a.target;
+      case 'bowl': return { row: cr.row + a.dr, col: cr.col + a.dc };
+      case 'plow': return { row: cr.row + a.dr * a.dist, col: cr.col + a.dc * a.dist };
+      case 'shaman': return a.from;
+      default: return null;
+    }
+  }
+  /** Junk Shaman: drop on a character; ally goes toward the enemy Stronghold, enemy is yanked away from it. */
+  bestShaman(opts: any[], cr: any): any {
+    const st = this.game.state;
+    const src = st.board.creatures.find((o: any) => o.row === opts[0]?.from.row && o.col === opts[0]?.from.col);
+    const eh = SH.opponent;
+    const d = (q: any) => Math.max(Math.abs(q.row - eh.row), Math.abs(q.col - eh.col));
+    const ally = src && src.owner === cr.owner;
+    return opts.slice().sort((x: any, y: any) => (ally ? d(x.target) - d(y.target) : d(y.target) - d(x.target)))[0];
+  }
+  /** Tap menu for abilities that are not aimed by dragging (Shockwave, Ward, Sacrifice). */
+  abilityMenu(cr: any) {
+    document.querySelector('.ability-menu')?.remove();
+    if (this.game.state.phase !== 'action' || this.game.state.priority !== 'player') return;
+    const opts = this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === cr.uid && ['shockwave', 'ward', 'sacrifice'].includes(a.ability));
+    if (!opts.length) return;
+    const NAME: Record<string, string> = { shockwave: 'Shockwave (1)', ward: 'Ward an ally (2)', sacrifice: 'Sacrifice an ally (+1 Bank)' };
+    const menu = h('div', { class: 'ability-menu', role: 'menu', 'aria-label': 'Abilities' });
+    for (const a of opts.slice(0, 8)) {
+      const t = a.target ? this.game.state.board.creatures.find((o: any) => o.row === a.target.row && o.col === a.target.col) : null;
+      const label = NAME[a.ability] + (t ? ` — ${CARDS[t.cardId].name} (${t.row},${t.col})` : '');
+      menu.append(h('button', { type: 'button', role: 'menuitem', class: 'txtbtn', onclick: () => { menu.remove(); const r = this.game.act(a); if (!r.ok) this.flash(r.error!); } }, label));
+    }
+    menu.append(h('button', { type: 'button', class: 'txtbtn', onclick: () => menu.remove() }, 'Cancel'));
+    document.body.append(menu);
   }
 }
