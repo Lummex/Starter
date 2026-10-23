@@ -1,4 +1,4 @@
-# OreHeart — Build Spec (Phase 1B, Round 12b-1 — Goblin 3D models from the owner's sheets)
+# OreHeart — Build Spec (Phase 1B, Round 12c — make every card do what its text says)
 
 ## Summary
 
@@ -14,9 +14,45 @@ Oreheart is a comic-style fantasy card battle in the browser. Goblins, Gnomes an
 
 **Phase 1B Round 12b-1** (this build) replaces the figures of Grubgrabber Miner, Boneknocker, Shiv Rat and Scrapsmith Miner with rigged Meshy 3D models made once from the owner's sheets (with their gear and animations), and seats a new Grubnak model on his junk throne, which replaces the Goblin castle/stand. Rules and layout are unchanged. Where older sections describe Grubnak standing in/on his fortress with a separate scepter (R7.B3, R9a, R9c.2), R12b.5 wins once the seated model is delivered.
 
+**Phase 1B Round 12c** (this build) makes every card do what the owner's card text in `cards.json` says (Goblins, Gnomes, Dwarves, neutral spells and Crystal cards), adds per-card Ranged ranges, `artPos` picture framing and full-size Crystal pictures, and archives Betty Fizzlebottom. Where an older section conflicts with a card's own text, R12c wins.
+
 Tech: Vite + TypeScript (vanilla or React), Three.js for the 3D scene, static `dist/` output, no backend.
 
-### Phase 1B, Round 12b-1 (Goblin 3D models from the owner's sheets) — READ FIRST
+### Phase 1B, Round 12c (make every card do what its text says) — READ FIRST
+
+Source: "Round 12c" at the top of `factory-design/design/oreheart-phase-1b-brief.md` (binding). Keep everything from Rounds 8a–12b-1. **The owner's `cards.json` (names, numbers, rarities, roles, `text`, `artPos`) is now the source of truth and must not be edited by the builder.** No 3D models, no Meshy. Work in this order and **commit + push after each step**: 1 display fixes, 2 numbers and ranges, 3 Goblins, 4 Gnomes, 5 Dwarves, 6 neutral spells and Crystal cards. If time runs short, stop after the last finished step and report which cards are done.
+
+**R12c.0 Card text, older rules and older checks.**
+- A card face (hand, close-up, Deck Builder, menus, pop-ups) shows the card's owner `text` in full, never truncated (the 80-character `shortText` limit no longer applies to owner text; `getCard().text` = the owner text; `shortText` may equal it). `longText` keeps its existing format (plain explanation, ends with a line starting "Example:") and must describe exactly what the engine does. How to Play/Rules wording matches.
+- Where a card's text conflicts with an older rule in this spec, **the card text wins for that card** (e.g. Scrapsmith Miner now draws a card when it dies, unless it died upgrading; Riot Shield Bearer is a Fighter, not a Miner).
+- **Dwarves no longer have a basic Miner.** Dwarf starter decks keep 50 Miners as **50 Anvilsworn Miners** (Smith Miners); Goblin/Gnome decks keep 30 basic + 20 Smith. The free Miner (R6.2) is unchanged. Rename: the Goblin basic Miner is now **Goblin Miner** (same id `goblin-scrounger`).
+- Older checks that hard-coded card names, costs, stats, roles or text the owner has now changed have been updated by the planner (AC6, AC10, AC18, AC27, AC45, AC51, AC112, AC247). If any other older check fails **only** because of the owner's new card data (stats/names/roles in its setup, e.g. using `dwarf-miner` as a 1/1 Miner), the builder may change that check's setup to an equivalent card, keeping its intent, and must list each such change in the report.
+- New test hooks: `getCard(id)` and `listCards()` also return `artPos` `{s,x,y}` and `range` (Ranged reach in squares; `99` = any distance; `null` for non-Ranged). Creatures in `getState().board.creatures` gain `poison` (remaining Venom Shiv ticks, 0 if none), `ward` (boolean), `illusion` (boolean). `getAbilityStatus()` → `{ [cardId]: "done" | "not done" }` for every card listed in R12c.3–6 and the Ranged/spell cards in R12c.2, honestly reporting what is built (AC309).
+- New actions: `{ type: "ability", creatureUid, ability, target?, to?, heals? }` with the ability names below; `{ type: "cast", uid, target?, to? }` (`to` only for Rat-Tunnel Ambush). Directions are given as `target` = the adjacent square in that direction. Every paid ability is paid like a spell (Flow first, then Bank), is listed in `legalActions()` only when affordable and legal, and is the creature's action for the turn unless stated. The AI considers every new ability and spell.
+
+**R12c.1 Display fixes.** `artPos` framing on every card face: the picture is scaled by `s` and shifted by `x`%, `y`% of the art window, clipped to it (default `{s:1,x:0,y:0}`); same on Commander cards from `commanders.json`. Crystal cards show their picture full size like spells (frame overlays on top). Every `OWNER_ART` card uses its picture everywhere (Deck Builder grid and close-ups included); Borgo's portrait is `/art/owner/dwarf/borgo-portrait.webp`. **Betty Fizzlebottom (`sprocket`) is archived:** removed from Choose Your Commander, AI picks, starter decks (9 remain: 3 per faction) and tests; her data moves to `data/archived-cards.json`.
+
+**R12c.2 Numbers and ranges.** Ranged attacks keep the R11.17 line rule (8 straight directions, shot stops at the first unit) with a **per-card range**: Skullflinger 6, Stormcaller Savant 5, Thunderwing Gyronaut 2 (Flying: moves over creatures), Marksmen Gunner 7, Grudge Hurler 5, Hexslinger Apprentice any distance (`range` 99, blocked by the first unit in the line if it is an ally; an enemy there is the target), every other Ranged card 7. Starfall Cataclysm: 4 damage to every creature in the 3×3 area centered on the target square. Venom Shiv: the target enemy creature gets `poison: 7`; at the start of each of its owner's turns it does not heal and takes 1 damage (`poison` −1); no healing of any kind while poisoned.
+
+**R12c.3 Goblins.**
+- SewerSlide Bomber `run` (pay 1, target = direction): moves square by square in that straight/diagonal line until the next square holds a unit, a mine or the board edge, then explodes: Ka-boom (1 damage, + upgrades' Attack bonus, to each adjacent enemy) and it dies. Normal Ka-boom when defeated too.
+- Bare Knuckle Lunatic: when defeated, every unit (creature) adjacent to it is pushed 1 square directly away from it (blocked = stays).
+- Bowler Brawler: aura +1 Attack to adjacent Goblins; `strike` (pay 2, target = orthogonal direction): every creature in that line (to the edge), friend or foe, is pushed 1–2 squares (seeded random each) further along the line; farthest first; blocked = stops early. The Brawler doesn't move.
+- Backstabbing Thief: Sneaky (no strike back); each enemy creature it defeats moves 1 crystal from the opponent's Flow (else Bank) to the player's Flow; nothing if the opponent has none.
+- Junk Shaman: adjacent Goblins +1 Attack on your turn; `pickUp` (pay 2, target = any creature within 5 (Chebyshev) of the Shaman, `to` = an empty non-mine square within 5 of the Shaman).
+- Goblin Chef: melee; after its attack the target (if alive) is pushed 2 squares directly away from the Chef.
+- Goblin Rocket Rider: `rocketRide` (free, target = any empty non-mine square): it moves there and every other creature in the 3×3 around it, friend or foe, takes damage = its Attack; then it may still make one attack this turn. Role stays `gatherer`.
+- Pickpocket! (counterspell): a creature being summoned returns to its owner's hand (cost not refunded). Rat-Tunnel Ambush: cast with `target` = your creature and `to` = an empty square adjacent to a mine; that creature may still attack this turn.
+
+**R12c.4 Gnomes.** Gearward Sentinel: Guard (an enemy adjacent to it may attack only it); once per enemy turn, after an enemy creature attacks one of your creatures, the Sentinel teleports to an empty square adjacent to the attacked creature and deals its Attack to the attacker. Glyphshield Warden: Shield 1 at the start of your turn (doesn't stack above 1); `ward` (pay 2, once per turn, target = ally): `ward: true` until the start of your next turn — it takes no damage and can't attack. Voldawright `shockwave` (pay 1): each adjacent enemy takes 1 damage and is pushed 1 square away. Mirrorveil Illusionist: `blink` costs 1 (once per match, swap with any of your creatures); when summoned it also places an illusion of itself (same stats, `illusion: true`, takes 35% less damage rounded down, can't attack, doesn't count as a card) on the empty square in front of it, if any. Brawler Adept: no ability (text only). Gnome Plow `plow` (pay 2, target = a square in a straight orthogonal line): it moves there; each creature in its path is pushed sideways 1–2 squares (seeded random side and distance). Overclocked Aethervein: mines 3; when you play a second or later Crystal card in one turn, it becomes unable to act this turn and takes 1 damage. Soul Stone Siphoner: +1 Bank for each creature it defeats; `sacrifice` (free, target = adjacent ally): that ally dies, +1 Bank. Unweave: counter any enemy spell. Snuff Out: counter a spell costing 3 or less (no Respond window opens if the only response can't legally cancel it).
+
+**R12c.5 Dwarves.** Riot Shield Bearer (Fighter): for its owner's first 3 turns after it is summoned (summon turn counts) it can't move or attack and its Health can't drop below 1; setup-placed creatures start with this expired. Ironwall Shieldbeard: Guard; `corpsman` (free, once per round, `heals: [{row,col,amount}]`, adjacent allies, total ≤ 7). Grudge Hurler: Ranged 5 in lines; an enemy it damages can't move during its owner's next turn. Bloodbeard Berserker: +1 Attack permanently each time it survives being attacked, and +1 for every 2 enemies it defeats. Corpsman Brewlord: once per turn `medic` heals an adjacent wounded Dwarf to full. Thunderhorn Ram Rider: Charge; `gallop` (pay 2): move to any empty square in a straight or diagonal line, any distance, not through units. Queen Brunhilda: takes at most 3 damage from any single hit. Gemdrunk Deepdelver: Attack = printed + your current Bank (shown in state `attack`). Ironjaw Big Back: no ability. Granite Oathkeeper: when it attacks, every adjacent enemy is pushed 1–2 squares away (seeded). Oathbound Overwatch: Sneaky; may attack any enemy creature at any distance. Barrelback Courier: can move/attack the turn it's summoned. Door Splitter: Charge in any of 8 directions; the creature it hits is pushed 1–3 squares in a seeded random direction (friend or foe). Grimhold Ravager: Attack doubles this round if it attacked or was attacked during the previous round. Thunderhorn Blast: your creatures +1 Attack this turn. Ironclad Bulwark: the target's next incoming hit deals 0. Emergency Rations: heal your Commander (`{commander:"player"}`) or a creature 4 (not above max).
+
+**R12c.6 Neutral spells and Crystal cards.** Field Bandage: heal one of your creatures to full (not if poisoned). Desperate Plunder (cost 0, no target): at the start of each of your turns, after your Flow is set, if the opponent's current Flow is greater than yours you gain +3 Flow (each copy adds 3); once you start a turn with more Flow than them it ends. Crystal cards are free and playable any time on your turn (R10.12 unchanged): Soul Shard +1 Bank, Soul Cluster +2 Bank, Heart of the Fallen +4 Bank, Motherlode +3 Bank and your next creature this match costs 2 less (minimum 0), Wellspring Geode +1 Flow at the start of each of your turns for the rest of the game.
+
+**Report:** steps and cards done/not done, owner questions (see Assumptions), every older check changed for owner card data, screenshots at 1920×1080 of one new ability per faction and the Deck Builder with the new art.
+
+### Phase 1B, Round 12b-1 (Goblin 3D models from the owner's sheets) — done
 
 Source: the "Round 12b-1" and "Round 12" (items 3–7) sections at the top of `factory-design/design/oreheart-phase-1b-brief.md` (binding) and the GDD. Keep **everything** from Rounds 8a–12a; **rules, layout and HUD are unchanged**. **Build only the five models below**, in this order, and **commit + push after each model works**: 1 Grubgrabber Miner, 2 Boneknocker, 3 Shiv Rat, 4 Scrapsmith Miner, 5 Grubnak seated on his junk throne. If time runs short, stop after the last finished model and say in the report which are done; the checks for an undelivered model skip themselves (they key off `models.json`). NOT this round: Gnome and Dwarf models, Sproingle/Borgo thrones (Round 12b-2), any rule change.
 
@@ -1512,6 +1548,34 @@ Round 8a notes on older criteria: AC149 now checks the R8a cover-fit camera (`mi
 281. (Round 12b-1; seated only, skipped without WebGL) Throne pose: the throne sits on the ground at cx 1.5 / cy 6.5 facing 146° (± 3°) with no tilt; Grubnak sits at the same point, `seated: true`, his lowest point above the board; across emotes the throne never moves.
 282. (Round 12b-1; seated only) Choose Your Commander and the Deck Builder viewer show the seated Grubnak (`grubnak.glb`).
 283. (Round 12b-1) Screenshots at 1920 × 1080 of the new models on the board, in the 3D viewer and Grubnak on his throne render without page errors.
+284. (Round 12c) Every card's data has numeric `artPos` {s,x,y}; owner names and text are used (Goblin Miner, Riot Shield Bearer, Skullflinger 6, Starfall 3×3).
+285. (Round 12c) Betty Fizzlebottom is not on Choose Your Commander or in any starter deck; 9 starter decks remain.
+286. (Round 12c) Per-card Ranged ranges: exactly `range` squares away is hittable, one more is not (Skullflinger 6, Gyronaut 2, Gunner 7, Stormcaller 5, Grudge Hurler 5); Hexslinger hits 6 away diagonally but not through an ally.
+287. (Round 12c) Starfall Cataclysm deals exactly 4 in its 3×3 area and nothing outside.
+288. (Round 12c) Venom Shiv: `poison` 7, 1 damage per owner turn, no healing.
+289. (Round 12c) SewerSlide Bomber's run: pays 1, stops before the first unit, Ka-boom 1, dies.
+290. (Round 12c) Scrapsmith Miner dying draws its owner a card.
+291. (Round 12c) Bare Knuckle Lunatic's death pushes adjacent units back 1.
+292. (Round 12c) Backstabbing Thief steals 1 crystal per enemy it defeats.
+293. (Round 12c) Bowler Brawler Strike (2) pushes creatures in its line 1–2 squares.
+294. (Round 12c) Junk Shaman pickUp (2): within 5 works, 6 away fails.
+295. (Round 12c) Goblin Chef Smack pushes its target 2; it can't attack 2 away.
+296. (Round 12c) Goblin Rocket Rider ride: 3×3 explosion for its Attack, then one attack; role stays gatherer.
+297. (Round 12c) Rat-Tunnel Ambush moves a creature next to a mine and it can still attack.
+298. (Round 12c) Voldawright Shockwave (1): adjacent enemies take 1 and are pushed 1.
+299. (Round 12c) Glyphshield Warden: Shield 1 each turn; Ward (2, once per turn) means no damage and no attacking.
+300. (Round 12c) Gnome Plow (2): straight-line move; creatures in the path pushed aside 1–2.
+301. (Round 12c) Snuff Out can't answer a 6-cost spell (no window); Unweave cancels it.
+302. (Round 12c) Riot Shield Bearer can't move, attack or die during its first 3 turns.
+303. (Round 12c) Queen Brunhilda takes at most 3 per hit; Bloodbeard Berserker gains +1 Attack after surviving an attack.
+304. (Round 12c) Gemdrunk Deepdelver Attack = printed + Bank; Grudge Hurler's target can't move on its next turn.
+305. (Round 12c) Ram Rider gallop (2); Oathbound Overwatch attacks at any distance; Barrelback Courier acts the turn it's played.
+306. (Round 12c) Field Bandage heals to full; Emergency Rations heals the Commander 4; Ironclad Bulwark makes the next hit 0.
+307. (Round 12c) Crystal cards: Bank +1/+2/+4/+3, Motherlode makes the next creature 2 cheaper, Geode gives +1 Flow each turn.
+308. (Round 12c) Desperate Plunder gives +3 Flow at turn start while the opponent has more Flow.
+309. (Round 12c) `getAbilityStatus()` reports "done" for every Round 12c card; `longText` still has "Example:".
+
+Round 12c notes on older criteria: AC6/AC112 (Dwarf starter decks have 0 basic + 50 Smith Miners), AC10 (Riot Shield Bearer 1/5 + Borgo = 6), AC18 (Bowler Brawler costs 6), AC27 (owner costs), AC45/AC51 (owner names), AC247 (the Smith Miner no-draw case now uses Arcsmith Miner) were updated for the owner's card data.
 
 Round 12b-1 notes on older criteria: once the seated Grubnak is delivered, AC180 checks `grubnak` + `throne` (fortress/scepter optional), AC181 expects the throne and staff instead of fortress and scepter, AC220 (old scepter numbers) skips itself, AC230/AC231 check the throne at 146° and Grubnak seated on it instead of standing on the ground.
 
@@ -1567,6 +1631,8 @@ Round 9a notes on older criteria: AC20, AC74 and the in-match text-control check
 - (Round 8b) No new 3D models: only Grubnak's Commander card has a viewer; creatures, Sproingle and Borgo get models in later rounds. Meshy may be used only to add one or two clips to the existing rigged Grubnak.
 
 ## Assumptions
+
+- (Round 12c, owner questions — simplest reading chosen) Ranged cards whose text says "any direction" still use the straight-line rule; Rocket Rider's explosion hits friend and foe but not Commanders and costs nothing; Thief steals from Flow, then Bank; Gemdrunk's bonus follows the live Bank; Riot Shield lasts its owner's first 3 turns; Brawler Adept's "can't cast spells" has no game effect; Overclocked Aethervein's "extra Crystal cards" means the second and later Crystal card played in one turn; Dwarves have no basic Miner, so Dwarf starter decks use 50 Anvilsworn Miners; Gearward's assist deals its Attack to the attacker.
 - (Round 12b-1) The owner sheets show several views in one picture, so the builder crops them into separate images for Meshy's multi-image job. Props may be baked into the mesh or built as separate small props, as long as they are visible and match the sheet. The new seated Grubnak keeps the file name `grubnak.glb` so the existing viewer and select-screen checks still apply. The throne faces the same way as Grubnak (146°) because he sits in it. Any canonical animation Meshy can't supply for a seated figure is built in code (marked `procedural`).
 
 - (Round 10) "Crystal cards any time" means any moment the player can act (own Deploy and Action phases, and as a responder in the Respond window); the game gives the human no other input during the enemy's turn.

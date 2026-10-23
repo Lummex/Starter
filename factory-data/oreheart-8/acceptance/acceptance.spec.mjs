@@ -200,10 +200,11 @@ for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
     const counts = {};
     for (const id of all) counts[id] = (counts[id] || 0) + 1;
     for (const [id, n] of Object.entries(counts)) if (LIMITED.has(id)) expect(n, id).toBeLessThanOrEqual(3);
-    const basic = { grubnak: 'goblin-scrounger', sproingle: 'gnome-prospector', borgo: 'dwarf-miner' }[cmd];
-    expect(counts[basic]).toBe(30);
+    // Round 12c: Dwarves have no basic Miner any more; their 50 Miners are all Anvilsworn (Smith) Miners
+    const basic = { grubnak: 'goblin-scrounger', sproingle: 'gnome-prospector', borgo: 'none' }[cmd];
+    expect(counts[basic] || 0).toBe(cmd === 'borgo' ? 0 : 30);
     const smith = { grubnak: 'goblin-smith-miner', sproingle: 'gnome-smith-miner', borgo: 'dwarf-smith-miner' }[cmd];
-    expect(counts[smith]).toBe(20);
+    expect(counts[smith]).toBe(cmd === 'borgo' ? 50 : 20);
     for (const id of NEW_BY_FACTION[cmd]) expect(counts[id] || 0, id).toBeGreaterThanOrEqual(1);
     const creatureIds = all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id) && id !== basic && id !== smith);
     const costs = await page.evaluate(async (ids) => {
@@ -285,7 +286,7 @@ test('AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy t
 });
 
 // ---------- AC9 (Crystal Flow) ----------
-test('AC9: example (a) — 1 Gemsinger Miner vs 2 Grubgrabber Miners: enemy owns the mine, enemy gets 4, you get 1 (+2 underdog)', async ({ page }) => {
+test('AC9: example (a) — 1 Gemsinger Miner vs 2 Goblin Miners: enemy owns the mine, enemy gets 4, you get 1 (+2 underdog)', async ({ page }) => {
   let s = await start(page, {
     ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak',
     setup: {
@@ -481,7 +482,7 @@ test('AC39: mining is an action — Gatherer 2, Fighter 1, nothing without minin
   // a creature that moved can't mine
   expect((await act(page, { type: 'move', creatureUid: idle, row: 3, col: 7 })).ok).toBe(true);
   expect((await act(page, { type: 'mine', creatureUid: idle, row: 4, col: 6 })).ok).toBe(false);
-  const label = page.getByLabel('Grubgrabber Miner, row 5, column 1', { exact: true });
+  const label = page.getByLabel('Goblin Miner, row 5, column 1', { exact: true });
   await expect(label).toHaveAttribute('data-mining', 'true');
   await expect(label).toHaveAttribute('data-acted', 'true');
   await done(page); // -> opponent's turn 2
@@ -574,8 +575,8 @@ test('AC10: Unique card limited to one on the battlefield; Borgo +1 Health', asy
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'dwarf-miner'), row: 7, col: 3 })).ok).toBe(true);
   s = await getState(page);
   expect(at(s, 7, 3).attack).toBe(1);
-  expect(at(s, 7, 3).maxHealth).toBe(2); // Stonebreaker Miner 1/1 + Borgo = 1/2
-  expect(at(s, 7, 3).health).toBe(2);
+  expect(at(s, 7, 3).maxHealth).toBe(6); // Round 12c: Riot Shield Bearer 1/5 + Borgo = 1/6
+  expect(at(s, 7, 3).health).toBe(6);
 });
 
 // ---------- AC11 ----------
@@ -1008,7 +1009,7 @@ test('AC18: Pickpocket! returns a summoned creature to hand', async ({ page }) =
     opponentCommander: 'borgo',
     setup: {
       playerHand: ['goblin-scrapper'],
-      playerCrystals: 5,
+      playerCrystals: 6, // Round 12c: Bowler Brawler costs 6
       opponentHand: ['hold-it'],
       opponentCrystals: 4,
     },
@@ -1297,11 +1298,11 @@ test('AC26: printed creature Health is at most 6', async ({ page }) => {
 
 // ---------- AC27 ----------
 const COSTS = {
-  'goblin-scrounger': 1, 'goblin-scrapper': 6, 'goblin-slinger': 4, 'goblin-bomber': 5, 'goblin-sneak': 6, 'wolf-rider': 9,
-  'grubnaks-big-boss-troll': 13, 'gnome-prospector': 1, 'gnome-tinker': 5, 'spark-gnome': 5, 'clockwork-beetle': 8,
-  'gnome-illusionist': 6, 'gyrocopter-ace': 8, 'the-great-steam-golem': 13, 'dwarf-miner': 1, 'shieldbeard': 7,
-  'axe-thrower': 6, 'ironhammer-berserker': 8, 'brewmaster': 7, 'ram-rider': 11, 'queen-brunhilda-stonebeard': 13,
-  'shard-guzzler': 5, 'overclocked-conduit': 5, 'crystal-drunk-delver': 7,
+  'goblin-scrounger': 1, 'goblin-scrapper': 6, 'goblin-slinger': 4, 'goblin-bomber': 3, 'goblin-sneak': 3, 'wolf-rider': 8,
+  'grubnaks-big-boss-troll': 7, 'gnome-prospector': 1, 'gnome-tinker': 4, 'spark-gnome': 5, 'clockwork-beetle': 6,
+  'gnome-illusionist': 6, 'gyrocopter-ace': 8, 'the-great-steam-golem': 10, 'dwarf-miner': 2, 'shieldbeard': 6,
+  'axe-thrower': 6, 'ironhammer-berserker': 7, 'brewmaster': 6, 'ram-rider': 10, 'queen-brunhilda-stonebeard': 10,
+  'shard-guzzler': 6, 'overclocked-conduit': 5, 'crystal-drunk-delver': 7,
 };
 test('AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 for 1', async ({ page }) => {
   await openTest(page);
@@ -1311,7 +1312,7 @@ test('AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 f
     return out;
   }, Object.keys(COSTS));
   for (const [id, cost] of Object.entries(COSTS)) expect(cards[id].cost, id).toBe(cost);
-  for (const id of ['goblin-scrounger', 'gnome-prospector', 'dwarf-miner']) {
+  for (const id of ['goblin-scrounger', 'gnome-prospector']) { // Round 12c: Dwarves have no basic Miner
     expect(cards[id].attack, id).toBe(1);
     expect(cards[id].health, id).toBe(1);
   }
@@ -1323,7 +1324,7 @@ test('AC27: summoning spends exactly the new costs', async ({ page }) => {
     playerCommander: 'borgo',
     setup: { playerHand: ['dwarf-miner', 'shieldbeard', 'axe-thrower', 'ram-rider'], playerCrystals: 30 },
   });
-  const steps = [['dwarf-miner', 1, 29], ['shieldbeard', 3, 22], ['axe-thrower', 4, 16], ['ram-rider', 5, 5]]; // Round 3b: (7,2) is the Stronghold
+  const steps = [['dwarf-miner', 1, 28], ['shieldbeard', 3, 22], ['axe-thrower', 4, 16], ['ram-rider', 5, 6]]; // Round 12c owner costs 2/6/6/10; // Round 3b: (7,2) is the Stronghold
   for (const [id, col, left] of steps) {
     expect((await act(page, { type: 'summon', uid: handUid(s, 'player', id), row: 7, col })).ok, id).toBe(true);
     s = await getState(page);
@@ -1569,7 +1570,7 @@ test('AC35: a Gatherer summoned this turn can move or mine but not attack; a Fig
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-slinger'), row: 7, col: 3 })).ok).toBe(true);
   s = await getState(page);
   expect(s.players.player.crystals).toBe(0); // Scrounger 1 + Slinger 4 - 1 Grubnak
-  await expect(page.getByLabel('Grubgrabber Miner, row 7, column 1', { exact: true })).toHaveAttribute('data-acted', 'false'); // stays bright
+  await expect(page.getByLabel('Goblin Miner, row 7, column 1', { exact: true })).toHaveAttribute('data-acted', 'false'); // stays bright
   await expect(page.getByLabel('Skullflinger, row 7, column 3', { exact: true })).toHaveAttribute('data-acted', 'true'); // summoning sickness
   await done(page);
   const g = at(s, 7, 1).uid;
@@ -1802,9 +1803,10 @@ test('AC45: Miner names, roles and badges', async ({ page }) => {
     }
     return out;
   });
-  expect(cards['goblin-scrounger'].name).toBe('Grubgrabber Miner');
+  expect(cards['goblin-scrounger'].name).toBe('Goblin Miner');
   expect(cards['gnome-prospector'].name).toBe('Gemsinger Miner');
-  expect(cards['dwarf-miner'].name).toBe('Stonebreaker Miner');
+  expect(cards['dwarf-miner'].name).toBe('Riot Shield Bearer'); // Round 12c: owner made it a Fighter
+  expect(cards['dwarf-miner'].role).toBe('fighter');
   for (const [id, name, faction] of [['goblin-smith-miner', 'Scrapsmith Miner', 'goblins'], ['gnome-smith-miner', 'Arcsmith Miner', 'gnomes'], ['dwarf-smith-miner', 'Anvilsworn Miner', 'dwarves']]) {
     expect(cards[id].name).toBe(name);
     expect(cards[id].faction).toBe(faction);
@@ -1813,13 +1815,13 @@ test('AC45: Miner names, roles and badges', async ({ page }) => {
     expect([cards[id].cost, cards[id].attack, cards[id].health, cards[id].move]).toEqual([2, 1, 1, 1]);
   }
   const hand = page.getByLabel('Your hand', { exact: true });
-  await expect(hand.getByRole('button', { name: 'Grubgrabber Miner', exact: true })).toContainText('⛏');
+  await expect(hand.getByRole('button', { name: 'Goblin Miner', exact: true })).toContainText('⛏');
   await expect(hand.getByRole('button', { name: 'Gutripper Brawler', exact: true })).toContainText('⚔');
   await expect(hand.getByRole('button', { name: 'Gutripper Brawler', exact: true })).not.toContainText('⛏');
   const smith = hand.getByRole('button', { name: 'Scrapsmith Miner', exact: true });
   await expect(smith).toContainText('⚒');
   await expect(smith).toContainText('SMITH');
-  await expect(page.getByLabel('Grubgrabber Miner, row 6, column 1', { exact: true })).toContainText('⛏');
+  await expect(page.getByLabel('Goblin Miner, row 6, column 1', { exact: true })).toContainText('⛏');
   await expect(page.getByLabel('Gutripper Brawler, row 6, column 2', { exact: true })).not.toContainText('⛏');
 });
 
@@ -2033,7 +2035,7 @@ test('AC50: Smith Miners never Tunnel; the Tunnel! tag shows from turn 1 (Round 
   expect(summons.some((a) => a.uid === smith && a.row === 7)).toBe(true);
   expect((await act(page, { type: 'summon', uid: smith, row: 3, col: 3 })).ok).toBe(false);
   const hb = page.getByLabel('Your hand', { exact: true });
-  await expect(hb.getByRole('button', { name: 'Grubgrabber Miner', exact: true })).toContainText('Tunnel!');
+  await expect(hb.getByRole('button', { name: 'Goblin Miner', exact: true })).toContainText('Tunnel!');
   await expect(hb.getByRole('button', { name: 'Scrapsmith Miner', exact: true })).not.toContainText('Tunnel!');
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 3, col: 3 })).ok).toBe(true);
 });
@@ -2079,17 +2081,17 @@ for (const [w, h] of [[844, 390], [740, 360], [667, 375]]) {
 
 // ---------- Revision 7 ----------
 const RENAMES = {
-  'goblin-scrounger': 'Grubgrabber Miner', 'goblin-scrapper': 'Gutripper Brawler', 'goblin-slinger': 'Skullflinger',
-  'goblin-bomber': 'Boomfist Lunatic', 'goblin-sneak': 'Backstab Weasel', 'wolf-rider': 'Mangewolf Rider',
-  'grubnaks-big-boss-troll': 'Gutcrusher the Troll Tyrant', 'gnome-prospector': 'Gemsinger Miner', 'gnome-tinker': 'Aegis Tinkerer',
+  'goblin-scrounger': 'Goblin Miner', 'goblin-scrapper': 'Bowler Brawler', 'goblin-slinger': 'Skullflinger',
+  'goblin-bomber': 'Bare Knuckle Lunatic', 'goblin-sneak': 'Backstabbing Thief', 'wolf-rider': 'Mangewolf Rider',
+  'grubnaks-big-boss-troll': 'Gronkowski Troll Tyrant', 'gnome-prospector': 'Gemsinger Miner', 'gnome-tinker': 'Aegis Tinkerer',
   'spark-gnome': 'Stormcaller Savant', 'clockwork-beetle': 'Iron Scarab Automaton', 'gnome-illusionist': 'Mirrorveil Illusionist',
-  'gyrocopter-ace': 'Thunderwing Gyronaut', 'the-great-steam-golem': 'The Arcane Colossus', 'dwarf-miner': 'Stonebreaker Miner',
+  'gyrocopter-ace': 'Thunderwing Gyronaut', 'the-great-steam-golem': 'The Arcane Colossus', 'dwarf-miner': 'Riot Shield Bearer',
   'shieldbeard': 'Ironwall Shieldbeard', 'axe-thrower': 'Grudge Hurler', 'ironhammer-berserker': 'Bloodbeard Berserker',
-  'brewmaster': 'Forgefire Brewlord', 'ram-rider': 'Thunderhorn Ram Rider', 'queen-brunhilda-stonebeard': 'Queen Brunhilda Ironheart, the Unbroken',
-  'shard-guzzler': 'Shardguzzler the Bottomless', 'overclocked-conduit': 'Overclocked Aethervein', 'crystal-drunk-delver': 'Gemdrunk Deepdelver',
+  'brewmaster': 'Corpsman Brewlord', 'ram-rider': 'Thunderhorn Ram Rider', 'queen-brunhilda-stonebeard': 'Queen Brunhilda',
+  'shard-guzzler': 'Goblin Rocket Rider', 'overclocked-conduit': 'Overclocked Aethervein', 'crystal-drunk-delver': 'Gemdrunk Deepdelver',
   'goblin-smith-miner': 'Scrapsmith Miner', 'gnome-smith-miner': 'Arcsmith Miner', 'dwarf-smith-miner': 'Anvilsworn Miner',
   'prospectors-prayer': 'Desperate Plunder', 'tunnel-rush': 'Rat-Tunnel Ambush', 'fireball': 'Searing Arcane Orb', 'battle-cry': 'Thunderhorn Blast',
-  'meteor-strike': 'Starfall Cataclysm', 'healing-light': 'Field Bandage', 'shield-bubble': 'Ironclad Bulwark', 'second-wind': 'Emergency Repairs',
+  'meteor-strike': 'Starfall Cataclysm', 'healing-light': 'Field Bandage', 'shield-bubble': 'Ironclad Bulwark', 'second-wind': 'Emergency Rations',
   'fizzle': 'Snuff Out', 'hold-it': 'Pickpocket!', 'spell-snap': 'Unweave', 'mirror-hex': 'Hex Reversal',
   'soul-shard': 'Soul Shard', 'crystal-cluster': 'Soul Cluster', 'glowing-geode': 'Wellspring Geode', 'heart-of-the-fallen': 'Heart of the Fallen',
   'motherlode': 'Motherlode',
@@ -2283,7 +2285,7 @@ test.describe('hand pop-out at 2x', () => {
   test('AC59: a hovered hand card rises to about 1.6x and stays fully on-screen', async ({ page }) => {
     await start(page, { ai: false, setup: { playerHand: ['goblin-scrapper', 'fireball', 'soul-shard', 'goblin-slinger', 'goblin-scrounger'] } });
     await page.waitForTimeout(2000);
-    for (const name of ['Gutripper Brawler', 'Grubgrabber Miner']) {
+    for (const name of ['Gutripper Brawler', 'Goblin Miner']) {
       const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name, exact: true });
       const before = await card.boundingBox();
       await page.mouse.move(before.x + before.width / 2, before.y + 8); // the visible top of the tucked card
@@ -2387,7 +2389,7 @@ test('AC61: Deck Builder problems use the exact messages and counts', async ({ p
 test('AC62: up to 5 saved decks persist after a reload', async ({ page }) => {
   await openDecks(page);
   await renameDeck(page, 'Miner Rush');
-  await addCard(page, 'Grubgrabber Miner', 50);
+  await addCard(page, 'Goblin Miner', 50);
   await expect(page.getByLabel('Deck problems', { exact: true })).toContainText('Deck is legal');
   await saveDeck(page);
   for (const name of ['Too Small', 'Deck C', 'Deck D', 'Deck E']) {
@@ -2653,10 +2655,10 @@ test('AC70: double-click and + add cards; single click only enlarges; copy limit
   await view.locator('[data-card-id]').first().click(); // Round 6a: no Close button, click dismisses
   await expect(view).toBeHidden();
   await expect(deckList(page)).not.toContainText('Shiv Rat');
-  await all.getByRole('button', { name: 'Grubgrabber Miner', exact: true }).dblclick();
-  await expect(deckList(page)).toContainText('1 × Grubgrabber Miner');
-  await deckList(page).getByRole('button', { name: 'Add Grubgrabber Miner', exact: true }).click();
-  await expect(deckList(page)).toContainText('2 × Grubgrabber Miner');
+  await all.getByRole('button', { name: 'Goblin Miner', exact: true }).dblclick();
+  await expect(deckList(page)).toContainText('1 × Goblin Miner');
+  await deckList(page).getByRole('button', { name: 'Add Goblin Miner', exact: true }).click();
+  await expect(deckList(page)).toContainText('2 × Goblin Miner');
   await expect(page.getByLabel('Cost chart', { exact: true }).getByLabel('Cost 1: 2 cards', { exact: true })).toHaveCount(1);
   await expect(page.getByLabel('Deck pile', { exact: true })).toContainText(/2 cards \(50[–-]100\)/);
   await addCard(page, 'Mangewolf Rider', 3);
@@ -2664,9 +2666,9 @@ test('AC70: double-click and + add cards; single click only enlarges; copy limit
   await expect(deckList(page).getByRole('button', { name: 'Add Mangewolf Rider', exact: true })).toBeDisabled();
   await all.getByRole('button', { name: 'Mangewolf Rider', exact: true }).dblclick();
   await expect(deckList(page)).toContainText('3 × Mangewolf Rider');
-  await deckList(page).getByRole('button', { name: 'Remove Grubgrabber Miner', exact: true }).click();
-  await deckList(page).getByRole('button', { name: 'Remove Grubgrabber Miner', exact: true }).click();
-  await expect(deckList(page)).not.toContainText('Grubgrabber Miner');
+  await deckList(page).getByRole('button', { name: 'Remove Goblin Miner', exact: true }).click();
+  await deckList(page).getByRole('button', { name: 'Remove Goblin Miner', exact: true }).click();
+  await expect(deckList(page)).not.toContainText('Goblin Miner');
   await expect(page.getByLabel('Deck pile', { exact: true })).toContainText(/3 cards \(50[–-]100\)/);
 });
 
@@ -2690,7 +2692,7 @@ test('AC71: Auto-fill completes a legal deck; Rename and Save', async ({ page })
 async function makeSelectDecks(page) {
   await openDecks(page);
   await renameDeck(page, 'Miner Rush');
-  await addCard(page, 'Grubgrabber Miner', 50);
+  await addCard(page, 'Goblin Miner', 50);
   await saveDeck(page);
   await page.getByRole('button', { name: 'New Deck', exact: true }).click();
   await renameDeck(page, 'Too Small');
@@ -2859,7 +2861,7 @@ test('AC76: the Last turn recap lists what the enemy did', async ({ page }) => {
   await openMatchMenu(page);
   await btn.click();
   await expect(dlg).toContainText('Summoned Gutripper Brawler');
-  await expect(dlg).toContainText('Moved Grubgrabber Miner');
+  await expect(dlg).toContainText('Moved Goblin Miner');
 });
 
 test('AC77: a mine with ready Miners shows the swinging pickaxe count; it goes once they mined', async ({ page }) => {
@@ -3598,7 +3600,7 @@ test('AC107: Deck Builder logo, smart search and cards per row', async ({ page }
   const slinger = (await info(['goblin-slinger']))[0];
   if (slinger.cost < 4) await expect(allCards(page).getByRole('button', { name: 'Skullflinger', exact: true })).toHaveCount(1);
   await search.fill('goblin miners');
-  await expect(allCards(page).getByRole('button', { name: 'Grubgrabber Miner', exact: true })).toHaveCount(1);
+  await expect(allCards(page).getByRole('button', { name: 'Goblin Miner', exact: true })).toHaveCount(1);
   ids = await shownIds();
   for (const c of await info(ids)) {
     expect(c.faction, c.id).toBe('goblins');
@@ -3737,9 +3739,9 @@ test('AC112/AC128: nine legal 100-card starter decks: Warband, Arcane Hoard and 
     const want = { warband: [88, 7, 5], 'arcane-hoard': [68, 24, 8], horde: [96, 0, 4] }[st];
     expect([creatures, spells, crystals], d.id).toEqual(want);
     expect(miners, `${d.id} Miners`).toBe(50);
-    const basic = { goblin: 'goblin-scrounger', gnome: 'gnome-prospector', dwarf: 'dwarf-miner' }[f];
-    expect(d.cards.filter((id) => id === basic).length, `${d.id} basic Miners`).toBe(30);
-    expect(d.cards.filter((id) => id === `${f}-smith-miner`).length, `${d.id} Smith Miners`).toBe(20);
+    const basic = { goblin: 'goblin-scrounger', gnome: 'gnome-prospector', dwarf: 'none' }[f]; // Round 12c: no Dwarf basic Miner
+    expect(d.cards.filter((id) => id === basic).length, `${d.id} basic Miners`).toBe(f === 'dwarf' ? 0 : 30);
+    expect(d.cards.filter((id) => id === `${f}-smith-miner`).length, `${d.id} Smith Miners`).toBe(f === 'dwarf' ? 50 : 20);
     const faction = { goblin: 'goblins', gnome: 'gnomes', dwarf: 'dwarves' }[f];
     for (const id of d.cards) if (info[id].type === 'spell') expect([faction, null, 'neutral'], `${d.id} ${id}`).toContain(info[id].faction ?? null);
     const cmd = { goblin: 'grubnak', gnome: 'sproingle', dwarf: 'borgo' }[f];
@@ -4717,7 +4719,7 @@ test('AC142: a card dragged from the grid shows at its 3-per-row size and lands 
   await expect(ghost).toHaveCount(0);
 });
 
-const TWELVE = ['Shiv Rat', 'Grubgrabber Miner', 'Mangewolf Rider', 'Snotskull Grunt', 'Rotgut Grenadier', 'Skullbasher Rusher',
+const TWELVE = ['Shiv Rat', 'Goblin Miner', 'Mangewolf Rider', 'Snotskull Grunt', 'Rotgut Grenadier', 'Skullbasher Rusher',
   'Soul Shard', 'Soul Cluster', 'Phase Stalker', 'Grimhold Ravager', 'Ironjaw Raider', 'Skullflinger'];
 async function visibleRows(page) {
   return deckList(page).evaluate((list) => {
@@ -4788,7 +4790,7 @@ test('AC145: Copy to my decks makes an editable saved copy and leaves the starte
   await expect(myDecks(page).getByRole('button', { name: /^Goblin Warband \(copy\)/ })).toHaveAttribute('aria-current', 'true');
   await expect(page.getByLabel('Deck problems', { exact: true })).toContainText('Deck is legal');
   await renameDeck(page, 'My Warband');
-  await deckList(page).getByRole('button', { name: 'Remove Grubgrabber Miner', exact: true }).click();
+  await deckList(page).getByRole('button', { name: 'Remove Goblin Miner', exact: true }).click();
   await saveDeck(page);
   const starters = await page.evaluate(async () => await window.oreheart.listStarterDecks());
   expect(starters.find((d) => d.name === 'Goblin Warband').cards.length).toBe(100);
@@ -5531,11 +5533,11 @@ test('AC169: Deck Builder close-up fills the height, has no scrollbar or Close, 
 
 test('AC170: deck list + and - change counts at once, without moving the row; rapid clicks all count', async ({ page }) => {
   await openDecks(page);
-  await allCards(page).getByRole('button', { name: 'Grubgrabber Miner', exact: true }).dblclick();
+  await allCards(page).getByRole('button', { name: 'Goblin Miner', exact: true }).dblclick();
   const list = deckList(page);
-  await expect(list).toContainText('1 × Grubgrabber Miner');
-  const add = list.getByRole('button', { name: 'Add Grubgrabber Miner', exact: true });
-  const rem = list.getByRole('button', { name: 'Remove Grubgrabber Miner', exact: true });
+  await expect(list).toContainText('1 × Goblin Miner');
+  const add = list.getByRole('button', { name: 'Add Goblin Miner', exact: true });
+  const rem = list.getByRole('button', { name: 'Remove Goblin Miner', exact: true });
   const clickAndRead = (btn) => btn.evaluate(async (b) => {
     const row = b.parentElement;
     b.click();
@@ -5547,18 +5549,18 @@ test('AC170: deck list + and - change counts at once, without moving the row; ra
   const pos = async () => [await add.boundingBox(), await rem.boundingBox()];
   let before = await pos();
   let r = await clickAndRead(add);
-  expect(r.text).toContain('2 × Grubgrabber Miner');
+  expect(r.text).toContain('2 × Goblin Miner');
   expect(r.anims, 'running animations after +').toBe(0);
   let after = await pos();
   for (let i = 0; i < 2; i++) { expect(Math.abs(after[i].x - before[i].x)).toBeLessThanOrEqual(1); expect(Math.abs(after[i].y - before[i].y)).toBeLessThanOrEqual(1); }
   before = after;
   r = await clickAndRead(rem);
-  expect(r.text).toContain('1 × Grubgrabber Miner');
+  expect(r.text).toContain('1 × Goblin Miner');
   expect(r.anims, 'running animations after -').toBe(0);
   after = await pos();
   for (let i = 0; i < 2; i++) { expect(Math.abs(after[i].x - before[i].x)).toBeLessThanOrEqual(1); expect(Math.abs(after[i].y - before[i].y)).toBeLessThanOrEqual(1); }
   for (let i = 0; i < 5; i++) await add.click({ delay: 0 });
-  await expect(list).toContainText('6 × Grubgrabber Miner');
+  await expect(list).toContainText('6 × Goblin Miner');
 });
 
 test('AC171: no "All cards" text and no corner ornaments on any menu screen', async ({ page }) => {
@@ -6648,7 +6650,7 @@ const deckStacks = (page) => deckRow(page).getByRole('button', { name: /(cards, 
 test('AC205: every deck entry on Choose Your Commander has the same size, also for long names and when selected', async ({ page }) => {
   await openDecks(page);
   await renameDeck(page, 'The Extremely Long Named Goblin Junkpile Deck');
-  await addCard(page, 'Grubgrabber Miner', 50);
+  await addCard(page, 'Goblin Miner', 50);
   await saveDeck(page);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
@@ -7858,10 +7860,10 @@ test('AC247: a basic Miner dying draws its owner a card; Smith Miners and upgrad
   expect(s.players.opponent.hand.length).toBe(hand0 + 1);
   expect(s.players.opponent.deck.length).toBe(deck0 - 1);
 
-  // Smith Miner killed: no draw
+  // Smith Miner killed: no draw (Round 12c: Arcsmith; Scrapsmith's own text now draws, AC290)
   s = await newMatch(page, quiet({ playerDeck: SHARDS, opponentDeck: SHARDS, board: [
     { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 5 },
-    { cardId: 'goblin-smith-miner', owner: 'opponent', row: 4, col: 5 },
+    { cardId: 'gnome-smith-miner', owner: 'opponent', row: 4, col: 5 },
   ] }));
   await done(page);
   s = await getState(page);
@@ -7946,7 +7948,7 @@ test('AC253: several Crystal cards in one turn, in Deploy and Action, never endi
 test('AC254: Tunnel from turn 1 — drag-and-drop next to a mine works and the AI uses the same rule', async ({ page }) => {
   let s = await start(page, quiet({ playerHand: ['goblin-scrounger'], playerCrystals: 5 }));
   await page.waitForTimeout(1000);
-  await expect(page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Grubgrabber Miner', exact: true })).toContainText('Tunnel!');
+  await expect(page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Goblin Miner', exact: true })).toContainText('Tunnel!');
   const card = await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox();
   const t = await sq2s(page, 5, 5); // next to M2 (4,4) and M3 (4,6)
   await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08);
@@ -8317,13 +8319,13 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1568, height: 782 }]) 
   test.describe(`round 12a drag-to-play at ${vp.width}x${vp.height}`, () => {
     test.use({ viewport: vp });
 
-    test(`AC269: dragging Grubgrabber Miner from the raised hand onto a legal home-row square summons it (${vp.width}x${vp.height})`, async ({ page }) => {
+    test(`AC269: dragging Goblin Miner from the raised hand onto a legal home-row square summons it (${vp.width}x${vp.height})`, async ({ page }) => {
       let s = await start(page, quiet({ playerHand: MINER_HAND, playerCrystals: 9 }));
       await page.waitForTimeout(800);
       const uid = handUid(s, 'player', 'goblin-scrounger');
       const spot = (await legal(page)).find((a) => a.type === 'summon' && a.uid === uid && a.row === 7 && !at(s, a.row, a.col));
       expect(spot, 'a legal home-row summon').toBeTruthy();
-      const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Grubgrabber Miner', exact: true });
+      const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Goblin Miner', exact: true });
       const p = await raiseHandAt(page, card);
       const t = await sq2s(page, spot.row, spot.col);
       await page.mouse.down();
@@ -8424,10 +8426,10 @@ test.describe('round 12a at 1920x1080', () => {
     }
     // Deck Builder close-up
     await openDecks(page);
-    for (const name of ['Grubgrabber Miner', 'Boneknocker', 'Shiv Rat', 'Scrapsmith Miner']) {
+    for (const name of ['Goblin Miner', 'Boneknocker', 'Shiv Rat', 'Scrapsmith Miner']) {
       const tile = allCards(page).getByRole('button', { name, exact: true });
       await tile.scrollIntoViewIfNeeded();
-      const id = { 'Grubgrabber Miner': 'goblin-scrounger', 'Boneknocker': 'goblin-pebbler', 'Shiv Rat': 'shiv-rat', 'Scrapsmith Miner': 'goblin-smith-miner' }[name];
+      const id = { 'Goblin Miner': 'goblin-scrounger', 'Boneknocker': 'goblin-pebbler', 'Shiv Rat': 'shiv-rat', 'Scrapsmith Miner': 'goblin-smith-miner' }[name];
       await expect(tile.locator(`img[src*="${OWNER_CARD_ART[id]}"]`).first()).toHaveCount(1);
       await tile.click();
       const view = page.getByRole('dialog', { name });
@@ -8451,7 +8453,7 @@ test.describe('round 12a at 1920x1080', () => {
     const shot = async (n) => testInfo.attach(n, { body: await page.screenshot(), contentType: 'image/png' });
     await start(page, quiet({ playerHand: [...Object.keys(OWNER_CARD_ART), 'fireball'], playerCrystals: 9 }));
     await page.waitForTimeout(800);
-    const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Grubgrabber Miner', exact: true });
+    const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Goblin Miner', exact: true });
     const p = await raiseHandAt(page, card);
     await shot('r12a-hand-raised');
     const t = await sq2s(page, 7, 6);
@@ -8462,7 +8464,7 @@ test.describe('round 12a at 1920x1080', () => {
     await page.mouse.move(p.x, 1076, { steps: 8 });
     await page.mouse.up();
     await openDecks(page);
-    for (const name of ['Grubgrabber Miner', 'Boneknocker', 'Shiv Rat', 'Scrapsmith Miner']) {
+    for (const name of ['Goblin Miner', 'Boneknocker', 'Shiv Rat', 'Scrapsmith Miner']) {
       await allCards(page).getByRole('button', { name, exact: true }).click();
       await expect(page.getByRole('dialog', { name })).toBeVisible();
       await page.waitForTimeout(300);
@@ -8529,7 +8531,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1568, height: 782 }, {
 
 // ---------- Round 12b-1: Goblin 3D models from the owner's sheets ----------
 const R12B_MODELS = {
-  'goblin-scrounger': { name: 'Grubgrabber Miner', parts: ['backpack', 'lantern', 'helmetLamp', 'pickaxe'], anims: ['idle', 'walk', 'attack', 'mine'], miner: true },
+  'goblin-scrounger': { name: 'Goblin Miner', parts: ['backpack', 'lantern', 'helmetLamp', 'pickaxe'], anims: ['idle', 'walk', 'attack', 'mine'], miner: true },
   'goblin-pebbler': { name: 'Boneknocker', parts: ['club'], anims: ['idle', 'walk', 'attack'], miner: false },
   'shiv-rat': { name: 'Shiv Rat', parts: ['dagger'], anims: ['idle', 'walk', 'attack'], miner: false },
   'goblin-smith-miner': { name: 'Scrapsmith Miner', parts: ['apron', 'scarf', 'helmetLamp', 'backpack', 'pickaxe', 'hammer'], anims: ['idle', 'walk', 'attack', 'mine'], miner: true },
@@ -8606,9 +8608,9 @@ for (const [cardId, spec] of Object.entries(R12B_MODELS)) {
   });
 }
 
-test('AC277: Grubgrabber Miner plays its mine and walk animations', async ({ page, request }) => {
+test('AC277: Goblin Miner plays its mine and walk animations', async ({ page, request }) => {
   const m = await creatureModels(request);
-  test.skip(!m || !m['goblin-scrounger'], 'Grubgrabber Miner model not delivered');
+  test.skip(!m || !m['goblin-scrounger'], 'Goblin Miner model not delivered');
   // two Miners: one next to the mine at row 4 col 2, one free to walk
   await start(page, quiet({ board: [
     { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 2 },
@@ -8744,4 +8746,358 @@ test.describe('round 12b-1 screenshots at 1920x1080', () => {
     await shot('r12b-viewer-grubnak');
     expect(errors).toEqual([]);
   });
+});
+
+// ---------- Round 12c: every card does what its text says ----------
+// opponent = Sproingle (no Borgo +1 Health), faction lock off, owner mines on row 4 (cols 2, 4, 6)
+const q12 = (extra, more = {}) => ({ ai: false, playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, ...more, setup: { opponentHand: [], playerDeck: SHARDS, opponentDeck: SHARDS, ...extra } });
+const P = (cardId, row, col, x = {}) => ({ cardId, owner: 'player', row, col, ...x });
+const O = (cardId, row, col, x = {}) => ({ cardId, owner: 'opponent', row, col, ...x });
+const ability = (page, s, row, col, name, x = {}) => act(page, { type: 'ability', creatureUid: at(s, row, col).uid, ability: name, ...x });
+const toAction = async (page) => { await done(page); return getState(page); };
+const canAttack = (acts, uid, row, col) => acts.some((a) => a.type === 'attack' && a.creatureUid === uid && sameTarget(a.target, row, col));
+
+test('AC284: card data carries artPos framing (default 1/0/0) and the owner text', async ({ page }) => {
+  await openTest(page);
+  const cards = await page.evaluate(async () => await window.oreheart.listCards());
+  for (const c of cards) {
+    expect(c.artPos, c.id).toBeTruthy();
+    for (const k of ['s', 'x', 'y']) expect(typeof c.artPos[k], `${c.id}.${k}`).toBe('number');
+  }
+  const pick = (id) => cards.find((c) => c.id === id);
+  expect(pick('goblin-scrounger').name).toBe('Goblin Miner');
+  expect(pick('dwarf-miner').name).toBe('Riot Shield Bearer');
+  expect(pick('goblin-slinger').text).toContain('Hits up to 6 spaces away');
+  expect(pick('meteor-strike').text).toContain('4 damage to everything in a 3×3 area');
+});
+
+test('AC285: Betty Fizzlebottom is archived: not on Choose Your Commander and not in any starter deck', async ({ page }) => {
+  await toSelect(page);
+  await expect(page.getByText(/Betty/)).toHaveCount(0);
+  await openTest(page);
+  const decks = await page.evaluate(async () => await window.oreheart.listStarterDecks());
+  for (const d of decks) expect(d.commanderId ?? d.commander ?? '', d.id).not.toBe('sprocket');
+  expect(decks.length).toBe(9);
+});
+
+test('AC286: per-card Ranged ranges: Skullflinger 6, Gyronaut 2, Gunner 7, Hexslinger any distance but not through allies', async ({ page }) => {
+  // same row (row 5), shooting left from column 13: a target exactly `range` away is hittable, one further is not
+  for (const [id, range] of [['goblin-slinger', 6], ['gyrocopter-ace', 2], ['deepforge-crossbowman', 7], ['spark-gnome', 5], ['axe-thrower', 5]]) {
+    await start(page, q12({ board: [P(id, 5, 13), O('dwarf-pickman', 5, 13 - range)] }));
+    let s = await toAction(page);
+    expect(canAttack(await legal(page), at(s, 5, 13).uid, 5, 13 - range), `${id} hits ${range} away`).toBe(true);
+    await newMatch(page, q12({ board: [P(id, 5, 13), O('dwarf-pickman', 5, 12 - range)] }));
+    s = await toAction(page);
+    expect(canAttack(await legal(page), at(s, 5, 13).uid, 5, 12 - range), `${id} misses ${range + 1} away`).toBe(false);
+    expect((await page.evaluate(async (x) => await window.oreheart.getCard(x), id)).range, id).toBe(range);
+  }
+  // Hexslinger Apprentice: any distance in a straight line, but not through an ally
+  await newMatch(page, q12({ board: [P('hexwright-apprentice', 7, 13), O('dwarf-pickman', 1, 7)] })); // diagonal, 6 away
+  let s = await toAction(page);
+  expect(canAttack(await legal(page), at(s, 7, 13).uid, 1, 7)).toBe(true);
+  await newMatch(page, q12({ board: [P('hexwright-apprentice', 7, 13), P('goblin-bomber', 4, 10), O('dwarf-pickman', 1, 7)] }));
+  s = await toAction(page);
+  expect(canAttack(await legal(page), at(s, 7, 13).uid, 1, 7)).toBe(false);
+});
+
+test('AC287: Starfall Cataclysm deals exactly 4 to everything in a 3x3 area', async ({ page }) => {
+  let s = await start(page, q12({ playerHand: ['meteor-strike'], playerCrystals: 6,
+    board: [O('dwarf-pickman', 2, 9), O('dwarf-pickman', 3, 10), O('dwarf-pickman', 3, 12)] }));
+  const before = { a: at(s, 2, 9).health, b: at(s, 3, 10).health, c: at(s, 3, 12).health };
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'meteor-strike'), target: { row: 2, col: 10 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 2, 9).health).toBe(before.a - 4);
+  expect(at(s, 3, 10).health).toBe(before.b - 4);
+  expect(at(s, 3, 12).health).toBe(before.c); // outside the 3x3
+  expect(s.players.player.crystals).toBe(0);
+});
+
+test('AC288: Venom Shiv: 1 damage at the start of each of the target\'s next 7 turns, and no healing meanwhile', async ({ page }) => {
+  let s = await start(page, q12({ playerHand: ['venom-shiv'], playerCrystals: 2, board: [O('dwarf-pickman', 2, 9, { damage: 2 })] }));
+  const hp = at(s, 2, 9).health;
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'venom-shiv'), target: { row: 2, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 2, 9).poison).toBe(7);
+  await passTurn(page); // opponent's turn 1 starts: no heal, 1 poison
+  s = await getState(page);
+  expect(at(s, 2, 9).health).toBe(hp - 1);
+  expect(at(s, 2, 9).poison).toBe(6);
+  await passTurn(page); await passTurn(page); // opponent's next turn
+  s = await getState(page);
+  expect(at(s, 2, 9).health).toBe(hp - 2);
+});
+
+test('AC289: SewerSlide Bomber pays 1, runs in a line until it hits something, then Ka-booms', async ({ page }) => {
+  let s = await start(page, q12({ playerCrystals: 3, board: [P('blastrat-sapper', 6, 9), O('dwarf-pickman', 2, 9)] }));
+  const hp = at(s, 2, 9).health;
+  s = await toAction(page);
+  expect((await ability(page, s, 6, 9, 'run', { target: { row: 5, col: 9 } })).ok).toBe(true); // direction: up
+  s = await getState(page);
+  expect(s.board.creatures.some((c) => c.cardId === 'blastrat-sapper')).toBe(false);
+  expect(at(s, 2, 9).health).toBe(hp - 1);
+  expect(s.players.player.crystals).toBe(2);
+});
+
+test('AC290: Scrapsmith Miner draws a card when it dies (its own text)', async ({ page }) => {
+  let s = await start(page, q12({ board: [P('goblin-sneak', 5, 9), O('goblin-smith-miner', 4, 9)] }));
+  s = await toAction(page);
+  const hand0 = s.players.opponent.hand.length;
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 9).uid, target: { row: 4, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 9)).toBeFalsy();
+  expect(s.players.opponent.hand.length).toBe(hand0 + 1);
+});
+
+test('AC291: Bare Knuckle Lunatic knocks every adjacent unit back 1 when defeated', async ({ page }) => {
+  let s = await start(page, q12({ board: [P('goblin-sneak', 5, 9), O('goblin-bomber', 4, 9), O('dwarf-pickman', 3, 9), O('dwarf-pickman', 4, 10)] }));
+  s = await toAction(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 9).uid, target: { row: 4, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.board.creatures.some((c) => c.cardId === 'goblin-bomber')).toBe(false);
+  expect(at(s, 6, 9) && at(s, 6, 9).cardId).toBe('goblin-sneak');
+  expect(at(s, 2, 9) && at(s, 2, 9).cardId).toBe('dwarf-pickman');
+  expect(at(s, 4, 11) && at(s, 4, 11).cardId).toBe('dwarf-pickman');
+});
+
+test('AC292: Backstabbing Thief steals 1 crystal for each enemy it defeats', async ({ page }) => {
+  let s = await start(page, q12({ playerCrystals: 0, opponentCrystals: 3, board: [P('goblin-sneak', 5, 9), O('goblin-scrounger', 4, 9)] }));
+  s = await toAction(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 9).uid, target: { row: 4, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.crystals).toBe(1);
+  expect(s.players.opponent.crystals).toBe(2);
+});
+
+test('AC293: Bowler Brawler Strike (2) knocks creatures in its line back 1-2 spaces', async ({ page }) => {
+  let s = await start(page, q12({ playerCrystals: 2, board: [P('goblin-scrapper', 6, 9), O('dwarf-pickman', 4, 9)] }));
+  s = await toAction(page);
+  expect((await ability(page, s, 6, 9, 'strike', { target: { row: 5, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  const p = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman');
+  expect(p.col).toBe(9);
+  expect([2, 3]).toContain(p.row);
+  expect(at(s, 6, 9).cardId).toBe('goblin-scrapper');
+  expect(s.players.player.crystals).toBe(0);
+});
+
+test('AC294: Junk Shaman pays 2 to move any character within 5 to a space within 5 of it', async ({ page }) => {
+  let s = await start(page, q12({ playerCrystals: 4, board: [P('junk-shaman', 6, 9), O('dwarf-pickman', 2, 9)] }));
+  s = await toAction(page);
+  expect((await ability(page, s, 6, 9, 'pickUp', { target: { row: 2, col: 9 }, to: { row: 7, col: 13 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 7, 13) && at(s, 7, 13).cardId).toBe('dwarf-pickman');
+  expect(s.players.player.crystals).toBe(2);
+  // 6 away: not allowed
+  s = await newMatch(page, q12({ playerCrystals: 4, board: [P('junk-shaman', 7, 9), O('dwarf-pickman', 1, 9)] }));
+  s = await toAction(page);
+  expect((await ability(page, s, 7, 9, 'pickUp', { target: { row: 1, col: 9 }, to: { row: 7, col: 10 } })).ok).toBe(false);
+});
+
+test('AC295: Goblin Chef Smack knocks its target back 2 and is not Ranged', async ({ page }) => {
+  let s = await start(page, q12({ board: [P('rotgut-grenadier', 5, 9), O('dwarf-pickman', 4, 9), O('dwarf-pickman', 3, 11)] }));
+  s = await toAction(page);
+  const uid = at(s, 5, 9).uid;
+  expect(canAttack(await legal(page), uid, 3, 11)).toBe(false);
+  expect((await act(page, { type: 'attack', creatureUid: uid, target: { row: 4, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 2, 9) && at(s, 2, 9).cardId).toBe('dwarf-pickman');
+});
+
+test('AC296: Goblin Rocket Rider rides to any space, explodes 3x3 for its Attack, then attacks once; it stays a Gatherer', async ({ page }) => {
+  let s = await start(page, q12({ board: [P('shard-guzzler', 7, 9), O('dwarf-pickman', 3, 9), O('dwarf-pickman', 3, 10), O('dwarf-pickman', 1, 9)] }));
+  const hp = at(s, 3, 9).health, far = at(s, 1, 9).health;
+  s = await toAction(page);
+  expect((await ability(page, s, 7, 9, 'rocketRide', { target: { row: 4, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 9).cardId).toBe('shard-guzzler');
+  expect(at(s, 3, 9).health).toBe(hp - 1);
+  expect(at(s, 3, 10).health).toBe(hp - 1);
+  expect(at(s, 1, 9).health).toBe(far);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 4, 9).uid, target: { row: 3, col: 9 } })).ok).toBe(true);
+  expect((await page.evaluate(async () => await window.oreheart.getCard('shard-guzzler'))).role).toBe('gatherer');
+});
+
+test('AC297: Rat-Tunnel Ambush moves a creature next to a mine and it can still attack', async ({ page }) => {
+  let s = await start(page, q12({ playerHand: ['tunnel-rush'], playerCrystals: 2, board: [P('dwarf-pickman', 7, 11), O('goblin-scrounger', 4, 7)] }));
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'tunnel-rush'), target: { row: 7, col: 11 }, to: { row: 5, col: 7 } })).ok).toBe(true);
+  s = await toAction(page);
+  expect(at(s, 5, 7) && at(s, 5, 7).cardId).toBe('dwarf-pickman');
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 7).uid, target: { row: 4, col: 7 } })).ok).toBe(true);
+});
+
+test('AC298: Voldawright Shockwave (1): adjacent enemies take 1 and are knocked back 1', async ({ page }) => {
+  let s = await start(page, q12({ playerCrystals: 1, board: [P('gnome-cogger', 4, 9), O('dwarf-pickman', 3, 9), O('dwarf-pickman', 4, 10)] }));
+  const hp = at(s, 3, 9).health;
+  s = await toAction(page);
+  expect((await ability(page, s, 4, 9, 'shockwave')).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 2, 9).health).toBe(hp - 1);
+  expect(at(s, 4, 11).health).toBe(hp - 1);
+  expect(s.players.player.crystals).toBe(0);
+});
+
+test('AC299: Glyphshield Warden gets Shield 1 each turn; Ward (2, once per turn) stops all damage to an ally for a round', async ({ page }) => {
+  let s = await start(page, q12({ playerBank: 4, board: [P('glyphshield-warden', 6, 9), P('dwarf-pickman', 5, 9), O('goblin-scrapper', 4, 9)] }));
+  await passTurn(page); await passTurn(page); // the player's turn 2 begins
+  s = await getState(page);
+  expect(at(s, 6, 9).shield).toBe(1);
+  const hp = at(s, 5, 9).health;
+  expect((await ability(page, s, 6, 9, 'ward', { target: { row: 5, col: 9 } })).ok).toBe(true);
+  expect((await ability(page, s, 6, 9, 'ward', { target: { row: 5, col: 9 } })).ok).toBe(false); // once per turn
+  s = await getState(page);
+  expect(s.players.player.bank).toBe(2);
+  const warded = at(s, 5, 9).uid;
+  s = await toAction(page);
+  expect((await legal(page)).some((a) => a.type === 'attack' && a.creatureUid === warded)).toBe(false); // can't attack while warded
+  await done(page); await done(page); // opponent's turn, Deploy -> Action
+  s = await getState(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 4, 9).uid, target: { row: 5, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 5, 9).health).toBe(hp);
+});
+
+test('AC300: Gnome Plow (2) moves in a straight line and knocks creatures in its path aside 1-2 spaces', async ({ page }) => {
+  let s = await start(page, q12({ playerCrystals: 2, board: [P('phase-stalker', 7, 9), O('dwarf-pickman', 5, 9)] }));
+  s = await toAction(page);
+  expect((await ability(page, s, 7, 9, 'plow', { target: { row: 3, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 3, 9) && at(s, 3, 9).cardId).toBe('phase-stalker');
+  const p = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman');
+  expect(p.row).toBe(5);
+  expect([1, 2]).toContain(Math.abs(p.col - 9));
+  expect((await ability(page, s, 3, 9, 'plow', { target: { row: 1, col: 11 } })).ok).toBe(false); // used / diagonal
+});
+
+test('AC301: Unweave cancels any enemy spell; Snuff Out only spells costing 3 or less', async ({ page }) => {
+  const base = { firstPlayer: 'opponent', opponentHand: ['meteor-strike'], opponentCrystals: 6, board: [P('dwarf-pickman', 6, 9)] };
+  let s = await start(page, q12({ ...base, playerHand: ['fizzle'], playerCrystals: 3 }));
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'opponent', 'meteor-strike'), target: { row: 6, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.pendingResponse).toBeFalsy(); // Snuff Out can't cancel a 6-cost spell, so no window opens
+  s = await newMatch(page, q12({ ...base, playerHand: ['spell-snap'], playerCrystals: 5 }));
+  const hp = at(s, 6, 9).health;
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'opponent', 'meteor-strike'), target: { row: 6, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.pendingResponse && s.pendingResponse.responder).toBe('player');
+  expect((await act(page, { type: 'respond', uid: handUid(s, 'player', 'spell-snap') })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 6, 9).health).toBe(hp);
+});
+
+test('AC302: Riot Shield Bearer can\'t move or attack and can\'t die for its first 3 turns', async ({ page }) => {
+  let s = await start(page, q12({ playerHand: ['dwarf-miner'], playerCrystals: 2, board: [O('ram-rider', 6, 9)] }, { playerCommander: 'borgo' }));
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'dwarf-miner'), row: 7, col: 9 })).ok).toBe(true);
+  await passTurn(page);
+  // opponent's Ram Rider (4 Attack) hits it twice over two turns: it never drops below 1
+  for (let i = 0; i < 2; i++) {
+    s = await toAction(page);
+    await act(page, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 7, col: 9 } });
+    s = await getState(page);
+    expect(at(s, 7, 9) && at(s, 7, 9).cardId).toBe('dwarf-miner');
+    expect(at(s, 7, 9).health).toBeGreaterThanOrEqual(1);
+    await done(page); // end opponent's Action
+    s = await toAction(page);
+    const mine = at(s, 7, 9).uid;
+    expect((await legal(page)).some((a) => (a.type === 'move' || a.type === 'attack') && a.creatureUid === mine)).toBe(false);
+    await done(page);
+  }
+});
+
+test('AC303: Queen Brunhilda takes at most 3 from a hit; Bloodbeard Grit +1 Attack after surviving', async ({ page }) => {
+  let s = await start(page, q12({ board: [P('the-great-steam-golem', 5, 9), O('queen-brunhilda-stonebeard', 4, 9)] })); // 5 Attack
+  const q = at(s, 4, 9).health;
+  s = await toAction(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 9).uid, target: { row: 4, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 9).health).toBe(q - 3);
+  s = await newMatch(page, q12({ board: [P('goblin-scrounger', 5, 9), O('ironhammer-berserker', 4, 9)] }));
+  const atk = at(s, 4, 9).attack;
+  s = await toAction(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 9).uid, target: { row: 4, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 4, 9).attack).toBe(atk + 1);
+});
+
+test('AC304: Gemdrunk Deepdelver gets +1 Attack per banked crystal; Grudge Hurler roots its target', async ({ page }) => {
+  let s = await start(page, q12({ playerBank: 3, board: [P('crystal-drunk-delver', 6, 9)] }));
+  const base = (await page.evaluate(async () => await window.oreheart.getCard('crystal-drunk-delver'))).attack;
+  expect(at(s, 6, 9).attack).toBe(base + 3);
+  s = await newMatch(page, q12({ board: [P('axe-thrower', 6, 9), O('dwarf-pickman', 2, 9)] }));
+  s = await toAction(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 2, col: 9 } })).ok).toBe(true);
+  await done(page); await done(page); // opponent's turn, Deploy -> Action
+  s = await getState(page);
+  const uid = at(s, 2, 9).uid;
+  expect((await legal(page)).some((a) => a.type === 'move' && a.creatureUid === uid)).toBe(false);
+});
+
+test('AC305: Ram Rider pays 2 to move any distance; Oathbound Overwatch attacks at any distance; Barrelback acts at once', async ({ page }) => {
+  let s = await start(page, q12({ playerCrystals: 2, board: [P('ram-rider', 7, 9), P('oathbound-pikeman', 7, 11), O('dwarf-pickman', 1, 3)] }));
+  s = await toAction(page);
+  expect((await ability(page, s, 7, 9, 'gallop', { target: { row: 2, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 2, 9) && at(s, 2, 9).cardId).toBe('ram-rider');
+  expect(s.players.player.crystals).toBe(0);
+  expect(canAttack(await legal(page), at(s, 7, 11).uid, 1, 3)).toBe(true);
+  s = await newMatch(page, q12({ playerHand: ['barrelback-courier'], playerCrystals: 5 }));
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'barrelback-courier'), row: 7, col: 9 })).ok).toBe(true);
+  s = await toAction(page);
+  expect((await legal(page)).some((a) => a.type === 'move' && a.creatureUid === at(s, 7, 9).uid)).toBe(true);
+});
+
+test('AC306: Ironclad Bulwark makes the next hit do 0; Field Bandage heals to full; Emergency Rations heals the Commander 4', async ({ page }) => {
+  let s = await start(page, q12({ playerHand: ['shield-bubble', 'healing-light', 'second-wind'], playerCrystals: 9, playerHealth: 10,
+    board: [P('dwarf-pickman', 5, 9, { damage: 3 }), O('goblin-scrapper', 4, 9)] }));
+  const full = at(s, 5, 9).maxHealth;
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'healing-light'), target: { row: 5, col: 9 } })).ok).toBe(true);
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'second-wind'), target: { commander: 'player' } })).ok).toBe(true);
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'shield-bubble'), target: { row: 5, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 5, 9).health).toBe(full);
+  expect(s.players.player.health).toBe(14);
+  await passTurn(page); await done(page);
+  s = await getState(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 4, 9).uid, target: { row: 5, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 5, 9).health).toBe(full);
+});
+
+test('AC307: Crystal cards: Soul Shard +1, Soul Cluster +2, Heart +4, Motherlode +3 and next creature 2 cheaper, Geode +1 Flow each turn', async ({ page }) => {
+  let s = await start(page, q12({ playerHand: ['soul-shard', 'crystal-cluster', 'heart-of-the-fallen', 'motherlode', 'glowing-geode', 'goblin-bomber'] }));
+  for (const id of ['soul-shard', 'crystal-cluster', 'heart-of-the-fallen', 'motherlode']) expect((await act(page, { type: 'playCrystal', uid: handUid(s, 'player', id) })).ok, id).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.bank).toBe(10);
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-bomber'), row: 7, col: 9 })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.bank).toBe(10 - 1); // Bare Knuckle Lunatic costs 3, 2 less = 1
+  expect((await act(page, { type: 'playCrystal', uid: handUid(s, 'player', 'glowing-geode') })).ok).toBe(true);
+  await passTurn(page); await passTurn(page);
+  s = await getState(page);
+  expect(s.players.player.crystals).toBe(1);
+});
+
+test('AC308: Desperate Plunder gives +3 Flow each turn while the opponent has more Flow, and stops once you have more', async ({ page }) => {
+  let s = await start(page, q12({ playerHand: ['prospectors-prayer'], opponentCrystals: 0,
+    board: [O('goblin-scrounger', 3, 4, { minedMine: { row: 4, col: 4 } }), O('goblin-scrounger', 3, 6, { minedMine: { row: 4, col: 6 } })] }));
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'prospectors-prayer') })).ok).toBe(true);
+  await passTurn(page); await passTurn(page);
+  s = await getState(page);
+  expect(s.players.player.crystals).toBe(3);
+});
+
+test('AC309: every Round 12c card reports its ability as built, and close-ups show the owner text', async ({ page }) => {
+  await openTest(page);
+  const status = await page.evaluate(async () => await window.oreheart.getAbilityStatus());
+  const ids = ['blastrat-sapper', 'goblin-bomber', 'goblin-scrapper', 'goblin-sneak', 'junk-shaman', 'rotgut-grenadier', 'shard-guzzler', 'hold-it', 'tunnel-rush',
+    'gearward-sentinel', 'glyphshield-warden', 'gnome-cogger', 'gnome-illusionist', 'gnome-widget', 'phase-stalker', 'overclocked-conduit', 'runic-siphoner', 'spell-snap',
+    'dwarf-miner', 'shieldbeard', 'axe-thrower', 'ironhammer-berserker', 'brewmaster', 'ram-rider', 'queen-brunhilda-stonebeard', 'crystal-drunk-delver', 'dwarf-pickman',
+    'dwarf-stoneback', 'oathbound-pikeman', 'barrelback-courier', 'rune-splitter', 'grimhold-ravager', 'battle-cry', 'shield-bubble', 'second-wind',
+    'fizzle', 'healing-light', 'prospectors-prayer', 'soul-shard', 'crystal-cluster', 'heart-of-the-fallen', 'motherlode', 'glowing-geode',
+    'goblin-slinger', 'spark-gnome', 'gyrocopter-ace', 'deepforge-crossbowman', 'hexwright-apprentice', 'meteor-strike', 'venom-shiv'];
+  for (const id of ids) expect(status[id], id).toBe('done');
+  for (const id of ['goblin-scrapper', 'shieldbeard', 'motherlode']) {
+    const c = await page.evaluate(async (x) => await window.oreheart.getCard(x), id);
+    expect(c.longText.length, id).toBeGreaterThan(c.text.length - 1);
+    expect(c.longText, id).toContain('Example:');
+  }
 });
