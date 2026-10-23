@@ -1,6 +1,6 @@
 # Automated check results
 
-281 of 394 checks passed after 3 build round(s).
+276 of 400 checks passed after 3 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -102,6 +102,7 @@
 - ✅ round 12a hand layout at 1568x782 › AC272: the raised hand never covers the board, is an even fan fully on screen, hovered card bigger (1568x782)
 - ✅ round 12a hand layout at 1366x768 › AC272: the raised hand never covers the board, is an even fan fully on screen, hovered card bigger (1366x768)
 - ❌ round 12b-1 screenshots at 1920x1080 › AC283: new models on the board, in the 3D viewer and Grubnak on his throne render without errors
+- ❌ round 12d screenshots (1920x1080) › AC315: hand, close-up, Deck Builder, Choose Your Commander and reference cards render without errors
 - ✅ AC1: main menu has exactly Play, Deck Builder, How to Play, Settings, Quit and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ❌ AC2: menu -> choose Commander -> mulligan -> match
@@ -232,7 +233,7 @@
 - ✅ AC88: volume sliders and the match mute button are remembered
 - ✅ AC89: Low graphics turns off bloom, shadows and particles and uses fewer draw calls
 - ❌ AC90: the built dist folder stays under 40 MB
-- ✅ AC91: card faces use the faction frame, stat slots, type icon and rarity colors
+- ❌ AC91: card faces use the faction frame, stat slots, type icon and rarity colors
 - ❌ AC92: every card has short and long text; Full explanation shows the long text
 - ✅ AC93: the cut-out deck image is used on every deck pile outside the match
 - ❌ AC94: Commander select shows borderless full-art Commander cards without stats
@@ -256,9 +257,9 @@
 - ✅ AC114: the computer plays the Warband style to the end of a match
 - ✅ AC114: the computer plays the Arcane Hoard style to the end of a match
 - ✅ AC114: the computer plays the Horde style to the end of a match
-- ✅ AC118: card numbers sit centered inside their slots in 3D gold
-- ✅ AC119: the rarity crystal is a small art crystal with the rarity word centered below
-- ✅ AC120: card names and text boxes use one size, gold lettering, thin text
+- ❌ AC118: card numbers sit centered inside their slots in 3D gold
+- ❌ AC119: the rarity crystal is a small art crystal with the rarity word centered below
+- ❌ AC120: card names and text boxes use one size, gold lettering, thin text
 - ✅ AC121: Deck Builder deck art has no frame; painted background
 - ✅ AC122: one ornate control style everywhere: no default browser controls or scrollbars
 - ✅ AC124: every spell has its own visual, played step by step
@@ -267,7 +268,7 @@
 - ❌ AC129: faction spells — names, factions, deck validation and the casting lock
 - ✅ AC130: Deck Commander locks other factions’ spells in the Deck Builder
 - ❌ AC131: Venom Shiv poisons for exactly 3 of the owner’s turns, then the creature heals; Hex Reversal is disabled
-- ✅ AC132: spell frames per faction with the cost and type orbs
+- ❌ AC132: spell frames per faction with the cost and type orbs
 - ✅ AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textured letters
 - ❌ AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulligan, hand) at several window sizes
 - ✅ AC137: menu buttons are plain gold text with a hover glow, no boxes or borders
@@ -280,7 +281,7 @@
 - ✅ AC144: starter decks can be removed (in-game confirm) and restored; at least one deck always remains
 - ✅ AC145: Copy to my decks makes an editable saved copy and leaves the starter deck unchanged; my decks can be removed
 - ❌ AC146: Choose Your Commander: big glowing Commander cards that stand out, big decks and text, filling the screen
-- ✅ AC147: spell cards use the owner's real spell frames per faction
+- ❌ AC147: spell cards use the owner's real spell frames per faction
 - ✅ AC149: the cover-fit painted view keeps both Commanders whole at every window shape (Round 8a)
 - ✅ AC150: no black bars at any window shape
 - ✅ AC152: Flow and bank numbers sit on both crystals with name, Flow and Next beside them
@@ -396,6 +397,11 @@
 - ❌ AC307: Crystal cards: Soul Shard +1, Soul Cluster +2, Heart +4, Motherlode +3 and next creature 2 cheaper, Geode +1 Flow each turn
 - ✅ AC308: Desperate Plunder gives +3 Flow each turn while the opponent has more Flow, and stops once you have more
 - ❌ AC309: every Round 12c card reports its ability as built, and close-ups show the owner text
+- ❌ AC310: the game loads the owner card format and renders every layout at 420:624
+- ❌ AC311: every card face uses the new renderer, and the old frames are gone
+- ❌ AC312: the 8 reference cards render at 420x624 with their name and cost, and text fits
+- ❌ AC313: a card's artPos is honored in the art layer
+- ✅ AC314: the three card-format fonts are bundled locally and loaded
 
 ## Failures
 
@@ -549,39 +555,39 @@ Call log:
   - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true })
 
 
-  5226 |       await page.waitForTimeout(500);
-  5227 |       await testInfo.attach(`menu-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
-> 5228 |       await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true }).hover();
+  5228 |       await page.waitForTimeout(500);
+  5229 |       await testInfo.attach(`menu-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+> 5230 |       await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true }).hover();
        |                                                                                                                           ^
-  5229 |       await page.waitForTimeout(600);
-  5230 |       await testInfo.attach(`hand-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
-  5231 |       expect(errors).toEqual([]);
+  5231 |       await page.waitForTimeout(600);
+  5232 |       await testInfo.attach(`hand-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+  5233 |       expect(errors).toEqual([]);
 ✗ round 5b screenshots (2560x1080) › AC160: match, Menu popped out and hand popped out render without errors (2560x1080)
 TimeoutError: locator.hover: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true })
 
 
-  5226 |       await page.waitForTimeout(500);
-  5227 |       await testInfo.attach(`menu-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
-> 5228 |       await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true }).hover();
+  5228 |       await page.waitForTimeout(500);
+  5229 |       await testInfo.attach(`menu-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+> 5230 |       await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true }).hover();
        |                                                                                                                           ^
-  5229 |       await page.waitForTimeout(600);
-  5230 |       await testInfo.attach(`hand-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
-  5231 |       expect(errors).toEqual([]);
+  5231 |       await page.waitForTimeout(600);
+  5232 |       await testInfo.attach(`hand-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+  5233 |       expect(errors).toEqual([]);
 ✗ round 5b screenshots (844x390) › AC160: match, Menu popped out and hand popped out render without errors (844x390)
 TimeoutError: locator.hover: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true })
 
 
-  5226 |       await page.waitForTimeout(500);
-  5227 |       await testInfo.attach(`menu-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
-> 5228 |       await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true }).hover();
+  5228 |       await page.waitForTimeout(500);
+  5229 |       await testInfo.attach(`menu-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+> 5230 |       await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true }).hover();
        |                                                                                                                           ^
-  5229 |       await page.waitForTimeout(600);
-  5230 |       await testInfo.attach(`hand-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
-  5231 |       expect(errors).toEqual([]);
+  5231 |       await page.waitForTimeout(600);
+  5232 |       await testInfo.attach(`hand-open-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+  5233 |       expect(errors).toEqual([]);
 ✗ round 6a match layout 1920x1080 › AC164: the hovered card rises to 48-60% of the height on the top layer (1920x1080)
 Error: expect(received).toBeGreaterThanOrEqual(expected)
 
@@ -591,9 +597,9 @@ Received:    0.3316089206271701
 Call Log:
 - Timeout 7000ms exceeded while waiting on the predicate
 
-  5313 |       const b0 = await card.boundingBox();
-  5314 |       await page.mouse.move(b0.x + b0.width / 2, Math.min(H - 4, b0.y + 10));
-> 5315 |       await expect.poll(async () => (await card.boundingBox()).height / H).toBeGreaterThanOrEqual(0.47);
+  5315 |       const b0 = await card.boundingBox();
+  5316 |       await page.mouse.move(b0.x + b0.width / 2, Math.min(H - 4, b0.y + 10));
+> 5317 |       await expect.poll(async () => (await card.boundingBox()).height / H).toBeGreaterThanOrEqual(0.47);
        |       ^
 ✗ round 6a screenshots (1920x1080) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (1920x1080)
 TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
@@ -601,26 +607,26 @@ Call log:
   - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true })
 
 
-  5628 |       await testInfo.attach(`6a-match-rest-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
-  5629 |       const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true });
-> 5630 |       const b = await card.boundingBox();
+  5630 |       await testInfo.attach(`6a-match-rest-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+  5631 |       const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true });
+> 5632 |       const b = await card.boundingBox();
        |                            ^
-  5631 |       await page.mouse.move(b.x + b.width / 2, Math.min(vp.height - 4, b.y + 10));
-  5632 |       await page.waitForTimeout(800);
-  5633 |       await testInfo.attach(`6a-match-popout-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+  5633 |       await page.mouse.move(b.x + b.width / 2, Math.min(vp.height - 4, b.y + 10));
+  5634 |       await page.waitForTimeout(800);
+  5635 |       await testInfo.attach(`6a-match-popout-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
 ✗ round 6a screenshots (844x390) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (844x390)
 TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true })
 
 
-  5628 |       await testInfo.attach(`6a-match-rest-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
-  5629 |       const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true });
-> 5630 |       const b = await card.boundingBox();
+  5630 |       await testInfo.attach(`6a-match-rest-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+  5631 |       const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true });
+> 5632 |       const b = await card.boundingBox();
        |                            ^
-  5631 |       await page.mouse.move(b.x + b.width / 2, Math.min(vp.height - 4, b.y + 10));
-  5632 |       await page.waitForTimeout(800);
-  5633 |       await testInfo.attach(`6a-match-popout-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
+  5633 |       await page.mouse.move(b.x + b.width / 2, Math.min(vp.height - 4, b.y + 10));
+  5634 |       await page.waitForTimeout(800);
+  5635 |       await testInfo.attach(`6a-match-popout-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
 ✗ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
 Error: only card 0 is popped
 
@@ -632,34 +638,34 @@ Received: false
 Call Log:
 - Timeout 4000ms exceeded while waiting on the predicate
 
-  5683 |         expect(pt, `card ${i} can be hovered`).not.toBeNull();
-  5684 |         await page.mouse.move(pt[0], pt[1], { steps: 4 });
+  5685 |         expect(pt, `card ${i} can be hovered`).not.toBeNull();
+  5686 |         await page.mouse.move(pt[0], pt[1], { steps: 4 });
 ✗ round 7 hand (1920x1080) › AC175: hand cards follow the owner layout (31-37% of the height), still tucked halfway (1920x1080)
 Error: expect(received).toBeGreaterThanOrEqual(expected)
 
 Expected: >= 0.36
 Received:    0.284837962962963
 
-  5739 |       for (let i = 0; i < 5; i++) {
-  5740 |         const b = await cards.nth(i).boundingBox();
-> 5741 |         expect(b.height / H).toBeGreaterThanOrEqual(0.36);
+  5741 |       for (let i = 0; i < 5; i++) {
+  5742 |         const b = await cards.nth(i).boundingBox();
+> 5743 |         expect(b.height / H).toBeGreaterThanOrEqual(0.36);
        |                              ^
-  5742 |         expect(b.height / H).toBeLessThanOrEqual(0.46);
-  5743 |         const shown = (H - b.y) / b.height;
-  5744 |         expect(shown).toBeGreaterThanOrEqual(0.18); // Round 10: tucked to a quarter
+  5744 |         expect(b.height / H).toBeLessThanOrEqual(0.46);
+  5745 |         const shown = (H - b.y) / b.height;
+  5746 |         expect(shown).toBeGreaterThanOrEqual(0.18); // Round 10: tucked to a quarter
 ✗ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
 TimeoutError: locator.evaluate: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true })
 
 
-  5648 | const handCards7 = (page) => page.getByLabel('Your hand', { exact: true }).getByRole('button').filter({ has: page.locator('[data-card-id]') });
-  5649 | // a point inside the card's visible part where the card itself receives the pointer
-> 5650 | const hoverPointOf = (card) => card.evaluate((el) => {
+  5650 | const handCards7 = (page) => page.getByLabel('Your hand', { exact: true }).getByRole('button').filter({ has: page.locator('[data-card-id]') });
+  5651 | // a point inside the card's visible part where the card itself receives the pointer
+> 5652 | const hoverPointOf = (card) => card.evaluate((el) => {
        |                                     ^
-  5651 |   const b = el.getBoundingClientRect();
-  5652 |   for (const fy of [0.08, 0.15, 0.25, 0.35, 0.5]) for (const fx of [0.15, 0.3, 0.5, 0.7, 0.85]) {
-  5653 |     const x = b.left + b.width * fx; const y = Math.min(innerHeight - 3, b.top + b.height * fy);
+  5653 |   const b = el.getBoundingClientRect();
+  5654 |   for (const fy of [0.08, 0.15, 0.25, 0.35, 0.5]) for (const fx of [0.15, 0.3, 0.5, 0.7, 0.85]) {
+  5655 |     const x = b.left + b.width * fx; const y = Math.min(innerHeight - 3, b.top + b.height * fy);
 ✗ round 8b stat badges 844x390 › AC202: stat badges are small painted icons with readable numbers
 Error: expect(locator).toHaveText(expected) failed
 
@@ -671,7 +677,7 @@ Timeout: 7000ms
 Call log:
   - Expect "toHaveText" with timeout 7000ms
   - waiting for getByLabel('Mangewolf Rider, row 5, column 6', { exact: true })
-    10 × locator resolved to <div role="img" data-row="5" data-col="6" data-extras="" data-uid="u201" data-poison="0" data-upgrades="0" data-acted="false" data-mining="false" data-damaged="false" class="token f-goblins mine" aria-label="Mangewolf Rider, row 5, column 6" title="Mangewolf Rider: Attack 3, Health 4/4">…</div>
+    11 × locator resolved to <div role="img" data-row="5" data-col="6" data-extras="" data-uid="u201" data-poison="0" data-upgrades="0" data-acted="false" data-mining="false" data-damaged="false" class="token f-goblins mine" aria-label="Mangewolf Rider, row 5, column 6" title="Mangewolf Rider: Attack 3, Health 4/4">…</div>
        - unexpected value "3 4 3"
 ✗ round 8b screenshots 1920x1080 › AC211: Commander screen, close-up viewer and stat badges render without errors (1920x1080)
 TimeoutError: locator.click: Timeout 10000ms exceeded.
@@ -679,141 +685,141 @@ Call log:
   - waiting for getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile', exact: true })
 
 
-  6857 |       await page.waitForTimeout(800);
-  6858 |       await testInfo.attach(`r8b-commander-row-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
-> 6859 |       await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
+  6859 |       await page.waitForTimeout(800);
+  6860 |       await testInfo.attach(`r8b-commander-row-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+> 6861 |       await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
        |                                                                            ^
-  6860 |       await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toBeVisible();
-  6861 |       await page.waitForTimeout(1500);
-  6862 |       await testInfo.attach(`r8b-commander-grubnak-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+  6862 |       await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toBeVisible();
+  6863 |       await page.waitForTimeout(1500);
+  6864 |       await testInfo.attach(`r8b-commander-grubnak-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
 ✗ round 8b screenshots 844x390 › AC211: Commander screen, close-up viewer and stat badges render without errors (844x390)
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile', exact: true })
 
 
-  6857 |       await page.waitForTimeout(800);
-  6858 |       await testInfo.attach(`r8b-commander-row-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
-> 6859 |       await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
+  6859 |       await page.waitForTimeout(800);
+  6860 |       await testInfo.attach(`r8b-commander-row-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+> 6861 |       await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
        |                                                                            ^
-  6860 |       await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toBeVisible();
-  6861 |       await page.waitForTimeout(1500);
-  6862 |       await testInfo.attach(`r8b-commander-grubnak-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
+  6862 |       await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toBeVisible();
+  6863 |       await page.waitForTimeout(1500);
+  6864 |       await testInfo.attach(`r8b-commander-grubnak-${W}x${H}`, { body: await page.screenshot(), contentType: 'image/png' });
 ✗ round 9a hand 1920x1080 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (1920x1080)
 Error: expect(received).toBeGreaterThanOrEqual(expected)
 
 Expected: >= 0.31
 Received:    0.284837962962963
 
-  7047 |       for (let i = 0; i < 5; i++) rest.push(await cards.nth(i).boundingBox());
-  7048 |       for (const b of rest) {
-> 7049 |         expect(b.height / fh).toBeGreaterThanOrEqual(0.31); expect(b.height / fh).toBeLessThanOrEqual(0.37);
+  7049 |       for (let i = 0; i < 5; i++) rest.push(await cards.nth(i).boundingBox());
+  7050 |       for (const b of rest) {
+> 7051 |         expect(b.height / fh).toBeGreaterThanOrEqual(0.31); expect(b.height / fh).toBeLessThanOrEqual(0.37);
        |                               ^
-  7050 |         const shown = (H - b.y) / b.height;
-  7051 |         expect(shown).toBeGreaterThanOrEqual(0.18); expect(shown).toBeLessThanOrEqual(0.32); // Round 10
-  7052 |       }
+  7052 |         const shown = (H - b.y) / b.height;
+  7053 |         expect(shown).toBeGreaterThanOrEqual(0.18); expect(shown).toBeLessThanOrEqual(0.32); // Round 10
+  7054 |       }
 ✗ round 9c menus 1920x1080 › AC233: main menu, Deck Builder and Choose Your Commander pieces sit in the owner boxes
 SyntaxError: Unexpected token 'N', "Not found" is not valid JSON
 
-  7376 |
-  7377 | async function menuPieceBoxes(page, request, screenId) {
-> 7378 |   const m = await (await request.get(R9C_MENUS)).json();
+  7378 |
+  7379 | async function menuPieceBoxes(page, request, screenId) {
+> 7380 |   const m = await (await request.get(R9C_MENUS)).json();
        |             ^
-  7379 |   const sc = m.screens.find((s) => s.id === screenId);
-  7380 |   const vp = page.viewportSize();
-  7381 |   const out = [];
-    at menuPieceBoxes (/home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7378:13)
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7398:12
+  7381 |   const sc = m.screens.find((s) => s.id === screenId);
+  7382 |   const vp = page.viewportSize();
+  7383 |   const out = [];
+    at menuPieceBoxes (/home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7380:13)
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7400:12
 ✗ round 9c menus 1920x1080 › AC234: the intro plays first, the logo crashes in with dirt, owner sounds fire on time, then the main menu
 SyntaxError: Unexpected token 'N', "Not found" is not valid JSON
 
-  7376 |
-  7377 | async function menuPieceBoxes(page, request, screenId) {
-> 7378 |   const m = await (await request.get(R9C_MENUS)).json();
+  7378 |
+  7379 | async function menuPieceBoxes(page, request, screenId) {
+> 7380 |   const m = await (await request.get(R9C_MENUS)).json();
        |             ^
-  7379 |   const sc = m.screens.find((s) => s.id === screenId);
-  7380 |   const vp = page.viewportSize();
-  7381 |   const out = [];
-    at menuPieceBoxes (/home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7378:13)
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7419:12
+  7381 |   const sc = m.screens.find((s) => s.id === screenId);
+  7382 |   const vp = page.viewportSize();
+  7383 |   const out = [];
+    at menuPieceBoxes (/home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7380:13)
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7421:12
 ✗ round 9c screenshots 1920x1080 › AC242: screenshots of the match with the arena, Commander close-ups, every menu screen and a creature close-up (1920x1080)
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('All cards', { exact: true }).getByRole('button', { name: /Gutripper Brawler/ }).first()
 
 
-  7563 |       await page.waitForTimeout(1200);
-  7564 |       await shot('deck-builder');
-> 7565 |       await allCards(page).getByRole('button', { name: /Gutripper Brawler/ }).first().click();
+  7565 |       await page.waitForTimeout(1200);
+  7566 |       await shot('deck-builder');
+> 7567 |       await allCards(page).getByRole('button', { name: /Gutripper Brawler/ }).first().click();
        |                                                                                       ^
-  7566 |       await page.waitForTimeout(1500);
-  7567 |       await shot('deck-builder-closeup');
-  7568 |       await page.keyboard.press('Escape');
+  7568 |       await page.waitForTimeout(1500);
+  7569 |       await shot('deck-builder-closeup');
+  7570 |       await page.keyboard.press('Escape');
 ✗ round 9c screenshots 844x390 › AC242: screenshots of the match with the arena, Commander close-ups, every menu screen and a creature close-up (844x390)
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('All cards', { exact: true }).getByRole('button', { name: /Gutripper Brawler/ }).first()
 
 
-  7563 |       await page.waitForTimeout(1200);
-  7564 |       await shot('deck-builder');
-> 7565 |       await allCards(page).getByRole('button', { name: /Gutripper Brawler/ }).first().click();
+  7565 |       await page.waitForTimeout(1200);
+  7566 |       await shot('deck-builder');
+> 7567 |       await allCards(page).getByRole('button', { name: /Gutripper Brawler/ }).first().click();
        |                                                                                       ^
-  7566 |       await page.waitForTimeout(1500);
-  7567 |       await shot('deck-builder-closeup');
-  7568 |       await page.keyboard.press('Escape');
+  7568 |       await page.waitForTimeout(1500);
+  7569 |       await shot('deck-builder-closeup');
+  7570 |       await page.keyboard.press('Escape');
 ✗ round 10 at 1920x1080 › AC243: drag highlights are bright in the faction color; attack squares are red
 TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Gutripper Brawler, row 5, column 9', { exact: true })
 
 
-  7631 |     await done(page);
-  7632 |     await page.waitForTimeout(800);
-> 7633 |     const lbl = await page.getByLabel('Gutripper Brawler, row 5, column 9', { exact: true }).boundingBox();
+  7633 |     await done(page);
+  7634 |     await page.waitForTimeout(800);
+> 7635 |     const lbl = await page.getByLabel('Gutripper Brawler, row 5, column 9', { exact: true }).boundingBox();
        |                                                                                              ^
-  7634 |     const from = await sq2s(page, 5, 9);
-  7635 |     const start0 = lbl ? { x: lbl.x + lbl.width / 2, y: lbl.y + lbl.height / 2 } : from;
-  7636 |     t = await sq2s(page, 5, 8);
+  7636 |     const from = await sq2s(page, 5, 9);
+  7637 |     const start0 = lbl ? { x: lbl.x + lbl.width / 2, y: lbl.y + lbl.height / 2 } : from;
+  7638 |     t = await sq2s(page, 5, 8);
 ✗ round 10 at 1920x1080 › AC250: card close-up fills 80–100 % of the height, no scrollbar, no Close; outside click and Esc close it
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Gutripper Brawler, row 6, column 5', { exact: true })
 
 
-  7742 |       return face;
-  7743 |     };
-> 7744 |     await page.getByLabel('Gutripper Brawler, row 6, column 5', { exact: true }).click();
+  7744 |       return face;
+  7745 |     };
+> 7746 |     await page.getByLabel('Gutripper Brawler, row 6, column 5', { exact: true }).click();
        |                                                                                  ^
-  7745 |     const dlg = page.getByRole('dialog', { name: 'Gutripper Brawler', exact: true });
-  7746 |     const face = await check(dlg, 'goblin-scrapper');
-  7747 |     await page.mouse.click(face.x > 40 ? 15 : 1905, H / 2);
+  7747 |     const dlg = page.getByRole('dialog', { name: 'Gutripper Brawler', exact: true });
+  7748 |     const face = await check(dlg, 'goblin-scrapper');
+  7749 |     await page.mouse.click(face.x > 40 ? 15 : 1905, H / 2);
 ✗ round 10 at 1920x1080 › AC256: Round 10 screenshots render without errors
 TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Gutripper Brawler, row 5, column 9', { exact: true })
 
 
-  7792 |     await page.mouse.move(960, 300);
-  7793 |     await done(page);
-> 7794 |     const lbl = await page.getByLabel('Gutripper Brawler, row 5, column 9', { exact: true }).boundingBox();
+  7794 |     await page.mouse.move(960, 300);
+  7795 |     await done(page);
+> 7796 |     const lbl = await page.getByLabel('Gutripper Brawler, row 5, column 9', { exact: true }).boundingBox();
        |                                                                                              ^
-  7795 |     const t = await sq2s(page, 5, 8);
-  7796 |     await page.mouse.move(lbl.x + lbl.width / 2, lbl.y + lbl.height / 2);
-  7797 |     await page.mouse.down();
+  7797 |     const t = await sq2s(page, 5, 8);
+  7798 |     await page.mouse.move(lbl.x + lbl.width / 2, lbl.y + lbl.height / 2);
+  7799 |     await page.mouse.down();
 ✗ round 11 at 1920x1080 › AC258: Tense Cycle plays continuously through every menu and only changes when a match starts
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByRole('button', { name: 'Fight!', exact: true })
 
 
-  8051 |     await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
-  8052 |     await check();
-> 8053 |     await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  8053 |     await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+  8054 |     await check();
+> 8055 |     await page.getByRole('button', { name: 'Fight!', exact: true }).click();
        |                                                                     ^
-  8054 |     await expect.poll(async () => (await audioState(page)).music.track, { timeout: 10000 }).toBe('first-fight');
-  8055 |   });
-  8056 |
+  8056 |     await expect.poll(async () => (await audioState(page)).music.track, { timeout: 10000 }).toBe('first-fight');
+  8057 |   });
+  8058 |
 ✗ round 11 at 1920x1080 › AC260: Settings "Square highlights" panel: defaults, live preview, saved, applied in a match, Reset to default
 Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'getHighlightSettings')
     at eval (eval at evaluate (:290:30), <anonymous>:1:35)
@@ -822,98 +828,98 @@ Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'g
     at eval (eval at evaluate (:290:30), <anonymous>:1:35)
     at UtilityScript.evaluate (<anonymous>:292:16)
     at UtilityScript.<anonymous> (<anonymous>:1:44)
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:8086:25
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:8088:25
 ✗ round 11 at 1920x1080 › AC261: unit rings use faction colors, grey out after acting; "Unit rings" settings are saved and applied
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: "#2f5fd8"
 Received: "#707992"
 
-  8128 |     expect(ring(r, mineU).color.toLowerCase()).toBe('#3ee06a');
-  8129 |     expect(ring(r, mineU).greyed).toBe(false);
-> 8130 |     expect(ring(r, theirs).color.toLowerCase()).toBe('#2f5fd8'); // Borgo: Dwarf main
+  8130 |     expect(ring(r, mineU).color.toLowerCase()).toBe('#3ee06a');
+  8131 |     expect(ring(r, mineU).greyed).toBe(false);
+> 8132 |     expect(ring(r, theirs).color.toLowerCase()).toBe('#2f5fd8'); // Borgo: Dwarf main
        |                                                 ^
-  8131 |     await done(page);
-  8132 |     expect((await act(page, { type: 'move', creatureUid: mineU, row: 5, col: 6 })).ok).toBe(true);
-  8133 |     await expect.poll(async () => ring(await renderStats10(page), mineU).greyed).toBe(true);
+  8133 |     await done(page);
+  8134 |     expect((await act(page, { type: 'move', creatureUid: mineU, row: 5, col: 6 })).ok).toBe(true);
+  8135 |     await expect.poll(async () => ring(await renderStats10(page), mineU).greyed).toBe(true);
 ✗ round 11 at 1920x1080 › AC264: dragging a card sideways in the hand reorders it, the hand stays up, and the order is kept
 TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true })
 
 
-  7988 | async function raiseHandAt(page, card) {
-  7989 |   const H = page.viewportSize().height;
-> 7990 |   let a = await card.boundingBox();
+  7990 | async function raiseHandAt(page, card) {
+  7991 |   const H = page.viewportSize().height;
+> 7992 |   let a = await card.boundingBox();
        |                      ^
-  7991 |   await page.mouse.move(a.x + a.width / 2, Math.min(a.y + a.height * 0.08, H - 3), { steps: 3 });
-  7992 |   await page.waitForTimeout(600);
-  7993 |   a = await card.boundingBox();
+  7993 |   await page.mouse.move(a.x + a.width / 2, Math.min(a.y + a.height * 0.08, H - 3), { steps: 3 });
+  7994 |   await page.waitForTimeout(600);
+  7995 |   a = await card.boundingBox();
 ✗ round 11 at 1920x1080 › AC265: dragging a card shows the real card face, floating and tilting; the hand tucks while over the board
 TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true })
 
 
-  7988 | async function raiseHandAt(page, card) {
-  7989 |   const H = page.viewportSize().height;
-> 7990 |   let a = await card.boundingBox();
+  7990 | async function raiseHandAt(page, card) {
+  7991 |   const H = page.viewportSize().height;
+> 7992 |   let a = await card.boundingBox();
        |                      ^
-  7991 |   await page.mouse.move(a.x + a.width / 2, Math.min(a.y + a.height * 0.08, H - 3), { steps: 3 });
-  7992 |   await page.waitForTimeout(600);
-  7993 |   a = await card.boundingBox();
+  7993 |   await page.mouse.move(a.x + a.width / 2, Math.min(a.y + a.height * 0.08, H - 3), { steps: 3 });
+  7994 |   await page.waitForTimeout(600);
+  7995 |   a = await card.boundingBox();
 ✗ round 11 at 1920x1080 › AC266: Ranged range 7 — the shot stops at the first unit, also your own
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  8255 |     expect(can(at(s, 6, 1).uid, 6, 7)).toBe(false);
-  8256 |     expect((await act(page, { type: 'attack', creatureUid: at(s, 6, 1).uid, target: { row: 6, col: 7 } })).ok).toBe(false);
-> 8257 |     expect(can(at(s, 7, 5).uid, 7, 12)).toBe(true);
+  8257 |     expect(can(at(s, 6, 1).uid, 6, 7)).toBe(false);
+  8258 |     expect((await act(page, { type: 'attack', creatureUid: at(s, 6, 1).uid, target: { row: 6, col: 7 } })).ok).toBe(false);
+> 8259 |     expect(can(at(s, 7, 5).uid, 7, 12)).toBe(true);
        |                                         ^
-  8258 |     const pv = await preview(page, at(s, 7, 5).uid, { row: 7, col: 12 });
-  8259 |     expect(pv.youDeal).toBe(1);
-  8260 |     expect(pv.youTake).toBe(0);
+  8260 |     const pv = await preview(page, at(s, 7, 5).uid, { row: 7, col: 12 });
+  8261 |     expect(pv.youDeal).toBe(1);
+  8262 |     expect(pv.youTake).toBe(0);
 ✗ round 12a drag-to-play at 1920x1080 › AC270: a drag from the tucked hand also plays; a drop back in the hand or on an illegal square plays nothing (1920x1080)
 TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true })
 
 
-  8349 |       const uid = handUid(s, 'player', 'goblin-scrapper');
-  8350 |       const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true });
-> 8351 |       const b = await card.boundingBox();
+  8351 |       const uid = handUid(s, 'player', 'goblin-scrapper');
+  8352 |       const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true });
+> 8353 |       const b = await card.boundingBox();
        |                            ^
-  8352 |       const from = { x: b.x + b.width / 2, y: Math.min(b.y + 8, H - 3) };
-  8353 |       // illegal: the enemy back row
-  8354 |       const bad = await sq2s(page, 1, 7);
+  8354 |       const from = { x: b.x + b.width / 2, y: Math.min(b.y + 8, H - 3) };
+  8355 |       // illegal: the enemy back row
+  8356 |       const bad = await sq2s(page, 1, 7);
 ✗ round 12a drag-to-play at 1568x782 › AC270: a drag from the tucked hand also plays; a drop back in the hand or on an illegal square plays nothing (1568x782)
 TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true })
 
 
-  8349 |       const uid = handUid(s, 'player', 'goblin-scrapper');
-  8350 |       const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true });
-> 8351 |       const b = await card.boundingBox();
+  8351 |       const uid = handUid(s, 'player', 'goblin-scrapper');
+  8352 |       const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Gutripper Brawler', exact: true });
+> 8353 |       const b = await card.boundingBox();
        |                            ^
-  8352 |       const from = { x: b.x + b.width / 2, y: Math.min(b.y + 8, H - 3) };
-  8353 |       // illegal: the enemy back row
-  8354 |       const bad = await sq2s(page, 1, 7);
+  8354 |       const from = { x: b.x + b.width / 2, y: Math.min(b.y + 8, H - 3) };
+  8355 |       // illegal: the enemy back row
+  8356 |       const bad = await sq2s(page, 1, 7);
 ✗ round 12a at 1920x1080 › AC271: dragging a targeted spell onto an enemy casts it there; a Crystal card dragged over the board is played
 TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Infernal Orb', exact: true })
 
 
-  8384 |     const hand = page.getByLabel('Your hand', { exact: true });
-  8385 |     const target = at(s, 4, 7);
-> 8386 |     const fb = await hand.getByRole('button', { name: 'Infernal Orb', exact: true }).boundingBox();
+  8386 |     const hand = page.getByLabel('Your hand', { exact: true });
+  8387 |     const target = at(s, 4, 7);
+> 8388 |     const fb = await hand.getByRole('button', { name: 'Infernal Orb', exact: true }).boundingBox();
        |                                                                                      ^
-  8387 |     await realDrag(page, { x: fb.x + fb.width / 2, y: Math.min(fb.y + 8, 1077) }, await sq2s(page, 4, 7));
-  8388 |     await expect.poll(async () => (await getState(page)).players.player.hand.some((c) => c.cardId === 'fireball')).toBe(false);
-  8389 |     s = await getState(page);
+  8389 |     await realDrag(page, { x: fb.x + fb.width / 2, y: Math.min(fb.y + 8, 1077) }, await sq2s(page, 4, 7));
+  8390 |     await expect.poll(async () => (await getState(page)).players.player.hand.some((c) => c.cardId === 'fireball')).toBe(false);
+  8391 |     s = await getState(page);
 ✗ round 12a at 1920x1080 › AC273: owner card paintings and Grubnak's on-throne portrait are used unchanged
 Error: goblin-pebbler
 
@@ -922,24 +928,33 @@ expect(received).toBe(expected) // Object.is equality
 Expected: "/art/owner/goblin/boneknocker-card-art.png"
 Received: "/art/owner/goblin/goblin-pebbler-card-art.webp"
 
-  8411 |     for (const [id, f] of Object.entries(OWNER_CARD_ART)) {
-  8412 |       const info = await page.evaluate(async (x) => await window.oreheart.getArtInfo(x), id);
-> 8413 |       expect(info.picture, id).toBe(`/art/owner/goblin/${f}`);
+  8413 |     for (const [id, f] of Object.entries(OWNER_CARD_ART)) {
+  8414 |       const info = await page.evaluate(async (x) => await window.oreheart.getArtInfo(x), id);
+> 8415 |       expect(info.picture, id).toBe(`/art/owner/goblin/${f}`);
        |                                ^
-  8414 |     }
+  8416 |     }
 ✗ round 12b-1 screenshots at 1920x1080 › AC283: new models on the board, in the 3D viewer and Grubnak on his throne render without errors
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Commander card', { exact: true }).getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile', exact: true })
 
 
-  8742 |       await page.keyboard.press('Escape');
-  8743 |     }
-> 8744 |     await page.getByLabel('Commander card', { exact: true }).getByRole('button', { name: COMMANDERS[0], exact: true }).click();
+  8744 |       await page.keyboard.press('Escape');
+  8745 |     }
+> 8746 |     await page.getByLabel('Commander card', { exact: true }).getByRole('button', { name: COMMANDERS[0], exact: true }).click();
        |                                                                                                                        ^
-  8745 |     await page.waitForTimeout(1500);
-  8746 |     await shot('r12b-viewer-grubnak');
-  8747 |     expect(errors).toEqual([]);
+  8747 |     await page.waitForTimeout(1500);
+  8748 |     await shot('r12b-viewer-grubnak');
+  8749 |     expect(errors).toEqual([]);
+✗ round 12d screenshots (1920x1080) › AC315: hand, close-up, Deck Builder, Choose Your Commander and reference cards render without errors
+Error: page.evaluate: TypeError: window.oreheart.renderCard is not a function
+    at eval (eval at evaluate (:290:30), <anonymous>:5:88)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at eval (eval at evaluate (:290:30), <anonymous>:5:88)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:9254:16
 ✗ AC2: menu -> choose Commander -> mulligan -> match
 Error: expect(locator).toBeVisible() failed
 
@@ -1094,8 +1109,8 @@ Timeout: 7000ms
 Call log:
   - Expect "toHaveText" with timeout 7000ms
   - waiting for getByLabel('Mangewolf Rider, row 6, column 6', { exact: true })
-    9 × locator resolved to <div role="img" data-row="6" data-col="6" data-uid="u26" data-extras="" data-poison="0" data-upgrades="0" data-acted="false" data-mining="false" data-damaged="false" class="token f-goblins mine" aria-label="Mangewolf Rider, row 6, column 6" title="Mangewolf Rider: Attack 3, Health 4/4">…</div>
-      - unexpected value "3 4 3"
+    10 × locator resolved to <div role="img" data-row="6" data-col="6" data-uid="u26" data-extras="" data-poison="0" data-upgrades="0" data-acted="false" data-mining="false" data-damaged="false" class="token f-goblins mine" aria-label="Mangewolf Rider, row 6, column 6" title="Mangewolf Rider: Attack 3, Health 4/4">…</div>
+       - unexpected value "3 4 3"
 ✗ AC42: Ranged creatures show the bow icon on the board and in the hand
 Error: expect(locator).not.toContainText(expected) failed
 
@@ -1282,7 +1297,7 @@ Call log:
 Error: expect(received).toBeLessThan(expected)
 
 Expected: < 41943040
-Received:   55147399
+Received:   60705388
 
   3117 |   expect(fs.existsSync(path.join(dist, 'index.html')), 'dist/index.html').toBe(true);
   3118 |   const bytes = walk(fs, path, dist).reduce((n, f) => n + fs.statSync(f).size, 0);
@@ -1291,6 +1306,19 @@ Received:   55147399
   3120 | });
   3121 |
   3122 | test.describe('phone-size match screenshot', () => {
+✗ AC91: card faces use the faction frame, stat slots, type icon and rarity colors
+Error: goblin-scrounger
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: > 0
+Received:   0
+
+  3164 |     const frame = spell ? (FRAME[c.faction] || 'shared') : (FRAME[c.faction] || 'neutral');
+  3165 |     await expect(face, id).toHaveAttribute('data-frame', spell ? `spell-${frame}` : frame);
+> 3166 |     expect(await face.locator(`img[src*="${spell ? 'spell' : 'card'}-frame-${frame}"]`).count(), id).toBeGreaterThan(0);
+       |                                                                                                      ^
+  3167 |     await expect(face.getByLabel(/^Cost \d+$/), id).toHaveCount(1); // may show a Commander discount
 ✗ AC92: every card has short and long text; Full explanation shows the long text
 Error: goblin-scrapper
 
@@ -1395,6 +1423,45 @@ Received: false
 > 3732 |     expect((await validate(page, d.cards)).legal, d.id).toBe(true);
        |                                                         ^
   3733 |     const of = (pred) => d.cards.filter((id) => pred(info[id])).length;
+✗ AC118: card numbers sit centered inside their slots in 3D gold
+Error: goblin-scrounger
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: > 0
+Received:   0
+
+  3884 |     const slots = face.getByLabel(/^(Cost|Attack|Health|Movement) \d+$/);
+  3885 |     const n = await slots.count();
+> 3886 |     expect(n, id).toBeGreaterThan(0);
+       |                   ^
+  3887 |     const faceBox = await face.boundingBox();
+✗ AC119: the rarity crystal is a small art crystal with the rarity word centered below
+Error: goblin-scrounger
+
+expect(locator).toHaveCount(expected) failed
+
+Locator:  getByLabel('All cards', { exact: true }).locator('[data-card-id="goblin-scrounger"]').first().getByLabel('Rarity: Common', { exact: true })
+Expected: 1
+Received: 0
+Timeout:  7000ms
+
+Call log:
+  - goblin-scrounger with timeout 7000ms
+  - waiting for getByLabel('All cards', { exact: true }).locator('[data-card-id="goblin-scrounger"]').first().getByLabel('Rarity: Common', { exact: true })
+✗ AC120: card names and text boxes use one size, gold lettering, thin text
+Error: goblin-scrounger: data-part="name"
+
+expect(received).toBeTruthy()
+
+Received: null
+
+  3961 |   const textSizes = new Set();
+  3962 |   for (const d of data) {
+> 3963 |     expect(d.name, `${d.id}: data-part="name"`).toBeTruthy();
+       |                                                 ^
+  3964 |     expect(d.text, `${d.id}: data-part="text"`).toBeTruthy();
+  3965 |     expect(isGold(d.name.st), `${d.id} name gold`).toBe(true);
 ✗ AC127: mulligan cards are double size, one row, on-screen (1280x720)
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
@@ -1447,6 +1514,19 @@ Received: 7
   4284 |   expect(s.players.player.crystals).toBe(0);
   4285 |   const toTurnOf = async (side) => {
   4286 |     for (let i = 0; i < 8; i++) {
+✗ AC132: spell frames per faction with the cost and type orbs
+Error: venom-shiv
+
+expect(received).toBeGreaterThan(expected)
+
+Expected: > 0
+Received:   0
+
+  4317 |     const face = hand.locator(`[data-card-id="${id}"]`).first();
+  4318 |     await expect(face, id).toHaveAttribute('data-frame', frame);
+> 4319 |     expect(await face.locator(`img[src*="${frame.replace('spell-', 'spell-frame-')}"]`).count(), id).toBeGreaterThan(0);
+       |                                                                                                      ^
+  4320 |     expect(await face.locator('img[src*="card-frame-"]').count(), id).toBe(0);
 ✗ AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulligan, hand) at several window sizes
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
@@ -1468,11 +1548,11 @@ expect(received).toBeGreaterThanOrEqual(expected)
 Expected: >= 864
 Received:    0
 
-  4595 |     const pb = await box(panel);
-  4596 |     expect(pb.y, `${at} panel touches the top`).toBeLessThanOrEqual(2);
-> 4597 |     expect(pb.x, `${at} panel on the right`).toBeGreaterThanOrEqual(W * 0.45);
+  4597 |     const pb = await box(panel);
+  4598 |     expect(pb.y, `${at} panel touches the top`).toBeLessThanOrEqual(2);
+> 4599 |     expect(pb.x, `${at} panel on the right`).toBeGreaterThanOrEqual(W * 0.45);
        |                                              ^
-  4598 |     const title = panel.getByRole('heading', { name: 'Deck Builder' });
+  4600 |     const title = panel.getByRole('heading', { name: 'Deck Builder' });
 ✗ AC143: the deck list always shows about 8 rows; it scrolls inside its panel
 TimeoutError: locator.dblclick: Timeout 10000ms exceeded.
 Call log:
@@ -1499,6 +1579,19 @@ Call log:
   4373 | async function toTitle(page) {
   4374 |   await page.goto('/?test=1');
   4375 |   await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+✗ AC147: spell cards use the owner's real spell frames per faction
+Error: venom-shiv
+
+expect(locator).toHaveCount(expected) failed
+
+Locator:  getByLabel('Your hand', { exact: true }).locator('[data-card-id="venom-shiv"]').first().locator('img[src*="/art/card-format/images/"][src*="spell-frame-goblin"]').first()
+Expected: 1
+Received: 0
+Timeout:  7000ms
+
+Call log:
+  - venom-shiv with timeout 7000ms
+  - waiting for getByLabel('Your hand', { exact: true }).locator('[data-card-id="venom-shiv"]').first().locator('img[src*="/art/card-format/images/"][src*="spell-frame-goblin"]').first()
 ✗ AC155: playable hand cards glow, the others do not, and it updates at once
 Error: expect(locator).toHaveAttribute(expected) failed
 
@@ -1518,13 +1611,13 @@ Call log:
   - waiting for getByLabel('All cards', { exact: true }).getByRole('button', { name: 'Rotgut Grenadier', exact: true })
 
 
-  6633 |   for (let i = 0; i < names.length; i++) {
-  6634 |     const tile = allCards(page).getByRole('button', { name: names[i], exact: true });
-> 6635 |     if (i % 2 === 0) await tile.dblclick();
+  6635 |   for (let i = 0; i < names.length; i++) {
+  6636 |     const tile = allCards(page).getByRole('button', { name: names[i], exact: true });
+> 6637 |     if (i % 2 === 0) await tile.dblclick();
        |                                 ^
-  6636 |     else {
-  6637 |       await tile.scrollIntoViewIfNeeded();
-  6638 |       await dragTile(page, tile, await listDrop(page));
+  6638 |     else {
+  6639 |       await tile.scrollIntoViewIfNeeded();
+  6640 |       await dragTile(page, tile, await listDrop(page));
 ✗ AC206: choosing a Commander hides the other two and shows only his decks; Change Commander, Esc and a second click bring the row back
 Error: expect(locator).toBeVisible() failed
 
@@ -1544,13 +1637,13 @@ Call log:
   - waiting for getByRole('button', { name: 'Grubnak Rotgut, King of the Junkpile', exact: true })
 
 
-  6739 |     };
-  6740 |     await check('row');
-> 6741 |     await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
+  6741 |     };
+  6742 |     await check('row');
+> 6743 |     await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
        |                                                                          ^
-  6742 |     await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toBeVisible();
-  6743 |     await check('focused');
-  6744 |     await expect(page.getByRole('button', { name: /in 3D/ })).toHaveCount(0);
+  6744 |     await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toBeVisible();
+  6745 |     await check('focused');
+  6746 |     await expect(page.getByRole('button', { name: /in 3D/ })).toHaveCount(0);
 ✗ AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak's card and dismisses correctly
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
@@ -1585,88 +1678,88 @@ expect(received).toBe(expected) // Object.is equality
 Expected: 2570231
 Received: 641695
 
-  6934 |     const r = await request.get(u);
-  6935 |     expect(r.ok(), u).toBe(true);
-> 6936 |     expect((await r.body()).length, u).toBe(n);
+  6936 |     const r = await request.get(u);
+  6937 |     expect(r.ok(), u).toBe(true);
+> 6938 |     expect((await r.body()).length, u).toBe(n);
        |                                        ^
-  6937 |   }
+  6939 |   }
 ✗ AC220: Grubnak holds his scepter in his right hand with the owner's numbers
 TypeError: Cannot read properties of undefined (reading '0')
 
-  7103 |   expect(g.held.item).toBe('scepter');
-  7104 |   expect(g.held.bone).toBe('RightHand');
-> 7105 |   [-4.404, 8.752, -3.774].forEach((v, i) => expect(g.held.position[i]).toBeCloseTo(v, 2));
+  7105 |   expect(g.held.item).toBe('scepter');
+  7106 |   expect(g.held.bone).toBe('RightHand');
+> 7107 |   [-4.404, 8.752, -3.774].forEach((v, i) => expect(g.held.position[i]).toBeCloseTo(v, 2));
        |                                                                   ^
-  7106 |   [-109.365, 5.199, 154.757].forEach((v, i) => expect(g.held.rotationDeg[i]).toBeCloseTo(v, 1));
-  7107 |   expect(g.held.scale).toBeCloseTo(61.35, 1);
-  7108 |   expect(g.animation).toBe('idle');
-    at forEach (/home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7105:67)
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7105:27
+  7108 |   [-109.365, 5.199, 154.757].forEach((v, i) => expect(g.held.rotationDeg[i]).toBeCloseTo(v, 1));
+  7109 |   expect(g.held.scale).toBeCloseTo(61.35, 1);
+  7110 |   expect(g.animation).toBe('idle');
+    at forEach (/home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7107:67)
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:7107:27
 ✗ AC232: the owner menus file, pictures, sound and main menu picture are shipped
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  7360 | test('AC232: the owner menus file, pictures, sound and main menu picture are shipped', async ({ page, request }) => {
-  7361 |   const res = await request.get(R9C_MENUS);
-> 7362 |   expect(res.ok()).toBe(true);
+  7362 | test('AC232: the owner menus file, pictures, sound and main menu picture are shipped', async ({ page, request }) => {
+  7363 |   const res = await request.get(R9C_MENUS);
+> 7364 |   expect(res.ok()).toBe(true);
        |                    ^
-  7363 |   const m = await res.json();
-  7364 |   expect(m.first).toBe('intro');
-  7365 |   expect(m.screens.map((s) => s.id)).toEqual(['intro', 'main', 'deck', 'commander']);
+  7365 |   const m = await res.json();
+  7366 |   expect(m.first).toBe('intro');
+  7367 |   expect(m.screens.map((s) => s.id)).toEqual(['intro', 'main', 'deck', 'commander']);
 ✗ AC239: every creature card close-up has a 3D viewer; spells do not
 TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('All cards', { exact: true }).getByRole('button', { name: /Gutripper Brawler/ }).first()
 
 
-  7498 | test('AC239: every creature card close-up has a 3D viewer; spells do not', async ({ page }) => {
-  7499 |   await openDecks(page);
-> 7500 |   await allCards(page).getByRole('button', { name: /Gutripper Brawler/ }).first().click();
+  7500 | test('AC239: every creature card close-up has a 3D viewer; spells do not', async ({ page }) => {
+  7501 |   await openDecks(page);
+> 7502 |   await allCards(page).getByRole('button', { name: /Gutripper Brawler/ }).first().click();
        |                                                                                   ^
-  7501 |   const dlg = page.getByRole('dialog', { name: /Gutripper Brawler/ });
-  7502 |   await expect(dlg).toBeVisible();
-  7503 |   const viewer = page.getByRole('region', { name: '3D model' });
+  7503 |   const dlg = page.getByRole('dialog', { name: /Gutripper Brawler/ });
+  7504 |   await expect(dlg).toBeVisible();
+  7505 |   const viewer = page.getByRole('region', { name: '3D model' });
 ✗ AC248: Ranged straight lines also apply to previewAttack and the Commander
 Error: expect(received).toMatch(expected)
 
 Expected pattern: /\b7\b/
 Received string:  "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 6 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield."
 
-  7902 |   expect(s.players.opponent.health).toBe(h0 - 1);
-  7903 |   const ranged = await page.evaluate(async () => await window.oreheart.getCard('goblin-slinger'));
-> 7904 |   expect(ranged.longText).toMatch(/\b7\b/); // Round 11
+  7904 |   expect(s.players.opponent.health).toBe(h0 - 1);
+  7905 |   const ranged = await page.evaluate(async () => await window.oreheart.getCard('goblin-slinger'));
+> 7906 |   expect(ranged.longText).toMatch(/\b7\b/); // Round 11
        |                           ^
-  7905 |   expect(ranged.longText.toLowerCase()).toMatch(/straight line/);
-  7906 | });
-  7907 |
+  7907 |   expect(ranged.longText.toLowerCase()).toMatch(/straight line/);
+  7908 | });
+  7909 |
 ✗ AC254: Tunnel from turn 1 — drag-and-drop next to a mine works and the AI uses the same rule
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  7959 |   // opponent side: summon next to a mine on its turn 1
-  7960 |   s = await newMatch(page, { ...quiet({ opponentHand: ['dwarf-miner'], opponentCrystals: 5 }), firstPlayer: 'opponent' });
-> 7961 |   expect((await act(page, { type: 'summon', uid: s.players.opponent.hand[0].uid, row: 3, col: 4 })).ok).toBe(true);
+  7961 |   // opponent side: summon next to a mine on its turn 1
+  7962 |   s = await newMatch(page, { ...quiet({ opponentHand: ['dwarf-miner'], opponentCrystals: 5 }), firstPlayer: 'opponent' });
+> 7963 |   expect((await act(page, { type: 'summon', uid: s.players.opponent.hand[0].uid, row: 3, col: 4 })).ok).toBe(true);
        |                                                                                                         ^
-  7962 | });
-  7963 |
-  7964 | test('AC255: rule texts updated for Miner death draw, Ranged lines (range 7) and Crystal cards', async ({ page }) => {
+  7964 | });
+  7965 |
+  7966 | test('AC255: rule texts updated for Miner death draw, Ranged lines (range 7) and Crystal cards', async ({ page }) => {
 ✗ AC255: rule texts updated for Miner death draw, Ranged lines (range 7) and Crystal cards
 Error: expect(received).toMatch(expected)
 
 Expected pattern: /dies/
 Received string:  "mines 2. can tunnel. +1 health upgrade."
 
-  7969 |   });
-  7970 |   for (const c of cards.slice(0, 3)) {
-> 7971 |     expect(c.shortText.toLowerCase()).toMatch(/dies/);
+  7971 |   });
+  7972 |   for (const c of cards.slice(0, 3)) {
+> 7973 |     expect(c.shortText.toLowerCase()).toMatch(/dies/);
        |                                       ^
-  7972 |     expect(c.shortText.toLowerCase()).toMatch(/draw/);
-  7973 |     expect(c.longText.toLowerCase()).toMatch(/draw/);
-  7974 |     expect(c.longText.toLowerCase()).not.toMatch(/behind on mines|more mines than you/);
+  7974 |     expect(c.shortText.toLowerCase()).toMatch(/draw/);
+  7975 |     expect(c.longText.toLowerCase()).toMatch(/draw/);
+  7976 |     expect(c.longText.toLowerCase()).not.toMatch(/behind on mines|more mines than you/);
 ✗ AC284: card data carries artPos framing (default 1/0/0) and the owner text
 Error: goblin-scrounger
 
@@ -1674,12 +1767,12 @@ expect(received).toBeTruthy()
 
 Received: undefined
 
-  8762 |   const cards = await page.evaluate(async () => await window.oreheart.listCards());
-  8763 |   for (const c of cards) {
-> 8764 |     expect(c.artPos, c.id).toBeTruthy();
+  8764 |   const cards = await page.evaluate(async () => await window.oreheart.listCards());
+  8765 |   for (const c of cards) {
+> 8766 |     expect(c.artPos, c.id).toBeTruthy();
        |                            ^
-  8765 |     for (const k of ['s', 'x', 'y']) expect(typeof c.artPos[k], `${c.id}.${k}`).toBe('number');
-  8766 |   }
+  8767 |     for (const k of ['s', 'x', 'y']) expect(typeof c.artPos[k], `${c.id}.${k}`).toBe('number');
+  8768 |   }
 ✗ AC286: per-card Ranged ranges: Skullflinger 6, Gyronaut 2, Gunner 7, Hexslinger any distance but not through allies
 Error: goblin-slinger
 
@@ -1688,167 +1781,167 @@ expect(received).toBe(expected) // Object.is equality
 Expected: 6
 Received: undefined
 
-  8790 |     s = await toAction(page);
-  8791 |     expect(canAttack(await legal(page), at(s, 5, 13).uid, 5, 12 - range), `${id} misses ${range + 1} away`).toBe(false);
-> 8792 |     expect((await page.evaluate(async (x) => await window.oreheart.getCard(x), id)).range, id).toBe(range);
+  8792 |     s = await toAction(page);
+  8793 |     expect(canAttack(await legal(page), at(s, 5, 13).uid, 5, 12 - range), `${id} misses ${range + 1} away`).toBe(false);
+> 8794 |     expect((await page.evaluate(async (x) => await window.oreheart.getCard(x), id)).range, id).toBe(range);
        |                                                                                                ^
-  8793 |   }
+  8795 |   }
 ✗ AC289: SewerSlide Bomber pays 1, runs in a line until it hits something, then Ka-booms
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  8832 |   const hp = at(s, 2, 9).health;
-  8833 |   s = await toAction(page);
-> 8834 |   expect((await ability(page, s, 6, 9, 'run', { target: { row: 5, col: 9 } })).ok).toBe(true); // direction: up
+  8834 |   const hp = at(s, 2, 9).health;
+  8835 |   s = await toAction(page);
+> 8836 |   expect((await ability(page, s, 6, 9, 'run', { target: { row: 5, col: 9 } })).ok).toBe(true); // direction: up
        |                                                                                    ^
-  8835 |   s = await getState(page);
-  8836 |   expect(s.board.creatures.some((c) => c.cardId === 'blastrat-sapper')).toBe(false);
-  8837 |   expect(at(s, 2, 9).health).toBe(hp - 1);
+  8837 |   s = await getState(page);
+  8838 |   expect(s.board.creatures.some((c) => c.cardId === 'blastrat-sapper')).toBe(false);
+  8839 |   expect(at(s, 2, 9).health).toBe(hp - 1);
 ✗ AC290: Scrapsmith Miner draws a card when it dies (its own text)
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: 1
 Received: 0
 
-  8846 |   s = await getState(page);
-  8847 |   expect(at(s, 4, 9)).toBeFalsy();
-> 8848 |   expect(s.players.opponent.hand.length).toBe(hand0 + 1);
+  8848 |   s = await getState(page);
+  8849 |   expect(at(s, 4, 9)).toBeFalsy();
+> 8850 |   expect(s.players.opponent.hand.length).toBe(hand0 + 1);
        |                                          ^
-  8849 | });
-  8850 |
-  8851 | test('AC291: Bare Knuckle Lunatic knocks every adjacent unit back 1 when defeated', async ({ page }) => {
+  8851 | });
+  8852 |
+  8853 | test('AC291: Bare Knuckle Lunatic knocks every adjacent unit back 1 when defeated', async ({ page }) => {
 ✗ AC292: Backstabbing Thief steals 1 crystal for each enemy it defeats
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: 1
 Received: 0
 
-  8865 |   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 9).uid, target: { row: 4, col: 9 } })).ok).toBe(true);
-  8866 |   s = await getState(page);
-> 8867 |   expect(s.players.player.crystals).toBe(1);
+  8867 |   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 9).uid, target: { row: 4, col: 9 } })).ok).toBe(true);
+  8868 |   s = await getState(page);
+> 8869 |   expect(s.players.player.crystals).toBe(1);
        |                                     ^
-  8868 |   expect(s.players.opponent.crystals).toBe(2);
-  8869 | });
-  8870 |
+  8870 |   expect(s.players.opponent.crystals).toBe(2);
+  8871 | });
+  8872 |
 ✗ AC293: Bowler Brawler Strike (2) knocks creatures in its line back 1-2 spaces
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  8872 |   let s = await start(page, q12({ playerCrystals: 2, board: [P('goblin-scrapper', 6, 9), O('dwarf-pickman', 4, 9)] }));
-  8873 |   s = await toAction(page);
-> 8874 |   expect((await ability(page, s, 6, 9, 'strike', { target: { row: 5, col: 9 } })).ok).toBe(true);
+  8874 |   let s = await start(page, q12({ playerCrystals: 2, board: [P('goblin-scrapper', 6, 9), O('dwarf-pickman', 4, 9)] }));
+  8875 |   s = await toAction(page);
+> 8876 |   expect((await ability(page, s, 6, 9, 'strike', { target: { row: 5, col: 9 } })).ok).toBe(true);
        |                                                                                       ^
-  8875 |   s = await getState(page);
-  8876 |   const p = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman');
-  8877 |   expect(p.col).toBe(9);
+  8877 |   s = await getState(page);
+  8878 |   const p = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman');
+  8879 |   expect(p.col).toBe(9);
 ✗ AC294: Junk Shaman pays 2 to move any character within 5 to a space within 5 of it
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  8884 |   let s = await start(page, q12({ playerCrystals: 4, board: [P('junk-shaman', 6, 9), O('dwarf-pickman', 2, 9)] }));
-  8885 |   s = await toAction(page);
-> 8886 |   expect((await ability(page, s, 6, 9, 'pickUp', { target: { row: 2, col: 9 }, to: { row: 7, col: 13 } })).ok).toBe(true);
+  8886 |   let s = await start(page, q12({ playerCrystals: 4, board: [P('junk-shaman', 6, 9), O('dwarf-pickman', 2, 9)] }));
+  8887 |   s = await toAction(page);
+> 8888 |   expect((await ability(page, s, 6, 9, 'pickUp', { target: { row: 2, col: 9 }, to: { row: 7, col: 13 } })).ok).toBe(true);
        |                                                                                                                ^
-  8887 |   s = await getState(page);
-  8888 |   expect(at(s, 7, 13) && at(s, 7, 13).cardId).toBe('dwarf-pickman');
-  8889 |   expect(s.players.player.crystals).toBe(2);
+  8889 |   s = await getState(page);
+  8890 |   expect(at(s, 7, 13) && at(s, 7, 13).cardId).toBe('dwarf-pickman');
+  8891 |   expect(s.players.player.crystals).toBe(2);
 ✗ AC295: Goblin Chef Smack knocks its target back 2 and is not Ranged
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: "dwarf-pickman"
 Received: undefined
 
-  8901 |   expect((await act(page, { type: 'attack', creatureUid: uid, target: { row: 4, col: 9 } })).ok).toBe(true);
-  8902 |   s = await getState(page);
-> 8903 |   expect(at(s, 2, 9) && at(s, 2, 9).cardId).toBe('dwarf-pickman');
+  8903 |   expect((await act(page, { type: 'attack', creatureUid: uid, target: { row: 4, col: 9 } })).ok).toBe(true);
+  8904 |   s = await getState(page);
+> 8905 |   expect(at(s, 2, 9) && at(s, 2, 9).cardId).toBe('dwarf-pickman');
        |                                             ^
-  8904 | });
-  8905 |
-  8906 | test('AC296: Goblin Rocket Rider rides to any space, explodes 3x3 for its Attack, then attacks once; it stays a Gatherer', async ({ page }) => {
+  8906 | });
+  8907 |
+  8908 | test('AC296: Goblin Rocket Rider rides to any space, explodes 3x3 for its Attack, then attacks once; it stays a Gatherer', async ({ page }) => {
 ✗ AC296: Goblin Rocket Rider rides to any space, explodes 3x3 for its Attack, then attacks once; it stays a Gatherer
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  8908 |   const hp = at(s, 3, 9).health, far = at(s, 1, 9).health;
-  8909 |   s = await toAction(page);
-> 8910 |   expect((await ability(page, s, 7, 9, 'rocketRide', { target: { row: 4, col: 9 } })).ok).toBe(true);
+  8910 |   const hp = at(s, 3, 9).health, far = at(s, 1, 9).health;
+  8911 |   s = await toAction(page);
+> 8912 |   expect((await ability(page, s, 7, 9, 'rocketRide', { target: { row: 4, col: 9 } })).ok).toBe(true);
        |                                                                                           ^
-  8911 |   s = await getState(page);
-  8912 |   expect(at(s, 4, 9).cardId).toBe('shard-guzzler');
-  8913 |   expect(at(s, 3, 9).health).toBe(hp - 1);
+  8913 |   s = await getState(page);
+  8914 |   expect(at(s, 4, 9).cardId).toBe('shard-guzzler');
+  8915 |   expect(at(s, 3, 9).health).toBe(hp - 1);
 ✗ AC299: Glyphshield Warden gets Shield 1 each turn; Ward (2, once per turn) stops all damage to an ally for a round
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  8943 |   expect(at(s, 6, 9).shield).toBe(1);
-  8944 |   const hp = at(s, 5, 9).health;
-> 8945 |   expect((await ability(page, s, 6, 9, 'ward', { target: { row: 5, col: 9 } })).ok).toBe(true);
+  8945 |   expect(at(s, 6, 9).shield).toBe(1);
+  8946 |   const hp = at(s, 5, 9).health;
+> 8947 |   expect((await ability(page, s, 6, 9, 'ward', { target: { row: 5, col: 9 } })).ok).toBe(true);
        |                                                                                     ^
-  8946 |   expect((await ability(page, s, 6, 9, 'ward', { target: { row: 5, col: 9 } })).ok).toBe(false); // once per turn
-  8947 |   s = await getState(page);
-  8948 |   expect(s.players.player.bank).toBe(2);
+  8948 |   expect((await ability(page, s, 6, 9, 'ward', { target: { row: 5, col: 9 } })).ok).toBe(false); // once per turn
+  8949 |   s = await getState(page);
+  8950 |   expect(s.players.player.bank).toBe(2);
 ✗ AC300: Gnome Plow (2) moves in a straight line and knocks creatures in its path aside 1-2 spaces
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  8960 |   let s = await start(page, q12({ playerCrystals: 2, board: [P('phase-stalker', 7, 9), O('dwarf-pickman', 5, 9)] }));
-  8961 |   s = await toAction(page);
-> 8962 |   expect((await ability(page, s, 7, 9, 'plow', { target: { row: 3, col: 9 } })).ok).toBe(true);
+  8962 |   let s = await start(page, q12({ playerCrystals: 2, board: [P('phase-stalker', 7, 9), O('dwarf-pickman', 5, 9)] }));
+  8963 |   s = await toAction(page);
+> 8964 |   expect((await ability(page, s, 7, 9, 'plow', { target: { row: 3, col: 9 } })).ok).toBe(true);
        |                                                                                     ^
-  8963 |   s = await getState(page);
-  8964 |   expect(at(s, 3, 9) && at(s, 3, 9).cardId).toBe('phase-stalker');
-  8965 |   const p = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman');
+  8965 |   s = await getState(page);
+  8966 |   expect(at(s, 3, 9) && at(s, 3, 9).cardId).toBe('phase-stalker');
+  8967 |   const p = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman');
 ✗ AC304: Gemdrunk Deepdelver gets +1 Attack per banked crystal; Grudge Hurler roots its target
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: 5
 Received: 2
 
-  9022 |   let s = await start(page, q12({ playerBank: 3, board: [P('crystal-drunk-delver', 6, 9)] }));
-  9023 |   const base = (await page.evaluate(async () => await window.oreheart.getCard('crystal-drunk-delver'))).attack;
-> 9024 |   expect(at(s, 6, 9).attack).toBe(base + 3);
+  9024 |   let s = await start(page, q12({ playerBank: 3, board: [P('crystal-drunk-delver', 6, 9)] }));
+  9025 |   const base = (await page.evaluate(async () => await window.oreheart.getCard('crystal-drunk-delver'))).attack;
+> 9026 |   expect(at(s, 6, 9).attack).toBe(base + 3);
        |                              ^
-  9025 |   s = await newMatch(page, q12({ board: [P('axe-thrower', 6, 9), O('dwarf-pickman', 2, 9)] }));
-  9026 |   s = await toAction(page);
-  9027 |   expect((await act(page, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 2, col: 9 } })).ok).toBe(true);
+  9027 |   s = await newMatch(page, q12({ board: [P('axe-thrower', 6, 9), O('dwarf-pickman', 2, 9)] }));
+  9028 |   s = await toAction(page);
+  9029 |   expect((await act(page, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 2, col: 9 } })).ok).toBe(true);
 ✗ AC305: Ram Rider pays 2 to move any distance; Oathbound Overwatch attacks at any distance; Barrelback acts at once
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  9035 |   let s = await start(page, q12({ playerCrystals: 2, board: [P('ram-rider', 7, 9), P('oathbound-pikeman', 7, 11), O('dwarf-pickman', 1, 3)] }));
-  9036 |   s = await toAction(page);
-> 9037 |   expect((await ability(page, s, 7, 9, 'gallop', { target: { row: 2, col: 9 } })).ok).toBe(true);
+  9037 |   let s = await start(page, q12({ playerCrystals: 2, board: [P('ram-rider', 7, 9), P('oathbound-pikeman', 7, 11), O('dwarf-pickman', 1, 3)] }));
+  9038 |   s = await toAction(page);
+> 9039 |   expect((await ability(page, s, 7, 9, 'gallop', { target: { row: 2, col: 9 } })).ok).toBe(true);
        |                                                                                       ^
-  9038 |   s = await getState(page);
-  9039 |   expect(at(s, 2, 9) && at(s, 2, 9).cardId).toBe('ram-rider');
-  9040 |   expect(s.players.player.crystals).toBe(0);
+  9040 |   s = await getState(page);
+  9041 |   expect(at(s, 2, 9) && at(s, 2, 9).cardId).toBe('ram-rider');
+  9042 |   expect(s.players.player.crystals).toBe(0);
 ✗ AC307: Crystal cards: Soul Shard +1, Soul Cluster +2, Heart +4, Motherlode +3 and next creature 2 cheaper, Geode +1 Flow each turn
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: 9
 Received: 10
 
-  9070 |   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-bomber'), row: 7, col: 9 })).ok).toBe(true);
-  9071 |   s = await getState(page);
-> 9072 |   expect(s.players.player.bank).toBe(10 - 1); // Bare Knuckle Lunatic costs 3, 2 less = 1
+  9072 |   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-bomber'), row: 7, col: 9 })).ok).toBe(true);
+  9073 |   s = await getState(page);
+> 9074 |   expect(s.players.player.bank).toBe(10 - 1); // Bare Knuckle Lunatic costs 3, 2 less = 1
        |                                 ^
-  9073 |   expect((await act(page, { type: 'playCrystal', uid: handUid(s, 'player', 'glowing-geode') })).ok).toBe(true);
-  9074 |   await passTurn(page); await passTurn(page);
-  9075 |   s = await getState(page);
+  9075 |   expect((await act(page, { type: 'playCrystal', uid: handUid(s, 'player', 'glowing-geode') })).ok).toBe(true);
+  9076 |   await passTurn(page); await passTurn(page);
+  9077 |   s = await getState(page);
 ✗ AC309: every Round 12c card reports its ability as built, and close-ups show the owner text
 Error: page.evaluate: TypeError: window.oreheart.getAbilityStatus is not a function
     at eval (eval at evaluate (:290:30), <anonymous>:1:35)
@@ -1857,5 +1950,48 @@ Error: page.evaluate: TypeError: window.oreheart.getAbilityStatus is not a funct
     at eval (eval at evaluate (:290:30), <anonymous>:1:35)
     at UtilityScript.evaluate (<anonymous>:292:16)
     at UtilityScript.<anonymous> (<anonymous>:1:44)
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:9090:29
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:9092:29
+✗ AC310: the game loads the owner card format and renders every layout at 420:624
+Error: page.evaluate: TypeError: window.oreheart.cardFormat is not a function
+    at eval (eval at evaluate (:290:30), <anonymous>:1:35)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at eval (eval at evaluate (:290:30), <anonymous>:1:35)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:9135:26
+✗ AC311: every card face uses the new renderer, and the old frames are gone
+Error: hand: faces not drawn by the card format
+
+expect(received).toEqual(expected) // deep equality
+
+- Expected  - 1
++ Received  + 8
+
+- Array []
++ Array [
++   "goblin-scrounger",
++   "goblin-scrounger",
++   "venom-shiv",
+✗ AC312: the 8 reference cards render at 420x624 with their name and cost, and text fits
+Error: page.evaluate: TypeError: window.oreheart.renderCard is not a function
+    at eval (eval at evaluate (:290:30), <anonymous>:2:38)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at eval (eval at evaluate (:290:30), <anonymous>:2:38)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at renderAndMeasure (/home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:9110:54)
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:9199:21
+✗ AC313: a card's artPos is honored in the art layer
+TypeError: Cannot destructure property 's' of 'card.artPos' as it is undefined.
+
+  9211 |   await openTest(page);
+  9212 |   const card = await page.evaluate(async () => await window.oreheart.getCard('second-wind'));
+> 9213 |   const { s, x, y } = card.artPos;
+       |           ^
+  9214 |   const r = await renderAndMeasure(page, 'second-wind', 624);
+  9215 |   expect(r.html).toContain('artclip');
+  9216 |   expect(r.html.replace(/\s/g, '')).toContain(`translate(${x}%,${y}%)scale(${s})`);
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:9213:11
 ```
