@@ -1,1451 +1,1457 @@
 [
-  {
-    "id": "goblin-scrounger",
-    "name": "Goblin Miner",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Common",
-    "role": "Gatherer",
-    "cost": 1,
-    "attack": 1,
-    "health": 1,
-    "move": 1,
-    "abilities": [
-      "gather",
-      "tunnel"
-    ],
-    "unique": false,
-    "text": "Mines 2. Can Tunnel. +1 Health upgrade.",
-    "flavor": "Scrounger, Taker of Shiny Things",
-    "shortText": "Mines 2. Can Tunnel. +1 Health upgrade.",
-    "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine.",
-    "artPos": {
-      "s": 1,
-      "x": -5.1,
-      "y": 3.1
-    }
-  },
-  {
-    "id": "goblin-scrapper",
-    "name": "Bowler Brawler",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 6,
-    "attack": 2,
-    "health": 3,
-    "move": 1,
-    "abilities": [
-      "junkBoost"
-    ],
-    "unique": false,
-    "text": "Nearby Goblins get +1 Attack. Strike (2 crystals): roll a huge bowling ball in a straight line (front, back, left or right). It knocks every creature in its path, friend or foe, back 1-2 spaces at random.",
-    "shortText": "Nearby Goblins get +1 Attack. Strike (2): roll a bowling ball that knocks everything in its line back 1-2 spaces.",
-    "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Nearby Goblins get +1 Attack. Strike (2 crystals): roll a huge bowling ball in a straight line (front, back, left or right). It knocks every creature in its path, friend or foe, back 1-2 spaces at random.",
-    "flavor": "Ex-professional goblin bowler.",
-    "artPos": {
-      "s": 0.92,
-      "x": -2.1,
-      "y": -3.9
-    }
-  },
-  {
-    "id": "goblin-slinger",
-    "name": "Skullflinger",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 4,
-    "attack": 1,
-    "health": 2,
-    "move": 1,
-    "abilities": [
-      "ranged"
-    ],
-    "unique": false,
-    "text": "Ranged. Hits up to 6 spaces away in any direction; no strike back. Throws skulls from fallen enemies on the battlefield.",
-    "shortText": "Ranged. Hits up to 6 spaces away in any direction; no strike back.",
-    "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 6 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield.",
-    "artPos": {
-      "s": 0.92,
-      "x": -3.1,
-      "y": -0.7
-    }
-  },
-  {
-    "id": "goblin-bomber",
-    "name": "Bare Knuckle Lunatic",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Rare",
-    "role": "Fighter",
-    "cost": 3,
-    "attack": 2,
-    "health": 2,
-    "move": 1,
-    "abilities": [],
-    "unique": false,
-    "text": "When defeated, he knocks all units around him back 1 space.",
-    "shortText": "When defeated, he knocks all units around him back 1 space.",
-    "longText": "Fighter creature. Cost 3, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). When defeated, he knocks all units around him back 1 space.",
-    "flavor": "Thinks every problem can be solved with a fistfight. Every single one.",
-    "artPos": {
-      "s": 0.93,
-      "x": -2.7,
-      "y": -2
-    }
-  },
-  {
-    "id": "goblin-sneak",
-    "name": "Backstabbing Thief",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Rare",
-    "role": "Fighter",
-    "cost": 3,
-    "attack": 3,
-    "health": 2,
-    "move": 1,
-    "abilities": [
-      "sneaky"
-    ],
-    "unique": false,
-    "text": "Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats.",
-    "shortText": "Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats.",
-    "longText": "Fighter creature. Cost 3, Attack 3, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats.",
-    "flavor": "Sneaky and sinister. Hides in the shadows before he strikes.",
-    "artPos": {
-      "s": 1.18,
-      "x": -10.9,
-      "y": 2.5
-    }
-  },
-  {
-    "id": "wolf-rider",
-    "name": "Mangewolf Rider",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Rare",
-    "role": "Fighter",
-    "cost": 8,
-    "attack": 3,
-    "health": 4,
-    "move": 3,
-    "abilities": [
-      "haste"
-    ],
-    "unique": false,
-    "text": "Can act the turn it's played.",
-    "shortText": "Can act the turn it's played.",
-    "longText": "Fighter creature. Cost 8, Attack 3, Health 4, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Can act the turn it's played.",
-    "flavor": "Crazy as a stunt rider. Never met a jump he would not try.",
-    "artPos": {
-      "s": 0.94,
-      "x": -2,
-      "y": -4.9
-    }
-  },
-  {
-    "id": "grubnaks-big-boss-troll",
-    "name": "Gronkowski Troll Tyrant",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Collector",
-    "role": "Fighter",
-    "cost": 7,
-    "attack": 5,
-    "health": 6,
-    "move": 2,
-    "abilities": [
-      "rally"
-    ],
-    "unique": true,
-    "text": "All your Goblins get +1 Attack.",
-    "shortText": "All your Goblins get +1 Attack.",
-    "longText": "Fighter creature. Cost 7, Attack 5, Health 6, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). All your Goblins get +1 Attack.",
-    "flavor": "Very dumb, but very good at sports. A pro goblin-ball player: hits hard and can take a punch.",
-    "artPos": {
-      "s": 1.55,
-      "x": -1.5,
-      "y": 26.1
-    }
-  },
-  {
-    "id": "shard-guzzler",
-    "name": "Goblin Rocket Rider",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Ultra Rare",
-    "role": "Gatherer",
-    "cost": 6,
-    "attack": 1,
-    "health": 4,
-    "move": 1,
-    "abilities": [],
-    "unique": false,
-    "text": "Light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's attack. Then it makes one attack.",
-    "shortText": "Ride a rocket to any space: it explodes in a 3x3 area for damage equal to this card's Attack, then makes one attack.",
-    "longText": "Miner creature. Cost 6, Attack 1, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rocket Ride: light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's Attack. Then it makes one attack.",
-    "flavor": "Goblin with the short fuse.",
-    "artPos": {
-      "s": 0.95,
-      "x": -3.7,
-      "y": -16.4
-    }
-  },
-  {
-    "id": "gnome-prospector",
-    "name": "Gemsinger Miner",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Common",
-    "role": "Gatherer",
-    "cost": 1,
-    "attack": 1,
-    "health": 1,
-    "move": 1,
-    "abilities": [
-      "gather",
-      "tunnel"
-    ],
-    "unique": false,
-    "text": "Miner: mines 2. Tunnel. +1 Health upgrade.",
-    "flavor": "Prospector of Profound Patience",
-    "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade.",
-    "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine.",
-    "artPos": {
-      "s": 0.99,
-      "x": 0,
-      "y": 0
-    }
-  },
-  {
-    "id": "gnome-tinker",
-    "name": "Aegis Tinkerer",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 4,
-    "attack": 1,
-    "health": 3,
-    "move": 1,
-    "abilities": [
-      "fixit"
-    ],
-    "unique": false,
-    "text": "Each turn, adjacent allies get Shield 1.",
-    "shortText": "Each turn, adjacent allies get Shield 1.",
-    "longText": "Fighter creature. Cost 4, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Fix-it: at the start of your turn, each adjacent ally gets Shield 1. Example: A Tinker next to a Beetle gives the Beetle a Shield each turn.",
-    "flavor": "\"Stay behind me. Nobody gets hurt on my watch.\"",
-    "artPos": {
-      "s": 1.17,
-      "x": -10.6,
-      "y": 1.2
-    }
-  },
-  {
-    "id": "spark-gnome",
-    "name": "Stormcaller Savant",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 5,
-    "attack": 2,
-    "health": 2,
-    "move": 1,
-    "abilities": [
-      "ranged"
-    ],
-    "unique": false,
-    "text": "Ranged. Hits up to 5 spaces away; no strike back.",
-    "shortText": "Ranged. Hits up to 5 spaces away; no strike back.",
-    "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits up to 5 spaces away; no strike back.",
-    "flavor": "Even the woods keep the storm's company.",
-    "artPos": {
-      "s": 1.02,
-      "x": -4.6,
-      "y": 3.8
-    }
-  },
-  {
-    "id": "clockwork-beetle",
-    "name": "Iron Scarab Automaton",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Rare",
-    "role": "Fighter",
-    "cost": 6,
-    "attack": 3,
-    "health": 5,
-    "move": 1,
-    "abilities": [
-      "armored"
-    ],
-    "unique": false,
-    "text": "Armored: takes 1 less damage from each hit.",
-    "shortText": "Armored: takes 1 less damage from each hit.",
-    "longText": "Fighter creature. Cost 6, Attack 3, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Armored: takes 1 less damage from every hit. Example: A 3-damage hit only deals 2.",
-    "artPos": {
-      "s": 0.95,
-      "x": -1.9,
-      "y": -8.7
-    }
-  },
-  {
-    "id": "gnome-illusionist",
-    "name": "Mirrorveil Illusionist",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Rare",
-    "role": "Fighter",
-    "cost": 6,
-    "attack": 2,
-    "health": 3,
-    "move": 1,
-    "abilities": [
-      "blink"
-    ],
-    "unique": false,
-    "text": "Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down).",
-    "shortText": "Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down).",
-    "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down).",
-    "artPos": {
-      "s": 1.02,
-      "x": -4.4,
-      "y": -6.2
-    }
-  },
-  {
-    "id": "gyrocopter-ace",
-    "name": "Thunderwing Gyronaut",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Ultra Rare",
-    "role": "Fighter",
-    "cost": 8,
-    "attack": 3,
-    "health": 3,
-    "move": 3,
-    "abilities": [
-      "flying",
-      "ranged"
-    ],
-    "unique": false,
-    "text": "Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
-    "shortText": "Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
-    "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
-    "artPos": {
-      "s": 0.92,
-      "x": -2.4,
-      "y": -3.7
-    }
-  },
-  {
-    "id": "the-great-steam-golem",
-    "name": "The Arcane Colossus",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Collector",
-    "role": "Fighter",
-    "cost": 10,
-    "attack": 5,
-    "health": 6,
-    "move": 2,
-    "abilities": [
-      "overload"
-    ],
-    "unique": true,
-    "text": "Its hits also hurt enemies next to the target.",
-    "shortText": "Its hits also hurt enemies next to the target.",
-    "longText": "Fighter creature. Cost 10, Attack 5, Health 6, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Overload: its attack also hits every enemy next to the target for 1. Example: Hitting a creature also hurts its neighbours.",
-    "artPos": {
-      "s": 1.05,
-      "x": 2.2,
-      "y": -2.1
-    }
-  },
-  {
-    "id": "overclocked-conduit",
-    "name": "Overclocked Aethervein",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Rare",
-    "role": "Gatherer",
-    "cost": 5,
-    "attack": 1,
-    "health": 4,
-    "move": 1,
-    "abilities": [
-      "eaterConduit"
-    ],
-    "unique": false,
-    "text": "Mines extra crystals each turn. Extra Crystal cards freeze it and cost 1 Health.",
-    "shortText": "Mines extra crystals each turn. Extra Crystal cards freeze it and cost 1 Health.",
-    "longText": "Miner creature. Cost 5, Attack 1, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Mines extra crystals each turn. Extra Crystal cards freeze it and cost 1 Health.",
-    "artPos": {
-      "s": 1.04,
-      "x": -5,
-      "y": 2.1
-    },
-    "flavor": "Four arms, four pickaxes, zero breaks."
-  },
-  {
-    "id": "dwarf-miner",
-    "name": "Riot Shield Bearer",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 2,
-    "attack": 1,
-    "health": 5,
-    "move": 1,
-    "abilities": [
-      "gather",
-      "tunnel"
-    ],
-    "unique": false,
-    "text": "Riot Shield. For 3 turns, can't move or attack. Can't be killed by anything.",
-    "flavor": "Has never met a rock he respected",
-    "shortText": "Riot Shield. For 3 turns, can't move or attack. Can't be killed by anything.",
-    "longText": "Fighter creature. Cost 2, Attack 1, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Riot Shield. For 3 turns, can't move or attack. Can't be killed by anything."
-  },
-  {
-    "id": "shieldbeard",
-    "name": "Ironwall Shieldbeard",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 6,
-    "attack": 2,
-    "health": 4,
-    "move": 1,
-    "abilities": [
-      "guard"
-    ],
-    "unique": false,
-    "text": "Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several.",
-    "shortText": "Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several.",
-    "longText": "Fighter creature. Cost 6, Attack 2, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several."
-  },
-  {
-    "id": "axe-thrower",
-    "name": "Grudge Hurler",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 6,
-    "attack": 2,
-    "health": 3,
-    "move": 1,
-    "abilities": [
-      "ranged"
-    ],
-    "unique": false,
-    "text": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
-    "shortText": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
-    "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
-    "artPos": {
-      "s": 1,
-      "x": -5.7,
-      "y": -5.6
-    }
-  },
-  {
-    "id": "ironhammer-berserker",
-    "name": "Bloodbeard Berserker",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Rare",
-    "role": "Fighter",
-    "cost": 7,
-    "attack": 2,
-    "health": 4,
-    "move": 1,
-    "abilities": [
-      "rage"
-    ],
-    "unique": false,
-    "text": "Grit. Each time it survives an attack, it permanently gains +1 Attack. Every2 enemy's it kills gives it +1 Attack.",
-    "shortText": "Grit. Each time it survives an attack, it permanently gains +1 Attack. Every2 enemy's it kills gives it +1 Attack.",
-    "longText": "Fighter creature. Cost 7, Attack 2, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Grit. Each time it survives an attack, it permanently gains +1 Attack. Every2 enemy's it kills gives it +1 Attack.",
-    "artPos": {
-      "s": 0.95,
-      "x": -1,
-      "y": -3.5
-    }
-  },
-  {
-    "id": "brewmaster",
-    "name": "Corpsman Brewlord",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Rare",
-    "role": "Fighter",
-    "cost": 6,
-    "attack": 2,
-    "health": 4,
-    "move": 1,
-    "abilities": [
-      "heartyale"
-    ],
-    "unique": false,
-    "text": "Medic. Each turn, heal an adjacent wounded dwarf. Beer is the cure.",
-    "shortText": "Medic. Each turn, heal an adjacent wounded dwarf. Beer is the cure.",
-    "longText": "Fighter creature. Cost 6, Attack 2, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Medic. Each turn, heal an adjacent wounded dwarf. Beer is the cure.",
-    "artPos": {
-      "s": 0.95,
-      "x": -3.2,
-      "y": -2.8
-    },
-    "flavor": "Doctor's orders: one pint, and call me in the morning."
-  },
-  {
-    "id": "ram-rider",
-    "name": "Thunderhorn Ram Rider",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Ultra Rare",
-    "role": "Fighter",
-    "cost": 10,
-    "attack": 4,
-    "health": 5,
-    "move": 2,
-    "abilities": [
-      "charge"
-    ],
-    "unique": false,
-    "text": "Charge. Moves and attacks in the same turn. Pay 2: Move in any direction, any number of spaces.",
-    "shortText": "Charge. Moves and attacks in the same turn. Pay 2: Move in any direction, any number of spaces.",
-    "longText": "Fighter creature. Cost 10, Attack 4, Health 5, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Charge. Moves and attacks in the same turn. Pay 2: Move in any direction, any number of spaces.",
-    "artPos": {
-      "s": 0.93,
-      "x": -2.7,
-      "y": -9
-    }
-  },
-  {
-    "id": "queen-brunhilda-stonebeard",
-    "name": "Queen Brunhilda",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Collector",
-    "role": "Fighter",
-    "cost": 10,
-    "attack": 5,
-    "health": 6,
-    "move": 2,
-    "abilities": [
-      "unbreakable"
-    ],
-    "unique": true,
-    "text": "Takes at most 3 damage from a hit.",
-    "shortText": "Takes at most 3 damage from a hit.",
-    "longText": "Fighter creature. Cost 10, Attack 5, Health 6, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Unbreakable: never takes more than 3 damage from one hit. Example: A 5-damage Fireball only deals 3 to her.",
-    "artPos": {
-      "s": 0.92,
-      "x": -2.9,
-      "y": -2.1
-    }
-  },
-  {
-    "id": "crystal-drunk-delver",
-    "name": "Gemdrunk Deepdelver",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Rare",
-    "role": "Gatherer",
-    "cost": 7,
-    "attack": 2,
-    "health": 5,
-    "move": 1,
-    "abilities": [
-      "eaterDelver"
-    ],
-    "unique": false,
-    "text": "Each Crystal in your bank gives it +1 Attack for good.",
-    "shortText": "Each Crystal in your bank gives it +1 Attack for good.",
-    "longText": "Miner creature. Cost 7, Attack 2, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Each Crystal in your bank gives it +1 Attack for good.",
-    "artPos": {
-      "s": 1,
-      "x": -5,
-      "y": 4.4
-    }
-  },
-  {
-    "id": "goblin-grunt",
-    "name": "Snotskull Grunt",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 3,
-    "attack": 2,
-    "health": 3,
-    "move": 1,
-    "abilities": [],
-    "unique": false,
-    "text": "Plain and sturdy. No tricks.",
-    "shortText": "Plain and sturdy. No tricks.",
-    "longText": "Fighter creature. Cost 3, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Example: Send it forward to trade blows with the enemy.",
-    "flavor": "Not very smart. Average, really. But still can hurt ya.",
-    "artPos": {
-      "s": 0.98,
-      "x": -3,
-      "y": 2.6
-    }
-  },
-  {
-    "id": "goblin-pebbler",
-    "name": "Boneknocker",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 3,
-    "attack": 1,
-    "health": 2,
-    "move": 1,
-    "abilities": [],
-    "unique": false,
-    "text": "Plain and sturdy. No tricks. Just kneecaps!",
-    "shortText": "Plain and sturdy. No tricks. Just kneecaps!",
-    "longText": "Fighter creature. Cost 3, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Plain and sturdy. No tricks. Just kneecaps!"
-  },
-  {
-    "id": "gnome-cogger",
-    "name": "Voldawright",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Rare",
-    "role": "Fighter",
-    "cost": 5,
-    "attack": 2,
-    "health": 3,
-    "move": 1,
-    "abilities": [],
-    "unique": false,
-    "text": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each.",
-    "shortText": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each.",
-    "longText": "Fighter creature. Cost 5, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each.",
-    "artPos": {
-      "s": 0.94,
-      "x": -3.7,
-      "y": -7.1
-    }
-  },
-  {
-    "id": "gnome-widget",
-    "name": "Brawler Adept",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 3,
-    "attack": 2,
-    "health": 2,
-    "move": 1,
-    "abilities": [],
-    "unique": false,
-    "text": "Plain and sturdy. No tricks. Can't cast spells.",
-    "shortText": "Plain and sturdy. No tricks. Can't cast spells.",
-    "longText": "Fighter creature. Cost 3, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Plain and sturdy. No tricks. Can't cast spells.",
-    "artPos": {
-      "s": 0.94,
-      "x": -3.3,
-      "y": -3.7
-    }
-  },
-  {
-    "id": "dwarf-pickman",
-    "name": "Ironjaw Big Back",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 5,
-    "attack": 1,
-    "health": 6,
-    "move": 1,
-    "abilities": [],
-    "unique": false,
-    "text": "Tough. Takes a beating and keeps swinging.",
-    "shortText": "Tough. Takes a beating and keeps swinging.",
-    "longText": "Fighter creature. Cost 5, Attack 1, Health 6, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Tough. Takes a beating and keeps swinging.",
-    "artPos": {
-      "s": 0.93,
-      "x": -2.6,
-      "y": -6
-    },
-    "flavor": "Hit him again. He likes it."
-  },
-  {
-    "id": "dwarf-stoneback",
-    "name": "Granite Oathkeeper",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 3,
-    "attack": 1,
-    "health": 3,
-    "move": 1,
-    "abilities": [],
-    "unique": false,
-    "text": "Enforcer. When it attacks, knocks back all nearby enemies 1-2 spaces at random.",
-    "shortText": "Enforcer. When it attacks, knocks back all nearby enemies 1-2 spaces at random.",
-    "longText": "Fighter creature. Cost 3, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Enforcer. When it attacks, knocks back all nearby enemies 1-2 spaces at random."
-  },
-  {
-    "id": "prospectors-prayer",
-    "name": "Desperate Plunder",
-    "type": "spell",
-    "faction": "any",
-    "rarity": "Rare",
-    "spellKind": "regular",
-    "cost": 0,
-    "effect": "gainCrystals",
-    "params": {
-      "amount": 3,
-      "needFewerSites": true
-    },
-    "text": "Spell. Gain 3 Flow each turn while your opponent has more Flow than you. Stackable. Stops once you have more.",
-    "shortText": "Spell. Gain 3 Flow each turn while your opponent has more Flow than you. Stackable. Stops once you have more.",
-    "longText": "Spell. Gain 3 Flow each turn while your opponent has more Flow than you. Stackable. Stops once you have more."
-  },
-  {
-    "id": "venom-shiv",
-    "name": "Venom Shiv",
-    "type": "spell",
-    "faction": "goblins",
-    "rarity": "Uncommon",
-    "spellKind": "regular",
-    "cost": 2,
-    "effect": "poison",
-    "params": {
-      "turns": 3,
-      "amount": 1
-    },
-    "text": "Spell. Fling a dagger at an enemy: it takes 1 damage each of its next 7 turns; no healing.",
-    "shortText": "Spell. Fling a dagger at an enemy: it takes 1 damage each of its next 7 turns; no healing.",
-    "longText": "Regular spell, cast in your Deploy phase. Fling a poisoned dagger at one enemy creature: it takes 1 damage at the start of each of its owner's next 7 turns and cannot heal during that time. A green marker with a turn counter shows the poison.",
-    "artPos": {
-      "s": 0.98,
-      "x": -3.2,
-      "y": 0.2
-    }
-  },
-  {
-    "id": "tunnel-rush",
-    "name": "Rat-Tunnel Ambush",
-    "type": "spell",
-    "faction": "goblins",
-    "rarity": "Uncommon",
-    "spellKind": "regular",
-    "cost": 2,
-    "effect": "tunnelMove",
-    "params": {},
-    "text": "Spell. Move a creature next to a mine; it can still attack.",
-    "shortText": "Spell. Move a creature next to a mine; it can still attack.",
-    "longText": "Regular spell, cast in your Deploy phase. Move one of your creatures to any empty space next to a crystal site; it can still attack this turn. Example: Move a far-away Fighter beside the enemy's mine and strike at once.",
-    "artPos": {
-      "s": 1.24,
-      "x": 10.2,
-      "y": -13
-    }
-  },
-  {
-    "id": "fireball",
-    "name": "Searing Arcane Orb",
-    "type": "spell",
-    "faction": "gnomes",
-    "rarity": "Rare",
-    "spellKind": "regular",
-    "cost": 3,
-    "effect": "damage",
-    "params": {
-      "amount": 3
-    },
-    "text": "Spell. 3 damage to a creature or Commander.",
-    "shortText": "Spell. 3 damage to a creature or Commander.",
-    "longText": "Regular spell, cast in your Deploy phase by your Commander. It deals 3 damage to one creature or to the enemy Commander. Example: Cast it on a 3-Health creature to defeat it.",
-    "artPos": {
-      "s": 1,
-      "x": -5.3,
-      "y": -2
-    }
-  },
-  {
-    "id": "battle-cry",
-    "name": "Thunderhorn Blast",
-    "type": "spell",
-    "faction": "dwarves",
-    "rarity": "Rare",
-    "spellKind": "regular",
-    "cost": 3,
-    "effect": "buffAttack",
-    "params": {
-      "amount": 1
-    },
-    "text": "Spell. All your creatures get +1 Attack this turn.",
-    "shortText": "Spell. All your creatures get +1 Attack this turn.",
-    "longText": "Regular spell, cast in your Deploy phase. Every creature you control gets +1 Attack until the end of the turn. Example: Cast it, then attack with three creatures for 1 extra damage each.",
-    "artPos": {
-      "s": 1,
-      "x": -5.2,
-      "y": 0.3
-    }
-  },
-  {
-    "id": "meteor-strike",
-    "name": "Starfall Cataclysm",
-    "type": "spell",
-    "faction": "gnomes",
-    "rarity": "Ultra Rare",
-    "spellKind": "regular",
-    "cost": 6,
-    "effect": "areaDamage",
-    "params": {
-      "amount": 2
-    },
-    "text": "Spell. 4 damage to everything in a 3×3 area.",
-    "shortText": "Spell. 4 damage to everything in a 3×3 area.",
-    "longText": "Regular spell, cast in your Deploy phase. It deals 4 damage to every creature in a 3 x 3 area, yours included. Example: Aim it at the middle of three enemy creatures.",
-    "artPos": {
-      "s": 0.99,
-      "x": 0,
-      "y": 0
-    }
-  },
-  {
-    "id": "healing-light",
-    "name": "Field Bandage",
-    "type": "spell",
-    "faction": "any",
-    "rarity": "Common",
-    "spellKind": "instant",
-    "cost": 2,
-    "effect": "heal",
-    "params": {
-      "amount": 3
-    },
-    "text": "Instant. Heal one of your creatures to full health.",
-    "shortText": "Instant. Heal one of your creatures to full health.",
-    "longText": "Instant. Heal one of your creatures to full health."
-  },
-  {
-    "id": "shield-bubble",
-    "name": "Ironclad Bulwark",
-    "type": "spell",
-    "faction": "dwarves",
-    "rarity": "Uncommon",
-    "spellKind": "instant",
-    "cost": 2,
-    "effect": "shield",
-    "params": {},
-    "text": "Instant. A creature takes no damage from the next hit.",
-    "shortText": "Instant. A creature takes no damage from the next hit.",
-    "longText": "Instant: play it in your turn or when you respond. One of your creatures takes no damage from the next hit this turn, even a Ranged one. Example: The enemy attacks your Shieldbeard: respond and the hit does nothing.",
-    "artPos": {
-      "s": 0.92,
-      "x": -1.7,
-      "y": -8.3
-    }
-  },
-  {
-    "id": "second-wind",
-    "name": "Emergency Rations",
-    "type": "spell",
-    "faction": "dwarves",
-    "rarity": "Ultra Rare",
-    "spellKind": "instant",
-    "cost": 5,
-    "effect": "healCommander",
-    "params": {
-      "amount": 4
-    },
-    "text": "Instant. Heal your Commander or another unit for 4.",
-    "shortText": "Instant. Heal your Commander or another unit for 4.",
-    "longText": "Instant. Heal your Commander or another unit for 4.",
-    "artPos": {
-      "s": 1.36,
-      "x": -5.6,
-      "y": -26
-    }
-  },
-  {
-    "id": "fizzle",
-    "name": "Snuff Out",
-    "type": "spell",
-    "faction": "any",
-    "rarity": "Uncommon",
-    "spellKind": "counter",
-    "cost": 3,
-    "effect": "cancelSpell",
-    "params": {
-      "maxCost": 3
-    },
-    "text": "Counterspell. Cancel a spell costing 3 or less.",
-    "shortText": "Counterspell. Cancel a spell costing 3 or less.",
-    "longText": "Counterspell (Instant): play it when the enemy casts a spell that costs 3 or less. The spell is cancelled and the caster's card is lost. Example: The enemy casts a 3-cost Searing Arcane Orb: respond and it shatters.",
-    "artPos": {
-      "s": 1.18,
-      "x": -3,
-      "y": -9.8
-    }
-  },
-  {
-    "id": "hold-it",
-    "name": "Pickpocket!",
-    "type": "spell",
-    "faction": "goblins",
-    "rarity": "Rare",
-    "spellKind": "counter",
-    "cost": 3,
-    "effect": "cancelSummon",
-    "params": {},
-    "text": "Counterspell. Send a creature being summoned back to hand.",
-    "shortText": "Counterspell. Send a creature being summoned back to hand.",
-    "longText": "Counterspell (Instant): play it when the enemy summons a creature. The summon is cancelled and the card goes back to their hand. Example: The enemy summons a big creature: stop it and they must pay again.",
-    "artPos": {
-      "s": 1.04,
-      "x": -7.7,
-      "y": -2.3
-    }
-  },
-  {
-    "id": "spell-snap",
-    "name": "Unweave",
-    "type": "spell",
-    "faction": "gnomes",
-    "rarity": "Rare",
-    "spellKind": "counter",
-    "cost": 5,
-    "effect": "cancelSpell",
-    "params": {},
-    "text": "Counterspell. Cancel any enemy spell.",
-    "shortText": "Counterspell. Cancel any enemy spell.",
-    "longText": "Counterspell (Instant): play it when the enemy casts any spell, whatever it costs. The spell is cancelled. Example: The enemy casts Starfall Cataclysm: respond and it is cancelled.",
-    "artPos": {
-      "s": 2.02,
-      "x": -56.1,
-      "y": 51.8
-    }
-  },
-  {
-    "id": "mirror-hex",
-    "name": "Hex Reversal",
-    "type": "spell",
-    "faction": "any",
-    "rarity": "Ultra Rare",
-    "spellKind": "counter",
-    "cost": 7,
-    "effect": "mirror",
-    "params": {},
-    "text": "Counterspell. Cancel a spell, then cast a free copy.",
-    "shortText": "Counterspell. Cancel a spell, then cast a free copy.",
-    "longText": "Counterspell (Instant): play it when the enemy casts a spell. It is cancelled, and you cast a free copy of it yourself. Example: The enemy casts Searing Arcane Orb at you: cancel it and Searing Arcane Orb their Commander.",
-    "disabled": true
-  },
-  {
-    "id": "soul-shard",
-    "name": "Soul Shard",
-    "type": "crystal",
-    "faction": "any",
-    "rarity": "Common",
-    "cost": 0,
-    "effect": "gain",
-    "params": {
-      "amount": 1
-    },
-    "unique": false,
-    "text": "Crystal card. Free. +1 to your Bank. Play any time during your turn.",
-    "shortText": "Crystal card. Free. +1 to your Bank. Play any time during your turn.",
-    "longText": "Crystal card. Free. +1 to your Bank. Play any time during your turn.",
-    "artPos": {
-      "s": 0.98,
-      "x": 0,
-      "y": 0
-    }
-  },
-  {
-    "id": "crystal-cluster",
-    "name": "Soul Cluster",
-    "type": "crystal",
-    "faction": "any",
-    "rarity": "Uncommon",
-    "cost": 0,
-    "effect": "gain",
-    "params": {
-      "amount": 2
-    },
-    "unique": false,
-    "text": "Crystal card. Free. Play any time during your turn. +2 to your Bank.",
-    "shortText": "Crystal card. Free. Play any time during your turn. +2 to your Bank.",
-    "longText": "Crystal card. Free. Play any time during your turn. +2 to your Bank."
-  },
-  {
-    "id": "glowing-geode",
-    "name": "Wellspring Geode",
-    "type": "crystal",
-    "faction": "any",
-    "rarity": "Collector",
-    "cost": 0,
-    "effect": "geode",
-    "params": {},
-    "unique": true,
-    "text": "Crystal card. +1 Flow every turn, for good. Play anytime during your turn.",
-    "shortText": "Crystal card. +1 Flow every turn, for good. Play anytime during your turn.",
-    "longText": "Crystal card. +1 Flow every turn, for good. Play anytime during your turn."
-  },
-  {
-    "id": "heart-of-the-fallen",
-    "name": "Heart of the Fallen",
-    "type": "crystal",
-    "faction": "any",
-    "rarity": "Ultra Rare",
-    "cost": 0,
-    "effect": "gain",
-    "params": {
-      "amount": 4
-    },
-    "unique": false,
-    "text": "Cast any time on your turn. Free. +4 to your Bank.",
-    "shortText": "Cast any time on your turn. Free. +4 to your Bank.",
-    "longText": "Cast any time on your turn. Free. +4 to your Bank."
-  },
-  {
-    "id": "motherlode",
-    "name": "Motherlode",
-    "type": "crystal",
-    "faction": "any",
-    "rarity": "Collector",
-    "cost": 0,
-    "effect": "motherlode",
-    "params": {
-      "amount": 3,
-      "discount": 2
-    },
-    "unique": false,
-    "text": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less. Play anytime during your turn.",
-    "shortText": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less. Play anytime during your turn.",
-    "longText": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less. Play anytime during your turn."
-  },
-  {
-    "id": "goblin-smith-miner",
-    "name": "Scrapsmith Miner",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Uncommon",
-    "role": "Smith",
-    "cost": 2,
-    "attack": 1,
-    "health": 1,
-    "move": 1,
-    "abilities": [
-      "smith"
-    ],
-    "unique": false,
-    "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health. When this dies, draw a card. No draw if it died upgrading.",
-    "shortText": "Upgrades a creature: +1 Attack, +1 Health. Draw a card when it dies (not when it dies upgrading).",
-    "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner.",
-    "flavor": "Does the mining, and can make anything out of anything.",
-    "artPos": {
-      "s": 0.99,
-      "x": 0,
-      "y": 0
-    }
-  },
-  {
-    "id": "gnome-smith-miner",
-    "name": "Arcsmith Miner",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Common",
-    "role": "Smith",
-    "cost": 2,
-    "attack": 1,
-    "health": 1,
-    "move": 1,
-    "abilities": [
-      "smith"
-    ],
-    "unique": false,
-    "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
-    "shortText": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
-    "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner."
-  },
-  {
-    "id": "dwarf-smith-miner",
-    "name": "Anvilsworn Miner",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Common",
-    "role": "Smith",
-    "cost": 2,
-    "attack": 1,
-    "health": 1,
-    "move": 1,
-    "abilities": [
-      "smith"
-    ],
-    "unique": false,
-    "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
-    "shortText": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
-    "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner."
-  },
-  {
-    "id": "rotgut-grenadier",
-    "name": "Goblin Chef",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 5,
-    "attack": 2,
-    "health": 2,
-    "move": 1,
-    "abilities": [],
-    "unique": false,
-    "text": "Smack. When this attacks, the target is knocked back 2 spaces.",
-    "shortText": "Smack. When this attacks, the target is knocked back 2 spaces.",
-    "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Smack. When this attacks, the target is knocked back 2 spaces.",
-    "flavor": "Not very clean. Not very nice. Smells bad, cooks horribly, but you can eat it.",
-    "artPos": {
-      "s": 1,
-      "x": -3.8,
-      "y": 3.2
-    }
-  },
-  {
-    "id": "shiv-rat",
-    "name": "Shiv Rat",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 4,
-    "attack": 2,
-    "health": 1,
-    "move": 1,
-    "abilities": [
-      "sneaky"
-    ],
-    "unique": false,
-    "text": "Sneaky. Enemies can't strike back at it.",
-    "shortText": "Sneaky. Enemies can't strike back at it.",
-    "longText": "Fighter creature. Cost 4, Attack 2, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Sneaky: enemies cannot strike back at it. Example: It attacks a Guard and takes no damage back.",
-    "artPos": {
-      "s": 1.08,
-      "x": 3.4,
-      "y": 7.3
-    }
-  },
-  {
-    "id": "skullbasher-rusher",
-    "name": "Skullbasher Rusher",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Uncommon",
-    "role": "Fighter",
-    "cost": 4,
-    "attack": 2,
-    "health": 2,
-    "move": 1,
-    "abilities": [
-      "charge"
-    ],
-    "unique": false,
-    "text": "Charge. Moves and attacks in the same turn.",
-    "shortText": "Charge. Moves and attacks in the same turn.",
-    "longText": "Fighter creature. Cost 4, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Charge: can move and attack in the same turn. Example: Walk up to an enemy and strike in the same turn.",
-    "artPos": {
-      "s": 1,
-      "x": -1.7,
-      "y": -5.1
-    }
-  },
-  {
-    "id": "junk-shaman",
-    "name": "Junk Shaman",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Ultra Rare",
-    "role": "Ranged",
-    "cost": 7,
-    "attack": 1,
-    "health": 3,
-    "move": 1,
-    "abilities": [
-      "junkBoost"
-    ],
-    "unique": false,
-    "text": "On your turn, adjacent Goblins get +1 Attack. Pay 2: pick up one character within 5 spaces (ally or enemy) and move it to any space within 5 spaces of this card.",
-    "shortText": "On your turn, adjacent Goblins get +1 Attack. Pay 2: move any character within 5 spaces to a space within 5.",
-    "longText": "Ranged creature. Cost 7, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). On your turn, adjacent Goblins get +1 Attack. Pay 2: pick up one character within 5 spaces (ally or enemy) and move it to any space within 5 spaces of this card.",
-    "flavor": "Old and wise in the wizard ways. One of the only spellcasters in the Goblin realm.",
-    "artPos": {
-      "s": 0.95,
-      "x": -2.3,
-      "y": 1
-    }
-  },
-  {
-    "id": "blastrat-sapper",
-    "name": "SewerSlide Bomber",
-    "type": "creature",
-    "faction": "goblins",
-    "rarity": "Uncommon",
-    "role": "Fighter",
-    "cost": 2,
-    "attack": 2,
-    "health": 1,
-    "move": 1,
-    "abilities": [
-      "kaboom1"
-    ],
-    "unique": false,
-    "text": "Ka-boom: 1 damage to adjacent enemies when defeated (upgrades make the blast stronger too). Pay 1 crystal: he runs in a straight or diagonal line until he hits something, then explodes.",
-    "shortText": "Ka-boom: 1 damage to adjacent enemies when defeated. Pay 1: he runs in a straight line until he hits something, then explodes.",
-    "longText": "Fighter creature. Cost 2, Attack 2, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ka-boom: 1 damage to adjacent enemies when defeated (upgrades make the blast stronger too). Pay 1 crystal: he runs in a straight or diagonal line until he hits something, then explodes.",
-    "flavor": "A crazed zealot, happy to go out with a bang for the cause.",
-    "artPos": {
-      "s": 1.34,
-      "x": -8.3,
-      "y": 21.8
-    }
-  },
-  {
-    "id": "hexwright-apprentice",
-    "name": "Hexslinger Apprentice",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 4,
-    "attack": 1,
-    "health": 2,
-    "move": 1,
-    "abilities": [
-      "ranged"
-    ],
-    "unique": false,
-    "text": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
-    "shortText": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
-    "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
-    "artPos": {
-      "s": 0.93,
-      "x": -2.2,
-      "y": -2.3
-    }
-  },
-  {
-    "id": "gearward-sentinel",
-    "name": "Gearward Sentinel",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 4,
-    "attack": 3,
-    "health": 4,
-    "move": 1,
-    "abilities": [
-      "guard"
-    ],
-    "unique": false,
-    "text": "Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight.",
-    "shortText": "Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight.",
-    "longText": "Fighter creature. Cost 4, Attack 3, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight.",
-    "artPos": {
-      "s": 1.06,
-      "x": -8.4,
-      "y": -2.8
-    }
-  },
-  {
-    "id": "runic-siphoner",
-    "name": "Soul Stone Siphoner",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Uncommon",
-    "role": "Fighter",
-    "cost": 7,
-    "attack": 5,
-    "health": 2,
-    "move": 1,
-    "abilities": [
-      "siphon"
-    ],
-    "unique": false,
-    "text": "Defeating a creature gives +1 Bank crystal. May sacrifice an allied creature to gain +1 Bank crystal.",
-    "shortText": "Defeating a creature gives +1 Bank crystal. May sacrifice an allied creature to gain +1 Bank crystal.",
-    "longText": "Fighter creature. Cost 7, Attack 5, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Defeating a creature gives +1 Bank crystal. May sacrifice an allied creature to gain +1 Bank crystal.",
-    "artPos": {
-      "s": 0.98,
-      "x": -4.7,
-      "y": -0.8
-    }
-  },
-  {
-    "id": "phase-stalker",
-    "name": "Gnome Plow",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Uncommon",
-    "role": "Fighter",
-    "cost": 6,
-    "attack": 2,
-    "health": 3,
-    "move": 1,
-    "abilities": [
-      "blink"
-    ],
-    "unique": false,
-    "text": "Plow (2 crystals): Move in a straight line, never diagonally. Knocks aside all creatures in its path, friend or foe, 1-2 spaces at random.",
-    "shortText": "Plow (2 crystals): Move in a straight line, never diagonally. Knocks aside all creatures in its path, friend or foe, 1-2 spaces at random.",
-    "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Plow (2 crystals): Move in a straight line, never diagonally. Knocks aside all creatures in its path, friend or foe, 1-2 spaces at random.",
-    "artPos": {
-      "s": 1,
-      "x": -1.8,
-      "y": -4.1
-    }
-  },
-  {
-    "id": "glyphshield-warden",
-    "name": "Glyphshield Warden",
-    "type": "creature",
-    "faction": "gnomes",
-    "rarity": "Uncommon",
-    "role": "Fighter",
-    "cost": 6,
-    "attack": 2,
-    "health": 3,
-    "move": 1,
-    "abilities": [
-      "glyphShield"
-    ],
-    "unique": false,
-    "text": "Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack.",
-    "shortText": "Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack.",
-    "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack."
-  },
-  {
-    "id": "oathbound-pikeman",
-    "name": "Oathbound Overwatch",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 6,
-    "attack": 2,
-    "health": 3,
-    "move": 1,
-    "abilities": [
-      "guard"
-    ],
-    "unique": false,
-    "text": "Sneaky. Can attack any enemy on the board, at any distance.",
-    "shortText": "Sneaky. Can attack any enemy on the board, at any distance.",
-    "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Sneaky. Can attack any enemy on the board, at any distance."
-  },
-  {
-    "id": "deepforge-crossbowman",
-    "name": "Marksmen Gunner",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 5,
-    "attack": 2,
-    "health": 2,
-    "move": 1,
-    "abilities": [
-      "ranged"
-    ],
-    "unique": false,
-    "text": "Ranged. Fires straight or diagonal up to 7 spaces; no strike back.",
-    "shortText": "Ranged. Fires straight or diagonal up to 7 spaces; no strike back.",
-    "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Fires straight or diagonal up to 7 spaces; no strike back.",
-    "artPos": {
-      "s": 0.93,
-      "x": -3,
-      "y": -3.9
-    },
-    "flavor": "Ex-military. Still loves a big bang."
-  },
-  {
-    "id": "barrelback-courier",
-    "name": "Barrelback Courier",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Common",
-    "role": "Fighter",
-    "cost": 5,
-    "attack": 2,
-    "health": 3,
-    "move": 1,
-    "abilities": [
-      "haste"
-    ],
-    "unique": false,
-    "text": "Can act the turn it's played.",
-    "shortText": "Can act the turn it's played.",
-    "longText": "Fighter creature. Cost 5, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Haste: can act the turn it is played. Example: Summon it and attack in the same turn.",
-    "artPos": {
-      "s": 1,
-      "x": -5.2,
-      "y": -0.1
-    }
-  },
-  {
-    "id": "rune-splitter",
-    "name": "Door Splitter",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Uncommon",
-    "role": "Fighter",
-    "cost": 7,
-    "attack": 3,
-    "health": 3,
-    "move": 1,
-    "abilities": [
-      "armored"
-    ],
-    "unique": false,
-    "text": "Charge. Can charge in any direction, even diagonally. Blasts enemies out of its way. Knocks any unit, friend or foe, back 1, 2 or 3 spaces at random in a random direction.",
-    "shortText": "Charge. Can charge in any direction, even diagonally. Blasts enemies out of its way. Knocks any unit, friend or foe, back 1, 2 or 3 spaces at random in a random direction.",
-    "longText": "Fighter creature. Cost 7, Attack 3, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Charge. Can charge in any direction, even diagonally. Blasts enemies out of its way. Knocks any unit, friend or foe, back 1, 2 or 3 spaces at random in a random direction.",
-    "flavor": "He has the key to the city. It's a battering ram."
-  },
-  {
-    "id": "grimhold-ravager",
-    "name": "Grimhold Ravager",
-    "type": "creature",
-    "faction": "dwarves",
-    "rarity": "Uncommon",
-    "role": "Fighter",
-    "cost": 7,
-    "attack": 3,
-    "health": 4,
-    "move": 1,
-    "abilities": [
-      "rage"
-    ],
-    "unique": false,
-    "text": "Brawler. If it attacked or was attacked last round, its Attack doubles this round.",
-    "shortText": "Brawler. If it attacked or was attacked last round, its Attack doubles this round.",
-    "longText": "Fighter creature. Cost 7, Attack 3, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Brawler. If it attacked or was attacked last round, its Attack doubles this round.",
-    "artPos": {
-      "s": 0.92,
-      "x": -2.8,
-      "y": -8.2
-    }
+ {
+  "id": "goblin-scrounger",
+  "name": "Goblin Miner",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Gatherer",
+  "cost": 1,
+  "attack": 1,
+  "health": 1,
+  "move": 1,
+  "abilities": [
+   "gather",
+   "tunnel"
+  ],
+  "unique": false,
+  "text": "Mines 2. Can Tunnel. +1 Health upgrade.",
+  "flavor": "Scrounger, Taker of Shiny Things",
+  "shortText": "Mines 2. Can Tunnel. +1 Health upgrade.",
+  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine.",
+  "artPos": {
+   "s": 1,
+   "x": -5.1,
+   "y": 3.1
   }
+ },
+ {
+  "id": "goblin-scrapper",
+  "name": "Bowler Brawler",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "junkBoost"
+  ],
+  "unique": false,
+  "text": "Nearby Goblins get +1 Attack. Strike (2 crystals): roll a huge bowling ball in a straight line (front, back, left or right). It knocks every creature in its path, friend or foe, back 1-2 spaces at random.",
+  "shortText": "Nearby Goblins get +1 Attack. Strike (2): roll a bowling ball that knocks everything in its line back 1-2 spaces.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Nearby Goblins get +1 Attack. Strike (2 crystals): roll a huge bowling ball in a straight line (front, back, left or right). It knocks every creature in its path, friend or foe, back 1-2 spaces at random.",
+  "flavor": "Ex-professional goblin bowler.",
+  "artPos": {
+   "s": 0.92,
+   "x": -2.1,
+   "y": -3.9
+  }
+ },
+ {
+  "id": "goblin-slinger",
+  "name": "Skullflinger",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 1,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged. Hits up to 6 spaces away in any direction; no strike back. Throws skulls from fallen enemies on the battlefield.",
+  "shortText": "Ranged. Hits up to 6 spaces away in any direction; no strike back.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 6 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield.",
+  "artPos": {
+   "s": 0.92,
+   "x": -3.1,
+   "y": -0.7
+  },
+  "range": 6
+ },
+ {
+  "id": "goblin-bomber",
+  "name": "Bare Knuckle Lunatic",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [],
+  "unique": false,
+  "text": "When defeated, he knocks all units around him back 1 space.",
+  "shortText": "When defeated, he knocks all units around him back 1 space.",
+  "longText": "Fighter creature. Cost 3, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). When defeated, he knocks all units around him back 1 space.",
+  "flavor": "Thinks every problem can be solved with a fistfight. Every single one.",
+  "artPos": {
+   "s": 0.93,
+   "x": -2.7,
+   "y": -2
+  }
+ },
+ {
+  "id": "goblin-sneak",
+  "name": "Backstabbing Thief",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 3,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "sneaky"
+  ],
+  "unique": false,
+  "text": "Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats.",
+  "shortText": "Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats.",
+  "longText": "Fighter creature. Cost 3, Attack 3, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats.",
+  "flavor": "Sneaky and sinister. Hides in the shadows before he strikes.",
+  "artPos": {
+   "s": 1.18,
+   "x": -10.9,
+   "y": 2.5
+  }
+ },
+ {
+  "id": "wolf-rider",
+  "name": "Mangewolf Rider",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 8,
+  "attack": 3,
+  "health": 4,
+  "move": 3,
+  "abilities": [
+   "haste"
+  ],
+  "unique": false,
+  "text": "Can act the turn it's played.",
+  "shortText": "Can act the turn it's played.",
+  "longText": "Fighter creature. Cost 8, Attack 3, Health 4, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Can act the turn it's played.",
+  "flavor": "Crazy as a stunt rider. Never met a jump he would not try.",
+  "artPos": {
+   "s": 0.94,
+   "x": -2,
+   "y": -4.9
+  }
+ },
+ {
+  "id": "grubnaks-big-boss-troll",
+  "name": "Gronkowski Troll Tyrant",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 7,
+  "attack": 5,
+  "health": 6,
+  "move": 2,
+  "abilities": [
+   "rally"
+  ],
+  "unique": true,
+  "text": "All your Goblins get +1 Attack.",
+  "shortText": "All your Goblins get +1 Attack.",
+  "longText": "Fighter creature. Cost 7, Attack 5, Health 6, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). All your Goblins get +1 Attack.",
+  "flavor": "Very dumb, but very good at sports. A pro goblin-ball player: hits hard and can take a punch.",
+  "artPos": {
+   "s": 1.55,
+   "x": -1.5,
+   "y": 26.1
+  }
+ },
+ {
+  "id": "shard-guzzler",
+  "name": "Goblin Rocket Rider",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Ultra Rare",
+  "role": "Gatherer",
+  "cost": 6,
+  "attack": 1,
+  "health": 4,
+  "move": 1,
+  "abilities": [],
+  "unique": false,
+  "text": "Light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's attack. Then it makes one attack.",
+  "shortText": "Ride a rocket to any space: it explodes in a 3x3 area for damage equal to this card's Attack, then makes one attack.",
+  "longText": "Miner creature. Cost 6, Attack 1, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rocket Ride: light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's Attack. Then it makes one attack.",
+  "flavor": "Goblin with the short fuse.",
+  "artPos": {
+   "s": 0.95,
+   "x": -3.7,
+   "y": -16.4
+  }
+ },
+ {
+  "id": "gnome-prospector",
+  "name": "Gemsinger Miner",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Gatherer",
+  "cost": 1,
+  "attack": 1,
+  "health": 1,
+  "move": 1,
+  "abilities": [
+   "gather",
+   "tunnel"
+  ],
+  "unique": false,
+  "text": "Miner: mines 2. Tunnel. +1 Health upgrade.",
+  "flavor": "Prospector of Profound Patience",
+  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade.",
+  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine.",
+  "artPos": {
+   "s": 0.99,
+   "x": 0,
+   "y": 0
+  }
+ },
+ {
+  "id": "gnome-tinker",
+  "name": "Aegis Tinkerer",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 1,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "fixit"
+  ],
+  "unique": false,
+  "text": "Each turn, adjacent allies get Shield 1.",
+  "shortText": "Each turn, adjacent allies get Shield 1.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Fix-it: at the start of your turn, each adjacent ally gets Shield 1. Example: A Tinker next to a Beetle gives the Beetle a Shield each turn.",
+  "flavor": "\"Stay behind me. Nobody gets hurt on my watch.\"",
+  "artPos": {
+   "s": 1.17,
+   "x": -10.6,
+   "y": 1.2
+  }
+ },
+ {
+  "id": "spark-gnome",
+  "name": "Stormcaller Savant",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged. Hits up to 5 spaces away; no strike back.",
+  "shortText": "Ranged. Hits up to 5 spaces away; no strike back.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits up to 5 spaces away; no strike back.",
+  "flavor": "Even the woods keep the storm's company.",
+  "artPos": {
+   "s": 1.02,
+   "x": -4.6,
+   "y": 3.8
+  },
+  "range": 5
+ },
+ {
+  "id": "clockwork-beetle",
+  "name": "Iron Scarab Automaton",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 3,
+  "health": 5,
+  "move": 1,
+  "abilities": [
+   "armored"
+  ],
+  "unique": false,
+  "text": "Armored: takes 1 less damage from each hit.",
+  "shortText": "Armored: takes 1 less damage from each hit.",
+  "longText": "Fighter creature. Cost 6, Attack 3, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Armored: takes 1 less damage from every hit. Example: A 3-damage hit only deals 2.",
+  "artPos": {
+   "s": 0.95,
+   "x": -1.9,
+   "y": -8.7
+  }
+ },
+ {
+  "id": "gnome-illusionist",
+  "name": "Mirrorveil Illusionist",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "blink"
+  ],
+  "unique": false,
+  "text": "Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down).",
+  "shortText": "Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down).",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down).",
+  "artPos": {
+   "s": 1.02,
+   "x": -4.4,
+   "y": -6.2
+  }
+ },
+ {
+  "id": "gyrocopter-ace",
+  "name": "Thunderwing Gyronaut",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Ultra Rare",
+  "role": "Fighter",
+  "cost": 8,
+  "attack": 3,
+  "health": 3,
+  "move": 3,
+  "abilities": [
+   "flying",
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
+  "shortText": "Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
+  "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
+  "artPos": {
+   "s": 0.92,
+   "x": -2.4,
+   "y": -3.7
+  },
+  "range": 2
+ },
+ {
+  "id": "the-great-steam-golem",
+  "name": "The Arcane Colossus",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 10,
+  "attack": 5,
+  "health": 6,
+  "move": 2,
+  "abilities": [
+   "overload"
+  ],
+  "unique": true,
+  "text": "Its hits also hurt enemies next to the target.",
+  "shortText": "Its hits also hurt enemies next to the target.",
+  "longText": "Fighter creature. Cost 10, Attack 5, Health 6, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Overload: its attack also hits every enemy next to the target for 1. Example: Hitting a creature also hurts its neighbours.",
+  "artPos": {
+   "s": 1.05,
+   "x": 2.2,
+   "y": -2.1
+  }
+ },
+ {
+  "id": "overclocked-conduit",
+  "name": "Overclocked Aethervein",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Rare",
+  "role": "Gatherer",
+  "cost": 5,
+  "attack": 1,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "eaterConduit"
+  ],
+  "unique": false,
+  "text": "Mines extra crystals each turn. Extra Crystal cards freeze it and cost 1 Health.",
+  "shortText": "Mines extra crystals each turn. Extra Crystal cards freeze it and cost 1 Health.",
+  "longText": "Miner creature. Cost 5, Attack 1, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Mines extra crystals each turn. Extra Crystal cards freeze it and cost 1 Health.",
+  "artPos": {
+   "s": 1.04,
+   "x": -5,
+   "y": 2.1
+  },
+  "flavor": "Four arms, four pickaxes, zero breaks."
+ },
+ {
+  "id": "dwarf-miner",
+  "name": "Riot Shield Bearer",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 1,
+  "health": 5,
+  "move": 1,
+  "abilities": [
+   "gather",
+   "tunnel"
+  ],
+  "unique": false,
+  "text": "Riot Shield. For 3 turns, can't move or attack. Can't be killed by anything.",
+  "flavor": "Has never met a rock he respected",
+  "shortText": "Riot Shield. For 3 turns, can't move or attack. Can't be killed by anything.",
+  "longText": "Fighter creature. Cost 2, Attack 1, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Riot Shield. For 3 turns, can't move or attack. Can't be killed by anything."
+ },
+ {
+  "id": "shieldbeard",
+  "name": "Ironwall Shieldbeard",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "guard"
+  ],
+  "unique": false,
+  "text": "Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several.",
+  "shortText": "Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several."
+ },
+ {
+  "id": "axe-thrower",
+  "name": "Grudge Hurler",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "shortText": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "artPos": {
+   "s": 1,
+   "x": -5.7,
+   "y": -5.6
+  },
+  "range": 5
+ },
+ {
+  "id": "ironhammer-berserker",
+  "name": "Bloodbeard Berserker",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 7,
+  "attack": 2,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "rage"
+  ],
+  "unique": false,
+  "text": "Grit. Each time it survives an attack, it permanently gains +1 Attack. Every2 enemy's it kills gives it +1 Attack.",
+  "shortText": "Grit. Each time it survives an attack, it permanently gains +1 Attack. Every2 enemy's it kills gives it +1 Attack.",
+  "longText": "Fighter creature. Cost 7, Attack 2, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Grit. Each time it survives an attack, it permanently gains +1 Attack. Every2 enemy's it kills gives it +1 Attack.",
+  "artPos": {
+   "s": 0.95,
+   "x": -1,
+   "y": -3.5
+  }
+ },
+ {
+  "id": "brewmaster",
+  "name": "Corpsman Brewlord",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "heartyale"
+  ],
+  "unique": false,
+  "text": "Medic. Each turn, heal an adjacent wounded dwarf. Beer is the cure.",
+  "shortText": "Medic. Each turn, heal an adjacent wounded dwarf. Beer is the cure.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Medic. Each turn, heal an adjacent wounded dwarf. Beer is the cure.",
+  "artPos": {
+   "s": 0.95,
+   "x": -3.2,
+   "y": -2.8
+  },
+  "flavor": "Doctor's orders: one pint, and call me in the morning."
+ },
+ {
+  "id": "ram-rider",
+  "name": "Thunderhorn Ram Rider",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Ultra Rare",
+  "role": "Fighter",
+  "cost": 10,
+  "attack": 4,
+  "health": 5,
+  "move": 2,
+  "abilities": [
+   "charge"
+  ],
+  "unique": false,
+  "text": "Charge. Moves and attacks in the same turn. Pay 2: Move in any direction, any number of spaces.",
+  "shortText": "Charge. Moves and attacks in the same turn. Pay 2: Move in any direction, any number of spaces.",
+  "longText": "Fighter creature. Cost 10, Attack 4, Health 5, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Charge. Moves and attacks in the same turn. Pay 2: Move in any direction, any number of spaces.",
+  "artPos": {
+   "s": 0.93,
+   "x": -2.7,
+   "y": -9
+  }
+ },
+ {
+  "id": "queen-brunhilda-stonebeard",
+  "name": "Queen Brunhilda",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 10,
+  "attack": 5,
+  "health": 6,
+  "move": 2,
+  "abilities": [
+   "unbreakable"
+  ],
+  "unique": true,
+  "text": "Takes at most 3 damage from a hit.",
+  "shortText": "Takes at most 3 damage from a hit.",
+  "longText": "Fighter creature. Cost 10, Attack 5, Health 6, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Unbreakable: never takes more than 3 damage from one hit. Example: A 5-damage Fireball only deals 3 to her.",
+  "artPos": {
+   "s": 0.92,
+   "x": -2.9,
+   "y": -2.1
+  }
+ },
+ {
+  "id": "crystal-drunk-delver",
+  "name": "Gemdrunk Deepdelver",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Rare",
+  "role": "Gatherer",
+  "cost": 7,
+  "attack": 2,
+  "health": 5,
+  "move": 1,
+  "abilities": [
+   "eaterDelver"
+  ],
+  "unique": false,
+  "text": "Each Crystal in your bank gives it +1 Attack for good.",
+  "shortText": "Each Crystal in your bank gives it +1 Attack for good.",
+  "longText": "Miner creature. Cost 7, Attack 2, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Each Crystal in your bank gives it +1 Attack for good.",
+  "artPos": {
+   "s": 1,
+   "x": -5,
+   "y": 4.4
+  }
+ },
+ {
+  "id": "goblin-grunt",
+  "name": "Snotskull Grunt",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [],
+  "unique": false,
+  "text": "Plain and sturdy. No tricks.",
+  "shortText": "Plain and sturdy. No tricks.",
+  "longText": "Fighter creature. Cost 3, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Example: Send it forward to trade blows with the enemy.",
+  "flavor": "Not very smart. Average, really. But still can hurt ya.",
+  "artPos": {
+   "s": 0.98,
+   "x": -3,
+   "y": 2.6
+  }
+ },
+ {
+  "id": "goblin-pebbler",
+  "name": "Boneknocker",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 1,
+  "health": 2,
+  "move": 1,
+  "abilities": [],
+  "unique": false,
+  "text": "Plain and sturdy. No tricks. Just kneecaps!",
+  "shortText": "Plain and sturdy. No tricks. Just kneecaps!",
+  "longText": "Fighter creature. Cost 3, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Plain and sturdy. No tricks. Just kneecaps!"
+ },
+ {
+  "id": "gnome-cogger",
+  "name": "Voldawright",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [],
+  "unique": false,
+  "text": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each.",
+  "shortText": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each.",
+  "artPos": {
+   "s": 0.94,
+   "x": -3.7,
+   "y": -7.1
+  }
+ },
+ {
+  "id": "gnome-widget",
+  "name": "Brawler Adept",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [],
+  "unique": false,
+  "text": "Plain and sturdy. No tricks. Can't cast spells.",
+  "shortText": "Plain and sturdy. No tricks. Can't cast spells.",
+  "longText": "Fighter creature. Cost 3, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Plain and sturdy. No tricks. Can't cast spells.",
+  "artPos": {
+   "s": 0.94,
+   "x": -3.3,
+   "y": -3.7
+  }
+ },
+ {
+  "id": "dwarf-pickman",
+  "name": "Ironjaw Big Back",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 1,
+  "health": 6,
+  "move": 1,
+  "abilities": [],
+  "unique": false,
+  "text": "Tough. Takes a beating and keeps swinging.",
+  "shortText": "Tough. Takes a beating and keeps swinging.",
+  "longText": "Fighter creature. Cost 5, Attack 1, Health 6, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Tough. Takes a beating and keeps swinging.",
+  "artPos": {
+   "s": 0.93,
+   "x": -2.6,
+   "y": -6
+  },
+  "flavor": "Hit him again. He likes it."
+ },
+ {
+  "id": "dwarf-stoneback",
+  "name": "Granite Oathkeeper",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 1,
+  "health": 3,
+  "move": 1,
+  "abilities": [],
+  "unique": false,
+  "text": "Enforcer. When it attacks, knocks back all nearby enemies 1-2 spaces at random.",
+  "shortText": "Enforcer. When it attacks, knocks back all nearby enemies 1-2 spaces at random.",
+  "longText": "Fighter creature. Cost 3, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Enforcer. When it attacks, knocks back all nearby enemies 1-2 spaces at random."
+ },
+ {
+  "id": "prospectors-prayer",
+  "name": "Desperate Plunder",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Rare",
+  "spellKind": "regular",
+  "cost": 0,
+  "effect": "gainCrystals",
+  "params": {
+   "amount": 3,
+   "needFewerSites": true
+  },
+  "text": "Spell. Gain 3 Flow each turn while your opponent has more Flow than you. Stackable. Stops once you have more.",
+  "shortText": "Spell. Gain 3 Flow each turn while your opponent has more Flow than you. Stackable. Stops once you have more.",
+  "longText": "Spell. Gain 3 Flow each turn while your opponent has more Flow than you. Stackable. Stops once you have more."
+ },
+ {
+  "id": "venom-shiv",
+  "name": "Venom Shiv",
+  "type": "spell",
+  "faction": "goblins",
+  "rarity": "Uncommon",
+  "spellKind": "regular",
+  "cost": 2,
+  "effect": "poison",
+  "params": {
+   "turns": 7,
+   "amount": 1
+  },
+  "text": "Spell. Fling a dagger at an enemy: it takes 1 damage each of its next 7 turns; no healing.",
+  "shortText": "Spell. Fling a dagger at an enemy: it takes 1 damage each of its next 7 turns; no healing.",
+  "longText": "Regular spell, cast in your Deploy phase. Fling a poisoned dagger at one enemy creature: it takes 1 damage at the start of each of its owner's next 7 turns and cannot heal during that time. A green marker with a turn counter shows the poison.",
+  "artPos": {
+   "s": 0.98,
+   "x": -3.2,
+   "y": 0.2
+  }
+ },
+ {
+  "id": "tunnel-rush",
+  "name": "Rat-Tunnel Ambush",
+  "type": "spell",
+  "faction": "goblins",
+  "rarity": "Uncommon",
+  "spellKind": "regular",
+  "cost": 2,
+  "effect": "tunnelMove",
+  "params": {},
+  "text": "Spell. Move a creature next to a mine; it can still attack.",
+  "shortText": "Spell. Move a creature next to a mine; it can still attack.",
+  "longText": "Regular spell, cast in your Deploy phase. Move one of your creatures to any empty space next to a crystal site; it can still attack this turn. Example: Move a far-away Fighter beside the enemy's mine and strike at once.",
+  "artPos": {
+   "s": 1.24,
+   "x": 10.2,
+   "y": -13
+  }
+ },
+ {
+  "id": "fireball",
+  "name": "Searing Arcane Orb",
+  "type": "spell",
+  "faction": "gnomes",
+  "rarity": "Rare",
+  "spellKind": "regular",
+  "cost": 3,
+  "effect": "damage",
+  "params": {
+   "amount": 3
+  },
+  "text": "Spell. 3 damage to a creature or Commander.",
+  "shortText": "Spell. 3 damage to a creature or Commander.",
+  "longText": "Regular spell, cast in your Deploy phase by your Commander. It deals 3 damage to one creature or to the enemy Commander. Example: Cast it on a 3-Health creature to defeat it.",
+  "artPos": {
+   "s": 1,
+   "x": -5.3,
+   "y": -2
+  }
+ },
+ {
+  "id": "battle-cry",
+  "name": "Thunderhorn Blast",
+  "type": "spell",
+  "faction": "dwarves",
+  "rarity": "Rare",
+  "spellKind": "regular",
+  "cost": 3,
+  "effect": "buffAttack",
+  "params": {
+   "amount": 1
+  },
+  "text": "Spell. All your creatures get +1 Attack this turn.",
+  "shortText": "Spell. All your creatures get +1 Attack this turn.",
+  "longText": "Regular spell, cast in your Deploy phase. Every creature you control gets +1 Attack until the end of the turn. Example: Cast it, then attack with three creatures for 1 extra damage each.",
+  "artPos": {
+   "s": 1,
+   "x": -5.2,
+   "y": 0.3
+  }
+ },
+ {
+  "id": "meteor-strike",
+  "name": "Starfall Cataclysm",
+  "type": "spell",
+  "faction": "gnomes",
+  "rarity": "Ultra Rare",
+  "spellKind": "regular",
+  "cost": 6,
+  "effect": "areaDamage",
+  "params": {
+   "amount": 4
+  },
+  "text": "Spell. 4 damage to everything in a 3×3 area.",
+  "shortText": "Spell. 4 damage to everything in a 3×3 area.",
+  "longText": "Regular spell, cast in your Deploy phase. It deals 4 damage to every creature in a 3 x 3 area, yours included. Example: Aim it at the middle of three enemy creatures.",
+  "artPos": {
+   "s": 0.99,
+   "x": 0,
+   "y": 0
+  }
+ },
+ {
+  "id": "healing-light",
+  "name": "Field Bandage",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Common",
+  "spellKind": "instant",
+  "cost": 2,
+  "effect": "heal",
+  "params": {
+   "amount": 3
+  },
+  "text": "Instant. Heal one of your creatures to full health.",
+  "shortText": "Instant. Heal one of your creatures to full health.",
+  "longText": "Instant. Heal one of your creatures to full health."
+ },
+ {
+  "id": "shield-bubble",
+  "name": "Ironclad Bulwark",
+  "type": "spell",
+  "faction": "dwarves",
+  "rarity": "Uncommon",
+  "spellKind": "instant",
+  "cost": 2,
+  "effect": "shield",
+  "params": {},
+  "text": "Instant. A creature takes no damage from the next hit.",
+  "shortText": "Instant. A creature takes no damage from the next hit.",
+  "longText": "Instant: play it in your turn or when you respond. One of your creatures takes no damage from the next hit this turn, even a Ranged one. Example: The enemy attacks your Shieldbeard: respond and the hit does nothing.",
+  "artPos": {
+   "s": 0.92,
+   "x": -1.7,
+   "y": -8.3
+  }
+ },
+ {
+  "id": "second-wind",
+  "name": "Emergency Rations",
+  "type": "spell",
+  "faction": "dwarves",
+  "rarity": "Ultra Rare",
+  "spellKind": "instant",
+  "cost": 5,
+  "effect": "healCommander",
+  "params": {
+   "amount": 4
+  },
+  "text": "Instant. Heal your Commander or another unit for 4.",
+  "shortText": "Instant. Heal your Commander or another unit for 4.",
+  "longText": "Instant. Heal your Commander or another unit for 4.",
+  "artPos": {
+   "s": 1.36,
+   "x": -5.6,
+   "y": -26
+  }
+ },
+ {
+  "id": "fizzle",
+  "name": "Snuff Out",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Uncommon",
+  "spellKind": "counter",
+  "cost": 3,
+  "effect": "cancelSpell",
+  "params": {
+   "maxCost": 3
+  },
+  "text": "Counterspell. Cancel a spell costing 3 or less.",
+  "shortText": "Counterspell. Cancel a spell costing 3 or less.",
+  "longText": "Counterspell (Instant): play it when the enemy casts a spell that costs 3 or less. The spell is cancelled and the caster's card is lost. Example: The enemy casts a 3-cost Searing Arcane Orb: respond and it shatters.",
+  "artPos": {
+   "s": 1.18,
+   "x": -3,
+   "y": -9.8
+  }
+ },
+ {
+  "id": "hold-it",
+  "name": "Pickpocket!",
+  "type": "spell",
+  "faction": "goblins",
+  "rarity": "Rare",
+  "spellKind": "counter",
+  "cost": 3,
+  "effect": "cancelSummon",
+  "params": {},
+  "text": "Counterspell. Send a creature being summoned back to hand.",
+  "shortText": "Counterspell. Send a creature being summoned back to hand.",
+  "longText": "Counterspell (Instant): play it when the enemy summons a creature. The summon is cancelled and the card goes back to their hand. Example: The enemy summons a big creature: stop it and they must pay again.",
+  "artPos": {
+   "s": 1.04,
+   "x": -7.7,
+   "y": -2.3
+  }
+ },
+ {
+  "id": "spell-snap",
+  "name": "Unweave",
+  "type": "spell",
+  "faction": "gnomes",
+  "rarity": "Rare",
+  "spellKind": "counter",
+  "cost": 5,
+  "effect": "cancelSpell",
+  "params": {},
+  "text": "Counterspell. Cancel any enemy spell.",
+  "shortText": "Counterspell. Cancel any enemy spell.",
+  "longText": "Counterspell (Instant): play it when the enemy casts any spell, whatever it costs. The spell is cancelled. Example: The enemy casts Starfall Cataclysm: respond and it is cancelled.",
+  "artPos": {
+   "s": 2.02,
+   "x": -56.1,
+   "y": 51.8
+  }
+ },
+ {
+  "id": "mirror-hex",
+  "name": "Hex Reversal",
+  "type": "spell",
+  "faction": "any",
+  "rarity": "Ultra Rare",
+  "spellKind": "counter",
+  "cost": 7,
+  "effect": "mirror",
+  "params": {},
+  "text": "Counterspell. Cancel a spell, then cast a free copy.",
+  "shortText": "Counterspell. Cancel a spell, then cast a free copy.",
+  "longText": "Counterspell (Instant): play it when the enemy casts a spell. It is cancelled, and you cast a free copy of it yourself. Example: The enemy casts Searing Arcane Orb at you: cancel it and Searing Arcane Orb their Commander.",
+  "disabled": true
+ },
+ {
+  "id": "soul-shard",
+  "name": "Soul Shard",
+  "type": "crystal",
+  "faction": "any",
+  "rarity": "Common",
+  "cost": 0,
+  "effect": "gain",
+  "params": {
+   "amount": 1
+  },
+  "unique": false,
+  "text": "Crystal card. Free. +1 to your Bank. Play any time during your turn.",
+  "shortText": "Crystal card. Free. +1 to your Bank. Play any time during your turn.",
+  "longText": "Crystal card. Free. +1 to your Bank. Play any time during your turn.",
+  "artPos": {
+   "s": 0.98,
+   "x": 0,
+   "y": 0
+  }
+ },
+ {
+  "id": "crystal-cluster",
+  "name": "Soul Cluster",
+  "type": "crystal",
+  "faction": "any",
+  "rarity": "Uncommon",
+  "cost": 0,
+  "effect": "gain",
+  "params": {
+   "amount": 2
+  },
+  "unique": false,
+  "text": "Crystal card. Free. Play any time during your turn. +2 to your Bank.",
+  "shortText": "Crystal card. Free. Play any time during your turn. +2 to your Bank.",
+  "longText": "Crystal card. Free. Play any time during your turn. +2 to your Bank."
+ },
+ {
+  "id": "glowing-geode",
+  "name": "Wellspring Geode",
+  "type": "crystal",
+  "faction": "any",
+  "rarity": "Collector",
+  "cost": 0,
+  "effect": "geode",
+  "params": {},
+  "unique": true,
+  "text": "Crystal card. +1 Flow every turn, for good. Play anytime during your turn.",
+  "shortText": "Crystal card. +1 Flow every turn, for good. Play anytime during your turn.",
+  "longText": "Crystal card. +1 Flow every turn, for good. Play anytime during your turn."
+ },
+ {
+  "id": "heart-of-the-fallen",
+  "name": "Heart of the Fallen",
+  "type": "crystal",
+  "faction": "any",
+  "rarity": "Ultra Rare",
+  "cost": 0,
+  "effect": "gain",
+  "params": {
+   "amount": 4
+  },
+  "unique": false,
+  "text": "Cast any time on your turn. Free. +4 to your Bank.",
+  "shortText": "Cast any time on your turn. Free. +4 to your Bank.",
+  "longText": "Cast any time on your turn. Free. +4 to your Bank."
+ },
+ {
+  "id": "motherlode",
+  "name": "Motherlode",
+  "type": "crystal",
+  "faction": "any",
+  "rarity": "Collector",
+  "cost": 0,
+  "effect": "motherlode",
+  "params": {
+   "amount": 3,
+   "discount": 2
+  },
+  "unique": false,
+  "text": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less. Play anytime during your turn.",
+  "shortText": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less. Play anytime during your turn.",
+  "longText": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less. Play anytime during your turn."
+ },
+ {
+  "id": "goblin-smith-miner",
+  "name": "Scrapsmith Miner",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Uncommon",
+  "role": "Smith",
+  "cost": 2,
+  "attack": 1,
+  "health": 1,
+  "move": 1,
+  "abilities": [
+   "smith"
+  ],
+  "unique": false,
+  "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health. When this dies, draw a card. No draw if it died upgrading.",
+  "shortText": "Upgrades a creature: +1 Attack, +1 Health. Draw a card when it dies (not when it dies upgrading).",
+  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner.",
+  "flavor": "Does the mining, and can make anything out of anything.",
+  "artPos": {
+   "s": 0.99,
+   "x": 0,
+   "y": 0
+  }
+ },
+ {
+  "id": "gnome-smith-miner",
+  "name": "Arcsmith Miner",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Smith",
+  "cost": 2,
+  "attack": 1,
+  "health": 1,
+  "move": 1,
+  "abilities": [
+   "smith"
+  ],
+  "unique": false,
+  "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
+  "shortText": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
+  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner."
+ },
+ {
+  "id": "dwarf-smith-miner",
+  "name": "Anvilsworn Miner",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Smith",
+  "cost": 2,
+  "attack": 1,
+  "health": 1,
+  "move": 1,
+  "abilities": [
+   "smith"
+  ],
+  "unique": false,
+  "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
+  "shortText": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
+  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner."
+ },
+ {
+  "id": "rotgut-grenadier",
+  "name": "Goblin Chef",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [],
+  "unique": false,
+  "text": "Smack. When this attacks, the target is knocked back 2 spaces.",
+  "shortText": "Smack. When this attacks, the target is knocked back 2 spaces.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Smack. When this attacks, the target is knocked back 2 spaces.",
+  "flavor": "Not very clean. Not very nice. Smells bad, cooks horribly, but you can eat it.",
+  "artPos": {
+   "s": 1,
+   "x": -3.8,
+   "y": 3.2
+  }
+ },
+ {
+  "id": "shiv-rat",
+  "name": "Shiv Rat",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 2,
+  "health": 1,
+  "move": 1,
+  "abilities": [
+   "sneaky"
+  ],
+  "unique": false,
+  "text": "Sneaky. Enemies can't strike back at it.",
+  "shortText": "Sneaky. Enemies can't strike back at it.",
+  "longText": "Fighter creature. Cost 4, Attack 2, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Sneaky: enemies cannot strike back at it. Example: It attacks a Guard and takes no damage back.",
+  "artPos": {
+   "s": 1.08,
+   "x": 3.4,
+   "y": 7.3
+  }
+ },
+ {
+  "id": "skullbasher-rusher",
+  "name": "Skullbasher Rusher",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "charge"
+  ],
+  "unique": false,
+  "text": "Charge. Moves and attacks in the same turn.",
+  "shortText": "Charge. Moves and attacks in the same turn.",
+  "longText": "Fighter creature. Cost 4, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Charge: can move and attack in the same turn. Example: Walk up to an enemy and strike in the same turn.",
+  "artPos": {
+   "s": 1,
+   "x": -1.7,
+   "y": -5.1
+  }
+ },
+ {
+  "id": "junk-shaman",
+  "name": "Junk Shaman",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Ultra Rare",
+  "role": "Ranged",
+  "cost": 7,
+  "attack": 1,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "junkBoost"
+  ],
+  "unique": false,
+  "text": "On your turn, adjacent Goblins get +1 Attack. Pay 2: pick up one character within 5 spaces (ally or enemy) and move it to any space within 5 spaces of this card.",
+  "shortText": "On your turn, adjacent Goblins get +1 Attack. Pay 2: move any character within 5 spaces to a space within 5.",
+  "longText": "Ranged creature. Cost 7, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). On your turn, adjacent Goblins get +1 Attack. Pay 2: pick up one character within 5 spaces (ally or enemy) and move it to any space within 5 spaces of this card.",
+  "flavor": "Old and wise in the wizard ways. One of the only spellcasters in the Goblin realm.",
+  "artPos": {
+   "s": 0.95,
+   "x": -2.3,
+   "y": 1
+  }
+ },
+ {
+  "id": "blastrat-sapper",
+  "name": "SewerSlide Bomber",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 2,
+  "health": 1,
+  "move": 1,
+  "abilities": [
+   "kaboom1"
+  ],
+  "unique": false,
+  "text": "Ka-boom: 1 damage to adjacent enemies when defeated (upgrades make the blast stronger too). Pay 1 crystal: he runs in a straight or diagonal line until he hits something, then explodes.",
+  "shortText": "Ka-boom: 1 damage to adjacent enemies when defeated. Pay 1: he runs in a straight line until he hits something, then explodes.",
+  "longText": "Fighter creature. Cost 2, Attack 2, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ka-boom: 1 damage to adjacent enemies when defeated (upgrades make the blast stronger too). Pay 1 crystal: he runs in a straight or diagonal line until he hits something, then explodes.",
+  "flavor": "A crazed zealot, happy to go out with a bang for the cause.",
+  "artPos": {
+   "s": 1.34,
+   "x": -8.3,
+   "y": 21.8
+  }
+ },
+ {
+  "id": "hexwright-apprentice",
+  "name": "Hexslinger Apprentice",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 1,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
+  "shortText": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
+  "artPos": {
+   "s": 0.93,
+   "x": -2.2,
+   "y": -2.3
+  },
+  "range": 99
+ },
+ {
+  "id": "gearward-sentinel",
+  "name": "Gearward Sentinel",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 3,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "guard"
+  ],
+  "unique": false,
+  "text": "Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight.",
+  "shortText": "Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight.",
+  "longText": "Fighter creature. Cost 4, Attack 3, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight.",
+  "artPos": {
+   "s": 1.06,
+   "x": -8.4,
+   "y": -2.8
+  }
+ },
+ {
+  "id": "runic-siphoner",
+  "name": "Soul Stone Siphoner",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 7,
+  "attack": 5,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "siphon"
+  ],
+  "unique": false,
+  "text": "Defeating a creature gives +1 Bank crystal. May sacrifice an allied creature to gain +1 Bank crystal.",
+  "shortText": "Defeating a creature gives +1 Bank crystal. May sacrifice an allied creature to gain +1 Bank crystal.",
+  "longText": "Fighter creature. Cost 7, Attack 5, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Defeating a creature gives +1 Bank crystal. May sacrifice an allied creature to gain +1 Bank crystal.",
+  "artPos": {
+   "s": 0.98,
+   "x": -4.7,
+   "y": -0.8
+  }
+ },
+ {
+  "id": "phase-stalker",
+  "name": "Gnome Plow",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "blink"
+  ],
+  "unique": false,
+  "text": "Plow (2 crystals): Move in a straight line, never diagonally. Knocks aside all creatures in its path, friend or foe, 1-2 spaces at random.",
+  "shortText": "Plow (2 crystals): Move in a straight line, never diagonally. Knocks aside all creatures in its path, friend or foe, 1-2 spaces at random.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Plow (2 crystals): Move in a straight line, never diagonally. Knocks aside all creatures in its path, friend or foe, 1-2 spaces at random.",
+  "artPos": {
+   "s": 1,
+   "x": -1.8,
+   "y": -4.1
+  }
+ },
+ {
+  "id": "glyphshield-warden",
+  "name": "Glyphshield Warden",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "glyphShield"
+  ],
+  "unique": false,
+  "text": "Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack.",
+  "shortText": "Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack."
+ },
+ {
+  "id": "oathbound-pikeman",
+  "name": "Oathbound Overwatch",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 6,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "guard"
+  ],
+  "unique": false,
+  "text": "Sneaky. Can attack any enemy on the board, at any distance.",
+  "shortText": "Sneaky. Can attack any enemy on the board, at any distance.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Sneaky. Can attack any enemy on the board, at any distance."
+ },
+ {
+  "id": "deepforge-crossbowman",
+  "name": "Marksmen Gunner",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged. Fires straight or diagonal up to 7 spaces; no strike back.",
+  "shortText": "Ranged. Fires straight or diagonal up to 7 spaces; no strike back.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Fires straight or diagonal up to 7 spaces; no strike back.",
+  "artPos": {
+   "s": 0.93,
+   "x": -3,
+   "y": -3.9
+  },
+  "flavor": "Ex-military. Still loves a big bang.",
+  "range": 7
+ },
+ {
+  "id": "barrelback-courier",
+  "name": "Barrelback Courier",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "haste"
+  ],
+  "unique": false,
+  "text": "Can act the turn it's played.",
+  "shortText": "Can act the turn it's played.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Haste: can act the turn it is played. Example: Summon it and attack in the same turn.",
+  "artPos": {
+   "s": 1,
+   "x": -5.2,
+   "y": -0.1
+  }
+ },
+ {
+  "id": "rune-splitter",
+  "name": "Door Splitter",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 7,
+  "attack": 3,
+  "health": 3,
+  "move": 1,
+  "abilities": [
+   "armored"
+  ],
+  "unique": false,
+  "text": "Charge. Can charge in any direction, even diagonally. Blasts enemies out of its way. Knocks any unit, friend or foe, back 1, 2 or 3 spaces at random in a random direction.",
+  "shortText": "Charge. Can charge in any direction, even diagonally. Blasts enemies out of its way. Knocks any unit, friend or foe, back 1, 2 or 3 spaces at random in a random direction.",
+  "longText": "Fighter creature. Cost 7, Attack 3, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Charge. Can charge in any direction, even diagonally. Blasts enemies out of its way. Knocks any unit, friend or foe, back 1, 2 or 3 spaces at random in a random direction.",
+  "flavor": "He has the key to the city. It's a battering ram."
+ },
+ {
+  "id": "grimhold-ravager",
+  "name": "Grimhold Ravager",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 7,
+  "attack": 3,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "rage"
+  ],
+  "unique": false,
+  "text": "Brawler. If it attacked or was attacked last round, its Attack doubles this round.",
+  "shortText": "Brawler. If it attacked or was attacked last round, its Attack doubles this round.",
+  "longText": "Fighter creature. Cost 7, Attack 3, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Brawler. If it attacked or was attacked last round, its Attack doubles this round.",
+  "artPos": {
+   "s": 0.92,
+   "x": -2.8,
+   "y": -8.2
+  }
+ }
 ]

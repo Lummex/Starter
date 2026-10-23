@@ -433,7 +433,7 @@ export function attackTargets(s: any, c: any): any[] {
   const out: any[] = [];
   if (has(c, 'ranged')) {
     // 8 straight lines, up to CONFIG.rangedRange squares; the shot stops at the first unit (creature or Stronghold)
-    for (const [dr, dc] of DIRS8) for (let k = 1; k <= CONFIG.rangedRange; k++) {
+    for (const [dr, dc] of DIRS8) for (let k = 1; k <= (CARDS[c.cardId].range ?? CONFIG.rangedRange); k++) {
       const r = c.row + dr * k, cl = c.col + dc * k;
       if (r < 1 || r > H || cl < 1 || cl > W) break;
       if (isStronghold(r, cl)) { if (r === sh.row && cl === sh.col) out.push({ commander: enemy }); break; }
