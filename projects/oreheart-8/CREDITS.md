@@ -48,3 +48,7 @@ Everything in the game is made in code or generated for this project. There are 
 - Alegreya SC upright 400/700 (OFL, from @fontsource/alegreya-sc; files `alegreya-sc-latin-400-normal.woff2` and `alegreya-sc-latin-700-normal.woff2`) for the owner's menu text styles.
 
 - Round 12b-1 models: Goblin creatures (Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner), Grubnak, his junk throne and staff were generated with the Meshy API from the owner's model sheets (`factory-design/goblin-art/`); animations from Meshy's animation library.
+
+## Round 12d
+- **Russo One** (`russo-one-latin-400-normal.woff2`) and **IM Fell English SC** (`im-fell-english-sc-latin-400-normal.woff2`), self-hosted in `public/assets/external/fonts/` (SIL OFL 1.1, from @fontsource) for the owner's card format. Alegreya SC was already bundled.
+- Card frames, gems and cost badges: the owner's Art Studio card format in `public/art/card-format/`.

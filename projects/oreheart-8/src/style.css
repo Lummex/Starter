@@ -842,7 +842,7 @@ input,textarea,button,select{font-family:"Alegreya SC",serif}
 /* ============ Round 5a: one plain gold font, text menu buttons, full-window screens ============ */
 @font-face{font-family:"Alegreya SC";font-style:italic;font-weight:400;font-display:swap;src:url(/assets/external/fonts/alegreya-sc-latin-400-italic.woff2) format("woff2")}
 @font-face{font-family:"Alegreya SC";font-style:italic;font-weight:700;font-display:swap;src:url(/assets/external/fonts/alegreya-sc-latin-700-italic.woff2) format("woff2")}
-html,body,button,input,textarea,select,*,*::before,*::after{font-family:"Alegreya SC",serif!important;font-style:italic!important;font-weight:400!important;-webkit-background-clip:border-box!important;background-clip:border-box!important}
+html,body,button,input,textarea,select,*:not(.ohcard *),*:not(.ohcard *)::before,*:not(.ohcard *)::after{font-family:"Alegreya SC",serif!important;font-style:italic!important;font-weight:400!important;-webkit-background-clip:border-box!important;background-clip:border-box!important}
 body{color:var(--gold-bright)}
 h1,h2,h3,p,li,label,dt,dd,.tagline,.welcome,.btn,button{color:var(--gold-bright)}
 

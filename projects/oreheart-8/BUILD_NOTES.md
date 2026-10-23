@@ -652,3 +652,11 @@ All listed failures trace to the owner's `cards.json` being the binding source o
 - AC117 / AC134 click Commander buttons by full names; Choose Your Commander (round 8b) shows Commander cards that hide the others after a click, so these flows changed.
 - AC164 expects a 48–60% pop-out; round 8b/10 deliberately made it ~70% and the hand tucks to a quarter at rest.
 The spec and hidden tests need the new names/numbers; the owner's card data was not reverted.
+
+## Round 12d — owner card format
+- `src/ui/ohrender.ts` is a port of the owner's `render.js`; `src/ui/cardfmt.ts` wraps it (`ohCardEl`, `commanderCard`) and loads `public/art/card-format/format.json`. `src/ui/ohcard.css` is the owner's `card.css` plus game integration (fills the parent at 420:624, never stretched).
+- Every card face (hand, hover/pop-out, close-up, deck builder, mulligan, reveals, enemy pop-ups, Choose Your Commander and Commander close-up) goes through `faceKids` / `ohCardEl`. The old frame images (`public/art/frames`) and frame code are deleted.
+- Text layers use the class `ohtx` (not `tx`) and set `-webkit-text-fill-color` inline so the game's old global text rules cannot recolor card text; the global italic/font override excludes `.ohcard *`.
+- Card backs are still the Oreheart back picture (the format's `back` layout has no image).
+- 8 engine tests in `tests/engine.test.ts` already failed before this round (round 12c card changes: names/costs/text); not touched.
+- `tools/shot-r12d.mjs` renders reference cards for comparison; `tools/shot-r12d-screens.mjs` makes the 1920×1080 screenshots.

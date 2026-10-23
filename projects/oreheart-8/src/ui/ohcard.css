@@ -1,0 +1,20 @@
+.ohcard{display:flex;justify-content:center}
+.ohcard .cardc{position:relative;container-type:size;overflow:hidden;border-radius:4%;background:#000;font-family:'Alegreya SC',Georgia,serif;flex:none;max-width:100%}
+.ohcard .ly{position:absolute;box-sizing:border-box}
+.ohcard .ly>img{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.ohcard .ly .artclip>img{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.ohcard .cardc{isolation:isolate}
+.ohcard .ly .ohtx{position:absolute;inset:0;display:flex;white-space:pre-wrap;overflow:visible;pointer-events:none}
+.ohcard .ly .ohtx>span{display:block;width:100%}
+.ohcard .ly.hid{display:none}
+.ohcard .ly .sym{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+/* game integration: the card fills its parent at the format's 420:624 aspect (never stretched) */
+.ohcard{flex:1 1 auto;width:100%;height:100%;min-height:0;align-items:center;pointer-events:none}
+.ohcard .cardc{height:100%!important;width:auto!important;max-width:100%;aspect-ratio:420/624}
+.hand-card:has(>.ohcard),.mull-card .hand-card:has(>.ohcard),.face:has(>.ohcard){padding:0;border:0;background:none;border-radius:0;min-height:0}
+@font-face{font-family:"Russo One";font-weight:400;font-display:swap;src:url(/assets/external/fonts/russo-one-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"IM Fell English SC";font-weight:400;font-display:swap;src:url(/assets/external/fonts/im-fell-english-sc-latin-400-normal.woff2) format("woff2")}
+.cmd-card .portrait-img.oh-cmd{display:flex;width:100%;height:100%;object-fit:unset}
+.cmd-card .cmd-win{position:absolute!important;left:0!important;bottom:0!important;width:1px!important;height:1px!important;padding:0!important;background:none!important;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.cz-img.oh-cmd{display:flex;height:100%;aspect-ratio:420/624}
+.hand-card>.ohcard,.face>.ohcard{position:absolute!important;inset:0!important;margin:0!important}

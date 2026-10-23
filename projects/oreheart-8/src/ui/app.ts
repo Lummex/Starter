@@ -1,4 +1,5 @@
 import { arenaOpts } from './arena-fx';
+import { ohCardEl, commanderCard } from './cardfmt';
 import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
@@ -32,10 +33,7 @@ export const OWNER_ART: Record<string, string> = { 'goblin-scrounger': '/art/own
 export const commanderPortrait = (id: string) => (id === 'grubnak' ? '/art/owner/goblin/grubnak-on-throne-art.png' : id === 'sproingle' ? '/art/owner/gnome/sproingle-portrait.webp' : id === 'borgo' ? '/art/owner/dwarf/borgo-portrait.webp' : `/art/commanders/${id}.webp`);
 export const pictureOf = (c: any): string | null => (c && OWNER_ART[c.id]) ? OWNER_ART[c.id] : (c && ((c.type === 'creature' && c.faction === 'goblins') || (c.type === 'spell' && !c.disabled)) ? `/art/cards/${c.id}.webp` : null);
 export const FRAME: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
-/** Spell frames: one line per faction (owner files replace the temporary generated ones by overwriting `public/art/frames/spell-frame-*.jpg`). */
-export const SPELL_FRAME_FILE = (key: string) => `spell-frame-${key}`;
 export const frameKey = (c: any) => (c.type === 'spell' ? `spell-${FRAME[c.faction] || 'shared'}` : FRAME[c.faction] || 'neutral');
-export const frameOf = (c: any) => (c.type === 'spell' ? SPELL_FRAME_FILE(FRAME[c.faction] || 'shared') : `card-frame-${FRAME[c.faction] || 'neutral'}`);
 export function typeOf(c: any): { icon: string; name: string } {
   if (c.type === 'spell') return c.spellKind === 'regular' ? { icon: '🪄', name: 'Spell' } : { icon: '⚡', name: 'Instant' };
   if (c.type === 'crystal') return { icon: '💎', name: 'Crystal card' };
@@ -53,28 +51,9 @@ const CRYSTAL_SVG = '<svg viewBox="0 0 24 32" focusable="false" aria-hidden="tru
 /** Owner framing of the picture inside the art window: scale s, offset x/y in % of the window. */
 export const artPosStyle = (c: any) => { const a = c?.artPos; if (!a) return null; return `transform:translate(${a.x || 0}%,${a.y || 0}%) scale(${a.s || 1});transform-origin:50% 50%`; };
 export function faceKids(c: any, cost?: number, cur?: { attack?: number; health?: number; move?: number }): El[] {
-  const pic = pictureOf(c);
-  const cr = c.type === 'creature';
-  const ty = typeOf(c);
-  const rk = rarityKey(c);
-  const len = c.name.length;
-  const nf = 0.06 * (len <= 16 ? 1 : Math.max(0.6, 16 / len));
-  const rw = h('span', { class: `rw r-${rk}`, role: 'img', 'aria-label': `Rarity: ${c.rarity}` });
-  rw.innerHTML = CRYSTAL_SVG;
-  rw.append(h('span', { class: 'rwt' }, c.rarity));
-  const kids: (El | null)[] = [
-    h('img', { class: 'frame', src: `/art/frames/${frameOf(c)}${c.type === 'spell' ? '.jpg' : '.webp'}`, alt: '', draggable: 'false' }),
-    pic ? h('span', { class: 'pic', 'data-art-pos': '1' }, h('img', { class: 'pi', src: pic, alt: '', draggable: 'false', loading: 'eager', style: artPosStyle(c) })) : h('span', { class: 'ty', 'aria-hidden': 'true' }, cr ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
-    h('span', { class: 'cost', role: 'img', 'aria-label': `Cost ${cost ?? c.cost}` }, String(cost ?? c.cost)),
-    cr ? h('span', { class: 'atk', role: 'img', 'aria-label': `Attack ${cur?.attack ?? c.attack}` }, String(cur?.attack ?? c.attack)) : null,
-    cr ? h('span', { class: 'hp', role: 'img', 'aria-label': `Health ${cur?.health ?? c.health}` }, String(cur?.health ?? c.health)) : null,
-    cr ? h('span', { class: 'mv', role: 'img', 'aria-label': `Movement ${cur?.move ?? c.move}` }, String(cur?.move ?? c.move)) : null,
-    h('span', { class: 'tyi', role: 'img', 'aria-label': `Type: ${ty.name}`, title: ty.name }, ty.icon, c.type === 'spell' ? h('span', { class: 'tyw' }, c.spellKind === 'regular' ? 'SPELL' : 'INSTANT') : null),
-    h('span', { class: `nm${len > 24 ? ' two' : ''}`, 'data-part': 'name', style: `--nf:${nf.toFixed(4)}` }, c.name),
-    h('span', { class: 'tx', 'data-part': 'text' }, c.shortText || c.text || '', h('span', { class: 'fl' }, c.flavor || '')),
-    rw,
-  ];
-  return kids.filter(Boolean) as El[];
+  const shown = { ...c, cost: cost ?? c.cost, text: c.shortText || c.text || '' };
+  if (c.type === 'creature' && cur) { if (cur.attack != null) shown.attack = cur.attack; if (cur.health != null) shown.health = cur.health; if (cur.move != null) shown.move = cur.move; }
+  return [ohCardEl(shown, pictureOf(c))];
 }
 const roleBadge = (c: any) => (c.role === 'Smith' ? '⚒️' : isMiner(c) ? '⛏️' : '⚔️');
 const COLOR_HEX: Record<string, string> = { green: '#3ee06a', blue: '#3fa9ff', purple: '#b45cff', white: '#f2f6ff' };
@@ -419,7 +398,7 @@ export class App {
     for (const c of cmds) {
       const f = FACTIONS[c.faction];
       cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { if (picked && cmd === c.id) unpick(); else { cmd = c.id; onCmd(); pick(); } } },
-        h('img', { class: 'portrait-img', src: commanderPortrait(c.id), alt: '', draggable: 'false' }),
+        h('span', { class: 'portrait-img oh-cmd' }, ohCardEl(commanderCard(c), commanderPortrait(c.id))),
         h('span', { class: 'cmd-win' },
           h('span', { class: 'nm' }, c.name),
           h('span', { class: 'fa' }, `${f.name} · ${f.faith}`),
@@ -598,9 +577,10 @@ export class App {
     for (const [k, v] of rows) dl.append(h('dt', {}, k), h('dd', {}, v));
     const cur = creature ? { attack: creature.attack, health: creature.health, move: c.move } : undefined;
     const face = h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, cost, cur));
-    const tx = face.querySelector('.tx') as El;
-    const tb = h('button', { type: 'button', class: 'tx', style: tx.getAttribute('style') || '', 'aria-label': 'Full explanation' }, tx.textContent || '');
-    tx.replaceWith(tb);
+    const tx = face.querySelector('.ohtx[data-bind="text"]') as El;
+    const tb = h('button', { type: 'button', class: 'tx-full', 'aria-label': 'Full explanation', title: 'Full explanation' });
+    tb.style.cssText = 'position:absolute;inset:0;background:none;border:0;cursor:pointer;pointer-events:auto;z-index:99;padding:0';
+    (tx?.parentElement || face).append(tb);
     tb.addEventListener('click', () => this.fullExplanation(c));
     // round 10: twice the old size, no scroll bar, no Close button; a click outside the card (or Esc) closes it
     const d = this.dialog(c.name, [h('div', { class: 'card-view-face' }, face), dl]);
@@ -611,7 +591,7 @@ export class App {
   closeUp(cardId: string, withViewer = false) {
     const isCmd = cardId.startsWith('cmd:');
     const c = isCmd ? ({ name: COMMANDERS[cardId.slice(4)].name, id: cardId, type: 'commander', faction: 'any' } as any) : CARDS[cardId];
-    const face = isCmd ? h('img', { class: 'cz-img', src: commanderPortrait(cardId.slice(4)), alt: c.name, draggable: 'false', 'data-card-id': cardId }) : h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, c.type === 'crystal' ? 0 : c.cost));
+    const face = isCmd ? h('div', { class: 'cz-img oh-cmd', role: 'img', 'aria-label': c.name, 'data-card-id': cardId }, ohCardEl(commanderCard(COMMANDERS[cardId.slice(4)]), commanderPortrait(cardId.slice(4)))) : h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, c.type === 'crystal' ? 0 : c.cost));
     const ov = h('div', { class: 'cardzoom', role: 'dialog', 'aria-modal': 'true', 'aria-label': c.name }, face);
     let stopViewer: (() => void) | null = null, closed = false;
     const close = () => { closed = true; stopViewer?.(); ov.remove(); document.removeEventListener('keydown', onKey, true); };

@@ -39,8 +39,9 @@ describe('spell visuals (R3b.7)', () => {
 });
 
 describe('Round 4 assets', () => {
-  it('owner spell frames (1152x1712 jpg) and spell pictures exist', () => {
-    for (const f of ['goblin', 'gnome', 'dwarf', 'shared']) expect(fs.existsSync(`public/art/frames/spell-frame-${f}.jpg`), f).toBe(true);
+  it('owner card format frames (round 12d) and spell pictures exist; old frames are gone', () => {
+    expect(fs.existsSync('public/art/frames')).toBe(false);
+    for (const f of ['goblin', 'gnome', 'dwarf', 'shared']) expect(fs.existsSync(`public/art/card-format/images/frame-spell-frame-${f}.webp`), f).toBe(true);
     for (const c of Object.values(CARDS)) if (c.type === 'spell' && !c.disabled) expect(fs.existsSync(`public/art/cards/${c.id}.webp`), c.id).toBe(true);
   });
   it('one plain gold font: Alegreya SC italic, self-hosted, no metal fills', () => {
