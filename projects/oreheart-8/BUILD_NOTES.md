@@ -664,3 +664,6 @@ The spec and hidden tests need the new names/numbers; the owner's card data was 
 ## Inspector round 1 follow-up
 - Fixed AC158: the Choose Your Commander card pictures (rendered by the card-format renderer) are now `aria-hidden`, so their scaled text no longer counts as small page text.
 - Other failures (AC43, AC51, AC59, AC66, AC104, AC105, AC116, AC117, AC134, AC160, AC164) come from tests that use names or numbers the owner changed in round 12c. Examples: `goblin-scrapper` is now "Bowler Brawler", Mangewolf Rider has Movement 3, and Grubnak is "Grubnak Rotgut, Goblin King". The owner's card data is the source of truth, so I did not revert it.
+
+## Inspector round 2 follow-up
+- The same stale-test failures were reported again (old names "Gutripper Brawler", "Grubnak Rotgut, King of the Junkpile", "Archmagister Sproingle the Unfathomable", Mangewolf Rider Movement 2, 48-60% pop-out). They were deliberately changed by the owner (commits 82229b5, 14a5595), so the app was left unchanged. SPEC.md and the acceptance tests need updating to the owner's names and numbers.
