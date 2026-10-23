@@ -405,6 +405,7 @@ function hurt(s: any, c: any, amount: number, ev: any[], raw = false) {
     if (c.bubble && d > 0) { c.bubble = false; d = 0; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col }); }
     if (c.shield > 0 && d > 0) { const b = Math.min(c.shield, d); c.shield -= b; d -= b; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col, amount: b }); }
   }
+  if (c.illusion) d = Math.floor(d * 0.65);
   c.health -= d;
   ev.push({ type: 'damage', uid: c.uid, row: c.row, col: c.col, amount: d });
   return d;
@@ -420,7 +421,7 @@ function defeat(s: any, c: any, ev: any[]) {
   const i = s.board.creatures.indexOf(c);
   if (i < 0) return;
   s.board.creatures.splice(i, 1);
-  s.players[c.owner].discard.push({ uid: c.uid, cardId: c.cardId });
+  if (!c.illusion) s.players[c.owner].discard.push({ uid: c.uid, cardId: c.cardId });
   const minerDraw = CARDS[c.cardId].role === 'Gatherer';
   ev.push({ type: 'defeat', uid: c.uid, cardId: c.cardId, owner: c.owner, row: c.row, col: c.col });
   if (has(c, 'deathKnock')) for (const o of [...s.board.creatures]) if (cheb(o, c) === 1) knockAway(s, c, o, 1, ev);
@@ -1163,6 +1164,16 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       const pa = { row: a.row, col: a.col }, pb = { row: b.row, col: b.col };
       a.row = pb.row; a.col = pb.col; b.row = pa.row; b.col = pa.col;
       a.blinkUsed = true;
+      {
+        // an illusion of the Illusionist appears in front of it (the free space nearest the enemy Stronghold)
+        const eh = stronghold(other(who));
+        const spot = [-1, 0, 1].flatMap((dr) => [-1, 0, 1].map((dc) => ({ row: a.row + dr, col: a.col + dc }))).filter((q) => emptyCell(s, q.row, q.col)).sort((x, y) => cheb(x, eh) - cheb(y, eh))[0];
+        if (spot) {
+          const ill: any = spawn(s, who, a.cardId, spot.row, spot.col);
+          ill.illusion = true; ill.summonedThisTurn = true;
+          ev.push({ type: 'summon', uid: ill.uid, cardId: ill.cardId, owner: who, row: spot.row, col: spot.col, illusion: true });
+        }
+      }
       ev.push({ type: 'move', uid: a.uid, from: pa, to: pb, teleport: true }, { type: 'move', uid: b.uid, from: pb, to: pa, teleport: true });
       break;
     }

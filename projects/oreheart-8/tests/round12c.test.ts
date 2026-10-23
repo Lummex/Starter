@@ -80,3 +80,12 @@ describe('round 12c active abilities', () => {
     expect(at(s, 4, 4).wardUntil).toBeGreaterThan(s.turn);
   });
 });
+describe('round 12c illusions and economy', () => {
+  it('Mirrorveil Illusionist blink leaves an illusion that takes 35% less damage', () => {
+    let s = done(mk({ playerCrystals: 3, board: [P('gnome-illusionist', 6, 3), P('goblin-grunt', 6, 5)] }));
+    const a = legalActions(s).find((x: any) => x.type === 'ability' && x.ability === 'blink');
+    s = act(s, a);
+    expect(s.board.creatures.filter((c: any) => c.illusion).length).toBe(1);
+    expect(s.players.player.crystals + s.players.player.bank).toBe(2);
+  });
+});
