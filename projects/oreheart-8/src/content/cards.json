@@ -1,7 +1,7 @@
 [
  {
   "id": "goblin-scrounger",
-  "name": "Grubgrabber Miner",
+  "name": "Goblin Miner",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Common",
@@ -15,14 +15,14 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Miner: mines 2. Tunnel. +1 Health upgrade. Draw a card when it dies.",
+  "text": "Mines 2. Can Tunnel. +1 Health upgrade.",
   "flavor": "Scrounger, Taker of Shiny Things",
-  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade. Draw a card when it dies.",
+  "shortText": "Mines 2. Can Tunnel. +1 Health upgrade.",
   "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine."
  },
  {
   "id": "goblin-scrapper",
-  "name": "Gutripper Brawler",
+  "name": "Bowler Brawler",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Common",
@@ -32,12 +32,13 @@
   "health": 3,
   "move": 1,
   "abilities": [
-   "frenzy"
+   "junkBoost"
   ],
   "unique": false,
-  "text": "+1 Attack next to another Goblin.",
-  "shortText": "+1 Attack next to another Goblin.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Frenzy: +1 Attack when next to another Goblin. Example: Two Goblins side by side both hit harder."
+  "text": "Nearby Goblins get +1 Attack. Strike (2 crystals): roll a huge bowling ball in a straight line (front, back, left or right). It knocks every creature in its path, friend or foe, back 1-2 spaces at random.",
+  "shortText": "Nearby Goblins get +1 Attack. Strike (2): roll a bowling ball that knocks everything in its line back 1-2 spaces.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Nearby Goblins get +1 Attack. Strike (2 crystals): roll a huge bowling ball in a straight line (front, back, left or right). It knocks every creature in its path, friend or foe, back 1-2 spaces at random.",
+  "flavor": "Ex-professional goblin bowler."
  },
  {
   "id": "goblin-slinger",
@@ -60,31 +61,30 @@
  },
  {
   "id": "goblin-bomber",
-  "name": "Boomfist Lunatic",
+  "name": "Bare Knuckle Lunatic",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Rare",
   "role": "Fighter",
-  "cost": 5,
+  "cost": 3,
   "attack": 2,
   "health": 2,
   "move": 1,
-  "abilities": [
-   "kaboom"
-  ],
+  "abilities": [],
   "unique": false,
-  "text": "When defeated, 2 damage to adjacent enemies.",
-  "shortText": "When defeated, 2 damage to adjacent enemies.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ka-boom: when defeated, deals 2 damage to all adjacent enemies. Example: A bomber is defeated between two enemies and both take damage."
+  "text": "When defeated, he knocks all units around him back 1 space.",
+  "shortText": "When defeated, he knocks all units around him back 1 space.",
+  "longText": "Fighter creature. Cost 3, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). When defeated, he knocks all units around him back 1 space.",
+  "flavor": "Thinks every problem can be solved with a fistfight. Every single one."
  },
  {
   "id": "goblin-sneak",
-  "name": "Backstab Weasel",
+  "name": "Backstabbing Thief",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Rare",
   "role": "Fighter",
-  "cost": 6,
+  "cost": 3,
   "attack": 3,
   "health": 2,
   "move": 1,
@@ -92,37 +92,39 @@
    "sneaky"
   ],
   "unique": false,
-  "text": "Sneaky. Enemies can't strike back at it.",
-  "shortText": "Sneaky. Enemies can't strike back at it.",
-  "longText": "Fighter creature. Cost 6, Attack 3, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Sneaky: enemies cannot strike back at it. Example: It attacks a Guard and takes no damage back."
+  "text": "Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats.",
+  "shortText": "Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats.",
+  "longText": "Fighter creature. Cost 3, Attack 3, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats.",
+  "flavor": "Sneaky and sinister. Hides in the shadows before he strikes."
  },
  {
   "id": "wolf-rider",
   "name": "Mangewolf Rider",
   "type": "creature",
   "faction": "goblins",
-  "rarity": "Ultra Rare",
+  "rarity": "Rare",
   "role": "Fighter",
-  "cost": 9,
+  "cost": 8,
   "attack": 3,
   "health": 4,
-  "move": 2,
+  "move": 3,
   "abilities": [
    "haste"
   ],
   "unique": false,
   "text": "Can act the turn it's played.",
   "shortText": "Can act the turn it's played.",
-  "longText": "Fighter creature. Cost 9, Attack 3, Health 4, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Haste: can act the turn it is played. Example: Summon it and attack in the same turn."
+  "longText": "Fighter creature. Cost 8, Attack 3, Health 4, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Can act the turn it's played.",
+  "flavor": "Crazy as a stunt rider. Never met a jump he would not try."
  },
  {
   "id": "grubnaks-big-boss-troll",
-  "name": "Gutcrusher the Troll Tyrant",
+  "name": "Gronkowski Troll Tyrant",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Collector",
   "role": "Fighter",
-  "cost": 13,
+  "cost": 7,
   "attack": 5,
   "health": 6,
   "move": 2,
@@ -132,7 +134,8 @@
   "unique": true,
   "text": "All your Goblins get +1 Attack.",
   "shortText": "All your Goblins get +1 Attack.",
-  "longText": "Fighter creature. Cost 13, Attack 5, Health 6, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rally: all your Goblins get +1 Attack. Example: With Grubnak's Big Boss in play every other Goblin hits 1 harder."
+  "longText": "Fighter creature. Cost 7, Attack 5, Health 6, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). All your Goblins get +1 Attack.",
+  "flavor": "Very dumb, but very good at sports. A pro goblin-ball player: hits hard and can take a punch."
  },
  {
   "id": "shard-guzzler",
@@ -492,9 +495,9 @@
   "move": 1,
   "abilities": [],
   "unique": false,
-  "text": "Plain and sturdy. No tricks.",
-  "shortText": "Plain and sturdy. No tricks.",
-  "longText": "Fighter creature. Cost 3, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Example: Send it forward to trade blows with the enemy."
+  "text": "Plain and sturdy. No tricks. Just kneecaps!",
+  "shortText": "Plain and sturdy. No tricks. Just kneecaps!",
+  "longText": "Fighter creature. Cost 3, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Plain and sturdy. No tricks. Just kneecaps!"
  },
  {
   "id": "gnome-cogger",
@@ -849,7 +852,7 @@
   "name": "Scrapsmith Miner",
   "type": "creature",
   "faction": "goblins",
-  "rarity": "Common",
+  "rarity": "Uncommon",
   "role": "Smith",
   "cost": 2,
   "attack": 1,
@@ -859,9 +862,10 @@
    "smith"
   ],
   "unique": false,
-  "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
-  "shortText": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
-  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner."
+  "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health. When this dies, draw a card. No draw if it died upgrading.",
+  "shortText": "Upgrades a creature: +1 Attack, +1 Health. Draw a card when it dies (not when it dies upgrading).",
+  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner.",
+  "flavor": "Does the mining, and can make anything out of anything."
  },
  {
   "id": "gnome-smith-miner",
@@ -903,7 +907,7 @@
  },
  {
   "id": "rotgut-grenadier",
-  "name": "Rotgut Grenadier",
+  "name": "Goblin Chef",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Common",
@@ -912,13 +916,12 @@
   "attack": 2,
   "health": 2,
   "move": 1,
-  "abilities": [
-   "ranged"
-  ],
+  "abilities": [],
   "unique": false,
-  "text": "Ranged. Hits 7 spaces in a line; no strike back.",
-  "shortText": "Ranged. Hits 7 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 6 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
+  "text": "Smack. When this attacks, the target is knocked back 2 spaces.",
+  "shortText": "Smack. When this attacks, the target is knocked back 2 spaces.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Smack. When this attacks, the target is knocked back 2 spaces.",
+  "flavor": "Not very clean. Not very nice. Smells bad, cooks horribly, but you can eat it."
  },
  {
   "id": "shiv-rat",
@@ -963,9 +966,9 @@
   "name": "Junk Shaman",
   "type": "creature",
   "faction": "goblins",
-  "rarity": "Uncommon",
-  "role": "Fighter",
-  "cost": 5,
+  "rarity": "Ultra Rare",
+  "role": "Ranged",
+  "cost": 7,
   "attack": 1,
   "health": 3,
   "move": 1,
@@ -973,18 +976,19 @@
    "junkBoost"
   ],
   "unique": false,
-  "text": "On your turn, adjacent Goblins get +1 Attack.",
-  "shortText": "On your turn, adjacent Goblins get +1 Attack.",
-  "longText": "Fighter creature. Cost 5, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Junk Boost: on your turn, adjacent Goblins get +1 Attack. Example: On your turn the Goblins beside the Shaman hit 1 harder."
+  "text": "On your turn, adjacent Goblins get +1 Attack. Pay 2: pick up one character within 5 spaces (ally or enemy) and move it to any space within 5 spaces of this card.",
+  "shortText": "On your turn, adjacent Goblins get +1 Attack. Pay 2: move any character within 5 spaces to a space within 5.",
+  "longText": "Ranged creature. Cost 7, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). On your turn, adjacent Goblins get +1 Attack. Pay 2: pick up one character within 5 spaces (ally or enemy) and move it to any space within 5 spaces of this card.",
+  "flavor": "Old and wise in the wizard ways. One of the only spellcasters in the Goblin realm."
  },
  {
   "id": "blastrat-sapper",
-  "name": "Blastrat Sapper",
+  "name": "SewerSlide Bomber",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Uncommon",
   "role": "Fighter",
-  "cost": 4,
+  "cost": 2,
   "attack": 2,
   "health": 1,
   "move": 1,
@@ -992,9 +996,10 @@
    "kaboom1"
   ],
   "unique": false,
-  "text": "Ka-boom: 1 damage to adjacent enemies when defeated.",
-  "shortText": "Ka-boom: 1 damage to adjacent enemies when defeated.",
-  "longText": "Fighter creature. Cost 4, Attack 2, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ka-boom 1: when defeated, deals 1 damage to every adjacent enemy creature. Example: It is defeated beside two enemies and each takes 1 damage."
+  "text": "Ka-boom: 1 damage to adjacent enemies when defeated (upgrades make the blast stronger too). Pay 1 crystal: he runs in a straight or diagonal line until he hits something, then explodes.",
+  "shortText": "Ka-boom: 1 damage to adjacent enemies when defeated. Pay 1: he runs in a straight line until he hits something, then explodes.",
+  "longText": "Fighter creature. Cost 2, Attack 2, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ka-boom: 1 damage to adjacent enemies when defeated (upgrades make the blast stronger too). Pay 1 crystal: he runs in a straight or diagonal line until he hits something, then explodes.",
+  "flavor": "A crazed zealot, happy to go out with a bang for the cause."
  },
  {
   "id": "hexwright-apprentice",

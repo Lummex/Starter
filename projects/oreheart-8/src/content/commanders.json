@@ -1,7 +1,7 @@
 [
  {
   "id": "grubnak",
-  "name": "Grubnak Rotgut, King of the Junkpile",
+  "name": "Grubnak Rotgut, Goblin King",
   "faction": "goblins",
   "health": 20,
   "abilityText": "Goblin creatures cost 1 less crystal (minimum 1).",
