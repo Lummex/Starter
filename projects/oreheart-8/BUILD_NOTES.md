@@ -626,3 +626,21 @@ AC96, AC135, AC137, AC139, AC168 (gold/bold/boxed menu text vs. the owner's whit
 - Grubnak: new Meshy model SEATED (Chair_Sit idle) on his junk throne, which replaces the castle/stand (`public/models/commanders` removed). Staff in his right hand, throne + Grubnak turned to the owner's pose (137°/146°). Emotes keep the old clip set (they play standing poses in place).
 - Tests: `tests/round12b.test.ts` (models saved, rigged, animated); screenshots `screenshots/r12b-*.png`.
 - Not tuned: staff angle and hand grips are set by eye; the other creatures' weapon rotations are untested beyond the idle pose; attack clips carry some root motion.
+
+## Round 12c — make every card do what its text says
+Done (engine, AI, tests in `tests/round12c.test.ts`, UI hooks):
+- Step 1: `artPos` framing on every card face (wrapper `.pic > img.pi`), Crystal card pictures full size, Betty Fizzlebottom archived in `data/archived-cards.json`.
+- Step 2: per-card `range` (Skullflinger 6, Stormcaller 5, Thunderwing 2, Marksmen 7, Grudge Hurler 5, Hexslinger any), Starfall 4 damage 3x3, Venom Shiv 7 turns.
+- Goblins: Bare Knuckle Lunatic, Backstabbing Thief, Goblin Chef, SewerSlide Bomber (`slide`), Bowler Brawler (`bowl`), Junk Shaman (`shaman`), Rocket Rider (`rocket`); Pickpocket! and Rat-Tunnel Ambush already worked.
+- Gnomes: Gearward Sentinel (guard + teleport assist), Glyphshield Warden (Shield each turn + `ward`), Voldawright (`shockwave`), Mirrorveil Illusionist (Blink costs 1 + illusion decoy, 35% less damage), Plow (`plow`), Soul Stone Siphoner (sacrifice); Unweave already worked.
+- Dwarves: Riot Shield Bearer (3 turns locked and invulnerable, now a Fighter), Ironwall Shieldbeard (Corpsman heal 7 at end of turn), Grudge Hurler (target rooted), Bloodbeard (Grit), Brewlord (Medic), Ram Rider (`ramMove`), Gemdrunk (+1 Attack per Bank), Granite Oathkeeper (random knockback), Oathbound Overwatch (any distance), Door Splitter (knockback 1-3 random), Grimhold Ravager (Brawler doubling), Ironclad Bulwark (shield lasts until hit), Emergency Rations (Commander or unit, 4).
+- Neutral: Desperate Plunder (persistent, stackable, +3 Flow while behind), Field Bandage (heal to full).
+- UI: abilities that aim at a cell are used by dragging the creature (glowing cells); Shockwave/Ward/Sacrifice appear in a tap menu.
+
+Not done / owner questions:
+- Overclocked Aethervein "extra mining" is only covered by the old Crystal Eater freeze mechanic.
+- Brawler Adept "can't cast spells" has no mechanical effect (creatures never cast).
+- Junk Shaman via drag: drop on a character; the engine places it at the best cell (allies toward the enemy Stronghold, enemies away from it).
+- Dwarves have no basic Miner now (Riot Shield Bearer is a Fighter) but `basicGatherers.dwarves` still points at it for the free Miner rule. Which card should be the Dwarf free Miner?
+- 8 older engine tests still fail because the owner's card edits changed names, costs and text (starter-deck composition, shortText length); they failed before this round.
+- No in-match ability screenshots this round (budget); deck builder screenshot: `screenshots/r12c-1920x1080-deckbuilder.png`.
