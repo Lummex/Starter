@@ -1,0 +1,10 @@
+.ohcard{display:flex;justify-content:center}
+.ohcard .cardc{position:relative;container-type:size;overflow:hidden;border-radius:4%;background:#000;font-family:'Alegreya SC',Georgia,serif;flex:none;max-width:100%}
+.ohcard .ly{position:absolute;box-sizing:border-box}
+.ohcard .ly>img{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.ohcard .ly .artclip>img{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.ohcard .cardc{isolation:isolate}
+.ohcard .ly .tx{position:absolute;inset:0;display:flex;white-space:pre-wrap;overflow:visible;pointer-events:none}
+.ohcard .ly .tx>span{display:block;width:100%}
+.ohcard .ly.hid{display:none}
+.ohcard .ly .sym{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
