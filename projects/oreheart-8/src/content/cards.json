@@ -206,10 +206,15 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Miner: mines 2. Tunnel. +1 Health upgrade. Draw a card when it dies.",
+  "text": "Miner: mines 2. Tunnel. +1 Health upgrade.",
   "flavor": "Prospector of Profound Patience",
-  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade. Draw a card when it dies.",
-  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine."
+  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade.",
+  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine.",
+  "artPos": {
+   "s": 0.99,
+   "x": 0,
+   "y": 0
+  }
  },
  {
   "id": "gnome-tinker",
@@ -218,7 +223,7 @@
   "faction": "gnomes",
   "rarity": "Common",
   "role": "Fighter",
-  "cost": 5,
+  "cost": 4,
   "attack": 1,
   "health": 3,
   "move": 1,
@@ -228,7 +233,13 @@
   "unique": false,
   "text": "Each turn, adjacent allies get Shield 1.",
   "shortText": "Each turn, adjacent allies get Shield 1.",
-  "longText": "Fighter creature. Cost 5, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Fix-it: at the start of your turn, each adjacent ally gets Shield 1. Example: A Tinker next to a Beetle gives the Beetle a Shield each turn."
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Fix-it: at the start of your turn, each adjacent ally gets Shield 1. Example: A Tinker next to a Beetle gives the Beetle a Shield each turn.",
+  "flavor": "\"Stay behind me. Nobody gets hurt on my watch.\"",
+  "artPos": {
+   "s": 1.17,
+   "x": -10.6,
+   "y": 1.2
+  }
  },
  {
   "id": "spark-gnome",
@@ -245,9 +256,15 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 7 spaces in a line; no strike back.",
-  "shortText": "Ranged. Hits 7 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 6 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
+  "text": "Ranged. Hits up to 5 spaces away; no strike back.",
+  "shortText": "Ranged. Hits up to 5 spaces away; no strike back.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits up to 5 spaces away; no strike back.",
+  "flavor": "Even the woods keep the storm's company.",
+  "artPos": {
+   "s": 1.02,
+   "x": -4.6,
+   "y": 3.8
+  }
  },
  {
   "id": "clockwork-beetle",
@@ -256,8 +273,8 @@
   "faction": "gnomes",
   "rarity": "Rare",
   "role": "Fighter",
-  "cost": 8,
-  "attack": 2,
+  "cost": 6,
+  "attack": 3,
   "health": 5,
   "move": 1,
   "abilities": [
@@ -266,7 +283,12 @@
   "unique": false,
   "text": "Armored: takes 1 less damage from each hit.",
   "shortText": "Armored: takes 1 less damage from each hit.",
-  "longText": "Fighter creature. Cost 8, Attack 2, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Armored: takes 1 less damage from every hit. Example: A 3-damage hit only deals 2."
+  "longText": "Fighter creature. Cost 6, Attack 3, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Armored: takes 1 less damage from every hit. Example: A 3-damage hit only deals 2.",
+  "artPos": {
+   "s": 0.95,
+   "x": -1.9,
+   "y": -8.7
+  }
  },
  {
   "id": "gnome-illusionist",
@@ -283,9 +305,14 @@
    "blink"
   ],
   "unique": false,
-  "text": "Blink: once, swap places with any of your creatures.",
-  "shortText": "Blink: once, swap places with any of your creatures.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Blink: once, swap places with any of your creatures. Example: Swap into a gap in your line to reach a distant enemy."
+  "text": "Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down).",
+  "shortText": "Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down).",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down).",
+  "artPos": {
+   "s": 1.02,
+   "x": -4.4,
+   "y": -6.2
+  }
  },
  {
   "id": "gyrocopter-ace",
@@ -297,15 +324,15 @@
   "cost": 8,
   "attack": 3,
   "health": 3,
-  "move": 2,
+  "move": 3,
   "abilities": [
    "flying",
    "ranged"
   ],
   "unique": false,
-  "text": "Flies over other creatures. Ranged. Hits 7 spaces in a line; no strike back.",
-  "shortText": "Flies over other creatures. Ranged. Hits 7 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flying: moves over other creatures. Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: It flies across a wall of enemy creatures."
+  "text": "Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
+  "shortText": "Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
+  "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back."
  },
  {
   "id": "the-great-steam-golem",
@@ -314,7 +341,7 @@
   "faction": "gnomes",
   "rarity": "Collector",
   "role": "Fighter",
-  "cost": 13,
+  "cost": 10,
   "attack": 5,
   "health": 6,
   "move": 2,
@@ -324,7 +351,12 @@
   "unique": true,
   "text": "Its hits also hurt enemies next to the target.",
   "shortText": "Its hits also hurt enemies next to the target.",
-  "longText": "Fighter creature. Cost 13, Attack 5, Health 6, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Overload: its attack also hits every enemy next to the target for 1. Example: Hitting a creature also hurts its neighbours."
+  "longText": "Fighter creature. Cost 10, Attack 5, Health 6, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Overload: its attack also hits every enemy next to the target for 1. Example: Hitting a creature also hurts its neighbours.",
+  "artPos": {
+   "s": 1.05,
+   "x": 2.2,
+   "y": -2.1
+  }
  },
  {
   "id": "overclocked-conduit",
@@ -541,37 +573,42 @@
  },
  {
   "id": "gnome-cogger",
-  "name": "Voltwright",
+  "name": "Voldawright",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 3,
+  "move": 1,
+  "abilities": [],
+  "unique": false,
+  "text": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each.",
+  "shortText": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each.",
+  "artPos": {
+   "s": 0.94,
+   "x": -3.7,
+   "y": -7.1
+  }
+ },
+ {
+  "id": "gnome-widget",
+  "name": "Brawler Adept",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Common",
   "role": "Fighter",
   "cost": 3,
   "attack": 2,
-  "health": 1,
-  "move": 1,
-  "abilities": [],
-  "unique": false,
-  "text": "Plain and sturdy. No tricks.",
-  "shortText": "Plain and sturdy. No tricks.",
-  "longText": "Fighter creature. Cost 3, Attack 2, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Example: Send it forward to trade blows with the enemy."
- },
- {
-  "id": "gnome-widget",
-  "name": "Hexgear Adept",
-  "type": "creature",
-  "faction": "gnomes",
-  "rarity": "Common",
-  "role": "Fighter",
-  "cost": 3,
-  "attack": 1,
   "health": 2,
   "move": 1,
   "abilities": [],
   "unique": false,
-  "text": "Plain and sturdy. No tricks.",
-  "shortText": "Plain and sturdy. No tricks.",
-  "longText": "Fighter creature. Cost 3, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Example: Send it forward to trade blows with the enemy."
+  "text": "Plain and sturdy. No tricks. Can't cast spells.",
+  "shortText": "Plain and sturdy. No tricks. Can't cast spells.",
+  "longText": "Fighter creature. Cost 3, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Plain and sturdy. No tricks. Can't cast spells."
  },
  {
   "id": "dwarf-pickman",
@@ -679,7 +716,12 @@
   },
   "text": "Spell. 3 damage to a creature or Commander.",
   "shortText": "Spell. 3 damage to a creature or Commander.",
-  "longText": "Regular spell, cast in your Deploy phase by your Commander. It deals 3 damage to one creature or to the enemy Commander. Example: Cast it on a 3-Health creature to defeat it."
+  "longText": "Regular spell, cast in your Deploy phase by your Commander. It deals 3 damage to one creature or to the enemy Commander. Example: Cast it on a 3-Health creature to defeat it.",
+  "artPos": {
+   "s": 1,
+   "x": -5.3,
+   "y": -2
+  }
  },
  {
   "id": "battle-cry",
@@ -704,14 +746,19 @@
   "faction": "gnomes",
   "rarity": "Ultra Rare",
   "spellKind": "regular",
-  "cost": 7,
+  "cost": 6,
   "effect": "areaDamage",
   "params": {
    "amount": 2
   },
-  "text": "Spell. 2 damage to everything in a 3×3 area.",
-  "shortText": "Spell. 2 damage to everything in a 3×3 area.",
-  "longText": "Regular spell, cast in your Deploy phase. It deals 2 damage to every creature in a 3 x 3 area, yours included. Example: Aim it at the middle of three enemy creatures."
+  "text": "Spell. 4 damage to everything in a 3×3 area.",
+  "shortText": "Spell. 4 damage to everything in a 3×3 area.",
+  "longText": "Regular spell, cast in your Deploy phase. It deals 4 damage to every creature in a 3 x 3 area, yours included. Example: Aim it at the middle of three enemy creatures.",
+  "artPos": {
+   "s": 0.99,
+   "x": 0,
+   "y": 0
+  }
  },
  {
   "id": "healing-light",
@@ -806,7 +853,12 @@
   "params": {},
   "text": "Counterspell. Cancel any enemy spell.",
   "shortText": "Counterspell. Cancel any enemy spell.",
-  "longText": "Counterspell (Instant): play it when the enemy casts any spell, whatever it costs. The spell is cancelled. Example: The enemy casts Starfall Cataclysm: respond and it is cancelled."
+  "longText": "Counterspell (Instant): play it when the enemy casts any spell, whatever it costs. The spell is cancelled. Example: The enemy casts Starfall Cataclysm: respond and it is cancelled.",
+  "artPos": {
+   "s": 2.02,
+   "x": -56.1,
+   "y": 51.8
+  }
  },
  {
   "id": "mirror-hex",
@@ -1083,7 +1135,7 @@
  },
  {
   "id": "hexwright-apprentice",
-  "name": "Hexwright Apprentice",
+  "name": "Hexslinger Apprentice",
   "type": "creature",
   "faction": "gnomes",
   "rarity": "Common",
@@ -1096,9 +1148,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 7 spaces in a line; no strike back.",
-  "shortText": "Ranged. Hits 7 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 6 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
+  "text": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
+  "shortText": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies."
  },
  {
   "id": "gearward-sentinel",
@@ -1107,17 +1159,22 @@
   "faction": "gnomes",
   "rarity": "Common",
   "role": "Fighter",
-  "cost": 6,
-  "attack": 1,
+  "cost": 4,
+  "attack": 3,
   "health": 4,
   "move": 1,
   "abilities": [
    "guard"
   ],
   "unique": false,
-  "text": "Guard. Adjacent enemies must attack it first.",
-  "shortText": "Guard. Adjacent enemies must attack it first.",
-  "longText": "Fighter creature. Cost 6, Attack 1, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Guard: adjacent enemies must attack it first. Example: With a Guard beside the enemy creature, it must be attacked first."
+  "text": "Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight.",
+  "shortText": "Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight.",
+  "longText": "Fighter creature. Cost 4, Attack 3, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight.",
+  "artPos": {
+   "s": 1.06,
+   "x": -8.4,
+   "y": -2.8
+  }
  },
  {
   "id": "runic-siphoner",
@@ -1172,9 +1229,9 @@
    "glyphShield"
   ],
   "unique": false,
-  "text": "Gets Shield 1 at the start of your turn.",
-  "shortText": "Gets Shield 1 at the start of your turn.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Glyph Shield: at the start of your turn it gets Shield 1. Example: It starts every turn with a Shield 1."
+  "text": "Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack.",
+  "shortText": "Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack."
  },
  {
   "id": "oathbound-pikeman",

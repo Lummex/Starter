@@ -19,7 +19,7 @@
  },
  {
   "id": "sproingle",
-  "name": "Archmagister Sproingle the Unfathomable",
+  "name": "Knobbin the Gnomeificent",
   "faction": "gnomes",
   "health": 20,
   "abilityText": "Your spells cost 1 less crystal (minimum 1).",
@@ -27,11 +27,16 @@
    "type": "spellDiscount",
    "amount": 1
   },
-  "blurb": "Clever tinkerers and spark-mages. Gadgets, healing and ranged sparks."
+  "blurb": "Clever tinkerers and spark-mages. Gadgets, healing and ranged sparks.",
+  "artPos": {
+   "s": 1.56,
+   "x": -6.4,
+   "y": 15.4
+  }
  },
  {
   "id": "sprocket",
-  "name": "Madame Sprocket, Mistress of Gears",
+  "name": "Betty Fizzlebottom, Mistress of Light",
   "faction": "gnomes",
   "health": 20,
   "playable": false,
