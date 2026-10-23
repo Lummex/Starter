@@ -478,13 +478,13 @@ describe('round 4', () => {
     expect(casts.length).toBeGreaterThan(0);
     expect(casts.every((a: any) => s.players.player.hand.find((h: any) => h.uid === a.uid).cardId === 'venom-shiv')).toBe(true);
   });
-  it('Venom Shiv poisons for 3 of the owner turns and blocks healing', () => {
+  it('Venom Shiv poisons for 7 of the owner turns and blocks healing', () => {
     let s = mk({ playerHand: ['venom-shiv', 'healing-light'], playerCrystals: 10, board: [O('shieldbeard', 2, 8)] });
     const target = at(s, 2, 8);
     const hp = target.health;
     s = act(s, { type: 'cast', uid: s.players.player.hand[0].uid, target: { row: 2, col: 8 } });
     if (s.pendingResponse) s = act(s, { type: 'pass' });
-    expect(at(s, 2, 8).poison).toBe(3);
+    expect(at(s, 2, 8).poison).toBe(7);
     const seen: number[] = [];
     for (let i = 0; i < 3; i++) {
       s = done(s, 2);
@@ -492,7 +492,7 @@ describe('round 4', () => {
       s = done(s, 2);
     }
     expect(seen).toEqual([hp - 1, hp - 2, hp - 3]);
-    expect(at(s, 2, 8).poison).toBe(0);
+    expect(at(s, 2, 8).poison).toBe(4);
   });
   it('casting lock: act() rejects a locked cast; factionLock:false allows it', () => {
     const setup = { playerHand: ['fireball'], playerCrystals: 10, board: [O('gnome-prospector', 2, 8)] };
@@ -530,10 +530,10 @@ describe('round 10 rules', () => {
     expect(targets(s, 4, 3).map((a: any) => a.target.col)).toEqual([4]);
     s = turnToAction(mk({ board: [P('goblin-slinger', 4, 3), P('goblin-scrapper', 4, 5), O('goblin-scrapper', 4, 8)] }));
     expect(targets(s, 4, 3).length).toBe(0);
-    // round 11: range 7 -- 7 away is in, 8 away is out
-    s = turnToAction(mk({ board: [P('goblin-slinger', 4, 2), O('goblin-scrapper', 4, 9)] }));
+    // round 11: Goblin Slinger range 6 -- 6 away is in, 7 away is out
+    s = turnToAction(mk({ board: [P('goblin-slinger', 4, 2), O('goblin-scrapper', 4, 8)] }));
     expect(targets(s, 4, 2).length).toBe(1);
-    s = turnToAction(mk({ board: [P('goblin-slinger', 4, 2), O('goblin-scrapper', 4, 10)] }));
+    s = turnToAction(mk({ board: [P('goblin-slinger', 4, 2), O('goblin-scrapper', 4, 9)] }));
     expect(targets(s, 4, 2).length).toBe(0);
   });
   it('basic Miner death draws a card; an upgrade Miner does not', () => {
