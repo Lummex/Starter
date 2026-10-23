@@ -139,22 +139,21 @@
  },
  {
   "id": "shard-guzzler",
-  "name": "Shardguzzler the Bottomless",
+  "name": "Goblin Rocket Rider",
   "type": "creature",
   "faction": "goblins",
   "rarity": "Uncommon",
   "role": "Gatherer",
-  "cost": 5,
+  "cost": 6,
   "attack": 1,
   "health": 4,
   "move": 1,
-  "abilities": [
-   "eaterGuzzler"
-  ],
+  "abilities": [],
   "unique": false,
-  "text": "Extra Crystal cards you play hurt it for 2.",
-  "shortText": "Extra Crystal cards you play hurt it for 2.",
-  "longText": "Miner creature. Cost 5, Attack 1, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Crystal Eater: each extra Crystal card you play this turn deals 2 damage to it. Example: Play a second Crystal card in a turn and it takes 2 damage."
+  "text": "Light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's attack. Then it makes one attack.",
+  "shortText": "Ride a rocket to any space: it explodes in a 3x3 area for damage equal to this card's Attack, then makes one attack.",
+  "longText": "Miner creature. Cost 6, Attack 1, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rocket Ride: light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's Attack. Then it makes one attack.",
+  "flavor": "Goblin with the short fuse."
  },
  {
   "id": "gnome-prospector",
