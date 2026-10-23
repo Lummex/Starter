@@ -361,6 +361,16 @@ function endTurn(s: any, ev: any[]) {
     own.crystals -= saved; own.bank += saved;
     ev.push({ type: 'savings', player: s.activePlayer, amount: saved });
   }
+  for (const c of [...s.board.creatures]) {
+    if (c.owner !== s.activePlayer) continue;
+    if (has(c, 'corpsman')) {
+      let pool = 7;
+      for (const a of adjacentCreatures(s, c).filter((x: any) => x.owner === c.owner && x.health < x.maxHealth).sort((x: any, y: any) => x.health - y.health)) {
+        const n = Math.min(pool, a.maxHealth - a.health); if (n > 0) { healCreature(s, a, n, ev); pool -= n; }
+      }
+    }
+    if (has(c, 'medic')) { const a = adjacentCreatures(s, c).find((x: any) => x.owner === c.owner && x.health < x.maxHealth && CARDS[x.cardId].faction === 'dwarves'); if (a) healCreature(s, a, 3, ev); }
+  }
   ev.push({ type: 'turnEnd', player: s.activePlayer });
   startTurn(s, ev);
 }
@@ -388,7 +398,7 @@ function damageCommander(s: any, who: Side, n: number, ev: any[]) {
 
 function hurt(s: any, c: any, amount: number, ev: any[], raw = false) {
   let d = amount;
-  if (has(c, 'riotShield') && s.turn < c.lockedUntil) d = 0;
+  if ((has(c, 'riotShield') && s.turn < c.lockedUntil) || s.turn < (c.wardUntil || 0)) d = 0;
   if (!raw) {
     if (has(c, 'armored')) d = Math.max(0, d - 1);
     if (has(c, 'unbreakable')) d = Math.min(d, 3);
@@ -448,7 +458,7 @@ const DIRS8 = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
 const canAct = (s: any, c: any) => (!c.summonedThisTurn || has(c, 'haste')) && s.turn >= c.lockedUntil;
 
 export function attackTargets(s: any, c: any): any[] {
-  if (c.hasAttacked || c.hasMined || !canAct(s, c) || (c.hasMoved && !has(c, 'charge'))) return [];
+  if (c.hasAttacked || c.hasMined || !canAct(s, c) || (c.hasMoved && !has(c, 'charge') && !c.rocketed) || s.turn < (c.wardUntil || 0)) return [];
   const enemy = other(c.owner);
   const sh = stronghold(enemy);
   const out: any[] = [];
@@ -525,6 +535,106 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   if (def.health <= 0 && has(attacker, 'siphon')) s.players[attacker.owner].bank += 1;
   if (attacker.health <= 0 && strikes && has(def, 'siphon')) s.players[def.owner].bank += 1;
   for (const c of [def, attacker, ...s.board.creatures]) if (c.health <= 0 && s.board.creatures.includes(c)) defeat(s, c, ev);
+}
+
+// ---------------------------------------------------------------- active abilities (round 12c)
+const ABILITY_COST: Record<string, number> = { slide: 1, bowl: 2, shockwave: 1, plow: 2, ramMove: 2, shaman: 2, ward: 2, rocket: 0, sacrifice: 0 };
+const D4 = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+const fresh = (s: any, c: any) => !c.hasAttacked && !c.hasMined && !c.hasMoved && canAct(s, c) && !(c.wardUntil > s.turn);
+/** Last cell a creature reaches walking (dr,dc) over empty cells, and what stopped it. */
+function runLine(s: any, c: any, dr: number, dc: number, max = 99) {
+  let r = c.row, cl = c.col, n = 0;
+  while (n < max && emptyCell(s, r + dr, cl + dc)) { r += dr; cl += dc; n++; }
+  return { row: r, col: cl, steps: n, hit: { row: r + dr, col: cl + dc } };
+}
+export function abilityActions(s: any, who: Side): any[] {
+  const out: any[] = [];
+  const pl = s.players[who];
+  for (const c of s.board.creatures) {
+    if (c.owner !== who) continue;
+    const mk = (ability: string, extra: any) => { if (funds(pl) >= (ABILITY_COST[ability] || 0)) out.push({ type: 'ability', ability, creatureUid: c.uid, ...extra }); };
+    const ok = fresh(s, c);
+    if (has(c, 'slide') && ok) for (const [dr, dc] of DIRS8) { const e = runLine(s, c, dr, dc); const h = e.hit; if (e.steps >= 1 && (creatureAt(s, h.row, h.col) || isStronghold(h.row, h.col))) mk('slide', { target: { row: e.row, col: e.col }, dr, dc }); }
+    if (has(c, 'bowl') && ok) for (const [dr, dc] of D4) { let r = c.row + dr, cl = c.col + dc, hit = false; while (inBounds(r, cl)) { if (creatureAt(s, r, cl)) hit = true; r += dr; cl += dc; } if (hit) mk('bowl', { dr, dc }); }
+    if (has(c, 'shockwave') && ok && adjacentCreatures(s, c).some((o: any) => o.owner !== who)) mk('shockwave', {});
+    if (has(c, 'plow') && ok) for (const [dr, dc] of D4) for (let dist = 1; dist <= 7; dist++) { const r = c.row + dr * dist, cl = c.col + dc * dist; if (!inBounds(r, cl) || isStronghold(r, cl) || isSite(s, r, cl)) break; mk('plow', { dr, dc, dist }); }
+    if (has(c, 'ramMove') && ok) for (const [dr, dc] of DIRS8) { const e = runLine(s, c, dr, dc); for (let k = 1; k <= e.steps; k++) mk('ramMove', { target: { row: c.row + dr * k, col: c.col + dc * k } }); }
+    if (has(c, 'shaman') && !c.hasAttacked && canAct(s, c))
+      for (const o of s.board.creatures) if (o !== c && cheb(o, c) <= 5 && !(o.riotShield))
+        for (let r = 1; r <= H; r++) for (let cl = 1; cl <= W; cl++) if (cheb({ row: r, col: cl }, c) <= 5 && emptyCell(s, r, cl)) mk('shaman', { from: { row: o.row, col: o.col }, target: { row: r, col: cl } });
+    if (has(c, 'rocket') && ok) for (let r = 1; r <= H; r++) for (let cl = 1; cl <= W; cl++) if (emptyCell(s, r, cl)) mk('rocket', { target: { row: r, col: cl } });
+    if (has(c, 'ward') && c.wardTurn !== s.turn && canAct(s, c)) for (const o of s.board.creatures) if (o.owner === who && o !== c) mk('ward', { target: { row: o.row, col: o.col } });
+    if (has(c, 'sacrifice') && canAct(s, c)) for (const o of s.board.creatures) if (o.owner === who && o !== c) mk('sacrifice', { target: { row: o.row, col: o.col } });
+  }
+  return out;
+}
+function blastAround(s: any, c: any, dmg: number, ev: any[]) {
+  const foe = other(c.owner);
+  for (const o of [...s.board.creatures]) if (o.owner === foe && cheb(o, c) <= 1) dealDamage(s, o, dmg, ev);
+  if (!s.winner && cheb(c, stronghold(foe)) <= 1) damageCommander(s, foe, dmg, ev);
+}
+function runAbility(s: any, l: any, who: Side, ev: any[]) {
+  const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
+  pay(s.players[who], ABILITY_COST[l.ability] || 0);
+  const to = (row: number, col: number, teleport = false) => { ev.push({ type: 'move', uid: c.uid, from: { row: c.row, col: c.col }, to: { row, col }, teleport }); c.row = row; c.col = col; };
+  ev.push({ type: 'abilityUsed', uid: c.uid, ability: l.ability, row: c.row, col: c.col });
+  switch (l.ability) {
+    case 'slide':
+      to(l.target.row, l.target.col); c.hasAttacked = true;
+      blastAround(s, c, CONFIG.kaboomDamage ?? 1, ev);
+      c.health = 0; defeat(s, c, ev);
+      break;
+    case 'bowl': {
+      c.hasAttacked = true;
+      const line: any[] = [];
+      for (let r = c.row + l.dr, cl = c.col + l.dc; inBounds(r, cl); r += l.dr, cl += l.dc) { const o = creatureAt(s, r, cl); if (o) line.push(o); }
+      for (const o of line.reverse()) knock(s, o, l.dr, l.dc, rint(s, 1, 2), ev);
+      break;
+    }
+    case 'shockwave':
+      c.hasAttacked = true;
+      for (const o of adjacentCreatures(s, c)) if (o.owner !== who) { knockAway(s, c, o, 1, ev); dealDamage(s, o, 1, ev); }
+      break;
+    case 'plow': {
+      c.hasAttacked = true;
+      let steps = 0;
+      for (let k = 1; k <= l.dist; k++) {
+        const r = c.row + l.dr, cl = c.col + l.dc;
+        const o = creatureAt(s, r, cl);
+        if (o) {
+          const side = rint(s, 0, 1) ? 1 : -1, n = rint(s, 1, 2);
+          knock(s, o, l.dc * side, l.dr * side, n, ev);
+          if (creatureAt(s, r, cl) === o) knock(s, o, -l.dc * side, -l.dr * side, n, ev);
+          if (creatureAt(s, r, cl)) break;
+        }
+        to(r, cl); steps++;
+      }
+      break;
+    }
+    case 'ramMove': to(l.target.row, l.target.col); c.hasMoved = true; break;
+    case 'shaman': {
+      const o = creatureAt(s, l.from.row, l.from.col);
+      c.hasAttacked = true;
+      ev.push({ type: 'move', uid: o.uid, from: { row: o.row, col: o.col }, to: { row: l.target.row, col: l.target.col }, teleport: true });
+      o.row = l.target.row; o.col = l.target.col;
+      break;
+    }
+    case 'rocket':
+      to(l.target.row, l.target.col, true); c.hasMoved = true; c.rocketed = true;
+      blastAround(s, c, atkValue(s, c), ev);
+      break;
+    case 'ward': {
+      const o = creatureAt(s, l.target.row, l.target.col);
+      o.wardUntil = s.turn + 2; c.wardTurn = s.turn;
+      ev.push({ type: 'ward', uid: o.uid, row: o.row, col: o.col });
+      break;
+    }
+    case 'sacrifice': {
+      const o = creatureAt(s, l.target.row, l.target.col);
+      o.health = 0; defeat(s, o, ev); s.players[who].bank += 1; c.hasAttacked = true;
+      break;
+    }
+  }
 }
 
 // ---------------------------------------------------------------- spawning / movement helpers
@@ -823,7 +933,8 @@ export function legalActions(s: any): any[] {
     else out.push({ type: 'gathererSwap' });
   }
   if (['deploy', 'action'].includes(ph)) {
-    for (const c of s.board.creatures) if (c.owner === who && has(c, 'blink') && !c.blinkUsed)
+    if (ph === 'action') out.push(...abilityActions(s, who));
+    for (const c of s.board.creatures) if (c.owner === who && has(c, 'blink') && !c.blinkUsed && funds(pl) >= 1)
       for (const o of s.board.creatures) if (o !== c && o.owner === who) out.push({ type: 'ability', creatureUid: c.uid, ability: 'blink', target: { row: o.row, col: o.col } });
     out.push({ type: 'done' });
   }
@@ -1045,6 +1156,8 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       break;
     }
     case 'ability': {
+      if (l.ability !== 'blink') { runAbility(s, l, who, ev); break; }
+      pay(pl, 1);
       const a = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
       const b = creatureAt(s, l.target.row, l.target.col);
       const pa = { row: a.row, col: a.col }, pb = { row: b.row, col: b.col };

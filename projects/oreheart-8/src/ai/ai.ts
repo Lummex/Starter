@@ -1,5 +1,5 @@
 // Computer opponent. Uses only legalActions() and read-only engine helpers; never mutates state.
-import { legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner } from '../engine';
+import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner } from '../engine';
 
 export type Rand = () => number;
 export function makeRand(seed: number): Rand {
@@ -102,6 +102,20 @@ function scoreCast(s: any, who: string, a: any): number {
   }
 }
 
+/** Material + Commander Health balance from `who`'s point of view (used to score special abilities by simulation). */
+function material(s: any, who: string): number {
+  let v = 0;
+  for (const c of s.board.creatures) v += (c.owner === who ? 1 : -1) * (CARDS[c.cardId].cost * 2 + c.health + c.attack);
+  return v + (s.players[who].health - s.players[other(who as any)].health) * 3;
+}
+function scoreAbility(s: any, who: string, a: any): number {
+  if (a.ability === 'blink' || a.ability === 'ward') return 0;
+  const r: any = applyAction(s, a);
+  if (!r.ok) return 0;
+  const d = material(r.state, who) - material(s, who);
+  return d >= 4 ? 30 + d : 0;
+}
+
 export function aiChoose(s: any, difficulty: string, rand: Rand): any {
   const who = s.priority as string;
   const legal = legalActions(s).filter((a: any) => a.type !== 'surrender');
@@ -131,7 +145,14 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
 
   const hard = difficulty === 'hard';
   const scored: [number, any][] = [];
+  // special abilities have many target options: simulate a sample of each kind only
+  const seenAb: Record<string, number> = {};
   for (const a of legal) {
+    if (a.type === 'ability') {
+      const k = a.ability + ':' + a.creatureUid;
+      seenAb[k] = (seenAb[k] || 0) + 1;
+      if (seenAb[k] > 8 && rand() < 0.97) continue;
+    }
     if (a.type === 'playCrystal') {
       const card = CARDS[s.players[who].hand.find((h: any) => h.uid === a.uid).cardId];
       scored.push([100, a]);
@@ -150,7 +171,8 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const cc = CARDS[c.cardId];
       scored.push([!isMiner(cc) && cc.cost >= 4 ? 28 + cc.cost + rand() : 0, a]);
-    } else if (a.type === 'cast') scored.push([scoreCast(s, who, a), a]);
+    } else if (a.type === 'ability') scored.push([scoreAbility(s, who, a), a]);
+    else if (a.type === 'cast') scored.push([scoreCast(s, who, a), a]);
     else if (a.type === 'mine') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const site = s.sites.find((x: any) => x.row === a.row && x.col === a.col);

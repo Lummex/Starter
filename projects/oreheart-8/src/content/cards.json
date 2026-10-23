@@ -37,7 +37,8 @@
   "health": 3,
   "move": 1,
   "abilities": [
-   "junkBoost"
+   "junkBoost",
+   "bowl"
   ],
   "unique": false,
   "text": "Nearby Goblins get +1 Attack. Strike (2 crystals): roll a huge bowling ball in a straight line (front, back, left or right). It knocks every creature in its path, friend or foe, back 1-2 spaces at random.",
@@ -187,7 +188,9 @@
   "attack": 1,
   "health": 4,
   "move": 1,
-  "abilities": [],
+  "abilities": [
+   "rocket"
+  ],
   "unique": false,
   "text": "Light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's attack. Then it makes one attack.",
   "shortText": "Ride a rocket to any space: it explodes in a 3x3 area for damage equal to this card's Attack, then makes one attack.",
@@ -431,7 +434,8 @@
   "health": 4,
   "move": 1,
   "abilities": [
-   "guard"
+   "guard",
+   "corpsman"
   ],
   "unique": false,
   "text": "Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several.",
@@ -500,7 +504,7 @@
   "health": 4,
   "move": 1,
   "abilities": [
-   "heartyale"
+   "medic"
   ],
   "unique": false,
   "text": "Medic. Each turn, heal an adjacent wounded dwarf. Beer is the cure.",
@@ -525,7 +529,8 @@
   "health": 5,
   "move": 2,
   "abilities": [
-   "charge"
+   "charge",
+   "ramMove"
   ],
   "unique": false,
   "text": "Charge. Moves and attacks in the same turn. Pay 2: Move in any direction, any number of spaces.",
@@ -636,7 +641,9 @@
   "attack": 2,
   "health": 3,
   "move": 1,
-  "abilities": [],
+  "abilities": [
+   "shockwave"
+  ],
   "unique": false,
   "text": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each.",
   "shortText": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each.",
@@ -1194,7 +1201,8 @@
   "health": 3,
   "move": 1,
   "abilities": [
-   "junkBoost"
+   "junkBoost",
+   "shaman"
   ],
   "unique": false,
   "text": "On your turn, adjacent Goblins get +1 Attack. Pay 2: pick up one character within 5 spaces (ally or enemy) and move it to any space within 5 spaces of this card.",
@@ -1219,7 +1227,8 @@
   "health": 1,
   "move": 1,
   "abilities": [
-   "kaboom1"
+   "kaboom1",
+   "slide"
   ],
   "unique": false,
   "text": "Ka-boom: 1 damage to adjacent enemies when defeated (upgrades make the blast stronger too). Pay 1 crystal: he runs in a straight or diagonal line until he hits something, then explodes.",
@@ -1294,7 +1303,8 @@
   "health": 2,
   "move": 1,
   "abilities": [
-   "siphon"
+   "siphon",
+   "sacrifice"
   ],
   "unique": false,
   "text": "Defeating a creature gives +1 Bank crystal. May sacrifice an allied creature to gain +1 Bank crystal.",
@@ -1318,7 +1328,7 @@
   "health": 3,
   "move": 1,
   "abilities": [
-   "blink"
+   "plow"
   ],
   "unique": false,
   "text": "Plow (2 crystals): Move in a straight line, never diagonally. Knocks aside all creatures in its path, friend or foe, 1-2 spaces at random.",
@@ -1342,7 +1352,8 @@
   "health": 3,
   "move": 1,
   "abilities": [
-   "glyphShield"
+   "glyphShield",
+   "ward"
   ],
   "unique": false,
   "text": "Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack.",

@@ -49,3 +49,34 @@ describe('round 12c abilities', () => {
     expect(c).toBeTruthy();
   });
 });
+describe('round 12c active abilities', () => {
+  const abil = (s: any, ability: string, extra: any = {}) => legalActions(s).find((a: any) => a.type === 'ability' && a.ability === ability && Object.entries(extra).every(([k, v]) => JSON.stringify((a as any)[k]) === JSON.stringify(v)));
+  const toAction = (s: any) => done(s);
+  it('SewerSlide Bomber runs to the first obstacle and goes Ka-boom', () => {
+    let s = toAction(mk({ playerCrystals: 3, board: [P('blastrat-sapper', 6, 3), O('goblin-grunt', 6, 9, { shield: 9 })] }));
+    const a = abil(s, 'slide', { dr: 0, dc: 1 });
+    expect(a.target).toEqual({ row: 6, col: 8 });
+    s = act(s, a);
+    expect(at(s, 6, 8)).toBeUndefined();
+  });
+  it('Bowler Brawler knocks everything in the line back', () => {
+    let s = toAction(mk({ playerCrystals: 3, board: [P('goblin-scrapper', 4, 2), O('goblin-grunt', 4, 4)] }));
+    s = act(s, abil(s, 'bowl', { dr: 0, dc: 1 }));
+    expect(at(s, 4, 4)).toBeUndefined();
+    expect(s.board.creatures.some((c: any) => c.owner === 'opponent' && c.col > 4 && c.row === 4)).toBe(true);
+  });
+  it('Voldawright shockwave and Rocket Rider explosion', () => {
+    let s = toAction(mk({ playerCrystals: 3, board: [P('gnome-cogger', 4, 3), O('goblin-grunt', 4, 4)] }));
+    s = act(s, abil(s, 'shockwave'));
+    expect(at(s, 4, 5).health).toBe(2);
+    let r = toAction(mk({ playerCrystals: 3, board: [P('shard-guzzler', 6, 3), O('goblin-grunt', 3, 9, { shield: 0 })] }));
+    r = act(r, abil(r, 'rocket', { target: { row: 3, col: 10 } }));
+    expect(at(r, 3, 9)).toBeDefined();
+    expect(at(r, 3, 9).health).toBe(2);
+  });
+  it('Glyphshield Warden ward blocks damage and attacks', () => {
+    let s = toAction(mk({ playerCrystals: 3, board: [P('glyphshield-warden', 4, 3), P('goblin-grunt', 4, 4)] }));
+    s = act(s, abil(s, 'ward', { target: { row: 4, col: 4 } }));
+    expect(at(s, 4, 4).wardUntil).toBeGreaterThan(s.turn);
+  });
+});
