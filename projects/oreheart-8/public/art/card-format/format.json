@@ -1,0 +1,2423 @@
+{
+ "name": "Card format final 1.0",
+ "sentAt": 1792714623231,
+ "layouts": {
+  "unit": {
+   "W": 420,
+   "H": 624,
+   "layers": [
+    {
+     "id": "L10r96",
+     "name": "Card art",
+     "kind": "art",
+     "x": -20.35,
+     "y": -8.55,
+     "w": 147.75,
+     "h": 110.51,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "fit": "contain",
+      "mask": "arch"
+     },
+     "z": 0
+    },
+    {
+     "id": "L6111297671cgx",
+     "name": "Goblin Miner\u2019s Crystal Strike",
+     "kind": "image",
+     "x": 0.13,
+     "y": -1.93,
+     "w": 101.17,
+     "h": 102.68,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "unit:goblins": "img:9xm59a"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "z": 1,
+     "fg": {
+      "goblins": {
+       "x": 0.13,
+       "y": -1.93,
+       "w": 101.17,
+       "h": 102.68,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 0.13,
+       "y": -1.93,
+       "w": 101.17,
+       "h": 102.68,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 0.13,
+       "y": -1.93,
+       "w": 101.17,
+       "h": 102.68,
+       "rot": 0
+      }
+     }
+    },
+    {
+     "id": "L61112976592xc",
+     "name": "Faction frame",
+     "kind": "image",
+     "x": 1.36,
+     "y": 61.28,
+     "w": 98.23,
+     "h": 38.56,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "src": "auto-frame",
+      "fit": "fill",
+      "mask": "none"
+     },
+     "z": 2
+    },
+    {
+     "id": "L611129766817ddw",
+     "name": "Split Stone Sword Heart Emblem",
+     "kind": "image",
+     "x": 6.69,
+     "y": 40.1,
+     "w": 12.36,
+     "h": 58.75,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "unit:goblins": "img:px1s8t",
+       "unit:gnomes": "img:xjz7zb",
+       "unit:dwarves": "img:649dov",
+       "*:goblins": "img:px1s8t",
+       "*:gnomes": "img:xjz7zb",
+       "*:dwarves": "img:649dov"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "z": 3,
+     "fg": {
+      "goblins": {
+       "x": 6.69,
+       "y": 40.1,
+       "w": 12.36,
+       "h": 58.75,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 6.36,
+       "y": 39.8,
+       "w": 12.36,
+       "h": 58.75,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 7.09,
+       "y": 40,
+       "w": 12.36,
+       "h": 58.75,
+       "rot": 0
+      }
+     }
+    },
+    {
+     "id": "L611129766819ec5",
+     "name": "Split Stone Wing Emblem (1)",
+     "kind": "image",
+     "x": 82.45,
+     "y": 40.13,
+     "w": 12.36,
+     "h": 58.75,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "unit:goblins": "img:f0vv8q",
+       "*:goblins": "img:f0vv8q"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "z": 4,
+     "fg": {
+      "goblins": {
+       "x": 82.45,
+       "y": 40.13,
+       "w": 12.36,
+       "h": 58.75,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 82.45,
+       "y": 40.13,
+       "w": 12.36,
+       "h": 58.75,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 82.45,
+       "y": 40.13,
+       "w": 12.36,
+       "h": 58.75,
+       "rot": 0
+      }
+     }
+    },
+    {
+     "id": "L611129766821dg9",
+     "name": "crystal_shard_green",
+     "kind": "image",
+     "x": 1.86,
+     "y": 0.8,
+     "w": 16.11,
+     "h": 14.59,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "*:goblins": "img:482p5n",
+       "*:dwarves": "img:482p5n",
+       "*:gnomes": "img:482p5n",
+       "*:any": "img:482p5n"
+      },
+      "fit": "contain",
+      "mask": "none",
+      "tint": "faction"
+     },
+     "z": 5,
+     "costPiece": true,
+     "link": "costcry"
+    },
+    {
+     "id": "L611129766823bbq",
+     "name": "crystal_shard_purple",
+     "kind": "image",
+     "x": 1.74,
+     "y": -7.09,
+     "w": 16.34,
+     "h": 30.2,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "unit:gnomes": "img:qqk0se",
+       "*:gnomes": "img:qqk0se"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "z": 6,
+     "fg": {
+      "goblins": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      }
+     }
+    },
+    {
+     "id": "L6111297668322jn",
+     "name": "Split Stone Wing Emblem (1)",
+     "kind": "image",
+     "x": 82.23,
+     "y": 58.71,
+     "w": 11.08,
+     "h": 31.38,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "unit:gnomes": "img:bp9qm2",
+       "*:gnomes": "img:bp9qm2",
+       "unit:dwarves": "img:bp9qm2"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "z": 7,
+     "fg": {
+      "goblins": {
+       "x": 82.23,
+       "y": 58.71,
+       "w": 11.08,
+       "h": 31.38,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 82.63,
+       "y": 39.9,
+       "w": 12.36,
+       "h": 58.75,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 81.73,
+       "y": 40.01,
+       "w": 12.36,
+       "h": 58.75,
+       "rot": 0
+      }
+     }
+    },
+    {
+     "id": "L11os6",
+     "name": "Cost",
+     "kind": "text",
+     "x": 1.26,
+     "y": 2.62,
+     "w": 16.9,
+     "h": 12.86,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "cost",
+      "content": "",
+      "font": "russo",
+      "size": 7.5,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 8,
+     "link": "costnum"
+    },
+    {
+     "id": "L12ysf",
+     "name": "Attack",
+     "kind": "text",
+     "x": 1.78,
+     "y": 62.81,
+     "w": 17.86,
+     "h": 11.73,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "attack",
+      "content": "",
+      "font": "russo",
+      "size": 3.7,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 9
+    },
+    {
+     "id": "L13emv",
+     "name": "Health",
+     "kind": "text",
+     "x": 9.21,
+     "y": 67.76,
+     "w": 10.47,
+     "h": 7.44,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "health",
+      "content": "",
+      "font": "russo",
+      "size": 3.7,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 10
+    },
+    {
+     "id": "L146vs",
+     "name": "Movement",
+     "kind": "text",
+     "x": 77.99,
+     "y": 65.58,
+     "w": 23.76,
+     "h": 11.71,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "move",
+      "content": "",
+      "font": "russo",
+      "size": 3.7,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 11
+    },
+    {
+     "id": "L15ld8",
+     "name": "Type icon",
+     "kind": "text",
+     "x": 76.59,
+     "y": 61.32,
+     "w": 21.15,
+     "h": 14.47,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "typeIcon",
+      "content": "",
+      "font": "display",
+      "size": 2.35,
+      "color": "#ffd75e",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 12
+    },
+    {
+     "id": "L17x21",
+     "name": "Rules text",
+     "kind": "text",
+     "x": 11.67,
+     "y": 76.51,
+     "w": 77.8,
+     "h": 13.11,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "text",
+      "content": "",
+      "font": "display",
+      "size": 3.1,
+      "color": "#593127",
+      "colorMode": "fixed",
+      "bold": false,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 13,
+     "ownFac": true,
+     "fg": {
+      "goblins": {
+       "x": 11.67,
+       "y": 76.51,
+       "w": 77.8,
+       "h": 13.11,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 11.67,
+       "y": 76.51,
+       "w": 77.8,
+       "h": 13.11,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 11.67,
+       "y": 76.51,
+       "w": 77.8,
+       "h": 13.11,
+       "rot": 0
+      }
+     }
+    },
+    {
+     "id": "L168pw",
+     "name": "Name",
+     "kind": "text",
+     "x": 22.77,
+     "y": 69.08,
+     "w": 55.4,
+     "h": 3.47,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "name",
+      "content": "",
+      "font": "fell",
+      "size": 2.85,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 0.84,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 14,
+     "ownFac": true,
+     "fg": {
+      "goblins": {
+       "x": 22.77,
+       "y": 69.08,
+       "w": 55.4,
+       "h": 3.47,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 22.67,
+       "y": 69.08,
+       "w": 55.4,
+       "h": 3.47,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 22.57,
+       "y": 69.68,
+       "w": 55.4,
+       "h": 3.47,
+       "rot": 0
+      }
+     }
+    },
+    {
+     "id": "L61112976682589150000s1z",
+     "name": "Rarity gem",
+     "kind": "gem",
+     "x": 47.1,
+     "y": 92.2,
+     "w": 6.88,
+     "h": 5.55,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "gem": {
+      "colorMode": "rarity",
+      "color": "#ffffff",
+      "glow": 0.3
+     },
+     "z": 15
+    },
+    {
+     "id": "L19gsc",
+     "name": "Rarity word",
+     "kind": "text",
+     "x": 35.14,
+     "y": 93.51,
+     "w": 30,
+     "h": 3.4,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "rarity",
+      "content": "",
+      "font": "display",
+      "size": 2.05,
+      "color": "#ffffff",
+      "colorMode": "rarity",
+      "bold": false,
+      "italic": true,
+      "upper": true,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 3,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 16
+    }
+   ],
+   "popLayers": null
+  },
+  "spell": {
+   "W": 420,
+   "H": 624,
+   "layers": [
+    {
+     "id": "L43wxf",
+     "name": "Card art",
+     "kind": "art",
+     "x": -3.14,
+     "y": -1.29,
+     "w": 109.42,
+     "h": 102.91,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "fit": "cover",
+      "mask": "none"
+     },
+     "z": 0
+    },
+    {
+     "id": "L421m5",
+     "name": "Frame",
+     "kind": "image",
+     "x": 0,
+     "y": 63.83,
+     "w": 100,
+     "h": 36.17,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "src": "auto-frame",
+      "fit": "fill",
+      "mask": "none"
+     },
+     "z": 1
+    },
+    {
+     "id": "L611129766825891500000ttz",
+     "name": "Prismatic Crystal World Emblem",
+     "kind": "image",
+     "x": 82.97,
+     "y": 56.82,
+     "w": 11.21,
+     "h": 31.85,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "spell:any": "img:twsqf1",
+       "spell:dwarves": "img:u2mrys",
+       "spell:gnomes": "img:1hd282",
+       "spell:goblins": "img:gsbk2z"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "fg": {
+      "goblins": {
+       "x": 82.97,
+       "y": 56.82,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 82.97,
+       "y": 56.82,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 82.97,
+       "y": 56.82,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "any": {
+       "x": 82.97,
+       "y": 56.82,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      }
+     },
+     "z": 2
+    },
+    {
+     "id": "L6.111297668258915e+21i25",
+     "name": "crystal_shard_green",
+     "kind": "image",
+     "x": 1.86,
+     "y": 0.8,
+     "w": 16.11,
+     "h": 14.59,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "*:goblins": "img:482p5n",
+       "*:dwarves": "img:482p5n",
+       "*:gnomes": "img:482p5n",
+       "*:any": "img:482p5n"
+      },
+      "fit": "contain",
+      "mask": "none",
+      "tint": "faction"
+     },
+     "z": 3,
+     "costPiece": true,
+     "link": "costcry"
+    },
+    {
+     "id": "L6.111297668258915e+21sxc",
+     "name": "Glowing Crystal Spell Emblem",
+     "kind": "image",
+     "x": 6,
+     "y": 56.81,
+     "w": 11.21,
+     "h": 31.85,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "spell:goblins": "img:sikmiy",
+       "spell:gnomes": "img:dildkl",
+       "spell:dwarves": "img:kw8fis",
+       "spell:any": "img:qr6y53"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "fg": {
+      "goblins": {
+       "x": 6,
+       "y": 56.81,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 6,
+       "y": 56.81,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 6,
+       "y": 56.81,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "any": {
+       "x": 6,
+       "y": 56.81,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      }
+     },
+     "z": 4
+    },
+    {
+     "id": "L44h9c",
+     "name": "Cost",
+     "kind": "text",
+     "x": 1.26,
+     "y": 2.62,
+     "w": 16.9,
+     "h": 12.86,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "cost",
+      "content": "",
+      "font": "russo",
+      "size": 7.5,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 5
+    },
+    {
+     "id": "L6.111297668258915e+21959",
+     "kind": "image",
+     "x": 1.86,
+     "y": 0.8,
+     "w": 16.11,
+     "h": 14.59,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "name": "crystal_shard_green",
+     "img": {
+      "byFaction": {
+       "unit:goblins": "img:482p5n",
+       "*:goblins": "img:482p5n",
+       "unit:dwarves": "img:8y035q",
+       "*:dwarves": "img:8y035q"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "fg": {
+      "goblins": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      },
+      "any": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      }
+     },
+     "z": 6
+    },
+    {
+     "id": "L6.111297668258915e+2190u",
+     "kind": "image",
+     "x": 1.74,
+     "y": -7.09,
+     "w": 16.34,
+     "h": 30.2,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "name": "crystal_shard_purple",
+     "img": {
+      "byFaction": {
+       "unit:gnomes": "img:qqk0se",
+       "*:gnomes": "img:qqk0se"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "fg": {
+      "goblins": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      },
+      "any": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      }
+     },
+     "z": 7
+    },
+    {
+     "id": "L477kc",
+     "name": "Name",
+     "kind": "text",
+     "x": 17.9,
+     "y": 70.5,
+     "w": 64,
+     "h": 6.4,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "name",
+      "content": "",
+      "font": "fell",
+      "size": 2.85,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 0.84,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 8
+    },
+    {
+     "id": "L48f37",
+     "name": "Rules text",
+     "kind": "text",
+     "x": 9.72,
+     "y": 77.13,
+     "w": 80.83,
+     "h": 18.02,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "text",
+      "content": "",
+      "font": "display",
+      "size": 3.1,
+      "color": "#593127",
+      "colorMode": "fixed",
+      "bold": false,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 9
+    },
+    {
+     "id": "L49u3j",
+     "name": "Rarity gem",
+     "kind": "gem",
+     "x": 43.9,
+     "y": 92.8,
+     "w": 12,
+     "h": 4.8,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "gem": {
+      "colorMode": "rarity",
+      "color": "#ffffff",
+      "glow": 0.3
+     },
+     "z": 10
+    },
+    {
+     "id": "L611129766825891500000zzp",
+     "name": "Rarity word",
+     "kind": "text",
+     "x": 35.14,
+     "y": 93.51,
+     "w": 30,
+     "h": 3.4,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "rarity",
+      "content": "",
+      "font": "display",
+      "size": 2.05,
+      "color": "#ffffff",
+      "colorMode": "rarity",
+      "bold": false,
+      "italic": true,
+      "upper": true,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 3,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 11
+    }
+   ],
+   "popLayers": null
+  },
+  "crystal": {
+   "W": 420,
+   "H": 624,
+   "layers": [
+    {
+     "id": "L51fhv",
+     "name": "Card art",
+     "kind": "art",
+     "x": -3.14,
+     "y": -1.29,
+     "w": 109.42,
+     "h": 102.91,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "fit": "cover",
+      "mask": "none"
+     },
+     "z": -1
+    },
+    {
+     "id": "L50m88",
+     "name": "Frame",
+     "kind": "image",
+     "x": 0,
+     "y": 60.07,
+     "w": 100,
+     "h": 39.93,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "src": "auto-frame",
+      "fit": "fill",
+      "mask": "none"
+     },
+     "z": 0
+    },
+    {
+     "id": "L6.111297668258915e+211ix",
+     "name": "crystal_shard_green",
+     "kind": "image",
+     "x": 1.86,
+     "y": 0.8,
+     "w": 16.11,
+     "h": 14.59,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "*:goblins": "img:482p5n",
+       "*:dwarves": "img:482p5n",
+       "*:gnomes": "img:482p5n",
+       "*:any": "img:482p5n"
+      },
+      "fit": "contain",
+      "mask": "none",
+      "tint": "faction"
+     },
+     "z": 2,
+     "costPiece": true,
+     "link": "costcry"
+    },
+    {
+     "id": "L52qlf",
+     "name": "Cost",
+     "kind": "text",
+     "x": 1.26,
+     "y": 2.62,
+     "w": 16.9,
+     "h": 12.86,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "cost",
+      "content": "",
+      "font": "russo",
+      "size": 7.5,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 3
+    },
+    {
+     "id": "L56k2v",
+     "name": "Type icon",
+     "kind": "text",
+     "x": 78,
+     "y": 84.3,
+     "w": 15,
+     "h": 10.2,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "typeIcon",
+      "content": "",
+      "font": "display",
+      "size": 6,
+      "color": "#ffd75e",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 4
+    },
+    {
+     "id": "L572yn",
+     "name": "Name",
+     "kind": "text",
+     "x": 12,
+     "y": 68,
+     "w": 76,
+     "h": 6.4,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "name",
+      "content": "",
+      "font": "fell",
+      "size": 2.85,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 0.84,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 5
+    },
+    {
+     "id": "L6.111297668258915e+21fjd",
+     "kind": "image",
+     "x": 1.86,
+     "y": 0.8,
+     "w": 16.11,
+     "h": 14.59,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "name": "crystal_shard_green",
+     "img": {
+      "byFaction": {
+       "unit:goblins": "img:482p5n",
+       "*:goblins": "img:482p5n",
+       "unit:dwarves": "img:8y035q",
+       "*:dwarves": "img:8y035q"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "z": 6,
+     "fg": {
+      "goblins": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      },
+      "any": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      }
+     }
+    },
+    {
+     "id": "L6.111297668258915e+21g1l",
+     "kind": "image",
+     "x": 1.74,
+     "y": -7.09,
+     "w": 16.34,
+     "h": 30.2,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "name": "crystal_shard_purple",
+     "img": {
+      "byFaction": {
+       "unit:gnomes": "img:qqk0se",
+       "*:gnomes": "img:qqk0se"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "z": 7,
+     "fg": {
+      "goblins": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      },
+      "any": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      }
+     }
+    },
+    {
+     "id": "L58yh4",
+     "name": "Rules text",
+     "kind": "text",
+     "x": 13,
+     "y": 74.8,
+     "w": 74,
+     "h": 16.2,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "text",
+      "content": "",
+      "font": "display",
+      "size": 3.1,
+      "color": "#593127",
+      "colorMode": "fixed",
+      "bold": false,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 8
+    },
+    {
+     "id": "L5952m",
+     "name": "Rarity gem",
+     "kind": "gem",
+     "x": 43,
+     "y": 91.1,
+     "w": 14,
+     "h": 6.8,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "gem": {
+      "colorMode": "rarity",
+      "color": "#ffffff",
+      "glow": 0.3
+     },
+     "z": 9
+    },
+    {
+     "id": "L603x5",
+     "name": "Rarity word",
+     "kind": "text",
+     "x": 35,
+     "y": 92.6,
+     "w": 30,
+     "h": 3.4,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "rarity",
+      "content": "",
+      "font": "display",
+      "size": 2.05,
+      "color": "#ffffff",
+      "colorMode": "rarity",
+      "bold": false,
+      "italic": true,
+      "upper": true,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 3,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 10
+    }
+   ],
+   "popLayers": null
+  },
+  "commander": {
+   "W": 426,
+   "H": 624,
+   "layers": [
+    {
+     "id": "L2yac",
+     "name": "Commander art",
+     "kind": "art",
+     "x": -13.55,
+     "y": -9.95,
+     "w": 130.92,
+     "h": 109.53,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "fit": "contain",
+      "mask": "none"
+     },
+     "z": 0
+    },
+    {
+     "id": "L1zxh",
+     "name": "Frame",
+     "kind": "image",
+     "x": -0.41,
+     "y": 59.83,
+     "w": 100.22,
+     "h": 42.19,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "src": "auto-frame",
+      "fit": "fill",
+      "mask": "none"
+     },
+     "z": 1
+    },
+    {
+     "id": "L5c63",
+     "name": "Name",
+     "kind": "text",
+     "x": 17.29,
+     "y": 69.02,
+     "w": 64.15,
+     "h": 6.4,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "name",
+      "content": "",
+      "font": "fell",
+      "size": 2.85,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 0.84,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 2,
+     "ownFac": true,
+     "fg": {
+      "goblins": {
+       "x": 17.29,
+       "y": 69.02,
+       "w": 64.15,
+       "h": 6.4,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 17.29,
+       "y": 69.02,
+       "w": 64.15,
+       "h": 6.4,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 17.29,
+       "y": 69.02,
+       "w": 64.15,
+       "h": 6.4,
+       "rot": 0
+      }
+     }
+    },
+    {
+     "id": "L6ij3",
+     "name": "Faction line",
+     "kind": "text",
+     "x": 26.82,
+     "y": 78.85,
+     "w": 44.97,
+     "h": 2.79,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "faith",
+      "content": "",
+      "font": "display",
+      "size": 2.3,
+      "color": "#000000",
+      "colorMode": "fixed",
+      "bold": false,
+      "italic": true,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0,
+      "stroke": 0.75,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 3
+    },
+    {
+     "id": "L747x",
+     "name": "Ability",
+     "kind": "text",
+     "x": 9.27,
+     "y": 79.04,
+     "w": 81.87,
+     "h": 13.3,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "text",
+      "content": "",
+      "font": "display",
+      "size": 3.1,
+      "color": "#593127",
+      "colorMode": "fixed",
+      "bold": false,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 4,
+     "ownFac": true,
+     "fg": {
+      "goblins": {
+       "x": 9.27,
+       "y": 79.04,
+       "w": 81.87,
+       "h": 13.3,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 9.27,
+       "y": 79.04,
+       "w": 81.87,
+       "h": 13.3,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 9.27,
+       "y": 79.04,
+       "w": 81.87,
+       "h": 13.3,
+       "rot": 0
+      }
+     }
+    },
+    {
+     "id": "L88bk",
+     "name": "Type word",
+     "kind": "text",
+     "x": 30.42,
+     "y": 75.75,
+     "w": 40,
+     "h": 4,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "type",
+      "content": "",
+      "font": "display",
+      "size": 1.3,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0.12,
+      "lineH": 1.12,
+      "shadow": 1,
+      "stroke": 3,
+      "strokeColor": "#1a0f06",
+      "glow": 3,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 5
+    },
+    {
+     "id": "L611129766825891500000efx",
+     "name": "Rarity gem",
+     "kind": "gem",
+     "x": 46.4,
+     "y": 92.2,
+     "w": 6.88,
+     "h": 5.55,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "gem": {
+      "colorMode": "rarity",
+      "color": "#ffffff",
+      "glow": 0.3
+     },
+     "z": 6
+    },
+    {
+     "id": "L611129766825891500000ggv",
+     "name": "Rarity word",
+     "kind": "text",
+     "x": 34.74,
+     "y": 93.51,
+     "w": 30,
+     "h": 3.4,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "rarity",
+      "content": "",
+      "font": "display",
+      "size": 2.05,
+      "color": "#ffffff",
+      "colorMode": "rarity",
+      "bold": false,
+      "italic": true,
+      "upper": true,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 3,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 7
+    }
+   ],
+   "popLayers": null
+  },
+  "back": {
+   "W": 420,
+   "H": 624,
+   "layers": [
+    {
+     "id": "L613vv",
+     "name": "Card back picture",
+     "kind": "image",
+     "x": 0,
+     "y": 0,
+     "w": 100,
+     "h": 100,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "src": "auto-frame",
+      "fit": "cover",
+      "mask": "none"
+     },
+     "z": 0
+    }
+   ],
+   "popLayers": null
+  },
+  "instant": {
+   "W": 420,
+   "H": 624,
+   "layers": [
+    {
+     "id": "L43wxf",
+     "name": "Card art",
+     "kind": "art",
+     "x": -3.14,
+     "y": -1.29,
+     "w": 109.42,
+     "h": 102.91,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "fit": "cover",
+      "mask": "none"
+     },
+     "z": 0
+    },
+    {
+     "id": "L421m5",
+     "name": "Frame",
+     "kind": "image",
+     "x": 0,
+     "y": 63.83,
+     "w": 100,
+     "h": 36.17,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "src": "auto-frame",
+      "fit": "fill",
+      "mask": "none"
+     },
+     "z": 1
+    },
+    {
+     "id": "L611129766825891500000fql",
+     "name": "Prismatic Crystal World Emblem",
+     "kind": "image",
+     "x": 83.01,
+     "y": 56.77,
+     "w": 11.21,
+     "h": 31.85,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "instant:any": "img:gx3vug",
+       "instant:goblins": "img:hsiu5p",
+       "instant:gnomes": "img:t18xzm",
+       "instant:dwarves": "img:93omhw"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "fg": {
+      "goblins": {
+       "x": 82.91,
+       "y": 56.77,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 83.01,
+       "y": 56.77,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 83.01,
+       "y": 56.77,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "any": {
+       "x": 83.01,
+       "y": 56.77,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      }
+     },
+     "z": 2
+    },
+    {
+     "id": "L611129766825891500000wim",
+     "name": "Radiant Golden Crystal Lightning Emblem",
+     "kind": "image",
+     "x": 6,
+     "y": 56.63,
+     "w": 11.21,
+     "h": 31.85,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "instant:dwarves": "img:uct9n5",
+       "instant:goblins": "img:w0o2bd",
+       "instant:gnomes": "img:jyksce",
+       "instant:any": "img:iu9n43"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "fg": {
+      "goblins": {
+       "x": 6,
+       "y": 56.63,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 6,
+       "y": 56.63,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 6,
+       "y": 56.63,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      },
+      "any": {
+       "x": 6,
+       "y": 56.63,
+       "w": 11.21,
+       "h": 31.85,
+       "rot": 0
+      }
+     },
+     "z": 3
+    },
+    {
+     "id": "L611129766825891500000zlg",
+     "name": "crystal_shard_white",
+     "kind": "image",
+     "x": 1.94,
+     "y": 0.64,
+     "w": 16.11,
+     "h": 14.59,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "instant:any": "img:4997b2"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "fg": {
+      "goblins": {
+       "x": 0,
+       "y": 0,
+       "w": 100,
+       "h": 100,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 0,
+       "y": 0,
+       "w": 100,
+       "h": 100,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 0,
+       "y": 0,
+       "w": 100,
+       "h": 100,
+       "rot": 0
+      },
+      "any": {
+       "x": 1.94,
+       "y": 0.64,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      }
+     },
+     "z": 4
+    },
+    {
+     "id": "L6.111297668258915e+212ps",
+     "name": "crystal_shard_green",
+     "kind": "image",
+     "x": 1.86,
+     "y": 0.8,
+     "w": 16.11,
+     "h": 14.59,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "img": {
+      "byFaction": {
+       "*:goblins": "img:482p5n",
+       "*:dwarves": "img:482p5n",
+       "*:gnomes": "img:482p5n",
+       "*:any": "img:482p5n"
+      },
+      "fit": "contain",
+      "mask": "none",
+      "tint": "faction"
+     },
+     "z": 5,
+     "costPiece": true,
+     "link": "costcry"
+    },
+    {
+     "id": "L44h9c",
+     "name": "Cost",
+     "kind": "text",
+     "x": 1.26,
+     "y": 2.62,
+     "w": 16.9,
+     "h": 12.86,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "cost",
+      "content": "",
+      "font": "russo",
+      "size": 7.5,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 6
+    },
+    {
+     "id": "L6.111297668258915e+21959",
+     "kind": "image",
+     "x": 1.86,
+     "y": 0.8,
+     "w": 16.11,
+     "h": 14.59,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "name": "crystal_shard_green",
+     "img": {
+      "byFaction": {
+       "unit:goblins": "img:482p5n",
+       "*:goblins": "img:482p5n",
+       "unit:dwarves": "img:8y035q",
+       "*:dwarves": "img:8y035q"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "fg": {
+      "goblins": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      },
+      "any": {
+       "x": 1.86,
+       "y": 0.8,
+       "w": 16.11,
+       "h": 14.59,
+       "rot": 0
+      }
+     },
+     "z": 7
+    },
+    {
+     "id": "L6.111297668258915e+2190u",
+     "kind": "image",
+     "x": 1.74,
+     "y": -7.09,
+     "w": 16.34,
+     "h": 30.2,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "name": "crystal_shard_purple",
+     "img": {
+      "byFaction": {
+       "unit:gnomes": "img:qqk0se",
+       "*:gnomes": "img:qqk0se"
+      },
+      "fit": "contain",
+      "mask": "none"
+     },
+     "fg": {
+      "goblins": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      },
+      "gnomes": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      },
+      "dwarves": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      },
+      "any": {
+       "x": 1.74,
+       "y": -7.09,
+       "w": 16.34,
+       "h": 30.2,
+       "rot": 0
+      }
+     },
+     "z": 8
+    },
+    {
+     "id": "L477kc",
+     "name": "Name",
+     "kind": "text",
+     "x": 17.9,
+     "y": 70.7,
+     "w": 64,
+     "h": 6.4,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "name",
+      "content": "",
+      "font": "fell",
+      "size": 2.85,
+      "color": "#ffffff",
+      "colorMode": "fixed",
+      "bold": true,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 0.84,
+      "shadow": 0.8,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 9
+    },
+    {
+     "id": "L48f37",
+     "name": "Rules text",
+     "kind": "text",
+     "x": 7.77,
+     "y": 76.61,
+     "w": 84.49,
+     "h": 15.64,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "text",
+      "content": "",
+      "font": "display",
+      "size": 3.1,
+      "color": "#593127",
+      "colorMode": "fixed",
+      "bold": false,
+      "italic": false,
+      "upper": false,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0,
+      "stroke": 0,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 10
+    },
+    {
+     "id": "L49u3j",
+     "name": "Rarity gem",
+     "kind": "gem",
+     "x": 43.9,
+     "y": 92.8,
+     "w": 12,
+     "h": 4.8,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "gem": {
+      "colorMode": "rarity",
+      "color": "#ffffff",
+      "glow": 0.3
+     },
+     "z": 11
+    },
+    {
+     "id": "L611129766825891500000t3t",
+     "name": "Rarity word",
+     "kind": "text",
+     "x": 35.14,
+     "y": 93.51,
+     "w": 30,
+     "h": 3.4,
+     "rot": 0,
+     "opacity": 1,
+     "hidden": false,
+     "locked": false,
+     "text": {
+      "bind": "rarity",
+      "content": "",
+      "font": "display",
+      "size": 2.05,
+      "color": "#ffffff",
+      "colorMode": "rarity",
+      "bold": false,
+      "italic": true,
+      "upper": true,
+      "align": "center",
+      "valign": "center",
+      "spacing": 0,
+      "lineH": 1.12,
+      "shadow": 0.8,
+      "stroke": 3,
+      "strokeColor": "#1a0f06",
+      "glow": 0,
+      "glowColor": "#FFD700",
+      "fit": true,
+      "bg": "",
+      "bgA": 0
+     },
+     "z": 12
+    }
+   ],
+   "popLayers": null
+  }
+ },
+ "frames": {
+  "unit:gnomes": "frame:bottom-gnome",
+  "unit:dwarves": "frame:bottom-dwarf",
+  "commander:gnomes": "img:4cfq1e",
+  "commander:dwarves": "img:yi2det",
+  "commander:goblins": "img:j4fuzm",
+  "unit:goblins": "frame:bottom-goblin",
+  "spell:goblins": "img:yzjzy6",
+  "spell:gnomes": "img:ekq3dh",
+  "spell:dwarves": "img:wxv25k",
+  "spell:any": "img:jzy0wi",
+  "crystal:any": "img:pt2xnm",
+  "instant:goblins": "img:0gvtf7",
+  "instant:gnomes": "img:p8ef5s",
+  "instant:dwarves": "img:vcdecp",
+  "instant:any": "img:sqyi3n"
+ },
+ "images": {
+  "9xm59a": "/art/card-format/images/c1e3401b.webp",
+  "px1s8t": "/art/card-format/images/a0096729.webp",
+  "xjz7zb": "/art/card-format/images/a0096729.webp",
+  "649dov": "/art/card-format/images/a0096729.webp",
+  "f0vv8q": "/art/card-format/images/1b0d4f9e.webp",
+  "482p5n": "/art/card-format/images/a01bef1e.webp",
+  "qqk0se": "/art/card-format/images/5bc14ebc.webp",
+  "bp9qm2": "/art/card-format/images/1b0d4f9e.webp",
+  "twsqf1": "/art/card-format/images/387bf614.webp",
+  "u2mrys": "/art/card-format/images/e56e3c50.webp",
+  "1hd282": "/art/card-format/images/42e54bde.webp",
+  "gsbk2z": "/art/card-format/images/2298e4af.webp",
+  "sikmiy": "/art/card-format/images/d0b41da3.webp",
+  "dildkl": "/art/card-format/images/d0b41da3.webp",
+  "kw8fis": "/art/card-format/images/d0b41da3.webp",
+  "qr6y53": "/art/card-format/images/d0b41da3.webp",
+  "8y035q": "/art/card-format/images/b6200637.webp",
+  "gx3vug": "/art/card-format/images/387bf614.webp",
+  "hsiu5p": "/art/card-format/images/2298e4af.webp",
+  "t18xzm": "/art/card-format/images/42e54bde.webp",
+  "93omhw": "/art/card-format/images/e56e3c50.webp",
+  "uct9n5": "/art/card-format/images/4cbf538e.webp",
+  "w0o2bd": "/art/card-format/images/4cbf538e.webp",
+  "jyksce": "/art/card-format/images/4cbf538e.webp",
+  "iu9n43": "/art/card-format/images/4cbf538e.webp",
+  "4997b2": "/art/card-format/images/07d46004.webp",
+  "4cfq1e": "/art/card-format/images/985ab3ba.webp",
+  "yi2det": "/art/card-format/images/82f428b3.webp",
+  "j4fuzm": "/art/card-format/images/30f68c1a.webp",
+  "yzjzy6": "/art/card-format/images/f68ba268.webp",
+  "ekq3dh": "/art/card-format/images/f68ba268.webp",
+  "wxv25k": "/art/card-format/images/f68ba268.webp",
+  "jzy0wi": "/art/card-format/images/f68ba268.webp",
+  "pt2xnm": "/art/card-format/images/f68ba268.webp",
+  "0gvtf7": "/art/card-format/images/f68ba268.webp",
+  "p8ef5s": "/art/card-format/images/f68ba268.webp",
+  "vcdecp": "/art/card-format/images/f68ba268.webp",
+  "sqyi3n": "/art/card-format/images/f68ba268.webp"
+ },
+ "builtin": {
+  "frame:spell-frame-shared": "/art/card-format/images/frame-spell-frame-shared.webp",
+  "frame:bottom-goblin": "/art/card-format/images/frame-bottom-goblin.webp",
+  "frame:spell-frame-goblin": "/art/card-format/images/frame-spell-frame-goblin.webp",
+  "gem:Rare": "/art/card-format/images/gem-Rare.webp",
+  "gem:Common": "/art/card-format/images/gem-Common.webp",
+  "frame:owner-dwarf": "/art/card-format/images/frame-owner-dwarf.webp",
+  "gem:Ultra Rare": "/art/card-format/images/gem-Ultra-Rare.webp",
+  "gem:Uncommon": "/art/card-format/images/gem-Uncommon.webp",
+  "frame:card-frame-goblin": "/art/card-format/images/frame-card-frame-goblin.webp",
+  "frame:spell-frame-dwarf": "/art/card-format/images/frame-spell-frame-dwarf.webp",
+  "frame:card-frame-gnome": "/art/card-format/images/frame-card-frame-gnome.webp",
+  "frame:card-frame-dwarf": "/art/card-format/images/frame-card-frame-dwarf.webp",
+  "frame:bottom-dwarf": "/art/card-format/images/frame-bottom-dwarf.webp",
+  "frame:bottom-gnome": "/art/card-format/images/frame-bottom-gnome.webp",
+  "cost:any": "/art/card-format/images/cost-any.webp",
+  "gem:Collector": "/art/card-format/images/gem-Collector.webp",
+  "frame:owner-gnome": "/art/card-format/images/frame-owner-gnome.webp",
+  "cost:dwarves": "/art/card-format/images/cost-dwarves.webp",
+  "frame:card-frame-neutral": "/art/card-format/images/frame-card-frame-neutral.webp",
+  "frame:spell-frame-gnome": "/art/card-format/images/frame-spell-frame-gnome.webp",
+  "cost:goblins": "/art/card-format/images/cost-goblins.webp",
+  "cost:gnomes": "/art/card-format/images/cost-gnomes.webp"
+ },
+ "factions": {
+  "goblins": {
+   "name": "Goblins",
+   "faith": "The Shiny Horde"
+  },
+  "gnomes": {
+   "name": "Gnomes",
+   "faith": "The Cogwork Congregation"
+  },
+  "dwarves": {
+   "name": "Dwarves",
+   "faith": "The Order of the Anvil"
+  }
+ }
+}
