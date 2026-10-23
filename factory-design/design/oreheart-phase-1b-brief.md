@@ -4,7 +4,21 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 12c — make every card do what its card text says (owner Art Studio update, Oct 23) — read this first
+## Round 12d — card faces use the owner's card format (owner, Oct 23) — read this first
+
+Round 12c is done. Keep everything from 8a–12c. **Problem:** the game still draws the OLD card frames. The owner designed new card frames in his Art Studio; they are BINDING and already committed:
+- On `factory/issue-8`: `projects/oreheart-8/public/art/card-format/format.json` plus `public/art/card-format/images/` (frames, gems, cost badges).
+- On `main`: `factory-design/card-format/` — `README.md` (read it first), `render.js` (the exact renderer the owner's Studio uses), `card.css`, and `reference/*.jpg` (how finished cards must look: goblin-scrounger, gnome-prospector, rune-splitter, fireball, healing-light, soul-shard, venom-shiv, second-wind).
+
+Time rule: keep it small, commit + push after each step, no new abilities, no 3D work this round.
+
+1. **Port the renderer.** Copy `render.js` and `card.css` into the game (TypeScript wrapper is fine) and load `/art/card-format/format.json`. Bundle the three fonts locally: Alegreya SC, Russo One, IM Fell English SC. One layout per card type (unit, commander, spell, instant, crystal, back); faction colors via the per-faction overrides in format.json; honor `artPos` in the art layer; Crystal cards full-bleed art.
+2. **Use it everywhere.** Every card face — hand, close-up, deck builder, menus, played-card pop-ups, Choose Your Commander cards, card backs — is drawn with the new renderer. Delete the old frame code and the old frame images (`public/art/frames` or wherever the old frames live) so nothing can fall back to them.
+3. **Check against the references.** Render the 8 reference cards at 420×624 and compare with `factory-design/card-format/reference/*.jpg`: same frame, gem, cost badge, name/type/text positions and fonts. Fix differences. Text that overflows shrinks to fit (render.js `fitText`).
+
+Report: screenshots 1920×1080 of a hand, a card close-up, the deck builder and Choose Your Commander, plus side-by-sides of 3 rendered cards next to their reference images.
+
+## Round 12c (done) — make every card do what its card text says (owner Art Studio update, Oct 23) — read this first
 
 Round 12b-1 is done (Goblin 3D models; the run hit the time limit before reporting, but all 5 models are on the branch). Keep everything from 8a–12b-1. The owner's card changes and pictures are already committed on `factory/issue-8` (`src/content/cards.json`, `src/ui/app.ts` OWNER_ART, `public/art/owner/{goblin,gnome,dwarf,neutral}/`). **The `text` of each card in `cards.json` is now the source of truth**: names, numbers, rarities, roles and text there are the owner's and must not be changed. This round builds the game logic so each card really does what its text says, plus a few display fixes. NO 3D models and NO Meshy this round (the owner now makes models himself in the Model Editor).
 
