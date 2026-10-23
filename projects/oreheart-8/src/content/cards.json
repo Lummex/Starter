@@ -55,9 +55,9 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits 7 spaces in a line; no strike back.",
-  "shortText": "Ranged. Hits 7 spaces in a line; no strike back.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. Example: A Ranged creature 6 spaces from an enemy in a straight line hits it, unless another unit stands in between (then it hits that unit)."
+  "text": "Ranged. Hits up to 6 spaces away in any direction; no strike back. Throws skulls from fallen enemies on the battlefield.",
+  "shortText": "Ranged. Hits up to 6 spaces away in any direction; no strike back.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 6 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield."
  },
  {
   "id": "goblin-bomber",
@@ -473,13 +473,14 @@
   "role": "Fighter",
   "cost": 3,
   "attack": 2,
-  "health": 1,
+  "health": 3,
   "move": 1,
   "abilities": [],
   "unique": false,
   "text": "Plain and sturdy. No tricks.",
   "shortText": "Plain and sturdy. No tricks.",
-  "longText": "Fighter creature. Cost 3, Attack 2, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Example: Send it forward to trade blows with the enemy."
+  "longText": "Fighter creature. Cost 3, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Example: Send it forward to trade blows with the enemy.",
+  "flavor": "Not very smart. Average, really. But still can hurt ya."
  },
  {
   "id": "goblin-pebbler",
@@ -948,7 +949,7 @@
   "faction": "goblins",
   "rarity": "Uncommon",
   "role": "Fighter",
-  "cost": 6,
+  "cost": 4,
   "attack": 2,
   "health": 2,
   "move": 1,
@@ -958,7 +959,7 @@
   "unique": false,
   "text": "Charge. Moves and attacks in the same turn.",
   "shortText": "Charge. Moves and attacks in the same turn.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Charge: can move and attack in the same turn. Example: Walk up to an enemy and strike in the same turn."
+  "longText": "Fighter creature. Cost 4, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Charge: can move and attack in the same turn. Example: Walk up to an enemy and strike in the same turn."
  },
  {
   "id": "junk-shaman",
