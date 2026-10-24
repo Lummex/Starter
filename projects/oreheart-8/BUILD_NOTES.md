@@ -695,3 +695,7 @@ Not done / notes: no new work on Round 12c ability wording beyond verifying Rock
 ## Round 14
 Done (untested in browser): owner layout copied to public, fanned player/enemy hands (data-fan-angle), Brewlord `brew` + drunk, Rocket Rider Fighter, flow shard counts + stream hooks, Dwarf Smith Miner decks, test hooks only in ?test=1, Deck Builder commander filter, Fight! label, drunk icon, dist < 40 MB.
 Not done: Round 12c ability fixes, straight-line ranged audit, Venom Shiv/Tunnel/Respond audits, Welcome dialog flow (AC260), hover pop 1.6x/popY, old-check cleanup.
+
+## Round 15
+- Facing per creature (engine `facing`, 3D figures turn and hold it), Bowler Brawler sideways bowling ball (engine `bowl` event + `scene.playBowl`), white non-card text, new unit stat badge (public/art/ui/badges), dist 37 MB.
+- Not done: the "non-white text" scan check; 5 pre-existing unit test failures (AI beats-passive x2, starter decks x2, card ability lists) not investigated; Round 14 carry-over items (Brewlord, flow shards, layout) only spot-checked, not browser-verified.
