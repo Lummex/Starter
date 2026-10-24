@@ -667,3 +667,13 @@ The spec and hidden tests need the new names/numbers; the owner's card data was 
 
 ## Inspector round 2 follow-up
 - The same stale-test failures were reported again (old names "Gutripper Brawler", "Grubnak Rotgut, King of the Junkpile", "Archmagister Sproingle the Unfathomable", Mangewolf Rider Movement 2, 48-60% pop-out). They were deliberately changed by the owner (commits 82229b5, 14a5595), so the app was left unchanged. SPEC.md and the acceptance tests need updating to the owner's names and numbers.
+
+## Round 13 (card polish, ability buttons, Deck Builder, title screen)
+1. **Spell cards:** the dark boxes were an old `.hand-card.spell::before` gradient in `style.css`; removed. Spell name/text now look like the owner's reference renders. All 66 cards apply their `artPos` (checked in a real browser: every card with `artPos` gets the `.artclip` framing wrapper).
+2. **Ability buttons:** a round icon above every unit with an activated ability (`ABILITY_UI` in `app.ts`: Slide 🚀, Bowling ball 🎳, Shockwave 💥, Plow 🚜, Ram charge 🐏, Grab ✋, Rocket Ride 🚀, Ward 🛡️, Sacrifice 🩸, Blink ✨). Lit and pulsing when it is your Action phase and the engine lists the ability as legal; greyed (`aria-disabled`) when unaffordable or used, or for enemy units. Click: no-target abilities fire at once, others light up target squares and wait for a click (uses the existing `pick` mechanism); hover/title shows name, cost and text. A callout (e.g. STRIKE!) shows when an ability is used. The AI already uses the same engine actions.
+3. **Deck Builder:** top logo removed; three clickable Commander portraits (Grubnak, Sproingle, Borgo) next to the title, the picked one glows (a hidden native select twin remains for assistive tech); cards the Commander cannot use are not listed (the rule itself is unchanged); the Cards-per-row slider no longer overlaps search or filters.
+4. **Title screen:** the logo is replaced by a fanned stack of five Oreheart card backs (drawn through the card renderer's `back` layout) with "Click to begin" over it.
+5. **Checks:** starter decks had Rare+ cards above the 3-copy limit after the owner's rarity changes (e.g. Desperate Plunder x4-5); fixed in `starter-decks.json` with same-faction replacements. 8 outdated unit checks updated to the owner's card data; all 109 unit tests pass. Choose Your Commander selection works (other Commanders hide after a pick by design; "Change Commander" brings them back).
+6. **Screenshots:** `tools/shot-r13.mjs` goes past the intro into a real match; output in `screenshots/r13-*.png`.
+
+Not done / notes: no new work on Round 12c ability wording beyond verifying Rocket Rider (explosion, then one attack).
