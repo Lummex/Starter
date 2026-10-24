@@ -3,7 +3,7 @@ import { ohCardEl, ohBackEl, commanderCard } from './cardfmt';
 import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
-import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
+import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other, ABILITY_COST } from '../engine';
 import { SPELL_VISUALS } from '../content/spell-visuals';
 import tutorialJson from '../content/tutorial.json';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters } from './decks';
@@ -45,6 +45,19 @@ export function typeOf(c: any): { icon: string; name: string } {
   if (ab.includes('guard')) return { icon: '🛡️', name: 'Guard' };
   return { icon: '⚔️', name: 'Fighter' };
 }
+/** Round 13: activated abilities that get a round button above their unit (icon, name, text; the cost comes from the engine). */
+export const ABILITY_UI: Record<string, { icon: string; name: string; text: string; burst: string }> = {
+  slide: { icon: '🚀', name: 'Slide', text: 'Runs in a straight line until it hits something, then goes Ka-boom.', burst: 'KA-BOOM!' },
+  bowl: { icon: '🎳', name: 'Bowling ball', text: 'Rolls a bowling ball in a straight line; every creature in its path is knocked back 1–2 spaces.', burst: 'STRIKE!' },
+  shockwave: { icon: '💥', name: 'Shockwave', text: 'Knocks back all adjacent enemies 1 space and deals 1 damage to each.', burst: 'SHOCKWAVE!' },
+  plow: { icon: '🚜', name: 'Plow', text: 'Plows in a straight line, shoving creatures aside.', burst: 'PLOW!' },
+  ramMove: { icon: '🐏', name: 'Ram charge', text: 'Moves any distance in a straight line.', burst: 'CHARGE!' },
+  shaman: { icon: '✋', name: 'Grab', text: 'Picks up any character within 5 spaces and puts it down within 5 spaces of the Shaman.', burst: 'YOINK!' },
+  rocket: { icon: '🚀', name: 'Rocket Ride', text: 'Flies to any space; 3×3 explosion equal to its Attack.', burst: 'WHOOSH!' },
+  ward: { icon: '🛡️', name: 'Ward', text: 'An ally gets Ward for one round.', burst: 'WARD!' },
+  sacrifice: { icon: '🩸', name: 'Sacrifice', text: 'Sacrifice an ally to gain 1 Bank crystal.', burst: 'SACRIFICE!' },
+  blink: { icon: '✨', name: 'Blink', text: 'Once, swap places with any of your creatures.', burst: 'BLINK!' },
+};
 export const RARITY_WORD: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Collector' };
 const CRYSTAL_SVG = '<svg viewBox="0 0 24 32" focusable="false" aria-hidden="true" class="rc"><polygon points="12,1 20,10 12,31 4,10" fill="currentColor"/><polygon points="12,1 4,10 12,13" fill="#fff" fill-opacity=".62"/><polygon points="12,1 20,10 12,13" fill="#fff" fill-opacity=".25"/><polygon points="4,10 12,13 12,31" fill="#000" fill-opacity=".18"/><polygon points="20,10 12,13 12,31" fill="#000" fill-opacity=".42"/><polyline points="12,1 20,10 12,31 4,10 12,1" fill="none" stroke="#1a0f06" stroke-width="1.1" stroke-linejoin="round"/><path d="M4,10 L12,13 L20,10 M12,13 L12,31" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".6"/></svg>';
 /** Card face on the owner's faction frame: cost, Attack, Health, Movement, type icon, picture, name, short text, rarity. */
@@ -1901,7 +1914,56 @@ export class App {
       this.placeToken(el, c.row, c.col);
     }
     for (const [uid, el] of this.tokens) if (!seen.has(uid)) { el.remove(); this.tokens.delete(uid); }
+    this.renderAbilityButtons(st);
     this.fitHearts();
+  }
+
+  /** Round 13: a small round icon above every unit with an activated ability; lit when it is your turn and the ability can be used. */
+  renderAbilityButtons(st: any) {
+    const legal: any[] = st.activePlayer === 'player' && st.priority === 'player' && st.phase === 'action' ? this.game.legalActions().filter((a: any) => a.type === 'ability') : [];
+    for (const c of st.board.creatures) {
+      const el = this.tokens.get(c.uid);
+      if (!el) continue;
+      const keys = ((CARDS[c.cardId].abilities || []) as string[]).filter((k) => ABILITY_UI[k]);
+      el.querySelectorAll('.ab-btn').forEach((b) => { if (!keys.includes((b as El).dataset.ability!)) b.remove(); });
+      keys.forEach((k, i) => {
+        const ui = ABILITY_UI[k], cost = k === 'blink' ? 1 : ABILITY_COST[k] || 0;
+        let b = el.querySelector(`.ab-btn[data-ability="${k}"]`) as El | null;
+        if (!b) {
+          b = h('button', { type: 'button', class: 'ab-btn', 'data-ability': k }, h('span', { 'aria-hidden': 'true' }, ui.icon)) as El;
+          b.addEventListener('pointerdown', (e) => e.stopPropagation());
+          b.addEventListener('click', (e) => { e.stopPropagation(); const cr = this.game.state.board.creatures.find((x: any) => x.uid === c.uid); if (cr) this.useAbility(cr, k); });
+          el.append(b);
+        }
+        const mineUnit = c.owner === 'player';
+        const ok = mineUnit && legal.some((a: any) => a.creatureUid === c.uid && a.ability === k);
+        b.dataset.ready = String(ok);
+        b.classList.toggle('off', !ok);
+        b.setAttribute('aria-disabled', String(!ok));
+        b.style.setProperty('--ox', (i - (keys.length - 1) / 2) * 120 + '%');
+        const label = `${ui.name} (${cost ? cost + ' crystal' + (cost > 1 ? 's' : '') : 'free'}): ${ui.text}`;
+        b.title = label; b.setAttribute('aria-label', label);
+      });
+    }
+  }
+  /** Click an ability button: no target = fire; otherwise light up the squares it can go to and wait for a click. */
+  useAbility(cr: any, k: string) {
+    const ui = ABILITY_UI[k];
+    if (this.game.state.priority !== 'player' || this.game.state.phase !== 'action') { this.flash('Abilities are used in your Action phase'); return; }
+    const opts = this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === cr.uid && a.ability === k);
+    if (!opts.length) { this.flash(`${ui.name}: not available (needs crystals, or already used this turn)`); return; }
+    this.pick = null; this.clearGlow();
+    const cellOf = (a: any) => this.abilityCell(a, cr) || a.target || null;
+    if (!opts.some(cellOf)) { const r = this.game.act(opts[0]); if (!r.ok) this.flash(r.error!); return; }
+    const cells = opts.map(cellOf).filter(Boolean) as { row: number; col: number }[];
+    this.pick = { cells, done: (cell) => {
+      this.pick = null; this.clearGlow();
+      const here = opts.filter((a: any) => { const q = cellOf(a); return q && q.row === cell.row && q.col === cell.col; });
+      const a = k === 'shaman' ? this.bestShaman(here, cr) : here[0];
+      if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); }
+    } };
+    this.setGlow(cells, 'glow-swap');
+    this.flash(`${ui.name}: choose a square`);
   }
 
   renderHand(st: any) {
@@ -2192,6 +2254,8 @@ export class App {
           this.floatText('-' + e.amount, 'dmg', e.row, e.col);
           if (e.amount >= 3) this.burst('KA-BOOM!', e.row, e.col);
         }
+      } else if (e.type === 'abilityUsed' && ABILITY_UI[e.ability]) {
+        this.burst(ABILITY_UI[e.ability].burst, e.row, e.col);
       } else if (e.type === 'draw' && (e.player === 'player' || e.owner === 'player')) {
         audio.play('draw');
       } else if (e.type === 'shieldBlock') {

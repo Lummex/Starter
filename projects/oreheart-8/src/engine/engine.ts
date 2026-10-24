@@ -539,7 +539,7 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
 }
 
 // ---------------------------------------------------------------- active abilities (round 12c)
-const ABILITY_COST: Record<string, number> = { slide: 1, bowl: 2, shockwave: 1, plow: 2, ramMove: 2, shaman: 2, ward: 2, rocket: 0, sacrifice: 0 };
+export const ABILITY_COST: Record<string, number> = { slide: 1, bowl: 2, shockwave: 1, plow: 2, ramMove: 2, shaman: 2, ward: 2, rocket: 0, sacrifice: 0 };
 const D4 = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 const fresh = (s: any, c: any) => !c.hasAttacked && !c.hasMined && !c.hasMoved && canAct(s, c) && !(c.wardUntil > s.turn);
 /** Last cell a creature reaches walking (dr,dc) over empty cells, and what stopped it. */

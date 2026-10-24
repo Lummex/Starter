@@ -1557,3 +1557,8 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .begin-stack{position:absolute;left:50%;top:50%;width:min(30vh,22vw);height:min(44.6vh,32vw);transform:translate(-50%,-50%);pointer-events:none}
 .begin-card{position:absolute;inset:0;transform-origin:50% 120%;transform:rotate(var(--r)) translateY(calc(var(--i)*-.4%));filter:drop-shadow(0 .8vh 1.2vh #000c)}
 .begin-gate .begin-btn{position:relative;z-index:2;color:#fff!important;-webkit-text-fill-color:#fff!important;-webkit-text-stroke:.06em #000;paint-order:stroke fill;text-shadow:0 0 .4em #000,0 0 .8em #000,0 .12em 0 #000}
+/* Round 13: ability buttons above units */
+.token .ab-btn{position:absolute;left:50%;top:-4%;width:max(30px,150%);aspect-ratio:1;max-width:38px;transform:translate(calc(-50% + var(--ox,0%)),-100%);pointer-events:auto;cursor:pointer;border-radius:50%;border:2px solid #FFD700;background:radial-gradient(circle at 35% 30%,#7a4cc2,#2a1450 70%);color:#fff;display:flex;align-items:center;justify-content:center;padding:0;font-size:max(15px,1.5vh);line-height:1;box-shadow:0 0 10px 2px #ffd700aa,0 2px 4px #000;z-index:30;animation:ab-pulse 1.6s ease-in-out infinite}
+.token .ab-btn:hover,.token .ab-btn:focus-visible{transform:translate(calc(-50% + var(--ox,0%)),-104%) scale(1.15);outline:0}
+.token .ab-btn.off{filter:grayscale(1) brightness(.55);box-shadow:0 1px 3px #000;border-color:#777;animation:none;cursor:not-allowed}
+@keyframes ab-pulse{0%,100%{box-shadow:0 0 8px 2px #ffd700aa,0 2px 4px #000}50%{box-shadow:0 0 16px 5px #ffe680,0 2px 4px #000}}
