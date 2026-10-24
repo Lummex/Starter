@@ -6755,7 +6755,7 @@ async function saveFactionDeck(page, name, commanderLabel) {
   await saveDeck(page);
 }
 
-test('AC238: saved deck entries are tinted and glow in their faction color', async ({ page }) => {
+test('AC238: saved deck entries glow in their faction color; the deck name text is white (Round 15)', async ({ page }) => {
   await openDecks(page);
   await saveFactionDeck(page, 'Green Deck');
   const entry = page.getByLabel('My decks', { exact: true }).getByRole('button', { name: /^Green Deck/ });
@@ -6763,14 +6763,15 @@ test('AC238: saved deck entries are tinted and glow in their faction color', asy
     const all = [e, ...e.querySelectorAll('*')];
     const txt = all.find((n) => [...n.childNodes].some((c) => c.nodeType === 3 && /Green Deck/.test(c.textContent))) || e;
     const s = getComputedStyle(txt);
+    const effects = all.map((n) => getComputedStyle(n)).flatMap((c) => [c.filter, c.boxShadow, c.textShadow, c.backgroundColor, c.backgroundImage, c.borderColor]).filter((v) => v && v !== 'none').join(' ');
     const glow = all.map((n) => getComputedStyle(n)).some((c) => (c.filter && c.filter.includes('drop-shadow')) || (c.boxShadow && c.boxShadow !== 'none') || (c.textShadow && c.textShadow !== 'none'));
-    return { color: s.color, glow, faction: e.closest('[data-faction]')?.dataset.faction || e.querySelector('[data-faction]')?.dataset.faction || e.dataset.faction };
+    const green = (effects.match(/rgba?\([^)]*\)/g) || []).some((x) => { const [r, g, b, a = 1] = x.match(/[\d.]+/g).map(Number); return a > 0.05 && g > r + 20 && g > b + 20; });
+    return { color: s.color, glow, green, faction: e.closest('[data-faction]')?.dataset.faction || e.querySelector('[data-faction]')?.dataset.faction || e.dataset.faction };
   });
-  const [r, g, b] = st.color.match(/\d+/g).map(Number);
   expect(st.faction).toBe('goblin');
-  expect(g, `goblin deck name ${st.color} is green`).toBeGreaterThan(r);
-  expect(g).toBeGreaterThan(b);
+  expect(st.color, 'deck name text is white (Round 15)').toBe('rgb(255, 255, 255)');
   expect(st.glow).toBe(true);
+  expect(st.green, 'glow/tint uses the Goblin green').toBe(true);
 });
 
 test('AC239: every creature card close-up has a 3D viewer; spells do not', async ({ page }) => {
@@ -8381,7 +8382,8 @@ test('AC310: the game loads the owner card format and renders every layout at 42
   await openTest(page);
   const fmt = await page.evaluate(async () => await window.oreheart.cardFormat());
   expect(fmt.name).toBe('Card format final 1.0');
-  for (const k of ['unit', 'commander', 'spell', 'instant', 'crystal', 'back']) expect(fmt.layouts, k).toContain(k);
+  const layoutNames = Array.isArray(fmt.layouts) ? fmt.layouts : Object.keys(fmt.layouts || {}); // Round 16: layouts may be a name list or a name-keyed object
+  for (const k of ['unit', 'commander', 'spell', 'instant', 'crystal', 'back']) expect(layoutNames, k).toContain(k);
   for (const id of ['goblin-scrounger', 'fireball', 'healing-light', 'soul-shard', 'grubnak', 'back']) {
     const r = await renderAndMeasure(page, id, 624);
     expect(r.cls.split(/\s+/), id).toContain('cardc');
@@ -8793,7 +8795,7 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
         if (p.role === 'phase-timer' && !(await page.locator('[data-hud-role="phase-timer"]').count())) continue; // the timer may be hidden early in a phase
         const st = await hudTextStyle(page, p.role);
         expect(st.color, `${p.role} color`).toBe('rgb(255, 255, 255)'); // Round 15: white overrides the layout's text colors
-        const want = p.text.size / 100 * fh * (L.textScale || 1);
+        const want = Math.max(p.text.size / 100 * fh * (L.textScale || 1), H <= 500 ? 14 : 0); // Round 16: the 14 px phone minimum (AC158) wins over smaller layout sizes
         expect(Math.abs(st.size - want), `${p.role} size ${st.size} vs ${want}`).toBeLessThanOrEqual(Math.max(1.5, want * 0.1));
         expect(st.weight >= 600, `${p.role} bold`).toBe(!!p.text.bold);
         expect(st.style === 'italic', `${p.role} italic`).toBe(!!p.text.italic);

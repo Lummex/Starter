@@ -22,9 +22,24 @@ Oreheart is a comic-style fantasy card battle in the browser. Goblins, Gnomes an
 
 **Phase 1B Round 14** makes the match screen match the owner's Oct 24 Game Editor layout exactly (positions and text style), fans both hands, sends Crystal Flow shards to each side's Flow crystal with more shards at higher Flow, makes Goblin Rocket Rider a Fighter and builds Corpsman Brewlord's heal/save ability with the Drunk state.
 
-**Phase 1B Round 15** (this build) first makes every Round 14 item actually work (its checks never finished; about 100 checks failed because the test hooks were unreachable), then: units keep facing the way they last moved or acted, Bowler Brawler's Strike rolls a bowling ball that scatters creatures sideways like pins, all text outside card faces is plain white, and every unit gets the owner's new stat badge.
+**Phase 1B Round 16** (this build) adds no new features: it finishes Round 15 and makes every failing check pass (329 of 399 passed in Round 15). Order: Round 15 items, the hand, Crystal Flow, card abilities and rules, then everything else (see "Phase 1B, Round 16" below).
+
+**Phase 1B Round 15** first makes every Round 14 item actually work (its checks never finished; about 100 checks failed because the test hooks were unreachable), then: units keep facing the way they last moved or acted, Bowler Brawler's Strike rolls a bowling ball that scatters creatures sideways like pins, all text outside card faces is plain white, and every unit gets the owner's new stat badge.
 
 Tech: Vite + TypeScript (vanilla or React), Three.js for the 3D scene, static `dist/` output, no backend.
+
+### Phase 1B, Round 16 (finish Round 15 and fix every failing check) — READ FIRST
+
+Source: "Round 16" at the top of `factory-design/design/oreheart-phase-1b-brief.md` (binding). **No new features.** The rules, layout and numbers are exactly those already written in this spec (Rounds 8a–15). The failing checks and their error messages are in `factory-data/oreheart-8/test-results.md`. Commit + push after each numbered step:
+
+- **R16.1 Round 15 items:** facing kept after a move/attack/mine (R15.1, AC333, AC334), Bowler Brawler's bowling ball (R15.2, AC293, AC320), all non-card text white (R15.3, AC167, AC326), the unit stat badge with `data-type` exactly `sword` / `pickaxe` / `bow` (not `fighter`) (R15.4, AC335).
+- **R16.2 The hand:** an even fan fully on screen at 1920×1080, 1568×782 and 1366×768 (no card below the bottom edge when raised); hover straightens the card (`data-fan-angle` 0), neighbors move aside, only one card pops, nothing sticks; playable cards glow; drag up plays, drag sideways reorders; dragging a hand card or a unit never pans the view (AC155, AC174, AC194, AC218, AC264, AC269, AC270, AC272, AC327).
+- **R16.3 Crystal Flow:** `getFlowStreams()` always returns `{ log: [...] }` (an array, never undefined) with entries from mines to `player-flow-crystal` / `enemy-flow-crystal`; more shards at higher Flow (AC222, AC249, AC329, AC330).
+- **R16.4 Card abilities and rules** as already specified: AC13/AC266 (Ranged 7 in straight lines), AC15, AC18, AC58, AC109, AC254, AC289–AC296, AC299, AC300, AC304, AC305, AC307, AC309, AC318, AC319, AC324, AC331, AC332.
+- **R16.5 Everything else:** black bars AC150/AC190 (and the slow pan checks AC191), Deck Builder AC143/AC204/AC209/AC238/AC322, card faces AC310/AC311/AC316, title card stack AC323, music AC258, Settings AC260/AC261 (`window.oreheart.getHighlightSettings` must exist in test mode), shipped files AC232/AC273 (owner files byte-identical), screenshots AC134/AC325, font weights AC168/AC326.
+- **Fix the game, not the check.** A check may only be changed when it clearly contradicts a newer owner round; record it in WORK.md.
+
+Report: the pass count, plus 1920×1080 screenshots of the fanned hand, a unit keeping its facing, the bowling ball scattering two creatures sideways, white menu text, and one unit of each faction with its stat badge.
 
 ### Phase 1B, Round 15 (Round 14 verified, facing, Bowler Brawler's bowling ball, all text white, unit stat badges) — READ FIRST
 
@@ -1618,7 +1633,7 @@ Round 8a notes on older criteria: AC149 now checks the R8a cover-fit camera (`mi
 235. (Round 9c) A click skips the Intro; How to Play opens the "Rules" page with a "Tutorial" button; Quit returns to the Intro.
 236. (Round 9c) Settings opens "Settings"; Play opens Choose Your Commander with "Back" and "Start"; Start opens the Mulligan; the `[data-menu-bg]` picture is cover-fit (R9c.3, R9c.4).
 237. (Round 9c) After the first click the menu screens play `tense-cycle`, also on the Deck Builder (R9c.3).
-238. (Round 9c) A saved Goblin deck entry in "My decks" has `data-faction` "goblin", a green name and a glow (R9c.5, R9c.9).
+238. (Round 9c, updated Round 16) A saved Goblin deck entry in "My decks" has `data-faction` "goblin", a white name (R15.3) and a glow or tint in the Goblin green (R9c.5, R9c.9).
 239. (Round 9c) Deck Builder close-up of a non-Commander creature (Gutripper Brawler) shows the "3D model" region with an "Idle" button; a spell close-up has none (R9c.6).
 240. (Round 9c) Deck Builder "Play" is disabled with a visible "not legal" reason for an illegal deck and enabled after Auto-fill; single click on a saved deck selects it, double-click starts a match (Mulligan) (R9c.7, R9c.8).
 241. (Round 9c) Deck list lines and "Deck counts" are white; "Back" is bold (R9c.10).
@@ -1693,7 +1708,7 @@ Round 8a notes on older criteria: AC149 now checks the R8a cover-fit camera (`mi
 307. (Round 12c) Crystal cards: Bank +1/+2/+4/+3, Motherlode makes the next creature 2 cheaper, Geode gives +1 Flow each turn.
 308. (Round 12c) Desperate Plunder gives +3 Flow at turn start while the opponent has more Flow.
 309. (Round 12c) `getAbilityStatus()` reports "done" for every Round 12c card; `longText` still has "Example:".
-310. (Round 12d) The game loads the owner's card format: `cardFormat()` names "Card format final 1.0" with the six layouts, and `renderCard` returns a 420 : 624 `cardc` card for a creature, a spell, an Instant, a Crystal card, a Commander and the card back; Goblin and Gnome creatures get different faction frames.
+310. (Round 12d) The game loads the owner's card format: `cardFormat()` names "Card format final 1.0" with the six layouts (`layouts` is a list of names or an object keyed by name), and `renderCard` returns a 420 : 624 `cardc` card for a creature, a spell, an Instant, a Crystal card, a Commander and the card back; Goblin and Gnome creatures get different faction frames.
 311. (Round 12d) Every card face in a match (hand, close-up, enemy card backs), the Deck Builder and Choose Your Commander is drawn by the new renderer (`div.cardc`, `data-card-format`, `data-layout`), and the old frames are gone: no `public/art/frames` folder and no request to `/art/frames/`.
 312. (Round 12d) The 8 reference cards render at 420 × 624 with their own name and cost, and no rules text overflows its box after `fitText`; the Crystal card (Soul Shard) picture covers the whole card.
 313. (Round 12d) A card's `artPos` is honored in the art layer (scale and offset inside an `artclip` wrapper).
@@ -1709,7 +1724,7 @@ Round 8a notes on older criteria: AC149 now checks the R8a cover-fit camera (`mi
 323. (Round 13) The Begin gate shows a centred, fanned "Oreheart deck" stack of at least 3 card backs with "Click to begin" over it and no logo, at 1920 × 1080 and 844 × 390 (R13.4).
 324. (Round 13) Knobbin and Thane Borgo can be picked on Choose Your Commander and a match starts with the chosen Commander (R13.5).
 325. (Round 13) Screenshots at 1920 × 1080 of the title screen, the Deck Builder with the Spells filter, a hand with spells, a spell close-up and an ability button in use render without page errors (R13.6).
-326. (Round 14) Every HUD text piece (Commander names, Flow/Next labels, deck counts, turn, phases, timer, Menu, Done) uses white (R15.3) and the owner layout's size (cqh × textScale, within 10 %), bold and italic; your Commander name sits at y 70.99 by the Flow crystal (R14.1). AC212 checks every piece's box against the Oct 24 layout within 1 %.
+326. (Round 14) Every HUD text piece (Commander names, Flow/Next labels, deck counts, turn, phases, timer, Menu, Done) uses white (R15.3) and the owner layout's size (cqh × textScale, within 10 %; at phone height never below the 14 px minimum of AC158), bold and italic; your Commander name sits at y 70.99 by the Flow crystal (R14.1). AC212 checks every piece's box against the Oct 24 layout within 1 %.
 327. (Round 14) Your hand is a fan: 4° per card from the centre, outer cards lower (arc), left-to-right order; hovering straightens the card and pops it to about 1.6× (R14.2).
 328. (Round 14) The enemy hand is a centred fan of at most 6 card backs, 9° apart (R14.2).
 329. (Round 14) Crystal Flow shards end inside each side's Flow crystal icon, which pulses when they arrive (R14.3).
@@ -1920,3 +1935,4 @@ Round 9a notes on older criteria: AC20, AC74 and the in-match text-control check
 - (Round 11) Highlight and ring settings are saved per browser (there are no accounts); "per player" means this browser's profile. Color settings left at `null` follow whichever faction the player is using in that match.
 - (Round 11) The 3 px tolerance on the mine button lets the button be a rectangle around the square's slightly trapezoid quad.
 - (Round 11) "Shot stops at the first unit" counts creatures and Strongholds of both sides; mines are not units and don't block shots.
+- (Round 16) Checks cleanup: **0 tests removed, 3 rewritten**, no new tests (the brief asks for no new features). AC238 now expects a white deck name with a Goblin-green glow/tint (Round 15 made all non-card text white, so the old "green name" contradicted it); AC310 accepted only a list of layout names but the spec allows an object keyed by name (the check called `toContain` on an object, which can never pass); AC326 at 844×390 now uses max(layout size, 14 px), because the older passing AC158 (no text under 14 px on phones) and the layout size conflicted. All other 67 failures are treated as game bugs.
