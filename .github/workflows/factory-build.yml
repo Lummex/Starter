@@ -44,7 +44,7 @@ jobs:
           MESHY_API_KEY: ${{ secrets.MESHYKEY }}
           GH_TOKEN: ${{ github.token }}
           PW_WORKERS: '4'
-          FACTORY_SHARDS: '5'
+          FACTORY_SHARDS: '8'
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
