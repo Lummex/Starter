@@ -1,0 +1,28 @@
+{
+ "generated": "2026-10-24T10:26:24.466Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "dagger": "01a16d6e-4503-71df-973f-3bdc60f882e4",
+  "backpack": "01a16d6e-450e-752c-9fc0-66d30fb24715",
+  "character": "01a16d6e-4510-7340-865c-f7bdba1e25c9",
+  "rig": "01a16d71-12e2-71bf-9b70-1b5a953fc10d",
+  "anim": "01a16d71-bd18-7176-b479-e0a7559cd46c"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [
+  "dagger",
+  "backpack"
+ ],
+ "notes": "",
+ "fileSizes": {
+  "dagger.glb": 8091488,
+  "backpack.glb": 10457196,
+  "char.glb": 6387176
+ }
+}

@@ -4,7 +4,21 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 15 — units face where they go, Bowler Brawler's ball, all text white, unit stat badges (owner, Oct 24) — read this first
+## Round 16 — finish Round 15 and fix every failing check (owner, Oct 24) — read this first
+
+Round 15 was built (329 of 399 checks passed). No new features this round: make the existing game match the brief. The full list of the 70 failing checks with their error messages is in `factory-data/oreheart-8/test-results.md` on this branch — start there. Commit + push after each numbered step.
+
+1. **Round 15 items first:** unit facing kept after a move (AC333), Bowler Brawler's bowling ball knocking creatures sideways like pins (AC293, AC320), all non-card text white (AC167, AC326), and the new stat badge under every unit (AC335).
+2. **The hand:** the hand must be an even fan fully on screen at 1920×1080, 1568×782 and 1366×768 — right now most of it sits below the bottom edge. Fix AC155, AC174, AC218, AC264, AC269, AC270, AC272 and AC327 together; dragging a hand card or a unit never pans the view (AC194).
+3. **Crystal flow** to each side's Flow crystal, with more shards at higher Flow (AC222, AC249, AC329, AC330).
+4. **Card abilities and rules** that fail: AC13/AC266 (Ranged range 7), AC15, AC18, AC58, AC109, AC254, AC289–AC296, AC299, AC300, AC304, AC305, AC307, AC309, AC318, AC319, AC324, AC331, AC332.
+5. **Everything else on the list** (layout/black bars AC150/AC190, Deck Builder AC143/AC204/AC209/AC238/AC322, card faces AC310/AC311/AC316, title card stack AC323, music AC258, settings AC260/AC261, shipped files AC232/AC273, screenshots AC134/AC325, font weights AC168).
+
+Rules for the checks: fix the game, not the check. Only if a check clearly contradicts a NEWER owner round in this brief (for example an old hand-layout check vs the Round 14 fanned hand), update that check to the newer rule and write which one and why in WORK.md. Do not delete or loosen checks otherwise.
+
+Report: the pass count, plus screenshots 1920×1080 of the fanned hand, a unit keeping its facing, the bowling ball scattering two creatures sideways, white menu text, and one unit of each faction with its stat badge.
+
+## Round 15 (built, 329/399 checks) — units face where they go, Bowler Brawler's ball, all text white, unit stat badges (owner, Oct 24)
 
 Keep everything from 8a–14. Round 14 was built but its checks were stopped before they finished (the run was too slow), so first make sure every Round 14 item works and fix what doesn't. Note: Round 14 gated the test hooks (`window.oreheart.*`) behind a test mode — make sure the acceptance checks still reach them (about 100 checks failed in Round 14). Commit + push after each numbered step.
 

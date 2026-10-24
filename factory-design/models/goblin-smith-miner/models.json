@@ -1,0 +1,29 @@
+{
+ "generated": "2026-10-24T10:21:14.141Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "pickaxe": "01a16d68-7240-7185-ac17-5dfd17b7e7e6",
+  "backpack": "01a16d68-724c-758b-a81f-0bf1eb8147f6",
+  "character": "01a16d68-7278-72ec-b1df-5265f253f40c",
+  "rig": "01a16d6c-0a4a-734a-918e-0ec9b1cae488",
+  "anim": "01a16d6c-b284-7399-9e4d-6afcc49699f6"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8,
+  "mine": 237
+ },
+ "parts": [
+  "pickaxe",
+  "backpack"
+ ],
+ "notes": "",
+ "fileSizes": {
+  "pickaxe.glb": 8986528,
+  "backpack.glb": 11217288,
+  "char.glb": 5833256
+ }
+}

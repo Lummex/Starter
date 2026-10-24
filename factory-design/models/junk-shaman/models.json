@@ -1,0 +1,25 @@
+{
+ "generated": "2026-10-24T10:22:36.856Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "staff": "01a16d69-6424-76dc-b6e5-0d502ea724fc",
+  "character": "01a16d69-649a-76e8-b941-25a6001e5426",
+  "rig": "01a16d6d-4a63-745a-be63-f56637500896",
+  "anim": "01a16d6e-1c33-70c7-b1b6-02e94a8d84a4"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [
+  "staff"
+ ],
+ "notes": "",
+ "fileSizes": {
+  "staff.glb": 13118960,
+  "char.glb": 7015192
+ }
+}

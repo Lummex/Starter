@@ -1,0 +1,25 @@
+{
+ "generated": "2026-10-24T10:16:25.840Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "skull-mace": "01a16d64-07ca-7788-a3a7-40ec0a66942e",
+  "character": "01a16d64-07c6-74b7-9a76-2da2390f0a6b",
+  "rig": "01a16d67-ca2d-75e7-b595-a097710fd00e",
+  "anim": "01a16d68-9a4b-709a-b4d0-23b5d9ad2445"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [
+  "skull-mace"
+ ],
+ "notes": "",
+ "fileSizes": {
+  "skull-mace.glb": 9976368,
+  "char.glb": 6381204
+ }
+}

@@ -4,7 +4,7 @@ Read:
 - `{{DATA_DIR}}/SPEC.md` (what was asked for)
 - `{{APP_DIR}}/BUILD_NOTES.md` if present (what the builder says it did)
 - `{{RESULTS_FILE}}` (automated test results summary)
-- Screenshots in `{{SHOTS_DIR}}` — look at them (desktop and phone). Note anything that looks broken, unstyled, cramped, or off-spec.
+- Screenshots in `{{SHOTS_DIR}}` — look at them (desktop and phone, in the order listed in README.txt there: home, menu, then into a match). A brief intro/loading picture in the first shot is normal, not a bug. Note anything that looks broken, unstyled, cramped, or off-spec.
 
 Then write `{{DATA_DIR}}/REPORT.md` in plain English, no jargon, using exactly this structure:
 

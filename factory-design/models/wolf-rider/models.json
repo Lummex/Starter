@@ -1,0 +1,28 @@
+{
+ "generated": "2026-10-24T10:30:23.014Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "mace": "01a16d71-945a-7606-a24c-1cd8a3507a66",
+  "character": "01a16d71-94ce-71ed-b704-a8d276504e7c",
+  "wolf": "01a16d71-94d3-72d9-ba34-3fe1c2935d73",
+  "rig": "01a16d74-64ed-740f-8f22-841a9ea26abb",
+  "anim": "01a16d75-37f1-7428-8363-4580eb77c1de"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [
+  "mace",
+  "wolf"
+ ],
+ "notes": "wolf is the mount (static model, not rigged)",
+ "fileSizes": {
+  "mace.glb": 10320652,
+  "wolf.glb": 14635772,
+  "char.glb": 6309188
+ }
+}
