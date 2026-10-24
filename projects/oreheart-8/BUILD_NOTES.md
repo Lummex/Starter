@@ -691,3 +691,7 @@ Not done / notes: no new work on Round 12c ability wording beyond verifying Rock
 - Deck Builder commander portraits group is now labelled "Deck Commander" (AC322).
 - Boneknocker and Scrapsmith Miner use the owner's PNG card art (AC273).
 - Not changed (checks look outdated vs. owner card data / spec): Mangewolf Rider Movement 3 (owner card), Skullflinger range 6 (owner card), "Fight!" is "Start" per Round 9c spec, hand-size bands (AC164/175/218) conflict between rounds, hand pop-out of the old AC174 and the opponent ring color in AC261 are unresolved.
+
+## Round 14
+Done (untested in browser): owner layout copied to public, fanned player/enemy hands (data-fan-angle), Brewlord `brew` + drunk, Rocket Rider Fighter, flow shard counts + stream hooks, Dwarf Smith Miner decks, test hooks only in ?test=1, Deck Builder commander filter, Fight! label, drunk icon, dist < 40 MB.
+Not done: Round 12c ability fixes, straight-line ranged audit, Venom Shiv/Tunnel/Respond audits, Welcome dialog flow (AC260), hover pop 1.6x/popY, old-check cleanup.

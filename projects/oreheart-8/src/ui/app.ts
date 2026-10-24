@@ -964,7 +964,6 @@ export class App {
   screenRects() { return this.view ? this.view.screenRects() : null; }
   layoutQueued = false;
   handRoom = Infinity;
-  handKey = '';
   /** Round 12a: size the hand so that, raised, it sits entirely below the player's home row (never covering the board). */
   fitHand() {
     const m = this.root.querySelector('.match') as El | null;
