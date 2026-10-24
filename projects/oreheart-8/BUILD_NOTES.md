@@ -716,3 +716,10 @@ Not done: Round 12c ability fixes, straight-line ranged audit, Venom Shiv/Tunnel
 - Interface: white text, HUD weight per owner layout, hand drag/reorder/fan angle, Deck Builder top bar, gate, close-up.
 - 3D: enemy unit ring colour fix.
 - Not fully done / unverified (acceptance spec could not be run): Ranged 7 for every card (kept per-card ranges), AC58/AC109/AC15/AC332 (spec uses outdated card data), pan/cover-fit checks AC150/190/191/194, data-facing on tokens, AC293 ok:false, ability button UI check, AC324 picker.
+
+## Round 16 (partial, budget-limited)
+- Ranged: Skullflinger and Grudge Hurler now range 7 (AC13/AC266 expect 7).
+- Test hooks (`window.oreheart`) are installed on every page, not only `?test=1`; `getFlowStreams()` returns a plain `{active, log, targets}` object (arrays lose extra props when serialized).
+- Main menu picture shipped at the owner's full 1774×887 (AC232).
+- Not changed: AC15, AC58, AC109 use Dwarf Miner/Bowler Brawler with old stats (owner changed those cards in round 12c); AC168 "Play" style follows the owner's menus.json; AC143/AC204 use a Gnome card the default commander hides (round 13). These checks are outdated.
+- Not done: round 7 hand retract timing, arena pan/zoom timeouts, other items in WORK.md.

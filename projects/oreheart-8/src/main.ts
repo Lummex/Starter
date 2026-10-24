@@ -21,7 +21,7 @@ if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catc
 
 if (test) (window as any).__app = app;
 if (test) (window as any).__ohCard = (id: string, h = 624) => { const el = ohCardEl(CARDS[id], pictureOf(CARDS[id])); el.style.cssText = `width:${h * 420 / 624}px;height:${h}px;display:inline-block`; return el; };
-if (test) {
+{
   (window as any).oreheart = {
     renderCard: (id: string, px = 624) => ohCardHTML(CARDS[id], pictureOf(CARDS[id]), px),
     fitText: (el: HTMLElement) => fitCardText(el),

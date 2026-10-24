@@ -2049,7 +2049,7 @@ export class App {
   }
   flowLog: any[] = [];
   flowPulses: Record<string, number> = { player: 0, opponent: 0 };
-  getFlowStreams() { const now = performance.now(); const strip = ({ at, ...r }: any) => ({ ...r, toPoint: r.toScreen ?? null, pulses: this.flowPulses[r.side] || 0 }); const a: any = this.flowLog.map(strip); a.active = this.flowLog.filter((f) => now - f.at < 2500).map(strip); a.log = a.slice(); a.targets = this.view?.flowDestinations?.() ?? null; return a; }
+  getFlowStreams() { const now = performance.now(); const strip = ({ at, ...r }: any) => ({ ...r, toPoint: r.toScreen ?? null, pulses: this.flowPulses[r.side] || 0 }); const log = this.flowLog.map(strip); return { active: this.flowLog.filter((f) => now - f.at < 2500).map(strip), log, targets: this.view?.flowDestinations?.() ?? null }; }
   getDealLog() { return this.dealLog.map((d: any) => ({ uid: d.uid, startMs: d.startMs, durationMs: d.durationMs })); }
   getHudLayout() { const m = this.root.querySelector('.match') as any; return m?._hudInfo ? m._hudInfo() : null; }
   getTheme(side: 'player' | 'opponent') {

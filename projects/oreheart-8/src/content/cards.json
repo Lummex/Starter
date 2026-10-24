@@ -66,15 +66,15 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits up to 6 spaces away in any direction; no strike back. Throws skulls from fallen enemies on the battlefield.",
-  "shortText": "Ranged. Hits up to 6 spaces away in any direction; no strike back.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 6 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield.",
+  "text": "Ranged. Hits up to 7 spaces away in any direction; no strike back. Throws skulls from fallen enemies on the battlefield.",
+  "shortText": "Ranged. Hits up to 7 spaces away in any direction; no strike back.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield.",
   "artPos": {
    "s": 0.92,
    "x": -3.1,
    "y": -0.7
   },
-  "range": 6
+  "range": 7
  },
  {
   "id": "goblin-bomber",
@@ -459,15 +459,15 @@
    "hobble"
   ],
   "unique": false,
-  "text": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
-  "shortText": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "text": "Ranged 7, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "shortText": "Ranged 7, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 7, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
   "artPos": {
    "s": 1,
    "x": -5.7,
    "y": -5.6
   },
-  "range": 5
+  "range": 7
  },
  {
   "id": "ironhammer-berserker",
