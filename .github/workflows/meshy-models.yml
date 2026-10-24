@@ -1,0 +1,43 @@
+name: Meshy — 3D models from approved sheets
+
+# Started by hand (Actions → this workflow → Run workflow). Makes each model ONCE; finished models are skipped.
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Only these ids (comma separated). Leave empty for every job in factory-design/meshy-jobs/jobs.json'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: meshy-models
+  cancel-in-progress: false
+
+jobs:
+  models:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Make the models
+        env:
+          MESHY_API_KEY: ${{ secrets.MESHYKEY }}
+          ONLY: ${{ github.event.inputs.only }}
+        run: node factory/scripts/meshy-models.mjs
+      - name: Save the models to GitHub
+        if: always()
+        run: |
+          git config user.name "factory-bot"
+          git config user.email "factory-bot@users.noreply.github.com"
+          git add factory-design/models factory-design/meshy-jobs/state.json factory-design/meshy-jobs/last-run.json || true
+          if git diff --cached --quiet; then echo "nothing to save"; exit 0; fi
+          git commit -q -m "Meshy: 3D models from approved Model Editor sheets"
+          for i in 1 2 3 4 5; do git pull -q --rebase origin main && git push -q origin HEAD:main && exit 0; sleep 15; done
+          exit 1
