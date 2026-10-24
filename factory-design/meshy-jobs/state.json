@@ -80,5 +80,10 @@
   "wolf": "01a16d71-94d3-72d9-ba34-3fe1c2935d73",
   "rig": "01a16d74-64ed-740f-8f22-841a9ea26abb",
   "anim": "01a16d75-37f1-7428-8363-4580eb77c1de"
+ },
+ "goblin-bomber": {
+  "character": "01a16fb1-a3d2-7246-841b-15ea9a8479a9",
+  "rig": "01a16fb4-024f-76f7-94fa-4f697a119576",
+  "anim": "01a16fb4-ad3d-72bd-a2dc-9ea353474c7b"
  }
 }
