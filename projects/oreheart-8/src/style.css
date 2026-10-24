@@ -1593,3 +1593,4 @@ body *::placeholder{color:#fff!important}
 body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id],[data-card-id] *,[data-card-back] *,.hand-card,.hand-card *,.mull-card *,svg *,canvas){color:#fff!important;-webkit-text-fill-color:#fff!important}
 body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-text,.o-text *,svg *,canvas,.o-menu-item){font-style:italic!important}
 .match .o-phase .ph-step[aria-current=step],.match .o-text.done-btn:hover,.match .o-text.menu-btn:hover{color:#fff!important;-webkit-text-fill-color:#fff!important}
+.match .hand .hand-card:not(.popclone)::before{content:"";position:absolute;left:0;right:0;top:-16px;height:16px;pointer-events:auto}

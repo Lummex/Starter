@@ -2469,7 +2469,9 @@ export class App {
     const ghost = h('div', { class: `hand-card static dragged-card ${card.type} f-${card.faction}`, role: 'group', 'aria-label': 'Dragged card', 'data-tilt': '0', 'data-card-id': card.id, 'data-frame': frameKey(card), 'data-rarity': rarityKey(card) }, h('span', { class: 'drag-id', 'aria-hidden': 'true', 'data-card-id': card.id, style: 'position:absolute;width:0;height:0;overflow:hidden' }), ...faceKids(card, card.type === 'crystal' ? 0 : card.cost));
     let tilt = 0, mode: 'reorder' | 'play' | '' = '';
     // reordering while the pointer stays near its grab height / inside the raised hand; moving clearly above both = playing the card
-    const handTop = (this.r.hand as El).getBoundingClientRect().top - 12, startY = e.clientY;
+    let homeBottom = -Infinity;
+    try { for (let c = 1; c <= 13; c++) for (const q of this.squareQuad(7, c) as any[]) homeBottom = Math.max(homeBottom, q.y); } catch { /* no board yet */ }
+    const handTop = Math.max((this.r.hand as El).getBoundingClientRect().top - 12, homeBottom + 2), startY = e.clientY;
     // round 12a: a pointer over the board that is not inside the hand band is always a play drag (grab height no longer decides)
     const overBoard = (x: number, y: number) => { const bb = (this.r.board as El).getBoundingClientRect(); return y < handTop && x >= bb.left && x <= bb.right && y >= bb.top && y <= bb.bottom; };
     const inReorder = (y: number, x = 0) => y >= handTop || (Math.abs(y - startY) < 45 && !overBoard(x, y));
@@ -2515,7 +2517,7 @@ export class App {
         return true;
       },
       onDrop: (cell, x, y) => {
-        if (mode === 'reorder' && !(cell && cell.row && overBoard(x, y))) { this.reorderHand(hc.uid, x); return; }
+        if (mode === 'reorder') { this.reorderHand(hc.uid, x); return; }
         if (cell && cell.row) this.dropCard(hc, card, cell, x, y);
       },
       onTap: () => {
