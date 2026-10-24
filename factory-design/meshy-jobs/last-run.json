@@ -1,0 +1,100 @@
+{
+ "at": "2026-10-24T10:30:23.014Z",
+ "results": [
+  {
+   "id": "goblin-scrapper",
+   "sizes": {
+    "bowling-ball.glb": 14051928,
+    "char.glb": 5633032
+   }
+  },
+  {
+   "id": "goblin-grunt",
+   "sizes": {
+    "frying-pan.glb": 8542248,
+    "char.glb": 5956296
+   }
+  },
+  {
+   "id": "blastrat-sapper",
+   "sizes": {
+    "bomb.glb": 12596360,
+    "char.glb": 6186616
+   }
+  },
+  {
+   "id": "goblin-slinger",
+   "sizes": {
+    "skull-mace.glb": 9976368,
+    "char.glb": 6381204
+   }
+  },
+  {
+   "id": "goblin-smith-miner",
+   "sizes": {
+    "pickaxe.glb": 8986528,
+    "backpack.glb": 11217288,
+    "char.glb": 5833256
+   }
+  },
+  {
+   "id": "goblin-sneak",
+   "sizes": {
+    "dagger.glb": 8213096,
+    "bag.glb": 11432388,
+    "char.glb": 5809684
+   }
+  },
+  {
+   "id": "grubnaks-big-boss-troll",
+   "sizes": {
+    "char.glb": 5934812
+   }
+  },
+  {
+   "id": "junk-shaman",
+   "sizes": {
+    "staff.glb": 13118960,
+    "char.glb": 7015192
+   }
+  },
+  {
+   "id": "rotgut-grenadier",
+   "sizes": {
+    "spatula.glb": 9639844,
+    "char.glb": 6128612
+   }
+  },
+  {
+   "id": "shard-guzzler",
+   "sizes": {
+    "rocket.glb": 13212972,
+    "char.glb": 5996232
+   }
+  },
+  {
+   "id": "shiv-rat",
+   "sizes": {
+    "dagger.glb": 8091488,
+    "backpack.glb": 10457196,
+    "char.glb": 6387176
+   }
+  },
+  {
+   "id": "skullbasher-rusher",
+   "sizes": {
+    "mace.glb": 11207436,
+    "shield.glb": 11140316,
+    "char.glb": 5547636
+   }
+  },
+  {
+   "id": "wolf-rider",
+   "sizes": {
+    "mace.glb": 10320652,
+    "wolf.glb": 14635772,
+    "char.glb": 6309188
+   }
+  }
+ ]
+}

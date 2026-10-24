@@ -1,0 +1,28 @@
+{
+ "generated": "2026-10-24T10:27:26.171Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "mace": "01a16d6f-0d76-75e4-a8b6-52dfc0dfb7bb",
+  "shield": "01a16d6f-0d6a-715f-a414-4c85c04a317d",
+  "character": "01a16d6f-0d73-72cf-8067-73527bf422c4",
+  "rig": "01a16d72-0238-70c7-9589-0233e0ef7973",
+  "anim": "01a16d72-ad0f-75ca-90e1-e6f2b54a6379"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [
+  "mace",
+  "shield"
+ ],
+ "notes": "",
+ "fileSizes": {
+  "mace.glb": 11207436,
+  "shield.glb": 11140316,
+  "char.glb": 5547636
+ }
+}

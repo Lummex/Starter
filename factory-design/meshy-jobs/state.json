@@ -1,0 +1,84 @@
+{
+ "blastrat-sapper": {
+  "bomb": "01a16d64-0772-74b7-a0f8-7e6557597886",
+  "character": "01a16d64-0771-741e-9273-b3dfe486c738",
+  "rig": "01a16d67-a26f-7053-978b-40f84483aa3f",
+  "anim": "01a16d68-7388-73bc-afae-86635443988f"
+ },
+ "goblin-grunt": {
+  "frying-pan": "01a16d64-0771-741d-a39a-ccb7343d18e7",
+  "character": "01a16d64-077d-7348-b69a-9793790dd4e8",
+  "rig": "01a16d67-7a13-7228-a46c-7cf4b1b451ed",
+  "anim": "01a16d68-2324-72ae-9859-fb96af835178"
+ },
+ "goblin-scrapper": {
+  "bowling-ball": "01a16d64-078a-7325-9a40-4588c5e74485",
+  "character": "01a16d64-07a0-71de-8756-e16c9f77abef",
+  "rig": "01a16d67-020f-76f2-b7c2-d4022fc762bc",
+  "anim": "01a16d67-aa8c-735b-8846-f36f2270c8a5"
+ },
+ "goblin-slinger": {
+  "skull-mace": "01a16d64-07ca-7788-a3a7-40ec0a66942e",
+  "character": "01a16d64-07c6-74b7-9a76-2da2390f0a6b",
+  "rig": "01a16d67-ca2d-75e7-b595-a097710fd00e",
+  "anim": "01a16d68-9a4b-709a-b4d0-23b5d9ad2445"
+ },
+ "goblin-smith-miner": {
+  "pickaxe": "01a16d68-7240-7185-ac17-5dfd17b7e7e6",
+  "backpack": "01a16d68-724c-758b-a81f-0bf1eb8147f6",
+  "character": "01a16d68-7278-72ec-b1df-5265f253f40c",
+  "rig": "01a16d6c-0a4a-734a-918e-0ec9b1cae488",
+  "anim": "01a16d6c-b284-7399-9e4d-6afcc49699f6"
+ },
+ "goblin-sneak": {
+  "dagger": "01a16d69-148b-76fe-914c-88d2ea2e6406",
+  "bag": "01a16d69-148c-778c-8cce-95a14bf9a341",
+  "character": "01a16d69-1494-776c-a601-869b25c79dc8",
+  "rig": "01a16d6c-82be-77d9-abd1-7e810c07ab74",
+  "anim": "01a16d6d-2c28-74f1-987c-2f5aecf2bd10"
+ },
+ "grubnaks-big-boss-troll": {
+  "character": "01a16d69-3cce-7497-9797-301b22fc98bf",
+  "rig": "01a16d6c-aa97-73e9-a7ea-db54b21e4860",
+  "anim": "01a16d6d-7b1d-70aa-abce-3523596174f7"
+ },
+ "junk-shaman": {
+  "staff": "01a16d69-6424-76dc-b6e5-0d502ea724fc",
+  "character": "01a16d69-649a-76e8-b941-25a6001e5426",
+  "rig": "01a16d6d-4a63-745a-be63-f56637500896",
+  "anim": "01a16d6e-1c33-70c7-b1b6-02e94a8d84a4"
+ },
+ "rotgut-grenadier": {
+  "spatula": "01a16d6d-ca56-71d7-b984-1e886cef5882",
+  "character": "01a16d6d-cabb-72b6-9197-a614b575117c",
+  "rig": "01a16d70-242b-738a-b7ce-1d3b8b5e04c1",
+  "anim": "01a16d70-cc95-7542-9d68-4acd70859dfc"
+ },
+ "shard-guzzler": {
+  "rocket": "01a16d6d-f4cc-7739-be9a-660fd12b44c8",
+  "character": "01a16d6d-f4d2-72fa-887f-5ee39a2abb14",
+  "rig": "01a16d70-9b2d-776b-bdbd-866c99462f11",
+  "anim": "01a16d71-42f9-7129-b75a-d1a2174d0e9c"
+ },
+ "shiv-rat": {
+  "dagger": "01a16d6e-4503-71df-973f-3bdc60f882e4",
+  "backpack": "01a16d6e-450e-752c-9fc0-66d30fb24715",
+  "character": "01a16d6e-4510-7340-865c-f7bdba1e25c9",
+  "rig": "01a16d71-12e2-71bf-9b70-1b5a953fc10d",
+  "anim": "01a16d71-bd18-7176-b479-e0a7559cd46c"
+ },
+ "skullbasher-rusher": {
+  "mace": "01a16d6f-0d76-75e4-a8b6-52dfc0dfb7bb",
+  "shield": "01a16d6f-0d6a-715f-a414-4c85c04a317d",
+  "character": "01a16d6f-0d73-72cf-8067-73527bf422c4",
+  "rig": "01a16d72-0238-70c7-9589-0233e0ef7973",
+  "anim": "01a16d72-ad0f-75ca-90e1-e6f2b54a6379"
+ },
+ "wolf-rider": {
+  "mace": "01a16d71-945a-7606-a24c-1cd8a3507a66",
+  "character": "01a16d71-94ce-71ed-b704-a8d276504e7c",
+  "wolf": "01a16d71-94d3-72d9-ba34-3fe1c2935d73",
+  "rig": "01a16d74-64ed-740f-8f22-841a9ea26abb",
+  "anim": "01a16d75-37f1-7428-8363-4580eb77c1de"
+ }
+}

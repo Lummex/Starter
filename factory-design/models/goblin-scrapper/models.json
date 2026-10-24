@@ -1,0 +1,25 @@
+{
+ "generated": "2026-10-24T10:15:23.760Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "bowling-ball": "01a16d64-078a-7325-9a40-4588c5e74485",
+  "character": "01a16d64-07a0-71de-8756-e16c9f77abef",
+  "rig": "01a16d67-020f-76f2-b7c2-d4022fc762bc",
+  "anim": "01a16d67-aa8c-735b-8846-f36f2270c8a5"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [
+  "bowling-ball"
+ ],
+ "notes": "",
+ "fileSizes": {
+  "bowling-ball.glb": 14051928,
+  "char.glb": 5633032
+ }
+}

@@ -1,0 +1,25 @@
+{
+ "generated": "2026-10-24T10:16:15.775Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "bomb": "01a16d64-0772-74b7-a0f8-7e6557597886",
+  "character": "01a16d64-0771-741e-9273-b3dfe486c738",
+  "rig": "01a16d67-a26f-7053-978b-40f84483aa3f",
+  "anim": "01a16d68-7388-73bc-afae-86635443988f"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [
+  "bomb"
+ ],
+ "notes": "",
+ "fileSizes": {
+  "bomb.glb": 12596360,
+  "char.glb": 6186616
+ }
+}

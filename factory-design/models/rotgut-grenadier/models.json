@@ -1,0 +1,25 @@
+{
+ "generated": "2026-10-24T10:25:22.472Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "spatula": "01a16d6d-ca56-71d7-b984-1e886cef5882",
+  "character": "01a16d6d-cabb-72b6-9197-a614b575117c",
+  "rig": "01a16d70-242b-738a-b7ce-1d3b8b5e04c1",
+  "anim": "01a16d70-cc95-7542-9d68-4acd70859dfc"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [
+  "spatula"
+ ],
+ "notes": "",
+ "fileSizes": {
+  "spatula.glb": 9639844,
+  "char.glb": 6128612
+ }
+}
