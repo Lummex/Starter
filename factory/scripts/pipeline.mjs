@@ -81,7 +81,7 @@ function checkoutBranch() {
 
 async function main() {
   setStatus(issue, 'factory:building');
-  comment(issue, `🏭 **The factory has started working on this.**\n\nPlanning → building → testing. This usually takes 10–30 minutes. ${runUrl() ? `[Watch the agents work](${runUrl()})` : ''}`,
+  comment(issue, `🏭 **The factory has started working on this.**\n\nPlanning → building → testing. This usually takes 30–60 minutes. ${runUrl() ? `[Watch the agents work](${runUrl()})` : ''}`,
     { type: 'started', run: runUrl() });
 
   checkoutBranch();
@@ -113,6 +113,7 @@ async function main() {
   // ---- 2. Build + inspect loop ----
   let failures = [];
   let result = { passed: 0, total: 0, failures: [] };
+  let lastFull = null;
   let round = 0;
   for (round = 1; round <= config.maxBuildRounds; round++) {
     const failuresSection = failures.length
@@ -132,13 +133,28 @@ async function main() {
       log('build failed', b.log);
       continue;
     }
-    result = await runAcceptance(appDir, accDir, path.join(workDir, `round-${round}`));
-    log(`round ${round}: ${result.passed}/${result.total} checks passed`);
+    // Speed-up: the first and last rounds run every check. Rounds in between only re-check
+    // what failed last time (minutes instead of a full run); the last round catches anything that broke.
+    const quick = lastFull && round > 1 && round < config.maxBuildRounds && lastFull.total > 0 && lastFull.passed < lastFull.total;
+    result = await runAcceptance(appDir, accDir, path.join(workDir, `round-${round}`), quick ? { onlyFailed: true, previous: result.results ? result : lastFull } : {});
+    log(`round ${round}: ${result.passed}/${result.total} checks passed${result.partial ? ' (quick re-check)' : ''}`);
+    if (result.partial && result.total > 0 && result.passed === result.total) {
+      log('every re-checked item passed; running the full set to make sure nothing else broke');
+      result = await runAcceptance(appDir, accDir, path.join(workDir, `round-${round}-full`));
+      log(`round ${round}: ${result.passed}/${result.total} checks passed (full)`);
+    }
+    if (!result.partial) lastFull = result;
     if (result.total > 0 && result.passed === result.total) break;
     failures = result.failures;
     if (totalSpent() > config.budgetsUsd.maxPerRun - config.budgetsUsd.builderPerRound / 2) { log('stopping: budget nearly used'); break; }
   }
   round = Math.min(round, config.maxBuildRounds);
+  // The report must always come from a full run.
+  if (result.partial) {
+    log('final full check for the report');
+    result = await runAcceptance(appDir, accDir, path.join(workDir, 'final'));
+    log(`final: ${result.passed}/${result.total} checks passed`);
+  }
 
   // ---- 3. Report ----
   const shotsDir = path.join(dataDir, 'screenshots');
