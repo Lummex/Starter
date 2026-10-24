@@ -1569,3 +1569,20 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .match .hand.o-hand .hand-card{transform-origin:50% 130%}
 /* 844x390 deck builder: top bar stays on one line and never overlaps */
 @media (max-height:420px){.db-stage .db-filterbox .db-filters{flex-wrap:nowrap;gap:3px;overflow:hidden}.db-stage .db-filterbox .combo{font-size:max(10px,1.4cqh)!important;padding:0 4px!important}}
+
+/* Round 15: unit stat badge (owner design) */
+.token .tk-stats>.a,.token .tk-stats>.h,.token .tk-stats>.m{display:none!important}
+.token .tk-stats{--bw:clamp(60px,9.5vh,110px);filter:drop-shadow(0 2px 3px #000a)}
+[data-unit-badge]{position:relative;display:block;width:var(--bw);aspect-ratio:412/262;font-family:'Russo One',system-ui,sans-serif;pointer-events:none}
+[data-unit-badge] .ub-frame{position:absolute;inset:0;width:100%;height:100%;display:block}
+[data-unit-badge] .ub-icon{position:absolute;left:49.8%;top:72.5%;width:29.5%;aspect-ratio:1;transform:translate(-50%,-50%);display:block}
+[data-unit-badge] .ub-n{position:absolute;transform:translate(-50%,-50%);color:#fff!important;-webkit-text-fill-color:#fff!important;-webkit-text-stroke:calc(var(--bw)*.03) #000;paint-order:stroke fill;text-shadow:0 calc(var(--bw)*.015) calc(var(--bw)*.03) #000c;line-height:1;font-weight:400}
+[data-unit-badge] .ub-h{left:49.5%;top:34.7%;font-size:calc(var(--bw)*.262*.18*1.55)}
+[data-unit-badge] .ub-a{left:25.5%;top:79.8%;font-size:calc(var(--bw)*.262*.15*1.55)}
+[data-unit-badge] .ub-m{left:89.1%;top:80.5%;font-size:calc(var(--bw)*.262*.15*1.55)}
+[data-unit-badge] .ub-n[data-buff="true"]{text-shadow:0 0 6px #3ee06a}
+[data-unit-badge][data-damaged="true"] .ub-h{text-shadow:0 0 6px #ff4040}
+
+/* Round 15: all text outside card faces is plain white (shadows and glows stay) */
+body *:not(.ohcard):not(.ohcard *):not(.cmd-card):not(.cmd-card *):not(.hand-card):not(.hand-card *):not(svg *){color:#fff!important;-webkit-text-fill-color:#fff!important}
+body *::placeholder{color:#fff!important}

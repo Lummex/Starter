@@ -86,6 +86,7 @@ export function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string
   return e;
 }
 /** Ornate custom dropdown (ARIA combobox + floating listbox). `sel.value` holds the current choice; `onchange` fires on selection. */
+const METAL: Record<string, string> = { dwarves: 'gold', gnomes: 'silver', goblins: 'rust' };
 export function combo(label: string, id: string, opts: string[], onchange: () => void, asDiv = false) {
   const state = { value: opts[0] };
   const cb = h(asDiv ? 'div' : 'button', { ...(asDiv ? { tabindex: '0' } : { type: 'button' }), class: 'combo', id, role: 'combobox', 'aria-label': label, 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-controls': id + '-list' }, opts[0]);
@@ -1879,7 +1880,10 @@ export class App {
       if (!el) {
         el = h('div', { class: `token f-${card.faction} ${c.owner === 'player' ? 'mine' : 'theirs'}`, role: 'img' },
           h('div', { class: 'tk-body', 'data-sym': FSYM(card.faction), 'aria-hidden': 'true' }),
-          h('div', { class: 'tk-stats' }, h('span', { class: 'a' }), ' ', h('span', { class: 'h' }), ' ', h('span', { class: 'm' }), h('span', { class: 'sh' })), h('div', { class: 'pips', 'aria-hidden': 'true' }));
+          h('div', { class: 'tk-stats' }, h('div', { 'data-unit-badge': '', 'data-metal': METAL[card.faction] || 'gold', 'data-type': card.abilities?.includes('ranged') ? 'ranged' : isMiner(card) ? 'miner' : 'fighter', role: 'img' },
+            h('img', { class: 'ub-frame', alt: '', draggable: 'false', src: `/art/ui/badges/frame-${METAL[card.faction] || 'gold'}.webp` }),
+            h('img', { class: 'ub-icon', alt: '', draggable: 'false', src: `/art/ui/badges/icon-${card.abilities?.includes('ranged') ? 'bow' : isMiner(card) ? 'pickaxe' : 'sword'}-${METAL[card.faction] || 'gold'}.webp` }),
+            h('span', { class: 'ub-n ub-h', 'data-stat': 'health' }), h('span', { class: 'ub-n ub-a', 'data-stat': 'attack' }), h('span', { class: 'ub-n ub-m', 'data-stat': 'movement' })), h('span', { class: 'a' }), ' ', h('span', { class: 'h' }), ' ', h('span', { class: 'm' }), h('span', { class: 'sh' })), h('div', { class: 'pips', 'aria-hidden': 'true' }));
         this.tokens.set(c.uid, el);
         this.r.board.insertBefore(el, this.r.fx);
       }
@@ -1890,6 +1894,9 @@ export class App {
       aEl.textContent = String(atkNow); aEl.dataset.buff = String(atkNow > printed.attack);
       hEl.textContent = String(c.health); hEl.dataset.buff = String(c.health > printed.health);
       mEl.textContent = String(maxMove(c));
+      { const bd = el.querySelector('[data-unit-badge]') as El, sv = (k: string, v: number, buff: boolean) => { const n = bd.querySelector(`[data-stat=${k}]`) as El; if (n.textContent !== String(v)) n.textContent = String(v); n.dataset.buff = String(buff); };
+        sv('attack', atkNow, atkNow > printed.attack); sv('health', c.health, c.health > printed.health); sv('movement', maxMove(c), false);
+        bd.dataset.damaged = String(c.health < c.maxHealth); bd.setAttribute('aria-label', `Attack ${atkNow}, Health ${c.health}, Movement ${maxMove(c)}`); }
       aEl.title = 'Attack'; hEl.title = 'Health'; mEl.title = 'Movement';
       el.dataset.extras = `${isMiner(printed) ? '⛏️' : ''}${printed.abilities?.includes('ranged') ? '🏹' : ''}`;
       el.dataset.mining = String(!!c.minedMine);

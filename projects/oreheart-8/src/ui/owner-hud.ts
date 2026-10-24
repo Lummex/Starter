@@ -21,7 +21,7 @@ function textCss(t: any, ts: number) {
   const sh = t.shadow ?? 0, gl = t.glow ?? 0;
   const parts = [`0 ${0.06 * sh}em ${0.12 * sh}em #000`, `0 0 ${0.04 * sh}em #000`];
   if (gl) parts.push(`0 0 ${0.18 * gl}em ${t.glowColor || '#000'}`);
-  return { color: t.color, fontWeight: t.bold ? '700' : '400', fontStyle: t.italic ? 'italic' : 'normal', textAlign: t.align === 'center' ? 'center' : t.align === 'right' ? 'right' : 'left', textShadow: parts.join(','), sizePct: (t.size || 2) * ts };
+  return { color: '#ffffff', fontWeight: t.bold ? '700' : '400', fontStyle: t.italic ? 'italic' : 'normal', textAlign: t.align === 'center' ? 'center' : t.align === 'right' ? 'right' : 'left', textShadow: parts.join(','), sizePct: (t.size || 2) * ts };
 }
 
 export interface HudHooks {
@@ -190,7 +190,7 @@ export function applyOwnerHud(match: El, r: any, hk: HudHooks) {
     match.querySelectorAll<El>('.o-deck .pile-n').forEach((n) => { n.style.fontSize = Math.max(14, (+n.dataset.size! / 100) * sh) + 'px'; });
     // menu look (sizes are % of screen height)
     const f = (v: number) => (v / 100) * sh + 'px';
-    panel.style.cssText = `--mfs:${Math.max(14, (ms.size / 100) * sh)}px;--mgap:${f(ms.gap)};--mpad:${f(ms.pad)};--mrad:${f(ms.radius)};--mw:${Math.max(180, (ms.width / 100) * sw)}px;--mc:${ms.color};--mhc:${ms.hoverColor};--mhg:${ms.hoverGlowColor};--mhgs:${ms.hoverGlow};--mgrow:${ms.grow};--mslide:${ms.slide};--mbg:${ms.bg};--mbga:${ms.bgA};--mspeed:${ms.speed}ms;--mstag:${ms.stagger}ms;top:calc(100% + ${f(ms.offset)});`;
+    panel.style.cssText = `--mfs:${Math.max(14, (ms.size / 100) * sh)}px;--mgap:${f(ms.gap)};--mpad:${f(ms.pad)};--mrad:${f(ms.radius)};--mw:${Math.max(180, (ms.width / 100) * sw)}px;--mc:#ffffff;--mhc:#ffffff;--mhg:${ms.hoverGlowColor};--mhgs:${ms.hoverGlow};--mgrow:${ms.grow};--mslide:${ms.slide};--mbg:${ms.bg};--mbga:${ms.bgA};--mspeed:${ms.speed}ms;--mstag:${ms.stagger}ms;top:calc(100% + ${f(ms.offset)});`;
   };
   const layoutInfo = () => {
     const W = match.clientWidth || window.innerWidth, H = match.clientHeight || window.innerHeight;
