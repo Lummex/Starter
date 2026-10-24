@@ -1,5 +1,5 @@
 {
- "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items.",
+ "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet).",
  "jobs": [
   {
    "id": "blastrat-sapper",
@@ -320,6 +320,23 @@
     "defeat": 8
    },
    "notes": "wolf is the mount (static model, not rigged)"
+  },
+  {
+   "id": "goblin-bomber",
+   "char": [
+    "goblin-bomber--char-front.jpg",
+    "goblin-bomber--char-side.jpg",
+    "goblin-bomber--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
   }
  ]
 }
