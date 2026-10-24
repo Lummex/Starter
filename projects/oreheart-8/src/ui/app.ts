@@ -1970,6 +1970,8 @@ export class App {
       const sh = el.querySelector('.sh') as El;
       sh.textContent = `${el.dataset.extras || ''}${c.shield > 0 ? `🛡${c.shield}` : ''}`;
       el.dataset.poison = String(c.poison || 0);
+      el.dataset.drunk = String(c.drunk || 0);
+      el.dataset.facing = String(c.facing || "");
       let pm = el.querySelector('.poison-mark') as El | null;
       if (c.poison > 0) {
         if (!pm) { pm = h('span', { class: 'poison-mark', role: 'img' }); sh.after(pm); }
@@ -2082,6 +2084,7 @@ export class App {
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
+      (el.querySelector('.ohcard') || el.firstElementChild)?.setAttribute('data-card-id', c.id);
       el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { if (this.lastPtr.down || this.noHand || this.hitCard(e.clientX, e.clientY) !== el) return; this.openHand(true); this.popCard(el, true); } });
       el.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.popCard(el, false); });
       el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);

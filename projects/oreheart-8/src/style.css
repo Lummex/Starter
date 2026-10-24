@@ -1645,3 +1645,9 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 }
 @media (max-height:480px){.mb-setup .cs-decks .deck-row{justify-content:flex-start!important}}
 @media (max-height:480px){.mb-setup .cs-decks .deck-row{scroll-snap-type:none!important}}
+
+/* Round 17: the hand rests as an even fan fully on screen; raising it never covers the board */
+.match{--hcw:calc(var(--fh) * .19)}
+.match .hand:not(.o-hand),.match .hand.o-hand{transform:translateY(calc(var(--hcw) * -.13))}
+.match .hand.o-hand.open,.match .hand.o-hand.has-pop,.match .hand:not(.o-hand).open,.match .hand:not(.o-hand).has-pop{transform:translateY(calc(var(--hcw) * -.13))}
+.match .hand.o-hand.away,.match .hand.o-hand.away.open,.match .hand.o-hand.away.has-pop{transform:translateY(calc(var(--hcw) * 1.6))!important}
