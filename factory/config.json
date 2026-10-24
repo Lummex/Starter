@@ -5,7 +5,7 @@
     "reviewer": "sonnet"
   },
   "budgetsUsd": {
-    "planner": 2,
+    "planner": 3,
     "builderPerRound": 6,
     "reviewer": 1,
     "maxPerRun": 20

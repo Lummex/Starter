@@ -7,8 +7,11 @@ export default defineConfig({
   testMatch: /.*\.spec\.(m?js|ts)$/,
   timeout: 30_000,
   expect: { timeout: 7_000 },
-  retries: 1,
-  workers: 2,
+  retries: Number(process.env.PW_RETRIES ?? 1),
+  // Every check opens its own fresh page, so they can all run side by side.
+  // (Without fullyParallel, a single test file only ever uses ONE worker.)
+  fullyParallel: true,
+  workers: Number(process.env.PW_WORKERS || 4),
   reporter: [['json', { outputFile: process.env.RESULTS_JSON || 'results.json' }], ['list']],
   use: {
     baseURL: `http://127.0.0.1:${port}`,
