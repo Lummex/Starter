@@ -4,7 +4,30 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 12d — card faces use the owner's card format (owner, Oct 23) — read this first
+## Round 13 — card-format polish, ability buttons, Deck Builder, title screen (owner, Oct 24) — read this first
+
+Round 12d is done (276/400 checks). Keep everything from 8a–12d. The owner played the preview and asked for the fixes below. Work in this order, **commit + push after each numbered step**, keep tests short. If time runs short, stop after the last finished step and report what is done.
+
+1. **Card faces match the owner's format exactly** (`public/art/card-format/format.json`, `factory-design/card-format/render.js` + `reference/*.jpg` on main).
+   - **Spell cards are broken:** two dark boxes cover the spell's name banner and the top of its text (seen on Desperate Plunder, Field Bandage, Snuff Out, Venom Shiv, Pickpocket!, Rat-Tunnel Ambush and every other spell/instant), in the Deck Builder and in the game. Remove them; name and text must look like `reference/fireball.jpg`, `healing-light.jpg`, `venom-shiv.jpg`, `second-wind.jpg`.
+   - **Picture positions:** NONE of the cards currently use the owner's framing. Every card face must apply its `artPos {s,x,y}` from `cards.json` / `commanders.json` exactly as render.js does. Check every card one by one against the Studio rendering.
+   - Fix the failing card-format checks (420:624 size, artPos, the 8 reference cards).
+2. **Ability buttons.** Every unit or commander with an activated ability (pay crystals / Strike / once-per-turn abilities, e.g. Bowler Brawler's bowling ball, SewerSlide Bomber, Junk Shaman, Goblin Rocket Rider, Glyphshield Warden, Voldawright, Mirrorveil Illusionist, Thunderhorn Ram Rider, …) shows a small round icon above it on the board, with an icon that matches the ability (bowling ball, rocket, grabbing hand, shield, shockwave, …).
+   - Lit and clickable when it is your turn and you can pay; greyed out when you can't afford it or already used it.
+   - Click → choose direction/target if needed → pay → the ability happens with a visible effect (e.g. the ball rolls and units get knocked back).
+   - Hover shows the ability name, cost and text. The AI uses the same abilities.
+3. **Deck Builder.**
+   - Remove the small Oreheart logo at the top centre (between the "Deck Builder" title and the search box).
+   - Replace the "Deck Commander" dropdown and the small single commander picture with **three commander portraits (Grubnak, Sproingle, Borgo) right next to the "Deck Builder" title**; click one to pick the commander, the picked one glows.
+   - **No locked cards:** if the chosen commander can't use a card (another faction's spells/cards), it is simply NOT in the list — no lock, no "Only for … Commanders" text. Changing commander updates the list. Neutral cards show for everyone. The game rule itself (faction cards only for that faction's commander) stays.
+   - Tidy the top bar: the "Cards per row" slider currently overlaps the search box and the Cost filter.
+4. **Title screen ("Click to begin").** Remove the old Oreheart logo from the centre. In its place show a stack of Oreheart cards (the card back from the owner's card format, `back` layout in format.json), slightly fanned so it reads as a deck, centred, with "Click to begin" over it in the same style as now. The background picture stays.
+5. **Checks cleanup.** Go through the failing checks: update or delete checks that test old card data (e.g. "Gutripper Brawler" in hand) and fix real bugs (e.g. Sproingle and Borgo can't be selected). Fix Round 12c card abilities that still don't match their text (knockback, ranges, Crystal cards, Rocket Rider).
+6. **Screenshots:** make the screenshot script go past the intro into a real match. The "I AM A GAME DEVELOPER" dirt screen is not a useful screenshot.
+
+Report: screenshots 1920×1080 of the title screen, the Deck Builder (all three commanders visible, spells filter), a hand with spells, a close-up of a spell, and an ability button in use; plus the checks pass count.
+
+## Round 12d (done) — card faces use the owner's card format
 
 Round 12c is done. Keep everything from 8a–12c. **Problem:** the game still draws the OLD card frames. The owner designed new card frames in his Art Studio; they are BINDING and already committed:
 - On `factory/issue-8`: `projects/oreheart-8/public/art/card-format/format.json` plus `public/art/card-format/images/` (frames, gems, cost badges).
