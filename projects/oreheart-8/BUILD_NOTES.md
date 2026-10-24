@@ -728,3 +728,8 @@ Not done: Round 12c ability fixes, straight-line ranged audit, Venom Shiv/Tunnel
 - `getFlowStreams()` now also returns `pulses` (per side) so AC329 passes.
 - Owner menu text is always italic Alegreya SC (menus.ts).
 - Not done: AC272/AC174 hand layout, AC58/AC15/AC266 (checks use cards the owner has since changed, e.g. Shard Guzzler is now a Fighter), AC109, AC135/AC168 heart numbers (owner layout's non-italic hearts conflict with AC326), and the remaining Round 16 items.
+
+## Round 16 (this pass)
+Fixed: Settings panels no longer shoved off-screen by the generic `fx-` effect CSS (AC260/AC261); pile counts and unit-badge numbers use the required fonts (AC135/AC168/AC335 fonts); badge sits under the unit's feet; `renderCard('back' | commander id)` renders at 420:624 (AC310); activated-ability buttons use the owner-facing names (`run`, `strike`, `pickUp`, `rocketRide`, `gallop`), carry the card name and cost in their label, show a `role="tooltip"` on hover, stay clickable when they sit over a target square, and Brewlord's `brew` button is lit on the enemy's turn (AC318–AC320, AC325, AC332 button); test mode resets the "tutorial seen" flag.
+
+Not changed (checks contradict newer owner cards/rounds or conflict with each other): AC15/AC58/AC109/AC266 (card stats, Rocket Rider now a Fighter, Bowler Brawler cost 6 and junk bonus), AC143/AC204 (Deck Builder hides other factions' cards), AC155 (Grubnak's creature discount), AC258 (button is "Start"), AC272 (owner-layout hand), AC273 (owner PNGs would push dist over 40 MB, AC90), AC332 health (Borgo +1 Health).
