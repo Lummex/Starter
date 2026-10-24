@@ -4,7 +4,30 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 16 — finish Round 15 and fix every failing check (owner, Oct 24) — read this first
+## Round 17 — Auto Battle mode with stance buttons, plus fixes (owner, Oct 24) — read this first
+
+Keep everything from 8a–16. Commit + push after each numbered step.
+
+### A. Fixes first (from Round 16's 57 failing checks)
+1. **One visible start button on Choose Your Commander.** Right now a hidden "Start" button sits under a visible "Fight!" button, so every check that starts a match fails (about 15). Remove the hidden duplicate. The visible button reads **Fight!**; update those checks to click the visible button by its name ("Fight!"). On phone (844×390) nothing on this screen may overlap or be cut off (deck names, Remove, Copy to my decks, Easy/Normal/Hard).
+2. **The hand.** Checks find 0 hand cards: put back the hand container labelled "Your hand" with each card as a button carrying `data-card-id`. The hand is an even fan fully on screen at rest (not mostly below the bottom edge), and a raised card must never cover most of the board on phone.
+3. `window.oreheart` exists only in test mode (AC5). The crystal mines show their normal color, not plain white.
+4. Then the rest of the failing list in `factory-data/oreheart-8/test-results.md` (Ranged, Brewlord, mine tapping, facing after a move, shard count, font weights, Deck Builder layout). Fix the game, not the checks, except where a check clearly contradicts a newer owner round (note it in WORK.md).
+
+### B. New game mode: Auto Battle
+5. **Choosing the mode.** On Choose Your Commander (the fight menu) add a mode choice next to Easy/Normal/Hard: **Classic** (today's game) and **Auto Battle**. Remember the last choice.
+6. **How Auto Battle plays.** Same board, cards, rules and computer opponent as Classic. The player ONLY plays cards (summon creatures, cast spells, Tunnel, Crystal cards, and ability buttons stay clickable on your turn). The player never moves or attacks with units: in your Action phase your units act on their own, one by one, with their normal move/attack/mine animations, following the current **stance**. Every rule still applies (move ranges, summoning sickness, mining is an action, Ranged lines, abilities, strike back). A small speed toggle (1× / 2×) and Done (skip to the end of your units' actions) are allowed. The enemy plays as it does now.
+7. **Stance buttons.** On the right edge of the match screen, vertically centered, a column of 4 big buttons (about 72 px tall on PC, easy to tap on phone), each with an icon and a short label. The active one glows in the player's faction color. The player can switch at any moment, also in the middle of the Action phase; the next unit to act uses the new stance. Hover/long-press shows a one-line description.
+   - **Aggressive** (sword icon): Miners go to the mines and mine. Every Fighter and Ranged unit goes straight for the enemy Commander/stronghold and attacks it whenever it can; it only attacks other units that block its path.
+   - **Mine Control** (pickaxe icon) — the owner's "defensive": the goal is crystal (mana) control. Miners mine. A Miner attacks an enemy Miner next to it only if it will survive the strike back; otherwise it mines. If you are low on crystals (you can't afford most cards in your hand), Miners always choose mining, unless you already have plenty to cast with. Fighters and Ranged hunt enemy Miners and units near the mines first, not the Commander. Once you own every mine (or the enemy has no Miners left), they switch to attacking the enemy Commander.
+   - **Guard** (shield icon): protect your Commander first, then your Miners. Fighters stay close (within 2 spaces) to your stronghold and your Miners and attack enemies that come near; they don't chase across the board. Miners keep mining but step away from a fight they would lose.
+   - **Free-for-all** (crossed swords icon): your units use the same full AI as the computer opponent and decide everything themselves.
+   - Default stance at the start of a match: Free-for-all.
+8. **Checks + test hooks.** Add `window.oreheart.setMode('auto'|'classic')`, `setStance(name)`, `getStance()`. With fixed seeds, add checks that: the player cannot move units by hand in Auto Battle; switching stance mid-turn changes the next unit's choice; Aggressive Fighters move toward and hit the enemy Commander; Mine Control Miners attack an adjacent enemy Miner only when they survive, and mine when crystals are low; Guard Fighters stay within 2 spaces of the stronghold/Miners; the 4 buttons sit on the right edge, vertically centered, at 1920×1080 and 844×390.
+
+Report: screenshots 1920×1080 and 844×390 of the fight menu with the mode choice, an Auto Battle match with the stance buttons, and a short sequence of units acting on their own under Aggressive and under Mine Control; plus the checks pass count.
+
+## Round 16 (built, 342/399 checks) — finish Round 15 and fix every failing check (owner, Oct 24)
 
 Round 15 was built (329 of 399 checks passed). No new features this round: make the existing game match the brief. The full list of the 70 failing checks with their error messages is in `factory-data/oreheart-8/test-results.md` on this branch — start there. Commit + push after each numbered step.
 
