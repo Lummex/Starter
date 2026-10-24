@@ -42,6 +42,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.CHAT_GPT_KEY }}
           MESHY_API_KEY: ${{ secrets.MESHYKEY }}
           GH_TOKEN: ${{ github.token }}
+          PW_WORKERS: '4'
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}

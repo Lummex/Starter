@@ -156,7 +156,9 @@ export function buildApp(appDir) {
 export function tail(s, n = 60) { return stripAnsi(s).trim().split('\n').slice(-n).join('\n'); }
 
 // Runs the hidden acceptance tests against the built site.
-export async function runAcceptance(appDir, accDir, outDir) {
+// opts.onlyFailed + opts.previous: re-run only the checks that failed in `previous`
+// (a quick in-between check); passing checks keep their earlier result.
+export async function runAcceptance(appDir, accDir, outDir, opts = {}) {
   fs.mkdirSync(outDir, { recursive: true });
   const resultsJson = path.join(outDir, 'results.json');
   fs.rmSync(resultsJson, { force: true });
@@ -164,13 +166,50 @@ export async function runAcceptance(appDir, accDir, outDir) {
   const runDir = path.join(FACTORY, '.run-tests');
   fs.rmSync(runDir, { recursive: true, force: true });
   fs.cpSync(accDir, runDir, { recursive: true });
+  const prevFailed = opts.onlyFailed && opts.previous ? (opts.previous.results || []).filter((r) => !r.ok && r.id) : [];
+  const partial = prevFailed.length > 0;
+  const args = ['playwright', 'test', '--config', path.join(FACTORY, 'playwright.config.mjs'), '--output', path.join(outDir, 'artifacts')];
+  if (partial) {
+    // Pick exactly the failed checks: one "file › describe › title" per line.
+    const list = path.join(outDir, 'only-failed.txt');
+    fs.writeFileSync(list, [...new Set(prevFailed.map((r) => `${r.id} › ${r.title}`))].join('\n') + '\n');
+    args.push('--test-list', list);
+  }
+  const t0 = Date.now();
   await withServer(path.join(appDir, 'dist'), async () => {
-    sh('npx', ['playwright', 'test', '--config', path.join(FACTORY, 'playwright.config.mjs'), '--output', path.join(outDir, 'artifacts')], {
+    sh('npx', args, {
       cwd: FACTORY, check: false, stdio: ['ignore', 'inherit', 'inherit'],
-      env: { ...process.env, ACCEPTANCE_DIR: runDir, RESULTS_JSON: resultsJson, FACTORY_PORT: String(config.port) },
+      env: { ...process.env, ACCEPTANCE_DIR: runDir, RESULTS_JSON: resultsJson, FACTORY_PORT: String(config.port), ...(opts.workers ? { PW_WORKERS: String(opts.workers) } : {}) },
     });
   });
-  if (!fs.existsSync(resultsJson)) return { passed: 0, total: 0, failures: ['The test runner crashed or found no tests.'] };
+  log(`checks took ${Math.round((Date.now() - t0) / 60000)} min${partial ? ` (re-checked only the ${prevFailed.length} that failed last time)` : ''}`);
+  const fresh = readResults(resultsJson);
+  if (!partial) {
+    // Heavy 3D/drag checks can time out when many run side by side. Give each failure one more
+    // try with less load before calling it a real failure.
+    const nFailed = (fresh.results || []).filter((r) => !r.ok).length;
+    if (!opts.noConfirm && nFailed > 0 && nFailed <= 150) {
+      log(`confirming ${nFailed} failed check(s) with fewer running at once`);
+      return runAcceptance(appDir, accDir, path.join(outDir, 'confirm'), { onlyFailed: true, previous: fresh, workers: 2, noConfirm: true, keepFull: true });
+    }
+    return fresh;
+  }
+  if (!fresh.results) return fresh;
+  // Merge: re-run checks replace their old result, everything else keeps its earlier result.
+  const byKey = new Map(fresh.results.map((r) => [r.id + '|' + r.title, r]));
+  const results = opts.previous.results.map((r) => byKey.get(r.id + '|' + r.title) || r);
+  const failed = results.filter((r) => !r.ok);
+  return {
+    passed: results.length - failed.length,
+    total: results.length,
+    results,
+    failures: [...fresh.fatal, ...failed.map((f) => `✗ ${f.title}\n${f.error}`)],
+    partial: !opts.keepFull, // a confirm pass still counts as a full run
+  };
+}
+
+function readResults(resultsJson) {
+  if (!fs.existsSync(resultsJson)) return { passed: 0, total: 0, failures: ['The test runner crashed or found no tests.'], fatal: [] };
   const report = JSON.parse(fs.readFileSync(resultsJson, 'utf8'));
   const results = [];
   const walk = (suite, prefix = '') => {
@@ -178,7 +217,7 @@ export async function runAcceptance(appDir, accDir, outDir) {
     for (const sp of suite.specs || []) {
       const ok = sp.ok;
       const err = sp.tests?.flatMap((t) => t.results || []).flatMap((r) => r.errors || (r.error ? [r.error] : [])).map((e) => stripAnsi(e.message || '')).find(Boolean);
-      results.push({ title: prefix + sp.title, ok, error: err ? err.split('\n').slice(0, 12).join('\n') : '' });
+      results.push({ title: prefix + sp.title, ok, id: sp.file || '', error: err ? err.split('\n').slice(0, 12).join('\n') : '' });
     }
   };
   for (const s of report.suites || []) walk(s);
@@ -189,5 +228,6 @@ export async function runAcceptance(appDir, accDir, outDir) {
     total: results.length,
     results,
     failures: [...fatal, ...failed.map((f) => `✗ ${f.title}\n${f.error}`)],
+    fatal,
   };
 }

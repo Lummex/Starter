@@ -8,6 +8,15 @@ Read `{{DATA_DIR}}/SPEC.md` carefully. Follow it exactly — especially any exac
 
 {{FAILURES_SECTION}}
 
+## Work as a team lead (faster)
+
+If `{{DATA_DIR}}/WORK.md` exists, the planner has split this round's work into areas. You are the LEAD:
+
+1. Read SPEC.md, WORK.md and the failures above. Look at the code just enough to decide who owns which files.
+2. If there are 2 or more areas with real work, hand each area to its specialist **at the same time** — several Task calls in ONE message: `rules-and-cards` (rules, cards, abilities, AI), `visuals-3d` (3D board, models, animations, effects), `interface` (menus, deck builder, card faces, buttons, layout, CSS). Give each one: its exact work items, the files it owns (no two specialists may own the same file), and the relevant failure messages. Do small or tightly linked items yourself instead.
+3. If there is only one area, or the whole job is small, just do it yourself — extra helpers cost money.
+4. When they report back, run `npm install` and `npm run build` ONCE, fix anything that clashes, and check every item is done.
+
 ## Where and how to build
 
 - Build the app in the folder `{{APP_DIR}}` (create it if missing; if it already exists, improve it rather than starting over).

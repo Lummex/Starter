@@ -4,7 +4,19 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 13 — card-format polish, ability buttons, Deck Builder, title screen (owner, Oct 24) — read this first
+## Round 14 — match screen exactly like the owner's layout, fanned hand, crystal flow (owner, Oct 24) — read this first
+
+Round 13 is done (328/409 checks). Keep everything from 8a–13 and finish any Round 13 item that is still failing. The owner updated his match screen in the Game Editor; it is already committed as `projects/oreheart-8/src/content/owner-layout.json` (same file on main: `factory-design/owner-layouts/final-draft/layout.json`). Commit + push after each numbered step.
+
+1. **The match screen matches the owner's layout exactly — positions AND text style.** For every piece in `hud`, use its `x, y, w, h` (percent of the screen), `rot`, `opacity`, `z`, and for text its `size, color, font, bold, italic, align, valign, shadow, glow, glowColor, caps` exactly. The owner says text colors and positions are currently off. Changed this time: your commander name (`pName`) moved down to sit by the Flow crystal (y 70.99), the Menu button text is bigger (3.7) and moved, the Done button text is bigger (5.7), and the Flow crystal moved slightly. Add a check that compares every hud piece's on-screen box and text color with the layout (within 1%).
+2. **Your hand is fanned.** The cards in your hand must fan out like the layout's `hand` settings: `angle` 4° per card, `arc` 1.45, `overlap` 0.2, `straighten` on hover, hover pops the card up (`popScale` 1.6, `popY` 10). Right now the hand is a flat row. The enemy hand (`eHand`, card backs) is also a fan (`fan.count` 6, `fan.angle` 9).
+3. **Crystal flow goes to the Flow crystal icon.** The shards that stream from your mines must fly to YOUR Flow crystal on the screen (`pCrystal`, bottom left), and the enemy's to theirs (`eCrystal`) — not to the commander or stronghold. When they arrive, the Flow crystal pulses.
+4. **More shards when Flow is higher.** The number of shards streaming from each mine grows with how much Flow that side gets per turn (for example 2 shards at Flow 1 up to about 12 at high Flow), so a bigger Flow is visible at a glance.
+5. **Card changes from the owner's Art Studio** are already in `src/content/cards.json` Goblin Rocket Rider is now a Fighter. Corpsman Brewlord's new text: "Once per turn, at any time (even on the enemy's turn): heal an adjacent wounded dwarf. If that dwarf would die, it survives with 1 Health instead. It becomes Drunk for 2 rounds. Drunk dwarves can't be healed." Build it: an ability button usable once per turn, also during the enemy's turn (as a response that can save a dwarf from dying); show a Drunk icon over drunk dwarves for 2 rounds; drunk dwarves can't be healed by anything. The AI uses it too.
+
+Report: screenshots 1920×1080 of the match screen next to the owner's layout, the fanned hand, and the crystal flow arriving at the Flow crystal; plus the checks pass count.
+
+## Round 13 (done) — card-format polish, ability buttons, Deck Builder, title screen (owner, Oct 24)
 
 Round 12d is done (276/400 checks). Keep everything from 8a–12d. The owner played the preview and asked for the fixes below. Work in this order, **commit + push after each numbered step**, keep tests short. If time runs short, stop after the last finished step and report what is done.
 
