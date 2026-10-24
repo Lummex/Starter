@@ -20,6 +20,8 @@ const appDir = path.join(ROOT, appRel);
 const dataDir = path.join(ROOT, dataRel);
 const accDir = path.join(dataDir, 'acceptance');
 const workDir = fs.mkdtempSync(path.join(process.env.RUNNER_TEMP || os.tmpdir(), 'factory-'));
+// Full check runs are pushed and split across machines by factory-checks.yml (see lib.mjs remoteChecks).
+const REMOTE = { push: () => push(), branch, slug };
 const prompt = (name) => fs.readFileSync(path.join(FACTORY, 'prompts', `${name}.md`), 'utf8');
 
 function commitAll(message) {
@@ -136,11 +138,11 @@ async function main() {
     // Speed-up: the first and last rounds run every check. Rounds in between only re-check
     // what failed last time (minutes instead of a full run); the last round catches anything that broke.
     const quick = lastFull && round > 1 && round < config.maxBuildRounds && lastFull.total > 0 && lastFull.passed < lastFull.total;
-    result = await runAcceptance(appDir, accDir, path.join(workDir, `round-${round}`), quick ? { onlyFailed: true, previous: result.results ? result : lastFull } : {});
+    result = await runAcceptance(appDir, accDir, path.join(workDir, `round-${round}`), quick ? { onlyFailed: true, previous: result.results ? result : lastFull } : { remote: REMOTE });
     log(`round ${round}: ${result.passed}/${result.total} checks passed${result.partial ? ' (quick re-check)' : ''}`);
     if (result.partial && result.total > 0 && result.passed === result.total) {
       log('every re-checked item passed; running the full set to make sure nothing else broke');
-      result = await runAcceptance(appDir, accDir, path.join(workDir, `round-${round}-full`));
+      result = await runAcceptance(appDir, accDir, path.join(workDir, `round-${round}-full`), { remote: REMOTE });
       log(`round ${round}: ${result.passed}/${result.total} checks passed (full)`);
     }
     if (!result.partial) lastFull = result;
@@ -152,7 +154,7 @@ async function main() {
   // The report must always come from a full run.
   if (result.partial) {
     log('final full check for the report');
-    result = await runAcceptance(appDir, accDir, path.join(workDir, 'final'));
+    result = await runAcceptance(appDir, accDir, path.join(workDir, 'final'), { remote: REMOTE });
     log(`final: ${result.passed}/${result.total} checks passed`);
   }
 
