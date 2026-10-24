@@ -43,7 +43,7 @@
   "unique": false,
   "text": "Nearby Goblins get +1 Attack. Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side.",
   "shortText": "Nearby Goblins get +1 Attack. Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Nearby Goblins get +1 Attack. Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Nearby Goblins get +1 Attack. Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side. Example: A Brawler at the bottom of a column rolls the ball up it and every unit in that column hops sideways.",
   "flavor": "Ex-professional goblin bowler.",
   "artPos": {
    "s": 0.92,
@@ -66,15 +66,15 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits up to 7 spaces away in any direction; no strike back. Throws skulls from fallen enemies on the battlefield.",
-  "shortText": "Ranged. Hits up to 7 spaces away in any direction; no strike back.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield.",
+  "text": "Ranged. Hits up to 6 spaces away in any direction; no strike back. Throws skulls from fallen enemies on the battlefield.",
+  "shortText": "Ranged. Hits up to 6 spaces away in any direction; no strike back.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 6 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield.",
   "artPos": {
    "s": 0.92,
    "x": -3.1,
    "y": -0.7
   },
-  "range": 7
+  "range": 6
  },
  {
   "id": "goblin-bomber",
@@ -268,16 +268,16 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits up to 7 spaces away; no strike back.",
-  "shortText": "Ranged. Hits up to 7 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits up to 7 spaces away; no strike back.",
+  "text": "Ranged. Hits up to 5 spaces away; no strike back.",
+  "shortText": "Ranged. Hits up to 5 spaces away; no strike back.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits up to 5 spaces away; no strike back.",
   "flavor": "Even the woods keep the storm's company.",
   "artPos": {
    "s": 1.02,
    "x": -4.6,
    "y": 3.8
   },
-  "range": 7
+  "range": 5
  },
  {
   "id": "clockwork-beetle",
@@ -343,15 +343,15 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Flies over other creatures. Ranged. Hurls fireballs and sparks up to 7 spaces away; no strike back.",
-  "shortText": "Flies over other creatures. Ranged. Hurls fireballs and sparks up to 7 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flies over other creatures. Ranged. Hurls fireballs and sparks up to 7 spaces away; no strike back.",
+  "text": "Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
+  "shortText": "Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
+  "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
   "artPos": {
    "s": 0.92,
    "x": -2.4,
    "y": -3.7
   },
-  "range": 7
+  "range": 2
  },
  {
   "id": "the-great-steam-golem",
@@ -414,7 +414,8 @@
   "health": 5,
   "move": 1,
   "abilities": [
-   "riotShield"
+   "riotShield",
+   "tunnel"
   ],
   "unique": false,
   "text": "Riot Shield. For 3 turns, can't move or attack. Can't be killed by anything.",
@@ -440,7 +441,7 @@
   "unique": false,
   "text": "Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several.",
   "shortText": "Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several."
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several. Example: Three hurt allies stand next to the Shieldbeard; it heals 3, 2 and 2 between them."
  },
  {
   "id": "axe-thrower",
@@ -458,15 +459,15 @@
    "hobble"
   ],
   "unique": false,
-  "text": "Ranged 7, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
-  "shortText": "Ranged 7, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 7, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "text": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "shortText": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
   "artPos": {
    "s": 1,
    "x": -5.7,
    "y": -5.6
   },
-  "range": 7
+  "range": 5
  },
  {
   "id": "ironhammer-berserker",
@@ -1051,7 +1052,7 @@
   "unique": false,
   "text": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less. Play anytime during your turn.",
   "shortText": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less. Play anytime during your turn.",
-  "longText": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less. Play anytime during your turn."
+  "longText": "Crystal card. Free. +3 to your Bank. Next creature costs 2 less. Play anytime during your turn. Example: Play Motherlode, then summon a 3-cost creature for 1."
  },
  {
   "id": "goblin-smith-miner",
@@ -1256,15 +1257,15 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits up to 7 spaces away in straight or diagonal lines. Can't cast through allies.",
-  "shortText": "Ranged. Hits up to 7 spaces away in straight or diagonal lines. Can't cast through allies.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits up to 7 spaces away in straight or diagonal lines. Can't cast through allies.",
+  "text": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
+  "shortText": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
   "artPos": {
    "s": 0.93,
    "x": -2.2,
    "y": -2.3
   },
-  "range": 7
+  "range": 99
  },
  {
   "id": "gearward-sentinel",

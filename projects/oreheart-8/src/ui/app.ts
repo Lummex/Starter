@@ -1166,6 +1166,7 @@ export class App {
       const hd = this.r.hand as El;
       if (hd && !hd.querySelector('.hand-card.popped:not(.popclone)')) { hd.classList.remove('has-pop'); hd.querySelectorAll('.popclone,.pop-ph').forEach((x) => x.remove()); }
       el.style.translate = ''; el.style.scale = '';
+      if (el.dataset.fanAngle0 !== undefined) { el.dataset.fanAngle = el.dataset.fanAngle0; delete el.dataset.fanAngle0; }
       el.style.transform = el.dataset.fan || '';
       el.style.zIndex = el.dataset.z || '';
       this.asideNeighbors(null);
@@ -1209,6 +1210,8 @@ export class App {
     const targetX = Math.max(hr.left + halfW + 2, Math.min(hr.right - halfW - 2, cx));
     const targetY = Math.max(hr.bottom, window.innerHeight) - halfH - 1;
     el.classList.add('popped');
+    if (el.dataset.fanAngle0 === undefined) el.dataset.fanAngle0 = el.dataset.fanAngle || '0';
+    el.dataset.fanAngle = '0';
     hand.classList.add('has-pop');
     this.asideNeighbors(el);
     // The popped card ignores the pointer; a transparent proxy keeps its resting spot clickable and draggable.
@@ -2011,7 +2014,7 @@ export class App {
     for (const hc of me.hand) {
       const c = CARDS[hc.cardId];
       const cost = costOf(c);
-      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid)), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
+      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         h('span', { class: 'cid', 'data-card-id': c.id }),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
@@ -2072,7 +2075,7 @@ export class App {
     cards.forEach((c, i) => {
       if (c === el) return;
       const base = el ? 'translateY(0px)' : c.dataset.fan || ''; // raised hand: the fan's curve is flattened
-      c.style.transform = idx < 0 || !el ? base : `${base} translateX(${(i < idx ? -1 : 1) * c.offsetWidth * 0.12 * (1 / Math.max(1, Math.abs(i - idx) * 0.6))}px)`;
+      c.style.transform = idx < 0 || !el ? base : `${base} translateX(${(i < idx ? -1 : 1) * c.offsetWidth * 0.2 * (1 / Math.max(1, Math.abs(i - idx) * 0.6))}px)`;
       c.dataset.aside = idx < 0 ? '' : i < idx ? 'left' : 'right';
     });
   }

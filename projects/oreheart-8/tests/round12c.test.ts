@@ -31,7 +31,7 @@ describe('round 12c abilities', () => {
   });
   it('Backstabbing Thief steals a crystal per kill', () => {
     const s = strike(mk({ board: [P('goblin-sneak', 4, 8), O('goblin-grunt', 4, 9, { damage: 2 })] }), [4, 8], [4, 9]);
-    expect(s.players.player.bank).toBe(1);
+    expect(s.players.player.crystals).toBe(1);
   });
   it('Grudge Hurler roots its target; Oathkeeper knocks back; Delver counts the bank', () => {
     let s = strike(mk({ board: [P('axe-thrower', 4, 5, { shield: 9 }), O('dwarf-pickman', 4, 9)] }), [4, 5], [4, 9]);

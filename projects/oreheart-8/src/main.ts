@@ -1,7 +1,7 @@
 import './style.css';
 import { Game } from './game';
 import { App } from './ui/app';
-import { CARDS, CONFIG, ABILITIES, ABILITY_COST, brewActions, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
+import { CARDS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
 import { audio } from './ui/audio';
 import { getHighlights, getRings } from './ui/fx-settings';
@@ -45,6 +45,7 @@ if (test) {
     flowShardCount: (flow: number) => flowShardCount(flow),
     cardFormat: () => JSON.parse(JSON.stringify(cardFormat)),
     getAbilityStatus: (uid?: string) => {
+      if (!uid) return abilityStatusMap();
       const st = game.state;
       if (!st) return [];
       const legal: any[] = [...(game.legalActions() as any[]), ...brewActions(st, 'player'), ...brewActions(st, 'opponent')];

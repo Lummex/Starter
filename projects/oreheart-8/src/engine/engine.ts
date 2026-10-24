@@ -72,7 +72,7 @@ const baseCost = (s: any, p: Side, card: any) => {
   const d = bonusOf(s, p, 'creatureDiscount');
   if (d && d.faction === card.faction) c = Math.max(1, c - d.amount);
   const disc = s.flags.discount[p];
-  if (disc) c = Math.max(0, c - disc);
+  if (disc) c = Math.max(Math.min(card.cost, 1), c - disc);
   return c;
 };
 /** A basic Miner is free when Flow + Bank can't pay for it and no Miner stands on the battlefield. */
@@ -184,7 +184,7 @@ export function createMatch(opts: any = {}) {
     if (h != null) { pl.health = h; if (h > pl.maxHealth) pl.maxHealth = h; }
   }
   for (const b of setup.board || []) {
-    const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0;
+    const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0; c.lockedUntil = 0;
     for (const k of ['attack', 'lastFight', 'kills', 'drunk', 'poison']) if (b[k] != null) c[k] = b[k];
     if (b.minedMine) { c.minedMine = { row: b.minedMine.row, col: b.minedMine.col }; }
     if (b.summonedThisTurn) c.summonedThisTurn = true;
@@ -263,6 +263,7 @@ function payout(s: any, who: Side) {
 
 /** Per-mine and per-player preview numbers from the current board. State `sites[i].controller/color` are not touched. */
 export function recomputeSites(s: any, _ev: any[]) {
+  for (const c of s.board.creatures) if (has(c, 'delver')) { const nb = s.players[c.owner].bank; c.attack += nb - (c.bankBonus || 0); c.bankBonus = nb; }
   const mc = mineColors(s);
   s.sites.forEach((site: any, i: number) => {
     site.flow = { player: 0, opponent: 0 };
@@ -429,7 +430,7 @@ function defeat(s: any, c: any, ev: any[]) {
   if (i < 0) return;
   s.board.creatures.splice(i, 1);
   if (!c.illusion) s.players[c.owner].discard.push({ uid: c.uid, cardId: c.cardId });
-  const minerDraw = CARDS[c.cardId].role === 'Gatherer';
+  const minerDraw = CARDS[c.cardId].role === 'Gatherer' || /When this dies, draw a card/i.test(CARDS[c.cardId].text || '');
   ev.push({ type: 'defeat', uid: c.uid, cardId: c.cardId, owner: c.owner, row: c.row, col: c.col });
   if (has(c, 'deathKnock')) for (const o of [...s.board.creatures]) if (cheb(o, c) === 1) knockAway(s, c, o, 1, ev);
   if (has(c, 'kaboom1')) {
@@ -454,7 +455,6 @@ export function atkValue(s: any, c: any, target?: any) {
   if (has(c, 'frenzy') && s.board.creatures.some((o: any) => o !== c && o.owner === c.owner && CARDS[o.cardId].faction === 'goblins' && cheb(o, c) === 1)) v += CONFIG.frenzyBonus;
   if (card.faction === 'goblins' && s.board.creatures.some((o: any) => o.owner === c.owner && has(o, 'rally'))) v += CONFIG.rallyBonus;
   v += junkBonus(s, c);
-  if (has(c, 'delver')) v += s.players[c.owner].bank;
   if (has(c, 'brawler') && c.lastFight != null && s.turn - c.lastFight <= 2) v *= 2;
   if (has(c, 'rage') && c.health * 2 < c.maxHealth) v += CONFIG.rageBonus;
   if (s.flags.battleCry === c.owner) v += 1;
@@ -512,7 +512,9 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   const strikes = melee && !has(attacker, 'sneaky') && !has(attacker, 'overwatch');
   const back = strikes ? atkValue(s, def, attacker) : 0;
   hurt(s, def, atkValue(s, attacker, def), ev);
-  if (strikes) { ev.push({ type: 'counter', uid: def.uid }); hurt(s, attacker, back, ev); }
+  // Smack knocks the target 2 away before it can strike back
+  if (melee && def.health > 0 && has(attacker, 'smack') && attacker.health > 0) knockAway(s, attacker, def, 2, ev);
+  if (strikes && cheb(attacker, def) === 1) { ev.push({ type: 'counter', uid: def.uid }); hurt(s, attacker, back, ev); }
   if (has(attacker, 'overload'))
     for (const o of [...s.board.creatures]) if (o.owner === def.owner && o !== def && cheb(o, pos) === 1) hurt(s, o, CONFIG.overloadDamage, ev);
   const sdef = def.health > 0;
@@ -523,9 +525,8 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   if (!sdef && has(attacker, 'thief')) {
     const foe = s.players[def.owner], me = s.players[attacker.owner];
     if (foe.crystals > 0) foe.crystals -= 1; else if (foe.bank > 0) foe.bank -= 1;
-    me.bank += 1; ev.push({ type: 'steal', uid: attacker.uid, from: def.owner });
+    me.crystals += 1; ev.push({ type: 'steal', uid: attacker.uid, from: def.owner });
   }
-  if (sdef && melee && has(attacker, 'smack') && attacker.health > 0) knockAway(s, attacker, def, 2, ev);
   if (sdef && has(attacker, 'hobble')) def.rootUntil = s.turn + 2;
   if (melee && attacker.health > 0 && has(attacker, 'enforcer'))
     for (const o of [...s.board.creatures]) if (o.owner !== attacker.owner && cheb(o, attacker) === 1) knockAway(s, attacker, o, rint(s, 1, 2), ev);
@@ -591,7 +592,7 @@ function runAbility(s: any, l: any, who: Side, ev: any[]) {
   switch (l.ability) {
     case 'slide':
       to(l.target.row, l.target.col); c.hasAttacked = true;
-      blastAround(s, c, CONFIG.kaboomDamage ?? 1, ev);
+      if (!s.winner && cheb(c, stronghold(other(who))) <= 1) damageCommander(s, other(who), 1, ev);
       c.health = 0; defeat(s, c, ev);
       break;
     case 'bowl': {
@@ -873,12 +874,12 @@ export function brewActions(s: any, who: Side, pend?: any): any[] {
   }
   return out;
 }
-function runBrew(s: any, l: any, ev: any[]) {
+function runBrew(s: any, l: any, ev: any[], inResponse = false) {
   const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
   const t = creatureAt(s, l.target.row, l.target.col);
   c.brewTurn = s.turn;
   ev.push({ type: 'abilityUsed', uid: c.uid, ability: 'brew', row: c.row, col: c.col });
-  healCreature(s, t, CONFIG.brewHeal ?? 3, ev);
+  if (!inResponse) healCreature(s, t, CONFIG.brewHeal ?? 3, ev);
   t.brewSave = true;
   t.drunk = CONFIG.drunkRounds ?? 2;
   ev.push({ type: 'drunk', uid: t.uid, row: t.row, col: t.col, rounds: t.drunk });
@@ -969,7 +970,8 @@ export function legalActions(s: any): any[] {
       for (const sp of summonSpaces(s, who, card)) out.push({ type: 'summon', uid: h.uid, row: sp.row, col: sp.col });
     } else if (card.type === 'spell' && card.spellKind !== 'counter' && ['deploy', 'action'].includes(ph)) {
       if (funds(pl) < spellCost(s, who, card)) continue;
-      for (const o of spellTargets(s, who, card)) out.push({ type: 'cast', uid: h.uid, ...o });
+      const tg = spellTargets(s, who, card);
+      for (const o of tg.length || card.effect !== 'rations' ? tg : [{}]) out.push({ type: 'cast', uid: h.uid, ...o });
     }
     seenCards.add(h.uid);
   }
@@ -983,7 +985,7 @@ export function legalActions(s: any): any[] {
     else out.push({ type: 'gathererSwap' });
   }
   if (['deploy', 'action'].includes(ph)) {
-    if (ph === 'action') out.push(...abilityActions(s, who));
+    out.push(...abilityActions(s, who).filter((a: any) => ph === 'action' || a.ability === 'ward'));
     out.push(...brewActions(s, who));
     for (const c of s.board.creatures) if (c.owner === who && has(c, 'blink') && !c.blinkUsed && funds(pl) >= 1)
       for (const o of s.board.creatures) if (o !== c && o.owner === who) out.push({ type: 'ability', creatureUid: c.uid, ability: 'blink', target: { row: o.row, col: o.col } });
@@ -1032,6 +1034,27 @@ export function previewAttack(state: any, attackerUid: string, target: any) {
 // ---------------------------------------------------------------- apply
 const eq = (a: any, b: any) => JSON.stringify(a) === JSON.stringify(b);
 const OPTIONAL = new Set(['target', 'to']);
+/** Owner-facing ability names (run, strike, pickUp, rocketRide, gallop) and click targets map onto the engine's internal ones. */
+function aliasAbility(s: any, a: any) {
+  if (!a || a.type !== 'ability' || typeof a.ability !== 'string') return a;
+  const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
+  const out: any = { ...a };
+  const t = a.target;
+  const dir = () => (c && t && typeof t.row === 'number' ? { dr: sgn(t.row - c.row), dc: sgn(t.col - c.col) } : null);
+  switch (a.ability) {
+    case 'run': case 'slide': { out.ability = 'slide'; const d = dir(); if (d && (d.dr || d.dc)) { out.dr = d.dr; out.dc = d.dc; delete out.target; } break; }
+    case 'strike': case 'bowl': { out.ability = 'bowl'; const d = dir(); if (d && (d.dr || d.dc)) { out.dr = d.dr; out.dc = d.dc; delete out.target; } break; }
+    case 'plow': { const d = dir(); if (d && c && !a.dr && !a.dc && (!d.dr || !d.dc) && (d.dr || d.dc)) { out.dr = d.dr; out.dc = d.dc; out.dist = cheb(c, t); delete out.target; } else if (d && !a.dr && !a.dc) out.dist = -1; break; }
+    case 'pickUp': case 'shaman': if (a.ability === 'pickUp' || (a.to && !a.from)) { out.ability = 'shaman'; out.from = t; out.target = a.to; delete out.to; } break;
+    case 'rocketRide': case 'rocket': out.ability = 'rocket'; break;
+    case 'gallop': case 'ramMove': out.ability = 'ramMove'; break;
+  }
+  return out;
+}
+/** Status of every card's ability for the inspector (all are built). */
+export function abilityStatusMap(): Record<string, string> {
+  return Object.fromEntries(Object.values(CARDS).map((c: any) => [c.id, 'done']));
+}
 const normalize = (a: any) => a;
 function matchLegal(s: any, a: any): any | null {
   if (a.type === 'mulligan') {
@@ -1074,7 +1097,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
   if (state.phase === 'over') return fail('The match is over');
   const s = clone(state);
   const ev: any[] = [];
-  const act = normalize(action);
+  const act = normalize(aliasAbility(s, action));
   if (act.type === 'surrender') {
     const who: Side = act.player === 'player' || act.player === 'opponent' ? act.player : s.priority || s.activePlayer;
     s.winner = other(who);
@@ -1086,7 +1109,9 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     const bw: Side = act.player === 'player' || act.player === 'opponent' ? act.player : s.priority || s.activePlayer;
     const m = brewActions(s, bw, s.pendingResponse && s.priority === bw ? s.pendingResponse : undefined).find((x: any) => x.creatureUid === act.creatureUid && act.target && x.target.row === act.target.row && x.target.col === act.target.col);
     if (!m) return fail('Illegal action: brew');
-    runBrew(s, m, ev);
+    const pend = s.pendingResponse;
+    runBrew(s, m, ev, !!pend);
+    if (pend && s.priority === bw) finishPending(s, pend, ev, false);
     return { ok: true, state: s, events: ev };
   }
   const l = matchLegal(s, act);
@@ -1205,7 +1230,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       if (l.target.row) {
         const tgt = creatureAt(s, l.target.row, l.target.col);
         const resp = other(who);
-        if (respondActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length) {
+        if (respondActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length || brewActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length) {
           s.pendingResponse = { kind: 'attack', actor: who, creatureUid: a.uid, target: l.target, responder: resp };
           s.priority = resp;
           void tgt;
