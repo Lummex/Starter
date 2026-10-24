@@ -27,6 +27,7 @@ export interface Rect { x: number; y: number; w: number; h: number }
 export interface BoardView {
   is3D: boolean;
   setState(state: any, events: any[]): void;
+  playBowl?(event: any): void;
   cellRect(row: number, col: number): Rect;
   resize(): void;
   setCamera(c: { zoom: number; x: number; y: number }): void;
@@ -401,7 +402,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   type Fig = {
     ringColor?: string; ringGreyed?: boolean;
     group: THREE.Group; target: THREE.Vector3; born: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
-    uid: string; cardId: string; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number;
+    uid: string; cardId: string; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
   };
   const figs = new Map<string, Fig>();
   const fx: { obj: THREE.Object3D; t: number; kind: string; vel?: THREE.Vector3 }[] = [];
@@ -512,6 +513,45 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const halo = ring.getObjectByName('ring-halo') as THREE.Mesh | undefined;
     if (halo) { (halo.material as THREE.MeshBasicMaterial).color.set(col); (halo.material as THREE.MeshBasicMaterial).opacity = rs.glow * 0.5 * rs.opacity; halo.visible = rs.glow > 0; }
   }
+  // facing letters -> yaw (models look down +Z at yaw 0; N = toward board row 1 = -Z)
+  const FACE_YAW: Record<string, number> = { N: Math.PI, NE: Math.PI * 3 / 4, E: Math.PI / 2, SE: Math.PI / 4, S: 0, SW: -Math.PI / 4, W: -Math.PI / 2, NW: -Math.PI * 3 / 4 };
+  const facingYaw = (c: any, owner: string) => { const v = FACE_YAW[c.facing as string]; return v !== undefined ? v : owner === 'player' ? Math.PI : 0; };
+  // Bowling ball (Brawler): a big rusty stone ball rolls along the path, spinning and kicking up dust; hit creatures tumble sideways like pins.
+  const bowls: { obj: THREE.Mesh; pts: THREE.Vector3[]; t0: number; dur: number; lastDust: number }[] = [];
+  const bowlDone = new WeakSet<object>();
+  let ballGeo: THREE.BufferGeometry | null = null, ballMat: THREE.Material | null = null;
+  function playBowl(e: any) {
+    if (!e || bowlDone.has(e)) return;
+    bowlDone.add(e);
+    const now = performance.now();
+    const path: { row: number; col: number }[] = e.path || [];
+    if (!path.length) return;
+    if (!ballGeo) {
+      const sg = new THREE.SphereGeometry(0.34, low ? 10 : 16, low ? 8 : 12);
+      ballGeo = sg; ballMat = new THREE.MeshStandardMaterial({ color: 0x6e5f52, roughness: 0.95, metalness: 0.15, emissive: 0x1a0e06, emissiveIntensity: 0.4 });
+    }
+    const obj = new THREE.Mesh(ballGeo, ballMat!);
+    obj.scale.setScalar(1.15);
+    // dark finger holes and a rusty band so the spin reads
+    const holeM = (ballMat as any).userData.hole || ((ballMat as any).userData.hole = new THREE.MeshBasicMaterial({ color: 0x120a06 }));
+    const holeG = (ballMat as any).userData.holeG || ((ballMat as any).userData.holeG = new THREE.SphereGeometry(0.06, 6, 5));
+    for (const [x, y, z] of [[0.1, 0.3, 0.1], [-0.08, 0.31, 0.12], [0.02, 0.26, -0.2], [0.3, -0.05, 0.1]]) { const h = new THREE.Mesh(holeG, holeM); h.position.set(x, y, z); obj.add(h); }
+    const pts = path.map((p) => world(p.row, p.col).setY(0.42));
+    obj.position.copy(pts[0]);
+    scene.add(obj);
+    const per = 90;
+    bowls.push({ obj, pts, t0: now, dur: Math.max(1, pts.length - 1) * per, lastDust: -1 });
+    spawnFx('dust', pts[0], 4); audio.play('melee');
+    for (const h of e.hits || []) {
+      const f = figs.get(h.id ?? h.uid);
+      if (!f) continue;
+      const from = h.from ? world(h.from.row, h.from.col) : f.group.position.clone();
+      let idx = path.findIndex((p) => h.from && p.row === h.from.row && p.col === h.from.col);
+      if (idx < 0) idx = 0;
+      f.bowl = { t0: now + idx * per, from, to: h.to ? world(h.to.row, h.to.col) : f.target.clone() };
+      f.group.position.copy(from);
+    }
+  }
   function setState(st: any, events: any[]) {
     state = st;
     const now = performance.now();
@@ -555,11 +595,12 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         f = { group: m.group, target: tgt.clone(), born, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0, c3d: (m.group as any).userData.c3d || null };
         figs.set(c.uid, f);
         if (born) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }
-        // creatures face the enemy
-        m.group.rotation.y = 0;
+        // creatures keep their stored facing (set below every state update)
+        f.yaw = facingYaw(c, c.owner); m.group.rotation.y = f.yaw;
       }
       if (f.target.distanceTo(tgt) > 0.01) { f.moving = now; if (f.group.position.distanceTo(tgt) < 6) audio.play('step', CARDS[c.cardId].faction); }
       f.target.copy(tgt);
+      f.faceWant = facingYaw(c, c.owner);
       if (f.finished) {
         const card = CARDS[c.cardId];
         const upg = Math.max(0, (c.attack - card.attack)) + Math.max(0, (c.maxHealth - card.health));
@@ -604,8 +645,10 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         const f = figs.get(e.uid)!;
         f.mineT = now;
         const m = world(e.row, e.col);
+        f.faceTo = Math.atan2(m.x - f.target.x, m.z - f.target.z); f.faceUntil = now + 1000;
         setTimeout(() => { spawnFx('spark', m, 4); audio.play('pick'); audio.play('chime'); }, 220);
-      } else if (e.type === 'damage' && e.uid) {
+      } else if (e.type === 'bowl') playBowl(e);
+      else if (e.type === 'damage' && e.uid) {
         const f = figs.get(e.uid);
         if (f && e.amount > 0) { f.hitT = now; }
       } else if (e.type === 'damage' && e.commander) audio.play('stronghold');
@@ -923,12 +966,14 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   let raf = 0;
   let disposed = false;
   const tmpV = new THREE.Vector3();
+  let frameLast = 0;
   function frame() {
     if (disposed) return;
     raf = requestAnimationFrame(frame);
     const now = performance.now();
     if (testMode && now - lastRender < Math.max(300, lastDur * 5)) return; // automated runs use software GL: keep the page responsive
     lastRender = now;
+    const dt0 = Math.min(0.1, (now - (frameLast || now)) / 1000); frameLast = now;
     for (const [uid, f] of figs) {
       const g = f.group;
       if (f.dying) {
@@ -945,7 +990,20 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         if (k >= 1) f.lunge = null;
         else goal.add(f.lunge.clone().multiplyScalar(Math.sin(k * Math.PI)));
       }
-      g.position.lerp(goal, 0.22);
+      if (f.bowl) {
+        const b = f.bowl, k = (now - b.t0) / 650;
+        if (k < 0) goal.copy(b.from);
+        else if (k < 1) { const e2 = k * (2 - k); g.position.lerpVectors(b.from, b.to, e2); goal.copy(g.position); }
+        else { f.bowl = null; g.rotation.z = 0; }
+      }
+      g.position.lerp(goal, f.bowl ? 1 : 0.22);
+      { // hold the stored facing; turn smoothly (~200 ms); miners look at their node while mining
+        const want = f.faceUntil && now < f.faceUntil ? f.faceTo! : (f.faceWant ?? f.yaw ?? 0);
+        if (f.yaw === undefined) f.yaw = want;
+        const d = Math.atan2(Math.sin(want - f.yaw), Math.cos(want - f.yaw));
+        f.yaw = Math.abs(d) < 0.01 ? want : f.yaw + d * (1 - Math.exp(-dt0 * 16));
+        g.rotation.y = f.yaw;
+      }
       const walking = g.position.distanceTo(f.target) > 0.05;
       if (f.born) {
         const k = Math.min(1, (now - f.born) / 450);
@@ -984,13 +1042,22 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         else p.body.rotation.x = 0;
         if (f.poke) {
           const k = (now - f.poke.t) / 1100;
-          if (k >= 1) { f.poke = null; g.rotation.y = 0; g.scale.setScalar(f.baseScale); }
+          if (k >= 1) { f.poke = null; g.rotation.y = f.yaw ?? 0; g.scale.setScalar(f.baseScale); }
           else if (f.poke.name === 'cackle') { p.head.rotation.x = -0.5 + Math.sin(k * 60) * 0.1; p.body.rotation.x = -0.15; g.position.y += Math.abs(Math.sin(k * Math.PI * 6)) * 0.07; }
-          else if (f.poke.name === 'rude dance') { g.rotation.y = Math.sin(k * Math.PI * 8) * 0.7; g.position.y += Math.abs(Math.sin(k * Math.PI * 8)) * 0.1; p.armL.rotation.z = Math.sin(k * 30) * 0.8; }
+          else if (f.poke.name === 'rude dance') { g.rotation.y = (f.yaw ?? 0) + Math.sin(k * Math.PI * 8) * 0.7; g.position.y += Math.abs(Math.sin(k * Math.PI * 8)) * 0.1; p.armL.rotation.z = Math.sin(k * 30) * 0.8; }
           else { g.scale.set(f.baseScale * (1 + Math.sin(k * Math.PI * 4) * 0.06), f.baseScale * (1 - Math.abs(Math.sin(k * Math.PI * 4)) * 0.12), f.baseScale); p.armL.rotation.x = p.armR.rotation.x = -2.2; }
         } else { p.armL.rotation.z = 0; p.head.rotation.x = 0; }
         if (p.aura) (p.aura.material as THREE.MeshBasicMaterial).opacity = 0.2 + Math.sin(t * 2) * 0.06;
       }
+    }
+    for (const f of figs.values()) if (f.bowl) { const k = (now - f.bowl.t0) / 650; if (k > 0 && k < 1) { f.group.rotation.z = Math.sin(k * Math.PI * 0.5) * Math.PI * 0.5 * (k < 0.7 ? 1 : (1 - k) / 0.3); f.group.position.y = Math.sin(k * Math.PI) * 0.35; } }
+    for (let i = bowls.length - 1; i >= 0; i--) {
+      const b = bowls[i], k = (now - b.t0) / b.dur + 0, n = b.pts.length - 1;
+      if (k >= 1 || n < 1) { spawnFx('dust', b.pts[n], 5); scene.remove(b.obj); bowls.splice(i, 1); continue; }
+      const x = k * n, a = Math.floor(x);
+      b.obj.position.lerpVectors(b.pts[a], b.pts[Math.min(n, a + 1)], x - a);
+      b.obj.rotation.x -= dt0 * 14 * (b.pts[Math.min(n, a + 1)].z - b.pts[a].z || 0.001) / 1 * 1; b.obj.rotation.z -= dt0 * 14 * (b.pts[a].x - b.pts[Math.min(n, a + 1)].x);
+      if (a !== b.lastDust) { b.lastDust = a; spawnFx('dust', b.obj.position, 2); }
     }
     for (let i = fx.length - 1; i >= 0; i--) {
       const e = fx[i], k = (now - e.t) / 700;
@@ -1082,7 +1149,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   const api: BoardView = {
-    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);
