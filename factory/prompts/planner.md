@@ -39,6 +39,20 @@ Work in the folder `{{DATA_DIR}}`. Create or update these files:
    - Keep tests deterministic: no real network calls that could flake, no exact timing.
    - Name each test after the acceptance criterion number it checks, e.g. `test('AC3: booking form shows confirmation', ...)`.
 
-3. ONLY if the request is so unclear that any reasonable build would likely be wrong (e.g. the description is a single vague word), instead write `{{DATA_DIR}}/QUESTIONS.md` with at most 3 short, plain-English questions for the owner, and do not write the other files. Prefer making sensible assumptions over asking — the owner wants autonomy.
+3. `{{DATA_DIR}}/WORK.md` — you are also the MANAGER. Split what must change in this round (new feedback plus checks that are failing) into work items grouped by area, so several builders can work at the same time:
+   - `## Rules & cards` — game rules, card data, abilities, AI, saving.
+   - `## 3D & visuals` — 3D board, models, animations, effects.
+   - `## Interface` — menus, deck builder, card faces, buttons, layout, text, CSS.
+   - `## Other` — anything else.
+   For each item: one line saying what to do, the acceptance criterion numbers it affects, and (if you can tell) the likely files. Leave an area out if it has no work. Keep it short — this is a to-do list, not a second spec.
+
+4. **Keep the checks lean.** Before adding new tests, look at `{{DATA_DIR}}/test-results.md` (if it exists) and clean up:
+   - Delete or rewrite tests for things the owner has since changed or removed (later feedback wins). Old tests that contradict newer feedback are the main reason builds keep failing.
+   - Merge near-duplicate tests and drop screenshot-only tests from old rounds that no longer prove anything.
+   - Avoid long fixed waits; wait for a condition instead. Keep each test well under 30 seconds.
+   - Every test must be independent: it opens its own page and sets up its own state, because tests run side by side in parallel.
+   Mention in SPEC.md's Assumptions how many tests you removed or rewrote and why.
+
+5. ONLY if the request is so unclear that any reasonable build would likely be wrong (e.g. the description is a single vague word), instead write `{{DATA_DIR}}/QUESTIONS.md` with at most 3 short, plain-English questions for the owner, and do not write the other files. Prefer making sensible assumptions over asking — the owner wants autonomy.
 
 Do not write any application code. Do not touch anything outside `{{DATA_DIR}}`.
