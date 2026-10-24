@@ -1,0 +1,61 @@
+name: Factory — checks
+run-name: Factory checks ${{ inputs.tag }}
+
+# Started by the factory (Factory — build) to run one full set of checks split across several machines.
+on:
+  workflow_dispatch:
+    inputs:
+      sha: { description: 'Commit to check', required: true }
+      slug: { description: 'Project folder name (projects/<slug>)', required: true }
+      tag: { description: 'Run id used by the factory to find this run', required: true }
+      shards: { description: 'How many machines', required: true, default: '5' }
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    steps:
+      - name: Skip unused machines
+        id: use
+        run: echo "go=${{ matrix.shard <= fromJSON(inputs.shards) }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.use.outputs.go == 'true'
+        with:
+          ref: ${{ inputs.sha }}
+      - uses: actions/setup-node@v4
+        if: steps.use.outputs.go == 'true'
+        with:
+          node-version: 22
+      - name: Install check tools and build the site
+        if: steps.use.outputs.go == 'true'
+        run: |
+          (cd factory && npm install --no-audit --no-fund && npx playwright install --with-deps chromium)
+          cd projects/${{ inputs.slug }}
+          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+          npm run build
+      - name: Run this machine's share of the checks
+        if: steps.use.outputs.go == 'true'
+        env:
+          PW_WORKERS: '3'
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          rm -rf factory/.run-tests && cp -r factory-data/${{ inputs.slug }}/acceptance factory/.run-tests
+          node factory/scripts/serve.mjs projects/${{ inputs.slug }}/dist 4173 > /dev/null 2>&1 &
+          sleep 2
+          cd factory
+          ACCEPTANCE_DIR="$PWD/.run-tests" RESULTS_JSON="$RUNNER_TEMP/out/results.json" FACTORY_PORT=4173 \
+            npx playwright test --config playwright.config.mjs --shard ${{ matrix.shard }}/${{ inputs.shards }} --output "$RUNNER_TEMP/out/artifacts" || true
+          ls -la "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: steps.use.outputs.go == 'true'
+        with:
+          name: results-${{ matrix.shard }}
+          path: ${{ runner.temp }}/out/results.json
+          retention-days: 3
