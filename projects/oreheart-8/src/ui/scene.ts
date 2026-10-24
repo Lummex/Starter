@@ -58,7 +58,7 @@ export interface BoardView {
   dispose(): void;
 }
 
-const SYMBOL: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
+const SYMBOL: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨', beer: '🍺' };
 const hexOf = (id: string | null) => (id && id !== 'white' ? COLORS[id].hex : COLORS.neutral.hex);
 const CMD_H = 2.4, CREATURE_H = 1.1;
 /** Height of the solid meshes in a group (sprites, beams and transparent effects ignored), in world units. */
@@ -270,6 +270,15 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       flowDest[sd] = (flowDest[sd] || new THREE.Vector3()).copy(camera.position).addScaledVector(flowDir, k);
     }
   }
+  /** Shards per stream: the engine's window.oreheart.flowShardCount if present, else 2 at flow 1 up to ~12 at flow 16. */
+  function shardCount(side: string): number {
+    const fl = state?.players?.[side]?.flow || 0;
+    const fn = (window as any).oreheart?.flowShardCount;
+    let c = 0;
+    if (typeof fn === 'function') { try { c = Number(fn(fl)); } catch { c = 0; } }
+    if (!(c > 0)) c = fl <= 0 ? 1 : Math.round(2 + (Math.min(fl, 16) - 1) * (10 / 15));
+    return Math.max(1, Math.min(FN, Math.round(c)));
+  }
   function updateFlow(now: number) {
     const n = flowMode === 'off' ? 0 : flowMode === 'reduced' ? 6 : FN;
     flowPts.visible = n > 0;
@@ -281,16 +290,17 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     updateFlowDest();
     mines.forEach((m, mi) => {
       const owner = flowOwner[mi] || 'neutral';
+      const nm = owner === 'neutral' ? n : Math.min(n, shardCount(owner));
       const a = m.group.position;
       const dest = owner === 'neutral' ? null : flowDest[owner] || cmd[owner].group.position;
       const c = flowCol[owner];
       for (let i = 0; i < FN; i++) {
         const k = mi * FN + i;
         flowDum.rotation.set(0, 0, 0);
-        if (i >= n) { flowDum.position.set(0, -50, 0); flowDum.scale.setScalar(0.001); flowDum.updateMatrix(); flowPts.setMatrixAt(k, flowDum.matrix); continue; }
+        if (i >= nm) { flowDum.position.set(0, -50, 0); flowDum.scale.setScalar(0.001); flowDum.updateMatrix(); flowPts.setMatrixAt(k, flowDum.matrix); continue; }
         let fade = 1;
         if (dest) {
-          const u = (t * 0.32 + i / n) % 1;
+          const u = (t * 0.32 + i / nm) % 1;
           const sx = a.x, sy = 1.5, sz = a.z, ex = dest.x, ey = flowDest[owner] ? dest.y : CMD_H * 0.55, ez = dest.z;
           const cx = (sx + ex) / 2, cy = 3.4, cz = (sz + ez) / 2;
           const w = 1 - u;
@@ -568,6 +578,12 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         });
       }
       applyRing(f, c, acted, st);
+      { // drunk icon above the creature (status field names: drunk / statuses.drunk / status.drunk)
+        const dr = !!(c.drunk || c.statuses?.drunk || c.status?.drunk || (Array.isArray(c.statuses) && c.statuses.some((x: any) => x === 'drunk' || x?.id === 'drunk' || x?.type === 'drunk')));
+        let ic = f.group.getObjectByName('drunk-icon') as THREE.Sprite | undefined;
+        if (dr && !ic) { ic = symbolSprite('beer', 0.5 / (f.baseScale || 1)); ic.name = 'drunk-icon'; ic.position.set(0.3 / (f.baseScale || 1), 1.55 / (f.baseScale || 1), 0); f.group.add(ic); }
+        if (ic) ic.visible = dr;
+      }
       const mv = events.find((e) => e.type === 'move' && e.uid === c.uid);
       if (mv && mv.teleport) f.group.position.copy(tgt);
     }

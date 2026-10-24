@@ -1562,3 +1562,10 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .token .ab-btn:hover,.token .ab-btn:focus-visible{transform:translate(calc(-50% + var(--ox,0%)),-104%) scale(1.15);outline:0}
 .token .ab-btn.off{filter:grayscale(1) brightness(.55);box-shadow:0 1px 3px #000;border-color:#777;animation:none;cursor:not-allowed}
 @keyframes ab-pulse{0%,100%{box-shadow:0 0 8px 2px #ffd700aa,0 2px 4px #000}50%{box-shadow:0 0 16px 5px #ffe680,0 2px 4px #000}}
+/* Round 14: spell and crystal faces have no dark box behind the owner-rendered card */
+.hand-card.spell,.hand-card.crystal,.hand-card.spell.big,.hand-card.crystal.big{background:transparent!important;box-shadow:none}
+.hand-card.spell .tx,.hand-card.spell .nm,.hand-card.spell .pic{background:transparent!important}
+/* fanned hands: cards rotate about their bottom centre */
+.match .hand.o-hand .hand-card{transform-origin:50% 130%}
+/* 844x390 deck builder: top bar stays on one line and never overlaps */
+@media (max-height:420px){.db-stage .db-filterbox .db-filters{flex-wrap:nowrap;gap:3px;overflow:hidden}.db-stage .db-filterbox .combo{font-size:max(10px,1.4cqh)!important;padding:0 4px!important}}

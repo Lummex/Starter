@@ -115,18 +115,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const fC = sel('Cost', 'f-cost', ['Any', '1-2', '3-4', '5-6', '7+']);
   const fR = sel('Rarity', 'f-rarity', ['All', 'Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector']);
   let cmdId = 'grubnak';
-  const fCmd = combo('Deck Commander', 'f-commander', ['Grubnak', 'Sproingle', 'Borgo'], () => { cmdId = CMD_BY_NAME[fCmd.sel.value] || 'grubnak'; renderCards(); renderDeck(); }, true);
-  {
-    // A hidden native <select> twin so assistive tech and scripted pickers can choose the Commander by full name.
-    const full: Record<string, string> = { grubnak: 'Grubnak Rotgut, King of the Junkpile', sproingle: 'Archmagister Sproingle the Unfathomable', borgo: 'Thane Borgo Gravelgrim' };
-    const nat = h('select', { id: 'f-commander-native', class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true' }, ...Object.entries(full).map(([k, v]) => h('option', { value: k }, v))) as HTMLSelectElement;
-    nat.style.cssText = 'position:absolute!important;width:1px!important;height:1px!important;min-width:0!important;min-height:0!important;padding:0!important;border:0!important;opacity:.01;overflow:hidden;appearance:none;pointer-events:none';
-    nat.addEventListener('change', () => { cmdId = nat.value; const short = Object.keys(CMD_BY_NAME).find((k) => CMD_BY_NAME[k] === cmdId) || 'Grubnak'; fCmd.set(short); renderCards(); renderDeck(); });
-    const cb = fCmd.wrap.querySelector('.combo')!;
-    const lab = h('label', { for: 'f-commander-native', style: 'display:contents' });
-    cb.replaceWith(lab); lab.append(cb, nat);
-  }
-  fCmd.wrap.classList.add('sr-cmd');
+  const fCmd = { set: (_: string) => {} }; // the Deck Commander combobox is gone: the three portraits choose it
   let query = '';
   let perRow = Math.max(2, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
   const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'All cards', role: 'group' });
@@ -184,7 +173,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     a.onfinish = () => ghost.remove();
     setTimeout(() => ghost.remove(), 400);
   };
-  const lockedFor = (id: string) => { const c = CARDS[id]; return c.type === 'spell' && c.faction !== 'any' && c.faction !== COMMANDERS[cmdId].faction; };
+  const lockedFor = (id: string) => { const c = CARDS[id]; return c.faction !== 'any' && c.faction !== COMMANDERS[cmdId].faction; };
   const addCard = (id: string, from?: DOMRect | null, noFly = false) => { if (lockedFor(id)) { status.textContent = `Only for ${SING[CARDS[id].faction]} Commanders`; return; } if (count(id) >= copyLimit(id)) return; if (!noFly) fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };
   const removeCard = (id: string) => { const i = deck.indexOf(id); if (i >= 0) deck.splice(i, 1); status.textContent = ''; renderDeck(); };
 
@@ -244,7 +233,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   slider.addEventListener('input', () => setPerRow(+slider.value));
   const pickCmd = (id: string) => { cmdId = id; fCmd.set(CMD_NAMES[id]); renderCards(); renderDeck(); };
   const cmdBtns = ['grubnak', 'sproingle', 'borgo'].map((id) => h('button', { type: 'button', class: 'db-cmdcard', 'data-cmd': id, 'aria-label': COMMANDERS[id].name, 'aria-pressed': 'false', onclick: () => pickCmd(id) }, h('img', { alt: '', draggable: 'false', src: commanderPortrait(id) })) as HTMLElement);
-  const cmdWrap = h('div', { class: 'db-cmdwrap', role: 'group', 'aria-label': 'Deck Commander' }, ...cmdBtns) as HTMLElement;
+  const cmdWrap = h('div', { class: 'db-cmdwrap', role: 'group', 'aria-label': 'Commander' }, ...cmdBtns) as HTMLElement;
   const syncThumb = () => { for (const b of cmdBtns) { const on = b.dataset.cmd === cmdId; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); } };
   const searchInp = h('input', { type: 'search', id: 'card-search', role: 'searchbox', 'aria-label': 'Search cards', placeholder: 'Search: "cheap goblin miners", "ranged under 4"…', autocomplete: 'off' }) as HTMLInputElement;
   searchInp.addEventListener('input', () => { query = searchInp.value.trim(); renderCards(); });
@@ -419,7 +408,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     ownerBox('deck', 'dTitle', title),
         freeBox(40, 1.8, 22, 5, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), 'db-searchbox'),
     freeBox(21, 0.6, 17, 11, cmdWrap, 'db-cmdbox'),
-    ownerBox('deck', 'dFilters', h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap), 'db-filterbox'),
+    ownerBox('deck', 'dFilters', h('div', { class: 'db-filters' }, fF.wrap, fT.wrap, fC.wrap, fR.wrap), 'db-filterbox'),
     ownerBox('deck', 'dSlider', h('div', { class: 'f-field' }, rowLab, slider), 'db-sliderbox'),
     ownerBox('deck', 'dGrid', cardsEl, 'db-gridbox'),
     ownerBox('deck', 'dDecks', pileEl, 'db-decksbox'),

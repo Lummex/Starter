@@ -3,6 +3,7 @@ import { ohCardEl, ohBackEl, commanderCard } from './cardfmt';
 import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
+import ownerLayoutJson0 from '../content/owner-layout.json';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other, ABILITY_COST } from '../engine';
 import { SPELL_VISUALS } from '../content/spell-visuals';
 import tutorialJson from '../content/tutorial.json';
@@ -46,6 +47,7 @@ export function typeOf(c: any): { icon: string; name: string } {
   return { icon: '⚔️', name: 'Fighter' };
 }
 /** Round 13: activated abilities that get a round button above their unit (icon, name, text; the cost comes from the engine). */
+const ownerLayoutHand = (ownerLayoutJson0 as any).hud.find((p: any) => p.role === 'player-hand')?.hand;
 export const ABILITY_UI: Record<string, { icon: string; name: string; text: string; burst: string }> = {
   slide: { icon: '🚀', name: 'Slide', text: 'Runs in a straight line until it hits something, then goes Ka-boom.', burst: 'KA-BOOM!' },
   bowl: { icon: '🎳', name: 'Bowling ball', text: 'Rolls a bowling ball in a straight line; every creature in its path is knocked back 1–2 spaces.', burst: 'STRIKE!' },
@@ -56,6 +58,7 @@ export const ABILITY_UI: Record<string, { icon: string; name: string; text: stri
   rocket: { icon: '🚀', name: 'Rocket Ride', text: 'Flies to any space; 3×3 explosion equal to its Attack.', burst: 'WHOOSH!' },
   ward: { icon: '🛡️', name: 'Ward', text: 'An ally gets Ward for one round.', burst: 'WARD!' },
   sacrifice: { icon: '🩸', name: 'Sacrifice', text: 'Sacrifice an ally to gain 1 Bank crystal.', burst: 'SACRIFICE!' },
+  brew: { icon: '🍺', name: 'Brew', text: 'Once per turn, even on the enemy turn: heal an adjacent wounded dwarf (it survives lethal damage with 1 Health). It becomes Drunk for 2 rounds.', burst: 'BREW!' },
   blink: { icon: '✨', name: 'Blink', text: 'Once, swap places with any of your creatures.', burst: 'BLINK!' },
 };
 export const RARITY_WORD: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Collector' };
@@ -499,7 +502,7 @@ export class App {
     buildRow();
     sel();
     const scroll = (dir: number) => row.scrollBy({ left: dir * 220, behavior: 'smooth' });
-    const startBtn = btn('Start', 'primary fight-btn', () => {
+    const startBtn = btn('Fight!', 'primary fight-btn', () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
           const opp = others[Math.floor(Math.random() * others.length)];
           const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
@@ -1406,8 +1409,10 @@ export class App {
       c.classList.remove('offhand'); c.tabIndex = 0;
       const off = k - (shown - 1) / 2;
       const t = (off * spacing) / (W / 2);
-      const rot = 0;
-      const y = 0.8 + t * t * cw * 0.03;
+      const HD = (ownerLayoutHand as any) || {};
+      const rot = off * (HD.angle ?? 4);
+      const y = 0.8 + t * t * cw * 0.03 * (HD.arc ?? 1.45) + off * off * cw * 0.012;
+      c.dataset.fanAngle = String(Math.round(rot * 100) / 100);
       c.style.left = x0 + k * spacing + 'px';
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
       c.dataset.fan = c.style.transform;
@@ -1454,11 +1459,11 @@ export class App {
     // enemy hand arc
     const n = en.hand.length;
     r.enemyHand.replaceChildren();
-    const shown = Math.min(n, 8);
+    const shown = Math.min(n, 6);
     for (let i = 0; i < shown; i++) {
-      const t = shown > 1 ? i / (shown - 1) - 0.5 : 0;
-      const b = h('div', { class: 'back', 'data-card-back': '', 'aria-hidden': 'true' });
-      b.style.transform = `rotate(${t * 70}deg)`;
+      const ang = (i - (shown - 1) / 2) * 9;
+      const b = h('div', { class: 'back', 'data-card-back': '', 'data-fan-angle': String(ang), 'aria-hidden': 'true' });
+      b.style.transform = `rotate(${ang}deg)`;
       r.enemyHand.append(b);
     }
     // phase
@@ -1922,7 +1927,7 @@ export class App {
 
   /** Round 13: a small round icon above every unit with an activated ability; lit when it is your turn and the ability can be used. */
   renderAbilityButtons(st: any) {
-    const legal: any[] = st.activePlayer === 'player' && st.priority === 'player' && st.phase === 'action' ? this.game.legalActions().filter((a: any) => a.type === 'ability') : [];
+    const legal: any[] = st.priority === 'player' && st.phase !== 'over' && st.phase !== 'mulligan' ? this.game.legalActions().filter((a: any) => a.type === 'ability' && (a.ability === 'brew' || (st.activePlayer === 'player' && st.phase === 'action'))) : [];
     for (const c of st.board.creatures) {
       const el = this.tokens.get(c.uid);
       if (!el) continue;
@@ -1932,7 +1937,7 @@ export class App {
         const ui = ABILITY_UI[k], cost = k === 'blink' ? 1 : ABILITY_COST[k] || 0;
         let b = el.querySelector(`.ab-btn[data-ability="${k}"]`) as El | null;
         if (!b) {
-          b = h('button', { type: 'button', class: 'ab-btn', 'data-ability': k }, h('span', { 'aria-hidden': 'true' }, ui.icon)) as El;
+          b = h('button', { type: 'button', class: 'ab-btn', 'data-ability': k, 'data-creature-uid': c.uid }, h('span', { 'aria-hidden': 'true' }, ui.icon)) as El;
           b.addEventListener('pointerdown', (e) => e.stopPropagation());
           b.addEventListener('click', (e) => { e.stopPropagation(); const cr = this.game.state.board.creatures.find((x: any) => x.uid === c.uid); if (cr) this.useAbility(cr, k); });
           el.append(b);
@@ -1951,7 +1956,7 @@ export class App {
   /** Click an ability button: no target = fire; otherwise light up the squares it can go to and wait for a click. */
   useAbility(cr: any, k: string) {
     const ui = ABILITY_UI[k];
-    if (this.game.state.priority !== 'player' || this.game.state.phase !== 'action') { this.flash('Abilities are used in your Action phase'); return; }
+    if (this.game.state.priority !== 'player' || (this.game.state.phase !== 'action' && k !== 'brew')) { this.flash('Abilities are used in your Action phase'); return; }
     const opts = this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === cr.uid && a.ability === k);
     if (!opts.length) { this.flash(`${ui.name}: not available (needs crystals, or already used this turn)`); return; }
     this.pick = null; this.clearGlow();
