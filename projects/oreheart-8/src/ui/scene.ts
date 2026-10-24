@@ -618,7 +618,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
           if (acted) { const hsl: any = {}; m.color.getHSL(hsl); m.color.setHSL(hsl.h, hsl.s * 0.8, hsl.l * 0.5); }
         });
       }
-      applyRing(f, c, acted, st);
+      applyRing(f, c, acted && (c.owner === st.activePlayer || !!(c.hasMoved || c.hasAttacked || c.hasMined)), st);
       { // drunk icon above the creature (status field names: drunk / statuses.drunk / status.drunk)
         const dr = !!(c.drunk || c.statuses?.drunk || c.status?.drunk || (Array.isArray(c.statuses) && c.statuses.some((x: any) => x === 'drunk' || x?.id === 'drunk' || x?.type === 'drunk')));
         let ic = f.group.getObjectByName('drunk-icon') as THREE.Sprite | undefined;
