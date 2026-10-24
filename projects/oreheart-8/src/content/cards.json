@@ -183,7 +183,7 @@
   "type": "creature",
   "faction": "goblins",
   "rarity": "Ultra Rare",
-  "role": "Gatherer",
+  "role": "Fighter",
   "cost": 6,
   "attack": 1,
   "health": 4,
@@ -194,7 +194,7 @@
   "unique": false,
   "text": "Light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's attack. Then it makes one attack.",
   "shortText": "Ride a rocket to any space: it explodes in a 3x3 area for damage equal to this card's Attack, then makes one attack.",
-  "longText": "Miner creature. Cost 6, Attack 1, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rocket Ride: light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's Attack. Then it makes one attack.",
+  "longText": "Fighter creature. Cost 6, Attack 1, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rocket Ride: light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's Attack. Then it makes one attack.",
   "flavor": "Goblin with the short fuse.",
   "artPos": {
    "s": 0.92,
@@ -507,9 +507,9 @@
    "medic"
   ],
   "unique": false,
-  "text": "Medic. Each turn, heal an adjacent wounded dwarf. Beer is the cure.",
-  "shortText": "Medic. Each turn, heal an adjacent wounded dwarf. Beer is the cure.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Medic. Each turn, heal an adjacent wounded dwarf. Beer is the cure.",
+  "text": "Once per turn, at any time (even on the enemy's turn): heal an adjacent wounded dwarf. If that dwarf would die, it survives with 1 Health instead. It becomes Drunk for 2 rounds. Drunk dwarves can't be healed.",
+  "shortText": "Once per turn, any time: heal an adjacent wounded dwarf; a dying dwarf survives at 1 Health. It becomes Drunk for 2 rounds (can't be healed).",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Once per turn, at any time (even on the enemy's turn): heal an adjacent wounded dwarf. If that dwarf would die, it survives with 1 Health instead. It becomes Drunk for 2 rounds. Drunk dwarves can't be healed.",
   "artPos": {
    "s": 0.95,
    "x": -3.2,
