@@ -123,8 +123,8 @@
   "flavor": "Sneaky and sinister. Hides in the shadows before he strikes.",
   "artPos": {
    "s": 1.18,
-   "x": -10.9,
-   "y": 2.5
+   "x": -12.2,
+   "y": -8.7
   }
  },
  {
@@ -197,9 +197,9 @@
   "longText": "Miner creature. Cost 6, Attack 1, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rocket Ride: light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's Attack. Then it makes one attack.",
   "flavor": "Goblin with the short fuse.",
   "artPos": {
-   "s": 0.95,
-   "x": -3.7,
-   "y": -16.4
+   "s": 0.92,
+   "x": -3.2,
+   "y": -4.9
   }
  },
  {
@@ -585,9 +585,9 @@
   "shortText": "Each Crystal in your bank gives it +1 Attack for good.",
   "longText": "Miner creature. Cost 7, Attack 2, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Each Crystal in your bank gives it +1 Attack for good.",
   "artPos": {
-   "s": 1,
-   "x": -5,
-   "y": 4.4
+   "s": 0.96,
+   "x": -3.2,
+   "y": -1.5
   }
  },
  {
