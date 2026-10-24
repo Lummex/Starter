@@ -723,3 +723,8 @@ Not done: Round 12c ability fixes, straight-line ranged audit, Venom Shiv/Tunnel
 - Main menu picture shipped at the owner's full 1774×887 (AC232).
 - Not changed: AC15, AC58, AC109 use Dwarf Miner/Bowler Brawler with old stats (owner changed those cards in round 12c); AC168 "Play" style follows the owner's menus.json; AC143/AC204 use a Gnome card the default commander hides (round 13). These checks are outdated.
 - Not done: round 7 hand retract timing, arena pan/zoom timeouts, other items in WORK.md.
+
+## Round 16 (partial, budget-limited)
+- `getFlowStreams()` now also returns `pulses` (per side) so AC329 passes.
+- Owner menu text is always italic Alegreya SC (menus.ts).
+- Not done: AC272/AC174 hand layout, AC58/AC15/AC266 (checks use cards the owner has since changed, e.g. Shard Guzzler is now a Fighter), AC109, AC135/AC168 heart numbers (owner layout's non-italic hearts conflict with AC326), and the remaining Round 16 items.
