@@ -126,6 +126,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     const lab = h('label', { for: 'f-commander-native', style: 'display:contents' });
     cb.replaceWith(lab); lab.append(cb, nat);
   }
+  fCmd.wrap.classList.add('sr-cmd');
   let query = '';
   let perRow = Math.max(2, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
   const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'All cards', role: 'group' });
@@ -238,12 +239,13 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     slider.value = String(perRow);
     fitRow();
   }
-  function renderCards() { cardsEl.replaceChildren(...ALL.filter((c) => !c.disabled && matches(c)).map(tile)); fitRow(); }
+  function renderCards() { cardsEl.replaceChildren(...ALL.filter((c) => !c.disabled && !lockedFor(c.id) && matches(c)).map(tile)); fitRow(); }
   const slider = h('input', { type: 'range', id: 'cards-per-row', min: '2', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
   slider.addEventListener('input', () => setPerRow(+slider.value));
-  const cmdThumb = h('button', { type: 'button', class: 'db-cmdcard', 'aria-label': 'Commander card', onclick: () => app.closeUp('cmd:' + cmdId, true) }, h('img', { alt: '', draggable: 'false' })) as HTMLElement;
-  const cmdWrap = h('div', { class: 'db-cmdwrap', role: 'group', 'aria-label': 'Commander card' }, cmdThumb) as HTMLElement;
-  const syncThumb = () => { const im = cmdThumb.querySelector('img') as HTMLImageElement; im.src = commanderPortrait(cmdId); cmdThumb.setAttribute('aria-label', COMMANDERS[cmdId].name); };
+  const pickCmd = (id: string) => { cmdId = id; fCmd.set(CMD_NAMES[id]); renderCards(); renderDeck(); };
+  const cmdBtns = ['grubnak', 'sproingle', 'borgo'].map((id) => h('button', { type: 'button', class: 'db-cmdcard', 'data-cmd': id, 'aria-label': COMMANDERS[id].name, 'aria-pressed': 'false', onclick: () => pickCmd(id) }, h('img', { alt: '', draggable: 'false', src: commanderPortrait(id) })) as HTMLElement);
+  const cmdWrap = h('div', { class: 'db-cmdwrap', role: 'group', 'aria-label': 'Choose Commander' }, ...cmdBtns) as HTMLElement;
+  const syncThumb = () => { for (const b of cmdBtns) { const on = b.dataset.cmd === cmdId; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); } };
   const searchInp = h('input', { type: 'search', id: 'card-search', role: 'searchbox', 'aria-label': 'Search cards', placeholder: 'Search: "cheap goblin miners", "ranged under 4"…', autocomplete: 'off' }) as HTMLInputElement;
   searchInp.addEventListener('input', () => { query = searchInp.value.trim(); renderCards(); });
   const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -411,14 +413,12 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
 
   pileEl.append(h('div', { class: 'db-carwrap', 'aria-label': 'My decks', role: 'group' }, btn('◀', 'small scroll', () => setCur(cur - 1), { 'aria-label': 'Previous deck' }), carEl, btn('▶', 'small scroll', () => setCur(cur + 1), { 'aria-label': 'Next deck' })), nameEl, sizeEl);
   const rowLab = h('label', { for: 'cards-per-row' }, 'Cards per row');
-  const logo = h('img', { class: 'db-logo', src: '/art/logo.webp', alt: 'Oreheart', draggable: 'false' });
-  const title = h('h1', { class: 'section cinzel db-title' }, 'Deck Builder');
+    const title = h('h1', { class: 'section cinzel db-title' }, 'Deck Builder');
   const actions = h('div', { class: 'row db-actions' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), btn('Rename', '', rename), newBtn, playBtn);
   const stage = h('div', { class: 'mb-stage db-stage', 'aria-label': 'Deck panel' },
     ownerBox('deck', 'dTitle', title),
-    freeBox(33, 0.4, 8, 5, logo, 'db-logobox'),
-    freeBox(42, 0.4, 19, 5, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), 'db-searchbox'),
-    freeBox(62.2, 0.5, 4.6, 11.2, cmdWrap, 'db-cmdbox'),
+        freeBox(40, 1.8, 22, 5, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), 'db-searchbox'),
+    freeBox(21, 0.6, 17, 11, cmdWrap, 'db-cmdbox'),
     ownerBox('deck', 'dFilters', h('div', { class: 'db-filters' }, fCmd.wrap, fF.wrap, fT.wrap, fC.wrap, fR.wrap), 'db-filterbox'),
     ownerBox('deck', 'dSlider', h('div', { class: 'f-field' }, rowLab, slider), 'db-sliderbox'),
     ownerBox('deck', 'dGrid', cardsEl, 'db-gridbox'),

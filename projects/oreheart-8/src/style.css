@@ -824,7 +824,6 @@ input,textarea,button,select{font-family:"Alegreya SC",serif}
 .hand-card.spell .rw .rc{height:calc(var(--cw)*.07)!important}
 .hand-card.spell .rw .rwt{font-size:calc(var(--cw)*.032)!important}
 .hand-card.spell .atk,.hand-card.spell .hp,.hand-card.spell .mv{display:none}
-.hand-card.spell::before{content:"";position:absolute;left:13.5%;top:62%;width:73%;height:21%;z-index:4;background:linear-gradient(180deg,transparent,rgba(8,6,12,.82) 55%,rgba(8,6,12,.9));pointer-events:none}
 .db-tile.locked{opacity:.4;filter:grayscale(.8);cursor:not-allowed}
 /* mulligan at double size: one straight row, gaps shrink first, then the cards scale to fit */
 .mull-hand{gap:clamp(2px,.6vw,8px);--cw:min(calc(2*min(15vw,22vh,120px)),calc((100vw - 24px - (var(--n,5) - 1)*6px) / var(--n,5)),calc((100vh - 200px) / 1.5))}
@@ -1544,3 +1543,12 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 
 .ability-menu{position:fixed;left:50%;bottom:12%;transform:translateX(-50%);z-index:9000;display:flex;flex-direction:column;gap:6px;align-items:center;font-family:'Alegreya SC',serif;font-style:italic;font-size:20px;color:#FFD700;text-shadow:0 0 6px #000,0 2px 4px #000}
 .ability-menu button{background:none;border:0;color:inherit;font:inherit;cursor:pointer;text-shadow:inherit}.ability-menu button:hover{text-shadow:0 0 10px #ffd700}
+/* Round 13: commander portraits next to the title, no logo, tidy top bar */
+.db-stage .db-cmdbox .db-cmdwrap{display:flex;gap:6%;align-items:stretch;justify-content:flex-start}
+.db-stage .db-cmdbox .db-cmdcard{flex:1 1 0;min-width:0;width:auto;background:none;border:0;padding:0;cursor:pointer;filter:brightness(.6) saturate(.7);transition:filter .15s,transform .15s}
+.db-stage .db-cmdbox .db-cmdcard:hover{filter:brightness(.85)}
+.db-stage .db-cmdbox .db-cmdcard.on{filter:none;transform:translateY(-2%);box-shadow:0 0 14px 4px #ffd700cc;border-radius:6%}
+.db-stage .db-cmdbox .db-cmdcard img{width:100%;height:100%;object-fit:contain}
+.db-stage .sr-cmd{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden;opacity:0;pointer-events:none}
+.db-stage .db-sliderbox .f-field{flex-direction:row;align-items:center;gap:.6em}
+.db-stage .db-sliderbox input[type=range]{flex:1;min-width:0}

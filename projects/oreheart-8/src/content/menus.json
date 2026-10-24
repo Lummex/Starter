@@ -448,7 +448,7 @@
      "name": "Title",
      "x": 2,
      "y": 1.5,
-     "w": 30,
+     "w": 18,
      "h": 7,
      "text": {
       "content": "Deck Builder",
@@ -763,10 +763,10 @@
      "id": "dSlider",
      "kind": "zone",
      "name": "Game area: cards-per-row slider",
-     "x": 41.59,
-     "y": 5.5,
-     "w": 20,
-     "h": 7,
+     "x": 40,
+     "y": 7.4,
+     "w": 22,
+     "h": 4.6,
      "zone": {
       "label": "Cards per row slider",
       "show": "rowslider",
