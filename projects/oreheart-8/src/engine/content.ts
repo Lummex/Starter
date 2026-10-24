@@ -5,13 +5,18 @@ import colorsJson from '../content/crystal-colors.json';
 import abilitiesJson from '../content/abilities.json';
 import decksJson from '../content/starter-decks.json';
 import configJson from '../content/game-config.json';
+import flavorJson from '../content/card-flavor.json';
 
-export const CARDS: Record<string, any> = Object.fromEntries((cardsJson as any[]).map((c) => [c.id, c]));
+const FLAV: Record<string, string[]> = flavorJson as any;
+export const CARDS: Record<string, any> = Object.fromEntries((cardsJson as any[]).map((c) => [c.id, { ...c, tagline: FLAV[c.id]?.[0] || c.name, flavor: FLAV[c.id]?.[1] || 'Nobody wrote this one down.' }]));
 export const COMMANDERS: Record<string, any> = Object.fromEntries((commandersJson as any[]).map((c) => [c.id, c]));
 export const FACTIONS: Record<string, any> = Object.fromEntries((factionsJson as any[]).map((c) => [c.id, c]));
 export const COLORS: Record<string, any> = Object.fromEntries((colorsJson as any[]).map((c) => [c.id, c]));
 export const ABILITIES: Record<string, any> = abilitiesJson as any;
-export const STARTER_DECKS: Record<string, string[]> = decksJson as any;
+export const STARTER_DECK_LIST: { id: string; name: string; faction: string; style: string; cards: string[] }[] = Object.entries(decksJson as any).map(([id, d]: any) => ({ id, ...d }));
+export const STARTER_DECKS: Record<string, string[]> = Object.fromEntries(STARTER_DECK_LIST.map((d) => [d.id, d.cards]));
+/** The default (Warband) deck id for a faction id such as "goblins". */
+export const warbandOf = (faction: string) => STARTER_DECK_LIST.find((d) => d.faction === faction && d.style === 'warband')!.id;
 export const CONFIG: any = configJson;
 export const COLOR_ORDER = ['green', 'blue', 'purple'];
 

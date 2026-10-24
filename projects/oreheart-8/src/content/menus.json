@@ -1,0 +1,1048 @@
+{
+ "name": "menu 1st draft",
+ "sentAt": "2026-10-21T01:44:22.517Z",
+ "game": "Oreheart",
+ "kind": "owner-menu-layout",
+ "editor": "Oreheart Menu Builder (Claude page)",
+ "units": "Piece x,y,w,h are % of the 16:9 screen; sounds: piece.sounds[] = {src (built-in name made with Web Audio in the Menu Builder, or snd:<id> = owner sound file in images), when (start/impact/end of the piece animation), at (extra ms), vol, pitch}; text size is % of screen height; animation times in milliseconds. Built-in pictures: logo = public/art/logo-wide.webp, menubg = the owner main menu picture (references/main-menu-background.png), cardface = goblin card frame. Game areas (kind zone) mark where the game draws its own content.",
+ "version": 1,
+ "first": "intro",
+ "notes": "",
+ "screens": [
+  {
+   "id": "intro",
+   "name": "Intro",
+   "kind": "intro",
+   "bg": {
+    "src": "img:fog3sr",
+    "color": "#000000",
+    "dim": 0,
+    "vignette": 0.6
+   },
+   "music": "tense-cycle",
+   "transition": {
+    "type": "fade",
+    "ms": 800
+   },
+   "intro": {
+    "length": 7000,
+    "next": "main",
+    "skip": true
+   },
+   "pieces": [
+    {
+     "id": "introLogo",
+     "kind": "pic",
+     "name": "Oreheart logo",
+     "x": 14.62,
+     "y": 13.82,
+     "w": 73.05,
+     "h": 58.44,
+     "pic": {
+      "src": "img:025dre",
+      "mode": "picture",
+      "fit": "contain"
+     },
+     "anim": {
+      "in": "crash",
+      "delay": 2450,
+      "dur": 650,
+      "ease": "springy",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 2,
+      "loopAmt": 0.91,
+      "loopColor": "#FFD700",
+      "crash": {
+       "dirt": 2.4,
+       "color": "#e18d48",
+       "shake": 3
+      }
+     },
+     "sounds": [
+      {
+       "src": "snd:qoqhrj",
+       "when": "start",
+       "at": 0,
+       "vol": 2,
+       "pitch": 1
+      }
+     ]
+    },
+    {
+     "id": "introTag",
+     "kind": "text",
+     "name": "Tagline",
+     "x": 21.19,
+     "y": 64.07,
+     "w": 60,
+     "h": 7,
+     "text": {
+      "content": "Deadly serious. Completely ridiculous.",
+      "size": 3.6,
+      "color": "#ffffff",
+      "font": "display",
+      "bold": true,
+      "italic": true,
+      "align": "center",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#FFD700"
+     },
+     "anim": {
+      "in": "fade",
+      "delay": 2600,
+      "dur": 1200,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     }
+    },
+    {
+     "id": "introClick",
+     "kind": "text",
+     "name": "Click to continue",
+     "x": 84.7,
+     "y": 87.84,
+     "w": 13.28,
+     "h": 8.61,
+     "text": {
+      "content": "Click to continue",
+      "size": 4.25,
+      "color": "#ffffff",
+      "font": "display",
+      "bold": false,
+      "italic": true,
+      "align": "center",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#000000"
+     },
+     "anim": {
+      "in": "fade",
+      "delay": 4200,
+      "dur": 800,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "blink",
+      "loopSpeed": 0.8,
+      "loopAmt": 0.6,
+      "loopColor": "#FFD700"
+     },
+     "sounds": []
+    },
+    {
+     "kind": "pic",
+     "name": "I AM A GAME DEVELOPER in Dirt",
+     "x": 23.21,
+     "y": 26.43,
+     "w": 55.95,
+     "h": 33.15,
+     "pic": {
+      "src": "img:rc7lcj",
+      "mode": "picture",
+      "fit": "contain"
+     },
+     "id": "pic12282",
+     "z": -1,
+     "anim": {
+      "in": "fade",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     },
+     "sounds": [],
+     "opacity": 0.59
+    }
+   ],
+   "sounds": [
+    {
+     "src": "thunder",
+     "when": "open",
+     "at": 470,
+     "vol": 1,
+     "pitch": 1
+    }
+   ]
+  },
+  {
+   "id": "main",
+   "name": "Main menu",
+   "kind": "main",
+   "bg": {
+    "src": "menubg",
+    "color": "#000000",
+    "dim": 0,
+    "vignette": 1
+   },
+   "music": "tense-cycle",
+   "transition": {
+    "type": "fade",
+    "ms": 500
+   },
+   "pieces": [
+    {
+     "id": "mainLogo",
+     "kind": "pic",
+     "name": "Oreheart logo",
+     "x": 1.23,
+     "y": -1.12,
+     "w": 41.31,
+     "h": 29.16,
+     "pic": {
+      "src": "img:zlqfpp",
+      "mode": "picture",
+      "fit": "contain"
+     },
+     "anim": {
+      "in": "drop",
+      "delay": 0,
+      "dur": 900,
+      "ease": "springy",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     },
+     "sounds": []
+    },
+    {
+     "id": "bPlay",
+     "kind": "button",
+     "name": "Button: Play",
+     "x": 40.65,
+     "y": 34.96,
+     "w": 20,
+     "h": 6.5,
+     "text": {
+      "content": "Play",
+      "size": 4.4,
+      "color": "#ffffff",
+      "font": "display",
+      "bold": true,
+      "italic": false,
+      "align": "center",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#FFD700"
+     },
+     "button": {
+      "goto": "commander",
+      "hoverColor": "#FFF3B0",
+      "hoverGlow": 1,
+      "hoverGlowColor": "#FFD700"
+     },
+     "anim": {
+      "in": "slide",
+      "delay": 300,
+      "dur": 600,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     },
+     "sounds": []
+    },
+    {
+     "id": "bDeck",
+     "kind": "button",
+     "name": "Button: Deck Builder",
+     "x": 40.65,
+     "y": 43.96,
+     "w": 20,
+     "h": 6.5,
+     "text": {
+      "content": "Deck Builder",
+      "size": 4.4,
+      "color": "#ffffff",
+      "font": "display",
+      "bold": true,
+      "italic": true,
+      "align": "center",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#FFD700"
+     },
+     "button": {
+      "goto": "deck",
+      "hoverColor": "#FFF3B0",
+      "hoverGlow": 1,
+      "hoverGlowColor": "#FFD700"
+     },
+     "anim": {
+      "in": "slide",
+      "delay": 400,
+      "dur": 600,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     }
+    },
+    {
+     "id": "bHow",
+     "kind": "button",
+     "name": "Button: How to Play",
+     "x": 40.65,
+     "y": 52.96,
+     "w": 20,
+     "h": 6.5,
+     "text": {
+      "content": "How to Play",
+      "size": 4.4,
+      "color": "#ffffff",
+      "font": "display",
+      "bold": true,
+      "italic": true,
+      "align": "center",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#FFD700"
+     },
+     "button": {
+      "goto": "",
+      "hoverColor": "#FFF3B0",
+      "hoverGlow": 1,
+      "hoverGlowColor": "#FFD700"
+     },
+     "anim": {
+      "in": "slide",
+      "delay": 500,
+      "dur": 600,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     }
+    },
+    {
+     "id": "bSettings",
+     "kind": "button",
+     "name": "Button: Settings",
+     "x": 40.65,
+     "y": 61.96,
+     "w": 20,
+     "h": 6.5,
+     "text": {
+      "content": "Settings",
+      "size": 4.4,
+      "color": "#ffffff",
+      "font": "display",
+      "bold": true,
+      "italic": true,
+      "align": "center",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#FFD700"
+     },
+     "button": {
+      "goto": "action:settings-sound",
+      "hoverColor": "#FFF3B0",
+      "hoverGlow": 1,
+      "hoverGlowColor": "#FFD700"
+     },
+     "anim": {
+      "in": "slide",
+      "delay": 600,
+      "dur": 600,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     }
+    },
+    {
+     "id": "bQuit",
+     "kind": "button",
+     "name": "Button: Quit",
+     "x": 40.69,
+     "y": 70.96,
+     "w": 20,
+     "h": 6.5,
+     "text": {
+      "content": "Quit",
+      "size": 4.4,
+      "color": "#ffffff",
+      "font": "display",
+      "bold": true,
+      "italic": true,
+      "align": "center",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#FFD700"
+     },
+     "button": {
+      "goto": "action:quit",
+      "hoverColor": "#FFF3B0",
+      "hoverGlow": 1,
+      "hoverGlowColor": "#FFD700"
+     },
+     "anim": {
+      "in": "slide",
+      "delay": 700,
+      "dur": 600,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     }
+    }
+   ],
+   "sounds": []
+  },
+  {
+   "id": "deck",
+   "name": "Deck builder",
+   "kind": "deck",
+   "bg": {
+    "src": "dbbg",
+    "color": "#120d16",
+    "dim": 0.2,
+    "vignette": 0.4
+   },
+   "music": "tense-cycle",
+   "transition": {
+    "type": "fade",
+    "ms": 400
+   },
+   "pieces": [
+    {
+     "id": "dTitle",
+     "kind": "text",
+     "name": "Title",
+     "x": 2,
+     "y": 1.5,
+     "w": 18,
+     "h": 7,
+     "text": {
+      "content": "Deck Builder",
+      "size": 5,
+      "color": "#FFD700",
+      "font": "display",
+      "bold": true,
+      "italic": true,
+      "align": "left",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#FFD700"
+     },
+     "anim": {
+      "in": "fade",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     },
+     "sounds": []
+    },
+    {
+     "id": "dFilters",
+     "kind": "zone",
+     "name": "Game area: filters & search",
+     "x": 3.19,
+     "y": 12.25,
+     "w": 60.64,
+     "h": 6.46,
+     "zone": {
+      "label": "Filters & search",
+      "st": {
+       "font": "display",
+       "size": 2.2,
+       "color": "#D4A94F",
+       "accent": "#D4A94F",
+       "faction": false,
+       "bold": false,
+       "italic": false,
+       "align": "left",
+       "spacing": 0,
+       "shadow": 0.8,
+       "glow": 0,
+       "glowColor": "#FFD700",
+       "halo": 0,
+       "haloColor": "#FFD700",
+       "haloSize": 20,
+       "_for": "filters"
+      },
+      "words": {}
+     },
+     "anim": {
+      "in": "none",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     },
+     "sounds": []
+    },
+    {
+     "id": "dGrid",
+     "kind": "zone",
+     "name": "Game area: card collection",
+     "x": 2,
+     "y": 18,
+     "w": 62,
+     "h": 72,
+     "zone": {
+      "label": "Card collection (grid of cards)"
+     },
+     "anim": {
+      "in": "none",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     }
+    },
+    {
+     "id": "dList",
+     "kind": "zone",
+     "name": "Game area: deck list",
+     "x": 67.04,
+     "y": 24,
+     "w": 31,
+     "h": 48,
+     "zone": {
+      "label": "Deck list (cards in the deck, + and \u2212)",
+      "st": {
+       "font": "display",
+       "size": 2.2,
+       "color": "#ffffff",
+       "accent": "#FFD700",
+       "faction": false,
+       "bold": false,
+       "italic": false,
+       "align": "left",
+       "spacing": 0,
+       "shadow": 0.8,
+       "glow": 0,
+       "glowColor": "#FFD700",
+       "halo": 0,
+       "haloColor": "#FFD700",
+       "haloSize": 20,
+       "_for": "decklist"
+      },
+      "words": {}
+     },
+     "anim": {
+      "in": "none",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     },
+     "sounds": []
+    },
+    {
+     "id": "dCount",
+     "kind": "zone",
+     "name": "Game area: card counts",
+     "x": 67,
+     "y": 73,
+     "w": 31,
+     "h": 7,
+     "zone": {
+      "label": "Cards 50\u2013100 \u00b7 Creatures \u00b7 Spells \u00b7 Crystal cards",
+      "st": {
+       "font": "display",
+       "size": 2.2,
+       "color": "#ffffff",
+       "accent": "#FFD700",
+       "faction": false,
+       "bold": false,
+       "italic": false,
+       "align": "left",
+       "spacing": 0,
+       "shadow": 0.8,
+       "glow": 0,
+       "glowColor": "#FFD700",
+       "halo": 0,
+       "haloColor": "#FFD700",
+       "haloSize": 20,
+       "_for": "counts"
+      }
+     },
+     "anim": {
+      "in": "none",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     }
+    },
+    {
+     "id": "dActions",
+     "kind": "zone",
+     "name": "Game area: deck actions",
+     "x": 67,
+     "y": 81,
+     "w": 31,
+     "h": 8,
+     "zone": {
+      "label": "Autofill \u00b7 Save \u00b7 Rename \u00b7 New deck \u00b7 Play",
+      "st": {
+       "font": "display",
+       "size": 2.2,
+       "color": "#FFD700",
+       "accent": "#FFD700",
+       "faction": false,
+       "bold": true,
+       "italic": true,
+       "align": "left",
+       "spacing": 0,
+       "shadow": 0.8,
+       "glow": 0,
+       "glowColor": "#FFD700",
+       "halo": 0,
+       "haloColor": "#FFD700",
+       "haloSize": 20,
+       "_for": "actions"
+      }
+     },
+     "anim": {
+      "in": "slide",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "right",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     },
+     "sounds": []
+    },
+    {
+     "id": "dBack",
+     "kind": "button",
+     "name": "Button: Back",
+     "x": 87.45,
+     "y": 91.5,
+     "w": 12,
+     "h": 6.5,
+     "text": {
+      "content": "Back",
+      "size": 6.4,
+      "color": "#ffffff",
+      "font": "display",
+      "bold": true,
+      "italic": true,
+      "align": "center",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#FFD700"
+     },
+     "button": {
+      "goto": "main",
+      "hoverColor": "#FFF3B0",
+      "hoverGlow": 1,
+      "hoverGlowColor": "#FFD700"
+     },
+     "anim": {
+      "in": "slide",
+      "delay": 0,
+      "dur": 600,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     },
+     "sounds": []
+    },
+    {
+     "id": "dDecks",
+     "kind": "zone",
+     "name": "Game area: your decks",
+     "x": 67,
+     "y": 3,
+     "w": 31,
+     "h": 20,
+     "zone": {
+      "label": "Your decks (arrows to scroll, + New deck)",
+      "show": "deckpick",
+      "st": {
+       "font": "display",
+       "size": 2,
+       "color": "#FFD700",
+       "accent": "#FFD700",
+       "faction": true,
+       "bold": true,
+       "italic": true,
+       "align": "center",
+       "spacing": 0,
+       "shadow": 0.8,
+       "glow": 0,
+       "glowColor": "#FFD700",
+       "halo": 0,
+       "haloColor": "#FFD700",
+       "haloSize": 20,
+       "_for": "deckpick"
+      }
+     },
+     "anim": {
+      "in": "none",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     },
+     "sounds": []
+    },
+    {
+     "id": "dSlider",
+     "kind": "zone",
+     "name": "Game area: cards-per-row slider",
+     "x": 40,
+     "y": 7.4,
+     "w": 22,
+     "h": 4.6,
+     "zone": {
+      "label": "Cards per row slider",
+      "show": "rowslider",
+      "st": {
+       "font": "display",
+       "size": 2.2,
+       "color": "#D4A94F",
+       "accent": "#FFD700",
+       "faction": false,
+       "bold": true,
+       "italic": true,
+       "align": "left",
+       "spacing": 0,
+       "shadow": 0.8,
+       "glow": 0,
+       "glowColor": "#FFD700",
+       "halo": 0,
+       "haloColor": "#FFD700",
+       "haloSize": 20,
+       "_for": "rowslider"
+      },
+      "words": {}
+     },
+     "anim": {
+      "in": "none",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     },
+     "sounds": []
+    }
+   ],
+   "sounds": []
+  },
+  {
+   "id": "commander",
+   "name": "Choose Your Commander",
+   "kind": "commander",
+   "bg": {
+    "src": "",
+    "color": "#100c14",
+    "dim": 0,
+    "vignette": 0.4
+   },
+   "music": "tense-cycle",
+   "transition": {
+    "type": "fade",
+    "ms": 400
+   },
+   "pieces": [
+    {
+     "id": "cTitle",
+     "kind": "text",
+     "name": "Title",
+     "x": 20,
+     "y": 2,
+     "w": 60,
+     "h": 8,
+     "text": {
+      "content": "Choose Your Commander",
+      "size": 5.2,
+      "color": "#FFD700",
+      "font": "display",
+      "bold": true,
+      "italic": true,
+      "align": "center",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#FFD700"
+     },
+     "anim": {
+      "in": "fade",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     }
+    },
+    {
+     "id": "cCards",
+     "kind": "zone",
+     "name": "Game area: Commander cards",
+     "x": 10,
+     "y": 13,
+     "w": 80,
+     "h": 48,
+     "zone": {
+      "label": "The three Commander cards",
+      "st": {
+       "font": "display",
+       "size": 2.2,
+       "color": "#D4A94F",
+       "accent": "#FFD700",
+       "faction": false,
+       "bold": false,
+       "italic": false,
+       "align": "center",
+       "spacing": 0,
+       "shadow": 0.8,
+       "glow": 0,
+       "glowColor": "#FFD700",
+       "halo": 0,
+       "haloColor": "#FFD700",
+       "haloSize": 20,
+       "_for": "commanders"
+      },
+      "names": {},
+      "abil": {}
+     },
+     "anim": {
+      "in": "none",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     },
+     "sounds": []
+    },
+    {
+     "id": "cDecks",
+     "kind": "zone",
+     "name": "Game area: decks for this Commander",
+     "x": 20,
+     "y": 63,
+     "w": 60,
+     "h": 22,
+     "zone": {
+      "label": "Decks for the chosen Commander",
+      "st": {
+       "font": "display",
+       "size": 2.2,
+       "color": "#FFD700",
+       "accent": "#FFD700",
+       "faction": true,
+       "bold": true,
+       "italic": true,
+       "align": "center",
+       "spacing": 0,
+       "shadow": 0.8,
+       "glow": 0,
+       "glowColor": "#FFD700",
+       "halo": 0,
+       "haloColor": "#FFD700",
+       "haloSize": 20,
+       "_for": "decks"
+      }
+     },
+     "anim": {
+      "in": "none",
+      "delay": 0,
+      "dur": 700,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     }
+    },
+    {
+     "id": "cBack",
+     "kind": "button",
+     "name": "Button: Back",
+     "x": 2,
+     "y": 90,
+     "w": 12,
+     "h": 6.5,
+     "text": {
+      "content": "Back",
+      "size": 3.6,
+      "color": "#FFD700",
+      "font": "display",
+      "bold": true,
+      "italic": true,
+      "align": "center",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#FFD700"
+     },
+     "button": {
+      "goto": "main",
+      "hoverColor": "#FFF3B0",
+      "hoverGlow": 1,
+      "hoverGlowColor": "#FFD700"
+     },
+     "anim": {
+      "in": "slide",
+      "delay": 0,
+      "dur": 600,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     }
+    },
+    {
+     "id": "cStart",
+     "kind": "button",
+     "name": "Button: Start",
+     "x": 80,
+     "y": 90,
+     "w": 18,
+     "h": 6.5,
+     "text": {
+      "content": "Fight!",
+      "size": 4.4,
+      "color": "#FFD700",
+      "font": "display",
+      "bold": true,
+      "italic": true,
+      "align": "center",
+      "valign": "center",
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#FFD700"
+     },
+     "button": {
+      "goto": "action:start-match",
+      "hoverColor": "#FFF3B0",
+      "hoverGlow": 1,
+      "hoverGlowColor": "#FFD700"
+     },
+     "anim": {
+      "in": "slide",
+      "delay": 0,
+      "dur": 600,
+      "ease": "smooth",
+      "from": "bottom",
+      "dist": 8,
+      "loop": "none",
+      "loopSpeed": 1,
+      "loopAmt": 1,
+      "loopColor": "#FFD700"
+     }
+    }
+   ],
+   "sounds": []
+  }
+ ],
+ "images": {
+  "fog3sr": "img-fog3sr.webp",
+  "025dre": "img-025dre.webp",
+  "rc7lcj": "img-rc7lcj.webp",
+  "zlqfpp": "img-zlqfpp.webp",
+  "qoqhrj": "snd-qoqhrj.mp3"
+ },
+ "imageNames": {
+  "025dre": "Oreheart_ Crystalforged Crest",
+  "gsaq6f": "Crystalline Mine Clearing",
+  "fog3sr": "Crystalline Mine Clearing",
+  "zlqfpp": "Oreheart_ Crystalforged Crest",
+  "qoqhrj": "ElevenLabs_audio_elevenlabs-sound-effects-v2_Heavy rock fall_2026-10-21T01_00_34",
+  "eubub0": "I AM A GAME DEVELOPER in Dirt",
+  "rc7lcj": "I AM A GAME DEVELOPER in Dirt"
+ },
+ "imageFilesNote": "images/sounds map: id -> file in this folder (img:<id> pictures, snd:<id> sounds). Built-in pictures: menubg = main-menu-background.png (this folder), logo = public/art/logo-wide.webp, dbbg = public/art/ui/deck-builder-bg.webp, cardback = public/art/ui/oreheart-card-back.webp, cardface = goblin card frame; cmd:/card:/frame: = the game's commander, card and frame art."
+}

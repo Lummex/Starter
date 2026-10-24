@@ -1,5 +1,5 @@
 // Computer opponent. Uses only legalActions() and read-only engine helpers; never mutates state.
-import { legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner } from '../engine';
+import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner } from '../engine';
 
 export type Rand = () => number;
 export function makeRand(seed: number): Rand {
@@ -35,7 +35,7 @@ function posValue(s: any, who: string, card: any, row: number, col: number, uid?
     const e = sh(foe);
     v -= 2 * cheb(here, e);
     if (cheb(here, e) <= 1) v += 40;
-    if (card.abilities?.includes('ranged') && cheb(here, e) <= 2) v += 30;
+    if (card.abilities?.includes('ranged') && cheb(here, e) <= 7) v += 30;
     const adj = SITES.map((x: any, i: number) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
     if (adj.some(({ i }) => s.sites[i].controller !== who)) v += 8;
   }
@@ -81,6 +81,7 @@ function scoreCast(s: any, who: string, a: any): number {
       const kills = t.health <= card.params.amount - (CARDS[t.cardId].abilities?.includes('armored') ? 1 : 0);
       return kills ? 50 + CARDS[t.cardId].cost * 6 : 5;
     }
+    case 'poison': return t && !t.poison ? 8 + CARDS[t.cardId].cost * 3 : 0;
     case 'areaDamage': {
       let v = 0;
       for (const c of s.board.creatures) if (cheb(c, a.target) <= 1) v += (c.owner === who ? -1 : 1) * (CARDS[c.cardId].cost * 3 + (c.health <= 2 ? 10 : 2));
@@ -101,10 +102,25 @@ function scoreCast(s: any, who: string, a: any): number {
   }
 }
 
-export function aiChoose(s: any, difficulty: string, rand: Rand): any {
+/** Material + Commander Health balance from `who`'s point of view (used to score special abilities by simulation). */
+function material(s: any, who: string): number {
+  let v = 0;
+  for (const c of s.board.creatures) v += (c.owner === who ? 1 : -1) * (CARDS[c.cardId].cost * 2 + c.health + c.attack);
+  return v + (s.players[who].health - s.players[other(who as any)].health) * 3;
+}
+function scoreAbility(s: any, who: string, a: any): number {
+  if (a.ability === 'brew') { const d = creatureAt(s, a.target.row, a.target.col); return d && d.maxHealth - d.health >= 2 ? 36 : 0; }
+  if (a.ability === 'blink' || a.ability === 'ward') return 0;
+  const r: any = applyAction(s, a);
+  if (!r.ok) return 0;
+  const d = material(r.state, who) - material(s, who);
+  return d >= 4 ? 30 + d : 0;
+}
+
+export function aiChoose(s: any, difficulty: string, rand: Rand, only?: string[]): any {
   const who = s.priority as string;
-  const legal = legalActions(s).filter((a: any) => a.type !== 'surrender');
-  if (s.phase === 'mulligan') return { type: 'mulligan', uids: difficulty !== 'easy' ? mulliganUids(s, who) : [] };
+  const legal = legalActions(s).filter((a: any) => a.type !== 'surrender' && (!only || only.includes(a.type)));
+  if (s.phase === 'mulligan') return { type: 'mulligan', uids: difficulty !== 'easy' && !s.players[who].mulligans ? mulliganUids(s, who) : [] };
   const pickBest = (scored: [number, any][], min: number) => {
     let best: any = null, bv = min;
     for (const [v, a] of scored) if (v > bv || (v === bv && best && rand() < 0.3)) { best = a; bv = v; }
@@ -114,7 +130,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
 
   if (difficulty === 'easy') {
     if (s.pendingResponse) {
-      const r = legal.filter((a: any) => a.type === 'respond');
+      const r = legal.filter((a: any) => a.type === 'respond' || a.ability === 'brew');
       return r.length && rand() < 0.3 ? r[Math.floor(rand() * r.length)] : { type: 'pass' };
     }
     const acts = legal.filter((a: any) => a.type !== 'done' && a.type !== 'gathererSwap');
@@ -126,18 +142,31 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
     return acts[0];
   }
 
+  if (s.pendingResponse) {
+    const bw = legal.find((a: any) => a.ability === 'brew');
+    if (bw) return bw;
+  }
   if (s.pendingResponse) return pickBest(legal.map((a: any) => [scoreRespond(s, who, a), a]), 0.5) || { type: 'pass' };
 
   const hard = difficulty === 'hard';
   const scored: [number, any][] = [];
+  // special abilities have many target options: simulate a sample of each kind only
+  const seenAb: Record<string, number> = {};
   for (const a of legal) {
+    if (a.type === 'ability') {
+      const k = a.ability + ':' + a.creatureUid;
+      seenAb[k] = (seenAb[k] || 0) + 1;
+      if (seenAb[k] > 8 && rand() < 0.97) continue;
+    }
     if (a.type === 'playCrystal') {
       const card = CARDS[s.players[who].hand.find((h: any) => h.uid === a.uid).cardId];
       scored.push([100, a]);
     } else if (a.type === 'summon') {
       const h = s.players[who].hand.find((x: any) => x.uid === a.uid);
       const card = CARDS[h.cardId];
-      scored.push([(card.role === 'Smith' ? 26 : isMiner(card) ? 40 : 40) + card.cost * 2 + posValue(s, who, card, a.row, a.col) * 0.5 + rand(), a]);
+      const myMiners = s.board.creatures.filter((c: any) => c.owner === who && isMiner(CARDS[c.cardId])).length;
+      const flood = isMiner(card) ? Math.max(0, myMiners - 4) * 9 : 0; // 100-card decks hold 50 Miners: keep fighters coming
+      scored.push([(card.role === 'Smith' ? 26 : 40) - flood + card.cost * 2 + posValue(s, who, card, a.row, a.col) * 0.5 + rand(), a]);
     } else if (a.type === 'gathererSwap') {
       const h = a.discardUid ? s.players[who].hand.find((x: any) => x.uid === a.discardUid) : null;
       const dc = h ? CARDS[h.cardId] : null;
@@ -147,7 +176,8 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const cc = CARDS[c.cardId];
       scored.push([!isMiner(cc) && cc.cost >= 4 ? 28 + cc.cost + rand() : 0, a]);
-    } else if (a.type === 'cast') scored.push([scoreCast(s, who, a), a]);
+    } else if (a.type === 'ability') scored.push([scoreAbility(s, who, a), a]);
+    else if (a.type === 'cast') scored.push([scoreCast(s, who, a), a]);
     else if (a.type === 'mine') {
       const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
       const site = s.sites.find((x: any) => x.row === a.row && x.col === a.col);

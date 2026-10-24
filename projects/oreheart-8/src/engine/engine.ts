@@ -1,5 +1,5 @@
 // Oreheart rules engine. Pure: no DOM, no timers, no Math.random. State is plain JSON data.
-import { CARDS, COMMANDERS, FACTIONS, STARTER_DECKS, CONFIG } from './content';
+import { CARDS, COMMANDERS, FACTIONS, STARTER_DECKS, STARTER_DECK_LIST, warbandOf, CONFIG } from './content';
 import { nextRand, shuffle } from './rng';
 
 export type Side = 'player' | 'opponent';
@@ -23,6 +23,24 @@ const inBounds = (row: number, col: number) => row >= 1 && row <= H && col >= 1 
 export const emptyCell = (s: any, row: number, col: number) => inBounds(row, col) && !isStronghold(row, col) && !isSite(s, row, col) && !creatureAt(s, row, col);
 const nearSite = (s: any, row: number, col: number) => s.sites.some((x: any) => cheb({ row, col }, x) <= 1 && !(x.row === row && x.col === col));
 const adjacentCreatures = (s: any, c: any) => s.board.creatures.filter((o: any) => o !== c && cheb(o, c) === 1);
+const sgn = Math.sign;
+const rint = (s: any, a: number, b: number) => a + Math.floor(nextRand(s) * (b - a + 1));
+/** Pushes `c` up to n spaces along (dr,dc); stops at the edge, a mine, a Stronghold or another unit. */
+const FACE: Record<string, string> = { '-1,0': 'N', '-1,1': 'NE', '0,1': 'E', '1,1': 'SE', '1,0': 'S', '1,-1': 'SW', '0,-1': 'W', '-1,-1': 'NW' };
+/** Turn `c` toward a square (never changes when the square is its own). */
+const faceTo = (c: any, row: number, col: number) => { const k = sgn(row - c.row) + ',' + sgn(col - c.col); if (FACE[k]) c.facing = FACE[k]; };
+function knock(s: any, c: any, dr: number, dc: number, n: number, ev: any[]) {
+  for (let i = 0; i < n; i++) {
+    const row = c.row + dr, col = c.col + dc;
+    if (!emptyCell(s, row, col)) break;
+    ev.push({ type: 'move', uid: c.uid, from: { row: c.row, col: c.col }, to: { row, col }, knock: true });
+    c.row = row; c.col = col;
+  }
+}
+const knockAway = (s: any, from: { row: number; col: number }, c: any, n: number, ev: any[]) => {
+  const dr = sgn(c.row - from.row), dc = sgn(c.col - from.col);
+  if (dr || dc) knock(s, c, dr, dc, n, ev);
+};
 const bonusOf = (s: any, p: Side, type: string) => {
   const a = COMMANDERS[s.players[p].commanderId].ability;
   return a.type === type ? a : null;
@@ -35,7 +53,7 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
   const maxHealth = card.health + (bh ? bh.amount : 0);
   const c = {
     uid: uid || 'u' + s.nextUid++, cardId, owner, row, col, attack: card.attack, health: maxHealth - damage, maxHealth,
-    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0,
+    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: card.abilities?.includes('riotShield') ? s.turn + 6 : 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0, drunk: 0, brewSave: false, brewTurn: 0, facing: owner === 'player' ? 'N' : 'S',
   };
   s.board.creatures.push(c);
   return c;
@@ -54,7 +72,7 @@ const baseCost = (s: any, p: Side, card: any) => {
   const d = bonusOf(s, p, 'creatureDiscount');
   if (d && d.faction === card.faction) c = Math.max(1, c - d.amount);
   const disc = s.flags.discount[p];
-  if (disc) c = Math.max(0, c - disc);
+  if (disc) c = Math.max(Math.min(card.cost, 1), c - disc);
   return c;
 };
 /** A basic Miner is free when Flow + Bank can't pay for it and no Miner stands on the battlefield. */
@@ -83,27 +101,26 @@ const gain = (s: any, p: Side, n: number) => {
 };
 
 // ---------------------------------------------------------------- mines
-/** Legal layout: 3 mines in rows 3-5, mirrored between halves, at least 2 apart (Chebyshev), on the board. */
+/** Legal test-layout: 3 mines in rows 3-5, at least 2 apart (Chebyshev), not adjacent to a Stronghold, on the board. */
 export function legalMines(m: any): boolean {
   if (!Array.isArray(m) || m.length !== CONFIG.mineCount) return false;
   for (const x of m) if (!x || !Number.isInteger(x.row) || !Number.isInteger(x.col) || x.row < 3 || x.row > 5 || x.col < 1 || x.col > W) return false;
-  for (let i = 0; i < m.length; i++) for (let j = i + 1; j < m.length; j++) if (cheb(m[i], m[j]) < 2) return false;
-  for (const x of m) {
-    if (x.row === 4) continue;
-    if (!m.some((y: any) => y.col === x.col && y.row === 8 - x.row)) return false;
-  }
+  for (let i = 0; i < m.length; i++) for (let j = i + 1; j < m.length; j++) if (m[i].row === m[j].row && m[i].col === m[j].col) return false;
+  for (const x of m) for (const p of ['player', 'opponent'] as Side[]) if (cheb(x, stronghold(p)) < 2) return false;
   return true;
 }
+/** Random layouts mirror corner to corner: (r, c) <-> (8 - r, 14 - c). */
 function randomMines(seed: number) {
   const r = { rng: (seed ^ 0x2f6e2b1) | 0 };
+  const pick = () => 1 + Math.floor(nextRand(r) * W);
   for (let tries = 0; tries < 1000; tries++) {
-    const pick = () => 1 + Math.floor(nextRand(r) * W);
-    let m: any[];
-    if (nextRand(r) < 0.6) { const c = pick(); m = [{ row: 3, col: c }, { row: 5, col: c }, { row: 4, col: pick() }]; }
-    else m = [{ row: 4, col: pick() }, { row: 4, col: pick() }, { row: 4, col: pick() }];
+    const row = 3 + Math.floor(nextRand(r) * 3);
+    const c = pick();
+    // two mirrored mines anywhere in rows 3-5 (they may touch each other or the centre mine) plus the centre mine
+    const m = [{ row, col: c }, { row: 8 - row, col: W + 1 - c }, { row: 4, col: 7 }];
     if (legalMines(m)) return m;
   }
-  return [{ row: 3, col: 3 }, { row: 5, col: 3 }, { row: 4, col: 9 }];
+  return [{ row: 3, col: 3 }, { row: 4, col: 7 }, { row: 5, col: 11 }];
 }
 const sortMines = (m: any[]) => m.map((x) => ({ row: x.row, col: x.col })).sort((a, b) => a.row - b.row || a.col - b.col);
 
@@ -114,8 +131,8 @@ export function createMatch(opts: any = {}) {
   const s: any = {
     turn: 0, activePlayer: 'player', priority: 'player', phase: 'mulligan', winner: null,
     players: {}, board: { creatures: [] },
-    sites: [] as any[],
-    pendingResponse: null, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
+    sites: [] as any[], strongholds: { player: { ...stronghold('player') }, opponent: { ...stronghold('opponent') } },
+    pendingResponse: null, factionLock: opts.factionLock !== false, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
     mulliganDone: { player: false, opponent: false }, tutorial: opts.tutorial ? { step: 'summon' } : null,
     flags: { battleCry: null, crystalsPlayed: { player: 0, opponent: 0 }, swapped: false, discount: { player: 0, opponent: 0 } },
   };
@@ -126,16 +143,22 @@ export function createMatch(opts: any = {}) {
   (['player', 'opponent'] as Side[]).forEach((who) => {
     const cmd = who === 'player' ? pcmd : ocmd;
     s.players[who] = {
-      commanderId: cmd.id, faction: cmd.faction, health: cmd.health, maxHealth: cmd.health,
-      crystals: 0, bank: 0, flow: 0, hand: [], deck: [], discard: [], geodes: 0, minedLastTurn: 0,
+      commanderId: cmd.id, mulligans: 0, faction: cmd.faction, health: cmd.health, maxHealth: cmd.health,
+      crystals: 0, bank: 0, flow: 0, hand: [], deck: [], discard: [], geodes: 0, plunder: 0, minedLastTurn: 0,
     };
   });
   for (const who of ['player', 'opponent'] as Side[]) {
     const pl = s.players[who];
     const given = setup && setup[who + 'Deck'];
     if (given) pl.deck = given.map((id: string) => makeCard(s, id));
-    else if (who === 'player' && opts.playerDeck) pl.deck = shuffle(s, opts.playerDeck.map((id: string) => makeCard(s, id)));
-    else pl.deck = shuffle(s, STARTER_DECKS[pl.faction].map((id: string) => makeCard(s, id)));
+    else if (who === 'player' && opts.playerDeck && !opts.playerDeckId) { pl.deckId = null; pl.deck = shuffle(s, opts.playerDeck.map((id: string) => makeCard(s, id))); }
+    else {
+      let id = who === 'player' ? opts.playerDeckId : opts.opponentDeckId;
+      if (!id || !STARTER_DECKS[id]) id = who === 'opponent' && !opts.testMode && !opts.setup ? STARTER_DECK_LIST.filter((d) => d.faction === pl.faction)[Math.floor(nextRand(s) * 3)].id : warbandOf(pl.faction);
+      pl.deckId = id;
+      pl.deck = shuffle(s, STARTER_DECKS[id].map((cid: string) => makeCard(s, cid)));
+    }
+    if (pl.deckId === undefined) pl.deckId = null;
   }
   if (!setup) {
     for (const who of ['player', 'opponent'] as Side[]) {
@@ -161,12 +184,14 @@ export function createMatch(opts: any = {}) {
     if (h != null) { pl.health = h; if (h > pl.maxHealth) pl.maxHealth = h; }
   }
   for (const b of setup.board || []) {
-    const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0;
+    const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0; c.lockedUntil = 0;
+    for (const k of ['attack', 'lastFight', 'kills', 'drunk', 'poison']) if (b[k] != null) c[k] = b[k];
     if (b.minedMine) { c.minedMine = { row: b.minedMine.row, col: b.minedMine.col }; }
     if (b.summonedThisTurn) c.summonedThisTurn = true;
+    if (b.facing && Object.values(FACE).includes(b.facing)) c.facing = b.facing;
   }
   s.mulliganDone = { player: true, opponent: true };
-  s.firstPlayer = setup.firstPlayer || 'player';
+  s.firstPlayer = setup.firstPlayer || opts.firstPlayer || 'player';
   s.turn = 1;
   s.activePlayer = s.firstPlayer;
   s.priority = s.firstPlayer;
@@ -238,6 +263,7 @@ function payout(s: any, who: Side) {
 
 /** Per-mine and per-player preview numbers from the current board. State `sites[i].controller/color` are not touched. */
 export function recomputeSites(s: any, _ev: any[]) {
+  for (const c of s.board.creatures) if (has(c, 'delver')) { const nb = s.players[c.owner].bank; c.attack += nb - (c.bankBonus || 0); c.bankBonus = nb; }
   const mc = mineColors(s);
   s.sites.forEach((site: any, i: number) => {
     site.flow = { player: 0, opponent: 0 };
@@ -258,6 +284,7 @@ export function nextPool(s: any, who: Side): number {
   const pl = s.players[who];
   const { mined, mc } = payout(s, who);
   let n = mined + pl.geodes * CONFIG.geodeIncome;
+  if (pl.plunder > 0 && s.players[other(who)].crystals > n) n += CONFIG.plunderFlow * pl.plunder;
   if (underdog(mc, s, who)) n += CONFIG.underdogBonus;
   return Math.min(CONFIG.poolCap, n);
 }
@@ -276,6 +303,7 @@ function collectIncome(s: any, who: Side, ev: any[]) {
   const pl = s.players[who];
   pl.minedLastTurn = payout(s, who).mined;
   // a side's very first turn keeps whatever the pool already holds (test setups)
+  if (pl.plunder > 0 && !(s.players[other(who)].crystals > payout(s, who).mined + pl.geodes * CONFIG.geodeIncome)) pl.plunder = 0;
   pl.crystals = s.turn <= 2 ? Math.max(pl.crystals, nextPool(s, who)) : nextPool(s, who);
   for (const c of s.board.creatures) if (c.owner === who) { c.minedMine = null; c.hasMined = false; }
   ev.push({ type: 'income', player: who, amount: pl.crystals, crystals: pl.crystals });
@@ -297,9 +325,20 @@ function startTurn(s: any, ev: any[]) {
   for (const c of s.board.creatures) {
     if (c.owner !== who) continue;
     c.maxHealth -= c.ale; c.ale = 0;
-    if (c.health < c.maxHealth) healCreature(s, c, c.maxHealth - c.health, ev);
-    c.health = c.maxHealth;
+    c.brewSave = false;
+    if (!c.poison && !(c.drunk > 0)) {
+      if (c.health < c.maxHealth) healCreature(s, c, c.maxHealth - c.health, ev);
+      c.health = c.maxHealth;
+    }
     c.shield = 0;
+    if (c.drunk > 0) c.drunk -= 1;
+  }
+  // poison: 1 damage at the start of its owner's turn, for the remaining turns
+  for (const c of [...s.board.creatures]) {
+    if (c.owner !== who || !(c.poison > 0)) continue;
+    c.poison -= 1;
+    ev.push({ type: 'poison', uid: c.uid, row: c.row, col: c.col, left: c.poison });
+    dealDamage(s, c, CONFIG.poisonDamage ?? 1, ev, true);
   }
   for (const c of [...s.board.creatures]) {
     if (c.owner !== who) continue;
@@ -329,13 +368,23 @@ function endTurn(s: any, ev: any[]) {
     own.crystals -= saved; own.bank += saved;
     ev.push({ type: 'savings', player: s.activePlayer, amount: saved });
   }
-  for (const c of s.board.creatures) c.bubble = false;
+  for (const c of [...s.board.creatures]) {
+    if (c.owner !== s.activePlayer) continue;
+    if (has(c, 'corpsman')) {
+      let pool = 7;
+      for (const a of adjacentCreatures(s, c).filter((x: any) => x.owner === c.owner && x.health < x.maxHealth).sort((x: any, y: any) => x.health - y.health)) {
+        const n = Math.min(pool, a.maxHealth - a.health); if (n > 0) { healCreature(s, a, n, ev); pool -= n; }
+      }
+    }
+    if (has(c, 'medic')) { const a = adjacentCreatures(s, c).find((x: any) => x.owner === c.owner && x.health < x.maxHealth && CARDS[x.cardId].faction === 'dwarves'); if (a) healCreature(s, a, 3, ev); }
+  }
   ev.push({ type: 'turnEnd', player: s.activePlayer });
   startTurn(s, ev);
 }
 
 // ---------------------------------------------------------------- damage
 function healCreature(s: any, c: any, n: number, ev: any[]) {
+  if (c.poison > 0 || c.drunk > 0) return;
   const before = c.health;
   c.health = Math.min(c.maxHealth, c.health + n);
   ev.push({ type: 'heal', uid: c.uid, row: c.row, col: c.col, amount: c.health - before });
@@ -356,13 +405,16 @@ function damageCommander(s: any, who: Side, n: number, ev: any[]) {
 
 function hurt(s: any, c: any, amount: number, ev: any[], raw = false) {
   let d = amount;
+  if ((has(c, 'riotShield') && s.turn < c.lockedUntil) || s.turn < (c.wardUntil || 0)) d = 0;
   if (!raw) {
     if (has(c, 'armored')) d = Math.max(0, d - 1);
     if (has(c, 'unbreakable')) d = Math.min(d, 3);
     if (c.bubble && d > 0) { c.bubble = false; d = 0; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col }); }
     if (c.shield > 0 && d > 0) { const b = Math.min(c.shield, d); c.shield -= b; d -= b; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col, amount: b }); }
   }
+  if (c.illusion) d = Math.floor(d * 0.65);
   c.health -= d;
+  if (c.brewSave && c.health <= 0 && d > 0) { c.health = 1; c.brewSave = false; ev.push({ type: 'brewSave', uid: c.uid, row: c.row, col: c.col }); }
   ev.push({ type: 'damage', uid: c.uid, row: c.row, col: c.col, amount: d });
   return d;
 }
@@ -377,14 +429,17 @@ function defeat(s: any, c: any, ev: any[]) {
   const i = s.board.creatures.indexOf(c);
   if (i < 0) return;
   s.board.creatures.splice(i, 1);
-  s.players[c.owner].discard.push({ uid: c.uid, cardId: c.cardId });
+  if (!c.illusion) s.players[c.owner].discard.push({ uid: c.uid, cardId: c.cardId });
+  const minerDraw = CARDS[c.cardId].role === 'Gatherer' || /When this dies, draw a card/i.test(CARDS[c.cardId].text || '');
   ev.push({ type: 'defeat', uid: c.uid, cardId: c.cardId, owner: c.owner, row: c.row, col: c.col });
+  if (has(c, 'deathKnock')) for (const o of [...s.board.creatures]) if (cheb(o, c) === 1) knockAway(s, c, o, 1, ev);
   if (has(c, 'kaboom1')) {
     for (const o of [...s.board.creatures]) if (o.owner !== c.owner && cheb(o, c) === 1) dealDamage(s, o, 1, ev);
   }
   if (has(c, 'kaboom')) {
     for (const o of [...s.board.creatures]) if (o.owner !== c.owner && cheb(o, c) === 1) dealDamage(s, o, CONFIG.kaboomDamage, ev);
   }
+  if (minerDraw) drawCard(s, c.owner, ev);
 }
 
 // ---------------------------------------------------------------- combat
@@ -400,23 +455,35 @@ export function atkValue(s: any, c: any, target?: any) {
   if (has(c, 'frenzy') && s.board.creatures.some((o: any) => o !== c && o.owner === c.owner && CARDS[o.cardId].faction === 'goblins' && cheb(o, c) === 1)) v += CONFIG.frenzyBonus;
   if (card.faction === 'goblins' && s.board.creatures.some((o: any) => o.owner === c.owner && has(o, 'rally'))) v += CONFIG.rallyBonus;
   v += junkBonus(s, c);
+  if (has(c, 'brawler') && c.lastFight != null && s.turn - c.lastFight <= 2) v *= 2;
   if (has(c, 'rage') && c.health * 2 < c.maxHealth) v += CONFIG.rageBonus;
   if (s.flags.battleCry === c.owner) v += 1;
   if (target && ADV(card.faction, CARDS[target.cardId].faction)) v += CONFIG.typeAdvantageBonus;
   return Math.max(0, v);
 }
 
+const DIRS8 = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
 const canAct = (s: any, c: any) => (!c.summonedThisTurn || has(c, 'haste')) && s.turn >= c.lockedUntil;
 
 export function attackTargets(s: any, c: any): any[] {
-  if (c.hasAttacked || c.hasMined || !canAct(s, c) || (c.hasMoved && !has(c, 'charge'))) return [];
+  if (c.hasAttacked || c.hasMined || !canAct(s, c) || (c.hasMoved && !has(c, 'charge') && !c.rocketed) || s.turn < (c.wardUntil || 0)) return [];
   const enemy = other(c.owner);
   const sh = stronghold(enemy);
   const out: any[] = [];
+  if (has(c, 'overwatch')) {
+    for (const o of s.board.creatures) if (o.owner === enemy) out.push({ row: o.row, col: o.col });
+    out.push({ commander: enemy });
+    return out;
+  }
   if (has(c, 'ranged')) {
-    // any enemy within Chebyshev distance 2, over creatures; Guard only affects melee
-    for (const o of s.board.creatures) if (o.owner === enemy && cheb(o, c) <= 2) out.push({ row: o.row, col: o.col });
-    if (cheb(c, sh) <= 2) out.push({ commander: enemy });
+    // 8 straight lines, up to CONFIG.rangedRange squares; the shot stops at the first unit (creature or Stronghold)
+    for (const [dr, dc] of DIRS8) for (let k = 1; k <= (CARDS[c.cardId].range ?? CONFIG.rangedRange); k++) {
+      const r = c.row + dr * k, cl = c.col + dc * k;
+      if (r < 1 || r > H || cl < 1 || cl > W) break;
+      if (isStronghold(r, cl)) { if (r === sh.row && cl === sh.col) out.push({ commander: enemy }); break; }
+      const o = creatureAt(s, r, cl);
+      if (o) { if (o.owner === enemy) out.push({ row: o.row, col: o.col }); break; }
+    }
     return out;
   }
   const adj = s.board.creatures.filter((o: any) => o.owner === enemy && cheb(o, c) === 1);
@@ -431,6 +498,7 @@ export function attackTargets(s: any, c: any): any[] {
 
 function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   attacker.hasAttacked = true;
+  if (target.commander) faceTo(attacker, stronghold(target.commander).row, stronghold(target.commander).col); else faceTo(attacker, target.row, target.col);
   if (target.commander) {
     const d = atkValue(s, attacker);
     ev.push({ type: 'attack', uid: attacker.uid, from: { row: attacker.row, col: attacker.col }, target: { commander: target.commander } });
@@ -441,15 +509,155 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   const melee = cheb(attacker, def) === 1 && !has(attacker, 'ranged');
   ev.push({ type: 'attack', uid: attacker.uid, from: { row: attacker.row, col: attacker.col }, target: { row: def.row, col: def.col }, ranged: !melee });
   const pos = { row: def.row, col: def.col };
-  const strikes = melee && !has(attacker, 'sneaky');
+  const strikes = melee && !has(attacker, 'sneaky') && !has(attacker, 'overwatch');
   const back = strikes ? atkValue(s, def, attacker) : 0;
   hurt(s, def, atkValue(s, attacker, def), ev);
-  if (strikes) { ev.push({ type: 'counter', uid: def.uid }); hurt(s, attacker, back, ev); }
+  // Smack knocks the target 2 away before it can strike back
+  if (melee && def.health > 0 && has(attacker, 'smack') && attacker.health > 0) knockAway(s, attacker, def, 2, ev);
+  if (strikes && cheb(attacker, def) === 1) { ev.push({ type: 'counter', uid: def.uid }); hurt(s, attacker, back, ev); }
   if (has(attacker, 'overload'))
     for (const o of [...s.board.creatures]) if (o.owner === def.owner && o !== def && cheb(o, pos) === 1) hurt(s, o, CONFIG.overloadDamage, ev);
+  const sdef = def.health > 0;
+  if (has(attacker, 'brawler')) attacker.lastFight = s.turn;
+  if (has(def, 'brawler')) def.lastFight = s.turn;
+  if (sdef && has(def, 'grit')) def.attack += 1;
+  if (!sdef && has(attacker, 'grit') && ((attacker.kills = (attacker.kills || 0) + 1) % 2 === 0)) attacker.attack += 1;
+  if (!sdef && has(attacker, 'thief')) {
+    const foe = s.players[def.owner], me = s.players[attacker.owner];
+    if (foe.crystals > 0) foe.crystals -= 1; else if (foe.bank > 0) foe.bank -= 1;
+    me.crystals += 1; ev.push({ type: 'steal', uid: attacker.uid, from: def.owner });
+  }
+  if (sdef && has(attacker, 'hobble')) def.rootUntil = s.turn + 2;
+  if (melee && attacker.health > 0 && has(attacker, 'enforcer'))
+    for (const o of [...s.board.creatures]) if (o.owner !== attacker.owner && cheb(o, attacker) === 1) knockAway(s, attacker, o, rint(s, 1, 2), ev);
+  if (melee && attacker.health > 0 && has(attacker, 'splitter'))
+    for (const o of [...s.board.creatures]) if (o !== def && cheb(o, attacker) === 1) { const dir = DIRS8[rint(s, 0, 7)]; knock(s, o, dir[0], dir[1], rint(s, 1, 3), ev); }
+  if (attacker.health > 0 && !has(attacker, 'ranged'))
+    for (const g of [...s.board.creatures]) {
+      if (g.owner !== def.owner || g === def || !has(g, 'assist') || g.health <= 0 || cheb(g, def) <= 1 && cheb(g, attacker) <= 1) continue;
+      const spot = [-1, 0, 1].flatMap((dr) => [-1, 0, 1].map((dc) => ({ row: def.row + dr, col: def.col + dc }))).filter((q) => (q.row !== def.row || q.col !== def.col) && emptyCell(s, q.row, q.col) && cheb(q, attacker) <= 1)[0];
+      if (!spot) continue;
+      ev.push({ type: 'move', uid: g.uid, from: { row: g.row, col: g.col }, to: spot, teleport: true });
+      g.row = spot.row; g.col = spot.col;
+      hurt(s, attacker, atkValue(s, g, attacker), ev);
+      break;
+    }
   if (def.health <= 0 && has(attacker, 'siphon')) s.players[attacker.owner].bank += 1;
   if (attacker.health <= 0 && strikes && has(def, 'siphon')) s.players[def.owner].bank += 1;
   for (const c of [def, attacker, ...s.board.creatures]) if (c.health <= 0 && s.board.creatures.includes(c)) defeat(s, c, ev);
+}
+
+// ---------------------------------------------------------------- active abilities (round 12c)
+export const ABILITY_COST: Record<string, number> = { slide: 1, bowl: 2, shockwave: 1, plow: 2, ramMove: 2, shaman: 2, ward: 2, rocket: 0, sacrifice: 0 };
+const D4 = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+const fresh = (s: any, c: any) => !c.hasAttacked && !c.hasMined && !c.hasMoved && canAct(s, c) && !(c.wardUntil > s.turn);
+/** Last cell a creature reaches walking (dr,dc) over empty cells, and what stopped it. */
+function runLine(s: any, c: any, dr: number, dc: number, max = 99) {
+  let r = c.row, cl = c.col, n = 0;
+  while (n < max && emptyCell(s, r + dr, cl + dc)) { r += dr; cl += dc; n++; }
+  return { row: r, col: cl, steps: n, hit: { row: r + dr, col: cl + dc } };
+}
+export function abilityActions(s: any, who: Side): any[] {
+  const out: any[] = [];
+  const pl = s.players[who];
+  for (const c of s.board.creatures) {
+    if (c.owner !== who) continue;
+    const mk = (ability: string, extra: any) => { if (funds(pl) >= (ABILITY_COST[ability] || 0)) out.push({ type: 'ability', ability, creatureUid: c.uid, ...extra }); };
+    const ok = fresh(s, c);
+    if (has(c, 'slide') && ok) for (const [dr, dc] of DIRS8) { const e = runLine(s, c, dr, dc); const h = e.hit; if (e.steps >= 1 && (creatureAt(s, h.row, h.col) || isStronghold(h.row, h.col))) mk('slide', { target: { row: e.row, col: e.col }, dr, dc }); }
+    if (has(c, 'bowl') && ok) for (const [dr, dc] of D4) { let r = c.row + dr, cl = c.col + dc, hit = false; while (inBounds(r, cl) && !isStronghold(r, cl) && !isSite(s, r, cl)) { if (creatureAt(s, r, cl)) hit = true; r += dr; cl += dc; } if (hit) mk('bowl', { dr, dc }); }
+    if (has(c, 'shockwave') && ok && adjacentCreatures(s, c).some((o: any) => o.owner !== who)) mk('shockwave', {});
+    if (has(c, 'plow') && ok) for (const [dr, dc] of D4) for (let dist = 1; dist <= 7; dist++) { const r = c.row + dr * dist, cl = c.col + dc * dist; if (!inBounds(r, cl) || isStronghold(r, cl) || isSite(s, r, cl)) break; mk('plow', { dr, dc, dist }); }
+    if (has(c, 'ramMove') && ok) for (const [dr, dc] of DIRS8) { const e = runLine(s, c, dr, dc); for (let k = 1; k <= e.steps; k++) mk('ramMove', { target: { row: c.row + dr * k, col: c.col + dc * k } }); }
+    if (has(c, 'shaman') && !c.hasAttacked && canAct(s, c))
+      for (const o of s.board.creatures) if (o !== c && cheb(o, c) <= 5 && !(o.riotShield))
+        for (let r = 1; r <= H; r++) for (let cl = 1; cl <= W; cl++) if (cheb({ row: r, col: cl }, c) <= 5 && emptyCell(s, r, cl)) mk('shaman', { from: { row: o.row, col: o.col }, target: { row: r, col: cl } });
+    if (has(c, 'rocket') && ok) for (let r = 1; r <= H; r++) for (let cl = 1; cl <= W; cl++) if (emptyCell(s, r, cl)) mk('rocket', { target: { row: r, col: cl } });
+    if (has(c, 'ward') && c.wardTurn !== s.turn && canAct(s, c)) for (const o of s.board.creatures) if (o.owner === who && o !== c) mk('ward', { target: { row: o.row, col: o.col } });
+    if (has(c, 'sacrifice') && canAct(s, c)) for (const o of s.board.creatures) if (o.owner === who && o !== c) mk('sacrifice', { target: { row: o.row, col: o.col } });
+  }
+  return out;
+}
+function blastAround(s: any, c: any, dmg: number, ev: any[]) {
+  const foe = other(c.owner);
+  for (const o of [...s.board.creatures]) if (o.owner === foe && cheb(o, c) <= 1) dealDamage(s, o, dmg, ev);
+  if (!s.winner && cheb(c, stronghold(foe)) <= 1) damageCommander(s, foe, dmg, ev);
+}
+function runAbility(s: any, l: any, who: Side, ev: any[]) {
+  const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
+  pay(s.players[who], ABILITY_COST[l.ability] || 0);
+  const to = (row: number, col: number, teleport = false) => { faceTo(c, row, col); ev.push({ type: 'move', uid: c.uid, from: { row: c.row, col: c.col }, to: { row, col }, teleport }); c.row = row; c.col = col; };
+  if (l.dr || l.dc) faceTo(c, c.row + (l.dr || 0), c.col + (l.dc || 0)); else if (l.target && l.ability !== 'slide' && l.ability !== 'ramMove' && l.ability !== 'rocket') faceTo(c, l.target.row, l.target.col);
+  ev.push({ type: 'abilityUsed', uid: c.uid, ability: l.ability, row: c.row, col: c.col });
+  switch (l.ability) {
+    case 'slide':
+      to(l.target.row, l.target.col); c.hasAttacked = true;
+      if (!s.winner && cheb(c, stronghold(other(who))) <= 1) damageCommander(s, other(who), 1, ev);
+      c.health = 0; defeat(s, c, ev);
+      break;
+    case 'bowl': {
+      c.hasAttacked = true;
+      const path: { row: number; col: number }[] = [];
+      const hits: any[] = [];
+      for (let r = c.row + l.dr, cl = c.col + l.dc; inBounds(r, cl) && !isStronghold(r, cl) && !isSite(s, r, cl); r += l.dr, cl += l.dc) path.push({ row: r, col: cl });
+      const line = path.map((p) => creatureAt(s, p.row, p.col)).filter(Boolean);
+      for (const o of line) {
+        const from = { row: o.row, col: o.col };
+        const side = rint(s, 0, 1) ? 1 : -1, n = rint(s, 1, 2);
+        const sr = l.dc * side, sc = l.dr * side;
+        const free = (k: number, a: number, b: number) => emptyCell(s, o.row + a * k, o.col + b * k);
+        let dir: number[] | null = null;
+        if (free(1, sr, sc)) dir = [sr, sc]; else if (free(1, -sr, -sc)) dir = [-sr, -sc];
+        if (dir) { const steps = n === 2 && free(2, dir[0], dir[1]) ? 2 : 1; for (let k = 0; k < steps; k++) { o.row += dir[0]; o.col += dir[1]; } }
+        hits.push({ id: o.uid, uid: o.uid, from, to: { row: o.row, col: o.col } });
+      }
+      ev.push({ type: 'bowl', uid: c.uid, from: { row: c.row, col: c.col }, dr: l.dr, dc: l.dc, path, hits });
+      break;
+    }
+    case 'shockwave':
+      c.hasAttacked = true;
+      for (const o of adjacentCreatures(s, c)) if (o.owner !== who) { knockAway(s, c, o, 1, ev); dealDamage(s, o, 1, ev); }
+      break;
+    case 'plow': {
+      c.hasAttacked = true;
+      let steps = 0;
+      for (let k = 1; k <= l.dist; k++) {
+        const r = c.row + l.dr, cl = c.col + l.dc;
+        const o = creatureAt(s, r, cl);
+        if (o) {
+          const side = rint(s, 0, 1) ? 1 : -1, n = rint(s, 1, 2);
+          knock(s, o, l.dc * side, l.dr * side, n, ev);
+          if (creatureAt(s, r, cl) === o) knock(s, o, -l.dc * side, -l.dr * side, n, ev);
+          if (creatureAt(s, r, cl)) break;
+        }
+        to(r, cl); steps++;
+      }
+      break;
+    }
+    case 'ramMove': to(l.target.row, l.target.col); c.hasMoved = true; break;
+    case 'shaman': {
+      const o = creatureAt(s, l.from.row, l.from.col);
+      c.hasAttacked = true;
+      ev.push({ type: 'move', uid: o.uid, from: { row: o.row, col: o.col }, to: { row: l.target.row, col: l.target.col }, teleport: true });
+      o.row = l.target.row; o.col = l.target.col;
+      break;
+    }
+    case 'rocket':
+      to(l.target.row, l.target.col, true); c.hasMoved = true; c.rocketed = true;
+      blastAround(s, c, atkValue(s, c), ev);
+      break;
+    case 'ward': {
+      const o = creatureAt(s, l.target.row, l.target.col);
+      o.wardUntil = s.turn + 2; c.wardTurn = s.turn;
+      ev.push({ type: 'ward', uid: o.uid, row: o.row, col: o.col });
+      break;
+    }
+    case 'sacrifice': {
+      const o = creatureAt(s, l.target.row, l.target.col);
+      o.health = 0; defeat(s, o, ev); s.players[who].bank += 1; c.hasAttacked = true;
+      break;
+    }
+  }
 }
 
 // ---------------------------------------------------------------- spawning / movement helpers
@@ -461,7 +669,7 @@ export function summonSpaces(s: any, p: Side, card: any): { row: number; col: nu
   const back = CONFIG.backRow[p], front = CONFIG.frontRow[p];
   for (const col of rowCells(back)) add(back, col);
   if (out.length === 0) for (const col of rowCells(front)) add(front, col);
-  if (card.abilities?.includes('tunnel') && sitesControlled(s, other(p)) > sitesControlled(s, p)) for (let r = 1; r <= H; r++) for (let c = 1; c <= W; c++) if (nearSite(s, r, c)) add(r, c);
+  if (card.abilities?.includes('tunnel')) for (let r = 1; r <= H; r++) for (let c = 1; c <= W; c++) if (nearSite(s, r, c)) add(r, c);
   return out;
 }
 
@@ -474,7 +682,7 @@ export function mineTargets(s: any, c: any): { row: number; col: number }[] {
 
 /** Spaces `c` can move to; a space held by one of its own creatures is a swap. */
 export function moveDests(s: any, c: any): { row: number; col: number }[] {
-  if (c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId]))) return [];
+  if (s.turn < (c.rootUntil || 0) || c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId]))) return [];
   const m = maxMove(c);
   const out: any[] = [];
   for (let dr = -m; dr <= m; dr++) for (let dc = -m; dc <= m; dc++) {
@@ -502,18 +710,28 @@ const tunnelCells = (s: any) => {
   return o;
 };
 
+/** Faction spells need a Commander of that faction; shared spells ('any') are open to all; disabled cards never. */
+export function spellUsable(s: any, p: Side, card: any): boolean {
+  if (card.disabled) return false;
+  if (s.factionLock === false) return true;
+  return card.faction === 'any' || !card.faction || card.faction === s.players[p].faction;
+}
+
 /** All target options for casting `card` as `p`. `[{}]` = castable with no target; `[]` = not castable. */
 export function spellTargets(s: any, p: Side, card: any): any[] {
+  if (!spellUsable(s, p, card)) return [];
   const own = s.board.creatures.filter((c: any) => c.owner === p);
   const foe = s.board.creatures.filter((c: any) => c.owner !== p);
   const pos = (c: any) => ({ row: c.row, col: c.col });
   switch (card.effect) {
-    case 'gainCrystals': return card.params.needFewerSites && sitesControlled(s, p) >= sitesControlled(s, other(p)) ? [] : [{}];
+    case 'gainCrystals': case 'plunder': return [{}];
+    case 'rations': return [...(s.players[p].health < s.players[p].maxHealth ? [{ target: { commander: p } }] : []), ...own.filter((c: any) => c.health < c.maxHealth).map((c: any) => ({ target: pos(c) }))];
     case 'tunnelMove': {
       const cells = tunnelCells(s);
       return own.flatMap((c: any) => cells.map((to: any) => ({ target: pos(c), to })));
     }
     case 'damage': return [...foe.map((c: any) => ({ target: pos(c) })), { target: { commander: other(p) } }];
+    case 'poison': return foe.map((c: any) => ({ target: pos(c) }));
     case 'buffAttack': return [{}];
     case 'areaDamage': {
       const o: any[] = [];
@@ -533,6 +751,7 @@ function autoTarget(s: any, p: Side, card: any) {
   const score = (o: any) => {
     const t = o.target && o.target.row ? creatureAt(s, o.target.row, o.target.col) : null;
     if (card.effect === 'damage') return t ? t.attack + CARDS[t.cardId].cost : 0.5;
+    if (card.effect === 'poison') return t ? t.attack + CARDS[t.cardId].cost + t.maxHealth : 0;
     if (card.effect === 'heal') return t ? t.maxHealth - t.health : 0;
     if (card.effect === 'areaDamage') {
       let v = 0;
@@ -550,6 +769,8 @@ function resolveSpell(s: any, p: Side, card: any, target: any, to: any, ev: any[
   const t = target && target.row ? creatureAt(s, target.row, target.col) : null;
   switch (card.effect) {
     case 'gainCrystals': gain(s, p, card.params.amount); break;
+    case 'plunder': pl.plunder++; break;
+    case 'rations': if (target && target.commander) { pl.health = Math.min(pl.maxHealth, pl.health + 4); ev.push({ type: 'heal', commander: p, amount: 4 }); } else if (t && t.owner === p) healCreature(s, t, 4, ev); break;
     case 'tunnelMove': {
       if (!t || t.owner !== p) break;
       const dest = to && emptyCell(s, to.row, to.col) ? to : tunnelCells(s)[0];
@@ -562,6 +783,7 @@ function resolveSpell(s: any, p: Side, card: any, target: any, to: any, ev: any[
       if (target && target.commander) damageCommander(s, target.commander, card.params.amount, ev);
       else if (t) dealDamage(s, t, card.params.amount, ev);
       break;
+    case 'poison': if (t && t.owner !== p) { t.poison = card.params.turns; ev.push({ type: 'poisoned', uid: t.uid, row: t.row, col: t.col, turns: t.poison }); } break;
     case 'buffAttack': s.flags.battleCry = p; break;
     case 'areaDamage':
       if (target) for (const c of [...s.board.creatures]) if (cheb(c, target) <= 1) dealDamage(s, c, card.params.amount, ev);
@@ -579,7 +801,7 @@ const pendingTargetCreature = (s: any, pend: any) => {
 };
 
 const hasEater = (s: any, p: Side) => s.board.creatures.some((c: any) => c.owner === p && CARDS[c.cardId].abilities?.some((a: string) => a.startsWith('eater')));
-const crystalOk = (s: any, p: Side) => s.flags.crystalsPlayed[p] < CONFIG.crystalCardsPerTurn || hasEater(s, p);
+const crystalOk = (_s: any, _p: Side) => true; // R10.12: no once-per-round limit
 /** Crystals a Crystal card adds to the Bank right now (Geode adds none). */
 const crystalAmount = (card: any) => (['gain', 'motherlode'].includes(card.effect) ? card.params.amount : 0);
 
@@ -590,7 +812,7 @@ export function respondMatches(s: any, responder: Side, pend: any): { h: any; ca
   const pt = pendingTargetCreature(s, pend);
   for (const h of pl.hand) {
     const card = CARDS[h.cardId];
-    if (card.type !== 'spell' || card.spellKind === 'regular') continue;
+    if (card.type !== 'spell' || card.spellKind === 'regular' || !spellUsable(s, responder, card)) continue;
     let opts: any[] = [];
     if (card.spellKind === 'counter') {
       if (card.effect === 'cancelSummon' && pend.kind === 'summon') opts = [{}];
@@ -635,9 +857,37 @@ export function respondNeeds(s: any, responder: Side, pend: any): { uid: string;
   return respondMatches(s, responder, pend).map((m) => ({ uid: m.h.uid, cardId: m.card.id, need: Math.max(0, spellCost(s, responder, m.card) - have) }));
 }
 
+
+// ---------------------------------------------------------------- Corpsman Brewlord (brew)
+/** Brew targets for `who`: adjacent wounded, sober Dwarves; once per turn per Brewlord, any time. */
+export function brewActions(s: any, who: Side, pend?: any): any[] {
+  const out: any[] = [];
+  if (s.phase === 'over' || s.phase === 'mulligan') return out;
+  const pt = pend ? pendingTargetCreature(s, pend) : null;
+  for (const c of s.board.creatures) {
+    if (c.owner !== who || !has(c, 'brew') || c.brewTurn === s.turn) continue;
+    for (const a of adjacentCreatures(s, c)) {
+      if (a.owner !== who || CARDS[a.cardId].faction !== 'dwarves' || !(a.health < a.maxHealth) || a.drunk > 0) continue;
+      if (pend && a !== pt) continue;
+      out.push({ type: 'ability', ability: 'brew', creatureUid: c.uid, target: { row: a.row, col: a.col } });
+    }
+  }
+  return out;
+}
+function runBrew(s: any, l: any, ev: any[], inResponse = false) {
+  const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
+  const t = creatureAt(s, l.target.row, l.target.col);
+  c.brewTurn = s.turn;
+  ev.push({ type: 'abilityUsed', uid: c.uid, ability: 'brew', row: c.row, col: c.col });
+  if (!inResponse) healCreature(s, t, CONFIG.brewHeal ?? 3, ev);
+  t.brewSave = true;
+  t.drunk = CONFIG.drunkRounds ?? 2;
+  ev.push({ type: 'drunk', uid: t.uid, row: t.row, col: t.col, rounds: t.drunk });
+}
+
 function openWindow(s: any, pend: any, ev: any[]) {
   const responder = other(pend.actor);
-  if (respondMatches(s, responder, { ...pend, responder }).length) {
+  if (respondActions(s, responder, { ...pend, responder }).length || brewActions(s, responder, pend).length) {
     s.pendingResponse = { ...pend, responder };
     s.priority = responder;
   } else finishPending(s, pend, ev, false);
@@ -648,7 +898,7 @@ function finishPending(s: any, pend: any, ev: any[], cancelled: boolean) {
   s.priority = s.activePlayer;
   const actor: Side = pend.actor;
   if (pend.kind === 'summon') {
-    if (cancelled) s.players[actor].hand.push(pend.card);
+    if (cancelled) { s.players[actor].hand.push(pend.card); ev.push({ type: 'bounce', uid: pend.card.uid, cardId: pend.card.cardId, owner: actor, row: pend.row, col: pend.col }); }
     else {
       const c = spawn(s, actor, pend.card.cardId, pend.row, pend.col, 0, pend.card.uid);
       c.summonedThisTurn = true;
@@ -696,13 +946,15 @@ export function legalActions(s: any): any[] {
   const out: any[] = [];
   const surrender = { type: 'surrender' };
   if (s.pendingResponse) {
-    out.push(...respondActions(s, who, s.pendingResponse), ...crystalPlays(s, who), { type: 'pass' }, surrender);
+    out.push(...respondActions(s, who, s.pendingResponse), ...crystalPlays(s, who), ...brewActions(s, who, s.pendingResponse), { type: 'pass' }, surrender);
     return out;
   }
   if (s.phase === 'mulligan') {
     if (s.mulliganDone[who]) return [surrender];
-    out.push({ type: 'mulligan', uids: [] }, { type: 'mulligan', uids: pl.hand.map((h: any) => h.uid) });
-    for (const h of pl.hand) out.push({ type: 'mulligan', uids: [h.uid] });
+    out.push({ type: 'mulligan', uids: [] });
+    if ((pl.mulligans || 0) < 3 && pl.hand.length) out.push({ type: 'mulligan', uids: pl.hand.map((h: any) => h.uid) });
+    if ((pl.mulligans || 0) < 3) for (const h of pl.hand) out.push({ type: 'mulligan', uids: [h.uid] });
+    if ((pl.mulligans || 0) < 3 && pl.hand.length > 1) out.push({ type: 'mulligan', uids: pl.hand.slice(0, 2).map((h: any) => h.uid) });
     out.push(surrender);
     return out;
   }
@@ -718,11 +970,12 @@ export function legalActions(s: any): any[] {
       for (const sp of summonSpaces(s, who, card)) out.push({ type: 'summon', uid: h.uid, row: sp.row, col: sp.col });
     } else if (card.type === 'spell' && card.spellKind !== 'counter' && ['deploy', 'action'].includes(ph)) {
       if (funds(pl) < spellCost(s, who, card)) continue;
-      for (const o of spellTargets(s, who, card)) out.push({ type: 'cast', uid: h.uid, ...o });
+      const tg = spellTargets(s, who, card);
+      for (const o of tg.length || card.effect !== 'rations' ? tg : [{}]) out.push({ type: 'cast', uid: h.uid, ...o });
     }
     seenCards.add(h.uid);
   }
-  if (ph === 'deploy') out.push(...crystalPlays(s, who));
+  if (ph === 'deploy' || ph === 'action') out.push(...crystalPlays(s, who));
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of moveDests(s, c)) out.push({ type: 'move', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of mineTargets(s, c)) out.push({ type: 'mine', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const x of s.sites) if (readyMinersAt(s, who, x).length) out.push({ type: 'mineAt', row: x.row, col: x.col });
@@ -732,7 +985,9 @@ export function legalActions(s: any): any[] {
     else out.push({ type: 'gathererSwap' });
   }
   if (['deploy', 'action'].includes(ph)) {
-    for (const c of s.board.creatures) if (c.owner === who && has(c, 'blink') && !c.blinkUsed)
+    out.push(...abilityActions(s, who).filter((a: any) => ph === 'action' || a.ability === 'ward'));
+    out.push(...brewActions(s, who));
+    for (const c of s.board.creatures) if (c.owner === who && has(c, 'blink') && !c.blinkUsed && funds(pl) >= 1)
       for (const o of s.board.creatures) if (o !== c && o.owner === who) out.push({ type: 'ability', creatureUid: c.uid, ability: 'blink', target: { row: o.row, col: o.col } });
     out.push({ type: 'done' });
   }
@@ -745,7 +1000,16 @@ export function hasMovesLeft(s: any): boolean {
   if (s.phase === 'over' || !s.priority || s.pendingResponse || !['deploy', 'action'].includes(s.phase) || s.priority !== s.activePlayer) return false;
   // Rev 9: spells, Instants, Crystal cards, upgrades, abilities and the swap never count.
   const kinds = s.phase === 'deploy' ? ['summon'] : ['move', 'mine', 'mineAt', 'attack'];
-  return legalActions(s).some((a: any) => kinds.includes(a.type));
+  const la = legalActions(s);
+  if (la.some((a: any) => kinds.includes(a.type))) return true;
+  // a Crystal card is never a move itself, but playing it may fund a summon that was out of reach
+  if (s.phase === 'deploy') {
+    for (const c of la.filter((a: any) => a.type === 'playCrystal')) {
+      const r = applyAction(s, c);
+      if (r.ok && legalActions(r.state).some((a: any) => a.type === 'summon')) return true;
+    }
+  }
+  return false;
 }
 
 /** Preview of an attack, computed by running the real attack code on a copy of the state. */
@@ -770,12 +1034,34 @@ export function previewAttack(state: any, attackerUid: string, target: any) {
 // ---------------------------------------------------------------- apply
 const eq = (a: any, b: any) => JSON.stringify(a) === JSON.stringify(b);
 const OPTIONAL = new Set(['target', 'to']);
+/** Owner-facing ability names (run, strike, pickUp, rocketRide, gallop) and click targets map onto the engine's internal ones. */
+function aliasAbility(s: any, a: any) {
+  if (!a || a.type !== 'ability' || typeof a.ability !== 'string') return a;
+  const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
+  const out: any = { ...a };
+  const t = a.target;
+  const dir = () => (c && t && typeof t.row === 'number' ? { dr: sgn(t.row - c.row), dc: sgn(t.col - c.col) } : null);
+  switch (a.ability) {
+    case 'run': case 'slide': { out.ability = 'slide'; const d = dir(); if (d && (d.dr || d.dc)) { out.dr = d.dr; out.dc = d.dc; delete out.target; } break; }
+    case 'strike': case 'bowl': { out.ability = 'bowl'; const d = dir(); if (d && (d.dr || d.dc)) { out.dr = d.dr; out.dc = d.dc; delete out.target; } break; }
+    case 'plow': { const d = dir(); if (d && c && !a.dr && !a.dc && (!d.dr || !d.dc) && (d.dr || d.dc)) { out.dr = d.dr; out.dc = d.dc; out.dist = cheb(c, t); delete out.target; } else if (d && !a.dr && !a.dc) out.dist = -1; break; }
+    case 'pickUp': case 'shaman': if (a.ability === 'pickUp' || (a.to && !a.from)) { out.ability = 'shaman'; out.from = t; out.target = a.to; delete out.to; } break;
+    case 'rocketRide': case 'rocket': out.ability = 'rocket'; break;
+    case 'gallop': case 'ramMove': out.ability = 'ramMove'; break;
+  }
+  return out;
+}
+/** Status of every card's ability for the inspector (all are built). */
+export function abilityStatusMap(): Record<string, string> {
+  return Object.fromEntries(Object.values(CARDS).map((c: any) => [c.id, 'done']));
+}
 const normalize = (a: any) => a;
 function matchLegal(s: any, a: any): any | null {
   if (a.type === 'mulligan') {
     const uids = Array.isArray(a.uids) ? a.uids : null;
     const hand = s.players[s.priority].hand.map((h: any) => h.uid);
     if (!uids || new Set(uids).size !== uids.length || !uids.every((u: string) => hand.includes(u))) return null;
+    if (uids.length && (s.players[s.priority].mulligans || 0) >= 3) return null;
     return s.phase === 'mulligan' && !s.pendingResponse && !s.mulliganDone[s.priority] ? a : null;
   }
   for (const l of legalActions(s)) {
@@ -795,14 +1081,7 @@ function matchLegal(s: any, a: any): any | null {
 function playCrystalCard(s: any, who: Side, h: any, ev: any[]) {
   const pl = s.players[who];
   const card = CARDS[h.cardId];
-  if (s.flags.crystalsPlayed[who] >= CONFIG.crystalCardsPerTurn) {
-    for (const c of [...s.board.creatures]) {
-      if (c.owner !== who) continue;
-      if (has(c, 'eaterGuzzler')) dealDamage(s, c, CONFIG.eaterGuzzlerDamage, ev, true);
-      else if (has(c, 'eaterConduit')) { c.lockedUntil = s.turn + 2; dealDamage(s, c, CONFIG.eaterConduitDamage, ev, true); }
-      else if (has(c, 'eaterDelver')) c.attack = Math.max(0, c.attack - CONFIG.eaterDelverPenalty);
-    }
-  }
+  // Round 10 (R10.12): Crystal cards have no once-per-round limit, so Crystal Eaters never punish a second one
   s.flags.crystalsPlayed[who]++;
   pl.discard.push(h);
   // Crystal cards fill the Bank: it never resets and has no cap
@@ -818,12 +1097,21 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
   if (state.phase === 'over') return fail('The match is over');
   const s = clone(state);
   const ev: any[] = [];
-  const act = normalize(action);
+  const act = normalize(aliasAbility(s, action));
   if (act.type === 'surrender') {
     const who: Side = act.player === 'player' || act.player === 'opponent' ? act.player : s.priority || s.activePlayer;
     s.winner = other(who);
     s.phase = 'over'; s.priority = null; s.pendingResponse = null;
     ev.push({ type: 'surrender', player: who }, { type: 'retreat', commander: who });
+    return { ok: true, state: s, events: ev };
+  }
+  if (act.type === 'ability' && act.ability === 'brew') {
+    const bw: Side = act.player === 'player' || act.player === 'opponent' ? act.player : s.priority || s.activePlayer;
+    const m = brewActions(s, bw, s.pendingResponse && s.priority === bw ? s.pendingResponse : undefined).find((x: any) => x.creatureUid === act.creatureUid && act.target && x.target.row === act.target.row && x.target.col === act.target.col);
+    if (!m) return fail('Illegal action: brew');
+    const pend = s.pendingResponse;
+    runBrew(s, m, ev, !!pend);
+    if (pend && s.priority === bw) finishPending(s, pend, ev, false);
     return { ok: true, state: s, events: ev };
   }
   const l = matchLegal(s, act);
@@ -836,12 +1124,16 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
   switch (act.type) {
     case 'mulligan': {
       const n = act.uids.length;
+      const k = (pl.mulligans || 0) + (n ? 1 : 0);
       const back = act.uids.map((u: string) => takeHand(u));
       pl.deck.push(...back);
       if (n) shuffle(s, pl.deck);
-      for (let i = 0; i < n; i++) pl.hand.push(pl.deck.shift());
+      const draw = n && k >= 2 ? n - 1 : n;
+      for (let i = 0; i < draw; i++) pl.hand.push(pl.deck.shift());
+      pl.mulligans = k;
+      ev.push({ type: 'mulligan', player: who, count: n, mulligans: k });
+      if (n && k < 3) break;
       s.mulliganDone[who] = true;
-      ev.push({ type: 'mulligan', player: who, count: n });
       if (who === 'player') s.priority = 'opponent';
       else finishSetup(s, ev);
       break;
@@ -858,7 +1150,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       s.pendingResponse = null;
       s.priority = s.activePlayer;
       if (card.spellKind === 'counter') {
-        ev.push({ type: 'counter', cardId: card.id, player: who });
+        ev.push({ type: 'counter', cardId: card.id, player: who, countered: pend.card ? pend.card.cardId : null, ckind: pend.kind });
         if (card.effect === 'mirror') {
           finishPending(s, pend, ev, true);
           const orig = CARDS[pend.card.cardId];
@@ -906,7 +1198,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     }
     case 'mineAt': {
       const group = readyMinersAt(s, who, l);
-      for (const m of group) { m.hasMined = true; m.minedMine = { row: l.row, col: l.col }; }
+      for (const m of group) { faceTo(m, l.row, l.col); m.hasMined = true; m.minedMine = { row: l.row, col: l.col }; }
       const mc = mineColors(s);
       for (const m of group) ev.push({ type: 'mine', uid: m.uid, row: l.row, col: l.col, amount: yieldAt(s, m, mc, l) });
       break;
@@ -915,6 +1207,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
       const from = { row: c.row, col: c.col };
       const mate = creatureAt(s, l.row, l.col);
+      faceTo(c, l.row, l.col);
       ev.push({ type: 'move', uid: c.uid, from, to: { row: l.row, col: l.col } });
       if (mate) {
         ev.push({ type: 'move', uid: mate.uid, from: { row: mate.row, col: mate.col }, to: from }, { type: 'swap', uid: c.uid, withUid: mate.uid });
@@ -927,6 +1220,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     case 'mine': {
       const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
       const amount = yieldAt(s, c, mineColors(s), l);
+      faceTo(c, l.row, l.col);
       c.hasMined = true; c.minedMine = { row: l.row, col: l.col };
       ev.push({ type: 'mine', uid: c.uid, row: l.row, col: l.col, amount });
       break;
@@ -936,7 +1230,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       if (l.target.row) {
         const tgt = creatureAt(s, l.target.row, l.target.col);
         const resp = other(who);
-        if (respondActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length) {
+        if (respondActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length || brewActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length) {
           s.pendingResponse = { kind: 'attack', actor: who, creatureUid: a.uid, target: l.target, responder: resp };
           s.priority = resp;
           void tgt;
@@ -947,11 +1241,23 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       break;
     }
     case 'ability': {
+      if (l.ability !== 'blink') { runAbility(s, l, who, ev); break; }
+      pay(pl, 1);
       const a = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
       const b = creatureAt(s, l.target.row, l.target.col);
       const pa = { row: a.row, col: a.col }, pb = { row: b.row, col: b.col };
       a.row = pb.row; a.col = pb.col; b.row = pa.row; b.col = pa.col;
       a.blinkUsed = true;
+      {
+        // an illusion of the Illusionist appears in front of it (the free space nearest the enemy Stronghold)
+        const eh = stronghold(other(who));
+        const spot = [-1, 0, 1].flatMap((dr) => [-1, 0, 1].map((dc) => ({ row: a.row + dr, col: a.col + dc }))).filter((q) => emptyCell(s, q.row, q.col)).sort((x, y) => cheb(x, eh) - cheb(y, eh))[0];
+        if (spot) {
+          const ill: any = spawn(s, who, a.cardId, spot.row, spot.col);
+          ill.illusion = true; ill.summonedThisTurn = true;
+          ev.push({ type: 'summon', uid: ill.uid, cardId: ill.cardId, owner: who, row: spot.row, col: spot.col, illusion: true });
+        }
+      }
       ev.push({ type: 'move', uid: a.uid, from: pa, to: pb, teleport: true }, { type: 'move', uid: b.uid, from: pb, to: pa, teleport: true });
       break;
     }

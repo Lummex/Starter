@@ -1,7 +1,7 @@
 [
  {
   "id": "grubnak",
-  "name": "Grubnak Rotgut, King of the Junkpile",
+  "name": "Grubnak Rotgut, Goblin King",
   "faction": "goblins",
   "health": 20,
   "abilityText": "Goblin creatures cost 1 less crystal (minimum 1).",
@@ -10,11 +10,16 @@
    "faction": "goblins",
    "amount": 1
   },
-  "blurb": "Scrappy, sneaky, chaotic. Cheap swarms and explosions."
+  "blurb": "Scrappy, sneaky, chaotic. Cheap swarms and explosions.",
+  "artPos": {
+   "s": 0.95,
+   "x": -1.7,
+   "y": -4.8
+  }
  },
  {
   "id": "sproingle",
-  "name": "Archmagister Sproingle the Unfathomable",
+  "name": "Knobbin the Gnomeificent",
   "faction": "gnomes",
   "health": 20,
   "abilityText": "Your spells cost 1 less crystal (minimum 1).",
@@ -22,20 +27,12 @@
    "type": "spellDiscount",
    "amount": 1
   },
-  "blurb": "Clever tinkerers and spark-mages. Gadgets, healing and ranged sparks."
- },
- {
-  "id": "sprocket",
-  "name": "Madame Sprocket, Mistress of Gears",
-  "faction": "gnomes",
-  "health": 20,
-  "playable": false,
-  "abilityText": "At the start of your turn, your creature with the lowest Health gets Shield 1.",
-  "ability": {
-   "type": "lowestShield",
-   "amount": 1
-  },
-  "blurb": "Not playable in phase 1a."
+  "blurb": "Clever tinkerers and spark-mages. Gadgets, healing and ranged sparks.",
+  "artPos": {
+   "s": 1.56,
+   "x": -6.4,
+   "y": 15.4
+  }
  },
  {
   "id": "borgo",

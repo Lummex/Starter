@@ -1,22 +1,28 @@
 ## What was built
-Oreheart is a comic-style fantasy card battle in the browser: you play one full match against a computer opponent (Easy, Normal or Hard), or a guided tutorial. This round (the final test round) adds a visual Deck Builder, a new Commander and deck select screen, a savings rule (10 spare crystals move to the Bank), swinging pickaxes on mines, an attack preview, a "Last turn" recap, and a match-end summary.
+Oreheart, a comic-style fantasy card battle in the browser. You pick a Commander and a deck, then fight a computer opponent on a painted swamp arena over three crystal mines. This round was meant to add no new features and only fix the failing checks from the previous round.
 
 ## Try these things
-- Open the menu, press **Tutorial**, and follow the tips all the way to Victory.
-- Press **Decks**: single-click a card to enlarge it, double-click to add it, try **Auto-fill**, then **Save**.
-- Press **Play**, pick a Commander, pick a deck (or "+ New Deck"), choose **Hard**, then **Fight!**
-- In a match, drag one of your creatures over an enemy and check the "You deal / You take" box. Let go elsewhere to cancel.
-- Finish your turn with 10 or more crystals and watch "+1 banked" fly into the Bank. After the enemy moves, press **Last turn**.
-- Win or surrender, then check the summary and press **Play again**.
+- Open the preview, click through the intro, and check the main menu (Play, Deck Builder, How to Play, Settings, Quit).
+- Click Play and try the "Choose Your Commander" screen on a phone-sized window. Check whether the buttons and deck names overlap.
+- Start a match, then drag a creature card from your hand onto a square on your home row.
+- Move the mouse over your hand cards. One card should rise and straighten. Check that it doesn't stick or cover the board.
+- Click Done to end your turn and watch the computer play.
+- Open the Menu (top-left) and try Settings and Give up.
 
 ## Automated checks
-129 of 129 checks passed. No page errors were recorded.
+342 of 399 checks passed. 57 failed. In plain terms:
+- About 15 failures are the Choose Your Commander screen. The test can't click the start button because the "Fight!" button sits on top of it. That could be a real layout fault or a check that is out of date. I can't tell which.
+- About 10 failures are the hand of cards. The checks could not find any hand cards in those tests. I can't tell whether the hand is broken or the checks are wrong.
+- The rest cover Ranged attacks, the Corpsman Brewlord ability, mine-tapping, unit facing after a move, Crystal Flow shard counts, font weights, and Deck Builder layout.
+- The window.oreheart test hook is visible outside test mode (AC5). This is minor.
 
 ## Things to know
-- The Hard computer opponent's Miner protection and Guard placement is only approximated, so Hard may feel less clever than the spec describes.
-- The builder only checked the pickaxe and Deck Builder layouts in a headless browser at one phone size (844×390).
-- The only screenshots available show the welcome pop-up on the menu (desktop) and the "please rotate your phone" screen (upright phone). Both look fine. I could not see the Deck Builder, select screen or match visually, so please check those yourself in the preview.
-- Visuals are still placeholders and there is no sound.
+- The goal of this round was to make every check pass. 57 still fail, so that goal was not met.
+- Phone screenshots show real problems:
+  - On Choose Your Commander, deck names, "Remove", "Copy to my decks" and Easy/Normal text overlap and are cut off.
+  - In the match, a large raised card covers much of the board.
+- Desktop screenshots look good. The menu and the painted arena render properly. In the match, the hand is mostly tucked off the bottom of the screen.
+- The mines look plain white rather than coloured.
 
 ## Recommendation
-Ready to approve
+Request changes: 57 checks still fail, and the phone layout of Choose Your Commander looks cramped and overlapping.
