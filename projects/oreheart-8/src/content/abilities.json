@@ -102,5 +102,9 @@
  "glyphShield": {
   "name": "Glyph Shield",
   "text": "At the start of your turn it gets Shield 1."
+ },
+ "brew": {
+  "name": "Brew",
+  "text": "Once per turn, at any time (even on the enemy's turn): heal an adjacent wounded dwarf. If that dwarf would die, it survives with 1 Health instead. It becomes Drunk for 2 rounds. Drunk dwarves can't be healed."
  }
 }

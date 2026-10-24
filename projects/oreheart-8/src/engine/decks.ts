@@ -39,3 +39,9 @@ export function validateDeck(ids: string[], commander?: string) {
   const problems = deckProblems(ids, commander);
   return { legal: problems.length === 0, problems };
 }
+
+/** Shards streaming from one mine for a Flow value: 2 at Flow 1, growing to 12 at Flow 16 (R14.4). */
+export function flowShardCount(flow: number): number {
+  const f = Math.max(1, Math.min(CONFIG.poolCap ?? 16, Math.round(Number(flow) || 1)));
+  return Math.round(2 + ((f - 1) * 10) / ((CONFIG.poolCap ?? 16) - 1));
+}

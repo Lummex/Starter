@@ -1,5 +1,5 @@
 // Match controller: owns the engine state, runs the computer opponent, and notifies the UI.
-import { createMatch, applyAction, legalActions, hasMovesLeft, other, CONFIG } from './engine';
+import { createMatch, applyAction, legalActions, hasMovesLeft, other, CONFIG, brewActions } from './engine';
 import { aiChoose, makeRand, Rand } from './ai/ai';
 import tutorialJson from './content/tutorial.json';
 
@@ -78,7 +78,7 @@ export class Game {
   }
   legalActions() {
     if (!this.state) return [];
-    if (this.ai && this.state.priority === 'opponent') return [];
+    if (this.ai && this.state.priority === 'opponent') return this.state.phase === 'over' ? [] : brewActions(this.state, 'player').map((a: any) => ({ ...a, player: 'player' }));
     return legalActions(this.state);
   }
 
@@ -87,7 +87,10 @@ export class Game {
     if (!this.state) return { ok: false, error: 'No match' };
     if (action && action.type === 'surrender') {
       if (this.ai) action = { ...action, player: 'player' };
-    } else if (this.ai && this.state.priority === 'opponent') return { ok: false, error: "It is the opponent's turn" };
+    } else if (this.ai && this.state.priority === 'opponent') {
+      if (!(action && action.type === 'ability' && action.ability === 'brew')) return { ok: false, error: "It is the opponent's turn" };
+      action = { ...action, player: 'player' };
+    }
     void external;
     let r: any;
     try { r = applyAction(this.state, action); } catch (e: any) { return { ok: false, error: String(e && e.message || e) }; }

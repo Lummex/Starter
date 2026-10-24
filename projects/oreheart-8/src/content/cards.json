@@ -504,7 +504,7 @@
   "health": 4,
   "move": 1,
   "abilities": [
-   "medic"
+   "brew"
   ],
   "unique": false,
   "text": "Once per turn, at any time (even on the enemy's turn): heal an adjacent wounded dwarf. If that dwarf would die, it survives with 1 Health instead. It becomes Drunk for 2 rounds. Drunk dwarves can't be healed.",

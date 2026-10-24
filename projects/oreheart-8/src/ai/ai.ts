@@ -109,6 +109,7 @@ function material(s: any, who: string): number {
   return v + (s.players[who].health - s.players[other(who as any)].health) * 3;
 }
 function scoreAbility(s: any, who: string, a: any): number {
+  if (a.ability === 'brew') { const d = creatureAt(s, a.target.row, a.target.col); return d && d.maxHealth - d.health >= 2 ? 36 : 0; }
   if (a.ability === 'blink' || a.ability === 'ward') return 0;
   const r: any = applyAction(s, a);
   if (!r.ok) return 0;
@@ -129,7 +130,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
 
   if (difficulty === 'easy') {
     if (s.pendingResponse) {
-      const r = legal.filter((a: any) => a.type === 'respond');
+      const r = legal.filter((a: any) => a.type === 'respond' || a.ability === 'brew');
       return r.length && rand() < 0.3 ? r[Math.floor(rand() * r.length)] : { type: 'pass' };
     }
     const acts = legal.filter((a: any) => a.type !== 'done' && a.type !== 'gathererSwap');
@@ -141,6 +142,10 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
     return acts[0];
   }
 
+  if (s.pendingResponse) {
+    const bw = legal.find((a: any) => a.ability === 'brew');
+    if (bw) return bw;
+  }
   if (s.pendingResponse) return pickBest(legal.map((a: any) => [scoreRespond(s, who, a), a]), 0.5) || { type: 'pass' };
 
   const hard = difficulty === 'hard';

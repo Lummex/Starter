@@ -1,11 +1,12 @@
 import './style.css';
 import { Game } from './game';
 import { App } from './ui/app';
-import { CARDS, CONFIG, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
+import { CARDS, CONFIG, ABILITIES, ABILITY_COST, brewActions, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
 import { audio } from './ui/audio';
 import { getHighlights, getRings } from './ui/fx-settings';
 import { pictureOf, rarityKey } from './ui/app';
+import cardFormat from '../public/art/card-format/format.json';
 import { ohCardEl, ohCardHTML, fitCardText } from './ui/cardfmt';
 
 const params = new URLSearchParams(location.search);
@@ -20,7 +21,7 @@ if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catc
 
 if (test) (window as any).__app = app;
 if (test) (window as any).__ohCard = (id: string, h = 624) => { const el = ohCardEl(CARDS[id], pictureOf(CARDS[id])); el.style.cssText = `width:${h * 420 / 624}px;height:${h}px;display:inline-block`; return el; };
-if (test || navigator.webdriver) {
+if (test) {
   (window as any).oreheart = {
     renderCard: (id: string, px = 624) => ohCardHTML(CARDS[id], pictureOf(CARDS[id]), px),
     fitText: (el: HTMLElement) => fitCardText(el),
@@ -39,7 +40,26 @@ if (test || navigator.webdriver) {
       if (!c) return null;
       const cr = c.type === 'creature';
       return { id: c.id, name: c.name, type: c.type, faction: c.faction === 'any' ? null : c.faction, disabled: !!c.disabled, rarity: c.rarity, role: cr ? String(c.role).toLowerCase() : null,
-        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, text: c.text, shortText: c.shortText, longText: c.longText, weapon: weaponOf(c), tagline: c.tagline, visual: c.type === 'spell' ? (SPELL_VISUALS[c.id]?.id ?? null) : null, flavor: c.flavor, speed: c.type === 'spell' ? (c.spellKind === 'counter' ? 'counter' : c.spellKind === 'instant' ? 'instant' : 'regular') : null };
+        cost: c.cost, attack: cr ? c.attack : null, health: cr ? c.health : null, move: cr ? c.move : null, range: cr ? (c.abilities?.includes('ranged') ? (c.range ?? CONFIG.rangedRange) : null) : null, artPos: c.artPos ?? { s: 1, x: 0, y: 0 }, abilities: c.abilities ?? [], text: c.text, shortText: c.shortText, longText: c.longText, weapon: weaponOf(c), tagline: c.tagline, visual: c.type === 'spell' ? (SPELL_VISUALS[c.id]?.id ?? null) : null, flavor: c.flavor, speed: c.type === 'spell' ? (c.spellKind === 'counter' ? 'counter' : c.spellKind === 'instant' ? 'instant' : 'regular') : null };
+    },
+    flowShardCount: (flow: number) => flowShardCount(flow),
+    cardFormat: () => JSON.parse(JSON.stringify(cardFormat)),
+    getAbilityStatus: (uid?: string) => {
+      const st = game.state;
+      if (!st) return [];
+      const legal: any[] = [...(game.legalActions() as any[]), ...brewActions(st, 'player'), ...brewActions(st, 'opponent')];
+      const out: any[] = [];
+      for (const c of st.board.creatures) {
+        if (uid && c.uid !== uid) continue;
+        for (const k of (CARDS[c.cardId].abilities || []) as string[]) {
+          if (!(k in ABILITY_COST) && k !== 'blink' && k !== 'brew') continue;
+          const cost = k === 'blink' ? 1 : ABILITY_COST[k] || 0;
+          const usable = legal.some((a) => a.type === 'ability' && a.creatureUid === c.uid && a.ability === k);
+          const used = k === 'brew' ? c.brewTurn === st.turn : k === 'blink' ? !!c.blinkUsed : k === 'ward' ? c.wardTurn === st.turn : !!(c.hasAttacked || c.hasMoved || c.hasMined);
+          out.push({ uid: c.uid, cardId: c.cardId, owner: c.owner, ability: k, name: ABILITIES[k]?.name ?? k, text: ABILITIES[k]?.text ?? '', cost, usable, ready: usable, used, affordable: usable || !used });
+        }
+      }
+      return out;
     },
     listCards: () => Object.keys(CARDS).filter((id) => !CARDS[id].disabled).map((id) => { const c = (window as any).oreheart.getCard(id); return { ...c, rarity: rarityKey(CARDS[id]) }; }),
     getArtInfo: (id: string) => {

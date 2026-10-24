@@ -50,7 +50,7 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
   const maxHealth = card.health + (bh ? bh.amount : 0);
   const c = {
     uid: uid || 'u' + s.nextUid++, cardId, owner, row, col, attack: card.attack, health: maxHealth - damage, maxHealth,
-    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: card.abilities?.includes('riotShield') ? s.turn + 6 : 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0,
+    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: card.abilities?.includes('riotShield') ? s.turn + 6 : 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0, drunk: 0, brewSave: false, brewTurn: 0,
   };
   s.board.creatures.push(c);
   return c;
@@ -182,7 +182,7 @@ export function createMatch(opts: any = {}) {
   }
   for (const b of setup.board || []) {
     const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0;
-    for (const k of ['attack', 'lastFight', 'kills']) if (b[k] != null) c[k] = b[k];
+    for (const k of ['attack', 'lastFight', 'kills', 'drunk', 'poison']) if (b[k] != null) c[k] = b[k];
     if (b.minedMine) { c.minedMine = { row: b.minedMine.row, col: b.minedMine.col }; }
     if (b.summonedThisTurn) c.summonedThisTurn = true;
   }
@@ -320,11 +320,13 @@ function startTurn(s: any, ev: any[]) {
   for (const c of s.board.creatures) {
     if (c.owner !== who) continue;
     c.maxHealth -= c.ale; c.ale = 0;
-    if (!c.poison) {
+    c.brewSave = false;
+    if (!c.poison && !(c.drunk > 0)) {
       if (c.health < c.maxHealth) healCreature(s, c, c.maxHealth - c.health, ev);
       c.health = c.maxHealth;
     }
     c.shield = 0;
+    if (c.drunk > 0) c.drunk -= 1;
   }
   // poison: 1 damage at the start of its owner's turn, for the remaining turns
   for (const c of [...s.board.creatures]) {
@@ -377,7 +379,7 @@ function endTurn(s: any, ev: any[]) {
 
 // ---------------------------------------------------------------- damage
 function healCreature(s: any, c: any, n: number, ev: any[]) {
-  if (c.poison > 0) return;
+  if (c.poison > 0 || c.drunk > 0) return;
   const before = c.health;
   c.health = Math.min(c.maxHealth, c.health + n);
   ev.push({ type: 'heal', uid: c.uid, row: c.row, col: c.col, amount: c.health - before });
@@ -407,6 +409,7 @@ function hurt(s: any, c: any, amount: number, ev: any[], raw = false) {
   }
   if (c.illusion) d = Math.floor(d * 0.65);
   c.health -= d;
+  if (c.brewSave && c.health <= 0 && d > 0) { c.health = 1; c.brewSave = false; ev.push({ type: 'brewSave', uid: c.uid, row: c.row, col: c.col }); }
   ev.push({ type: 'damage', uid: c.uid, row: c.row, col: c.col, amount: d });
   return d;
 }
@@ -835,9 +838,37 @@ export function respondNeeds(s: any, responder: Side, pend: any): { uid: string;
   return respondMatches(s, responder, pend).map((m) => ({ uid: m.h.uid, cardId: m.card.id, need: Math.max(0, spellCost(s, responder, m.card) - have) }));
 }
 
+
+// ---------------------------------------------------------------- Corpsman Brewlord (brew)
+/** Brew targets for `who`: adjacent wounded, sober Dwarves; once per turn per Brewlord, any time. */
+export function brewActions(s: any, who: Side, pend?: any): any[] {
+  const out: any[] = [];
+  if (s.phase === 'over' || s.phase === 'mulligan') return out;
+  const pt = pend ? pendingTargetCreature(s, pend) : null;
+  for (const c of s.board.creatures) {
+    if (c.owner !== who || !has(c, 'brew') || c.brewTurn === s.turn) continue;
+    for (const a of adjacentCreatures(s, c)) {
+      if (a.owner !== who || CARDS[a.cardId].faction !== 'dwarves' || !(a.health < a.maxHealth) || a.drunk > 0) continue;
+      if (pend && a !== pt) continue;
+      out.push({ type: 'ability', ability: 'brew', creatureUid: c.uid, target: { row: a.row, col: a.col } });
+    }
+  }
+  return out;
+}
+function runBrew(s: any, l: any, ev: any[]) {
+  const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
+  const t = creatureAt(s, l.target.row, l.target.col);
+  c.brewTurn = s.turn;
+  ev.push({ type: 'abilityUsed', uid: c.uid, ability: 'brew', row: c.row, col: c.col });
+  healCreature(s, t, CONFIG.brewHeal ?? 3, ev);
+  t.brewSave = true;
+  t.drunk = CONFIG.drunkRounds ?? 2;
+  ev.push({ type: 'drunk', uid: t.uid, row: t.row, col: t.col, rounds: t.drunk });
+}
+
 function openWindow(s: any, pend: any, ev: any[]) {
   const responder = other(pend.actor);
-  if (respondActions(s, responder, { ...pend, responder }).length) {
+  if (respondActions(s, responder, { ...pend, responder }).length || brewActions(s, responder, pend).length) {
     s.pendingResponse = { ...pend, responder };
     s.priority = responder;
   } else finishPending(s, pend, ev, false);
@@ -896,7 +927,7 @@ export function legalActions(s: any): any[] {
   const out: any[] = [];
   const surrender = { type: 'surrender' };
   if (s.pendingResponse) {
-    out.push(...respondActions(s, who, s.pendingResponse), ...crystalPlays(s, who), { type: 'pass' }, surrender);
+    out.push(...respondActions(s, who, s.pendingResponse), ...crystalPlays(s, who), ...brewActions(s, who, s.pendingResponse), { type: 'pass' }, surrender);
     return out;
   }
   if (s.phase === 'mulligan') {
@@ -935,6 +966,7 @@ export function legalActions(s: any): any[] {
   }
   if (['deploy', 'action'].includes(ph)) {
     if (ph === 'action') out.push(...abilityActions(s, who));
+    out.push(...brewActions(s, who));
     for (const c of s.board.creatures) if (c.owner === who && has(c, 'blink') && !c.blinkUsed && funds(pl) >= 1)
       for (const o of s.board.creatures) if (o !== c && o.owner === who) out.push({ type: 'ability', creatureUid: c.uid, ability: 'blink', target: { row: o.row, col: o.col } });
     out.push({ type: 'done' });
@@ -1030,6 +1062,13 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     s.winner = other(who);
     s.phase = 'over'; s.priority = null; s.pendingResponse = null;
     ev.push({ type: 'surrender', player: who }, { type: 'retreat', commander: who });
+    return { ok: true, state: s, events: ev };
+  }
+  if (act.type === 'ability' && act.ability === 'brew') {
+    const bw: Side = act.player === 'player' || act.player === 'opponent' ? act.player : s.priority || s.activePlayer;
+    const m = brewActions(s, bw, s.pendingResponse && s.priority === bw ? s.pendingResponse : undefined).find((x: any) => x.creatureUid === act.creatureUid && act.target && x.target.row === act.target.row && x.target.col === act.target.col);
+    if (!m) return fail('Illegal action: brew');
+    runBrew(s, m, ev);
     return { ok: true, state: s, events: ev };
   }
   const l = matchLegal(s, act);
