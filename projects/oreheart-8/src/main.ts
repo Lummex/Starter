@@ -44,6 +44,15 @@ if (test) {
     },
     flowShardCount: (flow: number) => flowShardCount(flow),
     cardFormat: () => JSON.parse(JSON.stringify(cardFormat)),
+    getAbilityButtons: () => {
+      const st = game.state;
+      return [...document.querySelectorAll<HTMLElement>('.ab-btn[data-ability]')].map((b) => {
+        const uid = b.dataset.creatureUid!, k = b.dataset.ability!;
+        const c = st?.board.creatures.find((x: any) => x.uid === uid);
+        const r = b.getBoundingClientRect();
+        return { uid, ability: k, cardId: c?.cardId ?? null, owner: c?.owner ?? null, cost: k === 'blink' ? 1 : (ABILITY_COST as any)[k] || 0, enabled: b.getAttribute('aria-disabled') !== 'true', icon: b.dataset.icon || '', label: b.getAttribute('aria-label') || '', rect: { x: r.x, y: r.y, width: r.width, height: r.height } };
+      });
+    },
     getAbilityStatus: (uid?: string) => {
       if (!uid) return abilityStatusMap();
       const st = game.state;

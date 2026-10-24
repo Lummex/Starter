@@ -710,3 +710,9 @@ Not done: Round 12c ability fixes, straight-line ranged audit, Venom Shiv/Tunnel
 - Deck Builder commander portraits group is labelled "Deck Commander".
 - Hand: unshrunk owner size (card ≈ 35–40 % of height); hovered card pops to ~1.6× with its bottom on the screen edge, and always retracts (nothing stuck).
 - Not changed (checks still use old card data): AC13 (Axe Thrower range is 5 in the owner's data), AC15/AC18/AC58 (owner card changes: Rocket Rider is a Fighter, costs), AC109 (enemy cannot afford a 6-cost Fighter on turn 1), AC155 (Grubnak discount makes the 7-cost troll playable with 6).
+
+## Round 16 (fix pass)
+- Engine: ability aliases (run, strike, pickUp, rocketRide, gallop, plow, ward), Chef knock-back, Thief steals Flow, Scrapsmith death draw, Gemdrunk attack, Motherlode floor, Brewlord lethal save, getAbilityStatus map.
+- Interface: white text, HUD weight per owner layout, hand drag/reorder/fan angle, Deck Builder top bar, gate, close-up.
+- 3D: enemy unit ring colour fix.
+- Not fully done / unverified (acceptance spec could not be run): Ranged 7 for every card (kept per-card ranges), AC58/AC109/AC15/AC332 (spec uses outdated card data), pan/cover-fit checks AC150/190/191/194, data-facing on tokens, AC293 ok:false, ability button UI check, AC324 picker.

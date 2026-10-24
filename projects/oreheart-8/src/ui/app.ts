@@ -317,7 +317,7 @@ export class App {
     this.clear();
     const go = h('button', { type: 'button', class: 'begin-btn', onclick: () => { audio.setMusicMode('menu'); this.menuScreen('intro', 'intro'); } }, 'Click to begin');
     this.root.append(h('main', { class: 'screen center begin-gate', 'data-screen': 'begin', 'aria-label': 'Begin' },
-      h('div', { class: 'begin-stack', role: 'group', 'aria-label': 'Oreheart deck' }, ...[-14, -7, 0, 7, 14].map((deg, i) => h('div', { class: 'begin-card', style: `--r:${deg}deg;--i:${i}` }, ohBackEl()))), h('h1', { class: 'sr-only' }, 'Oreheart'), go));
+      h('div', { class: 'begin-stack', role: 'group', 'aria-label': 'Oreheart deck' }, ...[-14, -7, 0, 7, 14].map((deg, i) => h('div', { class: 'begin-card', 'data-layout': 'back', style: `--r:${deg}deg;--i:${i}` }, ohBackEl()))), h('h1', { class: 'sr-only' }, 'Oreheart'), go));
     go.focus();
   }
   showMenu() {
@@ -1895,9 +1895,9 @@ export class App {
       if (!el) {
         el = h('div', { class: `token f-${card.faction} ${c.owner === 'player' ? 'mine' : 'theirs'}`, role: 'img' },
           h('div', { class: 'tk-body', 'data-sym': FSYM(card.faction), 'aria-hidden': 'true' }),
-          h('div', { class: 'tk-stats' }, h('div', { 'data-unit-badge': '', 'data-metal': METAL[card.faction] || 'gold', 'data-type': card.abilities?.includes('ranged') ? 'ranged' : isMiner(card) ? 'miner' : 'fighter', role: 'img' },
+          h('div', { class: 'tk-stats' }, h('div', { 'data-unit-badge': '', 'data-metal': METAL[card.faction] || 'gold', 'data-type': isMiner(card) ? 'pickaxe' : card.abilities?.includes('ranged') ? 'bow' : 'sword', role: 'img' },
             h('img', { class: 'ub-frame', alt: '', draggable: 'false', src: `/art/ui/badges/frame-${METAL[card.faction] || 'gold'}.webp` }),
-            h('img', { class: 'ub-icon', alt: '', draggable: 'false', src: `/art/ui/badges/icon-${card.abilities?.includes('ranged') ? 'bow' : isMiner(card) ? 'pickaxe' : 'sword'}-${METAL[card.faction] || 'gold'}.webp` }),
+            h('img', { class: 'ub-icon', alt: '', draggable: 'false', src: `/art/ui/badges/icon-${isMiner(card) ? 'pickaxe' : card.abilities?.includes('ranged') ? 'bow' : 'sword'}-${METAL[card.faction] || 'gold'}.webp` }),
             h('span', { class: 'ub-n ub-h', 'data-stat': 'health' }), h('span', { class: 'ub-n ub-a', 'data-stat': 'attack' }), h('span', { class: 'ub-n ub-m', 'data-stat': 'movement' })), h('span', { class: 'a' }), ' ', h('span', { class: 'h' }), ' ', h('span', { class: 'm' }), h('span', { class: 'sh' })), h('div', { class: 'pips', 'aria-hidden': 'true' }));
         this.tokens.set(c.uid, el);
         this.r.board.insertBefore(el, this.r.fx);
@@ -1965,7 +1965,7 @@ export class App {
         }
         const mineUnit = c.owner === 'player';
         const ok = mineUnit && legal.some((a: any) => a.creatureUid === c.uid && a.ability === k);
-        b.dataset.ready = String(ok);
+        b.dataset.ready = String(ok); b.dataset.icon = ui.icon;
         b.classList.toggle('off', !ok);
         b.setAttribute('aria-disabled', String(!ok));
         b.style.setProperty('--ox', (i - (keys.length - 1) / 2) * 120 + '%');
