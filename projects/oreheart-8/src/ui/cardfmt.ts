@@ -5,6 +5,8 @@ import './ohcard.css';
 /** The owner's card format (Art Studio, "Card format final 1.0") drawn by his own renderer: every card face in the game goes through here. */
 const R = makeOHRenderer(FORMAT as any);
 
+export const fitCardText = (el: HTMLElement) => R.fitText(el);
+
 /** HTML string of a card face drawn at `px` height (the CSS makes it fill its parent). */
 export function ohCardHTML(card: any, artUrl: string | null, px = 624): string {
   return R.cardHTML(card, artUrl || '', px);

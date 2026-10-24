@@ -685,3 +685,9 @@ Not done / notes: no new work on Round 12c ability wording beyond verifying Rock
 - `window.oreheart` test hooks are also exposed when `navigator.webdriver` is set (AC260).
 - Not changed (checks look outdated against later owner changes): Mangewolf Rider Movement 3 (owner card edit), hand card size / pop-out height (round 12a keeps the raised hand off the board), "Fight!" is now "Start" in the owner menus, per-card Ranged ranges (round 12c), Dwarf Miner riot-shield lock affecting ring colour, deck builder "All cards" / Commander card button replaced in round 13.
 - AC260 still stops at the Welcome dialog in the test run (passes when reproduced by hand); not resolved.
+
+## Inspector fix pass (round 13 follow-up)
+- Added `window.oreheart.renderCard(id, px)` / `fitText(el)` test hooks (AC315).
+- Deck Builder commander portraits group is now labelled "Deck Commander" (AC322).
+- Boneknocker and Scrapsmith Miner use the owner's PNG card art (AC273).
+- Not changed (checks look outdated vs. owner card data / spec): Mangewolf Rider Movement 3 (owner card), Skullflinger range 6 (owner card), "Fight!" is "Start" per Round 9c spec, hand-size bands (AC164/175/218) conflict between rounds, hand pop-out of the old AC174 and the opponent ring color in AC261 are unresolved.

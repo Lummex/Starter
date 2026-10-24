@@ -6,7 +6,7 @@ import { SPELL_VISUALS } from './content/spell-visuals';
 import { audio } from './ui/audio';
 import { getHighlights, getRings } from './ui/fx-settings';
 import { pictureOf, rarityKey } from './ui/app';
-import { ohCardEl } from './ui/cardfmt';
+import { ohCardEl, ohCardHTML, fitCardText } from './ui/cardfmt';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
@@ -22,6 +22,8 @@ if (test) (window as any).__app = app;
 if (test) (window as any).__ohCard = (id: string, h = 624) => { const el = ohCardEl(CARDS[id], pictureOf(CARDS[id])); el.style.cssText = `width:${h * 420 / 624}px;height:${h}px;display:inline-block`; return el; };
 if (test || navigator.webdriver) {
   (window as any).oreheart = {
+    renderCard: (id: string, px = 624) => ohCardHTML(CARDS[id], pictureOf(CARDS[id]), px),
+    fitText: (el: HTMLElement) => fitCardText(el),
     getState: () => game.getState(),
     legalActions: () => game.legalActions(),
     act: (action: any) => {
