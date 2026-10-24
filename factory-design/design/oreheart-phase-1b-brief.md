@@ -4,9 +4,9 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 15 (NEXT — build after Round 14 is reported) — units face where they go, Bowler Brawler's ball, all text white, unit stat badges (owner, Oct 24)
+## Round 15 — units face where they go, Bowler Brawler's ball, all text white, unit stat badges (owner, Oct 24) — read this first
 
-Keep everything from 8a–14. Commit + push after each numbered step.
+Keep everything from 8a–14. Round 14 was built but its checks were stopped before they finished (the run was too slow), so first make sure every Round 14 item works and fix what doesn't. Note: Round 14 gated the test hooks (`window.oreheart.*`) behind a test mode — make sure the acceptance checks still reach them (about 100 checks failed in Round 14). Commit + push after each numbered step.
 
 1. **Facing.** Every unit on the board turns to face the direction it moves, and KEEPS facing that way after it stops. Nothing snaps back to face the player's side.
    - A unit that attacks turns to face its target and keeps facing that way afterwards.
@@ -29,7 +29,7 @@ Keep everything from 8a–14. Commit + push after each numbered step.
 
 Report: screenshot sequences 1920×1080 of a unit moving and keeping its facing, a miner facing a node, and the bowling ball scattering two creatures sideways (one with a blocked side), and the title screen, a menu and the Deck Builder showing white text, and close-ups of one unit of each faction with its new stat badge; plus the checks pass count.
 
-## Round 14 — match screen exactly like the owner's layout, fanned hand, crystal flow (owner, Oct 24) — read this first
+## Round 14 (built, checks unfinished) — match screen exactly like the owner's layout, fanned hand, crystal flow (owner, Oct 24)
 
 Round 13 is done (328/409 checks). Keep everything from 8a–13 and finish any Round 13 item that is still failing. The owner updated his match screen in the Game Editor; it is already committed as `projects/oreheart-8/src/content/owner-layout.json` (same file on main: `factory-design/owner-layouts/final-draft/layout.json`). Commit + push after each numbered step.
 
