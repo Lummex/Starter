@@ -117,9 +117,9 @@ function scoreAbility(s: any, who: string, a: any): number {
   return d >= 4 ? 30 + d : 0;
 }
 
-export function aiChoose(s: any, difficulty: string, rand: Rand): any {
+export function aiChoose(s: any, difficulty: string, rand: Rand, only?: string[]): any {
   const who = s.priority as string;
-  const legal = legalActions(s).filter((a: any) => a.type !== 'surrender');
+  const legal = legalActions(s).filter((a: any) => a.type !== 'surrender' && (!only || only.includes(a.type)));
   if (s.phase === 'mulligan') return { type: 'mulligan', uids: difficulty !== 'easy' && !s.players[who].mulligans ? mulliganUids(s, who) : [] };
   const pickBest = (scored: [number, any][], min: number) => {
     let best: any = null, bv = min;

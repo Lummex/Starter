@@ -7,6 +7,7 @@ import ownerLayoutJson0 from '../content/owner-layout.json';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other, ABILITY_COST } from '../engine';
 import { SPELL_VISUALS } from '../content/spell-visuals';
 import tutorialJson from '../content/tutorial.json';
+import { STANCES } from '../ai/stances';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters } from './decks';
 import { brewActions, flowShardCount, deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
@@ -406,6 +407,9 @@ export class App {
     const cmds = (Object.values(COMMANDERS) as any[]).filter((x) => x.playable !== false);
     let cmd = cmds.some((c) => c.id === picks.cmd) ? picks.cmd : 'grubnak';
     let diff = ['easy', 'normal', 'hard'].includes(picks.diff) ? picks.diff : 'normal';
+    let mode = ['standard', 'cardplay', 'compvscomp'].includes(picks.mode) ? picks.mode : (localStorage.getItem('oreheart.mode') || 'standard');
+    if (!['standard', 'cardplay', 'compvscomp'].includes(mode)) mode = 'standard';
+    const modeBtns: El[] = [];
     const decks = loadDecks();
     const FN: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
     const warband = () => warbandOf(COMMANDERS[cmd].faction);
@@ -416,6 +420,7 @@ export class App {
     const msg = h('p', { class: 'deck-msg', 'aria-label': 'Deck message', role: 'status' });
     const sel = () => {
       cmdBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === cmd)));
+      modeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === mode)));
       diffBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === diff)));
       stacks.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.key === deckSel)));
     };
@@ -428,6 +433,7 @@ export class App {
           h('span', { class: 'fa' }, `${f.name} · ${f.faith}`),
           h('span', { class: 'ds' }, c.abilityText))));
     }
+    for (const [id, label] of [['standard', 'Standard'], ['cardplay', 'Card Play'], ['compvscomp', 'Card Comp vs Card Comp']]) modeBtns.push(btn(label, 'diff mode-btn', () => { mode = id; this.game.setMode(id); try { localStorage.setItem('oreheart.mode', id); } catch { /* storage unavailable */ } sel(); }, { 'data-id': id }));
     for (const d of ['easy', 'normal', 'hard']) diffBtns.push(btn(d[0].toUpperCase() + d.slice(1), 'diff', () => { diff = d; sel(); }, { 'data-id': d }));
     const FCMD: Record<string, string> = { goblins: 'grubnak', gnomes: 'sproingle', dwarves: 'borgo' };
     const visibleCount = () => STARTER_DECK_LIST.filter((d) => d.faction === COMMANDERS[cmd].faction && !hiddenStarters().includes(d.id)).length + decks.filter((d) => !d.commander || d.commander === cmd).length;
@@ -515,10 +521,10 @@ export class App {
           const opp = others[Math.floor(Math.random() * others.length)];
           const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
           const deckId = pick ? '' : deckSel.slice(8);
-          try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
-          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
+          try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, mode, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
+          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, mode, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
     };
-    const startBtn = h('div', { class: 'fight-wrap' }, btn('Fight!', 'primary fight-btn', startFn), btn('Start', 'sr-only', startFn, { tabindex: '-1' }));
+    const startBtn = h('div', { class: 'fight-wrap' }, btn('Fight!', 'primary fight-btn', startFn));
     const mainEl = h('main', { class: 'screen setup mb-setup', 'data-screen': 'select' },
       h('div', { class: 'mb-stage' },
         ownerBox('commander', 'cTitle', h('h1', { class: 'section cinzel cs-title' }, 'Choose Your Commander')),
@@ -528,6 +534,7 @@ export class App {
           btn('▶', 'small scroll', () => scroll(1), { 'aria-label': 'Scroll decks right' })), 'cs-decks'),
         freeBox(22, 90, 56, 8, [msg, h('div', { class: 'row setup-actions' },
           btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }),
+          h('div', { class: 'row', role: 'group', 'aria-label': 'Game mode' }, ...modeBtns),
           h('div', { class: 'row', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns))], 'cs-extra'),
         ownerBox('commander', 'cStart', startBtn, 'cs-start'),
         ownerBox('commander', 'cBack', btn('Back', 'back-btn', () => this.showMenu()), 'cs-back')));
@@ -674,6 +681,7 @@ export class App {
   }
 
   teardownMatch() {
+    this.modeUi?.remove(); this.modeUi = null;
     clearInterval(this.timerId);
     clearTimeout(this.respondTimer);
     this.unsub && this.unsub();
@@ -760,6 +768,7 @@ export class App {
       r.swap,
       r.tip, r.hand, r.handLeft, r.handRight, r.timer);
     this.root.append(match);
+    this.buildModeUi();
     const ps = this.game.state.players;
     applyOwnerHud(match, r, {
       playerFaction: ps.player.faction, enemyFaction: ps.opponent.faction,
@@ -903,13 +912,44 @@ export class App {
     r.menuBtn.setAttribute('aria-expanded', String(on));
     r.menuWrap.classList.toggle('open', on);
   }
+  modeUi: El | null = null;
+  buildModeUi() {
+    this.modeUi?.remove(); this.modeUi = null;
+    const g = this.game, mode = g.mode;
+    if (mode === 'standard') return;
+    const fac = this.game.state.players.player.faction;
+    const col = (FACTIONS as any)[fac]?.crystal || '#ffd700';
+    const wrap = h('div', { class: 'mode-ui', style: `--stance-glow:${col}` });
+    const col4 = h('div', { class: 'stance-col', role: 'group', 'aria-label': 'Stance' }, ...STANCES.map((st) => btn('', 'stance-btn', () => { g.setStance(st.id); this.refreshModeUi(); }, { 'data-stance': st.id, title: st.desc, 'aria-label': st.label })));
+    col4.querySelectorAll('button').forEach((b, i) => { b.append(h('span', { class: 'st-icon', 'aria-hidden': 'true' }, STANCES[i].icon), h('span', { class: 'st-label' }, STANCES[i].label)); });
+    const bar = mode === 'compvscomp'
+      ? h('div', { class: 'watch-bar', role: 'group', 'aria-label': 'Watch controls' },
+          btn(g.paused ? 'Play' : 'Pause', 'wb-pause', () => { g.setPaused(!g.paused); this.refreshModeUi(); }),
+          ...[1, 2, 4].map((n) => btn(n + '×', 'wb-speed', () => { g.setSpeed(n); this.refreshModeUi(); }, { 'data-speed': n })),
+          btn('Exit to menu', 'wb-exit', () => { g.act({ type: 'surrender' }); this.showMenu(); }))
+      : h('div', { class: 'watch-bar cp-bar', role: 'group', 'aria-label': 'Card Play controls' },
+          btn('1×', 'wb-speed', () => { g.setSpeed(1); this.refreshModeUi(); }, { 'data-speed': 1 }),
+          btn('2×', 'wb-speed', () => { g.setSpeed(2); this.refreshModeUi(); }, { 'data-speed': 2 }));
+    wrap.append(col4, bar);
+    this.root.append(wrap);
+    this.modeUi = wrap;
+    this.refreshModeUi();
+  }
+  refreshModeUi() {
+    const w = this.modeUi, g = this.game;
+    if (!w) return;
+    w.querySelectorAll<El>('.stance-btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.stance === g.stance)));
+    w.querySelectorAll<El>('.wb-speed').forEach((b) => b.setAttribute('aria-pressed', String(+(b.dataset.speed || 1) === g.speed)));
+    const p = w.querySelector('.wb-pause'); if (p) p.textContent = g.paused ? 'Play' : 'Pause';
+  }
   /** "Done" is shown only during the player's own Deploy/Action phase with priority and no dialog open. */
   syncDone() {
     const r = this.r, st = this.game.state;
     if (!r.done || !st) return;
     const mine = st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase) && !st.pendingResponse && !this.movesDlg && !this.root.querySelector('.overlay, .dialog');
-    r.done.hidden = !mine;
-    r.done.disabled = !mine;
+    const show = mine && st.mode !== 'compvscomp';
+    r.done.hidden = !show;
+    r.done.disabled = !show;
   }
 
   // ------------------------------------------------------------ camera zoom and pan (R2.19)
@@ -1829,7 +1869,7 @@ export class App {
   testLeft: number | null = null;
   lastTick = Date.now();
   timedNow(st: any) {
-    return !st.tutorial && st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase);
+    return !st.tutorial && st.mode !== 'compvscomp' && !(st.mode === 'cardplay' && st.phase === 'action') && st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase);
   }
   setPhaseTimeLeft(n: number) {
     const st = this.game.state;
@@ -2399,7 +2439,7 @@ export class App {
       h('p', {}, win ? 'The enemy Commander fled screaming that this was all part of the plan.' : 'Your Commander escaped at the last second, shouting that this was all part of the plan.'),
       table,
       h('div', { class: 'row' },
-        btn('Play again', 'primary', () => { if (this.lastTutorial) this.beginTutorial(); else { const o = { ...this.lastOptions }; this.beginMatch(o); } }),
+        btn(this.game.mode === 'compvscomp' ? 'Rematch' : 'Play again', 'primary', () => { if (this.lastTutorial) this.beginTutorial(); else { const o = { ...this.lastOptions }; this.beginMatch(o); } }),
         btn('Menu', '', () => this.showMenu()))));
   }
 

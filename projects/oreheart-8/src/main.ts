@@ -22,7 +22,7 @@ if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catc
 
 if (test) (window as any).__app = app;
 if (test) (window as any).__ohCard = (id: string, h = 624) => { const el = ohCardEl(CARDS[id], pictureOf(CARDS[id])); el.style.cssText = `width:${h * 420 / 624}px;height:${h}px;display:inline-block`; return el; };
-{
+if (test) {
   (window as any).oreheart = {
     renderCard: (id: string, px = 624) => {
       if (id === 'back') return ohCardHTML({ id: 'back', type: 'back', faction: 'goblins', name: '', text: '' }, null, px);
@@ -39,6 +39,14 @@ if (test) (window as any).__ohCard = (id: string, h = 624) => { const el = ohCar
     newMatch: (options: any = {}) => app.beginMatch(options),
     startTutorial: () => app.beginTutorial(),
     movesLeft: () => game.movesLeft(),
+    setMode: (m: string) => game.setMode(m),
+    getMode: () => game.mode,
+    setStance: (n: string) => { const r = game.setStance(n); app.refreshModeUi(); return r; },
+    getStance: () => game.getStance(),
+    stanceChoice: (uid?: string) => game.stanceChoice(uid),
+    autoActStep: () => game.autoActStep(),
+    setSpeed: (n: number) => { game.setSpeed(n); app.refreshModeUi(); },
+    setPaused: (p: boolean) => { game.setPaused(p); app.refreshModeUi(); },
     previewAttack: (uid: string, target: any) => (game.state ? previewAttack(game.state, uid, target) : null),
     tutorialAction: () => (game.state ? tutorialAction(game.state) : null),
     getCard: (id: string) => {

@@ -1601,3 +1601,17 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 .match .o-deck .pile-n:not(#_w){font-weight:var(--ow,700)!important;font-style:var(--os,italic)!important}
 .cmd-win:not(#_w) *:not(#_x),.screen.setup .cmd-card .cmd-win *:not(#_x){color:#fff!important;-webkit-text-fill-color:#fff!important}
 .token .tk-stats:not(#_w){transform:translate(-50%,calc(var(--bw)*.3))!important}
+
+/* Round 17: stance column and watch bar */
+.mode-ui{position:fixed;inset:0;pointer-events:none;z-index:40}
+.stance-col{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;pointer-events:auto}
+.stance-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:min(104px,14vw);height:72px;padding:4px;border:2px solid #0008;border-radius:10px;background:rgba(10,8,6,.78);color:#fff;font-family:"Alegreya SC",serif;font-weight:700;cursor:pointer}
+.stance-btn .st-icon{font-size:26px;line-height:1}
+.stance-btn .st-label{font-size:14px;line-height:1.05;text-align:center}
+.stance-btn[aria-pressed="true"]{border-color:var(--stance-glow);box-shadow:0 0 14px 3px var(--stance-glow),inset 0 0 10px var(--stance-glow)}
+.watch-bar{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:flex;gap:8px;pointer-events:auto;background:rgba(10,8,6,.72);padding:4px 8px;border-radius:10px;z-index:41}
+.watch-bar.cp-bar{left:auto;right:calc(min(104px,14vw) + 18px);bottom:auto;top:50%;transform:translateY(-50%);flex-direction:column}
+.watch-bar .btn{min-height:36px;min-width:44px;color:#fff}
+.watch-bar .btn[aria-pressed="true"]{box-shadow:0 0 10px 2px var(--stance-glow)}
+@media (max-height:480px){.stance-btn{height:56px;width:76px}.stance-btn .st-icon{font-size:20px}.stance-btn .st-label{font-size:11px}.stance-col{gap:4px}.watch-bar.cp-bar{right:90px}}
+.mb-setup .cs-extra .row{flex-wrap:wrap;justify-content:center}
