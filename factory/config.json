@@ -10,6 +10,6 @@
     "reviewer": 1,
     "maxPerRun": 20
   },
-  "maxBuildRounds": 3,
+  "maxBuildRounds": 5,
   "port": 4173
 }
