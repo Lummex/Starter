@@ -1,4 +1,4 @@
-# OreHeart — Build Spec (Phase 1B, Round 13 — spell card fix, picture framing, ability buttons, Deck Builder, title screen)
+# OreHeart — Build Spec (Phase 1B, Round 14 — owner layout exactly, fanned hands, crystal flow to the Flow crystal, Corpsman Brewlord)
 
 ## Summary
 
@@ -18,11 +18,41 @@ Oreheart is a comic-style fantasy card battle in the browser. Goblins, Gnomes an
 
 **Phase 1B Round 12d** draws every card face in the game (hand, close-ups, Deck Builder, menus, played-card pop-ups, Choose Your Commander, card backs) with the owner's binding card format ("Card format final 1.0") and the owner's own renderer, and deletes the old frame art. Rules, abilities and layout are unchanged.
 
-**Phase 1B Round 13** (this build) removes the dark boxes from spell faces, applies the owner's picture framing (`artPos`) on every card face, adds clickable ability buttons above units with activated abilities, gives the Deck Builder three Commander portraits by the title (cards the Commander can't use are hidden, not locked) and a tidy top bar, replaces the title-screen logo with a fanned stack of card backs, and cleans up outdated checks. Rules are unchanged.
+**Phase 1B Round 13** removes the dark boxes from spell faces, applies the owner's picture framing (`artPos`) on every card face, adds clickable ability buttons above units with activated abilities, gives the Deck Builder three Commander portraits by the title (cards the Commander can't use are hidden, not locked) and a tidy top bar, replaces the title-screen logo with a fanned stack of card backs, and cleans up outdated checks. Rules are unchanged.
+
+**Phase 1B Round 14** (this build) makes the match screen match the owner's Oct 24 Game Editor layout exactly (positions and text style), fans both hands, sends Crystal Flow shards to each side's Flow crystal with more shards at higher Flow, makes Goblin Rocket Rider a Fighter and builds Corpsman Brewlord's heal/save ability with the Drunk state.
 
 Tech: Vite + TypeScript (vanilla or React), Three.js for the 3D scene, static `dist/` output, no backend.
 
-### Phase 1B, Round 13 (spell card fix, owner picture framing, ability buttons, Deck Builder, title screen, checks cleanup) — READ FIRST
+### Phase 1B, Round 14 (owner Game Editor layout exactly, fanned hands, crystal flow to the Flow crystal, Corpsman Brewlord) — READ FIRST
+
+Source: "Round 14" at the top of `factory-design/design/oreheart-phase-1b-brief.md` (binding) and the owner's Oct 24 layout `src/content/owner-layout.json` (byte-identical to `factory-design/owner-layouts/final-draft/layout.json`, 34 841 bytes). Keep everything from Rounds 8a–13 and finish the Round 13 items that still fail (R13.1–R13.5; see WORK.md). The owner's `cards.json` stays the source of truth for names, numbers, roles and text; do not edit it.
+
+**R14.1 Match screen = owner layout, positions and text style.**
+- The served copy `/owner-layouts/final-draft/layout.json` (in `public/`) must be the same bytes as `src/content/owner-layout.json` (34 841 bytes; today `public/` still holds the old 34 481-byte file). One source, no hand-copied numbers.
+- For every `hud` piece: `x, y, w, h` (percent of the 16:9 match frame), `rot`, `opacity`, `z` exactly (AC212, within 1 % of the frame). For text pieces (`text` object, including the Menu and Done buttons): `color`, `size` (in `cqh`, i.e. percent of the frame height × `textScale`), `font`, `bold` (computed weight ≥ 600), `italic`, `align`, `valign`, `shadow`, `glow`/`glowColor`, `caps` exactly. The computed `color` of the element that draws the text must equal the layout hex (all current HUD text is `#ffffff`); font size within 10 %.
+- Changed this time: `pName` (your Commander name, e.g. "Grubnak Rotgut") now sits at y 70.99 next to the Flow crystal; Menu text size 3.7 at its new position; Done text size 5.7; the Flow crystal `pCrystal` moved slightly.
+- Every HUD piece keeps its `data-hud-role="<role>"` attribute; `window.oreheart.getHudLayout()` keeps returning `{ frame, pieces: [{ role, rect, rot }] }`.
+
+**R14.2 Fanned hands.**
+- Your hand follows the layout's `hand` settings: card `k` places from the centre is rotated `k × angle` (angle 4°) and dropped by `arc × k²` (arc 1.45, % units as in the Game Editor), neighbours overlap by `overlap` 0.2, cards sit in the `hand` box (h 33.81 % of the frame, still tucked at rest as before). Hovering a card straightens it (0°) and pops it up `popScale` 1.6× and `popY` 10 % (slide), neighbours move aside. Each hand card button carries `data-fan-angle="<degrees currently drawn>"` (e.g. −8, −4, 0, 4, 8 for five cards; 0 while popped). Drag-to-play, reorder and the tuck/raise behaviour from Rounds 11–12a stay.
+- The enemy hand (`eHand`) is a fan of card backs: one back per enemy card, at most `fan.count` 6, consecutive backs `fan.angle` 9° apart, centred on 0, the whole fan rotated by the piece's `rot` (−180). Each back carries `data-fan-angle`.
+
+**R14.3 Crystal flow to the Flow crystal icon.** Shards from a side's mines fly to that side's Flow crystal HUD piece (`player-flow-crystal` bottom-left, `enemy-flow-crystal` top-right), not to the Commander or stronghold. `getFlowStreams()` returns `{ log: [{ side, from, to, toPoint: { x, y } (CSS px, inside the target crystal's box), count, flow, shards, sBends }], pulses: { player, opponent } }`; when shards arrive the crystal plays a short pulse and its `pulses` counter goes up.
+
+**R14.4 More shards with more Flow.** Shards per mine per stream = `window.oreheart.flowShardCount(flow)` where `flow` is that side's Flow for the turn: 2 at Flow 1, never decreasing, about 12 (10–14) at Flow 16 (suggested `min(12, 1 + ceil(flow × 0.7))`, any monotone curve meeting those points is fine). Each log entry's `count` equals `flowShardCount(entry.flow)`.
+
+**R14.5 Owner card changes.**
+- **Goblin Rocket Rider** (`shard-guzzler`) is now a **Fighter** (`role` `fighter` in `getCard`): mines 1 like other Fighters, no Miner ⛏️ badge, summons like a Fighter. Its rocket ability is unchanged.
+- **Corpsman Brewlord** (`brewmaster`) — owner text: "Once per turn, at any time (even on the enemy's turn): heal an adjacent wounded dwarf. If that dwarf would die, it survives with 1 Health instead. It becomes Drunk for 2 rounds. Drunk dwarves can't be healed." Engine ability name `brew`, cost 0, target = an adjacent (8 neighbours) wounded friendly Dwarf-faction creature that is not Drunk (not itself, not a Commander).
+  - Usable once per turn (resets at the start of each player's turn), in any phase of either player's turn, as `act({ type: 'ability', creatureUid, ability: 'brew', target })`. The ability button (`data-ability="brew"`, icon `mug`) is lit on the enemy's turn too.
+  - Effect: heal the target to full; it becomes Drunk with `drunk: 2` (state field on the creature; `newMatch` setup board entries accept `drunk`). Drunk counts down by 1 at the start of its owner's turn, so it lasts 2 rounds.
+  - Save: when an enemy attack, spell or ability would defeat a non-Drunk friendly dwarf adjacent to a Brewlord whose `brew` is unused this turn, the damage pauses and a Respond window opens for the Brewlord's owner (`pendingResponse.responder` = that side; `legalActions()` includes the `brew` ability action). Using it: the dwarf survives with exactly 1 Health and becomes Drunk (2). "Let it happen" lets it die. The AI uses `brew` to heal and to save.
+  - Drunk creatures can't be healed by anything: healing spells (Field Bandage, …), abilities and the start-of-turn refresh to full all skip them. Their token shows a 🍺 Drunk icon and carries `data-drunk="<rounds left>"` (absent or `0` when sober); hover/tap text says "Drunk: can't be healed (N rounds)".
+
+Not in this round: new models, Meshy, other layout changes, the queued Menu Builder/halls work.
+
+### Phase 1B, Round 13 (spell card fix, owner picture framing, ability buttons, Deck Builder, title screen, checks cleanup) — done
 
 Source: "Round 13" at the top of `factory-design/design/oreheart-phase-1b-brief.md` on `main` (binding), `public/art/card-format/format.json`, `factory-design/card-format/render.js`, `card.css` and `reference/*.jpg`. Keep everything from Rounds 8a–12d. The owner's `cards.json` and `commanders.json` stay the source of truth for names, numbers, text and `artPos`; the builder must not edit them. Work in this order and **commit + push after each step**: 1 card faces, 2 ability buttons, 3 Deck Builder, 4 title screen, 5 checks cleanup, 6 screenshots. If time runs short, stop after the last finished step and report what is done. No 3D models, no Meshy.
 
@@ -1644,6 +1674,13 @@ Round 8a notes on older criteria: AC149 now checks the R8a cover-fit camera (`mi
 323. (Round 13) The Begin gate shows a centred, fanned "Oreheart deck" stack of at least 3 card backs with "Click to begin" over it and no logo, at 1920 × 1080 and 844 × 390 (R13.4).
 324. (Round 13) Knobbin and Thane Borgo can be picked on Choose Your Commander and a match starts with the chosen Commander (R13.5).
 325. (Round 13) Screenshots at 1920 × 1080 of the title screen, the Deck Builder with the Spells filter, a hand with spells, a spell close-up and an ability button in use render without page errors (R13.6).
+326. (Round 14) Every HUD text piece (Commander names, Flow/Next labels, deck counts, turn, phases, timer, Menu, Done) uses the owner layout's color, size (cqh × textScale, within 10 %), bold and italic; your Commander name sits at y 70.99 by the Flow crystal (R14.1). AC212 checks every piece's box against the Oct 24 layout within 1 %.
+327. (Round 14) Your hand is a fan: 4° per card from the centre, outer cards lower (arc), left-to-right order; hovering straightens the card and pops it to about 1.6× (R14.2).
+328. (Round 14) The enemy hand is a centred fan of at most 6 card backs, 9° apart (R14.2).
+329. (Round 14) Crystal Flow shards end inside each side's Flow crystal icon, which pulses when they arrive (R14.3).
+330. (Round 14) Shards per mine grow with that side's Flow: 2 at Flow 1, never fewer for more Flow, 10–14 at Flow 16; the streams use that count (R14.4).
+331. (Round 14) Corpsman Brewlord heals an adjacent wounded dwarf to full once per turn; the dwarf is Drunk for 2 rounds (icon, `data-drunk`), and Drunk dwarves can't be healed by spells or the start-of-turn refresh; Goblin Rocket Rider is a Fighter (AC296) (R14.5).
+332. (Round 14) On the enemy's turn the Brewlord button is lit, and a lethal hit on an adjacent dwarf opens a Respond window where Brewlord saves it at 1 Health, Drunk (R14.5).
 
 Round 12d notes on older criteria: AC147 now checks that each spell frame comes from `/art/card-format/images/` (the old 1152 × 1712 frame size check is retired with the old frames); the lettering check (AC135 and others using it) ignores text inside card faces (`.cardc`), which uses the format's fonts; the never-stretched check measures the `.cardc` root against 420 : 624.
 
@@ -1653,11 +1690,14 @@ Round 12b-1 notes on older criteria: once the seated Grubnak is delivered, AC180
 
 Round 12a notes on older criteria: AC81 exempts the four owner-painted cards from the generated-WebP checks (their picture is the owner PNG, AC273); AC94 expects Grubnak's portrait `grubnak-on-throne-art` (Sproingle and Borgo unchanged).
 
+Round 14 notes on older criteria: **retired** (owner later changed or removed what they described; no longer tested, do not build toward them): AC65, AC66, AC81, AC83, AC91, AC92, AC94, AC96, AC107, AC118, AC119, AC120, AC126, AC132, AC139, AC147, AC202, AC210, AC211, AC214, AC220, AC255, AC283, and AC57's "short text equals card text" part (AC57 now only checks the Commander names). Where an older criterion's numbers differ from `cards.json` (costs, Movement, ranges, poison length), `cards.json` wins.
+
 Round 10 notes on older criteria: AC11 and AC50 now check Tunnel from turn 1 (R10.13); AC13 checks the straight-line Ranged rule (R10.6); AC17's "one Crystal card per round" becomes "several per turn" (R10.12); AC22 and AC98 close the card with Esc/outside click (R10.8); AC43, AC152-era and AC175/AC218 hand checks use the quarter tuck (R10.9); AC110 allows touching mines (R10.3); AC222 checks streams ending at the Flow crystal counters (R10.7).
 
 Round 9a notes on older criteria: AC20, AC74 and the in-match text-control check use "Give up match!" → "Yes, give up" (was Surrender); every test that used the pop-out Menu items opens Menu → Settings first ("Match settings"); AC73 uses a Sproingle deck (R9a.10); AC104 keeps its perspective and corner checks but its R5b HUD-position checks are replaced by AC212; AC151, AC161, AC163 and AC166 (R5b/R6a HUD positions) are replaced by AC212–AC213 and AC218; AC154 (hover pop-out Menu) is replaced by AC216–AC217; AC160 opens the Menu by click; AC172 checks the code-built mine at 2.43–2.53 tall; AC175 expects 31–37 % hand cards; AC193 (Meshy mine) is retired; AC201 is replaced by AC218 (raise to 1.6 ×, 400–500 ms).
 
 ## Out of scope / limitations
+- (Round 14) No new 3D models or Meshy calls; only the HUD layout, hand fans, flow shards and the two owner card changes. The AI's use of Brewlord is not checked automatically.
 - (Round 12d) No new abilities, rule or layout changes, 3D models or Meshy calls. The owner's card format and renderer are used as delivered; changes to format.json itself are the owner's (Art Studio). Pixel-exact comparison with the reference JPGs is a manual check in the report, not an automated test.
 - (Round 12b-1) Gnome and Dwarf models, Sproingle's and Borgo's thrones (Round 12b-2), other Goblin creatures' models and any rule or layout change are not in this round. Models not finished in time are reported and their checks skip.
 - (Round 12a) New 3D models for Grubgrabber Miner, Boneknocker, Shiv Rat, Scrapsmith Miner and Grubnak, his junk throne and any Meshy call are Round 12b, not this build.
@@ -1704,6 +1744,9 @@ Round 9a notes on older criteria: AC20, AC74 and the in-match text-control check
 - (Round 8b) No new 3D models: only Grubnak's Commander card has a viewer; creatures, Sproingle and Borgo get models in later rounds. Meshy may be used only to add one or two clips to the existing rigged Grubnak.
 
 ## Assumptions
+
+- (Round 14) Checks cleanup: **24 tests removed** and **14 rewritten**. Removed because later owner rounds replaced what they checked: AC57 (short text = full text; owner text is now long), AC65 (old weapon table), AC66/AC202 (duplicates of AC30), AC81/AC83 (old `/art/cards/*.webp` pictures; owner paintings now), AC91/AC118/AC119/AC120/AC132/AC147 (old faction frames, replaced by the owner card format in 12d), AC92 (80-character short text), AC94 (old Commander art path), AC96 (ornate buttons; buttons are plain text since 5a), AC107/AC139 (Deck Builder logo and panel side; logo removed in 13), AC210 (brown-gold body text; the Deck Builder is white since 9c/11), AC214 (exact byte size of the bank picture), AC220 (standing Grubnak's scepter; he sits on his throne since 12b-1), AC255 (old short-text wording), and the old round 3b / 8b / 12b-1 screenshot-only tests. Rewritten to the owner's current card data: AC10 (Mangewolf Rider costs 8), AC16 (Dwarf Smith Miners mine; Thunderhorn Blast costs 3), AC18 (Snuff Out vs the 5-cost Emergency Rations; Pickpocket! refund math), AC30 (Mangewolf Movement 3), AC131 (Venom Shiv 7 turns, no healing), AC175/AC218 (hand ≈ 34 % of the frame, fanned), AC212 (Oct 24 layout bytes), AC248 (Skullflinger range 6), AC296 (Rocket Rider is a Fighter), AC307 (Flow is spent before the Bank), AC60/AC209/AC239 (the Deck Builder lists only the chosen Commander's faction plus neutral cards, so they use Venom Shiv and switch to Knobbin for Gnome cards).
+- (Round 14) Fan angles, the Drunk state and shard counts are exposed as `data-fan-angle`, `data-drunk`, `drunk`, `flowShardCount()` and `getFlowStreams().pulses` so the checks can read them without pixels. "Rounds" for Drunk = the owner's turns (counts down at the start of the owner's turn). "Adjacent" = the 8 surrounding squares. "Dwarf" = a Dwarf-faction creature. Brewlord can't target itself.
 
 - (Round 13) Ability buttons, the Deck Builder Commander portraits and the title card stack use the exact accessible names and `data-` attributes written in R13.2–R13.4 so the checks can find them. "Sproingle" in the brief is the Commander id `sproingle`, displayed with the owner's current name "Knobbin the Gnomeificent". When the Commander is switched in the Deck Builder, already-added cards the new Commander can't use stay in the deck and show as problems instead of being removed silently.
 - (Round 12d) Faces keep their old accessible labels (Cost, Attack, Health, Movement, Type, `data-frame`) so existing checks keep working; where the format has no layer for one (e.g. no type line on spells) the label sits on a visually hidden element. The card back everywhere is the format's `back` layout. Text inside card faces is exempt from the one-font rule because the owner's format sets its own fonts.
