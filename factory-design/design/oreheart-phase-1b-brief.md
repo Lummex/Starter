@@ -4,7 +4,7 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 15 (NEXT — build after Round 14 is reported) — units face where they go, Bowler Brawler's ball (owner, Oct 24)
+## Round 15 (NEXT — build after Round 14 is reported) — units face where they go, Bowler Brawler's ball, all text white (owner, Oct 24)
 
 Keep everything from 8a–14. Commit + push after each numbered step.
 
@@ -19,7 +19,9 @@ Keep everything from 8a–14. Commit + push after each numbered step.
    - Show each creature tumbling sideways like a pin. The AI uses the same rules.
    - New card text (already in the owner's Art Studio; put it in `cards.json` text/shortText/longText): "Nearby Goblins get +1 Attack. Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side."
 
-Report: screenshot sequences 1920×1080 of a unit moving and keeping its facing, a miner facing a node, and the bowling ball scattering two creatures sideways (one with a blocked side); plus the checks pass count.
+3. **All text white — except on cards.** Every piece of text outside the card faces is plain white (#ffffff): title screen, main menu, all menus and menu panels, drop-downs, the Deck Builder (titles, filters, labels, buttons), Choose Your Commander, the match screen (names, Flow numbers, turn banner, phase list, timer, Menu and Done buttons, tooltips, ability button labels), pop-ups and dialogs. No gold or yellow text anywhere. Keep the existing shadows/outlines so white stays readable, and hover/selected states can glow but the letters stay white. **Do NOT change anything on the card faces** (card names, type lines, text, costs, stats) — the owner likes the cards as they are. This overrides any gold text color in the layout or themes. Add a check that scans visible non-card text on the title screen, Deck Builder and match screen and fails on any non-white text color.
+
+Report: screenshot sequences 1920×1080 of a unit moving and keeping its facing, a miner facing a node, and the bowling ball scattering two creatures sideways (one with a blocked side), and the title screen, a menu and the Deck Builder showing white text; plus the checks pass count.
 
 ## Round 14 — match screen exactly like the owner's layout, fanned hand, crystal flow (owner, Oct 24) — read this first
 
