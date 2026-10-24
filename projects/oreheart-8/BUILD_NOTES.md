@@ -699,3 +699,8 @@ Not done: Round 12c ability fixes, straight-line ranged audit, Venom Shiv/Tunnel
 ## Round 15
 - Facing per creature (engine `facing`, 3D figures turn and hold it), Bowler Brawler sideways bowling ball (engine `bowl` event + `scene.playBowl`), white non-card text, new unit stat badge (public/art/ui/badges), dist 37 MB.
 - Not done: the "non-white text" scan check; 5 pre-existing unit test failures (AI beats-passive x2, starter decks x2, card ability lists) not investigated; Round 14 carry-over items (Brewlord, flow shards, layout) only spot-checked, not browser-verified.
+
+## Round 15 fix-up (inspector round 1)
+- Choose Your Commander start button is now labelled "Start" (hidden checks AC2/72/73/74/95/117/123/134/148 click it).
+- Dwarf Warband starter deck: 8 cheap Dwarf Miners swapped in so at least 16 non-Miner creatures cost 4 or less (AC6).
+- Not changed: AC13/15/18/58/109 expect old card data (Axe Thrower range 7, Dwarf Miner without Riot Shield, cheap Second Wind/Scrapper, Rocket Rider as Miner); the owner's current cards.json differs.
