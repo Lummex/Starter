@@ -515,6 +515,7 @@ export class App {
     void FN;
     buildRow();
     sel();
+    requestAnimationFrame(() => { row.scrollLeft = 0; });
     const scroll = (dir: number) => row.scrollBy({ left: dir * 220, behavior: 'smooth' });
     const startFn = () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
@@ -532,10 +533,10 @@ export class App {
         ownerBox('commander', 'cDecks', h('div', { class: 'deck-wrap' },
           btn('◀', 'small scroll', () => scroll(-1), { 'aria-label': 'Scroll decks left' }), row,
           btn('▶', 'small scroll', () => scroll(1), { 'aria-label': 'Scroll decks right' })), 'cs-decks'),
-        freeBox(22, 90, 56, 8, [msg, h('div', { class: 'row setup-actions' },
-          btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }),
-          h('div', { class: 'row', role: 'group', 'aria-label': 'Game mode' }, ...modeBtns),
-          h('div', { class: 'row', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns))], 'cs-extra'),
+        freeBox(20, 88.2, 60, 11.8, [msg,
+          h('div', { class: 'row mode-row', role: 'group', 'aria-label': 'Game mode' }, ...modeBtns),
+          h('div', { class: 'row setup-actions', role: 'group', 'aria-label': 'Difficulty' },
+            btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }), ...diffBtns)], 'cs-extra'),
         ownerBox('commander', 'cStart', startBtn, 'cs-start'),
         ownerBox('commander', 'cBack', btn('Back', 'back-btn', () => this.showMenu()), 'cs-back')));
     mainRef.el = mainEl as El;

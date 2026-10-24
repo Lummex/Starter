@@ -1615,3 +1615,33 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 .watch-bar .btn[aria-pressed="true"]{box-shadow:0 0 10px 2px var(--stance-glow)}
 @media (max-height:480px){.stance-btn{height:56px;width:76px}.stance-btn .st-icon{font-size:20px}.stance-btn .st-label{font-size:11px}.stance-col{gap:4px}.watch-bar.cp-bar{right:90px}}
 .mb-setup .cs-extra .row{flex-wrap:wrap;justify-content:center}
+.mb-setup .cs-extra{flex-direction:column;gap:0}
+.mb-setup .cs-extra .row{gap:1.6em;flex-wrap:nowrap}
+.mb-setup .cs-extra .btn{min-height:0!important;font-size:max(14px,2.5cqh)!important;padding:1px 6px!important;white-space:nowrap}
+.mb-setup .cs-extra .deck-msg:empty{display:none}
+@media (max-height:480px){
+  .mb-setup .mb-zone.cs-cards{top:11%!important;height:33%!important}
+  .mb-setup .mb-zone.cs-decks{top:45%!important;height:34%!important;left:14%!important;width:72%!important}
+  .mb-setup .mb-zone.cs-extra{top:81%!important;height:19%!important;left:12%!important;width:70%!important}
+  .mb-setup .mb-zone.cs-start{top:86%!important;height:10%!important;left:82%!important;width:17%!important}
+  .mb-setup .mb-zone.cs-back{top:86%!important;height:10%!important}
+  .mb-setup .cs-extra .btn{font-size:14px!important}
+  .mb-setup .cs-extra .row{gap:.9em}
+}
+@media (max-height:480px){
+  .mb-setup .mb-zone.cs-decks{top:47%!important;height:33%!important}
+  .mb-setup .cs-decks .deck-row{padding:0 3em!important;align-items:flex-end}
+  .mb-setup .cs-decks .dstack{transform:scale(.82);transform-origin:bottom center}
+  .mb-setup .mb-zone.cs-extra{top:82%!important;height:18%!important}
+}
+@media (max-height:480px){
+  .mb-setup .mb-zone.cs-decks{top:49.5%!important;height:31%!important}
+  .mb-setup .cs-decks .dstack{min-width:128px}
+  .mb-setup .cs-decks .deck-row{gap:6px}
+}
+@media (max-height:480px){
+  .mb-setup .cs-decks .dslot{min-width:132px;flex:0 0 132px}
+  .mb-setup .cs-decks .ds-acts{width:100%;align-items:center}
+}
+@media (max-height:480px){.mb-setup .cs-decks .deck-row{justify-content:flex-start!important}}
+@media (max-height:480px){.mb-setup .cs-decks .deck-row{scroll-snap-type:none!important}}
