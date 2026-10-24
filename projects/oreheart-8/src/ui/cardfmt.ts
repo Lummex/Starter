@@ -16,6 +16,8 @@ export function ohCardHTML(card: any, artUrl: string | null, px = 624): string {
 export function ohCardEl(card: any, artUrl: string | null): HTMLElement {
   const el = document.createElement('div');
   el.className = 'ohcard';
+  el.setAttribute('data-layout', card.type === 'back' ? 'back' : card.type === 'spell' ? (card.spellKind === 'regular' ? 'spell' : 'instant') : card.type === 'crystal' ? 'crystal' : card.type === 'commander' ? 'commander' : 'unit');
+  el.setAttribute('data-card-format', 'Card format final 1.0');
   el.innerHTML = ohCardHTML(card, artUrl);
   const fit = () => R.fitText(el);
   const ro = new ResizeObserver(() => {

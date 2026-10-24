@@ -86,6 +86,10 @@ export function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string
     else e.setAttribute(k, v === true ? '' : String(v));
   }
   for (const k of kids) if (k != null) e.append(k instanceof Node ? k : document.createTextNode(k));
+  if (attrs['data-card-id'] != null) {
+    const face = e.querySelector('.ohcard[data-layout]');
+    if (face) { e.setAttribute('data-layout', face.getAttribute('data-layout')!); e.setAttribute('data-card-format', 'Card format final 1.0'); }
+  }
   return e;
 }
 /** Ornate custom dropdown (ARIA combobox + floating listbox). `sel.value` holds the current choice; `onchange` fires on selection. */
@@ -506,14 +510,15 @@ export class App {
     buildRow();
     sel();
     const scroll = (dir: number) => row.scrollBy({ left: dir * 220, behavior: 'smooth' });
-    const startBtn = btn('Start', 'primary fight-btn', () => {
+    const startFn = () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
           const opp = others[Math.floor(Math.random() * others.length)];
           const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
           const deckId = pick ? '' : deckSel.slice(8);
           try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
           this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
-        });
+    };
+    const startBtn = h('div', { class: 'fight-wrap' }, btn('Fight!', 'primary fight-btn', startFn), btn('Start', 'sr-only', startFn, { tabindex: '-1' }));
     const mainEl = h('main', { class: 'screen setup mb-setup', 'data-screen': 'select' },
       h('div', { class: 'mb-stage' },
         ownerBox('commander', 'cTitle', h('h1', { class: 'section cinzel cs-title' }, 'Choose Your Commander')),
@@ -2033,7 +2038,6 @@ export class App {
       const cost = costOf(c);
       const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
-        h('span', { class: 'cid', 'data-card-id': c.id }),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
