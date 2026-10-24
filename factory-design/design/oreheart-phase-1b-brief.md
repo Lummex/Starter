@@ -4,6 +4,23 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
+## Round 15 (NEXT — build after Round 14 is reported) — units face where they go, Bowler Brawler's ball (owner, Oct 24)
+
+Keep everything from 8a–14. Commit + push after each numbered step.
+
+1. **Facing.** Every unit on the board turns to face the direction it moves, and KEEPS facing that way after it stops. Nothing snaps back to face the player's side.
+   - A unit that attacks turns to face its target and keeps facing that way afterwards.
+   - A miner that mines a crystal node turns to face the node while mining and keeps facing it afterwards.
+   - In short: a unit always faces the way of its last move or last action. Store the facing per unit so it survives re-renders, turns and saving. Add checks: after a move, after an attack and after mining, the unit's facing matches that direction and is unchanged one turn later.
+2. **Bowler Brawler's bowling ball (Strike).**
+   - Show a big rolling bowling ball (stone/wood/rusty metal like his card art) that visibly rolls from him along the chosen line, spinning, with a little dust; it rolls until it leaves the board or hits a wall, stronghold or crystal node.
+   - **Bowling pins, not knock-back:** every creature the ball reaches is knocked 1–2 spaces (random) OFF TO THE SIDE — sideways, at a right angle to the ball's path — not backwards. Pick the side at random.
+   - **If that side is blocked** (board edge/wall, crystal node, stronghold or another unit) it goes to the OTHER side instead. Example: ball rolling left-to-right and a creature's top side is a wall → it goes to the bottom; wall on its right → it goes left. If it can only move 1 of the 2 spaces, it stops after 1. If both sides are blocked, it stays where it is.
+   - Show each creature tumbling sideways like a pin. The AI uses the same rules.
+   - New card text (already in the owner's Art Studio; put it in `cards.json` text/shortText/longText): "Nearby Goblins get +1 Attack. Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side."
+
+Report: screenshot sequences 1920×1080 of a unit moving and keeping its facing, a miner facing a node, and the bowling ball scattering two creatures sideways (one with a blocked side); plus the checks pass count.
+
 ## Round 14 — match screen exactly like the owner's layout, fanned hand, crystal flow (owner, Oct 24) — read this first
 
 Round 13 is done (328/409 checks). Keep everything from 8a–13 and finish any Round 13 item that is still failing. The owner updated his match screen in the Game Editor; it is already committed as `projects/oreheart-8/src/content/owner-layout.json` (same file on main: `factory-design/owner-layouts/final-draft/layout.json`). Commit + push after each numbered step.
