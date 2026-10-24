@@ -1,0 +1,325 @@
+{
+ "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items.",
+ "jobs": [
+  {
+   "id": "blastrat-sapper",
+   "char": [
+    "blastrat-sapper--char-front.jpg",
+    "blastrat-sapper--char-side.jpg",
+    "blastrat-sapper--char-back.jpg"
+   ],
+   "parts": {
+    "bomb": [
+     "blastrat-sapper--bomb-front.jpg",
+     "blastrat-sapper--bomb-side.jpg",
+     "blastrat-sapper--bomb-back.jpg"
+    ]
+   },
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
+  },
+  {
+   "id": "goblin-grunt",
+   "char": [
+    "goblin-grunt--char-front.jpg",
+    "goblin-grunt--char-side.jpg",
+    "goblin-grunt--char-back.jpg"
+   ],
+   "parts": {
+    "frying-pan": [
+     "goblin-grunt--frying-pan-front.jpg",
+     "goblin-grunt--frying-pan-side.jpg",
+     "goblin-grunt--frying-pan-back.jpg"
+    ]
+   },
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
+  },
+  {
+   "id": "goblin-scrapper",
+   "char": [
+    "goblin-scrapper--char-front.jpg",
+    "goblin-scrapper--char-side.jpg",
+    "goblin-scrapper--char-back.jpg"
+   ],
+   "parts": {
+    "bowling-ball": [
+     "goblin-scrapper--bowling-ball-front.jpg",
+     "goblin-scrapper--bowling-ball-side.jpg",
+     "goblin-scrapper--bowling-ball-back.jpg"
+    ]
+   },
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
+  },
+  {
+   "id": "goblin-slinger",
+   "char": [
+    "goblin-slinger--char-front.jpg",
+    "goblin-slinger--char-side.jpg",
+    "goblin-slinger--char-back.jpg"
+   ],
+   "parts": {
+    "skull-mace": [
+     "goblin-slinger--skull-mace-front.jpg",
+     "goblin-slinger--skull-mace-side.jpg",
+     "goblin-slinger--skull-mace-back.jpg"
+    ]
+   },
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
+  },
+  {
+   "id": "goblin-smith-miner",
+   "char": [
+    "goblin-smith-miner--char-front.jpg",
+    "goblin-smith-miner--char-side.jpg",
+    "goblin-smith-miner--char-back.jpg"
+   ],
+   "parts": {
+    "pickaxe": [
+     "goblin-smith-miner--pickaxe-front.jpg",
+     "goblin-smith-miner--pickaxe-side.jpg",
+     "goblin-smith-miner--pickaxe-back.jpg"
+    ],
+    "backpack": [
+     "goblin-smith-miner--backpack-front.jpg",
+     "goblin-smith-miner--backpack-side.jpg",
+     "goblin-smith-miner--backpack-back.jpg"
+    ]
+   },
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8,
+    "mine": 237
+   }
+  },
+  {
+   "id": "goblin-sneak",
+   "char": [
+    "goblin-sneak--char-front.jpg",
+    "goblin-sneak--char-side.jpg",
+    "goblin-sneak--char-back.jpg"
+   ],
+   "parts": {
+    "dagger": [
+     "goblin-sneak--dagger-front.jpg",
+     "goblin-sneak--dagger-side.jpg",
+     "goblin-sneak--dagger-back.jpg"
+    ],
+    "bag": [
+     "goblin-sneak--bag-front.jpg",
+     "goblin-sneak--bag-side.jpg",
+     "goblin-sneak--bag-back.jpg"
+    ]
+   },
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
+  },
+  {
+   "id": "grubnaks-big-boss-troll",
+   "char": [
+    "grubnaks-big-boss-troll--char-front.jpg",
+    "grubnaks-big-boss-troll--char-side.jpg",
+    "grubnaks-big-boss-troll--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.6,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
+  },
+  {
+   "id": "junk-shaman",
+   "char": [
+    "junk-shaman--char-front.jpg",
+    "junk-shaman--char-side.jpg",
+    "junk-shaman--char-back.jpg"
+   ],
+   "parts": {
+    "staff": [
+     "junk-shaman--staff-front.jpg",
+     "junk-shaman--staff-side.jpg",
+     "junk-shaman--staff-back.jpg"
+    ]
+   },
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
+  },
+  {
+   "id": "rotgut-grenadier",
+   "char": [
+    "rotgut-grenadier--char-front.jpg",
+    "rotgut-grenadier--char-side.jpg",
+    "rotgut-grenadier--char-back.jpg"
+   ],
+   "parts": {
+    "spatula": [
+     "rotgut-grenadier--spatula-front.jpg",
+     "rotgut-grenadier--spatula-side.jpg",
+     "rotgut-grenadier--spatula-back.jpg"
+    ]
+   },
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
+  },
+  {
+   "id": "shard-guzzler",
+   "char": [
+    "shard-guzzler--char-front.jpg",
+    "shard-guzzler--char-side.jpg",
+    "shard-guzzler--char-back.jpg"
+   ],
+   "parts": {
+    "rocket": [
+     "shard-guzzler--rocket-front.jpg",
+     "shard-guzzler--rocket-side.jpg",
+     "shard-guzzler--rocket-back.jpg"
+    ]
+   },
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
+  },
+  {
+   "id": "shiv-rat",
+   "char": [
+    "shiv-rat--char-front.jpg",
+    "shiv-rat--char-side.jpg",
+    "shiv-rat--char-back.jpg"
+   ],
+   "parts": {
+    "dagger": [
+     "shiv-rat--dagger-front.jpg",
+     "shiv-rat--dagger-side.jpg",
+     "shiv-rat--dagger-back.jpg"
+    ],
+    "backpack": [
+     "shiv-rat--backpack-front.jpg",
+     "shiv-rat--backpack-side.jpg",
+     "shiv-rat--backpack-back.jpg"
+    ]
+   },
+   "height": 0.9,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
+  },
+  {
+   "id": "skullbasher-rusher",
+   "char": [
+    "skullbasher-rusher--char-front.jpg",
+    "skullbasher-rusher--char-side.jpg",
+    "skullbasher-rusher--char-back.jpg"
+   ],
+   "parts": {
+    "mace": [
+     "skullbasher-rusher--mace-front.jpg",
+     "skullbasher-rusher--mace-side.jpg",
+     "skullbasher-rusher--mace-back.jpg"
+    ],
+    "shield": [
+     "skullbasher-rusher--shield-front.jpg",
+     "skullbasher-rusher--shield-side.jpg",
+     "skullbasher-rusher--shield-back.jpg"
+    ]
+   },
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   }
+  },
+  {
+   "id": "wolf-rider",
+   "char": [
+    "wolf-rider--char-front.jpg",
+    "wolf-rider--char-side.jpg",
+    "wolf-rider--char-back.jpg"
+   ],
+   "parts": {
+    "mace": [
+     "wolf-rider--mace-front.jpg",
+     "wolf-rider--mace-side.jpg",
+     "wolf-rider--mace-back.jpg"
+    ],
+    "wolf": [
+     "wolf-rider--wolf-front.jpg",
+     "wolf-rider--wolf-side.jpg",
+     "wolf-rider--wolf-back.jpg"
+    ]
+   },
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "wolf is the mount (static model, not rigged)"
+  }
+ ]
+}

@@ -176,19 +176,28 @@ export async function runAcceptance(appDir, accDir, outDir, opts = {}) {
     args.push('--test-list', list);
   }
   const t0 = Date.now();
-  await withServer(path.join(appDir, 'dist'), async () => {
-    sh('npx', args, {
-      cwd: FACTORY, check: false, stdio: ['ignore', 'inherit', 'inherit'],
-      env: { ...process.env, ACCEPTANCE_DIR: runDir, RESULTS_JSON: resultsJson, FACTORY_PORT: String(config.port), ...(opts.workers ? { PW_WORKERS: String(opts.workers) } : {}) },
+  // Full runs are split across several GitHub machines at once (the 3D checks are CPU-bound, so
+  // more workers on ONE machine barely helps). Falls back to running here if that fails.
+  const shards = Number(process.env.FACTORY_SHARDS || 0);
+  let remoteOk = false;
+  if (!partial && opts.remote && shards > 1 && !FAKE) {
+    try { remoteOk = await remoteChecks({ ...opts.remote, shards, outDir, resultsJson }); } catch (e) { log('split checks failed, running them here instead:', e.message); }
+  }
+  if (!remoteOk) {
+    await withServer(path.join(appDir, 'dist'), async () => {
+      sh('npx', args, {
+        cwd: FACTORY, check: false, stdio: ['ignore', 'inherit', 'inherit'],
+        env: { ...process.env, ACCEPTANCE_DIR: runDir, RESULTS_JSON: resultsJson, FACTORY_PORT: String(config.port), ...(opts.workers ? { PW_WORKERS: String(opts.workers) } : {}) },
+      });
     });
-  });
-  log(`checks took ${Math.round((Date.now() - t0) / 60000)} min${partial ? ` (re-checked only the ${prevFailed.length} that failed last time)` : ''}`);
+  }
+  log(`checks took ${Math.round((Date.now() - t0) / 60000)} min${partial ? ` (re-checked only the ${prevFailed.length} that failed last time)` : remoteOk ? ` (split across ${shards} machines)` : ''}`);
   const fresh = readResults(resultsJson);
   if (!partial) {
     // Heavy 3D/drag checks can time out when many run side by side. Give each failure one more
     // try with less load before calling it a real failure.
     const nFailed = (fresh.results || []).filter((r) => !r.ok).length;
-    if (!opts.noConfirm && nFailed > 0 && nFailed <= 150) {
+    if (process.env.FACTORY_CONFIRM === '1' && !opts.noConfirm && nFailed > 0 && nFailed <= 40) {
       log(`confirming ${nFailed} failed check(s) with fewer running at once`);
       return runAcceptance(appDir, accDir, path.join(outDir, 'confirm'), { onlyFailed: true, previous: fresh, workers: 2, noConfirm: true, keepFull: true });
     }
@@ -206,6 +215,38 @@ export async function runAcceptance(appDir, accDir, outDir, opts = {}) {
     failures: [...fresh.fatal, ...failed.map((f) => `✗ ${f.title}\n${f.error}`)],
     partial: !opts.keepFull, // a confirm pass still counts as a full run
   };
+}
+
+// Starts factory-checks.yml for the pushed commit, waits for it, and merges the shard reports.
+async function remoteChecks({ push, branch, slug, shards, outDir, resultsJson }) {
+  push();
+  const sha = git('rev-parse', 'HEAD');
+  const tag = `${sha.slice(0, 8)}-${Date.now().toString(36)}`;
+  const r = sh('gh', ['workflow', 'run', 'factory-checks.yml', '--ref', 'main', '-f', `sha=${sha}`, '-f', `slug=${slug}`, '-f', `tag=${tag}`, '-f', `shards=${shards}`], { check: false });
+  if (r.status !== 0) throw new Error('could not start factory-checks: ' + (r.stderr || r.stdout));
+  log(`checks split across ${shards} machines (run ${tag})`);
+  const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+  let run = null;
+  for (let i = 0; i < 240; i++) { // up to ~60 minutes
+    await sleep(15000);
+    const l = sh('gh', ['run', 'list', '--workflow', 'factory-checks.yml', '-L', '30', '--json', 'databaseId,displayTitle,status,conclusion'], { check: false });
+    if (l.status !== 0) continue;
+    run = JSON.parse(l.stdout || '[]').find((x) => (x.displayTitle || '').includes(tag));
+    if (run && run.status === 'completed') break;
+  }
+  if (!run || run.status !== 'completed') throw new Error('factory-checks did not finish in time');
+  const dl = path.join(outDir, 'shards');
+  fs.rmSync(dl, { recursive: true, force: true });
+  const d = sh('gh', ['run', 'download', String(run.databaseId), '-D', dl], { check: false });
+  if (d.status !== 0) throw new Error('could not download shard results: ' + d.stderr);
+  const files = [];
+  const walk = (p) => { for (const f of fs.readdirSync(p)) { const q = path.join(p, f); if (fs.statSync(q).isDirectory()) walk(q); else if (f === 'results.json') files.push(q); } };
+  walk(dl);
+  if (files.length < shards) throw new Error(`only ${files.length} of ${shards} shard reports came back`);
+  const merged = { suites: [], errors: [] };
+  for (const f of files) { const j = JSON.parse(fs.readFileSync(f, 'utf8')); merged.suites.push(...(j.suites || [])); merged.errors.push(...(j.errors || [])); }
+  fs.writeFileSync(resultsJson, JSON.stringify(merged));
+  return true;
 }
 
 function readResults(resultsJson) {
