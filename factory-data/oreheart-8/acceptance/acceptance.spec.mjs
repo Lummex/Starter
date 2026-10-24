@@ -3906,7 +3906,7 @@ test('AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textu
   await page.evaluate(async () => { await document.fonts.ready; });
   expect(await page.evaluate(() => document.fonts.check('italic 400 20px "Alegreya SC"'))).toBe(true);
   expect(await letteringProblems(page), 'title').toEqual([]);
-  await expect(page.getByRole('button', { name: 'Play', exact: true })).toHaveCSS('color', 'rgb(255, 215, 0)');
+  await expect(page.getByRole('button', { name: 'Play', exact: true })).toHaveCSS('color', 'rgb(255, 255, 255)'); // Round 15: white
   await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
   expect(await letteringProblems(page), 'rules').toEqual([]);
@@ -3919,7 +3919,7 @@ test('AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textu
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
   await page.waitForTimeout(500);
   expect(await letteringProblems(page), 'deck builder').toEqual([]);
-  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toHaveCSS('color', 'rgb(255, 215, 0)');
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toHaveCSS('color', 'rgb(255, 255, 255)');
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible();
@@ -3982,7 +3982,7 @@ test('AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulliga
   expect(r.bad, 'hand').toEqual([]);
 });
 
-// menu actions are plain gold text: no border, box color, box image, shadow or outline at rest
+// menu actions are plain white text (Round 15): no border, box color, box image, shadow or outline at rest
 async function boxedButtons(page, names) {
   await page.mouse.move(1, 1);
   await page.evaluate(() => document.activeElement && document.activeElement.blur && document.activeElement.blur());
@@ -4001,11 +4001,11 @@ async function boxedButtons(page, names) {
     if (s.bgi !== 'none') bad.push(`${name} background-image`);
     if (s.shadow !== 'none') bad.push(`${name} box-shadow`);
     if (s.outline !== 0) bad.push(`${name} outline`);
-    if (s.color !== 'rgb(255, 215, 0)') bad.push(`${name} color ${s.color}`);
+    if (s.color !== 'rgb(255, 255, 255)') bad.push(`${name} color ${s.color}`);
   }
   return bad;
 }
-test('AC137: menu buttons are plain gold text with a hover glow, no boxes or borders', async ({ page }) => {
+test('AC137: menu buttons are plain white text with a hover glow, no boxes or borders', async ({ page }) => {
   await toTitle(page);
   expect(await boxedButtons(page, ['Play', 'Deck Builder', 'How to Play', 'Settings', 'Quit']), 'title').toEqual([]);
   const play = page.getByRole('button', { name: 'Play', exact: true });
@@ -4850,7 +4850,7 @@ const strayColors = (page) => page.evaluate((vars) => {
   const probe = document.createElement('span');
   document.body.appendChild(probe);
   const rgb = (c) => { const m = /rgba?\(([^)]+)\)/.exec(c); return m ? m[1].split(',').slice(0, 3).map((v) => Math.round(parseFloat(v))).join(',') : c; };
-  const allowed = new Set(vars.map((v) => { probe.style.color = `var(${v})`; return rgb(getComputedStyle(probe).color); }));
+  const allowed = new Set(['255,255,255']); // Round 15: every text outside the card faces is plain white
   probe.remove();
   const bad = [];
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -4866,17 +4866,10 @@ const strayColors = (page) => page.evaluate((vars) => {
   return bad.slice(0, 15);
 }, PALETTE_6A);
 
-test('AC167: one shared text palette, no stray text colors', async ({ page }) => {
+test('AC167: every text outside the card faces is plain white #ffffff (title, Rules, Settings, Deck Builder, Choose Your Commander, match)', async ({ page }) => {
   await openMenu(page);
   const vals = await page.evaluate((vars) => Object.fromEntries(vars.map((v) => [v, getComputedStyle(document.documentElement).getPropertyValue(v).trim().toLowerCase()])), PALETTE_6A);
-  expect(vals['--text-gold']).toBe('#ffd700');
-  expect(vals['--text-brown']).toBe('#b8862b');
-  expect(vals['--text-brown-light']).toBe('#d4a94f');
   expect(vals['--text-white']).toBe('#ffffff');
-  expect(vals['--text-soft']).toBe('#d4a94f'); // Round 8b: body text brown-gold
-  expect(vals['--text-black']).toBe('#000000');
-  expect(vals['--text-ink']).toBe('#1a1208');
-  for (const v of ['--color-player', '--color-enemy', '--color-warning', '--color-success', '--color-damage', '--color-goblins', '--color-gnomes', '--color-dwarves']) expect(vals[v], v).not.toBe('');
   expect(vals['--color-damage']).toBe('#ff4040');
   expect(await strayColors(page), 'title').toEqual([]);
   await page.getByRole('button', { name: 'How to Play', exact: true }).click();
@@ -8101,16 +8094,38 @@ test('AC292: Backstabbing Thief steals 1 crystal for each enemy it defeats', asy
   expect(s.players.opponent.crystals).toBe(2);
 });
 
-test('AC293: Bowler Brawler Strike (2) knocks creatures in its line back 1-2 spaces', async ({ page }) => {
+test('AC293: Bowler Brawler Strike (2) rolls a ball along a line; every creature on it is knocked 1-2 spaces sideways like a pin', async ({ page }) => {
+  // ball rolls up column 9: the dwarf at (4,9) is knocked left or right, never backwards
   let s = await start(page, q12({ playerCrystals: 2, board: [P('goblin-scrapper', 6, 9), O('dwarf-pickman', 4, 9)] }));
   s = await toAction(page);
   expect((await ability(page, s, 6, 9, 'strike', { target: { row: 5, col: 9 } })).ok).toBe(true);
   s = await getState(page);
   const p = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman');
-  expect(p.col).toBe(9);
-  expect([2, 3]).toContain(p.row);
+  expect(p.row).toBe(4);
+  expect([7, 8, 10, 11]).toContain(p.col);
   expect(at(s, 6, 9).cardId).toBe('goblin-scrapper');
   expect(s.players.player.crystals).toBe(0);
+  // column 13: the board edge blocks the right side, so (4,13) goes left; (2,13) has a unit on its left and the edge on its right, so it stays
+  s = await newMatch(page, q12({ playerCrystals: 2, board: [P('goblin-scrapper', 6, 13), O('dwarf-pickman', 4, 13), P('goblin-scrounger', 2, 13), O('dwarf-pickman', 2, 12)] }));
+  s = await toAction(page);
+  const miner = at(s, 2, 13).uid;
+  expect((await ability(page, s, 6, 13, 'strike', { target: { row: 5, col: 13 } })).ok).toBe(true);
+  s = await getState(page);
+  const hit = s.board.creatures.filter((c) => c.cardId === 'dwarf-pickman' && c.row === 4);
+  expect(hit.length).toBe(1);
+  expect([11, 12]).toContain(hit[0].col);
+  const m = s.board.creatures.find((c) => c.uid === miner);
+  expect([m.row, m.col]).toEqual([2, 13]); // friend or foe: both sides blocked, it stays
+  expect(at(s, 2, 12).cardId).toBe('dwarf-pickman');
+});
+
+test('AC293: Bowler Brawler shows the owner\'s Strike text', async ({ page }) => {
+  await openTest(page);
+  const c = await page.evaluate(async () => await window.oreheart.getCard('goblin-scrapper'));
+  const all = [c.text, c.shortText, c.longText].join(' ');
+  expect(all).toContain('Like bowling pins');
+  expect(all).toContain('off to the side');
+  expect(all).toContain('it goes to the other side');
 });
 
 test('AC294: Junk Shaman pays 2 to move any character within 5 to a space within 5 of it', async ({ page }) => {
@@ -8616,7 +8631,7 @@ test('AC319: ability buttons are greyed when unaffordable, on enemy units, or al
   await expect(ward).toHaveAttribute('aria-disabled', 'true');
 });
 
-test('AC320: clicking the Strike button and a target pays 2 and knocks the enemy back; hover shows the ability text', async ({ page }) => {
+test('AC320: clicking the Strike button and a target pays 2 and knocks the enemy sideways; hover shows the ability text', async ({ page }) => {
   let s = await start(page, q12({ playerCrystals: 2, board: [P('goblin-scrapper', 6, 9), O('dwarf-pickman', 4, 9)] }));
   s = await toAction(page);
   const strike = page.locator(`[data-ability="strike"][data-creature-uid="${at(s, 6, 9).uid}"]`);
@@ -8631,8 +8646,8 @@ test('AC320: clicking the Strike button and a target pays 2 and knocks the enemy
   await expect.poll(async () => (await getState(page)).players.player.crystals).toBe(0);
   s = await getState(page);
   const p = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman');
-  expect(p.col).toBe(9);
-  expect([2, 3]).toContain(p.row);
+  expect(p.row).toBe(4);
+  expect([7, 8, 10, 11]).toContain(p.col);
 });
 
 test('AC321: Deck Builder — three Commander portraits by the title, no logo, other factions hidden not locked', async ({ page }) => {
@@ -8767,7 +8782,7 @@ const hudTextStyle = (page, role) => page.locator(`[data-hud-role="${role}"]`).f
 for (const [W, H] of [[1920, 1080], [844, 390]]) {
   test.describe(`round 14 owner text style ${W}x${H}`, () => {
     test.use({ viewport: { width: W, height: H } });
-    test(`AC326: every HUD text uses the owner's color, size, bold and italic (${W}x${H})`, async ({ page, request }) => {
+    test(`AC326: every HUD text uses the owner's size, bold and italic, in white (${W}x${H})`, async ({ page, request }) => {
       const L = await ownerLayout(request);
       await start(page, R9_MATCH());
       const h = await hud(page);
@@ -8777,7 +8792,7 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       for (const p of pieces) {
         if (p.role === 'phase-timer' && !(await page.locator('[data-hud-role="phase-timer"]').count())) continue; // the timer may be hidden early in a phase
         const st = await hudTextStyle(page, p.role);
-        expect(st.color, `${p.role} color`).toBe(hexToRgb(p.text.color));
+        expect(st.color, `${p.role} color`).toBe('rgb(255, 255, 255)'); // Round 15: white overrides the layout's text colors
         const want = p.text.size / 100 * fh * (L.textScale || 1);
         expect(Math.abs(st.size - want), `${p.role} size ${st.size} vs ${want}`).toBeLessThanOrEqual(Math.max(1.5, want * 0.1));
         expect(st.weight >= 600, `${p.role} bold`).toBe(!!p.text.bold);
@@ -8793,7 +8808,7 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
 
 test.describe('round 14 Done text 1920x1080', () => {
   test.use({ viewport: { width: 1920, height: 1080 } });
-  test('AC326: the Done button uses the owner\'s size 5.7 and color when it shows', async ({ page, request }) => {
+  test('AC326: the Done button uses the owner\'s size 5.7 in white when it shows', async ({ page, request }) => {
     const L = await ownerLayout(request);
     const d = L.hud.find((x) => x.role === 'done-button');
     await start(page, quiet({ playerHand: ['goblin-scrapper'], playerCrystals: 6 }));
@@ -8801,7 +8816,7 @@ test.describe('round 14 Done text 1920x1080', () => {
     await expect(btn).toBeVisible();
     const fh = (await hud(page)).frame.height;
     const st = await hudTextStyle(page, 'done-button');
-    expect(st.color).toBe(hexToRgb(d.text.color));
+    expect(st.color).toBe('rgb(255, 255, 255)');
     expect(Math.abs(st.size - d.text.size / 100 * fh)).toBeLessThanOrEqual(d.text.size / 100 * fh * 0.1);
   });
 });
@@ -8953,4 +8968,117 @@ test('AC332: on the enemy\'s turn, Brewlord saves an adjacent dwarf from a letha
   expect(d).toBeTruthy();
   expect(d.health).toBe(1);
   expect(d.drunk).toBe(2);
+});
+
+// ---------- Phase 1B Round 15 (AC333–AC337) ----------
+const facingOf = async (page, uid) => (await getState(page)).board.creatures.find((c) => c.uid === uid).facing;
+
+test('AC333: a unit faces the way it moved and keeps that facing a full round later (state and data-facing)', async ({ page }) => {
+  let s = await start(page, quiet({ playerDeck: SHARDS, opponentDeck: SHARDS, board: [P('wolf-rider', 6, 6), O('dwarf-pickman', 2, 9)] }));
+  const uid = at(s, 6, 6).uid;
+  expect(await facingOf(page, uid)).toBe('N'); // player units start facing the enemy side
+  expect(await facingOf(page, at(s, 2, 9).uid)).toBe('S');
+  s = await toAction(page);
+  expect((await act(page, { type: 'move', creatureUid: uid, row: 6, col: 8 })).ok).toBe(true);
+  expect(await facingOf(page, uid)).toBe('E');
+  await expect(page.getByLabel('Mangewolf Rider, row 6, column 8', { exact: true })).toHaveAttribute('data-facing', 'E');
+  await done(page); // end Action -> enemy turn
+  await passTurn(page); // enemy passes -> our next turn
+  expect((await getState(page)).activePlayer).toBe('player');
+  expect(await facingOf(page, uid)).toBe('E');
+  await expect(page.getByLabel('Mangewolf Rider, row 6, column 8', { exact: true })).toHaveAttribute('data-facing', 'E');
+  s = await toAction(page);
+  expect((await act(page, { type: 'move', creatureUid: uid, row: 4, col: 8 })).ok).toBe(true);
+  expect(await facingOf(page, uid)).toBe('N');
+});
+
+test('AC334: an attacker faces its target and a miner faces the node it mined; both keep it one turn later', async ({ page }) => {
+  let s = await start(page, quiet({ playerDeck: SHARDS, opponentDeck: SHARDS, board: [
+    P('wolf-rider', 5, 10), O('dwarf-pickman', 5, 11), P('goblin-scrounger', 5, 3)] }));
+  const wolf = at(s, 5, 10).uid; const miner = at(s, 5, 3).uid;
+  s = await toAction(page);
+  expect((await act(page, { type: 'attack', creatureUid: wolf, target: { row: 5, col: 11 } })).ok).toBe(true);
+  expect(await facingOf(page, wolf)).toBe('E');
+  expect((await act(page, { type: 'mine', creatureUid: miner, row: M1.row, col: M1.col })).ok).toBe(true); // node at (4,2): up-left
+  expect(await facingOf(page, miner)).toBe('NW');
+  await done(page);
+  await passTurn(page);
+  expect((await getState(page)).activePlayer).toBe('player');
+  expect(await facingOf(page, wolf)).toBe('E');
+  expect(await facingOf(page, miner)).toBe('NW');
+});
+
+const badgeOf = (page, label) => page.getByLabel(label, { exact: true }).locator('[data-unit-badge]');
+test.describe('round 15 unit badges 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC335: every unit has the owner stat badge: faction metal frame, type icon, live white Russo One numbers under its feet', async ({ page }) => {
+    const units = [['goblin-scrapper', 'player', 6, 6], ['goblin-scrounger', 'player', 6, 8], ['goblin-slinger', 'player', 6, 10],
+      ['dwarf-pickman', 'opponent', 2, 6], ['gnome-tinker', 'opponent', 2, 8]];
+    await start(page, { ...quiet({ board: units.map(([cardId, owner, row, col]) => ({ cardId, owner, row, col })) }), factionLock: false });
+    const metal = { goblins: 'rust', gnomes: 'silver', dwarves: 'gold' };
+    for (const [id, , row, col] of units) {
+      const c = await page.evaluate(async (x) => await window.oreheart.getCard(x), id);
+      const type = /miner|smith|gatherer/i.test(c.role) ? 'pickaxe' : c.range != null ? 'bow' : 'sword';
+      const b = badgeOf(page, `${c.name}, row ${row}, column ${col}`);
+      await expect(b, c.name).toHaveCount(1);
+      await expect(b).toHaveAttribute('data-metal', metal[c.faction]);
+      await expect(b).toHaveAttribute('data-type', type);
+      const srcs = await b.locator('img').evaluateAll((els) => els.map((e) => e.getAttribute('src')));
+      expect(srcs.some((x) => x.endsWith(`badges/frame-${metal[c.faction]}.webp`)), `${c.name} frame`).toBe(true);
+      expect(srcs.some((x) => x.endsWith(`badges/icon-${type}-${metal[c.faction]}.webp`)), `${c.name} icon`).toBe(true);
+      await expect(b.locator('[data-stat="attack"]')).toHaveText(String(c.attack));
+      await expect(b.locator('[data-stat="health"]')).toHaveText(String(c.health));
+      await expect(b.locator('[data-stat="movement"]')).toHaveText(String(c.movement ?? c.move));
+      const st = await b.locator('[data-stat="health"]').evaluate((e) => { const cs = getComputedStyle(e); return { color: cs.color, font: cs.fontFamily, weight: parseInt(cs.fontWeight, 10), outline: cs.webkitTextStrokeWidth, shadow: cs.textShadow }; });
+      expect(st.font).toContain('Russo One');
+      expect(st.weight === 400 || st.weight >= 700).toBe(true);
+      expect(parseFloat(st.outline) > 0 || st.shadow !== 'none').toBe(true);
+      const sq = await sq2s(page, row, col);
+      const bb = await b.boundingBox();
+      expect(bb.y + bb.height / 2, `${c.name} badge under the feet`).toBeGreaterThan(sq.y);
+      expect(Math.abs(bb.x + bb.width / 2 - sq.x)).toBeLessThan(bb.width);
+    }
+  });
+});
+
+test('AC336: badge numbers update with damage (and the Health number stays live text)', async ({ page }) => {
+  let s = await start(page, quiet({ board: [P('wolf-rider', 5, 10), O('ironhammer-berserker', 5, 11)] }));
+  const enemy = await page.evaluate(async () => await window.oreheart.getCard('ironhammer-berserker'));
+  const wolf = await page.evaluate(async () => await window.oreheart.getCard('wolf-rider'));
+  s = await toAction(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 10).uid, target: { row: 5, col: 11 } })).ok).toBe(true);
+  s = await getState(page);
+  const e = at(s, 5, 11); // 4 Health - 3 Attack: it survives
+  await expect(badgeOf(page, `${enemy.name}, row 5, column 11`).locator('[data-stat="health"]')).toHaveText(String(e.health));
+  expect(e.health).toBeLessThan(enemy.health);
+  expect(e.health).toBeGreaterThan(0);
+  expect(wolf.attack).toBeGreaterThan(0);
+});
+
+test.describe('round 15 screenshots 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC337: facing, a miner at a node, the bowling ball, white-text menus and the unit badges render without errors', async ({ page }, info) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    const shot = async (n) => info.attach(n, { body: await page.screenshot(), contentType: 'image/png' });
+    await toTitle(page);
+    await shot('title-white-text');
+    await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+    await shot('deck-builder-white-text');
+    let s = await start(page, q12({ playerCrystals: 2, board: [P('goblin-scrapper', 6, 13), O('dwarf-pickman', 4, 13), P('goblin-scrounger', 2, 13), O('dwarf-pickman', 2, 12),
+      P('wolf-rider', 6, 6), P('goblin-scrounger', 5, 3), O('gnome-tinker', 3, 8)] }));
+    await shot('badges');
+    s = await toAction(page);
+    await act(page, { type: 'move', creatureUid: at(s, 6, 6).uid, row: 6, col: 8 });
+    await act(page, { type: 'mine', creatureUid: at(s, 5, 3).uid, row: M1.row, col: M1.col });
+    await page.waitForTimeout(600);
+    await shot('moved-and-mining');
+    await ability(page, s, 6, 13, 'strike', { target: { row: 5, col: 13 } });
+    await page.waitForTimeout(400);
+    await shot('bowling-ball-rolling');
+    await page.waitForTimeout(1200);
+    await shot('pins-scattered');
+    expect(errors).toEqual([]);
+  });
 });
