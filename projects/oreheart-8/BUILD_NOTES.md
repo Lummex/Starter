@@ -677,3 +677,11 @@ The spec and hidden tests need the new names/numbers; the owner's card data was 
 6. **Screenshots:** `tools/shot-r13.mjs` goes past the intro into a real match; output in `screenshots/r13-*.png`.
 
 Not done / notes: no new work on Round 12c ability wording beyond verifying Rocket Rider (explosion, then one attack).
+
+## Inspector fix pass (round 13 follow-up)
+- Fixed: a native image drag could cancel a card drag after a hand-band drop (AC270); `dragstart` is now blocked on hand/pop-out/drag-ghost elements.
+- Fixed: the Click-to-begin card stack has the accessible name "Oreheart deck" (AC257).
+- Added `/menus/menus.json` (public copy of the menu layout the app uses) (AC233/AC234).
+- `window.oreheart` test hooks are also exposed when `navigator.webdriver` is set (AC260).
+- Not changed (checks look outdated against later owner changes): Mangewolf Rider Movement 3 (owner card edit), hand card size / pop-out height (round 12a keeps the raised hand off the board), "Fight!" is now "Start" in the owner menus, per-card Ranged ranges (round 12c), Dwarf Miner riot-shield lock affecting ring colour, deck builder "All cards" / Commander card button replaced in round 13.
+- AC260 still stops at the Welcome dialog in the test run (passes when reproduced by hand); not resolved.
