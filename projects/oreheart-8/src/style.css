@@ -1556,4 +1556,4 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .begin-gate{position:relative}
 .begin-stack{position:absolute;left:50%;top:50%;width:min(30vh,22vw);height:min(44.6vh,32vw);transform:translate(-50%,-50%);pointer-events:none}
 .begin-card{position:absolute;inset:0;transform-origin:50% 120%;transform:rotate(var(--r)) translateY(calc(var(--i)*-.4%));filter:drop-shadow(0 .8vh 1.2vh #000c)}
-.begin-gate .begin-btn{position:relative;z-index:2;color:#fff!important;-webkit-text-stroke:.06em #000;paint-order:stroke fill;text-shadow:0 0 .4em #000,0 0 .8em #000,0 .12em 0 #000}
+.begin-gate .begin-btn{position:relative;z-index:2;color:#fff!important;-webkit-text-fill-color:#fff!important;-webkit-text-stroke:.06em #000;paint-order:stroke fill;text-shadow:0 0 .4em #000,0 0 .8em #000,0 .12em 0 #000}
