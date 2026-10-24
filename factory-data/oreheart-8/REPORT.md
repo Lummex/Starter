@@ -1,24 +1,31 @@
 ## What was built
-Oreheart, a comic-style fantasy card battle in the browser, this round (13) adds spell-card fixes, picture framing on cards, round ability buttons above units, a reworked Deck Builder with Commander portraits, and a title screen showing a fanned stack of card backs. The game plays one full match against a computer opponent, plus a tutorial.
+Oreheart is a comic-style fantasy card battle game. This build (Round 15) was meant to fix the broken Round 14 features, then add unit facing, Bowler Brawler's bowling-ball attack, all-white menu text and a new stat badge under every unit. The builder reports it finished these, but the automated checks only partly back that up.
 
 ## Try these things
-- Open the preview and click through the intro to the title screen. Check for the fanned card-back stack with "Click to begin".
-- Start a match and look at the hand. Do the spell cards show their name and text clearly?
-- Click a unit with a special ability (e.g. Bowler Brawler) and use its round ability button.
-- Open the Deck Builder. Check that the three Commander portraits sit by the title and that search, filters and "Cards per row" don't overlap.
-- Pick Knobbin or Thane Borgo as Commander and start a match.
-- On a phone, hold it sideways and check that the match fits the screen.
+- Open the preview on a computer and click through the intro to the main menu.
+- Start a match and drag a card from your hand onto a legal square.
+- Move a unit, then attack with it. Check that it turns to face the way it moved.
+- Play Bowler Brawler and use Strike. See whether the bowling ball knocks units sideways.
+- Look at the text on every menu screen. It should be white. Check the stat badge under each unit.
+- Watch the Crystal Flow shards when a turn starts.
 
 ## Automated checks
-328 of 409 checks passed. 81 failed. Most are in two groups:
-- Older checks from earlier rounds that the builder says are out of date after the owner's later card and layout changes. Examples are card stats, "Fight!" now being "Start", and hand card sizes. The builder did not confirm this for every failure.
-- Checks for this round's new features, including the title card stack, ability buttons, Deck Builder layout and Commander picking. These failed too, so I can't confirm those features work.
+329 of 399 checks passed. 70 failed. Many involve things the owner would notice:
+- Dragging cards from the hand onto the board failed in several checks.
+- The hand fan and hover pop-out checks failed.
+- Crystal Flow shards and the ability buttons failed.
+- Text colour and weight checks failed. Some text is still gold or brown instead of white.
+- The unit stat badge check failed.
+- Several card-ability checks failed, including Bowler Brawler, Rocket Rider, Corpsman Brewlord, Plow and the Crystal cards.
+- The facing check after a move failed.
+- Zooming, panning and black-bar checks timed out.
+- Some failures may be outdated checks, but I can't tell which.
 
 ## Things to know
-- The screenshots only show the intro screen (dirt with "I AM A GAME DEVELOPER" in the dirt) and the "Please rotate your phone" message. I saw no match screens, so I couldn't check how the new features look.
-- Nothing looked broken in the two screenshots.
-- The builder says one test (the Welcome dialog) passes by hand but still fails in the automated run.
+- The desktop screenshot shows a painted mine floor with the words "I AM A GAME DEVELOPER" in the middle. It looks like placeholder or test text, not a real game screen.
+- The phone screenshot only shows "Please rotate your phone". Nothing else was captured, so the match screen was not shown in any screenshot.
+- The build notes I could read describe older rounds, not Round 15 itself.
 - No page errors were recorded.
 
 ## Recommendation
-Request changes: 81 checks failed, including ones for this round's new features, and the screenshots don't show them working.
+Request changes: 70 of 399 checks failed, including card dragging, the hand, text colour and the new Round 15 features, and the screenshots don't show a real game screen.
