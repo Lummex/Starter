@@ -4,7 +4,7 @@
 export function makeOHRenderer(F:any,onReady?:()=>void){
 const IMG=F.builtin||{};const IMGS={};Object.entries(F.images||{}).forEach(([k,v])=>IMGS[k]=v);const FAC=F.factions||{};const P={frames:F.frames||{},layouts:F.layouts||{}};
 let TYPE='unit',FACT='goblins';const sel=null;
-const SRC=s=>!s?'':s.startsWith('img:')?(IMGS[s.slice(4)]||''):(IMG[s]||s);
+const SRC=s=>!s?'':s==='back'?'/art/ui/oreheart-card-back.webp':s.startsWith('img:')?(IMGS[s.slice(4)]||''):(IMG[s]||s);
 const fkey=(type,f)=>type+':'+f;const pk=l=>l&&(l.link||l.costPiece)?'*:'+FACT:fkey(TYPE,FACT);
 const FR={goblins:'goblin',gnomes:'gnome',dwarves:'dwarf'};const OWNF={gnomes:'frame:owner-gnome',dwarves:'frame:owner-dwarf'};
 function defFrame(type,f){if(type==='back')return 'back';if(type==='crystal')return 'frame:card-frame-neutral';if(type==='spell'||type==='instant')return 'frame:spell-frame-'+(FR[f]||'shared');return OWNF[f]||'frame:card-frame-'+(FR[f]||'neutral');}
@@ -43,7 +43,7 @@ function layerHTML(l,c,t){let h='';const st=`left:${l.x}%;top:${l.y}%;width:${l.
 
 function fitText(root){root.querySelectorAll('.ohtx[data-fit="1"]').forEach(el=>{let s=+el.dataset.size;const box=el.parentNode;const sp=el.firstChild;if(!sp)return;let g=0;while(g++<24&&(sp.scrollHeight>box.clientHeight+1||sp.scrollWidth>box.clientWidth+1)&&s>.6){s*=.93;el.style.fontSize=s+'cqh';}});}
 const perFac=l=>!!l.ownFac||(l.kind==='image'&&l.img&&!!l.img.byFaction&&!l.costPiece);
-function groupOf(c){if(c.type==='spell')return c.spellKind==='regular'?'spell':'instant';if(c.type==='crystal')return 'crystal';if(c.type==='commander')return 'commander';return 'unit';}
+function groupOf(c){if(c.type==='back')return 'back';if(c.type==='spell')return c.spellKind==='regular'?'spell':'instant';if(c.type==='crystal')return 'crystal';if(c.type==='commander')return 'commander';return 'unit';}
 function cardHTML(card,artUrl,px){TYPE=groupOf(card);const lay=P.layouts[TYPE]||P.layouts.unit;FACT=TYPE==='crystal'?'any':(card.faction||'goblins');if((TYPE==='unit'||TYPE==='commander')&&FACT==='any')FACT='goblins';
  const tw=typeOf(card);const c={name:card.name,text:card.text||'',flavor:card.flavor||'',cost:card.cost,attack:TYPE==='unit'?card.attack:'',health:(TYPE==='unit'||TYPE==='commander')?card.health:'',move:TYPE==='unit'?card.move:'',rarity:card.rarity||'Common',faction:card.faction||'any',typeWord:(TYPE==='commander'?'Commander':tw[1]).toUpperCase(),typeIcon:TYPE==='commander'?'👑':tw[0],art:artUrl||'',artPos:card.artPos||null};
  const t={kind:TYPE==='spell'||TYPE==='instant'?'spell':'creature',W:lay.W||420,H:lay.H||624,layers:lay.layers};

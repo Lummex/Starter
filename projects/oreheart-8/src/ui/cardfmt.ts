@@ -30,3 +30,6 @@ export function ohCardEl(card: any, artUrl: string | null): HTMLElement {
 export function commanderCard(c: any) {
   return { id: 'cmd:' + c.id, type: 'commander', faction: c.faction, name: c.name, text: c.abilityText, health: c.health, cost: '', rarity: 'Collector', artPos: c.artPos };
 }
+
+/** The Oreheart card back, drawn from the format's `back` layout. */
+export const ohBackEl = () => ohCardEl({ id: 'back', type: 'back', faction: 'goblins', name: '', text: '' }, null);

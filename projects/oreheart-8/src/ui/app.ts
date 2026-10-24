@@ -1,5 +1,5 @@
 import { arenaOpts } from './arena-fx';
-import { ohCardEl, commanderCard } from './cardfmt';
+import { ohCardEl, ohBackEl, commanderCard } from './cardfmt';
 import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
@@ -300,7 +300,7 @@ export class App {
     this.clear();
     const go = h('button', { type: 'button', class: 'begin-btn', onclick: () => { audio.setMusicMode('menu'); this.menuScreen('intro', 'intro'); } }, 'Click to begin');
     this.root.append(h('main', { class: 'screen center begin-gate', 'data-screen': 'begin', 'aria-label': 'Begin' },
-      h('img', { class: 'begin-logo', src: '/art/logo-wide.webp', alt: 'Oreheart', draggable: 'false' }), go));
+      h('div', { class: 'begin-stack', 'aria-hidden': 'true' }, ...[-14, -7, 0, 7, 14].map((deg, i) => h('div', { class: 'begin-card', style: `--r:${deg}deg;--i:${i}` }, ohBackEl()))), h('h1', { class: 'sr-only' }, 'Oreheart'), go));
     go.focus();
   }
   showMenu() {
