@@ -979,11 +979,11 @@ export class App {
     const vh = window.innerHeight, base = Math.min(vh, window.innerWidth * 0.5625) * 0.2455;
     this.handKey = key;
     // phones (very short windows) keep the big owner-size hand; everywhere else the raised hand, with its hovered card, stays below the home row
-    this.handRoom = vh < 500 ? Infinity : vh - bottom - 2;
+    this.handRoom = Infinity; // Round 14: the owner's layout wins: hovered card pops to ~1.6x
     const fit = (vh - bottom - 6) / (1.4861 * 1.15);
     if (vh < 500) { m.style.setProperty('--hcw', Math.round(base) + 'px'); return; }
     if (!(fit > 0)) { m.style.setProperty('--hcw', Math.round(base) + 'px'); return; }
-    m.style.setProperty('--hcw', Math.round(Math.max(base * 0.5, Math.min(base, fit))) + 'px');
+    m.style.setProperty('--hcw', Math.round(Math.max(base * 0.97, Math.min(base, fit))) + 'px');
   }
   layoutSoon() { if (this.layoutQueued) return; this.layoutQueued = true; requestAnimationFrame(() => { this.layoutQueued = false; this.layout(); }); }
   syncCam() { const v = this.view?.getView?.(); if (v && v.zoom) this.cam = { zoom: v.zoom, x: ((v.home?.[0] ?? v.painting.w / 2) - v.centerX) * v.scale, y: ((v.home?.[1] ?? v.painting.h / 2) - v.centerY) * v.scale }; }
@@ -1194,7 +1194,11 @@ export class App {
     const w = el.offsetWidth, hgt = el.offsetHeight;
     // the hand is animating up; measure from its un-transformed layout box plus the final (open) offset
     const ty = new DOMMatrix(getComputedStyle(hand).transform).m42;
+    // measure the hand at its final raised position (no transition) so the popped card lands where the raised hand will be
+    const hadPop = hand.classList.contains('has-pop');
+    hand.style.setProperty('transition', 'none', 'important'); hand.classList.add('has-pop'); void hand.offsetHeight;
     const hb = hand.getBoundingClientRect();
+    hand.style.removeProperty('transition'); if (!hadPop) hand.classList.remove('has-pop'); void hand.offsetHeight;
     const openY = -0.03 * w;
     const left = hb.left + (parseFloat(el.style.left) || 0);
     void ty; void openY;
@@ -1203,7 +1207,7 @@ export class App {
     const cx = left + w / 2, cy = top + hgt / 2;
     const halfW = (w * S) / 2, halfH = (hgt * S) / 2;
     const targetX = Math.max(hr.left + halfW + 2, Math.min(hr.right - halfW - 2, cx));
-    const targetY = hr.bottom - halfH - 1;
+    const targetY = Math.max(hr.bottom, window.innerHeight) - halfH - 1;
     el.classList.add('popped');
     hand.classList.add('has-pop');
     this.asideNeighbors(el);
@@ -1229,6 +1233,14 @@ export class App {
     el.style.transform = 'none';
     el.style.translate = `${targetX - cx}px ${targetY - cy}px`;
     el.style.scale = String(S);
+    {
+      // land the popped card's bottom on the screen edge (measured with transitions off, so the fan/hand offsets are exact)
+      el.style.setProperty('transition', 'none', 'important'); void el.offsetHeight;
+      const r = el.getBoundingClientRect();
+      const dy = (window.innerHeight - 1) - r.bottom, dx = Math.max(hr.left + 2 - r.left, Math.min(hr.right - 2 - r.right, 0));
+      el.style.translate = `${targetX - cx + dx}px ${targetY - cy + dy}px`;
+      void el.offsetHeight; el.style.removeProperty('transition');
+    }
     const cl = (el as any)._clone as El;
     if (cl) { cl.style.cssText = el.style.cssText; cl.style.zIndex = '8999'; }
     this.watchPop(el);

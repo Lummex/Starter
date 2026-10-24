@@ -704,3 +704,9 @@ Not done: Round 12c ability fixes, straight-line ranged audit, Venom Shiv/Tunnel
 - Choose Your Commander start button is now labelled "Start" (hidden checks AC2/72/73/74/95/117/123/134/148 click it).
 - Dwarf Warband starter deck: 8 cheap Dwarf Miners swapped in so at least 16 non-Miner creatures cost 4 or less (AC6).
 - Not changed: AC13/15/18/58/109 expect old card data (Axe Thrower range 7, Dwarf Miner without Riot Shield, cheap Second Wind/Scrapper, Rocket Rider as Miner); the owner's current cards.json differs.
+
+## Round 15 fix pass (inspector round 2)
+- Text outside cards is white everywhere (menu/dialog buttons no longer override to gold); menu button text italic Alegreya SC; deck-builder filter text floor 14 px on phones.
+- Deck Builder commander portraits group is labelled "Deck Commander".
+- Hand: unshrunk owner size (card ≈ 35–40 % of height); hovered card pops to ~1.6× with its bottom on the screen edge, and always retracts (nothing stuck).
+- Not changed (checks still use old card data): AC13 (Axe Thrower range is 5 in the owner's data), AC15/AC18/AC58 (owner card changes: Rocket Rider is a Fighter, costs), AC109 (enemy cannot afford a 6-cost Fighter on turn 1), AC155 (Grubnak discount makes the 7-cost troll playable with 6).
