@@ -66,15 +66,15 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits up to 6 spaces away in any direction; no strike back. Throws skulls from fallen enemies on the battlefield.",
-  "shortText": "Ranged. Hits up to 6 spaces away in any direction; no strike back.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 6 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield.",
+  "text": "Ranged. Hits up to 7 spaces away in any direction; no strike back. Throws skulls from fallen enemies on the battlefield.",
+  "shortText": "Ranged. Hits up to 7 spaces away in any direction; no strike back.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield.",
   "artPos": {
    "s": 0.92,
    "x": -3.1,
    "y": -0.7
   },
-  "range": 6
+  "range": 7
  },
  {
   "id": "goblin-bomber",
@@ -268,16 +268,16 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits up to 5 spaces away; no strike back.",
-  "shortText": "Ranged. Hits up to 5 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits up to 5 spaces away; no strike back.",
+  "text": "Ranged. Hits up to 7 spaces away; no strike back.",
+  "shortText": "Ranged. Hits up to 7 spaces away; no strike back.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits up to 7 spaces away; no strike back.",
   "flavor": "Even the woods keep the storm's company.",
   "artPos": {
    "s": 1.02,
    "x": -4.6,
    "y": 3.8
   },
-  "range": 5
+  "range": 7
  },
  {
   "id": "clockwork-beetle",
@@ -343,15 +343,15 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
-  "shortText": "Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back.",
+  "text": "Flies over other creatures. Ranged. Hurls fireballs and sparks up to 7 spaces away; no strike back.",
+  "shortText": "Flies over other creatures. Ranged. Hurls fireballs and sparks up to 7 spaces away; no strike back.",
+  "longText": "Fighter creature. Cost 8, Attack 3, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Flies over other creatures. Ranged. Hurls fireballs and sparks up to 7 spaces away; no strike back.",
   "artPos": {
    "s": 0.92,
    "x": -2.4,
    "y": -3.7
   },
-  "range": 2
+  "range": 7
  },
  {
   "id": "the-great-steam-golem",
@@ -458,15 +458,15 @@
    "hobble"
   ],
   "unique": false,
-  "text": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
-  "shortText": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
-  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "text": "Ranged 7, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "shortText": "Ranged 7, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 7, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
   "artPos": {
    "s": 1,
    "x": -5.7,
    "y": -5.6
   },
-  "range": 5
+  "range": 7
  },
  {
   "id": "ironhammer-berserker",
@@ -1256,15 +1256,15 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
-  "shortText": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
+  "text": "Ranged. Hits up to 7 spaces away in straight or diagonal lines. Can't cast through allies.",
+  "shortText": "Ranged. Hits up to 7 spaces away in straight or diagonal lines. Can't cast through allies.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits up to 7 spaces away in straight or diagonal lines. Can't cast through allies.",
   "artPos": {
    "s": 0.93,
    "x": -2.2,
    "y": -2.3
   },
-  "range": 99
+  "range": 7
  },
  {
   "id": "gearward-sentinel",

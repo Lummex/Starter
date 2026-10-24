@@ -1314,7 +1314,7 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 @keyframes omenu-grow{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes omenu-item{from{opacity:0;transform:translateY(-.4em)}to{opacity:1;transform:none}}
 .match .tip{z-index:30}
-.match .o-text,.match .o-text *,.match .o-text.ph-step{color:var(--oc,#fff)!important;-webkit-text-fill-color:var(--oc,#fff)!important;font-weight:700!important;font-style:italic}
+.match .o-text,.match .o-text *,.match .o-text.ph-step{color:var(--oc,#fff)!important;-webkit-text-fill-color:var(--oc,#fff)!important;font-weight:var(--ow,700)!important;font-style:var(--os,italic)!important}
 .match .o-phase .ph-step[aria-current=step]{color:#FFD700!important;-webkit-text-fill-color:#FFD700!important}
 .match .o-gem .o-gem-n,.match .o-bank .o-bank-n{position:absolute!important;left:0!important;top:0!important;transform:none!important;width:100%!important;height:100%!important;-webkit-text-stroke:0!important;color:#fff!important}
 .match .o-text.done-btn{font-style:italic}
@@ -1588,3 +1588,8 @@ body *:not(.ohcard):not(.ohcard *):not(.cmd-card):not(.cmd-card *):not(.hand-car
 body *::placeholder{color:#fff!important}
 #app:not(:has(.match)) .btn,#app:not(:has(.match)) .btn *,.dialog .btn,.dialog .btn *,#app .btn.primary{color:#fff!important;-webkit-text-fill-color:#fff!important}
 .mb-pc.mb-btn .mb-txt{font-style:italic!important}
+
+/* Round 16: every text outside the card faces is plain white and italic */
+body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id],[data-card-id] *,[data-card-back] *,.hand-card,.hand-card *,.mull-card *,svg *,canvas){color:#fff!important;-webkit-text-fill-color:#fff!important}
+body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-text,.o-text *,svg *,canvas,.o-menu-item){font-style:italic!important}
+.match .o-phase .ph-step[aria-current=step],.match .o-text.done-btn:hover,.match .o-text.menu-btn:hover{color:#fff!important;-webkit-text-fill-color:#fff!important}

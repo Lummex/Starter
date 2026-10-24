@@ -46,7 +46,7 @@ export function applyOwnerHud(match: El, r: any, hk: HudHooks) {
   const txt = (el: El, spec: any) => {
     const t = textCss(spec.text, ts);
     el.classList.add('o-text');
-    el.style.setProperty('--oc', t.color); el.style.color = t.color; el.style.fontWeight = t.fontWeight; el.style.fontStyle = t.fontStyle; el.style.textAlign = t.textAlign; el.style.textShadow = t.textShadow;
+    el.style.setProperty('--oc', t.color); el.style.setProperty('--ow', t.fontWeight); el.style.setProperty('--os', t.fontStyle); el.style.color = t.color; el.style.fontWeight = t.fontWeight; el.style.fontStyle = t.fontStyle; el.style.textAlign = t.textAlign; el.style.textShadow = t.textShadow;
     el.dataset.size = String(t.sizePct);
     el.style.justifyContent = spec.text.align === 'center' ? 'center' : spec.text.align === 'right' ? 'flex-end' : 'flex-start';
   };
