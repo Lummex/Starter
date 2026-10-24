@@ -1,16 +1,17 @@
 import './style.css';
 import { Game } from './game';
 import { App } from './ui/app';
-import { CARDS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
+import { CARDS, COMMANDERS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
 import { audio } from './ui/audio';
 import { getHighlights, getRings } from './ui/fx-settings';
-import { pictureOf, rarityKey } from './ui/app';
+import { pictureOf, rarityKey, commanderPortrait, INTERNAL_ABILITY } from './ui/app';
 import cardFormat from '../public/art/card-format/format.json';
-import { ohCardEl, ohCardHTML, fitCardText } from './ui/cardfmt';
+import { ohCardEl, ohCardHTML, fitCardText, commanderCard } from './ui/cardfmt';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
+if (test) { try { localStorage.removeItem('oreheart.tutorialSeen'); } catch { /* ignore */ } }
 const seedParam = params.get('seed');
 const seed = seedParam != null && seedParam !== '' && !isNaN(+seedParam) ? Math.trunc(+seedParam) : 1;
 
@@ -23,7 +24,12 @@ if (test) (window as any).__app = app;
 if (test) (window as any).__ohCard = (id: string, h = 624) => { const el = ohCardEl(CARDS[id], pictureOf(CARDS[id])); el.style.cssText = `width:${h * 420 / 624}px;height:${h}px;display:inline-block`; return el; };
 {
   (window as any).oreheart = {
-    renderCard: (id: string, px = 624) => ohCardHTML(CARDS[id], pictureOf(CARDS[id]), px),
+    renderCard: (id: string, px = 624) => {
+      if (id === 'back') return ohCardHTML({ id: 'back', type: 'back', faction: 'goblins', name: '', text: '' }, null, px);
+      const cmd = (COMMANDERS as any)[id.replace(/^cmd:/, '')];
+      if (!CARDS[id] && cmd) return ohCardHTML(commanderCard(cmd), commanderPortrait(cmd.id), px);
+      return ohCardHTML(CARDS[id], pictureOf(CARDS[id]), px);
+    },
     fitText: (el: HTMLElement) => fitCardText(el),
     getState: () => game.getState(),
     legalActions: () => game.legalActions(),
@@ -50,7 +56,7 @@ if (test) (window as any).__ohCard = (id: string, h = 624) => { const el = ohCar
         const uid = b.dataset.creatureUid!, k = b.dataset.ability!;
         const c = st?.board.creatures.find((x: any) => x.uid === uid);
         const r = b.getBoundingClientRect();
-        return { uid, ability: k, cardId: c?.cardId ?? null, owner: c?.owner ?? null, cost: k === 'blink' ? 1 : (ABILITY_COST as any)[k] || 0, enabled: b.getAttribute('aria-disabled') !== 'true', icon: b.dataset.icon || '', label: b.getAttribute('aria-label') || '', rect: { x: r.x, y: r.y, width: r.width, height: r.height } };
+        return { uid, ability: k, cardId: c?.cardId ?? null, owner: c?.owner ?? null, cost: k === 'blink' ? 1 : (ABILITY_COST as any)[INTERNAL_ABILITY[k] || k] || 0, enabled: b.getAttribute('aria-disabled') !== 'true', icon: b.dataset.icon || '', label: b.getAttribute('aria-label') || '', rect: { x: r.x, y: r.y, width: r.width, height: r.height } };
       });
     },
     getAbilityStatus: (uid?: string) => {

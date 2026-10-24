@@ -8,7 +8,7 @@ import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost
 import { SPELL_VISUALS } from '../content/spell-visuals';
 import tutorialJson from '../content/tutorial.json';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters } from './decks';
-import { flowShardCount, deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
+import { brewActions, flowShardCount, deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
 import { audio } from './audio';
 import { getHighlights, setHighlights, resetHighlights, getRings, setRings, resetRings, edgeOf, glowOf, mainOf, ringColor, applyHighlightVars } from './fx-settings';
@@ -50,7 +50,7 @@ export function typeOf(c: any): { icon: string; name: string } {
 const ownerLayoutHand = (ownerLayoutJson0 as any).hud.find((p: any) => p.role === 'player-hand')?.hand;
 export const ABILITY_UI: Record<string, { icon: string; name: string; text: string; burst: string }> = {
   slide: { icon: '🚀', name: 'Slide', text: 'Runs in a straight line until it hits something, then goes Ka-boom.', burst: 'KA-BOOM!' },
-  bowl: { icon: '🎳', name: 'Bowling ball', text: 'Rolls a bowling ball in a straight line; every creature in its path is knocked back 1–2 spaces.', burst: 'STRIKE!' },
+  bowl: { icon: '🎳', name: 'Strike', text: 'Rolls a bowling ball in a straight line; every creature in its path is knocked back 1–2 spaces.', burst: 'STRIKE!' },
   shockwave: { icon: '💥', name: 'Shockwave', text: 'Knocks back all adjacent enemies 1 space and deals 1 damage to each.', burst: 'SHOCKWAVE!' },
   plow: { icon: '🚜', name: 'Plow', text: 'Plows in a straight line, shoving creatures aside.', burst: 'PLOW!' },
   ramMove: { icon: '🐏', name: 'Ram charge', text: 'Moves any distance in a straight line.', burst: 'CHARGE!' },
@@ -61,6 +61,9 @@ export const ABILITY_UI: Record<string, { icon: string; name: string; text: stri
   brew: { icon: '🍺', name: 'Brew', text: 'Once per turn, even on the enemy turn: heal an adjacent wounded dwarf (it survives lethal damage with 1 Health). It becomes Drunk for 2 rounds.', burst: 'BREW!' },
   blink: { icon: '✨', name: 'Blink', text: 'Once, swap places with any of your creatures.', burst: 'BLINK!' },
 };
+/** Owner-facing names of the activated abilities (the data-ability attribute); the engine keeps its own names. */
+export const PUB_ABILITY: Record<string, string> = { slide: 'run', bowl: 'strike', shaman: 'pickUp', rocket: 'rocketRide', ramMove: 'gallop' };
+export const INTERNAL_ABILITY: Record<string, string> = Object.fromEntries(Object.entries(PUB_ABILITY).map(([a, b]) => [b, a]));
 export const RARITY_WORD: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Collector' };
 const CRYSTAL_SVG = '<svg viewBox="0 0 24 32" focusable="false" aria-hidden="true" class="rc"><polygon points="12,1 20,10 12,31 4,10" fill="currentColor"/><polygon points="12,1 4,10 12,13" fill="#fff" fill-opacity=".62"/><polygon points="12,1 20,10 12,13" fill="#fff" fill-opacity=".25"/><polygon points="4,10 12,13 12,31" fill="#000" fill-opacity=".18"/><polygon points="20,10 12,13 12,31" fill="#000" fill-opacity=".42"/><polyline points="12,1 20,10 12,31 4,10 12,1" fill="none" stroke="#1a0f06" stroke-width="1.1" stroke-linejoin="round"/><path d="M4,10 L12,13 L20,10 M12,13 L12,31" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".6"/></svg>';
 /** Card face on the owner's faction frame: cost, Attack, Health, Movement, type icon, picture, name, short text, rarity. */
@@ -1898,7 +1901,7 @@ export class App {
           h('div', { class: 'tk-stats' }, h('div', { 'data-unit-badge': '', 'data-metal': METAL[card.faction] || 'gold', 'data-type': isMiner(card) ? 'pickaxe' : card.abilities?.includes('ranged') ? 'bow' : 'sword', role: 'img' },
             h('img', { class: 'ub-frame', alt: '', draggable: 'false', src: `/art/ui/badges/frame-${METAL[card.faction] || 'gold'}.webp` }),
             h('img', { class: 'ub-icon', alt: '', draggable: 'false', src: `/art/ui/badges/icon-${isMiner(card) ? 'pickaxe' : card.abilities?.includes('ranged') ? 'bow' : 'sword'}-${METAL[card.faction] || 'gold'}.webp` }),
-            h('span', { class: 'ub-n ub-h', 'data-stat': 'health' }), h('span', { class: 'ub-n ub-a', 'data-stat': 'attack' }), h('span', { class: 'ub-n ub-m', 'data-stat': 'movement' })), h('span', { class: 'a' }), ' ', h('span', { class: 'h' }), ' ', h('span', { class: 'm' }), h('span', { class: 'sh' })), h('div', { class: 'pips', 'aria-hidden': 'true' }));
+            h('span', { class: 'ub-n ub-h', 'data-stat': 'health', 'aria-hidden': 'true' }), h('span', { class: 'ub-n ub-a', 'data-stat': 'attack', 'aria-hidden': 'true' }), h('span', { class: 'ub-n ub-m', 'data-stat': 'movement', 'aria-hidden': 'true' })), h('span', { class: 'a' }), ' ', h('span', { class: 'h' }), ' ', h('span', { class: 'm' }), h('span', { class: 'sh' })), h('div', { class: 'pips', 'aria-hidden': 'true' }));
         this.tokens.set(c.uid, el);
         this.r.board.insertBefore(el, this.r.fx);
       }
@@ -1948,19 +1951,32 @@ export class App {
 
   /** Round 13: a small round icon above every unit with an activated ability; lit when it is your turn and the ability can be used. */
   renderAbilityButtons(st: any) {
-    const legal: any[] = st.priority === 'player' && st.phase !== 'over' && st.phase !== 'mulligan' ? this.game.legalActions().filter((a: any) => a.type === 'ability' && (a.ability === 'brew' || (st.activePlayer === 'player' && st.phase === 'action'))) : [];
+    const live = st.phase !== 'over' && st.phase !== 'mulligan';
+    const legal: any[] = [...(live ? brewActions(st, 'player') : []), ...(live && st.priority === 'player' ? this.game.legalActions().filter((a: any) => a.type === 'ability' && (a.ability === 'brew' || (st.activePlayer === 'player' && st.phase === 'action'))) : [])];
     for (const c of st.board.creatures) {
       const el = this.tokens.get(c.uid);
       if (!el) continue;
       const keys = ((CARDS[c.cardId].abilities || []) as string[]).filter((k) => ABILITY_UI[k]);
-      el.querySelectorAll('.ab-btn').forEach((b) => { if (!keys.includes((b as El).dataset.ability!)) b.remove(); });
+      el.querySelectorAll('.ab-btn').forEach((b) => { if (!keys.some((k) => (PUB_ABILITY[k] || k) === (b as El).dataset.ability)) b.remove(); });
       keys.forEach((k, i) => {
         const ui = ABILITY_UI[k], cost = k === 'blink' ? 1 : ABILITY_COST[k] || 0;
-        let b = el.querySelector(`.ab-btn[data-ability="${k}"]`) as El | null;
+        let b = el.querySelector(`.ab-btn[data-ability="${PUB_ABILITY[k] || k}"]`) as El | null;
         if (!b) {
-          b = h('button', { type: 'button', class: 'ab-btn', 'data-ability': k, 'data-creature-uid': c.uid }, h('span', { 'aria-hidden': 'true' }, ui.icon)) as El;
-          b.addEventListener('pointerdown', (e) => e.stopPropagation());
-          b.addEventListener('click', (e) => { e.stopPropagation(); const cr = this.game.state.board.creatures.find((x: any) => x.uid === c.uid); if (cr) this.useAbility(cr, k); });
+          b = h('button', { type: 'button', class: 'ab-btn', 'data-ability': PUB_ABILITY[k] || k, 'data-creature-uid': c.uid }, h('span', { 'aria-hidden': 'true' }, ui.icon)) as El;
+          let picking = false;
+          // while a target is being chosen the button may sit over a target square: let that press reach the board
+          b.addEventListener('pointerdown', (e) => { picking = !!this.pick; if (!picking) e.stopPropagation(); });
+          const showTip = () => {
+            this.hideAbilityTip();
+            const tip = h('div', { role: 'tooltip', class: 'ab-tip', id: 'ab-tip' }, b!.getAttribute('aria-label') || '') as El;
+            const r = b!.getBoundingClientRect();
+            tip.style.cssText = `position:fixed;left:${r.left + r.width / 2}px;top:${Math.max(4, r.top - 8)}px;transform:translate(-50%,-100%);z-index:9999;max-width:min(320px,90vw);padding:6px 10px;background:#000c;border:1px solid #c9a24b;border-radius:8px;color:#fff;font-size:max(14px,1.6vh);pointer-events:none;text-align:center`;
+            document.body.append(tip);
+            b!.setAttribute('aria-describedby', 'ab-tip');
+          };
+          b.addEventListener('pointerenter', showTip); b.addEventListener('focus', showTip);
+          b.addEventListener('pointerleave', () => this.hideAbilityTip()); b.addEventListener('blur', () => this.hideAbilityTip());
+          b.addEventListener('click', (e) => { e.stopPropagation(); this.hideAbilityTip(); if (picking) { picking = false; return; } const cr = this.game.state.board.creatures.find((x: any) => x.uid === c.uid); if (cr) this.useAbility(cr, k); });
           el.append(b);
         }
         const mineUnit = c.owner === 'player';
@@ -1969,12 +1985,13 @@ export class App {
         b.classList.toggle('off', !ok);
         b.setAttribute('aria-disabled', String(!ok));
         b.style.setProperty('--ox', (i - (keys.length - 1) / 2) * 120 + '%');
-        const label = `${ui.name} (${cost ? cost + ' crystal' + (cost > 1 ? 's' : '') : 'free'}): ${ui.text}`;
+        const label = `${CARDS[c.cardId].name}: ${ui.name} (${cost || 'free'}) ${cost ? 'crystal' + (cost > 1 ? 's' : '') + '. ' : '. '}${ui.text}`;
         b.title = label; b.setAttribute('aria-label', label);
       });
     }
   }
   /** Click an ability button: no target = fire; otherwise light up the squares it can go to and wait for a click. */
+  hideAbilityTip() { document.getElementById('ab-tip')?.remove(); }
   useAbility(cr: any, k: string) {
     const ui = ABILITY_UI[k];
     if (this.game.state.priority !== 'player' || (this.game.state.phase !== 'action' && k !== 'brew')) { this.flash('Abilities are used in your Action phase'); return; }

@@ -49,5 +49,5 @@ function cardHTML(card,artUrl,px){TYPE=groupOf(card);const lay=P.layouts[TYPE]||
  const t={kind:TYPE==='spell'||TYPE==='instant'?'spell':'creature',W:lay.W||420,H:lay.H||624,layers:lay.layers};
  const coversAll=l=>l.kind==='image'&&l.img&&l.img.byFaction&&!l.costPiece&&Math.abs(l.x||0)<2&&Math.abs(l.y||0)<2&&l.w>=98&&l.h>=98;
  const ls=lay.layers.filter(l=>!coversAll(l)).map((l,i)=>{const g=perFac(l)&&l.fg&&l.fg[FACT];const o=g?Object.assign({},l,g):l;if(o.z==null)o.z=i;return o;});
- return `<div class="cardc" style="width:${px*t.W/t.H}px;height:${px}px">${ls.sort((a,b)=>(a.z||0)-(b.z||0)).map(l=>layerHTML(l,c,t)).join('')}</div>`;}
+ return `<div class="cardc" style="width:${px*420/624}px;height:${px}px">${ls.sort((a,b)=>(a.z||0)-(b.z||0)).map(l=>layerHTML(l,c,t)).join('')}</div>`;}
 return {cardHTML,fitText,groupOf};}

@@ -256,7 +256,7 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .callout{position:absolute;z-index:60;transform:translate(-50%,-120%);pointer-events:none;font-family:"Alegreya SC",serif;font-weight:400;font-size:clamp(.8rem,3.4vh,1.3rem);color:#fff6dc;-webkit-text-stroke:2px #1a0f05;paint-order:stroke fill;text-shadow:0 0 12px #ffb347,0 3px 0 #000;white-space:nowrap;animation:calloutPop 1.7s ease-out forwards;background:#2a0f4acc;padding:2px 12px;border-radius:12px;border:2px solid #ffd45a}
 .callout.opponent{color:#ffd0c8;border-color:#ff6a5a}
 @keyframes calloutPop{0%{opacity:0;transform:translate(-50%,-60%) scale(.5)}12%{opacity:1;transform:translate(-50%,-120%) scale(1.15)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-160%) scale(1)}}
-[class^="fx-"]{position:absolute;pointer-events:none;z-index:55;transform:translate(-50%,-50%)}
+[class^="fx-"]:not(.fx-panel):not(.fx-row){position:absolute;pointer-events:none;z-index:55;transform:translate(-50%,-50%)}
 .fx-orb{font-size:2.4rem;animation:orbPop .9s ease-out forwards}
 @keyframes orbPop{0%{transform:translate(-50%,-300%) scale(.5)}50%{transform:translate(-50%,-50%) scale(1.3)}100%{transform:translate(-50%,-50%) scale(2.2);opacity:0}}
 .fx-boom{font-family:"Alegreya SC",serif;font-weight:400;font-size:1.6rem;color:#ffd45a;-webkit-text-stroke:2px #a01800;paint-order:stroke fill;animation:calloutPop 1.1s ease-out forwards}
@@ -1576,7 +1576,7 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 [data-unit-badge]{position:relative;display:block;width:var(--bw);aspect-ratio:412/262;font-family:'Russo One',system-ui,sans-serif;pointer-events:none}
 [data-unit-badge] .ub-frame{position:absolute;inset:0;width:100%;height:100%;display:block}
 [data-unit-badge] .ub-icon{position:absolute;left:49.8%;top:72.5%;width:29.5%;aspect-ratio:1;transform:translate(-50%,-50%);display:block}
-[data-unit-badge] .ub-n{position:absolute;transform:translate(-50%,-50%);color:#fff!important;-webkit-text-fill-color:#fff!important;-webkit-text-stroke:calc(var(--bw)*.03) #000;paint-order:stroke fill;text-shadow:0 calc(var(--bw)*.015) calc(var(--bw)*.03) #000c;line-height:1;font-weight:400}
+[data-unit-badge] .ub-n{position:absolute;transform:translate(-50%,-50%);color:#fff!important;-webkit-text-fill-color:#fff!important;-webkit-text-stroke:calc(var(--bw)*.03) #000;paint-order:stroke fill;text-shadow:0 calc(var(--bw)*.015) calc(var(--bw)*.03) #000c;line-height:1;font-weight:400;font-family:'Russo One',system-ui,sans-serif!important;font-style:normal!important}
 [data-unit-badge] .ub-h{left:49.5%;top:34.7%;font-size:calc(var(--bw)*.262*.18*1.55)}
 [data-unit-badge] .ub-a{left:25.5%;top:79.8%;font-size:calc(var(--bw)*.262*.15*1.55)}
 [data-unit-badge] .ub-m{left:89.1%;top:80.5%;font-size:calc(var(--bw)*.262*.15*1.55)}
@@ -1600,3 +1600,4 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 .db-cmdinner{display:flex;gap:6%;align-items:stretch;justify-content:flex-start;width:100%;height:100%}
 .match .o-deck .pile-n:not(#_w){font-weight:var(--ow,700)!important;font-style:var(--os,italic)!important}
 .cmd-win:not(#_w) *:not(#_x),.screen.setup .cmd-card .cmd-win *:not(#_x){color:#fff!important;-webkit-text-fill-color:#fff!important}
+.token .tk-stats:not(#_w){transform:translate(-50%,calc(var(--bw)*.3))!important}
