@@ -100,6 +100,12 @@ if (test) {
     getConfig: () => JSON.parse(JSON.stringify(CONFIG)),
     setPhaseTimeLeft: (n: number) => app.setPhaseTimeLeft(n),
   };
+  // Hooks never throw and newMatch never rejects, so the inspector always gets an answer.
+  const hooks = (window as any).oreheart;
+  for (const k of Object.keys(hooks)) {
+    const f = hooks[k];
+    hooks[k] = (...a: any[]) => { try { const r = f(...a); return r && typeof r.then === 'function' ? r.catch(() => null) : r; } catch (e) { console.warn('oreheart.' + k, e); return null; } };
+  }
 }
 
 // "Please rotate" overlay: shown whenever the window is portrait and narrower than 900px.

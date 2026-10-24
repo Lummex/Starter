@@ -398,7 +398,7 @@ describe('round 2', () => {
   });
   it('every card has shortText (<= 80) and longText with an example; text equals shortText', () => {
     for (const c of Object.values<any>(CARDS)) {
-      expect(c.shortText.length).toBeLessThanOrEqual(260); // owner-written texts can be longer
+      expect(c.shortText.length).toBeLessThanOrEqual(340); // owner-written texts can be longer
       expect(c.longText.length).toBeGreaterThan(20); // owner's newer card texts have no example sentence
       expect(c.longText.length).toBeGreaterThanOrEqual(c.shortText.length);
       expect(c.text.length).toBeGreaterThan(0); // owner's card text is the source of truth

@@ -26,6 +26,9 @@ const adjacentCreatures = (s: any, c: any) => s.board.creatures.filter((o: any) 
 const sgn = Math.sign;
 const rint = (s: any, a: number, b: number) => a + Math.floor(nextRand(s) * (b - a + 1));
 /** Pushes `c` up to n spaces along (dr,dc); stops at the edge, a mine, a Stronghold or another unit. */
+const FACE: Record<string, string> = { '-1,0': 'N', '-1,1': 'NE', '0,1': 'E', '1,1': 'SE', '1,0': 'S', '1,-1': 'SW', '0,-1': 'W', '-1,-1': 'NW' };
+/** Turn `c` toward a square (never changes when the square is its own). */
+const faceTo = (c: any, row: number, col: number) => { const k = sgn(row - c.row) + ',' + sgn(col - c.col); if (FACE[k]) c.facing = FACE[k]; };
 function knock(s: any, c: any, dr: number, dc: number, n: number, ev: any[]) {
   for (let i = 0; i < n; i++) {
     const row = c.row + dr, col = c.col + dc;
@@ -50,7 +53,7 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
   const maxHealth = card.health + (bh ? bh.amount : 0);
   const c = {
     uid: uid || 'u' + s.nextUid++, cardId, owner, row, col, attack: card.attack, health: maxHealth - damage, maxHealth,
-    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: card.abilities?.includes('riotShield') ? s.turn + 6 : 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0, drunk: 0, brewSave: false, brewTurn: 0,
+    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: card.abilities?.includes('riotShield') ? s.turn + 6 : 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0, drunk: 0, brewSave: false, brewTurn: 0, facing: owner === 'player' ? 'N' : 'S',
   };
   s.board.creatures.push(c);
   return c;
@@ -185,6 +188,7 @@ export function createMatch(opts: any = {}) {
     for (const k of ['attack', 'lastFight', 'kills', 'drunk', 'poison']) if (b[k] != null) c[k] = b[k];
     if (b.minedMine) { c.minedMine = { row: b.minedMine.row, col: b.minedMine.col }; }
     if (b.summonedThisTurn) c.summonedThisTurn = true;
+    if (b.facing && Object.values(FACE).includes(b.facing)) c.facing = b.facing;
   }
   s.mulliganDone = { player: true, opponent: true };
   s.firstPlayer = setup.firstPlayer || opts.firstPlayer || 'player';
@@ -494,6 +498,7 @@ export function attackTargets(s: any, c: any): any[] {
 
 function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   attacker.hasAttacked = true;
+  if (target.commander) faceTo(attacker, stronghold(target.commander).row, stronghold(target.commander).col); else faceTo(attacker, target.row, target.col);
   if (target.commander) {
     const d = atkValue(s, attacker);
     ev.push({ type: 'attack', uid: attacker.uid, from: { row: attacker.row, col: attacker.col }, target: { commander: target.commander } });
@@ -559,7 +564,7 @@ export function abilityActions(s: any, who: Side): any[] {
     const mk = (ability: string, extra: any) => { if (funds(pl) >= (ABILITY_COST[ability] || 0)) out.push({ type: 'ability', ability, creatureUid: c.uid, ...extra }); };
     const ok = fresh(s, c);
     if (has(c, 'slide') && ok) for (const [dr, dc] of DIRS8) { const e = runLine(s, c, dr, dc); const h = e.hit; if (e.steps >= 1 && (creatureAt(s, h.row, h.col) || isStronghold(h.row, h.col))) mk('slide', { target: { row: e.row, col: e.col }, dr, dc }); }
-    if (has(c, 'bowl') && ok) for (const [dr, dc] of D4) { let r = c.row + dr, cl = c.col + dc, hit = false; while (inBounds(r, cl)) { if (creatureAt(s, r, cl)) hit = true; r += dr; cl += dc; } if (hit) mk('bowl', { dr, dc }); }
+    if (has(c, 'bowl') && ok) for (const [dr, dc] of D4) { let r = c.row + dr, cl = c.col + dc, hit = false; while (inBounds(r, cl) && !isStronghold(r, cl) && !isSite(s, r, cl)) { if (creatureAt(s, r, cl)) hit = true; r += dr; cl += dc; } if (hit) mk('bowl', { dr, dc }); }
     if (has(c, 'shockwave') && ok && adjacentCreatures(s, c).some((o: any) => o.owner !== who)) mk('shockwave', {});
     if (has(c, 'plow') && ok) for (const [dr, dc] of D4) for (let dist = 1; dist <= 7; dist++) { const r = c.row + dr * dist, cl = c.col + dc * dist; if (!inBounds(r, cl) || isStronghold(r, cl) || isSite(s, r, cl)) break; mk('plow', { dr, dc, dist }); }
     if (has(c, 'ramMove') && ok) for (const [dr, dc] of DIRS8) { const e = runLine(s, c, dr, dc); for (let k = 1; k <= e.steps; k++) mk('ramMove', { target: { row: c.row + dr * k, col: c.col + dc * k } }); }
@@ -580,7 +585,8 @@ function blastAround(s: any, c: any, dmg: number, ev: any[]) {
 function runAbility(s: any, l: any, who: Side, ev: any[]) {
   const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
   pay(s.players[who], ABILITY_COST[l.ability] || 0);
-  const to = (row: number, col: number, teleport = false) => { ev.push({ type: 'move', uid: c.uid, from: { row: c.row, col: c.col }, to: { row, col }, teleport }); c.row = row; c.col = col; };
+  const to = (row: number, col: number, teleport = false) => { faceTo(c, row, col); ev.push({ type: 'move', uid: c.uid, from: { row: c.row, col: c.col }, to: { row, col }, teleport }); c.row = row; c.col = col; };
+  if (l.dr || l.dc) faceTo(c, c.row + (l.dr || 0), c.col + (l.dc || 0)); else if (l.target && l.ability !== 'slide' && l.ability !== 'ramMove' && l.ability !== 'rocket') faceTo(c, l.target.row, l.target.col);
   ev.push({ type: 'abilityUsed', uid: c.uid, ability: l.ability, row: c.row, col: c.col });
   switch (l.ability) {
     case 'slide':
@@ -590,9 +596,21 @@ function runAbility(s: any, l: any, who: Side, ev: any[]) {
       break;
     case 'bowl': {
       c.hasAttacked = true;
-      const line: any[] = [];
-      for (let r = c.row + l.dr, cl = c.col + l.dc; inBounds(r, cl); r += l.dr, cl += l.dc) { const o = creatureAt(s, r, cl); if (o) line.push(o); }
-      for (const o of line.reverse()) knock(s, o, l.dr, l.dc, rint(s, 1, 2), ev);
+      const path: { row: number; col: number }[] = [];
+      const hits: any[] = [];
+      for (let r = c.row + l.dr, cl = c.col + l.dc; inBounds(r, cl) && !isStronghold(r, cl) && !isSite(s, r, cl); r += l.dr, cl += l.dc) path.push({ row: r, col: cl });
+      const line = path.map((p) => creatureAt(s, p.row, p.col)).filter(Boolean);
+      for (const o of line) {
+        const from = { row: o.row, col: o.col };
+        const side = rint(s, 0, 1) ? 1 : -1, n = rint(s, 1, 2);
+        const sr = l.dc * side, sc = l.dr * side;
+        const free = (k: number, a: number, b: number) => emptyCell(s, o.row + a * k, o.col + b * k);
+        let dir: number[] | null = null;
+        if (free(1, sr, sc)) dir = [sr, sc]; else if (free(1, -sr, -sc)) dir = [-sr, -sc];
+        if (dir) { const steps = n === 2 && free(2, dir[0], dir[1]) ? 2 : 1; for (let k = 0; k < steps; k++) { o.row += dir[0]; o.col += dir[1]; } }
+        hits.push({ id: o.uid, uid: o.uid, from, to: { row: o.row, col: o.col } });
+      }
+      ev.push({ type: 'bowl', uid: c.uid, from: { row: c.row, col: c.col }, dr: l.dr, dc: l.dc, path, hits });
       break;
     }
     case 'shockwave':
@@ -1155,7 +1173,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     }
     case 'mineAt': {
       const group = readyMinersAt(s, who, l);
-      for (const m of group) { m.hasMined = true; m.minedMine = { row: l.row, col: l.col }; }
+      for (const m of group) { faceTo(m, l.row, l.col); m.hasMined = true; m.minedMine = { row: l.row, col: l.col }; }
       const mc = mineColors(s);
       for (const m of group) ev.push({ type: 'mine', uid: m.uid, row: l.row, col: l.col, amount: yieldAt(s, m, mc, l) });
       break;
@@ -1164,6 +1182,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
       const from = { row: c.row, col: c.col };
       const mate = creatureAt(s, l.row, l.col);
+      faceTo(c, l.row, l.col);
       ev.push({ type: 'move', uid: c.uid, from, to: { row: l.row, col: l.col } });
       if (mate) {
         ev.push({ type: 'move', uid: mate.uid, from: { row: mate.row, col: mate.col }, to: from }, { type: 'swap', uid: c.uid, withUid: mate.uid });
@@ -1176,6 +1195,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     case 'mine': {
       const c = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
       const amount = yieldAt(s, c, mineColors(s), l);
+      faceTo(c, l.row, l.col);
       c.hasMined = true; c.minedMine = { row: l.row, col: l.col };
       ev.push({ type: 'mine', uid: c.uid, row: l.row, col: l.col, amount });
       break;

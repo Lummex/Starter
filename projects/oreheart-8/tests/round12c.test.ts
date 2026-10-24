@@ -63,7 +63,7 @@ describe('round 12c active abilities', () => {
     let s = toAction(mk({ playerCrystals: 3, board: [P('goblin-scrapper', 4, 2), O('goblin-grunt', 4, 4)] }));
     s = act(s, abil(s, 'bowl', { dr: 0, dc: 1 }));
     expect(at(s, 4, 4)).toBeUndefined();
-    expect(s.board.creatures.some((c: any) => c.owner === 'opponent' && c.col > 4 && c.row === 4)).toBe(true);
+    expect(s.board.creatures.some((c: any) => c.owner === 'opponent' && c.col === 4 && c.row !== 4)).toBe(true);
   });
   it('Voldawright shockwave and Rocket Rider explosion', () => {
     let s = toAction(mk({ playerCrystals: 3, board: [P('gnome-cogger', 4, 3), O('goblin-grunt', 4, 4)] }));
