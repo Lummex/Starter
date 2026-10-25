@@ -145,7 +145,14 @@ rotate.className = 'rotate-overlay';
 rotate.setAttribute('role', 'alert');
 rotate.innerHTML = '<div class="rot-icon" aria-hidden="true">📱</div><p>Please rotate your phone</p>';
 document.body.append(rotate);
-const checkRotate = () => { rotate.hidden = !(window.innerHeight > window.innerWidth && window.innerWidth < 900); };
+// owner (Oct 25): on a computer (no touch screen) the game keeps its shape: it letterboxes to 16:9 in a browser
+// window (zoom in/out still works) and never shows the phone rotate message. Phones and tablets work as before.
+const isComputer = () => !(navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches);
+const checkRotate = () => {
+  const pc = isComputer();
+  document.documentElement.toggleAttribute('data-desk', pc);
+  rotate.hidden = pc || !(window.innerHeight > window.innerWidth && window.innerWidth < 900);
+};
 checkRotate();
 window.addEventListener('resize', checkRotate);
 window.addEventListener('orientationchange', checkRotate);
