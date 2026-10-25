@@ -89,17 +89,21 @@
  "axe-thrower": {
   "character": "01a17264-72d7-71b0-b3d4-1d627fa4b502",
   "rig": "01a17267-bed9-73f7-94de-40d99a6c2a47",
-  "anim": "01a17268-de1a-715c-8f40-71a560fa7647"
+  "anim": "01a17268-de1a-715c-8f40-71a560fa7647",
+  "shield": "01a174d3-5b8d-74ab-b0ce-b0c7cbae6d6e"
  },
  "barrelback-courier": {
   "character": "01a17264-72d6-725f-9ad8-a50e9906469d",
   "rig": "01a17268-0f7d-77d3-9422-9c8e01f92e6b",
-  "anim": "01a17268-ddfd-74e5-ba25-94650324941d"
+  "anim": "01a17268-ddfd-74e5-ba25-94650324941d",
+  "barrel-pack": "01a174d3-5b8d-74ac-918a-c4b8ed15edc9"
  },
  "brewmaster": {
   "character": "01a17264-72fb-770e-9a8e-8dd89b58baf4",
   "rig": "01a17267-e73c-7437-8617-57ee8f758825",
-  "anim": "01a17268-df00-7708-94f7-4dabdaba26dd"
+  "anim": "01a17268-df00-7708-94f7-4dabdaba26dd",
+  "keg-pack": "01a174d3-5b91-7651-8075-cd8c9c2d3426",
+  "crystal-hammer": "01a174d3-5b8e-75a7-b320-7f9f0e8d7eac"
  },
  "clockwork-beetle": {
   "character": "01a17264-7351-73eb-9636-9b35d0371ca7"
@@ -107,17 +111,21 @@
  "crystal-drunk-delver": {
   "character": "01a17268-d8d9-756b-a157-885823f4970c",
   "rig": "01a1726c-9de9-721d-9b75-835b74a69f3c",
-  "anim": "01a1726d-4632-7632-95e1-e39159eb3fa0"
+  "anim": "01a1726d-4632-7632-95e1-e39159eb3fa0",
+  "pickaxe": "01a174d3-5b91-7583-8028-954c413735d5",
+  "crystal-backpack": "01a174d3-5b98-74e2-add7-e6aee47431b4"
  },
  "deepforge-crossbowman": {
   "character": "01a17269-7f50-71be-9274-8a907b019ef8",
   "rig": "01a1726c-ed7b-72b6-aa63-438568decf9b",
-  "anim": "01a1726d-95e2-737b-8fa5-efb111995c9d"
+  "anim": "01a1726d-95e2-737b-8fa5-efb111995c9d",
+  "crystal-gun": "01a174d5-1763-7165-b2be-33217e28116d"
  },
  "dwarf-miner": {
   "character": "01a17269-a71a-76aa-8182-46f5dbec24b2",
   "rig": "01a1726d-3d31-7531-a84e-b1dde1490056",
-  "anim": "01a1726e-0e63-7367-a91b-74277ab8e49b"
+  "anim": "01a1726e-0e63-7367-a91b-74277ab8e49b",
+  "tower-shield": "01a174d6-089e-708a-a41f-6d578c99ac87"
  },
  "dwarf-pickman": {
   "character": "01a17269-a72f-7443-a09c-c65495079485",
@@ -127,22 +135,26 @@
  "dwarf-stoneback": {
   "character": "01a1726e-0e89-75e2-8cee-5827f6523428",
   "rig": "01a17270-90a6-7796-a8af-6faa6a03d55e",
-  "anim": "01a17271-60bc-726a-8109-ef48886314fc"
+  "anim": "01a17271-60bc-726a-8109-ef48886314fc",
+  "hammer": "01a174d6-0946-7279-a503-af40c77863e2"
  },
  "gearward-sentinel": {
   "character": "01a1726e-380c-7662-bcac-df06c25cb503",
   "rig": "01a17270-b8f5-7657-b9fd-3bfc914f2405",
-  "anim": "01a17271-8791-741b-a55e-e64026528b8c"
+  "anim": "01a17271-8791-741b-a55e-e64026528b8c",
+  "mace": "01a174d6-5856-7754-90bd-1be6eeac9e90"
  },
  "glyphshield-warden": {
   "character": "01a1726e-d860-72ac-a1b7-2149be4c21e5",
   "rig": "01a17271-586d-71f8-99cb-aa75ea901d9e",
-  "anim": "01a17272-2835-77bb-bd18-e23ac8ca3982"
+  "anim": "01a17272-2835-77bb-bd18-e23ac8ca3982",
+  "shield": "01a174d6-cfe0-71c9-8840-9eb0fcd373bb"
  },
  "gnome-cogger": {
   "character": "01a1726f-54c4-75c0-a6e9-23460647361c",
   "rig": "01a17271-fa60-765b-9b1a-c24b4e5790cc",
-  "anim": "01a17272-ca52-74ce-97e7-e90e0ef3431b"
+  "anim": "01a17272-ca52-74ce-97e7-e90e0ef3431b",
+  "mace": "01a174d7-9b00-7356-be8b-26abd681814b"
  },
  "gnome-illusionist": {
   "character": "01a17272-2873-779a-aa29-28d52250900c",
@@ -152,12 +164,15 @@
  "gnome-smith-miner": {
   "character": "01a17272-5000-77a0-893a-02037a7d2296",
   "rig": "01a17275-22b1-7258-bb3e-c24187363a70",
-  "anim": "01a17275-ca8d-71c2-950c-91be37ce6e54"
+  "anim": "01a17275-ca8d-71c2-950c-91be37ce6e54",
+  "pickaxe": "01a174d8-12e2-7597-aa1a-31c81951a33d"
  },
  "gnome-tinker": {
   "character": "01a17272-f2ba-7268-8e1b-8e07d99921ad",
   "rig": "01a17275-9a81-73e9-8bcf-b5d82cc022b8",
-  "anim": "01a17276-6afe-7123-9501-4074710cffe0"
+  "anim": "01a17276-6afe-7123-9501-4074710cffe0",
+  "scepter": "01a174d8-8af6-747e-8af5-ec9bfb5fb754",
+  "crystal-shield": "01a174d8-8b66-70db-baf8-23e4a8aafce4"
  },
  "gnome-widget": {
   "character": "01a17273-6c9d-7298-a3ca-182093769516",
@@ -167,62 +182,74 @@
  "grimhold-ravager": {
   "character": "01a17276-4237-779b-baf8-c789105ad8d9",
   "rig": "01a17279-637d-72df-a545-525552dd6448",
-  "anim": "01a1727a-3692-706a-99e2-2a4f9ee7255b"
+  "anim": "01a1727a-3692-706a-99e2-2a4f9ee7255b",
+  "hammer": "01a174d8-da48-73d0-a362-efeddf329b91"
  },
  "gyrocopter-ace": {
   "character": "01a17276-92be-718b-a24f-3678f75f4b8c",
   "rig": "01a17279-8b89-7181-a4e5-95a44cb3a5ad",
-  "anim": "01a1727a-5b8b-717c-9149-25b41edf21c4"
+  "anim": "01a1727a-5b8b-717c-9149-25b41edf21c4",
+  "gyro-wings": "01a174d9-2ab0-7124-993f-51bfed31e759"
  },
  "hexwright-apprentice": {
   "character": "01a17277-3586-730a-be35-154323261b79",
   "rig": "01a1727a-52f5-7435-854d-d9558d5c19f1",
-  "anim": "01a1727a-fbb3-729b-aa81-19c6b8b0db0a"
+  "anim": "01a1727a-fbb3-729b-aa81-19c6b8b0db0a",
+  "staff": "01a174d9-7c59-70e6-a7cb-b75b049d581a"
  },
  "ironhammer-berserker": {
   "character": "01a17277-5dba-7296-9b43-5223cbcd6e9f",
   "rig": "01a1727a-caf4-70ff-8312-1ccbac3fd315",
-  "anim": "01a1727b-c465-7099-a2cd-d7055ab7d680"
+  "anim": "01a1727b-c465-7099-a2cd-d7055ab7d680",
+  "crystal-pistol": "01a174da-1db9-760d-9833-5b5e51f2b921"
  },
  "oathbound-pikeman": {
   "character": "01a1727a-fdee-737d-9a07-e24582092b52",
   "rig": "01a1727d-a4f5-75c4-9413-04d5d607cb12",
-  "anim": "01a1727e-9e16-708d-a7fe-c1455f7d8d7c"
+  "anim": "01a1727e-9e16-708d-a7fe-c1455f7d8d7c",
+  "rifle": "01a174da-4563-76f7-ab8a-5658137d8e0a"
  },
  "phase-stalker": {
   "character": "01a1727b-238c-761c-85d6-8f3e00797940",
   "rig": "01a1727d-cd4e-70e9-8089-dd13f89cfb92",
-  "anim": "01a1727e-c439-738c-9c98-6962c3f3a7b5"
+  "anim": "01a1727e-c439-738c-9c98-6962c3f3a7b5",
+  "plow": "01a174db-0cd8-73f9-b34a-e54209ba1644"
  },
  "queen-brunhilda-stonebeard": {
   "character": "01a1727b-ecde-722c-b695-c42ec2efec23",
   "rig": "01a1727e-950b-73e8-9f90-725f0b7bd269",
-  "anim": "01a1727f-67d5-7229-b855-94bb3a98b523"
+  "anim": "01a1727f-67d5-7229-b855-94bb3a98b523",
+  "warhammer": "01a174db-0d37-739d-999c-a99abb13fc6d"
  },
  "ram-rider": {
   "character": "01a1727c-8e5d-706f-859a-1a3265e5c4c9",
   "rig": "01a1727f-0d79-7697-812d-80ea3cf4bfc1",
-  "anim": "01a1727f-b9f4-76cf-b7ad-4e133a377a81"
+  "anim": "01a1727f-b9f4-76cf-b7ad-4e133a377a81",
+  "ram": "01a174db-ae9e-7406-98d4-2ae851d769c1"
  },
  "rune-splitter": {
   "character": "01a1727f-657e-737e-8d62-eb78b7524df0",
   "rig": "01a17282-10e9-70e3-8fba-437aa02a13c8",
-  "anim": "01a17282-b82f-71b4-8004-0c188e73d3af"
+  "anim": "01a17282-b82f-71b4-8004-0c188e73d3af",
+  "crystal-hammer": "01a174db-d6d5-74d4-87f6-4dc2e3d554d7"
  },
  "runic-siphoner": {
   "character": "01a1727f-8d4a-739b-b4b2-1416383b211e",
   "rig": "01a17281-e86a-75a1-9845-32bd3b3724e2",
-  "anim": "01a17282-8fd1-77fe-993a-e9bd01be278d"
+  "anim": "01a17282-8fd1-77fe-993a-e9bd01be278d",
+  "staff": "01a174dc-9e35-718e-9156-042ded85b2bf"
  },
  "shieldbeard": {
   "character": "01a17280-31f1-71ae-98ff-4ff40886f5a4",
   "rig": "01a17282-b10d-7468-9118-213ef1700f4e",
-  "anim": "01a17283-814a-7699-afb8-8f48f3945b69"
+  "anim": "01a17283-814a-7699-afb8-8f48f3945b69",
+  "medic-pack": "01a174dd-8e7f-747a-94a2-a8ccdef1a9b1"
  },
  "spark-gnome": {
   "character": "01a17280-823e-7272-b792-1a201ad5dc8f",
   "rig": "01a17282-d921-717d-a7ff-b0d982789958",
-  "anim": "01a17283-a935-7408-9dd6-d62998498633"
+  "anim": "01a17283-a935-7408-9dd6-d62998498633",
+  "staff": "01a174dd-b60b-775a-9b20-c3446b90173f"
  },
  "the-great-steam-golem": {
   "character": "01a17283-30f3-75ba-888f-998ec3efc6e1",

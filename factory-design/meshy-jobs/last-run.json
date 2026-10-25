@@ -1,178 +1,151 @@
 {
- "at": "2026-10-25T10:07:23.168Z",
+ "at": "2026-10-25T21:03:33.330Z",
  "results": [
   {
-   "id": "clockwork-beetle",
-   "sizes": {
-    "char.glb": 15813428
+   "id": "axe-thrower",
+   "partsAdded": {
+    "shield.glb": 10701692
    }
   },
   {
    "id": "barrelback-courier",
-   "sizes": {
-    "char.glb": 5471436
-   }
-  },
-  {
-   "id": "axe-thrower",
-   "sizes": {
-    "char.glb": 5649268
-   }
-  },
-  {
-   "id": "brewmaster",
-   "sizes": {
-    "char.glb": 5363616
+   "partsAdded": {
+    "barrel-pack.glb": 12327600
    }
   },
   {
    "id": "crystal-drunk-delver",
-   "sizes": {
-    "char.glb": 5674832
+   "partsAdded": {
+    "pickaxe.glb": 8233128,
+    "crystal-backpack.glb": 12486788
+   }
+  },
+  {
+   "id": "brewmaster",
+   "partsAdded": {
+    "crystal-hammer.glb": 8872784,
+    "keg-pack.glb": 13357804
    }
   },
   {
    "id": "deepforge-crossbowman",
-   "sizes": {
-    "char.glb": 5133304
-   }
-  },
-  {
-   "id": "dwarf-miner",
-   "sizes": {
-    "char.glb": 5682444
-   }
-  },
-  {
-   "id": "dwarf-pickman",
-   "sizes": {
-    "char.glb": 5704236
+   "partsAdded": {
+    "crystal-gun.glb": 9694344
    }
   },
   {
    "id": "dwarf-stoneback",
-   "sizes": {
-    "char.glb": 5584036
+   "partsAdded": {
+    "hammer.glb": 9708004
+   }
+  },
+  {
+   "id": "dwarf-miner",
+   "partsAdded": {
+    "tower-shield.glb": 9528328
    }
   },
   {
    "id": "gearward-sentinel",
-   "sizes": {
-    "char.glb": 5722768
+   "partsAdded": {
+    "mace.glb": 11258796
    }
   },
   {
    "id": "glyphshield-warden",
-   "sizes": {
-    "char.glb": 6052888
+   "partsAdded": {
+    "shield.glb": 10158484
    }
   },
   {
    "id": "gnome-cogger",
-   "sizes": {
-    "char.glb": 6240624
-   }
-  },
-  {
-   "id": "gnome-illusionist",
-   "sizes": {
-    "char.glb": 5613216
+   "partsAdded": {
+    "mace.glb": 11139312
    }
   },
   {
    "id": "gnome-smith-miner",
-   "sizes": {
-    "char.glb": 5640212
+   "partsAdded": {
+    "pickaxe.glb": 9695284
    }
   },
   {
    "id": "gnome-tinker",
-   "sizes": {
-    "char.glb": 6141788
-   }
-  },
-  {
-   "id": "gnome-widget",
-   "sizes": {
-    "char.glb": 5968916
+   "partsAdded": {
+    "scepter.glb": 10711984,
+    "crystal-shield.glb": 10068860
    }
   },
   {
    "id": "grimhold-ravager",
-   "sizes": {
-    "char.glb": 5725000
+   "partsAdded": {
+    "hammer.glb": 9213148
    }
   },
   {
    "id": "gyrocopter-ace",
-   "sizes": {
-    "char.glb": 5677016
+   "partsAdded": {
+    "gyro-wings.glb": 12998896
    }
   },
   {
    "id": "hexwright-apprentice",
-   "sizes": {
-    "char.glb": 5860192
-   }
-  },
-  {
-   "id": "ironhammer-berserker",
-   "sizes": {
-    "char.glb": 5599544
+   "partsAdded": {
+    "staff.glb": 10534044
    }
   },
   {
    "id": "oathbound-pikeman",
-   "sizes": {
-    "char.glb": 5580044
+   "partsAdded": {
+    "rifle.glb": 10202716
    }
   },
   {
-   "id": "phase-stalker",
-   "sizes": {
-    "char.glb": 6045300
+   "id": "ironhammer-berserker",
+   "partsAdded": {
+    "crystal-pistol.glb": 10120664
    }
   },
   {
    "id": "queen-brunhilda-stonebeard",
-   "sizes": {
-    "char.glb": 5601960
-   }
-  },
-  {
-   "id": "ram-rider",
-   "sizes": {
-    "char.glb": 5564776
-   }
-  },
-  {
-   "id": "runic-siphoner",
-   "sizes": {
-    "char.glb": 5857436
+   "partsAdded": {
+    "warhammer.glb": 10094428
    }
   },
   {
    "id": "rune-splitter",
-   "sizes": {
-    "char.glb": 5584060
+   "partsAdded": {
+    "crystal-hammer.glb": 10476868
    }
   },
   {
-   "id": "shieldbeard",
-   "sizes": {
-    "char.glb": 5933732
+   "id": "phase-stalker",
+   "partsAdded": {
+    "plow.glb": 13900928
+   }
+  },
+  {
+   "id": "ram-rider",
+   "partsAdded": {
+    "ram.glb": 12963220
+   }
+  },
+  {
+   "id": "runic-siphoner",
+   "partsAdded": {
+    "staff.glb": 10388908
    }
   },
   {
    "id": "spark-gnome",
-   "sizes": {
-    "char.glb": 6112556
+   "partsAdded": {
+    "staff.glb": 9666792
    }
   },
   {
-   "id": "the-great-steam-golem",
-   "sizes": {
-    "char.glb": 6564260
+   "id": "shieldbeard",
+   "partsAdded": {
+    "medic-pack.glb": 11088832
    }
   }
  ]

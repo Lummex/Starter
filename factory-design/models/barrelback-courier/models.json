@@ -4,7 +4,8 @@
  "tasks": {
   "character": "01a17264-72d6-725f-9ad8-a50e9906469d",
   "rig": "01a17268-0f7d-77d3-9422-9c8e01f92e6b",
-  "anim": "01a17268-ddfd-74e5-ba25-94650324941d"
+  "anim": "01a17268-ddfd-74e5-ba25-94650324941d",
+  "barrel-pack": "01a174d3-5b8d-74ac-918a-c4b8ed15edc9"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +15,13 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "barrel-pack"
+ ],
  "notes": "Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 5471436
- }
+  "char.glb": 5471436,
+  "barrel-pack.glb": 12327600
+ },
+ "partsAdded": "2026-10-25T20:52:26.329Z"
 }

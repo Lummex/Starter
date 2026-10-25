@@ -4,7 +4,8 @@
  "tasks": {
   "character": "01a1726e-d860-72ac-a1b7-2149be4c21e5",
   "rig": "01a17271-586d-71f8-99cb-aa75ea901d9e",
-  "anim": "01a17272-2835-77bb-bd18-e23ac8ca3982"
+  "anim": "01a17272-2835-77bb-bd18-e23ac8ca3982",
+  "shield": "01a174d6-cfe0-71c9-8840-9eb0fcd373bb"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +15,13 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "shield"
+ ],
  "notes": "Owner sheet note: Don't render the glove on this one but you render the shield is fine. Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 6052888
- }
+  "char.glb": 6052888,
+  "shield.glb": 10158484
+ },
+ "partsAdded": "2026-10-25T20:55:31.080Z"
 }

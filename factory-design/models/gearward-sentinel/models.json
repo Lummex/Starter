@@ -4,7 +4,8 @@
  "tasks": {
   "character": "01a1726e-380c-7662-bcac-df06c25cb503",
   "rig": "01a17270-b8f5-7657-b9fd-3bfc914f2405",
-  "anim": "01a17271-8791-741b-a55e-e64026528b8c"
+  "anim": "01a17271-8791-741b-a55e-e64026528b8c",
+  "mace": "01a174d6-5856-7754-90bd-1be6eeac9e90"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +15,13 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "mace"
+ ],
  "notes": "Owner sheet note: Don't render the shield We already have a shield for the gnomes. Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 5722768
- }
+  "char.glb": 5722768,
+  "mace.glb": 11258796
+ },
+ "partsAdded": "2026-10-25T20:55:10.774Z"
 }

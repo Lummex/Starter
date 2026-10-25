@@ -4,7 +4,8 @@
  "tasks": {
   "character": "01a17269-a71a-76aa-8182-46f5dbec24b2",
   "rig": "01a1726d-3d31-7531-a84e-b1dde1490056",
-  "anim": "01a1726e-0e63-7367-a91b-74277ab8e49b"
+  "anim": "01a1726e-0e63-7367-a91b-74277ab8e49b",
+  "tower-shield": "01a174d6-089e-708a-a41f-6d578c99ac87"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +15,13 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "tower-shield"
+ ],
  "notes": "Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 5682444
- }
+  "char.glb": 5682444,
+  "tower-shield.glb": 9528328
+ },
+ "partsAdded": "2026-10-25T20:54:40.039Z"
 }
