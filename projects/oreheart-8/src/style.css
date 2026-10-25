@@ -975,10 +975,10 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 .cry-img{position:relative;height:17vh;aspect-ratio:100/130;flex:none;filter:drop-shadow(0 0 1.4vh #6cf8)}
 .crystal-hud.theirs .cry-img{filter:drop-shadow(0 0 1.4vh #f648)}
 .cry-gem{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.cry-flow{position:absolute;left:50%;top:22%;transform:translate(-50%,0);font-size:max(14px,6.4vh);line-height:1;color:#fff;font-weight:700;font-style:normal;-webkit-text-stroke:.35vh #0a1230;paint-order:stroke fill;text-shadow:0 0 1vh #000a;white-space:nowrap}
+.cry-flow{position:absolute;left:50%;top:22%;transform:translate(-50%,0);font-size:max(14px,6.4vh);line-height:1;color:#fff;font-weight:700;font-style:italic;-webkit-text-stroke:.35vh #0a1230;paint-order:stroke fill;text-shadow:0 0 1vh #000a;white-space:nowrap}
 .cry-bank{position:absolute;left:50%;top:60%;width:60%;height:24%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center}
 .cry-bank .bank-ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:max(11px,4.4vh);filter:sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.05);opacity:.95}
-.cry-bank-n{position:relative;font-size:max(14px,4.6vh);line-height:1;color:#fff;font-weight:700;font-style:normal;-webkit-text-stroke:.3vh #2a1800;paint-order:stroke fill;text-shadow:0 0 .8vh #000}
+.cry-bank-n{position:relative;font-size:max(14px,4.6vh);line-height:1;color:#fff;font-weight:700;font-style:italic;-webkit-text-stroke:.3vh #2a1800;paint-order:stroke fill;text-shadow:0 0 .8vh #000}
 .cry-text{display:flex;flex-direction:column;gap:.2vh;padding-top:1.6vh;font-size:max(14px,3.5vh);line-height:1.1;text-shadow:0 0 .6vh #000,0 .1vh .2vh #000;white-space:nowrap}
 .cry-name,.cry-next{color:#f0cdbf}
 .cry-word{color:var(--gold-bright);font-size:max(14px,4vh)}
@@ -1198,7 +1198,7 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 :is(small,.dsize,.deck-size,.ds-n,.db-status,.mull-left){color:var(--text-body-sm)!important;-webkit-text-fill-color:var(--text-body-sm)!important}
 /* 7: compact painted stat icons with the number on top */
 .token .tk-stats{display:inline-flex;align-items:center;gap:1px;padding:0!important;background:none!important;border:0!important;border-radius:0!important;filter:drop-shadow(0 1px 2px #000);font-size:max(14px,2.3vh)!important;--si:max(21px,3.2vh)}
-.token .tk-stats .a,.token .tk-stats .h,.token .tk-stats .m{display:inline-flex;align-items:center;justify-content:center;width:var(--si);height:var(--si);background:center/contain no-repeat;color:#fff!important;-webkit-text-fill-color:#fff!important;font-weight:800;font-style:normal;font-size:max(14px,.62em);line-height:1;-webkit-text-stroke:.6px #000;paint-order:stroke fill;text-shadow:0 0 2px #000,0 0 2px #000,1px 1px 0 #000,-1px -1px 0 #000}
+.token .tk-stats .a,.token .tk-stats .h,.token .tk-stats .m{display:inline-flex;align-items:center;justify-content:center;width:var(--si);height:var(--si);background:center/contain no-repeat;color:#fff!important;-webkit-text-fill-color:#fff!important;font-weight:800;font-style:italic;font-size:max(14px,.62em);line-height:1;-webkit-text-stroke:.6px #000;paint-order:stroke fill;text-shadow:0 0 2px #000,0 0 2px #000,1px 1px 0 #000,-1px -1px 0 #000}
 .token .tk-stats .a{background-image:url(/art/ui/stat-sword.png)}
 .token .tk-stats .h{background-image:url(/art/ui/stat-heart.png)}
 .token .tk-stats .m{background-image:url(/art/ui/stat-boot.png)}
@@ -1298,7 +1298,7 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 .match .o-phase .ph-sep{margin:0 .25em;opacity:.7}
 .match .o-phase .ph-turn[data-x]{}
 .match .o-deck .deck-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:none!important;filter:drop-shadow(0 4px 6px #000)}
-.match .o-deck .pile-n{position:absolute!important;display:flex;align-items:center;justify-content:center;bottom:auto!important;transform-origin:50% 50%;font-family:"Alegreya SC",serif;font-style:normal;line-height:1}
+.match .o-deck .pile-n{position:absolute!important;display:flex;align-items:center;justify-content:center;bottom:auto!important;transform-origin:50% 50%;font-family:"Alegreya SC",serif;font-style:italic;line-height:1}
 .match .o-fan{display:block}
 .match .o-fan .back{position:absolute;left:50%;top:12%;width:30%;height:72%;margin-left:-15%;border-radius:4px;background:url('/art/ui/oreheart-card-back.webp') center/cover!important;border:1px solid #3a2a0a;transform-origin:50% 160%}
 .match .o-fan.browsing .back{animation:browse 2.4s ease-in-out infinite}

@@ -784,3 +784,9 @@ Not addressed (UI timing/hover checks AC143, AC155, AC174, AC189, AC204, AC218, 
 - Skullflinger restored to owner data: range 6 and text "up to 6 spaces" (AC248, AC284, AC286).
 - Build passes (`npm run build`). Unit tests: 128/135 pass. Remaining failures are outdated asserts (starter deck counts, card-back/deck-pile image sizes, weapon list, Axe Thrower range 5 vs 7) plus an AI "beats passive player" timing test.
 - NOT done this pass: arena speed checks, hand fan/drag checks, ring/highlight settings checks, Brewlord/Mine Control checks, font-weight checks, flow shard count checks.
+
+## Round 17 finish (this pass)
+- dist size: recompressed non-owner art (banners, deck piles, logo, card back, hearts) with sharp; dist is now ~41.92 MB total (AC90 limit is 40 MiB = 41,943,040 bytes). Margin is small, so don't add large assets.
+- Crystal counters and deck pile numbers use italic Alegreya SC (AC135 passes). The owner's Game Editor layout sets some match texts (deck counts "100") non-italic; left as the owner set them (AC168).
+- Test-mode 3D render throttle raised so arena/pan/zoom checks finish under load. Run alone or with 2 workers, the arena checks (AC40, AC72, AC150, AC189-194, AC216, AC219) pass.
+- Not changed (conflict with owner data or newer rounds): AC13 expects range 7 but the owner restored Skullflinger to range 6; AC58/AC155/AC109/AC218/AC206/AC176/AC233 assume older costs, Miner roles, hand tuck, deck art and Back position.

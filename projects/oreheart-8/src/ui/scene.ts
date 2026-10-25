@@ -974,7 +974,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     if (disposed) return;
     raf = requestAnimationFrame(frame);
     const now = performance.now();
-    if (testMode && now - lastRender < Math.max(300, lastDur * 5)) return; // automated runs use software GL: keep the page responsive
+    if (testMode && now - lastRender < Math.max(500, lastDur * 8)) return; // automated runs use software GL: keep the page responsive
     lastRender = now;
     const dt0 = Math.min(0.1, (now - (frameLast || now)) / 1000); frameLast = now;
     for (const [uid, f] of figs) {
