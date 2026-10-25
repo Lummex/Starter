@@ -750,3 +750,8 @@ Not changed (checks contradict newer owner cards/rounds or conflict with each ot
 - Stance ids are `aggressive`, `minecontrol`, `guard`, `freeforall`; `autoActStep()` returns `{ok, action}` and acts in reading order. In test mode releasing a paused Card Comp vs Card Comp match plays it to the end at once.
 - Italic flags from the owner layout and menus.json are honored (AC259, AC326); enemy card backs use the card-format back (AC311).
 - Still failing in my last local run (about 30 of ~400): AC15/AC58/AC341 (Shield/type-advantage and Rocket Rider-as-Miner expectations), AC109/AC110, AC143/AC204 (Deck Builder), AC155, AC174@1920, AC189/AC190, AC218, AC248/AC266/AC284/AC286 (Ranged 6 vs 7 wording), AC260/AC261, AC270, AC272 (conflicts with AC327), AC316, AC330, AC332, AC335, AC273; screenshot checks that time out under software WebGL.
+
+## Round 17 inspector follow-up (limited budget)
+- Build passes; `dist/index.html` exists. No app code changed in this pass.
+- AC15, AC58 (both), AC109 fail because the checks are stale against owner card changes already in `cards.json`: Riot Shield Bearer (`dwarf-miner`) has Health 5, Rocket Rider (`shard-guzzler`) is now a Fighter and can't mine, Bowler Brawler (`goblin-scrapper`) costs 6 so it can't be summoned on turn 1.
+- Not addressed: the Playwright timeouts (mulligan Keep Hand/Redraw clicks, screenshots, deck builder double-click, hand hover retract/AC218), AC260/AC261 `getHighlightSettings`, AC168 `Play [style normal]`, AC248 range text. Three older vitest checks (starter decks 30 basic, Ranged round 10, round12c ranges) are outdated by later rounds.
