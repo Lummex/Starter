@@ -339,9 +339,9 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   }
   function renderCarousel() {
     const items = saved.map((d, i) => h('button', { type: 'button', class: 'db-deck', 'aria-label': `${d.name}, ${d.cards.length} ${d.cards.length === 1 ? 'card' : 'cards'}`, 'aria-current': i === cur ? 'true' : null, tabindex: i === cur ? '0' : '-1', 'data-i': String(i), 'data-faction': ((COMMANDERS[d.commander || cmdId] || {}).faction || '').replace(/s$/, '').replace('dwarve', 'dwarf') },
-      h('img', { class: 'deck-img', src: '/art/deck/deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, d.name)));
+      h('img', { class: 'deck-img', src: '/art/deck/deck-menu.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, d.name)));
     items.push(h('button', { type: 'button', class: 'db-deck new', 'aria-label': '+ New Deck', 'aria-current': cur === saved.length ? 'true' : null, tabindex: cur === saved.length ? '0' : '-1', 'data-i': String(saved.length) },
-      h('img', { class: 'deck-img', src: '/art/deck/deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, '+ New Deck')));
+      h('img', { class: 'deck-img', src: '/art/deck/deck-menu.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, '+ New Deck')));
     items.forEach((b, i) => {
       b.addEventListener('click', () => { if (carDrag) return; if (i !== cur) setCur(i); });
       b.addEventListener('dblclick', () => { const d = saved[i]; if (!d || carDrag) return; const cm = d.commander || cmdId; if (!deckProblems(d.cards, cm).length) startWith(d.cards, cm); });

@@ -134,6 +134,16 @@ export interface MineArt {
 }
 
 export const MINE_MODEL = '/models/mines/crystal-mine.glb';
+/** Owner (Oct 24): the Crystal Node 3D model made in the Model Editor; it replaces the code-built mine once loaded. */
+export const CRYSTAL_NODE_MODEL = '/models/mines/crystal-node.glb';
+let crystalNodeP: Promise<THREE.Object3D> | null = null;
+function loadCrystalNode(): Promise<THREE.Object3D> {
+  return (crystalNodeP ||= new GLTFLoader().loadAsync(CRYSTAL_NODE_MODEL).then((g) => g.scene));
+}
+/** Owner's small glows around the node base (Model Editor look): x, y, z from the node's centre in a 1.96-tall node, size, opacity. */
+/** Owner (Oct 24): the node fits inside one board square (about 0.9 wide) and is about 1.05 squares tall. */
+const NODE_HEIGHT = 1.31, NODE_WIDTH = 1.125, NODE_TILT_DEG = 0; // owner: 25% larger than the first fit
+const NODE_GLOWS: number[][] = [[0.006, 0.206, -0.016, 1.44, 0.16], [-0.34, -0.072, -0.483, 0.83, 0.2], [-0.34, -0.15, 0.467, 0.61, 0.2], [0.338, -0.16, 0.427, 0.5, 0.2], [0.266, -0.118, -0.493, 0.66, 0.2], [-0.448, -0.472, -0.046, 0.5, 0.2], [0.524, -0.424, -0.072, 0.49, 0.2]];
 /** Owner layout: the mine is fitted to 1.7 squares tall at piece scale 1.46. */
 const MINE_HEIGHT = 1.7 * 1.46;
 let mineModelP: Promise<THREE.Object3D> | null = null;
@@ -227,6 +237,49 @@ export function makeMine(low: boolean, idx: number): MineArt {
     group.userData.mineFootprint = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z);
   }
   group.add(crystals);
+  // Owner (Oct 24): swap in the Crystal Node model (same height and spot; tinted by owner like before). Keeps the code-built mine if it can't load.
+  const nodeMats: { m: THREE.MeshStandardMaterial; c: THREE.Color }[] = [];
+  const nodeGlows: THREE.Sprite[] = [];
+  let lastHex: any = null;
+  // Owner (Oct 24): only the white crystals change color (rocks and dirt keep theirs). A shader mask picks bright, low-saturation texels.
+  const uNT = { value: new THREE.Color(0xffffff) }, uNA = { value: 0 }, uNG = { value: 0.15 };
+  let nodeGlowAmt = 0.15, baseLight = 7;
+  const applyNode = (hex: any) => {
+    const col = new THREE.Color(hex), neutral = col.r > 0.85 && col.g > 0.85 && col.b > 0.85;
+    uNT.value.copy(col); uNA.value = neutral ? 0 : 0.92; nodeGlowAmt = neutral ? 0.15 : 0.6;
+    for (const g of nodeGlows) g.material.color.copy(col);
+  };
+  loadCrystalNode().then((src) => {
+    const node = src.clone(true);
+    node.traverse((o: any) => { if (o.isMesh) {
+      const m = (o.material as THREE.MeshStandardMaterial).clone(); o.material = m; nodeMats.push({ m, c: m.color.clone() }); o.castShadow = !low;
+      m.onBeforeCompile = (sh) => {
+        sh.uniforms.uNT = uNT; sh.uniforms.uNA = uNA; sh.uniforms.uNG = uNG;
+        sh.fragmentShader = 'uniform vec3 uNT;uniform float uNA;uniform float uNG;\n' + sh.fragmentShader
+          .replace('#include <map_fragment>', `#include <map_fragment>
+          float cnL = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
+          float cnS = max(max(diffuseColor.r, diffuseColor.g), diffuseColor.b) - min(min(diffuseColor.r, diffuseColor.g), diffuseColor.b);
+          float cnM = smoothstep(0.42, 0.6, cnL) * (1.0 - smoothstep(0.1, 0.22, cnS));
+          diffuseColor.rgb = mix(diffuseColor.rgb, uNT * (0.2 + 0.95 * cnL), cnM * uNA);`)
+          .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+          totalEmissiveRadiance += uNT * cnM * uNG;`);
+      };
+    } });
+    // Owner (Oct 24): smaller, fits inside its own square and sits centred on it.
+    const b = new THREE.Box3().setFromObject(node), h0 = b.max.y - b.min.y, w0 = Math.max(b.max.x - b.min.x, b.max.z - b.min.z);
+    const k = Math.min(NODE_HEIGHT / h0, NODE_WIDTH / w0);
+    node.scale.setScalar(k);
+    node.position.set(-((b.max.x + b.min.x) / 2) * k, -b.min.y * k, -((b.max.z + b.min.z) / 2) * k);
+    const ks = (h0 * k) / 1.96;
+    group.userData.mineHeight = h0 * k; group.userData.mineFootprint = w0 * k;
+    for (const [x, y, z, sz, a] of NODE_GLOWS) {
+      const g = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: '#ffffff', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: a }));
+      g.position.set(x * ks, (y + 0.98) * ks, z * ks); g.scale.setScalar(sz * ks); g.userData.base = a; nodeGlows.push(g); crystals.add(g);
+    }
+    const tilt = new THREE.Group(); tilt.rotation.x = NODE_TILT_DEG * Math.PI / 180; tilt.add(node);
+    built.visible = false; crystals.add(tilt); baseLight = 3; if (light) light.intensity = 3; if (beam) beam.visible = false; group.userData.mineModel = 'crystal-node';
+    if (lastHex != null) applyNode(lastHex);
+  }).catch(() => { /* keep the code-built mine */ });
   // Round 11 (R10.10): no ring; a flat glow-and-rubble decal lies on the ground under the mine, tinted by owner.
   const decalMat = new THREE.MeshBasicMaterial({ map: glowTexture(), color: '#ffffff', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.55 });
   const decal = new THREE.Mesh(new THREE.CircleGeometry(0.85, 32), decalMat);
@@ -251,6 +304,7 @@ export function makeMine(low: boolean, idx: number): MineArt {
   return {
     group, mats, light, beam, sparks, crystals,
     recolor(hex) {
+      lastHex = hex; applyNode(hex);
       uTint.value.set(hex as any);
       for (const m of crystalMats) { m.color.set(hex as any).lerp(new THREE.Color(0xffffff), 0.25); m.emissive.set(hex as any).multiplyScalar(0.55); }
       glowSpr?.material.color.set(hex as any);
@@ -259,14 +313,18 @@ export function makeMine(low: boolean, idx: number): MineArt {
       light?.color.set(hex as any);
       (beam?.material as THREE.MeshBasicMaterial | undefined)?.color.set(hex as any);
       (sparks?.material as THREE.PointsMaterial | undefined)?.color.set(hex as any);
+      // Owner (Oct 24): only the crystals and their glows change color; the ground, the light on it and the stars stay white.
+      decalMat.color.set('#ffffff'); group.userData.decalHex = '#ffffff'; light?.color.set('#ffffff'); (sparks?.material as THREE.PointsMaterial | undefined)?.color.set('#ffffff'); // the stars stay white
     },
-    setDecal(hex) { decalMat.color.set(hex as any); group.userData.decalHex = '#' + new THREE.Color(hex as any).getHexString(); },
+    setDecal(_hex) { decalMat.color.set('#ffffff'); group.userData.decalHex = '#ffffff'; },
     burst() { burstT = performance.now(); },
     update(now) {
       const w = now / 420 + idx;
       uGlow.value = 0.95 + Math.sin(w) * 0.18;
       for (const m of crystalMats) m.emissiveIntensity = 0.8 + Math.sin(w) * 0.2;
       if (glowSpr) glowSpr.material.opacity = 0.3 + Math.sin(w) * 0.08;
+      nodeGlows.forEach((g, i) => { g.material.opacity = g.userData.base * (0.85 + 0.15 * Math.sin(w * 1.3 + i)); });
+      uNG.value = nodeGlowAmt * (0.85 + Math.sin(w) * 0.15);
       if (sparks) { sparks.rotation.y = now / 2200 + idx; sparks.position.y = Math.sin(now / 900 + idx) * 0.06; }
       if (beam) (beam.material as THREE.MeshBasicMaterial).opacity = 0.05 + Math.sin(w * 0.7) * 0.02;
       if (burstT) {
@@ -274,7 +332,7 @@ export function makeMine(low: boolean, idx: number): MineArt {
         // burst out, then regrow
         const s = k < 0.25 ? 1 + k * 2.4 : 0.35 + 0.65 * ((k - 0.25) / 0.75);
         crystals.scale.setScalar(Math.max(0.1, s));
-        if (light) light.intensity = 7 + (k < 0.3 ? 20 * (1 - k / 0.3) : 0);
+        if (light) light.intensity = baseLight + (k < 0.3 ? 20 * (1 - k / 0.3) : 0);
         if (k >= 1) { burstT = 0; crystals.scale.setScalar(1); }
       }
     },

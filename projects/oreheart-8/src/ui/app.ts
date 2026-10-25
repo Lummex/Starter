@@ -443,7 +443,7 @@ export class App {
     };
     const stack = (label: string, n: number, ok: boolean, key: string, onpick: () => void, starterId?: string, savedIdx?: number) => {
       const b = h('button', { type: 'button', class: `dstack${ok ? '' : ' bad'}`, 'data-key': key, 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', onclick: onpick },
-        h('img', { class: 'deck-img', src: '/art/deck/deck-pile.png', alt: '', draggable: 'false' }),
+        h('img', { class: 'deck-img', src: '/art/deck/deck-menu.png', alt: '', draggable: 'false' }),
         h('span', { class: 'ds-name', 'aria-hidden': 'true' }, label), h('span', { class: 'ds-n', 'aria-hidden': 'true' }, `${n} cards ${ok ? '✔' : '⚠'}`));
       stacks.push(b);
       const rm = btn('Remove', 'small tx-act', () => confirmRemove(label, () => {
@@ -1969,7 +1969,11 @@ export class App {
       el.dataset.upgrades = String(up);
       (el.querySelector('.pips') as El).textContent = up ? '●'.repeat(Math.min(up, 8)) : '';
       const sh = el.querySelector('.sh') as El;
-      sh.textContent = `${el.dataset.extras || ''}${c.shield > 0 ? `🛡${c.shield}` : ''}`;
+      // Owner (Oct 24): the pickaxe/bow already shows in the stat badge, so it is no longer drawn again beside it (kept as hidden text for screen readers)
+      let ex = el.querySelector('.tk-extra') as El | null;
+      if (!ex) { ex = h('span', { class: 'tk-extra sr-only' }) as El; el.append(ex); }
+      ex.textContent = el.dataset.extras || '';
+      sh.textContent = c.shield > 0 ? `🛡${c.shield}` : '';
       el.dataset.poison = String(c.poison || 0);
       el.dataset.drunk = String(c.drunk || 0);
       el.dataset.facing = String(c.facing || "");
