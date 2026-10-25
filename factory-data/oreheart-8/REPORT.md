@@ -1,28 +1,31 @@
 ## What was built
-Oreheart, a comic-style fantasy card battle in the browser. You pick a Commander and a deck, then fight a computer opponent on a painted swamp arena over three crystal mines. This round was meant to add no new features and only fix the failing checks from the previous round.
+Round 17 of Oreheart, the comic-fantasy card battle. It adds three ways to play on the "Choose Your Commander" screen: Standard (unchanged), Card Play (you only play cards and your units act on their own, steered by four stance buttons), and Card Comp vs Card Comp (the computer plays both sides while you watch). It also adds a single "Fight!" start button and a hand of cards that sits fully on screen.
 
 ## Try these things
-- Open the preview, click through the intro, and check the main menu (Play, Deck Builder, How to Play, Settings, Quit).
-- Click Play and try the "Choose Your Commander" screen on a phone-sized window. Check whether the buttons and deck names overlap.
-- Start a match, then drag a creature card from your hand onto a square on your home row.
-- Move the mouse over your hand cards. One card should rise and straighten. Check that it doesn't stick or cover the board.
-- Click Done to end your turn and watch the computer play.
-- Open the Menu (top-left) and try Settings and Give up.
+- Open the preview, click through the intro, and press Play to reach Choose Your Commander.
+- Click each of the three mode buttons (Standard, Card Play, Card Comp vs Card Comp), then press Fight!.
+- In Card Play, tap the four stance buttons on the right edge (Aggressive, Mine Control, Guard, Free-for-all) and watch your units change behavior.
+- In a Standard match, hover cards in your hand and drag one onto the board to play it.
+- Open the Deck Builder and add cards by double-click.
+- Try it on a phone-sized window too.
 
 ## Automated checks
-342 of 399 checks passed. 57 failed. In plain terms:
-- About 15 failures are the Choose Your Commander screen. The test can't click the start button because the "Fight!" button sits on top of it. That could be a real layout fault or a check that is out of date. I can't tell which.
-- About 10 failures are the hand of cards. The checks could not find any hand cards in those tests. I can't tell whether the hand is broken or the checks are wrong.
-- The rest cover Ranged attacks, the Corpsman Brewlord ability, mine-tapping, unit facing after a move, Crystal Flow shard counts, font weights, and Deck Builder layout.
-- The window.oreheart test hook is visible outside test mode (AC5). This is minor.
+379 of 411 checks passed; 32 failed. Failures cover:
+- Hand cards: hover and retract behavior, and the fan layout.
+- Deck Builder: adding cards.
+- Mine tapping and zoom or pan.
+- The Settings panels for square highlights and unit rings.
+- Some card rules: Ranged ranges, the Brewlord save, and the Mine Control stance.
+- Fonts (some text is not in the single font), and spell cards missing name or text.
+- A missing owner card-art file.
+
+Some of these may be outdated checks rather than real faults. Several are likely real, especially the hand and Deck Builder ones.
 
 ## Things to know
-- The goal of this round was to make every check pass. 57 still fail, so that goal was not met.
-- Phone screenshots show real problems:
-  - On Choose Your Commander, deck names, "Remove", "Copy to my decks" and Easy/Normal text overlap and are cut off.
-  - In the match, a large raised card covers much of the board.
-- Desktop screenshots look good. The menu and the painted arena render properly. In the match, the hand is mostly tucked off the bottom of the screen.
-- The mines look plain white rather than coloured.
+- The match screenshots (the screen after Fight!) are missing, so the match itself was not visually inspected.
+- The home screen and main menu look good. Choose Your Commander looks fine on desktop.
+- On the phone-size screenshot, Choose Your Commander is cramped. Deck names are cut off ("Goblin Horde", "Remove" and "Copy to my decks" are clipped at the right edge), and the mode and Easy/Normal/Hard text sits close together. This is the exact thing the round was meant to fix.
+- Skullflinger's Ranged range is 7 where the owner's text says 6.
 
 ## Recommendation
-Request changes: 57 checks still fail, and the phone layout of Choose Your Commander looks cramped and overlapping.
+Request changes: 32 checks fail (hand, Deck Builder and Commander screen issues on phone), and the match was never shown in screenshots.
