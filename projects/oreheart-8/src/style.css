@@ -1673,3 +1673,11 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 /* Owner (Oct 24): in every menu, Back sits bottom-left and going forward sits bottom-right */
 .btn.menu-back{position:fixed!important;left:2vw;bottom:3vh;z-index:60;margin:0!important}
 .btn.menu-fwd{position:fixed!important;right:2vw;bottom:3vh;z-index:60;margin:0!important}
+/* Owner (Oct 24): picture banners for Your turn / Opponent's turn / Deploy / Action, and Victory / Defeat */
+.banner.banner-img:not(#_w){padding:0!important;background:none!important;border:0!important;border-radius:0!important;-webkit-text-stroke:0!important;text-shadow:none!important;transform:translate(-50%,-50%);animation:ohBannerPop 1.5s ease-out both!important;filter:drop-shadow(0 6px 14px #000c)}
+.banner.banner-img img{display:block;width:min(62vw,820px);height:auto;max-height:34vh;object-fit:contain}
+.banner.banner-img[data-banner="deploy"] img,.banner.banner-img[data-banner="action"] img{width:min(44vw,560px)}
+@keyframes ohBannerPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}14%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}24%{transform:translate(-50%,-50%) scale(1)}82%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.04)}}
+.end-title{margin:0;line-height:0}
+.end-pic{display:block;width:min(80vw,900px);max-height:36vh;height:auto;object-fit:contain;margin:0 auto;filter:drop-shadow(0 8px 18px #000c);animation:ohEndPop .7s ease-out both}
+@keyframes ohEndPop{0%{opacity:0;transform:scale(.6)}60%{opacity:1;transform:scale(1.06)}100%{transform:scale(1)}}
