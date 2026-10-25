@@ -1209,7 +1209,7 @@ for (const [w, h] of [[844, 390], [740, 360], [667, 375]]) {
 }
 
 test.describe('portrait phone viewport', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
   test('AC24: upright phone shows the rotate message', async ({ page }) => {
     await page.goto('/?test=1');
@@ -1217,6 +1217,18 @@ test.describe('portrait phone viewport', () => {
     await page.waitForFunction(() => !!window.oreheart);
     await newMatch(page, { ai: false, skipMulligan: true, firstPlayer: 'player' });
     await expect(page.getByText('Please rotate your phone')).toBeVisible();
+  });
+});
+
+// owner (Oct 25): on a computer the game letterboxes to 16:9 and never asks to rotate
+test.describe('computer browser window, tall and narrow', () => {
+  test.use({ viewport: { width: 700, height: 900 } });
+  test('AC24b: a computer window never shows the rotate message and keeps the 16:9 shape', async ({ page }) => {
+    await page.goto('/?test=1');
+    await page.waitForFunction(() => !!window.oreheart);
+    await expect(page.getByText('Please rotate your phone')).toBeHidden();
+    const r = await page.evaluate(() => { const b = document.getElementById('app').getBoundingClientRect(); return b.width / b.height; });
+    expect(Math.abs(r - 16 / 9)).toBeLessThan(0.02);
   });
 });
 
@@ -1735,7 +1747,7 @@ test('AC42: Ranged creatures show the bow icon on the board and in the hand', as
 });
 
 test.describe('landscape layout details', () => {
-  test.use({ viewport: { width: 844, height: 390 } });
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
 
   // ---------- AC43 ----------
   test('AC43: the hand rests fully on screen at the bottom and rises on hover (Round 17)', async ({ page }) => {
@@ -2240,7 +2252,7 @@ test('AC58: mineAt action matches the tap; hovering a mine only shows its info',
 });
 
 test.describe('hand pop-out at 2x', () => {
-  test.use({ viewport: { width: 844, height: 390 } });
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
   test('AC59: a hovered hand card rises to about 1.6x and stays fully on-screen', async ({ page }) => {
     await start(page, { ai: false, setup: { playerHand: ['goblin-scrapper', 'fireball', 'soul-shard', 'goblin-slinger', 'goblin-scrounger'] } });
     await page.waitForTimeout(2000);
@@ -2939,7 +2951,7 @@ test('AC90: the built dist folder stays under 95 MB', async () => {
 });
 
 test.describe('phone-size match screenshot', () => {
-  test.use({ viewport: { width: 844, height: 390 } });
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
   test('AC90: the match screen renders full screen at 844x390 with no page errors', async ({ page }, testInfo) => {
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -3229,7 +3241,7 @@ test.describe('display mode on a PC window', () => {
 });
 
 test.describe('straight-on road board and corner HUD at 844x390', () => {
-  test.use({ viewport: { width: 844, height: 390 } });
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
   const W = 844, H = 390;
   const center = async (loc) => { const b = await loc.boundingBox(); return { x: b.x + b.width / 2, y: b.y + b.height / 2, b }; };
   test('AC104: straight-on road perspective, Commanders in the corners, HUD around them', async ({ page }) => {
@@ -3460,7 +3472,7 @@ for (const st of Object.keys(STYLES)) {
 }
 
 test.describe('both hands at 844x390', () => {
-  test.use({ viewport: { width: 844, height: 390 } });
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
   const inView = (b) => b && b.x >= -1 && b.y >= -1 && b.x + b.width <= 845 && b.y + b.height <= 391;
   test('AC115: the enemy hand is always on-screen and the hand shows about 7 cards, then scrolls', async ({ page }, testInfo) => {
     const fifteen = ['goblin-scrapper', 'goblin-slinger', 'goblin-scrounger', 'shiv-rat', 'fireball', 'soul-shard', 'shieldbeard', 'wolf-rider',
@@ -3830,7 +3842,7 @@ test('AC131: Venom Shiv poisons for 7 of the target’s turns (1 damage each, no
 // AC133 (Round 4 metal lettering) was retired in Round 5a; AC135 checks the new plain gold Alegreya SC lettering.
 
 test.describe('round 4 phone screenshots (844x390)', () => {
-  test.use({ viewport: { width: 844, height: 390 } });
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
   test('AC134: mulligan, spell cards per faction, a creature close-up and a menu screen render without errors', async ({ page }, testInfo) => {
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -4585,7 +4597,7 @@ async function smallText(page) {
   });
 }
 test.describe('readable sizes at 844x390', () => {
-  test.use({ viewport: { width: 844, height: 390 } });
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
   test('AC158: no text below about 14 px on any screen at phone size', async ({ page }) => {
     await page.goto('/?test=1');
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
@@ -9280,7 +9292,7 @@ test('AC345: the four stance buttons sit on the right edge, vertically centered,
 });
 
 test.describe('round 17 fixes at 844x390', () => {
-  test.use({ viewport: { width: 844, height: 390 } });
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
   test('AC346: Choose Your Commander fits a phone with nothing overlapping or cut off', async ({ page }) => {
     await toSelect(page);
     const names = ['Fight!', 'Back', 'Easy', 'Normal', 'Hard', ...MODES, 'Remove Goblin Warband', 'Copy Goblin Warband to my decks'];
