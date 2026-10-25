@@ -49,6 +49,29 @@ export function typeOf(c: any): { icon: string; name: string } {
 }
 /** Round 13: activated abilities that get a round button above their unit (icon, name, text; the cost comes from the engine). */
 const ownerLayoutHand = (ownerLayoutJson0 as any).hud.find((p: any) => p.role === 'player-hand')?.hand;
+/** Owner (Oct 24): comic pop-up pictures (public/art/pop) and speech bubbles (public/art/speech). */
+const POP_WORD: Record<string, string> = { 'KA-BOOM!': 'ka-boom', 'CRUNCH!': 'crunch', 'BLOCK!': 'block', 'POOF!': 'ko', 'STRIKE!': 'strike', 'SHOCKWAVE!': 'shockwave', 'PLOW!': 'plow', 'CHARGE!': 'charge', 'YOINK!': 'yoink', 'WHOOSH!': 'whoosh', 'WARD!': 'ward', 'SACRIFICE!': 'sacrifice', 'BREW!': 'brew', 'BLINK!': 'blink' };
+const HIT_POP: Record<string, string> = {
+  'rotgut-grenadier': 'smack', 'goblin-grunt': 'bonk', 'goblin-pebbler': 'bonk', 'skullbasher-rusher': 'bonk', 'goblin-bomber': 'pow', 'grubnaks-big-boss-troll': 'pow', 'gnome-widget': 'pow',
+  'goblin-sneak': 'stab', 'shiv-rat': 'stab', 'goblin-slinger': 'thwack', 'spark-gnome': 'zap', 'hexwright-apprentice': 'zap', 'deepforge-crossbowman': 'bang', 'gyrocopter-ace': 'fwoosh',
+  'axe-thrower': 'thunk', 'oathbound-pikeman': 'thunk', 'ram-rider': 'charge', 'rune-splitter': 'charge', 'the-great-steam-golem': 'crunch', 'ironhammer-berserker': 'crunch', 'grimhold-ravager': 'crunch',
+};
+const CMD_VOICE: Record<string, string> = { grubnak: 'grubnak', sproingle: 'knobbin', borgo: 'borgo' };
+const CMD_LINES: Record<string, Record<string, string>> = {
+  start: { grubnak: 'lets-crack-some-skulls', knobbin: 'prepare-for-science', borgo: 'for-the-hold' },
+  turn: { grubnak: 'move-it-maggots' },
+  cheer: { grubnak: 'ha', knobbin: 'splendid', borgo: 'aye' },
+  groan: { grubnak: 'ugh', knobbin: 'oh-dear', borgo: 'blast-it' },
+  flinch: { grubnak: 'ow', knobbin: 'ouch', borgo: 'hmph' },
+  cast: { knobbin: 'behold', borgo: 'by-the-anvil' },
+  mine: { grubnak: 'mine', knobbin: 'mine', borgo: 'mine' },
+  lostMine: { grubnak: 'that-was-my-crystal', knobbin: 'that-was-my-crystal', borgo: 'that-was-my-crystal' },
+  impatient: { grubnak: 'any-day-now', knobbin: 'any-day-now', borgo: 'any-day-now' },
+  low: { grubnak: 'part-of-the-plan', knobbin: 'part-of-the-plan', borgo: 'part-of-the-plan' },
+  win: { grubnak: 'told-ya', knobbin: 'told-ya', borgo: 'told-ya' },
+  lose: { grubnak: 'tactical-retreat', knobbin: 'tactical-retreat', borgo: 'tactical-retreat' },
+};
+const MSG_PIC: Record<string, string> = { 'THE CRYSTAL. HAS. FALLEN.': 'msg-the-crystal-has-fallen', 'Tap a target': 'msg-tap-a-target', 'Invalid target': 'msg-invalid-target', 'Cancelled': 'msg-cancelled' };
 export const ABILITY_UI: Record<string, { icon: string; name: string; text: string; burst: string }> = {
   slide: { icon: '🚀', name: 'Slide', text: 'Runs in a straight line until it hits something, then goes Ka-boom.', burst: 'KA-BOOM!' },
   bowl: { icon: '🎳', name: 'Strike', text: 'Rolls a bowling ball in a straight line; every creature in its path is knocked back 1–2 spaces.', burst: 'STRIKE!' },
@@ -702,6 +725,7 @@ export class App {
     this.tokens.clear();
     this.r = {};
     this.endShown = false;
+    this.fxStarted = false; this.uidCard.clear(); this.siteOwner.clear();
     this.pick = null;
     this.phaseKey = '';
     this.handKey = '';
@@ -2296,6 +2320,46 @@ export class App {
     this.r.fx.append(f);
     setTimeout(() => f.remove(), 1000);
   }
+  popStack = new Map<string, { n: number; t: number }>();
+  uidCard = new Map<string, string>();
+  /** Owner (Oct 24): a comic pop-up picture over a board square (it pops, holds, then fades). */
+  pop(name: string, row: number, col: number, label = '') {
+    if (!this.r.fx || !this.view) return;
+    const p = this.center(row, col), key = row + ',' + col, now = performance.now();
+    const st = this.popStack.get(key); const n = st && now - st.t < 700 ? st.n + 1 : 0; this.popStack.set(key, { n, t: now });
+    const f = h('div', { class: 'pop-img', 'aria-hidden': 'true', 'data-pop': name }, h('img', { src: `/art/pop/${name}.webp`, alt: '', draggable: 'false' }), label ? h('span', { class: 'sr-only' }, label) : '');
+    f.style.left = p.x + (n % 2 ? 18 : -10) * Math.min(n, 2) + 'px'; f.style.top = p.y - 24 - n * 34 + 'px';
+    f.style.setProperty('--rot', `${(Math.random() * 14 - 7).toFixed(1)}deg`);
+    this.r.fx.append(f);
+    setTimeout(() => f.remove(), 1150);
+  }
+  speechAt = { player: 0, opponent: 0 } as Record<string, number>;
+  /** Owner (Oct 24): a Commander says a line (picture) above its stronghold; one line at a time per side. */
+  say(side: 'player' | 'opponent', what: string, priority = false) {
+    const st = this.game?.state; if (!st || !this.r.fx || !this.view) return;
+    const voice = CMD_VOICE[st.players[side]?.commanderId]; const line = voice && CMD_LINES[what]?.[voice];
+    if (!line) return;
+    const now = performance.now(); if (!priority && now - (this.speechAt[side] || 0) < 2600) return;
+    this.speechAt[side] = now;
+    this.r.fx.querySelectorAll(`.speech[data-side="${side}"]`).forEach((x: El) => x.remove());
+    const p = this.center(SH[side].row, SH[side].col);
+    const f = h('div', { class: 'speech', 'aria-hidden': 'true', 'data-side': side, 'data-line': `${voice}-${line}` }, h('img', { src: `/art/speech/${voice}-${line}.webp`, alt: '', draggable: 'false' }));
+    f.style.left = p.x + 'px'; f.style.top = p.y - 70 + 'px';
+    this.r.fx.append(f);
+    setTimeout(() => f.remove(), 2400);
+  }
+  unitSayAt = 0;
+  /** A unit says a short line (picture) above its square; rare so the board stays readable. */
+  unitSay(name: string, row: number, col: number, force = false) {
+    if (!this.r.fx || !this.view) return;
+    const now = performance.now(); if (!force && now - this.unitSayAt < 3000) return; this.unitSayAt = now;
+    const p = this.center(row, col);
+    const f = h('div', { class: 'speech unit-speech', 'aria-hidden': 'true', 'data-line': name }, h('img', { src: `/art/speech/${name}.webp`, alt: '', draggable: 'false' }));
+    f.style.left = p.x + 'px'; f.style.top = p.y - 52 + 'px';
+    this.r.fx.append(f);
+    setTimeout(() => f.remove(), 1800);
+  }
+  fxStarted = false; lowSaid = { player: false, opponent: false } as Record<string, boolean>; siteOwner = new Map<string, string>();
   /** Red damage number over a Commander's heart, and the heart shakes. */
   heartPop(owner: string, amount: number) {
     const el = (owner === 'player' ? this.r.myHealth : this.r.enemyHealth) as El;
@@ -2307,6 +2371,7 @@ export class App {
     el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit');
   }
   burst(text: string, row: number, col: number) {
+    if (POP_WORD[text]) { this.pop(POP_WORD[text], row, col, text); return; }
     const p = this.center(row, col);
     const f = h('div', { class: 'burst' }, text);
     f.style.left = p.x + 'px'; f.style.top = p.y - 10 + 'px';
@@ -2347,26 +2412,63 @@ export class App {
     if (!mine) { b.lastAct = now; if (b.level) { b.level = 0; v.impatient('player', 0); } return; }
     const idle = now - b.lastAct;
     const need = this.idleMs + b.level * 15000;
-    if (idle >= need) { b.level++; v.impatient('player', b.level); }
+    if (idle >= need) { b.level++; v.impatient('player', b.level); if (b.level === 1) this.say('player', 'impatient', true); }
     else if (!b.level && now >= b.nextLook) { b.nextLook = now + 20000 + Math.random() * 20000; v.lookBack('player', 1800); }
   }
   emote(side: string, kind: any) {
     this.view && this.view.emote(side as any, kind);
+    if (side === 'player' || side === 'opponent') this.say(side, kind);
   }
   animate(st: any, events: any[]) {
     if (!this.view || !this.r.fx) return;
+    for (const c of st.board?.creatures || []) this.uidCard.set(c.uid, c.cardId);
+    if (!this.fxStarted && st.phase !== 'mulligan') {
+      this.fxStarted = true; this.lowSaid = { player: false, opponent: false };
+      for (const x of st.sites || []) this.siteOwner.set(x.row + ',' + x.col, x.controller || '');
+      this.say('player', 'start', true); setTimeout(() => this.say('opponent', 'start', true), 1400);
+    }
     for (const e of events) {
+      // owner (Oct 24): comic pop-ups and speech bubbles
+      if (e.type === 'attack' && e.target) {
+        const cid = this.uidCard.get(e.uid) || '', ab: string[] = CARDS[cid]?.abilities || [];
+        const tgt = e.target.commander ? SH[e.target.commander as 'player' | 'opponent'] : e.target;
+        const def = e.target.commander ? null : st.board.creatures.find((c: any) => c.row === e.target.row && c.col === e.target.col);
+        const dab: string[] = def ? CARDS[def.cardId]?.abilities || [] : [];
+        const word = ab.includes('sneaky') && !e.ranged ? 'backstabbed' : def && (dab.includes('armored') || dab.includes('unbreakable') || dab.includes('riotShield') || def.shield > 0) ? 'clang' : HIT_POP[cid] || (e.ranged ? 'thwack' : 'whack');
+        if (tgt) this.pop(word, tgt.row, tgt.col);
+      } else if (e.type === 'move' && e.knock && e.to && !events.some((x: any, j: number) => j > events.indexOf(e) && x.type === 'move' && x.knock && x.uid === e.uid)) this.pop('knockback', e.to.row, e.to.col);
+      else if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('stolen', c.row, c.col); this.unitSay('unit-mine-now', c.row, c.col, true); } }
+      else if (e.type === 'poisoned') this.pop('poisoned', e.row, e.col);
+      else if (e.type === 'drunk') { this.pop('hic', e.row, e.col); this.unitSay('unit-hic', e.row, e.col); }
+      else if (e.type === 'brewSave') this.pop('saved', e.row, e.col);
+      else if (e.type === 'ward') this.pop('ward', e.row, e.col);
+      else if (e.type === 'heal' && e.amount > 0 && e.row) this.pop('heal', e.row, e.col);
+      else if (e.type === 'mine' && e.uid) { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('clink', c.row, c.col); if (c.owner === 'player' && Math.random() < 0.3) this.unitSay('unit-shiny', c.row, c.col); } }
+      else if (e.type === 'minerUpgrade' && e.row) { this.pop('upgrade', e.row, e.col); this.unitSay('unit-good-as-new', e.row, e.col, true); }
+      else if (e.type === 'summon' && e.owner === 'player' && !e.illusion && e.row) this.unitSay(Math.random() < 0.5 ? 'unit-reporting' : 'unit-ready', e.row, e.col);
+      else if (e.type === 'abilityUsed' && e.ability === 'brew') this.unitSay('unit-bottoms-up', e.row, e.col, true);
+      else if (e.type === 'abilityUsed' && e.ability === 'slide') this.unitSay('unit-uh-oh', e.row, e.col, true);
+      else if (e.type === 'fizzle') { const sd = st.activePlayer === 'player' ? 'player' : 'opponent'; this.pop('fizzle', SH[sd].row, SH[sd].col); }
+      else if (e.type === 'turnStart' && e.player === 'player' && e.turn > 1) this.say('player', 'turn');
+      else if (e.type === 'siteControl') {
+        const k = e.row + ',' + e.col, was = this.siteOwner.get(k) || '', now = e.controller || '';
+        this.siteOwner.set(k, now);
+        if (now && now !== was) { this.say(now, 'mine', true); if (was) setTimeout(() => this.say(was as any, 'lostMine', true), 900); }
+      } else if (e.type === 'damage' && e.commander) {
+        const side = e.commander as 'player' | 'opponent';
+        if (!this.lowSaid[side] && st.players[side].health > 0 && st.players[side].health <= 5) { this.lowSaid[side] = true; setTimeout(() => this.say(side, 'low', true), 1200); }
+      }
       if (e.type === 'damage') {
         const owner = e.commander;
         if (owner) {
           const row = SH[owner as 'player' | 'opponent'].row, col = SH[owner as 'player' | 'opponent'].col;
           this.heartPop(owner, e.amount);
-          this.burst(e.amount >= 3 ? 'KA-BOOM!' : 'CRUNCH!', row, col);
+          if (e.amount >= 3) this.burst(e.amount >= 5 ? 'KA-BOOM!' : 'CRUNCH!', row, col);
           this.emote(owner, 'flinch');
           this.emote(owner === 'player' ? 'opponent' : 'player', 'cheer');
         } else if (e.amount > 0) {
           this.floatText('-' + e.amount, 'dmg', e.row, e.col);
-          if (e.amount >= 3) this.burst('KA-BOOM!', e.row, e.col);
+          if (e.amount >= 3) this.burst('CRUNCH!', e.row, e.col);
         }
       } else if (e.type === 'abilityUsed' && ABILITY_UI[e.ability]) {
         this.burst(ABILITY_UI[e.ability].burst, e.row, e.col);
@@ -2411,6 +2513,7 @@ export class App {
       const t = this.test ? 120 : 1600;
       this.view?.retreat(loser);
       audio.play(st.winner === 'player' ? 'win' : 'lose');
+      this.say(st.winner, 'win', true); this.say(loser as any, 'lose', true);
       const ov = h('div', { class: 'retreat', 'aria-hidden': 'true' }, h('img', { class: 'retreat-result', src: `/art/ui/banner-${endBanner(st.winner === 'player', st)}.webp`, alt: '', draggable: 'false' }), h('div', { class: 'esc' }, st.players[loser].commanderId === 'grubnak' ? '' : esc));
       this.root.querySelector('.match')?.append(ov);
       const winner = st.winner;
@@ -2433,7 +2536,8 @@ export class App {
     const r = this.r;
     if (!r.board) return;
     r.board.querySelectorAll('.hint').forEach((x: El) => x.remove());
-    const hint = h('div', { class: 'hint', role: 'status' }, text);
+    const pic = MSG_PIC[text];
+    const hint = pic ? h('div', { class: 'hint hint-pic', role: 'status' }, h('img', { src: `/art/speech/${pic}.webp`, alt: '', draggable: 'false' }), h('span', { class: 'sr-only' }, text)) : h('div', { class: 'hint', role: 'status' }, text);
     r.board.append(hint);
     setTimeout(() => hint.remove(), 1600);
   }
