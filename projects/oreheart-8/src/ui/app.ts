@@ -346,7 +346,7 @@ export class App {
     this.clear();
     this.root.append(h('main', { class: 'screen center', 'data-screen': 'settings' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.flowGroup(), this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), ...this.fxPanels(), btn('Back', '', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.flowGroup(), this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), ...this.fxPanels(), btn('Back', 'menu-back', () => this.showMenu()))));
   }
 
   /** The faction of the last picked Commander (defaults to Goblins): the default highlight / ring colors. */
@@ -572,7 +572,7 @@ export class App {
       sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit the first enemy up to 7 spaces away in one of the 8 straight directions (they cannot shoot past a unit) and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals (Flow first, then Bank). Commanders never attack. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet: you can play a Crystal card on its own or together with a counterspell to pay for it. Counterspells cancel spells or summons.'),
-      h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Tutorial', '', () => this.beginTutorial()), btn('Back', '', () => this.showMenu())));
+      h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Tutorial', 'menu-fwd', () => this.beginTutorial()), btn('Back', 'menu-back', () => this.showMenu())));
     this.root.append(s);
   }
 

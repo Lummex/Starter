@@ -70,9 +70,12 @@ export function applyOwnerHud(match: El, r: any, hk: HudHooks) {
   const gem = (role: string, side: 'player' | 'enemy', numEl: El, label: string) => {
     const spec = piece(role);
     const f = side === 'player' ? hk.playerFaction : hk.enemyFaction;
-    const pic = goblin(f) ? themeOf(f).flowCrystal.player.picture[0] : themeOf(FALLBACK).flowCrystal.opponentPlaceholder.picture[0];
+    // Owner (Oct 24): every side's Flow crystal takes its faction color — Gnomes and Dwarves reuse the goblin crystal picture, recolored
+    const pic = goblin(f) ? themeOf(f).flowCrystal.player.picture[0] : themeOf(FALLBACK).flowCrystal.player.picture[0];
+    const tint = goblin(f) ? '' : /gnome/.test(String(f)) ? 'hue-rotate(148deg) saturate(1.1)' : /dwar/.test(String(f)) ? 'hue-rotate(115deg) saturate(1.15) brightness(.85)' : 'grayscale(1) brightness(1.4)';
     const el = document.createElement('div'); el.className = 'o-gem'; el.setAttribute('role', 'group'); el.setAttribute('aria-label', label);
     const gi = img(picUrl(pic)); gi.setAttribute('role', 'img'); gi.setAttribute('aria-label', side === 'player' ? 'Your soul crystal' : 'Enemy soul crystal'); gi.alt = gi.getAttribute('aria-label')!;
+    if (tint) gi.style.filter = tint;
     el.append(gi);
     numEl.classList.add('o-gem-n');
     numEl.style.fontSize = `max(14px, calc(var(--u) * ${spec.gem.numSize} * 9 / 100))`;
