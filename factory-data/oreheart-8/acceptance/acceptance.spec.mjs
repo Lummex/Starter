@@ -9362,3 +9362,182 @@ test('AC349: bonus draws — +1 card per 4 crystals mined, +1 for holding every 
   expect(await bonusGain(page, [P(G, 3, 5), P(G, 2, 6)], [[3, 5, 3, 6], [2, 6, 3, 6]])).toBe(2); // 4 mined: +1
   expect(await bonusGain(page, [P(G, 3, 5), P(G, 5, 5), P(G, 4, 9)], [[3, 5, 3, 6], [5, 5, 5, 6], [4, 9, 4, 10]])).toBe(3); // 6 mined + all 3 mines: +2
 });
+
+// ---------- Round 21: every goblin unit in 3D in matches (owner, Oct 25) ----------
+// The 16 goblin units with finished Meshy models, folder per card in public/models/creatures/<card id>/
+const R21_GOBLINS = {
+  'goblin-scrounger': 'Goblin Miner', 'goblin-pebbler': 'Boneknocker', 'goblin-smith-miner': 'Scrapsmith Miner', 'shiv-rat': 'Shiv Rat',
+  'goblin-scrapper': 'Bowler Brawler', 'goblin-slinger': 'Skullflinger', 'goblin-bomber': 'Bare Knuckle Lunatic', 'goblin-sneak': 'Backstabbing Thief',
+  'wolf-rider': 'Mangewolf Rider', 'grubnaks-big-boss-troll': 'Gronkowski Troll Tyrant', 'shard-guzzler': 'Goblin Rocket Rider', 'goblin-grunt': 'Snotskull Grunt',
+  'rotgut-grenadier': 'Goblin Chef', 'skullbasher-rusher': 'Skullbasher Rusher', 'junk-shaman': 'Junk Shaman', 'blastrat-sapper': 'SewerSlide Bomber',
+};
+// the 12 models copied this round and the item files each one carries (from factory-design/models/<id>/models.json "parts")
+const R21_NEW = {
+  'goblin-scrapper': ['bowling-ball'], 'goblin-slinger': ['skull-mace'], 'goblin-bomber': [], 'goblin-sneak': ['dagger', 'bag'],
+  'wolf-rider': ['mace', 'wolf'], 'grubnaks-big-boss-troll': [], 'shard-guzzler': ['rocket'], 'goblin-grunt': ['frying-pan'],
+  'rotgut-grenadier': ['spatula'], 'skullbasher-rusher': ['mace', 'shield'], 'junk-shaman': ['staff'], 'blastrat-sapper': ['bomb'],
+};
+// the owner's saved looks (factory-design/looks/<id>.json): item -> bone, binding
+const R21_LOOKS = {
+  'goblin-scrapper': { 'bowling-ball': 'RightHand' },
+  'goblin-pebbler': { club: 'RightHand' },
+  'goblin-sneak': { bag: 'neck', dagger: 'RightHand' },
+  'rotgut-grenadier': { spatula: 'RightHand' },
+  'goblin-bomber': {},
+};
+function glbJson(buf) {
+  // GLB: 12-byte header, then chunk 0 (JSON): length (4), type (4), data
+  const len = buf.readUInt32LE(12);
+  return JSON.parse(buf.subarray(20, 20 + len).toString('utf8'));
+}
+const r21Fig = async (page, uid) => ((await renderStats(page)).figures || []).find((f) => f.uid === uid) || {};
+const r21Place = (ids, owner = 'player') => ids.map((cardId, i) => ({ cardId, owner, row: owner === 'player' ? 6 : 1, col: 3 + (i % 8) }));
+
+test('AC350: the 12 new goblin models are copied in, meshopt-compressed and small', async ({ request }) => {
+  for (const [id, items] of Object.entries(R21_NEW)) {
+    const mj = await request.get(`/models/creatures/${id}/models.json`);
+    expect(mj.ok(), `${id}/models.json`).toBe(true);
+    const info = await mj.json();
+    for (const a of ['idle', 'walk', 'attack', 'hit', 'defeat']) expect(typeof info.actions[a], `${id} action ${a}`).toBe('number');
+    let folderBytes = 0;
+    for (const file of ['char.glb', ...items.map((p) => `${p}.glb`)]) {
+      const res = await request.get(`/models/creatures/${id}/${file}`);
+      expect(res.ok(), `${id}/${file}`).toBe(true);
+      const body = await res.body();
+      expect(body.subarray(0, 4).toString('latin1'), `${id}/${file} is a GLB`).toBe('glTF');
+      expect(glbJson(body).extensionsUsed || [], `${id}/${file} is meshopt-compressed`).toContain('EXT_meshopt_compression');
+      expect(body.length, `${id}/${file} size`).toBeLessThanOrEqual(4 * 1024 * 1024);
+      folderBytes += body.length;
+    }
+    expect(folderBytes, `${id} total size`).toBeLessThanOrEqual(6 * 1024 * 1024);
+  }
+});
+
+for (const [label, ids] of [['first eight', Object.keys(R21_GOBLINS).slice(0, 8)], ['last eight', Object.keys(R21_GOBLINS).slice(8)]]) {
+  test(`AC351: every goblin unit shows its 3D model on the board, not a token (${label})`, async ({ page }) => {
+    test.setTimeout(45000);
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await start(page, quiet({ board: r21Place(ids) }));
+    if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+    const s = await getState(page);
+    await expect.poll(async () => {
+      const figs = (await renderStats(page)).figures || [];
+      return ids.filter((id) => (figs.find((f) => f.cardId === id) || {}).source !== `${id}.glb`);
+    }, { timeout: 25000, message: 'goblins still showing a token' }).toEqual([]);
+    const figs = (await renderStats(page)).figures;
+    for (const c of s.board.creatures) {
+      const f = figs.find((x) => x.uid === c.uid);
+      expect(f, c.cardId).toBeTruthy();
+      expect([f.row, f.col], `${c.cardId} stands on its square`).toEqual([c.row, c.col]);
+      expect(f.height, `${c.cardId} height`).toBeGreaterThanOrEqual(0.9);
+      expect(f.height, `${c.cardId} height`).toBeLessThanOrEqual(1.4);
+      for (const a of ['idle', 'walk', 'attack', 'hit', 'defeat']) expect(f.animations, `${c.cardId} ${a}`).toContain(a);
+      expect(f.currentAnimation, c.cardId).toBe('idle');
+    }
+    expect(errors).toEqual([]);
+  });
+}
+
+test('AC352: items sit on the bones from the owner looks and every carried item is attached', async ({ page }) => {
+  const ids = [...new Set([...Object.keys(R21_LOOKS), ...Object.keys(R21_NEW)])];
+  test.setTimeout(45000);
+  await start(page, quiet({ board: r21Place(ids.slice(0, 8)).concat(r21Place(ids.slice(8)).map((p) => ({ ...p, row: 5 }))) }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await expect.poll(async () => {
+    const figs = (await renderStats(page)).figures || [];
+    return ids.filter((id) => (figs.find((f) => f.cardId === id) || {}).source !== `${id}.glb`).length;
+  }, { timeout: 25000 }).toBe(0);
+  const figs = (await renderStats(page)).figures;
+  for (const id of ids) {
+    const f = figs.find((x) => x.cardId === id);
+    const items = f.items || [];
+    for (const name of R21_NEW[id] || []) expect(items.map((i) => i.name), `${id} carries ${name}`).toContain(name);
+    for (const [name, bone] of Object.entries(R21_LOOKS[id] || {})) {
+      const it = items.find((i) => i.name === name);
+      expect(it, `${id} item ${name}`).toBeTruthy();
+      expect(it.bone, `${id} ${name} bone`).toBe(bone);
+      expect(it.matchesLook, `${id} ${name} uses the owner's saved position/rotation/scale`).toBe(true);
+    }
+    expect(items.map((i) => i.name).some((n) => /solid/i.test(n)), `${id} has no editor "Solid part"`).toBe(false);
+  }
+});
+
+test('AC353: goblin models play walk, attack, hit and defeat with their own clips', async ({ page }) => {
+  await start(page, quiet({ board: [
+    { cardId: 'goblin-sneak', owner: 'player', row: 6, col: 8 },
+    { cardId: 'goblin-grunt', owner: 'player', row: 6, col: 10 },
+    { cardId: 'grubnaks-big-boss-troll', owner: 'opponent', row: 5, col: 10 },
+  ] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  const s = await getState(page);
+  const thief = at(s, 6, 8), grunt = at(s, 6, 10), troll = at(s, 5, 10);
+  await expect.poll(async () => [thief, grunt, troll].every(Boolean) && (await r21Fig(page, troll.uid)).source, { timeout: 20000 }).toBe('grubnaks-big-boss-troll.glb');
+  let moveAct = null, atkAct = null;
+  for (let i = 0; i < 3 && !(moveAct && atkAct); i++) {
+    const l = await legal(page);
+    moveAct = l.find((a) => a.type === 'move' && a.creatureUid === thief.uid);
+    atkAct = l.find((a) => a.type === 'attack' && a.creatureUid === grunt.uid && a.target && (a.target.uid === troll.uid || (a.target.row === 5 && a.target.col === 10)));
+    if (!(moveAct && atkAct)) await done(page);
+  }
+  expect(moveAct && atkAct, 'move and attack are legal').toBeTruthy();
+  expect((await act(page, moveAct)).ok).toBe(true);
+  expect((await act(page, atkAct)).ok).toBe(true); // 2 damage to the 5/6 troll, its 5 strike back defeats the 2/3 grunt
+  await expect.poll(async () => {
+    const log = (await renderStats(page)).creatureAnimLog || [];
+    const has = (uid, a) => log.some((e) => e.uid === uid && e.anim === a);
+    return { walk: has(thief.uid, 'walk'), attack: has(grunt.uid, 'attack'), hit: has(troll.uid, 'hit'), defeat: has(grunt.uid, 'defeat') };
+  }, { timeout: 10000 }).toEqual({ walk: true, attack: true, hit: true, defeat: true });
+  await expect.poll(async () => (await r21Fig(page, thief.uid)).currentAnimation, { timeout: 8000 }).toBe('idle');
+});
+
+test('AC354: a model that fails to load falls back to the token and the match keeps going', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.route('**/models/creatures/goblin-grunt/**', (r) => r.abort());
+  await start(page, quiet({ board: [
+    { cardId: 'goblin-grunt', owner: 'player', row: 6, col: 9 },
+    { cardId: 'goblin-sneak', owner: 'player', row: 6, col: 7 },
+  ] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await expect.poll(async () => ((await renderStats(page)).figures || []).find((f) => f.cardId === 'goblin-sneak')?.source, { timeout: 20000 }).toBe('goblin-sneak.glb');
+  const grunt = ((await renderStats(page)).figures || []).find((f) => f.cardId === 'goblin-grunt');
+  expect(grunt, 'the grunt still shows').toBeTruthy();
+  expect(grunt.source).toBe('placeholder');
+  const before = (await getState(page)).phase;
+  await done(page);
+  expect((await getState(page)).phase).not.toBe(before);
+  expect(errors).toEqual([]);
+});
+
+test('AC355: models load once and are reused; Gnome and Dwarf units are unchanged', async ({ page }) => {
+  const fetched = {};
+  page.on('request', (r) => { const m = r.url().match(/\/models\/creatures\/([^/]+)\/char\.glb/); if (m) fetched[m[1]] = (fetched[m[1]] || 0) + 1; });
+  await start(page, quiet({ board: [
+    ...[3, 4, 5, 6].map((col) => ({ cardId: 'skullbasher-rusher', owner: 'player', row: 6, col })),
+    { cardId: 'gnome-tinker', owner: 'player', row: 6, col: 9 },
+  ] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await expect.poll(async () => ((await renderStats(page)).figures || []).filter((f) => f.source === 'skullbasher-rusher.glb').length, { timeout: 20000 }).toBe(4);
+  expect(fetched['skullbasher-rusher'], 'char.glb downloaded once for 4 copies').toBe(1);
+  const gnome = ((await renderStats(page)).figures || []).find((f) => f.cardId === 'gnome-tinker');
+  expect(gnome && gnome.source).not.toMatch(/\.glb$/);
+  expect(Object.keys(fetched).filter((k) => !(k in R21_GOBLINS))).toEqual([]);
+});
+
+test('AC356: report screenshots — goblins on the board and close views (1920x1080)', async ({ page }) => {
+  test.setTimeout(45000);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await start(page, quiet({ board: r21Place(['goblin-scrapper', 'goblin-sneak', 'rotgut-grenadier', 'wolf-rider', 'grubnaks-big-boss-troll', 'junk-shaman', 'skullbasher-rusher', 'goblin-scrounger']) }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await expect.poll(async () => ((await renderStats(page)).figures || []).filter((f) => /\.glb$/.test(f.source || '')).length, { timeout: 25000 }).toBe(8);
+  await page.screenshot({ path: test.info().outputPath('round21-goblins-board.png') });
+  for (const [id, name] of [['goblin-scrapper', 'bowler-brawler'], ['goblin-sneak', 'backstabbing-thief'], ['rotgut-grenadier', 'goblin-chef']]) {
+    const f = ((await renderStats(page)).figures || []).find((x) => x.cardId === id);
+    const b = f && f.screenBox;
+    if (b && b.width > 0) {
+      const pad = Math.max(b.width, b.height);
+      await page.screenshot({ path: test.info().outputPath(`round21-${name}-close.png`), clip: { x: Math.max(0, b.x - pad), y: Math.max(0, b.y - pad), width: Math.min(1920, b.width + 2 * pad), height: Math.min(1080, b.height + 2 * pad) } });
+    }
+  }
+});

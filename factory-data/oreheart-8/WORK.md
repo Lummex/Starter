@@ -1,26 +1,14 @@
-# Round 17 finish: keep the owner's Oct 24 changes, bonus draws, fix the last failing checks
+# Round 21: goblin 3D models in matches
 
-Read "Round 17 finish" at the top of SPEC.md. The owner edited the game directly on Oct 24 ("Owner: …" commits). **Never revert those edits** (bonus draws, white unowned mines, no yellow unit ring, badge size, pop-ups/speech bubbles/banners/end pictures, deck pictures, Back bottom-left). Failing checks and messages: `test-results.md`.
-Checks rewritten by the planner (they contradicted current card data or newer rules): AC15, AC109, AC143, AC204, AC260, AC261, AC266, AC332, AC335. New: AC349. Fix the game, not these checks.
-
-## Rules & cards
-- Bonus draws (owner rule, already in `src/engine/engine.ts`): make sure it works in test mode with `newMatch({ mines, setup })`, keep `tests/round20.test.ts` passing. If an older hand-count check now breaks only because of the bonus draw, note it in the report (AC349, AC7).
-- Restore Skullflinger to owner data: `range: 6`, text/shortText/longText "Hits up to 6 spaces away" (AC248, AC284, AC286). `src/content/cards.json`.
-- `mineAt` and tapping a mine mine with every ready Miner next to it; `data-ready-miners` counts them all (AC58). `src/engine`, `src/ui/scene.ts`.
-- Mine Control stance: a Miner attacks an adjacent enemy Miner when `previewAttack` says it survives and crystals are not low (AC341). `src/ai/stances.ts`.
-- Flow stream log `flow` equals the side's current Flow (AC330).
+Read "Round 21" at the top of SPEC.md. ONLY the 3D goblins this round: no rule, menu, pop-up, mine, badge or old-check changes. Never revert the owner's direct "Owner: …" commits. **Do NOT run Meshy.** New checks: AC350–AC356. Old failing checks are not part of this round (owner's instruction).
 
 ## 3D & visuals
-- Arena checks time out: make the arena/pan/zoom and Round 10 screenshot flows fast enough to finish under 30 s (AC40, AC190, AC191, AC256).
-- Unit rings: faction colors, grey after acting, settings applied (AC261). The yellow CSS ring stays hidden (owner).
-
-## Interface
-- Hand: rests as an even fan fully on screen, below the board; hover raises one card and it always retracts; neighbors go back down (AC174, AC218, AC272); drag from the hand plays (AC270). `src/ui/hand.ts`.
-- `data-playable="false"` on cards you can't afford/place, updating at once (AC155).
-- Fonts: only Alegreya SC italic 400/700 on non-card text, no weight 100 / normal style (AC135, AC168).
-- Spell card faces have separate name and text elements in Deck Builder and hand (AC316).
-- Settings highlight panel values reach `getHighlightSettings` in test mode (AC260).
+- Copy the 12 folders from `factory-design/models/<id>/` to `public/models/creatures/<id>/` (char.glb, item GLBs, models.json); meshopt-compress (gltfpack / gltf-transform, textures ≤ 1024) so each file ≤ 4 MB, folder ≤ 6 MB; keep `shiv-rat` and `goblin-smith-miner` as they are; add to CREDITS.md (AC350).
+- Add all 12 to the `PARTS` list in `src/ui/creature3d.ts` (all 16 goblins in 3D, player and enemy) (AC351).
+- Apply the owner looks `factory-design/looks/{goblin-scrapper,goblin-bomber,goblin-pebbler,goblin-sneak,rotgut-grenadier}.json` exactly (bone, local position/rotation/scale, height + stretch; skip "Solid part"); update `goblin-pebbler`'s club; other goblins: weapon right hand, packs/bombs on back, wolf as mount, shield left arm (AC352).
+- Clips from each `models.json` `actions` (idle, walk, attack, hit, defeat, mine); play defeat before removal (AC353). `src/ui/creature3d.ts`, `src/ui/scene.ts`.
+- Token fallback when a model/item fails to load, no page errors (AC354); load + parse each GLB once, clone per unit (AC355).
+- Test hooks in `getRenderStats()` (`src/ui/scene.ts` ~line 1143): every figure gets `row`, `col`, `source`, `height`, `animations`, `currentAnimation`, `animationLog`, `items [{name, bone, matchesLook}]`, `screenBox`; add `creatureAnimLog [{uid, cardId, anim}]` that keeps defeated units (AC351–AC356). Keep the fields AC276/AC277 already read.
 
 ## Other
-- Owner Goblin paintings and `grubnak-on-throne-art.png` served byte-identical at `/art/owner/goblin/` (AC273).
-- Report: pass count, plus 1920×1080 screenshots of a bonus-draw message and a match at rest.
+- Report: 1920×1080 screenshots from AC356 (goblins on the board; close views of Bowler Brawler, Backstabbing Thief, Goblin Chef) and the pass count.
