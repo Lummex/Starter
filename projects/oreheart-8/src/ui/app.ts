@@ -1657,7 +1657,12 @@ export class App {
     const blocked = this.dialogs.length > 0 || !(r.timer as El).hidden;
     if (blocked) return;
     const text = this.bannerQ.shift()!;
-    this.bannerEl = h('div', { class: 'banner', role: 'status', 'aria-label': 'Phase banner' }, text);
+    // Owner (Oct 24): phase banners are the owner's pictures; the words stay as hidden text
+    const BANNER_PIC: Record<string, string> = { 'YOUR TURN': 'your-turn', 'ENEMY TURN': 'opponents-turn', DEPLOY: 'deploy', ACTION: 'action' };
+    const pic = BANNER_PIC[text];
+    this.bannerEl = pic
+      ? h('div', { class: 'banner banner-img', role: 'status', 'aria-label': 'Phase banner', 'data-banner': pic }, h('img', { src: `/art/ui/banner-${pic}.webp`, alt: '', draggable: 'false' }), h('span', { class: 'sr-only' }, text))
+      : h('div', { class: 'banner', role: 'status', 'aria-label': 'Phase banner' }, text);
     this.root.querySelector('.match')?.append(this.bannerEl);
     this.bannerAt = now;
   }
@@ -2444,7 +2449,7 @@ export class App {
       rowOf('Turns', String(st.turn)),
       rowOf('MVP', mvp));
     this.root.append(h('main', { class: 'screen center end' },
-      h('h1', {}, win ? 'Victory!' : 'Defeat'),
+      h('h1', { class: 'end-title' }, h('img', { class: 'end-pic', src: `/art/ui/banner-${win ? 'victory' : 'defeat'}.webp`, alt: '', draggable: 'false' }), h('span', { class: 'sr-only' }, win ? 'Victory!' : 'Defeat')),
       h('p', {}, win ? 'The enemy Commander fled screaming that this was all part of the plan.' : 'Your Commander escaped at the last second, shouting that this was all part of the plan.'),
       table,
       h('div', { class: 'row' },
