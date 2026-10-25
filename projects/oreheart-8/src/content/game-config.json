@@ -11,6 +11,8 @@
   "dwarves": "dwarf-miner"
  },
  "gathererFlow": 2,
+  "minedPerBonusCard": 4,
+  "allMinesBonusCards": 1,
  "fighterFlow": 1,
  "poolCap": 16,
  "savingsPerCrystal": 10,
