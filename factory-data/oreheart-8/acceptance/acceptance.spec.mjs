@@ -2929,12 +2929,13 @@ test('AC89: Low graphics turns off bloom, shadows and particles and uses fewer d
   expect(low.drawCalls).toBeLessThan(high.drawCalls);
 });
 
-test('AC90: the built dist folder stays under 40 MB', async () => {
+// owner (Oct 25): the goblin 3D models must keep full detail; the size budget is 70 MB and models are never simplified to meet it
+test('AC90: the built dist folder stays under 70 MB', async () => {
   const { fs, path, dir } = await appDir();
   const dist = path.join(dir, 'dist');
   expect(fs.existsSync(path.join(dist, 'index.html')), 'dist/index.html').toBe(true);
   const bytes = walk(fs, path, dist).reduce((n, f) => n + fs.statSync(f).size, 0);
-  expect(bytes).toBeLessThan(40 * 1024 * 1024);
+  expect(bytes).toBeLessThan(70 * 1024 * 1024);
 });
 
 test.describe('phone-size match screenshot', () => {
