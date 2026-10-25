@@ -1,25 +1,26 @@
 ## What was built
-This round puts 3D goblin models on the battlefield in place of flat tokens: 12 new models, each carrying its own gear, with walk, attack, hit and defeat animations. If a model fails to load, the game falls back to a token and the match keeps going. The model files were also shrunk so the whole game stays under the 40 MB limit.
+This round of Oreheart, the goblin/gnome/dwarf card battle game, added glowing effects on the Crystal Nodes (the mines) in each player's colour. It also gave Bowler Brawler his bowling throw, finger-spin and basketball-shot moves, with a green-flame ball. It also fixed a batch of earlier failing checks, including click controls and the hand of cards. The builder says it was short on budget, so some of this was never fully tested.
 
 ## Try these things
-- Click Play, pick Grubnak, start a match, and play a Goblin Miner onto your back row. Check that it appears as a 3D goblin with its gear.
-- Play several different goblin cards (Boneknocker, Shiv Rat, Scrapsmith Miner). Each should look different.
-- Move a goblin, then attack with one. Watch for walk, attack and hit animations, and a defeat animation when one dies.
-- Open the Deck Builder, click a goblin card and look at its 3D viewer.
-- Play a Gnome or Dwarf unit. It should still look like it did before.
-- Resize to phone width and check the board and hand still fit.
+- Start a match and look at the Crystal Nodes. They should glow in your colour once owned, and white while unowned.
+- Summon Bowler Brawler (it costs 6 crystals, so it may take a few turns). Watch the basketball-shot entrance, the idle finger spin, and his Strike.
+- Left-click one of your units to select it, then right-click it. The right-click should open its card and any ability buttons.
+- Click a card in your hand. A close-up should open with a "Play this card" or "Cast this spell" button. Also try dragging a card onto the board.
+- In Settings, switch to Low graphics and check that the effects calm down and the game still looks fine.
+- Try the phone-size view too.
 
 ## Automated checks
-389 of 420 checks passed. Two failures are about this round's work:
-- Goblin attack animation: one check found that the attack animation was not playing, though walk, hit and defeat were. Goblins may not visibly attack.
-- Model reuse: one check found Grubnak's model loading more than once, instead of once and reused. This is a performance concern, not something you'd see.
-
-The other 29 failures are older checks, mostly about hand layout, hover behavior, the Commander turning to look back, impatience animations, the Commander-choice screen and the Mine Control stance. Many of these were already failing before this round. A few look like slow-loading timeouts.
+403 of 426 checks passed. 23 failed:
+- About 10 timed out because the test machine was overloaded, not because the game broke (the builder re-ran several alone and they passed). These cover the Commander look-back and impatience emotes, panning, Low graphics, and some screenshots.
+- 4 look like out-of-date tests. They concern Goblin Rocket Rider now being a Fighter, a summon test that gives the opponent no crystals, and a model-loading check that doesn't expect Grubnak's 3D model.
+- The hand-layout check failed at three screen sizes. Hand cards overlap the bottom of the board, which the builder says is intentional (the owner's closer fan).
+- Real, unresolved failures: the Tutorial "Skip" button test, the Mine Control stance (a Miner mined where the test expected an attack), the Card Comp vs Card Comp watch mode (no Pause button), and the Bowler Brawler bowling test.
 
 ## Things to know
-- The screenshots show the menu and the match at its very start. No goblin models were visible on the board in them, so I could not confirm the models look right. Please check them yourself.
-- In the phone screenshot, a raised hand card covers much of the board. The "Tunnel!" tags also overlap there.
-- No page errors were recorded.
+- The home, menu and match screenshots look polished and complete, with no errors logged. The phone view fits the screen.
+- In the match screenshot the hand overlaps the board's bottom edge and the Done and phase text. Nothing is broken, but it is a bit crowded.
+- Bowler Brawler's motions and the node effects were never checked in a browser by the builder, so judge them yourself.
+- The builder skipped several checks as "outdated" on its own judgement.
 
 ## Recommendation
-Request changes: the goblin attack animation failed its check, I couldn't see any goblin models in the screenshots, and a number of older checks are still failing.
+Request changes: several real failures remain (Tutorial skip, Mine Control stance, Card Comp watch mode, Bowler Brawler bowling), and the new visuals were not tested.
