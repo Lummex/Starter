@@ -4,7 +4,11 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 21 — put the goblin 3D models into matches (owner, Oct 25) — read this first
+## Owner rule for every round (Oct 25): 3D models keep full detail
+
+Never simplify, decimate, weld, re-mesh or re-shrink any 3D model in `public/models/` (it scrambled the goblin textures in Round 21). Item textures may be 512 px at most; character textures stay as they are. The build-size budget is now **70 MB** (AC90). If the build is too big, ask the owner instead of shrinking models.
+
+## Round 21 — put the goblin 3D models into matches (owner, Oct 25) — built
 
 Keep everything from 8a–17 and the owner's direct changes on the branch (pop-ups, speech bubbles, bonus draws, hand play button, left/right click). This round is ONLY the 3D goblins; do not rework old checks or anything else.
 
