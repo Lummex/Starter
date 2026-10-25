@@ -128,7 +128,7 @@ export function applyOwnerHud(match: El, r: any, hk: HudHooks) {
     el.classList.add('o-deck');
     if (rot) el.style.setProperty('--rot', rot + 'deg');
     const t = textCss(c.text, ts);
-    n.style.cssText = `left:${c.x}%;top:${c.y}%;width:${c.w}%;height:${c.h}%;rotate:${c.rot || 0}deg;color:${t.color};font-weight:${t.fontWeight};--ow:${t.fontWeight};--os:italic;font-style:italic;text-shadow:${t.textShadow}`;
+    n.style.cssText = `left:${c.x}%;top:${c.y}%;width:${c.w}%;height:${c.h}%;rotate:${c.rot || 0}deg;color:${t.color};font-weight:${t.fontWeight};--ow:${t.fontWeight};--os:${t.fontStyle};font-style:${t.fontStyle};text-shadow:${t.textShadow}`;
     n.dataset.size = String(t.sizePct); n.dataset.role = countRole; n.dataset.hudRole = countRole;
     el.style.zIndex = '7';
     add(el, role);

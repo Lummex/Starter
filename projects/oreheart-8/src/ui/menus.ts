@@ -70,7 +70,7 @@ function textStyle(t: any) {
   const sh: string[] = [];
   if ((t.shadow || 0) > 0) sh.push(`0 ${(0.12 * sz).toFixed(2)}cqh 0 rgba(0,0,0,${t.shadow})`, `0 0 ${(0.25 * sz).toFixed(2)}cqh rgba(0,0,0,${t.shadow * 0.8})`);
   if ((t.glow || 0) > 0) sh.push(`0 0 ${(0.5 * sz * t.glow + 0.2).toFixed(2)}cqh ${t.glowColor || '#FFD700'}`, `0 0 ${(0.18 * sz * t.glow + 0.1).toFixed(2)}cqh ${t.glowColor || '#FFD700'}`);
-  return `font-family:${FONT};font-size:${sz}cqh;color:#ffffff;font-weight:${t.bold ? 700 : 400} !important;font-style:italic !important;letter-spacing:${t.spacing || 0}em;justify-content:${t.align === 'center' ? 'center' : t.align === 'right' ? 'flex-end' : 'flex-start'};text-align:${t.align};align-items:${t.valign === 'top' ? 'flex-start' : t.valign === 'bottom' ? 'flex-end' : 'center'};text-shadow:${sh.join(',') || 'none'}`;
+  return `font-family:${FONT};font-size:${sz}cqh;color:#ffffff;font-weight:${t.bold ? 700 : 400} !important;font-style:${t.italic === false ? "normal" : "italic"} !important;letter-spacing:${t.spacing || 0}em;justify-content:${t.align === 'center' ? 'center' : t.align === 'right' ? 'flex-end' : 'flex-start'};text-align:${t.align};align-items:${t.valign === 'top' ? 'flex-start' : t.valign === 'bottom' ? 'flex-end' : 'center'};text-shadow:${sh.join(',') || 'none'}`;
 }
 function haloHtml(t: any) {
   if (!(t.halo > 0)) return '';
