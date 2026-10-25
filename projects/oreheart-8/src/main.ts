@@ -8,6 +8,7 @@ import { getHighlights, getRings } from './ui/fx-settings';
 import { pictureOf, rarityKey, commanderPortrait, INTERNAL_ABILITY } from './ui/app';
 import cardFormat from '../public/art/card-format/format.json';
 import { ohCardEl, ohCardHTML, fitCardText, commanderCard } from './ui/cardfmt';
+import { hasCreature3dSlug } from './ui/creature3d';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
@@ -96,7 +97,7 @@ if (test) {
     getArtInfo: (id: string) => {
       const c: any = CARDS[id];
       if (!c) return null;
-      return { figure: c.type !== 'creature' ? null : c.faction === 'goblins' ? 'finished' : 'placeholder', picture: pictureOf(c) };
+      return { figure: c.type !== 'creature' ? null : c.faction === 'goblins' || hasCreature3dSlug(id) ? 'finished' : 'placeholder', picture: pictureOf(c) };
     },
     listStarterDecks: () => STARTER_DECK_LIST.map((d) => ({ id: d.id, name: d.name, faction: d.faction, style: d.style, cards: d.cards.slice() })),
     validateDeck: (ids: string[], commander?: string) => validateDeck(Array.isArray(ids) ? ids : [], commander),
