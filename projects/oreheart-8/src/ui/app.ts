@@ -2411,7 +2411,7 @@ export class App {
       const t = this.test ? 120 : 1600;
       this.view?.retreat(loser);
       audio.play(st.winner === 'player' ? 'win' : 'lose');
-      const ov = h('div', { class: 'retreat', 'aria-hidden': 'true' }, h('div', { class: 'burstbox' }, h('div', { class: 'big' }, 'KA-BOOM!')), h('div', { class: 'esc' }, st.players[loser].commanderId === 'grubnak' ? '' : esc));
+      const ov = h('div', { class: 'retreat', 'aria-hidden': 'true' }, h('img', { class: 'retreat-result', src: `/art/ui/banner-${endBanner(st.winner === 'player', st)}.webp`, alt: '', draggable: 'false' }), h('div', { class: 'esc' }, st.players[loser].commanderId === 'grubnak' ? '' : esc));
       this.root.querySelector('.match')?.append(ov);
       const winner = st.winner;
       setTimeout(() => this.showEnd(winner), t);
