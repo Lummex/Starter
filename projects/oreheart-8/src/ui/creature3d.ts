@@ -91,6 +91,7 @@ export interface C3D {
   play(n: CreatureAnim): void; current(): string; update(dt: number): void;
   clipNames: string[]; held: string[]; worn: string[]; height: number;
   /** height in board squares (owner look or default) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
+  /** Bowler Brawler only: hand-keyed special moves, ball hooks, flame effect */ special?: (n: 'bowl' | 'spinBall' | 'basketShot') => void; trig?: (shootT: number, born: number) => void; advanceIdle?: (sec: number) => void; ballInfo?: () => any; effects?: () => any[];
 }
 
 /** Instances one figure: the model stands on y = 0, centred, normalised to height 1 (the scene scales it to the board). */
@@ -106,6 +107,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   });
   prep(ch);
   const held: string[] = [], worn: string[] = [];
+  let ballRec: { part: THREE.Object3D; bone: THREE.Object3D; p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 } | null = null;
   const items: { name: string; bone: string; matchesLook: boolean }[] = [];
   ch.updateMatrixWorld(true);
   const look = LOOKS[id];
@@ -145,6 +147,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
       const part = src.clone(true); prep(part);
       part.position.set(...pc.look.pos); part.rotation.set(...(pc.look.rot.map((d) => THREE.MathUtils.degToRad(d)) as [number, number, number]), 'XYZ'); part.scale.set(...pc.look.scale);
       bone.add(part);
+      if (pc.name === 'bowling-ball') ballRec = { part, bone, p: part.position.clone(), q: part.quaternion.clone(), s: part.scale.clone() };
       items.push({ name: pc.name, bone: bone.name, matchesLook: true });
       (/Hand/.test(bone.name) ? held : worn).push(pc.name);
       continue;
@@ -182,7 +185,9 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     heightSpaces = DEFAULT_H[id] || 1.35;
     root.scale.setScalar(heightSpaces / 1.1 / total);
   } else root.scale.setScalar(heightSpaces / 1.1);
-  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => mixer.update(dt), clipNames: Object.keys(actions), held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
+  const rig = ballRec ? makeBallRig(ch, root, ballRec, out, log, () => cur, () => heightSpaces) : null;
+  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (rig) rig.step(dt); }, clipNames: Object.keys(actions), held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
+  if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }
   return out;
 }
 
@@ -213,4 +218,135 @@ export function attachPart(ch: THREE.Object3D, pc: PartCfg, src: THREE.Object3D,
   const ov = (globalThis as any).__tune?.[pc.name]; if (ov) { hold.position.set(ov[0] * H / Math.max(ws.x, 1e-6), ov[1] * H / Math.max(ws.x, 1e-6), ov[2] * H / Math.max(ws.x, 1e-6)); if (ov[3] !== undefined) hold.rotation.set(THREE.MathUtils.degToRad(ov[3]), THREE.MathUtils.degToRad(ov[4]), THREE.MathUtils.degToRad(ov[5])); }
   bone.add(hold);
   return bone.name;
+}
+
+// ---------------------------------------------------------------- Round 22.5: Bowler Brawler special moves (hand-keyed arm aims + a scripted ball)
+let flameTex: THREE.Texture | null = null;
+const FLAME = { size: 0.29, height: 1, speed: 1.38, core: '#238b5a', mid: '#00f088', tip: '#00ff04' };
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _d = new THREE.Vector3(), _t = new THREE.Vector3(), _c = new THREE.Vector3();
+const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _qi = new THREE.Quaternion(), _box = new THREE.Box3(), _id = new THREE.Quaternion();
+const ease = (x: number) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
+
+function aim(bone: THREE.Object3D, child: THREE.Object3D, dirWorld: THREE.Vector3, w: number) {
+  bone.updateWorldMatrix(true, false); child.updateWorldMatrix(true, false);
+  bone.getWorldPosition(_a); child.getWorldPosition(_b);
+  _d.subVectors(_b, _a).normalize();
+  _q.setFromUnitVectors(_d, dirWorld); _q2.copy(_id).slerp(_q, w);
+  bone.getWorldQuaternion(_q); _q.premultiply(_q2);
+  bone.parent!.getWorldQuaternion(_qi).invert();
+  bone.quaternion.copy(_qi.multiply(_q));
+  bone.updateMatrixWorld(true);
+}
+
+function makeBallRig(ch: THREE.Object3D, root: THREE.Group, rec: { part: THREE.Object3D; bone: THREE.Object3D; p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 }, out: C3D, log: string[], cur: () => string, hs: () => number) {
+  const arm = ch.getObjectByName('RightArm'), fore = ch.getObjectByName('RightForeArm'), hand = ch.getObjectByName('RightHand');
+  const part = rec.part;
+  const flame = new THREE.Group(); flame.visible = true; root.add(flame);
+  const layers: THREE.Sprite[] = [];
+  if (!flameTex) {
+    const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d')!, g = x.createRadialGradient(32, 40, 0, 32, 40, 30);
+    g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,0.4)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+    flameTex = new THREE.CanvasTexture(c);
+  }
+  for (const col of [FLAME.tip, FLAME.mid, FLAME.core]) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: flameTex, color: col, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    sp.center.set(0.5, 0.25); flame.add(sp); layers.push(sp);
+  }
+  let ready = false, r = 0.07, off = new THREE.Vector3(), sx = 1;
+  let state = 'hand', detached = false, spec = '', t = 0, D = 0, rollD = 0, vz = 0, pos = new THREE.Vector3(), vel = new THREE.Vector3(), landed = false;
+  let idleT = 0, idleThr = 10 + Math.random() * 10, lastShoot = 0, bornDone = false, clock = 0;
+  let minClear = Infinity, pen = 0, plog: string[] = [], lastLanding = { bounces: 0, rollDistance: 0 };
+  const dirA = new THREE.Vector3(), dirB = new THREE.Vector3(), q0 = new THREE.Quaternion();
+  const center = (v: THREE.Vector3) => { _box.setFromObject(part); _box.getCenter(v); root.worldToLocal(v); return v; };
+  const ws = () => root.getWorldScale(_c).y;
+  const init = () => {
+    if (ready || !hand) return;
+    const w = ws(); if (w < 0.05) return;
+    root.updateMatrixWorld(true);
+    _box.setFromObject(part); r = Math.max(0.01, (_box.max.y - _box.min.y) / 2 / w);
+    const c = center(new THREE.Vector3());
+    part.getWorldPosition(_t); root.worldToLocal(_t); off.copy(c).sub(_t);
+    sx = c.x >= 0 ? 1 : -1; ready = true;
+  };
+  const detach = () => { if (detached) return; root.attach(part); detached = true; };
+  const reattach = () => { if (!detached) return; rec.bone.add(part); part.position.copy(rec.p); part.quaternion.copy(rec.q); part.scale.copy(rec.s); detached = false; state = 'hand'; };
+  const setCenter = (v: THREE.Vector3) => { part.position.copy(v).sub(off); };
+  const start = (n: 'bowl' | 'spinBall' | 'basketShot') => {
+    init(); if (!ready || spec) return;
+    spec = n; t = 0; plog = []; state = n === 'spinBall' ? 'hand' : 'swing'; landed = false; idleT = 0; idleThr = 10 + Math.random() * 10;
+    D = n === 'bowl' ? 1.6 : n === 'basketShot' ? 2.7 : 2.6;
+    log.push(n); out.onPlay?.(n);
+    if (n === 'bowl') { plog.push('swingBack'); dirA.set(sx * 0.75, -0.2, -0.65); dirB.set(sx * 0.3, -0.5, 0.85); }
+    else if (n === 'basketShot') { plog.push('shoot'); dirA.set(sx * 0.15, 1, 0.35); }
+    else { plog.push('spin'); dirA.set(sx * 0.3, 0.35, 0.9); }
+    dirA.normalize(); dirB.normalize();
+  };
+  const toWorldDir = (v: THREE.Vector3, o: THREE.Vector3) => o.copy(v).applyQuaternion(root.getWorldQuaternion(q0)).normalize();
+  const finish = () => { reattach(); spec = ''; state = 'hand'; };
+  const step = (dt: number) => {
+    clock += dt; init();
+    if (!ready) return;
+    if (!spec) { if (cur() === 'idle') { idleT += dt; if (idleT >= idleThr) start('spinBall'); } else idleT = 0; }
+    else {
+      t += dt;
+      let w = 0;
+      if (spec === 'bowl') {
+        if (t < 0.45) w = ease(t / 0.45), toWorldDir(dirA, _t);
+        else if (t < 0.7) { w = 1; toWorldDir(_c.copy(dirA).lerp(dirB, ease((t - 0.45) / 0.25)).normalize(), _t); }
+        else { w = 1 - ease((t - 0.7) / 0.3); toWorldDir(dirB, _t); }
+        if (t >= 0.7 && !detached) {
+          plog.push('release'); center(pos); detach(); state = 'rolling'; plog.push('roll'); rollD = 0; pos.z = pos.z; vz = 2.4; pos.y = r + 0.002; pos.x = pos.x;
+        }
+        if (detached) {
+          const k = Math.max(0, 1 - (t - 0.7) / 0.85); const sp = vz * k; pos.z += sp * dt; rollD += sp * dt; pos.y = r + 0.002;
+          setCenter(pos); part.rotateOnWorldAxis(_d.set(1, 0, 0), sp * dt / r);
+          if (t - 0.7 > 0.85) { lastLanding = { bounces: 0, rollDistance: +(rollD * hs()).toFixed(3) }; finish(); }
+        }
+      } else if (spec === 'basketShot') {
+        if (t < 0.5) w = ease(t / 0.5); else w = 1 - ease((t - 0.5) / 0.4);
+        toWorldDir(dirA, _t);
+        if (t >= 0.5 && !detached) {
+          center(pos); detach(); state = 'flying'; plog.push('fly');
+          const T = 0.9, g = 7, ty = r + 0.002;
+          vel.set((sx * 0.1 - pos.x) / T, (ty - pos.y + 0.5 * g * T * T) / T, (0.9 - pos.z) / T);
+        }
+        if (detached && !landed) {
+          vel.y -= 7 * dt; pos.addScaledVector(vel, dt);
+          if (pos.y <= r + 0.002 && vel.y < 0) { pos.y = r + 0.002; landed = true; state = 'landed'; plog.push('land'); lastLanding = { bounces: 0, rollDistance: 0 }; }
+          setCenter(pos); part.rotateOnWorldAxis(_d.set(1, 0, 0), 9 * dt);
+        }
+        if (landed && t > 2.3) finish();
+      } else {
+        w = ease(t / 0.4) * (t > D - 0.4 ? ease((D - t) / 0.4) : 1);
+        toWorldDir(dirA, _t);
+        if (t > 0.35) {
+          if (!detached) detach();
+          if (hand) { hand.getWorldPosition(pos); root.worldToLocal(pos); pos.y += r * 1.3; }
+          setCenter(pos); part.rotateOnWorldAxis(_d.set(0, 1, 0), 14 * dt);
+        }
+        if (t >= D) finish();
+      }
+      if (arm && fore && hand && w > 0.001) { aim(arm, fore, _t, w); aim(fore, hand, _t, w); }
+      if (spec && !detached && hand === rec.bone) { /* ball follows the hand while swinging */ }
+    }
+    // hooks: lowest ball bottom, body hits, flame follows the ball
+    const c = center(_c);
+    minClear = Math.min(minClear, (c.y - r) * hs());
+    if (c.y > 0.2 && c.y < 0.9 && Math.hypot(c.x, c.z) < 0.13) pen++;
+    flame.position.copy(c);
+    const W = r * 2 * (FLAME.size / 0.29) * 1.4, Hh = r * 2 * 1.6 * FLAME.height;
+    layers.forEach((sp, i) => { const f = 1 + 0.18 * Math.sin(clock * 9 * FLAME.speed + i * 2) * Math.sin(clock * 5.3 * FLAME.speed + i); const k = 1 - i * 0.28; sp.scale.set(W * k * f, Hh * k * f, 1); });
+  };
+  return {
+    special: start,
+    active: () => spec,
+    step,
+    trig: (shootT: number, born: number) => {
+      if (born && !bornDone) { start('basketShot'); if (spec) bornDone = true; }
+      if (shootT && shootT !== lastShoot) { lastShoot = shootT; if (spec === 'spinBall') finish(); start('bowl'); }
+    },
+    advanceIdle: (sec: number) => { idleT += sec; if (!spec && idleT >= idleThr - 1e-6) start('spinBall'); },
+    info: () => ({ state, bone: 'RightHand', log: plog.slice(), minGroundClearance: isFinite(minClear) ? +minClear.toFixed(4) : 0, bodyPenetrations: pen, lastLanding }),
+    effects: () => [{ name: 'Flame', type: 'flame', attachedTo: 'bowling-ball', visible: flame.visible, settings: { size: FLAME.size, height: FLAME.height, speed: FLAME.speed, coreColor: FLAME.core, midColor: FLAME.mid, tipColor: FLAME.tip, colors: { core: FLAME.core, mid: FLAME.mid, tip: FLAME.tip } } }],
+  };
 }

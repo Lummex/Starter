@@ -227,7 +227,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   // glowing crystal mines inside spiked palisades
   const mines: MineArt[] = [];
   const mineFx: MineFx[] = [];
-  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
+  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
   for (let mi = 0; mi < CONFIG.mineCount; mi++) {
     const m = makeMine(low, mi);
     m.recolor('#ffffff');
@@ -1049,6 +1049,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       if (f.c3d) {
         const dt = Math.min(0.1, (now - (f.lastT || now)) / 1000); f.lastT = now;
         const mk3 = (now - f.mineT) / 900, ak3 = (now - f.shootT) / 380;
+        f.c3d.trig?.(f.shootT, f.born);
         f.c3d.play(f.shootT && ak3 < 1 ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? 'walk' : 'idle');
         f.c3d.update(dt);
         g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
@@ -1159,7 +1160,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   const _v = new THREE.Vector3();
   function figureStats(f: Fig) {
     const c = f.c3d, cv = canvas.getBoundingClientRect();
-    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', animationLog: c ? [...c.log] : [], items: c ? c.items.map((i) => ({ ...i })) : [] };
+    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', animationLog: c ? [...c.log] : [], ...(c && c.ballInfo ? { ball: c.ballInfo(), effects: c.effects!() } : {}), items: c ? c.items.map((i) => ({ ...i })) : [] };
     const b = c ? skinBox(f.group, new THREE.Box3()) : new THREE.Box3().setFromObject(f.group);
     if (b.isEmpty()) { base.screenBox = { x: 0, y: 0, width: 0, height: 0 }; return base; }
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
