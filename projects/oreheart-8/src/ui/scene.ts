@@ -53,6 +53,7 @@ export interface BoardView {
   emote(side: 'player' | 'opponent', kind: 'cheer' | 'groan' | 'flinch' | 'cast'): void;
   lookBack(side: 'player' | 'opponent', ms: number): void;
   impatient(side: 'player' | 'opponent', level: number): void;
+  advanceFigureIdle?(sec: number): void;
   facing(side: 'player' | 'opponent'): any;
   poke(uid: string): string | null;
   retreat(side: 'player' | 'opponent'): void;
@@ -407,7 +408,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   // creatures
   type Fig = {
     ringColor?: string; ringGreyed?: boolean;
-    group: THREE.Group; target: THREE.Vector3; born: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
+    group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
   };
   const figs = new Map<string, Fig>();
@@ -504,6 +505,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
 
   const creatureAnimLog: { uid: string; cardId: string; anim: string }[] = [];
   const asked = new Set<string>();
+  const pendingBorn = new Map<string, number>(); // summon time carried over when a token is rebuilt as its 3D model
   // each goblin model is fetched once, only when a unit of it is on the board
   function ensure3d(id: string) {
     if (asked.has(id) || !hasCreature3dSlug(id)) return;
@@ -511,7 +513,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     loadCreature3d(id).then((a) => {
       // figures built before the model arrived are rebuilt with it
       if (!a || disposed) return;
-      for (const [uid, f] of figs) if (f.cardId === id && !f.c3d) { scene.remove(f.group); figs.delete(uid); }
+      for (const [uid, f] of figs) if (f.cardId === id && !f.c3d) { if (f.bornAt) pendingBorn.set(uid, f.bornAt); scene.remove(f.group); figs.delete(uid); }
       if (state) setState(state, []);
     }).catch(() => { /* the token stays */ });
   }
@@ -609,7 +611,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         const born = events.some((e) => e.type === 'summon' && e.uid === c.uid) ? now : 0;
         m.group.position.copy(tgt);
         scene.add(m.group);
-        f = { group: m.group, target: tgt.clone(), born, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, row: c.row, col: c.col, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0, c3d: (m.group as any).userData.c3d || null };
+        f = { group: m.group, target: tgt.clone(), born, bornAt: born || pendingBorn.get(c.uid) || 0, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, row: c.row, col: c.col, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0, c3d: (m.group as any).userData.c3d || null };
         figs.set(c.uid, f);
         if (born) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }
         // creatures keep their stored facing (set below every state update)
@@ -653,6 +655,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         f.lunge = to.clone().sub(f.target).multiplyScalar(0.45);
         f.lungeT = now;
         f.shootT = now;
+        f.c3d?.play('attack'); // start the clip now: a defender-strike-back defeat can end this figure before the next frame
         audio.play(e.ranged || (CARDS[f.cardId].abilities || []).includes('ranged') ? 'ranged' : 'melee');
         if (f.finished) audio.voiceLine('yell');
         if (!e.target.commander && !e.ranged) {
@@ -664,7 +667,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         const m = world(e.row, e.col);
         f.faceTo = Math.atan2(m.x - f.target.x, m.z - f.target.z); f.faceUntil = now + 1000;
         setTimeout(() => { spawnFx('spark', m, 4); audio.play('pick'); audio.play('chime'); }, 220);
-      } else if (e.type === 'bowl') playBowl(e);
+      } else if (e.type === 'bowl') { const bf = figs.get(e.uid); if (bf) bf.shootT = now; playBowl(e); }
       else if (e.type === 'damage' && e.uid) {
         const f = figs.get(e.uid);
         if (f && e.amount > 0) { f.hitT = now; }
@@ -1047,9 +1050,10 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         if (on) g.rotation.z = Math.sin(k * 24) * 0.18 * (1 - k); else { g.rotation.z = 0; f.hitT = 0; }
       }
       if (f.c3d) {
-        const dt = Math.min(0.1, (now - (f.lastT || now)) / 1000); f.lastT = now;
+        const dt = Math.min(0.25, (now - (f.lastT || now)) / 1000); f.lastT = now;
         const mk3 = (now - f.mineT) / 900, ak3 = (now - f.shootT) / 380;
-        f.c3d.trig?.(f.shootT, f.born);
+        if (f.born) f.bornAt = f.born;
+        f.c3d.trig?.(f.shootT, f.born || (f.bornAt && now - f.bornAt < 12000 ? f.bornAt : 0)); // the model may finish loading after the short summon drop
         f.c3d.play(f.shootT && ak3 < 1 ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? 'walk' : 'idle');
         f.c3d.update(dt);
         g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
@@ -1195,7 +1199,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   }
 
   const api: BoardView = {
-    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);

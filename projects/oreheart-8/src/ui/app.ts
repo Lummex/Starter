@@ -2475,7 +2475,7 @@ export class App {
     }
   }
   selState: () => any = () => ({ mode: 'row', commanderId: '', model: null });
-  advanceIdle(seconds: number) { this.bhv.lastAct -= seconds * 1000; this.cmdTick(); }
+  advanceIdle(seconds: number) { this.bhv.lastAct -= seconds * 1000; this.cmdTick(); this.view?.advanceFigureIdle?.(seconds); }
   playerActed() {
     const b = this.bhv;
     b.lastAct = Date.now();

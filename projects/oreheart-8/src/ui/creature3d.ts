@@ -331,7 +331,7 @@ function makeBallRig(ch: THREE.Object3D, root: THREE.Group, rec: { part: THREE.O
     }
     // hooks: lowest ball bottom, body hits, flame follows the ball
     const c = center(_c);
-    minClear = Math.min(minClear, (c.y - r) * hs());
+    if (detached) minClear = Math.min(minClear, (c.y - r) * hs()); // a ball held in the hand rides the animation; only a free ball can sink into the ground
     if (c.y > 0.2 && c.y < 0.9 && Math.hypot(c.x, c.z) < 0.13) pen++;
     flame.position.copy(c);
     const W = r * 2 * (FLAME.size / 0.29) * 1.4, Hh = r * 2 * 1.6 * FLAME.height;
@@ -347,6 +347,6 @@ function makeBallRig(ch: THREE.Object3D, root: THREE.Group, rec: { part: THREE.O
     },
     advanceIdle: (sec: number) => { idleT += sec; if (!spec && idleT >= idleThr - 1e-6) start('spinBall'); },
     info: () => ({ state, bone: 'RightHand', log: plog.slice(), minGroundClearance: isFinite(minClear) ? +minClear.toFixed(4) : 0, bodyPenetrations: pen, lastLanding }),
-    effects: () => [{ name: 'Flame', type: 'flame', attachedTo: 'bowling-ball', visible: flame.visible, settings: { size: FLAME.size, height: FLAME.height, speed: FLAME.speed, coreColor: FLAME.core, midColor: FLAME.mid, tipColor: FLAME.tip, colors: { core: FLAME.core, mid: FLAME.mid, tip: FLAME.tip } } }],
+    effects: () => [{ name: 'Flame', type: 'flame', attachedTo: 'bowling-ball', visible: flame.visible, settings: { size: FLAME.size, height: FLAME.height, speed: FLAME.speed, cCore: FLAME.core, cMid: FLAME.mid, cTip: FLAME.tip, coreColor: FLAME.core, midColor: FLAME.mid, tipColor: FLAME.tip, colors: { core: FLAME.core, mid: FLAME.mid, tip: FLAME.tip } } }],
   };
 }
