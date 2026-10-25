@@ -1,9 +1,10 @@
 # Automated check results
 
-386 of 412 checks passed after 5 build round(s).
+389 of 420 checks passed after 5 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
+- ✅ landscape phone viewport 667x375 › AC24: menu and full-screen match fit a 667x375 landscape phone
 - ✅ AC1: main menu has exactly Play, Deck Builder, How to Play, Settings, Quit and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -54,7 +55,6 @@
 - ✅ AC21: Normal AI defeats a passive player before turn 60
 - ✅ AC22: hand cards are buttons and open a card view
 - ✅ AC23: illegal actions are rejected and state is unchanged
-- ✅ landscape phone viewport 667x375 › AC24: menu and full-screen match fit a 667x375 landscape phone
 - ✅ portrait phone viewport › AC24: upright phone shows the rotate message
 - ✅ landscape layout details › AC43: the hand rests fully on screen at the bottom and rises on hover (Round 17)
 - ✅ landscape layout details › AC44: deck piles on each player's right and Commander hearts
@@ -63,7 +63,7 @@
 - ✅ hearts and turn display 667x375 › AC51: Commander hearts never cover creature labels; turn display top-right (667x375)
 - ✅ hand pop-out at 2x › AC59: a hovered hand card rises to about 1.6x and stays fully on-screen
 - ✅ AC25: first visit offers the tutorial; Skip is remembered
-- ❌ AC25: Tutorial button opens the guided match with tips and Skip Tutorial
+- ✅ AC25: Tutorial button opens the guided match with tips and Skip Tutorial
 - ✅ AC25: tutorial steps start at summon and advance after a back-row summon
 - ✅ AC26: printed creature Health is at most 6
 - ✅ AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 for 1
@@ -82,13 +82,13 @@
 - ✅ AC36: flow preview, mine ring numbers and mine info
 - ✅ AC38: swapping places with your own creature uses only the dragged creature's action
 - ✅ AC37: the confirm pop-up sits above the countdown
-- ❌ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
+- ✅ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
 - ✅ AC41: the moves pop-up names miners that have not mined
 - ✅ AC42: Ranged creatures show the bow icon on the board and in the hand
 - ✅ AC45: Miner names, roles and badges
 - ✅ AC46: Miner upgrades — Smith gives +1 Attack and +1 Health, basic Miner +1 Health; they stack, persist and heal
 - ✅ AC46: a basic Miner played onto your creature gives exactly +1 Health; the free Miner can never upgrade
-- ✅ AC46: dropping a Smith Miner on your creature upgrades it at once (no choice pop-up)
+- ❌ AC46: dropping a Smith Miner on your creature upgrades it at once (no choice pop-up)
 - ✅ AC47: Crystal Bank persists, has no cap and is spent after Flow
 - ✅ AC48: playing a Crystal card never ends the phase or turn
 - ✅ AC49: an unaffordable counterspell opens no Respond window (Round 2)
@@ -106,12 +106,15 @@
 - ✅ AC60: Deck Builder shows card faces with full text and filters them
 - ✅ AC61: Deck Builder problems use the exact messages and counts
 - ✅ AC62: up to 5 saved decks persist after a reload
+- ✅ AC64: Deploy auto-skips with an unplayable hand; Action skips once nothing can act
+- ✅ AC64: Done with only a Crystal card, an Instant or an unplaceable card shows no pop-up
 - ✅ phone-size match screenshot › AC90: the match screen renders full screen at 844x390 with no page errors
 - ✅ display mode on a PC window › AC103: Display mode Auto / PC / Phone, remembered, without extra menu buttons
 - ✅ straight-on road board and corner HUD at 844x390 › AC104: straight-on road perspective, Commanders in the corners, HUD around them
 - ✅ straight-on road board and corner HUD at 844x390 › AC105: the enemy hand is smaller than the player hand
-- ✅ AC64: Deploy auto-skips with an unplayable hand; Action skips once nothing can act
-- ✅ AC64: Done with only a Crystal card, an Instant or an unplaceable card shows no pop-up
+- ✅ both hands at 844x390 › AC115: the enemy hand is always on-screen and the hand shows about 7 cards, then scrolls
+- ❌ both hands at 844x390 › AC116: a tapped creature shows its card at hovered-hand-card size, fully on-screen
+- ✅ both hands at 844x390 › AC117: the deck picker shows the nine starter decks as named stacks
 - ✅ AC67: ending your turn with 9 Flow saves 0 into the Bank
 - ✅ AC67: ending your turn with 10 Flow saves 1 into the Bank
 - ✅ AC67: ending your turn with 16 Flow saves 1 into the Bank
@@ -137,13 +140,13 @@
 - ✅ AC86: CREDITS.md lists fonts, card pictures and every outside asset file
 - ✅ AC87: sound stays locked until the first tap
 - ✅ AC88: volume sliders and the match mute button are remembered
-- ✅ AC89: Low graphics turns off bloom, shadows and particles and uses fewer draw calls
+- ❌ AC89: Low graphics turns off bloom, shadows and particles and uses fewer draw calls
 - ✅ AC90: the built dist folder stays under 40 MB
 - ✅ AC93: the cut-out deck image is used on every deck pile outside the match
 - ✅ AC95: up to 3 mulligans — 5 -> 5 -> 4 -> 3, then no more
 - ✅ AC95: the Mulligan screen shows one straight row and counts mulligans left
 - ✅ AC97: card reveals never block the game and can be pinned
-- ✅ AC98: tapping a creature shows its card and changes nothing
+- ❌ AC98: tapping a creature shows its card and changes nothing
 - ✅ AC99: the Card pop-ups switch skips reveals but never effects, and is remembered
 - ✅ AC100: spells play step by step and nothing vanishes without a cause
 - ✅ AC101: SewerSlide Bomber carries a bomb: drop, KA-BOOM, then 1 damage to the adjacent enemy
@@ -158,9 +161,6 @@
 - ✅ AC114: the computer plays the Warband style to the end of a match
 - ✅ AC114: the computer plays the Arcane Hoard style to the end of a match
 - ✅ AC114: the computer plays the Horde style to the end of a match
-- ✅ both hands at 844x390 › AC115: the enemy hand is always on-screen and the hand shows about 7 cards, then scrolls
-- ✅ both hands at 844x390 › AC116: a tapped creature shows its card at hovered-hand-card size, fully on-screen
-- ✅ both hands at 844x390 › AC117: the deck picker shows the nine starter decks as named stacks
 - ✅ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; no frame ornaments on any screen (844x390)
 - ✅ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; no frame ornaments on any screen (1280x720)
 - ❌ round 4 phone screenshots (844x390) › AC134: mulligan, spell cards per faction, a creature close-up and a menu screen render without errors
@@ -187,7 +187,7 @@
 - ✅ AC127: mulligan cards are double size, one row, on-screen (844x390)
 - ✅ AC129: faction spells — names, factions, deck validation and the casting lock
 - ✅ AC131: Venom Shiv poisons for 7 of the target’s turns (1 damage each, no healing); Hex Reversal is disabled
-- ❌ AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textured letters
+- ✅ AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textured letters
 - ❌ AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulligan, hand) at several window sizes
 - ✅ AC137: menu buttons are plain white text with a hover glow, no boxes or borders
 - ✅ AC138: every menu screen fills the window edge to edge at 844x390, 1280x720, 1920x1080 and rescales live
@@ -210,6 +210,10 @@
 - ✅ AC162: no hand counts for either player; deck numbers stay
 - ✅ AC165: face-down cards use the original Oreheart card back
 - ✅ AC167: every text outside the card faces is plain white #ffffff (title, Rules, Settings, Deck Builder, Choose Your Commander, match)
+- ❌ AC168: bold titles and main actions, regular body text, only four weights
+- ✅ AC169: Deck Builder close-up fills the height, has no scrollbar or Close, and dismisses on click or Esc
+- ✅ AC170: deck list + and - change counts at once, without moving the row; rapid clicks all count
+- ✅ AC171: no "All cards" text and no corner ornaments on any menu screen
 - ✅ round 6a screenshots (1920x1080) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (1920x1080)
 - ✅ round 6a screenshots (844x390) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (844x390)
 - ✅ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
@@ -220,7 +224,7 @@
 - ✅ arena homography 1920x1080 › AC188: square centers follow the homography of the owner's corners (1920x1080)
 - ✅ arena homography 844x390 › AC188: square centers follow the homography of the owner's corners (844x390)
 - ✅ arena highlights 1920x1080 › AC189: drag highlights are the legal summon squares on the painted floor; drop uses the mapping
-- ❌ arena pan 1920x1080 › AC191: keys, WASD and dragging empty board pan the view, always clamped to the painting
+- ✅ arena pan 1920x1080 › AC191: keys, WASD and dragging empty board pan the view, always clamped to the painting
 - ✅ arena HUD 1920x1080 › AC192: the HUD stays fixed while zooming and panning; Recenter and double-click reset the view
 - ✅ arena drags 1920x1080 › AC194: dragging a hand card or a creature never pans the view
 - ✅ round 8a screenshots 1920x1080 › AC195: the painted arena match fully zoomed out and zoomed in renders without errors (1920x1080)
@@ -229,10 +233,7 @@
 - ✅ round 8b pop-out 1920x1080 › AC201: the pop-out is about 70% of the window height, eased 150-200 ms (1920x1080)
 - ✅ round 8b pop-out 844x390 › AC201: the pop-out is about 70% of the window height, eased 150-200 ms (844x390)
 - ✅ round 9a owner layout 1920x1080 › AC212: every HUD piece sits where the owner's layout puts it (1920x1080)
-- ❌ AC168: bold titles and main actions, regular body text, only four weights
-- ✅ AC169: Deck Builder close-up fills the height, has no scrollbar or Close, and dismisses on click or Esc
-- ✅ AC170: deck list + and - change counts at once, without moving the row; rapid clicks all count
-- ✅ AC171: no "All cards" text and no corner ornaments on any menu screen
+- ✅ round 9a owner layout 844x390 › AC212: every HUD piece sits where the owner's layout puts it (844x390)
 - ✅ AC172: crystal mines use the owner's Crystal Node model, about 1.3 squares tall and inside its square, in the owner's faction color; unowned mines are white (owner, Oct 24)
 - ❌ AC176: the owner's card back and deck-pile pictures are used exactly
 - ✅ AC177: a popped card keeps the at-rest glow thickness and opacity
@@ -261,7 +262,10 @@
 - ✅ AC207: Grubnak's 3D model pops up in front of his card when he is chosen
 - ✅ AC208: Fight! sits bottom-right in both states at 1920x1080 and 844x390
 - ✅ AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak's card and dismisses correctly
-- ✅ round 9a owner layout 844x390 › AC212: every HUD piece sits where the owner's layout puts it (844x390)
+- ✅ AC213: the enemy deck and card fan are upside down with a readable deck count
+- ✅ AC215: themes follow each side's Commander faction; goblin corner frames only for a Goblin player
+- ✅ AC216: the drop-down Menu has the owner's six items, closes properly and Give up asks first
+- ✅ AC217: Settings, Sound Effects, Background music and How to play open their controls
 - ❌ round 9a hand 1920x1080 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (1920x1080)
 - ❌ round 9a hand 844x390 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (844x390)
 - ✅ round 9a screenshots 1920x1080 › AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (1920x1080)
@@ -276,19 +280,21 @@
 - ✅ round 10 at 1920x1080 › AC244: only the opponent's played cards pop up, at the left edge (Round 11)
 - ✅ round 10 at 1920x1080 › AC246: the mine click area is only its own square; clicking inside it mines (Round 11)
 - ✅ round 10 at 1920x1080 › AC249: Crystal Flow streams end at the Flow crystal counters in faction colors
-- ✅ round 10 at 1920x1080 › AC250: card close-up fills 80–100 % of the height, no scrollbar, no Close; outside click and Esc close it
+- ❌ round 10 at 1920x1080 › AC250: card close-up fills 80–100 % of the height, no scrollbar, no Close; outside click and Esc close it
 - ✅ round 10 at 1920x1080 › AC251: the resting hand is fully on screen (Round 17); hovering raises it
 - ✅ round 10 at 1920x1080 › AC256: Round 10 screenshots render without errors
 - ✅ round 11 at 1920x1080 › AC257: "Click to begin" gate, then the intro crash sound and thunder actually play
 - ✅ round 11 at 1920x1080 › AC258: Tense Cycle plays continuously through every menu and only changes when a match starts
 - ✅ round 11 at 1920x1080 › AC259: main menu button words are white, bold and styled as in menus.json
-- ✅ round 11 at 1920x1080 › AC260: Settings "Square highlights" panel: defaults, live preview, saved, applied in a match, Reset to default
-- ❌ round 11 at 1920x1080 › AC261: unit rings use faction colors, grey out after acting; "Unit rings" settings are saved and applied
+- ❌ round 11 at 1920x1080 › AC260: Settings "Square highlights" panel: defaults, live preview, saved, applied in a match, Reset to default
+- ✅ round 11 at 1920x1080 › AC261: unit rings use faction colors, grey out after acting; "Unit rings" settings are saved and applied
 - ✅ round 11 at 1920x1080 › AC262: a creature standing behind a mine can be selected by clicking it; the mine square still mines
-- ✅ AC213: the enemy deck and card fan are upside down with a readable deck count
-- ✅ AC215: themes follow each side's Commander faction; goblin corner frames only for a Goblin player
-- ✅ AC216: the drop-down Menu has the owner's six items, closes properly and Give up asks first
-- ✅ AC217: Settings, Sound Effects, Background music and How to play open their controls
+- ✅ round 11 at 1920x1080 › AC263: only the opponent's played cards pop up, left edge, at most 3 stacked
+- ✅ round 11 at 1920x1080 › AC264: dragging a card sideways in the hand reorders it, the hand stays up, and the order is kept
+- ✅ round 11 at 1920x1080 › AC265: dragging a card shows the real card face, floating and tilting; the hand tucks while over the board
+- ✅ round 11 at 1920x1080 › AC266: Ranged range 7 — the shot stops at the first unit, also your own
+- ✅ round 11 at 1920x1080 › AC267: Round 11 screenshots render without errors
+- ✅ round 12a drag-to-play at 1920x1080 › AC269: dragging Goblin Miner from the raised hand onto a legal home-row square summons it (1920x1080)
 - ✅ AC219: the opening hand deals in one card at a time
 - ✅ AC221: mines are the code-built owner mine with all its parts
 - ✅ AC222: Crystal Flow streams run from owned mines to each side's Flow crystal when Flow is gained
@@ -312,12 +318,6 @@
 - ✅ AC252: mines have no ring, a flat glow-rubble decal that stays white (owner, Oct 24: the ground never changes color), and sit level at equal height
 - ✅ AC253: several Crystal cards in one turn, in Deploy and Action, never ending the phase
 - ✅ AC254: Tunnel from turn 1 — drag-and-drop next to a mine works and the AI uses the same rule
-- ✅ round 11 at 1920x1080 › AC263: only the opponent's played cards pop up, left edge, at most 3 stacked
-- ✅ round 11 at 1920x1080 › AC264: dragging a card sideways in the hand reorders it, the hand stays up, and the order is kept
-- ✅ round 11 at 1920x1080 › AC265: dragging a card shows the real card face, floating and tilting; the hand tucks while over the board
-- ✅ round 11 at 1920x1080 › AC266: Ranged range 7 — the shot stops at the first unit, also your own
-- ✅ round 11 at 1920x1080 › AC267: Round 11 screenshots render without errors
-- ✅ round 12a drag-to-play at 1920x1080 › AC269: dragging Goblin Miner from the raised hand onto a legal home-row square summons it (1920x1080)
 - ✅ round 12a drag-to-play at 1920x1080 › AC270: a drag from the tucked hand also plays; a drop back in the hand or on an illegal square plays nothing (1920x1080)
 - ✅ round 12a drag-to-play at 1568x782 › AC269: dragging Goblin Miner from the raised hand onto a legal home-row square summons it (1568x782)
 - ✅ round 12a drag-to-play at 1568x782 › AC270: a drag from the tucked hand also plays; a drop back in the hand or on an illegal square plays nothing (1568x782)
@@ -363,6 +363,13 @@
 - ✅ AC302: Riot Shield Bearer can't move or attack and can't die for its first 3 turns
 - ✅ AC303: Queen Brunhilda takes at most 3 from a hit; Bloodbeard Grit +1 Attack after surviving
 - ✅ AC304: Gemdrunk Deepdelver gets +1 Attack per banked crystal; Grudge Hurler roots its target
+- ✅ AC305: Ram Rider pays 2 to move any distance; Oathbound Overwatch attacks at any distance; Barrelback acts at once
+- ✅ AC306: Ironclad Bulwark makes the next hit do 0; Field Bandage heals to full; Emergency Rations heals the Commander 4
+- ✅ AC307: Crystal cards: Soul Shard +1, Soul Cluster +2, Heart +4, Motherlode +3 and next creature 2 cheaper, Geode +1 Flow each turn
+- ✅ AC308: Desperate Plunder gives +3 Flow each turn while the opponent has more Flow, and stops once you have more
+- ✅ AC309: every Round 12c card reports its ability as built, and close-ups show the owner text
+- ✅ AC310: the game loads the owner card format and renders every layout at 420:624
+- ✅ AC311: every card face uses the new renderer, and the old frames are gone
 - ✅ round 12d screenshots (1920x1080) › AC315: hand, close-up, Deck Builder, Choose Your Commander and reference cards render without errors
 - ✅ Deck Builder top bar 1920x1080 › AC322: search, filters and Cards per row never overlap (1920x1080)
 - ✅ Deck Builder top bar 1280x720 › AC322: search, filters and Cards per row never overlap (1280x720)
@@ -370,8 +377,8 @@
 - ✅ title card stack 1920x1080 › AC323: the Begin gate shows a fanned Oreheart deck with Click to begin over it (1920x1080)
 - ✅ title card stack 844x390 › AC323: the Begin gate shows a fanned Oreheart deck with Click to begin over it (844x390)
 - ✅ Round 13 screenshots 1920x1080 › AC325: title, Deck Builder with spells, hand with spells, spell close-up and an ability button render without errors
-- ✅ round 14 owner text style 1920x1080 › AC326: every HUD text uses the owner's size, bold and italic, in white (1920x1080)
-- ✅ round 14 owner text style 844x390 › AC326: every HUD text uses the owner's size, bold and italic, in white (844x390)
+- ❌ round 14 owner text style 1920x1080 › AC326: every HUD text uses the owner's size, bold and italic, in white (1920x1080)
+- ❌ round 14 owner text style 844x390 › AC326: every HUD text uses the owner's size, bold and italic, in white (844x390)
 - ✅ round 14 Done text 1920x1080 › AC326: the Done button uses the owner's size 5.7 in white when it shows
 - ✅ round 14 fanned hand 1920x1080 › AC327: your hand is a fan (4° per card, arc), hover straightens and pops the card 1.6x
 - ✅ round 14 fanned hand 1920x1080 › AC328: the enemy hand is a fan of card backs, 9° apart, at most 6 shown
@@ -382,13 +389,6 @@
 - ✅ round 17 fixes at 844x390 › AC347: the hand is "Your hand" with data-card-id buttons, an even fan fully on screen, and a raised card never covers most of the board
 - ✅ round 17 screenshots › AC348: fight menu with modes, a Card Play match with stances and a Card Comp vs Card Comp match render without errors (1920x1080)
 - ✅ round 17 screenshots › AC348: fight menu with modes, a Card Play match with stances and a Card Comp vs Card Comp match render without errors (844x390)
-- ✅ AC305: Ram Rider pays 2 to move any distance; Oathbound Overwatch attacks at any distance; Barrelback acts at once
-- ✅ AC306: Ironclad Bulwark makes the next hit do 0; Field Bandage heals to full; Emergency Rations heals the Commander 4
-- ✅ AC307: Crystal cards: Soul Shard +1, Soul Cluster +2, Heart +4, Motherlode +3 and next creature 2 cheaper, Geode +1 Flow each turn
-- ✅ AC308: Desperate Plunder gives +3 Flow each turn while the opponent has more Flow, and stops once you have more
-- ✅ AC309: every Round 12c card reports its ability as built, and close-ups show the owner text
-- ✅ AC310: the game loads the owner card format and renders every layout at 420:624
-- ✅ AC311: every card face uses the new renderer, and the old frames are gone
 - ✅ AC312: the 8 reference cards render at 420x624 with their name and cost, and text fits
 - ✅ AC313: a card's artPos is honored in the art layer
 - ✅ AC314: the three card-format fonts are bundled locally and loaded
@@ -414,6 +414,14 @@
 - ❌ AC344: a Card Comp vs Card Comp match plays to the end with no input; watch bar, stances and Rematch
 - ✅ AC345: the four stance buttons sit on the right edge, vertically centered, big enough to tap (1920x1080 and 844x390)
 - ✅ AC349: bonus draws — +1 card per 4 crystals mined, +1 for holding every mine
+- ✅ AC350: the 12 new goblin models are copied in, meshopt-compressed and small
+- ✅ AC351: every goblin unit shows its 3D model on the board, not a token (first eight)
+- ✅ AC351: every goblin unit shows its 3D model on the board, not a token (last eight)
+- ✅ AC352: items sit on the bones from the owner looks and every carried item is attached
+- ❌ AC353: goblin models play walk, attack, hit and defeat with their own clips
+- ✅ AC354: a model that fails to load falls back to the token and the match keeps going
+- ❌ AC355: models load once and are reused; Gnome and Dwarf units are unchanged
+- ✅ AC356: report screenshots — goblins on the board and close views (1920x1080)
 
 ## Failures
 
@@ -431,21 +439,19 @@ Received: false
   780 |   expect(can(at(s, 6, 1).uid, 6, 8)).toBe(true);
   781 |   expect(can(at(s, 7, 4).uid, 7, 12)).toBe(false);
   782 |   expect((await act(page, { type: 'attack', creatureUid: at(s, 7, 4).uid, target: { row: 7, col: 12 } })).ok).toBe(false);
-✗ AC25: Tutorial button opens the guided match with tips and Skip Tutorial
-TimeoutError: locator.click: Timeout 10000ms exceeded.
-Call log:
-  - waiting for getByRole('button', { name: 'Skip Tutorial' })
-    - locator resolved to <button type="button" class="btn tip-skip">Skip Tutorial</button>
-  - attempting click action
-    - waiting for element to be visible, enabled and stable
-    - element is visible, enabled and stable
-    - scrolling into view if needed
+✗ AC46: dropping a Smith Miner on your creature upgrades it at once (no choice pop-up)
+Error: expect(received).toBe(expected) // Object.is equality
 
+Expected: 2
+Received: 1
 
-  1243 |   await expect(tip).toBeVisible();
-  1244 |   await expect(tip).toContainText(/back row/i);
-✗ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
-Test timeout of 30000ms exceeded.
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  1905 |   await page.mouse.move(b.x + b.width / 2, b.y + b.height + 12, { steps: 15 });
+  1906 |   await page.mouse.up();
+> 1907 |   await expect.poll(async () => at(await getState(page), 6, 3).attack).toBe(base.attack + 1);
+       |   ^
 ✗ AC58: tapping a mine mines with exactly the ready Miners next to it
 Error: expect(locator).toHaveAttribute(expected) failed
 
@@ -457,7 +463,7 @@ Timeout:  7000ms
 Call log:
   - Expect "toHaveAttribute" with timeout 7000ms
   - waiting for getByRole('button', { name: 'Crystal site, row 4, column 6', exact: true })
-    7 × locator resolved to <button data-row="4" data-col="6" data-mk="x1" type="button" data-ready-miners="1" class="site-mark ready" aria-label="Crystal site, row 4, column 6">…</button>
+    8 × locator resolved to <button data-row="4" data-col="6" data-mk="x1" type="button" data-ready-miners="1" class="site-mark ready" aria-label="Crystal site, row 4, column 6">…</button>
       - unexpected value "1"
 ✗ AC58: mineAt action matches the tap; hovering a mine only shows its info
 Error: expect(received).toBe(expected) // Object.is equality
@@ -472,6 +478,34 @@ Received: false
   2238 |   expect(at(s, 3, 5).hasMined).toBe(false);
   2239 |   expect((await act(page, { type: 'mineAt', row: M3.row, col: M3.col })).ok).toBe(false); // nobody left there
   2240 | });
+✗ both hands at 844x390 › AC116: a tapped creature shows its card at hovered-hand-card size, fully on-screen
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByRole('dialog').filter({ has: locator('[data-card-id="goblin-slinger"]') })
+Expected: visible
+Timeout: 7000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 7000ms
+  - waiting for getByRole('dialog').filter({ has: locator('[data-card-id="goblin-slinger"]') })
+
+
+✗ AC89: Low graphics turns off bloom, shadows and particles and uses fewer draw calls
+Test timeout of 30000ms exceeded.
+✗ AC98: tapping a creature shows its card and changes nothing
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByRole('dialog', { name: 'Bowler Brawler', exact: true })
+Expected: visible
+Timeout: 7000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 7000ms
+  - waiting for getByRole('dialog', { name: 'Bowler Brawler', exact: true })
+
+
 ✗ AC109: Strongholds stand in the corners: player (7,2), enemy (1,12)
 Error: expect(received).toBe(expected) // Object.is equality
 
@@ -486,33 +520,20 @@ Received: false
   3339 |   expect(opp.every((a) => a.row === 1)).toBe(true);
   3340 | });
 ✗ round 4 phone screenshots (844x390) › AC134: mulligan, spell cards per faction, a creature close-up and a menu screen render without errors
-TimeoutError: page.screenshot: Timeout 10000ms exceeded.
+TimeoutError: page.goto: Timeout 15000ms exceeded.
 Call log:
-  - taking page screenshot
+  - navigating to "http://127.0.0.1:4173/?test=1&seed=123", waiting until "load"
 
 
-  3835 |     const mull = await openMulligan(page);
-  3836 |     await page.waitForTimeout(600);
-> 3837 |     await testInfo.attach('mulligan-844x390', { body: await page.screenshot(), contentType: 'image/png' });
-       |                                                                  ^
-  3838 |     await openTest(page);
-  3839 |     const ids = ['venom-shiv', 'fireball', 'battle-cry', 'fizzle', 'goblin-scrapper'];
-  3840 |     await newMatch(page, quiet({ playerHand: ids }));
-✗ AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textured letters
-Error: match
-
-expect(received).toEqual(expected) // deep equality
-
-- Expected  - 1
-+ Received  + 4
-
-- Array []
-+ Array [
-+   "100 [style normal]",
-+   "100 [style normal]",
-+ ]
+  3 | // ---------- helpers ----------
+  4 | async function openTest(page, seed = 123) {
+> 5 |   await page.goto(`/?test=1&seed=${seed}`);
+    |              ^
+  6 |   await page.waitForFunction(() => !!window.oreheart);
+  7 | }
+  8 | // fixed mine layout used by setup tests (a legal "all three on row 4" layout)
 ✗ AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulligan, hand) at several window sizes
-Test timeout of 30000ms exceeded.
+Test timeout of 30000ms exceeded while setting up "page".
 ✗ AC155: playable hand cards glow, the others do not, and it updates at once
 Error: expect(locator).toHaveAttribute(expected) failed
 
@@ -524,10 +545,8 @@ Timeout:  7000ms
 Call log:
   - Expect "toHaveAttribute" with timeout 7000ms
   - waiting for getByLabel('Your hand', { exact: true }).locator('button:has([data-card-id="grubnaks-big-boss-troll"])').first()
-    - locator resolved to <button data-z="2" tabindex="0" type="button" data-uid="k202" data-layout="unit" data-fan-angle="2" data-frame="goblin" data-playable="true" data-rarity="collector" data-card="grubnaks-big-boss-troll" aria-label="Gronkowski Troll Tyrant" data-card-id="grubnaks-big-boss-troll" data-card-format="Card format final 1.0" class="hand-card creature f-goblins dealt" data-fan="translateY(1.59095px) rotate(2deg)">…</button>
-    7 × unexpected value "true"
-✗ arena pan 1920x1080 › AC191: keys, WASD and dragging empty board pan the view, always clamped to the painting
-Test timeout of 30000ms exceeded.
+    8 × locator resolved to <button data-z="2" tabindex="0" type="button" data-uid="k202" data-layout="unit" data-fan-angle="2" data-frame="goblin" data-playable="true" data-rarity="collector" data-card="grubnaks-big-boss-troll" class="hand-card creature f-goblins" aria-label="Gronkowski Troll Tyrant" data-card-id="grubnaks-big-boss-troll" data-card-format="Card format final 1.0" data-fan="translateY(1.41178px) rotate(2deg)">…</button>
+      - unexpected value "true"
 ✗ AC168: bold titles and main actions, regular body text, only four weights
 Error: title
 
@@ -630,8 +649,32 @@ Error: expect(received).toEqual(expected) // deep equality
 
   6667 |     await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
   6668 |     await page.waitForTimeout(2000);
-✗ round 11 at 1920x1080 › AC261: unit rings use faction colors, grey out after acting; "Unit rings" settings are saved and applied
-Test timeout of 30000ms exceeded.
+✗ round 10 at 1920x1080 › AC250: card close-up fills 80–100 % of the height, no scrollbar, no Close; outside click and Esc close it
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByRole('dialog', { name: 'Bowler Brawler', exact: true })
+Expected: visible
+Timeout: 7000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 7000ms
+  - waiting for getByRole('dialog', { name: 'Bowler Brawler', exact: true })
+
+
+✗ round 11 at 1920x1080 › AC260: Settings "Square highlights" panel: defaults, live preview, saved, applied in a match, Reset to default
+Error: expect(received).toBeGreaterThan(expected)
+
+Expected: > 0
+Received:   0
+
+  7351 |     await page.waitForTimeout(300);
+  7352 |     const hl = (await arenaInfo(page)).highlights;
+> 7353 |     expect(hl.length).toBeGreaterThan(0);
+       |                       ^
+  7354 |     for (const h of hl) { expect(h.color.toLowerCase()).toBe('#123456'); expect(h.centerAlpha).toBeLessThanOrEqual(0.05); }
+  7355 |     await page.mouse.move(p.x, p.y, { steps: 8 });
+  7356 |     await page.mouse.up();
 ✗ round 12a hand layout at 1920x1080 › AC272: the raised hand never covers the board, is an even fan fully on screen, hovered card bigger (1920x1080)
 Error: card top below the home row
 
@@ -671,6 +714,32 @@ Received:    459.4468688964844
 > 7760 |         expect(b.y, 'card top below the home row').toBeGreaterThanOrEqual(rowBottom - 2);
        |                                                    ^
   7761 |         expect(b.x).toBeGreaterThanOrEqual(-1);
+✗ round 14 owner text style 1920x1080 › AC326: every HUD text uses the owner's size, bold and italic, in white (1920x1080)
+Error: enemy-deck-count italic
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: false
+Received: true
+
+  8790 |         expect(Math.abs(st.size - want), `${p.role} size ${st.size} vs ${want}`).toBeLessThanOrEqual(Math.max(1.5, want * 0.1));
+  8791 |         expect(st.weight >= 600, `${p.role} bold`).toBe(!!p.text.bold);
+> 8792 |         expect(st.style === 'italic', `${p.role} italic`).toBe(!!p.text.italic);
+       |                                                           ^
+  8793 |       }
+✗ round 14 owner text style 844x390 › AC326: every HUD text uses the owner's size, bold and italic, in white (844x390)
+Error: enemy-deck-count italic
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: false
+Received: true
+
+  8790 |         expect(Math.abs(st.size - want), `${p.role} size ${st.size} vs ${want}`).toBeLessThanOrEqual(Math.max(1.5, want * 0.1));
+  8791 |         expect(st.weight >= 600, `${p.role} bold`).toBe(!!p.text.bold);
+> 8792 |         expect(st.style === 'italic', `${p.role} italic`).toBe(!!p.text.italic);
+       |                                                           ^
+  8793 |       }
 ✗ AC341: Mine Control — a Miner attacks an adjacent enemy Miner only if it survives, and mines when crystals are low
 Error: expect(received).toBe(expected) // Object.is equality
 
@@ -697,4 +766,30 @@ Call log:
   - waiting for getByRole('button', { name: 'Pause', exact: true })
 
 
+✗ AC353: goblin models play walk, attack, hit and defeat with their own clips
+Error: expect(received).toEqual(expected) // deep equality
+
+- Expected  - 1
++ Received  + 1
+
+  Object {
+-   "attack": true,
++   "attack": false,
+    "defeat": true,
+    "hit": true,
+    "walk": true,
+  }
+✗ AC355: models load once and are reused; Gnome and Dwarf units are unchanged
+Error: expect(received).toEqual(expected) // deep equality
+
+- Expected  - 1
++ Received  + 3
+
+- Array []
++ Array [
++   "grubnak",
++ ]
+
+  9523 |   const gnome = ((await renderStats(page)).figures || []).find((f) => f.cardId === 'gnome-tinker');
+  9524 |   expect(gnome && gnome.source).not.toMatch(/\.glb$/);
 ```

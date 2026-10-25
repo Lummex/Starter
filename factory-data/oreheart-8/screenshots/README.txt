@@ -3,6 +3,7 @@ Screens in order (name-viewport):
 2-menu-desktop.png
 3-before-match-desktop.png
 4-match-start-desktop.png
+5-match-desktop.png
 1-home-phone.png
 2-menu-phone.png
 3-before-match-phone.png
