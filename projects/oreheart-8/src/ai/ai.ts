@@ -35,7 +35,7 @@ function posValue(s: any, who: string, card: any, row: number, col: number, uid?
     const e = sh(foe);
     v -= 2 * cheb(here, e);
     if (cheb(here, e) <= 1) v += 40;
-    if (card.abilities?.includes('ranged') && cheb(here, e) <= 7) v += 30;
+    if (card.abilities?.includes('ranged') && cheb(here, e) <= (card.range ?? 7)) v += 30;
     const adj = SITES.map((x: any, i: number) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
     if (adj.some(({ i }) => s.sites[i].controller !== who)) v += 8;
   }
