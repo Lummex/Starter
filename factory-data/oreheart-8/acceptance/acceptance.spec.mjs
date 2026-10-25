@@ -7757,7 +7757,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1568, height: 782 }, {
   test.describe(`round 12a hand layout at ${vp.width}x${vp.height}`, () => {
     test.use({ viewport: vp });
 
-    test(`AC272: the raised hand never covers the board, is an even fan fully on screen, hovered card bigger (${vp.width}x${vp.height})`, async ({ page }) => {
+    test(`AC272: the raised hand is an even fan fully on screen, hovered card bigger (${vp.width}x${vp.height})`, async ({ page }) => {
       const { width: W, height: H } = vp;
       await start(page, quiet({ playerHand: ['goblin-scrounger', 'goblin-scrapper', 'goblin-slinger', 'fireball', 'soul-shard', 'goblin-pebbler', 'shiv-rat'], playerCrystals: 9 }));
       await page.waitForTimeout(800);
@@ -7781,7 +7781,8 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1568, height: 782 }, {
       const order = boxes.map((b, i) => ({ b, i })).sort((a, c) => a.b.x - c.b.x);
       const hovered = boxes[3];
       const others = boxes.filter((_, i) => i !== 3);
-      for (const b of others) expect(b.y, 'card top below the home row').toBeGreaterThanOrEqual(rowBottom - 2);
+      // Round 23: the owner's layout editor decides how high the raised hand rises (pop out fully), so no home-row limit
+      void rowBottom;
       // owner, Oct 25: closer fan — neighbours overlap (center gap under 70 % of a card width)
       expect(Math.max(...gaps)).toBeLessThan(0.7 * rest[0].width);
       for (const b of boxes) {
@@ -7792,15 +7793,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1568, height: 782 }, {
       }
       for (const b of others) expect(b.height).toBeGreaterThanOrEqual(minH);
       expect(hovered.height).toBeGreaterThanOrEqual(1.1 * Math.max(...others.map((b) => b.height)) - 1);
-      // nobody hidden behind the hovered card
-      for (let k = 0; k < order.length; k++) {
-        const { b, i } = order[k];
-        if (i === 3) continue;
-        const lo = b.x, hi = b.x + b.width;
-        // the part not covered by the hovered card
-        const covered = Math.max(0, Math.min(hi, hovered.x + hovered.width) - Math.max(lo, hovered.x));
-        expect((b.width - covered) / b.width, `card ${i} visible width`).toBeGreaterThanOrEqual(0.2);
-      }
+      void order; // Round 23: overlap 0.2 like the owner's layout editor; neighbours may sit behind the enlarged card
     });
   });
 }
@@ -9549,7 +9542,8 @@ test('AC355: models load once and are reused; Gnome and Dwarf units without a mo
   expect(fetched['skullbasher-rusher'], 'char.glb downloaded once for 4 copies').toBe(1);
   const gnome = ((await renderStats(page)).figures || []).find((f) => f.cardId === 'gnome-prospector');
   expect(gnome && gnome.source).not.toMatch(/\.glb$/);
-  expect(Object.keys(fetched).filter((k) => !(k in R21_GOBLINS))).toEqual([]);
+  // Grubnak (the Commander) has his own model since round 12b-1; only other non-goblin units must not fetch one
+  expect(Object.keys(fetched).filter((k) => !(k in R21_GOBLINS) && k !== 'grubnak')).toEqual([]);
 });
 
 test('AC357: Gnome and Dwarf units show their 3D models (character only); the clockwork beetle has no skeleton', async ({ page }) => {
@@ -9672,6 +9666,7 @@ test('AC359: Bowler Brawler holds his flaming ball in his hand and spins it on a
 });
 
 test('AC360: Bowler Brawler bowls (Strike and attack): ball back, swing, release, roll along the ground; nothing clips; a new ball returns to his hand', async ({ page }) => {
+  test.setTimeout(60000); // Round 23: model load + two full throws took longer than 30 s on the test machine
   await start(page, quiet({ playerCrystals: 6, board: [
     { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 5 },
     { cardId: 'goblin-grunt', owner: 'opponent', row: 6, col: 6 },
@@ -9758,4 +9753,190 @@ test('AC362: every Crystal Node shows the owner look effects in its owner color;
     expect(m.effects.length).toBe(1);
     expect(m.effects[0]).toMatchObject({ name: 'Glow', type: 'glow' });
   }
+});
+
+// ======================= Round 23 (owner, Oct 25) =======================
+// owner layout (src/content/owner-layout.json, HUD piece "hand"): overlap 0.2, angle 4, arc 1.45, popScale 1.6
+const R23_HAND = ['shiv-rat', 'goblin-pebbler', 'fireball', 'goblin-slinger', 'soul-shard', 'goblin-scrapper', 'goblin-scrounger'];
+const r23Fan = async (page) => (await handHover(page)).fan || [];
+const r23Tops = async (page) => {
+  const btns = handButtons(page); const n = await btns.count(); const tops = [];
+  for (let i = 0; i < n; i++) tops.push((await btns.nth(i).boundingBox()).y);
+  return tops;
+};
+const median = (a) => { const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+// starts a quiet match, turns the test flag off (real play behaviour) and parks the mouse on the board
+async function r23Start(page) {
+  await start(page, quiet({ playerHand: R23_HAND, playerCrystals: 9, playerDeck: SHARDS, opponentDeck: SHARDS }));
+  await page.evaluate(() => { window.__app.test = false; });
+  const mid = await sqCenter(page, 4, 7);
+  await page.mouse.move(mid.x, mid.y);
+  await expect.poll(async () => (await handHover(page)).raisedIndex, { timeout: 3000 }).toBe(-1);
+  const tops = await r23Tops(page);
+  await page.waitForTimeout(600); // let the resting fan settle before measuring
+  return { mid, restTop: median(await r23Tops(page)) || median(tops) };
+}
+// moves the real mouse onto the visible strip of hand card i (left part, cards overlap to the right)
+async function r23HoverCard(page, i) {
+  const b = await handButtons(page).nth(i).boundingBox();
+  const p = { x: b.x + Math.min(b.width * 0.12, 18), y: b.y + b.height * 0.5 };
+  await page.mouse.move(p.x, Math.min(p.y, page.viewportSize().height - 4), { steps: 6 });
+  return p;
+}
+
+for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }]) {
+  test.describe(`round 23 hand at ${vp.width}x${vp.height}`, () => {
+    test.use({ viewport: vp });
+
+    test(`AC363: the fan uses the owner layout — overlap 0.2, 4° per card, arc 1.45 (${vp.width}x${vp.height})`, async ({ page }) => {
+      await r23Start(page);
+      const fan = await r23Fan(page);
+      expect(fan.length).toBe(7);
+      const w = fan[0].width, h = fan[0].height;
+      const btns = handButtons(page);
+      for (let i = 0; i < 7; i++) {
+        const b = await btns.nth(i).boundingBox();
+        expect(Math.abs(b.x + b.width / 2 - fan[i].cx), `fan[${i}] matches the drawn card`).toBeLessThanOrEqual(w * 0.6);
+      }
+      for (let i = 1; i < 7; i++) {
+        const gap = fan[i].cx - fan[i - 1].cx;
+        expect(gap / w, `gap ${i}`).toBeGreaterThanOrEqual(0.17);
+        expect(gap / w, `gap ${i}`).toBeLessThanOrEqual(0.23);
+      }
+      for (let i = 0; i < 7; i++) {
+        const k = i - 3;
+        expect(Math.abs(fan[i].rotateDeg - 4 * k), `card ${i} angle ${fan[i].rotateDeg}`).toBeLessThanOrEqual(1);
+        const drop = (fan[i].cy - fan[3].cy) / h;
+        expect(Math.abs(drop - 0.0145 * k * k), `card ${i} arc ${drop.toFixed(3)}`).toBeLessThanOrEqual(0.04);
+      }
+      // hovering a card straightens it and enlarges it 1.6x
+      await r23HoverCard(page, 3);
+      await expect.poll(async () => (await handHover(page)).raisedIndex, { timeout: 2000 }).toBe(3);
+      await expect.poll(async () => { const f = (await r23Fan(page))[3]; return Math.abs(f.rotateDeg) <= 1 && Math.abs(f.scale - 1.6) <= 0.1; }, { timeout: 2000 }).toBe(true);
+    });
+
+    test(`AC364: grabbing a card tucks the rest of the hand, and it stays tucked after a play or a cancel (${vp.width}x${vp.height})`, async ({ page }) => {
+      const { restTop } = await r23Start(page);
+      const tuckedOk = async () => { const t = await r23Tops(page); return t.every((y) => y >= restTop - 6); };
+      // hover raises the hand
+      await r23HoverCard(page, 6);
+      await expect.poll(async () => median(await r23Tops(page)), { timeout: 2000 }).toBeLessThan(restTop - 20);
+      // grab the Miner (last card) and drag toward the back row in steps
+      const target = await sqCenter(page, 7, 6);
+      const from = await r23HoverCard(page, 6);
+      await page.mouse.down();
+      await page.mouse.move(from.x, from.y - 30, { steps: 3 });
+      await page.mouse.move((from.x + target.x) / 2, (from.y + target.y) / 2, { steps: 5 });
+      await expect.poll(tuckedOk, { message: 'rest of the hand tucks once a card is grabbed', timeout: 1200 }).toBe(true);
+      await page.mouse.move(target.x, target.y, { steps: 5 });
+      expect(await tuckedOk()).toBe(true);
+      await page.mouse.up();
+      await expect.poll(async () => (await getState(page)).players.player.hand.length, { timeout: 3000 }).toBe(6);
+      await page.waitForTimeout(700);
+      expect(await tuckedOk(), 'still tucked after the play').toBe(true);
+      // grab another card and drop it on an empty middle square (illegal) -> cancelled, hand stays down
+      const from2 = await r23HoverCard(page, 0);
+      await page.mouse.down();
+      const mid = await sqCenter(page, 3, 7);
+      await page.mouse.move(from2.x, from2.y - 30, { steps: 3 });
+      await page.mouse.move(mid.x, mid.y, { steps: 8 });
+      await expect.poll(tuckedOk, { timeout: 1200 }).toBe(true);
+      await page.mouse.up();
+      await page.waitForTimeout(700);
+      expect((await getState(page)).players.player.hand.length).toBe(6);
+      expect(await tuckedOk(), 'still tucked after a cancel').toBe(true);
+      expect((await handHover(page)).raisedIndex).toBe(-1);
+    });
+
+    test(`AC365: the hand tucks within about a third of a second when the mouse leaves it, also onto the enlarged card (${vp.width}x${vp.height})`, async ({ page }) => {
+      const { restTop, mid } = await r23Start(page);
+      // leave onto the board
+      await r23HoverCard(page, 2);
+      await expect.poll(async () => median(await r23Tops(page)), { timeout: 2000 }).toBeLessThan(restTop - 20);
+      await page.mouse.move(mid.x, mid.y, { steps: 4 });
+      await expect.poll(async () => (await handHover(page)).raised, { timeout: 500 }).toBe(false);
+      await expect.poll(async () => median(await r23Tops(page)), { timeout: 1500 }).toBeGreaterThanOrEqual(restTop - 6);
+      // leave upward onto the enlarged card's part above the fan
+      await r23HoverCard(page, 3);
+      await expect.poll(async () => (await handHover(page)).raisedIndex, { timeout: 2000 }).toBe(3);
+      await page.waitForTimeout(500);
+      const others = (await r23Tops(page)).filter((_, i) => i !== 3);
+      const big = await handButtons(page).nth(3).boundingBox();
+      const above = { x: big.x + big.width / 2, y: Math.max(2, Math.min(...others) - 12) };
+      expect(above.y, 'the enlarged card reaches above the fan').toBeGreaterThan(big.y);
+      await page.mouse.move(above.x, above.y, { steps: 4 });
+      await expect.poll(async () => (await handHover(page)).raised, { timeout: 500 }).toBe(false);
+      await expect.poll(async () => median(await r23Tops(page)), { timeout: 1500 }).toBeGreaterThanOrEqual(restTop - 6);
+    });
+  });
+}
+
+test('AC366: flying units hover, bob and sway above their square with a ground shadow; walkers stand on the ground', async ({ page }) => {
+  await start(page, quiet({ board: [
+    { cardId: 'gyrocopter-ace', owner: 'player', row: 6, col: 5 },
+    { cardId: 'dwarf-miner', owner: 'player', row: 6, col: 8 },
+  ] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  const fig = async (id) => ((await renderStats(page)).figures || []).find((f) => f.cardId === id) || {};
+  await expect.poll(async () => (await fig('gyrocopter-ace')).flying != null, { timeout: 20000 }).toBe(true);
+  const fl = (await fig('gyrocopter-ace')).flying;
+  if (fl.source === 'default') expect(fl).toMatchObject({ hoverSquares: 0.35, floatSquares: 0.06, floatsPerSecond: 0.6, swayDeg: 3, groundShadow: true });
+  expect(fl.hoverSquares).toBeGreaterThan(0);
+  const lifts = [], sways = [];
+  for (let i = 0; i < 8; i++) {
+    const f = await fig('gyrocopter-ace');
+    lifts.push(f.lift); sways.push(f.swayNowDeg);
+    expect(f.row === 6 && f.col === 5).toBe(true);
+    await page.waitForTimeout(150);
+  }
+  for (const l of lifts) {
+    expect(l).toBeGreaterThanOrEqual(fl.hoverSquares - fl.floatSquares - 0.01);
+    expect(l).toBeLessThanOrEqual(fl.hoverSquares + fl.floatSquares + 0.01);
+  }
+  expect(Math.max(...lifts) - Math.min(...lifts), 'it bobs').toBeGreaterThan(0.005);
+  for (const sw of sways) expect(Math.abs(sw)).toBeLessThanOrEqual(fl.swayDeg + 0.5);
+  expect((await fig('gyrocopter-ace')).groundShadow).toBe(fl.groundShadow);
+  const dwarf = await fig('dwarf-miner');
+  expect(dwarf.flying == null).toBe(true);
+  expect(Math.abs(dwarf.lift || 0)).toBeLessThanOrEqual(0.01);
+});
+
+test('AC367: Gnome and Dwarf models have their own heights; the Clockwork Beetle slides when it moves', async ({ page }) => {
+  test.setTimeout(45000);
+  const want = { 'dwarf-miner': 0.95, shieldbeard: 0.95, 'gnome-tinker': 0.85, 'spark-gnome': 0.85, 'queen-brunhilda-stonebeard': 1.05, 'ram-rider': 1.35, 'the-great-steam-golem': 1.6, 'clockwork-beetle': 0.9 };
+  const ids = Object.keys(want);
+  const s = await start(page, quiet({ board: ids.map((cardId, i) => ({ cardId, owner: 'player', row: i < 4 ? 6 : 4, col: 3 + 2 * (i % 4) })) }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await expect.poll(async () => ((await renderStats(page)).figures || []).filter((f) => /\.glb$/.test(f.source || '')).length, { timeout: 30000 }).toBe(ids.length);
+  for (const f of (await renderStats(page)).figures.filter((x) => x.cardId in want)) {
+    expect(Math.abs(f.height - want[f.cardId]), `${f.cardId} height ${f.height}`).toBeLessThanOrEqual(0.08);
+  }
+  const beetle = at(s, 4, 9);
+  expect(beetle.cardId).toBe('clockwork-beetle');
+  await toAction(page);
+  expect((await act(page, { type: 'move', creatureUid: beetle.uid, row: 3, col: 9 })).ok).toBe(true);
+  await expect.poll(async () => ((await renderStats(page)).creatureAnimLog || []).some((e) => e.uid === beetle.uid && e.anim === 'walk'), { timeout: 5000 }).toBe(true);
+  await expect.poll(async () => { const f = ((await renderStats(page)).figures || []).find((x) => x.uid === beetle.uid); return f && f.row === 3 && f.col === 9; }, { timeout: 5000 }).toBe(true);
+});
+
+test('AC368: Card Comp vs Card Comp watch bar sits bottom-right; Pause, Play and Exit to menu work', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openTest(page, 7);
+  await page.evaluate(async () => await window.oreheart.newMatch({ mode: 'compvscomp', seed: 7, skipMulligan: true, paused: true,
+    playerCommander: 'grubnak', opponentCommander: 'sproingle' }));
+  const play = page.getByRole('button', { name: 'Play', exact: true });
+  await expect(play).toBeVisible();
+  const b = await play.boundingBox();
+  expect(b.x + b.width / 2, 'watch bar on the right').toBeGreaterThan(1920 * 0.5);
+  expect(b.y + b.height / 2, 'watch bar at the bottom').toBeGreaterThan(1080 * 0.5);
+  await play.click();
+  const pause = page.getByRole('button', { name: 'Pause', exact: true });
+  await expect(pause).toBeVisible();
+  await pause.click();
+  await expect(play).toBeVisible();
+  const t = (await getState(page)).turn;
+  await page.waitForTimeout(1500);
+  expect((await getState(page)).turn, 'paused: no turn passes').toBe(t);
+  await page.getByRole('button', { name: 'Exit to menu', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });

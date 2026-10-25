@@ -1,29 +1,25 @@
-# Round 22: failing checks, Bowler Brawler special moves, Crystal Node effects
+# Round 23: the hand like the layout editor, failing checks, flying units, Gnome/Dwarf sizes
 
-Read "Round 22" at the top of SPEC.md. Keep everything from 8a–21 and the owner's "Owner: …" commits. **Do not touch** the Crystal Node tint/colors, the unit stat badge (incl. type-icon slot), ability icons above units, or status icons (owner is editing them). dist < 95 MB; never re-mesh/decimate models or touch UVs. Commit + push after each step.
+Read "Round 23" at the top of SPEC.md. Keep everything from 8a–22 and the owner's direct changes (Gnome/Dwarf models, computer letterbox, crystal colors, status icons, badge ability icon, Card Comp controls bottom-right at 0.58, `.vercelignore`). **Do not touch any model file**, the badge, icons, crystal colors or letterbox. dist < 95 MB (AC90). Commit + push after each item.
 
-Checks changed by the planner (newer owner decisions / owner cards.json win): AC98, AC116, AC250 (right-click opens a unit's card), AC218 (card returns to its rest spot, hand lowers on leaving the fan), AC272 (only the enlarged card may pass the home row; closer fan), AC13 (ranges from cards.json: Grudge Hurler 5, Skullflinger 6), AC155 (Grubnak discount), AC89 (unit was on row 0). Builders: fix the game for the rest; if you must change a check, write which and why here.
+Checks changed by the planner: AC272 (no home-row / 20 %-visible limits — owner layout decides), AC355 (Grubnak's own model allowed), AC360 (60 s limit). Owner-edited checks AC24, AC24b, AC80, AC84, AC355, AC357 (Gnome/Dwarf) are binding. If you must change another check, write which and why here.
 
 ## Rules & cards
-- Card Comp vs Card Comp must finish a match with no input; watch bar + Rematch (AC344). `src/engine/`, AI files.
-- Mine Control stance: Miner attacks an adjacent enemy Miner only if it survives, else mines when low (AC341).
-- `mineAt` / mine tap mines with every ready Miner next to the mine (AC58).
-- Smith Miner dropped on own creature upgrades at once (AC46); opponent summon squares around the corner Stronghold (1,12): (1,13) legal, (1,12) not (AC109).
-- Test hooks: `getDragCard()`, `setGraphics()`, Bowler `ball` fields, `mineModels[i].effects` (AC358, AC359–AC362). `src/main`/test-mode API.
+- Mine Control stance: adjacent enemy Miner → attack when it survives the strike back and crystals aren't low; mine only if it would die or crystals are low (AC341). AI stance code in `src/engine/` / AI files.
+- Card Comp vs Card Comp: Play → Pause → Play, no turns while paused, Exit to menu, plays to the end at 4× (AC344, AC368). `src/game.ts` `setPaused`, `src/ui/app.ts` `refreshModeUi` (keep the owner's bar position/scale).
 
 ## 3D & visuals
-- Bowler Brawler: `bowl` (attack + Strike), `spinBall` (idle, triggered by `advanceIdle(20)`), `basketShot` (on summon, lands dead); ball never clips body/ground, returns to hand; owner green Flame on the ball; existing rig, Meshy anim library or hand-keyed bones (AC359–AC361). `src/ui/creature3d.ts`, `public/models/creatures/goblin-scrapper/`.
-- Crystal Node: 9 effects from `factory-design/looks/crystal-node.json` (copy to `public/models/mines/crystal-node-look.json`), colored by owner faction (green/purple/blue/white), Low = main Glow only, light enough for 3 mines (AC362). `src/ui/scene.ts`.
-- Goblin models: own walk/attack/hit/defeat clips in `creatureAnimLog`; char.glb fetched once for 4 copies (AC353, AC355).
-- Low graphics: bloom/shadows/particles off, fewer draw calls (AC89); cover-fit no black bars (AC190); Commander look-back + impatience (AC196, AC197); Square highlight settings applied in match (AC260).
-- Keep dist < 95 MB (AC90): only shrink small prop textures; never touch geometry/UVs.
+- Flying units: lift/bob/sway/shadow from the saved look's `flying`, Gyronaut defaults 0.35/0.06/0.6/3°/shadow; hooks `flying`, `lift`, `swayNowDeg`, `groundShadow` on figures (AC366). `src/ui/creature3d.ts`, `src/ui/scene.ts`.
+- `DEFAULT_H`: dwarves 0.95, gnomes 0.85, Brunhilda 1.05, Ram Rider 1.35, Steam Golem 1.6, Beetle 0.9; beetle slides on move (`walk`) and shakes on hit (`hit`) without a skeleton (AC367). `src/ui/creature3d.ts`.
+- Bowler Brawler `bowl` must complete and return the ball to `"hand"` quickly (AC360).
+- Gnome/Dwarf models: make sure owner checks AC80, AC84, AC355, AC357 pass without editing model files.
 
 ## Interface
-- Controls: left-click own unit selects + lights squares, click lit square acts; right-click opens card + ability menu (no browser menu); enemy right-click/tap shows card (AC98, AC116, AC250, AC357).
-- Hand: closer overlap; click card → close-up with "Play this card"/"Cast this spell" → pick-up mode; hand lowers when pointer leaves fan (even onto the enlarged card); drag card hangs below-left, tilted (AC218, AC250, AC272, AC358).
-- `data-playable`/halo correct with Grubnak discount (AC155); owner card back + `deck-menu`/`deck-pile` images (AC176); cards never stretched (AC136).
-- Menus in owner boxes (Deck Builder Back, AC233); owner text styles: bold/italic per layout, enemy-deck-count italic, Play weight (AC168, AC326); Change Commander/hover grow (AC206).
+- Hand fan from `owner-layout.json` `hand` (overlap 0.2, angle 4, arc 1.45, popScale 1.6, popY 10, speed 450); remove `cw * 0.62` in `layoutHand`; add `getHandHover().fan` hook (AC363, AC272). `src/ui/app.ts`, `src/main.ts`.
+- Tuck the rest of the hand as soon as a card is grabbed; stays tucked after play/cancel (AC364).
+- Auto-tuck within ~1/3 s when the pointer leaves the fan, including onto the enlarged card (AC365). Verify with test flag off (`window.__app.test = false`) and real mouse at 1920×1080 and 1366×768.
+- Tutorial "Skip Tutorial" button clickable (nothing covering it) → main menu (AC25).
+- Letterbox / phone checks AC24, AC24b must keep passing (owner's change).
 
 ## Other
-- AC134 phone screenshots time out on page load (15 s): check the initial load size/blocking assets.
-- Report: pass count, 1920×1080 screenshot of three differently colored mines with effects, Bowler Brawler move sequence.
+- Report: pass count; 1920×1080 screenshots of resting fan, raised fan with hovered card, Gyronaut hovering.
