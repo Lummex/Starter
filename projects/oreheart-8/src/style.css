@@ -1685,3 +1685,13 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 .banner.banner-img:not(#_w){top:20%!important}
 /* Owner (Oct 24): the end-of-match pop-up shows the result picture */
 .retreat .retreat-result{display:block;width:min(80vw,900px);max-height:44vh;height:auto;object-fit:contain;filter:drop-shadow(0 8px 18px #000c);animation:ohEndPop .6s ease-out both}
+/* Owner (Oct 24): comic pop-ups and speech bubbles */
+.pop-img{position:absolute;z-index:40;pointer-events:none;transform:translate(-50%,-50%) rotate(var(--rot,0deg));animation:ohPop 1.15s ease-out both;filter:drop-shadow(0 3px 6px #000a)}
+.pop-img img{display:block;width:clamp(64px,8.5vw,150px);height:auto}
+@keyframes ohPop{0%{opacity:0;transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(.3)}16%{opacity:1;transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1.15)}28%{transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1)}75%{opacity:1;transform:translate(-50%,-62%) rotate(var(--rot,0deg)) scale(1)}100%{opacity:0;transform:translate(-50%,-80%) rotate(var(--rot,0deg)) scale(.95)}}
+.speech{position:absolute;z-index:330;pointer-events:none;transform:translate(-50%,-100%);animation:ohSay 2.4s ease-out both;filter:drop-shadow(0 4px 8px #000b)}
+.speech img{display:block;width:clamp(100px,11vw,200px);height:auto}
+.unit-speech{animation-duration:1.8s}.unit-speech img{width:clamp(56px,6vw,110px)}
+@keyframes ohSay{0%{opacity:0;transform:translate(-50%,-100%) scale(.5)}12%{opacity:1;transform:translate(-50%,-100%) scale(1.08)}20%{transform:translate(-50%,-100%) scale(1)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-110%)}}
+.hint.hint-pic:not(#_w){background:none!important;border:0!important;box-shadow:none!important;padding:0!important}
+.hint.hint-pic img{display:block;width:clamp(120px,16vw,260px);height:auto;filter:drop-shadow(0 4px 8px #000b)}
