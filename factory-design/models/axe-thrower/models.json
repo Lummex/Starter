@@ -1,0 +1,22 @@
+{
+ "generated": "2026-10-25T09:34:49.074Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a17264-72d7-71b0-b3d4-1d627fa4b502",
+  "rig": "01a17267-bed9-73f7-94de-40d99a6c2a47",
+  "anim": "01a17268-de1a-715c-8f40-71a560fa7647"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "rigged": true,
+ "parts": [],
+ "notes": "Character only for now (owner, Oct 25: accessories come later).",
+ "fileSizes": {
+  "char.glb": 5649268
+ }
+}
