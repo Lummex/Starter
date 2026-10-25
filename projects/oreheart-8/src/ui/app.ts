@@ -211,7 +211,7 @@ export class App {
     if (!this.r.fx || !this.view) return;
     this.burst('KA-BOOM!', e.row, e.col);
   }
-  pick: { cells: { row: number; col: number }[]; done: (c: { row: number; col: number }) => void } | null = null;
+  pick: { cells: { row: number; col: number }[]; done: (c: { row: number; col: number }) => void; unit?: string } | null = null;
   handScroll = 0;
   lastOptions: any = {};
   lastTutorial = false;
@@ -623,7 +623,7 @@ export class App {
     return { close, el: ov };
   }
 
-  showCard(cardId: string, creature?: any) {
+  showCard(cardId: string, creature?: any, hc?: any) {
     this.clearPops(); this.openHand(false, true);
     const c = CARDS[cardId];
     const rows: [string, string][] = [];
@@ -649,9 +649,48 @@ export class App {
     (tx?.parentElement || face).append(tb);
     tb.addEventListener('click', () => this.fullExplanation(c));
     // round 10: twice the old size, no scroll bar, no Close button; a click outside the card (or Esc) closes it
-    const d = this.dialog(c.name, [h('div', { class: 'card-view-face' }, face), dl]);
+    // Owner (Oct 25): a hand card's close-up has a button that plays it (legal squares light up, then tap one)
+    const kids: any[] = [h('div', { class: 'card-view-face' }, face), dl];
+    let d: any = null;
+    if (hc && this.game.state && this.game.state.phase !== 'over') {
+      const label = c.type === 'spell' ? 'Cast this spell' : c.type === 'crystal' ? 'Play this Crystal' : 'Play this card';
+      const can = this.game.legalActions().some((a: any) => a.uid === hc.uid);
+      const pb = h('button', { type: 'button', class: 'primary play-from-hand' + (can ? '' : ' cant'), 'aria-disabled': String(!can), title: can ? label : this.explain(c) }, label) as HTMLButtonElement;
+      pb.addEventListener('click', (ev) => { ev.stopPropagation(); d?.close(); this.tuckHand(); this.playFromHand(hc, c); setTimeout(() => this.tuckHand(), 0); });
+      kids.push(h('div', { class: 'play-from-hand-row' }, pb));
+    }
+    d = this.dialog(c.name, kids);
     d.el.classList.add('cardview');
     return d;
+  }
+  /** Slide the hand back down: no raised card, no keyboard focus left on a hand card. */
+  tuckHand() {
+    const a = document.activeElement as HTMLElement | null;
+    if (a && a.closest?.('.hand')) a.blur();
+    this.clearPops(); this.openHand(false, true);
+  }
+  /** Play a hand card without dragging: no target = play now; otherwise its legal squares light up and a tap on one plays it. */
+  playFromHand(hc: any, card: any) {
+    const st = this.game.state;
+    if (!st) return;
+    this.pick = null; this.clearGlow();
+    const legal = this.game.legalActions().filter((a: any) => a.uid === hc.uid);
+    if (!legal.length) { this.flash(this.explain(card)); return; }
+    const free = legal.find((a: any) => a.type === 'playCrystal' || (a.type === 'cast' && !a.target));
+    if (free) { const r = this.game.act(free); if (r && !r.ok) this.flash(r.error); return; }
+    const cells: any[] = [], smith: any[] = [];
+    for (const a of legal) {
+      if (a.type === 'summon') cells.push({ row: a.row, col: a.col });
+      else if (a.type === 'minerUpgrade') { const o = st.board.creatures.find((x: any) => x.uid === a.creatureUid); if (o) smith.push({ row: o.row, col: o.col }); }
+      else if (a.type === 'cast' && a.target) cells.push(this.cellOfTarget(a.target));
+    }
+    const all = [...cells, ...smith];
+    if (!all.length) { this.flash(this.explain(card)); return; }
+    this.dragKind = card.type;
+    this.setGlow(cells, 'glow');
+    this.setGlow(smith, 'glow-swap');
+    this.pick = { cells: all, done: (c) => { this.pick = null; this.clearGlow(); this.dropCard(hc, card, c); setTimeout(() => this.tuckHand(), 0); } };
+    this.flash(card.type === 'spell' ? 'Tap a target' : 'Tap a glowing square');
   }
   /** Deck builder close-up: the card fills the screen top to bottom; no Close button, no scrollbar; click anywhere or Esc dismisses. */
   closeUp(cardId: string, withViewer = false) {
@@ -1107,7 +1146,7 @@ export class App {
     }, { passive: false });
     b.addEventListener('contextmenu', (e) => e.preventDefault());
     b.addEventListener('pointerdown', (e: PointerEvent) => {
-      if (e.pointerType === 'mouse') { if (e.button === 1 || e.button === 2) { e.preventDefault(); this.startPan(e); } return; }
+      if (e.pointerType === 'mouse') { if (e.button === 2 && this.unitAtEvent(e)) { e.preventDefault(); return; } if (e.button === 1 || e.button === 2) { e.preventDefault(); this.startPan(e); } return; }
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (this.touches.size === 2) {
         const pts = [...this.touches.values()];
@@ -1361,7 +1400,8 @@ export class App {
     for (const b of this.handBoxes()) if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) hit = b.c;
     if (hit) return hit;
     // ... and the area of the enlarged card above the fan stays part of its zone
-    if (pop && !pop.classList.contains('dragging')) { const r = pop.getBoundingClientRect(); if (x >= r.left && x <= r.right && y >= r.top && y <= r.top + r.height * 0.77) return pop; }
+    // owner (Oct 25): moving off the fan (even onto the enlarged card) slides the hand back down
+    void pop;
     return null;
   }
   noHand = false;
@@ -1493,7 +1533,7 @@ export class App {
     this.handScroll = Math.max(0, Math.min(maxScroll, this.handScroll));
     const start = Math.round(this.handScroll);
     const shown = Math.min(n, VIS);
-    const spacing = shown > 1 ? Math.min(cw * 1.04, (W - cw) / (shown - 1)) : cw;
+    const spacing = shown > 1 ? Math.min(cw * 0.62, (W - cw) / (shown - 1)) : cw; // owner (Oct 25): closer together
     const x0 = Math.max(0, (W - (cw + (shown - 1) * spacing)) / 2);
     let moved = false;
     cards.forEach((c, i) => {
@@ -2727,7 +2767,7 @@ export class App {
           if (a) this.game.act(a);
           return;
         }
-        this.showCard(card.id);
+        this.showCard(card.id, undefined, hc);
       },
     });
     void st;
@@ -2797,17 +2837,81 @@ export class App {
     }
   }
 
+  /** The creature under a pointer event (its square or its stat badge), if any. */
+  unitAtEvent(e: PointerEvent | MouseEvent): any {
+    const st = this.game.state;
+    if (!st || !this.r.board) return null;
+    const lab = (e.target as El)?.closest?.('.tk-stats');
+    const labUid = lab ? (lab.closest('.token') as El | null)?.dataset.uid : null;
+    if (labUid) return st.board.creatures.find((c: any) => c.uid === labUid) || null;
+    const c = this.cellAt(e.clientX, e.clientY);
+    return c ? st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col) || null : null;
+  }
+  /** Owner (Oct 25): left-click a unit to use it: its moves, attacks, mining and aimed abilities light up; click one to do it. */
+  selectUnit(cr: any) {
+    const st = this.game.state;
+    this.pick = null; this.clearGlow();
+    if (this.respDlg) return;
+    const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
+    const isMove = (a: any) => a.type === 'move';
+    const swapAt = (a: any) => st.board.creatures.some((o: any) => o.row === a.row && o.col === a.col);
+    const groups: [any[], string][] = [
+      [legal.filter((a: any) => isMove(a) && !swapAt(a)).map((a: any) => ({ row: a.row, col: a.col })), 'glow'],
+      [legal.filter((a: any) => isMove(a) && swapAt(a)).map((a: any) => ({ row: a.row, col: a.col })), 'glow-swap'],
+      [legal.filter((a: any) => a.type === 'attack').map((a: any) => this.cellOfTarget(a.target)), 'glow-attack'],
+      [legal.filter((a: any) => a.type === 'mine').map((a: any) => ({ row: a.row, col: a.col })), 'glow-mine'],
+      [legal.filter((a: any) => a.type === 'ability' && this.abilityCell(a, cr)).map((a: any) => this.abilityCell(a, cr)!), 'glow-swap'],
+    ];
+    const cells = groups.flatMap((g) => g[0]);
+    if (!cells.length) return;
+    for (const [c, cls] of groups) this.setGlow(c, cls);
+    const uid = cr.uid;
+    this.pick = { cells, unit: uid, done: (c: any) => {
+      this.pick = null; this.clearGlow();
+      const cur = this.game.state.board.creatures.find((x: any) => x.uid === uid);
+      if (cur) this.unitActAt(cur, c);
+    } } as any;
+  }
+  /** Do what a unit dropped (or clicked) onto square c means: attack, mine, move or an aimed ability. */
+  unitActAt(cr: any, c: { row: number; col: number }) {
+    if (!c || !c.row) return;
+    const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
+    const atk = legal.find((a: any) => a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col)));
+    const mv = legal.find((a: any) => a.type === 'move' && a.row === c.row && a.col === c.col);
+    const mn = legal.find((a: any) => a.type === 'mine' && a.row === c.row && a.col === c.col);
+    const ab = legal.filter((a: any) => a.type === 'ability' && this.abilityCell(a, cr));
+    const abHere = ab.filter((a: any) => { const q = this.abilityCell(a, cr)!; return q.row === c.row && q.col === c.col; });
+    const abPick = (a0: any) => (a0.ability === 'shaman' ? this.bestShaman(abHere.filter((x: any) => x.ability === 'shaman'), cr) : a0);
+    const a = atk || mn || mv || (abHere[0] ? abPick(abHere[0]) : null);
+    if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); } else this.flash("Can't go there");
+  }
+
   boardPointerDown(e: PointerEvent) {
     const st = this.game.state;
     if (!st) return;
+    // Owner (Oct 25): the right mouse button opens a unit's card (and its ability menu); the left button uses units
+    if (e.pointerType === 'mouse' && e.button === 2) {
+      const u = this.unitAtEvent(e);
+      if (u) {
+        e.preventDefault();
+        this.view?.poke(u.uid);
+        if (u.owner === 'player') this.abilityMenu(u);
+        if (!this.dialogs.length) this.showCard(u.cardId, u);
+      }
+      return;
+    }
     const lab = (e.target as El).closest?.('.tk-stats');
     const labUid = lab ? (lab.closest('.token') as El | null)?.dataset.uid : null;
     const cell = labUid ? (() => { const c0 = st.board.creatures.find((c: any) => c.uid === labUid); return c0 ? { row: c0.row, col: c0.col } : null; })() : this.cellAt(e.clientX, e.clientY);
     if (!cell) { if (!this.pick && (e.pointerType !== 'mouse' || e.button === 0)) this.startPan(e); return; }
     if (this.pick) {
       const p = this.pick.cells.find((c) => c.row === cell.row && c.col === cell.col);
-      if (p) this.pick.done(p); else { this.pick = null; this.clearGlow(); this.flash('Cancelled'); }
-      return;
+      if (p) { this.pick.done(p); return; }
+      const unitPick = !!(this.pick as any).unit;
+      this.pick = null; this.clearGlow();
+      // a unit was selected: clicking another of your units selects that one instead; clicking elsewhere just deselects
+      const other = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col);
+      if (!(unitPick && other && other.owner === 'player')) { if (!unitPick) this.flash('Cancelled'); return; }
     }
     const cr = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col);
     if (!cr) { if (e.pointerType !== 'mouse' || e.button === 0) this.startPan(e); return; }
@@ -2842,22 +2946,18 @@ export class App {
         if (!legal.some((a: any) => a.type === 'move' || (a.type === 'ability' && this.abilityCell(a, cr)) || a.type === 'attack' || a.type === 'mine')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves, attacks OR mines)' : 'Creatures move and attack in the Action phase');
         return true;
       },
-      onDrop: (c) => {
-        if (!c || !c.row) return;
-        const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
-        const atk = legal.find((a: any) => a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col)));
-        const mv = legal.find((a: any) => a.type === 'move' && a.row === c.row && a.col === c.col);
-        const mn = legal.find((a: any) => a.type === 'mine' && a.row === c.row && a.col === c.col);
-        const ab = legal.filter((a: any) => a.type === 'ability' && this.abilityCell(a, cr));
-        const abHere = ab.filter((a: any) => { const q = this.abilityCell(a, cr)!; return q.row === c.row && q.col === c.col; });
-        const abPick = (a0: any) => (a0.ability === 'shaman' ? this.bestShaman(abHere.filter((x: any) => x.ability === 'shaman'), cr) : a0);
-        const a = atk || mn || mv || (abHere[0] ? abPick(abHere[0]) : null);
-        if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); } else this.flash("Can't go there");
-      },
+      onDrop: (c) => { if (c) this.unitActAt(cr, c); },
       onTap: () => {
         this.view?.poke(cr.uid);
-        if (mine) this.abilityMenu(cr);
-        if (this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);
+        // Owner (Oct 25): a left click uses the unit; the card opens with the right button (a touch tap on an enemy still shows its card)
+        if (mine) {
+          this.abilityMenu(cr);
+          this.selectUnit(cr);
+          if (!this.pick && !document.querySelector('.ability-menu')) {
+            if (e.pointerType !== 'mouse' && this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);
+            else this.flash(st.phase === 'action' && st.priority === 'player' ? 'This creature cannot act now' : 'Creatures move and attack in your Action phase');
+          }
+        } else if (e.pointerType !== 'mouse' && this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);
       },
     });
   }
