@@ -12,6 +12,12 @@ The game is hosted on Vercel's free plan, which rejects uploads over 100 MB. Kee
 - Character models and the owner's main art (logo, banners, card back, card art, commander portraits) must look the same after any shrinking.
 - If the game can't stay under 95 MB without visible loss, stop and ask the owner.
 
+## Owner rule for every round (Oct 25): the game and the owner's editors must always match
+
+The owner designs Oreheart in his editors (Model Editor, Game Editor, Arena Editor, Art Studio, Card Editor, Menu Builder, Card Frames, Camera). Anything that goes into the game must also be in the editors, and the other way round, so what he sees in an editor is what the game shows.
+- When a round adds or changes anything an editor shows (a 3D model or its size/look, card art, card text or stats, a card frame, arena pieces or layout, HUD/menu layout, camera, effects, icons, colors), list each change in `factory-data/oreheart-8/REPORT.md` under a heading **"Editor updates needed"**: what changed, which file in the game, and which editor shows it. The owner's helper then updates the editors from that list.
+- Read the editors' saved data where the brief points to it (e.g. `src/content/owner-layout.json`, `factory-design/looks/*.json`) and never overwrite those owner values with different ones without saying so in that list.
+
 ## Round 23 — the hand like the layout editor, failing checks, flying units, Gnome/Dwarf model sizes (owner, Oct 25) — read this first
 
 Since Round 22 the owner (directly) added: Gnome and Dwarf 3D models for 29 units (character only, `public/models/creatures/<id>/`), a 16:9 letterbox in matches on computers (no rotate message on a computer), crystal colors, status icons above heads, the ability icon in the stat badge, Card Comp vs Card Comp controls, and a `.vercelignore`. **Do not change or undo any of these**, do not touch any 3D model file, and keep the built `dist/` under 95 MB (AC90).
