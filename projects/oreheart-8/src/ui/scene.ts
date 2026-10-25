@@ -569,6 +569,63 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       f.group.position.copy(from);
     }
   }
+  // Owner (Oct 25): lasting effects (poison, drunk, rooted, ward, shield, can't act) float above the unit's head as the owner's icons, with turns left
+  const stIcons = new Map<string, { group: THREE.Group; key: string }>();
+  const stImg: Record<string, HTMLImageElement> = {};
+  const stTex = (k: string, n: number) => {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const draw = () => {
+      const g = c.getContext('2d')!; g.clearRect(0, 0, 128, 128);
+      const im = stImg[k];
+      if (im && im.complete && im.naturalWidth) { const sc = Math.min(112 / im.naturalWidth, 112 / im.naturalHeight); const w = im.naturalWidth * sc, hh = im.naturalHeight * sc; g.drawImage(im, (128 - w) / 2, (128 - hh) / 2, w, hh); }
+      if (n > 0) { g.beginPath(); g.arc(100, 100, 24, 0, Math.PI * 2); g.fillStyle = '#111e'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#ffd76a'; g.stroke(); g.fillStyle = '#fff'; g.font = 'bold 32px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), 100, 102); }
+      tex.needsUpdate = true;
+    };
+    if (!stImg[k]) { stImg[k] = new Image(); stImg[k].src = `/art/pop/icon-${k}.webp`; }
+    if (stImg[k].complete) draw(); else stImg[k].addEventListener('load', draw, { once: true });
+    draw();
+    return tex;
+  };
+  function statusList(st: any, c: any) {
+    const t = st.turn, out: [string, number][] = [];
+    if (c.poison > 0) out.push(['poison', c.poison]);
+    if (c.drunk > 0) out.push(['drunk', c.drunk]);
+    if ((c.rootUntil || 0) > t) out.push(['rooted', c.rootUntil - t]);
+    if ((c.wardUntil || 0) > t) out.push(['ward', 0]);
+    if (c.shield > 0 || c.bubble) out.push(['shield', c.shield > 0 ? c.shield : 0]);
+    if ((c.lockedUntil || 0) > t) out.push(['sleep', c.lockedUntil - t]);
+    return out;
+  }
+  function syncStatusIcons(st: any) {
+    const seen = new Set<string>();
+    for (const c of st.board.creatures) {
+      const list = statusList(st, c), key = list.map(([k, n]) => k + n).join(',');
+      let e = stIcons.get(c.uid);
+      if (!list.length) { if (e) { scene.remove(e.group); stIcons.delete(c.uid); } continue; }
+      seen.add(c.uid);
+      if (e && e.key === key) continue;
+      if (e) scene.remove(e.group);
+      const group = new THREE.Group(); group.name = 'status-icons'; group.userData.statuses = list.map(([k]) => k);
+      const S = 0.36, gap = 0.04;
+      list.forEach(([k, n], i) => {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: stTex(k, n), transparent: true, depthWrite: false, depthTest: false }));
+        sp.scale.set(S, S, 1); sp.position.x = (i - (list.length - 1) / 2) * (S + gap); sp.renderOrder = 50; sp.name = 'status-' + k;
+        group.add(sp);
+      });
+      scene.add(group); stIcons.set(c.uid, { group, key });
+    }
+    for (const [uid, e] of stIcons) if (!seen.has(uid)) { scene.remove(e.group); stIcons.delete(uid); }
+  }
+  function placeStatusIcons() {
+    for (const [uid, e] of stIcons) {
+      const f = figs.get(uid);
+      if (!f || f.dying) { e.group.visible = false; continue; }
+      e.group.visible = true;
+      const top = (f.c3d?.height || CREATURE_H) + 0.28;
+      e.group.position.set(f.group.position.x, f.group.position.y + top, f.group.position.z);
+    }
+  }
   function setState(st: any, events: any[]) {
     state = st;
     const now = performance.now();
@@ -642,11 +699,12 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         const dr = !!(c.drunk || c.statuses?.drunk || c.status?.drunk || (Array.isArray(c.statuses) && c.statuses.some((x: any) => x === 'drunk' || x?.id === 'drunk' || x?.type === 'drunk')));
         let ic = f.group.getObjectByName('drunk-icon') as THREE.Sprite | undefined;
         if (dr && !ic) { ic = symbolSprite('beer', 0.5 / (f.baseScale || 1)); ic.name = 'drunk-icon'; ic.position.set(0.3 / (f.baseScale || 1), 1.55 / (f.baseScale || 1), 0); f.group.add(ic); }
-        if (ic) ic.visible = dr;
+        if (ic) ic.visible = false; // owner (Oct 25): the drunk icon now shows with the other status icons above the head
       }
       const mv = events.find((e) => e.type === 'move' && e.uid === c.uid);
       if (mv && mv.teleport) f.group.position.copy(tgt);
     }
+    syncStatusIcons(st);
     for (const [uid, f] of figs) if (!seen.has(uid) && !f.dying) { f.dying = now; spawnFx('stars', f.group.position, 5); spawnFx('dust', f.group.position, 4); audio.play('defeat-poof'); if (f.finished) audio.voiceLine('sulk'); }
     for (const e of events) {
       if (e.type === 'attack' && figs.get(e.uid)) {
@@ -995,6 +1053,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     lastRender = now;
     const dt0 = Math.min(0.1, (now - (frameLast || now)) / 1000); frameLast = now;
     for (const fx of mineFx) fx.update(now / 1000);
+    placeStatusIcons();
     for (const [uid, f] of figs) {
       const g = f.group;
       if (f.dying && f.c3d) {

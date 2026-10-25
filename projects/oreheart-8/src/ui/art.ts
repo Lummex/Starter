@@ -243,10 +243,16 @@ export function makeMine(low: boolean, idx: number): MineArt {
   let lastHex: any = null;
   // Owner (Oct 24): only the white crystals change color (rocks and dirt keep theirs). A shader mask picks bright, low-saturation texels.
   const uNT = { value: new THREE.Color(0xffffff) }, uNA = { value: 0 }, uNG = { value: 0.15 };
+  // Owner (Oct 25): owned crystals look like the 2D Flow crystal pictures: deep, highly saturated color from dark facets to bright tips (no white wash)
+  const uND = { value: new THREE.Color(0x000000) }, uNM = { value: new THREE.Color(0x000000) }, uNL = { value: new THREE.Color(0x000000) };
   let nodeGlowAmt = 0.15, baseLight = 7;
   const applyNode = (hex: any) => {
     const col = new THREE.Color(hex), neutral = col.r > 0.85 && col.g > 0.85 && col.b > 0.85;
-    uNT.value.copy(col); uNA.value = neutral ? 0 : 0.92; nodeGlowAmt = neutral ? 0.15 : 0.6;
+    uNT.value.copy(col); uNA.value = neutral ? 0 : 1; nodeGlowAmt = neutral ? 0.15 : 0.28;
+    const hsl = { h: 0, s: 0, l: 0 }; col.getHSL(hsl);
+    if (hsl.h > 0.28 && hsl.h < 0.45) hsl.h = 0.335; // goblin green: the Flow crystal picture's yellow-green, not teal
+    // colors measured from the goblin Flow crystal picture: lightness 0.09 / 0.45 / 0.80 at saturation ~0.9 (hue drifts a little toward yellow-green at the tips)
+    uND.value.setHSL(hsl.h, 0.92, 0.06); uNM.value.setHSL(hsl.h, 0.88, 0.33); uNL.value.setHSL(hsl.h - 0.02, 0.9, 0.68);
     for (const g of nodeGlows) g.material.color.copy(col);
   };
   loadCrystalNode().then((src) => {
@@ -254,15 +260,25 @@ export function makeMine(low: boolean, idx: number): MineArt {
     node.traverse((o: any) => { if (o.isMesh) {
       const m = (o.material as THREE.MeshStandardMaterial).clone(); o.material = m; nodeMats.push({ m, c: m.color.clone() }); o.castShadow = !low;
       m.onBeforeCompile = (sh) => {
-        sh.uniforms.uNT = uNT; sh.uniforms.uNA = uNA; sh.uniforms.uNG = uNG;
-        sh.fragmentShader = 'uniform vec3 uNT;uniform float uNA;uniform float uNG;\n' + sh.fragmentShader
+        sh.uniforms.uNT = uNT; sh.uniforms.uNA = uNA; sh.uniforms.uNG = uNG; sh.uniforms.uND = uND; sh.uniforms.uNM = uNM; sh.uniforms.uNL = uNL;
+        sh.fragmentShader = 'uniform vec3 uNT;uniform float uNA;uniform float uNG;uniform vec3 uND;uniform vec3 uNM;uniform vec3 uNL;\n' + sh.fragmentShader
           .replace('#include <map_fragment>', `#include <map_fragment>
           float cnL = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
           float cnS = max(max(diffuseColor.r, diffuseColor.g), diffuseColor.b) - min(min(diffuseColor.r, diffuseColor.g), diffuseColor.b);
-          float cnM = smoothstep(0.42, 0.6, cnL) * (1.0 - smoothstep(0.1, 0.22, cnS));
-          diffuseColor.rgb = mix(diffuseColor.rgb, uNT * (0.2 + 0.95 * cnL), cnM * uNA);`)
+          // (texture values are linear here: the crystal faces sit around 0.5, rocks and dirt below 0.2)
+          float cnM = smoothstep(0.24, 0.36, cnL) * (1.0 - smoothstep(0.1, 0.22, cnS));
+          // spread the white crystal's shading over a dark-to-bright ramp in the faction color (more contrast, full saturation)
+          float cnT = clamp((cnL - 0.28) / 0.55, 0.0, 1.0); cnT = cnT * cnT * (3.0 - 2.0 * cnT);
+          vec3 cnC = cnT < 0.55 ? mix(uND, uNM, cnT / 0.55) : mix(uNM, uNL, (cnT - 0.55) / 0.45);
+          diffuseColor.rgb = mix(diffuseColor.rgb, cnC, cnM * uNA);`)
+          // owned crystals are not metal: a metallic surface shows grey reflections instead of its color
+          .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
+          metalnessFactor = mix(metalnessFactor, 0.0, cnM * uNA);`)
           .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-          totalEmissiveRadiance += uNT * cnM * uNG;`);
+          totalEmissiveRadiance += mix(uNT, cnC, uNA) * cnM * uNG;`)
+          // owned crystals: no white specular sheen washing the color out
+          .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+          reflectedLight.directSpecular *= mix(1.0, mix(1.0, 0.25, cnM), uNA); reflectedLight.indirectSpecular *= mix(1.0, mix(1.0, 0.35, cnM), uNA);`);
       };
     } });
     // Owner (Oct 24): smaller, fits inside its own square and sits centred on it.

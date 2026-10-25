@@ -1020,7 +1020,7 @@ export class App {
       ? h('div', { class: 'watch-bar', role: 'group', 'aria-label': 'Watch controls' },
           btn(g.paused ? 'Play' : 'Pause', 'wb-pause', () => { g.setPaused(!g.paused); this.refreshModeUi(); }),
           ...[1, 2, 4].map((n) => btn(n + '×', 'wb-speed', () => { g.setSpeed(n); this.refreshModeUi(); }, { 'data-speed': n })),
-          btn('Exit to menu', 'wb-exit', () => { g.act({ type: 'surrender' }); this.showMenu(); }))
+          btn('Exit', 'wb-exit', () => { g.act({ type: 'surrender' }); this.showMenu(); }, { 'aria-label': 'Exit to menu', title: 'Exit to menu' }))
       : h('div', { class: 'watch-bar cp-bar', role: 'group', 'aria-label': 'Card Play controls' },
           btn('1×', 'wb-speed', () => { g.setSpeed(1); this.refreshModeUi(); }, { 'data-speed': 1 }),
           btn('2×', 'wb-speed', () => { g.setSpeed(2); this.refreshModeUi(); }, { 'data-speed': 2 }));
@@ -2100,6 +2100,7 @@ export class App {
         pm.setAttribute('aria-label', `Poisoned, ${c.poison} turns left`);
         pm.textContent = `💧${c.poison}`;
       } else if (pm) pm.remove();
+      this.renderStatusIcons(st, c, el);
       el.dataset.damaged = String(c.health < c.maxHealth);
       el.dataset.acted = String(isActed(st, c));
       el.setAttribute("aria-label", `${card.name}, row ${c.row}, column ${c.col}`);
@@ -2120,6 +2121,25 @@ export class App {
   }
 
   /** Round 13: a small round icon above every unit with an activated ability; lit when it is your turn and the ability can be used. */
+  /** Owner (Oct 25): lasting effects show as the owner's icons above the unit's head for as long as they last (with turns left when known). */
+  renderStatusIcons(st: any, c: any, el: El) {
+    const t = st.turn;
+    const list: { k: string; n: number; label: string }[] = [];
+    if (c.poison > 0) list.push({ k: 'poison', n: c.poison, label: `Poisoned, ${c.poison} turn${c.poison > 1 ? 's' : ''} left` });
+    if (c.drunk > 0) list.push({ k: 'drunk', n: c.drunk, label: `Drunk, ${c.drunk} turn${c.drunk > 1 ? 's' : ''} left` });
+    if ((c.rootUntil || 0) > t) list.push({ k: 'rooted', n: c.rootUntil - t, label: "Rooted: can't move" });
+    if ((c.wardUntil || 0) > t) list.push({ k: 'ward', n: 0, label: 'Warded: takes no damage' });
+    if (c.shield > 0 || c.bubble) list.push({ k: 'shield', n: c.shield > 0 ? c.shield : 0, label: c.shield > 0 ? `Shield ${c.shield}` : 'Shield bubble' });
+    if ((c.lockedUntil || 0) > t) list.push({ k: 'sleep', n: c.lockedUntil - t, label: `Can't act for ${c.lockedUntil - t} more turn${c.lockedUntil - t > 1 ? 's' : ''}` });
+    let box = el.querySelector('.st-icons') as El | null;
+    const key = list.map((x) => x.k + x.n).join(',');
+    if (!list.length) { box?.remove(); return; }
+    if (!box) { box = h('div', { class: 'st-icons', role: 'group', 'aria-label': 'Status' }) as El; el.append(box); }
+    if (box.dataset.key === key) return;
+    box.dataset.key = key;
+    box.replaceChildren(...list.map((x) => h('span', { class: 'st-ic', 'data-status': x.k, role: 'img', 'aria-label': x.label, title: x.label },
+      h('img', { src: `/art/pop/icon-${x.k}.webp`, alt: '', draggable: 'false' }), x.n > 0 ? h('b', { 'aria-hidden': 'true' }, String(x.n)) : '')));
+  }
   renderAbilityButtons(st: any) {
     const live = st.phase !== 'over' && st.phase !== 'mulligan';
     const legal: any[] = [...(live ? brewActions(st, 'player') : []), ...(live && st.priority === 'player' ? this.game.legalActions().filter((a: any) => a.type === 'ability' && (a.ability === 'brew' || (st.activePlayer === 'player' && st.phase === 'action'))) : [])];
@@ -2147,7 +2167,10 @@ export class App {
           b.addEventListener('pointerenter', showTip); b.addEventListener('focus', showTip);
           b.addEventListener('pointerleave', () => this.hideAbilityTip()); b.addEventListener('blur', () => this.hideAbilityTip());
           b.addEventListener('click', (e) => { e.stopPropagation(); this.hideAbilityTip(); if (picking) { picking = false; return; } const cr = this.game.state.board.creatures.find((x: any) => x.uid === c.uid); if (cr) this.useAbility(cr, k); });
-          el.append(b);
+          // Owner (Oct 25): the ability icon takes the place of the unit-type icon in the stat badge
+          const bd = el.querySelector('[data-unit-badge]') as El | null;
+          (bd || el).append(b);
+          if (bd) bd.dataset.ability = PUB_ABILITY[k] || k;
         }
         const mineUnit = c.owner === 'player';
         const ok = mineUnit && legal.some((a: any) => a.creatureUid === c.uid && a.ability === k);
@@ -2155,6 +2178,8 @@ export class App {
         b.classList.toggle('off', !ok);
         b.setAttribute('aria-disabled', String(!ok));
         b.style.setProperty('--ox', (i - (keys.length - 1) / 2) * 120 + '%');
+        // shimmer only when it can be used right now (your unit, your turn, enough crystals); otherwise it just looks like a normal badge icon
+        b.classList.toggle('ready', ok);
         const label = `${CARDS[c.cardId].name}: ${ui.name} (${cost || 'free'}) ${cost ? 'crystal' + (cost > 1 ? 's' : '') + '. ' : '. '}${ui.text}`;
         b.title = label; b.setAttribute('aria-label', label);
       });
