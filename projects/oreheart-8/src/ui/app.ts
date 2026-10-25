@@ -518,6 +518,11 @@ export class App {
     let picked = false, stopStage: (() => void) | null = null;
     const stage = h('div', { class: 'cmd-stage', 'aria-hidden': 'true' }) as El;
     const cmdsEl = h('div', { class: 'cmds' }, h('div', { class: 'cmd-wall', 'aria-hidden': 'true' }), ...cmdBtns, stage) as El;
+    // hover grow/shrink follows real pointer movement (a pointer left over a card by an earlier click doesn't count)
+    cmdBtns.forEach((b) => {
+      b.addEventListener('pointermove', () => { if (!b.classList.contains('hov')) { cmdBtns.forEach((o) => o.classList.toggle('hov', o === b)); cmdsEl.classList.add('hovering'); } });
+      b.addEventListener('pointerleave', () => { b.classList.remove('hov'); if (!cmdBtns.some((o) => o.classList.contains('hov'))) cmdsEl.classList.remove('hovering'); });
+    });
     const changeBtn = btn('Change Commander', 'change-cmd tx-act', () => unpick()) as El;
     changeBtn.hidden = true;
     const mainRef: { el: El | null } = { el: null };

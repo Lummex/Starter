@@ -1232,8 +1232,8 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 .screen.setup{position:relative;overflow:hidden!important;justify-content:flex-start!important;gap:1vh!important;padding:1vh 3vw 0!important}
 .screen.setup .cmds{position:relative;flex:0 0 auto;width:min(94%,1100px);max-width:none;justify-content:center;gap:2.4vw;height:46vh;align-items:center;padding:0}
 .screen.setup .cmd-card{height:40vh!important;min-height:0!important;width:auto!important;aspect-ratio:3/4!important;flex:0 0 auto!important;transition:transform .2s ease,opacity .25s ease,box-shadow .2s ease!important;transform-origin:50% 60%}
-.screen.setup .cmds:not(.picked):has(.cmd-card:hover) .cmd-card:hover{transform:scale(1.1);z-index:3}
-.screen.setup .cmds:not(.picked):has(.cmd-card:hover) .cmd-card:not(:hover){transform:scale(.93)}
+.screen.setup .cmds.hovering:not(.picked) .cmd-card.hov{transform:scale(1.1);z-index:3}
+.screen.setup .cmds.hovering:not(.picked) .cmd-card:not(.hov){transform:scale(.93)}
 .screen.setup .cmd-card:focus-visible{outline:none;transform:scale(1.08)}
 .screen.setup .cmds.picked .cmd-card:not(.backdrop){opacity:0;pointer-events:none;position:absolute;visibility:hidden;transition:opacity .25s ease,visibility 0s .25s!important}
 .screen.setup .cmds.picked .cmd-card.backdrop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(1.12);z-index:1;opacity:.5;filter:brightness(.55);cursor:pointer}
