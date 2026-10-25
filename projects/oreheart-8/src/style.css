@@ -1664,3 +1664,5 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 .match [data-unit-badge] .ub-h{font-size:calc(var(--bw)*.262*.18*6.2)}
 .match [data-unit-badge] .ub-a{font-size:calc(var(--bw)*.262*.15*6.2)}
 .match [data-unit-badge] .ub-m{font-size:calc(var(--bw)*.262*.15*6.2)}
+/* Owner (Oct 24): no yellow ring under units (the 3D faction ring already marks them) */
+.match .token::before{display:none!important}
