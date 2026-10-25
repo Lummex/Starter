@@ -1,0 +1,28 @@
+{
+ "generated": "2026-10-24T10:21:25.015Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "dagger": "01a16d69-148b-76fe-914c-88d2ea2e6406",
+  "bag": "01a16d69-148c-778c-8cce-95a14bf9a341",
+  "character": "01a16d69-1494-776c-a601-869b25c79dc8",
+  "rig": "01a16d6c-82be-77d9-abd1-7e810c07ab74",
+  "anim": "01a16d6d-2c28-74f1-987c-2f5aecf2bd10"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [
+  "dagger",
+  "bag"
+ ],
+ "notes": "",
+ "fileSizes": {
+  "dagger.glb": 8213096,
+  "bag.glb": 11432388,
+  "char.glb": 5809684
+ }
+}

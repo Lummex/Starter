@@ -52,3 +52,6 @@ Everything in the game is made in code or generated for this project. There are 
 ## Round 12d
 - **Russo One** (`russo-one-latin-400-normal.woff2`) and **IM Fell English SC** (`im-fell-english-sc-latin-400-normal.woff2`), self-hosted in `public/assets/external/fonts/` (SIL OFL 1.1, from @fontsource) for the owner's card format. Alegreya SC was already bundled.
 - Card frames, gems and cost badges: the owner's Art Studio card format in `public/art/card-format/`.
+
+## Round 21 (goblin 3D models)
+- 3D models of Bowler Brawler, Skullflinger, Bare Knuckle Lunatic, Backstabbing Thief, Mangewolf Rider, Gronkowski Troll Tyrant, Goblin Rocket Rider, Snotskull Grunt, Goblin Chef, Skullbasher Rusher, Junk Shaman and SewerSlide Bomber (`public/models/creatures/<card id>/`): generated with the Meshy API from the owner's art and Model Editor sheets; animations from Meshy's library. Compressed with meshopt and 1024 px textures (gltf-transform).

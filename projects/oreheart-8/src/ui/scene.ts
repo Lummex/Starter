@@ -2,7 +2,7 @@
 import { ringColor, getRings } from './fx-settings';
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
-import { loadCreature3d, creature3dReady, makeCreature3d, type C3D } from './creature3d';
+import { loadCreature3d, creature3dReady, makeCreature3d, hasCreature3dSlug, type C3D } from './creature3d';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D } from './grubnak3d';
 import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
 import { audio } from './audio';
@@ -404,7 +404,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   type Fig = {
     ringColor?: string; ringGreyed?: boolean;
     group: THREE.Group; target: THREE.Vector3; born: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
-    uid: string; cardId: string; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
+    uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
   };
   const figs = new Map<string, Fig>();
   const fx: { obj: THREE.Object3D; t: number; kind: string; vel?: THREE.Vector3 }[] = [];
@@ -429,10 +429,12 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     let g: THREE.Group;
     let finished = false, mats: THREE.MeshStandardMaterial[] = [], parts: any = null, baseScale = 1;
     const a3 = card.faction === 'goblins' ? creature3dReady(card.id) : null;
-    if (a3) {
+    let c3: C3D | null = null;
+    if (a3) { try { c3 = makeCreature3d(card.id, a3); } catch { c3 = null; } }
+    if (a3 && c3) {
       // owner-sheet Meshy model (rigged, animated); dummy parts keep the procedural reactions harmless
-      const c3 = makeCreature3d(card.id, a3);
       g = new THREE.Group(); g.add(c3.group);
+      const cc3 = c3; cc3.onPlay = (n) => { if (n !== 'idle') creatureAnimLog.push({ uid: c.uid, cardId: c.cardId, anim: n }); };
       const dm = () => new THREE.Group();
       parts = { armL: dm(), armR: dm(), head: dm(), body: dm(), weapon: dm(), legL: dm(), legR: dm(), aura: null };
       finished = true; mats = c3.mats; baseScale = CREATURE_H;
@@ -462,7 +464,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       g.scale.setScalar(big);
     }
     const hasBomb = (card.abilities || []).some((a: string) => a === 'kaboom' || a === 'kaboom1');
-    if (hasBomb) {
+    if (hasBomb && !(g as any).userData.c3d) {
       // big round bomb with a lit fuse carried at the creature's side (R2.17)
       const bomb = new THREE.Group();
       bomb.name = 'bomb';
@@ -496,12 +498,19 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     return { group: g, finished, mats, parts, baseScale };
   }
 
-  for (const id of ['goblin-scrounger', 'goblin-pebbler', 'shiv-rat', 'goblin-smith-miner']) loadCreature3d(id).then((a) => {
-    // figures built before the model arrived are rebuilt with it
-    if (!a || disposed) return;
-    for (const [uid, f] of figs) if (f.cardId === id && !f.c3d) { scene.remove(f.group); figs.delete(uid); }
-    if (state) setState(state, []);
-  });
+  const creatureAnimLog: { uid: string; cardId: string; anim: string }[] = [];
+  const asked = new Set<string>();
+  // each goblin model is fetched once, only when a unit of it is on the board
+  function ensure3d(id: string) {
+    if (asked.has(id) || !hasCreature3dSlug(id)) return;
+    asked.add(id);
+    loadCreature3d(id).then((a) => {
+      // figures built before the model arrived are rebuilt with it
+      if (!a || disposed) return;
+      for (const [uid, f] of figs) if (f.cardId === id && !f.c3d) { scene.remove(f.group); figs.delete(uid); }
+      if (state) setState(state, []);
+    }).catch(() => { /* the token stays */ });
+  }
   let state: any = null;
   /** Round 11: ring in the side's faction color (player settings), grey once the unit has acted. */
   function applyRing(f: any, c: any, acted: boolean, st: any) {
@@ -591,18 +600,19 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       let f = figs.get(c.uid);
       const tgt = world(c.row, c.col);
       if (!f) {
+        if (CARDS[c.cardId]?.faction === 'goblins') ensure3d(c.cardId);
         const m = makeFigure(c);
         const born = events.some((e) => e.type === 'summon' && e.uid === c.uid) ? now : 0;
         m.group.position.copy(tgt);
         scene.add(m.group);
-        f = { group: m.group, target: tgt.clone(), born, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0, c3d: (m.group as any).userData.c3d || null };
+        f = { group: m.group, target: tgt.clone(), born, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, row: c.row, col: c.col, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0, c3d: (m.group as any).userData.c3d || null };
         figs.set(c.uid, f);
         if (born) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }
         // creatures keep their stored facing (set below every state update)
         f.yaw = facingYaw(c, c.owner); m.group.rotation.y = f.yaw;
       }
       if (f.target.distanceTo(tgt) > 0.01) { f.moving = now; if (f.group.position.distanceTo(tgt) < 6) audio.play('step', CARDS[c.cardId].faction); }
-      f.target.copy(tgt);
+      f.target.copy(tgt); f.row = c.row; f.col = c.col;
       f.faceWant = facingYaw(c, c.owner);
       if (f.finished) {
         const card = CARDS[c.cardId];
@@ -979,6 +989,16 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const dt0 = Math.min(0.1, (now - (frameLast || now)) / 1000); frameLast = now;
     for (const [uid, f] of figs) {
       const g = f.group;
+      if (f.dying && f.c3d) {
+        // the model's own defeat clip plays out, then the figure shrinks away
+        f.c3d.play('defeat'); f.c3d.update(dt0);
+        const len = Math.min(1.5, Math.max(0.5, f.c3d.dur('defeat'))) * 1000;
+        const k = (now - f.dying - len) / 300;
+        g.position.y = 0; g.rotation.z = 0;
+        if (k > 0) g.scale.setScalar(Math.max(0.001, f.baseScale * (1 - k)));
+        if (k >= 1) { scene.remove(g); figs.delete(uid); }
+        continue;
+      }
       if (f.dying) {
         const k = (now - f.dying) / 380;
         g.scale.setScalar(Math.max(0.001, f.baseScale * (1 - k)));
@@ -1024,7 +1044,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       if (f.c3d) {
         const dt = Math.min(0.1, (now - (f.lastT || now)) / 1000); f.lastT = now;
         const mk3 = (now - f.mineT) / 900, ak3 = (now - f.shootT) / 380;
-        f.c3d.play(walking ? 'walk' : f.shootT && ak3 < 1 ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : f.hitT && now - f.hitT < 320 ? 'hit' : 'idle');
+        f.c3d.play(f.shootT && ak3 < 1 ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? 'walk' : 'idle');
         f.c3d.update(dt);
         g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
       }
@@ -1131,6 +1151,22 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   frame();
   void state;
 
+  const _v = new THREE.Vector3();
+  function figureStats(f: Fig) {
+    const c = f.c3d, cv = canvas.getBoundingClientRect();
+    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', animationLog: c ? [...c.log] : [], items: c ? c.items.map((i) => ({ ...i })) : [] };
+    const b = c ? skinBox(f.group, new THREE.Box3()) : new THREE.Box3().setFromObject(f.group);
+    if (b.isEmpty()) { base.screenBox = { x: 0, y: 0, width: 0, height: 0 }; return base; }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let i = 0; i < 8; i++) {
+      _v.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).project(camera);
+      const px = cv.left + ((_v.x + 1) / 2) * cv.width, py = cv.top + ((1 - _v.y) / 2) * cv.height;
+      x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+    }
+    base.screenBox = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+    return base;
+  }
+
   function stats(): Promise<any> {
     const f0 = frames, t0 = Date.now();
     return new Promise((resolve) => {
@@ -1140,7 +1176,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
             webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
             bloom: false, shadows: renderer.shadowMap.enabled, particles: false, arena: arenaInfo,
             unitRings: [...figs.values()].filter((f) => !f.dying).map((f) => { const rs = getRings(); return { uid: f.uid, side: f.owner, color: f.ringColor || '', greyed: !!f.ringGreyed, thickness: rs.thickness, glow: rs.glow, opacity: rs.opacity }; }),
-            figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
+            figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ ...figureStats(f), uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
+            creatureAnimLog: creatureAnimLog.map((e) => ({ ...e })),
             commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? 'grubnak.glb' : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? 'grubnak-fortress.glb' : '', scepter: cm.g3d ? 'grubnak-scepter.glb' : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
             strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => { const cl = m.group.userData.cell || { row: 0, col: 0 }, bx = mineBox(cl.row, cl.col), cv = canvas.getBoundingClientRect(); return { row: cl.row, col: cl.col, screenBox: { x: bx.x + cv.left, y: bx.y + cv.top, width: bx.width, height: bx.height }, source: m.group.userData.mineModel === 'crystal-node' ? 'model:crystal-node.glb' : 'code:buildMineModel', ring: false, decal: { kind: 'glow-rubble', flat: true, color: m.group.userData.decalHex || m.group.userData.tintHex || '#ffffff' }, tiltDeg: (Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z)) * 180 / Math.PI, tilt: Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z), baseY: new THREE.Box3().setFromObject(m.crystals).min.y - m.group.position.y, scale: m.group.scale.x, parts: ['rubble', 'pedestal', 'banner', 'crystal'], shards: 11, pulsing: true, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' }; }), mineModel: 'code-built', crystalFlow: { shards: flowShown, streams: flowOwner.filter((o) => o && o !== 'neutral').length, swirls: flowOwner.filter((o) => !o || o === 'neutral').length, shape: 'faceted', path: 's-curve', target: 'bank' },
@@ -1191,7 +1228,7 @@ export function createFlatView(container: HTMLElement): BoardView {
     poke: () => null,
     lookBack() {}, impatient() {}, facing: () => ({}),
     retreat() { /* flat board: the overlay shows the retreat */ },
-    stats: async () => ({ webgl: false, graphics: 'low', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
+    stats: async () => ({ webgl: false, graphics: 'low', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], creatureAnimLog: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
     emote(side, kind) {
       const el = container.querySelector(`.stronghold.${side}`);
       if (el) { el.classList.remove('emote-cheer', 'emote-groan', 'emote-flinch', 'emote-cast'); void (el as HTMLElement).offsetWidth; el.classList.add('emote-' + kind); }
