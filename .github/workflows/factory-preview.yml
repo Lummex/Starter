@@ -1,0 +1,46 @@
+name: Factory — preview only
+
+# Builds a factory branch and puts it on a Vercel preview, with no AI agents and no checks (about 2 minutes, no agent cost).
+# Used after small owner changes (art, colours, sizes) so the owner can look at them right away.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Factory branch to preview (e.g. factory/issue-8)
+        required: true
+        default: factory/issue-8
+      app:
+        description: App folder (e.g. projects/oreheart-8)
+        required: true
+        default: projects/oreheart-8
+
+permissions:
+  contents: read
+
+run-name: Preview ${{ inputs.branch }}
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build
+        working-directory: ${{ inputs.app }}
+        run: |
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          npm run build
+      - name: Deploy preview
+        working-directory: ${{ inputs.app }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          rm -rf node_modules
+          url=$(npx --yes vercel@latest deploy --yes --token "$VERCEL_TOKEN" | grep -Eo 'https://[^ ]+' | tail -1)
+          echo "Preview: $url"
+          echo "## 👉 Preview: $url" >> "$GITHUB_STEP_SUMMARY"
