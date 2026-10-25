@@ -1,0 +1,500 @@
+{
+ "format": "oreheart-look-1",
+ "card": "goblin-scrapper",
+ "cardName": "Bowler Brawler",
+ "faction": "goblins",
+ "savedAt": "2026-10-24T22:09:46.161Z",
+ "units": "1 unit = 1 board square. Y is up. Rotations in degrees (X, Y, Z order). localPosition/localRotation/localScale are relative to what the piece is attached to (a bone or another piece); world values are where it is in the scene.",
+ "howToBuild": "Load the main model, scale it to heightSquares. For every part: load its model, attach it to the named bone (or piece) and apply its local position, rotation and scale. Recreate each effect with its type and settings at its attach point. Apply tint/glow/color and hide the listed bones. Play the listed animations; attached parts follow the bones.",
+ "preview": "/_blob/fba39c016420445c0c5b2cc744c96440",
+ "main": {
+  "name": "Bowler Brawler",
+  "kind": "model",
+  "attachedTo": "the ground (not attached)",
+  "parent": null,
+  "localPosition": [
+   0,
+   0,
+   0.005
+  ],
+  "localRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "localScale": 1,
+  "stretch": [
+   1,
+   0.93,
+   1
+  ],
+  "worldPosition": [
+   0,
+   0,
+   0.005
+  ],
+  "worldRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "worldScale": 1,
+  "visible": true,
+  "model": {
+   "key": "goblin-scrapper-v2",
+   "kind": "bundled"
+  },
+  "heightSquares": 1.188,
+  "animations": [
+   "Idle",
+   "Casual_Walk",
+   "Heavy_Hammer_Swing",
+   "Hit_Reaction",
+   "Dead",
+   "Idle (from Grubnak)",
+   "Call_Gesture (from Grubnak)",
+   "Victory_Fist_Pump (from Grubnak)",
+   "Hit_Reaction_1 (from Grubnak)",
+   "Hit_Reaction (from Grubnak)",
+   "Dead (from Grubnak)"
+  ],
+  "currentAnimation": "Casual_Walk",
+  "tint": {
+   "color": "#ffffff",
+   "amt": 0
+  },
+  "glow": {
+   "color": "#ffaa33",
+   "amt": 0
+  },
+  "color": {
+   "br": 0,
+   "co": 1,
+   "sa": 1,
+   "hu": 0,
+   "shine": 0
+  },
+  "hiddenBones": [],
+  "poseTweaks": {},
+  "fingers": {
+   "L": 0,
+   "R": 0,
+   "spread": 0,
+   "axis": "z",
+   "flip": false,
+   "thumb": true
+  }
+ },
+ "parts": [
+  {
+   "name": "Bowler Brawler – Bowler Brawler bowling ball",
+   "kind": "model",
+   "attachedTo": "bone \"RightHand\" of Bowler Brawler",
+   "parent": {
+    "kind": "bone",
+    "id": 48,
+    "bone": "RightHand",
+    "name": "Bowler Brawler"
+   },
+   "localPosition": [
+    -3.194,
+    27.128,
+    -12.731
+   ],
+   "localRotationDeg": [
+    50.405,
+    1.159,
+    166.638
+   ],
+   "localScale": 23,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.195,
+    -0.011,
+    0.076
+   ],
+   "worldRotationDeg": [
+    -74.221,
+    -21.973,
+    -54.882
+   ],
+   "worldScale": 0.23,
+   "visible": true,
+   "model": {
+    "key": "goblin-scrapper-v2-bowling-ball",
+    "kind": "bundled"
+   },
+   "heightSquares": 0.537,
+   "animations": [],
+   "currentAnimation": null,
+   "tint": {
+    "color": "#ffffff",
+    "amt": 0
+   },
+   "glow": {
+    "color": "#ffaa33",
+    "amt": 0
+   },
+   "color": {
+    "br": 0,
+    "co": 1,
+    "sa": 1,
+    "hu": 0,
+    "shine": 0
+   },
+   "hiddenBones": [],
+   "poseTweaks": {},
+   "fingers": {
+    "L": 0,
+    "R": 0,
+    "spread": 0,
+    "axis": "z",
+    "flip": false,
+    "thumb": true
+   }
+  }
+ ],
+ "effects": [
+  {
+   "name": "Flame",
+   "kind": "effect",
+   "attachedTo": "\"Bowler Brawler – Bowler Brawler bowling ball\"",
+   "parent": {
+    "kind": "item",
+    "id": 49,
+    "name": "Bowler Brawler – Bowler Brawler bowling ball"
+   },
+   "localPosition": [
+    0,
+    -0.063,
+    -0.415
+   ],
+   "localRotationDeg": [
+    81.361,
+    45.336,
+    0
+   ],
+   "localScale": 4.348,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.171,
+    -0.096,
+    0.058
+   ],
+   "worldRotationDeg": [
+    13.622,
+    -9.672,
+    14.729
+   ],
+   "worldScale": 0.997,
+   "visible": true,
+   "effectType": "flame",
+   "settings": {
+    "size": 0.29,
+    "height": 1,
+    "speed": 1.38,
+    "cCore": "#238b5a",
+    "cMid": "#00f088",
+    "cTip": "#00ff04"
+   },
+   "when": "always"
+  }
+ ],
+ "other": [
+  {
+   "name": "Solid part",
+   "kind": "rigid",
+   "attachedTo": "bone \"Hips\" of Bowler Brawler",
+   "parent": {
+    "kind": "bone",
+    "id": 48,
+    "bone": "Hips",
+    "name": "Bowler Brawler"
+   },
+   "localPosition": [
+    -1.085,
+    2.029,
+    0.871
+   ],
+   "localRotationDeg": [
+    12.924,
+    1.005,
+    0.801
+   ],
+   "localScale": 13,
+   "stretch": [
+    2.5,
+    0.83,
+    2.13
+   ],
+   "worldPosition": [
+    -0.017,
+    0.428,
+    -0.021
+   ],
+   "worldRotationDeg": [
+    -3.467,
+    -0.149,
+    -0.674
+   ],
+   "worldScale": 0.325,
+   "visible": true
+  }
+ ],
+ "editorScene": {
+  "units": "1 unit = 1 board square; Y is up",
+  "background": "#1a1420",
+  "view": {
+   "light": 1,
+   "reflections": 0.6,
+   "camera": {
+    "position": [
+     4.226,
+     2.984,
+     11.504
+    ],
+    "target": [
+     -0.066,
+     0.457,
+     0.813
+    ]
+   }
+  },
+  "items": [
+   {
+    "id": 48,
+    "kind": "model",
+    "name": "Bowler Brawler",
+    "parent": {
+     "kind": "world"
+    },
+    "position": [
+     0,
+     0,
+     0.005
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 1,
+    "stretch": [
+     1,
+     0.93,
+     1
+    ],
+    "visible": true,
+    "src": {
+     "key": "goblin-scrapper-v2",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "Casual_Walk",
+     "playing": true,
+     "speed": 1,
+     "lock": "xz",
+     "time": 2.097
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "hideCut": 0.5,
+    "paint": {},
+    "borrowed": [
+     {
+      "from": "b:grubnak",
+      "clip": "Idle",
+      "as": "Idle (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "Call_Gesture",
+      "as": "Call_Gesture (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "Victory_Fist_Pump",
+      "as": "Victory_Fist_Pump (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "Hit_Reaction_1",
+      "as": "Hit_Reaction_1 (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "Hit_Reaction",
+      "as": "Hit_Reaction (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "Dead",
+      "as": "Dead (from Grubnak)"
+     }
+    ]
+   },
+   {
+    "id": 49,
+    "kind": "model",
+    "name": "Bowler Brawler – Bowler Brawler bowling ball",
+    "parent": {
+     "kind": "bone",
+     "id": 48,
+     "bone": "RightHand"
+    },
+    "position": [
+     -3.194,
+     27.128,
+     -12.731
+    ],
+    "rotationDeg": [
+     50.405,
+     1.159,
+     166.638
+    ],
+    "scale": 23,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "src": {
+     "key": "goblin-scrapper-v2-bowling-ball",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "",
+     "playing": false,
+     "speed": 1,
+     "lock": "xz",
+     "time": 0
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "hideCut": 0.5,
+    "paint": {},
+    "borrowed": []
+   },
+   {
+    "id": 50,
+    "kind": "effect",
+    "name": "Flame",
+    "parent": {
+     "kind": "item",
+     "id": 49
+    },
+    "position": [
+     0,
+     -0.063,
+     -0.415
+    ],
+    "rotationDeg": [
+     81.361,
+     45.336,
+     0
+    ],
+    "scale": 4.348,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "flame",
+    "d": {
+     "size": 0.29,
+     "height": 1,
+     "speed": 1.38,
+     "cCore": "#238b5a",
+     "cMid": "#00f088",
+     "cTip": "#00ff04"
+    },
+    "when": "always"
+   },
+   {
+    "id": 55,
+    "kind": "rigid",
+    "name": "Solid part",
+    "parent": {
+     "kind": "bone",
+     "id": 48,
+     "bone": "Hips"
+    },
+    "position": [
+     -1.085,
+     2.029,
+     0.871
+    ],
+    "rotationDeg": [
+     12.924,
+     1.005,
+     0.801
+    ],
+    "scale": 13,
+    "stretch": [
+     2.5,
+     0.83,
+     2.13
+    ],
+    "visible": true
+   }
+  ]
+ }
+}

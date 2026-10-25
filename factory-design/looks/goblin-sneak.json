@@ -1,0 +1,534 @@
+{
+ "format": "oreheart-look-1",
+ "card": "goblin-sneak",
+ "cardName": "Backstabbing Thief",
+ "faction": "goblins",
+ "savedAt": "2026-10-24T22:51:02.262Z",
+ "units": "1 unit = 1 board square. Y is up. Rotations in degrees (X, Y, Z order). localPosition/localRotation/localScale are relative to what the piece is attached to (a bone or another piece); world values are where it is in the scene.",
+ "howToBuild": "Load the main model, scale it to heightSquares. For every part: load its model, attach it to the named bone (or piece) and apply its local position, rotation and scale. Recreate each effect with its type and settings at its attach point. Apply tint/glow/color and hide the listed bones. Play the listed animations; attached parts follow the bones.",
+ "preview": "/_blob/2c7ac158c51add2f865c645eabf1bba4",
+ "main": {
+  "name": "Backstabbing Thief",
+  "kind": "model",
+  "attachedTo": "the ground (not attached)",
+  "parent": null,
+  "localPosition": [
+   0,
+   0,
+   0
+  ],
+  "localRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "localScale": 1,
+  "stretch": [
+   1,
+   1,
+   1
+  ],
+  "worldPosition": [
+   0,
+   0,
+   0
+  ],
+  "worldRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "worldScale": 1,
+  "visible": true,
+  "model": {
+   "key": "goblin-sneak-v2",
+   "kind": "bundled"
+  },
+  "heightSquares": 0.982,
+  "animations": [
+   "Idle",
+   "Casual_Walk",
+   "Heavy_Hammer_Swing",
+   "Hit_Reaction",
+   "Dead"
+  ],
+  "currentAnimation": "Idle",
+  "tint": {
+   "color": "#ffffff",
+   "amt": 0
+  },
+  "glow": {
+   "color": "#ffaa33",
+   "amt": 0
+  },
+  "color": {
+   "br": 0,
+   "co": 1,
+   "sa": 1,
+   "hu": 0,
+   "shine": 0
+  },
+  "hiddenBones": [],
+  "poseTweaks": {},
+  "fingers": {
+   "L": 0,
+   "R": 0,
+   "spread": 0,
+   "axis": "z",
+   "flip": false,
+   "thumb": true
+  }
+ },
+ "parts": [
+  {
+   "name": "Backstabbing Thief – Backstabbing Thief bag",
+   "kind": "model",
+   "attachedTo": "bone \"neck\" of Backstabbing Thief",
+   "parent": {
+    "kind": "bone",
+    "id": 105,
+    "bone": "neck",
+    "name": "Backstabbing Thief"
+   },
+   "localPosition": [
+    -5.34,
+    1.862,
+    -14.029
+   ],
+   "localRotationDeg": [
+    8.548,
+    3.663,
+    3.154
+   ],
+   "localScale": 15,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.071,
+    0.607,
+    -0.149
+   ],
+   "worldRotationDeg": [
+    17.695,
+    17.229,
+    -12.92
+   ],
+   "worldScale": 0.15,
+   "visible": true,
+   "model": {
+    "key": "goblin-sneak-v2-bag",
+    "kind": "bundled"
+   },
+   "heightSquares": 0.315,
+   "animations": [],
+   "currentAnimation": null,
+   "tint": {
+    "color": "#ffffff",
+    "amt": 0
+   },
+   "glow": {
+    "color": "#ffaa33",
+    "amt": 0
+   },
+   "color": {
+    "br": 0,
+    "co": 1,
+    "sa": 1,
+    "hu": 0,
+    "shine": 0
+   },
+   "hiddenBones": [],
+   "poseTweaks": {},
+   "fingers": {
+    "L": 0,
+    "R": 0,
+    "spread": 0,
+    "axis": "z",
+    "flip": false,
+    "thumb": true
+   }
+  },
+  {
+   "name": "Backstabbing Thief – Backstabbing Thief dagger",
+   "kind": "model",
+   "attachedTo": "bone \"RightHand\" of Backstabbing Thief",
+   "parent": {
+    "kind": "bone",
+    "id": 105,
+    "bone": "RightHand",
+    "name": "Backstabbing Thief"
+   },
+   "localPosition": [
+    8.502,
+    7.038,
+    -9.251
+   ],
+   "localRotationDeg": [
+    159.362,
+    -37.54,
+    -90.548
+   ],
+   "localScale": 29,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.25,
+    0.152,
+    0.039
+   ],
+   "worldRotationDeg": [
+    -156.656,
+    78.73,
+    43.674
+   ],
+   "worldScale": 0.29,
+   "visible": true,
+   "model": {
+    "key": "goblin-sneak-v2-dagger",
+    "kind": "bundled"
+   },
+   "heightSquares": 0.386,
+   "animations": [],
+   "currentAnimation": null,
+   "tint": {
+    "color": "#ffffff",
+    "amt": 0
+   },
+   "glow": {
+    "color": "#ffaa33",
+    "amt": 0
+   },
+   "color": {
+    "br": 0,
+    "co": 1,
+    "sa": 1,
+    "hu": 0,
+    "shine": 0
+   },
+   "hiddenBones": [],
+   "poseTweaks": {},
+   "fingers": {
+    "L": 0,
+    "R": 0,
+    "spread": 0,
+    "axis": "z",
+    "flip": false,
+    "thumb": true
+   }
+  }
+ ],
+ "effects": [
+  {
+   "name": "Twinkles",
+   "kind": "effect",
+   "attachedTo": "\"Backstabbing Thief – Backstabbing Thief dagger\"",
+   "parent": {
+    "kind": "item",
+    "id": 107,
+    "name": "Backstabbing Thief – Backstabbing Thief dagger"
+   },
+   "localPosition": [
+    0.128,
+    0.891,
+    -0.022
+   ],
+   "localRotationDeg": [
+    100.191,
+    13.913,
+    79.79
+   ],
+   "localScale": 3.448,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.286,
+    0.015,
+    -0.181
+   ],
+   "worldRotationDeg": [
+    -8.321,
+    -0.315,
+    -1.757
+   ],
+   "worldScale": 1,
+   "visible": true,
+   "effectType": "twinkle",
+   "settings": {
+    "area": 0.05,
+    "count": 9,
+    "size": 0.07,
+    "speed": 2.05,
+    "color": "#035f02"
+   },
+   "when": "always"
+  }
+ ],
+ "other": [],
+ "animationRules": "",
+ "animationRequests": [],
+ "editorScene": {
+  "units": "1 unit = 1 board square; Y is up",
+  "background": "#1a1420",
+  "view": {
+   "light": 1.27,
+   "reflections": 0.6,
+   "camera": {
+    "position": [
+     -1.494,
+     1.028,
+     2.71
+    ],
+    "target": [
+     0,
+     0.499,
+     0.002
+    ]
+   }
+  },
+  "items": [
+   {
+    "id": 105,
+    "kind": "model",
+    "name": "Backstabbing Thief",
+    "parent": {
+     "kind": "world"
+    },
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 1,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "src": {
+     "key": "goblin-sneak-v2",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "Idle",
+     "playing": true,
+     "speed": 1,
+     "lock": "xz",
+     "time": 0.865
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "hideCut": 0.5,
+    "paint": {},
+    "borrowed": []
+   },
+   {
+    "id": 106,
+    "kind": "model",
+    "name": "Backstabbing Thief – Backstabbing Thief bag",
+    "parent": {
+     "kind": "bone",
+     "id": 105,
+     "bone": "neck"
+    },
+    "position": [
+     -5.34,
+     1.862,
+     -14.029
+    ],
+    "rotationDeg": [
+     8.548,
+     3.663,
+     3.154
+    ],
+    "scale": 15,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "src": {
+     "key": "goblin-sneak-v2-bag",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "",
+     "playing": false,
+     "speed": 1,
+     "lock": "xz",
+     "time": 0
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "hideCut": 0.5,
+    "paint": {},
+    "borrowed": []
+   },
+   {
+    "id": 107,
+    "kind": "model",
+    "name": "Backstabbing Thief – Backstabbing Thief dagger",
+    "parent": {
+     "kind": "bone",
+     "id": 105,
+     "bone": "RightHand"
+    },
+    "position": [
+     8.502,
+     7.038,
+     -9.251
+    ],
+    "rotationDeg": [
+     159.362,
+     -37.54,
+     -90.548
+    ],
+    "scale": 29,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "src": {
+     "key": "goblin-sneak-v2-dagger",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "",
+     "playing": false,
+     "speed": 1,
+     "lock": "xz",
+     "time": 0
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "hideCut": 0.5,
+    "paint": {},
+    "borrowed": []
+   },
+   {
+    "id": 110,
+    "kind": "effect",
+    "name": "Twinkles",
+    "parent": {
+     "kind": "item",
+     "id": 107
+    },
+    "position": [
+     0.128,
+     0.891,
+     -0.022
+    ],
+    "rotationDeg": [
+     100.191,
+     13.913,
+     79.79
+    ],
+    "scale": 3.448,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "twinkle",
+    "d": {
+     "area": 0.05,
+     "count": 9,
+     "size": 0.07,
+     "speed": 2.05,
+     "color": "#035f02"
+    },
+    "when": "always"
+   }
+  ]
+ }
+}
