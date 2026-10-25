@@ -39,3 +39,12 @@ Not changed — these checks look outdated or contradictory to later owner decis
 - Match deck piles now load `art/deck/deck-menu-deck-pile.png` (same 900x999 owner picture, renamed so the `deck-menu` / `deck-pile` selectors in AC176 both match).
 - Checked in a real browser, one worker: AC196, AC197, AC206, AC261 pass; their failures in the full run were CPU contention (parallel WebGL pages), as were the AC134/AC353/AC356/AC360/AC362 timeouts.
 - Not changed (outdated by newer owner decisions): AC58 (Goblin Rocket Rider is now a Fighter, so it no longer counts as a ready Miner), AC109 (a Fighter costs crystals; opponent starts with 0), AC272 (owner closer fan), AC176 deck-builder pile size 1155x1313 (owner's builder uses the 800x1000 stack art).
+
+## Round 23 (hand like the layout editor, failing checks, flying units, Gnome/Dwarf sizes)
+- Hand fan now reads `overlap`/`angle`/`arc` from `owner-layout.json`: neighbour centres sit 0.2 card widths apart, 4° per card, lowered 1.45 % × k² of the card height. The hand rests lower (tucked) and rises on hover; `getHandHover().fan` reports per-card slot centre, size, rotation and scale.
+- Grabbing a card tucks the rest of the hand a little below its rest position until it is hovered again; leaving the visible fan (cards' own boxes) tucks within ~0.1 s.
+- Card Comp vs Card Comp: watch bar usable (retreat overlay no longer eats clicks; test-mode end screen delayed 4 s; the end-screen Menu button is named "Exit to menu" in that mode).
+- Flying units (Thunderwing Gyronaut defaults 0.35 / 0.06 / 0.6 per s / 3° / shadow) hover, bob and sway, with hooks `flying`, `lift`, `swayNowDeg`, `groundShadow`.
+- Heights: Dwarf 0.95, Gnome 0.85, Brunhilda 1.05, Ram Rider 1.35, Arcane Colossus 1.6, Beetle 0.9; the skeleton-less beetle logs `walk`/`hit` and shakes when hit.
+- Not changed: **AC341** (Mine Control). The AI already attacks an adjacent enemy Miner when it survives the strike back; in the check's board the Dwarf Smith Miner gets the faction-advantage +1 Attack against the Goblin Miner, so even with Shield 1 the Goblin would die and mining is the correct choice. The check's premise looks outdated.
+- Tutorial "Skip Tutorial" (AC25) and Bowler Brawler bowl (AC360) pass unchanged.
