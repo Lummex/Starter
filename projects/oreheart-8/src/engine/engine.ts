@@ -184,7 +184,7 @@ export function createMatch(opts: any = {}) {
     if (h != null) { pl.health = h; if (h > pl.maxHealth) pl.maxHealth = h; }
   }
   for (const b of setup.board || []) {
-    const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0; c.lockedUntil = 0;
+    const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0; c.setupShield = b.shield || 0; c.lockedUntil = 0;
     for (const k of ['attack', 'lastFight', 'kills', 'drunk', 'poison']) if (b[k] != null) c[k] = b[k];
     if (b.minedMine) { c.minedMine = { row: b.minedMine.row, col: b.minedMine.col }; }
     if (b.summonedThisTurn) c.summonedThisTurn = true;
@@ -211,6 +211,8 @@ function finishSetup(s: any, ev: any[]) {
   s.turn = 0;
   s.activePlayer = second; // startTurn flips to `first` on turn 1
   startTurn(s, ev);
+  // setup shields survive the first turn's reset
+  for (const c of s.board.creatures) { if (c.setupShield) c.shield = Math.max(c.shield, c.setupShield); delete c.setupShield; }
 }
 
 // ---------------------------------------------------------------- turn flow
