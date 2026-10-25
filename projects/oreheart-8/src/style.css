@@ -1655,3 +1655,12 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
   .mb-setup .cs-extra .mode-row{position:absolute;left:107%;top:-250%;width:20%;flex-direction:column!important;align-items:flex-end;gap:6px!important}
   .mb-setup .cs-extra .mode-row .btn{white-space:normal!important;text-align:right;line-height:1.1}
 }
+
+/* Owner (Oct 24): stat badge about half the old size with bigger numbers; it sits low in the unit's square and scales with the square (zoom) */
+.match .token{container-type:inline-size}
+.match .token .tk-stats{--bw:max(26px,96cqw)!important;bottom:3%!important}
+.match .token .tk-stats:not(#_w){transform:translate(-50%,0)!important}
+.match [data-unit-badge] .ub-n{-webkit-text-stroke:calc(var(--bw)*.065) #000;text-shadow:0 calc(var(--bw)*.03) calc(var(--bw)*.06) #000c}
+.match [data-unit-badge] .ub-h{font-size:calc(var(--bw)*.262*.18*6.2)}
+.match [data-unit-badge] .ub-a{font-size:calc(var(--bw)*.262*.15*6.2)}
+.match [data-unit-badge] .ub-m{font-size:calc(var(--bw)*.262*.15*6.2)}
