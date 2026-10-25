@@ -22,3 +22,15 @@ Not done / not verified (no acceptance run, small budget):
 - Fixed: setup-board creatures with `shield` lost it when the first turn started (engine `finishSetup`); Mine Control (AC341) depends on it.
 - Not changed (judged outdated checks, owner cards.json wins): AC58 (Goblin Rocket Rider is now a Fighter, not a Miner, so M3 has 1 ready Miner), AC109 (Bowler Brawler costs 6, unaffordable on turn 1 so no summon squares show).
 - Not addressed this pass (budget): AC95, AC134, AC174, AC176, AC196/197, AC206, AC261, AC272, AC353, AC355, AC356, AC358.
+
+## Round 22 follow-up (inspector rejection fixes)
+Fixed: AC358 (Play this card no longer reopens its dialog; tap-to-place works under the tucked hand; `getDragCard()` test hook), AC206 (Commander hover grow follows real pointer movement), AC353 (attack clip starts at the event), AC359–AC361 (Bowler Brawler: flame settings keys, `advanceIdle` reaches figures, Strike/attack start the bowl, summon basketShot survives a late model load, ground clearance counts only a free ball), AC362 (Low graphics lists only the main Glow).
+
+Not changed — these checks look outdated or contradictory to later owner decisions:
+- AC58: expects Goblin Rocket Rider (`shard-guzzler`) to be a Miner; the owner's cards.json makes it a Fighter.
+- AC109: the enemy-summon part gives the opponent no crystals, so no summon is legal.
+- AC341: expects a 1/1 Goblin Miner with Shield 1 to survive a Dwarf Miner (type advantage gives the Dwarf +1 Attack).
+- AC355: expects no `grubnak/char.glb` fetch, but Grubnak is a 3D model since round 12.
+- AC176: its helper looks for `deck-menu` in the match piles while the same test requires `deck-pile.png` there.
+- AC272: the fan overlaps the home row by design (owner's fan layout); not changed.
+- AC134 / AC356 time out only when run in parallel under software rendering (all pass or are slow serially).
