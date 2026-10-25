@@ -4,9 +4,9 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Owner rule for every round (Oct 25): 3D models keep full detail
+## Owner rule for every round (Oct 25): no shrinking, ever
 
-Never simplify, decimate, weld, re-mesh or re-shrink any 3D model in `public/models/` (it scrambled the goblin textures in Round 21). Item textures may be 512 px at most; character textures stay as they are. The build-size budget is now **70 MB** (AC90). If the build is too big, ask the owner instead of shrinking models.
+This is going to be a big game (PC first, still reasonably fine on phones). **Never make anything smaller to save space**: no simplifying, decimating, welding or re-meshing 3D models, no lowering texture or picture resolution, no re-compressing owner art, pictures, sounds or models at lower quality. The build-size budget is **500 MB** (AC90). If something is too big for the host, stop and ask the owner; never shrink it yourself.
 
 ## Round 21 — put the goblin 3D models into matches (owner, Oct 25) — built
 
