@@ -1,10 +1,178 @@
 {
- "at": "2026-10-24T20:58:46.281Z",
+ "at": "2026-10-25T10:07:23.168Z",
  "results": [
   {
-   "id": "goblin-bomber",
+   "id": "clockwork-beetle",
    "sizes": {
-    "char.glb": 5671012
+    "char.glb": 15813428
+   }
+  },
+  {
+   "id": "barrelback-courier",
+   "sizes": {
+    "char.glb": 5471436
+   }
+  },
+  {
+   "id": "axe-thrower",
+   "sizes": {
+    "char.glb": 5649268
+   }
+  },
+  {
+   "id": "brewmaster",
+   "sizes": {
+    "char.glb": 5363616
+   }
+  },
+  {
+   "id": "crystal-drunk-delver",
+   "sizes": {
+    "char.glb": 5674832
+   }
+  },
+  {
+   "id": "deepforge-crossbowman",
+   "sizes": {
+    "char.glb": 5133304
+   }
+  },
+  {
+   "id": "dwarf-miner",
+   "sizes": {
+    "char.glb": 5682444
+   }
+  },
+  {
+   "id": "dwarf-pickman",
+   "sizes": {
+    "char.glb": 5704236
+   }
+  },
+  {
+   "id": "dwarf-stoneback",
+   "sizes": {
+    "char.glb": 5584036
+   }
+  },
+  {
+   "id": "gearward-sentinel",
+   "sizes": {
+    "char.glb": 5722768
+   }
+  },
+  {
+   "id": "glyphshield-warden",
+   "sizes": {
+    "char.glb": 6052888
+   }
+  },
+  {
+   "id": "gnome-cogger",
+   "sizes": {
+    "char.glb": 6240624
+   }
+  },
+  {
+   "id": "gnome-illusionist",
+   "sizes": {
+    "char.glb": 5613216
+   }
+  },
+  {
+   "id": "gnome-smith-miner",
+   "sizes": {
+    "char.glb": 5640212
+   }
+  },
+  {
+   "id": "gnome-tinker",
+   "sizes": {
+    "char.glb": 6141788
+   }
+  },
+  {
+   "id": "gnome-widget",
+   "sizes": {
+    "char.glb": 5968916
+   }
+  },
+  {
+   "id": "grimhold-ravager",
+   "sizes": {
+    "char.glb": 5725000
+   }
+  },
+  {
+   "id": "gyrocopter-ace",
+   "sizes": {
+    "char.glb": 5677016
+   }
+  },
+  {
+   "id": "hexwright-apprentice",
+   "sizes": {
+    "char.glb": 5860192
+   }
+  },
+  {
+   "id": "ironhammer-berserker",
+   "sizes": {
+    "char.glb": 5599544
+   }
+  },
+  {
+   "id": "oathbound-pikeman",
+   "sizes": {
+    "char.glb": 5580044
+   }
+  },
+  {
+   "id": "phase-stalker",
+   "sizes": {
+    "char.glb": 6045300
+   }
+  },
+  {
+   "id": "queen-brunhilda-stonebeard",
+   "sizes": {
+    "char.glb": 5601960
+   }
+  },
+  {
+   "id": "ram-rider",
+   "sizes": {
+    "char.glb": 5564776
+   }
+  },
+  {
+   "id": "runic-siphoner",
+   "sizes": {
+    "char.glb": 5857436
+   }
+  },
+  {
+   "id": "rune-splitter",
+   "sizes": {
+    "char.glb": 5584060
+   }
+  },
+  {
+   "id": "shieldbeard",
+   "sizes": {
+    "char.glb": 5933732
+   }
+  },
+  {
+   "id": "spark-gnome",
+   "sizes": {
+    "char.glb": 6112556
+   }
+  },
+  {
+   "id": "the-great-steam-golem",
+   "sizes": {
+    "char.glb": 6564260
    }
   }
  ]
