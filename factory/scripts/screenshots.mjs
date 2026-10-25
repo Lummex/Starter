@@ -50,7 +50,7 @@ for (const [name, viewport] of [['desktop', { width: 1366, height: 768 }], ['pho
   if (await clickText(page, /^play$/i)) {
     await settle(page, 2000);
     await shot('3-before-match');
-    if (await clickText(page, /^start$/i)) {
+    if (await clickText(page, /^(start|fight!?)$/i)) {
       await settle(page, 5000);
       await shot('4-match-start');
       for (let t = 0; t < 6; t++) { if (await clickText(page, /^keep( hand)?$/i)) { await settle(page, 4000); await shot('5-match'); break; } await page.waitForTimeout(1500); }
