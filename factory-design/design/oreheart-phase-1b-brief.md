@@ -12,7 +12,28 @@ The game is hosted on Vercel's free plan, which rejects uploads over 100 MB. Kee
 - Character models and the owner's main art (logo, banners, card back, card art, commander portraits) must look the same after any shrinking.
 - If the game can't stay under 95 MB without visible loss, stop and ask the owner.
 
-## Round 22 — fix the failing checks, Bowler Brawler's special moves, Crystal Node effects (owner, Oct 25) — read this first
+## Round 23 — the hand like the layout editor, failing checks, flying units, Gnome/Dwarf model sizes (owner, Oct 25) — read this first
+
+Since Round 22 the owner (directly) added: Gnome and Dwarf 3D models for 29 units (character only, `public/models/creatures/<id>/`), a 16:9 letterbox in matches on computers (no rotate message on a computer), crystal colors, status icons above heads, the ability icon in the stat badge, Card Comp vs Card Comp controls, and a `.vercelignore`. **Do not change or undo any of these**, do not touch any 3D model file, and keep the built `dist/` under 95 MB (AC90).
+
+### A. The hand (owner's top priority this round)
+1. **Spacing and overlap exactly like the owner's layout editor.** The owner's layout (`src/content/owner-layout.json`, HUD piece `hand`) has `overlap` 0.2, `angle` 4, `arc` 1.45, `slide` 18, `straighten`, `popScale` 1.6, `popY` 10, `ease` smooth, `speed` 450. Make the in-game fan look the same as the layout editor's hand preview with those settings (same card spacing, overlap, angle and arc). Remove the hard-coded `cw * 0.62` spacing in `app.ts` layoutHand and use the layout values instead.
+2. **The hand tucks back down after you grab a card.** As soon as you pick up a hand card and drag it toward the board, the rest of the hand slides down (tucked). It must not stay raised, also after the card is dropped, played or cancelled.
+3. **Auto-tuck when the mouse leaves.** Moving the mouse off the hand (anywhere, including onto the enlarged close-up or the board) tucks the hand within about a third of a second. Right now cards stay up in real play.
+4. Test all three with **real mouse events** (`page.mouse.move` in several steps, `down`, `up`) with the test flag OFF (`window.__app.test = false`), at 1920×1080 and 1366×768. Check the card positions after each step, not just classes.
+
+### B. Fix the real failures from Round 22
+Tutorial "Skip" button; Mine Control stance (a Miner mined where an attack was expected — decide which is right from the GDD, fix the game or the test); Card Comp vs Card Comp watch mode Pause button (the owner moved the watch bar to the bottom-right and scaled it to 0.58; keep that, make sure Pause/Play/Exit still work); Bowler Brawler's bowling check. Re-run every check; update ones that are outdated because of the owner's direct changes above (Gnome/Dwarf now have models: AC80/AC84/AC355/AC357; computer letterbox and touch-screen phone tests: AC24/AC24b).
+
+### C. Flying units hover
+Units whose saved look has `flying` (Model Editor → Flying; e.g. Gyrocopter Ace) float above their square in matches: lift `hoverSquares`, bob by `floatSquares` at `floatsPerSecond`, sway `swayDeg`, with a soft ground shadow if `groundShadow`. If there is no saved look yet, Gyrocopter Ace uses lift 0.35, bob 0.06, 0.6 per second, sway 3°, shadow on.
+
+### D. Gnome and Dwarf model sizes
+The new models all use one default height. Give each a sensible height in board squares (dwarves stocky ~0.95, gnomes small ~0.85, Queen Brunhilda ~1.05, Ram Rider ~1.35, The Great Steam Golem 1.6, Clockwork Beetle ~0.9) in `creature3d.ts` DEFAULT_H. No accessories (the owner adds those later). Clockwork Beetle has no skeleton: it should still slide when it moves and shake when hit.
+
+Do NOT touch crystal colors, the badge, ability or status icons, the Card Comp controls, the letterbox, or any model file.
+
+## Round 22 — fix the failing checks, Bowler Brawler's special moves, Crystal Node effects (owner, Oct 25) — built (403/426); owner merged
 
 Keep everything from 8a–21 and the owner's direct changes on the branch. Follow the size rule above (under 95 MB, never re-mesh models). Commit + push after each numbered step.
 
