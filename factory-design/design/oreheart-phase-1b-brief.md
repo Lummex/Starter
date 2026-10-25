@@ -4,7 +4,42 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 21 — put the goblin 3D models into matches (owner, Oct 25) — read this first
+## Owner rule for every round (Oct 25): size budget and safe shrinking
+
+The game is hosted on Vercel's free plan, which rejects uploads over 100 MB. Keep the built `dist/` under **95 MB** (AC90).
+- Shrinking is allowed where it doesn't visibly matter: lower texture resolution on small items/props, re-compressing pictures that are shown small. Leave the art as it is now (the owner checked it and it looks fine).
+- **Never** simplify, decimate, weld, re-mesh or re-quantize 3D model geometry, and never touch UVs. That scrambled the goblin textures in Round 21 and looked awful. To make a model smaller, only re-encode its textures at a lower resolution, then look at it rendered next to the original before keeping it.
+- Character models and the owner's main art (logo, banners, card back, card art, commander portraits) must look the same after any shrinking.
+- If the game can't stay under 95 MB without visible loss, stop and ask the owner.
+
+## Round 22 — fix the failing checks, Bowler Brawler's special moves, Crystal Node effects (owner, Oct 25) — read this first
+
+Keep everything from 8a–21 and the owner's direct changes on the branch. Follow the size rule above (under 95 MB, never re-mesh models). Commit + push after each numbered step.
+
+**The owner is changing these directly at the same time — do NOT touch them:** the crystal colors/tint on the Crystal Node model, the unit stat badge (including the unit-type icon slot) and the ability icons above units, and status icons over units' heads. Leave that code alone so nothing conflicts.
+
+### A. The failing checks (`factory-data/oreheart-8/test-results.md`, 31 failing)
+1. Fix the game, not the checks, except where a check contradicts a newer owner decision. These owner decisions win, so update those checks to match:
+   - **Controls (Oct 25):** left-click (or tap) one of your units *selects it* and lights up its moves/attacks/mining; clicking a lit square does it. **Right-click** a unit opens its card (and its ability menu if it is yours). On touch, tapping an enemy still shows its card. (Affects AC98, AC116 and similar.)
+   - **Hand (Oct 25):** cards overlap more (closer together); clicking a hand card opens its close-up with a **Play this card / Cast this spell** button; the hand slides back down as soon as the mouse leaves the fan, even onto the enlarged card; the dragged card hangs below-left of the pointer, tilted, so the target square stays visible. (Affects AC218, AC250, AC272.)
+   - Owner card numbers (ranges, costs) in `cards.json` win over old checks.
+2. The real bugs in the list (Card Comp vs Card Comp finishing, Mine Control stance, tapping a mine with all ready Miners, Low graphics, menus in owner boxes, owner text styles, Settings highlight panel, goblin models using their own walk/attack/hit/defeat clips, models loaded once): make them work.
+3. Write in WORK.md which checks you changed and why.
+
+### B. Bowler Brawler (`goblin-scrapper`) special moves
+4. The owner's animation wish list (from the Model Editor):
+   - **Rules:** He holds the bowling ball out in front of him in his hand. The ball never goes through his body and never goes through or clips into the ground. Every movement is made so nothing clips, in every animation.
+   - **Bowling attack** (his attack / Strike): he brings the ball back behind him, then swings forward and throws it out in front of him. The ball then rolls away along the ground (toward the target, knocking units like pins as Strike already does).
+   - **Spinning the ball on his finger** (idle / taunt): he spins the bowling ball on one finger like a basketball. Play it now and then while idle.
+   - **Basketball shot** (special): he shoots the bowling ball up like a basketball shot. It flies up, then comes down and stops dead with a heavy thunk into the ground (no bounce, no roll). Use it for his special ability.
+5. How: keep the existing model and rig (never regenerate the model). You may add animation clips with Meshy's animation library on the existing rig (rig task id in `public/models/creatures/goblin-scrapper/models.json`) if a close motion exists; otherwise key the bones by hand in code. The ball is a separate item: animate it (leave the hand, roll, fly, land) so it matches the motion. Also add the owner's green flame effect on the ball from `factory-design/looks/goblin-scrapper.json` (effect "Flame", always on).
+
+### C. Crystal Node effects
+6. The owner's saved look `factory-design/looks/crystal-node.json` lists the Crystal Node's effects: Twinkles, Sparks and several Glows at exact positions and settings. Recreate them on every Crystal Node in matches, exactly as listed. Their color follows the owner of the mine (goblins green, gnomes purple, dwarves blue; white when nobody owns it), matching the crystal. Keep it light enough to run smoothly with 3 mines on screen; on Low graphics show only the main glow.
+
+Report: the checks pass count, a 1920×1080 screenshot of a match with the three mines (one per color) and their effects, and a short sequence of Bowler Brawler doing each special move.
+
+## Round 21 — put the goblin 3D models into matches (owner, Oct 25) — built; models restored by owner
 
 Keep everything from 8a–17 and the owner's direct changes on the branch (pop-ups, speech bubbles, bonus draws, hand play button, left/right click). This round is ONLY the 3D goblins; do not rework old checks or anything else.
 
