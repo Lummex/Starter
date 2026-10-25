@@ -347,7 +347,13 @@
     "axe-thrower--char-side.jpg",
     "axe-thrower--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "shield": [
+     "axe-thrower--shield-front.jpg",
+     "axe-thrower--shield-side.jpg",
+     "axe-thrower--shield-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -356,7 +362,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): shield; skipped the ones the sheet note says not to render."
   },
   {
    "id": "barrelback-courier",
@@ -367,7 +373,13 @@
     "barrelback-courier--char-side.jpg",
     "barrelback-courier--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "barrel-pack": [
+     "barrelback-courier--barrel-pack-front.jpg",
+     "barrelback-courier--barrel-pack-side.jpg",
+     "barrelback-courier--barrel-pack-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -376,7 +388,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): barrel-pack; skipped the ones the sheet note says not to render."
   },
   {
    "id": "brewmaster",
@@ -387,7 +399,18 @@
     "brewmaster--char-side.jpg",
     "brewmaster--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "crystal-hammer": [
+     "brewmaster--crystal-hammer-front.jpg",
+     "brewmaster--crystal-hammer-side.jpg",
+     "brewmaster--crystal-hammer-back.jpg"
+    ],
+    "keg-pack": [
+     "brewmaster--keg-pack-front.jpg",
+     "brewmaster--keg-pack-side.jpg",
+     "brewmaster--keg-pack-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -396,7 +419,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): crystal-hammer, keg-pack; skipped the ones the sheet note says not to render."
   },
   {
    "id": "clockwork-beetle",
@@ -428,7 +451,18 @@
     "crystal-drunk-delver--char-side.jpg",
     "crystal-drunk-delver--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "pickaxe": [
+     "crystal-drunk-delver--pickaxe-front.jpg",
+     "crystal-drunk-delver--pickaxe-side.jpg",
+     "crystal-drunk-delver--pickaxe-back.jpg"
+    ],
+    "crystal-backpack": [
+     "crystal-drunk-delver--crystal-backpack-front.jpg",
+     "crystal-drunk-delver--crystal-backpack-side.jpg",
+     "crystal-drunk-delver--crystal-backpack-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -437,7 +471,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): pickaxe, crystal-backpack; skipped the ones the sheet note says not to render."
   },
   {
    "id": "deepforge-crossbowman",
@@ -448,7 +482,13 @@
     "deepforge-crossbowman--char-side.jpg",
     "deepforge-crossbowman--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "crystal-gun": [
+     "deepforge-crossbowman--crystal-gun-front.jpg",
+     "deepforge-crossbowman--crystal-gun-side.jpg",
+     "deepforge-crossbowman--crystal-gun-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -457,7 +497,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): crystal-gun; skipped the ones the sheet note says not to render."
   },
   {
    "id": "dwarf-miner",
@@ -468,7 +508,13 @@
     "dwarf-miner--char-side.jpg",
     "dwarf-miner--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "tower-shield": [
+     "dwarf-miner--tower-shield-front.jpg",
+     "dwarf-miner--tower-shield-side.jpg",
+     "dwarf-miner--tower-shield-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -477,7 +523,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): tower-shield; skipped the ones the sheet note says not to render."
   },
   {
    "id": "dwarf-pickman",
@@ -508,7 +554,13 @@
     "dwarf-stoneback--char-side.jpg",
     "dwarf-stoneback--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "hammer": [
+     "dwarf-stoneback--hammer-front.jpg",
+     "dwarf-stoneback--hammer-side.jpg",
+     "dwarf-stoneback--hammer-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -517,7 +569,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): hammer; skipped the ones the sheet note says not to render."
   },
   {
    "id": "gearward-sentinel",
@@ -528,7 +580,13 @@
     "gearward-sentinel--char-side.jpg",
     "gearward-sentinel--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "mace": [
+     "gearward-sentinel--mace-front.jpg",
+     "gearward-sentinel--mace-side.jpg",
+     "gearward-sentinel--mace-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -537,7 +595,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Owner sheet note: Don't render the shield We already have a shield for the gnomes. Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Owner sheet note: Don't render the shield We already have a shield for the gnomes. Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): mace; skipped the ones the sheet note says not to render."
   },
   {
    "id": "glyphshield-warden",
@@ -548,7 +606,13 @@
     "glyphshield-warden--char-side.jpg",
     "glyphshield-warden--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "shield": [
+     "glyphshield-warden--shield-front.jpg",
+     "glyphshield-warden--shield-side.jpg",
+     "glyphshield-warden--shield-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -557,7 +621,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Owner sheet note: Don't render the glove on this one but you render the shield is fine. Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Owner sheet note: Don't render the glove on this one but you render the shield is fine. Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): shield; skipped the ones the sheet note says not to render."
   },
   {
    "id": "gnome-cogger",
@@ -568,7 +632,13 @@
     "gnome-cogger--char-side.jpg",
     "gnome-cogger--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "mace": [
+     "gnome-cogger--mace-front.jpg",
+     "gnome-cogger--mace-side.jpg",
+     "gnome-cogger--mace-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -577,7 +647,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Owner sheet note: Don't render his backpack. Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Owner sheet note: Don't render his backpack. Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): mace; skipped the ones the sheet note says not to render."
   },
   {
    "id": "gnome-illusionist",
@@ -608,7 +678,13 @@
     "gnome-smith-miner--char-side.jpg",
     "gnome-smith-miner--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "pickaxe": [
+     "gnome-smith-miner--pickaxe-front.jpg",
+     "gnome-smith-miner--pickaxe-side.jpg",
+     "gnome-smith-miner--pickaxe-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -617,7 +693,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Owner sheet note: Don't render his bag we already have a known bag. Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Owner sheet note: Don't render his bag we already have a known bag. Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): pickaxe; skipped the ones the sheet note says not to render."
   },
   {
    "id": "gnome-tinker",
@@ -628,7 +704,18 @@
     "gnome-tinker--char-side.jpg",
     "gnome-tinker--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "scepter": [
+     "gnome-tinker--scepter-front.jpg",
+     "gnome-tinker--scepter-side.jpg",
+     "gnome-tinker--scepter-back.jpg"
+    ],
+    "crystal-shield": [
+     "gnome-tinker--crystal-shield-front.jpg",
+     "gnome-tinker--crystal-shield-side.jpg",
+     "gnome-tinker--crystal-shield-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -637,7 +724,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): scepter, crystal-shield; skipped the ones the sheet note says not to render."
   },
   {
    "id": "gnome-widget",
@@ -668,7 +755,13 @@
     "grimhold-ravager--char-side.jpg",
     "grimhold-ravager--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "hammer": [
+     "grimhold-ravager--hammer-front.jpg",
+     "grimhold-ravager--hammer-side.jpg",
+     "grimhold-ravager--hammer-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -677,7 +770,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): hammer; skipped the ones the sheet note says not to render."
   },
   {
    "id": "gyrocopter-ace",
@@ -688,7 +781,13 @@
     "gyrocopter-ace--char-side.jpg",
     "gyrocopter-ace--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "gyro-wings": [
+     "gyrocopter-ace--gyro-wings-front.jpg",
+     "gyrocopter-ace--gyro-wings-side.jpg",
+     "gyrocopter-ace--gyro-wings-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -697,7 +796,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): gyro-wings; skipped the ones the sheet note says not to render."
   },
   {
    "id": "hexwright-apprentice",
@@ -708,7 +807,13 @@
     "hexwright-apprentice--char-side.jpg",
     "hexwright-apprentice--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "staff": [
+     "hexwright-apprentice--staff-front.jpg",
+     "hexwright-apprentice--staff-side.jpg",
+     "hexwright-apprentice--staff-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -717,7 +822,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): staff; skipped the ones the sheet note says not to render."
   },
   {
    "id": "ironhammer-berserker",
@@ -728,7 +833,13 @@
     "ironhammer-berserker--char-side.jpg",
     "ironhammer-berserker--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "crystal-pistol": [
+     "ironhammer-berserker--crystal-pistol-front.jpg",
+     "ironhammer-berserker--crystal-pistol-side.jpg",
+     "ironhammer-berserker--crystal-pistol-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -737,7 +848,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): crystal-pistol; skipped the ones the sheet note says not to render."
   },
   {
    "id": "oathbound-pikeman",
@@ -748,7 +859,12 @@
     "oathbound-pikeman--char-side.jpg",
     "oathbound-pikeman--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "rifle": [
+     "oathbound-pikeman--rifle-front.jpg",
+     "oathbound-pikeman--rifle-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -757,7 +873,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Owner sheet note: Don't render his backpack. Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Owner sheet note: Don't render his backpack. Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): rifle; skipped the ones the sheet note says not to render."
   },
   {
    "id": "phase-stalker",
@@ -768,7 +884,13 @@
     "phase-stalker--char-side.jpg",
     "phase-stalker--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "plow": [
+     "phase-stalker--plow-front.jpg",
+     "phase-stalker--plow-side.jpg",
+     "phase-stalker--plow-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -777,7 +899,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): plow; skipped the ones the sheet note says not to render."
   },
   {
    "id": "queen-brunhilda-stonebeard",
@@ -788,7 +910,13 @@
     "queen-brunhilda-stonebeard--char-side.jpg",
     "queen-brunhilda-stonebeard--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "warhammer": [
+     "queen-brunhilda-stonebeard--warhammer-front.jpg",
+     "queen-brunhilda-stonebeard--warhammer-side.jpg",
+     "queen-brunhilda-stonebeard--warhammer-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -797,7 +925,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): warhammer; skipped the ones the sheet note says not to render."
   },
   {
    "id": "ram-rider",
@@ -808,7 +936,13 @@
     "ram-rider--char-side.jpg",
     "ram-rider--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "ram": [
+     "ram-rider--ram-front.jpg",
+     "ram-rider--ram-side.jpg",
+     "ram-rider--ram-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -817,7 +951,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Owner sheet note: Don't render his pickaxe. Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Owner sheet note: Don't render his pickaxe. Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): ram; skipped the ones the sheet note says not to render."
   },
   {
    "id": "rune-splitter",
@@ -828,7 +962,13 @@
     "rune-splitter--char-side.jpg",
     "rune-splitter--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "crystal-hammer": [
+     "rune-splitter--crystal-hammer-front.jpg",
+     "rune-splitter--crystal-hammer-side.jpg",
+     "rune-splitter--crystal-hammer-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -837,7 +977,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): crystal-hammer; skipped the ones the sheet note says not to render."
   },
   {
    "id": "runic-siphoner",
@@ -848,7 +988,13 @@
     "runic-siphoner--char-side.jpg",
     "runic-siphoner--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "staff": [
+     "runic-siphoner--staff-front.jpg",
+     "runic-siphoner--staff-side.jpg",
+     "runic-siphoner--staff-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -857,7 +1003,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): staff; skipped the ones the sheet note says not to render."
   },
   {
    "id": "shieldbeard",
@@ -868,7 +1014,13 @@
     "shieldbeard--char-side.jpg",
     "shieldbeard--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "medic-pack": [
+     "shieldbeard--medic-pack-front.jpg",
+     "shieldbeard--medic-pack-side.jpg",
+     "shieldbeard--medic-pack-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -877,7 +1029,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Owner sheet note: Don't render his hammer. Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Owner sheet note: Don't render his hammer. Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): medic-pack; skipped the ones the sheet note says not to render."
   },
   {
    "id": "spark-gnome",
@@ -888,7 +1040,13 @@
     "spark-gnome--char-side.jpg",
     "spark-gnome--char-back.jpg"
    ],
-   "parts": {},
+   "parts": {
+    "staff": [
+     "spark-gnome--staff-front.jpg",
+     "spark-gnome--staff-side.jpg",
+     "spark-gnome--staff-back.jpg"
+    ]
+   },
    "height": 1.0,
    "actions": {
     "idle": 0,
@@ -897,7 +1055,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): staff; skipped the ones the sheet note says not to render."
   },
   {
    "id": "the-great-steam-golem",
