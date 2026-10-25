@@ -1,5 +1,5 @@
 {
- "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet).",
+ "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet). Oct 25: owner asked for all remaining gnome and dwarf models, character only (no accessories yet); Gemsinger Miner and Anvilsworn Miner already exist and are not remade; Overclocked Aethervein waits for a redrawn sheet.",
  "jobs": [
   {
    "id": "blastrat-sapper",
@@ -337,6 +337,587 @@
     "hit": 178,
     "defeat": 8
    }
+  },
+  {
+   "id": "axe-thrower",
+   "name": "Grudge Hurler",
+   "faction": "dwarves",
+   "char": [
+    "axe-thrower--char-front.jpg",
+    "axe-thrower--char-side.jpg",
+    "axe-thrower--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "barrelback-courier",
+   "name": "Barrelback Courier",
+   "faction": "dwarves",
+   "char": [
+    "barrelback-courier--char-front.jpg",
+    "barrelback-courier--char-side.jpg",
+    "barrelback-courier--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "brewmaster",
+   "name": "Corpsman Brewlord",
+   "faction": "dwarves",
+   "char": [
+    "brewmaster--char-front.jpg",
+    "brewmaster--char-side.jpg",
+    "brewmaster--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "clockwork-beetle",
+   "name": "Iron Scarab Automaton",
+   "faction": "gnomes",
+   "char": [
+    "clockwork-beetle--char-front.jpg",
+    "clockwork-beetle--char-side.jpg",
+    "clockwork-beetle--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render his head or his legs. Character only for now (owner, Oct 25: accessories come later). Not a humanoid (mechanical beetle): no skeleton or animations; the game moves it as one piece.",
+   "rig": false
+  },
+  {
+   "id": "crystal-drunk-delver",
+   "name": "Gemdrunk Deepdelver",
+   "faction": "dwarves",
+   "char": [
+    "crystal-drunk-delver--char-front.jpg",
+    "crystal-drunk-delver--char-side.jpg",
+    "crystal-drunk-delver--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "deepforge-crossbowman",
+   "name": "Marksmen Gunner",
+   "faction": "dwarves",
+   "char": [
+    "deepforge-crossbowman--char-front.jpg",
+    "deepforge-crossbowman--char-side.jpg",
+    "deepforge-crossbowman--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "dwarf-miner",
+   "name": "Riot Shield Bearer",
+   "faction": "dwarves",
+   "char": [
+    "dwarf-miner--char-front.jpg",
+    "dwarf-miner--char-side.jpg",
+    "dwarf-miner--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "dwarf-pickman",
+   "name": "Ironjaw Big Back",
+   "faction": "dwarves",
+   "char": [
+    "dwarf-pickman--char-front.jpg",
+    "dwarf-pickman--char-side.jpg",
+    "dwarf-pickman--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render enter any of his accessories just the model himself. Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "dwarf-stoneback",
+   "name": "Granite Oathkeeper",
+   "faction": "dwarves",
+   "char": [
+    "dwarf-stoneback--char-front.jpg",
+    "dwarf-stoneback--char-side.jpg",
+    "dwarf-stoneback--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "gearward-sentinel",
+   "name": "Gearward Sentinel",
+   "faction": "gnomes",
+   "char": [
+    "gearward-sentinel--char-front.jpg",
+    "gearward-sentinel--char-side.jpg",
+    "gearward-sentinel--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render the shield We already have a shield for the gnomes. Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "glyphshield-warden",
+   "name": "Glyphshield Warden",
+   "faction": "gnomes",
+   "char": [
+    "glyphshield-warden--char-front.jpg",
+    "glyphshield-warden--char-side.jpg",
+    "glyphshield-warden--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render the glove on this one but you render the shield is fine. Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "gnome-cogger",
+   "name": "Voldawright",
+   "faction": "gnomes",
+   "char": [
+    "gnome-cogger--char-front.jpg",
+    "gnome-cogger--char-side.jpg",
+    "gnome-cogger--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render his backpack. Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "gnome-illusionist",
+   "name": "Mirrorveil Illusionist",
+   "faction": "gnomes",
+   "char": [
+    "gnome-illusionist--char-front.jpg",
+    "gnome-illusionist--char-side.jpg",
+    "gnome-illusionist--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render any of the accessories. Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "gnome-smith-miner",
+   "name": "Arcsmith Miner",
+   "faction": "gnomes",
+   "char": [
+    "gnome-smith-miner--char-front.jpg",
+    "gnome-smith-miner--char-side.jpg",
+    "gnome-smith-miner--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render his bag we already have a known bag. Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "gnome-tinker",
+   "name": "Aegis Tinkerer",
+   "faction": "gnomes",
+   "char": [
+    "gnome-tinker--char-front.jpg",
+    "gnome-tinker--char-side.jpg",
+    "gnome-tinker--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "gnome-widget",
+   "name": "Brawler Adept",
+   "faction": "gnomes",
+   "char": [
+    "gnome-widget--char-front.jpg",
+    "gnome-widget--char-side.jpg",
+    "gnome-widget--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render any of his accessories. Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "grimhold-ravager",
+   "name": "Grimhold Ravager",
+   "faction": "dwarves",
+   "char": [
+    "grimhold-ravager--char-front.jpg",
+    "grimhold-ravager--char-side.jpg",
+    "grimhold-ravager--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "gyrocopter-ace",
+   "name": "Thunderwing Gyronaut",
+   "faction": "gnomes",
+   "char": [
+    "gyrocopter-ace--char-front.jpg",
+    "gyrocopter-ace--char-side.jpg",
+    "gyrocopter-ace--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "hexwright-apprentice",
+   "name": "Hexslinger Apprentice",
+   "faction": "gnomes",
+   "char": [
+    "hexwright-apprentice--char-front.jpg",
+    "hexwright-apprentice--char-side.jpg",
+    "hexwright-apprentice--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "ironhammer-berserker",
+   "name": "Bloodbeard Berserker",
+   "faction": "dwarves",
+   "char": [
+    "ironhammer-berserker--char-front.jpg",
+    "ironhammer-berserker--char-side.jpg",
+    "ironhammer-berserker--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "oathbound-pikeman",
+   "name": "Oathbound Overwatch",
+   "faction": "dwarves",
+   "char": [
+    "oathbound-pikeman--char-front.jpg",
+    "oathbound-pikeman--char-side.jpg",
+    "oathbound-pikeman--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render his backpack. Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "phase-stalker",
+   "name": "Gnome Plow",
+   "faction": "gnomes",
+   "char": [
+    "phase-stalker--char-front.jpg",
+    "phase-stalker--char-side.jpg",
+    "phase-stalker--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "queen-brunhilda-stonebeard",
+   "name": "Queen Brunhilda",
+   "faction": "dwarves",
+   "char": [
+    "queen-brunhilda-stonebeard--char-front.jpg",
+    "queen-brunhilda-stonebeard--char-side.jpg",
+    "queen-brunhilda-stonebeard--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "ram-rider",
+   "name": "Thunderhorn Ram Rider",
+   "faction": "dwarves",
+   "char": [
+    "ram-rider--char-front.jpg",
+    "ram-rider--char-side.jpg",
+    "ram-rider--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render his pickaxe. Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "rune-splitter",
+   "name": "Door Splitter",
+   "faction": "dwarves",
+   "char": [
+    "rune-splitter--char-front.jpg",
+    "rune-splitter--char-side.jpg",
+    "rune-splitter--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "runic-siphoner",
+   "name": "Soul Stone Siphoner",
+   "faction": "gnomes",
+   "char": [
+    "runic-siphoner--char-front.jpg",
+    "runic-siphoner--char-side.jpg",
+    "runic-siphoner--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "shieldbeard",
+   "name": "Ironwall Shieldbeard",
+   "faction": "dwarves",
+   "char": [
+    "shieldbeard--char-front.jpg",
+    "shieldbeard--char-side.jpg",
+    "shieldbeard--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render his hammer. Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "spark-gnome",
+   "name": "Stormcaller Savant",
+   "faction": "gnomes",
+   "char": [
+    "spark-gnome--char-front.jpg",
+    "spark-gnome--char-side.jpg",
+    "spark-gnome--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.0,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "the-great-steam-golem",
+   "name": "The Arcane Colossus",
+   "faction": "gnomes",
+   "char": [
+    "the-great-steam-golem--char-front.jpg",
+    "the-great-steam-golem--char-side.jpg",
+    "the-great-steam-golem--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1.6,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Owner sheet note: Don't render any of his accessories. Character only for now (owner, Oct 25: accessories come later)."
   }
  ]
 }
