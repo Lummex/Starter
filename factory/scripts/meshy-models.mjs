@@ -45,7 +45,24 @@ const gen = { should_texture: true, enable_pbr: true, topology: 'triangle', shou
 
 async function run(job) {
   const out = path.join(OUT_ROOT, job.id);
-  if (fs.existsSync(path.join(out, 'models.json'))) { log(job.id, 'already made; skip'); return { id: job.id, skipped: true }; }
+  if (fs.existsSync(path.join(out, 'models.json'))) {
+    // Character already made (never regenerated). Only make accessories (parts) that are listed but not made yet.
+    const info = JSON.parse(fs.readFileSync(path.join(out, 'models.json'), 'utf8'));
+    const missing = Object.entries(job.parts || {}).filter(([pn]) => !fs.existsSync(path.join(out, pn + '.glb')));
+    if (!missing.length) { log(job.id, 'already made; skip'); return { id: job.id, skipped: true }; }
+    const got = {};
+    const rs = await Promise.allSettled(missing.map(async ([pn, views]) => {
+      const t = await task(job.id, 'multi-image-to-3d', pn, { image_urls: views.map(img), ...gen, target_polycount: 15000 });
+      got[pn + '.glb'] = await download(t.model_urls.glb, path.join(out, pn + '.glb'));
+      log(job.id, 'part done', pn);
+    }));
+    info.parts = [...new Set([...(info.parts || []), ...Object.keys(got).map((f) => f.replace(/\.glb$/, ''))])];
+    info.fileSizes = Object.assign(info.fileSizes || {}, got); info.tasks = state[job.id]; info.partsAdded = new Date().toISOString();
+    fs.writeFileSync(path.join(out, 'models.json'), JSON.stringify(info, null, 1));
+    const bad = rs.filter((r) => r.status === 'rejected').map((r) => r.reason.message);
+    if (bad.length) throw new Error(bad.join(' | '));
+    return { id: job.id, partsAdded: got };
+  }
   fs.mkdirSync(out, { recursive: true });
   const sizes = {};
   const partJobs = Object.entries(job.parts || {}).map(async ([pn, views]) => {
