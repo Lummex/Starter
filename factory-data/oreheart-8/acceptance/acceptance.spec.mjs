@@ -2798,7 +2798,9 @@ test('AC79: main menu shows the logo as the h1, the tagline and the five plaques
   expect(errors).toEqual([]);
 });
 
-test('AC80: every Goblin creature has a finished figure; Gnomes and Dwarves are placeholders', async ({ page }) => {
+// owner (Oct 25): Gnomes and Dwarves with an approved Model Editor sheet now have finished 3D models
+const GD_MODELS = ["axe-thrower", "barrelback-courier", "brewmaster", "clockwork-beetle", "crystal-drunk-delver", "deepforge-crossbowman", "dwarf-miner", "dwarf-pickman", "dwarf-stoneback", "gearward-sentinel", "glyphshield-warden", "gnome-cogger", "gnome-illusionist", "gnome-smith-miner", "gnome-tinker", "gnome-widget", "grimhold-ravager", "gyrocopter-ace", "hexwright-apprentice", "ironhammer-berserker", "oathbound-pikeman", "phase-stalker", "queen-brunhilda-stonebeard", "ram-rider", "rune-splitter", "runic-siphoner", "shieldbeard", "spark-gnome", "the-great-steam-golem"];
+test('AC80: every Goblin creature has a finished figure; Gnomes and Dwarves are finished when they have a model, else placeholders', async ({ page }) => {
   await openTest(page);
   const all = await page.evaluate(async () => await window.oreheart.listCards());
   const goblins = all.filter((c) => c.faction === 'goblins' && c.type === 'creature');
@@ -2810,7 +2812,7 @@ test('AC80: every Goblin creature has a finished figure; Gnomes and Dwarves are 
     const info = await page.evaluate(async (id) => await window.oreheart.getArtInfo(id), c.id);
     if (c.type !== 'creature') expect(info.figure, c.id).toBeNull();
     else if (c.faction === 'goblins') expect(info.figure, c.id).toBe('finished');
-    else if (c.faction === 'gnomes' || c.faction === 'dwarves') expect(info.figure, c.id).toBe('placeholder');
+    else if (c.faction === 'gnomes' || c.faction === 'dwarves') expect(info.figure, c.id).toBe(GD_MODELS.includes(c.id) ? 'finished' : 'placeholder');
   }
 });
 
@@ -2835,7 +2837,7 @@ test('AC84: finished Goblin figures, Grubnak, Strongholds and mines on the battl
     setup: { board: [
       { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 },
       { cardId: 'goblin-scrounger', owner: 'player', row: 6, col: 5 },
-      { cardId: 'gnome-tinker', owner: 'opponent', row: 0, col: 4 },
+      { cardId: 'gnome-prospector', owner: 'opponent', row: 0, col: 4 },
     ] },
   });
   const r = await page.evaluate(async () => await window.oreheart.getRenderStats());
@@ -9535,19 +9537,33 @@ test('AC354: a model that fails to load falls back to the token and the match ke
   expect(errors).toEqual([]);
 });
 
-test('AC355: models load once and are reused; Gnome and Dwarf units are unchanged', async ({ page }) => {
+test('AC355: models load once and are reused; Gnome and Dwarf units without a model are unchanged', async ({ page }) => {
   const fetched = {};
   page.on('request', (r) => { const m = r.url().match(/\/models\/creatures\/([^/]+)\/char\.glb/); if (m) fetched[m[1]] = (fetched[m[1]] || 0) + 1; });
   await start(page, quiet({ board: [
     ...[3, 4, 5, 6].map((col) => ({ cardId: 'skullbasher-rusher', owner: 'player', row: 6, col })),
-    { cardId: 'gnome-tinker', owner: 'player', row: 6, col: 9 },
+    { cardId: 'gnome-prospector', owner: 'player', row: 6, col: 9 },
   ] }));
   if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
   await expect.poll(async () => ((await renderStats(page)).figures || []).filter((f) => f.source === 'skullbasher-rusher.glb').length, { timeout: 20000 }).toBe(4);
   expect(fetched['skullbasher-rusher'], 'char.glb downloaded once for 4 copies').toBe(1);
-  const gnome = ((await renderStats(page)).figures || []).find((f) => f.cardId === 'gnome-tinker');
+  const gnome = ((await renderStats(page)).figures || []).find((f) => f.cardId === 'gnome-prospector');
   expect(gnome && gnome.source).not.toMatch(/\.glb$/);
   expect(Object.keys(fetched).filter((k) => !(k in R21_GOBLINS))).toEqual([]);
+});
+
+test('AC357: Gnome and Dwarf units show their 3D models (character only); the clockwork beetle has no skeleton', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await start(page, quiet({ board: [
+    { cardId: 'dwarf-miner', owner: 'player', row: 6, col: 3 },
+    { cardId: 'gnome-tinker', owner: 'player', row: 6, col: 5 },
+    { cardId: 'clockwork-beetle', owner: 'player', row: 6, col: 7 },
+  ] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await expect.poll(async () => ((await renderStats(page)).figures || []).filter((f) => /\.glb$/.test(f.source || '')).length, { timeout: 25000 }).toBe(3);
+  for (const f of (await renderStats(page)).figures) expect(f.model, f.cardId).toBe('finished');
+  expect(errors).toEqual([]);
 });
 
 test('AC356: report screenshots — goblins on the board and close views (1920x1080)', async ({ page }) => {
