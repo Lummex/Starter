@@ -1292,7 +1292,7 @@ export class App {
     if (!hand) return;
     if (!on && immediate) { clearTimeout(this.handTimer); this.handTimer = null; hand.classList.remove('open'); return; }
     if (on && this.pick && !this.pick.unit && !this.lastPtr.down) return; // tap-to-place: the raised hand must not cover the target squares
-    if (on) { clearTimeout(this.handTimer); this.handTimer = null; hand.classList.add('open'); }
+    if (on) { clearTimeout(this.handTimer); this.handTimer = null; hand.classList.remove('tuck'); hand.classList.add('open'); }
     else if (!this.handTimer) this.handTimer = setTimeout(() => { this.handTimer = null; hand.classList.remove('open'); }, 90);
   }
 
@@ -1462,11 +1462,22 @@ export class App {
     const W = window.innerWidth, H = window.innerHeight;
     const clipped = rects.map((r) => ({ l: Math.max(0, r.left), t: Math.max(0, r.top), r: Math.min(W, r.right), b: Math.min(H, r.bottom) })).filter((r) => r.r > r.l && r.b > r.t);
     const raised = !!hand && (hand.classList.contains('open') || hand.classList.contains('has-pop'));
-    if (!clipped.length) return { raised, zone: { x: 0, y: 0, width: 0, height: 0 }, cards: { x: 0, y: 0, width: 0, height: 0 }, raisedIndex: -1, popScale: 1.6, popMs: 450 };
+    const fan = hand ? ([...hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).map((c) => {
+      const r = c.getBoundingClientRect();
+      const m = new DOMMatrix(getComputedStyle(c).transform === 'none' ? undefined : getComputedStyle(c).transform);
+      const sc = parseFloat(getComputedStyle(c).scale) || 1;
+      // the card's slot centre: undo the displacement the rotation about the card's pivot adds to the centre
+      const [ox, oy] = getComputedStyle(c).transformOrigin.split(' ').map(parseFloat);
+      const mx = c.offsetWidth / 2 - ox, my = c.offsetHeight / 2 - oy;
+      const dx = (m.a - 1) * mx + m.c * my, dy = m.b * mx + (m.d - 1) * my;
+      return { cardId: c.dataset.cardId || (c.querySelector('[data-card-id]') as El | null)?.dataset.cardId || '', cx: r.left + r.width / 2 - dx, cy: r.top + r.height / 2 - dy, width: c.offsetWidth, height: c.offsetHeight,
+        rotateDeg: Math.round(Math.atan2(m.b, m.a) * 18000 / Math.PI) / 100, scale: Math.round(Math.hypot(m.a, m.b) * sc * 1000) / 1000 };
+    }) : [];
+    if (!clipped.length) return { raised, zone: { x: 0, y: 0, width: 0, height: 0 }, cards: { x: 0, y: 0, width: 0, height: 0 }, raisedIndex: -1, popScale: 1.6, popMs: 450, fan };
     const l = Math.min(...clipped.map((r) => r.l)), t = Math.min(...clipped.map((r) => r.t)), r = Math.max(...clipped.map((x) => x.r)), b = Math.max(...clipped.map((x) => x.b));
     const box = { x: l, y: t, width: r - l, height: b - t };
     const raisedIndex = ([...hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).findIndex((c) => c.classList.contains('popped'));
-    return { raised, zone: box, cards: { ...box }, raisedIndex, popScale: 1.6, popMs: 450 };
+    return { raised, zone: box, cards: { ...box }, raisedIndex, popScale: 1.6, popMs: 450, fan };
   }
   /** Return every popped card to the fan and tuck the hand; nothing may stay raised. */
   clearPops(except?: El) {
@@ -1513,8 +1524,8 @@ export class App {
         const orphan = hand.querySelector('.popclone,.pop-ph'); if (orphan) this.clearPops();
         // a mouse that has left the hand area tucks it back (nothing may stay raised)
         if (hand.classList.contains('open') && this.lastPtr.type === 'mouse' && !this.root.querySelector('.hand-card.dragging')) {
-          const hb = hand.getBoundingClientRect(), { x, y } = this.lastPtr;
-          if (!(x >= hb.left && x <= hb.right && y >= hb.top && y <= hb.bottom)) this.openHand(false, true);
+          const bx = this.getHandHoverBox(), { x, y } = this.lastPtr;
+          if (!bx || !(x >= bx.left - 6 && x <= bx.left + bx.width + 6 && y >= bx.top - 6 && y <= bx.top + bx.height + 6)) this.openHand(false, true);
         }
         // a resting mouse over a card that never got its hover event (the card moved under it) still pops that card
         if (this.lastPtr.type === 'mouse' && this.lastPtr.x >= 0 && !this.lastPtr.down && !this.root.querySelector('.hand-card.dragging')) {
@@ -1571,7 +1582,10 @@ export class App {
     this.handScroll = Math.max(0, Math.min(maxScroll, this.handScroll));
     const start = Math.round(this.handScroll);
     const shown = Math.min(n, VIS);
-    const spacing = shown > 1 ? Math.min(cw * 0.62, (W - cw) / (shown - 1)) : cw; // owner (Oct 25): closer together
+    const HD0 = (ownerLayoutHand as any) || {};
+    const ch = cards[0]?.offsetHeight || cw * 1.4;
+    // owner layout editor (R23.1): neighbours sit overlap × card width apart; only shrink when the fan would not fit the hand box
+    const spacing = shown > 1 ? Math.min(cw * (HD0.overlap ?? 0.2), (W - cw) / (shown - 1)) : cw;
     const x0 = Math.max(0, (W - (cw + (shown - 1) * spacing)) / 2);
     let moved = false;
     cards.forEach((c, i) => {
@@ -1587,7 +1601,8 @@ export class App {
       const t = (off * spacing) / (W / 2);
       const HD = (ownerLayoutHand as any) || {};
       const rot = off * (HD.angle ?? 4);
-      const y = 0.8 + t * t * cw * 0.03 * (HD.arc ?? 1.45) + off * off * cw * 0.012;
+      void t;
+      const y = off * off * ch * (HD.arc ?? 1.45) / 100;
       c.dataset.fanAngle = String(Math.round(rot * 100) / 100);
       c.style.left = x0 + k * spacing + 'px';
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
@@ -2803,6 +2818,7 @@ export class App {
       onStart: () => {
         if (this.pick || this.respDlg) return false;
         this.popCard(el, false);
+        this.clearPops(); this.openHand(false, true); (this.r.hand as El).classList.add('tuck'); // R23.2: the rest of the hand tucks the moment a card is grabbed, until the pointer hovers it again
         el.classList.add('dragging');
         const legal = this.game.legalActions().filter((a: any) => a.uid === hc.uid);
         if (!legal.length) { this.flash(this.explain(card)); }

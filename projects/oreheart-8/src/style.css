@@ -1648,7 +1648,8 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 
 /* Round 17: the hand rests as an even fan fully on screen; raising it never covers the board */
 .match{--hcw:calc(var(--fh) * .19)}
-.match .hand:not(.o-hand),.match .hand.o-hand{transform:translateY(calc(var(--hcw) * -.2))}
+/* Round 23: the hand rests tucked lower; hovering it raises it */
+.match .hand:not(.o-hand),.match .hand.o-hand{transform:translateY(calc(var(--hcw) * .3))}
 .match .hand.o-hand.open,.match .hand.o-hand.has-pop,.match .hand:not(.o-hand).open,.match .hand:not(.o-hand).has-pop{transform:translateY(calc(var(--hcw) * -.2))}
 .match .hand.o-hand.away,.match .hand.o-hand.away.open,.match .hand.o-hand.away.has-pop{transform:translateY(calc(var(--hcw) * 1.6))!important}
 @media (max-height:480px){
@@ -1739,3 +1740,6 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 html[data-desk][data-display=auto] #app{width:min(100vw,calc(100dvh * 16 / 9));height:min(100dvh,calc(100vw * 9 / 16));flex:none}
 html[data-desk][data-display=auto]{background:#05040a url(/art/menu-cavern.webp) center/cover}
 html[data-desk][data-display=auto] body{background:transparent}
+
+/* Round 23: after a grab the rest of the hand sits a little lower than at rest until it is hovered again */
+.match .hand.o-hand.tuck:not(.open):not(.has-pop):not(.away){transform:translateY(calc(var(--hcw) * .39))}

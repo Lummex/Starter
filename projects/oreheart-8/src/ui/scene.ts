@@ -1116,6 +1116,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         f.c3d.play(f.shootT && ak3 < 1 ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? 'walk' : 'idle');
         f.c3d.update(dt);
         g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
+        if (f.c3d.lift) g.position.y = (f.born ? g.position.y : 0) + f.c3d.lift; // flying units hover
       }
       const p = f.parts;
       if (f.finished && p) {
@@ -1223,7 +1224,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   const _v = new THREE.Vector3();
   function figureStats(f: Fig) {
     const c = f.c3d, cv = canvas.getBoundingClientRect();
-    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', animationLog: c ? [...c.log] : [], ...(c && c.ballInfo ? { ball: c.ballInfo(), effects: c.effects!() } : {}), items: c ? c.items.map((i) => ({ ...i })) : [] };
+    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', animationLog: c ? [...c.log] : [], ...(c && c.ballInfo ? { ball: c.ballInfo(), effects: c.effects!() } : {}), items: c ? c.items.map((i) => ({ ...i })) : [], flying: c?.flying ? { ...c.flying } : null, lift: c?.lift || 0, swayNowDeg: c?.swayNowDeg || 0, groundShadow: !!c?.groundShadow };
     const b = c ? skinBox(f.group, new THREE.Box3()) : new THREE.Box3().setFromObject(f.group);
     if (b.isEmpty()) { base.screenBox = { x: 0, y: 0, width: 0, height: 0 }; return base; }
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;

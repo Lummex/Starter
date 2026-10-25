@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { skinBox } from './grubnak3d';
+import { CARDS } from '../engine';
 
 export type CreatureAnim = 'idle' | 'walk' | 'attack' | 'mine' | 'hit' | 'defeat';
 export interface PartCfg { file: string; bone: string[]; /** target length as a fraction of the character height */ len: number; /** point along the long axis (0 bottom .. 1 top) that sits on the bone */ grip: number; rot: [number, number, number]; pos?: [number, number, number]; name: string; axis?: 'x' | 'y' | 'z'; /** owner look (Model Editor): exact bone-local transform of the raw part */ look?: LookPart; /** a mount standing under the rider */ mount?: boolean }
@@ -17,7 +18,10 @@ export const LOOKS: Record<string, { height: number; stretch: [number, number, n
   'rotgut-grenadier': { height: 1.219, stretch: [1, 1, 1] },
 };
 /** default height (board squares) for creatures without an owner look */
-const DEFAULT_H: Record<string, number> = { 'grubnaks-big-boss-troll': 1.4, 'wolf-rider': 1.35, 'the-great-steam-golem': 1.6, 'ram-rider': 1.35, 'clockwork-beetle': 0.9 };
+const DEFAULT_H_SPECIAL: Record<string, number> = { 'grubnaks-big-boss-troll': 1.4, 'wolf-rider': 1.35, 'the-great-steam-golem': 1.6, 'ram-rider': 1.35, 'clockwork-beetle': 0.9, 'queen-brunhilda-stonebeard': 1.05 };
+/** Round 23: dwarves ~0.95, gnomes ~0.85 spaces tall, goblins 1.1 (via the fallback) */
+const defaultH = (id: string): number | undefined => DEFAULT_H_SPECIAL[id] ?? ({ dwarves: 0.95, gnomes: 0.85 } as Record<string, number>)[(CARDS as any)[id]?.faction];
+const DEFAULT_H = new Proxy({} as Record<string, number>, { get: (_t, id: string) => defaultH(id) });
 /** which parts each creature carries (tuned by eye against the owner's assembled reference) */
 const PARTS: Record<string, PartCfg[]> = {
   'goblin-scrounger': [
@@ -119,6 +123,7 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
 export interface C3D {
   group: THREE.Group; mixer: THREE.AnimationMixer; mats: THREE.MeshStandardMaterial[];
   play(n: CreatureAnim): void; current(): string; update(dt: number): void;
+  /** flying units */ flying?: { hoverSquares: number; floatSquares: number; floatsPerSecond: number; swayDeg: number; groundShadow: boolean; source: string }; lift?: number; swayNowDeg?: number; groundShadow?: boolean;
   clipNames: string[]; held: string[]; worn: string[]; height: number;
   /** height in board squares (owner look or default) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
   /** Bowler Brawler only: hand-keyed special moves, ball hooks, flame effect */ special?: (n: 'bowl' | 'spinBall' | 'basketShot') => void; trig?: (shootT: number, born: number) => void; advanceIdle?: (sec: number) => void; ballInfo?: () => any; effects?: () => any[];
@@ -151,9 +156,14 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   const once = (n: string) => n === 'attack' || n === 'mine' || n === 'hit' || n === 'defeat';
   const resolve = (n: string) => (actions[n] ? n : n === 'mine' && actions.attack ? 'attack' : 'idle');
   const lockLen = (n: string) => (n === 'defeat' ? 1e9 : Math.min(actions[n]?.getClip().duration || 0.8, n === 'hit' ? 0.8 : 1.1));
-  let started = 0;
+  let started = 0, shakeT = 0;
   const out: C3D = {} as C3D;
   const play = (want: CreatureAnim) => {
+    if (!Object.keys(actions).length) {
+      // no skeleton (the Iron Scarab beetle): log the action; the figure slides when moved and shakes when hit
+      if (want !== cur) { cur = want; log.push(want); out.onPlay?.(want); if (want === 'hit') shakeT = 0.45; }
+      return;
+    }
     const n = resolve(want);
     if (!actions[n] || cur === n) return;
     // a started one-shot (attack / hit / mine) finishes before idle or walk take over; defeat never ends
@@ -215,8 +225,21 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     heightSpaces = DEFAULT_H[id] || 1.35;
     root.scale.setScalar(heightSpaces / 1.1 / total);
   } else root.scale.setScalar(heightSpaces / 1.1);
+  // Round 23: flying units (a saved look's `flying`, or the Gyronaut defaults) hover, bob, sway and keep a soft ground shadow
+  const flyCfg: any = (look as any)?.flying || (id === 'gyrocopter-ace' ? { hoverSquares: 0.35, floatSquares: 0.06, floatsPerSecond: 0.6, swayDeg: 3, groundShadow: true, source: 'default' } : null);
+  let flyT = 0, shadow: THREE.Mesh | null = null;
+  if (flyCfg) {
+    out.flying = { hoverSquares: flyCfg.hoverSquares, floatSquares: flyCfg.floatSquares, floatsPerSecond: flyCfg.floatsPerSecond, swayDeg: flyCfg.swayDeg, groundShadow: !!flyCfg.groundShadow, source: flyCfg.source || 'look' };
+    out.lift = flyCfg.hoverSquares; out.swayNowDeg = 0; out.groundShadow = !!flyCfg.groundShadow;
+    if (flyCfg.groundShadow) {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d')!, g = x.createRadialGradient(32, 32, 2, 32, 32, 30);
+      g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+      shadow = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.7), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false }));
+      shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.01; shadow.renderOrder = 1; shadow.userData.shadow = true; root.add(shadow);
+    }
+  }
   const rig = ballRec ? makeBallRig(ch, root, ballRec, out, log, () => cur, () => heightSpaces) : null;
-  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (rig) rig.step(dt); }, clipNames: Object.keys(actions), held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
+  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (flyCfg) { flyT += dt; out.lift = flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, clipNames: Object.keys(actions), held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
   if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }
   return out;
 }
