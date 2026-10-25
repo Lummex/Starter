@@ -779,3 +779,8 @@ Not addressed (UI timing/hover checks AC143, AC155, AC174, AC189, AC204, AC218, 
 ## Inspector round 4 fixes
 - Hand drag: because the owner-layout hand overlaps the home row, a legal target square under the pointer now always plays the card, a release near the grab point cancels, and sideways drags over non-legal squares reorder. Fixes AC189, AC269/AC270.
 - Not changed (checks contradict newer owner rounds or card data): AC15/AC58/AC109 assume `dwarf-miner`/Bowler Brawler costs of earlier rounds; AC218/AC272 contradict each other and the owner hand layout; AC260/AC261 need `window.oreheart` outside test mode (AC5 forbids it); AC135/AC168 contradict the owner menus' non-italic flags; AC143/AC204 pick cards hidden by the Commander filter; AC248 expects range 6 but Round 16 set range 7; AC273 expects .png art, files are .webp.
+
+## Round 15/17 finish (budget-limited pass)
+- Skullflinger restored to owner data: range 6 and text "up to 6 spaces" (AC248, AC284, AC286).
+- Build passes (`npm run build`). Unit tests: 128/135 pass. Remaining failures are outdated asserts (starter deck counts, card-back/deck-pile image sizes, weapon list, Axe Thrower range 5 vs 7) plus an AI "beats passive player" timing test.
+- NOT done this pass: arena speed checks, hand fan/drag checks, ring/highlight settings checks, Brewlord/Mine Control checks, font-weight checks, flow shard count checks.

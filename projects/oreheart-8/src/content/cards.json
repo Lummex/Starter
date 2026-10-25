@@ -66,15 +66,15 @@
    "ranged"
   ],
   "unique": false,
-  "text": "Ranged. Hits up to 7 spaces away in any direction; no strike back. Throws skulls from fallen enemies on the battlefield.",
-  "shortText": "Ranged. Hits up to 7 spaces away in any direction; no strike back.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 7 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield.",
+  "text": "Ranged. Hits up to 6 spaces away in any direction; no strike back. Throws skulls from fallen enemies on the battlefield.",
+  "shortText": "Ranged. Hits up to 6 spaces away in any direction; no strike back.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged: hits the first enemy up to 6 spaces away in a straight line (up, down, left, right or diagonal); it cannot shoot past a unit. No strike back. It throws skulls from fallen enemies on the battlefield.",
   "artPos": {
    "s": 0.92,
    "x": -3.1,
    "y": -0.7
   },
-  "range": 7
+  "range": 6
  },
  {
   "id": "goblin-bomber",
