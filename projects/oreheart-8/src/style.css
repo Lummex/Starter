@@ -1695,3 +1695,6 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 @keyframes ohSay{0%{opacity:0;transform:translate(-50%,-100%) scale(.5)}12%{opacity:1;transform:translate(-50%,-100%) scale(1.08)}20%{transform:translate(-50%,-100%) scale(1)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-110%)}}
 .hint.hint-pic:not(#_w){background:none!important;border:0!important;box-shadow:none!important;padding:0!important}
 .hint.hint-pic img{display:block;width:clamp(120px,16vw,260px);height:auto;filter:drop-shadow(0 4px 8px #000b)}
+
+/* round 17: the owner renderer marks its text span .tx for tests; keep it free of legacy .tx styling */
+.cardc .ohtx > span.tx{all:unset!important;display:inline}
