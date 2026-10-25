@@ -816,3 +816,8 @@ Not addressed (UI timing/hover checks AC143, AC155, AC174, AC189, AC204, AC218, 
 - `npm run build` succeeds; `dist/index.html` exists. No code changed in this pass.
 - The listed failures are old checks already triaged above (AC13, AC58, AC109, AC135, AC155, AC168, AC176, AC206, AC218) that contradict the owner's later data/layout, or load-only timeouts (AC25, AC40, AC134, AC136, AC190, AC191).
 - AC90 (dist under 40 MB) fails: dist is about 71 MB because of the owner's art (26 MB) and 3D models (39 MB). Not shrunk, to avoid damaging owner assets.
+
+## Round 21 follow-up (size and fonts)
+- `dist/` is back under 40 MB (about 39 MB): goblin character GLBs were decimated (position-welded meshopt simplify, ~65 %), weapon/prop GLBs to ~30 % with 256 px textures, character textures 512 px, all re-compressed with meshopt; non-Goblin owner art and card-format images capped at 840 px (`tools/shrink-art.mjs`). Crystal mines and Grubnak's models are untouched.
+- Deck pile counters (`.pile-n`) are always Alegreya SC italic (AC135/AC168).
+- Not changed: AC13/AC98/AC116/AC155/AC58 etc. disagree with the owner's direct edits (right-click opens a unit's card, left-click uses units, owner card ranges and Grubnak's discount); the card data from the owner wins.
