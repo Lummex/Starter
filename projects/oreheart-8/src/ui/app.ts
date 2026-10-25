@@ -1286,6 +1286,7 @@ export class App {
     const hand = this.r.hand as El;
     if (!hand) return;
     if (!on && immediate) { clearTimeout(this.handTimer); this.handTimer = null; hand.classList.remove('open'); return; }
+    if (on && this.pick && !this.pick.unit && !this.lastPtr.down) return; // tap-to-place: the raised hand must not cover the target squares
     if (on) { clearTimeout(this.handTimer); this.handTimer = null; hand.classList.add('open'); }
     else if (!this.handTimer) this.handTimer = setTimeout(() => { this.handTimer = null; hand.classList.remove('open'); }, 90);
   }
@@ -1294,6 +1295,7 @@ export class App {
   popCard(el: El, on: boolean) {
     this.installPopSafety();
     if (on && el.classList.contains('popped')) return;
+    if (on && this.pick && !this.pick.unit && this.lastPtr.type === 'mouse' && !this.lastPtr.down) return; // tap-to-place: hovering the hand must not cover the board
     if (on) this.clearPops(el);
     if (!on) {
       // remember where the enlarged card was: a press there right after the hand lowers still grabs that card
@@ -1478,9 +1480,15 @@ export class App {
     document.addEventListener('pointerdown', (e) => {
       this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: true };
       const onHand = !!(e.target as Element)?.closest?.('.hand, .hand-card, .hand-scroll');
+      // tap-to-place: a tucked hand card resting over a lit square must not swallow the tap on that square
+      if (onHand && this.pick && !this.pick.unit && e.pointerType === 'mouse' && e.button === 0) {
+        const cell = this.cellAt(e.clientX, e.clientY);
+        const p = cell && this.pick.cells.find((c) => c.row === cell.row && c.col === cell.col);
+        if (p) { e.stopPropagation(); e.preventDefault(); this.pick.done(p); return; }
+      }
       this.noHand = !onHand;
       const lp = this.lastPop;
-      if (this.noHand && lp && e.pointerType === 'mouse' && e.button === 0 && performance.now() - lp.at < 1500 && e.clientX >= lp.l && e.clientX <= lp.r && e.clientY >= lp.t && e.clientY <= lp.b) {
+      if (this.noHand && lp && !this.dialogs.length && !(e.target as Element)?.closest?.('.overlay, .cardzoom, [role=dialog]') && e.pointerType === 'mouse' && e.button === 0 && performance.now() - lp.at < 1500 && e.clientX >= lp.l && e.clientX <= lp.r && e.clientY >= lp.t && e.clientY <= lp.b) {
         const hc = this.game.state?.players?.player?.hand?.find((k: any) => k.uid === lp.uid);
         const cardEl = this.r?.hand?.querySelector(`.hand-card[data-uid="${lp.uid}"]:not(.popclone)`) as El | null;
         if (hc && cardEl) { this.noHand = false; this.lastPop = null; this.cardPointerDown(e, hc, cardEl); return; }

@@ -44,6 +44,13 @@ if (test) {
     setStance: (n: string) => { const r = game.setStance(n); app.refreshModeUi(); return r; },
     getStance: () => game.getStance(),
     stanceChoice: (uid?: string) => game.stanceChoice(uid),
+    getDragCard: () => {
+      const g = document.querySelector('.dragged-card') as HTMLElement | null;
+      if (!g) return null;
+      const r = g.getBoundingClientRect();
+      const tilt = parseFloat(g.style.getPropertyValue('--tilt')) || 0;
+      return { cardId: g.dataset.cardId, x: r.left, y: r.top, width: r.width, height: r.height, pointer: { x: parseFloat(g.style.left), y: parseFloat(g.style.top) }, tiltDeg: 24 + tilt * 0.4 };
+    },
     autoActStep: () => game.autoActStep(),
     setSpeed: (n: number) => { game.setSpeed(n); app.refreshModeUi(); },
     setPaused: (p: boolean) => { game.setPaused(p); app.refreshModeUi(); },
