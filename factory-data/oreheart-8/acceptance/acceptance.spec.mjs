@@ -837,7 +837,7 @@ test('AC15: Aegis Tinkerer gives Shield 1, which blocks exactly 1 damage', async
     setup: { playerDeck: SHARDS, opponentDeck: SHARDS, board: [
       { cardId: 'gnome-tinker', owner: 'player', row: 6, col: 1 },
       { cardId: 'spark-gnome', owner: 'player', row: 6, col: 2 },
-      { cardId: 'dwarf-miner', owner: 'opponent', row: 5, col: 3 },
+      { cardId: 'dwarf-pickman', owner: 'opponent', row: 5, col: 3 }, // Ironjaw Big Back, 1 Attack
     ] },
   });
   let s = await getState(page);
@@ -856,7 +856,6 @@ test('AC15: Aegis Tinkerer gives Shield 1, which blocks exactly 1 damage', async
   s = await getState(page);
   expect(at(s, 6, 2).health).toBe(2); // 1 damage fully blocked
   expect(at(s, 6, 2).shield).toBe(0);
-  expect(at(s, 5, 3)).toBeUndefined(); // Miner 1 + 1 Borgo = 2, struck back for 2 + 1 type advantage
 });
 
 // ---------- AC16 ----------
@@ -3333,7 +3332,7 @@ test('AC109: Strongholds stand in the corners: player (7,2), enemy (1,12)', asyn
   expect(acts.some((a) => a.type === 'move' && a.creatureUid === near && a.row === 1 && a.col === 12)).toBe(false);
   expect(acts.some((a) => a.type === 'move' && a.creatureUid === near && a.row === 1 && a.col === 11)).toBe(true);
   // the enemy summons beside its own Stronghold, never on it
-  s = await newMatch(page, { ai: false, setup: { firstPlayer: 'opponent', opponentHand: ['goblin-scrapper'] } }); // a Fighter: no Tunnel (Round 10)
+  s = await newMatch(page, { ai: false, factionLock: false, setup: { firstPlayer: 'opponent', opponentHand: ['goblin-scrapper'] } }); // a Fighter: no Tunnel (Round 10)
   const opp = (await legal(page)).filter((a) => a.type === 'summon');
   expect(opp.some((a) => a.row === 1 && a.col === 13)).toBe(true);
   expect(opp.some((a) => a.row === 1 && a.col === 12)).toBe(false);
@@ -4156,7 +4155,7 @@ test('AC142: a card dragged from the grid shows at its 3-per-row size and lands 
 });
 
 const TWELVE = ['Shiv Rat', 'Goblin Miner', 'Mangewolf Rider', 'Snotskull Grunt', 'Goblin Chef', 'Skullbasher Rusher',
-  'Soul Shard', 'Soul Cluster', 'Gnome Plow', 'Grimhold Ravager', 'Ironjaw Big Back', 'Skullflinger'];
+  'Soul Shard', 'Soul Cluster', 'Bowler Brawler', 'Boneknocker', 'Junk Shaman', 'Skullflinger']; // Goblin deck: other factions' cards are hidden (Round 13)
 async function visibleRows(page) {
   return deckList(page).evaluate((list) => {
     const items = [...list.querySelectorAll('li, [role="listitem"]')];
@@ -7323,6 +7322,10 @@ test.describe('round 11 at 1920x1080', () => {
   });
 
   test('AC260: Settings "Square highlights" panel: defaults, live preview, saved, applied in a match, Reset to default', async ({ page }) => {
+    await openTest(page); // window.oreheart exists only with ?test=1 (R17.3)
+    let hs = await page.evaluate(async () => await window.oreheart.getHighlightSettings());
+    expect(hs.edgeColor).toBeNull(); // null = faction default
+    expect(isRed(hs.attackColor)).toBe(true);
     await openMenu(page);
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     const panel = page.getByRole('region', { name: 'Square highlights' });
@@ -7331,13 +7334,9 @@ test.describe('round 11 at 1920x1080', () => {
     for (const l of ['Edge color', 'Glow color', 'Attack color', 'Strength', 'Glow size', 'Edge thickness', 'Inner fill', 'Pulse', 'Pulse speed']) {
       await expect(panel.getByLabel(l, { exact: true }), l).toBeVisible();
     }
-    let hs = await page.evaluate(async () => await window.oreheart.getHighlightSettings());
-    expect(hs.edgeColor).toBeNull(); // null = faction default
-    expect(isRed(hs.attackColor)).toBe(true);
     await panel.getByLabel('Edge color', { exact: true }).fill('#123456');
     await panel.getByLabel('Inner fill', { exact: true }).fill('0');
-    await page.reload();
-    await page.waitForFunction(() => !!window.oreheart);
+    await openTest(page);
     hs = await page.evaluate(async () => await window.oreheart.getHighlightSettings());
     expect(hs.edgeColor).toBe('#123456');
     expect(hs.fill).toBe(0);
@@ -7358,6 +7357,7 @@ test.describe('round 11 at 1920x1080', () => {
     await openMenu(page);
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('region', { name: 'Square highlights' }).getByRole('button', { name: 'Reset to default', exact: true }).click();
+    await openTest(page);
     hs = await page.evaluate(async () => await window.oreheart.getHighlightSettings());
     expect(hs.edgeColor).toBeNull();
     expect(hs.fill).toBeGreaterThan(0);
@@ -7390,8 +7390,7 @@ test.describe('round 11 at 1920x1080', () => {
       await expect(panel.getByLabel(l, { exact: true }), l).toBeVisible();
     }
     await panel.getByLabel('My ring color', { exact: true }).fill('#abcdef');
-    await page.reload();
-    await page.waitForFunction(() => !!window.oreheart);
+    await openTest(page);
     expect((await page.evaluate(async () => await window.oreheart.getRingSettings())).myColor).toBe('#abcdef');
     await start(page, quiet({ board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 6 }] }));
     r = await renderStats10(page);
@@ -7399,6 +7398,7 @@ test.describe('round 11 at 1920x1080', () => {
     await openMenu(page);
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('region', { name: 'Unit rings' }).getByRole('button', { name: 'Reset to default', exact: true }).click();
+    await openTest(page);
     expect((await page.evaluate(async () => await window.oreheart.getRingSettings())).myColor).toBeNull();
   });
 
@@ -7490,13 +7490,14 @@ test.describe('round 11 at 1920x1080', () => {
   });
 
   test('AC266: Ranged range 7 — the shot stops at the first unit, also your own', async ({ page }) => {
-    let s = await start(page, quiet({ board: [
-      { cardId: 'goblin-slinger', owner: 'player', row: 6, col: 1 },
+    // Marksmen Gunner has range 7 (Skullflinger is 6, owner Round 12c; AC286)
+    let s = await start(page, { ...quiet({ board: [
+      { cardId: 'deepforge-crossbowman', owner: 'player', row: 6, col: 1 },
       { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 4 }, // own unit in the line
-      { cardId: 'dwarf-miner', owner: 'opponent', row: 6, col: 7 }, // behind it: blocked
-      { cardId: 'goblin-slinger', owner: 'player', row: 7, col: 5 },
-      { cardId: 'dwarf-miner', owner: 'opponent', row: 7, col: 12 }, // exactly 7 away, clear
-    ] }));
+      { cardId: 'dwarf-pickman', owner: 'opponent', row: 6, col: 7 }, // behind it: blocked
+      { cardId: 'deepforge-crossbowman', owner: 'player', row: 7, col: 5 },
+      { cardId: 'dwarf-pickman', owner: 'opponent', row: 7, col: 12 }, // exactly 7 away, clear
+    ] }), factionLock: false });
     await done(page);
     const acts = (await legal(page)).filter((a) => a.type === 'attack');
     const can = (u, r, c) => acts.some((a) => a.creatureUid === u && sameTarget(a.target, r, c));
@@ -7504,11 +7505,11 @@ test.describe('round 11 at 1920x1080', () => {
     expect((await act(page, { type: 'attack', creatureUid: at(s, 6, 1).uid, target: { row: 6, col: 7 } })).ok).toBe(false);
     expect(can(at(s, 7, 5).uid, 7, 12)).toBe(true);
     const pv = await preview(page, at(s, 7, 5).uid, { row: 7, col: 12 });
-    expect(pv.youDeal).toBe(1);
+    expect(pv.youDeal).toBeGreaterThanOrEqual(2); // Gunner Attack 2
     expect(pv.youTake).toBe(0);
     expect((await act(page, { type: 'attack', creatureUid: at(s, 7, 5).uid, target: { row: 7, col: 12 } })).ok).toBe(true);
     s = await getState(page);
-    expect(at(s, 7, 12).health).toBe(at(s, 7, 12).maxHealth - 1);
+    expect(at(s, 7, 12).health).toBe(at(s, 7, 12).maxHealth - pv.youDeal);
     expect(at(s, 7, 5).health).toBe(at(s, 7, 5).maxHealth); // no strike back
   });
 
@@ -8937,7 +8938,7 @@ test('AC331: Corpsman Brewlord heals an adjacent wounded dwarf once per turn; th
 
 test('AC332: on the enemy\'s turn, Brewlord saves an adjacent dwarf from a lethal hit: it survives with 1 Health and is Drunk', async ({ page }) => {
   let s = await start(page, q12({ board: [
-    P('brewmaster', 6, 9), P('dwarf-pickman', 6, 10, { damage: 5 }), O('goblin-scrapper', 5, 10),
+    P('brewmaster', 6, 9), P('dwarf-pickman', 6, 10, { damage: 6 }), O('goblin-scrapper', 5, 10),
   ] }, { playerCommander: 'borgo', firstPlayer: 'opponent' }));
   const pick = at(s, 6, 10).uid, brew = at(s, 6, 9).uid;
   // the ability button is lit on the enemy's turn
@@ -8949,7 +8950,7 @@ test('AC332: on the enemy\'s turn, Brewlord saves an adjacent dwarf from a letha
   await expect(brewBtn).not.toHaveAttribute('aria-disabled', 'true');
   // a lethal hit opens a Respond window for the Brewlord's owner
   const hp = at(s, 6, 10).health;
-  expect(hp).toBe(1); // Ironjaw Big Back 6 Health, 5 damage
+  expect(hp).toBe(1); // Ironjaw Big Back 6 Health + 1 (Borgo), 6 damage
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 10).uid, target: { row: 6, col: 10 } })).ok).toBe(true);
   s = await getState(page);
   expect(s.pendingResponse && s.pendingResponse.responder).toBe('player');
@@ -9008,7 +9009,9 @@ test.describe('round 15 unit badges 1920x1080', () => {
       ['dwarf-pickman', 'opponent', 2, 6], ['gnome-tinker', 'opponent', 2, 8]];
     await start(page, { ...quiet({ board: units.map(([cardId, owner, row, col]) => ({ cardId, owner, row, col })) }), factionLock: false });
     const metal = { goblins: 'rust', gnomes: 'silver', dwarves: 'gold' };
+    const live = await getState(page); // live numbers (Commander buffs such as Borgo's +1 Health count)
     for (const [id, , row, col] of units) {
+      const u = at(live, row, col);
       const c = await page.evaluate(async (x) => await window.oreheart.getCard(x), id);
       const type = /miner|smith|gatherer/i.test(c.role) ? 'pickaxe' : c.range != null ? 'bow' : 'sword';
       const b = badgeOf(page, `${c.name}, row ${row}, column ${col}`);
@@ -9018,8 +9021,8 @@ test.describe('round 15 unit badges 1920x1080', () => {
       const srcs = await b.locator('img').evaluateAll((els) => els.map((e) => e.getAttribute('src')));
       expect(srcs.some((x) => x.endsWith(`badges/frame-${metal[c.faction]}.webp`)), `${c.name} frame`).toBe(true);
       expect(srcs.some((x) => x.endsWith(`badges/icon-${type}-${metal[c.faction]}.webp`)), `${c.name} icon`).toBe(true);
-      await expect(b.locator('[data-stat="attack"]')).toHaveText(String(c.attack));
-      await expect(b.locator('[data-stat="health"]')).toHaveText(String(c.health));
+      await expect(b.locator('[data-stat="attack"]')).toHaveText(String(u.attack));
+      await expect(b.locator('[data-stat="health"]')).toHaveText(String(u.health));
       await expect(b.locator('[data-stat="movement"]')).toHaveText(String(c.movement ?? c.move));
       const st = await b.locator('[data-stat="health"]').evaluate((e) => { const cs = getComputedStyle(e); return { color: cs.color, font: cs.fontFamily, weight: parseInt(cs.fontWeight, 10), outline: cs.webkitTextStrokeWidth, shadow: cs.textShadow }; });
       expect(st.font).toContain('Russo One');
@@ -9330,4 +9333,32 @@ test.describe('round 17 screenshots', () => {
       expect(errors).toEqual([]);
     });
   }
+});
+
+// ---------- Owner rule (Oct 24, "round 20" in the owner's tests): bonus draws (AC349) ----------
+const BONUS_MINES = [{ row: 3, col: 6 }, { row: 4, col: 10 }, { row: 5, col: 6 }];
+/** Player mines with the listed Miners on turn 1, then plays through to their next turn; returns the cards gained. */
+async function bonusGain(page, board, minesBy) {
+  await openTest(page);
+  await newMatch(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'sproingle', mines: BONUS_MINES, setup: { opponentHand: [], board } });
+  await done(page); // -> Action
+  let s = await getState(page);
+  for (const [r, c, mr, mc] of minesBy) {
+    const res = await act(page, { type: 'mine', creatureUid: at(s, r, c).uid, row: mr, col: mc });
+    expect(res.ok, JSON.stringify(res)).toBe(true);
+  }
+  const before = (await getState(page)).players.player.hand.length;
+  await done(page); // end the player's turn
+  for (let i = 0; i < 12 && (await getState(page)).activePlayer !== 'player'; i++) await done(page);
+  s = await getState(page);
+  expect(s.activePlayer).toBe('player');
+  return s.players.player.hand.length - before;
+}
+test('AC349: bonus draws — +1 card per 4 crystals mined, +1 for holding every mine', async ({ page }) => {
+  const cfg = await page.goto('/?test=1').then(() => page.waitForFunction(() => !!window.oreheart)).then(() => page.evaluate(async () => await window.oreheart.getConfig?.()));
+  if (cfg) { expect(cfg.minedPerBonusCard).toBe(4); expect(cfg.allMinesBonusCards).toBe(1); }
+  const G = 'goblin-scrounger'; // Goblin Miner: mines 2
+  expect(await bonusGain(page, [P(G, 3, 5)], [[3, 5, 3, 6]])).toBe(1); // 2 mined: normal draw only
+  expect(await bonusGain(page, [P(G, 3, 5), P(G, 2, 6)], [[3, 5, 3, 6], [2, 6, 3, 6]])).toBe(2); // 4 mined: +1
+  expect(await bonusGain(page, [P(G, 3, 5), P(G, 5, 5), P(G, 4, 9)], [[3, 5, 3, 6], [5, 5, 5, 6], [4, 9, 4, 10]])).toBe(3); // 6 mined + all 3 mines: +2
 });

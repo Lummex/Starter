@@ -1,4 +1,4 @@
-# OreHeart — Build Spec (Phase 1B, Round 17 — game modes Standard / Card Play / Card Comp vs Card Comp, stance buttons, fixes)
+# OreHeart — Build Spec (Phase 1B, Round 17 finish — owner's Oct 24 direct changes, bonus draws, remaining failing checks)
 
 ## Summary
 
@@ -26,18 +26,31 @@ Oreheart is a comic-style fantasy card battle in the browser. Goblins, Gnomes an
 
 **Phase 1B Round 15** first makes every Round 14 item actually work (its checks never finished; about 100 checks failed because the test hooks were unreachable), then: units keep facing the way they last moved or acted, Bowler Brawler's Strike rolls a bowling ball that scatters creatures sideways like pins, all text outside card faces is plain white, and every unit gets the owner's new stat badge.
 
-**Phase 1B Round 17** (this build) first fixes Round 16's failures (one visible **Fight!** button, the "Your hand" fan fully on screen at rest, test hooks only in test mode, colored mines, the rest of the failing list), then adds three game modes on Choose Your Commander — **Standard** (unchanged), **Card Play** (you only play cards; your units act on their own following one of four stance buttons: Aggressive, Mine Control, Guard, Free-for-all) and **Card Comp vs Card Comp** (the computer plays both sides with your deck while you watch). Read the Round 17 section first.
+**This build (Round 17 finish):** Round 17 is built (379 of 411 checks passed). This run keeps everything, adopts the owner's own Oct 24 code changes as binding (bonus draws, white unowned mines, no yellow ring under units, smaller stat badge, owner pop-ups/speech bubbles/banners/end pictures, Back bottom-left), and fixes the remaining failing checks. Read "Round 17 finish" below first.
+
+**Phase 1B Round 17** first fixes Round 16's failures (one visible **Fight!** button, the "Your hand" fan fully on screen at rest, test hooks only in test mode, colored mines, the rest of the failing list), then adds three game modes on Choose Your Commander — **Standard** (unchanged), **Card Play** (you only play cards; your units act on their own following one of four stance buttons: Aggressive, Mine Control, Guard, Free-for-all) and **Card Comp vs Card Comp** (the computer plays both sides with your deck while you watch). Read the Round 17 section first.
 
 Tech: Vite + TypeScript (vanilla or React), Three.js for the 3D scene, static `dist/` output, no backend.
 
-### Phase 1B, Round 17 (three game modes: Standard, Card Play with stance buttons, Card Comp vs Card Comp; plus fixes) — READ FIRST
+### Round 17 finish (owner's Oct 24 direct changes + remaining failures) — READ FIRST
+
+The owner edited the game directly on `factory/issue-8` after the last build (commits "Owner: …", Oct 24). **These changes are binding; never revert them.** Where they contradict older text in this spec, they win:
+
+- **F.1 Bonus draws (new rule; engine `src/engine/engine.ts`, config `minedPerBonusCard: 4`, `allMinesBonusCards: 1` in `src/content/game-config.json`).** At the start of a player's turn (from turn 2 on), after the normal draw, that player draws **+1 card per full 4 crystals their Miners mined last turn** (`floor(mined / 4)`) and **+1 card if they control every mine**. A `bonusDraw` event is logged and the owner's "bonus draw" message shows. Bonus cards never cost Health when the deck is empty (they are simply skipped). Examples: 2 mined → normal draw only; 4 mined at one mine → +1; 8 mined → +2; 6 mined while owning all 3 mines → +2. The owner's unit tests are `projects/oreheart-8/tests/round20.test.ts`. The AI does not need special handling. (AC349)
+- **F.2 Mines:** the owner's Crystal Node model (`model:crystal-node.glb`), about 1.3 squares tall, inside its square, in the owner's faction color; **an unowned mine is white `#ffffff`** (this replaces R17.3's "never plain white"; the ground decal stays white) (AC172, AC179, AC252).
+- **F.3 Units:** no yellow ring under units (the 3D faction ring marks them; `.token::before` hidden). The stat badge is about half its Round 15 size with bigger numbers, centred low in the unit's square, scaling with zoom (AC335 checks content, not size).
+- **F.4 Pictures:** menus show the deck stack `deck-menu`; match piles use the new `deck-pile` (900×999); card back 1024×1536; owner banner pictures (Your turn, Opponent's turn, Deploy, Action, Victory, Defeat) in the top third with a pop-in; end-of-match result picture chosen by how big the win/loss was; comic pop-ups (one third size) and Commander speech bubbles in matches; enemy Flow crystal in the enemy faction color.
+- **F.5 Menus:** in every menu **Back sits bottom-left** and the forward action (e.g. **Fight!**) bottom-right; the Deck Builder's Back is bottom-left; the commander card glow hugs the card.
+- **F.6 Remaining failures (fix the game):** Skullflinger is **range 6** again (owner card data, Round 12c: text "Hits up to 6 spaces away", `range: 6`; a builder wrongly changed it to 7) (AC248, AC284, AC286); `mineAt` / tapping a mine mines with every ready Miner next to it (AC58); `data-playable` false for unaffordable hand cards (AC155); hand hover retracts and the hand rests fully on screen below the board (AC174, AC218, AC272); drag-to-play from the hand (AC270); shard count log matches the current Flow (AC330); Mine Control attacks when it survives and crystals are not low (AC341); font weights/styles (only Alegreya SC italic 400/700, AC135, AC168); spell faces have name/text elements (AC316); owner Goblin paintings served unchanged at `/art/owner/goblin/` (AC273); the slow arena/screenshot checks finish under 30 s (AC40, AC190, AC191, AC256).
+
+### Phase 1B, Round 17 (three game modes: Standard, Card Play with stance buttons, Card Comp vs Card Comp; plus fixes) — built
 
 Source: "Round 17" at the top of `factory-design/design/oreheart-phase-1b-brief.md` (binding). Keep everything from Rounds 8a–16. Commit + push after each numbered step. Rules, numbers and cards are unchanged.
 
 **A. Fixes first (from Round 16's 57 failing checks)**
 - **R17.1 One visible start button.** Choose Your Commander has exactly one start button, labelled **"Fight!"** (no hidden "Start" button anywhere; it replaces "Start" from R9c). Nothing covers it, so a normal click works. At 844×390 nothing on this screen overlaps or is cut off: Commander cards, deck stacks (names, **Remove …**, **Copy … to my decks**), **Easy / Normal / Hard**, the three mode buttons, **Back** and **Fight!** (AC338, AC346; every check that starts a match from this screen clicks "Fight!").
 - **R17.2 The hand.** The hand container has `aria-label="Your hand"`; each hand card is a `<button>` inside it carrying `data-card-id`. **At rest the hand is an even fan fully on screen** (no card below the bottom edge; this replaces the Round 10 "quarter tuck" — the owner said it must not sit mostly below the edge). Hover still raises/enlarges the hovered card (straightened, neighbors aside, one at a time, nothing sticks); while dragging a card over the board the rest of the hand still tucks down (R11.9). On a phone a raised card covers less than half of the screen (AC43, AC163, AC174, AC175, AC251, AC347).
-- **R17.3** `window.oreheart` is `undefined` without `?test=1` (AC5). Crystal mines show their normal crystal/owner color, never plain white.
+- **R17.3** `window.oreheart` is `undefined` without `?test=1` (AC5). Crystal mines show their owner color; unowned mines are white (owner, Oct 24, F.2).
 - **R17.4** Then the rest of the failing list in `test-results.md` (Ranged, Brewlord, mine tapping, facing after a move, shard count, font weights, Deck Builder layout). Fix the game, not the checks.
 
 **B. Three game modes**
@@ -1778,6 +1791,7 @@ Round 8a notes on older criteria: AC149 now checks the R8a cover-fit camera (`mi
 346. (Round 17) At 844×390 nothing on Choose Your Commander overlaps or is cut off (Fight!, Back, difficulty, modes, a deck stack, Remove, Copy to my decks) (R17.1).
 347. (Round 17) The hand is `aria-label="Your hand"` with `button[data-card-id]` cards, an evenly spaced fan fully on screen at rest; a raised card covers less than half of a phone screen (R17.2).
 348. (Round 17) The report screenshots (fight menu with modes, Card Play with stances and two Aggressive steps, Card Comp vs Card Comp with the watch bar) render at 1920×1080 and 844×390 with no page errors.
+349. (Round 17 finish, owner rule) Bonus draws: at the start of your turn you draw 1 extra card per full 4 crystals your Miners mined last turn and 1 extra if you control every mine (2 mined → 1 card total, 4 mined → 2, 6 mined owning all 3 mines → 3) (F.1).
 
 Round 17 notes on older criteria: every check that started a match from Choose Your Commander now clicks "Fight!" (was "Start"; AC2, AC72–AC74, AC146, AC206, AC208, AC236 and others). The Round 10 "hand tucked to a quarter" expectations in AC43, AC163, AC174, AC175, AC251 and the R9a/R12a hand checks now expect every resting card fully on screen (R17.2). The hand still tucks while a card is dragged over the board (AC265 unchanged).
 
@@ -1843,6 +1857,8 @@ Round 9a notes on older criteria: AC20, AC74 and the in-match text-control check
 - (Round 8b) No new 3D models: only Grubnak's Commander card has a viewer; creatures, Sproingle and Borgo get models in later rounds. Meshy may be used only to add one or two clips to the existing rigged Grubnak.
 
 ## Assumptions
+
+- (Round 17 finish) The newest owner message in the prompt is Round 15, but Rounds 15–17 are already built and the owner has since changed the game directly (Oct 24 commits); those direct changes and their owner tests (`tests/round20.test.ts`) are treated as binding requests. Checks cleanup: **0 removed, 7 rewritten, 1 added (AC349)**. Rewritten because they contradicted the owner's current card data or newer rules, not the game: AC15 (the attacker `dwarf-miner` is now the unkillable Riot Shield Bearer → uses Ironjaw Big Back, drops the "attacker dies" line), AC143/AC204 (Gnome Plow, Grimhold Ravager and Ironjaw Big Back are hidden in a Goblin deck since Round 13 → Goblin cards), AC332 and AC335 (forgot Borgo's +1 Health → damage 6 / live numbers from `getState`), AC266 (Skullflinger is range 6 → uses Marksmen Gunner, range 7), AC109 (enemy Goblin card with faction lock off), AC260/AC261 (read settings hooks on a `?test=1` page, since R17.3 hides the hooks elsewhere).
 
 - (Round 17) The prompt's feedback list ends at Round 15, but Rounds 15 and 16 are already built and the brief's newest section, "Round 17 … read this first", is the owner's current request; this spec plans Round 17.
 - (Round 17) Checks cleanup: 0 tests deleted; about 30 tests rewritten — every `Start` button click/lookup now uses "Fight!" (R17.1 says the visible button is Fight! and the hidden Start must go), and 9 hand checks (AC43, AC163, AC174, AC175, AC251 and 4 others) changed from "tucked to a quarter at rest" to "fully on screen at rest" because the owner now says the resting hand must not sit mostly below the bottom edge. 11 new tests added (AC338–AC348).
