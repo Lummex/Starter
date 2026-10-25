@@ -54,7 +54,9 @@ async function run(job) {
     log(job.id, 'part done', pn);
   });
   const charJob = (async () => {
-    await task(job.id, 'multi-image-to-3d', 'character', { image_urls: job.char.map(img), ...gen, target_polycount: 20000 });
+    const ch = await task(job.id, 'multi-image-to-3d', 'character', { image_urls: job.char.map(img), ...gen, target_polycount: 20000 });
+    // Non-humanoid units (rig: false) get no skeleton or animations: the model itself is the character.
+    if (job.rig === false) { sizes['char.glb'] = await download(ch.model_urls.glb, path.join(out, 'char.glb')); log(job.id, 'character done (no rig)'); return; }
     await task(job.id, 'rigging', 'rig', { input_task_id: state[job.id].character, height_meters: job.height || 1 });
     const names = Object.keys(job.actions);
     const anim = await task(job.id, 'animations', 'anim', { rig_task_id: state[job.id].rig, action_ids: names.map((n) => job.actions[n]) });
@@ -62,7 +64,7 @@ async function run(job) {
     log(job.id, 'character done');
   })();
   await Promise.all([charJob, ...partJobs]);
-  fs.writeFileSync(path.join(out, 'models.json'), JSON.stringify({ generated: new Date().toISOString(), from: 'Model Editor approved sheet', tasks: state[job.id], actions: job.actions, parts: Object.keys(job.parts || {}), notes: job.notes || '', fileSizes: sizes }, null, 1));
+  fs.writeFileSync(path.join(out, 'models.json'), JSON.stringify({ generated: new Date().toISOString(), from: 'Model Editor approved sheet', tasks: state[job.id], actions: job.rig === false ? {} : job.actions, rigged: job.rig !== false, parts: Object.keys(job.parts || {}), notes: job.notes || '', fileSizes: sizes }, null, 1));
   return { id: job.id, sizes };
 }
 
