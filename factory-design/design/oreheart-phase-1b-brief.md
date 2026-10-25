@@ -4,7 +4,38 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Round 17 — two new game modes (Card Play with stance buttons, Card Comp vs Card Comp), plus fixes (owner, Oct 24) — read this first
+## Round 21 — put the goblin 3D models into matches (owner, Oct 25) — read this first
+
+Keep everything from 8a–17 and the owner's direct changes on the branch (pop-ups, speech bubbles, bonus draws, hand play button, left/right click). This round is ONLY the 3D goblins; do not rework old checks or anything else.
+
+Every goblin unit should appear on the board as its real 3D model instead of a flat token. The models are already made. Do NOT run Meshy, and do not regenerate or change any model.
+
+**What exists**
+- 4 goblins already show in 3D in matches: `goblin-scrounger`, `goblin-pebbler`, `goblin-smith-miner`, `shiv-rat` (see `src/ui/creature3d.ts`, models in `public/models/creatures/<card id>/`).
+- 12 more finished Meshy models are in `factory-design/models/<card id>/` (char.glb + item .glb files + models.json with animation clip numbers): `goblin-scrapper` (Bowler Brawler), `goblin-slinger` (Skullflinger), `goblin-bomber` (Bare Knuckle Lunatic), `goblin-sneak` (Backstabbing Thief), `wolf-rider`, `grubnaks-big-boss-troll`, `shard-guzzler`, `goblin-grunt`, `rotgut-grenadier`, `skullbasher-rusher`, `junk-shaman`, `blastrat-sapper`.
+- My saved "default looks" from the Model Editor are in `factory-design/looks/<card id>.json`. Each one says which bone every item is attached to, with its exact position, rotation and scale, plus model height and stretch. **These are binding: match them exactly.** Looks exist for `goblin-scrapper`, `goblin-bomber`, `goblin-pebbler`, `goblin-sneak`, `rotgut-grenadier`. For the other goblins, attach the items the way the model sheets show (weapon in the right hand, bags/packs on the back) and keep them from poking through the body.
+
+**What to build**
+1. Copy the 12 models into `public/models/creatures/<card id>/`. Compress them (meshopt, like the existing ones) so each unit is small enough to load quickly. Keep the look of the model the same.
+2. `goblin-pebbler` is already in 3D but I have since saved a look for it: update its item placement to match my look.
+3. Add every one of them to the 3D creature list so all 16 goblin units show in 3D, with items attached to the right bones.
+4. Use each model's own animations: idle, walk when moving, attack when attacking, hit when damaged, defeat when killed, and mining for Miners. Items must follow the hands. Ignore the "Solid part" entries in the looks; they are only editor helpers.
+5. Same size and placement rules as the existing 3D goblins: one unit per square, standing on the square, facing the enemy, stat badge still on the square.
+6. Keep the flat token as a fallback if a model fails to load. A match must never freeze or break because of a model.
+7. Keep the game fast: models load once and are reused. With a full board of goblins it should still run smoothly.
+
+**Not in this round**
+- Gnome and dwarf units stay as they are. I have not made their model sheets yet.
+- Special animations (like Bowler Brawler's bowling and finger spin) come later.
+
+**Checks I care about**
+- Every goblin card summoned in a match shows a 3D model, not a token.
+- Items are in the hands/on the back as in my looks, and move with the animations.
+- Nothing else in the game changes (rules, menus, pop-ups, crystal mines, badges).
+
+Report: screenshots 1920×1080 of a match with several different goblins on the board, and a close view of Bowler Brawler, Backstabbing Thief and Goblin Chef with their items; plus the checks pass count.
+
+## Round 17 (built, 379/411 checks) — two new game modes (Card Play with stance buttons, Card Comp vs Card Comp), plus fixes (owner, Oct 24)
 
 Keep everything from 8a–16. Commit + push after each numbered step.
 
