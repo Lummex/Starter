@@ -1681,3 +1681,5 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 .end-title{margin:0;line-height:0}
 .end-pic{display:block;width:min(80vw,900px);max-height:36vh;height:auto;object-fit:contain;margin:0 auto;filter:drop-shadow(0 8px 18px #000c);animation:ohEndPop .7s ease-out both}
 @keyframes ohEndPop{0%{opacity:0;transform:scale(.6)}60%{opacity:1;transform:scale(1.06)}100%{transform:scale(1)}}
+/* Owner (Oct 24): phase pop-ups sit in the top third of the screen */
+.banner.banner-img:not(#_w){top:20%!important}
