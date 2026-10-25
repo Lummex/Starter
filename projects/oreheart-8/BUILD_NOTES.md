@@ -739,3 +739,11 @@ Not changed (checks contradict newer owner cards/rounds or conflict with each ot
 - Choose Your Commander: the start button is "Fight!" (a hidden "Start" duplicate keeps older checks working) (AC258/AC324).
 - Every card face holder carries `data-layout` + `data-card-format`; removed the stray hidden `.cid` marker (AC311).
 - Not done / judged stale against later rules: AC58 (Rocket Rider is now a Fighter), AC109 (Bowler Brawler costs 6, unaffordable at 0 crystals), AC155 (Grubnak's discount), AC335 (Borgo +1 Health), AC272 (hover pop above the home row), AC273 (shipping PNG owner art would push dist past 40 MB, AC90), AC15, AC143/AC204 (Gnome cards hidden for Grubnak), AC266. Six older vitest checks (starter decks, Ranged range, AI) still fail against the newer owner cards.
+
+## Round 17 — modes, stances, fixes
+- **Choose Your Commander**: one visible **Fight!** button (hidden "Start" removed); mode buttons **Standard / Card Play / Card Comp vs Card Comp** (remembered); phone (844×390) layout reflowed.
+- **Game modes** (`src/game.ts`): `mode`, `stance`, `speed`; Card Play blocks player move/attack/mine/swap and auto-acts unit by unit; Comp vs Comp is AI on both sides (plays to the end instantly in test mode, with timers + Pause/1×/2×/4× in the browser).
+- **Stances** (`src/ai/stances.ts`): Aggressive, Mine Control, Guard, Free-for-all. UI: stance column on the right edge (`aria-label="Stance"`), Card Play speed bar, Comp vs Comp watch bar (Pause/Play, speed, Exit to menu), Rematch on the end screen.
+- **Hooks** (test mode only): `setMode`, `getMode`, `setStance`, `getStance`, `stanceChoice`, `autoActStep`, `setSpeed`, `setPaused`. `window.oreheart` no longer exists without `?test=1`.
+- Hand rests fully on screen as an even fan; hand buttons again contain a `[data-card-id]` element; units expose `data-facing` and `data-drunk`; neutral mines are teal, not white.
+- Known contradictions left as-is: AC272 (raised card ≤ board gap) vs AC327 (hover pops 1.6×); AC58 expects Goblin Rocket Rider to be a Miner (it is a Fighter since Round 14); AC332 forgets Borgo's +1 Health.

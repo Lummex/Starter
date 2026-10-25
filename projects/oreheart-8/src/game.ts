@@ -1,7 +1,7 @@
 // Match controller: owns the engine state, runs the computer opponent, and notifies the UI.
 import { createMatch, applyAction, legalActions, hasMovesLeft, other, CONFIG, brewActions } from './engine';
 import { aiChoose, makeRand, Rand } from './ai/ai';
-import { stanceChoose, UNIT_TYPES, Stance } from './ai/stances';
+import { stanceChoose, onlyUnit, Stance } from './ai/stances';
 import tutorialJson from './content/tutorial.json';
 
 export type Listener = (state: any, events: any[]) => void;
@@ -20,7 +20,7 @@ export class Game {
   private epoch = 0;
   paused = false;
   mode: 'standard' | 'cardplay' | 'compvscomp' = 'standard';
-  stance: Stance = 'free';
+  stance: Stance = 'freeforall';
   speed = 1;
   unitAutoPlay = true;
   private modeTimer: any = null;
@@ -91,16 +91,21 @@ export class Game {
     return this.mode;
   }
   setStance(n: string) {
-    const ok: Stance[] = ['aggressive', 'mine-control', 'guard', 'free'];
-    const k = String(n).toLowerCase().replace(/[ _]/g, '-');
-    const m: any = { mine: 'mine-control', minecontrol: 'mine-control', 'free-for-all': 'free', freeforall: 'free', defensive: 'mine-control' };
-    const v = (ok.includes(k as Stance) ? k : m[k]) as Stance | undefined;
+    const k = String(n).toLowerCase().replace(/[^a-z]/g, '');
+    const m: any = { aggressive: 'aggressive', minecontrol: 'minecontrol', mine: 'minecontrol', defensive: 'minecontrol', guard: 'guard', freeforall: 'freeforall', free: 'freeforall' };
+    const v = m[k] as Stance | undefined;
     if (v) { this.stance = v; if (this.state) this.state.stance = v; try { localStorage.setItem('oreheart.stance', v); } catch { /* storage unavailable */ } }
     return this.stance;
   }
   getStance() { return this.stance; }
   setSpeed(n: number) { this.speed = n === 2 || n === 4 ? n : 1; }
-  setPaused(p: boolean) { this.paused = p; if (!p) this.afterAction(); }
+  setPaused(p: boolean) {
+    this.paused = p;
+    if (p) return;
+    // test mode: a released Card Comp vs Card Comp match plays to the end at once
+    if (this.testMode && this.mode === 'compvscomp' && this.state && this.state.phase !== 'over') { this.aiBoth = true; clearTimeout(this.modeTimer); this.runBoth(); return; }
+    this.afterAction();
+  }
 
   /** The action the player's side would take under the current stance (units) or the full AI (cards). */
   private compChoose(): any {
@@ -113,24 +118,26 @@ export class Game {
     return aiChoose(s, this.difficulty, this.rand);
   }
 
-  /** Card Play (test hook and timer): the next unit of the player acts under the current stance. Returns the action or null. */
-  autoActStep() {
+  /** Card Play (test hook and timer): the next unit of the player (reading order) acts under the current stance. */
+  autoActStep(): any {
     const s = this.state;
-    if (!s || this.mode !== 'cardplay' || s.phase !== 'action' || s.activePlayer !== 'player' || s.priority !== 'player' || s.pendingResponse) return null;
-    const a = stanceChoose(s, this.stance, 'player', this.difficulty, this.rand);
-    this.lastStanceChoice = a;
-    if (!a) { this.internal(() => this.act({ type: 'done' })); return { type: 'done' }; }
-    const r = this.internal(() => this.act(a));
-    return r.ok ? a : null;
+    if (!s || this.mode !== 'cardplay' || s.phase !== 'action' || s.activePlayer !== 'player' || s.priority !== 'player' || s.pendingResponse) return { ok: false, error: 'not the Action phase of Card Play' };
+    const units = s.board.creatures.filter((c: any) => c.owner === 'player').sort((x: any, y: any) => x.row - y.row || x.col - y.col);
+    for (const u of units) {
+      const a = stanceChoose(onlyUnit(s, u.uid), this.stance, 'player', this.difficulty, this.rand);
+      if (!a || a.creatureUid !== u.uid) continue;
+      this.lastStanceChoice = a;
+      const r = this.internal(() => this.act(a));
+      if (r.ok) return { ok: true, action: a };
+    }
+    const r = this.internal(() => this.act({ type: 'done' }));
+    return { ...r, action: { type: 'done' } };
   }
   /** What the current stance would do next (does not act). With a uid, only that unit's best action. */
   stanceChoice(uid?: string) {
     const s = this.state;
     if (!s) return null;
-    if (!uid) return stanceChoose(s, this.stance, 'player', this.difficulty, this.rand);
-    const copy = JSON.parse(JSON.stringify(s));
-    for (const c of copy.board.creatures) if (c.owner === 'player' && c.uid !== uid) { c.hasMoved = true; c.hasAttacked = true; c.hasMined = true; }
-    return stanceChoose(copy, this.stance, 'player', this.difficulty, this.rand);
+    return stanceChoose(uid ? onlyUnit(s, uid) : s, this.stance, 'player', this.difficulty, this.rand);
   }
   private bypass = false;
   private internal<T>(f: () => T): T { this.bypass = true; try { return f(); } finally { this.bypass = false; } }
@@ -229,7 +236,7 @@ export class Game {
       if (!r.ok) r = applyAction(st, st.pendingResponse ? { type: 'pass' } : st.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' });
       if (r.ok) { this.state = r.state; this.emit(r.events); }
       this.afterAction();
-    }, (st0(this.state) / this.speed));
+    }, (st0(this.state) / this.speed) / (this.testMode ? 8 : 1));
   }
   private scheduleUnits() {
     const s = this.state;
@@ -256,5 +263,5 @@ export class Game {
   }
 }
 
-const st0 = (s: any) => (s.phase === 'mulligan' ? 400 : 650);
+const st0 = (s: any) => (s.phase === 'mulligan' ? 350 : 500);
 export { other };

@@ -407,7 +407,7 @@ export class App {
     const cmds = (Object.values(COMMANDERS) as any[]).filter((x) => x.playable !== false);
     let cmd = cmds.some((c) => c.id === picks.cmd) ? picks.cmd : 'grubnak';
     let diff = ['easy', 'normal', 'hard'].includes(picks.diff) ? picks.diff : 'normal';
-    let mode = ['standard', 'cardplay', 'compvscomp'].includes(picks.mode) ? picks.mode : (localStorage.getItem('oreheart.mode') || 'standard');
+    let mode = localStorage.getItem('oreheart.mode') || picks.mode || 'standard';
     if (!['standard', 'cardplay', 'compvscomp'].includes(mode)) mode = 'standard';
     const modeBtns: El[] = [];
     const decks = loadDecks();

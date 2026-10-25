@@ -2,12 +2,12 @@
 import { legalActions, previewAttack, CARDS, CONFIG, other, isMiner, creatureAt, spellCost } from '../engine';
 import { aiChoose, Rand } from './ai';
 
-export type Stance = 'aggressive' | 'mine-control' | 'guard' | 'free';
+export type Stance = 'aggressive' | 'minecontrol' | 'guard' | 'freeforall';
 export const STANCES: { id: Stance; label: string; icon: string; desc: string }[] = [
   { id: 'aggressive', label: 'Aggressive', icon: '⚔️', desc: 'Miners mine; Fighters rush the enemy Commander.' },
-  { id: 'mine-control', label: 'Mine Control', icon: '⛏️', desc: 'Win the crystal fight: protect mining, hunt enemy Miners.' },
+  { id: 'minecontrol', label: 'Mine Control', icon: '⛏️', desc: 'Win the crystal fight: protect mining, hunt enemy Miners.' },
   { id: 'guard', label: 'Guard', icon: '🛡️', desc: 'Stay near your Commander and Miners; hit what comes close.' },
-  { id: 'free', label: 'Free-for-all', icon: '🗡️', desc: 'Units decide everything with the full computer AI.' },
+  { id: 'freeforall', label: 'Free-for-all', icon: '🗡️', desc: 'Units decide everything with the full computer AI.' },
 ];
 export const UNIT_TYPES = ['move', 'attack', 'mine'];
 
@@ -24,7 +24,7 @@ function canAffordMost(s: any, who: string): boolean {
 
 /** The unit-action the stance picks for `who`, or null when no unit has anything worth doing. */
 export function stanceChoose(s: any, stance: Stance, who: string, difficulty: string, rand: Rand): any {
-  if (stance === 'free') {
+  if (stance === 'freeforall') {
     const a = aiChoose(s, difficulty, rand, UNIT_TYPES);
     return a && UNIT_TYPES.includes(a.type) ? a : null;
   }
@@ -64,7 +64,7 @@ export function stanceChoose(s: any, stance: Stance, who: string, difficulty: st
       const site = s.sites.find((x: any) => x.row === a.row && x.col === a.col);
       const enemyOwned = site && site.controller === foe;
       if (miner) consider((enemyOwned ? 55 : 70), a);
-      else if (stance === 'mine-control') consider(lowCrystals ? 5 : 12, a);
+      else if (stance === 'minecontrol') consider(lowCrystals ? 5 : 12, a);
       continue;
     }
     if (a.type === 'move') {
@@ -79,7 +79,7 @@ export function stanceChoose(s: any, stance: Stance, who: string, difficulty: st
         continue;
       }
       if (gain <= 0) continue;
-      if (stance === 'mine-control' && miner && lowCrystals && !sites.some((x: any) => cheb(a, x) <= 1)) { consider(10 + gain * 4, a); continue; }
+      if (stance === 'minecontrol' && miner && lowCrystals && !sites.some((x: any) => cheb(a, x) <= 1)) { consider(10 + gain * 4, a); continue; }
       consider(30 + gain * 10 + (nearestDist(a, foes) <= 1 ? 3 : 0), a);
       continue;
     }
@@ -90,8 +90,8 @@ export function stanceChoose(s: any, stance: Stance, who: string, difficulty: st
       const pv: any = previewAttack(s, c.uid, a.target) || { youDeal: 0, youTake: 0, attackerDefeated: false, targetDefeated: false };
       const kill = pv.targetDefeated ? 30 : 0;
       if (stance === 'aggressive') { if (canAdvance.has(c.uid) && !pv.targetDefeated) continue; if (miner) continue; consider(40 + kill + pv.youDeal * 3 - pv.youTake * 2, a); continue; }
-      if (stance === 'mine-control') {
-        if (miner) { if (isMiner(CARDS[d.cardId]) && !pv.attackerDefeated && !lowCrystals) consider(65 + kill, a); continue; }
+      if (stance === 'minecontrol') {
+        if (miner) { if (isMiner(CARDS[d.cardId]) && !pv.attackerDefeated && !lowCrystals) consider(90 + kill, a); continue; }
         const dm = isMiner(CARDS[d.cardId]) || nearestDist(d, sites) <= 2;
         consider((dm ? 75 : 35) + kill + pv.youDeal * 3 - pv.youTake * 2 - (pv.attackerDefeated ? 40 : 0), a);
         continue;
@@ -103,4 +103,11 @@ export function stanceChoose(s: any, stance: Stance, who: string, difficulty: st
     }
   }
   return best;
+}
+
+/** A copy of the state in which only `uid` (of `who`'s units) can still act. */
+export function onlyUnit(s: any, uid: string, who = 'player') {
+  const copy = JSON.parse(JSON.stringify(s));
+  for (const c of copy.board.creatures) if (c.owner === who && c.uid !== uid) { c.hasMoved = true; c.hasAttacked = true; c.hasMined = true; }
+  return copy;
 }
