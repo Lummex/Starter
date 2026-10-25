@@ -1528,6 +1528,7 @@ export class App {
       const ang = (i - (shown - 1) / 2) * 9;
       const b = h('div', { class: 'back', 'data-card-back': '', 'data-fan-angle': String(ang), 'aria-hidden': 'true' });
       b.style.transform = `rotate(${ang}deg)`;
+      b.append(ohBackEl());
       r.enemyHand.append(b);
     }
     // phase
