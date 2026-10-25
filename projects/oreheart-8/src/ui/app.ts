@@ -125,6 +125,16 @@ export function ornament(): El {
   return h('div', { class: 'ornament-none', 'aria-hidden': 'true', hidden: true });
 }
 const svgEl = (tag: string, attrs: Record<string, string> = {}): El => { const e = document.createElementNS('http://www.w3.org/2000/svg', tag) as unknown as El; for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+/** Owner (Oct 24): the end picture depends on how big the win or loss was, measured by the winning Commander's Health left (out of 20).
+ *  Close (4 or less) -> close-win / so-close; even (5-10) -> victory / defeat (level 1);
+ *  clear (11-16) -> you-won / defeated (level 2); a rout (17+) -> slaughter-victory / crushing-defeat (level 3). */
+export function endBanner(win: boolean, st: any): string {
+  const hp = Math.max(0, Number(st?.players?.[win ? 'player' : 'opponent']?.health ?? 10));
+  if (hp <= 4) return win ? 'close-win' : 'so-close';
+  if (hp <= 10) return win ? 'victory' : 'defeat';
+  if (hp <= 16) return win ? 'you-won' : 'defeated';
+  return win ? 'slaughter-victory' : 'crushing-defeat';
+}
 export const btn = (label: string, cls = '', onclick?: (e: Event) => void, attrs: Record<string, any> = {}) => h('button', { type: 'button', class: 'btn ' + cls, onclick, ...attrs }, label);
 
 const GLOW_COLOR: Record<string, string> = { goblins: '#b45cff', gnomes: '#3fa9ff', dwarves: '#ffcf3a', any: '#fff0c2' };
@@ -2449,7 +2459,7 @@ export class App {
       rowOf('Turns', String(st.turn)),
       rowOf('MVP', mvp));
     this.root.append(h('main', { class: 'screen center end' },
-      h('h1', { class: 'end-title' }, h('img', { class: 'end-pic', src: `/art/ui/banner-${win ? 'victory' : 'defeat'}.webp`, alt: '', draggable: 'false' }), h('span', { class: 'sr-only' }, win ? 'Victory!' : 'Defeat')),
+      h('h1', { class: 'end-title' }, h('img', { class: 'end-pic', src: `/art/ui/banner-${endBanner(win, st)}.webp`, alt: '', draggable: 'false', 'data-end-level': endBanner(win, st) }), h('span', { class: 'sr-only' }, win ? 'Victory!' : 'Defeat')),
       h('p', {}, win ? 'The enemy Commander fled screaming that this was all part of the plan.' : 'Your Commander escaped at the last second, shouting that this was all part of the plan.'),
       table,
       h('div', { class: 'row' },
