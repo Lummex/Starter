@@ -2328,7 +2328,7 @@ export class App {
     const p = this.center(row, col), key = row + ',' + col, now = performance.now();
     const st = this.popStack.get(key); const n = st && now - st.t < 700 ? st.n + 1 : 0; this.popStack.set(key, { n, t: now });
     const f = h('div', { class: 'pop-img', 'aria-hidden': 'true', 'data-pop': name }, h('img', { src: `/art/pop/${name}.webp`, alt: '', draggable: 'false' }), label ? h('span', { class: 'sr-only' }, label) : '');
-    f.style.left = p.x + (n % 2 ? 18 : -10) * Math.min(n, 2) + 'px'; f.style.top = p.y - 24 - n * 34 + 'px';
+    f.style.left = p.x + (n % 2 ? 8 : -5) * Math.min(n, 2) + 'px'; f.style.top = p.y - 14 - n * 14 + 'px';
     f.style.setProperty('--rot', `${(Math.random() * 14 - 7).toFixed(1)}deg`);
     this.r.fx.append(f);
     setTimeout(() => f.remove(), 1150);
@@ -2450,6 +2450,11 @@ export class App {
       else if (e.type === 'abilityUsed' && e.ability === 'slide') this.unitSay('unit-uh-oh', e.row, e.col, true);
       else if (e.type === 'fizzle') { const sd = st.activePlayer === 'player' ? 'player' : 'opponent'; this.pop('fizzle', SH[sd].row, SH[sd].col); }
       else if (e.type === 'turnStart' && e.player === 'player' && e.turn > 1) this.say('player', 'turn');
+      else if (e.type === 'bonusDraw') {
+        const why = [e.fromMining ? `${e.mined} crystals mined` : '', e.allMines ? 'all 3 mines' : ''].filter(Boolean).join(' + ');
+        const who = e.player === 'player' ? 'You draw' : 'Opponent draws';
+        setTimeout(() => this.flash(`${who} +${e.cards} card${e.cards > 1 ? 's' : ''} (${why})`), 900);
+      }
       else if (e.type === 'siteControl') {
         const k = e.row + ',' + e.col, was = this.siteOwner.get(k) || '', now = e.controller || '';
         this.siteOwner.set(k, now);
