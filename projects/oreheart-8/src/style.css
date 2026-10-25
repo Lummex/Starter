@@ -1666,3 +1666,10 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 .match [data-unit-badge] .ub-m{font-size:calc(var(--bw)*.262*.15*6.2)}
 /* Owner (Oct 24): no yellow ring under units (the 3D faction ring already marks them) */
 .match .token::before{display:none!important}
+/* Owner (Oct 24): Choose Your Commander — the glow frame hugs the card exactly (no black border) */
+.screen.setup .cmd-card:not(#_w){aspect-ratio:420/624!important;background:transparent!important;border-radius:12px;overflow:hidden}
+.screen.setup .cmd-card:not(#_w) .portrait-img{inset:0;width:100%;height:100%}
+.screen.setup .cmd-card:not(#_w) .portrait-img .ohcard,.screen.setup .cmd-card:not(#_w) .portrait-img>*{width:100%!important;height:100%!important}
+/* Owner (Oct 24): in every menu, Back sits bottom-left and going forward sits bottom-right */
+.btn.menu-back{position:fixed!important;left:2vw;bottom:3vh;z-index:60;margin:0!important}
+.btn.menu-fwd{position:fixed!important;right:2vw;bottom:3vh;z-index:60;margin:0!important}
