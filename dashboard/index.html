@@ -88,6 +88,17 @@ label { display: block; font-weight: 600; margin: 16px 0 6px; }
 .back { display: inline-flex; margin: 4px 0 8px; color: var(--muted); text-decoration: none; font-weight: 600; font-size: 15px; }
 dialog { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); width: min(560px, calc(100vw - 32px)); padding: 20px; }
 dialog::backdrop { background: rgba(0,0,0,.4); }
+.tabs { display: flex; gap: 6px; margin: 0 0 8px; }
+.tabs a { padding: 8px 14px; border-radius: 999px; text-decoration: none; color: var(--muted); font-weight: 600; border: 1px solid transparent; }
+.tabs a.on { background: var(--surface); border-color: var(--border); color: var(--text); }
+.bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin-top: 8px; }
+.bar > div { height: 100%; background: var(--accent); }
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.shots figure { margin: 0; } .shots img { width: 100%; border-radius: 8px; border: 1px solid var(--border); display: block; }
+.shots figcaption { font-size: 12px; color: var(--muted); }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 14px; } .kv dt { color: var(--muted); } .kv dd { margin: 0; overflow-wrap: anywhere; }
+select { font: inherit; width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; } @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
 .toprow { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
 @media (max-width: 520px) { h1 { font-size: 22px; } .actions > * { flex: 1 1 100%; justify-content: center; } }
 </style>
@@ -101,6 +112,7 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
     </a>
     <div id="hdr-actions"></div>
   </header>
+  <nav class="tabs" id="tabs"><a href="#/" data-tab="p">Projects</a><a href="#/3d" data-tab="3d">3D Production</a></nav>
   <main id="app" aria-live="polite"></main>
 </div>
 
@@ -339,9 +351,155 @@ async function send(n, action, message, btn) {
   catch (e) { alert(e.message); btn.disabled = false; }
 }
 
+// ---------- 3D Production (Blender worker) ----------
+const JOB = {
+  queued:          { label: 'Queued',            cls: 's-info',   busy: true },
+  claimed:         { label: 'Picked up',         cls: 's-info',   busy: true },
+  running:         { label: 'Working',           cls: 's-info',   busy: true },
+  validating:      { label: 'Checking',          cls: 's-info',   busy: true },
+  awaiting_review: { label: 'Ready for review',  cls: 's-accent', busy: false },
+  completed:       { label: 'Done',              cls: 's-good',   busy: false },
+  failed:          { label: 'Stopped',           cls: 's-bad',    busy: false },
+  cancelled:       { label: 'Cancelled',         cls: 's-warn',   busy: false },
+};
+const jst = (s) => JOB[s] || JOB.queued;
+const jpill = (s) => `<span class="pill ${jst(s).cls} ${jst(s).busy ? 'busy' : ''}"><span class="dot"></span>${jst(s).label}</span>`;
+const fileUrl = (path) => `/api/blender?file=${encodeURIComponent(path)}`;
+
+function workerLine(ws) {
+  if (!ws.length) return `<div class="banner s-warn"><strong>No Blender worker has checked in yet</strong><p>Run Install-Blender-Worker on the Windows PC. It shows up here once it is running.</p></div>`;
+  return ws.map((w) => {
+    const age = (Date.now() - new Date(w.at)) / 1000;
+    const alive = w.state === 'busy' ? age < 1800 : age < 1200;
+    const c = w.check || {};
+    const label = !alive ? 'Offline' : w.state === 'busy' ? 'Working on a job' : w.state === 'stopped' ? 'Stopped' : 'Online, waiting for jobs';
+    const cls = !alive || w.state === 'stopped' ? 's-warn' : 's-good';
+    return `<div class="banner ${cls}"><strong>Blender worker ${esc(w.worker_id)}: ${label}</strong>
+      <p>Last seen ${ago(w.at)}${c.blender_version ? ` · ${esc(c.blender_version)}` : ''}${c.claude_version ? ` · Claude Code ${esc(c.claude_version)}` : ''}${c.blender_mcp_port_9876 ? ` · Blender MCP ${esc(c.blender_mcp_port_9876)}` : ''}</p></div>`;
+  }).join('');
+}
+
+async function view3d() {
+  setHeader(`<a class="btn primary" href="#/3d/new">＋ New 3D job</a>`);
+  if (app.dataset.view !== '3d') app.innerHTML = `<p class="sub">Loading…</p>`;
+  app.dataset.view = '3d';
+  let d;
+  try { d = await api('/api/blender'); } catch (e) { app.innerHTML = `<div class="banner s-bad"><strong>Couldn't load 3D jobs</strong><p>${esc(e.message)}</p></div>`; return; }
+  if (location.hash !== '#/3d') return;
+  const row = (j) => `
+    <a class="card item" href="#/3d/j/${esc(j.id)}">
+      <span class="t">${esc(j.asset_id)} · ${j.type === 'animate' ? esc(j.animations.join(', ')) : 'Inspect model'}</span>${jpill(j.status)}
+      <span class="meta"><span>${esc(j.progress?.message || '')}</span><span>Updated ${ago(j.updated_at || j.created_at)}</span></span>
+    </a>`;
+  app.innerHTML = `<h1>3D Production</h1>
+    <p class="sub">Rigging and animation jobs done by Blender on the Windows PC. Source models are never changed; results come back here for review.</p>
+    ${workerLine(d.workers)}
+    <h2>Jobs</h2>
+    <div class="list">${d.jobs.map(row).join('') || '<div class="card empty"><strong>No 3D jobs yet.</strong>Start with an inspection of a model, then an animation.</div>'}</div>`;
+  if (d.jobs.some((j) => jst(j.status).busy)) schedule(view3d, 15000);
+}
+
+function view3dNew() {
+  setHeader('');
+  app.dataset.view = '3dnew';
+  app.innerHTML = `
+    <a class="back" href="#/3d">← 3D Production</a>
+    <h1>New 3D job</h1>
+    <form class="card" id="f">
+      <div class="row2">
+        <div><label for="type">Job</label><select id="type"><option value="animate">Make an animation</option><option value="inspect">Inspect a model</option></select></div>
+        <div><label for="asset">Unit id</label><input id="asset" required value="goblin-slinger" pattern="[a-z0-9][a-z0-9-]{2,63}"></div>
+      </div>
+      <label for="src">Source model</label>
+      <input id="src" required value="local:~/Downloads/r23/models/goblin-slinger/char.glb">
+      <p class="hint">local:… is a file on the Windows PC (Downloads or Documents › Oreheart only). repo:path/char.glb is a file in GitHub. It is copied, never changed.</p>
+      <div id="anim">
+        <label for="part">Held prop (optional)</label>
+        <input id="part" value="local:~/Downloads/r23/models/goblin-slinger/skull-mace.glb">
+        <p class="hint">Shown in the hand in the preview only. The game moves thrown things itself.</p>
+        <div class="row2">
+          <div><label for="clip">Clip name</label><input id="clip" value="Skull_Throw" pattern="[A-Za-z0-9_]{1,48}"></div>
+          <div><label for="frames">Length (frames at 30 per second)</label><input id="frames" value="36-60"></div>
+        </div>
+        <label for="ev">Events (comma separated)</label>
+        <input id="ev" value="projectile_release">
+        <label for="req">What should happen</label>
+        <textarea id="req">Hold the skull in the right hand, wind up, pull the arm back, twist the torso, throw, follow through, return to idle. Cartoon exaggeration. Separate projectile-release event. Keep all existing clips.</textarea>
+      </div>
+      <div class="err" id="e" hidden></div>
+      <div class="actions"><button class="primary" type="submit">Send to the Blender worker</button></div>
+    </form>`;
+  const sync = () => { $('#anim').hidden = $('#type').value !== 'animate'; };
+  $('#type').onchange = sync; sync();
+  $('#f').onsubmit = async (ev) => {
+    ev.preventDefault();
+    const b = ev.submitter; b.disabled = true;
+    const type = $('#type').value;
+    const body = { action: 'create', type, asset_id: $('#asset').value.trim(), character: $('#src').value.trim(), request: $('#req').value.trim() };
+    if (type === 'animate') {
+      const part = $('#part').value.trim();
+      if (part) { body.parts = { prop: part }; body.attachments = [{ part: 'prop', bone: 'right hand', note: 'preview prop; hide at projectile_release' }]; }
+      const fr = $('#frames').value.split(/[^0-9]+/).filter(Boolean).map(Number);
+      body.animations = [{ name: $('#clip').value.trim(), description: $('#req').value.trim(), frames: fr.length === 2 ? fr : undefined,
+        events: $('#ev').value.split(',').map((x) => x.trim()).filter(Boolean).map((name) => ({ name, bone: 'right hand' })) }];
+    }
+    try { const r = await api('/api/blender', { method: 'POST', body }); location.hash = `#/3d/j/${r.id}`; }
+    catch (e) { $('#e').hidden = false; $('#e').textContent = e.message; b.disabled = false; }
+  };
+}
+
+async function view3dJob(id) {
+  setHeader('');
+  if (app.dataset.view !== `j${id}`) app.innerHTML = `<a class="back" href="#/3d">← 3D Production</a><p class="sub">Loading…</p>`;
+  app.dataset.view = `j${id}`;
+  let d;
+  try { d = await api(`/api/blender?job=${encodeURIComponent(id)}`); } catch (e) { app.innerHTML = `<a class="back" href="#/3d">← 3D Production</a><div class="banner s-bad"><strong>Couldn't load this job</strong><p>${esc(e.message)}</p></div>`; return; }
+  if (location.hash !== `#/3d/j/${id}`) return;
+  const j = d.job; const s = j.status; const pr = j.progress || {};
+  const pngs = d.files.filter((f) => f.name.endsWith('.png'));
+  const final = pngs.filter((f) => f.name.startsWith('final-')); const design = pngs.filter((f) => !f.name.startsWith('final-'));
+  const others = d.files.filter((f) => !f.name.endsWith('.png'));
+  const shots = (list) => `<div class="shots">${list.map((f) => `<figure><a href="${fileUrl(f.path)}" target="_blank"><img loading="lazy" src="${fileUrl(f.path)}" alt="${esc(f.name)}"></a><figcaption>${esc(f.name.replace(/\.png$/, ''))}</figcaption></figure>`).join('')}</div>`;
+  let banner = '';
+  if (jst(s).busy) banner = `<div class="banner s-info"><strong>${esc(pr.message || 'Working')}</strong><div class="bar"><div style="width:${Math.max(3, Math.min(100, Number(pr.percent) || 0))}%"></div></div>
+     <div class="actions"><button data-a="cancel">Cancel job</button></div></div>`;
+  if (s === 'awaiting_review') banner = `<div class="banner s-accent"><strong>Ready for your review</strong><p>${esc(j.result?.summary || '')}. Look at the pictures below. Approve to use it in the game, or ask for changes.</p>
+     <div class="actions"><button class="good" data-a="approve">✓ Approve</button><button data-a="reject">Ask for changes</button><button data-a="cancel">Cancel</button></div></div>`;
+  if (s === 'completed') banner = `<div class="banner s-good"><strong>Done</strong><p>${esc(j.result?.summary || '')}${j.review?.note ? ` · ${esc(j.review.note)}` : ''}</p></div>`;
+  if (s === 'failed') banner = `<div class="banner s-bad"><strong>Stopped</strong><p>${esc(j.error?.message || 'Something went wrong.')}</p><div class="actions"><button class="primary" data-a="retry">Try again</button></div></div>`;
+  if (s === 'cancelled') banner = `<div class="banner s-warn"><strong>Cancelled</strong><div class="actions"><button data-a="retry">Run it again</button></div></div>`;
+  app.innerHTML = `
+    <a class="back" href="#/3d">← 3D Production</a>
+    <div class="toprow"><h1>${esc(j.asset_id)} · ${j.type === 'animate' ? esc((j.animations || []).map((a) => a.name).join(', ')) : 'Inspect model'}</h1>${jpill(s)}</div>
+    ${banner}
+    ${final.length ? `<h2>Finished clip (from the final file)</h2>${shots(final)}` : ''}
+    ${design.length ? `<h2>${final.length ? 'Design previews (with the held prop)' : 'Pictures'}</h2>${shots(design)}` : ''}
+    ${others.length ? `<h2>Files</h2><div class="card"><dl class="kv">${others.map((f) => `<dt>${esc(f.name)}</dt><dd><a href="${fileUrl(f.path)}" target="_blank">${f.size < 1024 ? f.size + " bytes" : (f.size / 1024).toFixed(0) + " KB"}</a></dd>`).join('')}</dl></div>` : ''}
+    <h2>Request</h2>
+    <div class="card"><dl class="kv"><dt>Job</dt><dd>${esc(j.id)}</dd><dt>Source</dt><dd>${esc(j.source?.character)}</dd>
+      ${j.request ? `<dt>Asked for</dt><dd>${esc(j.request)}</dd>` : ''}<dt>Worker</dt><dd>${esc(j.worker_id || '—')}</dd><dt>Created</dt><dd>${ago(j.created_at)}</dd></dl></div>
+    <h2>History</h2>
+    <div class="card"><dl class="kv">${(j.history || []).slice().reverse().map((h) => `<dt>${ago(h.at)}</dt><dd>${esc(jst(h.status).label)}${h.review ? ` (${esc(h.review)})` : ''}${h.recovered ? ' (picked up again after the worker stopped)' : ''}</dd>`).join('')}</dl></div>`;
+  app.querySelectorAll('[data-a]').forEach((b) => b.onclick = async () => {
+    const action = b.dataset.a; let note = '';
+    if (action === 'cancel' && !confirm('Cancel this job?')) return;
+    if (action === 'reject') { note = prompt('What should change?') || ''; if (!note.trim()) return; }
+    b.disabled = true;
+    try { await api('/api/blender', { method: 'POST', body: { action, id, note } }); await view3dJob(id); } catch (e) { alert(e.message); b.disabled = false; }
+  });
+  if (jst(s).busy) schedule(() => view3dJob(id), 10000);
+}
+
 function route() {
   clearTimeout(timer);
   const h = location.hash || '#/';
+  const tab = h.startsWith('#/3d') ? '3d' : 'p';
+  document.querySelectorAll('#tabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
+  $('#tabs').hidden = h === '#/login';
+  if (h === '#/3d') return view3d();
+  if (h === '#/3d/new') return view3dNew();
+  const jm = /^#\/3d\/j\/([a-z0-9-]{3,64})$/.exec(h);
+  if (jm) return view3dJob(jm[1]);
   if (h === '#/login') return viewLogin();
   if (h === '#/new') return viewNew();
   const m = /^#\/p\/(\d+)$/.exec(h);
