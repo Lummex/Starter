@@ -4,9 +4,13 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 **Goal of Phase 1B:** replace every placeholder with finished, original art and add sound effects, **without changing any game rule, number, layout position or test hook**. When it ships, Oreheart should look like a real, polished game on a phone held sideways. All 129 existing automated checks must keep passing.
 
-## Owner rule for every round (Oct 25): no shrinking, ever
+## Owner rule for every round (Oct 25): size budget and safe shrinking
 
-This is going to be a big game (PC first, still reasonably fine on phones). **Never make anything smaller to save space**: no simplifying, decimating, welding or re-meshing 3D models, no lowering texture or picture resolution, no re-compressing owner art, pictures, sounds or models at lower quality. The build-size budget is **500 MB** (AC90). If something is too big for the host, stop and ask the owner; never shrink it yourself.
+The game is hosted on Vercel's free plan, which rejects uploads over 100 MB. Keep the built `dist/` under **95 MB** (AC90).
+- Shrinking is allowed where it doesn't visibly matter: lower texture resolution on small items/props, re-compressing pictures that are shown small. Leave the art as it is now (the owner checked it and it looks fine).
+- **Never** simplify, decimate, weld, re-mesh or re-quantize 3D model geometry, and never touch UVs. That scrambled the goblin textures in Round 21 and looked awful. To make a model smaller, only re-encode its textures at a lower resolution, then look at it rendered next to the original before keeping it.
+- Character models and the owner's main art (logo, banners, card back, card art, commander portraits) must look the same after any shrinking.
+- If the game can't stay under 95 MB without visible loss, stop and ask the owner.
 
 ## Round 21 — put the goblin 3D models into matches (owner, Oct 25) — built
 
