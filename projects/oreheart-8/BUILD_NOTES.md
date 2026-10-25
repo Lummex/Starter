@@ -755,3 +755,14 @@ Not changed (checks contradict newer owner cards/rounds or conflict with each ot
 - Build passes; `dist/index.html` exists. No app code changed in this pass.
 - AC15, AC58 (both), AC109 fail because the checks are stale against owner card changes already in `cards.json`: Riot Shield Bearer (`dwarf-miner`) has Health 5, Rocket Rider (`shard-guzzler`) is now a Fighter and can't mine, Bowler Brawler (`goblin-scrapper`) costs 6 so it can't be summoned on turn 1.
 - Not addressed: the Playwright timeouts (mulligan Keep Hand/Redraw clicks, screenshots, deck builder double-click, hand hover retract/AC218), AC260/AC261 `getHighlightSettings`, AC168 `Play [style normal]`, AC248 range text. Three older vitest checks (starter decks 30 basic, Ranged round 10, round12c ranges) are outdated by later rounds.
+
+## Round 17 re-check (inspector round 2 triage)
+Build and `dist/index.html` verified. No app code changed in this pass: the listed failures were traced to checks that contradict newer owner rounds, not to app bugs:
+- AC15: Dwarf Miner is now the 1/5 Riot Shield Bearer, so it survives the strike back.
+- AC58: Goblin Rocket Rider (shard-guzzler) is a Fighter since Round 14, so it never mines.
+- AC109: the test gives the enemy 0 crystals, but the Fighter costs 4, so it has no summon actions.
+- AC248/AC266/round 12c unit test: Ranged range is 7 (Rounds 11, 16).
+- AC273: owner art is shipped as .webp on purpose (size); the .png paths don't exist.
+- AC143/AC204: the cards named in the test ("Gnome Plow") no longer exist.
+- AC155/AC174/AC189/AC218/AC272: expect the old quarter-tucked hand; Round 17 puts the hand fully on screen at rest.
+Not investigated (low confidence, budget): AC135/AC168 font-style/weight audit, AC72/AC256/AC261 timeouts.
