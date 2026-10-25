@@ -766,3 +766,12 @@ Build and `dist/index.html` verified. No app code changed in this pass: the list
 - AC143/AC204: the cards named in the test ("Gnome Plow") no longer exist.
 - AC155/AC174/AC189/AC218/AC272: expect the old quarter-tucked hand; Round 17 puts the hand fully on screen at rest.
 Not investigated (low confidence, budget): AC135/AC168 font-style/weight audit, AC72/AC256/AC261 timeouts.
+
+## Round 3 inspector triage (this pass)
+Build verified (`npm run build` OK). No app code changed: the engine behaves per the owner's current cards.json, which contradicts several old checks:
+- AC15: `dwarf-miner` is now Riot Shield Bearer (can't be killed); the check expects the old 3-health Miner to die.
+- AC58 (both): `shard-guzzler` is now Goblin Rocket Rider, a Fighter (Round 14), so it no longer mines; old counts assume a Miner.
+- AC109: `goblin-scrapper` (Bowler Brawler) costs 6 and the enemy starts with 0 crystals, so no summon is legal; the check assumed a cheap card.
+- AC248: Skullflinger text says range 7 (Round 11), the check expects 6.
+- AC135/AC168: the owner layout (menus.json) sets some text non-italic; the check expects italic everywhere.
+Not addressed (UI timing/hover checks AC143, AC155, AC174, AC189, AC204, AC218, AC260, AC261, AC266, AC273) — need real-browser debugging beyond this pass's budget.
