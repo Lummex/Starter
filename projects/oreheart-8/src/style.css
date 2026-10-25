@@ -1495,7 +1495,7 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .ring-prev-dot{width:50px;height:26px;border-radius:50%;border:5px solid #3ee06a;background:transparent}
 
 /* Round 11: the dragged card is the real card face, floating and tilting with the movement */
-.hand-card.dragged-card{position:fixed!important;left:0;top:0;z-index:1000;pointer-events:none!important;--cw:min(150px,24vh);width:var(--cw)!important;height:auto!important;transform:translate(-50%,-50%) rotate(var(--tilt,0deg)) scale(1.08)!important;transition:transform .08s linear!important;animation:card-float 1.4s ease-in-out infinite;box-shadow:0 14px 28px #000c,0 0 22px #ffd45a66!important;opacity:1;translate:none!important;scale:none!important}
+.hand-card.dragged-card{position:fixed!important;left:0;top:0;z-index:1000;pointer-events:none!important;--cw:min(130px,21vh);width:var(--cw)!important;height:auto!important;transform-origin:100% 0!important;transform:translate(-100%,0) translate(-6px,6px) rotate(calc(24deg + var(--tilt,0deg) * .4))!important;transition:transform .08s linear!important;animation:card-float 1.4s ease-in-out infinite;box-shadow:0 14px 28px #000c,0 0 22px #ffd45a66!important;opacity:1;translate:none!important;scale:none!important}
 @keyframes card-float{0%,100%{margin-top:-3px}50%{margin-top:4px}}
 
 /* Round 11: Change Commander is never covered by the deck pictures */
@@ -1698,3 +1698,9 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 
 /* round 17: the owner renderer marks its text span .tx for tests; keep it free of legacy .tx styling */
 .cardc .ohtx > span.tx{all:unset!important;display:inline}
+
+/* owner (Oct 25): play a hand card from its close-up */
+.play-from-hand-row{position:fixed;left:50%;bottom:max(14px,3vh);transform:translateX(-50%);z-index:2147483000;display:flex;justify-content:center;pointer-events:none}
+.cardview .play-from-hand,.play-from-hand{pointer-events:auto;font-family:inherit;font-size:clamp(17px,2.3vw,26px);font-weight:700;letter-spacing:.03em;color:#fff!important;padding:.5em 1.6em;border-radius:12px;border:2px solid #ffe08a!important;background:linear-gradient(#e0a325,#9a5a10)!important;box-shadow:0 6px 18px #000b,0 0 18px #ffcc5588;text-shadow:0 2px 3px #000a;cursor:pointer}
+.play-from-hand:hover{filter:brightness(1.15)}
+.play-from-hand.cant{opacity:.55;filter:grayscale(.6)}
