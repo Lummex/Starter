@@ -350,7 +350,20 @@ function startTurn(s: any, ev: any[]) {
     const mine = s.board.creatures.filter((c: any) => c.owner === who);
     if (mine.length) mine.reduce((a: any, b: any) => (b.health < a.health ? b : a)).shield += bonusOf(s, who, 'lowestShield').amount;
   }
+  // bonus draws: +1 card per full minedPerBonusCard crystals your miners bring in, +1 if every mine is yours
+  let bonus = 0;
+  if (s.turn > 1) {
+    const per = CONFIG.minedPerBonusCard ?? 4;
+    const mined = payout(s, who).mined;
+    const fromMining = per > 0 ? Math.floor(mined / per) : 0;
+    const mc = mineColors(s);
+    const allMines = mc.length > 0 && mc.every((m: any) => m.ctl === who) ? (CONFIG.allMinesBonusCards ?? 1) : 0;
+    bonus = fromMining + allMines;
+    if (bonus > 0) ev.push({ type: 'bonusDraw', player: who, cards: bonus, fromMining, allMines, mined });
+  }
   if (s.turn > 1) drawCard(s, who, ev);
+  // extra cards never cost Health for an empty deck
+  for (let i = 0; i < bonus && s.players[who].deck.length > 0 && !s.winner; i++) drawCard(s, who, ev);
   if (s.winner) return;
   recolorMines(s, ev);
   collectIncome(s, who, ev);
