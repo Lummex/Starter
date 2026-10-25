@@ -1,0 +1,22 @@
+{
+ "generated": "2026-10-25T09:45:29.455Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a1726f-54c4-75c0-a6e9-23460647361c",
+  "rig": "01a17271-fa60-765b-9b1a-c24b4e5790cc",
+  "anim": "01a17272-ca52-74ce-97e7-e90e0ef3431b"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "rigged": true,
+ "parts": [],
+ "notes": "Owner sheet note: Don't render his backpack. Character only for now (owner, Oct 25: accessories come later).",
+ "fileSizes": {
+  "char.glb": 6240624
+ }
+}
