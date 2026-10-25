@@ -659,6 +659,21 @@ export class App {
       pb.addEventListener('click', (ev) => { ev.stopPropagation(); d?.close(); this.tuckHand(); this.playFromHand(hc, c); setTimeout(() => this.tuckHand(), 0); });
       kids.push(h('div', { class: 'play-from-hand-row' }, pb));
     }
+    // right-click on your own unit: its activated abilities as an ability menu under the card
+    if (creature && creature.owner === 'player' && this.game.state && this.game.state.phase !== 'over') {
+      const st = this.game.state;
+      const keys = ((c.abilities || []) as string[]).filter((k) => ABILITY_UI[k]);
+      const ready = new Set(this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === creature.uid).map((a: any) => a.ability));
+      const row = h('div', { class: 'play-from-hand-row ability-row', role: 'group', 'aria-label': 'Abilities' });
+      for (const k of keys) {
+        const ui = ABILITY_UI[k], cost = k === 'blink' ? 1 : ABILITY_COST[k] || 0;
+        const ok = ready.has(k) && st.priority === 'player';
+        const b = h('button', { type: 'button', class: 'primary play-from-hand' + (ok ? '' : ' cant'), 'aria-disabled': String(!ok), title: ui.text }, `${ui.name}${cost ? ` (${cost})` : ''}`) as HTMLButtonElement;
+        b.addEventListener('click', (ev) => { ev.stopPropagation(); if (!ok) { this.flash(ui.text); return; } d?.close(); const cr = this.game.state.board.creatures.find((x: any) => x.uid === creature.uid); if (cr) this.useAbility(cr, k); });
+        row.append(b);
+      }
+      if (keys.length) kids.push(row);
+    }
     d = this.dialog(c.name, kids);
     d.el.classList.add('cardview');
     return d;
@@ -1281,6 +1296,9 @@ export class App {
     if (on && el.classList.contains('popped')) return;
     if (on) this.clearPops(el);
     if (!on) {
+      // remember where the enlarged card was: a press there right after the hand lowers still grabs that card
+      const cl = (el as any)._clone as El | null;
+      if (cl && cl.isConnected) { const r = cl.getBoundingClientRect(); this.lastPop = { uid: el.dataset.uid || '', l: r.left, t: r.top, r: r.right, b: r.bottom, at: performance.now() }; }
       (el as any)._ph?.remove(); (el as any)._clone?.remove();
       (el as any)._ph = (el as any)._clone = null;
       el.classList.remove('popped');
@@ -1405,6 +1423,7 @@ export class App {
     return null;
   }
   noHand = false;
+  lastPop: { uid: string; l: number; t: number; r: number; b: number; at: number } | null = null;
   /** Tight hover boxes: only the visible part of each fan card (tucked), or the whole card while the hand is raised. */
   handBoxes(): { c: El; l: number; t: number; w: number; h: number }[] {
     const hand = this.r?.hand as El;
@@ -1460,6 +1479,12 @@ export class App {
       this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: true };
       const onHand = !!(e.target as Element)?.closest?.('.hand, .hand-card, .hand-scroll');
       this.noHand = !onHand;
+      const lp = this.lastPop;
+      if (this.noHand && lp && e.pointerType === 'mouse' && e.button === 0 && performance.now() - lp.at < 1500 && e.clientX >= lp.l && e.clientX <= lp.r && e.clientY >= lp.t && e.clientY <= lp.b) {
+        const hc = this.game.state?.players?.player?.hand?.find((k: any) => k.uid === lp.uid);
+        const cardEl = this.r?.hand?.querySelector(`.hand-card[data-uid="${lp.uid}"]:not(.popclone)`) as El | null;
+        if (hc && cardEl) { this.noHand = false; this.lastPop = null; this.cardPointerDown(e, hc, cardEl); return; }
+      }
       if (this.noHand) { this.clearPops(); this.openHand(false, true); }
     }, true);
     const up = () => { this.lastPtr.down = false; this.noHand = false; if (this.lastPtr.type !== 'mouse') retract(); };
@@ -2758,7 +2783,7 @@ export class App {
       },
       onDrop: (cell, x, y) => {
         if (mode === 'reorder') { this.reorderHand(hc.uid, x); return; }
-        if (cell && cell.row) this.dropCard(hc, card, cell, x, y);
+        if (cell && (cell.row || plan.smith.length)) this.dropCard(hc, card, cell, x, y);
       },
       onTap: () => {
         if (this.swapping) {
@@ -2809,11 +2834,13 @@ export class App {
       let own = this.game.state.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col && c.owner === 'player');
       if (!own && x != null && y != null) {
         // the stat badge hangs below a token: a drop on the figure or its badge counts as a drop on that creature
+        let bestD = 1e9;
         for (const [uid, el] of this.tokens) {
           const c = this.game.state.board.creatures.find((k: any) => k.uid === uid);
-          if (!c || c.owner !== 'player') continue;
+          if (!c || c.owner !== 'player' || !ups.some((a: any) => a.creatureUid === c.uid)) continue;
           const r = el.getBoundingClientRect();
-          if (x >= r.left - 16 && x <= r.right + 16 && y >= r.top - 16 && y <= r.bottom + 16) { own = c; break; }
+          const d = Math.hypot(Math.max(r.left - x, 0, x - r.right), Math.max(r.top - y, 0, y - r.bottom));
+          if (d < bestD && d <= 48) { bestD = d; own = c; }
         }
       }
       const up = own && ups.find((a: any) => a.creatureUid === own.uid);

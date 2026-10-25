@@ -678,7 +678,7 @@
      "id": "dBack",
      "kind": "button",
      "name": "Button: Back",
-     "x": 87.45,
+     "x": 2,
      "y": 91.5,
      "w": 12,
      "h": 6.5,
@@ -993,7 +993,7 @@
      "w": 18,
      "h": 6.5,
      "text": {
-      "content": "Start",
+      "content": "Fight!",
       "size": 4.4,
       "color": "#FFD700",
       "font": "display",
