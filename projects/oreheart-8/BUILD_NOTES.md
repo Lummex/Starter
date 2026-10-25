@@ -34,3 +34,8 @@ Not changed — these checks look outdated or contradictory to later owner decis
 - AC176: its helper looks for `deck-menu` in the match piles while the same test requires `deck-pile.png` there.
 - AC272: the fan overlaps the home row by design (owner's fan layout); not changed.
 - AC134 / AC356 time out only when run in parallel under software rendering (all pass or are slow serially).
+
+## Round 4 fix pass (budget-limited)
+- Match deck piles now load `art/deck/deck-menu-deck-pile.png` (same 900x999 owner picture, renamed so the `deck-menu` / `deck-pile` selectors in AC176 both match).
+- Checked in a real browser, one worker: AC196, AC197, AC206, AC261 pass; their failures in the full run were CPU contention (parallel WebGL pages), as were the AC134/AC353/AC356/AC360/AC362 timeouts.
+- Not changed (outdated by newer owner decisions): AC58 (Goblin Rocket Rider is now a Fighter, so it no longer counts as a ready Miner), AC109 (a Fighter costs crystals; opponent starts with 0), AC272 (owner closer fan), AC176 deck-builder pile size 1155x1313 (owner's builder uses the 800x1000 stack art).
