@@ -16,8 +16,8 @@ export const LOOKS: Record<string, { height: number; stretch: [number, number, n
   'goblin-sneak': { height: 0.982, stretch: [1, 1, 1] },
   'rotgut-grenadier': { height: 1.219, stretch: [1, 1, 1] },
 };
-/** default height (board squares) for the goblins without an owner look */
-const DEFAULT_H: Record<string, number> = { 'grubnaks-big-boss-troll': 1.4, 'wolf-rider': 1.35 };
+/** default height (board squares) for creatures without an owner look */
+const DEFAULT_H: Record<string, number> = { 'grubnaks-big-boss-troll': 1.4, 'wolf-rider': 1.35, 'the-great-steam-golem': 1.6, 'ram-rider': 1.35, 'clockwork-beetle': 0.9 };
 /** which parts each creature carries (tuned by eye against the owner's assembled reference) */
 const PARTS: Record<string, PartCfg[]> = {
   'goblin-scrounger': [
@@ -51,6 +51,36 @@ const PARTS: Record<string, PartCfg[]> = {
     { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.55, grip: 0.3, rot: [180, 0, 0], axis: 'y' },
     { name: 'hammer', file: 'hammer.glb', bone: ['LeftHand'], len: 0.4, grip: 0.2, rot: [0, 0, 0], axis: 'y' },
   ],
+  // owner (Oct 25): Gnome and Dwarf models, character only for now (the owner adds their items with the Model Editor later)
+  'axe-thrower': [],
+  'barrelback-courier': [],
+  'brewmaster': [],
+  'clockwork-beetle': [],
+  'crystal-drunk-delver': [],
+  'deepforge-crossbowman': [],
+  'dwarf-miner': [],
+  'dwarf-pickman': [],
+  'dwarf-stoneback': [],
+  'gearward-sentinel': [],
+  'glyphshield-warden': [],
+  'gnome-cogger': [],
+  'gnome-illusionist': [],
+  'gnome-smith-miner': [],
+  'gnome-tinker': [],
+  'gnome-widget': [],
+  'grimhold-ravager': [],
+  'gyrocopter-ace': [],
+  'hexwright-apprentice': [],
+  'ironhammer-berserker': [],
+  'oathbound-pikeman': [],
+  'phase-stalker': [],
+  'queen-brunhilda-stonebeard': [],
+  'ram-rider': [],
+  'rune-splitter': [],
+  'runic-siphoner': [],
+  'shieldbeard': [],
+  'spark-gnome': [],
+  'the-great-steam-golem': [],
 };
 export const hasCreature3dSlug = (id: string) => id in PARTS;
 

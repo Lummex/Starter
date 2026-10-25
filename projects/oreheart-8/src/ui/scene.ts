@@ -433,7 +433,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const ringMat = () => new THREE.MeshBasicMaterial({ color: 0xffd400 });
     let g: THREE.Group;
     let finished = false, mats: THREE.MeshStandardMaterial[] = [], parts: any = null, baseScale = 1;
-    const a3 = card.faction === 'goblins' ? creature3dReady(card.id) : null;
+    const a3 = creature3dReady(card.id); // any faction with an owner-sheet model (goblins; Gnomes and Dwarves since Oct 25)
     let c3: C3D | null = null;
     if (a3) { try { c3 = makeCreature3d(card.id, a3); } catch { c3 = null; } }
     if (a3 && c3) {
@@ -663,7 +663,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       let f = figs.get(c.uid);
       const tgt = world(c.row, c.col);
       if (!f) {
-        if (CARDS[c.cardId]?.faction === 'goblins') ensure3d(c.cardId);
+        ensure3d(c.cardId);
         const m = makeFigure(c);
         const born = events.some((e) => e.type === 'summon' && e.uid === c.uid) ? now : 0;
         m.group.position.copy(tgt);
