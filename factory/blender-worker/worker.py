@@ -80,7 +80,7 @@ def load_config():
             cfg.update(json.load(f))
     if not cfg['worker_id']:
         cfg['worker_id'] = f"{socket.gethostname().lower()}-{uuid.uuid4().hex[:6]}"
-    if not cfg['blender_exe']:
+    if not cfg['blender_exe'] or not os.path.lexists(cfg['blender_exe']) or os.path.exists(os.path.join(APP_DIR, 'blender-path.txt')):
         cfg['blender_exe'] = find_blender() or ''
     if not cfg['claude_exe']:
         cfg['claude_exe'] = shutil.which('claude') or shutil.which('claude.exe') or os.path.join(os.path.expanduser('~'), '.local', 'bin', 'claude.exe')
@@ -95,6 +95,19 @@ def save_config(cfg):
 
 
 def find_blender():
+    alias = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Microsoft', 'WindowsApps', 'blender.exe')  # Microsoft Store Blender
+    pinned = os.path.join(APP_DIR, 'blender-path.txt')
+    if os.path.exists(pinned):
+        with open(pinned, encoding='utf-8-sig') as f:
+            p = f.read().strip()
+        if p:
+            return p
+    if os.path.exists(alias):
+        return alias
+    return find_blender_classic()
+
+
+def find_blender_classic():
     roots = [os.environ.get('ProgramFiles', r'C:\Program Files'), os.environ.get('ProgramFiles(x86)', r'C:\Program Files (x86)')]
     found = []
     for r in roots:
@@ -347,7 +360,7 @@ class Runner:
 
     def blender(self, script, *args, label):
         exe = self.cfg['blender_exe']
-        if not exe or not os.path.exists(exe):
+        if not exe or not os.path.lexists(exe):
             raise RuntimeError('Blender was not found. Set "blender_exe" in ' + CONFIG_PATH)
         ops = os.path.join(HERE, 'blender_ops', script)
         return self.run([exe, '--background', '--factory-startup', '--python-exit-code', '3', '--python', ops, '--', *args],
@@ -355,7 +368,7 @@ class Runner:
 
     def claude(self, prompt_file, label):
         exe = self.cfg['claude_exe']
-        if not exe or not os.path.exists(exe):
+        if not exe or not os.path.lexists(exe):
             raise RuntimeError('Claude Code was not found. Set "claude_exe" in ' + CONFIG_PATH)
         with open(prompt_file, encoding='utf-8') as f:
             prompt = f.read()
@@ -572,14 +585,14 @@ def build_prompt(job, rnd):
 # ----------------------------------------------------------------------------- checks / main loop
 def self_check(cfg, gh, full=False):
     res = {'worker_id': cfg['worker_id'], 'at': now(), 'python': sys.version.split()[0]}
-    res['blender_exe'] = cfg['blender_exe']; res['blender_found'] = bool(cfg['blender_exe'] and os.path.exists(cfg['blender_exe']))
+    res['blender_exe'] = cfg['blender_exe']; res['blender_found'] = bool(cfg['blender_exe'] and os.path.lexists(cfg['blender_exe']))
     if res['blender_found']:
         try:
             v = subprocess.run([cfg['blender_exe'], '--version'], capture_output=True, text=True, timeout=120)
             res['blender_version'] = (v.stdout or '').splitlines()[0] if v.stdout else v.stderr[:200]
         except Exception as e:
             res['blender_version'] = f'error: {e}'
-    res['claude_exe'] = cfg['claude_exe']; res['claude_found'] = bool(cfg['claude_exe'] and os.path.exists(cfg['claude_exe']))
+    res['claude_exe'] = cfg['claude_exe']; res['claude_found'] = bool(cfg['claude_exe'] and os.path.lexists(cfg['claude_exe']))
     if res['claude_found']:
         for key, args in (('claude_version', ['--version']), ('claude_mcp', ['mcp', 'list'])):
             try:
@@ -673,7 +686,9 @@ def do_one(gh, cfg):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--setup', action='store_true'); ap.add_argument('--once', action='store_true'); ap.add_argument('--check', action='store_true')
-    a = ap.parse_args()
+    # Also runs inside Blender (blender --background --python worker.py -- --setup); then our options follow '--'.
+    argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
+    a = ap.parse_args(argv)
     cfg = load_config()
     if a.setup:
         print('Paste your GitHub fine-grained token for', cfg['repo'], '(it will not be shown, and is saved only in Windows Credential Manager).')
@@ -684,14 +699,28 @@ def main():
         print('Saved. Checking it works…')
     token = cred_read()
     if not token:
-        print('No GitHub token saved yet. Run Install-Blender-Worker.cmd (or worker.py --setup).'); return 1
+        msg = 'No GitHub key saved yet. Run Install-Blender-Worker.cmd.'
+        print(msg); log(msg)
+        if a.check:
+            with open(os.path.join(APP_DIR, 'last-check.json'), 'w', encoding='utf-8') as f:
+                json.dump({'github': 'no key saved'}, f)
+        return 1
     gh = GitHub(cfg['repo'], token)
-    gh.ensure_branch(cfg['queue_branch'], cfg['base_branch'])
     if a.setup or a.check:
         res = self_check(cfg, gh, full=True)
+        if res.get('github') == 'ok':
+            try:
+                gh.ensure_branch(cfg['queue_branch'], cfg['base_branch'])
+                post_worker_status(gh, cfg, 'checked', {'check': res})
+                res['queue_branch'] = 'ok'
+            except Exception as e:
+                res['github'] = f'error creating the queue branch: {e}'
+        with open(os.path.join(APP_DIR, 'last-check.json'), 'w', encoding='utf-8') as f:
+            json.dump(res, f, indent=1)
         print(json.dumps(res, indent=1))
-        post_worker_status(gh, cfg, 'checked', {'check': res})
+        log('check:', json.dumps(res))
         return 0
+    gh.ensure_branch(cfg['queue_branch'], cfg['base_branch'])
     for f in ('STOP', 'CANCEL'):
         try: os.remove(os.path.join(APP_DIR, f))
         except OSError: pass
