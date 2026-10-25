@@ -1743,3 +1743,4 @@ html[data-desk][data-display=auto] body{background:transparent}
 
 /* Round 23: after a grab the rest of the hand sits a little lower than at rest until it is hovered again */
 .match .hand.o-hand.tuck:not(.open):not(.has-pop):not(.away){transform:translateY(calc(var(--hcw) * .39))}
+.match .retreat,.match .retreat *{pointer-events:none!important}

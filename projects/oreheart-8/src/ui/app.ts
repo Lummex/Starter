@@ -2633,7 +2633,7 @@ export class App {
       this.endShown = true;
       const loser = st.winner === 'player' ? 'opponent' : 'player';
       const esc = FACTIONS[st.players[loser].faction].symbol === 'skull' ? '🚀' : FACTIONS[st.players[loser].faction].symbol === 'gear' ? '💨' : '🕳️';
-      const t = this.test ? 120 : 1600;
+      const t = this.test ? (this.game.mode === 'compvscomp' ? 4000 : 120) : 1600; // a test-mode Card Comp match ends in an instant: keep its watch bar usable for a few seconds
       this.view?.retreat(loser);
       audio.play(st.winner === 'player' ? 'win' : 'lose');
       this.say(st.winner, 'win', true); this.say(loser as any, 'lose', true);
@@ -2666,7 +2666,7 @@ export class App {
   }
 
   showEnd(winner: string) {
-    if (!this.game.state || this.game.state.phase !== 'over') return;
+    if (!this.game.state || this.game.state.phase !== 'over' || !this.root.querySelector('.match')) return; // left for the menu meanwhile
     const st = this.game.state;
     this.clear();
     const win = winner === 'player';
@@ -2691,7 +2691,7 @@ export class App {
       table,
       h('div', { class: 'row' },
         btn(this.game.mode === 'compvscomp' ? 'Rematch' : 'Play again', 'primary', () => { if (this.lastTutorial) this.beginTutorial(); else { const o = { ...this.lastOptions }; this.beginMatch(o); } }),
-        btn('Menu', '', () => this.showMenu()))));
+        btn('Menu', '', () => this.showMenu(), this.game.mode === 'compvscomp' ? { 'aria-label': 'Exit to menu' } : {}))));
   }
 
   // ------------------------------------------------------------ board geometry / hit testing
