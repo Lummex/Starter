@@ -1,31 +1,29 @@
 ## What was built
-Round 17 of Oreheart, the comic-fantasy card battle. It adds three ways to play on the "Choose Your Commander" screen: Standard (unchanged), Card Play (you only play cards and your units act on their own, steered by four stance buttons), and Card Comp vs Card Comp (the computer plays both sides while you watch). It also adds a single "Fight!" start button and a hand of cards that sits fully on screen.
+This is the latest round of Oreheart, the browser card battle. It adds the owner's Oct 24 changes (bonus card draws for mining, white unowned mines), three game modes (Standard, Card Play, Card Comp vs Card Comp), and fixes for earlier failing checks. The title, menu, mulligan screen and painted arena all show up and look finished.
 
 ## Try these things
-- Open the preview, click through the intro, and press Play to reach Choose Your Commander.
-- Click each of the three mode buttons (Standard, Card Play, Card Comp vs Card Comp), then press Fight!.
-- In Card Play, tap the four stance buttons on the right edge (Aggressive, Mine Control, Guard, Free-for-all) and watch your units change behavior.
-- In a Standard match, hover cards in your hand and drag one onto the board to play it.
-- Open the Deck Builder and add cards by double-click.
-- Try it on a phone-sized window too.
+- Click through the title and main menu (Play, Deck Builder, How to Play, Settings), then pick a Commander and start a match.
+- On Choose Your Commander, try the three modes. In Card Play, use the four stance buttons on the right edge.
+- Start a Card Comp vs Card Comp match and see whether it plays to the end by itself.
+- In a match, hover and drag a hand card onto the board. Check that the raised hand doesn't hide too much of the board.
+- Open the Deck Builder and try the card close-up and the Commander portraits.
+- Mine with several Miners and watch for the bonus card draw on the next turn.
 
 ## Automated checks
-379 of 411 checks passed; 32 failed. Failures cover:
-- Hand cards: hover and retract behavior, and the fan layout.
-- Deck Builder: adding cards.
-- Mine tapping and zoom or pan.
-- The Settings panels for square highlights and unit rings.
-- Some card rules: Ranged ranges, the Brewlord save, and the Mine Control stance.
-- Fonts (some text is not in the single font), and spell cards missing name or text.
-- A missing owner card-art file.
-
-Some of these may be outdated checks rather than real faults. Several are likely real, especially the hand and Deck Builder ones.
+386 of 412 checks passed. 26 failed. Most are layout or animation checks. The ones that matter most for play:
+- A Card Comp vs Card Comp match did not finish in the test.
+- The Mine Control stance chose "mine" where the test expected "attack".
+- Tapping a mine counted 1 ready Miner where the test expected 2.
+- The raised hand covers part of the board in three window sizes.
+- Playable hand cards still show a glow when they shouldn't.
+- Commander look-back and impatience animations didn't trigger in time.
+- Several Deck Builder and Choose Your Commander layout checks failed, as did font-weight checks, a Ranged range check and the tutorial's Skip button.
 
 ## Things to know
-- The match screenshots (the screen after Fight!) are missing, so the match itself was not visually inspected.
-- The home screen and main menu look good. Choose Your Commander looks fine on desktop.
-- On the phone-size screenshot, Choose Your Commander is cramped. Deck names are cut off ("Goblin Horde", "Remove" and "Copy to my decks" are clipped at the right edge), and the mode and Easy/Normal/Hard text sits close together. This is the exact thing the round was meant to fix.
-- Skullflinger's Ranged range is 7 where the owner's text says 6.
+- Screenshots: the title, menu and mulligan screens look good on desktop. On the phone-size screen, the match is cramped. The raised hand card covers much of the board, and Commander names are clipped at the edges.
+- In the desktop mulligan screenshot, the "Grubnak Rotgut" label overlaps the faded Commander name behind it.
+- The match start screenshot only shows the mulligan, so I couldn't see a full game in progress.
+- I only read the opening of the spec, since the file is very large.
 
 ## Recommendation
-Request changes: 32 checks fail (hand, Deck Builder and Commander screen issues on phone), and the match was never shown in screenshots.
+Request changes: 26 checks still fail, including the new Card Comp match and the hand covering the board, and the phone layout looks cramped.
