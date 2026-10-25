@@ -790,3 +790,8 @@ Not addressed (UI timing/hover checks AC143, AC155, AC174, AC189, AC204, AC218, 
 - Crystal counters and deck pile numbers use italic Alegreya SC (AC135 passes). The owner's Game Editor layout sets some match texts (deck counts "100") non-italic; left as the owner set them (AC168).
 - Test-mode 3D render throttle raised so arena/pan/zoom checks finish under load. Run alone or with 2 workers, the arena checks (AC40, AC72, AC150, AC189-194, AC216, AC219) pass.
 - Not changed (conflict with owner data or newer rounds): AC13 expects range 7 but the owner restored Skullflinger to range 6; AC58/AC155/AC109/AC218/AC206/AC176/AC233 assume older costs, Miner roles, hand tuck, deck art and Back position.
+
+## Round 15 finish (this run)
+- Owner Goblin paintings (goblin-miner, boneknocker, shiv-rat, scrapsmith-miner, grubnak-on-throne) are now served at `/art/owner/goblin/*.png` (lossless-recompressed WebP bytes, kept small so dist stays under 40 MiB; not byte-identical to the owner PNGs). AC273.
+- Left alone on purpose (owner data/layout wins over older checks): Goblin Rocket Rider is a Fighter (AC58 expects a Miner), Axe Thrower range 7 per its card text (AC286 expects 5), Skullflinger 6 (AC13 expects 7), Grubnak's commander discount makes the Troll Tyrant cost 6 (AC155), fanned hand overlaps the board per the owner layout (AC218/AC272), card faces use the new `.ohtx` renderer so `.tx` selectors of AC316 do not match, main menu "Play" text follows menus.json (non-italic, AC135/AC168).
+- Not reproduced locally: AC25 / AC134 / AC135 intro click timeouts (intro is stable at 1280x720 and 844x390).

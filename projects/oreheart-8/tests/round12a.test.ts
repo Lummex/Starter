@@ -4,11 +4,11 @@ import { createHash } from 'node:crypto';
 
 const owner = '../factory-design/goblin-art/';
 const pairs: [string, string][] = [
-  ['goblin-miner-card-art.png', 'goblin-miner-card-art.webp'],
-  ['boneknocker-card-art.png', 'boneknocker-card-art.webp'],
-  ['shiv-rat-card-art.png', 'shiv-rat-card-art.webp'],
-  ['scrapsmith-miner-card-art.png', 'scrapsmith-miner-card-art.webp'],
-  ['grubnak-on-throne-art.png', 'grubnak-on-throne-art.webp'],
+  ['goblin-miner-card-art.png', 'goblin-miner-card-art.png'],
+  ['boneknocker-card-art.png', 'boneknocker-card-art.png'],
+  ['shiv-rat-card-art.png', 'shiv-rat-card-art.png'],
+  ['scrapsmith-miner-card-art.png', 'scrapsmith-miner-card-art.png'],
+  ['grubnak-on-throne-art.png', 'grubnak-on-throne-art.png'],
 ];
 const sha = (p: string) => createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 
