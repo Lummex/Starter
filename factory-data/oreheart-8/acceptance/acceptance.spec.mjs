@@ -2970,7 +2970,7 @@ const quiet = (extra) => ({ ai: false, playerCommander: 'grubnak', opponentComma
 
 
 async function expectDeckImage(loc, label) {
-  const img = loc.locator('img[src*="deck-pile"]').first();
+  const img = loc.locator('img[src*="deck-menu"]').first();
   await expect(img, label).toBeAttached();
   await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth > 0), { message: label }).toBe(true);
   const corners = await img.evaluate((i) => {
@@ -2983,7 +2983,7 @@ async function expectDeckImage(loc, label) {
   expect(corners, label).toEqual([0, 0, 0, 0]);
 }
 test('AC93: the cut-out deck image is used on every deck pile outside the match', async ({ page }) => {
-  // Round 7: the owner's deck-pile.png is used on every deck pile (the match piles are checked in AC176)
+  // Owner (Oct 24): menus show the neat deck stack deck-menu.png; the match piles keep deck-pile.png (checked in AC176)
   await openDecks(page);
   await expectDeckImage(page.getByLabel('Deck pile', { exact: true }), 'Deck pile');
   await page.goto('/?test=1');
@@ -3515,7 +3515,7 @@ test.describe('both hands at 844x390', () => {
     await expect(stacks.nth(2)).toHaveAccessibleName('Gnome Horde, 100 cards, ready');
     await expect(row.getByRole('button', { name: 'Goblin Horde, 100 cards, ready', exact: true })).toHaveCount(0); // Round 8b: only his decks
     await expect(row.getByRole('button', { name: 'Dwarf Arcane Hoard, 100 cards, ready', exact: true })).toHaveCount(0);
-    await expect(row.locator('img[src*="deck-pile"]').first()).toBeVisible();
+    await expect(row.locator('img[src*="deck-menu"]').first()).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('deck-picker-844x390.png') });
     await row.getByRole('button', { name: 'Gnome Horde, 100 cards, ready', exact: true }).click();
     await expect(row.getByRole('button', { name: 'Gnome Horde, 100 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -3557,7 +3557,7 @@ const gridFace = (page, id) => allCards(page).locator(`[data-card-id="${id}"]`).
 test('AC121: Deck Builder deck art has no frame; painted background', async ({ page }) => {
   await openDecks(page);
   const pile = page.getByLabel('Deck pile', { exact: true });
-  const img = pile.locator('img[src*="deck-pile"]').first();
+  const img = pile.locator('img[src*="deck-menu"]').first();
   await expect(img).toBeVisible();
   const boxes = await img.evaluate((el) => {
     const pileEl = el.closest('[aria-label="Deck pile"]');
@@ -5002,7 +5002,7 @@ test('AC171: no "All cards" text and no corner ornaments on any menu screen', as
   expect(await page.locator('[data-ornament="frame"]').count(), 'match frame ornaments').toBe(0); // Round 9a: 3 goblin corner frames allowed (AC215)
 });
 
-test('AC172: crystal mines use the owner\'s mine model (glTF placeholder or Round 8a Meshy GLB), exactly 1.5 tall, tinted by owner', async ({ page }) => {
+test('AC172: crystal mines use the owner\'s Crystal Node model, about 1.3 squares tall and inside its square, in the owner\'s faction color; unowned mines are white (owner, Oct 24)', async ({ page }) => {
   await start(page, quiet({ board: [
     { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
     { cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 6, minedMine: M3 },
@@ -5011,21 +5011,15 @@ test('AC172: crystal mines use the owner\'s mine model (glTF placeholder or Roun
   if (!r.webgl) test.skip(true, 'WebGL unavailable');
   expect(r.mines).toBe('finished');
   expect(r.mineModels).toHaveLength(3);
-  const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const neutral = new Set();
+  const FAC = ['#3ee06a', '#9b4dff', '#2f5fd8'];
   for (const m of r.mineModels) {
-    expect(m.source).toBe('code:buildMineModel'); // Round 9a: code-built owner mine
-    expect(m.height).toBeGreaterThanOrEqual(2.43);
-    expect(m.height).toBeLessThanOrEqual(2.53);
+    expect(['code:buildMineModel', 'model:crystal-node.glb']).toContain(m.source);
+    expect(m.height).toBeGreaterThanOrEqual(1.1);
+    expect(m.height).toBeLessThanOrEqual(1.45);
     expect(['player', 'opponent', 'neutral']).toContain(m.owner);
-    expect(m.tint).toMatch(/^#[0-9a-f]{6}$/i);
-    const [R, , B] = rgb(m.tint);
-    if (m.owner === 'player') expect(B).toBeGreaterThan(R);
-    if (m.owner === 'opponent') expect(R).toBeGreaterThan(B);
-    if (m.owner === 'neutral') neutral.add(m.tint.toLowerCase());
+    if (m.owner === 'neutral') expect(m.tint.toLowerCase()).toBe('#ffffff');
+    else expect(FAC).toContain(m.tint.toLowerCase());
   }
-  expect(neutral.size).toBeLessThanOrEqual(1);
-  for (const m of r.mineModels) if (m.owner !== 'neutral' && neutral.size) expect(neutral.has(m.tint.toLowerCase())).toBe(false);
 });
 
 for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
@@ -5188,11 +5182,11 @@ test('AC176: the owner\'s card back and deck-pile pictures are used exactly', as
     const i = new Image(); i.src = src; await i.decode();
     return [i.naturalWidth, i.naturalHeight];
   });
-  expect(size, 'owner card back (1184x1664)').toEqual([1184, 1664]);
+  expect(size, 'owner card back (Oct 24, 1024x1536)').toEqual([1024, 1536]);
   for (const label of ['Your deck', 'Enemy deck']) {
     const pile = page.getByLabel(label, { exact: true });
     await expectDeckImage(pile, label);
-    expect(await pileSize(pile), label).toEqual([1155, 1313]);
+    expect(await pileSize(pile), label).toEqual([900, 999]); // owner's new deck pile (Oct 24)
     await expect(pile.locator('[data-card-back]'), `${label} uses deck-pile.png, not card backs`).toHaveCount(0);
   }
   await expect(page.getByLabel('Your deck', { exact: true })).toContainText('12');
@@ -5261,14 +5255,14 @@ test('AC178: glow colors contrast with each faction frame', async ({ page }) => 
   }
 });
 
-test('AC179: crystal mines are 2.48 spaces tall (owner layout)', async ({ page }) => {
+test('AC179: crystal mines are about 1.3 spaces tall and fit inside their square (owner, Oct 24)', async ({ page }) => {
   await start(page, quiet({}));
   const r = await page.evaluate(async () => await window.oreheart.getRenderStats());
   if (!r.webgl) test.skip(true, 'WebGL unavailable');
   expect(r.mineModels).toHaveLength(3);
   for (const m of r.mineModels) {
-    expect(m.height).toBeGreaterThanOrEqual(2.43);
-    expect(m.height).toBeLessThanOrEqual(2.53);
+    expect(m.height).toBeGreaterThanOrEqual(1.1);
+    expect(m.height).toBeLessThanOrEqual(1.45);
   }
 });
 
@@ -6388,9 +6382,9 @@ test('AC221: mines are the code-built owner mine with all its parts', async ({ p
   if (!r.webgl) test.skip(true, 'WebGL unavailable');
   expect(r.mineModels).toHaveLength(3);
   for (const m of r.mineModels) {
-    expect(m.source).toBe('code:buildMineModel');
-    expect(m.height).toBeGreaterThanOrEqual(2.43); expect(m.height).toBeLessThanOrEqual(2.53);
-    for (const part of ['rubble', 'pedestal', 'banner', 'crystal']) expect(m.parts).toContain(part);
+    expect(['code:buildMineModel', 'model:crystal-node.glb']).toContain(m.source); // owner, Oct 24: the Crystal Node model replaces the code-built mine once loaded
+    expect(m.height).toBeGreaterThanOrEqual(1.1); expect(m.height).toBeLessThanOrEqual(1.45);
+    if (m.source === 'code:buildMineModel') for (const part of ['rubble', 'pedestal', 'banner', 'crystal']) expect(m.parts).toContain(part);
     expect(m.shards).toBeGreaterThanOrEqual(6);
     expect(m.pulsing).toBe(true);
   }
@@ -7179,7 +7173,7 @@ test('AC248: Ranged straight lines also apply to previewAttack and the Commander
   expect(ranged.longText).toMatch(/\b6\b/); // owner text: Skullflinger range 6
 });
 
-test('AC252: mines have no ring, a flat glow-rubble decal tinted by owner, and sit level at equal height', async ({ page }) => {
+test('AC252: mines have no ring, a flat glow-rubble decal that stays white (owner, Oct 24: the ground never changes color), and sit level at equal height', async ({ page }) => {
   await start(page, quiet({ board: [{ cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 }] }));
   await page.waitForTimeout(800);
   const r = await renderStats10(page);
@@ -7196,7 +7190,7 @@ test('AC252: mines have no ring, a flat glow-rubble decal tinted by owner, and s
     expect(Math.abs(m.height - h0)).toBeLessThanOrEqual(0.01);
   }
   const owned = r.mineModels.find((m) => m.owner === 'player');
-  expect(owned.decal.color.toLowerCase()).toBe(R10_GOBLIN);
+  expect(owned.decal.color.toLowerCase()).toBe('#ffffff');
   await expect(page.getByLabel(`Mine flow, row ${M1.row}, column ${M1.col}`, { exact: true })).toHaveCount(1);
 });
 
