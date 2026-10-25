@@ -2537,10 +2537,16 @@ export class App {
     // reordering while the pointer stays near its grab height / inside the raised hand; moving clearly above both = playing the card
     let homeBottom = -Infinity;
     try { for (let c = 1; c <= 13; c++) for (const q of this.squareQuad(7, c) as any[]) homeBottom = Math.max(homeBottom, q.y); } catch { /* no board yet */ }
-    const handTop = Math.max((this.r.hand as El).getBoundingClientRect().top - 12, homeBottom + 2), startY = e.clientY;
+    const handTop = (this.r.hand as El).getBoundingClientRect().top - 12, startY = e.clientY, startX = e.clientX;
+    // the hand may overlap the home row: only the horizontal span of the fan counts as "in the hand"
+    const fan = ([...(this.r.hand as El).querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).map((c) => c.getBoundingClientRect());
+    const fanL = Math.min(...fan.map((b) => b.left)) - 24, fanR = Math.max(...fan.map((b) => b.right)) + 24;
+    const inFan = (x: number) => x >= fanL && x <= fanR;
     // round 12a: a pointer over the board that is not inside the hand band is always a play drag (grab height no longer decides)
-    const overBoard = (x: number, y: number) => { const bb = (this.r.board as El).getBoundingClientRect(); return y < handTop && x >= bb.left && x <= bb.right && y >= bb.top && y <= bb.bottom; };
-    const inReorder = (y: number, x = 0) => y >= handTop || (Math.abs(y - startY) < 45 && !overBoard(x, y));
+    const overBoard = (x: number, y: number) => { const bb = (this.r.board as El).getBoundingClientRect(); return (y < handTop || !inFan(x)) && x >= bb.left && x <= bb.right && y >= bb.top && y <= bb.bottom; };
+    // a legal target square under the pointer always means "play", even where the hand overlaps the home row
+    const overLegal = (x: number, y: number) => { const c = this.cellAt(x, y); return !!c && [...plan.cells, ...plan.smith].some((q: any) => q && q.row === c.row && q.col === c.col); };
+    const inReorder = (y: number, x = 0) => Math.hypot(x - startX, y - startY) < 25 || !overLegal(x, y) && ((y >= handTop && inFan(x)) || (Math.abs(y - startY) < 45 && !overBoard(x, y)));
     let plan: { cells: any[]; smith: any[]; any: boolean } = { cells: [], smith: [], any: false };
     const setMode = (m: 'reorder' | 'play') => {
       if (m === mode) return;

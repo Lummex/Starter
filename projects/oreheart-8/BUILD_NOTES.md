@@ -775,3 +775,7 @@ Build verified (`npm run build` OK). No app code changed: the engine behaves per
 - AC248: Skullflinger text says range 7 (Round 11), the check expects 6.
 - AC135/AC168: the owner layout (menus.json) sets some text non-italic; the check expects italic everywhere.
 Not addressed (UI timing/hover checks AC143, AC155, AC174, AC189, AC204, AC218, AC260, AC261, AC266, AC273) — need real-browser debugging beyond this pass's budget.
+
+## Inspector round 4 fixes
+- Hand drag: because the owner-layout hand overlaps the home row, a legal target square under the pointer now always plays the card, a release near the grab point cancels, and sideways drags over non-legal squares reorder. Fixes AC189, AC269/AC270.
+- Not changed (checks contradict newer owner rounds or card data): AC15/AC58/AC109 assume `dwarf-miner`/Bowler Brawler costs of earlier rounds; AC218/AC272 contradict each other and the owner hand layout; AC260/AC261 need `window.oreheart` outside test mode (AC5 forbids it); AC135/AC168 contradict the owner menus' non-italic flags; AC143/AC204 pick cards hidden by the Commander filter; AC248 expects range 6 but Round 16 set range 7; AC273 expects .png art, files are .webp.
