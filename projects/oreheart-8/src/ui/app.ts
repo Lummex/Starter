@@ -1617,7 +1617,7 @@ export class App {
         for (const site of st.sites as any[]) {
           if (site.controller !== e.player) continue;
           const mine = e.player === 'player';
-          this.flowLog.push({ side: e.player, from: { row: site.row, col: site.col }, to: mine ? 'player-flow-crystal' : 'enemy-flow-crystal', shards: 'faceted', sBends: 2, flow: Math.max(1, site.flow?.[e.player] || 1), count: flowShardCount(site.flow?.[e.player] || 1), colors: [FACTION_GLOW[this.game.state.players[e.player as 'player'].faction], GLOW_COLOR[this.game.state.players[e.player as 'player'].faction]], toScreen: (() => { const t = this.root.querySelector(`[data-role=${mine ? 'player' : 'enemy'}-flow-crystal]`) as El | null; const b = t?.getBoundingClientRect(); return b ? { x: b.left + b.width / 2, y: b.top + b.height / 2 } : null; })(), at: performance.now() });
+          this.flowLog.push({ side: e.player, from: { row: site.row, col: site.col }, to: mine ? 'player-flow-crystal' : 'enemy-flow-crystal', shards: 'faceted', sBends: 2, flow: st.players[e.player].flow, count: flowShardCount(st.players[e.player].flow), colors: [FACTION_GLOW[this.game.state.players[e.player as 'player'].faction], GLOW_COLOR[this.game.state.players[e.player as 'player'].faction]], toScreen: (() => { const t = this.root.querySelector(`[data-role=${mine ? 'player' : 'enemy'}-flow-crystal]`) as El | null; const b = t?.getBoundingClientRect(); return b ? { x: b.left + b.width / 2, y: b.top + b.height / 2 } : null; })(), at: performance.now() });
         }
         if (e.player === 'opponent') { this.enemyLog = []; this.recording = true; } else this.recording = false;
         continue;
