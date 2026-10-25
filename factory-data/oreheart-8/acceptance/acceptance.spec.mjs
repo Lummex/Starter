@@ -2929,13 +2929,13 @@ test('AC89: Low graphics turns off bloom, shadows and particles and uses fewer d
   expect(low.drawCalls).toBeLessThan(high.drawCalls);
 });
 
-// owner (Oct 25): this will be a big game; nothing is ever shrunk to meet a size budget. Budget 500 MB.
-test('AC90: the built dist folder stays under 500 MB', async () => {
+// owner (Oct 25): stay under Vercel's free 100 MB upload limit (budget 95 MB); shrink only where it doesn't show, never re-mesh models
+test('AC90: the built dist folder stays under 95 MB', async () => {
   const { fs, path, dir } = await appDir();
   const dist = path.join(dir, 'dist');
   expect(fs.existsSync(path.join(dist, 'index.html')), 'dist/index.html').toBe(true);
   const bytes = walk(fs, path, dist).reduce((n, f) => n + fs.statSync(f).size, 0);
-  expect(bytes).toBeLessThan(500 * 1024 * 1024);
+  expect(bytes).toBeLessThan(95 * 1000 * 1000);
 });
 
 test.describe('phone-size match screenshot', () => {
