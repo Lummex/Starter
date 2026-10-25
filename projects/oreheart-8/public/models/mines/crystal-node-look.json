@@ -1,0 +1,909 @@
+{
+ "format": "oreheart-look-1",
+ "card": "crystal-node",
+ "cardName": "Crystal Node",
+ "faction": "any",
+ "savedAt": "2026-10-24T22:39:28.647Z",
+ "units": "1 unit = 1 board square. Y is up. Rotations in degrees (X, Y, Z order). localPosition/localRotation/localScale are relative to what the piece is attached to (a bone or another piece); world values are where it is in the scene.",
+ "howToBuild": "Load the main model, scale it to heightSquares. For every part: load its model, attach it to the named bone (or piece) and apply its local position, rotation and scale. Recreate each effect with its type and settings at its attach point. Apply tint/glow/color and hide the listed bones. Play the listed animations; attached parts follow the bones.",
+ "preview": "/_blob/6945abb166270eb71ccc3f31372d2962",
+ "main": {
+  "name": "Crystal Node",
+  "kind": "model",
+  "attachedTo": "the ground (not attached)",
+  "parent": null,
+  "localPosition": [
+   -0.078,
+   0.985,
+   0
+  ],
+  "localRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "localScale": 1.03,
+  "stretch": [
+   1,
+   1,
+   1
+  ],
+  "worldPosition": [
+   -0.078,
+   0.985,
+   0
+  ],
+  "worldRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "worldScale": 1.03,
+  "visible": true,
+  "model": {
+   "key": "crystal-node",
+   "kind": "bundled"
+  },
+  "heightSquares": 1.955,
+  "animations": [],
+  "currentAnimation": null,
+  "tint": {
+   "color": "#ffffff",
+   "amt": 0
+  },
+  "glow": {
+   "color": "#ffaa33",
+   "amt": 0
+  },
+  "color": {
+   "br": 0,
+   "co": 1,
+   "sa": 1,
+   "hu": 0,
+   "shine": 0
+  },
+  "hiddenBones": [],
+  "poseTweaks": {},
+  "fingers": {
+   "L": 0,
+   "R": 0,
+   "spread": 0,
+   "axis": "z",
+   "flip": false,
+   "thumb": true
+  }
+ },
+ "parts": [],
+ "effects": [
+  {
+   "name": "Twinkles",
+   "kind": "effect",
+   "attachedTo": "\"Crystal Node\"",
+   "parent": {
+    "kind": "item",
+    "id": 90,
+    "name": "Crystal Node"
+   },
+   "localPosition": [
+    0.042,
+    0.187,
+    -0.052
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 0.971,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.035,
+    1.178,
+    -0.054
+   ],
+   "worldRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "worldScale": 1,
+   "visible": true,
+   "effectType": "twinkle",
+   "settings": {
+    "area": 1.12,
+    "count": 38,
+    "size": 0.29,
+    "speed": 1.5,
+    "color": "#ffffff"
+   },
+   "when": "always"
+  },
+  {
+   "name": "Glow",
+   "kind": "effect",
+   "attachedTo": "\"Crystal Node\"",
+   "parent": {
+    "kind": "item",
+    "id": 90,
+    "name": "Crystal Node"
+   },
+   "localPosition": [
+    0.006,
+    0.2,
+    -0.016
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 0.971,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.072,
+    1.191,
+    -0.016
+   ],
+   "worldRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "worldScale": 1,
+   "visible": true,
+   "effectType": "glow",
+   "settings": {
+    "size": 1.44,
+    "strength": 2.89,
+    "flicker": 1,
+    "light": 1.16,
+    "color": "#ffffff"
+   },
+   "when": "always"
+  },
+  {
+   "name": "Sparks",
+   "kind": "effect",
+   "attachedTo": "\"Crystal Node\"",
+   "parent": {
+    "kind": "item",
+    "id": 90,
+    "name": "Crystal Node"
+   },
+   "localPosition": [
+    0.011,
+    -0.644,
+    -0.025
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 0.971,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.067,
+    0.322,
+    -0.026
+   ],
+   "worldRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "worldScale": 1,
+   "visible": true,
+   "effectType": "sparks",
+   "settings": {
+    "size": 0.095,
+    "rate": 80,
+    "speed": 2.35,
+    "spread": 0.34,
+    "gravity": 0.52,
+    "color": "#ffffff"
+   },
+   "when": "always"
+  },
+  {
+   "name": "Glow",
+   "kind": "effect",
+   "attachedTo": "\"Crystal Node\"",
+   "parent": {
+    "kind": "item",
+    "id": 90,
+    "name": "Crystal Node"
+   },
+   "localPosition": [
+    -0.33,
+    -0.07,
+    -0.469
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 0.971,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.418,
+    0.913,
+    -0.483
+   ],
+   "worldRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "worldScale": 1,
+   "visible": true,
+   "effectType": "glow",
+   "settings": {
+    "size": 0.83,
+    "strength": 1.2,
+    "flicker": 0.94,
+    "light": 1,
+    "color": "#ffffff"
+   },
+   "when": "always"
+  },
+  {
+   "name": "Glow",
+   "kind": "effect",
+   "attachedTo": "\"Crystal Node\"",
+   "parent": {
+    "kind": "item",
+    "id": 90,
+    "name": "Crystal Node"
+   },
+   "localPosition": [
+    -0.33,
+    -0.146,
+    0.453
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 0.971,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.418,
+    0.835,
+    0.467
+   ],
+   "worldRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "worldScale": 1,
+   "visible": true,
+   "effectType": "glow",
+   "settings": {
+    "size": 0.61,
+    "strength": 1.2,
+    "flicker": 0.9,
+    "light": 1,
+    "color": "#ffffff"
+   },
+   "when": "always"
+  },
+  {
+   "name": "Glow",
+   "kind": "effect",
+   "attachedTo": "\"Crystal Node\"",
+   "parent": {
+    "kind": "item",
+    "id": 90,
+    "name": "Crystal Node"
+   },
+   "localPosition": [
+    0.328,
+    -0.155,
+    0.415
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 0.971,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    0.26,
+    0.825,
+    0.427
+   ],
+   "worldRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "worldScale": 1,
+   "visible": true,
+   "effectType": "glow",
+   "settings": {
+    "size": 0.5,
+    "strength": 1.2,
+    "flicker": 0.9,
+    "light": 1,
+    "color": "#ffffff"
+   },
+   "when": "always"
+  },
+  {
+   "name": "Glow",
+   "kind": "effect",
+   "attachedTo": "\"Crystal Node\"",
+   "parent": {
+    "kind": "item",
+    "id": 90,
+    "name": "Crystal Node"
+   },
+   "localPosition": [
+    0.258,
+    -0.115,
+    -0.479
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 0.971,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    0.188,
+    0.867,
+    -0.493
+   ],
+   "worldRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "worldScale": 1,
+   "visible": true,
+   "effectType": "glow",
+   "settings": {
+    "size": 0.66,
+    "strength": 1.2,
+    "flicker": 1,
+    "light": 1,
+    "color": "#ffffff"
+   },
+   "when": "always"
+  },
+  {
+   "name": "Glow",
+   "kind": "effect",
+   "attachedTo": "\"Crystal Node\"",
+   "parent": {
+    "kind": "item",
+    "id": 90,
+    "name": "Crystal Node"
+   },
+   "localPosition": [
+    -0.435,
+    -0.458,
+    -0.045
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 0.971,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.526,
+    0.513,
+    -0.046
+   ],
+   "worldRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "worldScale": 1,
+   "visible": true,
+   "effectType": "glow",
+   "settings": {
+    "size": 0.5,
+    "strength": 1.2,
+    "flicker": 1,
+    "light": 1,
+    "color": "#ffffff"
+   },
+   "when": "always"
+  },
+  {
+   "name": "Glow",
+   "kind": "effect",
+   "attachedTo": "\"Crystal Node\"",
+   "parent": {
+    "kind": "item",
+    "id": 90,
+    "name": "Crystal Node"
+   },
+   "localPosition": [
+    0.509,
+    -0.412,
+    -0.07
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 0.971,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    0.446,
+    0.561,
+    -0.072
+   ],
+   "worldRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "worldScale": 1,
+   "visible": true,
+   "effectType": "glow",
+   "settings": {
+    "size": 0.49,
+    "strength": 1.2,
+    "flicker": 1,
+    "light": 1,
+    "color": "#ffffff"
+   },
+   "when": "always"
+  }
+ ],
+ "other": [],
+ "animationRules": "",
+ "animationRequests": [],
+ "editorScene": {
+  "units": "1 unit = 1 board square; Y is up",
+  "background": "#1a1420",
+  "view": {
+   "light": 1,
+   "reflections": 0.6,
+   "camera": {
+    "position": [
+     -4.629,
+     2.907,
+     -6.112
+    ],
+    "target": [
+     0,
+     1,
+     0
+    ]
+   }
+  },
+  "items": [
+   {
+    "id": 90,
+    "kind": "model",
+    "name": "Crystal Node",
+    "parent": {
+     "kind": "world"
+    },
+    "position": [
+     -0.078,
+     0.985,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 1.03,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "src": {
+     "key": "crystal-node",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "",
+     "playing": false,
+     "speed": 1,
+     "lock": "xz",
+     "time": 0
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "hideCut": 0.5,
+    "paint": {},
+    "borrowed": []
+   },
+   {
+    "id": 93,
+    "kind": "effect",
+    "name": "Twinkles",
+    "parent": {
+     "kind": "item",
+     "id": 90
+    },
+    "position": [
+     0.042,
+     0.187,
+     -0.052
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 0.971,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "twinkle",
+    "d": {
+     "area": 1.12,
+     "count": 38,
+     "size": 0.29,
+     "speed": 1.5,
+     "color": "#ffffff"
+    },
+    "when": "always"
+   },
+   {
+    "id": 95,
+    "kind": "effect",
+    "name": "Glow",
+    "parent": {
+     "kind": "item",
+     "id": 90
+    },
+    "position": [
+     0.006,
+     0.2,
+     -0.016
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 0.971,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "glow",
+    "d": {
+     "size": 1.44,
+     "strength": 2.89,
+     "flicker": 1,
+     "light": 1.16,
+     "color": "#ffffff"
+    },
+    "when": "always"
+   },
+   {
+    "id": 98,
+    "kind": "effect",
+    "name": "Sparks",
+    "parent": {
+     "kind": "item",
+     "id": 90
+    },
+    "position": [
+     0.011,
+     -0.644,
+     -0.025
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 0.971,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "sparks",
+    "d": {
+     "size": 0.095,
+     "rate": 80,
+     "speed": 2.35,
+     "spread": 0.34,
+     "gravity": 0.52,
+     "color": "#ffffff"
+    },
+    "when": "always"
+   },
+   {
+    "id": 99,
+    "kind": "effect",
+    "name": "Glow",
+    "parent": {
+     "kind": "item",
+     "id": 90
+    },
+    "position": [
+     -0.33,
+     -0.07,
+     -0.469
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 0.971,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "glow",
+    "d": {
+     "size": 0.83,
+     "strength": 1.2,
+     "flicker": 0.94,
+     "light": 1,
+     "color": "#ffffff"
+    },
+    "when": "always"
+   },
+   {
+    "id": 100,
+    "kind": "effect",
+    "name": "Glow",
+    "parent": {
+     "kind": "item",
+     "id": 90
+    },
+    "position": [
+     -0.33,
+     -0.146,
+     0.453
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 0.971,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "glow",
+    "d": {
+     "size": 0.61,
+     "strength": 1.2,
+     "flicker": 0.9,
+     "light": 1,
+     "color": "#ffffff"
+    },
+    "when": "always"
+   },
+   {
+    "id": 101,
+    "kind": "effect",
+    "name": "Glow",
+    "parent": {
+     "kind": "item",
+     "id": 90
+    },
+    "position": [
+     0.328,
+     -0.155,
+     0.415
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 0.971,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "glow",
+    "d": {
+     "size": 0.5,
+     "strength": 1.2,
+     "flicker": 0.9,
+     "light": 1,
+     "color": "#ffffff"
+    },
+    "when": "always"
+   },
+   {
+    "id": 102,
+    "kind": "effect",
+    "name": "Glow",
+    "parent": {
+     "kind": "item",
+     "id": 90
+    },
+    "position": [
+     0.258,
+     -0.115,
+     -0.479
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 0.971,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "glow",
+    "d": {
+     "size": 0.66,
+     "strength": 1.2,
+     "flicker": 1,
+     "light": 1,
+     "color": "#ffffff"
+    },
+    "when": "always"
+   },
+   {
+    "id": 103,
+    "kind": "effect",
+    "name": "Glow",
+    "parent": {
+     "kind": "item",
+     "id": 90
+    },
+    "position": [
+     -0.435,
+     -0.458,
+     -0.045
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 0.971,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "glow",
+    "d": {
+     "size": 0.5,
+     "strength": 1.2,
+     "flicker": 1,
+     "light": 1,
+     "color": "#ffffff"
+    },
+    "when": "always"
+   },
+   {
+    "id": 104,
+    "kind": "effect",
+    "name": "Glow",
+    "parent": {
+     "kind": "item",
+     "id": 90
+    },
+    "position": [
+     0.509,
+     -0.412,
+     -0.07
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 0.971,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "glow",
+    "d": {
+     "size": 0.49,
+     "strength": 1.2,
+     "flicker": 1,
+     "light": 1,
+     "color": "#ffffff"
+    },
+    "when": "always"
+   }
+  ]
+ }
+}
