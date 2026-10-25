@@ -1658,7 +1658,7 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 
 /* Owner (Oct 24): stat badge about half the old size with bigger numbers; it sits low in the unit's square and scales with the square (zoom) */
 .match .token{container-type:inline-size}
-.match .token .tk-stats{--bw:max(26px,96cqw)!important;bottom:3%!important}
+.match .token .tk-stats{--bw:max(26px,96cqw)!important;bottom:calc(45% - var(--bw)*.318)!important} /* centred on the square, a little below its middle */
 .match .token .tk-stats:not(#_w){transform:translate(-50%,0)!important}
 .match [data-unit-badge] .ub-n{-webkit-text-stroke:calc(var(--bw)*.065) #000;text-shadow:0 calc(var(--bw)*.03) calc(var(--bw)*.06) #000c}
 .match [data-unit-badge] .ub-h{font-size:calc(var(--bw)*.262*.18*6.2)}
