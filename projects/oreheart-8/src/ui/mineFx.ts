@@ -72,7 +72,7 @@ export function makeMineFx(low: boolean): MineFx {
       });
     },
     stats() {
-      return items.map((it) => ({ name: it.e.name, type: it.e.effectType, localPosition: it.e.localPosition, settings: { ...it.e.settings, color }, color, visible: it.obj.visible }));
+      return items.filter((it) => !isLow || it.obj.visible).map((it) => ({ name: it.e.name, type: it.e.effectType, localPosition: it.e.localPosition, settings: { ...it.e.settings, color }, color, visible: it.obj.visible }));
     },
   };
 }
