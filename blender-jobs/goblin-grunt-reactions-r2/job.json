@@ -17,7 +17,7 @@
  "progress": {
   "stage": "cancelled",
   "percent": 0,
-  "message": "Replaced by r2a and r2b (split into smaller jobs)"
+  "message": "Cancelled"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -89,6 +89,11 @@
    "at": "2026-10-26T09:56:45Z",
    "status": "cancelled",
    "by": "claude"
+  },
+  {
+   "at": "2026-10-26T09:58:45Z",
+   "status": "cancelled"
   }
- ]
+ ],
+ "updated_at": "2026-10-26T09:58:45Z"
 }
