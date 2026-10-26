@@ -240,6 +240,14 @@ def place_part(arm, pose, at, part_info):
     return scale
 
 
+def visible_at(vis, frame):
+    shown = True
+    for f, v in vis:
+        if frame >= f:
+            shown = v
+    return shown
+
+
 def key_visibility(objs, frames_visible):
     """frames_visible: list of (frame, visible). Constant keys on hide_render/hide_viewport."""
     for o in objs:
@@ -282,6 +290,7 @@ def quality_checks(arm, pose, act, L, ctx, spec_anim):
             q = pb.matrix.to_quaternion()
             if pb.name in prevq:
                 ang = math.degrees(prevq[pb.name].rotation_difference(q).angle)
+                ang = min(ang, 360 - ang)  # q and -q are the same rotation
                 if ang > fastest[0]:
                     fastest = (ang, pb.name, f)
             prevq[pb.name] = q
@@ -370,28 +379,52 @@ def main():
                 vis.append((int(at['show_at']), True))
             if at['hide_at'] is not None:
                 vis.append((int(at['hide_at']), False))
-            key_visibility(info[1], sorted(vis))
-            props.append(info)
-            report['notes'].append(f'{act.name}: {at["part"]} held in {at["bone"]} at scale {scale:.3f}')
+            props.append((info, act.name, sorted(vis)))
+            for o in info[1]:
+                o.hide_render = False
+                o.hide_set(False)
+            C.evaluate(arm, act, 0)
+            plo, phi = C.world_bbox(info[1])
+            hand = arm.matrix_world @ arm.pose.bones[at['bone']].head
+            report['notes'].append(f'{act.name}: {at["part"]} held in {at["bone"]} at scale {scale:.3f}; '
+                                   f'prop centre {C.to_char((plo + phi) / 2)} size {round((phi - plo).length, 3)} m, '
+                                   f'hand joint {C.to_char(hand)}')
     lo, hi = C.world_bbox([o for o in char_objs if o.type == 'MESH'])
-    C.make_camera(lo, hi, 35, 10, margin=2.0)
+    cam = C.make_camera(lo, hi, 35, 10, margin=2.0)
     for act, L, ctx in built:
         frames = sorted({0, L, *[e['frame'] for e in ctx._events], *[round(L * i / 6) for i in range(1, 6)]})
         for f in frames:
             C.evaluate(arm, act, f)
             sc.frame_set(f)
+            for info, clip, vis in props:  # prop visibility set directly for each picture
+                shown = clip == act.name and visible_at(vis, f)
+                for o in info[1]:
+                    o.hide_render = not shown
+            bpy.context.view_layer.update()
             C.render_to(os.path.join(out, f'preview-{act.name}-{f:03d}.png'))
+    # close-up of the hand and prop at frame 0, so the grip can be checked
+    for info, clip, vis in props[:1]:
+        act = next(a for a, _, _ in built if a.name == clip)
+        C.evaluate(arm, act, 0)
+        for o in info[1]:
+            o.hide_render = False
+        bpy.context.view_layer.update()
+        plo, phi = C.world_bbox(info[1])
+        bpy.data.objects.remove(sc.camera, do_unlink=True)
+        C.make_camera(plo, phi, 35, 10, margin=3.0)
+        C.render_to(os.path.join(out, f'preview-{clip}-grip.png'))
+    info = None
     # ---- exports
     ad = arm.animation_data
     ad.action = None
     ad.use_nla = True
-    for info in props:
+    for info, _, _ in props:
         for o in info[1]:
             o.animation_data_clear()
             o.hide_render = False
     bpy.context.view_layer.update()
     if props:
-        export(os.path.join(out, 'preview-weapon.glb'), char_objs + [p[0] for p in props] + [m for p in props for m in p[1]])
+        export(os.path.join(out, 'preview-weapon.glb'), char_objs + [p[0][0] for p in props] + [m for p in props for m in p[0][1]])
     exp_path = os.path.join(out, 'blender-export.glb')
     export(exp_path, char_objs)
     # ---- put the new clips into the ORIGINAL file (geometry and old clips untouched)
