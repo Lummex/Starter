@@ -8,23 +8,22 @@
    "seconds": 3.0,
    "key_frames": [
     3,
-    5,
-    9,
-    14,
-    17,
-    21,
-    26,
-    32,
-    38,
-    44,
-    47,
-    53,
-    58,
-    64,
-    70,
-    74,
-    80,
-    84
+    7,
+    12,
+    16,
+    19,
+    23,
+    28,
+    34,
+    40,
+    45,
+    49,
+    55,
+    62,
+    67,
+    72,
+    77,
+    83
    ],
    "bones_moved": [
     "Head",
@@ -46,25 +45,25 @@
    ],
    "events": [
     {
-     "frame": 14,
+     "frame": 16,
      "name": "down",
      "bone": "Hips",
-     "time": 0.4667
+     "time": 0.5333
     },
     {
-     "frame": 70,
+     "frame": 72,
      "name": "up",
      "bone": "Hips",
-     "time": 2.3333
+     "time": 2.4
     }
    ],
-   "fastest_turn_per_frame_deg": 56.3,
-   "feet_drift_m": 0.433
+   "fastest_turn_per_frame_deg": 36.8,
+   "feet_drift_m": 0.5299
   }
  ],
  "problems": [],
  "notes": [
-  "OH_React_Bowled: Bowled: brace 3, impact 5, airborne 9, down 14, bounce 17, dazed 21-44, sit-up 53, crouch 64, up 70, settle 74, hand off head 84, idle 90. Pan arm kept out to the side and raised while lying so the pan clears body and ground."
+  "OH_React_Bowled: Bowled: sweep 0-12, slam 16 (down), lie dazed 23-45, sit 55, crouch 62, stand 72 (up), idle 90. Right arm (pan) kept raised/out while on the ground so the pan stays clear of body and floor."
  ],
  "splice": {
   "problems": [],
@@ -86,6 +85,6 @@
    "worst_position_error_pct_of_height": 0.0008,
    "worst_rotation_error_deg": 0.0
   },
-  "written_clip_error_pct_of_height": 1e-05
+  "written_clip_error_pct_of_height": 2e-05
  }
 }
