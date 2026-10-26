@@ -1,0 +1,683 @@
+{
+ "file": "character.blender.glb",
+ "bytes": 3662964,
+ "blender": "5.2.3 LTS",
+ "fps": 30,
+ "axes": "points are (right, up, forward) in metres, character facing forward",
+ "warnings": [
+  "Icosphere: 42 vertices have no skin weight"
+ ],
+ "meshes": [
+  {
+   "name": "char1",
+   "vertices": 40454,
+   "triangles": 20659,
+   "materials": [
+    "Material_0"
+   ],
+   "uv_layers": 1,
+   "skinned": true,
+   "vertex_groups": 24,
+   "unweighted_vertices": 0,
+   "vertices_over_4_influences": 0
+  },
+  {
+   "name": "Icosphere",
+   "vertices": 42,
+   "triangles": 80,
+   "materials": [],
+   "uv_layers": 1,
+   "skinned": false,
+   "vertex_groups": 0,
+   "unweighted_vertices": 42,
+   "vertices_over_4_influences": 0
+  }
+ ],
+ "actions": [
+  {
+   "name": "Idle",
+   "frames": [
+    0.0,
+    120.0
+   ],
+   "seconds": 4.0,
+   "bones_animated": 24
+  },
+  {
+   "name": "Dead",
+   "frames": [
+    0.0,
+    89.0
+   ],
+   "seconds": 2.967,
+   "bones_animated": 24
+  },
+  {
+   "name": "Hit_Reaction",
+   "frames": [
+    0.0,
+    49.0
+   ],
+   "seconds": 1.633,
+   "bones_animated": 24
+  },
+  {
+   "name": "Heavy_Hammer_Swing",
+   "frames": [
+    0.0,
+    54.0
+   ],
+   "seconds": 1.8,
+   "bones_animated": 24
+  },
+  {
+   "name": "Casual_Walk",
+   "frames": [
+    0.0,
+    124.0
+   ],
+   "seconds": 4.133,
+   "bones_animated": 24
+  }
+ ],
+ "base_pose": "Idle frame 0",
+ "armature": {
+  "name": "Armature",
+  "bone_count": 24,
+  "object_scale": [
+   0.01,
+   0.01,
+   0.01
+  ],
+  "rotation_modes": [
+   "QUATERNION"
+  ],
+  "bones": {
+   "Hips": {
+    "parent": null,
+    "children": [
+     "Spine02",
+     "LeftUpLeg",
+     "RightUpLeg"
+    ],
+    "head": [
+     0.004,
+     0.3831,
+     0.0011
+    ],
+    "tail": [
+     -1.1758,
+     5.7157,
+     -1.2262
+    ],
+    "length": 5.5978,
+    "points": [
+     -0.2108,
+     0.9526,
+     -0.2193
+    ],
+    "deforms": true
+   },
+   "Spine02": {
+    "parent": "Hips",
+    "children": [
+     "Spine01"
+    ],
+    "head": [
+     -0.0078,
+     0.4364,
+     -0.0112
+    ],
+    "tail": [
+     -0.1877,
+     6.0306,
+     -0.0994
+    ],
+    "length": 5.5978,
+    "points": [
+     -0.0321,
+     0.9994,
+     -0.0158
+    ],
+    "deforms": true
+   },
+   "Spine01": {
+    "parent": "Spine02",
+    "children": [
+     "Spine"
+    ],
+    "head": [
+     -0.0096,
+     0.4923,
+     -0.012
+    ],
+    "tail": [
+     0.3181,
+     6.1696,
+     0.9491
+    ],
+    "length": 5.7674,
+    "points": [
+     0.0568,
+     0.9844,
+     0.1667
+    ],
+    "deforms": true
+   },
+   "Spine": {
+    "parent": "Spine01",
+    "children": [
+     "neck",
+     "LeftShoulder",
+     "RightShoulder"
+    ],
+    "head": [
+     -0.0063,
+     0.5491,
+     -0.0024
+    ],
+    "tail": [
+     0.3142,
+     3.3994,
+     1.0941
+    ],
+    "length": 3.0707,
+    "points": [
+     0.1044,
+     0.9282,
+     0.3571
+    ],
+    "deforms": true
+   },
+   "neck": {
+    "parent": "Spine",
+    "children": [
+     "Head"
+    ],
+    "head": [
+     -0.0031,
+     0.5776,
+     0.0085
+    ],
+    "tail": [
+     -0.0619,
+     4.7691,
+     0.2644
+    ],
+    "length": 4.1997,
+    "points": [
+     -0.014,
+     0.998,
+     0.0609
+    ],
+    "deforms": true
+   },
+   "Head": {
+    "parent": "neck",
+    "children": [
+     "head_end",
+     "headfront"
+    ],
+    "head": [
+     -0.0037,
+     0.6195,
+     0.0111
+    ],
+    "tail": [
+     -0.7671,
+     4.9283,
+     3.2642
+    ],
+    "length": 5.4526,
+    "points": [
+     -0.14,
+     0.7902,
+     0.5966
+    ],
+    "deforms": true
+   },
+   "head_end": {
+    "parent": "Head",
+    "children": [],
+    "head": [
+     -0.0114,
+     0.6626,
+     0.0436
+    ],
+    "tail": [
+     -0.7748,
+     4.9713,
+     3.2967
+    ],
+    "length": 5.4526,
+    "points": [
+     -0.14,
+     0.7902,
+     0.5966
+    ],
+    "deforms": true
+   },
+   "headfront": {
+    "parent": "Head",
+    "children": [],
+    "head": [
+     -0.0038,
+     0.567,
+     0.2231
+    ],
+    "tail": [
+     -0.0043,
+     -0.7439,
+     5.5157
+    ],
+    "length": 5.4526,
+    "points": [
+     -0.0001,
+     -0.2404,
+     0.9707
+    ],
+    "deforms": true
+   },
+   "LeftShoulder": {
+    "parent": "Spine",
+    "children": [
+     "LeftArm"
+    ],
+    "head": [
+     -0.0304,
+     0.6066,
+     0.0308
+    ],
+    "tail": [
+     -14.3982,
+     -0.3936,
+     1.461
+    ],
+    "length": 14.4735,
+    "points": [
+     -0.9927,
+     -0.0691,
+     0.0988
+    ],
+    "deforms": true
+   },
+   "LeftArm": {
+    "parent": "LeftShoulder",
+    "children": [
+     "LeftForeArm"
+    ],
+    "head": [
+     -0.1741,
+     0.5966,
+     0.0451
+    ],
+    "tail": [
+     -5.8231,
+     -13.6175,
+     -1.6536
+    ],
+    "length": 15.3896,
+    "points": [
+     -0.3671,
+     -0.9236,
+     -0.1104
+    ],
+    "deforms": true
+   },
+   "LeftForeArm": {
+    "parent": "LeftArm",
+    "children": [
+     "LeftHand"
+    ],
+    "head": [
+     -0.2305,
+     0.4545,
+     0.0281
+    ],
+    "tail": [
+     -0.6439,
+     -12.0319,
+     9.7094
+    ],
+    "length": 15.8053,
+    "points": [
+     -0.0262,
+     -0.79,
+     0.6125
+    ],
+    "deforms": true
+   },
+   "LeftHand": {
+    "parent": "LeftForeArm",
+    "children": [],
+    "head": [
+     -0.2347,
+     0.3296,
+     0.1249
+    ],
+    "tail": [
+     -4.0987,
+     -9.1315,
+     12.1817
+    ],
+    "length": 15.8053,
+    "points": [
+     -0.2445,
+     -0.5986,
+     0.7628
+    ],
+    "deforms": true
+   },
+   "RightShoulder": {
+    "parent": "Spine",
+    "children": [
+     "RightArm"
+    ],
+    "head": [
+     0.0326,
+     0.6009,
+     0.0055
+    ],
+    "tail": [
+     13.303,
+     -1.4047,
+     -6.593
+    ],
+    "length": 14.9555,
+    "points": [
+     0.8873,
+     -0.1341,
+     -0.4412
+    ],
+    "deforms": true
+   },
+   "RightArm": {
+    "parent": "RightShoulder",
+    "children": [
+     "RightForeArm"
+    ],
+    "head": [
+     0.1653,
+     0.5809,
+     -0.0605
+    ],
+    "tail": [
+     2.2474,
+     -11.4539,
+     -10.4011
+    ],
+    "length": 16.0031,
+    "points": [
+     0.1301,
+     -0.752,
+     -0.6462
+    ],
+    "deforms": true
+   },
+   "RightForeArm": {
+    "parent": "RightArm",
+    "children": [
+     "RightHand"
+    ],
+    "head": [
+     0.1861,
+     0.4605,
+     -0.1639
+    ],
+    "tail": [
+     6.0589,
+     -13.4243,
+     -0.0285
+    ],
+    "length": 15.0763,
+    "points": [
+     0.3895,
+     -0.921,
+     0.009
+    ],
+    "deforms": true
+   },
+   "RightHand": {
+    "parent": "RightForeArm",
+    "children": [],
+    "head": [
+     0.2448,
+     0.3217,
+     -0.1626
+    ],
+    "tail": [
+     4.0435,
+     -13.6943,
+     3.8894
+    ],
+    "length": 15.0763,
+    "points": [
+     0.252,
+     -0.9297,
+     0.2688
+    ],
+    "deforms": true
+   },
+   "LeftUpLeg": {
+    "parent": "Hips",
+    "children": [
+     "LeftLeg"
+    ],
+    "head": [
+     -0.0573,
+     0.348,
+     0.0584
+    ],
+    "tail": [
+     2.5328,
+     -14.8106,
+     9.1696
+    ],
+    "length": 17.8747,
+    "points": [
+     0.1449,
+     -0.848,
+     0.5097
+    ],
+    "deforms": true
+   },
+   "LeftLeg": {
+    "parent": "LeftUpLeg",
+    "children": [
+     "LeftFoot"
+    ],
+    "head": [
+     -0.0314,
+     0.1965,
+     0.1496
+    ],
+    "tail": [
+     -2.6489,
+     -13.3886,
+     -0.021
+    ],
+    "length": 13.8359,
+    "points": [
+     -0.1892,
+     -0.9819,
+     -0.0123
+    ],
+    "deforms": true
+   },
+   "LeftFoot": {
+    "parent": "LeftLeg",
+    "children": [
+     "LeftToeBase"
+    ],
+    "head": [
+     -0.0576,
+     0.0606,
+     0.1479
+    ],
+    "tail": [
+     5.3434,
+     -3.9121,
+     5.629
+    ],
+    "length": 8.66,
+    "points": [
+     0.6237,
+     -0.4587,
+     0.6329
+    ],
+    "deforms": true
+   },
+   "LeftToeBase": {
+    "parent": "LeftFoot",
+    "children": [],
+    "head": [
+     -0.0036,
+     0.0209,
+     0.2027
+    ],
+    "tail": [
+     6.4807,
+     0.3681,
+     5.9323
+    ],
+    "length": 8.66,
+    "points": [
+     0.7488,
+     0.0401,
+     0.6616
+    ],
+    "deforms": true
+   },
+   "RightUpLeg": {
+    "parent": "Hips",
+    "children": [
+     "RightLeg"
+    ],
+    "head": [
+     0.0658,
+     0.3485,
+     -0.0568
+    ],
+    "tail": [
+     4.4888,
+     -16.822,
+     -1.9914
+    ],
+    "length": 17.8362,
+    "points": [
+     0.248,
+     -0.9627,
+     -0.1085
+    ],
+    "deforms": true
+   },
+   "RightLeg": {
+    "parent": "RightUpLeg",
+    "children": [
+     "RightFoot"
+    ],
+    "head": [
+     0.1101,
+     0.1768,
+     -0.0761
+    ],
+    "tail": [
+     -4.1427,
+     -12.3003,
+     -5.735
+    ],
+    "length": 14.3453,
+    "points": [
+     -0.2965,
+     -0.8698,
+     -0.3945
+    ],
+    "deforms": true
+   },
+   "RightFoot": {
+    "parent": "RightLeg",
+    "children": [
+     "RightToeBase"
+    ],
+    "head": [
+     0.0675,
+     0.052,
+     -0.1327
+    ],
+    "tail": [
+     6.8836,
+     -3.6724,
+     2.118
+    ],
+    "length": 8.0868,
+    "points": [
+     0.8429,
+     -0.4606,
+     0.2783
+    ],
+    "deforms": true
+   },
+   "RightToeBase": {
+    "parent": "RightFoot",
+    "children": [],
+    "head": [
+     0.1357,
+     0.0148,
+     -0.1102
+    ],
+    "tail": [
+     7.7761,
+     0.3532,
+     2.5175
+    ],
+    "length": 8.0868,
+    "points": [
+     0.9448,
+     0.0418,
+     0.3249
+    ],
+    "deforms": true
+   }
+  }
+ },
+ "size": {
+  "min": [
+   -0.3325,
+   -0.05,
+   -0.2623
+  ],
+  "max": [
+   0.3282,
+   0.9608,
+   0.348
+  ],
+  "width": 0.6607,
+  "height": 1.0108,
+  "depth": 0.6103
+ },
+ "origin_at_feet": true,
+ "facing_check": {
+  "foot_points_forward_by": 5.7844,
+  "facing_ok": true
+ },
+ "key_bones": {
+  "hips": "Hips",
+  "spine": "Spine",
+  "neck": "neck",
+  "head": "Head",
+  "right shoulder": "RightShoulder",
+  "right upperarm": "RightArm",
+  "right forearm": "RightForeArm",
+  "right hand": "RightHand",
+  "left shoulder": "LeftShoulder",
+  "left upperarm": "LeftArm",
+  "left forearm": "LeftForeArm",
+  "left hand": "LeftHand",
+  "right thigh": "RightUpLeg",
+  "right shin": "RightLeg",
+  "right foot": "RightFoot",
+  "left thigh": "LeftUpLeg",
+  "left shin": "LeftLeg",
+  "left foot": "LeftFoot"
+ }
+}
