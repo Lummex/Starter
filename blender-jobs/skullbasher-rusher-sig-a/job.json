@@ -2,7 +2,7 @@
  "id": "skullbasher-rusher-sig-a",
  "type": "animate",
  "asset_id": "skullbasher-rusher",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:46:41Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T10:41:41Z",
- "error": {
-  "message": "{\"message\":\"is at 2a2991b072e67eac26952c1f4ead9f76d1e8e948 but expected d28bd20e9145ac540d870aa648a8f3d1e6047e0e\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
-  "at": "2026-10-26T10:31:46Z"
- },
+ "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "2 animation(s) built and checked: OH_Idle, OH_Walk"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/skullbasher-rusher/char.glb@factory/issue-8"
@@ -93,7 +90,240 @@
   {
    "at": "2026-10-26T10:39:53Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T10:42:33Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T10:41:41Z"
+ "updated_at": "2026-10-26T10:42:33Z",
+ "result": {
+  "summary": "2 animation(s) built and checked: OH_Idle, OH_Walk",
+  "files": [
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/char.glb",
+    "bytes": 1230644,
+    "sha256": "16f65ae0aa494652b8a1325a06eb47f6664764108236f8b196c66990e4752769"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/events.json",
+    "bytes": 307,
+    "sha256": "6c11dd1f135a27a0381c7ae0f1813a7d96122bd11b598a8dd265fcea689c16c7"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/inspection.json",
+    "bytes": 10265,
+    "sha256": "cd35195595a30ab9433b948de70ad96edf282e14ae2441d75b5525d7b5bd5c70"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/build-report.json",
+    "bytes": 2625,
+    "sha256": "d4c38a2787edecf82481f9fc27541c01c3fd67df4f4956a6ae02e3784b9d8b42"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/validation.json",
+    "bytes": 1009,
+    "sha256": "7244d78129b26face522636df7f5e2f47f37f71a207407a0ec4748921ca8c740"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/final-OH_Idle-000.png",
+    "bytes": 177694,
+    "sha256": "98595a69bb8644f7db12bfea477bd020e0c42b1f9a8fe15f4263659dfa7a0f29"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/final-OH_Idle-018.png",
+    "bytes": 177364,
+    "sha256": "7b9c8ccee465e9700d6b5246cbf762ed485dcaf01f18a30ccc4c6d54e802cf34"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/final-OH_Idle-036.png",
+    "bytes": 173018,
+    "sha256": "37e3093b8a3d3cb1fa34efeea9f19587209b4d36b28461e2ff0f91b2d93ac20c"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/final-OH_Idle-054.png",
+    "bytes": 171939,
+    "sha256": "46e6dafb0306c751ee7f7265ba17c675ce300143f9fa362e8ed41de8e231011a"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/final-OH_Idle-072.png",
+    "bytes": 177697,
+    "sha256": "0ae2c0cdfff584eec7e7ede2c179bae233a4be40283b362b24685f9521c9b016"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/final-OH_Walk-000.png",
+    "bytes": 177694,
+    "sha256": "0fe3f280c9725873634c02a5815d54a0fcfc933f29d0e5c79bb22e75e0adb789"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/final-OH_Walk-006.png",
+    "bytes": 169995,
+    "sha256": "ddf11fcd7df036607ac6ad0fafe0b28289c4245bc453f3ddde69921f10057cf1"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/final-OH_Walk-012.png",
+    "bytes": 169210,
+    "sha256": "b82fcc9137ee911fe528e2ad22f3ff2ad24d0c52099fa0ba746105ca2633dcc6"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/final-OH_Walk-018.png",
+    "bytes": 169606,
+    "sha256": "7ec828a2d7b667af579d8887a50cd95fc7d45f6ea465a24ea89d05670cbec052"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/final-OH_Walk-024.png",
+    "bytes": 177697,
+    "sha256": "fbc51fb0a1d06b2b139d592fec9dd8c2173865afacb7cd5636bc56aa97940f07"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Idle-000.png",
+    "bytes": 308321,
+    "sha256": "e63c05977b618e94f1e2d309336484f9900420397a0b180918123e3fc38c7b03"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Idle-012.png",
+    "bytes": 299161,
+    "sha256": "f008ba1898665b037a52c2114b187eb7909a055794a3842885edd5282a42c7d0"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Idle-024.png",
+    "bytes": 297626,
+    "sha256": "02dcd706ea31302f63391bcfca05a97a0d76edf2bd9c338f4b0278ea2e587a01"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Idle-036.png",
+    "bytes": 300687,
+    "sha256": "d9a9fc09b6f419eae8caea09984150d7069dd0c159a025dc217b912bd5abf53f"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Idle-048.png",
+    "bytes": 300170,
+    "sha256": "edbd2bcd718e1d4a0eda5ceaab04cfea86cd0a43132c0eb692f3f4863febc327"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Idle-060.png",
+    "bytes": 305401,
+    "sha256": "c3b0052bb29fd85f64f39c1733b41ec770ebac637867b1e8c3277b4f63445d51"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Idle-072.png",
+    "bytes": 308321,
+    "sha256": "15a2ca0fd25d78dc2ece9149854b8cbbe1b7e9964a7528d98b91fbc429a72c61"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Walk-000.png",
+    "bytes": 308321,
+    "sha256": "3248e312bc26812400a0288951ca2634fdf8b9fa2b27e8b62d50de1b917ef9d7"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Walk-004.png",
+    "bytes": 297077,
+    "sha256": "6ab5ad339f3d8224d496fe25dbb9ded8b07bb474447fb0865302af293a8e5727"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Walk-008.png",
+    "bytes": 295397,
+    "sha256": "0a4c1c3a16ac1227161f1caf7119e0785333428c5830751835d74dbb410f11c0"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Walk-012.png",
+    "bytes": 295033,
+    "sha256": "2fbb99d40ddca7fa28a28401ce17cf5caeb26ec5adcf76dd446caa8f55efd19e"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Walk-016.png",
+    "bytes": 294883,
+    "sha256": "d2139d13a486d654f4aead0a8def7dcefd7898bb88e581809b0037bb852e1a33"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Walk-020.png",
+    "bytes": 296880,
+    "sha256": "c74daa5b3e998d146b2aa6e63ba7f68c2dddb744cc161a391b115768451e44c3"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/preview-OH_Walk-024.png",
+    "bytes": 308321,
+    "sha256": "d8dd429caf6d204ecab48be52541ac2b55b77b448bb563b808def149bb5b3163"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/anim-OH_Idle.py.txt",
+    "bytes": 8465,
+    "sha256": "815edfb745e184ba6b1bd8b25a56149283ffaf4b1083ab268bf0aa0030d4eccf"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-a/out/anim-OH_Walk.py.txt",
+    "bytes": 5794,
+    "sha256": "f1f7eca13b33110d9715e046d6a35e2bd08a456b27533e1fc68529025fa6f689"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 36633,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Walk": [
+      0.0,
+      24.0
+     ],
+     "OH_Idle": [
+      0.0,
+      72.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Idle": {
+      "keys": 73,
+      "seconds": 2.4
+     },
+     "OH_Walk": {
+      "keys": 25,
+      "seconds": 0.8
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0014,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 2e-05
+   }
+  }
+ }
 }
