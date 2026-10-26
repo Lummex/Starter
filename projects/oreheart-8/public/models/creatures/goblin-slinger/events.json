@@ -1,0 +1,21 @@
+{
+ "asset_id": "goblin-slinger",
+ "fps": 30,
+ "clips": {
+  "Skull_Throw": {
+   "frames": 48,
+   "duration": 1.6,
+   "loop": false,
+   "events": [
+    {
+     "frame": 19,
+     "name": "projectile_release",
+     "bone": "RightHand",
+     "time": 0.6333
+    }
+   ],
+   "attachments": []
+  }
+ },
+ "note": "Made by the Blender worker (job goblin-slinger-skull-throw-003). The held skull mace stays in the hand; the game spawns the flying skull at projectile_release."
+}
