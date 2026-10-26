@@ -11,8 +11,8 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:19:41Z",
- "heartbeat_at": "2026-10-26T11:14:41Z",
+ "lease_until": "2026-10-26T11:21:15Z",
+ "heartbeat_at": "2026-10-26T11:16:15Z",
  "error": {
   "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r2/out/inspection.json does not match 332787a2941bc5b6848614995271e71da07d1994\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:13:45Z"
@@ -153,5 +153,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T11:14:41Z"
+ "updated_at": "2026-10-26T11:16:15Z"
 }
