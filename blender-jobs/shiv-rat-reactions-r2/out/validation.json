@@ -1,0 +1,77 @@
+{
+ "ok": true,
+ "problems": [],
+ "checks": {
+  "bones": 24,
+  "mesh_vertices": 39157,
+  "skinned_meshes": [
+   "char1"
+  ],
+  "clips": {
+   "Idle": [
+    0.0,
+    120.0
+   ],
+   "OH_React_Lifted": [
+    0.0,
+    48.0
+   ],
+   "OH_React_Backstab": [
+    0.0,
+    60.0
+   ],
+   "OH_React_Bowled": [
+    0.0,
+    90.0
+   ],
+   "Dead": [
+    0.0,
+    89.0
+   ],
+   "Hit_Reaction": [
+    0.0,
+    49.0
+   ],
+   "Thrust_Slash": [
+    0.0,
+    90.0
+   ],
+   "Quick_Walk": [
+    0.0,
+    90.0
+   ]
+  }
+ },
+ "blender": "5.2.3 LTS",
+ "build_problems": [],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_React_Bowled": {
+    "keys": 91,
+    "seconds": 3.0
+   },
+   "OH_React_Backstab": {
+    "keys": 61,
+    "seconds": 2.0
+   },
+   "OH_React_Lifted": {
+    "keys": 49,
+    "seconds": 1.6
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Quick_Walk",
+    "Thrust_Slash",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0017,
+   "worst_rotation_error_deg": 0.002
+  },
+  "written_clip_error_pct_of_height": 0.00091
+ }
+}
