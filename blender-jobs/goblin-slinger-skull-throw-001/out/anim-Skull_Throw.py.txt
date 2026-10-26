@@ -1,0 +1,103 @@
+def build(ctx):
+    ctx.length(48)
+    RELEASE = 21
+
+    hips = ctx.bone('hips')
+    sp2 = 'Spine02'
+    sp1 = 'Spine01'
+    sp = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm'); r_hand = ctx.bone('right hand')
+    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')
+    r_thigh = ctx.bone('right thigh'); r_shin = ctx.bone('right shin'); r_foot = ctx.bone('right foot')
+    l_thigh = ctx.bone('left thigh'); l_shin = ctx.bone('left shin'); l_foot = ctx.bone('left foot')
+
+    # Preview skull in the right hand, vanishes at release.
+    if 'skull-mace' in ctx.parts:
+        ctx.attach('skull-mace', r_hand, length=0.12, hide_at=RELEASE)
+
+    # ---- torso: (twist, bend) split across the three spine bones ----
+    def torso(f, twist, bend, side=0, interp='BEZIER'):
+        for b, w in ((sp2, 0.25), (sp1, 0.35), (sp, 0.4)):
+            ctx.key(f, b, turn=[('up', twist * w), ('right', bend * w), ('forward', side * w)], interp=interp)
+
+    def crouch(f, drop, fwd=0.0, k=1.0):
+        # small hip drop with knee bend so the feet stay roughly on the floor
+        ctx.key(f, hips, move=(0, -drop, fwd))
+        for th, sh, ft in ((r_thigh, r_shin, r_foot), (l_thigh, l_shin, l_foot)):
+            ctx.key(f, th, turn=[('right', 16 * k)])
+            ctx.key(f, sh, turn=[('right', -32 * k)])
+            ctx.key(f, ft, turn=[('right', 16 * k)])
+
+    def look(f, yaw, pitch=0):
+        ctx.key(f, neck, turn=[('up', yaw * 0.4), ('right', pitch * 0.4)])
+        ctx.key(f, head, turn=[('up', yaw * 0.6), ('right', pitch * 0.6)])
+
+    # ---- 0-6: anticipation dip, start twisting away ----
+    torso(6, -20, 8)
+    crouch(6, 0.012, k=0.8)
+    look(6, 12)
+    ctx.key(6, r_up, aim=(0.7, 0.1, -0.5))
+    ctx.key(6, r_fore, aim=(0.5, 0.5, -0.6))
+    ctx.key(6, l_up, aim=(-0.4, -0.3, 0.8))
+    ctx.key(6, l_fore, aim=(-0.2, 0.2, 0.95))
+
+    # ---- 11-16: big wind-up, arm high and back, skull behind head (held) ----
+    for f in (11, 16):
+        s = 1.0 if f == 11 else 1.06  # slight creep during hold
+        torso(f, -48 * s, 14 * s, side=8)
+        crouch(f, 0.016)
+        look(f, 34 * s, -6)
+        ctx.key(f, r_up, aim=(0.85, 0.45, -0.35))
+        ctx.key(f, r_fore, aim=(0.15, 0.55, -0.8))
+        ctx.key(f, r_hand, turn=[('right', 25)])
+        ctx.key(f, l_up, aim=(-0.35, 0.35, 0.85))
+        ctx.key(f, l_fore, aim=(-0.15, 0.45, 0.9))
+
+    # ---- 19: whip, torso snaps forward, elbow leads ----
+    torso(19, 5, -10, interp='LINEAR')
+    crouch(19, 0.012, fwd=0.01, k=0.8)
+    look(19, 2, 4)
+    ctx.key(19, r_up, aim=(0.65, 0.65, 0.35), interp='LINEAR')
+    ctx.key(19, r_fore, aim=(0.25, 0.9, -0.3), interp='LINEAR')
+    ctx.key(19, r_hand, turn=[('right', 15)])
+    ctx.key(19, l_up, aim=(-0.6, -0.2, 0.5))
+    ctx.key(19, l_fore, aim=(-0.5, -0.1, 0.6))
+
+    # ---- 21: RELEASE, arm extended toward target ----
+    torso(RELEASE, 25, -22, interp='LINEAR')
+    crouch(RELEASE, 0.014, fwd=0.015)
+    look(RELEASE, -6, 8)
+    ctx.key(RELEASE, r_up, aim=(0.35, 0.45, 0.82), interp='LINEAR')
+    ctx.key(RELEASE, r_fore, aim=(0.15, 0.3, 0.95), interp='LINEAR')
+    ctx.key(RELEASE, r_hand, turn=[('right', -25)])
+    ctx.key(RELEASE, l_up, aim=(-0.6, -0.5, -0.3))
+    ctx.key(RELEASE, l_fore, aim=(-0.3, -0.4, 0.2))
+    ctx.event(RELEASE, 'projectile_release', bone=r_hand)
+
+    # ---- 25-28: follow-through across the body (overshoot, held) ----
+    for f in (25, 28):
+        s = 1.0 if f == 25 else 0.94
+        torso(f, 42 * s, -32 * s, side=-6)
+        crouch(f, 0.018, fwd=0.015, k=1.1)
+        look(f, -18 * s, 14)
+        ctx.key(f, r_up, aim=(-0.35, -0.45, 0.82))
+        ctx.key(f, r_fore, aim=(-0.65, -0.55, 0.5))
+        ctx.key(f, r_hand, turn=[('right', -30)])
+        ctx.key(f, l_up, aim=(-0.55, -0.6, -0.55))
+        ctx.key(f, l_fore, aim=(-0.3, -0.7, 0.1))
+
+    # ---- 33: recoil past neutral (settle overshoot) ----
+    torso(33, -8, 6)
+    crouch(33, 0.006, k=0.4)
+    look(33, 4, -3)
+    ctx.key(33, r_up, aim=(0.25, -0.8, -0.3))
+    ctx.key(33, r_fore, aim=(0.35, -0.9, 0.15))
+    ctx.key(33, l_up, aim=(-0.4, -0.9, 0.0))
+
+    # ---- 38: almost idle; frame 48 auto-returns to base pose ----
+    torso(38, 3, -2)
+    look(38, -1, 0)
+
+    ctx.note('Skull_Throw: dip 6, wind-up hold 11-16, whip 19, release 21, follow-through hold 25-28, recoil 33, idle 48.')
