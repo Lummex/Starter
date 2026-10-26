@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:52:46Z",
- "heartbeat_at": "2026-10-26T10:47:46Z",
+ "lease_until": "2026-10-26T10:53:41Z",
+ "heartbeat_at": "2026-10-26T10:48:41Z",
  "error": null,
  "progress": {
-  "stage": "designing",
-  "percent": 25,
-  "message": "Claude Code is designing the animation"
+  "stage": "animating",
+  "percent": 35,
+  "message": "Building the keyframes in Blender and rendering previews"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/junk-shaman/char.glb@factory/issue-8"
@@ -82,5 +82,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:47:46Z"
+ "updated_at": "2026-10-26T10:48:41Z"
 }
