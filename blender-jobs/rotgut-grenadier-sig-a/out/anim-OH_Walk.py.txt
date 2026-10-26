@@ -1,0 +1,59 @@
+def build(ctx):
+    ctx.length(24)
+    hips = ctx.bone('hips')
+    sp2 = 'Spine02'
+    spine = ctx.bone('spine')
+    head = ctx.bone('head')
+    rua = ctx.bone('right upperarm'); rfa = ctx.bone('right forearm'); rh = ctx.bone('right hand')
+    lua = ctx.bone('left upperarm'); lfa = ctx.bone('left forearm')
+    lth, lsh, lft = ctx.bone('left thigh'), ctx.bone('left shin'), ctx.bone('left foot')
+    rth, rsh, rft = ctx.bone('right thigh'), ctx.bone('right shin'), ctx.bone('right foot')
+
+    def leg(f, th, sh, ft, a, b, c):
+        ctx.key(f, th, turn=[('right', a)])
+        ctx.key(f, sh, turn=[('right', b)])
+        ctx.key(f, ft, turn=[('right', c)])
+
+    # Frames 0 and 24 are left unkeyed: the base pose is already a contact (left foot forward),
+    # so the cycle starts/ends exactly in idle and loops. Frame 12 is the mirrored contact.
+    # In place like a treadmill: the standing foot slides back, the free foot lifts and swings forward.
+    # 6: passing, standing on left, right knee hiked up (waddle = high knee, short step)
+    leg(6, lth, lsh, lft, -20, 18, 2)
+    leg(6, rth, rsh, rft, 22, -50, 30)
+    ctx.key(6, hips, move=(-0.016, 0.014, 0.004))
+    # 12: contact, right forward / left back, weight drops
+    leg(12, rth, rsh, rft, 34, -12, -22)
+    leg(12, lth, lsh, lft, -34, 12, 26)
+    ctx.key(12, hips, move=(0, -0.004, 0.004))
+    # 18: passing, standing on right, left knee hiked up
+    leg(18, rth, rsh, rft, 14, 8, -22)
+    leg(18, lth, lsh, lft, -10, -46, 44)
+    ctx.key(18, hips, move=(0.016, 0.014, 0.004))
+
+    # Waddle: belly pushed out, upper body leans back and rolls hard over the standing leg,
+    # head bobs late. Base at 0/24, so the lean builds in and peaks at the passings.
+    roll = {6: -11, 12: 0, 18: 11}
+    lean = {6: 9, 12: 5, 18: 9}
+    for f, r in roll.items():
+        ctx.key(f, sp2, turn=[('right', lean[f] * 0.6), ('forward', r * 0.5)])
+        ctx.key(f, spine, turn=[('right', lean[f] * 0.5), ('forward', r * 0.6), ('up', -r * 0.5)])
+        ctx.key(f, head, turn=[('right', -lean[f]), ('forward', -r * 0.9)])
+    ctx.key(9, head, turn=[('right', -2), ('forward', 4)])
+    ctx.key(21, head, turn=[('right', -2), ('forward', -4)])
+
+    # Spatula waved out front like he's bossing the kitchen around; hand out to the side,
+    # well clear of the belly and the ground. Arm swings forward with the left leg's back-swing.
+    for f, a, e, w in ((6, (0.6, -0.35, 0.72), 60, -35),
+                       (9, (0.55, -0.2, 0.81), 75, 30),
+                       (12, (0.55, -0.25, 0.8), 70, -30),
+                       (15, (0.55, -0.15, 0.82), 78, 30),
+                       (18, (0.6, -0.4, 0.69), 55, -20)):
+        ctx.key(f, rua, aim=a)
+        ctx.key(f, rfa, turn=[('right', e)])
+        ctx.key(f, rh, turn=[('forward', w), ('right', -10)])
+    # Left arm swings opposite, elbow out for the waddle
+    for f, s in ((6, 0.05), (12, -0.45), (18, -0.1)):
+        ctx.key(f, lua, aim=(-0.55, -0.8, s))
+        ctx.key(f, lfa, turn=[('right', 30)])
+    ctx.note('Walk: base pose = contact at 0/24 (unkeyed, loops into idle), mirrored contact 12, '
+             'high-knee passings 6/18 with hip bob, belly-out lean and side roll; spatula waves 6-18.')
