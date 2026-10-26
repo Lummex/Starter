@@ -2,7 +2,7 @@
  "id": "goblin-sneak-sig-a",
  "type": "animate",
  "asset_id": "goblin-sneak",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:03:23Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T09:58:23Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "2 animation(s) built and checked: OH_Idle, OH_Walk"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/char.glb@factory/issue-8"
@@ -72,7 +72,240 @@
   {
    "at": "2026-10-26T09:56:42Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T09:58:31Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T09:58:23Z"
+ "updated_at": "2026-10-26T09:58:31Z",
+ "result": {
+  "summary": "2 animation(s) built and checked: OH_Idle, OH_Walk",
+  "files": [
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/char.glb",
+    "bytes": 1296528,
+    "sha256": "848f517026e503fc7ae617af99040f0e4812f2aa91b2c5b951b40220eee48b5f"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/events.json",
+    "bytes": 301,
+    "sha256": "86df7e1d5a98fde9c27b22ecdaea1d36263574bdf74c47295d29f51c79f5a0e1"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/inspection.json",
+    "bytes": 10293,
+    "sha256": "dfab33a990b2f25aa3385b26c92361672a397fb5a958c593f55ddc91c1453583"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/build-report.json",
+    "bytes": 2270,
+    "sha256": "bb059f825102a604c7f5e1df6e4e35094678ef5d070e8321fed788f9e9a58c6a"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/validation.json",
+    "bytes": 1009,
+    "sha256": "1e07cd74fdc5492de0bbfc17a9d2fc02a0937f299888e5bf8daadc5c30e8b348"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/final-OH_Idle-000.png",
+    "bytes": 180760,
+    "sha256": "c88bb8023188326c066e4285b41356c1cf804aacfcdeafb96195d7c728975ea9"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/final-OH_Idle-020.png",
+    "bytes": 173411,
+    "sha256": "b88d388c3f4dbffc3e89154b02066df78bbda455dcae568d59d3660fce8f6609"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/final-OH_Idle-039.png",
+    "bytes": 175173,
+    "sha256": "ef047dfd4dd467f1dc9ba8b58c3346461e56b7d4f5a40bc01715fb8fc98c4ed4"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/final-OH_Idle-058.png",
+    "bytes": 174843,
+    "sha256": "ad6a225f9f9b2c0139b2bcb19b43f67175d6404a45d8a232372974330f6d5fcd"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/final-OH_Idle-078.png",
+    "bytes": 180760,
+    "sha256": "0db3c984609df8efb97c24d5286c59e6f00f64bdc9e8524b8511933483b1b061"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/final-OH_Walk-000.png",
+    "bytes": 180760,
+    "sha256": "c85062d4210cc463e03544b6aa5ac588a83d7c0d3eac5fa1a75403e27c72f278"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/final-OH_Walk-006.png",
+    "bytes": 173112,
+    "sha256": "c1306923d612988f81f301bbcb3166e79774013e90626ccb09457079574c6f04"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/final-OH_Walk-012.png",
+    "bytes": 176904,
+    "sha256": "adb17d8a8d9fc0f339b4f5a05589caab9b6633f9ae14ef0a7c32ded4a478c755"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/final-OH_Walk-018.png",
+    "bytes": 173117,
+    "sha256": "7d9911782556f1d5912a12ea1fbcb01ba08da9851df30ea623a2c16fc6af173b"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/final-OH_Walk-024.png",
+    "bytes": 180763,
+    "sha256": "0a4da8faf40ee77935237835d8919a6097798cf127f9103b4eb402f081a5acf1"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Idle-000.png",
+    "bytes": 313039,
+    "sha256": "9540d9e4fddff3843d7294b9329dba2743642353e6d47477ee4ce53d78ab3ab1"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Idle-013.png",
+    "bytes": 297292,
+    "sha256": "f569e039664fc445c80752e68f10cfb8d0b9f4b7ffc3912671582c5b6fd20c0c"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Idle-026.png",
+    "bytes": 302589,
+    "sha256": "f86383eb3f25f380d2f2b8790c4a6c8b4c93957cb9850c90c8305359f7b4e68e"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Idle-039.png",
+    "bytes": 303861,
+    "sha256": "28b4205d5756e380aca1eef3300893ece96612b5dfb7e303b1421eb375aa637e"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Idle-052.png",
+    "bytes": 303776,
+    "sha256": "01b8a34fbe4f0e616651290cb3c2f4ba7f52213210c2ea92fbe30166ce768009"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Idle-065.png",
+    "bytes": 303820,
+    "sha256": "df333f0caa3996b22a2e36d2227ccbc45782cad1b0590c0a293ee7dfd16b3b40"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Idle-078.png",
+    "bytes": 313039,
+    "sha256": "d2e1a1a35f5fe12994fc04861a06e5eb13842a1688b80cb7d6e3c82b08ad82f3"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Walk-000.png",
+    "bytes": 313039,
+    "sha256": "413b60c715614071c7e98f61285125147255f1dc69f6eb6aa7eb1e86143ba521"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Walk-004.png",
+    "bytes": 301956,
+    "sha256": "dd1bd024458770e15a2d54ca1a83de07bb28ec4b18606534d5d8a127bad1e2d7"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Walk-008.png",
+    "bytes": 302306,
+    "sha256": "8c5175e551903650888252528cd92716d4d80d84ea124587ac117db63fb802d4"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Walk-012.png",
+    "bytes": 306812,
+    "sha256": "34aa15b2cfa0213ca719c207a0d81b23cbc5612a5d97736dc7e5a59051ec57b7"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Walk-016.png",
+    "bytes": 301737,
+    "sha256": "4f0c906c4b2b7f3a6427d10228992c7870c692465097213519518dea337bb66d"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Walk-020.png",
+    "bytes": 302616,
+    "sha256": "5a957333fa3b6dea5c8ddd85c99eb3e7b07d187192bf571a17256fa337d7cd0c"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/preview-OH_Walk-024.png",
+    "bytes": 313039,
+    "sha256": "d25870db3f7bd811f9273a74389649cf9873d58eaa8ec33226ae9cb98743abd4"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/anim-OH_Idle.py.txt",
+    "bytes": 4738,
+    "sha256": "eaeebf0cf6802a60569bb2955a0f4fed023ee36d7dfb41235a34117a6cfc57dc"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-sig-a/out/anim-OH_Walk.py.txt",
+    "bytes": 4124,
+    "sha256": "b5442784f1cb5d5f1889cbd980c9835fc7b8961a92c93c41da3b95bc0714f88a"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 40387,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Walk": [
+      0.0,
+      24.0
+     ],
+     "OH_Idle": [
+      0.0,
+      78.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Idle": {
+      "keys": 79,
+      "seconds": 2.6
+     },
+     "OH_Walk": {
+      "keys": 25,
+      "seconds": 0.8
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0009,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 2e-05
+   }
+  }
+ }
 }
