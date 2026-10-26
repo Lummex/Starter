@@ -4,28 +4,29 @@
  "clips": [
   {
    "name": "OH_React_Bowled",
-   "frames": 92,
-   "seconds": 3.067,
+   "frames": 84,
+   "seconds": 2.8,
    "key_frames": [
-    0,
-    4,
-    8,
-    12,
-    15,
-    19,
-    25,
-    31,
-    37,
+    3,
+    6,
+    10,
+    14,
+    17,
+    21,
+    26,
+    32,
+    38,
     43,
     47,
-    51,
-    56,
-    60,
-    64,
-    69,
-    73,
-    79,
-    85
+    52,
+    54,
+    57,
+    61,
+    65,
+    68,
+    72,
+    76,
+    80
    ],
    "bones_moved": [
     "Head",
@@ -35,60 +36,56 @@
     "LeftForeArm",
     "LeftHand",
     "LeftLeg",
-    "LeftShoulder",
     "LeftUpLeg",
     "RightArm",
     "RightFoot",
     "RightForeArm",
     "RightHand",
     "RightLeg",
-    "RightShoulder",
     "RightUpLeg",
     "Spine",
     "Spine01",
-    "Spine02",
-    "neck"
+    "Spine02"
    ],
    "events": [
     {
-     "frame": 12,
+     "frame": 14,
      "name": "down",
      "bone": "Hips",
-     "time": 0.4
+     "time": 0.4667
     },
     {
-     "frame": 73,
+     "frame": 65,
      "name": "up",
      "bone": "Hips",
-     "time": 2.4333
+     "time": 2.1667
     }
    ],
-   "fastest_turn_per_frame_deg": 46.1,
-   "feet_drift_m": 0.4595
+   "fastest_turn_per_frame_deg": 54.2,
+   "feet_drift_m": 0.5179
   },
   {
    "name": "OH_React_Backstab",
-   "frames": 62,
-   "seconds": 2.067,
+   "frames": 60,
+   "seconds": 2.0,
    "key_frames": [
-    0,
     3,
-    5,
+    6,
     8,
-    11,
-    13,
+    10,
+    12,
     16,
     20,
-    24,
-    28,
-    32,
+    23,
+    26,
+    30,
+    33,
     36,
-    38,
-    40,
-    43,
+    39,
+    42,
     46,
-    51,
-    56
+    50,
+    54
    ],
    "bones_moved": [
     "Head",
@@ -98,37 +95,33 @@
     "LeftForeArm",
     "LeftHand",
     "LeftLeg",
-    "LeftShoulder",
     "LeftUpLeg",
     "RightArm",
     "RightFoot",
     "RightForeArm",
     "RightHand",
     "RightLeg",
-    "RightShoulder",
     "RightUpLeg",
     "Spine",
     "Spine01",
-    "Spine02",
-    "neck"
+    "Spine02"
    ],
    "events": [
     {
-     "frame": 5,
+     "frame": 3,
      "name": "hit",
      "bone": "Spine",
-     "time": 0.1667
+     "time": 0.1
     }
    ],
-   "fastest_turn_per_frame_deg": 43.9,
-   "feet_drift_m": 0.0051
+   "fastest_turn_per_frame_deg": 113.0,
+   "feet_drift_m": 0.0346
   },
   {
    "name": "OH_React_Lifted",
    "frames": 48,
    "seconds": 1.6,
    "key_frames": [
-    0,
     2,
     4,
     6,
@@ -151,8 +144,7 @@
     40,
     42,
     44,
-    46,
-    48
+    46
    ],
    "bones_moved": [
     "Head",
@@ -160,60 +152,39 @@
     "LeftArm",
     "LeftFoot",
     "LeftForeArm",
-    "LeftHand",
     "LeftLeg",
     "LeftUpLeg",
     "RightArm",
     "RightFoot",
     "RightForeArm",
-    "RightHand",
     "RightLeg",
     "RightUpLeg",
     "Spine",
     "Spine01",
-    "Spine02",
-    "neck"
+    "Spine02"
    ],
    "events": [],
-   "fastest_turn_per_frame_deg": 41.9,
-   "feet_drift_m": 0.2745
+   "fastest_turn_per_frame_deg": 47.1,
+   "feet_drift_m": 0.3146
   }
  ],
- "problems": [
-  "OH_React_Lifted: Hips is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: Spine02 is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: Spine01 is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: Spine is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: neck is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: Head is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: LeftUpLeg is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: LeftLeg is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: LeftFoot is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: RightUpLeg is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: RightLeg is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: RightFoot is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: LeftArm is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: LeftForeArm is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: LeftHand is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: RightArm is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: RightForeArm is not back in the idle pose at the last frame (48)",
-  "OH_React_Lifted: RightHand is not back in the idle pose at the last frame (48)"
- ],
+ "problems": [],
  "notes": [
-  "OH_React_Bowled: Bowled: swept 4, airborne 8, down 12, bounce 15, dazed 19-47, sit 56, crouch 64, up 73, idle 92",
-  "OH_React_Backstab: Backstab: hit/arch 5, overshoot 8, tremble 11-16, reach 20-32, brace 36, pull 38, yank 40-43, stagger 46, idle 62",
-  "OH_React_Lifted: Lifted: 48f loop through idle at 0/48; 2 alternating kicks, 3 arm flails/windmills, 1 body squirm; hips stay in place"
+  "OH_React_Bowled: Bowled: swept 6, airborne 10, down 14 (bounce 17), dazed 21-43, sit 52, knees up 57, squat 61, up 65 (hand on temple 52-76), shake off 80, idle 84",
+  "OH_React_Backstab: Backstab: hit/jolt 3 (belly out, back arched, arms rigid), overshoot 6 + tremble to 12, wince 16, looks over left shoulder and gropes 20-30 (elbow up by the head), tug 33-36, yank 39, stagger 42-46, idle by 54",
+  "OH_React_Backstab: Fastest move: LeftForeArm turns 113 degrees in one frame at frame 38 (may look like a pop)",
+  "OH_React_Lifted: Lifted: 48-frame loop starting/ending in idle; legs kick on 16 frames (alternating), left arm flaps on 24, pan arm on 16, torso/head squirm on 48; no hip travel"
  ],
  "splice": {
   "problems": [],
   "clips": {
    "OH_React_Bowled": {
-    "keys": 93,
-    "seconds": 3.0667
+    "keys": 85,
+    "seconds": 2.8
    },
    "OH_React_Backstab": {
-    "keys": 63,
-    "seconds": 2.0667
+    "keys": 61,
+    "seconds": 2.0
    },
    "OH_React_Lifted": {
     "keys": 49,
@@ -232,6 +203,6 @@
    "worst_position_error_pct_of_height": 0.0008,
    "worst_rotation_error_deg": 0.0
   },
-  "written_clip_error_pct_of_height": 5e-05
+  "written_clip_error_pct_of_height": 0.0001
  }
 }
