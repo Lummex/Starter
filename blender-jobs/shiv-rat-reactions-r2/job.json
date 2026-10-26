@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:42:01Z",
- "heartbeat_at": "2026-10-26T11:37:01Z",
+ "lease_until": "2026-10-26T11:42:11Z",
+ "heartbeat_at": "2026-10-26T11:37:11Z",
  "error": null,
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/shiv-rat/char.glb@factory/issue-8"
@@ -100,5 +100,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T11:37:01Z"
+ "updated_at": "2026-10-26T11:37:11Z"
 }
