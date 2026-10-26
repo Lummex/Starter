@@ -1,0 +1,178 @@
+import math
+import mathutils
+
+V = mathutils.Vector
+
+
+def _dir(ctx, n):
+    b = ctx.bones[n]
+    return (V(b['tail']) - V(b['head'])).normalized()
+
+
+def _rot(a, b):
+    return V(a).normalized().rotation_difference(V(b).normalized())
+
+
+def arm(ctx, f, side, up_d, fore_d, hand_d=None):
+    # Directions are world (character) directions; children are compensated for the parent's rotation.
+    pre = 'Left' if side == 'L' else 'Right'
+    ub, fb, hb = pre + 'Arm', pre + 'ForeArm', pre + 'Hand'
+    up_d = V(up_d).normalized()
+    fore_d = V(fore_d).normalized()
+    ru = _rot(_dir(ctx, ub), up_d)
+    fa = ru.inverted() @ fore_d
+    rf = _rot(_dir(ctx, fb), fa)
+    if hand_d is None:
+        hand_d = fore_d
+    ha = (ru @ rf).inverted() @ V(hand_d).normalized()
+    ctx.key(f, ub, aim=tuple(up_d))
+    ctx.key(f, fb, aim=tuple(fa))
+    ctx.key(f, hb, aim=tuple(ha))
+
+
+def leg(ctx, f, side, hip_move):
+    # Two-bone IK so the ankle stays exactly where it is in the base pose.
+    pre = 'Left' if side == 'L' else 'Right'
+    th, sh, ft = pre + 'UpLeg', pre + 'Leg', pre + 'Foot'
+    H0 = V(ctx.bones[th]['head'])
+    K0 = V(ctx.bones[sh]['head'])
+    A0 = V(ctx.bones[ft]['head'])
+    L1 = (K0 - H0).length
+    L2 = (A0 - K0).length
+    H = H0 + V(hip_move)
+    D = A0 - H
+    d = min(max(D.length, abs(L1 - L2) + 1e-4), (L1 + L2) * 0.999)
+    u = D.normalized()
+    a = (L1 * L1 - L2 * L2 + d * d) / (2 * d)
+    h = math.sqrt(max(L1 * L1 - a * a, 0.0))
+    u0 = (A0 - H0).normalized()
+    p = (K0 - H0) - u0 * (K0 - H0).dot(u0)
+    p = p - u * p.dot(u)
+    if p.length < 1e-6:
+        p = V((0.0, 0.0, 1.0)) - u * u.z
+    p.normalize()
+    K = H + u * a + p * h
+    T = H + u * d
+    rt = _rot(_dir(ctx, th), (K - H))
+    sa = rt.inverted() @ (T - K).normalized()
+    rs = _rot(_dir(ctx, sh), sa)
+    fa = (rt @ rs).inverted() @ _dir(ctx, ft)
+    ctx.key(f, th, aim=tuple((K - H).normalized()))
+    ctx.key(f, sh, aim=tuple(sa))
+    ctx.key(f, ft, aim=tuple(fa))
+
+
+def hips(ctx, f, move):
+    ctx.key(f, 'Hips', move=move)
+    leg(ctx, f, 'L', move)
+    leg(ctx, f, 'R', move)
+
+
+def build(ctx):
+    ctx.length(72)
+
+    # The skull is tossed and caught with the RIGHT hand (the hand that holds his skull mace).
+    skull = None
+    for p in ctx.parts:
+        n = p.lower()
+        if 'skull' in n and 'mace' not in n:
+            skull = p
+            break
+    if skull:
+        ctx.attach(skull, 'RightHand', length=0.1, offset=(0, 0.04, 0))
+        ctx.note('Preview skull attached to RightHand: ' + skull)
+    else:
+        ctx.note('No loose skull part; the toss reads from the right-hand flick, catch dip and head tracking.')
+
+    # ---- hips (legs IK-locked to the floor) ----
+    for f, m in ((6, (0, -0.012, 0)), (10, (0, -0.028, 0)), (14, (0, 0.006, 0)),
+                 (18, (0, -0.002, 0)), (21, (0, -0.034, 0)), (24, (0, -0.006, 0)), (27, (0, -0.014, 0)),
+                 (30, (0.01, -0.014, 0)), (34, (0.01, -0.014, 0)),
+                 (36, (-0.012, -0.016, 0)), (40, (-0.012, -0.016, 0)), (43, (0, -0.022, 0)),
+                 (45, (0, 0.002, 0)), (64, (0, -0.01, 0))):
+        hips(ctx, f, m)
+    # cackle bounce
+    for i, f in enumerate(range(47, 62, 2)):
+        hips(ctx, f, (0, -0.022 if i % 2 == 0 else -0.008, 0))
+
+    # ---- right arm: brings the skull forward, tosses it up and catches it with a heavy dip ----
+    R_REST = (_dir(ctx, 'RightArm'), _dir(ctx, 'RightForeArm'), _dir(ctx, 'RightForeArm'))
+    # palm-up hand held out in front of his right hip, clear of the belly
+    HOLD = ((0.5, -0.82, 0.28), (0.25, 0.1, 1.0), (0.2, 0.35, 1.0))
+    DIP = ((0.5, -0.84, 0.2), (0.25, -0.3, 1.0), (0.2, -0.5, 1.0))
+    TOSS = ((0.5, -0.7, 0.45), (0.2, 0.85, 0.5), (0.1, 1.0, 0.2))
+    WAIT = ((0.5, -0.8, 0.3), (0.25, 0.3, 1.0), (0.2, 0.55, 1.0))
+    CATCH = ((0.5, -0.86, 0.16), (0.25, -0.45, 1.0), (0.2, -0.55, 1.0))
+    OVER = ((0.5, -0.8, 0.3), (0.25, 0.22, 1.0), (0.2, 0.4, 1.0))
+    CLUTCH = ((0.55, -0.78, 0.3), (0.2, 0.25, 1.0), (0.15, 0.45, 1.0))
+    CLUTCH2 = ((0.55, -0.82, 0.24), (0.2, 0.08, 1.0), (0.15, 0.25, 1.0))
+    for f, pz in ((7, HOLD), (11, DIP), (14, TOSS), (17, WAIT), (19, WAIT), (21, CATCH),
+                  (24, OVER), (27, HOLD), (44, HOLD)):
+        arm(ctx, f, 'R', *pz)
+    # cackling: he jiggles the skull in his hand in time with the laugh
+    for i, f in enumerate(range(47, 62, 2)):
+        arm(ctx, f, 'R', *(CLUTCH2 if i % 2 == 0 else CLUTCH))
+    arm(ctx, 63, 'R', *HOLD)
+    arm(ctx, 68, 'R', *R_REST)
+
+    # ---- left arm: twitchy claw that points/shades while he scans, then slaps his belly laughing ----
+    L_REST = (_dir(ctx, 'LeftArm'), _dir(ctx, 'LeftForeArm'), _dir(ctx, 'LeftForeArm'))
+    L_OUT = ((-0.55, -0.8, 0.15), (-0.3, -0.35, 0.9), (-0.2, -0.2, 1.0))
+    L_POINT = ((-0.5, -0.45, 0.75), (-0.3, -0.05, 1.0), (-0.3, 0.0, 1.0))
+    L_BELLY = ((-0.4, -0.88, 0.2), (0.0, -0.1, 1.0), (0.05, -0.2, 1.0))
+    L_BELLY2 = ((-0.42, -0.86, 0.26), (0.0, 0.05, 1.0), (0.05, -0.05, 1.0))
+    arm(ctx, 10, 'L', *L_OUT)
+    arm(ctx, 21, 'L', *L_OUT)
+    arm(ctx, 24, 'L', *L_REST)
+    arm(ctx, 30, 'L', *L_POINT)       # points off to his left
+    arm(ctx, 34, 'L', *L_POINT)
+    arm(ctx, 37, 'L', *L_OUT)         # snaps back as he twitches the other way
+    arm(ctx, 42, 'L', *L_OUT)
+    for i, f in enumerate(range(47, 62, 2)):
+        arm(ctx, f, 'L', *(L_BELLY if i % 2 == 0 else L_BELLY2))
+    arm(ctx, 66, 'L', *L_REST)
+
+    # ---- spine ----
+    for f, t in ((6, [('right', -6)]), (10, [('right', -12)]), (14, [('right', 6)]),
+                 (18, [('right', -1)]), (21, [('right', -15)]), (24, [('right', -3)]), (27, [('right', -7)]),
+                 (30, [('right', -8), ('up', 14)]), (34, [('right', -8), ('up', 14)]),
+                 (36, [('right', -10), ('up', -16)]), (40, [('right', -10), ('up', -16)]),
+                 (43, [('right', -10), ('up', 0)]), (45, [('right', 9)]),
+                 (64, [('right', -3)])):
+        ctx.key(f, 'Spine02', turn=t)
+    for i, f in enumerate(range(47, 62, 2)):
+        ctx.key(f, 'Spine02', turn=[('right', 4 if i % 2 == 0 else 11), ('forward', 3 if i % 2 == 0 else -3)])
+        ctx.key(f, 'Spine', turn=[('right', -3 if i % 2 == 0 else 3)])
+    ctx.key(45, 'Spine', turn=[('right', 0)])
+    ctx.key(63, 'Spine', turn=[('right', 0)])
+
+    # ---- shoulders: shrug-shake while cackling ----
+    ctx.key(45, 'LeftShoulder', turn=[('forward', 0)])
+    ctx.key(45, 'RightShoulder', turn=[('forward', 0)])
+    for i, f in enumerate(range(47, 62, 2)):
+        up = (i % 2 == 1)
+        ctx.key(f, 'LeftShoulder', turn=[('forward', 12 if up else -2)])
+        ctx.key(f, 'RightShoulder', turn=[('forward', -12 if up else 2)])
+    ctx.key(64, 'LeftShoulder', turn=[('forward', 0)])
+    ctx.key(64, 'RightShoulder', turn=[('forward', 0)])
+
+    # ---- neck / head: eyes on the skull, twitchy look-around, head thrown back cackling ----
+    neck = ((7, [('right', -8), ('up', -6)]), (11, [('right', -10), ('up', -6)]), (14, [('right', 6)]),
+            (17, [('right', 12), ('up', -4)]), (19, [('right', 12), ('up', -4)]), (21, [('right', -10), ('up', -6)]),
+            (24, [('right', -2)]),
+            (28, [('up', 4)]), (30, [('up', 22)]), (34, [('up', 22)]), (36, [('up', -24)]), (40, [('up', -24)]),
+            (42, [('up', 4), ('right', -6)]), (44, [('up', 0), ('right', -4)]), (46, [('right', 10)]),
+            (60, [('right', 8)]), (65, [('right', 0)]))
+    for f, t in neck:
+        ctx.key(f, 'neck', turn=t)
+    head = ((7, [('right', -8), ('up', -8)]), (11, [('right', -14), ('up', -8)]), (14, [('right', 10)]),
+            (17, [('right', 18), ('up', -5)]), (19, [('right', 16), ('up', -5)]), (21, [('right', -16), ('up', -8)]),
+            (24, [('right', -4)]),
+            (28, [('up', 6)]), (30, [('up', 28), ('forward', 10)]), (34, [('up', 28), ('forward', 10)]),
+            (36, [('up', -32), ('forward', -12)]), (40, [('up', -32), ('forward', -12)]),
+            (42, [('up', 6), ('right', -8)]), (44, [('right', -6)]), (46, [('right', 20)]),
+            (60, [('right', 14)]), (65, [('right', 0)]))
+    for f, t in head:
+        ctx.key(f, 'Head', turn=t)
+    for i, f in enumerate(range(48, 60, 2)):
+        ctx.key(f, 'Head', turn=[('right', 22 if i % 2 == 0 else 16), ('forward', 4 if i % 2 == 0 else -4)])
