@@ -18,7 +18,7 @@
    ],
    "OH_Idle": [
     0.0,
-    72.0
+    90.0
    ],
    "Dead": [
     0.0,
@@ -44,8 +44,8 @@
   "problems": [],
   "clips": {
    "OH_Idle": {
-    "keys": 73,
-    "seconds": 2.4
+    "keys": 91,
+    "seconds": 3.0
    },
    "OH_Walk": {
     "keys": 33,
@@ -64,6 +64,6 @@
    "worst_position_error_pct_of_height": 0.0008,
    "worst_rotation_error_deg": 0.0
   },
-  "written_clip_error_pct_of_height": 4e-05
+  "written_clip_error_pct_of_height": 5e-05
  }
 }
