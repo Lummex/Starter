@@ -4,28 +4,28 @@
  "clips": [
   {
    "name": "OH_React_Bowled",
-   "frames": 90,
-   "seconds": 3.0,
+   "frames": 92,
+   "seconds": 3.067,
    "key_frames": [
-    2,
+    0,
     4,
     8,
     12,
     15,
     19,
-    24,
-    30,
-    33,
-    36,
-    41,
+    25,
+    31,
+    37,
+    43,
     47,
     51,
     56,
-    62,
-    66,
-    72,
-    78,
-    83
+    60,
+    64,
+    69,
+    73,
+    79,
+    85
    ],
    "bones_moved": [
     "Head",
@@ -35,15 +35,19 @@
     "LeftForeArm",
     "LeftHand",
     "LeftLeg",
+    "LeftShoulder",
     "LeftUpLeg",
     "RightArm",
     "RightFoot",
     "RightForeArm",
+    "RightHand",
     "RightLeg",
+    "RightShoulder",
     "RightUpLeg",
     "Spine",
     "Spine01",
-    "Spine02"
+    "Spine02",
+    "neck"
    ],
    "events": [
     {
@@ -53,38 +57,38 @@
      "time": 0.4
     },
     {
-     "frame": 62,
+     "frame": 73,
      "name": "up",
      "bone": "Hips",
-     "time": 2.0667
+     "time": 2.4333
     }
    ],
-   "fastest_turn_per_frame_deg": 58.1,
-   "feet_drift_m": 0.5494
+   "fastest_turn_per_frame_deg": 46.1,
+   "feet_drift_m": 0.4595
   },
   {
    "name": "OH_React_Backstab",
-   "frames": 60,
-   "seconds": 2.0,
+   "frames": 62,
+   "seconds": 2.067,
    "key_frames": [
-    2,
-    4,
-    7,
-    9,
+    0,
+    3,
+    5,
+    8,
     11,
     13,
-    17,
+    16,
     20,
-    23,
-    26,
-    29,
+    24,
+    28,
     32,
-    35,
+    36,
     38,
-    41,
-    45,
-    49,
-    53
+    40,
+    43,
+    46,
+    51,
+    56
    ],
    "bones_moved": [
     "Head",
@@ -94,33 +98,37 @@
     "LeftForeArm",
     "LeftHand",
     "LeftLeg",
+    "LeftShoulder",
     "LeftUpLeg",
     "RightArm",
     "RightFoot",
     "RightForeArm",
     "RightHand",
     "RightLeg",
+    "RightShoulder",
     "RightUpLeg",
     "Spine",
     "Spine01",
-    "Spine02"
+    "Spine02",
+    "neck"
    ],
    "events": [
     {
-     "frame": 4,
+     "frame": 5,
      "name": "hit",
      "bone": "Spine",
-     "time": 0.1333
+     "time": 0.1667
     }
    ],
-   "fastest_turn_per_frame_deg": 99.2,
-   "feet_drift_m": 0.023
+   "fastest_turn_per_frame_deg": 43.9,
+   "feet_drift_m": 0.0051
   },
   {
    "name": "OH_React_Lifted",
-   "frames": 60,
-   "seconds": 2.0,
+   "frames": 48,
+   "seconds": 1.6,
    "key_frames": [
+    0,
     2,
     4,
     6,
@@ -144,12 +152,7 @@
     42,
     44,
     46,
-    48,
-    50,
-    52,
-    54,
-    56,
-    58
+    48
    ],
    "bones_moved": [
     "Head",
@@ -168,31 +171,53 @@
     "RightUpLeg",
     "Spine",
     "Spine01",
-    "Spine02"
+    "Spine02",
+    "neck"
    ],
    "events": [],
-   "fastest_turn_per_frame_deg": 56.4,
-   "feet_drift_m": 0.2658
+   "fastest_turn_per_frame_deg": 41.9,
+   "feet_drift_m": 0.2745
   }
  ],
- "problems": [],
+ "problems": [
+  "OH_React_Lifted: Hips is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Spine02 is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Spine01 is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Spine is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: neck is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Head is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftUpLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftFoot is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightUpLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightFoot is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftForeArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftHand is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightForeArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightHand is not back in the idle pose at the last frame (48)"
+ ],
  "notes": [
-  "OH_React_Backstab: Fastest move: LeftHand turns 99 degrees in one frame at frame 34 (may look like a pop)"
+  "OH_React_Bowled: Bowled: swept 4, airborne 8, down 12, bounce 15, dazed 19-47, sit 56, crouch 64, up 73, idle 92",
+  "OH_React_Backstab: Backstab: hit/arch 5, overshoot 8, tremble 11-16, reach 20-32, brace 36, pull 38, yank 40-43, stagger 46, idle 62",
+  "OH_React_Lifted: Lifted: 48f loop through idle at 0/48; 2 alternating kicks, 3 arm flails/windmills, 1 body squirm; hips stay in place"
  ],
  "splice": {
   "problems": [],
   "clips": {
    "OH_React_Bowled": {
-    "keys": 91,
-    "seconds": 3.0
+    "keys": 93,
+    "seconds": 3.0667
    },
    "OH_React_Backstab": {
-    "keys": 61,
-    "seconds": 2.0
+    "keys": 63,
+    "seconds": 2.0667
    },
    "OH_React_Lifted": {
-    "keys": 61,
-    "seconds": 2.0
+    "keys": 49,
+    "seconds": 1.6
    }
   },
   "calibration": {
@@ -207,6 +232,6 @@
    "worst_position_error_pct_of_height": 0.0008,
    "worst_rotation_error_deg": 0.0
   },
-  "written_clip_error_pct_of_height": 2e-05
+  "written_clip_error_pct_of_height": 5e-05
  }
 }
