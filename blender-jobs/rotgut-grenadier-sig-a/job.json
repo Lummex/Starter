@@ -11,8 +11,8 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:26:38Z",
- "heartbeat_at": "2026-10-26T10:21:38Z",
+ "lease_until": "2026-10-26T10:28:16Z",
+ "heartbeat_at": "2026-10-26T10:23:16Z",
  "error": null,
  "progress": {
   "stage": "uploading",
@@ -74,5 +74,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T10:21:38Z"
+ "updated_at": "2026-10-26T10:23:16Z"
 }
