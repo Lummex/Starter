@@ -1,0 +1,118 @@
+import math
+
+
+def build(ctx):
+    ctx.length(33)
+
+    hips = ctx.bone('hips')
+    sp_lo = ctx.bone('Spine01')
+    sp_hi = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    r_up = ctx.bone('right upperarm')
+    r_fore = ctx.bone('right forearm')
+    r_hand = ctx.bone('right hand')
+    l_up = ctx.bone('left upperarm')
+    l_fore = ctx.bone('left forearm')
+    legs = [
+        (ctx.bone('left thigh'), ctx.bone('left shin'), ctx.bone('left foot')),
+        (ctx.bone('right thigh'), ctx.bone('right shin'), ctx.bone('right foot')),
+    ]
+    leg_len = 0.33
+
+    def body(f, bend=0.0, twist=0.0, knee=0.0, lift=0.0, fwd=0.0, sway=0.0, interp='BEZIER'):
+        # knee bend drops the hips by exactly the amount the legs fold, so planted feet stay on the ground
+        drop = leg_len * (1.0 - math.cos(math.radians(knee)))
+        ctx.key(f, hips, move=(sway, lift - drop, fwd), interp=interp)
+        for thigh, shin, foot in legs:
+            ctx.key(f, thigh, turn=[('right', knee)], interp=interp)
+            ctx.key(f, shin, turn=[('right', -2.0 * knee)], interp=interp)
+            ctx.key(f, foot, turn=[('right', knee)], interp=interp)
+        ctx.key(f, sp_lo, turn=[('up', twist * 0.5), ('right', bend * 0.5)], interp=interp)
+        ctx.key(f, sp_hi, turn=[('up', twist * 0.5), ('right', bend * 0.5)], interp=interp)
+
+    def look(f, yaw=0.0, pitch=0.0, tilt=0.0, interp='BEZIER'):
+        ctx.key(f, neck, turn=[('up', yaw * 0.4), ('right', pitch * 0.4)], interp=interp)
+        ctx.key(f, head, turn=[('up', yaw * 0.6), ('right', pitch * 0.6), ('forward', tilt)], interp=interp)
+
+    def chamber(f, interp='BEZIER'):
+        # elbow cocked back at the right hip, dagger pointing at the target, well clear of the body
+        ctx.key(f, r_up, aim=(0.45, -0.35, -0.55), interp=interp)
+        ctx.key(f, r_fore, aim=(0.25, 0.2, 0.95), interp=interp)
+        ctx.key(f, r_hand, aim=(0.1, 0.15, 1.0), interp=interp)
+
+    def stab(f, height=0.1, across=0.1, interp='BEZIER'):
+        ctx.key(f, r_up, aim=(across + 0.1, height, 1.0), interp=interp)
+        ctx.key(f, r_fore, aim=(across, height + 0.05, 1.0), interp=interp)
+        ctx.key(f, r_hand, aim=(across * 0.5, height + 0.05, 1.0), interp=interp)
+
+    def left_arm(f, up_dir, fore_dir, interp='BEZIER'):
+        ctx.key(f, l_up, aim=up_dir, interp=interp)
+        ctx.key(f, l_fore, aim=fore_dir, interp=interp)
+
+    # 3: sneaky coil - crouch low, shoulders wound right, dagger cocked, eyes snap to target
+    body(3, bend=-10, twist=-22, knee=24, fwd=-0.02)
+    look(3, yaw=18, pitch=8, tilt=-8, interp='CONSTANT')
+    chamber(3)
+    left_arm(3, (-0.55, -0.15, 0.6), (-0.3, 0.1, 0.95))
+
+    # 5: skip forward (feet leave the ground for the dart in)
+    body(5, bend=-18, twist=0, knee=8, lift=0.025, fwd=0.035, interp='LINEAR')
+    look(5, yaw=5, pitch=10)
+
+    # 7: land in the lunge + stab 1
+    body(7, bend=-22, twist=14, knee=20, fwd=0.065)
+    stab(7, height=0.12, across=0.05)
+    left_arm(7, (-0.5, -0.6, -0.55), (-0.3, -0.5, -0.2))
+    look(7, yaw=0, pitch=12)
+
+    # 9: yank back
+    body(9, bend=-18, twist=-8, knee=20, fwd=0.06)
+    chamber(9, interp='LINEAR')
+    look(9, yaw=-6, pitch=6, tilt=6, interp='CONSTANT')
+
+    # 11: stab 2 (lower, a touch across)
+    body(11, bend=-24, twist=16, knee=22, fwd=0.068)
+    stab(11, height=0.0, across=0.0, interp='LINEAR')
+    look(11, yaw=4, pitch=14)
+
+    # 13: deeper wind-up for the finisher
+    body(13, bend=-14, twist=-16, knee=22, fwd=0.058)
+    chamber(13)
+    look(13, yaw=-4, pitch=4, tilt=-8, interp='CONSTANT')
+
+    # 15: stab 3 = HIT, full reach with overshoot, held 2 frames
+    body(15, bend=-28, twist=24, knee=24, fwd=0.075, interp='LINEAR')
+    stab(15, height=0.08, across=0.0, interp='LINEAR')
+    left_arm(15, (-0.45, -0.5, -0.75), (-0.2, -0.3, -0.9))
+    look(15, yaw=0, pitch=16, tilt=0)
+    ctx.event(15, 'hit', bone=r_hand)
+    body(17, bend=-26, twist=20, knee=25, fwd=0.073)
+    stab(17, height=0.1, across=0.02)
+
+    # 19: snatch the blade back, coil for the hop
+    body(19, bend=-6, twist=-6, knee=28, fwd=0.07)
+    chamber(19)
+    left_arm(19, (-0.6, -0.4, 0.4), (-0.3, 0.2, 0.9))
+    look(19, yaw=-14, pitch=0, tilt=10, interp='CONSTANT')
+
+    # 22: hop back - airborne, legs tucked, arms flung forward, glancing around
+    body(22, bend=-12, twist=0, knee=14, lift=0.055, fwd=0.02, interp='BEZIER')
+    ctx.key(22, r_up, aim=(0.5, -0.3, 0.75))
+    ctx.key(22, r_fore, aim=(0.2, 0.3, 0.95))
+    ctx.key(22, r_hand, aim=(0.1, 0.3, 1.0))
+    left_arm(22, (-0.6, -0.3, 0.7), (-0.2, 0.2, 0.95))
+    look(22, yaw=16, pitch=-6, tilt=-6, interp='CONSTANT')
+
+    # 25: land hard and squash
+    body(25, bend=-14, twist=-4, knee=26, lift=0.0, fwd=0.0, interp='LINEAR')
+    chamber(25)
+    left_arm(25, (-0.6, -0.4, 0.4), (-0.3, 0.1, 0.9))
+    look(25, yaw=-10, pitch=8, tilt=6, interp='CONSTANT')
+
+    # 28: rebound overshoot, one last twitchy glance, then settle to idle at 33
+    body(28, bend=4, twist=3, knee=6)
+    look(28, yaw=12, pitch=-4, tilt=-4, interp='CONSTANT')
+    ctx.key(28, r_up, aim=(0.25, -0.75, -0.45))
+
+    ctx.note('Dart in skip 3-7, stabs at 7/11/15 (hit 15), hop back 19-25, settle 28-33.')
