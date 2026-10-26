@@ -1,0 +1,20 @@
+{
+ "asset_id": "goblin-pebbler",
+ "fps": 30,
+ "clips": {
+  "OH_Idle": {
+   "frames": 72,
+   "duration": 2.4,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Walk": {
+   "frames": 28,
+   "duration": 0.9333,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  }
+ }
+}
