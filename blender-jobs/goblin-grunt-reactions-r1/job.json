@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T09:13:51Z",
- "heartbeat_at": "2026-10-26T09:08:51Z",
+ "lease_until": "2026-10-26T09:14:55Z",
+ "heartbeat_at": "2026-10-26T09:09:55Z",
  "error": {
   "message": "{\"message\":\"is at 2db5ff4ba4ff090d383dad766d18c0581194f192 but expected bdbc12576ecbeac8d39acfda9ee84167c818964a\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T09:06:57Z"
  },
  "progress": {
-  "stage": "designing",
-  "percent": 25,
-  "message": "Claude Code is designing the animation"
+  "stage": "animating",
+  "percent": 35,
+  "message": "Building the keyframes in Blender and rendering previews"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -103,5 +103,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T09:08:51Z"
+ "updated_at": "2026-10-26T09:09:55Z"
 }
