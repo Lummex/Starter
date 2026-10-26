@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:14:42Z",
- "heartbeat_at": "2026-10-26T10:09:42Z",
+ "lease_until": "2026-10-26T10:14:47Z",
+ "heartbeat_at": "2026-10-26T10:09:47Z",
  "error": null,
  "progress": {
-  "stage": "preparing",
-  "percent": 5,
-  "message": "Copying the source model into a private work folder"
+  "stage": "inspecting",
+  "percent": 15,
+  "message": "Reading the model, skeleton and animations in Blender"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/junk-shaman/char.glb@factory/issue-8"
@@ -84,5 +84,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:09:42Z"
+ "updated_at": "2026-10-26T10:09:47Z"
 }
