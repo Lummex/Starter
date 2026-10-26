@@ -1,0 +1,128 @@
+def build(ctx):
+    L = 90
+    ctx.length(L)
+    s2 = ctx.bone('Spine02'); s1 = ctx.bone('Spine01')
+    head = ctx.bone('Head')
+    rup = ctx.bone('RightArm'); rfo = ctx.bone('RightForeArm'); rha = ctx.bone('RightHand')
+    lup = ctx.bone('LeftArm'); lfo = ctx.bone('LeftForeArm'); lha = ctx.bone('LeftHand')
+
+    # Pan resting on the right shoulder: elbow out and forward, hand up by the shoulder,
+    # pan laid back over the shoulder, well clear of the head.
+    def pan_rest(f, bob=0):
+        ctx.key(f, rup, aim=(0.6, -0.55 + bob * 0.03, 0.5))
+        ctx.key(f, rfo, aim=(-0.22, 0.85, -0.45))
+        ctx.key(f, rha, aim=(0.05, 0.6, -0.8), turn=[('right', bob * 4)])
+
+    def body(f, bend=-6, lean=0, twist=0):
+        ctx.key(f, s2, turn=[('right', bend * 0.5), ('forward', lean * 0.5)])
+        ctx.key(f, s1, turn=[('right', bend * 0.5), ('up', twist)])
+
+    def larm_down(f, swing=0):
+        ctx.key(f, lup, turn=[('right', swing)])
+        ctx.key(f, lfo, turn=[('right', 8)])
+        ctx.key(f, lha)
+
+    # frame 0 is the base pose (auto). Heave the pan up onto the shoulder.
+    # anticipation: arm dips back, chest sinks
+    ctx.key(4, rup, turn=[('right', -14)])
+    ctx.key(4, rfo, turn=[('right', 6)])
+    body(4, bend=-9, twist=4)
+    ctx.key(4, head, turn=[('right', -4)])
+    # swing up past the shoulder (overshoot), then thunk down onto it
+    pan_rest(10, bob=-1.5)
+    body(10, bend=0, twist=-4)
+    ctx.key(10, head, turn=[('right', 4), ('forward', -3)])
+    pan_rest(13, bob=1)
+    body(13, bend=-8, twist=1)
+    ctx.key(13, head, turn=[('right', -3), ('forward', 5)])
+    pan_rest(16)
+    body(16)
+    ctx.key(16, head, turn=[('forward', 4)])
+
+    # dumb little shrug, head tips up
+    body(19, bend=-3, lean=-2)
+    ctx.key(19, head, turn=[('right', 8), ('forward', -4)])
+    ctx.key(19, lup, aim=(-0.2, -0.85, 0.35))
+    ctx.key(19, lfo, aim=(0.3, -0.2, 0.9))
+
+    # finger goes in the nose (overshoot at 24, settle 26)
+    ctx.key(24, lup, aim=(0.22, -0.58, 0.78))
+    ctx.key(24, lfo, aim=(0.82, 0.45, 0.38))
+    ctx.key(24, lha, aim=(0.45, 0.8, 0.35))
+    ctx.key(24, head, turn=[('right', 14), ('forward', -6)])
+    body(24, bend=-1, lean=-3)
+    ctx.key(26, lup, aim=(0.2, -0.6, 0.75))
+    ctx.key(26, lfo, aim=(0.8, 0.42, 0.42))
+    ctx.key(26, lha, aim=(0.5, 0.75, 0.4))
+    ctx.key(26, head, turn=[('right', 12), ('forward', -5)])
+
+    # dig dig dig: wrist wiggles, head jiggles along
+    for i, f in enumerate((29, 32, 35, 38)):
+        s = 1 if i % 2 == 0 else -1
+        ctx.key(f, lup, aim=(0.2, -0.6, 0.75))
+        ctx.key(f, lfo, aim=(0.8, 0.42 + 0.04 * s, 0.42))
+        ctx.key(f, lha, aim=(0.5, 0.75, 0.4), twist=14 * s)
+        ctx.key(f, head, turn=[('right', 12 + 2 * s), ('forward', -5 + 3 * s)])
+    body(38, bend=-1, lean=-3)
+
+    # yank it out (fast) and hold it up in front of his face
+    ctx.key(41, lup, aim=(0.1, -0.55, 0.83))
+    ctx.key(41, lfo, aim=(0.45, 0.62, 0.65))
+    ctx.key(41, lha, aim=(0.3, 0.9, 0.3))
+    ctx.key(41, head, turn=[('right', -4), ('forward', -2)])
+    ctx.key(44, lup, aim=(0.1, -0.5, 0.86))
+    ctx.key(44, lfo, aim=(0.5, 0.5, 0.7))
+    ctx.key(44, lha, aim=(0.25, 0.85, 0.45))
+    ctx.key(44, head, turn=[('right', -14), ('forward', -10)])
+    body(44, bend=-9, lean=-2)
+
+    # dim stare: slow head tilt one way... then the other
+    ctx.key(49, head, turn=[('right', -12), ('forward', -14), ('up', 6)])
+    ctx.key(55, head, turn=[('right', -13), ('forward', 12), ('up', -6)])
+    ctx.key(55, lup, aim=(0.1, -0.5, 0.86))
+    ctx.key(55, lfo, aim=(0.5, 0.52, 0.68))
+    ctx.key(55, lha, aim=(0.25, 0.85, 0.45), twist=-20)
+    body(55, bend=-9, lean=-2)
+
+    # wipe it on his shirt: hand flat on his belly, heavy rubs
+    ctx.key(59, lup, aim=(0.25, -0.85, 0.48))
+    ctx.key(59, lfo, aim=(0.75, 0.1, 0.65))
+    ctx.key(59, lha, aim=(0.7, -0.3, 0.65))
+    ctx.key(59, head, turn=[('right', -16), ('forward', 2)])
+    body(59, bend=-8, lean=-4, twist=6)
+    for i, f in enumerate((62, 65, 68, 71)):
+        s = 1 if i % 2 == 0 else -1
+        ctx.key(f, lup, aim=(0.25, -0.85 + 0.05 * s, 0.5))
+        ctx.key(f, lfo, aim=(0.75 + 0.07 * s, 0.1 - 0.12 * s, 0.65))
+        ctx.key(f, lha, aim=(0.7, -0.3, 0.65))
+        body(f, bend=-8, lean=-4, twist=6 + 3 * s)
+    ctx.key(71, head, turn=[('right', -14), ('forward', -3)])
+
+    # satisfied: arm drops with a swing-through, chest puffs, pan gets a pat-bounce
+    larm_down(75, swing=-12)
+    body(75, bend=2, lean=1, twist=-2)
+    ctx.key(75, head, turn=[('right', 6), ('forward', 6)])
+    pan_rest(75, bob=1)
+    larm_down(78, swing=5)
+    pan_rest(78, bob=-1)
+    body(78, bend=-7)
+    ctx.key(78, head, turn=[('right', -3), ('forward', 3)])
+
+    # pan comes back down to the side: lift off, heavy drop past idle, settle at base (90, auto)
+    ctx.key(81, rup, aim=(0.55, -0.35, 0.65))
+    ctx.key(81, rfo, aim=(0.1, 0.7, 0.7))
+    ctx.key(81, rha, aim=(0.1, 0.4, 0.9))
+    body(81, bend=-2, twist=-3)
+    ctx.key(86, rup, turn=[('right', -8)])
+    ctx.key(86, rfo, turn=[('right', -4)])
+    ctx.key(86, rha)
+    body(86, bend=-8, twist=2)
+    ctx.key(86, head, turn=[('forward', 3)])
+
+    # keep the pan arm still on the shoulder in between
+    for f in (19, 24, 41, 59, 71):
+        pan_rest(f)
+
+    ctx.note('Starts/ends in the base pose; heaves the pan onto the right shoulder (thunk at 13), '
+             'picks nose 24-38, stares 44-55, wipes on shirt 59-71, pats pan 75-78, lowers it 81-90. '
+             'Hips and legs are never keyed so the feet stay planted.')
