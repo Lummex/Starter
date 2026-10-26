@@ -1,0 +1,79 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Attack",
+   "frames": 38,
+   "seconds": 1.267,
+   "key_frames": [
+    6,
+    9,
+    12,
+    15,
+    18,
+    23,
+    26,
+    28,
+    30,
+    32,
+    34
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 12,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.4
+    }
+   ],
+   "fastest_turn_per_frame_deg": 56.8,
+   "feet_drift_m": 0.0471
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Attack: Kneecapper: crouch coil 6-9, low flat sweep with hit at 12, overshoot 15, settle 18, stands and chuckles 23-34, back to idle at 38."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Attack": {
+    "keys": 39,
+    "seconds": 1.2667
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0026,
+   "worst_rotation_error_deg": 0.004
+  },
+  "written_clip_error_pct_of_height": 0.00111
+ }
+}
