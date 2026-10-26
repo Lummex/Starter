@@ -7,13 +7,13 @@
  "retry_on_failure": false,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T08:20:43Z",
- "heartbeat_at": "2026-10-26T08:15:43Z",
+ "lease_until": "2026-10-26T08:21:54Z",
+ "heartbeat_at": "2026-10-26T08:16:54Z",
  "error": null,
  "progress": {
-  "stage": "designing",
-  "percent": 25,
-  "message": "Claude Code is designing the animation"
+  "stage": "animating",
+  "percent": 35,
+  "message": "Building the keyframes in Blender and rendering previews"
  },
  "history": [
   {
@@ -72,5 +72,5 @@
   "format": "glb",
   "target": "game: public/models/creatures/goblin-slinger/char.glb (after owner review)"
  },
- "updated_at": "2026-10-26T08:15:43Z"
+ "updated_at": "2026-10-26T08:16:54Z"
 }
