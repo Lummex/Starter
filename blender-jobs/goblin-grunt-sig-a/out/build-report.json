@@ -1,0 +1,133 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Idle",
+   "frames": 72,
+   "seconds": 2.4,
+   "key_frames": [
+    4,
+    9,
+    12,
+    15,
+    17,
+    19,
+    23,
+    25,
+    26,
+    27,
+    29,
+    31,
+    32,
+    33,
+    35,
+    39,
+    43,
+    46,
+    50,
+    52,
+    54,
+    56,
+    57,
+    59,
+    60,
+    61,
+    62,
+    64,
+    65,
+    68
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine02"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 43.0,
+   "feet_drift_m": 0.0007
+  },
+  {
+   "name": "OH_Walk",
+   "frames": 32,
+   "seconds": 1.067,
+   "key_frames": [
+    3,
+    6,
+    9,
+    11,
+    12,
+    14,
+    16,
+    19,
+    22,
+    25,
+    27,
+    28,
+    30
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine02"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 14.7,
+   "feet_drift_m": 0.108
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Idle: Pan heaved: wind-up 4, swing 9, overshoot 12, THUNK on shoulder 15, rests 19-56; nose pick 23-33, yank 35, inspect 39-46, wipe on shirt 50-57, pan down 59-68.",
+  "OH_Walk: Treadmill plod, base pose at contacts 0/16/32 (return_to_idle), stomp squash at 3/19, knee peaks 9/25 with hips over the support foot; pan arm swings heavily with a 2-frame lag (kept at his side so the loop starts and ends in idle)."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Idle": {
+    "keys": 73,
+    "seconds": 2.4
+   },
+   "OH_Walk": {
+    "keys": 33,
+    "seconds": 1.0667
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0008,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 4e-05
+ }
+}
