@@ -2,7 +2,7 @@
  "id": "goblin-scrapper-sig-a",
  "type": "animate",
  "asset_id": "goblin-scrapper",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T09:55:18Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T09:50:18Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "2 animation(s) built and checked: OH_Idle, OH_Walk"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb@factory/issue-8"
@@ -72,7 +72,240 @@
   {
    "at": "2026-10-26T09:48:39Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T09:50:22Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T09:50:18Z"
+ "updated_at": "2026-10-26T09:50:22Z",
+ "result": {
+  "summary": "2 animation(s) built and checked: OH_Idle, OH_Walk",
+  "files": [
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/char.glb",
+    "bytes": 1262240,
+    "sha256": "1e9523499f55588a035fbe2060d32b1d817d091119ee19a4ea5dfae2a3c3d9c4"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/events.json",
+    "bytes": 304,
+    "sha256": "ab8065776fbc11796b18d68a8c0fa9efc0ac6467bd31194194472faf15b38130"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/inspection.json",
+    "bytes": 10186,
+    "sha256": "d6ae715816bcc7641e484826d22a7704322740ef040aae6bb312561d27799168"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/build-report.json",
+    "bytes": 2239,
+    "sha256": "aaf05da4a0362b28ff29c37912ce8ef6232f559bb161f0340b0376ab4d41281c"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/validation.json",
+    "bytes": 1009,
+    "sha256": "5653c38dcba6620ffe5c6cf9b6d5ec9c4daa53e0fa22bc3ac4b721083fa4a609"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/final-OH_Idle-000.png",
+    "bytes": 177408,
+    "sha256": "9748af61b43268cc410ae8493202db80d4df786a42c4ea6dba320beddda57b23"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/final-OH_Idle-018.png",
+    "bytes": 175759,
+    "sha256": "4479388278fb2049ea1673b36d6f93033ac1a85310f093d3ffa311a9dcb11bee"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/final-OH_Idle-036.png",
+    "bytes": 175105,
+    "sha256": "bfc461ae4a391f9b8eb7e4a2b153f0912f587775e0cced3e8a91b20b62e55834"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/final-OH_Idle-054.png",
+    "bytes": 170118,
+    "sha256": "4e1150b5ce87a5deef33ea20e2f5a235a523b1f32d65ea941e8ce6871f12b7d1"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/final-OH_Idle-072.png",
+    "bytes": 177420,
+    "sha256": "b48b15cda158ef43d0de6e4e45d2748c604491f180674754c76298383fe4db80"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/final-OH_Walk-000.png",
+    "bytes": 177408,
+    "sha256": "9e99886867fcc52eb5e23dbc1298eaebcb5f49a85ca80eee855cedad86d82308"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/final-OH_Walk-008.png",
+    "bytes": 176013,
+    "sha256": "c301a1facacded7da69cd36a0385f92e9c033ef13f7aba040f99d954d71bdfd8"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/final-OH_Walk-015.png",
+    "bytes": 174910,
+    "sha256": "c86202fce521665463c23c3ad6340b61f5213b2892d2254e4c8912ddba2e3347"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/final-OH_Walk-022.png",
+    "bytes": 174738,
+    "sha256": "0834bdb165d09ac66e7bfed15731f4452a9d01d2322de135ba22d85748469bb5"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/final-OH_Walk-030.png",
+    "bytes": 177408,
+    "sha256": "1f24f7cd191c291d526053d8e59716cd4f65d47bc2192b2d1ae7bdc9a47d1712"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Idle-000.png",
+    "bytes": 308019,
+    "sha256": "cb232bc0b7523d101b3e89c69db2f361a97ab19ccdc9ff97eb1bcdf27b6ece77"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Idle-012.png",
+    "bytes": 305143,
+    "sha256": "64b7400f0e98c1ab646619d4a5592055b3cdfbc016bf2524e1250b26c128112e"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Idle-024.png",
+    "bytes": 305661,
+    "sha256": "1eae1b8871a80e00174b11cc2c1d86534b7ca41b43c1fed047c3cc2d29251506"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Idle-036.png",
+    "bytes": 303912,
+    "sha256": "a95e44db0ddb092676ecf085813a20b1c7dcf85571e0381ae876ac64a980da40"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Idle-048.png",
+    "bytes": 301517,
+    "sha256": "9f65cc127a0a9b4aca615919d3764798bf18da231eeb35bb16dc9e8a8b7697ae"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Idle-060.png",
+    "bytes": 302501,
+    "sha256": "f24c0dcbd12791ccbdda6ccd2c28c3cc19ca5dc71be49c3300fe1d2d1dd98c30"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Idle-072.png",
+    "bytes": 308019,
+    "sha256": "1db399f0444eea4ef43e218d795d3b40e7ecd0279173a0be7a9171a579132357"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Walk-000.png",
+    "bytes": 308019,
+    "sha256": "f7efb50725e826308c30e27b46ce8b395ad3f64bed2ee79d718f6bda95377105"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Walk-005.png",
+    "bytes": 307507,
+    "sha256": "2578fc5db8a9a0d96256544aef36d9c617662bee97c9c30d2f24b7d67bb2d8eb"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Walk-010.png",
+    "bytes": 303639,
+    "sha256": "63943b322ab171684e3e0f0a83008890b09bdf3daffc19f0a053acadb0332ebf"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Walk-015.png",
+    "bytes": 303694,
+    "sha256": "731763c4f05d23feaa237d5f005cf08749b8dff8be838ade0bfa9fe12f9c7619"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Walk-020.png",
+    "bytes": 302583,
+    "sha256": "d937c472859b2a279bc4fe905b259e529724da7eec037c42e7bb5998fe668a38"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Walk-025.png",
+    "bytes": 304811,
+    "sha256": "97b6f30656a08435a2ccb7442866e5b73caaae16ebac90ae42ef86aeb4f09ba2"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/preview-OH_Walk-030.png",
+    "bytes": 308019,
+    "sha256": "2df1d16b3e0148adf848912365ff3857568c64958f5884fc36289ecfbcd357a1"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/anim-OH_Idle.py.txt",
+    "bytes": 3918,
+    "sha256": "615dbf227e9c8c39cd493af2fe74bdf6fb819b15231544b833e6c8862bba31fc"
+   },
+   {
+    "file": "blender-jobs/goblin-scrapper-sig-a/out/anim-OH_Walk.py.txt",
+    "bytes": 5069,
+    "sha256": "79ef8aaecbc1aadc0fce63a842548db506cdfbebec7747ba27cd21ea4bd8c133"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 38258,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Walk": [
+      0.0,
+      30.0
+     ],
+     "OH_Idle": [
+      0.0,
+      72.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Idle": {
+      "keys": 73,
+      "seconds": 2.4
+     },
+     "OH_Walk": {
+      "keys": 31,
+      "seconds": 1.0
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0006,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 2e-05
+   }
+  }
+ }
 }
