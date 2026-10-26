@@ -1,0 +1,20 @@
+{
+ "asset_id": "rotgut-grenadier",
+ "fps": 30,
+ "clips": {
+  "OH_Attack": {
+   "frames": 34,
+   "duration": 1.1333,
+   "loop": false,
+   "events": [
+    {
+     "frame": 13,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.4333
+    }
+   ],
+   "attachments": []
+  }
+ }
+}
