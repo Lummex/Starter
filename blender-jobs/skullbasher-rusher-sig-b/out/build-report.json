@@ -1,0 +1,77 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Attack",
+   "frames": 36,
+   "seconds": 1.2,
+   "key_frames": [
+    6,
+    10,
+    12,
+    15,
+    16,
+    18,
+    20,
+    22,
+    24,
+    30
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02"
+   ],
+   "events": [
+    {
+     "frame": 20,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.6667
+    }
+   ],
+   "fastest_turn_per_frame_deg": 102.5,
+   "feet_drift_m": 0.0151
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Attack: Bash impact f10, mace hit f20, settle to idle by f36.",
+  "OH_Attack: Fastest move: RightHand turns 102 degrees in one frame at frame 18 (may look like a pop)"
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Attack": {
+    "keys": 37,
+    "seconds": 1.2
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0014,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 5e-05
+ }
+}
