@@ -11,8 +11,8 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:20:59Z",
- "heartbeat_at": "2026-10-26T10:15:59Z",
+ "lease_until": "2026-10-26T10:22:31Z",
+ "heartbeat_at": "2026-10-26T10:17:31Z",
  "error": null,
  "progress": {
   "stage": "designing",
@@ -84,5 +84,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:15:59Z"
+ "updated_at": "2026-10-26T10:17:31Z"
 }
