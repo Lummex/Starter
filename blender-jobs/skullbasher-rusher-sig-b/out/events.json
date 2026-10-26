@@ -3,15 +3,15 @@
  "fps": 30,
  "clips": {
   "OH_Attack": {
-   "frames": 36,
-   "duration": 1.2,
+   "frames": 40,
+   "duration": 1.3333,
    "loop": false,
    "events": [
     {
-     "frame": 20,
+     "frame": 21,
      "name": "hit",
      "bone": "RightHand",
-     "time": 0.6667
+     "time": 0.7
     }
    ],
    "attachments": []
