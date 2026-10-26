@@ -1,0 +1,61 @@
+def build(ctx):
+    L = 72
+    ctx.length(L)
+    hips = ctx.bone('hips'); sp = 'Spine01'; neck = ctx.bone('neck'); head = ctx.bone('head')
+    rua = ctx.bone('right upperarm'); rfa = ctx.bone('right forearm'); rh = ctx.bone('right hand')
+    lua = ctx.bone('left upperarm'); lfa = ctx.bone('left forearm'); lh = ctx.bone('left hand')
+    lsh = ctx.bone('left shin'); rsh = ctx.bone('right shin')
+
+    # club poses (right arm): wind = club cocked up/forward at his right, slap = club across into left palm
+    WIND = ((0.6, 0.45, 0.35), (0.3, 0.8, 0.5), [('right', -15)])
+    SLAP = ((0.0, -0.55, 0.83), (-0.55, 0.12, 0.82), [('right', 10)])
+    RECOIL = ((0.05, -0.5, 0.86), (-0.5, 0.3, 0.8), [('right', -5)])
+
+    def rarm(f, p, interp='BEZIER'):
+        ctx.key(f, rua, aim=p[0], interp=interp)
+        ctx.key(f, rfa, aim=p[1], interp=interp)
+        ctx.key(f, rh, turn=p[2], interp=interp)
+
+    def palm(f, dip=0.0):
+        ctx.key(f, lua, aim=(0.15, -0.75 - dip, 0.64))
+        ctx.key(f, lfa, aim=(0.45, 0.05 - dip, 0.9))
+        ctx.key(f, lh, twist=-40, turn=[('right', 10)])
+
+    # anticipation: crouch, cock the club, palm comes up
+    # (weight is carried in the spine only so the planted feet never slide or sink)
+    ctx.key(5, sp, turn=[('right', -4)])
+    rarm(10, WIND); palm(10)
+    ctx.key(10, sp, turn=[('up', -12), ('right', 6)])
+    # SLAP 1 (fast), overshoot, settle
+    rarm(14, SLAP, 'LINEAR'); palm(14, 0.08)
+    ctx.key(14, sp, turn=[('up', 6), ('right', -10)])
+    rarm(17, RECOIL); palm(17)
+    ctx.key(17, sp, turn=[('up', 3), ('right', -4)])
+    # small re-cock
+    rarm(22, ((0.3, 0.0, 0.9), (0.0, 0.6, 0.8), [('right', -15)]))
+    ctx.key(22, sp, turn=[('up', -4), ('right', 2)])
+    # SLAP 2, heavier, held
+    rarm(25, SLAP, 'LINEAR'); palm(25, 0.1)
+    ctx.key(25, sp, turn=[('up', 6), ('right', -12)])
+    rarm(28, RECOIL); palm(28)
+    rarm(32, RECOIL); palm(32)
+    # grin: chest puffs back, chin up, club rests across palm
+    ctx.key(32, sp, turn=[('up', 3), ('right', 0)])
+    ctx.key(32, head, turn=[('right', 0)])
+    ctx.key(37, sp, turn=[('up', 2), ('right', 7)])
+    ctx.key(37, head, turn=[('right', 14)])
+    ctx.key(37, neck, turn=[('right', 4)])
+    rarm(40, RECOIL); palm(40)
+    # neck roll: right ear down -> chin down -> left ear down -> up, settle
+    ctx.key(42, neck, turn=[('forward', 16)]); ctx.key(42, head, turn=[('forward', 12), ('right', 4)])
+    ctx.key(47, neck, turn=[('right', -14)]); ctx.key(47, head, turn=[('right', -12)])
+    ctx.key(52, neck, turn=[('forward', -16)]); ctx.key(52, head, turn=[('forward', -12), ('right', 4)])
+    ctx.key(55, neck, turn=[('forward', -18)]); ctx.key(55, head, turn=[('forward', -14), ('right', 6)])
+    ctx.key(58, neck, turn=[('right', 3)]); ctx.key(58, head, turn=[('right', 6), ('up', 4)])
+    ctx.key(44, sp, turn=[('up', 2), ('right', 2)])
+    rarm(52, RECOIL); palm(52)
+    # drop arms back to rest: club swings out to his right first so it clears the belly
+    rarm(57, ((0.55, -0.55, 0.6), (0.65, -0.45, 0.6), [('right', -10)]))
+    rarm(62, ((0.12, -0.7, -0.4), (0.3, -0.9, 0.0), [('right', 0)]))
+    ctx.key(64, neck, turn=[('right', 0)]); ctx.key(64, head, turn=[('right', -2)])
+    ctx.note('Idle: cock 10, slap 14 (overshoot 17), re-cock 22, slap 25 (hold 28-32), grin 37, neck roll 42-58, rest 62-72. Club assumed to extend from the right hand bone.')
