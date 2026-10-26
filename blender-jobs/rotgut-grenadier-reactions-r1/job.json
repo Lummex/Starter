@@ -2,7 +2,7 @@
  "id": "rotgut-grenadier-reactions-r1",
  "type": "animate",
  "asset_id": "rotgut-grenadier",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 4,
  "created_at": "2026-10-26T09:57:47Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:56:48Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T10:51:48Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "3 animation(s) built and checked: OH_Hit, OH_React_Knockback, OH_React_Bonk"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/rotgut-grenadier/char.glb@factory/issue-8"
@@ -84,7 +84,313 @@
   {
    "at": "2026-10-26T10:50:06Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T10:52:59Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T10:51:48Z"
+ "updated_at": "2026-10-26T10:52:59Z",
+ "result": {
+  "summary": "3 animation(s) built and checked: OH_Hit, OH_React_Knockback, OH_React_Bonk",
+  "files": [
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/char.glb",
+    "bytes": 1334192,
+    "sha256": "01582c0d627ce4a7462a3cf267522359cbd9cd2d988560789ed7c5d19b285a1d"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/events.json",
+    "bytes": 443,
+    "sha256": "8501ddcfd4ffa8fe046a58015cffd50aa527b18b59bb52dc9d09789da86752f0"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/inspection.json",
+    "bytes": 10173,
+    "sha256": "cca328771102bd3398ee7ac35d1a1ac45143b10cd81e3f42481598625dec339b"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/build-report.json",
+    "bytes": 2589,
+    "sha256": "cc860cc77b437e1b0fc6d20b9b7b0c83f40800881221b7b97be42cb062e44435"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/validation.json",
+    "bytes": 1146,
+    "sha256": "5750c91696f8bd2b78b006a9f09fe31742308040be56d1cbb62cfb59b2f26f6b"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_Hit-000.png",
+    "bytes": 179729,
+    "sha256": "37bc8ec6729757add60ac31831b0dcc6e4a49bc396ee16774d92fbf688c013fe"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_Hit-006.png",
+    "bytes": 179171,
+    "sha256": "895e7b5b34004b22583d1dec5c7b4df499136c4ab3f1d56561f603d349548348"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_Hit-012.png",
+    "bytes": 178660,
+    "sha256": "2a009baca8ee738a566beea666bce0d0687dbfc330e1fbc08612fb32394fc653"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_Hit-018.png",
+    "bytes": 179452,
+    "sha256": "b34fa36d1e90cdf100b4dd8403e3500bc2b9192b892f829f5687890d255fde26"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_Hit-024.png",
+    "bytes": 179724,
+    "sha256": "922f1b5c14676199d303279650aaaac1a56ecee8490f5f584fcbc9b6b1f9ced1"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_React_Bonk-000.png",
+    "bytes": 179729,
+    "sha256": "96136c63353d4a85100859c042b7019b17a761fa933c1e500ef0253ecae1e415"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_React_Bonk-009.png",
+    "bytes": 179647,
+    "sha256": "074758dfaa612f9a0264de67fa4ba52b0ba9e8f96eaef59cf3d12039aeda2741"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_React_Bonk-018.png",
+    "bytes": 179057,
+    "sha256": "19dd8c419ee02ee2f3bf4fcc8f09a1ab6d445af938cf284d4ae34328a7e979dd"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_React_Bonk-027.png",
+    "bytes": 180513,
+    "sha256": "ea39f02d6752ef8a9cd5e6ecf7d2540597574a73a104d5918fb9274c7c03894a"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_React_Bonk-036.png",
+    "bytes": 179724,
+    "sha256": "bead01d5518a2d4d678ddd8f9fe2aee3af56a8525f51e3c618dd15b184645e08"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_React_Knockback-000.png",
+    "bytes": 179729,
+    "sha256": "16c21d372c80667cce92ae38398fd66dfd0bc9d21b2faf7e2fd50a746de012fe"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_React_Knockback-009.png",
+    "bytes": 182559,
+    "sha256": "0f662e776af282ef4322472c4f122cf5df31729bdc8f613c3ee0500d0c5ae2cc"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_React_Knockback-018.png",
+    "bytes": 180336,
+    "sha256": "bfe3b9d5f4353bb42d104a1b2a9f3d787a0b5e26c1308106e9d6c85eba8ffbd5"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_React_Knockback-027.png",
+    "bytes": 179665,
+    "sha256": "aae748b412300c8bc242b164ea482af135a7e3e4614c6e88eb9c62f816f79da3"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/final-OH_React_Knockback-036.png",
+    "bytes": 179724,
+    "sha256": "bead01d5518a2d4d678ddd8f9fe2aee3af56a8525f51e3c618dd15b184645e08"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_Hit-000.png",
+    "bytes": 311873,
+    "sha256": "d0ef3ee15aacdb3a8894e1a66188b8c7b0cb9180e0336bb0ad5a6764bb5ea906"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_Hit-004.png",
+    "bytes": 311554,
+    "sha256": "6be7abb052e979fa62a161ad14d982c6459c810a93ad0ad7d02ba999d3b523f8"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_Hit-008.png",
+    "bytes": 311670,
+    "sha256": "883af35ead7a18104c7ff7f1c5846cbc521c4bc993243254b1646ce78a2030b6"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_Hit-012.png",
+    "bytes": 310473,
+    "sha256": "5381a00f7a88fdcea89074d083d9b4e4f4e90df118537cd28f6802dd7c01cab3"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_Hit-016.png",
+    "bytes": 310533,
+    "sha256": "c93917c3017aabe377eed248e25594a31edd3a87988ec2fd5833bee360213f84"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_Hit-020.png",
+    "bytes": 311799,
+    "sha256": "e841bb9f63a9693e44119d8772d35e0a8c39f9012a3922a269571624297c7d77"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_Hit-024.png",
+    "bytes": 311873,
+    "sha256": "60c8f689beaf077988be563e0c95d8ac0ecfe8bc5a1d07149815327b8a9a303d"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Bonk-000.png",
+    "bytes": 311873,
+    "sha256": "81de2afee8568ce0d7fa13536920dc9010a8151c66f8e61ccf14d85d03a238dd"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Bonk-006.png",
+    "bytes": 309379,
+    "sha256": "585aa9a67ecd18d8764d937468eb1180d52c992693a001256995172b3dc15c39"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Bonk-012.png",
+    "bytes": 306803,
+    "sha256": "8060cabe49c88c73083a97644f2348b66b6dfe4ca87950cb5d0ce48d0d20e25b"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Bonk-018.png",
+    "bytes": 310779,
+    "sha256": "1e2aa53baa44063c737c67a495abf75b6ba5ef19c15b63e9f6b8179ebb55b7eb"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Bonk-024.png",
+    "bytes": 310527,
+    "sha256": "207d53196d34c152adbedb1b3c0ded6ea6571e0c5141e814572b26cdf3bb65d3"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Bonk-030.png",
+    "bytes": 312145,
+    "sha256": "f132d3035d483fc0d5d8861453c184622e90dbdca40fda0a78f65b9d777b1404"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Bonk-036.png",
+    "bytes": 311873,
+    "sha256": "6cda2e41395b36b0a6eac9eaa465745fb252043875a0bcb98101dfb541680a6f"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Knockback-000.png",
+    "bytes": 311873,
+    "sha256": "81de2afee8568ce0d7fa13536920dc9010a8151c66f8e61ccf14d85d03a238dd"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Knockback-006.png",
+    "bytes": 316893,
+    "sha256": "ae9682b32dc1cd68d629fdb9987db74e600dbbffbd5dbd4ab644805a84ddbbb6"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Knockback-012.png",
+    "bytes": 314214,
+    "sha256": "5909868141eca1d519f6f23cc32b95e0411b7631ba78f41a3df73d19b4bc49b2"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Knockback-018.png",
+    "bytes": 313270,
+    "sha256": "54823c9ec5a8efc02b43a353c0d4d1a9fff7549497a543f2a9c647bec4c400db"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Knockback-024.png",
+    "bytes": 314020,
+    "sha256": "b00423be551e1c25e8497764aa2973eb9a667ba87148c07696091a9905cd23da"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Knockback-030.png",
+    "bytes": 311534,
+    "sha256": "5e3f9ea4810a6463041062a47d53bc6cd21c36b34881020445d71ca74fdb539b"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/preview-OH_React_Knockback-036.png",
+    "bytes": 311873,
+    "sha256": "6cda2e41395b36b0a6eac9eaa465745fb252043875a0bcb98101dfb541680a6f"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/anim-OH_Hit.py.txt",
+    "bytes": 3141,
+    "sha256": "8e491f1d46d50e5ceb7c1efd42620ae85095cf34efa7cdf114ff49c51ee4493c"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/anim-OH_React_Knockback.py.txt",
+    "bytes": 3467,
+    "sha256": "ae1a2be6a49c7d17b7a75306ade86c3da54b4faab5e1dd746de0861ed8d8e83b"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-reactions-r1/out/anim-OH_React_Bonk.py.txt",
+    "bytes": 2605,
+    "sha256": "f12c8c2fd0e750168d90adfdf5b09b0907e2a91ed3192c08423850e5156c1f21"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 40362,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_React_Bonk": [
+      0.0,
+      36.0
+     ],
+     "OH_React_Knockback": [
+      0.0,
+      36.0
+     ],
+     "OH_Hit": [
+      0.0,
+      24.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Hit": {
+      "keys": 25,
+      "seconds": 0.8
+     },
+     "OH_React_Knockback": {
+      "keys": 37,
+      "seconds": 1.2
+     },
+     "OH_React_Bonk": {
+      "keys": 37,
+      "seconds": 1.2
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0005,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 7e-05
+   }
+  }
+ }
 }
