@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:38:53Z",
- "heartbeat_at": "2026-10-26T10:33:53Z",
+ "lease_until": "2026-10-26T10:38:56Z",
+ "heartbeat_at": "2026-10-26T10:33:56Z",
  "error": null,
  "progress": {
-  "stage": "inspecting",
-  "percent": 15,
-  "message": "Reading the model, skeleton and animations in Blender"
+  "stage": "designing",
+  "percent": 25,
+  "message": "Claude Code is designing the animation"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb@factory/issue-8"
@@ -82,5 +82,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:33:53Z"
+ "updated_at": "2026-10-26T10:33:56Z"
 }
