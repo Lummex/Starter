@@ -2,7 +2,7 @@
  "id": "goblin-bomber-sig-b",
  "type": "animate",
  "asset_id": "goblin-bomber",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T09:34:25Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T09:29:25Z",
- "error": {
-  "message": "{\"message\":\"is at 9e3b8a952c1a172a83ca508445d0bc3afeece51a but expected 301958905144088bed9cb6a6eebb44f65cb2d0b2\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
-  "at": "2026-10-26T09:18:37Z"
- },
+ "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "2 animation(s) built and checked: OH_Attack, OH_Death"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -103,7 +100,250 @@
   {
    "at": "2026-10-26T09:29:18Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T09:30:53Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T09:29:25Z"
+ "updated_at": "2026-10-26T09:30:53Z",
+ "result": {
+  "summary": "2 animation(s) built and checked: OH_Attack, OH_Death",
+  "files": [
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/char.glb",
+    "bytes": 1229352,
+    "sha256": "238dc5ff3545567d0beb23a77ad6b971501eeb8485727ebd551b3a6cf448c269"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/events.json",
+    "bytes": 527,
+    "sha256": "7fce66a118a9b6795365f80dd4c09390338602d1c328497ea94d9cfa57464114"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/inspection.json",
+    "bytes": 10202,
+    "sha256": "df67e6d7bde363c756459ca6d7a5ceab5d2fd3727997cfe5eaf1e0907425d7ee"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/build-report.json",
+    "bytes": 2843,
+    "sha256": "6431c385ed87864d191cc2c40f432fd51cca9cbfa5720204eb3b2a46314f82d8"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/validation.json",
+    "bytes": 1017,
+    "sha256": "858a1379afd443a759affa8aeff9970720411f34f13ac9a91f5cc061313a0dd5"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/final-OH_Attack-000.png",
+    "bytes": 178527,
+    "sha256": "bd6a8bcb5be69b5853c0e34a6c3375b3369ef4cb09993e573685ded58f5cfc4b"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/final-OH_Attack-009.png",
+    "bytes": 174846,
+    "sha256": "74d82acedfab26874eb553bf56e3f381647e1398d90f1db9c4701938cf5720d9"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/final-OH_Attack-018.png",
+    "bytes": 177699,
+    "sha256": "b3255705054717040657893f9c6a0a4d839bdf3343c49a1f20500b529e1bbb50"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/final-OH_Attack-027.png",
+    "bytes": 173265,
+    "sha256": "2606dba1c13fdb4fea845b219786a84d567a9ffca91dceb0c39d1a93a7a0bb8d"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/final-OH_Attack-036.png",
+    "bytes": 178469,
+    "sha256": "5c7b43647e18253dd672492bbbe9aacc42780ff9c850a61fedfae6ec05dc1603"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/final-OH_Death-000.png",
+    "bytes": 178527,
+    "sha256": "857154581f4178311e1e3b4b754032ed0516750d07cf13fa040ccc08de9a090d"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/final-OH_Death-015.png",
+    "bytes": 169101,
+    "sha256": "9001471e8bd76a956186d8af6cea8a4df8836bdd94bf7724e6350850c5984374"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/final-OH_Death-030.png",
+    "bytes": 162243,
+    "sha256": "dc76dec62f48e966ac0b77184269e101406f88235c8f7c8e816f318ad401c8fc"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/final-OH_Death-045.png",
+    "bytes": 162650,
+    "sha256": "7ec4e1511b50cf93294680721384f4be3b57e3e60871354854aca8ad0561cae8"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/final-OH_Death-060.png",
+    "bytes": 163576,
+    "sha256": "f4d1893e346c335873d64bf35010749c35d07fccffaf282d8615940c340b499c"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Attack-000.png",
+    "bytes": 299350,
+    "sha256": "08d63c505278e2defba9a7b7279284e4158b20e0a8bb6e9c9375414fcf13fe9a"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Attack-006.png",
+    "bytes": 293349,
+    "sha256": "3d3021fb98e9cb72322676236ba99b1f468190c7c5a0bf843e76721ae3bce2a8"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Attack-012.png",
+    "bytes": 293070,
+    "sha256": "e35323f5d639d7e1d1e1470ec1057e0c76550a3885155c3ee509ec17544d4c1e"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Attack-018.png",
+    "bytes": 298238,
+    "sha256": "67e3274027dc70b58da147d320d670a75a02bce91cb4f412de8ae31a62f04175"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Attack-022.png",
+    "bytes": 292270,
+    "sha256": "bd60973f37f41b30b1a53b038a5db18a0b86aa130908390cd33c4e806c30b335"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Attack-024.png",
+    "bytes": 291902,
+    "sha256": "7dfbb618ab576314042065a219cb0556b9b5ae001eaa4153014000e19a481c65"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Attack-030.png",
+    "bytes": 294236,
+    "sha256": "89cafe440ebcc7c34ed8d94de5fdbe835de2c9a8f08b1577754244dfafa032d2"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Attack-036.png",
+    "bytes": 299350,
+    "sha256": "29c24a6365e1fb6fa3fda468bc7791620cfbc142554ec8323cd69fb582b58728"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Death-000.png",
+    "bytes": 299350,
+    "sha256": "47d6a2f8f28cb50e92f2f37addbc62f2c1082de8ed6ce831cb8e8d938758e642"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Death-010.png",
+    "bytes": 281389,
+    "sha256": "55bb31372fa84d408db2ccfabdd1ad51e656c62ac1aaeabb5f6a8fc1663b3faf"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Death-020.png",
+    "bytes": 293895,
+    "sha256": "3c2aef9f0dcfbcb5af1a21368dbf9c9b7e8fe230b49876aebec7707b28e565ce"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Death-028.png",
+    "bytes": 278263,
+    "sha256": "8944ae7696a239ffc209e7e3a873259cd1fb9d4853bf7f5755884d0f7ecaf302"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Death-030.png",
+    "bytes": 277694,
+    "sha256": "aeddcdd22a973aa56d96c2975d329d4e1bfb303a8d35aabd69b4d360d973cbc6"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Death-040.png",
+    "bytes": 282310,
+    "sha256": "ddbac75ed02e3362bca71e47980fb5d1190f52d9f86835772c6cf9c0e5b119b1"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Death-050.png",
+    "bytes": 280148,
+    "sha256": "a4dbf58288ecaf4f12e4197f579ff5e181c46e524be3a0ffd97563ed868f9599"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/preview-OH_Death-060.png",
+    "bytes": 278875,
+    "sha256": "31382441a4578127725ac40ba756d7ca296ea3acefff7dcd31b4c040b715e4b5"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/anim-OH_Attack.py.txt",
+    "bytes": 9050,
+    "sha256": "7967bd203ab811898fdcccf1daf9b0c56064d9ae5b1ae039a76bd7f5bcb908b6"
+   },
+   {
+    "file": "blender-jobs/goblin-bomber-sig-b/out/anim-OH_Death.py.txt",
+    "bytes": 12476,
+    "sha256": "9c445d1b63138fbe8dd552f1aa323425524dd30808f4d3ce15c37e58bc2c3ed2"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 38185,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Death": [
+      0.0,
+      60.0
+     ],
+     "OH_Attack": [
+      0.0,
+      36.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Attack": {
+      "keys": 37,
+      "seconds": 1.2
+     },
+     "OH_Death": {
+      "keys": 61,
+      "seconds": 2.0
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0009,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 0.00012
+   }
+  }
+ }
 }
