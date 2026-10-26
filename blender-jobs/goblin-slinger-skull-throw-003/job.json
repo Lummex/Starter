@@ -7,13 +7,13 @@
  "retry_on_failure": false,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T08:16:46Z",
- "heartbeat_at": "2026-10-26T08:11:46Z",
+ "lease_until": "2026-10-26T08:16:54Z",
+ "heartbeat_at": "2026-10-26T08:11:54Z",
  "error": null,
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "history": [
   {
@@ -76,5 +76,5 @@
   "format": "glb",
   "target": "game: public/models/creatures/goblin-slinger/char.glb (after owner review)"
  },
- "updated_at": "2026-10-26T08:11:46Z"
+ "updated_at": "2026-10-26T08:11:54Z"
 }
