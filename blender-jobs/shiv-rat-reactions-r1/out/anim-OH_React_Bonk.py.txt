@@ -1,0 +1,69 @@
+import math
+
+
+def build(ctx):
+    ctx.length(36)
+
+    hips = ctx.bone('hips')
+    spine = []
+    b = ctx.bone('spine')
+    while b and b != hips:
+        spine.append(b)
+        b = ctx.parent(b)
+    n = len(spine)
+
+    neck = None
+    for name in ctx.bones:
+        if 'neck' in name.lower():
+            neck = name
+    head = ctx.bone('head')
+    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm'); r_hand = ctx.bone('right hand')
+    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')
+
+    def body(f, back=0.0, side=0.0):
+        for s in spine:
+            ctx.key(f, s, turn=[('right', back / n), ('forward', side / n)])
+
+    def look(f, back=0.0, side=0.0, turn=0.0):
+        if neck:
+            ctx.key(f, neck, turn=[('right', back * 0.4), ('forward', side * 0.4), ('up', turn * 0.4)])
+            ctx.key(f, head, turn=[('right', back * 0.6), ('forward', side * 0.6), ('up', turn * 0.6)])
+        else:
+            ctx.key(f, head, turn=[('right', back), ('forward', side), ('up', turn)])
+
+    def arms(f, rd, ld, rb, lb):
+        ctx.key(f, r_up, aim=rd)
+        ctx.key(f, l_up, aim=ld)
+        ctx.key(f, r_fore, turn=[('forward', rb)])
+        ctx.key(f, l_fore, turn=[('forward', lb)])
+
+    # Impact: head driven straight down, chest crunches, arms jolt stiff out to the sides.
+    body(2, back=-8)
+    look(2, back=-28)
+    body(4, back=-12)
+    look(4, back=-34)
+    arms(2, (0.70, -0.62, 0.05), (-0.72, -0.62, 0.15), 5, -5)
+    arms(5, (0.78, -0.52, 0.10), (-0.80, -0.50, 0.20), 3, -3)
+    ctx.key(2, r_hand, turn=[('forward', 0)])
+
+    # Dizzy wobble: upper body and head trace two circles; the head lags behind the chest.
+    for i, f in enumerate(range(8, 24, 2)):
+        a = math.radians(i * 90)
+        amp = 1.0 - i * 0.07
+        body(f, back=-6 + 9 * math.cos(a) * amp, side=10 * math.sin(a) * amp)
+        look(f, back=-8 + 12 * math.cos(a - 1.2) * amp, side=16 * math.sin(a - 1.2) * amp)
+        sw = math.sin(a - 0.8) * amp
+        arms(f, (0.55 + 0.08 * sw, -0.80, -0.20), (-0.55 + 0.08 * sw, -0.82, 0.05), 10, -10)
+
+    # Shake it off: quick head shakes, then settle back to idle.
+    look(25, back=-4, turn=22)
+    look(27, back=-3, turn=-22)
+    look(29, back=-2, turn=12)
+    look(31, back=0, turn=-4)
+    body(26, back=-3)
+    body(30, back=1)
+    arms(27, (0.40, -0.80, -0.40), (-0.42, -0.90, 0.00), 6, -6)
+    arms(31, (0.25, -0.78, -0.55), (-0.38, -0.92, -0.08), 3, -3)
+    ctx.key(31, r_hand, turn=[('forward', 0)])
+
+    ctx.note('This rig has no eye bones, so the crossed-eyes read comes from the circling head wobble only.')
