@@ -1,7 +1,6 @@
 {
  "worker_id": "starr-f0fad5",
- "state": "busy",
- "at": "2026-10-26T10:48:50Z",
- "host": "Starr",
- "job": "rotgut-grenadier-reactions-r1"
+ "state": "idle",
+ "at": "2026-10-26T10:49:36Z",
+ "host": "Starr"
 }
