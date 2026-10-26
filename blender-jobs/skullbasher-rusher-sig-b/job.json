@@ -2,7 +2,7 @@
  "id": "skullbasher-rusher-sig-b",
  "type": "animate",
  "asset_id": "skullbasher-rusher",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:37:30Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T10:32:30Z",
- "error": {
-  "message": "{\"message\":\"is at 5824d1eed39270d06a501ce6e818d1b664176a41 but expected 0ff262b4795069f554e948d1999fa804944c47bb\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
-  "at": "2026-10-26T10:28:57Z"
- },
+ "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "1 animation(s) built and checked: OH_Attack"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/skullbasher-rusher/char.glb@factory/issue-8"
@@ -86,7 +83,172 @@
   {
    "at": "2026-10-26T10:32:23Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T10:33:16Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T10:32:30Z"
+ "updated_at": "2026-10-26T10:33:16Z",
+ "result": {
+  "summary": "1 animation(s) built and checked: OH_Attack",
+  "files": [
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/char.glb",
+    "bytes": 1159564,
+    "sha256": "c6ced80b924fb4de85506466a12fb2371230e1b822689f5b8ba89457fa6cf102"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/events.json",
+    "bytes": 298,
+    "sha256": "619dfa6224921efbb5004b9181a34d9ba4fac5df3f48012c47f38afa2f42d947"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/inspection.json",
+    "bytes": 10265,
+    "sha256": "cd35195595a30ab9433b948de70ad96edf282e14ae2441d75b5525d7b5bd5c70"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/build-report.json",
+    "bytes": 1515,
+    "sha256": "6797f4791f451dc5d46ecf26455253cc4be2024d13fbdd808726a6af9efe1a6e"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/validation.json",
+    "bytes": 911,
+    "sha256": "2f76004f6b25cdf6317752df8b1fbe52e96cc7bd3642441088659779caff5268"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/final-OH_Attack-000.png",
+    "bytes": 177694,
+    "sha256": "bfb2c99861115ea74d8dea19806233e413b4d81535f562a4e8110fff00560794"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/final-OH_Attack-010.png",
+    "bytes": 171991,
+    "sha256": "18cb6096bc9bff48e1fa33c3103985a44e3183d75cb377dcab1edb5bdf4b5df4"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/final-OH_Attack-020.png",
+    "bytes": 173097,
+    "sha256": "ff60088e54cad45c9e1f2907dc4ff9cf14ebb5ae3f7f1c2787c4ef5f47259a9a"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/final-OH_Attack-030.png",
+    "bytes": 173626,
+    "sha256": "c3caca1dfa1e19f0a2718ad526cf729655f7a56079185b3293b2d5790e661b89"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/final-OH_Attack-040.png",
+    "bytes": 177694,
+    "sha256": "4a09152cedc138f7242465869603ba70d3ff6f48981a31a9faa66893803bf919"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/preview-OH_Attack-000.png",
+    "bytes": 308321,
+    "sha256": "698c506c994c4db8c8ab6470fb8ddf7de1f244452f1da1fd47a212547c553d96"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/preview-OH_Attack-007.png",
+    "bytes": 300872,
+    "sha256": "444c5f5fbc1639c990906382d89132b9a786bf34caf50c43ea3e18ac8dbcd199"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/preview-OH_Attack-013.png",
+    "bytes": 301501,
+    "sha256": "bc5508de77edad72da13b0197ae341725e6c0faa9857591831570fed7409bfb7"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/preview-OH_Attack-020.png",
+    "bytes": 300494,
+    "sha256": "d5200df97c90a0d0f2222ca562ac6374e9b06a24bb3b685a9c47dc2c63b653c6"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/preview-OH_Attack-021.png",
+    "bytes": 297654,
+    "sha256": "84d88adfffc59fd7bfbe930aa721a0cee6335507538239efcf83c72e6d9a7191"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/preview-OH_Attack-027.png",
+    "bytes": 297925,
+    "sha256": "5710d0e111570137f1184f0bffe6cd0898eb41f8ae84317383f5c78a04a49a59"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/preview-OH_Attack-033.png",
+    "bytes": 307212,
+    "sha256": "6ad514dc380ad6766d58a33eac621acd8a85e7b6cc39e5070bbd3f6cd635f19b"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/preview-OH_Attack-040.png",
+    "bytes": 308321,
+    "sha256": "d603b7a96a896def235c6def01be8e3b9145419ef0e1db0a41f1ca03a4bf8e01"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-sig-b/out/anim-OH_Attack.py.txt",
+    "bytes": 5054,
+    "sha256": "8c18730471ada10e17e45fc36afafd5f3e7378dc1456fba9d87464a045dc8d51"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 36633,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Attack": [
+      0.0,
+      40.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Attack": {
+      "keys": 41,
+      "seconds": 1.3333
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0014,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 2e-05
+   }
+  }
+ }
 }
