@@ -1,0 +1,90 @@
+import math
+
+
+def build(ctx):
+    ctx.length(36)
+    hips = ctx.bone('hips')
+    sp2 = 'Spine02'; sp1 = 'Spine01'; sp = 'Spine'
+    head = ctx.bone('head')
+    r_up = ctx.bone('right upperarm'); l_up = ctx.bone('left upperarm')
+    r_hand = ctx.bone('right hand'); l_hand = ctx.bone('left hand')
+    thighs = (ctx.bone('right thigh'), ctx.bone('left thigh'))
+    shins = (ctx.bone('right shin'), ctx.bone('left shin'))
+    feet = (ctx.bone('right foot'), ctx.bone('left foot'))
+
+    # Knee bend that keeps feet planted: thigh forward a, shin back 2a, foot forward a;
+    # hips drop to match (thigh+shin ~0.31 m * (1 - cos a)).
+    def crouch(f, a, interp='BEZIER'):
+        drop = 0.31 * (1.0 - math.cos(math.radians(a)))
+        ctx.key(f, hips, move=(0, -drop, 0), interp=interp)
+        for b in thighs:
+            ctx.key(f, b, turn=[('right', a)], interp=interp)
+        for b in shins:
+            ctx.key(f, b, turn=[('right', -2 * a)], interp=interp)
+        for b in feet:
+            ctx.key(f, b, turn=[('right', a)], interp=interp)
+
+    def body(f, lean, side=0, interp='BEZIER'):
+        # lean: + back, - forward, spread over the spine chain
+        ctx.key(f, sp2, turn=[('right', lean * 0.3), ('forward', side * 0.3)], interp=interp)
+        ctx.key(f, sp1, turn=[('right', lean * 0.35), ('forward', side * 0.35)], interp=interp)
+        ctx.key(f, sp, turn=[('right', lean * 0.35), ('forward', side * 0.35)], interp=interp)
+
+    # Arm aims are in the spine's frame, so they are pre-compensated for the lean.
+    def arms(f, r_dir, l_dir, wrist=0, interp='BEZIER'):
+        ctx.key(f, r_up, aim=r_dir, interp=interp)
+        ctx.key(f, l_up, aim=l_dir, interp=interp)
+        ctx.key(f, r_hand, turn=[('right', wrist)], interp=interp)
+        ctx.key(f, l_hand, turn=[('right', wrist)], interp=interp)
+
+    # 5: anticipation - dips, both hands grab the pan handle low in front
+    crouch(5, 14)
+    body(5, -10)
+    arms(5, (-0.2, -0.55, 0.8), (0.35, -0.55, 0.75))
+    ctx.key(5, head, turn=[('right', -8)])
+
+    # 11: big two-handed raise overhead, chest leans back
+    crouch(11, 4)
+    body(11, 24)
+    arms(11, (-0.3, 0.88, 0.3), (0.3, 0.88, 0.3), wrist=10)
+    ctx.key(11, head, turn=[('right', 10)])
+
+    # 14-16: dumb pause at the top - teeters back, blank head tilt
+    crouch(14, 3)
+    body(14, 30, side=-4)
+    arms(14, (-0.3, 0.86, 0.35), (0.3, 0.86, 0.35), wrist=14)
+    ctx.key(14, head, turn=[('right', 12), ('forward', 14)])
+    crouch(16, 3, interp='LINEAR')
+    body(16, 29, side=-3, interp='LINEAR')
+    arms(16, (-0.3, 0.86, 0.35), (0.3, 0.86, 0.35), wrist=14, interp='LINEAR')
+    ctx.key(16, head, turn=[('right', 10), ('forward', 12)], interp='LINEAR')
+
+    # 19: SLAM - contact, squash down hard, pan out front at chest-to-knee height
+    crouch(19, 25)
+    body(19, -35)
+    arms(19, (-0.3, 0.15, 0.94), (0.3, 0.15, 0.94), wrist=-10)
+    ctx.key(19, head, turn=[('right', -12)])
+    ctx.event(19, 'hit', bone=r_hand)
+
+    # 21-23: overshoot deeper into the squash, hold
+    crouch(21, 28)
+    body(21, -40)
+    arms(21, (-0.3, 0.1, 0.95), (0.3, 0.1, 0.95), wrist=-14)
+    ctx.key(21, head, turn=[('right', -16)])
+    crouch(23, 27)
+    body(23, -38)
+
+    # 26: rebound up a little, pan still out front
+    crouch(26, 12)
+    body(26, -15)
+    arms(26, (-0.2, -0.1, 0.95), (0.3, -0.25, 0.9), wrist=-4)
+
+    # 26-32: dazed head wobble from the vibrating pan (his signature dopey beat)
+    ctx.key(26, head, turn=[('right', -6), ('forward', 14)])
+    ctx.key(29, head, turn=[('right', -4), ('forward', -12)])
+    ctx.key(32, head, turn=[('right', -2), ('forward', 6)])
+    crouch(31, 4)
+    body(31, -5)
+    arms(31, (0.0, -0.75, 0.6), (0.1, -0.85, 0.4))
+    ctx.note('Overhead two-handed pan whack: grab 5, raise 11, dopey hold 14-16, slam/hit 19, '
+             'squash 21-23, rebound 26, dazed head wobble 26-32, idle 36.')
