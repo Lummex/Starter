@@ -1,0 +1,77 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Attack",
+   "frames": 36,
+   "seconds": 1.2,
+   "key_frames": [
+    5,
+    11,
+    14,
+    16,
+    19,
+    21,
+    23,
+    26,
+    29,
+    31,
+    32
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02"
+   ],
+   "events": [
+    {
+     "frame": 19,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.6333
+    }
+   ],
+   "fastest_turn_per_frame_deg": 63.8,
+   "feet_drift_m": 0.0433
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Attack: Overhead two-handed pan whack: grab 5, raise 11, dopey hold 14-16, slam/hit 19, squash 21-23, rebound 26, dazed head wobble 26-32, idle 36."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Attack": {
+    "keys": 37,
+    "seconds": 1.2
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0008,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 4e-05
+ }
+}
