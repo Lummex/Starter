@@ -2,7 +2,7 @@
  "id": "skullbasher-rusher-sig-b",
  "type": "animate",
  "asset_id": "skullbasher-rusher",
- "status": "running",
+ "status": "validating",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:32:54Z",
- "heartbeat_at": "2026-10-26T10:27:54Z",
+ "lease_until": "2026-10-26T10:33:04Z",
+ "heartbeat_at": "2026-10-26T10:28:04Z",
  "error": null,
  "progress": {
-  "stage": "animating",
-  "percent": 35,
-  "message": "Building the keyframes in Blender and rendering previews"
+  "stage": "validating",
+  "percent": 80,
+  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/skullbasher-rusher/char.glb@factory/issue-8"
@@ -61,7 +61,11 @@
   {
    "at": "2026-10-26T10:26:34Z",
    "status": "running"
+  },
+  {
+   "at": "2026-10-26T10:28:04Z",
+   "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T10:27:54Z"
+ "updated_at": "2026-10-26T10:28:04Z"
 }
