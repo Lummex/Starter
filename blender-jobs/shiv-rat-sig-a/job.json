@@ -2,7 +2,7 @@
  "id": "shiv-rat-sig-a",
  "type": "animate",
  "asset_id": "shiv-rat",
- "status": "validating",
+ "status": "queued",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:28:01Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T10:23:01Z",
- "error": null,
+ "error": {
+  "message": "{\"message\":\"is at 698c1f6d38b824a2bbfc40e93aa1a37cd320441a but expected 3d3c8ccbc61f51c5cbbc099593bb9853b2ddbb9a\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
+  "at": "2026-10-26T10:23:09Z"
+ },
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "failed",
+  "percent": 0,
+  "message": "{\"message\":\"is at 698c1f6d38b824a2bbfc40e93aa1a37cd320441a but expected 3d3c8ccbc61f51c5cbbc099593bb9853b2ddbb9a\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/shiv-rat/char.glb@factory/issue-8"
@@ -72,7 +75,11 @@
   {
    "at": "2026-10-26T10:22:54Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T10:23:09Z",
+   "status": "failed"
   }
  ],
- "updated_at": "2026-10-26T10:23:01Z"
+ "updated_at": "2026-10-26T10:23:09Z"
 }
