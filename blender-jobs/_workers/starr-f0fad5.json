@@ -1,7 +1,6 @@
 {
  "worker_id": "starr-f0fad5",
- "state": "busy",
- "at": "2026-10-26T07:11:34Z",
- "host": "Starr",
- "job": "goblin-slinger-inspect-001"
+ "state": "idle",
+ "at": "2026-10-26T07:12:01Z",
+ "host": "Starr"
 }
