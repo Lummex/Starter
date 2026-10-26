@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:03:52Z",
- "heartbeat_at": "2026-10-26T09:58:52Z",
+ "lease_until": "2026-10-26T10:03:57Z",
+ "heartbeat_at": "2026-10-26T09:58:57Z",
  "error": null,
  "progress": {
-  "stage": "preparing",
-  "percent": 5,
-  "message": "Copying the source model into a private work folder"
+  "stage": "inspecting",
+  "percent": 15,
+  "message": "Reading the model, skeleton and animations in Blender"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -75,5 +75,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T09:58:52Z"
+ "updated_at": "2026-10-26T09:58:57Z"
 }
