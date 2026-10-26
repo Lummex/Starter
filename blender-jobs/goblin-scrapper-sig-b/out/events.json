@@ -1,0 +1,34 @@
+{
+ "asset_id": "goblin-scrapper",
+ "fps": 30,
+ "clips": {
+  "OH_Attack": {
+   "frames": 30,
+   "duration": 1.0,
+   "loop": false,
+   "events": [
+    {
+     "frame": 15,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.5
+    }
+   ],
+   "attachments": []
+  },
+  "OH_Special": {
+   "frames": 48,
+   "duration": 1.6,
+   "loop": false,
+   "events": [
+    {
+     "frame": 23,
+     "name": "ball_release",
+     "bone": "RightHand",
+     "time": 0.7667
+    }
+   ],
+   "attachments": []
+  }
+ }
+}
