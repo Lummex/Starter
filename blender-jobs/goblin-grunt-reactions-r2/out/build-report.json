@@ -1,0 +1,212 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_React_Bowled",
+   "frames": 90,
+   "seconds": 3.0,
+   "key_frames": [
+    2,
+    4,
+    8,
+    12,
+    15,
+    19,
+    24,
+    30,
+    33,
+    36,
+    41,
+    47,
+    51,
+    56,
+    62,
+    66,
+    72,
+    78,
+    83
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02"
+   ],
+   "events": [
+    {
+     "frame": 12,
+     "name": "down",
+     "bone": "Hips",
+     "time": 0.4
+    },
+    {
+     "frame": 62,
+     "name": "up",
+     "bone": "Hips",
+     "time": 2.0667
+    }
+   ],
+   "fastest_turn_per_frame_deg": 58.1,
+   "feet_drift_m": 0.5494
+  },
+  {
+   "name": "OH_React_Backstab",
+   "frames": 60,
+   "seconds": 2.0,
+   "key_frames": [
+    2,
+    4,
+    7,
+    9,
+    11,
+    13,
+    17,
+    20,
+    23,
+    26,
+    29,
+    32,
+    35,
+    38,
+    41,
+    45,
+    49,
+    53
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02"
+   ],
+   "events": [
+    {
+     "frame": 4,
+     "name": "hit",
+     "bone": "Spine",
+     "time": 0.1333
+    }
+   ],
+   "fastest_turn_per_frame_deg": 99.2,
+   "feet_drift_m": 0.023
+  },
+  {
+   "name": "OH_React_Lifted",
+   "frames": 60,
+   "seconds": 2.0,
+   "key_frames": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30,
+    32,
+    34,
+    36,
+    38,
+    40,
+    42,
+    44,
+    46,
+    48,
+    50,
+    52,
+    54,
+    56,
+    58
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 56.4,
+   "feet_drift_m": 0.2658
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_React_Backstab: Fastest move: LeftHand turns 99 degrees in one frame at frame 34 (may look like a pop)"
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_React_Bowled": {
+    "keys": 91,
+    "seconds": 3.0
+   },
+   "OH_React_Backstab": {
+    "keys": 61,
+    "seconds": 2.0
+   },
+   "OH_React_Lifted": {
+    "keys": 61,
+    "seconds": 2.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0008,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 2e-05
+ }
+}
