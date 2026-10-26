@@ -1,0 +1,151 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Attack",
+   "frames": 36,
+   "seconds": 1.2,
+   "key_frames": [
+    3,
+    5,
+    7,
+    9,
+    11,
+    13,
+    16,
+    19,
+    21,
+    22,
+    24,
+    27,
+    31,
+    33
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftShoulder",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightShoulder",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 22,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.7333
+    }
+   ],
+   "fastest_turn_per_frame_deg": 122.2,
+   "feet_drift_m": 0.003
+  },
+  {
+   "name": "OH_Death",
+   "frames": 60,
+   "seconds": 2.0,
+   "key_frames": [
+    3,
+    6,
+    8,
+    10,
+    12,
+    15,
+    21,
+    24,
+    26,
+    28,
+    30,
+    33,
+    36,
+    40,
+    43,
+    46,
+    49,
+    52,
+    60
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftShoulder",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightShoulder",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 28,
+     "name": "shockwave",
+     "bone": "RightHand",
+     "time": 0.9333
+    }
+   ],
+   "fastest_turn_per_frame_deg": 97.4,
+   "feet_drift_m": 0.3932
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Attack: Jabs 5/11, haymaker coil 16-19, smear 21, hit 22, overshoot 24, guard bounce 31-33. Legs solved with IK every key so feet stay planted while bouncing.",
+  "OH_Attack: Fastest move: RightForeArm turns 122 degrees in one frame at frame 15 (may look like a pop)",
+  "OH_Death: Slam: wrist at 0.067 m, target 0.065 m (shoulder 0.342 m high).",
+  "OH_Death: Recoil 3-6, knee down 10 (squash 12), fist overhead 21-24, slam + shockwave 28, wobble 33-36, topple 40-43, face-down 46, bounce 49, rests 52-60 (no return to idle).",
+  "OH_Death: Fastest move: RightHand turns 97 degrees in one frame at frame 42 (may look like a pop)"
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Attack": {
+    "keys": 37,
+    "seconds": 1.2
+   },
+   "OH_Death": {
+    "keys": 61,
+    "seconds": 2.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0009,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 0.00012
+ }
+}
