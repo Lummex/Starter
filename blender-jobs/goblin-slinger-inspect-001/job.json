@@ -11,13 +11,13 @@
  "retry_on_failure": false,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T07:16:36Z",
- "heartbeat_at": "2026-10-26T07:11:36Z",
+ "lease_until": "2026-10-26T07:16:39Z",
+ "heartbeat_at": "2026-10-26T07:11:39Z",
  "error": null,
  "progress": {
-  "stage": "preparing",
-  "percent": 5,
-  "message": "Copying the source model into a private work folder"
+  "stage": "inspecting",
+  "percent": 15,
+  "message": "Reading the model, skeleton and animations in Blender"
  },
  "source": {
   "character": "local:~/Downloads/r23/models/goblin-slinger/char.glb"
@@ -44,5 +44,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T07:11:36Z"
+ "updated_at": "2026-10-26T07:11:39Z"
 }
