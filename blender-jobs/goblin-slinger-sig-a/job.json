@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:08:20Z",
- "heartbeat_at": "2026-10-26T10:03:20Z",
+ "lease_until": "2026-10-26T10:08:31Z",
+ "heartbeat_at": "2026-10-26T10:03:31Z",
  "error": {
   "message": "{\"message\":\"is at e12198bc077c01489d76fb2c202ae0a9f416d6f6 but expected c9fb877c8a44632ac6da73132586dd242e654d80\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T09:57:40Z"
  },
  "progress": {
-  "stage": "animating",
-  "percent": 35,
-  "message": "Building the keyframes in Blender and rendering previews"
+  "stage": "designing",
+  "percent": 45,
+  "message": "Claude Code is designing the animation (revision)"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-slinger/char.glb@factory/issue-8"
@@ -91,5 +91,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:03:20Z"
+ "updated_at": "2026-10-26T10:03:31Z"
 }
