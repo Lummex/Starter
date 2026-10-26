@@ -1,0 +1,106 @@
+import math
+from mathutils import Vector
+
+
+def build(ctx):
+    ctx.length(72)
+
+    def rel_aim(parent, parent_dir, child_world):
+        # child aims are applied as if the parent stayed in base pose, so undo the parent's aim
+        p0 = Vector(ctx.bones[parent]['points'])
+        q = p0.rotation_difference(Vector(parent_dir).normalized())
+        v = q.inverted() @ Vector(child_world).normalized()
+        return (v.x, v.y, v.z)
+
+    def spine(f, h, interp='BEZIER'):
+        # h = total forward hunch in degrees (negative = forward), spread over the chain
+        ctx.key(f, 'Spine02', turn=[('right', h * 0.4)], interp=interp)
+        ctx.key(f, 'Spine01', turn=[('right', h * 0.35)], interp=interp)
+        ctx.key(f, 'Spine', turn=[('right', h * 0.25)], interp=interp)
+
+    def staff(f, h, lift, interp='BEZIER'):
+        # lift raises the staff hand (shrug + elbow) while the hand counter-rolls so the staff stays upright;
+        # the arm swings forward by the hunch amount so the staff stays vertical. lift >= 0: never into the ground.
+        ctx.key(f, 'RightShoulder', turn=[('forward', -10 * lift)], interp=interp)
+        ctx.key(f, 'RightArm', turn=[('right', -h)], interp=interp)
+        ctx.key(f, 'RightForeArm', turn=[('forward', -12 * lift)], interp=interp)
+        ctx.key(f, 'RightHand', turn=[('forward', 22 * lift)], interp=interp)
+
+    # --- body + staff: settle into the lean, two staff taps, mutter, release ---
+    beats = [
+        (7, -13, 0.0, 'BEZIER'),
+        (11, -11, 0.0, 'BEZIER'),
+        (14, -8, 0.85, 'BEZIER'),   # anticipation: rise, lift staff
+        (17, -7, 1.0, 'LINEAR'),    # apex hold -> slam
+        (19, -15, 0.0, 'BEZIER'),   # TAP 1 (body compresses onto staff)
+        (21, -13, 0.15, 'BEZIER'),  # rebound up
+        (24, -12, 0.0, 'BEZIER'),
+        (27, -9, 0.85, 'BEZIER'),
+        (29, -8, 1.0, 'LINEAR'),
+        (31, -15, 0.0, 'BEZIER'),   # TAP 2
+        (33, -13, 0.15, 'BEZIER'),
+        (36, -12, 0.0, 'BEZIER'),
+        (44, -13, 0.0, 'BEZIER'),
+        (52, -11, 0.0, 'BEZIER'),
+        (60, -12, 0.0, 'BEZIER'),
+        (66, -5, 0.0, 'BEZIER'),
+    ]
+    for f, h, lift, interp in beats:
+        spine(f, h, interp)
+        staff(f, h, lift, interp)
+
+    # --- neck keeps the face toward the camera while hunched ---
+    for f, a in ((8, 6), (19, 3), (24, 6), (31, 3), (36, 6), (60, 6), (66, 3)):
+        ctx.key(f, 'neck', turn=[('right', a)])
+
+    # --- head: glance at the staff for the taps, nod on impact, then mutter-bob ---
+    head = [
+        (6, [('up', -5), ('right', -3)]),
+        (12, [('up', -20), ('right', -10)]),
+        (17, [('up', -20), ('right', -3)]),
+        (19, [('up', -22), ('right', -16)]),
+        (22, [('up', -20), ('right', -6)]),
+        (29, [('up', -20), ('right', -3)]),
+        (31, [('up', -22), ('right', -16)]),
+        (34, [('up', -18), ('right', -6)]),
+        (38, [('up', 2), ('right', 3)]),
+    ]
+    for i, f in enumerate(range(41, 60, 3)):
+        if i % 2 == 0:
+            head.append((f, [('up', 4), ('right', -9), ('forward', 5)]))
+        else:
+            head.append((f, [('up', -3), ('right', 3), ('forward', -5)]))
+    head.append((63, [('right', -2)]))
+    for f, t in head:
+        ctx.key(f, 'Head', turn=t)
+
+    # --- free (left) hand: raised in front of the chest, stirring circles with fluttering fingers ---
+    ctx.key(8, 'LeftShoulder', turn=[('forward', 6)])
+    ctx.key(60, 'LeftShoulder', turn=[('forward', 6)])
+    ctx.key(66, 'LeftShoulder', turn=[('forward', 2)])
+
+    up_a = (-0.4, -0.5, 0.77)
+    up_b = (-0.45, -0.42, 0.78)
+    ctx.key(6, 'LeftArm', aim=(-0.45, -0.35, 0.82))   # overshoot up
+    ctx.key(10, 'LeftArm', aim=up_a)
+    for f, d in ((23, up_b), (35, up_a), (47, up_b), (59, up_a)):
+        ctx.key(f, 'LeftArm', aim=d)
+    ctx.key(65, 'LeftArm', aim=(-0.4, -0.8, 0.4))
+
+    ctx.key(6, 'LeftForeArm', aim=rel_aim('LeftArm', (-0.45, -0.35, 0.82), (0.3, 0.6, 0.75)))
+    for f in range(11, 60, 3):
+        t = (f - 11) / 12.0 * 2.0 * math.pi
+        d = (0.3 + 0.22 * math.cos(t), 0.35 + 0.22 * math.sin(t), 0.85)
+        par = up_a if f < 17 else (up_b if ((f - 11) // 12) % 2 == 0 else up_a)
+        ctx.key(f, 'LeftForeArm', aim=rel_aim('LeftArm', par, d))
+    ctx.key(65, 'LeftForeArm', turn=[('right', 25)])
+
+    for i, f in enumerate(range(11, 60, 3)):
+        if i % 2 == 0:
+            ctx.key(f, 'LeftHand', turn=[('forward', 25), ('right', 15)], twist=10)
+        else:
+            ctx.key(f, 'LeftHand', turn=[('forward', -20), ('right', -10)], twist=-10)
+    ctx.key(64, 'LeftHand', turn=[('right', -10)])
+
+    ctx.note('Idle: hunch onto staff f7, taps f19/f31 (lift-then-slam, staff only ever lifted), '
+             'mutter head-bob f38-60, left hand stirs circles f11-59, release f60-72.')
