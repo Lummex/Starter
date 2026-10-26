@@ -2,25 +2,22 @@
  "id": "goblin-grunt-reactions-r2",
  "type": "animate",
  "asset_id": "goblin-grunt",
- "status": "running",
+ "status": "cancelled",
  "priority": 9,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
  "retries": 0,
  "max_retries": 2,
  "retry_on_failure": true,
- "cancel_requested": false,
- "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:02:13Z",
- "heartbeat_at": "2026-10-26T09:57:13Z",
- "error": {
-  "message": "{\"message\":\"is at 63804e505d2a0973bede039002b8da31d7141e59 but expected ab4ade832244ceba9f66d880ea180de8a86cb3cd\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
-  "at": "2026-10-26T09:48:41Z"
- },
+ "cancel_requested": true,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
  "progress": {
-  "stage": "designing",
-  "percent": 25,
-  "message": "Claude Code is designing the animation"
+  "stage": "cancelled",
+  "percent": 0,
+  "message": "Replaced by r2a and r2b (split into smaller jobs)"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -89,69 +86,9 @@
    "by": "claude"
   },
   {
-   "at": "2026-10-26T09:04:29Z",
-   "status": "claimed",
-   "worker": "starr-f0fad5",
-   "recovered": false
-  },
-  {
-   "at": "2026-10-26T09:04:32Z",
-   "status": "running"
-  },
-  {
-   "at": "2026-10-26T09:17:20Z",
-   "status": "validating"
-  },
-  {
-   "at": "2026-10-26T09:17:42Z",
-   "status": "failed"
-  },
-  {
-   "at": "2026-10-26T09:18:52Z",
-   "status": "claimed",
-   "worker": "starr-f0fad5",
-   "recovered": false
-  },
-  {
-   "at": "2026-10-26T09:18:57Z",
-   "status": "running"
-  },
-  {
-   "at": "2026-10-26T09:31:52Z",
-   "status": "validating"
-  },
-  {
-   "at": "2026-10-26T09:32:50Z",
-   "status": "failed"
-  },
-  {
-   "at": "2026-10-26T09:33:07Z",
-   "status": "claimed",
-   "worker": "starr-f0fad5",
-   "recovered": false
-  },
-  {
-   "at": "2026-10-26T09:33:12Z",
-   "status": "running"
-  },
-  {
-   "at": "2026-10-26T09:47:09Z",
-   "status": "validating"
-  },
-  {
-   "at": "2026-10-26T09:48:41Z",
-   "status": "failed"
-  },
-  {
-   "at": "2026-10-26T09:50:46Z",
-   "status": "claimed",
-   "worker": "starr-f0fad5",
-   "recovered": false
-  },
-  {
-   "at": "2026-10-26T09:50:49Z",
-   "status": "running"
+   "at": "2026-10-26T09:56:45Z",
+   "status": "cancelled",
+   "by": "claude"
   }
- ],
- "updated_at": "2026-10-26T09:57:13Z"
+ ]
 }
