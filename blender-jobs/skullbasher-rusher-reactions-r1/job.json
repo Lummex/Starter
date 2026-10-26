@@ -2,7 +2,7 @@
  "id": "skullbasher-rusher-reactions-r1",
  "type": "animate",
  "asset_id": "skullbasher-rusher",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 4,
  "created_at": "2026-10-26T09:57:47Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:08:08Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T11:03:08Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "3 animation(s) built and checked: OH_Hit, OH_React_Knockback, OH_React_Bonk"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/skullbasher-rusher/char.glb@factory/issue-8"
@@ -84,7 +84,313 @@
   {
    "at": "2026-10-26T10:59:46Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T11:03:14Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T11:03:08Z"
+ "updated_at": "2026-10-26T11:03:14Z",
+ "result": {
+  "summary": "3 animation(s) built and checked: OH_Hit, OH_React_Knockback, OH_React_Bonk",
+  "files": [
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/char.glb",
+    "bytes": 1247732,
+    "sha256": "9826ff0182121798609d33d6e94ffde494a9064499992a8a07a6fa6a46979cbf"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/events.json",
+    "bytes": 445,
+    "sha256": "c01f627c9e6bb1049a8d8539e86a645304aeb69b922fa002d54f88f6904bb1a2"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/inspection.json",
+    "bytes": 10265,
+    "sha256": "cd35195595a30ab9433b948de70ad96edf282e14ae2441d75b5525d7b5bd5c70"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/build-report.json",
+    "bytes": 2589,
+    "sha256": "d6a8cd02929eced13d588fbdc8a675ed334805d4832eec0fb50cb37c19cadcee"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/validation.json",
+    "bytes": 1146,
+    "sha256": "2d4adcb25c2086643cfbd6013141f41a00fd5197e6d8c9a8f3bd9526ba3458e7"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_Hit-000.png",
+    "bytes": 177694,
+    "sha256": "9c859c775204c6262879453e01a101828119e01283cc0b39c4b2dad7c9b60bc0"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_Hit-006.png",
+    "bytes": 176566,
+    "sha256": "7134820616a9c2a152584bcf8fd6de3122cf03e1d9734321c45e17b4c0d5b13f"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_Hit-012.png",
+    "bytes": 176684,
+    "sha256": "a805bba598bcab239da1e148b9b28deb084b85a16935522dd5f1f67631815245"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_Hit-018.png",
+    "bytes": 177050,
+    "sha256": "b6b277e3c3ce7a25f2366441e32a365c5caffb34dc127b231d2111f7cd213ff6"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_Hit-024.png",
+    "bytes": 177694,
+    "sha256": "7a94a6ee49be12dcd3e2c34dab48094b7145859f12ecbe277bffa000a75d8aa9"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_React_Bonk-000.png",
+    "bytes": 177694,
+    "sha256": "23410db1f996f3c67c6f41d8d5a060f842e279b60e6c40e31dd48be57bc4a52e"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_React_Bonk-009.png",
+    "bytes": 177213,
+    "sha256": "c8f47f1cdae10545e8568543ed38f992b8d13737308b5168dd1db0d503cf9c6e"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_React_Bonk-018.png",
+    "bytes": 176605,
+    "sha256": "26540c9b15f8fb280083039f222e5fc08ae013b6266c26eaef5f3762f270a559"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_React_Bonk-027.png",
+    "bytes": 177473,
+    "sha256": "2ee74b75d0110b6bcfe01795eca3733cae051e22a03a4e72705a2f7e632725d9"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_React_Bonk-036.png",
+    "bytes": 177694,
+    "sha256": "ba84731a04e3f169870ca666752cc4c43eee7641d3b7027c175a0179c7384f12"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_React_Knockback-000.png",
+    "bytes": 177694,
+    "sha256": "c82a399c6b0646af0677809e61c8b56b7f6b7d5f06df21974c819f9c0bdcef67"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_React_Knockback-009.png",
+    "bytes": 179771,
+    "sha256": "e7799bba39cc4d919100394e49eb47a7be102ecbde5d725c3b2c355e5f38195b"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_React_Knockback-018.png",
+    "bytes": 176296,
+    "sha256": "362a19a05aa6631b2ad862b86d7fea2f772559ade30ea9e653e395e0608c2963"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_React_Knockback-027.png",
+    "bytes": 177723,
+    "sha256": "cd93c2635d71b7344a16f3630e1e84851ca49ee2d6b75ad6d5bc97f14f8bdac0"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/final-OH_React_Knockback-036.png",
+    "bytes": 177694,
+    "sha256": "5ae1a45c9523b07a6b261007041d3ad2849d66024cb111a6bc36eab631b2c84c"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_Hit-000.png",
+    "bytes": 308321,
+    "sha256": "5b1cca990ace7cecd0f113fc341ec836bf4e6107dce1f029880e008d3cf7aec2"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_Hit-004.png",
+    "bytes": 306978,
+    "sha256": "8f057dee660ee0daacc94b922c459df9d3a1cbb62a3337a32b2f0682b14bfab2"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_Hit-008.png",
+    "bytes": 306840,
+    "sha256": "81a6b6103e79777f1c454e6f045f989379ec434eb278a095492223e86c47299f"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_Hit-012.png",
+    "bytes": 306665,
+    "sha256": "271743105bc55585c0e713deb50f238d1c666dea30085ec1ff4392ee173d5f19"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_Hit-016.png",
+    "bytes": 306771,
+    "sha256": "f4d793c53bde7fdf68d92b0e08861282f55770d3eb97ffa9cbe4aa83cb77a0e4"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_Hit-020.png",
+    "bytes": 307965,
+    "sha256": "8d02be0a2f7c263bf940351a9ee5cc84ea332ffe106166db548b0d18fc8fe7cb"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_Hit-024.png",
+    "bytes": 308321,
+    "sha256": "7970351488606d8bb2ed6e67ece80ce35402a75d1b6997a9c5d52c5a64e4f3d1"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Bonk-000.png",
+    "bytes": 308321,
+    "sha256": "c8920dd627ed820baed67a4c1f4ff6b06e291450ad68ced2d2179c2058b9edda"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Bonk-006.png",
+    "bytes": 305286,
+    "sha256": "771c216ffb90ba10b3a8ccfba617ced3bb194185bdc2b7dba358b9901d22b67d"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Bonk-012.png",
+    "bytes": 304335,
+    "sha256": "27be3dd7f6822c030c9d7923d4f2d17e385743cc3fe2bcf142b5ae02e599287c"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Bonk-018.png",
+    "bytes": 306362,
+    "sha256": "b77e2be02e62818ad642679898fa2ee86c04c93cceed7bc9e43423f62524ee38"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Bonk-024.png",
+    "bytes": 307058,
+    "sha256": "656e6c41758490e2da5a6aaf3e2767f3462ac08d8997ff698478a37ae666dea7"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Bonk-030.png",
+    "bytes": 308538,
+    "sha256": "3d283476cd32137ed200f895880a6631c2a070ddb8e5eee8e8d0821ec2124855"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Bonk-036.png",
+    "bytes": 308321,
+    "sha256": "65357bbb21252db83be644096476d3e035a0f0fce8d7fe8a2f7108090fd968f8"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Knockback-000.png",
+    "bytes": 308321,
+    "sha256": "c8920dd627ed820baed67a4c1f4ff6b06e291450ad68ced2d2179c2058b9edda"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Knockback-006.png",
+    "bytes": 311163,
+    "sha256": "8a8be49c224a90a07376c437c0835b4c4c288833e43511d2bca7d493241cb9f6"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Knockback-012.png",
+    "bytes": 308307,
+    "sha256": "d9636a5231f42a0c596bd0a6ce2f8acb8f4baedc64dd73b4c687b7c85101b5d8"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Knockback-018.png",
+    "bytes": 306306,
+    "sha256": "d7fc32f2e91598886d7ef3446938a1a65386f8dc55300fc996804cee2ae29251"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Knockback-024.png",
+    "bytes": 308343,
+    "sha256": "ae0d7e3b24692e859dac1f919585fad8ab2c5fc389e4a32eed387d8138a7dc39"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Knockback-030.png",
+    "bytes": 307628,
+    "sha256": "65d61cff4ca9243837e3e28c3693793545017721eae2869205afddeee9405deb"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/preview-OH_React_Knockback-036.png",
+    "bytes": 308321,
+    "sha256": "68e7aeb02ad39b9e165b5d92924fab4ac809e3abbb92115f87276bb14bc8d101"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/anim-OH_Hit.py.txt",
+    "bytes": 3141,
+    "sha256": "8e491f1d46d50e5ceb7c1efd42620ae85095cf34efa7cdf114ff49c51ee4493c"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/anim-OH_React_Knockback.py.txt",
+    "bytes": 3467,
+    "sha256": "ae1a2be6a49c7d17b7a75306ade86c3da54b4faab5e1dd746de0861ed8d8e83b"
+   },
+   {
+    "file": "blender-jobs/skullbasher-rusher-reactions-r1/out/anim-OH_React_Bonk.py.txt",
+    "bytes": 2605,
+    "sha256": "f12c8c2fd0e750168d90adfdf5b09b0907e2a91ed3192c08423850e5156c1f21"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 36633,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_React_Bonk": [
+      0.0,
+      36.0
+     ],
+     "OH_React_Knockback": [
+      0.0,
+      36.0
+     ],
+     "OH_Hit": [
+      0.0,
+      24.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Hit": {
+      "keys": 25,
+      "seconds": 0.8
+     },
+     "OH_React_Knockback": {
+      "keys": 37,
+      "seconds": 1.2
+     },
+     "OH_React_Bonk": {
+      "keys": 37,
+      "seconds": 1.2
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0014,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 9e-05
+   }
+  }
+ }
 }
