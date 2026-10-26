@@ -1,0 +1,63 @@
+{
+ "id": "skullbasher-rusher-sig-a",
+ "type": "animate",
+ "asset_id": "skullbasher-rusher",
+ "status": "queued",
+ "priority": 5,
+ "created_at": "2026-10-26T09:02:28Z",
+ "created_by": "claude-overnight",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": true,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "Waiting for the Blender worker"
+ },
+ "source": {
+  "character": "repo:projects/oreheart-8/public/models/creatures/skullbasher-rusher/char.glb@factory/issue-8"
+ },
+ "request": "Skullbasher Rusher: Charge! Moves and attacks in the same turn. All forward momentum. He holds a mace in his right hand and a shield in his left hand; keep held items in the same hand. These are his own signature moves: give him a distinct personality, different from other goblins. Rules from the owner for every goblin: nothing he holds ever goes through his body or the ground; feet stay planted (no sliding or sinking) unless the clip says otherwise; held items stay in the same hand; movements look weighty and cartoony, never floaty. Board games are seen from above and in front, so make poses read clearly from there.",
+ "animations": [
+  {
+   "name": "OH_Idle",
+   "description": "Bangs the mace on his shield twice, stamps a foot like a bull ready to charge, snorts. Loops.",
+   "frames": [
+    60,
+    90
+   ],
+   "loop": true,
+   "return_to_idle": true,
+   "feet_may_move": true,
+   "events": []
+  },
+  {
+   "name": "OH_Walk",
+   "description": "In-place walk cycle for moving one board space at a time (the game slides him forward; he must NOT move forward himself, feet step in place like on a treadmill). Two full steps, loops seamlessly. Style: leaning-forward jog with the shield up in front.",
+   "frames": [
+    24,
+    36
+   ],
+   "loop": true,
+   "return_to_idle": true,
+   "feet_may_move": true,
+   "events": []
+  }
+ ],
+ "attachments": [],
+ "output": {
+  "format": "glb"
+ },
+ "history": [
+  {
+   "at": "2026-10-26T09:02:28Z",
+   "status": "queued",
+   "by": "claude"
+  }
+ ]
+}
