@@ -7,8 +7,8 @@
  "retry_on_failure": false,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T08:23:41Z",
- "heartbeat_at": "2026-10-26T08:18:41Z",
+ "lease_until": "2026-10-26T08:25:13Z",
+ "heartbeat_at": "2026-10-26T08:20:13Z",
  "error": null,
  "progress": {
   "stage": "designing",
@@ -72,5 +72,5 @@
   "format": "glb",
   "target": "game: public/models/creatures/goblin-slinger/char.glb (after owner review)"
  },
- "updated_at": "2026-10-26T08:18:41Z"
+ "updated_at": "2026-10-26T08:20:13Z"
 }
