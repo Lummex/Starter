@@ -1,0 +1,84 @@
+def build(ctx):
+    ctx.length(72)
+    spine = ctx.bone('spine')
+    low = ctx.bone('Spine02')
+    head = ctx.bone('head')
+    neck = ctx.bone('neck')
+    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm'); r_hand = ctx.bone('right hand')
+    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')
+
+    # Left fist planted on hip for the whole show-off (keys in/out)
+    for f in (10, 60):
+        ctx.key(f, l_up, aim=(-0.67, -0.67, -0.33))
+        ctx.key(f, l_fore, aim=(0.70, -0.64, 0.32))
+
+    # --- Anticipation: dip the ball low and forward, crouch over it (6-10)
+    ctx.key(8, r_up, aim=(0.35, -0.75, 0.55))
+    ctx.key(8, r_fore, aim=(0.1, -0.6, 0.8))
+    ctx.key(8, r_hand, turn=[('right', 0)])
+    ctx.key(8, spine, turn=[('right', -10), ('up', -6)])
+    ctx.key(8, low, turn=[('right', -4)])
+    ctx.key(8, head, turn=[('right', -6)])
+
+    # --- Pop: ball flicked up onto one finger, in front-right of the face (14 overshoot, 18 settle)
+    ctx.key(14, r_up, aim=(0.5, 0.72, 0.55))
+    ctx.key(14, r_fore, aim=(-0.05, 1.0, 0.2))
+    ctx.key(14, r_hand, aim=(0.0, 1.0, 0.05), twist=0, interp='LINEAR')
+    ctx.key(14, spine, turn=[('right', 9), ('up', 10)])
+    ctx.key(14, low, turn=[('right', 3)])
+    ctx.key(14, head, turn=[('right', 16), ('up', -14)])
+
+    ctx.key(18, r_up, aim=(0.55, 0.62, 0.58))
+    ctx.key(18, r_fore, aim=(0.0, 1.0, 0.15))
+    ctx.key(18, spine, turn=[('right', 6), ('up', 8)])
+    ctx.key(18, head, turn=[('right', 12), ('up', -12)])
+
+    # --- Spin: hand rolls continuously (2 full turns, 16-46), finger "tap" bob at 28-32
+    tw = 0
+    for f in range(16, 47, 2):
+        ctx.key(f, r_hand, aim=(0.0, 1.0, 0.05), twist=tw, interp='LINEAR')
+        tw += 48
+    ctx.key(28, r_up, aim=(0.57, 0.56, 0.6))
+    ctx.key(28, r_fore, aim=(0.05, 0.97, 0.2))
+    ctx.key(31, r_up, aim=(0.53, 0.66, 0.56))
+    ctx.key(31, r_fore, aim=(-0.03, 1.0, 0.12))
+    ctx.key(44, r_up, aim=(0.55, 0.62, 0.58))
+    ctx.key(44, r_fore, aim=(0.0, 1.0, 0.15))
+
+    # Plays to the crowd mid-spin: looks away from the ball at the camera, chin up, smug tilt
+    ctx.key(24, head, turn=[('right', 10), ('up', -10)])
+    ctx.key(29, head, turn=[('right', -4), ('forward', -10)])
+    ctx.key(36, head, turn=[('right', -2), ('forward', -12)])
+    ctx.key(26, spine, turn=[('right', 7), ('up', 6)])
+    ctx.key(38, spine, turn=[('right', 8), ('up', 4), ('forward', -4)])
+    ctx.key(42, head, turn=[('right', 12), ('up', -12)])
+    ctx.key(44, spine, turn=[('right', 6), ('up', 8)])
+
+    # --- Drop & catch: ball falls into the hand in front of the belly (50), weight overshoots down (53), settle (57)
+    ctx.key(50, r_up, aim=(0.35, -0.3, 0.88))
+    ctx.key(50, r_fore, aim=(0.1, 0.1, 1.0))
+    ctx.key(50, r_hand, turn=[('right', 0)])
+    ctx.key(50, head, turn=[('right', -8)])
+    ctx.key(50, spine, turn=[('right', 0), ('up', 2)])
+
+    ctx.key(53, r_up, aim=(0.32, -0.62, 0.72))
+    ctx.key(53, r_fore, aim=(0.12, -0.35, 0.93))
+    ctx.key(53, spine, turn=[('right', -9)])
+    ctx.key(53, low, turn=[('right', -4)])
+    ctx.key(53, head, turn=[('right', -10)])
+
+    ctx.key(57, r_up, aim=(0.32, -0.55, 0.77))
+    ctx.key(57, r_fore, aim=(0.1, -0.2, 0.97))
+    ctx.key(57, low, turn=[('right', 0)])
+
+    # --- Smug hold: chest puffed, head cocked, chin up at the crowd (60-66)
+    ctx.key(60, spine, turn=[('right', 7), ('up', 5)])
+    ctx.key(60, head, turn=[('right', 6), ('forward', 12), ('up', 6)])
+    ctx.key(66, spine, turn=[('right', 6), ('up', 4)])
+    ctx.key(66, head, turn=[('right', 5), ('forward', 11), ('up', 5)])
+    ctx.key(66, r_up, aim=(0.32, -0.55, 0.77))
+    ctx.key(66, r_fore, aim=(0.1, -0.2, 0.97))
+    # frame 72 returns to the base idle pose automatically for the loop
+
+    ctx.note('Ball spin = right hand twisted 720 deg (frames 16-46) with arm raised in front-right of the head. '
+             'Hips/legs untouched so the feet stay planted.')
