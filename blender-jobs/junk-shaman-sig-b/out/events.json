@@ -1,0 +1,40 @@
+{
+ "asset_id": "junk-shaman",
+ "fps": 30,
+ "clips": {
+  "OH_Attack": {
+   "frames": 34,
+   "duration": 1.1333,
+   "loop": false,
+   "events": [
+    {
+     "frame": 18,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.6
+    }
+   ],
+   "attachments": []
+  },
+  "OH_Special": {
+   "frames": 72,
+   "duration": 2.4,
+   "loop": false,
+   "events": [
+    {
+     "frame": 22,
+     "name": "lift_start",
+     "bone": "RightHand",
+     "time": 0.7333
+    },
+    {
+     "frame": 58,
+     "name": "lift_end",
+     "bone": "RightHand",
+     "time": 1.9333
+    }
+   ],
+   "attachments": []
+  }
+ }
+}
