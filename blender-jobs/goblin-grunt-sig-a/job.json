@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T09:37:59Z",
- "heartbeat_at": "2026-10-26T09:32:59Z",
+ "lease_until": "2026-10-26T09:38:06Z",
+ "heartbeat_at": "2026-10-26T09:33:06Z",
  "error": {
   "message": "{\"message\":\"is at 9d0312c35c8c102491b4b7922b98cf505ea058d3 but expected 4050e54a4c3df6c3a67ce9ea28ad02302f0198a1\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T09:27:53Z"
  },
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -95,5 +95,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T09:32:59Z"
+ "updated_at": "2026-10-26T09:33:06Z"
 }
