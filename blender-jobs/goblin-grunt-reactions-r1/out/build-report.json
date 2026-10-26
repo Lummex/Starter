@@ -4,44 +4,50 @@
  "clips": [
   {
    "name": "OH_Hit",
-   "frames": 26,
-   "seconds": 0.867,
+   "frames": 24,
+   "seconds": 0.8,
    "key_frames": [
-    2,
-    4,
+    3,
+    5,
     6,
-    7,
-    10,
+    8,
+    9,
+    11,
     12,
+    13,
     14,
-    15,
     16,
+    17,
     18,
     20,
+    21,
     22
    ],
    "bones_moved": [
     "Head",
     "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
     "LeftLeg",
     "LeftUpLeg",
     "RightArm",
+    "RightForeArm",
+    "RightHand",
     "Spine",
     "Spine01",
     "Spine02",
     "neck"
    ],
    "events": [],
-   "fastest_turn_per_frame_deg": 57.5,
-   "feet_drift_m": 0.1641
+   "fastest_turn_per_frame_deg": 49.9,
+   "feet_drift_m": 0.0486
   },
   {
    "name": "OH_React_Knockback",
-   "frames": 40,
-   "seconds": 1.333,
+   "frames": 36,
+   "seconds": 1.2,
    "key_frames": [
-    2,
-    4,
+    3,
     6,
     8,
     10,
@@ -49,36 +55,34 @@
     14,
     16,
     18,
-    20,
-    22,
-    24,
-    27,
-    31,
-    35
+    21,
+    25,
+    29
    ],
    "bones_moved": [
     "Head",
     "LeftArm",
-    "LeftFoot",
+    "LeftForeArm",
     "RightArm",
-    "RightFoot",
+    "RightForeArm",
+    "RightHand",
     "Spine",
     "Spine01",
     "Spine02",
     "neck"
    ],
    "events": [],
-   "fastest_turn_per_frame_deg": 70.3,
+   "fastest_turn_per_frame_deg": 66.4,
    "feet_drift_m": 0.0
   },
   {
    "name": "OH_React_Bonk",
-   "frames": 40,
-   "seconds": 1.333,
+   "frames": 36,
+   "seconds": 1.2,
    "key_frames": [
     2,
     4,
-    6,
+    5,
     8,
     10,
     12,
@@ -87,53 +91,50 @@
     18,
     20,
     22,
-    24,
+    25,
     26,
-    28,
+    27,
     29,
     30,
-    32,
-    33,
-    34,
-    37
+    31
    ],
    "bones_moved": [
     "Head",
     "LeftArm",
-    "LeftShoulder",
+    "LeftForeArm",
     "RightArm",
-    "RightShoulder",
+    "RightForeArm",
+    "RightHand",
     "Spine",
     "Spine01",
     "Spine02",
     "neck"
    ],
    "events": [],
-   "fastest_turn_per_frame_deg": 36.5,
+   "fastest_turn_per_frame_deg": 27.3,
    "feet_drift_m": 0.0
   }
  ],
  "problems": [],
  "notes": [
-  "OH_Hit: OH_Hit: impact 2, snap overshoot 4, left-leg stagger stamp 6-10, droop 12, head shake 14-20, idle 26.",
-  "OH_React_Knockback: OH_React_Knockback: shove 2, thrown back 4, heel skid 4-16, windmill 6-24, forward catch 27, rebound 31, idle 40. No root travel; game slides him.",
-  "OH_React_Knockback: Fastest move: RightArm turns 70 degrees in one frame at frame 2 (may look like a pop)",
-  "OH_React_Bonk: OH_React_Bonk: head snaps down 2-4 with shrug, dizzy circle wobble 6-26 (two loops, head lagging), head shake 28-34, chest up 33, idle 40."
+  "OH_Hit: Hips are never moved, so the planted foot cannot slide; stagger is a lift-and-stomp of the front foot in place.",
+  "OH_React_Knockback: No root/hip travel or rotation: the game slides him back; feet stay locked while only the upper body reacts.",
+  "OH_React_Bonk: This rig has no eye bones, so the crossed-eyes read comes from the circling head wobble only."
  ],
  "splice": {
   "problems": [],
   "clips": {
    "OH_Hit": {
-    "keys": 27,
-    "seconds": 0.8667
+    "keys": 25,
+    "seconds": 0.8
    },
    "OH_React_Knockback": {
-    "keys": 41,
-    "seconds": 1.3333
+    "keys": 37,
+    "seconds": 1.2
    },
    "OH_React_Bonk": {
-    "keys": 41,
-    "seconds": 1.3333
+    "keys": 37,
+    "seconds": 1.2
    }
   },
   "calibration": {
@@ -148,6 +149,6 @@
    "worst_position_error_pct_of_height": 0.0008,
    "worst_rotation_error_deg": 0.0
   },
-  "written_clip_error_pct_of_height": 1e-05
+  "written_clip_error_pct_of_height": 9e-05
  }
 }
