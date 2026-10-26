@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:48:45Z",
- "heartbeat_at": "2026-10-26T11:43:45Z",
+ "lease_until": "2026-10-26T11:49:54Z",
+ "heartbeat_at": "2026-10-26T11:44:54Z",
  "error": {
   "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r1/out/final-OH_React_Knockback-027.png does not match 695b0e8d32baca4a96d961942294ce8aa4513848\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:42:59Z"
  },
  "progress": {
-  "stage": "designing",
-  "percent": 25,
-  "message": "Claude Code is designing the animation"
+  "stage": "animating",
+  "percent": 35,
+  "message": "Building the keyframes in Blender and rendering previews"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -589,5 +589,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T11:43:45Z"
+ "updated_at": "2026-10-26T11:44:54Z"
 }
