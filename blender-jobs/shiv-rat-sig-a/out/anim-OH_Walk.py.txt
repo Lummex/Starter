@@ -1,0 +1,71 @@
+def build(ctx):
+    L = 24
+    ctx.length(L)
+    hips = ctx.bone('hips')
+    head = ctx.bone('head')
+    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm')
+    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')
+
+    # Frames 0 and 24 are the idle pose (left unkeyed). He drops into a crouch by frame 2,
+    # scurries two quick steps, and pops up for a twitchy peek at the loop point.
+    # (frame, thigh, shin, foot); thigh+, shin-2x, foot+ keeps the planted foot flat.
+    left = [
+        (2, 18, -36, 14),
+        (5, 42, -75, 30),   # left foot up high (passing)
+        (8, 24, -36, 12),   # left contact, a touch forward
+        (10, 20, -36, 16),
+        (14, 15, -30, 15),
+        (18, 10, -28, 18),  # pushed back under him as the right plants
+        (21, 10, -22, 12),
+    ]
+    right = [
+        (2, 14, -28, 14),
+        (6, 12, -30, 18),
+        (9, 8, -26, 18),
+        (12, 20, -40, 18),
+        (15, 42, -75, 30),  # right foot up high (passing)
+        (18, 24, -36, 12),  # right contact
+        (21, 18, -32, 14),
+    ]
+    for (thigh, shin, foot), keys in (
+        ((ctx.bone('left thigh'), ctx.bone('left shin'), ctx.bone('left foot')), left),
+        ((ctx.bone('right thigh'), ctx.bone('right shin'), ctx.bone('right foot')), right),
+    ):
+        for f, a, b, c in keys:
+            ctx.key(f, thigh, turn=[('right', a)])
+            ctx.key(f, shin, turn=[('right', b)])
+            ctx.key(f, foot, turn=[('right', c)])
+
+    # hips: crouched low, dip on each contact, sway over the planted foot
+    for f, x, y in ((2, 0.0, -0.014), (5, 0.012, -0.008), (8, 0.004, -0.02),
+                    (12, -0.004, -0.014), (15, -0.012, -0.008), (18, -0.004, -0.02),
+                    (21, 0.0, -0.012)):
+        ctx.key(f, hips, move=(x, y, 0))
+
+    # hunched spine with a bounce on the contacts; snaps upright at the loop for a peek
+    for f, bob in ((2, 0), (5, 2), (8, -4), (12, 0), (15, 2), (18, -4), (21, 0)):
+        ctx.key(f, 'Spine02', turn=[('right', -14 + bob)])
+        ctx.key(f, 'Spine01', turn=[('right', -10 + bob)])
+        ctx.key(f, ctx.bone('spine'), turn=[('right', -6), ('up', 4 if f < 12 else -4)])
+
+    # head counters the hunch to look ahead, with a quick twitchy glance mid-cycle
+    H = [
+        (2, [('right', 20)]),
+        (8, [('right', 24)]),
+        (11, [('right', 20), ('up', 22)]),
+        (14, [('right', 20), ('up', 20)]),
+        (16, [('right', 22), ('up', -4)]),
+        (18, [('right', 24)]),
+        (21, [('right', 18)]),
+    ]
+    for f, t in H:
+        ctx.key(f, head, turn=t, interp='LINEAR' if f in (11, 16) else 'BEZIER')
+
+    # arms tucked like rat paws: dagger held forward and low, short pumps opposite the legs
+    for f, s in ((2, 0), (5, 1), (10, 0), (15, -1), (21, 0)):
+        ctx.key(f, r_up, turn=[('right', 30 + 7 * s), ('forward', -8)])
+        ctx.key(f, r_fore, turn=[('right', 45 + 5 * s)])
+        ctx.key(f, l_up, turn=[('right', 25 - 7 * s), ('forward', 6)])
+        ctx.key(f, l_fore, turn=[('right', 60 - 5 * s)])
+    ctx.note('Walk: idle at 0/24, crouch by 2, left foot up 5 / plants 8, right foot up 15 / plants 18, '
+             'twitch glance 11-16, pops up for a peek at the loop.')
