@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T09:54:40Z",
- "heartbeat_at": "2026-10-26T09:49:40Z",
+ "lease_until": "2026-10-26T09:54:47Z",
+ "heartbeat_at": "2026-10-26T09:49:47Z",
  "error": null,
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb@factory/issue-8"
@@ -84,5 +84,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T09:49:40Z"
+ "updated_at": "2026-10-26T09:49:47Z"
 }
