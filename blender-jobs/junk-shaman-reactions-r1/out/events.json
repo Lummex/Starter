@@ -1,0 +1,27 @@
+{
+ "asset_id": "junk-shaman",
+ "fps": 30,
+ "clips": {
+  "OH_Hit": {
+   "frames": 24,
+   "duration": 0.8,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  },
+  "OH_React_Knockback": {
+   "frames": 36,
+   "duration": 1.2,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  },
+  "OH_React_Bonk": {
+   "frames": 36,
+   "duration": 1.2,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  }
+ }
+}
