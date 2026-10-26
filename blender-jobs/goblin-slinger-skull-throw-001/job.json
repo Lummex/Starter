@@ -7,13 +7,13 @@
  "retry_on_failure": false,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T07:35:43Z",
- "heartbeat_at": "2026-10-26T07:30:43Z",
+ "lease_until": "2026-10-26T07:35:46Z",
+ "heartbeat_at": "2026-10-26T07:30:46Z",
  "error": null,
  "progress": {
-  "stage": "inspecting",
-  "percent": 15,
-  "message": "Reading the model, skeleton and animations in Blender"
+  "stage": "designing",
+  "percent": 25,
+  "message": "Claude Code is designing the animation"
  },
  "history": [
   {
@@ -72,5 +72,5 @@
   "format": "glb",
   "target": "game: public/models/creatures/goblin-slinger/char.glb (after owner review)"
  },
- "updated_at": "2026-10-26T07:30:43Z"
+ "updated_at": "2026-10-26T07:30:46Z"
 }
