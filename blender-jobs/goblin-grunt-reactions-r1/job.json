@@ -2,7 +2,7 @@
  "id": "goblin-grunt-reactions-r1",
  "type": "animate",
  "asset_id": "goblin-grunt",
- "status": "claimed",
+ "status": "running",
  "priority": 9,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T09:15:56Z",
- "heartbeat_at": "2026-10-26T09:10:56Z",
+ "lease_until": "2026-10-26T09:16:01Z",
+ "heartbeat_at": "2026-10-26T09:11:01Z",
  "error": {
   "message": "{\"message\":\"is at 8bf49ab87a464e8a690d8f4994ff4f811c3341f2 but expected 549670dff621cefff943f60befe5e85ba37c42b7\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T09:10:39Z"
  },
  "progress": {
-  "stage": "claimed",
-  "percent": 0,
-  "message": "Picked up by the Blender worker"
+  "stage": "preparing",
+  "percent": 5,
+  "message": "Copying the source model into a private work folder"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -115,7 +115,11 @@
    "status": "claimed",
    "worker": "starr-f0fad5",
    "recovered": false
+  },
+  {
+   "at": "2026-10-26T09:11:01Z",
+   "status": "running"
   }
  ],
- "updated_at": "2026-10-26T09:10:56Z"
+ "updated_at": "2026-10-26T09:11:01Z"
 }
