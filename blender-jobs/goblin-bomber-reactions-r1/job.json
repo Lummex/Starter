@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:51:31Z",
- "heartbeat_at": "2026-10-26T11:46:31Z",
+ "lease_until": "2026-10-26T11:51:38Z",
+ "heartbeat_at": "2026-10-26T11:46:38Z",
  "error": {
   "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r1/out/final-OH_React_Bonk-018.png does not match 6b5703d1803eb36bdb7a637058db7fb2e66569f9\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:45:53Z"
  },
  "progress": {
-  "stage": "inspecting",
-  "percent": 15,
-  "message": "Reading the model, skeleton and animations in Blender"
+  "stage": "designing",
+  "percent": 25,
+  "message": "Claude Code is designing the animation"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -607,5 +607,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T11:46:31Z"
+ "updated_at": "2026-10-26T11:46:38Z"
 }
