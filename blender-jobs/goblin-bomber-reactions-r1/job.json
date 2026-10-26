@@ -2,7 +2,7 @@
  "id": "goblin-bomber-reactions-r1",
  "type": "animate",
  "asset_id": "goblin-bomber",
- "status": "queued",
+ "status": "claimed",
  "priority": 4,
  "created_at": "2026-10-26T09:57:47Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": null,
- "heartbeat_at": "2026-10-26T11:02:22Z",
+ "lease_until": "2026-10-26T11:07:55Z",
+ "heartbeat_at": "2026-10-26T11:02:55Z",
  "error": {
   "message": "{\"message\":\"is at 46d3cebdbdbdd0c08d8debd8557e31f726cfeece but expected b6d88aaf3477e37907c05dde3bcddd6f3221b6a3\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:02:29Z"
  },
  "progress": {
-  "stage": "failed",
+  "stage": "claimed",
   "percent": 0,
-  "message": "{\"message\":\"is at 46d3cebdbdbdd0c08d8debd8557e31f726cfeece but expected b6d88aaf3477e37907c05dde3bcddd6f3221b6a3\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}"
+  "message": "Picked up by the Blender worker"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -307,7 +307,13 @@
   {
    "at": "2026-10-26T11:02:29Z",
    "status": "failed"
+  },
+  {
+   "at": "2026-10-26T11:02:55Z",
+   "status": "claimed",
+   "worker": "starr-f0fad5",
+   "recovered": false
   }
  ],
- "updated_at": "2026-10-26T11:02:29Z"
+ "updated_at": "2026-10-26T11:02:55Z"
 }
