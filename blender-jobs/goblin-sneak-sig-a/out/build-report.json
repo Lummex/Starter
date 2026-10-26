@@ -1,0 +1,126 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Idle",
+   "frames": 78,
+   "seconds": 2.6,
+   "key_frames": [
+    8,
+    12,
+    16,
+    19,
+    21,
+    23,
+    25,
+    28,
+    30,
+    34,
+    37,
+    39,
+    44,
+    48,
+    51,
+    54,
+    56,
+    58,
+    61,
+    65,
+    70
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 79.6,
+   "feet_drift_m": 0.0347
+  },
+  {
+   "name": "OH_Walk",
+   "frames": 24,
+   "seconds": 0.8,
+   "key_frames": [
+    3,
+    6,
+    9,
+    12,
+    15,
+    18,
+    21
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 51.2,
+   "feet_drift_m": 0.1127
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Idle: Idle: crouch 8, fingertip test 12-19, ouch 21, glance L 28-34, glance R 37-44, twirl 48-58 (eased, no pop), ready 61-70.",
+  "OH_Idle: Fastest move: LeftHand turns 80 degrees in one frame at frame 21 (may look like a pop)",
+  "OH_Walk: Walk: in-place tiptoe sneak, left knee peak 6, right knee peak 18, contacts 0/12/24; upper body in base pose at 0/24, hunch pulses deepest at 6/18 with dagger tucked close."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Idle": {
+    "keys": 79,
+    "seconds": 2.6
+   },
+   "OH_Walk": {
+    "keys": 25,
+    "seconds": 0.8
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0009,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 2e-05
+ }
+}
