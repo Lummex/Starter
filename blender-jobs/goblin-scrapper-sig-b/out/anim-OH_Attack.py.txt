@@ -1,0 +1,164 @@
+import math
+from mathutils import Vector, Quaternion
+
+AX = {'right': (1, 0, 0), 'left': (-1, 0, 0), 'up': (0, 1, 0), 'down': (0, -1, 0),
+      'forward': (0, 0, 1), 'back': (0, 0, -1)}
+SPINE = (('Spine02', 0.3), ('Spine01', 0.35), ('Spine', 0.35))
+IDQ = (1.0, 0.0, 0.0, 0.0)
+
+
+def rq(turns):
+    # API turns are left-handed in (right, up, forward) space -> negate the angle
+    q = Quaternion(IDQ)
+    for ax, a in turns:
+        q = Quaternion(Vector(AX[ax]), math.radians(-a)) @ q
+    return q
+
+
+def wrap(a):
+    while a > 180.0:
+        a -= 360.0
+    while a < -180.0:
+        a += 360.0
+    return a
+
+
+def psi(v):
+    # angle in the side view, 0 = pointing down, +90 = pointing forward
+    return math.degrees(math.atan2(v.z, -v.y))
+
+
+def make_pose(ctx, low):
+    B = ctx.bones
+
+    def P(n, k='head'):
+        return Vector(B[n][k])
+
+    def flat(v):
+        return Vector((0.0, v.y, v.z))
+
+    def fk(p, chain, m):
+        for h, q in reversed(chain):
+            p = h + q @ (p - h)
+        return p + m
+
+    def leg(f, side, m, interp):
+        # two-bone side-view IK so the ankle stays where it is in the base pose
+        up, sh, ft = side + 'UpLeg', side + 'Leg', side + 'Foot'
+        H0 = flat(P(up))
+        K0 = flat(P(up, 'tail'))
+        A0 = flat(P(ft))
+        H1 = H0 + Vector((0.0, m.y, m.z))
+        l1 = (K0 - H0).length
+        l2 = (A0 - K0).length
+        d = A0 - H1
+        dist = min(max(d.length, abs(l1 - l2) + 0.005), (l1 + l2) * 0.999)
+        c = (l1 * l1 + dist * dist - l2 * l2) / (2.0 * l1 * dist)
+        ang = math.degrees(math.acos(min(1.0, max(-1.0, c))))
+        s = 1.0 if wrap(psi(K0 - H0) - psi(A0 - H0)) >= 0 else -1.0
+        pk = psi(d) + s * ang
+        thigh = wrap(pk - psi(K0 - H0))
+        r = math.radians(pk)
+        K1 = H1 + Vector((0.0, -math.cos(r), math.sin(r))) * l1
+        shin_w = wrap(psi(A0 - K1) - psi(A0 - K0))
+        ctx.key(f, up, turn=[('right', thigh)], interp=interp)
+        ctx.key(f, sh, turn=[('right', shin_w - thigh)], interp=interp)
+        ctx.key(f, ft, turn=[('right', -shin_w)], interp=interp)
+
+    def arm(f, side, chain, m, target, pole, interp):
+        ua, fa = side + 'Arm', side + 'ForeArm'
+        qc = Quaternion(IDQ)
+        for h, q in chain:
+            qc = qc @ q
+        S = fk(P(ua), chain, m)
+        l1 = (P(ua, 'tail') - P(ua)).length
+        l2 = (P(fa, 'tail') - P(fa)).length
+        d = Vector(target) - S
+        dist = min(max(d.length, abs(l1 - l2) + 0.02), (l1 + l2) * 0.995)
+        dn = d.normalized()
+        W = S + dn * dist
+        c = (l1 * l1 + dist * dist - l2 * l2) / (2.0 * l1 * dist)
+        ang = math.acos(min(1.0, max(-1.0, c)))
+        pv = Vector(pole)
+        pv = pv - dn * pv.dot(dn)
+        pv.normalize()
+        E = S + (dn * math.cos(ang) + pv * math.sin(ang)) * l1
+        ud = (E - S).normalized()
+        fd = (W - E).normalized()
+        lu = qc.inverted() @ ud
+        qua = Vector(B[ua]['points']).rotation_difference(lu)
+        lf = (qc @ qua).inverted() @ fd
+        ctx.key(f, ua, aim=(lu.x, lu.y, lu.z), interp=interp)
+        ctx.key(f, fa, aim=(lf.x, lf.y, lf.z), interp=interp)
+        tip = W + fd * 0.12
+        low[0] = min(low[0], W.y, tip.y)
+
+    def pose(f, hip=(0.0, 0.0, 0.0), twist=0.0, bend=0.0, lean=0.0, head=None,
+             R=None, L=None, Rpole=(1.0, -1.0, -0.3), Lpole=(-1.0, -1.0, -0.3), interp='BEZIER'):
+        m = Vector(hip)
+        ctx.key(f, 'Hips', move=hip, interp=interp)
+        leg(f, 'Left', m, interp)
+        leg(f, 'Right', m, interp)
+        chain = []
+        for n, w in SPINE:
+            t = [('up', twist * w), ('right', bend * w), ('forward', lean * w)]
+            ctx.key(f, n, turn=t, interp=interp)
+            chain.append((P(n), rq(t)))
+        if head is not None:
+            ctx.key(f, 'Head', turn=head, interp=interp)
+        if R is not None:
+            arm(f, 'Right', chain + [(P('RightShoulder'), Quaternion(IDQ))], m, R, Rpole, interp)
+        if L is not None:
+            arm(f, 'Left', chain + [(P('LeftShoulder'), Quaternion(IDQ))], m, L, Lpole, interp)
+
+    return pose
+
+
+def grip(b):
+    # both palms on the ball: right wrist on its right side, left wrist on its left side
+    x, y, z = b
+    return (x + 0.08, y + 0.02, z - 0.07), (x - 0.08, y + 0.02, z - 0.07)
+
+
+def build(ctx):
+    ctx.length(30)
+    low = [10.0]
+    pose = make_pose(ctx, low)
+    hand = ctx.bone('right hand')
+
+    # gather: scoops the ball into both hands, sizing up the target
+    r, l = grip((0.17, 0.42, 0.17))
+    pose(4, hip=(0.0, -0.015, 0.0), twist=-10, bend=2, head=[('up', 6)], R=r, L=l)
+
+    # wind-up: ball tucked to the right hip, shoulder loaded, eyes locked on the target
+    r, l = grip((0.27, 0.43, 0.08))
+    pose(9, hip=(0.0, -0.035, -0.025), twist=-30, bend=8, lean=4,
+         head=[('up', 20), ('right', -6)], R=r, L=l)
+    r, l = grip((0.28, 0.44, 0.06))
+    pose(12, hip=(0.0, -0.038, -0.028), twist=-34, bend=10, lean=5,
+         head=[('up', 22), ('right', -8)], R=r, L=l)
+
+    # SLAM: shoulder drives through, ball rammed out front
+    r, l = grip((0.08, 0.36, 0.30))
+    pose(15, hip=(0.0, -0.03, 0.04), twist=20, bend=-18, lean=-5,
+         head=[('up', -8), ('right', 8)], R=r, L=l, interp='LINEAR')
+    ctx.event(15, 'hit', bone=hand)
+
+    # overshoot
+    r, l = grip((0.05, 0.35, 0.32))
+    pose(17, hip=(0.0, -0.036, 0.05), twist=26, bend=-22, lean=-6,
+         head=[('up', -10), ('right', 10)], R=r, L=l)
+
+    # recoil
+    r, l = grip((0.09, 0.40, 0.24))
+    pose(20, hip=(0.0, -0.025, 0.03), twist=12, bend=-9, lean=-2,
+         head=[('up', -4), ('right', 4)], R=r, L=l)
+
+    # cocky settle: chest puffed, head tilted at the crowd
+    r, l = grip((0.14, 0.43, 0.19))
+    pose(23, hip=(0.0, -0.008, 0.01), twist=4, bend=5,
+         head=[('forward', -10), ('right', 8)], R=r, L=l)
+    pose(26, hip=(0.0, -0.004, 0.0), twist=1, bend=2, head=[('forward', -4)])
+
+    ctx.note('OH_Attack: gather 4, wind-up 9-12, hit 15, overshoot 17, recoil 20, cocky settle 23-26. '
+             'Lowest wrist/ball estimate %.3f m.' % low[0])
