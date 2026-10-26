@@ -1,0 +1,167 @@
+import math
+from mathutils import Vector, Quaternion
+
+AX = {'right': (1, 0, 0), 'left': (-1, 0, 0), 'up': (0, 1, 0),
+      'down': (0, -1, 0), 'forward': (0, 0, 1), 'back': (0, 0, -1)}
+Z = [('up', 0)]
+
+
+def tq(turns):
+    # (right, up, forward) is left-handed, so a physical right-hand-rule turn is a negative math angle
+    q = Quaternion()
+    for a, d in turns:
+        q = Quaternion(Vector(AX[a]), math.radians(-d)) @ q
+    return q
+
+
+def solve(ctx, f, hm, items, interp):
+    W = {}
+
+    def world(b):
+        if not b:
+            return Quaternion()
+        if b in W:
+            return W[b]
+        return world(ctx.parent(b))
+
+    ctx.key(f, 'Hips', move=hm, interp=interp)
+    for b, kind, val in items:
+        P = world(ctx.parent(b))
+        rest = Vector(ctx.bones[b]['points'])
+        if kind == 'turn':
+            L = tq(val)
+            ctx.key(f, b, turn=list(val), interp=interp)
+        elif kind == 'aim':
+            la = (P.inverted() @ Vector(val)).normalized()
+            L = rest.rotation_difference(la)
+            ctx.key(f, b, aim=(la.x, la.y, la.z), interp=interp)
+        else:
+            L = P.inverted() @ val
+            e = L.to_euler('XYZ')
+            ctx.key(f, b, turn=[('right', -math.degrees(e.x)), ('up', -math.degrees(e.y)),
+                                ('forward', -math.degrees(e.z))], interp=interp)
+        W[b] = P @ L
+
+
+def leg_items(ctx, side, hm, target, rot):
+    B = ctx.bones
+    th, sh, ft = side + 'UpLeg', side + 'Leg', side + 'Foot'
+    H0 = Vector(B[th]['head']); K0 = Vector(B[sh]['head']); A0 = Vector(B[ft]['head'])
+    L1 = (K0 - H0).length; L2 = (A0 - K0).length
+    r = (A0 - H0).normalized()
+    pole = (K0 - H0) - r * (K0 - H0).dot(r)
+    H = H0 + Vector(hm); T = Vector(target)
+    d = T - H
+    dist = max(min(d.length, (L1 + L2) * 0.995), abs(L1 - L2) + 0.01)
+    dn = d.normalized()
+    pole = pole - dn * pole.dot(dn)
+    pole.normalize()
+    ca = max(-1.0, min(1.0, (L1 * L1 + dist * dist - L2 * L2) / (2 * L1 * dist)))
+    sa = math.sqrt(1 - ca * ca)
+    K = H + dn * (L1 * ca) + pole * (L1 * sa)
+    E = H + dn * dist
+    return [(th, 'aim', tuple(K - H)), (sh, 'aim', tuple(E - K)), (ft, 'world', rot)]
+
+
+def pose(ctx, f, p, interp='BEZIER'):
+    B = ctx.bones
+    hm = p.get('hips', (0, 0, 0))
+    items = [('Spine02', 'turn', p.get('s2', Z)), ('Spine01', 'turn', p.get('s1', Z)),
+             ('Spine', 'turn', p.get('s0', Z)), ('neck', 'turn', p.get('neck', Z)),
+             ('Head', 'turn', p.get('head', Z)),
+             ('LeftShoulder', 'turn', p.get('lsh', Z)),
+             ('LeftArm', 'aim', p['lu']), ('LeftForeArm', 'aim', p['lf']),
+             ('LeftHand', 'aim', p.get('lh', p['lf'])),
+             ('RightShoulder', 'turn', p.get('rsh', Z)),
+             ('RightArm', 'aim', p['ru']), ('RightForeArm', 'aim', p['rf']),
+             ('RightHand', 'aim', p.get('rh', p['rf']))]
+    items += leg_items(ctx, 'Left', hm, p.get('lfoot', tuple(B['LeftFoot']['head'])), tq(p.get('lrot', Z)))
+    items += leg_items(ctx, 'Right', hm, p.get('rfoot', tuple(B['RightFoot']['head'])), tq(p.get('rrot', Z)))
+    solve(ctx, f, hm, items, interp)
+
+
+def build(ctx):
+    ctx.length(72)
+    B = ctx.bones
+    rf0 = Vector(B['RightFoot']['head'])
+
+    def foot(dy, dz):
+        return (rf0.x, rf0.y + dy, rf0.z + dz)
+
+    NEUTRAL = {'lu': tuple(B['LeftArm']['points']), 'lf': tuple(B['LeftForeArm']['points']),
+               'ru': tuple(B['RightArm']['points']), 'rf': tuple(B['RightForeArm']['points'])}
+    GUARD = {'lu': (-0.25, -0.5, 0.83), 'lf': (0.55, 0.1, 0.83), 'lh': (0.5, 0.0, 0.86)}
+
+    def P(*parts, **kw):
+        d = dict(NEUTRAL)
+        for part in parts:
+            d.update(part)
+        d.update(kw)
+        return d
+
+    # hand stays close to the forearm line so the wrist never flips (no pops); head kept up so the face reads
+    WIND1 = dict(ru=(0.7, 0.65, -0.15), rf=(0.15, 0.9, -0.4), rh=(0.12, 0.85, -0.5),
+                 s1=[('up', -14), ('right', 4)], s0=[('up', -6)],
+                 head=[('right', 2), ('up', 10)], hips=(0.005, -0.01, 0), rsh=[('forward', -6)])
+    MID = dict(ru=(0.45, 0.2, 0.55), rf=(-0.1, 0.55, 0.82), rh=(-0.15, 0.45, 0.88),
+               s1=[('up', 4), ('right', -3)], s0=[('up', 1)], head=[('right', 0), ('up', 8)],
+               hips=(0, -0.015, 0.003))
+    STRIKE = dict(ru=(0.05, -0.35, 0.94), rf=(-0.4, -0.35, 0.85), rh=(-0.42, -0.4, 0.81),
+                  s1=[('up', 12), ('right', -8)], s0=[('up', 4), ('right', -4)],
+                  neck=[('right', 4)], head=[('right', -2), ('up', 6)], hips=(-0.005, -0.02, 0.005))
+    IMPACT = dict(STRIKE, rf=(-0.45, -0.42, 0.8), rh=(-0.45, -0.45, 0.77), lf=(0.6, 0.0, 0.8), lh=(0.55, -0.1, 0.83),
+                  s1=[('up', 14), ('right', -10)], head=[('right', -6), ('up', 6)],
+                  hips=(-0.005, -0.026, 0.005))
+    RECOIL = dict(ru=(0.25, 0.05, 0.96), rf=(0.0, 0.4, 0.92), rh=(-0.05, 0.35, 0.93),
+                  s1=[('up', 4), ('right', -2)], head=[('right', 2), ('up', 4)],
+                  hips=(0, -0.015, 0))
+    WIND2 = dict(ru=(0.75, 0.7, -0.25), rf=(0.1, 0.92, -0.5), rh=(0.08, 0.85, -0.55),
+                 s1=[('up', -20), ('right', 7)], s0=[('up', -8), ('right', 3)],
+                 head=[('right', 4), ('up', 12)], hips=(0.01, -0.005, -0.005), rsh=[('forward', -10)])
+    STRIKE2 = dict(STRIKE, s1=[('up', 15), ('right', -12)], s0=[('up', 5), ('right', -6)],
+                   hips=(-0.008, -0.025, 0.008))
+    IMPACT2 = dict(IMPACT, s1=[('up', 17), ('right', -14)], s0=[('up', 5), ('right', -7)],
+                   head=[('right', -8), ('up', 6)], hips=(-0.008, -0.032, 0.008))
+
+    # bull stance: hunched forward, weight on the front (left) foot, shield low in front, mace cocked back
+    BULL = dict(lu=(-0.35, -0.75, 0.55), lf=(0.2, -0.4, 0.9), lh=(0.15, -0.5, 0.85),
+                ru=(0.25, -0.75, -0.6), rf=(0.35, -0.5, 0.8), rh=(0.3, -0.6, 0.75),
+                s2=[('right', -8)], s1=[('right', -12)], s0=[('right', -6)],
+                neck=[('right', 6)], head=[('right', -4)], hips=(-0.015, -0.03, 0.01))
+
+    poses = [
+        (6, P(GUARD, WIND1)),
+        (8, P(GUARD, MID)),
+        (10, P(GUARD, STRIKE)),          # BANG 1
+        (11, P(GUARD, IMPACT)),
+        (14, P(GUARD, RECOIL)),
+        (19, P(GUARD, WIND2)),
+        (21, P(GUARD, MID)),
+        (23, P(GUARD, STRIKE2)),         # BANG 2 (harder)
+        (24, P(GUARD, IMPACT2)),
+        (27, P(GUARD, RECOIL)),
+        (29, P(GUARD, RECOIL)),
+        (33, P(BULL)),
+        (37, P(BULL, rfoot=foot(0.075, 0.03), rrot=[('right', -15)],
+               hips=(-0.02, -0.022, 0.012), s1=[('right', -8)], head=[('right', 2)])),  # lift for stamp
+        (40, P(BULL, rfoot=foot(0.0, 0.02), hips=(-0.015, -0.045, 0.01),
+               s1=[('right', -16)], head=[('right', -10)], lf=(0.25, -0.5, 0.85))),     # STAMP
+        (42, P(BULL, rfoot=foot(0.0, 0.02), hips=(-0.015, -0.038, 0.01))),
+        (47, P(BULL, rfoot=foot(0.0, -0.08), hips=(-0.02, -0.034, 0.015),
+               s0=[('right', -8), ('up', -4)])),                                          # scrape back
+        (50, P(BULL, rfoot=foot(0.05, -0.04), rrot=[('right', -10)], hips=(-0.018, -0.028, 0.012))),
+        (53, P(BULL, hips=(-0.012, -0.036, 0.008))),                                      # re-plant
+        (56, P(BULL, s0=[('right', -12)], neck=[('right', -2)], head=[('right', -12)],
+               lsh=[('forward', 6)], rsh=[('forward', -6)], hips=(-0.01, -0.04, 0.008))),   # snort wind-up
+        (59, P(BULL, s1=[('right', -6)], s0=[('right', 6)], neck=[('right', 10)], head=[('right', 16)],
+               lsh=[('forward', 12)], rsh=[('forward', -12)], hips=(-0.01, -0.02, 0.005))),  # SNORT
+        (61, P(BULL, s1=[('right', -7)], s0=[('right', 4)], neck=[('right', 8)], head=[('right', 12)],
+               lsh=[('forward', 10)], rsh=[('forward', -10)], hips=(-0.01, -0.024, 0.005))),
+        (63, P(BULL, s1=[('right', -8)], head=[('right', -2), ('forward', 12)], hips=(-0.008, -0.03, 0.005))),
+        (65, P(BULL, s1=[('right', -8)], head=[('right', -4), ('forward', -10)], hips=(-0.006, -0.03, 0.004))),
+        (67, P(BULL, s1=[('right', -8)], head=[('right', -4), ('forward', 3)], hips=(-0.004, -0.025, 0.003))),
+    ]
+    for f, p in poses:
+        pose(ctx, f, p)
+    ctx.note('Bangs mace on raised shield at f10 and f23, bull hunch f33, foot stamp f40, scrape f47, '
+             'snort head-toss f59, settles to base at f72. Feet IK-planted via hip-relative leg solve.')
