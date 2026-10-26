@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:23:54Z",
- "heartbeat_at": "2026-10-26T10:18:54Z",
+ "lease_until": "2026-10-26T10:24:01Z",
+ "heartbeat_at": "2026-10-26T10:19:01Z",
  "error": null,
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/junk-shaman/char.glb@factory/issue-8"
@@ -88,5 +88,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T10:18:54Z"
+ "updated_at": "2026-10-26T10:19:01Z"
 }
