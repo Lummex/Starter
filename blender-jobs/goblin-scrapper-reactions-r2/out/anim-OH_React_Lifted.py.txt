@@ -1,0 +1,82 @@
+import math
+
+
+def build(ctx):
+    L = 48
+    ctx.length(L)
+
+    def B(words):
+        try:
+            return ctx.bone(words)
+        except Exception:
+            return None
+
+    hips = B('hips')
+    spine = B('spine')
+    neck = B('neck')
+    lup, lfore, lhand = B('left upperarm'), B('left forearm'), B('left hand')
+    rup, rfore = B('right upperarm'), B('right forearm')
+    lthigh, lshin, lfoot = B('left thigh'), B('left shin'), B('left foot')
+    rthigh, rshin, rfoot = B('right thigh'), B('right shin'), B('right foot')
+
+    chain = []
+    p = spine
+    while p and p != hips:
+        chain.insert(0, p)
+        p = ctx.parent(p)
+    n = max(1, len(chain))
+
+    def K(f, bone, **kw):
+        if bone:
+            ctx.key(f, bone, **kw)
+
+    def base(bone):
+        # base-pose direction of the bone, so the envelope blends from the real idle arm
+        if not bone:
+            return (0.0, -1.0, 0.0)
+        return tuple(ctx.bones[bone]['points'])
+
+    TAU = 2 * math.pi
+
+    # Frames 0 and L are the idle pose (automatic) so the loop is seamless and returns to idle.
+    # The struggle is keyed from frame 4 to 44; an envelope eases the offsets in/out near the loop point
+    # so the pass through idle reads as a quick "gather" between flails rather than a pop.
+    for f in range(4, L - 3, 3):
+        t = f / float(L)
+        k = TAU * 2 * t          # 2 kick/flail cycles per loop
+        a = TAU * t              # 1 body-twist cycle
+        env = math.sin(math.pi * t) ** 0.5   # 0 at the loop point, 1 mid-loop
+
+        K(f, hips, turn=[('up', 6 * math.sin(a) * env), ('forward', 4 * math.sin(k) * env)])
+
+        # torso: curled forward a little, wriggling
+        bend = (-10 + 5 * math.sin(k + 0.6)) * env
+        twist = 12 * math.sin(a) * env
+        side = 7 * math.sin(k + 2.0) * env
+        for b in chain:
+            K(f, b, turn=[('up', twist / n), ('right', bend / n), ('forward', side / n)])
+
+        # head: glances down at the ground, shakes in panic
+        K(f, neck, turn=[('up', 20 * math.sin(k + 1.4) * env), ('right', (-14 + 5 * math.sin(k)) * env)])
+
+        # legs: dangling, alternating bicycle kicks, toes pointing down
+        for thigh, shin, foot, ph, out in ((lthigh, lshin, lfoot, 0.0, 1), (rthigh, rshin, rfoot, math.pi, -1)):
+            s = math.sin(k + ph)
+            c = math.cos(k + ph)
+            K(f, thigh, turn=[('right', 30 * s * env), ('forward', out * (8 + 4 * c) * env)])
+            K(f, shin, turn=[('right', (-30 - 25 * (0.5 + 0.5 * c)) * env)])
+            K(f, foot, turn=[('right', (-20 - 10 * s) * env)])
+
+        # arms: flail up and out, blended from hanging (idle) by the envelope
+        def mix(v_idle, v):
+            return tuple(v_idle[i] + (v[i] - v_idle[i]) * env for i in range(3))
+
+        K(f, lup, aim=mix(base(lup), (-0.75, 0.4 + 0.45 * math.sin(k + 0.8), 0.35 * math.cos(k + 0.8))))
+        K(f, lfore, aim=mix(base(lfore), (-0.55, 0.6 + 0.35 * math.sin(k + 1.6), 0.45 * math.cos(k + 1.6))))
+        K(f, lhand, turn=[('forward', 25 * math.sin(k + 2.2) * env)])
+
+        # right arm holds the frying pan: kept wide to the side, clear of body and head
+        K(f, rup, aim=mix(base(rup), (0.8, 0.2 + 0.35 * math.sin(k + 2.6), 0.2 + 0.25 * math.cos(k + 2.6))))
+        K(f, rfore, aim=mix(base(rfore), (0.75, 0.25 + 0.35 * math.sin(k + 3.4), 0.25 + 0.3 * math.cos(k + 3.4))))
+
+    ctx.note('Lifted: 48-frame loop, idle at f0/f48 (seamless + return to idle), struggle f4-f44 with 2 kick/flail cycles; hips never translate.')
