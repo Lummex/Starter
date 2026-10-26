@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:40:00Z",
- "heartbeat_at": "2026-10-26T10:35:00Z",
+ "lease_until": "2026-10-26T10:40:07Z",
+ "heartbeat_at": "2026-10-26T10:35:07Z",
  "error": null,
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb@factory/issue-8"
@@ -86,5 +86,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T10:35:00Z"
+ "updated_at": "2026-10-26T10:35:07Z"
 }
