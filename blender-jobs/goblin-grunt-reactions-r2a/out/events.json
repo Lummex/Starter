@@ -8,16 +8,16 @@
    "loop": false,
    "events": [
     {
-     "frame": 14,
+     "frame": 11,
      "name": "down",
      "bone": "Hips",
-     "time": 0.4667
+     "time": 0.3667
     },
     {
-     "frame": 70,
+     "frame": 60,
      "name": "up",
      "bone": "Hips",
-     "time": 2.3333
+     "time": 2.0
     }
    ],
    "attachments": []
