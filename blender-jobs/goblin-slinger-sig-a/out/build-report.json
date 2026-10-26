@@ -1,0 +1,153 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Idle",
+   "frames": 72,
+   "seconds": 2.4,
+   "key_frames": [
+    6,
+    7,
+    10,
+    11,
+    14,
+    17,
+    18,
+    19,
+    21,
+    24,
+    27,
+    28,
+    30,
+    34,
+    36,
+    37,
+    40,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    63,
+    64,
+    65,
+    66,
+    68
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftShoulder",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightShoulder",
+    "RightUpLeg",
+    "Spine",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 68.4,
+   "feet_drift_m": 0.0028
+  },
+  {
+   "name": "OH_Walk",
+   "frames": 24,
+   "seconds": 0.8,
+   "key_frames": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftShoulder",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightShoulder",
+    "RightUpLeg",
+    "Spine",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 38.1,
+   "feet_drift_m": 0.0717
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Idle: No loose skull part; the toss reads from the right-hand flick, catch dip and head tracking.",
+  "OH_Walk: In-place skip: feet lift 7 cm straight up and land on their own spot (no sliding); skull hand hoisted by the right shoulder, dropping to the base hang only at the loop seam so frames 0 and 24 are the idle pose."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Idle": {
+    "keys": 73,
+    "seconds": 2.4
+   },
+   "OH_Walk": {
+    "keys": 25,
+    "seconds": 0.8
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead",
+    "Skull_Throw"
+   ],
+   "worst_position_error_pct_of_height": 0.0013,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 6e-05
+ }
+}
