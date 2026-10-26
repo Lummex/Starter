@@ -10,24 +10,46 @@ function Fail($msg) { Write-Host $msg -ForegroundColor Red; Read-Host 'Press Ent
 Write-Host ''
 Write-Host '=== Oreheart Blender Worker setup ===' -ForegroundColor Cyan
 
-# 1. Find a Blender that can run scripts in the background (classic install, Steam, or Microsoft Store).
+# 1. Find a Blender that can run scripts in the background (classic install, Steam, Microsoft Store, or the one running now).
+$diag = Join-Path $src 'install-log.txt'
+"Install log $(Get-Date)" | Set-Content $diag
+function Note($m) { Add-Content -Path $diag -Value $m }
 $candidates = @()
-$candidates += Get-ChildItem -Path "$env:ProgramFiles\Blender Foundation\*\blender.exe" -ErrorAction SilentlyContinue | Sort-Object { $_.VersionInfo.FileVersion } -Descending | ForEach-Object { $_.FullName }
-$candidates += "${env:ProgramFiles(x86)}\Steam\steamapps\common\Blender\blender.exe"
+try { $candidates += Get-Process -Name blender -ErrorAction SilentlyContinue | ForEach-Object { $_.Path } } catch {}
+try { $candidates += (Get-Command blender -ErrorAction SilentlyContinue).Source } catch {}
+foreach ($d in (Get-PSDrive -PSProvider FileSystem | ForEach-Object { $_.Root })) {
+  foreach ($rel in 'Program Files\Blender Foundation\*\blender.exe', 'Program Files (x86)\Steam\steamapps\common\Blender\blender.exe',
+                   'Steam\steamapps\common\Blender\blender.exe', 'SteamLibrary\steamapps\common\Blender\blender.exe',
+                   'Games\Steam\steamapps\common\Blender\blender.exe', 'Blender*\blender.exe') {
+    try { $candidates += Get-ChildItem -Path (Join-Path $d $rel) -ErrorAction SilentlyContinue | Sort-Object { $_.VersionInfo.FileVersion } -Descending | ForEach-Object { $_.FullName } } catch {}
+  }
+}
+foreach ($base in (Join-Path $env:USERPROFILE 'Downloads'), (Join-Path $env:USERPROFILE 'Documents\Oreheart'), (Join-Path $env:USERPROFILE 'Desktop')) {
+  foreach ($rel in 'blender*\blender.exe', 'blender*\blender*\blender.exe') {
+    try { $candidates += Get-ChildItem -Path (Join-Path $base $rel) -ErrorAction SilentlyContinue | Sort-Object { $_.VersionInfo.FileVersion } -Descending | ForEach-Object { $_.FullName } } catch {}
+  }
+}
 $candidates += Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\blender.exe'
-$pkg = Get-AppxPackage -Name 'BlenderFoundation.Blender*' -ErrorAction SilentlyContinue | Sort-Object Version -Descending | Select-Object -First 1
-if ($pkg) { $candidates += Join-Path $pkg.InstallLocation 'blender.exe' }
+try {
+  $pkgs = Get-AppxPackage -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*Blender*' } | Sort-Object Version -Descending
+  foreach ($pkg in $pkgs) { Note "Store package: $($pkg.Name) $($pkg.Version) at $($pkg.InstallLocation)"; $candidates += Join-Path $pkg.InstallLocation 'blender.exe' }
+} catch { Note "Get-AppxPackage failed: $_" }
+$candidates = $candidates | Where-Object { $_ } | Select-Object -Unique
 $blender = $null
 foreach ($c in $candidates) {
-  if (-not $c -or -not (Test-Path -LiteralPath $c)) { continue }
+  $exists = Test-Path -LiteralPath $c
+  Note "Candidate: $c  exists=$exists"
+  if (-not $exists) { continue }
   Write-Host "Trying Blender: $c"
   try {
-    $out = & $c --background --factory-startup --python-expr "import sys; print('OREHEART_OK', sys.version.split()[0])" 2>&1 | Out-String
+    $out = & $c --background --factory-startup --python-expr "import bpy; v = bpy.app.version; print(('OREHEART_OK' if v >= (4, 2, 0) else 'TOO_OLD'), bpy.app.version_string)" 2>&1 | Out-String
   } catch { $out = "$_" }
+  Note ("  output: " + ($out -replace "`r?`n", ' | ').Substring(0, [Math]::Min(600, $out.Length)))
   if ($out -match 'OREHEART_OK') { $blender = $c; Write-Host '  works.' -ForegroundColor Green; break }
-  Write-Host '  could not run scripts from here, trying the next one.'
+  if ($out -match 'TOO_OLD') { Write-Host '  too old (the worker needs Blender 4.2 or newer), trying the next one.' } else { Write-Host '  could not run scripts from here, trying the next one.' }
 }
-if (-not $blender) { Fail 'No Blender that can run in the background was found. Tell Claude what this window says.' }
+Note "Chosen: $blender"
+if (-not $blender) { Fail 'No usable Blender 4.2+ was found. Tell Claude what this window says (Claude can read install-log.txt).' }
 
 # 2. Copy the worker code (your settings and work folders are kept).
 New-Item -ItemType Directory -Force -Path $code | Out-Null
@@ -59,12 +81,14 @@ public static bool Save(string target, string secret) {
 Write-Host ''
 Write-Host 'Paste your GitHub key for the worker (the Oreheart Blender Worker token).' -ForegroundColor Yellow
 Write-Host 'Nothing shows while you paste. Right-click pastes in this window. Then press Enter.'
+Write-Host '(If you already saved it before, just press Enter to keep the saved key.)'
 $sec = Read-Host -AsSecureString 'Key'
 $plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
-if (-not $plain.Trim()) { Fail 'No key was entered.' }
-if (-not [Oreheart.Cred]::Save('OreheartBlenderWorker:github', $plain.Trim())) { Fail 'Could not save the key in Windows Credential Manager.' }
+if ($plain.Trim()) {
+  if (-not [Oreheart.Cred]::Save('OreheartBlenderWorker:github', $plain.Trim())) { Fail 'Could not save the key in Windows Credential Manager.' }
+  Write-Host 'Key saved in Windows Credential Manager.' -ForegroundColor Green
+} else { Write-Host 'Keeping the key that is already saved.' }
 $plain = $null
-Write-Host 'Key saved in Windows Credential Manager.' -ForegroundColor Green
 
 # 4. Check everything (Blender, Claude Code, Blender MCP port, GitHub).
 Write-Host ''

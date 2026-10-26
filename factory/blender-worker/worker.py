@@ -163,7 +163,7 @@ class GitHub:
         self.repo, self.token = repo, token
 
     def call(self, method, path, body=None, raw=False, ok404=False):
-        url = path if path.startswith('https://') else f'https://api.github.com/repos/{self.repo}/{path}'
+        url = path if path.startswith('https://') else f'https://api.github.com/repos/{self.repo}' + (f'/{path}' if path else '')
         data = json.dumps(body).encode() if body is not None else None
         for attempt in range(5):
             req = urllib.request.Request(url, data=data, method=method, headers={
@@ -207,9 +207,14 @@ class GitHub:
     def ensure_branch(self, branch, base):
         if self.call('GET', f'git/ref/heads/{branch}', ok404=True):
             return
-        sha = self.call('GET', f'git/ref/heads/{base}')['object']['sha']
+        # The queue branch is an orphan with only the job folder: no game code and no workflow files,
+        # so job updates never start any GitHub Actions and the key needs no Workflows permission.
+        readme = ('# Blender job queue\n\nOne folder per job: job.json (spec + state) and out/ (results).\n'
+                  'Written by the dashboard (3D Production) and the Windows Blender worker. Do not merge into main.\n')
+        tree = self.call('POST', 'git/trees', {'tree': [{'path': f'{JOBS_DIR}/README.md', 'mode': '100644', 'type': 'blob', 'content': readme}]})['sha']
+        commit = self.call('POST', 'git/commits', {'message': 'Start the Blender job queue', 'tree': tree, 'parents': []})['sha']
         try:
-            self.call('POST', 'git/refs', {'ref': f'refs/heads/{branch}', 'sha': sha})
+            self.call('POST', 'git/refs', {'ref': f'refs/heads/{branch}', 'sha': commit})
             log('created queue branch', branch)
         except Conflict:
             pass
@@ -639,8 +644,46 @@ def post_worker_status(gh, cfg, state, extra=None):
             log('could not post worker status:', e); return
 
 
+SYNC_DIRS = ('blender_ops', 'prompts')  # Blender-side scripts and prompts follow the repo's main branch
+
+
+def sync_code(gh, cfg):
+    """Keep the Blender scripts and prompts in step with factory/blender-worker on main (the owner's repo).
+    Only .py/.md files in these two folders are updated; worker.py itself changes only through the installer."""
+    changed = []
+    for d in SYNC_DIRS:
+        for e in gh.list_dir(f'factory/blender-worker/{d}', cfg['base_branch']):
+            name = e.get('name', '')
+            if e.get('type') != 'file' or not re.match(r'^[A-Za-z0-9_.-]+\.(py|md)$', name):
+                continue
+            local = os.path.join(HERE, d, name)
+            if os.path.exists(local):
+                with open(local, 'rb') as f:
+                    data = f.read()
+                if hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest() == e.get('sha'):
+                    continue
+            b, _ = gh.get_file(e['path'], cfg['base_branch'])
+            if b is None:
+                continue
+            os.makedirs(os.path.dirname(local), exist_ok=True)
+            with open(local, 'wb') as f:
+                f.write(b)
+            changed.append(f'{d}/{name}')
+    if changed:
+        log('updated from GitHub:', ', '.join(changed))
+        import importlib
+        importlib.reload(glbtool)
+    return changed
+
+
 def do_one(gh, cfg):
-    for ref in find_claimable(gh, cfg):
+    jobs = find_claimable(gh, cfg)
+    if jobs:
+        try:
+            sync_code(gh, cfg)
+        except Exception as e:
+            log('could not update scripts from GitHub (using the installed ones):', e)
+    for ref in jobs:
         if not claim(ref, cfg):
             continue
         log('claimed job', ref.id, ref.job.get('type'), ref.job.get('asset_id'))
@@ -687,7 +730,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--setup', action='store_true'); ap.add_argument('--once', action='store_true'); ap.add_argument('--check', action='store_true')
     # Also runs inside Blender (blender --background --python worker.py -- --setup); then our options follow '--'.
-    argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
+    if '--' in sys.argv:
+        argv = sys.argv[sys.argv.index('--') + 1:]
+    elif '--python' in sys.argv:  # started by Blender with no options of ours
+        argv = []
+    else:
+        argv = sys.argv[1:]
     a = ap.parse_args(argv)
     cfg = load_config()
     if a.setup:
