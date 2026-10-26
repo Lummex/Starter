@@ -1,0 +1,171 @@
+import math
+from mathutils import Vector, Quaternion
+
+AX = {'right': (1, 0, 0), 'left': (-1, 0, 0), 'up': (0, 1, 0), 'down': (0, -1, 0),
+      'forward': (0, 0, 1), 'back': (0, 0, -1)}
+
+# fist positions relative to the chest (Spine head), carried by the torso
+LG = (-0.11, -0.05, 0.24)
+RG = (0.12, -0.04, 0.19)
+
+DEFAULT = {
+    'hips': (0.0, -0.025, 0.0), 'hips_up': 0.0,
+    'twist': 0.0, 'bend': -10.0, 'lean': 0.0,
+    'lclav': 0.0, 'rclav': 0.0,
+    'lfist': LG, 'rfist': RG,
+    'lheel': 10.0, 'rheel': 10.0,
+    'llift': (0, 0, 0), 'rlift': (0, 0, 0),
+    'look': 6.0, 'yaw': 0.0,
+}
+
+
+def rot(axis, deg):
+    # matches the API convention (e.g. ('right', +40) swings a hanging arm forward)
+    return Quaternion(Vector(AX[axis]), math.radians(-deg))
+
+
+def two_bone(S, T, L1, L2, pole):
+    v = T - S
+    d = max(min(v.length, (L1 + L2) * 0.995), abs(L1 - L2) + 0.001)
+    u = v.normalized()
+    x = (L1 * L1 - L2 * L2 + d * d) / (2 * d)
+    h = math.sqrt(max(L1 * L1 - x * x, 0.0))
+    pp = pole - u * pole.dot(u)
+    if pp.length < 1e-6:
+        pp = Vector((0, 0, 1))
+    pp.normalize()
+    E = S + u * x + pp * h
+    return E, S + u * d
+
+
+def solve(ctx, f, over, interp='BEZIER'):
+    P = dict(DEFAULT)
+    P.update(over)
+    B = ctx.bones
+
+    def H(n):
+        return Vector(B[n]['head'])
+
+    def D(n):
+        return Vector(B[n]['points'])
+
+    Rw = {}
+    Pw = {}
+
+    def place(n, q):
+        p = B[n]['parent']
+        Pw[n] = Pw[p] + Rw[p] @ (H(n) - H(p))
+        Rw[n] = Rw[p] @ q
+
+    def turn_key(n, axis, deg):
+        place(n, rot(axis, deg))
+        ctx.key(f, n, turn=[(axis, deg)], interp=interp)
+
+    def aim_key(n, world_dir):
+        p = B[n]['parent']
+        local = Rw[p].inverted() @ world_dir.normalized()
+        place(n, D(n).rotation_difference(local))
+        ctx.key(f, n, aim=(local.x, local.y, local.z), interp=interp)
+
+    # hips
+    Rw['Hips'] = rot('up', P['hips_up'])
+    Pw['Hips'] = H('Hips') + Vector(P['hips'])
+    ctx.key(f, 'Hips', turn=[('up', P['hips_up'])], move=tuple(P['hips']), interp=interp)
+
+    # spine: one axis per bone
+    turn_key('Spine02', 'up', P['twist'])
+    turn_key('Spine01', 'right', P['bend'])
+    turn_key('Spine', 'forward', P['lean'])
+
+    # neck / head stay mostly upright and facing forward
+    half = Quaternion((1, 0, 0, 0)).slerp(Rw['Spine'], 0.5)
+    aim_key('neck', half @ D('neck'))
+    aim_key('Head', rot('up', P['yaw']) @ rot('right', -P['look']) @ D('Head'))
+
+    # arms: IK to fist targets given in the chest frame
+    for side, clav, fist, pole in (('Left', 'lclav', 'lfist', Vector((-0.5, -1.0, -0.3))),
+                                   ('Right', 'rclav', 'rfist', Vector((0.5, -1.0, -0.3)))):
+        turn_key(side + 'Shoulder', 'up', P[clav])
+        up = side + 'Arm'
+        fo = side + 'ForeArm'
+        p = B[up]['parent']
+        S = Pw[p] + Rw[p] @ (H(up) - H(p))
+        T = Pw['Spine'] + Rw['Spine'] @ Vector(P[fist])
+        E, T2 = two_bone(S, T, B[up]['length'], B[fo]['length'], pole)
+        aim_key(up, E - S)
+        aim_key(fo, T2 - E)
+
+    # legs: IK so feet stay planted (heel raise pivots on the ball of the foot)
+    for side, heel, lift in (('Left', 'lheel', 'llift'), ('Right', 'rheel', 'rlift')):
+        th = side + 'UpLeg'
+        sh = side + 'Leg'
+        ft = side + 'Foot'
+        toe = side + 'ToeBase'
+        S0 = H(th)
+        K0 = H(sh)
+        A0 = H(ft)
+        u = (A0 - S0).normalized()
+        pole = (K0 - S0) - u * (K0 - S0).dot(u)
+        pole = pole.normalized() + Vector((0, 0, 0.5))
+        T0 = H(toe)
+        fv = T0 - A0
+        A = A0
+        fdir = fv.normalized()
+        if abs(P[heel]) > 0.01:
+            ax = Vector((0, 1, 0)).cross(fv).normalized()
+            best = None
+            for s in (1, -1):
+                q = Quaternion(ax, math.radians(P[heel]) * s)
+                cand = T0 - q @ fv
+                if best is None or cand.y > best[0].y:
+                    best = (cand, (q @ fv).normalized())
+            A, fdir = best
+        A = A + Vector(P[lift])
+        S = Pw['Hips'] + Rw['Hips'] @ (S0 - H('Hips'))
+        E, T2 = two_bone(S, A, B[th]['length'], B[sh]['length'], pole)
+        aim_key(th, E - S)
+        aim_key(sh, T2 - E)
+        aim_key(ft, fdir)
+        aim_key(toe, D(toe))
+
+
+def step(lead):
+    # one boxer's shuffle step lifting `lead` foot ('l' or 'r'); s = +1 left step, -1 right step
+    s = 1 if lead == 'l' else -1
+    other = 'r' if lead == 'l' else 'l'
+    # rolling shoulders: the shoulder opposite the lifted foot rolls forward
+    up_clav = {'lclav': -8 * (s < 0) + 4 * (s > 0), 'rclav': 8 * (s > 0) - 4 * (s < 0)}
+    paw = (-0.11, -0.04, 0.27) if s > 0 else LG
+    guard_r = (0.12, -0.03, 0.20) if s < 0 else RG
+    return [
+        # squash after previous contact, weight shifts onto the planted foot
+        (3, {'hips': (0.006 * s, -0.042, 0), 'twist': 5 * s, 'look': 9,
+             lead + 'heel': 14, other + 'heel': 6}),
+        # passing: lifted foot up, toe down, body up on the planted toes
+        (7, dict({'hips': (0.014 * s, -0.012, 0), 'twist': 10 * s, 'lean': 4 * s, 'look': 4,
+                  lead + 'lift': (0, 0.045, 0.004), lead + 'heel': 24, other + 'heel': 18,
+                  'lfist': paw, 'rfist': guard_r}, **up_clav)),
+        # plant: foot back on its spot, knees soak the weight
+        (11, {'hips': (0.004 * s, -0.045, 0), 'twist': 4 * s, 'look': 9,
+              lead + 'lift': (0, 0.0, 0), lead + 'heel': 6, other + 'heel': 6,
+              'lclav': 2 * s, 'rclav': 2 * s}),
+        # recover to the stance
+        (14, {'hips': (0, -0.028, 0), 'twist': 0}),
+    ]
+
+
+def build(ctx):
+    ctx.length(32)
+    # step timings (3, 7, 11, 14) spread over a 16-frame step: squash, passing, plant, recover
+    remap = {3: 3, 7: 8, 11: 12, 14: 14}
+    keys = []
+    for f, pose in step('l'):
+        keys.append((remap[f], pose))
+    for f, pose in step('r'):
+        keys.append((remap[f] + 16, pose))
+    # frames 0 and 32 are left to the base idle pose (loop + return_to_idle)
+    for f, pose in keys:
+        solve(ctx, f, pose)
+    ctx.note('In-place boxer shuffle: feet lift and plant on their own spots (leg IK), hips never travel '
+             'forward; fists stay up in guard, lead hand paws on the left step. Frames 0 and 32 are the '
+             'base idle pose so the loop closes cleanly.')
