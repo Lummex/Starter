@@ -693,20 +693,27 @@ def _worker_hotfix():
     if not gh or not cf:
         return
     for G in gh:
-        if getattr(G, '_oh_race_retry', False):
+        if getattr(G, '_oh_race_retry', 0) == 2:
             continue
-        orig = G.put_file
+        orig = getattr(G, '_oh_put_file_orig', None) or G.put_file
+        G._oh_put_file_orig = orig
 
-        def put_file(self, *a, _orig=orig, _cf=tuple(cf), **k):
+        def put_file(self, path, content_bytes, message, branch, sha=None, _orig=orig, _cf=tuple(cf)):
+            import re as _re
             for i in range(6):
                 try:
-                    return _orig(self, *a, **k)
+                    return _orig(self, path, content_bytes, message, branch, sha)
                 except _cf as e:
                     if 'but expected' not in str(e) or i == 5:
                         raise
+                    if '/out/' in path or '/_workers/' in path:
+                        # result files are ours to overwrite: take the sha GitHub says the file is at now
+                        m = _re.search(r'is at ([0-9a-f]{40})', str(e))
+                        if m:
+                            sha = m.group(1)
                     time.sleep(2 + 3 * i)
         G.put_file = put_file
-        G._oh_race_retry = True
+        G._oh_race_retry = 2
 
 
 _worker_hotfix()
