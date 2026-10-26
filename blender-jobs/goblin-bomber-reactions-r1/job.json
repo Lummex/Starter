@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:47:51Z",
- "heartbeat_at": "2026-10-26T10:42:51Z",
+ "lease_until": "2026-10-26T10:47:56Z",
+ "heartbeat_at": "2026-10-26T10:42:56Z",
  "error": {
   "message": "{\"message\":\"is at e9831efa44e3b5c9d1a0d6cce527739ce68fb843 but expected 0efcbc93b348b9e73d65ad58cb3b5657f9ae5793\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T10:42:22Z"
  },
  "progress": {
-  "stage": "preparing",
-  "percent": 5,
-  "message": "Copying the source model into a private work folder"
+  "stage": "inspecting",
+  "percent": 15,
+  "message": "Reading the model, skeleton and animations in Blender"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -175,5 +175,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:42:51Z"
+ "updated_at": "2026-10-26T10:42:56Z"
 }
