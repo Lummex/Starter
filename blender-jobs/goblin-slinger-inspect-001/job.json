@@ -2,7 +2,7 @@
  "id": "goblin-slinger-inspect-001",
  "type": "inspect",
  "asset_id": "goblin-slinger",
- "status": "running",
+ "status": "completed",
  "priority": 5,
  "created_at": "2026-10-26T00:12:13Z",
  "created_by": "claude",
@@ -11,13 +11,13 @@
  "retry_on_failure": false,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T07:16:39Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T07:11:39Z",
  "error": null,
  "progress": {
-  "stage": "inspecting",
-  "percent": 15,
-  "message": "Reading the model, skeleton and animations in Blender"
+  "stage": "done",
+  "percent": 100,
+  "message": "2 mesh(es), 24 bones, 5 animation(s): Idle, Dead, Hit_Reaction, Heavy_Hammer_Swing, Casual_Walk"
  },
  "source": {
   "character": "local:~/Downloads/r23/models/goblin-slinger/char.glb"
@@ -42,7 +42,31 @@
   {
    "at": "2026-10-26T07:11:36Z",
    "status": "running"
+  },
+  {
+   "at": "2026-10-26T07:11:59Z",
+   "status": "completed"
   }
  ],
- "updated_at": "2026-10-26T07:11:39Z"
+ "updated_at": "2026-10-26T07:11:59Z",
+ "result": {
+  "summary": "2 mesh(es), 24 bones, 5 animation(s): Idle, Dead, Hit_Reaction, Heavy_Hammer_Swing, Casual_Walk",
+  "files": [
+   {
+    "file": "blender-jobs/goblin-slinger-inspect-001/out/inspection.json",
+    "bytes": 10510,
+    "sha256": "60e970359ecb73a9a7426520ffee0c18188c72fa1129206c1c13aca21457547c"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-inspect-001/out/preview-rest.png",
+    "bytes": 273729,
+    "sha256": "ffb4f538f6bf5f5b6d469e4a5aea447561cf587d108aaf7c755faf2a563a3ba8"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-inspect-001/out/preview-rest-side.png",
+    "bytes": 270407,
+    "sha256": "9581a89a656585c14807a2008d021a4937ef8c6de9e3f9bcf75adea79943f4bb"
+   }
+  ]
+ }
 }
