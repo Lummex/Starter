@@ -1,0 +1,98 @@
+def build(ctx):
+    ctx.length(36)
+    hips = ctx.bone('hips')
+    sp2 = 'Spine02'; sp1 = 'Spine01'; spine = ctx.bone('spine')
+    neck = ctx.bone('neck'); head = ctx.bone('head')
+    rup = ctx.bone('right upperarm'); rfo = ctx.bone('right forearm'); rha = ctx.bone('right hand')
+    lup = ctx.bone('left upperarm'); lfo = ctx.bone('left forearm'); lha = ctx.bone('left hand')
+    lth = ctx.bone('left thigh'); lsh = ctx.bone('left shin'); lft = ctx.bone('left foot')
+    rth = ctx.bone('right thigh'); rsh = ctx.bone('right shin'); rft = ctx.bone('right foot')
+
+    # straight-arm direction (forearm in line with the upper arm, rest frame)
+    straight = ctx.bones[rup]['points']
+
+    def legs(f, a, interp='BEZIER'):
+        # knee bend that keeps the feet flat: thigh fwd a, shin back 2a, foot fwd a
+        for th, sh, ft in ((lth, lsh, lft), (rth, rsh, rft)):
+            ctx.key(f, th, turn=[('right', a)], interp=interp)
+            ctx.key(f, sh, turn=[('right', -2 * a)], interp=interp)
+            ctx.key(f, ft, turn=[('right', a)], interp=interp)
+
+    def body(f, mv, bend, twist, lean=0, interp='BEZIER'):
+        ctx.key(f, hips, move=mv, turn=[('up', twist * 0.3)], interp=interp)
+        ctx.key(f, sp2, turn=[('right', bend * 0.4), ('up', twist * 0.3), ('forward', lean * 0.5)], interp=interp)
+        ctx.key(f, sp1, turn=[('right', bend * 0.35), ('up', twist * 0.4), ('forward', lean * 0.5)], interp=interp)
+        ctx.key(f, spine, turn=[('right', bend * 0.25), ('up', twist * 0.3)], interp=interp)
+        # head keeps glaring at the target
+        ctx.key(f, neck, turn=[('right', -bend * 0.35), ('up', -twist * 0.4)], interp=interp)
+        ctx.key(f, head, turn=[('right', -bend * 0.3), ('up', -twist * 0.3)], interp=interp)
+
+    # 4: anticipation - sink low, shoulders hunch, dagger tucked
+    body(4, (0.01, -0.012, -0.01), -18, 12, lean=6)
+    legs(4, 16)
+    ctx.key(4, rup, aim=(0.45, -0.55, -0.6))
+    ctx.key(4, lup, aim=(-0.5, -0.7, 0.3))
+
+    # 8: sidestep - slip to his left, low and leaning, dagger hidden behind
+    body(8, (-0.045, -0.01, 0.015), -20, -10, lean=-10)
+    legs(8, 14)
+    ctx.key(8, rup, aim=(0.5, -0.4, -0.75))
+    ctx.key(8, lup, aim=(-0.75, -0.45, 0.4))
+    # 10: wind-up 1 - dagger raised high, chest twisted right
+    body(10, (-0.05, -0.006, 0.0), -8, -25, lean=-6)
+    legs(10, 12)
+    ctx.key(10, rup, aim=(0.45, 0.75, -0.35))
+    ctx.key(10, rfo, turn=[('right', 25)])
+    ctx.key(10, lup, aim=(-0.7, -0.3, 0.6))
+
+    # 13: STAB 1 - forward and down
+    body(13, (-0.05, -0.014, 0.02), -28, 15, lean=-4)
+    legs(13, 17)
+    ctx.key(13, rup, aim=(0.12, 0.05, 1.0))
+    ctx.key(13, rfo, aim=straight)
+    ctx.key(13, rha, turn=[('right', -10)])
+    ctx.key(13, lup, aim=(-0.55, -0.55, -0.55))
+    ctx.key(15, rup, aim=(0.12, 0.02, 1.0))
+    ctx.key(15, rfo, aim=straight)
+
+    # 18: yank back, cocking for the second stab
+    body(18, (-0.05, -0.008, 0.0), -12, -22, lean=-6)
+    legs(18, 13)
+    ctx.key(18, rup, aim=(0.5, 0.7, -0.3))
+    ctx.key(18, rfo, turn=[('right', 30)])
+    ctx.key(18, rha, turn=[('right', 10)])
+    ctx.key(18, lup, aim=(-0.7, -0.3, 0.55))
+
+    # 21: STAB 2 (hit) - deeper, nastier, forward and down
+    body(21, (-0.05, -0.018, 0.03), -38, 20, lean=-4, interp='LINEAR')
+    legs(21, 19, interp='LINEAR')
+    ctx.key(21, rup, aim=(0.1, -0.1, 1.0), interp='LINEAR')
+    ctx.key(21, rfo, aim=straight, interp='LINEAR')
+    ctx.key(21, rha, turn=[('right', -18)], interp='LINEAR')
+    ctx.key(21, lup, aim=(-0.5, -0.5, -0.7), interp='LINEAR')
+    ctx.event(21, 'hit', bone=rha)
+    # hold the twisted knife
+    body(24, (-0.05, -0.017, 0.028), -36, 18, lean=-4)
+    legs(24, 18)
+    ctx.key(24, rup, aim=(0.1, -0.08, 1.0))
+    ctx.key(24, rfo, aim=straight)
+    ctx.key(24, rha, turn=[('right', -18), ('forward', 25)])
+    ctx.key(24, lup, aim=(-0.5, -0.5, -0.7))
+
+    # 28: hop back - airborne, legs tucked, dagger drawn in
+    body(28, (-0.02, 0.035, -0.02), -10, 0, lean=4)
+    legs(28, 20)
+    ctx.key(28, rup, aim=(0.5, -0.5, -0.5))
+    ctx.key(28, rfo, turn=[('right', 20)])
+    ctx.key(28, lup, aim=(-0.7, -0.4, 0.2))
+
+    # 31: land in his crouch, overshoot low
+    body(31, (0.0, -0.015, 0.0), -16, 6, lean=2)
+    legs(31, 18)
+    ctx.key(31, rup, aim=(0.4, -0.6, -0.6))
+    ctx.key(31, lup, aim=(-0.5, -0.75, 0.25))
+    # 33: settle
+    body(33, (0.0, -0.006, 0.0), -6, 2)
+    legs(33, 10)
+
+    ctx.note('Hit on second stab at frame 21; sidestep left 5cm then hop back to origin at 28-31.')
