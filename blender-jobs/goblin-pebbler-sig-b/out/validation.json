@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "problems": [],
+ "checks": {
+  "bones": 24,
+  "mesh_vertices": 35196,
+  "skinned_meshes": [
+   "char1"
+  ],
+  "clips": {
+   "Idle": [
+    0.0,
+    120.0
+   ],
+   "OH_Attack": [
+    0.0,
+    38.0
+   ],
+   "Dead": [
+    0.0,
+    89.0
+   ],
+   "Hit_Reaction": [
+    0.0,
+    49.0
+   ],
+   "Heavy_Hammer_Swing": [
+    0.0,
+    54.0
+   ],
+   "Casual_Walk": [
+    0.0,
+    124.0
+   ]
+  }
+ },
+ "blender": "5.2.3 LTS",
+ "build_problems": [],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Attack": {
+    "keys": 39,
+    "seconds": 1.2667
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0026,
+   "worst_rotation_error_deg": 0.004
+  },
+  "written_clip_error_pct_of_height": 0.00111
+ }
+}
