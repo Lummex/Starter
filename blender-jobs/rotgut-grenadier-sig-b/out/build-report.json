@@ -1,0 +1,69 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Attack",
+   "frames": 34,
+   "seconds": 1.133,
+   "key_frames": [
+    5,
+    9,
+    11,
+    13,
+    16,
+    19,
+    23,
+    25,
+    27
+   ],
+   "bones_moved": [
+    "Head",
+    "LeftArm",
+    "LeftForeArm",
+    "RightArm",
+    "RightForeArm",
+    "RightHand",
+    "Spine",
+    "Spine01"
+   ],
+   "events": [
+    {
+     "frame": 13,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.4333
+    }
+   ],
+   "fastest_turn_per_frame_deg": 91.8,
+   "feet_drift_m": 0.0
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Attack: Feet planted: hips and legs untouched; swat stays chest-high so the spatula clears the ground.",
+  "OH_Attack: Fastest move: LeftForeArm turns 92 degrees in one frame at frame 11 (may look like a pop)"
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Attack": {
+    "keys": 35,
+    "seconds": 1.1333
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0005,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 0.00017
+ }
+}
