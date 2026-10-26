@@ -1,0 +1,65 @@
+{
+ "status": "queued",
+ "created_at": "2026-10-26T07:26:42Z",
+ "created_by": "claude",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": false,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "Waiting for the Blender worker"
+ },
+ "history": [
+  {
+   "at": "2026-10-26T07:26:42Z",
+   "status": "queued",
+   "by": "claude"
+  }
+ ],
+ "id": "goblin-slinger-skull-throw-001",
+ "type": "animate",
+ "asset_id": "goblin-slinger",
+ "priority": 5,
+ "source": {
+  "character": "local:~/Downloads/r23/models/goblin-slinger/char.glb",
+  "parts": {
+   "skull-mace": "local:~/Downloads/r23/models/goblin-slinger/skull-mace.glb"
+  }
+ },
+ "request": "Create a skull-throw attack. Hold the skull in the right hand, wind up, pull the arm back, twist the torso, throw, follow through, return to idle. Cartoon exaggeration. Separate projectile-release event. Preserve the existing clips.",
+ "animations": [
+  {
+   "name": "Skull_Throw",
+   "description": "Right-handed overarm skull throw: anticipation (crouch + torso twist away), arm pulled back high, whip forward, release, follow-through across the body, settle back to idle.",
+   "frames": [
+    36,
+    60
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "events": [
+    {
+     "name": "projectile_release",
+     "bone": "right hand"
+    }
+   ]
+  }
+ ],
+ "attachments": [
+  {
+   "part": "skull-mace",
+   "bone": "right hand",
+   "note": "preview prop for the skull; hide it at projectile_release"
+  }
+ ],
+ "output": {
+  "format": "glb",
+  "target": "game: public/models/creatures/goblin-slinger/char.glb (after owner review)"
+ }
+}
