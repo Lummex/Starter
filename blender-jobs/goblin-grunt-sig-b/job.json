@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T09:38:06Z",
- "heartbeat_at": "2026-10-26T09:33:06Z",
+ "lease_until": "2026-10-26T09:38:16Z",
+ "heartbeat_at": "2026-10-26T09:33:16Z",
  "error": null,
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -67,5 +67,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T09:33:06Z"
+ "updated_at": "2026-10-26T09:33:16Z"
 }
