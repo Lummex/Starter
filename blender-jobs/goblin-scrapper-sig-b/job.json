@@ -1,0 +1,73 @@
+{
+ "id": "goblin-scrapper-sig-b",
+ "type": "animate",
+ "asset_id": "goblin-scrapper",
+ "status": "queued",
+ "priority": 5,
+ "created_at": "2026-10-26T09:02:28Z",
+ "created_by": "claude-overnight",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": true,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "Waiting for the Blender worker"
+ },
+ "source": {
+  "character": "repo:projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb@factory/issue-8"
+ },
+ "request": "Bowler Brawler: Ex-professional goblin bowler. Cocky, plays to the crowd, loves his ball. He holds a bowling ball in his right hand (held out in front of him); keep held items in the same hand. These are his own signature moves: give him a distinct personality, different from other goblins. Rules from the owner for every goblin: nothing he holds ever goes through his body or the ground; feet stay planted (no sliding or sinking) unless the clip says otherwise; held items stay in the same hand; movements look weighty and cartoony, never floaty. Board games are seen from above and in front, so make poses read clearly from there.",
+ "animations": [
+  {
+   "name": "OH_Attack",
+   "description": "Shoulder-check bash: steps in and slams the target with the ball held in both hands. Impact at 'hit'.",
+   "frames": [
+    24,
+    36
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": false,
+   "events": [
+    {
+     "name": "hit",
+     "bone": "right hand"
+    }
+   ]
+  },
+  {
+   "name": "OH_Special",
+   "description": "Bowling roll (owner's wish): brings the ball back behind him, steps forward low into a classic bowler's lunge, swings the arm forward and releases the ball along the ground in front of him ('ball_release' at the release), follow-through with the arm up, then a little fist pump.",
+   "frames": [
+    40,
+    54
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": true,
+   "events": [
+    {
+     "name": "ball_release",
+     "bone": "right hand"
+    }
+   ]
+  }
+ ],
+ "attachments": [],
+ "output": {
+  "format": "glb"
+ },
+ "history": [
+  {
+   "at": "2026-10-26T09:02:28Z",
+   "status": "queued",
+   "by": "claude"
+  }
+ ]
+}
