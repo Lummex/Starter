@@ -1,0 +1,191 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_React_Bowled",
+   "frames": 90,
+   "seconds": 3.0,
+   "key_frames": [
+    3,
+    7,
+    12,
+    16,
+    19,
+    23,
+    28,
+    34,
+    40,
+    45,
+    49,
+    55,
+    62,
+    67,
+    72,
+    77,
+    83
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 16,
+     "name": "down",
+     "bone": "Hips",
+     "time": 0.5333
+    },
+    {
+     "frame": 72,
+     "name": "up",
+     "bone": "Hips",
+     "time": 2.4
+    }
+   ],
+   "fastest_turn_per_frame_deg": 35.9,
+   "feet_drift_m": 0.555
+  },
+  {
+   "name": "OH_React_Backstab",
+   "frames": 60,
+   "seconds": 2.0,
+   "key_frames": [
+    0,
+    3,
+    6,
+    8,
+    10,
+    15,
+    18,
+    21,
+    24,
+    27,
+    30,
+    33,
+    36,
+    38,
+    40,
+    43,
+    46,
+    50,
+    54
+   ],
+   "bones_moved": [
+    "Hips",
+    "LeftArm",
+    "LeftForeArm",
+    "LeftHand",
+    "RightArm",
+    "RightForeArm",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 3,
+     "name": "hit",
+     "bone": "Spine",
+     "time": 0.1
+    }
+   ],
+   "fastest_turn_per_frame_deg": 108.8,
+   "feet_drift_m": 0.018
+  },
+  {
+   "name": "OH_React_Lifted",
+   "frames": 48,
+   "seconds": 1.6,
+   "key_frames": [
+    4,
+    7,
+    10,
+    13,
+    16,
+    19,
+    22,
+    25,
+    28,
+    31,
+    34,
+    37,
+    40,
+    43
+   ],
+   "bones_moved": [
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 43.9,
+   "feet_drift_m": 0.235
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_React_Bowled: Bowled: sweep 0-12, slam 16 (down), lie dazed 23-45, sit 55, crouch 62, stand 72 (up), idle 90. Right arm (pan) kept raised/out while on the ground so the pan stays clear of body and floor.",
+  "OH_React_Backstab: Backstab: hit jolt f3, reach f15-33, yank f38-40 (in-between at f38 removes the arm pop), overshoot f43, stagger f46-54, idle f60. Left hand does the reaching; right hand keeps the pan out to the side.",
+  "OH_React_Backstab: Fastest move: LeftForeArm turns 109 degrees in one frame at frame 38 (may look like a pop)",
+  "OH_React_Lifted: Lifted: 48-frame loop, idle at f0/f48 (seamless + return to idle), struggle f4-f44 with 2 kick/flail cycles; hips never translate."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_React_Bowled": {
+    "keys": 91,
+    "seconds": 3.0
+   },
+   "OH_React_Backstab": {
+    "keys": 61,
+    "seconds": 2.0
+   },
+   "OH_React_Lifted": {
+    "keys": 49,
+    "seconds": 1.6
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0009,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 2e-05
+ }
+}
