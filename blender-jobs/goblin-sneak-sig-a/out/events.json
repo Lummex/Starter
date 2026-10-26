@@ -1,0 +1,20 @@
+{
+ "asset_id": "goblin-sneak",
+ "fps": 30,
+ "clips": {
+  "OH_Idle": {
+   "frames": 78,
+   "duration": 2.6,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Walk": {
+   "frames": 24,
+   "duration": 0.8,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  }
+ }
+}
