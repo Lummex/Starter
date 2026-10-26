@@ -389,6 +389,18 @@ def main():
             report['notes'].append(f'{act.name}: {at["part"]} held in {at["bone"]} at scale {scale:.3f}; '
                                    f'prop centre {C.to_char((plo + phi) / 2)} size {round((phi - plo).length, 3)} m, '
                                    f'hand joint {C.to_char(hand)}')
+            report.setdefault('prop_debug', []).extend({
+                'name': o.name, 'polys': len(o.data.polygons), 'verts': len(o.data.vertices), 'hide_render': o.hide_render,
+                'visible': o.visible_get(), 'collections': [c.name for c in o.users_collection],
+                'scene_has': o.name in sc.objects, 'materials': [m.name if m else None for m in o.data.materials],
+                'world_scale': [round(x, 5) for x in o.matrix_world.to_scale()], 'parent': o.parent.name if o.parent else None,
+                'display_type': o.display_type} for o in info[1])
+            # bright marker ball at the same spot, made directly in Blender (shows whether bone-held objects render)
+            bpy.ops.mesh.primitive_uv_sphere_add(radius=max(0.01, (phi - plo).length * 0.12), location=(plo + phi) / 2)
+            ball = bpy.context.active_object
+            ball.name = f'GripMarker_{at["part"]}'
+            ball.color = (1.0, 0.2, 0.1, 1.0)
+            info[1].append(ball)
     lo, hi = C.world_bbox([o for o in char_objs if o.type == 'MESH'])
     cam = C.make_camera(lo, hi, 35, 10, margin=2.0)
     for act, L, ctx in built:
