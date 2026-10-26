@@ -3,21 +3,21 @@
  "fps": 30,
  "clips": {
   "OH_React_Bowled": {
-   "frames": 96,
-   "duration": 3.2,
+   "frames": 90,
+   "duration": 3.0,
    "loop": false,
    "events": [
     {
-     "frame": 11,
+     "frame": 16,
      "name": "down",
      "bone": "Hips",
-     "time": 0.3667
+     "time": 0.5333
     },
     {
-     "frame": 70,
+     "frame": 72,
      "name": "up",
      "bone": "Hips",
-     "time": 2.3333
+     "time": 2.4
     }
    ],
    "attachments": []
