@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:37:17Z",
- "heartbeat_at": "2026-10-26T11:32:17Z",
+ "lease_until": "2026-10-26T11:37:26Z",
+ "heartbeat_at": "2026-10-26T11:32:26Z",
  "error": {
   "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r1/out/final-OH_React_Knockback-000.png does not match db667ca6db87fe73e375766950db9d10c9dc0ff7\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:31:36Z"
  },
  "progress": {
-  "stage": "preparing",
-  "percent": 5,
-  "message": "Copying the source model into a private work folder"
+  "stage": "inspecting",
+  "percent": 15,
+  "message": "Reading the model, skeleton and animations in Blender"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -517,5 +517,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T11:32:17Z"
+ "updated_at": "2026-10-26T11:32:26Z"
 }
