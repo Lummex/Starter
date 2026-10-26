@@ -1,6 +1,7 @@
 {
  "worker_id": "starr-f0fad5",
- "state": "idle",
- "at": "2026-10-26T07:34:53Z",
- "host": "Starr"
+ "state": "busy",
+ "at": "2026-10-26T07:39:03Z",
+ "host": "Starr",
+ "job": "goblin-slinger-skull-throw-002"
 }
