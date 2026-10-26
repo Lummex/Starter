@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:04:02Z",
- "heartbeat_at": "2026-10-26T10:59:02Z",
+ "lease_until": "2026-10-26T11:04:59Z",
+ "heartbeat_at": "2026-10-26T10:59:59Z",
  "error": {
   "message": "{\"message\":\"is at 94ca3fb222de330226b71dd89025f954501cafb5 but expected e6f9b25ae873af0a41dc3886399323be5e2d717f\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T10:58:21Z"
  },
  "progress": {
-  "stage": "designing",
-  "percent": 25,
-  "message": "Claude Code is designing the animation"
+  "stage": "animating",
+  "percent": 35,
+  "message": "Building the keyframes in Blender and rendering previews"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -283,5 +283,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:59:02Z"
+ "updated_at": "2026-10-26T10:59:59Z"
 }
