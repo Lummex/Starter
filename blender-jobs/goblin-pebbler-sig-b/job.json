@@ -2,7 +2,7 @@
  "id": "goblin-pebbler-sig-b",
  "type": "animate",
  "asset_id": "goblin-pebbler",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T09:48:30Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T09:43:30Z",
- "error": {
-  "message": "{\"message\":\"is at b2a81eb08e80bf6db33b2e8a1621d3d7d14c55f1 but expected c107a589d3938a22ca122697b99bcfb8ee7bad8e\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
-  "at": "2026-10-26T09:36:43Z"
- },
+ "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "1 animation(s) built and checked: OH_Attack"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb@factory/issue-8"
@@ -86,7 +83,172 @@
   {
    "at": "2026-10-26T09:43:23Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T09:44:18Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T09:43:30Z"
+ "updated_at": "2026-10-26T09:44:18Z",
+ "result": {
+  "summary": "1 animation(s) built and checked: OH_Attack",
+  "files": [
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/char.glb",
+    "bytes": 829680,
+    "sha256": "1ae88f04185bbd328439dc56475d4480a3b6b2566cff258ffbb0ce6cabee634a"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/events.json",
+    "bytes": 294,
+    "sha256": "c67e0a74a0834b7471d25d33395e1019f566d425eaf1a58cd7a9671a7fa98f57"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/inspection.json",
+    "bytes": 10194,
+    "sha256": "1d0e580a93abfeba081c15c8755bcdd7e91b881ef5bdb6884b51788e1f9b7233"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/build-report.json",
+    "bytes": 1372,
+    "sha256": "290ced8f873d578cec5627f10d39b6c5c07bbc60459a8d747b74c5f66652e4c6"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/validation.json",
+    "bytes": 915,
+    "sha256": "e9bd45ab639c857ce3da30d2d081781538be85a0c21df471e62e2fafc8f99545"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/final-OH_Attack-000.png",
+    "bytes": 176866,
+    "sha256": "992066ebefb59fb65f1ce0bae206fc3dc0a340a28b690c5e6ee593df0111cd76"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/final-OH_Attack-010.png",
+    "bytes": 168265,
+    "sha256": "523942a241d95d38420cae1455d3e494a202c68a3a863902e4cc4a10ac2c9660"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/final-OH_Attack-019.png",
+    "bytes": 168473,
+    "sha256": "da329377c3b042c205dab473a0cd9767d3a165b169816a69d9db479765618c26"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/final-OH_Attack-029.png",
+    "bytes": 177055,
+    "sha256": "77d32a780c60e62cb76eadfedba2934d7c36aef68b7887564537700dff668dc9"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/final-OH_Attack-038.png",
+    "bytes": 176866,
+    "sha256": "5acf78231538ec29e566e3cb3db95a24bf517e6fd21edc1f19ee1cc6c5da8457"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/preview-OH_Attack-000.png",
+    "bytes": 306375,
+    "sha256": "1140b15273f2f7a8fb175a3ee1bda47760179d66c65486be37d7cc34fd4e01bf"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/preview-OH_Attack-006.png",
+    "bytes": 295066,
+    "sha256": "71d216e5f124734fce048213fd04cc02690c3f3423bf6923b87baab49c1e6280"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/preview-OH_Attack-012.png",
+    "bytes": 288285,
+    "sha256": "450a6541f663550e056fbf8ffc25b5c96bd73d75e1ae7fa6a359b89d72cc0df3"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/preview-OH_Attack-013.png",
+    "bytes": 287992,
+    "sha256": "0c068c97c4941858e232a930dd63f25bf1430c5c773f837153a4c79739cb993a"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/preview-OH_Attack-019.png",
+    "bytes": 292737,
+    "sha256": "8d99d4d65dcb6570f12ec0dd259dc1b19bb8ca100b853009bdf8c4c1007b7bba"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/preview-OH_Attack-025.png",
+    "bytes": 307018,
+    "sha256": "b915a66a5a2f621ca7f87e4101c5518f3b41eb60ab73a74253fabd41c3a411c4"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/preview-OH_Attack-032.png",
+    "bytes": 306623,
+    "sha256": "a2b48e0629403e1ba1c0d04c6aae775b102cf5349b7bcfe809d29fae5dad7dc5"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/preview-OH_Attack-038.png",
+    "bytes": 306375,
+    "sha256": "5eec83deabedc505775827c63359f63b1a923c3fd3f89a9ee2cdd9ff5b71c4d9"
+   },
+   {
+    "file": "blender-jobs/goblin-pebbler-sig-b/out/anim-OH_Attack.py.txt",
+    "bytes": 5296,
+    "sha256": "616a098a53b6e958d783eef2d59793bdfbb7d05ffcfa84146ab093068e51addd"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 35196,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Attack": [
+      0.0,
+      38.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Attack": {
+      "keys": 39,
+      "seconds": 1.2667
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0026,
+     "worst_rotation_error_deg": 0.004
+    },
+    "written_clip_error_pct_of_height": 0.00111
+   }
+  }
+ }
 }
