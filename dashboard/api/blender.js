@@ -23,8 +23,11 @@ async function tryGh(method, endpoint, body) {
 
 async function ensureBranch() {
   if (await tryGh('GET', `git/ref/heads/${BRANCH}`)) return;
-  const main = await gh('GET', 'git/ref/heads/main');
-  try { await gh('POST', 'git/refs', { ref: `refs/heads/${BRANCH}`, sha: main.object.sha }); } catch (e) { if (!String(e.message).includes('(422)')) throw e; }
+  // Orphan branch holding only the job folder: no game code, no workflow files (job updates never start Actions).
+  const tree = await gh('POST', 'git/trees', { tree: [{ path: `${DIR}/README.md`, mode: '100644', type: 'blob',
+    content: '# Blender job queue\n\nOne folder per job: job.json (spec + state) and out/ (results). Do not merge into main.\n' }] });
+  const commit = await gh('POST', 'git/commits', { message: 'Start the Blender job queue', tree: tree.sha, parents: [] });
+  try { await gh('POST', 'git/refs', { ref: `refs/heads/${BRANCH}`, sha: commit.sha }); } catch (e) { if (!String(e.message).includes('(422)')) throw e; }
 }
 
 async function readJob(id) {
