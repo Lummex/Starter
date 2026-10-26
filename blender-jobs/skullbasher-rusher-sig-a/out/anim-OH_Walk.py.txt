@@ -1,0 +1,140 @@
+import math
+from mathutils import Vector, Quaternion
+
+AX = {'right': (1, 0, 0), 'left': (-1, 0, 0), 'up': (0, 1, 0),
+      'down': (0, -1, 0), 'forward': (0, 0, 1), 'back': (0, 0, -1)}
+
+
+def tq(turns):
+    # (right, up, forward) is left-handed, so a physical right-hand-rule turn is a negative math angle
+    q = Quaternion()
+    for a, d in turns:
+        q = Quaternion(Vector(AX[a]), math.radians(-d)) @ q
+    return q
+
+
+def solve(ctx, f, hm, items, interp):
+    W = {}
+
+    def world(b):
+        if not b:
+            return Quaternion()
+        if b in W:
+            return W[b]
+        return world(ctx.parent(b))
+
+    ctx.key(f, 'Hips', move=hm, interp=interp)
+    for b, kind, val in items:
+        P = world(ctx.parent(b))
+        rest = Vector(ctx.bones[b]['points'])
+        if kind == 'turn':
+            L = tq(val)
+            ctx.key(f, b, turn=list(val), interp=interp)
+        elif kind == 'aim':
+            la = (P.inverted() @ Vector(val)).normalized()
+            L = rest.rotation_difference(la)
+            ctx.key(f, b, aim=(la.x, la.y, la.z), interp=interp)
+        else:
+            L = P.inverted() @ val
+            e = L.to_euler('XYZ')
+            ctx.key(f, b, turn=[('right', -math.degrees(e.x)), ('up', -math.degrees(e.y)),
+                                ('forward', -math.degrees(e.z))], interp=interp)
+        W[b] = P @ L
+
+
+def leg_items(ctx, side, hm, target, rot):
+    B = ctx.bones
+    th, sh, ft = side + 'UpLeg', side + 'Leg', side + 'Foot'
+    H0 = Vector(B[th]['head']); K0 = Vector(B[sh]['head']); A0 = Vector(B[ft]['head'])
+    L1 = (K0 - H0).length; L2 = (A0 - K0).length
+    r = (A0 - H0).normalized()
+    pole = (K0 - H0) - r * (K0 - H0).dot(r)
+    H = H0 + Vector(hm); T = Vector(target)
+    d = T - H
+    dist = max(min(d.length, (L1 + L2) * 0.995), abs(L1 - L2) + 0.01)
+    dn = d.normalized()
+    pole = pole - dn * pole.dot(dn)
+    pole.normalize()
+    ca = max(-1.0, min(1.0, (L1 * L1 + dist * dist - L2 * L2) / (2 * L1 * dist)))
+    sa = math.sqrt(1 - ca * ca)
+    K = H + dn * (L1 * ca) + pole * (L1 * sa)
+    E = H + dn * dist
+    return [(th, 'aim', tuple(K - H)), (sh, 'aim', tuple(E - K)), (ft, 'world', rot)]
+
+
+N = 24      # two steps: left contact f0, right contact f12
+HALF = 12
+RAMP = 4    # frames to ease from / back to the idle pose at the loop seam
+LIFT = 0.075
+
+
+def smooth(u):
+    u = max(0.0, min(1.0, u))
+    return u * u * (3 - 2 * u)
+
+
+def scale(turns, e):
+    return [(a, d * e) for a, d in turns]
+
+
+def blend(base, target, e):
+    v = Vector(base) * (1 - e) + Vector(target).normalized() * e
+    return tuple(v.normalized())
+
+
+def foot(f, contact, front, back):
+    # (z, lift, toe) for a foot whose stance runs contact..contact+12 (front -> back, like a treadmill)
+    t = (f - contact) % N
+    if t <= HALF:
+        return front + (back - front) * t / HALF, 0.0, 0.0
+    u = (t - HALF) / HALF
+    s = 0.5 - 0.5 * math.cos(math.pi * u)
+    return back + (front - back) * s, LIFT * math.sin(math.pi * u), -22 * math.sin(math.pi * u) * (1 - 0.6 * u)
+
+
+def build(ctx):
+    ctx.length(N)
+    B = ctx.bones
+    lf0 = Vector(B['LeftFoot']['head']); rf0 = Vector(B['RightFoot']['head'])
+    # base pose is already a left-forward contact: the cycle starts and ends exactly there
+    LF, LB = lf0.z, -0.11
+    RF, RB = 0.12, rf0.z
+
+    def pts(b):
+        return tuple(B[b]['points'])
+
+    # frames 0 and 24 are left to the automatic idle pose (loop seam = base pose)
+    for f in range(1, N):
+        e = smooth(min(f, N - f) / RAMP)
+        a = 2 * math.pi * f / N
+        sw = math.cos(a)                                  # +1: left foot forward / mace arm forward
+        bob = math.cos(2 * math.pi * 2 * (f - 2) / N)     # lowest just after each contact
+        hb = math.cos(2 * math.pi * 2 * (f - 4) / N)      # delayed follow-through for head and shield
+        hm = (-0.012 * math.sin(a) * e, (-0.035 - 0.015 * bob) * e, 0.01 * e)
+
+        lz, ly, lt = foot(f, 0, LF, LB)
+        rz, ry, rt = foot(f, HALF, RF, RB)
+
+        items = [
+            ('Spine02', 'turn', scale([('right', -12 + 2 * bob)], e)),
+            ('Spine01', 'turn', scale([('right', -9), ('up', 7 * sw)], e)),
+            ('Spine', 'turn', scale([('right', -4 + 2 * hb), ('up', 3 * sw)], e)),
+            ('neck', 'turn', scale([('right', 9), ('up', -4 * sw)], e)),
+            ('Head', 'turn', scale([('right', 13 - 3 * hb), ('up', -5 * sw)], e)),
+            ('LeftShoulder', 'turn', scale([('forward', 6 + 2 * hb)], e)),
+            # shield up: forearm held across the front of the chest, bouncing with the jog
+            ('LeftArm', 'aim', blend(pts('LeftArm'), (-0.15, -0.3 - 0.04 * hb, 0.94), e)),
+            ('LeftForeArm', 'aim', blend(pts('LeftForeArm'), (0.75, 0.18 + 0.05 * hb, 0.62), e)),
+            ('LeftHand', 'aim', blend(pts('LeftHand'), (0.72, 0.12 + 0.05 * hb, 0.68), e)),
+            ('RightShoulder', 'turn', scale([('forward', -2 - 2 * hb)], e)),
+            # mace arm pumps opposite the right leg, mace cocked forward and ready
+            ('RightArm', 'aim', blend(pts('RightArm'), (0.3, -0.85, 0.35 * sw - 0.05), e)),
+            ('RightForeArm', 'aim', blend(pts('RightForeArm'), (0.25, -0.15 + 0.2 * sw, 0.95), e)),
+            ('RightHand', 'aim', blend(pts('RightHand'), (0.2, -0.05 + 0.2 * sw, 0.97), e)),
+        ]
+        items += leg_items(ctx, 'Left', hm, (lf0.x, lf0.y + ly, lz), tq([('right', lt)]))
+        items += leg_items(ctx, 'Right', hm, (rf0.x, rf0.y + ry, rz), tq([('right', rt)]))
+        solve(ctx, f, hm, items, 'BEZIER')
+    ctx.note('24f jog in place starting/ending on the idle pose (it is already a left-forward contact): '
+             'left contact f0, right contact f12, treadmill stance, hips lowest f2/f14, lean + shield-up '
+             'eased in over f0-4 and out over f20-24.')
