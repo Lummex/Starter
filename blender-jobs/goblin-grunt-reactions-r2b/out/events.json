@@ -1,0 +1,27 @@
+{
+ "asset_id": "goblin-grunt",
+ "fps": 30,
+ "clips": {
+  "OH_React_Backstab": {
+   "frames": 60,
+   "duration": 2.0,
+   "loop": false,
+   "events": [
+    {
+     "frame": 3,
+     "name": "hit",
+     "bone": "Spine",
+     "time": 0.1
+    }
+   ],
+   "attachments": []
+  },
+  "OH_React_Lifted": {
+   "frames": 48,
+   "duration": 1.6,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  }
+ }
+}
