@@ -1,0 +1,80 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "Skull_Throw",
+   "frames": 48,
+   "seconds": 1.6,
+   "key_frames": [
+    5,
+    11,
+    14,
+    17,
+    19,
+    23,
+    27,
+    35,
+    42
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightShoulder",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 19,
+     "name": "projectile_release",
+     "bone": "RightHand",
+     "time": 0.6333
+    }
+   ],
+   "fastest_turn_per_frame_deg": 129.7,
+   "feet_drift_m": 0.0491
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "Skull_Throw: Skull_Throw take 3: wind-up peak f11-14, whip f17, release f19, follow-through f23-27, settle f35-48.",
+  "Skull_Throw: Fastest move: RightHand turns 130 degrees in one frame at frame 18 (may look like a pop)",
+  "Skull_Throw: skull-mace held in RightHand at scale 0.063; prop centre [0.2654, 0.2731, -0.1621] size 0.156 m, hand joint [0.2448, 0.3217, -0.1626]"
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "Skull_Throw": {
+    "keys": 49,
+    "seconds": 1.6
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0013,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 5e-05
+ }
+}
