@@ -1,5 +1,5 @@
 {
- "status": "validating",
+ "status": "awaiting_review",
  "created_at": "2026-10-26T07:26:42Z",
  "created_by": "claude",
  "retries": 0,
@@ -7,13 +7,13 @@
  "retry_on_failure": false,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T07:37:09Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T07:32:09Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "1 animation(s) built and checked: Skull_Throw"
  },
  "history": [
   {
@@ -34,6 +34,10 @@
   {
    "at": "2026-10-26T07:32:02Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T07:32:57Z",
+   "status": "awaiting_review"
   }
  ],
  "id": "goblin-slinger-skull-throw-001",
@@ -76,5 +80,171 @@
   "format": "glb",
   "target": "game: public/models/creatures/goblin-slinger/char.glb (after owner review)"
  },
- "updated_at": "2026-10-26T07:32:09Z"
+ "updated_at": "2026-10-26T07:32:57Z",
+ "result": {
+  "summary": "1 animation(s) built and checked: Skull_Throw",
+  "files": [
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/char.glb",
+    "bytes": 1307844,
+    "sha256": "ab6af6cfaeef849e8f63323c2b5165c418c62d827a2f2bd1d1bfb256e82911ed"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/events.json",
+    "bytes": 425,
+    "sha256": "a4fc666c5968be90f05a345017af031c8fe501b2d7f8d8037ae8c9e267a4aefa"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/inspection.json",
+    "bytes": 10197,
+    "sha256": "939def4f5e20244642a33fd58b25a631171b778cc2f399e1a863946160305423"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/build-report.json",
+    "bytes": 1517,
+    "sha256": "adcaaaaf9854c4199e911020d8bdca0d2938568065989ed22e49d590cff99b49"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/validation.json",
+    "bytes": 914,
+    "sha256": "a2aa9afdb01131bd3d27ba8f2d8d8f7bda028ec0be2fb6bc2ecef5b38c5461cf"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/preview-weapon.glb",
+    "bytes": 4262184,
+    "sha256": "2e75175eff30e30876bb77de7df25f8127b221815d361f4ed478683496101b91"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/final-Skull_Throw-000.png",
+    "bytes": 179993,
+    "sha256": "9b9d2807aa64b960933896a4983b54531d95a99c2ff533d4a1447b1a1805e846"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/final-Skull_Throw-012.png",
+    "bytes": 176788,
+    "sha256": "cf96b8d5b75d474b85f4456caa7b9b11e7f82bbb0be37c0f9c8ea2dc1b67df03"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/final-Skull_Throw-024.png",
+    "bytes": 170825,
+    "sha256": "9b9c391561f11ee91cb70e4c4225f2e3ed5de2614931dfc2d0c1141df4d72203"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/final-Skull_Throw-036.png",
+    "bytes": 180064,
+    "sha256": "64ed4c5d06934d1134e44bd422c491863305c02dc319ba750990d1674b66d68a"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/final-Skull_Throw-048.png",
+    "bytes": 180018,
+    "sha256": "d2dc07a2e4ffd9e08093d407e968a11cf084bc1a97ebf9acb4f9b44b44596c3f"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/preview-Skull_Throw-000.png",
+    "bytes": 312369,
+    "sha256": "6c879ba113af69bb1101480764c847756893a41f7869041d21f98f6e77ff6830"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/preview-Skull_Throw-008.png",
+    "bytes": 309800,
+    "sha256": "3658baca0684de9de175c65c3c4bdd707db0f6bc5b266a73b0a237206a325e02"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/preview-Skull_Throw-016.png",
+    "bytes": 306820,
+    "sha256": "d49967f7996f2f332aaf9e38d15f255abac3d6e06070fe27d4653ea699d7eb9a"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/preview-Skull_Throw-021.png",
+    "bytes": 299226,
+    "sha256": "0aecc2c25c00f264afea7da9fa2bed565d80a8e03a6c9c877468210d2567f38a"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/preview-Skull_Throw-024.png",
+    "bytes": 297480,
+    "sha256": "e697ea368d5d4e620d48626b32429a655756b4faaf3fdc05919d9651a6865f65"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/preview-Skull_Throw-032.png",
+    "bytes": 310538,
+    "sha256": "7056fc9ec5a3443a527c145def09282f2e499ba404e123d12ba47cd139430d88"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/preview-Skull_Throw-040.png",
+    "bytes": 312170,
+    "sha256": "c3d1181d22047b40b01dc90b25792aaa527407422105572c921d8534e2c10153"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/preview-Skull_Throw-048.png",
+    "bytes": 312361,
+    "sha256": "65bc9542276e1b0c986ccfae90a67e2b965257da7346d5e97d31149be48991db"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-skull-throw-001/out/anim-Skull_Throw.py.txt",
+    "bytes": 4405,
+    "sha256": "ef16538fb43a22022cdd8b63b01523c68482dd2accec935d3925868b9286e127"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 40454,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "Skull_Throw": [
+      0.0,
+      48.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "Skull_Throw": {
+      "keys": 49,
+      "seconds": 1.6
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0013,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 0.00011
+   }
+  }
+ }
 }
