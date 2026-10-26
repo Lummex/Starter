@@ -2,7 +2,7 @@
  "id": "goblin-sneak-reactions-r2",
  "type": "animate",
  "asset_id": "goblin-sneak",
- "status": "claimed",
+ "status": "running",
  "priority": 4,
  "created_at": "2026-10-26T10:21:37Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:46:00Z",
- "heartbeat_at": "2026-10-26T11:41:00Z",
+ "lease_until": "2026-10-26T11:46:09Z",
+ "heartbeat_at": "2026-10-26T11:41:09Z",
  "error": {
   "message": "{\"message\":\"is at 2a9095c02c228b5e38b1268ef2bebcb8648f0699 but expected aa3f772e9950cfa20d32fcef61704adcbce00680\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:37:37Z"
  },
  "progress": {
-  "stage": "claimed",
-  "percent": 0,
-  "message": "Picked up by the Blender worker"
+  "stage": "preparing",
+  "percent": 5,
+  "message": "Copying the source model into a private work folder"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/char.glb@factory/issue-8"
@@ -201,7 +201,11 @@
    "status": "claimed",
    "worker": "starr-f0fad5",
    "recovered": false
+  },
+  {
+   "at": "2026-10-26T11:41:09Z",
+   "status": "running"
   }
  ],
- "updated_at": "2026-10-26T11:41:00Z"
+ "updated_at": "2026-10-26T11:41:09Z"
 }
