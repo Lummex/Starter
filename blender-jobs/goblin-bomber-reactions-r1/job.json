@@ -2,7 +2,7 @@
  "id": "goblin-bomber-reactions-r1",
  "type": "animate",
  "asset_id": "goblin-bomber",
- "status": "validating",
+ "status": "queued",
  "priority": 4,
  "created_at": "2026-10-26T09:57:47Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:05:10Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T11:00:10Z",
  "error": {
-  "message": "{\"message\":\"is at 94ca3fb222de330226b71dd89025f954501cafb5 but expected e6f9b25ae873af0a41dc3886399323be5e2d717f\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
-  "at": "2026-10-26T10:58:21Z"
+  "message": "could not update job.json (too many conflicts)",
+  "at": "2026-10-26T11:00:28Z"
  },
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "failed",
+  "percent": 0,
+  "message": "could not update job.json (too many conflicts)"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -285,7 +285,11 @@
   {
    "at": "2026-10-26T11:00:10Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T11:00:28Z",
+   "status": "failed"
   }
  ],
- "updated_at": "2026-10-26T11:00:10Z"
+ "updated_at": "2026-10-26T11:00:28Z"
 }
