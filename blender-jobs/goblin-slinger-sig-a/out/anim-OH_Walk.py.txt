@@ -1,0 +1,146 @@
+import math
+import mathutils
+
+V = mathutils.Vector
+
+N = 24          # two steps, 12 frames each
+STEP = 2        # key every 2 frames (frames 0 and N are left to the automatic base pose)
+LIFT = 0.07     # swing foot lift (m)
+REACH = 0.015   # swing foot reaches a touch forward mid-air, lands back on its own spot
+
+
+def _dir(ctx, n):
+    b = ctx.bones[n]
+    return (V(b['tail']) - V(b['head'])).normalized()
+
+
+def _rot(a, b):
+    return V(a).normalized().rotation_difference(V(b).normalized())
+
+
+def _mix(a, b, r):
+    return (V(a) * (1.0 - r) + V(b) * r).normalized()
+
+
+def arm(ctx, f, side, up_d, fore_d, hand_d=None):
+    pre = 'Left' if side == 'L' else 'Right'
+    ub, fb, hb = pre + 'Arm', pre + 'ForeArm', pre + 'Hand'
+    up_d = V(up_d).normalized()
+    fore_d = V(fore_d).normalized()
+    ru = _rot(_dir(ctx, ub), up_d)
+    fa = ru.inverted() @ fore_d
+    rf = _rot(_dir(ctx, fb), fa)
+    if hand_d is None:
+        hand_d = fore_d
+    ha = (ru @ rf).inverted() @ V(hand_d).normalized()
+    ctx.key(f, ub, aim=tuple(up_d))
+    ctx.key(f, fb, aim=tuple(fa))
+    ctx.key(f, hb, aim=tuple(ha))
+
+
+def leg(ctx, f, side, hip_move, foot_off, toe_pitch):
+    # Two-bone IK: ankle goes exactly to base position + foot_off.
+    pre = 'Left' if side == 'L' else 'Right'
+    th, sh, ft = pre + 'UpLeg', pre + 'Leg', pre + 'Foot'
+    H0 = V(ctx.bones[th]['head'])
+    K0 = V(ctx.bones[sh]['head'])
+    A0 = V(ctx.bones[ft]['head'])
+    L1 = (K0 - H0).length
+    L2 = (A0 - K0).length
+    H = H0 + V(hip_move)
+    D = (A0 + V(foot_off)) - H
+    d = min(max(D.length, abs(L1 - L2) + 1e-4), (L1 + L2) * 0.999)
+    u = D.normalized()
+    a = (L1 * L1 - L2 * L2 + d * d) / (2 * d)
+    h = math.sqrt(max(L1 * L1 - a * a, 0.0))
+    u0 = (A0 - H0).normalized()
+    p = (K0 - H0) - u0 * (K0 - H0).dot(u0)
+    p = p - u * p.dot(u)
+    if p.length < 1e-6:
+        p = V((0.0, 0.0, 1.0)) - u * u.z
+    p.normalize()
+    K = H + u * a + p * h
+    T = H + u * d
+    rt = _rot(_dir(ctx, th), (K - H))
+    sa = rt.inverted() @ (T - K).normalized()
+    rs = _rot(_dir(ctx, sh), sa)
+    fd = _dir(ctx, ft)
+    if toe_pitch:
+        fd = V((fd.x, fd.y - toe_pitch, fd.z)).normalized()
+    fa = (rt @ rs).inverted() @ fd
+    ctx.key(f, th, aim=tuple((K - H).normalized()))
+    ctx.key(f, sh, aim=tuple(sa))
+    ctx.key(f, ft, aim=tuple(fa))
+
+
+def swing(t, start):
+    """Foot lifts straight up and comes back down on the same spot (no sliding while planted)."""
+    s = ((t - start) % 1.0) / 0.42
+    if s <= 0.0 or s >= 1.0:
+        return 0.0, 0.0, 0.0
+    arc = 0.5 - 0.5 * math.cos(2 * math.pi * s)     # smooth lift-off and landing
+    return REACH * arc, LIFT * arc, 0.35 * arc
+
+
+def build(ctx):
+    ctx.length(N)
+
+    # Base directions (the clip starts and ends exactly in the base pose so it loops into idle cleanly).
+    RU0, RF0 = _dir(ctx, 'RightArm'), _dir(ctx, 'RightForeArm')
+    LU0, LF0 = _dir(ctx, 'LeftArm'), _dir(ctx, 'LeftForeArm')
+    # Skull hand hoisted up beside his shoulder, out to the side so it stays clear of the head.
+    RU1 = V((0.85, -0.35, 0.25))
+    RF1 = V((0.45, 0.72, 0.45))
+    RH1 = V((0.35, 0.78, 0.5))
+
+    for f in range(STEP, N, STEP):
+        t = f / float(N)
+        s2 = (2 * t) % 1.0            # phase within one step
+        sn = math.sin(2 * math.pi * s2)
+
+        # Left foot swings in the first step, right foot in the second. Both feet down at t=0 and t=0.5.
+        lz, ly, lp = swing(t, 0.04)
+        rz, ry, rp = swing(t, 0.54)
+
+        # Skip bounce: squash after each landing, spring up while the foot is in the air.
+        bob = -0.024 * sn if sn > 0 else -0.009 * sn
+        sway = 0.013 * math.sin(2 * math.pi * t)     # over the planted foot (+ = right)
+        hip = (sway, bob, 0.0)
+        ctx.key(f, 'Hips', move=hip)
+        leg(ctx, f, 'L', hip, (0.0, ly, lz), lp)
+        leg(ctx, f, 'R', hip, (0.0, ry, rz), rp)
+
+        squash = max(0.0, sn)
+        side = math.sin(2 * math.pi * t)
+
+        # Eager forward lean that pumps with the bounce, chest counter-twists the hips.
+        ctx.key(f, 'Spine02', turn=[('right', -10 * squash - 4 * (1 - math.cos(2 * math.pi * t))),
+                                    ('up', -9 * side), ('forward', -4 * side)])
+        ctx.key(f, 'Spine', turn=[('right', 4 * squash), ('up', -3 * side)])
+        # Twitchy head: snappy side tilts, chin pops up on the spring.
+        twitch = max(-1.0, min(1.0, 3.0 * math.sin(2 * math.pi * t)))
+        ctx.key(f, 'neck', turn=[('right', 5 * squash), ('up', 6 * side)])
+        ctx.key(f, 'Head', turn=[('right', -6 * min(0.0, sn) * 1.5 - 4 * squash), ('forward', 9 * twitch)])
+
+        # Right hand heaves the skull up to his shoulder and keeps it there; it drops back to the
+        # base hang only at the loop seam (a heavy little heave each pair of steps). Lags the bounce.
+        c = 0.5 - 0.5 * math.cos(2 * math.pi * t)
+        r = 1.0 - (1.0 - c) ** 3
+        lag = max(0.0, math.sin(2 * math.pi * ((2 * t - 0.12) % 1.0)))
+        up_d = _mix(RU0, RU1 + V((0, -0.08 * lag, 0)), r)
+        fo_d = _mix(RF0, RF1 + V((0, -0.15 * lag, 0)), r)
+        ha_d = _mix(RF0, RH1 + V((0, -0.25 * lag, 0)), r)
+        arm(ctx, f, 'R', up_d, fo_d, ha_d)
+
+        # Left arm pumps opposite the left leg, elbow bending as it swings forward.
+        sw = math.sin(2 * math.pi * t)     # + while the left foot is up -> left arm back
+        l_up = LU0 + V((0.0, 0.12 * abs(sw), -0.55 * sw))
+        l_fo = LF0 + V((0.15 * max(0.0, -sw), 0.7 * max(0.0, -sw), 0.3 * max(0.0, -sw) - 0.4 * max(0.0, sw)))
+        arm(ctx, f, 'L', l_up, l_fo, None)
+
+        ctx.key(f, 'LeftShoulder', turn=[('forward', 5 * (1 - squash) * (1 if sn < 0 else 0.3))])
+        ctx.key(f, 'RightShoulder', turn=[('forward', -4 * r)])
+
+    ctx.note('In-place skip: feet lift %.0f cm straight up and land on their own spot (no sliding); '
+             'skull hand hoisted by the right shoulder, dropping to the base hang only at the loop seam so '
+             'frames 0 and %d are the idle pose.' % (LIFT * 100, N))
