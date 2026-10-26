@@ -32,6 +32,7 @@ CRED_TARGET = 'OreheartBlenderWorker:github'
 JOBS_DIR = 'blender-jobs'
 LEASE_SECONDS = 300
 HEARTBEAT_SECONDS = 90
+_LOCK = None
 STATES = ['queued', 'claimed', 'running', 'validating', 'completed', 'failed', 'awaiting_review', 'cancelled']
 # The ONLY operations this worker will ever perform. Anything else in a job is refused.
 ALLOWED_JOB_TYPES = {'inspect', 'animate'}
@@ -769,6 +770,21 @@ def main():
         log('check:', json.dumps(res))
         return 0
     gh.ensure_branch(cfg['queue_branch'], cfg['base_branch'])
+    # Only one worker may run on this PC (autostart + a manual start must not both take jobs).
+    global _LOCK
+    _LOCK = open(os.path.join(APP_DIR, 'worker.lock'), 'a+')
+    try:
+        if os.name == 'nt':
+            import msvcrt
+            _LOCK.seek(0)
+            msvcrt.locking(_LOCK.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(_LOCK.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        print('Another Oreheart Blender Worker is already running on this PC. This one will close.')
+        log('second worker start refused (one is already running)')
+        return 0
     for f in ('STOP', 'CANCEL'):
         try: os.remove(os.path.join(APP_DIR, f))
         except OSError: pass

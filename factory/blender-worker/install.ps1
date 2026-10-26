@@ -51,7 +51,14 @@ foreach ($c in $candidates) {
 Note "Chosen: $blender"
 if (-not $blender) { Fail 'No usable Blender 4.2+ was found. Tell Claude what this window says (Claude can read install-log.txt).' }
 
-# 2. Copy the worker code (your settings and work folders are kept).
+# 2. Stop a worker that is already running (it hands any job back to the queue), then copy the new code.
+if (Test-Path (Join-Path $app 'worker.lock')) {
+  Write-Host 'Stopping the worker that is running now...'
+  New-Item -ItemType File -Force -Path (Join-Path $app 'STOP') | Out-Null
+  Start-Sleep -Seconds 20
+  Remove-Item (Join-Path $app 'STOP') -ErrorAction SilentlyContinue
+}
+# Copy the worker code (your settings and work folders are kept).
 New-Item -ItemType Directory -Force -Path $code | Out-Null
 foreach ($item in 'worker.py', 'blender_ops', 'prompts', 'schema', 'README.md') {
   $p = Join-Path $src $item
