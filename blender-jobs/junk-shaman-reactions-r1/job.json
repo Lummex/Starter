@@ -2,7 +2,7 @@
  "id": "junk-shaman-reactions-r1",
  "type": "animate",
  "asset_id": "junk-shaman",
- "status": "queued",
+ "status": "claimed",
  "priority": 4,
  "created_at": "2026-10-26T09:57:47Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": null,
- "heartbeat_at": "2026-10-26T10:51:51Z",
+ "lease_until": "2026-10-26T10:57:25Z",
+ "heartbeat_at": "2026-10-26T10:52:25Z",
  "error": {
   "message": "{\"message\":\"is at 889779ad88629d1f8f86a308ac921080e45b1e03 but expected 006d61824eed66d2811eb8ce48f214b02ad7f8c1\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T10:52:00Z"
  },
  "progress": {
-  "stage": "failed",
+  "stage": "claimed",
   "percent": 0,
-  "message": "{\"message\":\"is at 889779ad88629d1f8f86a308ac921080e45b1e03 but expected 006d61824eed66d2811eb8ce48f214b02ad7f8c1\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}"
+  "message": "Picked up by the Blender worker"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/junk-shaman/char.glb@factory/issue-8"
@@ -109,7 +109,13 @@
   {
    "at": "2026-10-26T10:52:00Z",
    "status": "failed"
+  },
+  {
+   "at": "2026-10-26T10:52:25Z",
+   "status": "claimed",
+   "worker": "starr-f0fad5",
+   "recovered": false
   }
  ],
- "updated_at": "2026-10-26T10:52:00Z"
+ "updated_at": "2026-10-26T10:52:25Z"
 }
