@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:03:05Z",
- "heartbeat_at": "2026-10-26T09:58:05Z",
+ "lease_until": "2026-10-26T10:03:10Z",
+ "heartbeat_at": "2026-10-26T09:58:10Z",
  "error": null,
  "progress": {
-  "stage": "inspecting",
-  "percent": 15,
-  "message": "Reading the model, skeleton and animations in Blender"
+  "stage": "designing",
+  "percent": 25,
+  "message": "Claude Code is designing the animation"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -67,5 +67,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T09:58:05Z"
+ "updated_at": "2026-10-26T09:58:10Z"
 }
