@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:25:55Z",
- "heartbeat_at": "2026-10-26T10:20:55Z",
+ "lease_until": "2026-10-26T10:26:07Z",
+ "heartbeat_at": "2026-10-26T10:21:07Z",
  "error": null,
  "progress": {
-  "stage": "designing",
-  "percent": 25,
-  "message": "Claude Code is designing the animation"
+  "stage": "animating",
+  "percent": 35,
+  "message": "Building the keyframes in Blender and rendering previews"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/shiv-rat/char.glb@factory/issue-8"
@@ -70,5 +70,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:20:55Z"
+ "updated_at": "2026-10-26T10:21:07Z"
 }
