@@ -1,0 +1,77 @@
+{
+ "id": "junk-shaman-sig-b",
+ "type": "animate",
+ "asset_id": "junk-shaman",
+ "status": "queued",
+ "priority": 5,
+ "created_at": "2026-10-26T09:02:28Z",
+ "created_by": "claude-overnight",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": true,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "Waiting for the Blender worker"
+ },
+ "source": {
+  "character": "repo:projects/oreheart-8/public/models/creatures/junk-shaman/char.glb@factory/issue-8"
+ },
+ "request": "Junk Shaman: Old, wise goblin spellcaster. Leans on his staff, mutters spells. He holds a staff in his right hand; keep held items in the same hand. These are his own signature moves: give him a distinct personality, different from other goblins. Rules from the owner for every goblin: nothing he holds ever goes through his body or the ground; feet stay planted (no sliding or sinking) unless the clip says otherwise; held items stay in the same hand; movements look weighty and cartoony, never floaty. Board games are seen from above and in front, so make poses read clearly from there.",
+ "animations": [
+  {
+   "name": "OH_Attack",
+   "description": "Bonks the target with the top of his staff: raise high, bring it down. 'hit' at contact.",
+   "frames": [
+    28,
+    40
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": false,
+   "events": [
+    {
+     "name": "hit",
+     "bone": "right hand"
+    }
+   ]
+  },
+  {
+   "name": "OH_Special",
+   "description": "Levitation spell: raises the staff high overhead with his free hand reaching out, fingers spread ('lift_start' when the arm is fully raised - the game lifts the target), holds while slowly moving the arm sideways as if carrying something heavy through the air, then lowers the staff ('lift_end' - the game sets the target down).",
+   "frames": [
+    60,
+    80
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": false,
+   "events": [
+    {
+     "name": "lift_start",
+     "bone": "right hand"
+    },
+    {
+     "name": "lift_end",
+     "bone": "right hand"
+    }
+   ]
+  }
+ ],
+ "attachments": [],
+ "output": {
+  "format": "glb"
+ },
+ "history": [
+  {
+   "at": "2026-10-26T09:02:28Z",
+   "status": "queued",
+   "by": "claude"
+  }
+ ]
+}
