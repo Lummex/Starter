@@ -1,0 +1,75 @@
+{
+ "id": "goblin-sneak-reactions-r1",
+ "type": "animate",
+ "asset_id": "goblin-sneak",
+ "status": "queued",
+ "priority": 4,
+ "created_at": "2026-10-26T09:57:47Z",
+ "created_by": "claude-overnight",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": true,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "Waiting for the Blender worker"
+ },
+ "source": {
+  "character": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/char.glb@factory/issue-8"
+ },
+ "request": "COPY JOB - do not design anything new. These shared reaction clips were already designed and approved on Snotskull Grunt. Write each script below into anims/<ClipName>.py EXACTLY as given (same text), then stop. Only if a script fails on this character (for example a bone lookup does not exist), make the smallest change that fixes it. This character is Backstabbing Thief; he holds a dagger in his right hand and a bag at his neck.\n\n===== anims/OH_Hit.py =====\ndef build(ctx):\n    ctx.length(24)\n\n    hips = ctx.bone('hips')\n    spine = []\n    b = ctx.bone('spine')\n    while b and b != hips:\n        spine.append(b)\n        b = ctx.parent(b)\n    n = len(spine)\n\n    neck = None\n    for name in ctx.bones:\n        if 'neck' in name.lower():\n            neck = name\n    head = ctx.bone('head')\n    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm'); r_hand = ctx.bone('right hand')\n    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')\n    l_thigh = ctx.bone('left thigh'); l_shin = ctx.bone('left shin'); l_foot = ctx.bone('left foot')\n\n    def body(f, back=0.0, side=0.0, twist=0.0):\n        for s in spine:\n            ctx.key(f, s, turn=[('right', back / n), ('forward', side / n), ('up', twist / n)])\n\n    def look(f, back=0.0, side=0.0, turn=0.0):\n        if neck:\n            ctx.key(f, neck, turn=[('right', back * 0.4), ('forward', side * 0.4), ('up', turn * 0.4)])\n            ctx.key(f, head, turn=[('right', back * 0.6), ('forward', side * 0.6), ('up', turn * 0.6)])\n        else:\n            ctx.key(f, head, turn=[('right', back), ('forward', side), ('up', turn)])\n\n    # Upper body: snap back on impact, overshoot, stagger, shake it off, settle.\n    body(3, back=22, side=-4, twist=6)\n    body(6, back=27, side=-5, twist=8)\n    body(9, back=14, side=-3, twist=4)\n    body(12, back=4)\n    body(17, back=-2)\n    body(20, back=-4)\n    body(22, back=-1)\n\n    # Head whips back a touch harder than the chest, then shakes it off.\n    look(3, back=24, side=-6)\n    look(6, back=30, side=-8)\n    look(9, back=12)\n    look(12, back=-6, turn=16)\n    look(14, back=-6, turn=-16)\n    look(16, back=-4, turn=11)\n    look(18, back=-3, turn=-6)\n    look(21, back=2)\n\n    # Arms fling forward/out from inertia; pan arm stays out to the side, clear of body and ground.\n    for f, ra, la, rb, lb in (\n        (3, (0.75, -0.30, 0.40), (-0.70, -0.25, 0.45), 30, -30),\n        (6, (0.78, -0.18, 0.40), (-0.72, -0.12, 0.45), 40, -40),\n        (9, (0.65, -0.45, 0.20), (-0.60, -0.50, 0.25), 25, -25),\n        (13, (0.40, -0.80, -0.30), (-0.40, -0.88, 0.05), 12, -10),\n        (18, (0.25, -0.80, -0.50), (-0.38, -0.92, -0.05), 6, -5),\n    ):\n        ctx.key(f, r_up, aim=ra)\n        ctx.key(f, r_fore, turn=[('forward', rb)])\n        ctx.key(f, l_up, aim=la)\n        ctx.key(f, l_fore, turn=[('forward', lb)])\n    ctx.key(6, r_hand, turn=[('forward', 15)])\n    ctx.key(13, r_hand, turn=[('forward', 0)])\n\n    # One stagger step: the front foot lifts and stomps back down in the same spot.\n    ctx.key(5, l_thigh, turn=[('right', 0)])\n    ctx.key(5, l_shin, turn=[('right', 0)])\n    ctx.key(5, l_foot, turn=[('right', 0)])\n    ctx.key(8, l_thigh, turn=[('right', 22)])\n    ctx.key(8, l_shin, turn=[('right', -40)])\n    ctx.key(8, l_foot, turn=[('right', 15)])\n    ctx.key(11, l_thigh, turn=[('right', 0)], interp='LINEAR')\n    ctx.key(11, l_shin, turn=[('right', 0)], interp='LINEAR')\n    ctx.key(11, l_foot, turn=[('right', 0)], interp='LINEAR')\n\n    ctx.note('Hips are never moved, so the planted foot cannot slide; stagger is a lift-and-stomp of the front foot in place.')\n\n===== anims/OH_React_Knockback.py =====\nimport math\n\n\ndef build(ctx):\n    ctx.length(36)\n\n    hips = ctx.bone('hips')\n    spine = []\n    b = ctx.bone('spine')\n    while b and b != hips:\n        spine.append(b)\n        b = ctx.parent(b)\n    n = len(spine)\n\n    neck = None\n    for name in ctx.bones:\n        if 'neck' in name.lower():\n            neck = name\n    head = ctx.bone('head')\n    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm'); r_hand = ctx.bone('right hand')\n    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')\n\n    def body(f, back=0.0, side=0.0):\n        for s in spine:\n            ctx.key(f, s, turn=[('right', back / n), ('forward', side / n)])\n\n    def look(f, back=0.0, side=0.0):\n        if neck:\n            ctx.key(f, neck, turn=[('right', back * 0.4), ('forward', side * 0.4)])\n            ctx.key(f, head, turn=[('right', back * 0.6), ('forward', side * 0.6)])\n        else:\n            ctx.key(f, head, turn=[('right', back), ('forward', side)])\n\n    def norm(v):\n        l = math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])\n        return (v[0] / l, v[1] / l, v[2] / l)\n\n    # Upper body thrown back hard, held through the skid, lurches forward to catch balance, settles.\n    body(3, back=30)\n    body(6, back=36, side=3)\n    body(10, back=33, side=-3)\n    body(14, back=26, side=3)\n    body(18, back=12, side=-2)\n    body(21, back=-10)\n    body(25, back=4)\n    body(29, back=-2)\n\n    # Head lags on impact (whiplash), then flops back, then follows the recovery.\n    look(3, back=-12)\n    look(6, back=18)\n    look(10, back=14, side=-5)\n    look(14, back=10, side=5)\n    look(18, back=0)\n    look(21, back=-8)\n    look(25, back=5)\n    look(29, back=-2)\n\n    # Arms fly straight up on the shove.\n    ctx.key(3, r_up, aim=(0.55, 0.82, 0.15))\n    ctx.key(3, l_up, aim=(-0.55, 0.82, 0.15))\n    ctx.key(3, r_fore, turn=[('forward', 10)])\n    ctx.key(3, l_fore, turn=[('forward', -10)])\n    ctx.key(3, r_hand, turn=[('forward', 0)])\n\n    # Windmill: big forward circles out at the sides, arms out of phase.\n    # The circle is kept in the upper arc and out to the side so the pan never swings into the legs or the floor.\n    frames = [6, 8, 10, 12, 14, 16, 18]\n    for i, f in enumerate(frames):\n        a = math.radians(90 + i * 100)\n        amp = 1.0 - i * 0.08\n        rv = norm((0.65, 0.35 + 0.6 * math.sin(a) * amp, 0.7 * math.cos(a) * amp))\n        a2 = a + math.pi\n        lv = norm((-0.65, 0.35 + 0.6 * math.sin(a2) * amp, 0.7 * math.cos(a2) * amp))\n        ctx.key(f, r_up, aim=rv)\n        ctx.key(f, l_up, aim=lv)\n        ctx.key(f, r_fore, turn=[('forward', 15 + 10 * (i % 2))])\n        ctx.key(f, l_fore, turn=[('forward', -(15 + 10 * ((i + 1) % 2)))])\n\n    # Catch balance: arms thrown out wide for the lurch, then drop back down.\n    ctx.key(21, r_up, aim=(0.85, 0.05, 0.35))\n    ctx.key(21, l_up, aim=(-0.85, 0.05, 0.35))\n    ctx.key(21, r_fore, turn=[('forward', 20)])\n    ctx.key(21, l_fore, turn=[('forward', -20)])\n    ctx.key(25, r_up, aim=(0.45, -0.70, -0.25))\n    ctx.key(25, l_up, aim=(-0.50, -0.85, 0.05))\n    ctx.key(25, r_fore, turn=[('forward', 8)])\n    ctx.key(25, l_fore, turn=[('forward', -8)])\n    ctx.key(29, r_up, aim=(0.25, -0.80, -0.50))\n    ctx.key(29, l_up, aim=(-0.38, -0.92, -0.08))\n    ctx.key(21, r_hand, turn=[('forward', 10)])\n    ctx.key(29, r_hand, turn=[('forward', 0)])\n\n    ctx.note('No root/hip travel or rotation: the game slides him back; feet stay locked while only the upper body reacts.')\n\n===== anims/OH_React_Bonk.py =====\nimport math\n\n\ndef build(ctx):\n    ctx.length(36)\n\n    hips = ctx.bone('hips')\n    spine = []\n    b = ctx.bone('spine')\n    while b and b != hips:\n        spine.append(b)\n        b = ctx.parent(b)\n    n = len(spine)\n\n    neck = None\n    for name in ctx.bones:\n        if 'neck' in name.lower():\n            neck = name\n    head = ctx.bone('head')\n    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm'); r_hand = ctx.bone('right hand')\n    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')\n\n    def body(f, back=0.0, side=0.0):\n        for s in spine:\n            ctx.key(f, s, turn=[('right', back / n), ('forward', side / n)])\n\n    def look(f, back=0.0, side=0.0, turn=0.0):\n        if neck:\n            ctx.key(f, neck, turn=[('right', back * 0.4), ('forward', side * 0.4), ('up', turn * 0.4)])\n            ctx.key(f, head, turn=[('right', back * 0.6), ('forward', side * 0.6), ('up', turn * 0.6)])\n        else:\n            ctx.key(f, head, turn=[('right', back), ('forward', side), ('up', turn)])\n\n    def arms(f, rd, ld, rb, lb):\n        ctx.key(f, r_up, aim=rd)\n        ctx.key(f, l_up, aim=ld)\n        ctx.key(f, r_fore, turn=[('forward', rb)])\n        ctx.key(f, l_fore, turn=[('forward', lb)])\n\n    # Impact: head driven straight down, chest crunches, arms jolt stiff out to the sides.\n    body(2, back=-8)\n    look(2, back=-28)\n    body(4, back=-12)\n    look(4, back=-34)\n    arms(2, (0.70, -0.62, 0.05), (-0.72, -0.62, 0.15), 5, -5)\n    arms(5, (0.78, -0.52, 0.10), (-0.80, -0.50, 0.20), 3, -3)\n    ctx.key(2, r_hand, turn=[('forward', 0)])\n\n    # Dizzy wobble: upper body and head trace two circles; the head lags behind the chest.\n    for i, f in enumerate(range(8, 24, 2)):\n        a = math.radians(i * 90)\n        amp = 1.0 - i * 0.07\n        body(f, back=-6 + 9 * math.cos(a) * amp, side=10 * math.sin(a) * amp)\n        look(f, back=-8 + 12 * math.cos(a - 1.2) * amp, side=16 * math.sin(a - 1.2) * amp)\n        sw = math.sin(a - 0.8) * amp\n        arms(f, (0.55 + 0.08 * sw, -0.80, -0.20), (-0.55 + 0.08 * sw, -0.82, 0.05), 10, -10)\n\n    # Shake it off: quick head shakes, then settle back to idle.\n    look(25, back=-4, turn=22)\n    look(27, back=-3, turn=-22)\n    look(29, back=-2, turn=12)\n    look(31, back=0, turn=-4)\n    body(26, back=-3)\n    body(30, back=1)\n    arms(27, (0.40, -0.80, -0.40), (-0.42, -0.90, 0.00), 6, -6)\n    arms(31, (0.25, -0.78, -0.55), (-0.38, -0.92, -0.08), 3, -3)\n    ctx.key(31, r_hand, turn=[('forward', 0)])\n\n    ctx.note('This rig has no eye bones, so the crossed-eyes read comes from the circling head wobble only.')\n\n",
+ "animations": [
+  {
+   "name": "OH_Hit",
+   "description": "Takes a normal hit: head and chest snap back, one stagger step, shakes it off and returns to idle.",
+   "frames": [
+    20,
+    30
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": true,
+   "events": []
+  },
+  {
+   "name": "OH_React_Knockback",
+   "description": "Shoved hard: arms fly up, upper body thrown backwards, skids (the game slides him back 1-2 spaces - he must not travel himself), windmills his arms and catches his balance.",
+   "frames": [
+    30,
+    42
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": true,
+   "events": []
+  },
+  {
+   "name": "OH_React_Bonk",
+   "description": "Bonked on the head by a thrown skull: head snaps down, eyes-crossed dizzy wobble in a circle, shakes head and recovers.",
+   "frames": [
+    30,
+    42
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": true,
+   "events": []
+  }
+ ],
+ "attachments": [],
+ "output": {
+  "format": "glb"
+ },
+ "history": [
+  {
+   "at": "2026-10-26T09:57:47Z",
+   "status": "queued",
+   "by": "claude"
+  }
+ ]
+}
