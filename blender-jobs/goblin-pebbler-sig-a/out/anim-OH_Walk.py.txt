@@ -1,0 +1,52 @@
+def build(ctx):
+    L = 28
+    ctx.length(L)
+    hips = ctx.bone('hips'); sp = 'Spine01'; head = ctx.bone('head')
+    rua = ctx.bone('right upperarm'); rfa = ctx.bone('right forearm'); rh = ctx.bone('right hand')
+    lua = ctx.bone('left upperarm'); lfa = ctx.bone('left forearm')
+    lth = ctx.bone('left thigh'); lsh = ctx.bone('left shin'); lft = ctx.bone('left foot')
+    rth = ctx.bone('right thigh'); rsh = ctx.bone('right shin'); rft = ctx.bone('right foot')
+
+    def lift(f, th, sh, ft, amt, interp='BEZIER'):
+        ctx.key(f, th, turn=[('right', 38 * amt)], interp=interp)
+        ctx.key(f, sh, turn=[('right', -62 * amt)], interp=interp)
+        ctx.key(f, ft, turn=[('right', 20 * amt)], interp=interp)
+
+    def plant(f, th, sh, ft, bend=0.0):
+        ctx.key(f, th, turn=[('right', 6 * bend)], interp='LINEAR')
+        ctx.key(f, sh, turn=[('right', -12 * bend)], interp='LINEAR')
+        ctx.key(f, ft, turn=[('right', 6 * bend)], interp='LINEAR')
+
+    # club drags low behind: arm back, tip kept up off the floor, bounces on each stomp
+    def club(f, bounce):
+        ctx.key(f, rua, aim=(0.25, -0.7, -0.67))
+        ctx.key(f, rfa, aim=(0.35, -0.72, -0.6))
+        ctx.key(f, rh, turn=[('right', -22 - 10 * bounce)])
+
+    # half cycle: step side s (+1 = left foot up), base frame b
+    for b, s in ((0, 1), (14, -1)):
+        up_th, up_sh, up_ft = (lth, lsh, lft) if s > 0 else (rth, rsh, rft)
+        st_th, st_sh, st_ft = (rth, rsh, rft) if s > 0 else (lth, lsh, lft)
+        # 3: push-off squash, 7: knee high (swagger, hips over standing leg), 10: STOMP, 12: recover
+        ctx.key(b + 3, hips, move=(0, -0.012, 0))
+        lift(b + 3, up_th, up_sh, up_ft, 0.3); plant(b + 3, st_th, st_sh, st_ft, 0.6)
+        ctx.key(b + 7, hips, move=(-0.01 * s, 0.0, 0))
+        lift(b + 7, up_th, up_sh, up_ft, 1.0); plant(b + 7, st_th, st_sh, st_ft, 0.0)
+        ctx.key(b + 7, sp, turn=[('right', -10), ('up', -12 * s), ('forward', 7 * s)])
+        ctx.key(b + 7, head, turn=[('up', 8 * s), ('forward', -5 * s)])
+        ctx.key(b + 7, lua, turn=[('right', 25 * s), ('forward', -8)])
+        ctx.key(b + 7, lfa, turn=[('right', 20)])
+        club(b + 7, 0)
+        ctx.key(b + 10, hips, move=(-0.008 * s, -0.025, 0), interp='LINEAR')
+        lift(b + 10, up_th, up_sh, up_ft, 0.0, 'LINEAR'); plant(b + 10, st_th, st_sh, st_ft, 1.0)
+        ctx.key(b + 10, sp, turn=[('right', -16), ('up', -6 * s), ('forward', 3 * s)])
+        ctx.key(b + 10, head, turn=[('right', -8), ('up', 4 * s)])
+        club(b + 10, 1)
+        ctx.key(b + 12, hips, move=(-0.004 * s, -0.016, 0))
+        plant(b + 12, up_th, up_sh, up_ft, 0.7); plant(b + 12, st_th, st_sh, st_ft, 0.7)
+        club(b + 12, 0.4)
+    # frame 0/28 are base pose; club keys keep the drag pose at mid-cycle passing
+    club(14, 0.2)
+    ctx.key(14, hips, move=(0, -0.006, 0))
+    ctx.key(14, sp, turn=[('right', -8)])
+    ctx.note('Walk 28f in place: L knee up 7, stomp 10; R knee up 21, stomp 24; club held low behind, tip rolled up off floor and bouncing on stomps.')
