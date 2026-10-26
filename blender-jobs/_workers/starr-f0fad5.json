@@ -1,7 +1,6 @@
 {
  "worker_id": "starr-f0fad5",
- "state": "busy",
- "at": "2026-10-26T10:19:13Z",
- "host": "Starr",
- "job": "shiv-rat-sig-a"
+ "state": "idle",
+ "at": "2026-10-26T10:20:37Z",
+ "host": "Starr"
 }
