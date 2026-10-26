@@ -2,7 +2,7 @@
  "id": "goblin-bomber-reactions-r1",
  "type": "animate",
  "asset_id": "goblin-bomber",
- "status": "validating",
+ "status": "queued",
  "priority": 4,
  "created_at": "2026-10-26T09:57:47Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:27:38Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T11:22:38Z",
  "error": {
-  "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r1/out/char.glb does not match 59c14d43cee825697f67a73a220909bc2c5d0279\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
-  "at": "2026-10-26T11:20:42Z"
+  "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r1/out/final-OH_React_Knockback-000.png does not match eb9e5cc508c01b6673cc34c276373363807f3659\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
+  "at": "2026-10-26T11:23:24Z"
  },
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "failed",
+  "percent": 0,
+  "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r1/out/final-OH_React_Knockback-000.png does not match eb9e5cc508c01b6673cc34c276373363807f3659\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -447,7 +447,11 @@
   {
    "at": "2026-10-26T11:22:28Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T11:23:24Z",
+   "status": "failed"
   }
  ],
- "updated_at": "2026-10-26T11:22:38Z"
+ "updated_at": "2026-10-26T11:23:24Z"
 }
