@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:10:07Z",
- "heartbeat_at": "2026-10-26T10:05:07Z",
+ "lease_until": "2026-10-26T10:10:11Z",
+ "heartbeat_at": "2026-10-26T10:05:11Z",
  "error": {
   "message": "{\"message\":\"is at 9bf240a849422420fe06b68e2bf7ebd6bd758124 but expected 4febda41e906aadbc0114bec508185dde92ee632\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T10:04:38Z"
  },
  "progress": {
-  "stage": "inspecting",
-  "percent": 15,
-  "message": "Reading the model, skeleton and animations in Blender"
+  "stage": "designing",
+  "percent": 25,
+  "message": "Claude Code is designing the animation"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -106,5 +106,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:05:07Z"
+ "updated_at": "2026-10-26T10:05:11Z"
 }
