@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:35:58Z",
- "heartbeat_at": "2026-10-26T10:30:58Z",
+ "lease_until": "2026-10-26T10:36:07Z",
+ "heartbeat_at": "2026-10-26T10:31:07Z",
  "error": null,
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -86,5 +86,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T10:30:58Z"
+ "updated_at": "2026-10-26T10:31:07Z"
 }
