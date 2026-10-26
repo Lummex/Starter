@@ -1,0 +1,37 @@
+{
+ "id": "goblin-slinger-inspect-001",
+ "type": "inspect",
+ "asset_id": "goblin-slinger",
+ "status": "queued",
+ "priority": 5,
+ "created_at": "2026-10-26T00:12:13Z",
+ "created_by": "claude",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": false,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "Waiting for the Blender worker"
+ },
+ "source": {
+  "character": "local:~/Downloads/r23/models/goblin-slinger/char.glb"
+ },
+ "request": "First test: inspect the Goblin Slinger (mesh, skin, skeleton, clips, size, facing) and render the base pose.",
+ "animations": [],
+ "output": {
+  "format": "json"
+ },
+ "history": [
+  {
+   "at": "2026-10-26T00:12:13Z",
+   "status": "queued",
+   "by": "claude"
+  }
+ ]
+}
