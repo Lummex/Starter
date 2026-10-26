@@ -3,15 +3,15 @@
  "fps": 30,
  "clips": {
   "OH_Idle": {
-   "frames": 84,
-   "duration": 2.8,
+   "frames": 72,
+   "duration": 2.4,
    "loop": true,
    "events": [],
    "attachments": []
   },
   "OH_Walk": {
-   "frames": 30,
-   "duration": 1.0,
+   "frames": 32,
+   "duration": 1.0667,
    "loop": true,
    "events": [],
    "attachments": []
