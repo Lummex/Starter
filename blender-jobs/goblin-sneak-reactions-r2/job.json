@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:47:50Z",
- "heartbeat_at": "2026-10-26T11:42:50Z",
+ "lease_until": "2026-10-26T11:47:56Z",
+ "heartbeat_at": "2026-10-26T11:42:56Z",
  "error": {
   "message": "{\"message\":\"is at 2a9095c02c228b5e38b1268ef2bebcb8648f0699 but expected aa3f772e9950cfa20d32fcef61704adcbce00680\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:37:37Z"
  },
  "progress": {
-  "stage": "designing",
-  "percent": 25,
-  "message": "Claude Code is designing the animation"
+  "stage": "animating",
+  "percent": 35,
+  "message": "Building the keyframes in Blender and rendering previews"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/char.glb@factory/issue-8"
@@ -207,5 +207,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T11:42:50Z"
+ "updated_at": "2026-10-26T11:42:56Z"
 }
