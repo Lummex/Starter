@@ -14,15 +14,15 @@
    ],
    "OH_React_Bonk": [
     0.0,
-    40.0
+    36.0
    ],
    "OH_React_Knockback": [
     0.0,
-    40.0
+    36.0
    ],
    "OH_Hit": [
     0.0,
-    26.0
+    24.0
    ],
    "Dead": [
     0.0,
@@ -48,16 +48,16 @@
   "problems": [],
   "clips": {
    "OH_Hit": {
-    "keys": 27,
-    "seconds": 0.8667
+    "keys": 25,
+    "seconds": 0.8
    },
    "OH_React_Knockback": {
-    "keys": 41,
-    "seconds": 1.3333
+    "keys": 37,
+    "seconds": 1.2
    },
    "OH_React_Bonk": {
-    "keys": 41,
-    "seconds": 1.3333
+    "keys": 37,
+    "seconds": 1.2
    }
   },
   "calibration": {
@@ -72,6 +72,6 @@
    "worst_position_error_pct_of_height": 0.0008,
    "worst_rotation_error_deg": 0.0
   },
-  "written_clip_error_pct_of_height": 1e-05
+  "written_clip_error_pct_of_height": 9e-05
  }
 }
