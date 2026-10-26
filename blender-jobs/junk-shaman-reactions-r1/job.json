@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:55:08Z",
- "heartbeat_at": "2026-10-26T10:50:08Z",
+ "lease_until": "2026-10-26T10:55:11Z",
+ "heartbeat_at": "2026-10-26T10:50:11Z",
  "error": {
   "message": "{\"message\":\"is at 4bc295c6d5bfa9c1ae9cc464e063f30c599210fa but expected 55403b0a64cd8438bccfb0364ff6aec24bfe0793\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T10:49:35Z"
  },
  "progress": {
-  "stage": "inspecting",
-  "percent": 15,
-  "message": "Reading the model, skeleton and animations in Blender"
+  "stage": "designing",
+  "percent": 25,
+  "message": "Claude Code is designing the animation"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/junk-shaman/char.glb@factory/issue-8"
@@ -103,5 +103,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:50:08Z"
+ "updated_at": "2026-10-26T10:50:11Z"
 }
