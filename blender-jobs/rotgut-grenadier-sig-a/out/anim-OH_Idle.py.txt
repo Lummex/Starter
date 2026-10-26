@@ -1,0 +1,114 @@
+def build(ctx):
+    ctx.length(72)
+    hips = ctx.bone('hips')
+    sp2 = 'Spine02'
+    spine = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    rua = ctx.bone('right upperarm'); rfa = ctx.bone('right forearm'); rh = ctx.bone('right hand')
+    lua = ctx.bone('left upperarm'); lfa = ctx.bone('left forearm'); lh = ctx.bone('left hand')
+    legs = [(ctx.bone('left thigh'), ctx.bone('left shin'), ctx.bone('left foot')),
+            (ctx.bone('right thigh'), ctx.bone('right shin'), ctx.bone('right foot'))]
+
+    def crouch(f, d):
+        # hips drop d metres; knees bend so feet stay flat on the ground
+        a = d / 0.01 * 14.0
+        ctx.key(f, hips, move=(0, -d, 0))
+        for th, sh, ft in legs:
+            ctx.key(f, th, turn=[('right', a)])
+            ctx.key(f, sh, turn=[('right', -2 * a)])
+            ctx.key(f, ft, turn=[('right', a)])
+
+    def rarm(f, aim, fore, hand=0):
+        ctx.key(f, rua, aim=aim)
+        ctx.key(f, rfa, turn=[('right', fore)])
+        ctx.key(f, rh, turn=[('right', hand)])
+
+    # 8: ready - spatula held out front like over a pan, peering at it
+    crouch(8, 0.004)
+    rarm(8, (0.5, -0.55, 0.67), 55)
+    ctx.key(8, spine, turn=[('right', -6), ('up', -6)])
+    ctx.key(8, head, turn=[('right', -10), ('up', -10)])
+
+    # 13: anticipation dip, wrist cocked down
+    crouch(13, 0.012)
+    rarm(13, (0.5, -0.75, 0.45), 40, 25)
+    ctx.key(13, spine, turn=[('right', -10), ('up', -8)])
+    ctx.key(13, head, turn=[('right', -14), ('up', -10)])
+    ctx.key(13, lua, aim=(-0.45, -0.85, 0.2))
+
+    # 16: FLIP - snap up, wrist flicks
+    crouch(16, 0.0)
+    rarm(16, (0.45, -0.1, 0.89), 85, -40)
+    ctx.key(16, spine, turn=[('right', 4), ('up', -4)])
+    ctx.key(16, head, turn=[('right', 5), ('up', -6)])
+    # 18: overshoot
+    rarm(18, (0.45, -0.05, 0.89), 95, -50)
+
+    # 22-24: watches it fly up, arm drops back to catch position
+    ctx.key(22, head, turn=[('right', 25), ('up', -4)])
+    ctx.key(22, neck, turn=[('right', 6)])
+    ctx.key(24, spine, turn=[('right', 10), ('up', -2)])
+    ctx.key(22, lua, aim=(-0.75, -0.5, 0.3))
+    ctx.key(22, lfa, turn=[('right', 30)])
+    rarm(25, (0.5, -0.5, 0.71), 60, 0)
+    ctx.key(28, head, turn=[('right', -2), ('up', -8)])
+    ctx.key(28, neck, turn=[('right', 0)])
+
+    # 31: CATCH impact - weight drops
+    crouch(28, 0.002)
+    crouch(31, 0.012)
+    rarm(31, (0.5, -0.68, 0.53), 48, 22)
+    ctx.key(31, spine, turn=[('right', -9), ('up', -6)])
+    ctx.key(31, head, turn=[('right', -16), ('up', -10)])
+    # 34: settle
+    crouch(34, 0.004)
+    rarm(34, (0.5, -0.55, 0.67), 58, -4)
+    ctx.key(34, lua, aim=(-0.5, -0.8, 0.25))
+    ctx.key(34, lfa, turn=[('right', 15)])
+
+    # 38: lift it up beside the face, lean in to sniff
+    rarm(38, (0.68, -0.2, 0.7), 72, 0)
+    ctx.key(38, spine, turn=[('right', -10), ('up', -12)])
+    ctx.key(38, head, turn=[('right', -14), ('up', -24)])
+    # sniff, sniff, SNIFF
+    for f, h in ((40, -12), (42, -22), (44, -14), (46, -27)):
+        ctx.key(f, head, turn=[('right', h), ('up', -26)])
+    ctx.key(46, spine, turn=[('right', -6), ('up', -12)])
+    crouch(46, 0.002)
+
+    # 50: disgusted recoil - head jerks away, arm holds it out at length
+    crouch(50, 0.0)
+    ctx.key(50, head, turn=[('right', 22), ('up', 26), ('forward', -10)], interp='BEZIER')
+    ctx.key(52, head, turn=[('right', 26), ('up', 30), ('forward', -12)])
+    ctx.key(55, head, turn=[('right', 20), ('up', 24), ('forward', -8)])
+    ctx.key(50, spine, turn=[('right', 12), ('up', 10)])
+    ctx.key(50, neck, turn=[('right', 6)])
+    rarm(50, (0.85, -0.3, 0.43), 30, 10)
+    rarm(55, (0.85, -0.32, 0.41), 32, 6)
+    ctx.key(50, lua, aim=(-0.45, -0.2, 0.87))
+    ctx.key(50, lfa, turn=[('right', 60)])
+    ctx.key(52, lh, turn=[('forward', 25)])
+    ctx.key(54, lh, turn=[('forward', -25)])
+    ctx.key(56, lh, turn=[('forward', 0)])
+
+    # 59: ...but PROUD of it - chest out, chin up, spatula raised, fist on hip
+    ctx.key(59, head, turn=[('right', 16), ('up', -6)])
+    ctx.key(59, neck, turn=[('right', 4)])
+    ctx.key(59, spine, turn=[('right', 10), ('up', -6)])
+    crouch(59, 0.0)
+    rarm(59, (0.6, 0.62, 0.35), 30, -15)
+    # left fist on hip: elbow out to the side, forearm folds back inward to the belt
+    ctx.key(59, lua, aim=(-0.8, -0.5, -0.15))
+    ctx.key(59, lfa, turn=[('forward', 80)])
+    ctx.key(59, lh, turn=[('forward', 10)])
+    # confident nod
+    ctx.key(61, head, turn=[('right', 4), ('up', -6)])
+    ctx.key(63, head, turn=[('right', 18), ('up', -6)])
+    rarm(63, (0.6, 0.66, 0.32), 26, -20)
+    ctx.key(64, spine, turn=[('right', 11), ('up', -6)])
+    ctx.key(64, lua, aim=(-0.8, -0.5, -0.15))
+    ctx.key(64, lfa, turn=[('forward', 80)])
+    crouch(64, 0.0)
+    # 72: back to base (auto)
+    ctx.note('Idle: ready 8, dip 13, flip 16-18, watch 22, catch 31, sniffs 40-46, recoil 50-55, proud 59-64.')
