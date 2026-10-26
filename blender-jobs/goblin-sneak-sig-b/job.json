@@ -1,0 +1,56 @@
+{
+ "id": "goblin-sneak-sig-b",
+ "type": "animate",
+ "asset_id": "goblin-sneak",
+ "status": "queued",
+ "priority": 5,
+ "created_at": "2026-10-26T09:02:28Z",
+ "created_by": "claude-overnight",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": true,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "Waiting for the Blender worker"
+ },
+ "source": {
+  "character": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/char.glb@factory/issue-8"
+ },
+ "request": "Backstabbing Thief: Sneaky and sinister, hides in shadows before he strikes. Never fights fair. He holds a dagger in his right hand and a bag at his neck; keep held items in the same hand. These are his own signature moves: give him a distinct personality, different from other goblins. Rules from the owner for every goblin: nothing he holds ever goes through his body or the ground; feet stay planted (no sliding or sinking) unless the clip says otherwise; held items stay in the same hand; movements look weighty and cartoony, never floaty. Board games are seen from above and in front, so make poses read clearly from there.",
+ "animations": [
+  {
+   "name": "OH_Attack",
+   "description": "Backstab: quick sidestep as if slipping behind the target, then a clean double stab forward and down (two stabs, 'hit' at the second), then hops back into his crouch.",
+   "frames": [
+    30,
+    42
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": true,
+   "events": [
+    {
+     "name": "hit",
+     "bone": "right hand"
+    }
+   ]
+  }
+ ],
+ "attachments": [],
+ "output": {
+  "format": "glb"
+ },
+ "history": [
+  {
+   "at": "2026-10-26T09:02:28Z",
+   "status": "queued",
+   "by": "claude"
+  }
+ ]
+}
