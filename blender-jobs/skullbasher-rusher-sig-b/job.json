@@ -2,7 +2,7 @@
  "id": "skullbasher-rusher-sig-b",
  "type": "animate",
  "asset_id": "skullbasher-rusher",
- "status": "validating",
+ "status": "queued",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:33:11Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T10:28:11Z",
- "error": null,
+ "error": {
+  "message": "{\"message\":\"is at 5824d1eed39270d06a501ce6e818d1b664176a41 but expected 0ff262b4795069f554e948d1999fa804944c47bb\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
+  "at": "2026-10-26T10:28:57Z"
+ },
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "failed",
+  "percent": 0,
+  "message": "{\"message\":\"is at 5824d1eed39270d06a501ce6e818d1b664176a41 but expected 0ff262b4795069f554e948d1999fa804944c47bb\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/skullbasher-rusher/char.glb@factory/issue-8"
@@ -65,7 +68,11 @@
   {
    "at": "2026-10-26T10:28:04Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T10:28:57Z",
+   "status": "failed"
   }
  ],
- "updated_at": "2026-10-26T10:28:11Z"
+ "updated_at": "2026-10-26T10:28:57Z"
 }
