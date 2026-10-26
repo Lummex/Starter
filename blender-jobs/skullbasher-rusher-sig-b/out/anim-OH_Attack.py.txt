@@ -1,0 +1,101 @@
+import math
+
+
+def build(ctx):
+    ctx.length(40)
+
+    hips = ctx.bone('hips')
+    sp2 = 'Spine02'
+    sp1 = 'Spine01'
+    sp = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    lsh = ctx.bone('left shoulder')
+    lup = ctx.bone('left upperarm')
+    lfo = ctx.bone('left forearm')
+    lha = ctx.bone('left hand')
+    rsh = ctx.bone('right shoulder')
+    rup = ctx.bone('right upperarm')
+    rfo = ctx.bone('right forearm')
+    rha = ctx.bone('right hand')
+    lth = ctx.bone('left thigh')
+    lsn = ctx.bone('left shin')
+    lft = ctx.bone('left foot')
+    rth = ctx.bone('right thigh')
+    rsn = ctx.bone('right shin')
+    rft = ctx.bone('right foot')
+
+    def body(f, mv, bend, twist, lean=0, head_nod=0, interp='BEZIER'):
+        # hips weight shift; spine bend split across three spine bones
+        ctx.key(f, hips, move=mv, interp=interp)
+        for b in (sp2, sp1, sp):
+            ctx.key(f, b, turn=[('right', bend / 3.0), ('up', twist / 3.0), ('forward', lean / 3.0)], interp=interp)
+        ctx.key(f, neck, turn=[('right', -bend * 0.25), ('up', -twist * 0.3)], interp=interp)
+        ctx.key(f, head, turn=[('right', head_nod), ('up', -twist * 0.2)], interp=interp)
+        # legs: counter the hip shift so feet stay planted (thigh back, shin bend, foot flat)
+        fwd = mv[2]
+        down = -mv[1]
+        a = math.degrees(math.atan2(fwd, 0.33))
+        knee = down * 400.0
+        for th, sn, ft in ((lth, lsn, lft), (rth, rsn, rft)):
+            ctx.key(f, th, turn=[('right', -a + knee * 0.5)], interp=interp)
+            ctx.key(f, sn, turn=[('right', -knee)], interp=interp)
+            ctx.key(f, ft, turn=[('right', a + knee * 0.5)], interp=interp)
+
+    def shield(f, up_aim, fo_aim, hand_turn=0, interp='BEZIER'):
+        ctx.key(f, lup, aim=up_aim, interp=interp)
+        ctx.key(f, lfo, aim=fo_aim, interp=interp)
+        ctx.key(f, lha, turn=[('right', hand_turn)], interp=interp)
+
+    def mace(f, up_aim, fo_aim, hand_turn=0, sh=0, interp='BEZIER'):
+        ctx.key(f, rsh, turn=[('forward', sh)], interp=interp)
+        ctx.key(f, rup, aim=up_aim, interp=interp)
+        ctx.key(f, rfo, aim=fo_aim, interp=interp)
+        ctx.key(f, rha, turn=[('right', hand_turn)], interp=interp)
+
+    # --- 5: coil. Sinks back, shield tucked to chest, mace dragged low behind. Head tucked like a bull.
+    body(5, (0.0, -0.02, -0.025), bend=-10, twist=-18, head_nod=-8)
+    shield(5, (-0.55, -0.55, 0.6), (-0.1, 0.35, 0.93))
+    mace(5, (0.35, -0.75, -0.55), (0.25, -0.6, -0.75), hand_turn=-10)
+    ctx.key(5, lsh, turn=[('up', 10)])
+
+    # --- 10: SHIELD BASH impact. Lunges forward, left shoulder leads, shield shoved out.
+    body(10, (0.0, -0.015, 0.045), bend=-28, twist=-25, head_nod=-12, interp='LINEAR')
+    shield(10, (-0.25, 0.05, 0.97), (-0.05, 0.45, 0.9), hand_turn=10, interp='LINEAR')
+    mace(10, (0.5, -0.6, -0.6), (0.4, -0.4, -0.8), hand_turn=-15)
+    ctx.key(10, lsh, turn=[('up', -12)], interp='LINEAR')
+    # 12: overshoot and hold the bash
+    body(12, (0.0, -0.02, 0.05), bend=-32, twist=-27, head_nod=-14)
+    shield(12, (-0.22, 0.08, 0.97), (-0.05, 0.5, 0.86), hand_turn=12)
+    ctx.key(12, lsh, turn=[('up', -14)])
+
+    # --- 16: mace wind-up. Rears up and back, mace cocked high over right shoulder, shield pulled aside.
+    body(16, (0.0, 0.005, 0.02), bend=8, twist=-22, lean=-6, head_nod=4)
+    shield(16, (-0.75, -0.3, 0.55), (-0.2, 0.2, 0.95))
+    mace(16, (0.45, 0.85, -0.3), (0.15, 0.6, -0.8), hand_turn=-25, sh=12)
+    ctx.key(16, lsh, turn=[('up', 6)])
+    # 18: hang at the top of the wind-up
+    mace(18, (0.4, 0.9, -0.2), (0.1, 0.75, -0.65), hand_turn=-30, sh=14)
+    body(18, (0.0, 0.008, 0.015), bend=10, twist=-24, lean=-7, head_nod=5)
+
+    # --- 21: MACE IMPACT ('hit'). Whips down in front, chest twists through, big forward crunch.
+    body(21, (0.0, -0.03, 0.05), bend=-30, twist=22, lean=4, head_nod=-6, interp='LINEAR')
+    shield(21, (-0.8, -0.45, 0.4), (-0.35, 0.1, 0.93), interp='LINEAR')
+    mace(21, (0.15, -0.05, 1.0), (0.05, -0.2, 1.0), hand_turn=20, sh=-6, interp='LINEAR')
+    ctx.key(21, lsh, turn=[('up', 12)], interp='LINEAR')
+    ctx.event(21, 'hit', bone=rha)
+    # 23: overshoot, then hold the impact pose
+    body(23, (0.0, -0.035, 0.052), bend=-34, twist=26, lean=5, head_nod=-8)
+    mace(23, (0.12, -0.12, 1.0), (0.05, -0.3, 0.95), hand_turn=24, sh=-8)
+    body(26, (0.0, -0.032, 0.05), bend=-32, twist=24, lean=4, head_nod=-4)
+    mace(26, (0.14, -0.08, 1.0), (0.06, -0.25, 0.97), hand_turn=22, sh=-7)
+    shield(26, (-0.8, -0.45, 0.4), (-0.35, 0.1, 0.93))
+
+    # --- 32: recover, a cocky straighten with shield back up; then settle to idle at 40.
+    body(32, (0.0, -0.005, 0.01), bend=-6, twist=4, head_nod=6)
+    shield(32, (-0.5, -0.7, 0.35), (-0.1, -0.2, 0.97))
+    mace(32, (0.3, -0.85, -0.3), (0.35, -0.9, 0.1))
+    ctx.key(32, lsh, turn=[('up', 3)])
+    ctx.key(32, rsh, turn=[('forward', 0)])
+
+    ctx.note('Coil 5, shield bash impact 10 (hold 12), mace wind-up 16-18, mace impact/hit 21 (overshoot 23, hold 26), recover 32, idle 40.')
