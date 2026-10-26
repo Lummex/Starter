@@ -1,0 +1,93 @@
+import math
+
+
+def build(ctx):
+    ctx.length(36)
+
+    hips = ctx.bone('hips')
+    spine = []
+    b = ctx.bone('spine')
+    while b and b != hips:
+        spine.append(b)
+        b = ctx.parent(b)
+    n = len(spine)
+
+    neck = None
+    for name in ctx.bones:
+        if 'neck' in name.lower():
+            neck = name
+    head = ctx.bone('head')
+    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm'); r_hand = ctx.bone('right hand')
+    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')
+
+    def body(f, back=0.0, side=0.0):
+        for s in spine:
+            ctx.key(f, s, turn=[('right', back / n), ('forward', side / n)])
+
+    def look(f, back=0.0, side=0.0):
+        if neck:
+            ctx.key(f, neck, turn=[('right', back * 0.4), ('forward', side * 0.4)])
+            ctx.key(f, head, turn=[('right', back * 0.6), ('forward', side * 0.6)])
+        else:
+            ctx.key(f, head, turn=[('right', back), ('forward', side)])
+
+    def norm(v):
+        l = math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
+        return (v[0] / l, v[1] / l, v[2] / l)
+
+    # Upper body thrown back hard, held through the skid, lurches forward to catch balance, settles.
+    body(3, back=30)
+    body(6, back=36, side=3)
+    body(10, back=33, side=-3)
+    body(14, back=26, side=3)
+    body(18, back=12, side=-2)
+    body(21, back=-10)
+    body(25, back=4)
+    body(29, back=-2)
+
+    # Head lags on impact (whiplash), then flops back, then follows the recovery.
+    look(3, back=-12)
+    look(6, back=18)
+    look(10, back=14, side=-5)
+    look(14, back=10, side=5)
+    look(18, back=0)
+    look(21, back=-8)
+    look(25, back=5)
+    look(29, back=-2)
+
+    # Arms fly straight up on the shove.
+    ctx.key(3, r_up, aim=(0.55, 0.82, 0.15))
+    ctx.key(3, l_up, aim=(-0.55, 0.82, 0.15))
+    ctx.key(3, r_fore, turn=[('forward', 10)])
+    ctx.key(3, l_fore, turn=[('forward', -10)])
+    ctx.key(3, r_hand, turn=[('forward', 0)])
+
+    # Windmill: big forward circles out at the sides, arms out of phase.
+    # The circle is kept in the upper arc and out to the side so the pan never swings into the legs or the floor.
+    frames = [6, 8, 10, 12, 14, 16, 18]
+    for i, f in enumerate(frames):
+        a = math.radians(90 + i * 100)
+        amp = 1.0 - i * 0.08
+        rv = norm((0.65, 0.35 + 0.6 * math.sin(a) * amp, 0.7 * math.cos(a) * amp))
+        a2 = a + math.pi
+        lv = norm((-0.65, 0.35 + 0.6 * math.sin(a2) * amp, 0.7 * math.cos(a2) * amp))
+        ctx.key(f, r_up, aim=rv)
+        ctx.key(f, l_up, aim=lv)
+        ctx.key(f, r_fore, turn=[('forward', 15 + 10 * (i % 2))])
+        ctx.key(f, l_fore, turn=[('forward', -(15 + 10 * ((i + 1) % 2)))])
+
+    # Catch balance: arms thrown out wide for the lurch, then drop back down.
+    ctx.key(21, r_up, aim=(0.85, 0.05, 0.35))
+    ctx.key(21, l_up, aim=(-0.85, 0.05, 0.35))
+    ctx.key(21, r_fore, turn=[('forward', 20)])
+    ctx.key(21, l_fore, turn=[('forward', -20)])
+    ctx.key(25, r_up, aim=(0.45, -0.70, -0.25))
+    ctx.key(25, l_up, aim=(-0.50, -0.85, 0.05))
+    ctx.key(25, r_fore, turn=[('forward', 8)])
+    ctx.key(25, l_fore, turn=[('forward', -8)])
+    ctx.key(29, r_up, aim=(0.25, -0.80, -0.50))
+    ctx.key(29, l_up, aim=(-0.38, -0.92, -0.08))
+    ctx.key(21, r_hand, turn=[('forward', 10)])
+    ctx.key(29, r_hand, turn=[('forward', 0)])
+
+    ctx.note('No root/hip travel or rotation: the game slides him back; feet stay locked while only the upper body reacts.')
