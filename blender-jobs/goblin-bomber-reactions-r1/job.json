@@ -11,8 +11,8 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:56:07Z",
- "heartbeat_at": "2026-10-26T11:51:07Z",
+ "lease_until": "2026-10-26T11:57:39Z",
+ "heartbeat_at": "2026-10-26T11:52:39Z",
  "error": {
   "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r1/out/preview-OH_Hit-016.png does not match 9057b4b637002dbe4ae651283e4b1a39159d570a\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:49:05Z"
@@ -629,5 +629,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T11:51:07Z"
+ "updated_at": "2026-10-26T11:52:39Z"
 }
