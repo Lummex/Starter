@@ -2,7 +2,7 @@
  "id": "goblin-bomber-reactions-r1",
  "type": "animate",
  "asset_id": "goblin-bomber",
- "status": "running",
+ "status": "validating",
  "priority": 4,
  "created_at": "2026-10-26T09:57:47Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:52:39Z",
- "heartbeat_at": "2026-10-26T11:47:39Z",
+ "lease_until": "2026-10-26T11:52:51Z",
+ "heartbeat_at": "2026-10-26T11:47:51Z",
  "error": {
   "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r1/out/final-OH_React_Bonk-018.png does not match 6b5703d1803eb36bdb7a637058db7fb2e66569f9\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:45:53Z"
  },
  "progress": {
-  "stage": "animating",
-  "percent": 35,
-  "message": "Building the keyframes in Blender and rendering previews"
+  "stage": "validating",
+  "percent": 80,
+  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -605,7 +605,11 @@
   {
    "at": "2026-10-26T11:46:27Z",
    "status": "running"
+  },
+  {
+   "at": "2026-10-26T11:47:51Z",
+   "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T11:47:39Z"
+ "updated_at": "2026-10-26T11:47:51Z"
 }
