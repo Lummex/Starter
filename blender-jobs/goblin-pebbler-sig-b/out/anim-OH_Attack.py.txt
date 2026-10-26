@@ -1,0 +1,129 @@
+import math
+
+
+def build(ctx):
+    ctx.length(38)
+
+    hips = ctx.bone('hips')
+    sp2 = 'Spine02'
+    sp1 = 'Spine01'
+    sp = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    r_up = ctx.bone('right upperarm')
+    r_fore = ctx.bone('right forearm')
+    r_hand = ctx.bone('right hand')
+    l_up = ctx.bone('left upperarm')
+    l_fore = ctx.bone('left forearm')
+    l_hand = ctx.bone('left hand')
+    legs = [
+        (ctx.bone('left thigh'), ctx.bone('left shin'), ctx.bone('left foot')),
+        (ctx.bone('right thigh'), ctx.bone('right shin'), ctx.bone('right foot')),
+    ]
+
+    # Straight right arm: forearm aimed along the upper arm's base direction
+    straight = tuple(ctx.bones[r_up]['points'])
+
+    thigh_len = 0.19
+    shin_len = 0.163
+
+    def crouch(f, a, interp='BEZIER'):
+        # Squat with planted feet: thigh forward a, shin back to -a, foot flat.
+        drop = (thigh_len + shin_len) * (1.0 - math.cos(math.radians(a)))
+        ctx.key(f, hips, move=(0, -drop, 0), interp=interp)
+        for thigh, shin, foot in legs:
+            ctx.key(f, thigh, turn=[('right', a)], interp=interp)
+            ctx.key(f, shin, turn=[('right', -2 * a)], interp=interp)
+            ctx.key(f, foot, turn=[('right', a)], interp=interp)
+
+    def stand(f):
+        ctx.key(f, hips, move=(0, 0, 0))
+        for thigh, shin, foot in legs:
+            ctx.key(f, thigh, turn=[('right', 0)])
+            ctx.key(f, shin, turn=[('right', 0)])
+            ctx.key(f, foot, turn=[('right', 0)])
+
+    def torso(f, twist, bend, side=0, interp='BEZIER'):
+        # twist: + chest to his left, - to his right; bend: + forward
+        for b, w in ((sp2, 0.3), (sp1, 0.35), (sp, 0.35)):
+            ctx.key(f, b, turn=[('up', twist * w), ('right', -bend * w), ('forward', side * w)],
+                    interp=interp)
+
+    # ---- 0-6: squat down, coil to his right (anticipation) ----
+    crouch(6, 24)
+    torso(6, -35, 18, side=6)
+    ctx.key(6, r_up, aim=(0.75, -0.35, -0.45))
+    ctx.key(6, r_fore, aim=straight)
+    ctx.key(6, r_hand, turn=[('forward', 20)])
+    ctx.key(6, l_up, aim=(-0.5, -0.45, 0.7))
+    ctx.key(6, l_fore, turn=[('right', 25)])
+    ctx.key(6, neck, turn=[('up', 20), ('right', -8)])
+    ctx.key(6, head, turn=[('up', 15), ('right', -12)])  # glare at the target's knees
+
+    # ---- 6-9: deeper coil, held tension ----
+    crouch(9, 30)
+    torso(9, -45, 24, side=8)
+    ctx.key(9, r_up, aim=(0.8, -0.3, -0.5))
+    ctx.key(9, r_fore, aim=straight)
+    ctx.key(9, r_hand, turn=[('forward', 28)])
+    ctx.key(9, l_up, aim=(-0.45, -0.4, 0.8))
+    ctx.key(9, l_fore, turn=[('right', 30)])
+    ctx.key(9, neck, turn=[('up', 25), ('right', -10)])
+    ctx.key(9, head, turn=[('up', 18), ('right', -14)])
+
+    # ---- 12: CONTACT - flat, low sweep at knee height ----
+    crouch(12, 30, interp='LINEAR')
+    torso(12, 15, 28, side=-4, interp='LINEAR')
+    ctx.key(12, r_up, aim=(0.25, -0.5, 0.85), interp='LINEAR')
+    ctx.key(12, r_fore, aim=straight, interp='LINEAR')
+    ctx.key(12, r_hand, turn=[('forward', -5)], interp='LINEAR')
+    ctx.key(12, l_up, aim=(-0.6, -0.55, -0.4))
+    ctx.key(12, l_fore, turn=[('right', 20)])
+    ctx.key(12, neck, turn=[('up', 0), ('right', -12)])
+    ctx.key(12, head, turn=[('up', 0), ('right', -16)])
+    ctx.event(12, 'hit', bone=r_hand)
+
+    # ---- 15: follow-through overshoot across to his left, club stays out in front ----
+    crouch(15, 28)
+    torso(15, 45, 24, side=-8)
+    ctx.key(15, r_up, aim=(-0.3, -0.3, 0.9))
+    ctx.key(15, r_fore, aim=straight)
+    ctx.key(15, r_hand, turn=[('forward', -20)])
+    ctx.key(15, l_up, aim=(-0.55, -0.5, -0.6))
+    ctx.key(15, l_fore, turn=[('right', 15)])
+    ctx.key(15, neck, turn=[('up', -10), ('right', -10)])
+    ctx.key(15, head, turn=[('up', -8), ('right', -12)])
+
+    # ---- 18: settle, hold the mean low pose ----
+    crouch(18, 26)
+    torso(18, 38, 20, side=-6)
+    ctx.key(18, r_up, aim=(-0.2, -0.35, 0.9))
+    ctx.key(18, r_fore, aim=straight)
+    ctx.key(18, r_hand, turn=[('forward', -15)])
+    ctx.key(18, l_up, aim=(-0.55, -0.55, -0.5))
+    ctx.key(18, l_fore, turn=[('right', 15)])
+    ctx.key(18, neck, turn=[('up', -8), ('right', -8)])
+    ctx.key(18, head, turn=[('up', -6), ('right', -10)])
+
+    # ---- 23: straighten up, lean back, club dangling out at his right, hand on belly ----
+    stand(23)
+    torso(23, 5, -14)
+    ctx.key(23, r_up, aim=(0.45, -0.85, -0.15))
+    ctx.key(23, r_hand, turn=[('forward', 10)])
+    ctx.key(23, l_up, aim=(-0.3, -0.9, 0.25))
+    ctx.key(23, l_fore, aim=(0.8, -0.1, 0.6))
+    ctx.key(23, neck, turn=[('right', 10)])
+    ctx.key(23, head, turn=[('right', 22)])  # chin up, cackling
+
+    # ---- 25-33: choppy "heh-heh-heh" chuckles ----
+    for f, back, hd in ((26, -7, 8), (28, -13, 20), (30, -6, 8), (32, -12, 18), (34, -8, 10)):
+        torso(f, 5, back)
+        ctx.key(f, neck, turn=[('right', hd * 0.4)])
+        ctx.key(f, head, turn=[('right', hd)])
+        ctx.key(f, r_up, aim=(0.45, -0.85, -0.15))
+        ctx.key(f, l_up, aim=(-0.3, -0.9, 0.25))
+        ctx.key(f, l_fore, aim=(0.8, -0.1, 0.6))
+    # frame 38: auto return to idle base pose
+
+    ctx.note('Kneecapper: crouch coil 6-9, low flat sweep with hit at 12, '
+             'overshoot 15, settle 18, stands and chuckles 23-34, back to idle at 38.')
