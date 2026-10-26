@@ -1,6 +1,25 @@
 {
- "ok": true,
- "problems": [],
+ "ok": false,
+ "problems": [
+  "OH_React_Lifted: Hips is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Spine02 is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Spine01 is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Spine is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: neck is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Head is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftUpLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftFoot is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightUpLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightFoot is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftForeArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftHand is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightForeArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightHand is not back in the idle pose at the last frame (48)"
+ ],
  "checks": {
   "bones": 24,
   "mesh_vertices": 39025,
@@ -14,15 +33,15 @@
    ],
    "OH_React_Lifted": [
     0.0,
-    60.0
+    48.0
    ],
    "OH_React_Backstab": [
     0.0,
-    60.0
+    62.0
    ],
    "OH_React_Bowled": [
     0.0,
-    90.0
+    92.0
    ],
    "Dead": [
     0.0,
@@ -43,21 +62,40 @@
   }
  },
  "blender": "5.2.3 LTS",
- "build_problems": [],
+ "build_problems": [
+  "OH_React_Lifted: Hips is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Spine02 is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Spine01 is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Spine is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: neck is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: Head is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftUpLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftFoot is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightUpLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightLeg is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightFoot is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftForeArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: LeftHand is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightForeArm is not back in the idle pose at the last frame (48)",
+  "OH_React_Lifted: RightHand is not back in the idle pose at the last frame (48)"
+ ],
  "splice": {
   "problems": [],
   "clips": {
    "OH_React_Bowled": {
-    "keys": 91,
-    "seconds": 3.0
+    "keys": 93,
+    "seconds": 3.0667
    },
    "OH_React_Backstab": {
-    "keys": 61,
-    "seconds": 2.0
+    "keys": 63,
+    "seconds": 2.0667
    },
    "OH_React_Lifted": {
-    "keys": 61,
-    "seconds": 2.0
+    "keys": 49,
+    "seconds": 1.6
    }
   },
   "calibration": {
@@ -72,6 +110,6 @@
    "worst_position_error_pct_of_height": 0.0008,
    "worst_rotation_error_deg": 0.0
   },
-  "written_clip_error_pct_of_height": 2e-05
+  "written_clip_error_pct_of_height": 5e-05
  }
 }
