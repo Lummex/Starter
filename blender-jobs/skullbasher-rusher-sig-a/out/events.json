@@ -1,0 +1,20 @@
+{
+ "asset_id": "skullbasher-rusher",
+ "fps": 30,
+ "clips": {
+  "OH_Idle": {
+   "frames": 72,
+   "duration": 2.4,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Walk": {
+   "frames": 24,
+   "duration": 0.8,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  }
+ }
+}
