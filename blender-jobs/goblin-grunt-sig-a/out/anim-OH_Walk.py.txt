@@ -1,0 +1,90 @@
+def build(ctx):
+    L = 32
+    ctx.length(L)
+    hips = ctx.bone('Hips')
+    s2 = ctx.bone('Spine02'); s1 = ctx.bone('Spine01')
+    head = ctx.bone('Head')
+    rup = ctx.bone('RightArm'); rfo = ctx.bone('RightForeArm'); rha = ctx.bone('RightHand')
+    lup = ctx.bone('LeftArm'); lfo = ctx.bone('LeftForeArm')
+    legs = {
+        'L': (ctx.bone('LeftUpLeg'), ctx.bone('LeftLeg'), ctx.bone('LeftFoot')),
+        'R': (ctx.bone('RightUpLeg'), ctx.bone('RightLeg'), ctx.bone('RightFoot')),
+    }
+
+    def pan(f, bob=0):
+        # pan on the shoulder; it bounces a little on each stomp
+        ctx.key(f, rup, aim=(0.6, -0.55 - bob * 0.04, 0.5))
+        ctx.key(f, rfo, aim=(-0.22, 0.85, -0.45), turn=[('right', bob * 6)])
+        ctx.key(f, rha, aim=(0.05, 0.6, -0.8))
+
+    # thigh + shin + foot sum to ~0 so the sole stays flat; shin bend pulls the ankle back under the hip
+    def leg(f, side, thigh, shin, foot, interp='BEZIER'):
+        t, s, ft = legs[side]
+        ctx.key(f, t, turn=[('right', thigh)], interp=interp)
+        ctx.key(f, s, turn=[('right', shin)], interp=interp)
+        ctx.key(f, ft, turn=[('right', foot)], interp=interp)
+
+    # contact = base pose legs (both feet flat on their idle spots)
+    def contact(f, lean):
+        ctx.key(f, hips, move=(0, 0, 0))
+        leg(f, 'L', 0, 0, 0)
+        leg(f, 'R', 0, 0, 0)
+        ctx.key(f, s2, turn=[('right', -8), ('forward', lean)])
+        ctx.key(f, s1, turn=[('right', -5)])
+        ctx.key(f, head, turn=[('right', 5)])
+
+    # recoil after the stomp: hips sink 3 cm, both knees give
+    def recoil(f):
+        ctx.key(f, hips, move=(0, -0.03, 0))
+        leg(f, 'L', 26, -52, 26)
+        leg(f, 'R', 26, -52, 26)
+        ctx.key(f, s2, turn=[('right', -12)])
+        ctx.key(f, s1, turn=[('right', -8)])
+        ctx.key(f, head, turn=[('right', 9)])
+
+    # passing: one knee hauled high, standing leg straight, body rolls over the standing leg
+    def lift(f, side, lean, arm):
+        other = 'R' if side == 'L' else 'L'
+        ctx.key(f, hips, move=(0, 0.008, 0))
+        leg(f, side, 50, -98, 48)
+        leg(f, other, 0, 0, 0)
+        ctx.key(f, s2, turn=[('right', -4), ('forward', lean)])
+        ctx.key(f, s1, turn=[('right', -3), ('up', -lean)])
+        ctx.key(f, head, turn=[('right', -4), ('forward', -lean * 0.5)])
+        ctx.key(f, lup, turn=[('right', arm)])
+        ctx.key(f, lfo, turn=[('right', 15 + max(arm, 0) * 0.6)])
+
+    # frame 0 / 32: base pose (auto) = left foot just landed
+    recoil(3)
+    # pan heaved up from the side onto the shoulder during the first step
+    ctx.key(3, rup, turn=[('right', -12)])
+    pan(7, bob=-1.5)
+    pan(10, bob=1)
+
+    # right knee up, lean over the left leg, free arm swings forward
+    lift(9, 'R', lean=-7, arm=28)
+    leg(11, 'R', 46, -90, 44)
+    # heavy drop: right foot slams down fast
+    leg(14, 'R', 22, -44, 22, interp='LINEAR')
+    contact(16, lean=3)
+    ctx.key(16, lup, turn=[('right', 5)])
+    ctx.key(16, lfo, turn=[('right', 15)])
+    pan(16, bob=1.5)
+    recoil(19)
+    pan(20, bob=-0.5)
+
+    # left knee up, lean over the right leg, free arm swings back
+    lift(25, 'L', lean=7, arm=-24)
+    pan(24)
+    leg(27, 'L', 46, -90, 44)
+    # pan swings off the shoulder and drops to his side with the final stomp
+    ctx.key(27, rup, aim=(0.55, -0.35, 0.65))
+    ctx.key(27, rfo, aim=(0.1, 0.7, 0.7))
+    ctx.key(27, rha, aim=(0.1, 0.4, 0.9))
+    leg(30, 'L', 22, -44, 22, interp='LINEAR')
+    ctx.key(30, hips, move=(0, 0.004, 0))
+
+    ctx.note('Treadmill march, starts/ends in base pose so it loops into idle: recoil 3/19, '
+             'knee lifts 9 (right) and 25 (left) with the ankle pulled back under the hip, stomps 16/32. '
+             'Pan is heaved onto the right shoulder by frame 10, bounces on the stomp at 16, '
+             'and swings back down to the side for the loop seam at 32.')
