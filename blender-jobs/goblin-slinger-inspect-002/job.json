@@ -1,0 +1,37 @@
+{
+ "status": "queued",
+ "created_at": "2026-10-26T07:26:42Z",
+ "created_by": "claude",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": false,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "Waiting for the Blender worker"
+ },
+ "history": [
+  {
+   "at": "2026-10-26T07:26:42Z",
+   "status": "queued",
+   "by": "claude"
+  }
+ ],
+ "id": "goblin-slinger-inspect-002",
+ "type": "inspect",
+ "asset_id": "goblin-slinger",
+ "priority": 9,
+ "source": {
+  "character": "local:~/Downloads/r23/models/goblin-slinger/char.glb"
+ },
+ "request": "Re-check after the bone-tip and framing fixes.",
+ "animations": [],
+ "output": {
+  "format": "json"
+ }
+}
