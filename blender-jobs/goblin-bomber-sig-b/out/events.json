@@ -1,0 +1,34 @@
+{
+ "asset_id": "goblin-bomber",
+ "fps": 30,
+ "clips": {
+  "OH_Attack": {
+   "frames": 36,
+   "duration": 1.2,
+   "loop": false,
+   "events": [
+    {
+     "frame": 22,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.7333
+    }
+   ],
+   "attachments": []
+  },
+  "OH_Death": {
+   "frames": 60,
+   "duration": 2.0,
+   "loop": false,
+   "events": [
+    {
+     "frame": 28,
+     "name": "shockwave",
+     "bone": "RightHand",
+     "time": 0.9333
+    }
+   ],
+   "attachments": []
+  }
+ }
+}
