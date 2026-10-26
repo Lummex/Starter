@@ -17,5 +17,17 @@
   "rigged": 13600192,
   "char.glb": 5192084,
   "club.glb": 11656816
- }
+ },
+ "clips": {
+  "idle": "OH_Idle",
+  "walk": "OH_Walk",
+  "attack": "OH_Attack",
+  "hit": "OH_Hit",
+  "react_knockback": "OH_React_Knockback",
+  "react_bowled": "OH_React_Bowled",
+  "react_backstab": "OH_React_Backstab",
+  "react_lifted": "OH_React_Lifted",
+  "react_bonk": "OH_React_Bonk"
+ },
+ "clipsNote": "Named clips made by the Blender worker (Oct 26). \"actions\" is unchanged; the game switches to \"clips\" in Round 25."
 }
