@@ -1,0 +1,20 @@
+{
+ "asset_id": "goblin-scrapper",
+ "fps": 30,
+ "clips": {
+  "OH_Idle": {
+   "frames": 72,
+   "duration": 2.4,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Walk": {
+   "frames": 30,
+   "duration": 1.0,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  }
+ }
+}
