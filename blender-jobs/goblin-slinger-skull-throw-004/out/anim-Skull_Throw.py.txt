@@ -1,0 +1,186 @@
+import math
+import mathutils
+
+
+def build(ctx):
+    L = 54
+    ctx.length(L)
+    RELEASE = 26
+
+    V = mathutils.Vector
+    Q = mathutils.Quaternion
+    B = ctx.bones
+
+    hips = ctx.bone('hips')
+    spines = (('Spine02', 0.25), ('Spine01', 0.35), (ctx.bone('spine'), 0.4))
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    r_sh = ctx.bone('right shoulder')
+    r_up = ctx.bone('right upperarm')
+    r_fo = ctx.bone('right forearm')
+    r_ha = ctx.bone('right hand')
+    l_up = ctx.bone('left upperarm')
+    l_fo = ctx.bone('left forearm')
+    l_ha = ctx.bone('left hand')
+    legs = ((ctx.bone('left thigh'), ctx.bone('left shin'), ctx.bone('left foot')),
+            (ctx.bone('right thigh'), ctx.bone('right shin'), ctx.bone('right foot')))
+
+    # Preview skull in the right hand, vanishes at release
+    for p in ctx.parts:
+        if 'skull' in p:
+            ctx.attach(p, r_ha, length=0.16, hide_at=RELEASE)
+            break
+
+    AX = {'right': (1, 0, 0), 'left': (-1, 0, 0), 'up': (0, 1, 0), 'down': (0, -1, 0),
+          'forward': (0, 0, 1), 'back': (0, 0, -1)}
+
+    # (right, up, forward) is left-handed, so a physical right-hand-rule turn is a negative math angle
+    def tq(turns):
+        q = Q()
+        for ax, ang in turns:
+            q = Q(V(AX[ax]), math.radians(-ang)) @ q
+        return q
+
+    def pts(b):
+        return V(B[b]['points'])
+
+    # ---------------- torso / hips poses ----------------
+    # frame: (twist, bend, side lean, hip twist, hip move, head nod)
+    poses = {
+        7:  (-15, -14, 0, -4, (0.0, -0.030, -0.008), 4),       # anticipation crouch
+        15: (-55, 10, 10, -12, (0.012, -0.022, -0.022), -5),   # wind-up: big twist away, weight back
+        18: (-60, 13, 12, -13, (0.014, -0.024, -0.025), -6),   # extra pull / hold
+        22: (-12, -4, 4, -2, (0.004, -0.026, 0.0), 0),         # unwind, weight shifts
+        24: (15, -16, 0, 5, (-0.006, -0.030, 0.015), 5),       # whip
+        26: (38, -28, -6, 10, (-0.012, -0.034, 0.030), 10),    # release, weight on front foot
+        31: (50, -34, -10, 13, (-0.015, -0.038, 0.035), 12),   # follow-through overshoot
+        35: (44, -28, -8, 10, (-0.012, -0.034, 0.030), 10),    # hold
+        44: (-5, 5, 0, -1, (0.0, 0.004, -0.002), -1),          # recoil past idle
+    }
+    frames = sorted(poses)
+
+    def chest_q(f):
+        tw, bd, sd, htw = poses[f][:4]
+        q = tq([('up', htw)])
+        for _b, w in spines:
+            q = q @ tq([('up', tw * w), ('right', bd * w), ('forward', sd * w)])
+        return q
+
+    for f in frames:
+        tw, bd, sd, htw, mv, nod = poses[f]
+        for b, w in spines:
+            ctx.key(f, b, turn=[('up', tw * w), ('right', bd * w), ('forward', sd * w)])
+        # head counters the twist so the eyes stay on the target
+        ht = -0.3 * (tw + htw)
+        ctx.key(f, neck, turn=[('up', ht), ('right', nod * 0.5)])
+        ctx.key(f, head, turn=[('up', ht), ('right', nod * 0.5)])
+
+    # ---------------- hips + leg IK (feet stay planted) ----------------
+    hkeys = [(0, (0.0, 0.0, 0.0), 0.0)] + [(f, poses[f][4], poses[f][3]) for f in frames] + [(L, (0.0, 0.0, 0.0), 0.0)]
+
+    def hip_at(f):
+        for i in range(len(hkeys) - 1):
+            f0, m0, t0 = hkeys[i]
+            f1, m1, t1 = hkeys[i + 1]
+            if f0 <= f <= f1:
+                s = (f - f0) / float(f1 - f0)
+                s = s * s * (3 - 2 * s)
+                return tuple(m0[k] + (m1[k] - m0[k]) * s for k in range(3)), t0 + (t1 - t0) * s
+        return (0.0, 0.0, 0.0), 0.0
+
+    hip_head = V(B[hips]['head'])
+
+    def leg_ik(f, thigh, shin, foot, mv, Qh):
+        th0 = V(B[thigh]['head'])
+        kn0 = V(B[thigh]['tail'])
+        an0 = V(B[shin]['tail'])
+        L1 = (kn0 - th0).length
+        L2 = (an0 - kn0).length
+        th = hip_head + V(mv) + Qh @ (th0 - hip_head)
+        d = an0 - th
+        D = max(min(d.length, (L1 + L2) * 0.998), abs(L1 - L2) + 0.002)
+        dn = d.normalized()
+        a = (L1 * L1 - L2 * L2 + D * D) / (2 * D)
+        h = math.sqrt(max(L1 * L1 - a * a, 0.0))
+        pole = kn0 - th0
+        pole = (pole - dn * pole.dot(dn)).normalized()
+        knee = th + dn * a + pole * h
+        ankle = th + dn * D
+        t_loc = Qh.inverted() @ (knee - th).normalized()
+        Qt = Qh @ pts(thigh).rotation_difference(t_loc)
+        s_loc = Qt.inverted() @ (ankle - knee).normalized()
+        Qs = Qt @ pts(shin).rotation_difference(s_loc)
+        f_loc = Qs.inverted() @ pts(foot)
+        ctx.key(f, thigh, aim=tuple(t_loc))
+        ctx.key(f, shin, aim=tuple(s_loc))
+        ctx.key(f, foot, aim=tuple(f_loc))
+
+    for f in sorted(set(range(2, L - 1, 2)) | set(frames)):
+        mv, htw = hip_at(f)
+        ctx.key(f, hips, move=mv, turn=[('up', htw)])
+        Qh = tq([('up', htw)])
+        for thigh, shin, foot in legs:
+            leg_ik(f, thigh, shin, foot, mv, Qh)
+
+    # ---------------- arms ----------------
+    def arm(f, up, fo, ha, Qpar, space, ud, fd, hd):
+        def conv(v):
+            return (Qpar @ V(v)).normalized() if space == 'chest' else V(v).normalized()
+        wu, wf, wh = conv(ud), conv(fd), conv(hd)
+        lu = Qpar.inverted() @ wu
+        Qu = Qpar @ pts(up).rotation_difference(lu)
+        lf = Qu.inverted() @ wf
+        Qf = Qu @ pts(fo).rotation_difference(lf)
+        lh = Qf.inverted() @ wh
+        ctx.key(f, up, aim=tuple(lu))
+        ctx.key(f, fo, aim=tuple(lf))
+        ctx.key(f, ha, aim=tuple(lh))
+
+    # Right shoulder (clavicle): ('forward', -) raises it, ('up', -) pulls it back, ('up', +) drives it forward
+    rsh = {
+        7: [('up', 5)],
+        15: [('forward', -15), ('up', -12)],
+        18: [('forward', -18), ('up', -14)],
+        22: [('forward', -10), ('up', 0)],
+        24: [('forward', -5), ('up', 10)],
+        26: [('up', 16)],
+        31: [('up', 20), ('forward', 6)],
+        35: [('up', 16), ('forward', 5)],
+        44: [('up', -3)],
+    }
+    # frame: (space, upperarm dir, forearm dir, hand dir)
+    rarm = {
+        7:  ('world', (0.35, -0.75, 0.55), (-0.05, -0.1, 1.0), (-0.1, 0.2, 1.0)),       # skull tucked at belly
+        15: ('chest', (0.85, 0.45, -0.25), (-0.3, 0.72, -0.62), (-0.2, 0.4, -0.9)),     # elbow high, skull behind head
+        18: ('chest', (0.8, 0.55, -0.3), (-0.35, 0.65, -0.68), (-0.25, 0.3, -0.92)),
+        22: ('chest', (0.6, 0.72, 0.35), (0.05, 0.8, -0.6), (0.0, 0.4, -0.9)),          # elbow leads over shoulder
+        24: ('world', (0.3, 0.6, 0.75), (0.15, 0.9, 0.4), (0.1, 0.8, 0.6)),             # forearm whips over
+        RELEASE: ('world', (0.15, 0.25, 0.96), (0.08, 0.15, 0.99), (0.05, -0.35, 0.94)),  # extended at the front
+        31: ('world', (-0.45, -0.5, 0.74), (-0.8, -0.45, 0.4), (-0.75, -0.6, 0.2)),     # across the body
+        35: ('world', (-0.4, -0.6, 0.7), (-0.75, -0.55, 0.35), (-0.7, -0.65, 0.2)),
+        44: ('chest', (0.2, -0.8, -0.5), (0.4, -0.9, 0.05), (0.4, -0.9, 0.05)),
+    }
+    larm = {
+        7:  ('world', (-0.3, -0.85, 0.4), (-0.1, -0.4, 0.9), (-0.1, -0.4, 0.9)),
+        15: ('world', (-0.3, 0.3, 0.9), (-0.15, 0.3, 0.94), (-0.15, 0.3, 0.94)),        # points at the target
+        18: ('world', (-0.28, 0.35, 0.9), (-0.12, 0.35, 0.93), (-0.12, 0.35, 0.93)),
+        22: ('world', (-0.5, -0.1, 0.85), (-0.3, -0.3, 0.9), (-0.3, -0.3, 0.9)),
+        RELEASE: ('world', (-0.5, -0.75, -0.4), (-0.1, -0.5, 0.85), (-0.1, -0.6, 0.8)),  # yanked in to the hip
+        31: ('world', (-0.45, -0.8, -0.35), (0.0, -0.55, 0.83), (0.0, -0.6, 0.8)),
+        35: ('world', (-0.42, -0.82, -0.3), (0.0, -0.6, 0.8), (0.0, -0.65, 0.76)),
+        44: ('chest', (-0.37, -0.92, -0.1), (-0.03, -0.79, 0.61), (-0.03, -0.79, 0.61)),
+    }
+
+    for f in frames:
+        Qc = chest_q(f)
+        ctx.key(f, r_sh, turn=rsh[f])
+        sp, ud, fd, hd = rarm[f]
+        arm(f, r_up, r_fo, r_ha, Qc @ tq(rsh[f]), sp, ud, fd, hd)
+        if f in larm:
+            sp, ud, fd, hd = larm[f]
+            arm(f, l_up, l_fo, l_ha, Qc, sp, ud, fd, hd)
+
+    ctx.event(RELEASE, 'projectile_release', bone=r_ha)
+    ctx.note('Skull_Throw take 4 rev: crouch 7, wind-up 15-18 (elbow high out to the side, skull behind head, '
+             '~70deg twist away, weight back), whip 22-24, release %d in front, follow-through 31-35 across body, '
+             'recoil 44, idle %d. Legs solved with IK so feet stay planted.' % (RELEASE, L))
