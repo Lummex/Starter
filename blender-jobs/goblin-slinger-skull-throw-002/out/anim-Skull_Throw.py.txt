@@ -1,0 +1,118 @@
+def build(ctx):
+    ctx.length(48)
+
+    hips = ctx.bone('hips')
+    spine = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    r_sh = ctx.bone('right shoulder')
+    r_up = ctx.bone('right upperarm')
+    r_fo = ctx.bone('right forearm')
+    r_ha = ctx.bone('right hand')
+    l_up = ctx.bone('left upperarm')
+    l_fo = ctx.bone('left forearm')
+    r_th = ctx.bone('right thigh')
+    r_sn = ctx.bone('right shin')
+    l_th = ctx.bone('left thigh')
+    l_sn = ctx.bone('left shin')
+
+    RELEASE = 20
+
+    # --- preview skull in the right hand (visible from frame 0, hidden at release) ---
+    part = None
+    for p in ctx.parts:
+        if 'skull' in p.lower():
+            part = p
+            break
+    if part is None and len(ctx.parts) > 0:
+        part = ctx.parts[0]
+    if part is not None:
+        ctx.attach(part, r_ha, length=0.12, offset=(0, 0, 0), show_at=0, hide_at=RELEASE)
+        ctx.note('Skull preview prop "%s" attached to %s, hidden at frame %d' % (part, r_ha, RELEASE))
+    else:
+        ctx.note('No preview part available for the skull')
+
+    # --- anticipation: crouch, twist away, arm starts to lift (f6) ---
+    ctx.key(6, hips, move=(0.01, -0.015, -0.01), turn=[('up', -10)])
+    ctx.key(6, spine, turn=[('up', -25), ('right', 6)])
+    ctx.key(6, neck, turn=[('up', 12)])
+    ctx.key(6, r_sh, aim=(0.88, 0.1, -0.45))
+    ctx.key(6, r_up, aim=(0.75, 0.3, -0.55))
+    ctx.key(6, r_fo, aim=(0.2, 0.75, -0.6))
+    ctx.key(6, r_ha, turn=[('right', 15)])
+    ctx.key(6, l_up, aim=(-0.55, 0.2, 0.8))
+    ctx.key(6, l_fo, aim=(-0.3, 0.3, 0.9))
+
+    # --- cocked extreme: arm far back behind head, elbow high, big twist (f12-15 hold) ---
+    for f in (12, 15):
+        ctx.key(f, hips, move=(0.02, -0.022, -0.02), turn=[('up', -15)])
+        ctx.key(f, spine, turn=[('up', -48), ('right', 14)])
+        ctx.key(f, neck, turn=[('up', 22)])
+        ctx.key(f, head, turn=[('up', 12), ('right', -6)])
+        ctx.key(f, r_sh, aim=(0.8, 0.35, -0.48))
+        ctx.key(f, r_up, aim=(0.55, 0.62, -0.56))
+        ctx.key(f, r_fo, aim=(-0.25, 0.25, -0.93))
+        ctx.key(f, r_ha, turn=[('right', 35)])
+        ctx.key(f, l_up, aim=(-0.4, 0.45, 0.8))
+        ctx.key(f, l_fo, aim=(-0.15, 0.55, 0.82))
+        ctx.key(f, r_th, turn=[('right', 10)])
+        ctx.key(f, r_sn, turn=[('right', -18)])
+        ctx.key(f, l_th, turn=[('right', 4)])
+        ctx.key(f, l_sn, turn=[('right', -6)])
+
+    # --- whip: arm comes over the shoulder, weight steps forward (f18) ---
+    ctx.key(18, hips, move=(-0.005, -0.02, 0.02), turn=[('up', 5)], interp='LINEAR')
+    ctx.key(18, spine, turn=[('up', 5), ('right', -6)], interp='LINEAR')
+    ctx.key(18, neck, turn=[('up', -3)], interp='LINEAR')
+    ctx.key(18, head, turn=[('right', 0)], interp='LINEAR')
+    ctx.key(18, r_sh, aim=(0.85, 0.35, -0.2), interp='LINEAR')
+    ctx.key(18, r_up, aim=(0.35, 0.9, 0.1), interp='LINEAR')
+    ctx.key(18, r_fo, aim=(0.05, 0.85, -0.5), interp='LINEAR')
+    ctx.key(18, r_ha, turn=[('right', 20)], interp='LINEAR')
+    ctx.key(18, l_up, aim=(-0.7, -0.2, 0.3), interp='LINEAR')
+    ctx.key(18, l_fo, aim=(-0.4, -0.3, 0.6), interp='LINEAR')
+
+    # --- release out front, arm extended (f20) ---
+    ctx.key(RELEASE, hips, move=(-0.015, -0.025, 0.035), turn=[('up', 14)], interp='LINEAR')
+    ctx.key(RELEASE, spine, turn=[('up', 28), ('right', -20)], interp='LINEAR')
+    ctx.key(RELEASE, neck, turn=[('up', -14)], interp='LINEAR')
+    ctx.key(RELEASE, r_sh, aim=(0.85, 0.05, 0.3), interp='LINEAR')
+    ctx.key(RELEASE, r_up, aim=(0.25, 0.35, 0.9), interp='LINEAR')
+    ctx.key(RELEASE, r_fo, aim=(0.05, 0.2, 0.98), interp='LINEAR')
+    ctx.key(RELEASE, r_ha, turn=[('right', -30)], interp='LINEAR')
+    ctx.key(RELEASE, l_up, aim=(-0.7, -0.5, -0.3), interp='LINEAR')
+    ctx.key(RELEASE, l_fo, aim=(-0.4, -0.4, 0.3), interp='LINEAR')
+    ctx.key(RELEASE, r_th, turn=[('right', -4)], interp='LINEAR')
+    ctx.key(RELEASE, r_sn, turn=[('right', -4)], interp='LINEAR')
+    ctx.key(RELEASE, l_th, turn=[('right', 14)], interp='LINEAR')
+    ctx.key(RELEASE, l_sn, turn=[('right', -20)], interp='LINEAR')
+    ctx.event(RELEASE, 'projectile_release', bone=r_ha)
+
+    # --- follow-through across the body, overshoot then hold (f24-28) ---
+    for f in (24, 28):
+        ctx.key(f, hips, move=(-0.02, -0.03, 0.035), turn=[('up', 18)])
+        ctx.key(f, spine, turn=[('up', 42), ('right', -30)])
+        ctx.key(f, neck, turn=[('up', -18), ('right', 8)])
+        ctx.key(f, head, turn=[('right', 6)])
+        ctx.key(f, r_sh, aim=(0.75, -0.2, 0.62))
+        ctx.key(f, r_up, aim=(-0.45, -0.45, 0.77))
+        ctx.key(f, r_fo, aim=(-0.75, -0.45, 0.48))
+        ctx.key(f, r_ha, turn=[('right', -25)])
+        ctx.key(f, l_up, aim=(-0.6, -0.55, -0.55))
+        ctx.key(f, l_fo, aim=(-0.3, -0.6, -0.2))
+        ctx.key(f, r_th, turn=[('right', -6)])
+        ctx.key(f, r_sn, turn=[('right', -2)])
+        ctx.key(f, l_th, turn=[('right', 16)])
+        ctx.key(f, l_sn, turn=[('right', -24)])
+
+    # --- recover: rise past idle slightly, then settle into idle at 48 ---
+    ctx.key(36, hips, move=(-0.005, 0.004, 0.01), turn=[('up', 4)])
+    ctx.key(36, spine, turn=[('up', 8), ('right', 4)])
+    ctx.key(36, neck, turn=[('up', -4)])
+    ctx.key(36, r_up, aim=(0.2, -0.75, -0.45))
+    ctx.key(36, r_fo, aim=(0.35, -0.9, 0.1))
+    ctx.key(36, l_up, aim=(-0.4, -0.9, -0.05))
+    ctx.key(36, l_th, turn=[('right', 3)])
+    ctx.key(36, l_sn, turn=[('right', -4)])
+
+    ctx.note('Anticipation 0-12, cocked hold 12-15, whip 15-20, release %d, follow-through 24-28, settle to idle 48' % RELEASE)
