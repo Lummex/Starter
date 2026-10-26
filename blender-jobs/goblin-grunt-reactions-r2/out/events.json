@@ -3,35 +3,35 @@
  "fps": 30,
  "clips": {
   "OH_React_Bowled": {
-   "frames": 92,
-   "duration": 3.0667,
+   "frames": 84,
+   "duration": 2.8,
    "loop": false,
    "events": [
     {
-     "frame": 12,
+     "frame": 14,
      "name": "down",
      "bone": "Hips",
-     "time": 0.4
+     "time": 0.4667
     },
     {
-     "frame": 73,
+     "frame": 65,
      "name": "up",
      "bone": "Hips",
-     "time": 2.4333
+     "time": 2.1667
     }
    ],
    "attachments": []
   },
   "OH_React_Backstab": {
-   "frames": 62,
-   "duration": 2.0667,
+   "frames": 60,
+   "duration": 2.0,
    "loop": false,
    "events": [
     {
-     "frame": 5,
+     "frame": 3,
      "name": "hit",
      "bone": "Spine",
-     "time": 0.1667
+     "time": 0.1
     }
    ],
    "attachments": []
