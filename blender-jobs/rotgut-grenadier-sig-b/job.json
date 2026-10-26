@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:26:08Z",
- "heartbeat_at": "2026-10-26T10:21:08Z",
+ "lease_until": "2026-10-26T10:27:19Z",
+ "heartbeat_at": "2026-10-26T10:22:19Z",
  "error": null,
  "progress": {
-  "stage": "designing",
-  "percent": 25,
-  "message": "Claude Code is designing the animation"
+  "stage": "animating",
+  "percent": 35,
+  "message": "Building the keyframes in Blender and rendering previews"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/rotgut-grenadier/char.glb@factory/issue-8"
@@ -63,5 +63,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:21:08Z"
+ "updated_at": "2026-10-26T10:22:19Z"
 }
