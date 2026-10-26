@@ -1,0 +1,150 @@
+def build(ctx):
+    ctx.length(60)
+
+    def B(words):
+        try:
+            return ctx.bone(words)
+        except Exception:
+            return None
+
+    hips = B('hips')
+    spine = B('spine')
+    neck = B('neck')
+    head = B('head')
+    lup, lfore, lhand = B('left upperarm'), B('left forearm'), B('left hand')
+    rup, rfore = B('right upperarm'), B('right forearm')
+
+    # spine chain from just above the hips up to 'spine', so bends spread smoothly
+    chain = []
+    p = spine
+    while p and p != hips:
+        chain.insert(0, p)
+        p = ctx.parent(p)
+    n = max(1, len(chain))
+
+    def K(f, bone, **kw):
+        if bone:
+            ctx.key(f, bone, **kw)
+
+    def body(f, bend=0.0, twist=0.0, side=0.0, interp='BEZIER'):
+        # bend: + leans back (arch), - hunches forward. twist: + chest faces left.
+        for b in chain:
+            K(f, b, turn=[('up', twist / n), ('right', bend / n), ('forward', side / n)], interp=interp)
+
+    def look(f, turn_up=0.0, nod=0.0, interp='BEZIER'):
+        K(f, neck, turn=[('up', turn_up), ('right', nod)], interp=interp)
+
+    # --- frame 0: idle, snap straight into the hit
+    body(0, interp='LINEAR')
+    look(0, interp='LINEAR')
+    for b in (lup, lfore, lhand, rup, rfore):
+        K(0, b, interp='LINEAR')
+    K(0, hips, interp='LINEAR')
+
+    # --- frame 3: JOLT. chest thrown forward, back arched, head snapped back, arms stiff and splayed
+    ctx.event(3, 'hit', bone=spine)
+    body(3, bend=34, side=-3)
+    look(3, nod=26)
+    K(3, hips, move=(0, 0, 0.018))
+    K(3, lup, aim=(-0.68, -0.55, -0.48))
+    K(3, lfore, aim=(-0.68, -0.55, -0.48))
+    K(3, lhand, turn=[('forward', 15)])
+    K(3, rup, aim=(0.68, -0.55, -0.48))
+    K(3, rfore, aim=(0.68, -0.55, -0.48))
+
+    # frames 6-10: settle a hair and hold the rigid shock pose (tiny shudder)
+    body(6, bend=22, side=2)
+    look(6, nod=16)
+    K(6, hips, move=(0, 0, 0.01))
+    for f, s in ((6, 0.0), (8, 0.04), (10, -0.03)):
+        K(f, lup, aim=(-0.6 - s, -0.7, -0.28))
+        K(f, lfore, aim=(-0.6 - s, -0.7, -0.28))
+        K(f, rup, aim=(0.6 + s, -0.7, -0.28))
+        K(f, rfore, aim=(0.6 + s, -0.7, -0.28))
+    body(10, bend=20, side=-1)
+    look(10, nod=14)
+    K(10, hips, move=(0, 0, 0.009))
+
+    # --- frame 15-18: left hand reaches back over the left shoulder, head turns to look
+    body(15, bend=-4, twist=12)
+    look(15, turn_up=28, nod=-4)
+    K(15, hips, move=(0, 0, 0.004))
+    K(15, lup, aim=(-0.4, 0.7, -0.2))
+    K(15, lfore, aim=(0.1, 0.3, -0.9))
+    K(15, rup, aim=(0.75, -0.55, 0.2))
+    K(15, rfore, aim=(0.7, -0.4, 0.4))
+
+    body(18, bend=-8, twist=16)
+    look(18, turn_up=34, nod=-6)
+    K(18, lup, aim=(-0.15, 0.95, -0.25))
+    K(18, lfore, aim=(0.45, -0.3, -0.85))
+    K(18, lhand, turn=[('right', -20)])
+
+    # --- frames 21-33: tugging, can't get it. Body jerks with each tug, free arm waves for balance
+    tugs = ((21, 1), (24, -1), (27, 1), (30, -1), (33, 1))
+    for f, s in tugs:
+        body(f, bend=-8 - 3 * s, twist=16 + 3 * s, side=4 * s)
+        look(f, turn_up=32 - 4 * s, nod=-5 + 3 * s)
+        K(f, lup, aim=(-0.15, 0.95, -0.25 + 0.12 * s))
+        K(f, lfore, aim=(0.45, -0.3 - 0.1 * s, -0.85))
+        K(f, lhand, turn=[('right', -20 - 10 * s)])
+        K(f, rup, aim=(0.75, -0.45 + 0.12 * s, 0.25))
+        K(f, rfore, aim=(0.7, -0.3 + 0.15 * s, 0.45))
+
+    # --- frame 36: anticipation, hunch and grip hard
+    body(36, bend=-16, twist=20)
+    look(36, turn_up=20, nod=-12)
+    K(36, hips, move=(0, 0, -0.004))
+    K(36, lup, aim=(-0.1, 0.9, -0.4))
+    K(36, lfore, aim=(0.35, -0.45, -0.8))
+    K(36, lhand, turn=[('right', -30)])
+    K(36, rup, aim=(0.7, -0.6, 0.2))
+    K(36, rfore, aim=(0.65, -0.5, 0.4))
+
+    # --- frames 38-40: YANK! dagger ripped out, arm swept up over the shoulder then out forward-left
+    # (in-between at 38 keeps the arm travelling over the top instead of flipping through the body)
+    body(38, bend=2, twist=10)
+    look(38, turn_up=24, nod=4)
+    K(38, lup, aim=(-0.45, 0.88, -0.1))
+    K(38, lfore, aim=(-0.2, 0.75, -0.6))
+    K(38, lhand, turn=[('right', -10)])
+
+    body(40, bend=12, twist=-4)
+    look(40, turn_up=22, nod=12)
+    K(40, hips, move=(0, 0, 0.004))
+    K(40, lup, aim=(-0.6, 0.6, 0.5))
+    K(40, lfore, aim=(-0.5, 0.65, 0.55))
+    K(40, lhand, turn=[('right', 15)])
+    K(40, rup, aim=(0.7, -0.55, -0.3))
+    K(40, rfore, aim=(0.7, -0.5, -0.2))
+
+    # frame 43: overshoot, dagger held high
+    body(43, bend=15, twist=-8, side=-3)
+    look(43, turn_up=26, nod=16)
+    K(43, lup, aim=(-0.5, 0.72, 0.48))
+    K(43, lfore, aim=(-0.4, 0.82, 0.4))
+    K(43, lhand, turn=[('right', 20)])
+
+    # --- frames 46-54: stagger back, then forward, then settle
+    body(46, bend=10, twist=-4, side=-6)
+    look(46, turn_up=10, nod=8)
+    K(46, hips, move=(-0.006, 0, -0.012))
+    K(46, lup, aim=(-0.7, 0.2, 0.4))
+    K(46, lfore, aim=(-0.6, 0.0, 0.6))
+    K(46, lhand, turn=[('right', 10)])
+    K(46, rup, aim=(0.75, -0.3, 0.1))
+    K(46, rfore, aim=(0.7, -0.2, 0.3))
+
+    body(50, bend=-8, twist=3, side=4)
+    look(50, turn_up=-4, nod=-6)
+    K(50, hips, move=(0.004, 0, 0.006))
+    K(50, lup, aim=(-0.5, -0.6, 0.3))
+    K(50, lfore, aim=(-0.3, -0.7, 0.5))
+    K(50, rup, aim=(0.55, -0.75, -0.2))
+    K(50, rfore, aim=(0.5, -0.8, 0.0))
+
+    body(54, bend=2, side=-1)
+    look(54, nod=2)
+    K(54, hips, move=(0, 0, -0.002))
+    # frame 60: back to idle (automatic)
+    ctx.note('Backstab: hit jolt f3, reach f15-33, yank f38-40 (in-between at f38 removes the arm pop), overshoot f43, stagger f46-54, idle f60. Left hand does the reaching; right hand keeps the pan out to the side.')
