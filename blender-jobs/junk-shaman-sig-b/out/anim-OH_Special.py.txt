@@ -1,0 +1,173 @@
+import math
+import random
+from mathutils import Vector, Quaternion
+
+# Directions are (right, up, forward). The staff runs along the right hand bone:
+# its top points opposite the hand's direction, so right-hand aims below are "-staff top".
+
+AX = {
+    'right': Vector((1, 0, 0)), 'left': Vector((-1, 0, 0)),
+    'up': Vector((0, 1, 0)), 'down': Vector((0, -1, 0)),
+    'forward': Vector((0, 0, 1)), 'back': Vector((0, 0, -1)),
+}
+
+
+def tq(turns):
+    q = Quaternion((1, 0, 0, 0))
+    for ax, deg in turns:
+        q = Quaternion(AX[ax], math.radians(-deg)) @ q
+    return q
+
+
+def nv(v):
+    return Vector(v).normalized()
+
+
+def pts(ctx, n):
+    return Vector(ctx.bones[n]['points'])
+
+
+def rig_of(ctx):
+    b = ctx.bone
+    spine = b('spine')
+    return {
+        'hips': b('hips'), 'spine': spine, 'spine_lo': ctx.parent(spine),
+        'neck': b('neck'), 'head': b('head'),
+        'R': [b('right upperarm'), b('right forearm'), b('right hand')],
+        'L': [b('left upperarm'), b('left forearm'), b('left hand')],
+        'legs': [(b('left thigh'), b('left shin'), b('left foot')),
+                 (b('right thigh'), b('right shin'), b('right foot'))],
+    }
+
+
+def key_arm(ctx, f, names, dirs, R, interp):
+    # dirs are world directions; compensate for the parents' rotation (FK)
+    for n, w in zip(names, dirs):
+        local = R.inverted() @ nv(w)
+        ctx.key(f, n, aim=tuple(local), interp=interp)
+        R = R @ pts(ctx, n).rotation_difference(local)
+
+
+def plant_legs(ctx, rig, f, move, interp):
+    # two-bone IK so the feet stay exactly where they are while the hips shift
+    m = Vector(move)
+    for th, sh, ft in rig['legs']:
+        H = Vector(ctx.bones[th]['head'])
+        K = Vector(ctx.bones[sh]['head'])
+        A = Vector(ctx.bones[ft]['head'])
+        L1 = (K - H).length
+        L2 = (A - K).length
+        H2 = H + m
+        d = A - H2
+        dist = min(d.length, L1 + L2 - 1e-4)
+        u = d.normalized()
+        x = (L1 * L1 - L2 * L2 + dist * dist) / (2 * dist)
+        h = math.sqrt(max(0.0, L1 * L1 - x * x))
+        p = (K - H) - u * (K - H).dot(u)
+        if p.length < 1e-6:
+            p = Vector((0, 0, 1))
+        p.normalize()
+        K2 = H2 + u * x + p * h
+        wt = (K2 - H2).normalized()
+        ws = (A - K2).normalized()
+        ctx.key(f, th, aim=tuple(wt), interp=interp)
+        qt = pts(ctx, th).rotation_difference(wt)
+        ls = qt.inverted() @ ws
+        ctx.key(f, sh, aim=tuple(ls), interp=interp)
+        qs = pts(ctx, sh).rotation_difference(ls)
+        e = (qt @ qs).inverted().to_euler('XYZ')
+        ctx.key(f, ft, turn=[('right', -math.degrees(e.x)),
+                             ('up', -math.degrees(e.y)),
+                             ('forward', -math.degrees(e.z))], interp=interp)
+
+
+def pose(ctx, rig, f, spine, head, move, R, L, interp='BEZIER'):
+    spine = list(spine) or [('up', 0)]
+    head = list(head) or [('up', 0)]
+    ctx.key(f, rig['hips'], move=move, interp=interp)
+    ctx.key(f, rig['spine_lo'], turn=spine, interp=interp)
+    ctx.key(f, rig['spine'], turn=spine, interp=interp)
+    ctx.key(f, rig['neck'], turn=[(a, d * 0.4) for a, d in head], interp=interp)
+    ctx.key(f, rig['head'], turn=[(a, d * 0.6) for a, d in head], interp=interp)
+    chest = tq(spine) @ tq(spine)
+    key_arm(ctx, f, rig['R'], R, chest, interp)
+    key_arm(ctx, f, rig['L'], L, chest, interp)
+    plant_legs(ctx, rig, f, move, interp)
+
+
+def jitter(rnd, a):
+    return a * (rnd.random() * 2 - 1)
+
+
+def lerp3(a, b, t):
+    return tuple(a[i] + (b[i] - a[i]) * t for i in range(3))
+
+
+def build(ctx):
+    ctx.length(72)
+    rig = rig_of(ctx)
+    hand = ctx.bone('right hand')
+    rnd = random.Random(11)
+
+    # staff held high: elbow up and wide, wrist cocked so the staff stays upright beside his head
+    R_UP = [(0.9, 0.42, 0.1), (0.3, 0.35, 0.88), (0.0, -0.97, 0.25)]
+    # free hand reaching out, palm pushed outward (wrist bent back = fingers spread)
+    L_START = [(-0.55, 0.35, 0.76), (-0.45, 0.3, 0.84), (-0.35, 0.7, 0.6)]
+    L_END = [(0.2, 0.32, 0.92), (0.3, 0.28, 0.9), (0.25, 0.7, 0.65)]
+
+    # 7: anticipation - hunches, head down muttering, free hand cupped at his chest
+    pose(ctx, rig, 7, [('right', -6)], [('right', -14)], (0, -0.025, 0),
+         R=[(0.35, -0.6, -0.6), (0.45, -0.85, 0.1), (0.25, -0.97, 0.0)],
+         L=[(-0.3, -0.75, 0.55), (0.4, 0.35, 0.85), (0.5, 0.4, 0.75)])
+    # 11 / 14: mumbled incantation - two little head bobs
+    pose(ctx, rig, 11, [('right', -5)], [('right', -10), ('forward', 5)], (0, -0.027, 0),
+         R=[(0.35, -0.6, -0.6), (0.45, -0.85, 0.1), (0.25, -0.97, 0.0)],
+         L=[(-0.3, -0.75, 0.55), (0.4, 0.35, 0.85), (0.5, 0.4, 0.75)])
+    pose(ctx, rig, 14, [('right', -6)], [('right', -14), ('forward', -5)], (0, -0.028, 0),
+         R=[(0.35, -0.6, -0.6), (0.45, -0.85, 0.1), (0.25, -0.97, 0.0)],
+         L=[(-0.3, -0.75, 0.55), (0.4, 0.35, 0.85), (0.5, 0.4, 0.75)])
+    # 19: overshoot - flings the staff up, leans back, hand thrust out
+    pose(ctx, rig, 19, [('right', 8)], [('right', 14)], (0, -0.004, -0.008),
+         R=[(0.85, 0.5, 0.1), (0.25, 0.45, 0.85), (0.0, -0.95, 0.3)],
+         L=[(-0.5, 0.45, 0.75), (-0.4, 0.4, 0.83), (-0.3, 0.8, 0.5)])
+    # 22: settle into the full raise -> lift_start
+    pose(ctx, rig, 22, [('right', 5), ('up', 5)], [('right', 8), ('up', 6)], (-0.01, -0.015, 0),
+         R=R_UP, L=L_START)
+    ctx.event(22, 'lift_start', bone=hand)
+
+    # 22-50: drags the invisible weight sideways, left to right; knees sink with the strain,
+    # hips shift with the load, arm and head tremble
+    carry = (26, 30, 34, 38, 42, 46, 50)
+    for f in carry:
+        t = (f - 22) / 28.0
+        s = t * t * (3 - 2 * t)
+        sag = math.sin(t * math.pi)
+        twist = 5 + (-7 - 5) * s
+        spine = [('right', 5 - 3 * sag), ('up', twist), ('forward', jitter(rnd, 1.0))]
+        head = [('right', 8 - 6 * sag + jitter(rnd, 2.0)), ('up', 6 - 16 * s)]
+        move = (-0.01 + 0.024 * s, -0.015 - 0.015 * sag, 0.003 * sag)
+        L = [lerp3(L_START[i], L_END[i], s) for i in range(3)]
+        L[0] = (L[0][0], L[0][1] - 0.06 * sag + jitter(rnd, 0.02), L[0][2])  # the load drags the arm down
+        L[2] = (L[2][0] + jitter(rnd, 0.06), L[2][1] + jitter(rnd, 0.06), L[2][2])
+        R = [R_UP[0], R_UP[1], (R_UP[2][0] - 0.1 * s, R_UP[2][1], R_UP[2][2] + 0.05 * s)]
+        pose(ctx, rig, f, spine, head, move, R=R, L=L)
+
+    # 54: anticipation for the set-down - staff hitched up, chest up
+    pose(ctx, rig, 54, [('right', 6), ('up', -6)], [('right', 10), ('up', -8)], (0.012, -0.012, -0.004),
+         R=[(0.85, 0.5, 0.1), (0.25, 0.5, 0.83), (-0.1, -0.95, 0.3)],
+         L=[(-0.4, 0.25, 0.88), (-0.25, 0.15, 0.95), (-0.2, 0.6, 0.75)])
+    # 58: staff thumps down beside him, palm presses down -> lift_end
+    pose(ctx, rig, 58, [('right', -6), ('up', -2)], [('right', -8)], (0.004, -0.01, 0.005),
+         R=[(0.45, -0.75, -0.45), (0.35, -0.93, 0.1), (0.2, -0.98, 0.0)],
+         L=[(-0.45, -0.3, 0.85), (-0.3, -0.4, 0.86), (-0.25, -0.1, 0.95)])
+    ctx.event(58, 'lift_end', bone=hand)
+    # 62: tired old-man exhale, slumping onto the staff
+    pose(ctx, rig, 62, [('right', -5)], [('right', -10), ('forward', 4)], (0.002, -0.012, 0.004),
+         R=[(0.4, -0.78, -0.48), (0.38, -0.92, 0.06), (0.25, -0.97, 0.0)],
+         L=[(-0.4, -0.9, 0.05), (-0.1, -0.8, 0.5), (-0.1, -0.8, 0.5)])
+    # 66: straightening back to idle
+    pose(ctx, rig, 66, [('right', -2)], [('right', -3)], (0, -0.004, 0),
+         R=[(0.2, -0.78, -0.58), (0.39, -0.92, 0.02), (0.39, -0.92, 0.02)],
+         L=[(-0.38, -0.92, -0.05), (-0.05, -0.8, 0.58), (-0.05, -0.8, 0.58)])
+    ctx.note('OH_Special: mutter 7-14, raise overshoot 19, lift_start 22, heavy carry L->R 22-50, '
+             'hitch 54, thump down/lift_end 58, slump 62, idle 72')
