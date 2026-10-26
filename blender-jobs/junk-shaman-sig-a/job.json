@@ -2,7 +2,7 @@
  "id": "junk-shaman-sig-a",
  "type": "animate",
  "asset_id": "junk-shaman",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:19:57Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T10:14:57Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "2 animation(s) built and checked: OH_Idle, OH_Walk"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/junk-shaman/char.glb@factory/issue-8"
@@ -72,7 +72,240 @@
   {
    "at": "2026-10-26T10:14:50Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T10:16:11Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T10:14:57Z"
+ "updated_at": "2026-10-26T10:16:11Z",
+ "result": {
+  "summary": "2 animation(s) built and checked: OH_Idle, OH_Walk",
+  "files": [
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/char.glb",
+    "bytes": 1489540,
+    "sha256": "38fc02c8b135b6aebdc572780e8bf0419bde8b861bf39a0a445d61f71ffe3023"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/events.json",
+    "bytes": 300,
+    "sha256": "54c9d282002d7d435d01a84774e06051fbd899e2a83aaef8ca437137f8819611"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/inspection.json",
+    "bytes": 10259,
+    "sha256": "5e64661bee28fee988884264de8c9b7050a5c5023b0aa276b3b29b944cc139c9"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/build-report.json",
+    "bytes": 2333,
+    "sha256": "fb876a8d677cfe8aa470bd836c3e79d14b066a1510dcb8f7f4cde8b43c8703ad"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/validation.json",
+    "bytes": 1009,
+    "sha256": "11936b55c69a269cf30440e64e1220b3b24de8987e0fba6de4997d9d9ea460f3"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/final-OH_Idle-000.png",
+    "bytes": 180719,
+    "sha256": "11ba7515a918f640ef72bb7b9f0165edd7db0447128ac4130a30f37e1f3c9a3f"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/final-OH_Idle-018.png",
+    "bytes": 180149,
+    "sha256": "ec16f04f0257bef8ba38594e0eb371d2a616c2ce2a7b6d0dc1e7416d62170be1"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/final-OH_Idle-036.png",
+    "bytes": 180008,
+    "sha256": "1f7c822f016f9fcb2ed889bb18d2736188c92e0ad9c32b00190a893203d57ecb"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/final-OH_Idle-054.png",
+    "bytes": 179738,
+    "sha256": "887a003ed8bfa529e84c73c06bd96e88806ae11ef5b257dc4b895acf90634071"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/final-OH_Idle-072.png",
+    "bytes": 180706,
+    "sha256": "cd3723ff49df881df49cff8d8fa51e4f3de307735bd5e046b290df313b99885e"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/final-OH_Walk-000.png",
+    "bytes": 180719,
+    "sha256": "c8e6682c87658732dffc743f4000364b16bcc2287e82272f8aae7af9ab3e4115"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/final-OH_Walk-009.png",
+    "bytes": 179447,
+    "sha256": "78e4051270ad2bd3f11fb921359cb6744d3fb5a305f68dc4dfc5468e49a7902d"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/final-OH_Walk-018.png",
+    "bytes": 180533,
+    "sha256": "01477acffb036e16ea6a64a419a6f4510384e35818d4ccc9b18baafab1518e5d"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/final-OH_Walk-027.png",
+    "bytes": 179388,
+    "sha256": "97e18ad7632f259132fabf912def8e06cfc8dbe1ff34469894b30ea8cbd77779"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/final-OH_Walk-036.png",
+    "bytes": 180700,
+    "sha256": "67a44c16080c9f30e5d6ce016f544352bd8169107191a46d14268b7416b18a6c"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Idle-000.png",
+    "bytes": 315186,
+    "sha256": "15f4c7ae75bbcdd2656a90a4bc92e2dd03d905a1e949fa41258e9a27ff1fd79d"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Idle-012.png",
+    "bytes": 313016,
+    "sha256": "3719676e90f525424253e85c5c0c1d680510a68755d6fd7f4836a8224eeb171d"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Idle-024.png",
+    "bytes": 313065,
+    "sha256": "0e99d98c16ee36e26b9e8815221a84948d47011aa50fb0552c779c01d78740b9"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Idle-036.png",
+    "bytes": 313095,
+    "sha256": "d53b4b7fcd8d74fe01d4bf9e0a3d80bc130be166deb62200c71c8444608939f7"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Idle-048.png",
+    "bytes": 311963,
+    "sha256": "9d7a7fab57a4d91f7a5607e538a82473d8f865cac0d040f3c9df64b7b69f213c"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Idle-060.png",
+    "bytes": 311578,
+    "sha256": "8c10d09812d4f7b2929d5c384a8fc9fe2d2ee9198e00b68a19cb98d7925a2cd1"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Idle-072.png",
+    "bytes": 315186,
+    "sha256": "276d8e6f2bf0eecaef27c69b2d9912f2ea509d3f4d063b647c5809f6fd1489e2"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Walk-000.png",
+    "bytes": 315186,
+    "sha256": "606ac472ad8766ae36565a4e31f1c88019afc958a523af1df3a21210caaa0d28"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Walk-006.png",
+    "bytes": 313654,
+    "sha256": "45c1f6b4bf7792f59eedda8a9430886b5a3de1a00f986baeba7fec1e312896e2"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Walk-012.png",
+    "bytes": 312271,
+    "sha256": "a05c2a50e3bc542311dbfffc48eda3b257145a486ccfead7adb650793fc91d58"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Walk-018.png",
+    "bytes": 314128,
+    "sha256": "b347e0ae989e3f0c22c89aa97d9849bc4ceef1c1cd3222a88ac48c988f223125"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Walk-024.png",
+    "bytes": 313473,
+    "sha256": "2df84250e452c7f76fb9ed0df6ee85a39f47dcd8fd805b04dfb349f021836b32"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Walk-030.png",
+    "bytes": 312742,
+    "sha256": "5b95be18e2a4b6f2fb7eed06ed39f1eecfc959f043e8c97cb58b9becc7e808e4"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/preview-OH_Walk-036.png",
+    "bytes": 315186,
+    "sha256": "b81c7d602ea7feb134a6c7e18c33960833f23a9e209b10085eec048cadffa949"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/anim-OH_Idle.py.txt",
+    "bytes": 4766,
+    "sha256": "2c02ac6c9384b351f7cf79e46b714e0021cef2302b98da64fc31d656ee1c0ca8"
+   },
+   {
+    "file": "blender-jobs/junk-shaman-sig-a/out/anim-OH_Walk.py.txt",
+    "bytes": 4273,
+    "sha256": "570b0b29ee1858a54f624c8ddf966aec4b6d9bf7e64e4bedb67535ca6ea6a074"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 45710,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Walk": [
+      0.0,
+      36.0
+     ],
+     "OH_Idle": [
+      0.0,
+      72.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Idle": {
+      "keys": 73,
+      "seconds": 2.4
+     },
+     "OH_Walk": {
+      "keys": 37,
+      "seconds": 1.2
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0009,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 2e-05
+   }
+  }
+ }
 }
