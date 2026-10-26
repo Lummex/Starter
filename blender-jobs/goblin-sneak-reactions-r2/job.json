@@ -2,7 +2,7 @@
  "id": "goblin-sneak-reactions-r2",
  "type": "animate",
  "asset_id": "goblin-sneak",
- "status": "validating",
+ "status": "queued",
  "priority": 4,
  "created_at": "2026-10-26T10:21:37Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:36:49Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T11:31:49Z",
  "error": {
-  "message": "{\"message\":\"is at 7183c46ad2e1e3b783b85aa509a04b1004b5da80 but expected 274e87ef3da3f3d6750eb342452acb28d3df4b3d\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
-  "at": "2026-10-26T11:26:24Z"
+  "message": "{\"message\":\"is at 1d6041a6aeb776af3c7cc54fb9d88b09527b7518 but expected b6f42ca354f527bd579620e6f26c8f6226aa7eae\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
+  "at": "2026-10-26T11:32:04Z"
  },
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "failed",
+  "percent": 0,
+  "message": "{\"message\":\"is at 1d6041a6aeb776af3c7cc54fb9d88b09527b7518 but expected b6f42ca354f527bd579620e6f26c8f6226aa7eae\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/char.glb@factory/issue-8"
@@ -155,7 +155,11 @@
   {
    "at": "2026-10-26T11:31:42Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T11:32:04Z",
+   "status": "failed"
   }
  ],
- "updated_at": "2026-10-26T11:31:49Z"
+ "updated_at": "2026-10-26T11:32:04Z"
 }
