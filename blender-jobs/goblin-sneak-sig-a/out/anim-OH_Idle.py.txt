@@ -1,0 +1,105 @@
+import math
+
+
+def build(ctx):
+    ctx.length(78)
+
+    hips = ctx.bone('hips')
+    sp2 = 'Spine02'
+    sp1 = 'Spine01'
+    sp = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    rup = ctx.bone('right upperarm'); rfo = ctx.bone('right forearm'); rha = ctx.bone('right hand')
+    lup = ctx.bone('left upperarm'); lfo = ctx.bone('left forearm'); lha = ctx.bone('left hand')
+    legs = {
+        'L': (ctx.bone('left thigh'), ctx.bone('left shin'), ctx.bone('left foot'), 0.317),
+        'R': (ctx.bone('right thigh'), ctx.bone('right shin'), ctx.bone('right foot'), 0.329),
+    }
+
+    def crouch(f, d, side_shift=0.0):
+        # lower the hips by d and bend the legs so the feet stay planted
+        ctx.key(f, hips, move=(side_shift, -d, 0))
+        for side in ('L', 'R'):
+            th, sh, ft, L = legs[side]
+            a = math.degrees(math.acos(max(-1.0, min(1.0, 1.0 - d / L))))
+            ctx.key(f, th, turn=[('right', a)])
+            ctx.key(f, sh, turn=[('right', -2 * a)])
+            ctx.key(f, ft, turn=[('right', a)])
+
+    def hunch(f, bend=1.0, twist=0.0):
+        ctx.key(f, sp2, turn=[('right', -8 * bend), ('up', twist * 0.3)])
+        ctx.key(f, sp1, turn=[('right', -10 * bend), ('up', twist * 0.3)])
+        ctx.key(f, sp, turn=[('right', -6 * bend), ('up', twist * 0.4)])
+
+    def look(f, yaw=0.0, pitch=0.0):
+        # neck/head lift the face back up out of the hunch: sinister look from under the brow
+        ctx.key(f, neck, turn=[('right', 8), ('up', yaw * 0.25)])
+        ctx.key(f, head, turn=[('right', 8 + pitch), ('up', yaw * 0.75)])
+
+    def ready_arms(f, l_lift=0.0):
+        # dagger tucked close at the hip pointing forward, free hand clawed out front
+        ctx.key(f, rup, aim=(0.35, -0.75, 0.4))
+        ctx.key(f, rfo, aim=(0.1, -0.1, 1.0))
+        ctx.key(f, rha, turn=[('right', 10)])
+        ctx.key(f, lup, aim=(-0.4, -0.75 + l_lift, 0.4))
+        ctx.key(f, lfo, aim=(-0.1, -0.2 + l_lift, 1.0))
+        ctx.key(f, lha, turn=[('right', -20)])
+
+    # 8: drop into the crouch (overshoot)
+    crouch(8, 0.026); hunch(8, 1.2); look(8); ready_arms(8)
+
+    # 12-19: raise dagger point-up in front, fingertip tests the point
+    for f, reach in ((12, 0.0), (16, 1.0), (19, 1.0)):
+        crouch(f, 0.02)
+        hunch(f, 1.0, twist=-12)
+        look(f, yaw=-10, pitch=-14)
+        ctx.key(f, rup, aim=(0.1, -0.4, 0.9))
+        ctx.key(f, rfo, aim=(-0.3, 0.35, 0.88))
+        ctx.key(f, rha, turn=[('right', 15)])
+        ctx.key(f, lup, aim=(0.35 + 0.1 * reach, -0.2 + 0.2 * reach, 0.9))
+        ctx.key(f, lfo, aim=(0.7 + 0.1 * reach, 0.2 + 0.1 * reach, 0.55))
+        ctx.key(f, lha, turn=[('right', 10)])
+
+    # 21: ouch! free hand snaps back, head jerks up
+    crouch(21, 0.015)
+    hunch(21, 0.7, twist=-6)
+    look(21, yaw=-5, pitch=4)
+    ctx.key(21, rup, aim=(0.1, -0.4, 0.9))
+    ctx.key(21, rfo, aim=(-0.3, 0.35, 0.88))
+    ctx.key(21, lup, aim=(-0.55, -0.45, 0.3))
+    ctx.key(21, lfo, aim=(-0.3, 0.4, 0.6))
+    ctx.key(21, lha, turn=[('forward', 30)], interp='LINEAR')
+    ctx.key(23, lha, turn=[('forward', -25)], interp='LINEAR')
+
+    # 25: pleased little nod, back to ready
+    crouch(25, 0.022); hunch(25, 1.1); look(25, pitch=-6); ready_arms(25)
+
+    # 28-34: snap glance left (overshoot, hold)
+    for f, yaw in ((28, 45), (30, 52), (34, 46)):
+        crouch(f, 0.02); hunch(f, 1.0, twist=10); look(f, yaw=yaw); ready_arms(f)
+
+    # 37-44: snap glance right
+    for f, yaw in ((37, -50), (39, -57), (44, -50)):
+        crouch(f, 0.02); hunch(f, 1.0, twist=-10); look(f, yaw=yaw); ready_arms(f)
+
+    # 48-58: dagger out to the side, twirl around the wrist (split over forearm + hand,
+    # each under 180 deg so the rotation never flips), then an eased flip back to the grip
+    # (no step larger than ~45 deg per frame so it never pops)
+    for f, fo_tw, ha_tw in ((48, 0, 0), (51, -50, -80), (54, -70, -140), (56, -40, -80), (58, 0, 0)):
+        crouch(f, 0.018)
+        hunch(f, 0.9, twist=-6)
+        look(f, yaw=-15, pitch=-4)
+        ctx.key(f, rup, aim=(0.6, -0.5, 0.6))
+        ctx.key(f, rfo, aim=(0.5, 0.2, 0.85), twist=fo_tw)
+        ctx.key(f, rha, twist=ha_tw)
+        ctx.key(f, lup, aim=(-0.4, -0.7, 0.4))
+        ctx.key(f, lfo, aim=(-0.1, -0.1, 1.0))
+
+    # 61: catch and snap into the ready crouch (overshoot), 65 settle, hold
+    crouch(61, 0.028); hunch(61, 1.3); look(61, pitch=4); ready_arms(61, l_lift=0.1)
+    crouch(65, 0.02); hunch(65, 1.0); look(65); ready_arms(65)
+    crouch(70, 0.02); hunch(70, 1.0); look(70); ready_arms(70)
+    # 78: back to base pose (automatic) for a seamless loop
+
+    ctx.note('Idle: crouch 8, fingertip test 12-19, ouch 21, glance L 28-34, glance R 37-44, twirl 48-58 (eased, no pop), ready 61-70.')
