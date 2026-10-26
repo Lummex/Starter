@@ -2,7 +2,7 @@
  "id": "shiv-rat-sig-a",
  "type": "animate",
  "asset_id": "shiv-rat",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:35:22Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T10:30:22Z",
- "error": {
-  "message": "{\"message\":\"is at 698c1f6d38b824a2bbfc40e93aa1a37cd320441a but expected 3d3c8ccbc61f51c5cbbc099593bb9853b2ddbb9a\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
-  "at": "2026-10-26T10:23:09Z"
- },
+ "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "2 animation(s) built and checked: OH_Idle, OH_Walk"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/shiv-rat/char.glb@factory/issue-8"
@@ -93,7 +90,240 @@
   {
    "at": "2026-10-26T10:28:39Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T10:30:28Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T10:30:22Z"
+ "updated_at": "2026-10-26T10:30:28Z",
+ "result": {
+  "summary": "2 animation(s) built and checked: OH_Idle, OH_Walk",
+  "files": [
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/char.glb",
+    "bytes": 971864,
+    "sha256": "9a4ee9cf4dcd1d49a537e8e9b0ec8d03aa2182b9ebd32ea5b7e14fd44395167b"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/events.json",
+    "bytes": 297,
+    "sha256": "f8ea6d18052b8a5d70aaccbbe9cbc1fa2d0c156907fe95d30989c1377f90d6e8"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/inspection.json",
+    "bytes": 10257,
+    "sha256": "8434caf72adbdc458019856322f6edf8a7dd4ef0dac7c4623d30b98a75e075da"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/build-report.json",
+    "bytes": 2147,
+    "sha256": "17010568cd0956ce4e6b3ae98b60f73f3ba9f5aa801272575244d14c0ff75e60"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/validation.json",
+    "bytes": 998,
+    "sha256": "d1a205280c61217074837281ae10edb69615d94223d55e51c9d7a8a2aeac5aac"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/final-OH_Idle-000.png",
+    "bytes": 175429,
+    "sha256": "715a708ee97403412bec5196549493a592d8045410dd8532a8cb2b2516aaacfa"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/final-OH_Idle-015.png",
+    "bytes": 173811,
+    "sha256": "0fe9b6d4997952b299b1fcdf1b12dbd31f6e2126afc79058b512b92542d2b4f9"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/final-OH_Idle-030.png",
+    "bytes": 173242,
+    "sha256": "0881e90e2da3744e5afe03d5ee6d5b8de11695e11322faaad8cb4e62626019de"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/final-OH_Idle-045.png",
+    "bytes": 172569,
+    "sha256": "0bf84df2c42bfb859f0b0535b6a572d4e2564b235f0fa6a06d212c991bd15751"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/final-OH_Idle-060.png",
+    "bytes": 175429,
+    "sha256": "e210f76a6be57909984808707676ab9fbe2e5534e4631193a7241f4cb72bd416"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/final-OH_Walk-000.png",
+    "bytes": 175429,
+    "sha256": "9baeddc5a12848d90ccf97ef78a41f2fbd52e1c37a8389df4e35c040ab57a38c"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/final-OH_Walk-006.png",
+    "bytes": 171277,
+    "sha256": "7fd654a4f018843820d4f8813655587c6d9865250f1c65bfa0bfa0da5dc743ab"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/final-OH_Walk-012.png",
+    "bytes": 171891,
+    "sha256": "3052d53fa06e95803ac2507369f45d0d0076216938732dbca3d72a5dd90b3efe"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/final-OH_Walk-018.png",
+    "bytes": 171588,
+    "sha256": "31c3b53f34e71090842f85faba6fc3fb7b6abdc9861d7e25bef7f038e4770c24"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/final-OH_Walk-024.png",
+    "bytes": 175426,
+    "sha256": "d192aa55da59ca9aeefb32df19c2c0334520668acf709afa46978f7d34ee4d6c"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Idle-000.png",
+    "bytes": 304476,
+    "sha256": "c1ccd62eaa28d82efbd20770dd42ea40798de1212133c083a935a5125eb0d91e"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Idle-010.png",
+    "bytes": 301958,
+    "sha256": "d7c5c43933c514cab63d13128f4ef366b1afd73423f0f78d4b89aa601da46695"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Idle-020.png",
+    "bytes": 301991,
+    "sha256": "f18dbd7095bd721eccb2606f6d141cc537f116bf623e213b2f06166a75eacf6c"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Idle-030.png",
+    "bytes": 300921,
+    "sha256": "8cea25e3e0fd7888e36aa1fcd889d8e13c2fdbc44f4d1f758abdaf981a61b1be"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Idle-040.png",
+    "bytes": 299773,
+    "sha256": "a20281332f22a3579cccf9ecb93827e316c1b1a7f7132fb33457f60f7ac47d12"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Idle-050.png",
+    "bytes": 300621,
+    "sha256": "681cd63f8018e71cf93843decf98616caad2ee8f6f194679070e8ffb953b051e"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Idle-060.png",
+    "bytes": 304476,
+    "sha256": "eaaecbe8716841a74e7e688fb4d670a55d130644e080a299c9794a6e0b435f00"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Walk-000.png",
+    "bytes": 304476,
+    "sha256": "ccebc6fd35c2b39896a55e1d033bc38c2c6d35ed030a51e77adcd2696425a500"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Walk-004.png",
+    "bytes": 298434,
+    "sha256": "e2e9fa93dd8c653b7f4112d0850e4844f73b7fc30607b1586672e2d3623a52fc"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Walk-008.png",
+    "bytes": 297344,
+    "sha256": "be7e21b8cd7cd9a43a1cef4a5c08183d82fc76658833c37ad48a4ecd0a7c2b36"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Walk-012.png",
+    "bytes": 299177,
+    "sha256": "f9625655c319ec633e2fdc5f8ce3ed9e5751ada9e74d7c7570954593940feeac"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Walk-016.png",
+    "bytes": 299710,
+    "sha256": "1c599f018e0324ed35c9d7cc3d96eb99e0a6c31f143ce7d763732fc8cd4d8d8f"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Walk-020.png",
+    "bytes": 298863,
+    "sha256": "7865de05c9b2266daf570ed52e94a74ecc1d0af055215e0691806c67c0a106cb"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/preview-OH_Walk-024.png",
+    "bytes": 304476,
+    "sha256": "49dd3bea95d5a2c36f0fe19f3b03ce8d396ffadaad73e96b5fe45f7527313203"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/anim-OH_Idle.py.txt",
+    "bytes": 3522,
+    "sha256": "a0c3c02d48b817c9a33cc276125c70ba3c9566cfa28b9ea80d2cc7df5b8b30a5"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-a/out/anim-OH_Walk.py.txt",
+    "bytes": 3220,
+    "sha256": "264a248ae553124d4d70cf87462c2f875894c58780bf8ce99c7879cefa862a72"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 39157,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Walk": [
+      0.0,
+      24.0
+     ],
+     "OH_Idle": [
+      0.0,
+      60.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Thrust_Slash": [
+      0.0,
+      90.0
+     ],
+     "Quick_Walk": [
+      0.0,
+      90.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Idle": {
+      "keys": 61,
+      "seconds": 2.0
+     },
+     "OH_Walk": {
+      "keys": 25,
+      "seconds": 0.8
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Quick_Walk",
+      "Thrust_Slash",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0017,
+     "worst_rotation_error_deg": 0.002
+    },
+    "written_clip_error_pct_of_height": 0.00069
+   }
+  }
+ }
 }
