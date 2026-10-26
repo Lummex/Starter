@@ -1,0 +1,231 @@
+import math
+import mathutils
+
+V = mathutils.Vector
+AX = {'right': (1, 0, 0), 'left': (-1, 0, 0), 'up': (0, 1, 0), 'down': (0, -1, 0),
+      'forward': (0, 0, 1), 'back': (0, 0, -1)}
+SPINE = ('Spine02', 'Spine01', 'Spine')
+MISC = (('neck', 'neck'), ('Head', 'head'), ('LeftShoulder', 'lsh'), ('RightShoulder', 'rsh'),
+        ('LeftHand', 'lhand'), ('RightHand', 'rhand'))
+
+
+# ---------------------------------------------------------------- rig helpers
+def qturn(turns):
+    # API turns are in the character's (right, up, forward) frame; sign flips vs. plain math
+    q = mathutils.Quaternion()
+    for ax, deg in turns:
+        q = mathutils.Quaternion(V(AX[ax]), -math.radians(deg)) @ q
+    return q
+
+
+def unit(t):
+    return V(t).normalized()
+
+
+def ik2(root, target, l1, l2, pole):
+    d = target - root
+    n = d.normalized()
+    dist = min(max(d.length, abs(l1 - l2) + 0.002), (l1 + l2) * 0.999)
+    a = (l1 * l1 - l2 * l2 + dist * dist) / (2.0 * dist)
+    h = math.sqrt(max(l1 * l1 - a * a, 0.0))
+    p = pole - n * pole.dot(n)
+    if p.length < 1e-6:
+        p = V((0, 0, 1)) - n * n.z
+    p.normalize()
+    mid = root + n * a + p * h
+    end = root + n * dist
+    return (mid - root).normalized(), (end - mid).normalized()
+
+
+def make_rig(ctx):
+    B = ctx.bones
+    R = {'ctx': ctx, 'B': B}
+    R['H'] = {n: V(B[n]['head']) for n in B}
+    R['D'] = {n: V(B[n]['points']) for n in B}
+
+    def depth(n):
+        d = 0
+        p = B[n]['parent']
+        while p:
+            d += 1
+            p = B[p]['parent']
+        return d
+    R['order'] = sorted(B, key=depth)
+    H = R['H']
+    R['len'] = {}
+    R['pole'] = {}
+    for s in ('Left', 'Right'):
+        th, sh, ft = s + 'UpLeg', s + 'Leg', s + 'Foot'
+        R['len'][s + 'leg'] = ((H[sh] - H[th]).length, (H[ft] - H[sh]).length)
+        R['pole'][s] = H[sh] - (H[th] + H[ft]) * 0.5
+        up, fo, ha = s + 'Arm', s + 'ForeArm', s + 'Hand'
+        R['len'][s + 'arm'] = ((H[fo] - H[up]).length, (H[ha] - H[fo]).length)
+    return R
+
+
+def fk(R, local, move):
+    B, H = R['B'], R['H']
+    W, P = {}, {}
+    for n in R['order']:
+        par = B[n]['parent']
+        L = local.get(n, mathutils.Quaternion())
+        if par is None:
+            W[n] = L.copy()
+            P[n] = H[n] + move
+        else:
+            W[n] = W[par] @ L
+            P[n] = P[par] + W[par] @ (H[n] - H[par])
+    return W, P
+
+
+def tl(t):
+    return list(t) if t else [('up', 0)]
+
+
+def basic(R, p):
+    local, keys = {}, []
+    move = V(p.get('move', (0, 0, 0)))
+    ht = p.get('hips', [])
+    local['Hips'] = qturn(ht)
+    keys.append(('Hips', {'turn': tl(ht), 'move': (move.x, move.y, move.z)}))
+    tw, pt, sd = p.get('spine', (0, 0, 0))
+    st = [('up', tw / 3.0), ('right', pt / 3.0), ('forward', sd / 3.0)]
+    for b in SPINE:
+        local[b] = qturn(st)
+        keys.append((b, {'turn': st}))
+    for b, k in MISC:
+        t = p.get(k, [])
+        local[b] = qturn(t)
+        keys.append((b, {'turn': tl(t)}))
+    return local, keys, move
+
+
+def aim(R, local, keys, move, b, wdir):
+    W, P = fk(R, local, move)
+    par = R['B'][b]['parent']
+    a = W[par].inverted() @ wdir.normalized()
+    local[b] = R['D'][b].rotation_difference(a)
+    keys.append((b, {'aim': (a.x, a.y, a.z)}))
+
+
+def pose(R, frame, p, interp='BEZIER', dry=False):
+    H = R['H']
+    local, keys, move = basic(R, p)
+    legs = p.get('legs', {})
+    for s, sx in (('Left', -1.0), ('Right', 1.0)):
+        th, sh, ft = s + 'UpLeg', s + 'Leg', s + 'Foot'
+        l1, l2 = R['len'][s + 'leg']
+        W, P = fk(R, local, move)
+        T = P[th]
+        spec = legs.get(s, ('rest',))
+        if spec[0] == 'kneel':
+            dy = T.y - 0.045
+            hz = math.sqrt(max(l1 * l1 - dy * dy, 0.0))
+            K = V((T.x + sx * 0.012, 0.045, T.z + hz))
+            F = K + unit((0.0, 0.07, -1.0)) * l2
+            fd = unit((sx * 0.05, -0.35, -0.94))
+            pole = K - (T + F) * 0.5
+        elif spec[0] == 'prone':
+            r = 0.363
+            dy = T.y - 0.065
+            hz = math.sqrt(max(r * r - dy * dy, 0.0))
+            F = V((T.x + sx * 0.02, 0.065, T.z - hz))
+            fd = unit((sx * 0.1, -0.55, -0.83))
+            pole = V((0, -1, 0))
+        elif spec[0] == 'at':
+            F, fd, pole = V(spec[1]), unit(spec[2]), V(spec[3])
+        else:
+            F, fd, pole = H[ft], R['D'][ft], R['pole'][s]
+        d1, d2 = ik2(T, F, l1, l2, pole)
+        aim(R, local, keys, move, th, d1)
+        aim(R, local, keys, move, sh, d2)
+        aim(R, local, keys, move, ft, fd)
+    arms = p.get('arms', {})
+    for s in ('Left', 'Right'):
+        up, fo = s + 'Arm', s + 'ForeArm'
+        spec = arms.get(s)
+        if spec is None:
+            continue
+        W, P = fk(R, local, move)
+        if spec[0] == 'chest':
+            u = W['Spine'] @ unit(spec[1])
+            f = W['Spine'] @ unit(spec[2])
+        elif spec[0] == 'world':
+            u, f = unit(spec[1]), unit(spec[2])
+        else:
+            a1, a2 = R['len'][s + 'arm']
+            u, f = ik2(P[up], spec[1](P), a1, a2, V(spec[2]))
+        aim(R, local, keys, move, up, u)
+        aim(R, local, keys, move, fo, f)
+    W, P = fk(R, local, move)
+    if not dry:
+        for b, kw in keys:
+            R['ctx'].key(frame, b, interp=interp, **kw)
+    return P
+
+
+# ---------------------------------------------------------------- the clip
+GUARD_L = ('chest', (-0.25, -0.35, 0.9), (0.1, 0.6, 0.8))
+GUARD_R = ('chest', (0.25, -0.35, 0.9), (-0.1, 0.6, 0.8))
+GUARD = {'Left': GUARD_L, 'Right': GUARD_R}
+
+
+def build(ctx):
+    ctx.length(36)
+    R = make_rig(ctx)
+    hand = ctx.bone('right hand')
+
+    # bounce into guard
+    pose(R, 3, {'move': (0, -0.02, 0), 'spine': (-10, -8, 0), 'neck': [('up', 5)],
+                'head': [('right', -6)], 'arms': GUARD})
+    # jab 1
+    pose(R, 5, {'move': (0, -0.012, 0.015), 'spine': (-24, -12, 0), 'neck': [('up', 12)],
+                'head': [('right', -6)],
+                'arms': {'Left': ('world', (0.0, 0.08, 1.0), (0.02, 0.06, 1.0)), 'Right': GUARD_R}})
+    pose(R, 7, {'move': (0, -0.024, 0), 'spine': (-10, -8, 0), 'neck': [('up', 5)],
+                'head': [('right', -6)], 'arms': GUARD})
+    pose(R, 9, {'move': (0, 0.004, 0), 'spine': (-12, -6, 0), 'neck': [('up', 6)],
+                'head': [('right', -4)], 'arms': GUARD})
+    # jab 2, snappier and further
+    pose(R, 11, {'move': (0, -0.012, 0.018), 'spine': (-28, -14, 0), 'neck': [('up', 14)],
+                 'head': [('right', -6)],
+                 'arms': {'Left': ('world', (-0.02, 0.12, 1.0), (0.0, 0.1, 1.0)), 'Right': GUARD_R}})
+    pose(R, 13, {'move': (0, -0.022, 0), 'spine': (-12, -8, 0), 'neck': [('up', 6)],
+                 'head': [('right', -6)], 'arms': GUARD})
+    # huge haymaker wind-up: coil right, lean back onto back foot, left fist points at target
+    pose(R, 16, {'move': (0, -0.035, -0.012), 'spine': (-48, 10, 8), 'neck': [('up', 22)],
+                 'head': [('right', -4)],
+                 'arms': {'Left': ('world', (0.05, 0.15, 1.0), (0.0, 0.2, 1.0)),
+                          'Right': ('chest', (0.75, 0.4, -0.5), (-0.15, 0.9, 0.35))}})
+    pose(R, 19, {'move': (0, -0.04, -0.015), 'spine': (-55, 13, 10), 'neck': [('up', 26)],
+                 'head': [('right', -6)],
+                 'arms': {'Left': ('world', (0.05, 0.15, 1.0), (0.0, 0.2, 1.0)),
+                          'Right': ('chest', (0.8, 0.45, -0.45), (-0.2, 0.92, 0.3))}},
+         interp='LINEAR')
+    # whip around (smear frame)
+    pose(R, 21, {'move': (0, -0.032, 0.0), 'spine': (-5, -6, 0), 'neck': [('up', 5)],
+                 'arms': {'Left': GUARD_L,
+                          'Right': ('world', (0.85, 0.25, 0.45), (0.5, 0.2, 0.85))}},
+         interp='LINEAR')
+    # HIT
+    pose(R, 22, {'move': (0, -0.03, 0.02), 'spine': (45, -18, -4), 'neck': [('up', -18)],
+                 'head': [('right', -5)],
+                 'arms': {'Left': GUARD_L,
+                          'Right': ('world', (-0.05, 0.1, 1.0), (-0.05, 0.08, 1.0))}})
+    ctx.event(22, 'hit', bone=hand)
+    # follow-through overshoot, then settle
+    pose(R, 24, {'move': (0, -0.042, 0.022), 'spine': (55, -22, -6), 'neck': [('up', -22)],
+                 'head': [('right', -5)],
+                 'arms': {'Left': GUARD_L,
+                          'Right': ('world', (-0.35, 0.0, 0.94), (-0.42, -0.05, 0.9))}})
+    pose(R, 27, {'move': (0, -0.03, 0.015), 'spine': (40, -14, -3), 'neck': [('up', -15)],
+                 'head': [('right', -4)],
+                 'arms': {'Left': GUARD_L,
+                          'Right': ('world', (-0.2, 0.06, 1.0), (-0.22, 0.2, 1.0))}})
+    # cocky bounce back into guard
+    pose(R, 31, {'move': (0, 0.006, 0), 'spine': (-8, -4, 0), 'neck': [('forward', 8)],
+                 'head': [('right', -4)], 'arms': GUARD})
+    pose(R, 33, {'move': (0, -0.014, 0), 'spine': (-6, -4, 0), 'neck': [('forward', 4)],
+                 'arms': GUARD})
+    ctx.note('Jabs 5/11, haymaker coil 16-19, smear 21, hit 22, overshoot 24, guard bounce 31-33. '
+             'Legs solved with IK every key so feet stay planted while bouncing.')
