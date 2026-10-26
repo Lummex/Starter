@@ -1,0 +1,168 @@
+import math
+from mathutils import Vector, Quaternion
+
+AX = {'right': (1, 0, 0), 'left': (-1, 0, 0), 'up': (0, 1, 0), 'down': (0, -1, 0),
+      'forward': (0, 0, 1), 'back': (0, 0, -1)}
+SPINE = (('Spine02', 0.3), ('Spine01', 0.35), ('Spine', 0.35))
+IDQ = (1.0, 0.0, 0.0, 0.0)
+
+
+def rq(turns):
+    # API turns are left-handed in (right, up, forward) space -> negate the angle
+    q = Quaternion(IDQ)
+    for ax, a in turns:
+        q = Quaternion(Vector(AX[ax]), math.radians(-a)) @ q
+    return q
+
+
+def wrap(a):
+    while a > 180.0:
+        a -= 360.0
+    while a < -180.0:
+        a += 360.0
+    return a
+
+
+def psi(v):
+    # angle in the side view, 0 = pointing down, +90 = pointing forward
+    return math.degrees(math.atan2(v.z, -v.y))
+
+
+def make_pose(ctx, low):
+    B = ctx.bones
+
+    def P(n, k='head'):
+        return Vector(B[n][k])
+
+    def flat(v):
+        return Vector((0.0, v.y, v.z))
+
+    def fk(p, chain, m):
+        for h, q in reversed(chain):
+            p = h + q @ (p - h)
+        return p + m
+
+    def leg(f, side, m, interp):
+        # two-bone side-view IK so the ankle stays where it is in the base pose
+        up, sh, ft = side + 'UpLeg', side + 'Leg', side + 'Foot'
+        H0 = flat(P(up))
+        K0 = flat(P(up, 'tail'))
+        A0 = flat(P(ft))
+        H1 = H0 + Vector((0.0, m.y, m.z))
+        l1 = (K0 - H0).length
+        l2 = (A0 - K0).length
+        d = A0 - H1
+        dist = min(max(d.length, abs(l1 - l2) + 0.005), (l1 + l2) * 0.999)
+        c = (l1 * l1 + dist * dist - l2 * l2) / (2.0 * l1 * dist)
+        ang = math.degrees(math.acos(min(1.0, max(-1.0, c))))
+        s = 1.0 if wrap(psi(K0 - H0) - psi(A0 - H0)) >= 0 else -1.0
+        pk = psi(d) + s * ang
+        thigh = wrap(pk - psi(K0 - H0))
+        r = math.radians(pk)
+        K1 = H1 + Vector((0.0, -math.cos(r), math.sin(r))) * l1
+        shin_w = wrap(psi(A0 - K1) - psi(A0 - K0))
+        ctx.key(f, up, turn=[('right', thigh)], interp=interp)
+        ctx.key(f, sh, turn=[('right', shin_w - thigh)], interp=interp)
+        ctx.key(f, ft, turn=[('right', -shin_w)], interp=interp)
+
+    def arm(f, side, chain, m, target, pole, interp):
+        ua, fa = side + 'Arm', side + 'ForeArm'
+        qc = Quaternion(IDQ)
+        for h, q in chain:
+            qc = qc @ q
+        S = fk(P(ua), chain, m)
+        l1 = (P(ua, 'tail') - P(ua)).length
+        l2 = (P(fa, 'tail') - P(fa)).length
+        d = Vector(target) - S
+        dist = min(max(d.length, abs(l1 - l2) + 0.02), (l1 + l2) * 0.995)
+        dn = d.normalized()
+        W = S + dn * dist
+        c = (l1 * l1 + dist * dist - l2 * l2) / (2.0 * l1 * dist)
+        ang = math.acos(min(1.0, max(-1.0, c)))
+        pv = Vector(pole)
+        pv = pv - dn * pv.dot(dn)
+        pv.normalize()
+        E = S + (dn * math.cos(ang) + pv * math.sin(ang)) * l1
+        ud = (E - S).normalized()
+        fd = (W - E).normalized()
+        lu = qc.inverted() @ ud
+        qua = Vector(B[ua]['points']).rotation_difference(lu)
+        lf = (qc @ qua).inverted() @ fd
+        ctx.key(f, ua, aim=(lu.x, lu.y, lu.z), interp=interp)
+        ctx.key(f, fa, aim=(lf.x, lf.y, lf.z), interp=interp)
+        if side == 'Right':
+            tip = W + fd * 0.12
+            low[0] = min(low[0], W.y, tip.y)
+
+    def pose(f, hip=(0.0, 0.0, 0.0), twist=0.0, bend=0.0, lean=0.0, head=None,
+             R=None, L=None, Rpole=(1.0, -1.0, -0.3), Lpole=(-1.0, -1.0, -0.3), interp='BEZIER'):
+        m = Vector(hip)
+        ctx.key(f, 'Hips', move=hip, interp=interp)
+        leg(f, 'Left', m, interp)
+        leg(f, 'Right', m, interp)
+        chain = []
+        for n, w in SPINE:
+            t = [('up', twist * w), ('right', bend * w), ('forward', lean * w)]
+            ctx.key(f, n, turn=t, interp=interp)
+            chain.append((P(n), rq(t)))
+        if head is not None:
+            ctx.key(f, 'Head', turn=head, interp=interp)
+        if R is not None:
+            arm(f, 'Right', chain + [(P('RightShoulder'), Quaternion(IDQ))], m, R, Rpole, interp)
+        if L is not None:
+            arm(f, 'Left', chain + [(P('LeftShoulder'), Quaternion(IDQ))], m, L, Lpole, interp)
+
+    return pose
+
+
+def build(ctx):
+    ctx.length(48)
+    low = [10.0]
+    pose = make_pose(ctx, low)
+    hand = ctx.bone('right hand')
+
+    # address: ball cradled at the chest, chin up, showing off to the crowd
+    pose(6, twist=-6, bend=7, head=[('right', 10), ('up', -12)],
+         R=(0.20, 0.42, 0.17), L=(0.04, 0.40, 0.17))
+    pose(10, twist=-4, bend=6, head=[('right', 6), ('up', -2)],
+         R=(0.20, 0.41, 0.18), L=(0.04, 0.39, 0.18))
+
+    # push-away: ball pushed forward, knees start to sink
+    pose(13, hip=(0.0, -0.02, 0.01), twist=-8, bend=-4, head=[('right', 6)],
+         R=(0.24, 0.40, 0.26), L=(-0.22, 0.42, 0.16))
+
+    # backswing top: ball high behind him, left arm out for balance
+    pose(18, hip=(0.0, -0.04, 0.02), twist=-22, bend=-12, head=[('up', 14), ('right', 12)],
+         R=(0.27, 0.56, -0.33), Rpole=(0.5, -1.0, 0.3), L=(-0.40, 0.50, 0.10))
+
+    # bottom of the swing: arm straight down past his right side (clear of the leg)
+    pose(21, hip=(0.0, -0.06, 0.045), twist=-6, bend=-24, head=[('up', 4), ('right', 20)],
+         R=(0.29, 0.27, -0.04), Rpole=(0.5, -0.2, -1.0), L=(-0.42, 0.47, -0.08))
+
+    # release: deep lunge, arm swung out low along the floor
+    pose(23, hip=(0.0, -0.07, 0.05), twist=6, bend=-30, head=[('right', 24)],
+         R=(0.24, 0.20, 0.32), Rpole=(0.5, -1.0, -0.5), L=(-0.42, 0.45, -0.20))
+    ctx.event(23, 'ball_release', bone=hand)
+    pose(25, hip=(0.0, -0.068, 0.05), twist=9, bend=-28, head=[('right', 24)],
+         R=(0.27, 0.40, 0.36), Rpole=(0.5, -1.0, -0.5), L=(-0.42, 0.45, -0.21))
+
+    # follow-through: arm high up front, frozen watching the ball roll
+    pose(28, hip=(0.0, -0.058, 0.045), twist=12, bend=-18, head=[('right', 18), ('up', -4)],
+         R=(0.31, 0.88, 0.22), Rpole=(1.0, -0.5, -0.5), L=(-0.40, 0.46, -0.16))
+    pose(31, hip=(0.0, -0.055, 0.044), twist=11, bend=-17, head=[('right', 16), ('up', -6)],
+         R=(0.31, 0.89, 0.24), Rpole=(1.0, -0.5, -0.5), L=(-0.38, 0.45, -0.12))
+
+    # rise and cock the fist
+    pose(34, hip=(0.0, -0.015, 0.01), twist=-4, bend=4, head=[('right', 8), ('up', -8)],
+         R=(0.28, 0.55, 0.14), Rpole=(0.6, -1.0, -0.5))
+
+    # fist pump: yank down, little crouch, nod at the crowd
+    pose(37, hip=(0.0, -0.028, 0.0), twist=-10, bend=-9, head=[('right', -10), ('forward', -10), ('up', -8)],
+         R=(0.26, 0.40, 0.10), Rpole=(0.4, -0.6, -1.0))
+    pose(39, hip=(0.0, -0.022, 0.0), twist=-8, bend=-5, head=[('right', -6), ('forward', -12), ('up', -10)],
+         R=(0.26, 0.43, 0.12), Rpole=(0.4, -0.6, -1.0))
+    pose(42, hip=(0.0, -0.008, 0.0), twist=-3, bend=2, head=[('forward', -6), ('up', -4)])
+
+    ctx.note('OH_Special: address 6-10, push-away 13, backswing 18, bottom 21, release 23 (deep lunge), '
+             'follow-through 28-31, fist pump 37-39. Ball is part of the hand mesh, so it cannot be hidden '
+             'at release; game spawns the rolling ball at ball_release. Lowest wrist/ball estimate %.3f m.' % low[0])
