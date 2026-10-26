@@ -1,20 +1,7 @@
 {
  "worker_id": "starr-f0fad5",
- "state": "idle",
- "at": "2026-10-26T07:26:27Z",
+ "state": "busy",
+ "at": "2026-10-26T07:27:19Z",
  "host": "Starr",
- "check": {
-  "worker_id": "starr-f0fad5",
-  "at": "2026-10-26T07:26:23Z",
-  "python": "3.13.13",
-  "blender_exe": "C:\\Users\\kentu\\Downloads\\blender-5.2.3-windows-x64\\blender.exe",
-  "blender_found": true,
-  "blender_version": "Blender 5.2.3 LTS",
-  "claude_exe": "C:\\Users\\kentu\\.local\\bin\\claude.EXE",
-  "claude_found": true,
-  "claude_version": "2.1.310 (Claude Code)",
-  "claude_mcp": "Checking MCP server health\u2026\n\nclaude.ai Claude Docs: https://api.anthropic.com/v1/pages/mcp - \u221a Connected",
-  "blender_mcp_port_9876": "open (local only)",
-  "github": "ok"
- }
+ "job": "goblin-slinger-inspect-002"
 }
