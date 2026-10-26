@@ -1,0 +1,63 @@
+{
+ "id": "goblin-bomber-sig-a",
+ "type": "animate",
+ "asset_id": "goblin-bomber",
+ "status": "queued",
+ "priority": 5,
+ "created_at": "2026-10-26T09:02:28Z",
+ "created_by": "claude-overnight",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": true,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "Waiting for the Blender worker"
+ },
+ "source": {
+  "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
+ },
+ "request": "Bare Knuckle Lunatic: Brawler who thinks every problem is a fistfight. Always bouncing, always throwing punches. He holds nothing (fists always closed); keep held items in the same hand. These are his own signature moves: give him a distinct personality, different from other goblins. Rules from the owner for every goblin: nothing he holds ever goes through his body or the ground; feet stay planted (no sliding or sinking) unless the clip says otherwise; held items stay in the same hand; movements look weighty and cartoony, never floaty. Board games are seen from above and in front, so make poses read clearly from there.",
+ "animations": [
+  {
+   "name": "OH_Idle",
+   "description": "Shadow boxing (owner's wish): bouncing on his toes, bob and weave, jab-jab-cross combination, then back to bouncing. Loops.",
+   "frames": [
+    60,
+    90
+   ],
+   "loop": true,
+   "return_to_idle": true,
+   "feet_may_move": true,
+   "events": []
+  },
+  {
+   "name": "OH_Walk",
+   "description": "In-place walk cycle for moving one board space at a time (the game slides him forward; he must NOT move forward himself, feet step in place like on a treadmill). Two full steps, loops seamlessly. Style: boxer's shuffle, fists up guarding his face, shoulders rolling.",
+   "frames": [
+    24,
+    36
+   ],
+   "loop": true,
+   "return_to_idle": true,
+   "feet_may_move": true,
+   "events": []
+  }
+ ],
+ "attachments": [],
+ "output": {
+  "format": "glb"
+ },
+ "history": [
+  {
+   "at": "2026-10-26T09:02:28Z",
+   "status": "queued",
+   "by": "claude"
+  }
+ ]
+}
