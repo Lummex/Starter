@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:47:00Z",
- "heartbeat_at": "2026-10-26T11:42:00Z",
+ "lease_until": "2026-10-26T11:47:07Z",
+ "heartbeat_at": "2026-10-26T11:42:07Z",
  "error": {
   "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r1/out/final-OH_React_Bonk-027.png does not match 7b2e0906f7aa2be881c964f04fa32c4e7fabdbdb\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:39:52Z"
  },
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -575,5 +575,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T11:42:00Z"
+ "updated_at": "2026-10-26T11:42:07Z"
 }
