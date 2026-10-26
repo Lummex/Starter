@@ -4,19 +4,18 @@
  "clips": [
   {
    "name": "OH_Attack",
-   "frames": 36,
-   "seconds": 1.2,
+   "frames": 40,
+   "seconds": 1.333,
    "key_frames": [
-    6,
+    5,
     10,
     12,
-    15,
     16,
     18,
-    20,
-    22,
-    24,
-    30
+    21,
+    23,
+    26,
+    32
    ],
    "bones_moved": [
     "Head",
@@ -25,39 +24,44 @@
     "LeftFoot",
     "LeftForeArm",
     "LeftHand",
+    "LeftLeg",
+    "LeftShoulder",
     "LeftUpLeg",
     "RightArm",
     "RightFoot",
     "RightForeArm",
     "RightHand",
+    "RightLeg",
+    "RightShoulder",
     "RightUpLeg",
     "Spine",
     "Spine01",
-    "Spine02"
+    "Spine02",
+    "neck"
    ],
    "events": [
     {
-     "frame": 20,
+     "frame": 21,
      "name": "hit",
      "bone": "RightHand",
-     "time": 0.6667
+     "time": 0.7
     }
    ],
-   "fastest_turn_per_frame_deg": 102.5,
-   "feet_drift_m": 0.0151
+   "fastest_turn_per_frame_deg": 144.1,
+   "feet_drift_m": 0.0321
   }
  ],
  "problems": [],
  "notes": [
-  "OH_Attack: Bash impact f10, mace hit f20, settle to idle by f36.",
-  "OH_Attack: Fastest move: RightHand turns 102 degrees in one frame at frame 18 (may look like a pop)"
+  "OH_Attack: Coil 5, shield bash impact 10 (hold 12), mace wind-up 16-18, mace impact/hit 21 (overshoot 23, hold 26), recover 32, idle 40.",
+  "OH_Attack: Fastest move: RightForeArm turns 144 degrees in one frame at frame 20 (may look like a pop)"
  ],
  "splice": {
   "problems": [],
   "clips": {
    "OH_Attack": {
-    "keys": 37,
-    "seconds": 1.2
+    "keys": 41,
+    "seconds": 1.3333
    }
   },
   "calibration": {
@@ -72,6 +76,6 @@
    "worst_position_error_pct_of_height": 0.0014,
    "worst_rotation_error_deg": 0.0
   },
-  "written_clip_error_pct_of_height": 5e-05
+  "written_clip_error_pct_of_height": 2e-05
  }
 }
