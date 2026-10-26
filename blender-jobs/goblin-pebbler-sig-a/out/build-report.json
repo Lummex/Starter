@@ -1,0 +1,112 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Idle",
+   "frames": 72,
+   "seconds": 2.4,
+   "key_frames": [
+    5,
+    10,
+    14,
+    17,
+    22,
+    25,
+    28,
+    32,
+    37,
+    40,
+    42,
+    44,
+    47,
+    52,
+    55,
+    57,
+    58,
+    62,
+    64
+   ],
+   "bones_moved": [
+    "Head",
+    "LeftArm",
+    "LeftForeArm",
+    "LeftHand",
+    "RightArm",
+    "RightForeArm",
+    "RightHand",
+    "Spine01",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 54.1,
+   "feet_drift_m": 0.0
+  },
+  {
+   "name": "OH_Walk",
+   "frames": 28,
+   "seconds": 0.933,
+   "key_frames": [
+    3,
+    7,
+    10,
+    12,
+    14,
+    17,
+    21,
+    24,
+    26
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine01"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 39.4,
+   "feet_drift_m": 0.11
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Idle: Idle: cock 10, slap 14 (overshoot 17), re-cock 22, slap 25 (hold 28-32), grin 37, neck roll 42-58, rest 62-72. Club assumed to extend from the right hand bone.",
+  "OH_Walk: Walk 28f in place: L knee up 7, stomp 10; R knee up 21, stomp 24; club held low behind, tip rolled up off floor and bouncing on stomps."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Idle": {
+    "keys": 73,
+    "seconds": 2.4
+   },
+   "OH_Walk": {
+    "keys": 29,
+    "seconds": 0.9333
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0026,
+   "worst_rotation_error_deg": 0.004
+  },
+  "written_clip_error_pct_of_height": 0.00107
+ }
+}
