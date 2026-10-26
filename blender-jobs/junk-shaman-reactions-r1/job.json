@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:01:06Z",
- "heartbeat_at": "2026-10-26T10:56:06Z",
+ "lease_until": "2026-10-26T11:01:13Z",
+ "heartbeat_at": "2026-10-26T10:56:13Z",
  "error": {
   "message": "{\"message\":\"is at d83aac46b0b9dac93ca556a5380171761c1952eb but expected 0db4d6caf5b40b064527e6556f6848819d1d2193\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T10:54:17Z"
  },
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/junk-shaman/char.glb@factory/issue-8"
@@ -143,5 +143,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T10:56:06Z"
+ "updated_at": "2026-10-26T10:56:13Z"
 }
