@@ -1,0 +1,130 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Idle",
+   "frames": 72,
+   "seconds": 2.4,
+   "key_frames": [
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    28,
+    32,
+    36,
+    39,
+    42,
+    44,
+    47,
+    49,
+    51,
+    54,
+    57,
+    59,
+    61,
+    64,
+    68
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftShoulder",
+    "LeftToeBase",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightShoulder",
+    "RightToeBase",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 38.0,
+   "feet_drift_m": 0.0452
+  },
+  {
+   "name": "OH_Walk",
+   "frames": 32,
+   "seconds": 1.067,
+   "key_frames": [
+    3,
+    8,
+    12,
+    14,
+    19,
+    24,
+    28,
+    30
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftShoulder",
+    "LeftToeBase",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightShoulder",
+    "RightToeBase",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 54.9,
+   "feet_drift_m": 0.0764
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Idle: Frames 0 and 72 are left to the base idle pose (loop + return_to_idle); guard comes up by frame 4 and drops on the last 4 frames. Legs use IK so feet stay planted while bouncing.",
+  "OH_Walk: In-place boxer shuffle: feet lift and plant on their own spots (leg IK), hips never travel forward; fists stay up in guard, lead hand paws on the left step. Frames 0 and 32 are the base idle pose so the loop closes cleanly."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Idle": {
+    "keys": 73,
+    "seconds": 2.4
+   },
+   "OH_Walk": {
+    "keys": 33,
+    "seconds": 1.0667
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0009,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 0.00023
+ }
+}
