@@ -1,0 +1,139 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Attack",
+   "frames": 34,
+   "seconds": 1.133,
+   "key_frames": [
+    4,
+    11,
+    14,
+    16,
+    18,
+    21,
+    25,
+    30
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 18,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.6
+    }
+   ],
+   "fastest_turn_per_frame_deg": 53.9,
+   "feet_drift_m": 0.0011
+  },
+  {
+   "name": "OH_Special",
+   "frames": 72,
+   "seconds": 2.4,
+   "key_frames": [
+    7,
+    11,
+    14,
+    19,
+    22,
+    26,
+    30,
+    34,
+    38,
+    42,
+    46,
+    50,
+    54,
+    58,
+    62,
+    66
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 22,
+     "name": "lift_start",
+     "bone": "RightHand",
+     "time": 0.7333
+    },
+    {
+     "frame": 58,
+     "name": "lift_end",
+     "bone": "RightHand",
+     "time": 1.9333
+    }
+   ],
+   "fastest_turn_per_frame_deg": 49.3,
+   "feet_drift_m": 0.0011
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Attack: OH_Attack: gather 4, wind-up 11-14, whip 16, bonk/hit 18, recoil 21, smug hold 25, idle 34",
+  "OH_Special: OH_Special: mutter 7-14, raise overshoot 19, lift_start 22, heavy carry L->R 22-50, hitch 54, thump down/lift_end 58, slump 62, idle 72"
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Attack": {
+    "keys": 35,
+    "seconds": 1.1333
+   },
+   "OH_Special": {
+    "keys": 73,
+    "seconds": 2.4
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0009,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 4e-05
+ }
+}
