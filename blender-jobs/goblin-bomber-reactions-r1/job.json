@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:26:12Z",
- "heartbeat_at": "2026-10-26T11:21:12Z",
+ "lease_until": "2026-10-26T11:26:16Z",
+ "heartbeat_at": "2026-10-26T11:21:16Z",
  "error": {
   "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r1/out/char.glb does not match 59c14d43cee825697f67a73a220909bc2c5d0279\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:20:42Z"
  },
  "progress": {
-  "stage": "preparing",
-  "percent": 5,
-  "message": "Copying the source model into a private work folder"
+  "stage": "inspecting",
+  "percent": 15,
+  "message": "Reading the model, skeleton and animations in Blender"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -445,5 +445,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T11:21:12Z"
+ "updated_at": "2026-10-26T11:21:16Z"
 }
