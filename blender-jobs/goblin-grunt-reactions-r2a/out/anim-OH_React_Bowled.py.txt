@@ -1,0 +1,288 @@
+import math
+from mathutils import Vector, Quaternion
+
+AX = {
+    'right': (1, 0, 0), 'left': (-1, 0, 0),
+    'up': (0, 1, 0), 'down': (0, -1, 0),
+    'forward': (0, 0, 1), 'back': (0, 0, -1),
+}
+
+ROLES = [
+    'hips', 'spine', 'neck', 'head',
+    'right upperarm', 'right forearm', 'right hand',
+    'left upperarm', 'left forearm', 'left hand',
+    'right thigh', 'right shin', 'right foot',
+    'left thigh', 'left shin', 'left foot',
+]
+
+
+def turnq(turns):
+    # (right, up, forward) is left-handed, so the right-hand-rule angle is negated here
+    q = Quaternion()
+    for ax, deg in turns:
+        q = Quaternion(Vector(AX[ax]), -math.radians(deg)) @ q
+    return q
+
+
+def mir(v):
+    return (-v[0], v[1], v[2])
+
+
+def ik2(a, t, l1, l2, pole):
+    d = t - a
+    dist = max(min(d.length, (l1 + l2) * 0.995), abs(l1 - l2) + 1e-4)
+    dn = d.normalized()
+    c = (l1 * l1 + dist * dist - l2 * l2) / (2 * l1 * dist)
+    c = max(-1.0, min(1.0, c))
+    s = math.sqrt(1.0 - c * c)
+    p = Vector(pole)
+    p = p - dn * dn.dot(p)
+    if p.length < 1e-6:
+        p = Vector((0, 0, 1))
+    p.normalize()
+    d1 = dn * c + p * s
+    mid = a + d1 * l1
+    d2 = (a + dn * dist - mid).normalized()
+    return d1, d2
+
+
+def build(ctx):
+    ctx.length(90)
+    R = {}
+    for r in ROLES:
+        R[r] = ctx.bone(r)
+    B = ctx.bones
+    hips = R['hips']
+    sc = ctx.height / 1.004
+
+    def head0(n):
+        return Vector(B[n]['head'])
+
+    def wq(n, own):
+        q = Quaternion()
+        chain = []
+        p = n
+        while p is not None:
+            chain.append(p)
+            p = ctx.parent(p)
+        for b in reversed(chain):
+            q = q @ own.get(b, Quaternion())
+        return q
+
+    def wp(n, own, move):
+        p = ctx.parent(n)
+        if p is None:
+            pos = head0(n)
+        else:
+            pos = wp(p, own, move) + wq(p, own) @ (head0(n) - head0(p))
+        if n == hips:
+            pos = pos + Vector(move)
+        return pos
+
+    def resolve(t, own, move):
+        if t[0] == 'abs':
+            return Vector(t[1])
+        n = R[t[1]]
+        return wp(n, own, move) + wq(n, own) @ Vector(t[2])
+
+    def pose(f, spec, iks=(), interp='BEZIER'):
+        own = {}
+        move = spec.get('move', (0, 0, 0))
+        ikaims = {}
+        for role in ROLES:
+            n = R[role]
+            s = spec.get(role, {})
+            for (up_r, lo_r, end_r, target, pole) in iks:
+                if up_r == role:
+                    a = wp(n, own, move)
+                    l1 = (head0(R[lo_r]) - head0(n)).length
+                    l2 = (head0(R[end_r]) - head0(R[lo_r])).length
+                    d1, d2 = ik2(a, resolve(target, own, move), l1, l2, pole)
+                    ikaims[up_r] = d1
+                    ikaims[lo_r] = d2
+            turns = s.get('turn', [])
+            tq = turnq(turns)
+            par = ctx.parent(n)
+            pw = wq(par, own) if par is not None else Quaternion()
+            aim = ikaims.get(role, s.get('aim'))
+            if aim is not None and len(aim) == 3 and aim[0] == 'at':
+                aim = resolve(aim[1], own, move) - wp(n, own, move)
+            kw = {'turn': turns, 'interp': interp}
+            if aim is not None:
+                local = pw.inverted() @ Vector(aim).normalized()
+                own[n] = tq @ Vector(B[n]['points']).rotation_difference(local)
+                kw['aim'] = (local.x, local.y, local.z)
+            else:
+                own[n] = tq
+            if n == hips:
+                kw['move'] = move
+            ctx.key(f, n, **kw)
+
+    def arms(spec, ru, rf, lu, lf):
+        spec['right upperarm'] = {'aim': ru}
+        spec['right forearm'] = {'aim': rf}
+        spec['left upperarm'] = {'aim': lu}
+        spec['left forearm'] = {'aim': lf}
+        return spec
+
+    def legs(spec, th, sh):
+        spec['right thigh'] = {'aim': th}
+        spec['right shin'] = {'aim': sh}
+        spec['left thigh'] = {'aim': mir(th)}
+        spec['left shin'] = {'aim': mir(sh)}
+        return spec
+
+    def planted(spec):
+        for side in ('right', 'left'):
+            spec[side + ' foot'] = {'aim': tuple(B[R[side + ' foot']]['points'])}
+        return spec
+
+    leg_iks = (
+        ('right thigh', 'right shin', 'right foot',
+         ('abs', tuple(B[R['right foot']]['head'])), (0.3, 0, 1)),
+        ('left thigh', 'left shin', 'left foot',
+         ('abs', tuple(B[R['left foot']]['head'])), (-0.3, 0, 1)),
+    )
+    # left hand cupped on the side of the head, palm toward the crown
+    hold_ik = ('left upperarm', 'left forearm', 'left hand',
+               ('rel', 'head', (-0.14 * sc, 0.15 * sc, 0.05 * sc)), (-1, -0.2, 0.4))
+
+    def fixat(spec):
+        spec['left hand'] = {'aim': ('at', ('rel', 'head', (0.0, 0.22 * sc, 0.05 * sc)), 0)}
+        return spec
+
+    # --- 3: ball hits the shins, legs start to sweep out
+    s = {'move': (0, 0.01 * sc, -0.01 * sc),
+         'hips': {'turn': [('right', 12)]},
+         'spine': {'turn': [('right', -12)]},
+         'head': {'turn': [('right', -10)]}}
+    arms(s, (0.6, -0.4, 0.4), (0.6, -0.2, 0.5), mir((0.6, -0.4, 0.4)), mir((0.6, -0.2, 0.5)))
+    legs(s, (0.1, -0.75, 0.65), (0.0, -0.8, 0.6))
+    pose(3, s)
+
+    # --- 7: airborne, tipping back, arms flail up
+    s = {'move': (0, 0.04 * sc, -0.04 * sc),
+         'hips': {'turn': [('right', 40)]},
+         'spine': {'turn': [('right', -20)]},
+         'neck': {'turn': [('right', -10)]},
+         'head': {'turn': [('right', -15)]}}
+    arms(s, (0.6, 0.7, 0.3), (0.5, 0.85, 0.2), mir((0.6, 0.7, 0.3)), mir((0.5, 0.85, 0.2)))
+    legs(s, (0.15, -0.1, 1.0), (0.05, 0.1, 1.0))
+    pose(7, s)
+
+    # --- 12: falling, nearly horizontal (linear into the impact = no ease, weighty)
+    s = {'move': (0, -0.08 * sc, -0.10 * sc),
+         'hips': {'turn': [('right', 75)]},
+         'spine': {'turn': [('right', -10)]},
+         'neck': {'turn': [('right', -10)]},
+         'head': {'turn': [('right', -10)]}}
+    arms(s, (0.6, 0.75, -0.2), (0.5, 0.85, -0.1), mir((0.6, 0.75, -0.2)), mir((0.5, 0.85, -0.1)))
+    legs(s, (0.2, 0.6, 0.78), (0.1, 0.75, 0.65))
+    pose(12, s, interp='LINEAR')
+
+    # --- 16: SLAM flat on his back, legs whip up
+    s = {'move': (0, -0.275 * sc, -0.15 * sc),
+         'hips': {'turn': [('right', 90)]},
+         'neck': {'turn': [('right', -15)]},
+         'head': {'turn': [('right', -5)]}}
+    arms(s, (0.85, 0.45, -0.25), (0.8, 0.55, -0.2), mir((0.85, 0.45, -0.25)), mir((0.8, 0.55, -0.2)))
+    legs(s, (0.2, 0.8, 0.55), (0.1, 0.85, 0.5))
+    pose(16, s)
+    ctx.event(16, 'down', bone=hips)
+
+    # --- 19: small bounce
+    s = {'move': (0, -0.22 * sc, -0.15 * sc),
+         'hips': {'turn': [('right', 82)]},
+         'neck': {'turn': [('right', -10)]},
+         'head': {'turn': [('right', 5)]}}
+    arms(s, (0.8, 0.55, -0.2), (0.7, 0.7, -0.15), mir((0.8, 0.55, -0.2)), mir((0.7, 0.7, -0.15)))
+    legs(s, (0.2, 0.65, 0.73), (0.1, 0.6, 0.8))
+    pose(19, s)
+
+    # --- 23-45: lying dazed, legs flop down, head rolls side to side
+    def lying(head_turn, leg_up):
+        s = {'move': (0, -0.26 * sc, -0.15 * sc),
+             'hips': {'turn': [('right', 90)]},
+             'neck': {'turn': [('right', -15)]},
+             'head': {'turn': head_turn}}
+        arms(s, (0.85, 0.4, -0.3), (0.8, 0.5, -0.3), mir((0.85, 0.4, -0.3)), mir((0.8, 0.5, -0.3)))
+        legs(s, (0.22, leg_up, 0.92), (0.1, leg_up - 0.3, 1.0))
+        return s
+
+    pose(23, lying([], 0.4))
+    pose(28, lying([('up', 22)], 0.32))
+    pose(34, lying([('up', -22)], 0.3))
+    pose(40, lying([('up', 18)], 0.3))
+    pose(45, lying([('up', -6)], 0.32))
+
+    # --- 49: anticipation, curl back and swing legs up for momentum
+    s = {'move': (0, -0.27 * sc, -0.15 * sc),
+         'hips': {'turn': [('right', 95)]},
+         'neck': {'turn': [('right', -25)]},
+         'head': {'turn': [('right', -10)]}}
+    arms(s, (0.8, 0.5, 0.1), (0.7, 0.6, 0.3), mir((0.8, 0.5, 0.1)), mir((0.7, 0.6, 0.3)))
+    legs(s, (0.22, 0.55, 0.82), (0.1, 0.45, 0.9))
+    pose(49, s)
+
+    # --- 55: sits up hunched, left hand flies to his head
+    s = {'move': (0, -0.255 * sc, -0.10 * sc),
+         'hips': {'turn': [('right', 10)]},
+         'spine': {'turn': [('right', -25)]},
+         'neck': {'turn': [('right', -5)]},
+         'head': {'turn': [('forward', 12)]},
+         'right upperarm': {'aim': (0.85, -0.05, 0.5)},
+         'right forearm': {'aim': (0.6, 0.2, 0.75)}}
+    legs(s, (0.25, 0.05, 0.97), (0.12, -0.1, 0.99))
+    fixat(s)
+    pose(55, s, iks=(hold_ik,))
+
+    # --- 62: rolls forward into a crouch, feet back under him
+    s = {'move': (0, -0.15 * sc, -0.01 * sc),
+         'hips': {'turn': [('right', -25)]},
+         'spine': {'turn': [('right', -15)]},
+         'head': {'turn': [('forward', -8), ('right', 10)]},
+         'right upperarm': {'aim': (0.7, -0.3, 0.65)},
+         'right forearm': {'aim': (0.5, -0.2, 0.85)}}
+    planted(s)
+    fixat(s)
+    pose(62, s, iks=leg_iks + (hold_ik,))
+
+    # --- 67: pushing up
+    s = {'move': (0, -0.06 * sc, 0),
+         'hips': {'turn': [('right', -12)]},
+         'spine': {'turn': [('right', -8)]},
+         'head': {'turn': [('forward', 6)]},
+         'right upperarm': {'aim': (0.5, -0.65, 0.4)},
+         'right forearm': {'aim': (0.4, -0.6, 0.6)}}
+    planted(s)
+    fixat(s)
+    pose(67, s, iks=leg_iks + (hold_ik,))
+
+    # --- 72: standing ('up'), slight overshoot back, holding head
+    s = {'move': (0, 0, 0),
+         'hips': {'turn': [('right', 4)]},
+         'spine': {'turn': [('right', 6)]},
+         'head': {'turn': [('forward', 12)]}}
+    planted(s)
+    fixat(s)
+    pose(72, s, iks=leg_iks + (hold_ik,))
+    ctx.event(72, 'up', bone=hips)
+
+    # --- 77: woozy wobble, still holding head
+    s = {'move': (0, -0.015 * sc, 0),
+         'hips': {'turn': [('right', 0)]},
+         'spine': {'turn': [('right', -4)]},
+         'head': {'turn': [('forward', -10), ('up', 10)]}}
+    planted(s)
+    fixat(s)
+    pose(77, s, iks=leg_iks + (hold_ik,))
+
+    # --- 83: shakes it off, left hand drops; 90 = idle (auto)
+    s = {'move': (0, -0.006 * sc, 0),
+         'head': {'turn': [('up', -6)]},
+         'left upperarm': {'aim': (-0.5, -0.65, 0.3)}}
+    planted(s)
+    pose(83, s, iks=leg_iks)
+
+    ctx.note('Bowled: sweep 0-12, slam 16 (down), lie dazed 23-45, sit 55, crouch 62, stand 72 (up), idle 90. '
+             'Right arm (pan) kept raised/out while on the ground so the pan stays clear of body and floor.')
