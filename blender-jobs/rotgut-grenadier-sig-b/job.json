@@ -1,0 +1,56 @@
+{
+ "id": "rotgut-grenadier-sig-b",
+ "type": "animate",
+ "asset_id": "rotgut-grenadier",
+ "status": "queued",
+ "priority": 5,
+ "created_at": "2026-10-26T09:02:28Z",
+ "created_by": "claude-overnight",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": true,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "Waiting for the Blender worker"
+ },
+ "source": {
+  "character": "repo:projects/oreheart-8/public/models/creatures/rotgut-grenadier/char.glb@factory/issue-8"
+ },
+ "request": "Goblin Chef: Not very clean, not very nice, cooks horribly. His smack knocks the target back 2 spaces. He holds a spatula in his right hand; keep held items in the same hand. These are his own signature moves: give him a distinct personality, different from other goblins. Rules from the owner for every goblin: nothing he holds ever goes through his body or the ground; feet stay planted (no sliding or sinking) unless the clip says otherwise; held items stay in the same hand; movements look weighty and cartoony, never floaty. Board games are seen from above and in front, so make poses read clearly from there.",
+ "animations": [
+  {
+   "name": "OH_Attack",
+   "description": "Smack: huge sideways spatula swat, like hitting a fly, with a big follow-through ('hit' at contact; the game knocks the target back 2 spaces).",
+   "frames": [
+    26,
+    38
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": false,
+   "events": [
+    {
+     "name": "hit",
+     "bone": "right hand"
+    }
+   ]
+  }
+ ],
+ "attachments": [],
+ "output": {
+  "format": "glb"
+ },
+ "history": [
+  {
+   "at": "2026-10-26T09:02:28Z",
+   "status": "queued",
+   "by": "claude"
+  }
+ ]
+}
