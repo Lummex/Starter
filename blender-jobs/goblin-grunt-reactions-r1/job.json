@@ -2,7 +2,7 @@
  "id": "goblin-grunt-reactions-r1",
  "type": "animate",
  "asset_id": "goblin-grunt",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 9,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T09:20:02Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T09:15:02Z",
- "error": {
-  "message": "{\"message\":\"is at 8bf49ab87a464e8a690d8f4994ff4f811c3341f2 but expected 549670dff621cefff943f60befe5e85ba37c42b7\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
-  "at": "2026-10-26T09:10:39Z"
- },
+ "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "3 animation(s) built and checked: OH_Hit, OH_React_Knockback, OH_React_Bonk"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -123,7 +120,313 @@
   {
    "at": "2026-10-26T09:13:22Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T09:15:16Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T09:15:02Z"
+ "updated_at": "2026-10-26T09:15:16Z",
+ "result": {
+  "summary": "3 animation(s) built and checked: OH_Hit, OH_React_Knockback, OH_React_Bonk",
+  "files": [
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/char.glb",
+    "bytes": 1325368,
+    "sha256": "f22714adae6e5a3f5d5eca0191cb65d4b0a4c06b5a865496adbc64679468c440"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/events.json",
+    "bytes": 439,
+    "sha256": "084632e7deb154ed0422317aff6d93ed3f93fabe9eaa5847d8f314c5f6dabda2"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/inspection.json",
+    "bytes": 10289,
+    "sha256": "3a7d37af99c1c330c6c9798adb5da213d17d68e8454d7a5e16960c37fdf29884"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/build-report.json",
+    "bytes": 2589,
+    "sha256": "2c3e58172fdd848697cb468d30adf7b502e9b34479d10f8276ee0b7a91e9a227"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/validation.json",
+    "bytes": 1146,
+    "sha256": "3cf2724fd3495ff960f1bea28023787e90df4d23624e8161569bb74879c795a3"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_Hit-000.png",
+    "bytes": 179987,
+    "sha256": "1ed4af466922030af762c67fc0443411d8032d200b9b4d8ed04ddca5806ee7e1"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_Hit-006.png",
+    "bytes": 180252,
+    "sha256": "5cd8e7a8b75d7be0a36c7755d67bd9b02147a844d0c38787b114f917fd14ba14"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_Hit-012.png",
+    "bytes": 179390,
+    "sha256": "f5a9966868f755dac6bd90781c0a4b5ab2258bfbab21ab9cf029ba48b609380a"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_Hit-018.png",
+    "bytes": 179353,
+    "sha256": "c0063f877f0eb6624c2b40c7ae8d779e8bf8c83e6a7392f065c0d8cfea743407"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_Hit-024.png",
+    "bytes": 180032,
+    "sha256": "451d17c7fb4cc1fc367435caedec28814631bd9fcb1b5f3aedea708f0bc4b894"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_React_Bonk-000.png",
+    "bytes": 179987,
+    "sha256": "e1158fa514323693adedefaf7447310c7928916c7711d3d2414a87f020c66a5e"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_React_Bonk-009.png",
+    "bytes": 180162,
+    "sha256": "145229e99e6b52fefd9067fbc9bfcb02eb31b9d5c2ccf45c57984a235cfbc44e"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_React_Bonk-018.png",
+    "bytes": 179222,
+    "sha256": "c1f3b8c4b499be2bf158a46c54fe8640f0c1040d1b06587f6b7a50cff3908bf2"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_React_Bonk-027.png",
+    "bytes": 179612,
+    "sha256": "1115070bbaf4c64a8c998a8a086c11acac22106f37c6c5e542519ce6936598d2"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_React_Bonk-036.png",
+    "bytes": 180032,
+    "sha256": "2f828a5c917c47776be41bc1cbfe0d635472987dcff2a71d610eaeadf89f6991"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_React_Knockback-000.png",
+    "bytes": 179987,
+    "sha256": "d6355ba2be1819468d51a29fb42cbf94a3450fe931ede7e70921fae0bf74038f"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_React_Knockback-009.png",
+    "bytes": 183759,
+    "sha256": "16d426d7589ac0bb1569cca13d791072d201d03e8c61f38262af17385274dbef"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_React_Knockback-018.png",
+    "bytes": 179892,
+    "sha256": "917928b087f429d4e643d3c4614c11a2a21fca92ed0f0a19dd57458ebd5b6ce9"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_React_Knockback-027.png",
+    "bytes": 180224,
+    "sha256": "25f1d453bd37a57c624d0c2e9b4024ac02f46f736e18d4f0ed618fb7e7f8c817"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/final-OH_React_Knockback-036.png",
+    "bytes": 180032,
+    "sha256": "2f828a5c917c47776be41bc1cbfe0d635472987dcff2a71d610eaeadf89f6991"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_Hit-000.png",
+    "bytes": 312532,
+    "sha256": "6198e4b0b69e4a86c4e6a58d5aed1e7f3a7ec471b54bb4d64c1a5ce6956f835d"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_Hit-004.png",
+    "bytes": 312795,
+    "sha256": "e4a07451ebb5edcef6809f4318d67ef04a77408c4f1d4fcf338ffe7b85a2ebc9"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_Hit-008.png",
+    "bytes": 313275,
+    "sha256": "8e2f63c88a8ee086ba59d78f9f1d5328b119c27e7b8ee308236274c126fddb00"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_Hit-012.png",
+    "bytes": 311125,
+    "sha256": "c0590cd7abbf93f803b4c47c6cf4307b7bd900ab56f5226c8636308c91651f25"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_Hit-016.png",
+    "bytes": 310648,
+    "sha256": "756da6644711f0796bfad376d3ed99d7e39f742f16c424f70bbb96de98319f28"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_Hit-020.png",
+    "bytes": 311773,
+    "sha256": "90e1c64398bf221af90fa600ec713a7ebd610f9d145b2f207d0711377955c2e3"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_Hit-024.png",
+    "bytes": 312532,
+    "sha256": "05985c5173f467b06ffb66d2aacb622cbf872631506dcf4b6eda6e174d58542a"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Bonk-000.png",
+    "bytes": 312532,
+    "sha256": "9b5900909d9d8d0f444e9e10a444b58b9518264d2b1d8d9989d6f264fad0367d"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Bonk-006.png",
+    "bytes": 307883,
+    "sha256": "57866a0ec6394099b5a5625e3bd53b6d35c87a16b95fe77d1a297aa51665f6f4"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Bonk-012.png",
+    "bytes": 306951,
+    "sha256": "2fb6dbf45d515c332bc193c84cde96850b7df4db8a302ff01d8df5c09050134f"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Bonk-018.png",
+    "bytes": 311301,
+    "sha256": "8eb7560d5bf53104b16d62730e2c266f6746477f57a5a8403856f0154f5b4b56"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Bonk-024.png",
+    "bytes": 310952,
+    "sha256": "63496121c6e7a0148fefefdb7918d82550bfca07363ce189d14ab8af76b2c058"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Bonk-030.png",
+    "bytes": 312588,
+    "sha256": "f667dd915d5dfc8165fdcfb0751040fae5b608e049161d70d5ec67ee5f535c87"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Bonk-036.png",
+    "bytes": 312532,
+    "sha256": "8d27d89ba9761775c2452f27965ff4bac2ce2c47f63b1b74a345f817e1a9b881"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Knockback-000.png",
+    "bytes": 312532,
+    "sha256": "d301ab34ef4448dfa2d92071e1ba0ed56b86a0a88604fd34ebe8288b8b591d43"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Knockback-006.png",
+    "bytes": 318925,
+    "sha256": "7d33fad232c74b4573510af5c58c62eff17a322d92e11b0bc3599626446f9c6d"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Knockback-012.png",
+    "bytes": 315686,
+    "sha256": "431a32e68c74d4dc177bba49cf005df4c9ca67530071bce8042beea28fdc5426"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Knockback-018.png",
+    "bytes": 312404,
+    "sha256": "7f433d48f4453010e29bb3a89d1f9a7f3aed5f3f8be871519f6e295a90c9366b"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Knockback-024.png",
+    "bytes": 314044,
+    "sha256": "11320155ccebb9db1a6fae0b94ac5523a9debd4da44aacfe3e8fd2ab51aa7e7b"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Knockback-030.png",
+    "bytes": 311998,
+    "sha256": "b4bdb352cee965d1536ca5b91ba05edc1c48075f4a4b423c944af2e6038cd5c2"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/preview-OH_React_Knockback-036.png",
+    "bytes": 312532,
+    "sha256": "e0d799cbf5eabc32eb25ba1cacc9af2b93c80a641288bb888ef35824de8f5383"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/anim-OH_Hit.py.txt",
+    "bytes": 3141,
+    "sha256": "8e491f1d46d50e5ceb7c1efd42620ae85095cf34efa7cdf114ff49c51ee4493c"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/anim-OH_React_Knockback.py.txt",
+    "bytes": 3467,
+    "sha256": "ae1a2be6a49c7d17b7a75306ade86c3da54b4faab5e1dd746de0861ed8d8e83b"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r1/out/anim-OH_React_Bonk.py.txt",
+    "bytes": 2605,
+    "sha256": "f12c8c2fd0e750168d90adfdf5b09b0907e2a91ed3192c08423850e5156c1f21"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 39025,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_React_Bonk": [
+      0.0,
+      36.0
+     ],
+     "OH_React_Knockback": [
+      0.0,
+      36.0
+     ],
+     "OH_Hit": [
+      0.0,
+      24.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Hit": {
+      "keys": 25,
+      "seconds": 0.8
+     },
+     "OH_React_Knockback": {
+      "keys": 37,
+      "seconds": 1.2
+     },
+     "OH_React_Bonk": {
+      "keys": 37,
+      "seconds": 1.2
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0008,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 9e-05
+   }
+  }
+ }
 }
