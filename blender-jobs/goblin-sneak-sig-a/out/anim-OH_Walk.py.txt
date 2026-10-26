@@ -1,0 +1,88 @@
+import math
+
+
+def build(ctx):
+    ctx.length(24)
+
+    hips = ctx.bone('hips')
+    sp2 = 'Spine02'
+    sp1 = 'Spine01'
+    sp = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    rup = ctx.bone('right upperarm'); rfo = ctx.bone('right forearm'); rha = ctx.bone('right hand')
+    lup = ctx.bone('left upperarm'); lfo = ctx.bone('left forearm'); lha = ctx.bone('left hand')
+    legs = {
+        'L': (ctx.bone('left thigh'), ctx.bone('left shin'), ctx.bone('left foot'), 0.317),
+        'R': (ctx.bone('right thigh'), ctx.bone('right shin'), ctx.bone('right foot'), 0.329),
+    }
+
+    def stance(f, side, d):
+        # planted leg: bend to absorb a hip drop of d so the foot stays on the ground
+        th, sh, ft, L = legs[side]
+        a = math.degrees(math.acos(max(-1.0, min(1.0, 1.0 - d / L))))
+        ctx.key(f, th, turn=[('right', a)])
+        ctx.key(f, sh, turn=[('right', -2 * a)])
+        ctx.key(f, ft, turn=[('right', a)])
+
+    def swing(f, side, thigh, shin, foot):
+        th, sh, ft, L = legs[side]
+        ctx.key(f, th, turn=[('right', thigh)])
+        ctx.key(f, sh, turn=[('right', shin)])
+        ctx.key(f, ft, turn=[('right', foot)])
+
+    def blend_aim(bone, target, k):
+        # mix between the bone's base direction and the target so the pose can ease in/out
+        b = ctx.bones[bone]['points']
+        v = [b[i] * (1 - k) + target[i] * k for i in range(3)]
+        n = math.sqrt(sum(c * c for c in v)) or 1.0
+        return (v[0] / n, v[1] / n, v[2] / n)
+
+    def upper(f, twist, bob, k):
+        # k = how deep into the sneak pose (base pose at the loop seam 0/24, full on the high steps)
+        ctx.key(f, sp2, turn=[('right', (-10 - bob) * k), ('up', twist * 0.3)])
+        ctx.key(f, sp1, turn=[('right', (-12 - bob) * k), ('up', twist * 0.4)])
+        ctx.key(f, sp, turn=[('right', -6 * k), ('up', twist * 0.3)])
+        ctx.key(f, neck, turn=[('right', 10 * k), ('up', -twist * 0.4)])
+        ctx.key(f, head, turn=[('right', (10 + bob) * k), ('up', -twist * 0.6)])
+        # dagger held close at the chest, pointing forward
+        ctx.key(f, rup, aim=blend_aim(rup, (0.3, -0.75, 0.45 + 0.05 * (twist / 6.0)), k))
+        ctx.key(f, rfo, aim=blend_aim(rfo, (0.0, 0.1, 1.0), k))
+        ctx.key(f, rha, turn=[('right', 10 * k)])
+        # free hand creeps forward, fingers clawed
+        ctx.key(f, lup, aim=blend_aim(lup, (-0.4, -0.6, 0.5 - 0.1 * (twist / 6.0)), k))
+        ctx.key(f, lfo, aim=blend_aim(lfo, (-0.1, -0.05, 1.0), k))
+        ctx.key(f, lha, turn=[('right', -25 * k)])
+
+    # upper body: base pose at 0/24 (automatic, required for the loop seam); the hunch
+    # pulses deeper on each high step and eases up a little on each footfall
+    upper(3, 3, 1, 0.75)
+    upper(6, 6, 4, 1.0)     # left knee up -> chest turns left, deepest crouch
+    upper(9, 3, 2, 0.9)
+    upper(12, 0, 0, 0.7)    # footfall: body rises slightly
+    upper(15, -3, 1, 0.9)
+    upper(18, -6, 4, 1.0)   # right knee up -> chest turns right
+    upper(21, -3, 1, 0.75)
+
+    # legs/hips: both feet planted in base pose at 0, 12, 24 (automatic at 0/24)
+    for start, lift, plant in ((0, 'L', 'R'), (12, 'R', 'L')):
+        shift = 0.008 if plant == 'R' else -0.008
+        # 3: knee pulls up high, toe pointing down (tiptoe)
+        ctx.key(start + 3, hips, move=(shift * 0.6, -0.012, 0))
+        stance(start + 3, plant, 0.012)
+        swing(start + 3, lift, 35, -70, 10)
+        # 6: peak of the sneaky high step
+        ctx.key(start + 6, hips, move=(shift, -0.018, 0))
+        stance(start + 6, plant, 0.018)
+        swing(start + 6, lift, 45, -80, 15)
+        # 9: reach down, toes touch first
+        ctx.key(start + 9, hips, move=(shift * 0.6, -0.012, 0))
+        stance(start + 9, plant, 0.012)
+        swing(start + 9, lift, 28, -45, 12)
+
+    # 12: both feet down in base pose
+    ctx.key(12, hips, move=(0, 0, 0))
+    for side in ('L', 'R'):
+        swing(12, side, 0, 0, 0)
+
+    ctx.note('Walk: in-place tiptoe sneak, left knee peak 6, right knee peak 18, contacts 0/12/24; upper body in base pose at 0/24, hunch pulses deepest at 6/18 with dagger tucked close.')
