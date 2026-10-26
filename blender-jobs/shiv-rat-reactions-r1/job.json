@@ -2,7 +2,7 @@
  "id": "shiv-rat-reactions-r1",
  "type": "animate",
  "asset_id": "shiv-rat",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 4,
  "created_at": "2026-10-26T09:57:47Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:01:38Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T10:56:38Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "3 animation(s) built and checked: OH_Hit, OH_React_Knockback, OH_React_Bonk"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/shiv-rat/char.glb@factory/issue-8"
@@ -84,7 +84,313 @@
   {
    "at": "2026-10-26T10:54:57Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T10:57:45Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T10:56:38Z"
+ "updated_at": "2026-10-26T10:57:45Z",
+ "result": {
+  "summary": "3 animation(s) built and checked: OH_Hit, OH_React_Knockback, OH_React_Bonk",
+  "files": [
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/char.glb",
+    "bytes": 1000472,
+    "sha256": "7168ac9c04b129449b29d00dac0046f4a09ae4c0f56f0e721b740e77096cf7d1"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/events.json",
+    "bytes": 435,
+    "sha256": "94c8ee33575ffb17ab4c077bec316652d7a917fb062839aa7a0cfe5f300dd341"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/inspection.json",
+    "bytes": 10257,
+    "sha256": "8434caf72adbdc458019856322f6edf8a7dd4ef0dac7c4623d30b98a75e075da"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/build-report.json",
+    "bytes": 2586,
+    "sha256": "7e150f940755cbb63fadfbc24ec5c6243800a5cab13f0737cb187cf59c2588ba"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/validation.json",
+    "bytes": 1135,
+    "sha256": "8ea6dbcc704565579bc6307f9f7eeed8e8cf286481f478fdfc96c087452311f1"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_Hit-000.png",
+    "bytes": 175429,
+    "sha256": "425f7ee7bd640b6176cea8d51924be5fb14e32f1cf1639bae399cc51a69f567f"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_Hit-006.png",
+    "bytes": 175589,
+    "sha256": "44868b41df4d905f5c3f40dcabc6fd9ee0f3601b1252d875c1800fff1db77431"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_Hit-012.png",
+    "bytes": 174842,
+    "sha256": "b3a230f9b1c4280f7bcb124ff3aadccef4ef952b8a5f9499673bf004dae82a1e"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_Hit-018.png",
+    "bytes": 174984,
+    "sha256": "94178643c5b075fc4de6f7506c61e6b83a188427b3275bd0b3c67b12355e1f55"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_Hit-024.png",
+    "bytes": 175428,
+    "sha256": "57c9c5ab1a4eaf1a4d7af7f34b1e9b78ab7a9236865cce4b50d3e9ca955694a4"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_React_Bonk-000.png",
+    "bytes": 175429,
+    "sha256": "c070497c7cc0b0186077a5bd4ec5419cd9ad8d23319fce060b3fbb0cfee970cc"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_React_Bonk-009.png",
+    "bytes": 175087,
+    "sha256": "4eadedffd266b2859df55c17c0943e60d159cc2d714e08f2d5f43351307eb785"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_React_Bonk-018.png",
+    "bytes": 174082,
+    "sha256": "4d49e9a6eb9c3f5d0af7210763b8f9970d4f43154ae8d157fb49f0221a6e48c8"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_React_Bonk-027.png",
+    "bytes": 175176,
+    "sha256": "627c91e70cd4430db334f164f92fa3acf4798fbd9ec57f9674a7771b0e475abb"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_React_Bonk-036.png",
+    "bytes": 175428,
+    "sha256": "fa11d5def2fbc380237679865cc88bf42fe3f09917c3b30687e7987203391006"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_React_Knockback-000.png",
+    "bytes": 175429,
+    "sha256": "db081860012f4324f5b0f96cbfbfb1cf35e37e8289c747aa8befddaf41a98764"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_React_Knockback-009.png",
+    "bytes": 177484,
+    "sha256": "e1e4749053382163a25fcc67e7ea5ba71b70d81e0dd06b95c380fa151b8eaa8b"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_React_Knockback-018.png",
+    "bytes": 174576,
+    "sha256": "b478003a69cabb687e51991f021ec73d4e9de51ceed5db4a0fcdaede2250ac6a"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_React_Knockback-027.png",
+    "bytes": 175653,
+    "sha256": "bae46c26160d00ebce5deddaee28abc4e654aa8d5ed14ee1a880923159253bd6"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/final-OH_React_Knockback-036.png",
+    "bytes": 175424,
+    "sha256": "6b328782f8adc734b4672f73ff8ad9f9f0a63b4a5bdea12f28b4436ddd495a48"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_Hit-000.png",
+    "bytes": 304476,
+    "sha256": "c736a89f03e363d22f5d9cad01de7cbf05fd8d5131181b2d8bf3805b5e3bbf0a"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_Hit-004.png",
+    "bytes": 304893,
+    "sha256": "a2fadcdf348f9157347a4666e7713239a620afca9cc58d84964784e5f35641b5"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_Hit-008.png",
+    "bytes": 304654,
+    "sha256": "eb400a754c323d34a34f63bb486913ceea54f8e265dbc792184fa093329292b3"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_Hit-012.png",
+    "bytes": 303886,
+    "sha256": "4e7302042eb1b6d5bafee5f7de2df8ac67918da3fe08ba15c3ab458b47572a8c"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_Hit-016.png",
+    "bytes": 304013,
+    "sha256": "17de6eae1f458e0f9ec0ea5c98f9a3716cee2736517eec35ad7167b57660bce4"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_Hit-020.png",
+    "bytes": 304324,
+    "sha256": "a56af829e53cc367ac4322fbdaf48fa79601a6708a67f5549dad821a1ec08697"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_Hit-024.png",
+    "bytes": 304476,
+    "sha256": "3071e3c4b676e86cce33efb7631c6ecc6d9b9ef67d4058202466ee5a9c564515"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Bonk-000.png",
+    "bytes": 304476,
+    "sha256": "e7fbf882d228015827765886941633ca3b39599ff768718d075558d27b59312d"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Bonk-006.png",
+    "bytes": 302579,
+    "sha256": "fd06405094c414d28b694c9f89a70538868fbe7fe9531686f60e71bdda45f43b"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Bonk-012.png",
+    "bytes": 300980,
+    "sha256": "08c63e125db1c8365f333fec24cde06e14032bde7ecd6c27ea3ec5005f00fc05"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Bonk-018.png",
+    "bytes": 302964,
+    "sha256": "edbf091388c68d292b5dacef5107c7bc791a1dffdb6a7bd144e45d60c449cbd0"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Bonk-024.png",
+    "bytes": 303589,
+    "sha256": "9dd8e29231cfc59af9903313a7a9d978806373ac8acb1baef8a7aceae0808a4b"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Bonk-030.png",
+    "bytes": 304924,
+    "sha256": "3c5afba446786c8e23f0da4515e0ce947aeeec1b629b9254ad7ab7ecd0e1f945"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Bonk-036.png",
+    "bytes": 304476,
+    "sha256": "64865e69efe9f9daa53b39ea81f731d317f4708a89aee0bd21728217a8130905"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Knockback-000.png",
+    "bytes": 304476,
+    "sha256": "e7fbf882d228015827765886941633ca3b39599ff768718d075558d27b59312d"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Knockback-006.png",
+    "bytes": 307647,
+    "sha256": "8c727c5800f2c2d9a6e1c34b7d5744cf5844824dc4cd823203b4ecd203333973"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Knockback-012.png",
+    "bytes": 305081,
+    "sha256": "ef505cabd3de4872d6ef6c2ba64b7506f599c40a1112c865e387ac8bdbd62461"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Knockback-018.png",
+    "bytes": 304137,
+    "sha256": "a754b271354d72bdf2baed8ff18a63090fe5711cca30ccd3e71e3791b0435f17"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Knockback-024.png",
+    "bytes": 305552,
+    "sha256": "35f96a0555a9846a1c9b5ee7f8a6e5114aa0333688cdae82fc6e5e440cb4e5bf"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Knockback-030.png",
+    "bytes": 304167,
+    "sha256": "852aea64167d0a26e98f022cb436a18925dec3132a64f6d2f73cba61db9f6c03"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/preview-OH_React_Knockback-036.png",
+    "bytes": 304476,
+    "sha256": "64865e69efe9f9daa53b39ea81f731d317f4708a89aee0bd21728217a8130905"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/anim-OH_Hit.py.txt",
+    "bytes": 3141,
+    "sha256": "8e491f1d46d50e5ceb7c1efd42620ae85095cf34efa7cdf114ff49c51ee4493c"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/anim-OH_React_Knockback.py.txt",
+    "bytes": 3467,
+    "sha256": "ae1a2be6a49c7d17b7a75306ade86c3da54b4faab5e1dd746de0861ed8d8e83b"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-reactions-r1/out/anim-OH_React_Bonk.py.txt",
+    "bytes": 2605,
+    "sha256": "f12c8c2fd0e750168d90adfdf5b09b0907e2a91ed3192c08423850e5156c1f21"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 39157,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_React_Bonk": [
+      0.0,
+      36.0
+     ],
+     "OH_React_Knockback": [
+      0.0,
+      36.0
+     ],
+     "OH_Hit": [
+      0.0,
+      24.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Thrust_Slash": [
+      0.0,
+      90.0
+     ],
+     "Quick_Walk": [
+      0.0,
+      90.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Hit": {
+      "keys": 25,
+      "seconds": 0.8
+     },
+     "OH_React_Knockback": {
+      "keys": 37,
+      "seconds": 1.2
+     },
+     "OH_React_Bonk": {
+      "keys": 37,
+      "seconds": 1.2
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Quick_Walk",
+      "Thrust_Slash",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0017,
+     "worst_rotation_error_deg": 0.002
+    },
+    "written_clip_error_pct_of_height": 0.00078
+   }
+  }
+ }
 }
