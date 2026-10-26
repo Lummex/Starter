@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:28:42Z",
- "heartbeat_at": "2026-10-26T10:23:42Z",
+ "lease_until": "2026-10-26T10:28:46Z",
+ "heartbeat_at": "2026-10-26T10:23:46Z",
  "error": null,
  "progress": {
-  "stage": "preparing",
-  "percent": 5,
-  "message": "Copying the source model into a private work folder"
+  "stage": "inspecting",
+  "percent": 15,
+  "message": "Reading the model, skeleton and animations in Blender"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/shiv-rat/char.glb@factory/issue-8"
@@ -63,5 +63,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:23:42Z"
+ "updated_at": "2026-10-26T10:23:46Z"
 }
