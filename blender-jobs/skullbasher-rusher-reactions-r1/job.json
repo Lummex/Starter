@@ -2,7 +2,7 @@
  "id": "skullbasher-rusher-reactions-r1",
  "type": "animate",
  "asset_id": "skullbasher-rusher",
- "status": "claimed",
+ "status": "running",
  "priority": 4,
  "created_at": "2026-10-26T09:57:47Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:03:15Z",
- "heartbeat_at": "2026-10-26T10:58:15Z",
+ "lease_until": "2026-10-26T11:03:19Z",
+ "heartbeat_at": "2026-10-26T10:58:19Z",
  "error": null,
  "progress": {
-  "stage": "claimed",
-  "percent": 0,
-  "message": "Picked up by the Blender worker"
+  "stage": "preparing",
+  "percent": 5,
+  "message": "Copying the source model into a private work folder"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/skullbasher-rusher/char.glb@factory/issue-8"
@@ -76,7 +76,11 @@
    "status": "claimed",
    "worker": "starr-f0fad5",
    "recovered": false
+  },
+  {
+   "at": "2026-10-26T10:58:19Z",
+   "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:58:15Z"
+ "updated_at": "2026-10-26T10:58:19Z"
 }
