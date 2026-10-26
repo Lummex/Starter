@@ -1,0 +1,129 @@
+import math
+
+
+def _sub(a, b):
+    return (a[0] - b[0], a[1] - b[1], a[2] - b[2])
+
+
+def _add(a, b):
+    return (a[0] + b[0], a[1] + b[1], a[2] + b[2])
+
+
+def _mul(a, s):
+    return (a[0] * s, a[1] * s, a[2] * s)
+
+
+def _dot(a, b):
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+
+def _norm(a):
+    return math.sqrt(_dot(a, a))
+
+
+def _unit(a):
+    return _mul(a, 1.0 / max(_norm(a), 1e-6))
+
+
+def _ik(hip, ankle, l1, l2, pole):
+    # two-bone leg: returns (thigh direction, shin direction), knee bends toward pole
+    d = _sub(ankle, hip)
+    dist = _norm(d)
+    dmax = 0.985 * (l1 + l2)
+    if dist > dmax:
+        d = _mul(d, dmax / dist)
+        dist = dmax
+    dn = _mul(d, 1.0 / dist)
+    a = (l1 * l1 - l2 * l2 + dist * dist) / (2.0 * dist)
+    h = math.sqrt(max(l1 * l1 - a * a, 0.0))
+    p = _unit(_sub(pole, _mul(dn, _dot(pole, dn))))
+    knee = _add(_add(hip, _mul(dn, a)), _mul(p, h))
+    return _sub(knee, hip), _sub(_add(hip, d), knee)
+
+
+def _hips(t):
+    # dip just after each contact, rise on the passing pose; zero at contacts (0, 15, 30)
+    s = math.sin(4.0 * math.pi * t)
+    bob = -0.008 * s + 0.012 * (1.0 - math.cos(4.0 * math.pi * t)) * 0.5
+    sway = -0.012 * math.sin(2.0 * math.pi * t)   # over the left foot first, then the right
+    return (sway, bob, 0.0)
+
+
+def build(ctx):
+    T = 30
+    ctx.length(T)
+    B = ctx.bones
+    hips = ctx.bone('hips'); low = ctx.bone('Spine02'); spine = ctx.bone('spine'); head = ctx.bone('head')
+    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm'); r_hand = ctx.bone('right hand')
+    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')
+
+    # The base pose is already a contact pose: left foot forward, right foot back.
+    # Frames 0 and 30 are left as the base pose (return_to_idle); the cycle runs from it.
+    # Treadmill: a stance foot slides straight back along the ground, swing foot lifts and reaches forward.
+    D = 0.19      # stride the stance foot slides back in one step
+    LIFT = 0.065  # high-knee strut
+    legs = []
+    for side, pole in (('left', (0.5, 0.0, 0.86)), ('right', (0.87, 0.0, 0.5))):
+        th = ctx.bone(side + ' thigh'); sh = ctx.bone(side + ' shin'); ft = ctx.bone(side + ' foot')
+        ankle = B[ft]['head']
+        legs.append({
+            'side': side, 'th': th, 'sh': sh, 'ft': ft, 'pole': pole,
+            'hip': B[th]['head'], 'l1': B[th]['length'], 'l2': B[sh]['length'],
+            'ankle': ankle, 'dir': B[ft]['points'],
+        })
+
+    for f in range(1, T):
+        t = f / float(T)
+        hm = _hips(t)
+        ctx.key(f, hips, move=hm)
+        for L in legs:
+            ax, ay, az = L['ankle']
+            dx, dy, dz = L['dir']
+            if L['side'] == 'left':
+                stance = t <= 0.5
+                u = t * 2.0 if stance else (t - 0.5) * 2.0
+                z_front, z_back = az, az - D
+            else:
+                stance = t >= 0.5
+                u = (t - 0.5) * 2.0 if stance else t * 2.0
+                z_front, z_back = az + D, az
+            if stance:
+                z = z_front - D * u
+                y = ay
+                fd = (dx, dy, dz)
+            else:
+                e = 0.5 - 0.5 * math.cos(math.pi * u)
+                z = z_back + D * e
+                y = ay + LIFT * math.sin(math.pi * u) ** 0.8
+                if u < 0.35:
+                    fd = (dx * 0.7, -0.8, dz * 0.7)     # toe-off: heel peels up
+                elif u > 0.7:
+                    fd = (dx, -0.2, dz)                 # heel leads into contact
+                else:
+                    fd = (dx, dy, dz)
+            ta, sa = _ik(_add(L['hip'], hm), (ax, y, z), L['l1'], L['l2'], L['pole'])
+            ctx.key(f, L['th'], aim=ta)
+            ctx.key(f, L['sh'], aim=sa)
+            ctx.key(f, L['ft'], aim=_unit(fd))
+
+    # Upper body: shoulders counter-twist against the swing leg, chin pops up on each passing pose,
+    # head rolls cockily side to side. All zero at 0/15/30 so the loop and the idle ends match.
+    for f in range(2, T - 1, 2):
+        t = f / float(T)
+        s1 = math.sin(2.0 * math.pi * t)
+        s2 = 0.5 - 0.5 * math.cos(4.0 * math.pi * t)
+        ctx.key(f, low, turn=[('up', -3.0 * s1)])
+        ctx.key(f, spine, turn=[('up', -8.0 * s1), ('right', 4.0 * s2), ('forward', 3.0 * s1)])
+        ctx.key(f, head, turn=[('up', 9.0 * s1), ('right', 7.0 * s2), ('forward', -6.0 * s1)])
+
+        # Left arm: big swaggering swing, forward while the right leg swings
+        ctx.key(f, l_up, turn=[('right', 28.0 * s1), ('forward', -6.0 * s2)])
+        ctx.key(f, l_fore, turn=[('right', 22.0 * max(s1, 0.0))])
+
+        # Right arm: ball cradled at the hip, small bounce on each step
+        ctx.key(f, r_up, turn=[('right', 5.0 * s2)])
+        ctx.key(f, r_fore, turn=[('right', 7.0 * s2)])
+        ctx.key(f, r_hand, turn=[('right', 3.0 * s2)])
+
+    ctx.note('In-place strut built from the base pose (left foot forward = contact). Stance foot slides straight '
+             'back along the ground 19 cm per step, swing foot lifts 6.5 cm. Frames 0 and 30 are the base pose.')
