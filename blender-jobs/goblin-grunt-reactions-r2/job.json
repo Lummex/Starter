@@ -2,7 +2,7 @@
  "id": "goblin-grunt-reactions-r2",
  "type": "animate",
  "asset_id": "goblin-grunt",
- "status": "queued",
+ "status": "claimed",
  "priority": 9,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": null,
- "heartbeat_at": "2026-10-26T09:47:16Z",
+ "lease_until": "2026-10-26T09:55:46Z",
+ "heartbeat_at": "2026-10-26T09:50:46Z",
  "error": {
   "message": "{\"message\":\"is at 63804e505d2a0973bede039002b8da31d7141e59 but expected ab4ade832244ceba9f66d880ea180de8a86cb3cd\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T09:48:41Z"
  },
  "progress": {
-  "stage": "failed",
+  "stage": "claimed",
   "percent": 0,
-  "message": "{\"message\":\"is at 63804e505d2a0973bede039002b8da31d7141e59 but expected ab4ade832244ceba9f66d880ea180de8a86cb3cd\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}"
+  "message": "Picked up by the Blender worker"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -141,7 +141,13 @@
   {
    "at": "2026-10-26T09:48:41Z",
    "status": "failed"
+  },
+  {
+   "at": "2026-10-26T09:50:46Z",
+   "status": "claimed",
+   "worker": "starr-f0fad5",
+   "recovered": false
   }
  ],
- "updated_at": "2026-10-26T09:48:41Z"
+ "updated_at": "2026-10-26T09:50:46Z"
 }
