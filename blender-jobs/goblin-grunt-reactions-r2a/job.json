@@ -1,0 +1,60 @@
+{
+ "id": "goblin-grunt-reactions-r2a",
+ "type": "animate",
+ "asset_id": "goblin-grunt",
+ "status": "queued",
+ "priority": 9,
+ "created_at": "2026-10-26T09:56:45Z",
+ "created_by": "claude-overnight",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": true,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "Waiting for the Blender worker"
+ },
+ "source": {
+  "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
+ },
+ "request": "Shared reaction animations that EVERY goblin will reuse (designed here on Snotskull Grunt, a typical goblin). He holds a frying pan in his right hand; keep it in his hand. Make them generic (no personality quirks), clear and cartoony. Use ctx.bone() word lookups (e.g. ctx.bone('right hand'), ctx.bone('spine')) rather than exact names so the same script works on other goblins. Rules from the owner for every goblin: nothing he holds ever goes through his body or the ground; feet stay planted (no sliding or sinking) unless the clip says otherwise; held items stay in the same hand; movements look weighty and cartoony, never floaty. Board games are seen from above and in front, so make poses read clearly from there.",
+ "animations": [
+  {
+   "name": "OH_React_Bowled",
+   "description": "Hit by a giant bowling ball like a bowling pin: legs swept, falls flat on his back ('down' event when he hits the ground), lies dazed a moment, then gets up holding his head ('up' event when standing) and returns to idle.",
+   "frames": [
+    75,
+    100
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": true,
+   "events": [
+    {
+     "name": "down",
+     "bone": "hips"
+    },
+    {
+     "name": "up",
+     "bone": "hips"
+    }
+   ]
+  }
+ ],
+ "attachments": [],
+ "output": {
+  "format": "glb"
+ },
+ "history": [
+  {
+   "at": "2026-10-26T09:56:45Z",
+   "status": "queued",
+   "by": "claude"
+  }
+ ]
+}
