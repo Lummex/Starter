@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:33:04Z",
- "heartbeat_at": "2026-10-26T10:28:04Z",
+ "lease_until": "2026-10-26T10:33:11Z",
+ "heartbeat_at": "2026-10-26T10:28:11Z",
  "error": null,
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/skullbasher-rusher/char.glb@factory/issue-8"
@@ -67,5 +67,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T10:28:04Z"
+ "updated_at": "2026-10-26T10:28:11Z"
 }
