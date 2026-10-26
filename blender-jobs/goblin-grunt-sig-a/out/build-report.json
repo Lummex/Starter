@@ -4,60 +4,48 @@
  "clips": [
   {
    "name": "OH_Idle",
-   "frames": 72,
-   "seconds": 2.4,
+   "frames": 90,
+   "seconds": 3.0,
    "key_frames": [
     4,
-    9,
-    12,
-    15,
-    17,
+    10,
+    13,
+    16,
     19,
-    23,
-    25,
+    24,
     26,
-    27,
     29,
-    31,
     32,
-    33,
     35,
-    39,
-    43,
-    46,
-    50,
-    52,
-    54,
-    56,
-    57,
+    38,
+    41,
+    44,
+    49,
+    55,
     59,
-    60,
-    61,
     62,
-    64,
     65,
-    68
+    68,
+    71,
+    75,
+    78,
+    81,
+    86
    ],
    "bones_moved": [
     "Head",
-    "Hips",
     "LeftArm",
-    "LeftFoot",
     "LeftForeArm",
     "LeftHand",
-    "LeftLeg",
-    "LeftUpLeg",
     "RightArm",
-    "RightFoot",
     "RightForeArm",
     "RightHand",
-    "RightLeg",
-    "RightUpLeg",
+    "Spine01",
     "Spine02"
    ],
    "events": [],
-   "fastest_turn_per_frame_deg": 43.0,
-   "feet_drift_m": 0.0007
+   "fastest_turn_per_frame_deg": 88.2,
+   "feet_drift_m": 0.0
   },
   {
    "name": "OH_Walk",
@@ -65,17 +53,17 @@
    "seconds": 1.067,
    "key_frames": [
     3,
-    6,
+    7,
     9,
+    10,
     11,
-    12,
     14,
     16,
     19,
-    22,
+    20,
+    24,
     25,
     27,
-    28,
     30
    ],
    "bones_moved": [
@@ -92,24 +80,27 @@
     "RightHand",
     "RightLeg",
     "RightUpLeg",
+    "Spine01",
     "Spine02"
    ],
    "events": [],
-   "fastest_turn_per_frame_deg": 14.7,
-   "feet_drift_m": 0.108
+   "fastest_turn_per_frame_deg": 82.3,
+   "feet_drift_m": 0.178
   }
  ],
  "problems": [],
  "notes": [
-  "OH_Idle: Pan heaved: wind-up 4, swing 9, overshoot 12, THUNK on shoulder 15, rests 19-56; nose pick 23-33, yank 35, inspect 39-46, wipe on shirt 50-57, pan down 59-68.",
-  "OH_Walk: Treadmill plod, base pose at contacts 0/16/32 (return_to_idle), stomp squash at 3/19, knee peaks 9/25 with hips over the support foot; pan arm swings heavily with a 2-frame lag (kept at his side so the loop starts and ends in idle)."
+  "OH_Idle: Starts/ends in the base pose; heaves the pan onto the right shoulder (thunk at 13), picks nose 24-38, stares 44-55, wipes on shirt 59-71, pats pan 75-78, lowers it 81-90. Hips and legs are never keyed so the feet stay planted.",
+  "OH_Idle: Fastest move: RightHand turns 88 degrees in one frame at frame 84 (may look like a pop)",
+  "OH_Walk: Treadmill march, starts/ends in base pose so it loops into idle: recoil 3/19, knee lifts 9 (right) and 25 (left) with the ankle pulled back under the hip, stomps 16/32. Pan is heaved onto the right shoulder by frame 10, bounces on the stomp at 16, and swings back down to the side for the loop seam at 32.",
+  "OH_Walk: Fastest move: RightHand turns 82 degrees in one frame at frame 26 (may look like a pop)"
  ],
  "splice": {
   "problems": [],
   "clips": {
    "OH_Idle": {
-    "keys": 73,
-    "seconds": 2.4
+    "keys": 91,
+    "seconds": 3.0
    },
    "OH_Walk": {
     "keys": 33,
@@ -128,6 +119,6 @@
    "worst_position_error_pct_of_height": 0.0008,
    "worst_rotation_error_deg": 0.0
   },
-  "written_clip_error_pct_of_height": 4e-05
+  "written_clip_error_pct_of_height": 5e-05
  }
 }
