@@ -1,0 +1,153 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Hit",
+   "frames": 26,
+   "seconds": 0.867,
+   "key_frames": [
+    2,
+    4,
+    6,
+    7,
+    10,
+    12,
+    14,
+    15,
+    16,
+    18,
+    20,
+    22
+   ],
+   "bones_moved": [
+    "Head",
+    "LeftArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 57.5,
+   "feet_drift_m": 0.1641
+  },
+  {
+   "name": "OH_React_Knockback",
+   "frames": 40,
+   "seconds": 1.333,
+   "key_frames": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    27,
+    31,
+    35
+   ],
+   "bones_moved": [
+    "Head",
+    "LeftArm",
+    "LeftFoot",
+    "RightArm",
+    "RightFoot",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 70.3,
+   "feet_drift_m": 0.0
+  },
+  {
+   "name": "OH_React_Bonk",
+   "frames": 40,
+   "seconds": 1.333,
+   "key_frames": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    29,
+    30,
+    32,
+    33,
+    34,
+    37
+   ],
+   "bones_moved": [
+    "Head",
+    "LeftArm",
+    "LeftShoulder",
+    "RightArm",
+    "RightShoulder",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 36.5,
+   "feet_drift_m": 0.0
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Hit: OH_Hit: impact 2, snap overshoot 4, left-leg stagger stamp 6-10, droop 12, head shake 14-20, idle 26.",
+  "OH_React_Knockback: OH_React_Knockback: shove 2, thrown back 4, heel skid 4-16, windmill 6-24, forward catch 27, rebound 31, idle 40. No root travel; game slides him.",
+  "OH_React_Knockback: Fastest move: RightArm turns 70 degrees in one frame at frame 2 (may look like a pop)",
+  "OH_React_Bonk: OH_React_Bonk: head snaps down 2-4 with shrug, dizzy circle wobble 6-26 (two loops, head lagging), head shake 28-34, chest up 33, idle 40."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Hit": {
+    "keys": 27,
+    "seconds": 0.8667
+   },
+   "OH_React_Knockback": {
+    "keys": 41,
+    "seconds": 1.3333
+   },
+   "OH_React_Bonk": {
+    "keys": 41,
+    "seconds": 1.3333
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0008,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 1e-05
+ }
+}
