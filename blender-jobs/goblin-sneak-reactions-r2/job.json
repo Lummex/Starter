@@ -2,7 +2,7 @@
  "id": "goblin-sneak-reactions-r2",
  "type": "animate",
  "asset_id": "goblin-sneak",
- "status": "running",
+ "status": "validating",
  "priority": 4,
  "created_at": "2026-10-26T10:21:37Z",
  "created_by": "claude-overnight",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:28:22Z",
- "heartbeat_at": "2026-10-26T11:23:22Z",
+ "lease_until": "2026-10-26T11:28:35Z",
+ "heartbeat_at": "2026-10-26T11:23:35Z",
  "error": {
   "message": "{\"message\":\"is at 006c6278ab5ba95a5e6c3f159a26078b1e09d0c8 but expected 85036ed2de0a93aaa70e8851b2a98a840ef080b5\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:21:12Z"
  },
  "progress": {
-  "stage": "animating",
-  "percent": 35,
-  "message": "Building the keyframes in Blender and rendering previews"
+  "stage": "validating",
+  "percent": 80,
+  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/char.glb@factory/issue-8"
@@ -115,7 +115,11 @@
   {
    "at": "2026-10-26T11:21:45Z",
    "status": "running"
+  },
+  {
+   "at": "2026-10-26T11:23:35Z",
+   "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T11:23:22Z"
+ "updated_at": "2026-10-26T11:23:35Z"
 }
