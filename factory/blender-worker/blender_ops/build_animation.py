@@ -104,7 +104,7 @@ def rot_world(arm, turn, aim, twist, pose_b):
     """The extra rotation (armature space) a key asks for, relative to the base pose."""
     arm_inv = arm.matrix_world.to_quaternion().inverted()
     O = pose_b['matrix'].to_quaternion()
-    bone_dir = (O @ Vector((0, 1, 0))).normalized()
+    bone_dir = pose_b['dir_a'].normalized()  # real head -> child direction (armature space)
     R = Quaternion()
     if twist:
         R = Quaternion(bone_dir, math.radians(twist)) @ R

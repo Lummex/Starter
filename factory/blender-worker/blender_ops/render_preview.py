@@ -12,7 +12,7 @@ def main():
     C.clean_scene()
     objs = C.import_glb(a['in'])
     arm = C.find_armature(objs)
-    meshes = [o for o in objs if o.type == 'MESH']
+    meshes = [o for o in objs if o.type == 'MESH' and not C.is_helper(o)]
     C.setup_render(512)
     if arm:
         C.base_pose(arm)

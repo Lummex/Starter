@@ -13,7 +13,7 @@ def main():
     arm = C.find_armature(objs)
     rep = {'file': os.path.basename(a['in']), 'bytes': os.path.getsize(a['in']), 'blender': bpy.app.version_string,
            'fps': C.FPS, 'axes': 'points are (right, up, forward) in metres, character facing forward', 'warnings': []}
-    meshes = [o for o in objs if o.type == 'MESH']
+    meshes = [o for o in objs if o.type == 'MESH' and not C.is_helper(o)]
     rep['meshes'] = []
     for o in meshes:
         me = o.data

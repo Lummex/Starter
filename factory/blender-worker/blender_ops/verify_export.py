@@ -25,7 +25,7 @@ def main():
     if not arm:
         C.write_json(a['out'], {'ok': False, 'problems': ['No skeleton after re-import']})
         return
-    meshes = [o for o in objs if o.type == 'MESH']
+    meshes = [o for o in objs if o.type == 'MESH' and not C.is_helper(o)]
     checks['bones'] = len(arm.data.bones)
     if checks['bones'] != src['armature']['bone_count']:
         probs.append(f"Bone count changed: {src['armature']['bone_count']} -> {checks['bones']}")

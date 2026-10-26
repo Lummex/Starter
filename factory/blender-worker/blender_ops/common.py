@@ -73,6 +73,12 @@ def find_armature(objs=None):
     return max(arms, key=lambda o: len(o.data.bones))
 
 
+def is_helper(o):
+    """Objects the glTF importer adds for display only (bone shapes), not part of the model."""
+    return (o.type == 'MESH' and o.name.startswith('Icosphere') and not o.vertex_groups
+            and not any(m.type == 'ARMATURE' for m in o.modifiers) and len(o.data.vertices) <= 642)
+
+
 def skinned_meshes(arm):
     out = []
     for o in bpy.data.objects:
@@ -173,13 +179,29 @@ def base_pose(arm):
     mw = arm.matrix_world
     pose = {}
     for pb in arm.pose.bones:
-        head_w, tail_w = mw @ pb.head, mw @ pb.tail
         pose[pb.name] = {
             'basis': pb.matrix_basis.copy(),
             'matrix': pb.matrix.copy(),                         # armature space
             'frame': pb.matrix @ pb.matrix_basis.inverted(),    # parent pose x rest offset, armature space
-            'head_w': head_w, 'tail_w': tail_w,
+            'head_a': pb.head.copy(), 'head_w': mw @ pb.head,
         }
+    # glTF joints have no length, so Blender's bone tails are made up. The real "tip" of a bone is where its
+    # child starts; a bone without children (hand, head, toe) gets a short tip along its parent's direction.
+    for pb in arm.pose.bones:
+        p = pose[pb.name]
+        kids = [c for c in pb.children if (pose[c.name]['head_a'] - p['head_a']).length > 1e-6]
+        if kids:
+            # one child: its start; several (e.g. the top of the spine): the middle of them
+            tip_a = sum((pose[c.name]['head_a'] for c in kids), Vector()) / len(kids)
+        elif pb.parent is not None:
+            seg = p['head_a'] - pose[pb.parent.name]['head_a']
+            tip_a = p['head_a'] + (seg if seg.length > 1e-6 else Vector((0, 0, 0.01))) * 0.35
+        else:
+            tip_a = p['head_a'] + Vector((0, 0, 0.01))
+        p['tip_a'] = tip_a
+        p['tail_w'] = mw @ tip_a
+        d = tip_a - p['head_a']
+        p['dir_a'] = d.normalized() if d.length > 1e-9 else Vector((0, 0, 1))
     return pose, (idle.name if idle else None)
 
 
