@@ -1,0 +1,139 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Idle",
+   "frames": 72,
+   "seconds": 2.4,
+   "key_frames": [
+    8,
+    10,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    29,
+    30,
+    31,
+    32,
+    34,
+    36,
+    38,
+    40,
+    42,
+    44,
+    46,
+    50,
+    53,
+    57,
+    60,
+    66
+   ],
+   "bones_moved": [
+    "Head",
+    "LeftArm",
+    "LeftForeArm",
+    "RightArm",
+    "RightForeArm",
+    "RightHand",
+    "Spine",
+    "Spine02"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 62.4,
+   "feet_drift_m": 0.0
+  },
+  {
+   "name": "OH_Walk",
+   "frames": 30,
+   "seconds": 1.0,
+   "key_frames": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine02"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 31.5,
+   "feet_drift_m": 0.2705
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Idle: Ball spin = right hand twisted 720 deg (frames 16-46) with arm raised in front-right of the head. Hips/legs untouched so the feet stay planted.",
+  "OH_Walk: In-place strut built from the base pose (left foot forward = contact). Stance foot slides straight back along the ground 19 cm per step, swing foot lifts 6.5 cm. Frames 0 and 30 are the base pose."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Idle": {
+    "keys": 73,
+    "seconds": 2.4
+   },
+   "OH_Walk": {
+    "keys": 31,
+    "seconds": 1.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0006,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 2e-05
+ }
+}
