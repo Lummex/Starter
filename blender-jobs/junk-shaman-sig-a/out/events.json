@@ -1,0 +1,20 @@
+{
+ "asset_id": "junk-shaman",
+ "fps": 30,
+ "clips": {
+  "OH_Idle": {
+   "frames": 72,
+   "duration": 2.4,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Walk": {
+   "frames": 36,
+   "duration": 1.2,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  }
+ }
+}
