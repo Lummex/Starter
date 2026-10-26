@@ -2,7 +2,7 @@
  "id": "goblin-grunt-reactions-r2b",
  "type": "animate",
  "asset_id": "goblin-grunt",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 9,
  "created_at": "2026-10-26T09:56:45Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:09:55Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T10:04:55Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "2 animation(s) built and checked: OH_React_Backstab, OH_React_Lifted"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -77,7 +77,245 @@
   {
    "at": "2026-10-26T10:03:15Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T10:05:19Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T10:04:55Z"
+ "updated_at": "2026-10-26T10:05:19Z",
+ "result": {
+  "summary": "2 animation(s) built and checked: OH_React_Backstab, OH_React_Lifted",
+  "files": [
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/char.glb",
+    "bytes": 1319844,
+    "sha256": "44bcf46925662a66e74b8b00e657f1e9c10a76b401c112e57023f1f7158b3987"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/events.json",
+    "bytes": 419,
+    "sha256": "cc1ba917c80446f89626619566599747af4082974f915659fdf5ce5ddc725447"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/inspection.json",
+    "bytes": 10289,
+    "sha256": "3a7d37af99c1c330c6c9798adb5da213d17d68e8454d7a5e16960c37fdf29884"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/build-report.json",
+    "bytes": 2352,
+    "sha256": "5c49b7fe825493f66aa648277b5183208212e50d5dd187472669f33ba967e8c0"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/validation.json",
+    "bytes": 1045,
+    "sha256": "4d490454f090b10e444be57f3f77364c0d2378bfa17d00c79652b7d815745a26"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/final-OH_React_Backstab-000.png",
+    "bytes": 179987,
+    "sha256": "1d39f51605392dde078b438cf117b48cc5eea8fb7e29d830a71243d6aafc6e7d"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/final-OH_React_Backstab-015.png",
+    "bytes": 174724,
+    "sha256": "6b703211dbd409e0091c0618a9e47b79d500db79a26c706a85b8bb3a523b5573"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/final-OH_React_Backstab-030.png",
+    "bytes": 175450,
+    "sha256": "e81264ad93fdea89935cbf849c4375d13b73294c0d8bf5a267d381f700673128"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/final-OH_React_Backstab-045.png",
+    "bytes": 179450,
+    "sha256": "8e1b59498b0c6511a8111f35f642716221aa5df54165ba1fdd7421d0d978b509"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/final-OH_React_Backstab-060.png",
+    "bytes": 179987,
+    "sha256": "3f58ee4fc5a459302d126636035396093cc7289f2128d1335064e6d3d66f22ef"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/final-OH_React_Lifted-000.png",
+    "bytes": 179987,
+    "sha256": "bfe0615ef91b1d35c69f196c913f59c036db947d38e1224a9c6b78bacb1be781"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/final-OH_React_Lifted-012.png",
+    "bytes": 174379,
+    "sha256": "bf3172fc64db8365bea0d5ffd761801ecb46fa13961b75cddd325d19b9fac68d"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/final-OH_React_Lifted-024.png",
+    "bytes": 173355,
+    "sha256": "a756809af4f4041f6addfc05081ac0f4a2048edc9089c58829990286668732f1"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/final-OH_React_Lifted-036.png",
+    "bytes": 175605,
+    "sha256": "865010ce8edb10cd0de11fbe6c001485f7cb5a12a8e263da3747b029414dabeb"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/final-OH_React_Lifted-048.png",
+    "bytes": 180049,
+    "sha256": "7b2d12321f0cbe894b0af0607c5f1f14744f8b6503aba309056fad46a454c4c9"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Backstab-000.png",
+    "bytes": 312532,
+    "sha256": "516c2af37f2409eb4b021d1f881fc302ead759533b42e842fa39e3274e534350"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Backstab-003.png",
+    "bytes": 316215,
+    "sha256": "2977069c40605f1a8c1ed6ec488d9175a77c125eae054406d90cd69b47f0b32a"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Backstab-010.png",
+    "bytes": 317334,
+    "sha256": "c2cd7f42371b9e57d68785772d928cb27c62251e4d92cf084a39e7b89fc1b453"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Backstab-020.png",
+    "bytes": 305631,
+    "sha256": "73b2f83749bb75e21fdd3fdcaa0e85b2ec3e2857eddd7a0b117f2c3fc551146d"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Backstab-030.png",
+    "bytes": 305244,
+    "sha256": "e97dfdcc29baed0cbce24e40f932c954a4d0476d3a763b3eb8822c8cd993115c"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Backstab-040.png",
+    "bytes": 312474,
+    "sha256": "e92d5628fb327a82f6da0a12195206abdffd153e12aac7dc7d06cb693c01be90"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Backstab-050.png",
+    "bytes": 310016,
+    "sha256": "44e4c20ed13318726ad277fb1247cea75780f99495ed18a5f7ca6df6567b8052"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Backstab-060.png",
+    "bytes": 312532,
+    "sha256": "806f8c20c4b4c3977938c4f1c1758a8bd5ea2a0e9f105f9ab2f58572f2a6f40f"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Lifted-000.png",
+    "bytes": 312532,
+    "sha256": "f3c64b432f5eab13b4548d2fde03e3e3ed894cbe478f8f41cf9bf3a87f636f53"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Lifted-008.png",
+    "bytes": 305847,
+    "sha256": "0cebf7c616dc5e224352e7704a73e07ac643c2ba2c1378190695518521ff66e8"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Lifted-016.png",
+    "bytes": 298470,
+    "sha256": "cb07d957c6dc4633f1f24b3d6dd8fdb4063481c8815c7ca2438acc042da2ec08"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Lifted-024.png",
+    "bytes": 302296,
+    "sha256": "1fd49271b61f047c3f4d40f4f723d514ac61ef5218438cf10edbff4b7ea4202b"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Lifted-032.png",
+    "bytes": 304637,
+    "sha256": "93229a99599420dfb047af168e7cb943da509bfc4325fafaa3ce08237012b53d"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Lifted-040.png",
+    "bytes": 304189,
+    "sha256": "6e1bef6dc4890718b59f522dfb7c0bba31c7165cfd345138392f5fae0def97b0"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/preview-OH_React_Lifted-048.png",
+    "bytes": 312532,
+    "sha256": "d64634b8181368a5eff47c57ae683c4220c62a7f1021c6d8cd5ef573113184f5"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/anim-OH_React_Backstab.py.txt",
+    "bytes": 5595,
+    "sha256": "d0fc67b7f610e05ddf4d0863b5e0b60c6be82e09fbc189506abda63c27cfee07"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-reactions-r2b/out/anim-OH_React_Lifted.py.txt",
+    "bytes": 3513,
+    "sha256": "3ddaaf5a3fefb379896300870318556ebad8687a8daeed34947530fc9149e092"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 39025,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_React_Lifted": [
+      0.0,
+      48.0
+     ],
+     "OH_React_Backstab": [
+      0.0,
+      60.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_React_Backstab": {
+      "keys": 61,
+      "seconds": 2.0
+     },
+     "OH_React_Lifted": {
+      "keys": 49,
+      "seconds": 1.6
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0008,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 1e-05
+   }
+  }
+ }
 }
