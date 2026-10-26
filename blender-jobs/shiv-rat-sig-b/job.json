@@ -2,7 +2,7 @@
  "id": "shiv-rat-sig-b",
  "type": "animate",
  "asset_id": "shiv-rat",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:30:18Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T10:25:18Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "1 animation(s) built and checked: OH_Attack"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/shiv-rat/char.glb@factory/issue-8"
@@ -65,7 +65,172 @@
   {
    "at": "2026-10-26T10:25:11Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T10:26:05Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T10:25:18Z"
+ "updated_at": "2026-10-26T10:26:05Z",
+ "result": {
+  "summary": "1 animation(s) built and checked: OH_Attack",
+  "files": [
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/char.glb",
+    "bytes": 905696,
+    "sha256": "4c5fd40d1333e4ec2728d68ffd698e58fe34fc79311fccaf42359c8d1f421c6b"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/events.json",
+    "bytes": 285,
+    "sha256": "dfe4011462976772848be6eea6e09b458cc17a57d42b6b948c5f0f47dd60518e"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/inspection.json",
+    "bytes": 10257,
+    "sha256": "8434caf72adbdc458019856322f6edf8a7dd4ef0dac7c4623d30b98a75e075da"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/build-report.json",
+    "bytes": 1403,
+    "sha256": "3a7bcb216ad9bde81be84b1b1822eda35756842c0797492f88a665a9771c15b6"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/validation.json",
+    "bytes": 897,
+    "sha256": "7438c00ed59570ac36fb5026899b6e369ef13cc23327f9ea3cea973c1e68be3b"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/final-OH_Attack-000.png",
+    "bytes": 175429,
+    "sha256": "b5a880ad2232e6c13ba330f2ee9601134c8946d13d0e0a61a6e5fe1c2aaa8b25"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/final-OH_Attack-008.png",
+    "bytes": 169870,
+    "sha256": "d05ec414c00957ec396940e04bd6e3b5ed0ef3ceadca33e1713d1c290f366b94"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/final-OH_Attack-016.png",
+    "bytes": 169607,
+    "sha256": "da7515535ec6860eda69576c4e7fec74f29b321228df0b62030e34c5cd86f3d8"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/final-OH_Attack-025.png",
+    "bytes": 171730,
+    "sha256": "81eda3cba34a12fa4eee5c14bcfaeef3d54088e616a62ec3aa180d13173cbc82"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/final-OH_Attack-033.png",
+    "bytes": 175425,
+    "sha256": "118b2b4c64f6ca1beeaaadf0acd56209299232d5d1555378e31436855bd7f969"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/preview-OH_Attack-000.png",
+    "bytes": 304476,
+    "sha256": "3e8417f3d08c633a353ca14f14d14d825132b41b99a1a5886e3843a5478ee499"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/preview-OH_Attack-006.png",
+    "bytes": 296708,
+    "sha256": "b6df7e8060ca88c1b49f28a9a13191b25ffc54d734f8f1a7a138b7716acb167c"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/preview-OH_Attack-011.png",
+    "bytes": 296184,
+    "sha256": "c6a00edceba980f1c56a17f66d065d402896db456d1e72a1e8da876823fbd58e"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/preview-OH_Attack-015.png",
+    "bytes": 296693,
+    "sha256": "bc1b615dedf6c5fc2b14b21decd9a4608de0d8b40cd0341348d9b9400ea8d97b"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/preview-OH_Attack-016.png",
+    "bytes": 295266,
+    "sha256": "a53d534e19a67585cc6ed738bf9b49fb434b727a758f6b43479a971722b8d622"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/preview-OH_Attack-022.png",
+    "bytes": 297565,
+    "sha256": "fde8fff0435b2aa3159f7ec1c0dcbf730796cd644a4cc1de68d249a2da3e137d"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/preview-OH_Attack-028.png",
+    "bytes": 302560,
+    "sha256": "ac811e203a61a6df190065222ef3bc3d14a69b910e3c27bbc6e40b29ce7c5b0d"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/preview-OH_Attack-033.png",
+    "bytes": 304476,
+    "sha256": "f6c6df8cb0ef1573429aec13227898b5ac7ecafad0fa5a79506708a784735bc2"
+   },
+   {
+    "file": "blender-jobs/shiv-rat-sig-b/out/anim-OH_Attack.py.txt",
+    "bytes": 5190,
+    "sha256": "3de93d4d00084cfbc5dd6602a5dffede6d111317e2cdc99be495a589eb1e6652"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 39157,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Attack": [
+      0.0,
+      33.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Thrust_Slash": [
+      0.0,
+      90.0
+     ],
+     "Quick_Walk": [
+      0.0,
+      90.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Attack": {
+      "keys": 34,
+      "seconds": 1.1
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Quick_Walk",
+      "Thrust_Slash",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0017,
+     "worst_rotation_error_deg": 0.002
+    },
+    "written_clip_error_pct_of_height": 0.00069
+   }
+  }
+ }
 }
