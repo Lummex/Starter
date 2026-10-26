@@ -2,7 +2,7 @@
  "id": "goblin-grunt-reactions-r2",
  "type": "animate",
  "asset_id": "goblin-grunt",
- "status": "running",
+ "status": "validating",
  "priority": 9,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T09:22:09Z",
- "heartbeat_at": "2026-10-26T09:17:09Z",
+ "lease_until": "2026-10-26T09:22:20Z",
+ "heartbeat_at": "2026-10-26T09:17:20Z",
  "error": null,
  "progress": {
-  "stage": "animating",
-  "percent": 55,
-  "message": "Building the keyframes in Blender and rendering previews"
+  "stage": "validating",
+  "percent": 80,
+  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
@@ -94,7 +94,11 @@
   {
    "at": "2026-10-26T09:04:32Z",
    "status": "running"
+  },
+  {
+   "at": "2026-10-26T09:17:20Z",
+   "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T09:17:09Z"
+ "updated_at": "2026-10-26T09:17:20Z"
 }
