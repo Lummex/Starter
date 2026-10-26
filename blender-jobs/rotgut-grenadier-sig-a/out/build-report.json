@@ -1,0 +1,122 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Idle",
+   "frames": 72,
+   "seconds": 2.4,
+   "key_frames": [
+    8,
+    13,
+    16,
+    18,
+    22,
+    24,
+    25,
+    28,
+    31,
+    34,
+    38,
+    40,
+    42,
+    44,
+    46,
+    50,
+    52,
+    54,
+    55,
+    56,
+    59,
+    61,
+    63,
+    64
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 44.2,
+   "feet_drift_m": 0.0226
+  },
+  {
+   "name": "OH_Walk",
+   "frames": 24,
+   "seconds": 0.8,
+   "key_frames": [
+    6,
+    9,
+    12,
+    15,
+    18,
+    21
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine02"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 37.6,
+   "feet_drift_m": 0.1539
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Idle: Idle: ready 8, dip 13, flip 16-18, watch 22, catch 31, sniffs 40-46, recoil 50-55, proud 59-64.",
+  "OH_Walk: Walk: base pose = contact at 0/24 (unkeyed, loops into idle), mirrored contact 12, high-knee passings 6/18 with hip bob, belly-out lean and side roll; spatula waves 6-18."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Idle": {
+    "keys": 73,
+    "seconds": 2.4
+   },
+   "OH_Walk": {
+    "keys": 25,
+    "seconds": 0.8
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0005,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 3e-05
+ }
+}
