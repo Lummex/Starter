@@ -1,0 +1,92 @@
+def build(ctx):
+    ctx.length(34)
+
+    sp2 = ctx.bone('Spine01')
+    sp = ctx.bone('spine')
+    head = ctx.bone('head')
+    rup = ctx.bone('right upperarm')
+    rfo = ctx.bone('right forearm')
+    rha = ctx.bone('right hand')
+    lup = ctx.bone('left upperarm')
+    lfo = ctx.bone('left forearm')
+
+    # Hips/legs are never keyed so the feet stay planted; all weight comes from the spine.
+
+    def torso(f, twist, bend, side=0, interp='BEZIER'):
+        # split the twist over two spine bones for a smoother curve
+        ctx.key(f, sp2, turn=[('up', twist * 0.45), ('right', bend * 0.5), ('forward', side * 0.5)], interp=interp)
+        ctx.key(f, sp, turn=[('up', twist * 0.55), ('right', bend * 0.5), ('forward', side * 0.5)], interp=interp)
+
+    # --- 5: anticipation - sneering wind-up, spatula cocked high behind his right ear,
+    #        left finger jabbing at the "fly"
+    torso(5, -30, 10, 8)
+    ctx.key(5, rup, aim=(0.75, 0.55, -0.35))
+    ctx.key(5, rfo, aim=(0.55, 0.8, -0.25))
+    ctx.key(5, rha, turn=[('right', 25)])
+    ctx.key(5, lup, aim=(-0.45, -0.35, 0.8))
+    ctx.key(5, lfo, aim=(-0.2, -0.1, 1.0))
+    ctx.key(5, head, turn=[('up', 18), ('right', -8), ('forward', -10)])
+
+    # --- 9: hold & coil a bit tighter (squash), he savours it
+    torso(9, -36, 12, 10)
+    ctx.key(9, rup, aim=(0.7, 0.65, -0.4))
+    ctx.key(9, rfo, aim=(0.5, 0.85, -0.3))
+    ctx.key(9, rha, turn=[('right', 35)])
+    ctx.key(9, lup, aim=(-0.45, -0.3, 0.8))
+    ctx.key(9, lfo, aim=(-0.2, -0.05, 1.0))
+    ctx.key(9, head, turn=[('up', 22), ('right', -10), ('forward', -12)])
+
+    # --- 11: whip - arm smears out to his right side
+    torso(11, -8, -4, 2, interp='LINEAR')
+    ctx.key(11, rup, aim=(0.95, 0.25, 0.25), interp='LINEAR')
+    ctx.key(11, rfo, aim=(0.9, 0.2, 0.4), interp='LINEAR')
+    ctx.key(11, rha, turn=[('right', 10)], interp='LINEAR')
+    ctx.key(11, lup, aim=(-0.6, -0.4, 0.3))
+    ctx.key(11, lfo, aim=(-0.6, -0.3, 0.1))
+
+    # --- 13: CONTACT - flat swat straight across the front, chest-high
+    torso(13, 20, -12, -4, interp='LINEAR')
+    ctx.key(13, rup, aim=(0.35, 0.15, 0.95), interp='LINEAR')
+    ctx.key(13, rfo, aim=(0.1, 0.12, 1.0), interp='LINEAR')
+    ctx.key(13, rha, turn=[('up', 10)], interp='LINEAR')
+    ctx.key(13, lup, aim=(-0.65, 0.2, -0.6))
+    ctx.key(13, lfo, aim=(-0.6, 0.4, -0.4))
+    ctx.key(13, head, turn=[('up', 8), ('right', -12), ('forward', 6)])
+    ctx.event(13, 'hit', bone=rha)
+
+    # --- 16: big follow-through overshoot, arm flung across to his left, wrist flops
+    torso(16, 32, -14, -6)
+    ctx.key(16, rup, aim=(-0.2, 0.12, 0.95))
+    ctx.key(16, rfo, aim=(-0.55, 0.15, 0.8))
+    ctx.key(16, rha, turn=[('up', 28)])
+    ctx.key(16, lup, aim=(-0.7, 0.35, -0.55))
+    ctx.key(16, lfo, aim=(-0.55, 0.6, -0.35))
+    ctx.key(16, head, turn=[('up', 14), ('right', -6), ('forward', 10)])
+
+    # --- 19: hold, drifting a touch further (settle)
+    torso(19, 28, -10, -4)
+    ctx.key(19, rup, aim=(-0.15, 0.1, 0.95))
+    ctx.key(19, rfo, aim=(-0.5, 0.12, 0.85))
+    ctx.key(19, rha, turn=[('up', 22)])
+    ctx.key(19, lup, aim=(-0.65, 0.2, -0.45))
+    ctx.key(19, lfo, aim=(-0.5, 0.35, -0.3))
+    ctx.key(19, head, turn=[('up', 10), ('forward', 8)])
+
+    # --- 23-27: signature beat - lifts the spatula to eye it and flicks the goo off, smug head tilt
+    torso(23, 6, -2, 4)
+    ctx.key(23, rup, aim=(0.45, 0.25, 0.85))
+    ctx.key(23, rfo, aim=(0.3, 0.85, 0.4))
+    ctx.key(23, rha, turn=[('right', -10)])
+    ctx.key(23, lup, aim=(-0.45, -0.85, 0.1))
+    ctx.key(23, lfo, aim=(-0.2, -0.8, 0.5))
+    ctx.key(23, head, turn=[('up', -12), ('right', 6), ('forward', 12)])
+
+    ctx.key(25, rha, turn=[('right', -40)], interp='LINEAR')
+    ctx.key(27, rha, turn=[('right', 15)])
+    ctx.key(27, rup, aim=(0.45, 0.2, 0.85))
+    ctx.key(27, rfo, aim=(0.35, 0.8, 0.45))
+    torso(27, 4, 0, 3)
+    ctx.key(27, head, turn=[('up', -6), ('right', 4), ('forward', 14)])
+
+    # 34: auto-return to base (idle) pose
+    ctx.note('Feet planted: hips and legs untouched; swat stays chest-high so the spatula clears the ground.')
