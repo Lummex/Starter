@@ -677,3 +677,36 @@ def _append_accessor(j, buf, rows, typ):
         acc['min'] = [min(flat)]; acc['max'] = [max(flat)]
     j['accessors'].append(acc)
     return len(j['accessors']) - 1
+
+
+# ----------------------------------------------------------------------------- worker hotfix (applied when the worker reloads this file)
+def _worker_hotfix():
+    """Several worker processes commit to the same queue branch at once; GitHub then answers 409 'is at X but
+    expected Y' (a branch race, not a real conflict). Retry those writes instead of failing the job."""
+    import gc, time
+    try:
+        classes = [o for o in gc.get_objects() if isinstance(o, type) and o.__name__ in ('GitHub', 'Conflict')]
+    except Exception:
+        return
+    gh = [c for c in classes if c.__name__ == 'GitHub' and hasattr(c, 'put_file') and hasattr(c, 'ensure_branch')]
+    cf = [c for c in classes if c.__name__ == 'Conflict' and issubclass(c, Exception)]
+    if not gh or not cf:
+        return
+    for G in gh:
+        if getattr(G, '_oh_race_retry', False):
+            continue
+        orig = G.put_file
+
+        def put_file(self, *a, _orig=orig, _cf=tuple(cf), **k):
+            for i in range(6):
+                try:
+                    return _orig(self, *a, **k)
+                except _cf as e:
+                    if 'but expected' not in str(e) or i == 5:
+                        raise
+                    time.sleep(2 + 3 * i)
+        G.put_file = put_file
+        G._oh_race_retry = True
+
+
+_worker_hotfix()
