@@ -1,0 +1,91 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_React_Bowled",
+   "frames": 90,
+   "seconds": 3.0,
+   "key_frames": [
+    3,
+    5,
+    9,
+    14,
+    17,
+    21,
+    26,
+    32,
+    38,
+    44,
+    47,
+    53,
+    58,
+    64,
+    70,
+    74,
+    80,
+    84
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 14,
+     "name": "down",
+     "bone": "Hips",
+     "time": 0.4667
+    },
+    {
+     "frame": 70,
+     "name": "up",
+     "bone": "Hips",
+     "time": 2.3333
+    }
+   ],
+   "fastest_turn_per_frame_deg": 56.3,
+   "feet_drift_m": 0.433
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_React_Bowled: Bowled: brace 3, impact 5, airborne 9, down 14, bounce 17, dazed 21-44, sit-up 53, crouch 64, up 70, settle 74, hand off head 84, idle 90. Pan arm kept out to the side and raised while lying so the pan clears body and ground."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_React_Bowled": {
+    "keys": 91,
+    "seconds": 3.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0008,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 1e-05
+ }
+}
