@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:41:08Z",
- "heartbeat_at": "2026-10-26T11:36:08Z",
+ "lease_until": "2026-10-26T11:41:15Z",
+ "heartbeat_at": "2026-10-26T11:36:15Z",
  "error": {
   "message": "{\"message\":\"blender-jobs/goblin-bomber-reactions-r1/out/events.json does not match dbae176526a0090a8401dc5036aa57aec503df95\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:33:57Z"
  },
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -539,5 +539,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-26T11:36:08Z"
+ "updated_at": "2026-10-26T11:36:15Z"
 }
