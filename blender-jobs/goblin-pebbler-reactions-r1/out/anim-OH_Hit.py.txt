@@ -1,0 +1,77 @@
+def build(ctx):
+    ctx.length(24)
+
+    hips = ctx.bone('hips')
+    spine = []
+    b = ctx.bone('spine')
+    while b and b != hips:
+        spine.append(b)
+        b = ctx.parent(b)
+    n = len(spine)
+
+    neck = None
+    for name in ctx.bones:
+        if 'neck' in name.lower():
+            neck = name
+    head = ctx.bone('head')
+    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm'); r_hand = ctx.bone('right hand')
+    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')
+    l_thigh = ctx.bone('left thigh'); l_shin = ctx.bone('left shin'); l_foot = ctx.bone('left foot')
+
+    def body(f, back=0.0, side=0.0, twist=0.0):
+        for s in spine:
+            ctx.key(f, s, turn=[('right', back / n), ('forward', side / n), ('up', twist / n)])
+
+    def look(f, back=0.0, side=0.0, turn=0.0):
+        if neck:
+            ctx.key(f, neck, turn=[('right', back * 0.4), ('forward', side * 0.4), ('up', turn * 0.4)])
+            ctx.key(f, head, turn=[('right', back * 0.6), ('forward', side * 0.6), ('up', turn * 0.6)])
+        else:
+            ctx.key(f, head, turn=[('right', back), ('forward', side), ('up', turn)])
+
+    # Upper body: snap back on impact, overshoot, stagger, shake it off, settle.
+    body(3, back=22, side=-4, twist=6)
+    body(6, back=27, side=-5, twist=8)
+    body(9, back=14, side=-3, twist=4)
+    body(12, back=4)
+    body(17, back=-2)
+    body(20, back=-4)
+    body(22, back=-1)
+
+    # Head whips back a touch harder than the chest, then shakes it off.
+    look(3, back=24, side=-6)
+    look(6, back=30, side=-8)
+    look(9, back=12)
+    look(12, back=-6, turn=16)
+    look(14, back=-6, turn=-16)
+    look(16, back=-4, turn=11)
+    look(18, back=-3, turn=-6)
+    look(21, back=2)
+
+    # Arms fling forward/out from inertia; pan arm stays out to the side, clear of body and ground.
+    for f, ra, la, rb, lb in (
+        (3, (0.75, -0.30, 0.40), (-0.70, -0.25, 0.45), 30, -30),
+        (6, (0.78, -0.18, 0.40), (-0.72, -0.12, 0.45), 40, -40),
+        (9, (0.65, -0.45, 0.20), (-0.60, -0.50, 0.25), 25, -25),
+        (13, (0.40, -0.80, -0.30), (-0.40, -0.88, 0.05), 12, -10),
+        (18, (0.25, -0.80, -0.50), (-0.38, -0.92, -0.05), 6, -5),
+    ):
+        ctx.key(f, r_up, aim=ra)
+        ctx.key(f, r_fore, turn=[('forward', rb)])
+        ctx.key(f, l_up, aim=la)
+        ctx.key(f, l_fore, turn=[('forward', lb)])
+    ctx.key(6, r_hand, turn=[('forward', 15)])
+    ctx.key(13, r_hand, turn=[('forward', 0)])
+
+    # One stagger step: the front foot lifts and stomps back down in the same spot.
+    ctx.key(5, l_thigh, turn=[('right', 0)])
+    ctx.key(5, l_shin, turn=[('right', 0)])
+    ctx.key(5, l_foot, turn=[('right', 0)])
+    ctx.key(8, l_thigh, turn=[('right', 22)])
+    ctx.key(8, l_shin, turn=[('right', -40)])
+    ctx.key(8, l_foot, turn=[('right', 15)])
+    ctx.key(11, l_thigh, turn=[('right', 0)], interp='LINEAR')
+    ctx.key(11, l_shin, turn=[('right', 0)], interp='LINEAR')
+    ctx.key(11, l_foot, turn=[('right', 0)], interp='LINEAR')
+
+    ctx.note('Hips are never moved, so the planted foot cannot slide; stagger is a lift-and-stomp of the front foot in place.')
