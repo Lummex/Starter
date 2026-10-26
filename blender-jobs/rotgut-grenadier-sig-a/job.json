@@ -2,7 +2,7 @@
  "id": "rotgut-grenadier-sig-a",
  "type": "animate",
  "asset_id": "rotgut-grenadier",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 5,
  "created_at": "2026-10-26T09:02:28Z",
  "created_by": "claude-overnight",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:28:16Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-26T10:23:16Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "2 animation(s) built and checked: OH_Idle, OH_Walk"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/rotgut-grenadier/char.glb@factory/issue-8"
@@ -72,7 +72,240 @@
   {
    "at": "2026-10-26T10:21:31Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-26T10:24:05Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-26T10:23:16Z"
+ "updated_at": "2026-10-26T10:24:05Z",
+ "result": {
+  "summary": "2 animation(s) built and checked: OH_Idle, OH_Walk",
+  "files": [
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/char.glb",
+    "bytes": 1317104,
+    "sha256": "16b967e276239b72e5bbb3b3c7c6f36d12e05cf1c94595e965b7ca3475c02ef4"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/events.json",
+    "bytes": 305,
+    "sha256": "244076639b34bc90bd4920e97d366bde4a4ff7482ce78d3b63de8b4ed65e7da4"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/inspection.json",
+    "bytes": 10173,
+    "sha256": "cca328771102bd3398ee7ac35d1a1ac45143b10cd81e3f42481598625dec339b"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/build-report.json",
+    "bytes": 2082,
+    "sha256": "d118093a3e1ab4871298e9ab63096a16c38894c8f92d0d13fee3c29214fc6b60"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/validation.json",
+    "bytes": 1009,
+    "sha256": "4b43121f9e7e4d88dbd85f1d3d49f60e1a094ea27a7e3d6d744ca691d0641d76"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/final-OH_Idle-000.png",
+    "bytes": 179729,
+    "sha256": "35ddb70b5eadb842de0e73094669c432854e855ae7ebc7dc64696aab28629e21"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/final-OH_Idle-018.png",
+    "bytes": 179624,
+    "sha256": "4fa10292f553c636c43bb0975f764d7c9d4a5151b33f3abc9b5abc1071f880b9"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/final-OH_Idle-036.png",
+    "bytes": 176594,
+    "sha256": "ea5a57bbabb0f6fa6167337a00938f0d2e23aba4d25dfbaa795c134c2b573f5c"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/final-OH_Idle-054.png",
+    "bytes": 179934,
+    "sha256": "32faabba6c2a1169e97188a8d9c89411453a85e2899562dec8d53ba1e953e09f"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/final-OH_Idle-072.png",
+    "bytes": 179724,
+    "sha256": "33d1edc5bfb0b5cf3d00f9e2c2ac78cfb33c8a3dd0bdb786e690964ed279c292"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/final-OH_Walk-000.png",
+    "bytes": 179729,
+    "sha256": "f87baa089374ad948b5d1724d692c7f1b88118fcd368cd340024cc6fcf9abad5"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/final-OH_Walk-006.png",
+    "bytes": 176907,
+    "sha256": "b3393d3bd04a3a6a59d7e07296e4684c38a9a4c72377b1b740fb25b32d9bd022"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/final-OH_Walk-012.png",
+    "bytes": 175924,
+    "sha256": "f01a5489552b499a1e65894de82a9159d428b9a8a2188896df02f098f9a69f71"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/final-OH_Walk-018.png",
+    "bytes": 176716,
+    "sha256": "df50f6bc5ea2a96a90e177a0f85ba6d2c6742aa8d767cfaf8e4b3fd58bfb581f"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/final-OH_Walk-024.png",
+    "bytes": 179724,
+    "sha256": "d4517b4d04a8bf6cdc04363cbc4dfb066565a0ad77efde94184f3a320633d4f1"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Idle-000.png",
+    "bytes": 311873,
+    "sha256": "ad7705f48dfe5c9396c677513ed9c5d3622ceb0c3087828941a813b54cc23081"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Idle-012.png",
+    "bytes": 306419,
+    "sha256": "34e549f7d64c14402163e4f411e8c65db8185061f9991477ef78f3f817c757ac"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Idle-024.png",
+    "bytes": 312747,
+    "sha256": "ad61a8978c45bf5359e35729b36020aff713791d33f1b0bf0945cc815d87d122"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Idle-036.png",
+    "bytes": 307211,
+    "sha256": "8bb2a41875760a95ef6fff8dd6f0a413857fe2c006e544f896c0b42eb1a39c47"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Idle-048.png",
+    "bytes": 310146,
+    "sha256": "22b963458961a11f155ecb6742e6da3b7f52d6a61baaf71a7b409ab66d81d201"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Idle-060.png",
+    "bytes": 316215,
+    "sha256": "54a88f317b67d237fc1520a070e7cff7e1e854f2ea7d62d630b5934dc2050027"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Idle-072.png",
+    "bytes": 311873,
+    "sha256": "af94e53f74511393c0a3847cea85c1e0fa43fea1ade7c81de25c76b5e491ef7c"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Walk-000.png",
+    "bytes": 311873,
+    "sha256": "0357ade77b26c23d9f18c8f4c34622bc64a523dd7320de6b061324c05e7079bf"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Walk-004.png",
+    "bytes": 308874,
+    "sha256": "1a18018ef881778e8a2ee9622e3f5d7f43708dae427320b96fd6bbfec7977c8d"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Walk-008.png",
+    "bytes": 307771,
+    "sha256": "34a2b9213b65fa912175cee4576039836e73a4d99ec91c1c9baa0f2127e19adb"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Walk-012.png",
+    "bytes": 305725,
+    "sha256": "0ef54d05cffbdd6c5904d36b065d11c515c44ec936c8bd388c8313c73d387ef8"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Walk-016.png",
+    "bytes": 306528,
+    "sha256": "3cccdb2cb3f43c65c9046cd372b5b28a9a9b992a1561d37948d0225389cc7b2e"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Walk-020.png",
+    "bytes": 309349,
+    "sha256": "161a93d4ad65ec11dfaf340cb764a55a4f94e7405dd9a162bde9ac55ff9e9734"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/preview-OH_Walk-024.png",
+    "bytes": 311873,
+    "sha256": "fc95c00f7aa1b75b86d335d47f0199c049ed681ca56cfa64ec77a707d335c771"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/anim-OH_Idle.py.txt",
+    "bytes": 4865,
+    "sha256": "ae9ec752a464a6affdfd095db34f6a03a02e2383e8b64c0be9a18d47a818b8ee"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-sig-a/out/anim-OH_Walk.py.txt",
+    "bytes": 3210,
+    "sha256": "b52163f0c7c1bfbdfc7923c1fd9b68a59d0e570217d5421cbda48b498607cd95"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 40362,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Walk": [
+      0.0,
+      24.0
+     ],
+     "OH_Idle": [
+      0.0,
+      72.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Idle": {
+      "keys": 73,
+      "seconds": 2.4
+     },
+     "OH_Walk": {
+      "keys": 25,
+      "seconds": 0.8
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0005,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 3e-05
+   }
+  }
+ }
 }
