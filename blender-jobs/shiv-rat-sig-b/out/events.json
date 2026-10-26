@@ -1,0 +1,20 @@
+{
+ "asset_id": "shiv-rat",
+ "fps": 30,
+ "clips": {
+  "OH_Attack": {
+   "frames": 33,
+   "duration": 1.1,
+   "loop": false,
+   "events": [
+    {
+     "frame": 15,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.5
+    }
+   ],
+   "attachments": []
+  }
+ }
+}
