@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T10:35:58Z",
- "heartbeat_at": "2026-10-26T10:30:58Z",
+ "lease_until": "2026-10-26T10:36:02Z",
+ "heartbeat_at": "2026-10-26T10:31:02Z",
  "error": {
   "message": "{\"message\":\"is at 5824d1eed39270d06a501ce6e818d1b664176a41 but expected 0ff262b4795069f554e948d1999fa804944c47bb\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T10:28:57Z"
  },
  "progress": {
-  "stage": "preparing",
-  "percent": 5,
-  "message": "Copying the source model into a private work folder"
+  "stage": "inspecting",
+  "percent": 15,
+  "message": "Reading the model, skeleton and animations in Blender"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/skullbasher-rusher/char.glb@factory/issue-8"
@@ -84,5 +84,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T10:30:58Z"
+ "updated_at": "2026-10-26T10:31:02Z"
 }
