@@ -1,0 +1,127 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Attack",
+   "frames": 30,
+   "seconds": 1.0,
+   "key_frames": [
+    4,
+    9,
+    12,
+    15,
+    17,
+    20,
+    23,
+    26
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02"
+   ],
+   "events": [
+    {
+     "frame": 15,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.5
+    }
+   ],
+   "fastest_turn_per_frame_deg": 30.9,
+   "feet_drift_m": 0.0039
+  },
+  {
+   "name": "OH_Special",
+   "frames": 48,
+   "seconds": 1.6,
+   "key_frames": [
+    6,
+    10,
+    13,
+    18,
+    21,
+    23,
+    25,
+    28,
+    31,
+    34,
+    37,
+    39,
+    42
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02"
+   ],
+   "events": [
+    {
+     "frame": 23,
+     "name": "ball_release",
+     "bone": "RightHand",
+     "time": 0.7667
+    }
+   ],
+   "fastest_turn_per_frame_deg": 96.4,
+   "feet_drift_m": 0.0048
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Attack: OH_Attack: gather 4, wind-up 9-12, hit 15, overshoot 17, recoil 20, cocky settle 23-26. Lowest wrist/ball estimate 0.318 m.",
+  "OH_Special: OH_Special: address 6-10, push-away 13, backswing 18, bottom 21, release 23 (deep lunge), follow-through 28-31, fist pump 37-39. Ball is part of the hand mesh, so it cannot be hidden at release; game spawns the rolling ball at ball_release. Lowest wrist/ball estimate 0.161 m.",
+  "OH_Special: Fastest move: RightForeArm turns 96 degrees in one frame at frame 33 (may look like a pop)"
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Attack": {
+    "keys": 31,
+    "seconds": 1.0
+   },
+   "OH_Special": {
+    "keys": 49,
+    "seconds": 1.6
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0006,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 4e-05
+ }
+}
