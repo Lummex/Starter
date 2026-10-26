@@ -1,0 +1,20 @@
+{
+ "asset_id": "goblin-sneak",
+ "fps": 30,
+ "clips": {
+  "OH_Attack": {
+   "frames": 36,
+   "duration": 1.2,
+   "loop": false,
+   "events": [
+    {
+     "frame": 21,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.7
+    }
+   ],
+   "attachments": []
+  }
+ }
+}
