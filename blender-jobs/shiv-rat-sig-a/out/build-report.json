@@ -1,0 +1,138 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Idle",
+   "frames": 60,
+   "seconds": 2.0,
+   "key_frames": [
+    3,
+    6,
+    7,
+    8,
+    10,
+    12,
+    13,
+    14,
+    16,
+    18,
+    19,
+    20,
+    21,
+    22,
+    24,
+    26,
+    28,
+    30,
+    31,
+    32,
+    33,
+    35,
+    37,
+    39,
+    40,
+    41,
+    42,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    55,
+    57
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftForeArm",
+    "LeftHand",
+    "RightArm",
+    "RightForeArm",
+    "RightHand",
+    "Spine",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 43.6,
+   "feet_drift_m": 0.0108
+  },
+  {
+   "name": "OH_Walk",
+   "frames": 24,
+   "seconds": 0.8,
+   "key_frames": [
+    2,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    14,
+    15,
+    16,
+    18,
+    21
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 27.7,
+   "feet_drift_m": 0.1182
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Idle: Idle: snap-look left + sniffs (3-18), snap right (21), dagger flick/spin (30-41), sniff at camera (45-53).",
+  "OH_Walk: Walk: idle at 0/24, crouch by 2, left foot up 5 / plants 8, right foot up 15 / plants 18, twitch glance 11-16, pops up for a peek at the loop."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Idle": {
+    "keys": 61,
+    "seconds": 2.0
+   },
+   "OH_Walk": {
+    "keys": 25,
+    "seconds": 0.8
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Quick_Walk",
+    "Thrust_Slash",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0017,
+   "worst_rotation_error_deg": 0.002
+  },
+  "written_clip_error_pct_of_height": 0.00069
+ }
+}
