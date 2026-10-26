@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T11:29:22Z",
- "heartbeat_at": "2026-10-26T11:24:22Z",
+ "lease_until": "2026-10-26T11:29:26Z",
+ "heartbeat_at": "2026-10-26T11:24:26Z",
  "error": {
   "message": "{\"message\":\"is at a71aa594716dc10fe453765b35952265f7aad5e9 but expected ffc889bdc3c149bd0cbbd2e4b364a60768d14971\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}",
   "at": "2026-10-26T11:23:53Z"
  },
  "progress": {
-  "stage": "preparing",
-  "percent": 5,
-  "message": "Copying the source model into a private work folder"
+  "stage": "inspecting",
+  "percent": 15,
+  "message": "Reading the model, skeleton and animations in Blender"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/char.glb@factory/issue-8"
@@ -135,5 +135,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-26T11:24:22Z"
+ "updated_at": "2026-10-26T11:24:26Z"
 }
