@@ -1,0 +1,140 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Idle",
+   "frames": 72,
+   "seconds": 2.4,
+   "key_frames": [
+    6,
+    7,
+    8,
+    10,
+    11,
+    12,
+    14,
+    17,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    26,
+    27,
+    29,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    38,
+    41,
+    44,
+    47,
+    50,
+    52,
+    53,
+    56,
+    59,
+    60,
+    63,
+    64,
+    65,
+    66
+   ],
+   "bones_moved": [
+    "Head",
+    "LeftArm",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftShoulder",
+    "RightArm",
+    "RightForeArm",
+    "RightHand",
+    "RightShoulder",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 41.0,
+   "feet_drift_m": 0.0
+  },
+  {
+   "name": "OH_Walk",
+   "frames": 36,
+   "seconds": 1.2,
+   "key_frames": [
+    3,
+    8,
+    11,
+    13,
+    16,
+    21,
+    26,
+    29,
+    31,
+    34
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightShoulder",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 19.0,
+   "feet_drift_m": 0.0768
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Idle: Idle: hunch onto staff f7, taps f19/f31 (lift-then-slam, staff only ever lifted), mutter head-bob f38-60, left hand stirs circles f11-59, release f60-72.",
+  "OH_Walk: Walk: in-place hobble. Staff lifts f3, swings forward f8, plants with left foot f13 and drifts back while planted; right foot steps f21-31. Hip dips 9mm at contacts with matching knee bends."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Idle": {
+    "keys": 73,
+    "seconds": 2.4
+   },
+   "OH_Walk": {
+    "keys": 37,
+    "seconds": 1.2
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0009,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 2e-05
+ }
+}
