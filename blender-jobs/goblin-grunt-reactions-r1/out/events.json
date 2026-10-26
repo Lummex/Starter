@@ -1,0 +1,27 @@
+{
+ "asset_id": "goblin-grunt",
+ "fps": 30,
+ "clips": {
+  "OH_Hit": {
+   "frames": 26,
+   "duration": 0.8667,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  },
+  "OH_React_Knockback": {
+   "frames": 40,
+   "duration": 1.3333,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  },
+  "OH_React_Bonk": {
+   "frames": 40,
+   "duration": 1.3333,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  }
+ }
+}
