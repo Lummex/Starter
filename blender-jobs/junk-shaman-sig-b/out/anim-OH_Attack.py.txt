@@ -1,0 +1,135 @@
+import math
+from mathutils import Vector, Quaternion
+
+# Directions are (right, up, forward). The staff runs along the right hand bone:
+# its top points opposite the hand's direction, so right-hand aims below are "-staff top".
+
+AX = {
+    'right': Vector((1, 0, 0)), 'left': Vector((-1, 0, 0)),
+    'up': Vector((0, 1, 0)), 'down': Vector((0, -1, 0)),
+    'forward': Vector((0, 0, 1)), 'back': Vector((0, 0, -1)),
+}
+
+
+def tq(turns):
+    q = Quaternion((1, 0, 0, 0))
+    for ax, deg in turns:
+        q = Quaternion(AX[ax], math.radians(-deg)) @ q
+    return q
+
+
+def nv(v):
+    return Vector(v).normalized()
+
+
+def pts(ctx, n):
+    return Vector(ctx.bones[n]['points'])
+
+
+def rig_of(ctx):
+    b = ctx.bone
+    spine = b('spine')
+    return {
+        'hips': b('hips'), 'spine': spine, 'spine_lo': ctx.parent(spine),
+        'neck': b('neck'), 'head': b('head'),
+        'R': [b('right upperarm'), b('right forearm'), b('right hand')],
+        'L': [b('left upperarm'), b('left forearm'), b('left hand')],
+        'legs': [(b('left thigh'), b('left shin'), b('left foot')),
+                 (b('right thigh'), b('right shin'), b('right foot'))],
+    }
+
+
+def key_arm(ctx, f, names, dirs, R, interp):
+    # dirs are world directions; compensate for the parents' rotation (FK)
+    for n, w in zip(names, dirs):
+        local = R.inverted() @ nv(w)
+        ctx.key(f, n, aim=tuple(local), interp=interp)
+        R = R @ pts(ctx, n).rotation_difference(local)
+
+
+def plant_legs(ctx, rig, f, move, interp):
+    # two-bone IK so the feet stay exactly where they are while the hips shift
+    m = Vector(move)
+    for th, sh, ft in rig['legs']:
+        H = Vector(ctx.bones[th]['head'])
+        K = Vector(ctx.bones[sh]['head'])
+        A = Vector(ctx.bones[ft]['head'])
+        L1 = (K - H).length
+        L2 = (A - K).length
+        H2 = H + m
+        d = A - H2
+        dist = min(d.length, L1 + L2 - 1e-4)
+        u = d.normalized()
+        x = (L1 * L1 - L2 * L2 + dist * dist) / (2 * dist)
+        h = math.sqrt(max(0.0, L1 * L1 - x * x))
+        p = (K - H) - u * (K - H).dot(u)
+        if p.length < 1e-6:
+            p = Vector((0, 0, 1))
+        p.normalize()
+        K2 = H2 + u * x + p * h
+        wt = (K2 - H2).normalized()
+        ws = (A - K2).normalized()
+        ctx.key(f, th, aim=tuple(wt), interp=interp)
+        qt = pts(ctx, th).rotation_difference(wt)
+        ls = qt.inverted() @ ws
+        ctx.key(f, sh, aim=tuple(ls), interp=interp)
+        qs = pts(ctx, sh).rotation_difference(ls)
+        e = (qt @ qs).inverted().to_euler('XYZ')
+        ctx.key(f, ft, turn=[('right', -math.degrees(e.x)),
+                             ('up', -math.degrees(e.y)),
+                             ('forward', -math.degrees(e.z))], interp=interp)
+
+
+def pose(ctx, rig, f, spine, head, move, R, L, interp='BEZIER'):
+    spine = list(spine) or [('up', 0)]
+    head = list(head) or [('up', 0)]
+    ctx.key(f, rig['hips'], move=move, interp=interp)
+    ctx.key(f, rig['spine_lo'], turn=spine, interp=interp)
+    ctx.key(f, rig['spine'], turn=spine, interp=interp)
+    ctx.key(f, rig['neck'], turn=[(a, d * 0.4) for a, d in head], interp=interp)
+    ctx.key(f, rig['head'], turn=[(a, d * 0.6) for a, d in head], interp=interp)
+    chest = tq(spine) @ tq(spine)
+    key_arm(ctx, f, rig['R'], R, chest, interp)
+    key_arm(ctx, f, rig['L'], L, chest, interp)
+    plant_legs(ctx, rig, f, move, interp)
+
+
+def build(ctx):
+    ctx.length(34)
+    rig = rig_of(ctx)
+    hand = ctx.bone('right hand')
+
+    # 4: gather - hunch, glare down, grip tightens, staff lifts a hair
+    pose(ctx, rig, 4, [('right', -4)], [('right', -12)], (0, -0.015, 0),
+         R=[(0.2, -0.8, -0.45), (0.45, -0.85, 0.1), (0.35, -0.92, 0.1)],
+         L=[(-0.4, -0.9, 0.1), (-0.1, -0.7, 0.7), (-0.1, -0.7, 0.7)])
+    # 11: wind-up - elbow high and wide, staff top cocked back over his head, leaning back
+    pose(ctx, rig, 11, [('right', 7), ('up', -6)], [('right', 10), ('up', 10)], (0.008, -0.008, -0.008),
+         R=[(0.8, 0.75, -0.1), (0.35, 0.5, 0.8), (-0.15, -0.85, 0.5)],
+         L=[(-0.85, 0.1, 0.4), (-0.5, 0.5, 0.7), (-0.3, 0.6, 0.7)])
+    # 14: overshoot hold - a creaky old-man stretch further back
+    pose(ctx, rig, 14, [('right', 9), ('up', -7)], [('right', 13), ('up', 12)], (0.01, -0.01, -0.012),
+         R=[(0.75, 0.8, -0.2), (0.35, 0.6, 0.7), (-0.15, -0.75, 0.65)],
+         L=[(-0.9, 0.15, 0.35), (-0.55, 0.55, 0.6), (-0.35, 0.65, 0.6)])
+    # 16: whip through - staff top passing overhead
+    pose(ctx, rig, 16, [('right', -2)], [('right', 4)], (0.0, -0.02, 0.006),
+         R=[(0.6, 0.55, 0.55), (0.3, -0.3, 0.9), (-0.05, -0.9, -0.4)],
+         L=[(-0.8, -0.2, 0.1), (-0.5, -0.5, 0.3), (-0.5, -0.5, 0.3)], interp='LINEAR')
+    # 18: BONK - staff top lands in front-centre, body folds forward, eyes on target
+    pose(ctx, rig, 18, [('right', -12), ('up', 5)], [('right', 10)], (-0.005, -0.032, 0.018),
+         R=[(0.35, 0.05, 0.95), (0.15, -0.95, -0.2), (0.3, 0.1, -0.95)],
+         L=[(-0.6, -0.6, -0.5), (-0.3, -0.8, -0.5), (-0.3, -0.8, -0.5)])
+    ctx.event(18, 'hit', bone=hand)
+    # 21: recoil - staff bounces up off the skull
+    pose(ctx, rig, 21, [('right', -10), ('up', 4)], [('right', 6)], (-0.004, -0.026, 0.015),
+         R=[(0.35, 0.2, 0.9), (0.2, -0.85, 0.1), (0.25, -0.1, -0.95)],
+         L=[(-0.55, -0.7, -0.35), (-0.25, -0.85, 0.2), (-0.25, -0.85, 0.2)])
+    # 25: smug settle - head cocked, staff still pointed at the victim
+    pose(ctx, rig, 25, [('right', -9), ('up', 3)], [('right', 6), ('forward', -8)], (-0.003, -0.028, 0.015),
+         R=[(0.3, 0.0, 0.95), (0.2, -0.95, 0.0), (0.2, 0.05, -0.97)],
+         L=[(-0.5, -0.8, -0.2), (-0.2, -0.8, 0.5), (-0.2, -0.8, 0.5)])
+    # 30: back toward leaning on the staff
+    pose(ctx, rig, 30, [('right', -3)], [('right', -4)], (0, -0.01, 0.004),
+         R=[(0.2, -0.85, -0.3), (0.3, -0.95, 0.05), (0.15, -0.9, -0.35)],
+         L=[(-0.4, -0.9, -0.05), (-0.05, -0.8, 0.6), (-0.05, -0.8, 0.6)])
+    ctx.note('OH_Attack: gather 4, wind-up 11-14, whip 16, bonk/hit 18, recoil 21, smug hold 25, idle 34')
