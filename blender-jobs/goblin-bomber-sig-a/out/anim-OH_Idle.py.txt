@@ -1,0 +1,187 @@
+import math
+from mathutils import Vector, Quaternion
+
+AX = {'right': (1, 0, 0), 'left': (-1, 0, 0), 'up': (0, 1, 0), 'down': (0, -1, 0),
+      'forward': (0, 0, 1), 'back': (0, 0, -1)}
+
+# fist positions relative to the chest (Spine head), carried by the torso
+LG = (-0.11, -0.05, 0.24)
+RG = (0.12, -0.04, 0.19)
+
+DEFAULT = {
+    'hips': (0.0, -0.025, 0.0), 'hips_up': 0.0,
+    'twist': 0.0, 'bend': -10.0, 'lean': 0.0,
+    'lclav': 0.0, 'rclav': 0.0,
+    'lfist': LG, 'rfist': RG,
+    'lheel': 10.0, 'rheel': 10.0,
+    'llift': (0, 0, 0), 'rlift': (0, 0, 0),
+    'look': 6.0, 'yaw': 0.0,
+}
+
+
+def rot(axis, deg):
+    # matches the API convention (e.g. ('right', +40) swings a hanging arm forward)
+    return Quaternion(Vector(AX[axis]), math.radians(-deg))
+
+
+def two_bone(S, T, L1, L2, pole):
+    v = T - S
+    d = max(min(v.length, (L1 + L2) * 0.995), abs(L1 - L2) + 0.001)
+    u = v.normalized()
+    x = (L1 * L1 - L2 * L2 + d * d) / (2 * d)
+    h = math.sqrt(max(L1 * L1 - x * x, 0.0))
+    pp = pole - u * pole.dot(u)
+    if pp.length < 1e-6:
+        pp = Vector((0, 0, 1))
+    pp.normalize()
+    E = S + u * x + pp * h
+    return E, S + u * d
+
+
+def solve(ctx, f, over, interp='BEZIER'):
+    P = dict(DEFAULT)
+    P.update(over)
+    B = ctx.bones
+
+    def H(n):
+        return Vector(B[n]['head'])
+
+    def D(n):
+        return Vector(B[n]['points'])
+
+    Rw = {}
+    Pw = {}
+
+    def place(n, q):
+        p = B[n]['parent']
+        Pw[n] = Pw[p] + Rw[p] @ (H(n) - H(p))
+        Rw[n] = Rw[p] @ q
+
+    def turn_key(n, axis, deg):
+        place(n, rot(axis, deg))
+        ctx.key(f, n, turn=[(axis, deg)], interp=interp)
+
+    def aim_key(n, world_dir):
+        p = B[n]['parent']
+        local = Rw[p].inverted() @ world_dir.normalized()
+        place(n, D(n).rotation_difference(local))
+        ctx.key(f, n, aim=(local.x, local.y, local.z), interp=interp)
+
+    # hips
+    Rw['Hips'] = rot('up', P['hips_up'])
+    Pw['Hips'] = H('Hips') + Vector(P['hips'])
+    ctx.key(f, 'Hips', turn=[('up', P['hips_up'])], move=tuple(P['hips']), interp=interp)
+
+    # spine: one axis per bone
+    turn_key('Spine02', 'up', P['twist'])
+    turn_key('Spine01', 'right', P['bend'])
+    turn_key('Spine', 'forward', P['lean'])
+
+    # neck / head stay mostly upright and facing forward
+    half = Quaternion((1, 0, 0, 0)).slerp(Rw['Spine'], 0.5)
+    aim_key('neck', half @ D('neck'))
+    aim_key('Head', rot('up', P['yaw']) @ rot('right', -P['look']) @ D('Head'))
+
+    # arms: IK to fist targets given in the chest frame
+    for side, clav, fist, pole in (('Left', 'lclav', 'lfist', Vector((-0.5, -1.0, -0.3))),
+                                   ('Right', 'rclav', 'rfist', Vector((0.5, -1.0, -0.3)))):
+        turn_key(side + 'Shoulder', 'up', P[clav])
+        up = side + 'Arm'
+        fo = side + 'ForeArm'
+        p = B[up]['parent']
+        S = Pw[p] + Rw[p] @ (H(up) - H(p))
+        T = Pw['Spine'] + Rw['Spine'] @ Vector(P[fist])
+        E, T2 = two_bone(S, T, B[up]['length'], B[fo]['length'], pole)
+        aim_key(up, E - S)
+        aim_key(fo, T2 - E)
+
+    # legs: IK so feet stay planted (heel raise pivots on the ball of the foot)
+    for side, heel, lift in (('Left', 'lheel', 'llift'), ('Right', 'rheel', 'rlift')):
+        th = side + 'UpLeg'
+        sh = side + 'Leg'
+        ft = side + 'Foot'
+        toe = side + 'ToeBase'
+        S0 = H(th)
+        K0 = H(sh)
+        A0 = H(ft)
+        u = (A0 - S0).normalized()
+        pole = (K0 - S0) - u * (K0 - S0).dot(u)
+        pole = pole.normalized() + Vector((0, 0, 0.5))
+        T0 = H(toe)
+        fv = T0 - A0
+        A = A0
+        fdir = fv.normalized()
+        if abs(P[heel]) > 0.01:
+            ax = Vector((0, 1, 0)).cross(fv).normalized()
+            best = None
+            for s in (1, -1):
+                q = Quaternion(ax, math.radians(P[heel]) * s)
+                cand = T0 - q @ fv
+                if best is None or cand.y > best[0].y:
+                    best = (cand, (q @ fv).normalized())
+            A, fdir = best
+        A = A + Vector(P[lift])
+        S = Pw['Hips'] + Rw['Hips'] @ (S0 - H('Hips'))
+        E, T2 = two_bone(S, A, B[th]['length'], B[sh]['length'], pole)
+        aim_key(th, E - S)
+        aim_key(sh, T2 - E)
+        aim_key(ft, fdir)
+        aim_key(toe, D(toe))
+
+
+def build(ctx):
+    ctx.length(72)
+    L = 'LINEAR'
+    keys = [
+        # frame 0 is the base pose (auto); fists snap up into guard on the first bounce
+        # bouncing on his toes
+        (4, {'hips': (0, -0.042, 0), 'lheel': 4, 'rheel': 4, 'look': 8}),
+        (8, {'hips': (0, -0.008, 0), 'lheel': 22, 'rheel': 22, 'look': 4}),
+        (12, {'hips': (0, -0.042, 0), 'lheel': 4, 'rheel': 4, 'look': 8}),
+        (16, {'hips': (0, -0.008, 0), 'lheel': 22, 'rheel': 22, 'look': 4}),
+        (20, {'hips': (0, -0.045, 0), 'lheel': 4, 'rheel': 4, 'look': 8}),
+        # bob and weave: slip right, under, slip left
+        (24, {'hips': (0.025, -0.06, 0), 'lean': 14, 'bend': -22, 'twist': -8,
+              'lheel': 8, 'rheel': 4, 'look': -6,
+              'lfist': (-0.09, -0.03, 0.22), 'rfist': (0.10, -0.02, 0.18)}),
+        (28, {'hips': (0, -0.078, 0.005), 'bend': -30, 'lheel': 6, 'rheel': 6, 'look': -14,
+              'lfist': (-0.09, -0.02, 0.22), 'rfist': (0.10, -0.01, 0.18)}),
+        (32, {'hips': (-0.025, -0.06, 0), 'lean': -14, 'bend': -22, 'twist': 8,
+              'lheel': 4, 'rheel': 8, 'look': -6,
+              'lfist': (-0.09, -0.03, 0.22), 'rfist': (0.10, -0.02, 0.18)}),
+        (36, {'hips': (0, -0.006, 0), 'lheel': 22, 'rheel': 22, 'bend': -6, 'look': 4}),
+        # jab anticipation
+        (39, {'hips': (0, -0.038, 0), 'twist': 6, 'lfist': (-0.12, -0.05, 0.20), 'look': 10}, L),
+        # JAB 1
+        (42, {'hips': (0, -0.03, 0.006), 'twist': -14, 'lclav': -10, 'lean': 3,
+              'lfist': (-0.08, -0.03, 0.46), 'lheel': 6, 'rheel': 18, 'look': 8}),
+        (44, {'hips': (0, -0.03, 0.006), 'twist': -12, 'lclav': -8, 'lean': 3,
+              'lfist': (-0.08, -0.03, 0.44), 'lheel': 6, 'rheel': 18, 'look': 8}, L),
+        (47, {'hips': (0, -0.035, 0), 'twist': 2}, L),
+        # JAB 2 (quicker)
+        (49, {'hips': (0, -0.03, 0.006), 'twist': -16, 'lclav': -12, 'lean': 3,
+              'lfist': (-0.08, -0.03, 0.47), 'lheel': 6, 'rheel': 18, 'look': 8}),
+        (51, {'hips': (0, -0.03, 0.006), 'twist': -14, 'lclav': -10, 'lean': 3,
+              'lfist': (-0.08, -0.03, 0.45), 'lheel': 6, 'rheel': 18, 'look': 8}),
+        # cross wind-up: chest coils right, right fist cocks back
+        (54, {'hips': (0.01, -0.045, 0), 'hips_up': -8, 'twist': -14, 'rclav': -6,
+              'rfist': (0.13, -0.04, 0.14), 'lheel': 8, 'rheel': 12, 'look': 10}, L),
+        # CROSS: hips and chest whip left, rear heel pivots up
+        (57, {'hips': (-0.012, -0.03, 0.012), 'hips_up': 14, 'twist': 26, 'rclav': 14, 'lean': -5,
+              'rfist': (0.03, -0.03, 0.48), 'lfist': (-0.12, -0.03, 0.20),
+              'lheel': 6, 'rheel': 32, 'look': 6, 'yaw': 8}),
+        (59, {'hips': (-0.014, -0.032, 0.014), 'hips_up': 16, 'twist': 30, 'rclav': 16, 'lean': -6,
+              'rfist': (0.03, -0.03, 0.49), 'lfist': (-0.12, -0.03, 0.20),
+              'lheel': 6, 'rheel': 32, 'look': 6, 'yaw': 8}),
+        (61, {'hips': (-0.01, -0.032, 0.01), 'hips_up': 12, 'twist': 22, 'rclav': 10, 'lean': -4,
+              'rfist': (0.04, -0.03, 0.44), 'lfist': (-0.12, -0.03, 0.20),
+              'lheel': 6, 'rheel': 28, 'look': 6, 'yaw': 6}),
+        # snap back to guard and resume bouncing
+        (64, {'hips': (0, -0.044, 0), 'twist': -3, 'lheel': 4, 'rheel': 4, 'look': 8}),
+        (68, {'hips': (0, -0.008, 0), 'lheel': 22, 'rheel': 22, 'look': 4}),
+        # frame 72 is the base pose (auto) so the loop closes on idle
+    ]
+    for k in keys:
+        solve(ctx, k[0], k[1], k[2] if len(k) > 2 else 'BEZIER')
+    ctx.note('Frames 0 and 72 are left to the base idle pose (loop + return_to_idle); guard comes up by frame 4 '
+             'and drops on the last 4 frames. Legs use IK so feet stay planted while bouncing.')
