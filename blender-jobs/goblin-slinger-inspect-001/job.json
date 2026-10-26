@@ -2,7 +2,7 @@
  "id": "goblin-slinger-inspect-001",
  "type": "inspect",
  "asset_id": "goblin-slinger",
- "status": "claimed",
+ "status": "running",
  "priority": 5,
  "created_at": "2026-10-26T00:12:13Z",
  "created_by": "claude",
@@ -11,13 +11,13 @@
  "retry_on_failure": false,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-26T07:16:33Z",
- "heartbeat_at": "2026-10-26T07:11:33Z",
+ "lease_until": "2026-10-26T07:16:36Z",
+ "heartbeat_at": "2026-10-26T07:11:36Z",
  "error": null,
  "progress": {
-  "stage": "claimed",
-  "percent": 0,
-  "message": "Picked up by the Blender worker"
+  "stage": "preparing",
+  "percent": 5,
+  "message": "Copying the source model into a private work folder"
  },
  "source": {
   "character": "local:~/Downloads/r23/models/goblin-slinger/char.glb"
@@ -38,7 +38,11 @@
    "status": "claimed",
    "worker": "starr-f0fad5",
    "recovered": false
+  },
+  {
+   "at": "2026-10-26T07:11:36Z",
+   "status": "running"
   }
  ],
- "updated_at": "2026-10-26T07:11:33Z"
+ "updated_at": "2026-10-26T07:11:36Z"
 }
