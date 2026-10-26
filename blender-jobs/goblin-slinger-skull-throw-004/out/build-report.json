@@ -1,0 +1,124 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "Skull_Throw",
+   "frames": 54,
+   "seconds": 1.8,
+   "key_frames": [
+    2,
+    4,
+    6,
+    7,
+    8,
+    10,
+    12,
+    14,
+    15,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30,
+    31,
+    32,
+    34,
+    35,
+    36,
+    38,
+    40,
+    42,
+    44,
+    46,
+    48,
+    50,
+    52
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightShoulder",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 26,
+     "name": "projectile_release",
+     "bone": "RightHand",
+     "time": 0.8667
+    }
+   ],
+   "fastest_turn_per_frame_deg": 61.2,
+   "feet_drift_m": 0.0007
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "Skull_Throw: Skull_Throw take 4 rev: crouch 7, wind-up 15-18 (elbow high out to the side, skull behind head, ~70deg twist away, weight back), whip 22-24, release 26 in front, follow-through 31-35 across body, recoil 44, idle 54. Legs solved with IK so feet stay planted.",
+  "Skull_Throw: skull-mace held in RightHand at scale 0.084; prop centre [0.2654, 0.2731, -0.1621] size 0.209 m, hand joint [0.2448, 0.3217, -0.1626]"
+ ],
+ "prop_debug": [
+  {
+   "name": "Mesh_0",
+   "polys": 15530,
+   "verts": 24992,
+   "hide_render": false,
+   "visible": true,
+   "collections": [
+    "Collection"
+   ],
+   "scene_has": true,
+   "materials": [
+    "Material_0.001"
+   ],
+   "world_scale": [
+    0.08,
+    0.08,
+    0.08
+   ],
+   "parent": "Prop_skull-mace",
+   "display_type": "TEXTURED"
+  }
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "Skull_Throw": {
+    "keys": 55,
+    "seconds": 1.8
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0013,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 4e-05
+ }
+}
