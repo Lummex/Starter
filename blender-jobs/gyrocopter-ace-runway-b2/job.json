@@ -2,7 +2,7 @@
  "id": "gyrocopter-ace-runway-b2",
  "type": "animate",
  "asset_id": "gyrocopter-ace",
- "status": "running",
+ "status": "queued",
  "priority": 9,
  "created_at": "2026-10-27T09:01:12Z",
  "created_by": "claude (owner request Oct 27)",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-27T09:18:13Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-27T09:13:13Z",
  "error": {
   "message": "Claude Code did not write anims/OH_Attack.py",
-  "at": "2026-10-27T09:12:32Z"
+  "at": "2026-10-27T09:13:40Z"
  },
  "progress": {
-  "stage": "designing",
-  "percent": 25,
-  "message": "Claude Code is designing the animation"
+  "stage": "failed",
+  "percent": 0,
+  "message": "Claude Code did not write anims/OH_Attack.py"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/gyrocopter-ace/char.glb@factory/issue-8"
@@ -139,7 +139,11 @@
   {
    "at": "2026-10-27T09:13:06Z",
    "status": "running"
+  },
+  {
+   "at": "2026-10-27T09:13:40Z",
+   "status": "failed"
   }
  ],
- "updated_at": "2026-10-27T09:13:13Z"
+ "updated_at": "2026-10-27T09:13:40Z"
 }
