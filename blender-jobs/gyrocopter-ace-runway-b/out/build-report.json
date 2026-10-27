@@ -1,0 +1,124 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Attack",
+   "frames": 90,
+   "seconds": 3.0,
+   "key_frames": [
+    0,
+    8,
+    20,
+    26,
+    31,
+    34,
+    39,
+    50,
+    64,
+    76,
+    90
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 36,
+     "name": "projectile_release",
+     "bone": "RightHand",
+     "time": 1.2
+    }
+   ],
+   "fastest_turn_per_frame_deg": 49.8,
+   "feet_drift_m": 0.0133
+  },
+  {
+   "name": "OH_Hit",
+   "frames": 90,
+   "seconds": 3.0,
+   "key_frames": [
+    0,
+    8,
+    12,
+    17,
+    28,
+    44,
+    58,
+    72,
+    90
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 55.9,
+   "feet_drift_m": 0.0272
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Attack: OH_Attack: coil 20-26, punch 31-34, release 36, follow-through 39, hold to 50, settle 64-76, hover at 0/90 (hips +0.121 m).",
+  "OH_Hit: OH_Hit: impact 10-12, peak recoil + dip 17, arms wide hold 28, recover 44-58, settle 72, hover at 0/90 (hips +0.121 m)."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Attack": {
+    "keys": 91,
+    "seconds": 3.0
+   },
+   "OH_Hit": {
+    "keys": 91,
+    "seconds": 3.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0022,
+   "worst_rotation_error_deg": 0.005
+  },
+  "written_clip_error_pct_of_height": 0.00094
+ }
+}
