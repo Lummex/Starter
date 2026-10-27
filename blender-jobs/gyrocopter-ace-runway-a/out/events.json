@@ -1,0 +1,20 @@
+{
+ "asset_id": "gyrocopter-ace",
+ "fps": 30,
+ "clips": {
+  "OH_Hover": {
+   "frames": 90,
+   "duration": 3.0,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Fly": {
+   "frames": 90,
+   "duration": 3.0,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  }
+ }
+}
