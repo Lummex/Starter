@@ -1,0 +1,25 @@
+{
+ "id": "gyrocopter-ace-cast-front",
+ "character": "gyrocopter-ace",
+ "prompt": "A small gnome flyer with a propeller backpack and mechanical wings. Seen straight from the front. First half (0-3 s), spark throw: from the hover pose she pulls her right hand back beside her shoulder, a small glowing spark forms in that palm, at about 1.2 s she pushes the right arm straight forward and releases it, small follow-through, then returns to the hover pose. Wings keep flapping slowly, propeller spinning. Second half (3-6 s), knocked back: at 3.3 s her chest and head jerk backward, arms swing out, she dips down a little in the air and the wings pause, then she smoothly recovers to the hover pose. Body motion reference for 3D rigging: only the body and limbs move. Face frozen: no expression change, lips closed and still, no blinking, eyes fixed. Smooth, even 3D game animation. Camera locked, no zoom, full body always in frame, plain grey background. Each half starts and ends in the same pose so it loops.",
+ "model": "gen4.5",
+ "ratio": "1280:720",
+ "duration": 6,
+ "taskId": "92933bc3-5067-4cec-bd1f-7b318074b750",
+ "made": "2026-10-27T08:32:56.637Z",
+ "view": "front",
+ "segments": [
+  {
+   "move": "spark-throw",
+   "from": 0,
+   "to": 3
+  },
+  {
+   "move": "knocked-back",
+   "from": 3,
+   "to": 6
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}
