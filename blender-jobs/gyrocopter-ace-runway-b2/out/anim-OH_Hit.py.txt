@@ -1,0 +1,63 @@
+def build(ctx):
+    ctx.length(90)
+    hips = ctx.bone('hips'); spine = ctx.bone('spine'); neck = ctx.bone('neck'); head = ctx.bone('head')
+    rua = ctx.bone('right upperarm'); rfa = ctx.bone('right forearm')
+    lua = ctx.bone('left upperarm'); lfa = ctx.bone('left forearm')
+    lth = ctx.bone('left thigh'); lsh = ctx.bone('left shin'); lft = ctx.bone('left foot')
+    rth = ctx.bone('right thigh'); rsh = ctx.bone('right shin'); rft = ctx.bone('right foot')
+    H = 0.12 * ctx.height
+
+    def legs(f, th=12, sh=-22, ft=-18):
+        for t, s, fo in ((lth, lsh, lft), (rth, rsh, rft)):
+            ctx.key(f, t, turn=[('right', th)])
+            ctx.key(f, s, turn=[('right', sh)])
+            ctx.key(f, fo, turn=[('right', ft)])
+
+    def arms(f, ua, fa):
+        # ua/fa given for her right side; mirrored for the left
+        ctx.key(f, rua, aim=ua)
+        ctx.key(f, rfa, aim=fa)
+        ctx.key(f, lua, aim=(-ua[0], ua[1], ua[2]))
+        ctx.key(f, lfa, aim=(-fa[0], fa[1], fa[2]))
+
+    def torso(f, lean=0, neck_lean=0, head_lean=0, hip_tilt=0, y=0.0, z=0.0, interp='BEZIER'):
+        ctx.key(f, hips, move=(0, H + y, z), turn=[('right', hip_tilt)], interp=interp)
+        ctx.key(f, spine, turn=[('right', lean)], interp=interp)
+        ctx.key(f, neck, turn=[('right', neck_lean)], interp=interp)
+        ctx.key(f, head, turn=[('right', head_lean)], interp=interp)
+
+    hover_ua = (0.36, -0.92, 0.08)
+    hover_fa = (0.26, -0.84, 0.46)
+
+    # hover start / end (identical)
+    for f in (0, 90):
+        torso(f)
+        arms(f, hover_ua, hover_fa)
+        legs(f)
+
+    # brief hold, then impact snaps chest and head back at ~10
+    torso(6, lean=-2)
+    arms(6, hover_ua, hover_fa)
+    torso(10, lean=18, neck_lean=10, head_lean=14, hip_tilt=6, y=-0.012, z=-0.02)
+    arms(10, (0.75, -0.6, -0.28), (0.8, -0.35, -0.1))
+    legs(10, th=22, sh=-16, ft=-12)
+
+    # arms fly out wide, body overshoots back and dips in the air
+    torso(16, lean=24, neck_lean=12, head_lean=18, hip_tilt=8, y=-0.035, z=-0.035)
+    arms(16, (0.97, 0.1, -0.2), (0.93, 0.3, 0.1))
+    legs(16, th=28, sh=-14, ft=-10)
+    torso(22, lean=20, neck_lean=9, head_lean=12, hip_tilt=7, y=-0.04, z=-0.03)
+
+    # arms held out wide while she steadies (video f05-f07)
+    arms(30, (0.98, 0.08, -0.12), (0.94, 0.25, 0.2))
+    torso(34, lean=10, neck_lean=4, head_lean=5, hip_tilt=4, y=-0.025, z=-0.015)
+    legs(34, th=18, sh=-20, ft=-15)
+    arms(44, (0.92, -0.05, -0.05), (0.88, 0.1, 0.45))
+
+    # recover: arms drop, slight forward overshoot, float back up to hover
+    torso(54, lean=-4, neck_lean=-2, head_lean=-3, hip_tilt=-2, y=0.006, z=0.006)
+    arms(56, (0.55, -0.8, 0.1), (0.45, -0.7, 0.55))
+    legs(56, th=9, sh=-24, ft=-19)
+    torso(68, lean=1, y=-0.003)
+    arms(70, hover_ua, hover_fa)
+    ctx.note('Impact 10, peak recoil/dip 16-22, arms wide 16-44, recover 54-90 to hover. Never turns around.')
