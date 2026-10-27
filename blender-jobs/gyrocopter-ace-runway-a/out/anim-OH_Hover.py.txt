@@ -1,0 +1,30 @@
+def build(ctx):
+    ctx.length(90)
+    H = round(0.12 * ctx.height, 3)
+    hips = ctx.bone('hips'); spine = ctx.bone('spine'); neck = ctx.bone('neck'); head = ctx.bone('head')
+    lu = ctx.bone('left upperarm'); ru = ctx.bone('right upperarm')
+    lf = ctx.bone('left forearm'); rf = ctx.bone('right forearm')
+    lt = ctx.bone('left thigh'); rt = ctx.bone('right thigh')
+    ls = ctx.bone('left shin'); rs = ctx.bone('right shin')
+    lft = ctx.bone('left foot'); rft = ctx.bone('right foot')
+
+    # body bob: top of the bob is the shared hover height (frames 0, 45, 90), dips at 22 and 67
+    for f, dy in ((0, 0.0), (22, -0.03), (45, 0.0), (67, -0.03), (90, 0.0)):
+        ctx.key(f, hips, move=(0, H + dy, 0))
+        low = dy < 0
+        ctx.key(f, spine, turn=[('right', -3 if low else 0)])
+        ctx.key(f, neck, turn=[('right', 2 if low else 0)])
+        ctx.key(f, head, turn=[('right', 1 if low else 0)])
+        # feet lag the bob: knees fold a little more at the bottom
+        for t, s, ft in ((lt, ls, lft), (rt, rs, rft)):
+            ctx.key(f, t, turn=[('right', 14 if low else 10)])
+            ctx.key(f, s, turn=[('right', -28 if low else -22)])
+            ctx.key(f, ft, turn=[('right', -34 if low else -30)])
+
+    # arms loose and a little out, counter-swaying a few frames behind the bob
+    for f, out, bend in ((0, 10, 12), (25, 18, 18), (47, 8, 10), (70, 18, 18), (90, 10, 12)):
+        ctx.key(f, lu, turn=[('forward', out)])
+        ctx.key(f, ru, turn=[('forward', -out)])
+        ctx.key(f, lf, turn=[('right', bend)])
+        ctx.key(f, rf, turn=[('right', bend)])
+    ctx.note('Hover: hips +%.3f m, two 3 cm dips (f22, f67), arms counter-sway lagging 3 frames' % H)
