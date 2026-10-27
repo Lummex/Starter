@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-27T09:25:50Z",
- "heartbeat_at": "2026-10-27T09:20:50Z",
+ "lease_until": "2026-10-27T09:25:56Z",
+ "heartbeat_at": "2026-10-27T09:20:56Z",
  "error": {
   "message": "Claude Code did not write anims/OH_Attack.py",
   "at": "2026-10-27T09:18:10Z"
  },
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/gyrocopter-ace/char.glb@factory/issue-8"
@@ -215,5 +215,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-27T09:20:50Z"
+ "updated_at": "2026-10-27T09:20:56Z"
 }
