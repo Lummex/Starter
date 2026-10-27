@@ -1,0 +1,94 @@
+import math
+
+
+def build(ctx):
+    ctx.length(90)
+    last = 90
+    H = round(ctx.height * 0.12, 4)
+
+    hips = ctx.bone('hips')
+    sp2 = 'Spine02'
+    sp1 = 'Spine01'
+    spine = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    rup = ctx.bone('right upperarm'); rfo = ctx.bone('right forearm'); rha = ctx.bone('right hand')
+    lup = ctx.bone('left upperarm'); lfo = ctx.bone('left forearm'); lha = ctx.bone('left hand')
+    lth = ctx.bone('left thigh'); lsh = ctx.bone('left shin'); lft = ctx.bone('left foot')
+    rth = ctx.bone('right thigh'); rsh = ctx.bone('right shin'); rft = ctx.bone('right foot')
+
+    def legs(f, lift=0.0):
+        ctx.key(f, lth, turn=[('right', 12 + lift)])
+        ctx.key(f, rth, turn=[('right', 6 + lift)])
+        ctx.key(f, lsh, turn=[('right', -22 - lift * 1.4)])
+        ctx.key(f, rsh, turn=[('right', -28 - lift * 1.4)])
+        ctx.key(f, lft, turn=[('right', -18)])
+        ctx.key(f, rft, turn=[('right', -20)])
+
+    def hover(f):
+        ctx.key(f, hips, move=(0, H, 0))
+        legs(f)
+        for b in (sp2, sp1, spine, neck, head, rup, rfo, rha, lup, lfo, lha):
+            ctx.key(f, b, turn=[('up', 0)])
+
+    def torso(f, back, headback, tilt=0.0):
+        ctx.key(f, sp2, turn=[('right', back * 0.25), ('forward', tilt * 0.3)])
+        ctx.key(f, sp1, turn=[('right', back * 0.35), ('forward', tilt * 0.3)])
+        ctx.key(f, spine, turn=[('right', back * 0.4), ('forward', tilt * 0.4)])
+        ctx.key(f, neck, turn=[('right', headback * 0.4)])
+        ctx.key(f, head, turn=[('right', headback * 0.6), ('forward', -tilt * 0.5)])
+
+    def arms(f, up, bend):
+        # up: how high the arms fly out sideways (0 = hanging, 1 = horizontal)
+        y = -0.9 + 1.15 * up
+        ctx.key(f, rup, aim=(0.75, y, -0.25))
+        ctx.key(f, lup, aim=(-0.75, y, -0.25))
+        ctx.key(f, rfo, aim=(0.8, y + 0.25 * bend, 0.15 * bend))
+        ctx.key(f, lfo, aim=(-0.8, y + 0.25 * bend, 0.15 * bend))
+        ctx.key(f, rha, turn=[('forward', -20 * bend)])
+        ctx.key(f, lha, turn=[('forward', 20 * bend)])
+
+    hover(0)
+    hover(8)
+    hover(last)
+
+    # --- impact jerk (frame ~10): chest and head snap back, arms fling out, dip
+    ctx.key(12, hips, move=(0, H - 0.03, -0.025))
+    torso(12, 26, 22, tilt=4)
+    arms(12, 0.75, 0.6)
+    legs(12, lift=18)
+
+    # peak / overshoot
+    ctx.key(17, hips, move=(0, H - 0.05, -0.035))
+    torso(17, 32, 30, tilt=6)
+    arms(17, 1.0, 1.0)
+    legs(17, lift=24)
+
+    # held in the air, arms spread wide (video f05-f07)
+    ctx.key(28, hips, move=(0, H - 0.042, -0.025))
+    torso(28, 20, 14, tilt=3)
+    arms(28, 0.95, 1.0)
+    legs(28, lift=16)
+
+    ctx.key(44, hips, move=(0, H - 0.01, -0.01))
+    torso(44, 8, 4, tilt=1)
+    arms(44, 0.8, 0.8)
+    legs(44, lift=6)
+
+    # recovery: arms lower, small rise overshoot, settle into hover
+    ctx.key(58, hips, move=(0, H + 0.01, 0))
+    torso(58, -4, -4)
+    # arms back near their hanging base pose, slightly flared, then settle
+    ctx.key(58, rup, turn=[('forward', -14)])
+    ctx.key(58, lup, turn=[('forward', 14)])
+    for b in (rfo, lfo, rha, lha):
+        ctx.key(58, b, turn=[('up', 0)])
+    legs(58, lift=-3)
+
+    ctx.key(72, hips, move=(0, H - 0.004, 0))
+    torso(72, 1.5, 1.5)
+    ctx.key(72, rup, turn=[('forward', 3)])
+    ctx.key(72, lup, turn=[('forward', -3)])
+    legs(72, lift=1)
+
+    ctx.note('OH_Hit: impact 10-12, peak recoil + dip 17, arms wide hold 28, recover 44-58, settle 72, hover at 0/90 (hips +%.3f m).' % H)
