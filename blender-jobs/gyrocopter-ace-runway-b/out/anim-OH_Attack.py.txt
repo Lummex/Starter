@@ -1,0 +1,112 @@
+import math
+
+
+def build(ctx):
+    ctx.length(90)
+    last = 90
+    H = round(ctx.height * 0.12, 4)
+
+    hips = ctx.bone('hips')
+    sp2 = 'Spine02'
+    sp1 = 'Spine01'
+    spine = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    rup = ctx.bone('right upperarm'); rfo = ctx.bone('right forearm'); rha = ctx.bone('right hand')
+    lup = ctx.bone('left upperarm'); lfo = ctx.bone('left forearm'); lha = ctx.bone('left hand')
+    lth = ctx.bone('left thigh'); lsh = ctx.bone('left shin'); lft = ctx.bone('left foot')
+    rth = ctx.bone('right thigh'); rsh = ctx.bone('right shin'); rft = ctx.bone('right foot')
+
+    def legs(f, lift=0.0, fwd=0.0):
+        # relaxed dangling hover legs; lift = extra knee tuck
+        ctx.key(f, lth, turn=[('right', 12 + lift)])
+        ctx.key(f, rth, turn=[('right', 6 + lift)])
+        ctx.key(f, lsh, turn=[('right', -22 - lift * 1.4)])
+        ctx.key(f, rsh, turn=[('right', -28 - lift * 1.4)])
+        ctx.key(f, lft, turn=[('right', -18)])
+        ctx.key(f, rft, turn=[('right', -20)])
+
+    def hover(f):
+        ctx.key(f, hips, move=(0, H, 0))
+        legs(f)
+        for b in (sp2, sp1, spine, neck, head, rup, rfo, rha, lup, lfo, lha):
+            ctx.key(f, b, turn=[('up', 0)])
+
+    # --- frame 0 / last: shared hover pose
+    hover(0)
+    hover(last)
+
+    # --- anticipation: right hand pulls back beside the shoulder, body coils right
+    ctx.key(8, hips, move=(0, H + 0.005, 0))
+    ctx.key(20, hips, move=(0, H - 0.012, -0.01))
+    ctx.key(26, hips, move=(0, H - 0.014, -0.012))
+    legs(20, lift=8)
+    legs(26, lift=10)
+    for f, k in ((20, 0.9), (26, 1.0)):
+        ctx.key(f, sp2, turn=[('up', -6 * k)])
+        ctx.key(f, sp1, turn=[('up', -8 * k), ('right', 3 * k)])
+        ctx.key(f, spine, turn=[('up', -10 * k), ('right', 4 * k)])
+        ctx.key(f, head, turn=[('up', 18 * k), ('right', -4 * k)])
+        ctx.key(f, rup, aim=(0.8, 0.45, -0.4))
+        ctx.key(f, rfo, aim=(0.15, 0.95, -0.15))
+        ctx.key(f, rha, turn=[('right', 25)])
+        ctx.key(f, lup, aim=(-0.65, -0.45, 0.6))
+        ctx.key(f, lfo, aim=(-0.2, -0.1, 0.95))
+        ctx.key(f, lha, turn=[('up', 0)])
+
+    # --- thrust: right arm punches straight forward, chest turns right shoulder forward
+    ctx.key(31, rup, aim=(0.45, 0.25, 0.85))
+    ctx.key(31, rfo, aim=(0.3, 0.3, 0.9))
+    ctx.key(34, hips, move=(0, H + 0.008, 0.012))
+    legs(34, lift=-4)
+    ctx.key(34, sp2, turn=[('up', 7)])
+    ctx.key(34, sp1, turn=[('up', 9), ('right', -4)])
+    ctx.key(34, spine, turn=[('up', 10), ('right', -5)])
+    ctx.key(34, head, turn=[('up', -20), ('right', 4)])
+    ctx.key(34, rup, aim=(0.36, 0.12, 0.93))
+    ctx.key(34, rfo, aim=(0.36, 0.1, 0.93))
+    ctx.key(34, rha, turn=[('right', 8)])
+    ctx.key(34, lup, aim=(-0.5, -0.8, -0.35))
+    ctx.key(34, lfo, aim=(-0.3, -0.85, 0.2))
+
+    ctx.event(36, 'projectile_release', bone=rha)
+
+    # follow-through overshoot, then hold the pointing pose (video f05-f07)
+    ctx.key(39, hips, move=(0, H + 0.012, 0.016))
+    ctx.key(39, sp2, turn=[('up', 9)])
+    ctx.key(39, sp1, turn=[('up', 11), ('right', -6)])
+    ctx.key(39, spine, turn=[('up', 12), ('right', -7)])
+    ctx.key(39, head, turn=[('up', -24), ('right', 6)])
+    ctx.key(39, rup, aim=(0.38, 0.08, 0.92))
+    ctx.key(39, rfo, aim=(0.38, 0.04, 0.92))
+    ctx.key(39, rha, turn=[('right', -12)])
+    ctx.key(39, lup, aim=(-0.5, -0.78, -0.4))
+    ctx.key(39, lfo, aim=(-0.3, -0.85, 0.15))
+
+    ctx.key(50, hips, move=(0, H + 0.008, 0.01))
+    legs(50, lift=-2)
+    ctx.key(50, sp2, turn=[('up', 7)])
+    ctx.key(50, sp1, turn=[('up', 9), ('right', -4)])
+    ctx.key(50, spine, turn=[('up', 10), ('right', -5)])
+    ctx.key(50, head, turn=[('up', -18), ('right', 3)])
+    ctx.key(50, rup, aim=(0.36, 0.1, 0.93))
+    ctx.key(50, rfo, aim=(0.36, 0.08, 0.93))
+    ctx.key(50, rha, turn=[('right', -4)])
+    ctx.key(50, lup, aim=(-0.48, -0.8, -0.3))
+    ctx.key(50, lfo, aim=(-0.3, -0.85, 0.2))
+
+    # --- recover: arm drops back, small settle past neutral, then hover
+    ctx.key(64, hips, move=(0, H - 0.006, 0))
+    legs(64, lift=4)
+    ctx.key(64, sp2, turn=[('up', -2)])
+    ctx.key(64, sp1, turn=[('up', -2), ('right', 2)])
+    ctx.key(64, spine, turn=[('up', -2), ('right', 2)])
+    ctx.key(64, head, turn=[('up', 3), ('right', -2)])
+    ctx.key(64, rup, aim=(0.2, -0.85, -0.3))
+    ctx.key(64, rfo, aim=(0.3, -0.9, 0.2))
+    ctx.key(64, rha, turn=[('right', 6)])
+    ctx.key(64, lup, aim=(-0.38, -0.92, -0.05))
+    ctx.key(64, lfo, aim=(-0.05, -0.8, 0.6))
+
+    ctx.key(76, hips, move=(0, H + 0.003, 0))
+    ctx.note('OH_Attack: coil 20-26, punch 31-34, release 36, follow-through 39, hold to 50, settle 64-76, hover at 0/90 (hips +%.3f m).' % H)
