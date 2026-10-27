@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-27T09:22:31Z",
- "heartbeat_at": "2026-10-27T09:17:31Z",
+ "lease_until": "2026-10-27T09:22:35Z",
+ "heartbeat_at": "2026-10-27T09:17:35Z",
  "error": {
   "message": "Claude Code did not write anims/OH_Attack.py",
   "at": "2026-10-27T09:17:00Z"
  },
  "progress": {
-  "stage": "preparing",
-  "percent": 5,
-  "message": "Copying the source model into a private work folder"
+  "stage": "inspecting",
+  "percent": 15,
+  "message": "Reading the model, skeleton and animations in Blender"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/gyrocopter-ace/char.glb@factory/issue-8"
@@ -197,5 +197,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-27T09:17:31Z"
+ "updated_at": "2026-10-27T09:17:35Z"
 }
