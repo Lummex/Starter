@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-27T09:16:46Z",
- "heartbeat_at": "2026-10-27T09:11:46Z",
+ "lease_until": "2026-10-27T09:16:49Z",
+ "heartbeat_at": "2026-10-27T09:11:49Z",
  "error": null,
  "progress": {
-  "stage": "inspecting",
-  "percent": 15,
-  "message": "Reading the model, skeleton and animations in Blender"
+  "stage": "designing",
+  "percent": 25,
+  "message": "Claude Code is designing the animation"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/gyrocopter-ace/char.glb@factory/issue-8"
@@ -124,5 +124,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-27T09:11:46Z"
+ "updated_at": "2026-10-27T09:11:49Z"
 }
