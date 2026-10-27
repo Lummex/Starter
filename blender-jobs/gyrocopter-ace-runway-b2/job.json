@@ -11,8 +11,8 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-27T09:23:39Z",
- "heartbeat_at": "2026-10-27T09:18:39Z",
+ "lease_until": "2026-10-27T09:25:13Z",
+ "heartbeat_at": "2026-10-27T09:20:13Z",
  "error": {
   "message": "Claude Code did not write anims/OH_Attack.py",
   "at": "2026-10-27T09:18:10Z"
@@ -211,5 +211,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-27T09:18:39Z"
+ "updated_at": "2026-10-27T09:20:13Z"
 }
