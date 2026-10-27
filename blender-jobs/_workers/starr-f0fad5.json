@@ -1,7 +1,6 @@
 {
  "worker_id": "starr-f0fad5",
- "state": "busy",
- "at": "2026-10-27T09:11:40Z",
- "host": "Starr",
- "job": "gyrocopter-ace-runway-b2"
+ "state": "idle",
+ "at": "2026-10-27T09:12:34Z",
+ "host": "Starr"
 }
