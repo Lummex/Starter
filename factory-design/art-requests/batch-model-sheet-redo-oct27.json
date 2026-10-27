@@ -1,0 +1,40 @@
+{
+ "requests": [
+  {
+   "id": "model-sheet-redo-gearward-sentinel-oct27",
+   "cardId": "gearward-sentinel",
+   "cardName": "Gearward Sentinel",
+   "kind": "model-sheet",
+   "size": "1536x1024",
+   "n": 2,
+   "references": [
+    "factory-design/art-refs/2026-10-27-model-check/gearward-sentinel-card-art.png"
+   ],
+   "prompt": "Character model reference sheet for a 3D modeler, made to match the attached card painting exactly (same character, same proportions, same colors, same materials, same gear). Plain pure white background, no scenery, no text, no labels, no logos, no borders. Even soft studio lighting, crisp edges, chunky stylized 3D-rendered fantasy game style like the painting. Top row: the full character shown three times at the same size, standing in a neutral A-pose (arms angled down about 45 degrees away from the body, legs slightly apart, hands open and empty): front view, side view (facing left), back view. Whole body in frame, head to feet, nothing cropped. Bottom row: each accessory shown on its own, not held, at a readable size, in front, side and back views. CHARACTER: Gearward Sentinel, a giant hulking brass-and-bronze clockwork guardian robot (the big machine in the painting, NOT the small pink-haired gnome girl, who must not appear at all). Heavy riveted brass armor plates with dark bronze and iron joints, huge rounded shoulders, a short thick body with a broad chest, big riveted gauntlet hands, thick stumpy armored legs with large round knee joints and heavy feet. Its head is sunk low between the shoulders with one large round glowing blue eye lens; a glowing blue core and blue light seams in the chest and joints, small gear details and pipes, little puffs of steam from the back vents. Colors: warm polished brass and gold, dark bronze, iron grey, glowing cyan-blue lights, small purple crystal glints. ACCESSORIES (bottom row): 1) its brass spiked mace: a heavy round brass head with short spikes and a riveted band on a thick metal handle, front, side and back views. 2) its large round gear-shaped shield: a big brass cog wheel with chunky teeth around the rim, riveted center boss and a handle on the back, front, side and back views."
+  },
+  {
+   "id": "model-sheet-redo-overclocked-conduit-oct27",
+   "cardId": "overclocked-conduit",
+   "cardName": "Overclocked Aethervein",
+   "kind": "model-sheet",
+   "size": "1536x1024",
+   "n": 2,
+   "references": [
+    "factory-design/art-refs/2026-10-27-model-check/overclocked-conduit-card-art.png"
+   ],
+   "prompt": "Character model reference sheet for a 3D modeler, made to match the attached card painting exactly (same character, same proportions, same colors, same materials, same gear). Plain pure white background, no scenery, no text, no labels, no logos, no borders. Even soft studio lighting, crisp edges, chunky stylized 3D-rendered fantasy game style like the painting. Top row: the full character shown three times at the same size, standing in a neutral A-pose (arms angled down about 45 degrees away from the body, legs slightly apart, hands open and empty): front view, side view (facing left), back view. Whole body in frame, head to feet, nothing cropped. Bottom row: each accessory shown on its own, not held, at a readable size, in front, side and back views. CHARACTER: Overclocked Aethervein, a hunched brass mining robot (a machine, NOT a gnome or any person). Bulky riveted brass and gold armor body with dark purple-bronze panels, a round head with a wide grille mouth full of jagged metal teeth and two round glowing blue eye lenses, a glass dome on top of the head holding a glowing blue energy tube, glowing blue round lights in the shoulders, elbows, hips and knees, coiled pipes and gears on the back and shoulders that puff steam. Two strong mechanical arms (in the A-pose they hang down and out, hands empty), thick armored legs with big round knee joints and heavy feet. Colors: polished brass and gold, dark bronze, deep purple accents, glowing cyan-blue lights. ACCESSORIES (bottom row): 1) its mining pickaxe: brass and dark metal handle with a curved pick head whose blade glows icy blue, front, side and back views. 2) its tall brass-framed gear shield: a tall rectangular brass frame with a large cog emblem and a glowing blue gem in the middle, front, side and back views."
+  },
+  {
+   "id": "model-sheet-redo-gemsinger-miner-oct27",
+   "cardId": "gnome-prospector",
+   "cardName": "Gemsinger Miner",
+   "kind": "model-sheet",
+   "size": "1536x1024",
+   "n": 2,
+   "references": [
+    "factory-design/art-refs/2026-10-27-model-check/gnome-prospector-card-art.png"
+   ],
+   "prompt": "Character model reference sheet for a 3D modeler, made to match the attached card painting exactly (same character, same proportions, same colors, same materials, same gear). Plain pure white background, no scenery, no text, no labels, no logos, no borders. Even soft studio lighting, crisp edges, chunky stylized 3D-rendered fantasy game style like the painting. Top row: the full character shown three times at the same size, standing in a neutral A-pose (arms angled down about 45 degrees away from the body, legs slightly apart, hands open and empty): front view, side view (facing left), back view. Whole body in frame, head to feet, nothing cropped. Bottom row: each accessory shown on its own, not held, at a readable size, in front, side and back views. CHARACTER: Gemsinger Miner, a young cheerful gnome miner with big pointed ears, messy short brown hair, round wire glasses and a small grin, no beard. He wears a brown leather miner's cap with brass goggles on the front that hold a glowing blue gem lamp, a purple tunic with a short purple hooded cape and a ragged purple-and-white hem, brown leather belts and straps with a round brass gear buckle and small pouches, brown leather gloves with brass wrist guards, and big chunky brown-and-brass armored boots and shin guards. Colors: purple, warm brown leather, brass and gold, glowing blue gem light, skin tone as in the painting. ACCESSORIES (bottom row): his crystal pickaxe: a dark metal and brass handle with a big curved pick head made of glowing icy-blue crystal, front, side and back views."
+  }
+ ]
+}
