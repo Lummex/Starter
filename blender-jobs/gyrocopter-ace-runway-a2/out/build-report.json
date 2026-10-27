@@ -1,0 +1,103 @@
+{
+ "base_pose": "rest pose",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Hover",
+   "frames": 90,
+   "seconds": 3.0,
+   "key_frames": [
+    0,
+    22,
+    45,
+    67,
+    90
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 0.8,
+   "feet_drift_m": 0.0173
+  },
+  {
+   "name": "OH_Fly",
+   "frames": 90,
+   "seconds": 3.0,
+   "key_frames": [
+    0,
+    10,
+    22,
+    30,
+    38,
+    46,
+    54,
+    62,
+    72,
+    82,
+    90
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 8.3,
+   "feet_drift_m": 0.234
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Hover: Hover: hips +0.121 m, two bobs (low at 22 and 67), arms counter-lift on dips.",
+  "OH_Fly: Fly: hover -> 20 deg forward lean by 22, wing-beat bobs every 8 frames to 62, eases back to hover by 82."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Hover": {
+    "keys": 91,
+    "seconds": 3.0
+   },
+   "OH_Fly": {
+    "keys": 91,
+    "seconds": 3.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0022,
+   "worst_rotation_error_deg": 0.005
+  },
+  "written_clip_error_pct_of_height": 0.00112
+ }
+}
