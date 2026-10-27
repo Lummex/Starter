@@ -1,0 +1,41 @@
+import math
+
+
+def build(ctx):
+    ctx.length(90)
+    hips = ctx.bone('hips')
+    spine = ctx.bone('spine')
+    head = ctx.bone('head')
+    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')
+    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm')
+    l_thigh = ctx.bone('left thigh'); l_shin = ctx.bone('left shin'); l_foot = ctx.bone('left foot')
+    r_thigh = ctx.bone('right thigh'); r_shin = ctx.bone('right shin'); r_foot = ctx.bone('right foot')
+
+    hover = round(ctx.height * 0.12, 4)
+    bob = 0.018
+
+    def pose(f, low):
+        # low = 0 at the top of the bob (hover height), 1 at the bottom
+        ctx.key(f, hips, move=(0, hover - bob * low, 0))
+        ctx.key(f, spine, turn=[('right', -2 - 3 * low)])
+        ctx.key(f, head, turn=[('right', 2 * low)])
+        # arms loose, a little out; they lift and spread slightly as the body dips
+        ctx.key(f, l_up, aim=(-0.34 - 0.12 * low, -0.93 + 0.06 * low, 0.06))
+        ctx.key(f, r_up, aim=(0.34 + 0.12 * low, -0.93 + 0.06 * low, 0.06))
+        ctx.key(f, l_fore, aim=(-0.24 - 0.08 * low, -0.9, 0.32 + 0.08 * low))
+        ctx.key(f, r_fore, aim=(0.24 + 0.08 * low, -0.9, 0.32 + 0.08 * low))
+        # legs dangle: knees slightly bent, toes down; knees fold a touch more on the dip
+        ctx.key(f, l_thigh, aim=(-0.05, -0.97, 0.2 + 0.06 * low))
+        ctx.key(f, r_thigh, aim=(0.05, -0.97, 0.16 + 0.06 * low))
+        ctx.key(f, l_shin, aim=(-0.02, -0.96, -0.24 - 0.08 * low))
+        ctx.key(f, r_shin, aim=(0.02, -0.96, -0.28 - 0.08 * low))
+        ctx.key(f, l_foot, turn=[('right', -30 - 5 * low)])
+        ctx.key(f, r_foot, turn=[('right', -32 - 5 * low)])
+
+    # two bobs in 3 s: top at 0/45/90, bottom at 22/67
+    pose(0, 0.0)
+    pose(22, 1.0)
+    pose(45, 0.0)
+    pose(67, 1.0)
+    pose(90, 0.0)
+    ctx.note('Hover: hips +%.3f m, two bobs (low at 22 and 67), arms counter-lift on dips.' % hover)
