@@ -1,0 +1,90 @@
+def build(ctx):
+    ctx.length(90)
+    hips = ctx.bone('hips'); spine = ctx.bone('spine'); neck = ctx.bone('neck'); head = ctx.bone('head')
+    rua = ctx.bone('right upperarm'); rfa = ctx.bone('right forearm'); rh = ctx.bone('right hand')
+    lua = ctx.bone('left upperarm'); lfa = ctx.bone('left forearm')
+    lth = ctx.bone('left thigh'); lsh = ctx.bone('left shin'); lft = ctx.bone('left foot')
+    rth = ctx.bone('right thigh'); rsh = ctx.bone('right shin'); rft = ctx.bone('right foot')
+    H = 0.12 * ctx.height
+
+    def legs(f, th=12, sh=-22, ft=-18):
+        for t, s, fo in ((lth, lsh, lft), (rth, rsh, rft)):
+            ctx.key(f, t, turn=[('right', th)])
+            ctx.key(f, s, turn=[('right', sh)])
+            ctx.key(f, fo, turn=[('right', ft)])
+
+    def hover_arms(f, side='both'):
+        if side in ('both', 'right'):
+            ctx.key(f, rua, aim=(0.36, -0.92, 0.08))
+            ctx.key(f, rfa, aim=(0.26, -0.84, 0.46))
+        if side in ('both', 'left'):
+            ctx.key(f, lua, aim=(-0.36, -0.92, 0.08))
+            ctx.key(f, lfa, aim=(-0.26, -0.84, 0.46))
+
+    def torso(f, twist=0, lean=0, head_lean=0, interp='BEZIER'):
+        ctx.key(f, spine, turn=[('up', twist), ('right', lean)], interp=interp)
+        ctx.key(f, neck, turn=[('up', -twist * 0.4)], interp=interp)
+        ctx.key(f, head, turn=[('up', -twist * 0.4), ('right', head_lean)], interp=interp)
+
+    # hover start / end (identical)
+    for f in (0, 90):
+        ctx.key(f, hips, move=(0, H, 0))
+        torso(f)
+        hover_arms(f)
+        ctx.key(f, rh, turn=[('right', 0)])
+        legs(f)
+
+    # anticipation: small settle down in the air
+    ctx.key(10, hips, move=(0, H - 0.01, 0))
+    hover_arms(10)
+    torso(10, twist=-3, lean=2)
+
+    # wind-up: right hand pulled back beside shoulder, chest coils to her right
+    for f in (22, 26):
+        ctx.key(f, hips, move=(0, H + 0.006, -0.008))
+        torso(f, twist=-10, lean=5, head_lean=-3)
+        ctx.key(f, rua, aim=(0.82, 0.18, -0.46))
+        ctx.key(f, rfa, aim=(-0.12, 0.96, 0.1))
+        ctx.key(f, rh, turn=[('right', 25)])
+        ctx.key(f, lua, aim=(-0.5, -0.78, 0.36))
+        ctx.key(f, lfa, aim=(-0.3, -0.45, 0.84))
+    legs(24, th=8, sh=-28, ft=-20)
+
+    # push forward, release at 36
+    ctx.key(33, rua, aim=(0.2, 0.12, 0.97))
+    ctx.key(33, rfa, aim=(0.1, 0.14, 0.98))
+    torso(33, twist=8, lean=-5)
+    ctx.key(36, hips, move=(0, H, 0.012))
+    torso(36, twist=12, lean=-7, head_lean=3)
+    ctx.key(36, rua, aim=(0.12, 0.1, 0.99))
+    ctx.key(36, rfa, aim=(0.04, 0.1, 1.0))
+    ctx.key(36, rh, turn=[('right', 20)])
+    ctx.key(36, lua, aim=(-0.6, -0.72, -0.34))
+    ctx.key(36, lfa, aim=(-0.45, -0.75, 0.1))
+    legs(36, th=4, sh=-30, ft=-22)
+    ctx.event(36, 'projectile_release', bone=rh)
+
+    # follow-through overshoot, then hold the extended arm (video f05-f07)
+    ctx.key(41, hips, move=(0, H - 0.004, 0.016))
+    torso(41, twist=15, lean=-9, head_lean=4)
+    ctx.key(41, rua, aim=(0.08, 0.02, 1.0))
+    ctx.key(41, rfa, aim=(0.02, 0.0, 1.0))
+    ctx.key(41, rh, turn=[('right', 5)])
+    torso(50, twist=10, lean=-5, head_lean=2)
+    ctx.key(50, rua, aim=(0.12, 0.06, 0.99))
+    ctx.key(50, rfa, aim=(0.06, 0.06, 1.0))
+    ctx.key(50, lua, aim=(-0.55, -0.78, -0.2))
+    ctx.key(50, lfa, aim=(-0.4, -0.8, 0.3))
+    legs(50, th=8, sh=-26, ft=-20)
+
+    # return to hover with a soft settle
+    ctx.key(60, hips, move=(0, H + 0.008, 0.004))
+    ctx.key(64, rua, aim=(0.4, -0.75, 0.4))
+    ctx.key(64, rfa, aim=(0.3, -0.6, 0.72))
+    ctx.key(64, rh, turn=[('right', -5)])
+    torso(66, twist=-2, lean=1)
+    hover_arms(68, side='left')
+    ctx.key(74, hips, move=(0, H - 0.004, 0))
+    hover_arms(76)
+    torso(78)
+    ctx.note('Hover at +12% height; wind-up 22-26, release 36, follow-through 41, settle 64-90.')
