@@ -714,7 +714,11 @@
      "gnome-tinker--crystal-shield-front.jpg",
      "gnome-tinker--crystal-shield-side.jpg",
      "gnome-tinker--crystal-shield-back.jpg"
-    ]
+    ],
+    "wrench": {
+     "text": "A chunky stylized fantasy gnome tinkerer's wrench, single hand tool, oversized open-ended adjustable jaw in brass, short thick dark-steel handle wrapped with purple leather, a small glowing blue crystal set into the handle, a few rivets and gears, cartoon proportions, game prop, isolated object",
+     "texture": "hand-painted stylized game prop, polished brass jaw, dark steel, purple leather grip, glowing blue crystal"
+    }
    },
    "height": 1.0,
    "actions": {
@@ -724,7 +728,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): scepter, crystal-shield; skipped the ones the sheet note says not to render."
+   "notes": "Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): scepter, crystal-shield; skipped the ones the sheet note says not to render. Oct 27: owner asked for a wrench (no sheet; made with Meshy text-to-3D)."
   },
   {
    "id": "gnome-widget",
