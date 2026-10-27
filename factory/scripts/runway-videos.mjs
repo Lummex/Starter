@@ -39,10 +39,12 @@ async function run(job) {
   const model = job.model || 'gen4.5';
   const ratio = job.ratio || '1280:720';
   // Try the asked length first (owner wants about 3 s); if this model does not allow it, use 5 s.
-  let duration = job.duration || 3, task;
-  for (const d of [duration, 5]) {
+  const asked = job.duration || 3;
+  let duration = asked, task;
+  const tries = [...new Set([asked, asked > 5 ? 10 : 5, 5])];
+  for (const d of tries) {
     try { task = await call('POST', '/image_to_video', { model, promptImage: img, promptText: job.prompt, ratio, duration: d }); duration = d; break; }
-    catch (e) { if (e.status === 400 && d !== 5) { log(job.id, `length ${d}s not allowed, trying 5s:`, e.message.slice(0, 200)); continue; } throw e; }
+    catch (e) { if (e.status === 400 && d !== tries[tries.length - 1]) { log(job.id, `length ${d}s not allowed:`, e.message.slice(0, 200)); continue; } throw e; }
   }
   log(job.id, 'started', task.id, model, `${duration}s`);
   let t;
@@ -55,14 +57,22 @@ async function run(job) {
   const url = t.output[0];
   const clip = path.join(out, 'clip.mp4');
   fs.writeFileSync(clip, Buffer.from(await (await fetch(url)).arrayBuffer()));
-  // 12 evenly spaced frames + one contact sheet for review
+  // Frames for the animator. A clip can hold several moves one after another ("segments": [{move, from, to}] in seconds
+  // of the asked length); each move gets its own frames folder and contact sheet. Times are scaled if Runway made a different length.
+  const segs = (job.segments && job.segments.length ? job.segments : [{ move: job.move || 'move', from: 0, to: asked }])
+    .map((g) => ({ ...g, from: g.from * duration / asked, to: g.to * duration / asked }));
   const n = job.frames || 12;
-  execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', clip, '-vf', `fps=${n}/${duration},scale=640:-2`, '-frames:v', String(n), '-q:v', '3', path.join(out, 'frames', 'f%02d.jpg')]);
-  execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', clip, '-vf', `fps=${n}/${duration},scale=320:-2,tile=4x${Math.ceil(n / 4)}`, '-frames:v', '1', '-q:v', '3', path.join(out, 'sheet.jpg')]);
-  const info = { id: job.id, character: job.character, move: job.move, prompt: job.prompt, model, ratio, duration, taskId: task.id, made: new Date().toISOString(), frames: fs.readdirSync(path.join(out, 'frames')).length, approved: false };
+  for (const g of segs) {
+    const dir = path.join(out, 'frames', segs.length > 1 ? g.move : '');
+    fs.mkdirSync(dir, { recursive: true });
+    const len = g.to - g.from;
+    execFileSync('ffmpeg', ['-v', 'error', '-y', '-ss', String(g.from), '-t', String(len), '-i', clip, '-vf', `fps=${n}/${len},scale=640:-2`, '-frames:v', String(n), '-q:v', '3', path.join(dir, 'f%02d.jpg')]);
+    execFileSync('ffmpeg', ['-v', 'error', '-y', '-ss', String(g.from), '-t', String(len), '-i', clip, '-vf', `fps=${n}/${len},scale=320:-2,tile=4x${Math.ceil(n / 4)}`, '-frames:v', '1', '-q:v', '3', path.join(out, segs.length > 1 ? `sheet-${g.move}.jpg` : 'sheet.jpg')]);
+  }
+  const info = { id: job.id, character: job.character, move: job.move, prompt: job.prompt, model, ratio, duration, taskId: task.id, made: new Date().toISOString(), view: job.view || 'front', segments: segs, framesPerMove: n, approved: false };
   fs.writeFileSync(path.join(out, 'info.json'), JSON.stringify(info, null, 1));
-  log(job.id, 'done', info.frames, 'frames');
-  return { id: job.id, duration, frames: info.frames };
+  log(job.id, 'done', segs.length, 'moves');
+  return { id: job.id, duration, moves: segs.map((g) => g.move) };
 }
 
 const todo = jobs.filter((j) => !only.length || only.includes(j.id));
