@@ -717,3 +717,51 @@ def _worker_hotfix():
 
 
 _worker_hotfix()
+
+
+def _worker_refs_hotfix():
+    """Reference pictures (Oct 27): a job may list "references" (pictures in the repo, for example frames of an
+    owner-approved Runway video). They are copied into the job's work folder (refs/) before Claude Code designs the
+    clip, so it can Read them and match the poses. Pictures only, from approved folders; nothing is ever run."""
+    import gc, os, re
+    try:
+        classes = [o for o in gc.get_objects() if isinstance(o, type) and o.__name__ == 'Runner' and hasattr(o, 'claude') and hasattr(o, 'execute')]
+    except Exception:
+        return
+    ok = re.compile(r'^factory-design/(runway|runway-jobs)/[A-Za-z0-9._/-]+\.(jpg|jpeg|png)$')
+    for R in classes:
+        if getattr(R, '_oh_refs', 0) == 1:
+            continue
+        orig = getattr(R, '_oh_claude_orig', None) or R.claude
+        R._oh_claude_orig = orig
+
+        def claude(self, prompt_file, label, _orig=orig, _ok=ok):
+            refs = (self.job or {}).get('references') or []
+            if refs and not getattr(self, '_oh_refs_done', False):
+                base = os.path.join(self.work, 'refs')
+                os.makedirs(base, exist_ok=True)
+                got = 0
+                for r in refs[:120]:
+                    p = r.get('path', '') if isinstance(r, dict) else str(r)
+                    branch = (r.get('ref') if isinstance(r, dict) else None) or 'main'
+                    if '..' in p or not _ok.match(p):
+                        continue
+                    dest = os.path.join(base, *p.split('/')[2:])
+                    os.makedirs(os.path.dirname(dest), exist_ok=True)
+                    if not os.path.exists(dest):
+                        b, _ = self.gh.get_file(p, branch)
+                        if b:
+                            with open(dest, 'wb') as f:
+                                f.write(b)
+                            got += 1
+                    try:
+                        self.beat()
+                    except Exception:
+                        raise
+                self._oh_refs_done = True
+            return _orig(self, prompt_file, label)
+        R.claude = claude
+        R._oh_refs = 1
+
+
+_worker_refs_hotfix()
