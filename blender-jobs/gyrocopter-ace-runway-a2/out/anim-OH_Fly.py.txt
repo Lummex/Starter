@@ -1,0 +1,64 @@
+import math
+
+
+def build(ctx):
+    ctx.length(90)
+    hips = ctx.bone('hips')
+    spine = ctx.bone('spine')
+    head = ctx.bone('head')
+    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')
+    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm')
+    l_thigh = ctx.bone('left thigh'); l_shin = ctx.bone('left shin'); l_foot = ctx.bone('left foot')
+    r_thigh = ctx.bone('right thigh'); r_shin = ctx.bone('right shin'); r_foot = ctx.bone('right foot')
+
+    hover = round(ctx.height * 0.12, 4)
+
+    def mix(a, b, t):
+        return tuple(x + (y - x) * t for x, y in zip(a, b))
+
+    # hover pose (same as OH_Hover top) and full flight pose; legs/arms aims are in the hips' frame
+    H = {
+        'l_up': (-0.34, -0.93, 0.06), 'r_up': (0.34, -0.93, 0.06),
+        'l_fore': (-0.24, -0.9, 0.32), 'r_fore': (0.24, -0.9, 0.32),
+        'l_thigh': (-0.05, -0.97, 0.2), 'r_thigh': (0.05, -0.97, 0.16),
+        'l_shin': (-0.02, -0.96, -0.24), 'r_shin': (0.02, -0.96, -0.28),
+    }
+    F = {
+        'l_up': (-0.2, -0.8, -0.56), 'r_up': (0.2, -0.8, -0.56),
+        'l_fore': (-0.12, -0.7, -0.7), 'r_fore': (0.12, -0.7, -0.7),
+        'l_thigh': (-0.06, -0.96, -0.1), 'r_thigh': (0.06, -0.96, -0.16),
+        'l_shin': (-0.03, -0.8, -0.6), 'r_shin': (0.03, -0.78, -0.62),
+    }
+    bones = {'l_up': l_up, 'r_up': r_up, 'l_fore': l_fore, 'r_fore': r_fore,
+             'l_thigh': l_thigh, 'r_thigh': r_thigh, 'l_shin': l_shin, 'r_shin': r_shin}
+
+    def pose(f, t, beat=0.0, kick=0.0):
+        # t: 0 hover .. 1 full flight; beat: +1 top of wing beat, -1 bottom; kick: alternating leg flutter
+        ctx.key(f, hips, move=(0, hover + 0.012 * beat * t, 0), turn=[('right', -20 * t)])
+        ctx.key(f, spine, turn=[('right', -2 - 2 * t + 2 * beat * t)])
+        ctx.key(f, head, turn=[('right', 16 * t)])
+        for k, b in bones.items():
+            d = mix(H[k], F[k], t)
+            if k in ('l_up', 'r_up'):
+                # arms lift slightly away from the body on the down-beat
+                side = -1 if k[0] == 'l' else 1
+                d = (d[0] + side * 0.06 * (-beat) * t, d[1], d[2])
+            if k in ('l_shin', 'r_shin'):
+                s = 1 if k[0] == 'l' else -1
+                d = (d[0], d[1], d[2] - 0.1 * kick * s * t)
+            ctx.key(f, b, aim=d)
+        ctx.key(f, l_foot, turn=[('right', -30 - 15 * t)])
+        ctx.key(f, r_foot, turn=[('right', -32 - 15 * t)])
+
+    pose(0, 0.0)
+    pose(10, 0.45, 0.0, 0.0)
+    pose(22, 1.0, 1.0, 1.0)
+    pose(30, 1.0, -1.0, -1.0)
+    pose(38, 1.0, 1.0, 1.0)
+    pose(46, 1.0, -1.0, -1.0)
+    pose(54, 1.0, 1.0, 1.0)
+    pose(62, 0.85, -1.0, -1.0)
+    pose(72, 0.45, 0.5, 0.0)
+    pose(82, 0.0)
+    pose(90, 0.0)
+    ctx.note('Fly: hover -> 20 deg forward lean by 22, wing-beat bobs every 8 frames to 62, eases back to hover by 82.')
