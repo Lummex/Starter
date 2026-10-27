@@ -1,0 +1,45 @@
+name: Runway — reference videos of moves
+
+# Started by hand (Actions → this workflow → Run workflow). Makes each video ONCE; finished ones are skipped.
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Only these ids (comma separated). Leave empty for every job in factory-design/runway-jobs/jobs.json'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: runway-videos
+  cancel-in-progress: false
+
+jobs:
+  videos:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install ffmpeg
+        run: (command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -y -q ffmpeg)) > /dev/null
+      - name: Make the videos
+        env:
+          RUNWAY_API_KEY: ${{ secrets.RUNWAYKEY }}
+          ONLY: ${{ github.event.inputs.only }}
+        run: node factory/scripts/runway-videos.mjs
+      - name: Save the videos to GitHub
+        if: always()
+        run: |
+          git config user.name "factory-bot"
+          git config user.email "factory-bot@users.noreply.github.com"
+          git add factory-design/runway factory-design/runway-jobs/last-run.json || true
+          if git diff --cached --quiet; then echo "nothing to save"; exit 0; fi
+          git commit -q -m "Runway: reference videos of moves"
+          for i in 1 2 3 4 5; do git pull -q --rebase origin main && git push -q origin HEAD:main && exit 0; sleep 15; done
+          exit 1
