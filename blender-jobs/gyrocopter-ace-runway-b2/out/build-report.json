@@ -1,0 +1,127 @@
+{
+ "base_pose": "rest pose",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Attack",
+   "frames": 90,
+   "seconds": 3.0,
+   "key_frames": [
+    0,
+    10,
+    22,
+    24,
+    26,
+    33,
+    36,
+    41,
+    50,
+    60,
+    64,
+    66,
+    68,
+    74,
+    76,
+    78,
+    90
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 36,
+     "name": "projectile_release",
+     "bone": "RightHand",
+     "time": 1.2
+    }
+   ],
+   "fastest_turn_per_frame_deg": 36.4,
+   "feet_drift_m": 0.0491
+  },
+  {
+   "name": "OH_Hit",
+   "frames": 90,
+   "seconds": 3.0,
+   "key_frames": [
+    0,
+    6,
+    10,
+    16,
+    22,
+    30,
+    34,
+    44,
+    54,
+    56,
+    68,
+    70,
+    90
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 28.1,
+   "feet_drift_m": 0.0884
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Attack: Hover at +12% height; wind-up 22-26, release 36, follow-through 41, settle 64-90.",
+  "OH_Hit: Impact 10, peak recoil/dip 16-22, arms wide 16-44, recover 54-90 to hover. Never turns around."
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Attack": {
+    "keys": 91,
+    "seconds": 3.0
+   },
+   "OH_Hit": {
+    "keys": 91,
+    "seconds": 3.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0022,
+   "worst_rotation_error_deg": 0.005
+  },
+  "written_clip_error_pct_of_height": 0.00097
+ }
+}
