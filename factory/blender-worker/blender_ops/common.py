@@ -165,10 +165,13 @@ def pick_idle(acts):
     return acts[0] if acts else None
 
 
+BASE_MODE = 'idle'  # 'rest' = start from the model's rest pose (set by a job whose clips say "base_pose": "rest")
+
+
 def base_pose(arm):
-    """The pose new animations start from: frame 0 of the Idle clip (or the rest pose if there is none)."""
+    """The pose new animations start from: frame 0 of the Idle clip (or the rest pose if there is none, or if the job asks)."""
     acts = armature_actions(arm)
-    idle = pick_idle(acts)
+    idle = None if BASE_MODE == 'rest' else pick_idle(acts)
     if idle:
         evaluate(arm, idle, idle.frame_range[0])
     else:

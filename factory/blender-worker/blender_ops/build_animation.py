@@ -334,6 +334,8 @@ def main():
     if not arm:
         raise SystemExit('No skeleton in the model')
     char_objs = [arm] + C.skinned_meshes(arm)
+    if any(an.get('base_pose') == 'rest' for an in job['animations']):
+        C.BASE_MODE = 'rest'
     pose, idle = C.base_pose(arm)
     table = C.bone_table(arm, pose)
     report = {'base_pose': f'{idle} frame 0' if idle else 'rest pose', 'fps': C.FPS, 'clips': [], 'problems': [], 'notes': []}
