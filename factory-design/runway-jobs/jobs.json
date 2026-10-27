@@ -1,0 +1,13 @@
+{
+ "note": "Runway reference videos (owner, Oct 27). Each job makes one short clip of one character doing one move, from a still of its 3D model. Runs ONCE per job. The owner approves a clip before the Blender worker uses its frames.",
+ "jobs": [
+  {
+   "id": "goblin-bomber-idle",
+   "character": "goblin-bomber",
+   "move": "idle",
+   "image": "goblin-bomber--start.jpg",
+   "duration": 3,
+   "prompt": "The green goblin brawler shadow-boxes in place: bouncing lightly on his toes, bobbing and weaving his head, then throws a quick jab, jab, and a right cross with closed fists, then returns to bouncing. Same character, same outfit, full body always in frame, camera locked off and still, plain grey studio background, smooth 3D game animation."
+  }
+ ]
+}
