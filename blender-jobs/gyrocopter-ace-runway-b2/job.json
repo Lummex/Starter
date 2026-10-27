@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-27T09:25:13Z",
- "heartbeat_at": "2026-10-27T09:20:13Z",
+ "lease_until": "2026-10-27T09:25:38Z",
+ "heartbeat_at": "2026-10-27T09:20:38Z",
  "error": {
   "message": "Claude Code did not write anims/OH_Attack.py",
   "at": "2026-10-27T09:18:10Z"
  },
  "progress": {
-  "stage": "designing",
-  "percent": 25,
-  "message": "Claude Code is designing the animation"
+  "stage": "animating",
+  "percent": 35,
+  "message": "Building the keyframes in Blender and rendering previews"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/gyrocopter-ace/char.glb@factory/issue-8"
@@ -211,5 +211,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-27T09:20:13Z"
+ "updated_at": "2026-10-27T09:20:38Z"
 }
