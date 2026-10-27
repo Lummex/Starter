@@ -1,0 +1,114 @@
+{
+ "base_pose": "Idle frame 0",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Hover",
+   "frames": 90,
+   "seconds": 3.0,
+   "key_frames": [
+    0,
+    22,
+    25,
+    45,
+    47,
+    67,
+    70,
+    90
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 0.8,
+   "feet_drift_m": 0.0272
+  },
+  {
+   "name": "OH_Fly",
+   "frames": 90,
+   "seconds": 3.0,
+   "key_frames": [
+    0,
+    9,
+    18,
+    24,
+    29,
+    34,
+    39,
+    44,
+    49,
+    54,
+    59,
+    64,
+    73,
+    81,
+    90
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 23.7,
+   "feet_drift_m": 0.2375
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Hover: Hover: hips +0.121 m, two 3 cm dips (f22, f67), arms counter-sway lagging 3 frames",
+  "OH_Fly: Fly: hover f0, anticipation f9, lean -25 f18, cruise -21..-23 with 3 wing-beat bobs f24-64, brake f73, hover f90"
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Hover": {
+    "keys": 91,
+    "seconds": 3.0
+   },
+   "OH_Fly": {
+    "keys": 91,
+    "seconds": 3.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead"
+   ],
+   "worst_position_error_pct_of_height": 0.0022,
+   "worst_rotation_error_deg": 0.005
+  },
+  "written_clip_error_pct_of_height": 0.00073
+ }
+}
