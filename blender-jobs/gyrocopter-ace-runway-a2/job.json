@@ -2,7 +2,7 @@
  "id": "gyrocopter-ace-runway-a2",
  "type": "animate",
  "asset_id": "gyrocopter-ace",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 9,
  "created_at": "2026-10-27T09:01:12Z",
  "created_by": "claude (owner request Oct 27)",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-27T09:20:03Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-27T09:15:03Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "2 animation(s) built and checked: OH_Hover, OH_Fly"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/gyrocopter-ace/char.glb@factory/issue-8"
@@ -107,7 +107,240 @@
   {
    "at": "2026-10-27T09:13:24Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-27T09:15:09Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-27T09:15:03Z"
+ "updated_at": "2026-10-27T09:15:09Z",
+ "result": {
+  "summary": "2 animation(s) built and checked: OH_Hover, OH_Fly",
+  "files": [
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/char.glb",
+    "bytes": 1122640,
+    "sha256": "ab43d2ac546e313dab9a03f5cb1179d037d1eb6bcfcf0c103870cad4e1491615"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/events.json",
+    "bytes": 303,
+    "sha256": "e8c5d50fc245835a646f7084fd3bec5693dbdb35e59a59c711c253f78c5e4630"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/inspection.json",
+    "bytes": 10174,
+    "sha256": "1defc23b2f04cff1ac5f5b7b9fa2ac57a3ff1245da1b9572f1ee1656bcee0a49"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/build-report.json",
+    "bytes": 1789,
+    "sha256": "1ad90639c85a3d896a01acaa205e163c729f3f99d352ea0621abe6a95727d194"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/validation.json",
+    "bytes": 1014,
+    "sha256": "b7c42eba184a3b7c4a69b039ae52514e2944a2d7d29a77b1e3170cba26a26e99"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/final-OH_Fly-000.png",
+    "bytes": 176772,
+    "sha256": "95afca6378561617cf261d36d55d4b32beacf083e8a95d2d6f76904f0519b333"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/final-OH_Fly-022.png",
+    "bytes": 172607,
+    "sha256": "c3208f6d92b1f2a816fe8cb73242bb5f532deb2db220957e998a03d2ee26d5cb"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/final-OH_Fly-045.png",
+    "bytes": 172586,
+    "sha256": "cb094431d822b96880dfc08b0253142eb4092b6412878e36bc117774622b9000"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/final-OH_Fly-068.png",
+    "bytes": 174147,
+    "sha256": "9fc124e41b53b5286a0e02f449c0d92184d8c9571b70da9e3df75446cf056f1b"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/final-OH_Fly-090.png",
+    "bytes": 176772,
+    "sha256": "8274ed08db3be5798ecf9c9f3f1d1e021e9cc4a222db48e79787fec869a74f1c"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/final-OH_Hover-000.png",
+    "bytes": 176772,
+    "sha256": "c9023515b88b595462d280eb482acca027a52fee2edc70de536eb047baf8e5a5"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/final-OH_Hover-022.png",
+    "bytes": 177174,
+    "sha256": "4c741e47d6747f16e2e5ccdc76afc560c721a7efe03271256e74a2905155130e"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/final-OH_Hover-045.png",
+    "bytes": 176765,
+    "sha256": "81d588e64178ae00aba401d80bc58bf0dfb3f0d0c3c5f8dd695340656603256a"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/final-OH_Hover-068.png",
+    "bytes": 177281,
+    "sha256": "7f27ebf114bf9bfab846c974857531172568a42218aee7ede9add57123666c64"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/final-OH_Hover-090.png",
+    "bytes": 176772,
+    "sha256": "8274ed08db3be5798ecf9c9f3f1d1e021e9cc4a222db48e79787fec869a74f1c"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Fly-000.png",
+    "bytes": 305378,
+    "sha256": "6a09f7147eb3ae86babb06f211f2ed9bef5dff6e298a9cd9640e74f050b2b842"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Fly-015.png",
+    "bytes": 300551,
+    "sha256": "110b0ac20ae41c0f3e7cba51649f1557341c23cff2a0f966968868ea800ebc87"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Fly-030.png",
+    "bytes": 299347,
+    "sha256": "4d4a77450efafcdd82e38ce6f9057d980a309fca24a5e740f7987a0879e0b6d9"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Fly-045.png",
+    "bytes": 299393,
+    "sha256": "b580e6d7d35e62e27337ad8bd97082f9f474bd46b1cc4ed5472c3431ca2caa78"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Fly-060.png",
+    "bytes": 299566,
+    "sha256": "c7c53437d61a04f40b4a836442a73c9ba002d06306cbc55f8d5d65df4813bdbb"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Fly-075.png",
+    "bytes": 303811,
+    "sha256": "3b5b98411388e21033e2144fc000295f9049ffbd5a7fec400986eceec8750045"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Fly-090.png",
+    "bytes": 305378,
+    "sha256": "bab32ec2c57cc9321c2fb230d36036b20dfa87d6cbc30d48e2eba7230eb47749"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Hover-000.png",
+    "bytes": 305378,
+    "sha256": "5a1563836a34977ba7011c7a50b34179b926d8d1674eac37051dad25d8edc237"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Hover-015.png",
+    "bytes": 306069,
+    "sha256": "517e9c72e49f8312acdf5375fb639f15e158211746c5e8ef2868db4527478019"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Hover-030.png",
+    "bytes": 306146,
+    "sha256": "e4f0895cc8da7a3173e1b1123e5f76c8df87f544b0b55e1c7e7a9f751cca73d4"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Hover-045.png",
+    "bytes": 305378,
+    "sha256": "cb4b2f0c5369fd0f363429e056130930422c993b7ed4a7a4029885e88e9516a2"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Hover-060.png",
+    "bytes": 306069,
+    "sha256": "2fc79cdcc855114d9d8c45b91975c6b9e69a86a9cb38fbf36016928bae6b75a5"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Hover-075.png",
+    "bytes": 306146,
+    "sha256": "acd217bd8ba98852ec0a1f0c259b0826c62ae950b815e3985e9bd02be2cf677e"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/preview-OH_Hover-090.png",
+    "bytes": 305378,
+    "sha256": "2db5aa9ca588ab852c88ee27fded16a6b43c22bd3a45c58aa7caff7254d7ba4e"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/anim-OH_Hover.py.txt",
+    "bytes": 1917,
+    "sha256": "2fa227d156f87ab2af0a1eb1d7a921016926bcca60a2c36c3bce17bcd28a74be"
+   },
+   {
+    "file": "blender-jobs/gyrocopter-ace-runway-a2/out/anim-OH_Fly.py.txt",
+    "bytes": 2832,
+    "sha256": "4641885891a0317f9c428c9fa1833a9c4b86b6cda5c5244283b3ec0cd4297a63"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 34788,
+    "skinned_meshes": [
+     "Mesh_0"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Fly": [
+      0.0,
+      90.0
+     ],
+     "OH_Hover": [
+      0.0,
+      90.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Hover": {
+      "keys": 91,
+      "seconds": 3.0
+     },
+     "OH_Fly": {
+      "keys": 91,
+      "seconds": 3.0
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead"
+     ],
+     "worst_position_error_pct_of_height": 0.0022,
+     "worst_rotation_error_deg": 0.005
+    },
+    "written_clip_error_pct_of_height": 0.00112
+   }
+  }
+ }
 }
