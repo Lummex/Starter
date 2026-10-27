@@ -172,7 +172,9 @@
   "rig": "01a17275-9a81-73e9-8bcf-b5d82cc022b8",
   "anim": "01a17276-6afe-7123-9501-4074710cffe0",
   "scepter": "01a174d8-8af6-747e-8af5-ec9bfb5fb754",
-  "crystal-shield": "01a174d8-8b66-70db-baf8-23e4a8aafce4"
+  "crystal-shield": "01a174d8-8b66-70db-baf8-23e4a8aafce4",
+  "wrench:preview": "01a17c2d-fd2d-72a5-81f7-00ab7a8e0629",
+  "wrench": "01a17c2e-cdf9-763a-b6b8-bbd5e76b8325"
  },
  "gnome-widget": {
   "character": "01a17273-6c9d-7298-a3ca-182093769516",
