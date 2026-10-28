@@ -6,7 +6,8 @@ I build Ken's tools ("programs"): pinned claude.ai artifacts (review boards, das
 | Program | Link | Data |
 |---|---|---|
 | Motion References | https://claude.ai/artifact/U9YiTAL4juKxjLgvNeKEe8 | db collection `takes` (one doc per Runway clip), videos = artifact assets |
-| Studio Checklist | https://claude.ai/artifact/KwnPNScc2RjbM98WZ7R79G | db collections `characters` (steps per card) and `checks` (Gauge's checklist). Layout in reports/2026-10-28-wright-studio-checklist.md |
+| **Oreheart Studio** (main, Oct 28) | https://claude.ai/artifact/PrZreWSayBrALDPvQwsVmn | db `characters`, `checks`, `takes`; pictures as files/assets. Replaces Studio Checklist. |
+| Studio Checklist (backup) | https://claude.ai/artifact/KwnPNScc2RjbM98WZ7R79G | db collections `characters` (steps per card) and `checks` (Gauge's checklist). Layout in reports/2026-10-28-wright-studio-checklist.md |
 
 ## How I work (learned 2026-10-27)
 - Read the handbook first, then this file.
@@ -38,6 +39,12 @@ I build Ken's tools ("programs"): pinned claude.ai artifacts (review boards, das
 ## Delete videos (2026-10-28, Ken's choice: delete for good)
 - Motion References has "Delete video" (in-page confirm; db doc delete + assets.delete if no other take uses the file). Repo clips are untouched.
 - Test deletes with a probe doc (no video), never a real take.
+
+## Oreheart Studio (2026-10-28)
+- Ken wants ONE program, linear per character: Approve / Redraw / Skip, then straight to the next step. Old editors stay as backups.
+- Tested: a page inside the program (iframe of a published file) can use the main program's db via `parent.claude.use("db")` (its own window.claude gives null). That's how editors move in as rooms.
+- Asset copies get new ids at every hop (Model Editor -> Checklist -> Studio): keep an old->new map file per hop.
+- Ken deleted all Motion References videos on Oct 28 on purpose.
 
 ## Motion References: database layout
 Collection `takes`, doc id = Runway job id (e.g. `gyrocopter-ace-cast-side`). Fields:
