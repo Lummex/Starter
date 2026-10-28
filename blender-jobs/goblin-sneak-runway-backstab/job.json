@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-28T09:22:30Z",
- "heartbeat_at": "2026-10-28T09:17:30Z",
+ "lease_until": "2026-10-28T09:22:37Z",
+ "heartbeat_at": "2026-10-28T09:17:37Z",
  "error": null,
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/char.glb@factory/issue-8",
@@ -104,5 +104,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-28T09:17:30Z"
+ "updated_at": "2026-10-28T09:17:37Z"
 }
