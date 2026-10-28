@@ -29,6 +29,16 @@
 - `cellAt(x,y)`, `squareQuad(row,col)` (on-screen corners of a square), cell class `hover`.
 - Hand fan: `layoutHand()` (~1557): spacing = card width × owner-layout hand `overlap` (0.2), squeezes to fit. Value lives in src/content/owner-layout.json (HUD piece role player-hand), which comes from the Oreheart Game Editor (Claude page).
 
+## Learned Oct 28 (Round 26 brief run)
+- The planner really reads the **top section of oreheart-phase-1b-brief.md** ("read this first"), not the #8 comments after #100. So a new round = (1) its own brief file in factory-design/design/, (2) a short "current round, read X first" pointer at the top of phase-1b (replacing any older top round), (3) the #8 comment (for history). Round 26 pointer is in place.
+- Editing the 162 KB phase-1b brief without re-typing it: on a github.com/…/upload/main/<folder> page, fetch the file from raw.githubusercontent.com/<commit sha>/… (the sha path is never stale-cached), change it in JS, then `new DataTransfer()` + `new File([text], name)` → `input[type=file].files`, dispatch `change`, type the message, Commit. Works for several files at once; use one upload page per folder (don't put "/" in file names).
+- Other Anvil/Forge sessions edit the same files at the same time (Oct 28: budget change, notes, item (0) added to my brief). Always fetch the newest version by commit sha right before uploading, and re-read briefs after another session touches them.
+- Faction emblems = owner Card Format (public/art/card-format/format.json, spell layer "Prismatic Crystal World Emblem"): goblins 2298e4af.webp, gnomes 42e54bde.webp (purple), dwarves e56e3c50.webp (blue).
+- Code pointers (factory/issue-8 app.ts): mine owner emoji FSYM ~2053; "Moves still available" dialog ~1945 (remindMoves); Respond window openRespond ~2318/2404; Junk Shaman bestShaman ~3057 (game picks the landing square); pickaxe badge ~2061. creature3d.ts ~112 picks clips by name OR position.
+- Vercel: all factory deploys (pipeline preview, preview-only workflow, ship.mjs) run `vercel deploy` inside projects/oreheart-8 with .vercel/project.json → project **ID** prj_bFru…; ship finds the domain by ID. Renaming the project is safe for the scripts.
+- Vercel settings: Ignored Build Step is under Settings → Build and Deployment (dropdown; "Only build production" exists). Disconnect is under Settings → Git. **Clicking Disconnect was blocked by my permission check ("Modify Shared Resources") even with Ken's OK relayed by Forge** – Ken has to do it or approve it live.
+- Version rule (Ken, via Forge, Oct 28): the game project will be named oreheart-v0.8; each production release adds 0.1 (0.9, 1.0, …). Add to the handbook once the rename is done.
+
 ## Open issues
 - Comment paging bug above (blocks Round 25). Waiting for Ken's OK to fix.
 - Build #54 (Oct 25) failed: "ENOENT … factory-data/oreheart-8/acceptance". Build #55 did NOT hit it (tests were restored after each builder step). Likely cause: the builder agent committed the deletion of the hidden tests itself, so `confineTo()` (pipeline.mjs, uses `git diff HEAD`) had nothing to restore. Not fixed.
@@ -39,3 +49,4 @@
 - 2026-10-28 (later) Watched build #55: it built Round 24, not Round 25 (comment paging bug). Tested preview j2ykckwo2: card drag unchanged. Report overwritten with these results.
 - 2026-10-28 (later) Builder budget 6 → 10 per round for Round 26 (from Forge, Ken OK). Commit a098c01, checked on main. Report: factory-design/studio/reports/2026-10-28-anvil-builder-budget.md.
 - 2026-10-28 (later) Forge job: Ken rejected the Round 24 skull throw. Added item (0) 'Remove the Round 24 Skullflinger skull throw' (+ AC396) at the top of the Round 26 brief and fixed the lines that said to keep it (intro, B11.3, AC391). Commit ec756bf. Did not post on #8 (text given to Forge). Report: factory-design/studio/reports/2026-10-28-anvil-skullflinger-removal.md.
+- 2026-10-28 (later) Round 26 combined brief (from Forge, Ken OK): new brief + phase-1b pointer, Round 24/25 briefs copied to discontinued. Ledger file not there yet → #8 comment not posted. Vercel: starter-dashboard "Only build production" done; Git disconnect blocked by permission check; rename not done. Report: factory-design/studio/reports/2026-10-28-anvil-round-26.md.
