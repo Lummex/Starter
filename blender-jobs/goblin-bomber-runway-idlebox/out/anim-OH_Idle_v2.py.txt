@@ -1,0 +1,91 @@
+import math
+from mathutils import Vector, Quaternion
+
+N = 90
+# Shared start pose = the rest pose: frames 0 and N are left unkeyed so the worker sets them to
+# the base pose exactly (same as OH_Idle_ShadowBox). Everything below is a delta that is 0 at the seam.
+
+
+def V(t):
+    return Vector((t[0], t[1], t[2]))
+
+
+def chain_aims(bases, dirs):
+    # world directions -> per-bone aims ("as if the parents stayed still")
+    acc = Quaternion((1.0, 0.0, 0.0, 0.0))
+    out = []
+    for b, d in zip(bases, dirs):
+        local = acc.inverted() @ V(d).normalized()
+        out.append((local[0], local[1], local[2]))
+        acc = acc @ V(b).normalized().rotation_difference(local)
+    return out
+
+
+def leg_aims(ctx, th, sh, ft, hip_move):
+    # two-bone IK: ankle stays at its base position, foot keeps its base direction
+    B = ctx.bones
+    H0 = V(B[th]['head']); K0 = V(B[sh]['head']); A0 = V(B[ft]['head'])
+    L1 = (K0 - H0).length; L2 = (A0 - K0).length
+    H = H0 + V(hip_move); A = A0
+    to = A - H
+    u = to.normalized()
+    d = min(max(to.length, abs(L1 - L2) + 1e-4), (L1 + L2) * 0.9999)
+    u0 = (A0 - H0).normalized()
+    w = (K0 - H0) - u0 * (K0 - H0).dot(u0)
+    pole = w.normalized() if w.length > 0.004 else Vector((0.0, 0.0, 1.0))
+    v = pole - u * pole.dot(u)
+    if v.length < 1e-6:
+        v = Vector((0.0, 0.0, 1.0)) - u * u[2]
+    v.normalize()
+    ca = max(-1.0, min(1.0, (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d)))
+    sa = math.sqrt(1.0 - ca * ca)
+    K = H + u * (L1 * ca) + v * (L1 * sa)
+    return chain_aims([B[th]['points'], B[sh]['points'], B[ft]['points']],
+                      [K - H, A - K, B[ft]['points']])
+
+
+def build(ctx):
+    ctx.length(N)
+    hips = ctx.bone('hips')
+    sp2 = ctx.bone('Spine02'); sp1 = ctx.bone('Spine01'); sp = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    lsh = ctx.bone('left shoulder'); rsh = ctx.bone('right shoulder')
+    lu = ctx.bone('left upperarm'); lf = ctx.bone('left forearm')
+    ru = ctx.bone('right upperarm'); rf = ctx.bone('right forearm')
+    legs = [(ctx.bone('left thigh'), ctx.bone('left shin'), ctx.bone('left foot')),
+            (ctx.bone('right thigh'), ctx.bone('right shin'), ctx.bone('right foot'))]
+    B = ctx.bones
+    LU0 = B[lu]['points']; LF0 = B[lf]['points']
+    RU0 = B[ru]['points']; RF0 = B[rf]['points']
+
+    for f in range(5, N, 5):
+        x = 2 * math.pi * f / N
+        s = math.sin(x) * (1 - math.cos(x)) / 1.299   # weight shift (+ = over right foot), flat at loop seam
+        b = (1 - math.cos(2 * x)) / 2                   # breathing, two breaths
+        e = (1 - math.cos(x)) / 2                       # settle into the knees mid-loop
+
+        hm = (0.013 * s, -0.006 * e - 0.004 * s * s, 0.0)
+        ctx.key(f, hips, move=hm)
+        for th, sh, ft in legs:
+            a1, a2, a3 = leg_aims(ctx, th, sh, ft, hm)
+            ctx.key(f, th, aim=a1); ctx.key(f, sh, aim=a2); ctx.key(f, ft, aim=a3)
+
+        ctx.key(f, sp2, turn=[('up', 0), ('right', 0), ('forward', -2.5 * s)])
+        ctx.key(f, sp1, turn=[('up', 0), ('right', 0), ('forward', -1.0 * s)])
+        ctx.key(f, sp, turn=[('up', 0), ('right', 2.0 * b), ('forward', 0)])
+        ctx.key(f, neck, turn=[('up', 0), ('right', -1.5 * s * s - 0.8 * b), ('forward', 1.5 * s)])
+        ctx.key(f, lsh, turn=[('forward', 2.5 * b)])
+        ctx.key(f, rsh, turn=[('forward', -2.5 * b)])
+
+        # relaxed hanging arms with small counter-swing, slightly out on the inhale
+        Lu = (LU0[0] - 0.03 * b, LU0[1], LU0[2] + 0.07 * s)
+        Lf = (LF0[0] - 0.02 * b, LF0[1], LF0[2] + 0.09 * s)
+        Ru = (RU0[0] + 0.03 * b, RU0[1], RU0[2] - 0.07 * s)
+        Rf = (RF0[0] + 0.02 * b, RF0[1], RF0[2] - 0.09 * s)
+        a, c = chain_aims([LU0, LF0], [Lu, Lf])
+        ctx.key(f, lu, aim=a); ctx.key(f, lf, aim=c)
+        a, c = chain_aims([RU0, RF0], [Ru, Rf])
+        ctx.key(f, ru, aim=a); ctx.key(f, rf, aim=c)
+
+    ctx.note('OH_Idle_v2: start/end = base (rest) pose, shared with OH_Idle_ShadowBox; weight shift right ~f30 / '
+             'left ~f60, two breaths, knees settle mid-loop, leg IK keeps ankles fixed.')
