@@ -104,3 +104,11 @@
 - Vercel jam cause: Git auto-deploy in ~6 projects for every push on any branch (blender-queue status commits too), one build at a time. Keep my own pushes few. Only Ken can fix it (disconnect Git / Ignored Build Step).
 - The preview-only Build step is vite only (no tsc), so a type error won't fail it; keep patches type-safe anyway.
 - 2026-10-28 (evening) Seventh small fix (from Forge): lifted unit follows the pointer and loops OH_React_Lifted; Shaman holds OH_Special. Commit b0db357 on top of 11d9ed3. Preview #20 -> oreheart-8-e95v6egi5, stuck in Vercel queue, NOT tested. Report: factory-design/studio/reports/2026-10-28-anvil-lift-follows-pointer.md.
+## Learned Oct 28 (owner icon swap: Ken's mine-all pickaxe)
+- The mine-all pickaxe badge was CSS-drawn (span.pickaxe[data-mine-badge] with i.pk-h / i.pk-head / i.pk-spark, renderSites in app.ts ~2287; CSS style.css ~378 and ~475). Now it is one img.pk-img (src /art/ui/mine-all-pickaxe.webp) inside the same span, so the swing animation, fitMineBadges() and the .site-mark.ready clip-path fix still apply. CSS rule appended at the end of style.css.
+- Owner icon flow: stage the PNG from Ken's Downloads, make a 256x256 WebP with PIL (thumbnail + transparent canvas, quality 88: 16.5 KB from 1.1 MB), file_upload it from /mnt/user-data/outputs/... straight into the github.com upload page. Original goes to factory-design/design/ui/ on main (not into public/, so it doesn't add to the game size).
+- One upload page = one folder, so a change in 3 folders = 3 commits. Order them so nothing points at a missing file (image, then CSS, then code).
+- Check a badge layout without a preview: mock HTML with the same CSS in cloud Playwright (chromium.launch()).
+- Chrome on *.vercel.app worked this run (no permission block).
+- The Chrome tool blocks JS results that look like a commit sha ("Base64 encoded data"); return a comparison (true/false) instead.
+- 2026-10-28 (later) Small fix 10 from Forge: Ken's own mine-all pickaxe icon. Commits on factory/issue-8: 9d95c47 (image), then style, then 9d92f74 (app.ts, "Owner art: Ken's mine-all pickaxe icon (Oct 28)"). Original on main factory-design/design/ui/ken-mine-all-pickaxe.png. Preview #23 = oreheart-8-gd4gac0wt (queued on Vercel 20+ min, not tested). Report: factory-design/studio/reports/2026-10-28-anvil-ken-pickaxe-icon.md.
