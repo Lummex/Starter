@@ -74,5 +74,10 @@ character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view or
 - Builders (Ledger/Anvil): skip clips with status "removed" when putting moves in the game.
 - Chrome screenshots of the Studio sometimes time out (3D canvas); retry. Mouse-wheel scroll in the room panel is unreliable; drag the panel scrollbar instead.
 
+## Rigging (Oct 28)
+- Models made outside the Meshy pipeline (no entry in factory-design/meshy-jobs/state.json) never got Meshy's rig + default moves. Example: Anvilsworn Miner (Stonebreaker), Thane Borgo. Check a GLB quickly: parse the JSON chunk; skins = 0 means no skeleton.
+- Ken said no to a second Meshy call for rigging. Rigging goes to Spring's Blender worker. Job: reports/2026-10-28-wright-job-spring-rig-dwarves.md. Unrigged GLBs are in factory-design/models/<card-id>/.
+- Commanders (cmd-*) aren't in the Studio `characters` list, only in `library`.
+
 ## Ken's feedback
 - Wants to approve each move where he watches it, and to remove moves he doesn't want from a character's set (Oct 28).
