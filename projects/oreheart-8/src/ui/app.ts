@@ -1585,7 +1585,7 @@ export class App {
     const HD0 = (ownerLayoutHand as any) || {};
     const ch = cards[0]?.offsetHeight || cw * 1.4;
     // owner layout editor (R23.1): neighbours sit overlap × card width apart; only shrink when the fan would not fit the hand box
-    const spacing = shown > 1 ? Math.min(cw * (HD0.overlap ?? 0.2), (W - cw) / (shown - 1)) : cw;
+    const spacing = shown > 1 ? Math.min(cw * Math.max(0.54, HD0.overlap ?? 0.2), (W - cw) / (shown - 1)) : cw;
     const x0 = Math.max(0, (W - (cw + (shown - 1) * spacing)) / 2);
     let moved = false;
     cards.forEach((c, i) => {

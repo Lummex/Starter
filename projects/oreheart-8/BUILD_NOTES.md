@@ -61,3 +61,8 @@ Not changed — these checks look outdated or contradictory to later owner decis
 
 ### Editor updates needed
 Projectile: skull from `skull-mace.glb`, scale = held mace's longest side; arc peak 0.6 × min(1, dist/4); spin 2 turns/s in flight; flight 350 + 35·dist ms (350–550); bounce: velocity back ×1.1 plus 0.45 sideways, up 1.9, gravity 9, spin 5 turns/s, one hop (0.85 up), fade 150 ms, removed by 640 ms. Effects: `flash` (additive white sprite, 160 ms), `stars` ×4, `chips` ×4, `dust` ×2.
+
+## Round 25 fixes
+- Wide windows fill the screen (no bars); only windows narrower than 16:9 letterbox (AC24/AC24b).
+- Hand fan keeps neighbours at least 0.54 card widths apart so every card centre is clickable/hoverable; hand rests fully on screen (AC22/AC43/AC59/AC148/AC160).
+- AC58 (F "Crystal Eater" as a Miner) is outdated: the owner made Goblin Rocket Rider a Fighter in round 14.
