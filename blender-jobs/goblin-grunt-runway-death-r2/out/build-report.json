@@ -1,0 +1,112 @@
+{
+ "base_pose": "rest pose",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Death",
+   "frames": 120,
+   "seconds": 4.0,
+   "key_frames": [
+    8,
+    16,
+    24,
+    32,
+    40,
+    47,
+    51,
+    54,
+    60,
+    66,
+    72,
+    77,
+    81,
+    86,
+    90,
+    120
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 24.1,
+   "feet_drift_m": 0.2369
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Death: Death: dizzy wobble 8-32 (feet planted), knees buckle 40-47, plop onto bottom 51-54 (hips 0.126), settle sit 60, tip back 66-72 legs up, land flat 77, bounce 81, settle 86, lying still 90-120 (hips 0.141 = 0.14 x height). Board arm roll -90 deg (flatness 0.93).",
+  "OH_Death: Joint heights: 8: hips 0.387, low RightFoot 0.084; 16: hips 0.383, low RightFoot 0.084; 24: hips 0.377, low RightFoot 0.084; 32: hips 0.366, low RightFoot 0.084; 40: hips 0.331, low RightFoot 0.084; 47: hips 0.230, low RightFoot 0.084; 51: hips 0.165, low RightFoot 0.045; 54: hips 0.126, low LeftFoot 0.040; 60: hips 0.134, low LeftFoot 0.040; 66: hips 0.138, low LeftFoot 0.085; 72: hips 0.141, low LeftUpLeg 0.121; 77: hips 0.141, low LeftArm 0.068; 81: hips 0.159, low LeftArm 0.099; 86: hips 0.1",
+  "OH_Death: frying-pan held in RightHand at scale 0.184; prop centre [0.6564, 0.533, -0.0407] size 0.589 m, hand joint [0.3603, 0.3835, -0.0051]"
+ ],
+ "prop_debug": [
+  {
+   "name": "Mesh_0",
+   "polys": 15329,
+   "verts": 13833,
+   "hide_render": false,
+   "visible": true,
+   "collections": [
+    "Collection"
+   ],
+   "scene_has": true,
+   "materials": [
+    "Material_0.001"
+   ],
+   "world_scale": [
+    0.175,
+    0.175,
+    0.175
+   ],
+   "parent": "Prop_frying-pan",
+   "display_type": "TEXTURED"
+  }
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Death": {
+    "keys": 121,
+    "seconds": 4.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead",
+    "OH_Idle",
+    "OH_Walk",
+    "OH_Attack",
+    "OH_Hit",
+    "OH_React_Knockback",
+    "OH_React_Bonk",
+    "OH_React_Bowled",
+    "OH_React_Backstab",
+    "OH_React_Lifted"
+   ],
+   "worst_position_error_pct_of_height": 0.0008,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 2e-05
+ }
+}
