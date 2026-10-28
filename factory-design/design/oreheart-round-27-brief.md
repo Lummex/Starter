@@ -10,22 +10,37 @@
 - **Size:** keep the built `dist/` under **95 MB** (AC90). Only shrink textures; never simplify, re-mesh or re-quantize geometry and never touch UVs, bones, skin weights or clips. If something can't fit, leave it out and say so in REPORT.md.
 - **Owner art is binding.** Use existing art and models only; never invent a picture, emblem, icon or model. No Meshy.
 - **Editors must match the game.** Every value you copy or change goes in `factory-data/oreheart-8/REPORT.md` under **"Editor updates needed"** (what, which file, which editor).
-- **Order** (stop cleanly at a working state if the budget runs out): **C** (size) first, then **A**, then **B**, then **H** (heights), then **D**, then **E**. In REPORT.md list each item as Done / Partly / Not started.
+- **Order** (stop cleanly at a working state if the budget runs out): **C** (size) first, then **A**, then **B**, then **R** (rigged models), then **H** (heights), then **D**, then **E**. In REPORT.md list each item as Done / Partly / Not started.
 
 ---
 
 ## C. Smaller body textures (do this first — Ken OK'd the shrink, Oct 28)
 
-Ledger made shrunk copies of the game's own body files: `factory-design/design/models/round27-shrunk/<card>-char.glb` (on **main**; read its `README.md`). Each is the game's current `public/models/creatures/<card>/char.glb` with only its body picture shrunk 1024 → 512 px. Geometry, UVs, bones, skin weights and clips are unchanged.
+Ledger made shrunk copies of the game's own body files: `factory-design/design/models/round27-shrunk/<card>-char.glb` (on **main**; read its `README.md`). Each is the game's current `public/models/creatures/<card>/char.glb` with only its body picture(s) shrunk to 512 px (768 px where 512 looked noticeably softer: clockwork-beetle, the-great-steam-golem, gnome-tinker, junk-shaman, skullbasher-rusher, blastrat-sapper, wolf-rider). Geometry, UVs, bones, skin weights and clips are unchanged.
 
 1. Copy each `round27-shrunk/<card>-char.glb` over `public/models/creatures/<card>/char.glb`. Copy the bytes as they are; do not re-export or re-compress.
    - **15 dwarf bodies:** axe-thrower, barrelback-courier, brewmaster, crystal-drunk-delver, deepforge-crossbowman, dwarf-miner, dwarf-pickman, dwarf-stoneback, grimhold-ravager, ironhammer-berserker, oathbound-pikeman, queen-brunhilda-stonebeard, ram-rider, rune-splitter, shieldbeard.
-   - **13 gnome bodies** *(only if Ken has OK'd the gnome shrink by the time the round starts — see note)*: clockwork-beetle, gearward-sentinel, glyphshield-warden, gnome-cogger, gnome-illusionist, gnome-smith-miner, gnome-tinker, gnome-widget, hexwright-apprentice, phase-stalker, runic-siphoner, spark-gnome, the-great-steam-golem.
+   - **13 gnome bodies** (Ken OK'd, Oct 28 ~21:05; 10 at 512 px, clockwork-beetle / the-great-steam-golem / gnome-tinker at 768 px): clockwork-beetle, gearward-sentinel, glyphshield-warden, gnome-cogger, gnome-illusionist, gnome-smith-miner, gnome-tinker, gnome-widget, hexwright-apprentice, phase-stalker, runic-siphoner, spark-gnome, the-great-steam-golem.
+- **12 goblin bodies** (Ken OK'd, Oct 28 ~22:00): goblin-bomber, goblin-grunt, goblin-scrapper, goblin-slinger, goblin-sneak, rotgut-grenadier, shard-guzzler, grubnaks-big-boss-troll at 512 px; junk-shaman, skullbasher-rusher, blastrat-sapper, wolf-rider at 768 px.
+- **Crystal node** (mines; Ken OK'd as Ledger's option b, Oct 28 ~22:00): copy `round27-shrunk/mines-crystal-node.glb` over `public/models/mines/crystal-node.glb` (its 3 maps 1024 → 512 px).
+- **Only if Ken answered Yes to `decisions/r27-size-option-a` in Oreheart Studio** (read it right before starting): copy the 5 files in `round27-shrunk/option-a-needs-ken/`: `shiv-rat-char.glb`, `goblin-pebbler-char.glb`, `goblin-scrounger-char.glb`, `goblin-smith-miner-char.glb` over `public/models/creatures/<card>/char.glb`, and `grubnak-throne.glb` over `public/models/creatures/grubnak/throne.glb` (pictures 768 → 512 px). If he has not answered Yes, do not copy them (see the size note below).
 2. Do not shrink anything else.
 
-Size (Ledger's measurement, Oct 28): game now 95.38 MB; + item A parts 4.81 MB = 100.19 MB; − 15 dwarf bodies (3.03 MB) = 97.17 MB (still over 95); − 13 gnome bodies (4.74 MB) = **92.43 MB**. So the gnome bodies are needed to end under 95 MB.
+Size (Ledger, Oct 28 ~22:40, measured from the factory/issue-8 file list, all of `projects/oreheart-8/public/`, 1 MB = 1,000,000 bytes):
 
-> **Note for Ken/Forge before starting:** Ken's OK quoted in Ledger's README is "It's okay to shrink the dwarf". Without the gnome bodies the game ends at about 97.2 MB (over 95). Confirm the gnome shrink, or drop some of item A, before starting.
+| Step | Bytes | MB |
+|---|---|---|
+| Game files now (Round 26 parts are in) | 93,580,935 | 93.58 |
+| + 15 parts (A) | +4,808,392 | 98.39 |
+| − 15 dwarf bodies | −3,025,808 | 95.36 |
+| − 13 gnome bodies | −3,661,804 | 91.70 |
+| + 2 rigged models (R) | +4,987,688 | 96.69 |
+| − 12 goblin bodies | −2,154,324 | 94.54 |
+| + pickaxe + sceptre (R) | +1,073,824 | 95.61 |
+| − crystal node maps | −455,944 | **95.15** |
+| − option A (only if Ken says Yes) | −599,828 | **94.55** |
+
+> **Not ready to start until Ken answers `decisions/r27-size-option-a`** in Oreheart Studio. Without option A the round ends at 95.15 MB, over 95 MB (AC399 would fail). With it: 94.55 MB (about 0.45 MB to spare; the built `dist/` also holds the code bundle, so it will be a little higher). If Ken says No, Forge/Ken pick another cut before starting. Section H adds no files. New D move files (if any) are not counted here and need the same texture shrink.
 
 Done when:
 - **AC397** Each replaced `char.glb` is byte-identical to its `round27-shrunk/` file; for each one the glTF meshes, accessors (vertex/UV/skin data), node/bone list and animation clip names are identical to the previous build's file.
@@ -86,9 +101,38 @@ Done when:
 
 ---
 
+## R. Rigged Anvilsworn Miner and Thane Borgo (Ken, Oct 28: put both rigged models in)
+
+Clay's rigged models (Meshy, 24-bone skeleton like the other units). Ken approved both for Round 27 (Oct 28, in Forge's chat). Their Studio setups were made by Forge/Ledger from Ken's other setups and saved as the default look in Oreheart Studio; **Ken has not checked them yet** (`characters/<card>.steps.editor` = waiting). Read `library/<card>.setup` right before starting: if Ken changed it, use his numbers (Ledger updates `editor-setups-2026-10-28b.md` → "Rigged models"); if not, use the numbers below.
+
+1. Copy as they are (no re-export, no shrink):
+
+| From (main) | To `public/models/creatures/` |
+|---|---|
+| `factory-design/design/models/anvilsworn-miner-rig-oct28.glb` (2,603,600 bytes) | `dwarf-smith-miner/char.glb` (new) |
+| `factory-design/design/models/parts/stonebreaker-pickaxe.glb` (497,300) | `dwarf-smith-miner/pickaxe.glb` (new) |
+| `factory-design/design/models/borgo-rig-oct28.glb` (2,384,088) | `cmd-borgo/char.glb` (new) |
+| `factory-design/design/models/parts/borgo-sceptre.glb` (576,524) | `cmd-borgo/sceptre.glb` (new) |
+
+2. Clips (both): `Idle`, `Casual_Walk`, `Heavy_Hammer_Swing`, `Hit_Reaction`, `Dead` (the Miner also has `Charged_Axe_Chop`). `models.json` clips map like the other Meshy units: idle → Idle, walk → Casual_Walk, attack → Heavy_Hammer_Swing, hit → Hit_Reaction, death → Dead.
+3. `PARTS` (creature3d.ts), bone-local, rest pose, degrees XYZ:
+```ts
+'dwarf-smith-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-6.164, 15.149, 10.053], rot: [-66.649, 52.929, 128.399], scale: [38, 38, 38] } }],
+'cmd-borgo': [{ name: 'sceptre', file: 'sceptre.glb', bone: ['LeftHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-2.502, -5.086, 3.574], rot: [8.993, 35.932, 157.604], scale: [50, 50, 50] } }],
+```
+4. Heights (add to H's `LOOKS`; body scale 1 in the Studio, like Ken's other dwarves): `'dwarf-smith-miner': { height: 0.943, stretch: [1, 1, 1] }`, `'cmd-borgo': { height: 1.001, stretch: [1, 1, 1] }` (idle-0 heights 0.9432 and 1.0005). If Ken answered "resize" to `decisions/dwarf-heights`, treat these two like the other dwarves (H step 6).
+5. Borgo is a commander. No throne (Ken's commander setups don't use one). Show him wherever the game shows the dwarf commander's figure today, with the body, sceptre and height above; if the game has no 3D figure for Borgo yet, add the files and the `PARTS`/`LOOKS` lines only and say so in REPORT.md. Do not change Grubnak. The Miner has only the pickaxe (the card art shows no hammer).
+
+Done when:
+- **AC414** The four files are byte-identical to their sources on main.
+- **AC415** In a match the Anvilsworn Miner (and Borgo, if the game shows him) loads with no console error and plays idle/walk/attack/hit/death; the pickaxe / sceptre follow their bone with the values above within 0.001.
+- **AC416** Their body height in idle at t=0 equals the `LOOKS.height` above (±1%), and AC399 (under 95 MB) still passes.
+
+---
+
 ## D. New moves Ken approved (placeholder — add if approved)
 
-Spring is making Blender moves now. **Only moves Ken has approved in Oreheart Studio by the time the round starts go in** (Studio `library/<card>.animApprovals[<clip>].status == "approved"`, read right before starting; Bare Knuckle Lunatic v5 also needs `decisions/bkl-v5` answered "yes"). For each approved move, Spring/Ledger put the new `char.glb` (or clip) on main and the builder adds it to that card's `models.json` `clips` map and `events.json`.
+Spring is making Blender moves now. **Only moves Ken has approved in Oreheart Studio by the time the round starts go in** (Studio `library/<card>.animApprovals[<clip>].status == "approved"`, read right before starting). Bare Knuckle Lunatic keeps his current model (Ken, Oct 28: no v5). For each approved move, Spring/Ledger put the new `char.glb` (or clip) on main and the builder adds it to that card's `models.json` `clips` map and `events.json`.
 
 | Card (id) | Move | Clip role | Status on Oct 28 |
 |---|---|---|---|
@@ -96,7 +140,6 @@ Spring is making Blender moves now. **Only moves Ken has approved in Oreheart St
 | Goblin Chef (`rotgut-grenadier`) | death | `death` | being made — add if approved |
 | Skullflinger (`goblin-slinger`) | throw | `attack` (keep: no flying-skull projectile unless Ken asks) | being made — add if approved |
 | Backstabbing Thief (`goblin-sneak`) | backstab | `attack` | being made — add if approved |
-| Bare Knuckle Lunatic (`goblin-bomber`) | v5 idle + shadow boxing | `idle` (+ shadow boxing as idle variety / `special`) | being made; decision `bkl-v5` open — add if approved |
 
 For each approved row, fill in before starting: file path on main, clip names in the GLB, the `clips` map lines, and the `events.json` events (e.g. `hit` time for attacks, `projectile_release` only if Ken asks).
 
@@ -117,7 +160,7 @@ Filled in after Ken and Gauge review the Round 26 preview (build #56): anything 
 
 **Ken's Studio setup is the look, including height and scale.** Ledger measured every character that has a saved Studio setup and wrote the exact game numbers in **`factory-design/design/models/editor-setups-2026-10-28b.md`** → section **"Heights from Ken's Studio setups"** (table + **paste-ready `LOOKS`**), data in **`editor-setups-2026-10-28b.json`** → `heightsForGame`. This covers the 12 Round 26 cards, the 18 Round 27 cards and every other character with a Studio setup (47 in all; 42 get a `LOOKS` line).
 
-1. In `src/ui/creature3d.ts` replace the whole `LOOKS` object with the paste-ready one (42 entries). `LOOKS.height` = Ken's Studio body scale × that model's idle-0 height, so the game draws each body at exactly Ken's Studio size (the game normalises on the idle pose; do not round these numbers). Keep `stretch` as given (Bowler Brawler `[1, 0.93, 1]`).
+1. In `src/ui/creature3d.ts` replace the whole `LOOKS` object with the paste-ready one (42 entries, plus the 2 from R). `LOOKS.height` = Ken's Studio body scale × that model's idle-0 height, so the game draws each body at exactly Ken's Studio size (the game normalises on the idle pose; do not round these numbers). Keep `stretch` as given (Bowler Brawler `[1, 0.93, 1]`).
 2. Cards without a `LOOKS` line keep `DEFAULT_H` (no Studio setup yet). `LOOKS` already wins over `DEFAULT_H`; only the mount code path reads `DEFAULT_H` directly (see 4).
 3. **Grubnak** (`src/ui/grubnak3d.ts`): body scale `ck = 1.22` (Ken's Studio scale on the raw GLB) instead of `SEAT.k * tH / H0`. Throne unchanged.
 4. **Ram Rider** (with item B): build ram + rider 1:1 in Studio units with **no extra scale on the group** (ram scale 0.53, rider scale 2 on the ram → rider world scale 1.06); only lift the group so its lowest point is on the board. Studio group height 1.376 squares.
