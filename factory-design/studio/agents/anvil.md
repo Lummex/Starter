@@ -5,6 +5,9 @@
 - **BUG (found Oct 28):** `ownerFeedback()` in factory/scripts/lib.mjs only reads the first 100 comments (`per_page=100`, no paging). #8 has 117+ comments, so the planner can't see anything after Oct 24 (Round 15). Build #55 built Round 24 instead of Round 25 because of this. Fix = page through all comments (needs Ken's OK). Until fixed, a new round's comment on #8 is invisible to the planner.
 - Round briefs: older rounds are sections at the top of factory-design/design/oreheart-phase-1b-brief.md (162 KB, hard to edit in the browser). For Round 25 I used a separate file factory-design/design/oreheart-round-25-card-drag-brief.md and pointed the issue comment at it.
 - A Factory — build run takes ~2 h (5 build/inspect rounds) and makes its own Vercel preview; the link is in the last bot comment on #8. No need to run "preview only" after it.
+- Uploading without the Downloads round-trip works: on the github.com upload page, build a File in JS, put it in `input[type=file]` with a DataTransfer and dispatch `change`; then type the commit message and click Commit (the button moves down after typing, take a screenshot first).
+- raw.githubusercontent.com on main is cached for a few minutes after a commit; to verify, fetch raw at the new commit id instead.
+- Before editing a brief, search it for text that contradicts the new item (e.g. Round 26 said the skull throw 'stays'; B11 and AC391 too) and fix those lines as well.
 - Reading GitHub: api.github.com from a github.com tab works but the shared unauthenticated limit runs out fast (60/h for all agents). From a github.com tab, `fetch('https://raw.githubusercontent.com/Lummex/Starter/<branch>/<path>')` works; fetching from a raw.githubusercontent.com tab fails. Folder listings: `fetch('https://github.com/Lummex/Starter/tree/<branch>/<path>', {headers:{Accept:'application/json'}})` → payload.codeViewTreeRoute.tree.items.
 - raw.githubusercontent.com is cached for a few minutes after a commit (even with ?x=). To check a fresh commit, read the github.com/…/blob/main/<path> page text instead.
 - Reading a long Actions log: on the job page, `document.body.innerText` and filter lines with `[factory]`.
@@ -29,9 +32,10 @@
 ## Open issues
 - Comment paging bug above (blocks Round 25). Waiting for Ken's OK to fix.
 - Build #54 (Oct 25) failed: "ENOENT … factory-data/oreheart-8/acceptance". Build #55 did NOT hit it (tests were restored after each builder step). Likely cause: the builder agent committed the deletion of the hidden tests itself, so `confineTo()` (pipeline.mjs, uses `git diff HEAD`) had nothing to restore. Not fixed.
-- Round 24 (Skullflinger skull throw) was built by accident in #55 (preview j2ykckwo2). Not tested.
+- Round 24 (Skullflinger skull throw) was built by accident in #55 (preview j2ykckwo2). Ken REJECTED it (Oct 28): Round 26 brief item (0) removes it (commit 7018719 on factory/issue-8; keep da7b348, b37b320, c5a3242, 63e00e6).
 
 ## Job log
 - 2026-10-28 Card drag + wider hand (from Forge, Ken's OK for one round, preview only): wrote brief, posted Round 25 comment on #8. Could not add the label (blocked). Report: factory-design/studio/reports/2026-10-28-anvil-card-drag.md.
 - 2026-10-28 (later) Watched build #55: it built Round 24, not Round 25 (comment paging bug). Tested preview j2ykckwo2: card drag unchanged. Report overwritten with these results.
 - 2026-10-28 (later) Builder budget 6 → 10 per round for Round 26 (from Forge, Ken OK). Commit a098c01, checked on main. Report: factory-design/studio/reports/2026-10-28-anvil-builder-budget.md.
+- 2026-10-28 (later) Forge job: Ken rejected the Round 24 skull throw. Added item (0) 'Remove the Round 24 Skullflinger skull throw' (+ AC396) at the top of the Round 26 brief and fixed the lines that said to keep it (intro, B11.3, AC391). Commit ec756bf. Did not post on #8 (text given to Forge). Report: factory-design/studio/reports/2026-10-28-anvil-skullflinger-removal.md.
