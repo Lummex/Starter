@@ -2,7 +2,7 @@
  "id": "goblin-bomber-runway-idlebox",
  "type": "animate",
  "asset_id": "goblin-bomber",
- "status": "queued",
+ "status": "claimed",
  "priority": 9,
  "created_at": "2026-10-28T02:45:00Z",
  "created_by": "Spring (Forge job, Ken approved Runway take goblin-bomber-idle-box-front Oct 28)",
@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": null,
- "heartbeat_at": "2026-10-28T02:46:52Z",
+ "lease_until": "2026-10-28T02:52:42Z",
+ "heartbeat_at": "2026-10-28T02:47:42Z",
  "error": {
   "message": "Claude Code did not write anims/OH_Idle_v2.py",
   "at": "2026-10-28T02:47:13Z"
  },
  "progress": {
-  "stage": "failed",
+  "stage": "claimed",
   "percent": 0,
-  "message": "Claude Code did not write anims/OH_Idle_v2.py"
+  "message": "Picked up by the Blender worker"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -104,7 +104,13 @@
   {
    "at": "2026-10-28T02:47:13Z",
    "status": "failed"
+  },
+  {
+   "at": "2026-10-28T02:47:42Z",
+   "status": "claimed",
+   "worker": "starr-f0fad5",
+   "recovered": false
   }
  ],
- "updated_at": "2026-10-28T02:47:13Z"
+ "updated_at": "2026-10-28T02:47:42Z"
 }
