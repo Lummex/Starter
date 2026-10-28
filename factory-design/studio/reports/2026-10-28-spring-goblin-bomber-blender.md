@@ -1,24 +1,28 @@
-# Spring – Bare Knuckle Lunatic (goblin-bomber): Blender job from the approved Runway take
+# Spring – Bare Knuckle Lunatic (goblin-bomber): Blender clips from the approved Runway take
 
-Date: 2026-10-28 · Job from Forge (Ken approved both parts of goblin-bomber-idle-box-front).
+Date: 2026-10-28 · Job from Forge (Ken approved both parts of goblin-bomber-idle-box-front). Ken OK'd the worker fix directly in my chat.
 
-## What I did
-- Read the game's goblin-bomber models.json + events.json (factory/issue-8) and the Model Editor library doc (bundled key goblin-bomber-v4 = same clip set as the game: OH_Idle, OH_Walk, OH_Attack, OH_Death, OH_Hit, 5 reactions, plus old Meshy clips). No idle variants exist yet in events.json, so I named the new clips OH_Idle_v2 and OH_Idle_ShadowBox.
-- Looked at both frame sheets myself (idle f01–f03 has a small step and f12 raises fists; shadow-boxing f05 has a big sliding lunge: told the animator to ignore those and keep feet planted).
-- Wrote Blender job **blender-jobs/goblin-bomber-runway-idlebox/job.json** on blender-queue: source = game char.glb on factory/issue-8; two clips, 90 frames each (3 s), loop, base_pose "rest", face front, feet planted, both start/end in the same relaxed pose; references = goblin-bomber--front.jpg + all 24 frames (idle + shadow-boxing).
+## Result
+- Blender job **blender-jobs/goblin-bomber-runway-idlebox** (branch blender-queue) is done: status awaiting_review, "2 animation(s) built and checked: OH_Idle_v2, OH_Idle_ShadowBox".
+- Source: game char.glb on factory/issue-8. Output out/char.glb (1.96 MB, meshopt) = same model and all 15 old clips + the 2 new ones. Old clips untouched (worker calibration error 0.001%).
+- **OH_Idle_v2** (Part 1, idle): 90 frames / 3.0 s, loop. Breathing, sway, weight shift right ~f30 / left ~f60.
+- **OH_Idle_ShadowBox** (Part 2, idle special): 90 frames / 3.0 s, loop. Guard f9, left jab f15-17, right cross f26-28, left hook f38-40, right hook f49-51, guard f62, lowers fists f69-76, settled f82-90; small hip bounce every 10 frames.
+- Naming: events.json had no idle variants yet, so new names; the game still uses OH_Idle until Ken approves and Ledger/Anvil wire them in.
 
-## What went wrong
-- The worker (starr-f0fad5) picked it up in ~1 min but failed 5 times in a row in ~30 s each: "Claude Code did not write anims/OH_Idle_v2.py".
-- Cause (from the worker code on main): the reference-picture support is a hotfix in blender_ops/glbtool.py that only switches on when the worker reloads glbtool after a script update. If the worker was restarted since Oct 27, the hotfix is never active, so refs/ stays empty, and the job (correctly) tells the animator not to write anything without refs.
-- Second bug: a failed job goes back to "queued" without counting a retry, so it loops forever (one Claude Code run per minute). I paused the job (status failed, cancel_requested true) at 02:51 UTC so it stops using Ken's Claude usage. Checked: it stays paused.
+## My own checks (exported GLB, own renderer, front view)
+- Both clips exist, exactly 3.0 s / 90 frames, loop seam = 0 (first and last key identical on every channel).
+- Face front: hips yaw −0.56° the whole clip (the old OH_Idle is turned −28° to −52°).
+- Feet planted: foot drift 0.04% (idle) / 0.24% (shadow box) of his height. Nothing below the floor (lowest vertex −0.1% of height).
+- No broken limbs in 13 front frames per clip (images: img/2026-10-28-goblin-bomber-OH_Idle_v2-front.jpg, img/2026-10-28-goblin-bomber-OH_Idle_ShadowBox-front.jpg).
+- Compared with the video: shadow boxing follows the order (guard, jab, cross, hooks, lower). Differences Ken may notice: (1) both clips start/end in the model's rest stance, arms a bit wider out than the video's relaxed arms; (2) idle motion is subtle; (3) punches are compact, closer to the face than the video's full reach; no lunge (feet kept planted on purpose).
 
-## Blocked
-- My fix was to add a short "Reference pictures" note to factory/blender-worker/prompts/animate.md on main (any change there makes the worker reload glbtool and switch the refs hotfix on). The permission check blocked that upload ("Modify Shared Resources"), so I stopped as Forge asked. Nothing was changed on main except this report and my notes.
+## Made reviewable
+- Model Editor: new bundled model **"Bare Knuckle Lunatic + new idle & shadow boxing (Oct 28, for review)"** (models/goblin-bomber-v5.glb.txt, published as version 69; file checked byte-for-byte). The card still uses goblin-bomber-v4 – nothing switched.
+- Studio Checklist characters/goblin-bomber: steps.runway = approved, steps.blender = waiting with where-to-look note. kenNote untouched.
 
-## To unblock (pick one)
-1. Ken (or whoever may edit the worker) OKs a tiny change in factory/blender-worker/prompts/ or blender_ops/ on main; then I re-queue the job (status queued, cancel_requested false).
-2. Or Ken restarts nothing — but just touching a worker file on main is enough. A restart alone does NOT help (it makes it worse).
-3. Longer term (Ledger/whoever owns the worker): put references support into worker.py itself and count retries on failure.
+## Worker fix (earlier in this run)
+- First tries failed 5x: the worker's reference-picture hotfix was off after a restart (it only switches on when glbtool reloads after a script update), and a failed job re-queues forever without counting retries. I paused the job, Ken OK'd a one-line note in factory/blender-worker/prompts/animate.md on main (makes the worker reload), I re-queued, and it ran normally (~10 min incl. one revision round).
+- For whoever owns the worker: put "references" support into worker.py itself, and count retries on failure.
 
-## Not done yet
-- No exported GLB, no Model Editor bundle (plan: models/goblin-bomber-v5.glb.txt = v4 + the 2 new clips, listed as "Bare Knuckle Lunatic + Runway idle (Oct 28)" like gyrocopter-ace-v4), Studio Checklist not changed (blender step not started). Nothing in the game files.
+## Not done (by design)
+- Nothing in game files or production. Next after Ken's OK: Ledger, then Gauge, then Anvil.
