@@ -722,7 +722,9 @@ _worker_hotfix()
 def _worker_refs_hotfix():
     """Reference pictures (Oct 27): a job may list "references" (pictures in the repo, for example frames of an
     owner-approved Runway video). They are copied into the job's work folder (refs/) before Claude Code designs the
-    clip, so it can Read them and match the poses. Pictures only, from approved folders; nothing is ever run."""
+    clip, so it can Read them and match the poses. Pictures only, from approved folders; nothing is ever run.
+    Oct 28: worker.py now does this itself at every job start (Runner.fetch_references), so this hotfix is only for
+    workers installed before that; it skips any Runner that has the built-in version (_oh_refs = 1)."""
     import gc, os, re
     try:
         classes = [o for o in gc.get_objects() if isinstance(o, type) and o.__name__ == 'Runner' and hasattr(o, 'claude') and hasattr(o, 'execute')]
