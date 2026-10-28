@@ -153,3 +153,12 @@
 - Chrome file_upload only accepts files from this session's folders (working dir or shared notes folder), not ~/Downloads.
 - Adding `factory:revise` on #8 was blocked again (auto-mode "External System Writes"), even with Ken's OK quoted by Forge. Ken must add the label himself.
 - 2026-10-28 (late) Forge job: restart Round 26 + Ken's gnome OK in Round 27. Brief fix commit 28b65ac on main (restart note listing Ken's 10 owner fixes to keep; A1.2/AC371 now 88 % aspect-kept card; A5/A7/A9/A10 point at the owner fixes). Round 27: gnome line quotes Ken, header no longer says build #56 running. Label blocked: Ken to add it. Report: factory-design/studio/reports/2026-10-28-anvil-round-26-restart.md.
+
+## Learned Oct 28 (acceptance folder ENOENT)
+- The builder makes its OWN git commits during its turn (non-"factory:" messages on factory/issue-8). confineTo used to compare with HEAD, so a builder `git add -A` commit swallowed the hidden tests' deletion -> `ENOENT lstat factory-data/oreheart-8/acceptance` at "inspecting round N" (Oct 25 run 40226324857 round 5, Oct 28 run 40783616088 round 1). Tell-tale: no "reverted out-of-bounds changes: .../acceptance/acceptance.spec.mjs" line after the builder.
+- Fixed in 18244b2 (pipeline.mjs): confineTo(allowed, base) checks against the commit from before the agent ran (headSha()).
+- The builder can read the hidden tests from git history (it copied them to factory/acc-tmp and ran them). Not fixed; would need a separate decision.
+- Job logs via Chrome: fetch('/Lummex/Starter/commit/<full sha>/checks/<job id>/logs') in a github.com tab (short sha gives 500). Strip ?&= from output or the tool blocks it.
+- NEVER use computer type on github.com without focusing a field first: keys became shortcuts ("g i" opened Issues). Use form_input.
+- A Node 20 exists in another session's scratchpad (e2c9c653.../scratchpad/env/node.exe); fine for quick script tests.
+- 2026-10-28 (late) Forge job: Round 26 build failed (acceptance missing). Fix 18244b2 on main. Report: factory-design/studio/reports/2026-10-28-anvil-acceptance-missing-fix.md.
