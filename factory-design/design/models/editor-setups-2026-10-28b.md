@@ -62,54 +62,20 @@ All are the Studio's own GLBs (`models/<key>.glb.txt`, decoded). Only the **text
 | shieldbeard-medic-pack-oct25.glb | 363,476 | shieldbeard/medic-pack.glb (new) |
 | **Total** | **4,808,392** | nothing is replaced |
 
-## Body textures 1024 → 512 px (Round 27, Ken OK Oct 28)
+## Body textures (Round 27, Ken OK Oct 28)
 
-Ken OK'd shrinking body textures to stay under 95 MB ("It's okay to shrink the dwarf", Oct 28). **Builder: replace each `char.glb` below with the file from `factory-design/design/models/round27-shrunk/`** (copy it over, keep the name `char.glb`). Nothing else changes: same clips, bones, `models.json` and `events.json`.
+Ken OK'd shrinking body pictures to stay under 95 MB: dwarves ("It's okay to shrink the dwarf"), gnomes (~21:05, "make sure it doesn't mess up the textures"), goblins (~22:00 via Forge: 512 px, 768 px where 512 looks noticeably worse) and the crystal node maps (~22:00). **Builder: copy each file from `round27-shrunk/` over the game file** (keep the name `char.glb`). Full table with bytes: `round27-shrunk/README.md`.
 
-- All 15 dwarf bodies were not enough (game would be ~97.2 MB), so **all 13 gnome bodies at 1024 px were shrunk too** (gyrocopter-ace is already 512 px since Round 26). Goblins are untouched.
-- Only the pictures changed (1024 → 512 px, same format: JPEG stays JPEG at the same quality, clockwork-beetle's PNG stays PNG). Geometry, UVs, bones, skin weights and animation clips are byte-identical to the game's current `char.glb` (every non-picture byte range and every accessor compared).
-- Every original was first checked to be byte-identical to factory/issue-8 (git hash), so these are the game's own models, not older ones.
-- The Studio's Model Editor keeps its full 1024 px bodies for editing; the look numbers do not change (textures don't move anything).
+- 512 px: 15 dwarves, 10 gnomes, 8 goblins (goblin-bomber, goblin-grunt, goblin-scrapper, goblin-slinger, goblin-sneak, rotgut-grenadier, shard-guzzler, grubnaks-big-boss-troll).
+- 768 px (512 looked noticeably softer in side-by-side close-ups): clockwork-beetle, the-great-steam-golem, gnome-tinker, junk-shaman, skullbasher-rusher, blastrat-sapper, wolf-rider.
+- Crystal node: `round27-shrunk/mines-crystal-node.glb` → `public/models/mines/crystal-node.glb` (3 maps 1024 → 512 px).
+- Only if Ken answers Yes to `decisions/r27-size-option-a` (Oreheart Studio): `round27-shrunk/option-a-needs-ken/` (shiv-rat, goblin-pebbler, goblin-scrounger, goblin-smith-miner bodies and Grubnak's throne, 768 → 512 px).
+- Only the pictures changed (Lanczos, the original's JPEG quality tables and 4:2:0, PNG stays PNG, normal maps re-normalised). Geometry, UVs, bones, skin weights, clips and the glTF JSON (apart from byte offsets) are byte-identical to the game's files; every original was checked against factory/issue-8 by git hash first.
+- The Studio's Model Editor keeps its full-size bodies for editing; the look numbers do not change (textures don't move anything).
 
-| File (in `round27-shrunk/`) | Faction | Old bytes | New bytes | Replaces `public/models/creatures/` |
-|---|---|---|---|---|
-| axe-thrower-char.glb | dwarves | 961,544 | 756,472 | axe-thrower/char.glb |
-| barrelback-courier-char.glb | dwarves | 926,008 | 729,988 | barrelback-courier/char.glb |
-| brewmaster-char.glb | dwarves | 902,916 | 710,212 | brewmaster/char.glb |
-| crystal-drunk-delver-char.glb | dwarves | 994,884 | 803,552 | crystal-drunk-delver/char.glb |
-| deepforge-crossbowman-char.glb | dwarves | 863,928 | 680,296 | deepforge-crossbowman/char.glb |
-| dwarf-miner-char.glb | dwarves | 941,100 | 728,780 | dwarf-miner/char.glb |
-| dwarf-pickman-char.glb | dwarves | 1,002,084 | 806,884 | dwarf-pickman/char.glb |
-| dwarf-stoneback-char.glb | dwarves | 941,036 | 731,260 | dwarf-stoneback/char.glb |
-| grimhold-ravager-char.glb | dwarves | 963,176 | 750,296 | grimhold-ravager/char.glb |
-| ironhammer-berserker-char.glb | dwarves | 968,716 | 773,704 | ironhammer-berserker/char.glb |
-| oathbound-pikeman-char.glb | dwarves | 967,356 | 771,532 | oathbound-pikeman/char.glb |
-| queen-brunhilda-stonebeard-char.glb | dwarves | 971,608 | 759,704 | queen-brunhilda-stonebeard/char.glb |
-| ram-rider-char.glb | dwarves | 956,372 | 763,072 | ram-rider/char.glb |
-| rune-splitter-char.glb | dwarves | 971,104 | 767,920 | rune-splitter/char.glb |
-| shieldbeard-char.glb | dwarves | 1,026,396 | 798,748 | shieldbeard/char.glb |
-| clockwork-beetle-char.glb | gnomes | 3,242,480 | 1,230,460 | clockwork-beetle/char.glb |
-| gearward-sentinel-char.glb | gnomes | 951,772 | 748,524 | gearward-sentinel/char.glb |
-| glyphshield-warden-char.glb | gnomes | 1,019,184 | 788,848 | glyphshield-warden/char.glb |
-| gnome-cogger-char.glb | gnomes | 1,053,268 | 810,340 | gnome-cogger/char.glb |
-| gnome-illusionist-char.glb | gnomes | 889,316 | 681,684 | gnome-illusionist/char.glb |
-| gnome-smith-miner-char.glb | gnomes | 950,228 | 736,676 | gnome-smith-miner/char.glb |
-| gnome-tinker-char.glb | gnomes | 1,005,104 | 767,712 | gnome-tinker/char.glb |
-| gnome-widget-char.glb | gnomes | 977,620 | 751,572 | gnome-widget/char.glb |
-| hexwright-apprentice-char.glb | gnomes | 979,220 | 760,804 | hexwright-apprentice/char.glb |
-| phase-stalker-char.glb | gnomes | 1,057,264 | 834,800 | phase-stalker/char.glb |
-| runic-siphoner-char.glb | gnomes | 986,524 | 760,092 | runic-siphoner/char.glb |
-| spark-gnome-char.glb | gnomes | 1,043,048 | 801,860 | spark-gnome/char.glb |
-| the-great-steam-golem-char.glb | gnomes | 1,091,764 | 834,352 | the-great-steam-golem/char.glb |
-| **Total (28 bodies)** | | **29,605,020** | **21,840,144** | saves **7,764,876** |
+## SIZE (measured Oct 28 ~22:40)
 
-## SIZE (Ken OK'd the body shrink, Oct 28)
-
-Measured from the factory/issue-8 file list (all of `projects/oreheart-8/public/`, 1 MB = 1,000,000 bytes):
-- Game now (Round 26 is in): **95.38 MB**. (My earlier "about 94.9 MB" was too low; the real number is 95.38.)
-- + the 15 new parts above (+4.81 MB) → **100.19 MB** without shrinking – that would have been over 100 MB.
-- − 15 dwarf bodies at 512 px (−3.03 MB) → 97.17 MB (not enough).
-- − 13 gnome bodies at 512 px (−4.74 MB) → **92.43 MB after Round 27**. Under 95 MB with about 2.6 MB to spare.
+From the factory/issue-8 file list (all of `projects/oreheart-8/public/`, 1 MB = 1,000,000 bytes): game now **93.58 MB**; + 15 parts 98.39; − 15 dwarf bodies 95.36; − 13 gnome bodies 91.70; + 2 rigged models 96.69; − 12 goblin bodies 94.54; + pickaxe + sceptre 95.61; − crystal node maps **95.15 MB (over 95)**; − option A, only if Ken says Yes: **94.55 MB**. Round 27 waits for Ken's answer to `decisions/r27-size-option-a`. (This replaces the older 95.38 / 92.43 MB lines.)
 
 ## Grubnak scepter (optional, grubnak3d.ts)
 
@@ -140,6 +106,25 @@ Ken's look: `{ bone: 'RightHand', pos: [-2.754, 16.04, 5.84], rot: [-117, 34, 15
 'shieldbeard': [{ name: 'medic-pack', file: 'medic-pack.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [2.392, 13.129, -18.358], rot: [-154.103, -0.121, 171.756], scale: [25.761, 25.761, 25.761] } }],
 ```
 
+## Rigged models (Round 27; Ken, Oct 28: put both rigged models in)
+
+Clay's rigged Anvilsworn Miner and Thane Borgo Gravelgrim (Meshy, 24 bones). Ken wants both in Round 27; Studio `library/<card>.src` = `anvilsworn-miner-rig-oct28` / `borgo-rig-oct28` (same bytes as the files on main). **Their setups were made by Forge/Ledger** (Oct 28 ~22:25 UTC, saved with the Model Editor's "Save as default look") from Ken's other setups and the card art; **Ken still has to check them** (`characters/<card>.steps.editor` = waiting). If Ken changes them, these numbers are updated.
+
+| Card | Body (file → game) | Studio body scale | Item | Bone | position | rotationDeg (XYZ) | scale |
+|---|---|---|---|---|---|---|---|
+| dwarf-smith-miner (Anvilsworn Miner) | `anvilsworn-miner-rig-oct28.glb` → `dwarf-smith-miner/char.glb` | 1 | Pickaxe (`stonebreaker-pickaxe`, `parts/stonebreaker-pickaxe.glb` → `dwarf-smith-miner/pickaxe.glb`) | RightHand | [-6.164, 15.149, 10.053] | [-66.649, 52.929, 128.399] | 38 |
+| cmd-borgo (Thane Borgo Gravelgrim) | `borgo-rig-oct28.glb` → `cmd-borgo/char.glb` | 1 | Gear sceptre (`borgo-sceptre`, `parts/borgo-sceptre.glb` → `cmd-borgo/sceptre.glb`) | LeftHand | [-2.502, -5.086, 3.574] | [8.993, 35.932, 157.604] | 50 |
+
+- How they were made: body scale 1 like all of Ken's dwarves (1.0 squares; open decision `dwarf-heights`). The Miner holds the pickaxe the way Ken's Gemdrunk Deepdelver holds his (same angle to the body, grip moved onto the hand); the card art shows only a pickaxe, so the Stonebreaker hammer is not used. Borgo holds the sceptre upright in his **left** hand as in his card art, foot on the ground. **No throne** for Borgo: Ken's commander setup (Grubnak) doesn't use one.
+- Parts: the Studio's own GLBs with textures 512 → 256 px (like the other parts); geometry and all other bytes identical. pickaxe 660,548 → 497,300 bytes, sceptre 754,452 → 576,524.
+- Clips: Idle, Casual_Walk, Heavy_Hammer_Swing, Hit_Reaction, Dead (+ Charged_Axe_Chop on the Miner).
+- Heights: idle-0 raw heights 0.9432 (Miner) and 1.0005 (Borgo) → `LOOKS.height` 0.943 and 1.001 (scale 1). Studio standing height 1.0 for both (setupSummary: Miner 1.02 tall with the pickaxe, Borgo 1.00).
+
+```ts
+'dwarf-smith-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-6.164, 15.149, 10.053], rot: [-66.649, 52.929, 128.399], scale: [38, 38, 38] } }],
+'cmd-borgo': [{ name: 'sceptre', file: 'sceptre.glb', bone: ['LeftHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-2.502, -5.086, 3.574], rot: [8.993, 35.932, 157.604], scale: [50, 50, 50] } }],
+```
+
 ## Heights from Ken's Studio setups (binding, Ken Oct 28 evening)
 
 **Ken, Oct 28: heights DO matter now.** The game must match Ken's Studio setups for height and scale too. This replaces "height is information only" above. The data is in the JSON under **`heightsForGame`** (one entry per character with a saved Studio setup — 47 characters, read from Oreheart Studio `library/<card>.setup` on Oct 28 at 18:10 UTC).
@@ -166,6 +151,8 @@ Ken's look: `{ bone: 'RightHand', pos: [-2.754, 16.04, 5.84], rot: [-117, 34, 15
 | dwarf-miner (Riot Shield Bearer) | 1 | 1 | 0.95 | **1.058** |  | yes |
 | dwarf-pickman (Ironjaw Big Back) | 1 | 1 | 0.95 | **0.95** |  | yes |
 | dwarf-stoneback (Granite Oathkeeper) | 1 | 1 | 0.95 | **1.001** |  | yes |
+| dwarf-smith-miner (Anvilsworn Miner, rigged Oct 28) | 1 | 1 | — (not in the game yet) | **0.943** | | yes (R): setup by Forge/Ledger, waiting for Ken's check |
+| cmd-borgo (Thane Borgo Gravelgrim, rigged Oct 28) | 1 | 1 | — (not in the game yet) | **1.001** | | yes (R): commander, setup by Forge/Ledger, waiting for Ken's check |
 | gearward-sentinel (Gearward Sentinel) | 0.318 | 0.318 | 0.85 | **0.322** |  | yes |
 | glyphshield-warden (Glyphshield Warden) | 0.38 | 0.38 | 0.85 | **0.38** |  | yes |
 | gnome-cogger (Voldawright) | 0.25 | 0.25 | 0.85 | **0.261** |  | yes |
@@ -218,6 +205,8 @@ export const LOOKS: Record<string, { height: number; stretch: [number, number, n
   'dwarf-miner': { height: 1.058, stretch: [1, 1, 1] },
   'dwarf-pickman': { height: 0.95, stretch: [1, 1, 1] },
   'dwarf-stoneback': { height: 1.001, stretch: [1, 1, 1] },
+'dwarf-smith-miner': { height: 0.943, stretch: [1, 1, 1] },
+'cmd-borgo': { height: 1.001, stretch: [1, 1, 1] },
   'gearward-sentinel': { height: 0.322, stretch: [1, 1, 1] },
   'glyphshield-warden': { height: 0.38, stretch: [1, 1, 1] },
   'gnome-cogger': { height: 0.261, stretch: [1, 1, 1] },

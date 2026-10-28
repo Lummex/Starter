@@ -1205,6 +1205,56 @@
     },
     "groupHeight": 0.697
    }
+  },
+  "dwarf-smith-miner": {
+   "studioSetupSavedAt": "2026-10-28T22:25Z",
+   "studioModel": "anvilsworn-miner-rig-oct28.glb",
+   "sameFileAsGame": null,
+   "note": "rigged model, new in Round 27 (not in the game yet); setup by Forge/Ledger, waiting for Ken's check",
+   "studioBodyScale": 1,
+   "studioStretch": [
+    1,
+    1,
+    1
+   ],
+   "studioStandingHeightSquares": 1,
+   "idleClipUsedByGame": "Idle",
+   "rawIdle0Height": 0.9432,
+   "gameHeightToday": null,
+   "LOOKS": {
+    "height": 0.943,
+    "stretch": [
+     1,
+     1,
+     1
+    ]
+   },
+   "round27": "yes (R)"
+  },
+  "cmd-borgo": {
+   "studioSetupSavedAt": "2026-10-28T22:25Z",
+   "studioModel": "borgo-rig-oct28.glb",
+   "sameFileAsGame": null,
+   "note": "rigged commander, new in Round 27 (not in the game yet); setup by Forge/Ledger, waiting for Ken's check; no throne",
+   "studioBodyScale": 1,
+   "studioStretch": [
+    1,
+    1,
+    1
+   ],
+   "studioStandingHeightSquares": 1,
+   "idleClipUsedByGame": "Idle",
+   "rawIdle0Height": 1.0005,
+   "gameHeightToday": null,
+   "LOOKS": {
+    "height": 1.001,
+    "stretch": [
+     1,
+     1,
+     1
+    ]
+   },
+   "round27": "yes (R)"
   }
  },
  "cards": {
@@ -1229,7 +1279,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -1337,7 +1387,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -1454,7 +1504,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -1821,7 +1871,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -1987,7 +2037,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -2203,7 +2253,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -2252,7 +2302,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -2510,7 +2560,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -2618,7 +2668,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -2893,7 +2943,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -3001,7 +3051,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -3336,7 +3386,7 @@
    },
    "height": {
     "bodyHeightSquares": 1,
-    "withItemsHeightSquares": 1.0,
+    "withItemsHeightSquares": 1,
     "editorModelScale": 1,
     "editorStretch": [
      1,
@@ -3430,6 +3480,179 @@
      "note": "Ken, Oct 28: giant shoulder pad that is also a shield, on his RIGHT shoulder, as on the card art. Sketch draws the sheet, Ken approves, Clay makes it in Meshy (once), then Ledger attaches it in the Studio and exports it. Nothing to build for it in Round 27."
     }
    ]
+  },
+  "dwarf-smith-miner": {
+   "cardName": "Anvilsworn Miner",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T22:25Z by Forge/Ledger (Model Editor, Save as default look); waiting for Ken's check",
+   "model": {
+    "editorKey": "anvilsworn-miner-rig-oct28",
+    "editorFile": "models/anvilsworn-miner-rig-oct28.glb.txt",
+    "bytes": 2603600,
+    "repoFile": "factory-design/design/models/anvilsworn-miner-rig-oct28.glb",
+    "sameFileAsGame": null,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead",
+     "Charged_Axe_Chop"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "BINDING: LOOKS in heightsForGame"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ]
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Pickaxe",
+     "editorItemName": "Anvilsworn Miner – Pickaxe",
+     "accessoryId": "pickaxe",
+     "kind": "tool",
+     "glb": {
+      "editorKey": "stonebreaker-pickaxe",
+      "editorFile": "models/stonebreaker-pickaxe.glb.txt",
+      "bytes": 660548
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -6.164,
+      15.149,
+      10.053
+     ],
+     "rotationDeg": [
+      -66.649,
+      52.929,
+      128.399
+     ],
+     "scale": 38,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/dwarf-smith-miner/pickaxe.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/stonebreaker-pickaxe.glb",
+      "bytes": 497300,
+      "textures": "256 px"
+     }
+    }
+   ]
+  },
+  "cmd-borgo": {
+   "cardName": "Thane Borgo Gravelgrim",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T22:25Z by Forge/Ledger (Model Editor, Save as default look); waiting for Ken's check",
+   "model": {
+    "editorKey": "borgo-rig-oct28",
+    "editorFile": "models/borgo-rig-oct28.glb.txt",
+    "bytes": 2384088,
+    "repoFile": "factory-design/design/models/borgo-rig-oct28.glb",
+    "sameFileAsGame": null,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "BINDING: LOOKS in heightsForGame"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ]
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Gear sceptre",
+     "editorItemName": "Thane Borgo Gravelgrim – Gear sceptre",
+     "accessoryId": "sceptre",
+     "kind": "weapon",
+     "glb": {
+      "editorKey": "borgo-sceptre",
+      "editorFile": "models/borgo-sceptre.glb.txt",
+      "bytes": 754452
+     },
+     "attachedTo": {
+      "bone": "LeftHand"
+     },
+     "position": [
+      -2.502,
+      -5.086,
+      3.574
+     ],
+     "rotationDeg": [
+      8.993,
+      35.932,
+      157.604
+     ],
+     "scale": 50,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/cmd-borgo/sceptre.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/borgo-sceptre.glb",
+      "bytes": 576524,
+      "textures": "256 px"
+     }
+    }
+   ],
+   "type": "commander",
+   "throne": "none (Ken's commander setups do not use one)"
   }
  }
 }
