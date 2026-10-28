@@ -1,5 +1,5 @@
 {
- "note": "Runway reference videos (owner, Oct 27). Each job makes one short clip of one character doing one move, from a still of its 3D model. Runs ONCE per job. The owner approves a clip before the Blender worker uses its frames. Owner rules (Oct 27): body and limb motion only for rigging (face frozen, no lips, no blinking); smooth looping game animation; two moves per clip (first half / second half); front, side and back views. Cost rule (owner, Oct 28): use the cheapest image-to-video model and lowest resolution; set per-job \"model\" and \"ratio\" (default stays gen4.5).",
+ "note": "Runway reference videos (owner, Oct 27). Each job makes one short clip of one character doing one move, from a still of its 3D model. Runs ONCE per job. The owner approves a clip before the Blender worker uses its frames. Owner rules (Oct 27): body and limb motion only for rigging (face frozen, no lips, no blinking); smooth looping game animation; two moves per clip (first half / second half); front view only (owner, Oct 28). Cost rule (owner, Oct 28): use the cheapest image-to-video model and lowest resolution; set per-job \"model\" and \"ratio\" (default stays gen4.5).",
  "jobs": [
   {
    "id": "goblin-bomber-idle",
@@ -450,6 +450,98 @@
     }
    ],
    "prompt": "A cartoon goblin with green skin, spiky black and yellow hair and purple rags, holding a round tan ball (a cartoon skull) in his right hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), overhand toss: he swings his right arm back and up over his shoulder in a wind-up, shifts his weight forward and tosses the ball overhand like a baseball, forward toward the camera and out of the picture past its side, then his arm follows through down across his body. Part 2 (3-6 s), reload: he straightens up, reaches back to the pouch behind his hip, brings out a new identical tan ball in his right hand and returns to the standing pose from the start so the clip loops. Feet stay in the same small spot. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D game animation."
+  },
+  {
+   "id": "goblin-scrapper-idle-bowl",
+   "character": "goblin-scrapper",
+   "move": "idle-bowl",
+   "view": "front",
+   "image": "goblin-scrapper--front-ball.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "idle",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "bowling-attack",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "Cartoon goblin in a purple hood and big brown boots, holding a round brown bowling ball in his right hand, low in front of him. Front view. Two parts. The ball stays in front of him, never through his body or the floor. Part 1 (0-3 s), idle: he stands in place, breathes, shifts his weight a little and gently swings the ball forward and back once, feet planted. Part 2 (3-6 s), bowling: he swings the ball back behind his right hip, steps forward a little, bends low and swings his arm forward underhand, letting the ball go low in front of him so it rolls away along the floor toward the camera, then straightens up. Only body and limbs move. Face frozen, lips still, no blinking. Camera locked, full body in frame, plain grey background. Smooth 3D cartoon game animation."
+  },
+  {
+   "id": "goblin-scrapper-spin-shot",
+   "character": "goblin-scrapper",
+   "move": "spin-shot",
+   "view": "front",
+   "image": "goblin-scrapper--front-ball.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "ball-spin",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "basketball-shot",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "Cartoon goblin in a purple hood and big brown boots, holding a round brown bowling ball in his right hand, low in front of him. Front view. Two parts. The ball stays in front of him, never through his body or the floor. Part 1 (0-3 s), ball trick: he lifts the ball in front of his chest and spins it on one fingertip like a basketball trick, tapping it with his other hand. Part 2 (3-6 s), basketball shot: he holds the ball in both hands in front of his chest, bends his knees, hops and pushes it up high in front of him; it comes down in front of him and lands on the floor with a heavy thud and stops dead, no bounce, no roll. Only body and limbs move. Face frozen, lips still, no blinking. Camera locked, full body in frame, plain grey background. Smooth 3D cartoon game animation."
+  },
+  {
+   "id": "gyrocopter-ace-hover-fly",
+   "character": "gyrocopter-ace",
+   "move": "hover-fly",
+   "view": "front",
+   "image": "gyrocopter-ace--front-v2.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "hover-idle",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "fly-forward",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "Small cartoon gnome girl pilot, blue ponytail, goggles on her forehead, with a propeller and two bat-like mechanical wings on a backpack on her BACK (propeller behind her shoulders, never on her head). Front view. Two parts. Part 1 (0-3 s), hover idle: she floats just above the floor, propeller spinning, wings flapping slowly, body bobbing gently, feet hanging relaxed, arms loose. Part 2 (3-6 s), flying forward: she leans her whole body forward toward the camera, wings flap faster, legs trail back, arms swept back, staying in the same spot, then rises back to the start hover pose so it loops. Only body and limbs move. Face frozen, lips still, no blinking. Camera locked, full body in frame, plain grey background. Smooth 3D cartoon game animation."
+  },
+  {
+   "id": "gyrocopter-ace-spark-knock",
+   "character": "gyrocopter-ace",
+   "move": "spark-knock",
+   "view": "front",
+   "image": "gyrocopter-ace--front-v2.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "spark-throw",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "knocked-back",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "Small cartoon gnome girl pilot, blue ponytail, goggles on her forehead, with a propeller and two bat-like mechanical wings on a backpack on her BACK (propeller behind her shoulders, never on her head). Front view. Two parts. She hovers just above the floor the whole time, propeller spinning, wings flapping slowly. Part 1 (0-3 s), spark toss: she pulls her right hand back by her shoulder, a small glowing spark appears in her palm, she pushes the arm forward toward the camera and lets it go, then returns to hover. Part 2 (3-6 s), bumped back: like a gust of wind, her chest and head tip back, arms swing out, she dips lower and the wings pause, then she recovers to the start hover pose so it loops. Only body and limbs move. Face frozen, lips still, no blinking. Camera locked, full body in frame, plain grey background. Smooth 3D cartoon game animation."
   }
  ]
 }
