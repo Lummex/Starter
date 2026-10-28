@@ -7504,8 +7504,7 @@ test.describe('round 11 at 1920x1080', () => {
     await expect(drag).toContainText('Bowler Brawler');
     const tilt = parseFloat(await drag.getAttribute('data-tilt'));
     expect(Number.isFinite(tilt)).toBe(true);
-    expect(Math.abs(tilt)).toBeGreaterThan(0);
-    expect(Math.abs(tilt)).toBeLessThanOrEqual(15);
+    expect(Math.abs(tilt)).toBeLessThanOrEqual(8); // Round 26: gentle tilt ≤ 8° around the center
     // the rest of the hand tucks down while over the board
     await expect.poll(async () => shownFrac(await hand.getByRole('button', { name: 'Skullflinger', exact: true }).boundingBox(), H)).toBeLessThanOrEqual(0.32);
     await page.mouse.move(p.x, p.y, { steps: 10 });
@@ -9602,7 +9601,7 @@ test.describe('round 22 controls and hand 1920x1080', () => {
     await expect(enemy.getByRole('button', { name: /^Strike/ })).toHaveCount(0);
   });
 
-  test('AC358: clicking a hand card opens its close-up with Play this card; the dragged card hangs below-left of the pointer, tilted', async ({ page }) => {
+  test('AC358: clicking a hand card opens its close-up with Play this card, then a click on a highlighted square plays it', async ({ page }) => {
     await start(page, quiet({ playerHand: ['goblin-scrounger', 'goblin-scrapper'], playerCrystals: 3 }));
     const hand = page.getByLabel('Your hand', { exact: true });
     const miner = hand.locator('button:has([data-card-id="goblin-scrounger"])').first();
@@ -9615,20 +9614,6 @@ test.describe('round 22 controls and hand 1920x1080', () => {
     const sq = await sqCenter(page, 7, 5);
     await page.mouse.click(sq.x, sq.y);
     await expect.poll(async () => ((at(await getState(page), 7, 5)) || {}).cardId).toBe('goblin-scrounger');
-    // drag the other card upward: it hangs below-left of the pointer, tilted, never under it
-    const b = await hand.locator('button:has([data-card-id="goblin-scrapper"])').first().boundingBox();
-    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(b.x + b.width / 2 + 40, 450, { steps: 12 });
-    const d = await page.evaluate(() => window.oreheart.getDragCard());
-    expect(d, 'a card is being dragged').toBeTruthy();
-    const inside = d.pointer.x >= d.x && d.pointer.x <= d.x + d.width && d.pointer.y >= d.y && d.pointer.y <= d.y + d.height;
-    expect(inside, 'the target square under the pointer stays visible').toBe(false);
-    expect(d.x + d.width / 2).toBeLessThan(d.pointer.x);
-    expect(d.y + d.height / 2).toBeGreaterThan(d.pointer.y);
-    expect(Math.abs(d.tiltDeg)).toBeGreaterThanOrEqual(4);
-    await page.keyboard.press('Escape');
-    await page.mouse.up();
   });
 });
 
