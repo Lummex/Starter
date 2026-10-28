@@ -12,8 +12,13 @@ One page for the whole production line, dark look like Motion References, works 
 - Tap a row: all 10 steps with owner, status, note, date; Ken's note box (Save note); Gauge's checklist (sections Model, Accessories, Animations, Editors, Game files; pass / fail / not checked; Must-have / Nice-to-have; what's missing; who fixes it; date checked).
 - Link straight to one character: add `#<card-id>`, e.g. https://claude.ai/artifact/KwnPNScc2RjbM98WZ7R79G#gyrocopter-ace
 
+## Pictures (Ken asked mid-job, Oct 28)
+Tap a character: a Pictures row shows Card art, Reference sheet, 3D model and Model Editor, each with its step status; tap one to see it big. The board and the waiting list show the card art too.
+- Copied from the Model Editor into this program (server-side copy, nothing re-made): card art = Model Editor `thumbs/<id>.webp`; sheet = the approved sheet ref; 3D / Model Editor = the preview picture saved in the Model Editor (same picture for both today). The page trims the empty background off 3D pictures.
+- 19 characters have no saved 3D picture yet (the dwarves and some gnomes without an Editor setup), so they show "No picture saved yet".
+
 ## Checked
-Opened it in my own Chrome tab: board, counts, waiting list, failed filter and the character panel all render with the live data. Saved a test note on Bowler Brawler, read it back with ArtifactData (kenNote, kenNoteAt, kenNoteBy were there), then put the record back clean. Pinned: yes (Artifact list shows "mine, pinned").
+Opened it in my own Chrome tab: board, counts, waiting list, failed filter and the character panel all render with the live data. Opened Bare Knuckle Lunatic and Thunderwing Gyronaut: all four pictures load, tap-to-enlarge works. Saved a test note on Bowler Brawler, read it back with ArtifactData (kenNote, kenNoteAt, kenNoteBy were there), then put the record back clean. Pinned: yes (Artifact list shows "mine, pinned").
 
 ## Database layout (for Gauge, Spring, Ledger, Anvil, Forge)
 Use the ArtifactData tool with url `https://claude.ai/artifact/KwnPNScc2RjbM98WZ7R79G`. Always `get` first and pass `if_version`. Use `update` (not `set`) so you don't wipe Ken's note. The page updates live.
@@ -22,6 +27,7 @@ Use the ArtifactData tool with url `https://claude.ai/artifact/KwnPNScc2RjbM98WZ
 ```
 name, faction, role, rarity, order,
 kenNote, kenNoteAt, kenNoteBy        (written by the page; don't overwrite)
+images: { art, sheet, model, editor }  (picture paths in THIS program: "thumbs/<id>.webp", "refs/...webp" or "/_blob/<asset id>")
 updatedAt, updatedBy
 steps: {
   art | sheet | model | editor | runway | blender | editors | gauge | preview | live : {
@@ -36,6 +42,8 @@ steps: {
 Step order and owners: art (Brush ✋), sheet (Sketch ✋), model (Clay ✋), editor (Ledger), runway (Spring ✋), blender (Spring ✋), editors (Ledger), gauge (Gauge), preview (Anvil ✋), live (Anvil, Ken's OK).
 "waiting" = waiting for Ken. Only set it on ✋ steps. Non-✋ steps show "Done" when approved.
 To change one step, `update` the whole `steps.<key>` object is safest: read the doc, change that step, write `steps` back with `if_version`.
+
+To add a new picture: upload/copy it into this program's assets (Artifact publish, asset:true; copies get a NEW id), then `update` images.<step> with "/_blob/<new id>". Ask Wright if unsure.
 
 ### Collection `checks` (one doc per card id) — Gauge owns this
 ```
