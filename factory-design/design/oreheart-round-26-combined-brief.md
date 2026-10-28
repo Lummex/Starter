@@ -2,7 +2,7 @@
 
 **This is the current round. It is the whole job.** The game is `projects/oreheart-8` on branch `factory/issue-8`.
 
-- **Round 24 (Skullflinger skull throw) and Round 25 (card drag on its own) are discontinued as separate rounds.** Do not build them from any older text. Round 25's card-drag work is folded into this brief (item A1). The skull throw that build #55 already put in the game stays exactly as it is: do not remove, redo or extend it.
+- **Round 24 (Skullflinger skull throw) and Round 25 (card drag on its own) are discontinued as separate rounds.** Do not build them from any older text. Round 25's card-drag work is folded into this brief (item A1). **Change (owner, Oct 28): the owner rejected the Round 24 skull throw that build #55 put in the game. Remove it — see item (0) at the top of the must-do list below.**
 - If `factory-data/oreheart-8/SPEC.md` still lists Round 24 or Round 25 work, replace that part of the spec with this round. Older round sections in `oreheart-phase-1b-brief.md` are history only.
 
 ## Rules for this round (owner)
@@ -12,11 +12,24 @@
 - **Owner art is binding.** Use existing art only; never invent a picture, emblem or icon.
 - **Editors must match the game.** Every value you choose or change below goes in `factory-data/oreheart-8/REPORT.md` under **"Editor updates needed"** (what, which file, which editor).
 - **Priority if the budget runs out** — do them in this order and stop cleanly at a working state:
+  0. **Item (0): remove the Round 24 Skullflinger skull throw (do this first),**
   1. A1 card drag, A2 full screen, A6 Done button, A3 paying, A8 Respond window, A10 card flicker,
   2. then A4, A5, A7, A9,
   3. then part B (models),
   4. then part C (failing checks).
   In REPORT.md, list each item as Done / Partly / Not started.
+
+---
+
+## Must do first
+
+### (0) Remove the Round 24 Skullflinger skull throw (owner, Oct 28)
+Remove the Round 24 Skullflinger skull throw. Ken rejected it. Take out only the skull-throw code and effects added in the Round 24 commit, and put the Skullflinger's attack back the way it was before that commit (his normal attack using his Skull_Throw / OH_Attack clip, with no flying-skull projectile). Keep the other #55 changes (wide-window fill, hand overlap, menus) unless they conflict with Round 26 items.
+
+- The Round 24 commit on `factory/issue-8` is `7018719` ("Round 24: Skullflinger throws skulls that bonk off the target"). It changed `src/ui/creature3d.ts`, `src/ui/scene.ts`, `src/style.css` and `BUILD_NOTES.md` (+ two screenshots). Undo only its skull-throw parts; do not revert the later commits (`da7b348` wide-window fill / hand overlap / rest position, `b37b320`, `c5a3242`, `63e00e6` menus / letterbox / theme files).
+- Remove any Round 24 skull-throw styles from `style.css` and the Round 24 notes/screenshots references from `BUILD_NOTES.md` (screenshots can stay as history; do not show them as current).
+- If a hidden check still expects the flying skull, do NOT keep the projectile: list that check in REPORT.md as "conflicts with owner item (0)".
+- **AC396** During a Skullflinger attack no flying-skull projectile object is created in the scene; he still plays his attack clip (`OH_Attack` if his `clips` map has it, otherwise `Skull_Throw`) and the hit still lands on the target.
 
 ---
 
@@ -106,9 +119,9 @@ Hovering hand cards (and the close-up) sometimes makes them flicker or turn see-
 `src/ui/creature3d.ts` picks clips by name **or by position** from the old Meshy list (`c.animations[i]`, line ~112) and only reads `events.json` for attacks. Change it so that, for every creature:
 1. If `models.json` has a **`clips` map** (e.g. `idle → OH_Idle`, `walk → OH_Walk`, `attack → OH_Attack`, `hit → OH_Hit`, `death → OH_Death`, reactions, `special`) and/or `events.json` lists clips, use **those clip names**. Never fall back to "the clip at the same position".
 2. If a role has no clip in the map (e.g. no `OH_Death` yet), use the old Meshy clip for that role **by name** only, and list it in REPORT.md as "missing clip".
-3. Events in `events.json` (e.g. `projectile_release`) keep working (Skullflinger's throw must stay the same).
+3. Events in `events.json` (e.g. `projectile_release`) keep working (Skullflinger: his attack clip plays as normal, but with no flying-skull projectile — see item (0)).
 - **AC390** For every creature with a `clips` map, the clip playing in idle/walk/attack/hit is the one named in the map (check `current()` / the mixer's active clip name).
-- **AC391** Skullflinger still plays `Skull_Throw` with the release at the `events.json` time (AC358–AC360 keep passing).
+- **AC391** Skullflinger plays his normal attack clip (`OH_Attack` / `Skull_Throw`) with no flying-skull projectile (item (0)). Any check that expects the Round 24 flying skull is retired; list it in REPORT.md.
 
 ### B12. Parts placed like the owner's Model Editor
 The owner's Model Editor setups are exported (by Ledger) to **`factory-design/design/models/editor-setups-2026-10-28.json`** on main (plus any parts GLBs it lists, next to it). Read that file. For each character in it, copy the **accessory setup** (bone, position, rotation, scale) into `PARTS` in `creature3d.ts` so weapons/items sit exactly like in the editor: grunt (frying pan at his side, not behind his back), slinger (skull in hand), junk-shaman (staff as in the editor), skullbasher-rusher (mace + big shield in left hand), shiv-rat (dagger + **backpack**), and any others in the file. Copy listed part GLBs into `public/models/creatures/<id>/`. **Heights stay as they are now** (the owner says they don't matter yet).
