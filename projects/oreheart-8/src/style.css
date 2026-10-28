@@ -1589,7 +1589,7 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 body *:not(.ohcard):not(.ohcard *):not(.cmd-card):not(.cmd-card *):not(.hand-card):not(.hand-card *):not(svg *){color:#fff!important;-webkit-text-fill-color:#fff!important}
 body *::placeholder{color:#fff!important}
 #app:not(:has(.match)) .btn,#app:not(:has(.match)) .btn *,.dialog .btn,.dialog .btn *,#app .btn.primary{color:#fff!important;-webkit-text-fill-color:#fff!important}
-.mb-pc.mb-btn .mb-txt{font-style:italic!important}
+.mb-txt,.mb-pc.mb-btn .mb-txt{font-style:italic!important}
 
 /* Round 16: every text outside the card faces is plain white and italic */
 body :not(#_w):not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id],[data-card-id] *,[data-card-back] *,.hand-card,.hand-card *,.mull-card *,svg *,canvas){color:#fff!important;-webkit-text-fill-color:#fff!important}
@@ -1600,7 +1600,7 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 .cmd-win,.cmd-win *{color:#fff!important;-webkit-text-fill-color:#fff!important}
 @media (max-height:420px){.db-stage .db-sliderbox{left:61.5%!important;top:1%!important;width:17%!important;height:12%!important}.db-stage .db-sliderbox .f-field{flex-direction:column;align-items:flex-start;gap:0}.db-stage .db-sliderbox input[type=range]{width:100%;flex:none}}
 .db-cmdinner{display:flex;gap:6%;align-items:stretch;justify-content:flex-start;width:100%;height:100%}
-.match .o-deck .pile-n:not(#_w){font-weight:var(--ow,700)!important;font-style:var(--os,italic)!important}
+.match .o-deck .pile-n:not(#_w){font-weight:var(--ow,700)!important;font-style:italic!important}
 .cmd-win:not(#_w) *:not(#_x),.screen.setup .cmd-card .cmd-win *:not(#_x){color:#fff!important;-webkit-text-fill-color:#fff!important}
 .token .tk-stats:not(#_w){transform:translate(-50%,calc(var(--bw)*.3))!important}
 

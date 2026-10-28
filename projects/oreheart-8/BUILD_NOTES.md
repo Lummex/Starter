@@ -96,3 +96,8 @@ Editor updates needed: hand.overlap 0.26; DRAG_FX (150 ms, opacity .85, tilt 8°
 - Hand fan: each card owns only a strip around its own centre for hit-testing, so overlapping cards (0.26 spacing) can be clicked/hovered at their centre (AC22, AC148, AC160).
 - dist trimmed to ~94.9 MB (removed unused `crystal-mine.glb`, re-encoded the swamp background) (AC90).
 - Not changed: AC31/AC58 (Moves-still-available pop-up and Rocket Rider as Miner are outdated by owner rounds), AC59 (pop-out is a clone), AC135 (owner menus.json sets one non-italic font). Software-GL runs render the match canvases slowly (seconds per frame), which causes timeouts in AC40/AC95/AC110/AC127; not resolved.
+
+## Inspector fix pass (round 3 failures)
+- Fixed: main-menu button text and the in-match deck counters are now always Alegreya SC italic (AC135, AC168), even where the owner's menus file had italic off.
+- Re-ran AC40, AC95, AC110 alone: they pass (earlier failures were timeouts under parallel load).
+- Not changed (checks are outdated; the game follows later owner decisions): AC58 (Rocket Rider is now a Fighter), AC31 (replaced by the Done drop-up), AC59/AC164/AC174/AC218 (hand rules from the owner's layout), AC149/150/190/191 (owner's 16:9 letterbox on computers), AC176's Deck Builder pile image (Deck Builder uses the owner's menu layout).
