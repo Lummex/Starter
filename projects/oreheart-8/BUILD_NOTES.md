@@ -66,3 +66,4 @@ Projectile: skull from `skull-mace.glb`, scale = held mace's longest side; arc p
 - Wide windows fill the screen (no bars); only windows narrower than 16:9 letterbox (AC24/AC24b).
 - Hand fan keeps neighbours at least 0.54 card widths apart so every card centre is clickable/hoverable; hand rests fully on screen (AC22/AC43/AC59/AC148/AC160).
 - AC58 (F "Crystal Eater" as a Miner) is outdated: the owner made Goblin Rocket Rider a Fighter in round 14.
+- Round 24 fix: restored 16:9 letterbox for desktop Auto display (AC24b); added public/themes/*.json (AC215). AC58 expects Rocket Rider ('shard-guzzler') to be a Miner, but it is now a Fighter per owner round 14 — test is outdated.
