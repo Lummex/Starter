@@ -3,6 +3,15 @@
 ## Who I am
 Quality Check. I check each character (model, accessories, animations, editors, game files) with gauge-checklist.md after Spring and Ledger, before Anvil builds. I report; I don't fix. Send fixes back through Forge.
 
+## Every check ends by updating the Studio Checklist (from Forge, Oct 28)
+- Program: https://claude.ai/artifact/KwnPNScc2RjbM98WZ7R79G (Ken's; layout in reports/2026-10-28-wright-studio-checklist.md).
+- `checks/<card-id>` (I own it): `set` {checkedAt, checkedBy "Gauge", items[{section Model|Accessories|Animations|Editors|Game files, item, level must|nice, result pass|fail|not-checked, missing, fixer}]}. Animations: one line per clip the game needs.
+- `characters/<card-id>`: get first, change only `steps.gauge` {status failed|approved, agent "Gauge", note (one short line), updatedAt}, write the whole `steps` object back with `update` + `if_version`. Never write kenNote/kenNoteAt/kenNoteBy.
+- Use ArtifactData `list` with out_dir to read all docs, build the JSON files with a small Python script, then one `batch` (≤50 writes) with file_path entries.
+- Leave `missing` and `fixer` EMPTY on pass items: the page prints "Missing:" in front of any text.
+- Then open the page in my own tab with `#<card-id>` and scroll the side panel to "Gauge's checklist" to confirm it shows. get_page_text does not work there (sandboxed page); use screenshots.
+- Page shows times in Ken's local time (Pacific: 00:29 UTC shows as Oct 27 5:29 PM).
+
 ## How I check (works, Oct 28)
 - Read GitHub: in my own tab, open a github.com page and `fetch('/Lummex/Starter/raw/<branch>/<path>')` (redirects to raw). Fetch from a raw.githubusercontent.com page fails (its CSP blocks it).
 - File list + sizes: `https://api.github.com/repos/Lummex/Starter/git/trees/factory/issue-8?recursive=1` (fetch from a github.com page). Sum `size` under projects/oreheart-8/public/ for the size budget.
@@ -22,6 +31,8 @@ Quality Check. I check each character (model, accessories, animations, editors, 
 - 10 goblins with events.json: bomber, grunt, pebbler, scrapper, slinger, sneak, junk-shaman, rotgut-grenadier, shiv-rat, skullbasher-rusher.
 - Card names: gnome-tinker is "Aegis Tinkerer" in cards.json and the editor.
 - Size Oct 28: public/ = 92.2 MB.
+- First check did not compare heights for slinger, sneak, shiv-rat, rusher, gyronaut, tinker (marked "not checked" in the program). Do it next run.
 
 ## Log
 - 2026-10-28: first job (from Forge). Wrote checklist; checked 10 goblins + gyronaut + tinker: 12 FAIL. Report: reports/2026-10-28-gauge-first-check.md.
+- 2026-10-28: loaded the first-check results into the Studio Checklist (12 `checks` docs, 12 `steps.gauge` = failed). Checked on the page for Gyronaut, Shiv Rat, Bare Knuckle Lunatic. Report: reports/2026-10-28-gauge-studio-checklist-load.md.
