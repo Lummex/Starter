@@ -1,0 +1,117 @@
+{
+ "base_pose": "rest pose",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Attack",
+   "frames": 120,
+   "seconds": 4.0,
+   "key_frames": [
+    12,
+    20,
+    26,
+    34,
+    41,
+    45,
+    48,
+    50,
+    55,
+    60,
+    66,
+    72,
+    75,
+    84,
+    94,
+    104,
+    112
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [
+    {
+     "frame": 50,
+     "name": "projectile_release",
+     "bone": "RightHand",
+     "time": 1.6667
+    }
+   ],
+   "fastest_turn_per_frame_deg": 42.7,
+   "feet_drift_m": 0.026
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Attack: OH_Attack: cock hold 41-45, whip 48, projectile_release + skull hidden at 50, follow-through 55-60, pouch reach 66-72, new skull shown at 75, ready again by 112-120.",
+  "OH_Attack: skull-mace held in RightHand at scale 0.095; prop centre [0.3972, 0.3385, 0.0087] size 0.235 m, hand joint [0.3624, 0.377, -0.001]"
+ ],
+ "prop_debug": [
+  {
+   "name": "Mesh_0",
+   "polys": 15530,
+   "verts": 24992,
+   "hide_render": false,
+   "visible": true,
+   "collections": [
+    "Collection"
+   ],
+   "scene_has": true,
+   "materials": [
+    "Material_0.001"
+   ],
+   "world_scale": [
+    0.09,
+    0.09,
+    0.09
+   ],
+   "parent": "Prop_skull-mace",
+   "display_type": "TEXTURED"
+  }
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Attack": {
+    "keys": 121,
+    "seconds": 4.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead",
+    "Skull_Throw",
+    "OH_Idle",
+    "OH_Walk",
+    "OH_Hit",
+    "OH_React_Knockback",
+    "OH_React_Bonk",
+    "OH_React_Bowled",
+    "OH_React_Backstab",
+    "OH_React_Lifted"
+   ],
+   "worst_position_error_pct_of_height": 0.0013,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 2e-05
+ }
+}
