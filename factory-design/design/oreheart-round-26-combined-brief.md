@@ -5,6 +5,20 @@
 - **Round 24 (Skullflinger skull throw) and Round 25 (card drag on its own) are discontinued as separate rounds.** Do not build them from any older text. Round 25's card-drag work is folded into this brief (item A1). **Change (owner, Oct 28): the owner rejected the Round 24 skull throw that build #55 put in the game. Remove it — see item (0) at the top of the must-do list below.**
 - If `factory-data/oreheart-8/SPEC.md` still lists Round 24 or Round 25 work, replace that part of the spec with this round. Older round sections in `oreheart-phase-1b-brief.md` are history only.
 
+## Restart note (owner, Oct 28 evening) — read before changing anything
+- **This round was already built once** (run 40644497657, commits `78b5c24` plan, `23019fb`, `6f76fff`, `6b2f9ac`, report `c55fc1b`; 400 of 463 checks passed). That run built the code but was stopped by GitHub's 3-hour limit while waiting for the Vercel preview, so it never posted a preview. **Continue from what is on `factory/issue-8` now; do not start Round 26 over.** Focus on what the report says is not done or failing, and check each A/B item in a browser.
+- **After that build the owner committed 10 fixes straight to `factory/issue-8` (Oct 28, commits `5c959d4` to `9d92f74`). They are the owner's final answer for those things. Keep them exactly; do not undo, rewrite or "redo" them, and update any check that expects the older behaviour (say which in REPORT.md):**
+  1. `5c959d4` mine-all pickaxe fully visible (`.site-mark.ready{clip-path:none!important}`) — this is A5.
+  2. `9d95c47`/`da63fd9`/`9d92f74` the mine-all pickaxe badge is now **Ken's own picture** `public/art/ui/mine-all-pickaxe.webp` (`img.pk-img` inside `span.pickaxe[data-mine-badge]`); the old CSS-drawn pickaxe is gone on purpose. Owner art: never go back to the CSS drawing.
+  3. `c96705a` the mine's faction emblem (A7) is drawn **in the 3D scene** as a depth-tested sprite (scene.ts), so units stand in front of it; the HTML `img.mine-emblem[data-mine-emblem]` stays as a hidden copy (`visibility:hidden` in 3D). Keep both.
+  4. `d4b453b` hand cards don't flutter on hover (`popTarget`, fixed `handBoxes` slots, 90 ms hold) — this is A10.
+  5. `2f49dd3` no info pop-up when the mouse hovers a mine (tap / hold still opens it). Do not add the hover pop-up back.
+  6. `1beebd5` the dragged card **keeps its own shape** over a square: `cardInSquare()` makes it 88 % (`DRAG_FX.fit`) of the square's smaller on-screen side, centred, following the square's perspective — this replaces "exactly the square's size" in A1.2 (see A1).
+  7. `b00648f`/`11d9ed3` arrows (and ← → keys, swipe) to cycle hand cards in the close-up (`addCardNav`).
+  8. `b0db357` Junk Shaman lift: the real 3D unit hangs at the pointer (`BoardView.setCarry`) and loops its `lifted` clip; the Shaman loops `special` — this is part of A9.
+  9. `d6a8871` "Square highlights" colours also in the in-match Menu (`highlightPanel`, `matchHighlights`).
+  10. `7af662c` full screen / windowed toggle in the in-match Menu and Settings (`fsToggle` etc.); A2's first-tap request stays, and choosing in the toggle stops it.
+
 ## Rules for this round (owner)
 - **Change nothing that is not listed here.** No new game rules, no new or changed card numbers (cost, attack, health, move, range), no new cards, no renamed things.
 - **Do not touch `factory-data/oreheart-8/acceptance`** (never delete, move, rename or commit anything in `factory-data/`). Do not run `git add`, `git commit` or any git command: the factory saves your work itself.
@@ -41,7 +55,7 @@ Owner's words: "I want the mouse pointer in the center of the card, but I want t
 Where it lives now: `src/ui/app.ts` `cardPointerDown()` builds `.hand-card.dragged-card`, `drag()` moves it; `src/style.css` hangs it by its top-right corner (`transform-origin:100% 0; translate(-100%,0) … rotate(24deg …)`). `cellAt(x,y)` finds the square under the pointer, `squareQuad(row,col)` gives its four on-screen corners, `layoutHand()` spaces the fan with `hand.overlap` from `src/content/owner-layout.json` (HUD piece role `player-hand`).
 
 1. The pointer is in the **exact center** of the dragged card (mouse and touch) for the whole drag. No corner-hang, no offset, no 24° lean. Keep the small pick-up pop and a gentle tilt (≤ 8°, around the center).
-2. Over a board square the card **smoothly shrinks (~150 ms) to exactly that square's on-screen size and perspective** (a `matrix3d` from the card box onto `squareQuad`), still centered on the pointer. Moving between squares changes shape smoothly; in gaps keep the nearest square's shape. The card may be ~85% opaque while shrunk.
+2. Over a board square the card **smoothly shrinks (~150 ms) onto that square, keeping the card's own shape**: owner fix `1beebd5` (`cardInSquare()`, `DRAG_FX.fit` = 0.88) — the card is 88 % of the square's smaller on-screen side, centred on the square, and follows the square's perspective. It is not stretched to fill the square. Keep this exactly. Moving between squares changes smoothly; in gaps keep the nearest square's shape. The card may be ~85% opaque while shrunk.
 3. The square under the card is **highlighted** (bright outline above the board, visible around the card). Legal square = normal highlight color; illegal = muted red.
 4. Back over the hand (or off the board) it **grows back** to its normal held size.
 5. Dropping works exactly as now (places on the highlighted square; illegal drops refused). Reordering the hand, tap-to-enlarge, spells, Crystal cards, Smith swaps unchanged. Works on touch and with Graphics: Low.
@@ -49,7 +63,7 @@ Where it lives now: `src/ui/app.ts` `cardPointerDown()` builds `.hand-card.dragg
 
 Done when:
 - **AC370** Real mouse drag (test flag OFF, `page.mouse` in several steps): the dragged card's bounding-box center is within 6 px of the pointer, over the hand and over the board.
-- **AC371** 300 ms after the pointer stops over a square, the card's on-screen corners are within 4 px of `squareQuad` for that square (check one near and one far square).
+- **AC371** (owner change Oct 28) 300 ms after the pointer stops over a square, the card's on-screen corners are within 4 px of `cardInSquare(squareQuad(row,col), …)` for that square: its width/height ratio is the card's own (±3 %), it lies inside the square, and its larger side is 0.88 × the square's smaller side (±4 px) (check one near and one far square). The old "corners on `squareQuad`" check is out of date.
 - **AC372** The square under the card has the highlight and the highlight follows the pointer; back over the hand the card's width is within 5% of its starting width.
 - **AC373** Dropping on a highlighted legal square plays the card there exactly as before (unit appears, crystals spent as before).
 - **AC374** Full hand: neighbouring cards are 0.26 × card width apart at 1920×1080 (or squeezed only when they would not fit) and every card is fully on screen at 1920×1080, 1366×768 and 844×390.
@@ -78,7 +92,7 @@ Commander speech bubbles (`.speech`, `public/art/speech/`) about **35% smaller**
 - **AC380** A commander `.speech` bubble's width is 60–70% of what it was in the previous build at 1920×1080.
 
 ### A5. Mine-all pickaxe fully visible
-The "mine with every ready Miner" pickaxe badge on the crystal mines (`span.pickaxe` with `×N`, app.ts ~line 2061) is fully visible: not clipped by the mine, the board edge, a parent's `overflow`, or other HUD pieces, at all screen sizes. Same look otherwise.
+The "mine with every ready Miner" pickaxe badge on the crystal mines (`span.pickaxe` with `×N`, app.ts ~line 2061) is fully visible: not clipped by the mine, the board edge, a parent's `overflow`, or other HUD pieces, at all screen sizes. Already fixed by the owner (`5c959d4`); the badge picture is Ken's own `mine-all-pickaxe.webp` (`9d92f74`) — keep both.
 - **AC381** When the badge shows, its whole bounding box is inside the viewport and not covered (`elementFromPoint` at its center and 4 corners inset 2 px returns the badge or its children) at 1920×1080, 1366×768 and 844×390.
 
 ### A6. Done button
@@ -92,7 +106,7 @@ Done when:
 - **AC384** The drop-up's background is semi-transparent dark and its border black, matching the Menu pop-up's computed styles.
 
 ### A7. Mine owner shows the faction emblem
-The owner overlay on a controlled mine (now the faction symbol emoji, e.g. 💀, from `FSYM`, app.ts ~line 2053) shows the **owning faction's emblem picture** instead. Use the owner's existing emblem art from the Card Format (`public/art/card-format/format.json` → spell layer "Prismatic Crystal World Emblem" `byFaction`): goblins `images/2298e4af.webp`, gnomes `images/42e54bde.webp`, dwarves `images/e56e3c50.webp`. Use exactly that mapping (read it from format.json, do not swap colors). Do not draw a new emblem. Unowned mines unchanged.
+The owner overlay on a controlled mine (now the faction symbol emoji, e.g. 💀, from `FSYM`, app.ts ~line 2053) shows the **owning faction's emblem picture** instead. Use the owner's existing emblem art from the Card Format (`public/art/card-format/format.json` → spell layer "Prismatic Crystal World Emblem" `byFaction`): goblins `images/2298e4af.webp`, gnomes `images/42e54bde.webp`, dwarves `images/e56e3c50.webp`. Use exactly that mapping (read it from format.json, do not swap colors). Do not draw a new emblem. Unowned mines unchanged. In 3D the emblem is a depth-tested sprite in the scene (owner fix `c96705a`) and the HTML `img` is a hidden copy; keep that.
 - **AC385** A mine controlled by a Goblin player shows an `img` whose src ends with the goblin emblem file; a Gnome/Dwarf-controlled mine shows theirs; no 💀/⚙️/🔨 emoji remains on mines.
 
 ### A8. Respond window bigger and easier
@@ -101,14 +115,14 @@ The "Respond?" window (`openRespond`, app.ts ~2318/2404): **30% bigger** box, bi
 
 ### A9. Junk Shaman lift: you choose where it lands
 Card rule (unchanged): *Pay 2: pick up one character within 5 spaces (ally or enemy) and move it to any space within 5 spaces of this card.* Today the game picks the landing square itself (`bestShaman`, app.ts ~3057).
-1. After choosing the character to lift, it **follows the mouse/finger** (lifted a little above the board) and the **legal landing squares are highlighted**; the square under the pointer gets the strong highlight (same style as A1).
+1. After choosing the character to lift, it **follows the mouse/finger** (lifted a little above the board; on the 3D board this is owner fix `b0db357`, `setCarry`, keep it) and the **legal landing squares are highlighted**; the square under the pointer gets the strong highlight (same style as A1).
 2. **Clicking/tapping a highlighted square drops it there.** Clicking an illegal square does nothing; Esc / right-click / clicking the Shaman again cancels with nothing paid.
 3. Keep every rule limit: pick-up target within 5 spaces of the Shaman, landing square within 5 spaces of the Shaman, landing square must be empty (and allowed for that unit), pay 2 (Flow first, A3), once per the existing limits. The computer opponent keeps using `bestShaman`. Write the limits you enforce in REPORT.md.
 - **AC387** With the test flag OFF, using the lift then clicking a chosen legal square puts that character exactly on that square; 2 crystals are paid.
 - **AC388** Squares farther than 5 from the Shaman are not highlighted and clicking them does nothing; cancel pays nothing.
 
 ### A10. Cards flicker / go see-through on hover — find and fix
-Hovering hand cards (and the close-up) sometimes makes them flicker or turn see-through. Find the real cause (likely candidates: hover/pop classes toggled every frame by `pointerenter`/`pointerleave` on overlapping cards (app.ts ~2250), an `opacity` transition fighting the pop animation, or the shrink-opacity from A1 leaking onto hand cards) and fix it. Write the cause in REPORT.md.
+Hovering hand cards (and the close-up) sometimes makes them flicker or turn see-through. Find the real cause (likely candidates: hover/pop classes toggled every frame by `pointerenter`/`pointerleave` on overlapping cards (app.ts ~2250), an `opacity` transition fighting the pop animation, or the shrink-opacity from A1 leaking onto hand cards) and fix it. Write the cause in REPORT.md. The owner fixed the flutter on Oct 28 (`d4b453b`, `popTarget` + fixed hover slots); keep that fix and only add to it if AC389 still fails.
 - **AC389** Moving the mouse slowly across the whole hand (≥ 40 steps) and holding still on a card for 1 s: no hand card's computed opacity goes below 0.99 and the hovered card's pop class does not toggle more than once per card entered.
 
 ---
@@ -145,7 +159,7 @@ Fix the game (not the checks), unless the check is out of date because of an own
 3. **Mine Control stance** (decide from the GDD whether a Miner should mine or attack there; fix whichever is wrong).
 4. **Card Comp vs Card Comp watch mode Pause** (watch bar is bottom-right, scale 0.58 by the owner: keep that; Pause/Play/Exit must work).
 5. **Bowler Brawler bowling** check.
-- **AC395** All five pass, and every other existing check keeps passing (only update checks that test the old corner-hung drag card, the old centered "Moves still available" dialog or the old mine emoji).
+- **AC395** All five pass, and every other existing check keeps passing (only update checks that test the old corner-hung drag card, the old centered "Moves still available" dialog, the old mine emoji, or anything the owner's Oct 28 fixes changed: drag card filling the whole square, the CSS-drawn pickaxe, the mine hover pop-up, the HTML-only mine emblem).
 
 ---
 

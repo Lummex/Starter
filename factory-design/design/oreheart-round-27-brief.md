@@ -1,6 +1,6 @@
 # Round 27
 
-**DRAFT (Anvil, Oct 28) — not started.** Ken has not said "start" yet. Round 26 (build #56) is still running. Sections D and E are filled in after Ken reviews the Round 26 preview.
+**DRAFT (Anvil, Oct 28) — not started.** Ken has not said "start" yet. Round 26 is being rebuilt (restarted Oct 28 evening); Round 27 waits for it and for Ken's review of its preview. Sections D and E are filled in after Ken reviews the Round 26 preview.
 
 **When started, this is the whole job.** The game is `projects/oreheart-8` on branch `factory/issue-8`. Older round sections in `oreheart-phase-1b-brief.md` are history only. If `factory-data/oreheart-8/SPEC.md` still lists Round 26 work, replace that part with this round.
 
@@ -20,7 +20,7 @@ Ledger made shrunk copies of the game's own body files: `factory-design/design/m
 
 1. Copy each `round27-shrunk/<card>-char.glb` over `public/models/creatures/<card>/char.glb`. Copy the bytes as they are; do not re-export or re-compress.
    - **15 dwarf bodies:** axe-thrower, barrelback-courier, brewmaster, crystal-drunk-delver, deepforge-crossbowman, dwarf-miner, dwarf-pickman, dwarf-stoneback, grimhold-ravager, ironhammer-berserker, oathbound-pikeman, queen-brunhilda-stonebeard, ram-rider, rune-splitter, shieldbeard.
-   - **13 gnome bodies** (Ken OK'd, Oct 28 ~21:05; 10 at 512 px, clockwork-beetle / the-great-steam-golem / gnome-tinker at 768 px): clockwork-beetle, gearward-sentinel, glyphshield-warden, gnome-cogger, gnome-illusionist, gnome-smith-miner, gnome-tinker, gnome-widget, hexwright-apprentice, phase-stalker, runic-siphoner, spark-gnome, the-great-steam-golem.
+   - **13 gnome bodies** (Ken OK'd, Oct 28 ~21:05, and confirmed again to Forge ~22:45: "Yes, the one and yes, the two." — so all 28 bodies, 15 dwarves + 13 gnomes, are copied; 10 gnomes at 512 px, clockwork-beetle / the-great-steam-golem / gnome-tinker at 768 px): clockwork-beetle, gearward-sentinel, glyphshield-warden, gnome-cogger, gnome-illusionist, gnome-smith-miner, gnome-tinker, gnome-widget, hexwright-apprentice, phase-stalker, runic-siphoner, spark-gnome, the-great-steam-golem.
 - **12 goblin bodies** (Ken OK'd, Oct 28 ~22:00): goblin-bomber, goblin-grunt, goblin-scrapper, goblin-slinger, goblin-sneak, rotgut-grenadier, shard-guzzler, grubnaks-big-boss-troll at 512 px; junk-shaman, skullbasher-rusher, blastrat-sapper, wolf-rider at 768 px.
 - **Crystal node** (mines; Ken OK'd as Ledger's option b, Oct 28 ~22:00): copy `round27-shrunk/mines-crystal-node.glb` over `public/models/mines/crystal-node.glb` (its 3 maps 1024 → 512 px).
 - **Only if Ken answered Yes to `decisions/r27-size-option-a` in Oreheart Studio** (read it right before starting): copy the 5 files in `round27-shrunk/option-a-needs-ken/`: `shiv-rat-char.glb`, `goblin-pebbler-char.glb`, `goblin-scrounger-char.glb`, `goblin-smith-miner-char.glb` over `public/models/creatures/<card>/char.glb`, and `grubnak-throne.glb` over `public/models/creatures/grubnak/throne.glb` (pictures 768 → 512 px). If he has not answered Yes, do not copy them (see the size note below).
