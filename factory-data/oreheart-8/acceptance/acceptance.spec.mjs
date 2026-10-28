@@ -1435,7 +1435,7 @@ test('AC30: creature labels show Attack, Health, Movement and darken after actin
 test('AC31: Moves still available pop-up — Go back and Continue', async ({ page }) => {
   await start(page, { ai: false, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 1 } });
   const doneBtn = page.getByRole('button', { name: 'Done' });
-  const dlg = page.getByRole('dialog', { name: 'Moves still available! Continue to the next phase?' });
+  const dlg = page.getByRole('dialog', { name: /Moves still available/ });
   await doneBtn.click();
   await expect(dlg).toBeVisible();
   await dlg.getByRole('button', { name: 'Go back' }).click();
@@ -1655,7 +1655,7 @@ test('AC37: the confirm pop-up sits above the countdown', async ({ page }) => {
   await page.evaluate(async () => await window.oreheart.setPhaseTimeLeft(5));
   await expect(page.getByLabel('Phase timer', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Done' }).click();
-  const dlg = page.getByRole('dialog', { name: 'Moves still available! Continue to the next phase?' });
+  const dlg = page.getByRole('dialog', { name: /Moves still available/ });
   await expect(dlg).toBeVisible();
   await dlg.getByRole('button', { name: 'Continue' }).click(); // fails if covered by the countdown
   await expect.poll(async () => (await getState(page)).phase).toBe('action');
@@ -1709,7 +1709,7 @@ test('AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongh
 });
 
 // ---------- AC41 ----------
-test('AC41: the moves pop-up names miners that have not mined', async ({ page }) => {
+test('AC41: the moves drop-up says miners have not mined; after any move Done asks nothing (Round 26)', async ({ page }) => {
   let s = await start(page, { ai: false, setup: { board: [
     { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1 },
     { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 2 },
@@ -1717,17 +1717,16 @@ test('AC41: the moves pop-up names miners that have not mined', async ({ page })
   await done(page); // -> action
   expect(await movesLeft(page)).toBe(true);
   const doneBtn = page.getByRole('button', { name: 'Done' });
-  const dlg = page.getByRole('dialog', { name: 'Moves still available! Continue to the next phase?' });
+  const dlg = page.getByRole('dialog', { name: /Moves still available/ });
   await doneBtn.click();
   await expect(dlg).toBeVisible();
-  await expect(dlg).toContainText("2 miners haven't mined");
+  await expect(dlg).toContainText("miners haven't mined");
   await dlg.getByRole('button', { name: 'Go back' }).click();
   await expect(dlg).toBeHidden();
   expect((await act(page, { type: 'mine', creatureUid: at(s, 5, 1).uid, row: 4, col: 2 })).ok).toBe(true);
-  await doneBtn.click();
-  await expect(dlg).toContainText("1 miner hasn't mined");
-  await dlg.getByRole('button', { name: 'Continue' }).click();
+  await doneBtn.click(); // a move was made this phase: no question
   await expect.poll(async () => (await getState(page)).activePlayer).toBe('opponent');
+  await expect(dlg).toBeHidden();
 });
 
 // ---------- AC42 ----------
@@ -9773,7 +9772,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }]) 
   test.describe(`round 23 hand at ${vp.width}x${vp.height}`, () => {
     test.use({ viewport: vp });
 
-    test(`AC363: the fan uses the owner layout — overlap 0.2, 4° per card, arc 1.45 (${vp.width}x${vp.height})`, async ({ page }) => {
+    test(`AC363: the fan uses the owner layout — overlap 0.26, 4° per card, arc 1.45 (${vp.width}x${vp.height})`, async ({ page }) => {
       await r23Start(page);
       const fan = await r23Fan(page);
       expect(fan.length).toBe(7);
@@ -9785,8 +9784,8 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }]) 
       }
       for (let i = 1; i < 7; i++) {
         const gap = fan[i].cx - fan[i - 1].cx;
-        expect(gap / w, `gap ${i}`).toBeGreaterThanOrEqual(0.17);
-        expect(gap / w, `gap ${i}`).toBeLessThanOrEqual(0.23);
+        expect(gap / w, `gap ${i}`).toBeGreaterThanOrEqual(0.23);
+        expect(gap / w, `gap ${i}`).toBeLessThanOrEqual(0.29);
       }
       for (let i = 0; i < 7; i++) {
         const k = i - 3;
@@ -9926,67 +9925,442 @@ test('AC368: Card Comp vs Card Comp watch bar sits bottom-right; Pause, Play and
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });
 
-// ======================= Round 24 (owner, Oct 26): Skullflinger's skull throw =======================
-// The brief calls these AC358–AC360; those numbers were already taken (Round 22), so they are AC369–AC371 here.
-const r24Setup = async (page) => {
-  await start(page, quiet({ board: [
-    { cardId: 'goblin-slinger', owner: 'player', row: 6, col: 5 },
-    { cardId: 'grubnaks-big-boss-troll', owner: 'opponent', row: 3, col: 5 }, // 3 straight up, clear line, in range 6
-  ] }));
-  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
-  let s = await getState(page);
-  const sl = at(s, 6, 5), troll = at(s, 3, 5);
-  await expect.poll(async () => (await r22Fig(page, sl.uid)).source, { timeout: 20000 }).toBe('goblin-slinger.glb');
-  let atk = null;
-  for (let k = 0; k < 5 && !atk; k++) {
-    await done(page);
-    atk = (await legal(page)).find((a) => a.type === 'attack' && a.creatureUid === sl.uid);
-  }
-  expect(atk, 'Skullflinger can attack the troll').toBeTruthy();
-  s = await getState(page);
-  return { sl: at(s, 6, 5), troll: at(s, 3, 5), atk };
-};
-const r24Log = async (page, uid) => ((await renderStats(page)).projectileLog || []).filter((p) => p.shooterUid === uid);
 
-test('AC369/AC370: Skullflinger plays Skull_Throw, a skull leaves his right hand at ~0.63 s, bonks the target and bounces away, all gone within 1.5 s', async ({ page }) => {
-  test.setTimeout(60000);
-  const { sl, troll, atk } = await r24Setup(page);
-  expect((await act(page, atk)).ok).toBe(true);
-  // rules unchanged: exactly his Attack is removed
-  expect(at(await getState(page), 3, 5).health).toBe(troll.health - sl.attack);
-  await expect.poll(async () => ((await renderStats(page)).creatureAnimLog || []).some((e) => e.uid === sl.uid && e.anim === 'attack' && e.clip === 'Skull_Throw'), { timeout: 10000 }).toBe(true);
-  // a projectile is visible in flight at some point
-  await expect.poll(async () => ((await renderStats(page)).projectiles || []).some((p) => p.shooterUid === sl.uid) || (await r24Log(page, sl.uid)).length > 0, { timeout: 5000 }).toBe(true);
-  await expect.poll(async () => { const l = await r24Log(page, sl.uid); return l.length === 1 && l[0].removedMs != null; }, { timeout: 8000 }).toBe(true);
-  const p = (await r24Log(page, sl.uid))[0];
-  expect(p).toMatchObject({ kind: 'skull', clip: 'Skull_Throw', bone: 'RightHand', targetUid: troll.uid, hitTarget: true });
-  expect(p.releaseMs, 'released at the events.json time').toBeGreaterThanOrEqual(560);
-  expect(p.releaseMs).toBeLessThanOrEqual(720);
-  expect(p.spawnOffset, 'spawned at the RightHand bone').toBeLessThanOrEqual(0.1);
-  expect(p.contactMs - p.releaseMs, 'lobbed flight time').toBeGreaterThanOrEqual(250);
-  expect(p.contactMs - p.releaseMs).toBeLessThanOrEqual(700);
-  expect(p.removedMs - p.releaseMs, 'removed within 1.5 s of the throw').toBeLessThanOrEqual(1500);
-  expect(p.maxHeightAfterContact, 'bounces up after the bonk').toBeGreaterThan(p.heightAtContact + 0.05);
-  expect(((await renderStats(page)).projectiles || []).filter((q) => q.shooterUid === sl.uid)).toEqual([]);
-  // the target reacts, the held skull mace stays in his hand, and he goes back to Idle
-  expect(((await renderStats(page)).creatureAnimLog || []).some((e) => e.uid === troll.uid && e.anim === 'hit')).toBe(true);
-  const fig = await r22Fig(page, sl.uid);
-  expect((fig.items || []).some((i) => /skull/.test(i.name) && i.visible !== false), 'held skull mace still visible').toBe(true);
-  await expect.poll(async () => (await r22Fig(page, sl.uid)).currentAnimation, { timeout: 5000 }).toBe('idle');
+// ======================= Round 26 (owner, Oct 28): owner edits, model clips, failing checks =======================
+// Round 24's skull-throw checks (AC369–AC371) were retired: the owner rejected the flying skull (Round 26 item 0).
+// Owner Model Editor setups (factory-design/design/models/editor-setups-2026-10-28.json, partsTableLook): card -> [bone, pos, rotDeg, scale, part]
+const R26_SETUPS = {"goblin-bomber":[],"goblin-grunt":[["RightHand",[-13.281,9.76,19.154],[126.389,-36.031,38.735],[43.449,43.449,43.449],"frying-pan"]],"goblin-pebbler":[["RightHand",[-9.231,12.794,2.402],[27,11,52],[25,25,25],"club"]],"goblin-scrapper":[["RightHand",[-3.51,8.733,-1.595],[50.405,1.159,166.638],[23,23,23],"bowling-ball"]],"goblin-slinger":[["RightHand",[-4.733,9.93,4.184],[7.674,57.734,67.236],[19,19,19],"skull-mace"]],"goblin-sneak":[["neck",[-5.34,1.862,-14.029],[8.548,3.663,3.154],[15,15,15],"bag"],["RightHand",[8.502,7.038,-9.251],[159.362,-37.54,-90.548],[29,29,29],"dagger"]],"junk-shaman":[["RightHand",[6.217,-15.298,17.834],[110.02,-62.427,-52.655],[53,53,53],"staff"]],"rotgut-grenadier":[["RightHand",[18.162,-9.844,27.054],[35.239,-53.157,-88.87],[43,62.78,32.68],"spatula"]],"shiv-rat":[["Spine",[0.756,-10.807,-6.926],[176.37,0.217,178.765],[19,19,19],"backpack"],["RightHand",[-8.478,10.344,13.399],[132.296,-65.655,54.851],[26,26,26],"dagger"]],"skullbasher-rusher":[["RightHand",[-8.9,18.747,8.443],[-8.725,65.398,73.206],[36,36,36],"mace"],["LeftHand",[-3.667,7.628,-2.335],[-157.797,-59.618,-151.009],[37,37,37],"shield"]],"gyrocopter-ace":[["Spine02",[1,8.127,-15.443],[-178.557,0.345,175.676],[53,53,53],"gyro-wings-oct25"],["Spine02",[2.731,7.516,-13.38],[-84.27,23.646,2.952],[62.608,56.172,69.629],"gyro-wings-oct25"]],"gnome-tinker":[["RightHand",[-5.106,4.336,10.391],[-91.862,22.237,178.441],[29.826,29.826,29.826],"scepter-oct25"],["LeftForeArm",[-6.589,20.19,0.021],[-110.166,-61.024,179.49],[29.536,29.536,29.536],"crystal-shield-oct25"],["Hips",[-12.29,-9.118,25.184],[5.886,46.054,92.626],[16.542,16.542,16.542],"wrench-oct27"]]};
+const dragCard = (page) => page.evaluate(async () => await window.oreheart.getDragCard());
+const near = (a, b, tol) => Math.abs(a - b) <= tol;
+// grabs hand card i with the real mouse (test flag must be off) and moves it onto square (row, col) in steps
+async function r26Grab(page, i, row, col) {
+  const from = await r23HoverCard(page, i);
+  await page.mouse.down();
+  await page.mouse.move(from.x, from.y - 30, { steps: 3 });
+  const to = await sqCenter(page, row, col);
+  await page.mouse.move(to.x, to.y, { steps: 10 });
+  return { from, to };
+}
+async function r26Play(page, i, row, col) { await r26Grab(page, i, row, col); await page.mouse.up(); }
+const quad4 = async (page, row, col) => page.evaluate(([r, c]) => window.oreheart.squareQuad(r, c), [row, col]);
+const BANK_Q = (crystals, bank, hand = ['shiv-rat', 'shiv-rat']) => ({ ai: false, playerCommander: 'borgo', opponentCommander: 'grubnak', factionLock: false,
+  setup: { opponentHand: [], playerHand: hand, playerCrystals: crystals, playerBank: bank, playerDeck: SHARDS, opponentDeck: SHARDS } });
+async function bankStart(page, crystals, bank, hand) {
+  await start(page, BANK_Q(crystals, bank, hand));
+  await page.evaluate(() => { window.__app.test = false; });
+  await page.mouse.move(10, 10);
+}
+const flowBank = async (page) => { const p = (await getState(page)).players.player; return [p.crystals, p.bank]; };
+
+test.describe('round 26 at 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+
+  test('AC370/AC372: the dragged card stays centered on the pointer; the square under it is highlighted; it grows back over the hand', async ({ page }) => {
+    await r23Start(page);
+    const from = await r23HoverCard(page, 6);
+    const w0 = (await r23Fan(page))[6].width;
+    await page.mouse.down();
+    await page.mouse.move(from.x, from.y - 40, { steps: 4 });
+    const card = page.getByLabel('Dragged card', { exact: true });
+    await expect(card).toBeVisible();
+    let b = await card.boundingBox();
+    expect(near(b.x + b.width / 2, from.x, 6) && near(b.y + b.height / 2, from.y - 40, 6), 'centered over the hand').toBe(true);
+    for (const [r, c] of [[7, 6], [6, 8]]) {
+      const p = await sqCenter(page, r, c);
+      await page.mouse.move(p.x, p.y, { steps: 8 });
+      await page.waitForTimeout(300);
+      b = await card.boundingBox();
+      expect(near(b.x + b.width / 2, p.x, 6) && near(b.y + b.height / 2, p.y, 6), `centered over square ${r},${c}`).toBe(true);
+      const d = await dragCard(page);
+      expect(d.highlight, 'highlight follows the pointer').toMatchObject({ row: r, col: c });
+    }
+    expect((await dragCard(page)).highlight.legal).toBe(false); // (6,8) is not a summon square
+    await page.mouse.move(from.x, from.y - 40, { steps: 8 });
+    await page.waitForTimeout(300);
+    expect(Math.abs((await dragCard(page)).width - w0) / w0, 'grows back over the hand').toBeLessThanOrEqual(0.05);
+    await page.mouse.up();
+  });
+
+  test('AC371: 300 ms after stopping over a square the card takes that square\'s on-screen shape (near and far square)', async ({ page }) => {
+    await r23Start(page);
+    await r26Grab(page, 6, 7, 6);
+    for (const [r, c] of [[7, 6], [2, 7]]) {
+      const p = await sqCenter(page, r, c);
+      await page.mouse.move(p.x, p.y, { steps: 6 });
+      await page.waitForTimeout(300);
+      const d = await dragCard(page);
+      const q = await quad4(page, r, c);
+      expect(d.corners.length).toBe(4);
+      for (const pt of q) expect(Math.min(...d.corners.map((k) => Math.hypot(k.x - pt.x, k.y - pt.y))), `corner of ${r},${c}`).toBeLessThanOrEqual(4);
+      expect(d.opacity).toBeGreaterThanOrEqual(0.8);
+    }
+    await page.mouse.move(10, 10, { steps: 6 });
+    await page.mouse.up();
+  });
+
+  test('AC373: dropping on a highlighted legal square plays the card there exactly as before', async ({ page }) => {
+    await r23Start(page);
+    const before = await getState(page);
+    await r26Grab(page, 6, 7, 6); // Grubgrabber Miner
+    expect((await dragCard(page)).highlight).toMatchObject({ row: 7, col: 6, legal: true });
+    await page.mouse.up();
+    await expect.poll(async () => { const c = at(await getState(page), 7, 6); return c && c.cardId; }, { timeout: 3000 }).toBe('goblin-scrounger');
+    const s = await getState(page);
+    expect(s.players.player.hand.length).toBe(before.players.player.hand.length - 1);
+    expect(s.players.player.crystals).toBe(before.players.player.crystals - 1);
+    expect(await dragCard(page)).toBeFalsy();
+  });
+
+  test('AC375: the 3D canvas draws at the device pixel ratio; no scroll bars at 1920x1080, 2560x1080 and 3840x2160', async ({ page }) => {
+    await start(page, quiet({}));
+    for (const vp of [{ width: 1920, height: 1080 }, { width: 2560, height: 1080 }, { width: 3840, height: 2160 }]) {
+      await page.setViewportSize(vp);
+      await expect.poll(async () => { const c = (await renderStats(page)).canvas; return c && c.pixelRatio === 1 && near(c.bufferWidth, c.cssWidth, 2) && near(c.bufferHeight, c.cssHeight, 2); }, { timeout: 5000 }).toBe(true);
+      const sc = await page.evaluate(() => ({ x: document.documentElement.scrollWidth - innerWidth, y: document.documentElement.scrollHeight - innerHeight }));
+      expect(sc.x <= 0 && sc.y <= 0, `no scroll bars at ${vp.width}x${vp.height}`).toBe(true);
+    }
+  });
+
+  test('AC377: a payment that needs the Bank asks first; Yes pays Flow then Bank, No cancels', async ({ page }) => {
+    await bankStart(page, 2, 3);
+    const dlg = page.getByRole('dialog', { name: 'Use your banked crystals?' });
+    await r26Play(page, 0, 7, 6); // Shiv Rat, cost 4
+    await expect(dlg).toBeVisible();
+    await dlg.getByRole('button', { name: 'No', exact: true }).click();
+    await expect(dlg).toBeHidden();
+    expect(await flowBank(page)).toEqual([2, 3]);
+    expect((await getState(page)).players.player.hand.length).toBe(2);
+    expect(at(await getState(page), 7, 6)).toBeUndefined();
+    await r26Play(page, 0, 7, 6);
+    await expect(dlg).toBeVisible();
+    await dlg.getByRole('button', { name: 'Yes', exact: true }).click();
+    await expect.poll(async () => flowBank(page)).toEqual([0, 1]);
+    expect(at(await getState(page), 7, 6).cardId).toBe('shiv-rat');
+  });
+
+  test('AC378: with enough Flow there is no question and the Bank is unchanged', async ({ page }) => {
+    await bankStart(page, 4, 3);
+    await r26Play(page, 0, 7, 6);
+    await expect.poll(async () => flowBank(page)).toEqual([0, 3]);
+    await expect(page.getByRole('dialog', { name: 'Use your banked crystals?' })).toHaveCount(0);
+  });
+
+  test('AC379: "Don\'t ask again" stops the question; the Settings switch brings it back, also after reload', async ({ page }) => {
+    await bankStart(page, 2, 7);
+    const dlg = page.getByRole('dialog', { name: 'Use your banked crystals?' });
+    await r26Play(page, 0, 7, 6);
+    await dlg.getByRole('checkbox', { name: "Don't ask again" }).check();
+    await dlg.getByRole('button', { name: 'Yes', exact: true }).click();
+    await expect.poll(async () => flowBank(page)).toEqual([0, 5]);
+    await r26Play(page, 0, 7, 7);
+    await expect.poll(async () => flowBank(page)).toEqual([0, 1]);
+    await expect(dlg).toHaveCount(0);
+    await page.goto('/?test=1');
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('button', { name: 'Ask before using banked crystals: Off' }).click();
+    await expect(page.getByRole('button', { name: 'Ask before using banked crystals: On' })).toBeVisible();
+    await page.reload();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Ask before using banked crystals: On' })).toBeVisible();
+    await page.waitForFunction(() => !!window.oreheart);
+    await newMatch(page, BANK_Q(2, 3));
+    await page.evaluate(() => { window.__app.test = false; });
+    await page.mouse.move(10, 10);
+    await r26Play(page, 0, 7, 6);
+    await expect(dlg).toBeVisible();
+  });
+
+  test('AC380: Commander speech bubbles are about 35% smaller', async ({ page }) => {
+    await start(page, quiet({}));
+    await page.evaluate(async () => await window.oreheart.showCommanderSpeech('player', 'Hah!'));
+    const bubble = page.getByLabel('Commander speech', { exact: true }).first();
+    await expect(bubble).toBeVisible();
+    const sc = (await page.evaluate(async () => await window.oreheart.getUiScales())).commanderSpeech;
+    expect(sc.scale).toBeGreaterThanOrEqual(0.6);
+    expect(sc.scale).toBeLessThanOrEqual(0.7);
+    const b = await bubble.boundingBox();
+    const ratio = b.width / sc.unscaledWidth;
+    expect(ratio, 'drawn width / old width').toBeGreaterThanOrEqual(0.6);
+    expect(ratio).toBeLessThanOrEqual(0.7);
+  });
+
+  test('AC382: after any move this phase, Done ends the phase with no question', async ({ page }) => {
+    const s = await start(page, { ai: false, setup: { playerHand: ['goblin-scrounger', 'goblin-scrounger'], playerCrystals: 2 } });
+    expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 6 })).ok).toBe(true);
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
+    await expect.poll(async () => (await getState(page)).phase).toBe('action');
+    await expect(page.getByRole('dialog', { name: /Moves still available/ })).toHaveCount(0);
+  });
+
+  test('AC383/AC384: with no move made, Done opens a drop-up above it in the Menu style; Go back keeps the phase, Continue ends it', async ({ page }) => {
+    await start(page, { ai: false, setup: { board: [{ cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 2 }] } });
+    // Menu pop-up style to compare with
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    const menuStyle = await page.getByRole('menu', { name: 'Match menu' }).evaluate((e) => { const c = getComputedStyle(e); return { bg: c.backgroundColor, border: c.borderTopColor }; });
+    await page.getByRole('button', { name: 'Menu', exact: true }).click(); // closes it again
+    await expect(page.getByRole('menu', { name: 'Match menu' })).toBeHidden();
+    await done(page); // -> action, ready Miner next to the mine at (4,2)
+    const doneBtn = page.getByRole('button', { name: 'Done', exact: true });
+    await doneBtn.click();
+    const dlg = page.getByRole('dialog', { name: /Moves still available/ });
+    await expect(dlg).toBeVisible();
+    await expect(dlg).toContainText("Moves still available (miners haven't mined). Continue to the next phase?");
+    const d = await dlg.boundingBox(), btn = await doneBtn.boundingBox();
+    const gap = btn.y - (d.y + d.height);
+    expect(gap, 'opens upward from Done').toBeGreaterThanOrEqual(-2);
+    expect(gap).toBeLessThanOrEqual(12);
+    const st = await dlg.evaluate((e) => { const c = getComputedStyle(e); return { bg: c.backgroundColor, border: c.borderTopColor }; });
+    expect(st).toEqual(menuStyle);
+    const rgba = st.bg.match(/[\d.]+/g).map(Number);
+    expect(rgba.length === 4 && rgba[3] < 1 && rgba[0] < 80 && rgba[1] < 80 && rgba[2] < 80, 'see-through dark').toBe(true);
+    expect(st.border).toMatch(/^rgba?\(0, 0, 0/);
+    await dlg.getByRole('button', { name: 'Go back', exact: true }).click();
+    await expect(dlg).toBeHidden();
+    expect((await getState(page)).phase).toBe('action');
+    await doneBtn.click();
+    await dlg.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect.poll(async () => (await getState(page)).activePlayer).toBe('opponent');
+  });
+
+  test('AC385: a controlled mine shows the owning faction\'s emblem picture from the card format, no emoji', async ({ page }) => {
+    for (const [cmd, miner, file] of [['grubnak', 'goblin-scrounger', '2298e4af.webp'], ['borgo', 'dwarf-miner', 'e56e3c50.webp']]) {
+      const s = await (cmd === 'grubnak' ? start : newMatch)(page, { ai: false, playerCommander: cmd, setup: { board: [{ cardId: miner, owner: 'player', row: 5, col: 2 }] } });
+      await done(page);
+      expect((await act(page, { type: 'mine', creatureUid: at(s, 5, 2).uid, row: 4, col: 2 })).ok).toBe(true);
+      const site = siteBtn(page, M1);
+      await expect(site.locator(`img[src$="${file}"]`)).toHaveCount(1, { timeout: 5000 });
+      await expect(site).not.toContainText(/💀|⚙️|🔨/);
+    }
+  });
+
+  test('AC386: the Respond box is 1.3x bigger with buttons at least 44 px tall', async ({ page }) => {
+    const s = await start(page, respondSetup);
+    expect((await act(page, { type: 'cast', uid: handUid(s, 'opponent', 'fireball'), target: { row: 6, col: 4 } })).ok).toBe(true);
+    const dlg = page.getByRole('dialog', { name: 'Respond?' });
+    await expect(dlg).toBeVisible();
+    const sc = (await page.evaluate(async () => await window.oreheart.getUiScales())).respond;
+    const b = await dlg.boundingBox();
+    for (const r of [b.width / sc.unscaledWidth, b.height / sc.unscaledHeight]) { expect(r).toBeGreaterThanOrEqual(1.25); expect(r).toBeLessThanOrEqual(1.35); }
+    const btns = dlg.getByRole('button');
+    for (let i = 0; i < await btns.count(); i++) expect((await btns.nth(i).boundingBox()).height).toBeGreaterThanOrEqual(44);
+  });
+
+  test('AC387: Junk Shaman lift — the character follows the pointer and lands on the square you click; 2 crystals paid', async ({ page }) => {
+    let s = await start(page, q12({ playerCrystals: 4, board: [P('junk-shaman', 6, 9), O('dwarf-pickman', 2, 9)] }));
+    s = await toAction(page);
+    await page.evaluate(() => { window.__app.test = false; });
+    const tos = (await legal(page)).filter((a) => a.type === 'ability' && a.ability === 'pickUp' && sameTarget(a.target, 2, 9)).map((a) => `${a.to.row},${a.to.col}`).sort();
+    await page.locator(`[data-ability="pickUp"][data-creature-uid="${at(s, 6, 9).uid}"]`).click();
+    const t = await sqCenter(page, 2, 9);
+    await page.mouse.click(t.x, t.y);
+    await expect.poll(async () => (await page.evaluate(async () => await window.oreheart.getLiftState())).active).toBe(true);
+    const lift = await page.evaluate(async () => await window.oreheart.getLiftState());
+    expect(lift.legalSquares.map((q) => `${q.row},${q.col}`).sort(), 'highlighted squares = legal landing squares').toEqual(tos);
+    const p = await sqCenter(page, 7, 13);
+    await page.mouse.move(p.x, p.y, { steps: 8 });
+    expect((await page.evaluate(async () => await window.oreheart.getLiftState())).hover).toMatchObject({ row: 7, col: 13 });
+    await page.mouse.click(p.x, p.y);
+    await expect.poll(async () => { const c = at(await getState(page), 7, 13); return c && c.cardId; }).toBe('dwarf-pickman');
+    expect((await getState(page)).players.player.crystals).toBe(2);
+  });
+
+  test('AC388: Junk Shaman lift — squares farther than 5 are not highlighted and do nothing; cancel pays nothing', async ({ page }) => {
+    let s = await start(page, q12({ playerCrystals: 4, board: [P('junk-shaman', 6, 9), O('dwarf-pickman', 2, 9)] }));
+    s = await toAction(page);
+    await page.evaluate(() => { window.__app.test = false; });
+    await page.locator(`[data-ability="pickUp"][data-creature-uid="${at(s, 6, 9).uid}"]`).click();
+    const t = await sqCenter(page, 2, 9);
+    await page.mouse.click(t.x, t.y);
+    await expect.poll(async () => (await page.evaluate(async () => await window.oreheart.getLiftState())).active).toBe(true);
+    const lift = await page.evaluate(async () => await window.oreheart.getLiftState());
+    expect(lift.legalSquares.every((q) => Math.max(Math.abs(q.row - 6), Math.abs(q.col - 9)) <= 5)).toBe(true);
+    const far = await sqCenter(page, 7, 2 + 1); // 6 columns from the Shaman
+    await page.mouse.click(far.x, far.y);
+    await page.waitForTimeout(300);
+    expect(at(await getState(page), 2, 9).cardId).toBe('dwarf-pickman');
+    await page.keyboard.press('Escape');
+    await expect.poll(async () => (await page.evaluate(async () => await window.oreheart.getLiftState())).active).toBe(false);
+    s = await getState(page);
+    expect(s.players.player.crystals).toBe(4);
+    expect(at(s, 2, 9).cardId).toBe('dwarf-pickman');
+  });
+
+  test('AC389: hovering across the hand never flickers or turns cards see-through', async ({ page }) => {
+    await r23Start(page);
+    const fan = await r23Fan(page);
+    await page.evaluate(() => {
+      const btns = [...document.querySelector('[aria-label="Your hand"]').querySelectorAll('button')].filter((b) => b.querySelector('[data-card-id]'));
+      window.__r26 = { min: 1, cls: btns.map(() => 0), run: true };
+      const mo = new MutationObserver((ms) => ms.forEach((m) => { const i = btns.indexOf(m.target); if (i >= 0) window.__r26.cls[i]++; }));
+      btns.forEach((b) => mo.observe(b, { attributes: true, attributeFilter: ['class'] }));
+      const tick = () => {
+        for (const b of btns) for (const e of [b, b.querySelector('[data-card-id]')]) window.__r26.min = Math.min(window.__r26.min, parseFloat(getComputedStyle(e).opacity));
+        if (window.__r26.run) requestAnimationFrame(tick);
+      };
+      tick();
+    });
+    const y = Math.min(fan[3].cy + fan[3].height * 0.2, page.viewportSize().height - 4);
+    const x0 = fan[0].cx - fan[0].width * 0.4, x1 = fan[6].cx + fan[6].width * 0.4;
+    await page.mouse.move(x0, y, { steps: 4 });
+    for (let k = 0; k <= 40; k++) await page.mouse.move(x0 + (x1 - x0) * k / 40, y);
+    const sweep = await page.evaluate(() => window.__r26.cls.slice());
+    await page.waitForTimeout(1000);
+    const r = await page.evaluate(() => { window.__r26.run = false; return window.__r26; });
+    expect(r.min, 'no hand card below 0.99 opacity').toBeGreaterThanOrEqual(0.99);
+    sweep.forEach((n, i) => expect(n, `card ${i} pop class toggles during the sweep`).toBeLessThanOrEqual(4));
+    expect(r.cls, 'no class changes while holding still').toEqual(sweep);
+  });
+
+  test('AC391/AC396: Skullflinger plays his normal attack clip, no flying skull is created, the hit lands', async ({ page }) => {
+    test.setTimeout(60000);
+    await start(page, quiet({ board: [
+      { cardId: 'goblin-slinger', owner: 'player', row: 6, col: 5 },
+      { cardId: 'grubnaks-big-boss-troll', owner: 'opponent', row: 3, col: 5 },
+    ] }));
+    if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+    let s = await getState(page);
+    const sl = at(s, 6, 5), troll = at(s, 3, 5);
+    await expect.poll(async () => (await r22Fig(page, sl.uid)).source, { timeout: 20000 }).toBe('goblin-slinger.glb');
+    let atk = null;
+    for (let k = 0; k < 5 && !atk; k++) { await done(page); atk = (await legal(page)).find((a) => a.type === 'attack' && a.creatureUid === sl.uid); }
+    expect(atk).toBeTruthy();
+    expect((await act(page, atk)).ok).toBe(true);
+    expect(at(await getState(page), 3, 5).health).toBe(troll.health - sl.attack);
+    await expect.poll(async () => ((await renderStats(page)).creatureAnimLog || []).some((e) => e.uid === sl.uid && e.anim === 'attack' && ['OH_Attack', 'Skull_Throw'].includes(e.clip)), { timeout: 10000 }).toBe(true);
+    for (let k = 0; k < 6; k++) {
+      const st = await renderStats(page);
+      expect((st.projectiles || []).filter((p) => p.shooterUid === sl.uid), 'no flying skull').toEqual([]);
+      expect((st.projectileLog || []).filter((p) => p.shooterUid === sl.uid)).toEqual([]);
+      await page.waitForTimeout(250);
+    }
+    await expect.poll(async () => ((await renderStats(page)).creatureAnimLog || []).some((e) => e.uid === troll.uid && e.anim === 'hit'), { timeout: 5000 }).toBe(true);
+  });
 });
 
-test('AC371: Skullflinger\'s model keeps its 5 old clips plus Skull_Throw, and events.json gives the release time and bone', async ({ request }) => {
-  const res = await request.get('/models/creatures/goblin-slinger/char.glb');
-  expect(res.ok()).toBe(true);
-  const buf = await res.body();
-  expect(buf.readUInt32LE(0)).toBe(0x46546c67); // "glTF"
-  const json = JSON.parse(buf.subarray(20, 20 + buf.readUInt32LE(12)).toString('utf8'));
-  const clips = (json.animations || []).map((a) => a.name);
-  for (const c of ['Idle', 'Casual_Walk', 'Heavy_Hammer_Swing', 'Hit_Reaction', 'Dead', 'Skull_Throw']) expect(clips).toContain(c);
-  const ev = await request.get('/models/creatures/goblin-slinger/events.json');
-  expect(ev.ok()).toBe(true);
-  const text = JSON.stringify(await ev.json());
-  expect(text).toContain('projectile_release');
-  expect(text).toContain('RightHand');
-  expect(text).toMatch(/0\.633/);
+test.describe('round 26 high-density screen', () => {
+  test.use({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 2 });
+  test('AC375: with deviceScaleFactor 2 the 3D drawing buffer is 2x its CSS size', async ({ page }) => {
+    await start(page, quiet({}));
+    if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+    await expect.poll(async () => { const c = (await renderStats(page)).canvas; return c && c.pixelRatio === 2 && near(c.bufferWidth, 2 * c.cssWidth, 2) && near(c.bufferHeight, 2 * c.cssHeight, 2); }, { timeout: 5000 }).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight)).toBe(true);
+  });
+});
+
+test.describe('round 26 first click', () => {
+  test.use({ viewport: { width: 1280, height: 720 } });
+  test('AC376: the first click asks for fullscreen once; a refusal shows no error', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+    await page.addInitScript(() => {
+      window.__fs = 0;
+      Element.prototype.requestFullscreen = function () { window.__fs++; return Promise.reject(new Error('refused')); };
+    });
+    await page.goto('/');
+    await page.mouse.click(40, 40);
+    await expect.poll(async () => page.evaluate(() => window.__fs)).toBe(1);
+    await page.mouse.click(60, 60);
+    await page.mouse.click(80, 80);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.__fs)).toBe(1);
+    expect(errors).toEqual([]);
+  });
+});
+
+for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }, { width: 844, height: 390 }]) {
+  test.describe(`round 26 layout ${vp.width}x${vp.height}`, () => {
+    test.use({ viewport: vp });
+
+    test(`AC374: the full hand is spaced 0.26 of a card (or squeezed to fit) and every card is fully on screen (${vp.width}x${vp.height})`, async ({ page }) => {
+      await r23Start(page);
+      const fan = await r23Fan(page);
+      expect(fan.length).toBe(7);
+      for (let i = 1; i < 7; i++) {
+        const g = (fan[i].cx - fan[i - 1].cx) / fan[0].width;
+        if (vp.width === 1920) { expect(g).toBeGreaterThanOrEqual(0.24); expect(g).toBeLessThanOrEqual(0.28); } else expect(g).toBeLessThanOrEqual(0.28);
+      }
+      const btns = handButtons(page);
+      for (let i = 0; i < 7; i++) {
+        const b = await btns.nth(i).boundingBox();
+        expect(b.x >= -1 && b.y >= -1 && b.x + b.width <= vp.width + 1 && b.y + b.height <= vp.height + 1, `card ${i} fully on screen`).toBe(true);
+      }
+    });
+
+    test(`AC381: the mine-all pickaxe badge is fully visible and uncovered (${vp.width}x${vp.height})`, async ({ page }) => {
+      await start(page, { ai: false, setup: { board: [
+        { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 2 },
+        { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 3 },
+      ] } });
+      await done(page);
+      const badge = siteBtn(page, M1).locator('[data-mine-badge]');
+      await expect(badge).toBeVisible();
+      await expect(badge).toContainText('2');
+      const ok = await badge.evaluate((e) => {
+        const r = e.getBoundingClientRect();
+        if (r.left < 0 || r.top < 0 || r.right > innerWidth || r.bottom > innerHeight) return 'outside the window';
+        const pts = [[r.left + r.width / 2, r.top + r.height / 2], [r.left + 2, r.top + 2], [r.right - 2, r.top + 2], [r.left + 2, r.bottom - 2], [r.right - 2, r.bottom - 2]];
+        for (const [x, y] of pts) { const h = document.elementFromPoint(x, y); if (!h || !(h === e || e.contains(h))) return `covered at ${Math.round(x)},${Math.round(y)}`; }
+        return 'ok';
+      });
+      expect(ok).toBe('ok');
+    });
+  });
+}
+
+test.describe('round 26 Respond on a phone', () => {
+  test.use({ viewport: { width: 844, height: 390 } });
+  test('AC386: at 844x390 the Respond box and all its buttons are fully on screen', async ({ page }) => {
+    const s = await start(page, respondSetup);
+    expect((await act(page, { type: 'cast', uid: handUid(s, 'opponent', 'fireball'), target: { row: 6, col: 4 } })).ok).toBe(true);
+    const dlg = page.getByRole('dialog', { name: 'Respond?' });
+    await expect(dlg).toBeVisible();
+    const inView = (b) => b.x >= -1 && b.y >= -1 && b.x + b.width <= 845 && b.y + b.height <= 391;
+    expect(inView(await dlg.boundingBox())).toBe(true);
+    const btns = dlg.getByRole('button');
+    for (let i = 0; i < await btns.count(); i++) expect(inView(await btns.nth(i).boundingBox())).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
+  });
+});
+
+// Models: owner Model Editor parts and OH_ clip maps
+const glbClips = async (request, id) => {
+  const buf = await (await request.get(`/models/creatures/${id}/char.glb`)).body();
+  return (JSON.parse(buf.subarray(20, 20 + buf.readUInt32LE(12)).toString('utf8')).animations || []).map((a) => a.name);
+};
+async function r26Models(page, request, ids) {
+  const board = ids.map((id, i) => ({ cardId: id, owner: 'player', row: 7 - (i % 2), col: 3 + Math.floor(i / 2) * 2 }));
+  await start(page, quiet({ board }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  const s = await getState(page);
+  for (const [i, id] of ids.entries()) {
+    const c = at(s, board[i].row, board[i].col);
+    expect(c && c.cardId).toBe(id);
+    const want = R26_SETUPS[id] || [];
+    // AC392 / AC393 / AC394: every part from the owner's setups file is attached with the same bone and transform, and loads
+    await expect.poll(async () => {
+      const parts = (await r22Fig(page, c.uid)).parts || [];
+      return want.every(([bone, pos, rot, scale]) => parts.some((p) => p.loaded === true && p.bone === bone
+        && pos.every((v, k) => near(p.pos[k], v, 0.001)) && rot.every((v, k) => near(p.rotDeg[k], v, 0.001)) && scale.every((v, k) => near(p.scale[k], v, 0.001))));
+    }, { message: `${id}: parts like the Model Editor`, timeout: 40000 }).toBe(true);
+    // AC390: the idle clip is the one named in models.json "clips"
+    const mj = await (await request.get(`/models/creatures/${id}/models.json`)).json();
+    if (mj.clips && mj.clips.idle) await expect.poll(async () => (await r22Fig(page, c.uid)).currentClip, { message: `${id} idle clip`, timeout: 10000 }).toBe(mj.clips.idle);
+  }
+}
+
+test('AC390/AC392/AC393: Goblin figures carry their parts exactly as in the owner\'s Model Editor and idle on their OH_ clip', async ({ page, request }) => {
+  test.setTimeout(120000);
+  await r26Models(page, request, ['goblin-grunt', 'goblin-slinger', 'junk-shaman', 'shiv-rat', 'skullbasher-rusher', 'goblin-scrapper']);
+});
+
+test('AC390/AC394: Thunderwing Gyronaut and Aegis Tinkerer have their gear, events.json and a clips map whose clips exist', async ({ page, request }) => {
+  test.setTimeout(90000);
+  for (const id of ['gyrocopter-ace', 'gnome-tinker']) {
+    const mj = await (await request.get(`/models/creatures/${id}/models.json`)).json();
+    expect(mj.clips && Object.keys(mj.clips).length, `${id} clips map`).toBeTruthy();
+    expect((await request.get(`/models/creatures/${id}/events.json`)).ok(), `${id} events.json`).toBe(true);
+    const clips = await glbClips(request, id);
+    for (const [role, name] of Object.entries(mj.clips)) expect(clips, `${id} ${role} -> ${name}`).toContain(name);
+  }
+  await r26Models(page, request, ['gyrocopter-ace', 'gnome-tinker']);
 });
