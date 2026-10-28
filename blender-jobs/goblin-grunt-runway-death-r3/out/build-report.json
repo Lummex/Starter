@@ -1,0 +1,90 @@
+{
+ "base_pose": "rest pose",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Death",
+   "frames": 120,
+   "seconds": 4.0,
+   "key_frames": [
+    0,
+    8,
+    16,
+    24,
+    32,
+    40,
+    48,
+    54,
+    58,
+    63,
+    68,
+    73,
+    77,
+    82,
+    86,
+    90,
+    120
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftShoulder",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightShoulder",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 24.7,
+   "feet_drift_m": 0.3765
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Death: OH_Death lying pose joint heights (share of height): Hips 0.255, Spine02 0.243, Spine 0.213, Head 0.195, LeftShoulder 0.204, RightShoulder 0.204, LeftHand 0.168, RightHand 0.173, LeftUpLeg 0.203, RightUpLeg 0.305, LeftLeg 0.235, RightLeg 0.235, LeftFoot 0.235, RightFoot 0.235"
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Death": {
+    "keys": 121,
+    "seconds": 4.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead",
+    "OH_Idle",
+    "OH_Walk",
+    "OH_Attack",
+    "OH_Hit",
+    "OH_React_Knockback",
+    "OH_React_Bonk",
+    "OH_React_Bowled",
+    "OH_React_Backstab",
+    "OH_React_Lifted"
+   ],
+   "worst_position_error_pct_of_height": 0.0008,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 3e-05
+ }
+}
