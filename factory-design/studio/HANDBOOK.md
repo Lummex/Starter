@@ -19,13 +19,20 @@ Every agent reads this first, then its own onboarding file in factory-design/stu
   - `artRequests` — picture requests and results (Art Studio).
   - `modelSetups` — saved Model Editor setups and backups.
   - `cardTemplates` — card frame layouts (Card Editor). (Also small: `settings`, `sentToClaude`.)
-- Inside the Studio: Home / Next for me / Characters, plus the rooms **Model Editor**, **Art Studio** and **Card Editor** (links: `#room-model`, `#room-art`, `#room-card`).
+  - `decisions` — questions for Ken that aren't tied to one card: title, question, options [{label, value, note?}], status open|answered, answer, answerValue, answerNote, answeredAt, answeredBy, askedBy, askedAt, order, link.
+- Inside the Studio: Home / **Waiting for you** / Next for me / Characters, plus the rooms **Model Editor**, **Art Studio** and **Card Editor** (links: `#room-model`, `#room-art`, `#room-card`).
 - **Old programs are backup-only** (red banner "Moved to Oreheart Studio. Don't edit here"; their pages no longer save): Model Editor (5isEcq…), Motion References (U9YiTA…), Studio Checklist (KwnPNS…), Art Studio (DRScVH…), Card Editor (Hd1vVJ…). Do not read from or write to their databases. They are kept, not deleted.
 
 ### Adding files to the Studio
 - **Videos and pictures** (Runway clips, renders, sheets): upload with the Artifact tool, `action: publish`, `url` = Studio, `asset: true`, `file_path` (or `file_paths`, max 25; files must be in your working folder). Store only the returned **asset id** in the db (e.g. `takes/<id>.video`); the page shows it at `/_blob/<id>`. New take = `set` a `takes` doc with status "waiting".
 - **3D models** (GLB): the Model Editor room loads bundled models from the Studio's published files `models/<key>.glb.txt` (base64 GLB). Only Wright publishes the Studio page: send Wright the GLB (repo path) and the key/name, and Wright adds the file plus its entry in `model-editor.html` in one publish. Then set `library/<card>.src = {key, kind:"bundled"}` with ArtifactData.
 - Never delete a Studio record or asset without Ken's OK.
+
+### Asking Ken (Oct 28): the "Waiting for you" page
+- Ken answers everything on ONE page: Oreheart Studio → **Waiting for you** (`#waiting`; badge with the count on the top bar). It gathers, live: every `takes` doc with status "waiting", every `characters` step with status "waiting", and every open doc in `decisions`.
+- **Ask Ken through the `decisions` collection; don't ask him in chat.** New question = ArtifactData `set` on `decisions/<short-id>`: `{title, question, options: [{label:"Yes",value:"yes"},{label:"No",value:"no"}], status:"open", answer:"", answerNote:"", answeredAt:"", askedBy:"<your name>", askedAt:<real UTC now>, order:<number>, link:""}`. Add `{label:"Send my note", value:"note", note:true}` when he may want to write his own answer. Keep the question short and plain.
+- **Read his answers there:** query `decisions` where status == "answered" (fields `answer`, `answerValue`, `answerNote`, `answeredAt`). Ken can reopen an answer ("Change my answer"), so read it again right before acting.
+- To get approval on card work, set that step or take to status "waiting" (it shows up on the page by itself). Never delete a decision; when it no longer matters, ask Ken or leave it answered.
 
 ## The game
 Oreheart is a fantasy card and board game (goblins, gnomes, dwarves; mines, ore and crystals) played in the browser with 3D models on the board.
