@@ -1753,6 +1753,8 @@ html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!im
 .speech.cmd-speech img{width:calc(clamp(100px,11vw,200px) * .65)}
 .mine-emblem{display:block;width:100%;max-width:2.4em;height:auto;margin:0 auto;pointer-events:none}
 .pickaxe[data-mine-badge]{pointer-events:auto!important;z-index:6}
+/* Owner fix Oct 28: the site mark is clipped to its square; while the pickaxe badge shows, drop the clip so the whole pickaxe (head + handle) is visible */
+.site-mark.ready{clip-path:none!important}
 .dialog.respond-dlg{max-width:min(546px,96vw);font-size:1.3em;overflow:visible}
 .dialog.respond-dlg .btn{min-height:44px;min-width:0;font-size:1em}
 .dialog.respond-dlg .menu-list{gap:12px}
