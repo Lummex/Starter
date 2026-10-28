@@ -60,6 +60,13 @@
 - Vercel queue (Oct 28): every commit to factory/issue-8 or blender-queue starts Git builds in factory-2, oreheart-4, oreheart1-6, starter, starter-dashboard. The newest go first, so a CLI preview from "Factory — preview only" can sit "Queued" for an hour. "Start Building Now" = paid On-Demand builds, don't press it. Turning off Git builds on those old projects (Ken) would fix it.
 - Several Anvil runs commit owner fixes to factory/issue-8 at the same time; wait for the other run's commit, then fetch files by the newest commit sha right before uploading.
 
+## Learned Oct 28 (match-menu highlights, fix 8)
+- Settings "Square highlights" panel is now one method `highlightPanel(fac, onReset)` in app.ts; the in-match Menu item "Square highlights" (`matchHighlights()`) reuses it. Menu items are the `menuItems` list passed to applyOwnerHud (~line 902); owner-hud.ts builds the buttons from it.
+- **Vercel queue jam (Oct 28):** with many agents committing, starter-dashboard builds production on every main commit, and old git-connected projects (oreheart1-6, oreheart-4, factory-2) queue builds too. oreheart-8 previews then sit "Queued" for 1 h+, and Factory — preview only times out at 20 min (the Vercel deploy stays queued). Check the queue at vercel.com/lummex/~/deployments before starting a preview. Ken has to disconnect Git / cancel those builds.
+- Don't start one preview per small fix: agree on ONE preview at the end (other runs started 10 previews for fixes 1-7).
+- My Chrome tab leaves the group during long (5-9 min) sleeps: open a new tab after each wait.
+- The Chrome tool also blocks JS output with "x=y;" patterns: replace ; as well as ? = &.
+
 ## Open issues
 - Comment paging bug above (blocks Round 25). Waiting for Ken's OK to fix.
 - Build #54 (Oct 25) failed: "ENOENT … factory-data/oreheart-8/acceptance". Build #55 did NOT hit it (tests were restored after each builder step). Likely cause: the builder agent committed the deletion of the hidden tests itself, so `confineTo()` (pipeline.mjs, uses `git diff HEAD`) had nothing to restore. Not fixed.
@@ -82,3 +89,4 @@
 - 2026-10-28 (later) Forge job #4 of 4 small owner fixes: removed mine hover pop-up (commit 2f49dd3 on factory/issue-8, on top of pickaxe/icon/flutter). Preview run #17 → oreheart-8-396k2t0zp-lummex.vercel.app (GitHub job cancelled at 20 min; Vercel state unknown). Could not test: Chrome permission blocked on vercel.app. Report: factory-design/studio/reports/2026-10-28-anvil-mine-hover-popup.md.
 - 2026-10-28 (later) Owner fix from Forge: mine-all pickaxe cut off. Cause: .site-mark clip-path. Fix commit 5c959d4 on factory/issue-8 (one CSS rule). Checked with live CSS on old preview vqwc8zlrr. Preview-only run #14 -> oreheart-8-4gl49odvv (stuck in Vercel queue, not yet checked there). Report: factory-design/studio/reports/2026-10-28-anvil-pickaxe-fix.md.
 - 2026-10-28 (later) Owner fix from Forge: mine emblem drawn under 3D units (emblem now a depth-tested sprite in scene.ts; HTML copy hidden in 3D). Commit c96705a on factory/issue-8 (on top of pickaxe fix 5c959d4). Preview #15 = oreheart-8-k2ffmsal0 but still Queued on Vercel after ~55 min, so NOT checked in the browser yet. Report: factory-design/studio/reports/2026-10-28-anvil-mine-icon-under-units.md.
+- 2026-10-28 (later) Fix 8 of 8 (Forge, fast path): square highlight colours in the in-match Menu, reusing the Settings panel and setting. Commit d6a8871 on factory/issue-8. Preview #21 (oreheart-8-r91j0l7ro) stuck Queued on Vercel with all other previews; nothing tested. Report: factory-design/studio/reports/2026-10-28-anvil-match-menu-highlights.md.
