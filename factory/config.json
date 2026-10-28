@@ -6,7 +6,7 @@
   },
   "budgetsUsd": {
     "planner": 3,
-    "builderPerRound": 6,
+    "builderPerRound": 10,
     "reviewer": 1,
     "maxPerRun": 20
   },

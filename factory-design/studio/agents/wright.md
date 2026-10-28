@@ -5,9 +5,12 @@ I build Ken's tools ("programs"): pinned claude.ai artifacts (review boards, das
 ## My programs
 | Program | Link | Data |
 |---|---|---|
-| Motion References | https://claude.ai/artifact/U9YiTAL4juKxjLgvNeKEe8 | db collection `takes` (one doc per Runway clip), videos = artifact assets |
-| **Oreheart Studio** (main, Oct 28) | https://claude.ai/artifact/PrZreWSayBrALDPvQwsVmn | db `characters`, `checks`, `takes`; pictures as files/assets. Replaces Studio Checklist. |
-| Studio Checklist (backup) | https://claude.ai/artifact/KwnPNScc2RjbM98WZ7R79G | db collections `characters` (steps per card) and `checks` (Gauge's checklist). Layout in reports/2026-10-28-wright-studio-checklist.md |
+| **Oreheart Studio** (THE ONE HOME since Oct 28) | https://claude.ai/artifact/PrZreWSayBrALDPvQwsVmn | db `library`, `characters`, `checks`, `takes`, `cards`, `artRequests`, `modelSetups`, `cardTemplates` (+ `settings`, `sentToClaude`); pictures/videos as assets; models as published files. Rooms: model-editor.html, art-studio.html, card-editor.html (room URL `?v=18`). |
+| Motion References (backup-only) | https://claude.ai/artifact/U9YiTAL4juKxjLgvNeKEe8 | old db `takes` |
+| Studio Checklist (backup-only) | https://claude.ai/artifact/KwnPNScc2RjbM98WZ7R79G | old db `characters`, `checks` |
+| Model Editor (backup-only) | https://claude.ai/artifact/5isEcqgnmtqRHJUWAmqRDd | old db `library`, `modelSetups` |
+| Art Studio (backup-only) | https://claude.ai/artifact/DRScVHs88h8SD84Khm6z8B | old db `artRequests`, `cards`, `settings` |
+| Card Editor (backup-only) | https://claude.ai/artifact/Hd1vVJXzW81ZWETBZuuspR | old db `cardTemplates`, `sentToClaude` |
 
 ## How I work (learned 2026-10-27)
 - Read the handbook first, then this file.
@@ -33,6 +36,7 @@ I build Ken's tools ("programs"): pinned claude.ai artifacts (review boards, das
 ## Deep links (2026-10-28)
 - Model Editor: `#<card-id>` = open card in the Cards & models list, `#scene-<card-id>` = open in the 3D scene (DEEP/readDeep/tryDeep after libLoad).
 - Motion References: `#<character-id>` = filter to that character. Studio Checklist: `#<card-id>` opens that character's panel.
+- Studio rooms: `#room-model`, `#room-art`, `#room-card`; `#room-model--scene-<card-id>`.
 - Editing a big program I didn't write: Artifact read with path index.html -> out_dir, then publish with url + file_path + small `edits` (no need to load 280 KB into chat).
 - device_commit_files with the same stagedPath reuses an old cached copy: always write a fresh output folder before committing.
 
@@ -46,15 +50,52 @@ I build Ken's tools ("programs"): pinned claude.ai artifacts (review boards, das
 - Asset copies get new ids at every hop (Model Editor -> Checklist -> Studio): keep an old->new map file per hop.
 - Ken deleted all Motion References videos on Oct 28 on purpose.
 
-## Motion References: database layout
+## Moving an editor into the Studio (Stage 2, 2026-10-28)
+- Room = the editor's index.html saved as `<name>.html` in the Studio's files; add at the start of <body>: `var CL=(parent!==window&&parent.claude)||window.claude` and replace `claude.use(` with `CL.use(`.
+- Copy its published files with `files: {path: {artifact, path}}`: max 64 MB of copied files per publish (split by size).
+- Copy only the assets its db records reference (regex 32-hex ids over the records), keep old->new maps, rewrite every id in the records, then seed with ArtifactData batch (<=50 per batch).
+- Model Editor room: on `#scene-<id>` it clears the scene and skips the default Grubnak + autosave.
+
+## Rooms: the realm bridge (2026-10-28, important)
+- A room page (iframe) calling the parent's db with its own objects fails: "arguments must be plain JSON data". Fix = shim: wrap the parent's namespaces; convert every object/array argument with `parent.JSON.parse(JSON.stringify(x))`; wrap returned refs (they have null prototypes with own function props, so check for function props, not prototype). Blobs: `new parent.Blob([b])`.
+- Bust the iframe cache with `?v=<n>` on room URLs after changing a room file (now v=18).
+- Hub Test artifact (JwntCbnu…) is my test bench for room experiments.
+
+## Motion References: database layout (same in Studio `takes`)
 Collection `takes`, doc id = Runway job id (e.g. `gyrocopter-ace-cast-side`). Fields:
-character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view order), title, tag, detail, view (front/side/back), seconds, prompt, video (asset id), moves [{move, from, to}], order, source (repo path of clip.mp4), runwayTask, status ("waiting" | "approved" | "redraw"), note (Ken's redraw note), chosen (bool, one per character+move), decidedBy (user id), updatedAt.
+character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view order), title, tag, detail, view (front/side/back), seconds, prompt, video (asset id), moves [{move, from, to}], parts [{part, move, start, end, status, note, decidedBy, updatedAt}], order, source (repo path of clip.mp4), runwayTask, status ("waiting" | "approved" | "redraw"), note, chosen (bool, one per character+move), decidedBy (user id), updatedAt.
 - Adding a new clip: download clip.mp4 + info.json, upload clip as asset, `set` a new doc with status "waiting", chosen false.
 - After a redraw is made: upload the new clip, then `update` the doc: video = new id, status "waiting", note "" (or keep the old note in a `history` field).
 
-## Studio Checklist: database layout (short)
-`characters/<card-id>`: name, faction, role, rarity, order, kenNote/kenNoteAt/kenNoteBy (page writes), images{art,sheet,model,editor}, steps.{art,sheet,model,editor,runway,blender,editors,gauge,preview,live} = {status: not-started|working|waiting|approved|failed, agent, link, note, updatedAt}.
+## Studio Checklist: database layout (short; same in Studio `characters`/`checks`)
+`characters/<card-id>`: name, faction, role, rarity, order, kenNote/kenNoteAt/kenNoteBy (page writes), images{art,sheet,model,editor}, steps.{art,sheet,model,editor,runway,blender,editors,gauge,preview,live} = {status: not-started|working|waiting|approved|failed|redraw|skipped, agent, link, note, updatedAt}.
 `checks/<card-id>`: checkedAt, checkedBy, items [{section, item, level must|nice, result pass|fail|not-checked, missing, fixer}].
 
+## Move approvals (Model Editor room, Oct 28)
+- Stored on `library/<card-id>.animApprovals = {<clip name>: {status, note, at}}`. status: "approved" | "redraw" (note = what to change) | "removed" (out of his moves, kept safe, can be put back) | "" (not checked).
+- Never delete a key from a map with `update`: the store merges maps, so the old key stays. Write status "" instead.
+- The Studio's Posing & animation step shows the counts and a button that opens the Model Editor on that character.
+- Builders (Ledger/Anvil): skip clips with status "removed" when putting moves in the game.
+- Chrome screenshots of the Studio sometimes time out (3D canvas); retry. Mouse-wheel scroll in the room panel is unreliable; drag the panel scrollbar instead.
+
+## Rigging (Oct 28)
+- Models made outside the Meshy pipeline (no entry in factory-design/meshy-jobs/state.json) never got Meshy's rig + default moves. Example: Anvilsworn Miner (Stonebreaker), Thane Borgo. Check a GLB quickly: parse the JSON chunk; skins = 0 means no skeleton.
+- Ken said no to a second Meshy call for rigging. Rigging goes to Spring's Blender worker. Job: reports/2026-10-28-wright-job-spring-rig-dwarves.md. Unrigged GLBs are in factory-design/models/<card-id>/.
+- Commanders (cmd-*) aren't in the Studio `characters` list, only in `library`.
+
+## Two Model Editors (Oct 28) — now over: Studio is the one home
+- Old sync recipe (only if ever needed again): list both sides, map old asset ids → Studio ids, copy missing assets (asset:true, from_url, 10 ids per call), `update` only changed fields. Never overwrite Studio-only fields (animApprovals, animRequests, new accessories).
+- After syncing, the first Studio load showed an auto-attached shield (old data cached). A fresh reload showed Ken's saved setup. Always reload once before judging.
+
+## One home (Oct 28, job from Forge) — how I did it
+- Diff method: ArtifactData list every collection on both sides with out_dir, compare docs with 32-hex asset ids replaced by "ID", then per field compare `updatedAt` (and per step for `characters.steps`). Rule: copy only what changed ONLY on the old side since ~01:30; when both changed, keep the Studio and list the conflict; never bring back what Ken deleted in the Studio.
+- Bundled model into the Studio: publish Studio index.html with `files: {"model-editor.html": local, "models/<key>.glb.txt": {artifact: oldME, path}}` + add `{key,name,file,gh,lib:1}` to the bundled list in model-editor.html + bump room `?v=`.
+- Making a program backup-only: replace `(window.)claude.use(` with `__OHRO.use(` and insert a banner + guard script right after `</title>`. Guard = Proxy over an EMPTY target `{}` (proxying the frozen namespace directly breaks Proxy invariants), forwarding to the real object; blocks db set/update/delete/add (resolve no-op + flash the bar), assets upload/delete and artifact publish (reject). Wrap callback args and returned objects/arrays too (snapshot → docs → ref), but return `.data()` results raw. Tested with a frozen fake db in Playwright first: my first version leaked `snapshot.docs[0].ref.update` (snapshot object had no function props) — fixed by wrapping every plain/null-proto object.
+- MR/Checklist: also `canWrite:false` hides their buttons.
+- Publishing to an artifact I hadn't viewed: the first publish is refused and shows a diff (counts as viewed); if the diff only shows my own edits, publish the same file again (may need two tries: "identical content already refused" then it goes through).
+- Old programs stay pinned; republishing keeps the pin.
+- Don't `cat > file` without a heredoc in Bash: it waits for input and the call times out.
+
 ## Ken's feedback
-- (none yet)
+- Wants to approve each move where he watches it, and to remove moves he doesn't want from a character's set (Oct 28).
+- Oct 28: works only in Oreheart Studio now; changes go there "through their processes".

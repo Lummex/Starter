@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+import sys, json, os
+a = sys.argv
+if '--version' in a: print('Blender 4.2.0 (fake for tests)'); sys.exit(0)
+script = os.path.basename(a[a.index('--python') + 1]); args = a[a.index('--') + 1:] if '--' in a else []
+if script == 'worker.py':
+    sys.exit(0)
+out = args[args.index('--out') + 1]
+if script == 'inspect_asset.py':
+    json.dump({'actions': [{'name': 'Idle'}], 'meshes': [], 'armature': {'bone_count': 1}}, open(out, 'w'))
+    sys.exit(0)
+print('fake blender: unexpected script', script); sys.exit(5)

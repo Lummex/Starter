@@ -1,28 +1,35 @@
-# Anvil report — card drag and wider hand (Oct 28)
+# Anvil report – card drag round (build #55), 2026-10-28
 
-Job from Forge (Ken asked for it on Oct 28; OK for one factory round, preview only, not production).
+Job from Forge (Ken added factory:revise on #8). Preview only – nothing put on production.
+Earlier today (first part of this job): I wrote the Round 25 brief (factory-design/design/oreheart-round-25-card-drag-brief.md) and posted the Round 25 comment on #8; Ken then added the label himself.
 
-## Done
-- Brief written: factory-design/design/oreheart-round-25-card-drag-brief.md (on main). It covers:
-  - the card is held by its center
-  - over the board it shrinks to the on-screen size and perspective of the square under it, and that square is highlighted
-  - it grows back over the hand
-  - dropping works as before
-  - the hand is about 30% wider (owner layout hand overlap 0.2 → 0.26), still squeezing to fit small screens
-  - new checks AC361–AC365, and the editor-update list
-  - a "no git commands / don't touch factory-data acceptance" rule
-  - Round 24 (Skullflinger throw) is kept on hold
-- Round 25 comment posted on issue #8.
+## Result in one line
+Build #55 **succeeded, but it built the wrong round**: Round 24 (Skullflinger skull throw, on hold) instead of Round 25 (card drag + wider hand). The card-drag changes are **not** in the game.
 
-## Not done (blocked)
-- **The factory round was not started.** Adding the `factory:revise` label on issue #8 was blocked by my permission check. Ken needs to add that label himself (issue #8 → Labels → factory:revise).
-- So there is no new preview yet, and I haven't checked anything in the browser. The last preview is still https://oreheart-8-2o1xz3dbv-lummex.vercel.app (before this change).
-- Game Editor hand overlap (0.2 → 0.26): update it after the round is built and Ken likes the preview.
+## What happened
+- Factory — build #55 ran 02:24–04:23 UTC (~2 h, about $3.8 of agent budget). Ended "Ready for your review, but some checks failed" (404 of 438 passed).
+- The factory made its own preview: https://oreheart-8-j2ykckwo2-lummex.vercel.app (so I did not run "Factory — preview only" separately).
+- The planner said: latest message it could see was Round 15, so it followed the Round 24 brief on the branch instead.
+- No "missing test folder" failure this time (the hidden tests were restored after each builder step).
 
-## Risk
-- The last factory run (Factory — build #54) stopped with "ENOENT … factory-data/oreheart-8/acceptance". The folder exists on main and on the branch. The new brief tells the builder not to run git or touch that folder, but the factory script itself is unchanged. If the round fails the same way, the factory script needs a fix (separate job).
+## Why the Round 25 comment was missed (root cause, checked)
+- `ownerFeedback()` in `factory/scripts/lib.mjs` reads `issues/8/comments?per_page=100` – only the **first page**.
+- Issue #8 has **117 comments**. Page 1 ends on Oct 24 (Round 15 era). The Round 16–25 owner comments, including Round 25 (Oct 28 00:30), are on page 2, so the planner never sees them.
+- Rounds 16–24 probably worked only because their briefs were also written into the branch brief file.
 
-## Next
-1. Ken adds the factory:revise label on #8 (the round takes about 1–1.5 h).
-2. Anvil runs "Factory — preview only", then checks the drag in the browser: centered, shrinks to one square, square highlighted, wider hand. Screenshots go in the report.
-3. Update the Game Editor's hand overlap to match.
+## Fix (needs Ken's OK – nothing changed)
+- In `factory/scripts/lib.mjs`, make `ownerFeedback()` read all pages (loop `&page=2,3…` until a page is empty, or use `gh api --paginate`). One small change.
+- Optional: also tell the planner "the NEWEST owner comment is the current round".
+- Then re-run the card-drag round (Ken adds factory:revise again).
+
+## Preview test (Chrome, 1803×886 window)
+- Drag a card: card is **not** held by its center – it hangs off the pointer by its top-right corner, tilted ~20°. ✗
+- Shrinks to one square over the board: **no**, stays full card size (~187×226 px). ✗
+- Square under it highlighted: **yes** (white outline – this already existed). ✓
+- Grows back over the hand: stays about the same size (206×232). Not the new behaviour. ✗
+- Drop: **works** – Goblin Scrounger dropped on a square and was placed. ✓
+- Hand spread wider: **no change** – cards still overlap about half (step ~107 px for a 211 px card). ✗
+- Skullflinger skull throw: not tested (not my job today).
+
+## Rules followed
+No production deploy, no new factory round, nothing deleted, no factory code changed.

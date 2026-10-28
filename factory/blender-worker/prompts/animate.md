@@ -25,3 +25,6 @@ Clips to make (JSON):
 - Keep the character on the spot with feet planted; only small hip shifts with `move`.
 - Make it read clearly from the game's camera: strong silhouettes, anticipation, overshoot and settle, cartoon timing.
 - When done, reply with one short paragraph: the key poses and frames you chose.
+
+## Reference pictures
+- If the job lists reference pictures (for example frames of an owner-approved Runway video), the worker copies them into `refs/` before you start. Read them all first and match the body and limb poses and the timing.

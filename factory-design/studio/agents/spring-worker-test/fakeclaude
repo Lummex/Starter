@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+# Fake Claude Code: records what it can see in refs/ and writes NO animation (so the job fails on purpose).
+import sys, os, json
+if '--version' in sys.argv: print('fake claude 1.0'); sys.exit(0)
+if 'mcp' in sys.argv: print('none'); sys.exit(0)
+refs = []
+for root, _, files in os.walk('refs'):
+    refs += [os.path.relpath(os.path.join(root, f), '.') for f in files]
+with open(os.environ['FAKECLAUDE_LOG'], 'a') as f:
+    f.write(json.dumps({'cwd': os.path.basename(os.getcwd()), 'refs': sorted(refs)}) + '\n')
+print('I looked at the pictures but wrote nothing (test).')

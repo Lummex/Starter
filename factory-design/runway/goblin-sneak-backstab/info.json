@@ -1,0 +1,26 @@
+{
+ "id": "goblin-sneak-backstab",
+ "character": "goblin-sneak",
+ "move": "backstab",
+ "prompt": "A cartoon goblin with green skin, a dark purple hood and scarf, holding a small dagger in his right hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), sneaking: he crouches low, tiptoes a little to one side and back in place, sneaky and careful, dagger held low and close to his body. Part 2 (3-6 s), quick jab: he leans in to the side and makes one fast sneaky poke with the dagger, a quick underhand jab into the empty air past his side, then pulls back, straightens up and returns to the standing pose from the start so the clip loops. Feet stay in the same small spot. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation.",
+ "model": "grok_imagine_1_5_lite",
+ "ratio": "auto_480p",
+ "duration": 6,
+ "taskId": "d0add9b9-8f0f-4c7f-a6c7-f2cc8a42bdd4",
+ "made": "2026-10-28T04:51:44.711Z",
+ "view": "front",
+ "segments": [
+  {
+   "move": "sneak-in",
+   "from": 0,
+   "to": 3
+  },
+  {
+   "move": "quick-jab",
+   "from": 3,
+   "to": 6
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}

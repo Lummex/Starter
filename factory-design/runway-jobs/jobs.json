@@ -197,6 +197,259 @@
     }
    ],
    "prompt": "A cartoon goblin with green skin, a purple ragged kilt and big brown boots. Seen from behind. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), idle: he stands in place breathing slowly, chest rising and falling, a slight sway and a gentle weight shift from one foot to the other, arms relaxed at his sides, hands in loose fists. Part 2 (3-6 s), boxing workout: he raises both fists into a guard in front of his chin, bounces lightly on his toes and throws practice punches into the empty air: left jab, right jab, left hook, right hook, then lowers his arms back to the relaxed standing pose from the start so the clip loops. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Feet stay in the same spot. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D game animation."
+  },
+  {
+   "id": "goblin-grunt-death",
+   "character": "goblin-grunt",
+   "move": "death",
+   "view": "front",
+   "image": "goblin-grunt--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "fall-over",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "lying-still",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, wild pink hair, a rusty metal helmet and purple rags, holding a wooden board in one hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), falls over: he wobbles as if very dizzy, his knees buckle, he sits down onto his bottom and then gently tumbles down onto his back on the floor, right where he stood, with no sliding. He keeps holding his wooden board the whole time. Part 2 (3-6 s), lying still: he lies flat on his back on the floor, arms loosely to the sides, completely still until the end like a sleepy cartoon. He stays in the same spot the whole time. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation."
+  },
+  {
+   "id": "goblin-pebbler-death",
+   "character": "goblin-pebbler",
+   "move": "death",
+   "view": "front",
+   "image": "goblin-pebbler--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "fall-over",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "lying-still",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, a purple hood with a skull sign and brown leather straps, holding a small spiked club in one hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), falls over: he wobbles as if very dizzy, his knees buckle, he sits down onto his bottom and then gently tumbles down onto his back on the floor, right where he stood, with no sliding. He keeps holding his club the whole time. Part 2 (3-6 s), lying still: he lies flat on his back on the floor, arms loosely to the sides, completely still until the end like a sleepy cartoon. He stays in the same spot the whole time. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation."
+  },
+  {
+   "id": "goblin-scrapper-death",
+   "character": "goblin-scrapper",
+   "move": "death",
+   "view": "front",
+   "image": "goblin-scrapper--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "fall-over",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "lying-still",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, a purple hood with a skull sign, brown leather straps and big brown boots. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), falls over: he wobbles as if very dizzy, his knees buckle, he sits down onto his bottom and then gently tumbles down onto his back on the floor, right where he stood, with no sliding. Part 2 (3-6 s), lying still: he lies flat on his back on the floor, arms loosely to the sides, completely still until the end like a sleepy cartoon. He stays in the same spot the whole time. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation."
+  },
+  {
+   "id": "goblin-slinger-death",
+   "character": "goblin-slinger",
+   "move": "death",
+   "view": "front",
+   "image": "goblin-slinger--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "fall-over",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "lying-still",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, spiky black and yellow hair and purple rags, holding a round ball in one hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), falls over: he wobbles as if very dizzy, his knees buckle, he sits down onto his bottom and then gently tumbles down onto his back on the floor, right where he stood, with no sliding. He keeps holding his ball the whole time. Part 2 (3-6 s), lying still: he lies flat on his back on the floor, arms loosely to the sides, completely still until the end like a sleepy cartoon. He stays in the same spot the whole time. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation."
+  },
+  {
+   "id": "goblin-sneak-death",
+   "character": "goblin-sneak",
+   "move": "death",
+   "view": "front",
+   "image": "goblin-sneak--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "fall-over",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "lying-still",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, a dark purple hood and scarf, holding a small dagger in his right hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), falls over: he wobbles as if very dizzy, his knees buckle, he sits down onto his bottom and then gently tumbles down onto his back on the floor, right where he stood, with no sliding. He keeps holding his dagger the whole time. Part 2 (3-6 s), lying still: he lies flat on his back on the floor, arms loosely to the sides, completely still until the end like a sleepy cartoon. He stays in the same spot the whole time. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation."
+  },
+  {
+   "id": "junk-shaman-death",
+   "character": "junk-shaman",
+   "move": "death",
+   "view": "front",
+   "image": "junk-shaman--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "fall-over",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "lying-still",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, a crown of bones and feathers and purple robes, holding a junk staff in one hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), falls over: he wobbles as if very dizzy, his knees buckle, he sits down onto his bottom and then gently tumbles down onto his back on the floor, right where he stood, with no sliding. He keeps holding his staff the whole time. Part 2 (3-6 s), lying still: he lies flat on his back on the floor, arms loosely to the sides, completely still until the end like a sleepy cartoon. He stays in the same spot the whole time. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation."
+  },
+  {
+   "id": "rotgut-grenadier-death",
+   "character": "rotgut-grenadier",
+   "move": "death",
+   "view": "front",
+   "image": "rotgut-grenadier--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "fall-over",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "lying-still",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin cook with green skin, a patched chef hat and an apron, holding a big spatula in one hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), falls over: he wobbles as if very dizzy, his knees buckle, he sits down onto his bottom and then gently tumbles down onto his back on the floor, right where he stood, with no sliding. He keeps holding his spatula the whole time. Part 2 (3-6 s), lying still: he lies flat on his back on the floor, arms loosely to the sides, completely still until the end like a sleepy cartoon. He stays in the same spot the whole time. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation."
+  },
+  {
+   "id": "shiv-rat-death",
+   "character": "shiv-rat",
+   "move": "death",
+   "view": "front",
+   "image": "shiv-rat--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "fall-over",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "lying-still",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, a purple hood with a skull sign, brown leather straps and spiked boots. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), falls over: he wobbles as if very dizzy, his knees buckle, he sits down onto his bottom and then gently tumbles down onto his back on the floor, right where he stood, with no sliding. Part 2 (3-6 s), lying still: he lies flat on his back on the floor, arms loosely to the sides, completely still until the end like a sleepy cartoon. He stays in the same spot the whole time. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation."
+  },
+  {
+   "id": "skullbasher-rusher-death",
+   "character": "skullbasher-rusher",
+   "move": "death",
+   "view": "front",
+   "image": "skullbasher-rusher--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "fall-over",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "lying-still",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin and a purple hood with a skull sign, holding a spiked mace in one hand and a round wooden shield in the other. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), falls over: he wobbles as if very dizzy, his knees buckle, he sits down onto his bottom and then gently tumbles down onto his back on the floor, right where he stood, with no sliding. He keeps holding his mace and shield the whole time. Part 2 (3-6 s), lying still: he lies flat on his back on the floor, arms loosely to the sides, completely still until the end like a sleepy cartoon. He stays in the same spot the whole time. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation."
+  },
+  {
+   "id": "goblin-sneak-backstab",
+   "character": "goblin-sneak",
+   "move": "backstab",
+   "view": "front",
+   "image": "goblin-sneak--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "sneak-in",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "quick-jab",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, a dark purple hood and scarf, holding a small dagger in his right hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), sneaking: he crouches low, tiptoes a little to one side and back in place, sneaky and careful, dagger held low and close to his body. Part 2 (3-6 s), quick jab: he leans in to the side and makes one fast sneaky poke with the dagger, a quick underhand jab into the empty air past his side, then pulls back, straightens up and returns to the standing pose from the start so the clip loops. Feet stay in the same small spot. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation."
+  },
+  {
+   "id": "goblin-slinger-throw",
+   "character": "goblin-slinger",
+   "move": "throw",
+   "view": "front",
+   "image": "goblin-slinger--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "wind-up-throw",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "reload-ready",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, spiky black and yellow hair and purple rags, holding a round tan ball (a cartoon skull) in his right hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), overhand toss: he swings his right arm back and up over his shoulder in a wind-up, shifts his weight forward and tosses the ball overhand like a baseball, forward toward the camera and out of the picture past its side, then his arm follows through down across his body. Part 2 (3-6 s), reload: he straightens up, reaches back to the pouch behind his hip, brings out a new identical tan ball in his right hand and returns to the standing pose from the start so the clip loops. Feet stay in the same small spot. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D game animation."
   }
  ]
 }
