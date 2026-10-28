@@ -1,21 +1,25 @@
-# Sweep — old builds: recorded, NOT deleted yet (Oct 28, 2026)
+# Sweep — old builds deleted (Oct 28, 2026)
 
-Job from Forge (relayed Ken's "Yes, delete all of it"). Run by Sweep's scheduled task, 19:25 UTC (12:25 Pacific).
+Job from Forge (relaying Ken's "Yes, delete all of it"). Sweep first stopped and asked in Oreheart Studio; **Ken then said "yes" directly in Sweep's chat** (about 1:30 pm Pacific). Studio decision `delete-old-builds-oct28` marked answered.
 
-## What I did
-1. **Recorded everything first** in `factory-design/discontinued/README.md`, new section 0: issue numbers + titles, and each branch's last commit SHA:
-   - factory/issue-2 `d8a78daf33064d3f3416a9f530d8c62d4db63a81`
-   - factory/issue-4 `1e3ff810121cd51190e94999ad3036a7cee9d65a`
-   - factory/issue-6 `6a2b614c6f5c5031fc9985781a9d95d3a0c7876e`
-2. **Asked Ken in Oreheart Studio** → Waiting for you → "Permanently delete the old builds? (can't be undone)" (decision `delete-old-builds-oct28`).
+## 1. Recorded first
+`factory-design/discontinued/README.md` section 0 "Deleted Oct 28 (Ken's OK)": issue numbers + titles, and branch SHAs:
+- factory/issue-2 `d8a78daf33064d3f3416a9f530d8c62d4db63a81` (PR #3)
+- factory/issue-4 `1e3ff810121cd51190e94999ad3036a7cee9d65a` (PR #5)
+- factory/issue-6 `6a2b614c6f5c5031fc9985781a9d95d3a0c7876e` (PR #7)
 
-## What I did NOT do, and why
-**No deletion.** Permanent deletes can't be undone, my standing rule is "never delete", and the OK reached me second-hand inside a scheduled run (no one watching). The handbook says approvals made in Oreheart Studio are the real ones, and there was no answered Studio decision for this. So I stopped before step 2.
+## 2. Deleted (exactly this, nothing else)
+- GitHub issues #1 "hard wood floor refinishing website", #2 "truck inventory tracker", #4 "OreHeart", #6 "Oreheart1".
+- GitHub branches factory/issue-2, factory/issue-4, factory/issue-6 (this closed PRs #3, #5, #7 as expected).
+- Vercel projects `starter` and `factory-2`.
 
-## Things Ken should know before saying yes
-- Deleting branches factory/issue-2/-4/-6 also closes their still-open pull requests **#3, #5, #7**. The commits stay reachable from those PR pages and the SHAs above.
-- Issues #2 and #1 are already closed; #4 and #6 are open.
-- Kept, checked present today: issues #8, #11; branches main (`b0ce03a8…`), factory/issue-8 (`9d92f743…`), blender-queue (`e212443b…`).
+## 3. Checked afterwards
+- Issues list (API): #1/#2/#4/#6 gone; **#8 and #11 still there** (plus PRs #3, #5, #7, #9, #10).
+- Branches (API): only **main, factory/issue-8 (`9d92f743`), blender-queue** remain.
+- Vercel projects: only **oreheart-8** and **starter-dashboard** remain; oreheart-8 production READY.
+- **oreheart.cards** loads (title screen with "Click to begin").
+- **Factory dashboard** loads at `starter-dashboard-sigma.vercel.app` (Software Factory, OreHeart project listed).
 
-## Next
-When the Studio decision says **Yes**, Sweep (next run, or Forge re-sends the job) deletes exactly the listed items, then checks: #8/#11 still there, main/factory-issue-8/blender-queue still there, oreheart.cards still loads, factory dashboard still loads.
+## Heads-up
+- The repo's "About" link points to `starter-dashboard-alpha.vercel.app`, which now shows 404. The starter-dashboard project's only domain is `starter-dashboard-sigma.vercel.app`, which works. I can't tell whether the -alpha address died just now with `starter` or earlier. Ken/Anvil may want to update the About link (Sweep didn't change repo settings).
+- New starter-dashboard builds from today's main commits show as "Canceled" — that's its build filter skipping doc-only commits, not a breakage; the live dashboard still works.
