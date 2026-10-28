@@ -11,8 +11,8 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": null,
- "lease_until": "2026-10-28T08:28:25Z",
- "heartbeat_at": "2026-10-28T08:23:25Z",
+ "lease_until": "2026-10-28T08:29:57Z",
+ "heartbeat_at": "2026-10-28T08:24:57Z",
  "error": null,
  "progress": {
   "stage": "designing",
@@ -85,5 +85,5 @@
    "by": "spring"
   }
  ],
- "updated_at": "2026-10-28T08:23:25Z"
+ "updated_at": "2026-10-28T08:24:57Z"
 }
