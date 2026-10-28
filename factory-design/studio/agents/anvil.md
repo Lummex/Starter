@@ -47,6 +47,12 @@
 - Size truth (Ledger, Oct 28): game with Round 26 = 95.38 MB (not 92.2/94.9). Round 27 parts +4.81 MB; dwarf bodies -3.03, gnome bodies -4.74 → 92.43 MB. Ken's quoted OK covers dwarves; gnomes need his confirm.
 - Round 27 checks start at AC397 (Round 26 ended at AC396).
 
+## Learned Oct 28 (small owner fix fast path)
+- Fast path for a small owner fix (no factory round, no agent cost): find the code on factory/issue-8 (fetch app.ts/style.css by commit sha from a github.com tab), make the smallest edit in JS and upload it on github.com/Lummex/Starter/upload/factory/issue-8/<folder> with the owner's commit message, then Actions > Factory - preview only > Run workflow (defaults are right: workflow from main, branch factory/issue-8, app projects/oreheart-8). The preview link appears in the Deploy preview step log (line "Preview https://oreheart-8-....vercel.app").
+- Testing a mine badge without playing: in a match, build the same DOM in JS on a .site-mark (span.pickaxe[data-mine-badge] with i.pk-h, i.pk-head, i.pk-spark; add class ready) and zoom-screenshot. Real ready state needs a miner next to a mine on your action turn.
+- .site-mark has an inline clip-path (its square's screen shape, layout() ~1261): anything drawn outside the square inside it gets cut off. Pickaxe fix = .site-mark.ready{clip-path:none!important}.
+- **Vercel build queue jam (Oct 28):** every push also builds the old Git-connected projects (factory-2, oreheart-4, oreheart1-6, starter, starter-dashboard). With many sessions pushing, oreheart-8 CLI deploys stayed Queued 40+ min and the preview-only job hit its 20 min time limit (the Vercel deploy stays queued and should still build later; link stays the same). Do not press Start Building Now (paid) or cancel other deploys without Ken.
+
 ## Open issues
 - Comment paging bug above (blocks Round 25). Waiting for Ken's OK to fix.
 - Build #54 (Oct 25) failed: "ENOENT … factory-data/oreheart-8/acceptance". Build #55 did NOT hit it (tests were restored after each builder step). Likely cause: the builder agent committed the deletion of the hidden tests itself, so `confineTo()` (pipeline.mjs, uses `git diff HEAD`) had nothing to restore. Not fixed.
@@ -67,3 +73,4 @@
 - "Factory — preview only" can be cancelled by GitHub after ~20 min while the Vercel CLI still says "Building…". The preview URL is printed in the log before that (line "Preview").
 - **Permission check (Oct 28): my Chrome tools are blocked on *.vercel.app preview links ("Permission denied for this action on this domain").** Ken has to allow the site in Claude in Chrome before I can test previews.
 - 2026-10-28 (later) Forge job #4 of 4 small owner fixes: removed mine hover pop-up (commit 2f49dd3 on factory/issue-8, on top of pickaxe/icon/flutter). Preview run #17 → oreheart-8-396k2t0zp-lummex.vercel.app (GitHub job cancelled at 20 min; Vercel state unknown). Could not test: Chrome permission blocked on vercel.app. Report: factory-design/studio/reports/2026-10-28-anvil-mine-hover-popup.md.
+- 2026-10-28 (later) Owner fix from Forge: mine-all pickaxe cut off. Cause: .site-mark clip-path. Fix commit 5c959d4 on factory/issue-8 (one CSS rule). Checked with live CSS on old preview vqwc8zlrr. Preview-only run #14 -> oreheart-8-4gl49odvv (stuck in Vercel queue, not yet checked there). Report: factory-design/studio/reports/2026-10-28-anvil-pickaxe-fix.md.
