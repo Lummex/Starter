@@ -427,6 +427,29 @@
     }
    ],
    "prompt": "A cartoon goblin with green skin, a dark purple hood and scarf, holding a small dagger in his right hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), sneaking: he crouches low, tiptoes a little to one side and back in place, sneaky and careful, dagger held low and close to his body. Part 2 (3-6 s), quick jab: he leans in to the side and makes one fast sneaky poke with the dagger, a quick underhand jab into the empty air past his side, then pulls back, straightens up and returns to the standing pose from the start so the clip loops. Feet stay in the same small spot. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation."
+  },
+  {
+   "id": "goblin-slinger-throw",
+   "character": "goblin-slinger",
+   "move": "throw",
+   "view": "front",
+   "image": "goblin-slinger--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "wind-up-throw",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "reload-ready",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, spiky black and yellow hair and purple rags, holding a round tan ball (a cartoon skull) in his right hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), overhand toss: he swings his right arm back and up over his shoulder in a wind-up, shifts his weight forward and tosses the ball overhand like a baseball, forward toward the camera and out of the picture past its side, then his arm follows through down across his body. Part 2 (3-6 s), reload: he straightens up, reaches back to the pouch behind his hip, brings out a new identical tan ball in his right hand and returns to the standing pose from the start so the clip loops. Feet stay in the same small spot. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D game animation."
   }
  ]
 }
