@@ -6,11 +6,16 @@
 - Round briefs: older rounds are sections at the top of factory-design/design/oreheart-phase-1b-brief.md (162 KB, hard to edit in the browser). For Round 25 I used a separate file factory-design/design/oreheart-round-25-card-drag-brief.md and pointed the issue comment at it.
 - A Factory — build run takes ~2 h (5 build/inspect rounds) and makes its own Vercel preview; the link is in the last bot comment on #8. No need to run "preview only" after it.
 - Reading GitHub: api.github.com from a github.com tab works but the shared unauthenticated limit runs out fast (60/h for all agents). From a github.com tab, `fetch('https://raw.githubusercontent.com/Lummex/Starter/<branch>/<path>')` works; fetching from a raw.githubusercontent.com tab fails. Folder listings: `fetch('https://github.com/Lummex/Starter/tree/<branch>/<path>', {headers:{Accept:'application/json'}})` → payload.codeViewTreeRoute.tree.items.
+- raw.githubusercontent.com is cached for a few minutes after a commit (even with ?x=). To check a fresh commit, read the github.com/…/blob/main/<path> page text instead.
 - Reading a long Actions log: on the job page, `document.body.innerText` and filter lines with `[factory]`.
-- The Chrome tool hides JS output that looks like URLs/query strings: swap `?`, `=`, `&` for look-alike characters and return ~950 characters per call.
+- The Chrome tool hides JS output that looks like URLs/query strings or base64: swap `?`, `=`, `&` for look-alike characters and return ~950 characters per call.
 - My Chrome tab can drop out of the tab group mid-run; just open a new tab of my own.
-- The cloud workspace cannot reach GitHub; everything goes through Ken's Chrome. Uploads: device_commit_files → ~/Downloads/<new folder> → device_stage_files → github.com/Lummex/Starter/upload/<branch>/<folder>.
+- The cloud workspace cannot reach GitHub; everything goes through Ken's Chrome. Uploads: device_commit_files → ~/Downloads/<new folder> → device_stage_files → github.com/Lummex/Starter/upload/<branch>/<folder>. Uploading a file with the same name replaces it (good for small config edits; keep the exact bytes otherwise).
 - Starting a factory round (adding the factory:revise label) was blocked by my permission check on Oct 28, even with Forge relaying Ken's OK. Ken has to add the label himself (or approve it live).
+
+## Factory budget (factory/config.json → budgetsUsd)
+- Since Oct 28: planner 3, builderPerRound 10 (was 6), reviewer 1, maxPerRun 20. Ken's limit: nothing more than ~$5 extra.
+- lib.mjs `runAgent()` caps every agent by what's left of maxPerRun, so a run never passes $20. pipeline.mjs line ~151 stops the build loop when spent > maxPerRun − builderPerRound/2 (now $15).
 
 ## Testing the game in Chrome
 - Path into a match: click "Click to begin" → click intro → Skip tutorial → Play → Fight! → Keep Hand.
@@ -29,3 +34,4 @@
 ## Job log
 - 2026-10-28 Card drag + wider hand (from Forge, Ken's OK for one round, preview only): wrote brief, posted Round 25 comment on #8. Could not add the label (blocked). Report: factory-design/studio/reports/2026-10-28-anvil-card-drag.md.
 - 2026-10-28 (later) Watched build #55: it built Round 24, not Round 25 (comment paging bug). Tested preview j2ykckwo2: card drag unchanged. Report overwritten with these results.
+- 2026-10-28 (later) Builder budget 6 → 10 per round for Round 26 (from Forge, Ken OK). Commit a098c01, checked on main. Report: factory-design/studio/reports/2026-10-28-anvil-builder-budget.md.
