@@ -59,3 +59,16 @@
 - Game size today (factory/issue-8 public/) = 93.58 MB, not 95.38 – always re-measure from the tree.
 - Goblin bodies still at 1024 px: bomber, grunt, scrapper, slinger, sneak, junk-shaman, rotgut-grenadier, skullbasher, wolf-rider, blastrat, shard-guzzler, big-boss troll (~3.85 MB of pictures). Shiv-rat, pebbler, scrounger, smith-miner, grubnak at 768; gyrocopter 512. Crystal node 3×1024, grubnak throne 3×768.
 - GitHub upload page: `file_upload` straight into ref of "Choose your files" works (cloud paths); for archiving repo files, fetch from raw in the upload page and set `input#upload-manifest-files-input` with a DataTransfer.
+
+- 2026-10-28 late (Forge, Ken's answers ~22:00): Round 27 ready-up. 12 goblin bodies shrunk (8 at 512; junk-shaman, skullbasher, blastrat, wolf-rider at 768 = emblems/face softer), −2.15 MB. Borgo steps.model approved (Miner was already approved by Ken). Made + saved Studio setups for Anvilsworn Miner (pickaxe RightHand, scale 38) and Borgo (sceptre LeftHand, scale 50, no throne), body scale 1; steps.editor = waiting for Ken. Parts at 256 px. Crystal node 1024→512. **Size 95.15 MB, still over** → decision `r27-size-option-a` (5 goblin pictures 768→512 → 94.55, files in round27-shrunk/option-a-needs-ken/). Docs (brief C/R/D, editor-setups 28b md+json, README) updated. Report 2026-10-28-ledger-round27-ready.md.
+
+## Learned Oct 28 late
+- **Making a Studio setup exactly:** write it as a named save in `modelSetups/<slug>` ({name, savedAt, setup: JSON string}), reload the Studio (append `?r=N` to the URL; the list isn't live), pick the card in the left Cards list (search box), Save & load → Load, then **Save as default look** (banner shows "Look saved"). Load without picking the card first hides the Save banner. Verify in `library/<card>.setup`.
+- The Model Editor auto-adds every library accessory to the RightHand when a card has no setup, and auto-scales the body (0.956) – don't save that.
+- Placing gear like Ken: copy the WORLD pose of Ken's similar item relative to the body (bone frames differ between models), then move it so the handle axis goes through the hand's skinned-vertex centre; size from the model sheet. three: Box3.setFromObject(scene,true) gives skinned boxes.
+- Item scale is bone-local (Meshy armature 0.01) → world size = scale × 0.01 × body scale.
+- Getting GitHub files into the cloud box: concatenate several into ONE `<a download>` blob (name+length headers) → Downloads → device_stage_files. Works.
+- Studio scene with Borgo's throne is heavy: screenshots time out. Hide the throne first; panel scroll wheel doesn't work there – click the scrollbar track instead.
+- **Never close the group's first tab** (closed it → whole group gone, had to createIfEmpty again). Screenshot timeouts also happen when the first tab is the selected one; use the tab createIfEmpty gives you.
+- Texture-only check without screenshots: compare crops of the pictures themselves in the cloud box (Read the PNG).
+- Size lesson: count parts for new setups in the budget early; my "≈94.1" missed the pickaxe/sceptre (+1.07 MB).
