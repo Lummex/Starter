@@ -1462,15 +1462,39 @@ export class App {
     return null;
   }
   noHand = false;
+  popPending: { el: El | null; at: number } | null = null;
+  /** Owner fix Oct 28 (no flutter): which card should be up now. undefined = keep the popped card.
+   *  The popped card keeps its slot plus a 10 px margin; a new target (a neighbour, or nothing = leave the hand) must hold for 90 ms. */
+  popTarget(cur: El, x: number, y: number): El | null | undefined {
+    const hit = this.hitCard(x, y);
+    if (hit === cur) { this.popPending = null; return undefined; }
+    const b = this.handBoxes().find((q) => q.c === cur), DZ = 10;
+    if (b && x >= b.l - DZ && x <= b.l + b.w + DZ && y >= b.t - DZ && y <= b.t + b.h + DZ) { this.popPending = null; return undefined; }
+    const now = performance.now();
+    if (!this.popPending || this.popPending.el !== hit) { this.popPending = { el: hit, at: now }; return undefined; }
+    if (now - this.popPending.at < 90) return undefined;
+    this.popPending = null;
+    return hit;
+  }
   lastPop: { uid: string; l: number; t: number; r: number; b: number; at: number } | null = null;
-  /** Tight hover boxes: only the visible part of each fan card (tucked), or the whole card while the hand is raised. */
+  /** Hover boxes (owner fix Oct 28, no flutter): one fixed slot per fan card, taken from the resting layout (layoutHand),
+   *  side by side with no overlap. A card popping out, or its neighbours moving aside, never moves these boxes. */
   handBoxes(): { c: El; l: number; t: number; w: number; h: number }[] {
     const hand = this.r?.hand as El;
     if (!hand) return [];
     const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')].filter((c) => !c.classList.contains('offhand')) as El[];
     const vh = window.innerHeight, vw = window.innerWidth;
     const out = [];
+    const hb = hand.getBoundingClientRect();
+    const sx = hand.offsetWidth ? hb.width / hand.offsetWidth : 1, sy = hand.offsetHeight ? hb.height / hand.offsetHeight : sx;
     for (const c of cards) {
+      const slot = (c as any)._slot as { l: number; r: number; y: number } | undefined;
+      if (slot) {
+        const t0 = hb.top + (c.offsetTop + slot.y) * sy;
+        const l = Math.max(0, hb.left + slot.l * sx), t = t0, rr = Math.min(vw, hb.left + slot.r * sx), bb = Math.min(vh, t0 + c.offsetHeight * sy);
+        if (rr > l && bb > t) out.push({ c, l, t, w: rr - l, h: bb - t });
+        continue;
+      }
       // the resting box: a popped card is measured by its placeholder (the fan spot it left)
       const src = ((c as any)._ph as El | undefined)?.isConnected ? (c as any)._ph as El : c;
       const r = src.getBoundingClientRect();
@@ -1571,7 +1595,12 @@ export class App {
         }
         return;
       }
-      if (this.lastPtr.type === 'mouse') { if (this.hitCard(this.lastPtr.x, this.lastPtr.y) !== cur && !cur.classList.contains('dragging') && !cur.matches(':focus-visible')) retract(); }
+      if (this.lastPtr.type === 'mouse') {
+        if (!cur.classList.contains('dragging') && !cur.matches(':focus-visible')) {
+          const t = this.popTarget(cur, this.lastPtr.x, this.lastPtr.y);
+          if (t) { this.openHand(true); this.popCard(t, true); } else if (t === null) retract();
+        }
+      }
       else if (!this.lastPtr.down) retract();
     }, 80);
   }
@@ -1582,10 +1611,13 @@ export class App {
       const cur = this.root.querySelector('.hand-card.popped:not(.popclone)') as El;
       if (!hand || !cur || !cur.isConnected) { document.removeEventListener('pointermove', fn); if (this.popWatch === fn) this.popWatch = null; return; }
       if (e.pointerType !== 'mouse') return;
-      const hit = this.hitCard(e.clientX, e.clientY);
-      if (hit === cur) return;
+      if (cur.classList.contains('dragging')) return;
+      const hit = this.popTarget(cur, e.clientX, e.clientY);
+      if (hit === undefined) return;
+      // one clean switch: the old card goes down and the new one comes up in the same step
+      if (hit) { this.openHand(true); this.popCard(hit, true); return; }
       this.popCard(cur, false);
-      if (hit) this.popCard(hit, true); else { document.removeEventListener('pointermove', fn); this.popWatch = null; this.openHand(false, true); }
+      document.removeEventListener('pointermove', fn); this.popWatch = null; this.openHand(false, true);
     };
     this.popWatch = fn;
     document.addEventListener('pointermove', fn);
@@ -1642,6 +1674,8 @@ export class App {
       const y = off * off * ch * (HD.arc ?? 1.45) / 100;
       c.dataset.fanAngle = String(Math.round(rot * 100) / 100);
       c.style.left = x0 + k * spacing + 'px';
+      // fixed hover slot (hand px): centred on the card, one spacing wide; the end cards also own their outer half
+      { const mid = x0 + k * spacing + cw / 2; (c as any)._slot = { l: k === 0 ? x0 : mid - spacing / 2, r: k === shown - 1 ? x0 + k * spacing + cw : mid + spacing / 2, y }; }
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
       c.dataset.fan = c.style.transform;
       c.style.zIndex = String(k + 1);
@@ -2389,7 +2423,7 @@ export class App {
         playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null,
         tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
       (el.querySelector('.ohcard') || el.firstElementChild)?.setAttribute('data-card-id', c.id);
-      el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { if (this.lastPtr.down || this.noHand || el.classList.contains('popped') || this.hitCard(e.clientX, e.clientY) !== el) return; this.openHand(true); this.popCard(el, true); } });
+      el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { if (this.lastPtr.down || this.noHand || el.classList.contains('popped') || this.hitCard(e.clientX, e.clientY) !== el || this.r.hand?.querySelector('.hand-card.popped:not(.popclone)')) return; this.openHand(true); this.popCard(el, true); } });
       el.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.popCard(el, false); });
       el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);
       el.addEventListener('focus', () => { if (el.matches(':focus-visible')) this.popCard(el, true); });
