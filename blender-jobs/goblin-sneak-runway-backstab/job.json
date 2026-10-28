@@ -2,7 +2,7 @@
  "id": "goblin-sneak-runway-backstab",
  "type": "animate",
  "asset_id": "goblin-sneak",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 9,
  "created_at": "2026-10-28T09:11:56Z",
  "created_by": "Spring (Forge job Oct 28; Ken approved both parts of take goblin-sneak-backstab in Oreheart Studio)",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-28T09:22:37Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-28T09:17:37Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "1 animation(s) built and checked: OH_Attack_Backstab"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/char.glb@factory/issue-8",
@@ -102,7 +102,227 @@
   {
    "at": "2026-10-28T09:17:30Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-28T09:18:33Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-28T09:17:37Z"
+ "updated_at": "2026-10-28T09:18:33Z",
+ "result": {
+  "summary": "1 animation(s) built and checked: OH_Attack_Backstab",
+  "files": [
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/char.glb",
+    "bytes": 1853208,
+    "sha256": "91802543a395c0aec2db35e01e9ed75fb4ff737087d6e43c107551ce99ad4306"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/events.json",
+    "bytes": 414,
+    "sha256": "17f0f5aec8927ae6205113bcd13372874e5ed34351afaefd6e60d418c5798677"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/inspection.json",
+    "bytes": 11435,
+    "sha256": "54c9878bb878ccc49e159d7e0e6e1fe8ae4a5658646ad4e7792bb7e0a59961ab"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/build-report.json",
+    "bytes": 2172,
+    "sha256": "219fdb378606e077a5475feddd08a3a1a414980f95da3c71140ce44967ab23e0"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/validation.json",
+    "bytes": 1556,
+    "sha256": "4a7c6e6ace9b921ab1af5f6071e112bec1e23e76d8437a57db6921657d50ef47"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/preview-weapon.glb",
+    "bytes": 4530352,
+    "sha256": "433e10766215c581a1dd49d2833bc160612e8537328b11d2c15856a6d907ea11"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/final-OH_Attack_Backstab-000.png",
+    "bytes": 180608,
+    "sha256": "9ad4596ccbaa7f29c9b432579fc6e3ff0f86521a773e2e6970847ade16144e72"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/final-OH_Attack_Backstab-026.png",
+    "bytes": 178834,
+    "sha256": "e8be4500da832946fdb22bbc4a91d188c5ffc2618cdd23d7acf47edda5002822"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/final-OH_Attack_Backstab-052.png",
+    "bytes": 178425,
+    "sha256": "b993da55279830728bed20593c665dee971457c838d17000948515c0abff6138"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/final-OH_Attack_Backstab-079.png",
+    "bytes": 175038,
+    "sha256": "e08046d8d9d3838ac2b31d9a6db1bda21e04f40437e3ff279bdcc5502b95c022"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/final-OH_Attack_Backstab-105.png",
+    "bytes": 180608,
+    "sha256": "3e1f22827a84b3ea3e6075a3ff721c8c43c07f27b13973d5942b2b198b7130cb"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/preview-OH_Attack_Backstab-000.png",
+    "bytes": 313245,
+    "sha256": "45fc988c4a2263f3eb4f1da3f56a19946ad1ced360b692d3a802ab95c80bdd52"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/preview-OH_Attack_Backstab-018.png",
+    "bytes": 310215,
+    "sha256": "5c08ecb00e91b10c8a8214ac7e5425c1f7c8ebd2b353df4f12f14b80f889260f"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/preview-OH_Attack_Backstab-035.png",
+    "bytes": 306633,
+    "sha256": "87a39eea05e538f83760e2ab830c1c3e734c92f278648bf83942abbacb957795"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/preview-OH_Attack_Backstab-052.png",
+    "bytes": 309308,
+    "sha256": "db3ef535b837c5406e91371d59a1c097fb474fa40b3abdde64e68df23a5c355d"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/preview-OH_Attack_Backstab-070.png",
+    "bytes": 309473,
+    "sha256": "391f419bf7d661aaa30781c31a63745bd58b7f47909048ecba2241c5e0b2ef31"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/preview-OH_Attack_Backstab-075.png",
+    "bytes": 303534,
+    "sha256": "e7366c8c59c695d3e63af121828cb6132e21296d1ae387edcf7650ad22f29b1c"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/preview-OH_Attack_Backstab-088.png",
+    "bytes": 306392,
+    "sha256": "acfebd22048ba719f483c85479372e990f018a7a592905ab39ef0ceee6fce036"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/preview-OH_Attack_Backstab-105.png",
+    "bytes": 313245,
+    "sha256": "3f25a1e9e9ffa28d1e1e9d18be3a74795b26de00e9c971d6cd700e4a23412541"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/preview-OH_Attack_Backstab-grip.png",
+    "bytes": 373759,
+    "sha256": "7e6f12be37239e0f6ca2103a00596267f392313744ff092cc22ca5d15e58cb03"
+   },
+   {
+    "file": "blender-jobs/goblin-sneak-runway-backstab/out/anim-OH_Attack_Backstab.py.txt",
+    "bytes": 5921,
+    "sha256": "ad16deb0932e8304561b12d7a1a45909333b669770795463ea9ae81e3e8980ec"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 40387,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Attack_Backstab": [
+      0.0,
+      105.0
+     ],
+     "OH_React_Lifted": [
+      0.0,
+      48.0
+     ],
+     "OH_React_Backstab": [
+      0.0,
+      60.0
+     ],
+     "OH_React_Bowled": [
+      0.0,
+      90.0
+     ],
+     "OH_React_Bonk": [
+      0.0,
+      36.0
+     ],
+     "OH_React_Knockback": [
+      0.0,
+      36.0
+     ],
+     "OH_Hit": [
+      0.0,
+      24.0
+     ],
+     "OH_Attack": [
+      0.0,
+      36.0
+     ],
+     "OH_Walk": [
+      0.0,
+      24.0
+     ],
+     "OH_Idle": [
+      0.0,
+      78.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Attack_Backstab": {
+      "keys": 106,
+      "seconds": 3.5
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead",
+      "OH_Idle",
+      "OH_Walk",
+      "OH_Attack",
+      "OH_Hit",
+      "OH_React_Knockback",
+      "OH_React_Bonk",
+      "OH_React_Bowled",
+      "OH_React_Backstab",
+      "OH_React_Lifted"
+     ],
+     "worst_position_error_pct_of_height": 0.0009,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 1e-05
+   }
+  }
+ }
 }
