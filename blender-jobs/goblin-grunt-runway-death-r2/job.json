@@ -2,7 +2,7 @@
  "id": "goblin-grunt-runway-death-r2",
  "type": "animate",
  "asset_id": "goblin-grunt",
- "status": "queued",
+ "status": "claimed",
  "priority": 9,
  "created_at": "2026-10-28T08:34:24Z",
  "created_by": "Spring (Forge job Oct 28; Ken approved both parts of take goblin-grunt-death in Oreheart Studio) \u00b7 revision 2: first try (goblin-grunt-runway-death) sank him under the floor when lying",
@@ -10,11 +10,15 @@
  "max_retries": 1,
  "retry_on_failure": true,
  "cancel_requested": false,
- "worker_id": null,
- "lease_until": null,
- "heartbeat_at": null,
+ "worker_id": "starr-f0fad5",
+ "lease_until": "2026-10-28T08:40:28Z",
+ "heartbeat_at": "2026-10-28T08:35:28Z",
  "error": null,
- "progress": null,
+ "progress": {
+  "stage": "claimed",
+  "percent": 0,
+  "message": "Picked up by the Blender worker"
+ },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8",
   "parts": {
@@ -79,6 +83,13 @@
    "at": "2026-10-28T08:34:24Z",
    "status": "queued",
    "by": "spring"
+  },
+  {
+   "at": "2026-10-28T08:35:28Z",
+   "status": "claimed",
+   "worker": "starr-f0fad5",
+   "recovered": false
   }
- ]
+ ],
+ "updated_at": "2026-10-28T08:35:28Z"
 }
