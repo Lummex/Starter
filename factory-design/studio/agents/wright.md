@@ -67,5 +67,12 @@ character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view or
 `characters/<card-id>`: name, faction, role, rarity, order, kenNote/kenNoteAt/kenNoteBy (page writes), images{art,sheet,model,editor}, steps.{art,sheet,model,editor,runway,blender,editors,gauge,preview,live} = {status: not-started|working|waiting|approved|failed, agent, link, note, updatedAt}.
 `checks/<card-id>`: checkedAt, checkedBy, items [{section, item, level must|nice, result pass|fail|not-checked, missing, fixer}].
 
+## Move approvals (Model Editor room, Oct 28)
+- Stored on `library/<card-id>.animApprovals = {<clip name>: {status, note, at}}`. status: "approved" | "redraw" (note = what to change) | "removed" (out of his moves, kept safe, can be put back) | "" (not checked).
+- Never delete a key from a map with `update`: the store merges maps, so the old key stays. Write status "" instead.
+- The Studio's Posing & animation step shows the counts and a button that opens the Model Editor on that character.
+- Builders (Ledger/Anvil): skip clips with status "removed" when putting moves in the game.
+- Chrome screenshots of the Studio sometimes time out (3D canvas); retry. Mouse-wheel scroll in the room panel is unreliable; drag the panel scrollbar instead.
+
 ## Ken's feedback
-- (none yet)
+- Wants to approve each move where he watches it, and to remove moves he doesn't want from a character's set (Oct 28).
