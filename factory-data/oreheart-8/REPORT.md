@@ -1,29 +1,33 @@
 ## What was built
-This round gives the Skullflinger goblin a new skull-throwing attack: a skull leaves his hand, flies to the target, bonks off it and bounces away. It also re-checked earlier work, including the card hand layout and Bowler Brawler's moves, and fixed a few bugs. No rules or card numbers changed.
+This is Round 26 of OreHeart, a browser card battle where Goblins, Gnomes and Dwarves fight over crystal mines. It removes the Skullflinger skull throw and adds your October 28 edits. These include a card that centres on the pointer while you drag it, full-resolution full screen, and a "Use your banked crystals?" question. They also include a Done drop-up menu, faction emblems on owned mines, and updated model animations and parts.
 
 ## Try these things
-- Start a match as Grubnak and summon a Skullflinger. Attack an enemy with it and watch for the skull throw and bonk.
-- Hover over, then drag, cards in your hand. The hand should fan out, rise on hover and tuck away when you leave it.
-- Summon a Bowler Brawler (costs 6) and try his Strike ability.
-- Open the Menu in the top-left corner during a match.
-- Open the preview in a phone-sized window and in a wide computer window. Check that nothing is cut off.
+- Open the main menu and check that the buttons read Play, Deck Builder, How to Play, Settings and Quit.
+- Start a match, pick a Commander, and try the Mulligan screen.
+- Drag a card from your hand onto a square in your back row. It should centre on the pointer and shrink onto the square.
+- Click Done before making a move. A drop-up menu should appear with Go back and Continue.
+- Mine with a Miner next to a crystal mine, then look for the faction emblem on the mine you own.
+- Open the game on a phone held sideways, and check the hand and buttons fit.
 
 ## Automated checks
-404 of 438 checks passed. 34 failed:
-- **Likely out of date (about 6):** these tests expect things the owner has since changed. Examples are Goblin Rocket Rider being a Miner and the 4:3 window shape. The builder says the game is correct.
-- **Timeouts (about 8):** the test computer was too slow to run them in parallel. The builder says they passed when run alone. I did not see that myself.
-- **Possibly real (the rest):**
-  - Menu and board placement on some phone-sized and non-16:9 windows is off by up to about 75 pixels.
-  - A few font and weight checks failed.
-  - The match-screen Mulligan check timed out.
-  - Some hand-fan spacing and tuck checks failed.
-  - Bowler Brawler's basketball summon and the Skullflinger skull timing checks failed.
+400 of 463 checks passed. 63 failed. The builder says many of these checks are outdated, because they test rules you changed in earlier rounds (for example, Rocket Rider is now a Fighter). Others timed out when the tests ran slowly. Those claims are not proven here. Several failures are about the new Round 26 work, though:
+- the card drag
+- the Done drop-up
+- mine emblems
+- the pickaxe badge
+- full-screen and sharpness
+- the Junk Shaman lift
+- Goblin and Gnome model parts
+
+The builder never confirmed these in a browser. There are also many failures about hand behaviour: how cards rise on hover, and how the hand tucks away.
 
 ## Things to know
-- The skull throw was never seen mid-air in a screenshot, because the test machine was too slow. Judge it yourself in the preview.
-- The builder's notes say this round was budget-limited, and several earlier problems are listed as "not addressed".
-- The screenshots look good. The title screen and the desktop match are styled and complete. The phone match looks fine, but the enlarged hand card covers a lot of the board.
-- I only saw some of the screenshots, because the phone home and menu images were not all available.
+- The builder says nothing from Round 26 was checked in a browser, and the test results do not back it up.
+- The builder says phone and odd-window layout fixes (Part C) were not diagnosed. It also says the Tutorial Skip button and the Card Comp Pause button were not diagnosed.
+- The screenshots show the menu and the match board looking finished and styled. The phone shot shows the Mulligan screen, which fits, though its card text is small.
+- The enemy Commander on the board looks like a dark, odd shape.
+- There is no phone screenshot of the in-match board, so I could not check it.
+- The download is large, about 95 MB.
 
 ## Recommendation
-Request changes: 34 checks still fail, and some of those look like real layout bugs on phones. The skull throw has not been seen working.
+Request changes: 63 checks fail, including most of the new Round 26 features, and the builder says it never tested them in a browser.

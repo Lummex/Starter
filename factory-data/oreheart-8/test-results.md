@@ -1,12 +1,12 @@
 # Automated check results
 
-404 of 438 checks passed after 5 build round(s).
+400 of 463 checks passed after 5 build round(s).
 
-- ❌ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
-- ❌ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
+- ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
+- ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
 - ✅ landscape phone viewport 667x375 › AC24: menu and full-screen match fit a 667x375 landscape phone
 - ✅ portrait phone viewport › AC24: upright phone shows the rotate message
-- ✅ computer browser window, tall and narrow › AC24b: a computer window never shows the rotate message and keeps the 16:9 shape
+- ❌ computer browser window, tall and narrow › AC24b: a computer window never shows the rotate message and keeps the 16:9 shape
 - ✅ AC1: main menu has exactly Play, Deck Builder, How to Play, Settings, Quit and no page errors
 - ✅ AC1: starting a test-mode match causes no page errors
 - ✅ AC2: menu -> choose Commander -> mulligan -> match
@@ -57,15 +57,15 @@
 - ✅ AC21: Normal AI defeats a passive player before turn 60
 - ✅ AC22: hand cards are buttons and open a card view
 - ✅ AC23: illegal actions are rejected and state is unchanged
+- ✅ AC25: first visit offers the tutorial; Skip is remembered
+- ✅ AC25: Tutorial button opens the guided match with tips and Skip Tutorial
+- ✅ AC25: tutorial steps start at summon and advance after a back-row summon
 - ✅ landscape layout details › AC43: the hand rests fully on screen at the bottom and rises on hover (Round 17)
 - ✅ landscape layout details › AC44: deck piles on each player's right and Commander hearts
 - ✅ hearts and turn display 844x390 › AC51: Commander hearts never cover creature labels; turn display top-right (844x390)
 - ✅ hearts and turn display 740x360 › AC51: Commander hearts never cover creature labels; turn display top-right (740x360)
 - ✅ hearts and turn display 667x375 › AC51: Commander hearts never cover creature labels; turn display top-right (667x375)
-- ✅ hand pop-out at 2x › AC59: a hovered hand card rises to about 1.6x and stays fully on-screen
-- ✅ AC25: first visit offers the tutorial; Skip is remembered
-- ✅ AC25: Tutorial button opens the guided match with tips and Skip Tutorial
-- ✅ AC25: tutorial steps start at summon and advance after a back-row summon
+- ❌ hand pop-out at 2x › AC59: a hovered hand card rises to about 1.6x and stays fully on-screen
 - ✅ AC26: printed creature Health is at most 6
 - ✅ AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 for 1
 - ✅ AC27: summoning spends exactly the new costs
@@ -74,7 +74,7 @@
 - ✅ AC29: moves left ignores Instants, Crystal cards and the Miner swap
 - ✅ AC29: with auto-skip on, an empty turn passes by itself; a phase with moves left does not
 - ✅ AC30: creature labels show Attack, Health, Movement and darken after acting
-- ✅ AC31: Moves still available pop-up — Go back and Continue
+- ❌ AC31: Moves still available pop-up — Go back and Continue
 - ✅ AC31: no pop-up on timeout, and Settings can turn it off
 - ✅ AC32: countdown appears only in the last 10 seconds; 0 ends just the phase
 - ✅ AC33: Gatherer swap moves one basic Gatherer from deck to hand, once per turn
@@ -83,8 +83,8 @@
 - ✅ AC36: flow preview, mine ring numbers and mine info
 - ✅ AC38: swapping places with your own creature uses only the dragged creature's action
 - ✅ AC37: the confirm pop-up sits above the countdown
-- ✅ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
-- ✅ AC41: the moves pop-up names miners that have not mined
+- ❌ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
+- ✅ AC41: the moves drop-up says miners have not mined; after any move Done asks nothing (Round 26)
 - ✅ AC42: Ranged creatures show the bow icon on the board and in the hand
 - ✅ AC45: Miner names, roles and badges
 - ✅ AC46: Miner upgrades — Smith gives +1 Attack and +1 Health, basic Miner +1 Health; they stack, persist and heal
@@ -112,6 +112,12 @@
 - ✅ AC67: ending your turn with 9 Flow saves 0 into the Bank
 - ✅ AC67: ending your turn with 10 Flow saves 1 into the Bank
 - ✅ AC67: ending your turn with 16 Flow saves 1 into the Bank
+- ✅ AC67: savings applies to the opponent at the end of its own turn
+- ✅ AC68: a hand of only affordable spells does not count as moves left
+- ✅ AC68: with auto-skip on, a spells-only turn passes by itself
+- ✅ AC69: previewAttack matches the real attack exactly
+- ✅ AC69: dragging a creature over an enemy shows the attack preview; letting go elsewhere cancels
+- ✅ AC70: double-click and + add cards; single click only enlarges; copy limit and cost chart
 - ✅ phone-size match screenshot › AC90: the match screen renders full screen at 844x390 with no page errors
 - ✅ display mode on a PC window › AC103: Display mode Auto / PC / Phone, remembered, without extra menu buttons
 - ✅ straight-on road board and corner HUD at 844x390 › AC104: straight-on road perspective, Commanders in the corners, HUD around them
@@ -121,12 +127,7 @@
 - ✅ both hands at 844x390 › AC117: the deck picker shows the nine starter decks as named stacks
 - ✅ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; no frame ornaments on any screen (844x390)
 - ✅ title layout and ornaments › AC123: "Welcome to Oreheart!" never overlaps the logo or the Tutorial button; no frame ornaments on any screen (1280x720)
-- ✅ AC67: savings applies to the opponent at the end of its own turn
-- ✅ AC68: a hand of only affordable spells does not count as moves left
-- ✅ AC68: with auto-skip on, a spells-only turn passes by itself
-- ✅ AC69: previewAttack matches the real attack exactly
-- ✅ AC69: dragging a creature over an enemy shows the attack preview; letting go elsewhere cancels
-- ✅ AC70: double-click and + add cards; single click only enlarges; copy limit and cost chart
+- ❌ round 4 phone screenshots (844x390) › AC134: mulligan, spell cards per faction, a creature close-up and a menu screen render without errors
 - ✅ AC71: Auto-fill completes a legal deck; Rename and Save
 - ✅ AC72: select screen — Commander cards, deck stacks, difficulty and Fight! (no dropdowns)
 - ✅ AC72: "+ New Deck" on the select screen opens the Deck Builder
@@ -147,7 +148,7 @@
 - ✅ AC90: the built dist folder stays under 95 MB
 - ✅ AC93: the cut-out deck image is used on every deck pile outside the match
 - ✅ AC95: up to 3 mulligans — 5 -> 5 -> 4 -> 3, then no more
-- ✅ AC95: the Mulligan screen shows one straight row and counts mulligans left
+- ❌ AC95: the Mulligan screen shows one straight row and counts mulligans left
 - ✅ AC97: card reveals never block the game and can be pinned
 - ✅ AC98: right-clicking a creature shows its card and changes nothing; left-click only selects (owner, Oct 25)
 - ✅ AC99: the Card pop-ups switch skips reveals but never effects, and is remembered
@@ -157,7 +158,7 @@
 - ✅ AC106: zoom in, drag-to-attack still works, Re-center resets
 - ✅ AC108: title screen uses the painted cavern background with the logo, without errors
 - ✅ AC109: Strongholds stand in the corners: player (7,2), enemy (1,12)
-- ✅ AC110: random mines are always corner-mirrored, fair, away from both Strongholds and never on the same square
+- ❌ AC110: random mines are always corner-mirrored, fair, away from both Strongholds and never on the same square
 - ✅ AC111: decks of 50 to 100 cards and at most 20 Crystal cards
 - ✅ AC112/AC128: nine legal 100-card starter decks: Warband, Arcane Hoard and Horde for each faction
 - ✅ AC113: matches use the chosen starter decks; the opponent deck can be any of the three
@@ -167,9 +168,16 @@
 - ✅ AC121: Deck Builder deck art has no frame; painted background
 - ✅ AC122: one ornate control style everywhere: no default browser controls or scrollbars
 - ✅ AC124: every spell has its own visual, played step by step
-- ❌ round 4 phone screenshots (844x390) › AC134: mulligan, spell cards per faction, a creature close-up and a menu screen render without errors
-- ✅ round 5a screenshots (1920x1080) › AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (1920x1080)
-- ✅ round 5a screenshots (844x390) › AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (844x390)
+- ✅ AC127: mulligan cards are double size, one row, on-screen (1280x720)
+- ✅ AC127: mulligan cards are double size, one row, on-screen (844x390)
+- ✅ AC129: faction spells — names, factions, deck validation and the casting lock
+- ✅ AC131: Venom Shiv poisons for 7 of the target’s turns (1 damage each, no healing); Hex Reversal is disabled
+- ✅ AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textured letters
+- ✅ AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulligan, hand) at several window sizes
+- ✅ AC137: menu buttons are plain white text with a hover glow, no boxes or borders
+- ✅ AC138: every menu screen fills the window edge to edge at 844x390, 1280x720, 1920x1080 and rescales live
+- ❌ round 5a screenshots (1920x1080) › AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (1920x1080)
+- ❌ round 5a screenshots (844x390) › AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (844x390)
 - ✅ owner HUD layout 1920x1080 › AC151: HUD pieces sit at the owner's positions and never cover a Commander (1920x1080)
 - ✅ owner HUD layout 844x390 › AC151: HUD pieces sit at the owner's positions and never cover a Commander (844x390)
 - ✅ readable sizes at 844x390 › AC158: no text below about 14 px on any screen at phone size
@@ -178,26 +186,19 @@
 - ✅ round 5b screenshots (844x390) › AC160: match, Menu popped out and hand popped out render without errors (844x390)
 - ✅ round 6a match layout 1920x1080 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (1920x1080)
 - ✅ round 6a match layout 1920x1080 › AC163: the hand is 2x, centered, overlapping, fully on screen at rest and rises on hover (1920x1080)
-- ✅ round 6a match layout 1920x1080 › AC164: the hovered card rises to 48-60% of the height on the top layer (1920x1080)
+- ❌ round 6a match layout 1920x1080 › AC164: the hovered card rises to 48-60% of the height on the top layer (1920x1080)
 - ✅ round 6a match layout 1920x1080 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (1920x1080)
 - ✅ round 6a match layout 844x390 › AC161: Done sits bottom-right under the deck and nothing invisible blocks the board (844x390)
 - ✅ round 6a match layout 844x390 › AC163: the hand is 2x, centered, overlapping, fully on screen at rest and rises on hover (844x390)
-- ✅ round 6a match layout 844x390 › AC164: the hovered card rises to 48-60% of the height on the top layer (844x390)
+- ❌ round 6a match layout 844x390 › AC164: the hovered card rises to 48-60% of the height on the top layer (844x390)
 - ✅ round 6a match layout 844x390 › AC166: enemy hand centered with the deck to its left; nothing covers a Commander (844x390)
 - ✅ round 6a screenshots (1920x1080) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (1920x1080)
 - ✅ round 6a screenshots (844x390) › AC173: match with hand at rest and popped out, deck builder close-up and card back render without errors (844x390)
-- ✅ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
+- ❌ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
 - ✅ round 7 hand (1920x1080) › AC175: hand cards follow the owner layout (about 34% of the height), fully on screen at rest (1920x1080)
-- ✅ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
+- ❌ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
 - ✅ round 7 hand (844x390) › AC175: hand cards follow the owner layout (about 34% of the height), fully on screen at rest (844x390)
-- ❌ AC127: mulligan cards are double size, one row, on-screen (1280x720)
-- ❌ AC127: mulligan cards are double size, one row, on-screen (844x390)
-- ✅ AC129: faction spells — names, factions, deck validation and the casting lock
-- ✅ AC131: Venom Shiv poisons for 7 of the target’s turns (1 damage each, no healing); Hex Reversal is disabled
-- ❌ AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textured letters
-- ✅ AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulligan, hand) at several window sizes
-- ✅ AC137: menu buttons are plain white text with a hover glow, no boxes or borders
-- ❌ AC138: every menu screen fills the window edge to edge at 844x390, 1280x720, 1920x1080 and rescales live
+- ✅ round 7 screenshots (1920x1080) › AC184: Grubnak in a match and in the 3D viewer render without errors
 - ✅ AC140: the cards-per-row slider goes from 2 to 8
 - ✅ AC141: the deck carousel shows only my decks plus a New Deck slot; arrows, keys and dragging pick the deck
 - ✅ AC142: a card dragged from the grid shows at its 3-per-row size and lands in the deck
@@ -217,28 +218,11 @@
 - ✅ AC162: no hand counts for either player; deck numbers stay
 - ✅ AC165: face-down cards use the original Oreheart card back
 - ✅ AC167: every text outside the card faces is plain white #ffffff (title, Rules, Settings, Deck Builder, Choose Your Commander, match)
-- ❌ AC168: bold titles and main actions, regular body text, only four weights
+- ✅ AC168: bold titles and main actions, regular body text, only four weights
 - ✅ AC169: Deck Builder close-up fills the height, has no scrollbar or Close, and dismisses on click or Esc
 - ✅ AC170: deck list + and - change counts at once, without moving the row; rapid clicks all count
 - ✅ AC171: no "All cards" text and no corner ornaments on any menu screen
 - ✅ AC172: crystal mines use the owner's Crystal Node model, about 1.3 squares tall and inside its square, in the owner's faction color; unowned mines are white (owner, Oct 24)
-- ✅ round 7 screenshots (1920x1080) › AC184: Grubnak in a match and in the 3D viewer render without errors
-- ✅ arena homography 1920x1080 › AC188: square centers follow the homography of the owner's corners (1920x1080)
-- ❌ arena homography 844x390 › AC188: square centers follow the homography of the owner's corners (844x390)
-- ✅ arena highlights 1920x1080 › AC189: drag highlights are the legal summon squares on the painted floor; drop uses the mapping
-- ❌ arena pan 1920x1080 › AC191: keys, WASD and dragging empty board pan the view, always clamped to the painting
-- ✅ arena HUD 1920x1080 › AC192: the HUD stays fixed while zooming and panning; Recenter and double-click reset the view
-- ✅ arena drags 1920x1080 › AC194: dragging a hand card or a creature never pans the view
-- ✅ round 8a screenshots 1920x1080 › AC195: the painted arena match fully zoomed out and zoomed in renders without errors (1920x1080)
-- ✅ round 8a screenshots 844x390 › AC195: the painted arena match fully zoomed out and zoomed in renders without errors (844x390)
-- ✅ hand never rises while dragging 1920x1080 › AC200: dragging a creature or panning across the hand never raises it
-- ✅ round 8b pop-out 1920x1080 › AC201: the pop-out is about 70% of the window height, eased 150-200 ms (1920x1080)
-- ✅ round 8b pop-out 844x390 › AC201: the pop-out is about 70% of the window height, eased 150-200 ms (844x390)
-- ✅ round 9a owner layout 1920x1080 › AC212: every HUD piece sits where the owner's layout puts it (1920x1080)
-- ❌ round 9a owner layout 844x390 › AC212: every HUD piece sits where the owner's layout puts it (844x390)
-- ✅ round 9a hand 1920x1080 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (1920x1080)
-- ✅ round 9a hand 844x390 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (844x390)
-- ✅ round 9a screenshots 1920x1080 › AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (1920x1080)
 - ❌ AC176: the owner's card back and deck-pile pictures are used exactly
 - ✅ AC177: a popped card keeps the at-rest glow thickness and opacity
 - ✅ AC178: glow colors contrast with each faction frame
@@ -250,6 +234,27 @@
 - ✅ AC185: the owner's arena pictures and layout are loaded unchanged
 - ✅ AC186: all 54 arena effects are drawn, off-painting pools are clipped, two foreground cut-outs
 - ✅ AC187: no grid lines are drawn, even while dragging a card
+- ✅ arena homography 1920x1080 › AC188: square centers follow the homography of the owner's corners (1920x1080)
+- ✅ arena homography 844x390 › AC188: square centers follow the homography of the owner's corners (844x390)
+- ✅ arena highlights 1920x1080 › AC189: drag highlights are the legal summon squares on the painted floor; drop uses the mapping
+- ❌ arena pan 1920x1080 › AC191: keys, WASD and dragging empty board pan the view, always clamped to the painting
+- ❌ arena HUD 1920x1080 › AC192: the HUD stays fixed while zooming and panning; Recenter and double-click reset the view
+- ✅ arena drags 1920x1080 › AC194: dragging a hand card or a creature never pans the view
+- ✅ round 8a screenshots 1920x1080 › AC195: the painted arena match fully zoomed out and zoomed in renders without errors (1920x1080)
+- ✅ round 8a screenshots 844x390 › AC195: the painted arena match fully zoomed out and zoomed in renders without errors (844x390)
+- ❌ hand never rises while dragging 1920x1080 › AC200: dragging a creature or panning across the hand never raises it
+- ✅ round 8b pop-out 1920x1080 › AC201: the pop-out is about 70% of the window height, eased 150-200 ms (1920x1080)
+- ✅ round 8b pop-out 844x390 › AC201: the pop-out is about 70% of the window height, eased 150-200 ms (844x390)
+- ✅ round 9a owner layout 1920x1080 › AC212: every HUD piece sits where the owner's layout puts it (1920x1080)
+- ✅ round 9a owner layout 844x390 › AC212: every HUD piece sits where the owner's layout puts it (844x390)
+- ❌ round 9a hand 1920x1080 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (1920x1080)
+- ❌ round 9a hand 844x390 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (844x390)
+- ✅ round 9a screenshots 1920x1080 › AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (1920x1080)
+- ✅ round 9a screenshots 844x390 › AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (844x390)
+- ✅ round 9c arena › AC228: the arena canvas draws every frame and the screen center is not the plain board color
+- ✅ round 9c arena › AC229: all 57 owner effects (54 arena + 3 Crystal Flow), 2 cut-outs, no arena errors; unknown effect types are skipped
+- ✅ round 9c menus 1920x1080 › AC233: main menu, Deck Builder and Choose Your Commander pieces sit in the owner boxes
+- ✅ round 9c menus 1920x1080 › AC234: the intro plays first, the logo crashes in with dirt, owner sounds fire on time, then the main menu
 - ❌ AC190: cover-fit with no black bars at 16:9, 4:3, 21:9 and phone; max zoom about 2.5 px per painting pixel
 - ❌ AC191: at zoom 1 on a 4:3 window the view pans sideways but never past the edges
 - ✅ AC193: the Meshy crystal mine is saved once and used for every mine, tinted by owner
@@ -277,11 +282,16 @@
 - ✅ AC224: the music and sound effects volume sliders work and are remembered
 - ✅ AC225: savings land in the bank piece
 - ✅ AC226: the in-game editor (round 9b) is not built yet
-- ✅ round 9a screenshots 844x390 › AC227: match at rest, raised card, open menu and a Crystal Flow stream render without errors (844x390)
-- ✅ round 9c arena › AC228: the arena canvas draws every frame and the screen center is not the plain board color
-- ✅ round 9c arena › AC229: all 57 owner effects (54 arena + 3 Crystal Flow), 2 cut-outs, no arena errors; unknown effect types are skipped
-- ✅ round 9c menus 1920x1080 › AC233: main menu, Deck Builder and Choose Your Commander pieces sit in the owner boxes
-- ✅ round 9c menus 1920x1080 › AC234: the intro plays first, the logo crashes in with dirt, owner sounds fire on time, then the main menu
+- ✅ AC230: Commanders stand on the ground inside their strongholds, upright, facing the owner turn
+- ✅ AC231: the stronghold never moves; Grubnak emotes in place and returns to his turn
+- ✅ AC232: the owner menus file, pictures, sound and main menu picture are shipped
+- ✅ AC235: a click skips the intro; Quit returns to it; How to Play opens Rules with a Tutorial button
+- ✅ AC236: menu buttons go where the owner file says; the main menu picture is cover-fit
+- ✅ AC237: menus play the music the owner file names (tense-cycle)
+- ✅ AC238: saved deck entries glow in their faction color; the deck name text is white (Round 15)
+- ✅ AC239: every creature card close-up has a 3D viewer; spells do not
+- ✅ AC240: Play action in the Deck Builder (disabled with a reason while illegal); double-click a saved deck starts a match
+- ✅ AC241: Deck Builder text colors: deck list lines and counts white, Back bold
 - ✅ round 9c screenshots 1920x1080 › AC242: screenshots of the match with the arena, Commander close-ups, every menu screen and a creature close-up (1920x1080)
 - ✅ round 9c screenshots 844x390 › AC242: screenshots of the match with the arena, Commander close-ups, every menu screen and a creature close-up (844x390)
 - ✅ round 10 at 1920x1080 › AC243: drag highlights are bright in the faction color; attack squares are red
@@ -298,30 +308,20 @@
 - ❌ round 11 at 1920x1080 › AC261: unit rings use faction colors, grey out after acting; "Unit rings" settings are saved and applied
 - ✅ round 11 at 1920x1080 › AC262: a creature standing behind a mine can be selected by clicking it; the mine square still mines
 - ✅ round 11 at 1920x1080 › AC263: only the opponent's played cards pop up, left edge, at most 3 stacked
-- ✅ round 11 at 1920x1080 › AC264: dragging a card sideways in the hand reorders it, the hand stays up, and the order is kept
-- ✅ round 11 at 1920x1080 › AC265: dragging a card shows the real card face, floating and tilting; the hand tucks while over the board
+- ❌ round 11 at 1920x1080 › AC264: dragging a card sideways in the hand reorders it, the hand stays up, and the order is kept
+- ❌ round 11 at 1920x1080 › AC265: dragging a card shows the real card face, floating and tilting; the hand tucks while over the board
 - ✅ round 11 at 1920x1080 › AC266: Ranged range 7 — the shot stops at the first unit, also your own
 - ✅ round 11 at 1920x1080 › AC267: Round 11 screenshots render without errors
-- ✅ round 12a drag-to-play at 1920x1080 › AC269: dragging Goblin Miner from the raised hand onto a legal home-row square summons it (1920x1080)
+- ❌ round 12a drag-to-play at 1920x1080 › AC269: dragging Goblin Miner from the raised hand onto a legal home-row square summons it (1920x1080)
 - ✅ round 12a drag-to-play at 1920x1080 › AC270: a drag from the tucked hand also plays; a drop back in the hand or on an illegal square plays nothing (1920x1080)
-- ✅ round 12a drag-to-play at 1568x782 › AC269: dragging Goblin Miner from the raised hand onto a legal home-row square summons it (1568x782)
+- ❌ round 12a drag-to-play at 1568x782 › AC269: dragging Goblin Miner from the raised hand onto a legal home-row square summons it (1568x782)
 - ✅ round 12a drag-to-play at 1568x782 › AC270: a drag from the tucked hand also plays; a drop back in the hand or on an illegal square plays nothing (1568x782)
 - ✅ round 12a at 1920x1080 › AC271: dragging a targeted spell onto an enemy casts it there; a Crystal card dragged over the board is played
 - ✅ round 12a at 1920x1080 › AC273: owner card paintings and Grubnak's on-throne portrait are used unchanged
 - ✅ round 12a at 1920x1080 › AC274: Round 12a screenshots render without errors
-- ✅ round 12a hand layout at 1920x1080 › AC272: the raised hand is an even fan fully on screen, hovered card bigger (1920x1080)
-- ✅ round 12a hand layout at 1568x782 › AC272: the raised hand is an even fan fully on screen, hovered card bigger (1568x782)
-- ✅ round 12a hand layout at 1366x768 › AC272: the raised hand is an even fan fully on screen, hovered card bigger (1366x768)
-- ✅ AC230: Commanders stand on the ground inside their strongholds, upright, facing the owner turn
-- ✅ AC231: the stronghold never moves; Grubnak emotes in place and returns to his turn
-- ✅ AC232: the owner menus file, pictures, sound and main menu picture are shipped
-- ✅ AC235: a click skips the intro; Quit returns to it; How to Play opens Rules with a Tutorial button
-- ✅ AC236: menu buttons go where the owner file says; the main menu picture is cover-fit
-- ✅ AC237: menus play the music the owner file names (tense-cycle)
-- ✅ AC238: saved deck entries glow in their faction color; the deck name text is white (Round 15)
-- ✅ AC239: every creature card close-up has a 3D viewer; spells do not
-- ✅ AC240: Play action in the Deck Builder (disabled with a reason while illegal); double-click a saved deck starts a match
-- ✅ AC241: Deck Builder text colors: deck list lines and counts white, Back bold
+- ❌ round 12a hand layout at 1920x1080 › AC272: the raised hand is an even fan fully on screen, hovered card bigger (1920x1080)
+- ❌ round 12a hand layout at 1568x782 › AC272: the raised hand is an even fan fully on screen, hovered card bigger (1568x782)
+- ❌ round 12a hand layout at 1366x768 › AC272: the raised hand is an even fan fully on screen, hovered card bigger (1366x768)
 - ✅ AC245: random mines may touch; every layout keeps the placement rules
 - ✅ AC247: a basic Miner dying draws its owner a card; Smith Miners and upgrades do not
 - ✅ AC248: Ranged straight lines also apply to previewAttack and the Commander
@@ -332,12 +332,6 @@
 - ✅ AC276: Goblin Miner stands on the board as its new model with its gear and animations
 - ✅ AC278: the Deck Builder 3D viewer shows the new Goblin Miner model with its animation buttons
 - ✅ AC276: Boneknocker stands on the board as its new model with its gear and animations
-- ✅ round 12d screenshots (1920x1080) › AC315: hand, close-up, Deck Builder, Choose Your Commander and reference cards render without errors
-- ✅ Deck Builder top bar 1920x1080 › AC322: search, filters and Cards per row never overlap (1920x1080)
-- ✅ Deck Builder top bar 1280x720 › AC322: search, filters and Cards per row never overlap (1280x720)
-- ✅ Deck Builder top bar 844x390 › AC322: search, filters and Cards per row never overlap (844x390)
-- ✅ title card stack 1920x1080 › AC323: the Begin gate shows a fanned Oreheart deck with Click to begin over it (1920x1080)
-- ✅ title card stack 844x390 › AC323: the Begin gate shows a fanned Oreheart deck with Click to begin over it (844x390)
 - ✅ AC278: the Deck Builder 3D viewer shows the new Boneknocker model with its animation buttons
 - ✅ AC276: Shiv Rat stands on the board as its new model with its gear and animations
 - ✅ AC278: the Deck Builder 3D viewer shows the new Shiv Rat model with its animation buttons
@@ -356,6 +350,21 @@
 - ✅ AC289: SewerSlide Bomber pays 1, runs in a line until it hits something, then Ka-booms
 - ✅ AC290: Scrapsmith Miner draws a card when it dies (its own text)
 - ✅ AC291: Bare Knuckle Lunatic knocks every adjacent unit back 1 when defeated
+- ✅ round 12d screenshots (1920x1080) › AC315: hand, close-up, Deck Builder, Choose Your Commander and reference cards render without errors
+- ✅ Deck Builder top bar 1920x1080 › AC322: search, filters and Cards per row never overlap (1920x1080)
+- ✅ Deck Builder top bar 1280x720 › AC322: search, filters and Cards per row never overlap (1280x720)
+- ✅ Deck Builder top bar 844x390 › AC322: search, filters and Cards per row never overlap (844x390)
+- ✅ title card stack 1920x1080 › AC323: the Begin gate shows a fanned Oreheart deck with Click to begin over it (1920x1080)
+- ✅ title card stack 844x390 › AC323: the Begin gate shows a fanned Oreheart deck with Click to begin over it (844x390)
+- ✅ Round 13 screenshots 1920x1080 › AC325: title, Deck Builder with spells, hand with spells, spell close-up and an ability button render without errors
+- ❌ round 14 owner text style 1920x1080 › AC326: every HUD text uses the owner's size, bold and italic, in white (1920x1080)
+- ❌ round 14 owner text style 844x390 › AC326: every HUD text uses the owner's size, bold and italic, in white (844x390)
+- ✅ round 14 Done text 1920x1080 › AC326: the Done button uses the owner's size 5.7 in white when it shows
+- ✅ round 14 fanned hand 1920x1080 › AC327: your hand is a fan (4° per card, arc), hover straightens and pops the card 1.6x
+- ✅ round 14 fanned hand 1920x1080 › AC328: the enemy hand is a fan of card backs, 9° apart, at most 6 shown
+- ✅ round 14 crystal flow 1920x1080 › AC329: shards fly from the mine to each side's Flow crystal icon, which pulses on arrival
+- ✅ round 15 unit badges 1920x1080 › AC335: every unit has the owner stat badge: faction metal frame, type icon, live white Russo One numbers under its feet
+- ✅ round 15 screenshots 1920x1080 › AC337: facing, a miner at a node, the bowling ball, white-text menus and the unit badges render without errors
 - ✅ AC292: Backstabbing Thief steals 1 crystal for each enemy it defeats
 - ✅ AC293: Bowler Brawler Strike (2) rolls a ball along a line; every creature on it is knocked 1-2 spaces sideways like a pin
 - ✅ AC293: Bowler Brawler shows the owner's Strike text
@@ -386,27 +395,6 @@
 - ✅ AC319: ability buttons are greyed when unaffordable, on enemy units, or already used
 - ✅ AC320: clicking the Strike button and a target pays 2 and knocks the enemy sideways; hover shows the ability text
 - ✅ AC321: Deck Builder — three Commander portraits by the title, no logo, other factions hidden not locked
-- ✅ Round 13 screenshots 1920x1080 › AC325: title, Deck Builder with spells, hand with spells, spell close-up and an ability button render without errors
-- ✅ round 14 owner text style 1920x1080 › AC326: every HUD text uses the owner's size, bold and italic, in white (1920x1080)
-- ✅ round 14 owner text style 844x390 › AC326: every HUD text uses the owner's size, bold and italic, in white (844x390)
-- ✅ round 14 Done text 1920x1080 › AC326: the Done button uses the owner's size 5.7 in white when it shows
-- ✅ round 14 fanned hand 1920x1080 › AC327: your hand is a fan (4° per card, arc), hover straightens and pops the card 1.6x
-- ✅ round 14 fanned hand 1920x1080 › AC328: the enemy hand is a fan of card backs, 9° apart, at most 6 shown
-- ✅ round 14 crystal flow 1920x1080 › AC329: shards fly from the mine to each side's Flow crystal icon, which pulses on arrival
-- ✅ round 15 unit badges 1920x1080 › AC335: every unit has the owner stat badge: faction metal frame, type icon, live white Russo One numbers under its feet
-- ✅ round 15 screenshots 1920x1080 › AC337: facing, a miner at a node, the bowling ball, white-text menus and the unit badges render without errors
-- ✅ round 17 fixes at 844x390 › AC346: Choose Your Commander fits a phone with nothing overlapping or cut off
-- ❌ round 17 fixes at 844x390 › AC347: the hand is "Your hand" with data-card-id buttons, an even fan fully on screen, and a raised card never covers most of the board
-- ✅ round 17 screenshots › AC348: fight menu with modes, a Card Play match with stances and a Card Comp vs Card Comp match render without errors (1920x1080)
-- ✅ round 17 screenshots › AC348: fight menu with modes, a Card Play match with stances and a Card Comp vs Card Comp match render without errors (844x390)
-- ✅ round 22 controls and hand 1920x1080 › AC357: left-click selects your unit and lights its squares, clicking a lit square moves it; right-click opens its card with its ability menu
-- ✅ round 22 controls and hand 1920x1080 › AC358: clicking a hand card opens its close-up with Play this card; the dragged card hangs below-left of the pointer, tilted
-- ❌ round 23 hand at 1920x1080 › AC363: the fan uses the owner layout — overlap 0.2, 4° per card, arc 1.45 (1920x1080)
-- ❌ round 23 hand at 1920x1080 › AC364: grabbing a card tucks the rest of the hand, and it stays tucked after a play or a cancel (1920x1080)
-- ✅ round 23 hand at 1920x1080 › AC365: the hand tucks within about a third of a second when the mouse leaves it, also onto the enlarged card (1920x1080)
-- ❌ round 23 hand at 1366x768 › AC363: the fan uses the owner layout — overlap 0.2, 4° per card, arc 1.45 (1366x768)
-- ❌ round 23 hand at 1366x768 › AC364: grabbing a card tucks the rest of the hand, and it stays tucked after a play or a cancel (1366x768)
-- ✅ round 23 hand at 1366x768 › AC365: the hand tucks within about a third of a second when the mouse leaves it, also onto the enlarged card (1366x768)
 - ✅ AC324: Knobbin and Thane Borgo can be picked and a match starts with the chosen Commander
 - ✅ AC330: more shards per mine when that side's Flow is higher (2 at Flow 1 up to about 12)
 - ✅ AC331: Corpsman Brewlord heals an adjacent wounded dwarf once per turn; the dwarf is Drunk for 2 rounds and can't be healed
@@ -420,6 +408,43 @@
 - ❌ AC341: Mine Control — a Miner attacks an adjacent enemy Miner only if it survives, and mines when crystals are low
 - ✅ AC342: Guard — Fighters stay within 2 spaces of the stronghold or a Miner and hit enemies that come near
 - ✅ AC343: switching the stance mid-turn changes the next unit's choice
+- ✅ round 17 fixes at 844x390 › AC346: Choose Your Commander fits a phone with nothing overlapping or cut off
+- ❌ round 17 fixes at 844x390 › AC347: the hand is "Your hand" with data-card-id buttons, an even fan fully on screen, and a raised card never covers most of the board
+- ✅ round 17 screenshots › AC348: fight menu with modes, a Card Play match with stances and a Card Comp vs Card Comp match render without errors (1920x1080)
+- ✅ round 17 screenshots › AC348: fight menu with modes, a Card Play match with stances and a Card Comp vs Card Comp match render without errors (844x390)
+- ✅ round 22 controls and hand 1920x1080 › AC357: left-click selects your unit and lights its squares, clicking a lit square moves it; right-click opens its card with its ability menu
+- ❌ round 22 controls and hand 1920x1080 › AC358: clicking a hand card opens its close-up with Play this card; the dragged card hangs below-left of the pointer, tilted
+- ✅ round 23 hand at 1920x1080 › AC363: the fan uses the owner layout — overlap 0.26, 4° per card, arc 1.45 (1920x1080)
+- ❌ round 23 hand at 1920x1080 › AC364: grabbing a card tucks the rest of the hand, and it stays tucked after a play or a cancel (1920x1080)
+- ❌ round 23 hand at 1920x1080 › AC365: the hand tucks within about a third of a second when the mouse leaves it, also onto the enlarged card (1920x1080)
+- ✅ round 23 hand at 1366x768 › AC363: the fan uses the owner layout — overlap 0.26, 4° per card, arc 1.45 (1366x768)
+- ✅ round 23 hand at 1366x768 › AC364: grabbing a card tucks the rest of the hand, and it stays tucked after a play or a cancel (1366x768)
+- ❌ round 23 hand at 1366x768 › AC365: the hand tucks within about a third of a second when the mouse leaves it, also onto the enlarged card (1366x768)
+- ❌ round 26 at 1920x1080 › AC370/AC372: the dragged card stays centered on the pointer; the square under it is highlighted; it grows back over the hand
+- ✅ round 26 at 1920x1080 › AC371: 300 ms after stopping over a square the card takes that square's on-screen shape (near and far square)
+- ✅ round 26 at 1920x1080 › AC373: dropping on a highlighted legal square plays the card there exactly as before
+- ❌ round 26 at 1920x1080 › AC375: the 3D canvas draws at the device pixel ratio; no scroll bars at 1920x1080, 2560x1080 and 3840x2160
+- ✅ round 26 at 1920x1080 › AC377: a payment that needs the Bank asks first; Yes pays Flow then Bank, No cancels
+- ✅ round 26 at 1920x1080 › AC378: with enough Flow there is no question and the Bank is unchanged
+- ✅ round 26 at 1920x1080 › AC379: "Don't ask again" stops the question; the Settings switch brings it back, also after reload
+- ✅ round 26 at 1920x1080 › AC380: Commander speech bubbles are about 35% smaller
+- ✅ round 26 at 1920x1080 › AC382: after any move this phase, Done ends the phase with no question
+- ❌ round 26 at 1920x1080 › AC383/AC384: with no move made, Done opens a drop-up above it in the Menu style; Go back keeps the phase, Continue ends it
+- ❌ round 26 at 1920x1080 › AC385: a controlled mine shows the owning faction's emblem picture from the card format, no emoji
+- ✅ round 26 at 1920x1080 › AC386: the Respond box is 1.3x bigger with buttons at least 44 px tall
+- ❌ round 26 at 1920x1080 › AC387: Junk Shaman lift — the character follows the pointer and lands on the square you click; 2 crystals paid
+- ✅ round 26 at 1920x1080 › AC388: Junk Shaman lift — squares farther than 5 are not highlighted and do nothing; cancel pays nothing
+- ✅ round 26 at 1920x1080 › AC389: hovering across the hand never flickers or turns cards see-through
+- ✅ round 26 at 1920x1080 › AC391/AC396: Skullflinger plays his normal attack clip, no flying skull is created, the hit lands
+- ❌ round 26 high-density screen › AC375: with deviceScaleFactor 2 the 3D drawing buffer is 2x its CSS size
+- ❌ round 26 first click › AC376: the first click asks for fullscreen once; a refusal shows no error
+- ❌ round 26 layout 1920x1080 › AC374: the full hand is spaced 0.26 of a card (or squeezed to fit) and every card is fully on screen (1920x1080)
+- ❌ round 26 layout 1920x1080 › AC381: the mine-all pickaxe badge is fully visible and uncovered (1920x1080)
+- ❌ round 26 layout 1366x768 › AC374: the full hand is spaced 0.26 of a card (or squeezed to fit) and every card is fully on screen (1366x768)
+- ❌ round 26 layout 1366x768 › AC381: the mine-all pickaxe badge is fully visible and uncovered (1366x768)
+- ❌ round 26 layout 844x390 › AC374: the full hand is spaced 0.26 of a card (or squeezed to fit) and every card is fully on screen (844x390)
+- ❌ round 26 layout 844x390 › AC381: the mine-all pickaxe badge is fully visible and uncovered (844x390)
+- ✅ round 26 Respond on a phone › AC386: at 844x390 the Respond box and all its buttons are fully on screen
 - ✅ AC344: a Card Comp vs Card Comp match plays to the end with no input; watch bar, stances and Rematch
 - ❌ AC345: the four stance buttons sit on the right edge, vertically centered, big enough to tap (1920x1080 and 844x390)
 - ✅ AC349: bonus draws — +1 card per 4 crystals mined, +1 for holding every mine
@@ -434,42 +459,57 @@
 - ✅ AC359: Bowler Brawler holds his flaming ball in his hand and spins it on a finger when idle
 - ✅ AC360: Bowler Brawler bowls (Strike and attack): ball back, swing, release, roll along the ground; nothing clips; a new ball returns to his hand
 - ❌ AC361: summoning Bowler Brawler plays his basketball shot: the ball flies up and lands dead (no bounce, no roll)
-- ❌ AC362: every Crystal Node shows the owner look effects in its owner color; Low graphics keeps only the main glow
+- ✅ AC362: every Crystal Node shows the owner look effects in its owner color; Low graphics keeps only the main glow
 - ✅ AC366: flying units hover, bob and sway above their square with a ground shadow; walkers stand on the ground
 - ✅ AC367: Gnome and Dwarf models have their own heights; the Clockwork Beetle slides when it moves
 - ✅ AC368: Card Comp vs Card Comp watch bar sits bottom-right; Pause, Play and Exit to menu work
-- ❌ AC369/AC370: Skullflinger plays Skull_Throw, a skull leaves his right hand at ~0.63 s, bonks the target and bounces away, all gone within 1.5 s
-- ✅ AC371: Skullflinger's model keeps its 5 old clips plus Skull_Throw, and events.json gives the release time and bone
+- ❌ AC390/AC392/AC393: Goblin figures carry their parts exactly as in the owner's Model Editor and idle on their OH_ clip
+- ❌ AC390/AC394: Thunderwing Gyronaut and Aegis Tinkerer have their gear, events.json and a clips map whose clips exist
 
 ## Failures
 
 ```
-✗ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
-Error: expect(received).toBeLessThanOrEqual(expected)
+✗ computer browser window, tall and narrow › AC24b: a computer window never shows the rotate message and keeps the 16:9 shape
+Error: expect(received).toBeLessThan(expected)
 
-Expected: <= 1
-Received:    75.328125
+Expected: < 0.02
+Received:   0.9999999999999999
 
-  1189 |       await expect(field).toBeVisible();
-  1190 |       const box = await field.boundingBox();
-> 1191 |       expect(box.x).toBeLessThanOrEqual(1);
-       |                     ^
-  1192 |       expect(box.y).toBeLessThanOrEqual(1);
-  1193 |       expect(box.x + box.width).toBeGreaterThanOrEqual(w - 1);
-  1194 |       expect(box.y + box.height).toBeGreaterThanOrEqual(h - 1);
-✗ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
-Error: expect(received).toBeLessThanOrEqual(expected)
+  1229 |     await expect(page.getByText('Please rotate your phone')).toBeHidden();
+  1230 |     const r = await page.evaluate(() => { const b = document.getElementById('app').getBoundingClientRect(); return b.width / b.height; });
+> 1231 |     expect(Math.abs(r - 16 / 9)).toBeLessThan(0.02);
+       |                                  ^
+  1232 |   });
+  1233 | });
+  1234 |
+✗ hand pop-out at 2x › AC59: a hovered hand card rises to about 1.6x and stays fully on-screen
+Error: expect(received).toBeGreaterThan(expected)
 
-Expected: <= 1
-Received:    50
+Expected: > 216.4799346923828
+Received:   142.65623474121094
 
-  1189 |       await expect(field).toBeVisible();
-  1190 |       const box = await field.boundingBox();
-> 1191 |       expect(box.x).toBeLessThanOrEqual(1);
-       |                     ^
-  1192 |       expect(box.y).toBeLessThanOrEqual(1);
-  1193 |       expect(box.x + box.width).toBeGreaterThanOrEqual(w - 1);
-  1194 |       expect(box.y + box.height).toBeGreaterThanOrEqual(h - 1);
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  2260 |       const before = await card.boundingBox();
+  2261 |       await page.mouse.move(before.x + before.width / 2, before.y + 8); // the visible top of the tucked card
+> 2262 |       await expect.poll(async () => (await card.boundingBox()).height).toBeGreaterThan(before.height * 1.4); // Round 9a: ~1.6x
+       |       ^
+✗ AC31: Moves still available pop-up — Go back and Continue
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: "action"
+Received: "deploy"
+
+  1445 |   await dlg.getByRole('button', { name: 'Continue' }).click();
+  1446 |   await expect(dlg).toBeHidden();
+> 1447 |   expect((await getState(page)).phase).toBe('action');
+       |                                        ^
+  1448 |   await doneBtn.click(); // no creatures: no moves left, no pop-up
+  1449 |   await expect.poll(async () => (await getState(page)).activePlayer).toBe('opponent');
+  1450 |   await expect(dlg).toBeHidden();
+✗ AC40: 13 x 7 board; 3 random, corner-mirrored mines from the seed; Strongholds at (7,2) and (1,12); fixed tutorial layout
+Test timeout of 30000ms exceeded.
 ✗ AC58: tapping a mine mines with exactly the ready Miners next to it
 Error: expect(locator).toHaveAttribute(expected) failed
 
@@ -481,7 +521,7 @@ Timeout:  7000ms
 Call log:
   - Expect "toHaveAttribute" with timeout 7000ms
   - waiting for getByRole('button', { name: 'Crystal site, row 4, column 6', exact: true })
-    8 × locator resolved to <button data-row="4" data-col="6" data-mk="x1" type="button" data-ready-miners="1" class="site-mark ready" aria-label="Crystal site, row 4, column 6">…</button>
+    7 × locator resolved to <button data-row="4" data-col="6" type="button" data-mk="x1:" data-ready-miners="1" class="site-mark ready" aria-label="Crystal site, row 4, column 6">…</button>
       - unexpected value "1"
 ✗ AC58: mineAt action matches the tap; hovering a mine only shows its info
 Error: expect(received).toBe(expected) // Object.is equality
@@ -489,78 +529,108 @@ Error: expect(received).toBe(expected) // Object.is equality
 Expected: true
 Received: false
 
-  2247 |   expect((await act(page, { type: 'mineAt', row: M3.row, col: M3.col })).ok).toBe(true);
-  2248 |   s = await getState(page);
-> 2249 |   expect(at(s, 3, 6).hasMined && at(s, 5, 7).hasMined).toBe(true);
+  2246 |   expect((await act(page, { type: 'mineAt', row: M3.row, col: M3.col })).ok).toBe(true);
+  2247 |   s = await getState(page);
+> 2248 |   expect(at(s, 3, 6).hasMined && at(s, 5, 7).hasMined).toBe(true);
        |                                                        ^
-  2250 |   expect(at(s, 3, 5).hasMined).toBe(false);
-  2251 |   expect((await act(page, { type: 'mineAt', row: M3.row, col: M3.col })).ok).toBe(false); // nobody left there
-  2252 | });
+  2249 |   expect(at(s, 3, 5).hasMined).toBe(false);
+  2250 |   expect((await act(page, { type: 'mineAt', row: M3.row, col: M3.col })).ok).toBe(false); // nobody left there
+  2251 | });
 ✗ round 4 phone screenshots (844x390) › AC134: mulligan, spell cards per faction, a creature close-up and a menu screen render without errors
-TimeoutError: page.goto: Timeout 15000ms exceeded.
+Test timeout of 30000ms exceeded.
+✗ AC95: the Mulligan screen shows one straight row and counts mulligans left
+TimeoutError: locator.click: Timeout 10000ms exceeded.
 Call log:
-  - navigating to "http://127.0.0.1:4173/?test=1&seed=123", waiting until "load"
+  - waiting for getByRole('dialog', { name: 'Mulligan' }).getByRole('button', { name: 'Redraw Selected' })
+    - locator resolved to <button class="btn " type="button">Redraw Selected</button>
+  - attempting click action
+    - waiting for element to be visible, enabled and stable
+    - element is visible, enabled and stable
+    - scrolling into view if needed
+    - done scrolling
+    - performing click action
 
 
-  3 | // ---------- helpers ----------
-  4 | async function openTest(page, seed = 123) {
-> 5 |   await page.goto(`/?test=1&seed=${seed}`);
-    |              ^
-  6 |   await page.waitForFunction(() => !!window.oreheart);
-  7 | }
-  8 | // fixed mine layout used by setup tests (a legal "all three on row 4" layout)
-✗ AC127: mulligan cards are double size, one row, on-screen (1280x720)
-TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
+✗ AC110: random mines are always corner-mirrored, fair, away from both Strongholds and never on the same square
+Test timeout of 30000ms exceeded.
+✗ round 5a screenshots (1920x1080) › AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (1920x1080)
+TimeoutError: locator.hover: Timeout 10000ms exceeded.
 Call log:
-  - waiting for getByRole('dialog', { name: 'Mulligan' }).locator('[data-card-id]').first()
-
-
-  3756 |     await page.waitForTimeout(600);
-  3757 |     const boxes = [];
-> 3758 |     for (let i = 0; i < 5; i++) boxes.push(await faces.nth(i).boundingBox());
-       |                                                               ^
-  3759 |     boxes.sort((a, b) => a.x - b.x);
-  3760 |     for (const [i, b] of boxes.entries()) {
-  3761 |       expect(b.height, `face ${i} height`).toBeGreaterThanOrEqual(vp.min);
-✗ AC127: mulligan cards are double size, one row, on-screen (844x390)
-TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
+  - waiting for getByLabel('Your hand', { exact: true }).locator('[data-card-id="fireball"]').first()
+    - locator resolved to <button data-z="2" tabindex="0" type="button" data-uid="k202" data-rarity="rare" data-fan-angle="0" data-layout="spell" data-card="fireball" data-fan-angle0="-2" data-playable="false" data-card-id="fireball" data-frame="spell-gnome" aria-label="Searing Arcane Orb" data-card-format="Card format final 1.0" class="hand-card spell f-gnomes unaff popped" data-fan="translateY(1.38475px) rotate(-2deg)">…</button>
+  - attempting hover action
+    - waiting for element to be visible and stable
+    - element is visible and stable
+    - scrolling into view if needed
+    - done scrolling
+    - performing hover action
+    - <button data-z="3" tabindex="0" type="button" data-aside="" data-uid="k203" data-rarity="rare" data-fan-angle="0" data-layout="spell" data-fan-angle0="2" data-playable="false" data-card="battle-cry" data-frame="spell-dwarf" data-card-id="battle-cry" aria-label="Thunderhorn Blast" data-card-format="Card format final 1.0" data-fan="translateY(1.38475px) rotate(2deg)" class="hand-card spell f-dwarves unaff popped">…</button> intercepts pointer events
+  - retrying hover action
+✗ round 5a screenshots (844x390) › AC148: Deck Builder, Choose Your Commander and a spell card per faction render without errors (844x390)
+TimeoutError: locator.hover: Timeout 10000ms exceeded.
 Call log:
-  - waiting for getByRole('dialog', { name: 'Mulligan' }).locator('[data-card-id]').nth(2)
+  - waiting for getByLabel('Your hand', { exact: true }).locator('[data-card-id="fireball"]').first()
+    - locator resolved to <button data-z="2" tabindex="0" type="button" data-uid="k202" data-rarity="rare" data-fan-angle="0" data-layout="spell" data-card="fireball" data-fan-angle0="-2" data-playable="false" data-card-id="fireball" data-frame="spell-gnome" aria-label="Searing Arcane Orb" data-card-format="Card format final 1.0" class="hand-card spell f-gnomes unaff popped" data-fan="translateY(0.518375px) rotate(-2deg)">…</button>
+  - attempting hover action
+    - waiting for element to be visible and stable
+    - element is visible and stable
+    - scrolling into view if needed
+    - done scrolling
+    - performing hover action
+    - <button data-z="3" tabindex="0" type="button" data-aside="" data-uid="k203" data-rarity="rare" data-fan-angle="0" data-layout="spell" data-fan-angle0="2" data-playable="false" data-card="battle-cry" data-frame="spell-dwarf" data-card-id="battle-cry" aria-label="Thunderhorn Blast" data-card-format="Card format final 1.0" class="hand-card spell f-dwarves unaff popped" data-fan="translateY(0.518375px) rotate(2deg)">…</button> intercepts pointer events
+  - retrying hover action
+✗ round 6a match layout 1920x1080 › AC164: the hovered card rises to 48-60% of the height on the top layer (1920x1080)
+Error: expect(received).toBeGreaterThanOrEqual(expected)
 
+Expected: >= 0.47
+Received:    0.3536313657407407
 
-  3756 |     await page.waitForTimeout(600);
-  3757 |     const boxes = [];
-> 3758 |     for (let i = 0; i < 5; i++) boxes.push(await faces.nth(i).boundingBox());
-       |                                                               ^
-  3759 |     boxes.sort((a, b) => a.x - b.x);
-  3760 |     for (const [i, b] of boxes.entries()) {
-  3761 |       expect(b.height, `face ${i} height`).toBeGreaterThanOrEqual(vp.min);
-✗ AC135: one font everywhere: Alegreya SC Italic, bundled, no metal or textured letters
-Error: match
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
 
-expect(received).toEqual(expected) // deep equality
+  4750 |       const b0 = await card.boundingBox();
+  4751 |       await page.mouse.move(b0.x + b0.width / 2, Math.min(H - 4, b0.y + 10));
+> 4752 |       await expect.poll(async () => (await card.boundingBox()).height / H).toBeGreaterThanOrEqual(0.47);
+       |       ^
+✗ round 6a match layout 844x390 › AC164: the hovered card rises to 48-60% of the height on the top layer (844x390)
+Error: expect(received).toBeGreaterThanOrEqual(expected)
 
-- Expected  - 1
-+ Received  + 4
+Expected: >= 0.47
+Received:    0.36578521728515623
 
-- Array []
-+ Array [
-+   "100 [style normal]",
-+   "100 [style normal]",
-+ ]
-✗ AC138: every menu screen fills the window edge to edge at 844x390, 1280x720, 1920x1080 and rescales live
-Error: title 844x390 at the top-left corner
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  4750 |       const b0 = await card.boundingBox();
+  4751 |       await page.mouse.move(b0.x + b0.width / 2, Math.min(H - 4, b0.y + 10));
+> 4752 |       await expect.poll(async () => (await card.boundingBox()).height / H).toBeGreaterThanOrEqual(0.47);
+       |       ^
+✗ round 7 hand (1920x1080) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (1920x1080)
+Error: only card 1 is popped
 
 expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
-  4055 |   }, screen);
-  4056 |   expect(r.missing, `${where}: data-screen="${screen}"`).toBeUndefined();
-> 4057 |   expect(Math.abs(r.x) <= 2 && Math.abs(r.y) <= 2, `${where} at the top-left corner`).toBe(true);
-       |                                                                                       ^
-  4058 |   expect(Math.abs(r.w - r.W) <= 2 && Math.abs(r.h - r.H) <= 2, `${where} ${r.w}x${r.h} fills ${r.W}x${r.H}`).toBe(true);
+Call Log:
+- Timeout 4000ms exceeded while waiting on the predicate
+
+  5107 |         expect(pt, `card ${i} can be hovered`).not.toBeNull();
+  5108 |         await page.mouse.move(pt[0], pt[1], { steps: 4 });
+✗ round 7 hand (844x390) › AC174: hovered hand cards always retract; only one pops at a time; nothing stays stuck (844x390)
+Error: only card 1 is popped
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+Call Log:
+- Timeout 4000ms exceeded while waiting on the predicate
+
+  5107 |         expect(pt, `card ${i} can be hovered`).not.toBeNull();
+  5108 |         await page.mouse.move(pt[0], pt[1], { steps: 4 });
 ✗ AC149: the cover-fit painted view keeps both Commanders whole at every window shape (Round 8a)
 Error: 1920x1200: cover-fit default view, both Commanders whole
 
@@ -572,8 +642,8 @@ Received: false
 Call Log:
 - Timeout 7000ms exceeded while waiting on the predicate
 
-  4350 |   for (const [W, H] of SHAPES_5B) {
-  4351 |     await page.setViewportSize({ width: W, height: H });
+  4349 |   for (const [W, H] of SHAPES_5B) {
+  4350 |     await page.setViewportSize({ width: W, height: H });
 ✗ AC150: no black bars at any window shape
 Error: 1920x1200 battlefield fills the window
 
@@ -582,65 +652,78 @@ expect(received).toBe(expected) // Object.is equality
 Expected: true
 Received: false
 
-  4391 |     await page.waitForTimeout(800);
-  4392 |     const bf = await page.getByLabel('Battlefield', { exact: true }).boundingBox();
-> 4393 |     expect(bf.x <= 1 && bf.y <= 1 && bf.width >= W - 2 && bf.height >= H - 2, `${W}x${H} battlefield fills the window`).toBe(true);
+  4390 |     await page.waitForTimeout(800);
+  4391 |     const bf = await page.getByLabel('Battlefield', { exact: true }).boundingBox();
+> 4392 |     expect(bf.x <= 1 && bf.y <= 1 && bf.width >= W - 2 && bf.height >= H - 2, `${W}x${H} battlefield fills the window`).toBe(true);
        |                                                                                                                         ^
-  4394 |     expect(await blackEdges(page), `${W}x${H} black bars`).toEqual([]);
-✗ AC168: bold titles and main actions, regular body text, only four weights
-Error: title
-
-expect(received).toEqual(expected) // deep equality
-
-- Expected  - 1
-+ Received  + 3
-
-- Array []
-+ Array [
-+   "Play [style normal]",
-+ ]
-
-✗ arena homography 844x390 › AC188: square centers follow the homography of the owner's corners (844x390)
-Error: square 1,1 x
-
-expect(received).toBeLessThanOrEqual(expected)
-
-Expected: <= 3
-Received:    75.32812499999994
-
-  5460 |     const next = expectedCenter(layout, ar.arenaPicture, cam, r, c === 13 ? 12 : c + 1);
-  5461 |     const tol = Math.max(3, 0.05 * Math.abs(next.x - want.x));
-> 5462 |     expect(Math.abs(got.x - want.x), `square ${r},${c} x`).toBeLessThanOrEqual(tol);
-       |                                                            ^
-  5463 |     expect(Math.abs(got.y - want.y), `square ${r},${c} y`).toBeLessThanOrEqual(tol);
-✗ arena pan 1920x1080 › AC191: keys, WASD and dragging empty board pan the view, always clamped to the painting
-Test timeout of 30000ms exceeded.
-✗ round 9a owner layout 844x390 › AC212: every HUD piece sits where the owner's layout puts it (844x390)
-Error: enemy-deck x
-
-expect(received).toBeLessThanOrEqual(expected)
-
-Expected: <= 4.9
-Received:    75.51633333333336
-
-  6233 |         const offY = H > fh ? ((p.y + p.h / 2) < 33.33 ? 0 : (p.y + p.h / 2) > 66.67 ? H - fh : (H - fh) / 2) : 0;
-  6234 |         const want = { x: offX + p.x / 100 * fw, y: offY + p.y / 100 * fh, width: p.w / 100 * fw, height: p.h / 100 * fh };
-> 6235 |         for (const k of ['x', 'y', 'width', 'height']) expect(Math.abs(got.rect[k] - want[k]), `${p.role} ${k}`).toBeLessThanOrEqual(W === 1920 ? W * 0.01 : tol);
-       |                                                                                                                  ^
-  6236 |         expect(Math.abs(norm360((got.rot || 0) - (p.rot || 0))), `${p.role} rot`).toBeLessThanOrEqual(3);
+  4393 |     expect(await blackEdges(page), `${W}x${H} black bars`).toEqual([]);
 ✗ AC176: the owner's card back and deck-pile pictures are used exactly
 TimeoutError: locator.evaluate: Timeout 10000ms exceeded.
 Call log:
   - waiting for getByLabel('Deck pile', { exact: true }).locator('img[src*="deck-pile"]').first()
 
 
-  5182 |   return bad;
-  5183 | });
-> 5184 | const pileSize = (pile) => pile.locator('img[src*="deck-pile"]').first().evaluate((i) => [i.naturalWidth, i.naturalHeight]);
+  5181 |   return bad;
+  5182 | });
+> 5183 | const pileSize = (pile) => pile.locator('img[src*="deck-pile"]').first().evaluate((i) => [i.naturalWidth, i.naturalHeight]);
        |                                                                          ^
-  5185 |
-  5186 | test('AC176: the owner\'s card back and deck-pile pictures are used exactly', async ({ page }) => {
-  5187 |   await start(page, quiet({ opponentHand: ['goblin-scrapper', 'fireball', 'soul-shard'], playerDeck: SHARDS, opponentDeck: SHARDS.slice(0, 5) }));
+  5184 |
+  5185 | test('AC176: the owner\'s card back and deck-pile pictures are used exactly', async ({ page }) => {
+  5186 |   await start(page, quiet({ opponentHand: ['goblin-scrapper', 'fireball', 'soul-shard'], playerDeck: SHARDS, opponentDeck: SHARDS.slice(0, 5) }));
+✗ arena pan 1920x1080 › AC191: keys, WASD and dragging empty board pan the view, always clamped to the painting
+Test timeout of 30000ms exceeded.
+✗ arena HUD 1920x1080 › AC192: the HUD stays fixed while zooming and panning; Recenter and double-click reset the view
+Error: expect(received).toBeGreaterThan(expected)
+
+Expected: > 1.2
+Received:   1
+
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  5466 |   await page.mouse.move(x, y);
+  5467 |   for (let i = 0; i < clicks; i++) { await page.mouse.wheel(0, -240); await page.waitForTimeout(120); }
+> 5468 |   await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(1.2);
+       |   ^
+✗ hand never rises while dragging 1920x1080 › AC200: dragging a creature or panning across the hand never raises it
+Error: expect(received).toBeGreaterThan(expected)
+
+Expected: > 1.2
+Received:   1
+
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  5466 |   await page.mouse.move(x, y);
+  5467 |   for (let i = 0; i < clicks; i++) { await page.mouse.wheel(0, -240); await page.waitForTimeout(120); }
+> 5468 |   await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(1.2);
+       |   ^
+✗ round 9a hand 1920x1080 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (1920x1080)
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 3
+Received: 2
+
+  6369 |       expect(r.x).toBeGreaterThan(rest[3].x + 2);
+  6370 |       await hoverAt(3);
+> 6371 |       expect((await handHover(page)).raisedIndex).toBe(3);
+       |                                                   ^
+  6372 |       const b3 = await cards.nth(3).boundingBox();
+  6373 |       expect(b3.y + b3.height).toBeLessThanOrEqual(H + 1);
+  6374 |       const b2 = await cards.nth(2).boundingBox();
+✗ round 9a hand 844x390 › AC218: hovering raises the whole card, neighbors move aside, moving across shuffles (844x390)
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 3
+Received: 2
+
+  6369 |       expect(r.x).toBeGreaterThan(rest[3].x + 2);
+  6370 |       await hoverAt(3);
+> 6371 |       expect((await handHover(page)).raisedIndex).toBe(3);
+       |                                                   ^
+  6372 |       const b3 = await cards.nth(3).boundingBox();
+  6373 |       expect(b3.y + b3.height).toBeLessThanOrEqual(H + 1);
+  6374 |       const b2 = await cards.nth(2).boundingBox();
 ✗ AC190: cover-fit with no black bars at 16:9, 4:3, 21:9 and phone; max zoom about 2.5 px per painting pixel
 Error: 1600x1200 cover scale
 
@@ -649,35 +732,35 @@ expect(received).toBeLessThanOrEqual(expected)
 Expected: <= 0.01
 Received:    0.24960127591706535
 
-  5612 |     const c = await camera(page);
-  5613 |     expect(c.zoom, `${W}x${H} zoom`).toBeCloseTo(1, 3);
-> 5614 |     expect(Math.abs(c.minScale - cover) / cover, `${W}x${H} cover scale`).toBeLessThanOrEqual(0.01);
+  5611 |     const c = await camera(page);
+  5612 |     expect(c.zoom, `${W}x${H} zoom`).toBeCloseTo(1, 3);
+> 5613 |     expect(Math.abs(c.minScale - cover) / cover, `${W}x${H} cover scale`).toBeLessThanOrEqual(0.01);
        |                                                                           ^
-  5615 |     expect(Math.abs(c.scale - cover) / cover).toBeLessThanOrEqual(0.01);
+  5614 |     expect(Math.abs(c.scale - cover) / cover).toBeLessThanOrEqual(0.01);
 ✗ AC191: at zoom 1 on a 4:3 window the view pans sideways but never past the edges
 Error: expect(received).toBeLessThan(expected)
 
 Expected: < -20
 Received:   0
 
-  5693 |   await page.waitForTimeout(800);
-  5694 |   const v1 = (await camera(page)).view;
-> 5695 |   expect(v1.x).toBeLessThan(v0.x - 20);
+  5692 |   await page.waitForTimeout(800);
+  5693 |   const v1 = (await camera(page)).view;
+> 5694 |   expect(v1.x).toBeLessThan(v0.x - 20);
        |                ^
-  5696 |   expect(v1.x).toBeGreaterThanOrEqual(-0.5);
-  5697 |   for (let i = 0; i < 120; i++) await page.keyboard.press('ArrowRight');
-  5698 |   await page.waitForTimeout(800);
+  5695 |   expect(v1.x).toBeGreaterThanOrEqual(-0.5);
+  5696 |   for (let i = 0; i < 120; i++) await page.keyboard.press('ArrowRight');
+  5697 |   await page.waitForTimeout(800);
 ✗ AC196: the player Commander faces the opponent and turns back after a look-back
 Error: Timeout 10000ms exceeded while waiting on the predicate
 
-  5846 | test('AC196: the player Commander faces the opponent and turns back after a look-back', async ({ page }) => {
-  5847 |   await start(page, { ...quiet({ playerHand: HAND_R7, playerCrystals: 4, board: BOARD_5B }), firstPlayer: 'player' });
-> 5848 |   await expect.poll(async () => (await cmdEntry(page, 'player')).emoteLog, { timeout: 10000 }).toContain('lookBack');
+  5845 | test('AC196: the player Commander faces the opponent and turns back after a look-back', async ({ page }) => {
+  5846 |   await start(page, { ...quiet({ playerHand: HAND_R7, playerCrystals: 4, board: BOARD_5B }), firstPlayer: 'player' });
+> 5847 |   await expect.poll(async () => (await cmdEntry(page, 'player')).emoteLog, { timeout: 10000 }).toContain('lookBack');
        |   ^
-  5849 |   await expect.poll(async () => { const c = await cmdEntry(page, 'player'); return c.facingDeg <= 15 && c.emote === 'none'; }, { timeout: 10000, message: 'back to facing the opponent' }).toBe(true);
-  5850 |   const p = await cmdEntry(page, 'player');
-  5851 |   expect(p.turnMs).toBeGreaterThanOrEqual(400);
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:5848:3
+  5848 |   await expect.poll(async () => { const c = await cmdEntry(page, 'player'); return c.facingDeg <= 15 && c.emote === 'none'; }, { timeout: 10000, message: 'back to facing the opponent' }).toBe(true);
+  5849 |   const p = await cmdEntry(page, 'player');
+  5850 |   expect(p.turnMs).toBeGreaterThanOrEqual(400);
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:5847:3
 ✗ AC197: impatience starts after about 20 s idle and stops on an action
 Error: not impatient after 10 s
 
@@ -685,31 +768,161 @@ expect(received).not.toBe(expected) // Object.is equality
 
 Expected: not "impatient"
 
-  5859 |   await page.evaluate(async () => await window.oreheart.advanceIdle(10));
-  5860 |   await page.waitForTimeout(300);
-> 5861 |   expect((await cmdEntry(page, 'player')).emote, 'not impatient after 10 s').not.toBe('impatient');
+  5858 |   await page.evaluate(async () => await window.oreheart.advanceIdle(10));
+  5859 |   await page.waitForTimeout(300);
+> 5860 |   expect((await cmdEntry(page, 'player')).emote, 'not impatient after 10 s').not.toBe('impatient');
        |                                                                                  ^
-  5862 |   await page.evaluate(async () => await window.oreheart.advanceIdle(11));
-  5863 |   await expect.poll(async () => { const c = await cmdEntry(page, 'player'); return c.emote === 'impatient' && c.facingDeg >= 120; }, { timeout: 5000 }).toBe(true);
+  5861 |   await page.evaluate(async () => await window.oreheart.advanceIdle(11));
+  5862 |   await expect.poll(async () => { const c = await cmdEntry(page, 'player'); return c.emote === 'impatient' && c.facingDeg >= 120; }, { timeout: 5000 }).toBe(true);
 ✗ AC206: choosing a Commander hides the other two and shows only his decks; Change Commander, Esc and a second click bring the row back
 Test timeout of 30000ms exceeded.
 ✗ round 10 at 1920x1080 › AC256: Round 10 screenshots render without errors
 Test timeout of 30000ms exceeded.
 ✗ round 11 at 1920x1080 › AC261: unit rings use faction colors, grey out after acting; "Unit rings" settings are saved and applied
 Test timeout of 30000ms exceeded.
+✗ round 11 at 1920x1080 › AC264: dragging a card sideways in the hand reorders it, the hand stays up, and the order is kept
+Error: expect(received).toEqual(expected) // deep equality
+
+- Expected  - 2
++ Received  + 2
+
+  Array [
+-   "fireball",
++   "goblin-scrapper",
+    "goblin-slinger",
+    "soul-shard",
+-   "goblin-scrapper",
++   "fireball",
+✗ round 11 at 1920x1080 › AC265: dragging a card shows the real card face, floating and tilting; the hand tucks while over the board
+Error: expect(locator).toHaveCount(expected) failed
+
+Locator:  getByLabel('Dragged card', { exact: true }).locator('[data-card-id="goblin-scrapper"]')
+Expected: 1
+Received: 0
+Timeout:  7000ms
+
+Call log:
+  - Expect "toHaveCount" with timeout 7000ms
+  - waiting for getByLabel('Dragged card', { exact: true }).locator('[data-card-id="goblin-scrapper"]')
+    10 × locator resolved to 0 elements
+       - unexpected value "0"
+✗ round 12a drag-to-play at 1920x1080 › AC269: dragging Goblin Miner from the raised hand onto a legal home-row square summons it (1920x1080)
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: "goblin-scrounger"
+Received: "goblin-scrapper"
+
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  7609 |         .some((h) => h.row === spot.row && h.col === spot.col)).toBe(true);
+  7610 |       await page.mouse.up();
+> 7611 |       await expect.poll(async () => { const c = at(await getState(page), spot.row, spot.col); return c && c.cardId; }).toBe('goblin-scrounger');
+       |       ^
+✗ round 12a drag-to-play at 1568x782 › AC269: dragging Goblin Miner from the raised hand onto a legal home-row square summons it (1568x782)
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: "goblin-scrounger"
+Received: "goblin-scrapper"
+
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  7609 |         .some((h) => h.row === spot.row && h.col === spot.col)).toBe(true);
+  7610 |       await page.mouse.up();
+> 7611 |       await expect.poll(async () => { const c = at(await getState(page), spot.row, spot.col); return c && c.cardId; }).toBe('goblin-scrounger');
+       |       ^
+✗ round 12a hand layout at 1920x1080 › AC272: the raised hand is an even fan fully on screen, hovered card bigger (1920x1080)
+Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 671.1825134277344
+Received:    381.921875
+
+  7792 |       }
+  7793 |       for (const b of others) expect(b.height).toBeGreaterThanOrEqual(minH);
+> 7794 |       expect(hovered.height).toBeGreaterThanOrEqual(1.1 * Math.max(...others.map((b) => b.height)) - 1);
+       |                              ^
+  7795 |       void order; // Round 23: overlap 0.2 like the owner's layout editor; neighbours may sit behind the enlarged card
+  7796 |     });
+  7797 |   });
+✗ round 12a hand layout at 1568x782 › AC272: the raised hand is an even fan fully on screen, hovered card bigger (1568x782)
+Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 485.475
+Received:    276.40625
+
+  7792 |       }
+  7793 |       for (const b of others) expect(b.height).toBeGreaterThanOrEqual(minH);
+> 7794 |       expect(hovered.height).toBeGreaterThanOrEqual(1.1 * Math.max(...others.map((b) => b.height)) - 1);
+       |                              ^
+  7795 |       void order; // Round 23: overlap 0.2 like the owner's layout editor; neighbours may sit behind the enlarged card
+  7796 |     });
+  7797 |   });
+✗ round 12a hand layout at 1366x768 › AC272: the raised hand is an even fan fully on screen, hovered card bigger (1366x768)
+Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 477.6374664306641
+Received:    271.9531555175781
+
+  7792 |       }
+  7793 |       for (const b of others) expect(b.height).toBeGreaterThanOrEqual(minH);
+> 7794 |       expect(hovered.height).toBeGreaterThanOrEqual(1.1 * Math.max(...others.map((b) => b.height)) - 1);
+       |                              ^
+  7795 |       void order; // Round 23: overlap 0.2 like the owner's layout editor; neighbours may sit behind the enlarged card
+  7796 |     });
+  7797 |   });
+✗ round 14 owner text style 1920x1080 › AC326: every HUD text uses the owner's size, bold and italic, in white (1920x1080)
+Error: enemy-deck-count italic
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: false
+Received: true
+
+  8809 |         expect(Math.abs(st.size - want), `${p.role} size ${st.size} vs ${want}`).toBeLessThanOrEqual(Math.max(1.5, want * 0.1));
+  8810 |         expect(st.weight >= 600, `${p.role} bold`).toBe(!!p.text.bold);
+> 8811 |         expect(st.style === 'italic', `${p.role} italic`).toBe(!!p.text.italic);
+       |                                                           ^
+  8812 |       }
+✗ round 14 owner text style 844x390 › AC326: every HUD text uses the owner's size, bold and italic, in white (844x390)
+Error: enemy-deck-count italic
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: false
+Received: true
+
+  8809 |         expect(Math.abs(st.size - want), `${p.role} size ${st.size} vs ${want}`).toBeLessThanOrEqual(Math.max(1.5, want * 0.1));
+  8810 |         expect(st.weight >= 600, `${p.role} bold`).toBe(!!p.text.bold);
+> 8811 |         expect(st.style === 'italic', `${p.role} italic`).toBe(!!p.text.italic);
+       |                                                           ^
+  8812 |       }
 ✗ AC318: units with activated abilities show a round ability button above them
 Error: expect(received).toBeLessThan(expected)
 
 Expected: < 390.60154834540884
 Received:   402.328125
 
-  8626 |   const b = await strike.boundingBox();
-  8627 |   expect(Math.abs(b.x + b.width / 2 - c.x)).toBeLessThanOrEqual(Math.abs(n.x - c.x) * 0.6 + 2);
-> 8628 |   expect(b.y + b.height / 2).toBeLessThan(c.y);
+  8625 |   const b = await strike.boundingBox();
+  8626 |   expect(Math.abs(b.x + b.width / 2 - c.x)).toBeLessThanOrEqual(Math.abs(n.x - c.x) * 0.6 + 2);
+> 8627 |   expect(b.y + b.height / 2).toBeLessThan(c.y);
        |                              ^
-  8629 |   const list = await page.evaluate(async () => await window.oreheart.getAbilityButtons());
-  8630 |   expect(list.some((x) => x.ability === 'strike' && x.cardId === 'goblin-scrapper' && x.cost === 2 && x.enabled === true)).toBe(true);
-  8631 |   expect(list.some((x) => x.ability === 'pickUp' && x.cardId === 'junk-shaman')).toBe(true);
+  8628 |   const list = await page.evaluate(async () => await window.oreheart.getAbilityButtons());
+  8629 |   expect(list.some((x) => x.ability === 'strike' && x.cardId === 'goblin-scrapper' && x.cost === 2 && x.enabled === true)).toBe(true);
+  8630 |   expect(list.some((x) => x.ability === 'pickUp' && x.cardId === 'junk-shaman')).toBe(true);
+✗ AC341: Mine Control — a Miner attacks an adjacent enemy Miner only if it survives, and mines when crystals are low
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: "attack"
+Received: "mine"
+
+  9194 |   await toAction(page);
+  9195 |   let ch = await stanceChoice(page, uid);
+> 9196 |   expect(ch.type).toBe('attack');
+       |                   ^
+  9197 |   expect(sameTarget(ch.target, 5, 5)).toBe(true);
+  9198 |   // would die in the trade (1/1 vs 1/1) -> mines instead
+  9199 |   s = await start(page, cardPlay({ ...base, board: board(false) }, 'minecontrol'));
 ✗ round 17 fixes at 844x390 › AC347: the hand is "Your hand" with data-card-id buttons, an even fan fully on screen, and a raised card never covers most of the board
 Error: every hand card fully on screen at rest
 
@@ -721,60 +934,225 @@ Received: false
 Call Log:
 - Timeout 4000ms exceeded while waiting on the predicate
 
-  9317 |     const cards = page.getByLabel('Your hand', { exact: true }).locator('button[data-card-id]');
-  9318 |     await expect(cards).toHaveCount(5);
-✗ round 23 hand at 1920x1080 › AC363: the fan uses the owner layout — overlap 0.2, 4° per card, arc 1.45 (1920x1080)
-Error: gap 1
+  9316 |     const cards = page.getByLabel('Your hand', { exact: true }).locator('button[data-card-id]');
+  9317 |     await expect(cards).toHaveCount(5);
+✗ round 22 controls and hand 1920x1080 › AC358: clicking a hand card opens its close-up with Play this card; the dragged card hangs below-left of the pointer, tilted
+Error: expect(received).toBeLessThan(expected)
 
-expect(received).toBeLessThanOrEqual(expected)
+Expected: < 942.03125
+Received:   NaN
 
-Expected: <= 0.23
-Received:    0.5400149835066268
-
-  9787 |         const gap = fan[i].cx - fan[i - 1].cx;
-  9788 |         expect(gap / w, `gap ${i}`).toBeGreaterThanOrEqual(0.17);
-> 9789 |         expect(gap / w, `gap ${i}`).toBeLessThanOrEqual(0.23);
-       |                                     ^
-  9790 |       }
+  9625 |     const inside = d.pointer.x >= d.x && d.pointer.x <= d.x + d.width && d.pointer.y >= d.y && d.pointer.y <= d.y + d.height;
+  9626 |     expect(inside, 'the target square under the pointer stays visible').toBe(false);
+> 9627 |     expect(d.x + d.width / 2).toBeLessThan(d.pointer.x);
+       |                               ^
+  9628 |     expect(d.y + d.height / 2).toBeGreaterThan(d.pointer.y);
+  9629 |     expect(Math.abs(d.tiltDeg)).toBeGreaterThanOrEqual(4);
+  9630 |     await page.keyboard.press('Escape');
 ✗ round 23 hand at 1920x1080 › AC364: grabbing a card tucks the rest of the hand, and it stays tucked after a play or a cancel (1920x1080)
-Test timeout of 30000ms exceeded.
-✗ round 23 hand at 1366x768 › AC363: the fan uses the owner layout — overlap 0.2, 4° per card, arc 1.45 (1366x768)
-Error: gap 1
+Error: Timeout 1200ms exceeded while waiting on the predicate
+
+  9825 |       await page.mouse.move(from2.x, from2.y - 30, { steps: 3 });
+  9826 |       await page.mouse.move(mid.x, mid.y, { steps: 8 });
+> 9827 |       await expect.poll(tuckedOk, { timeout: 1200 }).toBe(true);
+       |       ^
+  9828 |       await page.mouse.up();
+  9829 |       await page.waitForTimeout(700);
+  9830 |       expect((await getState(page)).players.player.hand.length).toBe(6);
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:9827:7
+✗ round 23 hand at 1920x1080 › AC365: the hand tucks within about a third of a second when the mouse leaves it, also onto the enlarged card (1920x1080)
+Error: expect(received).toBeLessThan(expected)
+
+Expected: < 656.3422241210938
+Received:   676.3422241210938
+
+Call Log:
+- Timeout 2000ms exceeded while waiting on the predicate
+
+  9837 |       // leave onto the board
+  9838 |       await r23HoverCard(page, 2);
+> 9839 |       await expect.poll(async () => median(await r23Tops(page)), { timeout: 2000 }).toBeLessThan(restTop - 20);
+       |       ^
+✗ round 23 hand at 1366x768 › AC365: the hand tucks within about a third of a second when the mouse leaves it, also onto the enlarged card (1366x768)
+Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 474.56915283203125
+Received:    459.4468688964844
+
+Call Log:
+- Timeout 1500ms exceeded while waiting on the predicate
+
+  9851 |       await page.mouse.move(above.x, above.y, { steps: 4 });
+  9852 |       await expect.poll(async () => (await handHover(page)).raised, { timeout: 500 }).toBe(false);
+> 9853 |       await expect.poll(async () => median(await r23Tops(page)), { timeout: 1500 }).toBeGreaterThanOrEqual(restTop - 6);
+       |       ^
+✗ round 26 at 1920x1080 › AC370/AC372: the dragged card stays centered on the pointer; the square under it is highlighted; it grows back over the hand
+Error: grows back over the hand
 
 expect(received).toBeLessThanOrEqual(expected)
 
-Expected: <= 0.23
-Received:    0.5400528291458332
+Expected: <= 0.05
+Received:    0.39758769645651043
 
-  9787 |         const gap = fan[i].cx - fan[i - 1].cx;
-  9788 |         expect(gap / w, `gap ${i}`).toBeGreaterThanOrEqual(0.17);
-> 9789 |         expect(gap / w, `gap ${i}`).toBeLessThanOrEqual(0.23);
-       |                                     ^
-  9790 |       }
-✗ round 23 hand at 1366x768 › AC364: grabbing a card tucks the rest of the hand, and it stays tucked after a play or a cancel (1366x768)
-Error: Timeout 2000ms exceeded while waiting on the predicate
+  9978 |     await page.mouse.move(from.x, from.y - 40, { steps: 8 });
+  9979 |     await page.waitForTimeout(300);
+> 9980 |     expect(Math.abs((await dragCard(page)).width - w0) / w0, 'grows back over the hand').toBeLessThanOrEqual(0.05);
+       |                                                                                          ^
+  9981 |     await page.mouse.up();
+✗ round 26 at 1920x1080 › AC375: the 3D canvas draws at the device pixel ratio; no scroll bars at 1920x1080, 2560x1080 and 3840x2160
+Error: Timeout 5000ms exceeded while waiting on the predicate
 
-  9806 |       // hover raises the hand
-  9807 |       await r23HoverCard(page, 6);
-> 9808 |       await expect.poll(async () => median(await r23Tops(page)), { timeout: 2000 }).toBeLessThan(restTop - 20);
-       |       ^
-  9809 |       // grab the Miner (last card) and drag toward the back row in steps
-  9810 |       const target = await sqCenter(page, 7, 6);
-  9811 |       const from = await r23HoverCard(page, 6);
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:9808:7
-✗ AC341: Mine Control — a Miner attacks an adjacent enemy Miner only if it survives, and mines when crystals are low
+  10016 |     for (const vp of [{ width: 1920, height: 1080 }, { width: 2560, height: 1080 }, { width: 3840, height: 2160 }]) {
+  10017 |       await page.setViewportSize(vp);
+> 10018 |       await expect.poll(async () => { const c = (await renderStats(page)).canvas; return c && c.pixelRatio === 1 && near(c.bufferWidth, c.cssWidth, 2) && near(c.bufferHeight, c.cssHeight, 2); }, { timeout: 5000 }).toBe(true);
+        |       ^
+  10019 |       const sc = await page.evaluate(() => ({ x: document.documentElement.scrollWidth - innerWidth, y: document.documentElement.scrollHeight - innerHeight }));
+  10020 |       expect(sc.x <= 0 && sc.y <= 0, `no scroll bars at ${vp.width}x${vp.height}`).toBe(true);
+  10021 |     }
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:10018:7
+✗ round 26 at 1920x1080 › AC383/AC384: with no move made, Done opens a drop-up above it in the Menu style; Go back keeps the phase, Continue ends it
+Error: expect(received).toEqual(expected) // deep equality
+
+- Expected  - 2
++ Received  + 2
+
+  Object {
+-   "bg": "color(srgb 0.0705882 0.0509804 0.0862745 / 0.88)",
+-   "border": "rgba(255, 215, 0, 0.2)",
++   "bg": "rgba(0, 0, 0, 0)",
++   "border": "rgb(255, 255, 255)",
+  }
+
+✗ round 26 at 1920x1080 › AC385: a controlled mine shows the owning faction's emblem picture from the card format, no emoji
+Error: expect(locator).toHaveCount(expected) failed
+
+Locator:  getByRole('button', { name: 'Crystal site, row 4, column 2', exact: true }).locator('img[src$="2298e4af.webp"]')
+Expected: 1
+Received: 0
+Timeout:  5000ms
+
+Call log:
+  - Expect "toHaveCount" with timeout 5000ms
+  - waiting for getByRole('button', { name: 'Crystal site, row 4, column 2', exact: true }).locator('img[src$="2298e4af.webp"]')
+    6 × locator resolved to 0 elements
+      - unexpected value "0"
+✗ round 26 at 1920x1080 › AC387: Junk Shaman lift — the character follows the pointer and lands on the square you click; 2 crystals paid
+Error: highlighted squares = legal landing squares
+
+expect(received).toEqual(expected) // deep equality
+
+- Expected  -  1
++ Received  + 67
+
+- Array []
++ Array [
++   "1,10",
++   "1,11",
++   "1,13",
+✗ round 26 high-density screen › AC375: with deviceScaleFactor 2 the 3D drawing buffer is 2x its CSS size
 Error: expect(received).toBe(expected) // Object.is equality
 
-Expected: "attack"
-Received: "mine"
+Expected: true
+Received: false
 
-  9195 |   await toAction(page);
-  9196 |   let ch = await stanceChoice(page, uid);
-> 9197 |   expect(ch.type).toBe('attack');
-       |                   ^
-  9198 |   expect(sameTarget(ch.target, 5, 5)).toBe(true);
-  9199 |   // would die in the trade (1/1 vs 1/1) -> mines instead
-  9200 |   s = await start(page, cardPlay({ ...base, board: board(false) }, 'minecontrol'));
+Call Log:
+- Timeout 5000ms exceeded while waiting on the predicate
+
+  10243 |     await start(page, quiet({}));
+  10244 |     if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+> 10245 |     await expect.poll(async () => { const c = (await renderStats(page)).canvas; return c && c.pixelRatio === 2 && near(c.bufferWidth, 2 * c.cssWidth, 2) && near(c.bufferHeight, 2 * c.cssHeight, 2); }, { timeout: 5000 }).toBe(true);
+        |     ^
+✗ round 26 first click › AC376: the first click asks for fullscreen once; a refusal shows no error
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 1
+Received: 0
+
+Call Log:
+- Timeout 7000ms exceeded while waiting on the predicate
+
+  10259 |     await page.goto('/');
+  10260 |     await page.mouse.click(40, 40);
+> 10261 |     await expect.poll(async () => page.evaluate(() => window.__fs)).toBe(1);
+        |     ^
+✗ round 26 layout 1920x1080 › AC374: the full hand is spaced 0.26 of a card (or squeezed to fit) and every card is fully on screen (1920x1080)
+Error: card 0 fully on screen
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+  10283 |       for (let i = 0; i < 7; i++) {
+  10284 |         const b = await btns.nth(i).boundingBox();
+> 10285 |         expect(b.x >= -1 && b.y >= -1 && b.x + b.width <= vp.width + 1 && b.y + b.height <= vp.height + 1, `card ${i} fully on screen`).toBe(true);
+        |                                                                                                                                         ^
+  10286 |       }
+✗ round 26 layout 1920x1080 › AC381: the mine-all pickaxe badge is fully visible and uncovered (1920x1080)
+Error: expect(locator).toContainText(expected) failed
+
+Locator: getByRole('button', { name: 'Crystal site, row 4, column 2', exact: true }).locator('[data-mine-badge]')
+Expected substring: "2"
+Received string:    ""
+Timeout: 7000ms
+
+Call log:
+  - Expect "toContainText" with timeout 7000ms
+  - waiting for getByRole('button', { name: 'Crystal site, row 4, column 2', exact: true }).locator('[data-mine-badge]')
+    8 × locator resolved to <span class="pickaxe" data-mine-badge="" aria-hidden="true">…</span>
+      - unexpected value ""
+✗ round 26 layout 1366x768 › AC374: the full hand is spaced 0.26 of a card (or squeezed to fit) and every card is fully on screen (1366x768)
+Error: card 0 fully on screen
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+  10283 |       for (let i = 0; i < 7; i++) {
+  10284 |         const b = await btns.nth(i).boundingBox();
+> 10285 |         expect(b.x >= -1 && b.y >= -1 && b.x + b.width <= vp.width + 1 && b.y + b.height <= vp.height + 1, `card ${i} fully on screen`).toBe(true);
+        |                                                                                                                                         ^
+  10286 |       }
+✗ round 26 layout 1366x768 › AC381: the mine-all pickaxe badge is fully visible and uncovered (1366x768)
+Error: expect(locator).toContainText(expected) failed
+
+Locator: getByRole('button', { name: 'Crystal site, row 4, column 2', exact: true }).locator('[data-mine-badge]')
+Expected substring: "2"
+Received string:    ""
+Timeout: 7000ms
+
+Call log:
+  - Expect "toContainText" with timeout 7000ms
+  - waiting for getByRole('button', { name: 'Crystal site, row 4, column 2', exact: true }).locator('[data-mine-badge]')
+    8 × locator resolved to <span class="pickaxe" data-mine-badge="" aria-hidden="true">…</span>
+      - unexpected value ""
+✗ round 26 layout 844x390 › AC374: the full hand is spaced 0.26 of a card (or squeezed to fit) and every card is fully on screen (844x390)
+Error: card 0 fully on screen
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+  10283 |       for (let i = 0; i < 7; i++) {
+  10284 |         const b = await btns.nth(i).boundingBox();
+> 10285 |         expect(b.x >= -1 && b.y >= -1 && b.x + b.width <= vp.width + 1 && b.y + b.height <= vp.height + 1, `card ${i} fully on screen`).toBe(true);
+        |                                                                                                                                         ^
+  10286 |       }
+✗ round 26 layout 844x390 › AC381: the mine-all pickaxe badge is fully visible and uncovered (844x390)
+Error: expect(locator).toContainText(expected) failed
+
+Locator: getByRole('button', { name: 'Crystal site, row 4, column 2', exact: true }).locator('[data-mine-badge]')
+Expected substring: "2"
+Received string:    ""
+Timeout: 7000ms
+
+Call log:
+  - Expect "toContainText" with timeout 7000ms
+  - waiting for getByRole('button', { name: 'Crystal site, row 4, column 2', exact: true }).locator('[data-mine-badge]')
+    8 × locator resolved to <span class="pickaxe" data-mine-badge="" aria-hidden="true">…</span>
+      - unexpected value ""
 ✗ AC345: the four stance buttons sit on the right edge, vertically centered, big enough to tap (1920x1080 and 844x390)
 Error: 1920x1080 Aggressive on screen
 
@@ -783,46 +1161,48 @@ expect(received).toBeLessThanOrEqual(expected)
 Expected: <= 1921
 Received:    2062
 
-  9276 |     for (const [i, b] of boxes.entries()) {
-  9277 |       expect(b.x + b.width, `${W}x${H} ${STANCES[i]} at the right edge`).toBeGreaterThanOrEqual(W * 0.9);
-> 9278 |       expect(b.x + b.width, `${W}x${H} ${STANCES[i]} on screen`).toBeLessThanOrEqual(W + 1);
+  9275 |     for (const [i, b] of boxes.entries()) {
+  9276 |       expect(b.x + b.width, `${W}x${H} ${STANCES[i]} at the right edge`).toBeGreaterThanOrEqual(W * 0.9);
+> 9277 |       expect(b.x + b.width, `${W}x${H} ${STANCES[i]} on screen`).toBeLessThanOrEqual(W + 1);
        |                                                                  ^
-  9279 |       expect(b.height, `${W}x${H} ${STANCES[i]} height`).toBeGreaterThanOrEqual(W >= 1920 ? 60 : 40);
+  9278 |       expect(b.height, `${W}x${H} ${STANCES[i]} height`).toBeGreaterThanOrEqual(W >= 1920 ? 60 : 40);
 ✗ AC361: summoning Bowler Brawler plays his basketball shot: the ball flies up and lands dead (no bounce, no roll)
 Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 0
+Received: 1
+
+  9699 |   expect(b.lastLanding).toEqual({ bounces: 0, rollDistance: 0 });
+  9700 |   expect(b.minGroundClearance).toBeGreaterThanOrEqual(-0.01);
+> 9701 |   expect(b.bodyPenetrations).toBe(0);
+       |                              ^
+  9702 | });
+  9703 |
+  9704 | test('AC362: every Crystal Node shows the owner look effects in its owner color; Low graphics keeps only the main glow', async ({ page, request }) => {
+✗ AC390/AC392/AC393: Goblin figures carry their parts exactly as in the owner's Model Editor and idle on their OH_ clip
+Error: goblin-grunt: parts like the Model Editor
+
+expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: false
 
 Call Log:
-- Timeout 20000ms exceeded while waiting on the predicate
+- Timeout 40000ms exceeded while waiting on the predicate
 
-  9693 |   expect((await act(page, sum)).ok).toBe(true);
-  9694 |   const uid = at(await getState(page), sum.row, sum.col).uid;
-> 9695 |   await expect.poll(async () => ((await renderStats(page)).creatureAnimLog || []).some((e) => e.uid === uid && e.anim === 'basketShot'), { timeout: 20000 }).toBe(true);
-       |   ^
-✗ AC362: every Crystal Node shows the owner look effects in its owner color; Low graphics keeps only the main glow
-Error: Test timeout of 30000ms exceeded
+  10338 |     const want = R26_SETUPS[id] || [];
+  10339 |     // AC392 / AC393 / AC394: every part from the owner's setups file is attached with the same bone and transform, and loads
+✗ AC390/AC394: Thunderwing Gyronaut and Aegis Tinkerer have their gear, events.json and a clips map whose clips exist
+Error: gyrocopter-ace: parts like the Model Editor
 
-  9734 |   await page.evaluate(() => window.oreheart.setGraphics('low'));
-  9735 |   await newMatch(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [] } });
-> 9736 |   await expect.poll(async () => ((await renderStats(page)).mineModels || []).length, { timeout: 15000 }).toBe(3);
-       |   ^
-  9737 |   for (const m of (await renderStats(page)).mineModels) {
-  9738 |     expect(m.effects.length).toBe(1);
-  9739 |     expect(m.effects[0]).toMatchObject({ name: 'Glow', type: 'glow' });
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:9736:3
-✗ AC369/AC370: Skullflinger plays Skull_Throw, a skull leaves his right hand at ~0.63 s, bonks the target and bounces away, all gone within 1.5 s
-Error: expect(received).toBeLessThanOrEqual(expected)
+expect(received).toBe(expected) // Object.is equality
 
-Expected: <= 700
-Received:    1090.6000000000001
+Expected: true
+Received: false
 
-  9965 |   expect(p.spawnOffset, 'spawned at the RightHand bone').toBeLessThanOrEqual(0.1);
-  9966 |   expect(p.contactMs - p.releaseMs, 'lobbed flight time').toBeGreaterThanOrEqual(250);
-> 9967 |   expect(p.contactMs - p.releaseMs).toBeLessThanOrEqual(700);
-       |                                     ^
-  9968 |   expect(p.removedMs - p.releaseMs, 'removed within 1.5 s of the throw').toBeLessThanOrEqual(1500);
-  9969 |   expect(p.maxHeightAfterContact, 'bounces up after the bonk').toBeGreaterThan(p.heightAtContact + 0.05);
-  9970 |   expect(((await renderStats(page)).projectiles || []).filter((q) => q.shooterUid === sl.uid)).toEqual([]);
+Call Log:
+- Timeout 40000ms exceeded while waiting on the predicate
+
+  10338 |     const want = R26_SETUPS[id] || [];
+  10339 |     // AC392 / AC393 / AC394: every part from the owner's setups file is attached with the same bone and transform, and loads
 ```
