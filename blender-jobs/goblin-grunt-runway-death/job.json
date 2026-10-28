@@ -11,8 +11,8 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": null,
- "lease_until": null,
- "heartbeat_at": null,
+ "lease_until": "2026-10-28T08:18:26Z",
+ "heartbeat_at": "2026-10-28T08:13:26Z",
  "error": null,
  "progress": {
   "stage": "queued",
@@ -76,5 +76,6 @@
    "status": "queued",
    "by": "spring"
   }
- ]
+ ],
+ "updated_at": "2026-10-28T08:13:26Z"
 }
