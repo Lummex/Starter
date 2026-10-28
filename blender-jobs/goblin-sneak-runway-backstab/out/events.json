@@ -1,0 +1,27 @@
+{
+ "asset_id": "goblin-sneak",
+ "fps": 30,
+ "clips": {
+  "OH_Attack_Backstab": {
+   "frames": 105,
+   "duration": 3.5,
+   "loop": false,
+   "events": [
+    {
+     "frame": 75,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 2.5
+    }
+   ],
+   "attachments": [
+    {
+     "part": "dagger",
+     "bone": "RightHand",
+     "hide_at": null,
+     "show_at": null
+    }
+   ]
+  }
+ }
+}
