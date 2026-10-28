@@ -1,7 +1,7 @@
 # Studio setups for the game – second batch (Oct 28, 2026, for Round 27)
 
 Made by Ledger from Ken's saved default looks in **Oreheart Studio** (Model Editor room; database `library`, field `setup`), saved Oct 28 between 04:49 and 05:38 UTC.
-Data file: `editor-setups-2026-10-28b.json` (same folder). New accessory files: `parts/`.
+Data file: `editor-setups-2026-10-28b.json` (same folder). New accessory files: `parts/`. Smaller body files (textures only): `round27-shrunk/` (see "Body textures" below).
 The first file (`editor-setups-2026-10-28.json`) is used by Round 26 and is unchanged.
 
 18 cards: axe-thrower, barrelback-courier, brewmaster, cmd-grubnak, crystal-drunk-delver, deepforge-crossbowman, dwarf-miner, dwarf-pickman, dwarf-stoneback, goblin-scrapper, grimhold-ravager, ironhammer-berserker, junk-shaman, oathbound-pikeman, queen-brunhilda-stonebeard, ram-rider, rune-splitter, shieldbeard. (No other card has a new setup today.)
@@ -62,14 +62,54 @@ All are the Studio's own GLBs (`models/<key>.glb.txt`, decoded). Only the **text
 | shieldbeard-medic-pack-oct25.glb | 363,476 | shieldbeard/medic-pack.glb (new) |
 | **Total** | **4,808,392** | nothing is replaced |
 
-## SIZE – needs Ken's OK
+## Body textures 1024 → 512 px (Round 27, Ken OK Oct 28)
 
-- Game after Round 26: about **94.9 MB**. This export adds **4.81 MB** → about **99.7 MB**. That is **over 95 MB** (still under 100 MB).
-- Already squeezed: these parts are at 256 px. Going to 128 px saves only ~0.7 MB more (the rest is geometry, which we never touch).
-- **Textures that could be shrunk to get back under 95 MB** (shape untouched):
-  - Body texture 1024 → 512 px on the 18 bodies in this batch: saves **3.55 MB** (measured: ~0.2 MB each; Grubnak 0.08 MB) → about **96.2 MB**.
-  - The same on the other dwarf/gnome bodies already in the game (gearward-sentinel, glyphshield-warden, gnome-cogger, gnome-illusionist, gnome-smith-miner, gnome-tinker, gnome-widget, gyrocopter-ace, hexwright-apprentice, phase-stalker, runic-siphoner, spark-gnome, the-great-steam-golem): about **2.5 MB** more (estimate, ~0.2 MB each, not measured) → about **93.7 MB**.
-  - Only with Ken's OK. Nothing has been shrunk in the game.
+Ken OK'd shrinking body textures to stay under 95 MB ("It's okay to shrink the dwarf", Oct 28). **Builder: replace each `char.glb` below with the file from `factory-design/design/models/round27-shrunk/`** (copy it over, keep the name `char.glb`). Nothing else changes: same clips, bones, `models.json` and `events.json`.
+
+- All 15 dwarf bodies were not enough (game would be ~97.2 MB), so **all 13 gnome bodies at 1024 px were shrunk too** (gyrocopter-ace is already 512 px since Round 26). Goblins are untouched.
+- Only the pictures changed (1024 → 512 px, same format: JPEG stays JPEG at the same quality, clockwork-beetle's PNG stays PNG). Geometry, UVs, bones, skin weights and animation clips are byte-identical to the game's current `char.glb` (every non-picture byte range and every accessor compared).
+- Every original was first checked to be byte-identical to factory/issue-8 (git hash), so these are the game's own models, not older ones.
+- The Studio's Model Editor keeps its full 1024 px bodies for editing; the look numbers do not change (textures don't move anything).
+
+| File (in `round27-shrunk/`) | Faction | Old bytes | New bytes | Replaces `public/models/creatures/` |
+|---|---|---|---|---|
+| axe-thrower-char.glb | dwarves | 961,544 | 756,472 | axe-thrower/char.glb |
+| barrelback-courier-char.glb | dwarves | 926,008 | 729,988 | barrelback-courier/char.glb |
+| brewmaster-char.glb | dwarves | 902,916 | 710,212 | brewmaster/char.glb |
+| crystal-drunk-delver-char.glb | dwarves | 994,884 | 803,552 | crystal-drunk-delver/char.glb |
+| deepforge-crossbowman-char.glb | dwarves | 863,928 | 680,296 | deepforge-crossbowman/char.glb |
+| dwarf-miner-char.glb | dwarves | 941,100 | 728,780 | dwarf-miner/char.glb |
+| dwarf-pickman-char.glb | dwarves | 1,002,084 | 806,884 | dwarf-pickman/char.glb |
+| dwarf-stoneback-char.glb | dwarves | 941,036 | 731,260 | dwarf-stoneback/char.glb |
+| grimhold-ravager-char.glb | dwarves | 963,176 | 750,296 | grimhold-ravager/char.glb |
+| ironhammer-berserker-char.glb | dwarves | 968,716 | 773,704 | ironhammer-berserker/char.glb |
+| oathbound-pikeman-char.glb | dwarves | 967,356 | 771,532 | oathbound-pikeman/char.glb |
+| queen-brunhilda-stonebeard-char.glb | dwarves | 971,608 | 759,704 | queen-brunhilda-stonebeard/char.glb |
+| ram-rider-char.glb | dwarves | 956,372 | 763,072 | ram-rider/char.glb |
+| rune-splitter-char.glb | dwarves | 971,104 | 767,920 | rune-splitter/char.glb |
+| shieldbeard-char.glb | dwarves | 1,026,396 | 798,748 | shieldbeard/char.glb |
+| clockwork-beetle-char.glb | gnomes | 3,242,480 | 1,230,460 | clockwork-beetle/char.glb |
+| gearward-sentinel-char.glb | gnomes | 951,772 | 748,524 | gearward-sentinel/char.glb |
+| glyphshield-warden-char.glb | gnomes | 1,019,184 | 788,848 | glyphshield-warden/char.glb |
+| gnome-cogger-char.glb | gnomes | 1,053,268 | 810,340 | gnome-cogger/char.glb |
+| gnome-illusionist-char.glb | gnomes | 889,316 | 681,684 | gnome-illusionist/char.glb |
+| gnome-smith-miner-char.glb | gnomes | 950,228 | 736,676 | gnome-smith-miner/char.glb |
+| gnome-tinker-char.glb | gnomes | 1,005,104 | 767,712 | gnome-tinker/char.glb |
+| gnome-widget-char.glb | gnomes | 977,620 | 751,572 | gnome-widget/char.glb |
+| hexwright-apprentice-char.glb | gnomes | 979,220 | 760,804 | hexwright-apprentice/char.glb |
+| phase-stalker-char.glb | gnomes | 1,057,264 | 834,800 | phase-stalker/char.glb |
+| runic-siphoner-char.glb | gnomes | 986,524 | 760,092 | runic-siphoner/char.glb |
+| spark-gnome-char.glb | gnomes | 1,043,048 | 801,860 | spark-gnome/char.glb |
+| the-great-steam-golem-char.glb | gnomes | 1,091,764 | 834,352 | the-great-steam-golem/char.glb |
+| **Total (28 bodies)** | | **29,605,020** | **21,840,144** | saves **7,764,876** |
+
+## SIZE (Ken OK'd the body shrink, Oct 28)
+
+Measured from the factory/issue-8 file list (all of `projects/oreheart-8/public/`, 1 MB = 1,000,000 bytes):
+- Game now (Round 26 is in): **95.38 MB**. (My earlier "about 94.9 MB" was too low; the real number is 95.38.)
+- + the 15 new parts above (+4.81 MB) → **100.19 MB** without shrinking – that would have been over 100 MB.
+- − 15 dwarf bodies at 512 px (−3.03 MB) → 97.17 MB (not enough).
+- − 13 gnome bodies at 512 px (−4.74 MB) → **92.43 MB after Round 27**. Under 95 MB with about 2.6 MB to spare.
 
 ## Grubnak scepter (optional, grubnak3d.ts)
 
