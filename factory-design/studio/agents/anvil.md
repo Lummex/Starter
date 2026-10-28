@@ -53,6 +53,13 @@
 - .site-mark has an inline clip-path (its square's screen shape, layout() ~1261): anything drawn outside the square inside it gets cut off. Pickaxe fix = .site-mark.ready{clip-path:none!important}.
 - **Vercel build queue jam (Oct 28):** every push also builds the old Git-connected projects (factory-2, oreheart-4, oreheart1-6, starter, starter-dashboard). With many sessions pushing, oreheart-8 CLI deploys stayed Queued 40+ min and the preview-only job hit its 20 min time limit (the Vercel deploy stays queued and should still build later; link stays the same). Do not press Start Building Now (paid) or cancel other deploys without Ken.
 
+
+## Learned Oct 28 (mine icon under units)
+- The board is two canvases: paintings in a back WebGL canvas, the 3D units in a transparent front canvas (scene.ts, renderer alpha:true). HTML overlays (.site-mark z 25, emblem, pickaxe) are above both, so they can never go between 3D objects. To put an icon behind units, draw it in the 3D scene (THREE.Sprite, depth-tested). Trick: place it on the view line from the camera through the spot, moved toward the camera, so it keeps its screen position but sits in front of its own crystal.
+- Scene code: world(row,col) = 1 unit per square (scene.ts ~85); crystals[] per mine (~240); setState site loop (~633); frame loop renders after mines.forEach(m.update) (~1213).
+- Vercel queue (Oct 28): every commit to factory/issue-8 or blender-queue starts Git builds in factory-2, oreheart-4, oreheart1-6, starter, starter-dashboard. The newest go first, so a CLI preview from "Factory — preview only" can sit "Queued" for an hour. "Start Building Now" = paid On-Demand builds, don't press it. Turning off Git builds on those old projects (Ken) would fix it.
+- Several Anvil runs commit owner fixes to factory/issue-8 at the same time; wait for the other run's commit, then fetch files by the newest commit sha right before uploading.
+
 ## Open issues
 - Comment paging bug above (blocks Round 25). Waiting for Ken's OK to fix.
 - Build #54 (Oct 25) failed: "ENOENT … factory-data/oreheart-8/acceptance". Build #55 did NOT hit it (tests were restored after each builder step). Likely cause: the builder agent committed the deletion of the hidden tests itself, so `confineTo()` (pipeline.mjs, uses `git diff HEAD`) had nothing to restore. Not fixed.
@@ -74,3 +81,4 @@
 - **Permission check (Oct 28): my Chrome tools are blocked on *.vercel.app preview links ("Permission denied for this action on this domain").** Ken has to allow the site in Claude in Chrome before I can test previews.
 - 2026-10-28 (later) Forge job #4 of 4 small owner fixes: removed mine hover pop-up (commit 2f49dd3 on factory/issue-8, on top of pickaxe/icon/flutter). Preview run #17 → oreheart-8-396k2t0zp-lummex.vercel.app (GitHub job cancelled at 20 min; Vercel state unknown). Could not test: Chrome permission blocked on vercel.app. Report: factory-design/studio/reports/2026-10-28-anvil-mine-hover-popup.md.
 - 2026-10-28 (later) Owner fix from Forge: mine-all pickaxe cut off. Cause: .site-mark clip-path. Fix commit 5c959d4 on factory/issue-8 (one CSS rule). Checked with live CSS on old preview vqwc8zlrr. Preview-only run #14 -> oreheart-8-4gl49odvv (stuck in Vercel queue, not yet checked there). Report: factory-design/studio/reports/2026-10-28-anvil-pickaxe-fix.md.
+- 2026-10-28 (later) Owner fix from Forge: mine emblem drawn under 3D units (emblem now a depth-tested sprite in scene.ts; HTML copy hidden in 3D). Commit c96705a on factory/issue-8 (on top of pickaxe fix 5c959d4). Preview #15 = oreheart-8-k2ffmsal0 but still Queued on Vercel after ~55 min, so NOT checked in the browser yet. Report: factory-design/studio/reports/2026-10-28-anvil-mine-icon-under-units.md.
