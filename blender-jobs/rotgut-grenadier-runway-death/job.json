@@ -2,23 +2,19 @@
  "id": "rotgut-grenadier-runway-death",
  "type": "animate",
  "asset_id": "rotgut-grenadier",
- "status": "running",
+ "status": "queued",
  "priority": 9,
- "created_at": "2026-10-28T08:19:30Z",
+ "created_at": "2026-10-28T08:21:27Z",
  "created_by": "Spring (Forge job Oct 28; Ken approved both parts of take rotgut-grenadier-death in Oreheart Studio)",
  "retries": 0,
  "max_retries": 1,
  "retry_on_failure": true,
  "cancel_requested": false,
- "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-28T08:26:41Z",
- "heartbeat_at": "2026-10-28T08:21:41Z",
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
  "error": null,
- "progress": {
-  "stage": "preparing",
-  "percent": 5,
-  "message": "Copying the source model into a private work folder"
- },
+ "progress": null,
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/rotgut-grenadier/char.glb@factory/issue-8",
   "parts": {
@@ -29,7 +25,7 @@
  "animations": [
   {
    "name": "OH_Death",
-   "description": "Death, from the owner-approved video: part 1 'fall-over' (refs/rotgut-grenadier-death/frames/fall-over, f01-f12) then part 2 'lying-still' (refs/rotgut-grenadier-death/frames/lying-still). Frames 0-75 follow fall-over f01-f12 (frame N of 12 = about N*6 frames): from the base pose he wobbles as if very dizzy (small sway of hips and spine, head lolls), knees buckle, he sits straight down onto his bottom on the spot (about f09-f10), then tips gently backwards onto his back (f11-f12), legs up a little then down. Frames 75-90 he settles flat on his back like lying-still f01-f04 (small bounce, arms fall loosely out to the sides, legs relax). Frames 90-120 he lies completely still in that pose (no breathing). Use \"move\" on the hips to lower him to the floor: the hips go straight DOWN (and slightly back) to lying height so his body rests ON the floor, never under it. He stays in his own square: no sliding, no rolling away; his hips end within about 15% of his height of where they started. He keeps holding his big spatula the whole time (it stays in his hand and lies flat on the floor beside him at the end, never through the floor). This clip does NOT return to idle: key every bone you use at the last frame (120) with the lying pose so the clip ends lying down.",
+   "description": "Death, from the owner-approved video: part 1 'fall-over' (refs/rotgut-grenadier-death/frames/fall-over, f01-f12) then part 2 'lying-still' (refs/rotgut-grenadier-death/frames/lying-still). Frames 0-75 follow fall-over f01-f12 (frame N of 12 = about N*6 frames): from the base pose he wobbles as if very dizzy (small sway of hips and spine, head lolls), knees buckle, he sits straight down onto his bottom on the spot (about f09-f10), then tips gently backwards onto his back (f11-f12), legs up a little then down. Frames 75-90 he settles flat on his back like lying-still f01-f04 (small bounce, arms fall loosely out to the sides, legs relax). Frames 90-120 he lies completely still in that pose (no breathing). Use \"move\" on the hips to lower him to the floor: the hips go straight DOWN (and slightly back) to lying height so his body rests ON the floor, never under it. He stays in his own square: no sliding, no rolling away; his hips end within about 15% of his height of where they started. He keeps holding his big spatula the whole time (it stays in his hand and lies flat on the floor beside him at the end, never through the floor). This clip does NOT return to idle: key every bone you use at the last frame (120) with the lying pose so the clip ends lying down. LYING POSE, IMPORTANT (a first try sank his bottom 20% of his height under the floor): when he lies on his back (frames 75-120) the hips joint must end about 0.14 x ctx.height above the floor, NOT lower: with base_pose rest the hips start at about 0.36 x height, so key hips move=(0, -(hips_rest_height - 0.14*ctx.height), small backward offset) and no more. Lay him FLAT: hips turned back about 85-90 degrees ('right' axis), spine, chest and neck nearly straight in line with the hips (head resting on the floor, tilted a little), both legs lying along the floor (thighs turned so the legs are flat on the floor, knees only slightly bent, heels on the floor), arms resting on the floor at his sides. His back, bottom, heels and head touch the floor and NOTHING goes below the floor at any frame (the sit-down at frames 50-65 too: when he sits, his bottom rests at floor level, hips about 0.12-0.16 x height above the floor). Compute these heights from ctx.bones head positions before keying.",
    "frames": [
     120,
     120
@@ -80,20 +76,9 @@
  },
  "history": [
   {
-   "at": "2026-10-28T08:19:30Z",
+   "at": "2026-10-28T08:21:27Z",
    "status": "queued",
    "by": "spring"
-  },
-  {
-   "at": "2026-10-28T08:21:38Z",
-   "status": "claimed",
-   "worker": "starr-f0fad5",
-   "recovered": false
-  },
-  {
-   "at": "2026-10-28T08:21:41Z",
-   "status": "running"
   }
- ],
- "updated_at": "2026-10-28T08:21:41Z"
+ ]
 }
