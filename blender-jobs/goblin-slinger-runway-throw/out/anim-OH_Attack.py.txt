@@ -1,0 +1,160 @@
+import math
+
+
+def build(ctx):
+    ctx.length(120)
+
+    hips = ctx.bone('hips')
+    spines = ['Spine02', 'Spine01', 'Spine']
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    r_up = ctx.bone('right upperarm'); r_fore = ctx.bone('right forearm'); r_hand = ctx.bone('right hand')
+    l_up = ctx.bone('left upperarm'); l_fore = ctx.bone('left forearm')
+    thighs = [ctx.bone('right thigh'), ctx.bone('left thigh')]
+    shins = [ctx.bone('right shin'), ctx.bone('left shin')]
+    feet = [ctx.bone('right foot'), ctx.bone('left foot')]
+
+    RELEASE = 50
+    RELOAD = 75
+
+    # --- helpers -----------------------------------------------------------
+    def crouch(f, a):
+        # knees bend forward, shins back, feet stay flat; hips drop and shift so the
+        # ankles stay on the same spot (thigh 0.179 m, shin 0.14 m)
+        r = math.radians(a)
+        drop = 0.318 * (1.0 - math.cos(r))
+        fwd = (0.179 - 0.140) * math.sin(r)
+        ctx.key(f, hips, move=(0, -drop, -fwd))
+        for t in thighs:
+            ctx.key(f, t, turn=[('right', a)])
+        for s in shins:
+            ctx.key(f, s, turn=[('right', -2 * a)])
+        for ft in feet:
+            ctx.key(f, ft, turn=[('right', a)])
+
+    def torso(f, twist, bend, side, head_twist=0.0, head_bend=0.0):
+        # twist: - = chest to his right; bend: - = forward; side: + = lean to his right
+        for s in spines:
+            ctx.key(f, s, turn=[('up', twist / 3.0), ('right', bend / 3.0), ('forward', side / 3.0)])
+        # head counter-turns so he keeps reading from the front
+        ctx.key(f, neck, turn=[('up', head_twist * 0.5), ('right', head_bend * 0.5)])
+        ctx.key(f, head, turn=[('up', head_twist * 0.5), ('right', head_bend * 0.5)])
+
+    def rarm(f, up, fore, interp='BEZIER'):
+        ctx.key(f, r_up, aim=up, interp=interp)
+        ctx.key(f, r_fore, aim=fore, interp=interp)
+
+    def larm(f, up, fore):
+        ctx.key(f, l_up, aim=up)
+        ctx.key(f, l_fore, aim=fore)
+
+    # --- preview skull ------------------------------------------------------
+    part = 'skull-mace'
+    if part not in ctx.parts and len(ctx.parts) > 0:
+        part = list(ctx.parts)[0]
+    ctx.attach(part, r_hand, length=0.18, hide_at=RELEASE, show_at=RELOAD)
+    ctx.event(RELEASE, 'projectile_release', bone=r_hand)
+
+    # === PART 1: wind-up and throw (wind-up-throw f01-f12) =================
+    # f01-f03: ready, skull low by the right thigh, small crouch
+    crouch(12, 10)
+    torso(12, 0, -6, 0, 0, 4)
+    rarm(12, (0.25, -0.85, -0.40), (0.38, -0.92, 0.05))
+    larm(12, (-0.40, -0.90, 0.0), (-0.05, -0.75, 0.65))
+
+    # f04: anticipation, sinks a touch, skull drifts out
+    crouch(20, 13)
+    torso(20, 2, -8, 2, 0, 5)
+    rarm(20, (0.45, -0.80, -0.30), (0.45, -0.88, 0.10))
+    larm(20, (-0.42, -0.88, 0.05), (-0.05, -0.70, 0.70))
+
+    # f05: arm swings out and back, chest starts twisting right
+    crouch(26, 8)
+    torso(26, -10, -2, -3, 5, 2)
+    rarm(26, (0.90, -0.20, -0.30), (0.60, 0.60, -0.20))
+    larm(26, (-0.45, -0.65, 0.55), (-0.20, -0.35, 0.90))
+
+    # f06-f08: arm up and back, weight shifts back, lean away from the arm
+    crouch(34, 6)
+    torso(34, -22, 6, -8, 12, -2)
+    rarm(34, (0.92, 0.25, -0.35), (0.30, 0.85, -0.45))
+    larm(34, (-0.70, -0.40, 0.55), (-0.55, -0.40, 0.70))
+
+    # f09: cocked, elbow high, skull up beside/behind his head (overshoot, then hold)
+    crouch(41, 11)
+    torso(41, -27, 9, -11, 14, -3)
+    rarm(41, (0.95, 0.32, -0.32), (0.18, 0.90, -0.42))
+    larm(41, (-0.78, -0.35, 0.50), (-0.60, -0.40, 0.70))
+    crouch(45, 10)
+    torso(45, -25, 8, -10, 13, -3)
+    rarm(45, (0.95, 0.30, -0.30), (0.20, 0.90, -0.40))
+    larm(45, (-0.78, -0.38, 0.48), (-0.60, -0.42, 0.68))
+
+    # whip over the shoulder (arm kept wide so the skull clears his ear)
+    crouch(48, 9)
+    torso(48, -6, -3, -7, 4, 0)
+    rarm(48, (0.95, 0.45, 0.20), (0.45, 0.85, 0.40), interp='LINEAR')
+    larm(48, (-0.70, -0.55, 0.30), (-0.50, -0.60, 0.50))
+
+    # f10: RELEASE toward the camera, weight forward
+    crouch(RELEASE, 12)
+    torso(RELEASE, 12, -12, -4, -6, 5)
+    rarm(RELEASE, (0.55, 0.50, 0.70), (0.25, 0.30, 0.92))
+    larm(RELEASE, (-0.60, -0.70, -0.10), (-0.40, -0.75, 0.30))
+
+    # f11: follow-through down across his body, leaning forward
+    crouch(55, 16)
+    torso(55, 18, -22, -3, -10, 12)
+    rarm(55, (-0.15, -0.35, 0.92), (-0.40, -0.45, 0.80))
+    larm(55, (-0.65, -0.70, -0.20), (-0.45, -0.80, 0.20))
+
+    # f12: settles in the follow-through
+    crouch(60, 15)
+    torso(60, 14, -24, -2, -8, 13)
+    rarm(60, (-0.10, -0.55, 0.80), (-0.25, -0.60, 0.75))
+    larm(60, (-0.62, -0.72, -0.10), (-0.40, -0.82, 0.25))
+
+    # === PART 2: reload and back to ready (reload-ready f01-f12) ===========
+    # f01-f02: straightens up, right hand reaches back to the pouch behind his hip
+    crouch(66, 8)
+    torso(66, -8, -4, 6, 4, 2)
+    rarm(66, (0.35, -0.75, -0.55), (0.15, -0.80, -0.55))
+    larm(66, (-0.75, -0.55, 0.10), (-0.40, -0.85, 0.25))
+
+    crouch(72, 9)
+    torso(72, -9, -5, 6, 4, 3)
+    rarm(72, (0.30, -0.80, -0.52), (0.18, -0.85, -0.50))
+    larm(72, (-0.72, -0.60, 0.10), (-0.35, -0.85, 0.30))
+
+    # f03: hand comes back from the pouch with a new skull
+    crouch(RELOAD, 9)
+    torso(RELOAD, -6, -5, 4, 3, 3)
+    rarm(RELOAD, (0.35, -0.85, -0.20), (0.32, -0.94, 0.05))
+    larm(RELOAD, (-0.60, -0.75, 0.10), (-0.20, -0.80, 0.50))
+
+    # f05-f06: brings it forward and up to his side
+    crouch(84, 5)
+    torso(84, -4, -2, 0, 2, 2)
+    rarm(84, (0.75, -0.55, 0.10), (0.55, 0.20, 0.75))
+    larm(84, (-0.45, -0.88, 0.05), (-0.05, -0.75, 0.65))
+
+    # f07-f08: shows it off at his side (hold)
+    crouch(94, 4)
+    torso(94, -3, -3, 0, 2, 2)
+    rarm(94, (0.70, -0.60, 0.15), (0.45, 0.10, 0.85))
+    larm(94, (-0.42, -0.90, 0.02), (-0.05, -0.75, 0.65))
+
+    # f09-f10: lowers it toward the thigh
+    crouch(104, 9)
+    torso(104, 0, -5, 0, 0, 3)
+    rarm(104, (0.45, -0.85, -0.15), (0.42, -0.88, 0.15))
+    larm(104, (-0.40, -0.90, 0.0), (-0.05, -0.76, 0.64))
+
+    # f11-f12: settles into the ready pose (frame 120 = base pose)
+    crouch(112, 7)
+    torso(112, 0, -4, 0, 0, 2)
+    rarm(112, (0.22, -0.80, -0.52), (0.39, -0.92, 0.02))
+    larm(112, (-0.38, -0.92, -0.08), (-0.03, -0.79, 0.61))
+
+    ctx.note('OH_Attack: cock hold 41-45, whip 48, projectile_release + skull hidden at 50, '
+             'follow-through 55-60, pouch reach 66-72, new skull shown at 75, ready again by 112-120.')
