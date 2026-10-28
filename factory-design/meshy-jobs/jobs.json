@@ -1,5 +1,5 @@
 {
- "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet). Oct 25: owner asked for all remaining gnome and dwarf models, character only (no accessories yet); Gemsinger Miner and Anvilsworn Miner already exist and are not remade; Overclocked Aethervein waits for a redrawn sheet.",
+ "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet). Oct 25: owner asked for all remaining gnome and dwarf models, character only (no accessories yet); Gemsinger Miner and Anvilsworn Miner already exist and are not remade; Overclocked Aethervein waits for a redrawn sheet. Oct 28: owner OK'd re-running Meshy for two models only, WITH a skeleton: anvilsworn-miner-rig (Anvilsworn Miner, card dwarf-smith-miner; old Stonebreaker Miner model had 0 bones) and borgo-rig (Thane Borgo Gravelgrim, cmd-borgo; old model had 0 bones). New ids so the old models are kept.",
  "jobs": [
   {
    "id": "blastrat-sapper",
@@ -15,7 +15,7 @@
      "blastrat-sapper--bomb-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -38,7 +38,7 @@
      "goblin-grunt--frying-pan-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -61,7 +61,7 @@
      "goblin-scrapper--bowling-ball-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -84,7 +84,7 @@
      "goblin-slinger--skull-mace-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -112,7 +112,7 @@
      "goblin-smith-miner--backpack-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -141,7 +141,7 @@
      "goblin-sneak--bag-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -181,7 +181,7 @@
      "junk-shaman--staff-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -204,7 +204,7 @@
      "rotgut-grenadier--spatula-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -227,7 +227,7 @@
      "shard-guzzler--rocket-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -283,7 +283,7 @@
      "skullbasher-rusher--shield-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -311,7 +311,7 @@
      "wolf-rider--wolf-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -329,7 +329,7 @@
     "goblin-bomber--char-back.jpg"
    ],
    "parts": {},
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -354,7 +354,7 @@
      "axe-thrower--shield-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -380,7 +380,7 @@
      "barrelback-courier--barrel-pack-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -411,7 +411,7 @@
      "brewmaster--keg-pack-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -431,7 +431,7 @@
     "clockwork-beetle--char-back.jpg"
    ],
    "parts": {},
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -463,7 +463,7 @@
      "crystal-drunk-delver--crystal-backpack-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -489,7 +489,7 @@
      "deepforge-crossbowman--crystal-gun-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -515,7 +515,7 @@
      "dwarf-miner--tower-shield-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -535,7 +535,7 @@
     "dwarf-pickman--char-back.jpg"
    ],
    "parts": {},
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -561,7 +561,7 @@
      "dwarf-stoneback--hammer-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -587,7 +587,7 @@
      "gearward-sentinel--mace-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -613,7 +613,7 @@
      "glyphshield-warden--shield-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -639,7 +639,7 @@
      "gnome-cogger--mace-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -659,7 +659,7 @@
     "gnome-illusionist--char-back.jpg"
    ],
    "parts": {},
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -685,7 +685,7 @@
      "gnome-smith-miner--pickaxe-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -720,7 +720,7 @@
      "texture": "hand-painted stylized game prop, polished brass jaw, dark steel, purple leather grip, glowing blue crystal"
     }
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -740,7 +740,7 @@
     "gnome-widget--char-back.jpg"
    ],
    "parts": {},
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -766,7 +766,7 @@
      "grimhold-ravager--hammer-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -792,7 +792,7 @@
      "gyrocopter-ace--gyro-wings-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -818,7 +818,7 @@
      "hexwright-apprentice--staff-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -844,7 +844,7 @@
      "ironhammer-berserker--crystal-pistol-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -869,7 +869,7 @@
      "oathbound-pikeman--rifle-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -895,7 +895,7 @@
      "phase-stalker--plow-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -921,7 +921,7 @@
      "queen-brunhilda-stonebeard--warhammer-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -947,7 +947,7 @@
      "ram-rider--ram-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -973,7 +973,7 @@
      "rune-splitter--crystal-hammer-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -999,7 +999,7 @@
      "runic-siphoner--staff-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -1025,7 +1025,7 @@
      "shieldbeard--medic-pack-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -1051,7 +1051,7 @@
      "spark-gnome--staff-back.jpg"
     ]
    },
-   "height": 1.0,
+   "height": 1,
    "actions": {
     "idle": 0,
     "walk": 30,
@@ -1080,6 +1080,49 @@
     "defeat": 8
    },
    "notes": "Owner sheet note: Don't render any of his accessories. Character only for now (owner, Oct 25: accessories come later)."
+  },
+  {
+   "id": "anvilsworn-miner-rig",
+   "name": "Anvilsworn Miner",
+   "faction": "dwarves",
+   "card": "dwarf-smith-miner",
+   "char": [
+    "anvilsworn-miner-rig--char-front.jpg",
+    "anvilsworn-miner-rig--char-side.jpg",
+    "anvilsworn-miner-rig--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8,
+    "mine": 237
+   },
+   "notes": "Oct 28 rigged remake (owner OK). Views cropped from Ken's approved model sheet (A-pose + gear, Oct 24; approved Oct 28). Character only: the pickaxe and hammer already exist (stonebreaker-pickaxe, stonebreaker-hammer)."
+  },
+  {
+   "id": "borgo-rig",
+   "name": "Thane Borgo Gravelgrim",
+   "faction": "dwarves",
+   "card": "cmd-borgo",
+   "char": [
+    "borgo-rig--char-front.jpg",
+    "borgo-rig--char-side.jpg",
+    "borgo-rig--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8
+   },
+   "notes": "Oct 28 rigged remake (owner OK). Views: the Studio's Borgo front/side/back refs (Gear-Crowned Dwarf Commander sheet). Character only: sceptre and throne already exist (borgo-sceptre, borgo-throne)."
   }
  ]
 }

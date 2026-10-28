@@ -5,7 +5,7 @@ I build Ken's tools ("programs"): pinned claude.ai artifacts (review boards, das
 ## My programs
 | Program | Link | Data |
 |---|---|---|
-| **Oreheart Studio** (THE ONE HOME since Oct 28) | https://claude.ai/artifact/PrZreWSayBrALDPvQwsVmn | db `library`, `characters`, `checks`, `takes`, `cards`, `artRequests`, `modelSetups`, `cardTemplates` (+ `settings`, `sentToClaude`); pictures/videos as assets; models as published files. Rooms: model-editor.html, art-studio.html, card-editor.html (room URL `?v=18`). |
+| **Oreheart Studio** (THE ONE HOME since Oct 28) | https://claude.ai/artifact/PrZreWSayBrALDPvQwsVmn | db `library`, `characters`, `checks`, `takes`, `decisions`, `cards`, `artRequests`, `modelSetups`, `cardTemplates` (+ `settings`, `sentToClaude`); pictures/videos as assets; models as published files. Rooms: model-editor.html, art-studio.html, card-editor.html (room URL `?v=18`). |
 | Motion References (backup-only) | https://claude.ai/artifact/U9YiTAL4juKxjLgvNeKEe8 | old db `takes` |
 | Studio Checklist (backup-only) | https://claude.ai/artifact/KwnPNScc2RjbM98WZ7R79G | old db `characters`, `checks` |
 | Model Editor (backup-only) | https://claude.ai/artifact/5isEcqgnmtqRHJUWAmqRDd | old db `library`, `modelSetups` |
@@ -99,3 +99,20 @@ character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view or
 ## Ken's feedback
 - Wants to approve each move where he watches it, and to remove moves he doesn't want from a character's set (Oct 28).
 - Oct 28: works only in Oreheart Studio now; changes go there "through their processes".
+
+## Waiting for you inbox (Oct 28, job from Forge)
+- Studio view `#waiting` + top-bar button "Waiting for you" with an orange badge = open `decisions` + `takes` with status "waiting" + character steps "waiting". Home shows an orange banner with the same count and breakdown.
+- Decisions: option buttons (all neutral colour: don't make one look like the recommended answer), a note box (an option with `note:true` needs the note), "Answered" list folded at the bottom with "Change my answer" (sets status back to open and clears answer fields, including answeredBy).
+- Takes from the inbox: Approve = every part not yet approved -> approved; Redraw = every waiting part -> redraw with the note (+ take note). "Each part ->" opens the character's Runway step for part-by-part.
+- Steps from the inbox use the same writeStep as the character view.
+- `<details>` loses its open state on every re-render (innerHTML): keep it in state (`toggle` listener with capture=true, since toggle doesn't bubble).
+- Testing: Playwright with a fake `window.claude.use` (Map-backed db with onSnapshot/get/update) and the real data saved with ArtifactData out_dir — caught everything before publishing. Live test: a probe decision `zz-wright-test`, answered + reopened in my Chrome tab, read back with ArtifactData, then deleted (my own probe).
+- The Studio page is a cross-origin iframe inside claude.ai: `find`/JS can't see into it; click by screenshot coordinates.
+- Reading repo files to edit them: on a github.com page, fetch api.github.com contents (raw) -> blob -> `<a download>` to Downloads -> device_stage_files. Gets the exact bytes (page text can differ).
+
+## New Model Editor entries (Oct 28, job from Forge: Clay's rigged remakes + Spring's v5s)
+- Recipe that worked: GLB from GitHub via api.github.com raw fetch in my tab (sha256 checked in the page with crypto.subtle) -> `<a download>` to Downloads -> stage -> `base64 -w0` -> publish Studio index.html with `files: {"model-editor.html", "models/<key>.glb.txt" ...}` + bump room `?v=` (now v=19). Entries go into BUNDLED in model-editor.html (`{key,name,file,gh,lib:1}`), inserted before the newest existing ones. Format of .glb.txt = plain base64, no prefix.
+- After publishing: Artifact read the files back and `cmp` with my local copies (all identical). Studio stays pinned after a republish.
+- DON'T type a name into the "Add a card model or accessory…" dropdown in Chrome: every typeahead jump fires `change` and adds another copy (I got ~20 copies of one model). The scene autosaves to the iframe's localStorage in Ken's Chrome, so I had to delete the copies one by one (click row in "In the scene" + Delete key) to give Ken back his scene (Grudge Hurler + shield). Next time: one keystroke at most, or test in Playwright.
+- My tab stops drawing the 3D view when it is in the background (requestAnimationFrame paused): a blank canvas with no floor grid does NOT mean the page is broken.
+- Local Playwright tests of the editor need three.js r147; cdn.jsdelivr.net and registry.npmjs.org are blocked from the cloud workspace, and fetching the CDN files through Ken's Chrome was refused by a permission check. Ask Ken to allow a CDN/npm domain if I need headless tests.

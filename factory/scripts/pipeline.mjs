@@ -50,14 +50,27 @@ function push() {
 
 function sleep(seconds) { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, seconds * 1000); }
 
+// The commit an agent starts from. Agents sometimes make their own git commits, so changes are
+// judged against this commit, not HEAD (a builder commit once swallowed the hidden tests' removal).
+const headSha = () => sh('git', ['rev-parse', 'HEAD'], { check: false }).stdout.trim() || 'HEAD';
+
 // Undo anything an agent changed outside the folder it was allowed to touch.
-function confineTo(allowedRel) {
+function confineTo(allowedRel, base = 'HEAD') {
   // Tool installs (node_modules, lock files) are never treated as agent changes.
   const tooling = (f) => /(^|\/)(node_modules|dist)\//.test(f) || f === 'factory/package-lock.json' || f.startsWith('factory/.run-tests/');
   const inside = (f) => tooling(f) || f === allowedRel || f.startsWith(`${allowedRel}/`);
-  const changed = sh('git', ['diff', '--name-only', 'HEAD'], { check: false }).stdout.split('\n').filter(Boolean);
+  const changed = sh('git', ['diff', '--name-only', base], { check: false }).stdout.split('\n').filter(Boolean);
   const reverted = changed.filter((f) => !inside(f));
-  if (reverted.length) sh('git', ['checkout', 'HEAD', '--', ...reverted], { check: false });
+  if (reverted.length) {
+    // Files that existed at `base` are put back; files the agent added (and committed) are removed.
+    const known = new Set(sh('git', ['ls-tree', '-r', '--name-only', base, '--', ...reverted], { check: false }).stdout.split('\n').filter(Boolean));
+    const back = reverted.filter((f) => known.has(f));
+    if (back.length) sh('git', ['checkout', base, '--', ...back], { check: false });
+    for (const f of reverted.filter((f) => !known.has(f))) {
+      sh('git', ['rm', '-q', '--cached', '--ignore-unmatch', '--', f], { check: false });
+      fs.rmSync(path.join(ROOT, f), { force: true });
+    }
+  }
   const untracked = sh('git', ['ls-files', '--others', '--exclude-standard'], { check: false }).stdout.split('\n').filter(Boolean);
   const removed = untracked.filter((f) => !inside(f));
   for (const f of removed) fs.rmSync(path.join(ROOT, f), { force: true });
@@ -96,8 +109,9 @@ async function main() {
   // ---- 1. Plan ----
   fs.rmSync(path.join(dataDir, 'QUESTIONS.md'), { force: true });
   const vars = { TITLE: title, BODY: body, DATA_DIR: dataRel, APP_DIR: appRel, ACCEPTANCE_DIR: `${dataRel}/acceptance`, FEEDBACK_SECTION: feedbackSection };
+  const planBase = headSha();
   runAgent('planner', fill(prompt('planner'), vars), config.budgetsUsd.planner);
-  confineTo(dataRel);
+  confineTo(dataRel, planBase);
 
   if (fs.existsSync(path.join(dataDir, 'QUESTIONS.md'))) {
     commitAll(`factory: questions for #${issue}`);
@@ -122,9 +136,10 @@ async function main() {
       ? `## The inspector rejected the previous attempt (round ${round - 1})\n\nFix every one of these problems. The acceptance tests are hidden from you; these are their results. Fix the app — do not try to special-case the tests.\n\n\`\`\`\n${failures.join('\n\n').slice(0, 12000)}\n\`\`\``
       : '';
     // Hide the acceptance tests from the builder (they're restored from git afterwards).
+    const buildBase = headSha();
     fs.rmSync(accDir, { recursive: true, force: true });
     runAgent('builder', fill(prompt('builder'), { ...vars, FAILURES_SECTION: failuresSection }), config.budgetsUsd.builderPerRound);
-    confineTo(appRel); // also restores the hidden tests
+    confineTo(appRel, buildBase); // also restores the hidden tests
     commitAll(`factory: build round ${round} for #${issue}`);
 
     log(`inspecting round ${round}`);
@@ -176,10 +191,11 @@ async function main() {
       sh('node', [path.join(FACTORY, 'scripts/screenshots.mjs'), url, shotsDir], { cwd: FACTORY, check: false, stdio: 'inherit' });
     });
   }
+  const reviewBase = headSha();
   try {
     runAgent('reviewer', fill(prompt('reviewer'), { ...vars, RESULTS_FILE: `${dataRel}/test-results.md`, SHOTS_DIR: `${dataRel}/screenshots` }), config.budgetsUsd.reviewer);
   } catch (e) { log('reviewer skipped:', e.message); }
-  confineTo(dataRel);
+  confineTo(dataRel, reviewBase);
   const reportFile = path.join(dataDir, 'REPORT.md');
   const report = fs.existsSync(reportFile) ? fs.readFileSync(reportFile, 'utf8') : `## Automated checks\n\n${result.passed} of ${result.total} checks passed.`;
   commitAll(`factory: report for #${issue}`);

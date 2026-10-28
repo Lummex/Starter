@@ -1,0 +1,26 @@
+{
+ "id": "goblin-scrapper-idle-bowl",
+ "character": "goblin-scrapper",
+ "move": "idle-bowl",
+ "prompt": "Cartoon goblin in a purple hood and big brown boots, holding a round brown bowling ball in his right hand, low in front of him. Front view. Two parts. The ball stays in front of him, never through his body or the floor. Part 1 (0-3 s), idle: he stands in place, breathes, shifts his weight a little and gently swings the ball forward and back once, feet planted. Part 2 (3-6 s), bowling: he swings the ball back behind his right hip, steps forward a little, bends low and swings his arm forward underhand, letting the ball go low in front of him so it rolls away along the floor toward the camera, then straightens up. Only body and limbs move. Face frozen, lips still, no blinking. Camera locked, full body in frame, plain grey background. Smooth 3D cartoon game animation.",
+ "model": "grok_imagine_1_5_lite",
+ "ratio": "auto_480p",
+ "duration": 6,
+ "taskId": "c92269ee-db1e-48b2-b111-b8369d26fe3b",
+ "made": "2026-10-28T08:15:22.865Z",
+ "view": "front",
+ "segments": [
+  {
+   "move": "idle",
+   "from": 0,
+   "to": 3
+  },
+  {
+   "move": "bowling-attack",
+   "from": 3,
+   "to": 6
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}

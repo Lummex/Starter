@@ -1,0 +1,22 @@
+{
+ "generated": "2026-10-28T18:07:42.217Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a183ac-0822-7576-a9d1-d3b2cd3cebec",
+  "rig": "01a183b1-00c5-76cf-bad2-944f84f6f795",
+  "anim": "01a183b1-82d1-7749-9675-ce8eebb085f7"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "rigged": true,
+ "parts": [],
+ "notes": "Oct 28 rigged remake (owner OK). Views: the Studio's Borgo front/side/back refs (Gear-Crowned Dwarf Commander sheet). Character only: sceptre and throne already exist (borgo-sceptre, borgo-throne).",
+ "fileSizes": {
+  "char.glb": 15074964
+ }
+}

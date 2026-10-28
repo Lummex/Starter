@@ -1,0 +1,26 @@
+{
+ "id": "goblin-scrapper-spin-shot",
+ "character": "goblin-scrapper",
+ "move": "spin-shot",
+ "prompt": "Cartoon goblin in a purple hood and big brown boots, holding a round brown bowling ball in his right hand, low in front of him. Front view. Two parts. The ball stays in front of him, never through his body or the floor. Part 1 (0-3 s), ball trick: he lifts the ball in front of his chest and spins it on one fingertip like a basketball trick, tapping it with his other hand. Part 2 (3-6 s), basketball shot: he holds the ball in both hands in front of his chest, bends his knees, hops and pushes it up high in front of him; it comes down in front of him and lands on the floor with a heavy thud and stops dead, no bounce, no roll. Only body and limbs move. Face frozen, lips still, no blinking. Camera locked, full body in frame, plain grey background. Smooth 3D cartoon game animation.",
+ "model": "grok_imagine_1_5_lite",
+ "ratio": "auto_480p",
+ "duration": 6,
+ "taskId": "af9e5d67-1767-4d76-ac11-8e94cc27548d",
+ "made": "2026-10-28T08:16:05.266Z",
+ "view": "front",
+ "segments": [
+  {
+   "move": "ball-spin",
+   "from": 0,
+   "to": 3
+  },
+  {
+   "move": "basketball-shot",
+   "from": 3,
+   "to": 6
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}

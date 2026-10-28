@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+# Fake Claude Code: writes a harmless anims/<Name>.py (passes the worker's allowlist) unless FAKECLAUDE_FAIL is set.
+import sys, os, json
+if '--version' in sys.argv: print('fake claude 1.0'); sys.exit(0)
+if 'mcp' in sys.argv: print('none'); sys.exit(0)
+refs = [os.path.relpath(os.path.join(r, f), '.') for r, _, fs in os.walk('refs') for f in fs]
+with open(os.environ['FAKECLAUDE_LOG'], 'a') as f: f.write(json.dumps({'refs': sorted(refs)}) + '\n')
+if os.environ.get('FAKECLAUDE_FAIL'): print('wrote nothing (test)'); sys.exit(0)
+spec = json.load(open('job-spec.json'))
+os.makedirs('anims', exist_ok=True)
+for a in spec['job']['animations']:
+    open(os.path.join('anims', a['name'] + '.py'), 'w').write('import math\n\ndef build(ctx):\n    return math.pi\n')
+print('done (test)')

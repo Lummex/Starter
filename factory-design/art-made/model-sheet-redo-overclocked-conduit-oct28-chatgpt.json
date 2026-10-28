@@ -1,0 +1,16 @@
+{
+ "id": "model-sheet-redo-overclocked-conduit-oct28-chatgpt",
+ "status": "done",
+ "kind": "model-sheet",
+ "cardId": "overclocked-conduit",
+ "cardName": "Overclocked Aethervein",
+ "madeWith": "Ken's ChatGPT app (Chrome), Oct 28",
+ "prompt": "same as model-sheet-redo-overclocked-conduit-oct27 in art-requests/batch-model-sheet-redo-oct27.json, prefixed 'Create an image (landscape 3:2).'",
+ "reference": "factory-design/art-refs/2026-10-27-model-check/overclocked-conduit-card-art.png",
+ "files": [
+  "factory-design/art-made/model-sheet-redo-overclocked-conduit-oct28-chatgpt.png"
+ ],
+ "studioAsset": "243089945f59d64421482be881f7190d",
+ "at": "2026-10-28T21:00:00Z",
+ "by": "Wright"
+}

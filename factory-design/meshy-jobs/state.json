@@ -257,5 +257,15 @@
   "character": "01a17283-30f3-75ba-888f-998ec3efc6e1",
   "rig": "01a17285-daae-75b8-b04d-c54c350b4777",
   "anim": "01a17286-ae09-7017-b035-a1753967c56d"
+ },
+ "anvilsworn-miner-rig": {
+  "character": "01a183ac-0814-7087-b8d7-fb05fb85f1c6",
+  "rig": "01a183b2-b468-70d6-99c2-061d068c7056",
+  "anim": "01a183b3-466b-746c-9abc-cab548acb45c"
+ },
+ "borgo-rig": {
+  "character": "01a183ac-0822-7576-a9d1-d3b2cd3cebec",
+  "rig": "01a183b1-00c5-76cf-bad2-944f84f6f795",
+  "anim": "01a183b1-82d1-7749-9675-ce8eebb085f7"
  }
 }

@@ -19,7 +19,8 @@ Every agent reads this first, then its own onboarding file in factory-design/stu
   - `artRequests` — picture requests and results (Art Studio).
   - `modelSetups` — saved Model Editor setups and backups.
   - `cardTemplates` — card frame layouts (Card Editor). (Also small: `settings`, `sentToClaude`.)
-- Inside the Studio: Home / Next for me / Characters, plus the rooms **Model Editor**, **Art Studio** and **Card Editor** (links: `#room-model`, `#room-art`, `#room-card`).
+  - `decisions` — questions for Ken that aren't tied to one card: title, question, options [{label, value, note?}], status open|answered, answer, answerValue, answerNote, answeredAt, answeredBy, askedBy, askedAt, order, link.
+- Inside the Studio: Home / **Waiting for you** / Next for me / Characters, plus the rooms **Model Editor**, **Art Studio** and **Card Editor** (links: `#room-model`, `#room-art`, `#room-card`).
 - **Old programs are backup-only** (red banner "Moved to Oreheart Studio. Don't edit here"; their pages no longer save): Model Editor (5isEcq…), Motion References (U9YiTA…), Studio Checklist (KwnPNS…), Art Studio (DRScVH…), Card Editor (Hd1vVJ…). Do not read from or write to their databases. They are kept, not deleted.
 
 ### Adding files to the Studio
@@ -27,13 +28,26 @@ Every agent reads this first, then its own onboarding file in factory-design/stu
 - **3D models** (GLB): the Model Editor room loads bundled models from the Studio's published files `models/<key>.glb.txt` (base64 GLB). Only Wright publishes the Studio page: send Wright the GLB (repo path) and the key/name, and Wright adds the file plus its entry in `model-editor.html` in one publish. Then set `library/<card>.src = {key, kind:"bundled"}` with ArtifactData.
 - Never delete a Studio record or asset without Ken's OK.
 
+### Asking Ken (Oct 28): the "Waiting for you" page
+- Ken answers everything on ONE page: Oreheart Studio → **Waiting for you** (`#waiting`; badge with the count on the top bar). It gathers, live: every `takes` doc with status "waiting", every `characters` step with status "waiting", and every open doc in `decisions`.
+- **Ask Ken through the `decisions` collection; don't ask him in chat.** New question = ArtifactData `set` on `decisions/<short-id>`: `{title, question, options: [{label:"Yes",value:"yes"},{label:"No",value:"no"}], status:"open", answer:"", answerNote:"", answeredAt:"", askedBy:"<your name>", askedAt:<real UTC now>, order:<number>, link:""}`. Add `{label:"Send my note", value:"note", note:true}` when he may want to write his own answer. Keep the question short and plain.
+- **Read his answers there:** query `decisions` where status == "answered" (fields `answer`, `answerValue`, `answerNote`, `answeredAt`). Ken can reopen an answer ("Change my answer"), so read it again right before acting.
+- To get approval on card work, set that step or take to status "waiting" (it shows up on the page by itself). Never delete a decision; when it no longer matters, ask Ken or leave it answered.
+
+## Ken's Studio setup is the look (Ken, Oct 28 evening)
+- **Every agent and every factory brief that touches a model takes the look from Ken's saved setup in Oreheart Studio** (`library/<card>.setup`, Model Editor room): which accessories, which bone, position, rotation, scale (size × stretch), the character's **height/scale**, mounts, and the look. Nothing is guessed, auto-fitted or "tuned by eye".
+- **Heights matter.** The game's `LOOKS[id].height` (creature3d.ts) = Ken's Studio body scale × that model's idle-0 height, so the game body has exactly Ken's Studio size (1 Studio unit = 1 board square). Ledger exports these numbers (e.g. `factory-design/design/models/editor-setups-2026-10-28b.md`, "Heights from Ken's Studio setups").
+- If a card has no saved Studio setup, or the setup looks wrong (wrong model, item missing), do not invent one: ask Ken through `decisions` and wait.
+- When a model is remade (new GLB), Ledger moves Ken's saved placements, scale and height onto the new model in the Studio and checks by eye that every item sits where Ken put it, before anything goes to the game.
+
 ## The game
 Oreheart is a fantasy card and board game (goblins, gnomes, dwarves; mines, ore and crystals) played in the browser with 3D models on the board.
 - Code: GitHub repo **Lummex/Starter**. The game app is projects/oreheart-8 on branch **factory/issue-8** (cards: src/content/cards.json; models: public/models/creatures/<card-id>/char.glb + models.json + events.json; owner card paintings: public/art/owner/<faction>/<card-id>-card-art.webp). Design docs, briefs, Meshy/Runway jobs and reports live under factory-design/ on **main**.
 - **Factory:** GitHub Actions workflows on main (Factory — build / checks / preview only / ship) build the game in "rounds" from briefs in factory-design/design/. A round is only started with Ken's go-ahead.
 - **Vercel** project oreheart-8 (team Lummex). Production domain: oreheart.cards. Previews come from "Factory — preview only". Production only with Ken's OK.
 - **Model Editor:** now the Model Editor room inside Oreheart Studio (`#room-model`; `#room-model--scene-<card-id>` opens a card in the 3D scene). Its data is the Studio's `library` and `modelSetups`. The old Model Editor artifact (5isEcq…) is a read-only backup.
-- **Picture maker ("Art machine"):** workflow art-machine.yml on main; a request file under factory-design/art-requests/ makes ChatGPT pictures into factory-design/art-made/ (script: factory/scripts/art-machine.mjs).
+- **Pictures (Ken, Oct 28): make them in Ken's ChatGPT app (GPT-6), not with the OpenAI developer account.** In your own Chrome tab open https://chatgpt.com (Ken is signed in), attach the reference picture (card art: save it to ~/Downloads, device_stage_files, then file_upload the staged path into ChatGPT's "Attach photos" input), type the prompt starting "Create an image (landscape 3:2)." and send. When it's done, fetch the big `main img` (1536x1024) in JS -> blob -> `<a download>` to Downloads -> stage -> look at it. Then: upload it to the Studio as an asset, add it to `library/<card>.refs` (no status = waiting for Ken) and set the `characters` step to "waiting"; also save it to factory-design/art-made/ on main. Your PC must be on with Chrome open. Never solve a captcha; if ChatGPT asks for one or is signed out, ask Ken.
+- The old **art machine** (workflow art-machine.yml + factory/scripts/art-machine.mjs, OpenAI developer account) is paused: its credits ran out on Oct 27 and Ken chose not to refill them. Don't run it unless Ken says so.
 - **Meshy:** workflow meshy-models.yml (jobs in factory-design/meshy-jobs/jobs.json; script factory/scripts/meshy-models.mjs). Makes each model ONCE.
 - **Runway:** workflow runway-videos.yml (jobs in factory-design/runway-jobs/jobs.json; output factory-design/runway/<id>/ clip + frames). Rules: face frozen, body/limb motion only, smooth looping, two moves per clip, front view only (Ken, Oct 28: no side or back views), prompt under 1000 characters, gentle wording (Runway's safety check blocks fight words). Finished clips go into the Studio `takes` (see above).
 - **Blender worker:** runs on Ken's PC; jobs are files blender-jobs/<id>/job.json on branch **blender-queue**; it animates rigged models with Claude Code and uploads results to blender-jobs/<id>/out/. Jobs can carry "references" (picture paths under factory-design/runway/ or runway-jobs/) and "base_pose": "rest".

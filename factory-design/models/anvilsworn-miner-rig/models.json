@@ -1,0 +1,23 @@
+{
+ "generated": "2026-10-28T18:09:58.577Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a183ac-0814-7087-b8d7-fb05fb85f1c6",
+  "rig": "01a183b2-b468-70d6-99c2-061d068c7056",
+  "anim": "01a183b3-466b-746c-9abc-cab548acb45c"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8,
+  "mine": 237
+ },
+ "rigged": true,
+ "parts": [],
+ "notes": "Oct 28 rigged remake (owner OK). Views cropped from Ken's approved model sheet (A-pose + gear, Oct 24; approved Oct 28). Character only: the pickaxe and hammer already exist (stonebreaker-pickaxe, stonebreaker-hammer).",
+ "fileSizes": {
+  "char.glb": 15849732
+ }
+}

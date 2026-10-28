@@ -1,0 +1,26 @@
+{
+ "id": "gyrocopter-ace-spark-knock",
+ "character": "gyrocopter-ace",
+ "move": "spark-knock",
+ "prompt": "Small cartoon gnome girl pilot, blue ponytail, goggles on her forehead, with a propeller and two bat-like mechanical wings on a backpack on her BACK (propeller behind her shoulders, never on her head). Front view. Two parts. She hovers just above the floor the whole time, propeller spinning, wings flapping slowly. Part 1 (0-3 s), spark toss: she pulls her right hand back by her shoulder, a small glowing spark appears in her palm, she pushes the arm forward toward the camera and lets it go, then returns to hover. Part 2 (3-6 s), bumped back: like a gust of wind, her chest and head tip back, arms swing out, she dips lower and the wings pause, then she recovers to the start hover pose so it loops. Only body and limbs move. Face frozen, lips still, no blinking. Camera locked, full body in frame, plain grey background. Smooth 3D cartoon game animation.",
+ "model": "grok_imagine_1_5_lite",
+ "ratio": "auto_480p",
+ "duration": 6,
+ "taskId": "7d23a68c-0474-4176-a2d5-9864ca62117b",
+ "made": "2026-10-28T08:17:05.596Z",
+ "view": "front",
+ "segments": [
+  {
+   "move": "spark-throw",
+   "from": 0,
+   "to": 3
+  },
+  {
+   "move": "knocked-back",
+   "from": 3,
+   "to": 6
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}
