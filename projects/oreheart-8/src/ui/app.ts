@@ -416,20 +416,19 @@ export class App {
 
   /** The faction of the last picked Commander (defaults to Goblins): the default highlight / ring colors. */
   pickedFaction(): string { try { const p = JSON.parse(localStorage.getItem('oreheart.picks') || '{}'); return (COMMANDERS as any)[p.cmd]?.faction || 'goblins'; } catch { return 'goblins'; } }
-  fxPanels(): El[] {
-    const fac = this.pickedFaction();
+  /** Square highlights panel (Settings and the in-match Menu share it and the same saved setting). */
+  highlightPanel(fac: string, onReset: () => void): El {
     const ctl = (label: string, type: string, attrs: Record<string, any>, on: (v: any, el: HTMLInputElement) => void) => {
       const id = 'fx-' + label.toLowerCase().replace(/[^a-z]+/g, '-');
       const inp = h('input', { type, id, ...attrs }) as HTMLInputElement;
       inp.addEventListener('input', () => on(type === 'checkbox' ? inp.checked : type === 'range' ? +inp.value : inp.value, inp));
       return h('div', { class: 'slider fx-row' }, h('label', { for: id }, label), inp);
     };
-    // square highlights
     const hv = getHighlights();
     const hlPrev = h('div', { class: 'hl-prev', 'aria-label': 'Highlight preview', role: 'img' }, h('div', { class: 'cell glow hl-prev-sq' }), h('div', { class: 'cell glow-attack hl-prev-sq' }));
     const hlSet = (p: any) => { setHighlights(p); applyHighlightVars(fac); };
     applyHighlightVars(fac);
-    const hlPanel = h('section', { class: 'fx-panel', role: 'region', 'aria-label': 'Square highlights' }, h('h2', { class: 'section' }, 'Square highlights'), hlPrev,
+    return h('section', { class: 'fx-panel', role: 'region', 'aria-label': 'Square highlights' }, h('h2', { class: 'section' }, 'Square highlights'), hlPrev,
       ctl('Edge color', 'color', { value: edgeOf(fac) }, (v) => hlSet({ edgeColor: v })),
       ctl('Glow color', 'color', { value: glowOf(fac) }, (v) => hlSet({ glowColor: v })),
       ctl('Attack color', 'color', { value: hv.attackColor }, (v) => hlSet({ attackColor: v })),
@@ -439,7 +438,18 @@ export class App {
       ctl('Inner fill', 'range', { min: '0', max: '100', step: '1', value: String(hv.fill) }, (v) => hlSet({ fill: v })),
       ctl('Pulse', 'checkbox', hv.pulse ? { checked: '' } : {}, (v) => hlSet({ pulse: v })),
       ctl('Pulse speed', 'range', { min: '0.3', max: '3', step: '0.1', value: String(hv.pulseSpeed) }, (v) => hlSet({ pulseSpeed: v })),
-      btn('Reset to default', '', () => { resetHighlights(); applyHighlightVars(fac); this.showSettings(); }));
+      btn('Reset to default', '', () => { resetHighlights(); applyHighlightVars(fac); onReset(); }));
+  }
+  fxPanels(): El[] {
+    const fac = this.pickedFaction();
+    const ctl = (label: string, type: string, attrs: Record<string, any>, on: (v: any, el: HTMLInputElement) => void) => {
+      const id = 'fx-' + label.toLowerCase().replace(/[^a-z]+/g, '-');
+      const inp = h('input', { type, id, ...attrs }) as HTMLInputElement;
+      inp.addEventListener('input', () => on(type === 'checkbox' ? inp.checked : type === 'range' ? +inp.value : inp.value, inp));
+      return h('div', { class: 'slider fx-row' }, h('label', { for: id }, label), inp);
+    };
+    // square highlights (shared with the in-match Menu)
+    const hlPanel = this.highlightPanel(fac, () => this.showSettings());
     // unit rings
     const rv = getRings();
     const ringEl = (cls: string) => h('div', { class: 'ring-prev-dot ' + cls });
@@ -971,6 +981,7 @@ export class App {
       menuItems: [
         { label: 'Resume', run: () => {} },
         { label: 'Settings', run: () => this.matchSettings() },
+        { label: 'Square highlights', run: () => this.matchHighlights() },
         { label: 'How to play', run: () => this.matchHowTo() },
         { label: 'Sound Effects', run: () => this.matchVolume('Sound Effects') },
         { label: 'Background music', run: () => this.matchVolume('Background music') },
@@ -1086,6 +1097,12 @@ export class App {
       this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)),
       this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)),
       btn('Close', '', () => c.close()))]);
+  }
+  /** In-match Menu: the same Square highlights controls as Settings, applied to the board live. */
+  matchHighlights() {
+    const fac = this.game.state.players.player.faction;
+    const c: any = this.dialog('Square highlights', [h('div', { class: 'match-hl' }, this.highlightPanel(fac, () => { c.close(); this.matchHighlights(); })),
+      h('div', { class: 'row' }, btn('Close', '', () => c.close()))]);
   }
   matchHowTo() {
     const c: any = this.dialog('How to play', [h('h2', {}, 'How to play'),
