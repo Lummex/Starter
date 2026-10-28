@@ -34,6 +34,12 @@ Every agent reads this first, then its own onboarding file in factory-design/stu
 - **Read his answers there:** query `decisions` where status == "answered" (fields `answer`, `answerValue`, `answerNote`, `answeredAt`). Ken can reopen an answer ("Change my answer"), so read it again right before acting.
 - To get approval on card work, set that step or take to status "waiting" (it shows up on the page by itself). Never delete a decision; when it no longer matters, ask Ken or leave it answered.
 
+## Ken's Studio setup is the look (Ken, Oct 28 evening)
+- **Every agent and every factory brief that touches a model takes the look from Ken's saved setup in Oreheart Studio** (`library/<card>.setup`, Model Editor room): which accessories, which bone, position, rotation, scale (size × stretch), the character's **height/scale**, mounts, and the look. Nothing is guessed, auto-fitted or "tuned by eye".
+- **Heights matter.** The game's `LOOKS[id].height` (creature3d.ts) = Ken's Studio body scale × that model's idle-0 height, so the game body has exactly Ken's Studio size (1 Studio unit = 1 board square). Ledger exports these numbers (e.g. `factory-design/design/models/editor-setups-2026-10-28b.md`, "Heights from Ken's Studio setups").
+- If a card has no saved Studio setup, or the setup looks wrong (wrong model, item missing), do not invent one: ask Ken through `decisions` and wait.
+- When a model is remade (new GLB), Ledger moves Ken's saved placements, scale and height onto the new model in the Studio and checks by eye that every item sits where Ken put it, before anything goes to the game.
+
 ## The game
 Oreheart is a fantasy card and board game (goblins, gnomes, dwarves; mines, ore and crystals) played in the browser with 3D models on the board.
 - Code: GitHub repo **Lummex/Starter**. The game app is projects/oreheart-8 on branch **factory/issue-8** (cards: src/content/cards.json; models: public/models/creatures/<card-id>/char.glb + models.json + events.json; owner card paintings: public/art/owner/<faction>/<card-id>-card-art.webp). Design docs, briefs, Meshy/Runway jobs and reports live under factory-design/ on **main**.
