@@ -29,6 +29,12 @@ I build Ken's tools ("programs"): pinned claude.ai artifacts (review boards, das
 - Model Editor `thumb` (thumbs/<id>.webp) = card art; `previewAsset` = 3D picture (lots of empty background; trim with canvas, same-origin so it works).
 - A page with a side panel: route one character with `#<card-id>` so agents can link straight to it.
 
+## Deep links (2026-10-28)
+- Model Editor: `#<card-id>` = open card in the Cards & models list, `#scene-<card-id>` = open in the 3D scene (DEEP/readDeep/tryDeep after libLoad).
+- Motion References: `#<character-id>` = filter to that character. Studio Checklist: `#<card-id>` opens that character's panel.
+- Editing a big program I didn't write: Artifact read with path index.html -> out_dir, then publish with url + file_path + small `edits` (no need to load 280 KB into chat).
+- device_commit_files with the same stagedPath reuses an old cached copy: always write a fresh output folder before committing.
+
 ## Motion References: database layout
 Collection `takes`, doc id = Runway job id (e.g. `gyrocopter-ace-cast-side`). Fields:
 character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view order), title, tag, detail, view (front/side/back), seconds, prompt, video (asset id), moves [{move, from, to}], order, source (repo path of clip.mp4), runwayTask, status ("waiting" | "approved" | "redraw"), note (Ken's redraw note), chosen (bool, one per character+move), decidedBy (user id), updatedAt.
