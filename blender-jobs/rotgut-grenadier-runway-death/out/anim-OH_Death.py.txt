@@ -1,0 +1,264 @@
+import math
+import mathutils
+
+
+def build(ctx):
+    ctx.length(120)
+    B = ctx.bones
+
+    HIPS = 'Hips'
+    SPINES = ['Spine02', 'Spine01', 'Spine']
+    HEAD = 'Head'
+    LA, LF = 'LeftArm', 'LeftForeArm'
+    RA, RF, RH = 'RightArm', 'RightForeArm', 'RightHand'
+    LEGS = {'L': ('LeftUpLeg', 'LeftLeg', 'LeftFoot'),
+            'R': ('RightUpLeg', 'RightLeg', 'RightFoot')}
+    AX = {'right': (1, 0, 0), 'left': (-1, 0, 0), 'up': (0, 1, 0),
+          'down': (0, -1, 0), 'forward': (0, 0, 1), 'back': (0, 0, -1)}
+    # spatula direction in the rest pose (up and out to his right, like the front ref)
+    SPAT = mathutils.Vector((0.6, 0.8, 0.0)).normalized()
+
+    if 'spatula' in ctx.parts:
+        ctx.attach('spatula', RH, length=0.95, turn=[('forward', -120)])
+
+    def vec(t):
+        return mathutils.Vector((float(t[0]), float(t[1]), float(t[2])))
+
+    def unit(t):
+        return vec(t).normalized()
+
+    def rest_dir(b):
+        return unit(B[b]['points'])
+
+    def qturns(turns):
+        # API turns (right-hand rule in the character's frame) as quaternions, applied in order
+        q = mathutils.Quaternion()
+        for ax, d in turns:
+            q = mathutils.Quaternion(vec(AX[ax]), -math.radians(d)) @ q
+        return q
+
+    def sumdeg(turns, axis):
+        return sum(d for a, d in turns if a == axis)
+
+    def sag(dy, dz):
+        # angle in degrees from straight down, positive toward forward
+        return math.degrees(math.atan2(dz, -dy))
+
+    def K(f, b, turn=None, aim=None, move=None):
+        kw = {}
+        if aim is not None:
+            kw['aim'] = (float(aim[0]), float(aim[1]), float(aim[2]))
+            if turn:
+                kw['turn'] = turn
+        else:
+            kw['turn'] = turn if turn else [('up', 0.0)]
+        if move is not None:
+            kw['move'] = move
+        ctx.key(f, b, **kw)
+
+    # ---------------- hips: frame -> (move, turns) ----------------
+    HIP = {
+        0: ((0.0, 0.0, 0.0), []),
+        8: ((0.012, -0.004, 0.0), [('forward', -4)]),
+        16: ((-0.012, -0.008, 0.0), [('forward', 5)]),
+        24: ((0.010, -0.012, 0.0), [('forward', -4)]),
+        32: ((-0.006, -0.030, 0.0), [('forward', 3)]),
+        40: ((0.004, -0.060, -0.005), [('forward', -2), ('right', 4)]),
+        47: ((0.0, -0.100, -0.012), [('right', 6)]),
+        54: ((0.0, -0.160, -0.025), [('right', 6)]),
+        60: ((0.0, -0.222, -0.045), [('right', 10)]),             # bottom hits the floor
+        63: ((0.0, -0.210, -0.045), [('right', 5)]),              # little rebound
+        68: ((0.0, -0.200, -0.050), [('up', 8), ('right', 45)]),  # tipping back
+        73: ((0.0, -0.196, -0.055), [('up', 16), ('right', 80)]), # on his back, legs up
+        77: ((0.0, -0.200, -0.055), [('up', 18), ('right', 84)]),
+        81: ((0.0, -0.207, -0.055), [('up', 20), ('right', 83)]), # legs land
+        85: ((0.0, -0.190, -0.055), [('up', 20), ('right', 80)]), # small bounce
+        90: ((0.0, -0.204, -0.055), [('up', 20), ('right', 82)]), # flat, still
+    }
+    HIP[120] = HIP[90]
+    FRAMES = sorted(HIP.keys())
+
+    SPN = {
+        0: [], 8: [('forward', 4)], 16: [('forward', -5)],
+        24: [('forward', 4), ('right', -2)], 32: [('forward', -3), ('right', -4)],
+        40: [('forward', 1), ('right', -6)], 47: [('right', -8)], 54: [('right', -9)],
+        60: [('right', -5)], 63: [('right', -3)], 68: [('right', -7)], 73: [('right', -6)],
+        77: [('right', -3)], 81: [('right', 0.5)], 85: [('right', -2)], 90: [],
+    }
+    SPN[120] = SPN[90]
+
+    HD = {
+        0: [], 8: [('forward', -8), ('right', -3)], 16: [('forward', 10), ('right', -2)],
+        24: [('forward', -9), ('right', -5)], 32: [('forward', 8), ('right', -4)],
+        40: [('forward', -6), ('right', -6)], 47: [('forward', 4), ('right', -8)],
+        54: [('right', -5)], 60: [('right', -12)], 63: [('right', 4)], 68: [('right', -10)],
+        73: [('right', -14)], 77: [('right', -8)], 81: [('right', 0)], 85: [('right', -9)],
+        90: [('up', 10), ('right', -6)],
+    }
+    HD[120] = HD[90]
+
+    # left arm: ('turn', upperarm turns) or ('aim', upperarm dir, forearm dir) in world directions
+    LARM = {
+        0: ('turn', []), 8: ('turn', [('forward', 6)]), 16: ('turn', [('forward', 2)]),
+        24: ('turn', [('forward', 8)]), 32: ('turn', [('forward', 12), ('right', 6)]),
+        40: ('turn', [('forward', 20), ('right', 8)]), 47: ('turn', [('forward', 35), ('right', 10)]),
+        54: ('turn', [('forward', 55), ('right', 12)]), 60: ('turn', [('forward', 68), ('right', 18)]),
+        63: ('turn', [('forward', 60), ('right', 14)]),
+        68: ('aim', (-0.8, -0.4, 0.3), (-0.7, 0.2, 0.4)),
+        73: ('aim', (-0.85, 0.1, -0.3), (-0.6, 0.6, -0.2)),
+        77: ('aim', (-0.75, 0.35, -0.3), (-0.4, 0.85, -0.1)),
+        81: ('aim', (-0.7, 0.45, -0.3), (-0.35, 0.9, 0.0)),
+        85: ('aim', (-0.9, -0.1, -0.1), (-0.8, 0.2, 0.4)),
+        90: ('aim', (-0.88, -0.4, 0.2), (-0.9, -0.2, 0.4)),
+    }
+    LARM[120] = LARM[90]
+
+    # right arm (spatula): ('turn', upperarm turns, forearm turns) or
+    # ('aim', upperarm dir, forearm dir, spatula target dir)
+    RARM = {
+        0: ('turn', [], []), 8: ('turn', [('forward', -3)], []), 16: ('turn', [('forward', 2)], []),
+        24: ('turn', [('forward', -4)], []), 32: ('turn', [('right', 8), ('forward', -3)], [('right', 5)]),
+        40: ('turn', [('right', 12), ('forward', -5)], [('right', 10)]),
+        47: ('turn', [('right', 16), ('forward', -7)], [('right', 15)]),
+        54: ('aim', (0.35, -0.8, 0.35), (0.25, -0.1, 0.95), (0.1, 1.0, 0.05)),
+        60: ('aim', (0.5, -0.65, 0.4), (0.3, 0.05, 0.95), (0.05, 1.0, 0.1)),
+        63: ('aim', (0.5, -0.68, 0.38), (0.3, 0.0, 0.95), (0.08, 1.0, 0.08)),
+        68: ('aim', (0.5, -0.3, 0.8), (0.3, 0.5, 0.8), (0.15, 0.95, 0.3)),
+        73: ('aim', (0.45, 0.2, 0.87), (0.2, 0.9, 0.4), (0.05, 1.0, 0.0)),
+        77: ('aim', (0.5, 0.15, 0.85), (0.25, 0.9, 0.35), (0.1, 1.0, -0.05)),
+        81: ('aim', (0.7, 0.1, 0.7), (0.6, 0.7, 0.3), (0.45, 0.85, -0.1)),
+        85: ('aim', (0.9, -0.2, 0.35), (0.9, 0.2, 0.1), (0.9, 0.35, -0.2)),
+        90: ('aim', (0.9, -0.42, 0.12), (0.95, -0.2, -0.1), (0.86, -0.04, -0.5)),
+    }
+    RARM[120] = RARM[90]
+
+    # legs after he sits: (thigh abs, shin abs, foot abs delta) in degrees from straight down
+    LEGABS = {
+        68: {'R': (120, 75, 40), 'L': (112, 70, 40)},
+        73: {'R': (140, 112, 90), 'L': (132, 105, 90)},
+        77: {'R': (128, 105, 90), 'L': (120, 98, 90)},
+        81: {'R': (96, 89, 85), 'L': (86, 81, 80)},
+        85: {'R': (104, 96, 88), 'L': (94, 88, 84)},
+        90: {'R': (95, 88, 85), 'L': (84, 80, 80)},
+    }
+    LEGABS[120] = LEGABS[90]
+    SPLAY = {'R': -6.0, 'L': 6.0}
+    # planted feet (IK) up to the squat, feet scoot forward a little when he sits
+    IKSHIFT = {f: {'R': 0.0, 'L': 0.0} for f in (0, 8, 16, 24, 32, 40, 47, 54)}
+    IKSHIFT[60] = {'R': 0.10, 'L': 0.0}
+    IKSHIFT[63] = {'R': 0.10, 'L': 0.0}
+
+    # ---------------- helpers ----------------
+    def chain(f):
+        qs = qturns(SPN[f])
+        return qturns(HIP[f][1]) @ qs @ qs @ qs
+
+    def leg_info(side):
+        th, kn, ft = LEGS[side]
+        hj, kj, aj = B[th]['head'], B[kn]['head'], B[ft]['head']
+        L1 = math.hypot(kj[1] - hj[1], kj[2] - hj[2])
+        L2 = math.hypot(aj[1] - kj[1], aj[2] - kj[2])
+        p1 = sag(kj[1] - hj[1], kj[2] - hj[2])
+        p2 = sag(aj[1] - kj[1], aj[2] - kj[2])
+        return hj, aj, L1, L2, p1, p2
+
+    def key_leg(f, side, A1, A2, dF, th, lat=0.0, flat=0.0):
+        thigh, shin, foot = LEGS[side]
+        _, _, _, _, p1, p2 = leg_info(side)
+        d1 = A1 - p1
+        d2 = A2 - p2
+        tt = [('right', d1 - th)]
+        if lat:
+            tt.append(('forward', lat))
+        K(f, thigh, turn=tt)
+        K(f, shin, turn=[('right', d2 - d1)])
+        ftt = [('right', dF - d2)]
+        if flat:
+            ftt.append(('forward', flat))
+        K(f, foot, turn=ftt)
+
+    def leg_ik(f, side, shift):
+        move, turns = HIP[f]
+        th = sumdeg(turns, 'right')
+        roll = sumdeg(turns, 'forward')
+        h0 = B[HIPS]['head']
+        hj, aj, L1, L2, _, _ = leg_info(side)
+        ry, rz = hj[1] - h0[1], hj[2] - h0[2]
+        r = math.hypot(ry, rz)
+        a = math.radians(sag(ry, rz) + th)
+        py = h0[1] + move[1] - r * math.cos(a)
+        pz = h0[2] + move[2] + r * math.sin(a)
+        dy, dz = aj[1] - py, aj[2] + shift - pz
+        d = math.hypot(dy, dz)
+        d = max(abs(L1 - L2) + 1e-4, min(L1 + L2 - 1e-4, d))
+        psi = sag(dy, dz)
+        a1 = math.degrees(math.acos(max(-1.0, min(1.0, (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d)))))
+        a2 = math.degrees(math.acos(max(-1.0, min(1.0, (L2 * L2 + d * d - L1 * L1) / (2 * L2 * d)))))
+        lat = -roll + math.degrees(math.atan2(move[0], 0.26))
+        flat = -(roll + lat)
+        key_leg(f, side, psi + a1, psi - a2, 0.0, th, lat, flat)
+
+    def arm_aim(f, ub, fb, udir, fdir):
+        Qp = chain(f)
+        pu = (Qp.inverted() @ unit(udir)).normalized()
+        Qf = Qp @ rest_dir(ub).rotation_difference(pu)
+        pf = (Qf.inverted() @ unit(fdir)).normalized()
+        K(f, ub, aim=pu)
+        K(f, fb, aim=pf)
+        return Qf @ rest_dir(fb).rotation_difference(pf)
+
+    def spatula_hand(f, Qfw, fdir, target):
+        # pick the hand direction that lays the spatula along target with the least wrist bend
+        t = unit(target)
+        fd = unit(fdir)
+        r = rest_dir(RH)
+        inv = Qfw.inverted()
+        best = None
+        for i in range(19):
+            el = math.radians(-90 + i * 10)
+            for j in range(36):
+                az = math.radians(j * 10)
+                h = mathutils.Vector((math.cos(el) * math.cos(az), math.sin(el), math.cos(el) * math.sin(az)))
+                p = (inv @ h).normalized()
+                s = Qfw @ r.rotation_difference(p) @ SPAT
+                score = s.dot(t) + 0.35 * h.dot(fd) - 2.0 * max(0.0, -0.35 - h.y)
+                if best is None or score > best[0]:
+                    best = (score, p)
+        K(f, RH, aim=best[1])
+
+    # ---------------- keys ----------------
+    for f in FRAMES:
+        move, turns = HIP[f]
+        K(f, HIPS, turn=turns, move=move)
+        for s in SPINES:
+            K(f, s, turn=SPN[f])
+        K(f, HEAD, turn=HD[f])
+
+        la = LARM[f]
+        if la[0] == 'turn':
+            K(f, LA, turn=la[1])
+            K(f, LF, turn=[])
+        else:
+            arm_aim(f, LA, LF, la[1], la[2])
+
+        ra = RARM[f]
+        if ra[0] == 'turn':
+            K(f, RA, turn=ra[1])
+            K(f, RF, turn=ra[2])
+            K(f, RH, turn=[])
+        else:
+            Qfw = arm_aim(f, RA, RF, ra[1], ra[2])
+            spatula_hand(f, Qfw, ra[2], ra[3])
+
+        for side in ('L', 'R'):
+            if f in IKSHIFT:
+                leg_ik(f, side, IKSHIFT[f][side])
+            else:
+                a1, a2, dF = LEGABS[f][side]
+                th = sumdeg(turns, 'right')
+                lat = SPLAY[side] if f >= 90 else 0.0
+                key_leg(f, side, a1, a2, dF, th, lat)
+
+    ctx.note('OH_Death: dizzy wobble 0-32, knees buckle 32-54 (feet planted, IK), '
+             'sits on bottom 60, tips back 68, on back legs up 73, legs land 81, bounce 85, '
+             'flat and still 90-120; spatula vertical while falling, laid on the floor at his right.')
