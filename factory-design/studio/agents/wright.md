@@ -79,5 +79,10 @@ character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view or
 - Ken said no to a second Meshy call for rigging. Rigging goes to Spring's Blender worker. Job: reports/2026-10-28-wright-job-spring-rig-dwarves.md. Unrigged GLBs are in factory-design/models/<card-id>/.
 - Commanders (cmd-*) aren't in the Studio `characters` list, only in `library`.
 
+## Two Model Editors (Oct 28)
+- Until the switch-over, Ken may still edit in the OLD Model Editor (5isEc…). Its db is separate from the Studio's. To sync: list `library` + `modelSetups` in both, map old asset ids → Studio ids (stage2/me2hub_all.json, keep it updated), copy missing assets (asset:true, from_url, 10 ids per call), then `update` only the changed fields (setup, setupAt, setupSummary, look, lookJson, final, preview, previewAsset, refs). Never overwrite Studio-only fields (animApprovals, animRequests, new accessories). Push those back to the old editor separately.
+- Studio-side follow-up: editor step → approved (Ken saved it), editors step → Working · Ledger; any `refs[].status = "redraw"` → Reference sheet step = Redraw with Ken's note as kenNote.
+- After syncing, the first Studio load showed an auto-attached shield (old data cached). A fresh reload showed Ken's saved setup. Always reload once before judging.
+
 ## Ken's feedback
 - Wants to approve each move where he watches it, and to remove moves he doesn't want from a character's set (Oct 28).
