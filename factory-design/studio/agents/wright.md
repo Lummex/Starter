@@ -52,6 +52,11 @@ I build Ken's tools ("programs"): pinned claude.ai artifacts (review boards, das
 - Copy only the assets its db records reference (regex 32-hex ids over the records), keep old->new maps, rewrite every id in the records, then seed with ArtifactData batch (<=50 per batch).
 - Model Editor room: on `#scene-<id>` it clears the scene and skips the default Grubnak + autosave.
 
+## Rooms: the realm bridge (2026-10-28, important)
+- A room page (iframe) calling the parent's db with its own objects fails: "arguments must be plain JSON data". Fix = shim (factory-design copy in my notes below): wrap the parent's namespaces; convert every object/array argument with `parent.JSON.parse(JSON.stringify(x))`; wrap returned refs (they have null prototypes with own function props, so check for function props, not prototype). Blobs: `new parent.Blob([b])`.
+- Bust the iframe cache with `?v=<n>` on room URLs after changing a room file.
+- Hub Test artifact (JwntCbnu…) is my test bench for room experiments.
+
 ## Motion References: database layout
 Collection `takes`, doc id = Runway job id (e.g. `gyrocopter-ace-cast-side`). Fields:
 character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view order), title, tag, detail, view (front/side/back), seconds, prompt, video (asset id), moves [{move, from, to}], order, source (repo path of clip.mp4), runwayTask, status ("waiting" | "approved" | "redraw"), note (Ken's redraw note), chosen (bool, one per character+move), decidedBy (user id), updatedAt.
