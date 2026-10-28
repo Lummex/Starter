@@ -134,3 +134,13 @@
 - 2026-10-28 (later) Owner fix 9/9 from Forge: full screen / windowed toggle (menu + Settings). Commit 7af662c on factory/issue-8 (after d6a8871). Preview-only run #22 -> oreheart-8-g59tuud42 stuck Queued in Vercel; toggle logic tested on old preview vqwc8zlrr. Report: factory-design/studio/reports/2026-10-28-anvil-fullscreen-toggle.md.
 - 2026-10-28 (later) Hand flutter fix (Forge, Ken found it): commit d4b453b on factory/issue-8 on top of the pickaxe (5c959d4) and mine icon (c96705a) fixes. Preview run #16 timed out; the deployment (oreheart-8-43xduknv6) was still queued on Vercel after 1 h+, so it is NOT tested in a preview yet. Report: factory-design/studio/reports/2026-10-28-anvil-hand-flutter.md.
 - 2026-10-28 (later) Owner fix from Ken via Forge: arrows to cycle cards in the close-up (+ ← → keys, swipe). Commits 11d9ed3 (app.ts) + style.css on factory/issue-8, on top of the 5 other owner fixes. Preview https://oreheart-8-6h02wbaaj-lummex.vercel.app tested: arrows, keys, wrap, Play acts on shown card. Report: factory-design/studio/reports/2026-10-28-anvil-closeup-arrows.md.
+
+
+## Learned Oct 28 (Oreheart Online / back counter design)
+- The engine (src/engine/engine.ts) is pure: createMatch / legalActions / applyAction(state, action) -> {ok, state, events}; JSON state, seeded mulberry32 RNG kept in state.rng, imports only ./content, ./rng, tutorial.json. So it can run unchanged in a Supabase Edge Function for server-authoritative PvP. state.rng and the opponent hand must be hidden (viewFor redaction).
+- Sides are 'player' | 'opponent'; state.priority = who may act. Local match driver = class Game in src/game.ts (AI timers). Decks = localStorage in src/ui/decks.ts; deck rules in src/engine/decks.ts (validateDeck). copyLimit = CONFIG.copyLimits[rarity].
+- cards.json already has rarity on all 66 cards: 25 Common, 13 Uncommon, 15 Rare, 8 Ultra Rare, 5 Collector.
+- Prices (official pages, Oct 28 2026): Supabase Free $0 (pauses after 1 week idle) / Pro from $25 (100k MAU, 8 GB, 250 GB egress, daily backups 7 days); Stripe 2.9% + 30c US cards, +1.5% intl, +1% FX, $15 dispute; Vercel Hobby $0 (personal), Pro $20 incl. $20 usage credit, Hobby 100 GB transfer.
+- Folder listing JSON: payload.codeViewTreeRoute.tree.items (not payload.tree).
+- Fetching raw.githubusercontent.com from a raw tab fails; navigate to each raw URL and use get_page_text instead (or fetch from a github.com tab).
+- 2026-10-28 (late) Design job from Forge: factory-design/design/oreheart-online-backcounter-design.md (architecture, tables, RLS, PvP, phases A-D, Ken's setup steps, costs, risks). Design only. Report: factory-design/studio/reports/2026-10-28-anvil-backcounter-design.md.
