@@ -2,7 +2,7 @@
  "id": "rotgut-grenadier-runway-death",
  "type": "animate",
  "asset_id": "rotgut-grenadier",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 9,
  "created_at": "2026-10-28T08:21:27Z",
  "created_by": "Spring (Forge job Oct 28; Ken approved both parts of take rotgut-grenadier-death in Oreheart Studio)",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": null,
- "lease_until": "2026-10-28T08:37:30Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-28T08:32:30Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "1 animation(s) built and checked: OH_Death"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/rotgut-grenadier/char.glb@factory/issue-8",
@@ -87,7 +87,222 @@
   {
    "at": "2026-10-28T08:32:23Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-28T08:33:23Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-28T08:32:30Z"
+ "updated_at": "2026-10-28T08:33:23Z",
+ "result": {
+  "summary": "1 animation(s) built and checked: OH_Death",
+  "files": [
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/char.glb",
+    "bytes": 1886312,
+    "sha256": "5c37d695149998bdd83e73de6c92fc7b631ba91fed40ada3504a5c636b0e1d76"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/events.json",
+    "bytes": 305,
+    "sha256": "8a7376f0c8925540ad77acc7b3f17754bf3635fb45c8965025056bc7886c5804"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/inspection.json",
+    "bytes": 11317,
+    "sha256": "f6e8f75d0407cb398ab1c71a8e99f3bbe9353a9b19877e5ff98d026c5cee3dc6"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/build-report.json",
+    "bytes": 2114,
+    "sha256": "e1d8526d643373cbf42985cb7582d12e46bc2baa84aecba40702e9a4bf1e5b76"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/validation.json",
+    "bytes": 1536,
+    "sha256": "dbc0884a21c9674cd1846000a2febdfa4636e32c1ea094b38094f17968fc4743"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/preview-weapon.glb",
+    "bytes": 4700556,
+    "sha256": "036be5a8592cb91bd4a0ca88e36bc6e9554ea9bff5e5f05e56b5a3bbd4f7661f"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/final-OH_Death-000.png",
+    "bytes": 182152,
+    "sha256": "fd8cedcda158e2dc60afe02504f8c81e35204333dfaddac1059eb75a4f97be61"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/final-OH_Death-030.png",
+    "bytes": 180370,
+    "sha256": "f329c1dedd6559706d5ee945850e3c26d653ec6f0b30b7e6866af3c6c732e91d"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/final-OH_Death-060.png",
+    "bytes": 172946,
+    "sha256": "3089e702c8eda093af7ab9e596bbd42c24eff131bcf5fc28fa01f55dfbf89cae"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/final-OH_Death-090.png",
+    "bytes": 167228,
+    "sha256": "5576277f0589c9780b41f12e7e66037f26fa7a01709fac11d808e2054109289c"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/final-OH_Death-120.png",
+    "bytes": 167222,
+    "sha256": "88bedd80942a7f382cc9fd7e862c1c9730a46557af64e0fbef7f41f56c63e383"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/preview-OH_Death-000.png",
+    "bytes": 301386,
+    "sha256": "127dbf6dcf0127a3ce92af369b8a2c497c90f1d13922974136839fcc08fd19f7"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/preview-OH_Death-020.png",
+    "bytes": 300542,
+    "sha256": "0bddcbe438cafd5387ff2bf7238cedc108eaebe6aacb259c1556127b86b39897"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/preview-OH_Death-040.png",
+    "bytes": 298405,
+    "sha256": "7f0653871ac80775ffb29e68718feadaf5cfc43c6a76c2d061907550aa2cf493"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/preview-OH_Death-060.png",
+    "bytes": 290441,
+    "sha256": "7089de29416c247686f8c625f370b0781976c032ba5b06647058ca892c59b486"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/preview-OH_Death-080.png",
+    "bytes": 289139,
+    "sha256": "c7b366daf3d6a04036ad82d9c593708e21f0af77621ed92f1c611a4b9380e22f"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/preview-OH_Death-100.png",
+    "bytes": 284283,
+    "sha256": "9aae4b64a8816696f418fc3e53053385ccd3121e8ef47b65eb73da2c78707a84"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/preview-OH_Death-120.png",
+    "bytes": 284283,
+    "sha256": "b064064aee9899b6ab510b2ad7f6ea07b12ecb5db6a328b439bd359bfb1918c2"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/preview-OH_Death-grip.png",
+    "bytes": 276056,
+    "sha256": "646f929000f88121b254cff459f4de947e48edf2e99bfdccf862935be64b0079"
+   },
+   {
+    "file": "blender-jobs/rotgut-grenadier-runway-death/out/anim-OH_Death.py.txt",
+    "bytes": 11292,
+    "sha256": "31a742f66fc9b334d34935a12bd220afb60fcc0c9f51446cd1dafaea732cf847"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 40362,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Death": [
+      0.0,
+      120.0
+     ],
+     "OH_React_Lifted": [
+      0.0,
+      48.0
+     ],
+     "OH_React_Backstab": [
+      0.0,
+      60.0
+     ],
+     "OH_React_Bowled": [
+      0.0,
+      90.0
+     ],
+     "OH_React_Bonk": [
+      0.0,
+      36.0
+     ],
+     "OH_React_Knockback": [
+      0.0,
+      36.0
+     ],
+     "OH_Hit": [
+      0.0,
+      24.0
+     ],
+     "OH_Attack": [
+      0.0,
+      34.0
+     ],
+     "OH_Walk": [
+      0.0,
+      24.0
+     ],
+     "OH_Idle": [
+      0.0,
+      72.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Death": {
+      "keys": 121,
+      "seconds": 4.0
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead",
+      "OH_Idle",
+      "OH_Walk",
+      "OH_Attack",
+      "OH_Hit",
+      "OH_React_Knockback",
+      "OH_React_Bonk",
+      "OH_React_Bowled",
+      "OH_React_Backstab",
+      "OH_React_Lifted"
+     ],
+     "worst_position_error_pct_of_height": 0.0005,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 2e-05
+   }
+  }
+ }
 }
