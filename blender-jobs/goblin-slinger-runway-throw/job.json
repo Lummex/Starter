@@ -2,7 +2,7 @@
  "id": "goblin-slinger-runway-throw",
  "type": "animate",
  "asset_id": "goblin-slinger",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 9,
  "created_at": "2026-10-28T09:05:17Z",
  "created_by": "Spring (Forge job Oct 28; Ken approved both parts of take goblin-slinger-throw in Oreheart Studio)",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-28T09:15:46Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-28T09:10:46Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "1 animation(s) built and checked: OH_Attack"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-slinger/char.glb@factory/issue-8",
@@ -102,7 +102,227 @@
   {
    "at": "2026-10-28T09:10:39Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-28T09:11:42Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-28T09:10:46Z"
+ "updated_at": "2026-10-28T09:11:42Z",
+ "result": {
+  "summary": "1 animation(s) built and checked: OH_Attack",
+  "files": [
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/char.glb",
+    "bytes": 1953912,
+    "sha256": "28d2ca229167681f3083bb0638c37cf577379c835112d822bdf085bbfaf9a355"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/events.json",
+    "bytes": 425,
+    "sha256": "3b8040b73b969fa6d32edb0bfbba59abdf1b8dadf745b2f35f4da045a4d7156f"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/inspection.json",
+    "bytes": 11341,
+    "sha256": "7ab64fd2ae72b2177d4584e0c576ad584c9fb1545c5da963b3b3cfcff48155a5"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/build-report.json",
+    "bytes": 2174,
+    "sha256": "b264aabd8ee39c870ca6b223d603fe2c7d2981be02d1dcaf71cf3a2e4c8f3f6c"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/validation.json",
+    "bytes": 1542,
+    "sha256": "01641ac24eeafb92fdc6a55cb7985eb5cd7e356d439e1ed1ca61700d16819c7a"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/preview-weapon.glb",
+    "bytes": 4959388,
+    "sha256": "a56e52020a8558a7e5621fd641403b6f166b1e40b893b7acec0bafbb81344a11"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/final-OH_Attack-000.png",
+    "bytes": 181635,
+    "sha256": "3d5c83cb6be80c4a48448460327560263afe9bf76fb129f5fd08b9fa8a205265"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/final-OH_Attack-030.png",
+    "bytes": 180754,
+    "sha256": "510464ef4960bbbed4634766bfb530882468fc0f44459ba16faa43bfab2fc686"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/final-OH_Attack-060.png",
+    "bytes": 175245,
+    "sha256": "4067c57168ff73ed6127882261462fc16d8ac3dfc1d15ab28e5f3888753437ee"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/final-OH_Attack-090.png",
+    "bytes": 179279,
+    "sha256": "8c2acfb683fd28c9008a80c7328b586ece6ffb0754b959eddc9767630358d1a2"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/final-OH_Attack-120.png",
+    "bytes": 181635,
+    "sha256": "3326c2cb0e89b9dac1ec8e1317637a990666e4e400ed23d0b25775cd3b35ecbb"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/preview-OH_Attack-000.png",
+    "bytes": 311190,
+    "sha256": "7f0917ddbfbe3f658886b80c26a54cad3fa7e541bdeccd7c021cc45f71af127d"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/preview-OH_Attack-020.png",
+    "bytes": 308192,
+    "sha256": "508a23090714757c9b5f9bb54050786b463a7365d8f05eb2f00fe8e6b338e5cd"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/preview-OH_Attack-040.png",
+    "bytes": 308666,
+    "sha256": "070f649c29a85499abaf2d7a0e8ba29b042694b58bddfc53bc330f730d1ed87b"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/preview-OH_Attack-050.png",
+    "bytes": 303478,
+    "sha256": "312d804650fee78dae4d4b2ad84d1f14c97946d85828157681e4e6c7ffc5514c"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/preview-OH_Attack-060.png",
+    "bytes": 301243,
+    "sha256": "d8beb58fbb9ca8250aa46465f4f5f177ac609e73878c19bcf27e3ceca60aac17"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/preview-OH_Attack-080.png",
+    "bytes": 308437,
+    "sha256": "18d01723d454c3d565cb1b0731be6f79f84d4b3a32459575986eebcafba5dcbd"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/preview-OH_Attack-100.png",
+    "bytes": 308236,
+    "sha256": "92d075d35cc180a08cc2ce5c431a245d749fe5317488bcda1b7a5804ec73d3eb"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/preview-OH_Attack-120.png",
+    "bytes": 311458,
+    "sha256": "5bcc854de12c441189af3a929c0a4812b49e333d134b8525efbf0a870f51fe92"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/preview-OH_Attack-grip.png",
+    "bytes": 372927,
+    "sha256": "441123edc5b80416497c03743525132a9057262731e100c26e3a4f3096081652"
+   },
+   {
+    "file": "blender-jobs/goblin-slinger-runway-throw/out/anim-OH_Attack.py.txt",
+    "bytes": 6435,
+    "sha256": "c081a268685180bb56dc2f2bd015b28bb9baa5d3758c7e23d844f6939ab8ffc8"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 40454,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Attack": [
+      0.0,
+      120.0
+     ],
+     "OH_React_Lifted": [
+      0.0,
+      48.0
+     ],
+     "OH_React_Backstab": [
+      0.0,
+      60.0
+     ],
+     "OH_React_Bowled": [
+      0.0,
+      90.0
+     ],
+     "OH_React_Bonk": [
+      0.0,
+      36.0
+     ],
+     "OH_React_Knockback": [
+      0.0,
+      36.0
+     ],
+     "OH_Hit": [
+      0.0,
+      24.0
+     ],
+     "OH_Walk": [
+      0.0,
+      24.0
+     ],
+     "OH_Idle": [
+      0.0,
+      72.0
+     ],
+     "Skull_Throw": [
+      0.0,
+      48.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Attack": {
+      "keys": 121,
+      "seconds": 4.0
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead",
+      "Skull_Throw",
+      "OH_Idle",
+      "OH_Walk",
+      "OH_Hit",
+      "OH_React_Knockback",
+      "OH_React_Bonk",
+      "OH_React_Bowled",
+      "OH_React_Backstab",
+      "OH_React_Lifted"
+     ],
+     "worst_position_error_pct_of_height": 0.0013,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 2e-05
+   }
+  }
+ }
 }
