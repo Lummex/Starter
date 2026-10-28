@@ -88,10 +88,12 @@ const PARTS: Record<string, PartCfg[]> = {
 };
 export const hasCreature3dSlug = (id: string) => id in PARTS;
 
-interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationClip>; parts: Record<string, THREE.Object3D>; info: any }
+interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationClip>; parts: Record<string, THREE.Object3D>; info: any; events?: any }
 const cache = new Map<string, Promise<Assets | null>>();
 const ready = new Map<string, Assets>();
 export const creature3dReady = (id: string) => ready.get(id) || null;
+/** a shared copy source for a thrown part (e.g. the Skullflinger's skull); loaded once with the creature */
+export const creaturePart = (id: string, name: string): THREE.Object3D | null => ready.get(id)?.parts[name] || null;
 
 export function loadCreature3d(id: string): Promise<Assets | null> {
   if (!hasCreature3dSlug(id)) return Promise.resolve(null);
@@ -107,10 +109,12 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
         const c = await gl.loadAsync(base + 'char.glb');
         const names = Object.keys(info.actions || {});
         const clips: Record<string, THREE.AnimationClip> = {};
-        names.forEach((n, i) => { const cl = c.animations.find((a) => a.name === n) || c.animations[i]; if (cl) clips[n] = cl; });
+        names.forEach((n, i) => { const cl = (n === 'attack' && info.clips?.attack && c.animations.find((a) => a.name === info.clips.attack)) || c.animations.find((a) => a.name === n) || c.animations[i]; if (cl) clips[n] = cl; });
+        let events: any = null;
+        if (info.clips?.attack) { try { const er = await fetch(base + 'events.json'); if (er.ok) events = await er.json(); } catch { /* no events file */ } }
         const parts: Record<string, THREE.Object3D> = {};
         for (const pc of PARTS[id]) { try { parts[pc.name] = (await gl.loadAsync(base + pc.file)).scene; } catch { /* part missing: the figure still works */ } }
-        const a = { char: c.scene, clips, parts, info };
+        const a = { char: c.scene, clips, parts, info, events };
         ready.set(id, a);
         return a;
       } catch { return null; }
@@ -123,9 +127,10 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
 export interface C3D {
   group: THREE.Group; mixer: THREE.AnimationMixer; mats: THREE.MeshStandardMaterial[];
   play(n: CreatureAnim): void; current(): string; update(dt: number): void;
+  /** Round 24: attack clip played by the model (GLB clip name), release time (ms into the clip) and bone read from events.json; onRelease fires exactly when the clip passes it */ attackClip?: string; partObject?: (name: string) => THREE.Object3D | null; clipOf?: (anim: string) => string; release?: { ms: number; bone: string } | null; onRelease?: (bone: THREE.Object3D) => void;
   /** flying units */ flying?: { hoverSquares: number; floatSquares: number; floatsPerSecond: number; swayDeg: number; groundShadow: boolean; source: string }; lift?: number; swayNowDeg?: number; groundShadow?: boolean;
   clipNames: string[]; held: string[]; worn: string[]; height: number;
-  /** height in board squares (owner look or default) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
+  /** height in board squares (owner look or default) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
   /** Bowler Brawler only: hand-keyed special moves, ball hooks, flame effect */ special?: (n: 'bowl' | 'spinBall' | 'basketShot') => void; trig?: (shootT: number, born: number) => void; advanceIdle?: (sec: number) => void; ballInfo?: () => any; effects?: () => any[];
 }
 
@@ -143,7 +148,13 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   prep(ch);
   const held: string[] = [], worn: string[] = [];
   let ballRec: { part: THREE.Object3D; bone: THREE.Object3D; p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 } | null = null;
-  const items: { name: string; bone: string; matchesLook: boolean }[] = [];
+  const items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[] = [];
+  const objs = new Map<string, THREE.Object3D | null>();
+  const addItem = (name: string, bone: string, matchesLook: boolean, obj: THREE.Object3D | null) => { objs.set(name, obj); items.push({ name, bone, matchesLook, get visible() { let o: THREE.Object3D | null = obj; if (!o) return true; while (o) { if (!o.visible) return false; o = o.parent; } return true; } }); };
+  const attackClipName = a.clips.attack?.name || '';
+  const relEv = (a.events?.clips?.[attackClipName]?.events || []).find((e: any) => e.name === 'projectile_release');
+  const release = relEv ? { ms: relEv.time * 1000, bone: relEv.bone as string } : null;
+  let relDone = true;
   ch.updateMatrixWorld(true);
   const look = LOOKS[id];
   const H = Math.max(0.01, skinBox(ch).getSize(new THREE.Vector3()).y);
@@ -155,7 +166,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   const log: string[] = [];
   const once = (n: string) => n === 'attack' || n === 'mine' || n === 'hit' || n === 'defeat';
   const resolve = (n: string) => (actions[n] ? n : n === 'mine' && actions.attack ? 'attack' : 'idle');
-  const lockLen = (n: string) => (n === 'defeat' ? 1e9 : Math.min(actions[n]?.getClip().duration || 0.8, n === 'hit' ? 0.8 : 1.1));
+  const lockLen = (n: string) => (n === 'defeat' ? 1e9 : n === 'attack' && release ? actions[n]?.getClip().duration || 1.6 : Math.min(actions[n]?.getClip().duration || 0.8, n === 'hit' ? 0.8 : 1.1));
   let started = 0, shakeT = 0;
   const out: C3D = {} as C3D;
   const play = (want: CreatureAnim) => {
@@ -172,7 +183,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     const next = actions[n];
     next.reset(); next.setLoop(once(n) ? THREE.LoopOnce : THREE.LoopRepeat, once(n) ? 1 : Infinity); next.clampWhenFinished = true;
     const prev = actions[cur]; if (prev && prev !== next) next.crossFadeFrom(prev, 0.15, false);
-    next.play(); cur = n; started = mixer.time; log.push(n); out.onPlay?.(n);
+    next.play(); cur = n; started = mixer.time; relDone = n !== 'attack' || !release; log.push(n); out.onPlay?.(n);
   };
   play('idle');
   mixer.setTime(0); started = 0;
@@ -188,12 +199,12 @@ export function makeCreature3d(id: string, a: Assets): C3D {
       part.position.set(...pc.look.pos); part.rotation.set(...(pc.look.rot.map((d) => THREE.MathUtils.degToRad(d)) as [number, number, number]), 'XYZ'); part.scale.set(...pc.look.scale);
       bone.add(part);
       if (pc.name === 'bowling-ball') ballRec = { part, bone, p: part.position.clone(), q: part.quaternion.clone(), s: part.scale.clone() };
-      items.push({ name: pc.name, bone: bone.name, matchesLook: true });
+      addItem(pc.name, bone.name, true, part);
       (/Hand/.test(bone.name) ? held : worn).push(pc.name);
       continue;
     }
     const bn = attachPart(ch, pc, src, H, prep);
-    if (bn) { items.push({ name: pc.name, bone: bn, matchesLook: false }); (/Hand/.test(bn) ? held : worn).push(pc.name); }
+    if (bn) { addItem(pc.name, bn, false, ch.getObjectByName(bn)?.children[ch.getObjectByName(bn)!.children.length - 1] || null); (/Hand/.test(bn) ? held : worn).push(pc.name); }
   }
   const root = new THREE.Group();
   const sc = new THREE.Group();
@@ -219,7 +230,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     sc.scale.multiplyScalar(0.8);
     sc.position.y = seat; sc.position.z = -0.02;
     root.userData.mount = true;
-    items.push({ name: mt.name, bone: 'ground', matchesLook: false });
+    addItem(mt.name, 'ground', false, holder);
     const total = seat + 0.8;
     root.scale.setScalar(1 / total);
     heightSpaces = DEFAULT_H[id] || 1.35;
@@ -239,7 +250,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     }
   }
   const rig = ballRec ? makeBallRig(ch, root, ballRec, out, log, () => cur, () => heightSpaces) : null;
-  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (flyCfg) { flyT += dt; out.lift = flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, clipNames: Object.keys(actions), held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
+  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { const act = actions[cur]; if (release && !relDone && cur === 'attack' && act) { const rem = release.ms / 1000 - act.time; if (rem >= 0 && dt >= rem) { mixer.update(rem); dt -= rem; relDone = true; const hb = ch.getObjectByName(release.bone); if (hb) { ch.updateMatrixWorld(true); out.onRelease?.(hb); } } else if (rem < 0) relDone = true; } mixer.update(dt); if (flyCfg) { flyT += dt; out.lift = flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
   if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }
   return out;
 }

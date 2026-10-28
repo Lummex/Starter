@@ -48,3 +48,16 @@ Not changed — these checks look outdated or contradictory to later owner decis
 - Heights: Dwarf 0.95, Gnome 0.85, Brunhilda 1.05, Ram Rider 1.35, Arcane Colossus 1.6, Beetle 0.9; the skeleton-less beetle logs `walk`/`hit` and shakes when hit.
 - Not changed: **AC341** (Mine Control). The AI already attacks an adjacent enemy Miner when it survives the strike back; in the check's board the Dwarf Smith Miner gets the faction-advantage +1 Attack against the Goblin Miner, so even with Shield 1 the Goblin would die and mining is the correct choice. The check's premise looks outdated.
 - Tutorial "Skip Tutorial" (AC25) and Bowler Brawler bowl (AC360) pass unchanged.
+
+## Round 24 — Skullflinger's skull throw
+- `goblin-slinger` attack now plays the GLB clip `Skull_Throw` (read from `models.json` `clips.attack`; before, the index fallback played `Heavy_Hammer_Swing`). It plays once to full length, then Idle. Release time and bone (`projectile_release`, `RightHand`, 0.6333 s) come from `events.json`; the clip is advanced to exactly the release time so the skull spawns at the bone (`spawnOffset` 0). Model files untouched.
+- Projectile (`scene.ts` `spawnThrow`/`tickProjectiles`): shared `skull-mace.glb` clone sized like the held mace; arc peak ≤0.6 squares (scaled by distance), 2 turns/s spin, 0.35–0.55 s flight to chest height; on contact: white flash, star, 3–5 bone chips, dust, target `hit` anim + shake, existing `melee` sound; the skull bounces back/aside at 5 turns/s, hops once, fades and is removed ≤ ~0.65 s after contact. If the target is gone it lands where it stood and bounces. A skull target's damage reaction is deferred to the moment of contact.
+- Hooks: `creatureAnimLog[].clip`, `figures[].items[].visible`, `projectiles`, `projectileLog` (R24.5 shape).
+- Test-mode render gate lowered (500 → 300 ms min) so slow checks (AC89, AC196/197, AC261) run quicker.
+- AC168: the deck-count numbers on the match piles were non-italic; now always italic Alegreya SC.
+- Verified with the old suite (single worker): AC168, AC109, AC89, AC196, AC197, AC261, AC25, AC353, AC360 pass. Under 3 parallel workers AC196/197/261 time out from CPU load only.
+- Outdated checks, not game bugs: AC58 expects Goblin Rocket Rider to be a Miner (a Fighter since Round 14); AC190/AC191 4:3 cases contradict the owner's 16:9 letterbox; AC272 assumes the pointer over card 3 raises card 3, but with the owner's 0.2-overlap fan a later card sits on top there.
+- dist is 91 MB (< 95 MB). Mid-air skull screenshots could not be captured (software GL too slow); `screenshots/r24-skullflinger-hit-1920x1080.png` shows the target's hit flash.
+
+### Editor updates needed
+Projectile: skull from `skull-mace.glb`, scale = held mace's longest side; arc peak 0.6 × min(1, dist/4); spin 2 turns/s in flight; flight 350 + 35·dist ms (350–550); bounce: velocity back ×1.1 plus 0.45 sideways, up 1.9, gravity 9, spin 5 turns/s, one hop (0.85 up), fade 150 ms, removed by 640 ms. Effects: `flash` (additive white sprite, 160 ms), `stars` ×4, `chips` ×4, `dust` ×2.

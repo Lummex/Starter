@@ -2,7 +2,7 @@
 import { ringColor, getRings } from './fx-settings';
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
-import { loadCreature3d, creature3dReady, makeCreature3d, hasCreature3dSlug, type C3D } from './creature3d';
+import { loadCreature3d, creature3dReady, creaturePart, makeCreature3d, hasCreature3dSlug, type C3D } from './creature3d';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D } from './grubnak3d';
 import { makeMineFx, MineFx } from './mineFx';
 import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
@@ -412,20 +412,95 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
   };
   const figs = new Map<string, Fig>();
-  const fx: { obj: THREE.Object3D; t: number; kind: string; vel?: THREE.Vector3 }[] = [];
+  const fx: { obj: THREE.Object3D; t: number; kind: string; vel?: THREE.Vector3; dur?: number }[] = [];
   const puffTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d')!; const gr = g.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
   const starTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d')!; g.fillStyle = '#ffe14a'; g.strokeStyle = '#3a2400'; g.lineWidth = 4; g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 11 : 28, a = (i / 10) * Math.PI * 2 - Math.PI / 2; g.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); } g.closePath(); g.fill(); g.stroke(); return new THREE.CanvasTexture(c); })();
-  function spawnFx(kind: 'dust' | 'stars' | 'spark', at: THREE.Vector3, n = 5) {
+  function spawnFx(kind: 'dust' | 'stars' | 'spark' | 'chips' | 'flash', at: THREE.Vector3, n = 5) {
     if (low) return;
     for (let i = 0; i < n; i++) {
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: kind === 'stars' ? starTex : puffTex, transparent: true, depthWrite: false, color: kind === 'spark' ? 0xfff0a0 : kind === 'dust' ? 0xb8a890 : 0xffffff }));
-      sp.scale.setScalar(kind === 'stars' ? 0.22 : kind === 'spark' ? 0.12 : 0.3);
-      sp.position.copy(at).add(new THREE.Vector3(0, 0.3, 0));
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: kind === 'stars' ? starTex : puffTex, transparent: true, depthWrite: false, color: kind === 'spark' ? 0xfff0a0 : kind === 'dust' ? 0xb8a890 : kind === 'chips' ? 0xeee2c0 : 0xffffff, blending: kind === 'flash' ? THREE.AdditiveBlending : THREE.NormalBlending }));
+      sp.scale.setScalar(kind === 'stars' ? 0.22 : kind === 'spark' ? 0.12 : kind === 'chips' ? 0.07 : kind === 'flash' ? 0.7 : 0.3);
+      sp.position.copy(at).add(kind === 'flash' || kind === 'chips' ? new THREE.Vector3(0, 0, 0) : new THREE.Vector3(0, 0.3, 0));
       scene.add(sp);
-      const a = (i / n) * Math.PI * 2;
-      fx.push({ obj: sp, t: performance.now(), kind, vel: new THREE.Vector3(Math.cos(a) * 0.9, kind === 'stars' ? 2 : 0.9, Math.sin(a) * 0.9) });
+      const a = (i / n) * Math.PI * 2 + (kind === 'chips' ? 0.5 : 0);
+      fx.push({ obj: sp, t: performance.now(), kind, dur: kind === 'flash' ? 160 : kind === 'chips' ? 600 : 700, vel: kind === 'flash' ? new THREE.Vector3() : new THREE.Vector3(Math.cos(a) * (kind === 'chips' ? 1.4 : 0.9), kind === 'stars' ? 2 : kind === 'chips' ? 2.4 : 0.9, Math.sin(a) * (kind === 'chips' ? 1.4 : 0.9)) });
     }
   }
+  // ---------------------------------------------------------------- Round 24: thrown projectiles (Skullflinger's skull)
+  interface Proj { id: number; kind: string; shooterUid: string; targetUid: string | null; state: 'flying' | 'bouncing' | 'fading'; obj: THREE.Object3D; mats: THREE.Material[]; start: THREE.Vector3; end: THREE.Vector3; commander: string; peak: number; flightMs: number; t0: number; tc: number; vel: THREE.Vector3; spin: number; hops: number; fadeAt: number; groundY: number; log: any; releaseMs: number; shooterH: number }
+  const throwInfo = new Map<string, { targetUid: string | null; to: THREE.Vector3; commander: string }>();
+  const skullTargets = new Map<string, number>();
+  const projectiles: Proj[] = [];
+  const projectileLog: any[] = [];
+  let projSeq = 0;
+  const chestOf = (uid: string | null, commander: string, to: THREE.Vector3) => {
+    const tf = uid ? figs.get(uid) : null;
+    if (tf && !tf.dying) { const b = tf.c3d ? skinBox(tf.group, new THREE.Box3()) : new THREE.Box3().setFromObject(tf.group); if (!b.isEmpty()) return new THREE.Vector3(tf.group.position.x, b.min.y + (b.max.y - b.min.y) * 0.6, tf.group.position.z); }
+    if (commander) return to.clone().setY(0.8);
+    return (tf ? tf.group.position.clone() : to.clone()).setY(0.05);
+  };
+  function spawnThrow(uid: string, c3d: C3D, bone: THREE.Object3D) {
+    const info = throwInfo.get(uid), shooter = figs.get(uid);
+    const src = creaturePart(shooter?.cardId || '', 'skull-mace');
+    if (!info || !src || !c3d.release) return;
+    throwInfo.delete(uid);
+    const obj = src.clone(true);
+    const held = c3d.partObject?.('skull-mace');
+    const long = (o: THREE.Object3D) => { const sz = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3()); return Math.max(sz.x, sz.y, sz.z, 1e-4); };
+    obj.scale.multiplyScalar(held ? long(held) / long(obj) : 0.3);
+    obj.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(obj), ctr = bb.getCenter(new THREE.Vector3());
+    const holder = new THREE.Group(); obj.position.sub(ctr); holder.add(obj);
+    const mats: THREE.Material[] = [];
+    obj.traverse((m: any) => { if (m.isMesh) { m.frustumCulled = false; const own = (x: any) => { const k = x.clone(); k.transparent = true; mats.push(k); return k; }; m.material = Array.isArray(m.material) ? m.material.map(own) : own(m.material); } });
+    const start = new THREE.Vector3(); bone.getWorldPosition(start);
+    holder.position.copy(start); scene.add(holder);
+    const end = chestOf(info.targetUid, info.commander, info.to);
+    const dist = Math.hypot(end.x - start.x, end.z - start.z);
+    const now = performance.now();
+    const p: Proj = { id: ++projSeq, kind: 'skull', shooterUid: uid, targetUid: info.targetUid, state: 'flying', obj: holder, mats, start, end, commander: info.commander, peak: 0.6 * Math.min(1, dist / 4), flightMs: Math.min(550, Math.max(350, 350 + dist * 35)), t0: now, tc: 0, vel: new THREE.Vector3(), spin: 0, hops: 0, fadeAt: 0, groundY: 0.06, releaseMs: c3d.release.ms, shooterH: 0,
+      log: { id: 0, kind: 'skull', shooterUid: uid, targetUid: info.targetUid, clip: c3d.attackClip || '', bone: c3d.release.bone, releaseMs: c3d.release.ms, spawnOffset: 0, contactMs: null, removedMs: null, heightAtContact: 0, maxHeightAfterContact: 0, hitTarget: false } };
+    p.log.id = p.id; p.log.spawnOffset = +holder.position.distanceTo(start).toFixed(4);
+    projectiles.push(p); projectileLog.push(p.log);
+  }
+  function tickProjectiles() {
+    const now = performance.now();
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+      const p = projectiles[i], el = now - p.t0, o = p.obj;
+      const ms = (v: number) => +(p.releaseMs + v).toFixed(1);
+      if (p.state === 'flying') {
+        const tgt = chestOf(p.targetUid, p.commander, p.end); if (p.targetUid && figs.get(p.targetUid) && !figs.get(p.targetUid)!.dying) p.end.copy(tgt);
+        const u = Math.min(1, el / p.flightMs);
+        o.position.lerpVectors(p.start, p.end, u); o.position.y += 4 * p.peak * u * (1 - u);
+        o.rotation.x += 2 * Math.PI * 2 * 0.016; o.rotation.z += 0.05;
+        if (u >= 1) {
+          p.state = 'bouncing'; p.tc = now; p.log.contactMs = ms(el); p.log.heightAtContact = +Math.max(0, o.position.y - 0).toFixed(3);
+          const dir = new THREE.Vector3(p.end.x - p.start.x, 0, p.end.z - p.start.z); if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1); dir.normalize();
+          const side = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(Math.random() < 0.5 ? 0.45 : -0.45);
+          p.vel.copy(dir).multiplyScalar(-1.1).add(side).setY(1.9); p.spin = 5 * Math.PI * 2;
+          const hit = !!(p.targetUid && figs.has(p.targetUid)) || !!p.commander;
+          p.log.hitTarget = hit;
+          const at = o.position.clone();
+          spawnFx('flash', at, 1); spawnFx('stars', at, 4); spawnFx('chips', at, 4); spawnFx('dust', at, 2);
+          if (hit) audio.play('melee');
+          const tf = p.targetUid ? figs.get(p.targetUid) : null; if (tf) tf.hitT = now;
+          if (!hit) p.groundY = 0.06;
+        }
+      } else {
+        const dt = 0.016, since = now - p.tc;
+        p.vel.y -= 9 * dt; o.position.addScaledVector(p.vel, dt); o.rotation.x += p.spin * dt; o.rotation.z += 3 * dt;
+        const gy = p.groundY;
+        if (o.position.y <= gy && p.vel.y < 0) { o.position.y = gy; if (p.hops < 1) { p.hops++; p.vel.y = 0.85; p.vel.x *= 0.6; p.vel.z *= 0.6; } else { p.vel.set(0, 0, 0); p.spin = 0; if (p.state !== 'fading') { p.state = 'fading'; p.fadeAt = now; } } }
+        p.log.maxHeightAfterContact = Math.max(p.log.maxHeightAfterContact, +o.position.y.toFixed(3));
+        if (since > 400 && p.state !== 'fading') { p.state = 'fading'; p.fadeAt = now; }
+        if (p.state === 'fading') for (const m of p.mats) (m as any).opacity = Math.max(0, 1 - (now - p.fadeAt) / 150);
+        if (since >= 640 || (p.state === 'fading' && now - p.fadeAt >= 150)) {
+          scene.remove(o); for (const m of p.mats) m.dispose(); projectiles.splice(i, 1); p.log.removedMs = ms(now - p.t0);
+        }
+      }
+    }
+  }
+  const projTimer = setInterval(() => { if (projectiles.length) tickProjectiles(); }, 16);
   function makeFigure(c: any): { group: THREE.Group; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number } {
     const card = CARDS[c.cardId];
     const f = FACTIONS[card.faction];
@@ -439,7 +514,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     if (a3 && c3) {
       // owner-sheet Meshy model (rigged, animated); dummy parts keep the procedural reactions harmless
       g = new THREE.Group(); g.add(c3.group);
-      const cc3 = c3; cc3.onPlay = (n) => { if (n !== 'idle') creatureAnimLog.push({ uid: c.uid, cardId: c.cardId, anim: n }); };
+      const cc3 = c3; cc3.onPlay = (n) => { if (n !== 'idle') creatureAnimLog.push({ uid: c.uid, cardId: c.cardId, anim: n, clip: cc3.clipOf?.(n) || '' }); };
+      if (cc3.release) cc3.onRelease = (bone) => spawnThrow(c.uid, cc3, bone);
       const dm = () => new THREE.Group();
       parts = { armL: dm(), armR: dm(), head: dm(), body: dm(), weapon: dm(), legL: dm(), legR: dm(), aura: null };
       finished = true; mats = c3.mats; baseScale = CREATURE_H;
@@ -503,7 +579,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     return { group: g, finished, mats, parts, baseScale };
   }
 
-  const creatureAnimLog: { uid: string; cardId: string; anim: string }[] = [];
+  const creatureAnimLog: { uid: string; cardId: string; anim: string; clip?: string }[] = [];
   const asked = new Set<string>();
   const pendingBorn = new Map<string, number>(); // summon time carried over when a token is rebuilt as its 3D model
   // each goblin model is fetched once, only when a unit of it is on the board
@@ -713,6 +789,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         f.lunge = to.clone().sub(f.target).multiplyScalar(0.45);
         f.lungeT = now;
         f.shootT = now;
+        if (f.c3d?.release) { const tf = e.target.commander ? null : [...figs.values()].find((x) => x.row === e.target.row && x.col === e.target.col && !x.dying) || [...figs.values()].find((x) => x.row === e.target.row && x.col === e.target.col); throwInfo.set(e.uid, { targetUid: tf ? tf.uid : e.target.commander ? 'commander:' + e.target.commander : null, to: to.clone(), commander: e.target.commander || '' }); if (tf) skullTargets.set(tf.uid, now); }
         f.c3d?.play('attack'); // start the clip now: a defender-strike-back defeat can end this figure before the next frame
         audio.play(e.ranged || (CARDS[f.cardId].abilities || []).includes('ranged') ? 'ranged' : 'melee');
         if (f.finished) audio.voiceLine('yell');
@@ -728,7 +805,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       } else if (e.type === 'bowl') { const bf = figs.get(e.uid); if (bf) bf.shootT = now; playBowl(e); }
       else if (e.type === 'damage' && e.uid) {
         const f = figs.get(e.uid);
-        if (f && e.amount > 0) { f.hitT = now; }
+        if (f && e.amount > 0 && !(skullTargets.has(e.uid) && now - skullTargets.get(e.uid)! < 400)) { f.hitT = now; }
       } else if (e.type === 'damage' && e.commander) audio.play('stronghold');
     }
   }
@@ -1049,7 +1126,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     if (disposed) return;
     raf = requestAnimationFrame(frame);
     const now = performance.now();
-    if (testMode && now - lastRender < Math.max(500, lastDur * 8)) return; // automated runs use software GL: keep the page responsive
+    if (testMode && now - lastRender < Math.max(300, lastDur * 6)) return; // automated runs use software GL: keep the page responsive
     lastRender = now;
     const dt0 = Math.min(0.1, (now - (frameLast || now)) / 1000); frameLast = now;
     for (const fx of mineFx) fx.update(now / 1000);
@@ -1153,10 +1230,10 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       if (a !== b.lastDust) { b.lastDust = a; spawnFx('dust', b.obj.position, 2); }
     }
     for (let i = fx.length - 1; i >= 0; i--) {
-      const e = fx[i], k = (now - e.t) / 700;
+      const e = fx[i], k = (now - e.t) / (e.dur || 700);
       if (k >= 1) { scene.remove(e.obj); (e.obj as THREE.Sprite).material.dispose(); fx.splice(i, 1); continue; }
       e.obj.position.add(tmpV.copy(e.vel!).multiplyScalar(0.016));
-      e.vel!.y -= e.kind === 'stars' ? 0.06 : 0;
+      e.vel!.y -= e.kind === 'stars' ? 0.06 : e.kind === 'chips' ? 0.12 : 0;
       ((e.obj as THREE.Sprite).material as THREE.SpriteMaterial).opacity = 1 - k;
     }
     for (const side of ['player', 'opponent'] as const) {
@@ -1248,6 +1325,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
             unitRings: [...figs.values()].filter((f) => !f.dying).map((f) => { const rs = getRings(); return { uid: f.uid, side: f.owner, color: f.ringColor || '', greyed: !!f.ringGreyed, thickness: rs.thickness, glow: rs.glow, opacity: rs.opacity }; }),
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ ...figureStats(f), uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
             creatureAnimLog: creatureAnimLog.map((e) => ({ ...e })),
+            projectiles: projectiles.map((p) => ({ id: p.id, kind: p.kind, shooterUid: p.shooterUid, targetUid: p.targetUid, state: p.state, height: +p.obj.position.y.toFixed(3) })),
+            projectileLog: projectileLog.map((l) => ({ ...l })),
             commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? 'grubnak.glb' : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? 'grubnak-fortress.glb' : '', scepter: cm.g3d ? 'grubnak-scepter.glb' : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
             strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => { const cl = m.group.userData.cell || { row: 0, col: 0 }, bx = mineBox(cl.row, cl.col), cv = canvas.getBoundingClientRect(); return { row: cl.row, col: cl.col, screenBox: { x: bx.x + cv.left, y: bx.y + cv.top, width: bx.width, height: bx.height }, effects: mineFx[i].stats(), source: m.group.userData.mineModel === 'crystal-node' ? 'model:crystal-node.glb' : 'code:buildMineModel', ring: false, decal: { kind: 'glow-rubble', flat: true, color: m.group.userData.decalHex || m.group.userData.tintHex || '#ffffff' }, tiltDeg: (Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z)) * 180 / Math.PI, tilt: Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z), baseY: new THREE.Box3().setFromObject(m.crystals).min.y - m.group.position.y, scale: m.group.scale.x, parts: ['rubble', 'pedestal', 'banner', 'crystal'], shards: 11, pulsing: true, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' }; }), mineModel: 'code-built', crystalFlow: { shards: flowShown, streams: flowOwner.filter((o) => o && o !== 'neutral').length, swirls: flowOwner.filter((o) => !o || o === 'neutral').length, shape: 'faceted', path: 's-curve', target: 'bank' },
@@ -1261,7 +1340,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   const api: BoardView = {
     is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
-      disposed = true;
+      disposed = true; clearInterval(projTimer); for (const p of projectiles) scene.remove(p.obj); projectiles.length = 0;
       cancelAnimationFrame(raf);
       renderer.dispose();
       backRenderer?.dispose();
@@ -1298,7 +1377,7 @@ export function createFlatView(container: HTMLElement): BoardView {
     poke: () => null,
     lookBack() {}, impatient() {}, facing: () => ({}),
     retreat() { /* flat board: the overlay shows the retreat */ },
-    stats: async () => ({ webgl: false, graphics: 'low', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], creatureAnimLog: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
+    stats: async () => ({ webgl: false, graphics: 'low', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], creatureAnimLog: [], projectiles: [], projectileLog: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
     emote(side, kind) {
       const el = container.querySelector(`.stronghold.${side}`);
       if (el) { el.classList.remove('emote-cheer', 'emote-groan', 'emote-flinch', 'emote-cast'); void (el as HTMLElement).offsetWidth; el.classList.add('emote-' + kind); }
