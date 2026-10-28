@@ -8,5 +8,6 @@ Screens in order (name-viewport):
 2-menu-phone.png
 3-before-match-phone.png
 4-match-start-phone.png
+5-match-phone.png
 
 Note: the first shot is taken 4 seconds after load; a short intro/loading picture before the menu is normal and is NOT a broken game.

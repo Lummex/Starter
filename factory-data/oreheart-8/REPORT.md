@@ -1,26 +1,29 @@
 ## What was built
-This round of Oreheart, the goblin/gnome/dwarf card battle game, added glowing effects on the Crystal Nodes (the mines) in each player's colour. It also gave Bowler Brawler his bowling throw, finger-spin and basketball-shot moves, with a green-flame ball. It also fixed a batch of earlier failing checks, including click controls and the hand of cards. The builder says it was short on budget, so some of this was never fully tested.
+This round gives the Skullflinger goblin a new skull-throwing attack: a skull leaves his hand, flies to the target, bonks off it and bounces away. It also re-checked earlier work, including the card hand layout and Bowler Brawler's moves, and fixed a few bugs. No rules or card numbers changed.
 
 ## Try these things
-- Start a match and look at the Crystal Nodes. They should glow in your colour once owned, and white while unowned.
-- Summon Bowler Brawler (it costs 6 crystals, so it may take a few turns). Watch the basketball-shot entrance, the idle finger spin, and his Strike.
-- Left-click one of your units to select it, then right-click it. The right-click should open its card and any ability buttons.
-- Click a card in your hand. A close-up should open with a "Play this card" or "Cast this spell" button. Also try dragging a card onto the board.
-- In Settings, switch to Low graphics and check that the effects calm down and the game still looks fine.
-- Try the phone-size view too.
+- Start a match as Grubnak and summon a Skullflinger. Attack an enemy with it and watch for the skull throw and bonk.
+- Hover over, then drag, cards in your hand. The hand should fan out, rise on hover and tuck away when you leave it.
+- Summon a Bowler Brawler (costs 6) and try his Strike ability.
+- Open the Menu in the top-left corner during a match.
+- Open the preview in a phone-sized window and in a wide computer window. Check that nothing is cut off.
 
 ## Automated checks
-403 of 426 checks passed. 23 failed:
-- About 10 timed out because the test machine was overloaded, not because the game broke (the builder re-ran several alone and they passed). These cover the Commander look-back and impatience emotes, panning, Low graphics, and some screenshots.
-- 4 look like out-of-date tests. They concern Goblin Rocket Rider now being a Fighter, a summon test that gives the opponent no crystals, and a model-loading check that doesn't expect Grubnak's 3D model.
-- The hand-layout check failed at three screen sizes. Hand cards overlap the bottom of the board, which the builder says is intentional (the owner's closer fan).
-- Real, unresolved failures: the Tutorial "Skip" button test, the Mine Control stance (a Miner mined where the test expected an attack), the Card Comp vs Card Comp watch mode (no Pause button), and the Bowler Brawler bowling test.
+404 of 438 checks passed. 34 failed:
+- **Likely out of date (about 6):** these tests expect things the owner has since changed. Examples are Goblin Rocket Rider being a Miner and the 4:3 window shape. The builder says the game is correct.
+- **Timeouts (about 8):** the test computer was too slow to run them in parallel. The builder says they passed when run alone. I did not see that myself.
+- **Possibly real (the rest):**
+  - Menu and board placement on some phone-sized and non-16:9 windows is off by up to about 75 pixels.
+  - A few font and weight checks failed.
+  - The match-screen Mulligan check timed out.
+  - Some hand-fan spacing and tuck checks failed.
+  - Bowler Brawler's basketball summon and the Skullflinger skull timing checks failed.
 
 ## Things to know
-- The home, menu and match screenshots look polished and complete, with no errors logged. The phone view fits the screen.
-- In the match screenshot the hand overlaps the board's bottom edge and the Done and phase text. Nothing is broken, but it is a bit crowded.
-- Bowler Brawler's motions and the node effects were never checked in a browser by the builder, so judge them yourself.
-- The builder skipped several checks as "outdated" on its own judgement.
+- The skull throw was never seen mid-air in a screenshot, because the test machine was too slow. Judge it yourself in the preview.
+- The builder's notes say this round was budget-limited, and several earlier problems are listed as "not addressed".
+- The screenshots look good. The title screen and the desktop match are styled and complete. The phone match looks fine, but the enlarged hand card covers a lot of the board.
+- I only saw some of the screenshots, because the phone home and menu images were not all available.
 
 ## Recommendation
-Request changes: several real failures remain (Tutorial skip, Mine Control stance, Card Comp watch mode, Bowler Brawler bowling), and the new visuals were not tested.
+Request changes: 34 checks still fail, and some of those look like real layout bugs on phones. The skull throw has not been seen working.
