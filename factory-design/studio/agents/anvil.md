@@ -144,3 +144,12 @@
 - Folder listing JSON: payload.codeViewTreeRoute.tree.items (not payload.tree).
 - Fetching raw.githubusercontent.com from a raw tab fails; navigate to each raw URL and use get_page_text instead (or fetch from a github.com tab).
 - 2026-10-28 (late) Design job from Forge: factory-design/design/oreheart-online-backcounter-design.md (architecture, tables, RLS, PvP, phases A-D, Ken's setup steps, costs, risks). Design only. Report: factory-design/studio/reports/2026-10-28-anvil-backcounter-design.md.
+
+## Learned Oct 28 (Round 26 restart)
+- Run 40644497657 (Round 26) was NOT lost work: plan + build + 4 inspect rounds + report were committed to factory/issue-8 (78b5c24..c55fc1b, 400/463 checks). After the reviewer (08:47) it sat in the Vercel preview deploy (queue jam) until GitHub's job limit `timeout-minutes: 180` cancelled it at 09:33. No preview, no "ready" comment; #8 label stayed `factory:building`.
+- Why: a build takes ~2h15 of the 3 h; a Vercel queue wait of 45+ min kills it. Raising timeout-minutes in factory-build.yml (or skipping the wait) needs Ken's OK.
+- From Claude Code on Starr: curl to api.github.com works (60/h shared); check-run annotations show the real cancel reason ("exceeded the maximum execution time"). Full job log: fetch `/Lummex/Starter/commit/<sha>/checks/<job id>/logs` from a github.com tab (Ken signed in).
+- No python/node on PATH in Git Bash: use `py -I`.
+- Chrome file_upload only accepts files from this session's folders (working dir or shared notes folder), not ~/Downloads.
+- Adding `factory:revise` on #8 was blocked again (auto-mode "External System Writes"), even with Ken's OK quoted by Forge. Ken must add the label himself.
+- 2026-10-28 (late) Forge job: restart Round 26 + Ken's gnome OK in Round 27. Brief fix commit 28b65ac on main (restart note listing Ken's 10 owner fixes to keep; A1.2/AC371 now 88 % aspect-kept card; A5/A7/A9/A10 point at the owner fixes). Round 27: gnome line quotes Ken, header no longer says build #56 running. Label blocked: Ken to add it. Report: factory-design/studio/reports/2026-10-28-anvil-round-26-restart.md.
