@@ -1,7 +1,6 @@
 {
  "worker_id": "starr-f0fad5",
- "state": "busy",
- "at": "2026-10-28T09:20:42Z",
- "host": "Starr",
- "job": "goblin-grunt-runway-death-r3"
+ "state": "idle",
+ "at": "2026-10-28T09:35:13Z",
+ "host": "Starr"
 }
