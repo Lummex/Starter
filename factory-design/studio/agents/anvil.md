@@ -162,3 +162,12 @@
 - NEVER use computer type on github.com without focusing a field first: keys became shortcuts ("g i" opened Issues). Use form_input.
 - A Node 20 exists in another session's scratchpad (e2c9c653.../scratchpad/env/node.exe); fine for quick script tests.
 - 2026-10-28 (late) Forge job: Round 26 build failed (acceptance missing). Fix 18244b2 on main. Report: factory-design/studio/reports/2026-10-28-anvil-acceptance-missing-fix.md.
+- 2026-10-28 (late) Forge job: Factory — build timeout-minutes 180 → 330 (Ken OK). Commit c635461 on main.
+
+## Learned Oct 29 (Android: movable tutorial tip + full screen)
+- Round 26 retry run 40783616088 failed after 20 min with the old "ENOENT … factory-data/oreheart-8/acceptance" bug; nothing committed. Still not fixed.
+- Android full screen cause: the first-tap request (R26.A2, installPopSafety) listened on pointerdown and only from match start. Android Chrome only grants a user gesture on pointerup/click for touch, so it was always refused. Also there was NO web manifest. Fix: fsFirstTap() (pointerup + click, once, navigationUI 'hide') called from the App constructor; public/manifest.webmanifest (display fullscreen, landscape) + icon-512.png (upscaled icon-192) + link in index.html.
+- Tutorial tip (.tip, renderTip) had pointer-events:none but sat over the board; now draggable (tipMovable/tipPlace, position kept as fractions, clamped) with a shrink button (tipMin, .tip-small). Test hooks kept (aria-label "Tutorial tip", .tip-text, Skip Tutorial).
+- Testing a phone size without resizing Ken's Chrome: on the preview tab, document.write an 844x390 iframe of '/?test=1' (same origin, Vercel login cookie works); window.__app and window.oreheart only exist with ?test=1. Monkeypatch App.prototype methods there to try a change before committing. Built-in browser pane can't open previews (Vercel login).
+- Commits a4800cc (app.ts), 6abe006 (style), dbbf5d2 (index.html), 98e6991 (manifest + icon) on factory/issue-8. Preview-only run 40790057521.
+- Preview https://oreheart-8-74c8ptyyl-lummex.vercel.app (run 40790057521, built in ~5 min, no Vercel jam). Tested at 844x390: manifest served (fullscreen, landscape), tip drags and shrinks, Miner summon by real mouse drag works with the tip moved. My first real drag there put the page in real full screen (pointerup gesture accepted), unlike the old pointerdown request. Hand-card drags in a test iframe can fail after an exit-fullscreen resize; reload the iframe before testing.
