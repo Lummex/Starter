@@ -1,0 +1,109 @@
+{
+ "base_pose": "rest pose",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Death",
+   "frames": 120,
+   "seconds": 4.0,
+   "key_frames": [
+    8,
+    16,
+    24,
+    32,
+    40,
+    47,
+    53,
+    57,
+    62,
+    68,
+    74,
+    79,
+    85,
+    90,
+    120
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine02",
+    "neck"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 39.0,
+   "feet_drift_m": 0.2688
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Death: Death: dizzy wobble 0-32, knees buckle 40-47 (feet planted), plop sit 53-62, tip back 68, land 74, bounce 79, settle 85-90, hold lying 90-120.",
+  "OH_Death: frying-pan held in RightHand at scale 0.184; prop centre [0.4035, 0.3249, 0.2539] size 0.471 m, hand joint [0.3603, 0.3835, -0.0051]"
+ ],
+ "prop_debug": [
+  {
+   "name": "Mesh_0",
+   "polys": 15329,
+   "verts": 13833,
+   "hide_render": false,
+   "visible": true,
+   "collections": [
+    "Collection"
+   ],
+   "scene_has": true,
+   "materials": [
+    "Material_0.001"
+   ],
+   "world_scale": [
+    0.175,
+    0.175,
+    0.175
+   ],
+   "parent": "Prop_frying-pan",
+   "display_type": "TEXTURED"
+  }
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Death": {
+    "keys": 121,
+    "seconds": 4.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead",
+    "OH_Idle",
+    "OH_Walk",
+    "OH_Attack",
+    "OH_Hit",
+    "OH_React_Knockback",
+    "OH_React_Bonk",
+    "OH_React_Bowled",
+    "OH_React_Backstab",
+    "OH_React_Lifted"
+   ],
+   "worst_position_error_pct_of_height": 0.0008,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 3e-05
+ }
+}
