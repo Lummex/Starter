@@ -99,5 +99,5 @@ Careful — these look old but ARE still used: the `-v2` **accessories** (frying
 
 Both were folded into Round 26 (`factory-design/design/oreheart-round-26-combined-brief.md`). Nothing was deleted.
 
-- `factory-design/discontinued/round-24-skullflinger-skull-throw-brief.md` — the Round 24 section copied out of `oreheart-phase-1b-brief.md` (it was on hold; build #55 built it by mistake). The skull throw already in the game stays as it is. In `oreheart-phase-1b-brief.md` that section is now replaced by a pointer to Round 26.
+- `factory-design/discontinued/round-24-skullflinger-skull-throw-brief.md` — the Round 24 section copied out of `oreheart-phase-1b-brief.md` (it was on hold; build #55 built it by mistake). The owner rejected the skull throw build #55 put in the game; Round 26 item (0) removes it. In `oreheart-phase-1b-brief.md` that section is now replaced by a pointer to Round 26.
 - `factory-design/discontinued/oreheart-round-25-card-drag-brief.md` — the Round 25 card-drag brief. The old file `factory-design/design/oreheart-round-25-card-drag-brief.md` now only says "discontinued, read Round 26".
