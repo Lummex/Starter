@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": null,
- "lease_until": "2026-10-28T08:26:48Z",
- "heartbeat_at": "2026-10-28T08:21:48Z",
+ "lease_until": "2026-10-28T08:26:52Z",
+ "heartbeat_at": "2026-10-28T08:21:52Z",
  "error": null,
  "progress": {
-  "stage": "inspecting",
-  "percent": 15,
-  "message": "Reading the model, skeleton and animations in Blender"
+  "stage": "designing",
+  "percent": 25,
+  "message": "Claude Code is designing the animation"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/rotgut-grenadier/char.glb@factory/issue-8",
@@ -85,5 +85,5 @@
    "by": "spring"
   }
  ],
- "updated_at": "2026-10-28T08:21:48Z"
+ "updated_at": "2026-10-28T08:21:52Z"
 }
