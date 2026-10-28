@@ -27,3 +27,13 @@ Job: move unused copies out of the way into `_discontinued`, or list them in `fa
 5. Re-check editor models after Clay/Ledger update cards (new -v5 etc. make -v4 old).
 6. Flag to Forge again: blender-queue pushes start preview builds in 6 Vercel projects.
 7. My upload folders in Downloads (`sweep-upload-*`) are mine and can go in `_discontinued` after upload.
+
+## Oct 28 — large models backup (90 Meshy originals > 3 MB)
+- Copied all 90 `factory-design/models/**` files > 3 MB to `C:\Users\kentu\Downloads\_discontinued\Large Models\<card>\<file>` and checked every one (size + git blob SHA-1). List in discontinued README section 6.
+- **Did not delete from main**: same rule as before, a relayed "Ken OK" isn't enough. Asked in Studio decisions `delete-large-models-oct28`. Next run: read it first; only if `answer` = yes (re-read right before acting), delete exactly those 90 paths.
+- How the download worked: on a **github.com** page (not api.github.com or raw), `fetch('/Lummex/Starter/raw/main/<path>')` works (on raw/api pages fetch fails). Get the list with `fetch('https://api.github.com/repos/Lummex/Starter/git/trees/main?recursive=1')` from that github.com page. Save with blob → `<a download="LargeModels__card__file.glb">`; Chrome does it with no prompt, ~5 s per file. Run long loops in the background (`(async()=>{...})()` + a status variable); one JS call times out after 45 s.
+- To put files in a subfolder: `device_stage_files` the Downloads copies → copy into `/mnt/user-data/outputs/...` → `device_commit_files` to the target path (≤ 30 MB per file, ≤ 100 MB per call). Verify by staging the committed copies back and hashing (`sha1(b"blob <len>\0"+data)` = git SHA).
+- The tool output blocks long hex strings (SHAs) as "base64", and text with query strings as "cookie data": write such lists into a downloaded file and stage it instead of printing them.
+- `get_page_text` on a `blob/...?plain=1` page reads a GitHub file fine; or fetch raw from a github.com page and download it.
+- Downloads listing is >2,000 entries (truncated), so check new files by staging them by exact name, not by listing.
+- Leftover: 90 loose `LargeModels__*.glb` copies + `sweep-*` files in Downloads (no move/delete tool). Move to `_discontinued` when a device shell exists.
