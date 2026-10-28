@@ -1,0 +1,28 @@
+================ OLD worker.py
+idle hour: 4 commits {'idle': 4}
+10 restarts: 10 commits {'idle': 10}
+one job: status=awaiting_review progress='1 animation(s) built and checked: OH_Test'; job commits=31, hour total=37
+   kinds: {'idle': 5, 'claimed': 1, 'busy': 1, 'preparing 5%': 1, 'inspecting 15%': 1, 'references 20%': 1, 'designing 25%': 1, 'heartbeat': 4, 'animating 35%': 1, 'validating 80%': 1, 'uploading 90%': 1, 'upload <file>': 18, 'done': 1}
+   result files on the branch: 18; result entries in job.json: 18
+   Claude Code runs: 1 refs seen: [4]
+================ NEW worker.py
+idle hour: 0 commits {}
+10 restarts: 0 commits {}
+one job: status=awaiting_review progress='1 animation(s) built and checked: OH_Test'; job commits=8, hour total=8
+   kinds: {'claimed': 1, 'preparing 5%': 1, 'inspecting 15%': 1, 'references 20%': 1, 'designing 25%': 1, 'animating 35%': 1, 'validating 80%': 1, 'done': 1}
+   result files on the branch: 18; result entries in job.json: 18
+   Claude Code runs: 1 refs seen: [4]
+   every commit tagged [skip ci] [vercel skip]: True
+   worker status file now: idle
+   uploaded files identical to the local results: True []
+================ NEW worker only: safety checks
+  fail start 1: status=queued retries=1
+  fail start 2: status=queued retries=2
+  fail start 3: status=failed retries=2
+  commits for 3 failed runs: 18 {'claimed': 3, 'preparing 5%': 3, 'inspecting 15%': 3, 'references 20%': 3, 'designing 25%': 3, 'failed': 3}
+  validation fail: status=failed files on branch=18 commits=8 last='blender job spring-quiet-test: failed [skip ci] [vercel skip]'
+  cancel at 200 s: status=cancelled cancelled at stage={'at': '2026-10-28T16:51:10Z', 'status': 'cancelled'} commits=7
+  crash: status after crash=running lease_until=2026-10-28T17:06:10Z
+  after restart: status=awaiting_review retries=1 recovered=[False, True]
+  long stage (Claude 23 min): status=awaiting_review job commits=10 heartbeats=2 longest gap between job.json writes=630 s (lease 900 s)
+summary {"OLD idle hour": 4, "OLD 10 restarts": 10, "OLD one job": 31, "OLD hour with one job": 37, "NEW idle hour": 0, "NEW 10 restarts": 0, "NEW one job": 8, "NEW hour with one job": 8}

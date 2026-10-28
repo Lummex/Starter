@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+# Fake Blender for the offline rig: makes the files each worker step expects (a tiny real GLB as the result).
+import sys, json, os, shutil
+a = sys.argv
+if '--version' in a: print('Blender 4.2.0 (fake for tests)'); sys.exit(0)
+script = os.path.basename(a[a.index('--python') + 1]); args = a[a.index('--') + 1:] if '--' in a else []
+if script == 'worker.py': sys.exit(0)
+def arg(n): return args[args.index(n) + 1]
+out = arg('--out')
+if script == 'inspect_asset.py':
+    json.dump({'actions': [{'name': 'Idle'}], 'meshes': [{}], 'armature': {'bone_count': 1}}, open(out, 'w')); sys.exit(0)
+if script == 'render_preview.py':
+    for n in ('preview-rest.png', 'preview-rest-side.png'): open(os.path.join(out, n), 'wb').write(b'\x89PNG fake')
+    sys.exit(0)
+if script == 'build_animation.py':
+    shutil.copyfile(arg('--orig'), os.path.join(out, 'char.glb'))
+    json.dump({'problems': []}, open(os.path.join(out, 'build-report.json'), 'w'))
+    json.dump({}, open(os.path.join(out, 'events.json'), 'w'))
+    for i in range(0, 121, 20): open(os.path.join(out, f'preview-OH_Test-{i:03d}.png'), 'wb').write(b'\x89PNG fake')
+    sys.exit(0)
+if script == 'verify_export.py':
+    json.dump({'ok': os.environ.get('FAKE_VALIDATION', 'ok') == 'ok', 'problems': []}, open(out, 'w'))
+    for i in (0, 30, 60, 90, 120): open(os.path.join(arg('--renders'), f'final-OH_Test-{i:03d}.png'), 'wb').write(b'\x89PNG fake')
+    sys.exit(0)
+print('fake blender: unexpected script', script); sys.exit(5)
