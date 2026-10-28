@@ -2,7 +2,7 @@
  "id": "rotgut-grenadier-runway-death",
  "type": "animate",
  "asset_id": "rotgut-grenadier",
- "status": "queued",
+ "status": "validating",
  "priority": 9,
  "created_at": "2026-10-28T08:21:27Z",
  "created_by": "Spring (Forge job Oct 28; Ken approved both parts of take rotgut-grenadier-death in Oreheart Studio)",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": null,
- "lease_until": "2026-10-28T08:37:05Z",
- "heartbeat_at": "2026-10-28T08:32:05Z",
+ "lease_until": "2026-10-28T08:37:23Z",
+ "heartbeat_at": "2026-10-28T08:32:23Z",
  "error": null,
  "progress": {
-  "stage": "animating",
-  "percent": 35,
-  "message": "Building the keyframes in Blender and rendering previews"
+  "stage": "validating",
+  "percent": 80,
+  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/rotgut-grenadier/char.glb@factory/issue-8",
@@ -83,7 +83,11 @@
    "at": "2026-10-28T08:21:27Z",
    "status": "queued",
    "by": "spring"
+  },
+  {
+   "at": "2026-10-28T08:32:23Z",
+   "status": "validating"
   }
  ],
- "updated_at": "2026-10-28T08:32:05Z"
+ "updated_at": "2026-10-28T08:32:23Z"
 }
