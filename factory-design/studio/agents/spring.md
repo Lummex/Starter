@@ -8,6 +8,9 @@ My long-term memory. Read before every job; add after every job.
   - grok_imagine_1_5_lite: duration 1–15 s (any whole number, so 6 s works), ratio "auto_480p" (keeps the start image's shape), prompt up to 2500 chars (house rule still < 1000).
   - In jobs.json set per job: "model": "grok_imagine_1_5_lite", "ratio": "auto_480p", "duration": 6. The script already reads job.model / job.ratio (default gen4.5 / 1280:720).
 - **Front view only (Ken, Oct 28):** every Runway reference is ONE clip from the front. No side or back views, no side/back start images. Job id = <card>-<move> (no -front/-side/-back suffix needed).
+- **Always update the programs (Ken, Oct 28):** every video or result I make goes into BOTH programs so Ken can view and approve it, before I report done:
+  - Motion References (https://claude.ai/artifact/U9YiTAL4juKxjLgvNeKEe8): upload clip as asset, `set` takes/<job id> (status waiting, parts[]).
+  - Oreheart Studio (https://claude.ai/artifact/PrZreWSayBrALDPvQwsVmn, Ken's main program): upload the clip as ITS OWN asset (ids differ per artifact), `set` takes/<job id> there too, and `update` characters/<card-id> steps.runway = {agent: Spring, status: waiting, note, link: Motion References#<card-id>, updatedAt} (pin if_version; write the whole steps object). Check both pages in my tab.
 - Runway prompt house rules: face frozen, limb motion only, two moves per clip (0–3 s / 3–6 s, "segments"), front view only, loop back to start pose, still camera, plain background, gentle words ("boxing workout", "practice punches", never "fight").
 
 ## How I do things
@@ -24,3 +27,4 @@ My long-term memory. Read before every job; add after every job.
   - Lesson: grok lite back view turned the character round to face camera during the boxing half. Next time for back views add "he keeps his back to the camera the whole time, never turns around".
   - Uploaded clips as Motion References assets and set takes with parts[] (status waiting). Checked cards play in my tab.
 - 2026-10-28 – Ken (directly): from now on front view only for Runway references. Updated my notes, my onboarding and the Runway rule in the HANDBOOK. Cost per character move drops to one clip (~$0.13).
+- 2026-10-28 – Ken had deleted all Motion References videos. Re-added only goblin-bomber-idle-box-front (front only) to Motion References and Oreheart Studio (Runway step = waiting for Ken). Side/back clips stay only on GitHub, not on the boards.
