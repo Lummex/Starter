@@ -2102,7 +2102,7 @@ export class App {
       const m = this.r.sites[i] as El;
       const fac = s.controller ? st.players[s.controller].faction : '';
       const emb = fac ? mineEmblemUrl(fac) : null;
-      const mkEmb = () => (emb ? h('img', { class: 'mine-emblem', 'data-mine-emblem': fac, alt: '', draggable: 'false', src: emb }) : '');
+      const mkEmb = () => (emb ? h('img', { class: 'mine-emblem', 'data-mine-emblem': fac, alt: '', draggable: 'false', src: emb, style: this.view?.is3D ? 'visibility:hidden' : null }) : ''); // Owner fix Oct 28: in 3D the emblem is drawn in the scene under the units (scene.ts); this hidden copy only keeps the layout and markers
       const myAction = st.phase === 'action' && st.priority === 'player' && st.activePlayer === 'player' && !st.pendingResponse;
       const n = myAction ? readyMinersAt(st, 'player', s).length : 0;
       m.dataset.readyMiners = String(n);

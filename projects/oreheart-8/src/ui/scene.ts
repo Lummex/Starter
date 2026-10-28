@@ -5,6 +5,7 @@ import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
 import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, type C3D } from './creature3d';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D } from './grubnak3d';
 import { makeMineFx, MineFx } from './mineFx';
+import { mineEmblemUrl } from './cardfmt';
 import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
 import { audio } from './audio';
 import baseLayoutJson from '../content/arena-layout.json';
@@ -237,7 +238,11 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     mines.push(m);
     const fx = makeMineFx(low); m.group.add(fx.group); mineFx.push(fx);
   }
-  const crystals = mines.map((m) => ({ ctl: undefined as any, art: m, sprite: null as THREE.Sprite | null }));
+  const crystals = mines.map((m) => ({ ctl: undefined as any, art: m, sprite: null as THREE.Sprite | null, emb: null as THREE.Sprite | null, embFac: '' }));
+// Owner fix Oct 28 (Ken): the mine's faction emblem lives in the 3D scene (depth-tested, not an HTML overlay), so units standing on or in front of the mine are drawn over it
+const embTexCache: Record<string, THREE.Texture> = {};
+const embTex = (u: string) => embTexCache[u] || (embTexCache[u] = (() => { const t = new THREE.TextureLoader().load(u); t.colorSpace = THREE.SRGBColorSpace; return t; })());
+const _embV = new THREE.Vector3();
 
   const embers: null = null;
 
@@ -632,6 +637,13 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     const now = performance.now();
     st.sites.forEach((s: any, i: number) => {
       const cr = crystals[i];
+    { const fac = s.controller ? st.players[s.controller].faction : '';
+      if (cr.embFac !== fac) {
+        cr.embFac = fac;
+        if (cr.emb) { scene.remove(cr.emb); (cr.emb.material as THREE.SpriteMaterial).dispose(); cr.emb = null; }
+        const url = fac ? mineEmblemUrl(fac) : null;
+        if (url) { cr.emb = new THREE.Sprite(new THREE.SpriteMaterial({ map: embTex(url), transparent: true, depthWrite: false })); cr.emb.scale.set(0.42, 0.42, 1); cr.emb.renderOrder = 10; cr.emb.name = 'mine-emblem'; scene.add(cr.emb); }
+      } }
       cr.art.group.position.copy(world(s.row, s.col)); cr.art.group.userData.cell = { row: s.row, col: s.col };
       cr.art.group.rotation.set(0, 0, 0); cr.art.group.scale.setScalar(1); // mines sit flat and level, all the same size
       if (cr.ctl === s.color) return;
@@ -1211,6 +1223,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       }
     }
     mines.forEach((m) => m.update(now));
+    // mine emblem: on the mine's square centre, moved half a square towards the camera (same spot on screen) so its own crystal stays behind it but units in front cover it
+    crystals.forEach((cr) => { if (!cr.emb) return; const p = cr.art.group.position; _embV.copy(camera.position).sub(p).normalize(); cr.emb.position.copy(p).addScaledVector(_embV, 0.55); });
     updateFlow(now);
     renderer.info.reset();
     const t0 = performance.now();
