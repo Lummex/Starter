@@ -57,6 +57,8 @@ export interface BoardView {
   advanceFigureIdle?(sec: number): void;
   facing(side: 'player' | 'opponent'): any;
   poke(uid: string): string | null;
+  /** Owner fix (Ken, Oct 28): the unit the Junk Shaman carries hangs at the pointer (screen px) and loops its lifted clip; the holder plays his lift special. null = put down */
+  setCarry?(c: { uid: string; holder: string; x: number; y: number } | null): void;
   retreat(side: 'player' | 'opponent'): void;
   stats(): Promise<any>;
   dispose(): void;
@@ -418,6 +420,25 @@ const _embV = new THREE.Vector3();
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
   };
   const figs = new Map<string, Fig>();
+  // Owner fix (Ken, Oct 28): Junk Shaman carry. The carried figure hangs just under the pointer, raised above the board
+  const CARRY_UP = 0.45;
+  let carry: { uid: string; holder: string; pos: THREE.Vector3; h: number } | null = null;
+  const carryRay = new THREE.Vector3(), carryDir = new THREE.Vector3();
+  function setCarry(c: { uid: string; holder: string; x: number; y: number } | null) {
+    if (!c) { carry = null; return; }
+    const rc = canvas.getBoundingClientRect();
+    if (!rc.width) return;
+    let h = carry && carry.uid === c.uid ? carry.h : 0;
+    if (!h) { const f0 = figs.get(c.uid); if (f0) { const bx = new THREE.Box3().setFromObject(f0.group); h = bx.isEmpty() ? 1 : Math.max(0.3, Math.min(3, bx.max.y - bx.min.y)); } else h = 1; }
+    const nx = ((c.x - rc.left) / rc.width) * 2 - 1, ny = -(((c.y - rc.top) / rc.height) * 2 - 1);
+    carryRay.set(nx, ny, 0.5).unproject(camera);
+    carryDir.copy(carryRay).sub(camera.position).normalize();
+    const top = CARRY_UP + h * 0.85;
+    const k = (top - camera.position.y) / (carryDir.y || -1e-6);
+    const pos = new THREE.Vector3().copy(camera.position).addScaledVector(carryDir, k);
+    pos.y = CARRY_UP;
+    carry = { uid: c.uid, holder: c.holder, pos, h };
+  }
   const fx: { obj: THREE.Object3D; t: number; kind: string; vel?: THREE.Vector3; dur?: number }[] = [];
   const puffTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d')!; const gr = g.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
   const starTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d')!; g.fillStyle = '#ffe14a'; g.strokeStyle = '#3a2400'; g.lineWidth = 4; g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 11 : 28, a = (i / 10) * Math.PI * 2 - Math.PI / 2; g.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); } g.closePath(); g.fill(); g.stroke(); return new THREE.CanvasTexture(c); })();
@@ -1103,7 +1124,9 @@ const _embV = new THREE.Vector3();
         else if (k < 1) { const e2 = k * (2 - k); g.position.lerpVectors(b.from, b.to, e2); goal.copy(g.position); }
         else { f.bowl = null; g.rotation.z = 0; }
       }
-      g.position.lerp(goal, f.bowl ? 1 : 0.22);
+      const carried = !!(carry && carry.uid === f.uid);
+      if (carried) goal.set(carry!.pos.x, goal.y, carry!.pos.z);
+      g.position.lerp(goal, f.bowl ? 1 : carried ? 0.5 : 0.22);
       { // hold the stored facing; turn smoothly (~200 ms); miners look at their node while mining
         const want = f.faceUntil && now < f.faceUntil ? f.faceTo! : (f.faceWant ?? f.yaw ?? 0);
         if (f.yaw === undefined) f.yaw = want;
@@ -1130,11 +1153,15 @@ const _embV = new THREE.Vector3();
         const mk3 = (now - f.mineT) / 900, ak3 = (now - f.shootT) / 380;
         if (f.born) f.bornAt = f.born;
         f.c3d.trig?.(f.shootT, f.born || (f.bornAt && now - f.bornAt < 12000 ? f.bornAt : 0)); // the model may finish loading after the short summon drop
-        f.c3d.play(f.shootT && ak3 < 1 ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? 'walk' : 'idle');
+        f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : f.shootT && ak3 < 1 ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? 'walk' : 'idle');
         f.c3d.update(dt);
         g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
         if (f.c3d.lift) g.position.y = (f.born ? g.position.y : 0) + f.c3d.lift; // flying units hover
       }
+      if (carried) { // Owner fix (Ken, Oct 28): carried by the Junk Shaman: raised above the board under the pointer
+        g.position.y = carry!.pos.y + Math.sin(now / 260) * 0.04;
+        if (!f.c3d?.has?.('lifted')) { g.rotation.z = Math.sin(now / 300) * 0.12; (f as any).dangle = true; } // no lifted clip: gentle dangle
+      } else if ((f as any).dangle) { g.rotation.z = 0; (f as any).dangle = false; }
       const p = f.parts;
       if (f.finished && p) {
         const t = now / 1000;
@@ -1281,7 +1308,7 @@ const _embV = new THREE.Vector3();
   }
 
   const api: BoardView = {
-    is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setCarry, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true; window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);
       cancelAnimationFrame(raf);

@@ -2409,6 +2409,9 @@ export class App {
     const card = CARDS[tgt.cardId];
     const ghost = h('div', { class: 'ghost tk lift-ghost', 'aria-hidden': 'true' }, FSYM(card.faction));
     ghost.style.cssText = 'position:fixed;pointer-events:none;z-index:1000;transform:translate(-50%,calc(-50% - 28px));filter:drop-shadow(0 18px 8px #0009)';
+    // Owner fix (Ken, Oct 28): on the 3D board the real unit hangs at the pointer instead of the flat ghost
+    const carry3d = !!(this.view?.is3D && this.view.setCarry);
+    if (carry3d) ghost.style.display = 'none';
     document.body.append(ghost); l.ghost = ghost;
     this.tokens.get(tgt.uid)?.classList.add('lifted');
     const hl = (c: { row: number; col: number } | null) => {
@@ -2416,7 +2419,7 @@ export class App {
       l.hover = c;
       if (c) this.r.cells.get(c.row + ',' + c.col)?.classList.add('hover', ...(legal.some((q) => q.row === c.row && q.col === c.col) ? ['lift-hover'] : []));
     };
-    const mv = (e: PointerEvent) => { ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px'; hl(this.cellAt(e.clientX, e.clientY)); };
+    const mv = (e: PointerEvent) => { ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px'; if (carry3d) this.view?.setCarry?.({ uid: tgt.uid, holder: cr.uid, x: e.clientX, y: e.clientY }); hl(this.cellAt(e.clientX, e.clientY)); };
     const down = (e: PointerEvent) => {
       if ((e.target as El)?.closest?.('.dialog,.overlay,.hud-menu,.menu-panel')) return;
       e.preventDefault(); e.stopPropagation();
@@ -2437,10 +2440,10 @@ export class App {
     l.stop = () => {
       document.removeEventListener('pointermove', mv, true); document.removeEventListener('pointerdown', down, true);
       document.removeEventListener('keydown', key, true); document.removeEventListener('contextmenu', ctx, true);
-      ghost.remove(); this.tokens.get(tgt.uid)?.classList.remove('lifted');
+      ghost.remove(); this.tokens.get(tgt.uid)?.classList.remove('lifted'); if (carry3d) this.view?.setCarry?.(null);
     };
     const p = this.squareToScreen(tgt.row, tgt.col);
-    if (p) { ghost.style.left = p.x + 'px'; ghost.style.top = p.y + 'px'; }
+    if (p) { ghost.style.left = p.x + 'px'; ghost.style.top = p.y + 'px'; if (carry3d) this.view?.setCarry?.({ uid: tgt.uid, holder: cr.uid, x: p.x, y: p.y }); }
     this.flash('Click a lit square to drop it there (Esc cancels)');
   }
   /** Click an ability button: no target = fire; otherwise light up the squares it can go to and wait for a click. */
