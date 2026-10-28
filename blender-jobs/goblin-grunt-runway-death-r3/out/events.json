@@ -1,0 +1,13 @@
+{
+ "asset_id": "goblin-grunt",
+ "fps": 30,
+ "clips": {
+  "OH_Death": {
+   "frames": 120,
+   "duration": 4.0,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  }
+ }
+}
