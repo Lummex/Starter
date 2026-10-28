@@ -1,0 +1,113 @@
+import math
+
+LEG = 0.32          # hip-to-ankle length used to keep the feet planted
+K = 57.3 / LEG      # degrees of leg tilt per metre of hip shift
+
+
+def _rot_up(v, a):
+    r, u, f = v
+    c, s = math.cos(math.radians(a)), math.sin(math.radians(a))
+    return (r * c - f * s, u, f * c + r * s)
+
+
+def _rot_right(v, a):
+    r, u, f = v
+    c, s = math.cos(math.radians(a)), math.sin(math.radians(a))
+    return (r, u * c + f * s, f * c - u * s)
+
+
+def _norm(v):
+    n = math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
+    return (v[0] / n, v[1] / n, v[2] / n)
+
+
+def build(ctx):
+    ctx.length(105)
+    B = ctx.bone
+    hips = B('hips')
+    sp = ['Spine02', 'Spine01', 'Spine']
+    neck, head = B('neck'), B('head')
+    lsh, rsh = B('left shoulder'), B('right shoulder')
+    rup, rfo, rha = B('right upperarm'), B('right forearm'), B('right hand')
+    lup, lfo = B('left upperarm'), B('left forearm')
+    legs = [(B('left thigh'), B('left shin'), B('left foot')),
+            (B('right thigh'), B('right shin'), B('right foot'))]
+
+    # dagger preview prop, held the whole clip
+    if 'dagger' in ctx.parts:
+        ctx.attach('dagger', rha, length=0.16)
+
+    # arm directions as seen in the world (compensated for chest lean/twist below)
+    RA = {
+        'low':   ((0.22, -0.92, -0.30), (0.30, -0.90, 0.15)),
+        'hip':   ((0.30, -0.92, -0.10), (0.25, -0.75, 0.55)),   # dagger low and close by right hip
+        'back':  ((0.38, -0.80, -0.45), (0.30, -0.75, -0.50)),  # drawn back, anticipation
+        'jab':   ((0.30, -0.30, 0.90), (0.22, -0.08, 0.97)),    # underhand poke, extended
+        'over':  ((0.32, -0.24, 0.92), (0.22, 0.00, 0.98)),
+        'pull':  ((0.30, -0.90, 0.05), (0.25, -0.55, 0.75)),
+    }
+    LA = {
+        'low':   ((-0.37, -0.92, -0.05), (-0.05, -0.80, 0.55)),
+        'hang':  ((-0.30, -0.85, 0.40), (-0.15, -0.80, 0.55)),  # hanging forward in the crouch
+        'bal':   ((-0.60, -0.65, -0.40), (-0.40, -0.75, -0.20)),  # balance back and out
+    }
+
+    def pose(f, d, hx=0.0, hz=0.0, lean=0.0, side=0.0, twist=0.0,
+             hunch=0.0, ra='low', la='low', interp='BEZIER'):
+        # hips: drop and small weight shifts only
+        ctx.key(f, hips, move=(hx, -d, hz), interp=interp)
+        # legs: bend so the hips drop while feet stay flat and planted
+        bend = math.degrees(math.acos(min(1.0, max(-1.0, 1.0 - d / LEG))))
+        for thigh, shin, foot in legs:
+            ctx.key(f, thigh, turn=[('right', bend - hz * K), ('forward', hx * K)], interp=interp)
+            ctx.key(f, shin, turn=[('right', -2 * bend)], interp=interp)
+            ctx.key(f, foot, turn=[('right', bend + hz * K), ('forward', -hx * K)], interp=interp)
+        # spine: forward lean, side lean (+ = his right), twist (+ = chest to his left)
+        for name, w in zip(sp, (0.4, 0.35, 0.25)):
+            ctx.key(f, name, turn=[('up', twist * w), ('right', -lean * w), ('forward', side * w)],
+                    interp=interp)
+        # head leans in, but lifts so the face keeps looking forward
+        ctx.key(f, neck, turn=[('up', -twist * 0.35), ('right', lean * 0.45), ('forward', -side * 0.4)],
+                interp=interp)
+        ctx.key(f, head, turn=[('up', -twist * 0.25), ('right', lean * 0.25), ('forward', -side * 0.3)],
+                interp=interp)
+        # hunched shoulders
+        ctx.key(f, rsh, turn=[('forward', -hunch), ('up', hunch * 0.5)], interp=interp)
+        ctx.key(f, lsh, turn=[('forward', hunch), ('up', -hunch * 0.5)], interp=interp)
+
+        def aim(v):
+            return _norm(_rot_right(_rot_up(v, -twist), lean))
+
+        for (u, fo), (bu, bf) in ((RA[ra], (rup, rfo)), (LA[la], (lup, lfo))):
+            ctx.key(f, bu, aim=aim(u), interp=interp)
+            ctx.key(f, bf, aim=aim(fo), interp=interp)
+
+    # ---- Part 1: sneak-in (frames 0-45) ----
+    pose(8,  0.012, hx=-0.012, lean=6,  hunch=4,  ra='low', la='low')    # tiptoe weight left
+    pose(16, 0.016, hz=-0.010, lean=8,  hunch=6,  ra='low', la='low')    # weight back
+    pose(24, 0.018, hx=-0.010, lean=10, hunch=7,  ra='hip', la='low')    # careful shift left
+    pose(32, 0.030, hx=0.004,  lean=18, hunch=10, ra='hip', la='hang')   # sinking in
+    pose(40, 0.044, hx=0.010,  lean=27, side=3, hunch=13, ra='hip', la='hang')
+    pose(45, 0.046, hx=0.008,  lean=28, side=2, hunch=14, ra='hip', la='hang')
+
+    # ---- Part 2: quick-jab (frames 45-105) ----
+    pose(52, 0.050, hx=0.0,    lean=28, twist=-8,  hunch=14, ra='back', la='hang')
+    pose(60, 0.052, hx=-0.008, lean=26, twist=-12, hunch=14, ra='back', la='hang')
+    pose(67, 0.056, hx=-0.012, hz=-0.008, lean=24, twist=-18, side=-3, hunch=15,
+         ra='back', la='hang')                                               # deepest wind-up
+    pose(72, 0.050, hx=0.0,    lean=26, twist=-6, hunch=12, ra='hip', la='hang', interp='LINEAR')
+    pose(75, 0.040, hx=0.016, hz=0.014, lean=30, twist=14, side=9, hunch=8,
+         ra='jab', la='bal')                                                 # poke
+    ctx.event(75, 'hit', bone=rha)
+    pose(77, 0.040, hx=0.018, hz=0.016, lean=32, twist=16, side=10, hunch=8,
+         ra='over', la='bal')                                                # overshoot
+    pose(81, 0.041, hx=0.016, hz=0.014, lean=30, twist=14, side=9, hunch=8,
+         ra='jab', la='bal')                                                 # short hold
+    pose(87, 0.042, hx=0.004, lean=24, twist=-2, side=2, hunch=12, ra='pull', la='hang')
+    pose(91, 0.040, hx=0.002, lean=22, twist=0, hunch=12, ra='hip', la='hang')
+    pose(97, 0.016, hx=0.0,   lean=8,  hunch=5, ra='low', la='low')         # straightening up
+    pose(101, 0.0, lean=-2, hunch=0, ra='low', la='low')                     # small upright overshoot
+    # frame 105 returns to the base pose automatically
+
+    ctx.note('Backstab: sneak-in crouch 0-45, wind-up 67, underhand jab hit at 75, hold to 81, '
+             'pull back 87-91, recover by 105.')
