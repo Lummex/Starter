@@ -46,6 +46,12 @@ I build Ken's tools ("programs"): pinned claude.ai artifacts (review boards, das
 - Asset copies get new ids at every hop (Model Editor -> Checklist -> Studio): keep an old->new map file per hop.
 - Ken deleted all Motion References videos on Oct 28 on purpose.
 
+## Moving an editor into the Studio (Stage 2, 2026-10-28)
+- Room = the editor's index.html saved as `<name>.html` in the Studio's files; add at the start of <body>: `var CL=(parent!==window&&parent.claude)||window.claude` and replace `claude.use(` with `CL.use(`.
+- Copy its published files with `files: {path: {artifact, path}}`: max 64 MB of copied files per publish (split by size).
+- Copy only the assets its db records reference (regex 32-hex ids over the records), keep old->new maps, rewrite every id in the records, then seed with ArtifactData batch (<=50 per batch).
+- Model Editor room: on `#scene-<id>` it clears the scene and skips the default Grubnak + autosave.
+
 ## Motion References: database layout
 Collection `takes`, doc id = Runway job id (e.g. `gyrocopter-ace-cast-side`). Fields:
 character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view order), title, tag, detail, view (front/side/back), seconds, prompt, video (asset id), moves [{move, from, to}], order, source (repo path of clip.mp4), runwayTask, status ("waiting" | "approved" | "redraw"), note (Ken's redraw note), chosen (bool, one per character+move), decidedBy (user id), updatedAt.
