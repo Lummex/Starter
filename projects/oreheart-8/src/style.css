@@ -1787,3 +1787,5 @@ html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!im
 .overlay.cardview .card-nav-next{right:max(6px,2vw)}
 .overlay.cardview .card-nav:hover{filter:brightness(1.15) drop-shadow(0 2px 2px #0007)}
 .overlay.cardview .card-nav svg{display:block;pointer-events:none}
+/* Owner art Oct 28: Ken's own mine-all pickaxe icon (public/art/ui/mine-all-pickaxe.webp) replaces the CSS-drawn pickaxe; shown whole, never cropped */
+.pickaxe .pk-img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none}
