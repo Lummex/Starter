@@ -8,11 +8,11 @@ Times are Ken's local time (Pacific). "Today" = Oct 27, so anything made Oct 27 
 
 ---
 
-## 0. Lined up for deletion Oct 28 — WAITING for Ken's OK in Oreheart Studio
+## 0. Deleted Oct 28 (Ken's OK)
 
-Forge passed on a job to permanently delete the items below. Sweep has **not deleted anything yet**: a permanent delete needs Ken's own "Yes" on the Studio's **Waiting for you** page (decision `delete-old-builds-oct28`). Until then everything below still exists.
+Ken said "yes" directly to Sweep on Oct 28 (Studio decision `delete-old-builds-oct28` marked answered). Sweep **permanently deleted** everything listed in this section at about 1:30 pm Pacific. This is the only time anything was deleted; the rest of this file is still "listed, not deleted".
 
-The commit SHAs are recorded so the code can be restored from git history if a branch is deleted.
+The commit SHAs are recorded so the code can be restored from git history (e.g. from closed PRs #3, #5, #7).
 
 ### GitHub Lummex/Starter — issues
 | Issue | Title | State (Oct 28) |
@@ -29,7 +29,7 @@ The commit SHAs are recorded so the code can be restored from git history if a b
 | factory/issue-4 | `1e3ff810121cd51190e94999ad3036a7cee9d65a` | #5 "Factory: OreHeart (#4)" |
 | factory/issue-6 | `6a2b614c6f5c5031fc9985781a9d95d3a0c7876e` | #7 "Factory: Oreheart1 (#6)" |
 
-Deleting a branch closes its open pull request; the PR page keeps the commits, so the code can still be restored from it.
+Deleting the branches closed PRs #3, #5, #7; those PR pages keep the commits, so the code can still be restored from them.
 
 ### Vercel (team Lummex) — projects
 - `starter` (already disconnected from Git)
@@ -103,10 +103,10 @@ Careful — these look old but ARE still used: the `-v2` **accessories** (frying
 1. **Downloads, made today (Oct 27) — left alone:** `ohmain-*` (4), `ohbw-*` (3: worker.py, glbtool.py, animate.md), `ohg-*` (11 gyrocopter clips/sheets), `ohgy*` (15), `oh-gnome-tinker-wrench.glb`, `oh-bomber-idle-clip.mp4`, `oh-bomber-idle-sheet.jpg`, folders `oh-gy1`, `oh-gy2`, `oh-rw1`–`oh-rw4`, `oh-wrench`. Sweep can list these next time once they're a day old.
 2. **Downloads check may be incomplete:** the folder has more than 2,000 items and the listing tool stops at 2,000, so a few more oh-* files may exist.
 3. **Editor models:** `crystal-node-hd` (full-detail crystal node, no card uses it), `gnome-smith-miner-oct25` (newer Arcsmith body not yet used, but its pickaxe IS used), `gyrocopter-ace-oct25` (not the card's model, but still named in the gyrocopter's saved look).
-4. **Old game branches:** `factory/issue-2`, `factory/issue-4`, `factory/issue-6` (last change Oct 13; the game is `factory/issue-8`). Look unused. *(Oct 28: lined up for deletion, see section 0.)*
+4. **Old game branches:** `factory/issue-2`, `factory/issue-4`, `factory/issue-6` (last change Oct 13; the game is `factory/issue-8`). Look unused. *(Oct 28: deleted with Ken's OK, see section 0.)*
 5. **Leftover upload folders on main:** `oreheart-upload/` (Oct 13, early design + factory copy), `factory/STEP-2-factory-folder/config.json` (Oct 13). Nothing in the factory code or workflows points at them.
 6. **Old round notes on main:** `factory-design/round-9b-queued.md`, `factory-design/round9c/` (Oct 20–21). `round-8b-queued.md` is still mentioned in OREHEART-HANDOFF.md, so leave that one.
-7. **Vercel:** two projects not in the team list: `starter` (818 preview builds, all from `blender-queue`; last change Oct 20) and `starter-dashboard`. Ask before treating them as old. *(Oct 28: `starter` lined up for deletion, see section 0; `starter-dashboard` is kept.)*
+7. **Vercel:** two projects not in the team list: `starter` (818 preview builds, all from `blender-queue`; last change Oct 20) and `starter-dashboard`. Ask before treating them as old. *(Oct 28: `starter` deleted with Ken's OK, see section 0; `starter-dashboard` is kept.)*
 8. **Old Blender worker copy** on Ken's PC: Sweep can't see running programs. Only the copy in `%LOCALAPPDATA%\OreheartBlenderWorker` is the real one.
 
 ---
