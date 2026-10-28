@@ -1,0 +1,93 @@
+{
+ "id": "goblin-bomber-runway-idlebox",
+ "type": "animate",
+ "asset_id": "goblin-bomber",
+ "status": "queued",
+ "priority": 9,
+ "created_at": "2026-10-28T02:45:00Z",
+ "created_by": "Spring (Forge job, Ken approved Runway take goblin-bomber-idle-box-front Oct 28)",
+ "retries": 0,
+ "max_retries": 2,
+ "retry_on_failure": true,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": {
+  "stage": "queued",
+  "percent": 0,
+  "message": "waiting for a worker"
+ },
+ "source": {
+  "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
+ },
+ "request": "Bare Knuckle Lunatic (goblin-bomber): a muscular goblin brawler who thinks every problem is a fistfight. He holds nothing; his hands are always closed fists. REFERENCE VIDEO: the owner had Runway make one 6 s FRONT-view video and APPROVED both halves. Its frames are in refs/ (Read the pictures with the Read tool): refs/goblin-bomber--front.jpg is his model from the front; refs/goblin-bomber-idle-box-front/frames/idle/f01..f12.jpg is part 1 (0-3 s) and refs/goblin-bomber-idle-box-front/frames/shadow-boxing/f01..f12.jpg is part 2 (3-6 s), 12 evenly spaced frames per 3 s move, time order, f12 = end. FIRST look at all the pictures for a move, then match his BODY and LIMB poses frame by frame: torso lean and twist, head tilt, arm and leg angles, hip height, and the timing (frame N of 12 = N/12 of the clip). This is a rig motion reference only. IGNORE in the video: face and mouth (never animate the face), camera drift, the little step he takes at the very start of the idle part (f01-f03: his feet stay planted), the fists rising in idle f12 (that is the hand-over to part 2, not part of the idle), and the big sliding lunge in shadow-boxing f05 (keep the twist and punch, but the feet stay planted). If refs/ is missing or empty, do NOT write any animation files (the job will be retried). Owner rules for every goblin: nothing goes through his body or the ground; feet stay planted (no sliding or sinking); movements look weighty and cartoony, never floaty; poses read clearly from above and in front (board game camera). BASE POSE: these clips use \"base_pose\": \"rest\", so ctx.key turns are relative to the model's REST pose, a straight, square, front-facing A-pose (same as refs/goblin-bomber--front.jpg). He must face straight forward (+Z, toward the camera) like the video: no overall turn of the hips or root; only the short torso twist inside a punch. SHARED START POSE: both clips start AND end in exactly the same relaxed standing pose, the one in idle f04-f06: feet about shoulder-width apart and flat, knees very slightly bent, upper arms hanging down and a little out from the body, elbows slightly bent, closed fists by his thighs, chest up. Key every bone you change at frame 0 and the last frame with identical values so each clip loops seamlessly and the game can switch between the two clips without a pop. This job makes two NEW clips, OH_Idle_v2 and OH_Idle_ShadowBox. Do not touch, rename or remove the existing clips (OH_Idle etc. stay as they are). Smooth, even game animation.",
+ "animations": [
+  {
+   "name": "OH_Idle_v2",
+   "description": "New standing idle, from part 1 'idle' of the video (refs/goblin-bomber-idle-box-front/frames/idle). He stands in the shared start pose and is alive: slow breathing (chest and shoulders rise and fall about twice in 3 s), a gentle side-to-side sway of hips and spine, a soft weight shift from one foot to the other and back (hips move a little over each foot, knees flex slightly, feet never lift or slide), arms hang relaxed with a small counter-swing, fists loosely closed, head steady with a tiny nod. Subtle, calm but tough. Ends exactly in the start pose so it loops seamlessly.",
+   "frames": [
+    90,
+    90
+   ],
+   "loop": true,
+   "return_to_idle": false,
+   "feet_may_move": false,
+   "events": [],
+   "base_pose": "rest"
+  },
+  {
+   "name": "OH_Idle_ShadowBox",
+   "description": "Idle special: shadow boxing like a boxer training, from part 2 'shadow-boxing' of the video (refs/goblin-bomber-idle-box-front/frames/shadow-boxing). From the shared start pose he brings both fists up into a guard in front of his chin (f01), bounces lightly on the balls of his feet (small hip up-down bob, knees springy, toes stay planted, no sliding), and throws practice punches into the air straight toward the camera: left jab (f02), right jab/cross with shoulder turn (f03-f04), left hook with a torso twist (f05), right hook (f06-f07), back to guard (f08), then lowers his fists (f09-f10) and settles back into the shared start pose (f11-f12). Snappy punches with a short hold at full extension, weighty and cartoony. Ends exactly in the start pose so it loops seamlessly.",
+   "frames": [
+    90,
+    90
+   ],
+   "loop": true,
+   "return_to_idle": true,
+   "feet_may_move": false,
+   "events": [],
+   "base_pose": "rest"
+  }
+ ],
+ "attachments": [],
+ "references": [
+  "factory-design/runway-jobs/goblin-bomber--front.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f01.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f02.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f03.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f04.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f05.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f06.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f07.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f08.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f09.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f10.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f11.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/idle/f12.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f01.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f02.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f03.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f04.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f05.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f06.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f07.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f08.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f09.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f10.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f11.jpg",
+  "factory-design/runway/goblin-bomber-idle-box-front/frames/shadow-boxing/f12.jpg"
+ ],
+ "output": {
+  "format": "glb"
+ },
+ "history": [
+  {
+   "at": "2026-10-28T02:45:00Z",
+   "status": "queued",
+   "by": "spring"
+  }
+ ],
+ "updated_at": "2026-10-28T02:45:00Z"
+}
