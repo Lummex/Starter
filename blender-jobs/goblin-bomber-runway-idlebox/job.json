@@ -11,16 +11,16 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-28T02:53:49Z",
- "heartbeat_at": "2026-10-28T02:48:49Z",
+ "lease_until": "2026-10-28T02:53:52Z",
+ "heartbeat_at": "2026-10-28T02:48:52Z",
  "error": {
   "message": "Claude Code did not write anims/OH_Idle_v2.py",
   "at": "2026-10-28T02:48:13Z"
  },
  "progress": {
-  "stage": "inspecting",
-  "percent": 15,
-  "message": "Reading the model, skeleton and animations in Blender"
+  "stage": "designing",
+  "percent": 25,
+  "message": "Claude Code is designing the animation"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -130,5 +130,5 @@
    "status": "running"
   }
  ],
- "updated_at": "2026-10-28T02:48:49Z"
+ "updated_at": "2026-10-28T02:48:52Z"
 }
