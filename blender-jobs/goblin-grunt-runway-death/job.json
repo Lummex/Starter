@@ -11,8 +11,8 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-28T08:19:58Z",
- "heartbeat_at": "2026-10-28T08:14:58Z",
+ "lease_until": "2026-10-28T08:21:30Z",
+ "heartbeat_at": "2026-10-28T08:16:30Z",
  "error": null,
  "progress": {
   "stage": "designing",
@@ -101,5 +101,5 @@
    "note": "restored this job file: a second Spring run overwrote it by mistake at 08:12 (same job id); worker kept running your spec"
   }
  ],
- "updated_at": "2026-10-28T08:14:58Z"
+ "updated_at": "2026-10-28T08:16:30Z"
 }
