@@ -1,0 +1,26 @@
+{
+ "id": "goblin-slinger-throw",
+ "character": "goblin-slinger",
+ "move": "throw",
+ "prompt": "A cartoon goblin with green skin, spiky black and yellow hair and purple rags, holding a round tan ball (a cartoon skull) in his right hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), overhand toss: he swings his right arm back and up over his shoulder in a wind-up, shifts his weight forward and tosses the ball overhand like a baseball, forward toward the camera and out of the picture past its side, then his arm follows through down across his body. Part 2 (3-6 s), reload: he straightens up, reaches back to the pouch behind his hip, brings out a new identical tan ball in his right hand and returns to the standing pose from the start so the clip loops. Feet stay in the same small spot. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D game animation.",
+ "model": "grok_imagine_1_5_lite",
+ "ratio": "auto_480p",
+ "duration": 6,
+ "taskId": "de1d76c9-77c3-4fb4-842e-65fa9e3d3d6d",
+ "made": "2026-10-28T04:56:07.747Z",
+ "view": "front",
+ "segments": [
+  {
+   "move": "wind-up-throw",
+   "from": 0,
+   "to": 3
+  },
+  {
+   "move": "reload-ready",
+   "from": 3,
+   "to": 6
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}
