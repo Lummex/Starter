@@ -1,0 +1,2233 @@
+{
+ "format": "oreheart-editor-setups-1",
+ "made": "2026-10-28",
+ "by": "Ledger (Model Editor)",
+ "forRound": 27,
+ "source": "Oreheart Studio https://claude.ai/artifact/PrZreWSayBrALDPvQwsVmn (Model Editor room), database collection \"library\", field \"setup\" (= the scene Ken saved as each card's default look)",
+ "readme": "See factory-design/design/models/editor-setups-2026-10-28b.md",
+ "cards": {
+  "axe-thrower": {
+   "cardName": "Grudge Hurler",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:09:45.609Z",
+   "model": {
+    "editorKey": "axe-thrower-oct25",
+    "editorFile": "models/axe-thrower-oct25.glb.txt",
+    "bytes": 961544,
+    "gameFile": "projects/oreheart-8/public/models/creatures/axe-thrower/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Shield",
+     "editorItemName": "Grudge Hurler – Shield",
+     "accessoryId": "shield-oct25",
+     "kind": "shield",
+     "glb": {
+      "editorKey": "axe-thrower-shield-oct25",
+      "editorFile": "models/axe-thrower-shield-oct25.glb.txt",
+      "bytes": 519620
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -12.652,
+      21.111,
+      0.103
+     ],
+     "rotationDeg": [
+      -58.52,
+      43.389,
+      -47.797
+     ],
+     "scale": 17,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/axe-thrower/shield.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/axe-thrower-shield-oct25.glb",
+      "bytes": 335984,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       -12.652,
+       21.111,
+       0.103
+      ],
+      "rot": [
+       -58.52,
+       43.389,
+       -47.797
+      ],
+      "scale": [
+       17,
+       17,
+       17
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": []
+  },
+  "barrelback-courier": {
+   "cardName": "Barrelback Courier",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T04:56:15.438Z",
+   "model": {
+    "editorKey": "barrelback-courier-oct25",
+    "editorFile": "models/barrelback-courier-oct25.glb.txt",
+    "bytes": 926008,
+    "gameFile": "projects/oreheart-8/public/models/creatures/barrelback-courier/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0.009,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Barrel pack",
+     "editorItemName": "Barrelback Courier – Barrel pack",
+     "accessoryId": "barrel-pack-oct25",
+     "kind": "backpack",
+     "glb": {
+      "editorKey": "barrelback-courier-barrel-pack-oct25",
+      "editorFile": "models/barrelback-courier-barrel-pack-oct25.glb.txt",
+      "bytes": 592756
+     },
+     "attachedTo": {
+      "bone": "Spine02"
+     },
+     "position": [
+      3.631,
+      13.995,
+      -18.271
+     ],
+     "rotationDeg": [
+      -160.68,
+      -0.629,
+      176.305
+     ],
+     "scale": 28.026,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/barrelback-courier/barrel-pack.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/barrelback-courier-barrel-pack-oct25.glb",
+      "bytes": 387532,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "Spine02",
+      "pos": [
+       3.631,
+       13.995,
+       -18.271
+      ],
+      "rot": [
+       -160.68,
+       -0.629,
+       176.305
+      ],
+      "scale": [
+       28.026,
+       28.026,
+       28.026
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": [
+    {
+     "name": "Solid part",
+     "kind": "rigid",
+     "attachedTo": {
+      "bone": "Hips"
+     },
+     "note": "editor \"keep a part solid\" box; not a model"
+    }
+   ]
+  },
+  "brewmaster": {
+   "cardName": "Corpsman Brewlord",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:02:48.560Z",
+   "model": {
+    "editorKey": "brewmaster-oct25",
+    "editorFile": "models/brewmaster-oct25.glb.txt",
+    "bytes": 902916,
+    "gameFile": "projects/oreheart-8/public/models/creatures/brewmaster/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     -0.036,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Keg pack",
+     "editorItemName": "Corpsman Brewlord – Keg pack",
+     "accessoryId": "keg-pack-oct25",
+     "kind": "backpack",
+     "glb": {
+      "editorKey": "brewmaster-keg-pack-oct25",
+      "editorFile": "models/brewmaster-keg-pack-oct25.glb.txt",
+      "bytes": 636356
+     },
+     "attachedTo": {
+      "bone": "Spine02"
+     },
+     "position": [
+      3.052,
+      10.711,
+      -23.178
+     ],
+     "rotationDeg": [
+      -167.137,
+      7.3,
+      175.685
+     ],
+     "scale": 24.348,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/brewmaster/keg-pack.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/brewmaster-keg-pack-oct25.glb",
+      "bytes": 403584,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "Spine02",
+      "pos": [
+       3.052,
+       10.711,
+       -23.178
+      ],
+      "rot": [
+       -167.137,
+       7.3,
+       175.685
+      ],
+      "scale": [
+       24.348,
+       24.348,
+       24.348
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": [
+    {
+     "name": "Solid part",
+     "kind": "rigid",
+     "attachedTo": {
+      "bone": "Hips"
+     },
+     "note": "editor \"keep a part solid\" box; not a model"
+    }
+   ],
+   "notUsed": [
+    {
+     "name": "Crystal hammer",
+     "editorKey": "brewmaster-crystal-hammer-oct25",
+     "note": "made, but not in Ken's saved look; not exported"
+    }
+   ]
+  },
+  "cmd-grubnak": {
+   "cardName": "Grubnak Rotgut Goblin King",
+   "faction": "goblins",
+   "editorDocVersionNote": "setup saved 2026-10-28T04:49:13.613Z",
+   "model": {
+    "editorKey": "grubnak-new",
+    "editorFile": "models/grubnak3d-char.glb.txt",
+    "bytes": 1017492,
+    "gameFile": "projects/oreheart-8/public/models/creatures/grubnak/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Chair_Sit_Idle_M",
+     "Chest_Pound_Taunt",
+     "Call_Gesture",
+     "Victory_Fist_Pump",
+     "Hit_Reaction_1",
+     "mage_soell_cast",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1.22,
+    "withItemsHeightSquares": 1.78,
+    "editorModelScale": 1.22,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     -0.002,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Scepter",
+     "editorItemName": "Grubnak Rotgut Goblin King – Scepter",
+     "accessoryId": "scepter",
+     "kind": "weapon",
+     "glb": {
+      "editorKey": "grubnak-new-scepter",
+      "editorFile": "models/grubnak3d-scepter.glb.txt",
+      "bytes": 277640
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -2.754,
+      16.04,
+      5.84
+     ],
+     "rotationDeg": [
+      -117,
+      34,
+      153
+     ],
+     "scale": 76,
+     "stretch": [
+      0.98,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/grubnak/scepter.glb",
+      "sameShapeAndOrigin": true
+     },
+     "repoCopy": null,
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       -2.754,
+       16.04,
+       5.84
+      ],
+      "rot": [
+       -117,
+       34,
+       153
+      ],
+      "scale": [
+       74.48,
+       76,
+       76
+      ]
+     }
+    }
+   ],
+   "effects": [
+    {
+     "name": "Glow",
+     "type": "glow",
+     "attachedTo": {
+      "part": "Scepter"
+     },
+     "position": [
+      -0.011,
+      0.752,
+      -0.038
+     ],
+     "rotationDeg": [
+      0,
+      0,
+      0
+     ],
+     "scale": 1.332,
+     "settings": {
+      "size": 0.5,
+      "strength": 1.2,
+      "flicker": 1,
+      "light": 2.19,
+      "color": "#8a0f55"
+     },
+     "when": "always"
+    },
+    {
+     "name": "Glow",
+     "type": "glow",
+     "attachedTo": {
+      "part": "Scepter"
+     },
+     "position": [
+      0.11,
+      -0.812,
+      -0.006
+     ],
+     "rotationDeg": [
+      0,
+      0,
+      0
+     ],
+     "scale": 1.332,
+     "settings": {
+      "size": 0.34,
+      "strength": 1.2,
+      "flicker": 0.76,
+      "light": 1.34,
+      "color": "#d00bac"
+     },
+     "when": "always"
+    },
+    {
+     "name": "Twinkles",
+     "type": "twinkle",
+     "attachedTo": {
+      "part": "Scepter"
+     },
+     "position": [
+      0.07,
+      0.721,
+      0.026
+     ],
+     "rotationDeg": [
+      0,
+      0,
+      0
+     ],
+     "scale": 1.332,
+     "settings": {
+      "area": 0.12,
+      "count": 40,
+      "size": 0.07,
+      "speed": 1.5,
+      "color": "#fff6c8"
+     },
+     "when": "always"
+    },
+    {
+     "name": "Twinkles",
+     "type": "twinkle",
+     "attachedTo": {
+      "part": "Scepter"
+     },
+     "position": [
+      0.127,
+      -0.875,
+      -0.018
+     ],
+     "rotationDeg": [
+      0,
+      0,
+      0
+     ],
+     "scale": 1.332,
+     "settings": {
+      "area": 0.07,
+      "count": 12,
+      "size": 0.07,
+      "speed": 1.5,
+      "color": "#fff6c8"
+     },
+     "when": "always"
+    }
+   ],
+   "editorOnly": [
+    {
+     "name": "Cut-out box",
+     "kind": "cutbox",
+     "attachedTo": {
+      "item": "Grubnak Rotgut Goblin King – Scepter"
+     },
+     "note": "editor cut-out box (hides part of a model in the editor view); not a model"
+    },
+    {
+     "name": "Cut-out box",
+     "kind": "cutbox",
+     "attachedTo": {
+      "item": "Grubnak Rotgut Goblin King – Scepter"
+     },
+     "note": "editor cut-out box (hides part of a model in the editor view); not a model"
+    },
+    {
+     "name": "Solid part",
+     "kind": "rigid",
+     "attachedTo": {
+      "bone": "Hips"
+     },
+     "note": "editor \"keep a part solid\" box; not a model"
+    }
+   ],
+   "notUsed": [
+    {
+     "name": "Junk throne",
+     "editorKey": "grubnak-new-throne",
+     "note": "not in Ken's saved look; the game keeps its own throne (grubnak3d.ts)"
+    }
+   ]
+  },
+  "crystal-drunk-delver": {
+   "cardName": "Gemdrunk Deepdelver",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:05:59.052Z",
+   "model": {
+    "editorKey": "crystal-drunk-delver-oct25",
+    "editorFile": "models/crystal-drunk-delver-oct25.glb.txt",
+    "bytes": 994884,
+    "gameFile": "projects/oreheart-8/public/models/creatures/crystal-drunk-delver/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     -0.001,
+     0
+    ],
+    "rotationDeg": [
+     -0.217,
+     0.141,
+     2.03
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Pickaxe",
+     "editorItemName": "Gemdrunk Deepdelver – Pickaxe",
+     "accessoryId": "pickaxe-oct25",
+     "kind": "tool",
+     "glb": {
+      "editorKey": "crystal-drunk-delver-pickaxe-oct25",
+      "editorFile": "models/crystal-drunk-delver-pickaxe-oct25.glb.txt",
+      "bytes": 365300
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -11.916,
+      9.542,
+      10.035
+     ],
+     "rotationDeg": [
+      -47.527,
+      43.36,
+      126.79
+     ],
+     "scale": 29.769,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/crystal-drunk-delver/pickaxe.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/crystal-drunk-delver-pickaxe-oct25.glb",
+      "bytes": 229252,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       -11.916,
+       9.542,
+       10.035
+      ],
+      "rot": [
+       -47.527,
+       43.36,
+       126.79
+      ],
+      "scale": [
+       29.769,
+       29.769,
+       29.769
+      ]
+     }
+    },
+    {
+     "name": "Crystal backpack",
+     "editorItemName": "Gemdrunk Deepdelver – Crystal backpack",
+     "accessoryId": "crystal-backpack-oct25",
+     "kind": "backpack",
+     "glb": {
+      "editorKey": "crystal-drunk-delver-crystal-backpack-oct25",
+      "editorFile": "models/crystal-drunk-delver-crystal-backpack-oct25.glb.txt",
+      "bytes": 631172
+     },
+     "attachedTo": {
+      "bone": "Spine02"
+     },
+     "position": [
+      -22.899,
+      -0.026,
+      -8.549
+     ],
+     "rotationDeg": [
+      1.154,
+      39.312,
+      0.926
+     ],
+     "scale": 23.689,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/crystal-drunk-delver/crystal-backpack.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/crystal-drunk-delver-crystal-backpack-oct25.glb",
+      "bytes": 406968,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "Spine02",
+      "pos": [
+       -22.899,
+       -0.026,
+       -8.549
+      ],
+      "rot": [
+       1.154,
+       39.312,
+       0.926
+      ],
+      "scale": [
+       23.689,
+       23.689,
+       23.689
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": []
+  },
+  "deepforge-crossbowman": {
+   "cardName": "Marksmen Gunner",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:31:40.128Z",
+   "model": {
+    "editorKey": "deepforge-crossbowman-oct25",
+    "editorFile": "models/deepforge-crossbowman-oct25.glb.txt",
+    "bytes": 863928,
+    "gameFile": "projects/oreheart-8/public/models/creatures/deepforge-crossbowman/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0.018,
+     0
+    ],
+    "rotationDeg": [
+     2.508,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Crystal gun",
+     "editorItemName": "Marksmen Gunner – Crystal gun",
+     "accessoryId": "crystal-gun-oct25",
+     "kind": "weapon",
+     "glb": {
+      "editorKey": "deepforge-crossbowman-crystal-gun-oct25",
+      "editorFile": "models/deepforge-crossbowman-crystal-gun-oct25.glb.txt",
+      "bytes": 452444
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -13.667,
+      14.213,
+      10.056
+     ],
+     "rotationDeg": [
+      124.622,
+      -40.578,
+      -4.098
+     ],
+     "scale": 33.745,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/deepforge-crossbowman/crystal-gun.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/deepforge-crossbowman-crystal-gun-oct25.glb",
+      "bytes": 291020,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       -13.667,
+       14.213,
+       10.056
+      ],
+      "rot": [
+       124.622,
+       -40.578,
+       -4.098
+      ],
+      "scale": [
+       33.745,
+       33.745,
+       33.745
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": []
+  },
+  "dwarf-miner": {
+   "cardName": "Riot Shield Bearer",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:35:38.740Z",
+   "model": {
+    "editorKey": "dwarf-miner-oct25",
+    "editorFile": "models/dwarf-miner-oct25.glb.txt",
+    "bytes": 941100,
+    "gameFile": "projects/oreheart-8/public/models/creatures/dwarf-miner/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.03,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Tower shield",
+     "editorItemName": "Riot Shield Bearer – Tower shield",
+     "accessoryId": "tower-shield-oct25",
+     "kind": "shield",
+     "glb": {
+      "editorKey": "dwarf-miner-tower-shield-oct25",
+      "editorFile": "models/dwarf-miner-tower-shield-oct25.glb.txt",
+      "bytes": 443544
+     },
+     "attachedTo": {
+      "bone": "LeftForeArm"
+     },
+     "position": [
+      3.309,
+      4.936,
+      12.344
+     ],
+     "rotationDeg": [
+      -35.451,
+      -2.837,
+      156.794
+     ],
+     "scale": 43,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/dwarf-miner/tower-shield.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/dwarf-miner-tower-shield-oct25.glb",
+      "bytes": 280912,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "LeftForeArm",
+      "pos": [
+       3.309,
+       4.936,
+       12.344
+      ],
+      "rot": [
+       -35.451,
+       -2.837,
+       156.794
+      ],
+      "scale": [
+       43,
+       43,
+       43
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": []
+  },
+  "dwarf-pickman": {
+   "cardName": "Ironjaw Big Back",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:10:03.271Z",
+   "model": {
+    "editorKey": "dwarf-pickman-oct25",
+    "editorFile": "models/dwarf-pickman-oct25.glb.txt",
+    "bytes": 1002084,
+    "gameFile": "projects/oreheart-8/public/models/creatures/dwarf-pickman/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     -0.001,
+     -0.109
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [],
+   "effects": [],
+   "editorOnly": []
+  },
+  "dwarf-stoneback": {
+   "cardName": "Granite Oathkeeper",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:06:58.843Z",
+   "model": {
+    "editorKey": "dwarf-stoneback-oct25",
+    "editorFile": "models/dwarf-stoneback-oct25.glb.txt",
+    "bytes": 941036,
+    "gameFile": "projects/oreheart-8/public/models/creatures/dwarf-stoneback/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     -0.186
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Hammer",
+     "editorItemName": "Granite Oathkeeper – Hammer",
+     "accessoryId": "hammer-oct25",
+     "kind": "weapon",
+     "glb": {
+      "editorKey": "dwarf-stoneback-hammer-oct25",
+      "editorFile": "models/dwarf-stoneback-hammer-oct25.glb.txt",
+      "bytes": 389704
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -7.435,
+      10.978,
+      9.103
+     ],
+     "rotationDeg": [
+      127.903,
+      -62.14,
+      44.02
+     ],
+     "scale": 31.335,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/dwarf-stoneback/hammer.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/dwarf-stoneback-hammer-oct25.glb",
+      "bytes": 239036,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       -7.435,
+       10.978,
+       9.103
+      ],
+      "rot": [
+       127.903,
+       -62.14,
+       44.02
+      ],
+      "scale": [
+       31.335,
+       31.335,
+       31.335
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": []
+  },
+  "goblin-scrapper": {
+   "cardName": "Bowler Brawler",
+   "faction": "goblins",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:10:25.598Z",
+   "model": {
+    "editorKey": "goblin-scrapper-v4",
+    "editorFile": "models/goblin-scrapper-v4.glb.txt",
+    "bytes": 1758032,
+    "gameFile": "projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead",
+     "OH_Idle",
+     "OH_Walk",
+     "OH_Attack",
+     "OH_Special",
+     "OH_Hit",
+     "OH_React_Knockback",
+     "OH_React_Bonk",
+     "OH_React_Bowled",
+     "OH_React_Backstab",
+     "OH_React_Lifted"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 0.493,
+    "withItemsHeightSquares": 0.49,
+    "editorModelScale": 0.53,
+    "editorStretch": [
+     1,
+     0.93,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     0.005
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Bowler Brawler bowling ball",
+     "editorItemName": "Bowler Brawler – Bowler Brawler bowling ball",
+     "accessoryId": "bowling-ball",
+     "kind": "tool",
+     "glb": {
+      "editorKey": "goblin-scrapper-v2-bowling-ball",
+      "editorFile": "models/goblin-scrapper-v2-bowling-ball.glb.txt",
+      "bytes": 1341056
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -3.51,
+      8.733,
+      -1.595
+     ],
+     "rotationDeg": [
+      50.405,
+      1.159,
+      166.638
+     ],
+     "scale": 23,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/goblin-scrapper/bowling-ball.glb",
+      "sameShapeAndOrigin": true
+     },
+     "repoCopy": null,
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       -3.51,
+       8.733,
+       -1.595
+      ],
+      "rot": [
+       50.405,
+       1.159,
+       166.638
+      ],
+      "scale": [
+       23,
+       23,
+       23
+      ]
+     }
+    }
+   ],
+   "effects": [
+    {
+     "name": "Flame",
+     "type": "flame",
+     "attachedTo": {
+      "part": "Bowler Brawler bowling ball"
+     },
+     "position": [
+      0,
+      -0.063,
+      -0.415
+     ],
+     "rotationDeg": [
+      81.361,
+      45.336,
+      0
+     ],
+     "scale": 4.348,
+     "settings": {
+      "size": 0.29,
+      "height": 1,
+      "speed": 1.38,
+      "cCore": "#238b5a",
+      "cMid": "#00f088",
+      "cTip": "#00ff04"
+     },
+     "when": "always"
+    }
+   ],
+   "editorOnly": [
+    {
+     "name": "Solid part",
+     "kind": "rigid",
+     "attachedTo": {
+      "bone": "Hips"
+     },
+     "note": "editor \"keep a part solid\" box; not a model"
+    }
+   ]
+  },
+  "grimhold-ravager": {
+   "cardName": "Grimhold Ravager",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:07:43.565Z",
+   "model": {
+    "editorKey": "grimhold-ravager-oct25",
+    "editorFile": "models/grimhold-ravager-oct25.glb.txt",
+    "bytes": 963176,
+    "gameFile": "projects/oreheart-8/public/models/creatures/grimhold-ravager/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Hammer",
+     "editorItemName": "Grimhold Ravager – Hammer",
+     "accessoryId": "hammer-oct25",
+     "kind": "weapon",
+     "glb": {
+      "editorKey": "grimhold-ravager-hammer-oct25",
+      "editorFile": "models/grimhold-ravager-hammer-oct25.glb.txt",
+      "bytes": 402388
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -7.368,
+      14.973,
+      3.457
+     ],
+     "rotationDeg": [
+      -39.361,
+      49.914,
+      95.703
+     ],
+     "scale": 31.019,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/grimhold-ravager/hammer.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/grimhold-ravager-hammer-oct25.glb",
+      "bytes": 256112,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       -7.368,
+       14.973,
+       3.457
+      ],
+      "rot": [
+       -39.361,
+       49.914,
+       95.703
+      ],
+      "scale": [
+       31.019,
+       31.019,
+       31.019
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": []
+  },
+  "ironhammer-berserker": {
+   "cardName": "Bloodbeard Berserker",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T04:59:45.007Z",
+   "model": {
+    "editorKey": "ironhammer-berserker-oct25",
+    "editorFile": "models/ironhammer-berserker-oct25.glb.txt",
+    "bytes": 968716,
+    "gameFile": "projects/oreheart-8/public/models/creatures/ironhammer-berserker/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Crystal pistol",
+     "editorItemName": "Bloodbeard Berserker – Crystal pistol",
+     "accessoryId": "crystal-pistol-oct25",
+     "kind": "weapon",
+     "glb": {
+      "editorKey": "ironhammer-berserker-crystal-pistol-oct25",
+      "editorFile": "models/ironhammer-berserker-crystal-pistol-oct25.glb.txt",
+      "bytes": 456312
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -1.882,
+      21.222,
+      -1.587
+     ],
+     "rotationDeg": [
+      168.899,
+      -32.158,
+      92.346
+     ],
+     "scale": 16.176,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/ironhammer-berserker/crystal-pistol.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/ironhammer-berserker-crystal-pistol-oct25.glb",
+      "bytes": 292024,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       -1.882,
+       21.222,
+       -1.587
+      ],
+      "rot": [
+       168.899,
+       -32.158,
+       92.346
+      ],
+      "scale": [
+       16.176,
+       16.176,
+       16.176
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": []
+  },
+  "junk-shaman": {
+   "cardName": "Junk Shaman",
+   "faction": "goblins",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:13:50.591Z",
+   "model": {
+    "editorKey": "junk-shaman-v4",
+    "editorFile": "models/junk-shaman-v4.glb.txt",
+    "bytes": 2012352,
+    "gameFile": "projects/oreheart-8/public/models/creatures/junk-shaman/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead",
+     "OH_Idle",
+     "OH_Walk",
+     "OH_Attack",
+     "OH_Special",
+     "OH_Hit",
+     "OH_React_Knockback",
+     "OH_React_Bonk",
+     "OH_React_Bowled",
+     "OH_React_Backstab",
+     "OH_React_Lifted"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 0.71,
+    "withItemsHeightSquares": 0.83,
+    "editorModelScale": 0.71,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     -0.002,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Junk Shaman staff",
+     "editorItemName": "Junk Shaman – Junk Shaman staff",
+     "accessoryId": "staff",
+     "kind": "tool",
+     "glb": {
+      "editorKey": "junk-shaman-v2-staff",
+      "editorFile": "models/junk-shaman-v2-staff.glb.txt",
+      "bytes": 1229228
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      6.217,
+      -15.298,
+      17.834
+     ],
+     "rotationDeg": [
+      110.02,
+      -62.427,
+      -52.655
+     ],
+     "scale": 53,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/junk-shaman/staff.glb",
+      "sameShapeAndOrigin": true
+     },
+     "repoCopy": null,
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       6.217,
+       -15.298,
+       17.834
+      ],
+      "rot": [
+       110.02,
+       -62.427,
+       -52.655
+      ],
+      "scale": [
+       53,
+       53,
+       53
+      ]
+     }
+    }
+   ],
+   "effects": [
+    {
+     "name": "Glow",
+     "type": "glow",
+     "attachedTo": {
+      "part": "Junk Shaman staff"
+     },
+     "position": [
+      0.034,
+      0.368,
+      -0.026
+     ],
+     "rotationDeg": [
+      0,
+      0,
+      0
+     ],
+     "scale": 1.887,
+     "settings": {
+      "size": 0.78,
+      "strength": 0.66,
+      "flicker": 0.78,
+      "light": 1,
+      "color": "#44ff00"
+     },
+     "when": "always"
+    },
+    {
+     "name": "Magic orbs",
+     "type": "orbs",
+     "attachedTo": {
+      "part": "Junk Shaman staff"
+     },
+     "position": [
+      -0.021,
+      0.392,
+      0.042
+     ],
+     "rotationDeg": [
+      0,
+      0,
+      0
+     ],
+     "scale": 1.887,
+     "settings": {
+      "count": 4,
+      "radius": 0.13,
+      "size": 0.21,
+      "speed": 1.2,
+      "bob": 0.28,
+      "color": "#11d902"
+     },
+     "when": "always"
+    }
+   ],
+   "editorOnly": []
+  },
+  "oathbound-pikeman": {
+   "cardName": "Oathbound Overwatch",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:30:19.614Z",
+   "model": {
+    "editorKey": "oathbound-pikeman-oct25",
+    "editorFile": "models/oathbound-pikeman-oct25.glb.txt",
+    "bytes": 967356,
+    "gameFile": "projects/oreheart-8/public/models/creatures/oathbound-pikeman/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Rifle",
+     "editorItemName": "Oathbound Overwatch – Rifle",
+     "accessoryId": "rifle-oct25",
+     "kind": "weapon",
+     "glb": {
+      "editorKey": "oathbound-pikeman-rifle-oct25",
+      "editorFile": "models/oathbound-pikeman-rifle-oct25.glb.txt",
+      "bytes": 485384
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -44.159,
+      16.494,
+      20.613
+     ],
+     "rotationDeg": [
+      163.196,
+      -28.673,
+      7.516
+     ],
+     "scale": 79.963,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/oathbound-pikeman/rifle.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/oathbound-pikeman-rifle-oct25.glb",
+      "bytes": 316064,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       -44.159,
+       16.494,
+       20.613
+      ],
+      "rot": [
+       163.196,
+       -28.673,
+       7.516
+      ],
+      "scale": [
+       79.963,
+       79.963,
+       79.963
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": []
+  },
+  "queen-brunhilda-stonebeard": {
+   "cardName": "Queen Brunhilda",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:33:07.318Z",
+   "model": {
+    "editorKey": "queen-brunhilda-stonebeard-oct25",
+    "editorFile": "models/queen-brunhilda-stonebeard-oct25.glb.txt",
+    "bytes": 971608,
+    "gameFile": "projects/oreheart-8/public/models/creatures/queen-brunhilda-stonebeard/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Warhammer",
+     "editorItemName": "Queen Brunhilda – Warhammer",
+     "accessoryId": "warhammer-oct25",
+     "kind": "weapon",
+     "glb": {
+      "editorKey": "queen-brunhilda-stonebeard-warhammer-oct25",
+      "editorFile": "models/queen-brunhilda-stonebeard-warhammer-oct25.glb.txt",
+      "bytes": 435720
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -6.749,
+      6.967,
+      10.796
+     ],
+     "rotationDeg": [
+      31.091,
+      75.481,
+      74.138
+     ],
+     "scale": 31.171,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/queen-brunhilda-stonebeard/warhammer.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/queen-brunhilda-stonebeard-warhammer-oct25.glb",
+      "bytes": 280216,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       -6.749,
+       6.967,
+       10.796
+      ],
+      "rot": [
+       31.091,
+       75.481,
+       74.138
+      ],
+      "scale": [
+       31.171,
+       31.171,
+       31.171
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": []
+  },
+  "ram-rider": {
+   "cardName": "Thunderhorn Ram Rider",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:37:20.303Z",
+   "model": {
+    "editorKey": "ram-rider-oct25",
+    "editorFile": "models/ram-rider-oct25.glb.txt",
+    "bytes": 956372,
+    "gameFile": "projects/oreheart-8/public/models/creatures/ram-rider/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 2,
+    "withItemsHeightSquares": 1.06,
+    "editorModelScale": 2,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "item 404",
+    "position": [
+     -0.017,
+     -0.217,
+     -0.328
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Ram",
+     "editorItemName": "Thunderhorn Ram Rider – Ram",
+     "accessoryId": "ram-oct25",
+     "kind": "mount",
+     "glb": {
+      "editorKey": "ram-rider-ram-oct25",
+      "editorFile": "models/ram-rider-ram-oct25.glb.txt",
+      "bytes": 1271540
+     },
+     "attachedTo": {
+      "ground": true
+     },
+     "position": [
+      0.011,
+      0.473,
+      0.006
+     ],
+     "rotationDeg": [
+      0,
+      0,
+      0
+     ],
+     "scale": 0.53,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/ram-rider/ram.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/ram-rider-ram-oct25.glb",
+      "bytes": 408672,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": null,
+     "mount": {
+      "note": "mount standing on the ground; the rider is attached to it (see riderOnMount)",
+      "mountWorldPosition": [
+       0.011,
+       0.473,
+       0.006
+      ],
+      "mountWorldRotationDeg": [
+       0,
+       0,
+       0
+      ],
+      "mountScale": 0.53,
+      "riderOnMount": {
+       "position": [
+        -0.017,
+        -0.217,
+        -0.328
+       ],
+       "rotationDeg": [
+        0,
+        0,
+        0
+       ],
+       "scale": 2
+      },
+      "riderWorldScale": 1.06
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": []
+  },
+  "rune-splitter": {
+   "cardName": "Door Splitter",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:04:54.662Z",
+   "model": {
+    "editorKey": "rune-splitter-oct25",
+    "editorFile": "models/rune-splitter-oct25.glb.txt",
+    "bytes": 971104,
+    "gameFile": "projects/oreheart-8/public/models/creatures/rune-splitter/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.06,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     -0.033
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0.208
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Crystal hammer",
+     "editorItemName": "Door Splitter – Crystal hammer",
+     "accessoryId": "crystal-hammer-oct25",
+     "kind": "weapon",
+     "glb": {
+      "editorKey": "rune-splitter-crystal-hammer-oct25",
+      "editorFile": "models/rune-splitter-crystal-hammer-oct25.glb.txt",
+      "bytes": 501328
+     },
+     "attachedTo": {
+      "bone": "RightHand"
+     },
+     "position": [
+      -5.945,
+      14.395,
+      2.713
+     ],
+     "rotationDeg": [
+      -90.58,
+      40.418,
+      154.032
+     ],
+     "scale": 31.285,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/rune-splitter/crystal-hammer.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/rune-splitter-crystal-hammer-oct25.glb",
+      "bytes": 317540,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "RightHand",
+      "pos": [
+       -5.945,
+       14.395,
+       2.713
+      ],
+      "rot": [
+       -90.58,
+       40.418,
+       154.032
+      ],
+      "scale": [
+       31.285,
+       31.285,
+       31.285
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": []
+  },
+  "shieldbeard": {
+   "cardName": "Ironwall Shieldbeard",
+   "faction": "dwarves",
+   "editorDocVersionNote": "setup saved 2026-10-28T05:16:08.503Z",
+   "model": {
+    "editorKey": "shieldbeard-oct25",
+    "editorFile": "models/shieldbeard-oct25.glb.txt",
+    "bytes": 1026396,
+    "gameFile": "projects/oreheart-8/public/models/creatures/shieldbeard/char.glb",
+    "sameFileAsGame": true,
+    "clips": [
+     "Idle",
+     "Casual_Walk",
+     "Heavy_Hammer_Swing",
+     "Hit_Reaction",
+     "Dead"
+    ],
+    "bones": 24
+   },
+   "height": {
+    "bodyHeightSquares": 1,
+    "withItemsHeightSquares": 1.0,
+    "editorModelScale": 1,
+    "editorStretch": [
+     1,
+     1,
+     1
+    ],
+    "note": "information only (Ken: only the final game heights matter)"
+   },
+   "mainPlacement": {
+    "parent": "world",
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "note": "the game stands the figure on the ground and centres it, so small offsets/tilts of the body are not used"
+   },
+   "flying": null,
+   "accessories": [
+    {
+     "name": "Medic pack",
+     "editorItemName": "Ironwall Shieldbeard – Medic pack",
+     "accessoryId": "medic-pack-oct25",
+     "kind": "backpack",
+     "glb": {
+      "editorKey": "shieldbeard-medic-pack-oct25",
+      "editorFile": "models/shieldbeard-medic-pack-oct25.glb.txt",
+      "bytes": 562780
+     },
+     "attachedTo": {
+      "bone": "Spine02"
+     },
+     "position": [
+      2.392,
+      13.129,
+      -18.358
+     ],
+     "rotationDeg": [
+      -154.103,
+      -0.121,
+      171.756
+     ],
+     "scale": 25.761,
+     "stretch": [
+      1,
+      1,
+      1
+     ],
+     "inGame": {
+      "file": "projects/oreheart-8/public/models/creatures/shieldbeard/medic-pack.glb",
+      "exists": false
+     },
+     "repoCopy": {
+      "file": "factory-design/design/models/parts/shieldbeard-medic-pack-oct25.glb",
+      "bytes": 363476,
+      "texturesShrunkTo": 256,
+      "geometryUntouched": true
+     },
+     "partsTableLook": {
+      "bone": "Spine02",
+      "pos": [
+       2.392,
+       13.129,
+       -18.358
+      ],
+      "rot": [
+       -154.103,
+       -0.121,
+       171.756
+      ],
+      "scale": [
+       25.761,
+       25.761,
+       25.761
+      ]
+     }
+    }
+   ],
+   "effects": [],
+   "editorOnly": [],
+   "placeholders": [
+    {
+     "name": "Shoulder-pad shield",
+     "accessoryId": "shoulder-shield",
+     "status": "not made yet",
+     "note": "Ken, Oct 28: giant shoulder pad that is also a shield, on his RIGHT shoulder, as on the card art. Sketch draws the sheet, Ken approves, Clay makes it in Meshy (once), then Ledger attaches it in the Studio and exports it. Nothing to build for it in Round 27."
+    }
+   ]
+  }
+ }
+}
