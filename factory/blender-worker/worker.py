@@ -13,6 +13,11 @@ Claiming a job = rewriting job.json with the file's current SHA (compare-and-swa
 workers can never both claim it. A claimed job carries a lease that the worker renews with
 heartbeats; if the PC or Blender crashes, the lease runs out and the job is picked up again.
 
+Quiet queue (Oct 28): every push to GitHub makes Vercel queue builds, so the worker commits as little as possible.
+No timed "idle" commits (the worker status file changes only when the state really changes), one commit per job
+stage, lease renewals only when a stage runs long, and all result files go up in ONE commit together with the final
+job state. Every commit message carries "[skip ci] [vercel skip]".
+
 Commands:
     python worker.py --setup        store the GitHub token in Windows Credential Manager
     python worker.py                run (polls for jobs)
@@ -30,8 +35,10 @@ CONFIG_PATH = os.path.join(APP_DIR, 'config.json')
 LOG_PATH = os.path.join(APP_DIR, 'worker.log')
 CRED_TARGET = 'OreheartBlenderWorker:github'
 JOBS_DIR = 'blender-jobs'
-LEASE_SECONDS = 300
-HEARTBEAT_SECONDS = 90
+LEASE_SECONDS = 900          # a crashed job is picked up again after at most 15 minutes
+HEARTBEAT_SECONDS = 90       # how often a running job re-reads job.json (cancel check; a read, never a commit)
+LEASE_RENEW_SECONDS = 600    # renew the lease (one commit) only when the last job.json write is this old
+SKIP_TAG = ' [skip ci] [vercel skip]'  # on every commit message: hosts that honour it (or an ignore-build command) skip the build
 _LOCK = None
 STATES = ['queued', 'claimed', 'running', 'validating', 'completed', 'failed', 'awaiting_review', 'cancelled']
 # The ONLY operations this worker will ever perform. Anything else in a job is refused.
@@ -204,6 +211,31 @@ class GitHub:
             body['sha'] = sha
         return self.call('PUT', f'contents/{path}', body)['content']['sha']
 
+    def commit_files(self, files, message, branch, expect=None):
+        """Write several files (path -> bytes) to a branch in ONE commit (git data API).
+        expect = {path: sha or None}: compare-and-swap, raises Conflict if a file is no longer at that sha.
+        If someone else pushes in between, the branch update is refused (not a fast-forward) and we retry on the new head.
+        Returns {path: blob sha}."""
+        blobs = {p: self.call('POST', 'git/blobs', {'content': base64.b64encode(b).decode(), 'encoding': 'base64'})['sha']
+                 for p, b in files.items()}
+        for attempt in range(6):
+            head = self.call('GET', f'git/ref/heads/{branch}')['object']['sha']
+            for p, want in (expect or {}).items():
+                meta = self.call('GET', f'contents/{p}?ref={head}', ok404=True)
+                have = meta.get('sha') if isinstance(meta, dict) else None
+                if have != want:
+                    raise Conflict(f'{p} changed on GitHub (now {have}, this worker had {want})')
+            base_tree = self.call('GET', f'git/commits/{head}')['tree']['sha']
+            tree = self.call('POST', 'git/trees', {'base_tree': base_tree, 'tree': [
+                {'path': p, 'mode': '100644', 'type': 'blob', 'sha': s} for p, s in blobs.items()]})['sha']
+            commit = self.call('POST', 'git/commits', {'message': message, 'tree': tree, 'parents': [head]})['sha']
+            try:
+                self.call('PATCH', f'git/refs/heads/{branch}', {'sha': commit, 'force': False})
+                return blobs
+            except Conflict:  # the branch moved (another writer): build the commit again on the new head
+                time.sleep(2 + 3 * attempt)
+        raise RuntimeError(f'could not commit to {branch} (the branch kept moving)')
+
     def list_dir(self, path, ref):
         r = self.call('GET', f'contents/{path}?ref={ref}', ok404=True)
         return r if isinstance(r, list) else []
@@ -216,7 +248,7 @@ class GitHub:
         readme = ('# Blender job queue\n\nOne folder per job: job.json (spec + state) and out/ (results).\n'
                   'Written by the dashboard (3D Production) and the Windows Blender worker. Do not merge into main.\n')
         tree = self.call('POST', 'git/trees', {'tree': [{'path': f'{JOBS_DIR}/README.md', 'mode': '100644', 'type': 'blob', 'content': readme}]})['sha']
-        commit = self.call('POST', 'git/commits', {'message': 'Start the Blender job queue', 'tree': tree, 'parents': []})['sha']
+        commit = self.call('POST', 'git/commits', {'message': 'Start the Blender job queue' + SKIP_TAG, 'tree': tree, 'parents': []})['sha']
         try:
             self.call('POST', 'git/refs', {'ref': f'refs/heads/{branch}', 'sha': commit})
             log('created queue branch', branch)
@@ -246,16 +278,19 @@ class JobRef:
         self.job, self.sha = (json.loads(b) if b else None), sha
         return self.job
 
-    def save(self, msg):
+    def save(self, msg, extra_files=None):
+        """One commit: job.json (compare-and-swap on its sha) plus any extra files (results, worker status)."""
         self.job['updated_at'] = now()
-        self.sha = self.gh.put_file(self.path, (json.dumps(self.job, indent=1) + '\n').encode(), f'blender job {self.id}: {msg}', self.cfg['queue_branch'], self.sha)
+        files = {self.path: (json.dumps(self.job, indent=1) + '\n').encode(), **(extra_files or {})}
+        shas = self.gh.commit_files(files, f'blender job {self.id}: {msg}{SKIP_TAG}', self.cfg['queue_branch'], expect={self.path: self.sha})
+        self.sha = shas[self.path]
 
-    def update(self, msg, mutate):
+    def update(self, msg, mutate, extra_files=None):
         """Apply mutate(job) and save; on a conflict re-read and retry (someone else edited it, e.g. a cancel)."""
         for _ in range(5):
             mutate(self.job)
             try:
-                self.save(msg); return
+                self.save(msg, extra_files); return
             except Conflict:
                 self.load()
                 if self.job.get('cancel_requested'):
@@ -300,7 +335,9 @@ def claim(ref, cfg):
                    progress={'stage': 'claimed', 'percent': 0, 'message': 'Picked up by the Blender worker'})
     ref.job.setdefault('history', []).append({'at': now(), 'status': 'claimed', 'worker': cfg['worker_id'], 'recovered': was != 'queued'})
     try:
-        ref.save('claimed')  # compare-and-swap: fails if another worker got there first
+        # compare-and-swap: fails if another worker got there first. The worker status ("busy") rides in the same commit.
+        ref.save('claimed', worker_status_files(cfg, 'busy', {'job': ref.id}))
+        _STATUS['state'] = 'busy'
         return True
     except Conflict:
         return False
@@ -314,7 +351,9 @@ class Runner:
         self.gh, self.cfg, self.ref = gh, cfg, ref
         self.job = ref.job
         self.work = os.path.join(cfg['work_root'], ref.id)
-        self.last_beat = 0
+        self.last_beat = 0                 # last time job.json was checked (cancel)
+        self.last_write = time.time()      # last time job.json was written (the claim just now)
+        self.pending = {}                  # result files: uploaded in ONE commit with the final job state
 
     # --- state
     def progress(self, stage, percent, message, status=None):
@@ -326,18 +365,22 @@ class Runner:
                 j.setdefault('history', []).append({'at': now(), 'status': status})
         self.ref.update(f'{stage} {percent}%', m)
         self.job = self.ref.job
-        self.last_beat = time.time()
+        self.last_beat = self.last_write = time.time()
         log(self.ref.id, f'[{stage} {percent}%]', message)
 
     def beat(self):
+        """Every 90 s: re-read job.json (no commit) to see a cancel. Renew the lease (one commit) only when the last
+        write is 10 minutes old, so a normal stage makes no heartbeat commits; the lease (15 min) never runs out."""
         if time.time() - self.last_beat < HEARTBEAT_SECONDS:
             return
         self.ref.load()
+        self.last_beat = time.time()
         if self.ref.job.get('cancel_requested'):
             raise Cancelled()
-        self.ref.update('heartbeat', lambda j: j.update(lease_until=lease_until(), heartbeat_at=now()))
+        if time.time() - self.last_write >= LEASE_RENEW_SECONDS:
+            self.ref.update('heartbeat', lambda j: j.update(lease_until=lease_until(), heartbeat_at=now()))
+            self.last_write = time.time()
         self.job = self.ref.job
-        self.last_beat = time.time()
 
     def check_control(self):
         if os.path.exists(os.path.join(APP_DIR, 'STOP')) or os.path.exists(os.path.join(APP_DIR, 'CANCEL')):
@@ -456,6 +499,8 @@ class Runner:
         return got
 
     def upload_outputs(self, names):
+        """Collect the result files. They are committed in ONE commit together with the final job state
+        (done or failed) by do_one, instead of one commit per file."""
         base = f'{JOBS_DIR}/{self.ref.id}/out'
         uploaded = []
         for n in names:
@@ -465,14 +510,10 @@ class Runner:
             with open(p, 'rb') as f:
                 data = f.read()
             dest = f'{base}/{n.replace(os.sep, "/")}'
-            self.gh.put_file(dest, data, f'blender job {self.ref.id}: upload {n}', self.cfg['queue_branch'], self.existing_sha(dest))
+            self.pending[dest] = data
             uploaded.append({'file': dest, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
-            self.beat()
+        log(self.ref.id, f'{len(uploaded)} result file(s) ready; they go up in one commit with the final job state')
         return uploaded
-
-    def existing_sha(self, path):
-        meta = self.gh.call('GET', f'contents/{path}?ref={self.cfg["queue_branch"]}', ok404=True)
-        return meta['sha'] if isinstance(meta, dict) else None
 
     # --- the job
     def execute(self):
@@ -562,7 +603,7 @@ class Runner:
             val['problems'] = val.get('problems', []) + br['problems']
         with open(os.path.join(out_dir, 'validation.json'), 'w', encoding='utf-8') as f:
             json.dump(val, f, indent=1)
-        self.progress('uploading', 90, 'Uploading the results')
+        log(self.ref.id, '[uploading 90%] Collecting the results (one commit with the final state)')
         names = ['char.glb', 'events.json', 'inspection.json', 'build-report.json', 'validation.json', 'preview-weapon.glb']
         names += sorted(n for n in os.listdir(out_dir) if n.endswith('.png'))
         for a in anims:  # keep the animation scripts with the results (they are how the clip was made)
@@ -669,18 +710,30 @@ def self_check(cfg, gh, full=False):
     return res
 
 
-def post_worker_status(gh, cfg, state, extra=None):
+_STATUS = {'state': None}  # the state the status file on GitHub has now (kept in memory)
+
+
+def worker_status_files(cfg, state, extra=None):
     path = f'{JOBS_DIR}/_workers/{cfg["worker_id"]}.json'
     body = {'worker_id': cfg['worker_id'], 'state': state, 'at': now(), 'host': socket.gethostname(), **(extra or {})}
-    for _ in range(3):
-        try:
-            meta = gh.call('GET', f'contents/{path}?ref={cfg["queue_branch"]}', ok404=True)
-            gh.put_file(path, (json.dumps(body, indent=1) + '\n').encode(), f'blender worker {cfg["worker_id"]}: {state}', cfg['queue_branch'], meta['sha'] if meta else None)
-            return
-        except Conflict:
-            continue
-        except Exception as e:
-            log('could not post worker status:', e); return
+    return {path: (json.dumps(body, indent=1) + '\n').encode()}
+
+
+def post_worker_status(gh, cfg, state, extra=None):
+    """Write the worker status file ONLY when the state really changes (idle / busy / stopped / checked).
+    No timed "I'm alive" commits: every commit makes Vercel queue builds. "at" = when the state last changed."""
+    if _STATUS['state'] == state:
+        return
+    path = f'{JOBS_DIR}/_workers/{cfg["worker_id"]}.json'
+    try:
+        if _STATUS['state'] is None:  # first time since this start: maybe the file already says so (a restart)
+            b, _ = gh.get_file(path, cfg['queue_branch'])
+            if b and json.loads(b).get('state') == state:
+                _STATUS['state'] = state; return
+        gh.commit_files(worker_status_files(cfg, state, extra), f'blender worker {cfg["worker_id"]}: {state}{SKIP_TAG}', cfg['queue_branch'])
+        _STATUS['state'] = state
+    except Exception as e:
+        log('could not post worker status:', e)
 
 
 SYNC_DIRS = ('blender_ops', 'prompts')  # Blender-side scripts and prompts follow the repo's main branch
@@ -726,26 +779,29 @@ def do_one(gh, cfg):
         if not claim(ref, cfg):
             continue
         log('claimed job', ref.id, ref.job.get('type'), ref.job.get('asset_id'))
-        post_worker_status(gh, cfg, 'busy', {'job': ref.id})
         r = Runner(gh, cfg, ref)
+        idle = worker_status_files(cfg, 'idle')
         try:
             result = r.execute()
             final = 'awaiting_review' if ref.job.get('type') == 'animate' else 'completed'
             r.ref.load()
             r.ref.update('done', lambda j: j.update(status=final, result=result, error=None, lease_until=None,
                                                      progress={'stage': 'done', 'percent': 100, 'message': result['summary']},
-                                                     history=j.get('history', []) + [{'at': now(), 'status': final}]))
+                                                     history=j.get('history', []) + [{'at': now(), 'status': final}]),
+                         {**r.pending, **idle})  # ONE commit: all result files + final state + worker idle
+            _STATUS['state'] = 'idle'
             log('job', ref.id, '->', final, result['summary'])
         except Cancelled:
             r.ref.load()
             if os.path.exists(os.path.join(APP_DIR, 'STOP')) and not r.ref.job.get('cancel_requested'):
                 # The worker is being stopped: give the job back to the queue.
                 r.ref.update('released', lambda j: j.update(status='queued', worker_id=None, lease_until=None,
-                                                            progress={'stage': 'queued', 'percent': 0, 'message': 'Worker was stopped; waiting to restart'}))
+                                                            progress={'stage': 'queued', 'percent': 0, 'message': 'Worker was stopped; waiting to restart'}), idle)
             else:
                 r.ref.update('cancelled', lambda j: j.update(status='cancelled', lease_until=None,
                                                               progress={'stage': 'cancelled', 'percent': 0, 'message': 'Cancelled'},
-                                                              history=j.get('history', []) + [{'at': now(), 'status': 'cancelled'}]))
+                                                              history=j.get('history', []) + [{'at': now(), 'status': 'cancelled'}]), idle)
+            _STATUS['state'] = 'idle'
             try: os.remove(os.path.join(APP_DIR, 'CANCEL'))
             except OSError: pass
             log('job', ref.id, 'stopped/cancelled')
@@ -766,11 +822,12 @@ def do_one(gh, cfg):
                                        'message': (f'Retry {tries + 1} of {cap}: ' if retry else 'Stopped (no retries left): ') + err[:300]},
                              history=j.get('history', []) + [{'at': now(), 'status': 'failed', 'retries': tries + 1 if retry else tries,
                                                               'next': 'queued' if retry else 'stopped'}])
-                r.ref.update('failed', failed)
+                r.ref.update('failed', failed, {**r.pending, **idle})  # results made so far (e.g. failed validation) go up too
+                _STATUS['state'] = 'idle'
                 log('job', ref.id, '->', r.ref.job.get('status'), f"(retries {r.ref.job.get('retries')}/{r.ref.job.get('max_retries', 2)})")
             except Exception as e2:
                 log('could not record failure:', e2)
-        post_worker_status(gh, cfg, 'idle')
+        post_worker_status(gh, cfg, 'idle')  # only commits if the final commit above did not get through
         return True
     return False
 
@@ -837,8 +894,9 @@ def main():
         try: os.remove(os.path.join(APP_DIR, f))
         except OSError: pass
     log('worker', cfg['worker_id'], 'started; polling', cfg['repo'], 'branch', cfg['queue_branch'])
-    post_worker_status(gh, cfg, 'idle', {'check': self_check(cfg, gh)})
-    last_status = time.time()
+    chk = self_check(cfg, gh)
+    log('start check:', json.dumps(chk))
+    post_worker_status(gh, cfg, 'idle', {'check': chk})  # commits only if the status file did not already say "idle"
     while True:
         if os.path.exists(os.path.join(APP_DIR, 'STOP')):
             post_worker_status(gh, cfg, 'stopped'); log('stopped'); return 0
@@ -850,8 +908,6 @@ def main():
             log('poll error:', e); did = False
         if a.once:
             return 0
-        if time.time() - last_status > 900:  # an "I'm alive" note every 15 minutes while idle
-            post_worker_status(gh, cfg, 'idle'); last_status = time.time()
         if not did:
             for _ in range(int(cfg['poll_seconds'] / 5)):
                 if os.path.exists(os.path.join(APP_DIR, 'STOP')):
