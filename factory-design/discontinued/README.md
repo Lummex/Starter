@@ -1,10 +1,42 @@
 # Discontinued list (Sweep)
 
-Last checked: **Oct 27, 2026** by Sweep (cleanup).
+Last checked: **Oct 28, 2026** by Sweep (cleanup).
 
 **Team rule (from Ken):** anything on this list, or inside any `_discontinued` folder, is **not used**. Don't look at it. Don't use it. Nothing here has been deleted.
 
 Times are Ken's local time (Pacific). "Today" = Oct 27, so anything made Oct 27 was left alone.
+
+---
+
+## 0. Lined up for deletion Oct 28 — WAITING for Ken's OK in Oreheart Studio
+
+Forge passed on a job to permanently delete the items below. Sweep has **not deleted anything yet**: a permanent delete needs Ken's own "Yes" on the Studio's **Waiting for you** page (decision `delete-old-builds-oct28`). Until then everything below still exists.
+
+The commit SHAs are recorded so the code can be restored from git history if a branch is deleted.
+
+### GitHub Lummex/Starter — issues
+| Issue | Title | State (Oct 28) |
+|---|---|---|
+| #1 | hard wood floor refinishing website | closed |
+| #2 | truck inventory tracker | closed |
+| #4 | OreHeart (old version) | open |
+| #6 | Oreheart1 (old version) | open |
+
+### GitHub Lummex/Starter — branches (last commit SHA, Oct 28)
+| Branch | Last commit SHA | Open pull request on it |
+|---|---|---|
+| factory/issue-2 | `d8a78daf33064d3f3416a9f530d8c62d4db63a81` | #3 "Factory: truck inventory tracker (#2)" |
+| factory/issue-4 | `1e3ff810121cd51190e94999ad3036a7cee9d65a` | #5 "Factory: OreHeart (#4)" |
+| factory/issue-6 | `6a2b614c6f5c5031fc9985781a9d95d3a0c7876e` | #7 "Factory: Oreheart1 (#6)" |
+
+Deleting a branch closes its open pull request; the PR page keeps the commits, so the code can still be restored from it.
+
+### Vercel (team Lummex) — projects
+- `starter` (already disconnected from Git)
+- `factory-2` (already disconnected from Git)
+
+### Keep — do NOT touch
+Issue #8, issue #11 (Hoardfire idea), branches `main`, `factory/issue-8` (`9d92f743…`), `blender-queue`; Vercel `oreheart-8` (oreheart.cards) and `starter-dashboard`; everything in projects/, factory-data/, factory/, dashboard/, factory-design/.
 
 ---
 
@@ -30,16 +62,16 @@ Job folders under `blender-jobs/` (left in place; GitHub has no "move"):
 - Cancelled (1): `goblin-grunt-reactions-r2`
 - Completed (2): `goblin-slinger-inspect-001`, `goblin-slinger-inspect-002`
 - Awaiting review, finished Oct 26 (44):
-  `goblin-bomber-reactions-r1`, `goblin-bomber-reactions-r2`, `goblin-bomber-sig-a`, `goblin-bomber-sig-b`,
-  `goblin-grunt-reactions-r1`, `goblin-grunt-reactions-r2a`, `goblin-grunt-reactions-r2b`, `goblin-grunt-sig-a`, `goblin-grunt-sig-b`,
-  `goblin-pebbler-reactions-r1`, `goblin-pebbler-reactions-r2`, `goblin-pebbler-sig-a`, `goblin-pebbler-sig-b`,
-  `goblin-scrapper-reactions-r1`, `goblin-scrapper-reactions-r2`, `goblin-scrapper-sig-a`, `goblin-scrapper-sig-b`,
-  `goblin-slinger-reactions-r1`, `goblin-slinger-reactions-r2`, `goblin-slinger-sig-a`, `goblin-slinger-skull-throw-001` … `-004`,
-  `goblin-sneak-reactions-r1`, `goblin-sneak-reactions-r2`, `goblin-sneak-sig-a`, `goblin-sneak-sig-b`,
-  `junk-shaman-reactions-r1`, `junk-shaman-reactions-r2`, `junk-shaman-sig-a`, `junk-shaman-sig-b`,
-  `rotgut-grenadier-reactions-r1`, `rotgut-grenadier-reactions-r2`, `rotgut-grenadier-sig-a`, `rotgut-grenadier-sig-b`,
-  `shiv-rat-reactions-r1`, `shiv-rat-reactions-r2`, `shiv-rat-sig-a`, `shiv-rat-sig-b`,
-  `skullbasher-rusher-reactions-r1`, `skullbasher-rusher-reactions-r2`, `skullbasher-rusher-sig-a`, `skullbasher-rusher-sig-b`
+`goblin-bomber-reactions-r1`, `goblin-bomber-reactions-r2`, `goblin-bomber-sig-a`, `goblin-bomber-sig-b`,
+`goblin-grunt-reactions-r1`, `goblin-grunt-reactions-r2a`, `goblin-grunt-reactions-r2b`, `goblin-grunt-sig-a`, `goblin-grunt-sig-b`,
+`goblin-pebbler-reactions-r1`, `goblin-pebbler-reactions-r2`, `goblin-pebbler-sig-a`, `goblin-pebbler-sig-b`,
+`goblin-scrapper-reactions-r1`, `goblin-scrapper-reactions-r2`, `goblin-scrapper-sig-a`, `goblin-scrapper-sig-b`,
+`goblin-slinger-reactions-r1`, `goblin-slinger-reactions-r2`, `goblin-slinger-sig-a`, `goblin-slinger-skull-throw-001` … `-004`,
+`goblin-sneak-reactions-r1`, `goblin-sneak-reactions-r2`, `goblin-sneak-sig-a`, `goblin-sneak-sig-b`,
+`junk-shaman-reactions-r1`, `junk-shaman-reactions-r2`, `junk-shaman-sig-a`, `junk-shaman-sig-b`,
+`rotgut-grenadier-reactions-r1`, `rotgut-grenadier-reactions-r2`, `rotgut-grenadier-sig-a`, `rotgut-grenadier-sig-b`,
+`shiv-rat-reactions-r1`, `shiv-rat-reactions-r2`, `shiv-rat-sig-a`, `shiv-rat-sig-b`,
+`skullbasher-rusher-reactions-r1`, `skullbasher-rusher-reactions-r2`, `skullbasher-rusher-sig-a`, `skullbasher-rusher-sig-b`
 
 Still live, NOT discontinued: `blender-jobs/README.md`, `blender-jobs/_workers/`, and the 4 `gyrocopter-ace-runway-*` jobs (today).
 
@@ -71,10 +103,10 @@ Careful — these look old but ARE still used: the `-v2` **accessories** (frying
 1. **Downloads, made today (Oct 27) — left alone:** `ohmain-*` (4), `ohbw-*` (3: worker.py, glbtool.py, animate.md), `ohg-*` (11 gyrocopter clips/sheets), `ohgy*` (15), `oh-gnome-tinker-wrench.glb`, `oh-bomber-idle-clip.mp4`, `oh-bomber-idle-sheet.jpg`, folders `oh-gy1`, `oh-gy2`, `oh-rw1`–`oh-rw4`, `oh-wrench`. Sweep can list these next time once they're a day old.
 2. **Downloads check may be incomplete:** the folder has more than 2,000 items and the listing tool stops at 2,000, so a few more oh-* files may exist.
 3. **Editor models:** `crystal-node-hd` (full-detail crystal node, no card uses it), `gnome-smith-miner-oct25` (newer Arcsmith body not yet used, but its pickaxe IS used), `gyrocopter-ace-oct25` (not the card's model, but still named in the gyrocopter's saved look).
-4. **Old game branches:** `factory/issue-2`, `factory/issue-4`, `factory/issue-6` (last change Oct 13; the game is `factory/issue-8`). Look unused.
+4. **Old game branches:** `factory/issue-2`, `factory/issue-4`, `factory/issue-6` (last change Oct 13; the game is `factory/issue-8`). Look unused. *(Oct 28: lined up for deletion, see section 0.)*
 5. **Leftover upload folders on main:** `oreheart-upload/` (Oct 13, early design + factory copy), `factory/STEP-2-factory-folder/config.json` (Oct 13). Nothing in the factory code or workflows points at them.
 6. **Old round notes on main:** `factory-design/round-9b-queued.md`, `factory-design/round9c/` (Oct 20–21). `round-8b-queued.md` is still mentioned in OREHEART-HANDOFF.md, so leave that one.
-7. **Vercel:** two projects not in the team list: `starter` (818 preview builds, all from `blender-queue`; last change Oct 20) and `starter-dashboard`. Ask before treating them as old.
+7. **Vercel:** two projects not in the team list: `starter` (818 preview builds, all from `blender-queue`; last change Oct 20) and `starter-dashboard`. Ask before treating them as old. *(Oct 28: `starter` lined up for deletion, see section 0; `starter-dashboard` is kept.)*
 8. **Old Blender worker copy** on Ken's PC: Sweep can't see running programs. Only the copy in `%LOCALAPPDATA%\OreheartBlenderWorker` is the real one.
 
 ---
