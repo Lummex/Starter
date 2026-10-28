@@ -20,7 +20,7 @@ The owner designs Oreheart in his editors (Model Editor, Game Editor, Arena Edit
 
 ## Round 26 — the current round (owner, Oct 28) — read this first
 
-The current round is **Round 26**. Read `factory-design/design/oreheart-round-26-combined-brief.md` first: it is the whole job for this round. **Round 24** (Skullflinger skull throw) and **Round 25** (card drag on its own) are discontinued as separate rounds (copies are in `factory-design/discontinued/`); do not build them from any older text. The skull throw that is already in the game stays as it is. Every round section below is history from earlier rounds.
+The current round is **Round 26**. Read `factory-design/design/oreheart-round-26-combined-brief.md` first: it is the whole job for this round. **Round 24** (Skullflinger skull throw) and **Round 25** (card drag on its own) are discontinued as separate rounds (copies are in `factory-design/discontinued/`); do not build them from any older text. The owner rejected the skull throw that build #55 put in the game: Round 26 item (0) removes it. Every round section below is history from earlier rounds.
 
 ## Round 23 — the hand like the layout editor, failing checks, flying units, Gnome/Dwarf model sizes (owner, Oct 25) — built
 
