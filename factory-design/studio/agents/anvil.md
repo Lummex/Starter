@@ -96,3 +96,11 @@
 - Reading big code files through the Chrome tool: keep the file in window._x, then return ~900-char slices with ? = & swapped for look-alikes. Patching: string-replace anchors in JS (check each occurs once), then DataTransfer File into the upload page input; check head oid first so no other session's commit is lost.
 - Vercel queue jam again (Oct 28 evening): oreheart-8 preview 1beebd5 (oreheart-8-47j8b29wj) stayed Queued 60+ min; GitHub preview-only job times out at 20 min but the Vercel deploy stays queued.
 - 2026-10-28 (evening) Fifth small fix (from Forge): drag card keeps its shape, 88% of the square. Commit 1beebd5. Preview run #18 -> oreheart-8-47j8b29wj, stuck in Vercel queue, not tested yet. Report: factory-design/studio/reports/2026-10-28-anvil-drag-card-shape.md.
+
+## Learned Oct 28 (7th small fix: lifted unit follows the pointer)
+- Junk Shaman lift code: app.ts startLift / beginLandingPick (ghost token, pointer handlers, l.stop). 3D figures: scene.ts createBoardView, per-frame loop over figs (goal lerp, f.c3d.play(...) picks the clip). creature3d.ts loads only clips named in models.json `actions`; extra roles (react_lifted, special) must be loaded by name from `clips`. play() loops anything not in once() (attack/mine/hit/defeat).
+- New hooks (b0db357): BoardView.setCarry({uid, holder, x, y} | null); C3D anims 'lifted' and 'special' (special loops between its lift_start/lift_end events = the Shaman holds the lift); C3D.has(name).
+- Screen to board point: ray from camera through the pointer (unproject at z 0.5) to a horizontal plane; board top is y 0 (same trick as updateFlowDest).
+- Vercel jam cause: Git auto-deploy in ~6 projects for every push on any branch (blender-queue status commits too), one build at a time. Keep my own pushes few. Only Ken can fix it (disconnect Git / Ignored Build Step).
+- The preview-only Build step is vite only (no tsc), so a type error won't fail it; keep patches type-safe anyway.
+- 2026-10-28 (evening) Seventh small fix (from Forge): lifted unit follows the pointer and loops OH_React_Lifted; Shaman holds OH_Special. Commit b0db357 on top of 11d9ed3. Preview #20 -> oreheart-8-e95v6egi5, stuck in Vercel queue, NOT tested. Report: factory-design/studio/reports/2026-10-28-anvil-lift-follows-pointer.md.
