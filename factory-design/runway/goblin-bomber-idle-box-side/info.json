@@ -1,0 +1,26 @@
+{
+ "id": "goblin-bomber-idle-box-side",
+ "character": "goblin-bomber",
+ "move": "idle-box",
+ "prompt": "A cartoon goblin with green skin, a purple ragged kilt and big brown boots. Seen from his side, in profile. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), idle: he stands in place breathing slowly, chest rising and falling, a slight sway and a gentle weight shift from one foot to the other, arms relaxed at his sides, hands in loose fists. Part 2 (3-6 s), boxing workout: he raises both fists into a guard in front of his chin, bounces lightly on his toes and throws practice punches into the empty air: left jab, right jab, left hook, right hook, then lowers his arms back to the relaxed standing pose from the start so the clip loops. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Feet stay in the same spot. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D game animation.",
+ "model": "grok_imagine_1_5_lite",
+ "ratio": "auto_480p",
+ "duration": 6,
+ "taskId": "d7ff432c-91ad-4fb2-9079-eec730c01531",
+ "made": "2026-10-28T00:22:52.349Z",
+ "view": "side",
+ "segments": [
+  {
+   "move": "idle",
+   "from": 0,
+   "to": 3
+  },
+  {
+   "move": "shadow-boxing",
+   "from": 3,
+   "to": 6
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}

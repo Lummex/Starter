@@ -1,52 +1,28 @@
 {
- "at": "2026-10-27T08:36:37.695Z",
+ "at": "2026-10-28T00:23:18.165Z",
  "results": [
   {
-   "id": "goblin-bomber-idle",
-   "skipped": true
-  },
-  {
-   "id": "gyrocopter-ace-fly-front",
+   "id": "goblin-bomber-idle-box-front",
    "duration": 6,
    "moves": [
-    "hover-idle",
-    "fly-forward"
+    "idle",
+    "shadow-boxing"
    ]
   },
   {
-   "id": "gyrocopter-ace-fly-side",
+   "id": "goblin-bomber-idle-box-side",
    "duration": 6,
    "moves": [
-    "hover-idle",
-    "fly-forward"
+    "idle",
+    "shadow-boxing"
    ]
   },
   {
-   "id": "gyrocopter-ace-fly-back",
-   "error": "POST /image_to_video -> 400 {\"error\":\"Validation of body failed\",\"issues\":[{\"code\":\"too_big\",\"path\":[\"promptText\"],\"message\":\"Too big: expected string to have <=1000 characters\",\"origin\":\"string\",\"maximum\":1000,\"inclusive\":true}],\"docUrl\":\"https://docs.dev.runwayml.com/api\"}"
-  },
-  {
-   "id": "gyrocopter-ace-cast-front",
+   "id": "goblin-bomber-idle-box-back",
    "duration": 6,
    "moves": [
-    "spark-throw",
-    "knocked-back"
-   ]
-  },
-  {
-   "id": "gyrocopter-ace-cast-side",
-   "duration": 6,
-   "moves": [
-    "spark-throw",
-    "knocked-back"
-   ]
-  },
-  {
-   "id": "gyrocopter-ace-cast-back",
-   "duration": 6,
-   "moves": [
-    "spark-throw",
-    "knocked-back"
+    "idle",
+    "shadow-boxing"
    ]
   }
  ]
