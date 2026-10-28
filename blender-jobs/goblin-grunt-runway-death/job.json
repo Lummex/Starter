@@ -2,44 +2,52 @@
  "id": "goblin-grunt-runway-death",
  "type": "animate",
  "asset_id": "goblin-grunt",
- "status": "queued",
+ "status": "running",
  "priority": 9,
- "created_at": "2026-10-28T08:15:00Z",
- "created_by": "Spring (Forge job, Ken approved Runway take goblin-grunt-death Oct 28)",
+ "created_at": "2026-10-28T08:20:00Z",
+ "created_by": "Spring (Forge job Oct 28; Ken approved both parts of take goblin-grunt-death in Oreheart Studio)",
  "retries": 0,
- "max_retries": 2,
+ "max_retries": 1,
  "retry_on_failure": true,
  "cancel_requested": false,
- "worker_id": null,
+ "worker_id": "starr-f0fad5",
  "lease_until": "2026-10-28T08:18:26Z",
  "heartbeat_at": "2026-10-28T08:13:26Z",
  "error": null,
  "progress": {
-  "stage": "queued",
-  "percent": 0,
-  "message": "Waiting for the Blender worker"
+  "stage": "designing",
+  "percent": 25,
+  "message": "Claude Code is designing the animation"
  },
  "source": {
-  "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8"
+  "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8",
+  "parts": {
+   "frying-pan": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/frying-pan.glb@factory/issue-8"
+  }
  },
- "request": "Snotskull Grunt (goblin-grunt): a scrappy goblin foot soldier with a rusty helmet and purple rags; he holds a wooden board in his right hand. REFERENCE VIDEO: the owner had Runway make one 6 s FRONT-view death video and APPROVED both halves. Its frames are in refs/ (Read the pictures with the Read tool): refs/goblin-grunt--front.jpg is his model from the front; refs/goblin-grunt-death/frames/fall-over/f01..f12.jpg is part 1 (0-3 s) and refs/goblin-grunt-death/frames/lying-still/f01..f12.jpg is part 2 (3-6 s), 12 evenly spaced frames per 3 s, time order. FIRST look at all the pictures, then match his BODY and LIMB poses frame by frame: the dizzy wobble, knees buckling, sitting down onto his bottom, then tumbling back onto his back, and lying flat, arms loosely out to the sides. This is a rig motion reference only. IGNORE in the video: face and mouth (never animate the face), camera drift, and any change of the held prop's size or shape. HELD PROP: the wooden board is parented to his hand bone and must stay in that hand the whole clip (do not drop it, do not animate it separately); keep it from passing through his body or the floor. Owner rules for every goblin: nothing goes through his body or the ground (when lying down, his back, head and limbs rest ON the floor, never under it); he falls in place where he stood (no sliding, root does not travel); weighty and cartoony, never floaty; poses read clearly from above and in front (board game camera); he faces straight forward (+Z) like the video. BASE POSE: \"base_pose\": \"rest\" (turns are relative to the straight front-facing rest pose, same as refs/goblin-grunt--front.jpg). This job REPLACES only the clip OH_Death (\"replace\": true). Do not touch, rename or remove any other clip. Smooth, even game animation.",
+ "request": "Snotskull Grunt (goblin-grunt): defeat animation from an owner-approved Runway reference video (front view, 6 s). refs/goblin-grunt--front.jpg is his model from the front; refs/goblin-grunt-death/frames/fall-over/f01..f12.jpg is part 1 (0-3 s) and refs/goblin-grunt-death/frames/lying-still/f01..f12.jpg is part 2 (3-6 s), 12 evenly spaced frames per part, time order. IGNORE in the video: the face, camera drift, and the small sideways shuffle of the feet at the very start (feet stay planted until he sits down). Owner rules for every goblin: nothing goes through his body, his held item or the ground; feet planted unless told otherwise (no sliding or sinking); weighty and cartoony, never floaty; poses read clearly from above and in front (board game camera). BASE POSE: these clips use \"base_pose\": \"rest\", so ctx.key turns are relative to the model's REST pose, the straight front-facing pose in refs/goblin-grunt--front.jpg. He faces straight forward (+Z, toward the camera) like the video. This is a rig motion reference only: never animate the face. FIRST Read all the pictures for a move, then match his BODY and LIMB poses frame by frame (torso lean and twist, head tilt, arm and leg angles, hip height) and the timing. If refs/ is missing or empty, do NOT write any animation files (the job will be retried). Do not touch, rename or remove any existing clip.",
  "animations": [
   {
    "name": "OH_Death",
-   "description": "Death, one-shot, from the whole video. Frames 0-15: standing in the start pose (same as frame 0 of OH_Idle), he wobbles dizzily side to side (fall-over f01-f05). Frames 15-40: knees buckle, hips drop straight down and he sits onto his bottom with legs out in front (f06-f11). Frames 40-62: he tips backwards and gently tumbles onto his back, arms swinging loosely up and out (f12 and lying-still f01-f02). Frames 62-72: small settle bounce as he lands flat on his back (lying-still f03). Frames 72-90: lies completely still on his back, arms loosely to the sides, legs relaxed (lying-still f04-f12). Hold the final pose: it is the last frame the game shows. Does NOT loop.",
+   "description": "Death, from the owner-approved video: part 1 'fall-over' (refs/goblin-grunt-death/frames/fall-over, f01-f12) then part 2 'lying-still' (refs/goblin-grunt-death/frames/lying-still). Frames 0-75 follow fall-over f01-f12 (frame N of 12 = about N*6 frames): from the base pose he wobbles as if very dizzy (small sway of hips and spine, head lolls), knees buckle, he sits straight down onto his bottom on the spot (about f09-f10), then tips gently backwards onto his back (f11-f12), legs up a little then down. Frames 75-90 he settles flat on his back like lying-still f01-f04 (small bounce, arms fall loosely out to the sides, legs relax). Frames 90-120 he lies completely still in that pose (no breathing). Use \"move\" on the hips to lower him to the floor: the hips go straight DOWN (and slightly back) to lying height so his body rests ON the floor, never under it. He stays in his own square: no sliding, no rolling away; his hips end within about 15% of his height of where they started. He keeps holding his wooden board (frying-pan part) the whole time (it stays in his hand and lies flat on the floor beside him at the end, never through the floor). This clip does NOT return to idle: key every bone you use at the last frame (120) with the lying pose so the clip ends lying down.",
    "frames": [
-    90,
-    90
+    120,
+    120
    ],
    "loop": false,
    "return_to_idle": false,
    "feet_may_move": true,
    "events": [],
-   "base_pose": "rest",
-   "replace": true
+   "base_pose": "rest"
   }
  ],
- "attachments": [],
+ "attachments": [
+  {
+   "part": "frying-pan",
+   "bone": "right hand",
+   "note": "preview prop: his wooden board (frying-pan part), held the whole clip"
+  }
+ ],
  "references": [
   "factory-design/runway-jobs/goblin-grunt--front.jpg",
   "factory-design/runway/goblin-grunt-death/frames/fall-over/f01.jpg",
@@ -72,9 +80,25 @@
  },
  "history": [
   {
-   "at": "2026-10-28T08:15:00Z",
+   "at": "2026-10-28T08:20:00Z",
    "status": "queued",
    "by": "spring"
+  },
+  {
+   "at": "2026-10-28T08:11:36Z",
+   "status": "claimed",
+   "worker": "starr-f0fad5",
+   "recovered": false
+  },
+  {
+   "at": "2026-10-28T08:11:40Z",
+   "status": "running"
+  },
+  {
+   "at": "2026-10-28T08:16:00Z",
+   "status": "running",
+   "by": "spring",
+   "note": "restored this job file: a second Spring run overwrote it by mistake at 08:12 (same job id); worker kept running your spec"
   }
  ],
  "updated_at": "2026-10-28T08:13:26Z"
