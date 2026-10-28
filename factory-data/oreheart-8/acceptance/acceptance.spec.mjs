@@ -3351,7 +3351,7 @@ test('AC109: Strongholds stand in the corners: player (7,2), enemy (1,12)', asyn
   expect(acts.some((a) => a.type === 'move' && a.creatureUid === near && a.row === 1 && a.col === 12)).toBe(false);
   expect(acts.some((a) => a.type === 'move' && a.creatureUid === near && a.row === 1 && a.col === 11)).toBe(true);
   // the enemy summons beside its own Stronghold, never on it
-  s = await newMatch(page, { ai: false, factionLock: false, setup: { firstPlayer: 'opponent', opponentHand: ['goblin-scrapper'] } }); // a Fighter: no Tunnel (Round 10)
+  s = await newMatch(page, { ai: false, factionLock: false, setup: { firstPlayer: 'opponent', opponentHand: ['goblin-scrapper'], opponentCrystals: 6 } }); // a Fighter: no Tunnel (Round 10); Round 24: give the enemy crystals to pay for it
   const opp = (await legal(page)).filter((a) => a.type === 'summon');
   expect(opp.some((a) => a.row === 1 && a.col === 13)).toBe(true);
   expect(opp.some((a) => a.row === 1 && a.col === 12)).toBe(false);
@@ -9560,22 +9560,7 @@ test('AC357: Gnome and Dwarf units show their 3D models (character only); the cl
   expect(errors).toEqual([]);
 });
 
-test('AC356: report screenshots — goblins on the board and close views (1920x1080)', async ({ page }) => {
-  test.setTimeout(45000);
-  await page.setViewportSize({ width: 1920, height: 1080 });
-  await start(page, quiet({ board: r21Place(['goblin-scrapper', 'goblin-sneak', 'rotgut-grenadier', 'wolf-rider', 'grubnaks-big-boss-troll', 'junk-shaman', 'skullbasher-rusher', 'goblin-scrounger']) }));
-  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
-  await expect.poll(async () => ((await renderStats(page)).figures || []).filter((f) => /\.glb$/.test(f.source || '')).length, { timeout: 25000 }).toBe(8);
-  await page.screenshot({ path: test.info().outputPath('round21-goblins-board.png') });
-  for (const [id, name] of [['goblin-scrapper', 'bowler-brawler'], ['goblin-sneak', 'backstabbing-thief'], ['rotgut-grenadier', 'goblin-chef']]) {
-    const f = ((await renderStats(page)).figures || []).find((x) => x.cardId === id);
-    const b = f && f.screenBox;
-    if (b && b.width > 0) {
-      const pad = Math.max(b.width, b.height);
-      await page.screenshot({ path: test.info().outputPath(`round21-${name}-close.png`), clip: { x: Math.max(0, b.x - pad), y: Math.max(0, b.y - pad), width: Math.min(1920, b.width + 2 * pad), height: Math.min(1080, b.height + 2 * pad) } });
-    }
-  }
-});
+// AC356 (Round 21 report screenshots) removed in Round 24: screenshot-only, proved nothing and timed out.
 
 // ======================= Round 22 (owner, Oct 25) =======================
 const r22Fig = async (page, uid) => ((await renderStats(page)).figures || []).find((f) => f.uid === uid) || {};
@@ -9939,4 +9924,69 @@ test('AC368: Card Comp vs Card Comp watch bar sits bottom-right; Pause, Play and
   expect((await getState(page)).turn, 'paused: no turn passes').toBe(t);
   await page.getByRole('button', { name: 'Exit to menu', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+});
+
+// ======================= Round 24 (owner, Oct 26): Skullflinger's skull throw =======================
+// The brief calls these AC358–AC360; those numbers were already taken (Round 22), so they are AC369–AC371 here.
+const r24Setup = async (page) => {
+  await start(page, quiet({ board: [
+    { cardId: 'goblin-slinger', owner: 'player', row: 6, col: 5 },
+    { cardId: 'grubnaks-big-boss-troll', owner: 'opponent', row: 3, col: 5 }, // 3 straight up, clear line, in range 6
+  ] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  let s = await getState(page);
+  const sl = at(s, 6, 5), troll = at(s, 3, 5);
+  await expect.poll(async () => (await r22Fig(page, sl.uid)).source, { timeout: 20000 }).toBe('goblin-slinger.glb');
+  let atk = null;
+  for (let k = 0; k < 5 && !atk; k++) {
+    await done(page);
+    atk = (await legal(page)).find((a) => a.type === 'attack' && a.creatureUid === sl.uid);
+  }
+  expect(atk, 'Skullflinger can attack the troll').toBeTruthy();
+  s = await getState(page);
+  return { sl: at(s, 6, 5), troll: at(s, 3, 5), atk };
+};
+const r24Log = async (page, uid) => ((await renderStats(page)).projectileLog || []).filter((p) => p.shooterUid === uid);
+
+test('AC369/AC370: Skullflinger plays Skull_Throw, a skull leaves his right hand at ~0.63 s, bonks the target and bounces away, all gone within 1.5 s', async ({ page }) => {
+  test.setTimeout(60000);
+  const { sl, troll, atk } = await r24Setup(page);
+  expect((await act(page, atk)).ok).toBe(true);
+  // rules unchanged: exactly his Attack is removed
+  expect(at(await getState(page), 3, 5).health).toBe(troll.health - sl.attack);
+  await expect.poll(async () => ((await renderStats(page)).creatureAnimLog || []).some((e) => e.uid === sl.uid && e.anim === 'attack' && e.clip === 'Skull_Throw'), { timeout: 10000 }).toBe(true);
+  // a projectile is visible in flight at some point
+  await expect.poll(async () => ((await renderStats(page)).projectiles || []).some((p) => p.shooterUid === sl.uid) || (await r24Log(page, sl.uid)).length > 0, { timeout: 5000 }).toBe(true);
+  await expect.poll(async () => { const l = await r24Log(page, sl.uid); return l.length === 1 && l[0].removedMs != null; }, { timeout: 8000 }).toBe(true);
+  const p = (await r24Log(page, sl.uid))[0];
+  expect(p).toMatchObject({ kind: 'skull', clip: 'Skull_Throw', bone: 'RightHand', targetUid: troll.uid, hitTarget: true });
+  expect(p.releaseMs, 'released at the events.json time').toBeGreaterThanOrEqual(560);
+  expect(p.releaseMs).toBeLessThanOrEqual(720);
+  expect(p.spawnOffset, 'spawned at the RightHand bone').toBeLessThanOrEqual(0.1);
+  expect(p.contactMs - p.releaseMs, 'lobbed flight time').toBeGreaterThanOrEqual(250);
+  expect(p.contactMs - p.releaseMs).toBeLessThanOrEqual(700);
+  expect(p.removedMs - p.releaseMs, 'removed within 1.5 s of the throw').toBeLessThanOrEqual(1500);
+  expect(p.maxHeightAfterContact, 'bounces up after the bonk').toBeGreaterThan(p.heightAtContact + 0.05);
+  expect(((await renderStats(page)).projectiles || []).filter((q) => q.shooterUid === sl.uid)).toEqual([]);
+  // the target reacts, the held skull mace stays in his hand, and he goes back to Idle
+  expect(((await renderStats(page)).creatureAnimLog || []).some((e) => e.uid === troll.uid && e.anim === 'hit')).toBe(true);
+  const fig = await r22Fig(page, sl.uid);
+  expect((fig.items || []).some((i) => /skull/.test(i.name) && i.visible !== false), 'held skull mace still visible').toBe(true);
+  await expect.poll(async () => (await r22Fig(page, sl.uid)).currentAnimation, { timeout: 5000 }).toBe('idle');
+});
+
+test('AC371: Skullflinger\'s model keeps its 5 old clips plus Skull_Throw, and events.json gives the release time and bone', async ({ request }) => {
+  const res = await request.get('/models/creatures/goblin-slinger/char.glb');
+  expect(res.ok()).toBe(true);
+  const buf = await res.body();
+  expect(buf.readUInt32LE(0)).toBe(0x46546c67); // "glTF"
+  const json = JSON.parse(buf.subarray(20, 20 + buf.readUInt32LE(12)).toString('utf8'));
+  const clips = (json.animations || []).map((a) => a.name);
+  for (const c of ['Idle', 'Casual_Walk', 'Heavy_Hammer_Swing', 'Hit_Reaction', 'Dead', 'Skull_Throw']) expect(clips).toContain(c);
+  const ev = await request.get('/models/creatures/goblin-slinger/events.json');
+  expect(ev.ok()).toBe(true);
+  const text = JSON.stringify(await ev.json());
+  expect(text).toContain('projectile_release');
+  expect(text).toContain('RightHand');
+  expect(text).toMatch(/0\.633/);
 });

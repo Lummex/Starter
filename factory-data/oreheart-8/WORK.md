@@ -1,25 +1,26 @@
-# Round 23: the hand like the layout editor, failing checks, flying units, Gnome/Dwarf sizes
+# Round 24: Skullflinger's skull throw + remaining failures
 
-Read "Round 23" at the top of SPEC.md. Keep everything from 8a–22 and the owner's direct changes (Gnome/Dwarf models, computer letterbox, crystal colors, status icons, badge ability icon, Card Comp controls bottom-right at 0.58, `.vercelignore`). **Do not touch any model file**, the badge, icons, crystal colors or letterbox. dist < 95 MB (AC90). Commit + push after each item.
+Read "Round 24" at the top of SPEC.md. Keep everything from 8a–23 and the owner's direct changes. **Do not touch any model file**, especially `public/models/creatures/goblin-slinger/char.glb` and `events.json` (owner files, never re-export or compress them). dist < 95 MB (AC90). Commit + push after each item.
 
-Checks changed by the planner: AC272 (no home-row / 20 %-visible limits — owner layout decides), AC355 (Grubnak's own model allowed), AC360 (60 s limit). Owner-edited checks AC24, AC24b, AC80, AC84, AC355, AC357 (Gnome/Dwarf) are binding. If you must change another check, write which and why here.
-
-## Rules & cards
-- Mine Control stance: adjacent enemy Miner → attack when it survives the strike back and crystals aren't low; mine only if it would die or crystals are low (AC341). AI stance code in `src/engine/` / AI files.
-- Card Comp vs Card Comp: Play → Pause → Play, no turns while paused, Exit to menu, plays to the end at 4× (AC344, AC368). `src/game.ts` `setPaused`, `src/ui/app.ts` `refreshModeUi` (keep the owner's bar position/scale).
+Checks changed by the planner: AC109 (the enemy now gets crystals for its summon), AC356 removed (old screenshot-only check). New: AC369–AC371 (the brief calls them AC358–AC360; those numbers were taken). If you must change another check, write which and why here.
 
 ## 3D & visuals
-- Flying units: lift/bob/sway/shadow from the saved look's `flying`, Gyronaut defaults 0.35/0.06/0.6/3°/shadow; hooks `flying`, `lift`, `swayNowDeg`, `groundShadow` on figures (AC366). `src/ui/creature3d.ts`, `src/ui/scene.ts`.
-- `DEFAULT_H`: dwarves 0.95, gnomes 0.85, Brunhilda 1.05, Ram Rider 1.35, Steam Golem 1.6, Beetle 0.9; beetle slides on move (`walk`) and shakes on hit (`hit`) without a skeleton (AC367). `src/ui/creature3d.ts`.
-- Bowler Brawler `bowl` must complete and return the ball to `"hand"` quickly (AC360).
-- Gnome/Dwarf models: make sure owner checks AC80, AC84, AC355, AC357 pass without editing model files.
+- Skullflinger attack plays `Skull_Throw` once, then Idle; clip name and release time read from `events.json`; held skull mace stays visible (AC369). `src/ui/creature3d.ts`, `src/ui/scene.ts`.
+- Projectile: shared skull from `skull-mace.glb`, spawned at the `RightHand` bone at release, arc (~0.6 sq peak), ~2 turns/s spin, 0.35–0.55 s flight to chest height; lands and bounces if the target is gone (AC369). Reuse/generalize the ranged-projectile code.
+- Bonk: bounce up/back/aside, faster spin, one hop, fade ≤0.7 s; star/puff, 3–5 bone chips, white flash, tiny squash, target `hit` anim, existing hit sound (AC370).
+- Hooks: `creatureAnimLog[].clip`, `figures[].items[].visible`, `getRenderStats().projectiles` and `projectileLog` exactly as R24.5 (AC369, AC370).
+- Timeouts: speed up AC89 (Low graphics), AC190/AC191 (arena fit/pan), AC196/AC197 (Commander look-back/impatience), AC261 (unit rings). Find what makes them slow, don't raise limits.
+
+## Rules & cards
+- No rule changes. Damage from Skullflinger stays exactly his Attack, applied as now (AC369).
+- AC58: tapping a mine must mine with exactly the ready Miners next to it (`data-ready-miners` count and `mineAt` both wrong in Round 22 results). Engine mine/miner adjacency + `site-mark` UI.
+- AC109: confirm the enemy can summon on (1,13) but never on its Stronghold (1,12).
 
 ## Interface
-- Hand fan from `owner-layout.json` `hand` (overlap 0.2, angle 4, arc 1.45, popScale 1.6, popY 10, speed 450); remove `cw * 0.62` in `layoutHand`; add `getHandHover().fan` hook (AC363, AC272). `src/ui/app.ts`, `src/main.ts`.
-- Tuck the rest of the hand as soon as a card is grabbed; stays tucked after play/cancel (AC364).
-- Auto-tuck within ~1/3 s when the pointer leaves the fan, including onto the enlarged card (AC365). Verify with test flag off (`window.__app.test = false`) and real mouse at 1920×1080 and 1366×768.
-- Tutorial "Skip Tutorial" button clickable (nothing covering it) → main menu (AC25).
-- Letterbox / phone checks AC24, AC24b must keep passing (owner's change).
+- AC168: remove the weight-100 font face so only the four allowed weights are used.
+- AC176: deck piles must show the owner's `deck-pile` picture as an `<img>` (the check timed out finding it).
+- Re-verify Round 23 hand checks (AC272, AC363–AC365), AC25 Skip Tutorial, AC344/AC368 watch bar.
 
 ## Other
-- Report: pass count; 1920×1080 screenshots of resting fan, raised fan with hovered card, Gyronaut hovering.
+- Run the full suite. The results file is from Round 22, so confirm the Round 23 fixes (AC25, AC341, AC344, AC360, AC363–AC368).
+- REPORT.md: pass count; "Editor updates needed" with the projectile size, arc, spin, bounce and effect names; 1920×1080 screenshots of Skullflinger mid-throw and of the bonk.

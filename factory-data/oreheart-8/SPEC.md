@@ -1,6 +1,8 @@
-# OreHeart — Build Spec (Phase 1B, Round 23 — the hand like the layout editor, failing checks, flying units, Gnome/Dwarf model sizes)
+# OreHeart — Build Spec (Phase 1B, Round 24 — Skullflinger throws skulls that bonk off the target)
 
 ## Summary
+
+**Phase 1B Round 24 (this build)** gives Skullflinger (`goblin-slinger`) the owner's new `Skull_Throw` attack. A real skull leaves his right hand at the time given in `events.json`, flies to the target in a short spinning arc, bonks off it with a small cartoon impact, bounces once and fades away. No rule or number changes. It also re-checks the Round 23 work and the checks that still failed.
 
 **Phase 1B Round 23 (this build)** makes the in-match hand fan exactly like the owner's layout editor (spacing, angle, arc, pop), tucks it after a grab and whenever the mouse leaves it, fixes the remaining real failures (Tutorial Skip, Mine Control stance, Card Comp watch bar, Bowler Brawler check), lets flying units hover, and gives the new Gnome and Dwarf models their own heights. Read "Round 23" under Pages & features first.
 
@@ -38,7 +40,19 @@ Oreheart is a comic-style fantasy card battle in the browser. Goblins, Gnomes an
 
 Tech: Vite + TypeScript (vanilla or React), Three.js for the 3D scene, static `dist/` output, no backend.
 
-### Round 23 (the hand like the layout editor, failing checks, flying units, Gnome/Dwarf model sizes) — READ FIRST
+### Round 24 (Skullflinger's skull throw) — READ FIRST
+
+Keep everything from Rounds 8a–23 and the owner's direct changes. **Do not touch any 3D model file.** `public/models/creatures/goblin-slinger/char.glb` (now with a 6th clip, `Skull_Throw`, 1.6 s) and `events.json` (event `projectile_release` at 0.6333 s from bone `RightHand`) are owner files: never re-export, re-compress or edit them. Keep `dist/` under 95 MB (AC90).
+
+- **R24.1 The attack clip.** When Skullflinger attacks, his figure plays `Skull_Throw` once (not looping), then goes back to Idle. The clip name and release time are read from `events.json` (not hard-coded). The skull mace in his right hand stays visible the whole time. (AC369)
+- **R24.2 The projectile.** At the release time, a flying skull spawns at the world position of his `RightHand` bone. It uses the skull from `skull-mace.glb` (loaded once and shared by every throw, about the same size as the one in his hand). The game moves it, not the animation. It flies to the target's chest height in a short arc (peak ~0.6 squares above the straight line for a far target, less for a close one) and spins end over end about 2 turns per second. It stays in the air ~0.35–0.55 s. If the target is gone before the skull lands, it lands where the target was and bounces once. (AC369)
+- **R24.3 The bonk.** On contact the skull bounces off: it pops up and back the way it came (a little to one side), spins faster, hops once on the ground and fades out within ~0.7 s. At contact there is a quick white star/puff, 3–5 bone chips, a short white flash and a tiny squash/shake on the target, and the target plays its `Hit_Reaction` (`hit`). A short "bonk" uses an existing hit sound if one fits (no new sound files). The damage number may appear when the skull lands, but damage, timing, range and every rule number stay exactly as now. (AC370)
+- **R24.4 General and light.** The throw reuses or extends the shared ranged/projectile code, so any unit can later use `events.json` plus a projectile model the same way. There are only a few projectiles on screen at once, and every projectile and effect is cleaned up when done.
+- **R24.5 Test hooks (test mode).** `getRenderStats().creatureAnimLog` entries add `clip` (the GLB clip actually played, e.g. `{ uid, cardId: "goblin-slinger", anim: "attack", clip: "Skull_Throw" }`). Figure `items[i]` adds `visible` (boolean). `getRenderStats().projectiles` = projectiles on screen now: `[{ id, kind: "skull", shooterUid, targetUid, state: "flying"|"bouncing"|"fading", height }]` (`height` = squares above the ground). `getRenderStats().projectileLog` = every projectile this match, kept after removal: `[{ id, kind, shooterUid, targetUid, clip, bone, releaseMs, spawnOffset, contactMs, removedMs, heightAtContact, maxHeightAfterContact, hitTarget }]`. All times are game-clock ms since the attack clip started; `removedMs` is `null` while it is alive. `spawnOffset` = distance in squares from the spawn point to the `RightHand` bone at release. `hitTarget` = it reached a living target.
+- **R24.6 Re-verify.** Run the whole suite. The last results file is from Round 22, so confirm that the Round 23 fixes (AC25, AC272, AC341, AC344, AC360, AC363–AC368) pass, and fix the remaining real failures: AC58 (ready-Miner counts on mine taps), AC168 (a weight-100 font face), AC176 (deck-pile picture), AC89, AC190, AC191, AC196, AC197 and AC261 (timeouts: make them faster, not longer).
+- **R24.7 Report.** Under **"Editor updates needed"** in `REPORT.md`, list the projectile size, arc height, spin, bounce settings and effect names. Include the pass count and 1920 × 1080 screenshots of Skullflinger mid-throw and of the bonk.
+
+### Round 23 (the hand like the layout editor, failing checks, flying units, Gnome/Dwarf model sizes) — built
 
 Source: "Round 23" and the "Owner rule for every round (Oct 25)" at the top of `factory-design/design/oreheart-phase-1b-brief.md` (binding). Keep everything from 8a–22.
 
@@ -1861,7 +1875,7 @@ Round 21 criteria (goblin 3D models in matches):
 - **AC353** Moving plays `walk`, attacking plays `attack`, the damaged unit plays `hit`, a defeated unit plays `defeat`, then the mover returns to `idle`.
 - **AC354** If a goblin model fails to load, that unit shows the token, other goblins still show in 3D, and the match continues with no page error.
 - **AC355** Four copies of one goblin download its `char.glb` once; Gnome/Dwarf units without a model folder stay non-3D and request no creature model (Grubnak, the Commander, may fetch his own model).
-- **AC356** Report screenshots at 1920 × 1080: several goblins on the board, close views of Bowler Brawler, Backstabbing Thief and Goblin Chef.
+- **AC356** (retired in Round 24: screenshot-only check from Round 21, no longer tested.)
 - **AC357** (Round 22) Left-clicking your unit selects it and lights its squares; clicking a lit square moves it there; right-clicking it opens its card with its ability menu ("Strike…") and changes nothing; right-clicking an enemy shows its card without ability buttons (R22.1).
 - **AC358** (Round 22) Clicking a hand card opens its close-up with "Play this card"; pressing it then clicking a lit back-row square summons it there; a dragged hand card hangs below-left of the pointer, tilted, never under it (R22.2).
 - **AC359** (Round 22) Bowler Brawler has `bowl`, `spinBall`, `basketShot`; at rest the ball is in his RightHand with the owner's green Flame, never in the ground or his body; idling ~20 s plays `spinBall` (R22.5).
@@ -1890,6 +1904,10 @@ Round 14 notes on older criteria: **retired** (owner later changed or removed wh
 Round 10 notes on older criteria: AC11 and AC50 now check Tunnel from turn 1 (R10.13); AC13 checks the straight-line Ranged rule (R10.6); AC17's "one Crystal card per round" becomes "several per turn" (R10.12); AC22 and AC98 close the card with Esc/outside click (R10.8); AC43, AC152-era and AC175/AC218 hand checks use the quarter tuck (R10.9); AC110 allows touching mines (R10.3); AC222 checks streams ending at the Flow crystal counters (R10.7).
 
 Round 9a notes on older criteria: AC20, AC74 and the in-match text-control check use "Give up match!" → "Yes, give up" (was Surrender); every test that used the pop-out Menu items opens Menu → Settings first ("Match settings"); AC73 uses a Sproingle deck (R9a.10); AC104 keeps its perspective and corner checks but its R5b HUD-position checks are replaced by AC212; AC151, AC161, AC163 and AC166 (R5b/R6a HUD positions) are replaced by AC212–AC213 and AC218; AC154 (hover pop-out Menu) is replaced by AC216–AC217; AC160 opens the Menu by click; AC172 checks the code-built mine at 2.43–2.53 tall; AC175 expects 31–37 % hand cards; AC193 (Meshy mine) is retired; AC201 is replaced by AC218 (raise to 1.6 ×, 400–500 ms).
+
+- **AC369** (Round 24) When Skullflinger attacks, it removes exactly his Attack from the target's Health and plays `Skull_Throw`. A skull spawns at his right hand ~0.56–0.72 s after the clip starts, flies 0.25–0.7 s to the target and is removed within 1.5 s of the throw. His held skull mace stays visible, and he returns to Idle (R24.1, R24.2, R24.5).
+- **AC370** (Round 24) When the skull reaches the target, the target plays its hit reaction and the skull bounces away: its height goes up after contact before it falls and fades (R24.3).
+- **AC371** (Round 24) The served `goblin-slinger/char.glb` has the clips Idle, Casual_Walk, Heavy_Hammer_Swing, Hit_Reaction, Dead and Skull_Throw, and `events.json` gives `projectile_release` at 0.633 s from `RightHand` (R24 intro).
 
 ## Out of scope / limitations
 - (Round 22) No new or regenerated 3D models; no changes to the Crystal Node tint, unit stat badge, ability icons or status icons (owner is editing them). Gnome and Dwarf models stay as they are.
@@ -1940,6 +1958,9 @@ Round 9a notes on older criteria: AC20, AC74 and the in-match text-control check
 - (Round 8b) No new 3D models: only Grubnak's Commander card has a viewer; creatures, Sproingle and Borgo get models in later rounds. Meshy may be used only to add one or two clips to the existing rigged Grubnak.
 
 ## Assumptions
+- (Round 24) The prompt's newest owner message is Round 15, but the branch's newest owner brief is **Round 24** (Oct 26, "Skullflinger throws skulls that bonk off the target"); this spec builds Round 24. The brief numbers its checks AC358–AC360, but those numbers already belong to Round 22 checks, so the new checks are **AC369–AC371**. Checks cleanup: **1 removed** (AC356, a Round 21 screenshot-only test that timed out), **1 rewritten** (AC109: the enemy now gets crystals to pay for its summon), **2 added** (AC369/AC370 share one test because each throw needs a slow model load; AC371). The available results file (403/426) is from Round 22; Round 23's results were not available.
+- (Round 24) The brief's "size unchanged" check can't compare against the original file from inside the browser, so AC371 checks the clips and `events.json` instead. The no-re-processing rule is stated in R24.
+- (Round 24) The timing and bounce checks read the game's own `projectileLog` numbers (game clock), not screen frames, so they stay deterministic on a busy test machine.
 - (Round 23) The prompt's newest owner message is Round 15, but the branch's newest owner brief is **Round 23** (Oct 25, commit "Owner brief: Round 23"); this spec builds Round 23. Checks cleanup: **0 removed, 3 rewritten, 6 added (AC363–AC368)**. Rewritten: **AC272** (dropped "other cards stay below the home row" and "every card ≥ 20 % visible beside the raised card" — the owner's layout editor now decides the fan: overlap 0.2 and "pop out fully" make both impossible); **AC355** (also allows Grubnak's own model download — Grubnak has a 3D model since round 12b-1, which made the check fail); **AC360** (time limit 30 s → 60 s; model load plus two full throws exceeded 30 s on the test machine). The owner's own updates to AC24, AC24b, AC80, AC84 and the Gnome/Dwarf "AC357" are kept as written (that owner check shares the number AC357 with the Round 22 controls check; both stay).
 - (Round 23) Mine Control (AC341): the brief's Round 17 stance rule ("a Miner attacks an enemy Miner next to it only if it will survive the strike back; otherwise it mines; if low on crystals, it mines") makes **attack** correct for a Shield-1 Miner with 16 crystals, so the game is fixed and the check stays.
 - (Round 23) The fan's numbers are checked through the new `getHandHover().fan` hook (rotation and unrotated size cannot be measured from bounding boxes), cross-checked against each card button's real on-screen box.
