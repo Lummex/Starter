@@ -946,8 +946,7 @@ export class App {
       m.addEventListener('pointerup', endHold);
       m.addEventListener('pointercancel', endHold);
       m.addEventListener('pointerleave', endHold);
-      m.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') this.openSite(i, 'hover'); });
-      m.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType === 'mouse' && this.siteTipMode === 'hover') this.closeSiteTip(); });
+      // Owner fix (Ken, Oct 28): no info pop-up when the mouse hovers a mine.
       r.sites.push(m); r.board.append(m);
     });
     r.strong = {} as any;
