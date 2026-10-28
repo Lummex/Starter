@@ -1,28 +1,84 @@
 {
- "at": "2026-10-28T00:23:18.165Z",
+ "at": "2026-10-28T04:51:44.711Z",
  "results": [
   {
-   "id": "goblin-bomber-idle-box-front",
+   "id": "goblin-grunt-death",
    "duration": 6,
    "moves": [
-    "idle",
-    "shadow-boxing"
+    "fall-over",
+    "lying-still"
    ]
   },
   {
-   "id": "goblin-bomber-idle-box-side",
+   "id": "goblin-pebbler-death",
    "duration": 6,
    "moves": [
-    "idle",
-    "shadow-boxing"
+    "fall-over",
+    "lying-still"
    ]
   },
   {
-   "id": "goblin-bomber-idle-box-back",
+   "id": "goblin-scrapper-death",
    "duration": 6,
    "moves": [
-    "idle",
-    "shadow-boxing"
+    "fall-over",
+    "lying-still"
+   ]
+  },
+  {
+   "id": "goblin-slinger-death",
+   "duration": 6,
+   "moves": [
+    "fall-over",
+    "lying-still"
+   ]
+  },
+  {
+   "id": "goblin-sneak-death",
+   "duration": 6,
+   "moves": [
+    "fall-over",
+    "lying-still"
+   ]
+  },
+  {
+   "id": "junk-shaman-death",
+   "duration": 6,
+   "moves": [
+    "fall-over",
+    "lying-still"
+   ]
+  },
+  {
+   "id": "rotgut-grenadier-death",
+   "duration": 6,
+   "moves": [
+    "fall-over",
+    "lying-still"
+   ]
+  },
+  {
+   "id": "shiv-rat-death",
+   "duration": 6,
+   "moves": [
+    "fall-over",
+    "lying-still"
+   ]
+  },
+  {
+   "id": "skullbasher-rusher-death",
+   "duration": 6,
+   "moves": [
+    "fall-over",
+    "lying-still"
+   ]
+  },
+  {
+   "id": "goblin-sneak-backstab",
+   "duration": 6,
+   "moves": [
+    "sneak-in",
+    "quick-jab"
    ]
   }
  ]

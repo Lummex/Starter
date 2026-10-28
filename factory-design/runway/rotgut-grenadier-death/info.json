@@ -1,0 +1,26 @@
+{
+ "id": "rotgut-grenadier-death",
+ "character": "rotgut-grenadier",
+ "move": "death",
+ "prompt": "A cartoon goblin cook with green skin, a patched chef hat and an apron, holding a big spatula in one hand. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), falls over: he wobbles as if very dizzy, his knees buckle, he sits down onto his bottom and then gently tumbles down onto his back on the floor, right where he stood, with no sliding. He keeps holding his spatula the whole time. Part 2 (3-6 s), lying still: he lies flat on his back on the floor, arms loosely to the sides, completely still until the end like a sleepy cartoon. He stays in the same spot the whole time. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D cartoon game animation.",
+ "model": "grok_imagine_1_5_lite",
+ "ratio": "auto_480p",
+ "duration": 6,
+ "taskId": "74bce9fa-c2ed-467b-933a-1ef62325a65f",
+ "made": "2026-10-28T04:50:27.162Z",
+ "view": "front",
+ "segments": [
+  {
+   "move": "fall-over",
+   "from": 0,
+   "to": 3
+  },
+  {
+   "move": "lying-still",
+   "from": 3,
+   "to": 6
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}
