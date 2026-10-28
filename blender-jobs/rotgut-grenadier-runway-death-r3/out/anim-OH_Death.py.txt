@@ -1,0 +1,425 @@
+import math
+from mathutils import Vector, Quaternion, Matrix
+
+# Character directions are (right, up, forward). For the math we use a right-handed
+# proxy (right, up, -forward); C() converts both ways.
+AX = {
+    'right': Vector((1.0, 0.0, 0.0)), 'left': Vector((-1.0, 0.0, 0.0)),
+    'up': Vector((0.0, 1.0, 0.0)), 'down': Vector((0.0, -1.0, 0.0)),
+    'forward': Vector((0.0, 0.0, -1.0)), 'back': Vector((0.0, 0.0, 1.0)),
+}
+
+
+def C(v):
+    return Vector((v[0], v[1], -v[2]))
+
+
+def turn_list(ang):
+    # ang = (forward, up, right) degrees, applied in that order
+    out = []
+    for name, a in (('forward', ang[0]), ('up', ang[1]), ('right', ang[2])):
+        if abs(a) > 1e-4:
+            out.append((name, float(a)))
+    return out
+
+
+def tq(ang):
+    q = Quaternion()
+    for name, a in turn_list(ang):
+        q = Quaternion(AX[name], math.radians(a)) @ q
+    return q
+
+
+def lerp(a, b, t):
+    return tuple(x + (y - x) * t for x, y in zip(a, b))
+
+
+def ease(t, kind):
+    if kind == 'in':
+        return t * t
+    if kind == 'out':
+        return 1.0 - (1.0 - t) * (1.0 - t)
+    if kind == 'linear':
+        return t
+    return t * t * (3.0 - 2.0 * t)
+
+
+def ramp(f, a, b):
+    if f <= a:
+        return 0.0
+    if f >= b:
+        return 1.0
+    x = (f - a) / float(b - a)
+    return x * x * (3.0 - 2.0 * x)
+
+
+def frame_q(a, b, a2, b2):
+    # rotation taking direction a -> a2 and (roughly) b -> b2
+    e1 = a.normalized(); e2 = (b - e1 * b.dot(e1)).normalized(); e3 = e1.cross(e2)
+    f1 = a2.normalized(); f2 = (b2 - f1 * b2.dot(f1)).normalized(); f3 = f1.cross(f2)
+    m1 = Matrix((e1, e2, e3)).transposed()
+    m2 = Matrix((f1, f2, f3)).transposed()
+    return (m2 @ m1.transposed()).to_quaternion().normalized()
+
+
+def aim_twist(Wp, Qw, d0):
+    # local rotation = MinArc(d0 -> aim) * Roll(d0, twist)
+    L = (Wp.inverted() @ Qw).normalized()
+    a = (L @ d0).normalized()
+    M = d0.rotation_difference(a)
+    Rq = M.inverted() @ L
+    ang = 2.0 * math.atan2(Vector((Rq.x, Rq.y, Rq.z)).dot(d0), Rq.w)
+    while ang > math.pi:
+        ang -= 2.0 * math.pi
+    while ang < -math.pi:
+        ang += 2.0 * math.pi
+    W = Wp @ M @ Quaternion(d0, ang)
+    return a, math.degrees(ang), W
+
+
+def ik(S, A, l1, l2, pole):
+    d = A - S
+    dist = max(min(d.length, (l1 + l2) * 0.995), abs(l1 - l2) + 1e-3)
+    u = d.normalized()
+    p = pole - u * pole.dot(u)
+    if p.length < 1e-6:
+        p = Vector((0.0, 1.0, 0.0)) - u * u.y
+    p.normalize()
+    a = (l1 * l1 - l2 * l2 + dist * dist) / (2.0 * dist)
+    h = math.sqrt(max(l1 * l1 - a * a, 0.0))
+    K = S + u * a + p * h
+    E = S + u * dist
+    return (K - S).normalized(), (E - K).normalized()
+
+
+def build(ctx):
+    ctx.length(120)
+    B = ctx.bones
+    H = ctx.height
+    n = {
+        'hips': ctx.bone('hips'), 's2': 'Spine02', 's1': 'Spine01', 'sp': ctx.bone('spine'),
+        'nk': ctx.bone('neck'), 'hd': ctx.bone('head'),
+        'rs': ctx.bone('right shoulder'), 'ra': ctx.bone('right upperarm'),
+        'rf': ctx.bone('right forearm'), 'rh': ctx.bone('right hand'),
+        'ls': ctx.bone('left shoulder'), 'la': ctx.bone('left upperarm'),
+        'lf': ctx.bone('left forearm'), 'lh': ctx.bone('left hand'),
+        'lt': ctx.bone('left thigh'), 'll': ctx.bone('left shin'), 'lft': ctx.bone('left foot'),
+        'rt': ctx.bone('right thigh'), 'rl': ctx.bone('right shin'), 'rft': ctx.bone('right foot'),
+    }
+    RH = {k: C(B[v]['head']) for k, v in n.items()}
+    RT = {k: C(B[v]['tail']) for k, v in n.items()}
+    D0 = {k: (RT[k] - RH[k]).normalized() for k in n}
+    LEN = {k: (RT[k] - RH[k]).length for k in n}
+    HAT_B = C(B['head_end']['head']) if 'head_end' in B else RT['hd']
+    HAT_T = C(B['head_end']['tail']) if 'head_end' in B else RT['hd']
+
+    if 'spatula' in ctx.parts:
+        ctx.attach('spatula', n['rh'], length=0.95, turn=[('forward', -120)])
+
+    h0 = B[n['hips']]['head'][1]
+    hip_lie = 0.20 * H
+    hip_sit = 0.20 * H
+    hip_land = 0.19 * H
+    hz = -0.03  # small backward offset when down
+
+    # The rest pelvis is yawed (left hip forward, right hip back). Lying down we square it
+    # first (yaw), so both thighs rest at the same height; spine and neck undo the yaw.
+    vlr = RH['rt'] - RH['lt']
+    SQ = math.degrees(math.atan2(vlr.z, vlr.x))
+    vsh = C(B[n['ra']]['head']) - C(B[n['la']]['head'])
+    CH = math.degrees(math.atan2(vsh.z, vsh.x))  # chest yaw in the rest pose
+
+    # leg geometry
+    leg = {}
+    for side, t, s, f in (('l', 'lt', 'll', 'lft'), ('r', 'rt', 'rl', 'rft')):
+        l1 = (RH[s] - RH[t]).length
+        l2 = (RH[f] - RH[s]).length
+        Sv, Kv, Av = RH[t], RH[s], RH[f]
+        u = (Av - Sv).normalized()
+        pk = (Kv - Sv) - u * (Kv - Sv).dot(u)
+        leg[side] = (l1, l2, tuple(C(pk.normalized())), tuple(C(Av)))
+    LA0 = leg['l'][3]; RA0 = leg['r'][3]
+    LP0 = leg['l'][2]; RP0 = leg['r'][2]
+
+    S_REST = C((0.67, 0.74, 0.0)).normalized()   # spatula axis vs. hand in the rest pose
+    F_REST = C((0.0, 0.0, 1.0))                  # blade face normal in the rest pose
+    SPAT_LEN = 0.95
+
+    def hips_z(dz):
+        return B[n['hips']]['head'][2] + dz
+
+    def sit_ankle(side, h, fwd):
+        a = LA0 if side == 'l' else RA0
+        dx = -0.025 if side == 'l' else 0.025
+        return ('abs', (a[0] + dx, h, hips_z(hz) + fwd))
+
+    # ---------------- key poses ----------------
+    Z = (0.0, 0.0, 0.0)
+    base = {
+        'hm': (0.0, h0, 0.0), 'hr': Z,
+        's2': Z, 's1': Z, 'sp': Z, 'nk': Z, 'hd': Z,
+        'ra': ('rel', Z), 'rf': ('rel', Z), 'rh': ('rel', Z),
+        'la': ('rel', Z), 'lf': ('rel', Z), 'lh': Z,
+        'lA': ('abs', LA0), 'rA': ('abs', RA0), 'lP': LP0, 'rP': RP0, 'lF': 0.0, 'rF': 0.0,
+    }
+    keys = []
+
+    def K(frame, kind='smooth', **kw):
+        prev = dict(keys[-1][1]) if keys else dict(base)
+        prev.update(kw)
+        keys.append((frame, prev, kind))
+
+    LC = (-0.35, 0.0, 1.0); RC = (0.35, 0.0, 1.0)      # crouch knee poles
+    LS = (-0.3, 1.0, 0.5); RS = (0.3, 1.0, 0.5)        # sitting knee poles
+    LL = (-0.15, 1.0, 0.0); RL = (0.15, 1.0, 0.0)      # lying knee poles
+
+    # hr = hips (forward, up, right); spine tuples = (forward, up, right)
+    K(0)
+    # f01-f05: dizzy wobble, feet planted, head lolls
+    K(8, hm=(0.015, h0 - 0.006, 0.0), hr=(4, 0, 0), s2=(-3, 0, 0), s1=(-2, 0, 0), nk=(-4, 0, 0), hd=(-10, 0, -4),
+      ra=('rel', (-3, 0, 3)), la=('rel', (8, 0, 5)), lf=('rel', (0, 0, 10)), rf=('rel', (0, 0, 6)))
+    K(16, hm=(-0.018, h0 - 0.012, 0.0), hr=(-5, 0, 0), s2=(4, 0, 0), s1=(3, 0, 0), nk=(5, 0, 0), hd=(12, 0, -6),
+      ra=('rel', (-1, 0, -3)), la=('rel', (2, 0, -6)), lf=('rel', (0, 0, 16)), rf=('rel', (0, 0, 10)))
+    K(24, hm=(0.016, h0 - 0.02, 0.004), hr=(5, 0, 0), s2=(-4, 0, 2), s1=(-3, 0, 0), nk=(-6, 0, 0), hd=(-14, 0, 8),
+      ra=('rel', (-4, 0, 4)), la=('rel', (10, 0, 8)), lf=('rel', (0, 0, 8)), rf=('rel', (0, 0, 6)))
+    K(32, hm=(-0.013, h0 - 0.032, 0.0), hr=(-4, 0, 0), s2=(4, 0, -2), s1=(3, 0, 0), nk=(6, 0, 4), hd=(12, 0, -10),
+      ra=('rel', (-1, 0, -2)), la=('rel', (3, 0, -4)), lf=('rel', (0, 0, 18)), rf=('rel', (0, 0, 12)),
+      lP=lerp(LP0, LC, 0.3), rP=lerp(RP0, RC, 0.3))
+    # f06-f09: knees buckle, spatula drifts up to vertical
+    K(40, hm=(0.006, h0 - 0.06, -0.008), hr=(2, 0, -3), s2=(-2, 0, -6), s1=(0, 0, -4), nk=(-4, 0, 6),
+      hd=(-10, 0, 8), ra=('rel', (-5, 0, 6)), la=('rel', (14, 0, 6)), lf=('rel', (0, 0, 12)),
+      rf=('rel', (0, 0, 16)), lP=LC, rP=RC)
+    K(46, hm=(0.0, h0 - 0.08, -0.015), hr=(0, 0, -6), s2=(0, 0, -8), s1=(0, 0, -6), sp=(0, 0, -4), nk=(0, 0, 4),
+      hd=(6, 0, 6), ra=('rel', (-6, 0, 12)), rf=('rel', (0, 0, 20)),
+      la=('world', (-0.6, -0.65, 0.45)), lf=('world', (-0.5, -0.4, 0.75)))
+    K(52, 'in', hm=(0.0, h0 - 0.11, -0.025), hr=(0, 4, -4), s2=(0, 0, -10), s1=(0, 0, -6), sp=(0, 0, -4),
+      nk=(0, 0, 6), hd=(-6, 0, 8),
+      ra=('world', (0.55, -0.6, 0.45)), rf=('wrist',), rh=('spat', (0.25, 0.96, 0.1), (0, 0, 1)),
+      la=('world', (-0.9, 0.1, 0.35)), lf=('world', (-0.6, 0.6, 0.5)))
+    # f09-f10: plops down onto his bottom on the spot
+    K(57, 'in', hm=(0.0, hip_land, hz), hr=(0, 12, 8), s2=(0, 0, -12), s1=(0, 0, -8), sp=(0, 0, -4),
+      nk=(0, 0, -6), hd=(4, 0, -10),
+      ra=('world', (0.6, -0.45, 0.5)), rh=('spat', (0.3, 0.95, 0.05), (0, 0, 1)),
+      la=('world', (-0.8, 0.35, 0.4)), lf=('world', (-0.45, 0.8, 0.4)),
+      lA=sit_ankle('l', 0.06, 0.22), rA=sit_ankle('r', 0.06, 0.20), lP=LS, rP=RS, lF=20.0, rF=20.0)
+    K(62, 'out', hm=(0.0, hip_sit, hz), hr=(0, 20, 18), s2=(0, 0, -4), s1=(0, 0, -2), sp=Z, nk=(0, 0, 4),
+      hd=(8, 0, 4),
+      ra=('world', (0.6, -0.6, 0.45)), rh=('spat', (0.2, 0.97, 0.1), (0, 0, 1)),
+      la=('world', (-0.75, -0.45, 0.4)), lf=('world', (-0.55, -0.35, 0.75)),
+      lA=sit_ankle('l', 0.065, 0.24), rA=sit_ankle('r', 0.065, 0.22), lF=25.0, rF=25.0)
+    # f11-f12: tips back onto his back, legs up a little
+    K(68, hm=(0.0, 0.21 * H, hz), hr=(0, 30, 45), s2=(0, 0, 4), s1=Z, sp=Z, nk=(0, 0, -6), hd=(0, 0, -10),
+      ra=('world', (0.55, 0.5, 0.6)), rh=('spat', (0.15, 0.98, 0.0), (-0.7, 0, 0.7)),
+      la=('world', (-0.75, 0.5, 0.4)), lf=('world', (-0.45, 0.85, 0.25)),
+      lA=sit_ankle('l', 0.17, 0.25), rA=sit_ankle('r', 0.17, 0.23),
+      lP=(-0.2, 1.0, 0.3), rP=(0.2, 1.0, 0.3), lF=35.0, rF=35.0)
+    K(74, hm=(0.0, hip_lie + 0.01, hz), hr=(0, 38, 70), s2=(0, 0, 6), s1=(0, 0, 3), sp=(0, 0, 3),
+      nk=(0, 0, -10), hd=(4, 0, -10),
+      ra=('world', (0.4, 0.9, 0.15)), rh=('spat', (0.05, 1.0, 0.0), (-1, 0, 0)),
+      la=('world', (-0.7, 0.65, 0.2)), lf=('world', (-0.35, 0.93, 0.05)),
+      lA=sit_ankle('l', 0.24, 0.26), rA=sit_ankle('r', 0.24, 0.24), lF=50.0, rF=50.0)
+    K(78, 'in', hm=(0.0, hip_lie, hz), hr=(0, SQ, 88), s2=(0, 0, 10), s1=(0, 0, 8), sp=(0, 0, 2),
+      nk=(0, 0, -18), hd=(4, 0, -16),
+      ra=('world', (0.6, 0.75, 0.05)), rh=('spat', (0.35, 0.93, -0.1), (-0.93, 0.35, 0)),
+      la=('world', (-0.85, 0.45, 0.1)), lf=('world', (-0.8, 0.55, 0.0)),
+      lA=('lie', -0.2, 0.27), rA=('lie', 0.2, 0.27), lP=LL, rP=RL, lF=65.0, rF=65.0)
+    # lying-still f01-f04: small bounce, arms and spatula fall out to the sides
+    K(81, 'out', hm=(0.0, hip_lie + 0.012, hz), hr=(0, SQ, 86), hd=(4, 0, -18),
+      ra=('flat', (0.8, 0.55), 0.14), rh=('spat', (0.75, 0.55, -0.3), (-0.55, 0.8, 0)),
+      la=('flat', (-0.9, 0.3), 0.14), lf=('flat', (-0.9, 0.35), 0.12),
+      lA=('lie', -0.2, 0.255), rA=('lie', 0.2, 0.255), lF=75.0, rF=75.0)
+    # flat on his back, chin tucked so the chef hat lies along the floor
+    LIE = dict(hm=(0.0, hip_lie, hz), hr=(0, SQ, 88), s2=(0, 0, 12), s1=(0, 0, 10), sp=Z,
+               nk=(0, 0, -22), hd=(4, 0, -16),
+               ra=('flat', (0.75, 0.66), 0.105), rf=('wrist',), rh=('spat', (0.94, 0.05, -0.34), (0, 1, 0)),
+               la=('flat', (-0.75, 0.66), 0.105), lf=('flat', (-0.7, 0.7), 0.08),
+               lA=('lie', -0.2, 0.245), rA=('lie', 0.2, 0.245), lP=LL, rP=RL, lF=80.0, rF=80.0)
+    K(85, 'out', **LIE)
+    K(90, **LIE)
+    K(120, 'linear', **LIE)
+
+    # ---------------- floor clearance (share of H; skin below each joint + 1%) ----------------
+    SIT_REQ = {'hips': .19, 'lt': .19, 'rt': .19, 's2': .12, 's1': .12, 'sp': .12, 'nk': .12, 'hd': .15,
+               'hat_b': .12, 'hat_t': .10, 'la': .08, 'ra': .08, 'l_elbow': .07, 'r_elbow': .07,
+               'l_hand': .06, 'r_hand': .06, 'l_handtip': .05, 'r_handtip': .05, 'spat_end': .03,
+               'l_knee': .10, 'r_knee': .10}
+    LIE_REQ = {'hips': .19, 'lt': .19, 'rt': .19, 's2': .11, 's1': .11, 'sp': .11, 'nk': .11, 'hd': .15,
+               'hat_b': .12, 'hat_t': .10, 'la': .10, 'ra': .10, 'l_elbow': .09, 'r_elbow': .09,
+               'l_hand': .07, 'r_hand': .07, 'l_handtip': .06, 'r_handtip': .06, 'spat_end': .03,
+               'l_knee': .24, 'r_knee': .24}
+
+    def reqs(frame):
+        ws = ramp(frame, 48, 54)
+        wl = ramp(frame, 64, 78)
+        if ws <= 0.0 and wl <= 0.0:
+            return None
+        return {k: max(SIT_REQ[k] * ws, LIE_REQ[k] * wl) * H for k in LIE_REQ}
+
+    # ---------------- solver ----------------
+    def hand_q_indep(spec):
+        if spec[0] == 'spat':
+            return frame_q(S_REST, F_REST, C(spec[1]), C(spec[2]))
+        return frame_q(D0['rh'], F_REST, C(spec[1]), C(spec[2]))
+
+    def limb_dir(spec, Wp, d0, joint, length, hand_spec=None):
+        m = spec[0]
+        if m == 'rel':
+            return (Wp @ tq(spec[1]) @ d0).normalized()
+        if m == 'world':
+            return C(spec[1]).normalized()
+        if m == 'flat':
+            v = max(-0.9, min(0.9, (spec[2] - joint.y) / length))
+            hv = C((spec[1][0], 0.0, spec[1][1]))
+            hv.y = 0.0
+            hv = hv.normalized() * math.sqrt(1.0 - v * v)
+            hv.y = v
+            return hv.normalized()
+        # 'wrist': forearm continues the hand
+        return (hand_q_indep(hand_spec) @ D0['rh']).normalized()
+
+    def blend_dir(da, db, t):
+        v = da * (1.0 - t) + db * t
+        return v.normalized() if v.length > 1e-5 else db
+
+    def solve(pa, pb, t, lift):
+        def num(k):
+            return lerp(pa[k], pb[k], t)
+        out = []
+        hm = num('hm'); hr = num('hr')
+        move = (hm[0], hm[1] + lift - h0, hm[2])
+        Wh = tq(hr)
+        Ph = RH['hips'] + C(move)
+        aimh, twh, Wh = aim_twist(Quaternion(), Wh, D0['hips'])
+        out.append((n['hips'], dict(aim=tuple(C(aimh)), twist=twh, move=move)))
+
+        # spine and neck undo the pelvis squaring so chest and face stay square
+        yaw = hr[1]
+        cc = -max(0.0, yaw - CH)
+        hc = -min(yaw, CH) if yaw > 0.0 else 0.0
+        extra = {'s2': cc * 0.5, 's1': cc * 0.5, 'sp': 0.0, 'nk': hc * 0.5, 'hd': hc * 0.5}
+
+        pts = {'hips': Ph}
+        W = {'hips': Wh}; P = {'hips': Ph}
+        chain = (('s2', 'hips'), ('s1', 's2'), ('sp', 's1'), ('nk', 'sp'), ('hd', 'nk'))
+        for b, par in chain:
+            P[b] = P[par] + W[par] @ (RH[b] - RH[par])
+            ang = num(b)
+            ang = (ang[0], ang[1] + extra[b], ang[2])
+            W[b] = W[par] @ tq(ang)
+            out.append((n[b], dict(turn=turn_list(ang) or [('right', 0.0)])))
+            pts[b] = P[b]
+        pts['hat_b'] = P['hd'] + W['hd'] @ (HAT_B - RH['hd'])
+        pts['hat_t'] = P['hd'] + W['hd'] @ (HAT_T - RH['hd'])
+
+        # arms
+        for sd in ('r', 'l'):
+            s, a, f, h = sd + 's', sd + 'a', sd + 'f', sd + 'h'
+            W[s] = W['sp']
+            P[s] = P['sp'] + W['sp'] @ (RH[s] - RH['sp'])
+            P[a] = P[s] + W[s] @ (RH[a] - RH[s])
+            pts[a] = P[a]
+            da = limb_dir(pa[a], W[s], D0[a], P[a], LEN[a])
+            db = limb_dir(pb[a], W[s], D0[a], P[a], LEN[a])
+            dw = blend_dir(da, db, t)
+            aim = W[s].inverted() @ dw
+            W[a] = W[s] @ D0[a].rotation_difference(aim)
+            out.append((n[a], dict(aim=tuple(C(aim)))))
+            P[f] = P[a] + W[a] @ (RH[f] - RH[a])
+            hsa = pa['rh'] if sd == 'r' else None
+            hsb = pb['rh'] if sd == 'r' else None
+            da = limb_dir(pa[f], W[a], D0[f], P[f], LEN[f], hsa)
+            db = limb_dir(pb[f], W[a], D0[f], P[f], LEN[f], hsb)
+            dw = blend_dir(da, db, t)
+            aim = W[a].inverted() @ dw
+            W[f] = W[a] @ D0[f].rotation_difference(aim)
+            out.append((n[f], dict(aim=tuple(C(aim)))))
+            P[h] = P[f] + W[f] @ (RH[h] - RH[f])
+            if sd == 'r':
+                qa = (W[f] @ tq(pa['rh'][1])) if pa['rh'][0] == 'rel' else hand_q_indep(pa['rh'])
+                qb = (W[f] @ tq(pb['rh'][1])) if pb['rh'][0] == 'rel' else hand_q_indep(pb['rh'])
+                if qa.dot(qb) < 0.0:
+                    qb = -qb
+                qw = qa.slerp(qb, t)
+                aimh2, tw, W[h] = aim_twist(W[f], qw, D0[h])
+                out.append((n[h], dict(aim=tuple(C(aimh2)), twist=tw)))
+            else:
+                ang = num('lh')
+                W[h] = W[f] @ tq(ang)
+                out.append((n[h], dict(turn=turn_list(ang) or [('right', 0.0)])))
+            pts[sd + '_elbow'] = P[f]
+            pts[sd + '_hand'] = P[h]
+            pts[sd + '_handtip'] = P[h] + W[h] @ (RT[h] - RH[h])
+            if sd == 'r':
+                pts['spat_end'] = pts['r_handtip'] + (W[h] @ S_REST) * SPAT_LEN
+
+        # legs
+        for sd in ('l', 'r'):
+            th, sh, ft = sd + 't', sd + 'l', sd + 'ft'
+            l1, l2 = leg[sd][0], leg[sd][1]
+            S = Ph + Wh @ (RH[th] - RH['hips'])
+            pts[th] = S
+
+            def target(spec):
+                if spec[0] == 'abs':
+                    return C(spec[1])
+                y = spec[2]
+                reach = (l1 + l2) * 0.95
+                dy = S.y - y
+                hl = math.sqrt(max(reach * reach - dy * dy, 0.0))
+                hv = C((spec[1], 0.0, 1.0)).normalized() * hl
+                return Vector((S.x + hv.x, y, S.z + hv.z))
+            A = target(pa[sd + 'A']).lerp(target(pb[sd + 'A']), t)
+            pole = C(num(sd + 'P'))
+            dt, ds = ik(S, A, l1, l2, pole)
+            aim = Wh.inverted() @ dt
+            Wt = Wh @ D0[th].rotation_difference(aim)
+            out.append((n[th], dict(aim=tuple(C(aim)))))
+            aim2 = Wt.inverted() @ ds
+            Ws = Wt @ D0[sh].rotation_difference(aim2)
+            out.append((n[sh], dict(aim=tuple(C(aim2)))))
+            fa = pa[sd + 'F'] + (pb[sd + 'F'] - pa[sd + 'F']) * t
+            qf = Quaternion(AX['right'], math.radians(fa))
+            aimf, twf, Wf = aim_twist(Ws, qf, D0[ft])
+            out.append((n[ft], dict(aim=tuple(C(aimf)), twist=twf)))
+            knee = S + dt * l1
+            ankle = knee + ds * l2
+            pts[sd + '_knee'] = knee
+            pts[sd + '_ankle'] = ankle
+            pts[sd + '_toe'] = ankle + Wf @ (RT[ft] - RH[ft])
+        return out, pts
+
+    # ---------------- sample and key ----------------
+    kframes = [k[0] for k in keys]
+    samples = sorted(set(list(range(0, 91, 2)) + kframes))
+    report = []
+    max_lift = 0.0
+    for fr in samples:
+        i = 0
+        while i < len(keys) - 1 and keys[i + 1][0] < fr:
+            i += 1
+        if fr == keys[i][0] or i == len(keys) - 1:
+            pa = pb = keys[i][1]; t = 0.0
+        else:
+            f0, f1 = keys[i][0], keys[i + 1][0]
+            pa, pb = keys[i][1], keys[i + 1][1]
+            t = ease((fr - f0) / float(f1 - f0), keys[i + 1][2])
+        rq = reqs(fr)
+        lift = 0.0
+        out, pts = solve(pa, pb, t, lift)
+        if rq:
+            for _ in range(5):
+                d = max(rq[k] - pts[k].y for k in rq if k in pts)
+                if d <= 0.001 or lift >= 0.07:
+                    break
+                lift = min(lift + d + 0.002, 0.07)
+                out, pts = solve(pa, pb, t, lift)
+        max_lift = max(max_lift, lift)
+        for bone, kw in out:
+            ctx.key(fr, bone, **kw)
+        low = min((round(v.y, 3), k) for k, v in pts.items())
+        if fr in (0, 46, 57, 62, 68, 74, 78, 81, 90, 120):
+            report.append((fr, low, round(pts['hips'].y, 3), round(lift, 3)))
+
+    ctx.note('OH_Death: pelvis squared by %.1f deg when down, chest counter %.1f deg; hips sit %.3f lie %.3f '
+             '(H=%.3f); max auto-lift %.3f' % (SQ, CH, hip_sit, hip_lie, H, max_lift))
+    ctx.note('frame, lowest point, hips height, lift: %s' % (report,))
