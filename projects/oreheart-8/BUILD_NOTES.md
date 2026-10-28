@@ -72,3 +72,13 @@ Projectile: skull from `skull-mace.glb`, scale = held mace's longest side; arc p
 - Computer windows now letterbox menus to 16:9 too (AC24b); deck-count text honours the owner's non-italic setting (AC326).
 - Not changed (outdated vs. owner's direct changes): AC58 (Goblin Rocket Rider is a Fighter now), AC318 (ability icon lives in the stat badge), AC149/150/190/191 (non-16:9 fill checks vs. owner's 16:9 letterbox), AC176 label.
 - Not fixed: timeouts AC95, AC134, AC148, AC174, AC197, AC256, AC261.
+
+## Round 24 re-check of the reported failures (no app change needed)
+Build and `dist/index.html` verified. These reported failures come from checks that no longer match the owner's later, binding changes (the app follows the owner and SPEC.md):
+- AC58: `shard-guzzler` (Goblin Rocket Rider) is a Fighter since Round 14, so only one Miner is ready next to that mine.
+- AC341: type advantage (+1 Dwarf vs Goblin) applies to strike backs, so a Goblin Miner with Shield 1 still dies against a Dwarf Smith Miner (`previewAttack` says so) and mines instead.
+- AC176: the Deck Builder / deck picker use the owner's `deck-menu.png` (Oct 24); match piles use `deck-menu-deck-pile.png`.
+- AC318: the ability button lives inside the stat badge (owner, Oct 25), not above the unit.
+- AC345: the stance column is tucked off the right edge on purpose and slides out on hover.
+- AC149/150/190/191: computers letterbox matches to 16:9 (owner change), so 4:3 / 16:10 windows are not cover-fit.
+- AC95, AC134, AC174, AC197, AC256, AC261, AC347, and the AC191 pan test failed on timeouts only; not diagnosed in this run.
