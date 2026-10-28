@@ -20,7 +20,7 @@ type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
 /** Round 26 drag-card look (mirrored in the editors). */
 const UI_SCALE = { commanderSpeech: 0.65, respond: 1.3 };
-const DRAG_FX = { shrinkMs: 150, shrinkOpacity: 0.85, tiltMax: 8, legal: '#3ee06a', illegal: '#b04040' };
+const DRAG_FX = { shrinkMs: 150, shrinkOpacity: 0.85, tiltMax: 8, legal: '#3ee06a', illegal: '#b04040', fit: 0.88 }; // fit (Ken, Oct 28): card over a square keeps its shape, 88% of the square's smaller side
 function homography(p: { x: number; y: number }[], w: number, h: number): string {
   const [p0, p1, p2, p3] = p;
   const sx = p0.x - p1.x + p2.x - p3.x, sy = p0.y - p1.y + p2.y - p3.y;
@@ -2980,6 +2980,21 @@ export class App {
     const top = byY.slice(0, 2).sort((a: any, b: any) => a.x - b.x), bot = byY.slice(2, 4).sort((a: any, b: any) => a.x - b.x);
     return [top[0], top[1], bot[1], bot[0]];
   }
+  /** Owner fix (Ken, Oct 28): where the dragged card sits over a square (TL, TR, BR, BL). It keeps the card's own shape
+   *  (no stretching), is DRAG_FX.fit of the square's smaller on-screen side, centred, and follows the square's perspective. */
+  cardInSquare(q: { x: number; y: number }[], W: number, H: number) {
+    const [tl, tr, br, bl] = q;
+    const len = (a: any, b: any) => Math.hypot(b.x - a.x, b.y - a.y);
+    const sqW = (len(tl, tr) + len(bl, br)) / 2, sqH = (len(tl, bl) + len(tr, br)) / 2;
+    if (!W || !H || !sqW || !sqH) return q.map((p) => ({ ...p }));
+    const k = DRAG_FX.fit * Math.min(sqW / W, sqH / H);
+    const hu = (W * k / sqW) / 2, hv = (H * k / sqH) / 2;
+    const at = (u: number, v: number) => ({
+      x: (1 - u) * (1 - v) * tl.x + u * (1 - v) * tr.x + u * v * br.x + (1 - u) * v * bl.x,
+      y: (1 - u) * (1 - v) * tl.y + u * (1 - v) * tr.y + u * v * br.y + (1 - u) * v * bl.y,
+    });
+    return [at(0.5 - hu, 0.5 - hv), at(0.5 + hu, 0.5 - hv), at(0.5 + hu, 0.5 + hv), at(0.5 - hu, 0.5 + hv)];
+  }
   /** Square nearest to the pointer while it is over the board (gaps keep the nearest square). */
   nearestCell(x: number, y: number): { row: number; col: number } | null {
     const bb = (this.r.board as El).getBoundingClientRect();
@@ -3041,7 +3056,8 @@ export class App {
       fx.W = W; fx.H = H;
       const step = dt / DRAG_FX.shrinkMs;
       fx.s = fx.tgt > fx.s ? Math.min(fx.tgt, fx.s + step) : Math.max(fx.tgt, fx.s - step);
-      if (fx.qt) { if (!fx.q) fx.q = fx.qt.map((p: any) => ({ ...p })); else { const k = 1 - Math.exp(-dt / 35); fx.q = fx.q.map((p: any, i: number) => ({ x: p.x + (fx.qt[i].x - p.x) * k, y: p.y + (fx.qt[i].y - p.y) * k })); } }
+      const qc = fx.qt ? this.cardInSquare(fx.qt, W, H) : null; // Owner fix (Ken, Oct 28): the card keeps its shape inside the square, it no longer stretches to the square
+      if (qc) { if (!fx.q) fx.q = qc.map((p: any) => ({ ...p })); else { const k = 1 - Math.exp(-dt / 35); fx.q = fx.q.map((p: any, i: number) => ({ x: p.x + (qc[i].x - p.x) * k, y: p.y + (qc[i].y - p.y) * k })); } }
       if (!fx.qt && fx.s === 0) fx.q = null;
       const a = fx.tilt * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
       const free = [[-W / 2, -H / 2], [W / 2, -H / 2], [W / 2, H / 2], [-W / 2, H / 2]].map(([x, y]) => ({ x: fx.px + x * ca - y * sa, y: fx.py + x * sa + y * ca }));
