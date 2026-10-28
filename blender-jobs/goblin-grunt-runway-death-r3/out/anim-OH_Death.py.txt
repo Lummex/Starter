@@ -1,0 +1,405 @@
+import math
+from mathutils import Vector, Quaternion
+
+# API turn axes, in (right, up, forward). API angles turn the opposite way to the
+# standard right-hand formula (('right', +30) leans back), so tq() negates them.
+AXES = {'right': (1.0, 0.0, 0.0), 'up': (0.0, 1.0, 0.0), 'forward': (0.0, 0.0, 1.0)}
+ZERO = [('up', 0.0)]
+
+
+def clampf(x, a, b):
+    return a if x < a else (b if x > b else x)
+
+
+def V(t):
+    return Vector((t[0], t[1], t[2]))
+
+
+def tq(turns):
+    # turns applied in order around the fixed character axes
+    q = Quaternion((1.0, 0.0, 0.0, 0.0))
+    for ax, deg in turns:
+        q = Quaternion(V(AXES[ax]), math.radians(-deg)) @ q
+    return q
+
+
+def slope_dir(h, dy):
+    # horizontal heading h with a vertical component dy (unit vector)
+    dy = clampf(dy, -0.95, 0.95)
+    hv = Vector((h[0], 0.0, h[2]))
+    hv.normalize()
+    s = math.sqrt(1.0 - dy * dy)
+    return Vector((hv.x * s, dy, hv.z * s))
+
+
+def build(ctx):
+    ctx.length(120)
+    B = ctx.bones
+    H = ctx.height
+
+    def nm(exact, words):
+        return exact if exact in B else ctx.bone(words)
+
+    HIPS = nm('Hips', 'hips')
+    S2 = nm('Spine02', 'spine02')
+    S1 = nm('Spine01', 'spine01')
+    SP = nm('Spine', 'spine')
+    NECK = nm('neck', 'neck')
+    HEAD = nm('Head', 'head')
+    LSH = nm('LeftShoulder', 'left shoulder')
+    LARM = nm('LeftArm', 'left upperarm')
+    LFA = nm('LeftForeArm', 'left forearm')
+    LHAND = nm('LeftHand', 'left hand')
+    RSH = nm('RightShoulder', 'right shoulder')
+    RARM = nm('RightArm', 'right upperarm')
+    RFA = nm('RightForeArm', 'right forearm')
+    RHAND = nm('RightHand', 'right hand')
+    LUL = nm('LeftUpLeg', 'left thigh')
+    LL = nm('LeftLeg', 'left shin')
+    LF = nm('LeftFoot', 'left foot')
+    RUL = nm('RightUpLeg', 'right thigh')
+    RL = nm('RightLeg', 'right shin')
+    RF = nm('RightFoot', 'right foot')
+    SPINE = [S2, S1, SP, NECK, HEAD]
+
+    def rest(b):
+        return V(B[b]['head'])
+
+    def pts(b):
+        return V(B[b]['points'])
+
+    def par(b):
+        return B[b]['parent']
+
+    # ---------------- tiny FK pose builder ----------------
+    def new_state(move, hips_turns):
+        st = {'q': {}, 'p': {}, 'k': []}
+        st['q'][HIPS] = tq(hips_turns)
+        st['p'][HIPS] = rest(HIPS) + V(move)
+        st['k'].append((HIPS, {'turn': list(hips_turns) if hips_turns else ZERO,
+                               'move': (move[0], move[1], move[2])}))
+        return st
+
+    def place(st, b):
+        pa = par(b)
+        st['p'][b] = st['p'][pa] + st['q'][pa] @ (rest(b) - rest(pa))
+        return st['p'][b]
+
+    def loc(st, b, turns):
+        place(st, b)
+        st['q'][b] = st['q'][par(b)] @ tq(turns)
+        st['k'].append((b, {'turn': list(turns) if turns else ZERO}))
+
+    def wdir(st, b, d):
+        # point bone b along world direction d (parents as already posed)
+        place(st, b)
+        d = V(d).normalized()
+        ld = st['q'][par(b)].inverted() @ d
+        st['q'][b] = st['q'][par(b)] @ pts(b).rotation_difference(ld)
+        st['k'].append((b, {'aim': (ld.x, ld.y, ld.z)}))
+
+    def wrot(st, b, qw):
+        # give bone b a full world orientation qw (delta from rest)
+        place(st, b)
+        lq = st['q'][par(b)].inverted() @ qw
+        e = lq.to_euler('XYZ')
+        turns = [('right', -math.degrees(e.x)), ('up', -math.degrees(e.y)),
+                 ('forward', -math.degrees(e.z))]
+        st['q'][b] = st['q'][par(b)] @ tq(turns)
+        st['k'].append((b, {'turn': turns}))
+
+    def seg(a, b):
+        return (rest(b) - rest(a)).length
+
+    def leg_ik(st, ul, lg, ft, A, foot_dir, pole):
+        P = place(st, ul)
+        L1 = seg(ul, lg)
+        L2 = seg(lg, ft)
+        D = A - P
+        u = D.normalized()
+        d = clampf(D.length, abs(L1 - L2) + 0.001, (L1 + L2) * 0.999)
+        a = (L1 * L1 - L2 * L2 + d * d) / (2.0 * d)
+        hh = math.sqrt(max(L1 * L1 - a * a, 0.0))
+        pv = V(pole)
+        v = pv - u * pv.dot(u)
+        v.normalize()
+        K = P + u * a + v * hh
+        wdir(st, ul, K - P)
+        wdir(st, lg, (P + u * d) - K)
+        wdir(st, ft, foot_dir)
+
+    def leg_dirs(st, ul, lg, ft, spec):
+        h1, knee_y, h2, ankle_y, foot_dir = spec
+        P = place(st, ul)
+        wdir(st, ul, slope_dir(h1, (knee_y - P.y) / seg(ul, lg)))
+        K = place(st, lg)
+        wdir(st, lg, slope_dir(h2, (ankle_y - K.y) / seg(lg, ft)))
+        wdir(st, ft, foot_dir)
+
+    def arm_reach(st, sh, up, fa, hand, h1, h2, tail_y):
+        # both arm segments share one slope so the fingertips land at tail_y
+        loc(st, sh, [])
+        S = place(st, up)
+        total = seg(up, fa) + seg(fa, hand) + B[hand]['length']
+        dy = (tail_y - S.y) / total
+        wdir(st, up, slope_dir(h1, dy))
+        wdir(st, fa, slope_dir(h2, dy))
+        loc(st, hand, [])
+
+    def run(spec, lift):
+        hy = spec.get('hy')
+        y = (hy - rest(HIPS).y) if hy is not None else spec.get('dy', 0.0)
+        move = (spec.get('mx', 0.0), y + lift, spec.get('mz', 0.0))
+        st = new_state(move, spec.get('hips', []))
+        sp = spec.get('sp', {})
+        for b in SPINE:
+            if spec.get('spw'):
+                wrot(st, b, tq(sp.get(b, [])))
+            else:
+                loc(st, b, sp.get(b, []))
+        la = spec['la']
+        if la[0] == 'l':
+            loc(st, LSH, [])
+            loc(st, LARM, la[1])
+            loc(st, LFA, la[2])
+            loc(st, LHAND, [])
+        else:
+            arm_reach(st, LSH, LARM, LFA, LHAND, la[1], la[2], la[3])
+        ra = spec['ra']
+        if ra[0] == 'l':
+            loc(st, RSH, [])
+            loc(st, RARM, ra[1])
+            loc(st, RFA, ra[2])
+            loc(st, RHAND, [])
+        elif ra[0] == 'b':
+            # board hand: forearm (and board) get a fixed world orientation,
+            # upper arm slope picked so the wrist sits at the wanted height
+            loc(st, RSH, [])
+            S = place(st, RARM)
+            fv = ra[3] @ (rest(RHAND) - rest(RFA))
+            dy = (ra[2] - S.y - fv.y) / seg(RARM, RFA)
+            wdir(st, RARM, slope_dir(ra[1], dy))
+            wrot(st, RFA, ra[3])
+            loc(st, RHAND, [])
+        else:
+            loc(st, RSH, [])
+            wdir(st, RARM, ra[1])
+            wrot(st, RFA, ra[2])
+            loc(st, RHAND, [])
+        lg = spec['legs']
+        if lg[0] == 'rest':
+            for b in (LUL, LL, LF, RUL, RL, RF):
+                loc(st, b, [])
+        elif lg[0] == 'plant':
+            dz = Vector((0.0, 0.0, lg[1]))
+            up_k = lg[2]
+            leg_ik(st, LUL, LL, LF, rest(LF) + dz, pts(LF), (-0.2, up_k, 1.0))
+            leg_ik(st, RUL, RL, RF, rest(RF) + dz, pts(RF), (0.2, up_k, 1.0))
+        else:
+            leg_dirs(st, LUL, LL, LF, lg[1])
+            leg_dirs(st, RUL, RL, RF, lg[2])
+        return st
+
+    def deficit(st, mins):
+        worst = 0.0
+        for b in mins:
+            worst = max(worst, mins[b] * H - st['p'][b].y)
+        return worst
+
+    def emit(frame, spec):
+        st = run(spec, 0.0)
+        mins = spec.get('mins')
+        if mins:
+            d = deficit(st, mins)
+            if d > 0.0005:
+                st = run(spec, d + 0.003)
+        for b, kw in st['k']:
+            if 'aim' in kw:
+                ctx.key(frame, b, aim=kw['aim'])
+            elif 'move' in kw:
+                ctx.key(frame, b, turn=kw['turn'], move=kw['move'])
+            else:
+                ctx.key(frame, b, turn=kw['turn'])
+        return st
+
+    def lying(head_frac, base):
+        # spine curls back past the hips until the Head joint rests at head_frac * height
+        def with_k(k):
+            s = dict(base)
+            s['spw'] = True
+            s['sp'] = {S2: [('up', 20.0), ('right', 88.0 + 1.0 * k)],
+                       S1: [('up', 6.0), ('right', 88.0 + 2.0 * k)],
+                       SP: [('right', 88.0 + 2.6 * k)],
+                       NECK: [('right', 88.0 + 3.2 * k)],
+                       HEAD: [('right', 88.0 + 3.6 * k)]}
+            return s
+        lo, hi = -10.0, 15.0
+        for i in range(30):
+            mid = 0.5 * (lo + hi)
+            if run(with_k(mid), 0.0)['p'][HEAD].y > head_frac * H:
+                lo = mid
+            else:
+                hi = mid
+        return with_k(0.5 * (lo + hi))
+
+    # ---------------- floor clearances (share of height) ----------------
+    torso = {HIPS: 0.20, S2: 0.14, S1: 0.14, SP: 0.14, NECK: 0.14, HEAD: 0.14,
+             LSH: 0.12, RSH: 0.12, LARM: 0.13, RARM: 0.13, LFA: 0.10, RFA: 0.10,
+             LHAND: 0.15, RHAND: 0.15, LUL: 0.20, RUL: 0.20}
+    MLIE = dict(torso)
+    MLIE.update({LL: 0.23, RL: 0.23, LF: 0.23, RF: 0.23})
+    MROLL = dict(torso)
+    MROLL.update({LL: 0.23, RL: 0.23, LF: 0.18, RF: 0.18})
+    MSIT = {HIPS: 0.20, LUL: 0.165, RUL: 0.165, S2: 0.25, S1: 0.25, SP: 0.25,
+            NECK: 0.25, HEAD: 0.25, LHAND: 0.14, RHAND: 0.25}
+
+    I = Quaternion((1.0, 0.0, 0.0, 0.0))
+    # board lying flat on the floor (face up), forearm along his side toward the feet
+    QFLAT = Quaternion((0.0, 1.0, 0.0), math.radians(-10.0)) @ Quaternion((1.0, 0.0, 0.0), math.radians(-90.0))
+    Q77 = pts(RFA).rotation_difference(Vector((0.6, 0.35, 0.7)).normalized())
+    Q82 = Q77.slerp(QFLAT, 0.65)
+
+    def legs_lie(knee, ankle, foot_l, foot_r):
+        return ('dirs',
+                ((-0.22, 0, 1.0), knee * H, (-0.12, 0, 1.0), ankle * H, foot_l),
+                ((0.22, 0, 1.0), knee * H, (0.12, 0, 1.0), ankle * H, foot_r))
+
+    PLANT = ('plant', 0.0, 0.0)
+
+    # ---------------- part 1: dizzy wobble (fall-over f01-f08) ----------------
+    emit(0, {'hips': [], 'la': ('l', [], []), 'ra': ('l', [], []), 'legs': ('rest',)})
+
+    emit(8, {'dy': -0.008, 'mx': 0.012, 'hips': [('forward', 4), ('up', 3)],
+             'sp': {S2: [('forward', -2)], S1: [('forward', -2), ('right', -3)],
+                    SP: [('forward', -1)], NECK: [('forward', 5), ('right', -4)],
+                    HEAD: [('forward', 9), ('right', -5)]},
+             'la': ('l', [('forward', 6)], [('right', 8)]),
+             'ra': ('l', [('forward', -4)], [('right', 6)]),
+             'legs': PLANT})
+
+    emit(16, {'dy': -0.014, 'mx': -0.014, 'hips': [('forward', -5), ('up', -3)],
+              'sp': {S2: [('forward', 2)], S1: [('forward', 3), ('right', -4)],
+                     SP: [('forward', 2)], NECK: [('forward', -6), ('right', -6)],
+                     HEAD: [('forward', -11), ('right', -6)]},
+              'la': ('l', [('forward', 4), ('right', 10)], [('right', 12)]),
+              'ra': ('l', [('forward', -8), ('right', -4)], [('right', 4)]),
+              'legs': PLANT})
+
+    emit(24, {'dy': -0.022, 'mx': 0.014, 'mz': 0.004, 'hips': [('forward', 5), ('up', 2), ('right', -2)],
+              'sp': {S2: [('forward', -3), ('right', -3)], S1: [('forward', -3), ('right', -4)],
+                     SP: [('right', -2)], NECK: [('forward', 7), ('right', -8)],
+                     HEAD: [('forward', 12), ('right', -10)]},
+              'la': ('l', [('forward', 10), ('right', -6)], [('right', 10)]),
+              'ra': ('b', (0.7, 0, 0.45), 0.31 * H, I),
+              'legs': PLANT})
+
+    # knees start to buckle (f05)
+    emit(32, {'dy': -0.04, 'mx': -0.008, 'hips': [('forward', -3), ('right', -5)],
+              'sp': {S2: [('forward', 2), ('right', -4)], S1: [('right', -5)],
+                     SP: [('right', -2)], NECK: [('forward', -5), ('right', 4)],
+                     HEAD: [('forward', -10), ('right', -10)]},
+              'la': ('l', [('forward', 14)], [('right', 12)]),
+              'ra': ('b', (0.75, 0, 0.45), 0.31 * H, I),
+              'legs': PLANT})
+
+    # arms out for balance (f06-f07)
+    emit(40, {'dy': -0.06, 'mx': 0.012, 'mz': -0.005, 'hips': [('forward', 5), ('right', -4)],
+              'sp': {S2: [('forward', -4), ('right', -3)], S1: [('forward', -3), ('right', -3)],
+                     SP: [], NECK: [('forward', 6), ('right', -3)],
+                     HEAD: [('forward', 12), ('right', -8)]},
+              'la': ('l', [('forward', 28)], [('right', 18)]),
+              'ra': ('b', (0.85, 0, 0.35), 0.33 * H, I),
+              'legs': PLANT})
+
+    emit(48, {'dy': -0.085, 'mx': -0.006, 'mz': -0.01, 'hips': [('forward', -4), ('right', -8)],
+              'sp': {S2: [('forward', 3), ('right', -6)], S1: [('right', -5)],
+                     SP: [('right', -2)], NECK: [('forward', -4), ('right', -2)],
+                     HEAD: [('forward', -10), ('right', -6)]},
+              'la': ('l', [('forward', 30), ('right', 10)], [('right', 20)]),
+              'ra': ('b', (0.85, 0, 0.35), 0.31 * H, I),
+              'legs': PLANT})
+
+    # deep crouch, feet still planted (f09)
+    emit(54, {'hy': 0.255 * H, 'mz': -0.02, 'hips': [('right', -12)],
+              'sp': {S2: [('right', -6)], S1: [('right', -5)], SP: [('right', -2)],
+                     NECK: [('right', 4)], HEAD: [('right', 6), ('forward', 4)]},
+              'la': ('t', (-0.85, 0, 0.35), (-0.7, 0, 0.6), 0.20 * H),
+              'ra': ('b', (0.85, 0, 0.4), 0.30 * H, I),
+              'legs': ('plant', 0.0, 0.2)})
+
+    # ---------------- sit down on his bottom (f10) ----------------
+    SIT = ('plant', 0.09, 0.4)
+    emit(58, {'hy': 0.205 * H, 'mz': -0.03, 'hips': [('right', 4)],
+              'sp': {S2: [('right', -10)], S1: [('right', -7)], SP: [('right', -4)],
+                     NECK: [('right', -6)], HEAD: [('right', -10), ('forward', 5)]},
+              'la': ('t', (-0.8, 0, 0.45), (-0.6, 0, 0.75), 0.15 * H),
+              'ra': ('b', (0.9, 0, 0.35), 0.29 * H, I),
+              'legs': SIT, 'mins': MSIT})
+
+    emit(63, {'hy': 0.205 * H, 'mz': -0.03, 'hips': [('right', 8)],
+              'sp': {S2: [('right', -2)], S1: [], SP: [],
+                     NECK: [('right', 4)], HEAD: [('right', 6), ('forward', -6)]},
+              'la': ('t', (-0.85, 0, 0.4), (-0.65, 0, 0.7), 0.15 * H),
+              'ra': ('b', (0.9, 0, 0.3), 0.30 * H, I),
+              'legs': SIT, 'mins': MSIT})
+
+    # ---------------- tip back, legs come up (f11-f12) ----------------
+    emit(68, {'hy': 0.215 * H, 'mz': -0.035, 'hips': [('up', 10), ('right', 28)], 'spw': True,
+              'sp': {S2: [('up', 5), ('right', 22)], S1: [('up', 1), ('right', 18)],
+                     SP: [('right', 16)], NECK: [('right', 10)],
+                     HEAD: [('right', 4), ('forward', 4)]},
+              'la': ('t', (-0.85, 0, 0.3), (-0.65, 0, 0.6), 0.16 * H),
+              'ra': ('b', (0.9, 0, 0.25), 0.29 * H, I),
+              'legs': ('dirs',
+                       ((-0.15, 0, 1.0), 0.30 * H, (-0.1, 0, 1.0), 0.21 * H, (-0.25, 0.55, 0.8)),
+                       ((0.15, 0, 1.0), 0.30 * H, (0.1, 0, 1.0), 0.21 * H, (0.25, 0.55, 0.8))),
+              'mins': MROLL})
+
+    emit(73, {'hy': 0.22 * H, 'mz': -0.04, 'hips': [('up', 26), ('right', 62)], 'spw': True,
+              'sp': {S2: [('up', 13), ('right', 56)], S1: [('up', 4), ('right', 52)],
+                     SP: [('right', 50)], NECK: [('right', 44)], HEAD: [('right', 36)]},
+              'la': ('t', (-0.9, 0, 0.15), (-0.8, 0, 0.4), 0.17 * H),
+              'ra': ('b', (0.9, 0, 0.2), 0.29 * H, I),
+              'legs': ('dirs',
+                       ((-0.15, 0, 1.0), 0.35 * H, (-0.1, 0, 1.0), 0.36 * H, (-0.2, 0.85, 0.5)),
+                       ((0.15, 0, 1.0), 0.35 * H, (0.1, 0, 1.0), 0.36 * H, (0.2, 0.85, 0.5))),
+              'mins': MROLL})
+
+    # ---------------- part 2: flat on his back (lying-still f01-f04) ----------------
+    LIE_HIPS = [('up', 40), ('right', 88)]
+
+    # back hits the floor, legs and board still up (lying-still f01)
+    emit(77, lying(0.19, {'hy': 0.205 * H, 'mz': -0.045, 'hips': LIE_HIPS,
+                          'la': ('t', (-0.9, 0, 0.2), (-0.7, 0, 0.5), 0.19 * H),
+                          'ra': ('d', (0.7, 0.3, 0.6), Q77),
+                          'legs': ('dirs',
+                                   ((-0.2, 0, 1.0), 0.32 * H, (-0.12, 0, 1.0), 0.37 * H, (-0.2, 0.9, 0.4)),
+                                   ((0.2, 0, 1.0), 0.32 * H, (0.12, 0, 1.0), 0.37 * H, (0.2, 0.9, 0.4))),
+                          'mins': MLIE}))
+
+    # head and legs slam down, board swinging to the floor (f02)
+    emit(82, lying(0.145, {'hy': 0.205 * H, 'mz': -0.045, 'hips': LIE_HIPS,
+                           'la': ('t', (-0.85, 0, 0.45), (-0.6, 0, 0.8), 0.17 * H),
+                           'ra': ('b', (0.75, 0, 0.55), 0.21 * H, Q82),
+                           'legs': legs_lie(0.235, 0.235, (-0.3, 0.8, 0.5), (0.3, 0.8, 0.5)),
+                           'mins': MLIE}))
+
+    # small bounce (f03)
+    emit(86, lying(0.155, {'hy': 0.217 * H, 'mz': -0.045, 'hips': LIE_HIPS,
+                           'la': ('t', (-0.85, 0, 0.5), (-0.55, 0, 0.85), 0.165 * H),
+                           'ra': ('b', (0.8, 0, 0.6), 0.17 * H, QFLAT),
+                           'legs': legs_lie(0.25, 0.27, (-0.3, 0.8, 0.5), (0.3, 0.8, 0.5)),
+                           'mins': MLIE}))
+
+    # settled and completely still (f04-f12), held to the last frame
+    final = lying(0.145, {'hy': 0.205 * H, 'mz': -0.045, 'hips': LIE_HIPS,
+                          'la': ('t', (-0.85, 0, 0.5), (-0.55, 0, 0.85), 0.155 * H),
+                          'ra': ('b', (0.8, 0, 0.6), 0.155 * H, QFLAT),
+                          'legs': legs_lie(0.235, 0.235, (-0.35, 0.8, 0.45), (0.35, 0.8, 0.45)),
+                          'mins': MLIE})
+    emit(90, final)
+    st = emit(120, final)
+
+    rep = ', '.join('%s %.3f' % (b, st['p'][b].y / H) for b in
+                    (HIPS, S2, SP, HEAD, LSH, RSH, LHAND, RHAND, LUL, RUL, LL, RL, LF, RF))
+    ctx.note('OH_Death lying pose joint heights (share of height): ' + rep)
