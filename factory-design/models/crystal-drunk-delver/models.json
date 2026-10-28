@@ -4,7 +4,9 @@
  "tasks": {
   "character": "01a17268-d8d9-756b-a157-885823f4970c",
   "rig": "01a1726c-9de9-721d-9b75-835b74a69f3c",
-  "anim": "01a1726d-4632-7632-95e1-e39159eb3fa0"
+  "anim": "01a1726d-4632-7632-95e1-e39159eb3fa0",
+  "pickaxe": "01a174d3-5b91-7583-8028-954c413735d5",
+  "crystal-backpack": "01a174d3-5b98-74e2-add7-e6aee47431b4"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +16,15 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "pickaxe",
+  "crystal-backpack"
+ ],
  "notes": "Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 5674832
- }
+  "char.glb": 5674832,
+  "pickaxe.glb": 8233128,
+  "crystal-backpack.glb": 12486788
+ },
+ "partsAdded": "2026-10-25T20:52:26.499Z"
 }

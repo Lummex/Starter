@@ -4,7 +4,8 @@
  "tasks": {
   "character": "01a17276-92be-718b-a24f-3678f75f4b8c",
   "rig": "01a17279-8b89-7181-a4e5-95a44cb3a5ad",
-  "anim": "01a1727a-5b8b-717c-9149-25b41edf21c4"
+  "anim": "01a1727a-5b8b-717c-9149-25b41edf21c4",
+  "gyro-wings": "01a174d9-2ab0-7124-993f-51bfed31e759"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +15,13 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "gyro-wings"
+ ],
  "notes": "Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 5677016
- }
+  "char.glb": 5677016,
+  "gyro-wings.glb": 12998896
+ },
+ "partsAdded": "2026-10-25T20:57:55.098Z"
 }

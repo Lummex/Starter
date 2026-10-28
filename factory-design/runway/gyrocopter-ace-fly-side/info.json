@@ -1,0 +1,25 @@
+{
+ "id": "gyrocopter-ace-fly-side",
+ "character": "gyrocopter-ace",
+ "prompt": "A small gnome flyer with a propeller backpack and mechanical wings. Seen from her side. First half (0-3 s), hover idle: she hovers a little above the ground. The propeller on the back of her backpack spins fast the whole time. Her two bat-like mechanical wings flap slowly, two full flaps. Her body bobs gently up and down twice. Knees slightly bent, feet hanging relaxed, arms loose a little away from the body. Second half (3-6 s), flying forward in place: she leans her whole body forward about 20 degrees, wings flap faster (four flaps), legs trail back, arms swept back along her sides, then she rises back to the upright hover pose. She stays in the same spot. Body motion reference for 3D rigging: only the body and limbs move. Face frozen: no expression change, lips closed and still, no blinking, eyes fixed. Smooth, even 3D game animation. Camera locked, no zoom, full body always in frame, plain grey background. Each half starts and ends in the same pose so it loops.",
+ "model": "gen4.5",
+ "ratio": "1280:720",
+ "duration": 6,
+ "taskId": "a87f57ca-e6a5-4b19-adf5-fcbe5ab082be",
+ "made": "2026-10-27T08:31:17.538Z",
+ "view": "side",
+ "segments": [
+  {
+   "move": "hover-idle",
+   "from": 0,
+   "to": 3
+  },
+  {
+   "move": "fly-forward",
+   "from": 3,
+   "to": 6
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}

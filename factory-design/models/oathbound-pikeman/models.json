@@ -4,7 +4,8 @@
  "tasks": {
   "character": "01a1727a-fdee-737d-9a07-e24582092b52",
   "rig": "01a1727d-a4f5-75c4-9413-04d5d607cb12",
-  "anim": "01a1727e-9e16-708d-a7fe-c1455f7d8d7c"
+  "anim": "01a1727e-9e16-708d-a7fe-c1455f7d8d7c",
+  "rifle": "01a174da-4563-76f7-ab8a-5658137d8e0a"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +15,13 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "rifle"
+ ],
  "notes": "Owner sheet note: Don't render his backpack. Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 5580044
- }
+  "char.glb": 5580044,
+  "rifle.glb": 10202716
+ },
+ "partsAdded": "2026-10-25T20:58:36.506Z"
 }

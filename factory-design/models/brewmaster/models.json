@@ -4,7 +4,9 @@
  "tasks": {
   "character": "01a17264-72fb-770e-9a8e-8dd89b58baf4",
   "rig": "01a17267-e73c-7437-8617-57ee8f758825",
-  "anim": "01a17268-df00-7708-94f7-4dabdaba26dd"
+  "anim": "01a17268-df00-7708-94f7-4dabdaba26dd",
+  "keg-pack": "01a174d3-5b91-7651-8075-cd8c9c2d3426",
+  "crystal-hammer": "01a174d3-5b8e-75a7-b320-7f9f0e8d7eac"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +16,15 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "crystal-hammer",
+  "keg-pack"
+ ],
  "notes": "Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 5363616
- }
+  "char.glb": 5363616,
+  "crystal-hammer.glb": 8872784,
+  "keg-pack.glb": 13357804
+ },
+ "partsAdded": "2026-10-25T20:52:46.749Z"
 }

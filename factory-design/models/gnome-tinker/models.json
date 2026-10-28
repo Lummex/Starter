@@ -4,7 +4,11 @@
  "tasks": {
   "character": "01a17272-f2ba-7268-8e1b-8e07d99921ad",
   "rig": "01a17275-9a81-73e9-8bcf-b5d82cc022b8",
-  "anim": "01a17276-6afe-7123-9501-4074710cffe0"
+  "anim": "01a17276-6afe-7123-9501-4074710cffe0",
+  "scepter": "01a174d8-8af6-747e-8af5-ec9bfb5fb754",
+  "crystal-shield": "01a174d8-8b66-70db-baf8-23e4a8aafce4",
+  "wrench:preview": "01a17c2d-fd2d-72a5-81f7-00ab7a8e0629",
+  "wrench": "01a17c2e-cdf9-763a-b6b8-bbd5e76b8325"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +18,17 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "scepter",
+  "crystal-shield",
+  "wrench"
+ ],
  "notes": "Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 6141788
- }
+  "char.glb": 6141788,
+  "scepter.glb": 10711984,
+  "crystal-shield.glb": 10068860,
+  "wrench.glb": 8551312
+ },
+ "partsAdded": "2026-10-27T07:07:37.908Z"
 }

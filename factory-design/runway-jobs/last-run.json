@@ -1,0 +1,29 @@
+{
+ "at": "2026-10-28T00:23:18.165Z",
+ "results": [
+  {
+   "id": "goblin-bomber-idle-box-front",
+   "duration": 6,
+   "moves": [
+    "idle",
+    "shadow-boxing"
+   ]
+  },
+  {
+   "id": "goblin-bomber-idle-box-side",
+   "duration": 6,
+   "moves": [
+    "idle",
+    "shadow-boxing"
+   ]
+  },
+  {
+   "id": "goblin-bomber-idle-box-back",
+   "duration": 6,
+   "moves": [
+    "idle",
+    "shadow-boxing"
+   ]
+  }
+ ]
+}

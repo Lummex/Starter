@@ -4,7 +4,8 @@
  "tasks": {
   "character": "01a17272-5000-77a0-893a-02037a7d2296",
   "rig": "01a17275-22b1-7258-bb3e-c24187363a70",
-  "anim": "01a17275-ca8d-71c2-950c-91be37ce6e54"
+  "anim": "01a17275-ca8d-71c2-950c-91be37ce6e54",
+  "pickaxe": "01a174d8-12e2-7597-aa1a-31c81951a33d"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +15,13 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "pickaxe"
+ ],
  "notes": "Owner sheet note: Don't render his bag we already have a known bag. Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 5640212
- }
+  "char.glb": 5640212,
+  "pickaxe.glb": 9695284
+ },
+ "partsAdded": "2026-10-25T20:56:12.569Z"
 }

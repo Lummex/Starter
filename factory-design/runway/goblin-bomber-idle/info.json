@@ -1,0 +1,13 @@
+{
+ "id": "goblin-bomber-idle",
+ "character": "goblin-bomber",
+ "move": "idle",
+ "prompt": "A cartoon goblin character does a cheerful boxing workout in place, like exercise practice: bouncing lightly on his toes, swaying his head left and right, then three quick practice punches into the empty air, then bouncing again. Same character and outfit, full body always in frame, still camera, plain grey studio background, smooth stylized 3D game animation.",
+ "model": "gen4.5",
+ "ratio": "1280:720",
+ "duration": 3,
+ "taskId": "eac39586-fb0b-4fb4-a2fd-577ef09e61cd",
+ "made": "2026-10-27T07:31:15.610Z",
+ "frames": 12,
+ "approved": false
+}

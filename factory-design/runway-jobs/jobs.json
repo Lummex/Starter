@@ -1,0 +1,202 @@
+{
+ "note": "Runway reference videos (owner, Oct 27). Each job makes one short clip of one character doing one move, from a still of its 3D model. Runs ONCE per job. The owner approves a clip before the Blender worker uses its frames. Owner rules (Oct 27): body and limb motion only for rigging (face frozen, no lips, no blinking); smooth looping game animation; two moves per clip (first half / second half); front, side and back views. Cost rule (owner, Oct 28): use the cheapest image-to-video model and lowest resolution; set per-job \"model\" and \"ratio\" (default stays gen4.5).",
+ "jobs": [
+  {
+   "id": "goblin-bomber-idle",
+   "character": "goblin-bomber",
+   "move": "idle",
+   "image": "goblin-bomber--start.jpg",
+   "duration": 3,
+   "prompt": "A cartoon goblin character does a cheerful boxing workout in place, like exercise practice: bouncing lightly on his toes, swaying his head left and right, then three quick practice punches into the empty air, then bouncing again. Same character and outfit, full body always in frame, still camera, plain grey studio background, smooth stylized 3D game animation."
+  },
+  {
+   "id": "gyrocopter-ace-fly-front",
+   "character": "gyrocopter-ace",
+   "view": "front",
+   "image": "gyrocopter-ace--front.jpg",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "hover-idle",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "fly-forward",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A small gnome flyer with a propeller backpack and mechanical wings. Seen straight from the front. First half (0-3 s), hover idle: she hovers a little above the ground. The propeller on the back of her backpack spins fast the whole time. Her two bat-like mechanical wings flap slowly, two full flaps. Her body bobs gently up and down twice. Knees slightly bent, feet hanging relaxed, arms loose a little away from the body. Second half (3-6 s), flying forward in place: she leans her whole body forward about 20 degrees, wings flap faster (four flaps), legs trail back, arms swept back along her sides, then she rises back to the upright hover pose. She stays in the same spot. Body motion reference for 3D rigging: only the body and limbs move. Face frozen: no expression change, lips closed and still, no blinking, eyes fixed. Smooth, even 3D game animation. Camera locked, no zoom, full body always in frame, plain grey background. Each half starts and ends in the same pose so it loops."
+  },
+  {
+   "id": "gyrocopter-ace-fly-side",
+   "character": "gyrocopter-ace",
+   "view": "side",
+   "image": "gyrocopter-ace--side.jpg",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "hover-idle",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "fly-forward",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A small gnome flyer with a propeller backpack and mechanical wings. Seen from her side. First half (0-3 s), hover idle: she hovers a little above the ground. The propeller on the back of her backpack spins fast the whole time. Her two bat-like mechanical wings flap slowly, two full flaps. Her body bobs gently up and down twice. Knees slightly bent, feet hanging relaxed, arms loose a little away from the body. Second half (3-6 s), flying forward in place: she leans her whole body forward about 20 degrees, wings flap faster (four flaps), legs trail back, arms swept back along her sides, then she rises back to the upright hover pose. She stays in the same spot. Body motion reference for 3D rigging: only the body and limbs move. Face frozen: no expression change, lips closed and still, no blinking, eyes fixed. Smooth, even 3D game animation. Camera locked, no zoom, full body always in frame, plain grey background. Each half starts and ends in the same pose so it loops."
+  },
+  {
+   "id": "gyrocopter-ace-fly-back",
+   "character": "gyrocopter-ace",
+   "view": "back",
+   "image": "gyrocopter-ace--back.jpg",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "hover-idle",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "fly-forward",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A small gnome flyer with a propeller backpack and mechanical wings. Seen from behind; the spinning propeller and wings are clearly visible. First half (0-3 s), hover idle: she hovers a little above the ground. The propeller on the back of her backpack spins fast the whole time. Her two bat-like mechanical wings flap slowly, two full flaps. Her body bobs gently up and down twice. Knees slightly bent, feet hanging relaxed, arms loose a little away from the body. Second half (3-6 s), flying forward in place: she leans her whole body forward about 20 degrees, wings flap faster (four flaps), legs trail back, arms swept back along her sides, then she rises back to the upright hover pose. She stays in the same spot. Body motion reference for 3D rigging: only the body and limbs move. Face frozen: no expression change, lips closed and still, no blinking, eyes fixed. Smooth, even 3D game animation. Camera locked, no zoom, full body always in frame, plain grey background. Each half starts and ends in the same pose so it loops."
+  },
+  {
+   "id": "gyrocopter-ace-cast-front",
+   "character": "gyrocopter-ace",
+   "view": "front",
+   "image": "gyrocopter-ace--front.jpg",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "spark-throw",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "knocked-back",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A small gnome flyer with a propeller backpack and mechanical wings. Seen straight from the front. First half (0-3 s), spark throw: from the hover pose she pulls her right hand back beside her shoulder, a small glowing spark forms in that palm, at about 1.2 s she pushes the right arm straight forward and releases it, small follow-through, then returns to the hover pose. Wings keep flapping slowly, propeller spinning. Second half (3-6 s), knocked back: at 3.3 s her chest and head jerk backward, arms swing out, she dips down a little in the air and the wings pause, then she smoothly recovers to the hover pose. Body motion reference for 3D rigging: only the body and limbs move. Face frozen: no expression change, lips closed and still, no blinking, eyes fixed. Smooth, even 3D game animation. Camera locked, no zoom, full body always in frame, plain grey background. Each half starts and ends in the same pose so it loops."
+  },
+  {
+   "id": "gyrocopter-ace-cast-side",
+   "character": "gyrocopter-ace",
+   "view": "side",
+   "image": "gyrocopter-ace--side.jpg",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "spark-throw",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "knocked-back",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A small gnome flyer with a propeller backpack and mechanical wings. Seen from her side. First half (0-3 s), spark throw: from the hover pose she pulls her right hand back beside her shoulder, a small glowing spark forms in that palm, at about 1.2 s she pushes the right arm straight forward and releases it, small follow-through, then returns to the hover pose. Wings keep flapping slowly, propeller spinning. Second half (3-6 s), knocked back: at 3.3 s her chest and head jerk backward, arms swing out, she dips down a little in the air and the wings pause, then she smoothly recovers to the hover pose. Body motion reference for 3D rigging: only the body and limbs move. Face frozen: no expression change, lips closed and still, no blinking, eyes fixed. Smooth, even 3D game animation. Camera locked, no zoom, full body always in frame, plain grey background. Each half starts and ends in the same pose so it loops."
+  },
+  {
+   "id": "gyrocopter-ace-cast-back",
+   "character": "gyrocopter-ace",
+   "view": "back",
+   "image": "gyrocopter-ace--back.jpg",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "spark-throw",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "knocked-back",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A small gnome flyer with a propeller backpack and mechanical wings. Seen from behind; the spinning propeller and wings are clearly visible. First half (0-3 s), spark throw: from the hover pose she pulls her right hand back beside her shoulder, a small glowing spark forms in that palm, at about 1.2 s she pushes the right arm straight forward and releases it, small follow-through, then returns to the hover pose. Wings keep flapping slowly, propeller spinning. Second half (3-6 s), knocked back: at 3.3 s her chest and head jerk backward, arms swing out, she dips down a little in the air and the wings pause, then she smoothly recovers to the hover pose. Body motion reference for 3D rigging: only the body and limbs move. Face frozen: no expression change, lips closed and still, no blinking, eyes fixed. Smooth, even 3D game animation. Camera locked, no zoom, full body always in frame, plain grey background. Each half starts and ends in the same pose so it loops."
+  },
+  {
+   "id": "goblin-bomber-idle-box-front",
+   "character": "goblin-bomber",
+   "move": "idle-box",
+   "view": "front",
+   "image": "goblin-bomber--front.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "idle",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "shadow-boxing",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, a purple ragged kilt and big brown boots. Seen straight from the front. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), idle: he stands in place breathing slowly, chest rising and falling, a slight sway and a gentle weight shift from one foot to the other, arms relaxed at his sides, hands in loose fists. Part 2 (3-6 s), boxing workout: he raises both fists into a guard in front of his chin, bounces lightly on his toes and throws practice punches into the empty air: left jab, right jab, left hook, right hook, then lowers his arms back to the relaxed standing pose from the start so the clip loops. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Feet stay in the same spot. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D game animation."
+  },
+  {
+   "id": "goblin-bomber-idle-box-side",
+   "character": "goblin-bomber",
+   "move": "idle-box",
+   "view": "side",
+   "image": "goblin-bomber--side.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "idle",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "shadow-boxing",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, a purple ragged kilt and big brown boots. Seen from his side, in profile. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), idle: he stands in place breathing slowly, chest rising and falling, a slight sway and a gentle weight shift from one foot to the other, arms relaxed at his sides, hands in loose fists. Part 2 (3-6 s), boxing workout: he raises both fists into a guard in front of his chin, bounces lightly on his toes and throws practice punches into the empty air: left jab, right jab, left hook, right hook, then lowers his arms back to the relaxed standing pose from the start so the clip loops. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Feet stay in the same spot. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D game animation."
+  },
+  {
+   "id": "goblin-bomber-idle-box-back",
+   "character": "goblin-bomber",
+   "move": "idle-box",
+   "view": "back",
+   "image": "goblin-bomber--back.jpg",
+   "model": "grok_imagine_1_5_lite",
+   "ratio": "auto_480p",
+   "duration": 6,
+   "segments": [
+    {
+     "move": "idle",
+     "from": 0,
+     "to": 3
+    },
+    {
+     "move": "shadow-boxing",
+     "from": 3,
+     "to": 6
+    }
+   ],
+   "prompt": "A cartoon goblin with green skin, a purple ragged kilt and big brown boots. Seen from behind. Body motion reference for 3D rigging, two parts. Part 1 (0-3 s), idle: he stands in place breathing slowly, chest rising and falling, a slight sway and a gentle weight shift from one foot to the other, arms relaxed at his sides, hands in loose fists. Part 2 (3-6 s), boxing workout: he raises both fists into a guard in front of his chin, bounces lightly on his toes and throws practice punches into the empty air: left jab, right jab, left hook, right hook, then lowers his arms back to the relaxed standing pose from the start so the clip loops. Only the body and limbs move. Face frozen: no expression change, lips still, no blinking, eyes fixed. Feet stay in the same spot. Camera locked, close-up, no zoom, full body always in frame, plain grey background. Same character and outfit. Smooth stylized 3D game animation."
+  }
+ ]
+}

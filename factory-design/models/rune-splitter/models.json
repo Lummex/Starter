@@ -4,7 +4,8 @@
  "tasks": {
   "character": "01a1727f-657e-737e-8d62-eb78b7524df0",
   "rig": "01a17282-10e9-70e3-8fba-437aa02a13c8",
-  "anim": "01a17282-b82f-71b4-8004-0c188e73d3af"
+  "anim": "01a17282-b82f-71b4-8004-0c188e73d3af",
+  "crystal-hammer": "01a174db-d6d5-74d4-87f6-4dc2e3d554d7"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +15,13 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "crystal-hammer"
+ ],
  "notes": "Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 5584060
- }
+  "char.glb": 5584060,
+  "crystal-hammer.glb": 10476868
+ },
+ "partsAdded": "2026-10-25T21:00:39.358Z"
 }

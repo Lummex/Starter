@@ -4,7 +4,8 @@
  "tasks": {
   "character": "01a17276-4237-779b-baf8-c789105ad8d9",
   "rig": "01a17279-637d-72df-a545-525552dd6448",
-  "anim": "01a1727a-3692-706a-99e2-2a4f9ee7255b"
+  "anim": "01a1727a-3692-706a-99e2-2a4f9ee7255b",
+  "hammer": "01a174d8-da48-73d0-a362-efeddf329b91"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +15,13 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "hammer"
+ ],
  "notes": "Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 5725000
- }
+  "char.glb": 5725000,
+  "hammer.glb": 9213148
+ },
+ "partsAdded": "2026-10-25T20:57:04.042Z"
 }

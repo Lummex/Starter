@@ -4,7 +4,8 @@
  "tasks": {
   "character": "01a17277-5dba-7296-9b43-5223cbcd6e9f",
   "rig": "01a1727a-caf4-70ff-8312-1ccbac3fd315",
-  "anim": "01a1727b-c465-7099-a2cd-d7055ab7d680"
+  "anim": "01a1727b-c465-7099-a2cd-d7055ab7d680",
+  "crystal-pistol": "01a174da-1db9-760d-9833-5b5e51f2b921"
  },
  "actions": {
   "idle": 0,
@@ -14,9 +15,13 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "crystal-pistol"
+ ],
  "notes": "Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
-  "char.glb": 5599544
- }
+  "char.glb": 5599544,
+  "crystal-pistol.glb": 10120664
+ },
+ "partsAdded": "2026-10-25T20:58:46.806Z"
 }
