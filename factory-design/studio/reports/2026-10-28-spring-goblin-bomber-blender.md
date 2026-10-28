@@ -22,7 +22,7 @@ Date: 2026-10-28 · Job from Forge (Ken approved both parts of goblin-bomber-idl
 
 ## Worker fix (earlier in this run)
 - First tries failed 5x: the worker's reference-picture hotfix was off after a restart (it only switches on when glbtool reloads after a script update), and a failed job re-queues forever without counting retries. I paused the job, Ken OK'd a one-line note in factory/blender-worker/prompts/animate.md on main (makes the worker reload), I re-queued, and it ran normally (~10 min incl. one revision round).
-- For whoever owns the worker: put "references" support into worker.py itself, and count retries on failure.
+- The permanent fix (references + retry counting inside worker.py) was done on main in a parallel Spring run (see 2026-10-28-spring-worker-fixes.md). It only reaches Ken's PC when he re-runs Install-Blender-Worker.cmd.
 
 ## Not done (by design)
 - Nothing in game files or production. Next after Ken's OK: Ledger, then Gauge, then Anvil.
