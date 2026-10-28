@@ -5,7 +5,7 @@ I build Ken's tools ("programs"): pinned claude.ai artifacts (review boards, das
 ## My programs
 | Program | Link | Data |
 |---|---|---|
-| **Oreheart Studio** (THE ONE HOME since Oct 28) | https://claude.ai/artifact/PrZreWSayBrALDPvQwsVmn | db `library`, `characters`, `checks`, `takes`, `cards`, `artRequests`, `modelSetups`, `cardTemplates` (+ `settings`, `sentToClaude`); pictures/videos as assets; models as published files. Rooms: model-editor.html, art-studio.html, card-editor.html (room URL `?v=18`). |
+| **Oreheart Studio** (THE ONE HOME since Oct 28) | https://claude.ai/artifact/PrZreWSayBrALDPvQwsVmn | db `library`, `characters`, `checks`, `takes`, `decisions`, `cards`, `artRequests`, `modelSetups`, `cardTemplates` (+ `settings`, `sentToClaude`); pictures/videos as assets; models as published files. Rooms: model-editor.html, art-studio.html, card-editor.html (room URL `?v=18`). |
 | Motion References (backup-only) | https://claude.ai/artifact/U9YiTAL4juKxjLgvNeKEe8 | old db `takes` |
 | Studio Checklist (backup-only) | https://claude.ai/artifact/KwnPNScc2RjbM98WZ7R79G | old db `characters`, `checks` |
 | Model Editor (backup-only) | https://claude.ai/artifact/5isEcqgnmtqRHJUWAmqRDd | old db `library`, `modelSetups` |
@@ -99,3 +99,13 @@ character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view or
 ## Ken's feedback
 - Wants to approve each move where he watches it, and to remove moves he doesn't want from a character's set (Oct 28).
 - Oct 28: works only in Oreheart Studio now; changes go there "through their processes".
+
+## Waiting for you inbox (Oct 28, job from Forge)
+- Studio view `#waiting` + top-bar button "Waiting for you" with an orange badge = open `decisions` + `takes` with status "waiting" + character steps "waiting". Home shows an orange banner with the same count and breakdown.
+- Decisions: option buttons (all neutral colour: don't make one look like the recommended answer), a note box (an option with `note:true` needs the note), "Answered" list folded at the bottom with "Change my answer" (sets status back to open and clears answer fields, including answeredBy).
+- Takes from the inbox: Approve = every part not yet approved -> approved; Redraw = every waiting part -> redraw with the note (+ take note). "Each part ->" opens the character's Runway step for part-by-part.
+- Steps from the inbox use the same writeStep as the character view.
+- `<details>` loses its open state on every re-render (innerHTML): keep it in state (`toggle` listener with capture=true, since toggle doesn't bubble).
+- Testing: Playwright with a fake `window.claude.use` (Map-backed db with onSnapshot/get/update) and the real data saved with ArtifactData out_dir — caught everything before publishing. Live test: a probe decision `zz-wright-test`, answered + reopened in my Chrome tab, read back with ArtifactData, then deleted (my own probe).
+- The Studio page is a cross-origin iframe inside claude.ai: `find`/JS can't see into it; click by screenshot coordinates.
+- Reading repo files to edit them: on a github.com page, fetch api.github.com contents (raw) -> blob -> `<a download>` to Downloads -> device_stage_files. Gets the exact bytes (page text can differ).
