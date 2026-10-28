@@ -39,6 +39,14 @@
 - Vercel settings: Ignored Build Step is under Settings → Build and Deployment (dropdown; "Only build production" exists). Disconnect is under Settings → Git. **Clicking Disconnect was blocked by my permission check ("Modify Shared Resources") even with Ken's OK relayed by Forge** – Ken has to do it or approve it live.
 - Version rule (Ken, via Forge, Oct 28): the game project will be named oreheart-v0.8; each production release adds 0.1 (0.9, 1.0, …). Add to the handbook once the rename is done.
 
+## Learned Oct 28 (Round 27 draft)
+- Studio card ids for the goblin moves: grunt = goblin-grunt (Snotskull Grunt), Goblin Chef = rotgut-grenadier, Skullflinger = goblin-slinger, Thief = goblin-sneak (Backstabbing Thief), Bare Knuckle Lunatic = goblin-bomber. Move approvals = library/<id>.animApprovals[clip].status "approved"; BKL v5 also has decision bkl-v5.
+- Reading the Studio: ArtifactData list with out_dir, then python over the JSON files (fast, no browser).
+- file_upload in Chrome accepts files from /mnt/user-data/outputs/... (cloud outputs folder) but NOT from the Downloads copy. So: cp to /mnt/user-data/outputs/<x>/, then file_upload that path straight into the github.com upload page. No device_commit needed.
+- Fresh file text by commit: on a github.com tab, tree JSON (Accept: application/json) → payload.codeViewTreeRoute.refInfo.currentOid, then fetch raw.githubusercontent.com/Lummex/Starter/<oid>/<path>. The blob JSON has no rawLines any more.
+- Size truth (Ledger, Oct 28): game with Round 26 = 95.38 MB (not 92.2/94.9). Round 27 parts +4.81 MB; dwarf bodies -3.03, gnome bodies -4.74 → 92.43 MB. Ken's quoted OK covers dwarves; gnomes need his confirm.
+- Round 27 checks start at AC397 (Round 26 ended at AC396).
+
 ## Open issues
 - Comment paging bug above (blocks Round 25). Waiting for Ken's OK to fix.
 - Build #54 (Oct 25) failed: "ENOENT … factory-data/oreheart-8/acceptance". Build #55 did NOT hit it (tests were restored after each builder step). Likely cause: the builder agent committed the deletion of the hidden tests itself, so `confineTo()` (pipeline.mjs, uses `git diff HEAD`) had nothing to restore. Not fixed.
@@ -50,3 +58,4 @@
 - 2026-10-28 (later) Builder budget 6 → 10 per round for Round 26 (from Forge, Ken OK). Commit a098c01, checked on main. Report: factory-design/studio/reports/2026-10-28-anvil-builder-budget.md.
 - 2026-10-28 (later) Forge job: Ken rejected the Round 24 skull throw. Added item (0) 'Remove the Round 24 Skullflinger skull throw' (+ AC396) at the top of the Round 26 brief and fixed the lines that said to keep it (intro, B11.3, AC391). Commit ec756bf. Did not post on #8 (text given to Forge). Report: factory-design/studio/reports/2026-10-28-anvil-skullflinger-removal.md.
 - 2026-10-28 (later) Round 26 combined brief (from Forge, Ken OK): new brief + phase-1b pointer, Round 24/25 briefs copied to discontinued. Ledger file not there yet → #8 comment not posted. Vercel: starter-dashboard "Only build production" done; Git disconnect blocked by permission check; rename not done. Report: factory-design/studio/reports/2026-10-28-anvil-round-26.md.
+- 2026-10-28 (later) Round 27 brief DRAFT (from Forge): factory-design/design/oreheart-round-27-brief.md (C shrink, A 18 looks, B ram mount, D add-if-approved moves, E R26 leftovers; AC397-407). Not posted, no label, game branch untouched, phase-1b pointer NOT switched (draft text in the report). Open: Ken OK for gnome shrink. Report: factory-design/studio/reports/2026-10-28-anvil-round-27-draft.md.
