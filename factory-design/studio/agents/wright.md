@@ -35,6 +35,10 @@ I build Ken's tools ("programs"): pinned claude.ai artifacts (review boards, das
 - Editing a big program I didn't write: Artifact read with path index.html -> out_dir, then publish with url + file_path + small `edits` (no need to load 280 KB into chat).
 - device_commit_files with the same stagedPath reuses an old cached copy: always write a fresh output folder before committing.
 
+## Delete videos (2026-10-28, Ken's choice: delete for good)
+- Motion References has "Delete video" (in-page confirm; db doc delete + assets.delete if no other take uses the file). Repo clips are untouched.
+- Test deletes with a probe doc (no video), never a real take.
+
 ## Motion References: database layout
 Collection `takes`, doc id = Runway job id (e.g. `gyrocopter-ace-cast-side`). Fields:
 character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view order), title, tag, detail, view (front/side/back), seconds, prompt, video (asset id), moves [{move, from, to}], order, source (repo path of clip.mp4), runwayTask, status ("waiting" | "approved" | "redraw"), note (Ken's redraw note), chosen (bool, one per character+move), decidedBy (user id), updatedAt.
