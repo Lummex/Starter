@@ -1,0 +1,110 @@
+{
+ "base_pose": "rest pose",
+ "fps": 30,
+ "clips": [
+  {
+   "name": "OH_Death",
+   "frames": 120,
+   "seconds": 4.0,
+   "key_frames": [
+    0,
+    8,
+    16,
+    24,
+    32,
+    40,
+    47,
+    54,
+    60,
+    63,
+    68,
+    73,
+    77,
+    81,
+    85,
+    90,
+    120
+   ],
+   "bones_moved": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftLeg",
+    "LeftUpLeg",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightUpLeg",
+    "Spine",
+    "Spine01",
+    "Spine02"
+   ],
+   "events": [],
+   "fastest_turn_per_frame_deg": 18.3,
+   "feet_drift_m": 0.3111
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "OH_Death: OH_Death: dizzy wobble 0-32, knees buckle 32-54 (feet planted, IK), sits on bottom 60, tips back 68, on back legs up 73, legs land 81, bounce 85, flat and still 90-120; spatula vertical while falling, laid on the floor at his right.",
+  "OH_Death: spatula held in RightHand at scale 0.499; prop centre [0.3056, 0.2597, 0.3006] size 1.452 m, hand joint [0.3301, 0.3641, 0.0112]"
+ ],
+ "prop_debug": [
+  {
+   "name": "Mesh_0",
+   "polys": 15497,
+   "verts": 18176,
+   "hide_render": false,
+   "visible": true,
+   "collections": [
+    "Collection"
+   ],
+   "scene_has": true,
+   "materials": [
+    "Material_0.001"
+   ],
+   "world_scale": [
+    0.475,
+    0.475,
+    0.475
+   ],
+   "parent": "Prop_spatula",
+   "display_type": "TEXTURED"
+  }
+ ],
+ "splice": {
+  "problems": [],
+  "clips": {
+   "OH_Death": {
+    "keys": 121,
+    "seconds": 4.0
+   }
+  },
+  "calibration": {
+   "clip": "Idle",
+   "checked_clips": [
+    "Idle",
+    "Casual_Walk",
+    "Heavy_Hammer_Swing",
+    "Hit_Reaction",
+    "Dead",
+    "OH_Idle",
+    "OH_Walk",
+    "OH_Attack",
+    "OH_Hit",
+    "OH_React_Knockback",
+    "OH_React_Bonk",
+    "OH_React_Bowled",
+    "OH_React_Backstab",
+    "OH_React_Lifted"
+   ],
+   "worst_position_error_pct_of_height": 0.0005,
+   "worst_rotation_error_deg": 0.0
+  },
+  "written_clip_error_pct_of_height": 2e-05
+ }
+}
