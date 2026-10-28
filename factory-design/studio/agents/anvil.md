@@ -74,6 +74,12 @@
 - Quick type check works in the cloud: global tsc exists (/home/claude/.npm-global/bin/tsc); npm registry is not reachable. Put the inserted code in a stub .ts file and run tsc --strict.
 - Vercel queue (again, 1h+): with many sessions pushing to main, starter-dashboard production builds keep taking the one slot and oreheart-8 previews stay Queued. The Deploy step still prints the preview link before it times out.
 
+## Learned Oct 28 (hand flutter fix)
+- Hand hover code (app.ts): handBoxes / hitCard / popTarget (~1455-1500), installPopSafety 80 ms loop (~1580), watchPop (~1600), layoutHand stores each card's fixed slot in (el as any)._slot. asideNeighbors moves neighbours 20 % aside and flattens the arc; never measure hover boxes from the moved cards.
+- Reading big files without the 950-character limit: in my github.com tab make a Blob download (a.download = name) into Ken's Downloads, then device_stage_files it into the cloud and work there (python patch with exact-once replacements, TypeScript transpileModule from /home/claude/.npm-global for a syntax check). Upload the result with file_upload from /mnt/user-data/outputs/.
+- npm registry is not reachable from the cloud workspace; can't build the game here.
+- VERCEL QUEUE JAM (Oct 28): every commit to main also builds starter-dashboard, factory-2, oreheart-4, oreheart1-6 (Git-connected). On busy days oreheart-8 previews sit "Queued" for over an hour and "Factory — preview only" times out at 20 min (the Vercel deployment keeps waiting; its link still works once built). Check vercel.com/lummex/~/deployments. Fix needs Ken: Ignored Build Step "Only build production" or Git disconnect on the old projects.
+
 ## Open issues
 - Comment paging bug above (blocks Round 25). Waiting for Ken's OK to fix.
 - Build #54 (Oct 25) failed: "ENOENT … factory-data/oreheart-8/acceptance". Build #55 did NOT hit it (tests were restored after each builder step). Likely cause: the builder agent committed the deletion of the hidden tests itself, so `confineTo()` (pipeline.mjs, uses `git diff HEAD`) had nothing to restore. Not fixed.
@@ -120,3 +126,4 @@
 - The Chrome tool blocks JS results that look like a commit sha ("Base64 encoded data"); return a comparison (true/false) instead.
 - 2026-10-28 (later) Small fix 10 from Forge: Ken's own mine-all pickaxe icon. Commits on factory/issue-8: 9d95c47 (image), then style, then 9d92f74 (app.ts, "Owner art: Ken's mine-all pickaxe icon (Oct 28)"). Original on main factory-design/design/ui/ken-mine-all-pickaxe.png. Preview #23 = oreheart-8-gd4gac0wt (queued on Vercel 20+ min, not tested). Report: factory-design/studio/reports/2026-10-28-anvil-ken-pickaxe-icon.md.
 - 2026-10-28 (later) Owner fix 9/9 from Forge: full screen / windowed toggle (menu + Settings). Commit 7af662c on factory/issue-8 (after d6a8871). Preview-only run #22 -> oreheart-8-g59tuud42 stuck Queued in Vercel; toggle logic tested on old preview vqwc8zlrr. Report: factory-design/studio/reports/2026-10-28-anvil-fullscreen-toggle.md.
+- 2026-10-28 (later) Hand flutter fix (Forge, Ken found it): commit d4b453b on factory/issue-8 on top of the pickaxe (5c959d4) and mine icon (c96705a) fixes. Preview run #16 timed out; the deployment (oreheart-8-43xduknv6) was still queued on Vercel after 1 h+, so it is NOT tested in a preview yet. Report: factory-design/studio/reports/2026-10-28-anvil-hand-flutter.md.
