@@ -1,0 +1,89 @@
+{
+ "id": "goblin-sneak-runway-backstab",
+ "type": "animate",
+ "asset_id": "goblin-sneak",
+ "status": "queued",
+ "priority": 9,
+ "created_at": "2026-10-28T09:11:56Z",
+ "created_by": "Spring (Forge job Oct 28; Ken approved both parts of take goblin-sneak-backstab in Oreheart Studio)",
+ "retries": 0,
+ "max_retries": 1,
+ "retry_on_failure": true,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": null,
+ "source": {
+  "character": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/char.glb@factory/issue-8",
+  "parts": {
+   "dagger": "repo:projects/oreheart-8/public/models/creatures/goblin-sneak/dagger.glb@factory/issue-8"
+  }
+ },
+ "request": "Backstabbing Thief (goblin-sneak): NEW attack, sneak in + quick jab, from an owner-approved Runway reference video (front view, 6 s). refs/goblin-sneak--front.jpg is his model from the front with the dagger in his RIGHT hand; refs/goblin-sneak-backstab/frames/sneak-in/f01..f12.jpg is part 1 (0-3 s) and refs/goblin-sneak-backstab/frames/quick-jab/f01..f12.jpg is part 2 (3-6 s). The clip plays both parts at a faster game speed: part 1 in frames 0-45, part 2 in frames 45-105 (map the 12 frames of each part evenly). IGNORE in the video: the face, camera drift, and the big sideways lunge with the dagger flying high in quick-jab f07-f08 (keep a compact lean and jab; his feet stay in their small spot, the dagger never goes through his head or body). Owner rules for every goblin: nothing goes through his body, his held item or the ground; feet planted unless told otherwise (no sliding or sinking); weighty and cartoony, never floaty; poses read clearly from above and in front (board game camera). BASE POSE: these clips use \"base_pose\": \"rest\", so ctx.key turns are relative to the model's REST pose, the straight front-facing pose in refs/goblin-sneak--front.jpg. He faces straight forward (+Z, toward the camera) like the video. This is a rig motion reference only: never animate the face. FIRST Read all the pictures for a move, then match his BODY and LIMB poses frame by frame (torso lean and twist, head tilt, arm and leg angles, hip height) and the timing. If refs/ is missing or empty, do NOT write any animation files (the job will be retried). Do not touch, rename or remove any existing clip.",
+ "animations": [
+  {
+   "name": "OH_Attack_Backstab",
+   "description": "Sneak in, then one quick jab. Frames 0-45 follow sneak-in: from the base pose he sinks into a sneaky crouch (knees bent, hips lower, chest forward), dagger held low and close by his right hip, shoulders hunched; tiny careful tiptoe weight shifts left and back (feet stay planted, only the hips and knees shift) and the head leans in. Frames 45-105 follow quick-jab: f01-f05 deep crouch with the dagger drawn back low by his right hip (anticipation); f06-f07 (about frame 75) he leans in to his right and makes one fast underhand poke forward and slightly to his right with the dagger, arm extended, short hold at full extension (event 'hit' at the poke); f08-f09 pulls the dagger back close; f10-f12 straightens up and returns to the base pose. Snappy jab, weighty and sneaky, never floaty.",
+   "frames": [
+    105,
+    105
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": false,
+   "events": [
+    {
+     "name": "hit",
+     "bone": "right hand"
+    }
+   ],
+   "base_pose": "rest"
+  }
+ ],
+ "attachments": [
+  {
+   "part": "dagger",
+   "bone": "right hand",
+   "note": "preview prop: his dagger, held the whole clip"
+  }
+ ],
+ "references": [
+  "factory-design/runway-jobs/goblin-sneak--front.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f01.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f02.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f03.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f04.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f05.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f06.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f07.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f08.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f09.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f10.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f11.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/sneak-in/f12.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f01.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f02.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f03.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f04.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f05.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f06.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f07.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f08.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f09.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f10.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f11.jpg",
+  "factory-design/runway/goblin-sneak-backstab/frames/quick-jab/f12.jpg"
+ ],
+ "output": {
+  "format": "glb"
+ },
+ "history": [
+  {
+   "at": "2026-10-28T09:11:56Z",
+   "status": "queued",
+   "by": "spring"
+  }
+ ]
+}
