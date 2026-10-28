@@ -14,9 +14,19 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "gyro-wings"
+ ],
  "notes": "Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
   "char.glb": 5677016
- }
+ },
+ "clips": {
+  "idle": "OH_Hover",
+  "walk": "OH_Fly",
+  "attack": "OH_Attack",
+  "hit": "OH_Hit",
+  "defeat": "Dead"
+ },
+ "clipsNote": "Round 26: clip names by role; roles not listed (death) fall back to the old Meshy Dead clip by name (missing OH_Death)."
 }

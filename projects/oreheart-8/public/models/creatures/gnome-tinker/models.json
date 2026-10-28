@@ -14,9 +14,21 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
+ "parts": [
+  "scepter",
+  "crystal-shield",
+  "wrench"
+ ],
  "notes": "Character only for now (owner, Oct 25: accessories come later).",
  "fileSizes": {
   "char.glb": 6141788
- }
+ },
+ "clips": {
+  "idle": "Idle",
+  "walk": "Casual_Walk",
+  "attack": "Heavy_Hammer_Swing",
+  "hit": "Hit_Reaction",
+  "defeat": "Dead"
+ },
+ "clipsNote": "Round 26: clip names by role; roles not listed (death) fall back to the old Meshy Dead clip by name (missing OH_Death)."
 }

@@ -29,28 +29,31 @@ const PARTS: Record<string, PartCfg[]> = {
     { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.62, grip: 0.3, rot: [180, 0, 0], axis: 'y' },
   ],
   'goblin-pebbler': [{ name: 'club', file: 'club.glb', bone: ['RightHand'], len: 0.55, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-9.231, 12.794, 2.402], rot: [27, 11, 52], scale: [25, 25, 25] } }],
-  'goblin-scrapper': [{ name: 'bowling-ball', file: 'bowling-ball.glb', bone: ['RightHand'], len: 0.3, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-3.194, 27.128, -12.731], rot: [50.405, 1.159, 166.638], scale: [23, 23, 23] } }],
+  'goblin-scrapper': [{ name: 'bowling-ball', file: 'bowling-ball.glb', bone: ['RightHand'], len: 0.3, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-3.51, 8.733, -1.595], rot: [50.405, 1.159, 166.638], scale: [23, 23, 23] } }],
   'goblin-bomber': [],
   'goblin-sneak': [
     { name: 'bag', file: 'bag.glb', bone: ['neck'], len: 0.3, grip: 0.5, rot: [0, 0, 0], look: { bone: 'neck', pos: [-5.34, 1.862, -14.029], rot: [8.548, 3.663, 3.154], scale: [15, 15, 15] } },
     { name: 'dagger', file: 'dagger.glb', bone: ['RightHand'], len: 0.4, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [8.502, 7.038, -9.251], rot: [159.362, -37.54, -90.548], scale: [29, 29, 29] } },
   ],
   'rotgut-grenadier': [{ name: 'spatula', file: 'spatula.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [18.162, -9.844, 27.054], rot: [35.239, -53.157, -88.87], scale: [43, 43 * 1.46, 43 * 0.76] } }],
-  'goblin-slinger': [{ name: 'skull-mace', file: 'skull-mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'y' }],
-  'goblin-grunt': [{ name: 'frying-pan', file: 'frying-pan.glb', bone: ['RightHand'], len: 0.42, grip: 0.15, rot: [180, 0, 0], axis: 'y' }],
-  'junk-shaman': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.85, grip: 0.4, rot: [180, 0, 0], axis: 'y' }],
+  'goblin-slinger': [{ name: 'skull-mace', file: 'skull-mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-4.733, 9.93, 4.184], rot: [7.674, 57.734, 67.236], scale: [19, 19, 19] } }],
+  'goblin-grunt': [{ name: 'frying-pan', file: 'frying-pan.glb', bone: ['RightHand'], len: 0.42, grip: 0.15, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-13.281, 9.76, 19.154], rot: [126.389, -36.031, 38.735], scale: [43.449, 43.449, 43.449] } }],
+  'junk-shaman': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.85, grip: 0.4, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [6.217, -15.298, 17.834], rot: [110.02, -62.427, -52.655], scale: [53, 53, 53] } }],
   'shard-guzzler': [{ name: 'rocket', file: 'rocket.glb', bone: ['Spine02', 'Spine01', 'Spine'], len: 0.55, grip: 0.5, rot: [0, 180, 0], pos: [0, 0, -0.14] }],
   'blastrat-sapper': [{ name: 'bomb', file: 'bomb.glb', bone: ['Spine02', 'Spine01', 'Spine'], len: 0.32, grip: 0.5, rot: [0, 180, 0], pos: [0, -0.02, -0.12] }],
   'skullbasher-rusher': [
-    { name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'y' },
-    { name: 'shield', file: 'shield.glb', bone: ['LeftForeArm'], len: 0.45, grip: 0.5, rot: [0, 90, 0], pos: [0.06, 0, 0] },
+    { name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-8.9, 18.747, 8.443], rot: [-8.725, 65.398, 73.206], scale: [36, 36, 36] } },
+    { name: 'shield', file: 'shield.glb', bone: ['LeftHand'], len: 0.45, grip: 0.5, rot: [0, 90, 0], look: { bone: 'LeftHand', pos: [-3.667, 7.628, -2.335], rot: [-157.797, -59.618, -151.009], scale: [37, 37, 37] } },
   ],
   'wolf-rider': [
     { name: 'wolf', file: 'wolf.glb', bone: [], len: 0.9, grip: 0.5, rot: [0, 0, 0], mount: true },
     { name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'x' },
   ],
   'grubnaks-big-boss-troll': [],
-  'shiv-rat': [{ name: 'dagger', file: 'dagger.glb', bone: ['RightHand'], len: 0.4, grip: 0.2, rot: [180, 0, 0], axis: 'y' }],
+  'shiv-rat': [
+    { name: 'backpack', file: 'backpack.glb', bone: ['Spine'], len: 0.36, grip: 0.5, rot: [0, 180, 0], look: { bone: 'Spine', pos: [0.756, -10.807, -6.926], rot: [176.37, 0.217, 178.765], scale: [19, 19, 19] } },
+    { name: 'dagger', file: 'dagger.glb', bone: ['RightHand'], len: 0.4, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-8.478, 10.344, 13.399], rot: [132.296, -65.655, 54.851], scale: [26, 26, 26] } },
+  ],
   'goblin-smith-miner': [
     { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.55, grip: 0.3, rot: [180, 0, 0], axis: 'y' },
     { name: 'hammer', file: 'hammer.glb', bone: ['LeftHand'], len: 0.4, grip: 0.2, rot: [0, 0, 0], axis: 'y' },
@@ -70,10 +73,17 @@ const PARTS: Record<string, PartCfg[]> = {
   'gnome-cogger': [],
   'gnome-illusionist': [],
   'gnome-smith-miner': [],
-  'gnome-tinker': [],
+  'gnome-tinker': [
+    { name: 'scepter', file: 'scepter.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-5.106, 4.336, 10.391], rot: [-91.862, 22.237, 178.441], scale: [29.826, 29.826, 29.826] } },
+    { name: 'crystal-shield', file: 'crystal-shield.glb', bone: ['LeftForeArm'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [-6.589, 20.19, 0.021], rot: [-110.166, -61.024, 179.49], scale: [29.536, 29.536, 29.536] } },
+    { name: 'wrench', file: 'wrench.glb', bone: ['Hips'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [-12.29, -9.118, 25.184], rot: [5.886, 46.054, 92.626], scale: [16.542, 16.542, 16.542] } },
+  ],
   'gnome-widget': [],
   'grimhold-ravager': [],
-  'gyrocopter-ace': [],
+  'gyrocopter-ace': [
+    { name: 'gyro-wings', file: 'gyro-wings.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [1, 8.127, -15.443], rot: [-178.557, 0.345, 175.676], scale: [53, 53, 53] } },
+    { name: 'gyro-wings-2', file: 'gyro-wings.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [2.731, 7.516, -13.38], rot: [-84.27, 23.646, 2.952], scale: [62.608, 56.172, 69.629] } },
+  ],
   'hexwright-apprentice': [],
   'ironhammer-berserker': [],
   'oathbound-pikeman': [],
@@ -91,9 +101,10 @@ export const hasCreature3dSlug = (id: string) => id in PARTS;
 interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationClip>; parts: Record<string, THREE.Object3D>; info: any; events?: any }
 const cache = new Map<string, Promise<Assets | null>>();
 const ready = new Map<string, Assets>();
+/** Round 26 (AC390): roles whose mapped clip was not found in the GLB, so the old Meshy clip (by name) plays; also at window.__missingClips */
+export const missingClips: { id: string; role: string; wanted: string; used: string }[] = [];
+(globalThis as any).__missingClips = missingClips;
 export const creature3dReady = (id: string) => ready.get(id) || null;
-/** a shared copy source for a thrown part (e.g. the Skullflinger's skull); loaded once with the creature */
-export const creaturePart = (id: string, name: string): THREE.Object3D | null => ready.get(id)?.parts[name] || null;
 
 export function loadCreature3d(id: string): Promise<Assets | null> {
   if (!hasCreature3dSlug(id)) return Promise.resolve(null);
@@ -109,9 +120,18 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
         const c = await gl.loadAsync(base + 'char.glb');
         const names = Object.keys(info.actions || {});
         const clips: Record<string, THREE.AnimationClip> = {};
-        names.forEach((n, i) => { const cl = (n === 'attack' && info.clips?.attack && c.animations.find((a) => a.name === info.clips.attack)) || c.animations.find((a) => a.name === n) || c.animations[i]; if (cl) clips[n] = cl; });
+        // Round 26: clips strictly by name (models.json `clips` map first, then the old Meshy clip of that role by name); never by position
+        const OLD: Record<string, string> = { idle: 'Idle', walk: 'Casual_Walk', attack: 'Heavy_Hammer_Swing', hit: 'Hit_Reaction', defeat: 'Dead' };
+        const MAPKEY: Record<string, string[]> = { idle: ['idle'], walk: ['walk'], attack: ['attack'], hit: ['hit'], defeat: ['defeat', 'death'], mine: ['mine'] };
+        const byName = (nm?: string) => (nm ? c.animations.find((a) => a.name === nm) : undefined);
+        for (const n of names) {
+          const want = (MAPKEY[n] || [n]).map((k) => info.clips?.[k]).find((v) => typeof v === 'string') as string | undefined;
+          let cl = byName(want);
+          if (!cl) { cl = byName(OLD[n]) || byName(n); if (cl && info.clips && typeof info.clips === 'object') missingClips.push({ id, role: n, wanted: want || `OH_${n}`, used: cl.name }); }
+          if (cl) clips[n] = cl;
+        }
         let events: any = null;
-        if (info.clips?.attack) { try { const er = await fetch(base + 'events.json'); if (er.ok) events = await er.json(); } catch { /* no events file */ } }
+        if (info.clips) { try { const er = await fetch(base + 'events.json'); if (er.ok) events = await er.json(); } catch { /* no events file */ } }
         const parts: Record<string, THREE.Object3D> = {};
         for (const pc of PARTS[id]) { try { parts[pc.name] = (await gl.loadAsync(base + pc.file)).scene; } catch { /* part missing: the figure still works */ } }
         const a = { char: c.scene, clips, parts, info, events };
@@ -127,7 +147,7 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
 export interface C3D {
   group: THREE.Group; mixer: THREE.AnimationMixer; mats: THREE.MeshStandardMaterial[];
   play(n: CreatureAnim): void; current(): string; update(dt: number): void;
-  /** Round 24: attack clip played by the model (GLB clip name), release time (ms into the clip) and bone read from events.json; onRelease fires exactly when the clip passes it */ attackClip?: string; partObject?: (name: string) => THREE.Object3D | null; clipOf?: (anim: string) => string; release?: { ms: number; bone: string } | null; onRelease?: (bone: THREE.Object3D) => void;
+  /** Round 24: attack clip played by the model (GLB clip name), release time (ms into the clip) and bone read from events.json; onRelease fires exactly when the clip passes it */ attackClip?: string; partObject?: (name: string) => THREE.Object3D | null; clipOf?: (anim: string) => string; release?: { ms: number; bone: string } | null; onRelease?: (bone: THREE.Object3D) => void; currentClip?: () => string; partInfo?: () => { name: string; bone: string; pos: number[]; rot: number[]; scale: number[] }[];
   /** flying units */ flying?: { hoverSquares: number; floatSquares: number; floatsPerSecond: number; swayDeg: number; groundShadow: boolean; source: string }; lift?: number; swayNowDeg?: number; groundShadow?: boolean;
   clipNames: string[]; held: string[]; worn: string[]; height: number;
   /** height in board squares (owner look or default) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
@@ -149,12 +169,11 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   const held: string[] = [], worn: string[] = [];
   let ballRec: { part: THREE.Object3D; bone: THREE.Object3D; p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 } | null = null;
   const items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[] = [];
+  const partInfo: { name: string; bone: string; pos: number[]; rot: number[]; scale: number[] }[] = [];
   const objs = new Map<string, THREE.Object3D | null>();
   const addItem = (name: string, bone: string, matchesLook: boolean, obj: THREE.Object3D | null) => { objs.set(name, obj); items.push({ name, bone, matchesLook, get visible() { let o: THREE.Object3D | null = obj; if (!o) return true; while (o) { if (!o.visible) return false; o = o.parent; } return true; } }); };
   const attackClipName = a.clips.attack?.name || '';
-  const relEv = (a.events?.clips?.[attackClipName]?.events || []).find((e: any) => e.name === 'projectile_release');
-  const release = relEv ? { ms: relEv.time * 1000, bone: relEv.bone as string } : null;
-  let relDone = true;
+  const release: { ms: number; bone: string } | null = null; // Round 26 item (0): no projectile release any more
   ch.updateMatrixWorld(true);
   const look = LOOKS[id];
   const H = Math.max(0.01, skinBox(ch).getSize(new THREE.Vector3()).y);
@@ -166,7 +185,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   const log: string[] = [];
   const once = (n: string) => n === 'attack' || n === 'mine' || n === 'hit' || n === 'defeat';
   const resolve = (n: string) => (actions[n] ? n : n === 'mine' && actions.attack ? 'attack' : 'idle');
-  const lockLen = (n: string) => (n === 'defeat' ? 1e9 : n === 'attack' && release ? actions[n]?.getClip().duration || 1.6 : Math.min(actions[n]?.getClip().duration || 0.8, n === 'hit' ? 0.8 : 1.1));
+  const lockLen = (n: string) => (n === 'defeat' ? 1e9 : Math.min(actions[n]?.getClip().duration || 0.8, n === 'hit' ? 0.8 : 1.1));
   let started = 0, shakeT = 0;
   const out: C3D = {} as C3D;
   const play = (want: CreatureAnim) => {
@@ -183,7 +202,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     const next = actions[n];
     next.reset(); next.setLoop(once(n) ? THREE.LoopOnce : THREE.LoopRepeat, once(n) ? 1 : Infinity); next.clampWhenFinished = true;
     const prev = actions[cur]; if (prev && prev !== next) next.crossFadeFrom(prev, 0.15, false);
-    next.play(); cur = n; started = mixer.time; relDone = n !== 'attack' || !release; log.push(n); out.onPlay?.(n);
+    next.play(); cur = n; started = mixer.time; log.push(n); out.onPlay?.(n);
   };
   play('idle');
   mixer.setTime(0); started = 0;
@@ -198,6 +217,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
       const part = src.clone(true); prep(part);
       part.position.set(...pc.look.pos); part.rotation.set(...(pc.look.rot.map((d) => THREE.MathUtils.degToRad(d)) as [number, number, number]), 'XYZ'); part.scale.set(...pc.look.scale);
       bone.add(part);
+      partInfo.push({ name: pc.name, bone: bone.name, pos: [...pc.look.pos], rot: [...pc.look.rot], scale: [...pc.look.scale] });
       if (pc.name === 'bowling-ball') ballRec = { part, bone, p: part.position.clone(), q: part.quaternion.clone(), s: part.scale.clone() };
       addItem(pc.name, bone.name, true, part);
       (/Hand/.test(bone.name) ? held : worn).push(pc.name);
@@ -250,7 +270,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     }
   }
   const rig = ballRec ? makeBallRig(ch, root, ballRec, out, log, () => cur, () => heightSpaces) : null;
-  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { const act = actions[cur]; if (release && !relDone && cur === 'attack' && act) { const rem = release.ms / 1000 - act.time; if (rem >= 0 && dt >= rem) { mixer.update(rem); dt -= rem; relDone = true; const hb = ch.getObjectByName(release.bone); if (hb) { ch.updateMatrixWorld(true); out.onRelease?.(hb); } } else if (rem < 0) relDone = true; } mixer.update(dt); if (flyCfg) { flyT += dt; out.lift = flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
+  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (flyCfg) { flyT += dt; out.lift = flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
   if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }
   return out;
 }

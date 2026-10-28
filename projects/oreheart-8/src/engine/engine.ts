@@ -93,6 +93,11 @@ function pay(pl: any, cost: number) {
   pl.crystals -= f;
   pl.bank -= cost - f;
 }
+/** How many Bank crystals paying `cost` would use (Flow is spent first; 0 when Flow covers it). */
+export function bankNeeded(state: any, player: Side, cost: number): number {
+  const pl = state.players[player];
+  return Math.max(0, cost - Math.max(0, pl.crystals));
+}
 const payCreature = (pl: any, _faction: string, cost: number) => pay(pl, cost);
 const paySpell = (pl: any, _faction: string, cost: number) => pay(pl, cost);
 const gain = (s: any, p: Side, n: number) => {
@@ -1431,9 +1436,38 @@ function trackStats(s: any, ev: any[]) {
   }
 }
 
+/** True when the active player has made a move (card, move, attack, mine, ability) in the current phase. */
+export function movedThisPhase(state: any): boolean {
+  const m = state && state.moveMark;
+  return !!m && m.turn === state.turn && m.phase === state.phase && m.player === state.activePlayer;
+}
+const MOVE_TYPES = ['summon', 'cast', 'playCrystal', 'minerUpgrade', 'mineAt', 'move', 'mine', 'attack', 'ability', 'gathererSwap'];
+
+/** Characters the Shaman can lift: any character within 5 spaces (ally or enemy), not shielded. */
+export function shamanLiftTargets(state: any, shamanUid: string): any[] {
+  const c = state.board.creatures.find((x: any) => x.uid === shamanUid);
+  if (!c || !has(c, 'shaman')) return [];
+  return state.board.creatures.filter((o: any) => o !== c && cheb(o, c) <= 5 && !o.riotShield);
+}
+/** Empty squares within 5 of the Shaman where the chosen target may land. */
+export function shamanLandingSquares(state: any, shamanUid: string, targetUid: string): { row: number; col: number }[] {
+  const c = state.board.creatures.find((x: any) => x.uid === shamanUid);
+  const o = state.board.creatures.find((x: any) => x.uid === targetUid);
+  if (!c || !o || o === c || !has(c, 'shaman') || cheb(o, c) > 5 || o.riotShield) return [];
+  const out: { row: number; col: number }[] = [];
+  for (let r = 1; r <= H; r++) for (let cl = 1; cl <= W; cl++) if (cheb({ row: r, col: cl }, c) <= 5 && emptyCell(state, r, cl)) out.push({ row: r, col: cl });
+  return out;
+}
+/** Lift via the normal action path: applyAction(state, shamanLiftAction(...)). Illegal squares (over 5 away) are rejected by the engine. */
+export function shamanLiftAction(state: any, shamanUid: string, targetUid: string, square: { row: number; col: number }): any {
+  const o = state.board.creatures.find((x: any) => x.uid === targetUid);
+  return { type: 'ability', ability: 'shaman', creatureUid: shamanUid, from: o ? { row: o.row, col: o.col } : undefined, target: { row: square.row, col: square.col } };
+}
+
 export function applyAction(state: any, action: any): { ok: boolean; state: any; events: any[]; error?: string } {
   const actor: Side = state && state.priority;
   const r = applyActionInner(state, action);
+  if (r.ok && action && MOVE_TYPES.includes(action.type) && r.state.phase === state.phase) r.state.moveMark = { turn: r.state.turn, phase: r.state.phase, player: r.state.activePlayer };
   if (r.ok) trackStats(r.state, r.events);
   if (r.ok && r.state.tutorial) { advanceTutorial(r.state, action, actor, r.events); if (r.state.winner === 'player') r.state.tutorial.step = 'complete'; }
   return r;

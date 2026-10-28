@@ -2,7 +2,7 @@
 import { ringColor, getRings } from './fx-settings';
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
-import { loadCreature3d, creature3dReady, creaturePart, makeCreature3d, hasCreature3dSlug, type C3D } from './creature3d';
+import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, type C3D } from './creature3d';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D } from './grubnak3d';
 import { makeMineFx, MineFx } from './mineFx';
 import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
@@ -193,7 +193,8 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     return null;
   }
   const testMode = document.body.classList.contains('test');
-  renderer.setPixelRatio(testMode ? 0.5 : low ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+  const pixelRatio = () => (testMode ? 0.5 : low ? Math.min(window.devicePixelRatio || 1, 2) : window.devicePixelRatio || 1);
+  renderer.setPixelRatio(pixelRatio());
   renderer.shadowMap.enabled = !low;
   renderer.info.autoReset = false;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -426,81 +427,6 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       fx.push({ obj: sp, t: performance.now(), kind, dur: kind === 'flash' ? 160 : kind === 'chips' ? 600 : 700, vel: kind === 'flash' ? new THREE.Vector3() : new THREE.Vector3(Math.cos(a) * (kind === 'chips' ? 1.4 : 0.9), kind === 'stars' ? 2 : kind === 'chips' ? 2.4 : 0.9, Math.sin(a) * (kind === 'chips' ? 1.4 : 0.9)) });
     }
   }
-  // ---------------------------------------------------------------- Round 24: thrown projectiles (Skullflinger's skull)
-  interface Proj { id: number; kind: string; shooterUid: string; targetUid: string | null; state: 'flying' | 'bouncing' | 'fading'; obj: THREE.Object3D; mats: THREE.Material[]; start: THREE.Vector3; end: THREE.Vector3; commander: string; peak: number; flightMs: number; t0: number; tc: number; vel: THREE.Vector3; spin: number; hops: number; fadeAt: number; groundY: number; log: any; releaseMs: number; shooterH: number }
-  const throwInfo = new Map<string, { targetUid: string | null; to: THREE.Vector3; commander: string }>();
-  const skullTargets = new Map<string, number>();
-  const projectiles: Proj[] = [];
-  const projectileLog: any[] = [];
-  let projSeq = 0;
-  const chestOf = (uid: string | null, commander: string, to: THREE.Vector3) => {
-    const tf = uid ? figs.get(uid) : null;
-    if (tf && !tf.dying) { const b = tf.c3d ? skinBox(tf.group, new THREE.Box3()) : new THREE.Box3().setFromObject(tf.group); if (!b.isEmpty()) return new THREE.Vector3(tf.group.position.x, b.min.y + (b.max.y - b.min.y) * 0.6, tf.group.position.z); }
-    if (commander) return to.clone().setY(0.8);
-    return (tf ? tf.group.position.clone() : to.clone()).setY(0.05);
-  };
-  function spawnThrow(uid: string, c3d: C3D, bone: THREE.Object3D) {
-    const info = throwInfo.get(uid), shooter = figs.get(uid);
-    const src = creaturePart(shooter?.cardId || '', 'skull-mace');
-    if (!info || !src || !c3d.release) return;
-    throwInfo.delete(uid);
-    const obj = src.clone(true);
-    const held = c3d.partObject?.('skull-mace');
-    const long = (o: THREE.Object3D) => { const sz = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3()); return Math.max(sz.x, sz.y, sz.z, 1e-4); };
-    obj.scale.multiplyScalar(held ? long(held) / long(obj) : 0.3);
-    obj.updateMatrixWorld(true);
-    const bb = new THREE.Box3().setFromObject(obj), ctr = bb.getCenter(new THREE.Vector3());
-    const holder = new THREE.Group(); obj.position.sub(ctr); holder.add(obj);
-    const mats: THREE.Material[] = [];
-    obj.traverse((m: any) => { if (m.isMesh) { m.frustumCulled = false; const own = (x: any) => { const k = x.clone(); k.transparent = true; mats.push(k); return k; }; m.material = Array.isArray(m.material) ? m.material.map(own) : own(m.material); } });
-    const start = new THREE.Vector3(); bone.getWorldPosition(start);
-    holder.position.copy(start); scene.add(holder);
-    const end = chestOf(info.targetUid, info.commander, info.to);
-    const dist = Math.hypot(end.x - start.x, end.z - start.z);
-    const now = performance.now();
-    const p: Proj = { id: ++projSeq, kind: 'skull', shooterUid: uid, targetUid: info.targetUid, state: 'flying', obj: holder, mats, start, end, commander: info.commander, peak: 0.6 * Math.min(1, dist / 4), flightMs: Math.min(550, Math.max(350, 350 + dist * 35)), t0: now, tc: 0, vel: new THREE.Vector3(), spin: 0, hops: 0, fadeAt: 0, groundY: 0.06, releaseMs: c3d.release.ms, shooterH: 0,
-      log: { id: 0, kind: 'skull', shooterUid: uid, targetUid: info.targetUid, clip: c3d.attackClip || '', bone: c3d.release.bone, releaseMs: c3d.release.ms, spawnOffset: 0, contactMs: null, removedMs: null, heightAtContact: 0, maxHeightAfterContact: 0, hitTarget: false } };
-    p.log.id = p.id; p.log.spawnOffset = +holder.position.distanceTo(start).toFixed(4);
-    projectiles.push(p); projectileLog.push(p.log);
-  }
-  function tickProjectiles() {
-    const now = performance.now();
-    for (let i = projectiles.length - 1; i >= 0; i--) {
-      const p = projectiles[i], el = now - p.t0, o = p.obj;
-      const ms = (v: number) => +(p.releaseMs + v).toFixed(1);
-      if (p.state === 'flying') {
-        const tgt = chestOf(p.targetUid, p.commander, p.end); if (p.targetUid && figs.get(p.targetUid) && !figs.get(p.targetUid)!.dying) p.end.copy(tgt);
-        const u = Math.min(1, el / p.flightMs);
-        o.position.lerpVectors(p.start, p.end, u); o.position.y += 4 * p.peak * u * (1 - u);
-        o.rotation.x += 2 * Math.PI * 2 * 0.016; o.rotation.z += 0.05;
-        if (u >= 1) {
-          p.state = 'bouncing'; p.tc = now; p.log.contactMs = ms(el); p.log.heightAtContact = +Math.max(0, o.position.y - 0).toFixed(3);
-          const dir = new THREE.Vector3(p.end.x - p.start.x, 0, p.end.z - p.start.z); if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1); dir.normalize();
-          const side = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(Math.random() < 0.5 ? 0.45 : -0.45);
-          p.vel.copy(dir).multiplyScalar(-1.1).add(side).setY(1.9); p.spin = 5 * Math.PI * 2;
-          const hit = !!(p.targetUid && figs.has(p.targetUid)) || !!p.commander;
-          p.log.hitTarget = hit;
-          const at = o.position.clone();
-          spawnFx('flash', at, 1); spawnFx('stars', at, 4); spawnFx('chips', at, 4); spawnFx('dust', at, 2);
-          if (hit) audio.play('melee');
-          const tf = p.targetUid ? figs.get(p.targetUid) : null; if (tf) tf.hitT = now;
-          if (!hit) p.groundY = 0.06;
-        }
-      } else {
-        const dt = 0.016, since = now - p.tc;
-        p.vel.y -= 9 * dt; o.position.addScaledVector(p.vel, dt); o.rotation.x += p.spin * dt; o.rotation.z += 3 * dt;
-        const gy = p.groundY;
-        if (o.position.y <= gy && p.vel.y < 0) { o.position.y = gy; if (p.hops < 1) { p.hops++; p.vel.y = 0.85; p.vel.x *= 0.6; p.vel.z *= 0.6; } else { p.vel.set(0, 0, 0); p.spin = 0; if (p.state !== 'fading') { p.state = 'fading'; p.fadeAt = now; } } }
-        p.log.maxHeightAfterContact = Math.max(p.log.maxHeightAfterContact, +o.position.y.toFixed(3));
-        if (since > 400 && p.state !== 'fading') { p.state = 'fading'; p.fadeAt = now; }
-        if (p.state === 'fading') for (const m of p.mats) (m as any).opacity = Math.max(0, 1 - (now - p.fadeAt) / 150);
-        if (since >= 640 || (p.state === 'fading' && now - p.fadeAt >= 150)) {
-          scene.remove(o); for (const m of p.mats) m.dispose(); projectiles.splice(i, 1); p.log.removedMs = ms(now - p.t0);
-        }
-      }
-    }
-  }
-  const projTimer = setInterval(() => { if (projectiles.length) tickProjectiles(); }, 16);
   function makeFigure(c: any): { group: THREE.Group; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number } {
     const card = CARDS[c.cardId];
     const f = FACTIONS[card.faction];
@@ -515,7 +441,6 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       // owner-sheet Meshy model (rigged, animated); dummy parts keep the procedural reactions harmless
       g = new THREE.Group(); g.add(c3.group);
       const cc3 = c3; cc3.onPlay = (n) => { if (n !== 'idle') creatureAnimLog.push({ uid: c.uid, cardId: c.cardId, anim: n, clip: cc3.clipOf?.(n) || '' }); };
-      if (cc3.release) cc3.onRelease = (bone) => spawnThrow(c.uid, cc3, bone);
       const dm = () => new THREE.Group();
       parts = { armL: dm(), armR: dm(), head: dm(), body: dm(), weapon: dm(), legL: dm(), legR: dm(), aura: null };
       finished = true; mats = c3.mats; baseScale = CREATURE_H;
@@ -789,7 +714,6 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
         f.lunge = to.clone().sub(f.target).multiplyScalar(0.45);
         f.lungeT = now;
         f.shootT = now;
-        if (f.c3d?.release) { const tf = e.target.commander ? null : [...figs.values()].find((x) => x.row === e.target.row && x.col === e.target.col && !x.dying) || [...figs.values()].find((x) => x.row === e.target.row && x.col === e.target.col); throwInfo.set(e.uid, { targetUid: tf ? tf.uid : e.target.commander ? 'commander:' + e.target.commander : null, to: to.clone(), commander: e.target.commander || '' }); if (tf) skullTargets.set(tf.uid, now); }
         f.c3d?.play('attack'); // start the clip now: a defender-strike-back defeat can end this figure before the next frame
         audio.play(e.ranged || (CARDS[f.cardId].abilities || []).includes('ranged') ? 'ranged' : 'melee');
         if (f.finished) audio.voiceLine('yell');
@@ -805,7 +729,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       } else if (e.type === 'bowl') { const bf = figs.get(e.uid); if (bf) bf.shootT = now; playBowl(e); }
       else if (e.type === 'damage' && e.uid) {
         const f = figs.get(e.uid);
-        if (f && e.amount > 0 && !(skullTargets.has(e.uid) && now - skullTargets.get(e.uid)! < 400)) { f.hitT = now; }
+        if (f && e.amount > 0) { f.hitT = now; }
       } else if (e.type === 'damage' && e.commander) audio.play('stronghold');
     }
   }
@@ -824,7 +748,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   let backRenderer: THREE.WebGLRenderer | null = null;
   try {
     backRenderer = new THREE.WebGLRenderer({ canvas: backCanvas, antialias: false, alpha: false });
-    backRenderer.setPixelRatio(testMode ? 0.5 : low ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+    backRenderer.setPixelRatio(pixelRatio());
     backRenderer.outputColorSpace = THREE.LinearSRGBColorSpace;
     backRenderer.setClearColor(0x000000, 1);
   } catch { backRenderer = null; }
@@ -903,9 +827,13 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     return out;
   };
   let sizedW = 0, sizedH = 0;
+  const onWinResize = () => resize();
+  window.addEventListener('resize', onWinResize); document.addEventListener('fullscreenchange', onWinResize);
+  const canvasInfo = () => { const r = renderer.domElement, b = renderer.getDrawingBufferSize(new THREE.Vector2()); return { bufferWidth: b.x, bufferHeight: b.y, cssWidth: r.clientWidth, cssHeight: r.clientHeight, pixelRatio: renderer.getPixelRatio(), devicePixelRatio: window.devicePixelRatio || 1, ratioX: b.x / Math.max(1, r.clientWidth), ratioY: b.y / Math.max(1, r.clientHeight) }; };
   function resize() {
     const W = container.clientWidth || 390, H = container.clientHeight || 420;
     view.W = W; view.H = H;
+    const pr = pixelRatio(); if (pr !== renderer.getPixelRatio()) { renderer.setPixelRatio(pr); backRenderer?.setPixelRatio(pr); sizedW = 0; }
     const resized = W !== sizedW || H !== sizedH;
     if (resized) { sizedW = W; sizedH = H; renderer.setSize(W, H, false); backRenderer?.setSize(W, H, false); }
     if (resized && view.zoom <= 1.0001 && !easing) { const [cx, cy] = homeCenter(); view.cx = cx; view.cy = cy; Object.assign(tgt, { zoom: 1, cx, cy }); }
@@ -1301,7 +1229,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   const _v = new THREE.Vector3();
   function figureStats(f: Fig) {
     const c = f.c3d, cv = canvas.getBoundingClientRect();
-    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', animationLog: c ? [...c.log] : [], ...(c && c.ballInfo ? { ball: c.ballInfo(), effects: c.effects!() } : {}), items: c ? c.items.map((i) => ({ ...i })) : [], flying: c?.flying ? { ...c.flying } : null, lift: c?.lift || 0, swayNowDeg: c?.swayNowDeg || 0, groundShadow: !!c?.groundShadow };
+    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', currentClip: c?.currentClip ? c.currentClip() : '', parts: c?.partInfo ? c.partInfo().map((x) => ({ ...x })) : [], animationLog: c ? [...c.log] : [], ...(c && c.ballInfo ? { ball: c.ballInfo(), effects: c.effects!() } : {}), items: c ? c.items.map((i) => ({ ...i })) : [], flying: c?.flying ? { ...c.flying } : null, lift: c?.lift || 0, swayNowDeg: c?.swayNowDeg || 0, groundShadow: !!c?.groundShadow };
     const b = c ? skinBox(f.group, new THREE.Box3()) : new THREE.Box3().setFromObject(f.group);
     if (b.isEmpty()) { base.screenBox = { x: 0, y: 0, width: 0, height: 0 }; return base; }
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
@@ -1325,8 +1253,9 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
             unitRings: [...figs.values()].filter((f) => !f.dying).map((f) => { const rs = getRings(); return { uid: f.uid, side: f.owner, color: f.ringColor || '', greyed: !!f.ringGreyed, thickness: rs.thickness, glow: rs.glow, opacity: rs.opacity }; }),
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ ...figureStats(f), uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
             creatureAnimLog: creatureAnimLog.map((e) => ({ ...e })),
-            projectiles: projectiles.map((p) => ({ id: p.id, kind: p.kind, shooterUid: p.shooterUid, targetUid: p.targetUid, state: p.state, height: +p.obj.position.y.toFixed(3) })),
-            projectileLog: projectileLog.map((l) => ({ ...l })),
+            projectiles: [], projectileLog: [],
+            canvas: canvasInfo(),
+            missingClips: missingClipList.map((m) => ({ ...m })),
             commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? 'grubnak.glb' : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? 'grubnak-fortress.glb' : '', scepter: cm.g3d ? 'grubnak-scepter.glb' : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
             strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => { const cl = m.group.userData.cell || { row: 0, col: 0 }, bx = mineBox(cl.row, cl.col), cv = canvas.getBoundingClientRect(); return { row: cl.row, col: cl.col, screenBox: { x: bx.x + cv.left, y: bx.y + cv.top, width: bx.width, height: bx.height }, effects: mineFx[i].stats(), source: m.group.userData.mineModel === 'crystal-node' ? 'model:crystal-node.glb' : 'code:buildMineModel', ring: false, decal: { kind: 'glow-rubble', flat: true, color: m.group.userData.decalHex || m.group.userData.tintHex || '#ffffff' }, tiltDeg: (Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z)) * 180 / Math.PI, tilt: Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z), baseY: new THREE.Box3().setFromObject(m.crystals).min.y - m.group.position.y, scale: m.group.scale.x, parts: ['rubble', 'pedestal', 'banner', 'crystal'], shards: 11, pulsing: true, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' }; }), mineModel: 'code-built', crystalFlow: { shards: flowShown, streams: flowOwner.filter((o) => o && o !== 'neutral').length, swirls: flowOwner.filter((o) => !o || o === 'neutral').length, shape: 'faceted', path: 's-curve', target: 'bank' },
@@ -1340,7 +1269,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
   const api: BoardView = {
     is3D: true, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
-      disposed = true; clearInterval(projTimer); for (const p of projectiles) scene.remove(p.obj); projectiles.length = 0;
+      disposed = true; window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);
       cancelAnimationFrame(raf);
       renderer.dispose();
       backRenderer?.dispose();

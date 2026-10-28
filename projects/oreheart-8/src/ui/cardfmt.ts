@@ -37,3 +37,12 @@ export function commanderCard(c: any) {
 
 /** The Oreheart card back, drawn from the format's `back` layout. */
 export const ohBackEl = () => ohCardEl({ id: 'back', type: 'back', faction: 'goblins', name: '', text: '' }, null);
+
+/** R26.A7: the owner's "Prismatic Crystal World Emblem" picture of a faction (Card Format spell layer, byFaction), read from format.json. */
+export function mineEmblemUrl(faction: string): string | null {
+  const F: any = FORMAT;
+  const layer = (F.layouts?.spell?.layers || []).find((l: any) => l.name === 'Prismatic Crystal World Emblem');
+  const key = layer?.img?.byFaction?.['spell:' + faction];
+  const url = key ? F.images?.[String(key).replace(/^img:/, '')] : null;
+  return url || null;
+}

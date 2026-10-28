@@ -1495,7 +1495,9 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .ring-prev-dot{width:50px;height:26px;border-radius:50%;border:5px solid #3ee06a;background:transparent}
 
 /* Round 11: the dragged card is the real card face, floating and tilting with the movement */
-.hand-card.dragged-card{position:fixed!important;left:0;top:0;z-index:1000;pointer-events:none!important;--cw:min(130px,21vh);width:var(--cw)!important;height:auto!important;transform-origin:100% 0!important;transform:translate(-100%,0) translate(-6px,6px) rotate(calc(24deg + var(--tilt,0deg) * .4))!important;transition:transform .08s linear!important;animation:card-float 1.4s ease-in-out infinite;box-shadow:0 14px 28px #000c,0 0 22px #ffd45a66!important;opacity:1;translate:none!important;scale:none!important}
+.hand-card.dragged-card{position:fixed!important;left:0!important;top:0!important;margin:0!important;z-index:1000;pointer-events:none!important;--cw:min(130px,21vh);width:var(--cw)!important;height:auto!important;transform-origin:0 0!important;transition:none!important;animation:none!important;box-shadow:0 14px 28px #000c,0 0 22px #ffd45a66!important;opacity:1;translate:none!important;scale:none!important;will-change:transform}
+.drag-square-hl{position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:1001;pointer-events:none;overflow:visible}
+.drag-square-hl polygon{stroke-width:4;stroke-linejoin:round;filter:drop-shadow(0 0 6px #000)}
 @keyframes card-float{0%,100%{margin-top:-3px}50%{margin-top:4px}}
 
 /* Round 11: Change Commander is never covered by the deck pictures */
@@ -1746,3 +1748,30 @@ html[data-desk][data-display=auto] body{background:transparent}
 .match .retreat,.match .retreat *{pointer-events:none!important}
 
 html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!important;height:min(100dvh,calc(100vw * 9 / 16))!important}
+
+/* Round 26 */
+.speech.cmd-speech img{width:calc(clamp(100px,11vw,200px) * .65)}
+.mine-emblem{display:block;width:100%;max-width:2.4em;height:auto;margin:0 auto;pointer-events:none}
+.pickaxe[data-mine-badge]{pointer-events:auto!important;z-index:6}
+.dialog.respond-dlg{max-width:min(546px,96vw);font-size:1.3em;overflow:visible}
+.dialog.respond-dlg .btn{min-height:44px;min-width:0;font-size:1em}
+.dialog.respond-dlg .menu-list{gap:12px}
+.dialog.respond-dlg .enemy-card.hand-card.static{width:169px;height:auto!important}
+@media (max-height:520px){
+  .dialog.respond-dlg{display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center;max-height:98vh;padding:6px 10px;font-size:1em}
+  .dialog.respond-dlg h2,.dialog.respond-dlg .respond-bar{grid-column:1/-1}
+  .dialog.respond-dlg .enemy-card.hand-card.static{grid-column:1;width:92px;margin:0 auto 2px}
+  .dialog.respond-dlg .resp-what{grid-column:1;font-size:.8em}
+  .dialog.respond-dlg .menu-list{grid-column:2;grid-row:3/5;gap:8px}
+}
+.done-dropup{position:fixed;z-index:1200;width:340px;max-width:calc(100vw - 8px);display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:.8vh 1vw 1vh;animation:none}
+.done-dropup .dropup-text{margin:0;font-size:max(14px,2.6vh);text-align:left}
+.done-dropup .row{display:flex;gap:8px}
+.done-dropup .btn{text-align:center!important}
+.cell.lift-hover{outline:4px solid #fff;outline-offset:-4px;z-index:5}
+.token.lifted{opacity:.35}
+/* R26.A10: hand cards never fade: no opacity transitions on the fan and nothing but a card being dragged / off-hand may go see-through */
+.match .hand .hand-card,.match .hand .hand-card.popped,.match .hand .hand-card.popped:not(.popclone){transition-property:transform,translate,scale!important}
+.match .hand .hand-card:not(.dragging):not(.offhand),.match .hand .hand-card .ohcard,.match .hand .hand-card .cardc{opacity:1!important}
+.match .hand .hand-card.popped:not(.popclone){will-change:transform,scale}
+.watch-bar:not(.cp-bar){z-index:600}
