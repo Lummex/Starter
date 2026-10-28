@@ -2,7 +2,7 @@
  "id": "goblin-grunt-runway-death",
  "type": "animate",
  "asset_id": "goblin-grunt",
- "status": "validating",
+ "status": "awaiting_review",
  "priority": 9,
  "created_at": "2026-10-28T08:20:00Z",
  "created_by": "Spring (Forge job Oct 28; Ken approved both parts of take goblin-grunt-death in Oreheart Studio)",
@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": "starr-f0fad5",
- "lease_until": "2026-10-28T08:22:18Z",
+ "lease_until": null,
  "heartbeat_at": "2026-10-28T08:17:18Z",
  "error": null,
  "progress": {
-  "stage": "uploading",
-  "percent": 90,
-  "message": "Uploading the results"
+  "stage": "done",
+  "percent": 100,
+  "message": "1 animation(s) built and checked: OH_Death"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb@factory/issue-8",
@@ -103,7 +103,222 @@
   {
    "at": "2026-10-28T08:17:09Z",
    "status": "validating"
+  },
+  {
+   "at": "2026-10-28T08:18:10Z",
+   "status": "awaiting_review"
   }
  ],
- "updated_at": "2026-10-28T08:17:18Z"
+ "updated_at": "2026-10-28T08:18:10Z",
+ "result": {
+  "summary": "1 animation(s) built and checked: OH_Death",
+  "files": [
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/char.glb",
+    "bytes": 1904528,
+    "sha256": "1fe0d0eed93f08300db14649d8442c4e65f9b42cf568f871e54dde31aa350864"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/events.json",
+    "bytes": 304,
+    "sha256": "eb349bbc79b3cc16481014e26c3248f605cc868181a070e3ae9117276de8b482"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/inspection.json",
+    "bytes": 11433,
+    "sha256": "8ec8c8a64b6e39e0c5b459015aa5dc3281760dad1d5188c5dd379943fd1f3d4c"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/build-report.json",
+    "bytes": 2028,
+    "sha256": "edf7af243812deb54c7880ef127784e55e40e1ea301c62f105f456a1d0a0aa74"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/validation.json",
+    "bytes": 1536,
+    "sha256": "ba4ae0f8752edf1d19a2314eb87a93220223ddeb0eb372af23967eabfc148c14"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/preview-weapon.glb",
+    "bytes": 4484740,
+    "sha256": "889e99a564bed6f622c3c0a2511094a647b1747a21224b44130419ff5f3ebfb0"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/final-OH_Death-000.png",
+    "bytes": 182899,
+    "sha256": "6c0587f3af1db5b6da058687f9249271413d3041ebe2fd0a781d8543ae4dab70"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/final-OH_Death-030.png",
+    "bytes": 180356,
+    "sha256": "055ab9d3e4384ec6c943c23426fa64a7c3575365058968ba12ace9e6d9d4d4fe"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/final-OH_Death-060.png",
+    "bytes": 171636,
+    "sha256": "fc5a6fb7a9f1e8a904dff0b8df623ed16277a1fd8fe8a2fe29acb9b57d8250f4"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/final-OH_Death-090.png",
+    "bytes": 166909,
+    "sha256": "2ff6b4c39b28e13d510a2c3170b79fb1ed469d497350eae57a503166d1b2f1d2"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/final-OH_Death-120.png",
+    "bytes": 166887,
+    "sha256": "da46c8953ef5c1c5f4e6b0359db28780193720462fc0813f708c2db621008f96"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/preview-OH_Death-000.png",
+    "bytes": 312807,
+    "sha256": "fa2bbf2383b4834687c2e27009c0d1124f6bbd64226e2a1ce9fe7e6ad59398fb"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/preview-OH_Death-020.png",
+    "bytes": 308922,
+    "sha256": "42fba7bf47153221644f498c0aba66bd9e63fd35d89965be8aaa6c71d225a18f"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/preview-OH_Death-040.png",
+    "bytes": 302209,
+    "sha256": "5b1f46695498f3a258698225792b0dd0e89a6d09c6963a16f2c5b15bec725e4c"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/preview-OH_Death-060.png",
+    "bytes": 295710,
+    "sha256": "98c84ae6cc8ceb4e08bf258756f52500141595ca64cfd71493be0b6607fbd8bb"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/preview-OH_Death-080.png",
+    "bytes": 288319,
+    "sha256": "a76127a73b49ff8f043b6f034117928bface4ad2908cdf43aa3d2cef6f90d06b"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/preview-OH_Death-100.png",
+    "bytes": 288572,
+    "sha256": "0406ee3edfe175b0a5b7f1f54339d5141e4fd98f31ba4f9c819f185cb028cd96"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/preview-OH_Death-120.png",
+    "bytes": 288572,
+    "sha256": "0e64861f00fe75dffb0aa6ed72a2382ab64357800996c1361915b4a7f161aece"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/preview-OH_Death-grip.png",
+    "bytes": 392562,
+    "sha256": "fb0494d451ff1ae0ceced7b60e97d6341f5273b4b603d742104ecfbdce1915e4"
+   },
+   {
+    "file": "blender-jobs/goblin-grunt-runway-death/out/anim-OH_Death.py.txt",
+    "bytes": 8186,
+    "sha256": "b50295dd8a9d4e20c4bd3d9c4a0cc2b14b001efaf11912e374ab9ffbc87db8b6"
+   }
+  ],
+  "validation": {
+   "ok": true,
+   "problems": [],
+   "checks": {
+    "bones": 24,
+    "mesh_vertices": 39025,
+    "skinned_meshes": [
+     "char1"
+    ],
+    "clips": {
+     "Idle": [
+      0.0,
+      120.0
+     ],
+     "OH_Death": [
+      0.0,
+      120.0
+     ],
+     "OH_React_Lifted": [
+      0.0,
+      48.0
+     ],
+     "OH_React_Backstab": [
+      0.0,
+      60.0
+     ],
+     "OH_React_Bowled": [
+      0.0,
+      90.0
+     ],
+     "OH_React_Bonk": [
+      0.0,
+      36.0
+     ],
+     "OH_React_Knockback": [
+      0.0,
+      36.0
+     ],
+     "OH_Hit": [
+      0.0,
+      24.0
+     ],
+     "OH_Attack": [
+      0.0,
+      36.0
+     ],
+     "OH_Walk": [
+      0.0,
+      32.0
+     ],
+     "OH_Idle": [
+      0.0,
+      90.0
+     ],
+     "Dead": [
+      0.0,
+      89.0
+     ],
+     "Hit_Reaction": [
+      0.0,
+      49.0
+     ],
+     "Heavy_Hammer_Swing": [
+      0.0,
+      54.0
+     ],
+     "Casual_Walk": [
+      0.0,
+      124.0
+     ]
+    }
+   },
+   "blender": "5.2.3 LTS",
+   "build_problems": [],
+   "splice": {
+    "problems": [],
+    "clips": {
+     "OH_Death": {
+      "keys": 121,
+      "seconds": 4.0
+     }
+    },
+    "calibration": {
+     "clip": "Idle",
+     "checked_clips": [
+      "Idle",
+      "Casual_Walk",
+      "Heavy_Hammer_Swing",
+      "Hit_Reaction",
+      "Dead",
+      "OH_Idle",
+      "OH_Walk",
+      "OH_Attack",
+      "OH_Hit",
+      "OH_React_Knockback",
+      "OH_React_Bonk",
+      "OH_React_Bowled",
+      "OH_React_Backstab",
+      "OH_React_Lifted"
+     ],
+     "worst_position_error_pct_of_height": 0.0008,
+     "worst_rotation_error_deg": 0.0
+    },
+    "written_clip_error_pct_of_height": 3e-05
+   }
+  }
+ }
 }
