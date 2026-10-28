@@ -67,6 +67,13 @@
 - My Chrome tab leaves the group during long (5-9 min) sleeps: open a new tab after each wait.
 - The Chrome tool also blocks JS output with "x=y;" patterns: replace ; as well as ? = &.
 
+## Learned Oct 28 (full screen toggle)
+- In-match Menu items are the menuItems list passed to applyOwnerHud() in app.ts (~line 1030); owner-hud.ts turns each into a button.o-menu-item (label set once; to change it later find the button in r.menuPanel and update textContent). Main Settings = showSettings() stack (~line 467).
+- Full screen helpers fsSupported/fsActive/fsLabel/fsToggle/fsWatch sit just above "export class App". R26.A2 still asks for full screen on the first tap; choosing in the toggle sets __ohFsAsked so it stops.
+- Chrome refuses requestFullscreen from my automated clicks ("not granted", even with user activation). Test the label logic by faking document.fullscreenElement + dispatching fullscreenchange; real full screen needs Ken's own click.
+- Quick type check works in the cloud: global tsc exists (/home/claude/.npm-global/bin/tsc); npm registry is not reachable. Put the inserted code in a stub .ts file and run tsc --strict.
+- Vercel queue (again, 1h+): with many sessions pushing to main, starter-dashboard production builds keep taking the one slot and oreheart-8 previews stay Queued. The Deploy step still prints the preview link before it times out.
+
 ## Open issues
 - Comment paging bug above (blocks Round 25). Waiting for Ken's OK to fix.
 - Build #54 (Oct 25) failed: "ENOENT … factory-data/oreheart-8/acceptance". Build #55 did NOT hit it (tests were restored after each builder step). Likely cause: the builder agent committed the deletion of the hidden tests itself, so `confineTo()` (pipeline.mjs, uses `git diff HEAD`) had nothing to restore. Not fixed.
@@ -112,3 +119,4 @@
 - Chrome on *.vercel.app worked this run (no permission block).
 - The Chrome tool blocks JS results that look like a commit sha ("Base64 encoded data"); return a comparison (true/false) instead.
 - 2026-10-28 (later) Small fix 10 from Forge: Ken's own mine-all pickaxe icon. Commits on factory/issue-8: 9d95c47 (image), then style, then 9d92f74 (app.ts, "Owner art: Ken's mine-all pickaxe icon (Oct 28)"). Original on main factory-design/design/ui/ken-mine-all-pickaxe.png. Preview #23 = oreheart-8-gd4gac0wt (queued on Vercel 20+ min, not tested). Report: factory-design/studio/reports/2026-10-28-anvil-ken-pickaxe-icon.md.
+- 2026-10-28 (later) Owner fix 9/9 from Forge: full screen / windowed toggle (menu + Settings). Commit 7af662c on factory/issue-8 (after d6a8871). Preview-only run #22 -> oreheart-8-g59tuud42 stuck Queued in Vercel; toggle logic tested on old preview vqwc8zlrr. Report: factory-design/studio/reports/2026-10-28-anvil-fullscreen-toggle.md.
