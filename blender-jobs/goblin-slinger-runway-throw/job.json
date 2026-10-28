@@ -1,0 +1,89 @@
+{
+ "id": "goblin-slinger-runway-throw",
+ "type": "animate",
+ "asset_id": "goblin-slinger",
+ "status": "queued",
+ "priority": 9,
+ "created_at": "2026-10-28T09:05:17Z",
+ "created_by": "Spring (Forge job Oct 28; Ken approved both parts of take goblin-slinger-throw in Oreheart Studio)",
+ "retries": 0,
+ "max_retries": 1,
+ "retry_on_failure": true,
+ "cancel_requested": false,
+ "worker_id": null,
+ "lease_until": null,
+ "heartbeat_at": null,
+ "error": null,
+ "progress": null,
+ "source": {
+  "character": "repo:projects/oreheart-8/public/models/creatures/goblin-slinger/char.glb@factory/issue-8",
+  "parts": {
+   "skull-mace": "repo:projects/oreheart-8/public/models/creatures/goblin-slinger/skull-mace.glb@factory/issue-8"
+  }
+ },
+ "request": "Skullflinger (goblin-slinger): NEW throw attack from an owner-approved Runway reference video (front view, 6 s). refs/goblin-slinger--front.jpg is his model from the front with the skull in his RIGHT hand; refs/goblin-slinger-throw/frames/wind-up-throw/f01..f12.jpg is part 1 (0-3 s) and refs/goblin-slinger-throw/frames/reload-ready/f01..f12.jpg is part 2 (3-6 s). The clip plays both parts at a faster game speed: part 1 in frames 0-60, part 2 in frames 60-120 (frame N of 12 = N*5 frames into that part). THE SKULL: it stays attached to his right hand bone until the release; there is NO flying projectile in the clip (the game flies the skull). Mark the release with ctx.event(<release frame>, 'projectile_release', bone=<right hand>) and hide the preview skull at that frame (hide_at); show a new skull again (show_at) when his hand comes back from the pouch behind his right hip. IGNORE in the video: the face, the ball flying through the air, the big sideways body turn at the release (keep it to a moderate chest twist so he still reads from the front), and camera drift. Owner rules for every goblin: nothing goes through his body, his held item or the ground; feet planted unless told otherwise (no sliding or sinking); weighty and cartoony, never floaty; poses read clearly from above and in front (board game camera). BASE POSE: these clips use \"base_pose\": \"rest\", so ctx.key turns are relative to the model's REST pose, the straight front-facing pose in refs/goblin-slinger--front.jpg. He faces straight forward (+Z, toward the camera) like the video. This is a rig motion reference only: never animate the face. FIRST Read all the pictures for a move, then match his BODY and LIMB poses frame by frame (torso lean and twist, head tilt, arm and leg angles, hip height) and the timing. If refs/ is missing or empty, do NOT write any animation files (the job will be retried). Do not touch, rename or remove any existing clip.",
+ "animations": [
+  {
+   "name": "OH_Attack",
+   "description": "Overhand skull throw, then a new skull, back to ready. Frames 0-60 follow wind-up-throw: f01-f04 ready with the skull low by his right thigh, small crouch; f05-f06 swings the right arm back and up, chest twists to his right (wind-up), elbow high, skull up beside/behind his head (f09); weight shifts back then forward; f10 (about frame 50) whips the arm forward over the shoulder and RELEASES toward the camera (projectile_release here, skull hidden); f11-f12 follow-through down across his body, leaning forward. Frames 60-120 follow reload-ready: f01-f02 he straightens up, right hand reaches back to the pouch behind his right hip; f03 (about frame 75) a new skull appears in his right hand (show the preview skull again); f05-f08 he brings it forward and up to his side, f09-f12 settles back into the ready pose of frame 0, skull low in his right hand. Feet stay in the same small spot (small weight shift only). Ends exactly in the frame-0 pose so it can repeat.",
+   "frames": [
+    120,
+    120
+   ],
+   "loop": false,
+   "return_to_idle": true,
+   "feet_may_move": false,
+   "events": [
+    {
+     "name": "projectile_release",
+     "bone": "right hand"
+    }
+   ],
+   "base_pose": "rest"
+  }
+ ],
+ "attachments": [
+  {
+   "part": "skull-mace",
+   "bone": "right hand",
+   "note": "preview prop for the skull: held until projectile_release (hide_at), new skull shown again when the hand returns from the pouch (show_at)"
+  }
+ ],
+ "references": [
+  "factory-design/runway-jobs/goblin-slinger--front.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f01.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f02.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f03.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f04.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f05.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f06.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f07.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f08.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f09.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f10.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f11.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/wind-up-throw/f12.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f01.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f02.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f03.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f04.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f05.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f06.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f07.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f08.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f09.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f10.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f11.jpg",
+  "factory-design/runway/goblin-slinger-throw/frames/reload-ready/f12.jpg"
+ ],
+ "output": {
+  "format": "glb"
+ },
+ "history": [
+  {
+   "at": "2026-10-28T09:05:17Z",
+   "status": "queued",
+   "by": "spring"
+  }
+ ]
+}
