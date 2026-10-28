@@ -1,0 +1,26 @@
+{
+ "id": "gyrocopter-ace-hover-fly",
+ "character": "gyrocopter-ace",
+ "move": "hover-fly",
+ "prompt": "Small cartoon gnome girl pilot, blue ponytail, goggles on her forehead, with a propeller and two bat-like mechanical wings on a backpack on her BACK (propeller behind her shoulders, never on her head). Front view. Two parts. Part 1 (0-3 s), hover idle: she floats just above the floor, propeller spinning, wings flapping slowly, body bobbing gently, feet hanging relaxed, arms loose. Part 2 (3-6 s), flying forward: she leans her whole body forward toward the camera, wings flap faster, legs trail back, arms swept back, staying in the same spot, then rises back to the start hover pose so it loops. Only body and limbs move. Face frozen, lips still, no blinking. Camera locked, full body in frame, plain grey background. Smooth 3D cartoon game animation.",
+ "model": "grok_imagine_1_5_lite",
+ "ratio": "auto_480p",
+ "duration": 6,
+ "taskId": "f4364db0-13d5-47e7-b579-74feba2a1e60",
+ "made": "2026-10-28T08:16:31.239Z",
+ "view": "front",
+ "segments": [
+  {
+   "move": "hover-idle",
+   "from": 0,
+   "to": 3
+  },
+  {
+   "move": "fly-forward",
+   "from": 3,
+   "to": 6
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}
