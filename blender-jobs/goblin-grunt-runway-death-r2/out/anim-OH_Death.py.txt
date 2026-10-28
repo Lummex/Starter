@@ -1,0 +1,300 @@
+import math
+import mathutils
+
+V = mathutils.Vector
+Q = mathutils.Quaternion
+AX = {'right': (1, 0, 0), 'left': (-1, 0, 0), 'up': (0, 1, 0), 'down': (0, -1, 0),
+      'forward': (0, 0, 1), 'back': (0, 0, -1)}
+
+
+# ---------------------------------------------------------------- helpers
+def qturn(turns):
+    # API turns are in the character's (right, up, forward) frame; sign flips vs. plain maths
+    q = Q()
+    for ax, deg in turns:
+        q = Q(V(AX[ax]), -math.radians(deg)) @ q
+    return q
+
+
+def tl(t):
+    return list(t) if t else [('up', 0)]
+
+
+def clamp(x, lo, hi):
+    return max(lo, min(hi, x))
+
+
+def even(turns):
+    # spread a total spine bend evenly over the three spine bones
+    return [[(a, d / 3.0) for a, d in turns] for _ in range(3)]
+
+
+def flat_dir(sx, phi, vy):
+    # direction mostly along the floor: phi = degrees from forward toward the side sx, vy = slope
+    vy = clamp(vy, -0.95, 0.95)
+    h = math.sqrt(1.0 - vy * vy)
+    a = math.radians(phi)
+    return V((sx * h * math.sin(a), vy, h * math.cos(a)))
+
+
+def ik2(root, target, l1, l2, pole):
+    d = target - root
+    n = d.normalized()
+    dist = min(max(d.length, abs(l1 - l2) + 0.002), (l1 + l2) * 0.999)
+    a = (l1 * l1 - l2 * l2 + dist * dist) / (2.0 * dist)
+    h = math.sqrt(max(l1 * l1 - a * a, 0.0))
+    p = pole - n * pole.dot(n)
+    if p.length < 1e-6:
+        p = V((0, 0, 1)) - n * n.z
+    p.normalize()
+    mid = root + n * a + p * h
+    end = root + n * dist
+    return (mid - root).normalized(), (end - mid).normalized()
+
+
+# ---------------------------------------------------------------- the clip
+def build(ctx):
+    ctx.length(120)
+    B = ctx.bones
+    H = {n: V(B[n]['head']) for n in B}
+    D = {n: V(B[n]['points']) for n in B}
+    ht = ctx.height
+
+    def depth(n):
+        d = 0
+        p = B[n]['parent']
+        while p:
+            d += 1
+            p = B[p]['parent']
+        return d
+    order = sorted(B, key=depth)
+
+    def fk(local, move):
+        W, P = {}, {}
+        for n in order:
+            par = B[n]['parent']
+            L = local.get(n, Q())
+            if par is None:
+                W[n] = L.copy()
+                P[n] = H[n] + move
+            else:
+                W[n] = W[par] @ L
+                P[n] = P[par] + W[par] @ (H[n] - H[par])
+        return W, P
+
+    hips = ctx.bone('hips')
+    spine = ctx.bone('spine')
+    SPN = [b for b in ('Spine02', 'Spine01') if b in B] + [spine]
+    neck = ctx.bone('neck')
+    head = ctx.bone('head')
+    ARM = {'L': (ctx.bone('left upperarm'), ctx.bone('left forearm'), ctx.bone('left hand')),
+           'R': (ctx.bone('right upperarm'), ctx.bone('right forearm'), ctx.bone('right hand'))}
+    LEG = {'L': (ctx.bone('left thigh'), ctx.bone('left shin'), ctx.bone('left foot')),
+           'R': (ctx.bone('right thigh'), ctx.bone('right shin'), ctx.bone('right foot'))}
+    SX = {'L': -1.0, 'R': 1.0}
+    hip0 = H[hips]
+    board = {'t': 0.0}
+    report = []
+
+    def pose(f, p, interp='BEZIER'):
+        local = {}
+        keys = {}
+        m = V((p.get('hx', 0.0), p['hy'] - hip0.y, p.get('hz', 0.0)))
+        local[hips] = qturn(p.get('hips', []))
+        keys[hips] = {'turn': tl(p.get('hips')), 'move': (m.x, m.y, m.z)}
+
+        def set_turn(b, t):
+            local[b] = qturn(t)
+            keys[b] = {'turn': tl(t)}
+
+        def set_aim(b, wdir, twist=0.0):
+            W, P = fk(local, m)
+            a = (W[B[b]['parent']].inverted() @ wdir.normalized()).normalized()
+            local[b] = D[b].rotation_difference(a) @ Q(D[b], -math.radians(twist))
+            kw = {'aim': (a.x, a.y, a.z)}
+            if twist:
+                kw['twist'] = twist
+            keys[b] = kw
+
+        sp = p.get('sp', ([], [], []))
+        for i, b in enumerate(SPN):
+            set_turn(b, sp[min(i, len(sp) - 1)])
+        set_turn(neck, p.get('neck', []))
+        set_turn(head, p.get('head', []))
+
+        # ---- legs
+        for s in ('L', 'R'):
+            sx = SX[s]
+            th, sh, ft = LEG[s]
+            l1 = (H[sh] - H[th]).length
+            l2 = (H[ft] - H[sh]).length
+            spec = p.get('legs', {}).get(s, ('plant',))
+            W, P = fk(local, m)
+            T = P[th]
+            if spec[0] == 'plant':
+                d1, d2 = ik2(T, H[ft], l1, l2, H[sh] - (H[th] + H[ft]) * 0.5)
+                fd = D[ft]
+            elif spec[0] == 'ik':
+                dx, y, dz, pole, fdir = spec[1:]
+                tgt = V((T.x + sx * dx, y, T.z + dz))
+                d1, d2 = ik2(T, tgt, l1, l2, V((sx * pole[0], pole[1], pole[2])))
+                fd = V((sx * fdir[0], fdir[1], fdir[2]))
+            else:  # 'lie': leg along the floor, knee / ankle joint heights given
+                kh, ah = spec[1], spec[2]
+                d1 = flat_dir(sx, 8, (kh - T.y) / l1)
+                K = T + d1 * l1
+                d2 = flat_dir(sx, 6, (ah - K.y) / l2)
+                fd = V((sx * 0.35, 0.85, 0.35))  # toes up, soles to the camera
+            set_aim(th, d1)
+            set_aim(sh, d2)
+            set_aim(ft, fd)
+
+        # ---- arms
+        for s in ('L', 'R'):
+            sx = SX[s]
+            up, fo, ha = ARM[s]
+            l1 = (H[fo] - H[up]).length
+            l2 = (H[ha] - H[fo]).length
+            spec = p['arms'][s]
+            if spec[0] == 'turn':
+                set_turn(up, spec[1])
+                set_turn(fo, spec[2])
+            elif spec[0] == 'world':
+                set_aim(up, V(spec[1]))
+                set_aim(fo, V(spec[2]), twist=(spec[3] if len(spec) > 3 else 0.0))
+            elif spec[0] == 'ik':
+                W, P = fk(local, m)
+                S = P[up]
+                tgt = V((S.x + sx * spec[1], spec[2], S.z + spec[3]))
+                d1, d2 = ik2(S, tgt, l1, l2, V(spec[4]))
+                set_aim(up, d1)
+                set_aim(fo, d2)
+            else:  # 'lie': arm resting on the floor out to the side
+                W, P = fk(local, m)
+                S = P[up]
+                set_aim(up, flat_dir(sx, spec[1], (spec[2] - S.y) / l1))
+                W, P = fk(local, m)
+                E = P[fo]
+                if s == 'R':
+                    # roll the board arm so the board's flat face ends up facing the sky
+                    # (works for either roll sign: both +t and -t must lay it flat)
+                    n0 = V((0, 0, 1)).cross(D[ha]).normalized()
+                    best = None
+                    for phi in range(30, 90, 5):
+                        df = flat_dir(sx, phi, (spec[3] - E.y) / l2)
+                        a = (W[up].inverted() @ df).normalized()
+                        base = D[fo].rotation_difference(a)
+                        for t in range(-180, 181, 5):
+                            sc = 2.0
+                            for tt in (t, -t):
+                                n = W[up] @ (base @ Q(D[fo], -math.radians(tt))) @ n0
+                                sc = min(sc, abs(n.y))
+                            score = sc - abs(phi - 60) * 0.002 - abs(abs(t) - 90) * 0.0001
+                            if best is None or score > best[0]:
+                                best = (score, phi, t, df)
+                    board['t'] = float(best[2])
+                    board['score'] = best[0]
+                    set_aim(fo, best[3], twist=board['t'])
+                else:
+                    set_aim(fo, flat_dir(sx, spec[4], (spec[3] - E.y) / l2))
+            set_turn(ha, [])
+
+        for b, kw in keys.items():
+            ctx.key(f, b, interp=interp, **kw)
+        W, P = fk(local, m)
+        low = min((P[b].y, b) for b in P if 'Toe' not in b and b not in ('head_end', 'headfront'))
+        report.append('%d: hips %.3f, low %s %.3f' % (f, P[hips].y, low[1], low[0]))
+
+    # ---------------- lying pose (lying-still f03-f12), built first to find the board roll
+    LIE_SP = ([('up', -15)], [('up', 8)], [('up', 8)])  # undo the pelvis roll, level the shoulders
+    LIE = {
+        'hy': 0.14 * ht, 'hz': -0.03,
+        'hips': [('up', 15), ('right', 87)],
+        'sp': LIE_SP,
+        'neck': [('right', -4)], 'head': [('up', -4)],
+        'legs': {'L': ('lie', 0.085, 0.075), 'R': ('lie', 0.085, 0.075)},
+        'arms': {'L': ('lie', 70, 0.07, 0.05, 55), 'R': ('lie', 65, 0.07, 0.05)},
+    }
+    pose(90, LIE)
+    pose(120, LIE)
+    t = board['t']
+    settle = dict(LIE)
+    settle['hips'] = [('up', 15), ('right', 88)]
+    settle['neck'] = [('right', -3)]
+    pose(86, settle)
+
+    # ---------------- fall-over f01-f06: dizzy wobble, feet planted
+    WOB = [
+        # f, hip x, hip drop, hip tilt, spine side, spine fwd, neck side, head side, head nod, arm swing
+        (8, 0.012, 0.004, -2, 5, -3, -4, -8, -4, 4),
+        (16, -0.014, 0.008, 2, -6, -4, 6, 10, -6, -5),
+        (24, 0.016, 0.014, -3, 7, -6, -6, -12, -9, 6),
+        (32, -0.012, 0.025, 2, -5, -8, 7, 12, -10, -4),
+    ]
+    for f, hx, drop, tilt, ss, sf, ns, hs, hn, sw in WOB:
+        pose(f, {'hx': hx, 'hy': hip0.y - drop, 'hips': [('forward', tilt)],
+                 'sp': even([('forward', ss), ('right', sf)]),
+                 'neck': [('forward', ns), ('right', hn * 0.5)],
+                 'head': [('forward', hs), ('right', hn)],
+                 'arms': {'L': ('turn', [('forward', -3 + sw * 0.5)], [('right', 6)]),
+                          'R': ('turn', [('forward', 3 + sw * 0.5)], [('right', 4)])}})
+
+    # ---------------- f07-f08: knees buckle, feet still planted
+    pose(40, {'hy': hip0.y - 0.06, 'hips': [('right', -4)], 'sp': even([('right', -12)]),
+              'neck': [('forward', 6), ('right', -6)], 'head': [('forward', 8), ('right', -8)],
+              'arms': {'L': ('turn', [('right', 10), ('forward', -6)], [('right', 12)]),
+                       'R': ('turn', [('right', 6), ('forward', 8)], [('right', 8)])}})
+    pose(47, {'hy': 0.23, 'hz': -0.01, 'hips': [('right', -8)], 'sp': even([('right', -15)]),
+              'neck': [('right', 4)], 'head': [('forward', -6)],
+              'arms': {'L': ('world', (-0.5, -0.8, 0.3), (-0.35, -0.7, 0.6)),
+                       'R': ('world', (0.6, -0.75, 0.25), (0.3, -0.55, 0.8))}}, interp='LINEAR')
+
+    # ---------------- f09-f10: drops straight down onto his bottom, feet slide out in front
+    SIT_ARMS = {'L': ('ik', 0.15, 0.075, 0.06, (-0.3, 0.1, -1.0)),
+                'R': ('world', (0.55, -0.75, 0.25), (0.25, -0.15, 0.95))}
+    SIT_LEGS = {s: ('ik', 0.05, 0.04, 0.22, (0.3, 1.0, 0.3), (0.45, -0.35, 0.8)) for s in ('L', 'R')}
+    pose(51, {'hy': 0.165, 'hz': -0.02, 'hips': [('right', -2)], 'sp': even([('right', -12)]),
+              'neck': [('right', -4)], 'head': [('forward', -6)],
+              'legs': {s: ('ik', 0.04, 0.045, 0.13, (0.3, 1.0, 0.3), (0.4, -0.4, 0.8)) for s in ('L', 'R')},
+              'arms': {'L': ('world', (-0.6, -0.75, 0.2), (-0.5, -0.75, 0.4)),
+                       'R': ('world', (0.6, -0.7, 0.3), (0.3, -0.3, 0.9))}}, interp='LINEAR')
+    pose(54, {'hy': 0.125 * ht, 'hz': -0.025, 'hips': [('right', 4)], 'sp': even([('right', -18)]),
+              'neck': [('right', -10)], 'head': [('forward', 5)],
+              'legs': SIT_LEGS, 'arms': SIT_ARMS})
+    pose(60, {'hy': 0.133 * ht, 'hz': -0.025, 'hips': [('right', 9)],
+              'sp': even([('right', -8), ('forward', 4)]),
+              'neck': [('right', -4)], 'head': [('forward', 8)],
+              'legs': SIT_LEGS, 'arms': SIT_ARMS})
+
+    # ---------------- f11-f12: tips back, legs come up a little, board swings up
+    pose(66, {'hy': 0.137 * ht, 'hz': -0.03, 'hips': [('right', 35)], 'sp': even([('right', -12)]),
+              'neck': [('right', -10)], 'head': [('forward', 4)],
+              'legs': {s: ('ik', 0.05, 0.085, 0.24, (0.3, 1.0, 0.2), (0.4, -0.1, 0.9)) for s in ('L', 'R')},
+              'arms': {'L': ('world', (-0.75, -0.3, 0.35), (-0.6, -0.1, 0.7)),
+                       'R': ('world', (0.6, -0.3, 0.45), (0.35, 0.45, 0.8))}}, interp='LINEAR')
+    pose(72, {'hy': 0.14 * ht, 'hz': -0.03, 'hips': [('up', 8), ('right', 74)],
+              'sp': ([('up', -8), ('right', -6)], [('up', 4), ('right', -6)], [('up', 4), ('right', -6)]),
+              'neck': [('right', -14)], 'head': [],
+              'legs': {s: ('ik', 0.06, 0.22, 0.2, (0.2, 1.0, 0.0), (0.4, 0.6, 0.6)) for s in ('L', 'R')},
+              'arms': {'L': ('world', (-0.8, 0.35, 0.15), (-0.55, 0.75, 0.25)),
+                       'R': ('world', (0.75, 0.3, 0.15), (0.35, 0.9, 0.1))}}, interp='LINEAR')
+
+    # ---------------- lying-still f01-f04: lands flat, small bounce, arms flop out, legs relax
+    pose(77, {'hy': 0.14 * ht, 'hz': -0.03, 'hips': [('up', 15), ('right', 89)], 'sp': LIE_SP,
+              'neck': [('right', 2)], 'head': [('up', -4)],
+              'legs': {'L': ('lie', 0.13, 0.15), 'R': ('lie', 0.13, 0.15)},
+              'arms': {'L': ('world', (-0.9, 0.2, 0.2), (-0.8, 0.35, 0.4)),
+                       'R': ('world', (0.85, 0.2, 0.25), (0.75, 0.5, 0.35), t * 0.4)}})
+    pose(81, {'hy': 0.14 * ht + 0.018, 'hz': -0.03, 'hips': [('up', 15), ('right', 85)], 'sp': LIE_SP,
+              'neck': [('right', -6)], 'head': [('up', -4)],
+              'legs': {'L': ('lie', 0.12, 0.13), 'R': ('lie', 0.12, 0.13)},
+              'arms': {'L': ('world', (-0.9, 0.06, 0.3), (-0.85, 0.12, 0.5)),
+                       'R': ('world', (0.9, 0.06, 0.35), (0.85, 0.15, 0.5), t * 0.8)}})
+
+    if 'frying-pan' in ctx.parts:
+        ctx.attach('frying-pan', ARM['R'][2], length=0.35)
+    ctx.note('Death: dizzy wobble 8-32 (feet planted), knees buckle 40-47, plop onto bottom 51-54 '
+             '(hips %.3f), settle sit 60, tip back 66-72 legs up, land flat 77, bounce 81, settle 86, '
+             'lying still 90-120 (hips %.3f = 0.14 x height). Board arm roll %.0f deg (flatness %.2f).'
+             % (0.125 * ht, 0.14 * ht, t, board.get('score', 0.0)))
+    ctx.note('Joint heights: ' + '; '.join(sorted(report, key=lambda r: int(r.split(':')[0]))))
