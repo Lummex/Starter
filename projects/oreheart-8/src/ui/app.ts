@@ -713,7 +713,76 @@ export class App {
     }
     d = this.dialog(c.name, kids);
     d.el.classList.add('cardview');
+    if (hc) this.addCardNav(d, hc);
     return d;
+  }
+  /** Owner fix (Ken, Oct 28): arrows on each side of a hand card's close-up step to the previous / next card in the hand
+   *  (wrapping at the ends); the ← / → keys and a sideways swipe on the card do the same. The Play / Cast button always
+   *  belongs to the card shown, because each step opens that card's own close-up. No arrows with only one card in hand. */
+  addCardNav(d: { close: () => void; el: El }, hc: any) {
+    const handNow = () => ((this.game.state?.players?.player?.hand || []) as any[]);
+    if (handNow().length < 2 || !handNow().some((k) => k.uid === hc.uid)) return;
+    const ov = d.el;
+    let done = false;
+    const cleanup = () => { done = true; document.removeEventListener('keydown', onKey, true); window.removeEventListener('resize', place); };
+    const go = (step: number) => {
+      if (done) return;
+      const cur = handNow();
+      const at = cur.findIndex((k) => k.uid === hc.uid);
+      if (at < 0 || cur.length < 2) return;
+      const next = cur[(at + step + cur.length) % cur.length];
+      cleanup();
+      d.close();
+      this.showCard(next.cardId, undefined, next);
+    };
+    const chevron = (dir: number) => `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="${dir < 0 ? 'M15 4 7 12l8 8' : 'M9 4l8 8-8 8'}" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const mk = (dir: number) => {
+      const b = h('button', { type: 'button', class: `card-nav ${dir < 0 ? 'card-nav-prev' : 'card-nav-next'}`, 'aria-label': dir < 0 ? 'Previous card' : 'Next card', title: dir < 0 ? 'Previous card (←)' : 'Next card (→)' }) as HTMLButtonElement;
+      b.innerHTML = chevron(dir);
+      b.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+      b.addEventListener('click', (ev) => { ev.stopPropagation(); go(dir); });
+      return b;
+    };
+    const prev = mk(-1), nextB = mk(1);
+    ov.append(prev, nextB);
+    const face = ov.querySelector('.card-view-face .hand-card') as HTMLElement | null;
+    // keep the arrows just beside the big card (never off screen)
+    const place = () => {
+      if (!ov.isConnected) { cleanup(); return; }
+      if (!face) return;
+      const r = face.getBoundingClientRect();
+      if (!r.width) return;
+      const bw = prev.offsetWidth || 56, gap = Math.max(10, Math.min(24, innerWidth * 0.015));
+      const top = `${Math.round(r.top + r.height / 2)}px`;
+      prev.style.top = top; nextB.style.top = top;
+      prev.style.left = `${Math.round(Math.max(6, r.left - bw - gap))}px`;
+      nextB.style.left = `${Math.round(Math.min(innerWidth - bw - 6, r.right + gap))}px`;
+      nextB.style.right = 'auto';
+    };
+    requestAnimationFrame(() => requestAnimationFrame(place));
+    setTimeout(place, 300);
+    window.addEventListener('resize', place);
+    const onKey = (e: KeyboardEvent) => {
+      if (!ov.isConnected) { cleanup(); return; }
+      if (this.dialogs[this.dialogs.length - 1] !== ov) return;
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault(); e.stopPropagation();
+      go(e.key === 'ArrowLeft' ? -1 : 1);
+    };
+    document.addEventListener('keydown', onKey, true);
+    // phones: a sideways swipe on the big card (left = next, right = previous)
+    if (face) {
+      let sid = -1, sx = 0, sy = 0;
+      face.style.touchAction = 'pan-y';
+      face.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType === 'mouse') return; sid = e.pointerId; sx = e.clientX; sy = e.clientY; });
+      face.addEventListener('pointercancel', () => { sid = -1; });
+      face.addEventListener('pointerup', (e: PointerEvent) => {
+        if (e.pointerId !== sid) return;
+        sid = -1;
+        const dx = e.clientX - sx, dy = e.clientY - sy;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { e.preventDefault(); go(dx < 0 ? 1 : -1); }
+      });
+    }
   }
   /** Slide the hand back down: no raised card, no keyboard focus left on a hand card. */
   tuckHand() {
