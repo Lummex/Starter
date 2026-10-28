@@ -1,0 +1,197 @@
+import math
+from mathutils import Vector, Quaternion
+
+N = 90
+BOX = -0.018           # springy boxing stance (hip drop vs. the shared start pose)
+
+# Shared start pose = the rest pose (frames 0 and N are left unkeyed, so the worker sets them
+# to the base pose exactly). Near-start arm poses are deltas added to the rest directions.
+REST = 'REST'
+DIP = ('D', (-0.03, 0.01, -0.09), (-0.05, 0.01, -0.10))
+OVER = ('D', (-0.01, 0.0, -0.05), (-0.02, 0.0, -0.08))
+
+# left-arm poses (upper arm dir, forearm dir) in (right, up, forward); the right arm is mirrored
+GUARD = ((-0.30, -0.50, 0.80), (0.20, 0.72, 0.62))
+GUARD_HI = ((-0.30, -0.42, 0.85), (0.20, 0.78, 0.58))
+JAB = ((-0.04, 0.04, 1.0), (0.06, 0.04, 1.0))
+CROSS = ((-0.02, 0.05, 1.0), (0.10, 0.04, 1.0))
+HOOK_WIND = ((-0.42, -0.40, 0.80), (0.15, 0.75, 0.62))
+HOOK = ((-0.72, 0.06, 0.69), (0.78, 0.05, 0.62))
+LOW = ((-0.30, -0.90, 0.30), (0.08, -0.25, 0.97))
+
+# frame, chest twist T (+ = toward his left), forward lean (- = forward), shoulder shrug, left pose, right pose
+TIMELINE = [
+    (4, 0, 2, 0, DIP, DIP),              # anticipation
+    (9, 0, -7, 4, GUARD_HI, GUARD_HI),   # f01 guard (overshoot)
+    (12, 5, -6, 4, GUARD, GUARD),
+    (15, -14, -9, 4, JAB, GUARD),        # f02 left jab
+    (17, -13, -9, 4, JAB, GUARD),
+    (21, 0, -6, 4, GUARD, GUARD),
+    (23, -7, -6, 4, GUARD, GUARD),       # wind
+    (26, 26, -10, 4, GUARD, CROSS),      # f03-f04 right cross
+    (28, 24, -10, 4, GUARD, CROSS),
+    (32, 3, -6, 4, GUARD, GUARD),
+    (35, 10, -6, 4, HOOK_WIND, GUARD),   # wind
+    (38, -30, -8, 4, HOOK, GUARD),       # f05 left hook
+    (40, -28, -8, 4, HOOK, GUARD),
+    (44, -4, -6, 4, GUARD, GUARD),
+    (46, -10, -6, 4, GUARD, HOOK_WIND),  # wind
+    (49, 30, -8, 4, GUARD, HOOK),        # f06-f07 right hook
+    (51, 28, -8, 4, GUARD, HOOK),
+    (56, 0, -6, 4, GUARD, GUARD),
+    (62, 0, -6, 4, GUARD, GUARD),        # f08 guard
+    (69, 0, -2, 1, LOW, LOW),            # f09 lowering
+    (76, 0, 1, 0, OVER, OVER),           # f10 drop, slight overshoot
+    (82, 0, 0, 0, REST, REST),           # f11 settle; f12 (frame 90) = shared start pose
+]
+
+# hip shift (right, forward) keys: weight goes into each punch
+HIP_XZ = [(0, 0, 0), (12, 0, 0), (15, -0.004, 0.006), (17, -0.004, 0.006), (21, 0, 0),
+          (23, 0.003, -0.002), (26, -0.008, 0.008), (28, -0.008, 0.008), (32, 0, 0),
+          (35, -0.003, 0), (38, 0.008, 0.004), (40, 0.008, 0.004), (44, 0, 0),
+          (46, 0.003, 0), (49, -0.008, 0.004), (51, -0.008, 0.004), (56, 0, 0), (90, 0, 0)]
+
+
+def V(t):
+    return Vector((t[0], t[1], t[2]))
+
+
+def mir(t):
+    return (-t[0], t[1], t[2])
+
+
+def add(a, b):
+    return (a[0] + b[0], a[1] + b[1], a[2] + b[2])
+
+
+def smooth(a):
+    a = max(0.0, min(1.0, a))
+    return a * a * (3 - 2 * a)
+
+
+def rot_up(v, deg):
+    # turn a direction around 'up' (right-hand rule: + turns forward toward his left)
+    r = math.radians(deg); c = math.cos(r); s = math.sin(r)
+    return (v[0] * c - v[2] * s, v[1], v[2] * c + v[0] * s)
+
+
+def chain_aims(bases, dirs):
+    # world directions -> per-bone aims ("as if the parents stayed still")
+    acc = Quaternion((1.0, 0.0, 0.0, 0.0))
+    out = []
+    for b, d in zip(bases, dirs):
+        local = acc.inverted() @ V(d).normalized()
+        out.append((local[0], local[1], local[2]))
+        acc = acc @ V(b).normalized().rotation_difference(local)
+    return out
+
+
+def leg_aims(ctx, th, sh, ft, hip_move):
+    # two-bone IK: ankle stays at its base position, foot keeps its base direction
+    B = ctx.bones
+    H0 = V(B[th]['head']); K0 = V(B[sh]['head']); A0 = V(B[ft]['head'])
+    L1 = (K0 - H0).length; L2 = (A0 - K0).length
+    H = H0 + V(hip_move); A = A0
+    to = A - H
+    u = to.normalized()
+    d = min(max(to.length, abs(L1 - L2) + 1e-4), (L1 + L2) * 0.9999)
+    u0 = (A0 - H0).normalized()
+    w = (K0 - H0) - u0 * (K0 - H0).dot(u0)
+    pole = w.normalized() if w.length > 0.004 else Vector((0.0, 0.0, 1.0))
+    v = pole - u * pole.dot(u)
+    if v.length < 1e-6:
+        v = Vector((0.0, 0.0, 1.0)) - u * u[2]
+    v.normalize()
+    ca = max(-1.0, min(1.0, (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d)))
+    sa = math.sqrt(1.0 - ca * ca)
+    K = H + u * (L1 * ca) + v * (L1 * sa)
+    return chain_aims([B[th]['points'], B[sh]['points'], B[ft]['points']],
+                      [K - H, A - K, B[ft]['points']])
+
+
+def bob(f):
+    return BOX - 0.006 * (1 - math.cos(2 * math.pi * (f - 9) / 10.0)) / 2
+
+
+def hip_y(f):
+    if f <= 4:
+        return -0.006 * smooth(f / 4.0)
+    if f <= 9:
+        return -0.006 + (BOX + 0.006) * smooth((f - 4) / 5.0)
+    if f <= 62:
+        return bob(f)
+    if f <= 80:
+        return bob(f) * (1 - smooth((f - 62) / 18.0))
+    return 0.0
+
+
+def hip_xz(f):
+    for i in range(len(HIP_XZ) - 1):
+        f0, x0, z0 = HIP_XZ[i]; f1, x1, z1 = HIP_XZ[i + 1]
+        if f0 <= f <= f1:
+            k = smooth((f - f0) / float(f1 - f0))
+            return x0 + (x1 - x0) * k, z0 + (z1 - z0) * k
+    return 0.0, 0.0
+
+
+def arm_dirs(pose, rest_u, rest_f, right):
+    # world (upper, fore) directions for one arm, before the chest twist
+    if pose == REST:
+        return rest_u, rest_f
+    if pose[0] == 'D':
+        du, df = pose[1], pose[2]
+        if right:
+            du, df = mir(du), mir(df)
+        return add(rest_u, du), add(rest_f, df)
+    if right:
+        return mir(pose[0]), mir(pose[1])
+    return pose[0], pose[1]
+
+
+def build(ctx):
+    ctx.length(N)
+    hips = ctx.bone('hips')
+    sp2 = ctx.bone('Spine02'); sp1 = ctx.bone('Spine01'); sp = ctx.bone('spine')
+    neck = ctx.bone('neck')
+    lsh = ctx.bone('left shoulder'); rsh = ctx.bone('right shoulder')
+    lu = ctx.bone('left upperarm'); lf = ctx.bone('left forearm')
+    ru = ctx.bone('right upperarm'); rf = ctx.bone('right forearm')
+    legs = [(ctx.bone('left thigh'), ctx.bone('left shin'), ctx.bone('left foot')),
+            (ctx.bone('right thigh'), ctx.bone('right shin'), ctx.bone('right foot'))]
+    B = ctx.bones
+
+    # hips bounce + weight shift, legs solved so the feet never slide.
+    # Frames 0 and N are not keyed: the worker sets them to the base pose (= shared start pose).
+    for f in range(2, N, 2):
+        x, z = hip_xz(f)
+        hm = (x, hip_y(f), z)
+        ctx.key(f, hips, move=hm)
+        for th, sh, ft in legs:
+            a1, a2, a3 = leg_aims(ctx, th, sh, ft, hm)
+            ctx.key(f, th, aim=a1); ctx.key(f, sh, aim=a2); ctx.key(f, ft, aim=a3)
+
+    # upper body: twist only in the spine (hips stay square), punches aimed at the camera
+    for f, T, lean, shrug, lp, rp in TIMELINE:
+        ctx.key(f, sp2, turn=[('up', 0.30 * T), ('right', 0.4 * lean), ('forward', 0)])
+        ctx.key(f, sp1, turn=[('up', 0.35 * T), ('right', 0.3 * lean), ('forward', 0)])
+        ctx.key(f, sp, turn=[('up', 0.35 * T), ('right', 0.3 * lean), ('forward', 0)])
+        ctx.key(f, neck, turn=[('up', -0.55 * T), ('right', -0.6 * lean), ('forward', 0)])
+        ctx.key(f, lsh, turn=[('forward', shrug)])
+        ctx.key(f, rsh, turn=[('forward', -shrug)])
+
+        if lp == REST and rp == REST:
+            for b in (lu, lf, ru, rf):
+                ctx.key(f, b, turn=[('up', 0)])
+            continue
+        Lu, Lf = arm_dirs(lp, B[lu]['points'], B[lf]['points'], False)
+        Ru, Rf = arm_dirs(rp, B[ru]['points'], B[rf]['points'], True)
+        Lu = rot_up(Lu, -T); Lf = rot_up(Lf, -T)
+        Ru = rot_up(Ru, -T); Rf = rot_up(Rf, -T)
+        a, c = chain_aims([B[lu]['points'], B[lf]['points']], [Lu, Lf])
+        ctx.key(f, lu, aim=a); ctx.key(f, lf, aim=c)
+        a, c = chain_aims([B[ru]['points'], B[rf]['points']], [Ru, Rf])
+        ctx.key(f, ru, aim=a); ctx.key(f, rf, aim=c)
+
+    ctx.note('OH_Idle_ShadowBox: start/end = base (rest) pose, shared with OH_Idle_v2; guard f9, L jab f15-17, '
+             'R cross f26-28, L hook f38-40, R hook f49-51, guard f62, lower f69-76, settled f82-90; '
+             'hips bob every 10 frames, leg IK keeps feet planted.')
