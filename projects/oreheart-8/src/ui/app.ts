@@ -2284,7 +2284,7 @@ export class App {
       const mk = (n > 0 ? `x${n}` : 'o') + ':' + fac;
       if (m.dataset.mk !== mk) {
         m.dataset.mk = mk;
-        if (n > 0) m.replaceChildren(h('span', { class: 'pickaxe', 'data-mine-badge': '', 'aria-hidden': 'true' }, h('i', { class: 'pk-h' }), h('i', { class: 'pk-head' }), h('i', { class: 'pk-spark' })), mkEmb(), `×${n}`);
+        if (n > 0) m.replaceChildren(h('span', { class: 'pickaxe', 'data-mine-badge': '', 'aria-hidden': 'true' }, h('img', { class: 'pk-img', src: '/art/ui/mine-all-pickaxe.webp', alt: '', draggable: 'false' })), mkEmb(), `×${n}`);
         else m.replaceChildren(...(this.view?.is3D ? [] : ['💎']), mkEmb());
       }
       m.style.color = COLOR_HEX[s.color] || COLOR_HEX.white;
