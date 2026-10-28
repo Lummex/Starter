@@ -92,3 +92,12 @@ Careful — these look old but ARE still used: the `-v2` **accessories** (frying
 | starter | ? | 818 | 573 | 1 | all from blender-queue |
 
 **Worth knowing:** every push to `blender-queue` starts a new preview build in **6 Vercel projects** at once (about 4,500 wasted builds so far). The worker queue never needs a website. Fixing this is a Vercel setting ("Ignored Build Step"), which Sweep is not allowed to change — Forge/Anvil should decide.
+
+---
+
+## 5. Old round briefs (Anvil, Oct 28)
+
+Both were folded into Round 26 (`factory-design/design/oreheart-round-26-combined-brief.md`). Nothing was deleted.
+
+- `factory-design/discontinued/round-24-skullflinger-skull-throw-brief.md` — the Round 24 section copied out of `oreheart-phase-1b-brief.md` (it was on hold; build #55 built it by mistake). The skull throw already in the game stays as it is. In `oreheart-phase-1b-brief.md` that section is now replaced by a pointer to Round 26.
+- `factory-design/discontinued/oreheart-round-25-card-drag-brief.md` — the Round 25 card-drag brief. The old file `factory-design/design/oreheart-round-25-card-drag-brief.md` now only says "discontinued, read Round 26".
