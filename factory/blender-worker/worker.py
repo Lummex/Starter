@@ -38,6 +38,9 @@ STATES = ['queued', 'claimed', 'running', 'validating', 'completed', 'failed', '
 ALLOWED_JOB_TYPES = {'inspect', 'animate'}
 ID_RE = re.compile(r'^[a-z0-9][a-z0-9-]{2,63}$')
 NAME_RE = re.compile(r'^[A-Za-z0-9_]{1,48}$')
+REF_RE = re.compile(r'^factory-design/(runway|runway-jobs)/[A-Za-z0-9._/-]+\.(jpg|jpeg|png)$')  # reference pictures only
+REF_BRANCH_RE = re.compile(r'^[A-Za-z0-9._/-]{1,100}$')
+MAX_REFERENCES = 120
 
 DEFAULT_CONFIG = {
     'repo': 'Lummex/Starter',
@@ -305,6 +308,7 @@ def claim(ref, cfg):
 
 class Runner:
     """Runs one job. Every external program goes through self.run(), which heartbeats and honours cancel/stop."""
+    _oh_refs = 1  # references are built in (fetch_references); the old glbtool.py reload hotfix must leave this class alone
 
     def __init__(self, gh, cfg, ref):
         self.gh, self.cfg, self.ref = gh, cfg, ref
@@ -418,6 +422,39 @@ class Runner:
         glbtool.decompress(dest, plain, dequantize=True)
         return dest, plain
 
+    def fetch_references(self):
+        """Reference pictures: a job may list "references" (pictures in the repo, for example frames of an owner-approved
+        Runway video). They are downloaded into the job's work folder (refs/) before Claude Code designs the clip, so it can
+        Read them and match the poses. Pictures only (.jpg/.jpeg/.png), only from factory-design/runway/ or runway-jobs/;
+        they are saved as data and nothing is ever run. refs/<path minus its first two folders>."""
+        refs = self.job.get('references') or []
+        if not refs:
+            return 0
+        self.progress('references', 20, f'Downloading {min(len(refs), MAX_REFERENCES)} reference picture(s)')
+        base = os.path.join(self.work, 'refs')
+        os.makedirs(base, exist_ok=True)
+        got, bad, missing = 0, [], []
+        for r in refs[:MAX_REFERENCES]:
+            p = (r.get('path', '') if isinstance(r, dict) else str(r)).strip()
+            branch = (r.get('ref') if isinstance(r, dict) else None) or self.cfg['base_branch']
+            if '..' in p or not REF_RE.match(p) or not REF_BRANCH_RE.match(str(branch)):
+                bad.append(p); continue
+            dest = os.path.join(base, *p.split('/')[2:])
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            if not os.path.exists(dest):
+                b, _ = self.gh.get_file(p, branch)
+                if not b:
+                    missing.append(p); continue
+                with open(dest, 'wb') as f:
+                    f.write(b)
+            got += 1
+            self.check_control(); self.beat()
+        log(self.ref.id, f'references: {got} downloaded into refs/, {len(bad)} refused, {len(missing)} not found')
+        if bad or missing or not got:
+            # Stop before Claude Code runs: without its pictures the job cannot match the video (and would waste usage).
+            raise RuntimeError(f'Reference pictures missing: {len(missing)} not found {missing[:3]}, {len(bad)} not allowed {bad[:3]}')
+        return got
+
     def upload_outputs(self, names):
         base = f'{JOBS_DIR}/{self.ref.id}/out'
         uploaded = []
@@ -481,6 +518,7 @@ class Runner:
         with open(spec_path, 'w', encoding='utf-8') as f:
             json.dump({'job': {k: j[k] for k in ('asset_id', 'request', 'animations', 'attachments') if k in j}, 'inspection': insp}, f, indent=1)
         shutil.copyfile(os.path.join(HERE, 'blender_ops', 'anim_api.md'), os.path.join(self.work, 'ANIMATION-API.md'))
+        self.fetch_references()
 
         rounds = int(self.cfg.get('revision_rounds', 1))
         for rnd in range(rounds + 1):
@@ -716,10 +754,20 @@ def do_one(gh, cfg):
             log('job', ref.id, 'FAILED', err, traceback.format_exc())
             try:
                 r.ref.load()
-                retry = r.ref.job.get('retries', 0) < r.ref.job.get('max_retries', 2) and r.ref.job.get('retry_on_failure', False)
-                r.ref.update('failed', lambda j: j.update(status='queued' if retry else 'failed', error={'message': err[:4000], 'at': now()},
-                                                           lease_until=None, progress={'stage': 'failed', 'percent': 0, 'message': err[:300]},
-                                                           history=j.get('history', []) + [{'at': now(), 'status': 'failed'}]))
+
+                def failed(j, err=err):
+                    # Every failure uses up one retry. Once retries reaches max_retries (or retry_on_failure is off)
+                    # the job stays "failed", so a job that keeps failing can never loop and burn Claude usage.
+                    tries, cap = int(j.get('retries', 0) or 0), int(j.get('max_retries', 2) or 0)
+                    retry = bool(j.get('retry_on_failure', False)) and tries < cap
+                    j.update(status='queued' if retry else 'failed', retries=tries + 1 if retry else tries,
+                             error={'message': err[:4000], 'at': now()}, lease_until=None,
+                             progress={'stage': 'failed', 'percent': 0,
+                                       'message': (f'Retry {tries + 1} of {cap}: ' if retry else 'Stopped (no retries left): ') + err[:300]},
+                             history=j.get('history', []) + [{'at': now(), 'status': 'failed', 'retries': tries + 1 if retry else tries,
+                                                              'next': 'queued' if retry else 'stopped'}])
+                r.ref.update('failed', failed)
+                log('job', ref.id, '->', r.ref.job.get('status'), f"(retries {r.ref.job.get('retries')}/{r.ref.job.get('max_retries', 2)})")
             except Exception as e2:
                 log('could not record failure:', e2)
         post_worker_status(gh, cfg, 'idle')

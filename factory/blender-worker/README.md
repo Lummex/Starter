@@ -24,6 +24,8 @@ Controls (in `%LOCALAPPDATA%\OreheartBlenderWorker`): `Start-`, `Stop-`, `Pause-
 
 - **Claim** = rewrite `job.json` with its current file SHA (compare-and-swap). Only one worker can win.
 - **Lease** 5 minutes, renewed by a heartbeat every 90 s. If the PC sleeps or crashes, the lease runs out and the job is picked up again (`retries` counts this).
+- **Retries**: every failure uses up one retry (`retries` + 1) and the job goes back to `queued` only while `retry_on_failure` is on and `retries` is below `max_retries`; after that it stays `failed`. A failing job can never loop.
+- **References**: a job may list `references` (pictures under `factory-design/runway/` or `factory-design/runway-jobs/` on main). At job start the worker downloads them into the work folder's `refs/` (path minus its first two folders) for Claude Code to look at. If any is missing the job stops before Claude Code runs.
 - **Idempotent**: every run starts from a clean work folder; results overwrite the job's own `out/` only.
 - **Cancel** from the dashboard sets `cancel_requested`; the worker stops at its next heartbeat.
 
