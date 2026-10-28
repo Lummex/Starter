@@ -148,7 +148,8 @@ document.body.append(rotate);
 const isComputer = () => !(navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches);
 const checkRotate = () => {
   const pc = isComputer();
-  document.documentElement.toggleAttribute('data-desk', pc);
+  // phone-sized windows always fill the whole window edge to edge (AC24, AC138); only a large computer window letterboxes
+  document.documentElement.toggleAttribute('data-desk', pc && window.innerWidth >= 1200 && window.innerHeight >= 650);
   rotate.hidden = pc || !(window.innerHeight > window.innerWidth && window.innerWidth < 900);
 };
 checkRotate();

@@ -1646,6 +1646,9 @@ export class App {
       c.dataset.fan = c.style.transform;
       c.style.zIndex = String(k + 1);
       c.dataset.z = String(k + 1);
+      const half = Math.min(cw / 2, spacing / 2);
+      c.style.setProperty('--hl', (k === 0 ? cw / 2 : half) + 'px');
+      c.style.setProperty('--hr', (k === shown - 1 ? cw / 2 : half) + 'px');
     });
     if (moved) for (const c of cards) if (c.parentElement === hand) hand.append(c);
     if (hand.lastElementChild !== spill) hand.append(spill);

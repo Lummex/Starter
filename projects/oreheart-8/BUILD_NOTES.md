@@ -90,3 +90,9 @@ Done: R26.0 skull throw removed; A1 centered/shrinking card drag (hand overlap 0
 Partly/not started: Part C (phone/odd-window HUD offsets, Tutorial Skip, Card Comp Pause) not diagnosed; Mine Control AI already matches the brief (AC341 test likely outdated). Nothing was verified in a browser.
 dist = 96,756,205 bytes (92.3 MiB).
 Editor updates needed: hand.overlap 0.26; DRAG_FX (150 ms, opacity .85, tilt 8°); oreheart.askBank setting; commander bubble 0.65; Done drop-up = .menu-panel style; Respond 1.3x/546 px; gyronaut/tinker clips maps; shiv-rat/tinker/gyronaut PARTS; bowling-ball position corrected.
+
+## Fix pass (inspector round 1)
+- Phone-sized windows (< 1200×650) fill the whole window; only large computer windows letterbox to 16:9 (AC24, AC138).
+- Hand fan: each card owns only a strip around its own centre for hit-testing, so overlapping cards (0.26 spacing) can be clicked/hovered at their centre (AC22, AC148, AC160).
+- dist trimmed to ~94.9 MB (removed unused `crystal-mine.glb`, re-encoded the swamp background) (AC90).
+- Not changed: AC31/AC58 (Moves-still-available pop-up and Rocket Rider as Miner are outdated by owner rounds), AC59 (pop-out is a clone), AC135 (owner menus.json sets one non-italic font). Software-GL runs render the match canvases slowly (seconds per frame), which causes timeouts in AC40/AC95/AC110/AC127; not resolved.

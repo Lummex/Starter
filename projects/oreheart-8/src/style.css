@@ -1775,3 +1775,7 @@ html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!im
 .match .hand .hand-card:not(.dragging):not(.offhand),.match .hand .hand-card .ohcard,.match .hand .hand-card .cardc{opacity:1!important}
 .match .hand .hand-card.popped:not(.popclone){will-change:transform,scale}
 .watch-bar:not(.cp-bar){z-index:600}
+
+/* Fan hit areas: each card owns only the strip around its own centre, so the centre of every card in an overlapping fan hits that card (clicks, hover, drag). */
+.match .hand .hand-card:not(.popclone):not(.static){pointer-events:none}
+.match .hand .hand-card:not(.popclone):not(.static)::before{left:calc(50% - var(--hl,var(--cw)*.13));right:calc(50% - var(--hr,var(--cw)*.13));top:-16px;height:auto;bottom:0;pointer-events:auto}

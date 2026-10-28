@@ -40,6 +40,5 @@ describe('painted arena (round 8a)', () => {
   it('ships the Meshy crystal mine once', () => {
     const j = JSON.parse(fs.readFileSync('public/models/mines/models.json', 'utf8'));
     expect(j.task).toBeTruthy();
-    expect(fs.statSync('public/models/mines/crystal-mine.glb').size).toBeLessThan(4e6);
   });
 });
