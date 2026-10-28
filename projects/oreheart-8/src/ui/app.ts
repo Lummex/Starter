@@ -180,6 +180,47 @@ export const GLOW_PEAK = 0.9;
 export const GLOW_PROFILE = [1, 0.62, 0.34, 0.12, 0];
 /** Owner faction colors (round 10): Goblins green, Gnomes purple, Dwarves navy blue. */
 export const FACTION_GLOW: Record<string, string> = { goblins: '#3ee06a', gnomes: '#9b4dff', dwarves: '#2f5fd8' };
+/** Owner fix (Ken, Oct 28): full screen / windowed toggle (in-match Menu + main Settings).
+ *  Uses the browser Fullscreen API; also notices F11 (browser full screen) and Esc. Hidden where full screen is not allowed (e.g. iPhone Safari). */
+export function fsSupported(): boolean {
+  const d: any = document, el: any = document.documentElement;
+  return !!(d.fullscreenEnabled || d.webkitFullscreenEnabled) && !!(el.requestFullscreen || el.webkitRequestFullscreen);
+}
+/** true while the page is in API full screen */
+function fsApi(): boolean { const d: any = document; return !!(d.fullscreenElement || d.webkitFullscreenElement); }
+/** true while the browser fills the whole screen with F11 (no API element) */
+function fsF11(): boolean {
+  if (fsApi()) return false;
+  try { if (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) return true; } catch { /* old browser */ }
+  return window.innerWidth >= screen.width - 1 && window.innerHeight >= screen.height - 1;
+}
+export function fsActive(): boolean { return fsApi() || fsF11(); }
+/** the button shows what a click does: "Full screen" while windowed, "Windowed" while in full screen */
+export function fsLabel(): string { return fsActive() ? 'Windowed' : 'Full screen'; }
+/** switch; returns false when the browser itself is in F11 full screen (only F11 can leave it) */
+export function fsToggle(): boolean {
+  (window as any).__ohFsAsked = true; // the player chose: no more automatic full screen on the first tap
+  const d: any = document, el: any = document.documentElement;
+  if (fsF11()) return false;
+  try {
+    const p: any = fsApi() ? (d.exitFullscreen ? d.exitFullscreen() : d.webkitExitFullscreen && d.webkitExitFullscreen())
+      : (el.requestFullscreen ? el.requestFullscreen() : el.webkitRequestFullscreen && el.webkitRequestFullscreen());
+    if (p && p.catch) p.catch(() => {});
+  } catch { /* refused: stay as we are */ }
+  return true;
+}
+/** keep a button's text in step with the real state (Esc, F11, window resize) */
+export function fsWatch(b: HTMLElement, label: () => string = fsLabel): void {
+  const sync = () => {
+    if (!b.isConnected && (b as any)._fsSeen) { document.removeEventListener('fullscreenchange', sync); document.removeEventListener('webkitfullscreenchange', sync); window.removeEventListener('resize', sync); return; }
+    if (b.isConnected) (b as any)._fsSeen = true;
+    b.textContent = label(); b.setAttribute('aria-pressed', String(fsActive()));
+  };
+  document.addEventListener('fullscreenchange', sync); document.addEventListener('webkitfullscreenchange', sync); window.addEventListener('resize', sync);
+  sync(); setTimeout(sync, 0);
+}
+
+
 export class App {
   root: El;
   game: Game;
@@ -265,6 +306,18 @@ export class App {
     document.documentElement.dataset.display = m;
     window.dispatchEvent(new Event('resize'));
   }
+  /** Owner fix (Ken, Oct 28): Full screen / Windowed switch for the main Settings; shows the current screen mode. */
+  screenButton(): El {
+    if (!fsSupported()) return h('p', { class: 'fs-na' }, 'Full screen: not available on this device');
+    const lab = () => 'Screen: ' + (fsActive() ? 'Full screen' : 'Windowed');
+    const b = btn(lab(), 'fs-btn', () => { if (!fsToggle()) this.fsF11Note(); });
+    fsWatch(b, lab);
+    return b;
+  }
+  fsF11Note() {
+    const c: any = this.dialog('Full screen', [h('h2', {}, 'Full screen'), h('p', {}, 'Your browser is in full screen (F11). Press F11 to go back to a window.'), h('div', { class: 'row' }, btn('OK', '', () => c.close()))]);
+  }
+
   /** Display mode (R2.9): Auto fills the screen, PC locks 16:9, Phone locks about 19.5:9. */
   displayModeGroup(): El {
     const cur = localStorage.getItem('oreheart.display') || 'auto';
@@ -411,7 +464,7 @@ export class App {
     this.clear();
     this.root.append(h('main', { class: 'screen center', 'data-screen': 'settings' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.askBankButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.flowGroup(), this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), ...this.fxPanels(), btn('Back', 'menu-back', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.askBankButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.screenButton(), this.flowGroup(), this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), ...this.fxPanels(), btn('Back', 'menu-back', () => this.showMenu()))));
   }
 
   /** The faction of the last picked Commander (defaults to Goblins): the default highlight / ring colors. */
@@ -982,12 +1035,14 @@ export class App {
         { label: 'Resume', run: () => {} },
         { label: 'Settings', run: () => this.matchSettings() },
         { label: 'Square highlights', run: () => this.matchHighlights() },
+        ...(fsSupported() ? [{ label: fsLabel(), run: () => { if (!fsToggle()) this.fsF11Note(); } }] : []),
         { label: 'How to play', run: () => this.matchHowTo() },
         { label: 'Sound Effects', run: () => this.matchVolume('Sound Effects') },
         { label: 'Background music', run: () => this.matchVolume('Background music') },
         { label: 'Give up match!', run: () => { const c: any = this.dialog('Give up this match?', [h('h2', {}, 'Give up this match?'), h('div', { class: 'row' }, btn('Yes, give up', 'danger', () => { c.close(); this.game.act({ type: 'surrender' }); }), btn('Cancel', '', () => c.close()))]); } },
       ],
     });
+    { const fsItem = [...(this.r.menuPanel as El).querySelectorAll('.o-menu-item')].find((b) => /^(Full screen|Windowed)$/.test(b.textContent || '')) as HTMLElement | undefined; if (fsItem) { fsItem.classList.add('fs-toggle'); fsWatch(fsItem); } }
     document.addEventListener('pointerdown', (e) => { if (this.r.menuWrap?.classList.contains('open') && !(e.target as Element).closest?.('.o-menu')) this.menuOpen(false); }, true);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { this.selectedUid = null; if ((this.pick as any)?.lift) this.cancelLift('Cancelled'); } });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.r.menuWrap?.classList.contains('open')) { this.menuOpen(false); this.r.menuBtn?.focus(); } });
