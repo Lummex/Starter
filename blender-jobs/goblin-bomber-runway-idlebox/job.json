@@ -2,7 +2,7 @@
  "id": "goblin-bomber-runway-idlebox",
  "type": "animate",
  "asset_id": "goblin-bomber",
- "status": "queued",
+ "status": "claimed",
  "priority": 9,
  "created_at": "2026-10-28T02:45:00Z",
  "created_by": "Spring (Forge job, Ken approved Runway take goblin-bomber-idle-box-front Oct 28)",
@@ -10,14 +10,14 @@
  "max_retries": 2,
  "retry_on_failure": true,
  "cancel_requested": false,
- "worker_id": null,
- "lease_until": null,
- "heartbeat_at": "2026-10-28T02:50:58Z",
+ "worker_id": "starr-f0fad5",
+ "lease_until": "2026-10-28T03:21:06Z",
+ "heartbeat_at": "2026-10-28T03:16:06Z",
  "error": null,
  "progress": {
-  "stage": "queued",
+  "stage": "claimed",
   "percent": 0,
-  "message": "Re-queued by Spring after the worker prompt update (Ken OK)"
+  "message": "Picked up by the Blender worker"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb@factory/issue-8"
@@ -165,7 +165,13 @@
    "status": "queued",
    "by": "spring",
    "note": "re-queued after refs fix (Ken OK)"
+  },
+  {
+   "at": "2026-10-28T03:16:06Z",
+   "status": "claimed",
+   "worker": "starr-f0fad5",
+   "recovered": false
   }
  ],
- "updated_at": "2026-10-28T03:14:16Z"
+ "updated_at": "2026-10-28T03:16:06Z"
 }
