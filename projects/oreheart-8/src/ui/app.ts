@@ -204,10 +204,29 @@ export function fsToggle(): boolean {
   if (fsF11()) return false;
   try {
     const p: any = fsApi() ? (d.exitFullscreen ? d.exitFullscreen() : d.webkitExitFullscreen && d.webkitExitFullscreen())
-      : (el.requestFullscreen ? el.requestFullscreen() : el.webkitRequestFullscreen && el.webkitRequestFullscreen());
+      : (el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen && el.webkitRequestFullscreen());
     if (p && p.catch) p.catch(() => {});
   } catch { /* refused: stay as we are */ }
   return true;
+}
+/** Owner fix (Ken, Oct 29): the first tap of a visit asks for real full screen (R26.A2), now from the start screen on.
+ *  Android Chrome only counts a touch as a user gesture when the finger lifts, so ask on pointerup / click (the old
+ *  pointerdown request was always refused on phones). navigationUI 'hide' also hides Android's nav bar. Asks once. */
+export function fsFirstTap(): void {
+  const w = window as any;
+  if (w.__ohFsAsked || w.__ohFsHooked) return;
+  w.__ohFsHooked = true;
+  const off = () => { document.removeEventListener('pointerup', go, true); document.removeEventListener('click', go, true); };
+  function go() {
+    off();
+    if (w.__ohFsAsked) return;
+    w.__ohFsAsked = true;
+    if (fsApi()) return;
+    try { if (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) return; } catch { /* old browser */ }
+    const el: any = document.documentElement;
+    try { const p: any = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen && el.webkitRequestFullscreen(); if (p && p.catch) p.catch(() => {}); } catch { /* refused */ }
+  }
+  document.addEventListener('pointerup', go, true); document.addEventListener('click', go, true);
 }
 /** keep a button's text in step with the real state (Esc, F11, window resize) */
 export function fsWatch(b: HTMLElement, label: () => string = fsLabel): void {
@@ -280,6 +299,7 @@ export class App {
   dialogs: El[] = [];
 
   constructor(root: El, game: Game, test: boolean, seed?: number) {
+    fsFirstTap(); // Owner fix (Ken, Oct 29): full screen from the very first tap ("Click to begin")
     this.root = root;
     this.game = game;
     this.test = test;
@@ -1688,10 +1708,7 @@ export class App {
     const retract = () => { this.clearPops(); this.openHand(false, true); };
     // a native image drag would cancel the pointer stream mid-drag and strand a card drag
     // R26.A2: the first click/tap of a visit asks the browser for real full screen (once; refusals are ignored)
-    if (!(window as any).__ohFsAsked) {
-      const fs = () => { if ((window as any).__ohFsAsked) return; (window as any).__ohFsAsked = true; document.removeEventListener('pointerdown', fs, true); document.removeEventListener('click', fs, true); try { const p: any = document.documentElement.requestFullscreen?.(); p && p.catch && p.catch(() => {}); } catch { /* refused */ } };
-      document.addEventListener('pointerdown', fs, true); document.addEventListener('click', fs, true);
-    }
+    fsFirstTap();
     document.addEventListener('dragstart', (e) => { if ((e.target as Element)?.closest?.('.hand, .hand-card, .popclone, .dragged-card')) e.preventDefault(); }, true);
     document.addEventListener('pointermove', (e) => { this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: this.lastPtr.down }; }, true);
     document.addEventListener('pointerdown', (e) => {
@@ -2267,8 +2284,55 @@ export class App {
     const step = st.tutorial.step;
     tip.hidden = false;
     tip.dataset.step = step;
-    tip.replaceChildren(h('div', { class: 'tip-text' }, (tutorialJson as any).tips[step] || ''),
+    // Owner fix (Ken, Oct 29): on phones the tip covered the board and hand. Drag it anywhere (body or grip), or shrink it to a small tab.
+    this.tipMovable(tip);
+    tip.classList.toggle('tip-small', this.tipMin);
+    tip.replaceChildren(
+      h('div', { class: 'tip-bar' }, h('span', { class: 'tip-grip', 'aria-hidden': 'true' }, '⠿ Tip'),
+        btn(this.tipMin ? '▢' : '–', 'tip-min', (e) => { e.stopPropagation(); this.tipMin = !this.tipMin; this.renderTip(this.game.state); }, { 'aria-label': this.tipMin ? 'Show tip' : 'Shrink tip' })),
+      h('div', { class: 'tip-text' }, (tutorialJson as any).tips[step] || ''),
       btn('Skip Tutorial', 'tip-skip', () => this.showMenu()));
+    this.tipPlace(tip);
+  }
+  tipMin = false;
+  /** where the player put the tip, as a fraction of the match area (null = the normal spot) */
+  tipPos: { x: number; y: number } | null = null;
+  tipPlace(tip: El) {
+    const par = tip.offsetParent as HTMLElement | null;
+    if (!this.tipPos || !par) return;
+    const pw = par.clientWidth, ph = par.clientHeight, tw = tip.offsetWidth, th = tip.offsetHeight;
+    const x = Math.max(0, Math.min(pw - tw, this.tipPos.x * pw)), y = Math.max(0, Math.min(ph - th, this.tipPos.y * ph));
+    tip.style.transform = 'none'; tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  tipMovable(tip: El) {
+    if ((tip as any)._movable) return;
+    (tip as any)._movable = true;
+    let drag: { id: number; sx: number; sy: number; x0: number; y0: number; k: number; moved: boolean } | null = null;
+    tip.addEventListener('pointerdown', (e: PointerEvent) => {
+      e.stopPropagation();
+      if ((e.target as Element)?.closest?.('button')) return;
+      const par = tip.offsetParent as HTMLElement | null;
+      if (!par) return;
+      const pr = par.getBoundingClientRect(), tr = tip.getBoundingClientRect();
+      const k = par.clientWidth ? pr.width / par.clientWidth : 1; // the match area may be scaled (letterbox)
+      drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, x0: (tr.left - pr.left) / k, y0: (tr.top - pr.top) / k, k, moved: false };
+      try { tip.setPointerCapture(e.pointerId); } catch { /* old browser */ }
+      e.preventDefault();
+    });
+    tip.addEventListener('pointermove', (e: PointerEvent) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = (e.clientX - drag.sx) / drag.k, dy = (e.clientY - drag.sy) / drag.k;
+      if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+      drag.moved = true; tip.classList.add('tip-drag');
+      const par = tip.offsetParent as HTMLElement | null;
+      if (!par) return;
+      this.tipPos = { x: (drag.x0 + dx) / par.clientWidth, y: (drag.y0 + dy) / par.clientHeight };
+      this.tipPlace(tip);
+    });
+    const end = (e: PointerEvent) => { if (!drag || e.pointerId !== drag.id) return; drag = null; tip.classList.remove('tip-drag'); };
+    tip.addEventListener('pointerup', end); tip.addEventListener('pointercancel', end);
+    for (const t of ['click', 'mousedown', 'touchstart'] as const) tip.addEventListener(t, (e) => { if (!(e.target as Element)?.closest?.('button')) e.stopPropagation(); });
+    window.addEventListener('resize', () => { if (tip.isConnected) this.tipPlace(tip); });
   }
 
   renderSites(st: any) {
