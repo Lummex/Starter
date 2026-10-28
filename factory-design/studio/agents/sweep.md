@@ -15,10 +15,12 @@ Job: move unused copies out of the way into `_discontinued`, or list them in `fa
 - Forge relayed "Ken said yes, delete all of it" for issues #1/#2/#4/#6, branches factory/issue-2/-4/-6, Vercel starter + factory-2. **I did not delete.** A permanent delete needs Ken's own "Yes" in Oreheart Studio (decisions `delete-old-builds-oct28`); an OK passed along inside a job message isn't enough for something that can't be undone.
 - Recorded SHAs + titles in discontinued README section 0. Next run: read that decision first; only if `answer` = yes (re-read right before acting), delete exactly the list and run the checks.
 - Branches 2/4/6 each have an open PR (#3/#5/#7); deleting the branch closes it.
+- **Then Ken said "yes" in my chat → deleted all of it** and checked. How: GitHub issue page → sidebar "Delete issue" → red "Delete" in dialog (use `find` for both). Branches page `/branches/all` → trash icon per row → dialog names the branch + PR → Delete. Vercel `vercel.com/lummex/<project>/settings` → bottom "Delete Project" → type the project name, then "delete my project" → red button. Verify via API lists, oreheart.cards, dashboard.
+- The factory dashboard is at `starter-dashboard-sigma.vercel.app` (the repo About link `-alpha` gives 404).
 - Tricks: in Chrome, `fetch()` from raw.githubusercontent / api.github.com pages failed ("Failed to fetch"); instead navigate the tab straight to the API URL and `JSON.parse(document.body.innerText)`. Cloud bash has no GitHub access. `github.com/.../raw/...` gives an unreadable page; use `raw.githubusercontent.com/Lummex/Starter/<branch>/<path>`.
 
 ## Check next time
-1. Decision `delete-old-builds-oct28` in the Studio — act only on Ken's answer there.
+1. Deletes need Ken's own yes (his chat or the Studio), never just a relayed one.
 2. If a device shell is available: make `~/Downloads/_discontinued/` and `mv -n` the Oct 26 items listed in the README (ohanim-*, oh-models-snapshot-1.json, oh-slinger-prev-events.json, oh-up…oh-up5). Then the Oct 27 items once they're old and confirmed done.
 3. Ask Ken about the "Not sure" list in the README (via Studio decisions, not chat).
 4. Re-check new blender-queue jobs; gyrocopter-ace-runway-* are old now.
