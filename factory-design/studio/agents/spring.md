@@ -68,3 +68,21 @@ For several files: open any github.com page, `fetch("https://api.github.com/repo
 - Start images: the old goblin-scrapper--front.jpg had NO bowling ball; render a new one from Ken's saved Studio look (library/<card>.final asset) with spring-render2/3.py. spring-render3.py adds SKIP=<node ids> and SLICE=<node>:below|above:<h>. For gyrocopter-ace, skip node 17 (duplicate wing piece) to get wings + propeller on her back.
 - Runway prompts over 1000 characters are easy to write; count them before uploading.
 - Times: a Blender job takes 5-15 min (deaths with the clearance table about 15 min).
+
+## Quiet worker (Oct 28, Forge job, Ken OK) — report: reports/2026-10-28-spring-worker-quiet.md
+- Why: every push to blender-queue made Vercel queue builds for every Git-connected project (347 piled up overnight).
+  Old worker: an "idle" commit every 15 min + one per restart, and ~35 commits per job (heartbeat every 90 s, one per uploaded file).
+- New worker.py on main (needs Ken's reinstall, decision "blender-worker-quiet-reinstall" in the Studio):
+  status file `_workers/<id>.json` written only when the state changes (busy rides in the claim commit, idle in the final one);
+  `GitHub.commit_files` = several files in ONE commit (blobs → tree → commit → fast-forward ref; CAS on job.json inside it);
+  results go up in one commit with the final state; lease 15 min, cancel check = a read every 90 s, lease-renew commit only
+  after 10 min without a write; every message ends with "[skip ci] [vercel skip]".
+- Offline test (spring-worker-test/quiet/, real worker.py, fake GitHub at the HTTP level + virtual clock):
+  idle hour 4 → 0, 10 restarts 10 → 0, one job 31 → 8 commits. Retry cap, cancel, crash recovery, failed-validation upload,
+  long stage (2 heartbeats, max gap 630 s < 900 s) and --check all still work.
+- Vercel does NOT honour "[skip ci]" by itself (docs/community): only git.deploymentEnabled in the pushed commit's vercel.json
+  or the project's Ignored Build Step (VERCEL_GIT_COMMIT_REF / VERCEL_GIT_COMMIT_MESSAGE). Told Forge/Anvil in the report.
+- How to tell the new worker is live: blender-queue commit messages end with "[skip ci] [vercel skip]" and no "idle" commits every 15 min.
+- Raw pages (raw.githubusercontent.com) can serve an OLD copy for minutes after a commit; to verify an upload use
+  api.github.com contents?ref=main with Accept raw (cache: no-store) and compare sha256.
+- Chrome downloads with an existing name get " (1)", " (2)"… Stage the newest one (check mtimeMs), not the bare name.
