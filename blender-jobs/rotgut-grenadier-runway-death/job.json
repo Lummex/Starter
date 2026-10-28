@@ -11,13 +11,13 @@
  "retry_on_failure": true,
  "cancel_requested": false,
  "worker_id": null,
- "lease_until": "2026-10-28T08:37:23Z",
- "heartbeat_at": "2026-10-28T08:32:23Z",
+ "lease_until": "2026-10-28T08:37:30Z",
+ "heartbeat_at": "2026-10-28T08:32:30Z",
  "error": null,
  "progress": {
-  "stage": "validating",
-  "percent": 80,
-  "message": "Re-loading the exported GLB and checking skeleton, clips and events"
+  "stage": "uploading",
+  "percent": 90,
+  "message": "Uploading the results"
  },
  "source": {
   "character": "repo:projects/oreheart-8/public/models/creatures/rotgut-grenadier/char.glb@factory/issue-8",
@@ -89,5 +89,5 @@
    "status": "validating"
   }
  ],
- "updated_at": "2026-10-28T08:32:23Z"
+ "updated_at": "2026-10-28T08:32:30Z"
 }
