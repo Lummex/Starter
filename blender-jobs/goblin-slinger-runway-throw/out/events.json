@@ -1,0 +1,27 @@
+{
+ "asset_id": "goblin-slinger",
+ "fps": 30,
+ "clips": {
+  "OH_Attack": {
+   "frames": 120,
+   "duration": 4.0,
+   "loop": false,
+   "events": [
+    {
+     "frame": 50,
+     "name": "projectile_release",
+     "bone": "RightHand",
+     "time": 1.6667
+    }
+   ],
+   "attachments": [
+    {
+     "part": "skull-mace",
+     "bone": "RightHand",
+     "hide_at": 50,
+     "show_at": 75
+    }
+   ]
+  }
+ }
+}
