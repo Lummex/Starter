@@ -25,7 +25,7 @@ How Gauge looks at a model: in my own Chrome tab, open a page on cdn.jsdelivr.ne
 | 1.2 | Rigged | Has a SkinnedMesh and a skin; bones include Hips, Spine, Head, LeftHand, RightHand, LeftFoot, RightFoot (the game attaches parts to these). | Must |
 | 1.3 | Faces front (+Z) | In rest pose the left hand is at +X and the right hand at −X, toes point to +Z; front render shows the face. | Must |
 | 1.4 | Stands on the ground | Rest-pose lowest point is y = 0 (the game also re-grounds it); feet are not far below the floor in idle. | Must |
-| 1.5 | Height (note only) | Write down the game height (LOOKS / DEFAULT_H in creature3d.ts) and the Model Editor scale. **Ken, Oct 28: differences between editor and game are NOT a fail.** Only the final game heights matter, and they are set at the end. | Note |
+| 1.5 | Height matches Ken's Studio setup | Game `LOOKS[id].height` and `stretch` (creature3d.ts) equal Ledger's latest export (`heightsForGame` in factory-design/design/models/editor-setups-*.json: Studio body scale × the model's idle-0 height, ±0.001); in a match the body's idle height is that many board squares (±1%). Commanders/mounts: the export's body scale / mount numbers. Cards without a Studio setup: write down `DEFAULT_H`. **Ken, Oct 28 evening: heights matter now – a difference is a fail** (replaces "heights are only a note"). | Must |
 | 1.6 | Matches the owner's card art | Side-by-side: card art vs front/side/back renders. Colors, outfit, hair/hat/hood, build, weapon. | Must |
 | 1.7 | Original name only | cards.json name is original (no names from other games, films or brands); the same name is used in the Model Editor. | Must |
 | 1.8 | Model sheet approved | Model Editor `refs[]` sheet status is "approved" (not "redraw"). | Must |
@@ -39,7 +39,7 @@ How Gauge looks at a model: in my own Chrome tab, open a page on cdn.jsdelivr.ne
 | 2.2 | Right bone | Weapon in the correct hand (the hand the card art shows; default RightHand), shield on the left arm/hand, packs on Spine/neck, mounts under the rider. | Must |
 | 2.3 | Sits in the hand / on the body | Render rest + idle from front and both sides: the grip is inside the hand, the item is not floating in the air or behind the back. | Must |
 | 2.4 | No clipping | Item does not go through the body or under the floor in idle, walk and attack. | Must |
-| 2.5 | Same placement as the owner's editor look | If the editor look has a transform for the item, the game uses that same bone + position/rotation/scale (a `look` entry in PARTS), not the auto-fit. | Must |
+| 2.5 | Same placement as Ken's Studio setup | Every item in Ken's saved Studio setup (`library/<card>.setup`) is in the game on the same bone with the same position/rotation/scale (a `look` entry in PARTS), not the auto-fit; nothing is guessed. | Must |
 | 2.6 | Effects | Effects in the editor look (flame, glow, twinkles, orbs) also show in the game. | Nice |
 
 ## 3. Animations
@@ -78,5 +78,5 @@ How Gauge looks at a model: in my own Chrome tab, open a page on cdn.jsdelivr.ne
 | 5.3 | Size budget | Sum of everything under `projects/oreheart-8/public/` (GitHub tree sizes) stays under 95 MB; anything that would pass 100 MB needs Ken first. | Must |
 
 ## Verdict
-- **PASS**: every Must is OK. Notes (like heights) never block.
+- **PASS**: every Must is OK. Notes never block. (Heights are a Must since Ken, Oct 28 evening – see 1.5.)
 - **FAIL**: any Must is not OK. List each one with the agent who fixes it: Clay = model, Spring = animation, Ledger = Model Editor, Anvil = game files/code, Brush/Sketch = art, Wright = programs/databases, Sweep = cleanup. Send through Forge.
