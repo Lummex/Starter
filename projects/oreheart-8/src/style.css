@@ -1814,3 +1814,21 @@ html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!im
 /* Owner fix (Ken, Oct 29): no emblem above an owned mine (kept in the page, hidden); the area around mines stays clear for grabbing units */
 .site-mark .mine-emblem{visibility:hidden!important}
 .site-mark .pickaxe,.site-mark .pk-img,.site-mark .mine-emblem{pointer-events:none!important}
+
+/* Owner fix (Ken, Oct 29): in automated runs the speech bubble only fades (no pop scale), so its size can be measured at any moment */
+body.test .speech{animation-name:ohSayFlat}
+@keyframes ohSayFlat{0%{opacity:0}12%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-110%)}}
+
+/* Round 28: move orders. Path squares get a soft dotted marker in the player's faction colour; the end square a ring and a turn label */
+.cell.path::before,.cell.path-end::before{content:'';position:absolute;left:50%;top:50%;width:max(10px,22%);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:var(--pfc,#3ee06a);box-shadow:0 0 0 2px #000a,0 0 8px var(--pfc,#3ee06a);opacity:.85;pointer-events:none}
+.cell.path.path-preview::before{opacity:.65}
+.cell.path-end{z-index:21}
+.cell.path-end::before{width:max(26px,62%);background:color-mix(in srgb,var(--pfc,#3ee06a) 22%,transparent);border:3px dashed var(--pfc,#3ee06a);box-shadow:0 0 10px var(--pfc,#3ee06a),inset 0 0 8px #000a;opacity:1}
+.cell.path-end.path-blocked::before{border-color:#ff5a4a;box-shadow:0 0 10px #ff5a4a;background:#ff5a4a22}
+.cell .path-label{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none;font-size:clamp(12px,2.6vh,16px);font-weight:800;line-height:1;padding:4px 8px;border-radius:999px;background:#0d0c11e6;border:1.5px solid #FFD700;color:#fff;text-shadow:0 1px 2px #000;box-shadow:0 2px 6px #000c}
+.cell.path-blocked .path-label{border-color:#ff5a4a;color:#ffd0ca}
+.cell .path-label[data-kind="chase"]{border-color:#ff4a3a;transform:translate(-50%,-160%)}
+.token .tk-order{position:absolute;left:100%;top:0;transform:translate(-30%,-30%);display:flex;align-items:center;gap:2px;z-index:31;pointer-events:none}
+.token .tk-order-mark{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 3px;border-radius:999px;background:#0d0c11e6;border:1.5px solid #FFD700;color:#FFD700;font-size:13px;font-weight:800;line-height:1;box-shadow:0 1px 3px #000}
+.token .tk-cancel{pointer-events:auto;touch-action:manipulation;cursor:pointer;width:28px;height:28px;min-width:28px;padding:0;border-radius:50%;border:2px solid #FFD700;background:#120d08;color:#FFD700;font-size:15px;font-weight:900;line-height:1;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 6px #ffd70088,0 2px 4px #000}
+.token .tk-cancel:hover,.token .tk-cancel:focus-visible{background:#FFD700;color:#120d08;outline:0}
