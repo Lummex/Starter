@@ -6675,10 +6675,11 @@ test('AC232: the owner menus file, pictures, sound and main menu picture are shi
   expect((await snd.body()).length).toBe(98253);
   await openTest(page);
   const dims = await page.evaluate(async () => {
-    const img = new Image(); img.src = '/art/menu-cavern.webp'; await img.decode();
+    // Owner change (Ken, Oct 29): new front menu picture front-menu-background-oct29 (1672x941) replaces menu-cavern.webp (moved to _discontinued)
+    const img = new Image(); img.src = '/art/menu-front-oct29.webp'; await img.decode();
     return [img.naturalWidth, img.naturalHeight];
   });
-  expect(dims).toEqual([1774, 887]);
+  expect(dims).toEqual([1672, 941]);
 });
 
 async function menuPieceBoxes(page, request, screenId) {
