@@ -7,7 +7,8 @@ import { audio } from './audio';
 type Piece = any;
 const FONT = "'Alegreya SC',Georgia,serif";
 const EASE: Record<string, string> = { smooth: 'cubic-bezier(.22,1,.36,1)', gentle: 'cubic-bezier(.45,0,.25,1)', springy: 'cubic-bezier(.34,1.56,.64,1)', even: 'linear' };
-const BUILTIN: Record<string, string> = { logo: '/art/logo-wide.webp', menubg: '/art/menu-cavern.webp', dbbg: '/art/deck-bg.webp' };
+// Owner art (Ken, Oct 29): the front menu picture is front-menu-background-oct29 (art/main-menu), re-encoded WebP q80, 1672x941
+const BUILTIN: Record<string, string> = { logo: '/art/logo-wide.webp', menubg: '/art/menu-front-oct29.webp', dbbg: '/art/deck-bg.webp' };
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 const hexA = (h: string, a: number) => { const n = parseInt((h || '#000000').slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
 export const src = (s: string) => (!s ? '' : s.startsWith('img:') ? `/art/menu/img-${s.slice(4)}.webp` : BUILTIN[s] || s);
