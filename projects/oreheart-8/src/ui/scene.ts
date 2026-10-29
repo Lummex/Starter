@@ -34,8 +34,9 @@ export interface BoardView {
   resize(): void;
   setCamera(c: { zoom: number; x: number; y: number }): void;
   /** painted-arena view controls (round 8a) */
-  zoomAt(factor: number, sx?: number, sy?: number): void;
-  panBy(dx: number, dy: number): void;
+  /** now = follow a finger exactly (no easing) */
+  zoomAt(factor: number, sx?: number, sy?: number, now?: boolean): void;
+  panBy(dx: number, dy: number, now?: boolean): void;
   recenter(): void;
   getView(): any;
   squareCenter(row: number, col: number): { x: number; y: number } | null;
@@ -665,7 +666,7 @@ const _embV = new THREE.Vector3();
         cr.embFac = fac;
         if (cr.emb) { scene.remove(cr.emb); (cr.emb.material as THREE.SpriteMaterial).dispose(); cr.emb = null; }
         const url = fac ? mineEmblemUrl(fac) : null;
-        if (url) { cr.emb = new THREE.Sprite(new THREE.SpriteMaterial({ map: embTex(url), transparent: true, depthWrite: false })); cr.emb.scale.set(0.42, 0.42, 1); cr.emb.renderOrder = 10; cr.emb.name = 'mine-emblem'; scene.add(cr.emb); }
+        if (url) { cr.emb = new THREE.Sprite(new THREE.SpriteMaterial({ map: embTex(url), transparent: true, depthWrite: false })); cr.emb.scale.set(0.42, 0.42, 1); cr.emb.renderOrder = 10; cr.emb.name = 'mine-emblem'; cr.emb.visible = false; scene.add(cr.emb); } // Owner fix (Ken, Oct 29): no emblem above an owned mine (kept hidden)
       } }
       cr.art.group.position.copy(world(s.row, s.col)); cr.art.group.userData.cell = { row: s.row, col: s.col };
       cr.art.group.rotation.set(0, 0, 0); cr.art.group.scale.setScalar(1); // mines sit flat and level, all the same size
@@ -879,11 +880,19 @@ const _embV = new THREE.Vector3();
   }
   const tgt = { zoom: 1, cx: BG.w / 2, cy: BG.h / 2 };
   let easing = false;
-  function setViewState(zoom: number, cx: number, cy: number) {
-    const prev = { zoom: view.zoom, cx: view.cx, cy: view.cy };
+  function setViewState(zoom: number, cx: number, cy: number, now = false, from?: { zoom: number; cx: number; cy: number }) {
+    const prev = from || { zoom: view.zoom, cx: view.cx, cy: view.cy };
     view.zoom = zoom; view.cx = cx; view.cy = cy; applyView();
     Object.assign(tgt, { zoom: view.zoom, cx: view.cx, cy: view.cy });
+    if (now) { easing = false; return; } // Owner fix (Ken, Oct 29): a finger drag / pinch moves the board 1:1, no lag
     if (!testMode) { Object.assign(view, prev); applyView(); easing = true; }
+  }
+  /** Owner fix (Ken, Oct 29): each new step starts from where the view is heading, not from where the easing is now
+   *  (before, every step threw away the part not yet eased, so a swipe moved the board only a few pixels) */
+  function fromTarget() {
+    const prev = { zoom: view.zoom, cx: view.cx, cy: view.cy };
+    if (easing) { view.zoom = tgt.zoom; view.cx = tgt.cx; view.cy = tgt.cy; clampView(); }
+    return prev;
   }
   /** smooth, eased motion toward the target view (every frame; instant in automated runs) */
   function easeView(dt: number) {
@@ -894,13 +903,14 @@ const _embV = new THREE.Vector3();
     applyView();
     api.onViewChange?.();
   }
-  function zoomAt(factor: number, sx = view.W / 2, sy = view.H / 2) {
+  function zoomAt(factor: number, sx = view.W / 2, sy = view.H / 2, now = false) {
     // keep the painting point under (sx, sy) fixed
+    const prev = fromTarget();
     const bx = view.cx + (sx - view.W / 2) / view.scale, by = view.cy + (sy - view.H / 2) / view.scale;
     view.zoom *= factor; clampView();
-    setViewState(view.zoom, bx - (sx - view.W / 2) / view.scale, by - (sy - view.H / 2) / view.scale);
+    setViewState(view.zoom, bx - (sx - view.W / 2) / view.scale, by - (sy - view.H / 2) / view.scale, now, prev);
   }
-  function panBy(dx: number, dy: number) { setViewState(view.zoom, view.cx - dx / view.scale, view.cy - dy / view.scale); }
+  function panBy(dx: number, dy: number, now = false) { const prev = fromTarget(); setViewState(view.zoom, view.cx - dx / view.scale, view.cy - dy / view.scale, now, prev); }
   /** home view: top of the painting at the window top; sideways, centred on the span of the two Commanders so both stay whole */
   function homeCenter(): [number, number] {
     const s0 = Math.max(view.W / BG.w, view.H / BG.h), hw = view.W / (2 * s0), hh = view.H / (2 * s0);

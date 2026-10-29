@@ -1327,14 +1327,16 @@ export class App {
   private wheelNoop: (() => void) | null = null;
   refreshWheel() { setTimeout(() => { if (this.wheelNoop) window.removeEventListener('wheel', this.wheelNoop, true); this.wheelNoop = () => {}; window.addEventListener('wheel', this.wheelNoop, true); }, 60); }
   zoomBy(f: number, sx?: number, sy?: number) { this.view?.zoomAt(f, sx, sy); this.applyCam(); }
-  panBy(dx: number, dy: number) { this.view?.panBy(dx, dy); this.applyCam(); }
+  panBy(dx: number, dy: number, now = false) { this.view?.panBy(dx, dy, now); this.applyCam(); }
   startPan(e: PointerEvent) {
     let lx = e.clientX, ly = e.clientY, moved = false;
     const x0 = e.clientX, y0 = e.clientY;
     const move = (ev: PointerEvent) => {
-      if (this.touches.size >= 2) return;
+      if (ev.pointerId !== e.pointerId) return;
+      // Owner fix (Ken, Oct 29): while two fingers pinch, keep this finger's spot so the pan doesn't jump afterwards
+      if (this.touches.size >= 2) { lx = ev.clientX; ly = ev.clientY; return; }
       if (!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) > 5) { moved = true; lx = x0; ly = y0; }
-      if (moved) { this.panBy(ev.clientX - lx, ev.clientY - ly); lx = ev.clientX; ly = ev.clientY; }
+      if (moved) { this.panBy(ev.clientX - lx, ev.clientY - ly, true); lx = ev.clientX; ly = ev.clientY; } // 1:1 with the finger / mouse
     };
     const up = () => {
       window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
@@ -1358,7 +1360,7 @@ export class App {
       const rc = b.getBoundingClientRect();
       // a mouse wheel (or a trackpad pinch) zooms toward the cursor; a trackpad two-finger scroll pans
       const wheel = e.ctrlKey || e.deltaMode !== 0 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 40);
-      if (wheel) this.zoomBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : e.deltaMode ? 0.05 : 0.0004)), e.clientX - rc.left, e.clientY - rc.top);
+      if (wheel) this.zoomBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : e.deltaMode ? 0.05 : 0.0015)), e.clientX - rc.left, e.clientY - rc.top); // Owner fix (Ken, Oct 29): ~14% per wheel notch (was 4%)
       else this.panBy(-e.deltaX, -e.deltaY);
     }, { passive: false });
     b.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -1375,8 +1377,10 @@ export class App {
           if (q.length < 2) return;
           const d = Math.hypot(q[0].x - q[1].x, q[0].y - q[1].y), mx = (q[0].x + q[1].x) / 2, my = (q[0].y + q[1].y) / 2;
           const rc = b.getBoundingClientRect();
-          this.view?.zoomAt(d / (d0 || 1), mx - rc.left, my - rc.top);
-          this.view?.panBy(mx - mx0, my - my0);
+          // Owner fix (Ken, Oct 29): 1:1 pinch. Zoom about the old midpoint, then move it to the new one, both at once (no easing),
+          // so the board point between the fingers stays between them and the zoom follows the finger distance exactly
+          this.view?.zoomAt(d / (d0 || 1), mx0 - rc.left, my0 - rc.top, true);
+          this.view?.panBy(mx - mx0, my - my0, true);
           d0 = d; mx0 = mx; my0 = my;
           this.applyCam();
         };
