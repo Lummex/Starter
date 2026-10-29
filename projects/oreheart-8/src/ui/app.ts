@@ -1621,7 +1621,7 @@ export class App {
     // 1. the top-centre of a card is that card's (the cards overlap by 0.26, a neighbour lies over its middle)
     for (const b of bs) {
       const cw = b.c.offsetWidth * (b.sx || 1);
-      if (Math.abs(x - b.cx) <= cw * 0.06 && y >= b.t - 6 && y <= b.t + b.h * 0.14) return b.c;
+      if (Math.abs(x - (b.cxt ?? b.cx)) <= cw * 0.06 && y >= b.t - 6 && y <= b.t + b.h * 0.14) return b.c;
     }
     // 2. with a card up, its enlarged copy lies over the pointer: use the fixed resting strips instead
     if (this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)')) {
@@ -1662,7 +1662,7 @@ export class App {
   lastPop: { uid: string; l: number; t: number; r: number; b: number; at: number } | null = null;
   /** Hover boxes (owner fix Oct 28, no flutter): one fixed slot per fan card, taken from the resting layout (layoutHand),
    *  side by side with no overlap. A card popping out, or its neighbours moving aside, never moves these boxes. */
-  handBoxes(centred = false): { c: El; l: number; t: number; w: number; h: number; cx: number; sx: number }[] {
+  handBoxes(centred = false): { c: El; l: number; t: number; w: number; h: number; cx: number; cxt?: number; sx: number }[] {
     const hand = this.r?.hand as El;
     if (!hand) return [];
     const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')].filter((c) => !c.classList.contains('offhand')) as El[];
@@ -1671,11 +1671,11 @@ export class App {
     const hb = hand.getBoundingClientRect();
     const sx = hand.offsetWidth ? hb.width / hand.offsetWidth : 1, sy = hand.offsetHeight ? hb.height / hand.offsetHeight : sx;
     for (const c of cards) {
-      const slot = (c as any)[centred ? '_slotC' : '_slot'] as { l: number; r: number; y: number; cx?: number } | undefined;
+      const slot = (c as any)[centred ? '_slotC' : '_slot'] as { l: number; r: number; y: number; cx?: number; cxt?: number } | undefined;
       if (slot) {
         const t0 = hb.top + (c.offsetTop + slot.y) * sy;
         const l = Math.max(0, hb.left + slot.l * sx), t = t0, rr = Math.min(vw, hb.left + slot.r * sx), bb = Math.min(vh, t0 + c.offsetHeight * sy);
-        if (rr > l && bb > t) out.push({ c, l, t, w: rr - l, h: bb - t, cx: hb.left + (slot.cx ?? slot.l) * sx, sx });
+        if (rr > l && bb > t) out.push({ c, l, t, w: rr - l, h: bb - t, cx: hb.left + (slot.cx ?? slot.l) * sx, cxt: hb.left + (slot.cxt ?? slot.cx ?? slot.l) * sx, sx });
         continue;
       }
       // the resting box: a popped card is measured by its placeholder (the fan spot it left)
@@ -1850,7 +1850,7 @@ export class App {
     const spacing = shown > 1 ? Math.min(cw * (HD0.overlap ?? 0.26), (W - cw) / (shown - 1)) : cw;
     const x0 = Math.max(0, (W - (cw + (shown - 1) * spacing)) / 2);
     let moved = false;
-    const slotCx: number[] = [], slotDy: number[] = [], slotY: number[] = [], slotEl: El[] = [];
+    const slotCx: number[] = [], slotCt: number[] = [], slotDy: number[] = [], slotY: number[] = [], slotEl: El[] = [];
     cards.forEach((c, i) => {
       const k = i - start;
       if (k < 0 || k >= VIS) {
@@ -1870,7 +1870,7 @@ export class App {
       c.style.left = x0 + k * spacing + 'px';
       // fixed hover slot (hand px): centred on the card, one spacing wide; the end cards also own their outer half
       // the fan tilts about the card's pivot (50 % / 110 % of its height), which swings the visible card sideways: the slot follows the visible card
-      { const th = (rot * Math.PI) / 180, piv = 0.6 * ch; slotCx[k] = x0 + k * spacing + cw / 2 + piv * Math.sin(th); slotDy[k] = piv * (1 - Math.cos(th)); slotY[k] = y; slotEl[k] = c; }
+      { const th = (rot * Math.PI) / 180, piv = 0.6 * ch; slotCx[k] = x0 + k * spacing + cw / 2 + piv * Math.sin(th); slotCt[k] = slotCx[k]; slotDy[k] = piv * (1 - Math.cos(th)); slotY[k] = y; slotEl[k] = c; }
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
       c.dataset.fan = c.style.transform;
       c.style.zIndex = String(k + 1);
@@ -1886,10 +1886,30 @@ export class App {
       const lean = (j: number) => { const th = (parseFloat(slotEl[j].dataset.fanAngle || '0') * Math.PI) / 180; return th > 0 ? 0.3 * (ch / 2) * Math.sin(th) : 0; };
       const l = slotCx[k] - cw / 2 - lean(k);
       const r = k === slotEl.length - 1 ? slotCx[k] + cw / 2 : slotCx[k + 1] - cw / 2 - lean(k + 1);
-      (slotEl[k] as any)._slot = { l, r, y: slotY[k] + slotDy[k], cx: slotCx[k] };
-      (slotEl[k] as any)._slotC = { l: k === 0 ? slotCx[0] - cw / 2 : (slotCx[k - 1] + slotCx[k]) / 2, r: k === slotEl.length - 1 ? slotCx[k] + cw / 2 : (slotCx[k] + slotCx[k + 1]) / 2, y: slotY[k] + slotDy[k], cx: slotCx[k] };
+      (slotEl[k] as any)._slot = { l, r, y: slotY[k] + slotDy[k], cx: slotCx[k], cxt: slotCt[k] };
+      (slotEl[k] as any)._slotC = { l: k === 0 ? slotCx[0] - cw / 2 : (slotCx[k - 1] + slotCx[k]) / 2, r: k === slotEl.length - 1 ? slotCx[k] + cw / 2 : (slotCx[k] + slotCx[k + 1]) / 2, y: slotY[k] + slotDy[k], cx: slotCx[k], cxt: slotCt[k] };
     }
     if (moved) for (const c of cards) if (c.parentElement === hand) hand.append(c);
+    // the arc and tilt drop the outer cards lower than the middle one: lift the resting hand just enough that every card lies fully on screen
+    try {
+      const host = hand.offsetParent as El | null;
+      if (host && slotEl.length) {
+        const cs = getComputedStyle(hand);
+        const restK = parseFloat(cs.getPropertyValue('--rest-k')) || -0.12;
+        const hcw = parseFloat(cs.getPropertyValue('--hcw')) || cw;
+        const restShift = restK * (parseFloat(getComputedStyle(this.root.querySelector('.match') || hand).getPropertyValue('--hcw')) || hcw);
+        const baseTop = host.getBoundingClientRect().top / (host.getBoundingClientRect().height / (host.offsetHeight || 1) || 1) + hand.offsetTop;
+        let worst = 0;
+        slotEl.forEach((c, k) => {
+          const th = Math.abs(parseFloat(c.dataset.fanAngle || '0')) * Math.PI / 180;
+          const drop = Math.sin(th) * cw / 2 + 0.3 * ch * (1 - Math.cos(th));
+          worst = Math.max(worst, baseTop + restShift + c.offsetTop + slotY[k] + ch + drop);
+        });
+        const need = Math.max(0, Math.ceil(worst - window.innerHeight + 2));
+        const have = parseFloat(hand.style.getPropertyValue('--rest-lift')) || 0;
+        if (Math.abs(need - have) >= 1) hand.style.setProperty('--rest-lift', need + 'px');
+      }
+    } catch { /* ignore */ }
     if (hand.lastElementChild !== spill) hand.append(spill);
     const hl = this.r.handLeft as El, hr = this.r.handRight as El;
     if (hl) { hl.hidden = !(n > VIS && start > 0); hr.hidden = !(n > VIS && start < maxScroll); }
