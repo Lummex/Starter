@@ -79,7 +79,7 @@
     ]
   },
   "tips": {
-    "summon": "Welcome! Your Stronghold sits in the bottom-left corner. Drag a Miner (Grubgrabber Miner) from your hand onto a free space on your back row, the bottom row next to that corner, to summon it. You have no crystals, but a basic Miner is free when you are broke.",
+    "summon": "Welcome! Your Stronghold sits in the bottom-left corner. Drag a Miner (Goblin Miner) from your hand onto a free space on your back row, the bottom row next to that corner, to summon it. You have no crystals, but a basic Miner is free when you are broke.",
     "move": "Nice! Press Done to reach the Action phase, then drag your Miner onto an empty space beside the middle mine. Miners may move the turn they appear. Each troop does one thing per turn: move OR attack OR mine. You can zoom (pinch or mouse wheel) and drag the battlefield to look around, and tap any creature to see its card.",
     "mine": "Mining is an action! On your next Action phase, drag your Miner onto the mine beside it. A Miner mines 2 crystals, a Fighter 1. Standing nearby without mining gives nothing.",
     "mineTap": "Now the shortcut. Next turn, in the Action phase, tap the mine: every ready Miner beside it mines at once. Tap the mine now (press and hold a mine to see its info).",
