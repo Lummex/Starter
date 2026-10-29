@@ -1,16 +1,10 @@
 {
- "at": "2026-10-28T18:09:58.578Z",
+ "at": "2026-10-29T05:30:37.143Z",
  "results": [
   {
-   "id": "borgo-rig",
+   "id": "overclocked-conduit",
    "sizes": {
-    "char.glb": 15074964
-   }
-  },
-  {
-   "id": "anvilsworn-miner-rig",
-   "sizes": {
-    "char.glb": 15849732
+    "char.glb": 18866532
    }
   }
  ]

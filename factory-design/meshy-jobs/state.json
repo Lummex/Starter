@@ -267,5 +267,10 @@
   "character": "01a183ac-0822-7576-a9d1-d3b2cd3cebec",
   "rig": "01a183b1-00c5-76cf-bad2-944f84f6f795",
   "anim": "01a183b1-82d1-7749-9675-ce8eebb085f7"
+ },
+ "overclocked-conduit": {
+  "character": "01a1861f-6238-7148-bf0b-44f8fc57bfe9",
+  "rig": "01a18622-0f05-740e-b581-d4302fc0c3f0",
+  "anim": "01a18622-9278-778d-bf39-c145eb30f5e8"
  }
 }

@@ -1,0 +1,23 @@
+{
+ "generated": "2026-10-29T05:30:37.143Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a1861f-6238-7148-bf0b-44f8fc57bfe9",
+  "rig": "01a18622-0f05-740e-b581-d4302fc0c3f0",
+  "anim": "01a18622-9278-778d-bf39-c145eb30f5e8"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8,
+  "mine": 237
+ },
+ "rigged": true,
+ "parts": [],
+ "notes": "Oct 29 (Ken approved the robot sheet; note: \"He doesn't need the shield drawn\"). Views cut from the sheet's top row (front/side/back, no shield, steam puffs painted out). Character only: no shield; pickaxe not made yet (accessories later, like the other gnomes). Gatherer, so it gets the mine clip like the miners.",
+ "fileSizes": {
+  "char.glb": 18866532
+ }
+}
