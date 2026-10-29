@@ -853,7 +853,7 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 /* ---- R5a.3: menu buttons are plain glowing text ---- */
 #app:not(:has(.match)) .btn,.dialog .btn{background:none!important;background-image:none!important;border:0!important;box-shadow:none!important;outline:0;color:#fff!important;-webkit-text-fill-color:#fff!important;border-radius:0!important;clip-path:none!important;min-width:0;text-shadow:0 0 2px #000,0 1px 2px #000;cursor:pointer;transition:transform .12s,text-shadow .15s,background .15s;filter:none!important;animation:none!important}
 #app:not(:has(.match)) .btn::before,#app:not(:has(.match)) .btn::after,.dialog .btn::before,.dialog .btn::after{display:none!important}
-#app:not(:has(.match)) .btn:hover:not(:disabled),.dialog .btn:hover:not(:disabled){background:radial-gradient(ellipse at center,var(--gold-bright)55 0,transparent 70%)!important;text-shadow:0 0 10px var(--gold-bright),0 0 22px #ffb300,0 1px 2px #000;transform:scale(1.08);color:#FFE866!important}
+#app:not(:has(.match)) .btn:hover:not(:disabled),.dialog .btn:hover:not(:disabled){background:radial-gradient(ellipse at center,var(--gold-bright)55 0,transparent 70%)!important;text-shadow:0 0 10px var(--gold-bright),0 0 22px #ffb300,0 1px 2px #000;transform:scale(1.08);color:#fff!important}
 #app:not(:has(.match)) .btn:active:not(:disabled),.dialog .btn:active:not(:disabled){transform:scale(.94);text-shadow:0 0 18px #fff,0 0 30px var(--gold-bright)}
 #app:not(:has(.match)) .btn[aria-pressed=true],#app:not(:has(.match)) .btn.primary{text-shadow:0 0 8px var(--gold-bright),0 0 18px #ffb300,0 1px 2px #000;color:#fff!important;-webkit-text-fill-color:#fff!important}
 #app:not(:has(.match)) .btn[aria-pressed=true]{text-decoration:underline;text-underline-offset:5px}
@@ -1298,7 +1298,7 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 .match .o-phase .ph-sep{margin:0 .25em;opacity:.7}
 .match .o-phase .ph-turn[data-x]{}
 .match .o-deck .deck-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:none!important;filter:drop-shadow(0 4px 6px #000)}
-.match .o-deck .pile-n{position:absolute!important;display:flex;align-items:center;justify-content:center;bottom:auto!important;transform-origin:50% 50%;font-family:"Alegreya SC",serif;font-style:italic;line-height:1}
+.match .o-deck .pile-n{position:absolute!important;display:flex;align-items:center;justify-content:center;bottom:auto!important;transform-origin:50% 50%;font-family:"Alegreya SC",serif;font-style:var(--os,normal);line-height:1}
 .match .o-fan{display:block}
 .match .o-fan .back{position:absolute;left:50%;top:12%;width:30%;height:72%;margin-left:-15%;border-radius:4px;background:url('/art/ui/oreheart-card-back.webp') center/cover!important;border:1px solid #3a2a0a;transform-origin:50% 160%}
 .match .o-fan.browsing .back{animation:browse 2.4s ease-in-out infinite}
@@ -1600,7 +1600,7 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 .cmd-win,.cmd-win *{color:#fff!important;-webkit-text-fill-color:#fff!important}
 @media (max-height:420px){.db-stage .db-sliderbox{left:61.5%!important;top:1%!important;width:17%!important;height:12%!important}.db-stage .db-sliderbox .f-field{flex-direction:column;align-items:flex-start;gap:0}.db-stage .db-sliderbox input[type=range]{width:100%;flex:none}}
 .db-cmdinner{display:flex;gap:6%;align-items:stretch;justify-content:flex-start;width:100%;height:100%}
-.match .o-deck .pile-n:not(#_w){font-weight:var(--ow,700)!important;font-style:italic!important}
+.match .o-deck .pile-n:not(#_w){font-weight:var(--ow,700)!important;font-style:var(--os,normal)!important}
 .cmd-win:not(#_w) *:not(#_x),.screen.setup .cmd-card .cmd-win *:not(#_x){color:#fff!important;-webkit-text-fill-color:#fff!important}
 .token .tk-stats:not(#_w){transform:translate(-50%,calc(var(--bw)*.3))!important}
 
@@ -1803,3 +1803,6 @@ html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!im
 .test .match .hand,.test .match .hand .hand-card,.test .match .hand .hand-card.popped,.test .match .hand .hand-card.popped:not(.popclone){transition:none!important}
 /* Round 15: all text outside the cards is plain white (Settings screen-mode button included) */
 .fs-btn,.fs-btn *,.fs-na{color:#fff!important}
+
+/* text colour never fades (computed colour is always plain white during hover transitions) */
+.btn,.btn *,.fs-btn{transition-property:transform,text-shadow,background,opacity,filter!important}

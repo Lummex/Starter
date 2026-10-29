@@ -1322,7 +1322,10 @@ export class App {
   layoutSoon() { if (this.layoutQueued) return; this.layoutQueued = true; requestAnimationFrame(() => { this.layoutQueued = false; this.layout(); }); }
   syncCam() { const v = this.view?.getView?.(); if (v && v.zoom) this.cam = { zoom: v.zoom, x: ((v.home?.[0] ?? v.painting.w / 2) - v.centerX) * v.scale, y: ((v.home?.[1] ?? v.painting.h / 2) - v.centerY) * v.scale }; }
   applyCam() { this.syncCam(); this.layout(); }
-  resetCam() { this.view?.recenter(); this.applyCam(); }
+  resetCam() { this.view?.recenter(); this.applyCam(); this.refreshWheel(); }
+  /** registering a fresh blocking wheel listener makes Chrome rebuild its wheel hit regions (they go stale after dialogs close), so the wheel always reaches the board */
+  private wheelNoop: (() => void) | null = null;
+  refreshWheel() { setTimeout(() => { if (this.wheelNoop) window.removeEventListener('wheel', this.wheelNoop, true); this.wheelNoop = () => {}; window.addEventListener('wheel', this.wheelNoop, true); }, 60); }
   zoomBy(f: number, sx?: number, sy?: number) { this.view?.zoomAt(f, sx, sy); this.applyCam(); }
   panBy(dx: number, dy: number) { this.view?.panBy(dx, dy); this.applyCam(); }
   startPan(e: PointerEvent) {
@@ -1345,6 +1348,8 @@ export class App {
   lastGround = 0;
   touches = new Map<number, { x: number; y: number }>();
   setupCamera() {
+    // a document-level blocking wheel listener makes the browser always deliver wheel events to the board (its hit-region cache goes stale after layout changes)
+    if (!(window as any).__wheelGuard) { (window as any).__wheelGuard = true; window.addEventListener('resize', () => this.refreshWheel()); }
     const b = this.r.board as El;
     (b.parentElement as El).addEventListener('wheel', (e: WheelEvent) => {
       if ((e.target as El).closest?.('.hand,.dialog,.hud,.reveal')) return;

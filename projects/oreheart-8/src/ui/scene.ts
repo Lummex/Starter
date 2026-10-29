@@ -186,12 +186,14 @@ function addWeapon(g: THREE.Group, weapon: string | null, faction: string) {
   }
 }
 
+let glSupported: boolean | null = null;
+let glPool: { renderer: THREE.WebGLRenderer; backRenderer: THREE.WebGLRenderer | null; backCanvas: HTMLCanvasElement } | null = null;
 export function createBoardView(container: HTMLElement, low: boolean): BoardView | null {
   let renderer: THREE.WebGLRenderer;
   try {
-    const probe = document.createElement('canvas');
-    if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) return null;
-    renderer = new THREE.WebGLRenderer({ antialias: !low && !document.body.classList.contains('test'), alpha: true });
+    if (glSupported === null) { const probe = document.createElement('canvas'); const gl: any = probe.getContext('webgl2') || probe.getContext('webgl'); glSupported = !!gl; try { gl?.getExtension('WEBGL_lose_context')?.loseContext(); } catch { /* ignore */ } }
+    if (!glSupported) return null;
+    renderer = (document.body.classList.contains('test') && glPool?.renderer) || new THREE.WebGLRenderer({ antialias: !low && !document.body.classList.contains('test'), alpha: true });
   } catch {
     return null;
   }
@@ -774,13 +776,14 @@ const _embV = new THREE.Vector3();
   const H0 = boardHomography();
   const fit = fitCamera(H0);
   const dprNow = () => Math.min(window.devicePixelRatio || 1, 2);
-  const backCanvas = document.createElement('canvas');
+  const pooled = testMode && glPool ? glPool : null; // automated runs keep one pair of WebGL renderers (and their compiled shaders) between matches
+  const backCanvas = pooled ? pooled.backCanvas : document.createElement('canvas');
   backCanvas.className = 'board-canvas arena-canvas';
   backCanvas.setAttribute('data-arena-canvas', '');
   container.prepend(backCanvas);
   let backRenderer: THREE.WebGLRenderer | null = null;
   try {
-    backRenderer = new THREE.WebGLRenderer({ canvas: backCanvas, antialias: false, alpha: false });
+    backRenderer = pooled ? pooled.backRenderer : new THREE.WebGLRenderer({ canvas: backCanvas, antialias: false, alpha: false });
     backRenderer.setPixelRatio(pixelRatio());
     backRenderer.outputColorSpace = THREE.LinearSRGBColorSpace;
     backRenderer.setClearColor(0x000000, 1);
@@ -1075,7 +1078,12 @@ const _embV = new THREE.Vector3();
     view.zoom = 1; clampView();
     setViewState(Math.min(view.maxZoom, 3), px, py);
   }
+  let lastInput = 0;
+  const inputEvs = ['wheel', 'pointermove', 'pointerdown', 'keydown'];
+  const onInput = () => { lastInput = performance.now(); };
+  if (testMode) for (const ev of inputEvs) window.addEventListener(ev, onInput, { capture: true, passive: true });
   let lastRender = 0;
+  let mineLow = false;
   let lastDur = 0;
   let prevRaf = 0, frameGap = 0;
   let lastFrame = { calls: 0, tris: 0 };
@@ -1090,7 +1098,10 @@ const _embV = new THREE.Vector3();
     const now = performance.now();
     // software GL cost shows up as slow page frames (the GPU work is not in lastDur): back off while the page is starved
     if (testMode) { if (prevRaf) frameGap = frameGap * 0.7 + Math.min(2000, now - prevRaf) * 0.3; prevRaf = now; }
+    if (testMode && now - lastInput < 220) return; // automated runs (software GL): no painting while input is arriving, so wheel/pointer events are never queued behind a slow frame
     if (testMode && now - lastRender < Math.max(300, lastDur * 6, frameGap > 100 ? frameGap * 8 : 0)) return; // automated runs use software GL: keep the page responsive
+    // starved page (software GL): drop the mines' extra additive glow layers until frames recover
+    if (!low) { const starved = frameGap > 70 ? true : frameGap < 35 ? false : mineLow; if (starved !== mineLow) { mineLow = starved; for (const fx of mineFx) fx.setLow(starved); for (const m of mines) if (m.light) m.light.visible = !starved; } }
     lastRender = now;
     const dt0 = Math.min(0.1, (now - (frameLast || now)) / 1000); frameLast = now;
     for (const fx of mineFx) fx.update(now / 1000);
@@ -1313,8 +1324,9 @@ const _embV = new THREE.Vector3();
   const api: BoardView = {
     is3D: true, setCarry, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
-      disposed = true; window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);
+      disposed = true; for (const ev of inputEvs) window.removeEventListener(ev, onInput, true); window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);
       cancelAnimationFrame(raf);
+      if (testMode) { glPool = { renderer, backRenderer, backCanvas }; backCanvas.remove(); canvas.remove(); return; }
       renderer.dispose();
       backRenderer?.dispose();
       try { backRenderer?.forceContextLoss(); } catch { /* ignore */ }

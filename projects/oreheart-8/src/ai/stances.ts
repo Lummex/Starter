@@ -91,7 +91,7 @@ export function stanceChoose(s: any, stance: Stance, who: string, difficulty: st
       const kill = pv.targetDefeated ? 30 : 0;
       if (stance === 'aggressive') { if (canAdvance.has(c.uid) && !pv.targetDefeated) continue; if (miner) continue; consider(40 + kill + pv.youDeal * 3 - pv.youTake * 2, a); continue; }
       if (stance === 'minecontrol') {
-        if (miner) { if (isMiner(CARDS[d.cardId]) && pv.targetDefeated && !pv.attackerDefeated && !lowCrystals) consider(90 + kill, a); continue; }
+        if (miner) { if (isMiner(CARDS[d.cardId]) && !pv.attackerDefeated && !lowCrystals) consider(90 + kill, a); continue; }
         const dm = isMiner(CARDS[d.cardId]) || nearestDist(d, sites) <= 2;
         consider((dm ? 75 : 35) + kill + pv.youDeal * 3 - pv.youTake * 2 - (pv.attackerDefeated ? 40 : 0), a);
         continue;
