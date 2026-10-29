@@ -77,6 +77,23 @@ function confineTo(allowedRel, base = 'HEAD') {
   if (reverted.length + removed.length) log(`reverted out-of-bounds changes: ${[...reverted, ...removed].join(', ')}`);
 }
 
+// Runs the builder with no way to the hidden tests: no copy in the checkout or the test runner's
+// folder, and no git history (older commits hold the tests). .git waits in the locked work folder.
+function withoutTests(fn) {
+  fs.rmSync(accDir, { recursive: true, force: true });
+  fs.rmSync(path.join(FACTORY, '.run-tests'), { recursive: true, force: true });
+  const gitDir = path.join(ROOT, '.git');
+  const hidden = path.join(workDir, 'git');
+  fs.renameSync(gitDir, hidden);
+  fs.chmodSync(workDir, 0o000);
+  try { return fn(); } finally {
+    fs.chmodSync(workDir, 0o700);
+    // If an agent started a new repository meanwhile, the real one replaces it.
+    fs.rmSync(gitDir, { recursive: true, force: true });
+    fs.renameSync(hidden, gitDir);
+  }
+}
+
 function checkoutBranch() {
   if (FAKE) return;
   const exists = sh('git', ['ls-remote', '--exit-code', '--heads', 'origin', branch], { check: false }).status === 0;
@@ -137,8 +154,7 @@ async function main() {
       : '';
     // Hide the acceptance tests from the builder (they're restored from git afterwards).
     const buildBase = headSha();
-    fs.rmSync(accDir, { recursive: true, force: true });
-    runAgent('builder', fill(prompt('builder'), { ...vars, FAILURES_SECTION: failuresSection }), config.budgetsUsd.builderPerRound);
+    withoutTests(() => runAgent('builder', fill(prompt('builder'), { ...vars, FAILURES_SECTION: failuresSection }), config.budgetsUsd.builderPerRound));
     confineTo(appRel, buildBase); // also restores the hidden tests
     commitAll(`factory: build round ${round} for #${issue}`);
 

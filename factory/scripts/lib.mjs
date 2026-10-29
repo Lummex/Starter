@@ -83,7 +83,13 @@ export function runUrl() {
 
 // Owner comments (not from the bot), oldest first: answers to questions and change requests.
 export function ownerFeedback(issue) {
-  const comments = gh('GET', `issues/${issue}/comments?per_page=100`) || [];
+  // GitHub gives at most 100 comments per page; read every page (issue #8 has well over 100).
+  const comments = [];
+  for (let page = 1; page <= 100; page++) {
+    const batch = gh('GET', `issues/${issue}/comments?per_page=100&page=${page}`) || [];
+    comments.push(...batch);
+    if (batch.length < 100) break;
+  }
   return comments
     .filter((c) => c.user?.type !== 'Bot' && !c.body.includes('<!-- factory:'))
     .map((c) => `- (${c.created_at?.slice(0, 10)}) ${c.body.trim()}`)
