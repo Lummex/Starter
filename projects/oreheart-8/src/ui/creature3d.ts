@@ -5,8 +5,9 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { skinBox } from './grubnak3d';
 import { CARDS } from '../engine';
+import animSlotsJson from '../content/anim-slots.json';
 
-export type CreatureAnim = 'idle' | 'walk' | 'attack' | 'mine' | 'hit' | 'defeat' | 'lifted' | 'special';
+export type CreatureAnim = 'idle' | 'walk' | 'attack' | 'mine' | 'hit' | 'defeat' | 'lifted' | 'special' | 'knockback' | 'bowled' | 'idleBreak';
 export interface PartCfg { file: string; bone: string[]; /** target length as a fraction of the character height */ len: number; /** point along the long axis (0 bottom .. 1 top) that sits on the bone */ grip: number; rot: [number, number, number]; pos?: [number, number, number]; name: string; axis?: 'x' | 'y' | 'z'; /** owner look (Model Editor): exact bone-local transform of the raw part */ look?: LookPart; /** a mount standing under the rider */ mount?: boolean }
 export interface LookPart { bone: string; pos: [number, number, number]; rot: [number, number, number]; scale: [number, number, number] }
 /** owner looks (factory-design/looks/*.json): height in squares + stretch of the main model */
@@ -105,6 +106,9 @@ const ready = new Map<string, Assets>();
 export const missingClips: { id: string; role: string; wanted: string; used: string }[] = [];
 (globalThis as any).__missingClips = missingClips;
 export const creature3dReady = (id: string) => ready.get(id) || null;
+/** Round 28b: what the Studio slot file did per card (test hook: window.__animSlotLog) */
+export const slotLog: { id: string; role: string; clip: string; how: string }[] = [];
+(globalThis as any).__animSlotLog = slotLog;
 
 export function loadCreature3d(id: string): Promise<Assets | null> {
   if (!hasCreature3dSlug(id)) return Promise.resolve(null);
@@ -132,6 +136,18 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
         }
         // Owner fix (Ken, Oct 28): a unit carried by the Junk Shaman loops its lifted clip; the Shaman holds his lift special
     for (const [role, key] of [['lifted', 'react_lifted'], ['special', 'special']]) { const nm = info.clips?.[key]; const cl = typeof nm === 'string' ? byName(nm) : undefined; if (cl && !clips[role]) clips[role] = cl; }
+        // Round 28b (Ken's Studio slots, Oct 29): a card's slot choices from src/content/anim-slots.json come first. Only clips in this card's
+        // own GLB play (a shared-library clip from another model is noted, not retargeted); "none" removes the role; roles without a choice keep the logic above.
+        { const sl = (animSlotsJson as any).cards?.[id]?.slots as Record<string, any> | undefined;
+          if (sl) for (const [role, pick] of Object.entries(sl)) {
+            const p = Array.isArray(pick) ? pick[0] : pick;
+            if (!p) continue;
+            if (p.none) { delete clips[role]; slotLog.push({ id, role, clip: '', how: 'none' }); continue; }
+            if (p.shared) { slotLog.push({ id, role, clip: p.clip, how: 'shared-skipped' }); continue; }
+            const cl = byName(p.clip);
+            if (cl) { clips[role] = cl; slotLog.push({ id, role, clip: p.clip, how: p.auto ? 'auto' : 'pick' }); }
+            else slotLog.push({ id, role, clip: p.clip, how: 'missing-in-glb' });
+          } }
     let events: any = null;
         if (info.clips) { try { const er = await fetch(base + 'events.json'); if (er.ok) events = await er.json(); } catch { /* no events file */ } }
         const parts: Record<string, THREE.Object3D> = {};
@@ -186,8 +202,8 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   for (const k of Object.keys(a.clips)) actions[k] = mixer.clipAction(a.clips[k]);
   let cur = '';
   const log: string[] = [];
-  const once = (n: string) => n === 'attack' || n === 'mine' || n === 'hit' || n === 'defeat';
-  const resolve = (n: string) => (actions[n] ? n : n === 'mine' && actions.attack ? 'attack' : 'idle');
+  const once = (n: string) => n === 'attack' || n === 'mine' || n === 'hit' || n === 'defeat' || n === 'knockback' || n === 'bowled' || n === 'idleBreak'; // Round 28b: new one-shot roles
+  const resolve = (n: string): string => (actions[n] ? n : n === 'mine' && actions.attack ? 'attack' : (n === 'knockback' || n === 'bowled') && actions.hit ? 'hit' : 'idle'); // Round 28b: knockback / bowled fall back to the hit clip, idleBreak to idle
   const lockLen = (n: string) => (n === 'defeat' ? 1e9 : Math.min(actions[n]?.getClip().duration || 0.8, n === 'hit' ? 0.8 : 1.1));
   let started = 0, shakeT = 0;
   const out: C3D = {} as C3D;
