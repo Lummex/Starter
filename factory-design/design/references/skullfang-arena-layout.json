@@ -41,7 +41,8 @@
    "height": 1.1,
    "cCore": "#fff6c0",
    "cMid": "#ffb030",
-   "cTip": "#c0300a"
+   "cTip": "#c0300a",
+   "strength": 0.4
   },
   {
    "type": "flame",
@@ -51,7 +52,8 @@
    "height": 1.1,
    "cCore": "#fff6c0",
    "cMid": "#ffb030",
-   "cTip": "#c0300a"
+   "cTip": "#c0300a",
+   "strength": 0.4
   },
   {
    "type": "flame",
@@ -61,7 +63,8 @@
    "height": 1,
    "cCore": "#fff6c0",
    "cMid": "#ffb030",
-   "cTip": "#c0300a"
+   "cTip": "#c0300a",
+   "strength": 0.4
   },
   {
    "type": "flame",
@@ -71,14 +74,15 @@
    "height": 1,
    "cCore": "#fff6c0",
    "cMid": "#ffb030",
-   "cTip": "#c0300a"
+   "cTip": "#c0300a",
+   "strength": 0.4
   },
   {
    "type": "glow",
    "x": 201,
    "y": 100,
    "radius": 45,
-   "strength": 1.5,
+   "strength": 1.725,
    "pulse": 0.5,
    "cGlow": "#ffb347"
   },
@@ -87,7 +91,7 @@
    "x": 1162,
    "y": 62,
    "radius": 43,
-   "strength": 1.18,
+   "strength": 1.357,
    "pulse": 0.5,
    "cGlow": "#ffb347"
   },
@@ -150,7 +154,8 @@
    "height": 0.9,
    "cCore": "#299e4c",
    "cMid": "#4bca07",
-   "cTip": "#05b347"
+   "cTip": "#05b347",
+   "strength": 0.4
   },
   {
    "type": "flame",
@@ -160,14 +165,15 @@
    "height": 0.9,
    "cCore": "#299e4c",
    "cMid": "#4bca07",
-   "cTip": "#05b347"
+   "cTip": "#05b347",
+   "strength": 0.4
   },
   {
    "type": "glow",
    "x": 76,
    "y": 117,
    "radius": 27,
-   "strength": 0.7,
+   "strength": 0.805,
    "pulse": 0.9,
    "cGlow": "#ff9147"
   },
@@ -176,7 +182,7 @@
    "x": 235,
    "y": 39,
    "radius": 27,
-   "strength": 0.7,
+   "strength": 0.805,
    "pulse": 0.84,
    "cGlow": "#ff9147"
   },
@@ -185,7 +191,7 @@
    "x": 994,
    "y": 74,
    "radius": 29,
-   "strength": 0.7,
+   "strength": 0.805,
    "pulse": 0.43,
    "cGlow": "#ff9147"
   },
@@ -194,7 +200,7 @@
    "x": 1130,
    "y": 80,
    "radius": 24,
-   "strength": 0.7,
+   "strength": 0.805,
    "pulse": 1,
    "cGlow": "#ff9147"
   },
@@ -525,7 +531,7 @@
    "x": 1278,
    "y": 34,
    "radius": 10,
-   "strength": 0.7,
+   "strength": 0.805,
    "pulse": 0.7,
    "cGlow": "#ff9147"
   },
