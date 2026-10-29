@@ -94,3 +94,9 @@ For several files: open any github.com page, `fetch("https://api.github.com/repo
 - Helpers (max 3) can each do one character in parallel, each in its own work folder.
 - At switch time: nothing queued or running on blender-queue; all 60 jobs finished (sig-b jobs = awaiting_review).
 - 2026-10-29 – Forge job: compared keeping the worker vs Blender direct; Forge chose direct. Stopped the worker with the STOP file, added Blender direct to the HANDBOOK and team-lessons.
+
+## Shared animations (Oct 29, Forge job) — report: reports/2026-10-29-spring-shared-animations.md
+- All 45 rigged game models = identical Meshy 24-bone skeleton (no fingers). Rest poses differ 10–100° per bone, so raw rotation copy breaks; use spring-retarget.py (Blender headless, rest-relative world rotations, hips × hip-height ratio, ~15–20 s/clip). Self-test 0.0°; goblin walk→dwarf 31.8° vs dwarf's own Meshy walk (unrelated clip 87°).
+- Run: set BOPS=<worker blender_ops dir>; inputs must be meshopt-free (glbtool.decompress); `blender -b --factory-startup --python spring-retarget.py -- --src s.glb --clip X --tgt t.glb --out DIR [--compare CLIP] [--render 1] [--export 1]`.
+- Studio: `animations` (65 seeded, ids biped-<slot>-<what>), `animRequests` (query status=="wanted"), `library/<card>.animSlots` (Wright writes; one id per slot, idleBreak ≤3).
+- Learned: Windows Python needs C:/ paths, not /c/ (Git Bash form) → FileNotFoundError. `$(cat list)` from py output has CRLF → use tr -d '\r'. A `cd X && rm X/*` is blocked by the safety check; just overwrite files.
