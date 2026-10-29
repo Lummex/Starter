@@ -5659,7 +5659,8 @@ test.describe('arena pan 1920x1080', () => {
   test('AC191: keys, WASD and dragging empty board pan the view, always clamped to the painting', async ({ page }) => {
     await start(page, quiet({ board: ARENA_BOARD }));
     await page.waitForTimeout(800);
-    await zoomIn(page, 960, 500, 4);
+    // Owner change (Ken, Oct 29, commit 135b9f4): one wheel notch now zooms ~16 % (was ~4 %), so 4 notches reach max zoom and square (6,8) ends up off-screen; 1 notch gives zoom 1.43, the old 4-notch zoom (1.47).
+    await zoomIn(page, 960, 500, 1);
     const before = (await camera(page)).view;
     for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
     await expect.poll(async () => (await camera(page)).view.x).toBeGreaterThan(before.x + 1);
