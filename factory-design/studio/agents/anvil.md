@@ -226,3 +226,7 @@
 - Shared-library retargeting: Spring's note (side-session-notes/spring-shared-anims-feasibility.md) says it is doable with a Blender tool plus a per-character floor pass and Ken's eye; the game flags `shared` picks and skips them until that exists.
 - Slots with no game trigger yet: run, fly/hover, ride, tunnel, teleport, ranged, charge, block, forge, heal, cheer, poke, stunned, summon, commander slots.
 - AC108 still pins the old "cavern" menu picture: fails on every build since the new front menu; needs Forge/Ken's OK for a one-line update.
+## 2026-10-30 Gauge's go-live cosmetic list (8 items)
+- 6 done in CSS/JS (welcome box, phone deck strip, phone result screen, Escape on the card view, tutorial miner name, turn text/countdown hidden behind the drop-up and dialogs); 2 left for Ken: the reveal position (round 10 design) and the open hand fan over rows 5-7 (Round 8 hover-box rule). A Close button on the card view contradicts AC250 (round 10: no Close) — Ken's call.
+- Lesson: before adding a button or text to an existing dialog, grep the spec for that dialog's name; AC250 forbids a "Close" button on the card close-up and AC346 measures the first deck slot's buttons on Choose Your Commander.
+- Phone deck slots were a fixed 132 px (max-height:480 rule); 110 px with 12 px action buttons fits three decks in the 402 px strip.
