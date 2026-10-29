@@ -26,6 +26,8 @@ Ledger made shrunk copies of the game's own body files: `factory-design/design/m
 - **Only if Ken answered Yes to `decisions/r27-size-option-a` in Oreheart Studio** (read it right before starting): copy the 5 files in `round27-shrunk/option-a-needs-ken/`: `shiv-rat-char.glb`, `goblin-pebbler-char.glb`, `goblin-scrounger-char.glb`, `goblin-smith-miner-char.glb` over `public/models/creatures/<card>/char.glb`, and `grubnak-throne.glb` over `public/models/creatures/grubnak/throne.glb` (pictures 768 → 512 px). If he has not answered Yes, do not copy them (see the size note below).
 2. Do not shrink anything else.
 
+**Size now (Anvil, Oct 29, after Round 26 + owner fixes + Round 28 + the new front menu): the built `dist/` is 94,983,419 bytes = 94.98 MB, only 0.02 MB under the 95 MB limit. Budget Round 27 from 94.98 MB (measured dist, code bundle included), not from the 93.58 MB below.**
+
 Size (Ledger, Oct 28 ~22:40, measured from the factory/issue-8 file list, all of `projects/oreheart-8/public/`, 1 MB = 1,000,000 bytes):
 
 | Step | Bytes | MB |
