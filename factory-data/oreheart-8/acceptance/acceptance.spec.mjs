@@ -6675,11 +6675,11 @@ test('AC232: the owner menus file, pictures, sound and main menu picture are shi
   expect((await snd.body()).length).toBe(98253);
   await openTest(page);
   const dims = await page.evaluate(async () => {
-    // Owner change (Ken, Oct 29): new front menu picture front-menu-background-oct29 (1672x941) replaces menu-cavern.webp (moved to _discontinued)
+    // Owner change (Ken, Oct 29, v2): the front menu picture is front-menu-background-oct29-v2 (1670x942); v1 and menu-cavern.webp are in _discontinued
     const img = new Image(); img.src = '/art/menu-front-oct29.webp'; await img.decode();
     return [img.naturalWidth, img.naturalHeight];
   });
-  expect(dims).toEqual([1672, 941]);
+  expect(dims).toEqual([1670, 942]);
 });
 
 async function menuPieceBoxes(page, request, screenId) {
@@ -9770,6 +9770,21 @@ async function r23Start(page) {
   return { mid, restTop: median(await r23Tops(page)) || median(tops) };
 }
 // moves the real mouse onto the visible strip of hand card i (left part, cards overlap to the right)
+// Owner change (Forge, Oct 29): a press takes the card drawn under the pointer (Ken's rule). r23HoverCard's aim point sits at the
+// resting card's mid-height, which is BELOW the card once it has risen, where a neighbour is drawn. Before grabbing, park the mouse
+// on the raised card's drawn band (same x, y inside the card) so the grab takes the card that was hovered.
+async function r23Grip(page, from) {
+  // wait until the raised card has stopped moving (its rise is a .12 s transition; slower under load)
+  await expect.poll(async () => page.evaluate(() => { const el = document.querySelector('.hand-card.popped:not(.popclone)'); if (!el) return 'none'; const b = el.getBoundingClientRect(); const k = [b.left, b.top, b.width].map(Math.round).join(','); const same = el.__gripKey === k; el.__gripKey = k; return same ? 'still' : k; }), { timeout: 1500, intervals: [80, 80, 80, 80, 120, 120, 200, 200, 300] }).toMatch(/still|none/);
+  const up = await page.evaluate(([x]) => {
+    const el = document.querySelector('.hand-card.popped:not(.popclone)'); if (!el) return null;
+    const b = el.getBoundingClientRect(); return { x: Math.max(b.left + 8, Math.min(b.right - 8, x)), y: b.top + b.height * 0.45 };
+  }, [from.x]);
+  if (!up) return from;
+  await page.mouse.move(up.x, up.y, { steps: 2 });
+  await page.waitForTimeout(100);
+  return up;
+}
 async function r23HoverCard(page, i) {
   const b = await handButtons(page).nth(i).boundingBox();
   const p = { x: b.x + Math.min(b.width * 0.12, 18), y: b.y + b.height * 0.5 };
@@ -9816,7 +9831,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }]) 
       await expect.poll(async () => median(await r23Tops(page)), { timeout: 2000 }).toBeLessThan(restTop - 20);
       // grab the Miner (last card) and drag toward the back row in steps
       const target = await sqCenter(page, 7, 6);
-      const from = await r23HoverCard(page, 6);
+      const from = await r23Grip(page, await r23HoverCard(page, 6));
       await page.mouse.down();
       await page.mouse.move(from.x, from.y - 30, { steps: 3 });
       await page.mouse.move((from.x + target.x) / 2, (from.y + target.y) / 2, { steps: 5 });
@@ -9943,7 +9958,7 @@ const dragCard = (page) => page.evaluate(async () => await window.oreheart.getDr
 const near = (a, b, tol) => Math.abs(a - b) <= tol;
 // grabs hand card i with the real mouse (test flag must be off) and moves it onto square (row, col) in steps
 async function r26Grab(page, i, row, col) {
-  const from = await r23HoverCard(page, i);
+  const from = await r23Grip(page, await r23HoverCard(page, i));
   await page.mouse.down();
   await page.mouse.move(from.x, from.y - 30, { steps: 3 });
   const to = await sqCenter(page, row, col);
@@ -9966,14 +9981,17 @@ test.describe('round 26 at 1920x1080', () => {
 
   test('AC370/AC372: the dragged card stays centered on the pointer; the square under it is highlighted; it grows back over the hand', async ({ page }) => {
     await r23Start(page);
-    const from = await r23HoverCard(page, 6);
+    const from = await r23Grip(page, await r23HoverCard(page, 6));
     const w0 = (await r23Fan(page))[6].width;
     await page.mouse.down();
-    await page.mouse.move(from.x, from.y - 40, { steps: 4 });
+    // Owner change (Forge, Oct 29): the grab now starts on the raised card, so 'over the hand' is just below the board's bottom edge (no square under the pointer)
+    const handY = Math.max(from.y + 30, (await page.evaluate(() => Math.max(...[...Array(13)].flatMap((_, k) => window.oreheart.squareQuad(7, k + 1).map((q) => q.y))))) + 8);
+    await page.mouse.move(from.x, handY, { steps: 4 });
     const card = page.getByLabel('Dragged card', { exact: true });
     await expect(card).toBeVisible();
+    await page.waitForTimeout(200); // Owner change (Forge, Oct 29): the grabbed card glides to the pointer; measure it settled, not mid-glide
     let b = await card.boundingBox();
-    expect(near(b.x + b.width / 2, from.x, 6) && near(b.y + b.height / 2, from.y - 40, 6), 'centered over the hand').toBe(true);
+    expect(near(b.x + b.width / 2, from.x, 6) && near(b.y + b.height / 2, handY, 6), 'centered over the hand').toBe(true);
     for (const [r, c] of [[7, 6], [6, 8]]) {
       const p = await sqCenter(page, r, c);
       await page.mouse.move(p.x, p.y, { steps: 8 });
@@ -9984,9 +10002,9 @@ test.describe('round 26 at 1920x1080', () => {
       expect(d.highlight, 'highlight follows the pointer').toMatchObject({ row: r, col: c });
     }
     expect((await dragCard(page)).highlight.legal).toBe(false); // (6,8) is not a summon square
-    await page.mouse.move(from.x, from.y - 40, { steps: 8 });
+    await page.mouse.move(from.x, handY, { steps: 8 });
     await page.waitForTimeout(300);
-    expect(Math.abs((await dragCard(page)).width - w0) / w0, 'grows back over the hand').toBeLessThanOrEqual(0.05);
+    await expect.poll(async () => Math.abs((await dragCard(page)).width - w0) / w0, { message: 'grows back over the hand', timeout: 2000 }).toBeLessThanOrEqual(0.05); // Owner change (Forge, Oct 29): the grow-back is a 150 ms ease; wait for it instead of a fixed 300 ms (slow check machines)
     await page.mouse.up();
   });
 
@@ -9998,7 +10016,7 @@ test.describe('round 26 at 1920x1080', () => {
     const sortQuad = (k) => { const byY = [...k].sort((a, b) => a.y - b.y); const top = byY.slice(0, 2).sort((a, b) => a.x - b.x), bot = byY.slice(2, 4).sort((a, b) => a.x - b.x); return [top[0], top[1], bot[1], bot[0]]; };
     const inside = (pt, k) => { let s = 0; for (let i = 0; i < 4; i++) { const a = k[i], b = k[(i + 1) % 4]; const cr = (b.x - a.x) * (pt.y - a.y) - (b.y - a.y) * (pt.x - a.x); if (Math.abs(cr) > 1e-6) { if (s === 0) s = Math.sign(cr); else if (Math.sign(cr) !== s) return false; } } return true; };
     // the card's own shape, measured while it is still held over the hand (no square under it)
-    const from = await r23HoverCard(page, 6);
+    const from = await r23Grip(page, await r23HoverCard(page, 6));
     await page.mouse.down();
     await page.mouse.move(from.x, from.y - 30, { steps: 3 });
     await page.waitForTimeout(300);
