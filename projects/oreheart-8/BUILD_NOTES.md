@@ -101,3 +101,11 @@ Editor updates needed: hand.overlap 0.26; DRAG_FX (150 ms, opacity .85, tilt 8°
 - Fixed: main-menu button text and the in-match deck counters are now always Alegreya SC italic (AC135, AC168), even where the owner's menus file had italic off.
 - Re-ran AC40, AC95, AC110 alone: they pass (earlier failures were timeouts under parallel load).
 - Not changed (checks are outdated; the game follows later owner decisions): AC58 (Rocket Rider is now a Fighter), AC31 (replaced by the Done drop-up), AC59/AC164/AC174/AC218 (hand rules from the owner's layout), AC149/150/190/191 (owner's 16:9 letterbox on computers), AC176's Deck Builder pile image (Deck Builder uses the owner's menu layout).
+
+## Inspector round-1 fixes (Round 15 finish)
+- Hand hover: slots/hit-testing now follow the visible strip of each fan card (topmost element first), far-away pointer lowers the card at once; test mode disables hand transitions (AC59, AC174, AC218).
+- "Moves still available" drop-up: stale outside-click listener no longer closes the next drop-up (AC31).
+- Settings "Screen:" button is white (AC167).
+- Test-mode 3D renderer backs off when page frames are starved (software GL), fixing load-induced timeouts.
+- Removed unused duplicate `public/art/logo.webp` so dist stays under 95 MB (AC90).
+- Not changed (outdated checks, contradict newer owner changes): AC149/AC150 (full-window cover-fit vs owner's 16:9 letterbox), AC58 (Rocket Rider is now a Fighter), AC138 select-screen corner (menus are 16:9 pieces), AC176 label "Deck pile".
