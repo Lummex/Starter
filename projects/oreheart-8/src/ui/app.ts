@@ -1737,6 +1737,19 @@ export class App {
     document.addEventListener('pointerdown', (e) => {
       this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: true };
       const onHand = !!(e.target as Element)?.closest?.('.hand, .hand-card, .hand-scroll');
+      // a press on the enlarged (hovered) card grabs that card; with none up, the card whose fan slot holds the pointer wins over a neighbour
+      if (e.pointerType === 'mouse' && e.button === 0 && !this.pick && !this.dialogs.length && onHand) {
+        const pop = this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)') as El | null;
+        const tgt = (e.target as Element)?.closest?.('.hand-card:not(.popclone)') as El | null;
+        let want: El | null = null;
+        // the same answer the hover pop uses (fixed fan slots), so what rises is what is grabbed
+        want = this.hitCard(e.clientX, e.clientY);
+        if (pop && !want) { const b = pop.getBoundingClientRect(); if (e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom) want = pop; }
+        if (want && tgt && tgt !== want && !tgt.classList.contains('offhand')) {
+          const hc = this.game.state?.players?.player?.hand?.find((k: any) => k.uid === want!.dataset.uid);
+          if (hc) { e.stopPropagation(); e.preventDefault(); this.cardPointerDown(e, hc, want); return; }
+        }
+      }
       // tap-to-place: a tucked hand card resting over a lit square must not swallow the tap on that square
       if (onHand && this.pick && !this.pick.unit && e.pointerType === 'mouse' && e.button === 0) {
         const cell = this.cellAt(e.clientX, e.clientY);
@@ -1869,8 +1882,10 @@ export class App {
     // fixed hover slots (hand px), side by side with no gaps: neighbours split at the midpoint between their visible centres; the end cards also own their outer half
     for (let k = 0; k < slotEl.length; k++) {
       // each card owns the strip of itself that stays visible (later cards overlap it): from its own left edge to the next card's
-      const l = slotCx[k] - cw / 2;
-      const r = k === slotEl.length - 1 ? slotCx[k] + cw / 2 : slotCx[k + 1] - cw / 2;
+      // a tilted card on the right leans over its left neighbour at the top: it also owns that wedge (30 % of the lean)
+      const lean = (j: number) => { const th = (parseFloat(slotEl[j].dataset.fanAngle || '0') * Math.PI) / 180; return th > 0 ? 0.3 * (ch / 2) * Math.sin(th) : 0; };
+      const l = slotCx[k] - cw / 2 - lean(k);
+      const r = k === slotEl.length - 1 ? slotCx[k] + cw / 2 : slotCx[k + 1] - cw / 2 - lean(k + 1);
       (slotEl[k] as any)._slot = { l, r, y: slotY[k] + slotDy[k], cx: slotCx[k] };
       (slotEl[k] as any)._slotC = { l: k === 0 ? slotCx[0] - cw / 2 : (slotCx[k - 1] + slotCx[k]) / 2, r: k === slotEl.length - 1 ? slotCx[k] + cw / 2 : (slotCx[k] + slotCx[k + 1]) / 2, y: slotY[k] + slotDy[k], cx: slotCx[k] };
     }
