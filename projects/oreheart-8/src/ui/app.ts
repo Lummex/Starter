@@ -1610,23 +1610,27 @@ export class App {
   /** Which fan card (by its resting box, not its popped one) the point is over. */
   hitCard(x: number, y: number): El | null {
     if (this.noHand) return null;
-    // the enlarged (popped) card is part of its hover zone: moving up onto it to grab it never retracts it
-    const pop = this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)') as El | null;
-    // a card's own resting box wins (so moving across the fan switches cards even under the enlarged one) ...
-    let hit: El | null = null;
-    if (!pop) {
-      // nothing popped yet: the card the pointer really sits over (the topmost one), else the nearest fan slot
-      const under = document.elementFromPoint(x, y)?.closest?.('.hand-card:not(.popclone):not(.offhand)') as El | null;
-      if (under && this.r?.hand?.contains(under)) return under;
-      for (const b of this.handBoxes(true)) if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) hit = b.c;
-      return hit;
+    // one fixed slot per fan card, split at the midpoints between card centres (the cards overlap by 0.26,
+    // so the topmost element under the pointer is not a reliable answer); the slots never move when a card pops
+    const bs = this.handBoxes(true);
+    // 1. the top-centre of a card is that card's (the cards overlap by 0.26, a neighbour lies over its middle)
+    for (const b of bs) {
+      const cw = b.c.offsetWidth * (b.sx || 1);
+      if (Math.abs(x - b.cx) <= cw * 0.06 && y >= b.t - 6 && y <= b.t + b.h * 0.14) return b.c;
     }
-    for (const b of this.handBoxes()) if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) hit = b.c;
-    if (hit) return hit;
-    // ... and the area of the enlarged card above the fan stays part of its zone
-    // owner (Oct 25): moving off the fan (even onto the enlarged card) slides the hand back down
-    void pop;
-    return null;
+    // 2. with a card up, its enlarged copy lies over the pointer: use the fixed resting strips instead
+    if (this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)')) {
+      let h2: El | null = null;
+      for (const b of this.handBoxes()) if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) h2 = b.c;
+      return h2;
+    }
+    // 2b. the card really under the pointer (its visible strip)
+    const under = document.elementFromPoint(x, y)?.closest?.('.hand-card:not(.popclone):not(.offhand)') as El | null;
+    if (under && this.r?.hand?.contains(under)) return under;
+    // 3. else the nearest fan slot
+    let hit: El | null = null;
+    for (const b of bs) if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) hit = b.c;
+    return hit;
   }
   noHand = false;
   popPending: { el: El | null; at: number } | null = null;
@@ -1653,7 +1657,7 @@ export class App {
   lastPop: { uid: string; l: number; t: number; r: number; b: number; at: number } | null = null;
   /** Hover boxes (owner fix Oct 28, no flutter): one fixed slot per fan card, taken from the resting layout (layoutHand),
    *  side by side with no overlap. A card popping out, or its neighbours moving aside, never moves these boxes. */
-  handBoxes(centred = false): { c: El; l: number; t: number; w: number; h: number }[] {
+  handBoxes(centred = false): { c: El; l: number; t: number; w: number; h: number; cx: number; sx: number }[] {
     const hand = this.r?.hand as El;
     if (!hand) return [];
     const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')].filter((c) => !c.classList.contains('offhand')) as El[];
@@ -1662,18 +1666,18 @@ export class App {
     const hb = hand.getBoundingClientRect();
     const sx = hand.offsetWidth ? hb.width / hand.offsetWidth : 1, sy = hand.offsetHeight ? hb.height / hand.offsetHeight : sx;
     for (const c of cards) {
-      const slot = (c as any)[centred ? '_slotC' : '_slot'] as { l: number; r: number; y: number } | undefined;
+      const slot = (c as any)[centred ? '_slotC' : '_slot'] as { l: number; r: number; y: number; cx?: number } | undefined;
       if (slot) {
         const t0 = hb.top + (c.offsetTop + slot.y) * sy;
         const l = Math.max(0, hb.left + slot.l * sx), t = t0, rr = Math.min(vw, hb.left + slot.r * sx), bb = Math.min(vh, t0 + c.offsetHeight * sy);
-        if (rr > l && bb > t) out.push({ c, l, t, w: rr - l, h: bb - t });
+        if (rr > l && bb > t) out.push({ c, l, t, w: rr - l, h: bb - t, cx: hb.left + (slot.cx ?? slot.l) * sx, sx });
         continue;
       }
       // the resting box: a popped card is measured by its placeholder (the fan spot it left)
       const src = ((c as any)._ph as El | undefined)?.isConnected ? (c as any)._ph as El : c;
       const r = src.getBoundingClientRect();
       const l = Math.max(0, r.left), t = r.top, rr = Math.min(vw, r.right), bb = Math.min(vh, r.bottom);
-      if (rr > l && bb > t) out.push({ c, l, t, w: rr - l, h: bb - t });
+      if (rr > l && bb > t) out.push({ c, l, t, w: rr - l, h: bb - t, cx: (l + rr) / 2, sx });
     }
     return out;
   }
@@ -1862,8 +1866,8 @@ export class App {
       // each card owns the strip of itself that stays visible (later cards overlap it): from its own left edge to the next card's
       const l = slotCx[k] - cw / 2;
       const r = k === slotEl.length - 1 ? slotCx[k] + cw / 2 : slotCx[k + 1] - cw / 2;
-      (slotEl[k] as any)._slot = { l, r, y: slotY[k] + slotDy[k] };
-      (slotEl[k] as any)._slotC = { l: k === 0 ? slotCx[0] - cw / 2 : (slotCx[k - 1] + slotCx[k]) / 2, r: k === slotEl.length - 1 ? slotCx[k] + cw / 2 : (slotCx[k] + slotCx[k + 1]) / 2, y: slotY[k] + slotDy[k] };
+      (slotEl[k] as any)._slot = { l, r, y: slotY[k] + slotDy[k], cx: slotCx[k] };
+      (slotEl[k] as any)._slotC = { l: k === 0 ? slotCx[0] - cw / 2 : (slotCx[k - 1] + slotCx[k]) / 2, r: k === slotEl.length - 1 ? slotCx[k] + cw / 2 : (slotCx[k] + slotCx[k + 1]) / 2, y: slotY[k] + slotDy[k], cx: slotCx[k] };
     }
     if (moved) for (const c of cards) if (c.parentElement === hand) hand.append(c);
     if (hand.lastElementChild !== spill) hand.append(spill);

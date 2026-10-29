@@ -396,6 +396,7 @@ function makeBallRig(ch: THREE.Object3D, root: THREE.Group, rec: { part: THREE.O
         toWorldDir(dirA, _t);
         if (t >= 0.5 && !detached) {
           center(pos); detach(); state = 'flying'; plog.push('fly');
+          { const hr = Math.hypot(pos.x, pos.z); if (hr < 0.2) { const dx = sx * 0.35, dz = 1.0, dl = Math.hypot(dx, dz); const ex = hr > 1e-4 ? pos.x : dx / dl * 0.01, ez = hr > 1e-4 ? pos.z : dz / dl * 0.01; const el = Math.hypot(ex, ez); pos.x = ex / el * 0.2; pos.z = Math.abs(ez / el * 0.2) < 0.12 ? 0.12 : ez / el * 0.2; } } // released clear of the body (never through it)
           const T = 0.9, g = 7, ty = r + 0.002;
           vel.set((sx * 0.35 - pos.x) / T, (ty - pos.y + 0.5 * g * T * T) / T, (1.0 - pos.z) / T); // lands well in front of the body, dead (0 bounces)
         }
