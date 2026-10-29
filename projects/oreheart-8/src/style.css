@@ -1808,3 +1808,9 @@ html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!im
 /* text colour never fades (computed colour is always plain white during hover transitions) */
 .btn,.btn *,.fs-btn{transition-property:transform,text-shadow,background,opacity,filter!important}
 
+
+/* Owner fix (Ken, Oct 29): no flow counters ("+0 / +0") above the crystal mines; kept in the page, hidden */
+.match .mine-flow{visibility:hidden!important}
+/* Owner fix (Ken, Oct 29): no emblem above an owned mine (kept in the page, hidden); the area around mines stays clear for grabbing units */
+.site-mark .mine-emblem{visibility:hidden!important}
+.site-mark .pickaxe,.site-mark .pk-img,.site-mark .mine-emblem{pointer-events:none!important}
