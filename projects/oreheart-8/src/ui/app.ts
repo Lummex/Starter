@@ -1619,9 +1619,10 @@ export class App {
     // so the topmost element under the pointer is not a reliable answer); the slots never move when a card pops
     const bs = this.handBoxes(true);
     // 1. the top-centre of a card is that card's (the cards overlap by 0.26, a neighbour lies over its middle)
-    for (const b of bs) {
+    // (the first card has no neighbour on its left, so it keeps the wider aim; the others use a tight aim so a pointer on a visible strip stays with that strip's card)
+    for (const [bi, b] of bs.entries()) {
       const cw = b.c.offsetWidth * (b.sx || 1);
-      if (Math.abs(x - (b.cxt ?? b.cx)) <= cw * 0.06 && y >= b.t - 6 && y <= b.t + b.h * 0.14) return b.c;
+      if (Math.abs(x - (b.cxt ?? b.cx)) <= cw * (bi === 0 ? 0.06 : 0.028) && y >= b.t - 6 && y <= b.t + b.h * 0.14) return b.c;
     }
     // 2. with a card up, its enlarged copy lies over the pointer: use the fixed resting strips instead
     if (this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)')) {
