@@ -683,6 +683,7 @@ const _embV = new THREE.Vector3();
       if (s.controller) {
         cr.sprite = symbolSprite(FACTIONS[st.players[s.controller].faction].symbol, 0.5);
         cr.sprite.position.y = 1.85;
+        cr.sprite.visible = false; // Owner fix (Ken, Oct 29): no faction symbol (skull, gear, hammer) above an owned mine; the mine's colour shows the owner
         cr.art.group.add(cr.sprite);
       }
     });
