@@ -187,3 +187,10 @@
 - GitHub upload: wait ~3 s after file_upload before Commit, and set the summary through #commit-summary-input with JS.
 - 2026-10-29 Forge job: factory fixes committed + R26 triage. Report: factory-design/studio/reports/2026-10-29-anvil-factory-fixes-and-r26-triage.md.
 - Learned: two Anvil sessions committed notes minutes apart, and my upload wiped the other's section (fixed in the next commit). Re-check main IMMEDIATELY before clicking Commit on a shared notes file, not just before the upload starts.
+
+## Learned Oct 29 (running the hidden checks on Ken's PC)
+- You can run chosen acceptance checks locally in ~20 s. git archive --prefix=projects/oreheart-8/ origin/factory/issue-8:projects/oreheart-8 | tar -x (the full-tree archive fails on Windows because of an odd file name in references/). Then npm ci + npm run build with the scratchpad Node 20, npm install in a copy of factory/, and serve dist with factory/scripts/serve.mjs.
+- Run Playwright with a local config spreading playwright.config.mjs plus use.channel 'chrome' (Ken's Chrome, no browser download) and retries 0. The test folder must sit INSIDE the factory folder or '@playwright/test' isn't found. Use --grep "AC58|AC135|...".
+- In 3D mode the DOM site marks sit UNDER the board canvas: elementFromPoint on mine badges hits the canvas or the badge's own .site-mark button. Cover checks must ignore those.
+- Always run a check both ways: the old version must fail and the new one pass, plus one negative test that proves it can still fail.
+- 2026-10-29 Forge job: 14 stale checks updated, handed to Forge (anvil-check-updates/ in shared notes). Report: factory-design/studio/reports/2026-10-29-anvil-stale-check-updates.md.
