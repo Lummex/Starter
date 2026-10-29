@@ -3318,13 +3318,14 @@ test('AC106: zoom in, drag-to-attack still works, Re-center resets', async ({ pa
 
 
 test('AC108: title screen uses the painted cavern background with the logo, without errors', async ({ page }) => {
+  // Owner change (Forge, Oct 30): Ken's new front menu picture is /art/menu-front-oct29.webp (Oct 29), so the picture may be the old cavern or the new menu-front one.
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await openMenu(page);
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' }).getByRole('img', { name: 'Oreheart' })).toBeVisible();
   const usesCavern = await page.evaluate(() =>
-    [...document.querySelectorAll('img')].some((i) => /cavern/.test(i.src)) ||
-    [...document.querySelectorAll('*')].some((e) => /cavern/.test(getComputedStyle(e).backgroundImage)));
+    [...document.querySelectorAll('img')].some((i) => /cavern|menu-front/.test(i.src)) ||
+    [...document.querySelectorAll('*')].some((e) => /cavern|menu-front/.test(getComputedStyle(e).backgroundImage)));
   expect(usesCavern).toBe(true);
   expect(errors).toEqual([]);
 });
