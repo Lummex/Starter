@@ -1077,6 +1077,7 @@ const _embV = new THREE.Vector3();
   }
   let lastRender = 0;
   let lastDur = 0;
+  let prevRaf = 0, frameGap = 0;
   let lastFrame = { calls: 0, tris: 0 };
   let frames = 0;
   let raf = 0;
@@ -1087,7 +1088,9 @@ const _embV = new THREE.Vector3();
     if (disposed) return;
     raf = requestAnimationFrame(frame);
     const now = performance.now();
-    if (testMode && now - lastRender < Math.max(300, lastDur * 6)) return; // automated runs use software GL: keep the page responsive
+    // software GL cost shows up as slow page frames (the GPU work is not in lastDur): back off while the page is starved
+    if (testMode) { if (prevRaf) frameGap = frameGap * 0.7 + Math.min(2000, now - prevRaf) * 0.3; prevRaf = now; }
+    if (testMode && now - lastRender < Math.max(300, lastDur * 6, frameGap > 100 ? frameGap * 8 : 0)) return; // automated runs use software GL: keep the page responsive
     lastRender = now;
     const dt0 = Math.min(0.1, (now - (frameLast || now)) / 1000); frameLast = now;
     for (const fx of mineFx) fx.update(now / 1000);

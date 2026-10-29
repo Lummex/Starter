@@ -1799,3 +1799,7 @@ html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!im
 .match .tip.tip-small{max-width:none;padding:3px 8px}
 .tip.tip-small .tip-bar{margin:0}
 .tip.tip-small .tip-text,.tip.tip-small .tip-skip{display:none}
+/* test mode: no hand animation, so measurements never land mid-transition */
+.test .match .hand,.test .match .hand .hand-card,.test .match .hand .hand-card.popped,.test .match .hand .hand-card.popped:not(.popclone){transition:none!important}
+/* Round 15: all text outside the cards is plain white (Settings screen-mode button included) */
+.fs-btn,.fs-btn *,.fs-na{color:#fff!important}

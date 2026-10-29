@@ -1614,6 +1614,13 @@ export class App {
     const pop = this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)') as El | null;
     // a card's own resting box wins (so moving across the fan switches cards even under the enlarged one) ...
     let hit: El | null = null;
+    if (!pop) {
+      // nothing popped yet: the card the pointer really sits over (the topmost one), else the nearest fan slot
+      const under = document.elementFromPoint(x, y)?.closest?.('.hand-card:not(.popclone):not(.offhand)') as El | null;
+      if (under && this.r?.hand?.contains(under)) return under;
+      for (const b of this.handBoxes(true)) if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) hit = b.c;
+      return hit;
+    }
     for (const b of this.handBoxes()) if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) hit = b.c;
     if (hit) return hit;
     // ... and the area of the enlarged card above the fan stays part of its zone
@@ -1630,6 +1637,13 @@ export class App {
     if (hit === cur) { this.popPending = null; return undefined; }
     const b = this.handBoxes().find((q) => q.c === cur), DZ = 10;
     if (b && x >= b.l - DZ && x <= b.l + b.w + DZ && y >= b.t - DZ && y <= b.t + b.h + DZ) { this.popPending = null; return undefined; }
+    if (!hit) {
+      // clearly away from the hand (well outside every slot and the enlarged card): lower at once, no hold
+      const hb = this.getHandHoverBox(), cr = cur.getBoundingClientRect(), M = 36;
+      const l = Math.min(cr.left, hb ? hb.left : cr.left), t = Math.min(cr.top, hb ? hb.top : cr.top);
+      const r = Math.max(cr.right, hb ? hb.left + hb.width : cr.right), bt = Math.max(cr.bottom, hb ? hb.top + hb.height : cr.bottom);
+      if (x < l - M || x > r + M || y < t - M || y > bt + M) { this.popPending = null; return null; }
+    }
     const now = performance.now();
     if (!this.popPending || this.popPending.el !== hit) { this.popPending = { el: hit, at: now }; return undefined; }
     if (now - this.popPending.at < 90) return undefined;
@@ -1639,7 +1653,7 @@ export class App {
   lastPop: { uid: string; l: number; t: number; r: number; b: number; at: number } | null = null;
   /** Hover boxes (owner fix Oct 28, no flutter): one fixed slot per fan card, taken from the resting layout (layoutHand),
    *  side by side with no overlap. A card popping out, or its neighbours moving aside, never moves these boxes. */
-  handBoxes(): { c: El; l: number; t: number; w: number; h: number }[] {
+  handBoxes(centred = false): { c: El; l: number; t: number; w: number; h: number }[] {
     const hand = this.r?.hand as El;
     if (!hand) return [];
     const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')].filter((c) => !c.classList.contains('offhand')) as El[];
@@ -1648,7 +1662,7 @@ export class App {
     const hb = hand.getBoundingClientRect();
     const sx = hand.offsetWidth ? hb.width / hand.offsetWidth : 1, sy = hand.offsetHeight ? hb.height / hand.offsetHeight : sx;
     for (const c of cards) {
-      const slot = (c as any)._slot as { l: number; r: number; y: number } | undefined;
+      const slot = (c as any)[centred ? '_slotC' : '_slot'] as { l: number; r: number; y: number } | undefined;
       if (slot) {
         const t0 = hb.top + (c.offsetTop + slot.y) * sy;
         const l = Math.max(0, hb.left + slot.l * sx), t = t0, rr = Math.min(vw, hb.left + slot.r * sx), bb = Math.min(vh, t0 + c.offsetHeight * sy);
@@ -1845,9 +1859,11 @@ export class App {
     });
     // fixed hover slots (hand px), side by side with no gaps: neighbours split at the midpoint between their visible centres; the end cards also own their outer half
     for (let k = 0; k < slotEl.length; k++) {
-      const l = k === 0 ? slotCx[0] - cw / 2 : (slotCx[k - 1] + slotCx[k]) / 2;
-      const r = k === slotEl.length - 1 ? slotCx[k] + cw / 2 : (slotCx[k] + slotCx[k + 1]) / 2;
+      // each card owns the strip of itself that stays visible (later cards overlap it): from its own left edge to the next card's
+      const l = slotCx[k] - cw / 2;
+      const r = k === slotEl.length - 1 ? slotCx[k] + cw / 2 : slotCx[k + 1] - cw / 2;
       (slotEl[k] as any)._slot = { l, r, y: slotY[k] + slotDy[k] };
+      (slotEl[k] as any)._slotC = { l: k === 0 ? slotCx[0] - cw / 2 : (slotCx[k - 1] + slotCx[k]) / 2, r: k === slotEl.length - 1 ? slotCx[k] + cw / 2 : (slotCx[k] + slotCx[k + 1]) / 2, y: slotY[k] + slotDy[k] };
     }
     if (moved) for (const c of cards) if (c.parentElement === hand) hand.append(c);
     if (hand.lastElementChild !== spill) hand.append(spill);
@@ -2180,7 +2196,8 @@ export class App {
 
   /** R26.A6: Done ends the phase silently after any move; with none made (and moves left) a drop-up asks first. */
   dropUp: El | null = null;
-  closeDropUp() { this.dropUp?.remove(); this.dropUp = null; }
+  dropOff: ((e: Event) => void) | null = null;
+  closeDropUp() { this.dropUp?.remove(); this.dropUp = null; if (this.dropOff) { document.removeEventListener('pointerdown', this.dropOff, true); this.dropOff = null; } }
   pressDone() {
     const st = this.game.state;
     if (!st) return;
@@ -2197,6 +2214,7 @@ export class App {
       document.body.append(up);
       this.dropUp = up;
       const off = (e: Event) => { if (!up.contains(e.target as Node) && e.target !== db && !db.contains(e.target as Node)) { this.closeDropUp(); document.removeEventListener('pointerdown', off, true); } };
+      this.dropOff = off;
       document.addEventListener('pointerdown', off, true);
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.closeDropUp(); }, { once: true });
     } else this.game.act({ type: 'done' });
