@@ -132,3 +132,14 @@ character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view or
 - The Browser javascript tool can't see the page's top-level `const`s (CB, LIB); expose test state on window (e.g. window.__store) instead.
 - The room re-renders the Pose editor on every db snapshot, so refs from `find` go stale fast: find + click in the same batch.
 - Python heredocs with JS regexes inside `py -c "..."` break escapes: write files with the Write tool.
+
+## Animation slots (Oct 29, job from Forge)
+- Model Editor room: config-driven slots (`SLOT_CONFIG`), shared `animations` library, `library.animSlots` (one id per slot, "none" or []), `animRequests` (status wanted). Studio v26, room ?v=23. Schema agreed between Spring and Forge: see reports/2026-10-29-wright-animation-slots.md.
+- Schemas crossed with Spring's once: when a parallel agent fills the same data, wait for Forge's approved schema before writing data; building the UI first is fine.
+- Avoid `prompt()` in room pages (sandboxed iframe): use inline boxes.
+- Oct 29: 35-slot config from Ledger's proposal; slots that don't fit a card auto-show "no animation". Browser-pane JS can't reach page functions either (isolated world), only DOM and window props.
+
+## Card Editor backgrounds (Oct 29, job from Forge)
+- Card Editor room: faction is the global `FACT`; every faction/type change calls `renderPbar()`, so `setFacBg()` hooks there and sets `#wrap` background (Studio asset /_blob/<id>, with a dark overlay).
+- Faction colours (Card Format): dwarves blue, gnomes purple, goblins green. CLAUDE.md's older "Gnomes (blue), Dwarves (purple)" line is the other way round; trust format.json.
+- Local test of /_blob assets: copy the files to test/_blob/<id> (no extension) and serve the folder.
