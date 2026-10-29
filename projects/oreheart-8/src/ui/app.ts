@@ -799,6 +799,11 @@ export class App {
     }
     d = this.dialog(c.name, kids);
     d.el.classList.add('cardview');
+    { // Gauge's check (Oct 30): Escape closes the big card view wherever the focus is (no Close button: AC250, round 10 rule; outside tap closes)
+      const close0 = d.close, esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { ev.stopPropagation(); d.close(); } };
+      d.close = () => { document.removeEventListener('keydown', esc, true); close0(); };
+      document.addEventListener('keydown', esc, true);
+    }
     if (hc) this.addCardNav(d, hc);
     return d;
   }
