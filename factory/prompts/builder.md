@@ -34,3 +34,5 @@ If `{{DATA_DIR}}/WORK.md` exists, the planner has split this round's work into a
 4. Write `{{APP_DIR}}/BUILD_NOTES.md`: a short list of what you built and any spec items you could not fully satisfy.
 
 Do not create or modify anything under `{{DATA_DIR}}` except reading SPEC.md. Do not write your own acceptance tests in `{{DATA_DIR}}`.
+
+The acceptance tests are hidden on purpose, and git is switched off while you work (the factory makes the commits). Do not try to find or run the tests anywhere else (old commits, other folders, GitHub or the internet); build from SPEC.md and the inspector's results.
