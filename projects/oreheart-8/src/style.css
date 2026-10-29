@@ -422,7 +422,7 @@ h2.section,.dialog h2,.screen h1.section{color:var(--gold2);letter-spacing:.06em
 
 /* main menu (menu screen.jpg) */
 .menu-screen{justify-content:center;align-items:center;overflow:hidden;background:#07060a;display:grid;grid-template-columns:1.15fr 1fr;gap:6px 14px;padding:10px 24px}
-.menu-bg{position:absolute;inset:0;background:url(/art/menu-cavern.webp) center/cover no-repeat;opacity:.95;z-index:0}
+.menu-bg{position:absolute;inset:0;background:url(/art/menu-front-oct29.webp) center/cover no-repeat;opacity:.95;z-index:0}
 .menu-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,#000a 0,#0000 70%)}
 .menu-head,.menu-grid{position:relative;z-index:1}
 .menu-head{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
@@ -535,7 +535,7 @@ h2.section,.dialog h2,.screen h1.section{color:var(--gold2);letter-spacing:.06em
 body{display:flex;align-items:center;justify-content:center}
 html[data-display=phone] #app{width:min(100vw,calc(100dvh * 19.5 / 9));height:min(100dvh,calc(100vw * 9 / 19.5));flex:none}
 html[data-display=pc] #app{width:min(100vw,calc(100dvh * 16 / 9));height:min(100dvh,calc(100vw * 9 / 16));flex:none}
-html[data-display=phone],html[data-display=pc]{background:#05040a url(/art/menu-cavern.webp) center/cover}
+html[data-display=phone],html[data-display=pc]{background:#05040a url(/art/menu-front-oct29.webp) center/cover}
 html[data-display=phone] body,html[data-display=pc] body{background:transparent}
 .display-mode{border:0;margin:0;padding:0;display:flex;gap:10px;align-items:center;justify-content:center;color:var(--gold2);font-family:"Alegreya SC",serif}
 .display-mode legend{float:left;margin-right:8px;padding:0}
@@ -866,7 +866,7 @@ html,body{overflow:hidden!important;width:100%;height:100%}
 .btn.small,.btn.scroll{border-radius:0!important}
 
 /* ---- R5a.7: Choose Your Commander ---- */
-.screen.setup{background:linear-gradient(#0b0a10aa,#0b0a10aa),url(/art/menu-cavern.webp) center/cover no-repeat,#0d0b12!important;justify-content:space-evenly;gap:0;padding:6px 3vw;overflow:hidden}
+.screen.setup{background:linear-gradient(#0b0a10aa,#0b0a10aa),url(/art/menu-front-oct29.webp) center/cover no-repeat,#0d0b12!important;justify-content:space-evenly;gap:0;padding:6px 3vw;overflow:hidden}
 .screen.setup h1.section{font-size:clamp(1.3rem,6vh,3.4rem);margin:0;color:var(--gold-bright)}
 .screen.setup .cmds{position:relative;max-width:none;width:94%;justify-content:space-evenly;gap:0;align-items:center;padding:1.4vh 0}
 .cmd-wall{position:absolute;inset:0 -1%;z-index:0;background:#0009;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:14px;pointer-events:none}
@@ -1471,7 +1471,7 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .db-stage .db-decksbox .db-deck{height:calc(100% - 4px)!important}
 
 /* Round 11: "Click to begin" gate */
-.begin-gate{background:#05040a url('/art/menu-cavern.webp') center/cover no-repeat;gap:6vh;overflow:hidden}
+.begin-gate{background:#05040a url('/art/menu-front-oct29.webp') center/cover no-repeat;gap:6vh;overflow:hidden}
 .begin-logo{width:min(60vw,820px);max-height:45vh;object-fit:contain;filter:drop-shadow(0 0 24px #000)}
 .begin-btn{background:none;border:0;color:#ffffff;font-family:'Alegreya SC',Georgia,serif;font-style:italic;font-weight:700;font-size:max(22px,4.4vh);cursor:pointer;text-shadow:0 .12em 0 #000c;animation:begin-blink 1.6s ease-in-out infinite}
 .begin-btn:hover,.begin-btn:focus-visible{color:#FFD700;text-shadow:0 0 .5em #FFD700;outline:0}
@@ -1741,7 +1741,7 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 
 /* owner (Oct 25): on a computer, Auto keeps the 16:9 shape (letterbox) so a browser window never squashes the game */
 html[data-desk][data-display=auto] #app{width:min(100vw,calc(100dvh * 16 / 9));height:min(100dvh,calc(100vw * 9 / 16));flex:none}
-html[data-desk][data-display=auto]{background:#05040a url(/art/menu-cavern.webp) center/cover}
+html[data-desk][data-display=auto]{background:#05040a url(/art/menu-front-oct29.webp) center/cover}
 html[data-desk][data-display=auto] body{background:transparent}
 
 /* Round 23: after a grab the rest of the hand sits a little lower than at rest until it is hovered again */
@@ -1832,3 +1832,6 @@ body.test .speech{animation-name:ohSayFlat}
 .token .tk-order-mark{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 3px;border-radius:999px;background:#0d0c11e6;border:1.5px solid #FFD700;color:#FFD700;font-size:13px;font-weight:800;line-height:1;box-shadow:0 1px 3px #000}
 .token .tk-cancel{pointer-events:auto;touch-action:manipulation;cursor:pointer;width:28px;height:28px;min-width:28px;padding:0;border-radius:50%;border:2px solid #FFD700;background:#120d08;color:#FFD700;font-size:15px;font-weight:900;line-height:1;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 6px #ffd70088,0 2px 4px #000}
 .token .tk-cancel:hover,.token .tk-cancel:focus-visible{background:#FFD700;color:#120d08;outline:0}
+
+/* Owner art (Ken, Oct 29): the new front menu picture is bright behind the buttons; a soft dark glow keeps the lettering readable (the picture itself is untouched) */
+.mb-root[data-menu="main"] .mb-dim::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 22% 40% at 50% 57%,rgba(0,0,0,.42) 0,rgba(0,0,0,.22) 55%,transparent 100%)}
