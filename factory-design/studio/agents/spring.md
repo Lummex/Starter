@@ -86,3 +86,11 @@ For several files: open any github.com page, `fetch("https://api.github.com/repo
 - Raw pages (raw.githubusercontent.com) can serve an OLD copy for minutes after a commit; to verify an upload use
   api.github.com contents?ref=main with Accept raw (cache: no-store) and compare sha256.
 - Chrome downloads with an existing name get " (1)", " (2)"… Stage the newest one (check mtimeMs), not the bare name.
+
+## Blender direct (Oct 29, Forge decision)
+- Worker stopped 2026-10-29 01:04Z via the STOP file (Stop-Blender-Worker.cmd). Installed copy kept in %LOCALAPPDATA%\OreheartBlenderWorker as backup; delete nothing. STOP file still there.
+- Blender exe: C:\Users\kentu\Downloads\blender-5.2.3-windows-x64\blender.exe. Run `blender --background --factory-startup --python <script>` from my own session.
+- Same safety: worker's blender_ops + glbtool export validation + my spring-check-clip.py; never overwrite a model (new <card>-vN files); never use port 9876 (Ken's own Blender window, PID 51460 at the time, listens on 127.0.0.1:9876; leave it alone).
+- Helpers (max 3) can each do one character in parallel, each in its own work folder.
+- At switch time: nothing queued or running on blender-queue; all 60 jobs finished (sig-b jobs = awaiting_review).
+- 2026-10-29 – Forge job: compared keeping the worker vs Blender direct; Forge chose direct. Stopped the worker with the STOP file, added Blender direct to the HANDBOOK and team-lessons.
