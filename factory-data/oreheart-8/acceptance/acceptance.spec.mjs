@@ -2193,7 +2193,7 @@ async function mineAllSetup(page) {
       { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 6 }, // C: will move first
       { cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 5 }, // D: Fighter, never included
       { cardId: 'goblin-scrounger', owner: 'player', row: 7, col: 9 }, // E: not next to a mine
-      { cardId: 'shard-guzzler', owner: 'player', row: 5, col: 7 }, // F: Crystal Eater next to M3
+      { cardId: 'shard-guzzler', owner: 'player', row: 5, col: 7 }, // F: next to M3; Owner change (Oct 22, 43286e36): Shard Guzzler became Goblin Rocket Rider, a Fighter, so it never mines
     ],
   } });
 }
@@ -2206,12 +2206,12 @@ test('AC58: tapping a mine mines with exactly the ready Miners next to it', asyn
   await done(page);
   await expect(siteBtn(page, M1)).toHaveAttribute('data-ready-miners', '2'); // A, B
   await expect(siteBtn(page, M2)).toHaveAttribute('data-ready-miners', '1'); // B (D is a Fighter)
-  await expect(siteBtn(page, M3)).toHaveAttribute('data-ready-miners', '2'); // C, F
+  await expect(siteBtn(page, M3)).toHaveAttribute('data-ready-miners', '1'); // C only; Owner change (Oct 22, 43286e36): F (Rocket Rider) is a Fighter
   expect((await act(page, { type: 'mineAll' })).ok).toBe(false);
   const mineAts = (await legal(page)).filter((a) => a.type === 'mineAt');
   expect(mineAts.length).toBe(3);
   expect((await act(page, { type: 'move', creatureUid: at(s, 3, 6).uid, row: 2, col: 6 })).ok).toBe(true);
-  await expect(siteBtn(page, M3)).toHaveAttribute('data-ready-miners', '1');
+  await expect(siteBtn(page, M3)).toHaveAttribute('data-ready-miners', '0'); // Owner change (Oct 22, 43286e36): C moved away and F is a Fighter, so nobody is ready at M3
   await siteBtn(page, M1).click();
   await expect.poll(async () => at(await getState(page), 3, 1).hasMined).toBe(true);
   s = await getState(page);
@@ -2219,14 +2219,16 @@ test('AC58: tapping a mine mines with exactly the ready Miners next to it', asyn
   expect(at(s, 5, 3).minedMine).toMatchObject(M1); // the tapped mine
   expect(at(s, 5, 7).hasMined).toBe(false);
   await expect(siteBtn(page, M2)).toHaveAttribute('data-ready-miners', '0');
+  // Owner change (Oct 22, 43286e36): F is a Fighter, so a tap on M3 (nobody ready) opens the mine info instead of mining
   await siteBtn(page, M3).click();
-  await expect.poll(async () => at(await getState(page), 5, 7).hasMined).toBe(true);
+  await expect(page.getByRole('dialog', { name: 'Crystal site' })).toBeVisible();
+  await page.keyboard.press('Escape');
   s = await getState(page);
-  expect(at(s, 5, 7).minedMine).toMatchObject(M3);
+  expect(at(s, 5, 7).hasMined).toBe(false); // Fighter (Rocket Rider)
   expect(at(s, 3, 5).hasMined).toBe(false); // Fighter
   expect(at(s, 7, 9).hasMined).toBe(false); // not next to a mine
   expect(at(s, 2, 6).hasMined).toBe(false); // already moved
-  expect(s.players.player.flow).toBe(6); // M1 now 2 vs 2 = neutral: 2 + 2, plus F 2
+  expect(s.players.player.flow).toBe(4); // M1 now 2 vs 2 = neutral: 2 + 2; Owner change (Oct 22, 43286e36): F is a Fighter and adds nothing
   expect((await legal(page)).some((a) => a.type === 'mineAt')).toBe(false);
 });
 
@@ -2235,8 +2237,9 @@ test('AC58: mineAt action matches the tap; hovering a mine only shows its info',
   await done(page);
   await siteBtn(page, M1).hover();
   const info = page.getByRole('dialog', { name: 'Crystal site' });
-  await expect(info).toBeVisible();
-  await expect(info).toContainText('Controlled by: Enemy');
+  // Owner change (Oct 28, 2f49dd3): hovering a mine shows NO info pop-up any more (tap / hold still opens it, checked below)
+  await page.waitForTimeout(700);
+  await expect(info).toHaveCount(0);
   await page.mouse.move(5, 200);
   s = await getState(page);
   expect(s.board.creatures.some((c) => c.hasMined)).toBe(false);
@@ -2245,9 +2248,14 @@ test('AC58: mineAt action matches the tap; hovering a mine only shows its info',
   expect((await getState(page)).board.creatures.some((c) => c.hasMined)).toBe(false);
   expect((await act(page, { type: 'mineAt', row: M3.row, col: M3.col })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 3, 6).hasMined && at(s, 5, 7).hasMined).toBe(true);
+  expect(at(s, 3, 6).hasMined).toBe(true);
+  expect(at(s, 5, 7).hasMined).toBe(false); // Owner change (Oct 22, 43286e36): Rocket Rider is a Fighter
   expect(at(s, 3, 5).hasMined).toBe(false);
   expect((await act(page, { type: 'mineAt', row: M3.row, col: M3.col })).ok).toBe(false); // nobody left there
+  // Owner change (Oct 28, 2f49dd3): a tap on a mine with nobody ready still opens its info
+  await siteBtn(page, M3).click();
+  await expect(info).toBeVisible();
+  await expect(info).toContainText('Controlled by:');
 });
 
 test.describe('hand pop-out at 2x', () => {
@@ -3902,8 +3910,11 @@ async function letteringProblems(page) {
       if (r.width === 0 || r.height === 0 || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
       const cs = getComputedStyle(el);
       const t = n.textContent.trim().slice(0, 30);
+      // Owner change (Oct 24, c874f715 owner-layout.json; Oct 18, e0d6b3fc menus.json): text the owner marks italic:false (e.g. deck counts, the Play button) is upright on purpose: the HUD sets --os/font-style normal (owner-hud.ts), menu pieces set font-style normal inline (menus.ts)
+      let ownerUpright = false;
+      for (let a = el; a && a !== document.body; a = a.parentElement) { if (a.style && (a.style.fontStyle === 'normal' || a.style.getPropertyValue('--os').trim() === 'normal') && a.closest('[data-hud-role], .mb-pc')) { ownerUpright = true; break; } }
       if (!/^["']?Alegreya SC\b/.test(cs.fontFamily)) bad.push(`${t} [font ${cs.fontFamily}]`);
-      else if (cs.fontStyle !== 'italic') bad.push(`${t} [style ${cs.fontStyle}]`);
+      else if (cs.fontStyle !== 'italic' && !ownerUpright) bad.push(`${t} [style ${cs.fontStyle}]`);
       else if (!['400', '500', '700', '800'].includes(cs.fontWeight)) bad.push(`${t} [weight ${cs.fontWeight}]`);
     }
     for (const e of document.querySelectorAll('body *')) {
@@ -5215,7 +5226,8 @@ test('AC176: the owner\'s card back and deck-pile pictures are used exactly', as
   await openDecks(page);
   const dp = page.getByLabel('Deck pile', { exact: true });
   await expectDeckImage(dp, 'Deck pile');
-  expect(await pileSize(dp)).toEqual([1155, 1313]);
+  // Owner change (Oct 24, 11acd779 / c874f715): the Deck Builder pile is the owner's neat deck stack deck-menu.png (800x1000), not deck-pile
+  expect(await dp.locator('img[src*="deck-menu"]').first().evaluate((i) => [i.naturalWidth, i.naturalHeight])).toEqual([800, 1000]);
   expect(await oldDeckArt(page), 'deck builder').toEqual([]);
   await page.goto('/?test=1');
   await page.getByRole('button', { name: 'Play', exact: true }).click();
@@ -6286,7 +6298,11 @@ test('AC216: the drop-down Menu has the owner\'s six items, closes properly and 
   await expect(menu).toBeVisible();
   await expect(btn).toHaveAttribute('aria-expanded', 'true');
   const names = (await menu.getByRole('menuitem').allInnerTexts()).map((x) => x.replace(/\s+/g, ' ').trim());
-  expect(names).toEqual(['Resume', 'Settings', 'How to play', 'Sound Effects', 'Background music', 'Give up match!']);
+  // Owner change (Oct 28, d6a8871 + 7af662c): the Menu also has "Square highlights" and a Full screen / Windowed switch (its label shows the current mode)
+  expect(names.length).toBe(8);
+  expect(names.slice(0, 3)).toEqual(['Resume', 'Settings', 'Square highlights']);
+  expect(['Full screen', 'Windowed']).toContain(names[3]);
+  expect(names.slice(4)).toEqual(['How to play', 'Sound Effects', 'Background music', 'Give up match!']);
   const bb = await btn.boundingBox(), first = await menu.getByRole('menuitem').first().boundingBox();
   expect(first.y).toBeGreaterThan(bb.y);
   expect(Math.abs(first.x - bb.x)).toBeLessThanOrEqual(1920 * 0.03);
@@ -8623,7 +8639,9 @@ test('AC318: units with activated abilities show a round ability button above th
   const c = await sq2s(page, 6, 9), n = await sq2s(page, 6, 10);
   const b = await strike.boundingBox();
   expect(Math.abs(b.x + b.width / 2 - c.x)).toBeLessThanOrEqual(Math.abs(n.x - c.x) * 0.6 + 2);
-  expect(b.y + b.height / 2).toBeLessThan(c.y);
+  // Owner change (Oct 25, 39d93d5c): the ability button sits in the unit's stat badge (in place of the unit-type icon), not above the unit
+  expect(await strike.evaluate((el) => !!el.closest('[data-unit-badge]')), 'ability button lives in the stat badge').toBe(true);
+  expect(Math.abs(b.y + b.height / 2 - c.y), 'badge stays with its unit').toBeLessThanOrEqual(Math.abs(n.x - c.x) * 1.5);
   const list = await page.evaluate(async () => await window.oreheart.getAbilityButtons());
   expect(list.some((x) => x.ability === 'strike' && x.cardId === 'goblin-scrapper' && x.cost === 2 && x.enabled === true)).toBe(true);
   expect(list.some((x) => x.ability === 'pickUp' && x.cardId === 'junk-shaman')).toBe(true);
@@ -9185,9 +9203,10 @@ test('AC340: Aggressive — a Fighter next to the enemy Commander hits it; a far
 
 test('AC341: Mine Control — a Miner attacks an adjacent enemy Miner only if it survives, and mines when crystals are low', async ({ page }) => {
   // mines at (4,2), (4,4), (4,6); our Miner at (5,4) beside mine (4,4); the enemy Miner at (5,5)
-  const board = (shield) => [P('goblin-scrounger', 5, 4, shield ? { shield: 1 } : {}), O('dwarf-smith-miner', 5, 5)];
+  // Rule check (Oct 28): Dwarves beat Goblins (+1 type advantage), so the enemy Miner strikes back for 2; Shield 2 is what lets a 1-Health Goblin Miner survive the trade
+  const board = (shield) => [P('goblin-scrounger', 5, 4, shield ? { shield: 2 } : {}), O('dwarf-smith-miner', 5, 5)];
   const base = { playerDeck: SHARDS, opponentDeck: SHARDS, playerCrystals: 16, playerHand: ['goblin-scrounger', 'goblin-pebbler'] };
-  // survives the strike back (Shield 1) and has plenty of crystals -> attacks
+  // survives the strike back (Shield 2 against a 2-damage counter) and has plenty of crystals -> attacks
   let s = await start(page, cardPlay({ ...base, board: board(true) }, 'minecontrol'));
   let uid = at(s, 5, 4).uid;
   await toAction(page);
@@ -9269,6 +9288,9 @@ test('AC345: the four stance buttons sit on the right edge, vertically centered,
   for (const [W, H] of [[1920, 1080], [844, 390]]) {
     await page.setViewportSize({ width: W, height: H });
     await start(page, cardPlay({ playerDeck: SHARDS, opponentDeck: SHARDS }));
+    // Owner change (Oct 25, 39d93d5c): the stance column hides at the right edge (a sliver shows) and slides out on hover; measure it slid out
+    await page.getByLabel('Stance', { exact: true }).hover();
+    await page.waitForTimeout(400); // slide-out transition .28s
     const boxes = [];
     for (const n of STANCES) boxes.push(await stanceBtn(page, n).boundingBox());
     for (const [i, b] of boxes.entries()) {
@@ -9968,15 +9990,32 @@ test.describe('round 26 at 1920x1080', () => {
 
   test('AC371: 300 ms after stopping over a square the card takes that square\'s on-screen shape (near and far square)', async ({ page }) => {
     await r23Start(page);
-    await r26Grab(page, 6, 7, 6);
+    // Owner change (Oct 28, 1beebd5): the card keeps its own shape over a square: 88% of the square's smaller on-screen side, centred, inside the square (cardInSquare, DRAG_FX.fit)
+    const len = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
+    const sides = (k) => ({ w: (len(k[0], k[1]) + len(k[3], k[2])) / 2, h: (len(k[0], k[3]) + len(k[1], k[2])) / 2 });
+    const sortQuad = (k) => { const byY = [...k].sort((a, b) => a.y - b.y); const top = byY.slice(0, 2).sort((a, b) => a.x - b.x), bot = byY.slice(2, 4).sort((a, b) => a.x - b.x); return [top[0], top[1], bot[1], bot[0]]; };
+    const inside = (pt, k) => { let s = 0; for (let i = 0; i < 4; i++) { const a = k[i], b = k[(i + 1) % 4]; const cr = (b.x - a.x) * (pt.y - a.y) - (b.y - a.y) * (pt.x - a.x); if (Math.abs(cr) > 1e-6) { if (s === 0) s = Math.sign(cr); else if (Math.sign(cr) !== s) return false; } } return true; };
+    // the card's own shape, measured while it is still held over the hand (no square under it)
+    const from = await r23HoverCard(page, 6);
+    await page.mouse.down();
+    await page.mouse.move(from.x, from.y - 30, { steps: 3 });
+    await page.waitForTimeout(300);
+    const d0 = await dragCard(page);
+    expect(d0.corners.length).toBe(4);
+    const own = sides(sortQuad(d0.corners));
     for (const [r, c] of [[7, 6], [2, 7]]) {
       const p = await sqCenter(page, r, c);
       await page.mouse.move(p.x, p.y, { steps: 6 });
       await page.waitForTimeout(300);
       const d = await dragCard(page);
-      const q = await quad4(page, r, c);
+      const q = sortQuad(await quad4(page, r, c));
       expect(d.corners.length).toBe(4);
-      for (const pt of q) expect(Math.min(...d.corners.map((k) => Math.hypot(k.x - pt.x, k.y - pt.y))), `corner of ${r},${c}`).toBeLessThanOrEqual(4);
+      const cs = sortQuad(d.corners), sz = sides(cs), sq = sides(q);
+      expect(Math.abs(sz.w / sz.h - own.w / own.h) / (own.w / own.h), `own shape kept over ${r},${c}`).toBeLessThanOrEqual(0.03);
+      expect(Math.abs(Math.max(sz.w, sz.h) - 0.88 * Math.min(sq.w, sq.h)), `88% of square ${r},${c}`).toBeLessThanOrEqual(4);
+      for (const pt of cs) expect(inside(pt, q), `inside square ${r},${c}`).toBe(true);
+      const cc = { x: cs.reduce((a, k) => a + k.x, 0) / 4, y: cs.reduce((a, k) => a + k.y, 0) / 4 };
+      expect(Math.hypot(cc.x - p.x, cc.y - p.y), `centred on square ${r},${c}`).toBeLessThanOrEqual(4);
       expect(d.opacity).toBeGreaterThanOrEqual(0.8);
     }
     await page.mouse.move(10, 10, { steps: 6 });
@@ -10107,13 +10146,16 @@ test.describe('round 26 at 1920x1080', () => {
     await expect.poll(async () => (await getState(page)).activePlayer).toBe('opponent');
   });
 
-  test('AC385: a controlled mine shows the owning faction\'s emblem picture from the card format, no emoji', async ({ page }) => {
-    for (const [cmd, miner, file] of [['grubnak', 'goblin-scrounger', '2298e4af.webp'], ['borgo', 'dwarf-miner', 'e56e3c50.webp']]) {
+  // Owner change (Oct 29, 73b62fb8/135b9f4e/cd698e7): no emblem picture and no skull/gear/hammer symbol above an owned mine; the mine's colour shows the owner
+  test('AC385: a controlled mine shows no faction emblem picture and no emoji symbol', async ({ page }) => {
+    for (const [cmd, miner] of [['grubnak', 'goblin-scrounger'], ['borgo', 'dwarf-miner']]) {
       const s = await (cmd === 'grubnak' ? start : newMatch)(page, { ai: false, playerCommander: cmd, setup: { board: [{ cardId: miner, owner: 'player', row: 5, col: 2 }] } });
       await done(page);
       expect((await act(page, { type: 'mine', creatureUid: at(s, 5, 2).uid, row: 4, col: 2 })).ok).toBe(true);
+      await done(page); // mine control is recomputed at the next Draw phase (engine recolorMines)
+      await expect.poll(async () => (await getState(page)).sites.find((x) => x.row === M1.row && x.col === M1.col).controller, { timeout: 5000 }).toBe('player');
       const site = siteBtn(page, M1);
-      await expect(site.locator(`img[src$="${file}"]`)).toHaveCount(1, { timeout: 5000 });
+      await expect(site.locator('img:visible')).toHaveCount(0, { timeout: 5000 }); // Owner change (Oct 29): the emblem picture is hidden
       await expect(site).not.toContainText(/💀|⚙️|🔨/);
     }
   });
@@ -10279,13 +10321,21 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }, {
       await done(page);
       const badge = siteBtn(page, M1).locator('[data-mine-badge]');
       await expect(badge).toBeVisible();
-      await expect(badge).toContainText('2');
+      // Owner change (Oct 28, 9d92f74): the badge is Ken's pickaxe picture; the ×2 count sits beside it on the site, not inside the badge
+      await expect(badge.locator('img.pk-img')).toBeVisible();
+      await expect(siteBtn(page, M1)).toContainText('×2');
       const ok = await badge.evaluate((e) => {
+        // Owner change (Oct 29, 73b62fb8): the badge has pointer-events:none so units can be grabbed; ignore that while checking it is not covered
+        const els = [e, ...e.querySelectorAll('*')], saved = els.map((x) => x.style.getPropertyValue('pointer-events'));
+        els.forEach((x) => x.style.setProperty('pointer-events', 'auto', 'important'));
+        try {
         const r = e.getBoundingClientRect();
         if (r.left < 0 || r.top < 0 || r.right > innerWidth || r.bottom > innerHeight) return 'outside the window';
         const pts = [[r.left + r.width / 2, r.top + r.height / 2], [r.left + 2, r.top + 2], [r.right - 2, r.top + 2], [r.left + 2, r.bottom - 2], [r.right - 2, r.bottom - 2]];
-        for (const [x, y] of pts) { const h = document.elementFromPoint(x, y); if (!h || !(h === e || e.contains(h))) return `covered at ${Math.round(x)},${Math.round(y)}`; }
+        for (const [x, y] of pts) { const h = document.elementFromPoint(x, y); // The board's own 3D canvas draws over its page layer in 3D mode; its own mine button and the board canvas are not covers; any other UI is
+        if (!h || !(h === e || e.contains(h) || h === e.closest('.site-mark') || (h.tagName === 'CANVAS' && h.closest('.board')))) return `covered at ${Math.round(x)},${Math.round(y)}`; }
         return 'ok';
+        } finally { els.forEach((x, i) => { if (saved[i]) x.style.setProperty('pointer-events', saved[i]); else x.style.removeProperty('pointer-events'); }); }
       });
       expect(ok).toBe('ok');
     });
