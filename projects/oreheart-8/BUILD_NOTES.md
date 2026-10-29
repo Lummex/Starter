@@ -109,3 +109,10 @@ Editor updates needed: hand.overlap 0.26; DRAG_FX (150 ms, opacity .85, tilt 8°
 - Test-mode 3D renderer backs off when page frames are starved (software GL), fixing load-induced timeouts.
 - Removed unused duplicate `public/art/logo.webp` so dist stays under 95 MB (AC90).
 - Not changed (outdated checks, contradict newer owner changes): AC149/AC150 (full-window cover-fit vs owner's 16:9 letterbox), AC58 (Rocket Rider is now a Fighter), AC138 select-screen corner (menus are 16:9 pieces), AC176 label "Deck pile".
+
+## Round 15 finish (this run)
+- Hand: grabbing a card now takes the card the hover logic raised (`hitCard` fan slot, with a wedge for the tilt lean); a quick press no longer picks a neighbour. Tight aim for rule-1 hover except the first card.
+- Hand: the resting fan is lifted just enough (`--rest-lift`, measured from the arc and tilt) so every card lies fully on screen at any window size.
+- Commander impatience counts only `advanceIdle` time in automated runs; the Commander's turn animation no longer caps its time step in automated runs (slow software-GL frames).
+- Not changed (checks that no longer match owner rules): AC58 (uses Rocket Rider as a Miner), AC341 (type advantage makes the Miner die), AC318 (ability button now lives in the Round 15 unit badge), AC216 (menu has the later Settings items), AC371 (owner: the dragged card keeps its own shape).
+- Many other failures were timeouts under 4 parallel software-GL pages; they pass when run alone.
