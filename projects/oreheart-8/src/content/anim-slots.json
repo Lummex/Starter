@@ -1,0 +1,326 @@
+{
+ "generated": "2026-10-29T09:16:18.021Z",
+ "source": "Oreheart Studio: library/<card>.animSlots + animations (approved only)",
+ "cards": {
+  "goblin-bomber": {
+   "slots": {
+    "idle": {
+     "clip": "OH_Idle",
+     "animation": "biped-idle-goblin-bomber",
+     "name": "Shadow boxing (owner's wish): bouncing on his toes, bob and weave, jab",
+     "loop": true,
+     "shared": false,
+     "file": {
+      "modelKey": "goblin-bomber-v4",
+      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb"
+     },
+     "auto": true
+    }
+   },
+   "candidates": {
+    "idle": [
+     {
+      "clip": "OH_Idle",
+      "animation": "biped-idle-goblin-bomber",
+      "name": "Shadow boxing (owner's wish): bouncing on his toes, bob and weave, jab",
+      "loop": true,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-bomber-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb"
+      }
+     }
+    ]
+   }
+  },
+  "goblin-grunt": {
+   "slots": {
+    "defeat": {
+     "clip": "Dead",
+     "animation": "biped-death-meshy-dead",
+     "name": "Meshy stock death fall",
+     "loop": false,
+     "shared": false,
+     "file": {
+      "modelKey": "goblin-grunt-v4",
+      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb"
+     },
+     "auto": true
+    }
+   },
+   "candidates": {
+    "defeat": [
+     {
+      "clip": "Dead",
+      "animation": "biped-death-meshy-dead",
+      "name": "Meshy stock death fall",
+      "loop": false,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-grunt-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb"
+      }
+     }
+    ]
+   }
+  },
+  "goblin-pebbler": {
+   "slots": {
+    "attack": {
+     "clip": "OH_Attack",
+     "animation": "biped-attack-goblin-pebbler",
+     "name": "Kneecapper",
+     "loop": false,
+     "shared": false,
+     "file": {
+      "modelKey": "goblin-pebbler-v4",
+      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+     },
+     "auto": true
+    },
+    "bowled": {
+     "clip": "OH_React_Bowled",
+     "animation": "biped-bonk-bowled-over",
+     "name": "Bowled over like a pin: falls flat, gets up holding head",
+     "loop": false,
+     "shared": false,
+     "file": {
+      "modelKey": "goblin-pebbler-v4",
+      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+     },
+     "auto": true
+    },
+    "knockback": {
+     "clip": "OH_React_Knockback",
+     "animation": "biped-bonk-knockback",
+     "name": "Shoved hard: arms fly up, skid, catch balance (game slides him)",
+     "loop": false,
+     "shared": false,
+     "file": {
+      "modelKey": "goblin-pebbler-v4",
+      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+     },
+     "auto": true
+    },
+    "lifted": {
+     "clip": "OH_React_Lifted",
+     "animation": "biped-bonk-lifted-flail",
+     "name": "Lifted by magic: legs dangle and kick (loop)",
+     "loop": false,
+     "shared": false,
+     "file": {
+      "modelKey": "goblin-pebbler-v4",
+      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+     },
+     "auto": true
+    }
+   },
+   "candidates": {
+    "attack": [
+     {
+      "clip": "OH_Attack",
+      "animation": "biped-attack-goblin-pebbler",
+      "name": "Kneecapper",
+      "loop": false,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-pebbler-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+      }
+     }
+    ],
+    "hit": [
+     {
+      "clip": "OH_React_Backstab",
+      "animation": "biped-bonk-backstabbed",
+      "name": "Stabbed in the back: jolt, reaches back, yanks dagger out",
+      "loop": false,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-pebbler-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+      }
+     },
+     {
+      "clip": "OH_React_Bonk",
+      "animation": "biped-bonk-head-dizzy",
+      "name": "Bonked on the head: dizzy wobble, shake head",
+      "loop": false,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-pebbler-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+      }
+     },
+     {
+      "clip": "OH_Hit",
+      "animation": "biped-bonk-hit-stagger",
+      "name": "Hit: snap back, one stagger step, shake it off",
+      "loop": false,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-pebbler-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+      }
+     }
+    ],
+    "bowled": [
+     {
+      "clip": "OH_React_Bowled",
+      "animation": "biped-bonk-bowled-over",
+      "name": "Bowled over like a pin: falls flat, gets up holding head",
+      "loop": false,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-pebbler-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+      }
+     }
+    ],
+    "knockback": [
+     {
+      "clip": "OH_React_Knockback",
+      "animation": "biped-bonk-knockback",
+      "name": "Shoved hard: arms fly up, skid, catch balance (game slides him)",
+      "loop": false,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-pebbler-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+      }
+     }
+    ],
+    "lifted": [
+     {
+      "clip": "OH_React_Lifted",
+      "animation": "biped-bonk-lifted-flail",
+      "name": "Lifted by magic: legs dangle and kick (loop)",
+      "loop": false,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-pebbler-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+      }
+     }
+    ],
+    "walk": [
+     {
+      "clip": "Casual_Walk",
+      "animation": "biped-walk-meshy-casual",
+      "name": "Meshy stock casual walk",
+      "loop": true,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-pebbler-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
+      }
+     }
+    ]
+   }
+  },
+  "goblin-scrapper": {
+   "slots": {
+    "attack": {
+     "clip": "OH_Attack",
+     "animation": "biped-attack-goblin-scrapper",
+     "name": "Shoulder-check bash",
+     "loop": false,
+     "shared": false,
+     "file": {
+      "modelKey": "goblin-scrapper-v4",
+      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb"
+     },
+     "auto": true
+    },
+    "special": {
+     "clip": "OH_Special",
+     "animation": "biped-special-goblin-scrapper",
+     "name": "Bowling roll (owner's wish)",
+     "loop": false,
+     "shared": false,
+     "file": {
+      "modelKey": "goblin-scrapper-v4",
+      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb"
+     },
+     "auto": true
+    },
+    "walk": {
+     "clip": "OH_Walk",
+     "animation": "biped-walk-goblin-scrapper",
+     "name": "In-place walk cycle (treadmill)",
+     "loop": true,
+     "shared": false,
+     "file": {
+      "modelKey": "goblin-scrapper-v4",
+      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb"
+     },
+     "auto": true
+    }
+   },
+   "candidates": {
+    "attack": [
+     {
+      "clip": "OH_Attack",
+      "animation": "biped-attack-goblin-scrapper",
+      "name": "Shoulder-check bash",
+      "loop": false,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-scrapper-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb"
+      }
+     }
+    ],
+    "hit": [
+     {
+      "clip": "Hit_Reaction",
+      "animation": "biped-bonk-meshy-hit-reaction",
+      "name": "Meshy stock hit reaction",
+      "loop": false,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-scrapper-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb"
+      }
+     }
+    ],
+    "special": [
+     {
+      "clip": "OH_Special",
+      "animation": "biped-special-goblin-scrapper",
+      "name": "Bowling roll (owner's wish)",
+      "loop": false,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-scrapper-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb"
+      }
+     }
+    ],
+    "walk": [
+     {
+      "clip": "OH_Walk",
+      "animation": "biped-walk-goblin-scrapper",
+      "name": "In-place walk cycle (treadmill)",
+      "loop": true,
+      "shared": false,
+      "file": {
+       "modelKey": "goblin-scrapper-v4",
+       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "stats": {
+  "picked": 0,
+  "none": 0,
+  "notApproved": 0,
+  "missing": 0,
+  "shared": 0,
+  "candidates": 14,
+  "cardsWithPicks": 0,
+  "auto": 9
+ }
+}
