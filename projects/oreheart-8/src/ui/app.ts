@@ -3349,7 +3349,9 @@ export class App {
     const overBoard = (x: number, y: number) => { const bb = (this.r.board as El).getBoundingClientRect(); return (y < handTop || !inFan(x)) && x >= bb.left && x <= bb.right && y >= bb.top && y <= bb.bottom; };
     // a legal target square under the pointer always means "play", even where the hand overlaps the home row
     const overLegal = (x: number, y: number) => { const c = this.cellAt(x, y); return !!c && [...plan.cells, ...plan.smith].some((q: any) => q && q.row === c.row && q.col === c.col); };
-    const inReorder = (y: number, x = 0) => Math.hypot(x - startX, y - startY) < 25 || !overLegal(x, y) && ((y >= handTop && inFan(x)) || (Math.abs(y - startY) < 45 && !overBoard(x, y)));
+    // Owner fix (Ken, Oct 29, R26 A1): a square above the home row is always the board, even inside the raised hand's band, so an illegal square there shows its red outline instead of a hand reorder
+    const overUpperBoard = (x: number, y: number) => { const c = this.cellAt(x, y); return !!c && c.row < 7; };
+    const inReorder = (y: number, x = 0) => Math.hypot(x - startX, y - startY) < 25 || !overLegal(x, y) && !overUpperBoard(x, y) && ((y >= handTop && inFan(x)) || (Math.abs(y - startY) < 45 && !overBoard(x, y)));
     let plan: { cells: any[]; smith: any[]; any: boolean } = { cells: [], smith: [], any: false };
     const setMode = (m: 'reorder' | 'play') => {
       if (m === mode) return;
@@ -3368,9 +3370,10 @@ export class App {
     const fxRender = () => {
       if (fx.done || !ghost.isConnected) return;
       const now = performance.now(), dt = Math.min(100, now - fx.t); fx.t = now;
+      if (now - (fx.lastMove || 0) > 60) { tilt *= Math.exp(-dt / 120); fx.tilt = tilt; ghost.dataset.tilt = tilt.toFixed(2); } // Owner fix (Ken, Oct 29, R26 A1): the gentle tilt eases back to level once the pointer rests
       const W = ghost.offsetWidth, H = ghost.offsetHeight;
       if (!W || !H) return;
-      if (!fx.startW) fx.startW = W;
+      if (!fx.startW) { fx.startW = W; ghost.style.setProperty('width', W + 'px', 'important'); ghost.style.setProperty('height', H + 'px', 'important'); } // Owner fix (Ken, Oct 29, R26 A1.4): the held size is frozen at the grab, so the card grows back to exactly that size (the hand's own sizing changes while it tucks away)
       fx.W = W; fx.H = H;
       const step = dt / DRAG_FX.shrinkMs;
       fx.s = fx.tgt > fx.s ? Math.min(fx.tgt, fx.s + step) : Math.max(fx.tgt, fx.s - step);
@@ -3401,7 +3404,7 @@ export class App {
       manualHand: true,
       touchSwipe: (dx) => { this.handScroll -= dx / 40; this.layoutHand(); },
       onMove: (dx, px, y) => {
-        tilt = Math.max(-DRAG_FX.tiltMax, Math.min(DRAG_FX.tiltMax, tilt * 0.8 + dx * 0.3));
+        tilt = Math.max(-DRAG_FX.tiltMax, Math.min(DRAG_FX.tiltMax, tilt * 0.8 + dx * 0.3)); fx.lastMove = performance.now();
         ghost.dataset.tilt = tilt.toFixed(2);
         setMode(inReorder(y, px) || !(plan.cells.length || plan.smith.length || plan.any) ? 'reorder' : 'play'); // an unplayable card can only be reordered
         fx.px = px; fx.py = y; fx.tilt = tilt;
