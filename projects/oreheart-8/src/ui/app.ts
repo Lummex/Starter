@@ -1626,8 +1626,10 @@ export class App {
     // (the top 77 %; the rest is clipped so the fan shows through) the pointer is. Before, its right half fell into the
     // neighbours' narrow fan strips, so clicking or grabbing a raised card opened or dragged the card to its right.
     // Hovering keeps the fan-strip rule below (Oct 28), so sliding along the fan still raises the next card.
+    // (Forge, Oct 29) the test is the card's real drawn shape (rotation, scale and its 77 % clip), not its bounding box: a tilted card's
+    // box reaches over its neighbours' corners, and a press there belongs to the neighbour that is actually drawn under the pointer.
     if (press) { const pop = this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)') as El | null;
-      if (pop) { const b = pop.getBoundingClientRect(); if (x >= b.left && x <= b.right && y >= b.top && y <= b.top + b.height * 0.77) return pop; } }
+      if (pop && this.drawnAt(pop, x, y)) return pop; }
     // one fixed slot per fan card, split at the midpoints between card centres (the cards overlap by 0.26,
     // so the topmost element under the pointer is not a reliable answer); the slots never move when a card pops
     const bs = this.handBoxes(true);
@@ -1650,6 +1652,13 @@ export class App {
     let hit: El | null = null;
     for (const b of bs) if (x >= b.l && x <= b.l + b.w && y >= b.t && y <= b.t + b.h) hit = b.c;
     return hit;
+  }
+  /** True when (x, y) lies on the drawn part of `el` (browser hit test: follows its transform and clip-path), even if it ignores the pointer. */
+  drawnAt(el: El, x: number, y: number): boolean {
+    const prev = el.style.getPropertyValue('pointer-events'), prio = el.style.getPropertyPriority('pointer-events');
+    el.style.setProperty('pointer-events', 'auto', 'important');
+    try { return document.elementsFromPoint(x, y).some((e) => e === el || el.contains(e)); }
+    finally { if (prev) el.style.setProperty('pointer-events', prev, prio); else el.style.removeProperty('pointer-events'); }
   }
   noHand = false;
   popPending: { el: El | null; at: number } | null = null;
