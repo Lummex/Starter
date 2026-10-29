@@ -1,5 +1,5 @@
 {
- "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet). Oct 25: owner asked for all remaining gnome and dwarf models, character only (no accessories yet); Gemsinger Miner and Anvilsworn Miner already exist and are not remade; Overclocked Aethervein waits for a redrawn sheet. Oct 28: owner OK'd re-running Meshy for two models only, WITH a skeleton: anvilsworn-miner-rig (Anvilsworn Miner, card dwarf-smith-miner; old Stonebreaker Miner model had 0 bones) and borgo-rig (Thane Borgo Gravelgrim, cmd-borgo; old model had 0 bones). New ids so the old models are kept.",
+ "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet). Oct 25: owner asked for all remaining gnome and dwarf models, character only (no accessories yet); Gemsinger Miner and Anvilsworn Miner already exist and are not remade; Overclocked Aethervein waits for a redrawn sheet. Oct 28: owner OK'd re-running Meshy for two models only, WITH a skeleton: anvilsworn-miner-rig (Anvilsworn Miner, card dwarf-smith-miner; old Stonebreaker Miner model had 0 bones) and borgo-rig (Thane Borgo Gravelgrim, cmd-borgo; old model had 0 bones). New ids so the old models are kept. Oct 29: Ken approved the Overclocked Aethervein robot sheet (redo, ChatGPT Oct 28) with the note \"He doesn't need the shield drawn\": job overclocked-conduit, character only, no shield.",
  "jobs": [
   {
    "id": "blastrat-sapper",
@@ -1123,6 +1123,28 @@
     "defeat": 8
    },
    "notes": "Oct 28 rigged remake (owner OK). Views: the Studio's Borgo front/side/back refs (Gear-Crowned Dwarf Commander sheet). Character only: sceptre and throne already exist (borgo-sceptre, borgo-throne)."
+  },
+  {
+   "id": "overclocked-conduit",
+   "name": "Overclocked Aethervein",
+   "faction": "gnomes",
+   "card": "overclocked-conduit",
+   "char": [
+    "overclocked-conduit--char-front.jpg",
+    "overclocked-conduit--char-side.jpg",
+    "overclocked-conduit--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8,
+    "mine": 237
+   },
+   "notes": "Oct 29 (Ken approved the robot sheet; note: \"He doesn't need the shield drawn\"). Views cut from the sheet's top row (front/side/back, no shield, steam puffs painted out). Character only: no shield; pickaxe not made yet (accessories later, like the other gnomes). Gatherer, so it gets the mine clip like the miners."
   }
  ]
 }
