@@ -22,3 +22,10 @@ Report: factory-design/studio/reports/2026-10-28-clay-rigged-remakes.md
 - Borgo's `borgo-front.webp` ref has the right glove cut off at the picture edge; the sheet's front figure overlaps the next figure, so it can't be cropped cleanly.
 - Size: game ≈ 92.43 MB after Round 27; every new rigged character is ≈ 2.5 MB. Flag before adding.
 - Only Wright publishes the Studio page (Model Editor model files). Leave Wright a note in the report.
+
+## Oct 29, 2026 – lossless meshopt pack of the two rigged dwarves (Round 27 size)
+Report: factory-design/studio/reports/2026-10-29-clay-r27-dwarf-pack.md (scripts next to it).
+- Lossless way to pack (Ken's "never touch geometry" rule): NOT gltfpack (even -noq can reorder/dedup vertices and resample clips). Use meshoptimizer's `encodeGltfBuffer` per bufferView: ATTRIBUTES mode, no filter, byteStride = element size (must be a multiple of 4); indices in INDICES mode. Pictures copied as is. Fallback buffer 1 + EXT_meshopt_compression required. Saves ~28% (2.6 MB → 1.84 MB). Prove with a decode + byte compare using three's own decoder, plus a pixel diff render (got 0).
+- Learned: TRIANGLES index mode came out BIGGER than INDICES mode on Meshy index lists (not vertex-cache ordered). Try both, keep the smaller.
+- Local PC setup: conda Node env in scratchpad (~3 min), `npm install meshoptimizer@0.22.0 three@0.170.0` (the game's three). In Git Bash put the env on PATH as /c/Users/… (a "C:/…" entry breaks PATH because of the colon).
+- Render check: .claude/launch.json "clay-check" serves my scratchpad r27 folder on 5191; compare.html uses an importmap to node_modules/three.
