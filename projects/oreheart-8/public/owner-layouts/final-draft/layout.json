@@ -41,7 +41,7 @@
    "y": 543,
    "size": 2.75,
    "height": 1.1,
-   "strength": 0.61,
+   "strength": 0.4,
    "cCore": "#fff6c0",
    "cMid": "#ffb030",
    "cTip": "#c0300a"
@@ -52,7 +52,7 @@
    "y": 538,
    "size": 2.6,
    "height": 1.1,
-   "strength": 0.61,
+   "strength": 0.4,
    "cCore": "#fff6c0",
    "cMid": "#ffb030",
    "cTip": "#c0300a"
@@ -63,7 +63,7 @@
    "y": 101,
    "size": 1.9,
    "height": 1,
-   "strength": 0.61,
+   "strength": 0.4,
    "cCore": "#fff6c0",
    "cMid": "#ffb030",
    "cTip": "#c0300a"
@@ -74,7 +74,7 @@
    "y": 96,
    "size": 1.8,
    "height": 1,
-   "strength": 0.61,
+   "strength": 0.4,
    "cCore": "#fff6c0",
    "cMid": "#ffb030",
    "cTip": "#c0300a"
@@ -84,7 +84,7 @@
    "x": 201,
    "y": 100,
    "radius": 45,
-   "strength": 1.5,
+   "strength": 1.725,
    "pulse": 0.5,
    "cGlow": "#ffb347"
   },
@@ -93,7 +93,7 @@
    "x": 1162,
    "y": 62,
    "radius": 43,
-   "strength": 1.18,
+   "strength": 1.357,
    "pulse": 0.5,
    "cGlow": "#ffb347"
   },
@@ -154,7 +154,7 @@
    "y": 144,
    "size": 2.25,
    "height": 0.9,
-   "strength": 0.61,
+   "strength": 0.4,
    "cCore": "#299e4c",
    "cMid": "#4bca07",
    "cTip": "#05b347"
@@ -165,7 +165,7 @@
    "y": 144,
    "size": 2.25,
    "height": 0.9,
-   "strength": 0.61,
+   "strength": 0.4,
    "cCore": "#299e4c",
    "cMid": "#4bca07",
    "cTip": "#05b347"
@@ -175,7 +175,7 @@
    "x": 76,
    "y": 117,
    "radius": 27,
-   "strength": 0.7,
+   "strength": 0.805,
    "pulse": 0.9,
    "cGlow": "#ff9147"
   },
@@ -184,7 +184,7 @@
    "x": 235,
    "y": 39,
    "radius": 27,
-   "strength": 0.7,
+   "strength": 0.805,
    "pulse": 0.84,
    "cGlow": "#ff9147"
   },
@@ -193,7 +193,7 @@
    "x": 994,
    "y": 74,
    "radius": 29,
-   "strength": 0.7,
+   "strength": 0.805,
    "pulse": 0.43,
    "cGlow": "#ff9147"
   },
@@ -202,7 +202,7 @@
    "x": 1130,
    "y": 80,
    "radius": 24,
-   "strength": 0.7,
+   "strength": 0.805,
    "pulse": 1,
    "cGlow": "#ff9147"
   },
@@ -533,7 +533,7 @@
    "x": 1278,
    "y": 34,
    "radius": 10,
-   "strength": 0.7,
+   "strength": 0.805,
    "pulse": 0.7,
    "cGlow": "#ff9147"
   },
@@ -2210,7 +2210,7 @@
    "h": 33.81,
    "hand": {
     "count": 10,
-    "overlap": 0.2,
+    "overlap": 0.26,
     "angle": 4,
     "arc": 1.45,
     "slide": 18,
