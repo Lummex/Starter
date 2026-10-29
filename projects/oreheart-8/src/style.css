@@ -1835,3 +1835,16 @@ body.test .speech{animation-name:ohSayFlat}
 
 /* Owner art (Ken, Oct 29): the new front menu picture is bright behind the buttons; a soft dark glow keeps the lettering readable (the picture itself is untouched) */
 .mb-root[data-menu="main"] .mb-dim::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 22% 40% at 50% 57%,rgba(0,0,0,.42) 0,rgba(0,0,0,.22) 55%,transparent 100%)}
+
+/* ----- Gauge's go-live cosmetic list (Oct 30, Forge-approved) ----- */
+/* 1: the Welcome box sits above the Auto / PC / Phone switch in the bottom-left corner */
+.overlay.welcome{padding-bottom:34px}
+@media (orientation:portrait),(max-width:700px){.overlay.welcome{padding-bottom:34px}}
+/* 2: phone: the three starter decks fit the Choose Your Commander deck strip (smaller gap and action buttons) */
+@media (max-width:900px){.screen.setup .deck-row{gap:8px;padding:8px 6px}.screen.setup .btn.tx-act{font-size:12px!important;min-height:24px!important;padding:0 4px!important}}
+@media (max-width:900px) and (max-height:480px){.mb-setup .cs-decks .dslot{min-width:110px;flex:0 0 110px}}
+/* 3: phone: the result screen fits 390 px without a scroll */
+@media (max-height:480px){.screen.end{gap:4px;padding:6px 10px}.end-pic{max-height:24vh}.screen.end p{margin:2px 0}.summary{margin:4px 0}.summary th,.summary td{padding:2px 10px;font-size:.85rem}}
+/* 4: Escape closes the big card view from anywhere (app.ts); no Close button by the round 10 rule (AC250) */
+/* 7: the turn text and the countdown digit stay out of the Done drop-up and out of dialogs */
+body:has(.done-dropup) .match .phase,body:has(.done-dropup) .match .countdown,.match:has(> .overlay) .countdown{visibility:hidden}
