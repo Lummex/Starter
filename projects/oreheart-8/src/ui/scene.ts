@@ -1223,7 +1223,7 @@ const _embV = new THREE.Vector3();
       if (cm.g3d) cm.g3d.update(Math.min(0.1, Math.max(0, (now - (cm.g3d as any)._t || 0) / 1000))), ((cm.g3d as any)._t = now);
       cm.fig.rotation.z = 0;
       if (cm.g3d && cm.baseYaw !== undefined) {
-        const dt = Math.min(0.1, Math.max(0, (now - ((cm as any)._yt || now)) / 1000)); (cm as any)._yt = now;
+        const dt = Math.min(testMode ? 1 : 0.1, Math.max(0, (now - ((cm as any)._yt || now)) / 1000)); (cm as any)._yt = now; // automated runs paint rarely: let one frame cover the elapsed time
         const want = now < (cm.lookUntil || 0) ? 0 : cm.baseYaw;
         let d = Math.atan2(Math.sin(want - cm.yaw!), Math.cos(want - cm.yaw!));
         if (Math.abs(d) < 0.01) cm.yaw = want; else cm.yaw = cm.yaw! + d * (1 - Math.exp(-dt * 7.5)) + Math.sign(d) * Math.min(Math.abs(d), 0.4 * dt);

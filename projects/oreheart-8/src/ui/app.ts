@@ -3002,8 +3002,8 @@ export class App {
     const sl = Math.min(1000, Math.max(0, now - b.lastTick)); b.lastTick = now;
     const mine = st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') && !st.pendingResponse && !document.querySelector('[role="dialog"][aria-label="Mulligan"]');
     if (!mine) { b.lastAct = now; b.idleAcc = 0; if (b.level) { b.level = 0; v.impatient('player', 0); } return; }
-    b.idleAcc += sl;
-    const idle = Math.min(now - b.lastAct, b.idleAcc);
+    if (!this.test) b.idleAcc += sl; // automated runs only count idle time that advanceIdle() adds, so a slow page never turns into early impatience
+    const idle = this.test ? b.idleAcc : Math.min(now - b.lastAct, b.idleAcc);
     // one look-back ~3 s into each of the player's turns (any phase), then every 20-40 s
     if (!b.level && b.lookKey !== b.key && now - b.keyAt >= 3000) { b.lookKey = b.key; v.lookBack('player', 1800); }
     const need = this.idleMs + b.level * 15000;
