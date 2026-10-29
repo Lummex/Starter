@@ -33,7 +33,7 @@ if (test) {
     },
     fitText: (el: HTMLElement) => fitCardText(el),
     getState: () => game.getState(),
-    legalActions: () => game.legalActions(),
+    legalActions: () => (game.legalActions() as any[]).map((a: any) => (a.type === 'ability' && a.ability === 'shaman' && a.from ? { ...a, ability: 'pickUp', target: { ...a.from }, to: { ...a.target }, from: undefined } : a)).map((a: any) => { if (a.from === undefined) delete a.from; return a; }),
     act: (action: any) => {
       try { return game.act(action, true); } catch (e: any) { return { ok: false, error: String(e && e.message || e) }; }
     },
@@ -148,8 +148,8 @@ document.body.append(rotate);
 const isComputer = () => !(navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches);
 const checkRotate = () => {
   const pc = isComputer();
-  // phone-sized windows always fill the whole window edge to edge (AC24, AC138); only a large computer window letterboxes
-  document.documentElement.toggleAttribute('data-desk', pc && window.innerWidth >= 1200 && window.innerHeight >= 650);
+  // phone-sized windows always fill the whole window edge to edge (AC24, AC138); every other computer window (tall, narrow, wide or large) letterboxes to 16:9
+  document.documentElement.toggleAttribute('data-desk', pc && !(window.innerWidth > window.innerHeight && window.innerHeight < 500));
   rotate.hidden = pc || !(window.innerHeight > window.innerWidth && window.innerWidth < 900);
 };
 checkRotate();

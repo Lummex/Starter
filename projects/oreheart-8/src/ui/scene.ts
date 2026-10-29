@@ -196,7 +196,7 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
     return null;
   }
   const testMode = document.body.classList.contains('test');
-  const pixelRatio = () => (testMode ? 0.5 : low ? Math.min(window.devicePixelRatio || 1, 2) : window.devicePixelRatio || 1);
+  const pixelRatio = () => (low ? Math.min(window.devicePixelRatio || 1, 2) : window.devicePixelRatio || 1); // Round 26 A2: native resolution (capped at 2 only on Graphics: Low), also in test mode
   renderer.setPixelRatio(pixelRatio());
   renderer.shadowMap.enabled = !low;
   renderer.info.autoReset = false;
@@ -773,7 +773,7 @@ const _embV = new THREE.Vector3();
   // pan in painting pixels) moves the paintings, effects, pieces and highlights together.
   const H0 = boardHomography();
   const fit = fitCamera(H0);
-  const dprNow = () => (testMode ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+  const dprNow = () => Math.min(window.devicePixelRatio || 1, 2);
   const backCanvas = document.createElement('canvas');
   backCanvas.className = 'board-canvas arena-canvas';
   backCanvas.setAttribute('data-arena-canvas', '');
@@ -794,7 +794,7 @@ const _embV = new THREE.Vector3();
     Promise.all([load('/art/arena/skullfang-swamp-background.jpg'), load('/art/arena/skullfang-arena.png')]).then(([bg, ar]) => {
       if (disposed) return;
       const prev = THREE.ColorManagement.enabled;
-      arena = buildArena(layoutJson, bg, ar, () => view.scale * (testMode ? 0.5 : low ? 1 : Math.min(window.devicePixelRatio || 1, 2)));
+      arena = buildArena(layoutJson, bg, ar, () => view.scale * (low ? 1 : Math.min(window.devicePixelRatio || 1, 2)));
       THREE.ColorManagement.enabled = prev;
       Object.assign(arenaInfo, { loaded: true, errors: arena.errors, skippedTypes: arena.skippedTypes, effects: arena.effects.length, cutouts: arena.cuts.length, flowEffects: (layoutJson.effects as any[]).filter((e: any) => e.type === 'flow').length });
       applyView();

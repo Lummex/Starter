@@ -1814,6 +1814,7 @@ export class App {
     const spacing = shown > 1 ? Math.min(cw * (HD0.overlap ?? 0.26), (W - cw) / (shown - 1)) : cw;
     const x0 = Math.max(0, (W - (cw + (shown - 1) * spacing)) / 2);
     let moved = false;
+    const slotCx: number[] = [], slotDy: number[] = [], slotY: number[] = [], slotEl: El[] = [];
     cards.forEach((c, i) => {
       const k = i - start;
       if (k < 0 || k >= VIS) {
@@ -1832,7 +1833,8 @@ export class App {
       c.dataset.fanAngle = String(Math.round(rot * 100) / 100);
       c.style.left = x0 + k * spacing + 'px';
       // fixed hover slot (hand px): centred on the card, one spacing wide; the end cards also own their outer half
-      { const mid = x0 + k * spacing + cw / 2; (c as any)._slot = { l: k === 0 ? x0 : mid - spacing / 2, r: k === shown - 1 ? x0 + k * spacing + cw : mid + spacing / 2, y }; }
+      // the fan tilts about the card's pivot (50 % / 110 % of its height), which swings the visible card sideways: the slot follows the visible card
+      { const th = (rot * Math.PI) / 180, piv = 0.6 * ch; slotCx[k] = x0 + k * spacing + cw / 2 + piv * Math.sin(th); slotDy[k] = piv * (1 - Math.cos(th)); slotY[k] = y; slotEl[k] = c; }
       c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
       c.dataset.fan = c.style.transform;
       c.style.zIndex = String(k + 1);
@@ -1841,6 +1843,12 @@ export class App {
       c.style.setProperty('--hl', (k === 0 ? cw / 2 : half) + 'px');
       c.style.setProperty('--hr', (k === shown - 1 ? cw / 2 : half) + 'px');
     });
+    // fixed hover slots (hand px), side by side with no gaps: neighbours split at the midpoint between their visible centres; the end cards also own their outer half
+    for (let k = 0; k < slotEl.length; k++) {
+      const l = k === 0 ? slotCx[0] - cw / 2 : (slotCx[k - 1] + slotCx[k]) / 2;
+      const r = k === slotEl.length - 1 ? slotCx[k] + cw / 2 : (slotCx[k] + slotCx[k + 1]) / 2;
+      (slotEl[k] as any)._slot = { l, r, y: slotY[k] + slotDy[k] };
+    }
     if (moved) for (const c of cards) if (c.parentElement === hand) hand.append(c);
     if (hand.lastElementChild !== spill) hand.append(spill);
     const hl = this.r.handLeft as El, hr = this.r.handRight as El;
@@ -2898,7 +2906,7 @@ export class App {
     setTimeout(() => f.remove(), 900);
   }
   // Commander behaviour (round 8b): faces the opponent, looks back at the player, gets impatient when the player idles
-  bhv = { key: '', lastAct: Date.now(), level: 0, nextLook: new URLSearchParams(location.search).get('test') === '1' ? Infinity : Date.now() + 20000 + Math.random() * 20000, timer: 0 as any, bound: false };
+  bhv = { key: '', lastAct: Date.now(), level: 0, nextLook: new URLSearchParams(location.search).get('test') === '1' ? Infinity : Date.now() + 20000 + Math.random() * 20000, timer: 0 as any, bound: false, idleAcc: 0, lastTick: Date.now(), lookKey: '', keyAt: Date.now() };
   idleMs = 20000;
   cmdBehavior(st: any) {
     const b = this.bhv;
@@ -2910,16 +2918,16 @@ export class App {
     }
     const key = `${st.turn}|${st.activePlayer}|${st.phase}`;
     if (key !== b.key) {
-      b.key = key;
+      b.key = key; b.keyAt = Date.now();
       this.playerActed();
       if (st.activePlayer === 'player' && st.phase === 'deploy') setTimeout(() => { if (this.bhv.key === key && this.bhv.level === 0) this.view?.lookBack('player', 1800); }, 3000);
     }
   }
   selState: () => any = () => ({ mode: 'row', commanderId: '', model: null });
-  advanceIdle(seconds: number) { this.bhv.lastAct -= seconds * 1000; this.cmdTick(); this.view?.advanceFigureIdle?.(seconds); }
+  advanceIdle(seconds: number) { this.bhv.lastAct -= seconds * 1000; this.bhv.idleAcc += seconds * 1000; this.cmdTick(); this.view?.advanceFigureIdle?.(seconds); }
   playerActed() {
     const b = this.bhv;
-    b.lastAct = Date.now();
+    b.lastAct = Date.now(); b.idleAcc = 0;
     if (b.level) { b.level = 0; this.view?.impatient('player', 0); }
   }
   cmdTick() {
@@ -2927,9 +2935,14 @@ export class App {
     const v = this.view;
     if (!st || !v || !this.root.querySelector('.match')) return;
     const b = this.bhv, now = Date.now();
+    // idle time only counts in slices of at most 1 s per tick, so a stalled/slow page (loading models, busy CPU) never turns into early impatience
+    const sl = Math.min(1000, Math.max(0, now - b.lastTick)); b.lastTick = now;
     const mine = st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') && !st.pendingResponse && !document.querySelector('[role="dialog"][aria-label="Mulligan"]');
-    if (!mine) { b.lastAct = now; if (b.level) { b.level = 0; v.impatient('player', 0); } return; }
-    const idle = now - b.lastAct;
+    if (!mine) { b.lastAct = now; b.idleAcc = 0; if (b.level) { b.level = 0; v.impatient('player', 0); } return; }
+    b.idleAcc += sl;
+    const idle = Math.min(now - b.lastAct, b.idleAcc);
+    // one look-back ~3 s into each of the player's turns (any phase), then every 20-40 s
+    if (!b.level && b.lookKey !== b.key && now - b.keyAt >= 3000) { b.lookKey = b.key; v.lookBack('player', 1800); }
     const need = this.idleMs + b.level * 15000;
     if (idle >= need) { b.level++; v.impatient('player', b.level); if (b.level === 1) this.say('player', 'impatient', true); }
     else if (!b.level && now >= b.nextLook) { b.nextLook = now + 20000 + Math.random() * 20000; v.lookBack('player', 1800); }

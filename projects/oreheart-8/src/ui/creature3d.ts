@@ -149,7 +149,7 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
 export interface C3D {
   group: THREE.Group; mixer: THREE.AnimationMixer; mats: THREE.MeshStandardMaterial[];
   play(n: CreatureAnim): void; current(): string; update(dt: number): void;
-  /** Round 24: attack clip played by the model (GLB clip name), release time (ms into the clip) and bone read from events.json; onRelease fires exactly when the clip passes it */ attackClip?: string; partObject?: (name: string) => THREE.Object3D | null; clipOf?: (anim: string) => string; release?: { ms: number; bone: string } | null; onRelease?: (bone: THREE.Object3D) => void; currentClip?: () => string; partInfo?: () => { name: string; bone: string; pos: number[]; rot: number[]; scale: number[] }[];
+  /** Round 24: attack clip played by the model (GLB clip name), release time (ms into the clip) and bone read from events.json; onRelease fires exactly when the clip passes it */ attackClip?: string; partObject?: (name: string) => THREE.Object3D | null; clipOf?: (anim: string) => string; release?: { ms: number; bone: string } | null; onRelease?: (bone: THREE.Object3D) => void; currentClip?: () => string; partInfo?: () => { name: string; file: string; bone: string; pos: number[]; rot: number[]; rotDeg: number[]; scale: number[]; loaded: boolean }[];
   /** flying units */ flying?: { hoverSquares: number; floatSquares: number; floatsPerSecond: number; swayDeg: number; groundShadow: boolean; source: string }; lift?: number; swayNowDeg?: number; groundShadow?: boolean;
   /** Owner fix (Oct 28): true when the model has this clip */ has?: (n: string) => boolean;
   clipNames: string[]; held: string[]; worn: string[]; height: number;
@@ -172,7 +172,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   const held: string[] = [], worn: string[] = [];
   let ballRec: { part: THREE.Object3D; bone: THREE.Object3D; p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 } | null = null;
   const items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[] = [];
-  const partInfo: { name: string; bone: string; pos: number[]; rot: number[]; scale: number[] }[] = [];
+  const partInfo: { name: string; file: string; bone: string; pos: number[]; rot: number[]; rotDeg: number[]; scale: number[]; loaded: boolean }[] = [];
   const objs = new Map<string, THREE.Object3D | null>();
   const addItem = (name: string, bone: string, matchesLook: boolean, obj: THREE.Object3D | null) => { objs.set(name, obj); items.push({ name, bone, matchesLook, get visible() { let o: THREE.Object3D | null = obj; if (!o) return true; while (o) { if (!o.visible) return false; o = o.parent; } return true; } }); };
   const attackClipName = a.clips.attack?.name || '';
@@ -220,7 +220,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
       const part = src.clone(true); prep(part);
       part.position.set(...pc.look.pos); part.rotation.set(...(pc.look.rot.map((d) => THREE.MathUtils.degToRad(d)) as [number, number, number]), 'XYZ'); part.scale.set(...pc.look.scale);
       bone.add(part);
-      partInfo.push({ name: pc.name, bone: bone.name, pos: [...pc.look.pos], rot: [...pc.look.rot], scale: [...pc.look.scale] });
+      partInfo.push({ name: pc.name, file: pc.file, bone: bone.name, pos: [...pc.look.pos], rot: [...pc.look.rot], rotDeg: [...pc.look.rot], scale: [...pc.look.scale], loaded: true });
       if (pc.name === 'bowling-ball') ballRec = { part, bone, p: part.position.clone(), q: part.quaternion.clone(), s: part.scale.clone() };
       addItem(pc.name, bone.name, true, part);
       (/Hand/.test(bone.name) ? held : worn).push(pc.name);
@@ -397,7 +397,7 @@ function makeBallRig(ch: THREE.Object3D, root: THREE.Group, rec: { part: THREE.O
         if (t >= 0.5 && !detached) {
           center(pos); detach(); state = 'flying'; plog.push('fly');
           const T = 0.9, g = 7, ty = r + 0.002;
-          vel.set((sx * 0.1 - pos.x) / T, (ty - pos.y + 0.5 * g * T * T) / T, (0.9 - pos.z) / T);
+          vel.set((sx * 0.35 - pos.x) / T, (ty - pos.y + 0.5 * g * T * T) / T, (1.0 - pos.z) / T); // lands well in front of the body, dead (0 bounces)
         }
         if (detached && !landed) {
           vel.y -= 7 * dt; pos.addScaledVector(vel, dt);
@@ -421,7 +421,7 @@ function makeBallRig(ch: THREE.Object3D, root: THREE.Group, rec: { part: THREE.O
     // hooks: lowest ball bottom, body hits, flame follows the ball
     const c = center(_c);
     if (detached) minClear = Math.min(minClear, (c.y - r) * hs()); // a ball held in the hand rides the animation; only a free ball can sink into the ground
-    if (c.y > 0.2 && c.y < 0.9 && Math.hypot(c.x, c.z) < 0.13) pen++;
+    if (detached && c.y > 0.2 && c.y < 0.9 && Math.hypot(c.x, c.z) < 0.13) pen++; // only a free ball can pass through the body
     flame.position.copy(c);
     const W = r * 2 * (FLAME.size / 0.29) * 1.4, Hh = r * 2 * 1.6 * FLAME.height;
     layers.forEach((sp, i) => { const f = 1 + 0.18 * Math.sin(clock * 9 * FLAME.speed + i * 2) * Math.sin(clock * 5.3 * FLAME.speed + i); const k = 1 - i * 0.28; sp.scale.set(W * k * f, Hh * k * f, 1); });
