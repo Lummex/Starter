@@ -29,3 +29,11 @@ Report: factory-design/studio/reports/2026-10-29-clay-r27-dwarf-pack.md (scripts
 - Learned: TRIANGLES index mode came out BIGGER than INDICES mode on Meshy index lists (not vertex-cache ordered). Try both, keep the smaller.
 - Local PC setup: conda Node env in scratchpad (~3 min), `npm install meshoptimizer@0.22.0 three@0.170.0` (the game's three). In Git Bash put the env on PATH as /c/Users/… (a "C:/…" entry breaks PATH because of the colon).
 - Render check: .claude/launch.json "clay-check" serves my scratchpad r27 folder on 5191; compare.html uses an importmap to node_modules/three.
+
+## Oct 29, 2026 – Overclocked Aethervein (robot, gnomes)
+Report: factory-design/studio/reports/2026-10-29-clay-aethervein-model.md
+- Whole job locally on Ken's PC: crop views with PIL (cut figures by connected shape when views touch on the sheet), upload views + jobs.json in ONE commit on /upload/main/factory-design/meshy-jobs, Run workflow with `inputs[only]` set by JS, watch the run with a background until-loop (took 5 min), download char.glb from the bot's commit sha.
+- Texture shrink tool: reports/2026-10-29-clay-shrink-textures.py (`jpeg88` = all maps JPEG q88 4:2:0 = same as my Oct 28 files). Checks every non-picture byte and the JSON.
+- Learned: steam puffs on a sheet must be painted out COMPLETELY. Faint wisps I left at the pipe tops became two small grey flags in the model. Next time check the cut views zoomed in at 100% before uploading.
+- Learned: on robots/golems whose face is on the torso, Meshy's head bone sits in the face, and the Idle clip folds the face (the grin hides). Always check the face in rest pose AND idle; tell Spring.
+- three.js check: add RoomEnvironment as the scene environment, or Meshy's metal looks almost black. skeleton.pose() for the rest pose breaks later mixer shots on the same cached scene, so do it last.
