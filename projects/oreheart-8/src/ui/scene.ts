@@ -1107,14 +1107,16 @@ const _embV = new THREE.Vector3();
     if (disposed) return;
     raf = requestAnimationFrame(frame);
     const now = performance.now();
-    // software GL cost shows up as slow page frames (the GPU work is not in lastDur): back off while the page is starved
+    // Automated runs (software GL on the check machines): keep the page responsive by drawing fewer frames while input arrives or frames are slow.
+    // Owner fix (Ken, Oct 29): the Round 26 builder also switched the mines to low effects when frames were slow, and the figures moved a fixed
+    // step per frame, so the checks measured a slow-motion game with the wrong mine effects (late clips, missing effects, 4 s stats).
+    // Now the mines always keep their real effects, and movement and clips advance by elapsed time (below), so a slow frame rate never slows the game.
     if (testMode) { if (prevRaf) frameGap = frameGap * 0.7 + Math.min(2000, now - prevRaf) * 0.3; prevRaf = now; }
-    if (testMode && now - lastInput < 220) return; // automated runs (software GL): no painting while input is arriving, so wheel/pointer events are never queued behind a slow frame
-    if (testMode && now - lastRender < Math.max(300, lastDur * 6, frameGap > 100 ? frameGap * 8 : 0)) return; // automated runs use software GL: keep the page responsive
-    // starved page (software GL): drop the mines' extra additive glow layers until frames recover
-    if (!low) { const starved = frameGap > 70 ? true : frameGap < 35 ? false : mineLow; if (starved !== mineLow) { mineLow = starved; for (const fx of mineFx) fx.setLow(starved); for (const m of mines) if (m.light) m.light.visible = !starved; } }
+    if (testMode && now - lastInput < 220) return;
+    if (testMode && now - lastRender < Math.max(300, lastDur * 6, frameGap > 100 ? frameGap * 8 : 0)) return;
     lastRender = now;
-    const dt0 = Math.min(0.1, (now - (frameLast || now)) / 1000); frameLast = now;
+    void mineLow;
+    const dt0 = Math.min(0.5, (now - (frameLast || now)) / 1000); frameLast = now; // real elapsed time (capped at 0.5 s)
     for (const fx of mineFx) fx.update(now / 1000);
     placeStatusIcons();
     for (const [uid, f] of figs) {
@@ -1151,7 +1153,8 @@ const _embV = new THREE.Vector3();
       }
       const carried = !!(carry && carry.uid === f.uid);
       if (carried) goal.set(carry!.pos.x, goal.y, carry!.pos.z);
-      g.position.lerp(goal, f.bowl ? 1 : carried ? 0.5 : 0.22);
+      const walking = g.position.distanceTo(f.target) > 0.05; // judged before this frame's glide: one slow frame may cover the whole step
+      g.position.lerp(goal, f.bowl ? 1 : carried ? 0.5 : 1 - Math.exp(-dt0 * 14)); // time-based glide (0.22 per frame at 60 fps, as before)
       { // hold the stored facing; turn smoothly (~200 ms); miners look at their node while mining
         const want = f.faceUntil && now < f.faceUntil ? f.faceTo! : (f.faceWant ?? f.yaw ?? 0);
         if (f.yaw === undefined) f.yaw = want;
@@ -1159,7 +1162,6 @@ const _embV = new THREE.Vector3();
         f.yaw = Math.abs(d) < 0.01 ? want : f.yaw + d * (1 - Math.exp(-dt0 * 16));
         g.rotation.y = f.yaw;
       }
-      const walking = g.position.distanceTo(f.target) > 0.05;
       if (f.born) {
         const k = Math.min(1, (now - f.born) / 450);
         g.position.y = (1 - k) * -0.6;
@@ -1174,7 +1176,7 @@ const _embV = new THREE.Vector3();
         if (on) g.rotation.z = Math.sin(k * 24) * 0.18 * (1 - k); else { g.rotation.z = 0; f.hitT = 0; }
       }
       if (f.c3d) {
-        const dt = Math.min(0.25, (now - (f.lastT || now)) / 1000); f.lastT = now;
+        const dt = Math.min(0.5, (now - (f.lastT || now)) / 1000); f.lastT = now;
         const mk3 = (now - f.mineT) / 900, ak3 = (now - f.shootT) / 380;
         if (f.born) f.bornAt = f.born;
         f.c3d.trig?.(f.shootT, f.born || (f.bornAt && now - f.bornAt < 12000 ? f.bornAt : 0)); // the model may finish loading after the short summon drop
@@ -1312,7 +1314,7 @@ const _embV = new THREE.Vector3();
     const f0 = frames, t0 = Date.now();
     return new Promise((resolve) => {
       const wait = () => {
-        if (frames >= f0 + 2 && (Date.now() - t0 > 4000 || mines.every((m) => m.group.userData.mineHeight))) {
+        if (frames >= f0 + 2 && (Date.now() - t0 > 1000 || mines.every((m) => m.group.userData.mineHeight))) { // Owner fix (Ken, Oct 29): answer after 2 frames (was up to 4 s)
           resolve({
             webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
             bloom: false, shadows: renderer.shadowMap.enabled, particles: false, arena: arenaInfo,

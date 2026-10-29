@@ -15,6 +15,9 @@ import { audio } from './audio';
 import { getHighlights, setHighlights, resetHighlights, getRings, setRings, resetRings, edgeOf, glowOf, mainOf, ringColor, applyHighlightVars } from './fx-settings';
 import { loadGrubnak3d } from './grubnak3d';
 import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
+import { emptyCell } from '../engine';
+import { planOrder, type Order, type OrderPlan } from '../engine/orders';
+import { runOrders } from './orders-run';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -1617,8 +1620,14 @@ export class App {
   lastPtr = { x: -1, y: -1, type: 'mouse', down: false };
   popSafety = false;
   /** Which fan card (by its resting box, not its popped one) the point is over. */
-  hitCard(x: number, y: number): El | null {
+  hitCard(x: number, y: number, press = false): El | null {
     if (this.noHand) return null;
+    // Owner fix (Ken, Oct 29): a press (click or grab) on the raised card takes the raised card, wherever on its drawn part
+    // (the top 77 %; the rest is clipped so the fan shows through) the pointer is. Before, its right half fell into the
+    // neighbours' narrow fan strips, so clicking or grabbing a raised card opened or dragged the card to its right.
+    // Hovering keeps the fan-strip rule below (Oct 28), so sliding along the fan still raises the next card.
+    if (press) { const pop = this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)') as El | null;
+      if (pop) { const b = pop.getBoundingClientRect(); if (x >= b.left && x <= b.right && y >= b.top && y <= b.top + b.height * 0.77) return pop; } }
     // one fixed slot per fan card, split at the midpoints between card centres (the cards overlap by 0.26,
     // so the topmost element under the pointer is not a reliable answer); the slots never move when a card pops
     const bs = this.handBoxes(true);
@@ -1747,8 +1756,8 @@ export class App {
         const pop = this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)') as El | null;
         const tgt = (e.target as Element)?.closest?.('.hand-card:not(.popclone)') as El | null;
         let want: El | null = null;
-        // the same answer the hover pop uses (fixed fan slots), so what rises is what is grabbed
-        want = this.hitCard(e.clientX, e.clientY);
+        // the raised card wins where it is drawn; otherwise the same answer the hover pop uses (fixed fan slots), so what rises is what is grabbed
+        want = this.hitCard(e.clientX, e.clientY, true);
         if (pop && !want) { const b = pop.getBoundingClientRect(); if (e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom) want = pop; }
         if (want && tgt && tgt !== want && !tgt.classList.contains('offhand')) {
           const hc = this.game.state?.players?.player?.hand?.find((k: any) => k.uid === want!.dataset.uid);
@@ -1925,6 +1934,7 @@ export class App {
   update(st: any, events: any[]) {
     const r = this.r;
     if (!r.board || !st) return;
+    if (events.some((e) => e.type === 'newMatch')) { this.orders.clear(); this.orderPreview = null; this.ordersRunKey = ''; } // Round 28
     const me = st.players.player, en = st.players.opponent;
     this.view && this.view.setState(st, events);
     this.record(st, events);
@@ -1999,6 +2009,17 @@ export class App {
     this.animate(st, events);
     this.prevCreatures = st.board.creatures.map((c: any) => ({ uid: c.uid, cardId: c.cardId, row: c.row, col: c.col }));
     this.tick();
+    this.renderOrders(st); // Round 28: move orders
+    this.maybeRunOrders(st);
+  }
+  ordersRunKey = '';
+  /** Round 28 (M3, M5): at the start of the player's Action phase every ordered unit walks its path and a chaser attacks when in range. Once per turn. */
+  maybeRunOrders(st: any) {
+    if (!st || st.phase !== 'action' || st.activePlayer !== 'player' || st.priority !== 'player' || st.pendingResponse || !this.orders.size) return;
+    const key = `${st.turn}|${st.seed ?? ''}|${this.game.options?.seed ?? ''}`;
+    if (this.ordersRunKey === key) return;
+    this.ordersRunKey = key;
+    void runOrders(this.game, this.orders, { delayMs: this.test ? 0 : 450, onChange: () => this.renderOrders(this.game.state) });
   }
 
   // ------------------------------------------------------------ enemy turn recap (R9.7)
@@ -2938,7 +2959,7 @@ export class App {
     const sp = document.querySelector('.cmd-speech img') as El | null;
     const rd = document.querySelector('.dialog.respond-dlg') as El | null;
     return {
-      commanderSpeech: { scale: UI_SCALE.commanderSpeech, unscaledWidth: sp ? sp.getBoundingClientRect().width / UI_SCALE.commanderSpeech : 0 },
+      commanderSpeech: { scale: UI_SCALE.commanderSpeech, unscaledWidth: sp ? sp.offsetWidth / UI_SCALE.commanderSpeech : 0 }, // layout width: the pop animation's scale must not leak into the reference
       respond: { scale: UI_SCALE.respond, unscaledWidth: rd ? rd.getBoundingClientRect().width / UI_SCALE.respond : 0, unscaledHeight: rd ? rd.getBoundingClientRect().height / UI_SCALE.respond : 0 },
     };
   }
@@ -3531,6 +3552,112 @@ export class App {
       if (cur) this.unitActAt(cur, c);
     } } as any;
   }
+  // ------------------------------------------------------------ Round 28: move orders (UI only; the start-of-turn walk lives in orders-run.ts)
+  orders = new Map<string, Order>();
+  orderPreview: Order | null = null;
+  getOrders(): Order[] { return [...this.orders.values()].map((o) => JSON.parse(JSON.stringify(o))); }
+  /** Orders exist only for the player's own units, never in the tutorial or in Comp vs Comp. */
+  ordersAllowed(st: any = this.game.state) { return !!st && !st.tutorial && st.mode !== 'compvscomp' && this.game.mode !== 'compvscomp' && st.phase !== 'over'; }
+  setOrder(o: Order) {
+    const st = this.game.state;
+    const c = st?.board.creatures.find((x: any) => x.uid === o?.uid);
+    if (!c || c.owner !== 'player' || !this.ordersAllowed(st)) return false;
+    this.orders.set(o.uid, JSON.parse(JSON.stringify(o)));
+    this.renderOrders(st);
+    return true;
+  }
+  cancelOrder(uid: string) { const had = this.orders.delete(uid); this.renderOrders(this.game.state); return had; }
+  orderPlan(uid: string): OrderPlan | null { const o = this.orders.get(uid); return o && this.game.state ? planOrder(this.game.state, o) : null; }
+  /** The order a unit dropped (or clicked) on square c would get: chase an enemy standing there, else walk there. null = not an order square. */
+  orderFor(cr: any, c: { row: number; col: number } | null): Order | null {
+    const st = this.game.state;
+    if (!c || !c.row || !cr || cr.owner !== 'player' || !this.ordersAllowed(st)) return null;
+    if (c.row === cr.row && c.col === cr.col) return null;
+    const there = st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col);
+    if (there) return there.owner !== cr.owner ? { kind: 'chase', uid: cr.uid, targetUid: there.uid } : null;
+    return emptyCell(st, c.row, c.col) ? { kind: 'move', uid: cr.uid, dest: { row: c.row, col: c.col } } : null;
+  }
+  /** Is there a normal legal action (attack, mine, move, aimed ability) for this unit on square c? Same matching as unitActAt. */
+  unitHasActionAt(cr: any, c: { row: number; col: number }) {
+    if (!c || !c.row) return false;
+    return this.game.legalActions().some((a: any) => a.creatureUid === cr.uid && (
+      (a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col))) ||
+      ((a.type === 'move' || a.type === 'mine') && a.row === c.row && a.col === c.col) ||
+      (a.type === 'ability' && (() => { const q = this.abilityCell(a, cr); return !!q && q.row === c.row && q.col === c.col; })())));
+  }
+  /** A unit dropped or clicked onto c: a legal action works exactly as before (and replaces the unit's order); anywhere else gives it an order. */
+  unitDropAt(cr: any, c: { row: number; col: number } | null) {
+    if (!c || !c.row) return;
+    const st = this.game.state;
+    if (this.unitHasActionAt(cr, c)) { if (this.orders.delete(cr.uid)) this.renderOrders(st); this.unitActAt(cr, c); return; }
+    if (!this.orderTime(cr)) { this.unitActAt(cr, c); return; }
+    this.orderAt(cr, c);
+  }
+  /** Orders are given in the player's own Action phase, to the player's own units. */
+  orderTime(cr: any) { const st = this.game.state; return !!cr && cr.owner === 'player' && this.ordersAllowed(st) && st.phase === 'action' && st.activePlayer === 'player' && st.priority === 'player' && !st.pendingResponse; }
+  orderAt(cr: any, c: { row: number; col: number }) {
+    const o = this.orderFor(cr, c);
+    if (!o) { this.flash('No path there'); return; }
+    if (!maxMove(cr)) { this.flash('This creature cannot move'); return; }
+    this.setOrder(o);
+    if (planOrder(this.game.state, o).blocked) this.flash('No path there right now');
+  }
+  /** Live path preview while a unit is being dragged (null clears it). */
+  previewOrder(o: Order | null) {
+    const same = JSON.stringify(o) === JSON.stringify(this.orderPreview);
+    this.orderPreview = o;
+    if (!same) this.renderOrders(this.game.state);
+  }
+  /** Draws every standing order: path squares, the turn count at the end, and the marker + ✕ cancel button on the unit. */
+  renderOrders(st: any) {
+    if (!this.r.cells) return;
+    for (const el of this.r.cells.values() as Iterable<El>) {
+      if (el.classList.contains('path') || el.classList.contains('path-end')) { el.classList.remove('path', 'path-end', 'path-preview', 'path-blocked'); delete el.dataset.turns; el.querySelector('.path-label')?.remove(); }
+    }
+    if (!st || !this.ordersAllowed(st)) { this.orders.clear(); this.orderPreview = null; }
+    const plans: [Order, OrderPlan, boolean][] = [];
+    if (st) for (const [uid, o] of [...this.orders]) {
+      const c = st.board.creatures.find((x: any) => x.uid === uid);
+      const p = c && c.owner === 'player' ? planOrder(st, o) : null;
+      if (!p || p.done) { this.orders.delete(uid); continue; }
+      if (this.orderPreview && this.orderPreview.uid === uid) continue; // the live preview stands in for it while dragging
+      plans.push([o, p, false]);
+    }
+    if (st && this.orderPreview) { const p = planOrder(st, this.orderPreview); if (!p.done) plans.push([this.orderPreview, p, true]); }
+    const pfc = FACTION_GLOW[(st?.players.player.faction as string)] || '#3ee06a';
+    const cellEl = (q: { row: number; col: number }) => this.r.cells.get(q.row + ',' + q.col) as El | undefined;
+    for (const [o, p, pv] of plans) {
+      for (const q of p.path) { const el = cellEl(q); if (el) { el.classList.add('path'); if (pv) el.classList.add('path-preview'); el.style.setProperty('--pfc', pfc); } }
+      const tgt = o.kind === 'chase' ? st.board.creatures.find((x: any) => x.uid === o.targetUid) : null;
+      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
+      const end = endQ && cellEl(endQ);
+      if (!end) continue;
+      end.classList.add('path-end'); end.classList.toggle('path', !p.blocked); end.classList.toggle('path-preview', pv); end.classList.toggle('path-blocked', p.blocked); end.style.setProperty('--pfc', pfc);
+      const n = p.turns;
+      const text = p.blocked || !isFinite(n) ? 'Blocked' : o.kind === 'chase' ? 'Chase' : `${n} turn${n === 1 ? '' : 's'}`;
+      if (isFinite(n)) end.dataset.turns = String(n);
+      end.querySelector('.path-label')?.remove();
+      end.append(h('span', { class: 'path-label', role: 'status', 'data-kind': o.kind, title: o.kind === 'chase' && isFinite(n) && !p.blocked ? `Chase: ${n} turn${n === 1 ? '' : 's'} to reach` : text }, text));
+    }
+    // the ordered units' markers
+    for (const [uid, el] of this.tokens) {
+      const o = this.orders.get(uid);
+      let m = el.querySelector('.tk-order') as El | null;
+      if (!o) { m?.remove(); continue; }
+      if (!m) {
+        const b = h('button', { type: 'button', class: 'tk-cancel', 'aria-label': 'Cancel order', title: 'Cancel order', 'data-uid': uid }, '✕') as El;
+        const stop = (e: Event) => { e.stopPropagation(); };
+        b.addEventListener('pointerdown', stop);
+        b.addEventListener('pointerup', stop);
+        b.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); this.cancelOrder(uid); });
+        m = h('div', { class: 'tk-order', 'data-uid': uid }, h('span', { class: 'tk-order-mark', 'aria-hidden': 'true' }, '➜'), b) as El;
+        el.append(m);
+      }
+      m.dataset.kind = o.kind;
+      const mk = m.querySelector('.tk-order-mark') as El, sym = o.kind === 'chase' ? '⚔' : '➜';
+      if (mk.textContent !== sym) mk.textContent = sym;
+    }
+  }
   /** Do what a unit dropped (or clicked) onto square c means: attack, mine, move or an aimed ability. */
   unitActAt(cr: any, c: { row: number; col: number }) {
     if (!c || !c.row) return;
@@ -3565,8 +3692,11 @@ export class App {
     if (!cell) { if (!this.pick && (e.pointerType !== 'mouse' || e.button === 0)) this.startPan(e); return; }
     if (this.pick) {
       const p = this.pick.cells.find((c) => c.row === cell.row && c.col === cell.col);
-      if (p) { this.pick.done(p); return; }
+      if (p) { if ((this.pick as any).unit && this.orders.delete((this.pick as any).unit)) this.renderOrders(st); this.pick.done(p); return; }
       const unitPick = !!(this.pick as any).unit;
+      { // Round 28: a unit is selected and a square it can't reach this turn was clicked: give it an order
+        const pu = unitPick ? st.board.creatures.find((c: any) => c.uid === (this.pick as any).unit) : null;
+        if (pu && this.orderTime(pu) && this.orderFor(pu, cell)) { this.pick = null; this.clearGlow(); this.orderAt(pu, cell); return; } }
       this.pick = null; this.clearGlow();
       // a unit was selected: clicking another of your units selects that one instead; clicking elsewhere just deselects
       const other = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col);
@@ -3583,6 +3713,7 @@ export class App {
     this.drag(e, {
       ghost,
       onHover: (c, x, y) => {
+        if (mine) this.previewOrder(c && this.orderTime(cr) && !this.unitHasActionAt(cr, c) ? this.orderFor(cr, c) : null); // Round 28: path preview
         const a = mine && c ? atkAt(c) : null;
         const pv: any = a ? previewAttack(this.game.state, cr.uid, a.target) : null;
         if (!pv) { box?.remove(); box = null; return; }
@@ -3591,7 +3722,7 @@ export class App {
         box.replaceChildren(`You deal ${pv.youDeal} / You take ${pv.youTake}`, ...(dead ? [h('span', { class: 'skull' }, ` ${pv.targetDefeated ? '💀' : ''}${pv.attackerDefeated ? '💀' : ''}`)] : []));
         box.style.left = x + 'px'; box.style.top = y + 'px';
       },
-      onEnd: () => { box?.remove(); box = null; },
+      onEnd: () => { box?.remove(); box = null; if (this.orderPreview) this.previewOrder(null); },
       onStart: () => {
         if (!mine || this.respDlg) return false;
         const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
@@ -3605,7 +3736,7 @@ export class App {
         if (!legal.some((a: any) => a.type === 'move' || (a.type === 'ability' && this.abilityCell(a, cr)) || a.type === 'attack' || a.type === 'mine')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves, attacks OR mines)' : 'Creatures move and attack in the Action phase');
         return true;
       },
-      onDrop: (c) => { if (c) this.unitActAt(cr, c); },
+      onDrop: (c) => { if (c) this.unitDropAt(cr, c); },
       onTap: () => {
         this.view?.poke(cr.uid);
         // Owner (Oct 25): a left click uses the unit; the card opens with the right button (a touch tap on an enemy still shows its card)
