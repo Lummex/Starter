@@ -172,9 +172,18 @@
 - Commits a4800cc (app.ts), 6abe006 (style), dbbf5d2 (index.html), 98e6991 (manifest + icon) on factory/issue-8. Preview-only run 40790057521.
 - Preview https://oreheart-8-74c8ptyyl-lummex.vercel.app (run 40790057521, built in ~5 min, no Vercel jam). Tested at 844x390: manifest served (fullscreen, landscape), tip drags and shrinks, Miner summon by real mouse drag works with the tip moved. My first real drag there put the page in real full screen (pointerup gesture accepted), unlike the old pointerdown request. Hand-card drags in a test iframe can fail after an exit-fullscreen resize; reload the iframe before testing.
 
+## Learned Oct 29 (5 owner fixes after Round 26: counters, 1:1 pan/pinch, flames, glows, mine symbol)
+- Pan felt slow because scene.ts setViewState eases from the CURRENT (lagging) view: every pan/zoom step started from where the easing was, throwing away the rest. Fix: fromTarget() starts each step from the target; finger/mouse drags and pinch use now=true (no easing). Pinch must zoom about the OLD midpoint, then pan by the midpoint change.
+- Test mode (body class "test") turns easing off, so slow-pan bugs only show with the class removed. rAF is throttled in a background or iframe tab (1 frame / 0.5 s), so eased moves look stuck: measure 1:1 paths, or wait long.
+- Synthetic touch tests: send pointermove/up to the element that got pointerdown (real touches are captured), else app.touches keeps a stale finger and pinches double up. Measure squares with app.view.cellRect(), not .cell DOM (not re-laid out in 3D).
+- Arena effect looks come from src/content/owner-layout.json (Game Editor), positions from arena-layout.json; arena-fx.ts makeFlame ignored "strength" before 135b9f4.
+- Owned mines had TWO markers: the card-format emblem sprite (cr.emb) and a faction emoji sprite (cr.sprite, symbolSprite at y 1.85). The skull Ken saw was cr.sprite. Check every marker before saying "gone".
+- Commits on factory/issue-8: 9289c3e (owner-layout), 73b62fb (style), 135b9f4 (app/scene/arena-fx), cd698e7 (scene: symbol hidden). Previews b1tin7rzk (first 3) and apishvin4 (all). Measured: pan 200 px -> 200 px; pinch 100->200 px -> squares 45.6->91.2 (x2.000), centre drift 0; 3 wheel notches -> x1.568.
+
 ## Learned Oct 29 (factory fixes + R26 triage)
 - bd7f8ad/795515a: planner reads all #8 comments; builder runs with .git + tests locked away (withoutTests in pipeline.mjs). If a builder ever complains git is missing, that's intended.
 - Test harness for pipeline changes: extract the function text from the .mjs and eval it with stubs against a throwaway git repo (Node 20 from a scratchpad conda env). Gotcha: a regex stub /page=(\d+)/ also matches per_page=; use /[?&]page=/. Escaped sed in Git Bash failed silently; edit with py or the Edit tool.
 - Triage of 40 R26 failures with 3 Fable helpers (~13 checks each, read-only) took ~11 min. Give them: failing names, results.md Failures section, the spec file and git show access. Spot-check one code claim per helper.
 - GitHub upload: wait ~3 s after file_upload before Commit, and set the summary through #commit-summary-input with JS.
 - 2026-10-29 Forge job: factory fixes committed + R26 triage. Report: factory-design/studio/reports/2026-10-29-anvil-factory-fixes-and-r26-triage.md.
+- Learned: two Anvil sessions committed notes minutes apart, and my upload wiped the other's section (fixed in the next commit). Re-check main IMMEDIATELY before clicking Commit on a shared notes file, not just before the upload starts.
