@@ -4434,7 +4434,9 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
       await page.waitForTimeout(800);
       const hand = page.getByLabel('Your hand', { exact: true });
       for (const id of ids) {
-        await hand.locator(`[data-card-id="${id}"]`).first().hover();
+        // owner change (Ken, Oct 30 hand spec): the resting hand is half tucked below the screen, so hover the card's visible top part
+        const cb = await hand.locator(`[data-card-id="${id}"]`).first().boundingBox();
+        await page.mouse.move(cb.x + cb.width / 2, Math.min(vp.height - 2, cb.y + cb.height * 0.2));
         await page.waitForTimeout(400);
         await testInfo.attach(`spell-${id}-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
       }

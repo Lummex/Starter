@@ -181,7 +181,7 @@ html body input[type=radio]:checked{background:url(/art/ui/silver/gem-neutral-96
 
 /* buttons that hug a screen edge keep that cap inside the button (nothing drawn off-screen) */
 html body #app .btn.fight-btn{--sv-v:.15;--sv-ox:0px;padding-right:calc(var(--sv-cap) * .95)!important}
-html body #app .match .btn.swap-btn{--sv-ox:0px;padding-right:calc(var(--sv-cap) * .95)!important;padding-left:calc(var(--sv-cap) * .3 + 4px)!important}
+html body #app .match .btn.swap-btn{--sv-ox:0px;--sv-oxl:0px;padding-right:calc(var(--sv-cap) * .95)!important;padding-left:calc(var(--sv-cap) * .95)!important} /* Oct 31: the left gem cap no longer covers the first letter */
 html body #app .match .o-menu .btn.menu-btn{--sv-v:.1;--sv-oxl:calc(var(--sv-cap) * .35);--sv-ox:calc(var(--sv-cap) * .75);padding-left:calc(var(--sv-cap) * .65)!important}
 /* the Done drop-up: its two buttons stack so the gem caps have room */
 html body .menu-panel.done-dropup .row{flex-direction:column;align-items:center}
