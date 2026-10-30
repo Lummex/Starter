@@ -10920,3 +10920,35 @@ test('AC418: every rigged unit leaves its bind pose once loaded, and plays a wal
   const log = (await renderStats(page)).creatureAnimLog || [];
   expect(log.some((e) => e.uid === walker.uid && e.anim === 'walk'), 'the walker played its walk clip').toBe(true);
 });
+
+// Ken (Oct 30): "a gnome riding the plow ... vibrating with a little smoke effect ... wheels and tracks moving ... driving it, and ramming people"
+test('AC419: the Gnome Plow is a gnome seated on his plow: the plow is its mount, its wheels spin while it moves, and he plays the ride clip at rest', async ({ page }) => {
+  test.setTimeout(60000);
+  const s = await start(page, quiet({ board: [{ cardId: 'phase-stalker', owner: 'player', row: 6, col: 3 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 11 }] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  const plow = at(s, 6, 3);
+  const fig = async () => ((await renderStats(page)).figures || []).find((f) => f.uid === plow.uid) || {};
+  await expect.poll(async () => (await fig()).model === 'finished' && /\.glb$/.test((await fig()).source || ''), { timeout: 30000 }).toBe(true);
+  expect(await page.evaluate(() => (window.__sharedPack.units || {})['phase-stalker'])).toMatch(/^retargeted \d+/);
+  await expect.poll(async () => (await fig()).currentClip, { timeout: 8000 }).toBe('biped-ride-01');
+  const f0 = await fig();
+  expect(f0.items.map((i) => i.name + '@' + i.bone)).toContain('plow@ground');
+  expect(f0.poseDelta, 'not in its bind pose').toBeGreaterThan(0.05);
+  expect(Math.abs(f0.height - 0.48)).toBeLessThanOrEqual(0.08);
+  const rig = () => page.evaluate(() => { const r = window.__plowRigs || []; return r.length ? JSON.parse(JSON.stringify(r[r.length - 1])) : null; });
+  const r0 = await rig();
+  expect(r0, 'plow rig').toBeTruthy();
+  expect(r0).toMatchObject({ wheels: 8, tracks: 2, exhaust: true });
+  await expect.poll(async () => (await rig()).puffs, { timeout: 8000 }).toBeGreaterThan(0); // exhaust smoke at rest
+  await toAction(page);
+  const mv = (await legal(page)).filter((a) => a.type === 'move' && a.creatureUid === plow.uid).sort((a, b) => Math.max(Math.abs(b.row - 6), Math.abs(b.col - 3)) - Math.max(Math.abs(a.row - 6), Math.abs(a.col - 3)))[0];
+  expect(mv).toBeTruthy();
+  const turns0 = (await rig()).wheelTurns;
+  expect((await act(page, mv)).ok).toBe(true);
+  await expect.poll(async () => Math.abs((await rig()).wheelTurns - turns0), { timeout: 8000 }).toBeGreaterThan(0.3); // the wheels roll along the ground
+  await expect.poll(async () => { const f = await fig(); return f.row === mv.row && f.col === mv.col && !f.moving; }, { timeout: 8000 }).toBe(true);
+  const log = ((await renderStats(page)).creatureAnimLog || []).filter((e) => e.uid === plow.uid && e.anim === 'walk');
+  expect(log.length, 'drove (walk role)').toBeGreaterThan(0);
+  expect(log.every((e) => e.clip === 'biped-ride-01'), 'he stays seated while the plow drives').toBe(true);
+  await expect.poll(async () => (await fig()).currentClip, { timeout: 8000 }).toBe('biped-ride-01');
+});

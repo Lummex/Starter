@@ -3,6 +3,7 @@ import { ringColor, getRings } from './fx-settings';
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
 import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, type C3D } from './creature3d';
+import { stagePlow, plowFrame } from './plow';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D, loadCommander3d, makeCommander3d, commander3dReady, commanderIds3d } from './grubnak3d';
 import { makeMineFx, MineFx } from './mineFx';
 import { mineEmblemUrl } from './cardfmt';
@@ -878,6 +879,7 @@ const _embV = new THREE.Vector3();
         f.kb = { t0: now, from, land: tgt.clone(), h: 0.45, spin: 1, fly: 420, ret: false, landed: false, knockMove: true }; f.knockT = now + 100; fitKnockClip(f);
       } else if (mv) { f.path = walkPath(mv.from, mv.to, st, c.uid); f.run = f.path.length > 1; f.c3d?.setPace?.(f.run ? 'run' : 'walk', f.run ? RUN_SPEED : WALK_SPEED); } // Oct 30: walk (or run) square by square
     }
+    stagePlow(events, figs, now, { world, fx: spawnFx, sound: (n) => audio.play(n) }); // Gnome Plow: drive + ram (plow.ts)
     syncStatusIcons(st);
     // Oct 30 (Ken's fighting vision): an attack is a little scene. The attacker finishes its walk, turns, steps in and swings (ranged units shoot from
     // where they stand); the blow lands at IMPACT: clink or bonk, the defender flinches, is launched back with a tumble, lands, gets up and hops
@@ -1358,6 +1360,7 @@ const _embV = new THREE.Vector3();
       if (carried) goal.set(carry!.pos.x, goal.y, carry!.pos.z);
       const walking = !inKb && (onPath || Math.hypot(g.position.x - f.target.x, g.position.z - f.target.z) > 0.05); // on the ground plane: a hovering flyer is not walking // judged before this frame's glide: one slow frame may cover the whole step
       if (!onPath && !inKb) g.position.lerp(goal, f.bowl ? 1 : carried ? 0.5 : 1 - Math.exp(-dt0 * (f.lunge ? 24 : 14))); // time-based glide; snappier while stepping in to swing
+      plowFrame(f, now, { world, fx: spawnFx, sound: (n) => audio.play(n) }); // Gnome Plow: drive + ram (plow.ts)
       { // hold the stored facing; turn smoothly (~200 ms); miners look at their node while mining; walkers face each step
         const want = pathYaw ?? (f.faceUntil && now < f.faceUntil ? f.faceTo! : (f.faceWant ?? f.yaw ?? 0));
         if (f.yaw === undefined) f.yaw = want;
