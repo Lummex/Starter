@@ -100,3 +100,11 @@ For several files: open any github.com page, `fetch("https://api.github.com/repo
 - Run: set BOPS=<worker blender_ops dir>; inputs must be meshopt-free (glbtool.decompress); `blender -b --factory-startup --python spring-retarget.py -- --src s.glb --clip X --tgt t.glb --out DIR [--compare CLIP] [--render 1] [--export 1]`.
 - Studio: `animations` (65 seeded, ids biped-<slot>-<what>), `animRequests` (query status=="wanted"), `library/<card>.animSlots` (Wright writes; one id per slot, idleBreak ≤3).
 - Learned: Windows Python needs C:/ paths, not /c/ (Git Bash form) → FileNotFoundError. `$(cat list)` from py output has CRLF → use tr -d '\r'. A `cd X && rm X/*` is blocked by the safety check; just overwrite files.
+
+## Shared biped pack v1 (Oct 30, Forge job) — report: reports/2026-10-30-spring-biped-pack-v1.md
+- Pack: factory-design/design/anims/biped-pack-v1.glb (+ .json, ohrt-retarget-reference.py) on main d2b8bf4; sources/tools in biped-pack-v1-src/ (0251be5). 32 clips, 1.15 MB, skeleton-only (goblin-grunt rest), registered in Studio `animations` (approved under Ken's Oct 30 delegation).
+- Game retargets at load by bone name. Method "align": Wt = D * C(b) * Wt_rest, D = Ws_now * inv(Ws_rest), C = swing from unit rest bone dir to pack rest bone dir (leaves use the parent's C, Hips identity); hips offset × leg-length ratio. It matches each unit's own Meshy clips within 1.2–1.7° per bone; the plain delta is off by 14–20°.
+- Tools: packbuild.py (Blender, worker anim API, exports armature-only), slim.py (drops scale/non-hip translation tracks), packcheck.py (numpy retarget onto goblin/gnome/dwarf/golem: sink, lift0, slide, seam, wrist, kneeRev + contact sheets).
+- Learned: Blender's bundled python (blender-5.2.3/5.2/python/bin/python.exe) has numpy. System `py` has PIL but no numpy, and `py -I` hides user site-packages. Splitting the work into 3 Opus helpers by clip group took ~20 min wall time, and all clips passed the shared pass marks on the first merge.
+- Known quirks for the game: golem deaths float 4–11%, uneven-leg units hover a foot 2–8% in walk/run, and loops start mid-swing.
+- Next: rider, beetle (multileg) and flyer sets.
