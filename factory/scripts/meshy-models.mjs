@@ -97,14 +97,16 @@ async function run(job) {
     const ch = await task(job.id, 'multi-image-to-3d', 'character', { image_urls: job.char.map(img), ...gen, target_polycount: 20000 });
     // Non-humanoid units (rig: false) get no skeleton or animations: the model itself is the character.
     if (job.rig === false) { sizes['char.glb'] = await download(ch.model_urls.glb, path.join(out, 'char.glb')); log(job.id, 'character done (no rig)'); return; }
-    await task(job.id, 'rigging', 'rig', { input_task_id: state[job.id].character, height_meters: job.height || 1 });
-    const names = Object.keys(job.actions);
+    const rig = await task(job.id, 'rigging', 'rig', { input_task_id: state[job.id].character, height_meters: job.height || 1 });
+    const names = Object.keys(job.actions || {});
+    // "actions": {} = rig only, no paid stock clips (the shared animation pack is baked in later on the same 24-bone skeleton).
+    if (!names.length) { sizes['char.glb'] = await download(rig.result?.rigged_character_glb_url || rig.rigged_character_glb_url, path.join(out, 'char.glb')); log(job.id, 'character done (rig only)'); return; }
     const anim = await task(job.id, 'animations', 'anim', { rig_task_id: state[job.id].rig, action_ids: names.map((n) => job.actions[n]) });
     sizes['char.glb'] = await download(anim.result?.animation_glb_url || anim.animation_glb_url, path.join(out, 'char.glb'));
     log(job.id, 'character done');
   })();
   await Promise.all([charJob, ...partJobs]);
-  fs.writeFileSync(path.join(out, 'models.json'), JSON.stringify({ generated: new Date().toISOString(), from: 'Model Editor approved sheet', tasks: state[job.id], actions: job.rig === false ? {} : job.actions, rigged: job.rig !== false, parts: Object.keys(job.parts || {}), notes: job.notes || '', fileSizes: sizes }, null, 1));
+  fs.writeFileSync(path.join(out, 'models.json'), JSON.stringify({ generated: new Date().toISOString(), from: 'Model Editor approved sheet', tasks: state[job.id], actions: job.rig === false ? {} : (job.actions || {}), rigged: job.rig !== false, parts: Object.keys(job.parts || {}), notes: job.notes || '', fileSizes: sizes }, null, 1));
   return { id: job.id, sizes };
 }
 
