@@ -13,10 +13,10 @@ const pool = (s: any, w = 'player') => s.players[w].crystals;
 const total = (s: any, w = 'player') => s.players[w].crystals as number;
 
 describe('content and board', () => {
-  it('starter decks: 40 creatures, 6 spells incl. Fizzle, 4 Crystal cards', () => {
+  it('starter decks: 48 creatures, 7 spells incl. Fizzle, 5 Crystal cards (Ken, Oct 30: 60-card decks)', () => {
     for (const deck of Object.entries(STARTER_DECKS).filter(([k]) => k.endsWith('-warband')).map(([, v]) => v)) {
       const t = (ty: string) => deck.filter((id) => CARDS[id].type === ty).length;
-      expect([t('creature'), t('spell'), t('crystal')]).toEqual([88, 7, 5]);
+      expect([t('creature'), t('spell'), t('crystal')]).toEqual([48, 7, 5]);
       expect(deck).toContain('fizzle');
     }
     expect([CONFIG.boardWidth, CONFIG.boardHeight, CONFIG.mineCount]).toEqual([13, 7, 3]);
@@ -143,11 +143,12 @@ describe('economy extras', () => {
 
 describe('revision 6', () => {
   const B = (g = 0, w = 0) => g + w;
-  it('starter decks: 5 basic Miners and 3 Smith Miners each', () => {
+  it('warband starter decks: basic Miners and Smith Miners (Ken, Oct 30: 60-card decks)', () => {
     const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner'], gnomes: ['gnome-prospector', 'gnome-smith-miner'], dwarves: ['dwarf-miner', 'dwarf-smith-miner'] };
+    const want: any = { goblins: [8, 4], gnomes: [8, 4], dwarves: [5, 4] };
     for (const [f, [b, sm]] of Object.entries<any>(pairs)) {
-      expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === b).length).toBe(30);
-      expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === sm).length).toBe(20);
+      expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === b).length).toBe(want[f][0]);
+      expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === sm).length).toBe(want[f][1]);
     }
     expect(CARDS['goblin-scrounger'].name).toBe('Goblin Miner'); // owner's card data (Art Studio) is the source of truth
   });
@@ -451,7 +452,7 @@ describe('Round 3a', () => {
   it('nine legal starter decks', () => {
     const ids = Object.keys(STARTER_DECKS);
     expect(ids.length).toBe(9);
-    for (const id of ids) { expect(STARTER_DECKS[id].length).toBe(100); expect(deckProblems(STARTER_DECKS[id])).toEqual([]); }
+    for (const id of ids) { expect(STARTER_DECKS[id].length).toBe(60); expect(deckProblems(STARTER_DECKS[id])).toEqual([]); }
     const s = createMatch({ seed: 3, playerCommander: 'sproingle', playerDeckId: 'gnome-horde', opponentDeckId: 'goblin-arcane-hoard', skipMulligan: true });
     expect(s.players.player.deckId).toBe('gnome-horde');
     expect(s.players.opponent.deckId).toBe('goblin-arcane-hoard');
@@ -459,18 +460,21 @@ describe('Round 3a', () => {
 });
 
 describe('round 4', () => {
-  it('nine starter decks: 30 basic + 20 Smith Miners, style mix, legal for their Commander', () => {
-    const mix: any = { warband: [38, 7, 5], 'arcane-hoard': [18, 24, 8], horde: [46, 0, 4] };
+  it('nine 60-card starter decks: Miners about a fifth, style mix, legal for their Commander (Ken, Oct 30)', () => {
+    const mix: any = { warband: [48, 7, 5], 'arcane-hoard': [40, 14, 6], horde: [56, 0, 4] };
     const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner', 'grubnak'], gnomes: ['gnome-prospector', 'gnome-smith-miner', 'sproingle'], dwarves: ['dwarf-miner', 'dwarf-smith-miner', 'borgo'] };
     for (const d of STARTER_DECK_LIST) {
       const [b, sm, cmd] = pairs[d.faction];
-      expect(d.cards.length).toBe(100);
-      expect(d.cards.filter((x) => x === b).length).toBe(30);
-      expect(d.cards.filter((x) => x === sm).length).toBe(20);
+      expect(d.cards.length).toBe(60);
+      expect(d.cards.filter((x) => x === b).length).toBeGreaterThanOrEqual(5); // engine's opening-hand rescue looks for the basic Miner
+      expect(d.cards.filter((x) => x === sm).length).toBeGreaterThanOrEqual(3);
+      const miners = d.cards.filter((x) => CARDS[x].role === 'Gatherer' || CARDS[x].role === 'Smith' || x === b).length;
+      expect(miners).toBeLessThanOrEqual(15);
+      expect(d.cards.filter((x) => CARDS[x].type === 'creature').length).toBe(mix[d.style][0]);
       const fighters = d.cards.filter((x) => CARDS[x].type === 'creature' && CARDS[x].role !== 'Gatherer' && CARDS[x].role !== 'Smith').length;
       const spells = d.cards.filter((x) => CARDS[x].type === 'spell').length;
       const crystals = d.cards.filter((x) => CARDS[x].type === 'crystal').length;
-      expect([spells, crystals]).toEqual(mix[d.style].slice(1)); // owner changed Fighter roles; Miners are fixed at 50
+      expect([spells, crystals]).toEqual(mix[d.style].slice(1)); // owner changed Fighter roles; Miners are about 10-12 of 60
       expect(fighters).toBeGreaterThan(0);
       expect(validateDeck(d.cards, cmd).legal).toBe(true);
     }
