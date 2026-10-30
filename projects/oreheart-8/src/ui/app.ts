@@ -18,6 +18,7 @@ import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
 import { emptyCell } from '../engine';
 import { planOrder, type Order, type OrderPlan } from '../engine/orders';
 import { runOrders } from './orders-run';
+import { orderSvg, type OrderDrawing } from './order-draw';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -1167,6 +1168,8 @@ export class App {
       r.strong[side] = s; r.board.append(s);
     }
     r.board.append(r.enemyHealth, r.myHealth, r.fx);
+    // Ken (Oct 30 playtest): the order route is drawn like a football play on an SVG layer over the board (shown only on hover / select / drag)
+    r.orderSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); r.orderSvg.setAttribute('class', 'order-svg'); r.orderSvg.setAttribute('aria-hidden', 'true'); r.board.append(r.orderSvg);
     const ro = new ResizeObserver(() => this.layout());
     ro.observe(r.board);
     this.unsub = this.game.subscribe((st, ev) => this.update(st, ev));
@@ -1195,6 +1198,8 @@ export class App {
       }, 400);
     });
     r.board.addEventListener('pointerleave', clearHover);
+    r.board.addEventListener('pointermove', (e: PointerEvent) => { if (e.pointerType === 'mouse') this.setOrderHover(e.buttons ? null : this.unitAtEvent(e)?.uid ?? null); });
+    r.board.addEventListener('pointerleave', () => this.setOrderHover(null));
     r.board.addEventListener('pointerdown', clearHover, true);
     r.board.addEventListener('pointerdown', (e: PointerEvent) => { if (this.touches.size < 2) this.boardPointerDown(e); });
     r.hand.addEventListener('wheel', (e: WheelEvent) => { e.preventDefault(); this.handScroll += (e.deltaY || e.deltaX) / 80; this.layoutHand(); }, { passive: false });
@@ -1498,6 +1503,7 @@ export class App {
     for (const el of this.tokens.values()) this.placeToken(el, +el.dataset.row!, +el.dataset.col!);
     this.fitHearts();
     this.layoutHand();
+    this.drawOrders();
   }
   /** Heart on the Stronghold's wall facing the camera (bottom of its cell), shrunk so it never covers a creature label. */
   placeHeart(el: El, side: 'player' | 'opponent') {
@@ -3340,6 +3346,7 @@ export class App {
     this.dragKind = '';
     for (const el of this.r.cells.values() as Iterable<El>) { if (el.style.clipPath) el.style.clipPath = ''; el.classList.remove('glow', 'glow-attack', 'glow-swap', 'glow-mine', 'hover'); }
     this.r.board.classList.remove('drop-any');
+    this.drawOrders();
   }
   cellOfTarget(t: any) { return t.commander ? SH[t.commander as 'player' | 'opponent'] : { row: t.row, col: t.col }; }
 
@@ -3675,6 +3682,7 @@ export class App {
       const cur = this.game.state.board.creatures.find((x: any) => x.uid === uid);
       if (cur) this.unitActAt(cur, c);
     } } as any;
+    this.drawOrders();
   }
   // ------------------------------------------------------------ Round 28: move orders (UI only; the start-of-turn walk lives in orders-run.ts)
   orders = new Map<string, Order>();
@@ -3733,6 +3741,7 @@ export class App {
     if (!o) { this.flash('No path there'); return; }
     if (!maxMove(cr)) { this.flash('This creature cannot move'); return; }
     this.setOrder(o);
+    this.flashOrder(o.uid);
     if (planOrder(this.game.state, o).blocked) this.flash('No path there right now');
   }
   /** Live path preview while a unit is being dragged (null clears it). */
@@ -3741,12 +3750,14 @@ export class App {
     this.orderPreview = o;
     if (!same) this.renderOrders(this.game.state);
   }
-  /** Draws every standing order: path squares, the turn count at the end, and the marker + ✕ cancel button on the unit. */
+  /** Marks every standing order on its squares (.path / .path-end, invisible markers since Ken's Oct 30 playtest), the turn count at the end,
+   *  and the marker + ✕ cancel button on the unit; drawOrders() draws the visible football-play route for the shown ones. */
   renderOrders(st: any) {
     if (!this.r.cells) return;
     for (const el of this.r.cells.values() as Iterable<El>) {
-      if (el.classList.contains('path') || el.classList.contains('path-end')) { el.classList.remove('path', 'path-end', 'path-preview', 'path-blocked'); delete el.dataset.turns; el.querySelector('.path-label')?.remove(); }
+      if (el.classList.contains('path') || el.classList.contains('path-end')) { el.classList.remove('path', 'path-end', 'path-preview', 'path-blocked', 'path-show'); delete el.dataset.turns; delete el.dataset.uid; el.querySelector('.path-label')?.remove(); }
     }
+    this.orderPlans = [];
     if (!st || !this.ordersAllowed(st)) { this.orders.clear(); this.orderPreview = null; }
     const plans: [Order, OrderPlan, boolean][] = [];
     if (st) for (const [uid, o] of [...this.orders]) {
@@ -3765,6 +3776,8 @@ export class App {
       const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
       const end = endQ && cellEl(endQ);
       if (!end) continue;
+      this.orderPlans.push({ o, p, pv });
+      end.dataset.uid = o.uid;
       end.classList.add('path-end'); end.classList.toggle('path', !p.blocked); end.classList.toggle('path-preview', pv); end.classList.toggle('path-blocked', p.blocked); end.style.setProperty('--pfc', pfc);
       const n = p.turns;
       const text = p.blocked || !isFinite(n) ? 'Blocked' : o.kind === 'chase' ? 'Chase' : `${n} turn${n === 1 ? '' : 's'}`;
@@ -3790,6 +3803,54 @@ export class App {
       const mk = m.querySelector('.tk-order-mark') as El, sym = o.kind === 'chase' ? '⚔' : '➜';
       if (mk.textContent !== sym) mk.textContent = sym;
     }
+    this.drawOrders();
+  }
+  // Ken (Oct 30 playtest): routes are hidden at rest; shown while a mouse hovers the unit, while it is selected / just tapped, while dragging a new order, and briefly after giving one
+  orderPlans: { o: Order; p: OrderPlan; pv: boolean }[] = [];
+  orderHover: string | null = null;
+  orderFocus: string | null = null;
+  orderFlashUid: string | null = null;
+  orderFlashT: any = null;
+  setOrderHover(uid: string | null) {
+    if (uid === this.orderHover) return;
+    const old = this.orderHover; this.orderHover = uid;
+    if ((old && this.orders.has(old)) || (uid && this.orders.has(uid))) this.drawOrders();
+  }
+  flashOrder(uid: string) {
+    clearTimeout(this.orderFlashT); this.orderFlashUid = uid; this.drawOrders();
+    this.orderFlashT = setTimeout(() => { if (this.orderFlashUid === uid) { this.orderFlashUid = null; this.drawOrders(); } }, 2200);
+  }
+  /** Which orders show their route right now. */
+  orderShown(uid: string, pv: boolean) { return pv || uid === this.orderHover || uid === this.orderFocus || uid === this.orderFlashUid || uid === (this.pick as any)?.unit; }
+  /** Draws the shown routes on the SVG layer: a hand-drawn curved chalk line, an X at the end (a circle around a chased unit), plus the 'N turns' label. */
+  drawOrders() {
+    const svg = this.r.orderSvg as SVGSVGElement | undefined, view = this.view, st = this.game.state;
+    if (!svg || !view || !this.r.cells) return;
+    const shown = st ? this.orderPlans.filter((x) => this.orderShown(x.o.uid, x.pv)) : [];
+    const showUids = new Set(shown.map((x) => x.o.uid));
+    for (const el of this.r.cells.values() as Iterable<El>) if (el.classList.contains('path-end')) el.classList.toggle('path-show', showUids.has(el.dataset.uid || ''));
+    if (!shown.length) { if (svg.firstChild) svg.replaceChildren(); return; }
+    const centre = (row: number, col: number) => {
+      const q = view.cellQuad?.(row, col) || [];
+      if (q.length) return { x: q.reduce((a: number, p: any) => a + p.x, 0) / q.length, y: q.reduce((a: number, p: any) => a + p.y, 0) / q.length };
+      const rc = view.cellRect(row, col); return { x: rc.x + rc.w / 2, y: rc.y + rc.h / 2 };
+    };
+    const bw = this.r.board.clientWidth, bh = this.r.board.clientHeight;
+    svg.setAttribute('viewBox', `0 0 ${bw} ${bh}`);
+    let html = '';
+    for (const { o, p, pv } of shown) {
+      const c = st.board.creatures.find((x: any) => x.uid === o.uid);
+      const tgt = o.kind === 'chase' ? st.board.creatures.find((x: any) => x.uid === o.targetUid) : null;
+      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
+      if (!c || !endQ) continue;
+      const rc = view.cellRect(endQ.row, endQ.col);
+      const sq = [{ row: c.row, col: c.col }, ...p.path];
+      if (o.kind === 'move' && (p.blocked || !p.path.length)) sq.push(endQ);
+      const d: OrderDrawing = { uid: o.uid, kind: o.kind, pts: sq.map((q) => centre(q.row, q.col)), end: centre(endQ.row, endQ.col), cw: rc.w, ch: rc.h, preview: pv, blocked: p.blocked };
+      if (o.kind === 'chase') d.pts.push(d.end);
+      html += orderSvg(d);
+    }
+    svg.innerHTML = html;
   }
   /** Do what a unit dropped (or clicked) onto square c means: attack, mine, move or an aimed ability. */
   unitActAt(cr: any, c: { row: number; col: number }) {
@@ -3808,6 +3869,7 @@ export class App {
   boardPointerDown(e: PointerEvent) {
     const st = this.game.state;
     if (!st) return;
+    if (this.orderFocus) { this.orderFocus = null; this.drawOrders(); } // Ken (Oct 30): a route stays shown only for the unit just tapped
     // Owner (Oct 25): the right mouse button opens a unit's card (and its ability menu); the left button uses units
     if (e.pointerType === 'mouse' && e.button === 2) {
       const u = this.unitAtEvent(e);
@@ -3877,6 +3939,7 @@ export class App {
         if (mine) {
           this.abilityMenu(cr);
           this.selectUnit(cr);
+          if (this.orders.has(cr.uid)) { this.orderFocus = cr.uid; this.drawOrders(); }
           if (!this.pick && !document.querySelector('.ability-menu')) {
             if (e.pointerType !== 'mouse' && this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);
             else this.flash(st.phase === 'action' && st.priority === 'player' ? 'This creature cannot act now' : 'Creatures move and attack in your Action phase');
