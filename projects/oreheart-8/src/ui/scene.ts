@@ -495,6 +495,16 @@ const _embV = new THREE.Vector3();
   const fx: { obj: THREE.Object3D; t: number; kind: string; vel?: THREE.Vector3; dur?: number }[] = [];
   const puffTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d')!; const gr = g.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
   const starTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d')!; g.fillStyle = '#ffe14a'; g.strokeStyle = '#3a2400'; g.lineWidth = 4; g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 11 : 28, a = (i / 10) * Math.PI * 2 - Math.PI / 2; g.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); } g.closePath(); g.fill(); g.stroke(); return new THREE.CanvasTexture(c); })();
+  // Oct 30 (Brush's comic stickers, public/art/combat-fx): an impact puff / sparkle and dizzy stars after a knock-back
+  const stickerTex = new Map<string, THREE.Texture>();
+  function sticker(name: string, at: THREE.Vector3, size: number, dur: number) {
+    if (low) return;
+    let t = stickerTex.get(name);
+    if (!t) { t = new THREE.TextureLoader().load(`/art/combat-fx/${name}.webp`); stickerTex.set(name, t); }
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false }));
+    sp.scale.setScalar(size); sp.position.copy(at); sp.renderOrder = 12; scene.add(sp);
+    fx.push({ obj: sp, t: performance.now(), kind: 'flash', dur, vel: new THREE.Vector3(0, 0.25, 0) });
+  }
   function spawnFx(kind: 'dust' | 'stars' | 'spark' | 'chips' | 'flash', at: THREE.Vector3, n = 5) {
     if (low) return;
     for (let i = 0; i < n; i++) {
@@ -1207,7 +1217,7 @@ const _embV = new THREE.Vector3();
     for (let i = impacts.length - 1; i >= 0; i--) { // Oct 30: the blow lands: clink on armour, bonk on everything else
       const b = impacts[i]; if (now < b.at) continue; impacts.splice(i, 1);
       const at = b.to.clone(); at.y = 0.55;
-      spawnFx(b.armored ? 'spark' : 'stars', at, b.ranged ? 4 : 7); if (!b.ranged) spawnFx('flash', at, 1);
+      spawnFx(b.armored ? 'spark' : 'stars', at, b.ranged ? 4 : 7); if (!b.ranged) spawnFx('flash', at, 1); sticker(b.armored ? 'sparkle-8' : b.ranged ? 'puff-streak' : 'puff-big', at, 0.8, 380);
       audio.play(b.commander ? 'bonk' : b.armored ? 'clink' : 'bonk');
     }
     for (const [uid, f] of figs) {
@@ -1257,7 +1267,7 @@ const _embV = new THREE.Vector3();
           inKb = true;
           if (t < b.fly) { const e = t / b.fly; g.position.lerpVectors(b.from, b.land, e); kbY = 4 * b.h * e * (1 - e); g.rotation.x = -b.spin * Math.PI * 2 * easeIO(e); }
           else if (t < down) {
-            if (!b.landed) { b.landed = true; spawnFx('dust', b.land, 6); audio.play('thud'); }
+            if (!b.landed) { b.landed = true; spawnFx('dust', b.land, 6); audio.play('thud'); sticker('dizzy-stars-' + (1 + Math.floor(Math.random() * 3)), b.land.clone().setY((f.c3d?.heightSpaces || 1) * 0.95), 0.5, 900); }
             g.position.copy(b.land); g.rotation.x = 0;
             const s = Math.sin(Math.PI * (t - b.fly) / 230); g.scale.set(f.baseScale * (1 + 0.12 * s), f.baseScale * (1 - 0.2 * s), f.baseScale * (1 + 0.12 * s));
           } else if (t < up) { const e = easeIO((t - down) / 300); g.scale.setScalar(f.baseScale); g.position.lerpVectors(b.land, f.target, e); kbY = Math.sin(e * Math.PI) * 0.14; }

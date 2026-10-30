@@ -2853,7 +2853,7 @@ test('AC84: finished Goblin figures, Grubnak, Strongholds and mines on the battl
   for (const f of r.figures) {
     const c = s.board.creatures.find((x) => x.uid === f.uid);
     expect(c, f.uid).toBeTruthy();
-    expect(f.model, f.cardId).toBe(c.cardId.startsWith('gnome') ? 'placeholder' : 'finished');
+    expect(f.model, f.cardId).toBe(c.cardId.startsWith('gnome') && !GD_MODELS.includes(c.cardId) ? 'placeholder' : 'finished'); // owner change (Ken, Oct 30): the Gemsinger Miner has its 3D model
   }
   expect(r.commanders.player).toMatchObject({ commanderId: 'grubnak', model: 'finished' });
   expect(r.commanders.opponent).toMatchObject({ commanderId: 'sproingle', model: 'placeholder' });
@@ -9564,10 +9564,11 @@ test('AC355: models load once and are reused; Gnome and Dwarf units without a mo
   if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
   await expect.poll(async () => ((await renderStats(page)).figures || []).filter((f) => f.source === 'skullbasher-rusher.glb').length, { timeout: 20000 }).toBe(4);
   expect(fetched['skullbasher-rusher'], 'char.glb downloaded once for 4 copies').toBe(1);
-  const gnome = ((await renderStats(page)).figures || []).find((f) => f.cardId === 'gnome-prospector');
-  expect(gnome && gnome.source).not.toMatch(/\.glb$/);
+  // owner change (Ken, Oct 30): the Gemsinger Miner now has its own model (loaded once, like any unit)
+  await expect.poll(async () => (((await renderStats(page)).figures || []).find((f) => f.cardId === 'gnome-prospector') || {}).source, { timeout: 20000 }).toBe('gnome-prospector.glb');
+  expect(fetched['gnome-prospector']).toBe(1);
   // Grubnak (the Commander) has his own model since round 12b-1; only other non-goblin units must not fetch one
-  expect(Object.keys(fetched).filter((k) => !(k in R21_GOBLINS) && k !== 'grubnak')).toEqual([]);
+  expect(Object.keys(fetched).filter((k) => !(k in R21_GOBLINS) && k !== 'grubnak' && k !== 'gnome-prospector')).toEqual([]);
 });
 
 test('AC357: Gnome and Dwarf units show their 3D models (character only); the clockwork beetle has no skeleton', async ({ page }) => {
