@@ -3529,7 +3529,7 @@ test('AC112/AC128: nine legal 60-card starter decks: Warband, Arcane Hoard and H
 });
 
 // New check (Ken, Oct 30: 60-card starter decks)
-test('AC409: every starter deck is exactly 60 cards, legal for its Commander, and a match deals from it', async ({ page }) => {
+test('AC417: every starter deck is exactly 60 cards, legal for its Commander, and a match deals from it', async ({ page }) => {
   await openTest(page);
   const decks = await page.evaluate(async () => await window.oreheart.listStarterDecks());
   expect(decks.length).toBe(9);
