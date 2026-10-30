@@ -111,7 +111,7 @@ interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationCl
 export interface PackClip { clip: THREE.AnimationClip; kind: string; loop: boolean; impact?: number; rootSpeed?: number; events?: { name: string; time: number }[] }
 interface Pack { clips: PackClip[]; rig: Rig }
 interface SharedSet { byName: Record<string, THREE.AnimationClip>; byKind: Record<string, THREE.AnimationClip[]>; impact: Record<string, number>; speed: Record<string, number>; events: Record<string, { name: string; time: number }[]> }
-export const PACK_URL = '/models/anims/biped-pack-v1';
+export const PACK_URL = '/models/anims/biped-pack-v2'; // Spring's v2 (Oct 30): v1's 32 clips + 25 from Mixamo
 let packP: Promise<Pack | null> | null = null;
 /** test hook (window.__sharedPack): what the pack loader did */
 export const packInfo = { url: PACK_URL, loaded: false, clips: [] as { name: string; kind: string }[], error: '', units: {} as Record<string, string> };
@@ -140,15 +140,15 @@ export function loadSharedPack(): Promise<Pack | null> {
 // Retarget (Spring's method, Oct 30): per bone b in world rotations, D = Wsrc_now(b) * inv(Wsrc_rest(b)); C(b) = shortest swing turning the target's
 // rest bone direction (b -> child) onto the pack's; Wtgt_now(b) = D * C(b) * Wtgt_rest(b); local = inv(Wtgt_now(parent)) * Wtgt_now(b). Hips: C = identity;
 // leaf bones use their parent's C. Hips position = the pack's world offset from rest x (target leg / pack leg). Baked once per model at load.
-interface Rig { order: string[]; parent: Map<string, string | null>; restW: Map<string, THREE.Quaternion>; restP: Map<string, THREE.Vector3>; restL: Map<string, THREE.Quaternion>; upW: Map<string, THREE.Quaternion>; upM: Map<string, THREE.Matrix4>; leg: number; kids: Map<string, string[]> }
+interface Rig { order: string[]; parent: Map<string, string | null>; restW: Map<string, THREE.Quaternion>; restP: Map<string, THREE.Vector3>; restL: Map<string, THREE.Quaternion>; restLp: Map<string, THREE.Vector3>; restS: Map<string, THREE.Vector3>; upW: Map<string, THREE.Quaternion>; upM: Map<string, THREE.Matrix4>; leg: number; kids: Map<string, string[]> }
 function rigOf(root: THREE.Object3D): Rig {
   root.updateMatrixWorld(true);
-  const rg: Rig = { order: [], parent: new Map(), restW: new Map(), restP: new Map(), restL: new Map(), upW: new Map(), upM: new Map(), leg: 0, kids: new Map() };
+  const rg: Rig = { order: [], parent: new Map(), restW: new Map(), restP: new Map(), restL: new Map(), restLp: new Map(), restS: new Map(), upW: new Map(), upM: new Map(), leg: 0, kids: new Map() };
   root.traverse((o: any) => {
     if (!o.isBone || rg.restW.has(o.name)) return;
     const pb = o.parent && (o.parent as any).isBone ? o.parent.name : null;
     rg.order.push(o.name); rg.parent.set(o.name, pb);
-    rg.restW.set(o.name, o.getWorldQuaternion(new THREE.Quaternion())); rg.restP.set(o.name, o.getWorldPosition(new THREE.Vector3())); rg.restL.set(o.name, o.quaternion.clone());
+    rg.restW.set(o.name, o.getWorldQuaternion(new THREE.Quaternion())); rg.restP.set(o.name, o.getWorldPosition(new THREE.Vector3())); rg.restL.set(o.name, o.quaternion.clone()); rg.restLp.set(o.name, o.position.clone()); rg.restS.set(o.name, o.scale.clone());
     if (pb) { if (!rg.kids.has(pb)) rg.kids.set(pb, []); rg.kids.get(pb)!.push(o.name); }
     else { rg.upW.set(o.name, o.parent ? o.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion()); rg.upM.set(o.name, o.parent ? o.parent.matrixWorld.clone() : new THREE.Matrix4()); }
   });
@@ -172,8 +172,28 @@ function swings(S: Rig, T: Rig): Map<string, THREE.Quaternion> {
   }
   return C;
 }
+/** Spring (Oct 30): one shared lift can't fit every body, so a standing clip is lowered / raised until this unit's lowest foot at frame 0
+ *  matches its own rest stance (forward kinematics on the baked first frame; the Hips track moves by the difference) */
+const FEET = ['LeftToeBase', 'RightToeBase', 'LeftFoot', 'RightFoot'];
+function groundFix(T: Rig, hip: string, outQ: Map<string, number[]>, outP: number[]) {
+  const W = new Map<string, THREE.Matrix4>(), q = new THREE.Quaternion(), v = new THREE.Vector3();
+  for (const b of T.order) {
+    const pb = T.parent.get(b), qa = outQ.get(b)!;
+    q.set(qa[0], qa[1], qa[2], qa[3]);
+    const pos = b === hip ? v.set(outP[0], outP[1], outP[2]) : T.restLp.get(b)!;
+    W.set(b, (pb ? W.get(pb)! : T.upM.get(b)!).clone().multiply(new THREE.Matrix4().compose(pos, q, T.restS.get(b)!)));
+  }
+  const feet = FEET.filter((f) => W.has(f) && T.restP.has(f));
+  if (!feet.length) return;
+  const now = Math.min(...feet.map((f) => new THREE.Vector3().setFromMatrixPosition(W.get(f)!).y)), rest = Math.min(...feet.map((f) => T.restP.get(f)!.y));
+  const top = Math.max(...[...T.restP.values()].map((p) => p.y)), h = Math.max(1e-6, top - rest);
+  const d = now - rest;
+  if (Math.abs(d) < 0.005 * h || Math.abs(d) > 0.25 * h) return; // already on the floor, or a pose that really leaves it
+  const up = T.upM.get(hip)!, local = new THREE.Vector3(0, -d, 0).applyMatrix3(new THREE.Matrix3().setFromMatrix4(up.clone().invert()));
+  for (let k = 0; k < outP.length; k += 3) { outP[k] += local.x; outP[k + 1] += local.y; outP[k + 2] += local.z; }
+}
 /** a pack clip baked onto this model's skeleton, or null when fewer than 80 % of its rotated bones exist here */
-function retarget(src: THREE.AnimationClip, S: Rig, T: Rig, C: Map<string, THREE.Quaternion>): THREE.AnimationClip | null {
+function retarget(src: THREE.AnimationClip, S: Rig, T: Rig, C: Map<string, THREE.Quaternion>, ground = false): THREE.AnimationClip | null {
   const qTr = new Map<string, THREE.KeyframeTrack>(); let hipTr: THREE.KeyframeTrack | null = null, hipName = '';
   for (const tr of src.tracks) { const i = tr.name.lastIndexOf('.'), bone = tr.name.slice(0, i), prop = tr.name.slice(i + 1); if (prop === 'quaternion') qTr.set(bone, tr); else if (prop === 'position' && !S.parent.get(bone) && S.restW.has(bone)) { hipTr = tr; hipName = bone; } }
   if (!qTr.size || [...qTr.keys()].filter((b) => T.restW.has(b)).length / qTr.size < 0.8) return null;
@@ -204,6 +224,7 @@ function retarget(src: THREE.AnimationClip, S: Rig, T: Rig, C: Map<string, THREE
   }
   const tracks: THREE.KeyframeTrack[] = [];
   for (const [b, vals] of outQ) if (S.restW.has(b)) tracks.push(new THREE.QuaternionKeyframeTrack(b + '.quaternion', times, vals));
+  if (outP.length && ground) groundFix(T, hipName, outQ, outP);
   if (outP.length) tracks.push(new THREE.VectorKeyframeTrack(hipName + '.position', times, outP));
   return new THREE.AnimationClip(src.name, src.duration, tracks);
 }
@@ -214,7 +235,7 @@ function sharedFor(id: string, char: THREE.Object3D, pack: Pack | null): SharedS
   const C = swings(pack.rig, T), ratio = pack.rig.leg > 1e-6 && T.leg > 1e-6 ? T.leg / pack.rig.leg : 1;
   const out: SharedSet = { byName: {}, byKind: {}, impact: {}, speed: {}, events: {} };
   for (const pc of pack.clips) {
-    const cl = retarget(pc.clip, pack.rig, T, C);
+    const cl = retarget(pc.clip, pack.rig, T, C, /^(idle|idleBreak|walk|run|attack|ranged|hit|cheer)$/.test(pc.kind));
     if (!cl) { packInfo.units[id] = 'bones do not match'; return null; }
     out.byName[cl.name] = cl; (out.byKind[pc.kind] ||= []).push(cl); if (pc.events) out.events[cl.name] = pc.events;
     if (pc.impact !== undefined) out.impact[cl.name] = pc.impact;
