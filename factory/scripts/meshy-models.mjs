@@ -94,10 +94,12 @@ async function run(job) {
     log(job.id, 'part done', pn);
   });
   const charJob = (async () => {
-    const ch = await task(job.id, 'multi-image-to-3d', 'character', { image_urls: job.char.map(img), ...gen, target_polycount: 20000 });
+    // "model": "<file>.glb" in meshy-jobs = rig an EXISTING model (no new mesh is made).
+    const ch = job.model ? null : await task(job.id, 'multi-image-to-3d', 'character', { image_urls: job.char.map(img), ...gen, target_polycount: 20000 });
     // Non-humanoid units (rig: false) get no skeleton or animations: the model itself is the character.
     if (job.rig === false) { sizes['char.glb'] = await download(ch.model_urls.glb, path.join(out, 'char.glb')); log(job.id, 'character done (no rig)'); return; }
-    const rig = await task(job.id, 'rigging', 'rig', { input_task_id: state[job.id].character, height_meters: job.height || 1 });
+    const src = job.model ? { model_url: 'data:application/octet-stream;base64,' + fs.readFileSync(path.join(JOBS_DIR, job.model)).toString('base64') } : { input_task_id: state[job.id].character };
+    const rig = await task(job.id, 'rigging', 'rig', { ...src, height_meters: job.height || 1 });
     const names = Object.keys(job.actions || {});
     // "actions": {} = rig only, no paid stock clips (the shared animation pack is baked in later on the same 24-bone skeleton).
     if (!names.length) { sizes['char.glb'] = await download(rig.result?.rigged_character_glb_url || rig.rigged_character_glb_url, path.join(out, 'char.glb')); log(job.id, 'character done (rig only)'); return; }
