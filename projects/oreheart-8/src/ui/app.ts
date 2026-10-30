@@ -3075,7 +3075,8 @@ export class App {
         const def = e.target.commander ? null : st.board.creatures.find((c: any) => c.row === e.target.row && c.col === e.target.col);
         const dab: string[] = def ? CARDS[def.cardId]?.abilities || [] : [];
         const word = ab.includes('sneaky') && !e.ranged ? 'backstabbed' : def && (dab.includes('armored') || dab.includes('unbreakable') || dab.includes('riotShield') || def.shield > 0) ? 'clang' : HIT_POP[cid] || (e.ranged ? 'thwack' : 'whack');
-        if (tgt) this.pop(word, tgt.row, tgt.col);
+        const wait = Math.max(0, this.view.blowDelay?.(e.uid) || 0); // Oct 30: the pop-up lands with the blow
+        if (tgt) { if (wait) setTimeout(() => this.pop(word, tgt.row, tgt.col), wait); else this.pop(word, tgt.row, tgt.col); }
       } else if (e.type === 'move' && e.knock && e.to && !events.some((x: any, j: number) => j > events.indexOf(e) && x.type === 'move' && x.knock && x.uid === e.uid)) this.pop('knockback', e.to.row, e.to.col);
       else if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('stolen', c.row, c.col); this.unitSay('unit-mine-now', c.row, c.col, true); } }
       else if (e.type === 'poisoned') this.pop('poisoned', e.row, e.col);

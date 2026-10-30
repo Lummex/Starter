@@ -128,6 +128,9 @@ class AudioEngine {
       case 'step': { const f = faction === 'goblins' ? 260 : faction === 'gnomes' ? 700 : 150; this.tone(f, f * 0.5, 0.06, faction === 'gnomes' ? 'square' : 'triangle', 0.15); if (faction === 'gnomes') this.tone(f * 1.5, f, 0.04, 'square', 0.08, 0.05); break; }
       case 'melee': this.noise(0.15, 900, 1, 0.6); this.tone(140, 50, 0.18, 'sawtooth', 0.4); break;
       case 'ranged': this.noise(0.18, 2500, 2, 0.35, 0, 'bandpass', 600); this.tone(900, 200, 0.15, 'triangle', 0.2); break;
+      case 'bonk': this.tone(620, 160, 0.14, 'square', 0.28); this.noise(0.08, 700, 1, 0.35); this.tone(1240, 900, 0.05, 'sine', 0.12, 0.02); break; // Oct 30: cartoon bonk
+      case 'clink': this.tone(2350, 2300, 0.18, 'sine', 0.22); this.tone(3520, 3400, 0.12, 'sine', 0.14, 0.01); this.noise(0.05, 6000, 3, 0.25, 0, 'highpass'); break; // metal clink
+      case 'thud': this.noise(0.14, 300, 1, 0.45, 0, 'lowpass', 120); this.tone(110, 55, 0.12, 'sine', 0.35); break; // landing after a knock-back
       case 'pick': this.tone(1800, 1200, 0.06, 'square', 0.25); this.noise(0.06, 5000, 3, 0.3, 0, 'highpass'); break;
       case 'chime': this.tone(1320, 1320, 0.35, 'sine', 0.25); this.tone(1760, 1760, 0.4, 'sine', 0.2, 0.08); break;
       case 'tick': this.tone(900, 800, 0.05, 'square', 0.12); break;

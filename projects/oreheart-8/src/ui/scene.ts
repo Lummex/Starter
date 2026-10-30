@@ -30,6 +30,8 @@ export interface BoardView {
   is3D: boolean;
   setState(state: any, events: any[]): void;
   playBowl?(event: any): void;
+  /** Oct 30: ms until this unit's attack blow lands (pop-ups wait for it) */
+  blowDelay?(uid: string): number;
   cellRect(row: number, col: number): Rect;
   resize(): void;
   setCamera(c: { zoom: number; x: number; y: number }): void;
@@ -421,7 +423,37 @@ const _embV = new THREE.Vector3();
     ringColor?: string; ringGreyed?: boolean;
     group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
+    /** Oct 30: squares still to walk (one per step), running gait, knock-back flight, delayed hit flash, step-in length, when its blow lands */
+    path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; hitAt?: number; lungeDur?: number; blowAt?: number;
   };
+  type Knock = { t0: number; from: THREE.Vector3; land: THREE.Vector3; h: number; spin: number; fly: number; ret: boolean; landed: boolean; knockMove?: boolean };
+  // Oct 30 (Ken's fighting vision): units walk square by square and fights are little comic scenes (timings in ms, snappy)
+  const WALK_SPEED = 2.8, RUN_SPEED = 4.0, IMPACT_MELEE = 250, IMPACT_RANGED = 300, LUNGE_MS = 620;
+  const impacts: { at: number; to: THREE.Vector3; ranged: boolean; armored: boolean; commander: boolean }[] = [];
+  const easeIO = (x: number) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
+  /** step in fast, hold the swing, step back */
+  const lungeShape = (k: number) => (k < 0.35 ? 1 - (1 - k / 0.35) ** 2 : k < 0.55 ? 1 : 1 - easeIO((k - 0.55) / 0.45));
+  /** king steps from one square to another, each step to a free square where there is a choice (straight line first) */
+  function walkPath(from: { row: number; col: number }, to: { row: number; col: number }, st: any, uid: string): THREE.Vector3[] {
+    const pts: THREE.Vector3[] = [];
+    let r = from.row, c = from.col;
+    const left = (a: number, b: number) => Math.max(Math.abs(to.row - a), Math.abs(to.col - b));
+    const free = (a: number, b: number) => (a === to.row && b === to.col) || !st.board.creatures.some((x: any) => x.uid !== uid && x.row === a && x.col === b);
+    for (let n = 0; n < 16 && (r !== to.row || c !== to.col); n++) {
+      const dr = Math.sign(to.row - r), dc = Math.sign(to.col - c);
+      const cands = [[r + dr, c + dc], [r + dr, c], [r, c + dc]].filter(([a, b]) => (a !== r || b !== c) && left(a, b) < left(r, c));
+      const [a, b] = cands.find(([x, y]) => free(x, y)) || cands[0];
+      pts.push(world(a, b)); r = a; c = b;
+    }
+    return pts;
+  }
+  /** ms until a figure finishes the walk it is on */
+  function pathLeft(f: Fig): number {
+    if (!f.path || !f.path.length) return 0;
+    let d = 0, p = f.group.position.clone().setY(0);
+    for (const q of f.path) { d += p.distanceTo(q); p = q; }
+    return (d / (f.run ? RUN_SPEED : WALK_SPEED)) * 1000;
+  }
   const figs = new Map<string, Fig>();
   // Owner fix (Ken, Oct 28): Junk Shaman carry. The carried figure hangs just under the pointer, raised above the board
   const CARRY_UP = 0.45;
@@ -469,7 +501,7 @@ const _embV = new THREE.Vector3();
     if (a3 && c3) {
       // owner-sheet Meshy model (rigged, animated); dummy parts keep the procedural reactions harmless
       g = new THREE.Group(); g.add(c3.group);
-      const cc3 = c3; cc3.onPlay = (n) => { if (n !== 'idle') creatureAnimLog.push({ uid: c.uid, cardId: c.cardId, anim: n, clip: cc3.clipOf?.(n) || '' }); };
+      const cc3 = c3; cc3.onPlay = (n) => { if (n !== 'idle') creatureAnimLog.push({ uid: c.uid, cardId: c.cardId, anim: n === 'run' ? 'walk' : n, clip: cc3.clipOf?.(n) || '', ...(n === 'run' ? { gait: 'run' } : {}) }); };
       const dm = () => new THREE.Group();
       parts = { armL: dm(), armR: dm(), head: dm(), body: dm(), weapon: dm(), legL: dm(), legR: dm(), aura: null };
       finished = true; mats = c3.mats; baseScale = CREATURE_H;
@@ -533,7 +565,7 @@ const _embV = new THREE.Vector3();
     return { group: g, finished, mats, parts, baseScale };
   }
 
-  const creatureAnimLog: { uid: string; cardId: string; anim: string; clip?: string }[] = [];
+  const creatureAnimLog: { uid: string; cardId: string; anim: string; clip?: string; gait?: string }[] = [];
   const asked = new Set<string>();
   const pendingBorn = new Map<string, number>(); // summon time carried over when a token is rebuilt as its 3D model
   // each goblin model is fetched once, only when a unit of it is on the board
@@ -710,7 +742,7 @@ const _embV = new THREE.Vector3();
         figs.set(c.uid, f);
         if (born) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }
         // creatures keep their stored facing (set below every state update)
-        f.yaw = facingYaw(c, c.owner); m.group.rotation.y = f.yaw;
+        f.yaw = facingYaw(c, c.owner); m.group.rotation.order = 'YXZ'; m.group.rotation.y = f.yaw;
       }
       if (f.target.distanceTo(tgt) > 0.01) { f.moving = now; if (f.group.position.distanceTo(tgt) < 6) audio.play('step', CARDS[c.cardId].faction); }
       f.target.copy(tgt); f.row = c.row; f.col = c.col;
@@ -740,24 +772,58 @@ const _embV = new THREE.Vector3();
         if (ic) ic.visible = false; // owner (Oct 25): the drunk icon now shows with the other status icons above the head
       }
       const mv = events.find((e) => e.type === 'move' && e.uid === c.uid);
-      if (mv && mv.teleport) f.group.position.copy(tgt);
-      if (mv && mv.knock) f.knockT = now; // Round 28b: a knock-back (Smack, Shockwave, deathKnock...) plays the knockback clip while the figure slides
+      if (mv && mv.teleport) { f.group.position.copy(tgt); f.path = []; }
+      else if (mv && mv.knock) { // Round 28b + Oct 30: a knock-back (Smack, Shockwave, deathKnock...) launches the figure onto its new square with a tumble
+        const from = f.group.position.clone().setY(0); f.path = [];
+        f.kb = { t0: now, from, land: tgt.clone(), h: 0.45, spin: 1, fly: 420, ret: false, landed: false, knockMove: true }; f.knockT = now + 100;
+      } else if (mv) { f.path = walkPath(mv.from, mv.to, st, c.uid); f.run = f.path.length > 1; } // Oct 30: walk (or run) square by square
     }
     syncStatusIcons(st);
-    for (const [uid, f] of figs) if (!seen.has(uid) && !f.dying) { f.dying = now; spawnFx('stars', f.group.position, 5); spawnFx('dust', f.group.position, 4); audio.play('defeat-poof'); if (f.finished) audio.voiceLine('sulk'); }
+    // Oct 30 (Ken's fighting vision): an attack is a little scene. The attacker finishes its walk, turns, steps in and swings (ranged units shoot from
+    // where they stand); the blow lands at IMPACT: clink or bonk, the defender flinches, is launched back with a tumble, lands, gets up and hops
+    // back to its square. Hit flashes, deaths and the pop-up wait for the blow.
+    let blowAt = 0;
+    const strikers = new Set<string>();
     for (const e of events) {
-      if (e.type === 'attack' && figs.get(e.uid)) {
-        const f = figs.get(e.uid)!;
-        const to = e.target.commander ? world(SHP[e.target.commander][0], SHP[e.target.commander][1]) : world(e.target.row, e.target.col);
-        f.lunge = to.clone().sub(f.target).multiplyScalar(0.45);
-        f.lungeT = now;
-        f.shootT = now;
-        f.c3d?.play('attack'); // start the clip now: a defender-strike-back defeat can end this figure before the next frame
-        audio.play(e.ranged || (CARDS[f.cardId].abilities || []).includes('ranged') ? 'ranged' : 'melee');
-        if (f.finished) audio.voiceLine('yell');
-        if (!e.target.commander && !e.ranged) {
-          for (const d of figs.values()) if (d !== f && d.target.distanceTo(to) < 0.1) { d.lunge = f.target.clone().sub(d.target).multiplyScalar(0.3); d.lungeT = now; }
-        }
+      if (e.type !== 'attack' || !figs.get(e.uid)) continue;
+      const f = figs.get(e.uid)!;
+      const to = e.target.commander ? world(SHP[e.target.commander][0], SHP[e.target.commander][1]) : world(e.target.row, e.target.col);
+      const ranged = !!(e.ranged || (CARDS[f.cardId].abilities || []).includes('ranged'));
+      const wait = pathLeft(f), t0 = now + wait, imp = ranged ? IMPACT_RANGED : IMPACT_MELEE;
+      f.blowAt = t0 + imp; blowAt = Math.max(blowAt, f.blowAt); strikers.add(f.uid);
+      const dir = to.clone().sub(f.target).setY(0);
+      f.faceTo = Math.atan2(dir.x, dir.z); f.faceUntil = t0 + imp + 500;
+      if (ranged) { f.lunge = dir.clone().normalize().multiplyScalar(-0.12); f.lungeT = t0 + imp - 40; f.lungeDur = 300; }
+      else { f.lunge = dir.clone().multiplyScalar(0.42); f.lungeT = t0; f.lungeDur = LUNGE_MS; }
+      f.shootT = t0;
+      if (f.c3d) {
+        const ci = f.c3d.impactOf?.('attack'), d = f.c3d.dur('attack');
+        f.c3d.setSpeed?.('attack', ci ? Math.min(2.6, Math.max(0.8, ci / (imp / 1000))) : Math.min(2.2, Math.max(1, d / 0.75)));
+        if (!wait) f.c3d.play('attack'); // start the clip now: a defender-strike-back defeat can end this figure before the next frame
+      }
+      const swing = () => { audio.play(ranged ? 'ranged' : 'melee'); if (f.finished) audio.voiceLine('yell'); };
+      if (wait) setTimeout(swing, wait); else swing();
+      const def = e.target.commander ? null : [...figs.values()].find((d) => d !== f && d.row === e.target.row && d.col === e.target.col && !(d.kb && d.kb.knockMove)) || null;
+      const dab: string[] = def ? CARDS[def.cardId]?.abilities || [] : [];
+      const dc = def ? st.board.creatures.find((x: any) => x.uid === def.uid) : null;
+      impacts.push({ at: f.blowAt, to: to.clone(), ranged, armored: dab.includes('armored') || dab.includes('unbreakable') || dab.includes('riotShield') || (dc?.shield || 0) > 0, commander: !!e.target.commander });
+      if (def) {
+        const back = def.target.clone().sub(f.target).setY(0); if (back.lengthSq() < 1e-6) back.set(0, 0, 1); back.normalize();
+        def.kb = { t0: f.blowAt, from: def.target.clone(), land: def.target.clone().addScaledVector(back, ranged ? 0.22 : 0.42), h: ranged ? 0.16 : 0.42, spin: ranged ? 0 : 1, fly: ranged ? 220 : 380, ret: true, landed: false };
+        def.knockT = f.blowAt + 120;
+        def.faceTo = Math.atan2(f.target.x - def.target.x, f.target.z - def.target.z); def.faceUntil = f.blowAt + 1100; // braces, facing the attacker
+      }
+    }
+    if (blowAt) for (const f of figs.values()) if (f.kb && f.kb.knockMove && f.kb.t0 === now) { f.kb.t0 = blowAt; f.knockT = blowAt + 100; } // ability knocks land with the blow
+    for (const [uid, f] of figs) if (!seen.has(uid) && !f.dying) {
+      const at = blowAt ? blowAt + (strikers.has(uid) ? 320 : f.kb ? f.kb.fly + 180 : 180) : now;
+      f.dying = at; const p = f.group.position;
+      const poof = () => { spawnFx('stars', p, 5); spawnFx('dust', p, 4); audio.play('defeat-poof'); if (f.finished) audio.voiceLine('sulk'); };
+      if (at > now) setTimeout(poof, at - now); else poof();
+    }
+    for (const e of events) {
+      if (e.type === 'attack') {
+        // Oct 30: staged in the pre-pass above
       } else if (e.type === 'mine' && figs.get(e.uid)) {
         const f = figs.get(e.uid)!;
         f.mineT = now;
@@ -767,8 +833,8 @@ const _embV = new THREE.Vector3();
       } else if (e.type === 'bowl') { const bf = figs.get(e.uid); if (bf) bf.shootT = now; playBowl(e); }
       else if (e.type === 'damage' && e.uid) {
         const f = figs.get(e.uid);
-        if (f && e.amount > 0) { f.hitT = now; }
-      } else if (e.type === 'damage' && e.commander) audio.play('stronghold');
+        if (f && e.amount > 0) { if (blowAt) f.hitAt = (f.blowAt && strikers.has(f.uid) ? f.blowAt : blowAt) + (strikers.has(f.uid) ? 150 : 0); else f.hitT = now; } // a strike-back lands just after the blow
+      } else if (e.type === 'damage' && e.commander) { if (blowAt > now) setTimeout(() => audio.play('stronghold'), blowAt - now); else audio.play('stronghold'); }
     }
   }
 
@@ -1120,11 +1186,18 @@ const _embV = new THREE.Vector3();
     const dt0 = Math.min(0.5, (now - (frameLast || now)) / 1000); frameLast = now; // real elapsed time (capped at 0.5 s)
     for (const fx of mineFx) fx.update(now / 1000);
     placeStatusIcons();
+    for (let i = impacts.length - 1; i >= 0; i--) { // Oct 30: the blow lands: clink on armour, bonk on everything else
+      const b = impacts[i]; if (now < b.at) continue; impacts.splice(i, 1);
+      const at = b.to.clone(); at.y = 0.55;
+      spawnFx(b.armored ? 'spark' : 'stars', at, b.ranged ? 4 : 7); if (!b.ranged) spawnFx('flash', at, 1);
+      audio.play(b.commander ? 'bonk' : b.armored ? 'clink' : 'bonk');
+    }
     for (const [uid, f] of figs) {
       const g = f.group;
-      if (f.dying && f.c3d) {
+      if (f.hitAt && now >= f.hitAt) { f.hitT = now; f.hitAt = 0; f.c3d?.play('hit'); } // Oct 30: the hit flash and flinch wait for the blow
+      if (f.dying && now >= f.dying && f.c3d) {
         // the model's own defeat clip plays out, then the figure shrinks away
-        f.c3d.play('defeat'); f.c3d.update(dt0);
+        f.c3d.play('defeat'); f.c3d.update(dt0); g.rotation.x = 0;
         const len = Math.min(1.5, Math.max(0.5, f.c3d.dur('defeat'))) * 1000;
         const k = (now - f.dying - len) / 300;
         g.position.y = 0; g.rotation.z = 0;
@@ -1132,7 +1205,7 @@ const _embV = new THREE.Vector3();
         if (k >= 1) { scene.remove(g); figs.delete(uid); }
         continue;
       }
-      if (f.dying) {
+      if (f.dying && now >= f.dying) {
         const k = (now - f.dying) / 380;
         g.scale.setScalar(Math.max(0.001, f.baseScale * (1 - k)));
         g.rotation.y += 0.3;
@@ -1141,10 +1214,38 @@ const _embV = new THREE.Vector3();
         continue;
       }
       let goal = f.target.clone();
-      if (f.lunge) {
-        const k = (now - f.lungeT) / 380;
+      const carried = !!(carry && carry.uid === f.uid);
+      if (f.bowl) f.kb = null;
+      // Oct 30: walking square by square (constant pace, facing each step), or running when the move is longer than one square
+      let pathYaw: number | undefined;
+      const onPath = !!(f.path && f.path.length) && !f.kb && !carried && !f.bowl;
+      if (onPath) {
+        const nx = f.path![0], dx = nx.x - g.position.x, dz = nx.z - g.position.z, d = Math.hypot(dx, dz), step = (f.run ? RUN_SPEED : WALK_SPEED) * dt0;
+        if (d > 1e-4) pathYaw = Math.atan2(dx, dz);
+        if (d <= step) { g.position.x = nx.x; g.position.z = nx.z; f.path!.shift(); if (f.path!.length) audio.play('step', CARDS[f.cardId].faction); }
+        else { g.position.x += (dx / d) * step; g.position.z += (dz / d) * step; }
+        goal.set(g.position.x, goal.y, g.position.z);
+      } else if (f.path && f.path.length && (carried || f.bowl)) f.path = [];
+      if (f.lunge && !onPath) {
+        const k = (now - f.lungeT) / (f.lungeDur || 380);
         if (k >= 1) f.lunge = null;
-        else goal.add(f.lunge.clone().multiplyScalar(Math.sin(k * Math.PI)));
+        else if (k > 0) goal.add(f.lunge.clone().multiplyScalar(lungeShape(k)));
+      }
+      // Oct 30: knock-back: launched up and back with a backflip, a squashy landing, then a hop back to its square
+      let kbY = 0, inKb = false;
+      if (f.kb && !carried) {
+        const b = f.kb, t = now - b.t0, down = b.fly + 230, up = down + (b.ret ? 300 : 0);
+        if (t >= 0) {
+          inKb = true;
+          if (t < b.fly) { const e = t / b.fly; g.position.lerpVectors(b.from, b.land, e); kbY = 4 * b.h * e * (1 - e); g.rotation.x = -b.spin * Math.PI * 2 * easeIO(e); }
+          else if (t < down) {
+            if (!b.landed) { b.landed = true; spawnFx('dust', b.land, 6); audio.play('thud'); }
+            g.position.copy(b.land); g.rotation.x = 0;
+            const s = Math.sin(Math.PI * (t - b.fly) / 230); g.scale.set(f.baseScale * (1 + 0.12 * s), f.baseScale * (1 - 0.2 * s), f.baseScale * (1 + 0.12 * s));
+          } else if (t < up) { const e = easeIO((t - down) / 300); g.scale.setScalar(f.baseScale); g.position.lerpVectors(b.land, f.target, e); kbY = Math.sin(e * Math.PI) * 0.14; }
+          else { f.kb = null; inKb = false; g.rotation.x = 0; g.scale.setScalar(f.baseScale); g.position.copy(b.ret ? f.target : b.land); }
+          goal.copy(g.position);
+        }
       }
       if (f.bowl) {
         const b = f.bowl, k = (now - b.t0) / 650;
@@ -1152,12 +1253,11 @@ const _embV = new THREE.Vector3();
         else if (k < 1) { const e2 = k * (2 - k); g.position.lerpVectors(b.from, b.to, e2); goal.copy(g.position); }
         else { f.bowl = null; g.rotation.z = 0; }
       }
-      const carried = !!(carry && carry.uid === f.uid);
       if (carried) goal.set(carry!.pos.x, goal.y, carry!.pos.z);
-      const walking = g.position.distanceTo(f.target) > 0.05; // judged before this frame's glide: one slow frame may cover the whole step
-      g.position.lerp(goal, f.bowl ? 1 : carried ? 0.5 : 1 - Math.exp(-dt0 * 14)); // time-based glide (0.22 per frame at 60 fps, as before)
-      { // hold the stored facing; turn smoothly (~200 ms); miners look at their node while mining
-        const want = f.faceUntil && now < f.faceUntil ? f.faceTo! : (f.faceWant ?? f.yaw ?? 0);
+      const walking = !inKb && (onPath || Math.hypot(g.position.x - f.target.x, g.position.z - f.target.z) > 0.05); // on the ground plane: a hovering flyer is not walking // judged before this frame's glide: one slow frame may cover the whole step
+      if (!onPath && !inKb) g.position.lerp(goal, f.bowl ? 1 : carried ? 0.5 : 1 - Math.exp(-dt0 * (f.lunge ? 24 : 14))); // time-based glide; snappier while stepping in to swing
+      { // hold the stored facing; turn smoothly (~200 ms); miners look at their node while mining; walkers face each step
+        const want = pathYaw ?? (f.faceUntil && now < f.faceUntil ? f.faceTo! : (f.faceWant ?? f.yaw ?? 0));
         if (f.yaw === undefined) f.yaw = want;
         const d = Math.atan2(Math.sin(want - f.yaw), Math.cos(want - f.yaw));
         f.yaw = Math.abs(d) < 0.01 ? want : f.yaw + d * (1 - Math.exp(-dt0 * 16));
@@ -1178,14 +1278,14 @@ const _embV = new THREE.Vector3();
       }
       if (f.c3d) {
         const dt = Math.min(0.5, (now - (f.lastT || now)) / 1000); f.lastT = now;
-        const mk3 = (now - f.mineT) / 900, ak3 = (now - f.shootT) / 380;
+        const mk3 = (now - f.mineT) / 900, ak3 = now >= f.shootT ? (now - f.shootT) / 600 : 2;
         if (f.born) f.bornAt = f.born;
         f.c3d.trig?.(f.shootT, f.born || (f.bornAt && now - f.bornAt < 12000 ? f.bornAt : 0)); // the model may finish loading after the short summon drop
         // Round 28b: knock-back and bowled-over reactions (Ken's slots) come before the plain hit; an idle break plays once in a while
-        const knocked = f.knockT && now - f.knockT < 700 && f.c3d.has?.('knockback'), bowledNow = f.bowledT && now >= f.bowledT && now - f.bowledT < 900 && f.c3d.has?.('bowled');
+        const knocked = f.knockT && now >= f.knockT && now - f.knockT < 700 && f.c3d.has?.('knockback'), bowledNow = f.bowledT && now >= f.bowledT && now - f.bowledT < 900 && f.c3d.has?.('bowled');
         if (!walking && !f.shootT && !f.hitT && f.c3d.has?.('idleBreak')) { if (!f.idleBreakAt) f.idleBreakAt = now + 6000 + Math.random() * 8000; else if (now > f.idleBreakAt) { f.idleBreakT = now; f.idleBreakAt = now + 9000 + Math.random() * 9000; } } else f.idleBreakAt = 0;
         const breaking = f.idleBreakT && now - f.idleBreakT < (f.c3d.dur('idleBreak') || 1.5) * 1000;
-        f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : f.shootT && ak3 < 1 ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : bowledNow ? 'bowled' : knocked ? 'knockback' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? 'walk' : breaking ? 'idleBreak' : 'idle');
+        f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : f.shootT && ak3 < 1 ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : bowledNow ? 'bowled' : knocked ? 'knockback' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? (f.run && onPath ? 'run' : 'walk') : breaking ? 'idleBreak' : 'idle');
         f.c3d.update(dt);
         g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
         if (f.c3d.lift) g.position.y = (f.born ? g.position.y : 0) + f.c3d.lift; // flying units hover
@@ -1194,6 +1294,7 @@ const _embV = new THREE.Vector3();
         g.position.y = carry!.pos.y + Math.sin(now / 260) * 0.04;
         if (!f.c3d?.has?.('lifted')) { g.rotation.z = Math.sin(now / 300) * 0.12; (f as any).dangle = true; } // no lifted clip: gentle dangle
       } else if ((f as any).dangle) { g.rotation.z = 0; (f as any).dangle = false; }
+      if (kbY) g.position.y += kbY;
       const p = f.parts;
       if (f.finished && p) {
         const t = now / 1000;
@@ -1340,7 +1441,7 @@ const _embV = new THREE.Vector3();
   }
 
   const api: BoardView = {
-    is3D: true, setCarry, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setCarry, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true; for (const ev of inputEvs) window.removeEventListener(ev, onInput, true); window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);
       cancelAnimationFrame(raf);
