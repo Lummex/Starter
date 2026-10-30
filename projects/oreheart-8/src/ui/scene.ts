@@ -460,7 +460,7 @@ const _embV = new THREE.Vector3();
     if (!f.path || !f.path.length) return 0;
     let d = 0, p = f.group.position.clone().setY(0);
     for (const q of f.path) { d += p.distanceTo(q); p = q; }
-    return (d / (f.run ? RUN_SPEED : WALK_SPEED)) * 1000;
+    return (d / Math.min(6, Math.max(1.2, f.c3d?.gaitSpeed?.(f.run ? 'run' : 'walk') ?? (f.run ? RUN_SPEED : WALK_SPEED)))) * 1000;
   }
   const figs = new Map<string, Fig>();
   // Owner fix (Ken, Oct 28): Junk Shaman carry. The carried figure hangs just under the pointer, raised above the board
@@ -1228,7 +1228,7 @@ const _embV = new THREE.Vector3();
       let pathYaw: number | undefined;
       const onPath = !!(f.path && f.path.length) && !f.kb && !carried && !f.bowl;
       if (onPath) {
-        const nx = f.path![0], dx = nx.x - g.position.x, dz = nx.z - g.position.z, d = Math.hypot(dx, dz), step = (f.run ? RUN_SPEED : WALK_SPEED) * dt0;
+        const nx = f.path![0], dx = nx.x - g.position.x, dz = nx.z - g.position.z, d = Math.hypot(dx, dz), step = Math.min(6, Math.max(1.2, f.c3d?.gaitSpeed?.(f.run ? 'run' : 'walk') ?? (f.run ? RUN_SPEED : WALK_SPEED))) * dt0; // the pack's pace when known (feet don't skate)
         if (d > 1e-4) pathYaw = Math.atan2(dx, dz);
         if (d <= step) { g.position.x = nx.x; g.position.z = nx.z; f.path!.shift(); if (f.path!.length) audio.play('step', CARDS[f.cardId].faction); }
         else { g.position.x += (dx / d) * step; g.position.z += (dz / d) * step; }
