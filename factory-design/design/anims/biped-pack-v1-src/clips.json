@@ -1,0 +1,198 @@
+[
+ {
+  "name": "biped-idle-01",
+  "loop": true,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idle-02",
+  "loop": true,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idle-03",
+  "loop": true,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idle-04",
+  "loop": true,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idle-05",
+  "loop": true,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idle-06",
+  "loop": true,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idle-07",
+  "loop": true,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idle-08",
+  "loop": true,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idle-09",
+  "loop": true,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idle-10",
+  "loop": true,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idleBreak-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idleBreak-02",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idleBreak-03",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-idleBreak-04",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-walk-01",
+  "loop": true,
+  "return_to_idle": false,
+  "feet_may_move": true,
+  "rootSpeed": 0.318
+ },
+ {
+  "name": "biped-walk-02",
+  "loop": true,
+  "return_to_idle": false,
+  "feet_may_move": true,
+  "rootSpeed": 0.182
+ },
+ {
+  "name": "biped-run-01",
+  "loop": true,
+  "return_to_idle": false,
+  "feet_may_move": true,
+  "rootSpeed": 0.571
+ },
+ {
+  "name": "biped-run-02",
+  "loop": true,
+  "return_to_idle": false,
+  "feet_may_move": true,
+  "rootSpeed": 0.514
+ },
+ {
+  "name": "biped-cheer-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-cheer-02",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": true
+ },
+ {
+  "name": "biped-lifted-01",
+  "loop": true,
+  "return_to_idle": false,
+  "feet_may_move": true
+ },
+ {
+  "name": "biped-attack-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-attack-02",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-attack-03",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-attack-04",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-throw-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-bonk-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-bonk-02",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-knockback-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": true
+ },
+ {
+  "name": "biped-bowled-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": true
+ },
+ {
+  "name": "biped-death-01",
+  "loop": false,
+  "return_to_idle": false,
+  "feet_may_move": true
+ },
+ {
+  "name": "biped-death-02",
+  "loop": false,
+  "return_to_idle": false,
+  "feet_may_move": true
+ }
+]
