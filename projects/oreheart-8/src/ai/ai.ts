@@ -179,7 +179,7 @@ function effectiveDamage(s: any, u: any, hits: number[]): number {
   return tot;
 }
 
-interface Prm { threatW: number; goalW: number; turnW: number; fwdW: number; rush?: number; mines?: number }
+interface Prm { threatW: number; goalW: number; turnW: number; fwdW: number; rush?: number; mines?: number; econM?: number; cmdM?: number; foeMinerM?: number; raceM?: number; lead?: number; colFwd?: number; earlyMiner?: number; foeM?: number }
 
 /** Reading the board at the start of each decision (Ken, Oct 30: "react to what I'm doing"):
  *  rush  = how hard the enemy is pushing toward our Commander (enemy fighters within 4 squares, weighted by Attack and closeness), 0..2
@@ -203,7 +203,10 @@ export function readBoard(s: any, me: string): { rush: number; mines: number } {
   return { rush: Math.max(0, Math.min(2, R / 6)), mines: Math.max(0, Math.min(2, M)) };
 }
 /** Tuning knobs (exported so the match simulator can try other values). */
-export const TUNE = { cmdW: 16, pressW: 8, myEcon: 7, foeEcon: 5, specialBias: 3, hardThreat: 0.5, medThreat: 0.4, hardTurn: 6, medTurn: 6, hardFwd: 5.5, medFwd: 4, hardNoise: 4, medNoise: 6, hardMin: 1.5, medMin: 1.5, look: 1, lookW: 0.7, moveBias: 0, medMistake: 0.2, hardMs: 300, medMs: 60, medMoves: 60, defG: 14, react: 1, d2Base: 0, rushThresh: 0.3, mineThresh: 0.75, mineHit: 40, rushHit: 14, mineBonus: 12, fighterMine: 0, swapV: 16, swapMiners: 5 };
+export const TUNE = { cmdW: 16, pressW: 8, myEcon: 7, foeEcon: 5, specialBias: 3, hardThreat: 0.5, medThreat: 0.4, hardTurn: 6, medTurn: 6, hardFwd: 5.5, medFwd: 4, hardNoise: 4, medNoise: 6, hardMin: 1.5, medMin: 1.5, look: 1, lookW: 0.7, moveBias: 0, medMistake: 0.2, hardMs: 300, medMs: 60, medMoves: 60, defG: 14, react: 1, d2Base: 0, rushThresh: 0.3, mineThresh: 0.75, mineHit: 40, rushHit: 14, mineBonus: 12, fighterMine: 0, swapV: 16, swapMiners: 5,
+  // Hard only (Oct 31): the reply-turn search. reply=0 switches it off (Hard then plays as on Oct 30).
+  reply: 1, replyK: 5, replyMargin: 40, replyW: 0.8, replyMs: 150, replyMySteps: 8, replyFoeSteps: 10, replyMoves: 8, replyDeploy: 1, replyDeployK: 4, replyTurnMs: 700,
+  hardEcon: 1, hardCmd: 1, hardFoeMiner: 1, hardFighterMine: 0, hardRace: 1, hardLeadPush: 0, hardColFwd: 0, hardEarlyMiner: 0, hardEarlyTurns: 8, hardEarlyFighterMine: 0, hardFoeUnit: 1.5 };
 const cmdVal = (h: number) => h * TUNE.cmdW + Math.min(0, h - 8) * 10;
 
 /** How good the board is for `me` (bigger = better). Reads only public information. */
@@ -211,7 +214,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
   const foe = other(me as any);
   if (s.winner) return s.winner === me ? 1e6 : -1e6;
   const my = s.players[me], fp = s.players[foe];
-  let v = cmdVal(my.health) - cmdVal(fp.health);
+  let v = (cmdVal(my.health) - cmdVal(fp.health)) * (P.cmdM || 1);
   const mine: any[] = [], foes: any[] = [];
   for (const c of s.board.creatures) (c.owner === me ? mine : foes).push(c);
   const myTurn = s.activePlayer === me;
@@ -231,7 +234,8 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
     if (c.poison > 0) { const fut = (c.poisonStacks || 1) * (CONFIG.poisonDamage ?? 1) * Math.min(c.poison, 4); v -= fut >= c.health ? unitVal(s, c, 9) * 0.6 : fut * 3; }
   }
   for (const f of foes) {
-    v -= unitVal(s, f, isMiner(CARDS[f.cardId]) ? fr++ : 0);
+    // Hard (Oct 31): enemy units count for more, so a kill always outweighs the lost "go and get it" goal below (killing an adjacent enemy used to score as a loss)
+    v -= unitVal(s, f, isMiner(CARDS[f.cardId]) ? fr++ : 0) * (isMiner(CARDS[f.cardId]) ? P.foeMinerM || 1 : 1) * (P.foeM || 1);
     if (f.poison > 0) {
       // poisoned units don't heal: their damage stays, and the poison keeps ticking
       const fut = (f.poisonStacks || 1) * (CONFIG.poisonDamage ?? 1) * Math.min(f.poison, 4);
@@ -246,7 +250,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
   // (own income counts more than the enemy's: mining your first mine also hands the enemy the underdog bonus, which must not scare us off mining)
   const rush = P.rush || 0, mineGap = P.mines || 0;
   // when they out-mine us, their income matters more: killing or knocking their Miners off a mine pays
-  v += TUNE.myEcon * nextPool(s, me as any) - (TUNE.foeEcon + 4 * mineGap) * nextPool(s, foe as any);
+  v += (P.econM || 1) * (TUNE.myEcon * nextPool(s, me as any) - (TUNE.foeEcon + 4 * mineGap) * nextPool(s, foe as any));
   for (const x of s.sites) {
     let n = 0;
     for (const c of s.board.creatures) if (c.minedMine && c.minedMine.row === x.row && c.minedMine.col === x.col && cheb(c, x) <= 1) n += c.owner === me ? 1 : -1;
@@ -261,6 +265,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
   for (const c of mine) {
     const card = CARDS[c.cardId];
     if (isMiner(card)) {
+      if (P.earlyMiner && mr <= 3) v += P.earlyMiner; // Hard, early game: the first three Miners are worth far more than any fighter
       const near = sites.filter((x: any) => cheb(c, x) <= 1);
       if (near.length) v += 10 + (near.some((x: any) => x.controller !== foe) ? 3 : 0);
       else {
@@ -273,7 +278,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
     const mv = card.move || 1;
     const turns = (t: any, r = reach) => Math.max(0, Math.ceil((cheb(c, t) - r) / mv));
     const T = P.turnW;
-    let best = 30 - T * turns(foeHome) + (fp.health <= 8 ? 8 : 0) - 8 * rush; // under a rush, racing to their Commander matters less
+    let best = 30 - T * (P.raceM || 1) * turns(foeHome) + (fp.health <= 8 ? 8 : 0) - 8 * rush + (P.lead || 0); // under a rush, racing to their Commander matters less; Hard: a material lead sends the army at the Commander
     for (const f of foes) {
       const fc = CARDS[f.cardId];
       // a rush on our Commander pulls fighters home (and widens the alarm zone); mine domination sends them after Miners
@@ -285,6 +290,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
     for (const x of sites) if (x.controller !== me) { const g = 12 + 8 * mineGap - T * Math.max(0, Math.ceil((cheb(c, x) - 1) / mv)); if (g > best) best = g; }
     v += P.goalW * best;
     v += P.fwdW * Math.min(6, Math.abs(c.row - backRow(me))); // forward, not sideways along the home row
+    if (P.colFwd) v += P.colFwd * Math.max(0, 6 - Math.abs(c.col - foeHome.col)); // Hard: and across the board toward the enemy corner
     if (c.row === backRow(me) && s.turn >= 6) v -= 2; // don't clog the summoning row
   }
   // ---- threats: what the enemy can do on its next turn with the units it has now
@@ -403,15 +409,87 @@ function shortlist(s: any, me: string, legal: any[], rand: Rand, hard: boolean):
   return pruneAbilities(s, me, out, rand, hard ? 12 : 8);
 }
 
+// ---------------------------------------------------------------- Hard only (Oct 31): the reply-turn search
+// Ken: Hard should be "pretty hard", aggressive and smart. For its few best-looking options Hard now plays the rest of its own
+// turn out (cheap greedy picks), ends the turn, and plays the player's reply turn with the player's UNITS (moves, attacks,
+// mines, specials; never the player's hand or deck, which are hidden: their Deploy phase is skipped), then judges the board
+// after that reply. An option that looks good now but hands the player a strong reply loses points; a set-up that pays off
+// over the whole turn gains them. Medium and Easy never run this.
+const HARD_P = (): Prm => ({ threatW: TUNE.hardThreat, goalW: 1, turnW: TUNE.hardTurn, fwdW: TUNE.hardFwd, econM: TUNE.hardEcon, cmdM: TUNE.hardCmd, foeMinerM: TUNE.hardFoeMiner, raceM: TUNE.hardRace, colFwd: TUNE.hardColFwd, foeM: TUNE.hardFoeUnit });
+const UNIT_ONLY = ['move', 'attack', 'mine', 'mineAt', 'ability'];
+/** One cheap greedy pick for `who` (no look-ahead): the best option by evaluate(), or null for "done". */
+function lightChoose(st: any, who: string, P: Prm, rand: Rand, unitsOnly: boolean, deadline: number): any | null {
+  const legal = legalActions(st).filter((a: any) => (unitsOnly ? UNIT_ONLY.includes(a.type) : !['done', 'pass', 'surrender', 'gathererSwap'].includes(a.type)));
+  if (!legal.length) return null;
+  const short = shortlist(st, who, legal, rand, false);
+  const moves = short.filter((a) => a.type === 'move').map((a) => { const c = st.board.creatures.find((x: any) => x.uid === a.creatureUid); return [c ? posValue(st, who, CARDS[c.cardId], a.row, a.col) - posValue(st, who, CARDS[c.cardId], c.row, c.col) : 0, a] as [number, any]; }).sort((x, y) => y[0] - x[0]).slice(0, TUNE.replyMoves).map((x) => x[1]);
+  const cands = [...short.filter((a) => a.type !== 'move'), ...moves];
+  const base = evaluate(st, who, P);
+  let best: any = null, bv = TUNE.hardMin;
+  for (const a of cands) {
+    if (a.type === 'playCrystal') return a;
+    const t = trial(st, a, who);
+    if (!t) continue;
+    if (t.winner === who) return a;
+    let v = evaluate(t, who, P) - base;
+    if (a.type === 'mineAt') v += TUNE.mineBonus;
+    else if (a.type === 'mine') v += isMiner(CARDS[st.board.creatures.find((x: any) => x.uid === a.creatureUid)?.cardId] || {}) ? TUNE.mineBonus : TUNE.fighterMine;
+    if ((a.type === 'ability' || a.type === 'cast') && v > -1) v += TUNE.specialBias;
+    if (v > bv) { bv = v; best = a; }
+    if (performance.now() > deadline) break;
+  }
+  return best;
+}
+/** Plays `who`'s current phase greedily for up to `steps` actions (stops at "done", a winner or the deadline). */
+function playout(st: any, who: string, P: Prm, steps: number, rand: Rand, unitsOnly: boolean, deadline: number): any {
+  for (let i = 0; i < steps; i++) {
+    if (st.winner || st.activePlayer !== who || (st.phase !== 'action' && st.phase !== 'deploy')) break;
+    if (st.pendingResponse) { const q: any = applyAction(st, { type: 'pass' }); if (!q.ok) break; st = q.state; continue; }
+    const a = lightChoose(st, who, P, rand, unitsOnly, deadline);
+    if (!a) break;
+    const n = trial(st, a, who);
+    if (!n) break;
+    if ((globalThis as any).__aiReplyDebug) (globalThis as any).__aiReplyDebug.push({ who, turn: st.turn, phase: st.phase, a: [a.type, a.ability || a.creatureUid || a.uid, a.row ?? a.target?.row, a.col ?? a.target?.col], after: evaluate(n, who, P) - evaluate(st, who, P) });
+    st = n;
+    if (performance.now() > deadline) break;
+  }
+  return st;
+}
+/** How the board looks for `me` after the rest of its turn and the player's reply turn, from state `t` (after one candidate action). */
+export function replyValue(t: any, me: string, P: Prm, rand: Rand, deadline: number): number {
+  const foe = other(me as any);
+  let st = t;
+  if (st.phase === 'deploy') { st = playout(st, me, P, TUNE.replyMySteps, rand, false, deadline); if (st.phase === 'deploy' && st.activePlayer === me && !st.winner) { const q: any = applyAction(st, { type: 'done' }); if (q.ok) st = q.state; } }
+  st = playout(st, me, P, TUNE.replyMySteps, rand, false, deadline);
+  // end our turn and skip the player's Deploy (their hand is hidden), to the start of their Action phase
+  for (let g = 0; g < 8 && !st.winner && !(st.phase === 'action' && st.activePlayer === foe && !st.pendingResponse); g++) {
+    const q: any = applyAction(st, st.pendingResponse ? { type: 'pass' } : { type: 'done' });
+    if (!q.ok) break;
+    st = q.state;
+  }
+  if (!st.winner) st = playout(st, foe, HARD_P(), TUNE.replyFoeSteps, rand, true, deadline);
+  // judge the board at the start of our NEXT turn: units heal to full then, poison ticks, income arrives and an empty deck costs Health.
+  // (Judging right after the reply over-counts chip damage that heals anyway.) Only our own deck is touched, never the player's hand.
+  for (let g = 0; g < 8 && !st.winner && !(st.activePlayer === me && st.phase === 'deploy' && !st.pendingResponse); g++) {
+    const q: any = applyAction(st, st.pendingResponse ? { type: 'pass' } : { type: 'done' });
+    if (!q.ok) break;
+    st = q.state;
+  }
+  return evaluate(st, me, P);
+}
+
+const replyPool = { key: '', ms: 0 };
 function smartChoose(s: any, hard: boolean, rand: Rand, legal: any[], done: any): any {
   const me = s.priority as string;
   const mood = readBoard(s, me), sharp = hard ? 1 : 0.5; // Medium reacts too, less sharply
-  const P: Prm = hard ? { threatW: TUNE.hardThreat, goalW: 1, turnW: TUNE.hardTurn, fwdW: TUNE.hardFwd } : { threatW: TUNE.medThreat, goalW: 1, turnW: TUNE.medTurn, fwdW: TUNE.medFwd };
+  const P: Prm = hard ? HARD_P() : { threatW: TUNE.medThreat, goalW: 1, turnW: TUNE.medTurn, fwdW: TUNE.medFwd };
   // react only to a real push or a real gap (small swings are normal play)
   P.rush = Math.max(0, mood.rush - TUNE.rushThresh) * sharp * TUNE.react; P.mines = Math.max(0, mood.mines - TUNE.mineThresh) * sharp * TUNE.react;
   // the forward push gives way while defending, and every step toward a goal (home, or the enemy Miners) counts more
   P.fwdW = P.fwdW * Math.max(0.2, 1 - 0.5 * P.rush);
   P.goalW = 1 + 0.75 * P.rush;
+  if (hard && s.turn <= TUNE.hardEarlyTurns) P.earlyMiner = TUNE.hardEarlyMiner;
+  if (hard && TUNE.hardLeadPush) { let L = 0; for (const c of s.board.creatures) if (!isMiner(CARDS[c.cardId])) L += c.owner === me ? 1 : -1; P.lead = TUNE.hardLeadPush * Math.max(0, Math.min(6, L)); }
   // per-turn priorities: how many enemy Miners sit on mines, and how hard the enemy fighters press our Commander
   const myHome = sh(me), foeSide = other(me as any);
   const onMines = (st: any) => st.board.creatures.filter((c: any) => c.owner === foeSide && isMiner(CARDS[c.cardId]) && st.sites.some((x: any) => cheb(c, x) <= 1)).length;
@@ -465,7 +543,7 @@ function smartChoose(s: any, hard: boolean, rand: Rand, legal: any[], done: any)
     if ((a.type === 'ability' || a.type === 'cast') && v > -1) v += TUNE.specialBias; // Ken: use special abilities and spells, not only plain attacks
     if (a.type === 'move') v += TUNE.moveBias;
     if (a.type === 'mineAt') v += TUNE.mineBonus;
-    else if (a.type === 'mine') v += isMiner(CARDS[s.board.creatures.find((x: any) => x.uid === a.creatureUid)?.cardId] || {}) ? TUNE.mineBonus : TUNE.fighterMine; // the Crystal Flow is the engine of every turn
+    else if (a.type === 'mine') v += isMiner(CARDS[s.board.creatures.find((x: any) => x.uid === a.creatureUid)?.cardId] || {}) ? TUNE.mineBonus : hard ? TUNE.hardFighterMine + (s.turn <= TUNE.hardEarlyTurns ? TUNE.hardEarlyFighterMine : 0) : TUNE.fighterMine; // the Crystal Flow is the engine of every turn
     if (P.mines! > 0 || P.rush! > 0) v += priority(a, t);
     if (a.type === 'mine' && P.rush > 0.3) { const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid); if (c && !isMiner(CARDS[c.cardId])) v -= 12 * P.rush; } // a fighter doesn't stop to mine while the Commander is rushed
     scored.push({ v: v + rand() * noise, a, t });
@@ -496,6 +574,29 @@ function smartChoose(s: any, hard: boolean, rand: Rand, legal: any[], done: any)
     }
   }
   scored.sort((x, y) => y.v - x.v);
+  const minH = hard ? TUNE.hardMin : TUNE.medMin;
+  // a per-turn pool (replyTurnMs) keeps long late-game turns quick: once it is spent, the rest of the turn uses the plain scoring
+  const poolKey = s.turn + ':' + me;
+  if (replyPool.key !== poolKey) { replyPool.key = poolKey; replyPool.ms = 0; }
+  if (hard && TUNE.reply && replyPool.ms < TUNE.replyTurnMs && (s.phase === 'action' || (TUNE.replyDeploy && s.phase === 'deploy')) && scored.length > 1 && scored[0].v > minH) {
+    const r0 = performance.now();
+    // the reply-turn search (see replyValue): re-rank the best few options by the board after the player's reply turn.
+    // The best-looking option keeps its score; the others gain or lose by how much better or worse their reply board is.
+    const K = s.phase === 'deploy' ? TUNE.replyDeployK : TUNE.replyK;
+    const top = scored.slice(0, K).filter((x) => x.t && !x.t.winner && x.v > minH && scored[0].v - x.v <= TUNE.replyMargin);
+    if (top.length > 1) {
+      const deadline = performance.now() + TUNE.replyMs;
+      const R: number[] = [];
+      for (const x of top) {
+        if (R.length >= 2 && performance.now() > deadline) break;
+        R.push(replyValue(x.t, me, P, makeRand(s.turn * 131 + 7), deadline)); // the same random stream for every option: a fair comparison
+      }
+      if ((globalThis as any).__aiReplyDebug) (globalThis as any).__aiReplyDebug.push({ R, top: top.map((x) => [x.a.type, x.a.row ?? x.a.target?.row, x.a.col ?? x.a.target?.col, Math.round(x.v)]) });
+      for (let i = 1; i < R.length; i++) top[i].v += TUNE.replyW * (R[i] - R[0]);
+      scored.sort((x, y) => y.v - x.v);
+    }
+    replyPool.ms += performance.now() - r0;
+  }
   if ((globalThis as any).__aiDebug) (globalThis as any).__aiDebug.push({ turn: s.turn, phase: s.phase, base, top: scored.slice(0, 6).map((x) => [Math.round(x.v * 10) / 10, x.a.type, x.a.ability || x.a.creatureUid || x.a.uid, x.a.row ?? x.a.target?.row, x.a.col ?? x.a.target?.col]) });
   const min = hard ? TUNE.hardMin : TUNE.medMin;
   if (!scored.length || scored[0].v <= min) return done;

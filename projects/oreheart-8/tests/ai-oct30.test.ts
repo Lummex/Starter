@@ -1,7 +1,8 @@
 // Computer opponent upgrade (Ken, Oct 30: "medium and hard need to be adjusted ... hard needs to be pretty hard").
+// Oct 31 (AI desk): Hard plays out the player's reply turn; Medium and Easy stay step-for-step the same (goldens below).
 import { describe, it, expect } from 'vitest';
 import { createMatch, applyAction, legalActions, creatureAt } from '../src/engine';
-import { aiChoose, makeRand, evaluate } from '../src/ai/ai';
+import { aiChoose, makeRand, evaluate, replyValue, TUNE } from '../src/ai/ai';
 import { CARDS, isMiner } from '../src/engine';
 import { scenario, rushBot, mineBot, MINES as SC_MINES, HOME } from '../tools/ai-sim/scenarios';
 
@@ -22,7 +23,9 @@ describe('AI Oct 30: Hard and Medium', () => {
   });
 
   it('finishes off a wounded enemy instead of scratching a healthy one', () => {
-    const s = action({ board: [P('goblin-grunt', 4, 8), O('dwarf-stoneback', 3, 7, { damage: 2 }), O('dwarf-stoneback', 3, 9)] });
+    // a Slinger (ranged, no strike back) can shoot the Stoneback on 1 Health or the healthy one (Oct 31: was a Grunt in melee, where the
+    // reply-turn search rightly saw that the kill cost the Grunt its life next turn and dodged instead)
+    const s = action({ board: [P('goblin-slinger', 5, 9), O('dwarf-stoneback', 3, 7, { damage: 3 }), O('dwarf-stoneback', 3, 9)] });
     const a = aiChoose(s, 'hard', makeRand(2));
     expect(a.type).toBe('attack');
     expect(a.target).toEqual({ row: 3, col: 7 });
@@ -110,6 +113,58 @@ describe('AI Oct 30: Hard and Medium', () => {
     }
     expect(s.winner).toBeTruthy();
   });
+});
+
+describe("AI Oct 31: Hard plays out the player's reply turn", () => {
+  const HP = () => ({ threatW: TUNE.hardThreat, goalW: 1, turnW: TUNE.hardTurn, fwdW: TUNE.hardFwd });
+  it('the reply value sees a Rocket unit jumping next to its Commander (the static threat check cannot)', () => {
+    // same board, except one enemy is a Shard Guzzler (Rocket: jump anywhere, blast, then hit) instead of a plain Grunt
+    const mk = (enemy: string) => action({ board: [P('goblin-scrounger', 6, 5, { minedMine: MINES[2] }), P('goblin-grunt', 6, 8), O(enemy, 2, 10), O('goblin-grunt', 2, 8)] }, 'player');
+    const plain = replyValue(mk('goblin-grunt'), 'player', HP(), makeRand(1), performance.now() + 2000);
+    const rocket = replyValue(mk('shard-guzzler'), 'player', HP(), makeRand(1), performance.now() + 2000);
+    expect(plain - rocket).toBeGreaterThan(20);
+  });
+  it('Hard still decides within budget with the reply search on (worst single decision, busy board)', () => {
+    let s: any = createMatch({ seed: 45, skipMulligan: true, testMode: true });
+    const r = makeRand(5);
+    let worst = 0, guard = 0, count = 0, turn = -1;
+    while (s.phase !== 'over' && s.turn < 16 && guard++ < 3000) {
+      if (s.turn !== turn) { turn = s.turn; count = 0; }
+      const t0 = performance.now();
+      let a = aiChoose(s, 'hard', r);
+      worst = Math.max(worst, performance.now() - t0);
+      if (++count > 60 && !s.pendingResponse) a = { type: 'done' };
+      let x: any = applyAction(s, a);
+      if (!x.ok) x = applyAction(s, s.pendingResponse ? { type: 'pass' } : { type: 'done' });
+      s = x.state;
+    }
+    expect(worst).toBeLessThan(1500);
+  });
+});
+
+describe('AI Oct 31: Medium is unchanged', () => {
+  // recorded on branch ai-oct30b (f3518716) with the decision time budget switched off (the budget makes Medium timing-dependent under load)
+  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 21: { turn: 27, units: 31, steps: 246 }, 23: { turn: 26, units: 18, steps: 206 }, 25: { turn: 27, units: 18, steps: 302 } };
+  for (const seed of [21, 23, 25]) {
+    it('medium vs medium, seed ' + seed, () => {
+      const keep = { medMs: TUNE.medMs, hardMs: TUNE.hardMs };
+      TUNE.medMs = 1e9; TUNE.hardMs = 1e9;
+      try {
+        let s: any = createMatch({ seed, playerCommander: ['grubnak', 'sproingle', 'borgo'][seed % 3], opponentCommander: ['borgo', 'grubnak', 'sproingle'][seed % 3], testMode: true });
+        const rand = makeRand(seed);
+        let g = 0, n = 0, turn = -1;
+        while (s.phase !== 'over' && s.turn < 40 && g++ < 30000) {
+          if (s.turn !== turn) { turn = s.turn; n = 0; }
+          let a = aiChoose(s, 'normal', rand);
+          if (++n > 60 && !s.pendingResponse && s.phase !== 'mulligan') a = { type: 'done' };
+          let r: any = applyAction(s, a);
+          if (!r.ok) r = applyAction(s, s.pendingResponse ? { type: 'pass' } : s.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' });
+          s = r.state;
+        }
+        expect({ turn: s.turn, units: s.board.creatures.length, steps: g }).toEqual(GOLDEN[seed]);
+      } finally { Object.assign(TUNE, keep); }
+    });
+  }
 });
 
 describe('AI Oct 30: Easy is unchanged', () => {

@@ -1,11 +1,14 @@
 // Headless AI-vs-AI match runner (Anvil, Oct 30). Not part of the game build.
 // Bundle: npx esbuild tools/ai-sim/sim.ts --bundle --platform=node --format=esm --outfile=<out>/sim.mjs
 // Run:    node sim.mjs <aiA> <diffA> <aiB> <diffB> <matches> [seed0] [maxTurns]
-//   aiX = old | new. Sides swap every match; commanders and starter decks rotate through all 3 x 3.
+//   aiX = old | new. Every seed is played twice (A on each side); commanders and starter decks rotate through all 3 x 3.
 import { createMatch, applyAction, legalActions, CARDS, CONFIG, STARTER_DECK_LIST, isMiner } from '../../src/engine';
 (globalThis as any).__la = legalActions;
 import { aiChoose as newChoose, makeRand, TUNE } from '../../src/ai/ai';
 if (process.env.AI_TUNE) Object.assign(TUNE, JSON.parse(process.env.AI_TUNE));
+// AI_TUNE_B: extra overrides for bot B only (applied before each of B's decisions and undone before A's)
+const TUNE_B: any = process.env.AI_TUNE_B ? JSON.parse(process.env.AI_TUNE_B) : null;
+const TUNE_A: any = TUNE_B ? Object.fromEntries(Object.keys(TUNE_B).map((k) => [k, (TUNE as any)[k]])) : null;
 import { aiChoose as oldChoose } from './ai-old';
 
 const CMDS = ['grubnak', 'sproingle', 'borgo'];
@@ -57,6 +60,7 @@ export function playMatch(seed: number, A: Bot, B: Bot, aIsPlayer: boolean, maxT
       if (la.length) { st[who].abTurns.add(key); for (const x of la) st[who].abAvail[x.ability] = (st[who].abAvail[x.ability] || 0) + 0; for (const k of new Set(la.map((x: any) => x.ability))) st[who].abAvail[k] = (st[who].abAvail[k] || 0) + 1; }
     }
     const t0 = performance.now();
+    if (TUNE_B) Object.assign(TUNE, bot === A ? TUNE_A : TUNE_B);
     let a = (bot.ai === 'new' ? newChoose : oldChoose)(s, bot.diff, rands[who]);
     const dt = performance.now() - t0;
     if (dt > 1500 && process.env.SLOW) { const la = (globalThis as any).__la ? (globalThis as any).__la(s) : []; const k: Record<string, number> = {}; for (const x of la) k[x.type + (x.ability ? ':' + x.ability : '')] = (k[x.type + (x.ability ? ':' + x.ability : '')] || 0) + 1; console.error('SLOW', Math.round(dt), 'ms seed', seed, 'turn', s.turn, s.phase, 'units', s.board.creatures.length, JSON.stringify(k), '->', a.type, a.ability || ''); }
@@ -119,7 +123,13 @@ function sum(list: any[]) {
 const [, , aiA = 'old', dA = 'hard', aiB = 'old', dB = 'normal', nStr = '20', s0 = '1', mt = '120'] = process.argv;
 const N = +nStr, A: Bot = { ai: aiA as any, diff: dA }, B: Bot = { ai: aiB as any, diff: dB };
 const res: any[] = [];
-for (let i = 0; i < N; i++) res.push(playMatch(+s0 + i, A, B, i % 2 === 0, +mt));
+// paired: every seed is played twice, once with A on each side (Oct 31: the one-sided order gave side A 56-58% even in mirror matches)
+for (let i = 0; i < N; i++) {
+  const seed = +s0 + (i >> 1), r = playMatch(seed, A, B, i % 2 === 0, +mt);
+  res.push(r);
+  // PERMATCH=1: one line per match (seed, who A played, Commanders, winner, turns) for match-up analysis
+  if (process.env.PERMATCH) console.error(JSON.stringify({ seed, aSide: i % 2 === 0 ? 'player' : 'opponent', pc: CMDS[seed % 3], oc: CMDS[Math.floor(seed / 3) % 3], first: seed % 2 ? 'player' : 'opponent', winner: r.winner, turns: r.turns, hpA: r.stA.hpLeft, hpB: r.stB.hpLeft, minedA: r.stA.mined, minedB: r.stB.mined, t6A: r.stA.t6, t6B: r.stB.t6, t12A: r.stA.t12, t12B: r.stB.t12 }));
+}
 const w = (k: string) => res.filter((r) => r.winner === k).length;
 console.log(JSON.stringify({
   A: `${aiA}-${dA}`, B: `${aiB}-${dB}`, matches: N, winsA: w('A'), winsB: w('B'), unfinished: w(null as any),
