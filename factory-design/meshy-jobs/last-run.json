@@ -1,10 +1,26 @@
 {
- "at": "2026-10-29T05:30:37.143Z",
+ "at": "2026-10-30T04:45:04.577Z",
  "results": [
   {
-   "id": "overclocked-conduit",
+   "id": "gearward-sentinel-robot",
    "sizes": {
-    "char.glb": 18866532
+    "mace.glb": 10628256,
+    "gear-shield.glb": 11074360,
+    "char.glb": 15092728
+   }
+  },
+  {
+   "id": "gemsinger-miner-silver",
+   "sizes": {
+    "pickaxe.glb": 10229976,
+    "char.glb": 15470164
+   }
+  },
+  {
+   "id": "overclocked-conduit-silver",
+   "sizes": {
+    "pickaxe.glb": 10190164,
+    "char.glb": 15660492
    }
   }
  ]

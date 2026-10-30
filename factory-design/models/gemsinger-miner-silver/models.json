@@ -1,0 +1,19 @@
+{
+ "generated": "2026-10-30T04:44:55.207Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "pickaxe": "01a18b1c-6b05-7507-89c7-bbc065d3d1ff",
+  "character": "01a18b1c-6b07-7227-9af1-01e658ee7967",
+  "rig": "01a18b1f-85ad-734a-ba94-9b412f1d0d00"
+ },
+ "actions": {},
+ "rigged": true,
+ "parts": [
+  "pickaxe"
+ ],
+ "notes": "Oct 30 (Forge, Ken delegated approvals). Views cut from the approved SILVER sheet (Sketch). Rig only, no stock clips (Forge Oct 30: the shared biped pack gives the moves). Accessories the card shows, once each.",
+ "fileSizes": {
+  "pickaxe.glb": 10229976,
+  "char.glb": 15470164
+ }
+}

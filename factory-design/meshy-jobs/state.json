@@ -272,5 +272,21 @@
   "character": "01a1861f-6238-7148-bf0b-44f8fc57bfe9",
   "rig": "01a18622-0f05-740e-b581-d4302fc0c3f0",
   "anim": "01a18622-9278-778d-bf39-c145eb30f5e8"
+ },
+ "gemsinger-miner-silver": {
+  "pickaxe": "01a18b1c-6b05-7507-89c7-bbc065d3d1ff",
+  "character": "01a18b1c-6b07-7227-9af1-01e658ee7967",
+  "rig": "01a18b1f-85ad-734a-ba94-9b412f1d0d00"
+ },
+ "overclocked-conduit-silver": {
+  "pickaxe": "01a18b1c-6b06-7273-b447-48e2ba7c4eea",
+  "character": "01a18b1c-6b06-74ec-babe-8414f19193a6",
+  "rig": "01a18b1f-85a9-708c-b9ed-f20d1e04ac21"
+ },
+ "gearward-sentinel-robot": {
+  "mace": "01a18b1c-6b07-75f9-acab-3f535295d49e",
+  "gear-shield": "01a18b1c-6b06-74ed-aa37-c81b4c1b342f",
+  "character": "01a18b1c-6b0b-7463-8948-44351d7d6710",
+  "rig": "01a18b1f-857c-773b-a1a9-bce052b97278"
  }
 }
