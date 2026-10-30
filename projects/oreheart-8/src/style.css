@@ -721,7 +721,11 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 .match~.ornament{opacity:.6}
 
 /* --- Deck Builder: painted scene, frameless deck art --- */
-.db-screen{background:linear-gradient(#0b0a10aa,#0b0a1066 40%,#0b0a10bb),url(/art/ui/deck-builder-bg.webp) center/cover no-repeat,#14120f!important}
+.db-screen{--hall:url(/art/ui/deck-builder-bg-neutral.webp);background:linear-gradient(#0b0a1088,#0b0a1044 40%,#0b0a1099),var(--hall) center/cover no-repeat,#14120f!important}
+/* Owner (Ken, Oct 30): the Deck Builder shows the painted hall of the faction being built or viewed (faction filter, else the Commander's faction; the tavern for Neutral) */
+:is(.db-screen,.screen.setup)[data-hall=goblins]{--hall:url(/art/ui/deck-builder-bg-goblins.webp)}:is(.db-screen,.screen.setup)[data-hall=gnomes]{--hall:url(/art/ui/deck-builder-bg-gnomes.webp)}:is(.db-screen,.screen.setup)[data-hall=dwarves]{--hall:url(/art/ui/deck-builder-bg-dwarves.webp)}
+/* Owner (Ken, Oct 30): Choose Your Commander shows the hall of the Commander selected or under the pointer (same files and tint as the Deck Builder) */
+.screen.setup[data-hall]{background:linear-gradient(#0b0a1088,#0b0a1044 40%,#0b0a1099),var(--hall,url(/art/ui/deck-builder-bg-neutral.webp)) center/cover no-repeat,#0d0b12!important}
 .db-pile,.db-pilewrap .db-pile{border:0!important;outline:0!important;box-shadow:none!important;background:none!important;border-radius:0!important}
 .db-pile .deck-img{border:0;outline:0;box-shadow:none;background:none;filter:drop-shadow(0 0 14px #e3b54a88) drop-shadow(0 6px 8px #000)}
 .db-pile .pile-top{border:0;box-shadow:none}
@@ -1200,7 +1204,7 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 .token .tk-stats{display:inline-flex;align-items:center;gap:1px;padding:0!important;background:none!important;border:0!important;border-radius:0!important;filter:drop-shadow(0 1px 2px #000);font-size:max(14px,2.3vh)!important;--si:max(21px,3.2vh)}
 .token .tk-stats .a,.token .tk-stats .h,.token .tk-stats .m{display:inline-flex;align-items:center;justify-content:center;width:var(--si);height:var(--si);background:center/contain no-repeat;color:#fff!important;-webkit-text-fill-color:#fff!important;font-weight:800;font-style:italic;font-size:max(14px,.62em);line-height:1;-webkit-text-stroke:.6px #000;paint-order:stroke fill;text-shadow:0 0 2px #000,0 0 2px #000,1px 1px 0 #000,-1px -1px 0 #000}
 .token .tk-stats .a{background-image:url(/art/ui/stat-sword.png)}
-.token .tk-stats .h{background-image:url(/art/ui/stat-heart.png)}
+.token .tk-stats .h{background-image:url(/art/ui/ruby-heart.png)} /* same picture as stat-heart.png (Oct 30, size) */
 .token .tk-stats .m{background-image:url(/art/ui/stat-boot.png)}
 .token[data-damaged="true"] .tk-stats .h{color:#ff4040!important;-webkit-text-fill-color:#ff4040!important}
 .token .tk-stats [data-buff="true"]{color:#3ee06a!important;-webkit-text-fill-color:#3ee06a!important}
