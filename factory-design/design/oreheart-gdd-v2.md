@@ -214,7 +214,7 @@ The computer opponent picks among them for variety. Fighters are mostly Commons,
 
 Every turn runs through the same phases, each with a 50-second timer. For the first 40 seconds no timer is shown; then a big 10-to-0 countdown pops up in the center of the screen, and at 0 the game moves to the next phase (not the end of the whole turn). Both numbers are owner settings. The tutorial has no timer.
 
-**Setup:** pick your Commander and deck. The deck is shuffled and you draw 5 cards. You may mulligan up to **3 times**: shuffle back any cards you don't want and redraw. The first mulligan is free; each later one gives you **1 card fewer** (so your opening hand can go 5 → 5 → 4 → 3). The cards are shown as real card images in one straight row; tap the ones to swap. A coin flip decides who goes first; the first player skips their first draw, and the second player draws 1 extra card.
+**Setup:** pick your Commander and deck. The deck is shuffled and you draw 5 cards. You see them as real card images in one straight row and choose **Keep Hand** or **Redraw Hand**. A redraw shuffles your whole hand back into the deck and draws a completely new hand of the same size (5 cards). You get **one redraw per match**; there is no picking single cards to swap. The computer opponent has the same choice (it redraws when its hand has no Miner or no fighter it can afford early). A coin flip decides who goes first; the first player skips their first draw, and the second player draws 1 extra card.
 
 **Luck:** you draw one card at a time from a shuffled deck, so you never know exactly what's coming. Booster packs add luck to your collection. There is no other randomness.
 
