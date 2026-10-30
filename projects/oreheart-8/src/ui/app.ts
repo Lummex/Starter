@@ -1530,8 +1530,8 @@ export class App {
     el.style.width = s + 'px'; el.style.height = s + 'px';
     // Gauge (Oct 30): the 2.5x Commander filled its square, so the heart sits at the square's outer corner (the player's bottom-left, the enemy's top-right)
     const out = side === 'player' ? -1 : 1;
-    el.style.left = Math.max(2, Math.min(window.innerWidth - s - 2, rc.x + rc.w / 2 - s / 2 + out * rc.w * 0.55)) + 'px';
-    el.style.top = Math.max(2, Math.min(window.innerHeight - s - 2, side === 'player' ? rc.y + rc.h - s * 0.6 : rc.y - s * 0.4)) + 'px';
+    el.style.left = Math.max(2, Math.min(window.innerWidth - s - 2, rc.x + rc.w / 2 - s / 2 + out * (rc.w * 0.5 + s * 0.65))) + 'px'; // fully outside the stronghold column, over the arena wall, never on a playable square
+    el.style.top = Math.max(2, Math.min(window.innerHeight - s - 2, side === 'player' ? rc.y + rc.h + 2 : rc.y - s - 2)) + 'px'; // just outside the board's bottom / top edge: never over a unit's label
     el.style.fontSize = Math.max(14, s * 0.4) + 'px';
   }
   fitHearts() {
