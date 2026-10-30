@@ -1016,7 +1016,7 @@ export function legalActions(s: any): any[] {
   if (['deploy', 'action'].includes(ph)) {
     out.push(...abilityActions(s, who).filter((a: any) => ph === 'action' || a.ability === 'ward'));
     out.push(...brewActions(s, who));
-    for (const c of s.board.creatures) if (c.owner === who && has(c, 'blink') && !c.blinkUsed && funds(pl) >= 1)
+    for (const c of s.board.creatures) if (c.owner === who && has(c, 'blink') && !c.illusion && !c.blinkUsed && funds(pl) >= 1) // fix (Oct 31): an illusion never Blinks (it made illusions forever)
       for (const o of s.board.creatures) if (o !== c && o.owner === who) out.push({ type: 'ability', creatureUid: c.uid, ability: 'blink', target: { row: o.row, col: o.col } });
     out.push({ type: 'done' });
   }
@@ -1275,6 +1275,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     }
     case 'ability': {
       if (l.ability !== 'blink') { runAbility(s, l, who, ev); break; }
+      { const bl = s.board.creatures.find((x: any) => x.uid === l.creatureUid); if (!bl || bl.illusion || bl.blinkUsed) break; } // fix (Oct 31): an illusion cannot Blink or make copies
       pay(pl, 1);
       const a = s.board.creatures.find((x: any) => x.uid === l.creatureUid);
       const b = creatureAt(s, l.target.row, l.target.col);
