@@ -19,36 +19,51 @@ const key = (q: Cell) => q.row + ',' + q.col;
  *  `dest` itself must be empty. null when there is no path. */
 export function shortestPath(s: any, c: any, dest: Cell): Cell[] | null {
   if (!dest || (dest.row === c.row && dest.col === c.col) || !emptyCell(s, dest.row, dest.col)) return null;
-  return bfs(s, c, (q) => q.row === dest.row && q.col === dest.col);
+  return bfs(s, c, (q) => q.row === dest.row && q.col === dest.col, dest);
 }
 
-/** Can `c` walk through square q on a multi-turn path? Empty squares always; a flyer also over creatures (never Strongholds, mines or off-board). */
+/** Can `c` walk through square q on a multi-turn path? Empty squares always; a flyer also over creatures (never Strongholds, mines or off-board).
+ *  Ken (Oct 30, "going around things for no reason"): our own units further away than this turn's move don't count as obstacles; they will
+ *  have moved by then, and the route is planned again every turn. Allies within this turn's reach still do (never wait behind one). */
 function passable(s: any, c: any, noUnits: any, q: Cell): boolean {
   if (emptyCell(s, q.row, q.col)) return true;
-  return has(c, 'flying') && !!creatureAt(s, q.row, q.col) && emptyCell(noUnits, q.row, q.col);
+  const o = creatureAt(s, q.row, q.col);
+  if (!o || !emptyCell(noUnits, q.row, q.col)) return false;
+  return has(c, 'flying') || (o.owner === c.owner && Math.max(Math.abs(q.row - c.row), Math.abs(q.col - c.col)) > (maxMove(c) || 0));
 }
 
-/** BFS from c's square (8 directions, DIRS8 order) to the nearest square that is empty and satisfies `goal`. Path excludes the start. */
-function bfs(s: any, c: any, goal: (q: Cell) => boolean): Cell[] | null {
+/** Ken (Oct 30): "always pick the most direct route". Breadth-first by steps (8 directions, so the fewest moves always wins), and among
+ *  routes with the same number of steps the one that stays closest to the straight line toward `aim` (no wiggles, no needless detours).
+ *  The goal must be an empty square that satisfies `goal`. Path excludes the start. */
+function bfs(s: any, c: any, goal: (q: Cell) => boolean, aim?: Cell): Cell[] | null {
   const noUnits = { ...s, board: { ...s.board, creatures: [] } };
   const start: Cell = { row: c.row, col: c.col };
+  const to = aim || start;
+  const vr = to.row - start.row, vc = to.col - start.col, vl = Math.hypot(vr, vc);
+  /** how far square q lies from the straight line start -> aim (0 on the line) */
+  const off = (q: Cell) => (vl < 1e-9 ? 0 : Math.abs((q.row - start.row) * vc - (q.col - start.col) * vr) / vl);
+  const seen = new Set<string>([key(start)]);
   const prev = new Map<string, Cell | null>([[key(start), null]]);
+  const dev = new Map<string, number>([[key(start), 0]]);
   let frontier: Cell[] = [start];
   while (frontier.length) {
-    const next: Cell[] = [];
+    const layer = new Map<string, Cell>();
     for (const q of frontier) for (const [dr, dc] of DIRS8) {
       const n: Cell = { row: q.row + dr, col: q.col + dc };
       const k = key(n);
-      if (prev.has(k) || !passable(s, c, noUnits, n)) continue;
-      prev.set(k, q);
-      if (emptyCell(s, n.row, n.col) && goal(n)) {
-        const path: Cell[] = [];
-        for (let x: Cell | null = n; x && key(x) !== key(start); x = prev.get(key(x)) ?? null) path.unshift(x);
-        return path;
-      }
-      next.push(n);
+      if (seen.has(k) || !passable(s, c, noUnits, n)) continue;
+      const d = dev.get(key(q))! + off(n) + (dr && dc ? 0.001 : 0); // straighter first; a hair less diagonal on exact ties
+      if (!layer.has(k) || d < dev.get(k)!) { layer.set(k, n); dev.set(k, d); prev.set(k, q); }
     }
-    frontier = next;
+    for (const k of layer.keys()) seen.add(k);
+    const goals = [...layer.values()].filter((n) => emptyCell(s, n.row, n.col) && goal(n));
+    if (goals.length) {
+      goals.sort((a, b) => dev.get(key(a))! - dev.get(key(b))! || Math.hypot(a.row - to.row, a.col - to.col) - Math.hypot(b.row - to.row, b.col - to.col));
+      const path: Cell[] = [];
+      for (let x: Cell | null = goals[0]; x && key(x) !== key(start); x = prev.get(key(x)) ?? null) path.unshift(x);
+      return path;
+    }
+    frontier = [...layer.values()];
   }
   return null;
 }
@@ -66,6 +81,7 @@ export function nextStep(s: any, c: any, path: Cell[]): Cell | null {
   const dests = moveDests(s, c);
   for (let k = Math.min(maxMove(c) || 0, path.length); k >= 1; k--) {
     const q = path[k - 1];
+    if (creatureAt(s, q.row, q.col)) continue; // never land on (swap with) one of our own units; walk past it on a later step
     if (dests.some((d) => d.row === q.row && d.col === q.col)) return { row: q.row, col: q.col };
   }
   return null;
@@ -82,7 +98,7 @@ export function canAttackFrom(s: any, c: any, at: Cell, enemy: any): boolean {
 /** Shortest path to the nearest square from which `enemy` is in attack range (empty path = already in range). null = unreachable. */
 export function chasePath(s: any, c: any, enemy: any): Cell[] | null {
   if (canAttackFrom(s, c, { row: c.row, col: c.col }, enemy)) return [];
-  return bfs(s, c, (q) => canAttackFrom(s, c, q, enemy));
+  return bfs(s, c, (q) => canAttackFrom(s, c, q, enemy), { row: enemy.row, col: enemy.col });
 }
 
 /** The legal attack action of `c` on `enemy` right now, or null. */

@@ -166,3 +166,20 @@ describe('Round 28 orders: planOrder', () => {
     expect(planOrder(s, { kind: 'chase', uid: w.uid, targetUid: e.uid })).toMatchObject({ blocked: true, done: false });
   });
 });
+
+describe('Oct 30 (Ken): always the most direct route', () => {
+  it('an open board gives a straight line, not a zig-zag', () => {
+    const s = mk([P('goblin-grunt', 4, 1), O('goblin-grunt', 7, 13)]);
+    const p = shortestPath(s, at(s, 4, 1), { row: 4, col: 5 })!;
+    expect(p).toEqual([{ row: 4, col: 2 }, { row: 4, col: 3 }, { row: 4, col: 4 }, { row: 4, col: 5 }]);
+    const d = shortestPath(s, at(s, 4, 1), { row: 1, col: 4 })!; // a pure diagonal stays on the diagonal
+    expect(d).toEqual([{ row: 3, col: 2 }, { row: 2, col: 3 }, { row: 1, col: 4 }]);
+  });
+  it('an ally far down the road is no reason to go around (one within this turn\'s reach still is)', () => {
+    const s = mk([P('goblin-grunt', 6, 1), P('goblin-grunt', 6, 4), O('goblin-grunt', 1, 13)]);
+    const p = shortestPath(s, at(s, 6, 1), { row: 6, col: 6 })!;
+    expect(p.every((q) => q.row === 6)).toBe(true);
+    const near = mk([P('goblin-grunt', 6, 1), P('goblin-grunt', 6, 2), O('goblin-grunt', 1, 13)]);
+    expect(has(shortestPath(near, at(near, 6, 1), { row: 6, col: 6 })!, 6, 2)).toBe(false);
+  });
+});

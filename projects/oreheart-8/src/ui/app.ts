@@ -3686,8 +3686,17 @@ export class App {
     const st = this.game.state;
     const c = st?.board.creatures.find((x: any) => x.uid === o?.uid);
     if (!c || c.owner !== 'player' || !this.ordersAllowed(st)) return false;
-    this.orders.set(o.uid, JSON.parse(JSON.stringify(o)));
+    const order: Order = JSON.parse(JSON.stringify(o));
+    this.orders.set(o.uid, order);
     this.renderOrders(st);
+    // Ken (Oct 30): an order given in your own Action phase walks its first leg right away (it uses this unit's move, like a normal move);
+    // later legs happen by themselves on your next turns
+    if (st.phase === 'action' && st.activePlayer === 'player' && st.priority === 'player' && !st.pendingResponse) {
+      const one = new Map([[o.uid, order]]);
+      void runOrders(this.game, one, { delayMs: 0, onChange: () => this.renderOrders(this.game.state) }).then(() => {
+        if (!one.has(o.uid) && this.orders.get(o.uid) === order) { this.orders.delete(o.uid); this.renderOrders(this.game.state); }
+      });
+    }
     return true;
   }
   cancelOrder(uid: string) { const had = this.orders.delete(uid); this.renderOrders(this.game.state); return had; }
