@@ -10,6 +10,7 @@ export const GRUBNAK_ANIMS = ['idle', 'laugh', 'point', 'celebrate', 'surprised'
 export type GrubnakAnim = (typeof GRUBNAK_ANIMS)[number];
 
 export interface G3DAssets {
+  /** Oct 30: a hand prop placed exactly as in Ken's Studio setup (Ledger) */ prop?: THREE.Object3D | null;
   char: THREE.Object3D;
   clips: Record<string, THREE.AnimationClip>;
   fortress: THREE.Object3D;
@@ -163,13 +164,14 @@ function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress:
 /** emotes a Commander may lack -> the clip that stands in for it */
 const EMOTE_FALLBACK: Record<string, string> = { laugh: 'attack', point: 'attack', celebrate: 'attack', cast: 'attack', taunt: 'attack', cheer: 'attack', surprised: 'hit', flinch: 'hit', walk: 'idle' };
 /** per Commander: model folder, files and how tall he stands (board squares) on top of his stronghold */
-const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortress: string; scepter: string }; figH: number; keepK: number; deck: number; sceptre: { len: number; grip: number; rot: [number, number, number] } }> = {
+type Look = { bone: string; pos: [number, number, number]; rot: [number, number, number]; scale: [number, number, number] };
+const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortress: string; scepter: string }; figH: number; keepK: number; deck: number; sceptre: { len: number; grip: number; rot: [number, number, number] }; prop?: { file: string; look: Look } }> = {
   borgo: { base: '/models/commanders/borgo/', files: { source: 'borgo.glb', fortress: 'dwarf-stronghold', scepter: 'borgo-sceptre.glb' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
-  // Oct 30 (Clay): rigged, rest pose only; every move comes from the shared pack. figH = Borgo's until Ledger saves each one's height from Ken's Studio setup.
-  sproingle: { base: '/models/commanders/sproingle/', files: { source: 'sproingle.glb', fortress: 'gnome-stronghold', scepter: '' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
-  skreeka: { base: '/models/commanders/skreeka/', files: { source: 'skreeka.glb', fortress: 'goblin-stronghold', scepter: '' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
-  sprocket: { base: '/models/commanders/sprocket/', files: { source: 'sprocket.glb', fortress: 'gnome-stronghold', scepter: '' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
-  grumblebeard: { base: '/models/commanders/grumblebeard/', files: { source: 'grumblebeard.glb', fortress: 'dwarf-stronghold', scepter: '' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
+  // Oct 30 (Clay): rigged, rest pose only; every move comes from the shared pack. figH = Ken's Studio body scale (Ledger) x 0.8, the same conversion as Borgo's.
+  sproingle: { base: '/models/commanders/sproingle/', files: { source: 'sproingle.glb', fortress: 'gnome-stronghold', scepter: '' }, figH: 0.72, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
+  skreeka: { base: '/models/commanders/skreeka/', files: { source: 'skreeka.glb', fortress: 'goblin-stronghold', scepter: '' }, figH: 1.2, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
+  sprocket: { base: '/models/commanders/sprocket/', files: { source: 'sprocket.glb', fortress: 'gnome-stronghold', scepter: '' }, figH: 0.68, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] }, prop: { file: 'wrench.glb', look: { bone: 'RightHand', pos: [-2.293, 7.176, 7.017], rot: [-16.36, -20.67, 135.98], scale: [15.776, 15.776, 15.776] } } },
+  grumblebeard: { base: '/models/commanders/grumblebeard/', files: { source: 'grumblebeard.glb', fortress: 'dwarf-stronghold', scepter: '' }, figH: 0.84, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] }, prop: { file: 'hammer.glb', look: { bone: 'RightHand', pos: [-4.807, -4.132, 0.907], rot: [-3.17, -47.48, 163.5], scale: [44.699, 44.699, 44.699] } } },
 };
 /** Oct 30: which pack kind fills each Commander role it lacks (or has only as a stock Meshy clip) */
 const CMD_PACK: [string, string][] = [['idle', 'idle'], ['walk', 'walk'], ['attack', 'attack'], ['hit', 'hit'], ['defeat', 'defeat'], ['cheer', 'cheer'], ['celebrate', 'cheer'], ['laugh', 'cheer'], ['taunt', 'cheer'], ['cast', 'attack'], ['point', 'attack'], ['surprised', 'hit'], ['flinch', 'hit']];
@@ -202,7 +204,8 @@ export function loadCommander3d(id: string): Promise<G3DAssets | null> {
           if (clips[role] && !CMD_STOCK.test(clips[role].name)) continue;
           const l = sh.byKind[kind] || []; if (l.length) clips[role] = l[Math.floor(Math.random() * l.length)];
         }
-        const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info };
+        const pr = cfg.prop ? await gl.loadAsync(cfg.base + cfg.prop.file).then((x) => x.scene).catch(() => null) : null;
+        const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info, prop: pr };
         otherLoaded.set(id, a);
         return a;
       } catch {
@@ -231,6 +234,7 @@ export function makeCommander3d(id: string, a: G3DAssets, keep: THREE.Object3D, 
   const cb0 = box(ch), H0 = cb0.max.y - cb0.min.y;
   let scepterBone = '';
   if (a.scepter) scepterBone = attachPart(ch, { name: 'scepter', file: '', bone: ['RightHand'], len: cfg.sceptre.len, grip: cfg.sceptre.grip, rot: cfg.sceptre.rot, axis: 'y' }, a.scepter, H0, () => {});
+  if (a.prop && cfg.prop) { const bn = ch.getObjectByName(cfg.prop.look.bone); if (bn) { const p = a.prop.clone(true); const L = cfg.prop.look; p.position.set(...L.pos); p.rotation.set(...(L.rot.map((d) => THREE.MathUtils.degToRad(d)) as [number, number, number]), 'XYZ'); p.scale.set(...L.scale); p.traverse((o: any) => { if (o.isMesh) o.frustumCulled = false; }); bn.add(p); scepterBone = scepterBone || bn.name; } } // Ken's Studio placement (Ledger)
   m0.stopAllAction(); m0.uncacheRoot(ch);
   const sc = new THREE.Group(); sc.scale.setScalar((cfg.figH * gk * size) / Math.max(H0, 0.01));
   ch.position.set(-(cb0.min.x + cb0.max.x) / 2, -cb0.min.y, -(cb0.min.z + cb0.max.z) / 2);
