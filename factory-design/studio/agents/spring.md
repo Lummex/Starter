@@ -125,3 +125,12 @@ For several files: open any github.com page, `fetch("https://api.github.com/repo
   - strip_xz (removing root travel) makes clips that take steps skid; use it only on lying or stationary clips.
   - Soften wrists 50% (hand halfway to following the forearm) so props don't flail.
 - Dropped: Mixamo "Large Hit Reaction From The Front" (steps back far, doesn't fit a tile).
+
+## Oct 30 night (Forge jobs): slot defaults, Plow rider, specials
+- Slot defaults for 6 old-clip units (studio/pack-v2-slot-defaults.json): the loader only gives a role to the pack when the model's models.json `clips` map doesn't name it, so these units needed a {"pack":"random"} slot + a small creature3d.ts patch (sent to Anvil).
+- Pack v3 (cc3cb09): biped-ride-01 (seated driving loop) and biped-ride-02 (ram) for the Gnome Plow. Seated hips 0.229 m on the pack rig. On Clay's plow-split.glb: gnome origin at plow-local (0.561, 0.093, -0.016), yaw -90, scale 1.061.
+- Pack v4 (7af6885, 70 clips): 11 per-card specials by 3 Opus helpers (chef-smack, rocket-ride, shockwave, sewer-slide, enforcer-stomp, colossus-slam, brew-toss, steal, shaman-lift, blink, siphon). Each checked on the 4 test units and on its own card. Slot list: studio/pack-v4-special-slots.json.
+- tools/mergeglb.py appends clips into an existing pack (old clips byte-identical); faster than a full rebuild.
+- Learned: render crops must auto-fit the figure (bbox of non-background pixels); the default preview camera leaves the character tiny.
+- Learned: the Meshy 24-bone rig has no finger bones, and the Studio "fingers" curl only poses finger bones. A closed grip (Junk Shaman staff) needs a mesh edit: a new char-vN.glb (Clay, or me if Forge assigns it).
+- Queued in Studio animRequests: clockwork-beetle multileg set (Clay's beetle rig: models/beetle-rig-oct30/char.glb, tripod gait).
