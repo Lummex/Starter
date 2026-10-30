@@ -60,21 +60,24 @@ const PARTS: Record<string, PartCfg[]> = {
     { name: 'hammer', file: 'hammer.glb', bone: ['LeftHand'], len: 0.4, grip: 0.2, rot: [0, 0, 0], axis: 'y' },
   ],
   // owner (Oct 25): Gnome and Dwarf models, character only for now (the owner adds their items with the Model Editor later)
-  'axe-thrower': [],
-  'barrelback-courier': [],
-  'brewmaster': [],
+  'axe-thrower': [{ name: 'shield', file: 'shield.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-12.652, 21.111, 0.103], rot: [-58.52, 43.389, -47.797], scale: [17, 17, 17] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'barrelback-courier': [{ name: 'barrel-pack', file: 'barrel-pack.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [3.631, 13.995, -18.271], rot: [-160.68, -0.629, 176.305], scale: [28.026, 28.026, 28.026] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'brewmaster': [{ name: 'keg-pack', file: 'keg-pack.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [3.052, 10.711, -23.178], rot: [-167.137, 7.3, 175.685], scale: [24.348, 24.348, 24.348] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'clockwork-beetle': [],
-  'crystal-drunk-delver': [],
-  'deepforge-crossbowman': [],
-  'dwarf-miner': [],
+  'crystal-drunk-delver': [
+    { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-11.916, 9.542, 10.035], rot: [-47.527, 43.36, 126.79], scale: [29.769, 29.769, 29.769] } },
+    { name: 'crystal-backpack', file: 'crystal-backpack.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [-22.899, -0.026, -8.549], rot: [1.154, 39.312, 0.926], scale: [23.689, 23.689, 23.689] } },
+  ], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'deepforge-crossbowman': [{ name: 'crystal-gun', file: 'crystal-gun.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-13.667, 14.213, 10.056], rot: [124.622, -40.578, -4.098], scale: [33.745, 33.745, 33.745] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'dwarf-miner': [{ name: 'tower-shield', file: 'tower-shield.glb', bone: ['LeftForeArm'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [3.309, 4.936, 12.344], rot: [-35.451, -2.837, 156.794], scale: [43, 43, 43] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'dwarf-pickman': [],
-  'dwarf-smith-miner': [],
-  'dwarf-stoneback': [],
+  'dwarf-smith-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-6.164, 15.149, 10.053], rot: [-66.649, 52.929, 128.399], scale: [38, 38, 38] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'dwarf-stoneback': [{ name: 'hammer', file: 'hammer.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-7.435, 10.978, 9.103], rot: [127.903, -62.14, 44.02], scale: [31.335, 31.335, 31.335] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'gearward-sentinel': [],
   'gnome-prospector': [], // Oct 30 (Clay): new Meshy model, moves from the shared pack; pickaxe waits for Ken's Studio setup
   'overclocked-conduit': [], // Oct 30 (Clay): the robot, moves from the shared pack; two pickaxes wait for Ken's Studio setup
-  'glyphshield-warden': [],
-  'gnome-cogger': [],
+  'glyphshield-warden': [{ name: 'shield', file: 'shield.glb', bone: ['LeftForeArm'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [-0.289, 25.921, 0.524], rot: [-114.616, -54.523, 103.055], scale: [28.912, 28.912, 28.912] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'gnome-cogger': [{ name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-16.476, -10.052, 6.626], rot: [-106.963, -35.01, 84.605], scale: [32.833, 32.833, 32.833] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'gnome-illusionist': [],
   'gnome-smith-miner': [],
   'gnome-tinker': [
@@ -83,21 +86,21 @@ const PARTS: Record<string, PartCfg[]> = {
     { name: 'wrench', file: 'wrench.glb', bone: ['Hips'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [-12.29, -9.118, 25.184], rot: [5.886, 46.054, 92.626], scale: [16.542, 16.542, 16.542] } },
   ],
   'gnome-widget': [],
-  'grimhold-ravager': [],
+  'grimhold-ravager': [{ name: 'hammer', file: 'hammer.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-7.368, 14.973, 3.457], rot: [-39.361, 49.914, 95.703], scale: [31.019, 31.019, 31.019] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'gyrocopter-ace': [
     { name: 'gyro-wings', file: 'gyro-wings.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [1, 8.127, -15.443], rot: [-178.557, 0.345, 175.676], scale: [53, 53, 53] } },
     { name: 'gyro-wings-2', file: 'gyro-wings.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [2.731, 7.516, -13.38], rot: [-84.27, 23.646, 2.952], scale: [62.608, 56.172, 69.629] } },
   ],
-  'hexwright-apprentice': [],
-  'ironhammer-berserker': [],
-  'oathbound-pikeman': [],
+  'hexwright-apprentice': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-8.889, 11.139, 14.226], rot: [-153.173, -64.937, 132.76], scale: [52.968, 52.968, 52.968] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'ironhammer-berserker': [{ name: 'crystal-pistol', file: 'crystal-pistol.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-1.882, 21.222, -1.587], rot: [168.899, -32.158, 92.346], scale: [16.176, 16.176, 16.176] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'oathbound-pikeman': [{ name: 'rifle', file: 'rifle.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-44.159, 16.494, 20.613], rot: [163.196, -28.673, 7.516], scale: [79.963, 79.963, 79.963] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'phase-stalker': [],
-  'queen-brunhilda-stonebeard': [],
-  'ram-rider': [],
-  'rune-splitter': [],
-  'runic-siphoner': [],
-  'shieldbeard': [],
-  'spark-gnome': [],
+  'queen-brunhilda-stonebeard': [{ name: 'warhammer', file: 'warhammer.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-6.749, 6.967, 10.796], rot: [31.091, 75.481, 74.138], scale: [31.171, 31.171, 31.171] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'ram-rider': [{ name: 'ram', file: 'ram.glb', bone: [], len: 0.9, grip: 0.5, rot: [0, 0, 0], mount: true }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'rune-splitter': [{ name: 'crystal-hammer', file: 'crystal-hammer.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-5.945, 14.395, 2.713], rot: [-90.58, 40.418, 154.032], scale: [31.285, 31.285, 31.285] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'runic-siphoner': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-5.934, 11.383, -0.229], rot: [67.927, -40.258, -143.624], scale: [20, 41.4, 20] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'shieldbeard': [{ name: 'medic-pack', file: 'medic-pack.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [2.392, 13.129, -18.358], rot: [-154.103, -0.121, 171.756], scale: [25.761, 25.761, 25.761] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'spark-gnome': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-2.63, 8.57, 0.056], rot: [-128.277, -22.025, 141.36], scale: [41, 51.25, 41] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'the-great-steam-golem': [],
 };
 export const hasCreature3dSlug = (id: string) => id in PARTS;
