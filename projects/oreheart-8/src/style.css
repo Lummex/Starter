@@ -1296,10 +1296,15 @@ small,.sub,.muted,.dsize,.deck-size{color:var(--body-sm)}
 .match .o-text{display:flex;align-items:center;font-family:"Alegreya SC",serif;line-height:1;white-space:nowrap;text-transform:none!important;letter-spacing:0!important;overflow:visible;font-variant-caps:normal}
 .match .o-text.o-name{overflow:visible}
 .match .o-phase{display:block}
-.match .o-phase .ph-step{opacity:.8;color:inherit}
-.match .o-phase .ph-step[aria-current=step]{opacity:1;color:#FFD700!important;text-shadow:0 0 .4em #FFD700,0 2px 3px #000}
-.match .o-phase .ph-step.done{opacity:.55}
-.match .o-phase .ph-sep{margin:0 .25em;opacity:.7}
+/* Ken (Oct 30 playtest): compact 2x2 phase tracker bottom-right; the current phase sits on a plate in the active side's faction colour, the others are dimmed to grey (text stays white for the all-white-text rule) */
+.match .o-phase{--php1:#3fae4a;--php2:#17561f;--phb:#9dff8a;--phg:#3ee06a;}
+.match .o-phase[data-faction=gnomes]{--php1:#5a2a92;--php2:#2a0f4a;--phb:#d8dee9;--phg:#7fc8ff;}
+.match .o-phase[data-faction=dwarves]{--php1:#3a6ee6;--php2:#16348a;--phb:#ffd36b;--phg:#2f5fd8;}
+.match .o-phase .ph-steps{display:grid;grid-template-columns:repeat(2,auto);justify-content:end;align-content:start;gap:.18em .2em}
+.match .o-phase .ph-steps .ph-step:not(#_w){opacity:.5;padding:.1em .45em .14em;border-radius:.4em;text-align:center;color:#fff!important;-webkit-text-fill-color:#fff!important;filter:grayscale(1)}
+.match .o-phase .ph-steps .ph-step[aria-current=step]:not(#_w){opacity:1;filter:none;color:#fff!important;-webkit-text-fill-color:#fff!important;background:linear-gradient(var(--php1),var(--php2));box-shadow:inset 0 0 0 .09em var(--phb),0 0 .45em var(--phg),0 .1em .2em #000;text-shadow:0 .06em 0 #000}
+.match .o-phase .ph-steps .ph-step.done:not(#_w){opacity:.38}
+.match .o-phase .ph-sep{display:none}
 .match .o-phase .ph-turn[data-x]{}
 .match .o-deck .deck-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:none!important;filter:drop-shadow(0 4px 6px #000)}
 .match .o-deck .pile-n{position:absolute!important;display:flex;align-items:center;justify-content:center;bottom:auto!important;transform-origin:50% 50%;font-family:"Alegreya SC",serif;font-style:var(--os,normal);line-height:1}
@@ -1683,14 +1688,14 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 .btn.menu-fwd{position:fixed!important;right:2vw;bottom:3vh;z-index:60;margin:0!important}
 /* Owner (Oct 24): picture banners for Your turn / Opponent's turn / Deploy / Action, and Victory / Defeat */
 .banner.banner-img:not(#_w){padding:0!important;background:none!important;border:0!important;border-radius:0!important;-webkit-text-stroke:0!important;text-shadow:none!important;transform:translate(-50%,-50%);animation:ohBannerPop 1.5s ease-out both!important;filter:drop-shadow(0 6px 14px #000c)}
-.banner.banner-img img{display:block;width:min(62vw,820px);height:auto;max-height:34vh;object-fit:contain}
-.banner.banner-img[data-banner="deploy"] img,.banner.banner-img[data-banner="action"] img{width:min(44vw,560px)}
+.banner.banner-img img{display:block;width:min(46vw,620px);height:auto;max-height:24vh;object-fit:contain}
+.banner.banner-img[data-banner="deploy"] img,.banner.banner-img[data-banner="action"] img{width:min(33vw,420px)}
 @keyframes ohBannerPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}14%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}24%{transform:translate(-50%,-50%) scale(1)}82%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.04)}}
 .end-title{margin:0;line-height:0}
 .end-pic{display:block;width:min(80vw,900px);max-height:36vh;height:auto;object-fit:contain;margin:0 auto;filter:drop-shadow(0 8px 18px #000c);animation:ohEndPop .7s ease-out both}
 @keyframes ohEndPop{0%{opacity:0;transform:scale(.6)}60%{opacity:1;transform:scale(1.06)}100%{transform:scale(1)}}
-/* Owner (Oct 24): phase pop-ups sit in the top third of the screen */
-.banner.banner-img:not(#_w){top:20%!important}
+/* Owner (Oct 24): phase pop-ups sit in the top third of the screen; Ken (Oct 30 playtest): smaller and a little higher */
+.banner.banner-img:not(#_w){top:14%!important}
 /* Owner (Oct 24): the end-of-match pop-up shows the result picture */
 .retreat .retreat-result{display:block;width:min(80vw,900px);max-height:44vh;height:auto;object-fit:contain;filter:drop-shadow(0 8px 18px #000c);animation:ohEndPop .6s ease-out both}
 /* Owner (Oct 24): comic pop-ups and speech bubbles */

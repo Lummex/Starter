@@ -1995,6 +1995,7 @@ export class App {
     // phase
     const whose = st.activePlayer === 'player' ? 'Your turn' : 'Enemy turn';
     r.phase.dataset.side = st.activePlayer === 'player' ? 'you' : 'enemy';
+    r.phase.dataset.faction = String((st.players as any)[st.activePlayer]?.faction || ''); // Ken, Oct 30: current phase plate in the active side's faction colour
     (r.phase.querySelector('.ph-turn') as El).textContent = st.phase === 'mulligan' ? 'Mulligan' : st.phase === 'over' ? 'Match over' : `${whose} · Turn ${st.turn}`;
     r.phase.querySelectorAll('.ph-step').forEach((el: El) => {
       const order = ['draw', 'deploy', 'action', 'end'], k = el.dataset.phase!, cur = order.indexOf(st.phase);
