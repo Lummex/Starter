@@ -1,0 +1,15 @@
+{
+ "generated": "2026-10-30T05:49:25.178Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a18b57-bd43-74ab-83f2-3f2d5a5f885e",
+  "rig": "01a18b5a-8fd2-7687-acfb-b5e3674235b4"
+ },
+ "actions": {},
+ "rigged": true,
+ "parts": [],
+ "notes": "Oct 30 locked Commander, from Sketch's approved sheet. Rig only, no stock clips. Gear hammer comes from props-batch-1.",
+ "fileSizes": {
+  "char.glb": 16735956
+ }
+}

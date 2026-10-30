@@ -288,5 +288,23 @@
   "gear-shield": "01a18b1c-6b06-74ed-aa37-c81b4c1b342f",
   "character": "01a18b1c-6b0b-7463-8948-44351d7d6710",
   "rig": "01a18b1f-857c-773b-a1a9-bce052b97278"
+ },
+ "cmd-skreeka-rig": {
+  "character": "01a18b57-bd43-77af-8bdb-b6fedda1394f",
+  "rig": "01a18b5a-b81e-707f-b4bc-dc69994c31d3"
+ },
+ "cmd-sprocket-rig": {
+  "character": "01a18b57-bd3f-74a4-95e3-c04b9ca0e13f",
+  "rig": "01a18b5a-1868-7673-9aa8-01ed7b73faf2"
+ },
+ "cmd-grumblebeard-rig": {
+  "character": "01a18b57-bd43-74ab-83f2-3f2d5a5f885e",
+  "rig": "01a18b5a-8fd2-7687-acfb-b5e3674235b4"
+ },
+ "cmd-sproingle-rig": {
+  "rig": "01a18b57-bd43-7081-969e-6db0ae687bb5"
+ },
+ "props-batch-1": {
+  "character": "01a18b58-1ca3-729f-ad59-db49bb2923fa"
  }
 }

@@ -1,0 +1,15 @@
+{
+ "generated": "2026-10-30T05:48:53.200Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a18b57-bd3f-74a4-95e3-c04b9ca0e13f",
+  "rig": "01a18b5a-1868-7673-9aa8-01ed7b73faf2"
+ },
+ "actions": {},
+ "rigged": true,
+ "parts": [],
+ "notes": "Oct 30 locked Commander, silver metal, from Sketch's approved sheet. Rig only, no stock clips. Wrench comes from props-batch-1; crystal is an effect, not made.",
+ "fileSizes": {
+  "char.glb": 15902696
+ }
+}

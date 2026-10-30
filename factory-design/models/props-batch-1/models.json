@@ -1,0 +1,14 @@
+{
+ "generated": "2026-10-30T05:48:01.999Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a18b58-1ca3-729f-ad59-db49bb2923fa"
+ },
+ "actions": {},
+ "rigged": false,
+ "parts": [],
+ "notes": "Oct 30 (Ken: batch props into one Meshy model). Sketch's sheet with 3 props laid apart, left to right: Madame Sprocket's wrench, Old Grumblebeard's gear hammer, Ironwall Shieldbeard's shoulder shield (place on the right shoulder as on the card). Not rigged. Clay splits it by loose parts in Blender (split_props.py) into wrench / hammer / shoulder-shield GLBs.",
+ "fileSizes": {
+  "char.glb": 12681020
+ }
+}
