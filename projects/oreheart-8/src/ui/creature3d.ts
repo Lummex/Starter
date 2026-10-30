@@ -108,7 +108,7 @@ interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationCl
 // otherwise a unit whose own idle / walk is the stock Meshy one gets a random pack idle (with a random start time) and a random walk / run.
 export interface PackClip { clip: THREE.AnimationClip; kind: string; loop: boolean; impact?: number; rootSpeed?: number; events?: { name: string; time: number }[] }
 interface Pack { clips: PackClip[]; rig: Rig }
-interface SharedSet { byName: Record<string, THREE.AnimationClip>; byKind: Record<string, THREE.AnimationClip[]>; impact: Record<string, number>; speed: Record<string, number> }
+interface SharedSet { byName: Record<string, THREE.AnimationClip>; byKind: Record<string, THREE.AnimationClip[]>; impact: Record<string, number>; speed: Record<string, number>; events: Record<string, { name: string; time: number }[]> }
 export const PACK_URL = '/models/anims/biped-pack-v1';
 let packP: Promise<Pack | null> | null = null;
 /** test hook (window.__sharedPack): what the pack loader did */
@@ -210,18 +210,18 @@ function sharedFor(id: string, char: THREE.Object3D, pack: Pack | null): SharedS
   const T = rigOf(char);
   if (!T.order.length) { packInfo.units[id] = 'no skeleton'; return null; }
   const C = swings(pack.rig, T), ratio = pack.rig.leg > 1e-6 && T.leg > 1e-6 ? T.leg / pack.rig.leg : 1;
-  const out: SharedSet = { byName: {}, byKind: {}, impact: {}, speed: {} };
+  const out: SharedSet = { byName: {}, byKind: {}, impact: {}, speed: {}, events: {} };
   for (const pc of pack.clips) {
     const cl = retarget(pc.clip, pack.rig, T, C);
     if (!cl) { packInfo.units[id] = 'bones do not match'; return null; }
-    out.byName[cl.name] = cl; (out.byKind[pc.kind] ||= []).push(cl);
+    out.byName[cl.name] = cl; (out.byKind[pc.kind] ||= []).push(cl); if (pc.events) out.events[cl.name] = pc.events;
     if (pc.impact !== undefined) out.impact[cl.name] = pc.impact;
     if (pc.rootSpeed !== undefined) out.speed[cl.name] = pc.rootSpeed * ratio; // model units per second
   }
   packInfo.units[id] = 'retargeted ' + pack.clips.length;
   return out;
 }
-const STOCK = /^(Idle|Casual_Walk|Walk|Heavy_Hammer_Swing|Hit_Reaction)$/;
+const STOCK = /^(Idle|Casual_Walk|Walk|Heavy_Hammer_Swing|Hit_Reaction|Dead)$/;
 const cache = new Map<string, Promise<Assets | null>>();
 const ready = new Map<string, Assets>();
 /** Round 26 (AC390): roles whose mapped clip was not found in the GLB, so the old Meshy clip (by name) plays; also at window.__missingClips */
@@ -291,7 +291,7 @@ export interface C3D {
   /** Round 24: attack clip played by the model (GLB clip name), release time (ms into the clip) and bone read from events.json; onRelease fires exactly when the clip passes it */ attackClip?: string; partObject?: (name: string) => THREE.Object3D | null; clipOf?: (anim: string) => string; release?: { ms: number; bone: string } | null; onRelease?: (bone: THREE.Object3D) => void; currentClip?: () => string; partInfo?: () => { name: string; file: string; bone: string; pos: number[]; rot: number[]; rotDeg: number[]; scale: number[]; loaded: boolean }[];
   /** flying units */ flying?: { hoverSquares: number; floatSquares: number; floatsPerSecond: number; swayDeg: number; groundShadow: boolean; source: string }; lift?: number; swayNowDeg?: number; groundShadow?: boolean;
   /** Owner fix (Oct 28): true when the model has this clip */ has?: (n: string) => boolean;
-  /** Oct 30: where the attack blow lands (s into the clip, if known) and a clip speed setter */ impactOf?: (n: string) => number | undefined; setSpeed?: (n: string, k: number) => void; gaitSpeed?: (n: string) => number | undefined;
+  /** Oct 30: where the attack blow lands (s into the clip, if known) and a clip speed setter */ impactOf?: (n: string) => number | undefined; setSpeed?: (n: string, k: number) => void; gaitSpeed?: (n: string) => number | undefined; eventsOf?: (n: string) => { name: string; time: number }[]; packRoles?: Set<string>; seek?: (n: string, t: number) => void;
   clipNames: string[]; held: string[]; worn: string[]; height: number;
   /** height in board squares (owner look or default) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
   /** Bowler Brawler only: hand-keyed special moves, ball hooks, flame effect */ special?: (n: 'bowl' | 'spinBall' | 'basketShot') => void; trig?: (shootT: number, born: number) => void; advanceIdle?: (sec: number) => void; ballInfo?: () => any; effects?: () => any[];
@@ -324,13 +324,17 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   const mixer = new THREE.AnimationMixer(ch);
   const actions: Record<string, THREE.AnimationAction> = {};
   // Oct 30: every figure draws its own idle / walk / run from the shared pack (unless Ken picked a slot or the model has its own custom clip)
+  const packRoles = new Set<string>();
   const clips = { ...a.clips }, sh = a.shared, pick = (l?: THREE.AnimationClip[]) => (l && l.length ? l[Math.floor(Math.random() * l.length)] : undefined);
   if (sh) {
-    const free = (role: string) => !a.picked?.has(role) && (!clips[role] || STOCK.test(clips[role].name));
-    for (const [role, kinds] of [['idle', ['idle']], ['walk', ['walk']], ['run', ['run']], ['idleBreak', ['idleBreak']], ['knockback', ['knockback', 'bonk']]] as [string, string[]][]) {
+    // a role is free unless Ken picked a slot for it, the model's own clips map names it, or the model has its own custom clip for it
+    const mapped = (role: string) => { const m = a.info?.clips || {}; return typeof m[role] === 'string' || (role === 'defeat' && typeof m.death === 'string') || (role === 'knockback' && typeof m.react_knockback === 'string') || (role === 'lifted' && typeof m.react_lifted === 'string'); };
+    const free = (role: string) => !a.picked?.has(role) && !mapped(role) && (!clips[role] || STOCK.test(clips[role].name));
+    const ranged = ((CARDS as any)[id]?.abilities || []).includes('ranged');
+    for (const [role, kinds] of [['idle', ['idle']], ['walk', ['walk']], ['run', ['run']], ['idleBreak', ['idleBreak']], ['attack', [ranged ? 'ranged' : 'attack']], ['hit', ['hit']], ['knockback', ['knockback']], ['bowled', ['bowled']], ['defeat', ['defeat']], ['lifted', ['lifted']]] as [string, string[]][]) {
       if (!free(role)) continue;
       const cl = pick(kinds.flatMap((k) => sh.byKind[k] || []));
-      if (cl) clips[role] = cl;
+      if (cl) { clips[role] = cl; packRoles.add(role); }
     }
   }
   for (const k of Object.keys(clips)) actions[k] = mixer.clipAction(clips[k]);
@@ -432,6 +436,10 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   out.impactOf = (n: string): number | undefined => { const cl = actions[resolve(n)]?.getClip(); if (!cl) return undefined; if (sh?.impact[cl.name] !== undefined) return sh.impact[cl.name]; const ev: any[] = (a.events as any)?.clips?.[cl.name]?.events || []; const e = ev.find((x: any) => /impact|hit|contact|strike|release/i.test(x.name || '')); return typeof e?.time === 'number' ? e.time : undefined; };
   /** Oct 30: walk / run pace from the pack (rootSpeed x leg ratio), in board squares per second */
   out.gaitSpeed = (n: string) => { const cl = actions[resolve(n)]?.getClip(); const sp = cl ? sh?.speed[cl.name] : undefined; return sp ? (sp / bodyH) * heightSpaces : undefined; };
+  /** Oct 30: the pack's timed events of the clip playing this role (launch / land / recovered, hit, ground...) */
+  out.packRoles = packRoles;
+  out.eventsOf = (n: string) => { const cl = actions[resolve(n)]?.getClip(); return (cl && sh?.events[cl.name]) || []; };
+  out.seek = (n: string, t: number) => { const ac = actions[resolve(n)]; if (ac) ac.time = t; };
   out.setSpeed = (n: string, k: number) => { const ac = actions[resolve(n)]; if (ac) ac.timeScale = k; };
   Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (cur === 'special' && actions.special) { const sg = holdSeg(); if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
   if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }

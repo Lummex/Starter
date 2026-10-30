@@ -432,7 +432,7 @@ const _embV = new THREE.Vector3();
     group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
     /** Oct 30: squares still to walk (one per step), running gait, knock-back flight, delayed hit flash, step-in length, when its blow lands */
-    path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; hitAt?: number; lungeDur?: number; blowAt?: number;
+    path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lungeDur?: number; blowAt?: number;
   };
   type Knock = { t0: number; from: THREE.Vector3; land: THREE.Vector3; h: number; spin: number; fly: number; ret: boolean; landed: boolean; knockMove?: boolean };
   // Oct 30 (Ken's fighting vision): units walk square by square and fights are little comic scenes (timings in ms, snappy)
@@ -454,6 +454,16 @@ const _embV = new THREE.Vector3();
       pts.push(world(a, b)); r = a; c = b;
     }
     return pts;
+  }
+  /** a knock-back clip with launch / land events (Spring's pack) is sped up so its landing meets the flight's, and starts at its launch */
+  function fitKnockClip(f: Fig) {
+    f.kbClip = null;
+    const ev = f.c3d?.eventsOf?.('knockback') || [], la = ev.find((e) => e.name === 'launch')?.time, ld = ev.find((e) => e.name === 'land')?.time, rc = ev.find((e) => e.name === 'recovered')?.time;
+    if (!f.kb || la === undefined || ld === undefined || ld <= la) return;
+    const k = Math.min(3, Math.max(0.8, (ld - la) / (f.kb.fly / 1000)));
+    f.c3d!.setSpeed?.('knockback', k);
+    f.kbClip = { launch: la, dur: (((rc ?? f.c3d!.dur('knockback')) - la) / k) * 1000, seeked: false };
+    f.kb.spin = 0; // the clip does its own tumble
   }
   /** ms until a figure finishes the walk it is on */
   function pathLeft(f: Fig): number {
@@ -783,7 +793,7 @@ const _embV = new THREE.Vector3();
       if (mv && mv.teleport) { f.group.position.copy(tgt); f.path = []; }
       else if (mv && mv.knock) { // Round 28b + Oct 30: a knock-back (Smack, Shockwave, deathKnock...) launches the figure onto its new square with a tumble
         const from = f.group.position.clone().setY(0); f.path = [];
-        f.kb = { t0: now, from, land: tgt.clone(), h: 0.45, spin: 1, fly: 420, ret: false, landed: false, knockMove: true }; f.knockT = now + 100;
+        f.kb = { t0: now, from, land: tgt.clone(), h: 0.45, spin: 1, fly: 420, ret: false, landed: false, knockMove: true }; f.knockT = now + 100; fitKnockClip(f);
       } else if (mv) { f.path = walkPath(mv.from, mv.to, st, c.uid); f.run = f.path.length > 1; } // Oct 30: walk (or run) square by square
     }
     syncStatusIcons(st);
@@ -818,7 +828,7 @@ const _embV = new THREE.Vector3();
       if (def) {
         const back = def.target.clone().sub(f.target).setY(0); if (back.lengthSq() < 1e-6) back.set(0, 0, 1); back.normalize();
         def.kb = { t0: f.blowAt, from: def.target.clone(), land: def.target.clone().addScaledVector(back, ranged ? 0.22 : 0.42), h: ranged ? 0.16 : 0.42, spin: ranged ? 0 : 1, fly: ranged ? 220 : 380, ret: true, landed: false };
-        def.knockT = f.blowAt + 120;
+        def.knockT = f.blowAt + 120; fitKnockClip(def);
         def.faceTo = Math.atan2(f.target.x - def.target.x, f.target.z - def.target.z); def.faceUntil = f.blowAt + 1100; // braces, facing the attacker
       }
     }
@@ -1290,10 +1300,11 @@ const _embV = new THREE.Vector3();
         if (f.born) f.bornAt = f.born;
         f.c3d.trig?.(f.shootT, f.born || (f.bornAt && now - f.bornAt < 12000 ? f.bornAt : 0)); // the model may finish loading after the short summon drop
         // Round 28b: knock-back and bowled-over reactions (Ken's slots) come before the plain hit; an idle break plays once in a while
-        const knocked = f.knockT && now >= f.knockT && now - f.knockT < 700 && f.c3d.has?.('knockback'), bowledNow = f.bowledT && now >= f.bowledT && now - f.bowledT < 900 && f.c3d.has?.('bowled');
-        if (!walking && !f.shootT && !f.hitT && f.c3d.has?.('idleBreak')) { if (!f.idleBreakAt) f.idleBreakAt = now + 6000 + Math.random() * 8000; else if (now > f.idleBreakAt) { f.idleBreakT = now; f.idleBreakAt = now + 9000 + Math.random() * 9000; } } else f.idleBreakAt = 0;
+        const knocked = f.knockT && now >= f.knockT && now - f.knockT < (f.kbClip ? f.kbClip.dur : 700) && f.c3d.has?.('knockback'), bowledNow = f.bowledT && now >= f.bowledT && now - f.bowledT < 900 && f.c3d.has?.('bowled');
+        if (!walking && !f.shootT && !f.hitT && f.c3d.has?.('idleBreak') && !(testMode && f.c3d.packRoles?.has('idleBreak'))) { // automated runs: no random pack idle breaks (checks read 'idle') if (!f.idleBreakAt) f.idleBreakAt = now + 6000 + Math.random() * 8000; else if (now > f.idleBreakAt) { f.idleBreakT = now; f.idleBreakAt = now + 9000 + Math.random() * 9000; } } else f.idleBreakAt = 0;
         const breaking = f.idleBreakT && now - f.idleBreakT < (f.c3d.dur('idleBreak') || 1.5) * 1000;
-        f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : f.shootT && ak3 < 1 ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : bowledNow ? 'bowled' : knocked ? 'knockback' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? (f.run && onPath ? 'run' : 'walk') : breaking ? 'idleBreak' : 'idle');
+        f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : f.shootT && ak3 < 1 && !(f.hitT && f.hitT > f.shootT) ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : bowledNow ? 'bowled' : knocked ? 'knockback' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? (f.run && onPath ? 'run' : 'walk') : breaking ? 'idleBreak' : 'idle');
+        if (knocked && f.kbClip && !f.kbClip.seeked && f.c3d.current() === 'knockback') { f.c3d.seek?.('knockback', f.kbClip.launch); f.kbClip.seeked = true; }
         f.c3d.update(dt);
         g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
         if (f.c3d.lift) g.position.y = (f.born ? g.position.y : 0) + f.c3d.lift; // flying units hover
