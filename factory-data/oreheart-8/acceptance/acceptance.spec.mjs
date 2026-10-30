@@ -3021,38 +3021,85 @@ test('AC93: the cut-out deck image is used on every deck pile outside the match'
 });
 
 
-test('AC95: up to 3 mulligans — 5 -> 5 -> 4 -> 3, then no more', async ({ page }) => {
+// Owner check change (Ken, Oct 30 mulligan rule): no more picking cards (5 -> 5 -> 4 -> 3). One full redraw per match:
+// the whole hand goes back, the deck is reshuffled and a new hand of the SAME size is drawn. Keep = unchanged.
+test('AC95: Redraw Hand = the whole hand back and a same-size new hand from the reshuffled deck, once; part of a hand is never legal', async ({ page }) => {
   let s = await start(page, { ai: false, firstPlayer: 'player' });
   expect(s.phase).toBe('mulligan');
   expect(s.priority).toBe('player');
-  const hand = () => s.players.player.hand.map((c) => c.uid);
-  expect((await act(page, { type: 'mulligan', uids: hand() })).ok).toBe(true);
+  const before = s.players.player.hand.map((c) => c.uid);
+  const deckN = s.players.player.deck.length;
+  expect(before.length).toBe(5);
+  const legalNow = await legal(page);
+  expect(legalNow.some((a) => a.type === 'mulligan' && a.redraw === true)).toBe(true);
+  expect(legalNow.some((a) => a.type === 'mulligan' && !a.redraw)).toBe(true);
+  expect((await act(page, { type: 'mulligan', uids: before.slice(0, 2) })).ok).toBe(false); // picking cards is gone
+  expect((await act(page, { type: 'mulligan', redraw: true })).ok).toBe(true);
   s = await getState(page);
-  expect(s.players.player.hand.length).toBe(5);
+  const after = s.players.player.hand.map((c) => c.uid);
+  expect(after.length).toBe(5);
+  expect(after).not.toEqual(before);
+  expect(s.players.player.deck.length).toBe(deckN);
+  const all = new Set([...after, ...s.players.player.deck.map((c) => c.uid)]);
+  for (const u of before) expect(all.has(u), 'old cards are back in deck or hand').toBe(true);
   expect(s.players.player.mulligans).toBe(1);
-  expect(s.priority).toBe('player');
-  expect((await act(page, { type: 'mulligan', uids: hand().slice(0, 2) })).ok).toBe(true);
-  s = await getState(page);
-  expect(s.players.player.hand.length).toBe(4);
-  expect(s.players.player.mulligans).toBe(2);
-  expect((await act(page, { type: 'mulligan', uids: hand().slice(0, 1) })).ok).toBe(true);
-  s = await getState(page);
-  expect(s.players.player.hand.length).toBe(3);
-  expect(s.players.player.mulligans).toBe(3);
+  expect(s.mulliganDone.player).toBe(true);
   expect(s.phase === 'mulligan' ? s.priority : 'done').not.toBe('player');
-  const r = await act(page, { type: 'mulligan', uids: hand().slice(0, 1) });
-  expect(r.ok).toBe(false);
-  expect((await getState(page)).players.player.hand.length).toBe(3);
+  if (s.phase === 'mulligan') { expect((await act(page, { type: 'mulligan', uids: [] })).ok).toBe(true); s = await getState(page); }
+  expect(s.phase).toBe('deploy');
+  expect((await act(page, { type: 'mulligan', redraw: true })).ok).toBe(false); // only once
+  expect((await getState(page)).players.player.mulligans).toBe(1);
 });
 
-test('AC95: the Mulligan screen shows one straight row and counts mulligans left', async ({ page }) => {
+test('AC406: Keep Hand leaves the opening hand exactly as it was', async ({ page }) => {
+  let s = await start(page, { ai: false, firstPlayer: 'player' });
+  const before = s.players.player.hand.map((c) => c.uid);
+  const deck = s.players.player.deck.map((c) => c.uid);
+  expect((await act(page, { type: 'mulligan', uids: [] })).ok).toBe(true);
+  s = await getState(page);
+  expect(s.players.player.hand.map((c) => c.uid)).toEqual(before);
+  expect(s.players.player.deck.map((c) => c.uid)).toEqual(deck);
+  expect(s.players.player.mulligans).toBe(0);
+  expect(s.mulliganDone.player).toBe(true);
+});
+
+test('AC407: the computer redraws a hand with no affordable fighter and keeps a workable one', async ({ page }) => {
+  await openTest(page);
+  const run = async (seed) => {
+    const s0 = await newMatch(page, { ai: true, difficulty: 'normal', seed, firstPlayer: 'player', playerCommander: 'grubnak', opponentCommander: 'borgo' });
+    const before = s0.players.opponent.hand.map((c) => c.uid);
+    expect((await act(page, { type: 'mulligan', uids: [] })).ok).toBe(true);
+    await expect.poll(async () => (await getState(page)).mulliganDone.opponent, { timeout: 8000 }).toBe(true);
+    const s = await getState(page);
+    return { before, ids: s0.players.opponent.hand.map((c) => c.cardId), after: s.players.opponent.hand.map((c) => c.uid), m: s.players.opponent.mulligans };
+  };
+  // seed 1: Smith Miners + Brewmaster (6) + Queen Brunhilda: nothing cheap to fight with -> redraw
+  const r1 = await run(1);
+  expect(r1.ids.filter((id) => !/miner/.test(id)).every((id) => ['brewmaster', 'queen-brunhilda-stonebeard'].includes(id)), JSON.stringify(r1.ids)).toBe(true);
+  expect(r1.m).toBe(1);
+  expect(r1.after.slice(0, 5)).not.toEqual(r1.before);
+  // a full redraw, not a swap: the old rule swapped only the two dear cards and kept the three Miners in hand
+  expect(r1.before.filter((u) => r1.after.includes(u)).length).toBeLessThan(3);
+  // seed 3: Miners + Barrelback Courier (5) -> keep (the hand stays, plus the second player's extra card)
+  const r3 = await run(3);
+  expect(r3.ids).toContain('barrelback-courier');
+  expect(r3.m).toBe(0);
+  expect(r3.after.slice(0, r3.before.length)).toEqual(r3.before);
+});
+
+// Owner check change (Ken, Oct 30 mulligan rule): the screen keeps its one straight row, but the cards are not tapped any more;
+// the buttons are Keep Hand and Redraw Hand, and it counts "Redraws left: 1".
+test('AC95: the Mulligan screen shows one straight row, Keep Hand / Redraw Hand, and Redraws left: 1', async ({ page }) => {
   await page.goto('/?test=1&seed=7');
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Grubnak Rotgut, Goblin King' }).click();
   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
   const mull = page.getByRole('dialog', { name: 'Mulligan' });
   await expect(mull).toBeVisible();
-  await expect(mull).toContainText('Mulligans left: 3');
+  await expect(mull).toContainText('Redraws left: 1');
+  await expect(mull).not.toContainText('Mulligans left');
+  await expect(mull.getByRole('button', { name: 'Redraw Selected' })).toHaveCount(0);
+  await expect(mull.locator('button[aria-pressed]')).toHaveCount(0);
   const faces = mull.locator('[data-card-id]');
   await expect(faces).toHaveCount(5);
   const boxes = [];
@@ -3062,12 +3109,26 @@ test('AC95: the Mulligan screen shows one straight row and counts mulligans left
     expect(Math.abs(boxes[i].y - boxes[0].y)).toBeLessThanOrEqual(2);
     expect(boxes[i].x).toBeGreaterThanOrEqual(boxes[i - 1].x + boxes[i - 1].width - 1);
   }
-  await faces.first().click();
-  await mull.getByRole('button', { name: 'Redraw Selected' }).click();
-  await expect(mull).toContainText('Mulligans left: 2');
-  await expect(faces).toHaveCount(5);
-  await mull.getByRole('button', { name: 'Keep Hand' }).click();
+  const before = await faces.evaluateAll((els) => els.map((e) => e.dataset.uid));
+  await expect(mull.getByRole('button', { name: 'Keep Hand' })).toBeVisible();
+  await expect(mull.getByRole('button', { name: 'Redraw Hand' })).toBeEnabled();
+  await mull.getByRole('button', { name: 'Redraw Hand' }).click();
+  await expect(mull).toBeHidden();
   await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
+  const s = await getState(page);
+  expect(s.players.player.mulligans).toBe(1);
+  expect(s.players.player.hand.length).toBe(5);
+  expect(s.players.player.hand.map((c) => c.uid)).not.toEqual(before);
+});
+
+test('AC408: How to Play tells the new rule, not the old 5-4-3 one', async ({ page }) => {
+  await page.goto('/?test=1');
+  await page.getByRole('button', { name: 'How to Play', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Rules', exact: true })).toBeVisible();
+  const all = await page.evaluate(() => document.body.innerText);
+  expect(all).toMatch(/Redraw Hand/);
+  expect(all).toMatch(/one redraw per match/i);
+  expect(all).not.toMatch(/then 4, then 3|Redraw Selected|up to 3 times/);
 });
 
 const boxless = (loc) => loc.evaluate((e) => {
