@@ -10760,6 +10760,8 @@ test('AC411: the Miner cards say "Can\'t attack the turn it\'s played" and no ca
   expect(bearer.text).not.toMatch(/turn it's played/);
 
 // ---------- Owner (Ken, Oct 30): close-up ✕ Close, the computer's played card, the enemy discard pile, the Bulwark bubble ----------
+});
+
 test.describe('Oct 30 Ken at 1920x1080', () => {
   test.use({ viewport: { width: 1920, height: 1080 } });
   const visBoxes = (loc) => loc.evaluateAll((els) => els.filter((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden').map((e) => e.getBoundingClientRect().toJSON()));
