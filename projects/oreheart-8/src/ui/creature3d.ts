@@ -138,7 +138,9 @@ export function loadSharedPack(): Promise<Pack | null> {
         clips.push({ clip, kind: String(m.kind || ''), loop: m.loop !== false, impact: imp, rootSpeed: typeof m.rootSpeed === 'number' ? m.rootSpeed : undefined, events: ev });
       }
       Object.assign(packInfo, { loaded: true, clips: clips.map((c) => ({ name: c.clip.name, kind: c.kind })) });
-      return { clips, rig: rigOf(g.scene) };
+      const rig = rigOf(g.scene, true);
+      if (!rig.restW.has('Hips') || rig.order.length < 20) { packInfo.error = 'pack skeleton not found (' + rig.order.length + ' nodes)'; console.warn('[anim pack] ' + packInfo.error); return null; }
+      return { clips, rig };
     } catch (e: any) { packInfo.error = String(e?.message || e); return null; }
   })();
   return packP;
@@ -147,16 +149,19 @@ export function loadSharedPack(): Promise<Pack | null> {
 // rest bone direction (b -> child) onto the pack's; Wtgt_now(b) = D * C(b) * Wtgt_rest(b); local = inv(Wtgt_now(parent)) * Wtgt_now(b). Hips: C = identity;
 // leaf bones use their parent's C. Hips position = the pack's world offset from rest x (target leg / pack leg). Baked once per model at load.
 interface Rig { order: string[]; parent: Map<string, string | null>; restW: Map<string, THREE.Quaternion>; restP: Map<string, THREE.Vector3>; restL: Map<string, THREE.Quaternion>; restLp: Map<string, THREE.Vector3>; restS: Map<string, THREE.Vector3>; upW: Map<string, THREE.Quaternion>; upM: Map<string, THREE.Matrix4>; leg: number; kids: Map<string, string[]> }
-function rigOf(root: THREE.Object3D): Rig {
+/** `anyNode`: Spring's pack GLB is skeleton-only (no skin), so three.js loads its joints as plain nodes, not Bones; every named node under the root counts */
+function rigOf(root: THREE.Object3D, anyNode = false): Rig {
   root.updateMatrixWorld(true);
+  const isBone = (o: any) => (anyNode ? o !== root && !!o.name && !o.isMesh : !!o.isBone);
   const rg: Rig = { order: [], parent: new Map(), restW: new Map(), restP: new Map(), restL: new Map(), restLp: new Map(), restS: new Map(), upW: new Map(), upM: new Map(), leg: 0, kids: new Map() };
   root.traverse((o: any) => {
-    if (!o.isBone || rg.restW.has(o.name)) return;
-    const pb = o.parent && (o.parent as any).isBone ? o.parent.name : null;
+    if (!isBone(o) || rg.restW.has(o.name)) return;
+    const pb = o.parent && isBone(o.parent) ? o.parent.name : null;
     rg.order.push(o.name); rg.parent.set(o.name, pb);
     rg.restW.set(o.name, o.getWorldQuaternion(new THREE.Quaternion())); rg.restP.set(o.name, o.getWorldPosition(new THREE.Vector3())); rg.restL.set(o.name, o.quaternion.clone()); rg.restLp.set(o.name, o.position.clone()); rg.restS.set(o.name, o.scale.clone());
     if (pb) { if (!rg.kids.has(pb)) rg.kids.set(pb, []); rg.kids.get(pb)!.push(o.name); }
-    else { rg.upW.set(o.name, o.parent ? o.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion()); rg.upM.set(o.name, o.parent ? o.parent.matrixWorld.clone() : new THREE.Matrix4()); }
+    // the parent's world transform, for every bone (the Hips track needs it even when the Hips hang under an armature node)
+    rg.upW.set(o.name, o.parent ? o.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion()); rg.upM.set(o.name, o.parent ? o.parent.matrixWorld.clone() : new THREE.Matrix4());
   });
   const P = (n: string) => rg.restP.get(n);
   const chain = ['LeftUpLeg', 'LeftLeg', 'LeftFoot', 'LeftToeBase'].map(P);
@@ -201,7 +206,7 @@ function groundFix(T: Rig, hip: string, outQ: Map<string, number[]>, outP: numbe
 /** a pack clip baked onto this model's skeleton, or null when fewer than 80 % of its rotated bones exist here */
 function retarget(src: THREE.AnimationClip, S: Rig, T: Rig, C: Map<string, THREE.Quaternion>, ground = false): THREE.AnimationClip | null {
   const qTr = new Map<string, THREE.KeyframeTrack>(); let hipTr: THREE.KeyframeTrack | null = null, hipName = '';
-  for (const tr of src.tracks) { const i = tr.name.lastIndexOf('.'), bone = tr.name.slice(0, i), prop = tr.name.slice(i + 1); if (prop === 'quaternion') qTr.set(bone, tr); else if (prop === 'position' && !S.parent.get(bone) && S.restW.has(bone)) { hipTr = tr; hipName = bone; } }
+  for (const tr of src.tracks) { const i = tr.name.lastIndexOf('.'), bone = tr.name.slice(0, i), prop = tr.name.slice(i + 1); if (prop === 'quaternion') qTr.set(bone, tr); else if (prop === 'position' && /hips/i.test(bone) && S.restW.has(bone)) { hipTr = tr; hipName = bone; } }
   if (!qTr.size || [...qTr.keys()].filter((b) => T.restW.has(b)).length / qTr.size < 0.8) return null;
   const times = Array.from(new Set([...qTr.values()].flatMap((t) => Array.from(t.times)))).sort((a, b) => a - b);
   const qi = new Map([...qTr].map(([b, t]) => [b, t.createInterpolant()]));
@@ -232,6 +237,7 @@ function retarget(src: THREE.AnimationClip, S: Rig, T: Rig, C: Map<string, THREE
   for (const [b, vals] of outQ) if (S.restW.has(b)) tracks.push(new THREE.QuaternionKeyframeTrack(b + '.quaternion', times, vals));
   if (outP.length && ground) groundFix(T, hipName, outQ, outP);
   if (outP.length) tracks.push(new THREE.VectorKeyframeTrack(hipName + '.position', times, outP));
+  if (!tracks.some((t) => t instanceof THREE.QuaternionKeyframeTrack)) return null; // an empty clip would leave the bind pose showing (Ken's T-poses, Oct 30)
   return new THREE.AnimationClip(src.name, src.duration, tracks);
 }
 function sharedFor(id: string, char: THREE.Object3D, pack: Pack | null): SharedSet | null {
@@ -242,7 +248,7 @@ function sharedFor(id: string, char: THREE.Object3D, pack: Pack | null): SharedS
   const out: SharedSet = { byName: {}, byKind: {}, impact: {}, speed: {}, events: {} };
   for (const pc of pack.clips) {
     const cl = retarget(pc.clip, pack.rig, T, C, /^(idle|idleBreak|walk|run|attack|ranged|hit|cheer)$/.test(pc.kind));
-    if (!cl) { packInfo.units[id] = 'bones do not match'; return null; }
+    if (!cl) { packInfo.units[id] = 'bones do not match (' + pc.clip.name + ')'; console.warn('[anim pack] ' + id + ': ' + packInfo.units[id] + '; using its own clips'); return null; }
     out.byName[cl.name] = cl; (out.byKind[pc.kind] ||= []).push(cl); if (pc.events) out.events[cl.name] = pc.events;
     if (pc.impact !== undefined) out.impact[cl.name] = pc.impact;
     if (pc.rootSpeed !== undefined) out.speed[cl.name] = pc.rootSpeed * ratio; // model units per second
@@ -310,7 +316,7 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
         const a = { char: c.scene, clips, parts, info, events, shared, picked, packFree };
         ready.set(id, a);
         return a;
-      } catch { return null; }
+      } catch (e: any) { console.warn('[creature3d] ' + id + ' failed to load: ' + (e?.message || e)); return null; }
     })();
     cache.set(id, p);
   }
@@ -323,7 +329,7 @@ export interface C3D {
   /** Round 24: attack clip played by the model (GLB clip name), release time (ms into the clip) and bone read from events.json; onRelease fires exactly when the clip passes it */ attackClip?: string; partObject?: (name: string) => THREE.Object3D | null; clipOf?: (anim: string) => string; release?: { ms: number; bone: string } | null; onRelease?: (bone: THREE.Object3D) => void; currentClip?: () => string; partInfo?: () => { name: string; file: string; bone: string; pos: number[]; rot: number[]; rotDeg: number[]; scale: number[]; loaded: boolean }[];
   /** flying units */ flying?: { hoverSquares: number; floatSquares: number; floatsPerSecond: number; swayDeg: number; groundShadow: boolean; source: string }; lift?: number; swayNowDeg?: number; groundShadow?: boolean;
   /** Owner fix (Oct 28): true when the model has this clip */ has?: (n: string) => boolean;
-  /** Oct 30: where the attack blow lands (s into the clip, if known) and a clip speed setter */ impactOf?: (n: string) => number | undefined; setSpeed?: (n: string, k: number) => void; gaitSpeed?: (n: string) => number | undefined; setPace?: (n: string, pace: number) => void; eventsOf?: (n: string) => { name: string; time: number }[]; packRoles?: Set<string>; animWeight?: () => number; seek?: (n: string, t: number) => void;
+  /** Oct 30: where the attack blow lands (s into the clip, if known) and a clip speed setter */ impactOf?: (n: string) => number | undefined; setSpeed?: (n: string, k: number) => void; gaitSpeed?: (n: string) => number | undefined; setPace?: (n: string, pace: number) => void; eventsOf?: (n: string) => { name: string; time: number }[]; packRoles?: Set<string>; animWeight?: () => number; poseDelta?: () => number; diag?: () => any; seek?: (n: string, t: number) => void;
   clipNames: string[]; held: string[]; worn: string[]; height: number;
   /** height in board squares (owner look or default) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
   /** Bowler Brawler only: hand-keyed special moves, ball hooks, flame effect */ special?: (n: 'bowl' | 'spinBall' | 'basketShot') => void; trig?: (shootT: number, born: number) => void; advanceIdle?: (sec: number) => void; ballInfo?: () => any; effects?: () => any[];
@@ -341,6 +347,8 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     }
   });
   prep(ch);
+  // test hook (Oct 30 T-pose hunt): the bind pose, captured before any clip plays; poseDelta() = mean bone rotation away from it (radians); ~0 = T-pose showing
+  const restQ = new Map<string, THREE.Quaternion>(); ch.traverse((o: any) => { if (o.isBone && !restQ.has(o.name)) restQ.set(o.name, o.quaternion.clone()); });
   const held: string[] = [], worn: string[] = [];
   let ballRec: { part: THREE.Object3D; bone: THREE.Object3D; p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 } | null = null;
   const items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[] = [];
@@ -472,6 +480,8 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   out.gaitSpeed = (n: string) => { const cl = actions[resolve(n)]?.getClip(); const sp = cl ? sh?.speed[cl.name] : undefined; return sp ? (sp / bodyH) * heightSpaces : undefined; };
   /** Oct 30: the pack's timed events of the clip playing this role (launch / land / recovered, hit, ground...) */
   out.packRoles = packRoles;
+  out.poseDelta = () => { let n = 0, t = 0; ch.traverse((o: any) => { if (o.isBone && restQ.has(o.name)) { n++; t += 2 * Math.acos(Math.min(1, Math.abs(o.quaternion.dot(restQ.get(o.name)!)))); } }); return n ? t / n : 0; };
+  out.diag = () => { const run = Object.entries(actions).filter(([, ac]) => ac.isRunning()).map(([k, ac]) => `${k}:${ac.getClip().name}:w${ac.getEffectiveWeight().toFixed(2)}:t${ac.time.toFixed(2)}:ts${ac.timeScale}`); return { cur, run, mixerTime: +mixer.time.toFixed(2), tracks: actions[cur] ? actions[cur].getClip().tracks.length : 0 }; };
   /** test hook (Oct 30 T-pose sweep): total effective weight of the playing clips; ~0 = the bind pose shows */
   out.animWeight = () => Object.values(actions).reduce((t, ac) => t + (ac.isRunning() || ac.clampWhenFinished && ac.enabled ? ac.getEffectiveWeight() : 0), 0);
   out.eventsOf = (n: string) => { const cl = actions[resolve(n)]?.getClip(); return (cl && sh?.events[cl.name]) || []; };
