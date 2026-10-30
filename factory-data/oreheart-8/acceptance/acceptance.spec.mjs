@@ -3703,7 +3703,8 @@ test('AC121: Deck Builder deck art has no frame; painted background', async ({ p
   expect(painted).toBe(true);
 });
 
-// every visible native control is restyled; no native <select>; every scrollbar is gold
+// every visible native control is restyled; no native <select>; every scrollbar is silver
+// Owner check change (Ken, Oct 30 silver theme): the whole UI is silvery, not gold, so scrollbars are silver (a light, cool grey thumb) instead of gold
 async function checkControls(page, where) {
   const r = await page.evaluate(() => {
     const bad = [];
@@ -3723,7 +3724,7 @@ async function checkControls(page, where) {
       if (/none/.test(s.scrollbarWidth)) continue; // hidden scrollbar (e.g. hand fan with arrows) is fine
       const c = s.scrollbarColor;
       const [r1, g1, b1] = (c.match(/[\d.]+/g) || []).map(Number);
-      if (c === 'auto' || !(r1 >= 120 && r1 >= g1 && g1 > b1)) bad.push(`scrollbar ${e.tagName.toLowerCase()} "${e.getAttribute('aria-label') || ''}" color ${c}`);
+      if (c === 'auto' || !(r1 >= 110 && b1 >= r1 && b1 >= g1 && b1 - r1 <= 60)) bad.push(`scrollbar ${e.tagName.toLowerCase()} "${e.getAttribute('aria-label') || ''}" color ${c}`);
     }
     return bad;
   });
@@ -4106,6 +4107,8 @@ test('AC136: cards are never stretched (Deck Builder at 2 and 8 per row, mulliga
 });
 
 // menu actions are plain white text (Round 15): no border, box color, box image, shadow or outline at rest
+// Owner check change (Ken, Oct 30 silver theme: "silvery UI, not gold, with fancier buttons: a border with a gem in it"):
+// the main actions now sit in Brush's silver gem frame, drawn as a border image (no CSS border width, box colour or shadow), text still white
 async function boxedButtons(page, names) {
   await page.mouse.move(1, 1);
   await page.evaluate(() => document.activeElement && document.activeElement.blur && document.activeElement.blur());
@@ -4128,9 +4131,11 @@ async function boxedButtons(page, names) {
   }
   return bad;
 }
+const unframed = async (page, names) => { const bad = []; for (const name of names) { const src = await page.getByRole('button', { name, exact: true }).first().evaluate((e) => getComputedStyle(e).borderImageSource); if (!/\/art\/ui\/silver\/btn-/.test(src)) bad.push(`${name} has no silver gem frame (${src})`); } return bad; };
 test('AC137: menu buttons are plain white text with a hover glow, no boxes or borders', async ({ page }) => {
   await toTitle(page);
   expect(await boxedButtons(page, ['Play', 'Deck Builder', 'How to Play', 'Settings', 'Quit']), 'title').toEqual([]);
+  expect(await unframed(page, ['Play', 'Deck Builder', 'How to Play', 'Settings', 'Quit']), 'title gem frames (Ken, Oct 30)').toEqual([]);
   const play = page.getByRole('button', { name: 'Play', exact: true });
   const look = () => play.evaluate((e) => { const c = getComputedStyle(e); return [c.textShadow, c.filter, c.transform, c.backgroundImage, c.color, c.fontSize].join('|'); });
   const rest = await look();
@@ -4145,10 +4150,12 @@ test('AC137: menu buttons are plain white text with a hover glow, no boxes or bo
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   expect(await boxedButtons(page, ['Auto-fill', 'Save', 'Rename', 'New Deck', 'Back']), 'deck builder').toEqual([]);
+  expect(await unframed(page, ['Auto-fill', 'Save', 'Rename', 'New Deck', 'Back']), 'deck builder gem frames (Ken, Oct 30)').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Normal', exact: true }).click();
   expect(await boxedButtons(page, ['Easy', 'Hard', 'Fight!', 'Remove Goblin Warband', 'Copy Goblin Warband to my decks', 'Restore starter decks']), 'select').toEqual([]);
+  expect(await unframed(page, ['Back', 'Fight!']), 'select gem frames (Ken, Oct 30)').toEqual([]);
 });
 
 async function fillsWindow(page, screen, where) {
