@@ -19,11 +19,11 @@
  "underdogBonus": 2,
  "geodeIncome": 1,
  "starterDeckMix": {
-  "creatures": 40,
-  "spells": 6,
-  "crystals": 4,
-  "basicGatherers": 5,
-  "smithMiners": 3
+  "creatures": 48,
+  "spells": 7,
+  "crystals": 5,
+  "basicGatherers": 8,
+  "smithMiners": 4
  },
  "openingHandSize": 5,
  "secondPlayerExtraCards": 1,

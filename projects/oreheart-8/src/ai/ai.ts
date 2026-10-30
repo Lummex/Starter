@@ -170,7 +170,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand, only?: string[]
       const h = s.players[who].hand.find((x: any) => x.uid === a.uid);
       const card = CARDS[h.cardId];
       const myMiners = s.board.creatures.filter((c: any) => c.owner === who && isMiner(CARDS[c.cardId])).length;
-      const flood = isMiner(card) ? Math.max(0, myMiners - 4) * 9 : 0; // 100-card decks hold 50 Miners: keep fighters coming
+      const flood = isMiner(card) ? Math.max(0, myMiners - 5) * 6 : 0; // 60-card starter decks hold ~11 Miners (Ken, Oct 30): hold back only past 5 on board, keep fighters coming
       scored.push([(card.role === 'Smith' ? 26 : 40) - flood + card.cost * 2 + posValue(s, who, card, a.row, a.col) * 0.5 + rand(), a]);
     } else if (a.type === 'gathererSwap') {
       const h = a.discardUid ? s.players[who].hand.find((x: any) => x.uid === a.discardUid) : null;

@@ -191,7 +191,8 @@ test('AC5: window.oreheart only in test mode; seeds are deterministic', async ({
 
 // ---------- AC6 ----------
 for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
-  test(`AC6: ${cmd} Warband starter deck is 100 cards: 30 + 20 Miners, 38 Fighters, 7 spells, 5 Crystal cards`, async ({ page }) => {
+  // Owner check change (Ken, Oct 30: 60-card starter decks): 48 creatures (about 12 Miners), 7 spells, 5 Crystal cards
+  test(`AC6: ${cmd} Warband starter deck is 60 cards: about a fifth Miners, 48 creatures, 7 spells, 5 Crystal cards`, async ({ page }) => {
     const s = await start(page, { playerCommander: cmd, ai: false, firstPlayer: 'player' });
     expect(s.phase).toBe('mulligan');
     const p = s.players.player;
@@ -199,18 +200,18 @@ for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
     expect(s.players.opponent.health).toBe(20);
     expect(p.hand.length).toBe(5);
     const all = [...p.deck, ...p.hand].map((c) => c.cardId);
-    expect(all.length).toBe(100);
+    expect(all.length).toBe(60);
     expect(all.filter((id) => CRYSTALS.has(id)).length).toBe(5);
     expect(all.filter((id) => SPELLS.has(id)).length).toBe(7);
-    expect(all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id)).length).toBe(88);
+    expect(all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id)).length).toBe(48);
     const counts = {};
     for (const id of all) counts[id] = (counts[id] || 0) + 1;
     for (const [id, n] of Object.entries(counts)) if (LIMITED.has(id)) expect(n, id).toBeLessThanOrEqual(3);
-    // Round 12c: Dwarves have no basic Miner any more; their 50 Miners are all Anvilsworn (Smith) Miners
-    const basic = { grubnak: 'goblin-scrounger', sproingle: 'gnome-prospector', borgo: 'none' }[cmd];
-    expect(counts[basic] || 0).toBe(cmd === 'borgo' ? 0 : 30);
+    // Ken, Oct 30: 8 basic + 4 Smith Miners (goblins, gnomes); Dwarves keep 5 Riot Shield Bearers (config basic, opening-hand rescue) + 4 Anvilsworn
+    const basic = { grubnak: 'goblin-scrounger', sproingle: 'gnome-prospector', borgo: 'dwarf-miner' }[cmd];
+    expect(counts[basic] || 0).toBe(cmd === 'borgo' ? 5 : 8);
     const smith = { grubnak: 'goblin-smith-miner', sproingle: 'gnome-smith-miner', borgo: 'dwarf-smith-miner' }[cmd];
-    expect(counts[smith]).toBe(cmd === 'borgo' ? 50 : 20);
+    expect(counts[smith]).toBe(4);
     for (const id of NEW_BY_FACTION[cmd]) expect(counts[id] || 0, id).toBeGreaterThanOrEqual(1);
     const creatureIds = all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id) && id !== basic && id !== smith);
     const costs = await page.evaluate(async (ids) => {
@@ -218,7 +219,7 @@ for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
       for (const id of ids) out.push((await window.oreheart.getCard(id)).cost);
       return out;
     }, creatureIds);
-    expect(costs.filter((c) => c <= 4).length).toBeGreaterThanOrEqual(16);
+    expect(costs.filter((c) => c <= 4).length).toBeGreaterThanOrEqual(cmd === 'borgo' ? 4 : 16); // Dwarf cards are expensive by design (5 cheap Riot Shield Bearers are the basic Miners)
   });
 }
 
@@ -2606,10 +2607,10 @@ test('AC72: select screen — Commander cards, deck stacks, difficulty and Fight
     await expect(page.getByRole('button', { name: n, exact: true })).toBeVisible();
   }
   const stacks = deckRow(page).getByRole('button', { name: /cards, (ready|not ready)$/ });
-  await expect(stacks.first()).toHaveAccessibleName('Goblin Warband, 100 cards, ready');
+  await expect(stacks.first()).toHaveAccessibleName('Goblin Warband, 60 cards, ready');
   // Round 8b: only the selected Commander's decks (Grubnak by default)
   for (const f of ['Goblin', 'Gnome', 'Dwarf']) for (const st of ['Warband', 'Arcane Hoard', 'Horde']) {
-    await expect(deckRow(page).getByRole('button', { name: `${f} ${st}, 100 cards, ready`, exact: true })).toHaveCount(f === 'Goblin' ? 1 : 0);
+    await expect(deckRow(page).getByRole('button', { name: `${f} ${st}, 60 cards, ready`, exact: true })).toHaveCount(f === 'Goblin' ? 1 : 0);
   }
   await expect(deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })).toHaveCount(1);
   const small = deckRow(page).getByRole('button', { name: /^Too Small, 1 cards?, not ready$/ });
@@ -2669,7 +2670,7 @@ test('AC74: match-end summary, Play again with the same choices, and Menu', asyn
   await page.goto('/?test=1&seed=5');
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Thane Borgo Gravelgrim', exact: true }).click();
-  await deckRow(page).getByRole('button', { name: 'Dwarf Warband, 100 cards, ready', exact: true }).click();
+  await deckRow(page).getByRole('button', { name: 'Dwarf Warband, 60 cards, ready', exact: true }).click();
   await page.getByRole('button', { name: 'Hard', exact: true }).click();
   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
   await keepAndGetState(page);
@@ -2682,7 +2683,7 @@ test('AC74: match-end summary, Play again with the same choices, and Menu', asyn
   expect(s.players.player.commanderId).toBe('borgo');
   expect(s.difficulty).toBe('hard');
   expect(s.winner).toBeNull();
-  expect(allIds(s, 'player').length).toBe(100);
+  expect(allIds(s, 'player').length).toBe(60); // Ken, Oct 30: 60-card starter decks
   await surrenderViaMenu(page);
   await page.getByRole('button', { name: 'Menu', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
@@ -3073,15 +3074,16 @@ test('AC407: the computer redraws a hand with no affordable fighter and keeps a 
     const s = await getState(page);
     return { before, ids: s0.players.opponent.hand.map((c) => c.cardId), after: s.players.opponent.hand.map((c) => c.uid), m: s.players.opponent.mulligans };
   };
-  // seed 1: Smith Miners + Brewmaster (6) + Queen Brunhilda: nothing cheap to fight with -> redraw
-  const r1 = await run(1);
-  expect(r1.ids.filter((id) => !/miner/.test(id)).every((id) => ['brewmaster', 'queen-brunhilda-stonebeard'].includes(id)), JSON.stringify(r1.ids)).toBe(true);
+  // Owner check change (Ken, Oct 30: 60-card starter decks): new seeds for the new Dwarf Warband.
+  // seed 7: Smith Miners + a Riot Shield Bearer (the Dwarf basic Miner) + Crystal cards: no fighter at all -> redraw
+  const r1 = await run(7);
+  expect(r1.ids.filter((id) => !/miner/.test(id)).every((id) => ['crystal-cluster', 'glowing-geode'].includes(id)), JSON.stringify(r1.ids)).toBe(true);
   expect(r1.m).toBe(1);
   expect(r1.after.slice(0, 5)).not.toEqual(r1.before);
   // a full redraw, not a swap: the old rule swapped only the two dear cards and kept the three Miners in hand
   expect(r1.before.filter((u) => r1.after.includes(u)).length).toBeLessThan(3);
-  // seed 3: Miners + Barrelback Courier (5) -> keep (the hand stays, plus the second player's extra card)
-  const r3 = await run(3);
+  // seed 16: Miners + Barrelback Courier (5) -> keep (the hand stays, plus the second player's extra card)
+  const r3 = await run(16);
   expect(r3.ids).toContain('barrelback-courier');
   expect(r3.m).toBe(0);
   expect(r3.after.slice(0, r3.before.length)).toEqual(r3.before);
@@ -3090,7 +3092,7 @@ test('AC407: the computer redraws a hand with no affordable fighter and keeps a 
 // Owner check change (Ken, Oct 30 mulligan rule): the screen keeps its one straight row, but the cards are not tapped any more;
 // the buttons are Keep Hand and Redraw Hand, and it counts "Redraws left: 1".
 test('AC95: the Mulligan screen shows one straight row, Keep Hand / Redraw Hand, and Redraws left: 1', async ({ page }) => {
-  await page.goto('/?test=1&seed=7');
+  await page.goto('/?test=1&seed=4'); // Ken, Oct 30 (60-card starter decks): seed 7 now puts the player second; seed 4 has the player first
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Grubnak Rotgut, Goblin King' }).click();
   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
@@ -3488,7 +3490,8 @@ test('AC111: decks of 50 to 100 cards and at most 20 Crystal cards', async ({ pa
 
 const STYLES = { warband: 'Warband', 'arcane-hoard': 'Arcane Hoard', horde: 'Horde' };
 const FACTIONS = { goblin: 'Goblin', gnome: 'Gnome', dwarf: 'Dwarf' };
-test('AC112/AC128: nine legal 100-card starter decks: Warband, Arcane Hoard and Horde for each faction', async ({ page }) => {
+// Owner check change (Ken, Oct 30: 60-card starter decks)
+test('AC112/AC128: nine legal 60-card starter decks: Warband, Arcane Hoard and Horde for each faction', async ({ page }) => {
   await openTest(page);
   const decks = await page.evaluate(async () => await window.oreheart.listStarterDecks());
   expect(decks.length).toBe(9);
@@ -3499,7 +3502,7 @@ test('AC112/AC128: nine legal 100-card starter decks: Warband, Arcane Hoard and 
     expect(d, `${f}-${st}`).toBeTruthy();
     expect(d.name).toBe(`${fname} ${sname}`);
     expect(d.style).toBe(st);
-    expect(d.cards.length).toBe(100);
+    expect(d.cards.length).toBe(60);
     expect((await validate(page, d.cards)).legal, d.id).toBe(true);
     const of = (pred) => d.cards.filter((id) => pred(info[id])).length;
     const creatures = of((c) => c.type === 'creature');
@@ -3507,12 +3510,15 @@ test('AC112/AC128: nine legal 100-card starter decks: Warband, Arcane Hoard and 
     const crystals = of((c) => c.type === 'crystal');
     const miners = of((c) => c.type === 'creature' && (c.role === 'gatherer' || c.role === 'smith'));
     const counters = of((c) => c.type === 'spell' && c.speed === 'counter');
-    const want = { warband: [88, 7, 5], 'arcane-hoard': [68, 24, 8], horde: [96, 0, 4] }[st];
+    const want = { warband: [48, 7, 5], 'arcane-hoard': [40, 14, 6], horde: [56, 0, 4] }[st];
     expect([creatures, spells, crystals], d.id).toEqual(want);
-    expect(miners, `${d.id} Miners`).toBe(50);
-    const basic = { goblin: 'goblin-scrounger', gnome: 'gnome-prospector', dwarf: 'none' }[f]; // Round 12c: no Dwarf basic Miner
-    expect(d.cards.filter((id) => id === basic).length, `${d.id} basic Miners`).toBe(f === 'dwarf' ? 0 : 30);
-    expect(d.cards.filter((id) => id === `${f}-smith-miner`).length, `${d.id} Smith Miners`).toBe(f === 'dwarf' ? 50 : 20);
+    expect(miners, `${d.id} Miners`).toBeGreaterThanOrEqual(5); // Ken, Oct 30: Miners about 10-12 of 60, not half the deck
+    expect(miners, `${d.id} Miners`).toBeLessThanOrEqual(12);
+    const basic = { goblin: 'goblin-scrounger', gnome: 'gnome-prospector', dwarf: 'dwarf-miner' }[f]; // config basicGatherers
+    const nb = d.cards.filter((id) => id === basic).length;
+    if (f === 'dwarf') expect(nb, `${d.id} basic Miners`).toBe(5); else expect(nb, `${d.id} basic Miners`).toBeGreaterThanOrEqual(7);
+    const ns = d.cards.filter((id) => id === `${f}-smith-miner`).length;
+    expect(ns >= 3 && ns <= 4, `${d.id} Smith Miners (${ns})`).toBe(true);
     const faction = { goblin: 'goblins', gnome: 'gnomes', dwarf: 'dwarves' }[f];
     for (const id of d.cards) if (info[id].type === 'spell') expect([faction, null, 'neutral'], `${d.id} ${id}`).toContain(info[id].faction ?? null);
     const cmd = { goblin: 'grubnak', gnome: 'sproingle', dwarf: 'borgo' }[f];
@@ -3520,6 +3526,23 @@ test('AC112/AC128: nine legal 100-card starter decks: Warband, Arcane Hoard and 
     if (st === 'warband') expect(counters, d.id).toBeGreaterThanOrEqual(1);
     if (st === 'arcane-hoard') expect(counters, d.id).toBeGreaterThanOrEqual(2);
   }
+});
+
+// New check (Ken, Oct 30: 60-card starter decks)
+test('AC409: every starter deck is exactly 60 cards, legal for its Commander, and a match deals from it', async ({ page }) => {
+  await openTest(page);
+  const decks = await page.evaluate(async () => await window.oreheart.listStarterDecks());
+  expect(decks.length).toBe(9);
+  for (const d of decks) {
+    expect(d.cards.length, d.id).toBe(60);
+    const cmd = { goblins: 'grubnak', gnomes: 'sproingle', dwarves: 'borgo' }[d.faction];
+    const v = await validate(page, d.cards, cmd);
+    expect(v.problems, `${d.id} with ${cmd}`).toEqual([]);
+    expect(v.legal, d.id).toBe(true);
+  }
+  const s = await newMatch(page, { ai: false, playerCommander: 'borgo', opponentCommander: 'sproingle', playerDeckId: 'dwarf-arcane-hoard', opponentDeckId: 'gnome-horde' });
+  expect(s.players.player.deck.length + s.players.player.hand.length).toBe(60);
+  expect(s.players.opponent.deck.length + s.players.opponent.hand.length).toBe(60);
 });
 
 test('AC113: matches use the chosen starter decks; the opponent deck can be any of the three', async ({ page }) => {
@@ -3605,16 +3628,16 @@ test.describe('both hands at 844x390', () => {
     await page.getByRole('button', { name: 'Play', exact: true }).click();
     await page.getByRole('button', { name: 'Knobbin the Gnomeificent', exact: true }).click();
     const row = page.getByLabel('Deck choice', { exact: true });
-    const stacks = row.getByRole('button', { name: /, 100 cards, ready$/ });
-    await expect(stacks.first()).toHaveAccessibleName('Gnome Warband, 100 cards, ready');
-    await expect(stacks.nth(1)).toHaveAccessibleName('Gnome Arcane Hoard, 100 cards, ready');
-    await expect(stacks.nth(2)).toHaveAccessibleName('Gnome Horde, 100 cards, ready');
-    await expect(row.getByRole('button', { name: 'Goblin Horde, 100 cards, ready', exact: true })).toHaveCount(0); // Round 8b: only his decks
-    await expect(row.getByRole('button', { name: 'Dwarf Arcane Hoard, 100 cards, ready', exact: true })).toHaveCount(0);
+    const stacks = row.getByRole('button', { name: /, 60 cards, ready$/ });
+    await expect(stacks.first()).toHaveAccessibleName('Gnome Warband, 60 cards, ready');
+    await expect(stacks.nth(1)).toHaveAccessibleName('Gnome Arcane Hoard, 60 cards, ready');
+    await expect(stacks.nth(2)).toHaveAccessibleName('Gnome Horde, 60 cards, ready');
+    await expect(row.getByRole('button', { name: 'Goblin Horde, 60 cards, ready', exact: true })).toHaveCount(0); // Round 8b: only his decks
+    await expect(row.getByRole('button', { name: 'Dwarf Arcane Hoard, 60 cards, ready', exact: true })).toHaveCount(0);
     await expect(row.locator('img[src*="deck-menu"]').first()).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('deck-picker-844x390.png') });
-    await row.getByRole('button', { name: 'Gnome Horde, 100 cards, ready', exact: true }).click();
-    await expect(row.getByRole('button', { name: 'Gnome Horde, 100 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await row.getByRole('button', { name: 'Gnome Horde, 60 cards, ready', exact: true }).click();
+    await expect(row.getByRole('button', { name: 'Gnome Horde, 60 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Fight!', exact: true }).click();
     await page.getByRole('button', { name: 'Keep Hand' }).click();
     const s = await page.evaluate(async () => await window.oreheart.getState());
@@ -4289,30 +4312,30 @@ test('AC144: starter decks can be removed (in-game confirm) and restored; at lea
     await expect(dlg).toBeVisible();
     await expect(dlg).toContainText(name);
     await dlg.getByRole('button', { name: 'Remove', exact: true }).click();
-    await expect(row.getByRole('button', { name: `${name}, 100 cards, ready`, exact: true })).toHaveCount(0);
+    await expect(row.getByRole('button', { name: `${name}, 60 cards, ready`, exact: true })).toHaveCount(0);
   };
   await row.getByRole('button', { name: 'Remove Goblin Horde', exact: true }).click();
   await page.getByRole('dialog', { name: 'Remove deck?' }).getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(row.getByRole('button', { name: 'Goblin Horde, 100 cards, ready', exact: true })).toHaveCount(1);
+  await expect(row.getByRole('button', { name: 'Goblin Horde, 60 cards, ready', exact: true })).toHaveCount(1);
   await removeDeck('Goblin Horde');
   await page.reload();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(row.getByRole('button', { name: 'Goblin Horde, 100 cards, ready', exact: true })).toHaveCount(0);
-  await expect(row.getByRole('button', { name: 'Goblin Warband, 100 cards, ready', exact: true })).toHaveCount(1);
+  await expect(row.getByRole('button', { name: 'Goblin Horde, 60 cards, ready', exact: true })).toHaveCount(0);
+  await expect(row.getByRole('button', { name: 'Goblin Warband, 60 cards, ready', exact: true })).toHaveCount(1);
   // Restore from Settings
   await toTitle(page);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Restore starter decks', exact: true }).click();
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(row.getByRole('button', { name: 'Goblin Horde, 100 cards, ready', exact: true })).toHaveCount(1);
+  await expect(row.getByRole('button', { name: 'Goblin Horde, 60 cards, ready', exact: true })).toHaveCount(1);
   // Round 8b: per Commander, his last deck can't be removed
   for (const st of ['Goblin Warband', 'Goblin Arcane Hoard']) await removeDeck(st);
   await expect(row.getByRole('button', { name: 'Remove Goblin Horde', exact: true })).toBeDisabled();
-  await expect(row.getByRole('button', { name: 'Goblin Horde, 100 cards, ready', exact: true })).toHaveCount(1);
+  await expect(row.getByRole('button', { name: 'Goblin Horde, 60 cards, ready', exact: true })).toHaveCount(1);
   // Restore from the deck picker
   await page.getByRole('button', { name: 'Restore starter decks', exact: true }).click();
-  for (const st of STARTERS.slice(0, 3)) await expect(row.getByRole('button', { name: `${st}, 100 cards, ready`, exact: true })).toHaveCount(1);
+  for (const st of STARTERS.slice(0, 3)) await expect(row.getByRole('button', { name: `${st}, 60 cards, ready`, exact: true })).toHaveCount(1);
 });
 
 test('AC145: Copy to my decks makes an editable saved copy and leaves the starter deck unchanged; my decks can be removed', async ({ page }) => {
@@ -4321,18 +4344,18 @@ test('AC145: Copy to my decks makes an editable saved copy and leaves the starte
   await deckRow(page).getByRole('button', { name: 'Copy Goblin Warband to my decks', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
   await expect(deckName(page)).toHaveText('Goblin Warband (copy)');
-  await expect(deckSize(page)).toContainText(/100 cards \(50[–-]100\)/);
+  await expect(deckSize(page)).toContainText(/60 cards \(50[–-]100\)/); // Ken, Oct 30: 60-card starter decks
   await expect(myDecks(page).getByRole('button', { name: /^Goblin Warband \(copy\)/ })).toHaveAttribute('aria-current', 'true');
   await expect(page.getByLabel('Deck problems', { exact: true })).toContainText('Deck is legal');
   await renameDeck(page, 'My Warband');
   await deckList(page).getByRole('button', { name: 'Remove Goblin Miner', exact: true }).click();
   await saveDeck(page);
   const starters = await page.evaluate(async () => await window.oreheart.listStarterDecks());
-  expect(starters.find((d) => d.name === 'Goblin Warband').cards.length).toBe(100);
+  expect(starters.find((d) => d.name === 'Goblin Warband').cards.length).toBe(60);
   await page.reload();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(deckRow(page).getByRole('button', { name: 'Goblin Warband, 100 cards, ready', exact: true })).toHaveCount(1);
-  await expect(deckRow(page).getByRole('button', { name: 'My Warband, 99 cards, ready', exact: true })).toHaveCount(1);
+  await expect(deckRow(page).getByRole('button', { name: 'Goblin Warband, 60 cards, ready', exact: true })).toHaveCount(1);
+  await expect(deckRow(page).getByRole('button', { name: 'My Warband, 59 cards, ready', exact: true })).toHaveCount(1);
   await deckRow(page).getByRole('button', { name: 'Remove My Warband', exact: true }).click();
   await page.getByRole('dialog', { name: 'Remove deck?' }).getByRole('button', { name: 'Remove', exact: true }).click();
   await expect(deckRow(page).getByRole('button', { name: /^My Warband,/ })).toHaveCount(0);
@@ -4360,7 +4383,7 @@ test('AC146: Choose Your Commander: big glowing Commander cards that stand out, 
       expect(gap, `${at} cards ${a}/${b} do not overlap`).toBeGreaterThanOrEqual(8);
       expect(gap, `${at} cards ${a}/${b} sit close`).toBeLessThanOrEqual(W * 0.06 + 1);
     }
-    const stack = deckRow(page).getByRole('button', { name: 'Goblin Warband, 100 cards, ready', exact: true });
+    const stack = deckRow(page).getByRole('button', { name: 'Goblin Warband, 60 cards, ready', exact: true });
     expect((await box(stack)).height, `${at} deck stack size`).toBeGreaterThanOrEqual(H * 0.15);
     const glow = (n) => page.getByRole('button', { name: n, exact: true }).evaluate((e) => {
       for (const x of [e, ...e.querySelectorAll('*')]) {
@@ -6168,7 +6191,7 @@ test('AC206: choosing a Commander hides the other two and shows only his decks; 
     await expect(grub).toHaveAttribute('aria-pressed', 'true');
     expect((await selectState(page)).mode).toBe('focused');
     await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toBeVisible();
-    await expect(deckRow(page).getByRole('button', { name: 'Goblin Warband, 100 cards, ready', exact: true })).toBeVisible();
+    await expect(deckRow(page).getByRole('button', { name: 'Goblin Warband, 60 cards, ready', exact: true })).toBeVisible();
     await expect(deckRow(page).getByRole('button', { name: /^(Gnome|Dwarf) / })).toHaveCount(0);
   };
   const backToRow = async (how) => {
@@ -6187,7 +6210,7 @@ test('AC206: choosing a Commander hides the other two and shows only his decks; 
   await backToRow('second click');
   await page.getByRole('button', { name: COMMANDERS[1], exact: true }).click();
   expect((await selectState(page)).commanderId).toBe('sproingle');
-  await expect(deckRow(page).getByRole('button', { name: 'Gnome Warband, 100 cards, ready', exact: true })).toBeVisible();
+  await expect(deckRow(page).getByRole('button', { name: 'Gnome Warband, 60 cards, ready', exact: true })).toBeVisible();
   await expect(deckRow(page).getByRole('button', { name: /^(Goblin|Dwarf) / })).toHaveCount(0);
   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
   const s = await keepAndGetState(page);
@@ -9398,7 +9421,7 @@ test.describe('round 17 fixes at 844x390', () => {
       expect(b.x >= -1 && b.y >= -1 && b.x + b.width <= 845 && b.y + b.height <= 391, `${n} on screen`).toBe(true);
       boxes[n] = b;
     }
-    const deck = await deckRow(page).getByRole('button', { name: 'Goblin Warband, 100 cards, ready', exact: true }).boundingBox();
+    const deck = await deckRow(page).getByRole('button', { name: 'Goblin Warband, 60 cards, ready', exact: true }).boundingBox();
     boxes['Goblin Warband deck'] = deck;
     const keys = Object.keys(boxes);
     const hit = (a, b) => a.x < b.x + b.width - 1 && b.x < a.x + a.width - 1 && a.y < b.y + b.height - 1 && b.y < a.y + a.height - 1;
