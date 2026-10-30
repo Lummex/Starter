@@ -1824,6 +1824,24 @@ html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!im
 /* the resting hand tucks down below the home row (--tuck-drop, set by layoutHand); hover (mouse) or a touch on the hand (.shown, phones) brings it fully up */
 .match .hand:not(.o-hand):not(.open):not(.has-pop):not(.shown):not(.away),.match .hand.o-hand:not(.open):not(.has-pop):not(.shown):not(.away){transform:translateY(calc(var(--hcw) * var(--rest-k) - var(--rest-lift,0px) + var(--tuck-drop,0px)))}
 .match .hand.o-hand.tuck:not(.open):not(.has-pop):not(.away){transform:translateY(max(calc(var(--hcw) * .39),calc(var(--hcw) * var(--rest-k) - var(--rest-lift,0px) + var(--tuck-drop,0px))))}
+/* Oct 30 Ken hand spec */
+/* tucked: the top HALF of every card shows above the bottom edge (PC and phone); hover (mouse) or a touch on the hand (.shown) raises it fully. Offsets come from layoutHand (--hy-rest / --hy-open) */
+.match .hand[data-hy]:not(.away){transform:translateY(var(--hy-rest))!important}
+.match .hand[data-hy]:is(.open,.has-pop,.shown):not(.away){transform:translateY(var(--hy-open))!important}
+/* every card movement eases (the row glides when the dock window follows the pointer); nothing snaps */
+.match .hand .hand-card:not(.popped):not(.dragging):not(.popclone){transition-property:transform,translate,scale,left!important;transition-duration:.2s!important;transition-timing-function:cubic-bezier(.2,.7,.2,1)!important}
+.test .match .hand .hand-card:not(.popped):not(.dragging):not(.popclone){transition:none!important}
+/* the Tunnel! tag sits inside the card's top edge (it poked above the hand as a clipped teal tab) */
+.match .hand .hand-card .tunnel-tag,.match .hand .hand-card.popclone .tunnel-tag{top:15.5%!important;left:5%!important;transform:none!important;font-size:calc(var(--cw)*.075);line-height:1.3;padding:0 .45em;border-radius:.7em;box-shadow:0 1px 3px #000a}
+/* phones: a single tap selects a card (it lifts a little and gets a gold edge); a tap on the selected card opens the big view, a double tap plays */
+.match .hand .hand-card.sel:not(.popped){translate:0 calc(var(--cw) * -.14)}
+.match .hand .hand-card.sel:not(.popped)::after{content:"";position:absolute;inset:-3px;border-radius:calc(var(--cw)*.06);box-shadow:0 0 0 2px #FFD700,0 0 12px 2px #ffd700aa;pointer-events:none;z-index:7}
+/* Ken: while dragging, a drop that would UPGRADE a unit says so on the card and lights that unit in gold (deploy squares stay green) */
+.upgrade-badge{position:fixed;left:0;top:0;z-index:1003;pointer-events:none;transform:translate(-50%,-100%);font-family:"Alegreya SC",serif;font-weight:800;font-size:clamp(13px,2.6vh,20px);letter-spacing:.06em;line-height:1;white-space:nowrap;padding:.34em .75em;border-radius:999px;color:#fff!important;-webkit-text-fill-color:#fff!important;background:linear-gradient(#5a3a08,#1a1003);border:2px solid #FFD700;box-shadow:0 0 14px 4px #ffd700b0,0 2px 6px #000c;text-shadow:0 1px 2px #000!important;font-style:normal!important}
+.drag-square-hl[data-upgrade="1"] polygon{stroke:#FFD700!important;fill:rgba(255,215,0,.22)!important;stroke-width:5;stroke-dasharray:10 6}
+.token.upgrade-target{z-index:40}
+.token.upgrade-target::after{content:"";position:absolute;left:-30%;right:-30%;bottom:-12%;height:36%;border-radius:50%;border:3px solid #FFD700;box-shadow:0 0 14px 4px #ffd700cc,inset 0 0 10px #ffd70088;pointer-events:none;animation:ohUpg .7s ease-in-out infinite alternate}
+@keyframes ohUpg{from{opacity:.65}to{opacity:1}}
 /* Owner fix (Ken, Oct 28): arrows beside a hand card's close-up step through the hand (same gold look as Play this card) */
 .overlay.cardview .card-nav{position:fixed;top:50%;transform:translateY(-50%);z-index:2147483001;pointer-events:auto;box-sizing:border-box;width:clamp(52px,6vw,68px);height:clamp(52px,6vw,68px);min-width:0;margin:0;padding:0;display:flex;align-items:center;justify-content:center;font-size:clamp(26px,3.2vw,36px);line-height:1;color:#fff!important;border-radius:50%;border:2px solid #ffe08a!important;background:linear-gradient(#e0a325,#9a5a10)!important;box-shadow:0 6px 18px #000b,0 0 18px #ffcc5588;cursor:pointer;touch-action:manipulation;filter:drop-shadow(0 2px 2px #0007)}
 .overlay.cardview .card-nav-prev{left:max(6px,2vw)}

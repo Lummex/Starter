@@ -1919,7 +1919,9 @@ test('AC46: dropping a Smith Miner on your creature upgrades it at once (no choi
   const b = await label.boundingBox();
   await page.mouse.move(a.x + a.width / 2, Math.min(a.y + a.height * 0.15, page.viewportSize().height - 3));
   await page.mouse.down();
-  await page.mouse.move(b.x + b.width / 2, b.y + b.height + 12, { steps: 15 });
+  // owner check change (Ken, Oct 30 hand spec): the drop lands on the unit itself; a drop 12 px below it (the square underneath) now deploys there
+  // instead (Ken: "I just put a tunneling goblin out right underneath my cook goblin, and it upgraded my cook goblin")
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 15 });
   await page.mouse.up();
   await expect.poll(async () => at(await getState(page), 6, 3).attack).toBe(base.attack + 1);
   expect(at(await getState(page), 6, 3).maxHealth).toBe(base.health + 1);
@@ -3577,7 +3579,8 @@ for (const st of Object.keys(STYLES)) {
 test.describe('both hands at 844x390', () => {
   test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
   const inView = (b) => b && b.x >= -1 && b.y >= -1 && b.x + b.width <= 845 && b.y + b.height <= 391;
-  test('AC115: the enemy hand is always on-screen and the hand shows about 7 cards, then scrolls', async ({ page }, testInfo) => {
+  test('AC115: the enemy hand is always on-screen and the hand shows all 15 cards in a dock row (Ken, Oct 30)', async ({ page }, testInfo) => {
+    // owner check change (Ken, Oct 30 hand spec): was "shows about 7 cards, then scrolls"; with many cards the hand is a dock-like row around the pointer
     const fifteen = ['goblin-scrapper', 'goblin-slinger', 'goblin-scrounger', 'shiv-rat', 'fireball', 'soul-shard', 'shieldbeard', 'wolf-rider',
       'goblin-bomber', 'goblin-sneak', 'gnome-tinker', 'dwarf-miner', 'battle-cry', 'fizzle', 'crystal-cluster'];
     await start(page, quiet({ playerHand: fifteen, opponentHand: ['goblin-scrapper', 'fireball', 'soul-shard', 'shiv-rat', 'fizzle'] }));
@@ -3604,10 +3607,9 @@ test.describe('both hands at 844x390', () => {
       return n;
     };
     const first = await shown();
-    expect(first).toBeGreaterThanOrEqual(5);
-    expect(first).toBeLessThanOrEqual(8);
-    await page.getByRole('button', { name: 'Scroll hand right', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Scroll hand left', exact: true })).toBeVisible();
+    expect(first).toBe(15);
+    await expect(page.getByRole('button', { name: 'Scroll hand right', exact: true })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Scroll hand left', exact: true })).toBeHidden();
     await page.screenshot({ path: testInfo.outputPath('match-both-hands-844x390.png') });
   });
 
@@ -8955,21 +8957,22 @@ test.describe('round 14 Done text 1920x1080', () => {
 
 test.describe('round 14 fanned hand 1920x1080', () => {
   test.use({ viewport: { width: 1920, height: 1080 } });
-  test('AC327: your hand is a fan (4° per card, arc), hover straightens and pops the card 1.6x', async ({ page }) => {
+  test('AC327: your hand is a flat fan (at most 1.4° per card, no arc; Ken, Oct 30), hover straightens and pops the card 1.6x', async ({ page }) => {
+    // owner check change (Ken, Oct 30 hand spec): was 4° per card with an arc ("do less of a fan")
     await start(page, quiet({ playerHand: ['goblin-scrapper', 'fireball', 'soul-shard', 'goblin-slinger', 'venom-shiv'] }));
     await page.mouse.move(960, 200);
     const cards = handCards7(page);
     await expect(cards).toHaveCount(5);
     await expect.poll(async () => (await cards.evaluateAll((els) => els.map((e) => e.getAttribute('data-fan-angle')))).every((a) => a !== null)).toBe(true);
     const ang = (await cards.evaluateAll((els) => els.map((e) => parseFloat(e.getAttribute('data-fan-angle')))));
-    ang.forEach((a, i) => expect(Math.abs(a - (i - 2) * 4), `card ${i} angle ${a}`).toBeLessThanOrEqual(0.6));
+    ang.forEach((a, i) => expect(Math.abs(a - (i - 2) * 1.4), `card ${i} angle ${a}`).toBeLessThanOrEqual(0.3));
     const box = [];
     for (let i = 0; i < 5; i++) box.push(await cards.nth(i).boundingBox());
-    // rotated cards have wider bounding boxes; outer cards sit lower (arc)
-    expect(box[0].width).toBeGreaterThan(box[2].width * 1.05);
-    expect(box[4].width).toBeGreaterThan(box[2].width * 1.05);
-    expect(box[0].y).toBeGreaterThan(box[2].y);
-    expect(box[4].y).toBeGreaterThan(box[2].y);
+    // rotated cards have slightly wider bounding boxes; no arc: the outer cards sit level with the middle one
+    expect(box[0].width).toBeGreaterThan(box[2].width * 1.02);
+    expect(box[4].width).toBeGreaterThan(box[2].width * 1.02);
+    expect(Math.abs(box[0].y - box[2].y)).toBeLessThanOrEqual(box[2].height * 0.04);
+    expect(Math.abs(box[4].y - box[2].y)).toBeLessThanOrEqual(box[2].height * 0.04);
     for (let i = 1; i < 5; i++) expect(box[i].x).toBeGreaterThan(box[i - 1].x);
     const restH = box[2].height;
     const pt = await hoverPointOf(cards.nth(0));
@@ -9899,7 +9902,8 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }]) 
   test.describe(`round 23 hand at ${vp.width}x${vp.height}`, () => {
     test.use({ viewport: vp });
 
-    test(`AC363: the fan uses the owner layout — overlap 0.26, 4° per card, arc 1.45 (${vp.width}x${vp.height})`, async ({ page }) => {
+    test(`AC363: the fan follows Ken's Oct 30 hand spec — every card shows at least 50 %, a flat fan (at most 1.4° per card, no arc) (${vp.width}x${vp.height})`, async ({ page }) => {
+      // owner check change (Ken, Oct 30 hand spec): was the owner layout's overlap 0.26, 4° per card, arc 1.45 ("they kind of blend together"; "do less of a fan")
       await r23Start(page);
       const fan = await r23Fan(page);
       expect(fan.length).toBe(7);
@@ -9911,14 +9915,15 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }]) 
       }
       for (let i = 1; i < 7; i++) {
         const gap = fan[i].cx - fan[i - 1].cx;
-        expect(gap / w, `gap ${i}`).toBeGreaterThanOrEqual(0.23);
-        expect(gap / w, `gap ${i}`).toBeLessThanOrEqual(0.29);
+        expect(gap / w, `gap ${i}`).toBeGreaterThanOrEqual(0.5);
+        expect(gap / w, `gap ${i}`).toBeLessThanOrEqual(0.7);
       }
       for (let i = 0; i < 7; i++) {
-        const k = i - 3;
-        expect(Math.abs(fan[i].rotateDeg - 4 * k), `card ${i} angle ${fan[i].rotateDeg}`).toBeLessThanOrEqual(1);
+        expect(Math.abs(fan[i].rotateDeg), `card ${i} angle ${fan[i].rotateDeg}`).toBeLessThanOrEqual(3.6);
+        if (i) expect(fan[i].rotateDeg - fan[i - 1].rotateDeg, `card ${i} turn`).toBeGreaterThanOrEqual(0);
+        if (i) expect(fan[i].rotateDeg - fan[i - 1].rotateDeg, `card ${i} turn`).toBeLessThanOrEqual(1.45);
         const drop = (fan[i].cy - fan[3].cy) / h;
-        expect(Math.abs(drop - 0.0145 * k * k), `card ${i} arc ${drop.toFixed(3)}`).toBeLessThanOrEqual(0.04);
+        expect(Math.abs(drop), `card ${i} arc ${drop.toFixed(3)}`).toBeLessThanOrEqual(0.02);
       }
       // hovering a card straightens it and enlarges it 1.6x
       await r23HoverCard(page, 3);
@@ -10421,13 +10426,14 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }, {
   test.describe(`round 26 layout ${vp.width}x${vp.height}`, () => {
     test.use({ viewport: vp });
 
-    test(`AC374: the full hand is spaced 0.26 of a card (or squeezed to fit) and every card is fully on screen (${vp.width}x${vp.height})`, async ({ page }) => {
+    test(`AC374: the full hand shows at least 50 % of every card (Ken, Oct 30) and every card is on screen at its tucked rest (${vp.width}x${vp.height})`, async ({ page }) => {
+      // owner check change (Ken, Oct 30 hand spec): was "spaced 0.26 of a card"
       await r23Start(page);
       const fan = await r23Fan(page);
       expect(fan.length).toBe(7);
       for (let i = 1; i < 7; i++) {
         const g = (fan[i].cx - fan[i - 1].cx) / fan[0].width;
-        if (vp.width === 1920) { expect(g).toBeGreaterThanOrEqual(0.24); expect(g).toBeLessThanOrEqual(0.28); } else expect(g).toBeLessThanOrEqual(0.28);
+        expect(g).toBeGreaterThanOrEqual(0.5); expect(g).toBeLessThanOrEqual(0.7);
       }
       const btns = handButtons(page);
       for (let i = 0; i < 7; i++) {
