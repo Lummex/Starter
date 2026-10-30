@@ -15,6 +15,7 @@ describe('anim-slots.json (Ken\'s Studio slot choices)', () => {
         const ps = Array.isArray(pick) ? pick : [pick];
         for (const p of ps) {
           if (p.none) continue;
+          if (p.pack === 'random') { expect(p.auto, `${card}.${role} pack-random is an auto default`).toBe(true); continue; } // Oct 30 (Spring): a random shared-pack clip of this kind
           expect(typeof p.clip, `${card}.${role} clip`).toBe('string');
           expect(p.animation, `${card}.${role} animation id`).toMatch(/^[a-z]+-/);
           // a clip the game can play must be one of the card's named clips (models.json) or an old Meshy clip name
@@ -27,11 +28,11 @@ describe('anim-slots.json (Ken\'s Studio slot choices)', () => {
       }
     }
   });
-  it('knows the approved goblin-pebbler reactions (knockback, bowled, lifted)', () => {
+  it('Boneknocker keeps its approved Kneecapper attack and lifted clip; its reactions come from the shared pack (Spring, Oct 30)', () => {
     const peb = (slots as any).cards['goblin-pebbler'];
     expect(peb).toBeTruthy();
-    expect(peb.slots.knockback.clip).toBe('OH_React_Knockback');
-    expect(peb.slots.bowled.clip).toBe('OH_React_Bowled');
+    expect(peb.slots.attack.clip).toBe('OH_Attack');
     expect(peb.slots.lifted.clip).toBe('OH_React_Lifted');
+    for (const role of ['idle', 'walk', 'run', 'hit', 'knockback', 'bowled', 'defeat', 'idleBreak']) expect(peb.slots[role], role).toEqual({ pack: 'random', auto: true });
   });
 });

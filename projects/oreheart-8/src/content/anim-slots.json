@@ -15,6 +15,34 @@
       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-bomber/char.glb"
      },
      "auto": true
+    },
+    "idleBreak": {
+     "pack": "random",
+     "auto": true
+    },
+    "walk": {
+     "pack": "random",
+     "auto": true
+    },
+    "run": {
+     "pack": "random",
+     "auto": true
+    },
+    "hit": {
+     "pack": "random",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    },
+    "defeat": {
+     "pack": "random",
+     "auto": true
     }
    },
    "candidates": {
@@ -36,15 +64,35 @@
   "goblin-grunt": {
    "slots": {
     "defeat": {
-     "clip": "Dead",
-     "animation": "biped-death-meshy-dead",
-     "name": "Meshy stock death fall",
-     "loop": false,
-     "shared": false,
-     "file": {
-      "modelKey": "goblin-grunt-v4",
-      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-grunt/char.glb"
-     },
+     "pack": "random",
+     "auto": true
+    },
+    "idle": {
+     "pack": "random",
+     "auto": true
+    },
+    "idleBreak": {
+     "pack": "random",
+     "auto": true
+    },
+    "walk": {
+     "pack": "random",
+     "auto": true
+    },
+    "run": {
+     "pack": "random",
+     "auto": true
+    },
+    "hit": {
+     "pack": "random",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
      "auto": true
     }
    },
@@ -79,27 +127,11 @@
      "auto": true
     },
     "bowled": {
-     "clip": "OH_React_Bowled",
-     "animation": "biped-bonk-bowled-over",
-     "name": "Bowled over like a pin: falls flat, gets up holding head",
-     "loop": false,
-     "shared": false,
-     "file": {
-      "modelKey": "goblin-pebbler-v4",
-      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
-     },
+     "pack": "random",
      "auto": true
     },
     "knockback": {
-     "clip": "OH_React_Knockback",
-     "animation": "biped-bonk-knockback",
-     "name": "Shoved hard: arms fly up, skid, catch balance (game slides him)",
-     "loop": false,
-     "shared": false,
-     "file": {
-      "modelKey": "goblin-pebbler-v4",
-      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
-     },
+     "pack": "random",
      "auto": true
     },
     "lifted": {
@@ -112,6 +144,30 @@
       "modelKey": "goblin-pebbler-v4",
       "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-pebbler/char.glb"
      },
+     "auto": true
+    },
+    "idle": {
+     "pack": "random",
+     "auto": true
+    },
+    "idleBreak": {
+     "pack": "random",
+     "auto": true
+    },
+    "walk": {
+     "pack": "random",
+     "auto": true
+    },
+    "run": {
+     "pack": "random",
+     "auto": true
+    },
+    "hit": {
+     "pack": "random",
+     "auto": true
+    },
+    "defeat": {
+     "pack": "random",
      "auto": true
     }
    },
@@ -245,15 +301,35 @@
      "auto": true
     },
     "walk": {
-     "clip": "OH_Walk",
-     "animation": "biped-walk-goblin-scrapper",
-     "name": "In-place walk cycle (treadmill)",
-     "loop": true,
-     "shared": false,
-     "file": {
-      "modelKey": "goblin-scrapper-v4",
-      "repo": "factory/issue-8:projects/oreheart-8/public/models/creatures/goblin-scrapper/char.glb"
-     },
+     "pack": "random",
+     "auto": true
+    },
+    "idle": {
+     "pack": "random",
+     "auto": true
+    },
+    "idleBreak": {
+     "pack": "random",
+     "auto": true
+    },
+    "run": {
+     "pack": "random",
+     "auto": true
+    },
+    "hit": {
+     "pack": "random",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    },
+    "defeat": {
+     "pack": "random",
      "auto": true
     }
    },
@@ -311,6 +387,80 @@
      }
     ]
    }
+  },
+  "goblin-sneak": {
+   "slots": {
+    "idle": {
+     "pack": "random",
+     "auto": true
+    },
+    "idleBreak": {
+     "pack": "random",
+     "auto": true
+    },
+    "walk": {
+     "pack": "random",
+     "auto": true
+    },
+    "run": {
+     "pack": "random",
+     "auto": true
+    },
+    "hit": {
+     "pack": "random",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    },
+    "defeat": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "dwarf-smith-miner": {
+   "slots": {
+    "idle": {
+     "pack": "random",
+     "auto": true
+    },
+    "idleBreak": {
+     "pack": "random",
+     "auto": true
+    },
+    "walk": {
+     "pack": "random",
+     "auto": true
+    },
+    "run": {
+     "pack": "random",
+     "auto": true
+    },
+    "hit": {
+     "pack": "random",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    },
+    "defeat": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
   }
  },
  "stats": {
@@ -322,5 +472,6 @@
   "candidates": 14,
   "cardsWithPicks": 0,
   "auto": 9
- }
+ },
+ "note_pack_random": "Oct 30 (Spring): {\"pack\":\"random\"} = this role draws a random clip of its kind from the shared biped pack (studio/pack-v2-slot-defaults.json); keep these when the file is regenerated"
 }

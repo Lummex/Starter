@@ -471,7 +471,7 @@ const _embV = new THREE.Vector3();
     if (!f.path || !f.path.length) return 0;
     let d = 0, p = f.group.position.clone().setY(0);
     for (const q of f.path) { d += p.distanceTo(q); p = q; }
-    return (d / Math.min(6, Math.max(1.2, f.c3d?.gaitSpeed?.(f.run ? 'run' : 'walk') ?? (f.run ? RUN_SPEED : WALK_SPEED)))) * 1000;
+    return (d / (f.run ? RUN_SPEED : WALK_SPEED)) * 1000;
   }
   const figs = new Map<string, Fig>();
   // Owner fix (Ken, Oct 28): Junk Shaman carry. The carried figure hangs just under the pointer, raised above the board
@@ -811,7 +811,7 @@ const _embV = new THREE.Vector3();
       else if (mv && mv.knock) { // Round 28b + Oct 30: a knock-back (Smack, Shockwave, deathKnock...) launches the figure onto its new square with a tumble
         const from = f.group.position.clone().setY(0); f.path = [];
         f.kb = { t0: now, from, land: tgt.clone(), h: 0.45, spin: 1, fly: 420, ret: false, landed: false, knockMove: true }; f.knockT = now + 100; fitKnockClip(f);
-      } else if (mv) { f.path = walkPath(mv.from, mv.to, st, c.uid); f.run = f.path.length > 1; } // Oct 30: walk (or run) square by square
+      } else if (mv) { f.path = walkPath(mv.from, mv.to, st, c.uid); f.run = f.path.length > 1; f.c3d?.setPace?.(f.run ? 'run' : 'walk', f.run ? RUN_SPEED : WALK_SPEED); } // Oct 30: walk (or run) square by square
     }
     syncStatusIcons(st);
     // Oct 30 (Ken's fighting vision): an attack is a little scene. The attacker finishes its walk, turns, steps in and swings (ranged units shoot from
@@ -1255,7 +1255,7 @@ const _embV = new THREE.Vector3();
       let pathYaw: number | undefined;
       const onPath = !!(f.path && f.path.length) && !f.kb && !carried && !f.bowl;
       if (onPath) {
-        const nx = f.path![0], dx = nx.x - g.position.x, dz = nx.z - g.position.z, d = Math.hypot(dx, dz), step = Math.min(6, Math.max(1.2, f.c3d?.gaitSpeed?.(f.run ? 'run' : 'walk') ?? (f.run ? RUN_SPEED : WALK_SPEED))) * dt0; // the pack's pace when known (feet don't skate)
+        const nx = f.path![0], dx = nx.x - g.position.x, dz = nx.z - g.position.z, d = Math.hypot(dx, dz), step = (f.run ? RUN_SPEED : WALK_SPEED) * dt0; // one pace for everyone (Gauge, Oct 30: the Anvilsworn ran 3x faster); the clip speed fits the pace in setPace
         if (d > 1e-4) pathYaw = Math.atan2(dx, dz);
         if (d <= step) { g.position.x = nx.x; g.position.z = nx.z; f.path!.shift(); if (f.path!.length) audio.play('step', CARDS[f.cardId].faction); }
         else { g.position.x += (dx / d) * step; g.position.z += (dz / d) * step; }
@@ -1332,6 +1332,7 @@ const _embV = new THREE.Vector3();
         if (!f.c3d?.has?.('lifted')) { g.rotation.z = Math.sin(now / 300) * 0.12; (f as any).dangle = true; } // no lifted clip: gentle dangle
       } else if ((f as any).dangle) { g.rotation.z = 0; (f as any).dangle = false; }
       if (kbY) g.position.y += kbY;
+      { const ring = g.getObjectByName('acting-ring'); if (ring) ring.position.y = (0.04 - g.position.y) / (f.baseScale || 1); } // Ken (Oct 30): the ring sits on the square, not on the model
       const p = f.parts;
       if (f.finished && p) {
         const t = now / 1000;
@@ -1440,7 +1441,7 @@ const _embV = new THREE.Vector3();
   const _v = new THREE.Vector3();
   function figureStats(f: Fig) {
     const c = f.c3d, cv = canvas.getBoundingClientRect();
-    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', currentClip: c?.currentClip ? c.currentClip() : '', parts: c?.partInfo ? c.partInfo().map((x) => ({ ...x })) : [], animationLog: c ? [...c.log] : [], ...(c && c.ballInfo ? { ball: c.ballInfo(), effects: c.effects!() } : {}), items: c ? c.items.map((i) => ({ ...i })) : [], flying: c?.flying ? { ...c.flying } : null, lift: c?.lift || 0, swayNowDeg: c?.swayNowDeg || 0, groundShadow: !!c?.groundShadow };
+    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', currentClip: c?.currentClip ? c.currentClip() : '', parts: c?.partInfo ? c.partInfo().map((x) => ({ ...x })) : [], animationLog: c ? [...c.log] : [], ...(c && c.ballInfo ? { ball: c.ballInfo(), effects: c.effects!() } : {}), items: c ? c.items.map((i) => ({ ...i })) : [], flying: c?.flying ? { ...c.flying } : null, lift: c?.lift || 0, swayNowDeg: c?.swayNowDeg || 0, groundShadow: !!c?.groundShadow, animWeight: c?.animWeight ? +c.animWeight().toFixed(2) : null, moving: !!(f.path && f.path.length), packed: c?.packRoles ? [...c.packRoles] : [] };
     const b = c ? skinBox(f.group, new THREE.Box3()) : new THREE.Box3().setFromObject(f.group);
     if (b.isEmpty()) { base.screenBox = { x: 0, y: 0, width: 0, height: 0 }; return base; }
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;

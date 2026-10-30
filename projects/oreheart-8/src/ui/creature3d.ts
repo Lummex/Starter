@@ -108,7 +108,7 @@ const PARTS: Record<string, PartCfg[]> = {
 };
 export const hasCreature3dSlug = (id: string) => id in PARTS;
 
-interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationClip>; parts: Record<string, THREE.Object3D>; info: any; events?: any; shared?: SharedSet | null; picked?: Set<string> }
+interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationClip>; parts: Record<string, THREE.Object3D>; info: any; events?: any; shared?: SharedSet | null; picked?: Set<string>; packFree?: Set<string> }
 
 // ---------------------------------------------------------------- Oct 30 (Ken's fighting vision): Spring's shared biped animation pack
 // One pack (public/models/anims/biped-pack-v1.glb + .json) is loaded once and retargeted at load time onto every model whose bones match by
@@ -289,7 +289,7 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
         }
         // Owner fix (Ken, Oct 28): a unit carried by the Junk Shaman loops its lifted clip; the Shaman holds his lift special
     for (const [role, key] of [['lifted', 'react_lifted'], ['special', 'special']]) { const nm = info.clips?.[key]; const cl = typeof nm === 'string' ? byName(nm) : undefined; if (cl && !clips[role]) clips[role] = cl; }
-        const shared = sharedFor(id, c.scene, await loadSharedPack()), picked = new Set<string>();
+        const shared = sharedFor(id, c.scene, await loadSharedPack()), picked = new Set<string>(), packFree = new Set<string>();
         // Round 28b (Ken's Studio slots, Oct 29): a card's slot choices from src/content/anim-slots.json come first. Only clips in this card's
         // own GLB play (a shared-library clip from another model is noted, not retargeted); "none" removes the role; roles without a choice keep the logic above.
         { const sl = (animSlotsJson as any).cards?.[id]?.slots as Record<string, any> | undefined;
@@ -297,6 +297,7 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
             const p = Array.isArray(pick) ? pick[0] : pick;
             if (!p) continue;
             if (p.none) { delete clips[role]; slotLog.push({ id, role, clip: '', how: 'none' }); continue; }
+            if (p.pack === 'random') { delete clips[role]; packFree.add(role); slotLog.push({ id, role, clip: '', how: 'pack-random' }); continue; } // Oct 30 (Spring): a random pack clip of this kind
             if (p.shared) { const sc = shared?.byName[p.clip] || shared?.byName[p.animation]; if (sc) { clips[role] = sc; picked.add(role); slotLog.push({ id, role, clip: sc.name, how: 'shared' }); } else slotLog.push({ id, role, clip: p.clip, how: 'shared-skipped' }); continue; }
             const cl = byName(p.clip);
             if (cl) { clips[role] = cl; picked.add(role); slotLog.push({ id, role, clip: p.clip, how: p.auto ? 'auto' : 'pick' }); }
@@ -306,7 +307,7 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
         if (info.clips) { try { const er = await fetch(base + 'events.json'); if (er.ok) events = await er.json(); } catch { /* no events file */ } }
         const parts: Record<string, THREE.Object3D> = {};
         for (const pc of PARTS[id]) { try { parts[pc.name] = (await gl.loadAsync(base + pc.file)).scene; } catch { /* part missing: the figure still works */ } }
-        const a = { char: c.scene, clips, parts, info, events, shared, picked };
+        const a = { char: c.scene, clips, parts, info, events, shared, picked, packFree };
         ready.set(id, a);
         return a;
       } catch { return null; }
@@ -322,7 +323,7 @@ export interface C3D {
   /** Round 24: attack clip played by the model (GLB clip name), release time (ms into the clip) and bone read from events.json; onRelease fires exactly when the clip passes it */ attackClip?: string; partObject?: (name: string) => THREE.Object3D | null; clipOf?: (anim: string) => string; release?: { ms: number; bone: string } | null; onRelease?: (bone: THREE.Object3D) => void; currentClip?: () => string; partInfo?: () => { name: string; file: string; bone: string; pos: number[]; rot: number[]; rotDeg: number[]; scale: number[]; loaded: boolean }[];
   /** flying units */ flying?: { hoverSquares: number; floatSquares: number; floatsPerSecond: number; swayDeg: number; groundShadow: boolean; source: string }; lift?: number; swayNowDeg?: number; groundShadow?: boolean;
   /** Owner fix (Oct 28): true when the model has this clip */ has?: (n: string) => boolean;
-  /** Oct 30: where the attack blow lands (s into the clip, if known) and a clip speed setter */ impactOf?: (n: string) => number | undefined; setSpeed?: (n: string, k: number) => void; gaitSpeed?: (n: string) => number | undefined; eventsOf?: (n: string) => { name: string; time: number }[]; packRoles?: Set<string>; seek?: (n: string, t: number) => void;
+  /** Oct 30: where the attack blow lands (s into the clip, if known) and a clip speed setter */ impactOf?: (n: string) => number | undefined; setSpeed?: (n: string, k: number) => void; gaitSpeed?: (n: string) => number | undefined; setPace?: (n: string, pace: number) => void; eventsOf?: (n: string) => { name: string; time: number }[]; packRoles?: Set<string>; animWeight?: () => number; seek?: (n: string, t: number) => void;
   clipNames: string[]; held: string[]; worn: string[]; height: number;
   /** height in board squares (owner look or default) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
   /** Bowler Brawler only: hand-keyed special moves, ball hooks, flame effect */ special?: (n: 'bowl' | 'spinBall' | 'basketShot') => void; trig?: (shootT: number, born: number) => void; advanceIdle?: (sec: number) => void; ballInfo?: () => any; effects?: () => any[];
@@ -360,7 +361,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   if (sh) {
     // a role is free unless Ken picked a slot for it, the model's own clips map names it, or the model has its own custom clip for it
     const mapped = (role: string) => { const m = a.info?.clips || {}; return typeof m[role] === 'string' || (role === 'defeat' && typeof m.death === 'string') || (role === 'knockback' && typeof m.react_knockback === 'string') || (role === 'lifted' && typeof m.react_lifted === 'string'); };
-    const free = (role: string) => !a.picked?.has(role) && !mapped(role) && (!clips[role] || STOCK.test(clips[role].name));
+    const free = (role: string) => !a.picked?.has(role) && (!!a.packFree?.has(role) || (!mapped(role) && (!clips[role] || STOCK.test(clips[role].name))));
     const ranged = ((CARDS as any)[id]?.abilities || []).includes('ranged');
     for (const [role, kinds] of [['idle', ['idle']], ['walk', ['walk']], ['run', ['run']], ['idleBreak', ['idleBreak']], ['attack', [ranged ? 'ranged' : 'attack']], ['hit', ['hit']], ['knockback', ['knockback']], ['bowled', ['bowled']], ['defeat', ['defeat']], ['lifted', ['lifted']]] as [string, string[]][]) {
       if (!free(role)) continue;
@@ -386,7 +387,9 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     const n = resolve(want);
     if (!actions[n] || cur === n) return;
     // a started one-shot (attack / hit / mine) finishes before idle or walk take over; defeat never ends
-    if (cur && once(cur) && !once(n) && mixer.time - started < lockLen(cur)) return;
+    // Oct 30 (Ken: "moving, but their animation's not playing"): walking or running always takes over at once (only a defeat or an idle break-in
+    // fidget used to hold it back for up to 1.1 s, so the unit slid); other one-shots still finish before idle
+    if (cur && once(cur) && !once(n) && n !== 'walk' && n !== 'run' && mixer.time - started < lockLen(cur)) return;
     if (cur === 'defeat') return;
     const next = actions[n];
     next.reset(); next.setLoop(once(n) ? THREE.LoopOnce : THREE.LoopRepeat, once(n) ? 1 : Infinity); next.clampWhenFinished = true;
@@ -447,7 +450,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     root.scale.setScalar(heightSpaces / 1.1 / total);
   } else root.scale.setScalar(heightSpaces / 1.1);
   // Round 23: flying units (a saved look's `flying`, or the Gyronaut defaults) hover, bob, sway and keep a soft ground shadow
-  const flyCfg: any = (look as any)?.flying || (id === 'gyrocopter-ace' ? { hoverSquares: 0.35, floatSquares: 0.06, floatsPerSecond: 0.6, swayDeg: 3, groundShadow: true, source: 'default' } : null);
+  const flyCfg: any = (look as any)?.flying || (id === 'gyrocopter-ace' ? { hoverSquares: 0.7, floatSquares: 0.06, floatsPerSecond: 0.6, swayDeg: 3, groundShadow: true, source: 'default' } /* Ken (Oct 30): hover twice as high */ : null);
   let flyT = 0, shadow: THREE.Mesh | null = null;
   if (flyCfg) {
     out.flying = { hoverSquares: flyCfg.hoverSquares, floatSquares: flyCfg.floatSquares, floatsPerSecond: flyCfg.floatsPerSecond, swayDeg: flyCfg.swayDeg, groundShadow: !!flyCfg.groundShadow, source: flyCfg.source || 'look' };
@@ -469,8 +472,12 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   out.gaitSpeed = (n: string) => { const cl = actions[resolve(n)]?.getClip(); const sp = cl ? sh?.speed[cl.name] : undefined; return sp ? (sp / bodyH) * heightSpaces : undefined; };
   /** Oct 30: the pack's timed events of the clip playing this role (launch / land / recovered, hit, ground...) */
   out.packRoles = packRoles;
+  /** test hook (Oct 30 T-pose sweep): total effective weight of the playing clips; ~0 = the bind pose shows */
+  out.animWeight = () => Object.values(actions).reduce((t, ac) => t + (ac.isRunning() || ac.clampWhenFinished && ac.enabled ? ac.getEffectiveWeight() : 0), 0);
   out.eventsOf = (n: string) => { const cl = actions[resolve(n)]?.getClip(); return (cl && sh?.events[cl.name]) || []; };
   out.seek = (n: string, t: number) => { const ac = actions[resolve(n)]; if (ac) ac.time = t; };
+  /** Oct 30: play a walk / run clip at the speed that matches a pace in board squares per second (feet stay planted) */
+  out.setPace = (n: string, pace: number) => { const g = out.gaitSpeed?.(n); const ac = actions[resolve(n)]; if (ac) ac.timeScale = g ? Math.min(1.8, Math.max(0.6, pace / g)) : 1; };
   out.setSpeed = (n: string, k: number) => { const ac = actions[resolve(n)]; if (ac) ac.timeScale = k; };
   Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (cur === 'special' && actions.special) { const sg = holdSeg(); if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
   if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }

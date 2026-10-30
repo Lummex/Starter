@@ -1764,6 +1764,7 @@ html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!im
 .speech.cmd-speech img{width:calc(clamp(100px,11vw,200px) * .65)}
 .mine-emblem{display:block;width:100%;max-width:2.4em;height:auto;margin:0 auto;pointer-events:none}
 .pickaxe[data-mine-badge]{pointer-events:auto!important;z-index:6}
+.pickaxe[data-mine-badge]::after{content:'';position:absolute;inset:-14px -18px -20px;pointer-events:auto;cursor:pointer} /* Ken (Oct 30): the pickaxe is easy to tap: the icon plus padding catches clicks */
 /* Owner fix Oct 28: the site mark is clipped to its square; while the pickaxe badge shows, drop the clip so the whole pickaxe (head + handle) is visible */
 .site-mark.ready{clip-path:none!important}
 .dialog.respond-dlg{max-width:min(546px,96vw);font-size:1.3em;overflow:visible}

@@ -9896,7 +9896,7 @@ test('AC366: flying units hover, bob and sway above their square with a ground s
   const fig = async (id) => ((await renderStats(page)).figures || []).find((f) => f.cardId === id) || {};
   await expect.poll(async () => (await fig('gyrocopter-ace')).flying != null, { timeout: 20000 }).toBe(true);
   const fl = (await fig('gyrocopter-ace')).flying;
-  if (fl.source === 'default') expect(fl).toMatchObject({ hoverSquares: 0.35, floatSquares: 0.06, floatsPerSecond: 0.6, swayDeg: 3, groundShadow: true });
+  if (fl.source === 'default') expect(fl).toMatchObject({ hoverSquares: 0.7, /* owner change (Ken, Oct 30): hover twice as high */ floatSquares: 0.06, floatsPerSecond: 0.6, swayDeg: 3, groundShadow: true });
   expect(fl.hoverSquares).toBeGreaterThan(0);
   const lifts = [], sways = [];
   for (let i = 0; i < 8; i++) {
