@@ -245,7 +245,8 @@
   "character": "01a17280-31f1-71ae-98ff-4ff40886f5a4",
   "rig": "01a17282-b10d-7468-9118-213ef1700f4e",
   "anim": "01a17283-814a-7699-afb8-8f48f3945b69",
-  "medic-pack": "01a174dd-8e7f-747a-94a2-a8ccdef1a9b1"
+  "medic-pack": "01a174dd-8e7f-747a-94a2-a8ccdef1a9b1",
+  "shoulder-shield": "01a18b78-4edc-70f1-aab5-8a3a20a331d3"
  },
  "spark-gnome": {
   "character": "01a17280-823e-7272-b792-1a201ad5dc8f",
@@ -295,7 +296,8 @@
  },
  "cmd-sprocket-rig": {
   "character": "01a18b57-bd3f-74a4-95e3-c04b9ca0e13f",
-  "rig": "01a18b5a-1868-7673-9aa8-01ed7b73faf2"
+  "rig": "01a18b5a-1868-7673-9aa8-01ed7b73faf2",
+  "wrench": "01a18b78-4edc-70f0-8f43-48687110d9d7"
  },
  "cmd-grumblebeard-rig": {
   "character": "01a18b57-bd43-74ab-83f2-3f2d5a5f885e",

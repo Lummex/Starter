@@ -1,34 +1,16 @@
 {
- "at": "2026-10-30T05:49:35.385Z",
+ "at": "2026-10-30T06:23:44.599Z",
  "results": [
   {
-   "id": "cmd-sproingle-rig",
-   "sizes": {
-    "char.glb": 4516700
-   }
-  },
-  {
-   "id": "props-batch-1",
-   "sizes": {
-    "char.glb": 12681020
-   }
-  },
-  {
    "id": "cmd-sprocket-rig",
-   "sizes": {
-    "char.glb": 15902696
+   "partsAdded": {
+    "wrench.glb": 10822100
    }
   },
   {
-   "id": "cmd-grumblebeard-rig",
-   "sizes": {
-    "char.glb": 16735956
-   }
-  },
-  {
-   "id": "cmd-skreeka-rig",
-   "sizes": {
-    "char.glb": 17927248
+   "id": "shieldbeard",
+   "partsAdded": {
+    "shoulder-shield.glb": 12074060
    }
   }
  ]
