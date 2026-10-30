@@ -139,7 +139,7 @@ export function createMatch(opts: any = {}) {
     sites: [] as any[], strongholds: { player: { ...stronghold('player') }, opponent: { ...stronghold('opponent') } },
     pendingResponse: null, factionLock: opts.factionLock !== false, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
     mulliganDone: { player: false, opponent: false }, tutorial: opts.tutorial ? { step: 'summon' } : null,
-    flags: { battleCry: null, crystalsPlayed: { player: 0, opponent: 0 }, swapped: false, discount: { player: 0, opponent: 0 } },
+    flags: { battleCry: null, battleCryN: { player: 0, opponent: 0 }, crystalsPlayed: { player: 0, opponent: 0 }, swapped: false, discount: { player: 0, opponent: 0 } },
   };
   const setup = opts.setup;
   const mines = opts.mines ? opts.mines :  randomMines((opts.seed ?? 1) | 0);
@@ -190,7 +190,8 @@ export function createMatch(opts: any = {}) {
   }
   for (const b of setup.board || []) {
     const c = spawn(s, b.owner, b.cardId, b.row, b.col, b.damage || 0); c.shield = b.shield || 0; c.setupShield = b.shield || 0; c.lockedUntil = 0;
-    for (const k of ['attack', 'lastFight', 'kills', 'drunk', 'poison']) if (b[k] != null) c[k] = b[k];
+    for (const k of ['attack', 'lastFight', 'kills', 'drunk', 'poison', 'poisonStacks', 'bubbles', 'rootUntil', 'lockedUntil', 'wardUntil']) if (b[k] != null) c[k] = b[k];
+    if (b.bubbles > 0) c.bubble = true;
     if (b.minedMine) { c.minedMine = { row: b.minedMine.row, col: b.minedMine.col }; }
     if (b.summonedThisTurn) c.summonedThisTurn = true;
     if (b.facing && Object.values(FACE).includes(b.facing)) c.facing = b.facing;
@@ -325,7 +326,7 @@ function startTurn(s: any, ev: any[]) {
   s.pendingResponse = null;
   const cp = s.flags.crystalsPlayed;
   cp[who] = 0;
-  s.flags = { battleCry: null, crystalsPlayed: cp, swapped: false, discount: { player: 0, opponent: 0 } };
+  s.flags = { battleCry: null, battleCryN: { player: 0, opponent: 0 }, crystalsPlayed: cp, swapped: false, discount: { player: 0, opponent: 0 } };
   for (const c of s.board.creatures) if (c.owner === who) { c.summonedThisTurn = false; c.hasMoved = false; c.hasAttacked = false; c.movedDistance = 0; }
   ev.push({ type: 'turnStart', player: who, turn: s.turn });
   // creatures heal to full, lose leftover Shield and expired Hearty Ale
@@ -344,8 +345,10 @@ function startTurn(s: any, ev: any[]) {
   for (const c of [...s.board.creatures]) {
     if (c.owner !== who || !(c.poison > 0)) continue;
     c.poison -= 1;
-    ev.push({ type: 'poison', uid: c.uid, row: c.row, col: c.col, left: c.poison });
-    dealDamage(s, c, CONFIG.poisonDamage ?? 1, ev, true);
+    const stacks = Math.max(1, Math.min(STACK_CAP(), c.poisonStacks || 1)); // stacking: 1 damage per dagger (up to 3)
+    ev.push({ type: 'poison', uid: c.uid, row: c.row, col: c.col, left: c.poison, stacks });
+    if (!(c.poison > 0)) c.poisonStacks = 0;
+    dealDamage(s, c, (CONFIG.poisonDamage ?? 1) * stacks, ev, true);
   }
   for (const c of [...s.board.creatures]) {
     if (c.owner !== who) continue;
@@ -429,7 +432,7 @@ function hurt(s: any, c: any, amount: number, ev: any[], raw = false) {
   if (!raw) {
     if (has(c, 'armored')) d = Math.max(0, d - 1);
     if (has(c, 'unbreakable')) d = Math.min(d, 3);
-    if (c.bubble && d > 0) { c.bubble = false; d = 0; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col }); }
+    if ((c.bubbles > 0 || c.bubble) && d > 0) { c.bubbles = Math.max(0, (c.bubbles || 1) - 1); c.bubble = c.bubbles > 0; d = 0; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col, left: c.bubbles }); } // stacking: one bubble per blocked hit
     if (c.shield > 0 && d > 0) { const b = Math.min(c.shield, d); c.shield -= b; d -= b; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col, amount: b }); }
   }
   if (c.illusion) d = Math.floor(d * 0.65);
@@ -463,21 +466,25 @@ function defeat(s: any, c: any, ev: any[]) {
 }
 
 // ---------------------------------------------------------------- combat
+// Ken (Oct 30, approved stacking plan): the same lasting effect adds up; the clock keeps the longer; caps in game-config
+const STACK_CAP = () => CONFIG.stackCap ?? 3, AURA_CAP = () => CONFIG.auraStackCap ?? 2, ROOT_CAP = () => CONFIG.rootStackCap ?? 2;
+/** a Riot Shield Bearer behind its shield (can't be lifted, hurt or act) */
+const riotUp = (s: any, o: any) => has(o, 'riotShield') && s.turn < (o.lockedUntil || 0);
 const ADV = (a: string, d: string) => FACTIONS[a]?.beats === d;
 /** Junk Shaman's situational +1 Attack for adjacent Goblins on their owner's turn. */
 export function junkBonus(s: any, c: any): number {
   if (CARDS[c.cardId].faction !== 'goblins' || s.activePlayer !== c.owner) return 0;
-  return s.board.creatures.some((o: any) => o !== c && o.owner === c.owner && has(o, 'junkBoost') && cheb(o, c) === 1) ? 1 : 0;
+  return Math.min(AURA_CAP(), s.board.creatures.filter((o: any) => o !== c && o.owner === c.owner && has(o, 'junkBoost') && cheb(o, c) === 1).length); // stacking: +1 per adjacent booster, up to +2
 }
 export function atkValue(s: any, c: any, target?: any) {
   const card = CARDS[c.cardId];
   let v = c.attack;
   if (has(c, 'frenzy') && s.board.creatures.some((o: any) => o !== c && o.owner === c.owner && CARDS[o.cardId].faction === 'goblins' && cheb(o, c) === 1)) v += CONFIG.frenzyBonus;
-  if (card.faction === 'goblins' && s.board.creatures.some((o: any) => o.owner === c.owner && has(o, 'rally'))) v += CONFIG.rallyBonus;
+  if (card.faction === 'goblins') v += CONFIG.rallyBonus * Math.min(AURA_CAP(), s.board.creatures.filter((o: any) => o.owner === c.owner && has(o, 'rally')).length); // stacking: +1 per Tyrant, up to +2
   v += junkBonus(s, c);
   if (has(c, 'brawler') && c.lastFight != null && s.turn - c.lastFight <= 2) v *= 2;
   if (has(c, 'rage') && c.health * 2 < c.maxHealth) v += CONFIG.rageBonus;
-  if (s.flags.battleCry === c.owner) v += 1;
+  v += Math.min(AURA_CAP(), s.flags.battleCryN?.[c.owner] ?? (s.flags.battleCry === c.owner ? 1 : 0)); // stacking: +1 per Thunderhorn Blast this turn, up to +2
   if (target && ADV(card.faction, CARDS[target.cardId].faction)) v += CONFIG.typeAdvantageBonus;
   return Math.max(0, v);
 }
@@ -547,7 +554,7 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
     if (foe.crystals > 0) foe.crystals -= 1; else if (foe.bank > 0) foe.bank -= 1;
     me.crystals += 1; ev.push({ type: 'steal', uid: attacker.uid, from: def.owner });
   }
-  if (sdef && has(attacker, 'hobble')) def.rootUntil = s.turn + 2;
+  if (sdef && has(attacker, 'hobble')) def.rootUntil = s.turn < (def.rootUntil || 0) ? Math.min(def.rootUntil + 2, s.turn + 2 * ROOT_CAP()) : s.turn + 2; // stacking: a second hit holds it one turn longer (max 2)
   if (melee && attacker.health > 0 && has(attacker, 'enforcer'))
     for (const o of [...s.board.creatures]) if (o.owner !== attacker.owner && cheb(o, attacker) === 1) knockAway(s, attacker, o, rint(s, 1, 2), ev);
   if (melee && attacker.health > 0 && has(attacker, 'splitter'))
@@ -590,7 +597,7 @@ export function abilityActions(s: any, who: Side): any[] {
     if (has(c, 'plow') && ok) for (const [dr, dc] of D4) for (let dist = 1; dist <= 7; dist++) { const r = c.row + dr * dist, cl = c.col + dc * dist; if (!inBounds(r, cl) || isStronghold(r, cl) || isSite(s, r, cl)) break; mk('plow', { dr, dc, dist }); }
     if (has(c, 'ramMove') && ok) for (const [dr, dc] of DIRS8) { const e = runLine(s, c, dr, dc); for (let k = 1; k <= e.steps; k++) mk('ramMove', { target: { row: c.row + dr * k, col: c.col + dc * k } }); }
     if (has(c, 'shaman') && !c.hasAttacked && canAct(s, c))
-      for (const o of s.board.creatures) if (o !== c && cheb(o, c) <= 5 && !(o.riotShield))
+      for (const o of s.board.creatures) if (o !== c && cheb(o, c) <= 5 && !riotUp(s, o)) // fix: o.riotShield never existed, so a shielded Riot Shield Bearer could be lifted
         for (let r = 1; r <= H; r++) for (let cl = 1; cl <= W; cl++) if (cheb({ row: r, col: cl }, c) <= 5 && emptyCell(s, r, cl)) mk('shaman', { from: { row: o.row, col: o.col }, target: { row: r, col: cl } });
     if (has(c, 'rocket') && ok) for (let r = 1; r <= H; r++) for (let cl = 1; cl <= W; cl++) if (emptyCell(s, r, cl)) mk('rocket', { target: { row: r, col: cl } });
     if (has(c, 'ward') && c.wardTurn !== s.turn && canAct(s, c)) for (const o of s.board.creatures) if (o.owner === who && o !== c) mk('ward', { target: { row: o.row, col: o.col } });
@@ -803,13 +810,13 @@ function resolveSpell(s: any, p: Side, card: any, target: any, to: any, ev: any[
       if (target && target.commander) damageCommander(s, target.commander, card.params.amount, ev);
       else if (t) dealDamage(s, t, card.params.amount, ev);
       break;
-    case 'poison': if (t && t.owner !== p) { t.poison = card.params.turns; ev.push({ type: 'poisoned', uid: t.uid, row: t.row, col: t.col, turns: t.poison }); } break;
-    case 'buffAttack': s.flags.battleCry = p; break;
+    case 'poison': if (t && t.owner !== p) { t.poisonStacks = t.poison > 0 ? Math.min(STACK_CAP(), (t.poisonStacks || 1) + 1) : 1; t.poison = Math.max(t.poison || 0, card.params.turns); ev.push({ type: 'poisoned', uid: t.uid, row: t.row, col: t.col, turns: t.poison, stacks: t.poisonStacks }); } break; // stacking: +1 damage a turn per dagger (up to 3), the clock keeps the longer
+    case 'buffAttack': s.flags.battleCry = p; s.flags.battleCryN = s.flags.battleCryN || { player: 0, opponent: 0 }; s.flags.battleCryN[p] = Math.min(AURA_CAP(), (s.flags.battleCryN[p] || 0) + 1); break;
     case 'areaDamage':
       if (target) for (const c of [...s.board.creatures]) if (cheb(c, target) <= 1) dealDamage(s, c, card.params.amount, ev);
       break;
     case 'heal': if (t && t.owner === p) healCreature(s, t, card.params.amount, ev); break;
-    case 'shield': if (t && t.owner === p) t.bubble = true; break;
+    case 'shield': if (t && t.owner === p) { t.bubbles = Math.min(STACK_CAP(), (t.bubbles || (t.bubble ? 1 : 0)) + 1); t.bubble = true; } break; // stacking: each Bulwark blocks one more hit (up to 3)
     case 'healCommander': pl.health = Math.min(pl.maxHealth, pl.health + card.params.amount); ev.push({ type: 'heal', commander: p, amount: card.params.amount }); break;
   }
 }
@@ -1447,13 +1454,13 @@ const MOVE_TYPES = ['summon', 'cast', 'playCrystal', 'minerUpgrade', 'mineAt', '
 export function shamanLiftTargets(state: any, shamanUid: string): any[] {
   const c = state.board.creatures.find((x: any) => x.uid === shamanUid);
   if (!c || !has(c, 'shaman')) return [];
-  return state.board.creatures.filter((o: any) => o !== c && cheb(o, c) <= 5 && !o.riotShield);
+  return state.board.creatures.filter((o: any) => o !== c && cheb(o, c) <= 5 && !riotUp(state, o));
 }
 /** Empty squares within 5 of the Shaman where the chosen target may land. */
 export function shamanLandingSquares(state: any, shamanUid: string, targetUid: string): { row: number; col: number }[] {
   const c = state.board.creatures.find((x: any) => x.uid === shamanUid);
   const o = state.board.creatures.find((x: any) => x.uid === targetUid);
-  if (!c || !o || o === c || !has(c, 'shaman') || cheb(o, c) > 5 || o.riotShield) return [];
+  if (!c || !o || o === c || !has(c, 'shaman') || cheb(o, c) > 5 || riotUp(state, o)) return [];
   const out: { row: number; col: number }[] = [];
   for (let r = 1; r <= H; r++) for (let cl = 1; cl <= W; cl++) if (cheb({ row: r, col: cl }, c) <= 5 && emptyCell(state, r, cl)) out.push({ row: r, col: cl });
   return out;

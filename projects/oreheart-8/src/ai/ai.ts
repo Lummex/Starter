@@ -81,7 +81,7 @@ function scoreCast(s: any, who: string, a: any): number {
       const kills = t.health <= card.params.amount - (CARDS[t.cardId].abilities?.includes('armored') ? 1 : 0);
       return kills ? 50 + CARDS[t.cardId].cost * 6 : 5;
     }
-    case 'poison': return t && !t.poison ? 8 + CARDS[t.cardId].cost * 3 : 0;
+    case 'poison': return !t ? 0 : !t.poison ? 8 + CARDS[t.cardId].cost * 3 : (t.poisonStacks || 1) < (CONFIG.stackCap ?? 3) ? Math.round((8 + CARDS[t.cardId].cost * 3) / 2) : 0; // stacking (Ken, Oct 30): a second dagger is worth about half
     case 'areaDamage': {
       let v = 0;
       for (const c of s.board.creatures) if (cheb(c, a.target) <= 1) v += (c.owner === who ? -1 : 1) * (CARDS[c.cardId].cost * 3 + (c.health <= 2 ? 10 : 2));

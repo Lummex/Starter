@@ -663,7 +663,7 @@ const _embV = new THREE.Vector3();
   // Owner (Oct 25): lasting effects (poison, drunk, rooted, ward, shield, can't act) float above the unit's head as the owner's icons, with turns left
   const stIcons = new Map<string, { group: THREE.Group; key: string }>();
   const stImg: Record<string, HTMLImageElement> = {};
-  const stTex = (k: string, n: number) => {
+  const stTex = (k: string, n: number, x = 0) => {
     const c = document.createElement('canvas'); c.width = c.height = 128;
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
     const draw = () => {
@@ -674,24 +674,30 @@ const _embV = new THREE.Vector3();
       tex.needsUpdate = true;
     };
     if (!stImg[k]) { stImg[k] = new Image(); stImg[k].src = `/art/pop/icon-${k}.webp`; }
-    if (stImg[k].complete) draw(); else stImg[k].addEventListener('load', draw, { once: true });
-    draw();
+    const ck = 'stack' + Math.min(3, x);
+    if (x > 1 && !stImg[ck]) { stImg[ck] = new Image(); stImg[ck].src = `/art/stack/stack-chip-x${Math.min(3, x)}-64.webp`; }
+    const chip = () => { const im = stImg[ck]; if (x > 1 && im && im.complete && im.naturalWidth) { c.getContext('2d')!.drawImage(im, 70, 0, 58, 45); tex.needsUpdate = true; } }; // gold x2 / x3 on the top right
+    if (stImg[k].complete) { draw(); chip(); } else stImg[k].addEventListener('load', () => { draw(); chip(); }, { once: true });
+    if (x > 1 && !stImg[ck].complete) stImg[ck].addEventListener('load', () => { draw(); chip(); }, { once: true });
+    draw(); chip();
     return tex;
   };
   function statusList(st: any, c: any) {
-    const t = st.turn, out: [string, number][] = [];
-    if (c.poison > 0) out.push(['poison', c.poison]);
+    const t = st.turn, out: [string, number, number?][] = [];
+    // Ken (Oct 30, stacking): [icon, number, x2 / x3 chip]
+    if (c.poison > 0) out.push(['poison', c.poison, Math.max(1, c.poisonStacks || 1)]);
     if (c.drunk > 0) out.push(['drunk', c.drunk]);
     if ((c.rootUntil || 0) > t) out.push(['rooted', c.rootUntil - t]);
     if ((c.wardUntil || 0) > t) out.push(['ward', 0]);
-    if (c.shield > 0 || c.bubble) out.push(['shield', c.shield > 0 ? c.shield : 0]);
+    if (c.shield > 0 || c.bubble) out.push(['shield', c.shield > 0 ? c.shield : 0, c.shield > 0 ? 0 : c.bubbles || 0]);
+    if ((st.flags?.battleCryN?.[c.owner] || 0) > 0) out.push(['attackup', 0, st.flags.battleCryN[c.owner]]);
     if ((c.lockedUntil || 0) > t) out.push(['sleep', c.lockedUntil - t]);
     return out;
   }
   function syncStatusIcons(st: any) {
     const seen = new Set<string>();
     for (const c of st.board.creatures) {
-      const list = statusList(st, c), key = list.map(([k, n]) => k + n).join(',');
+      const list = statusList(st, c), key = list.map(([k, n, x]) => k + n + 'x' + (x || 0)).join(',');
       let e = stIcons.get(c.uid);
       if (!list.length) { if (e) { scene.remove(e.group); stIcons.delete(c.uid); } continue; }
       seen.add(c.uid);
@@ -699,8 +705,8 @@ const _embV = new THREE.Vector3();
       if (e) scene.remove(e.group);
       const group = new THREE.Group(); group.name = 'status-icons'; group.userData.statuses = list.map(([k]) => k);
       const S = 0.36, gap = 0.04;
-      list.forEach(([k, n], i) => {
-        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: stTex(k, n), transparent: true, depthWrite: false, depthTest: false }));
+      list.forEach(([k, n, x], i) => {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: stTex(k, n, x || 0), transparent: true, depthWrite: false, depthTest: false }));
         sp.scale.set(S, S, 1); sp.position.x = (i - (list.length - 1) / 2) * (S + gap); sp.renderOrder = 50; sp.name = 'status-' + k;
         group.add(sp);
       });

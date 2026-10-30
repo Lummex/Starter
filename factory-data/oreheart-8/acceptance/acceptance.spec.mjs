@@ -10426,3 +10426,155 @@ test('AC390/AC394: Thunderwing Gyronaut and Aegis Tinkerer have their gear, even
   }
   await r26Models(page, request, ['gyrocopter-ace', 'gnome-tinker']);
 });
+
+// ---------- Ken (Oct 30): stacking effects (approved plan factory-design/design/stacking-effects-proposal.md) ----------
+const stk = (s, row, col) => at(s, row, col) || {};
+const cast = (page, s, cardId, target) => act(page, { type: 'cast', uid: handUid(s, 'player', cardId), target });
+
+test('AC397: Venom Shiv stacks: 2 then 3 damage a turn, never more than 3; the clock keeps the longer', async ({ page }) => {
+  let s = await start(page, q12({ playerHand: ['venom-shiv', 'venom-shiv', 'venom-shiv', 'venom-shiv'], playerCrystals: 20, playerBank: 20, board: [O('dwarf-pickman', 2, 9)] }));
+  expect((await cast(page, s, 'venom-shiv', { row: 2, col: 9 })).ok).toBe(true);
+  s = await getState(page);
+  expect([stk(s, 2, 9).poison, stk(s, 2, 9).poisonStacks]).toEqual([7, 1]);
+  expect((await cast(page, s, 'venom-shiv', { row: 2, col: 9 })).ok).toBe(true);
+  s = await getState(page);
+  expect([stk(s, 2, 9).poison, stk(s, 2, 9).poisonStacks]).toEqual([7, 2]);
+  const hp = stk(s, 2, 9).health;
+  await passTurn(page); // the opponent's turn starts: 2 poison damage, no healing
+  s = await getState(page);
+  expect(stk(s, 2, 9).health).toBe(hp - 2);
+  expect(stk(s, 2, 9).poison).toBe(6);
+  await passTurn(page);
+  s = await getState(page);
+  expect((await cast(page, s, 'venom-shiv', { row: 2, col: 9 })).ok).toBe(true);
+  s = await getState(page);
+  expect((await cast(page, s, 'venom-shiv', { row: 2, col: 9 })).ok).toBe(true);
+  s = await getState(page);
+  expect(stk(s, 2, 9).poisonStacks).toBe(3); // a fourth dagger stays at the cap
+  expect(stk(s, 2, 9).poison).toBe(7);
+  const hp2 = stk(s, 2, 9).health;
+  await passTurn(page);
+  s = await getState(page);
+  expect(stk(s, 2, 9).health).toBe(hp2 - 3);
+});
+
+test('AC398: a fresh dagger on a nearly-finished poison sets 7 turns, not 7 more', async ({ page }) => {
+  let s = await start(page, q12({ playerHand: ['venom-shiv'], playerCrystals: 9, board: [O('dwarf-pickman', 2, 9, { poison: 3, poisonStacks: 1 })] }));
+  expect((await cast(page, s, 'venom-shiv', { row: 2, col: 9 })).ok).toBe(true);
+  s = await getState(page);
+  expect([stk(s, 2, 9).poison, stk(s, 2, 9).poisonStacks]).toEqual([7, 2]);
+});
+
+test('AC399: two Ironclad Bulwarks block the next two hits, the third lands', async ({ page }) => {
+  let s = await start(page, q12({ playerHand: ['shield-bubble', 'shield-bubble'], playerCrystals: 9,
+    board: [P('dwarf-pickman', 5, 9), O('goblin-grunt', 4, 9), O('goblin-pebbler', 4, 8), O('goblin-scrounger', 4, 10)] }));
+  expect((await cast(page, s, 'shield-bubble', { row: 5, col: 9 })).ok).toBe(true);
+  s = await getState(page);
+  expect((await cast(page, s, 'shield-bubble', { row: 5, col: 9 })).ok).toBe(true);
+  s = await getState(page);
+  expect(stk(s, 5, 9).bubbles).toBe(2);
+  const full = stk(s, 5, 9).health;
+  await passTurn(page); await done(page); // the opponent's Action phase
+  for (const [r, c, left] of [[4, 9, 1], [4, 8, 0]]) {
+    s = await getState(page);
+    expect((await act(page, { type: 'attack', creatureUid: at(s, r, c).uid, target: { row: 5, col: 9 } })).ok).toBe(true);
+    s = await getState(page);
+    expect(stk(s, 5, 9).health, `blocked by bubble ${left + 1}`).toBe(full);
+    expect(stk(s, 5, 9).bubbles || 0).toBe(left);
+  }
+  s = await getState(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 4, 10).uid, target: { row: 5, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(stk(s, 5, 9).health).toBeLessThan(full);
+});
+
+test('AC400: Thunderhorn Blast stacks once: +1, then +2, a third is still +2; gone next turn', async ({ page }) => {
+  let s = await start(page, q12({ playerHand: ['battle-cry', 'battle-cry', 'battle-cry'], playerCrystals: 20, board: [P('goblin-grunt', 5, 9), O('grubnaks-big-boss-troll', 4, 9)] }));
+  s = await toAction(page);
+  const g = at(s, 5, 9), base = g.attack;
+  const deal = async () => (await preview(page, g.uid, { row: 4, col: 9 })).youDeal;
+  expect(await deal()).toBe(base);
+  for (const want of [base + 1, base + 2, base + 2]) {
+    s = await getState(page);
+    expect((await cast(page, s, 'battle-cry', null)).ok).toBe(true);
+    expect(await deal()).toBe(want);
+  }
+  await passTurn(page); await passTurn(page);
+  expect(await deal()).toBe(base);
+});
+
+test('AC401: Troll Tyrants: two give Goblins +2, three still +2', async ({ page }) => {
+  const tyrants = (n) => Array.from({ length: n }, (_, i) => P('grubnaks-big-boss-troll', 7, 3 + i * 2));
+  for (const [n, plus] of [[1, 1], [2, 2], [3, 2]]) {
+    let s = await start(page, q12({ board: [P('goblin-grunt', 5, 9), O('grubnaks-big-boss-troll', 4, 9), ...tyrants(n)] }));
+    s = await toAction(page);
+    const g = at(s, 5, 9);
+    expect((await preview(page, g.uid, { row: 4, col: 9 })).youDeal, `${n} Tyrants`).toBe(g.attack + plus);
+  }
+});
+
+test('AC402: Junk Boost: next to the Bowler Brawler and the Junk Shaman a Goblin gets +2 on its own turn', async ({ page }) => {
+  let s = await start(page, q12({ board: [P('goblin-grunt', 5, 9), P('goblin-scrapper', 5, 8), P('junk-shaman', 5, 10), O('grubnaks-big-boss-troll', 4, 9)] }));
+  s = await toAction(page);
+  const g = at(s, 5, 9);
+  expect((await preview(page, g.uid, { row: 4, col: 9 })).youDeal).toBe(g.attack + 2);
+  s = await newMatch(page, q12({ board: [P('goblin-grunt', 5, 9), P('goblin-scrapper', 5, 8), O('grubnaks-big-boss-troll', 4, 9)] }));
+  s = await toAction(page);
+  expect((await preview(page, at(s, 5, 9).uid, { row: 4, col: 9 })).youDeal).toBe(at(s, 5, 9).attack + 1);
+});
+
+test('AC403: two Grudge Hurler hits root for its next two turns; a third does not make it three', async ({ page }) => {
+  let s = await start(page, q12({ board: [P('axe-thrower', 6, 9, { attack: 1 }), P('axe-thrower', 6, 5, { attack: 1 }), P('axe-thrower', 6, 13, { attack: 1 }), O('dwarf-pickman', 2, 9)] }));
+  s = await toAction(page);
+  const turn = s.turn;
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 2, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(stk(s, 2, 9).rootUntil).toBe(turn + 2);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 6, 5).uid, target: { row: 2, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(stk(s, 2, 9).rootUntil).toBe(turn + 4);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 6, 13).uid, target: { row: 2, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(stk(s, 2, 9).rootUntil).toBe(turn + 4);
+  await done(page); await done(page); // opponent's Action: rooted
+  s = await getState(page);
+  expect((await legal(page)).some((a) => a.type === 'move' && a.creatureUid === at(s, 2, 9).uid)).toBe(false);
+  await done(page); await passTurn(page); await done(page); // its next Action: still rooted
+  s = await getState(page);
+  expect((await legal(page)).some((a) => a.type === 'move' && a.creatureUid === at(s, 2, 9).uid)).toBe(false);
+  await done(page); await passTurn(page); await done(page); // the one after: free
+  s = await getState(page);
+  expect((await legal(page)).some((a) => a.type === 'move' && a.creatureUid === at(s, 2, 9).uid)).toBe(true);
+});
+
+test('AC404: exceptions: Ward refreshes, never stacks; a shielded Riot Shield Bearer cannot be lifted by the Junk Shaman', async ({ page }) => {
+  let s = await start(page, q12({ playerCrystals: 9, board: [P('glyphshield-warden', 6, 9), P('glyphshield-warden', 6, 11), P('dwarf-pickman', 6, 10)] }));
+  s = await toAction(page);
+  const ward = async (r, c) => ability(page, s, r, c, 'ward', { target: { row: 6, col: 10 } });
+  expect((await ward(6, 9)).ok).toBe(true);
+  s = await getState(page);
+  const w1 = stk(s, 6, 10).wardUntil;
+  expect((await ward(6, 11)).ok).toBe(true);
+  s = await getState(page);
+  expect(stk(s, 6, 10).wardUntil).toBe(w1);
+  s = await newMatch(page, q12({ playerCrystals: 9, board: [P('junk-shaman', 6, 9), O('dwarf-miner', 4, 9, { lockedUntil: 7 }), O('dwarf-pickman', 4, 11)] }));
+  s = await toAction(page);
+  const lifts = (await legal(page)).filter((a) => a.type === 'ability' && a.ability === 'pickUp');
+  const from = (r, c) => lifts.some((a) => a.target && a.target.row === r && a.target.col === c);
+  expect(from(4, 11), 'can lift a normal unit').toBe(true);
+  expect(from(4, 9), 'cannot lift a shielded Riot Shield Bearer').toBe(false);
+});
+
+test('AC405: the stacking cards say so, and a stacked poison shows x2', async ({ page }) => {
+  await openTest(page);
+  const text = async (id) => (await page.evaluate(async (x) => await window.oreheart.getCard(x), id)).text;
+  expect(await text('venom-shiv')).toMatch(/Stacks: each extra dagger adds 1 damage a turn \(up to 3\)\./);
+  expect(await text('shield-bubble')).toMatch(/Stacks: two Bulwarks block the next two hits\./);
+  expect(await text('battle-cry')).toMatch(/Stacks once: two Blasts give \+2\./);
+  expect(await text('grubnaks-big-boss-troll')).toMatch(/Two Tyrants: \+2\./);
+  expect(await text('goblin-scrapper')).toMatch(/up to \+2 with the Junk Shaman/);
+  expect(await text('junk-shaman')).toMatch(/up to \+2 with the Bowler Brawler/);
+  expect(await text('axe-thrower')).toMatch(/A second hit holds it one turn longer\./);
+  const cfg = await page.evaluate(async () => await window.oreheart.getConfig());
+  expect([cfg.stackCap, cfg.auraStackCap, cfg.rootStackCap]).toEqual([3, 2, 2]);
+});

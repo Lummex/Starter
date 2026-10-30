@@ -2609,8 +2609,9 @@ export class App {
       let pm = el.querySelector('.poison-mark') as El | null;
       if (c.poison > 0) {
         if (!pm) { pm = h('span', { class: 'poison-mark', role: 'img' }); sh.after(pm); }
-        pm.setAttribute('aria-label', `Poisoned, ${c.poison} turns left`);
-        pm.textContent = `💧${c.poison}`;
+        const px = Math.max(1, c.poisonStacks || 1); // Oct 30 stacking: "💧7 x2"
+        pm.setAttribute('aria-label', px > 1 ? `Poisoned x${px}: ${px} damage a turn, ${c.poison} turns left` : `Poisoned, ${c.poison} turns left`);
+        pm.textContent = px > 1 ? `💧${c.poison} x${px}` : `💧${c.poison}`;
       } else if (pm) pm.remove();
       this.renderStatusIcons(st, c, el);
       el.dataset.damaged = String(c.health < c.maxHealth);
@@ -2636,21 +2637,25 @@ export class App {
   /** Owner (Oct 25): lasting effects show as the owner's icons above the unit's head for as long as they last (with turns left when known). */
   renderStatusIcons(st: any, c: any, el: El) {
     const t = st.turn;
-    const list: { k: string; n: number; label: string }[] = [];
-    if (c.poison > 0) list.push({ k: 'poison', n: c.poison, label: `Poisoned, ${c.poison} turn${c.poison > 1 ? 's' : ''} left` });
+    const list: { k: string; n: number; label: string; x?: number }[] = [];
+    // Ken (Oct 30, stacking): a stacked effect shows a gold x2 / x3 chip on its icon
+    const ps = c.poison > 0 ? Math.max(1, c.poisonStacks || 1) : 0, bs = c.bubbles > 1 ? c.bubbles : 0, bc = st.flags?.battleCryN?.[c.owner] || 0;
+    if (c.poison > 0) list.push({ k: 'poison', n: c.poison, x: ps, label: ps > 1 ? `Poisoned x${ps}: ${ps} damage a turn, ${c.poison} turn${c.poison > 1 ? 's' : ''} left` : `Poisoned, ${c.poison} turn${c.poison > 1 ? 's' : ''} left` });
     if (c.drunk > 0) list.push({ k: 'drunk', n: c.drunk, label: `Drunk, ${c.drunk} turn${c.drunk > 1 ? 's' : ''} left` });
     if ((c.rootUntil || 0) > t) list.push({ k: 'rooted', n: c.rootUntil - t, label: "Rooted: can't move" });
     if ((c.wardUntil || 0) > t) list.push({ k: 'ward', n: 0, label: 'Warded: takes no damage' });
-    if (c.shield > 0 || c.bubble) list.push({ k: 'shield', n: c.shield > 0 ? c.shield : 0, label: c.shield > 0 ? `Shield ${c.shield}` : 'Shield bubble' });
+    if (c.shield > 0 || c.bubble) list.push({ k: 'shield', n: c.shield > 0 ? c.shield : 0, x: c.shield > 0 ? 0 : bs, label: c.shield > 0 ? `Shield ${c.shield}` : bs > 1 ? `Shield bubble x${bs}: blocks the next ${bs} hits` : 'Shield bubble' });
+    if (bc > 0) list.push({ k: 'attackup', n: 0, x: bc, label: `+${bc} Attack this turn` });
     if ((c.lockedUntil || 0) > t) list.push({ k: 'sleep', n: c.lockedUntil - t, label: `Can't act for ${c.lockedUntil - t} more turn${c.lockedUntil - t > 1 ? 's' : ''}` });
     let box = el.querySelector('.st-icons') as El | null;
-    const key = list.map((x) => x.k + x.n).join(',');
+    const key = list.map((x) => x.k + x.n + 'x' + (x.x || 0)).join(',');
     if (!list.length) { box?.remove(); return; }
     if (!box) { box = h('div', { class: 'st-icons', role: 'group', 'aria-label': 'Status' }) as El; el.append(box); }
     if (box.dataset.key === key) return;
     box.dataset.key = key;
     box.replaceChildren(...list.map((x) => h('span', { class: 'st-ic', 'data-status': x.k, role: 'img', 'aria-label': x.label, title: x.label },
-      h('img', { src: `/art/pop/icon-${x.k}.webp`, alt: '', draggable: 'false' }), x.n > 0 ? h('b', { 'aria-hidden': 'true' }, String(x.n)) : '')));
+      h('img', { src: `/art/pop/icon-${x.k}.webp`, alt: '', draggable: 'false' }), x.n > 0 ? h('b', { 'aria-hidden': 'true' }, String(x.n)) : '',
+      (x.x || 0) > 1 ? h('img', { class: 'st-stack', 'data-stack': String(x.x), src: `/art/stack/stack-chip-x${Math.min(3, x.x!)}-64.webp`, alt: '', draggable: 'false' }) : '')));
   }
   renderAbilityButtons(st: any) {
     const live = st.phase !== 'over' && st.phase !== 'mulligan';

@@ -41,8 +41,8 @@
    "bowl"
   ],
   "unique": false,
-  "text": "Nearby Goblins get +1 Attack. Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side.",
-  "shortText": "Nearby Goblins get +1 Attack. Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side.",
+  "text": "Nearby Goblins get +1 Attack (up to +2 with the Junk Shaman). Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side.",
+  "shortText": "Nearby Goblins get +1 Attack (up to +2 with the Junk Shaman). Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side.",
   "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Nearby Goblins get +1 Attack. Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side. Example: A Brawler at the bottom of a column rolls the ball up it and every unit in that column hops sideways.",
   "flavor": "Ex-professional goblin bowler.",
   "artPos": {
@@ -167,8 +167,8 @@
    "rally"
   ],
   "unique": true,
-  "text": "All your Goblins get +1 Attack.",
-  "shortText": "All your Goblins get +1 Attack.",
+  "text": "All your Goblins get +1 Attack. Two Tyrants: +2.",
+  "shortText": "All your Goblins get +1 Attack. Two Tyrants: +2.",
   "longText": "Fighter creature. Cost 7, Attack 5, Health 6, Movement 2. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). All your Goblins get +1 Attack.",
   "flavor": "Very dumb, but very good at sports. A pro goblin-ball player: hits hard and can take a punch.",
   "artPos": {
@@ -459,8 +459,8 @@
    "hobble"
   ],
   "unique": false,
-  "text": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
-  "shortText": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
+  "text": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn. A second hit holds it one turn longer.",
+  "shortText": "Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn. A second hit holds it one turn longer.",
   "longText": "Fighter creature. Cost 6, Attack 2, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn.",
   "artPos": {
    "s": 1,
@@ -749,8 +749,8 @@
    "turns": 7,
    "amount": 1
   },
-  "text": "Spell. Fling a dagger at an enemy: it takes 1 damage each of its next 7 turns; no healing.",
-  "shortText": "Spell. Fling a dagger at an enemy: it takes 1 damage each of its next 7 turns; no healing.",
+  "text": "Spell. Fling a dagger at an enemy: it takes 1 damage each of its next 7 turns; no healing. Stacks: each extra dagger adds 1 damage a turn (up to 3).",
+  "shortText": "Spell. Fling a dagger at an enemy: it takes 1 damage each of its next 7 turns; no healing. Stacks: each extra dagger adds 1 damage a turn (up to 3).",
   "longText": "Regular spell, cast in your Deploy phase. Fling a poisoned dagger at one enemy creature: it takes 1 damage at the start of each of its owner's next 7 turns and cannot heal during that time. A green marker with a turn counter shows the poison.",
   "artPos": {
    "s": 0.98,
@@ -810,8 +810,8 @@
   "params": {
    "amount": 1
   },
-  "text": "Spell. All your creatures get +1 Attack this turn.",
-  "shortText": "Spell. All your creatures get +1 Attack this turn.",
+  "text": "Spell. All your creatures get +1 Attack this turn. Stacks once: two Blasts give +2.",
+  "shortText": "Spell. All your creatures get +1 Attack this turn. Stacks once: two Blasts give +2.",
   "longText": "Regular spell, cast in your Deploy phase. Every creature you control gets +1 Attack until the end of the turn. Example: Cast it, then attack with three creatures for 1 extra damage each.",
   "artPos": {
    "s": 1,
@@ -866,8 +866,8 @@
   "cost": 2,
   "effect": "shield",
   "params": {},
-  "text": "Instant. A creature takes no damage from the next hit.",
-  "shortText": "Instant. A creature takes no damage from the next hit.",
+  "text": "Instant. A creature takes no damage from the next hit. Stacks: two Bulwarks block the next two hits.",
+  "shortText": "Instant. A creature takes no damage from the next hit. Stacks: two Bulwarks block the next two hits.",
   "longText": "Instant: play it in your turn or when you respond. One of your creatures takes no damage from the next hit this turn, even a Ranged one. Example: The enemy attacks your Shieldbeard: respond and the hit does nothing.",
   "artPos": {
    "s": 0.92,
@@ -1206,8 +1206,8 @@
    "shaman"
   ],
   "unique": false,
-  "text": "On your turn, adjacent Goblins get +1 Attack. Pay 2: pick up one character within 5 spaces (ally or enemy) and move it to any space within 5 spaces of this card.",
-  "shortText": "On your turn, adjacent Goblins get +1 Attack. Pay 2: move any character within 5 spaces to a space within 5.",
+  "text": "On your turn, adjacent Goblins get +1 Attack (up to +2 with the Bowler Brawler). Pay 2: pick up one character within 5 spaces (ally or enemy) and move it to any space within 5 spaces of this card.",
+  "shortText": "On your turn, adjacent Goblins get +1 Attack (up to +2 with the Bowler Brawler). Pay 2: move any character within 5 spaces to a space within 5.",
   "longText": "Ranged creature. Cost 7, Attack 1, Health 3, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). On your turn, adjacent Goblins get +1 Attack. Pay 2: pick up one character within 5 spaces (ally or enemy) and move it to any space within 5 spaces of this card.",
   "flavor": "Old and wise in the wizard ways. One of the only spellcasters in the Goblin realm.",
   "artPos": {
