@@ -292,7 +292,7 @@ The live card list (66 cards: 16 creatures per faction, 13 spells, 5 Crystal car
 **Goblins (green crystals)**
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Goblin Miner | Common | Gatherer | 1 | 1 | 1 | 1 | Mines 2. Can Tunnel. +1 Health upgrade. |
+| Goblin Miner | Common | Gatherer | 1 | 1 | 1 | 1 | Mines 2. Can Tunnel. +1 Health upgrade. Can't attack the turn it's played. |
 | Bowler Brawler | Common | Fighter | 6 | 2 | 3 | 1 | Nearby Goblins get +1 Attack (up to +2 with the Junk Shaman). Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side. |
 | Skullflinger | Common | Fighter | 4 | 1 | 2 | 1 | Ranged. Hits up to 6 spaces away in any direction; no strike back. |
 | Bare Knuckle Lunatic | Rare | Fighter | 3 | 2 | 2 | 1 | When defeated, he knocks all units around him back 1 space. |
@@ -312,7 +312,7 @@ The live card list (66 cards: 16 creatures per faction, 13 spells, 5 Crystal car
 **Gnomes (blue crystals)**
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Gemsinger Miner | Common | Gatherer | 1 | 1 | 1 | 1 | Miner: mines 2. Tunnel. +1 Health upgrade. |
+| Gemsinger Miner | Common | Gatherer | 1 | 1 | 1 | 1 | Miner: mines 2. Tunnel. +1 Health upgrade. Can't attack the turn it's played. |
 | Aegis Tinkerer | Common | Fighter | 4 | 1 | 3 | 1 | Each turn, adjacent allies get Shield 1. |
 | Stormcaller Savant | Common | Fighter | 5 | 2 | 2 | 1 | Ranged. Hits up to 5 spaces away; no strike back. |
 | Iron Scarab Automaton | Rare | Fighter | 6 | 3 | 5 | 1 | Armored: takes 1 less damage from each hit. |
