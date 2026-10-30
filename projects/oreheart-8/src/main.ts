@@ -1,4 +1,6 @@
 import './style.css';
+import './ui/theme-silver.css'; // Ken (Oct 30): silver UI theme, loads after style.css so its rules win
+import { startSilverFrames } from './ui/theme-silver';
 import { Game } from './game';
 import { App } from './ui/app';
 import { CARDS, COMMANDERS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
@@ -159,3 +161,4 @@ const checkRotate = () => {
 checkRotate();
 window.addEventListener('resize', checkRotate);
 window.addEventListener('orientationchange', checkRotate);
+startSilverFrames(); // Ken (Oct 30): gem caps of the silver buttons keep their shape (theme-silver.ts)
