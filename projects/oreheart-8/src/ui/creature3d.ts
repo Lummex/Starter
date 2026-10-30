@@ -42,7 +42,7 @@ const PARTS: Record<string, PartCfg[]> = {
   'rotgut-grenadier': [{ name: 'spatula', file: 'spatula.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [18.162, -9.844, 27.054], rot: [35.239, -53.157, -88.87], scale: [43, 43 * 1.46, 43 * 0.76] } }],
   'goblin-slinger': [{ name: 'skull-mace', file: 'skull-mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-4.733, 9.93, 4.184], rot: [7.674, 57.734, 67.236], scale: [19, 19, 19] } }],
   'goblin-grunt': [{ name: 'frying-pan', file: 'frying-pan.glb', bone: ['RightHand'], len: 0.42, grip: 0.15, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-13.281, 9.76, 19.154], rot: [126.389, -36.031, 38.735], scale: [43.449, 43.449, 43.449] } }],
-  'junk-shaman': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.85, grip: 0.4, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [6.217, -15.298, 17.834], rot: [110.02, -62.427, -52.655], scale: [53, 53, 53] } }],
+  'junk-shaman': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.85, grip: 0.4, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [5.156, -7.33, 3.734], rot: [-10.17, -24.8, -150.09], scale: [52.566, 52.566, 52.566] } }], // Ken (Oct 30): upright, hand-gripping (Ledger)
   'shard-guzzler': [{ name: 'rocket', file: 'rocket.glb', bone: ['Spine02', 'Spine01', 'Spine'], len: 0.55, grip: 0.5, rot: [0, 180, 0], pos: [0, 0, -0.14] }],
   'blastrat-sapper': [{ name: 'bomb', file: 'bomb.glb', bone: ['Spine02', 'Spine01', 'Spine'], len: 0.32, grip: 0.5, rot: [0, 180, 0], pos: [0, -0.02, -0.12] }],
   'skullbasher-rusher': [
@@ -74,7 +74,7 @@ const PARTS: Record<string, PartCfg[]> = {
   'deepforge-crossbowman': [{ name: 'crystal-gun', file: 'crystal-gun.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-13.667, 14.213, 10.056], rot: [124.622, -40.578, -4.098], scale: [33.745, 33.745, 33.745] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'dwarf-miner': [{ name: 'tower-shield', file: 'tower-shield.glb', bone: ['LeftForeArm'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [3.309, 4.936, 12.344], rot: [-35.451, -2.837, 156.794], scale: [43, 43, 43] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'dwarf-pickman': [],
-  'dwarf-smith-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-6.164, 15.149, 10.053], rot: [-66.649, 52.929, 128.399], scale: [38, 38, 38] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'dwarf-smith-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-6.164, 15.149, 10.053], rot: [-66.649, 52.929, 128.399], scale: [38, 38, 38] } }, { name: 'hammer', file: 'hammer.glb', bone: ['Hips'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [10.074, 4.349, -12.19], rot: [19.81, -0.33, -120.23], scale: [15.769, 15.769, 15.769] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'dwarf-stoneback': [{ name: 'hammer', file: 'hammer.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-7.435, 10.978, 9.103], rot: [127.903, -62.14, 44.02], scale: [31.335, 31.335, 31.335] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'gearward-sentinel': [],
   'gnome-prospector': [], // Oct 30 (Clay): new Meshy model, moves from the shared pack; pickaxe waits for Ken's Studio setup
@@ -117,7 +117,7 @@ interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationCl
 export interface PackClip { clip: THREE.AnimationClip; kind: string; loop: boolean; impact?: number; rootSpeed?: number; events?: { name: string; time: number }[] }
 interface Pack { clips: PackClip[]; rig: Rig }
 export interface SharedSet { byName: Record<string, THREE.AnimationClip>; byKind: Record<string, THREE.AnimationClip[]>; impact: Record<string, number>; speed: Record<string, number>; events: Record<string, { name: string; time: number }[]> }
-export const PACK_URL = '/models/anims/biped-pack-v2'; // Spring's v2 (Oct 30): v1's 32 clips + 25 from Mixamo
+export const PACK_URL = '/models/anims/biped-pack-v3'; // Spring's v3 (Oct 30): v2's 57 clips + 2 Gnome Plow ride clips (ride, rideRam)
 let packP: Promise<Pack | null> | null = null;
 /** test hook (window.__sharedPack): what the pack loader did */
 export const packInfo = { url: PACK_URL, loaded: false, clips: [] as { name: string; kind: string }[], error: '', units: {} as Record<string, string> };

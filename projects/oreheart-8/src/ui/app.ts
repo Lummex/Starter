@@ -2663,7 +2663,7 @@ export class App {
     box.dataset.key = key;
     box.replaceChildren(...list.map((x) => h('span', { class: 'st-ic', 'data-status': x.k, role: 'img', 'aria-label': x.label, title: x.label },
       h('img', { src: `/art/pop/icon-${x.k}.webp`, alt: '', draggable: 'false' }), x.n > 0 ? h('b', { 'aria-hidden': 'true' }, String(x.n)) : '',
-      (x.x || 0) > 1 ? h('img', { class: 'st-stack', 'data-stack': String(x.x), src: `/art/stack/stack-chip-x${Math.min(3, x.x!)}-64.webp`, alt: '', draggable: 'false' }) : '')));
+      (x.x || 0) > 1 ? h('span', { class: 'st-stack', 'data-stack': String(x.x), 'aria-hidden': 'true' }, `×${Math.min(3, x.x!)}`) : '')));  // Ken (Oct 30): a plain white ×2 / ×3 on the icon
   }
   renderAbilityButtons(st: any) {
     const live = st.phase !== 'over' && st.phase !== 'mulligan';

@@ -674,11 +674,8 @@ const _embV = new THREE.Vector3();
       tex.needsUpdate = true;
     };
     if (!stImg[k]) { stImg[k] = new Image(); stImg[k].src = `/art/pop/icon-${k}.webp`; }
-    const ck = 'stack' + Math.min(3, x);
-    if (x > 1 && !stImg[ck]) { stImg[ck] = new Image(); stImg[ck].src = `/art/stack/stack-chip-x${Math.min(3, x)}-64.webp`; }
-    const chip = () => { const im = stImg[ck]; if (x > 1 && im && im.complete && im.naturalWidth) { c.getContext('2d')!.drawImage(im, 70, 0, 58, 45); tex.needsUpdate = true; } }; // gold x2 / x3 on the top right
+    const chip = () => { if (x <= 1) return; const g = c.getContext('2d')!; g.font = '900 44px system-ui, sans-serif'; g.textAlign = 'right'; g.textBaseline = 'top'; g.lineWidth = 7; g.strokeStyle = '#000'; g.lineJoin = 'round'; g.strokeText('×' + Math.min(3, x), 126, 2); g.fillStyle = '#fff'; g.fillText('×' + Math.min(3, x), 126, 2); tex.needsUpdate = true; }; // Ken (Oct 30): a crisp white x2 / x3 with a dark outline on the icon's top right
     if (stImg[k].complete) { draw(); chip(); } else stImg[k].addEventListener('load', () => { draw(); chip(); }, { once: true });
-    if (x > 1 && !stImg[ck].complete) stImg[ck].addEventListener('load', () => { draw(); chip(); }, { once: true });
     draw(); chip();
     return tex;
   };

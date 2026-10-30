@@ -142,7 +142,7 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .pile{width:30px;height:40px;font-size:.8rem}
 .swap-btn{min-width:0;min-height:44px;padding:4px 8px;font-size:.78rem;line-height:1.1}
 .swap-btn[hidden]{display:none}
-.st-ic{position:relative}.st-ic .st-stack{position:absolute;top:-28%;right:-30%;width:70%;height:auto;pointer-events:none} /* Oct 30 stacking: gold x2 / x3 chip */
+.st-ic{position:relative}.st-ic .st-stack{position:absolute;top:-30%;right:-34%;font:900 .62em/1 system-ui,sans-serif;color:#fff;text-shadow:0 0 2px #000,0 0 2px #000,1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;pointer-events:none} /* Oct 30 stacking (Ken): a crisp white x2 / x3 with a dark outline */
 .phase{font-family:"Alegreya SC",serif;font-weight:400;font-size:.62rem;line-height:1.2;text-align:center;padding:4px 6px;background:#000b;border:1px solid #4a4659;border-radius:8px}
 .health{min-height:34px;font-size:1rem;background:#000b}
 .btn.done-btn,.btn.menu-btn{min-width:0;width:100%;min-height:46px;padding:6px 8px}
