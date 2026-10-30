@@ -2943,6 +2943,9 @@ test('AC89: Low graphics turns off bloom, shadows and particles and uses fewer d
     { cardId: 'gnome-tinker', owner: 'opponent', row: 2, col: 4 }, // Round 22: was row 0 (not a board row)
   ] } };
   await start(page, setup);
+  // owner change (Ken, Oct 30): both Commanders are 3D models now, so compare only once they have loaded in both matches
+  const loaded = async () => expect.poll(async () => { const r = await page.evaluate(async () => await window.oreheart.getRenderStats()); return r.commanders.player.model === 'finished' && r.commanders.opponent.model === 'finished' && r.figures.every((f) => f.model === 'finished'); }, { timeout: 20000 }).toBe(true);
+  await loaded();
   const high = await page.evaluate(async () => await window.oreheart.getRenderStats());
   expect(high.graphics).toBe('high');
   expect(high.webgl).toBe(true);
@@ -2954,6 +2957,7 @@ test('AC89: Low graphics turns off bloom, shadows and particles and uses fewer d
   await expect(page.getByRole('button', { name: 'Graphics: Low' })).toBeVisible();
 
   await start(page, setup);
+  await loaded();
   const low = await page.evaluate(async () => await window.oreheart.getRenderStats());
   expect(low.graphics).toBe('low');
   expect(low).toMatchObject({ bloom: false, shadows: false, particles: false });
