@@ -2951,12 +2951,13 @@ test('AC89: Low graphics turns off bloom, shadows and particles and uses fewer d
 });
 
 // owner (Oct 25): stay under Vercel's free 100 MB upload limit (budget 95 MB); shrink only where it doesn't show, never re-mesh models
-test('AC90: the built dist folder stays under 95 MB', async () => {
+// Owner change (Ken, Oct 29: "set it for 250 megabytes then"; Vercel Pro, 1 GB upload cap): the budget is now 250 MB
+test('AC90: the built dist folder stays under 250 MB', async () => {
   const { fs, path, dir } = await appDir();
   const dist = path.join(dir, 'dist');
   expect(fs.existsSync(path.join(dist, 'index.html')), 'dist/index.html').toBe(true);
   const bytes = walk(fs, path, dist).reduce((n, f) => n + fs.statSync(f).size, 0);
-  expect(bytes).toBeLessThan(95 * 1000 * 1000);
+  expect(bytes).toBeLessThan(250 * 1000 * 1000);
 });
 
 test.describe('phone-size match screenshot', () => {
