@@ -10885,3 +10885,25 @@ test.describe('Oct 30 Ken at 1920x1080', () => {
     expect((await fig(uid)).bubblePops).toBe(1);
   });
 });
+
+// ---------- Ken (Oct 30): no T-poses, and legs move while walking ----------
+test('AC418: every rigged unit leaves its bind pose once loaded, and plays a walk or run clip while it moves', async ({ page }) => {
+  test.setTimeout(90000);
+  const ids = ['gnome-cogger', 'dwarf-pickman', 'gnome-prospector', 'goblin-scrounger', 'the-great-steam-golem', 'queen-brunhilda-stonebeard', 'overclocked-conduit', 'goblin-grunt'];
+  const s = await start(page, quiet({ board: ids.map((cardId, i) => ({ cardId, owner: 'player', row: i < 4 ? 6 : 5, col: 2 + 3 * (i % 4) + (i < 4 ? 0 : 1) })) }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await expect.poll(async () => ((await renderStats(page)).figures || []).filter((f) => /\.glb$/.test(f.source || '')).length, { timeout: 40000 }).toBe(ids.length);
+  await page.waitForTimeout(800);
+  for (const f of (await renderStats(page)).figures) {
+    expect(f.poseDelta, `${f.cardId} is not in its bind pose (T-pose)`).toBeGreaterThan(0.05);
+    expect(f.diag && f.diag.tracks, `${f.cardId} idle clip has tracks`).toBeGreaterThan(0);
+  }
+  await toAction(page);
+  const walker = at(s, 6, 2);
+  const mv = (await legal(page)).find((a) => a.type === 'move' && a.creatureUid === walker.uid);
+  expect(mv).toBeTruthy();
+  expect((await act(page, mv)).ok).toBe(true);
+  await expect.poll(async () => { const f = ((await renderStats(page)).figures || []).find((x) => x.uid === walker.uid); return f && f.moving ? f.currentAnimation : 'done'; }, { timeout: 8000 }).toMatch(/walk|run|done/);
+  const log = (await renderStats(page)).creatureAnimLog || [];
+  expect(log.some((e) => e.uid === walker.uid && e.anim === 'walk'), 'the walker played its walk clip').toBe(true);
+});
