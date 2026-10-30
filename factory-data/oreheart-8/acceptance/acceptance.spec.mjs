@@ -10643,3 +10643,79 @@ test('AC405: the stacking cards say so, and a stacked poison shows x2', async ({
   const cfg = await page.evaluate(async () => await window.oreheart.getConfig());
   expect([cfg.stackCap, cfg.auraStackCap, cfg.rootStackCap]).toEqual([3, 2, 2]);
 });
+// Owner rule (Ken, Oct 30): Miners "can't attack their first turn, but they can mine their first turn"; from the owner's next turn on they attack like any creature.
+test('AC409: a Miner summoned this turn can mine but not attack; from its next turn it attacks with normal strike-back', async ({ page }) => {
+  // mine at (4,4); Tunnel lets the Goblin Miner come down at (5,4), beside the mine and beside an enemy Boneknocker (1/2) at (5,5)
+  let s = await start(page, quiet({ playerDeck: SHARDS, opponentDeck: SHARDS, playerHand: ['goblin-scrounger'], playerCrystals: 5, board: [O('goblin-pebbler', 5, 5)] }));
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 5, col: 4 })).ok).toBe(true);
+  s = await getState(page);
+  const uid = at(s, 5, 4).uid;
+  expect(at(s, 5, 4).summonedThisTurn).toBe(true);
+  await done(page); // -> Action, same turn
+  let legalNow = await legal(page);
+  expect(legalNow.some((a) => a.type === 'attack' && a.creatureUid === uid), 'no attack the turn it is played').toBe(false);
+  expect(legalNow.some((a) => a.type === 'mine' && a.creatureUid === uid && a.row === 4 && a.col === 4), 'but it can mine').toBe(true);
+  expect(legalNow.some((a) => a.type === 'mineAt' && a.row === 4 && a.col === 4), 'tap-to-mine counts it as ready').toBe(true);
+  expect((await act(page, { type: 'mine', creatureUid: uid, row: 4, col: 4 })).ok).toBe(true);
+  s = await getState(page);
+  expect(creature(s, uid).hasMined).toBe(true);
+  await done(page); // end Action -> opponent's turn
+  await passTurn(page); // opponent passes -> player's turn 2
+  await done(page); // -> Action
+  s = await getState(page);
+  expect(s.turn).toBe(3); // the player's second turn
+  const hp = at(s, 5, 5).health; // 1/2 Boneknocker (+1 Health from Borgo)
+  legalNow = await legal(page);
+  expect(legalNow.some((a) => a.type === 'attack' && a.creatureUid === uid && sameTarget(a.target, 5, 5)), 'its next turn: attack is legal').toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: uid, target: { row: 5, col: 5 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 5, 5).health, 'the Boneknocker takes 1 damage from the Miner').toBe(hp - 1);
+  expect(creature(s, uid), 'the 1-Health Miner falls to the normal strike-back').toBeUndefined();
+});
+
+test('AC410: a Smith Miner summoned as a Miner follows the same rule: move or mine now, attack from its next turn', async ({ page }) => {
+  // one Scrapsmith comes down from hand onto the back row at (7,4) beside an enemy at (6,5); a second one stands beside mine (4,4) as if just summoned
+  let s = await start(page, quiet({ playerDeck: SHARDS, opponentDeck: SHARDS, playerHand: ['goblin-smith-miner'], playerCrystals: 5,
+    board: [P('goblin-smith-miner', 5, 4, { summonedThisTurn: true }), O('goblin-pebbler', 5, 5), O('goblin-pebbler', 6, 5)] }));
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-smith-miner'), row: 7, col: 4 })).ok).toBe(true);
+  s = await getState(page);
+  const back = at(s, 7, 4).uid, mid = at(s, 5, 4).uid;
+  expect(at(s, 7, 4).summonedThisTurn).toBe(true);
+  await done(page); // -> Action
+  let legalNow = await legal(page);
+  for (const u of [back, mid]) expect(legalNow.some((a) => a.type === 'attack' && a.creatureUid === u), 'no attack on the summon turn').toBe(false);
+  expect(legalNow.some((a) => a.type === 'move' && a.creatureUid === back), 'it may move').toBe(true);
+  expect(legalNow.some((a) => a.type === 'mine' && a.creatureUid === mid && a.row === 4 && a.col === 4), 'it may mine').toBe(true);
+  expect((await act(page, { type: 'mine', creatureUid: mid, row: 4, col: 4 })).ok).toBe(true);
+  await done(page);
+  await passTurn(page);
+  await done(page); // player's second turn, Action
+  s = await getState(page);
+  const hp = at(s, 6, 5).health;
+  legalNow = await legal(page);
+  expect(legalNow.some((a) => a.type === 'attack' && a.creatureUid === back && sameTarget(a.target, 6, 5)), 'next turn the back-row Smith Miner can attack').toBe(true);
+  expect(legalNow.some((a) => a.type === 'attack' && a.creatureUid === mid && sameTarget(a.target, 5, 5)), 'and so can the one that mined').toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: back, target: { row: 6, col: 5 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(at(s, 6, 5).health).toBe(hp - 1);
+});
+
+test('AC411: the Miner cards say "Can\'t attack the turn it\'s played" and no card says Miners never attack', async ({ page }) => {
+  await openTest(page);
+  const card = async (id) => await page.evaluate(async (x) => await window.oreheart.getCard(x), id);
+  for (const id of ['goblin-scrounger', 'gnome-prospector']) {
+    const c = await card(id);
+    expect(c.text, id).toMatch(/Can't attack the turn it's played\./);
+    expect(c.shortText, id).toMatch(/Can't attack the turn it's played\./);
+    expect(c.longText, id).toMatch(/Can't attack the turn it's played/);
+    expect(c.longText, id).not.toMatch(/never attack/i);
+  }
+  for (const id of ['goblin-smith-miner', 'gnome-smith-miner', 'dwarf-smith-miner']) {
+    const c = await card(id);
+    expect(c.longText, id).toMatch(/can mine or move that turn, but can't attack until its next turn/);
+    expect(c.longText, id).not.toMatch(/never attack/i);
+  }
+  const bearer = await card('dwarf-miner'); // Riot Shield Bearer is a Fighter (Round 12c): its text is untouched
+  expect(bearer.text).toMatch(/Riot Shield/);
+  expect(bearer.text).not.toMatch(/turn it's played/);
+});

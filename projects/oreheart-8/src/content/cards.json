@@ -15,10 +15,10 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Mines 2. Can Tunnel. +1 Health upgrade.",
+  "text": "Mines 2. Can Tunnel. +1 Health upgrade. Can't attack the turn it's played.",
   "flavor": "Scrounger, Taker of Shiny Things",
-  "shortText": "Mines 2. Can Tunnel. +1 Health upgrade.",
-  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine.",
+  "shortText": "Mines 2. Can Tunnel. +1 Health upgrade. Can't attack the turn it's played.",
+  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Can't attack the turn it's played (it can mine or move that turn); from its next turn on it attacks like any creature. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine.",
   "artPos": {
    "s": 1,
    "x": -5.1,
@@ -218,10 +218,10 @@
    "tunnel"
   ],
   "unique": false,
-  "text": "Miner: mines 2. Tunnel. +1 Health upgrade.",
+  "text": "Miner: mines 2. Tunnel. +1 Health upgrade. Can't attack the turn it's played.",
   "flavor": "Prospector of Profound Patience",
-  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade.",
-  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine.",
+  "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade. Can't attack the turn it's played.",
+  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Can't attack the turn it's played (it can mine or move that turn); from its next turn on it attacks like any creature. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine.",
   "artPos": {
    "s": 0.99,
    "x": 0,
@@ -1071,7 +1071,7 @@
   "unique": false,
   "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health. When this dies, draw a card. No draw if it died upgrading.",
   "shortText": "Upgrades a creature: +1 Attack, +1 Health. Draw a card when it dies (not when it dies upgrading).",
-  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner.",
+  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner: it can mine or move that turn, but can't attack until its next turn. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner.",
   "flavor": "Does the mining, and can make anything out of anything.",
   "artPos": {
    "s": 0.99,
@@ -1096,7 +1096,7 @@
   "unique": false,
   "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
   "shortText": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
-  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner."
+  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner: it can mine or move that turn, but can't attack until its next turn. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner."
  },
  {
   "id": "dwarf-smith-miner",
@@ -1115,7 +1115,7 @@
   "unique": false,
   "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
   "shortText": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
-  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner."
+  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner: it can mine or move that turn, but can't attack until its next turn. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner."
  },
  {
   "id": "rotgut-grenadier",

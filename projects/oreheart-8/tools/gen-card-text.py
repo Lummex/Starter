@@ -28,7 +28,7 @@ for c in cards:
         long=[]
         role={'Gatherer':'Miner','Smith':'Smith Miner'}.get(c['role'],'Fighter')
         long.append(f"{role} creature. Cost {c['cost']}, Attack {c['attack']}, Health {c['health']}, Movement {c['move']}. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full).")
-        if role!='Fighter': long.append('Miners can move or mine, but never attack. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health.' if role=='Miner' else 'A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner.')
+        if role!='Fighter': long.append('Can\'t attack the turn it\'s played (it can mine or move that turn); from its next turn on it attacks like any creature. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health.' if role=='Miner' else 'A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner: it can mine or move that turn, but can\'t attack until its next turn.')
         for a in c.get('abilities',[]):
             t=ab[a]['text'].rstrip('.'); nm=ab[a]['name']
             long.append(f"{nm}: {t[0].lower()+t[1:]}.")
