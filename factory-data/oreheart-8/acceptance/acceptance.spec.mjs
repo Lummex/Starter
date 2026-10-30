@@ -21,6 +21,12 @@ async function start(page, opts) {
   await openTest(page);
   return newMatch(page, opts);
 }
+// Owner check change (Ken, Oct 30 playtest): the resting hand tucks down below the home row so it never covers the board,
+// and every card keeps at least 30 % showing to grab (it was "fully on screen at rest", Round 17). Hover / touch raises it fully.
+async function restTuckedOk(page, b, H) {
+  const home = await page.evaluate(async () => { let y = -Infinity; for (let c = 1; c <= 13; c++) for (const p of await window.oreheart.squareQuad(7, c)) y = Math.max(y, p.y); return y; });
+  return (H - b.y) / b.height >= 0.3 && b.y >= home - 6 && b.y < H;
+}
 const getState = (page) => page.evaluate(async () => await window.oreheart.getState());
 const legal = (page) => page.evaluate(async () => await window.oreheart.legalActions());
 const act = (page, a) => page.evaluate(async (x) => await window.oreheart.act(x), a);
@@ -1757,15 +1763,14 @@ test.describe('landscape layout details', () => {
     await page.waitForTimeout(800);
     const rest = await card.boundingBox();
     expect(rest.y).toBeLessThan(390);
-    const shown = (390 - rest.y) / rest.height;
-    expect(shown).toBeGreaterThanOrEqual(0.97); // Round 17: the hand rests fully on screen
+    expect(await restTuckedOk(page, rest, 390), 'Ken, Oct 30: rests tucked below the home row, top showing').toBe(true);
     expect(rest.height).toBeGreaterThanOrEqual(390 * 0.31);
     expect(rest.height).toBeLessThanOrEqual(390 * 0.37);
     await page.mouse.move(rest.x + rest.width / 2, rest.y + rest.height * 0.2);
     await expect.poll(async () => { const b = await card.boundingBox(); return b.y + b.height; }).toBeLessThanOrEqual(391);
     await expect.poll(async () => (await card.boundingBox()).y).toBeGreaterThanOrEqual(-1);
     await page.mouse.move(422, 120);
-    await expect.poll(async () => { const b = await card.boundingBox(); return (390 - b.y) / b.height; }).toBeGreaterThanOrEqual(0.97); // Round 17
+    await expect.poll(async () => restTuckedOk(page, await card.boundingBox(), 390)).toBe(true); // Ken, Oct 30: back to the tucked rest
   });
 
   // ---------- AC44 ----------
@@ -5136,9 +5141,9 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       await allRest('all cards back after leaving the hand');
       await expect.poll(async () => {
         const n = await cards.count(); const shown = [];
-        for (let i = 0; i < n; i++) { const b = await cards.nth(i).boundingBox(); shown.push((H - b.y) / b.height); }
-        return shown.every((s) => s >= 0.97);
-      }, { message: 'hand back at rest, fully on screen (Round 17)' }).toBe(true);
+        for (let i = 0; i < n; i++) shown.push(await restTuckedOk(page, await cards.nth(i).boundingBox(), H));
+        return shown.every((s) => s);
+      }, { message: 'hand back at its tucked rest (Ken, Oct 30)' }).toBe(true);
       // a drag dropped back on the hand leaves nothing stuck
       pt = await hoverPointOf(cards.nth(2));
       await page.mouse.move(pt[0], pt[1], { steps: 3 });
@@ -5177,8 +5182,7 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
         const b = await cards.nth(i).boundingBox();
         expect(b.height / H).toBeGreaterThanOrEqual(0.30); // Round 14: owner hand h 33.81%, fanned cards' boxes grow a little
         expect(b.height / H).toBeLessThanOrEqual(0.40);
-        const shown = (H - b.y) / b.height;
-        expect(shown).toBeGreaterThanOrEqual(0.97); // Round 17: the hand rests fully on screen
+        expect(await restTuckedOk(page, b, H), 'Ken, Oct 30: rests tucked below the home row, top showing').toBe(true);
       }
     });
   });
@@ -6366,8 +6370,7 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       for (let i = 0; i < 5; i++) rest.push(await cards.nth(i).boundingBox());
       for (const b of rest) {
         expect(b.height / fh).toBeGreaterThanOrEqual(0.30); expect(b.height / fh).toBeLessThanOrEqual(0.40); // Round 14: fanned
-        const shown = (H - b.y) / b.height;
-        expect(shown).toBeGreaterThanOrEqual(0.97); // Round 17: fully on screen at rest // Round 10
+        expect(await restTuckedOk(page, b, H), 'Ken, Oct 30: rests tucked below the home row, top showing').toBe(true);
       }
       const hoverAt = async (i) => {
         const b = rest[i];
@@ -7075,14 +7078,13 @@ test.describe('round 10 at 1920x1080', () => {
     expect(n).toBeGreaterThanOrEqual(3);
     for (let i = 0; i < n; i++) {
       const b = await cards.nth(i).boundingBox();
-      const shown = (H - b.y) / b.height;
-      expect(shown).toBeGreaterThanOrEqual(0.97); // Round 17: fully on screen at rest
+      expect(await restTuckedOk(page, b, H), 'Ken, Oct 30: rests tucked below the home row, top showing').toBe(true);
     }
     const b = await cards.nth(Math.floor(n / 2)).boundingBox();
     await page.mouse.move(b.x + b.width / 2, b.y + 6, { steps: 4 });
     await expect.poll(async () => { const c = await cards.nth(0).boundingBox(); return (H - c.y) / c.height; }, { timeout: 4000 }).toBeGreaterThanOrEqual(0.95);
     await page.mouse.move(960, 300, { steps: 4 });
-    await expect.poll(async () => { const c = await cards.nth(0).boundingBox(); return (H - c.y) / c.height; }, { timeout: 4000 }).toBeGreaterThanOrEqual(0.97); // Round 17: back at rest, fully on screen
+    await expect.poll(async () => restTuckedOk(page, await cards.nth(0).boundingBox(), H), { timeout: 4000 }).toBe(true); // Ken, Oct 30: back to the tucked rest
   });
 
   test('AC256: Round 10 screenshots render without errors', async ({ page }, testInfo) => {
@@ -9341,9 +9343,9 @@ test.describe('round 17 fixes at 844x390', () => {
     const cards = page.getByLabel('Your hand', { exact: true }).locator('button[data-card-id]');
     await expect(cards).toHaveCount(5);
     await expect.poll(async () => {
-      for (let i = 0; i < 5; i++) { const b = await cards.nth(i).boundingBox(); if (b.y < -1 || b.y + b.height > 391 || b.x < -1 || b.x + b.width > 845) return false; }
+      for (let i = 0; i < 5; i++) { const b = await cards.nth(i).boundingBox(); if (b.x < -1 || b.x + b.width > 845 || !(await restTuckedOk(page, b, 390))) return false; }
       return true;
-    }, { message: 'every hand card fully on screen at rest', timeout: 4000 }).toBe(true);
+    }, { message: 'every hand card on screen at its tucked rest (Ken, Oct 30)', timeout: 4000 }).toBe(true);
     const xs = []; for (let i = 0; i < 5; i++) { const b = await cards.nth(i).boundingBox(); xs.push(b.x + b.width / 2); }
     const steps = xs.slice(1).map((x, i) => x - xs[i]);
     for (const st of steps) expect(Math.abs(st - steps[0]), 'even fan spacing').toBeLessThanOrEqual(Math.max(4, Math.abs(steps[0]) * 0.15));
@@ -10332,7 +10334,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }, {
       const btns = handButtons(page);
       for (let i = 0; i < 7; i++) {
         const b = await btns.nth(i).boundingBox();
-        expect(b.x >= -1 && b.y >= -1 && b.x + b.width <= vp.width + 1 && b.y + b.height <= vp.height + 1, `card ${i} fully on screen`).toBe(true);
+        expect(b.x >= -1 && b.x + b.width <= vp.width + 1 && await restTuckedOk(page, b, vp.height), `card ${i} on screen at its tucked rest (Ken, Oct 30)`).toBe(true);
       }
     });
 

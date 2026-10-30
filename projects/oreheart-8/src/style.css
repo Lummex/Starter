@@ -1791,6 +1791,10 @@ html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!im
 /* Fan hit areas: each card owns only the strip around its own centre, so the centre of every card in an overlapping fan hits that card (clicks, hover, drag). */
 .match .hand .hand-card:not(.popclone):not(.static){pointer-events:none}
 .match .hand .hand-card:not(.popclone):not(.static)::before{left:calc(50% - var(--hl,var(--cw)*.13));right:calc(50% - var(--hr,var(--cw)*.13));top:-16px;height:auto;bottom:0;pointer-events:auto}
+/* Oct 30 Ken playtest: hand */
+/* the resting hand tucks down below the home row (--tuck-drop, set by layoutHand); hover (mouse) or a touch on the hand (.shown, phones) brings it fully up */
+.match .hand:not(.o-hand):not(.open):not(.has-pop):not(.shown):not(.away),.match .hand.o-hand:not(.open):not(.has-pop):not(.shown):not(.away){transform:translateY(calc(var(--hcw) * var(--rest-k) - var(--rest-lift,0px) + var(--tuck-drop,0px)))}
+.match .hand.o-hand.tuck:not(.open):not(.has-pop):not(.away){transform:translateY(max(calc(var(--hcw) * .39),calc(var(--hcw) * var(--rest-k) - var(--rest-lift,0px) + var(--tuck-drop,0px))))}
 /* Owner fix (Ken, Oct 28): arrows beside a hand card's close-up step through the hand (same gold look as Play this card) */
 .overlay.cardview .card-nav{position:fixed;top:50%;transform:translateY(-50%);z-index:2147483001;pointer-events:auto;box-sizing:border-box;width:clamp(52px,6vw,68px);height:clamp(52px,6vw,68px);min-width:0;margin:0;padding:0;display:flex;align-items:center;justify-content:center;font-size:clamp(26px,3.2vw,36px);line-height:1;color:#fff!important;border-radius:50%;border:2px solid #ffe08a!important;background:linear-gradient(#e0a325,#9a5a10)!important;box-shadow:0 6px 18px #000b,0 0 18px #ffcc5588;cursor:pointer;touch-action:manipulation;filter:drop-shadow(0 2px 2px #0007)}
 .overlay.cardview .card-nav-prev{left:max(6px,2vw)}
