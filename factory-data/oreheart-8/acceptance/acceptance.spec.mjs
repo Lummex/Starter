@@ -9478,8 +9478,9 @@ for (const [label, ids] of [['first eight', Object.keys(R21_GOBLINS).slice(0, 8)
       const f = figs.find((x) => x.uid === c.uid);
       expect(f, c.cardId).toBeTruthy();
       expect([f.row, f.col], `${c.cardId} stands on its square`).toEqual([c.row, c.col]);
-      expect(f.height, `${c.cardId} height`).toBeGreaterThanOrEqual(0.9);
-      expect(f.height, `${c.cardId} height`).toBeLessThanOrEqual(1.4);
+      // owner change (Ken, Oct 30): every unit at its saved Studio height: regular units small (about 0.35-0.55 squares), only the special big ones large (Troll 1.57)
+      expect(f.height, `${c.cardId} height`).toBeGreaterThanOrEqual(0.3);
+      expect(f.height, `${c.cardId} height`).toBeLessThanOrEqual(1.7);
       for (const a of ['idle', 'walk', 'attack', 'hit', 'defeat']) expect(f.animations, `${c.cardId} ${a}`).toContain(a);
       expect(f.currentAnimation, c.cardId).toBe('idle');
     }
@@ -9918,7 +9919,7 @@ test('AC366: flying units hover, bob and sway above their square with a ground s
 
 test('AC367: Gnome and Dwarf models have their own heights; the Clockwork Beetle slides when it moves', async ({ page }) => {
   test.setTimeout(45000);
-  const want = { 'dwarf-miner': 0.95, shieldbeard: 0.95, 'gnome-tinker': 0.85, 'spark-gnome': 0.85, 'queen-brunhilda-stonebeard': 1.05, 'ram-rider': 1.35, 'the-great-steam-golem': 1.6, 'clockwork-beetle': 0.9 };
+  const want = { 'dwarf-miner': 0.55, shieldbeard: 0.508, 'gnome-tinker': 0.407, 'spark-gnome': 0.317, 'queen-brunhilda-stonebeard': 0.545, 'ram-rider': 1.06, 'the-great-steam-golem': 2.111, 'clockwork-beetle': 0.706 }; // owner change (Ken, Oct 30): Ken's saved Studio heights (Ledger's table)
   const ids = Object.keys(want);
   const s = await start(page, quiet({ board: ids.map((cardId, i) => ({ cardId, owner: 'player', row: i < 4 ? 6 : 4, col: 3 + 2 * (i % 4) })) }));
   if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');

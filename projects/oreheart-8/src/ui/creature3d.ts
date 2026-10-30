@@ -6,6 +6,9 @@ import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.j
 import { skinBox } from './grubnak3d';
 import { CARDS } from '../engine';
 import animSlotsJson from '../content/anim-slots.json';
+import unitHeightsJson from '../content/unit-heights.json';
+/** Ken (Oct 30): every unit at the height he saved in Oreheart Studio (Ledger's table, board squares; mounts = rider + mount); beats LOOKS and the faction defaults */
+export const HEIGHTS: Record<string, number> = Object.fromEntries(Object.entries(unitHeightsJson as Record<string, unknown>).filter(([k, v]) => !k.startsWith('_') && typeof v === 'number')) as Record<string, number>;
 
 export type CreatureAnim = 'idle' | 'walk' | 'run' | 'attack' | 'mine' | 'hit' | 'defeat' | 'lifted' | 'special' | 'knockback' | 'bowled' | 'idleBreak';
 export interface PartCfg { file: string; bone: string[]; /** target length as a fraction of the character height */ len: number; /** point along the long axis (0 bottom .. 1 top) that sits on the bone */ grip: number; rot: [number, number, number]; pos?: [number, number, number]; name: string; axis?: 'x' | 'y' | 'z'; /** owner look (Model Editor): exact bone-local transform of the raw part */ look?: LookPart; /** a mount standing under the rider */ mount?: boolean }
@@ -417,7 +420,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   const sc = new THREE.Group();
   const k = 1 / bodyH;
   ch.position.set(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
-  let heightSpaces = look ? look.height : DEFAULT_H[id] || 1.1;
+  let heightSpaces = HEIGHTS[id] ?? (look ? look.height : DEFAULT_H[id] || 1.1);
   const st = look ? look.stretch : [1, 1, 1];
   sc.scale.set(k * st[0], k * st[1], k * st[2]);
   sc.add(ch); root.add(sc);
@@ -440,7 +443,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     addItem(mt.name, 'ground', false, holder);
     const total = seat + 0.8;
     root.scale.setScalar(1 / total);
-    heightSpaces = DEFAULT_H[id] || 1.35;
+    heightSpaces = HEIGHTS[id] ?? (DEFAULT_H[id] || 1.35);
     root.scale.setScalar(heightSpaces / 1.1 / total);
   } else root.scale.setScalar(heightSpaces / 1.1);
   // Round 23: flying units (a saved look's `flying`, or the Gyronaut defaults) hover, bob, sway and keep a soft ground shadow
