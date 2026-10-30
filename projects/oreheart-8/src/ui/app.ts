@@ -887,6 +887,49 @@ export class App {
     if (a && a.closest?.('.hand')) a.blur();
     this.clearPops(); this.openHand(false, true);
   }
+  /** Oct 30 Ken playtest (hand): a single tap/click opens the card view after a short wait; a second tap/click on the same card
+   *  within that wait plays it instead (same as the card view's Play / Cast button: legal squares light up, or it casts at once). */
+  static DBL_MS = 250;
+  tapWait: { uid: string; t: any; x: number; y: number; at: number } | null = null;
+  handTap(hc: any, card: any) {
+    const w = this.tapWait;
+    if (w) { clearTimeout(w.t); this.tapWait = null; }
+    if (w && w.uid === hc.uid) { this.playByDoubleTap(hc, card); return; }
+    // in play mode from a double-tap: tapping the card again (or any hand card) just cancels it
+    if (this.cancelHandPick()) return;
+    this.tapWait = { uid: hc.uid, x: this.lastPtr.x, y: this.lastPtr.y, at: performance.now(), t: setTimeout(() => { this.tapWait = null; if (this.game.state?.players?.player?.hand?.some((k: any) => k.uid === hc.uid)) this.showCard(card.id, undefined, hc); }, App.DBL_MS) };
+  }
+  playByDoubleTap(hc: any, card: any) {
+    if (!this.game.state || this.game.state.phase === 'over') return;
+    this.tuckHand(); this.showHandTouch(false);
+    this.playFromHand(hc, card);
+    if (this.pick && !(this.pick as any).unit) (this.pick as any).hand = hc.uid;
+    setTimeout(() => this.tuckHand(), 0);
+  }
+  /** Leave the play mode started by a double-tap (Escape, the card again, or empty space). */
+  cancelHandPick() {
+    if (!(this.pick as any)?.hand) return false;
+    this.pick = null; this.clearGlow(); this.flash('Cancelled');
+    return true;
+  }
+  handIdle: any = null;
+  /** Oct 30 Ken playtest (hand): on phones a touch on the hand brings it fully up (.shown); it tucks back down on a tap
+   *  off the hand (the board), a swipe down on the hand, or after 4 s without a touch on it. */
+  showHandTouch(on: boolean) {
+    const hand = this.r?.hand as El | undefined;
+    clearTimeout(this.handIdle); this.handIdle = null;
+    if (!hand) return;
+    if (!on) { hand.classList.remove('shown'); return; }
+    hand.classList.add('shown');
+    const arm = () => {
+      this.handIdle = setTimeout(() => {
+        this.handIdle = null;
+        if (this.lastPtr.down && this.lastPtr.type !== 'mouse') { arm(); return; } // a finger still on the hand / a card being dragged
+        hand.classList.remove('shown');
+      }, 4000);
+    };
+    arm();
+  }
   /** Play a hand card without dragging: no target = play now; otherwise its legal squares light up and a tap on one plays it. */
   playFromHand(hc: any, card: any) {
     const st = this.game.state;
@@ -1078,7 +1121,7 @@ export class App {
     });
     { const fsItem = [...(this.r.menuPanel as El).querySelectorAll('.o-menu-item')].find((b) => /^(Full screen|Windowed)$/.test(b.textContent || '')) as HTMLElement | undefined; if (fsItem) { fsItem.classList.add('fs-toggle'); fsWatch(fsItem); } }
     document.addEventListener('pointerdown', (e) => { if (this.r.menuWrap?.classList.contains('open') && !(e.target as Element).closest?.('.o-menu')) this.menuOpen(false); }, true);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { this.selectedUid = null; if ((this.pick as any)?.lift) this.cancelLift('Cancelled'); } });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { this.selectedUid = null; if ((this.pick as any)?.lift) this.cancelLift('Cancelled'); this.cancelHandPick(); } });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.r.menuWrap?.classList.contains('open')) { this.menuOpen(false); this.r.menuBtn?.focus(); } });
     // board layers
     r.cells = new Map<string, El>();
@@ -1313,6 +1356,9 @@ export class App {
   screenRects() { return this.view ? this.view.screenRects() : null; }
   layoutQueued = false;
   handRoom = Infinity;
+  homeRowBottom = 0;
+  restTy: number | null = null;
+  popDelayUntil = 0; // Oct 30 Ken playtest: a card is about to rise once the hand is up
   /** Round 12a: size the hand so that, raised, it sits entirely below the player's home row (never covering the board). */
   fitHand() {
     const m = this.root.querySelector('.match') as El | null;
@@ -1324,6 +1370,7 @@ export class App {
     const bb = (this.r.board as El).getBoundingClientRect();
     let bottom = 0;
     for (let col = 1; col <= BW; col++) { const rc = this.view.cellRect(BH, col); bottom = Math.max(bottom, bb.top + rc.y + rc.h); }
+    this.homeRowBottom = bottom; // Oct 30 Ken playtest: the tucked hand rests below the home row (measured in the home view)
     const vh = window.innerHeight, base = Math.min(vh, window.innerWidth * 0.5625) * 0.2455;
     this.handKey = key;
     // phones (very short windows) keep the big owner-size hand; everywhere else the raised hand, with its hovered card, stays below the home row
@@ -1540,9 +1587,13 @@ export class App {
       const hd0 = this.r.hand as El;
       if (hd0 && !this.test && !hd0.classList.contains('open')) {
         this.openHand(true);
+        const p0 = { x: this.lastPtr.x, y: this.lastPtr.y };
+        this.popDelayUntil = performance.now() + 300;
         setTimeout(() => {
+          this.popDelayUntil = 0;
           if (!el.isConnected || !hd0.classList.contains('open') || el.classList.contains('popped')) return;
-          if (this.lastPtr.type === 'mouse' && this.hitCard(this.lastPtr.x, this.lastPtr.y) !== el) return;
+          // Oct 30 Ken playtest (hand): the hand slides up from its tucked rest under a resting pointer; a pointer that has not moved keeps the card it chose
+          if (this.lastPtr.type === 'mouse' && Math.hypot(this.lastPtr.x - p0.x, this.lastPtr.y - p0.y) > 6 && this.hitCard(this.lastPtr.x, this.lastPtr.y) !== el) return;
           this.popCard(el, true);
         }, 280);
         return;
@@ -1579,7 +1630,7 @@ export class App {
     // The popped card ignores the pointer; a transparent proxy keeps its resting spot clickable and draggable.
     const ph = h('span', { class: 'pop-ph', 'aria-hidden': 'true' }) as El;
     ph.style.cssText = `position:absolute;left:${el.style.left};top:${el.offsetTop}px;width:${w}px;height:${hgt}px;transform:${el.dataset.fan || ''};z-index:${el.dataset.z || 1};pointer-events:auto;cursor:grab`;
-    ph.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);
+    ph.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') { this.openHand(true); this.showHandTouch(true); } }, true);
     ph.addEventListener('pointerdown', (e: PointerEvent) => (el as any)._down?.(e));
     (el as any)._ph = ph;
     hand.append(ph);
@@ -1648,7 +1699,7 @@ export class App {
     // (the first card has no neighbour on its left, so it keeps the wider aim; the others use a tight aim so a pointer on a visible strip stays with that strip's card)
     for (const [bi, b] of bs.entries()) {
       const cw = b.c.offsetWidth * (b.sx || 1);
-      if (Math.abs(x - (b.cxt ?? b.cx)) <= cw * (bi === 0 ? 0.06 : 0.028) && y >= b.t - 6 && y <= b.t + b.h * 0.14) return b.c;
+      if (Math.abs(x - (b.cxt ?? b.cx)) <= cw * (bi === 0 ? 0.06 : 0.028) && y >= b.t - 6 && y <= b.t + b.c.offsetHeight * (b.sx || 1) * 0.14) return b.c; // Oct 30: the card's own height (a tucked card is clipped by the screen edge)
     }
     // 2. with a card up, its enlarged copy lies over the pointer: use the fixed resting strips instead
     if (this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)')) {
@@ -1678,7 +1729,7 @@ export class App {
   popTarget(cur: El, x: number, y: number): El | null | undefined {
     const hit = this.hitCard(x, y);
     if (hit === cur) { this.popPending = null; return undefined; }
-    const b = this.handBoxes().find((q) => q.c === cur), DZ = 10;
+    const b = this.handBoxes().find((q) => q.c === cur), ra = (cur as any)._ra, DZ = ra ? Math.max(0, 10 - ra.e * (b ? b.sx : 1)) : 10; // Oct 30 Ken playtest: a raised card's strip already reaches E past its resting slot
     if (b && x >= b.l - DZ && x <= b.l + b.w + DZ && y >= b.t - DZ && y <= b.t + b.h + DZ) { this.popPending = null; return undefined; }
     if (!hit) {
       // clearly away from the hand (well outside every slot and the enlarged card): lower at once, no hold
@@ -1704,11 +1755,16 @@ export class App {
     const out = [];
     const hb = hand.getBoundingClientRect();
     const sx = hand.offsetWidth ? hb.width / hand.offsetWidth : 1, sy = hand.offsetHeight ? hb.height / hand.offsetHeight : sx;
+    // Oct 30 Ken playtest (hand): the hand rises from its tucked rest when hovered; the top-centre aim (centred slots) stays where the
+    // resting cards were, so a pointer that raised a card keeps it while the hand slides up under the pointer
+    let up = 0;
+    if (centred && this.restTy !== null) { try { up = Math.max(0, this.restTy - new DOMMatrix(getComputedStyle(hand).transform).m42) * sy; } catch { up = 0; } }
     for (const c of cards) {
       const slot = (c as any)[centred ? '_slotC' : '_slot'] as { l: number; r: number; y: number; cx?: number; cxt?: number } | undefined;
       if (slot) {
-        const t0 = hb.top + (c.offsetTop + slot.y) * sy;
-        const l = Math.max(0, hb.left + slot.l * sx), t = t0, rr = Math.min(vw, hb.left + slot.r * sx), bb = Math.min(vh, t0 + c.offsetHeight * sy);
+        const t0 = hb.top + (c.offsetTop + slot.y) * sy + up;
+        const ra = centred ? null : (c as any)._ra as { l: number; r: number } | null; // Oct 30 Ken playtest: raised fan strips
+        const l = Math.max(0, hb.left + (ra ? ra.l : slot.l) * sx), t = t0, rr = Math.min(vw, hb.left + (ra ? ra.r : slot.r) * sx), bb = centred ? Math.min(vh, t0 + c.offsetHeight * sy) : vh; // Oct 30: each strip reaches down to the screen edge (the raised hand floats above it)
         if (rr > l && bb > t) out.push({ c, l, t, w: rr - l, h: bb - t, cx: hb.left + (slot.cx ?? slot.l) * sx, cxt: hb.left + (slot.cxt ?? slot.cx ?? slot.l) * sx, sx });
         continue;
       }
@@ -1770,6 +1826,13 @@ export class App {
     document.addEventListener('pointermove', (e) => { this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: this.lastPtr.down }; }, true);
     document.addEventListener('pointerdown', (e) => {
       this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: true };
+      { // Oct 30 Ken playtest (hand): the second press of a double-click / double-tap plays the card, even if the hand moved under the finger
+        const tw = this.tapWait;
+        if (tw && (e.pointerType !== 'mouse' || e.button === 0) && !this.dialogs.length && performance.now() - tw.at < App.DBL_MS && Math.hypot(e.clientX - tw.x, e.clientY - tw.y) < 40) {
+          const hc = this.game.state?.players?.player?.hand?.find((k: any) => k.uid === tw.uid);
+          if (hc) { e.stopPropagation(); e.preventDefault(); clearTimeout(tw.t); this.tapWait = null; this.playByDoubleTap(hc, CARDS[hc.cardId]); return; }
+        }
+      }
       const onHand = !!(e.target as Element)?.closest?.('.hand, .hand-card, .hand-scroll');
       // a press on the enlarged (hovered) card grabs that card; with none up, the card whose fan slot holds the pointer wins over a neighbour
       if (e.pointerType === 'mouse' && e.button === 0 && !this.pick && !this.dialogs.length && onHand) {
@@ -1816,7 +1879,7 @@ export class App {
           if (!bx || !(x >= bx.left - 6 && x <= bx.left + bx.width + 6 && y >= bx.top - 6 && y <= bx.top + bx.height + 6)) this.openHand(false, true);
         }
         // a resting mouse over a card that never got its hover event (the card moved under it) still pops that card
-        if (this.lastPtr.type === 'mouse' && this.lastPtr.x >= 0 && !this.lastPtr.down && !this.root.querySelector('.hand-card.dragging')) {
+        if (this.lastPtr.type === 'mouse' && this.lastPtr.x >= 0 && !this.lastPtr.down && !this.root.querySelector('.hand-card.dragging') && performance.now() >= this.popDelayUntil) {
           const hit = this.hitCard(this.lastPtr.x, this.lastPtr.y);
           if (hit && this.root.querySelector('.match')) { this.openHand(true); this.popCard(hit, true); }
         }
@@ -1942,6 +2005,19 @@ export class App {
         const need = Math.max(0, Math.ceil(worst - window.innerHeight + 2));
         const have = parseFloat(hand.style.getPropertyValue('--rest-lift')) || 0;
         if (Math.abs(need - have) >= 1) hand.style.setProperty('--rest-lift', need + 'px');
+        // Oct 30 Ken playtest (hand): the resting hand tucks down below the home row so it never covers the board,
+        // keeping the top of every card showing to grab (at least ~40 % of the highest card). Hover / touch raises it fully.
+        const oy = parseFloat(getComputedStyle(slotEl[0]).transformOrigin.split(' ')[1]) || 1.3 * ch;
+        let minTop = Infinity;
+        slotEl.forEach((c, k) => {
+          const th = Math.abs(parseFloat(c.dataset.fanAngle || '0')) * Math.PI / 180;
+          minTop = Math.min(minTop, baseTop + restShift - need + c.offsetTop + slotY[k] + oy * (1 - Math.cos(th)) - Math.sin(th) * cw / 2);
+        });
+        const want = this.homeRowBottom > 0 ? this.homeRowBottom + 4 - minTop : 0;
+        const drop = Math.max(0, Math.round(Math.min(want, window.innerHeight - 0.42 * ch - minTop)));
+        const had = parseFloat(hand.style.getPropertyValue('--tuck-drop')) || 0;
+        if (Math.abs(drop - had) >= 1) hand.style.setProperty('--tuck-drop', drop + 'px');
+        this.restTy = restShift - need + drop; // the resting hand's offset (px), for the hover slots
       }
     } catch { /* ignore */ }
     if (hand.lastElementChild !== spill) hand.append(spill);
@@ -2145,7 +2221,7 @@ export class App {
   get remindMoves() { return localStorage.getItem('oreheart.movesReminder') !== 'off'; }
   tuckOutside = (e: PointerEvent) => {
     const hand = this.r.hand as El | undefined;
-    if (hand && e.pointerType !== 'mouse' && !hand.contains(e.target as Node)) { clearTimeout(this.handTimer); hand.classList.remove('open'); }
+    if (hand && e.pointerType !== 'mouse' && !hand.contains(e.target as Node)) { clearTimeout(this.handTimer); hand.classList.remove('open'); this.showHandTouch(false); }
   };
   onKey = (_e: KeyboardEvent) => { /* no keyboard shortcuts */ };
 
@@ -2748,7 +2824,7 @@ export class App {
       (el.querySelector('.ohcard') || el.firstElementChild)?.setAttribute('data-card-id', c.id);
       el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { if (this.lastPtr.down || this.noHand || el.classList.contains('popped') || this.hitCard(e.clientX, e.clientY) !== el || this.r.hand?.querySelector('.hand-card.popped:not(.popclone)')) return; this.openHand(true); this.popCard(el, true); } });
       el.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.popCard(el, false); });
-      el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);
+      el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') { this.openHand(true); this.showHandTouch(true); } }, true);
       el.addEventListener('focus', () => { if (el.matches(':focus-visible')) this.popCard(el, true); });
       el.addEventListener('blur', () => this.popCard(el, false));
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));
@@ -2798,6 +2874,22 @@ export class App {
     if (!hand) return;
     const cards = [...hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[];
     const idx = el ? cards.indexOf(el) : -1;
+    cards.forEach((c) => { (c as any)._ra = null; });
+    // Oct 30 Ken playtest (hand): with a card raised and the fan straightened, the other cards spread out a little (each step
+    // 1.2x the resting spacing, outward from the raised card), and the hover strips move with them, so the card you point at
+    // is the card that rises. The strips stay side by side (no gaps), and they only change when another card rises.
+    if (el && idx >= 0 && cards.length > 1) {
+      const L = cards.map((c) => parseFloat(c.style.left) || 0), cw = cards[0].offsetWidth || 66;
+      const E = 0.2 * Math.abs(L[1] - L[0]), last = cards.length - 1;
+      const lft = (j: number) => (j > idx ? L[j] + (j - idx) * E : j < idx ? L[j] - (idx - j + 1) * E : L[j] - E);
+      cards.forEach((c, j) => {
+        (c as any)._ra = { e: E, l: lft(j), r: j === last ? L[j] + cw + (j - idx) * E + (j === idx ? E : 0) : j + 1 === idx ? L[idx] - E : j === idx ? L[j + 1] + E : lft(j + 1) };
+        if (c === el) return;
+        c.style.transform = `translateY(0px) translateX(${j > idx ? 0.2 * cw + (j - idx) * E : -(0.2 * cw + (idx - j + 1) * E)}px)`; // aside 0.2 of a card (as before), plus the spread
+        c.dataset.aside = j < idx ? 'left' : 'right';
+      });
+      return;
+    }
     cards.forEach((c, i) => {
       if (c === el) return;
       const base = el ? 'translateY(0px)' : c.dataset.fan || ''; // raised hand: the fan's curve is flattened
@@ -3246,18 +3338,19 @@ export class App {
   cellOfTarget(t: any) { return t.commander ? SH[t.commander as 'player' | 'opponent'] : { row: t.row, col: t.col }; }
 
   // ------------------------------------------------------------ pointer interactions
-  drag(e: PointerEvent, opts: { ghost: El; onStart: () => boolean | void; onDrop: (cell: { row: number; col: number } | null, x: number, y: number) => void; onTap: () => void; touchSwipe?: (dx: number) => void; onHover?: (cell: { row: number; col: number } | null, x: number, y: number) => void; onEnd?: () => void; manualHand?: boolean; onMove?: (dx: number, x: number, y: number) => void }) {
+  drag(e: PointerEvent, opts: { ghost: El; onStart: () => boolean | void; onDrop: (cell: { row: number; col: number } | null, x: number, y: number) => void; onTap: () => void; touchSwipe?: (dx: number) => void; touchDown?: () => void; onHover?: (cell: { row: number; col: number } | null, x: number, y: number) => void; onEnd?: () => void; manualHand?: boolean; onMove?: (dx: number, x: number, y: number) => void }) {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     const x0 = e.clientX, y0 = e.clientY;
-    let dragging = false, swiping = false, lastX = x0;
+    let dragging = false, swiping = false, swipedDown = false, lastX = x0;
     const move = (ev: PointerEvent) => {
       const dx = ev.clientX - x0, dy = ev.clientY - y0;
       if (!dragging && !swiping && Math.hypot(dx, dy) > 8) {
         if (ev.pointerType !== 'mouse' && opts.touchSwipe && Math.abs(dx) > Math.abs(dy)) swiping = true;
+        else if (ev.pointerType !== 'mouse' && opts.touchDown && dy > Math.abs(dx)) { swipedDown = true; swiping = true; opts.touchDown(); } // Oct 30 Ken playtest: a swipe down on the hand tucks it
         else if (opts.onStart() !== false) { dragging = true; if (!opts.manualHand) this.r.hand?.classList.add('away'); opts.ghost.style.left = ev.clientX + 'px'; opts.ghost.style.top = ev.clientY + 'px'; document.body.append(opts.ghost); lastX = ev.clientX; }
         else cleanup();
       }
-      if (swiping) { opts.touchSwipe!(ev.clientX - lastX); lastX = ev.clientX; }
+      if (swiping && !swipedDown) { opts.touchSwipe!(ev.clientX - lastX); lastX = ev.clientX; }
       if (dragging) {
         opts.ghost.style.left = ev.clientX + 'px'; opts.ghost.style.top = ev.clientY + 'px';
         opts.onMove && opts.onMove(ev.clientX - lastX, ev.clientX, ev.clientY); lastX = ev.clientX;
@@ -3415,6 +3508,7 @@ export class App {
       ghost,
       manualHand: true,
       touchSwipe: (dx) => { this.handScroll -= dx / 40; this.layoutHand(); },
+      touchDown: () => { this.clearPops(); this.openHand(false, true); this.showHandTouch(false); },
       onMove: (dx, px, y) => {
         tilt = Math.max(-DRAG_FX.tiltMax, Math.min(DRAG_FX.tiltMax, tilt * 0.8 + dx * 0.3)); fx.lastMove = performance.now();
         ghost.dataset.tilt = tilt.toFixed(2);
@@ -3464,7 +3558,7 @@ export class App {
           if (a) this.game.act(a);
           return;
         }
-        this.showCard(card.id, undefined, hc);
+        this.handTap(hc, card);
       },
     });
     void st;
@@ -3713,6 +3807,7 @@ export class App {
     const lab = (e.target as El).closest?.('.tk-stats');
     const labUid = lab ? (lab.closest('.token') as El | null)?.dataset.uid : null;
     const cell = labUid ? (() => { const c0 = st.board.creatures.find((c: any) => c.uid === labUid); return c0 ? { row: c0.row, col: c0.col } : null; })() : this.cellAt(e.clientX, e.clientY);
+    if (!cell && (this.pick as any)?.hand && (e.pointerType !== 'mouse' || e.button === 0)) { this.cancelHandPick(); return; } // Oct 30 Ken playtest: empty space cancels a double-tap play
     if (!cell) { if (!this.pick && (e.pointerType !== 'mouse' || e.button === 0)) this.startPan(e); return; }
     if (this.pick) {
       const p = this.pick.cells.find((c) => c.row === cell.row && c.col === cell.col);
