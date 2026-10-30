@@ -337,13 +337,17 @@ export interface C3D {
   /** flying units */ flying?: { hoverSquares: number; floatSquares: number; floatsPerSecond: number; swayDeg: number; groundShadow: boolean; source: string }; lift?: number; swayNowDeg?: number; groundShadow?: boolean;
   /** Owner fix (Oct 28): true when the model has this clip */ has?: (n: string) => boolean;
   /** Oct 30: where the attack blow lands (s into the clip, if known) and a clip speed setter */ impactOf?: (n: string) => number | undefined; setSpeed?: (n: string, k: number) => void; gaitSpeed?: (n: string) => number | undefined; setPace?: (n: string, pace: number) => void; eventsOf?: (n: string) => { name: string; time: number }[]; packRoles?: Set<string>; animWeight?: () => number; /** Oct 31: true while the Junk Shaman carries a unit (his special loops its lift segment) */ holding?: boolean; poseDelta?: () => number; diag?: () => any; seek?: (n: string, t: number) => void;
-  clipNames: string[]; held: string[]; worn: string[]; height: number;
+  clipNames: string[]; held: string[]; worn: string[]; height: number; boardH?: number;
   /** height in board squares (owner look or default) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
   /** Bowler Brawler only: hand-keyed special moves, ball hooks, flame effect */ special?: (n: 'bowl' | 'spinBall' | 'basketShot') => void; trig?: (shootT: number, born: number) => void; advanceIdle?: (sec: number) => void; ballInfo?: () => any; effects?: () => any[];
 }
 
 /** Instances one figure: the model stands on y = 0, centred, normalised to height 1 (the scene scales it to the board). */
-export function makeCreature3d(id: string, a: Assets): C3D {
+/** Board size: Studio height x k, softened above 1.8 squares so the giants (Troll, Golem) stay the biggest without swallowing the board (Ken, Oct 31). */
+export const BOARD_KNEE = 1.8, BOARD_SOFT = 0.35;
+export const boardScale = (h: number, k: number) => { const bh = h * k; return (bh > BOARD_KNEE && k > 1 ? BOARD_KNEE + (bh - BOARD_KNEE) * BOARD_SOFT : bh) / Math.max(h, 1e-4); };
+/** `k` = the board size factor (owner layout characterSizes.creatures; Ken, Oct 31: units 3x). heightSpaces stays the Studio height; boardH is the height on the board. */
+export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   const ch = skeletonClone(a.char) as THREE.Object3D;
   const mats: THREE.MeshStandardMaterial[] = [];
   const prep = (o: THREE.Object3D) => o.traverse((m: any) => {
@@ -438,7 +442,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   const sc = new THREE.Group();
   const k = 1 / bodyH;
   ch.position.set(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
-  let heightSpaces = HEIGHTS[id] ?? (look ? look.height : DEFAULT_H[id] || 1.1);
+  let heightSpaces = HEIGHTS[id] ?? (look ? look.height : DEFAULT_H[id] || 1.1), kk = k0;
   const st = look ? look.stretch : [1, 1, 1];
   sc.scale.set(k * st[0], k * st[1], k * st[2]);
   sc.add(ch); root.add(sc);
@@ -462,8 +466,9 @@ export function makeCreature3d(id: string, a: Assets): C3D {
     const total = seat + 0.8;
     root.scale.setScalar(1 / total);
     heightSpaces = HEIGHTS[id] ?? (DEFAULT_H[id] || 1.35);
-    root.scale.setScalar(heightSpaces / 1.1 / total);
-  } else root.scale.setScalar(heightSpaces / 1.1);
+    kk = boardScale(heightSpaces, k0);
+    root.scale.setScalar(heightSpaces / 1.1 / total * kk);
+  } else { kk = boardScale(heightSpaces, k0); root.scale.setScalar(heightSpaces / 1.1 * kk); }
   // Round 23: flying units (a saved look's `flying`, or the Gyronaut defaults) hover, bob, sway and keep a soft ground shadow
   const flyCfg: any = (look as any)?.flying || (id === 'gyrocopter-ace' ? { hoverSquares: 0.7, floatSquares: 0.06, floatsPerSecond: 0.6, swayDeg: 3, groundShadow: true, source: 'default' } /* Ken (Oct 30): hover twice as high */ : null);
   let flyT = 0, shadow: THREE.Mesh | null = null;
@@ -497,7 +502,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   out.setPace = (n: string, pace: number) => { const g = out.gaitSpeed?.(n); const ac = actions[resolve(n)]; if (ac) ac.timeScale = g ? Math.min(1.8, Math.max(0.6, pace / g)) : 1; };
   out.holding = false;
   out.setSpeed = (n: string, k: number) => { const ac = actions[resolve(n)]; if (ac) ac.timeScale = k; };
-  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (cur === 'special' && actions.special && out.holding) { const sg = holdSeg(); if (!actions.special.isRunning()) { actions.special.reset(); actions.special.play(); } if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
+  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (cur === 'special' && actions.special && out.holding) { const sg = holdSeg(); if (!actions.special.isRunning()) { actions.special.reset(); actions.special.play(); } if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = (flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares) * kk; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, boardH: heightSpaces * kk, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
   if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }
   return out;
 }

@@ -73,6 +73,8 @@ const SYMBOL: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: 
 const MINE_FACTION: Record<string, string> = { goblins: '#3ee06a', gnomes: '#9b4dff', dwarves: '#2f5fd8' };
 const hexOf = (id: string | null) => (id && id !== 'white' ? COLORS[id].hex : COLORS.neutral.hex);
 const CMD_H = 2.4, CREATURE_H = 1.1;
+/** Ken (Oct 31 playtest): "the sizes of the units are way too small ... triple the size". Every unit's board size = its Studio height x this (owner layout characterSizes.creatures). Rings stay square-sized. */
+const UNIT_K = Math.max(0.2, +((ownerLayoutJson as any).characterSizes?.creatures ?? 1) || 1);
 /** Height of the solid meshes in a group (sprites, beams and transparent effects ignored), in world units. */
 function measureBox(o: THREE.Object3D): THREE.Box3 {
   const b = new THREE.Box3();
@@ -527,7 +529,7 @@ const _embV = new THREE.Vector3();
     let finished = false, mats: THREE.MeshStandardMaterial[] = [], parts: any = null, baseScale = 1;
     const a3 = creature3dReady(card.id); // any faction with an owner-sheet model (goblins; Gnomes and Dwarves since Oct 25)
     let c3: C3D | null = null;
-    if (a3) { try { c3 = makeCreature3d(card.id, a3); } catch { c3 = null; } }
+    if (a3) { try { c3 = makeCreature3d(card.id, a3, UNIT_K); } catch { c3 = null; } }
     if (a3 && c3) {
       // owner-sheet Meshy model (rigged, animated); dummy parts keep the procedural reactions harmless
       g = new THREE.Group(); g.add(c3.group);
@@ -581,7 +583,8 @@ const _embV = new THREE.Vector3();
     g.scale.setScalar(1);
     g.updateMatrixWorld(true);
     const nat = (g as any).userData.c3d ? 0 : measureHeight(g);
-    if (nat > 0.05) baseScale = (CREATURE_H / nat) * (card.rarity === 'Collector' ? 1.1 : 1);
+    if (nat > 0.05) baseScale = (CREATURE_H / nat) * (card.rarity === 'Collector' ? 1.1 : 1) * UNIT_K;
+    else if (!(g as any).userData.c3d) baseScale *= UNIT_K;
     g.scale.setScalar(baseScale);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 6, 24), ringMat());
     ring.name = 'acting-ring';
@@ -717,7 +720,7 @@ const _embV = new THREE.Vector3();
       const f = figs.get(uid);
       if (!f || f.dying) { e.group.visible = false; continue; }
       e.group.visible = true;
-      const top = (f.c3d?.height || CREATURE_H) + 0.28;
+      const top = (f.c3d ? (f.c3d.boardH ?? f.c3d.height) + (f.c3d.lift || 0) : CREATURE_H * UNIT_K) + 0.28;
       e.group.position.set(f.group.position.x, f.group.position.y + top, f.group.position.z);
     }
   }
@@ -772,7 +775,7 @@ const _embV = new THREE.Vector3();
       if (b.root.parent !== f.group) f.group.add(b.root); // the figure was rebuilt (its 3D model arrived)
       // sized to the unit's own height (Ken's saved Studio heights), a little wider than the unit, centred a bit low
       const sx = f.group.scale.x || 1, sy = f.group.scale.y || 1;
-      const h = Math.min(2.5, Math.max(0.3, f.c3d?.height || 0.5)), R = Math.min(1.1, Math.max(0.2, h * 0.42 + 0.06)), cyW = Math.max(R * 0.8, h * 0.42);
+      const h = Math.min(7, Math.max(0.3, f.c3d?.boardH || f.c3d?.height || 0.5 * UNIT_K)), R = Math.min(2.6, Math.max(0.2, h * 0.42 + 0.06)), cyW = Math.max(R * 0.8, h * 0.42);
       let k = 1, op = 1;
       if (b.popAt && now >= b.popAt) {
         const t = (now - b.popAt) / 340;
@@ -1226,7 +1229,11 @@ const _embV = new THREE.Vector3();
     const fb = skinBox(cm.g3d.fortress, new THREE.Box3()), cb = skinBox(cm.g3d.figure, new THREE.Box3());
     const cp = new THREE.Vector3(); cm.g3d.figure.getWorldPosition(cp);
     const fp = new THREE.Vector3(); cm.g3d.fortress.getWorldPosition(fp);
-    return { ...facing(cm === cmd.player ? 'player' : 'opponent'), pose: { commanderBaseY: +cb.min.y.toFixed(3), fortressBaseY: +fb.min.y.toFixed(3), boardY: 0, commanderCentre: [+((cb.min.x + cb.max.x) / 2).toFixed(3), +((cb.min.z + cb.max.z) / 2).toFixed(3)], fortressCentre: [+((fb.min.x + fb.max.x) / 2).toFixed(3), +((fb.min.z + fb.max.z) / 2).toFixed(3)], commanderTurnDeg: +(((cm.baseYaw ?? 0) * 180) / Math.PI).toFixed(1), currentYawDeg: +(((cm.yaw ?? 0) * 180) / Math.PI).toFixed(1), tilt: 0, lean: 0, commanderHeight: +(cb.max.y - cb.min.y).toFixed(2), fortressHeight: +(fb.max.y - fb.min.y).toFixed(2) }, model3d: 'meshy', heightSpaces: +(b.max.y - Math.max(b.min.y, 0)).toFixed(2), footprint: +Math.max(b.max.x - b.min.x, b.max.z - b.min.z).toFixed(2), animations: cm.g3d.clipNames, animation: cm.g3d.current() };
+    // Oct 31: the Commander's height on screen in px (top to feet, at its centre), so the two Commanders can be compared as the player sees them
+    const cv = canvas.getBoundingClientRect(), mx = (cb.min.x + cb.max.x) / 2, mz = (cb.min.z + cb.max.z) / 2;
+    const pyOf = (y: number) => { _v.set(mx, y, mz).project(camera); return ((1 - _v.y) / 2) * cv.height; };
+    const screenH = +(pyOf(cb.min.y) - pyOf(cb.max.y)).toFixed(1);
+    return { screenH, matchK: cm === cmd.opponent ? +cmdMatchK.toFixed(3) : 1, ...facing(cm === cmd.player ? 'player' : 'opponent'), pose: { commanderBaseY: +cb.min.y.toFixed(3), fortressBaseY: +fb.min.y.toFixed(3), boardY: 0, commanderCentre: [+((cb.min.x + cb.max.x) / 2).toFixed(3), +((cb.min.z + cb.max.z) / 2).toFixed(3)], fortressCentre: [+((fb.min.x + fb.max.x) / 2).toFixed(3), +((fb.min.z + fb.max.z) / 2).toFixed(3)], commanderTurnDeg: +(((cm.baseYaw ?? 0) * 180) / Math.PI).toFixed(1), currentYawDeg: +(((cm.yaw ?? 0) * 180) / Math.PI).toFixed(1), tilt: 0, lean: 0, commanderHeight: +(cb.max.y - cb.min.y).toFixed(2), fortressHeight: +(fb.max.y - fb.min.y).toFixed(2) }, model3d: 'meshy', heightSpaces: +(b.max.y - Math.max(b.min.y, 0)).toFixed(2), footprint: +Math.max(b.max.x - b.min.x, b.max.z - b.min.z).toFixed(2), animations: cm.g3d.clipNames, animation: cm.g3d.current() };
   }
 
   /** Round 9c test hook: where each Commander and Stronghold stands (board units: +cx right, +cy toward the player), on the ground, with yaw/tilt/lean. */
@@ -1283,10 +1290,23 @@ const _embV = new THREE.Vector3();
   let disposed = false;
   const tmpV = new THREE.Vector3();
   let frameLast = 0;
+  // Ken (Oct 31): "the opposing commander is still kind of small. Make each commander the same size-ish." Once both 3D Commanders are in,
+  // the enemy's figure is scaled so its height ON SCREEN (feet to top, as the player sees it) matches the player's. The player's stays as it is.
+  let cmdMatched: any = null, cmdMatchK = 1;
+  function matchCommanders() {
+    const p = cmd.player?.g3d, o = cmd.opponent?.g3d;
+    if (!p || !o || cmdMatched === o) return;
+    cmdMatched = o;
+    const hp = (c3('player') as any).screenH, ho = (c3('opponent') as any).screenH;
+    if (!(hp > 4 && ho > 4)) { cmdMatched = null; return; }
+    cmdMatchK = Math.min(2, Math.max(0.5, hp / ho));
+    o.figure.scale.multiplyScalar(cmdMatchK);
+  }
   function frame() {
     if (disposed) return;
     raf = requestAnimationFrame(frame);
     const now = performance.now();
+    matchCommanders();
     // Automated runs (software GL on the check machines): keep the page responsive by drawing fewer frames while input arrives or frames are slow.
     // Owner fix (Ken, Oct 29): the Round 26 builder also switched the mines to low effects when frames were slow, and the figures moved a fixed
     // step per frame, so the checks measured a slow-motion game with the wrong mine effects (late clips, missing effects, 4 s stats).
