@@ -1472,6 +1472,33 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 
 /* Round 10 inspector fixes: dialogs above the hand, filters above the grid, menu hover glow on the button itself */
 .overlay.cardview{z-index:20000}
+/* Oct 30 Ken: close, reveal, discard, bubble */
+/* the card close-up: a small ✕ Close button at the card's top-right corner (outside tap and Esc still close it) */
+.overlay.cardview .card-view-face{position:relative;width:fit-content;margin:0 auto}
+.overlay.cardview .cv-close{position:absolute;top:1.2%;right:1.8%;left:auto;width:clamp(38px,5vw,50px);height:clamp(38px,5vw,50px);min-width:0;margin:0;padding:0;display:flex;align-items:center;justify-content:center;pointer-events:auto;z-index:2147483001;border-radius:50%;border:2px solid #ffe08a;background:linear-gradient(#5a4630,#2a1f14);color:#ffe9b0;font-size:clamp(18px,2.4vw,24px);font-weight:700;line-height:1;box-shadow:0 4px 12px #000b;cursor:pointer;touch-action:manipulation;text-shadow:0 1px 2px #000}
+.overlay.cardview .cv-close:hover,.overlay.cardview .cv-close:focus-visible{filter:brightness(1.3);box-shadow:0 0 14px #ffcc55aa,0 4px 12px #000b}
+/* the computer's played card: big in the middle, then laid down on the enemy discard pile */
+.match .reveal.opp-play{box-shadow:0 0 60px #ffd45acc,0 14px 40px #000;animation:oppPlayIn .22s ease-out;transform-style:preserve-3d}
+@keyframes oppPlayIn{from{transform:translate(-50%,-50%) scale(.55);opacity:.2}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
+/* the enemy discard pile: face-up on the left side, mirrors your deck on the right */
+.match .e-discard{position:absolute;z-index:22;left:max(8px,env(safe-area-inset-left));top:24%;width:clamp(44px,10vh,104px);height:auto;aspect-ratio:1152/1712;padding:0;margin:0;min-width:0;border:0;border-radius:8px;background:none;cursor:pointer;pointer-events:auto;filter:drop-shadow(0 4px 6px #000)}
+.match .e-discard.empty{border:2px dashed #e3b54a99;background:#0006}
+.match .e-discard .e-discard-top{position:absolute;inset:0;display:block;pointer-events:none}
+.match .e-discard .e-discard-top .hand-card{position:absolute;left:0;top:0;width:100%;--cw:clamp(44px,10vh,104px);transform:none;pointer-events:none;box-shadow:2px 2px 0 #1b1a22,4px 4px 0 #000a!important}
+.match .e-discard .e-discard-n{position:absolute;right:-7px;bottom:-7px;z-index:3;min-width:1.7em;padding:0 .3em;border-radius:1em;background:#2a1f14;border:2px solid #e3b54a;color:#fff;font-size:clamp(11px,2.4vh,16px);line-height:1.45;text-align:center;text-shadow:0 1px 2px #000}
+.match .e-discard:hover,.match .e-discard:focus-visible{filter:drop-shadow(0 0 10px #ffd45a) drop-shadow(0 4px 6px #000)}
+.match .e-discard.thud{animation:eDiscardThud .34s ease-out}
+@keyframes eDiscardThud{0%{transform:scale(1.14)}60%{transform:scale(.97)}100%{transform:scale(1)}}
+/* the enemy discard pile fanned out: half-size cards in a sideways-scrolling row; tap one for its close-up */
+.overlay.e-discard-view{z-index:19000;position:fixed;inset:0}
+.overlay.e-discard-view .dialog{max-width:96vw;width:auto;max-height:none;overflow:visible;padding:10px 12px 12px}
+.overlay.e-discard-view .e-discard-title{margin:0 0 6px;font-size:clamp(15px,3vh,24px)}
+.e-discard-row{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:10px 6px 12px;max-width:92vw;touch-action:pan-x;cursor:grab;scrollbar-width:thin;scrollbar-color:#e3b54a #0006}
+.e-discard-row:active{cursor:grabbing}
+.e-discard-card{flex:0 0 auto;width:var(--dcw);padding:0;margin:0;min-width:0;border:0;background:none;cursor:pointer;transition:transform .12s}
+.e-discard-card:hover,.e-discard-card:focus-visible{transform:translateY(-6px) scale(1.06)}
+.e-discard-card .hand-card{position:relative;left:auto;top:auto;display:block;width:var(--dcw);--cw:var(--dcw);pointer-events:none}
+.e-discard-none{margin:8px 12px;opacity:.85}
 .db-stage .db-filterbox{z-index:6}
 .mb-btn:hover,.mb-btn:focus-visible{text-shadow:0 0 .4em var(--hgc,#FFD700)}
 /* Round 10 fix: the deck carousel keeps a real size inside the owner's dDecks zone */

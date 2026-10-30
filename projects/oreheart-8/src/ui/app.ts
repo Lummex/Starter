@@ -778,10 +778,14 @@ export class App {
     tb.style.cssText = 'position:absolute;inset:0;background:none;border:0;cursor:pointer;pointer-events:auto;z-index:99;padding:0';
     (tx?.parentElement || face).append(tb);
     tb.addEventListener('click', () => this.fullExplanation(c));
-    // round 10: twice the old size, no scroll bar, no Close button; a click outside the card (or Esc) closes it
+    // round 10: twice the old size, no scroll bar; a click outside the card (or Esc) closes it
+    // Owner (Ken, Oct 30): a small ✕ Close button at the card's top-right corner closes it too
     // Owner (Oct 25): a hand card's close-up has a button that plays it (legal squares light up, then tap one)
-    const kids: any[] = [h('div', { class: 'card-view-face' }, face), dl];
     let d: any = null;
+    const xb = h('button', { type: 'button', class: 'cv-close', 'aria-label': 'Close', title: 'Close (Esc)' }, '✕');
+    xb.addEventListener('pointerdown', (ev: Event) => ev.stopPropagation());
+    xb.addEventListener('click', (ev: Event) => { ev.stopPropagation(); d?.close(); });
+    const kids: any[] = [h('div', { class: 'card-view-face' }, face, xb), dl];
     if (hc && this.game.state && this.game.state.phase !== 'over') {
       const label = c.type === 'spell' ? 'Cast this spell' : c.type === 'crystal' ? 'Play this Crystal' : 'Play this card';
       const can = this.game.legalActions().some((a: any) => a.uid === hc.uid);
@@ -806,7 +810,7 @@ export class App {
     }
     d = this.dialog(c.name, kids);
     d.el.classList.add('cardview');
-    { // Gauge's check (Oct 30): Escape closes the big card view wherever the focus is (no Close button: AC250, round 10 rule; outside tap closes)
+    { // Gauge's check (Oct 30): Escape closes the big card view wherever the focus is (outside tap and the ✕ Close button close it too)
       const close0 = d.close, esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { ev.stopPropagation(); d.close(); } };
       d.close = () => { document.removeEventListener('keydown', esc, true); close0(); };
       document.addEventListener('keydown', esc, true);
@@ -1120,6 +1124,7 @@ export class App {
         { label: 'Give up match!', run: () => { const c: any = this.dialog('Give up this match?', [h('h2', {}, 'Give up this match?'), h('div', { class: 'row' }, btn('Yes, give up', 'danger', () => { c.close(); this.game.act({ type: 'surrender' }); }), btn('Cancel', '', () => c.close()))]); } },
       ],
     });
+    this.buildEnemyDiscard(match); // Owner (Ken, Oct 30): the enemy discard pile on the left
     { const fsItem = [...(this.r.menuPanel as El).querySelectorAll('.o-menu-item')].find((b) => /^(Full screen|Windowed)$/.test(b.textContent || '')) as HTMLElement | undefined; if (fsItem) { fsItem.classList.add('fs-toggle'); fsWatch(fsItem); } }
     document.addEventListener('pointerdown', (e) => { if (this.r.menuWrap?.classList.contains('open') && !(e.target as Element).closest?.('.o-menu')) this.menuOpen(false); }, true);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { this.selectedUid = null; if ((this.pick as any)?.lift) this.cancelLift('Cancelled'); this.cancelHandPick(); } });
@@ -2050,6 +2055,7 @@ export class App {
     (r.myDeck.querySelector('.pile-n') as El).textContent = String(me.deck.length);
     r.enemyDeck.style.setProperty('--fill', String(Math.max(0.55, Math.min(1, 0.55 + en.deck.length / 60))));
     r.myDeck.style.setProperty('--fill', String(Math.max(0.55, Math.min(1, 0.55 + me.deck.length / 60))));
+    this.renderEnemyDiscard(); // Owner (Ken, Oct 30)
     r.enemyHand.classList.toggle('browsing', st.activePlayer === 'opponent' && st.phase !== 'over' && st.phase !== 'mulligan');
     r.crFlow.textContent = String(me.crystals);
     r.crBank.textContent = String(me.bank);
@@ -2246,77 +2252,165 @@ export class App {
     this.r.fx.append(f);
     setTimeout(() => f.remove(), 1700);
   }
-  /** Big card in the middle of the screen, then it drops onto its space (or flies away). */
+  /** Owner (Ken, Oct 30): the computer's played card pops up LARGE in the middle of the screen (about 30 % bigger than the
+   *  card close-up, nearly full height on a phone) for about a second, then is laid down: it shrinks, tilts back and slides
+   *  over to the enemy discard pile on the left (a summoned creature drops onto its square instead, as before). Spell and
+   *  ability animations still play underneath. Tap the big card to pin it; tap again to let it go. Only one big card shows
+   *  at a time: a newer one sends the previous one to the pile at once. Your own played cards do not pop up (round 11). */
   reveals: { player: El[]; opponent: El[] } = { player: [], opponent: [] };
+  /** cards that are still flying to the enemy discard pile (the pile shows them when they land) */
+  discardInFlight = 0;
+  revealHoldMs() { return localStorage.getItem('oreheart.reveal') === 'fast' ? 600 : 1100; }
   reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player') {
     if ((this.test && !this.fxReal) || !this.r.board) return;
     if (side === 'player') return; // round 11: only the opponent's played cards pop up
     const c = CARDS[cardId];
-    const secs = this.revealSeconds();
+    if (!c) return;
     const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c));
     const host = this.root.querySelector('.match') as El;
-    // round 10: enemy plays hover at the left edge, yours at the right edge; up to 3 stack (newest on top, offset)
     const list = this.reveals[side];
+    // the newest card takes the middle; any earlier one that is not pinned is laid down now
+    for (const old of [...list]) if (old.dataset.pinned !== 'true') (old as any)._finish?.();
     const hostR = host.getBoundingClientRect(), vh = window.innerHeight, vw = window.innerWidth;
-    const cw = Math.min(180, vh * 0.3);
-    while (list.length >= 3) list.shift()!.remove();
+    const cw = Math.round(Math.min(vw * 0.6, (vh * 0.95) / (1712 / 1152)));
     el.style.setProperty('--cw', cw + 'px');
-    el.dataset.side = side; el.dataset.slot = String(list.length);
-    const place = () => {
-      list.forEach((r, i) => {
-        const k = list.length - 1 - i; // 0 = newest, on top
-        r.dataset.slot = String(i); r.dataset.stackIndex = String(k);
-        r.style.left = (side === 'opponent' ? 10 + cw / 2 + k * 22 : vw - 8 - cw / 2 - k * 22) - hostR.left + 'px';
-        r.style.top = vh * 0.42 - k * 16 - hostR.top + 'px';
-        r.style.zIndex = String(520 + i);
-      });
-    };
-    list.push(el); place();
+    el.classList.add('opp-play');
+    el.dataset.side = side; el.dataset.stage = 'big';
+    el.style.left = vw / 2 - hostR.left + 'px';
+    el.style.top = vh / 2 - hostR.top + 'px';
+    el.style.zIndex = String(5000 + list.length);
+    list.push(el);
     host.append(el);
-    let done = false;
-    const unlist = () => { const i = list.indexOf(el); if (i >= 0) { list.splice(i, 1); place(); } };
+    const toPile = !(c.type === 'creature' && at && this.view);
+    if (toPile) { this.discardInFlight++; this.renderEnemyDiscard(); }
+    let done = false, landed = false, layAnim: Animation | null = null, layFallback: any = null;
+    const unlist = () => { const i = list.indexOf(el); if (i >= 0) list.splice(i, 1); };
+    const land = () => {
+      if (landed) return; landed = true;
+      if (toPile) { this.discardInFlight = Math.max(0, this.discardInFlight - 1); this.renderEnemyDiscard(true); }
+    };
     const finish = () => {
-      if (done) return; done = true; unlist();
-      let dx = 0, dy = 0;
-      if (at && this.view) {
-        const pc = this.center(at.row, at.col);
-        const br = this.r.board.getBoundingClientRect(), hr = host.getBoundingClientRect(), er = el.getBoundingClientRect();
-        dx = br.left - hr.left + pc.x - (er.left - hr.left + er.width / 2);
-        dy = br.top - hr.top + pc.y - (er.top - hr.top + er.height / 2);
-      }
-      if (c.type === 'creature' && at && this.view) {
-        // drop onto the space, flip, glow, then rise into the 3D creature with a dust puff
+      if (done) return; done = true; clearTimeout(timer);
+      el.dataset.stage = 'laying';
+      const er = el.getBoundingClientRect(), ex = er.left + er.width / 2, ey = er.top + er.height / 2;
+      if (!toPile && at) {
+        // a creature: drop onto its space, flip, glow, then rise into the 3D creature with a dust puff
+        const br = this.r.board.getBoundingClientRect(), pc = this.center(at.row, at.col);
+        const dx = br.left + pc.x - ex, dy = br.top + pc.y - ey, s0 = 75 / cw, s1 = 32 / cw;
         const T = (x: number, y: number, sc: number, ry: number) => `translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) perspective(600px) rotateY(${ry}deg) scale(${sc})`;
         const gl = '0 0 40px #ffd45aaa,0 10px 30px #000', glow = '0 0 70px 22px #fff2a0,0 0 30px 10px #ffd45a';
-        const dur = Math.min(1500, secs * 1000);
+        const dur = 1100;
         const anim = el.animate([
           { transform: T(0, 0, 1, 0), opacity: 1, boxShadow: gl, offset: 0 },
-          { transform: T(dx, dy, 0.42, 0), opacity: 1, boxShadow: gl, offset: 0.35 },
-          { transform: T(dx, dy, 0.42, 180), opacity: 1, boxShadow: glow, offset: 0.6 },
-          { transform: T(dx, dy, 0.42, 360), opacity: 1, boxShadow: glow, offset: 0.75 },
-          { transform: T(dx, dy - 40, 0.18, 360), opacity: 0, boxShadow: glow, offset: 1 },
+          { transform: T(dx, dy, s0, 0), opacity: 1, boxShadow: gl, offset: 0.4 },
+          { transform: T(dx, dy, s0, 180), opacity: 1, boxShadow: glow, offset: 0.62 },
+          { transform: T(dx, dy, s0, 360), opacity: 1, boxShadow: glow, offset: 0.77 },
+          { transform: T(dx, dy - 40, s1, 360), opacity: 0, boxShadow: glow, offset: 1 },
         ], { duration: dur, easing: 'ease-in-out', fill: 'forwards' });
         const puff = h('div', { class: 'dust-puff', 'aria-hidden': 'true' });
-        const pc = this.center(at.row, at.col);
         puff.style.left = `${pc.x}px`; puff.style.top = `${pc.y}px`;
         setTimeout(() => this.r.board?.append(puff), dur * 0.8);
         setTimeout(() => puff.remove(), dur * 0.8 + 700);
-        anim.onfinish = () => el.remove();
+        anim.onfinish = () => { unlist(); el.remove(); };
         return;
       }
-      const anim = el.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.15)`, opacity: 0.2 }], { duration: Math.min(500, secs * 700), easing: 'ease-in', fill: 'forwards' });
-      anim.onfinish = () => el.remove();
+      // lay it down on the enemy discard pile: shrink, tilt back as it slides over, and land flat on the pile
+      const pile = this.r.eDiscard as El | undefined;
+      const pr = pile && pile.getBoundingClientRect();
+      const tx = pr && pr.width ? pr.left + pr.width / 2 : 12 + cw * 0.12, ty = pr && pr.width ? pr.top + pr.height / 2 : vh * 0.3;
+      const s = pr && pr.width ? pr.width / er.width : 0.2;
+      const dx = tx - ex, dy = ty - ey;
+      const T = (x: number, y: number, sc: number, rx: number, rz: number) => `translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) perspective(900px) rotateX(${rx}deg) rotateZ(${rz}deg) scale(${sc})`;
+      const anim = el.animate([
+        { transform: T(0, 0, 1, 0, 0), opacity: 1, offset: 0 },
+        { transform: T(dx * 0.15, dy * 0.15 - 14, 0.86, 8, -4), opacity: 1, offset: 0.2 },
+        { transform: T(dx * 0.7, dy * 0.7 - 10, s * 1.7, 34, -10), opacity: 1, offset: 0.65 },
+        { transform: T(dx, dy, s * 1.08, 18, -3), opacity: 1, offset: 0.88 },
+        { transform: T(dx, dy, s, 0, 0), opacity: 1, offset: 1 },
+      ], { duration: 720, easing: 'cubic-bezier(.45,.05,.4,1)', fill: 'forwards' });
+      anim.onfinish = () => { unlist(); el.remove(); land(); };
+      layAnim = anim;
+      layFallback = setTimeout(() => { if (el.isConnected) { unlist(); el.remove(); } land(); }, 1600); // never leave the pile short (background tabs pause animations)
     };
-    // tap pins the card so it stays readable while play continues; tap again dismisses it
+    (el as any)._finish = finish;
+    // tap pins the card so it stays readable while play continues; tap again dismisses it (lays it down)
     let timer: any = null;
     el.addEventListener('pointerdown', (ev: Event) => {
       ev.stopPropagation();
-      if (el.dataset.pinned === 'true') { done = true; unlist(); el.remove(); return; }
+      if (el.dataset.pinned === 'true') { el.dataset.pinned = 'false'; finish(); return; }
+      if (done && layAnim && !landed) { // a tap while it is being laid down grabs it back to the middle, pinned
+        layAnim.onfinish = null; layAnim.cancel(); layAnim = null; clearTimeout(layFallback); done = false; el.dataset.stage = 'big';
+      }
       if (done) return;
       clearTimeout(timer);
       el.dataset.pinned = 'true';
     });
-    timer = setTimeout(finish, secs * 1000);
+    // about a second in play; automated runs (?test=1, slow software graphics) hold it 3 s so the checks can see it (data-hold-ms = the real time)
+    el.dataset.holdMs = String(this.revealHoldMs());
+    timer = setTimeout(finish, this.test ? Math.max(3000, this.revealHoldMs()) : this.revealHoldMs());
+  }
+  // ------------------------------------------------------------ Owner (Ken, Oct 30): the enemy discard pile, face-up on the left
+  buildEnemyDiscard(match: El) {
+    const b = h('button', { type: 'button', class: 'e-discard empty', 'aria-label': 'Enemy discard pile', title: 'The computer\'s used cards (tap to look through them)', 'data-count': '0' },
+      h('span', { class: 'e-discard-top', 'aria-hidden': 'true' }), h('span', { class: 'e-discard-n', 'aria-hidden': 'true' }, '0')) as HTMLButtonElement;
+    b.addEventListener('pointerdown', (e: Event) => e.stopPropagation());
+    b.addEventListener('click', (e: Event) => { e.stopPropagation(); this.showEnemyDiscard(); });
+    this.r.eDiscard = b; this.discardInFlight = 0;
+    match.append(b);
+  }
+  renderEnemyDiscard(thud = false) {
+    const el = this.r.eDiscard as El | undefined, st = this.game.state;
+    if (!el || !st) return;
+    const pile = (st.players.opponent.discard || []) as any[];
+    const shown = Math.max(0, pile.length - this.discardInFlight);
+    const top = shown ? pile[shown - 1] : null;
+    (el.querySelector('.e-discard-n') as El).textContent = String(shown);
+    el.dataset.count = String(shown);
+    el.classList.toggle('empty', !shown);
+    const slot = el.querySelector('.e-discard-top') as El;
+    if ((slot.dataset.cardId || '') !== (top?.cardId || '')) {
+      slot.dataset.cardId = top?.cardId || '';
+      const c = top && CARDS[top.cardId];
+      slot.replaceChildren(...(c ? [h('span', { class: `hand-card static ${c.type} f-${c.faction}`, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c))] : []));
+    }
+    el.dataset.top = top?.cardId || '';
+    if (thud) { el.classList.remove('thud'); void el.offsetWidth; el.classList.add('thud'); }
+  }
+  /** the enemy discard pile fanned out: cards at about half the hand size, newest first, scroll or drag sideways; tap one for its close-up */
+  showEnemyDiscard() {
+    const st = this.game.state;
+    if (!st) return;
+    const pile = ((st.players.opponent.discard || []) as any[]).slice(0, Math.max(0, st.players.opponent.discard.length - this.discardInFlight)).reverse();
+    const hcw = parseFloat(getComputedStyle(this.r.hand || document.body).getPropertyValue('--hcw')) || Math.min(150, innerHeight * 0.3);
+    const cw = Math.max(48, Math.round(hcw * 0.5));
+    const row = h('div', { class: 'e-discard-row', role: 'list', 'aria-label': 'Enemy discard pile cards' });
+    row.style.setProperty('--dcw', cw + 'px');
+    let moved = false;
+    for (const k of pile) {
+      const c = CARDS[k.cardId];
+      if (!c) continue;
+      const b = h('button', { type: 'button', class: 'e-discard-card', role: 'listitem', 'aria-label': c.name, title: c.name },
+        h('span', { class: `hand-card static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c)));
+      (b.firstChild as El).style.setProperty('--cw', cw + 'px');
+      b.addEventListener('click', (e: Event) => { e.stopPropagation(); if (moved) { moved = false; return; } this.showCard(c.id); });
+      row.append(b);
+    }
+    if (!pile.length) row.append(h('p', { class: 'e-discard-none' }, 'The computer has not used any cards yet.'));
+    // drag (mouse or finger) or wheel to scroll sideways, like the hand
+    let sx = 0, sl = 0, pid = -1;
+    row.addEventListener('pointerdown', (e: PointerEvent) => { pid = e.pointerId; sx = e.clientX; sl = row.scrollLeft; moved = false; });
+    row.addEventListener('pointermove', (e: PointerEvent) => { if (e.pointerId !== pid) return; const dx = e.clientX - sx; if (Math.abs(dx) > 6) moved = true; if (moved) row.scrollLeft = sl - dx; });
+    const stop = (e: PointerEvent) => { if (e.pointerId === pid) pid = -1; };
+    row.addEventListener('pointerup', stop); row.addEventListener('pointercancel', stop);
+    row.addEventListener('wheel', (e: WheelEvent) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { row.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+    const d = this.dialog('Enemy discard pile', [h('h2', { class: 'e-discard-title' }, `Enemy discard pile (${pile.length})`), row]);
+    d.el.classList.add('e-discard-view');
+    { // Escape closes it whenever it is the top dialog (also after a card close-up on top of it was closed)
+      const close0 = d.close, esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape' && this.dialogs[this.dialogs.length - 1] === d.el) { ev.stopPropagation(); d.close(); } };
+      d.close = () => { document.removeEventListener('keydown', esc, true); close0(); };
+      document.addEventListener('keydown', esc, true);
+    }
+    return d;
   }
   spellFx(e: any) {
     if (!this.r.fx || !this.view) return;

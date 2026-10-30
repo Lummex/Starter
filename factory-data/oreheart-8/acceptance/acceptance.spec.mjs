@@ -1157,7 +1157,7 @@ test('AC22: hand cards are buttons and open a card view', async ({ page }) => {
   const view = page.getByRole('dialog', { name: 'Searing Arcane Orb' });
   await expect(view).toBeVisible();
   await expect(view).toContainText('3 damage');
-  await expect(view.getByRole('button', { name: 'Close' })).toHaveCount(0); // Round 10: Esc / outside click
+  await expect(view.getByRole('button', { name: 'Close' })).toHaveCount(1); // owner check change (Ken, Oct 30: ✕ Close on the card view)
   await page.keyboard.press('Escape');
   await expect(view).toBeHidden();
 });
@@ -3148,10 +3148,11 @@ test('AC97: card reveals never block the game and can be pinned', async ({ page 
   await castFireball(page, s);
   const reveal = page.getByLabel('Card reveal', { exact: true });
   await expect(reveal).toBeVisible();
+  // owner check change (Ken, Oct 30): the computer's card shows big for about a second, then is laid down; a tap pins it (also while it is moving)
+  await reveal.click({ force: true });
+  await expect(reveal).toHaveAttribute('data-pinned', 'true');
   await expect(reveal).toContainText('Searing Arcane Orb');
   expect(at(await getState(page), 6, 4)).toBeUndefined(); // already resolved underneath
-  await reveal.click();
-  await expect(reveal).toHaveAttribute('data-pinned', 'true');
   await page.waitForTimeout(4000);
   await expect(reveal).toBeVisible();
   await reveal.click();
@@ -3169,7 +3170,7 @@ test('AC98: right-clicking a creature shows its card and changes nothing; left-c
   await expect(card).toBeVisible();
   await expect(card.locator('[data-card-id="goblin-scrapper"]')).toHaveCount(1);
   expect(await getState(page)).toEqual(before);
-  await expect(card.getByRole('button', { name: 'Close' })).toHaveCount(0); // Round 10
+  await expect(card.getByRole('button', { name: 'Close' })).toHaveCount(1); // owner check change (Ken, Oct 30: ✕ Close on the card view)
   await page.keyboard.press('Escape');
   await expect(card).toBeHidden();
 });
@@ -7041,7 +7042,7 @@ test.describe('round 10 at 1920x1080', () => {
     await page.mouse.up();
   });
 
-  test('AC244: only the opponent\'s played cards pop up, at the left edge (Round 11)', async ({ page }) => {
+  test('AC244: only the opponent\'s played cards pop up, big in the middle, then onto the enemy discard pile at the left (owner, Oct 30)', async ({ page }) => {
     const W = 1920, H = 1080;
     await page.goto('/?test=1&seed=123&fx=1');
     await page.waitForFunction(() => !!window.oreheart);
@@ -7056,9 +7057,16 @@ test.describe('round 10 at 1920x1080', () => {
     expect((await act(page, { type: 'playCrystal', uid: s.players.opponent.hand[0].uid })).ok).toBe(true);
     const theirs = page.locator('[aria-label="Card reveal"][data-side="opponent"]').first();
     await expect(theirs).toBeVisible();
+    // owner check change (Ken, Oct 30): the computer's card pops up big in the middle, then is laid down on the enemy discard pile at the left
+    await page.waitForTimeout(350); // after the quick pop-in
     const b = await theirs.boundingBox();
-    expect(b.x).toBeGreaterThanOrEqual(0); expect(b.x).toBeLessThanOrEqual(W * 0.06);
-    expect(b.x + b.width).toBeLessThanOrEqual(W * 0.35);
+    expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.05);
+    expect(b.height).toBeGreaterThanOrEqual(H * 0.85);
+    await expect(theirs).toHaveCount(0, { timeout: 6000 });
+    const pile = page.getByRole('button', { name: 'Enemy discard pile', exact: true });
+    const pb = await pile.boundingBox();
+    expect(pb.x).toBeGreaterThanOrEqual(0); expect(pb.x).toBeLessThanOrEqual(W * 0.06);
+    await expect(pile).toHaveAttribute('data-top', 'soul-shard');
   });
 
   test('AC246: the mine click area is only its own square; clicking inside it mines (Round 11)', async ({ page }) => {
@@ -7103,7 +7111,7 @@ test.describe('round 10 at 1920x1080', () => {
     expect(inBox(o.toScreen, ec, 4)).toBe(true);
   });
 
-  test('AC250: card close-up fills 80–100 % of the height, no scrollbar, no Close; outside click and Esc close it', async ({ page }) => {
+  test('AC250: card close-up fills 80–100 % of the height, no scrollbar, a ✕ Close (owner, Oct 30); outside click and Esc close it', async ({ page }) => {
     const H = 1080;
     await start(page, quiet({ playerHand: ['fireball'], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 5 }] }));
     await page.waitForTimeout(800);
@@ -7112,8 +7120,7 @@ test.describe('round 10 at 1920x1080', () => {
       const face = await dlg.locator(`[data-card-id="${id}"]`).first().boundingBox();
       expect(face.height / H).toBeGreaterThanOrEqual(0.8); expect(face.height / H).toBeLessThanOrEqual(1.0);
       expect(face.y).toBeGreaterThanOrEqual(0); expect(face.y + face.height).toBeLessThanOrEqual(H + 1);
-      await expect(dlg.getByRole('button', { name: 'Close' })).toHaveCount(0);
-      await expect(dlg.getByText('Close', { exact: true })).toHaveCount(0);
+      await expect(dlg.getByRole('button', { name: 'Close' })).toHaveCount(1); // owner check change (Ken, Oct 30: ✕ Close on the card view)
       const scroll = await dlg.evaluate((d) => [d, ...d.querySelectorAll('*')].filter((e) => e.clientHeight > 0 && e.scrollHeight > e.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(e).overflowY)).length);
       expect(scroll).toBe(0);
       return face;
@@ -7531,7 +7538,7 @@ test.describe('round 11 at 1920x1080', () => {
     await expect.poll(async () => at(await getState(page), M2.row + 1, M2.col).hasMined).toBe(true);
   });
 
-  test('AC263: only the opponent\'s played cards pop up, left edge, at most 3 stacked', async ({ page }) => {
+  test('AC263: only the opponent\'s played cards pop up, one big card at a time, all laid on the enemy discard pile (owner, Oct 30)', async ({ page }) => {
     const W = 1920;
     await page.goto('/?test=1&seed=123&fx=1');
     await page.waitForFunction(() => !!window.oreheart);
@@ -7539,8 +7546,12 @@ test.describe('round 11 at 1920x1080', () => {
     for (const c of s.players.opponent.hand) expect((await act(page, { type: 'playCrystal', uid: c.uid })).ok).toBe(true);
     const theirs = page.locator('[aria-label="Card reveal"][data-side="opponent"]');
     const vis = (loc) => loc.evaluateAll((els) => els.filter((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden').map((e) => e.getBoundingClientRect().toJSON()));
-    await expect.poll(async () => (await vis(theirs)).length).toBe(3);
-    for (const b of await vis(theirs)) { expect(b.x).toBeLessThanOrEqual(W * 0.06); expect(b.right).toBeLessThanOrEqual(W * 0.35); }
+    // owner check change (Ken, Oct 30): one big card in the middle at a time; each earlier one is laid down on the enemy discard pile
+    const big = page.locator('[aria-label="Card reveal"][data-side="opponent"][data-stage="big"]');
+    expect((await vis(big)).length).toBeLessThanOrEqual(1);
+    for (const b of await vis(big)) expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.05);
+    await expect.poll(async () => (await vis(theirs)).length, { timeout: 8000 }).toBe(0);
+    await expect(page.getByRole('button', { name: 'Enemy discard pile', exact: true })).toHaveAttribute('data-count', '4');
     s = await newMatch(page, { ...quiet({ playerHand: ['soul-shard'] }), firstPlayer: 'player' });
     expect((await act(page, { type: 'playCrystal', uid: s.players.player.hand[0].uid })).ok).toBe(true);
     await page.waitForTimeout(800);
@@ -10718,4 +10729,128 @@ test('AC411: the Miner cards say "Can\'t attack the turn it\'s played" and no ca
   const bearer = await card('dwarf-miner'); // Riot Shield Bearer is a Fighter (Round 12c): its text is untouched
   expect(bearer.text).toMatch(/Riot Shield/);
   expect(bearer.text).not.toMatch(/turn it's played/);
+
+// ---------- Owner (Ken, Oct 30): close-up ✕ Close, the computer's played card, the enemy discard pile, the Bulwark bubble ----------
+test.describe('Oct 30 Ken at 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  const visBoxes = (loc) => loc.evaluateAll((els) => els.filter((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden').map((e) => e.getBoundingClientRect().toJSON()));
+
+  test('AC413: the card close-up has a small ✕ Close at the card\'s top-right; outside tap and Esc still close it', async ({ page }) => {
+    await start(page, quiet({ playerHand: ['fireball'], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 5 }] }));
+    await page.waitForTimeout(800);
+    const unit = page.getByLabel('Bowler Brawler, row 6, column 5', { exact: true });
+    const dlg = page.getByRole('dialog', { name: 'Bowler Brawler', exact: true });
+    await unit.click({ button: 'right' });
+    await expect(dlg).toBeVisible();
+    const x = dlg.getByRole('button', { name: 'Close', exact: true });
+    await expect(x).toBeVisible();
+    await expect(x).toHaveText('✕');
+    const f = await dlg.locator('[data-card-id="goblin-scrapper"]').first().boundingBox(), xb = await x.boundingBox();
+    expect(xb.width).toBeLessThanOrEqual(64); // small
+    expect(xb.x + xb.width / 2).toBeGreaterThan(f.x + f.width * 0.8); // top-right of the card
+    expect(xb.y + xb.height / 2).toBeLessThan(f.y + f.height * 0.15);
+    await x.click();
+    await expect(dlg).toBeHidden();
+    await unit.click({ button: 'right' });
+    await expect(dlg).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dlg).toBeHidden();
+    await unit.click({ button: 'right' });
+    await expect(dlg).toBeVisible();
+    await page.mouse.click(15, 540);
+    await expect(dlg).toBeHidden();
+  });
+
+  test('AC414: the computer\'s played card pops up big in the middle for about a second, then is laid down on its discard pile', async ({ page }) => {
+    const W = 1920, H = 1080;
+    await page.goto('/?test=1&seed=123&fx=1');
+    await page.waitForFunction(() => !!window.oreheart);
+    // the normal close-up size, to compare with
+    await newMatch(page, quiet({ playerHand: ['soul-shard'] }));
+    await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: /./ }).first().click();
+    const view = page.getByRole('dialog').filter({ has: page.locator('[data-card-id="soul-shard"]') });
+    await expect(view).toBeVisible();
+    const closeUp = await view.locator('[data-card-id="soul-shard"]').first().boundingBox();
+    await page.keyboard.press('Escape');
+    const s = await newMatch(page, { ...quiet({ opponentHand: ['soul-shard'] }), firstPlayer: 'opponent' });
+    const pile = page.getByRole('button', { name: 'Enemy discard pile', exact: true });
+    await expect(pile).toHaveAttribute('data-count', '0');
+    expect((await act(page, { type: 'playCrystal', uid: s.players.opponent.hand[0].uid })).ok).toBe(true);
+    const big = page.locator('[aria-label="Card reveal"][data-side="opponent"][data-stage="big"]');
+    await expect(big).toHaveCount(1);
+    await expect(big).toHaveAttribute('data-hold-ms', '1100'); // about a second in play (automated runs hold it longer)
+    expect(await pile.getAttribute('data-count'), 'the pile waits for the card to land').toBe('0');
+    // pin it (a tap) so the slow check machines can measure it, then tap again to let it go
+    const card = page.locator('[aria-label="Card reveal"][data-side="opponent"]').first();
+    await card.click({ force: true });
+    await expect(card).toHaveAttribute('data-pinned', 'true');
+    await expect(big).toHaveCount(1);
+    let b = null; // measured once its quick pop-in is over
+    await expect.poll(async () => { [b] = await visBoxes(big); return b ? b.height : 0; }, { timeout: 3000 }).toBeGreaterThan(closeUp.height * 1.1); // bigger than the close-up (as big as the screen allows)
+    expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.03);
+    expect(Math.abs(b.y + b.height / 2 - H / 2)).toBeLessThanOrEqual(H * 0.05);
+    expect(b.height).toBeLessThanOrEqual(H);
+    await card.click({ force: true });
+    // laid down: it leaves the middle, slides left onto the pile and the pile shows it face-up
+    await expect(page.locator('[aria-label="Card reveal"][data-side="opponent"]')).toHaveCount(0, { timeout: 5000 });
+    await expect(pile).toHaveAttribute('data-count', '1');
+    await expect(pile).toHaveAttribute('data-top', 'soul-shard');
+  });
+
+  test('AC415: the enemy discard pile sits face-up on the left; tapping it fans the cards out at half the hand size, scrollable, each opens its close-up', async ({ page }) => {
+    const W = 1920;
+    let s = await start(page, { ...quiet({ opponentHand: Array(9).fill('soul-shard'), playerHand: ['goblin-scrapper', 'fireball'] }), firstPlayer: 'opponent' });
+    for (const c of s.players.opponent.hand) expect((await act(page, { type: 'playCrystal', uid: c.uid })).ok).toBe(true);
+    const pile = page.getByRole('button', { name: 'Enemy discard pile', exact: true });
+    await expect(pile).toHaveAttribute('data-count', '9');
+    await expect(pile).toHaveAttribute('data-top', 'soul-shard');
+    const pb = await pile.boundingBox(), deck = await page.getByLabel('Your deck', { exact: true }).boundingBox();
+    expect(pb.x + pb.width / 2).toBeLessThan(W * 0.12); // left side (your deck is on the right)
+    expect(deck.x + deck.width / 2).toBeGreaterThan(W * 0.5);
+    expect(await pile.locator('.hand-card').count(), 'face-up top card').toBe(1);
+    await pile.click();
+    const dlg = page.getByRole('dialog', { name: 'Enemy discard pile', exact: true });
+    await expect(dlg).toBeVisible();
+    const list = dlg.getByRole('list', { name: 'Enemy discard pile cards' });
+    const cards = list.getByRole('listitem');
+    await expect(cards).toHaveCount(9);
+    const handCard = await page.getByLabel('Your hand', { exact: true }).locator('[data-card-id]').first().evaluate((e) => e.offsetWidth);
+    const cw = await cards.first().evaluate((e) => e.offsetWidth);
+    expect(cw / handCard).toBeGreaterThanOrEqual(0.35); expect(cw / handCard).toBeLessThanOrEqual(0.65);
+    const sc = await list.evaluate((e) => ({ sw: e.scrollWidth, cw: e.clientWidth, ox: getComputedStyle(e).overflowX }));
+    expect(['auto', 'scroll']).toContain(sc.ox);
+    // drag sideways scrolls it, like the hand
+    const lb = await list.boundingBox();
+    if (sc.sw > sc.cw + 2) {
+      await page.mouse.move(lb.x + lb.width * 0.7, lb.y + lb.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(lb.x + lb.width * 0.3, lb.y + lb.height / 2, { steps: 8 });
+      await page.mouse.up();
+      expect(await list.evaluate((e) => e.scrollLeft)).toBeGreaterThan(20);
+    }
+    await cards.first().click();
+    const view = page.getByRole('dialog', { name: 'Soul Shard', exact: true });
+    await expect(view).toBeVisible();
+    await expect(view.locator('[data-card-id="soul-shard"]')).toHaveCount(1);
+    await view.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(view).toBeHidden();
+    await page.keyboard.press('Escape');
+    await expect(dlg).toBeHidden();
+  });
+
+  test('AC416: an Ironclad Bulwark shows a bubble around the unit in its faction colour; it pops when it blocks a hit', async ({ page }) => {
+    let s = await start(page, q12({ playerHand: ['shield-bubble'], playerCrystals: 9,
+      board: [P('dwarf-pickman', 5, 9), O('goblin-grunt', 4, 9), O('goblin-pebbler', 4, 8)] }));
+    const fig = async (uid) => (await page.evaluate(async () => await window.oreheart.getRenderStats())).figures.find((f) => f.uid === uid);
+    const uid = stk(s, 5, 9).uid;
+    expect((await fig(uid)).bubble).toBe(false);
+    expect((await cast(page, s, 'shield-bubble', { row: 5, col: 9 })).ok).toBe(true);
+    await expect.poll(async () => (await fig(uid)).bubble).toBe(true);
+    expect((await fig(uid)).bubbleColor).toBe('#2f5fd8'); // Dwarves: blue (goblins green #3ee06a, gnomes purple #9b4dff)
+    await passTurn(page); await done(page); // the opponent's Action phase
+    s = await getState(page);
+    expect((await act(page, { type: 'attack', creatureUid: at(s, 4, 9).uid, target: { row: 5, col: 9 } })).ok).toBe(true);
+    await expect.poll(async () => (await fig(uid)).bubble).toBe(false);
+    expect((await fig(uid)).bubblePops).toBe(1);
+  });
 });

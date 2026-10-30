@@ -720,6 +720,74 @@ const _embV = new THREE.Vector3();
       e.group.position.set(f.group.position.x, f.group.position.y + top, f.group.position.z);
     }
   }
+  // Oct 30 (Ken): the Ironclad Bulwark bubble. A see-through sphere in the unit's faction colour (with a brighter rim that always
+  // faces the camera, for a soap-bubble look) sits around the unit while it has bubbles left; when it blocks a hit it pops (a quick
+  // swell and fade, sparkles) at the moment the blow lands, then grows back if more bubbles are left. The 2D status icon stays.
+  const BUBBLE_RIM: Record<string, string> = { goblins: '#a8ffc0', gnomes: '#8fd8ff', dwarves: '#8fc0ff' };
+  const bubbleRimTex = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d')!;
+    const gr = g.createRadialGradient(64, 64, 0, 64, 64, 63);
+    gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.6, 'rgba(255,255,255,0.04)'); gr.addColorStop(0.85, 'rgba(255,255,255,0.35)');
+    gr.addColorStop(0.96, 'rgba(255,255,255,0.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    const hl = g.createRadialGradient(44, 38, 0, 44, 38, 18); hl.addColorStop(0, 'rgba(255,255,255,0.85)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = hl; g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  })();
+  type Bubble = { root: THREE.Group; fill: THREE.MeshBasicMaterial; rim: THREE.SpriteMaterial; hex: string; on: boolean; popAt: number; sparkled: boolean; growAt: number };
+  const bubbles = new Map<string, Bubble>(), bubblePops = new Map<string, number>();
+  function makeBubble(f: Fig, faction: string): Bubble {
+    const root = new THREE.Group(); root.name = 'shield-bubble';
+    const hex = MINE_FACTION[faction] || '#3ee06a';
+    const fill = new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: 0.2, depthWrite: false });
+    const sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 18), fill); sphere.renderOrder = 40; sphere.name = 'shield-bubble-sphere';
+    const rim = new THREE.SpriteMaterial({ map: bubbleRimTex, color: BUBBLE_RIM[faction] || '#ffffff', transparent: true, opacity: 0.9, depthWrite: false });
+    const rs = new THREE.Sprite(rim); rs.scale.set(2.04, 2.04, 1); rs.renderOrder = 41; rs.name = 'shield-bubble-rim';
+    root.add(sphere, rs); f.group.add(root);
+    return { root, fill, rim, hex, on: true, popAt: 0, sparkled: false, growAt: performance.now() };
+  }
+  function syncBubbles(st: any, events: any[], blowAt: number, now: number) {
+    for (const c of st.board.creatures) {
+      const f = figs.get(c.uid); if (!f) continue;
+      const want = (c.bubbles || 0) > 0 || !!c.bubble;
+      let b = bubbles.get(c.uid);
+      if (want && !b) { const fac = CARDS[c.cardId]?.faction; b = makeBubble(f, MINE_FACTION[fac] ? fac : st.players[c.owner]?.faction); bubbles.set(c.uid, b); } // the unit's own faction colour
+      if (b) b.on = want;
+    }
+    for (const e of events) {
+      if (e.type !== 'shieldBlock' || !e.uid || e.amount) continue; // a bubble block (Shield blocks carry an amount)
+      const b = bubbles.get(e.uid); if (!b) continue;
+      b.popAt = Math.max(now, blowAt || 0); b.sparkled = false; bubblePops.set(e.uid, (bubblePops.get(e.uid) || 0) + 1);
+    }
+    for (const [uid, b] of bubbles) {
+      const f = figs.get(uid);
+      if (!f || !st.board.creatures.some((x: any) => x.uid === uid)) { b.root.parent?.remove(b.root); bubbles.delete(uid); }
+      else if (!b.on && !b.popAt) { b.root.parent?.remove(b.root); bubbles.delete(uid); }
+    }
+  }
+  function placeBubbles(now: number) {
+    for (const [uid, b] of bubbles) {
+      const f = figs.get(uid); if (!f) continue;
+      if (b.root.parent !== f.group) f.group.add(b.root); // the figure was rebuilt (its 3D model arrived)
+      // sized to the unit's own height (Ken's saved Studio heights), a little wider than the unit, centred a bit low
+      const sx = f.group.scale.x || 1, sy = f.group.scale.y || 1;
+      const h = Math.min(2.5, Math.max(0.3, f.c3d?.height || 0.5)), R = Math.min(1.1, Math.max(0.2, h * 0.42 + 0.06)), cyW = Math.max(R * 0.8, h * 0.42);
+      let k = 1, op = 1;
+      if (b.popAt && now >= b.popAt) {
+        const t = (now - b.popAt) / 340;
+        if (!b.sparkled) { b.sparkled = true; const p = f.group.position.clone(); p.y += cyW; spawnFx('spark', p, 8); sticker('sparkle-8', p, R * 2.2, 380); } // the app plays the bubble sound
+        if (t >= 1) { b.popAt = 0; if (!b.on) { b.root.parent?.remove(b.root); bubbles.delete(uid); continue; } b.growAt = now; k = 0.2; op = 0; }
+        else { k = 1 + 0.5 * t; op = 1 - t; }
+      } else if (b.growAt) {
+        const t = Math.min(1, (now - b.growAt) / 260); k = 0.6 + 0.4 * t; op = t; if (t >= 1) b.growAt = 0;
+      }
+      const wob = 1 + Math.sin(now / 260 + uid.length) * 0.015;
+      b.root.scale.set((R * k * wob) / sx, (R * k / wob) / sy, (R * k * wob) / sx);
+      b.root.position.set(0, cyW / sy, 0);
+      b.fill.opacity = 0.2 * op; b.rim.opacity = op;
+      b.root.visible = !f.dying;
+    }
+  }
   function setState(st: any, events: any[]) {
     state = st;
     const now = performance.now();
@@ -868,6 +936,7 @@ const _embV = new THREE.Vector3();
         if (f && e.amount > 0) { if (blowAt) f.hitAt = (f.blowAt && strikers.has(f.uid) ? f.blowAt : blowAt) + (strikers.has(f.uid) ? 150 : 0); else f.hitT = now; } // a strike-back lands just after the blow
       } else if (e.type === 'damage' && e.commander) { if (blowAt > now) setTimeout(() => audio.play('stronghold'), blowAt - now); else audio.play('stronghold'); }
     }
+    syncBubbles(st, events, blowAt, now); // Oct 30 (Ken): Bulwark bubble
   }
 
   // ---------------------------------------------------------------- painted arena (round 8a)
@@ -1218,6 +1287,7 @@ const _embV = new THREE.Vector3();
     const dt0 = Math.min(0.5, (now - (frameLast || now)) / 1000); frameLast = now; // real elapsed time (capped at 0.5 s)
     for (const fx of mineFx) fx.update(now / 1000);
     placeStatusIcons();
+    placeBubbles(now);
     for (let i = impacts.length - 1; i >= 0; i--) { // Oct 30: the blow lands: clink on armour, bonk on everything else
       const b = impacts[i]; if (now < b.at) continue; impacts.splice(i, 1);
       const at = b.to.clone(); at.y = 0.55;
@@ -1460,7 +1530,7 @@ const _embV = new THREE.Vector3();
             webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
             bloom: false, shadows: renderer.shadowMap.enabled, particles: false, arena: arenaInfo,
             unitRings: [...figs.values()].filter((f) => !f.dying).map((f) => { const rs = getRings(); return { uid: f.uid, side: f.owner, color: f.ringColor || '', greyed: !!f.ringGreyed, thickness: rs.thickness, glow: rs.glow, opacity: rs.opacity }; }),
-            figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ ...figureStats(f), uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb) })),
+            figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ ...figureStats(f), uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb), bubble: !!bubbles.get(f.uid)?.on, bubblePops: bubblePops.get(f.uid) || 0, bubbleColor: bubbles.get(f.uid)?.hex || '' })),
             creatureAnimLog: creatureAnimLog.map((e) => ({ ...e })),
             projectiles: [], projectileLog: [],
             canvas: canvasInfo(),
