@@ -156,11 +156,11 @@ Three factions, each with its own color: Goblins green, Gnomes blue, Dwarves pur
 | Playstyle | Cheap swarms, explosions, poison and tricks | Magic, fireballs, counter-magic, ranged sparks | Big health, heavy hits, war machines, holding ground |
 | Strength | Numbers and speed of play | Support and surprises | Hard to kill |
 | Weakness | Fragile | Weak in close combat | Expensive |
-| Commander | Grubnak Rotgut, King of the Junkpile | Archmagister Sproingle the Unfathomable | Thane Borgo Gravelgrim |
+| Commander | Grubnak Rotgut, King of the Junkpile | Knobbin the Gnomeificent | Thane Borgo Gravelgrim |
 
 **Two kinds of creature in every faction:**
 
-- **Miners:** strong at mining (2 crystals per mining action), no summoning sickness, weak in a fight.
+- **Miners:** strong at mining (2 crystals per mining action), they can mine (or move) the turn they're played but can't attack until their next turn, weak in a fight.
 - **Fighters:** strong in a fight; only 1 crystal per mining action.
 
 **Type advantage:** +1 Attack when Dwarves hit Goblins, Goblins hit Gnomes, or Gnomes hit Dwarves.
@@ -176,7 +176,7 @@ You pick your Commander before each match. Each faction has one starter Commande
 | --- | --- | --- | --- |
 | Grubnak Rotgut, King of the Junkpile | Goblins | Starter | Goblin creatures cost 1 less crystal (minimum 1) |
 | Queen Skreeka, Hoarder of Shinies | Goblins | Booster pack | Gain 1 crystal whenever one of your creatures is defeated (Flow cap still applies) |
-| Archmagister Sproingle the Unfathomable | Gnomes | Starter | Your spells cost 1 less crystal (minimum 1) |
+| Knobbin the Gnomeificent | Gnomes | Starter | Your spells cost 1 less crystal (minimum 1) |
 | Madame Sprocket, Mistress of Gears | Gnomes | Booster pack | At the start of your turn, your creature with the lowest Health gets Shield 1 |
 | Thane Borgo Gravelgrim | Dwarves | Starter | Your creatures get +1 Health |
 | Grumblebeard the Unkillable | Dwarves | Booster pack | Your Commander starts with 25 Health instead of 20 |
@@ -203,10 +203,10 @@ A creature card shows its cost, Attack, Health, movement and one special ability
 
 **Deck rules:** **50 to 100 cards** (owner settings: minimum 50, maximum 100). Common and Uncommon cards have no copy limit; Rare, Ultra Rare and Collector cards are limited to 3 copies each. Especially powerful cards are marked Unique: you can have only one of that card on your battlefield at a time (extra copies wait in your hand). A deck can hold at most **20 Crystal cards** in total, whatever their rarity (owner setting).
 
-**Starter decks** (three per faction, nine in total, **100 cards each**), named per faction (for example "Goblin Warband"). Every starter deck has **50 Miners: 30 of the faction's basic Miner and 20 of its Smith Miner**; the other 50 cards depend on the style (spells are that faction's own plus the shared ones):
-- **Warband** (balanced): 38 Fighters, 7 spells (including counterspells) and 5 Crystal cards.
-- **Arcane Hoard** (spells): 18 Fighters, 24 spells (including counterspells) and 8 Crystal cards.
-- **The Horde** (no spells): 46 Fighters, no spells and 4 Crystal cards.
+**Starter decks** (three per faction, nine in total, **60 cards each**), named per faction (for example "Goblin Warband"). Each deck has 10 to 12 Miners (about one card in five: the faction's basic Miner and Smith Miner, plus the Deepdelver for Dwarves and the Aethervein for Gnomes in some decks) and the rest is a mix of roles: cheap swarmers, ranged units, defenders and a few big specials (spells are that faction's own plus the shared ones, one of them always Snuff Out):
+- **Warband** (balanced): 48 creatures (about 12 Miners and 36 Fighters), 7 spells (including counterspells) and 5 Crystal cards.
+- **Arcane Hoard** (spells): 40 creatures (about 12 Miners and 28 Fighters), 14 spells (including counterspells) and 6 Crystal cards.
+- **The Horde** (no spells): 56 creatures (about 10 Miners and 46 Fighters) and 4 Crystal cards.
 
 The computer opponent picks among them for variety. Fighters are mostly Commons, with plenty of cheap creatures so there's always something to play; the owner can change the mix in the settings file. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander and your deck.
 
@@ -222,7 +222,7 @@ Every turn runs through the same phases, each with a 50-second timer. For the fi
 
 1. **Draw phase** (automatic): all your creatures heal back to full Health, you draw 1 card (no hand limit), mine colors update, and your crystal pool resets to your Crystal Flow.
 2. **Deploy phase** (timed): drag creature cards onto empty spaces in your back row, play Crystal cards and Smith upgrades, and cast spells (Regular spells work in any phase of your turn, Instants at any time). If your back row is full, you can summon onto the row in front of it; if both are full, the card waits in your hand.
-3. **Action phase** (timed): each of your creatures does **one** thing: **move, attack or mine**. Drag it to an empty space to move, onto an enemy (or the enemy Stronghold) to attack, or onto a mine next to it to mine. Creatures placed this turn can't act unless their ability says so; **Miners have no summoning sickness**: they can move or mine (but not attack) the turn they're placed.
+3. **Action phase** (timed): each of your creatures does **one** thing: **move, attack or mine**. Drag it to an empty space to move, onto an enemy (or the enemy Stronghold) to attack, or onto a mine next to it to mine. Creatures placed this turn can't act unless their ability says so; **Miners can mine (or move) the turn they're placed, but can't attack until their next turn**.
 4. **End phase** (automatic): end-of-turn abilities happen, then it's the other player's turn.
 
 You can tap a "Done" button to finish a phase early. If you still have something you could do, a center pop-up asks "Moves still available! Continue to the next phase?" with Continue and Go back, and names creatures that could still mine (for example "2 miners haven't mined"), since skipping mining costs crystals next turn. It can be turned off in Settings, and never appears when the timer runs out.
@@ -268,7 +268,7 @@ Upgrading is done only by playing **Miner cards from your hand onto your own cre
 | **Basic Miner** (Grubgrabber, Gemsinger, Stonebreaker) | **+1 Health** |
 | **Smith Miner** (Scrapsmith, Arcsmith, Anvilsworn) | **+1 Attack and +1 Health** |
 
-- **Played onto an empty space** in your back row, either card is summoned as a normal Miner instead (no summoning sickness, mines for 2).
+- **Played onto an empty space** in your back row, either card is summoned as a normal Miner instead (it can mine the turn it's played but can't attack until its next turn; mines for 2).
 - **Played onto one of your own creatures** (any Fighter or Miner, anywhere on the battlefield), it is not summoned: the creature gets the upgrade permanently (it also counts as part of its full Health when it heals) and the Miner card goes to the discard pile.
 - You pay the card's normal cost either way. Upgrades stack with **no limit** (owner setting, to watch in playtests) and are lost when the creature is defeated.
 - **The free Miner can never upgrade:** it is summoned straight onto the battlefield. A basic Miner pulled into your hand by the Miner swap can be used as an upgrade like any other.
