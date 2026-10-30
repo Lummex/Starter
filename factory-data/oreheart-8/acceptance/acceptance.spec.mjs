@@ -219,7 +219,7 @@ for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
       for (const id of ids) out.push((await window.oreheart.getCard(id)).cost);
       return out;
     }, creatureIds);
-    expect(costs.filter((c) => c <= 4).length).toBeGreaterThanOrEqual(cmd === 'borgo' ? 8 : 16); // Dwarf cards are expensive by design
+    expect(costs.filter((c) => c <= 4).length).toBeGreaterThanOrEqual(cmd === 'borgo' ? 4 : 16); // Dwarf cards are expensive by design (5 cheap Riot Shield Bearers are the basic Miners)
   });
 }
 
@@ -2683,7 +2683,7 @@ test('AC74: match-end summary, Play again with the same choices, and Menu', asyn
   expect(s.players.player.commanderId).toBe('borgo');
   expect(s.difficulty).toBe('hard');
   expect(s.winner).toBeNull();
-  expect(allIds(s, 'player').length).toBe(100);
+  expect(allIds(s, 'player').length).toBe(60); // Ken, Oct 30: 60-card starter decks
   await surrenderViaMenu(page);
   await page.getByRole('button', { name: 'Menu', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
@@ -3074,15 +3074,16 @@ test('AC407: the computer redraws a hand with no affordable fighter and keeps a 
     const s = await getState(page);
     return { before, ids: s0.players.opponent.hand.map((c) => c.cardId), after: s.players.opponent.hand.map((c) => c.uid), m: s.players.opponent.mulligans };
   };
-  // seed 1: Smith Miners + Brewmaster (6) + Queen Brunhilda: nothing cheap to fight with -> redraw
-  const r1 = await run(1);
-  expect(r1.ids.filter((id) => !/miner/.test(id)).every((id) => ['brewmaster', 'queen-brunhilda-stonebeard'].includes(id)), JSON.stringify(r1.ids)).toBe(true);
+  // Owner check change (Ken, Oct 30: 60-card starter decks): new seeds for the new Dwarf Warband.
+  // seed 7: Smith Miners + a Riot Shield Bearer (the Dwarf basic Miner) + Crystal cards: no fighter at all -> redraw
+  const r1 = await run(7);
+  expect(r1.ids.filter((id) => !/miner/.test(id)).every((id) => ['crystal-cluster', 'glowing-geode'].includes(id)), JSON.stringify(r1.ids)).toBe(true);
   expect(r1.m).toBe(1);
   expect(r1.after.slice(0, 5)).not.toEqual(r1.before);
   // a full redraw, not a swap: the old rule swapped only the two dear cards and kept the three Miners in hand
   expect(r1.before.filter((u) => r1.after.includes(u)).length).toBeLessThan(3);
-  // seed 3: Miners + Barrelback Courier (5) -> keep (the hand stays, plus the second player's extra card)
-  const r3 = await run(3);
+  // seed 16: Miners + Barrelback Courier (5) -> keep (the hand stays, plus the second player's extra card)
+  const r3 = await run(16);
   expect(r3.ids).toContain('barrelback-courier');
   expect(r3.m).toBe(0);
   expect(r3.after.slice(0, r3.before.length)).toEqual(r3.before);
@@ -3091,7 +3092,7 @@ test('AC407: the computer redraws a hand with no affordable fighter and keeps a 
 // Owner check change (Ken, Oct 30 mulligan rule): the screen keeps its one straight row, but the cards are not tapped any more;
 // the buttons are Keep Hand and Redraw Hand, and it counts "Redraws left: 1".
 test('AC95: the Mulligan screen shows one straight row, Keep Hand / Redraw Hand, and Redraws left: 1', async ({ page }) => {
-  await page.goto('/?test=1&seed=7');
+  await page.goto('/?test=1&seed=4'); // Ken, Oct 30 (60-card starter decks): seed 7 now puts the player second; seed 4 has the player first
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Grubnak Rotgut, Goblin King' }).click();
   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
