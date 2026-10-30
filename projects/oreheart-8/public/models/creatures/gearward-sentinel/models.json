@@ -1,22 +1,16 @@
 {
- "generated": "2026-10-25T09:44:16.596Z",
- "from": "Model Editor approved sheet",
- "tasks": {
-  "character": "01a1726e-380c-7662-bcac-df06c25cb503",
-  "rig": "01a17270-b8f5-7657-b9fd-3bfc914f2405",
-  "anim": "01a17271-8791-741b-a55e-e64026528b8c"
- },
- "actions": {
-  "idle": 0,
-  "walk": 30,
-  "attack": 128,
-  "hit": 178,
-  "defeat": 8
- },
+ "generated": "2026-10-30",
+ "from": "Clay, Meshy Oct 30 (Forge-approved under Ken's Oct 30 delegation); rest pose only",
+ "actions": {},
  "rigged": true,
- "parts": [],
- "notes": "Owner sheet note: Don't render the shield We already have a shield for the gnomes. Character only for now (owner, Oct 25: accessories come later).",
+ "parts": [
+  "gear-shield",
+  "mace"
+ ],
+ "notes": "No clips in the GLB: every move comes from the shared biped pack (public/models/anims). Accessory placement and height wait for Ken's Studio setup (Ledger).",
  "fileSizes": {
-  "char.glb": 5722768
+  "char.glb": 2695496,
+  "gear-shield.glb": 898812,
+  "mace.glb": 883428
  }
 }

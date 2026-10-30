@@ -2806,7 +2806,7 @@ test('AC79: main menu shows the logo as the h1, the tagline and the five plaques
 });
 
 // owner (Oct 25): Gnomes and Dwarves with an approved Model Editor sheet now have finished 3D models
-const GD_MODELS = ["axe-thrower", "barrelback-courier", "brewmaster", "clockwork-beetle", "crystal-drunk-delver", "deepforge-crossbowman", "dwarf-miner", "dwarf-smith-miner", "dwarf-pickman", "dwarf-stoneback", "gearward-sentinel", "glyphshield-warden", "gnome-cogger", "gnome-illusionist", "gnome-smith-miner", "gnome-tinker", "gnome-widget", "grimhold-ravager", "gyrocopter-ace", "hexwright-apprentice", "ironhammer-berserker", "oathbound-pikeman", "phase-stalker", "queen-brunhilda-stonebeard", "ram-rider", "rune-splitter", "runic-siphoner", "shieldbeard", "spark-gnome", "the-great-steam-golem"];
+const GD_MODELS = ["axe-thrower", "barrelback-courier", "brewmaster", "clockwork-beetle", "crystal-drunk-delver", "deepforge-crossbowman", "dwarf-miner", "dwarf-smith-miner", "dwarf-pickman", "dwarf-stoneback", "gearward-sentinel", "glyphshield-warden", "gnome-cogger", "gnome-illusionist", "gnome-prospector", "gnome-smith-miner", "gnome-tinker", "gnome-widget", "grimhold-ravager", "gyrocopter-ace", "hexwright-apprentice", "ironhammer-berserker", "oathbound-pikeman", "overclocked-conduit", "phase-stalker", "queen-brunhilda-stonebeard", "ram-rider", "rune-splitter", "runic-siphoner", "shieldbeard", "spark-gnome", "the-great-steam-golem"];
 test('AC80: every Goblin creature has a finished figure; Gnomes and Dwarves are finished when they have a model, else placeholders', async ({ page }) => {
   await openTest(page);
   const all = await page.evaluate(async () => await window.oreheart.listCards());

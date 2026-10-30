@@ -1299,9 +1299,10 @@ const _embV = new THREE.Vector3();
         const mk3 = (now - f.mineT) / 900, ak3 = now >= f.shootT ? (now - f.shootT) / 600 : 2;
         if (f.born) f.bornAt = f.born;
         f.c3d.trig?.(f.shootT, f.born || (f.bornAt && now - f.bornAt < 12000 ? f.bornAt : 0)); // the model may finish loading after the short summon drop
+        // automated runs: no random pack idle breaks (checks read 'idle')
         // Round 28b: knock-back and bowled-over reactions (Ken's slots) come before the plain hit; an idle break plays once in a while
         const knocked = f.knockT && now >= f.knockT && now - f.knockT < (f.kbClip ? f.kbClip.dur : 700) && f.c3d.has?.('knockback'), bowledNow = f.bowledT && now >= f.bowledT && now - f.bowledT < 900 && f.c3d.has?.('bowled');
-        if (!walking && !f.shootT && !f.hitT && f.c3d.has?.('idleBreak') && !(testMode && f.c3d.packRoles?.has('idleBreak'))) { // automated runs: no random pack idle breaks (checks read 'idle') if (!f.idleBreakAt) f.idleBreakAt = now + 6000 + Math.random() * 8000; else if (now > f.idleBreakAt) { f.idleBreakT = now; f.idleBreakAt = now + 9000 + Math.random() * 9000; } } else f.idleBreakAt = 0;
+        if (!walking && !f.shootT && !f.hitT && f.c3d.has?.('idleBreak') && !(testMode && f.c3d.packRoles?.has('idleBreak'))) { if (!f.idleBreakAt) f.idleBreakAt = now + 6000 + Math.random() * 8000; else if (now > f.idleBreakAt) { f.idleBreakT = now; f.idleBreakAt = now + 9000 + Math.random() * 9000; } } else f.idleBreakAt = 0;
         const breaking = f.idleBreakT && now - f.idleBreakT < (f.c3d.dur('idleBreak') || 1.5) * 1000;
         f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : f.shootT && ak3 < 1 && !(f.hitT && f.hitT > f.shootT) ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : bowledNow ? 'bowled' : knocked ? 'knockback' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? (f.run && onPath ? 'run' : 'walk') : breaking ? 'idleBreak' : 'idle');
         if (knocked && f.kbClip && !f.kbClip.seeked && f.c3d.current() === 'knockback') { f.c3d.seek?.('knockback', f.kbClip.launch); f.kbClip.seeked = true; }

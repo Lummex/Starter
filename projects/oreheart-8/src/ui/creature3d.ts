@@ -71,6 +71,8 @@ const PARTS: Record<string, PartCfg[]> = {
   'dwarf-smith-miner': [],
   'dwarf-stoneback': [],
   'gearward-sentinel': [],
+  'gnome-prospector': [], // Oct 30 (Clay): new Meshy model, moves from the shared pack; pickaxe waits for Ken's Studio setup
+  'overclocked-conduit': [], // Oct 30 (Clay): the robot, moves from the shared pack; two pickaxes wait for Ken's Studio setup
   'glyphshield-warden': [],
   'gnome-cogger': [],
   'gnome-illusionist': [],
