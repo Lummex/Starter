@@ -1145,6 +1145,72 @@
     "mine": 237
    },
    "notes": "Oct 29 (Ken approved the robot sheet; note: \"He doesn't need the shield drawn\"). Views cut from the sheet's top row (front/side/back, no shield, steam puffs painted out). Character only: no shield; pickaxe not made yet (accessories later, like the other gnomes). Gatherer, so it gets the mine clip like the miners."
+  },
+  {
+   "id": "gemsinger-miner-silver",
+   "name": "Gemsinger Miner",
+   "faction": "gnomes",
+   "card": "gnome-prospector",
+   "char": [
+    "gemsinger-miner-silver--char-front.jpg",
+    "gemsinger-miner-silver--char-side.jpg",
+    "gemsinger-miner-silver--char-back.jpg"
+   ],
+   "parts": {
+    "pickaxe": [
+     "gemsinger-miner-silver--pickaxe-front.jpg",
+     "gemsinger-miner-silver--pickaxe-angled.jpg",
+     "gemsinger-miner-silver--pickaxe-side.jpg"
+    ]
+   },
+   "height": 1,
+   "actions": {},
+   "notes": "Oct 30 (Forge, Ken delegated approvals). Views cut from the approved SILVER sheet (Sketch). Rig only, no stock clips (Forge Oct 30: the shared biped pack gives the moves). Accessories the card shows, once each."
+  },
+  {
+   "id": "overclocked-conduit-silver",
+   "name": "Overclocked Aethervein",
+   "faction": "gnomes",
+   "card": "overclocked-conduit",
+   "char": [
+    "overclocked-conduit-silver--char-front.jpg",
+    "overclocked-conduit-silver--char-side.jpg",
+    "overclocked-conduit-silver--char-back.jpg"
+   ],
+   "parts": {
+    "pickaxe": [
+     "overclocked-conduit-silver--pickaxe-left.jpg",
+     "overclocked-conduit-silver--pickaxe-right.jpg"
+    ]
+   },
+   "height": 1,
+   "actions": {},
+   "notes": "Oct 30 silver redo (Ken: robot, two arms, no shield, purple + light blue + silver). Views cut from the approved silver sheet. Replaces the Oct 29 brass robot. Rig only, no stock clips (Forge Oct 30: the shared biped pack gives the moves). Accessories the card shows, once each. Card shows no shoulder canisters and no back gem: both painted out of the sheet views (Forge)."
+  },
+  {
+   "id": "gearward-sentinel-robot",
+   "name": "Gearward Sentinel",
+   "faction": "gnomes",
+   "card": "gearward-sentinel",
+   "char": [
+    "gearward-sentinel-robot--char-front.jpg",
+    "gearward-sentinel-robot--char-side.jpg",
+    "gearward-sentinel-robot--char-back.jpg"
+   ],
+   "parts": {
+    "mace": [
+     "gearward-sentinel-robot--mace-side.jpg",
+     "gearward-sentinel-robot--mace-end.jpg"
+    ],
+    "gear-shield": [
+     "gearward-sentinel-robot--shield-front.jpg",
+     "gearward-sentinel-robot--shield-side.jpg",
+     "gearward-sentinel-robot--shield-back.jpg"
+    ]
+   },
+   "height": 1,
+   "actions": {},
+   "notes": "Oct 30 remake: the old mesh was the small pink-haired gnome from the card corner, not the silver robot. Views cut from the approved silver robot sheet, steam painted out. Rig only, no stock clips (Forge Oct 30: the shared biped pack gives the moves). Accessories the card shows, once each."
   }
  ]
 }
