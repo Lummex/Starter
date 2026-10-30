@@ -1023,10 +1023,6 @@
      "shieldbeard--medic-pack-front.jpg",
      "shieldbeard--medic-pack-side.jpg",
      "shieldbeard--medic-pack-back.jpg"
-    ],
-    "shoulder-shield": [
-     "shieldbeard--shoulder-shield-1.jpg",
-     "shieldbeard--shoulder-shield-2.jpg"
     ]
    },
    "height": 1,
@@ -1037,7 +1033,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Owner sheet note: Don't render his hammer. Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): medic-pack; skipped the ones the sheet note says not to render. Oct 30: shoulder-pad shield added from Sketch's approved sheet (front/back views); place it on the right shoulder as on the card, not backpack-like as drawn."
+   "notes": "Owner sheet note: Don't render his hammer. Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): medic-pack; skipped the ones the sheet note says not to render."
   },
   {
    "id": "spark-gnome",
@@ -1241,15 +1237,10 @@
     "cmd-sprocket-rig--char-side.jpg",
     "cmd-sprocket-rig--char-back.jpg"
    ],
-   "parts": {
-    "wrench": [
-     "cmd-sprocket-rig--wrench-1.jpg",
-     "cmd-sprocket-rig--wrench-2.jpg"
-    ]
-   },
+   "parts": {},
    "height": 1,
    "actions": {},
-   "notes": "Oct 30 locked Commander, silver metal, from Sketch's approved sheet. Rig only, no stock clips. Wrench as an accessory; crystal is an effect, not made."
+   "notes": "Oct 30 locked Commander, silver metal, from Sketch's approved sheet. Rig only, no stock clips. Wrench comes from props-batch-1; crystal is an effect, not made."
   },
   {
    "id": "cmd-grumblebeard-rig",
@@ -1261,16 +1252,10 @@
     "cmd-grumblebeard-rig--char-side.jpg",
     "cmd-grumblebeard-rig--char-back.jpg"
    ],
-   "parts": {
-    "hammer": [
-     "cmd-grumblebeard-rig--hammer-1.jpg",
-     "cmd-grumblebeard-rig--hammer-2.jpg",
-     "cmd-grumblebeard-rig--hammer-3.jpg"
-    ]
-   },
+   "parts": {},
    "height": 1,
    "actions": {},
-   "notes": "Oct 30 locked Commander, from Sketch's approved sheet. Rig only, no stock clips. Gear hammer as an accessory."
+   "notes": "Oct 30 locked Commander, from Sketch's approved sheet. Rig only, no stock clips. Gear hammer comes from props-batch-1."
   },
   {
    "id": "cmd-sproingle-rig",
@@ -1283,6 +1268,20 @@
    "height": 1,
    "actions": {},
    "notes": "Oct 30: RIG the existing Oct 23 Sproingle model (Studio key sproingle; A-pose, already silver/purple), no new mesh, no stock clips."
+  },
+  {
+   "id": "props-batch-1",
+   "name": "Props batch 1",
+   "faction": "mixed",
+   "card": "",
+   "char": [
+    "props-batch-1--sheet.jpg"
+   ],
+   "parts": {},
+   "height": 1,
+   "rig": false,
+   "actions": {},
+   "notes": "Oct 30 (Ken: batch props into one Meshy model). Sketch's sheet with 3 props laid apart, left to right: Madame Sprocket's wrench, Old Grumblebeard's gear hammer, Ironwall Shieldbeard's shoulder shield (place on the right shoulder as on the card). Not rigged. Clay splits it by loose parts in Blender (split_props.py) into wrench / hammer / shoulder-shield GLBs."
   }
  ]
 }
