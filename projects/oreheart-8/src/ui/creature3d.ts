@@ -68,6 +68,7 @@ const PARTS: Record<string, PartCfg[]> = {
   'deepforge-crossbowman': [],
   'dwarf-miner': [],
   'dwarf-pickman': [],
+  'dwarf-smith-miner': [],
   'dwarf-stoneback': [],
   'gearward-sentinel': [],
   'glyphshield-warden': [],

@@ -3,7 +3,7 @@ import { ringColor, getRings } from './fx-settings';
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
 import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, type C3D } from './creature3d';
-import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D } from './grubnak3d';
+import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D, loadCommander3d, makeCommander3d, commander3dReady, commanderIds3d } from './grubnak3d';
 import { makeMineFx, MineFx } from './mineFx';
 import { mineEmblemUrl } from './cardfmt';
 import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
@@ -367,11 +367,18 @@ const _embV = new THREE.Vector3();
     const cm = cmd[side];
     cm.group.clear();
     cm.g3d = null;
-    const a3 = id === 'grubnak' ? grubnak3dReady() : null;
-    if (a3) { cm.keep = null; cm.retreat = null; } else { cm.keep = makeStronghold(faction, low); cm.group.add(cm.keep.group); }
+    const a3 = id === 'grubnak' ? grubnak3dReady() : commander3dReady(id);
+    const onThrone = !!a3 && id === 'grubnak'; // Grubnak's throne replaces the stronghold; other 3D Commanders (Oct 30: Borgo) stand on theirs
+    if (onThrone) { cm.keep = null; cm.retreat = null; } else { cm.keep = makeStronghold(faction, low); cm.group.add(cm.keep.group); if (a3) cm.retreat = null; }
     cm.fig = new THREE.Group();
     cm.grub = null;
-    if (a3) {
+    if (a3 && !onThrone) {
+      // Oct 30: Thane Borgo (and later Commanders) as the Meshy model standing on his stronghold, posed like Grubnak (owner layout turn + size)
+      const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
+      const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
+      cm.g3d = makeCommander3d(id, a3, cm.keep!.group, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1) });
+      cm.fig = cm.g3d.figure;
+    } else if (a3) {
       // Round 7 Part B: the Meshy 3D Grubnak on his own fortress
       const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
       const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
@@ -415,6 +422,7 @@ const _embV = new THREE.Vector3();
     cm.baseK = cm.group.scale.y;
   }
   loadGrubnak3d().then((a) => { if (a && !disposed) for (const side of ['player', 'opponent'] as const) if (cmd[side].id === 'grubnak' && !cmd[side].g3d) buildCommander(side, cmd[side].faction, 'grubnak'); });
+  for (const cid of commanderIds3d()) if (cid !== 'grubnak') loadCommander3d(cid).then((a) => { if (a && !disposed) for (const side of ['player', 'opponent'] as const) if (cmd[side].id === cid && !cmd[side].g3d) buildCommander(side, cmd[side].faction, cid); });
 
   // creatures
   type Fig = {
@@ -1329,7 +1337,7 @@ const _embV = new THREE.Vector3();
             projectiles: [], projectileLog: [],
             canvas: canvasInfo(),
             missingClips: missingClipList.map((m) => ({ ...m })),
-            commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? 'grubnak.glb' : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? 'grubnak-fortress.glb' : '', scepter: cm.g3d ? 'grubnak-scepter.glb' : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
+            commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? (cm.g3d.files?.source || 'grubnak.glb') : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? (cm.g3d.files?.fortress || 'grubnak-fortress.glb') : '', scepter: cm.g3d ? (cm.g3d.files?.scepter ?? 'grubnak-scepter.glb') : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
             strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => { const cl = m.group.userData.cell || { row: 0, col: 0 }, bx = mineBox(cl.row, cl.col), cv = canvas.getBoundingClientRect(); return { row: cl.row, col: cl.col, screenBox: { x: bx.x + cv.left, y: bx.y + cv.top, width: bx.width, height: bx.height }, effects: mineFx[i].stats(), source: m.group.userData.mineModel === 'crystal-node' ? 'model:crystal-node.glb' : 'code:buildMineModel', ring: false, decal: { kind: 'glow-rubble', flat: true, color: m.group.userData.decalHex || m.group.userData.tintHex || '#ffffff' }, tiltDeg: (Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z)) * 180 / Math.PI, tilt: Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z), baseY: new THREE.Box3().setFromObject(m.crystals).min.y - m.group.position.y, scale: m.group.scale.x, parts: ['rubble', 'pedestal', 'banner', 'crystal'], shards: 11, pulsing: true, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' }; }), mineModel: 'code-built', crystalFlow: { shards: flowShown, streams: flowOwner.filter((o) => o && o !== 'neutral').length, swirls: flowOwner.filter((o) => !o || o === 'neutral').length, shape: 'faceted', path: 's-curve', target: 'bank' },
           });
