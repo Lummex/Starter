@@ -11,7 +11,9 @@ const EASE: Record<string, string> = { smooth: 'cubic-bezier(.22,1,.36,1)', gent
 const BUILTIN: Record<string, string> = { logo: '/art/logo-wide.webp', menubg: '/art/menu-front-oct29.webp', dbbg: '/art/deck-bg.webp' };
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 const hexA = (h: string, a: number) => { const n = parseInt((h || '#000000').slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
-export const src = (s: string) => (!s ? '' : s.startsWith('img:') ? `/art/menu/img-${s.slice(4)}.webp` : BUILTIN[s] || s);
+/** Oct 30 (size): the Menu editor's picture zlqfpp is byte-for-byte the same as 025dre, so the game ships one file for both */
+const SAME_PICTURE: Record<string, string> = { zlqfpp: '025dre' };
+export const src = (s: string) => (!s ? '' : s.startsWith('img:') ? `/art/menu/img-${SAME_PICTURE[s.slice(4)] || s.slice(4)}.webp` : BUILTIN[s] || s);
 export const menuScreens: any[] = (menus as any).screens;
 export const firstScreen: string = (menus as any).first;
 

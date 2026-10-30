@@ -569,7 +569,11 @@ export class App {
     else if (typeof picks.deckId === 'string' && STARTER_DECKS[picks.deckId]) deckSel = 'starter:' + picks.deckId;
     const cmdBtns: El[] = [], diffBtns: El[] = [], stacks: El[] = [];
     const msg = h('p', { class: 'deck-msg', 'aria-label': 'Deck message', role: 'status' });
+    // Owner (Ken, Oct 30): the background is the hall of the Commander selected, or the one under the pointer / keyboard focus
+    let hallOver = '';
+    const setHall = () => { const s = this.root.querySelector('.screen.setup') as El | null; const f = COMMANDERS[hallOver || cmd]?.faction; const hall = f === 'goblins' || f === 'gnomes' || f === 'dwarves' ? f : 'neutral'; if (s && s.dataset.hall !== hall) s.dataset.hall = hall; };
     const sel = () => {
+      setHall();
       cmdBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === cmd)));
       modeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === mode)));
       diffBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === diff)));
@@ -577,7 +581,8 @@ export class App {
     };
     for (const c of cmds) {
       const f = FACTIONS[c.faction];
-      cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { if (picked && cmd === c.id) unpick(); else { cmd = c.id; onCmd(); pick(); } } },
+      cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { if (picked && cmd === c.id) unpick(); else { cmd = c.id; onCmd(); pick(); } },
+        onpointerenter: () => { hallOver = c.id; setHall(); }, onpointerleave: () => { if (hallOver === c.id) { hallOver = ''; setHall(); } }, onfocus: () => { hallOver = c.id; setHall(); }, onblur: () => { if (hallOver === c.id) { hallOver = ''; setHall(); } } },
         h('span', { class: 'portrait-img oh-cmd', 'aria-hidden': 'true' }, ohCardEl(commanderCard(c), commanderPortrait(c.id))),
         h('span', { class: 'cmd-win' },
           h('span', { class: 'nm' }, c.name),
@@ -698,6 +703,7 @@ export class App {
     mainRef.el = mainEl as El;
     this.selState = () => ({ mode: picked ? 'focused' : 'row', commanderId: cmd, model: picked && cmd === 'grubnak' && stage.classList.contains('pop') ? { shown: true, source: 'grubnak.glb', animation: 'idle' } : null });
     this.root.append(mainEl);
+    setHall();
   }
 
   showRules() {

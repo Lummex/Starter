@@ -228,7 +228,9 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     slider.value = String(perRow);
     fitRow();
   }
-  function renderCards() { cardsEl.replaceChildren(...ALL.filter((c) => !c.disabled && !lockedFor(c.id) && matches(c)).map(tile)); fitRow(); }
+  // Owner (Ken, Oct 30): the background hall follows the faction filter, else the deck's Commander; Neutral shows the tavern
+  const setHall = () => { const f = fF.sel.value; const hall = f === 'Goblins' ? 'goblins' : f === 'Gnomes' ? 'gnomes' : f === 'Dwarves' ? 'dwarves' : f === 'Neutral' ? 'neutral' : (COMMANDERS[cmdId]?.faction || 'neutral'); const s = app.root.querySelector('.db-screen') as HTMLElement | null; if (s && s.dataset.hall !== hall) s.dataset.hall = hall; };
+  function renderCards() { setHall(); cardsEl.replaceChildren(...ALL.filter((c) => !c.disabled && !lockedFor(c.id) && matches(c)).map(tile)); fitRow(); }
   const slider = h('input', { type: 'range', id: 'cards-per-row', min: '2', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
   slider.addEventListener('input', () => setPerRow(+slider.value));
   const pickCmd = (id: string) => { cmdId = id; fCmd.set(CMD_NAMES[id]); renderCards(); renderDeck(); };
