@@ -37,3 +37,12 @@ Report: factory-design/studio/reports/2026-10-29-clay-aethervein-model.md
 - Learned: steam puffs on a sheet must be painted out COMPLETELY. Faint wisps I left at the pipe tops became two small grey flags in the model. Next time check the cut views zoomed in at 100% before uploading.
 - Learned: on robots/golems whose face is on the torso, Meshy's head bone sits in the face, and the Idle clip folds the face (the grin hides). Always check the face in rest pose AND idle; tell Spring.
 - three.js check: add RoomEnvironment as the scene environment, or Meshy's metal looks almost black. skeleton.pose() for the rest pose breaks later mixer shots on the same cached scene, so do it last.
+
+## Oct 30, 2026 – silver gnomes + Gemsinger / Aethervein / Gearward models
+Report: factory-design/studio/reports/2026-10-30-clay-silver-gnomes-and-models.md (tools next to it: 2026-10-30-clay-silver-*.py).
+- Silver recolour, no credits: swap ONLY the base-colour picture inside the game GLB (glbtex.py keeps every other byte; meshopt bufferViews keep their compressed data, only offsets move). Mask in Lab: hue 50–90 + chroma >28 = gold/brass; dark bronze 40–50 only when L<50; light peach (L>62, hue<62) protected; head/neck bone-weight UV map (baked in three.js) makes brown beards/brows safe. Silver = luminance ×1.3 contrast + tint (0.90,0.97,1.07).
+- Learned: HSV hue can't split skin from bronze; Lab can. First pass turned a brown beard grey and a forehead pale: always check faces close-up in 3D, front AND back.
+- Meshy: "actions": {} now = rig only (script 98fc83c), saves the clip cost; the GLB has the 24-bone rig and one rest clip. A 3-character + 4-part run took 5 min.
+- Learned: pressing Run workflow on the Meshy workflow is blocked for agents (spends credits). Prepare everything; Ken or Forge presses it.
+- Learned: when the sheet shows things the card doesn't (Aethervein canisters, back gem), paint them out of the views before Meshy; it worked cleanly (polygon fill with row background).
+- Packing: shrink.py jpeg88 (char 1024, parts 512) then r27 pack.mjs (INDICES won every time); verify.mjs EXACT. ~15 MB raw -> ~2.8 MB char, ~0.75–0.9 MB part.
