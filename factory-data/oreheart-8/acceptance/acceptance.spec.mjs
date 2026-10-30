@@ -10643,3 +10643,128 @@ test('AC405: the stacking cards say so, and a stacked poison shows x2', async ({
   const cfg = await page.evaluate(async () => await window.oreheart.getConfig());
   expect([cfg.stackCap, cfg.auraStackCap, cfg.rootStackCap]).toEqual([3, 2, 2]);
 });
+
+// ---------- Owner (Ken, Oct 30): close-up ✕ Close, the computer's played card, the enemy discard pile, the Bulwark bubble ----------
+test.describe('Oct 30 Ken at 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  const visBoxes = (loc) => loc.evaluateAll((els) => els.filter((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden').map((e) => e.getBoundingClientRect().toJSON()));
+
+  test('AC409: the card close-up has a small ✕ Close at the card\'s top-right; outside tap and Esc still close it', async ({ page }) => {
+    await start(page, quiet({ playerHand: ['fireball'], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 5 }] }));
+    await page.waitForTimeout(800);
+    const unit = page.getByLabel('Bowler Brawler, row 6, column 5', { exact: true });
+    const dlg = page.getByRole('dialog', { name: 'Bowler Brawler', exact: true });
+    await unit.click({ button: 'right' });
+    await expect(dlg).toBeVisible();
+    const x = dlg.getByRole('button', { name: 'Close', exact: true });
+    await expect(x).toBeVisible();
+    await expect(x).toHaveText('✕');
+    const f = await dlg.locator('[data-card-id="goblin-scrapper"]').first().boundingBox(), xb = await x.boundingBox();
+    expect(xb.width).toBeLessThanOrEqual(64); // small
+    expect(xb.x + xb.width / 2).toBeGreaterThan(f.x + f.width * 0.8); // top-right of the card
+    expect(xb.y + xb.height / 2).toBeLessThan(f.y + f.height * 0.15);
+    await x.click();
+    await expect(dlg).toBeHidden();
+    await unit.click({ button: 'right' });
+    await expect(dlg).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dlg).toBeHidden();
+    await unit.click({ button: 'right' });
+    await expect(dlg).toBeVisible();
+    await page.mouse.click(15, 540);
+    await expect(dlg).toBeHidden();
+  });
+
+  test('AC410: the computer\'s played card pops up big in the middle for about a second, then is laid down on its discard pile', async ({ page }) => {
+    const W = 1920, H = 1080;
+    await page.goto('/?test=1&seed=123&fx=1');
+    await page.waitForFunction(() => !!window.oreheart);
+    // the normal close-up size, to compare with
+    await newMatch(page, quiet({ playerHand: ['soul-shard'] }));
+    await page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: /./ }).first().click();
+    const view = page.getByRole('dialog').filter({ has: page.locator('[data-card-id="soul-shard"]') });
+    await expect(view).toBeVisible();
+    const closeUp = await view.locator('[data-card-id="soul-shard"]').first().boundingBox();
+    await page.keyboard.press('Escape');
+    const s = await newMatch(page, { ...quiet({ opponentHand: ['soul-shard'] }), firstPlayer: 'opponent' });
+    const pile = page.getByRole('button', { name: 'Enemy discard pile', exact: true });
+    await expect(pile).toHaveAttribute('data-count', '0');
+    expect((await act(page, { type: 'playCrystal', uid: s.players.opponent.hand[0].uid })).ok).toBe(true);
+    const big = page.locator('[aria-label="Card reveal"][data-side="opponent"][data-stage="big"]');
+    await expect(big).toHaveCount(1);
+    await expect(big).toHaveAttribute('data-hold-ms', '1100'); // about a second in play (automated runs hold it longer)
+    expect(await pile.getAttribute('data-count'), 'the pile waits for the card to land').toBe('0');
+    // pin it (a tap) so the slow check machines can measure it, then tap again to let it go
+    const card = page.locator('[aria-label="Card reveal"][data-side="opponent"]').first();
+    await card.click({ force: true });
+    await expect(card).toHaveAttribute('data-pinned', 'true');
+    await expect(big).toHaveCount(1);
+    let b = null; // measured once its quick pop-in is over
+    await expect.poll(async () => { [b] = await visBoxes(big); return b ? b.height : 0; }, { timeout: 3000 }).toBeGreaterThan(closeUp.height * 1.1); // bigger than the close-up (as big as the screen allows)
+    expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.03);
+    expect(Math.abs(b.y + b.height / 2 - H / 2)).toBeLessThanOrEqual(H * 0.05);
+    expect(b.height).toBeLessThanOrEqual(H);
+    await card.click({ force: true });
+    // laid down: it leaves the middle, slides left onto the pile and the pile shows it face-up
+    await expect(page.locator('[aria-label="Card reveal"][data-side="opponent"]')).toHaveCount(0, { timeout: 5000 });
+    await expect(pile).toHaveAttribute('data-count', '1');
+    await expect(pile).toHaveAttribute('data-top', 'soul-shard');
+  });
+
+  test('AC411: the enemy discard pile sits face-up on the left; tapping it fans the cards out at half the hand size, scrollable, each opens its close-up', async ({ page }) => {
+    const W = 1920;
+    let s = await start(page, { ...quiet({ opponentHand: Array(9).fill('soul-shard'), playerHand: ['goblin-scrapper', 'fireball'] }), firstPlayer: 'opponent' });
+    for (const c of s.players.opponent.hand) expect((await act(page, { type: 'playCrystal', uid: c.uid })).ok).toBe(true);
+    const pile = page.getByRole('button', { name: 'Enemy discard pile', exact: true });
+    await expect(pile).toHaveAttribute('data-count', '9');
+    await expect(pile).toHaveAttribute('data-top', 'soul-shard');
+    const pb = await pile.boundingBox(), deck = await page.getByLabel('Your deck', { exact: true }).boundingBox();
+    expect(pb.x + pb.width / 2).toBeLessThan(W * 0.12); // left side (your deck is on the right)
+    expect(deck.x + deck.width / 2).toBeGreaterThan(W * 0.5);
+    expect(await pile.locator('.hand-card').count(), 'face-up top card').toBe(1);
+    await pile.click();
+    const dlg = page.getByRole('dialog', { name: 'Enemy discard pile', exact: true });
+    await expect(dlg).toBeVisible();
+    const list = dlg.getByRole('list', { name: 'Enemy discard pile cards' });
+    const cards = list.getByRole('listitem');
+    await expect(cards).toHaveCount(9);
+    const handCard = await page.getByLabel('Your hand', { exact: true }).locator('[data-card-id]').first().evaluate((e) => e.offsetWidth);
+    const cw = await cards.first().evaluate((e) => e.offsetWidth);
+    expect(cw / handCard).toBeGreaterThanOrEqual(0.35); expect(cw / handCard).toBeLessThanOrEqual(0.65);
+    const sc = await list.evaluate((e) => ({ sw: e.scrollWidth, cw: e.clientWidth, ox: getComputedStyle(e).overflowX }));
+    expect(['auto', 'scroll']).toContain(sc.ox);
+    // drag sideways scrolls it, like the hand
+    const lb = await list.boundingBox();
+    if (sc.sw > sc.cw + 2) {
+      await page.mouse.move(lb.x + lb.width * 0.7, lb.y + lb.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(lb.x + lb.width * 0.3, lb.y + lb.height / 2, { steps: 8 });
+      await page.mouse.up();
+      expect(await list.evaluate((e) => e.scrollLeft)).toBeGreaterThan(20);
+    }
+    await cards.first().click();
+    const view = page.getByRole('dialog', { name: 'Soul Shard', exact: true });
+    await expect(view).toBeVisible();
+    await expect(view.locator('[data-card-id="soul-shard"]')).toHaveCount(1);
+    await view.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(view).toBeHidden();
+    await page.keyboard.press('Escape');
+    await expect(dlg).toBeHidden();
+  });
+
+  test('AC412: an Ironclad Bulwark shows a bubble around the unit in its faction colour; it pops when it blocks a hit', async ({ page }) => {
+    let s = await start(page, q12({ playerHand: ['shield-bubble'], playerCrystals: 9,
+      board: [P('dwarf-pickman', 5, 9), O('goblin-grunt', 4, 9), O('goblin-pebbler', 4, 8)] }));
+    const fig = async (uid) => (await page.evaluate(async () => await window.oreheart.getRenderStats())).figures.find((f) => f.uid === uid);
+    const uid = stk(s, 5, 9).uid;
+    expect((await fig(uid)).bubble).toBe(false);
+    expect((await cast(page, s, 'shield-bubble', { row: 5, col: 9 })).ok).toBe(true);
+    await expect.poll(async () => (await fig(uid)).bubble).toBe(true);
+    expect((await fig(uid)).bubbleColor).toBe('#2f5fd8'); // Dwarves: blue (goblins green #3ee06a, gnomes purple #9b4dff)
+    await passTurn(page); await done(page); // the opponent's Action phase
+    s = await getState(page);
+    expect((await act(page, { type: 'attack', creatureUid: at(s, 4, 9).uid, target: { row: 5, col: 9 } })).ok).toBe(true);
+    await expect.poll(async () => (await fig(uid)).bubble).toBe(false);
+    expect((await fig(uid)).bubblePops).toBe(1);
+  });
+});
