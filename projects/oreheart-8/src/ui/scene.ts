@@ -378,13 +378,13 @@ const _embV = new THREE.Vector3();
       // Oct 30: Thane Borgo (and later Commanders) as the Meshy model standing on his stronghold, posed like Grubnak (owner layout turn + size)
       const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
       const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
-      cm.g3d = makeCommander3d(id, a3, cm.keep!.group, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1) });
+      cm.g3d = makeCommander3d(id, a3, cm.keep!.group, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: CS.commanders ?? 1, base: CS.commanderBase ?? true });
       cm.fig = cm.g3d.figure;
     } else if (a3) {
       // Round 7 Part B: the Meshy 3D Grubnak on his own fortress
       const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
       const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
-      cm.g3d = makeGrubnak3d(a3, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1) });
+      cm.g3d = makeGrubnak3d(a3, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: CS.commanders ?? 1, base: CS.commanderBase ?? true });
       cm.fig = cm.g3d.figure;
     } else if (id === 'grubnak') {
       cm.grub = makeGrubnak(low);

@@ -84,7 +84,8 @@ const D2R = Math.PI / 180;
 /** Round 12b-1: Grubnak SEATED on his junk throne (the throne replaces the castle/stand). The throne stands flat on the board point; he sits in it holding the staff,
  *  both turned to the owner's `turn` (146 deg = toward the enemy corner). `figure` (the seated Grubnak) turns alone for look-backs. */
 const THRONE_H = 1.5, SEAT = { k: 0.55, y: 0.17, z: 0.1 };
-export interface OwnerPose { fort: { scale: number; sx?: number; sy?: number; sz?: number; turn: number }; cmd: { scale: number; turn: number }; groups?: number }
+export interface OwnerPose { fort: { scale: number; sx?: number; sy?: number; sz?: number; turn: number }; cmd: { scale: number; turn: number }; groups?: number;
+  /** Ken (Oct 30 playtest): Commander size on the board (owner-layout characterSizes.commanders, 1 = the old size) and whether the throne / stronghold under a 3D Commander shows (characterSizes.commanderBase) */ size?: number; base?: boolean }
 
 export function makeGrubnak3d(a: G3DAssets, pose?: OwnerPose): G3D {
   const turn = (pose?.cmd.turn ?? 0) * D2R;
@@ -100,6 +101,8 @@ export function makeGrubnak3d(a: G3DAssets, pose?: OwnerPose): G3D {
   tsc.add(throne);
   const tYaw = new THREE.Group(); tYaw.rotation.y = turn; tYaw.add(tsc);
   group.add(tYaw);
+  const onBase = pose?.base ?? true, size = pose?.size ?? 1;
+  tYaw.visible = onBase; // Ken (Oct 30): "take the thrones off them" (kept, hidden, so the stronghold spot and its test poses stay put)
   // Grubnak
   const ch = skeletonClone(a.char) as THREE.Object3D;
   ch.traverse((o: any) => { if (o.isMesh || o.isSkinnedMesh) { o.frustumCulled = false; o.castShadow = false; } });
@@ -114,12 +117,12 @@ export function makeGrubnak3d(a: G3DAssets, pose?: OwnerPose): G3D {
     scepterBone = attachPart(ch, pcfg, a.scepter, H0, () => {});
   }
   m0.stopAllAction(); m0.uncacheRoot(ch);
-  const ck = (SEAT.k * tH) / Math.max(H0, 0.01);
+  const ck = (SEAT.k * tH * size) / Math.max(H0, 0.01);
   const sc = new THREE.Group(); sc.scale.setScalar(ck);
   ch.position.set(-(cb0.min.x + cb0.max.x) / 2, -cb0.min.y, -(cb0.min.z + cb0.max.z) / 2);
   sc.add(ch);
   figure.add(sc);
-  figure.position.set(Math.sin(turn) * SEAT.z * tH, SEAT.y * tH, Math.cos(turn) * SEAT.z * tH);
+  if (onBase) figure.position.set(Math.sin(turn) * SEAT.z * tH, SEAT.y * tH, Math.cos(turn) * SEAT.z * tH); // without the throne he stands on the ground
   figure.rotation.y = turn;
   group.add(figure);
   return finish(a, group, figure, throne, ch, scepterBone);
@@ -161,7 +164,7 @@ function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress:
 const EMOTE_FALLBACK: Record<string, string> = { laugh: 'attack', point: 'attack', celebrate: 'attack', cast: 'attack', taunt: 'attack', cheer: 'attack', surprised: 'hit', flinch: 'hit', walk: 'idle' };
 /** per Commander: model folder, files and how tall he stands (board squares) on top of his stronghold */
 const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortress: string; scepter: string }; figH: number; keepK: number; deck: number; sceptre: { len: number; grip: number; rot: [number, number, number] } }> = {
-  borgo: { base: '/models/commanders/borgo/', files: { source: 'borgo.glb', fortress: 'dwarf-stronghold', scepter: 'borgo-sceptre.glb' }, figH: 1.0, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
+  borgo: { base: '/models/commanders/borgo/', files: { source: 'borgo.glb', fortress: 'dwarf-stronghold', scepter: 'borgo-sceptre.glb' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
 };
 export const hasCommander3d = (id: string) => id === 'grubnak' || id in OTHER_CMDS;
 export const commanderIds3d = () => ['grubnak', ...Object.keys(OTHER_CMDS)];
@@ -206,6 +209,8 @@ export function makeCommander3d(id: string, a: G3DAssets, keep: THREE.Object3D, 
   const kYaw = new THREE.Group(); kYaw.rotation.y = turn;
   keep.scale.setScalar(cfg.keepK * gk); keep.position.set(0, 0, 0);
   kYaw.add(keep); group.add(kYaw);
+  const onBase = pose?.base ?? true, size = pose?.size ?? 1;
+  kYaw.visible = onBase; // Ken (Oct 30): Commanders stand on the board, no throne or stronghold under them
   const ch = skeletonClone(a.char) as THREE.Object3D;
   ch.traverse((o: any) => { if (o.isMesh || o.isSkinnedMesh) { o.frustumCulled = false; o.castShadow = false; } });
   const m0 = new THREE.AnimationMixer(ch); if (a.clips.idle) { m0.clipAction(a.clips.idle).play(); m0.setTime(0); }
@@ -214,10 +219,10 @@ export function makeCommander3d(id: string, a: G3DAssets, keep: THREE.Object3D, 
   let scepterBone = '';
   if (a.scepter) scepterBone = attachPart(ch, { name: 'scepter', file: '', bone: ['RightHand'], len: cfg.sceptre.len, grip: cfg.sceptre.grip, rot: cfg.sceptre.rot, axis: 'y' }, a.scepter, H0, () => {});
   m0.stopAllAction(); m0.uncacheRoot(ch);
-  const sc = new THREE.Group(); sc.scale.setScalar((cfg.figH * gk) / Math.max(H0, 0.01));
+  const sc = new THREE.Group(); sc.scale.setScalar((cfg.figH * gk * size) / Math.max(H0, 0.01));
   ch.position.set(-(cb0.min.x + cb0.max.x) / 2, -cb0.min.y, -(cb0.min.z + cb0.max.z) / 2);
   sc.add(ch);
-  sc.position.y = cfg.deck * cfg.keepK * gk; // feet on the stronghold's top deck (the scene keeps `figure` itself at y 0)
+  sc.position.y = onBase ? cfg.deck * cfg.keepK * gk : 0; // feet on the stronghold's top deck (the scene keeps `figure` itself at y 0)
   const figure = new THREE.Group();
   figure.add(sc);
   figure.rotation.y = turn;

@@ -2430,7 +2430,8 @@
  ],
  "characterSizes": {
   "all": 1,
-  "commanders": 1,
+  "commanderBase": false,
+  "commanders": 1.8,
   "fortresses": 1,
   "mines": 1,
   "creatures": 1,

@@ -6221,7 +6221,7 @@ async function ownerLayout(request) {
   const r = await request.get('/owner-layouts/final-draft/layout.json');
   expect(r.ok()).toBe(true);
   const body = await r.body();
-  expect(body.length).toBe(34849); // Round 14: the owner's Oct 24 layout (same bytes as src/content/owner-layout.json; Oct 30: synced to the owner's flame 0.4 / glow x1.15 fixes and hand overlap 0.26)
+  expect(body.length).toBe(34877); // Round 14: the owner's Oct 24 layout (same bytes as src/content/owner-layout.json; Oct 30: synced to the owner's flame 0.4 / glow x1.15 fixes and hand overlap 0.26; Ken Oct 30 playtest: Commanders 1.8x, no thrones)
   return JSON.parse(body.toString('utf8'));
 }
 const SKIP_ROLES = new Set(['player-hand', 'done-button']);
