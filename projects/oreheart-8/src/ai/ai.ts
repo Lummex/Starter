@@ -206,7 +206,14 @@ export function readBoard(s: any, me: string): { rush: number; mines: number } {
 export const TUNE = { cmdW: 16, pressW: 8, myEcon: 7, foeEcon: 5, specialBias: 3, hardThreat: 0.5, medThreat: 0.4, hardTurn: 6, medTurn: 6, hardFwd: 5.5, medFwd: 4, hardNoise: 4, medNoise: 6, hardMin: 1.5, medMin: 1.5, look: 1, lookW: 0.7, moveBias: 0, medMistake: 0.2, hardMs: 300, medMs: 60, medMoves: 60, defG: 14, react: 1, d2Base: 0, rushThresh: 0.3, mineThresh: 0.75, mineHit: 40, rushHit: 14, mineBonus: 12, fighterMine: 0, swapV: 16, swapMiners: 5,
   // Hard only (Oct 31): the reply-turn search. reply=0 switches it off (Hard then plays as on Oct 30).
   reply: 1, replyK: 5, replyMargin: 40, replyW: 0.8, replyMs: 150, replyMySteps: 8, replyFoeSteps: 10, replyMoves: 8, replyDeploy: 1, replyDeployK: 4, replyTurnMs: 700,
-  hardEcon: 1, hardCmd: 1, hardFoeMiner: 1, hardFighterMine: 0, hardRace: 1, hardLeadPush: 0, hardColFwd: 0, hardEarlyMiner: 0, hardEarlyTurns: 8, hardEarlyFighterMine: 0, hardFoeUnit: 1.5 };
+  hardEcon: 1, hardCmd: 1, hardFoeMiner: 1, hardFighterMine: 0, hardRace: 1, hardLeadPush: 0, hardColFwd: 0, hardEarlyMiner: 0, hardEarlyTurns: 8, hardEarlyFighterMine: 0, hardFoeUnit: 1.5,
+  // Hard's thinking per turn (Ken, Oct 31: a slow phone must never stall a turn). hardTurnMs: the pool for the full search (look-ahead and reply search); past it a decision is "lean" (plain scoring, leanMs);
+  // past hardTurnMaxMs only tailMs each. phoneScale shortens every budget on a touch phone, so each decision blocks the screen for less.
+  hardTurnMs: 1200, hardTurnMaxMs: 1800, leanMs: 60, tailMs: 15, phoneScale: 0.6 };
+/** A phone (touch, few cores) or a mobile browser. Every budget below is wall-clock, so a 3-4x slower phone already does less thinking in the same time; this shortens the budgets too. */
+const PHONE = typeof navigator !== 'undefined' && (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '') || ((navigator.maxTouchPoints || 0) > 1 && (navigator.hardwareConcurrency || 8) <= 6));
+/** A time budget in ms for this device (window.__aiTimeScale overrides it, for probes). */
+export const budgetMs = (ms: number) => ms * ((globalThis as any).__aiTimeScale ?? (PHONE ? TUNE.phoneScale : 1));
 const cmdVal = (h: number) => h * TUNE.cmdW + Math.min(0, h - 8) * 10;
 
 /** How good the board is for `me` (bigger = better). Reads only public information. */
@@ -479,8 +486,23 @@ export function replyValue(t: any, me: string, P: Prm, rand: Rand, deadline: num
 }
 
 const replyPool = { key: '', ms: 0 };
+/** Hard's thinking spent this turn (ms), see TUNE.hardTurnMs. Probe hook: window.__aiTurnMs. */
+const hardPool = { key: '', ms: 0, lean: 0 };
+(globalThis as any).__aiTurnMs = hardPool;
 function smartChoose(s: any, hard: boolean, rand: Rand, legal: any[], done: any): any {
+  if (!hard) return smartChooseInner(s, hard, rand, legal, done);
+  const key = s.turn + ':' + s.priority;
+  if (hardPool.key !== key) { hardPool.key = key; hardPool.ms = 0; hardPool.lean = 0; }
+  const t = performance.now();
+  try { return smartChooseInner(s, hard, rand, legal, done); } finally { hardPool.ms += performance.now() - t; }
+}
+function smartChooseInner(s: any, hard: boolean, rand: Rand, legal: any[], done: any): any {
   const me = s.priority as string;
+  // the per-turn pool: once Hard has spent hardTurnMs this turn it decides lean (plain scoring at Medium speed, no look-ahead, no reply search), past hardTurnMaxMs only a quick glance
+  const left = hard ? budgetMs(TUNE.hardTurnMs) - hardPool.ms : Infinity;
+  const tail = hard && hardPool.ms >= budgetMs(TUNE.hardTurnMaxMs), lean = tail || (hard && left <= 0);
+  if (lean) hardPool.lean++;
+  const tStart = performance.now();
   const mood = readBoard(s, me), sharp = hard ? 1 : 0.5; // Medium reacts too, less sharply
   const P: Prm = hard ? HARD_P() : { threatW: TUNE.medThreat, goalW: 1, turnW: TUNE.medTurn, fwdW: TUNE.medFwd };
   // react only to a real push or a real gap (small swings are normal play)
@@ -515,7 +537,7 @@ function smartChoose(s: any, hard: boolean, rand: Rand, legal: any[], done: any)
   const base = evaluate(s, me, P);
   const pl = s.players[me];
   // a time budget keeps big late-game boards quick on phones: non-move options first, then moves (most forward first)
-  const t0 = performance.now(), budget = hard ? TUNE.hardMs : TUNE.medMs;
+  const t0 = performance.now(), budget = hard ? (tail ? budgetMs(TUNE.tailMs) : lean ? budgetMs(TUNE.leanMs) : Math.min(budgetMs(TUNE.hardMs), left)) : TUNE.medMs;
   const short = shortlist(s, me, legal, rand, hard);
   const movesFirst = short.filter((a) => a.type === 'move').map((a) => { const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid); return [c ? posValue(s, me, CARDS[c.cardId], a.row, a.col) - posValue(s, me, CARDS[c.cardId], c.row, c.col) : 0, a] as [number, any]; }).sort((x, y) => y[0] - x[0]).map((x) => x[1]);
   const cands = [...short.filter((a) => a.type !== 'move'), ...(hard ? movesFirst : movesFirst.slice(0, TUNE.medMoves))];
@@ -548,7 +570,7 @@ function smartChoose(s: any, hard: boolean, rand: Rand, legal: any[], done: any)
     if (a.type === 'mine' && P.rush > 0.3) { const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid); if (c && !isMiner(CARDS[c.cardId])) v -= 12 * P.rush; } // a fighter doesn't stop to mine while the Commander is rushed
     scored.push({ v: v + rand() * noise, a, t });
   }
-  if (hard && TUNE.look && s.phase === 'action' && performance.now() - t0 < budget * 0.6) {
+  if (hard && !lean && TUNE.look && s.phase === 'action' && performance.now() - t0 < budget * 0.6) {
     // look one action ahead for the most promising options: set-ups (Blast, damage, Shield, Ward, knock-backs) that pay off next action
     const live = scored.filter((x) => x.t && x.t.priority === me && x.t.phase === s.phase && !x.t.winner).sort((x, y) => y.v - x.v);
     // the 4 best options, plus the best spells and specials: a set-up like Thunderhorn Blast looks useless on its own
@@ -578,14 +600,14 @@ function smartChoose(s: any, hard: boolean, rand: Rand, legal: any[], done: any)
   // a per-turn pool (replyTurnMs) keeps long late-game turns quick: once it is spent, the rest of the turn uses the plain scoring
   const poolKey = s.turn + ':' + me;
   if (replyPool.key !== poolKey) { replyPool.key = poolKey; replyPool.ms = 0; }
-  if (hard && TUNE.reply && replyPool.ms < TUNE.replyTurnMs && (s.phase === 'action' || (TUNE.replyDeploy && s.phase === 'deploy')) && scored.length > 1 && scored[0].v > minH) {
+  if (hard && !lean && TUNE.reply && replyPool.ms < budgetMs(TUNE.replyTurnMs) && (s.phase === 'action' || (TUNE.replyDeploy && s.phase === 'deploy')) && scored.length > 1 && scored[0].v > minH) {
     const r0 = performance.now();
     // the reply-turn search (see replyValue): re-rank the best few options by the board after the player's reply turn.
     // The best-looking option keeps its score; the others gain or lose by how much better or worse their reply board is.
     const K = s.phase === 'deploy' ? TUNE.replyDeployK : TUNE.replyK;
     const top = scored.slice(0, K).filter((x) => x.t && !x.t.winner && x.v > minH && scored[0].v - x.v <= TUNE.replyMargin);
     if (top.length > 1) {
-      const deadline = performance.now() + TUNE.replyMs;
+      const deadline = performance.now() + Math.max(0, Math.min(budgetMs(TUNE.replyMs), left - (performance.now() - tStart)));
       const R: number[] = [];
       for (const x of top) {
         if (R.length >= 2 && performance.now() > deadline) break;

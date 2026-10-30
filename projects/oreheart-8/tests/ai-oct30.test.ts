@@ -140,6 +140,55 @@ describe("AI Oct 31: Hard plays out the player's reply turn", () => {
     }
     expect(worst).toBeLessThan(1500);
   });
+
+  // Ken (Oct 31): a slow phone must never stall a turn. Hard's thinking per turn is pooled (TUNE.hardTurnMs): once the pool is spent, the
+  // rest of the turn decides lean, so even a 25-action late-game turn stays under about 2 s of thinking (on a phone the budgets shrink too).
+  const turnMs = (seed: number, scale: number, maxTurn: number) => {
+    (globalThis as any).__aiTimeScale = scale;
+    try {
+      let s: any = createMatch({ seed, skipMulligan: true, testMode: true });
+      const r = makeRand(5);
+      const perTurn = new Map<string, number>();
+      let guard = 0, count = 0, turn = -1, lean = 0;
+      while (s.phase !== 'over' && s.turn < maxTurn && guard++ < 4000) {
+        if (s.turn !== turn) { turn = s.turn; count = 0; }
+        const t0 = performance.now();
+        let a = aiChoose(s, 'hard', r);
+        const k = s.turn + ':' + s.priority;
+        perTurn.set(k, (perTurn.get(k) || 0) + performance.now() - t0);
+        if (++count > 60 && !s.pendingResponse) a = { type: 'done' };
+        let x: any = applyAction(s, a);
+        if (!x.ok) x = applyAction(s, s.pendingResponse ? { type: 'pass' } : { type: 'done' });
+        s = x.state;
+        lean = Math.max(lean, (globalThis as any).__aiTurnMs.lean);
+      }
+      return { worst: Math.max(...perTurn.values()), turns: perTurn.size, lean };
+    } finally { delete (globalThis as any).__aiTimeScale; }
+  };
+  it("Hard's whole turn of thinking stays under 2 s, PC budgets", () => {
+    const r = turnMs(45, 1, 22);
+    expect(r.turns).toBeGreaterThan(10);
+    expect(r.worst).toBeLessThan(2000);
+  });
+  it("Hard's whole turn of thinking stays under 1.3 s with phone budgets (the pool, not the clock, bounds it)", () => {
+    const r = turnMs(44, 0.6, 22);
+    expect(r.turns).toBeGreaterThan(10);
+    expect(r.worst).toBeLessThan(1300);
+  });
+  it('the pool is per turn: a fresh turn thinks fully again', () => {
+    let s: any = createMatch({ seed: 45, skipMulligan: true, testMode: true });
+    const r = makeRand(5);
+    const pool = (globalThis as any).__aiTurnMs;
+    let guard = 0, seen = 0, lastKey = '';
+    while (s.phase !== 'over' && s.turn < 8 && guard++ < 800) {
+      let a = aiChoose(s, 'hard', r);
+      if (s.priority === 'opponent' || s.priority === 'player') { if (pool.key !== lastKey) { lastKey = pool.key; seen++; expect(pool.ms).toBeLessThan(1500); } }
+      let x: any = applyAction(s, a);
+      if (!x.ok) x = applyAction(s, s.pendingResponse ? { type: 'pass' } : { type: 'done' });
+      s = x.state;
+    }
+    expect(seen).toBeGreaterThan(3);
+  });
 });
 
 describe('AI Oct 31: Medium is unchanged', () => {
