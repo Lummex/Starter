@@ -1,0 +1,42 @@
+{
+ "generated": "2026-10-31",
+ "clips": {
+  "multileg-attack-01": {
+   "events": [
+    {
+     "name": "windup",
+     "frame": 2,
+     "time": 0.0667
+    },
+    {
+     "name": "hit",
+     "frame": 20,
+     "time": 0.6667
+    }
+   ]
+  },
+  "multileg-bonk-01": {
+   "events": [
+    {
+     "name": "impact",
+     "frame": 2,
+     "time": 0.0667
+    }
+   ]
+  },
+  "multileg-death-01": {
+   "events": [
+    {
+     "name": "ground",
+     "frame": 26,
+     "time": 0.8667
+    },
+    {
+     "name": "poof",
+     "frame": 29,
+     "time": 0.9667
+    }
+   ]
+  }
+ }
+}

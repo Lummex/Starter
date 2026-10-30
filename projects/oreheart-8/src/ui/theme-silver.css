@@ -205,3 +205,6 @@ html body #app .match :is(.btn.o-text.done-btn,.o-menu .btn.menu-btn){--sv-h:var
 html body #app .match .btn.swap-btn{--sv-h:1.3em}
 html body #app .match :is(.dialog .row .btn.btn,.dialog .menu-list .btn.btn){--sv-h:max(44px,calc(1.2em + 20px))}
 html body .done-dropup .btn.btn{--sv-h:max(44px,calc(1.2em + 20px))}
+
+/* Oct 31: on phones the Done button's icon cap is shorter, so its left gem no longer touches the deck pile */
+@media (max-width: 900px){html body #app .match .btn.o-text.done-btn{--sv-oxl:calc(var(--sv-f) * .45 + var(--sv-cap) * .92)}}

@@ -10,7 +10,7 @@ import unitHeightsJson from '../content/unit-heights.json';
 /** Ken (Oct 30): every unit at the height he saved in Oreheart Studio (Ledger's table, board squares; mounts = rider + mount); beats LOOKS and the faction defaults */
 export const HEIGHTS: Record<string, number> = Object.fromEntries(Object.entries(unitHeightsJson as Record<string, unknown>).filter(([k, v]) => !k.startsWith('_') && typeof v === 'number')) as Record<string, number>;
 
-export type CreatureAnim = 'idle' | 'walk' | 'run' | 'attack' | 'mine' | 'hit' | 'defeat' | 'lifted' | 'special' | 'knockback' | 'bowled' | 'idleBreak';
+export type CreatureAnim = 'idle' | 'walk' | 'run' | 'attack' | 'mine' | 'hit' | 'defeat' | 'lifted' | 'special' | 'ability' | 'knockback' | 'bowled' | 'idleBreak';
 export interface PartCfg { file: string; bone: string[]; /** target length as a fraction of the character height */ len: number; /** point along the long axis (0 bottom .. 1 top) that sits on the bone */ grip: number; rot: [number, number, number]; pos?: [number, number, number]; name: string; axis?: 'x' | 'y' | 'z'; /** owner look (Model Editor): exact bone-local transform of the raw part */ look?: LookPart; /** a mount standing under the rider */ mount?: boolean }
 export interface LookPart { bone: string; pos: [number, number, number]; rot: [number, number, number]; scale: [number, number, number] }
 /** owner looks (factory-design/looks/*.json): height in squares + stretch of the main model */
@@ -117,7 +117,7 @@ interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationCl
 export interface PackClip { clip: THREE.AnimationClip; kind: string; loop: boolean; impact?: number; rootSpeed?: number; events?: { name: string; time: number }[] }
 interface Pack { clips: PackClip[]; rig: Rig }
 export interface SharedSet { byName: Record<string, THREE.AnimationClip>; byKind: Record<string, THREE.AnimationClip[]>; impact: Record<string, number>; speed: Record<string, number>; events: Record<string, { name: string; time: number }[]> }
-export const PACK_URL = '/models/anims/biped-pack-v3'; // Spring's v3 (Oct 30): v2's 57 clips + 2 Gnome Plow ride clips (ride, rideRam)
+export const PACK_URL = '/models/anims/biped-pack-v4'; // Spring's v4 (Oct 30): v3's 59 clips + 11 per-card specials (kind special / ability)
 let packP: Promise<Pack | null> | null = null;
 /** test hook (window.__sharedPack): what the pack loader did */
 export const packInfo = { url: PACK_URL, loaded: false, clips: [] as { name: string; kind: string }[], error: '', units: {} as Record<string, string> };
@@ -186,12 +186,12 @@ function swings(S: Rig, T: Rig): Map<string, THREE.Quaternion> {
 /** Spring (Oct 30): one shared lift can't fit every body, so a standing clip is lowered / raised until this unit's lowest foot at frame 0
  *  matches its own rest stance (forward kinematics on the baked first frame; the Hips track moves by the difference) */
 const FEET = ['LeftToeBase', 'RightToeBase', 'LeftFoot', 'RightFoot'];
-function groundFix(T: Rig, hip: string, outQ: Map<string, number[]>, outP: number[]) {
+function groundFix(T: Rig, hip: string, outQ: Map<string, number[]>, outP: number[], k = 0, ramp = -1) {
   const W = new Map<string, THREE.Matrix4>(), q = new THREE.Quaternion(), v = new THREE.Vector3();
   for (const b of T.order) {
     const pb = T.parent.get(b), qa = outQ.get(b)!;
-    q.set(qa[0], qa[1], qa[2], qa[3]);
-    const pos = b === hip ? v.set(outP[0], outP[1], outP[2]) : T.restLp.get(b)!;
+    q.set(qa[k * 4], qa[k * 4 + 1], qa[k * 4 + 2], qa[k * 4 + 3]);
+    const pos = b === hip ? v.set(outP[k * 3], outP[k * 3 + 1], outP[k * 3 + 2]) : T.restLp.get(b)!;
     W.set(b, (pb ? W.get(pb)! : T.upM.get(b)!).clone().multiply(new THREE.Matrix4().compose(pos, q, T.restS.get(b)!)));
   }
   const feet = FEET.filter((f) => W.has(f) && T.restP.has(f));
@@ -199,12 +199,13 @@ function groundFix(T: Rig, hip: string, outQ: Map<string, number[]>, outP: numbe
   const now = Math.min(...feet.map((f) => new THREE.Vector3().setFromMatrixPosition(W.get(f)!).y)), rest = Math.min(...feet.map((f) => T.restP.get(f)!.y));
   const top = Math.max(...[...T.restP.values()].map((p) => p.y)), h = Math.max(1e-6, top - rest);
   const d = now - rest;
-  if (Math.abs(d) < 0.005 * h || Math.abs(d) > 0.25 * h) return; // already on the floor, or a pose that really leaves it
+  if (Math.abs(d) < 0.005 * h || Math.abs(d) > (ramp >= 0 ? 0.6 : 0.25) * h) return; // already on the floor, or a pose that really leaves it
   const up = T.upM.get(hip)!, local = new THREE.Vector3(0, -d, 0).applyMatrix3(new THREE.Matrix3().setFromMatrix4(up.clone().invert()));
-  for (let k = 0; k < outP.length; k += 3) { outP[k] += local.x; outP[k + 1] += local.y; outP[k + 2] += local.z; }
+  const n = outP.length / 3, last = Math.max(1, n - 1);
+  for (let i = 0; i < n; i++) { const w = ramp < 0 ? 1 : Math.min(1, Math.max(0, (i - ramp) / Math.max(1, last - ramp))); outP[i * 3] += local.x * w; outP[i * 3 + 1] += local.y * w; outP[i * 3 + 2] += local.z * w; } // Spring (Oct 30): the sewer-slide's prone end is snapped to the floor, ramped in from the launch
 }
 /** a pack clip baked onto this model's skeleton, or null when fewer than 80 % of its rotated bones exist here */
-function retarget(src: THREE.AnimationClip, S: Rig, T: Rig, C: Map<string, THREE.Quaternion>, ground = false): THREE.AnimationClip | null {
+function retarget(src: THREE.AnimationClip, S: Rig, T: Rig, C: Map<string, THREE.Quaternion>, ground = false, endSnapFrom?: number): THREE.AnimationClip | null {
   const qTr = new Map<string, THREE.KeyframeTrack>(); let hipTr: THREE.KeyframeTrack | null = null, hipName = '';
   for (const tr of src.tracks) { const i = tr.name.lastIndexOf('.'), bone = tr.name.slice(0, i), prop = tr.name.slice(i + 1); if (prop === 'quaternion') qTr.set(bone, tr); else if (prop === 'position' && /hips/i.test(bone) && S.restW.has(bone)) { hipTr = tr; hipName = bone; } }
   if (!qTr.size || [...qTr.keys()].filter((b) => T.restW.has(b)).length / qTr.size < 0.8) return null;
@@ -236,6 +237,7 @@ function retarget(src: THREE.AnimationClip, S: Rig, T: Rig, C: Map<string, THREE
   const tracks: THREE.KeyframeTrack[] = [];
   for (const [b, vals] of outQ) if (S.restW.has(b)) tracks.push(new THREE.QuaternionKeyframeTrack(b + '.quaternion', times, vals));
   if (outP.length && ground) groundFix(T, hipName, outQ, outP);
+  if (outP.length && endSnapFrom !== undefined) { const r = Math.max(0, times.findIndex((t) => t >= endSnapFrom)); groundFix(T, hipName, outQ, outP, times.length - 1, r); }
   if (outP.length) tracks.push(new THREE.VectorKeyframeTrack(hipName + '.position', times, outP));
   if (!tracks.some((t) => t instanceof THREE.QuaternionKeyframeTrack)) return null; // an empty clip would leave the bind pose showing (Ken's T-poses, Oct 30)
   return new THREE.AnimationClip(src.name, src.duration, tracks);
@@ -247,7 +249,8 @@ function sharedFor(id: string, char: THREE.Object3D, pack: Pack | null): SharedS
   const C = swings(pack.rig, T), ratio = pack.rig.leg > 1e-6 && T.leg > 1e-6 ? T.leg / pack.rig.leg : 1;
   const out: SharedSet = { byName: {}, byKind: {}, impact: {}, speed: {}, events: {} };
   for (const pc of pack.clips) {
-    const cl = retarget(pc.clip, pack.rig, T, C, /^(idle|idleBreak|walk|run|attack|ranged|hit|cheer)$/.test(pc.kind));
+    const endSnap = /sewer-slide/.test(pc.clip.name) ? (pc.events?.find((e) => e.name === 'launch')?.time ?? 0) : undefined; // ends prone: snap the end pose to the floor
+    const cl = retarget(pc.clip, pack.rig, T, C, /^(idle|idleBreak|walk|run|attack|ranged|hit|cheer)$/.test(pc.kind), endSnap);
     if (!cl) { packInfo.units[id] = 'bones do not match (' + pc.clip.name + ')'; console.warn('[anim pack] ' + id + ': ' + packInfo.units[id] + '; using its own clips'); return null; }
     out.byName[cl.name] = cl; (out.byKind[pc.kind] ||= []).push(cl); if (pc.events) out.events[cl.name] = pc.events;
     if (pc.impact !== undefined) out.impact[cl.name] = pc.impact;
@@ -293,9 +296,12 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
           if (!cl) { cl = byName(OLD[n]) || byName(n); if (cl && info.clips && typeof info.clips === 'object') missingClips.push({ id, role: n, wanted: want || `OH_${n}`, used: cl.name }); }
           if (cl) clips[n] = cl;
         }
+        // Oct 31: any other role named in models.json `clips` (e.g. the beetle's run) loads by name too
+        for (const [role, nm] of Object.entries((info.clips || {}) as Record<string, unknown>)) if (typeof nm === 'string' && !clips[role] && !['death', 'react_knockback', 'react_lifted', 'special'].includes(role)) { const cl = byName(nm); if (cl) clips[role] = cl; }
         // Owner fix (Ken, Oct 28): a unit carried by the Junk Shaman loops its lifted clip; the Shaman holds his lift special
     for (const [role, key] of [['lifted', 'react_lifted'], ['special', 'special']]) { const nm = info.clips?.[key]; const cl = typeof nm === 'string' ? byName(nm) : undefined; if (cl && !clips[role]) clips[role] = cl; }
-        const shared = sharedFor(id, c.scene, await loadSharedPack()), picked = new Set<string>(), packFree = new Set<string>();
+        const shared = info.bodyType && info.bodyType !== 'biped' ? null : sharedFor(id, c.scene, await loadSharedPack()), picked = new Set<string>(), packFree = new Set<string>(); // a multi-leg or other body keeps its own clips
+        if (info.bodyType && info.bodyType !== 'biped') packInfo.units[id] = 'own skeleton (' + info.bodyType + ')';
         // Round 28b (Ken's Studio slots, Oct 29): a card's slot choices from src/content/anim-slots.json come first. Only clips in this card's
         // own GLB play (a shared-library clip from another model is noted, not retargeted); "none" removes the role; roles without a choice keep the logic above.
         { const sl = (animSlotsJson as any).cards?.[id]?.slots as Record<string, any> | undefined;
@@ -329,7 +335,7 @@ export interface C3D {
   /** Round 24: attack clip played by the model (GLB clip name), release time (ms into the clip) and bone read from events.json; onRelease fires exactly when the clip passes it */ attackClip?: string; partObject?: (name: string) => THREE.Object3D | null; clipOf?: (anim: string) => string; release?: { ms: number; bone: string } | null; onRelease?: (bone: THREE.Object3D) => void; currentClip?: () => string; partInfo?: () => { name: string; file: string; bone: string; pos: number[]; rot: number[]; rotDeg: number[]; scale: number[]; loaded: boolean }[];
   /** flying units */ flying?: { hoverSquares: number; floatSquares: number; floatsPerSecond: number; swayDeg: number; groundShadow: boolean; source: string }; lift?: number; swayNowDeg?: number; groundShadow?: boolean;
   /** Owner fix (Oct 28): true when the model has this clip */ has?: (n: string) => boolean;
-  /** Oct 30: where the attack blow lands (s into the clip, if known) and a clip speed setter */ impactOf?: (n: string) => number | undefined; setSpeed?: (n: string, k: number) => void; gaitSpeed?: (n: string) => number | undefined; setPace?: (n: string, pace: number) => void; eventsOf?: (n: string) => { name: string; time: number }[]; packRoles?: Set<string>; animWeight?: () => number; poseDelta?: () => number; diag?: () => any; seek?: (n: string, t: number) => void;
+  /** Oct 30: where the attack blow lands (s into the clip, if known) and a clip speed setter */ impactOf?: (n: string) => number | undefined; setSpeed?: (n: string, k: number) => void; gaitSpeed?: (n: string) => number | undefined; setPace?: (n: string, pace: number) => void; eventsOf?: (n: string) => { name: string; time: number }[]; packRoles?: Set<string>; animWeight?: () => number; /** Oct 31: true while the Junk Shaman carries a unit (his special loops its lift segment) */ holding?: boolean; poseDelta?: () => number; diag?: () => any; seek?: (n: string, t: number) => void;
   clipNames: string[]; held: string[]; worn: string[]; height: number;
   /** height in board squares (owner look or default) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
   /** Bowler Brawler only: hand-keyed special moves, ball hooks, flame effect */ special?: (n: 'bowl' | 'spinBall' | 'basketShot') => void; trig?: (shootT: number, born: number) => void; advanceIdle?: (sec: number) => void; ballInfo?: () => any; effects?: () => any[];
@@ -381,7 +387,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   let cur = '';
   const log: string[] = [];
   const randomIdle = () => { const ac = actions.idle; if (ac) { ac.time = Math.random() * (ac.getClip().duration || 1); ac.timeScale = 0.9 + Math.random() * 0.2; } }; // nothing idles in unison
-  const once = (n: string) => n === 'attack' || n === 'mine' || n === 'hit' || n === 'defeat' || n === 'knockback' || n === 'bowled' || n === 'idleBreak'; // Round 28b: new one-shot roles
+  const once = (n: string) => n === 'attack' || n === 'mine' || n === 'hit' || n === 'defeat' || n === 'knockback' || n === 'bowled' || n === 'idleBreak' || n === 'special' || n === 'ability'; // Round 28b: new one-shot roles; Oct 31: specials and abilities play once (the Shaman's hold loops its lift segment)
   const resolve = (n: string): string => (actions[n] ? n : n === 'run' && actions.walk ? 'walk' : n === 'mine' && actions.attack ? 'attack' : (n === 'knockback' || n === 'bowled') && actions.hit ? 'hit' : 'idle'); // Round 28b: knockback / bowled fall back to the hit clip, idleBreak to idle
   const lockLen = (n: string) => (n === 'defeat' ? 1e9 : Math.min(actions[n]?.getClip().duration || 0.8, n === 'hit' ? 0.8 : 1.1));
   let started = 0, shakeT = 0;
@@ -472,12 +478,12 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   }
   const rig = ballRec ? makeBallRig(ch, root, ballRec, out, log, () => cur, () => heightSpaces) : null;
   // Owner fix (Ken, Oct 28): while the Shaman carries a unit his special loops between its lift_start and lift_end events (he holds the lift)
-  const holdSeg = (): [number, number] => { const ac = actions.special; const cn = ac ? ac.getClip().name : ''; const d = ac ? ac.getClip().duration || 1 : 1; const ev: any[] = (a.events as any)?.clips?.[cn]?.events || []; const s0 = ev.find((e: any) => e.name === 'lift_start')?.time; const s1 = ev.find((e: any) => e.name === 'lift_end')?.time; return [typeof s0 === 'number' ? s0 : d * 0.3, typeof s1 === 'number' ? s1 : d * 0.8]; };
+  const holdSeg = (): [number, number] => { const ac = actions.special; const cn = ac ? ac.getClip().name : ''; const d = ac ? ac.getClip().duration || 1 : 1; const ev: any[] = [...((a.events as any)?.clips?.[cn]?.events || []), ...((sh?.events[cn]) || [])]; const s0 = ev.find((e: any) => e.name === 'lift_start' || e.name === 'lift')?.time; const s1 = ev.find((e: any) => e.name === 'lift_end' || e.name === 'drop')?.time; return [typeof s0 === 'number' ? s0 : d * 0.3, typeof s1 === 'number' ? s1 : d * 0.8]; };
   randomIdle();
   /** Oct 30: seconds into a clip where the blow lands (pack metadata, or an impact/hit/contact event in events.json) */
-  out.impactOf = (n: string): number | undefined => { const cl = actions[resolve(n)]?.getClip(); if (!cl) return undefined; if (sh?.impact[cl.name] !== undefined) return sh.impact[cl.name]; const ev: any[] = (a.events as any)?.clips?.[cl.name]?.events || []; const e = ev.find((x: any) => /impact|hit|contact|strike|release/i.test(x.name || '')); return typeof e?.time === 'number' ? e.time : undefined; };
+  out.impactOf = (n: string): number | undefined => { const cl = actions[resolve(n)]?.getClip(); if (!cl) return undefined; if (sh?.impact[cl.name] !== undefined) return sh.impact[cl.name]; const ev: any[] = [...((a.events as any)?.clips?.[cl.name]?.events || []), ...((a.info?.events?.[cl.name]) || [])]; const e = ev.find((x: any) => /impact|hit|contact|strike|release/i.test(x.name || '')); return typeof e?.time === 'number' ? e.time : undefined; };
   /** Oct 30: walk / run pace from the pack (rootSpeed x leg ratio), in board squares per second */
-  out.gaitSpeed = (n: string) => { const cl = actions[resolve(n)]?.getClip(); const sp = cl ? sh?.speed[cl.name] : undefined; return sp ? (sp / bodyH) * heightSpaces : undefined; };
+  out.gaitSpeed = (n: string) => { const cl = actions[resolve(n)]?.getClip(); const sp = cl ? (sh?.speed[cl.name] ?? a.info?.gait?.[n]) : undefined; return sp ? (sp / bodyH) * heightSpaces : undefined; };
   /** Oct 30: the pack's timed events of the clip playing this role (launch / land / recovered, hit, ground...) */
   out.packRoles = packRoles;
   out.poseDelta = () => { let n = 0, t = 0; ch.traverse((o: any) => { if (o.isBone && restQ.has(o.name)) { n++; t += 2 * Math.acos(Math.min(1, Math.abs(o.quaternion.dot(restQ.get(o.name)!)))); } }); return n ? t / n : 0; };
@@ -488,8 +494,9 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   out.seek = (n: string, t: number) => { const ac = actions[resolve(n)]; if (ac) ac.time = t; };
   /** Oct 30: play a walk / run clip at the speed that matches a pace in board squares per second (feet stay planted) */
   out.setPace = (n: string, pace: number) => { const g = out.gaitSpeed?.(n); const ac = actions[resolve(n)]; if (ac) ac.timeScale = g ? Math.min(1.8, Math.max(0.6, pace / g)) : 1; };
+  out.holding = false;
   out.setSpeed = (n: string, k: number) => { const ac = actions[resolve(n)]; if (ac) ac.timeScale = k; };
-  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (cur === 'special' && actions.special) { const sg = holdSeg(); if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
+  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (cur === 'special' && actions.special && out.holding) { const sg = holdSeg(); if (!actions.special.isRunning()) { actions.special.reset(); actions.special.play(); } if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
   if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }
   return out;
 }

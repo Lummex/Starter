@@ -433,7 +433,7 @@ const _embV = new THREE.Vector3();
     group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
     /** Oct 30: squares still to walk (one per step), running gait, knock-back flight, delayed hit flash, step-in length, when its blow lands */
-    path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lungeDur?: number; blowAt?: number;
+    path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lungeDur?: number; blowAt?: number;
   };
   type Knock = { t0: number; from: THREE.Vector3; land: THREE.Vector3; h: number; spin: number; fly: number; ret: boolean; landed: boolean; knockMove?: boolean };
   // Oct 30 (Ken's fighting vision): units walk square by square and fights are little comic scenes (timings in ms, snappy)
@@ -897,9 +897,13 @@ const _embV = new THREE.Vector3();
       else { f.lunge = dir.clone().multiplyScalar(0.42); f.lungeT = t0; f.lungeDur = LUNGE_MS; }
       f.shootT = t0;
       if (f.c3d) {
-        const ci = f.c3d.impactOf?.('attack'), d = f.c3d.dur('attack');
-        f.c3d.setSpeed?.('attack', ci ? Math.min(2.6, Math.max(0.8, ci / (imp / 1000))) : Math.min(2.2, Math.max(1, d / 0.75)));
-        if (!wait) f.c3d.play('attack'); // start the clip now: a defender-strike-back defeat can end this figure before the next frame
+        // Oct 31 (Spring's specials): a smack, stomp or slam IS the unit's attack, so its special clip plays instead of the plain swing
+        const role: 'attack' | 'special' = f.c3d.has?.('special') && (CARDS[f.cardId].abilities || []).some((x: string) => x === 'smack' || x === 'enforcer' || x === 'overload') ? 'special' : 'attack';
+        f.atkRole = role;
+        const ci = f.c3d.impactOf?.(role), d = f.c3d.dur(role);
+        const k = ci ? Math.min(2.6, Math.max(0.8, ci / (imp / 1000))) : Math.min(2.2, Math.max(1, d / 0.75));
+        f.c3d.setSpeed?.(role, k); f.atkMs = role === 'special' ? Math.max(600, (d / k) * 1000) : 600;
+        if (!wait) f.c3d.play(role); // start the clip now: a defender-strike-back defeat can end this figure before the next frame
       }
       const swing = () => { audio.play(ranged ? 'ranged' : 'melee'); if (f.finished) audio.voiceLine('yell'); };
       if (wait) setTimeout(swing, wait); else swing();
@@ -916,7 +920,8 @@ const _embV = new THREE.Vector3();
     }
     if (blowAt) for (const f of figs.values()) if (f.kb && f.kb.knockMove && f.kb.t0 === now) { f.kb.t0 = blowAt; f.knockT = blowAt + 100; } // ability knocks land with the blow
     for (const [uid, f] of figs) if (!seen.has(uid) && !f.dying) {
-      const at = blowAt ? blowAt + (strikers.has(uid) ? 320 : f.kb ? f.kb.fly + 180 : 180) : now;
+      const ride = events.find((e) => e.type === 'abilityUsed' && e.uid === uid && (e.ability === 'slide' || e.ability === 'rocket')); // Oct 31: a sewer slide / rocket ride that ends in a blast plays out first
+      const at = ride && f.c3d?.has?.('special') ? now + Math.max(600, (f.c3d.dur('special') || 1.5) * 1000) : blowAt ? blowAt + (strikers.has(uid) ? 320 : f.kb ? f.kb.fly + 180 : 180) : now;
       f.dying = at; const p = f.group.position;
       const poof = () => { spawnFx('stars', p, 5); spawnFx('dust', p, 4); audio.play('defeat-poof'); if (f.finished) audio.voiceLine('sulk'); };
       if (at > now) setTimeout(poof, at - now); else poof();
@@ -931,6 +936,11 @@ const _embV = new THREE.Vector3();
         f.faceTo = Math.atan2(m.x - f.target.x, m.z - f.target.z); f.faceUntil = now + 1000;
         setTimeout(() => { spawnFx('spark', m, 4); audio.play('pick'); audio.play('chime'); }, 220);
       } else if (e.type === 'bowl') { const bf = figs.get(e.uid); if (bf) bf.shootT = now; playBowl(e); }
+      else if ((e.type === 'abilityUsed' || e.type === 'steal') && figs.get(e.uid)) { // Oct 31 (Spring's specials): brew toss, steal, blink, siphon, rocket ride, shockwave, sewer slide, plow ram
+        const f = figs.get(e.uid)!, ab = e.type === 'steal' ? 'steal' : e.ability;
+        const role: 'ability' | 'special' | null = ['brew', 'steal', 'blink', 'siphon'].includes(ab) && f.c3d?.has?.('ability') ? 'ability' : ['rocket', 'shockwave', 'slide', 'plow'].includes(ab) && f.c3d?.has?.('special') ? 'special' : null;
+        if (role && f.c3d) { f.abilT = now; f.abilRole = role; f.abilMs = Math.max(400, (f.c3d.dur(role) || 1) * 1000); f.c3d.setSpeed?.(role, 1); }
+      }
       else if (e.type === 'damage' && e.uid) {
         const f = figs.get(e.uid);
         if (f && e.amount > 0) { if (blowAt) f.hitAt = (f.blowAt && strikers.has(f.uid) ? f.blowAt : blowAt) + (strikers.has(f.uid) ? 150 : 0); else f.hitT = now; } // a strike-back lands just after the blow
@@ -1380,7 +1390,8 @@ const _embV = new THREE.Vector3();
       }
       if (f.c3d) {
         const dt = Math.min(0.5, (now - (f.lastT || now)) / 1000); f.lastT = now;
-        const mk3 = (now - f.mineT) / 900, ak3 = now >= f.shootT ? (now - f.shootT) / 600 : 2;
+        const mk3 = (now - f.mineT) / 900, ak3 = now >= f.shootT ? (now - f.shootT) / (f.atkMs || 600) : 2;
+        const abil = f.abilT && now - f.abilT < (f.abilMs || 1000) ? f.abilRole : null; // Oct 31: a special / ability clip from an abilityUsed event
         if (f.born) f.bornAt = f.born;
         f.c3d.trig?.(f.shootT, f.born || (f.bornAt && now - f.bornAt < 12000 ? f.bornAt : 0)); // the model may finish loading after the short summon drop
         // automated runs: no random pack idle breaks (checks read 'idle')
@@ -1388,7 +1399,8 @@ const _embV = new THREE.Vector3();
         const knocked = f.knockT && now >= f.knockT && now - f.knockT < (f.kbClip ? f.kbClip.dur : 700) && f.c3d.has?.('knockback'), bowledNow = f.bowledT && now >= f.bowledT && now - f.bowledT < 900 && f.c3d.has?.('bowled');
         if (!walking && !f.shootT && !f.hitT && f.c3d.has?.('idleBreak') && !(testMode && f.c3d.packRoles?.has('idleBreak'))) { if (!f.idleBreakAt) f.idleBreakAt = now + 6000 + Math.random() * 8000; else if (now > f.idleBreakAt) { f.idleBreakT = now; f.idleBreakAt = now + 9000 + Math.random() * 9000; } } else f.idleBreakAt = 0;
         const breaking = f.idleBreakT && now - f.idleBreakT < (f.c3d.dur('idleBreak') || 1.5) * 1000;
-        f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : f.shootT && ak3 < 1 && !(f.hitT && f.hitT > f.shootT) ? 'attack' : f.mineT && mk3 < 1 ? 'mine' : bowledNow ? 'bowled' : knocked ? 'knockback' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? (f.run && onPath ? 'run' : 'walk') : breaking ? 'idleBreak' : 'idle');
+        f.c3d.holding = !!(carry && carry.holder === f.uid);
+        f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : abil ? abil : f.shootT && ak3 < 1 && !(f.hitT && f.hitT > f.shootT) ? (f.atkRole || 'attack') : f.mineT && mk3 < 1 ? 'mine' : bowledNow ? 'bowled' : knocked ? 'knockback' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? (f.run && onPath ? 'run' : 'walk') : breaking ? 'idleBreak' : 'idle');
         if (knocked && f.kbClip && !f.kbClip.seeked && f.c3d.current() === 'knockback') { f.c3d.seek?.('knockback', f.kbClip.launch); f.kbClip.seeked = true; }
         f.c3d.update(dt);
         g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
