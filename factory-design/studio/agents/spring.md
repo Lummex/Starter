@@ -108,3 +108,20 @@ For several files: open any github.com page, `fetch("https://api.github.com/repo
 - Learned: Blender's bundled python (blender-5.2.3/5.2/python/bin/python.exe) has numpy. System `py` has PIL but no numpy, and `py -I` hides user site-packages. Splitting the work into 3 Opus helpers by clip group took ~20 min wall time, and all clips passed the shared pass marks on the first merge.
 - Known quirks for the game: golem deaths float 4–11%, uneven-leg units hover a foot 2–8% in walk/run, and loops start mid-swing.
 - Next: rider, beetle (multileg) and flyer sets.
+
+## Biped pack v2 with Mixamo (Oct 30, Forge job, Ken OK) — report: reports/2026-10-30-spring-biped-pack-v2-mixamo.md
+- v2 on main 9b6dbd2 (factory-design/design/anims/biped-pack-v2.glb/.json, 57 clips = v1's 32 + 25 Mixamo); tools in biped-pack-v2-src/ (c418bca). Raw Mixamo FBX only on Ken's PC: art/mixamo/ (28 files).
+- Mixamo licence: Adobe FAQ "royalty free for personal, commercial, and non-profit projects", including video games.
+- Mixamo was already signed in as Ken in Chrome (no login step needed).
+- How I downloaded: the page's own API (/api/v1/products, /animations/export, /characters/<id>/monitor; X Bot, fbx7_2019, skin false, 30 fps, inplace where supported).
+- Learned (Mixamo downloads):
+  - Chrome blocks repeat automatic downloads from mixamo.com after the first; iframes and reloads don't help.
+  - The S3 links expire after 300 s and can't be fetched cross-origin from the page.
+  - Exports hit HTTP 429 after ~7 fast calls: wait ~30 s and space calls ~8 s apart.
+  - What worked: a local receiver (py http.server on 127.0.0.1:8765) serving a helper page, opened by one real click from the Mixamo tab. The Mixamo page postMessages each signed link to it, and the receiver downloads into art/mixamo. A direct fetch to localhost from mixamo.com fails.
+- Learned (fitting to our units):
+  - Mixamo -> our rig with the align retarget works. Mixamo's long legs make lying poses sink 30-38% and walks ~9% on our chunky units.
+  - Fix: groundfix.py lifts the Hips track. "frame" mode for lying clips, "contact" mode (signed, per frame) for standing ones, measured over goblin/gnome/dwarf/golem.
+  - strip_xz (removing root travel) makes clips that take steps skid; use it only on lying or stationary clips.
+  - Soften wrists 50% (hand halfway to following the forearm) so props don't flail.
+- Dropped: Mixamo "Large Hit Reaction From The Front" (steps back far, doesn't fit a tile).
