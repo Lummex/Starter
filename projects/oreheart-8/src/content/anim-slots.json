@@ -577,6 +577,74 @@
     }
    },
    "candidates": {}
+  },
+  "phase-stalker": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-ride-01",
+     "animation": "biped-ride-01",
+     "auto": true,
+     "name": "Seated driving (Gnome Plow rider, Spring pack ride clip)"
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-ride-01",
+     "animation": "biped-ride-01",
+     "auto": true,
+     "name": "Seated driving (Gnome Plow rider, Spring pack ride clip)"
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-ride-01",
+     "animation": "biped-ride-01",
+     "auto": true,
+     "name": "Seated driving (Gnome Plow rider, Spring pack ride clip)"
+    },
+    "special": {
+     "shared": true,
+     "clip": "biped-ride-02",
+     "animation": "biped-ride-02",
+     "auto": true,
+     "name": "Seated ram: rears back, slams forward at impact (Gnome Plow)"
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-ride-02",
+     "animation": "biped-ride-02",
+     "auto": true,
+     "name": "Seated ram: rears back, slams forward at impact (Gnome Plow)"
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-ride-01",
+     "animation": "biped-ride-01",
+     "auto": true,
+     "name": "Seated driving (Gnome Plow rider, Spring pack ride clip); keeps him seated"
+    },
+    "knockback": {
+     "shared": true,
+     "clip": "biped-ride-01",
+     "animation": "biped-ride-01",
+     "auto": true,
+     "name": "Seated driving (Gnome Plow rider, Spring pack ride clip); keeps him seated"
+    },
+    "bowled": {
+     "shared": true,
+     "clip": "biped-ride-01",
+     "animation": "biped-ride-01",
+     "auto": true,
+     "name": "Seated driving (Gnome Plow rider, Spring pack ride clip); keeps him seated"
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-ride-01",
+     "animation": "biped-ride-01",
+     "auto": true,
+     "name": "Seated driving (Gnome Plow rider, Spring pack ride clip); keeps him seated"
+    }
+   },
+   "note": "Ken (Oct 30): a gnome driving the plow. Anvil/plow worker: the rider stays seated in every role (no standing clip on the plow)."
   }
  },
  "stats": {

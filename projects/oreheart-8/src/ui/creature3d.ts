@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { skinBox } from './grubnak3d';
+import { plowMount } from './plow';
 import { CARDS } from '../engine';
 import animSlotsJson from '../content/anim-slots.json';
 import unitHeightsJson from '../content/unit-heights.json';
@@ -97,7 +98,7 @@ const PARTS: Record<string, PartCfg[]> = {
   'hexwright-apprentice': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-8.889, 11.139, 14.226], rot: [-153.173, -64.937, 132.76], scale: [52.968, 52.968, 52.968] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'ironhammer-berserker': [{ name: 'crystal-pistol', file: 'crystal-pistol.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-1.882, 21.222, -1.587], rot: [168.899, -32.158, 92.346], scale: [16.176, 16.176, 16.176] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'oathbound-pikeman': [{ name: 'rifle', file: 'rifle.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-44.159, 16.494, 20.613], rot: [163.196, -28.673, 7.516], scale: [79.963, 79.963, 79.963] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
-  'phase-stalker': [],
+  'phase-stalker': [{ name: 'plow', file: 'plow.glb', bone: [], len: 0.9, grip: 0.5, rot: [0, 0, 0], mount: true }], // Ken (Oct 30): the gnome drives the plow; built by plow.ts (Clay's split plow, Spring + Ledger's seat)
   'queen-brunhilda-stonebeard': [{ name: 'warhammer', file: 'warhammer.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-6.749, 6.967, 10.796], rot: [31.091, 75.481, 74.138], scale: [31.171, 31.171, 31.171] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'ram-rider': [{ name: 'ram', file: 'ram.glb', bone: [], len: 0.9, grip: 0.5, rot: [0, 0, 0], mount: true }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'rune-splitter': [{ name: 'crystal-hammer', file: 'crystal-hammer.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-5.945, 14.395, 2.713], rot: [-90.58, 40.418, 154.032], scale: [31.285, 31.285, 31.285] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
@@ -443,7 +444,7 @@ export function makeCreature3d(id: string, a: Assets): C3D {
   sc.add(ch); root.add(sc);
   // a mount stands on the ground; the rider sits on its back
   const mt = PARTS[id].find((p) => p.mount);
-  if (mt && a.parts[mt.name]) {
+  if (mt && a.parts[mt.name] && !plowMount(id, a.parts[mt.name], root, sc, ch, prep, (n, o) => addItem(n, 'ground', false, o))) {
     const w = a.parts[mt.name].clone(true); prep(w);
     const wb = new THREE.Box3().setFromObject(w), ws = wb.getSize(new THREE.Vector3()), wc = wb.getCenter(new THREE.Vector3());
     const long = Math.max(ws.x, ws.z);
