@@ -1,0 +1,167 @@
+[
+ {
+  "name": "biped-idle-11",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/idle-breathing.fbx",
+  "loop": true,
+  "src": "idle-breathing"
+ },
+ {
+  "name": "biped-idle-12",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/idle-happy.fbx",
+  "loop": true,
+  "src": "idle-happy"
+ },
+ {
+  "name": "biped-idle-13",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/idle-bored.fbx",
+  "loop": true,
+  "src": "idle-bored"
+ },
+ {
+  "name": "biped-idle-14",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/idle-nervous.fbx",
+  "loop": true,
+  "src": "idle-nervous"
+ },
+ {
+  "name": "biped-idle-15",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/idle-dizzy.fbx",
+  "loop": true,
+  "src": "idle-dizzy"
+ },
+ {
+  "name": "biped-idle-16",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/idle-orc.fbx",
+  "loop": true,
+  "src": "idle-orc"
+ },
+ {
+  "name": "biped-idle-17",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/idle-dwarf.fbx",
+  "loop": true,
+  "src": "idle-dwarf"
+ },
+ {
+  "name": "biped-idle-18",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/idle-oldman.fbx",
+  "loop": true,
+  "src": "idle-oldman"
+ },
+ {
+  "name": "biped-idle-19",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/idle-vegas.fbx",
+  "loop": true,
+  "src": "idle-vegas"
+ },
+ {
+  "name": "biped-idle-20",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/idle-weightshift.fbx",
+  "loop": true,
+  "src": "idle-weightshift"
+ },
+ {
+  "name": "biped-idleBreak-05",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/brk-yawn.fbx",
+  "loop": false,
+  "src": "brk-yawn",
+  "speed": 1.7
+ },
+ {
+  "name": "biped-idleBreak-06",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/brk-armstretch.fbx",
+  "loop": false,
+  "src": "brk-armstretch",
+  "speed": 1.7
+ },
+ {
+  "name": "biped-idleBreak-07",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/brk-neck.fbx",
+  "loop": false,
+  "src": "brk-neck"
+ },
+ {
+  "name": "biped-idleBreak-08",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/brk-shoulder.fbx",
+  "loop": false,
+  "src": "brk-shoulder"
+ },
+ {
+  "name": "biped-walk-03",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/walk-swagger.fbx",
+  "loop": true,
+  "src": "walk-swagger"
+ },
+ {
+  "name": "biped-walk-04",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/walk-dwarf.fbx",
+  "loop": true,
+  "src": "walk-dwarf"
+ },
+ {
+  "name": "biped-run-03",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/run-standard.fbx",
+  "loop": true,
+  "src": "run-standard"
+ },
+ {
+  "name": "biped-run-04",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/run-drunk.fbx",
+  "loop": true,
+  "src": "run-drunk"
+ },
+ {
+  "name": "biped-bonk-04",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/hit-body.fbx",
+  "loop": false,
+  "src": "hit-body",
+  "speed": 1.2,
+  "strip_xz": true
+ },
+ {
+  "name": "biped-knockback-02",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/kd-punch.fbx",
+  "loop": false,
+  "src": "kd-punch",
+  "then": "C:/Users/kentu/Documents/Oreheart/art/mixamo/up-back.fbx",
+  "speed": 1.5,
+  "blend": 8,
+  "speed2": 2.8,
+  "strip_xz": true
+ },
+ {
+  "name": "biped-bowled-02",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/kd-stomach.fbx",
+  "loop": false,
+  "src": "kd-stomach",
+  "then": "C:/Users/kentu/Documents/Oreheart/art/mixamo/up-stomach.fbx",
+  "speed": 1.5,
+  "blend": 8,
+  "speed2": 2.8,
+  "strip_xz": true
+ },
+ {
+  "name": "biped-death-03",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/death-back.fbx",
+  "loop": false,
+  "src": "death-back"
+ },
+ {
+  "name": "biped-death-04",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/death-forward.fbx",
+  "loop": false,
+  "src": "death-forward"
+ },
+ {
+  "name": "biped-cheer-03",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/cheer-fists.fbx",
+  "loop": false,
+  "src": "cheer-fists"
+ },
+ {
+  "name": "biped-cheer-04",
+  "fbx": "C:/Users/kentu/Documents/Oreheart/art/mixamo/cheer-excited.fbx",
+  "loop": false,
+  "src": "cheer-excited",
+  "speed": 1.3
+ }
+]
