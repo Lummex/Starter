@@ -10468,7 +10468,10 @@ async function r26Models(page, request, ids) {
     }, { message: `${id}: parts like the Model Editor`, timeout: 40000 }).toBe(true);
     // AC390: the idle clip is the one named in models.json "clips"
     const mj = await (await request.get(`/models/creatures/${id}/models.json`)).json();
-    if (mj.clips && mj.clips.idle) await expect.poll(async () => (await r22Fig(page, c.uid)).currentClip, { message: `${id} idle clip`, timeout: 10000 }).toBe(mj.clips.idle);
+    // owner change (Ken / Spring, Oct 30): a card whose idle slot is { pack: "random" } (src/content/anim-slots.json) idles with a random shared-pack idle instead
+    const packIdle = ((await page.evaluate(() => (window.__animSlotLog || []).slice())) || []).some((e) => e.id === id && e.role === 'idle' && e.how === 'pack-random');
+    if (packIdle) await expect.poll(async () => (await r22Fig(page, c.uid)).currentClip, { message: `${id} pack idle`, timeout: 10000 }).toMatch(/^biped-idle-\d+$/);
+    else if (mj.clips && mj.clips.idle) await expect.poll(async () => (await r22Fig(page, c.uid)).currentClip, { message: `${id} idle clip`, timeout: 10000 }).toBe(mj.clips.idle);
   }
 }
 
