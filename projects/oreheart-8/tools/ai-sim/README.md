@@ -16,4 +16,9 @@ node /tmp/sim.mjs new hard old hard 20 1000 150   # aiA diffA aiB diffB matches 
 AI_TUNE='{"hardThreat":0.6}' node /tmp/sim.mjs new hard new normal 20 1000 150   # try other weights (see TUNE in src/ai/ai.ts)
 ```
 
-Difficulty names: `easy`, `normal` (shown as Medium), `hard`. Sides swap every match; Commanders and deck styles rotate.
+Difficulty names: `easy`, `normal` (shown as Medium), `hard`. Every seed is played twice, once with bot A on each side (Oct 31: the old one-sided order gave side A 56-58% even in mirror matches); Commanders and deck styles rotate.
+
+Oct 31 additions:
+- `AI_TUNE_B='{...}'` overrides TUNE for bot B only (A keeps `AI_TUNE`), so two settings of the same AI can play each other.
+- `PERMATCH=1` prints one JSON line per match on stderr (seed, side, Commanders, first player, winner, turns, Health, crystals mined, turn-6 and turn-12 snapshots) for match-up analysis.
+- What decides a match (Medium mirror, 552 matches): the side with more units at turn 6 wins 75%, and the faction match-up dominates. Dwarves lose to gnomes 89% and to goblins 75% with the same AI on both sides, so any "Hard vs Medium" win rate is capped by the deck balance; judge Hard's skill on mirror match-ups (same faction both sides).
