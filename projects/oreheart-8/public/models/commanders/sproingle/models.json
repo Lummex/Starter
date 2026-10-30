@@ -1,0 +1,15 @@
+{
+ "generated": "2026-10-30",
+ "from": "Clay, models/commanders-oct30/game/cmd-sproingle.glb (Forge-approved under Ken's Oct 30 delegation); rest pose only",
+ "commander": "sproingle",
+ "files": {
+  "char": "char.glb",
+  "sceptre": null,
+  "throne": null
+ },
+ "clips": {},
+ "notes": "Moves come from the shared biped pack. Height = default until Ledger saves it from Ken's Studio setup.",
+ "fileSizes": {
+  "char.glb": 3329908
+ }
+}

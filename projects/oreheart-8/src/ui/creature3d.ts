@@ -113,7 +113,7 @@ interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationCl
 // otherwise a unit whose own idle / walk is the stock Meshy one gets a random pack idle (with a random start time) and a random walk / run.
 export interface PackClip { clip: THREE.AnimationClip; kind: string; loop: boolean; impact?: number; rootSpeed?: number; events?: { name: string; time: number }[] }
 interface Pack { clips: PackClip[]; rig: Rig }
-interface SharedSet { byName: Record<string, THREE.AnimationClip>; byKind: Record<string, THREE.AnimationClip[]>; impact: Record<string, number>; speed: Record<string, number>; events: Record<string, { name: string; time: number }[]> }
+export interface SharedSet { byName: Record<string, THREE.AnimationClip>; byKind: Record<string, THREE.AnimationClip[]>; impact: Record<string, number>; speed: Record<string, number>; events: Record<string, { name: string; time: number }[]> }
 export const PACK_URL = '/models/anims/biped-pack-v2'; // Spring's v2 (Oct 30): v1's 32 clips + 25 from Mixamo
 let packP: Promise<Pack | null> | null = null;
 /** test hook (window.__sharedPack): what the pack loader did */
@@ -247,6 +247,8 @@ function sharedFor(id: string, char: THREE.Object3D, pack: Pack | null): SharedS
   packInfo.units[id] = 'retargeted ' + pack.clips.length;
   return out;
 }
+/** Oct 30: the shared pack baked onto any rigged model (Commanders use it for idles, cheers and the emotes they lack) */
+export async function packClipsFor(key: string, char: THREE.Object3D): Promise<SharedSet | null> { return sharedFor(key, char, await loadSharedPack()); }
 const STOCK = /^(Idle|Casual_Walk|Walk|Heavy_Hammer_Swing|Hit_Reaction|Dead)$/;
 const cache = new Map<string, Promise<Assets | null>>();
 const ready = new Map<string, Assets>();

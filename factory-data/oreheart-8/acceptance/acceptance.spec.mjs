@@ -2861,7 +2861,9 @@ test('AC84: finished Goblin figures, Grubnak, Strongholds and mines on the battl
     expect(f.model, f.cardId).toBe(c.cardId.startsWith('gnome') && !GD_MODELS.includes(c.cardId) ? 'placeholder' : 'finished'); // owner change (Ken, Oct 30): the Gemsinger Miner has its 3D model
   }
   expect(r.commanders.player).toMatchObject({ commanderId: 'grubnak', model: 'finished' });
-  expect(r.commanders.opponent).toMatchObject({ commanderId: 'sproingle', model: 'placeholder' });
+  // owner change (Ken, Oct 30): Archmagister Sproingle is a 3D Commander now (Clay's rigged model, moves from the shared pack)
+  expect(r.commanders.opponent.commanderId).toBe('sproingle');
+  await expect.poll(async () => (await page.evaluate(async () => await window.oreheart.getRenderStats())).commanders.opponent.model, { timeout: 20000 }).toBe('finished');
   expect(r.strongholds).toEqual({ player: 'finished', opponent: 'finished' });
   expect(r.mines).toBe('finished');
 });

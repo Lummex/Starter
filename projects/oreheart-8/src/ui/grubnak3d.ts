@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { attachPart } from './creature3d';
+import { attachPart, packClipsFor } from './creature3d';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 const BASE = '/models/creatures/grubnak/';
@@ -165,7 +165,15 @@ const EMOTE_FALLBACK: Record<string, string> = { laugh: 'attack', point: 'attack
 /** per Commander: model folder, files and how tall he stands (board squares) on top of his stronghold */
 const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortress: string; scepter: string }; figH: number; keepK: number; deck: number; sceptre: { len: number; grip: number; rot: [number, number, number] } }> = {
   borgo: { base: '/models/commanders/borgo/', files: { source: 'borgo.glb', fortress: 'dwarf-stronghold', scepter: 'borgo-sceptre.glb' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
+  // Oct 30 (Clay): rigged, rest pose only; every move comes from the shared pack. figH = Borgo's until Ledger saves each one's height from Ken's Studio setup.
+  sproingle: { base: '/models/commanders/sproingle/', files: { source: 'sproingle.glb', fortress: 'gnome-stronghold', scepter: '' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
+  skreeka: { base: '/models/commanders/skreeka/', files: { source: 'skreeka.glb', fortress: 'goblin-stronghold', scepter: '' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
+  sprocket: { base: '/models/commanders/sprocket/', files: { source: 'sprocket.glb', fortress: 'gnome-stronghold', scepter: '' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
+  grumblebeard: { base: '/models/commanders/grumblebeard/', files: { source: 'grumblebeard.glb', fortress: 'dwarf-stronghold', scepter: '' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
 };
+/** Oct 30: which pack kind fills each Commander role it lacks (or has only as a stock Meshy clip) */
+const CMD_PACK: [string, string][] = [['idle', 'idle'], ['walk', 'walk'], ['attack', 'attack'], ['hit', 'hit'], ['defeat', 'defeat'], ['cheer', 'cheer'], ['celebrate', 'cheer'], ['laugh', 'cheer'], ['taunt', 'cheer'], ['cast', 'attack'], ['point', 'attack'], ['surprised', 'hit'], ['flinch', 'hit']];
+const CMD_STOCK = /^(Idle|Casual_Walk|Walk|Heavy_Hammer_Swing|Hit_Reaction|Dead)$/;
 export const hasCommander3d = (id: string) => id === 'grubnak' || id in OTHER_CMDS;
 export const commanderIds3d = () => ['grubnak', ...Object.keys(OTHER_CMDS)];
 const otherLoading = new Map<string, Promise<G3DAssets | null>>();
@@ -189,6 +197,11 @@ export function loadCommander3d(id: string): Promise<G3DAssets | null> {
         const [c, s] = await Promise.all([gl.loadAsync(cfg.base + (info.files?.char || 'char.glb')), info.files?.sceptre ? gl.loadAsync(cfg.base + info.files.sceptre).catch(() => null) : Promise.resolve(null)]);
         const clips: Record<string, THREE.AnimationClip> = {};
         for (const [role, nm] of Object.entries((info.clips || {}) as Record<string, string>)) { const cl = c.animations.find((x) => x.name === nm); if (cl) clips[role] = cl; }
+        const sh = await packClipsFor('cmd-' + id, c.scene).catch(() => null);
+        if (sh) for (const [role, kind] of CMD_PACK) {
+          if (clips[role] && !CMD_STOCK.test(clips[role].name)) continue;
+          const l = sh.byKind[kind] || []; if (l.length) clips[role] = l[Math.floor(Math.random() * l.length)];
+        }
         const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info };
         otherLoaded.set(id, a);
         return a;

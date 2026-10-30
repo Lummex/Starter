@@ -370,6 +370,7 @@ const _embV = new THREE.Vector3();
     cm.group.clear();
     cm.g3d = null;
     const a3 = id === 'grubnak' ? grubnak3dReady() : commander3dReady(id);
+    if (!a3 && id !== 'grubnak' && commanderIds3d().includes(id)) loadCommander3d(id).then((x) => { if (x && !disposed) for (const sd of ['player', 'opponent'] as const) if (cmd[sd].id === id && !cmd[sd].g3d) buildCommander(sd, cmd[sd].faction, id); });
     const onThrone = !!a3 && id === 'grubnak'; // Grubnak's throne replaces the stronghold; other 3D Commanders (Oct 30: Borgo) stand on theirs
     if (onThrone) { cm.keep = null; cm.retreat = null; } else { cm.keep = makeStronghold(faction, low); cm.group.add(cm.keep.group); if (a3) cm.retreat = null; }
     cm.fig = new THREE.Group();
@@ -424,7 +425,7 @@ const _embV = new THREE.Vector3();
     cm.baseK = cm.group.scale.y;
   }
   loadGrubnak3d().then((a) => { if (a && !disposed) for (const side of ['player', 'opponent'] as const) if (cmd[side].id === 'grubnak' && !cmd[side].g3d) buildCommander(side, cmd[side].faction, 'grubnak'); });
-  for (const cid of commanderIds3d()) if (cid !== 'grubnak') loadCommander3d(cid).then((a) => { if (a && !disposed) for (const side of ['player', 'opponent'] as const) if (cmd[side].id === cid && !cmd[side].g3d) buildCommander(side, cmd[side].faction, cid); });
+  // Oct 30: only the Commanders in this match download their model (each is ~3 MB); buildCommander asks for it
 
   // creatures
   type Fig = {
