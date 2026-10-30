@@ -381,15 +381,23 @@ describe('revision 9', () => {
 });
 
 describe('round 2', () => {
-  it('mulligans go 5 -> 5 -> 4 -> 3 and a 4th is rejected', () => {
+  // Ken (Oct 30): one full redraw replaces the old 5 -> 5 -> 4 -> 3 card-picking mulligan
+  it('Redraw Hand puts the whole hand back, reshuffles and draws the same number of cards, once', () => {
     let s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', seed: 5 });
-    const sw = (n: number) => act(s, { type: 'mulligan', uids: s.players.player.hand.slice(0, n).map((h: any) => h.uid) });
-    s = sw(5); expect(s.players.player.hand.length).toBe(5); expect(s.players.player.mulligans).toBe(1);
-    s = sw(2); expect(s.players.player.hand.length).toBe(4); expect(s.players.player.mulligans).toBe(2);
-    expect(s.priority).toBe('player');
-    s = sw(1); expect(s.players.player.hand.length).toBe(3); expect(s.players.player.mulligans).toBe(3);
+    const before = s.players.player.hand.map((h: any) => h.uid);
+    const deckN = s.players.player.deck.length;
+    expect(applyAction(s, { type: 'mulligan', uids: [before[0]] }).ok).toBe(false); // part of a hand is never legal
+    s = act(s, { type: 'mulligan', redraw: true });
+    const after = s.players.player.hand.map((h: any) => h.uid);
+    expect(after.length).toBe(5);
+    expect(s.players.player.deck.length).toBe(deckN);
+    expect(after).not.toEqual(before);
+    expect(s.players.player.mulligans).toBe(1);
     expect(s.mulliganDone.player).toBe(true);
-    expect(applyAction(s, { type: 'mulligan', uids: [s.players.player.hand[0].uid] }).ok).toBe(false);
+    expect(s.priority).toBe('opponent');
+    s = act(s, { type: 'mulligan', uids: [] }); // the opponent keeps
+    expect(s.phase).not.toBe('mulligan');
+    expect(applyAction(s, { type: 'mulligan', redraw: true }).ok).toBe(false);
   });
   it('keeping the hand ends the mulligan', () => {
     let s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', seed: 5 });

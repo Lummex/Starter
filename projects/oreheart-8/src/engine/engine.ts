@@ -65,6 +65,9 @@ const makeCard = (s: any, cardId: string) => ({ uid: 'k' + s.nextUid++, cardId }
 export const isMiner = (card: any) => card.role === 'Gatherer' || card.role === 'Smith';
 export const basicGatherer = (faction: string): string => CONFIG.basicGatherers[faction];
 export const basicMiner = basicGatherer;
+/** Ken (Oct 30): one full redraw of the opening hand per match (the whole hand, same size), never card by card. */
+export const MULLIGAN_REDRAWS = 1;
+export const canRedraw = (s: any, who: string) => (s.players[who].mulligans || 0) < MULLIGAN_REDRAWS && s.players[who].hand.length > 0;
 /** Flow + Bank: everything a player can spend. */
 export const funds = (pl: any) => pl.crystals + pl.bank;
 const baseCost = (s: any, p: Side, card: any) => {
@@ -978,10 +981,9 @@ export function legalActions(s: any): any[] {
   }
   if (s.phase === 'mulligan') {
     if (s.mulliganDone[who]) return [surrender];
+    // Ken (Oct 30): keep the hand, or redraw the WHOLE hand once (same size, drawn from the reshuffled deck)
     out.push({ type: 'mulligan', uids: [] });
-    if ((pl.mulligans || 0) < 3 && pl.hand.length) out.push({ type: 'mulligan', uids: pl.hand.map((h: any) => h.uid) });
-    if ((pl.mulligans || 0) < 3) for (const h of pl.hand) out.push({ type: 'mulligan', uids: [h.uid] });
-    if ((pl.mulligans || 0) < 3 && pl.hand.length > 1) out.push({ type: 'mulligan', uids: pl.hand.slice(0, 2).map((h: any) => h.uid) });
+    if (canRedraw(s, who)) out.push({ type: 'mulligan', redraw: true, uids: [] });
     out.push(surrender);
     return out;
   }
@@ -1085,11 +1087,16 @@ export function abilityStatusMap(): Record<string, string> {
 const normalize = (a: any) => a;
 function matchLegal(s: any, a: any): any | null {
   if (a.type === 'mulligan') {
-    const uids = Array.isArray(a.uids) ? a.uids : null;
+    // Ken (Oct 30): no picking cards any more. `{ redraw: true }` (or uids naming the whole hand) shuffles the whole hand
+    // back and draws a new one of the same size, once per match; `uids: []` keeps the hand. Part of a hand is never legal.
+    const uids = a.uids === undefined ? [] : Array.isArray(a.uids) ? a.uids : null;
     const hand = s.players[s.priority].hand.map((h: any) => h.uid);
     if (!uids || new Set(uids).size !== uids.length || !uids.every((u: string) => hand.includes(u))) return null;
-    if (uids.length && (s.players[s.priority].mulligans || 0) >= 3) return null;
-    return s.phase === 'mulligan' && !s.pendingResponse && !s.mulliganDone[s.priority] ? a : null;
+    if (uids.length && uids.length !== hand.length) return null;
+    const redraw = a.redraw === true || uids.length > 0;
+    if (redraw && !canRedraw(s, s.priority)) return null;
+    if (s.phase !== 'mulligan' || s.pendingResponse || s.mulliganDone[s.priority]) return null;
+    return { type: 'mulligan', redraw, uids: [] };
   }
   for (const l of legalActions(s)) {
     if (l.type !== a.type) continue;
@@ -1150,16 +1157,15 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
 
   switch (act.type) {
     case 'mulligan': {
-      const n = act.uids.length;
-      const k = (pl.mulligans || 0) + (n ? 1 : 0);
-      const back = act.uids.map((u: string) => takeHand(u));
-      pl.deck.push(...back);
-      if (n) shuffle(s, pl.deck);
-      const draw = n && k >= 2 ? n - 1 : n;
-      for (let i = 0; i < draw; i++) pl.hand.push(pl.deck.shift());
-      pl.mulligans = k;
-      ev.push({ type: 'mulligan', player: who, count: n, mulligans: k });
-      if (n && k < 3) break;
+      // Ken (Oct 30): one full redraw. The whole hand goes back, the deck is reshuffled, and a new hand of the SAME size is drawn.
+      const n = act.redraw ? pl.hand.length : 0;
+      if (n) {
+        pl.deck.push(...pl.hand.splice(0, pl.hand.length));
+        shuffle(s, pl.deck);
+        for (let i = 0; i < n; i++) pl.hand.push(pl.deck.shift());
+        pl.mulligans = (pl.mulligans || 0) + 1;
+      }
+      ev.push({ type: 'mulligan', player: who, count: n, redraw: n > 0, mulligans: pl.mulligans || 0 });
       s.mulliganDone[who] = true;
       if (who === 'player') s.priority = 'opponent';
       else finishSetup(s, ev);

@@ -4,7 +4,7 @@ import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
 import ownerLayoutJson0 from '../content/owner-layout.json';
-import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other, ABILITY_COST, bankNeeded, movedThisPhase, shamanLiftTargets, shamanLandingSquares, shamanLiftAction } from '../engine';
+import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other, ABILITY_COST, bankNeeded, movedThisPhase, shamanLiftTargets, shamanLandingSquares, shamanLiftAction, MULLIGAN_REDRAWS } from '../engine';
 import { SPELL_VISUALS } from '../content/spell-visuals';
 import tutorialJson from '../content/tutorial.json';
 import { STANCES } from '../ai/stances';
@@ -730,7 +730,7 @@ export class App {
       sec('The Board', 'Your crystal (Flow on the gem, Bank below it) is at the top-left, the enemy crystal at the top, the phase tracker at the top-right, your hand along the bottom and your deck at the bottom-right. A hidden grid 13 spaces wide and 7 deep. Your Stronghold sits in the bottom-left corner (row 7, column 2) and the enemy Stronghold in the top-right corner (row 1, column 12); the mines mirror from corner to corner. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
       sec('Decks and auto-skip', 'The Decks screen on the main menu is a testing deck builder: every card is unlocked and you can save up to 5 decks of 50 to 100 cards (Rare, Ultra Rare and Collector cards max 3 copies, at most 20 Crystal cards). Pick a saved deck or the starter deck before a match. Your Deploy phase ends by itself when no card in your hand can be both paid for and placed, and your Action phase ends by itself when no creature can move, attack or mine.', crystals),
       sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
-      sec('Mulligan and Camera', 'Before the match you may mulligan up to 3 times: tap cards, then Redraw Selected. Your first mulligan redraws as many cards as you swap; each later one redraws one fewer (5, then 4, then 3 cards). On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and choose Recenter in the Menu (right side) to reset. The Menu also holds Last turn, Mute, the Card pop-ups switch and Surrender. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
+      sec('Mulligan and Camera', 'Before the match you see your opening hand. Keep Hand plays it as it is; Redraw Hand shuffles every card back into your deck and draws a completely new hand of the same size. You get one redraw per match, so look before you choose. The computer gets the same choice. On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and choose Recenter in the Menu (right side) to reset. The Menu also holds Last turn, Mute, the Card pop-ups switch and Surrender. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
       sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (any number, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
       sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit the first enemy up to 7 spaces away in one of the 8 straight directions (they cannot shoot past a unit) and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
@@ -2933,22 +2933,18 @@ export class App {
   openMulligan(st: any) {
     const selected = new Set<string>();
     const hand = st.players.player.hand;
+    // Ken (Oct 30): no picking cards. Keep Hand, or Redraw Hand = the whole hand goes back and a new one of the same size is drawn, once per match.
     const wrap = h('div', { class: 'mull-hand', style: `--n:${Math.max(5, hand.length)}` });
-    const left = 3 - (st.players.player.mulligans || 0);
-    const redraw = btn('Redraw Selected', '', () => go([...selected]), { disabled: true });
+    const left = Math.max(0, MULLIGAN_REDRAWS - (st.players.player.mulligans || 0));
     for (const hc of hand) {
       const c = CARDS[hc.cardId];
       const face = h('div', { class: `hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true', 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c));
-      const b = h('button', { type: 'button', class: 'mull-card', 'aria-pressed': 'false', 'aria-label': c.name, 'data-uid': hc.uid, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c), onclick: () => {
-        if (selected.has(hc.uid)) selected.delete(hc.uid); else selected.add(hc.uid);
-        b.setAttribute('aria-pressed', String(selected.has(hc.uid)));
-        (redraw as HTMLButtonElement).disabled = selected.size === 0;
-      } }, face);
-      wrap.append(b);
+      wrap.append(h('div', { class: 'mull-card', role: 'img', 'aria-label': c.name, 'data-uid': hc.uid, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, face));
     }
-    const go = (uids: string[]) => this.game.act({ type: 'mulligan', uids });
-    const d = this.dialog('Mulligan', [h('h2', {}, 'Mulligan'), h('p', { class: 'mull-left', style: 'text-align:center;margin:0 0 10px' }, `Mulligans left: ${left}`), h('p', { class: 'mull-hint', style: 'text-align:center;margin:0 0 6px' }, 'Tap cards you want to shuffle back and redraw (your first redraw keeps 5 cards, then 4, then 3).'), wrap,
-      h('div', { class: 'row' }, btn('Keep Hand', 'primary', () => go([])), redraw)]);
+    const go = (redraw: boolean) => this.game.act({ type: 'mulligan', redraw, uids: [] });
+    const redraw = btn('Redraw Hand', '', () => go(true), { disabled: left <= 0 });
+    const d = this.dialog('Mulligan', [h('h2', {}, 'Mulligan'), h('p', { class: 'mull-left', style: 'text-align:center;margin:0 0 10px' }, `Redraws left: ${left}`), h('p', { class: 'mull-hint', style: 'text-align:center;margin:0 0 6px' }, `Keep this hand, or redraw it: every card goes back into your deck and you draw ${hand.length} new ones (once per match).`), wrap,
+      h('div', { class: 'row' }, btn('Keep Hand', 'primary', () => go(false)), redraw)]);
     d.el.dataset.sticky = '1';
     d.el.dataset.mulligans = String(st.players.player.mulligans || 0);
     this.mullDlg = d;

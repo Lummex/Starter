@@ -1,5 +1,5 @@
 // Computer opponent. Uses only legalActions() and read-only engine helpers; never mutates state.
-import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner } from '../engine';
+import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, canRedraw, basicGatherer } from '../engine';
 
 export type Rand = () => number;
 export function makeRand(seed: number): Rand {
@@ -43,9 +43,14 @@ function posValue(s: any, who: string, card: any, row: number, col: number, uid?
   return v;
 }
 
-function mulliganUids(s: any, who: string) {
-  const hand = s.players[who].hand;
-  return hand.filter((h: any) => CARDS[h.cardId].type !== 'crystal' && CARDS[h.cardId].cost >= 6).map((h: any) => h.uid);
+/** Ken (Oct 30): the computer keeps or redraws its WHOLE opening hand, once. It redraws when the hand has no Miner
+ *  (nothing to start the Crystal Flow) or no fighter it can afford early (a non-Miner creature costing 5 or less). */
+export function wantsRedraw(s: any, who: string): boolean {
+  const cards = s.players[who].hand.map((h: any) => CARDS[h.cardId]).filter((c: any) => c.type === 'creature');
+  const minerCard = (c: any) => isMiner(c) || c.id === basicGatherer(c.faction);
+  const miner = cards.some(minerCard);
+  const fighter = cards.some((c: any) => !minerCard(c) && c.cost <= 5);
+  return !miner || !fighter;
 }
 
 function scoreRespond(s: any, who: string, a: any): number {
@@ -120,7 +125,7 @@ function scoreAbility(s: any, who: string, a: any): number {
 export function aiChoose(s: any, difficulty: string, rand: Rand, only?: string[]): any {
   const who = s.priority as string;
   const legal = legalActions(s).filter((a: any) => a.type !== 'surrender' && (!only || only.includes(a.type)));
-  if (s.phase === 'mulligan') return { type: 'mulligan', uids: difficulty !== 'easy' && !s.players[who].mulligans ? mulliganUids(s, who) : [] };
+  if (s.phase === 'mulligan') return { type: 'mulligan', redraw: difficulty !== 'easy' && canRedraw(s, who) && wantsRedraw(s, who), uids: [] };
   const pickBest = (scored: [number, any][], min: number) => {
     let best: any = null, bv = min;
     for (const [v, a] of scored) if (v > bv || (v === bv && best && rand() < 0.3)) { best = a; bv = v; }

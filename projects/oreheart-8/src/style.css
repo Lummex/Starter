@@ -525,7 +525,7 @@ h2.section,.dialog h2,.screen h1.section{color:var(--gold2);letter-spacing:.06em
 .hand-card.unaff{filter:none}
 /* mulligan: one straight row of real faces */
 .mull-hand{display:flex;flex-wrap:nowrap;gap:8px;justify-content:center;align-items:center;--cw:min(15vw,22vh,120px)}
-.mull-hand .mull-card{position:relative;width:var(--cw);aspect-ratio:1152/1712;padding:0;border:0;background:none;cursor:pointer;flex:0 0 auto;min-height:0;transition:transform .15s,filter .15s}
+.mull-hand .mull-card{position:relative;width:var(--cw);aspect-ratio:1152/1712;padding:0;border:0;background:none;cursor:default;flex:0 0 auto;min-height:0;transition:transform .15s,filter .15s}
 .mull-hand .mull-card .hand-card{position:relative;left:auto;top:auto;transform:none;width:100%;pointer-events:none}
 .mull-card[aria-pressed=true]{transform:translateY(-10px) scale(1.05);background:none;filter:drop-shadow(0 0 10px #ff4a4a)}
 .mull-card[aria-pressed=true]::after{content:"✕";position:absolute;left:50%;top:40%;transform:translateX(-50%);font-size:calc(var(--cw)*.5);color:#ff5a4a;text-shadow:0 0 8px #000;pointer-events:none}
