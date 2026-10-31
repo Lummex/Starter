@@ -8,6 +8,8 @@ Read `{{DATA_DIR}}/SPEC.md` carefully. Follow it exactly — especially any exac
 
 {{FAILURES_SECTION}}
 
+{{EXTRA_SECTION}}
+
 ## Work as a team lead (faster)
 
 If `{{DATA_DIR}}/WORK.md` exists, the planner has split this round's work into areas. You are the LEAD:
@@ -21,7 +23,7 @@ If `{{DATA_DIR}}/WORK.md` exists, the planner has split this round's work into a
 
 - Build the app in the folder `{{APP_DIR}}` (create it if missing; if it already exists, improve it rather than starting over).
 - Use Vite. Vanilla JS/TS or React — pick what fits. `{{APP_DIR}}/package.json` must have a `build` script that outputs a static site to `{{APP_DIR}}/dist/`.
-- Front end only: no server code, no secrets, no paid services. Browser storage (localStorage) is fine.
+- Front end only: no server code, no secrets, no paid services. Browser storage (localStorage) is fine. (If the section above says this project has a Supabase backend, database work goes in `supabase/` as NEW migration files or Edge Functions, and the apps talk to it only with the public URL and publishable key from `import.meta.env`. Never a secret key, never the words `service_role` in app code.)
 - Must look professional and work well on both phones and desktops. Use semantic HTML (real `<button>`, `<label for>`, `<nav>`, headings in order) — this is good for accessibility and is how the inspector finds things.
 - Include a `.gitignore` with `node_modules` and `dist`.
 - Use `base: './'` or the default `/` in Vite — the site is served from the domain root.

@@ -11,5 +11,12 @@
     "maxPerRun": 20
   },
   "maxBuildRounds": 5,
-  "port": 4173
+  "port": 4173,
+  "projects": {
+    "oreheart-8": {
+      "extraApps": [{ "dir": "projects/oreheart-admin", "port": 4174, "test": true }],
+      "extraDirs": ["supabase"],
+      "supabase": true
+    }
+  }
 }

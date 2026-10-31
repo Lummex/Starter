@@ -1,10 +1,11 @@
 // Ships an approved project: production deploy on Vercel, merge the code into main, close the request.
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, FAKE, log, sh, git, resolveSlug, setStatus, comment, runUrl } from './lib.mjs';
+import { ROOT, FAKE, log, sh, git, resolveSlug, projectConfig, setStatus, comment, runUrl } from './lib.mjs';
 
 const issue = process.env.ISSUE_NUMBER;
 const title = process.env.ISSUE_TITLE || '';
+const body = process.env.ISSUE_BODY || '';
 const branch = `factory/issue-${issue}`;
 
 async function main() {
@@ -13,11 +14,12 @@ async function main() {
     git('fetch', '-q', 'origin', `${branch}:${branch}`);
     git('checkout', '-q', branch);
   }
-  const slug = resolveSlug(issue, title);
+  const slug = resolveSlug(issue, title, body);
   const appDir = path.join(ROOT, 'projects', slug);
   if (!fs.existsSync(path.join(appDir, 'package.json'))) throw new Error(`No app found at projects/${slug}.`);
 
   let live = 'https://example.vercel.app';
+  const alsoLive = [];
   if (!FAKE) {
     const r = sh('npx', ['--yes', 'vercel@latest', 'deploy', '--prod', '--yes', '--token', process.env.VERCEL_TOKEN], { cwd: appDir, check: false });
     const out = `${r.stdout}\n${r.stderr}`;
@@ -27,12 +29,22 @@ async function main() {
     live = (await productionDomain(appDir)) || urls[0] || r.stdout.trim().split('\n').pop();
     log('live at', live, 'all urls:', urls.join(' '));
 
+    // Extra apps (e.g. the admin site) go live too, but only when the owner has linked their Vercel project.
+    // The real database is never touched here: that is the separate "Supabase — deploy" workflow.
+    for (const a of projectConfig(slug).extraApps) {
+      const dir = path.join(ROOT, a.dir);
+      if (!fs.existsSync(path.join(dir, '.vercel', 'project.json')) || !fs.existsSync(path.join(dir, 'package.json'))) continue;
+      const e = sh('npx', ['--yes', 'vercel@latest', 'deploy', '--prod', '--yes', '--token', process.env.VERCEL_TOKEN], { cwd: dir, check: false });
+      if (e.status !== 0) { log(`${a.dir}: production deploy failed`, `${e.stdout}\n${e.stderr}`.slice(-1500)); alsoLive.push(`${a.dir}: deploy FAILED (see run log)`); continue; }
+      alsoLive.push(`${a.dir}: ${(await productionDomain(dir)) || (e.stdout.match(/https:\/\/\S+/g) || []).pop() || 'deployed'}`);
+    }
+
     const merge = sh('gh', ['pr', 'merge', branch, '--squash', '--delete-branch'], { check: false });
     if (merge.status !== 0) log('PR merge skipped:', merge.stderr);
   }
 
   setStatus(issue, 'factory:shipped');
-  comment(issue, `🚀 **Shipped! Your site is live:** ${live}\n\n<sub>[Run log](${runUrl()})</sub>`, { type: 'shipped', live });
+  comment(issue, `🚀 **Shipped! Your site is live:** ${live}\n${alsoLive.map((s) => `\nAlso live: ${s}`).join('')}\n\n<sub>[Run log](${runUrl()})</sub>`, { type: 'shipped', live });
   if (!FAKE) sh('gh', ['issue', 'close', issue, '--reason', 'completed'], { check: false });
 }
 
