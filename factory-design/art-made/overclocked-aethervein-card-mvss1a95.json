@@ -1,0 +1,13 @@
+{
+  "request": "overclocked-aethervein-card-mvss1a95",
+  "cardId": "overclocked-conduit",
+  "parent": "overclocked-aethervein-card-mvkj3k2b",
+  "parentAsset": "c7d105ba5af54b163b746c2bb02e9ecd",
+  "kenFeedback": "He has four arms I just need him to have two arms and no shield but the image is fine so just remove the shield and the two arms",
+  "method": "Edit of the approved parent picture in Ken's ChatGPT (2 passes: 1) remove shield + lower two arms, 2) remove leftover front-arm stub on the chest)",
+  "size": "1024x1536",
+  "studioAsset": "8581558c3447fd00efdcf41a522c2981",
+  "status": "ready (waiting for Ken in Art Studio)",
+  "madeBy": "Brush",
+  "madeAt": "2026-10-29"
+}

@@ -116,3 +116,30 @@ character, characterName, move (clip name: idle/fly/cast), take (A/B/C = view or
 - DON'T type a name into the "Add a card model or accessory…" dropdown in Chrome: every typeahead jump fires `change` and adds another copy (I got ~20 copies of one model). The scene autosaves to the iframe's localStorage in Ken's Chrome, so I had to delete the copies one by one (click row in "In the scene" + Delete key) to give Ken back his scene (Grudge Hurler + shield). Next time: one keystroke at most, or test in Playwright.
 - My tab stops drawing the 3D view when it is in the background (requestAnimationFrame paused): a blank canvas with no floor grid does NOT mean the page is broken.
 - Local Playwright tests of the editor need three.js r147; cdn.jsdelivr.net and registry.npmjs.org are blocked from the cloud workspace, and fetching the CDN files through Ken's Chrome was refused by a permission check. Ask Ken to allow a CDN/npm domain if I need headless tests.
+
+## Sync gaps check (Oct 28 evening, job from Forge after Gauge's sync report)
+- Method that worked from Claude Code: ArtifactData `list` with `out_dir` for every collection on both sides into the scratchpad, then a small Python diff (32-hex asset ids -> "ID"; per-field / per-step timestamps decide which side is newer). Artifact `list scope:"files"` on both programs to compare model files by path and size.
+- Result: the Studio already had everything except two things where Ken's answers differ -> asked as decisions (`bkl-video-approval`, `missing-death-videos`). No copies needed this time.
+- Bomber v5 file and Ledger's ball-a/ball-b/staff-upright setups were already in the Studio (fixed earlier). Gauge's checks are identical on both sides.
+- Death takes for pebbler/slinger/sneak were missing from the Studio; brought back Oct 29 (decision answered "bring them back"). Never bring back deleted videos without an answer.
+- Python with `-I` ignores PYTHONIOENCODING: use `sys.stdout.reconfigure(encoding="utf-8")` on Windows.
+- While Round 26 builds, Forge said no GitHub commits: keep report/notes in ~/Downloads/<new folder> until told.
+- Oct 29: restoring takes from old MR = asset copy (from_url + asset_ids) -> new ids -> set take docs with new video id; verify by Artifact read of each asset id one at a time (`paths` with asset ids fails: it only takes published file paths).
+
+## Animation set (Oct 29, job from Ken directly)
+- Built in the Model Editor room (Pose editor): shared `coreAnims` slots + per-card `library.animSet` + `animOrders/<card>` on Send. Room ?v=21, Studio version 24.
+- Local test bench that worked on Ken's PC: copy the room html, inject a Map-backed fake `window.claude` (lib.js + fake.js) before everything, serve the folder with a temporary launch.json entry + preview_start; models fetched with Artifact read `paths`. three.js CDN loads fine here (not blocked like the cloud workspace).
+- The Browser javascript tool can't see the page's top-level `const`s (CB, LIB); expose test state on window (e.g. window.__store) instead.
+- The room re-renders the Pose editor on every db snapshot, so refs from `find` go stale fast: find + click in the same batch.
+- Python heredocs with JS regexes inside `py -c "..."` break escapes: write files with the Write tool.
+
+## Animation slots (Oct 29, job from Forge)
+- Model Editor room: config-driven slots (`SLOT_CONFIG`), shared `animations` library, `library.animSlots` (one id per slot, "none" or []), `animRequests` (status wanted). Studio v26, room ?v=23. Schema agreed between Spring and Forge: see reports/2026-10-29-wright-animation-slots.md.
+- Schemas crossed with Spring's once: when a parallel agent fills the same data, wait for Forge's approved schema before writing data; building the UI first is fine.
+- Avoid `prompt()` in room pages (sandboxed iframe): use inline boxes.
+- Oct 29: 35-slot config from Ledger's proposal; slots that don't fit a card auto-show "no animation". Browser-pane JS can't reach page functions either (isolated world), only DOM and window props.
+
+## Card Editor backgrounds (Oct 29, job from Forge)
+- Card Editor room: faction is the global `FACT`; every faction/type change calls `renderPbar()`, so `setFacBg()` hooks there and sets `#wrap` background (Studio asset /_blob/<id>, with a dark overlay).
+- Faction colours (Card Format): dwarves blue, gnomes purple, goblins green. CLAUDE.md's older "Gnomes (blue), Dwarves (purple)" line is the other way round; trust format.json.
+- Local test of /_blob assets: copy the files to test/_blob/<id> (no extension) and serve the folder.

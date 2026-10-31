@@ -1,0 +1,68 @@
+[
+ {
+  "name": "biped-special-chef-smack",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-special-rocket-ride",
+  "loop": false,
+  "return_to_idle": false,
+  "feet_may_move": true
+ },
+ {
+  "name": "biped-special-shockwave",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-special-sewer-slide",
+  "loop": false,
+  "return_to_idle": false,
+  "feet_may_move": true
+ },
+ {
+  "name": "biped-special-enforcer-stomp",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": true
+ },
+ {
+  "name": "biped-special-colossus-slam",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-special-brew-toss",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-special-steal",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-special-shaman-lift",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-special-blink",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": true
+ },
+ {
+  "name": "biped-special-siphon",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ }
+]

@@ -76,33 +76,38 @@ Ken's OK via Forge (~22:00): "also do your option b, the crystal node maps, if n
 |---|---|---|---|---|
 | mines-crystal-node.glb | 1,740,316 | 1,284,372 | 455,944 | models/mines/crystal-node.glb |
 
-## option-a-needs-ken/ (copy ONLY if Ken answers Yes to `decisions/r27-size-option-a`)
+## Option A: 4 more goblin files (decision `r27-size-option-a` = Yes, Oct 29)
 
-Five goblin pictures 768 → 512 px (bodies and Grubnak's throne). Checked on the pictures themselves (768→512 is a small step; difference is slight); a full side-by-side render follows if Ken says yes.
+Decided Yes (Forge, Oct 29; Ken: non-visual calls are Forge's). Checked by eye in three.js, original and new side by side (front and close-ups, idle t=0). Pictures: `../../../studio/reports/2026-10-29-ledger-r27-option-a/`.
 
-| File | Old bytes | New bytes | Saves | Replaces public/models/creatures/ |
-|---|---|---|---|---|
-| shiv-rat-char.glb | 1,406,596 | 1,334,164 | 72,432 | shiv-rat/char.glb |
-| goblin-pebbler-char.glb | 1,345,972 | 1,286,280 | 59,692 | goblin-pebbler/char.glb |
-| goblin-scrounger-char.glb | 899,600 | 816,096 | 83,504 | goblin-scrounger/char.glb |
-| goblin-smith-miner-char.glb | 852,472 | 780,612 | 71,860 | goblin-smith-miner/char.glb |
-| grubnak-throne.glb | 1,138,204 | 825,864 | 312,340 | grubnak/throne.glb |
-| **Total** | 5,642,844 | 5,043,016 | 599,828 | |
+- Shiv Rat, Goblin Miner (scrounger) and Scrapsmith Miner (goblin-smith-miner): 768 → 512 px. They look the same.
+- **Grubnak's throne:** only the normal map and the metal/rough map go 768 → 512 px. **The colour map stays 768 px**, because at 512 the skull banners were blurry even at full view. Its colour picture, geometry and glTF JSON (apart from byte offsets) are byte-for-byte the original.
+- **Boneknocker (goblin-pebbler) is NOT shrunk.** The skull on its hood looked noticeably softer at 512, so it keeps the game's current file (Ken's goblin rule: noticeably worse stays 768).
 
-## Game size for Round 27 (Ledger, Oct 28 ~22:40, measured)
+| File | Picture size | Old bytes | New bytes | Saves | Replaces public/models/creatures/ |
+|---|---|---|---|---|---|
+| shiv-rat-char.glb | 512 px | 1,406,596 | 1,334,164 | 72,432 | shiv-rat/char.glb |
+| goblin-scrounger-char.glb | 512 px | 899,600 | 816,096 | 83,504 | goblin-scrounger/char.glb |
+| goblin-smith-miner-char.glb | 512 px | 852,472 | 780,612 | 71,860 | goblin-smith-miner/char.glb |
+| grubnak-throne.glb | colour 768 px; normal + metal/rough 512 px | 1,138,204 | 909,944 | 228,260 | grubnak/throne.glb |
+| **Total** | | 4,296,872 | 3,840,816 | 456,056 | |
 
-Measured from the factory/issue-8 file list (all of `projects/oreheart-8/public/`, 1 MB = 1,000,000 bytes):
+The folder `option-a-needs-ken/` is **not used** (superseded: it holds the all-512 throne and Boneknocker). Builder: don't copy anything from it.
+
+## Game size for Round 27 (Ledger, Oct 29, measured after Round 26)
+
+Measured from the factory/issue-8 file list at commit `dc569cf464c9102294776993a2b110b77d06db00` (all of `projects/oreheart-8/public/`, 1 MB = 1,000,000 bytes). All 46 files this folder replaces still have the "Old bytes" sizes listed above.
 
 | Step | Bytes | MB |
 |---|---|---|
-| Game files now (Round 26 parts are in) | 93,580,935 | 93.58 |
-| + 15 Round 27 parts (item A) | +4,808,392 | 98.39 |
-| − 15 dwarf bodies | −3,025,808 | 95.36 |
-| − 13 gnome bodies | −3,661,804 | 91.70 |
-| + Clay's two rigged models (Anvilsworn Miner 2,603,600 + Borgo 2,384,088; Ken: both in) | +4,987,688 | 96.69 |
-| − 12 goblin bodies | −2,154,324 | 94.54 |
-| + Miner's pickaxe 497,300 + Borgo's sceptre 576,524 (parts/, 256 px) | +1,073,824 | 95.61 |
-| − crystal node maps | −455,944 | **95.15** |
-| − option A (only if Ken says Yes) | −599,828 | **94.55** |
+| Game files now (after Round 26) | 93,596,499 | 93.60 |
+| + 15 Round 27 parts (item A) | +4,808,392 | 98.40 |
+| − 15 dwarf bodies | −3,025,808 | 95.38 |
+| − 13 gnome bodies | −3,661,804 | 91.72 |
+| + Clay's two rigged models (Anvilsworn Miner 2,603,600 + Borgo 2,384,088) | +4,987,688 | 96.70 |
+| − 12 goblin bodies | −2,154,324 | 94.55 |
+| + Miner's pickaxe 497,300 + Borgo's sceptre 576,524 (parts/, 256 px) | +1,073,824 | 95.62 |
+| − crystal node maps | −455,944 | 95.17 |
+| − option A (4 files above) | −456,056 | **94.71** |
 
-**95.15 MB is still over 95.** With option A: 94.55 MB (0.45 MB to spare). Waiting for Ken: `decisions/r27-size-option-a` in Oreheart Studio.
+**Round 27 total: 94,712,467 bytes = 94.71 MB, under 95 (0.29 MB to spare).** Owner fixes added to factory/issue-8 after `dc569cf` count on top of this.

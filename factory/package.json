@@ -6,6 +6,8 @@
     "pipeline": "node scripts/pipeline.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "1.56.1"
+    "@playwright/test": "1.56.1",
+    "@supabase/supabase-js": "2.49.4",
+    "otplib": "12.0.1"
   }
 }

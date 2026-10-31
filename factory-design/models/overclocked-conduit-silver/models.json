@@ -1,0 +1,19 @@
+{
+ "generated": "2026-10-30T04:45:04.577Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "pickaxe": "01a18b1c-6b06-7273-b447-48e2ba7c4eea",
+  "character": "01a18b1c-6b06-74ec-babe-8414f19193a6",
+  "rig": "01a18b1f-85a9-708c-b9ed-f20d1e04ac21"
+ },
+ "actions": {},
+ "rigged": true,
+ "parts": [
+  "pickaxe"
+ ],
+ "notes": "Oct 30 silver redo (Ken: robot, two arms, no shield, purple + light blue + silver). Views cut from the approved silver sheet. Replaces the Oct 29 brass robot. Rig only, no stock clips (Forge Oct 30: the shared biped pack gives the moves). Accessories the card shows, once each. Card shows no shoulder canisters and no back gem: both painted out of the sheet views (Forge).",
+ "fileSizes": {
+  "pickaxe.glb": 10190164,
+  "char.glb": 15660492
+ }
+}

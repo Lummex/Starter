@@ -7,7 +7,7 @@
 ## Rules for this round (owner)
 - **Change nothing that is not listed here.** No new game rules, no new or changed card numbers (cost, attack, health, move, range), no new cards, no renamed things.
 - **Do not touch `factory-data/oreheart-8/acceptance`** (never delete, move, rename or commit anything in `factory-data/`). Do not run `git add`, `git commit` or any git command: the factory saves your work itself.
-- **Size:** keep the built `dist/` under **95 MB** (AC90). Only shrink textures; never simplify, re-mesh or re-quantize geometry and never touch UVs, bones, skin weights or clips. If something can't fit, leave it out and say so in REPORT.md.
+- **Size:** keep the built `dist/` under **250 MB** (AC90; Ken, Oct 29). Only shrink textures; never simplify, re-mesh or re-quantize geometry and never touch UVs, bones, skin weights or clips. If something can't fit, leave it out and say so in REPORT.md.
 - **Owner art is binding.** Use existing art and models only; never invent a picture, emblem, icon or model. No Meshy.
 - **Editors must match the game.** Every value you copy or change goes in `factory-data/oreheart-8/REPORT.md` under **"Editor updates needed"** (what, which file, which editor).
 - **Order** (stop cleanly at a working state if the budget runs out): **C** (size) first, then **A**, then **B**, then **R** (rigged models), then **H** (heights), then **D**, then **E**. In REPORT.md list each item as Done / Partly / Not started.
@@ -26,6 +26,8 @@ Ledger made shrunk copies of the game's own body files: `factory-design/design/m
 - **Only if Ken answered Yes to `decisions/r27-size-option-a` in Oreheart Studio** (read it right before starting): copy the 5 files in `round27-shrunk/option-a-needs-ken/`: `shiv-rat-char.glb`, `goblin-pebbler-char.glb`, `goblin-scrounger-char.glb`, `goblin-smith-miner-char.glb` over `public/models/creatures/<card>/char.glb`, and `grubnak-throne.glb` over `public/models/creatures/grubnak/throne.glb` (pictures 768 → 512 px). If he has not answered Yes, do not copy them (see the size note below).
 2. Do not shrink anything else.
 
+**Size now (Anvil, Oct 29, after Round 26 + owner fixes + Round 28 + the new front menu): the built `dist/` is 94,983,419 bytes = 94.98 MB, only 0.02 MB under the 95 MB limit. Budget Round 27 from 94.98 MB (measured dist, code bundle included), not from the 93.58 MB below.** **Update (Ken, Oct 29): the size budget is now 250 MB (Vercel Pro), so Round 27 no longer needs to squeeze for size; the game was ~96 MB after the faction halls (Oct 30).**
+
 Size (Ledger, Oct 28 ~22:40, measured from the factory/issue-8 file list, all of `projects/oreheart-8/public/`, 1 MB = 1,000,000 bytes):
 
 | Step | Bytes | MB |
@@ -40,12 +42,12 @@ Size (Ledger, Oct 28 ~22:40, measured from the factory/issue-8 file list, all of
 | − crystal node maps | −455,944 | **95.15** |
 | − option A (only if Ken says Yes) | −599,828 | **94.55** |
 
-> **Not ready to start until Ken answers `decisions/r27-size-option-a`** in Oreheart Studio. Without option A the round ends at 95.15 MB, over 95 MB (AC399 would fail). With it: 94.55 MB (about 0.45 MB to spare; the built `dist/` also holds the code bundle, so it will be a little higher). If Ken says No, Forge/Ken pick another cut before starting. Section H adds no files. New D move files (if any) are not counted here and need the same texture shrink.
+> **Not ready to start until Ken answers `decisions/r27-size-option-a`** in Oreheart Studio. Without option A the round ends at 95.15 MB, over 95 MB (AC399 would fail). With it: 94.55 MB (about 0.45 MB to spare; the built `dist/` also holds the code bundle, so it will be a little higher). If Ken says No, Forge/Ken pick another cut before starting. Section H adds no files. New D move files (if any) are not counted here and need the same texture shrink. **(Oct 29: with the 250 MB budget, size no longer blocks the round; option A is now only a look/content choice for Ken.)**
 
 Done when:
 - **AC397** Each replaced `char.glb` is byte-identical to its `round27-shrunk/` file; for each one the glTF meshes, accessors (vertex/UV/skin data), node/bone list and animation clip names are identical to the previous build's file.
 - **AC398** Every replaced creature still loads and plays idle/walk/attack in a match (no missing texture, no console error).
-- **AC399** Built `dist/` at the end of the round is **under 95 MB** (also AC90). Write the final size in REPORT.md.
+- **AC399** Built `dist/` at the end of the round is **under 250 MB** (also AC90). Write the final size in REPORT.md.
 
 ---
 
@@ -126,7 +128,7 @@ Clay's rigged models (Meshy, 24-bone skeleton like the other units). Ken approve
 Done when:
 - **AC414** The four files are byte-identical to their sources on main.
 - **AC415** In a match the Anvilsworn Miner (and Borgo, if the game shows him) loads with no console error and plays idle/walk/attack/hit/death; the pickaxe / sceptre follow their bone with the values above within 0.001.
-- **AC416** Their body height in idle at t=0 equals the `LOOKS.height` above (±1%), and AC399 (under 95 MB) still passes.
+- **AC416** Their body height in idle at t=0 equals the `LOOKS.height` above (±1%), and AC399 (under 250 MB) still passes.
 
 ---
 
@@ -146,7 +148,7 @@ For each approved row, fill in before starting: file path on main, clip names in
 Done when (only for rows that go in):
 - **AC405** The card's `models.json` `clips` map and `events.json` name the new clip(s), and every name exists in its `char.glb`.
 - **AC406** In a match that card plays the new clip for its role (mixer's active clip name), and attack hits still land when the `events.json` says.
-- **AC407** Size stays under 95 MB after the new files (AC399).
+- **AC407** Size stays under 250 MB after the new files (AC399).
 
 ---
 

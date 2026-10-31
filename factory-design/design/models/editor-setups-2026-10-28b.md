@@ -69,13 +69,13 @@ Ken OK'd shrinking body pictures to stay under 95 MB: dwarves ("It's okay to shr
 - 512 px: 15 dwarves, 10 gnomes, 8 goblins (goblin-bomber, goblin-grunt, goblin-scrapper, goblin-slinger, goblin-sneak, rotgut-grenadier, shard-guzzler, grubnaks-big-boss-troll).
 - 768 px (512 looked noticeably softer in side-by-side close-ups): clockwork-beetle, the-great-steam-golem, gnome-tinker, junk-shaman, skullbasher-rusher, blastrat-sapper, wolf-rider.
 - Crystal node: `round27-shrunk/mines-crystal-node.glb` → `public/models/mines/crystal-node.glb` (3 maps 1024 → 512 px).
-- Only if Ken answers Yes to `decisions/r27-size-option-a` (Oreheart Studio): `round27-shrunk/option-a-needs-ken/` (shiv-rat, goblin-pebbler, goblin-scrounger, goblin-smith-miner bodies and Grubnak's throne, 768 → 512 px).
+- Option A (decision `r27-size-option-a` = Yes, Oct 29): `round27-shrunk/` shiv-rat, goblin-scrounger and goblin-smith-miner bodies (768 → 512 px), plus `grubnak-throne.glb` → `public/models/creatures/grubnak/throne.glb` (normal + metal/rough maps 512 px, **colour map stays 768**). **Boneknocker (goblin-pebbler) is not shrunk.** Don't use the old `option-a-needs-ken/` folder.
 - Only the pictures changed (Lanczos, the original's JPEG quality tables and 4:2:0, PNG stays PNG, normal maps re-normalised). Geometry, UVs, bones, skin weights, clips and the glTF JSON (apart from byte offsets) are byte-identical to the game's files; every original was checked against factory/issue-8 by git hash first.
 - The Studio's Model Editor keeps its full-size bodies for editing; the look numbers do not change (textures don't move anything).
 
-## SIZE (measured Oct 28 ~22:40)
+## SIZE (measured Oct 29, after Round 26)
 
-From the factory/issue-8 file list (all of `projects/oreheart-8/public/`, 1 MB = 1,000,000 bytes): game now **93.58 MB**; + 15 parts 98.39; − 15 dwarf bodies 95.36; − 13 gnome bodies 91.70; + 2 rigged models 96.69; − 12 goblin bodies 94.54; + pickaxe + sceptre 95.61; − crystal node maps **95.15 MB (over 95)**; − option A, only if Ken says Yes: **94.55 MB**. Round 27 waits for Ken's answer to `decisions/r27-size-option-a`. (This replaces the older 95.38 / 92.43 MB lines.)
+Measured Oct 29 after Round 26, at factory/issue-8 commit `dc569cf` (all of `projects/oreheart-8/public/`, 1 MB = 1,000,000 bytes): game now **93.60 MB**; + 15 parts 98.40; − 15 dwarf bodies 95.38; − 13 gnome bodies 91.72; + 2 rigged models 96.70; − 12 goblin bodies 94.55; + pickaxe + sceptre 95.62; − crystal node maps 95.17; − option A (4 files) **94.71 MB**. Full table: `round27-shrunk/README.md`. (This replaces the Oct 28 numbers.)
 
 ## Grubnak scepter (optional, grubnak3d.ts)
 

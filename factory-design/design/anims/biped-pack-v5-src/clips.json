@@ -1,0 +1,44 @@
+[
+ {
+  "name": "biped-ranged-rifle-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-ranged-bow-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-ranged-sling-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-ranged-cannon-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-ranged-bowl-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-ranged-cast-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ },
+ {
+  "name": "biped-ranged-cast-hand-01",
+  "loop": false,
+  "return_to_idle": true,
+  "feet_may_move": false
+ }
+]

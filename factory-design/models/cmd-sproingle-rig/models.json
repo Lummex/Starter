@@ -1,0 +1,14 @@
+{
+ "generated": "2026-10-30T05:46:09.914Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "rig": "01a18b57-bd43-7081-969e-6db0ae687bb5"
+ },
+ "actions": {},
+ "rigged": true,
+ "parts": [],
+ "notes": "Oct 30: RIG the existing Oct 23 Sproingle model (Studio key sproingle; A-pose, already silver/purple), no new mesh, no stock clips.",
+ "fileSizes": {
+  "char.glb": 4516700
+ }
+}

@@ -1,0 +1,129 @@
+{
+ "card": "clockwork-beetle",
+ "bodyType": "multileg",
+ "glb": "clockwork-beetle-anim-v1.glb",
+ "note": "Clay's beetle rig (models/beetle-rig-oct30/char.glb) with Spring's 8 clips baked in; mesh and bones unchanged, uncompressed (meshopt-pack it like other models). Clips play directly on this model (no retarget). rootSpeed is in model units per second: multiply by the game scale of the model. Floor contact already fixed per frame.",
+ "modelsJsonClips": {
+  "idle": "multileg-idle-01",
+  "walk": "multileg-walk-01",
+  "run": "multileg-run-01",
+  "attack": "multileg-attack-01",
+  "hit": "multileg-bonk-01",
+  "defeat": "multileg-death-01"
+ },
+ "extraIdles": [
+  "multileg-idle-02",
+  "multileg-idle-03"
+ ],
+ "clips": [
+  {
+   "name": "multileg-idle-01",
+   "kind": "idle",
+   "loop": true,
+   "frames": 96,
+   "duration": 3.2,
+   "events": [],
+   "desc": "Calm breathing, looks around, shuffles one leg at a time"
+  },
+  {
+   "name": "multileg-idle-02",
+   "kind": "idle",
+   "loop": true,
+   "frames": 72,
+   "duration": 2.4,
+   "events": [],
+   "desc": "Impatient drumming with the front legs"
+  },
+  {
+   "name": "multileg-idle-03",
+   "kind": "idle",
+   "loop": true,
+   "frames": 120,
+   "duration": 4.0,
+   "events": [],
+   "desc": "Proud rear-end wiggle and a back-leg stretch"
+  },
+  {
+   "name": "multileg-walk-01",
+   "kind": "walk",
+   "loop": true,
+   "frames": 40,
+   "duration": 1.3333,
+   "events": [],
+   "desc": "Tripod walk (3 legs at a time), in place",
+   "rootSpeed": 0.303
+  },
+  {
+   "name": "multileg-run-01",
+   "kind": "run",
+   "loop": true,
+   "frames": 24,
+   "duration": 0.8,
+   "events": [],
+   "desc": "Fast scuttling tripod run, nose down",
+   "rootSpeed": 0.656
+  },
+  {
+   "name": "multileg-attack-01",
+   "kind": "attack",
+   "loop": false,
+   "frames": 38,
+   "duration": 1.2667,
+   "events": [
+    {
+     "name": "windup",
+     "frame": 2,
+     "time": 0.0667
+    },
+    {
+     "name": "hit",
+     "frame": 20,
+     "time": 0.6667
+    }
+   ],
+   "desc": "Rears up, claws raised, then stabs down with both front legs",
+   "impact": 0.6667
+  },
+  {
+   "name": "multileg-bonk-01",
+   "kind": "hit",
+   "loop": false,
+   "frames": 32,
+   "duration": 1.0667,
+   "events": [
+    {
+     "name": "impact",
+     "frame": 2,
+     "time": 0.0667
+    }
+   ],
+   "desc": "Jolted back, legs flare, dizzy head shake"
+  },
+  {
+   "name": "multileg-death-01",
+   "kind": "defeat",
+   "loop": false,
+   "frames": 70,
+   "duration": 2.3333,
+   "events": [
+    {
+     "name": "windup",
+     "frame": 2,
+     "time": 0.0667
+    },
+    {
+     "name": "ground",
+     "frame": 26,
+     "time": 0.8667
+    },
+    {
+     "name": "poof",
+     "frame": 29,
+     "time": 0.9667
+    }
+   ],
+   "desc": "Flips onto its back, legs wiggle in the air, then curl up still",
+   "endsLying": true
+  }
+ ]
+}

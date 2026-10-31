@@ -51,6 +51,7 @@ Oreheart is a fantasy card and board game (goblins, gnomes, dwarves; mines, ore 
 - **Meshy:** workflow meshy-models.yml (jobs in factory-design/meshy-jobs/jobs.json; script factory/scripts/meshy-models.mjs). Makes each model ONCE.
 - **Runway:** workflow runway-videos.yml (jobs in factory-design/runway-jobs/jobs.json; output factory-design/runway/<id>/ clip + frames). Rules: face frozen, body/limb motion only, smooth looping, two moves per clip, front view only (Ken, Oct 28: no side or back views), prompt under 1000 characters, gentle wording (Runway's safety check blocks fight words). Finished clips go into the Studio `takes` (see above).
 - **Blender worker:** runs on Ken's PC; jobs are files blender-jobs/<id>/job.json on branch **blender-queue**; it animates rigged models with Claude Code and uploads results to blender-jobs/<id>/out/. Jobs can carry "references" (picture paths under factory-design/runway/ or runway-jobs/) and "base_pose": "rest".
+- **Blender direct (Oct 29):** Spring runs Blender directly in headless mode on Ken's PC (`blender -b --python`, new -vN files, same export checks). The worker is stopped but kept installed as a backup. No more blender-queue jobs unless Forge says so.
 
 ## How to do things (no GitHub token: use Ken's Chrome)
 - Read GitHub files: in your own Chrome tab (Claude in Chrome tools) fetch https://github.com/Lummex/Starter/raw/<branch>/<path>?x=<timestamp>.
