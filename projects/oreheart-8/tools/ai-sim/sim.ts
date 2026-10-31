@@ -9,6 +9,7 @@ import * as fs from 'node:fs';
 // DECK_FILE=<path to a starter-decks.json-shaped file>: replaces the card lists of the decks it names.  CARD_TUNE='{"dwarf-miner":{"cost":1}}': patches card fields.
 if (process.env.DECK_FILE) for (const [id, d] of Object.entries(JSON.parse(fs.readFileSync(process.env.DECK_FILE, 'utf8')) as any)) { STARTER_DECKS[id] = (d as any).cards; const e = STARTER_DECK_LIST.find((x) => x.id === id); if (e) e.cards = (d as any).cards; else STARTER_DECK_LIST.push({ id, ...(d as any) }); }
 if (process.env.CARD_TUNE) for (const [id, patch] of Object.entries(JSON.parse(process.env.CARD_TUNE))) Object.assign(CARDS[id], patch as any);
+if (process.env.CONFIG_TUNE) Object.assign(CONFIG, JSON.parse(process.env.CONFIG_TUNE)); // CONFIG_TUNE='{"typeAdvantageBonus":0}': game-config experiments (Oct 31, dwarf fix)
 import { aiChoose as newChoose, makeRand, TUNE } from '../../src/ai/ai';
 if (process.env.AI_TUNE) Object.assign(TUNE, JSON.parse(process.env.AI_TUNE));
 // AI_TUNE_B: extra overrides for bot B only (applied before each of B's decisions and undone before A's)
@@ -26,7 +27,7 @@ const back = (who: string) => CONFIG.backRow[who];
 
 type Bot = { ai: 'old' | 'new'; diff: string };
 const blank = (): any => ({ abilities: 0, abilityKinds: {} as Record<string, number>, abAvail: {} as Record<string, number>, spells: 0, spellKinds: {} as Record<string, number>, poisonStack: 0,
-  attacks: 0, kills: 0, cmdHits: 0, cmdDamage: 0, captures: 0, moves: 0, chases: 0, summons: 0, mines: 0, homeShare: [] as number[], fwd: [] as number[], ms: 0, calls: 0, maxMs: 0 });
+  attacks: 0, kills: 0, cmdHits: 0, cmdDamage: 0, captures: 0, moves: 0, chases: 0, summons: 0, mines: 0, minersLost: 0, minerLifeSum: 0, minersBorn: 0, homeShare: [] as number[], fwd: [] as number[], ms: 0, calls: 0, maxMs: 0 });
 
 export function playMatch(seed: number, A: Bot, B: Bot, aIsPlayer: boolean, maxTurns = 120) {
   let pc = CMDS[seed % 3], oc = CMDS[Math.floor(seed / 3) % 3];
@@ -61,10 +62,11 @@ export function playMatch(seed: number, A: Bot, B: Bot, aIsPlayer: boolean, maxT
         }
       }
       turnSeen = s.turn; count = 0;
-      if (s.turn === 7 || s.turn === 13) for (const w of ['player', 'opponent']) {
-        const k = 't' + (s.turn - 1);
+      // Oct 31 (Forge/Ken: "the miners get killed so quick"): snapshots after 3, 5, 6, 8 and 12 turns EACH (s.turn counts single-player turns)
+      if (s.turn === 7 || s.turn === 11 || s.turn === 13 || s.turn === 17 || s.turn === 25) for (const w of ['player', 'opponent']) {
+        const k = 't' + ({ 7: 6, 11: 'r5', 13: 12, 17: 'r8', 25: 'r12' } as any)[s.turn];
         st[w][k] = { miners: s.board.creatures.filter((c: any) => c.owner === w && isMiner(CARDS[c.cardId])).length, units: s.board.creatures.filter((c: any) => c.owner === w).length,
-          mined: s.stats?.mined?.[w] || 0, hand: s.players[w].hand.length, pool: s.players[w].crystals + s.players[w].bank, swaps: st[w].swaps || 0 };
+          mined: s.stats?.mined?.[w] || 0, hand: s.players[w].hand.length, pool: s.players[w].crystals + s.players[w].bank, swaps: st[w].swaps || 0, minersLost: st[w].minersLost, minersBorn: st[w].minersBorn };
       }
     }
     const bot = bots[who];
@@ -102,7 +104,8 @@ export function playMatch(seed: number, A: Bot, B: Bot, aIsPlayer: boolean, maxT
       else if (lastMoved[a.creatureUid] != null && s.turn - lastMoved[a.creatureUid] <= 2) S.chases++;
     }
     for (const e of r.events) {
-      if (e.type === 'summon') born[e.uid] = r.state.turn;
+      if (e.type === 'summon') { born[e.uid] = r.state.turn; if (isMiner(CARDS[e.cardId])) st[e.owner || who].minersBorn++; }
+      if (e.type === 'defeat' && isMiner(CARDS[e.cardId])) { st[e.owner].minersLost++; st[e.owner].minerLifeSum += r.state.turn - (born[e.uid] ?? r.state.turn); }
       if (e.type === 'damage' && e.commander && e.commander !== who) S.cmdDamage += e.amount;
       if (e.type === 'defeat' && e.owner !== who && s.activePlayer === who) S.kills++;
     }
@@ -125,7 +128,7 @@ function sum(list: any[]) {
   return {
     abilities: avg((x) => x.abilities), spells: avg((x) => x.spells), poisonStacks: avg((x) => x.poisonStack), attacks: avg((x) => x.attacks), kills: avg((x) => x.kills),
     commanderHits: avg((x) => x.cmdHits), commanderDamage: avg((x) => x.cmdDamage), mineCaptures: avg((x) => x.captures), moves: avg((x) => x.moves), chases: avg((x) => x.chases),
-    summons: avg((x) => x.summons), mines: avg((x) => x.mines), crystalsMined: avg((x) => x.mined), unitsLost: avg((x) => x.lost), hpLeft: avg((x) => x.hpLeft),
+    summons: avg((x) => x.summons), mines: avg((x) => x.mines), crystalsMined: avg((x) => x.mined), unitsLost: avg((x) => x.lost), hpLeft: avg((x) => x.hpLeft), minersLost: avg((x) => x.minersLost), minersBorn: avg((x) => x.minersBorn), minerLife: avg((x) => (x.minersLost ? x.minerLifeSum / x.minersLost : 0)),
     fightersInHomeRows: +(100 * avg((x) => mean(x.homeShare))).toFixed(0) + '%', fighterRowsForward: avg((x) => mean(x.fwd)),
     msPerDecision: +(list.reduce((t, x) => t + x.ms, 0) / Math.max(1, list.reduce((t, x) => t + x.calls, 0))).toFixed(2), worstMs: +Math.max(...list.map((x) => x.maxMs)).toFixed(0),
     abilityKinds: kinds('abilityKinds'), spellKinds: kinds('spellKinds'),
@@ -143,7 +146,7 @@ for (let i = 0; i < N; i++) {
   const seed = +s0 + (i >> 1), r = playMatch(seed, A, B, i % 2 === 0, +mt);
   res.push(r);
   // PERMATCH=1: one line per match (seed, who A played, Commanders, winner, turns) for match-up analysis
-  if (process.env.PERMATCH) console.error(JSON.stringify({ seed, aSide: i % 2 === 0 ? 'player' : 'opponent', pc: CMDS[seed % 3], oc: CMDS[Math.floor(seed / 3) % 3], first: seed % 2 ? 'player' : 'opponent', winner: r.winner, turns: r.turns, hpA: r.stA.hpLeft, hpB: r.stB.hpLeft, minedA: r.stA.mined, minedB: r.stB.mined, t6A: r.stA.t6, t6B: r.stB.t6, t12A: r.stA.t12, t12B: r.stB.t12 }));
+  if (process.env.PERMATCH) console.error(JSON.stringify({ seed, aSide: i % 2 === 0 ? 'player' : 'opponent', pc: CMDS[seed % 3], oc: CMDS[Math.floor(seed / 3) % 3], first: seed % 2 ? 'player' : 'opponent', winner: r.winner, turns: r.turns, hpA: r.stA.hpLeft, hpB: r.stB.hpLeft, minedA: r.stA.mined, minedB: r.stB.mined, t6A: r.stA.t6, t6B: r.stB.t6, t12A: r.stA.t12, t12B: r.stB.t12, r5A: r.stA.tr5, r5B: r.stB.tr5, r8A: r.stA.tr8, r8B: r.stB.tr8, r12A: r.stA.tr12, r12B: r.stB.tr12, minersLostA: r.stA.minersLost, minersLostB: r.stB.minersLost, minersBornA: r.stA.minersBorn, minersBornB: r.stB.minersBorn, minerLifeA: r.stA.minersLost ? r.stA.minerLifeSum / r.stA.minersLost : null, minerLifeB: r.stB.minersLost ? r.stB.minerLifeSum / r.stB.minersLost : null }));
 }
 const w = (k: string) => res.filter((r) => r.winner === k).length;
 console.log(JSON.stringify({
