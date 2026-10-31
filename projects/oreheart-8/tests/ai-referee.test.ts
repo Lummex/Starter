@@ -8,8 +8,8 @@ import { aiChoose, makeRand } from '../src/ai/ai';
 
 const CMDS = ['grubnak', 'sproingle', 'borgo'];
 const FAC: Record<string, string> = { grubnak: 'goblins', sproingle: 'gnomes', borgo: 'dwarves' };
-const styles = ['warband', 'arcane-hoard', 'horde'];
-const deckFor = (cmd: string, k: number) => STARTER_DECK_LIST.find((d) => d.faction === FAC[cmd] && d.style === styles[k % 3])!.id;
+const styles = ['warband', 'mine-rush', 'arcane-hoard', 'expedition']; // Ken, Oct 31: four starter styles
+const deckFor = (cmd: string, k: number) => STARTER_DECK_LIST.find((d) => d.faction === FAC[cmd] && d.style === styles[k % styles.length])!.id;
 const canon = (a: any) => JSON.stringify(Object.keys(a).filter((k) => a[k] !== undefined && !(k === 'redraw' && !a[k])).sort().reduce((o: any, k) => (o[k] = a[k], o), {}));
 
 export function refereeMatch(seed: number, diffs: Record<string, string>, maxTurns = 60) {

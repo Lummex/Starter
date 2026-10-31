@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createMatch, applyAction, legalActions, creatureAt, CARDS, CONFIG, STARTER_DECKS, incomePreview, hasMovesLeft, legalMines, weaponOf, deckProblems, atkValue, validateDeck, STARTER_DECK_LIST } from '../src/engine';
+import { createMatch, applyAction, legalActions, creatureAt, CARDS, CONFIG, STARTER_DECKS, incomePreview, hasMovesLeft, legalMines, weaponOf, deckProblems, atkValue, validateDeck, STARTER_DECK_LIST, isActed, isMiner } from '../src/engine';
 
 const act = (s: any, a: any) => { const r = applyAction(s, a); if (!r.ok) throw new Error(r.error); return r.state; };
 const done = (s: any, n = 1) => { for (let i = 0; i < n; i++) s = act(s, { type: 'done' }); return s; };
@@ -13,10 +13,10 @@ const pool = (s: any, w = 'player') => s.players[w].crystals;
 const total = (s: any, w = 'player') => s.players[w].crystals as number;
 
 describe('content and board', () => {
-  it('starter decks: 48 creatures, 7 spells incl. Fizzle, 5 Crystal cards (Ken, Oct 30: 60-card decks)', () => {
+  it('Warband starter decks: 48 creatures, 8 spells incl. Fizzle, 4 Crystal cards (Ken, Oct 31: four 60-card decks per faction)', () => {
     for (const deck of Object.entries(STARTER_DECKS).filter(([k]) => k.endsWith('-warband')).map(([, v]) => v)) {
       const t = (ty: string) => deck.filter((id) => CARDS[id].type === ty).length;
-      expect([t('creature'), t('spell'), t('crystal')]).toEqual([48, 7, 5]);
+      expect([t('creature'), t('spell'), t('crystal')]).toEqual([48, 8, 4]);
       expect(deck).toContain('fizzle');
     }
     expect([CONFIG.boardWidth, CONFIG.boardHeight, CONFIG.mineCount]).toEqual([13, 7, 3]);
@@ -143,9 +143,9 @@ describe('economy extras', () => {
 
 describe('revision 6', () => {
   const B = (g = 0, w = 0) => g + w;
-  it('warband starter decks: basic Miners and Smith Miners (Ken, Oct 30: 60-card decks)', () => {
+  it('warband starter decks: basic Miners and Smith Miners (Ken, Oct 31: 15/7 goblins, 17/5 gnomes, 14/5 dwarves)', () => {
     const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner'], gnomes: ['gnome-prospector', 'gnome-smith-miner'], dwarves: ['dwarf-miner', 'dwarf-smith-miner'] };
-    const want: any = { goblins: [8, 4], gnomes: [8, 4], dwarves: [5, 4] };
+    const want: any = { goblins: [15, 7], gnomes: [17, 5], dwarves: [14, 5] };
     for (const [f, [b, sm]] of Object.entries<any>(pairs)) {
       expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === b).length).toBe(want[f][0]);
       expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === sm).length).toBe(want[f][1]);
@@ -218,7 +218,7 @@ describe('revision 6', () => {
     const r = act(s, legalActions(s).find((a: any) => a.type === 'summon'));
     expect(r.players.player.bank).toBe(0);
   });
-  it('a free Riot Shield Bearer (the dwarves\' basic Miner, a Fighter) counts as the Miner on the battlefield: never a second free one (Ken, Oct 31)', () => {
+  it('a free Riot Shield Bearer (the dwarves\' basic Miner) counts as the Miner on the battlefield: never a second free one (Ken, Oct 31)', () => {
     let s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { playerHand: ['dwarf-miner', 'dwarf-miner', 'dwarf-miner'], playerCrystals: 0 } });
     const summons = (st: any) => legalActions(st).filter((a: any) => a.type === 'summon');
     expect(summons(s).length).toBeGreaterThan(0);
@@ -228,17 +228,53 @@ describe('revision 6', () => {
     expect(s.players.player.crystals + s.players.player.bank).toBe(0);
     expect(summons(s).length).toBe(0); // the second Bearer costs 2 and the side is broke
   });
-  it('Tunnel works from turn 1, any time (round 10)', () => {
+  it('Tunnel only beside a mine your side owns (Ken, Oct 31)', () => {
     const near = (s: any) => legalActions(s).filter((a: any) => a.type === 'summon' && a.row < 7);
+    const by = (m: any, a: any) => Math.max(Math.abs(m.row - a.row), Math.abs(m.col - a.col)) === 1;
+    // turn 1, no mine owned: row 7 only
     let s = mk({ playerHand: ['goblin-scrounger'], playerCrystals: B(1) });
-    expect(near(s).length).toBeGreaterThan(0);
-    // every empty space next to every mine is offered
-    const cells = new Set(near(s).map((a: any) => a.row + ',' + a.col));
-    expect(cells.has('4,7')).toBe(true);
-    expect(cells.has('4,9')).toBe(true);
-    // Smith Miners never tunnel
-    s = mk({ playerHand: ['goblin-smith-miner'], playerCrystals: B(2) });
+    expect(legalActions(s).filter((a: any) => a.type === 'summon').length).toBeGreaterThan(0);
     expect(near(s).length).toBe(0);
+    // the player owns the mine at 3,6: its empty neighbours are offered, nothing beside the other two mines
+    const owner = (o: string) => [{ cardId: 'goblin-scrapper', owner: o, row: 4, col: 7, minedMine: { row: 3, col: 6 } }];
+    s = mk({ playerHand: ['goblin-scrounger'], playerCrystals: B(1), board: owner('player') });
+    expect(s.sites.find((x: any) => x.row === 3 && x.col === 6).controller).toBe('player');
+    const cells = new Set(near(s).map((a: any) => a.row + ',' + a.col));
+    for (const k of ['2,5', '2,6', '2,7', '3,5', '3,7', '4,5', '4,6']) expect(cells.has(k), k).toBe(true);
+    expect(near(s).every((a: any) => by(MINES[0], a))).toBe(true);
+    expect(cells.has('4,9')).toBe(false); // beside the mine at 4,10 only
+    expect(cells.has('6,6')).toBe(false); // beside the mine at 5,6 only
+    // the same creature on the OPPONENT's side: nothing beside any mine
+    s = mk({ playerHand: ['goblin-scrounger'], playerCrystals: B(1), board: owner('opponent') });
+    expect(s.sites.find((x: any) => x.row === 3 && x.col === 6).controller).toBe('opponent');
+    expect(near(s).length).toBe(0);
+    // Smith Miners never tunnel, even beside an owned mine
+    s = mk({ playerHand: ['goblin-smith-miner'], playerCrystals: B(2), board: owner('player') });
+    expect(near(s).length).toBe(0);
+  });
+  it('Riot Shield Bearer is the dwarves\' basic Miner: walks and mines (2) while shielded, never attacks or dies then (Ken, Oct 31)', () => {
+    expect(CARDS['dwarf-miner'].role).toBe('Gatherer');
+    expect(isMiner(CARDS['dwarf-miner'])).toBe(true);
+    // from hand (Borgo, 2 crystals): back row, shield up for 3 turns
+    let s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { playerHand: ['dwarf-miner'], playerCrystals: 2 } });
+    s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 });
+    expect(at(s, 7, 1).lockedUntil).toBe(s.turn + 6);
+    // on the board beside the mine at 3,6, shield up, 1 Health left, an enemy Grunt next to it
+    s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { board: [P('dwarf-miner', 2, 5, { lockedUntil: 10, damage: 5 }), O('goblin-grunt', 2, 4)] } });
+    s = done(s); // -> Action
+    const b = at(s, 2, 5);
+    const mineActs = legalActions(s).filter((a: any) => a.creatureUid === b.uid);
+    expect(mineActs.some((a: any) => a.type === 'move')).toBe(true);
+    expect(mineActs.some((a: any) => a.type === 'mine' && a.row === 3 && a.col === 6)).toBe(true);
+    expect(mineActs.some((a: any) => a.type === 'attack')).toBe(false);
+    expect(isActed(s, b)).toBe(false);
+    const before = incomePreview(s, 'player');
+    s = mine(s, 2, 5, 3, 6);
+    expect(incomePreview(s, 'player') - before).toBe(2);
+    s = done(s, 2); // end Action -> the opponent's Deploy -> its Action
+    s = act(s, { type: 'attack', creatureUid: at(s, 2, 4).uid, target: { row: 2, col: 5 } });
+    expect(at(s, 2, 5)?.cardId).toBe('dwarf-miner');
+    expect(at(s, 2, 5).health).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -459,19 +495,21 @@ describe('Round 3a', () => {
       expect(legalMines(m)).toBe(true);
     }
   });
-  it('nine legal starter decks', () => {
+  it('twelve legal starter decks (Ken, Oct 31)', () => {
     const ids = Object.keys(STARTER_DECKS);
-    expect(ids.length).toBe(9);
+    expect(ids.length).toBe(12);
     for (const id of ids) { expect(STARTER_DECKS[id].length).toBe(60); expect(deckProblems(STARTER_DECKS[id])).toEqual([]); }
-    const s = createMatch({ seed: 3, playerCommander: 'sproingle', playerDeckId: 'gnome-horde', opponentDeckId: 'goblin-arcane-hoard', skipMulligan: true });
-    expect(s.players.player.deckId).toBe('gnome-horde');
+    const s = createMatch({ seed: 3, playerCommander: 'sproingle', playerDeckId: 'gnome-expedition', opponentDeckId: 'goblin-arcane-hoard', skipMulligan: true });
+    expect(s.players.player.deckId).toBe('gnome-expedition');
     expect(s.players.opponent.deckId).toBe('goblin-arcane-hoard');
   });
 });
 
 describe('round 4', () => {
-  it('nine 60-card starter decks: Miners about a fifth, style mix, legal for their Commander (Ken, Oct 30)', () => {
-    const mix: any = { warband: [48, 7, 5], 'arcane-hoard': [40, 14, 6], horde: [56, 0, 4] };
+  it('twelve 60-card starter decks: Miners at least a third, four style mixes, legal for their Commander (Ken, Oct 31)', () => {
+    const mix: any = { warband: [48, 8, 4], 'mine-rush': [60, 0, 0], 'arcane-hoard': [45, 15, 0], expedition: [45, 9, 6] };
+    expect(STARTER_DECK_LIST.length).toBe(12);
+    for (const f of ['goblins', 'gnomes', 'dwarves']) expect(STARTER_DECK_LIST.filter((d) => d.faction === f).map((d) => d.style)).toEqual(['warband', 'mine-rush', 'arcane-hoard', 'expedition']);
     const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner', 'grubnak'], gnomes: ['gnome-prospector', 'gnome-smith-miner', 'sproingle'], dwarves: ['dwarf-miner', 'dwarf-smith-miner', 'borgo'] };
     for (const d of STARTER_DECK_LIST) {
       const [b, sm, cmd] = pairs[d.faction];
@@ -479,12 +517,12 @@ describe('round 4', () => {
       expect(d.cards.filter((x) => x === b).length).toBeGreaterThanOrEqual(5); // engine's opening-hand rescue looks for the basic Miner
       expect(d.cards.filter((x) => x === sm).length).toBeGreaterThanOrEqual(3);
       const miners = d.cards.filter((x) => CARDS[x].role === 'Gatherer' || CARDS[x].role === 'Smith' || x === b).length;
-      expect(miners).toBeLessThanOrEqual(15);
+      expect(miners).toBeGreaterThanOrEqual(20);
       expect(d.cards.filter((x) => CARDS[x].type === 'creature').length).toBe(mix[d.style][0]);
       const fighters = d.cards.filter((x) => CARDS[x].type === 'creature' && CARDS[x].role !== 'Gatherer' && CARDS[x].role !== 'Smith').length;
       const spells = d.cards.filter((x) => CARDS[x].type === 'spell').length;
       const crystals = d.cards.filter((x) => CARDS[x].type === 'crystal').length;
-      expect([spells, crystals]).toEqual(mix[d.style].slice(1)); // owner changed Fighter roles; Miners are about 10-12 of 60
+      expect([spells, crystals]).toEqual(mix[d.style].slice(1));
       expect(fighters).toBeGreaterThan(0);
       expect(validateDeck(d.cards, cmd).legal).toBe(true);
     }

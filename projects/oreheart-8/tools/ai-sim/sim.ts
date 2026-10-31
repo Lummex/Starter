@@ -2,8 +2,13 @@
 // Bundle: npx esbuild tools/ai-sim/sim.ts --bundle --platform=node --format=esm --outfile=<out>/sim.mjs
 // Run:    node sim.mjs <aiA> <diffA> <aiB> <diffB> <matches> [seed0] [maxTurns]
 //   aiX = old | new. Every seed is played twice (A on each side); commanders and starter decks rotate through all 3 x 3.
-import { createMatch, applyAction, legalActions, CARDS, CONFIG, STARTER_DECK_LIST, isMiner } from '../../src/engine';
+import { createMatch, applyAction, legalActions, CARDS, CONFIG, STARTER_DECK_LIST, STARTER_DECKS, isMiner } from '../../src/engine';
+import * as fs from 'node:fs';
 (globalThis as any).__la = legalActions;
+// Balance desk (Oct 31): sim-only overrides, so deck and card variants can be tried without touching the content files.
+// DECK_FILE=<path to a starter-decks.json-shaped file>: replaces the card lists of the decks it names.  CARD_TUNE='{"dwarf-miner":{"cost":1}}': patches card fields.
+if (process.env.DECK_FILE) for (const [id, d] of Object.entries(JSON.parse(fs.readFileSync(process.env.DECK_FILE, 'utf8')) as any)) { STARTER_DECKS[id] = (d as any).cards; const e = STARTER_DECK_LIST.find((x) => x.id === id); if (e) e.cards = (d as any).cards; else STARTER_DECK_LIST.push({ id, ...(d as any) }); }
+if (process.env.CARD_TUNE) for (const [id, patch] of Object.entries(JSON.parse(process.env.CARD_TUNE))) Object.assign(CARDS[id], patch as any);
 import { aiChoose as newChoose, makeRand, TUNE } from '../../src/ai/ai';
 if (process.env.AI_TUNE) Object.assign(TUNE, JSON.parse(process.env.AI_TUNE));
 // AI_TUNE_B: extra overrides for bot B only (applied before each of B's decisions and undone before A's)
@@ -13,6 +18,10 @@ import { aiChoose as oldChoose } from './ai-old';
 
 const CMDS = ['grubnak', 'sproingle', 'borgo'];
 const FAC: Record<string, string> = { grubnak: 'goblins', sproingle: 'gnomes', borgo: 'dwarves' };
+const CMD_OF: Record<string, string> = { goblins: 'grubnak', gnomes: 'sproingle', dwarves: 'borgo' };
+// MATCH=<deckIdA>,<deckIdB> (Oct 31, decks desk): bot A always plays deck A with its faction's Commander, bot B deck B; seeds still alternate sides and first player.
+const MATCH = process.env.MATCH ? process.env.MATCH.split(',') : null;
+const STYLES = [...new Set(STARTER_DECK_LIST.map((d) => d.style))];
 const back = (who: string) => CONFIG.backRow[who];
 
 type Bot = { ai: 'old' | 'new'; diff: string };
@@ -20,10 +29,16 @@ const blank = (): any => ({ abilities: 0, abilityKinds: {} as Record<string, num
   attacks: 0, kills: 0, cmdHits: 0, cmdDamage: 0, captures: 0, moves: 0, chases: 0, summons: 0, mines: 0, homeShare: [] as number[], fwd: [] as number[], ms: 0, calls: 0, maxMs: 0 });
 
 export function playMatch(seed: number, A: Bot, B: Bot, aIsPlayer: boolean, maxTurns = 120) {
-  const pc = CMDS[seed % 3], oc = CMDS[Math.floor(seed / 3) % 3];
-  const styles = ['warband', 'arcane-hoard', 'horde'];
-  const deckFor = (cmd: string, k: number) => STARTER_DECK_LIST.find((d) => d.faction === FAC[cmd] && d.style === styles[k % 3])!.id;
-  let s: any = createMatch({ seed: seed * 7919 + 13, playerCommander: pc, opponentCommander: oc, playerDeckId: deckFor(pc, seed), opponentDeckId: deckFor(oc, seed + 1), testMode: true, firstPlayer: seed % 2 ? 'player' : 'opponent' });
+  let pc = CMDS[seed % 3], oc = CMDS[Math.floor(seed / 3) % 3];
+  const deckFor = (cmd: string, k: number) => STARTER_DECK_LIST.find((d) => d.faction === FAC[cmd] && d.style === STYLES[k % STYLES.length])!.id;
+  let pd = deckFor(pc, seed), od = deckFor(oc, seed + 1);
+  if (MATCH) {
+    const dA = STARTER_DECK_LIST.find((d) => d.id === MATCH[0])!, dB = STARTER_DECK_LIST.find((d) => d.id === MATCH[1])!;
+    if (!dA || !dB) throw new Error('MATCH: unknown deck id ' + MATCH);
+    const [dp, dopp] = aIsPlayer ? [dA, dB] : [dB, dA];
+    pc = CMD_OF[dp.faction]; oc = CMD_OF[dopp.faction]; pd = dp.id; od = dopp.id;
+  }
+  let s: any = createMatch({ seed: seed * 7919 + 13, playerCommander: pc, opponentCommander: oc, playerDeckId: pd, opponentDeckId: od, testMode: true, firstPlayer: seed % 2 ? 'player' : 'opponent' });
   const bots: Record<string, Bot> = aIsPlayer ? { player: A, opponent: B } : { player: B, opponent: A };
   const rands: Record<string, any> = { player: makeRand(seed * 31 + 1), opponent: makeRand(seed * 31 + 2) };
   const st: Record<string, any> = { player: blank(), opponent: blank() };
