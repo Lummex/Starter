@@ -43,11 +43,21 @@ html body :is(.net-screen .net-btn,.net-btn.net-profile-btn):active:not(:disable
 html body :is(.net-screen .net-btn,.net-btn.net-profile-btn):disabled{border-image-source:var(--sv-dis);opacity:1}
 .net-chip:focus-visible,.net-avatar:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .net-btn:focus-visible{outline:2px solid #fff;outline-offset:1px}
-.net-avatars{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;max-height:46vh;overflow-y:auto;padding:4px}
-.net-avatar{min-height:84px;padding:2px;background:#0c0e15;border:2px solid #6e798f;border-radius:8px;cursor:pointer;color:#cfd6e4;box-shadow:inset 0 0 0 1px #000a}
-.net-avatar:hover{border-color:#e6ebf5;box-shadow:0 0 10px #dfe8f7aa}
-.net-avatar img{width:100%;height:84px;object-fit:cover;border-radius:5px;display:block}
-.net-avatar-big{width:96px;height:96px;object-fit:cover;border-radius:8px;border:2px solid #a4abb9;box-shadow:0 0 0 1px #000,0 0 12px #929aab66}
+.net-avatars{display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow-y:auto;padding:4px 2px}
+/* Ken (Oct 31): player avatars are painted portraits in silver rings, grouped by race */
+.net-avatar-race h3{text-align:left;margin:2px 0 4px}
+.net-avatar-race[hidden]{display:none}
+.net-avatar-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px;justify-items:center}
+.net-avatar{width:84px;height:84px;padding:0;border-radius:50%;overflow:hidden;background:#0c0e15;border:3px solid #a4abb9;cursor:pointer;box-shadow:0 0 0 2px #000,0 3px 8px #000a}
+.net-avatar[hidden]{display:none}
+.net-avatar:hover,.net-avatar[aria-pressed=true]{border-color:#fff;box-shadow:0 0 0 2px #000,0 0 14px #dfe8f7}
+.net-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.net-avatar-big{width:96px;height:96px;object-fit:cover;border-radius:50%;border:3px solid #cfd6e4;box-shadow:0 0 0 2px #000,0 0 14px #929aab88}
+.net-races{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.net-race{min-height:44px;padding:4px 14px;font:inherit;font-size:1rem;font-style:italic;color:#e6ebf5;background:linear-gradient(rgba(44,48,60,.92),rgba(16,18,26,.92));border:1px solid #6e798f;border-radius:22px;cursor:pointer;text-shadow:0 1px 2px #000}
+.net-race[hidden]{display:none}
+.net-race:hover,.net-race[aria-pressed=true]{border-color:#fff;color:#fff;box-shadow:0 0 10px #dfe8f7aa}
+.net-race:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .net-profile{display:flex;gap:16px;align-items:center;justify-content:center;text-align:left}
 .net-username{color:#fff;font-size:1.4rem !important;font-weight:700}
 .net-reason{color:#fff;font-style:normal !important}
@@ -71,7 +81,10 @@ html body :is(.net-screen .net-btn,.net-btn.net-profile-btn):disabled{border-ima
   .net-row .net-field label{flex:none}
   .net-btn{min-height:44px;padding:4px 12px;font-size:1rem}
   textarea.net-input{min-height:60px}
-  .net-avatars{max-height:62vh}
+  .net-avatars{max-height:calc(100vh - 150px)}
+  .net-race{min-height:44px;padding:2px 12px;font-size:.9rem}
+  .net-avatar{width:72px;height:72px}
+  .net-avatar-row{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
 }
 
 .net-cu::after { content: attr(data-url) attr(data-end); }

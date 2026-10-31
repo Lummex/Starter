@@ -190,6 +190,9 @@ select pg_temp.ok('my_status gives username, coins, needs_avatar, not banned',
 select pg_temp.works('set_avatar accepts card art', :P1, 'aal1', $q$ select public.set_avatar('goblin-scrounger') $q$);
 select pg_temp.refused('set_avatar refuses anything else', :P1, 'aal1', $q$ select public.set_avatar('../../evil') $q$);
 select pg_temp.ok('avatar stored', (select avatar from public.profiles where id = :P1) = 'goblin-scrounger');
+select pg_temp.works('set_avatar accepts a painted portrait (Oct 31)', :P1, 'aal1', $q$ select public.set_avatar('goblin-goggle-rogue') $q$);
+select pg_temp.ok('portrait stored', (select avatar from public.profiles where id = :P1) = 'goblin-goggle-rogue');
+select pg_temp.works('set_avatar still accepts card art', :P1, 'aal1', $q$ select public.set_avatar('goblin-scrounger') $q$);
 
 select pg_temp.works('save_deck: new deck', :P1, 'aal1',
   $q$ select public.save_deck(null, 'Junk Rush', 'grubnak', array['goblin-scrounger','goblin-scrounger','fizzle']) $q$);

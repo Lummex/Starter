@@ -23,8 +23,9 @@ for (const d of Object.values(decks)) {
 const sorted = Object.fromEntries(Object.entries(starter).sort(([a], [b]) => a.localeCompare(b)));
 
 const cardIds = cards.map((c) => c.id).sort();
-// Avatars come from existing card art only (no new pictures): every card that is not disabled.
-const avatarCards = cards.filter((c) => !c.disabled).map((c) => c.id).sort();
+// Avatars: Brush's painted portraits (avatars.json, Ken Oct 31) plus every card that is not disabled (the older
+// card-art avatars stay allowed for players who already picked one).
+const avatarCards = [...new Set([...read('avatars.json').map((a) => a.id), ...cards.filter((c) => !c.disabled).map((c) => c.id)])].sort();
 const commanderIds = commanders.map((c) => c.id).sort();
 
 const settings = {

@@ -1,9 +1,8 @@
 // Online Phase A screens and start-up flow: server check, login, sign-up (age question first), parent consent,
 // avatar, welcome, profile, ban, forgot / set password, Contact us, server decks.
 import './net.css';
-import { h, btn, pictureOf } from '../ui/app';
+import { h, btn } from '../ui/app';
 import type { App } from '../ui/app';
-import { CARDS } from '../engine';
 import { loadBrowserDecks as loadLocalDecks } from '../ui/decks';
 import type { SavedDeck } from '../ui/decks';
 import { net } from './state';
@@ -11,7 +10,7 @@ import { client, rpc, redirectUrl, myStatus, passwordOk, underThirteen, savedAge
 import { buildKind, mismatch } from './env-guard';
 import { pageMode } from './switch';
 import parentNotice from '../content/parent-notice.json';
-import AVATARS from '../content/avatar-cards.json';
+import { AVATAR_LIST, RACES, avatarPicture, avatarName } from './avatars';
 
 type El = HTMLElement;
 const TURNSTILE = (import.meta as any).env?.VITE_TURNSTILE_SITE_KEY as string | undefined;
@@ -317,18 +316,47 @@ function revokedScreen() {
     h('div', { class: 'net-actions' }, nbtn('Sign out', () => { void signOut(); }), offlineBtn()));
 }
 
-function avatarScreen(s: Status) {
+function avatarScreen(s: Status, back?: () => void) {
   const err = alertEl();
+  // Ken (Oct 31): painted portraits in circles, grouped by race with a race filter. A portrait shows once its
+  // picture has loaded, so new files dropped into public/art/avatars appear by themselves.
+  let race = 'all';
+  const sections = new Map<string, El>();
+  const chips = new Map<string, El>();
+  const refresh = () => {
+    for (const [r, sec] of sections) sec.hidden = !(race === 'all' || race === r) || !sec.querySelector('.net-avatar:not([hidden])');
+    for (const [r, c] of chips) { c.setAttribute('aria-pressed', String(r === race)); if (r !== 'all') c.hidden = !sections.get(r)?.querySelector('.net-avatar:not([hidden])'); }
+  };
+  const chip = (r: string, label: string) => {
+    const c = h('button', { type: 'button', class: 'net-race', 'aria-pressed': 'false', onclick: () => { race = r; refresh(); } }, label);
+    chips.set(r, c);
+    return c;
+  };
+  const pick = async (id: string) => {
+    err.textContent = '';
+    try {
+      await rpc('set_avatar', { p_card: id });
+      s.avatar = id; s.needs_avatar = false;
+      if (status && status !== s) { status.avatar = id; status.needs_avatar = false; } // Profile may hold a newer copy
+      if (back) back(); else welcomeScreen(s);
+    } catch (e: any) { err.textContent = e.message; }
+  };
   const grid = h('div', { class: 'net-avatars', role: 'group', 'aria-label': 'Avatars' },
-    ...(AVATARS as string[]).filter((id) => CARDS[id]).map((id) => {
-      const c = CARDS[id];
-      const pic = pictureOf(c);
-      return h('button', { type: 'button', class: 'net-avatar', 'aria-label': c.name, title: c.name, onclick: async () => {
-        err.textContent = '';
-        try { await rpc('set_avatar', { p_card: id }); s.avatar = id; s.needs_avatar = false; welcomeScreen(s); } catch (e: any) { err.textContent = e.message; }
-      } }, pic ? h('img', { src: pic, alt: '' }) : h('span', {}, c.name));
+    ...RACES.map(([r, label]) => {
+      const tiles = AVATAR_LIST.filter((a) => a.race === r).map((a) => {
+        const img = h('img', { src: avatarPicture(a.id), alt: '', loading: 'eager', decoding: 'async' }) as HTMLImageElement;
+        const tile = h('button', { type: 'button', class: 'net-avatar', 'aria-label': a.label, title: a.label, 'aria-pressed': String(s.avatar === a.id), hidden: true, onclick: () => { void pick(a.id); } }, img);
+        const show = () => { if (img.naturalWidth > 0) { tile.hidden = false; refresh(); } };
+        if (img.complete) show(); else img.addEventListener('load', show);
+        return tile;
+      });
+      const sec = h('section', { class: 'net-avatar-race', hidden: true }, h('h3', {}, label), h('div', { class: 'net-avatar-row' }, ...tiles));
+      sections.set(r, sec);
+      return sec;
     }));
-  menuShow('avatar', h('h1', {}, 'Choose your avatar'), err, grid);
+  const filter = h('div', { class: 'net-races', role: 'group', 'aria-label': 'Race' }, chip('all', 'All'), ...RACES.map(([r, label]) => chip(r, label)));
+  menuShow('avatar', h('h1', {}, 'Choose your avatar'), filter, err, grid, back ? h('div', { class: 'net-actions' }, nbtn('Back', back)) : null);
+  refresh();
 }
 
 function welcomeScreen(s: Status) {
@@ -411,14 +439,13 @@ export function menuExtras(el: El) {
 
 function showProfile() {
   const s = status!;
-  const card = s.avatar ? CARDS[s.avatar] : null;
-  const pic = card ? pictureOf(card) : null;
   const joined = h('p', {}, '');
   menuShow('profile', h('h1', {}, 'Profile'),
     h('div', { class: 'net-profile' },
-      pic ? h('img', { class: 'net-avatar-big', src: pic, alt: card?.name || 'Avatar' }) : null,
+      h('img', { class: 'net-avatar-big', src: avatarPicture(s.avatar), alt: avatarName(s.avatar) }),
       h('div', {}, h('p', { class: 'net-username' }, s.username), joined, h('p', {}, 'No online matches yet'))),
     h('div', { class: 'net-actions' },
+      nbtn('Change avatar', () => avatarScreen(s, showProfile)),
       nbtn('Contact us', () => showContact({ back: showProfile, email: undefined, player: s.username })),
       nbtn('Sign out', () => { void signOut(); }),
       nbtn('Back', () => app.showMenu())));
