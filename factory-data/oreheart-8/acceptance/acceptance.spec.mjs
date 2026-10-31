@@ -7565,7 +7565,12 @@ test.describe('round 11 at 1920x1080', () => {
     await page.waitForTimeout(1000);
     let s = await getState(page);
     const behind = at(s, M2.row - 1, M2.col).uid;
-    const c = await sq2s(page, M2.row - 1, M2.col);
+    // owner check change (Ken via Forge, Oct 31): units are 3x and the mine's pickaxe badge is drawn over the square behind the mine.
+    // The unit wins where its body is tapped; the pickaxe picture itself still mines (AC421). So click the unit's body, above the pickaxe.
+    let sb = null;
+    await expect.poll(async () => { sb = ((await renderStats(page)).figures.find((f) => f.row === M2.row - 1 && f.col === M2.col) || {}).screenBox; return sb ? sb.height : 0; }, { timeout: 15000 }).toBeGreaterThan(20);
+    const pkTop = await page.locator(`.site-mark[data-row="${M2.row}"][data-col="${M2.col}"] .pk-img`).evaluate((e) => e.getBoundingClientRect().top).catch(() => 1e9);
+    const c = { x: sb.x + sb.width / 2, y: Math.min(sb.y + sb.height * 0.3, pkTop - 22) };
     await page.mouse.click(c.x, c.y);
     await expect.poll(async () => await page.evaluate(async () => await window.oreheart.getSelected())).toBe(behind);
     s = await getState(page);
@@ -10074,7 +10079,8 @@ test('AC368: Card Comp vs Card Comp watch bar sits bottom-right; Pause, Play and
 // ======================= Round 26 (owner, Oct 28): owner edits, model clips, failing checks =======================
 // Round 24's skull-throw checks (AC369–AC371) were retired: the owner rejected the flying skull (Round 26 item 0).
 // Owner Model Editor setups (factory-design/design/models/editor-setups-2026-10-28.json, partsTableLook): card -> [bone, pos, rotDeg, scale, part]
-const R26_SETUPS = {"goblin-bomber":[],"goblin-grunt":[["RightHand",[-13.281,9.76,19.154],[126.389,-36.031,38.735],[43.449,43.449,43.449],"frying-pan"]],"goblin-pebbler":[["RightHand",[-9.231,12.794,2.402],[27,11,52],[25,25,25],"club"]],"goblin-scrapper":[["RightHand",[-3.51,8.733,-1.595],[50.405,1.159,166.638],[23,23,23],"bowling-ball"]],"goblin-slinger":[["RightHand",[-4.733,9.93,4.184],[7.674,57.734,67.236],[19,19,19],"skull-mace"]],"goblin-sneak":[["neck",[-5.34,1.862,-14.029],[8.548,3.663,3.154],[15,15,15],"bag"],["RightHand",[8.502,7.038,-9.251],[159.362,-37.54,-90.548],[29,29,29],"dagger"]],"junk-shaman":[["RightHand",[5.156,-7.33,3.734],[-10.17,-24.8,-150.09],[52.566,52.566,52.566],"staff"]],"rotgut-grenadier":[["RightHand",[18.162,-9.844,27.054],[35.239,-53.157,-88.87],[43,62.78,32.68],"spatula"]],"shiv-rat":[["Spine",[0.756,-10.807,-6.926],[176.37,0.217,178.765],[19,19,19],"backpack"],["RightHand",[-8.478,10.344,13.399],[132.296,-65.655,54.851],[26,26,26],"dagger"]],"skullbasher-rusher":[["RightHand",[-8.9,18.747,8.443],[-8.725,65.398,73.206],[36,36,36],"mace"],["LeftHand",[-3.667,7.628,-2.335],[-157.797,-59.618,-151.009],[37,37,37],"shield"]],"gyrocopter-ace":[["Spine02",[1,8.127,-15.443],[-178.557,0.345,175.676],[53,53,53],"gyro-wings-oct25"],["Spine02",[2.731,7.516,-13.38],[-84.27,23.646,2.952],[62.608,56.172,69.629],"gyro-wings-oct25"]],"gnome-tinker":[["RightHand",[-5.106,4.336,10.391],[-91.862,22.237,178.441],[29.826,29.826,29.826],"scepter-oct25"],["LeftForeArm",[-6.589,20.19,0.021],[-110.166,-61.024,179.49],[29.536,29.536,29.536],"crystal-shield-oct25"],["Hips",[-12.29,-9.118,25.184],[5.886,46.054,92.626],[16.542,16.542,16.542],"wrench-oct27"]]}; // owner change (Ken, Oct 30): Junk Shaman staff upright, hand-gripping (Ledger)
+const R26_SETUPS = {"goblin-bomber":[],"goblin-grunt":[["RightHand",[-13.281,9.76,19.154],[126.389,-36.031,38.735],[43.449,43.449,43.449],"frying-pan"]],"goblin-pebbler":[["RightHand",[-9.231,12.794,2.402],[27,11,52],[25,25,25],"club"]],"goblin-scrapper":[["RightHand",[-3.51,8.733,-1.595],[50.405,1.159,166.638],[23,23,23],"bowling-ball"]],"goblin-slinger":[["RightHand",[-4.733,9.93,4.184],[7.674,57.734,67.236],[19,19,19],"skull-mace"]],"goblin-sneak":[["neck",[-5.34,1.862,-14.029],[8.548,3.663,3.154],[15,15,15],"bag"],["RightHand",[8.502,7.038,-9.251],[159.362,-37.54,-90.548],[29,29,29],"dagger"]],"junk-shaman":[["RightHand",[5.156,-7.33,3.734],[-10.17,-24.8,-150.09],[52.566,52.566,52.566],"staff"]],"rotgut-grenadier":[["RightHand",[18.162,-9.844,27.054],[35.239,-53.157,-88.87],[43,62.78,32.68],"spatula"]],"shiv-rat":[["Spine",[0.756,-10.807,-6.926],[176.37,0.217,178.765],[19,19,19],"backpack"],["RightHand",[-8.478,10.344,13.399],[132.296,-65.655,54.851],[26,26,26],"dagger"]],"skullbasher-rusher":[["RightHand",[-8.9,18.747,8.443],[-8.725,65.398,73.206],[36,36,36],"mace"],["LeftHand",[-3.667,7.628,-2.335],[-157.797,-59.618,-151.009],[37,37,37],"shield"]],"gyrocopter-ace":[["Spine02",[1,8.127,-15.443],[-178.557,0.345,175.676],[53,53,53],"gyro-wings-oct25"],["Spine02",[2.731,7.516,-13.38],[-84.27,23.646,2.952],[62.608,56.172,69.629],"gyro-wings-oct25"]],"gnome-tinker":[["RightHand",[-5.106,4.336,10.391],[-91.862,22.237,178.441],[29.826,29.826,29.826],"scepter-oct25"],["LeftForeArm",[-6.589,20.19,0.021],[-110.166,-61.024,179.49],[29.536,29.536,29.536],"crystal-shield-oct25"],["Hips",[-12.29,-9.118,25.184],[5.886,46.054,92.626],[16.542,16.542,16.542],"wrench-oct27"]]};
+ // owner change (Ken, Oct 30): Junk Shaman staff upright, hand-gripping (Ledger)
 const dragCard = (page) => page.evaluate(async () => await window.oreheart.getDragCard());
 const near = (a, b, tol) => Math.abs(a - b) <= tol;
 // grabs hand card i with the real mouse (test flag must be off) and moves it onto square (row, col) in steps
@@ -10976,3 +10982,31 @@ for (const dev of [{ name: 'phone touch', use: { viewport: { width: 812, height:
     });
   });
 }
+
+// Oct 31 (Ken via Forge): "a unit standing behind a mine must be tappable, and the pickaxe must stay easy to tap". The pickaxe picture
+// itself mines; its extra tap padding goes to a unit whose body is under the pointer.
+test('AC421: the pickaxe picture mines; a tap on its padding over a unit behind the mine selects that unit', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await start(page, quiet({ playerDeck: SHARDS, opponentDeck: SHARDS, board: [
+    { cardId: 'goblin-scrapper', owner: 'player', row: M2.row - 1, col: M2.col },
+    { cardId: 'goblin-scrounger', owner: 'player', row: M2.row + 1, col: M2.col },
+  ] }));
+  await done(page);
+  let s = await getState(page);
+  const behind = at(s, M2.row - 1, M2.col).uid;
+  const pk = page.locator(`.site-mark[data-row="${M2.row}"][data-col="${M2.col}"] .pk-img`);
+  await expect(pk).toBeVisible();
+  await expect.poll(async () => (((await renderStats(page)).figures.find((f) => f.row === M2.row - 1 && f.col === M2.col) || {}).screenBox || {}).height || 0, { timeout: 15000 }).toBeGreaterThan(20);
+  const ib = await pk.boundingBox();
+  // just outside the picture, still inside the pickaxe's tap padding, on the unit's body
+  const pad = { x: ib.x + ib.width + 6, y: ib.y + ib.height * 0.3 };
+  const hitPk = await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest('.pickaxe'), [pad.x, pad.y]);
+  expect(hitPk, 'the point is on the pickaxe padding').toBe(true);
+  await page.mouse.click(pad.x, pad.y);
+  await expect.poll(async () => await page.evaluate(async () => await window.oreheart.getSelected())).toBe(behind);
+  s = await getState(page);
+  expect(at(s, M2.row + 1, M2.col).hasMined, 'the padding tap over the unit did not mine').toBeFalsy();
+  await page.keyboard.press('Escape');
+  await page.mouse.click(ib.x + ib.width / 2, ib.y + ib.height / 2);
+  await expect.poll(async () => at(await getState(page), M2.row + 1, M2.col).hasMined).toBe(true);
+});

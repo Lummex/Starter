@@ -1162,10 +1162,22 @@ export class App {
       const fl = h('div', { class: 'mine-flow', role: 'img', 'aria-label': `Mine flow, row ${row}, column ${col}` }, '+0 / +0');
       fl.dataset.row = String(row); fl.dataset.col = String(col);
       r.rings.push(ring); r.flows.push(fl); r.board.append(ring, fl);
-      const m = h('button', { type: 'button', class: 'site-mark', 'aria-label': `Crystal site, row ${row}, column ${col}`, onclick: () => this.tapSite(i) });
+      const m = h('button', { type: 'button', class: 'site-mark', 'aria-label': `Crystal site, row ${row}, column ${col}`, onclick: () => { if (this.sitePass) { this.sitePass = false; return; } this.tapSite(i); } });
       m.dataset.row = String(row); m.dataset.col = String(col);
       m.dataset.readyMiners = '0';
       m.addEventListener('pointerdown', (e) => {
+        // Ken (Oct 31): the pickaxe stays easy to tap, but a unit standing behind the mine stays tappable too. The pickaxe picture itself
+        // and the mine's own spot always mine; the extra tap padding beyond them hands the tap to the board when a unit (its body, square or stat badge) is under the pointer.
+        this.sitePass = false;
+        const pk = (e.target as El).closest?.('.pickaxe') ? m.querySelector('.pk-img') as El | null : null;
+        if (pk) {
+          const b = pk.getBoundingClientRect();
+          const inR = (r: DOMRect) => e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+          const onIcon = inR(b) || inR(m.getBoundingClientRect()); // the picture, or the mine's own spot
+          const st = this.game.state, c = this.cellAt(e.clientX, e.clientY);
+          const unitThere = !!this.figureAtEvent(e) || !!(c && st?.board.creatures.some((x: any) => x.row === c.row && x.col === c.col)) || document.elementsFromPoint(e.clientX, e.clientY).some((x) => (x as El).closest?.('.tk-stats'));
+          if (!onIcon && unitThere) { this.sitePass = true; return; }
+        }
         e.stopPropagation();
         this.holdFired = false;
         clearTimeout(this.holdTimer);
@@ -3805,6 +3817,8 @@ export class App {
     const c = this.cellAt(e.clientX, e.clientY);
     return (c ? st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col) : null) || this.figureAtEvent(e);
   }
+  /** Oct 31: set when a tap on the pickaxe's padding went to the unit under it (the site mark then skips its click) */
+  sitePass = false;
   /** Oct 31: the creature whose 3D figure is drawn under the pointer (units are 3x and cover the squares behind them), or null. */
   figureAtEvent(e: { clientX: number; clientY: number }): any {
     const uid = this.view?.unitAt?.(e.clientX, e.clientY);
