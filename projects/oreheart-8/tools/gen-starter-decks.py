@@ -33,7 +33,8 @@ D = {
                    'venom-shiv': 3, 'tunnel-rush': 2, 'hold-it': 2, 'fizzle': 1, 'healing-light': 1,
                    'soul-shard': 2, 'crystal-cluster': 2, 'glowing-geode': 1, 'heart-of-the-fallen': 1},
   'warband':      {'goblin-scrounger': 22, 'goblin-smith-miner': 8,
-                   'goblin-grunt': 5, 'goblin-sneak': 2, 'goblin-bomber': 2, 'goblin-slinger': 3, 'skullbasher-rusher': 3, 'shiv-rat': 1, 'goblin-scrapper': 1, 'grubnaks-big-boss-troll': 2, 'wolf-rider': 1,
+                   'goblin-grunt': 5, 'goblin-sneak': 2, 'goblin-bomber': 2, 'goblin-slinger': 3, 'skullbasher-rusher': 3, 'shiv-rat': 1, 'goblin-scrapper': 1, 'grubnaks-big-boss-troll': 1, 'shard-guzzler': 2,  # Ken, Oct 31: the Goblin Rocket Rider was in no deck; it replaces 1 Wolf Rider (8) + 1 Big Boss Troll (7)
+                  
                    'venom-shiv': 2, 'hold-it': 2, 'fizzle': 1, 'tunnel-rush': 1,
                    'crystal-cluster': 2, 'glowing-geode': 1, 'heart-of-the-fallen': 1},
  },

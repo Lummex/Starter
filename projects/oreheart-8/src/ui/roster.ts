@@ -4,9 +4,10 @@
 import { COMMANDERS } from '../engine';
 import { AI_NAMES } from './players';
 import { RANK_CONFIG } from './rank';
+import { rivalAvatars } from './avatars';
 
 export type Skill = 'easy' | 'medium' | 'hard';
-export interface Rival { id: string; name: string; faction: string; commander: string; style: string; skill: Skill; points: number }
+export interface Rival { id: string; name: string; faction: string; commander: string; style: string; skill: Skill; points: number; avatar: string }
 /** Shown on a rival's profile (the computer does not play by styles yet; it is a label for now). */
 export const STYLE_LABELS = ['Aggressive', 'Mine Control', 'Guard', 'Free-for-all'];
 const SKILLS: Skill[] = ['easy', 'easy', 'easy', 'easy', 'easy', 'easy', 'easy', 'medium', 'medium', 'medium', 'medium', 'medium', 'medium', 'medium', 'hard', 'hard', 'hard', 'hard', 'hard', 'hard'];
@@ -19,6 +20,7 @@ function build(): Rival[] {
     const commander = Object.values(COMMANDERS).find((c: any) => c.faction === faction && c.playable !== false)?.id || 'grubnak';
     const names = AI_NAMES[faction].slice(0, 18).concat(shared.slice(fi * 2, fi * 2 + 2));
     const per: Record<Skill, number> = { easy: 0, medium: 0, hard: 0 };
+    const avs = rivalAvatars(faction);
     const count: Record<Skill, number> = { easy: SKILLS.filter((s) => s === 'easy').length, medium: SKILLS.filter((s) => s === 'medium').length, hard: SKILLS.filter((s) => s === 'hard').length };
     names.forEach((name, i) => {
       const skill = SKILLS[i];
@@ -26,7 +28,7 @@ function build(): Rival[] {
       const k = per[skill]++;
       // spread each skill's rivals across its band; the three factions are offset a little so their ranks don't line up exactly
       const points = Math.round(lo + ((hi - lo) * (k + 0.25 + fi * 0.25)) / count[skill]);
-      out.push({ id: `${faction}-${i + 1}`, name, faction, commander, style: STYLE_LABELS[(i + fi) % STYLE_LABELS.length], skill, points });
+      out.push({ id: `${faction}-${i + 1}`, name, faction, commander, style: STYLE_LABELS[(i + fi) % STYLE_LABELS.length], skill, points, avatar: avs.length ? avs[i % avs.length] : '' });
     });
   });
   return out;

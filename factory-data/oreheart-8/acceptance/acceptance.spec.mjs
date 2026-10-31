@@ -13662,3 +13662,37 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
     expect((await page.evaluate(() => window.oreheart.getRank())).points).toBe(95 + rr.delta);
   });
 }
+
+// Oct 31 (Ken: holo only on certain areas): every holo mask is a transparency mask (white = shine, the rest clear), so the shine never covers the whole picture.
+// Ken: "Goblin Rocket Rider, which I haven't seen him in the game": 2 copies in the Goblin Warband. Brush's avatars on both plates.
+test('AC532: holo masks shine only through their white parts; the Rocket Rider is in the Goblin Warband; both plates show an avatar picture', async ({ page, request }) => {
+  test.setTimeout(90000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const share = await page.evaluate(async (ids) => {
+    const out = {};
+    for (const id of ids) {
+      const img = new Image(); img.src = `/art/holo-masks/${id}.webp`; await img.decode();
+      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height).data; let clear = 0;
+      for (let i = 3; i < d.length; i += 4) if (d[i] < 32) clear++;
+      out[id] = clear / (d.length / 4);
+    }
+    return out;
+  }, ['grubnaks-big-boss-troll', 'shard-guzzler', 'meteor-strike']);
+  for (const [id, s] of Object.entries(share)) expect(s, `${id}: most of its mask is clear`).toBeGreaterThan(0.5);
+  const decks = await (await request.get('/')).ok();
+  expect(decks).toBe(true);
+  const wb = await page.evaluate(() => window.oreheart.starterDeckCards('goblin-warband'));
+  expect(wb.length).toBe(60);
+  expect(wb.filter((c) => c === 'shard-guzzler').length, 'two Rocket Riders in the Goblin Warband').toBe(2);
+  await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [] } }));
+  const av = await page.evaluate(() => [...document.querySelectorAll('.match .o-plate .o-av')].map((a) => ({ bg: getComputedStyle(a).backgroundImage, id: a.dataset.avatar })));
+  expect(av.length).toBe(2);
+  expect(av.find((a) => a.id === 'goblin-goggle-rogue'), 'your avatar: Ken\'s goblin goggle rogue').toBeTruthy();
+  for (const a of av) expect(a.bg, 'an avatar picture').toMatch(/\/art\/avatars\/[a-z-]+\.webp/);
+  const rv = await page.evaluate(() => window.oreheart.getRival());
+  const all = await page.evaluate(() => window.oreheart.avatars());
+  expect(all.find((x) => x.id === rv.avatar).race, 'a dwarf rival gets a dwarf (or human/undead) avatar').toMatch(/dwarf|undead|human/);
+});

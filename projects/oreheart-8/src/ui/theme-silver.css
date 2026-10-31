@@ -367,3 +367,8 @@ html body #app .end .rank-panel .rank-up{color:#2a1700!important;text-shadow:0 1
 }
 @media (max-height:500px){ html body #app .end .rank-panel .rank-up{right:auto;left:-1.2em;top:-.85em;rotate:-6deg} }
 @media (max-height:500px){ html body #app .end .rank-panel .rank-up{left:50%;right:auto;top:-1.25em;translate:-50% 0;rotate:-3deg;padding:.05em .55em} html body #app .end .rank-panel{margin-top:.45em} }
+
+
+/* Oct 31: Brush's avatars inside the silver ring (the letter only shows while there is no picture) */
+html body #app .match .o-plate .o-av.has-img{background-size:cover;background-position:center 18%;background-repeat:no-repeat}
+html body #app .match .o-plate .o-av.has-img::before{content:none}

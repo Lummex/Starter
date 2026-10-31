@@ -15,6 +15,7 @@ import { audio, pickArena } from './audio';
 import { getPlayerName, pickAiName } from './players';
 import { rankOf, load as loadRank, recordResult, recordVs, RankInfo, RankResult } from './rank';
 import { matchRival, rivalById, Rival } from './roster';
+import { avatarUrl, getPlayerAvatar, shownAvatar } from './avatars';
 import { getHighlights, setHighlights, resetHighlights, getRings, setRings, resetRings, edgeOf, glowOf, mainOf, ringColor, applyHighlightVars } from './fx-settings';
 import { loadGrubnak3d } from './grubnak3d';
 import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
@@ -1417,8 +1418,8 @@ export class App {
   /** Short title shown; the rest of the full display name stays in the text for screen readers. */
   /** Ken, Oct 31: the name plate shows the PLAYER's name big and the Commander's name small underneath, with a round avatar spot beside it
    *  (a placeholder with the first letter until Brush's avatars plug in: data-avatar on .o-av). */
-  setPlate(el: El, player: string, commander: string, faction: string, side: 'player' | 'enemy', rank: RankInfo | null = null, tip = '') {
-    const key = player + '|' + commander + '|' + faction + '|' + (rank ? rank.label : '') + '|' + tip;
+  setPlate(el: El, player: string, commander: string, faction: string, side: 'player' | 'enemy', rank: RankInfo | null = null, tip = '', avatar = '') {
+    const key = player + '|' + commander + '|' + faction + '|' + (rank ? rank.label : '') + '|' + tip + '|' + avatar;
     if (el.dataset.plate === key) return;
     el.dataset.plate = key; el.dataset.full = commander; el.dataset.player = player;
     el.classList.add('o-plate', side === 'enemy' ? 'o-enemy' : 'o-you');
@@ -1427,6 +1428,8 @@ export class App {
     const words = h('span', { class: 'o-pl' },
       h('span', { class: 'o-pn', title: player }, player),
       h('span', { class: 'o-cm' }, m ? m[1] : commander, m ? h('span', { class: 'sr-only' }, m[2] + m[3]) : ('' as any)));
+    const src = avatarUrl(avatar); /* Brush's avatar (a painted stand-in of the same race until its own picture exists) */
+    if (src) { av.classList.add('has-img'); av.style.backgroundImage = `url(${src})`; av.dataset.avatar = avatar; av.dataset.shown = shownAvatar(avatar); }
     if (rank) av.append(this.charmEl(rank));
     if (side === 'enemy') el.replaceChildren(words, av); else el.replaceChildren(av, words);
     el.setAttribute('aria-label', `${side === 'enemy' ? 'Opponent' : 'You'}: ${player}, Commander ${commander}${rank ? `, rank ${rank.label}` : ''}`);
@@ -2339,10 +2342,10 @@ export class App {
     r.eFlow.textContent = String(en.crystals);
     r.eBank.textContent = String(en.bank);
     { const my = rankOf(loadRank().points);
-      this.setPlate(r.myName, getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player', my, `${getPlayerName()}: ${my.label}, ${my.inDivision} rank points`);
+      this.setPlate(r.myName, getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player', my, `${getPlayerName()}: ${my.label}, ${my.inDivision} rank points`, getPlayerAvatar());
       const rv = this.rival, rec = rv ? recordVs(rv.id) : null;
       this.setPlate(r.eName, this.aiName || 'Opponent', COMMANDERS[en.commanderId]?.name || '', en.faction, 'enemy', rv ? rankOf(rv.points) : null,
-        rv ? `${rv.name}: ${rankOf(rv.points).label} · ${rv.skill === 'easy' ? 'Easy' : rv.skill === 'hard' ? 'Hard' : 'Medium'} · ${rv.style} · You ${rec!.w}-${rec!.l}` : ''); }
+        rv ? `${rv.name}: ${rankOf(rv.points).label} · ${rv.skill === 'easy' ? 'Easy' : rv.skill === 'hard' ? 'Hard' : 'Medium'} · ${rv.style} · You ${rec!.w}-${rec!.l}` : '', rv ? rv.avatar : ''); }
     audio.voicePreload(me.commanderId); audio.voicePreload(en.commanderId); // Oct 31: the Commanders' voice lines (loads once)
     r.income.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')}`;
     r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;
