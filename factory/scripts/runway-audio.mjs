@@ -46,7 +46,7 @@ if (MODE === 'probe') {
     ['/organization', null],
   ];
   for (const [p, b] of tries) {
-    try { const r = await call(b ? 'POST' : 'GET', p, b || undefined); log('PROBE', p, 'OK', JSON.stringify(r).slice(0, 3000)); }
+    try { const r = await call(b ? 'POST' : 'GET', p, b || undefined); log("PROBE", p, "OK", JSON.stringify(r)); }
     catch (e) { log('PROBE', p, e.message); }
   }
   process.exit(0);
@@ -73,6 +73,6 @@ async function one(j) {
   } catch (e) { results.push({ id: j.id, error: e.message }); log('FAILED', j.id, e.message); }
 }
 // a few at a time (Runway limits concurrent tasks)
-for (let i = 0; i < todo.length; i += 4) await Promise.all(todo.slice(i, i + 4).map(one));
+for (const j of todo) await one(j);   // Runway allows 1 ElevenLabs task at a time
 fs.writeFileSync(path.join(DIR, 'last-run.json'), JSON.stringify({ at: new Date().toISOString(), made: results.filter((r) => r.ok).length, results }, null, 1));
 log('finished', results.filter((r) => r.ok).length, 'made,', results.filter((r) => r.error).length, 'failed');
