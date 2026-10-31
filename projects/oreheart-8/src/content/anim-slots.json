@@ -645,6 +645,83 @@
     }
    },
    "note": "Ken (Oct 30): a gnome driving the plow. Anvil/plow worker: the rider stays seated in every role (no standing clip on the plow)."
+  },
+  "oathbound-pikeman": {
+   "slots": {
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-rifle-01",
+     "animation": "biped-ranged-rifle-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "deepforge-crossbowman": {
+   "slots": {
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-cannon-01",
+     "animation": "biped-ranged-cannon-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "goblin-slinger": {
+   "slots": {
+    "attack": {
+     "shared": true,
+     "clip": "biped-throw-01",
+     "animation": "biped-throw-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "axe-thrower": {
+   "slots": {
+    "attack": {
+     "shared": true,
+     "clip": "biped-throw-01",
+     "animation": "biped-throw-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "spark-gnome": {
+   "slots": {
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-cast-01",
+     "animation": "biped-ranged-cast-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "hexwright-apprentice": {
+   "slots": {
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-cast-hand-01",
+     "animation": "biped-ranged-cast-hand-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "gyrocopter-ace": {
+   "slots": {
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-cast-hand-01",
+     "animation": "biped-ranged-cast-hand-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
   }
  },
  "stats": {
