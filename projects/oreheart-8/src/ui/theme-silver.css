@@ -208,3 +208,68 @@ html body .done-dropup .btn.btn{--sv-h:max(44px,calc(1.2em + 20px))}
 
 /* Oct 31: on phones the Done button's icon cap is shorter, so its left gem no longer touches the deck pile */
 @media (max-width: 900px){html body #app .match .btn.o-text.done-btn{--sv-oxl:calc(var(--sv-f) * .45 + var(--sv-cap) * .92)}}
+
+/* ================= 7. Choose Your Commander (Ken, Oct 31 playtest) =================
+   "the background box that the commander cards sit in, I don't want that" / "Just leave it his card, selected, and put arrows on either
+   side of the card so you can page through the commanders" / "the game mode ... on the right-hand side" / "the fight doesn't fit inside
+   the button that it's in ... I like the artwork, but they look awkward."
+   Layout: Commander cards + arrows on the left (owner box cCards), the right-hand column holds the game modes and, under them, the deck
+   picker as a list (owner box cDecks; room for four named starter decks per faction plus saved decks), bottom row Back / difficulty / Fight!. */
+html body #app .mb-setup .cmd-wall{display:none!important}
+html body #app .mb-setup .cs-cards .cmd-pager{position:relative;display:flex;align-items:center;justify-content:center;gap:clamp(10px,1.6vw,34px);width:100%;height:100%}
+html body #app .mb-setup .cs-cards .cmd-pager .cmds{flex:0 1 auto;width:auto!important;max-width:none;height:100%;padding:0!important;background:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html body #app .mb-setup .cs-cards .cmd-card{height:46vh!important}
+/* one Commander at a time once chosen: the others leave the row, the chosen card stays in front, bigger (no 3D model) */
+html body #app .mb-setup .cmds.one .cmd-card:not(.focus){display:none!important}
+html body #app .mb-setup .cmds.one .cmd-card.focus{position:relative!important;height:min(100%,70vh)!important;transform:none!important;opacity:1!important;filter:none!important;visibility:visible!important;pointer-events:auto!important}
+/* the arrows: Brush's silver arrow medallion (the Back icon), mirrored for forward */
+html body #app .mb-setup .cmd-arrow{flex:0 0 auto;width:clamp(44px,8.5vh,92px);height:clamp(44px,8.5vh,92px);padding:0;margin:0;border:0!important;background:none!important;box-shadow:none!important;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s ease,filter .15s ease;filter:drop-shadow(0 3px 6px #000c)}
+html body #app .mb-setup .cmd-arrow .cmd-arrow-ico{display:block;width:100%;height:100%;background:url(/art/ui/silver/icon-back.webp) center/contain no-repeat;pointer-events:none}
+html body #app .mb-setup .cmd-arrow.next .cmd-arrow-ico{transform:scaleX(-1)}
+html body #app .mb-setup .cmd-arrow:is(:hover,:focus-visible){transform:scale(1.1);filter:drop-shadow(0 0 10px var(--sv-glow)) drop-shadow(0 3px 6px #000c);outline:none}
+html body #app .mb-setup .cmd-arrow:active{transform:scale(.95)}
+/* right-hand column: small labels, a see-through dark backing so the hall painting stays visible */
+html body #app .mb-setup .cs-label{display:block;font-size:max(14px,2cqh);line-height:1.1;color:#fff;text-align:center;letter-spacing:.06em;margin:0 0 .3em;text-shadow:0 0 3px #000,0 1px 2px #000}
+html body #app .mb-setup .cs-modes{align-items:stretch;justify-content:flex-start;z-index:6}
+html body #app .mb-setup .cs-modes .mode-row{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:clamp(6px,1.2cqh,16px);width:100%;margin:0;padding:0 calc(var(--sv-ox,0px))}
+/* the deck picker: one row per deck (picture, name, card count) with Remove / Copy beside it; the list scrolls inside its box */
+html body #app .mb-setup .cs-decks .deck-wrap{display:flex!important;flex-direction:column!important;align-items:stretch!important;width:100%!important;height:100%!important;margin:0!important;gap:0;max-width:none!important}
+html body #app .mb-setup .cs-decks .deck-wrap>.btn.scroll{display:none!important}
+html body #app .mb-setup .cs-decks .deck-row.deck-row{--acts:116px;--rowh:clamp(34px,6cqh,64px);display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;align-items:stretch!important;justify-content:flex-start!important;gap:clamp(4px,.8cqh,10px)!important;flex:1 1 0;min-height:0;width:100%;overflow-x:hidden!important;overflow-y:auto!important;padding:2px 4px 2px 2px!important;scroll-snap-type:none!important;overscroll-behavior:contain}
+html body #app .mb-setup .cs-decks .dslot.dslot{display:grid!important;grid-template-columns:minmax(0,1fr) var(--acts);align-items:center;gap:6px;min-width:0!important;width:100%!important;flex:0 0 auto!important;margin:0!important}
+html body #app .mb-setup .cs-decks .dstack.dstack{grid-column:1;position:relative;display:grid!important;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:.5em;row-gap:0;width:100%!important;min-width:0!important;height:var(--rowh)!important;min-height:0!important;margin:0!important;padding:3px .6em 3px 3px!important;transform:none!important;border:1px solid #c9d2e266!important;border-radius:8px!important;background:linear-gradient(90deg,#0b0a14d9,#0b0a14a6)!important;box-shadow:0 2px 6px #0009!important;text-align:left;overflow:hidden;cursor:pointer}
+html body #app .mb-setup .cs-decks .dstack.dstack .deck-img{grid-row:1/3;grid-column:1;height:calc(var(--rowh) - 8px)!important;width:auto!important;max-width:none!important;aspect-ratio:auto;object-fit:contain;position:static!important;margin:0!important;transform:none!important}
+html body #app .mb-setup .cs-decks .dstack.dstack .ds-name{display:block!important;height:auto!important;grid-column:2;grid-row:1;position:static!important;inset:auto!important;transform:none!important;width:auto!important;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;font-size:max(14px,2.1cqh)!important;line-height:1.1!important;text-align:left!important;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;color:#fff!important}
+html body #app .mb-setup .cs-decks .dstack.dstack .ds-n{display:block!important;height:auto!important;grid-column:2;grid-row:2;position:static!important;inset:auto!important;transform:none!important;margin:0!important;padding:0!important;background:none!important;font-size:14px!important;line-height:1.1!important;text-align:left!important;white-space:nowrap!important;color:#e6ebf5!important;opacity:.9}
+html body #app .mb-setup .cs-decks .dstack.newdeck{display:flex!important;align-items:center;justify-content:flex-start;padding-left:.8em!important;font-size:max(14px,2.1cqh)!important;border-style:dashed!important}
+html body #app .mb-setup .cs-decks .dstack.dstack[aria-pressed=true]{border:1px solid #fff!important;background:linear-gradient(90deg,#3a4466e6,#1a1d2ccc)!important;box-shadow:0 0 0 2px #dfe8f7aa,0 0 14px #b5c6ffaa!important}
+html body #app .mb-setup .cs-decks .dstack.dstack.bad{opacity:.8}
+html body #app .mb-setup .cs-decks .dstack.dstack:is(:hover,:focus-visible){border-color:#fff!important;outline:none}
+html body #app .mb-setup .cs-decks .ds-acts.ds-acts{grid-column:2;display:flex!important;flex-direction:row!important;align-items:center;justify-content:flex-start;gap:4px;width:auto!important;margin:0!important;position:static!important}
+html body #app .mb-setup .cs-decks .ds-acts .btn.tx-act{min-height:30px!important;padding:2px 6px!important;font-size:14px!important;line-height:1.1!important;white-space:nowrap}
+/* the silver gem buttons: the gem caps sit inside the button and the text sits on the rail between them, never under a cap */
+html body #app .mb-setup :is(.btn.fight-btn,.btn.diff,.btn.mode-btn).btn.btn{--sv-ox:0px;--sv-oxl:0px;margin-inline:0!important;box-sizing:border-box;text-align:center;justify-content:center;line-height:1.1!important}
+html body #app .mb-setup .cs-start .btn.fight-btn.fight-btn{--sv-v:.1;font-size:max(16px,3.6cqh)!important;padding:max(10px,.34em) calc(var(--sv-cap) * .92)!important;letter-spacing:.04em}
+html body #app .mb-setup .cs-modes .btn.mode-btn.mode-btn{width:100%;font-size:max(14px,2.05cqh)!important;padding:max(9px,.42em) calc(var(--sv-cap) * .9)!important;min-height:0!important}
+html body #app .mb-setup .cs-extra .btn.diff.diff{font-size:max(14px,2.3cqh)!important;padding:max(9px,.42em) calc(var(--sv-cap) * .9)!important;min-height:0!important}
+html body #app .mb-setup .cs-extra .setup-actions{gap:clamp(8px,1.4vw,26px)}
+@media (max-height:480px){
+  /* phone: cards on the left, modes + decks in the right column, Back / difficulty / Fight! along the bottom */
+  /* the 16:9 stage leaves side margins on a wide phone: the cards and the right column use the whole screen width (--edge = one margin) */
+  html body #app .mb-setup .mb-zone{--edge:calc((100vw - 100cqw) / 2)}
+  html body #app .mb-setup .mb-zone.cs-cards{left:calc(1vw - var(--edge))!important;top:11%!important;width:64vw!important;height:74%!important}
+  html body #app .mb-setup .mb-zone.cs-modes{left:calc(67.2vw - var(--edge))!important;top:11%!important;width:32vw!important;height:25%!important}
+  html body #app .mb-setup .mb-zone.cs-decks{left:calc(67.2vw - var(--edge))!important;top:37%!important;width:32vw!important;height:49%!important}
+  html body #app .mb-setup .mb-zone.cs-extra{top:86%!important;height:14%!important;left:22%!important;width:52%!important}
+  html body #app .mb-setup .cs-label{display:none}
+  html body #app .mb-setup .cs-cards .cmd-card{height:42vh!important}
+  html body #app .mb-setup .cmds.one .cmd-card.focus{height:calc(100% - 16px)!important}
+  html body #app .mb-setup .cmd-arrow{width:44px;height:44px}
+  html body #app .mb-setup .cs-modes .mode-row{gap:4px}
+  html body #app .mb-setup .cs-modes .btn.mode-btn.mode-btn{white-space:nowrap!important;text-align:center;padding:6px 8px!important;font-size:14px!important;line-height:1.1!important;min-height:0!important;height:31px}
+  html body #app .mb-setup .cs-decks .deck-row.deck-row{--acts:62px;--rowh:44px;gap:4px!important}
+  html body #app .mb-setup .cs-decks .ds-acts.ds-acts{flex-direction:column!important;align-items:stretch;gap:2px}
+  html body #app .mb-setup .cs-decks .ds-acts .btn.tx-act{min-height:21px!important;height:21px;padding:0 4px!important;text-align:left}
+  html body #app .mb-setup .cs-extra .btn.diff.diff{padding:6px 8px!important;font-size:14px!important}
+  html body #app .mb-setup .cs-start .btn.fight-btn.fight-btn{--sv-v:.04;font-size:18px!important;padding:10px calc(var(--sv-cap) * .92)!important}
+}

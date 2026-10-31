@@ -583,7 +583,7 @@ export class App {
     };
     for (const c of cmds) {
       const f = FACTIONS[c.faction];
-      cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { if (picked && cmd === c.id) unpick(); else { cmd = c.id; onCmd(); pick(); } },
+      cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { if (picked && cmd === c.id) return; cmd = c.id; onCmd(); pick(); },
         onpointerenter: () => { hallOver = c.id; setHall(); }, onpointerleave: () => { if (hallOver === c.id) { hallOver = ''; setHall(); } }, onfocus: () => { hallOver = c.id; setHall(); }, onblur: () => { if (hallOver === c.id) { hallOver = ''; setHall(); } } },
         h('span', { class: 'portrait-img oh-cmd', 'aria-hidden': 'true' }, ohCardEl(commanderCard(c), commanderPortrait(c.id))),
         h('span', { class: 'cmd-win' },
@@ -610,7 +610,7 @@ export class App {
       }), { 'aria-label': `Remove ${label}` }) as HTMLButtonElement;
       if (visibleCount() <= 1) { rm.disabled = true; rm.setAttribute('aria-disabled', 'true'); }
       const acts: El[] = [rm];
-      if (starterId) acts.push(btn('Copy to my decks', 'small tx-act', () => {
+      if (starterId) acts.push(btn('Copy', 'small tx-act', () => {
         const sd: any = STARTER_DECK_LIST.find((x) => x.id === starterId)!;
         if (decks.length >= 5) { msg.textContent = 'You can save up to 5 decks.'; return; }
         decks.push({ name: `${label} (copy)`, cards: sd.cards.slice(), commander: FCMD[sd.faction] || 'grubnak' });
@@ -639,37 +639,50 @@ export class App {
       items.push(h('div', { class: 'dslot' }, h('button', { type: 'button', class: 'dstack newdeck', onclick: () => showDecks(this) }, '+ New Deck')));
       row.replaceChildren(...items);
     };
-    // round 8b item 11: choosing a Commander hides the others; the card drops back as a backdrop and the 3D model pops up in front
-    let picked = false, stopStage: (() => void) | null = null;
-    const stage = h('div', { class: 'cmd-stage', 'aria-hidden': 'true' }) as El;
-    const cmdsEl = h('div', { class: 'cmds' }, h('div', { class: 'cmd-wall', 'aria-hidden': 'true' }), ...cmdBtns, stage) as El;
+    // Owner (Ken, Oct 31): "the background box that the commander cards sit in, I don't want that" (no wall), and "when you click the goblin king,
+    // I don't want his 3D image to pop up anymore. Just leave it his card, selected, and put arrows on either side of the card so you can page
+    // through the commanders. Instead of [the] change commander [button], just have the arrows ... Forward and back."
+    let picked = false;
+    const cmdsEl = h('div', { class: 'cmds' }, ...cmdBtns) as El;
     // hover grow/shrink follows real pointer movement (a pointer left over a card by an earlier click doesn't count)
     cmdBtns.forEach((b) => {
       b.addEventListener('pointermove', () => { if (!b.classList.contains('hov')) { cmdBtns.forEach((o) => o.classList.toggle('hov', o === b)); cmdsEl.classList.add('hovering'); } });
       b.addEventListener('pointerleave', () => { b.classList.remove('hov'); if (!cmdBtns.some((o) => o.classList.contains('hov'))) cmdsEl.classList.remove('hovering'); });
     });
-    const changeBtn = btn('Change Commander', 'change-cmd tx-act', () => unpick()) as El;
-    changeBtn.hidden = true;
     const mainRef: { el: El | null } = { el: null };
     const pick = () => {
       picked = true;
-      cmdsEl.classList.add('picked'); changeBtn.hidden = false;
+      cmdsEl.classList.add('one');
       mainRef.el?.setAttribute('data-picked', cmd);
-      cmdBtns.forEach((b) => b.classList.toggle('backdrop', b.dataset.id === cmd));
-      stopStage?.(); stopStage = null; stage.replaceChildren();
-      if (cmd === 'grubnak') {
-        const mine = cmd;
-        void mountGrubnakViewer(stage, { bare: true }).then((stop) => { if (!stop) return; if (!picked || cmd !== mine) { stop(); return; } stopStage = stop; stage.classList.add('pop'); });
-      }
+      cmdBtns.forEach((b) => b.classList.toggle('focus', b.dataset.id === cmd));
     };
     const unpick = () => {
       picked = false;
-      stopStage?.(); stopStage = null; stage.replaceChildren(); stage.classList.remove('pop');
-      cmdsEl.classList.remove('picked'); changeBtn.hidden = true;
+      cmdsEl.classList.remove('one');
       mainRef.el?.removeAttribute('data-picked');
-      cmdBtns.forEach((b) => b.classList.remove('backdrop'));
+      cmdBtns.forEach((b) => b.classList.remove('focus'));
     };
-    const onEsc = (e: KeyboardEvent) => { if (!document.querySelector('[data-screen="select"]')) { document.removeEventListener('keydown', onEsc); return; } if (e.key === 'Escape' && picked) { e.stopPropagation(); unpick(); } };
+    // forward / back through the Commanders (wrapping); locked Commanders are never in the list, as before
+    const page = (dir: number) => {
+      const i = Math.max(0, cmds.findIndex((c) => c.id === cmd));
+      cmd = cmds[(i + dir + cmds.length) % cmds.length].id;
+      hallOver = '';
+      onCmd(); pick();
+      (cmdBtns.find((b) => b.dataset.id === cmd) as HTMLElement | undefined)?.classList.remove('hov');
+      cmdsEl.classList.remove('hovering');
+    };
+    const arrow = (dir: number) => h('button', { type: 'button', class: `cmd-arrow ${dir < 0 ? 'prev' : 'next'}`, 'aria-label': dir < 0 ? 'Previous commander' : 'Next commander', onclick: () => page(dir) },
+      h('span', { class: 'cmd-arrow-ico', 'aria-hidden': 'true' })) as El;
+    const pager = h('div', { class: 'cmd-pager' }, arrow(-1), cmdsEl, arrow(1)) as El;
+    const onEsc = (e: KeyboardEvent) => {
+      if (!document.querySelector('[data-screen="select"]')) { document.removeEventListener('keydown', onEsc); return; }
+      if (e.key === 'Escape' && picked) { e.stopPropagation(); unpick(); return; }
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.altKey && !e.ctrlKey && !e.metaKey && !this.dialogs.length) {
+        const t = e.target as HTMLElement | null;
+        if (t && (t.closest('input,textarea,select,[contenteditable],.deck-row,.deck-wrap,[role=slider]'))) return;
+        e.preventDefault(); page(e.key === 'ArrowLeft' ? -1 : 1);
+      }
+    };
     document.addEventListener('keydown', onEsc);
     const onCmd = () => {
       if (deckSel.startsWith('starter:') && !hiddenStarters().includes(warband())) deckSel = 'starter:' + warband();
@@ -679,7 +692,6 @@ export class App {
     buildRow();
     sel();
     requestAnimationFrame(() => { row.scrollLeft = 0; });
-    const scroll = (dir: number) => row.scrollBy({ left: dir * 220, behavior: 'smooth' });
     const startFn = () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
           const opp = others[Math.floor(Math.random() * others.length)];
@@ -692,18 +704,18 @@ export class App {
     const mainEl = h('main', { class: 'screen setup mb-setup', 'data-screen': 'select' },
       h('div', { class: 'mb-stage' },
         ownerBox('commander', 'cTitle', h('h1', { class: 'section cinzel cs-title' }, 'Choose Your Commander')),
-        ownerBox('commander', 'cCards', [cmdsEl, changeBtn], 'cs-cards'),
-        ownerBox('commander', 'cDecks', h('div', { class: 'deck-wrap' },
-          btn('◀', 'small scroll', () => scroll(-1), { 'aria-label': 'Scroll decks left' }), row,
-          btn('▶', 'small scroll', () => scroll(1), { 'aria-label': 'Scroll decks right' })), 'cs-decks'),
+        ownerBox('commander', 'cCards', pager, 'cs-cards'),
+        // Owner (Ken, Oct 31): "I would also like the game mode, standard ... comp versus comp ... on the right-hand side"; the deck picker sits
+        // right under it as a list (Forge, Ken approved: room for four named starter decks per faction plus the saved decks)
+        freeBox(74, 12, 24.5, 23, [h('span', { class: 'cs-label', 'aria-hidden': 'true' }, 'Game mode'), h('div', { class: 'mode-row', role: 'group', 'aria-label': 'Game mode' }, ...modeBtns)], 'cs-modes'),
+        ownerBox('commander', 'cDecks', h('div', { class: 'deck-wrap' }, h('span', { class: 'cs-label', 'aria-hidden': 'true' }, 'Deck'), row), 'cs-decks'),
         freeBox(20, 88.2, 60, 11.8, [msg,
-          h('div', { class: 'row mode-row', role: 'group', 'aria-label': 'Game mode' }, ...modeBtns),
           h('div', { class: 'row setup-actions', role: 'group', 'aria-label': 'Difficulty' },
             btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }), ...diffBtns)], 'cs-extra'),
         ownerBox('commander', 'cStart', startBtn, 'cs-start'),
         ownerBox('commander', 'cBack', btn('Back', 'back-btn', () => this.showMenu()), 'cs-back')));
     mainRef.el = mainEl as El;
-    this.selState = () => ({ mode: picked ? 'focused' : 'row', commanderId: cmd, model: picked && cmd === 'grubnak' && stage.classList.contains('pop') ? { shown: true, source: 'grubnak.glb', animation: 'idle' } : null });
+    this.selState = () => ({ mode: picked ? 'focused' : 'row', commanderId: cmd, model: null }); // Ken, Oct 31: no 3D pop-up on this screen
     this.root.append(mainEl);
     setHall();
   }
