@@ -2,6 +2,7 @@ name: Factory — checks
 run-name: Factory checks ${{ inputs.tag }}
 
 # Started by the factory (Factory — build) to run one full set of checks split across several machines.
+# Can also be started by hand (Run workflow) to check a commit without any agent cost.
 on:
   workflow_dispatch:
     inputs:
@@ -16,7 +17,7 @@ permissions:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -33,13 +34,51 @@ jobs:
         if: steps.use.outputs.go == 'true'
         with:
           node-version: 22
-      - name: Install check tools and build the site
+      - uses: supabase/setup-cli@v1
+        if: steps.use.outputs.go == 'true'
+        with:
+          version: latest
+      - name: Install check tools
         if: steps.use.outputs.go == 'true'
         run: |
           (cd factory && npm install --no-audit --no-fund && npx playwright install --with-deps chromium)
-          cd projects/${{ inputs.slug }}
-          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
-          npm run build
+          if [ -f supabase/config.toml ]; then sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client > /dev/null; fi
+      - name: Local database for the checks (only projects with a supabase/ folder)
+        if: steps.use.outputs.go == 'true'
+        run: |
+          if [ ! -f supabase/config.toml ]; then echo "no supabase/ folder: checks run without a database"; exit 0; fi
+          supabase start -x vector,logflare
+          supabase db reset --local
+          # The CLI's fixed LOCAL demo values (not secrets). Names differ by CLI version.
+          supabase status -o env > "$RUNNER_TEMP/sb.env"
+          get() { for n in "$@"; do v=$(grep -E "^$n=" "$RUNNER_TEMP/sb.env" | head -1 | cut -d= -f2- | tr -d '"'); if [ -n "$v" ]; then echo "$v"; return; fi; done; }
+          url=$(get API_URL); url=${url:-http://127.0.0.1:54321}
+          anon=$(get PUBLISHABLE_KEY ANON_KEY)
+          secret=$(get SECRET_KEY SERVICE_ROLE_KEY)
+          dburl=$(get DB_URL); dburl=${dburl:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}
+          mail=$(get INBUCKET_URL MAILPIT_URL); mail=${mail:-http://127.0.0.1:54324}
+          [ -n "$anon" ] || { echo "no local publishable/anon key from supabase status"; exit 1; }
+          echo "::add-mask::$secret"
+          {
+            echo "VITE_SUPABASE_URL=$url"; echo "VITE_SUPABASE_PUBLISHABLE_KEY=$anon"; echo "VITE_OREHEART_ENV=test"; echo "VITE_TURNSTILE_SITE_KEY="
+            echo "SUPABASE_URL=$url"; echo "SUPABASE_ANON_KEY=$anon"; echo "SUPABASE_PUBLISHABLE_KEY=$anon"; echo "SUPABASE_TEST_ADMIN_KEY=$secret"
+            echo "DB_URL=$dburl"; echo "MAIL_URL=$mail"; echo "FUNCTIONS_URL=$url/functions/v1"; echo "FACTORY_ADMIN_PORT=4174"
+          } >> "$GITHUB_ENV"
+          if [ -f supabase/functions/.env.test ] && [ -d supabase/functions ]; then
+            nohup supabase functions serve --env-file supabase/functions/.env.test --no-verify-jwt > "$RUNNER_TEMP/functions.log" 2>&1 &
+          fi
+      - name: Build the site (and the extra apps of this project)
+        if: steps.use.outputs.go == 'true'
+        run: |
+          build() { ( cd "$1"; if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi; npm run build ); }
+          build projects/${{ inputs.slug }}
+          # Extra apps from factory/config.json "projects.<slug>.extraApps" (e.g. the admin site)
+          node -e '
+            const c = JSON.parse(require("fs").readFileSync("factory/config.json","utf8"));
+            const p = (c.projects||{})[process.argv[1]]||{};
+            for (const a of p.extraApps||[]) console.log(`${a.dir} ${a.port}`);
+          ' "${{ inputs.slug }}" > "$RUNNER_TEMP/extra.txt"
+          while read -r dir port; do [ -n "$dir" ] && [ -f "$dir/package.json" ] && build "$dir"; done < "$RUNNER_TEMP/extra.txt"
       - name: Run this machine's share of the checks
         if: steps.use.outputs.go == 'true'
         env:
@@ -48,11 +87,15 @@ jobs:
           mkdir -p "$RUNNER_TEMP/out"
           rm -rf factory/.run-tests && cp -r factory-data/${{ inputs.slug }}/acceptance factory/.run-tests
           node factory/scripts/serve.mjs projects/${{ inputs.slug }}/dist 4173 > /dev/null 2>&1 &
+          while read -r dir port; do [ -n "$dir" ] && [ -f "$dir/dist/index.html" ] && node factory/scripts/serve.mjs "$dir/dist" "$port" > /dev/null 2>&1 & done < "$RUNNER_TEMP/extra.txt"
           sleep 2
           cd factory
           ACCEPTANCE_DIR="$PWD/.run-tests" RESULTS_JSON="$RUNNER_TEMP/out/results.json" FACTORY_PORT=4173 \
             npx playwright test --config playwright.config.mjs --shard ${{ matrix.shard }}/${{ inputs.shards }} --output "$RUNNER_TEMP/out/artifacts" || true
           ls -la "$RUNNER_TEMP/out"
+      - name: Stop the local database
+        if: always() && steps.use.outputs.go == 'true'
+        run: if [ -f supabase/config.toml ]; then supabase stop --no-backup || true; fi
       - uses: actions/upload-artifact@v4
         if: steps.use.outputs.go == 'true'
         with:
