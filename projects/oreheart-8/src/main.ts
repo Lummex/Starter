@@ -6,7 +6,7 @@ import { App } from './ui/app';
 import { CARDS, COMMANDERS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
 import { spellFxLog, spellFxNow, spellFxAt, setSpellFxEnabled, SPELL_FX_SPEC, fxPhone, fxLayerUrl, FX_LAYERS } from './ui/spell-fx';
-import { audio, VOICE } from './ui/audio';
+import { audio, VOICE, MIX } from './ui/audio';
 import { getHighlights, getRings } from './ui/fx-settings';
 import { pictureOf, rarityKey, commanderPortrait, INTERNAL_ABILITY } from './ui/app';
 import cardFormat from '../public/art/card-format/format.json';
@@ -126,6 +126,7 @@ if (test) {
     getAudioState: () => audio.state(),
     setVoicesOn: (on: boolean) => audio.setVoicesOn(on), // Oct 31: unit voices switch (off until Ken approves the reel)
     voiceEvent: (ev: 'select' | 'hurt' | 'special', unit: string, who: string, big?: boolean) => audio.speak(ev, unit, who, !!big),
+    setMixRules: (r: any) => { Object.assign(MIX, r); return { ...MIX }; }, // checks only: {enabled:false} plays every sound as asked (the sound-file checks), default is Brush's mix rules
     setVoiceRules: (r: any) => { Object.assign(VOICE, r); return { ...VOICE }; }, // checks only: shorten the voice cooldown / gap
     playSfx: (name: string, faction?: string) => audio.play(name, faction),
     playSpellSound: (id: string) => audio.spell(id),

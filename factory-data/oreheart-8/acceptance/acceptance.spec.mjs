@@ -12223,14 +12223,14 @@ test('AC483: the Done button is the size of the Menu button, both have their con
 // ---------- Oct 31: Brush's sound files (Ken: "the game sounds good. Implement them.") ----------
 // studio/sound-spec.json: event -> file(s), base volume, random pitch range in semitones (+/- 1.5 dB volume on top)
 const SFX_SPEC = {
-  click: [['ui-click'], 0.7, 0.5], tick: [['ui-tick'], 0.6, 0.3], chime: [['ui-chime'], 0.55, 0], draw: [['card-draw'], 0.7, 1], cardPlay: [['card-play'], 0.8, 0.7],
-  summon: [['summon-1', 'summon-2', 'summon-3'], 0.6, 0.8], 'step:goblins': [['step-goblin'], 0.5, 1.5], 'step:gnomes': [['step-gnome'], 0.5, 1.5], 'step:dwarves': [['step-dwarf'], 0.55, 1.2],
+  click: [['ui-click'], 0.45, 0.5], tick: [['ui-tick'], 0.35, 0.3], chime: [['ui-chime'], 0.5, 0], draw: [['card-draw'], 0.6, 1], cardPlay: [['card-play'], 0.7, 0.7], // Oct 31 (Brush mix_rules): lowered base volumes for the small sounds
+  summon: [['summon-1', 'summon-2', 'summon-3'], 0.6, 0.8], 'step:goblins': [['step-goblin'], 0.4, 1.5], 'step:gnomes': [['step-gnome'], 0.4, 1.5], 'step:dwarves': [['step-dwarf'], 0.4, 1.2],
   // Oct 31 (Brush): the projectile sounds
   'shot-rifle': [['shot-rifle'], 0.9, 0.8], 'shot-cannon': [['shot-cannon'], 1, 0.5], 'throw-whoosh': [['throw-whoosh'], 0.8, 1.5], 'cast-zap': [['cast-zap'], 0.85, 1],
   'cast-hex': [['cast-hex'], 0.7, 1], 'fireball-whoosh': [['fireball-whoosh'], 0.85, 1], 'bowl-roll': [['bowl-roll'], 0.6, 0], 'skull-crack': [['skull-crack'], 0.9, 1],
   'book-thud': [['book-thud'], 0.9, 1], 'zap-hit': [['zap-hit'], 0.9, 1], 'fire-burst': [['fire-burst'], 0.9, 0.8], 'pins-scatter': [['pins-scatter'], 0.95, 0.8],
   melee: [['melee'], 0.9, 1], ranged: [['ranged'], 0.85, 1], bonk: [['bonk-1', 'bonk-2', 'bonk-3'], 0.9, 1], clink: [['clink-1', 'clink-2', 'clink-3'], 0.85, 0.8],
-  thud: [['thud'], 0.85, 1], pick: [['mine-pick'], 0.6, 1], shatter: [['shatter'], 0.85, 0.5], 'defeat-poof': [['defeat-poof'], 0.85, 0.8],
+  thud: [['thud'], 0.85, 1], pick: [['mine-pick'], 0.5, 1], shatter: [['shatter'], 0.85, 0.5], 'defeat-poof': [['defeat-poof'], 0.85, 0.8],
   stronghold: [['commander-hit'], 1, 0.5], kaboom: [['kaboom'], 1, 0.5], 'turn-start': [['turn-start'], 0.85, 0], win: [['win'], 1, 0], lose: [['lose'], 1, 0],
 };
 const SFX_SPELLS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-rush', 'battle-cry', 'healing-light', 'shield-bubble', 'second-wind', 'prospectors-prayer', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex'];
@@ -12255,6 +12255,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
       const errors = []; page.on('pageerror', (e) => errors.push(e.message));
       await start(page, quiet({ playerHand: [] }));
       await sfxReady(page);
+      await page.evaluate(() => window.oreheart.setMixRules({ enabled: false })); // this check plays every sound as asked; the mix rules have their own check (AC525)
       let st = await sfxState(page);
       // every spec event maps to its files under /audio/sfx/, each served (200) and decoded
       for (const [key, [files]] of Object.entries(SFX_SPEC)) expect(st.map[key], key).toEqual(files.map((f) => `/audio/sfx/${f}.ogg`));
@@ -12484,7 +12485,7 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
       expect(roll.loop, 'the roll sound loops').toBe(true);
       expect(Math.abs(roll.t - L.spawnedAt), 'the roll starts as the ball leaves his hand').toBeLessThanOrEqual(60);
       expect(Math.abs(roll.stoppedAt - L.landedAt), 'the roll stops on impact').toBeLessThanOrEqual(60);
-      expect(sp.filter((p) => p.key === 'pins-scatter').length, 'pins scatter for each unit bowled over').toBeGreaterThanOrEqual(2);
+      expect(sp.filter((p) => p.key === 'pins-scatter').length, 'pins scatter as the units are bowled over (the mix rules allow one scatter sound per 120 ms)').toBeGreaterThanOrEqual(1);
       // the held ball is back in his hand after the roll
       await expect.poll(async () => (await r22Fig(page, me.uid)).ball?.state, { timeout: 10000 }).toBe('hand');
       expect(((await r22Fig(page, me.uid)).items || []).find((i) => i.name === 'bowling-ball')?.visible, 'his ball is back').toBe(true);
@@ -12785,10 +12786,11 @@ test('AC512: each unit the Bowler\'s ball knocks over gets a bonk with the heavy
   s = await toAction(page);
   const t0 = await page.evaluate(() => performance.now());
   expect((await act(page, { type: 'ability', creatureUid: me.uid, ability: 'strike', target: { row: 5, col: 8 } })).ok).toBe(true);
-  await expect.poll(async () => (await sfxState(page)).plays.filter((p) => p.key === 'pins-scatter' && p.t >= t0 - 5).length, { timeout: 15000, message: 'pins scatter for both units' }).toBeGreaterThanOrEqual(2);
+  await expect.poll(async () => (await sfxState(page)).plays.filter((p) => p.key === 'pins-scatter' && p.t >= t0 - 5).length, { timeout: 15000, message: 'pins scatter as the units are bowled over' }).toBeGreaterThanOrEqual(1); // the mix rules allow one scatter sound per 120 ms
+  await page.waitForTimeout(800);
   const sp = (await sfxState(page)).plays.filter((p) => p.t >= t0 - 5);
-  const bonks = sp.filter((p) => p.key === 'bonk' && sp.some((q) => q.key === 'pins-scatter' && Math.abs(q.t - p.t) <= 30));
-  expect(bonks.length, 'a bonk for each unit bowled over').toBeGreaterThanOrEqual(2);
+  const bonks = sp.filter((p) => p.key === 'bonk');
+  expect(bonks.length, 'a bonk as the units are bowled over').toBeGreaterThanOrEqual(1);
   for (const b of bonks) {
     expect(b.punch && b.punch.key, 'bowled over = the heavy punch').toBe('punch-heavy');
     expect(b.punch.file).toBe('/audio/sfx/punch-heavy.ogg');
@@ -12837,7 +12839,7 @@ test('AC524: summon plays 3 variants without repeating, the mining clink is limi
   await start(page, quiet({ playerHand: [] }));
   await sfxReady(page);
   const base = (await sfxState(page)).plays.length;
-  for (let i = 0; i < 12; i++) await playKey(page, 'summon');
+  for (let i = 0; i < 12; i++) { await playKey(page, 'summon'); await page.waitForTimeout(140); } // Oct 31 mix rules: the same sound at most once per 120 ms
   const s = (await sfxState(page)).plays.slice(base).filter((p) => p.key === 'summon').map((p) => p.file);
   expect(s.length).toBe(12);
   for (let i = 1; i < s.length; i++) expect(s[i], `summon ${i} differs from summon ${i - 1}`).not.toBe(s[i - 1]);
@@ -12856,4 +12858,96 @@ test('AC524: summon plays 3 variants without repeating, the mining clink is limi
   await start(page, quiet({ playerHand: [] }));
   expect((await page.evaluate(async () => (await window.oreheart.getAudioState()).sfxVolume)), 'a saved 80 stays 80').toBe(80);
   await page.evaluate(() => localStorage.removeItem('oreheart.sfxVolume'));
+});
+
+// Brush's mix_rules / Ken (Oct 31): "cut down a little bit on the noises ... not so much twinkling and stuff going on."
+// (Each group of plays below happens inside ONE page.evaluate, so a slow test browser cannot stretch the gaps between them.)
+test('AC525: the sound mix: at most 3 effects at once (the lowest priority gives way), a minimum gap per sound, a spell or kaboom mutes small sounds for 0.6 s, 2 footsteps at most, a summon follows its card by 0.35 s, mass defeats stagger at -6 dB, and no chime on a slider', async ({ page }) => {
+  test.setTimeout(120000);
+  await start(page, quiet({ playerHand: [] }));
+  await sfxReady(page);
+  const plays = async (n0) => (await sfxState(page)).plays.slice(n0);
+  const mixNow = () => page.evaluate(async () => (await window.oreheart.getAudioState()).sfx.mix);
+  // priority + the limit of 3: stronghold, win and turn-start are long; a 4th sound either gives way to them or takes the lowest one's place
+  let n0 = (await sfxState(page)).plays.length;
+  const r1 = await page.evaluate(async () => {
+    const o = window.oreheart, mix = async () => (await o.getAudioState()).sfx.mix.live.slice().sort();
+    o.playSfx('stronghold'); o.playSfx('win'); o.playSfx('turn-start');
+    const three = await mix();
+    o.playSfx('click'); // lower than everything playing: skipped
+    const afterClick = await mix();
+    o.playSfx('melee'); // higher than turn-start: it takes that place
+    return { three, afterClick, afterMelee: await mix() };
+  });
+  expect(r1.three).toEqual(['stronghold', 'turn-start', 'win']);
+  expect(r1.afterClick, 'a click is skipped when 3 louder sounds play').toEqual(['stronghold', 'turn-start', 'win']);
+  expect((await plays(n0)).some((p) => p.key === 'click'), 'the skipped click is not even logged').toBe(false);
+  expect(r1.afterMelee, 'the lowest priority gave way').toEqual(['melee', 'stronghold', 'win']);
+  // a kaboom (or spell) mutes small sounds for its first 0.6 s, but not a summon
+  await page.waitForTimeout(3500);
+  n0 = (await sfxState(page)).plays.length;
+  const r2 = await page.evaluate(async () => {
+    const o = window.oreheart; o.playSfx('kaboom'); o.playSfx('clink'); o.playSfx('summon');
+    return (await o.getAudioState()).sfx.mix;
+  });
+  expect(r2.ducking, 'ducking while the kaboom starts').toBe(true);
+  const q2 = await plays(n0);
+  expect(q2.some((p) => p.key === 'clink'), 'clink is muted while the kaboom starts').toBe(false);
+  expect(q2.some((p) => p.key === 'summon'), 'a summon is not muted').toBe(true);
+  // minimum gaps: six quick clicks and draws make one each
+  await page.waitForTimeout(3500);
+  n0 = (await sfxState(page)).plays.length;
+  await page.evaluate(() => { for (let i = 0; i < 6; i++) { window.oreheart.playSfx('click'); window.oreheart.playSfx('draw'); } });
+  const q3 = await plays(n0);
+  expect(q3.filter((p) => p.key === 'click').length, 'six quick clicks make one').toBe(1);
+  expect(q3.filter((p) => p.key === 'draw').length, 'six quick draws make one').toBe(1);
+  // two footsteps at most
+  await page.waitForTimeout(600);
+  n0 = (await sfxState(page)).plays.length;
+  await page.evaluate(() => { window.oreheart.playSfx('step', 'goblins'); window.oreheart.playSfx('step', 'gnomes'); window.oreheart.playSfx('step', 'dwarves'); });
+  expect((await plays(n0)).filter((p) => p.key.startsWith('step:')).length, 'at most 2 footsteps sound at once').toBe(2);
+  // a card's summon follows 0.35 s behind it
+  await page.waitForTimeout(1500);
+  n0 = (await sfxState(page)).plays.length;
+  await page.evaluate(() => { window.oreheart.playSfx('cardPlay'); window.oreheart.playSfx('summon'); });
+  await expect.poll(async () => (await plays(n0)).some((p) => p.key === 'summon'), { timeout: 5000 }).toBe(true);
+  const cp = (await plays(n0)).find((p) => p.key === 'cardPlay'), sm = (await plays(n0)).find((p) => p.key === 'summon');
+  expect(sm.t - cp.t, 'the summon sound comes 0.35 s after the card sound').toBeGreaterThanOrEqual(330);
+  // a mass defeat: the first poof at full volume, the rest staggered and 6 dB quieter
+  await page.waitForTimeout(1500);
+  n0 = (await sfxState(page)).plays.length;
+  await page.evaluate(() => { for (let i = 0; i < 3; i++) window.oreheart.playSfx('defeat-poof'); });
+  await expect.poll(async () => (await plays(n0)).filter((p) => p.key === 'defeat-poof').length, { timeout: 5000 }).toBeGreaterThanOrEqual(2);
+  const pf = (await plays(n0)).filter((p) => p.key === 'defeat-poof');
+  expect(pf[1].t - pf[0].t, 'the second poof is staggered').toBeGreaterThanOrEqual(100);
+  expect(pf[1].vol, 'staggered poofs are 6 dB quieter').toBeLessThan(pf[0].vol * 0.75);
+  // no chime or click when a volume slider moves
+  await openMatchMenu(page);
+  await page.waitForTimeout(400);
+  n0 = (await sfxState(page)).plays.length;
+  await page.getByRole('dialog', { name: 'Match settings' }).getByRole('slider', { name: 'Sound effects volume' }).fill('40');
+  await page.waitForTimeout(300);
+  expect((await plays(n0)).filter((p) => p.key === 'chime' || p.key === 'click').length, 'moving a volume slider makes no sound').toBe(0);
+});
+
+// Brush's mix_rules (Oct 31): "click: ONLY for real buttons that start something (Done, Play, menu items, Back). NOT for toggles inside panels"
+test('AC526: a real action button (Menu, a menu item) clicks, a toggle switch in a panel does not', async ({ page }) => {
+  test.setTimeout(90000);
+  await start(page, quiet({ playerHand: [] }));
+  await sfxReady(page);
+  await page.evaluate(() => window.oreheart.setMixRules({ enabled: false })); // only the click rule is under test, not the 3-voice limit
+  const clicks = async () => (await sfxState(page)).plays.filter((p) => p.key === 'click').length;
+  let c0 = await clicks();
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  expect(await clicks(), 'the Menu button clicks').toBe(c0 + 1);
+  await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Match settings' })).toBeVisible();
+  c0 = await clicks();
+  expect(c0, 'a menu item clicks').toBeGreaterThanOrEqual(2);
+  const sw = page.getByRole('switch', { name: 'Card pop-ups' });
+  await expect(sw).toBeVisible();
+  const was = await sw.getAttribute('aria-checked');
+  await sw.click();
+  await expect(sw).not.toHaveAttribute('aria-checked', was);
+  expect(await clicks(), 'a toggle switch makes no click').toBe(c0);
 });

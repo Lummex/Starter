@@ -593,7 +593,9 @@ const _embV = new THREE.Vector3();
     return (d / (f.run ? RUN_SPEED : WALK_SPEED)) * 1000;
   }
   const figs = new Map<string, Fig>();
-  let lastChimeAt = -1e9;
+  const minedSnd = new Set<string>(); /* Oct 31 (Brush): one mining clink per crystal mine per turn */
+  const _sv = new THREE.Vector3();
+  const audible = (p: THREE.Vector3) => { _sv.copy(p).project(camera); return Math.abs(_sv.x) <= 1 && Math.abs(_sv.y) <= 1 && _sv.z < 1; }; /* no footstep for a unit off screen */
   // Owner fix (Ken, Oct 28): Junk Shaman carry. The carried figure hangs just under the pointer, raised above the board
   const CARRY_UP = 0.45;
   let carry: { uid: string; holder: string; pos: THREE.Vector3; h: number } | null = null;
@@ -1000,7 +1002,7 @@ const _embV = new THREE.Vector3();
         // creatures keep their stored facing (set below every state update)
         f.yaw = facingYaw(c, c.owner); m.group.rotation.order = 'YXZ'; m.group.rotation.y = f.yaw;
       }
-      if (f.target.distanceTo(tgt) > 0.01) { f.moving = now; if (f.group.position.distanceTo(tgt) < 6) audio.play('step', CARDS[c.cardId].faction); }
+      if (f.target.distanceTo(tgt) > 0.01) { f.moving = now; if (f.group.position.distanceTo(tgt) < 6 && audible(f.group.position)) audio.play('step', CARDS[c.cardId].faction); /* Oct 31 (Brush): one footstep per move, none off screen */ }
       f.target.copy(tgt); f.row = c.row; f.col = c.col;
       f.faceWant = facingYaw(c, c.owner);
       if (f.finished) {
@@ -1123,8 +1125,9 @@ const _embV = new THREE.Vector3();
         const f = figs.get(e.uid)!;
         f.mineT = now;
         const m = world(e.row, e.col);
+        const mk = (state?.turn ?? 0) + ':' + e.row + ',' + e.col; let mineKey = !minedSnd.has(mk); if (mineKey) { if (minedSnd.size > 80) minedSnd.clear(); minedSnd.add(mk); }
         f.faceTo = Math.atan2(m.x - f.target.x, m.z - f.target.z); f.faceUntil = now + 1000;
-        setTimeout(() => { spawnFx('spark', m, 4); audio.play('pick'); if (now - lastChimeAt > 20000) { lastChimeAt = now; audio.play('chime'); } /* Brush: the chime once in a while, never on every pick */ }, 220);
+        setTimeout(() => { spawnFx('spark', m, 4); if (mineKey) audio.play('pick'); /* Brush: no chime on mining */ }, 220);
       } else if (e.type === 'bowl') {
         const bf = figs.get(e.uid) || null;
         let rel = 300;
@@ -1574,7 +1577,7 @@ const _embV = new THREE.Vector3();
       if (onPath) {
         const nx = f.path![0], dx = nx.x - g.position.x, dz = nx.z - g.position.z, d = Math.hypot(dx, dz), step = (f.run ? RUN_SPEED : WALK_SPEED) * dt0; // one pace for everyone (Gauge, Oct 30: the Anvilsworn ran 3x faster); the clip speed fits the pace in setPace
         if (d > 1e-4) pathYaw = Math.atan2(dx, dz);
-        if (d <= step) { g.position.x = nx.x; g.position.z = nx.z; f.path!.shift(); if (f.path!.length) audio.play('step', CARDS[f.cardId].faction); }
+        if (d <= step) { g.position.x = nx.x; g.position.z = nx.z; f.path!.shift(); }
         else { g.position.x += (dx / d) * step; g.position.z += (dz / d) * step; }
         goal.set(g.position.x, goal.y, g.position.z);
       } else if (f.path && f.path.length && (carried || f.bowl)) f.path = [];

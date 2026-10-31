@@ -252,6 +252,15 @@ export function fsWatch(b: HTMLElement, label: () => string = fsLabel): void {
 }
 
 
+/** Oct 31 (Brush mix_rules): the click sound is only for real buttons that start something (Done, Play, menu items, Back), never for toggles, tabs, filters, scroll arrows or card-list buttons. */
+const NO_CLICK_CLASS = /\b(hand-card|dstack|cmd-card|cmd-arrow|card-nav|db-deck|db-cmdcard|recap-line|e-discard|e-discard-card|site-mark|tx-full|cv-close|viewer-anim|sw-btn|tk-cancel)\b|tab|filter|scroll|toggle|chip/;
+export function isActionButton(b: El): boolean {
+  if (b.hasAttribute('aria-pressed') || b.hasAttribute('aria-checked') || b.hasAttribute('aria-selected')) return false;
+  const role = b.getAttribute('role');
+  if (role === 'switch' || role === 'tab' || role === 'listitem' || role === 'option' || role === 'checkbox' || role === 'radio') return false;
+  return !NO_CLICK_CLASS.test(b.className || '');
+}
+
 export class App {
   root: El;
   game: Game;
@@ -324,7 +333,7 @@ export class App {
     this.fxReal = test && /[?&]fx=1/.test(location.search);
     this.seed = seed;
     if (test) document.body.classList.add('test');
-    root.addEventListener('click', (e) => { if ((e.target as El).closest?.('button')) audio.play('click'); }, true);
+    root.addEventListener('click', (e) => { const b = (e.target as El).closest?.('button') as El | null; if (b && isActionButton(b)) audio.play('click'); }, true);
     game.aiPace = { busy: () => this.aiBusy(), preview: (a: any, st: any) => this.aiPreview(a, st) };
   }
 
@@ -486,7 +495,7 @@ export class App {
   slider(label: string, id: string, value: number, on: (v: number) => void): El {
     const inp = h('input', { type: 'range', id, min: '0', max: '100', step: '1', value: String(value) }) as HTMLInputElement;
     inp.addEventListener('input', () => on(+inp.value));
-    inp.addEventListener('change', () => audio.play('chime'));
+    /* Oct 31 (Brush mix_rules): no chime or tick when a volume slider moves */
     // two labels: the short visible one and a screen-reader one with the full name
     if (label === 'Sound effects volume') return h('div', { class: 'slider' }, h('label', { for: id }, 'Sound effects'), h('label', { for: id, class: 'sr-only' }, label), inp);
     return h('div', { class: 'slider' }, h('label', { for: id }, label), inp);
@@ -2770,7 +2779,7 @@ export class App {
     const pt = r.phase?.querySelector('.ph-time') as El | null;
     if (pt) pt.textContent = timed && !st.pendingResponse ? `${left}s left` : '';
     this.syncDone();
-    if (show) { if (r.timer.textContent !== String(left)) audio.play('tick'); r.timer.textContent = String(left); }
+    if (show) { if (r.timer.textContent !== String(left) && left <= 5 && st.activePlayer === 'player') audio.play('tick'); /* Oct 31: only the last 5 s of YOUR phase */ r.timer.textContent = String(left); }
     if (!frozen && timed && left <= 0 && !st.pendingResponse) {
       this.deadline = now + total * 1000;
       this.game.act({ type: 'done' });
@@ -3484,6 +3493,7 @@ export class App {
       this.say('player', 'start', true); setTimeout(() => this.say('opponent', 'start', true), 1400);
     }
     let replayDelay = 0; // Oct 31: Hex Reversal's copied spell plays back after the reflection
+    let drewSnd = false; /* Oct 31 (Brush): one draw sound for a multi-draw */
     for (const e of events) {
       // owner (Oct 24): comic pop-ups and speech bubbles
       if (e.type === 'attack' && e.target) {
@@ -3538,7 +3548,7 @@ export class App {
       } else if (e.type === 'abilityUsed' && ABILITY_UI[e.ability]) {
         this.burst(ABILITY_UI[e.ability].burst, e.row, e.col);
       } else if (e.type === 'draw' && (e.player === 'player' || e.owner === 'player')) {
-        audio.play('draw');
+        if (!drewSnd) { drewSnd = true; audio.play('draw'); }
       } else if (e.type === 'shieldBlock') {
         audio.play('clink'); // Oct 31: armoured clink (Brush's files)
         this.burst('BLOCK!', e.row, e.col);
@@ -3573,8 +3583,8 @@ export class App {
         audio.spell(id); // Oct 31: each spell's own file (spell-<id>.ogg), starting with its FX
       }
       else if (e.type === 'summon') {
-        audio.play('cardPlay');
-      } else if (e.type === 'playCrystal') audio.play('cardPlay');
+        if (e.owner === 'player') audio.play('cardPlay'); /* Oct 31 (Brush): own cards only; the summon sound follows 0.35 s later */
+      } else if (e.type === 'playCrystal') { if (e.player === 'player') audio.play('cardPlay'); }
       else if (e.type === 'minerUpgrade') {
         this.floatText(`+${e.attack ? '1 ATK ' : ''}+1 HP ✨`, 'heal', e.row, e.col);
       }

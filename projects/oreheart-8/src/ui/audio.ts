@@ -10,10 +10,10 @@ const D = (files: string | string[], vol: number, st: number): SfxDef => ({ file
 export const sfxUrl = (file: string) => `/audio/sfx/${file}.ogg`;
 /** Event -> files, from studio/sound-spec.json (Brush, Oct 31). Keys are the audio.play() names; footsteps are step:<faction>, spells spell:<id>. */
 export const SFX: Record<string, SfxDef> = {
-  click: D('ui-click', 0.7, 0.5), tick: D('ui-tick', 0.6, 0.3), chime: D('ui-chime', 0.55, 0), draw: D('card-draw', 0.7, 1), cardPlay: D('card-play', 0.8, 0.7),
-  summon: D(['summon-1', 'summon-2', 'summon-3'], 0.6, 0.8), 'step:goblins': D('step-goblin', 0.5, 1.5), 'step:gnomes': D('step-gnome', 0.5, 1.5), 'step:dwarves': D('step-dwarf', 0.55, 1.2),
+  click: D('ui-click', 0.45, 0.5), tick: D('ui-tick', 0.35, 0.3), chime: D('ui-chime', 0.5, 0), draw: D('card-draw', 0.6, 1), cardPlay: D('card-play', 0.7, 0.7),
+  summon: D(['summon-1', 'summon-2', 'summon-3'], 0.6, 0.8), 'step:goblins': D('step-goblin', 0.4, 1.5), 'step:gnomes': D('step-gnome', 0.4, 1.5), 'step:dwarves': D('step-dwarf', 0.4, 1.2),
   melee: D('melee', 0.9, 1), ranged: D('ranged', 0.85, 1), bonk: D(['bonk-1', 'bonk-2', 'bonk-3'], 0.9, 1), clink: D(['clink-1', 'clink-2', 'clink-3'], 0.85, 0.8),
-  thud: D('thud', 0.85, 1), pick: D('mine-pick', 0.6, 1), shatter: D('shatter', 0.85, 0.5), 'defeat-poof': D('defeat-poof', 0.85, 0.8),
+  thud: D('thud', 0.85, 1), pick: D('mine-pick', 0.5, 1), shatter: D('shatter', 0.85, 0.5), 'defeat-poof': D('defeat-poof', 0.85, 0.8),
   stronghold: D('commander-hit', 1, 0.5), kaboom: D('kaboom', 1, 0.5), 'turn-start': D('turn-start', 0.85 * 0.6, 0), win: D('win', 1, 0), lose: D('lose', 1, 0),
   // Oct 31 (Ken: "realistic punches"): layered under the hit sounds inside play() (studio/voice-spec.json "punches")
   punch: D(['punch-1', 'punch-2', 'punch-3'], 0.8, 1), 'punch-armour': D(['punch-armour-1', 'punch-armour-2'], 0.8, 1), 'punch-heavy': D('punch-heavy', 0.9, 1),
@@ -35,8 +35,20 @@ export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-
 for (const id of SPELL_SOUNDS) SFX['spell:' + id] = D('spell-' + id, 1, 0);
 const OLD_SPELL: Record<string, string> = { fireball: 'fireball', 'meteor-strike': 'meteor', 'healing-light': 'heal', 'second-wind': 'heal', 'shield-bubble': 'bubble' };
 const MAX_VOICES = 3;
-/** Oct 31 (Brush: "fires constantly"): the mining clink plays at most once per 0.4 s. */
-const MIN_GAP_MS: Record<string, number> = { pick: 400 };
+/** Oct 31 (Ken: "cut down a little bit on the noises ... not so much twinkling and stuff going on"): Brush's mix_rules (studio/sound-spec.json).
+ *  Few, meaningful sounds: at most 3 effects at once (the lowest priority is dropped, or the newcomer when it is lower than all playing), a minimum gap per sound,
+ *  a spell or kaboom mutes everything below a summon for 0.6 s, at most 2 footsteps sounding, a card's summon waits 0.35 s behind its card sound,
+ *  mass defeats stagger at -6 dB. Sounds muted by a rule do not play and do not log. */
+export const MIX = { enabled: true, maxLive: 3, duckMs: 600, maxSteps: 2, summonAfterCardMs: 350 };
+const PRIO_RULES: [RegExp, number][] = [
+  [/^win$/, 100], [/^lose$/, 99], [/^stronghold$/, 90], [/^kaboom$/, 85], [/^spell/, 80], [/^(defeat-poof|shatter)$/, 70], [/^summon$/, 60],
+  [/^(melee|ranged|shot-.*|throw-whoosh|cast-.*|fireball-whoosh|skull-crack|book-thud|zap-hit|fire-burst|pins-scatter|bowl-roll)$/, 50],
+  [/^(bonk|clink|thud|punch.*)$/, 45], [/^(turn-start|chime)$/, 40], [/^draw$/, 35], [/^cardPlay$/, 30], [/^pick$/, 25], [/^step:/, 20], [/^click$/, 15], [/^tick$/, 10],
+];
+export const prioOf = (key: string) => PRIO_RULES.find(([re]) => re.test(key))?.[1] ?? 50;
+const PRIO_SUMMON = 60;
+/** The least time between two plays of the same sound (ms). */
+export const gapOf = (key: string) => (/^(melee|bonk|clink|ranged|punch.*)$/.test(key) ? 90 : /^step:/.test(key) ? 220 : key === 'pick' ? 400 : key === 'click' ? 150 : key === 'draw' ? 250 : key === 'cardPlay' ? 300 : 120);
 /** Ken, Oct 31: "the sound effects default sound is too high": the starting Sound effects volume is 56 (was 80, about -3 dB). A volume the player saved is kept as it is. */
 export const DEFAULT_SFX_VOLUME = 56;
 /** Ken's switch for the unit voices. ON since Oct 31 (Ken: "the voices are all right"); false puts the old grunts back exactly as before. */
@@ -212,18 +224,56 @@ class AudioEngine {
     const active: Record<string, number> = {};
     for (const [k, v] of Object.entries(this.voices)) if (v.length) active[k] = v.length;
     return { plays: this.sfxPlays.slice(), files: { ...this.fileState }, loaded: [...this.bufs.keys()].filter((n) => !n.startsWith('punch')).length, punchLoaded: [...this.bufs.keys()].filter((n) => n.startsWith('punch')).length, map: Object.fromEntries(Object.entries(SFX).map(([k, d]) => [k, d.files.map(sfxUrl)])),
-      gain: this.sfxGain ? this.sfxGain.gain.value : null, maxVoices: MAX_VOICES, active };
+      gain: this.sfxGain ? this.sfxGain.gain.value : null, maxVoices: MAX_VOICES, active, mix: this.mixState() };
   }
   /** Plays a named effect: its sound file when loaded, otherwise the old synthesized sound. Unknown names are ignored. */
   /** `punch` overrides the hit's usual punch layer (Forge, Oct 31: a bowled-over unit gets the heavy punch). */
   private lastAt: Record<string, number> = {};
-  play(name: string, faction = 'goblins', punch?: string) {
-    const gap = MIN_GAP_MS[name];
-    if (gap) { const t = performance.now(); if (t - (this.lastAt[name] ?? -1e9) < gap) return; this.lastAt[name] = t; }
-    const e = this.playKey(name === 'step' ? 'step:' + faction : name, () => this.synth(name, faction));
+  private live: { key: string; prio: number; src: AudioBufferSourceNode | null; end: number; at: number }[] = [];
+  private duckUntil = -1e9;
+  private poofs: number[] = [];
+  /** The mix rules: may this sound play now? Registers it (gap, duck) when it may. */
+  private gate(key: string): boolean {
+    if (!MIX.enabled) return true;
+    const now = performance.now(), prio = prioOf(key);
+    if (now - (this.lastAt[key] ?? -1e9) < gapOf(key)) return false; // the same sound twice too quickly
+    if (now < this.duckUntil && prio < PRIO_SUMMON) return false; // a spell or kaboom has the floor for its first 0.6 s
+    this.live = this.live.filter((l) => l.end > now);
+    if (key.startsWith('step:') && this.live.filter((l) => l.key.startsWith('step:')).length >= MIX.maxSteps) return false;
+    if (this.live.length >= MIX.maxLive) {
+      let low = this.live[0];
+      for (const l of this.live) if (l.prio < low.prio || (l.prio === low.prio && l.at < low.at)) low = l;
+      if (prio < low.prio) return false; // lower than everything playing: the newcomer is skipped
+      try { low.src?.stop(); } catch { /* ended */ }
+      this.live.splice(this.live.indexOf(low), 1);
+    }
+    this.lastAt[key] = now;
+    if (/^spell/.test(key) || key === 'kaboom') this.duckUntil = now + MIX.duckMs;
+    return true;
+  }
+  private track(key: string, src: AudioBufferSourceNode | null, durMs: number) { const now = performance.now(); this.live.push({ key, prio: prioOf(key), src, end: now + durMs, at: now }); }
+  /** Test hook: the mix state. */
+  mixState() { const now = performance.now(); return { enabled: MIX.enabled, live: this.live.filter((l) => l.end > now).map((l) => l.key), left: this.live.map((l) => l.key + ':' + Math.round(l.end - now)), ducking: now < this.duckUntil }; }
+  play(name: string, faction = 'goblins', punch?: string, _o?: { volMul?: number; later?: boolean }) {
+    const key = name === 'step' ? 'step:' + faction : name;
+    if (MIX.enabled && !_o?.later) {
+      const now = performance.now();
+      if (key === 'cardPlay') this.lastCardAt = now;
+      // a card's summon follows 0.35 s behind its card sound, never at the same instant
+      if (key === 'summon' && now - this.lastCardAt < MIX.summonAfterCardMs) { setTimeout(() => this.play(name, faction, punch, { later: true }), this.lastCardAt + MIX.summonAfterCardMs - now); return; }
+      // a mass defeat: the first poof at full volume, the rest staggered at -6 dB
+      if (key === 'defeat-poof') {
+        this.poofs = this.poofs.filter((t) => now - t < 400); const n = this.poofs.length; this.poofs.push(now); this.poofNext = Math.max(now, this.poofNext) + 160;
+        if (n >= 1) { setTimeout(() => this.play(name, faction, punch, { later: true, volMul: 0.5 }), this.poofNext - now); return; }
+      }
+    }
+    if (!this.gate(key)) return;
+    const e = this.playKey(key, () => this.synth(name, faction), false, _o?.volMul ?? 1);
     const pk = punch || PUNCH_FOR[name];
     if (pk && e.played) e.punch = this.punch(pk);
   }
+  private lastCardAt = -1e9;
+  private poofNext = 0;
   private heavyAt = -1e9;
   /** The punch layer under a hit. A Commander hit gets only the heavy punch: its board bonk and its stronghold sound land close together (up to a few frames apart on a slow phone). */
   private punch(key: string) {
@@ -239,10 +289,11 @@ class AudioEngine {
   }
   /** A spell's own sound (spell-<id>.ogg), started at the same moment as its FX; a generic sound for unknown spells. */
   spell(id: string) {
-    const key = 'spell:' + id;
-    this.playKey(SFX[key] ? key : 'spell', () => this.synth(OLD_SPELL[id] || 'spell'));
+    const key = SFX['spell:' + id] ? 'spell:' + id : 'spell';
+    if (!this.gate(key)) return;
+    this.playKey(key, () => this.synth(OLD_SPELL[id] || 'spell'));
   }
-  private playKey(key: string, fallback: () => void, quiet = false): SfxPlay {
+  private playKey(key: string, fallback: () => void, quiet = false, volMul = 1): SfxPlay {
     const def = SFX[key];
     const e: SfxPlay = { key, file: null, from: 'synth', rate: 1, vol: 0, voices: 0, t: Math.round(performance.now()), played: false };
     const log = () => { if (quiet) return; this.sfxPlays.push(e); if (this.sfxPlays.length > 300) this.sfxPlays.shift(); };
@@ -262,7 +313,7 @@ class AudioEngine {
     const buf = file ? this.bufs.get(file) : undefined;
     if (!def || !buf) { fallback(); e.played = true; log(); return e; }
     const c = this.ctx!;
-    const rate = Math.pow(2, ((Math.random() * 2 - 1) * def.st) / 12), vol = def.vol * Math.pow(10, ((Math.random() * 2 - 1) * 1.5) / 20);
+    const rate = Math.pow(2, ((Math.random() * 2 - 1) * def.st) / 12), vol = def.vol * volMul * Math.pow(10, ((Math.random() * 2 - 1) * 1.5) / 20);
     const vs = (this.voices[key] ||= []);
     while (vs.length >= MAX_VOICES) { const old = vs.shift()!; try { old.src.stop(); } catch { /* already ended */ } } // steal the oldest
     const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
@@ -272,6 +323,7 @@ class AudioEngine {
     vs.push(v);
     src.onended = () => { const k = vs.indexOf(v); if (k >= 0) vs.splice(k, 1); try { g.disconnect(); } catch { /* gone */ } };
     src.start();
+    if (!quiet) this.track(key, src, (buf.duration / rate) * 1000); // punch layers (quiet) belong to their hit and do not count as a voice
     Object.assign(e, { from: 'file', rate, vol, voices: vs.length, played: true });
     log();
     return e;
@@ -279,6 +331,7 @@ class AudioEngine {
 
   /** A looping effect (the Bowler's rolling ball): starts now, stop(ms) fades it out. Logged like any play (loop: true, stoppedAt). */
   loop(key: string): { stop(fadeMs?: number): void } {
+    if (!this.gate(key)) return { stop() { /* muted by the mix rules */ } };
     const e: any = this.playKey(key, () => { /* no synth loop */ });
     const vs = this.voices[key] || [], v = e.from === 'file' ? vs[vs.length - 1] : null;
     e.loop = true;
