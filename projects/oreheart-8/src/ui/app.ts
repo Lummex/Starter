@@ -2848,7 +2848,7 @@ export class App {
     if ((c.wardUntil || 0) > t) list.push({ k: 'ward', n: 0, label: 'Warded: takes no damage' });
     if (c.shield > 0 || c.bubble) list.push({ k: 'shield', n: c.shield > 0 ? c.shield : 0, x: c.shield > 0 ? 0 : bs, label: c.shield > 0 ? `Shield ${c.shield}` : bs > 1 ? `Shield bubble x${bs}: blocks the next ${bs} hits` : 'Shield bubble' });
     if (bc > 0) list.push({ k: 'attackup', n: 0, x: bc, label: `+${bc} Attack this turn` });
-    if ((c.lockedUntil || 0) > t) list.push({ k: 'sleep', n: c.lockedUntil - t, label: `Can't act for ${c.lockedUntil - t} more turn${c.lockedUntil - t > 1 ? 's' : ''}` });
+    if ((c.lockedUntil || 0) > t) list.push({ k: 'sleep', n: c.lockedUntil - t, label: `Can't attack for ${c.lockedUntil - t} more turn${c.lockedUntil - t > 1 ? 's' : ''}` }); // Oct 31: a shielded Bearer can still walk and mine
     let box = el.querySelector('.st-icons') as El | null;
     const key = list.map((x) => x.k + x.n + 'x' + (x.x || 0)).join(',');
     if (!list.length) { box?.remove(); return; }
@@ -3008,7 +3008,7 @@ export class App {
     const me = st.players.player;
     const hand = this.r.hand as El;
     const tot = funds(me);
-    const tunnel = true; // R10.13: Tunnel works any time, next to any mine
+    const tunnel = st.sites.some((x: any) => x.controller === 'player'); // Ken (Oct 31): Tunnel only beside a mine your side owns. No Tunnel! tag is drawn any more (Ken: remove ability overlays); this only re-keys the hand when ownership changes
     const hidden = st.phase === 'mulligan';
     const costOf = (c: any) => (c.type === 'creature' ? creatureCost(st, 'player', c) : c.type === 'spell' ? spellCost(st, 'player', c) : 0);
     const affordable = (c: any) => (c.type === 'creature' ? tot >= costOf(c) : c.type === 'spell' ? tot >= costOf(c) : true);

@@ -5,7 +5,7 @@
  },
  "tunnel": {
   "name": "Tunnel",
-  "text": "It can be summoned any time onto any empty space next to any mine."
+  "text": "It can be summoned straight onto any empty space next to a mine your side owns right now."
  },
  "frenzy": {
   "name": "Frenzy",

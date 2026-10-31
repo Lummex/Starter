@@ -20,10 +20,10 @@
  "geodeIncome": 1,
  "starterDeckMix": {
   "creatures": 48,
-  "spells": 7,
-  "crystals": 5,
-  "basicGatherers": 8,
-  "smithMiners": 4
+  "spells": 8,
+  "crystals": 4,
+  "miners": 22,
+  "note": "Ken, Oct 31: the Warband (default) deck. Miners are at least a third of every starter deck; the four styles are in tools/gen-starter-decks.py"
  },
  "openingHandSize": 5,
  "secondPlayerExtraCards": 1,

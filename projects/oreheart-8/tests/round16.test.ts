@@ -35,11 +35,16 @@ describe('round 16 rules', () => {
     const opp = legal().filter((a: any) => a.type === 'summon');
     void opp;
   });
-  it('AC254', () => {
+  it('AC254 (Ken, Oct 31: Tunnel only beside a mine your side owns)', () => {
+    // no mine owned: no Tunnel square; owning the mine at 4,6 opens 5,5
     mk({ ai: false, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 5 } });
+    expect(legal().some((a: any) => a.type === 'summon' && a.row === 5 && a.col === 5)).toBe(false);
+    mk({ ai: false, setup: { playerHand: ['goblin-scrounger'], playerCrystals: 5, board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 7, minedMine: { row: 4, col: 6 } }] } });
     expect(legal().some((a: any) => a.type === 'summon' && a.row === 5 && a.col === 5)).toBe(true);
-    mk({ ai: false, firstPlayer: 'opponent', setup: { opponentHand: ['dwarf-miner'], opponentCrystals: 5, firstPlayer: 'opponent' } });
+    // the opponent's Riot Shield Bearer: only beside a mine the opponent owns (4,4 here), never beside the neutral 4,6
+    mk({ ai: false, firstPlayer: 'opponent', setup: { opponentHand: ['dwarf-miner'], opponentCrystals: 5, firstPlayer: 'opponent', board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 5, col: 4, minedMine: { row: 4, col: 4 } }] } });
     expect(legal().some((a: any) => a.type === 'summon' && a.row === 3 && a.col === 4)).toBe(true);
+    expect(legal().some((a: any) => a.type === 'summon' && a.row === 3 && a.col === 7)).toBe(false);
   });
 });
 const SH = Array(12).fill('soul-shard');

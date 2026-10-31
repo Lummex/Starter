@@ -18,7 +18,7 @@
   "text": "Mines 2. Can Tunnel. +1 Health upgrade. Can't attack the turn it's played.",
   "flavor": "Scrounger, Taker of Shiny Things",
   "shortText": "Mines 2. Can Tunnel. +1 Health upgrade. Can't attack the turn it's played.",
-  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Can't attack the turn it's played (it can mine or move that turn); from its next turn on it attacks like any creature. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine.",
+  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Can't attack the turn it's played (it can mine or move that turn); from its next turn on it attacks like any creature. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned straight onto any empty space next to a mine your side owns right now (never beside a neutral or enemy mine). Example: once your Miners own a mine, you can summon it onto an empty space beside that mine instead of your back row.",
   "artPos": {
    "s": 1,
    "x": -5.1,
@@ -221,7 +221,7 @@
   "text": "Miner: mines 2. Tunnel. +1 Health upgrade. Can't attack the turn it's played.",
   "flavor": "Prospector of Profound Patience",
   "shortText": "Miner: mines 2. Tunnel. +1 Health upgrade. Can't attack the turn it's played.",
-  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Can't attack the turn it's played (it can mine or move that turn); from its next turn on it attacks like any creature. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned any time onto any empty space next to any mine. Example: from turn 1 you can summon it onto an empty space beside any mine.",
+  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Can't attack the turn it's played (it can mine or move that turn); from its next turn on it attacks like any creature. A Miner drag-played onto your own creature gives it +1 Health; a Smith Miner gives +1 Attack and +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Tunnel: it can be summoned straight onto any empty space next to a mine your side owns right now (never beside a neutral or enemy mine). Example: once your Miners own a mine, you can summon it onto an empty space beside that mine instead of your back row.",
   "artPos": {
    "s": 0.99,
    "x": 0,
@@ -260,7 +260,7 @@
   "faction": "gnomes",
   "rarity": "Common",
   "role": "Fighter",
-  "cost": 5,
+  "cost": 4,
   "attack": 2,
   "health": 2,
   "move": 1,
@@ -270,7 +270,7 @@
   "unique": false,
   "text": "Ranged. Hits up to 5 spaces away; no strike back.",
   "shortText": "Ranged. Hits up to 5 spaces away; no strike back.",
-  "longText": "Fighter creature. Cost 5, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits up to 5 spaces away; no strike back.",
+  "longText": "Fighter creature. Cost 4, Attack 2, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits up to 5 spaces away; no strike back.",
   "flavor": "Even the woods keep the storm's company.",
   "artPos": {
    "s": 1.02,
@@ -408,20 +408,21 @@
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Common",
-  "role": "Fighter",
+  "role": "Gatherer",
   "cost": 2,
   "attack": 1,
   "health": 5,
   "move": 1,
   "abilities": [
+   "gather",
    "riotShield",
    "tunnel"
   ],
   "unique": false,
-  "text": "Riot Shield. For 3 turns, can't move or attack. Can't be killed by anything.",
+  "text": "Mines 2. Tunnel. Riot Shield: 3 turns, can't attack, can't be killed.",
   "flavor": "Has never met a rock he respected",
-  "shortText": "Riot Shield. For 3 turns, can't move or attack. Can't be killed by anything.",
-  "longText": "Fighter creature. Cost 2, Attack 1, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Riot Shield. For 3 turns, can't move or attack. Can't be killed by anything."
+  "shortText": "Mines 2. Tunnel. Riot Shield: 3 turns, can't attack, can't be killed.",
+  "longText": "Miner creature. Cost 2, Attack 1, Health 5, Movement 1. The dwarves' basic Miner. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Can't attack the turn it's played; from its next turn on it attacks like any creature. A Miner drag-played onto your own creature gives it +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Riot Shield: for its first 3 turns it can't attack and can't be killed by anything; it can still walk and mine. Tunnel: it can be summoned straight onto any empty space next to a mine your side owns right now (never beside a neutral or enemy mine). Example: once your Miners own a mine, Tunnel it in beside that mine (or walk it there) and it digs for 3 turns while nothing can kill it."
  },
  {
   "id": "shieldbeard",
@@ -1249,7 +1250,7 @@
   "faction": "gnomes",
   "rarity": "Common",
   "role": "Fighter",
-  "cost": 4,
+  "cost": 3,
   "attack": 1,
   "health": 2,
   "move": 1,
@@ -1259,7 +1260,7 @@
   "unique": false,
   "text": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
   "shortText": "Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
-  "longText": "Fighter creature. Cost 4, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
+  "longText": "Fighter creature. Cost 3, Attack 1, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies.",
   "artPos": {
    "s": 0.93,
    "x": -2.2,
