@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
 import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, standingBox, type C3D } from './creature3d';
 import { stagePlow, plowFrame } from './plow';
+import { SHOTS, isShooter, createProjectiles, preloadShots, type ShotSpec } from './projectiles';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D, loadCommander3d, makeCommander3d, commander3dReady, commanderIds3d } from './grubnak3d';
 import { makeMineFx, MineFx } from './mineFx';
 import { createSpellFx, fxImpactMs, type SpellFxRequest } from './spell-fx';
@@ -487,12 +488,14 @@ const _embV = new THREE.Vector3();
   function boardBusy(now: number): string {
     if (spellFx.busy(now)) return 'spell';
     if (impacts.length) return 'impact';
+    if (proj.busy()) return 'projectile'; // Oct 31: a shot or a bowling ball about to fly or flying
     for (const f of figs.values()) {
       if (f.dying) return 'dying';
       if (f.born && now - f.born < 600) return 'summon';
       if (f.hitAt && f.hitAt > now - 350) return 'hit';
       if (f.hitT && now - f.hitT < 350) return 'hit';
       if (f.kb && !f.kb.landed) return 'knock';
+      if (f.bowl) return 'bowled';
       if (f.shootT && now >= f.shootT - 2000 && now - f.shootT < (f.atkMs || 600) + 250) return 'attack';
       if (f.abilT && now - f.abilT < (f.abilMs || 1000)) return 'ability';
       if (f.mineT && now - f.mineT < 900) return 'mine';
@@ -579,6 +582,7 @@ const _embV = new THREE.Vector3();
       fx.push({ obj: sp, t: performance.now(), kind, dur: kind === 'flash' ? 160 : kind === 'chips' ? 600 : 700, vel: kind === 'flash' ? new THREE.Vector3() : new THREE.Vector3(Math.cos(a) * (kind === 'chips' ? 1.4 : 0.9), kind === 'stars' ? 2 : kind === 'chips' ? 2.4 : 0.9, Math.sin(a) * (kind === 'chips' ? 1.4 : 0.9)) });
     }
   }
+  const proj = createProjectiles(scene, (k, at, n) => spawnFx(k, at, n), low); // Oct 31 (Ken): flying 3D projectiles
   function makeFigure(c: any): { group: THREE.Group; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number } {
     const card = CARDS[c.cardId];
     const f = FACTIONS[card.faction];
@@ -687,42 +691,74 @@ const _embV = new THREE.Vector3();
   // facing letters -> yaw (models look down +Z at yaw 0; N = toward board row 1 = -Z)
   const FACE_YAW: Record<string, number> = { N: Math.PI, NE: Math.PI * 3 / 4, E: Math.PI / 2, SE: Math.PI / 4, S: 0, SW: -Math.PI / 4, W: -Math.PI / 2, NW: -Math.PI * 3 / 4 };
   const facingYaw = (c: any, owner: string) => { const v = FACE_YAW[c.facing as string]; return v !== undefined ? v : owner === 'player' ? Math.PI : 0; };
-  // Bowling ball (Brawler): a big rusty stone ball rolls along the path, spinning and kicking up dust; hit creatures tumble sideways like pins.
-  const bowls: { obj: THREE.Mesh; pts: THREE.Vector3[]; t0: number; dur: number; lastDust: number }[] = [];
+  // Oct 31 (Ken: "the bowler, the bowling ball should come out and roll across the screen, the 3D bowling ball"): his own OH_Special swing plays;
+  // at its ball_release event (bottom of the swing) the ball leaves his hand and Clay's 3D bowling ball rolls along the ground through the line,
+  // spinning; every unit in the path is knocked over the moment the ball reaches its square. The held ball comes back when the roll is over.
   const bowlDone = new WeakSet<object>();
-  let ballGeo: THREE.BufferGeometry | null = null, ballMat: THREE.Material | null = null;
-  function playBowl(e: any) {
+  function playBowl(e: any, bf: Fig | null = null, relMs = 0) {
     if (!e || bowlDone.has(e)) return;
     bowlDone.add(e);
     const now = performance.now();
     const path: { row: number; col: number }[] = e.path || [];
     if (!path.length) return;
-    if (!ballGeo) {
-      const sg = new THREE.SphereGeometry(0.34, low ? 10 : 16, low ? 8 : 12);
-      ballGeo = sg; ballMat = new THREE.MeshStandardMaterial({ color: 0x6e5f52, roughness: 0.95, metalness: 0.15, emissive: 0x1a0e06, emissiveIntensity: 0.4 });
-    }
-    const obj = new THREE.Mesh(ballGeo, ballMat!);
-    obj.scale.setScalar(1.15);
-    // dark finger holes and a rusty band so the spin reads
-    const holeM = (ballMat as any).userData.hole || ((ballMat as any).userData.hole = new THREE.MeshBasicMaterial({ color: 0x120a06 }));
-    const holeG = (ballMat as any).userData.holeG || ((ballMat as any).userData.holeG = new THREE.SphereGeometry(0.06, 6, 5));
-    for (const [x, y, z] of [[0.1, 0.3, 0.1], [-0.08, 0.31, 0.12], [0.02, 0.26, -0.2], [0.3, -0.05, 0.1]]) { const h = new THREE.Mesh(holeG, holeM); h.position.set(x, y, z); obj.add(h); }
-    const pts = path.map((p) => world(p.row, p.col).setY(0.42));
-    obj.position.copy(pts[0]);
-    scene.add(obj);
-    const per = 90;
-    bowls.push({ obj, pts, t0: now, dur: Math.max(1, pts.length - 1) * per, lastDust: -1 });
-    spawnFx('dust', pts[0], 4); audio.play('melee');
+    const spec = SHOTS['goblin-scrapper'];
+    const releaseAt = now + relMs;
+    const pts = path.map((p) => world(p.row, p.col));
+    const from = e.from ? world(e.from.row, e.from.col) : bf ? bf.target.clone() : pts[0].clone();
+    const start = from.clone().lerp(pts[0], 0.3);
+    const pathAt: number[] = [];
+    let d = 0, prev = start;
+    for (const q of pts) { d += prev.distanceTo(q); prev = q; pathAt.push(releaseAt + (d / spec.speed) * 1000); }
+    proj.fire({ shooterUid: e.uid, unit: bf?.cardId || 'goblin-scrapper', clip: bf?.c3d?.clipOf?.('special') || '', spec, releaseTime: relMs / 1000, releaseAt, arriveAt: pathAt[pathAt.length - 1], to: pts[pts.length - 1].clone(), path: pts, pathAt,
+      launch: () => (bf && figs.get(bf.uid) === bf ? launchPoint(bf, spec, pts[0]) : { pos: start.clone().setY(0.3), bone: start.clone().setY(0.3), drift: 0 }),
+      onSpawn: () => { bf?.c3d?.ballHide?.(true); spawnFx('dust', start, 4); audio.play('melee'); },
+      onLand: () => { bf?.c3d?.ballHide?.(false); } });
     for (const h of e.hits || []) {
       const f = figs.get(h.id ?? h.uid);
       if (!f) continue;
-      const from = h.from ? world(h.from.row, h.from.col) : f.group.position.clone();
+      const from2 = h.from ? world(h.from.row, h.from.col) : f.group.position.clone();
       let idx = path.findIndex((p) => h.from && p.row === h.from.row && p.col === h.from.col);
       if (idx < 0) idx = 0;
-      f.bowl = { t0: now + idx * per, from, to: h.to ? world(h.to.row, h.to.col) : f.target.clone() }; f.bowledT = now + idx * per; setTimeout(() => audio.play('bonk'), idx * per); // Round 28b: bowled-over clip
-      f.group.position.copy(from);
+      const t = pathAt[idx] - 60; // knocked over as the ball reaches it
+      f.bowl = { t0: t, from: from2, to: h.to ? world(h.to.row, h.to.col) : f.target.clone() }; f.bowledT = t; setTimeout(() => audio.play('bonk'), Math.max(0, t - now)); // Round 28b: bowled-over clip (bonk as the ball reaches it)
+      f.group.position.copy(from2);
     }
   }
+  /** Oct 31: where a shot leaves the shooter: the launch bone, or the far end of the held weapon toward the target (muzzle / staff tip);
+   *  for the Bowler the held ball itself (its centre and size) */
+  const _lb = new THREE.Box3(), _lc = new THREE.Vector3(), _lh = new THREE.Vector3();
+  /** an end of a held item's long axis, in world space: the one farthest from the hand (a rifle's muzzle) or nearest the target (a staff's head) */
+  function farEnd(part: THREE.Object3D, hand: THREE.Vector3, toward: THREE.Vector3 | null): THREE.Vector3 {
+    const inv = part.matrixWorld.clone().invert(), lb = new THREE.Box3(), m = new THREE.Matrix4(), bb = new THREE.Box3();
+    part.traverse((o: any) => { if (!o.isMesh || !o.geometry) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); bb.copy(o.geometry.boundingBox).applyMatrix4(m.multiplyMatrices(inv, o.matrixWorld)); lb.union(bb); });
+    if (lb.isEmpty()) return part.getWorldPosition(new THREE.Vector3());
+    const c = lb.getCenter(new THREE.Vector3()), sz = lb.getSize(new THREE.Vector3());
+    const ax = sz.x >= sz.y && sz.x >= sz.z ? 'x' : sz.y >= sz.z ? 'y' : 'z';
+    const a = c.clone(), b2 = c.clone(); a[ax] = lb.min[ax]; b2[ax] = lb.max[ax];
+    a.applyMatrix4(part.matrixWorld); b2.applyMatrix4(part.matrixWorld);
+    if (toward) return a.distanceToSquared(toward) < b2.distanceToSquared(toward) ? a : b2; // a staff: the end nearer the target
+    return a.distanceToSquared(hand) > b2.distanceToSquared(hand) ? a : b2;
+  }
+  function launchPoint(f: Fig, s: ShotSpec, toPt: THREE.Vector3): { pos: THREE.Vector3; bone: THREE.Vector3; size?: number; drift: number } {
+    const c = f.c3d;
+    f.group.updateMatrixWorld(true);
+    const bone = c?.char?.getObjectByName(s.bone) || null;
+    const bp = bone ? bone.getWorldPosition(new THREE.Vector3()) : f.group.position.clone().setY((c?.boardH ?? 1) * 0.6 + (c?.lift || 0));
+    const pos = bp.clone();
+    let size: number | undefined;
+    const part = s.part ? c?.partObject?.(s.part) : null;
+    if (part) {
+      _lb.setFromObject(part);
+      if (!_lb.isEmpty()) {
+        _lb.getCenter(_lc); _lb.getSize(_lh).multiplyScalar(0.5);
+        if (s.style === 'roll') { pos.copy(_lc); size = Math.min(_lh.x, _lh.y, _lh.z) * 2; }
+        else if (s.launch === 'muzzle') pos.copy(farEnd(part, bp, s.tip === 'toward' ? toPt : null));
+      }
+    }
+    return { pos, bone: bp, size, drift: Math.hypot(f.group.position.x - f.target.x, f.group.position.z - f.target.z) }; // drift: how far the body is off its square at the release (a shooter stays put)
+  }
+  /** test hook: every attack staged (shot or melee, and how far it stepped in) */
+  const attackLog: { uid: string; cardId: string; kind: string; lunge: number; at: number; blowAt: number }[] = [];
   // Owner (Oct 25): lasting effects (poison, drunk, rooted, ward, shield, can't act) float above the unit's head as the owner's icons, with turns left
   const stIcons = new Map<string, { group: THREE.Group; key: string }>();
   const stImg: Record<string, HTMLImageElement> = {};
@@ -854,6 +890,7 @@ const _embV = new THREE.Vector3();
   function setState(st: any, events: any[]) {
     state = st;
     const now = performance.now();
+    for (const c of st.board.creatures) preloadShots(c.cardId); // Oct 31: projectile models download once per kind (cached)
     st.sites.forEach((s: any, i: number) => {
       const cr = crystals[i];
     { const fac = s.controller ? st.players[s.controller].faction : '';
@@ -952,15 +989,38 @@ const _embV = new THREE.Vector3();
       if (e.type !== 'attack' || !figs.get(e.uid)) continue;
       const f = figs.get(e.uid)!;
       const to = e.target.commander ? world(SHP[e.target.commander][0], SHP[e.target.commander][1]) : world(e.target.row, e.target.col);
-      const ranged = !!(e.ranged || (CARDS[f.cardId].abilities || []).includes('ranged'));
+      const shot = isShooter(f.cardId) ? SHOTS[f.cardId] : null; // Oct 31 (Ken): every ranged unit stays on its square and shoots a flying 3D projectile
+      const ranged = !!(shot || e.ranged || (CARDS[f.cardId].abilities || []).includes('ranged'));
       const wait = pathLeft(f), t0 = now + wait, imp = ranged ? IMPACT_RANGED : IMPACT_MELEE;
-      f.blowAt = t0 + imp; blowAt = Math.max(blowAt, f.blowAt); strikers.add(f.uid);
+      const def = e.target.commander ? null : [...figs.values()].find((d) => d !== f && d.row === e.target.row && d.col === e.target.col && !(d.kb && d.kb.knockMove)) || null;
+      f.blowAt = t0 + imp;
       const dir = to.clone().sub(f.target).setY(0);
       f.faceTo = Math.atan2(dir.x, dir.z); f.faceUntil = t0 + imp + 500;
-      if (ranged) { f.lunge = dir.clone().normalize().multiplyScalar(-0.12); f.lungeT = t0 + imp - 40; f.lungeDur = 300; }
+      if (shot) {
+        // no step, no lunge: turn to the target, play the ranged clip; the projectile leaves at the clip's release event and the blow (hit, flash,
+        // damage pop-up, knock-back, death, bubble) is its ARRIVAL. The clip is sped up so the release comes about 0.6 s in (never slowed down).
+        f.lunge = null; f.atkRole = 'attack';
+        let relS = imp / 1000, clipRel = relS, durS = 0.6;
+        if (f.c3d) {
+          const ci = f.c3d.impactOf?.('attack'), d = f.c3d.dur('attack') || 0.6, k = ci ? Math.min(2, Math.max(1, ci / 0.6)) : 1;
+          f.c3d.setSpeed?.('attack', k); if (ci) { clipRel = ci; relS = ci / k; } durS = d / k;
+        }
+        f.atkMs = Math.max(600, durS * 1000);
+        const releaseAt = t0 + relS * 1000;
+        const toPt = to.clone().setY(def ? (def.c3d?.boardH ?? 1) * 0.5 + (def.c3d?.lift || 0) : 0.7);
+        const est = f.target.clone().setY((f.c3d?.boardH ?? 1) * 0.6 + (f.c3d?.lift || 0));
+        const flightMs = Math.min(2200, Math.max(120, ((est.distanceTo(toPt) * (shot.style === 'arc' ? 1.15 : 1)) / shot.speed) * 1000));
+        f.blowAt = releaseAt + flightMs; f.faceUntil = f.blowAt + 400;
+        const sh = shot, ff = f;
+        proj.fire({ shooterUid: f.uid, unit: f.cardId, clip: f.c3d?.clipOf?.('attack') || '', spec: shot, releaseTime: clipRel, releaseAt, arriveAt: f.blowAt, to: toPt, targetUid: def?.uid,
+          launch: () => launchPoint(ff, sh, toPt), onSpawn: () => audio.play('ranged') });
+      } else if (ranged) { f.lunge = dir.clone().normalize().multiplyScalar(-0.12); f.lungeT = t0 + imp - 40; f.lungeDur = 300; }
       else { f.lunge = dir.clone().multiplyScalar(0.42); f.lungeT = t0; f.lungeDur = LUNGE_MS; }
+      blowAt = Math.max(blowAt, f.blowAt); strikers.add(f.uid);
       f.shootT = t0;
-      if (f.c3d) {
+      attackLog.push({ uid: f.uid, cardId: f.cardId, kind: shot ? 'shot' : ranged ? 'ranged' : 'melee', lunge: f.lunge ? +f.lunge.length().toFixed(3) : 0, at: Math.round(t0), blowAt: Math.round(f.blowAt) }); if (attackLog.length > 60) attackLog.shift();
+      if (f.c3d && shot) { if (!wait) f.c3d.play('attack'); }
+      else if (f.c3d) {
         // Oct 31 (Spring's specials): a smack, stomp or slam IS the unit's attack, so its special clip plays instead of the plain swing
         const role: 'attack' | 'special' = f.c3d.has?.('special') && (CARDS[f.cardId].abilities || []).some((x: string) => x === 'smack' || x === 'enforcer' || x === 'overload') ? 'special' : 'attack';
         f.atkRole = role;
@@ -969,9 +1029,8 @@ const _embV = new THREE.Vector3();
         f.c3d.setSpeed?.(role, k); f.atkMs = role === 'special' ? Math.max(600, (d / k) * 1000) : 600;
         if (!wait) f.c3d.play(role); // start the clip now: a defender-strike-back defeat can end this figure before the next frame
       }
-      const swing = () => { audio.play(ranged ? 'ranged' : 'melee'); if (f.finished) audio.voiceLine('yell'); };
+      const swing = () => { if (!shot) audio.play(ranged ? 'ranged' : 'melee'); if (f.finished) audio.voiceLine('yell'); }; // a shot's 'ranged' sound plays at its release
       if (wait) setTimeout(swing, wait); else swing();
-      const def = e.target.commander ? null : [...figs.values()].find((d) => d !== f && d.row === e.target.row && d.col === e.target.col && !(d.kb && d.kb.knockMove)) || null;
       const dab: string[] = def ? CARDS[def.cardId]?.abilities || [] : [];
       const dc = def ? st.board.creatures.find((x: any) => x.uid === def.uid) : null;
       impacts.push({ at: f.blowAt, to: to.clone(), ranged, armored: dab.includes('armored') || dab.includes('unbreakable') || dab.includes('riotShield') || (dc?.shield || 0) > 0, commander: !!e.target.commander });
@@ -1008,7 +1067,19 @@ const _embV = new THREE.Vector3();
         const m = world(e.row, e.col);
         f.faceTo = Math.atan2(m.x - f.target.x, m.z - f.target.z); f.faceUntil = now + 1000;
         setTimeout(() => { spawnFx('spark', m, 4); audio.play('pick'); audio.play('chime'); }, 220);
-      } else if (e.type === 'bowl') { const bf = figs.get(e.uid); if (bf) bf.shootT = now; playBowl(e); }
+      } else if (e.type === 'bowl') {
+        const bf = figs.get(e.uid) || null;
+        let rel = 300;
+        if (bf) {
+          bf.shootT = now; bf.lunge = null;
+          if (bf.c3d?.has?.('special')) { // his own bowl (OH_Special): the ball leaves the hand at ball_release, the bottom of the swing
+            bf.atkRole = 'special'; bf.c3d.setSpeed?.('special', 1); bf.atkMs = Math.max(600, (bf.c3d.dur('special') || 1.6) * 1000);
+            rel = (bf.c3d.impactOf?.('special') ?? 0.7667) * 1000; bf.c3d.ballQuiet?.(); bf.c3d.play('special');
+          }
+          bf.faceTo = Math.atan2(e.dc || 0, e.dr || 0); bf.faceUntil = now + Math.max(rel + 300, bf.atkMs || 600);
+        }
+        playBowl(e, bf, rel);
+      }
       else if ((e.type === 'abilityUsed' || e.type === 'steal') && figs.get(e.uid)) { // Oct 31 (Spring's specials): brew toss, steal, blink, siphon, rocket ride, shockwave, sewer slide, plow ram
         const f = figs.get(e.uid)!, ab = e.type === 'steal' ? 'steal' : e.ability;
         const role: 'ability' | 'special' | null = ['brew', 'steal', 'blink', 'siphon'].includes(ab) && f.c3d?.has?.('ability') ? 'ability' : ['rocket', 'shockwave', 'slide', 'plow'].includes(ab) && f.c3d?.has?.('special') ? 'special' : null;
@@ -1477,7 +1548,7 @@ const _embV = new THREE.Vector3();
         else { f.bowl = null; g.rotation.z = 0; }
       }
       if (carried) goal.set(carry!.pos.x, goal.y, carry!.pos.z);
-      const walking = !inKb && (onPath || Math.hypot(g.position.x - f.target.x, g.position.z - f.target.z) > 0.05); // on the ground plane: a hovering flyer is not walking // judged before this frame's glide: one slow frame may cover the whole step
+      const walking = !inKb && !f.bowl && (onPath || Math.hypot(g.position.x - f.target.x, g.position.z - f.target.z) > 0.05); /* Oct 31: a unit waiting for the bowling ball stands still */ // on the ground plane: a hovering flyer is not walking // judged before this frame's glide: one slow frame may cover the whole step
       if (!onPath && !inKb) g.position.lerp(goal, f.bowl ? 1 : carried ? 0.5 : 1 - Math.exp(-dt0 * (f.lunge ? 24 : 14))); // time-based glide; snappier while stepping in to swing
       plowFrame(f, now, { world, fx: spawnFx, sound: (n) => audio.play(n) }); // Gnome Plow: drive + ram (plow.ts)
       { // hold the stored facing; turn smoothly (~200 ms); miners look at their node while mining; walkers face each step
@@ -1554,14 +1625,7 @@ const _embV = new THREE.Vector3();
       }
     }
     for (const f of figs.values()) if (f.bowl) { const k = (now - f.bowl.t0) / 650; if (k > 0 && k < 1) { f.group.rotation.z = Math.sin(k * Math.PI * 0.5) * Math.PI * 0.5 * (k < 0.7 ? 1 : (1 - k) / 0.3); f.group.position.y = Math.sin(k * Math.PI) * 0.35; } }
-    for (let i = bowls.length - 1; i >= 0; i--) {
-      const b = bowls[i], k = (now - b.t0) / b.dur + 0, n = b.pts.length - 1;
-      if (k >= 1 || n < 1) { spawnFx('dust', b.pts[n], 5); scene.remove(b.obj); bowls.splice(i, 1); continue; }
-      const x = k * n, a = Math.floor(x);
-      b.obj.position.lerpVectors(b.pts[a], b.pts[Math.min(n, a + 1)], x - a);
-      b.obj.rotation.x -= dt0 * 14 * (b.pts[Math.min(n, a + 1)].z - b.pts[a].z || 0.001) / 1 * 1; b.obj.rotation.z -= dt0 * 14 * (b.pts[a].x - b.pts[Math.min(n, a + 1)].x);
-      if (a !== b.lastDust) { b.lastDust = a; spawnFx('dust', b.obj.position, 2); }
-    }
+    proj.update(now); // Oct 31: shots and the bowling ball fly by elapsed time
     for (let i = fx.length - 1; i >= 0; i--) {
       const e = fx[i], k = (now - e.t) / (e.dur || 700);
       if (k >= 1) { scene.remove(e.obj); (e.obj as THREE.Sprite).material.dispose(); fx.splice(i, 1); continue; }
@@ -1687,7 +1751,7 @@ const _embV = new THREE.Vector3();
             unitRings: [...figs.values()].filter((f) => !f.dying).map((f) => { const rs = getRings(); return { uid: f.uid, side: f.owner, color: f.ringColor || '', greyed: !!f.ringGreyed, thickness: rs.thickness, glow: rs.glow, opacity: rs.opacity }; }),
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ ...figureStats(f), uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb), bubble: !!bubbles.get(f.uid)?.on, bubblePops: bubblePops.get(f.uid) || 0, bubbleColor: bubbles.get(f.uid)?.hex || '' })),
             creatureAnimLog: creatureAnimLog.map((e) => ({ ...e })),
-            projectiles: [], projectileLog: [],
+            projectiles: proj.active(), projectileLog: proj.log(), attackLog: attackLog.map((x) => ({ ...x })),
             canvas: canvasInfo(),
             missingClips: missingClipList.map((m) => ({ ...m })),
             commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? (cm.g3d.files?.source || 'grubnak.glb') : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? (cm.g3d.files?.fortress || 'grubnak-fortress.glb') : '', scepter: cm.g3d ? (cm.g3d.files?.scepter ?? 'grubnak-scepter.glb') : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, items: (((cm.g3d as any)?.items || []) as { name: string; bone: string; obj: THREE.Object3D | null }[]).map((i) => { let o: THREE.Object3D | null = i.obj, vis = !!o, size = 0; while (o) { if (!o.visible) vis = false; o = o.parent; } if (i.obj) { const ib = new THREE.Box3().setFromObject(i.obj, true); if (!ib.isEmpty()) size = +ib.getSize(new THREE.Vector3()).length().toFixed(3); } return { name: i.name, bone: i.bone, visible: vis, size }; }), animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
@@ -1707,7 +1771,7 @@ const _embV = new THREE.Vector3();
     topAt: (row: number, col: number) => thingBox(row, col),
     is3D: true, setCarry, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
-      spellFx.dispose();
+      spellFx.dispose(); proj.dispose();
       disposed = true; for (const ev of inputEvs) window.removeEventListener(ev, onInput, true); window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);
       cancelAnimationFrame(raf);
       if (testMode) { glPool = { renderer, backRenderer, backCanvas }; backCanvas.remove(); canvas.remove(); return; }

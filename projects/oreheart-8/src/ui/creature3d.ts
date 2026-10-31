@@ -156,7 +156,7 @@ interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationCl
 export interface PackClip { clip: THREE.AnimationClip; kind: string; loop: boolean; impact?: number; rootSpeed?: number; events?: { name: string; time: number }[] }
 interface Pack { clips: PackClip[]; rig: Rig }
 export interface SharedSet { byName: Record<string, THREE.AnimationClip>; byKind: Record<string, THREE.AnimationClip[]>; impact: Record<string, number>; speed: Record<string, number>; events: Record<string, { name: string; time: number }[]> }
-export const PACK_URL = '/models/anims/biped-pack-v4'; // Spring's v4 (Oct 30): v3's 59 clips + 11 per-card specials (kind special / ability)
+export const PACK_URL = '/models/anims/biped-pack-v5'; // Spring's v5 (Oct 31): v4's 70 clips (byte-identical) + 7 ranged clips (kind ranged, each with a `release` {frame, time, bone})
 let packP: Promise<Pack | null> | null = null;
 /** test hook (window.__sharedPack): what the pack loader did */
 export const packInfo = { url: PACK_URL, loaded: false, clips: [] as { name: string; kind: string }[], error: '', units: {} as Record<string, string> };
@@ -380,7 +380,7 @@ export interface C3D {
   clipNames: string[]; held: string[]; worn: string[]; height: number; boardH?: number; boardK?: number;
   /** Oct 31: the older Studio height (heightSpaces before the real-world table), the model's natural standing / whole-box height (model units), and the body object (for measuring) */ studioHeight?: number; natural?: { standing: number; box: number }; char?: THREE.Object3D;
   /** Oct 31: the unit's height in squares (Ledger's real-world table; on the board x characterSizes.creatures) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
-  /** Bowler Brawler only: hand-keyed special moves, ball hooks, flame effect */ special?: (n: 'bowl' | 'spinBall' | 'basketShot') => void; trig?: (shootT: number, born: number) => void; advanceIdle?: (sec: number) => void; ballInfo?: () => any; effects?: () => any[];
+  /** Bowler Brawler only: hand-keyed special moves, ball hooks, flame effect */ special?: (n: 'bowl' | 'spinBall' | 'basketShot') => void; ballQuiet?: () => void; ballHide?: (on: boolean) => void; trig?: (shootT: number, born: number) => void; advanceIdle?: (sec: number) => void; ballInfo?: () => any; effects?: () => any[];
 }
 
 /** Instances one figure: the model stands on y = 0, centred, normalised to height 1 (the scene scales it to the board). */
@@ -574,7 +574,7 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   out.holding = false;
   out.setSpeed = (n: string, k: number) => { const ac = actions[resolve(n)]; if (ac) ac.timeScale = k; };
   Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (cur === 'special' && actions.special && out.holding) { const sg = holdSeg(); if (!actions.special.isRunning()) { actions.special.reset(); actions.special.play(); } if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = (flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares) * kk; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, studioHeight: studioH, boardH, boardK: kk, natural: { standing: +standH.toFixed(4), box: +bodyH.toFixed(4) }, char: ch, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
-  if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }
+  if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.ballQuiet = rig.quiet; out.ballHide = rig.hide; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }
   return out;
 }
 
@@ -643,6 +643,7 @@ function makeBallRig(ch: THREE.Object3D, root: THREE.Group, rec: { part: THREE.O
   let ready = false, r = 0.07, off = new THREE.Vector3(), sx = 1;
   let state = 'hand', detached = false, spec = '', t = 0, D = 0, rollD = 0, vz = 0, pos = new THREE.Vector3(), vel = new THREE.Vector3(), landed = false;
   let idleT = 0, idleThr = 10 + Math.random() * 10, lastShoot = 0, bornDone = false, clock = 0;
+  let quiet = false, quietNow = false, quietRel = false, hidden = false; // Oct 31 (Ken): the real bowl plays his own OH_Special clip and the scene rolls Clay's 3D ball; the rig only keeps its log
   let minClear = Infinity, pen = 0, plog: string[] = [], lastLanding = { bounces: 0, rollDistance: 0 };
   const dirA = new THREE.Vector3(), dirB = new THREE.Vector3(), q0 = new THREE.Quaternion();
   const center = (v: THREE.Vector3) => { _box.setFromObject(part); _box.getCenter(v); root.worldToLocal(v); return v; };
@@ -662,6 +663,7 @@ function makeBallRig(ch: THREE.Object3D, root: THREE.Group, rec: { part: THREE.O
   const start = (n: 'bowl' | 'spinBall' | 'basketShot') => {
     init(); if (!ready || spec) return;
     spec = n; t = 0; plog = []; state = n === 'spinBall' ? 'hand' : 'swing'; landed = false; idleT = 0; idleThr = 10 + Math.random() * 10;
+    quietNow = quiet && n === 'bowl'; quiet = false; quietRel = false;
     D = n === 'bowl' ? 1.6 : n === 'basketShot' ? 2.7 : 2.6;
     log.push(n); out.onPlay?.(n);
     if (n === 'bowl') { plog.push('swingBack'); dirA.set(sx * 0.75, -0.2, -0.65); dirB.set(sx * 0.3, -0.5, 0.85); }
@@ -678,7 +680,10 @@ function makeBallRig(ch: THREE.Object3D, root: THREE.Group, rec: { part: THREE.O
     else {
       t += dt;
       let w = 0;
-      if (spec === 'bowl') {
+      if (spec === 'bowl' && quietNow) { // no hand-keyed arm aims and no local roll: the clip swings, the scene's ball rolls
+        if (t >= 0.7 && !quietRel) { quietRel = true; plog.push('release'); state = 'rolling'; plog.push('roll'); }
+        if (t >= 1.55) { lastLanding = { bounces: 0, rollDistance: 0 }; finish(); }
+      } else if (spec === 'bowl') {
         if (t < 0.45) w = ease(t / 0.45), toWorldDir(dirA, _t);
         else if (t < 0.7) { w = 1; toWorldDir(_c.copy(dirA).lerp(dirB, ease((t - 0.45) / 0.25)).normalize(), _t); }
         else { w = 1 - ease((t - 0.7) / 0.3); toWorldDir(dirB, _t); }
@@ -735,6 +740,9 @@ function makeBallRig(ch: THREE.Object3D, root: THREE.Group, rec: { part: THREE.O
       if (shootT && shootT !== lastShoot) { lastShoot = shootT; if (spec === 'spinBall') finish(); start('bowl'); }
     },
     advanceIdle: (sec: number) => { idleT += sec; if (!spec && idleT >= idleThr - 1e-6) start('spinBall'); },
+    /** Oct 31: the next bowl is the real one (his OH_Special clip plays; the scene rolls the 3D ball) */ quiet: () => { quiet = true; },
+    /** Oct 31: the held ball (and its flame) leaves his hand at the release and comes back when the rolled ball has finished */ hide: (on: boolean) => { hidden = on; part.visible = !on; flame.visible = !on; },
+    hidden: () => hidden,
     info: () => ({ state, bone: 'RightHand', log: plog.slice(), minGroundClearance: isFinite(minClear) ? +minClear.toFixed(4) : 0, bodyPenetrations: pen, lastLanding }),
     effects: () => [{ name: 'Flame', type: 'flame', attachedTo: 'bowling-ball', visible: flame.visible, settings: { size: FLAME.size, height: FLAME.height, speed: FLAME.speed, cCore: FLAME.core, cMid: FLAME.mid, cTip: FLAME.tip, coreColor: FLAME.core, midColor: FLAME.mid, tipColor: FLAME.tip, colors: { core: FLAME.core, mid: FLAME.mid, tip: FLAME.tip } } }],
   };

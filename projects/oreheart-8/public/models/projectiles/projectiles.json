@@ -1,0 +1,224 @@
+{
+ "readme": "Clay 2026-10-31. Game-ready projectiles made in Blender (no Meshy credits). Every file: origin at its centre, FLIES ALONG glTF +Z (nose/face at +z), up = +y. size_gltf_xyz is in model units (about board-square fractions; scale in the game as needed). Glowing ones use emissive materials. Cards are from cards.json abilities: Skullflinger, Bowler, Grudge Hurler, Marksmen Gunner, Gyronaut, Stormcaller, Hexslinger, Venom Shiv; the rest are spares Forge asked for.",
+ "forward": "+z",
+ "up": "+y",
+ "projectiles": {
+  "skull": {
+   "cards": [
+    "goblin-slinger"
+   ],
+   "flight": "arc (thrown), tumble end over end",
+   "spin": "tumble about x, ~2 turns/s",
+   "note": "cracked skull cut from the Skullflinger's own skull mace; face looks +z",
+   "file": "skull.glb",
+   "size_gltf_xyz": [
+    0.232,
+    0.185,
+    0.24
+   ],
+   "tris": 5135
+  },
+  "bowling-ball": {
+   "cards": [
+    "goblin-scrapper"
+   ],
+   "flight": "rolls along the ground in a straight line (front/back/left/right)",
+   "spin": "roll about the axis across the path",
+   "note": "the Bowler's own riveted ball, matches his card",
+   "file": "bowling-ball.glb",
+   "size_gltf_xyz": [
+    0.339,
+    0.34,
+    0.323
+   ],
+   "tris": 4986
+  },
+  "grudge-book": {
+   "cards": [
+    "axe-thrower"
+   ],
+   "flight": "thrown, slight arc, straight/diagonal lines",
+   "spin": "flat spin about y",
+   "note": "the Grudge Hurler throws a gem-studded book on his card (not an axe)",
+   "file": "grudge-book.glb",
+   "size_gltf_xyz": [
+    0.31,
+    0.13,
+    0.41
+   ],
+   "tris": 104
+  },
+  "crystal-shot": {
+   "cards": [
+    "deepforge-crossbowman"
+   ],
+   "flight": "straight, fast",
+   "spin": "none (or a slow roll about z)",
+   "note": "blue crystal round from his crystal gun; play muzzle-flash at the barrel",
+   "file": "crystal-shot.glb",
+   "size_gltf_xyz": [
+    0.09,
+    0.101,
+    0.271
+   ],
+   "tris": 30
+  },
+  "muzzle-flash": {
+   "cards": [
+    "deepforge-crossbowman"
+   ],
+   "flight": "not a projectile: show ~0.1 s at the muzzle, cone points +z",
+   "spin": "random roll about z each shot",
+   "note": "emissive, semi-transparent",
+   "file": "muzzle-flash.glb",
+   "size_gltf_xyz": [
+    0.32,
+    0.32,
+    0.22
+   ],
+   "tris": 28
+  },
+  "fireball": {
+   "cards": [
+    "gyrocopter-ace"
+   ],
+   "flight": "straight, slight arc",
+   "spin": "slow roll",
+   "note": "glowing core + flame tail behind (-z)",
+   "file": "fireball.glb",
+   "size_gltf_xyz": [
+    0.24,
+    0.227,
+    0.405
+   ],
+   "tris": 178
+  },
+  "lightning-orb": {
+   "cards": [
+    "spark-gnome"
+   ],
+   "flight": "straight, fast",
+   "spin": "fast random rotation (crackle)",
+   "note": "blue-white electric ball",
+   "file": "lightning-orb.glb",
+   "size_gltf_xyz": [
+    0.175,
+    0.23,
+    0.185
+   ],
+   "tris": 130
+  },
+  "hex-bolt": {
+   "cards": [
+    "hexwright-apprentice"
+   ],
+   "flight": "straight lines/diagonals, fast",
+   "spin": "roll about z",
+   "note": "purple crystal shard with glow tail",
+   "file": "hex-bolt.glb",
+   "size_gltf_xyz": [
+    0.12,
+    0.12,
+    0.405
+   ],
+   "tris": 34
+  },
+  "venom-dagger": {
+   "cards": [
+    "venom-shiv (spell)"
+   ],
+   "flight": "thrown, slight arc",
+   "spin": "none, point first",
+   "note": "green venom blade, point at +z",
+   "file": "venom-dagger.glb",
+   "size_gltf_xyz": [
+    0.11,
+    0.07,
+    0.265
+   ],
+   "tris": 126
+  },
+  "arrow": {
+   "cards": [],
+   "flight": "arc",
+   "spin": "none, point first",
+   "note": "spare: no current card shoots arrows",
+   "file": "arrow.glb",
+   "size_gltf_xyz": [
+    0.058,
+    0.055,
+    0.62
+   ],
+   "tris": 62
+  },
+  "crossbow-bolt": {
+   "cards": [],
+   "flight": "straight",
+   "spin": "none, point first",
+   "note": "spare",
+   "file": "crossbow-bolt.glb",
+   "size_gltf_xyz": [
+    0.06,
+    0.075,
+    0.44
+   ],
+   "tris": 50
+  },
+  "bullet": {
+   "cards": [
+    "oathbound-pikeman (rifle) if he gets a ranged attack"
+   ],
+   "flight": "straight, very fast",
+   "spin": "none",
+   "note": "lead shot with smoke trail; spare",
+   "file": "bullet.glb",
+   "size_gltf_xyz": [
+    0.05,
+    0.05,
+    0.19
+   ],
+   "tris": 182
+  },
+  "sling-stone": {
+   "cards": [],
+   "flight": "arc",
+   "spin": "tumble",
+   "note": "spare",
+   "file": "sling-stone.glb",
+   "size_gltf_xyz": [
+    0.096,
+    0.074,
+    0.094
+   ],
+   "tris": 80
+  },
+  "bomb": {
+   "cards": [
+    "blastrat-sapper (if it throws)"
+   ],
+   "flight": "high arc",
+   "spin": "slow tumble",
+   "note": "lit fuse with glowing spark on top; spare",
+   "file": "bomb.glb",
+   "size_gltf_xyz": [
+    0.18,
+    0.283,
+    0.18
+   ],
+   "tris": 596
+  },
+  "throwing-axe": {
+   "cards": [],
+   "flight": "arc",
+   "spin": "end over end about x, ~3 turns/s",
+   "note": "spare dwarf axe",
+   "file": "throwing-axe.glb",
+   "size_gltf_xyz": [
+    0.17,
+    0.35,
+    0.04
+   ],
+   "tris": 56
+  }
+ }
+}
