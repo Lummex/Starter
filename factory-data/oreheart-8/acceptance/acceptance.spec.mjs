@@ -10952,3 +10952,27 @@ test('AC419: the Gnome Plow is a gnome seated on his plow: the plow is its mount
   expect(log.every((e) => e.clip === 'biped-ride-01'), 'he stays seated while the plow drives').toBe(true);
   await expect.poll(async () => (await fig()).currentClip, { timeout: 8000 }).toBe('biped-ride-01');
 });
+
+// Oct 31 (Ken: "I can't move any of the characters"): units are 3x tall, so their bodies stand over the squares behind them.
+// A tap or click on the unit's body (not its own square) must select it, and a tap on a lit square then moves it.
+for (const dev of [{ name: 'phone touch', use: { viewport: { width: 812, height: 375 }, hasTouch: true, isMobile: true } }, { name: 'desktop mouse', use: { viewport: { width: 1568, height: 782 } } }]) {
+  test.describe(`AC420 ${dev.name}`, () => {
+    test.use(dev.use);
+    test(`AC420: tapping a 3x unit's body selects it and a tap on a lit square moves it (${dev.name})`, async ({ page }) => {
+      await start(page, quiet({ playerHand: [], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 9 }] }));
+      await done(page);
+      const fig = async () => (await renderStats(page)).figures.find((f) => f.row === 6 && f.col === 9);
+      await expect.poll(async () => ((await fig())?.screenBox?.height || 0), { timeout: 15000 }).toBeGreaterThan(20);
+      const sb = (await fig()).screenBox;
+      const body = { x: sb.x + sb.width / 2, y: sb.y + sb.height * 0.3 };
+      const own = await sq2s(page, 6, 9);
+      expect(body.y, 'the body point is above the unit\'s own square').toBeLessThan(own.y - 15);
+      const tap = (p) => (dev.use.hasTouch ? page.touchscreen.tap(p.x, p.y) : page.mouse.click(p.x, p.y));
+      await tap(body);
+      await expect.poll(async () => (await page.evaluate(async () => (await window.oreheart.getArena()).highlights)).some((h) => h.row === 6 && h.col === 10), { timeout: 5000 }).toBe(true);
+      const to = await sq2s(page, 6, 10);
+      await tap(to);
+      await expect.poll(async () => { const c = at(await getState(page), 6, 10); return c && c.cardId; }, { timeout: 8000 }).toBe('goblin-scrapper');
+    });
+  });
+}

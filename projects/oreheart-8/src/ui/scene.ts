@@ -61,6 +61,8 @@ export interface BoardView {
   advanceFigureIdle?(sec: number): void;
   facing(side: 'player' | 'opponent'): any;
   poke(uid: string): string | null;
+  /** Oct 31 (Ken: "I can't move any of the characters"): the unit whose figure is drawn under this screen point (client px), front-most first; units are 3x and stand over the squares behind them */
+  unitAt?(x: number, y: number): string | null;
   /** Owner fix (Ken, Oct 28): the unit the Junk Shaman carries hangs at the pointer (screen px) and loops its lifted clip; the holder plays his lift special. null = put down */
   setCarry?(c: { uid: string; holder: string; x: number; y: number } | null): void;
   retreat(side: 'player' | 'opponent'): void;
@@ -1541,6 +1543,31 @@ const _embV = new THREE.Vector3();
   void state;
 
   const _v = new THREE.Vector3();
+  /** Screen box (client px) of a figure's solid meshes, or null. */
+  function figScreenBox(f: Fig) {
+    const b = f.c3d ? skinBox(f.group, new THREE.Box3()) : new THREE.Box3().setFromObject(f.group);
+    if (b.isEmpty()) return null;
+    const cv = canvas.getBoundingClientRect();
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let i = 0; i < 8; i++) {
+      _v.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).project(camera);
+      const px = cv.left + ((_v.x + 1) / 2) * cv.width, py = cv.top + ((1 - _v.y) / 2) * cv.height;
+      x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+    }
+    return { x0, y0, x1, y1 };
+  }
+  /** Oct 31: the unit drawn under (x, y): inside the middle 70 % of its figure's width, feet to top; the front-most (lowest feet on screen) wins. */
+  function unitAt(x: number, y: number): string | null {
+    let best: string | null = null, by = -1e9;
+    for (const [uid, f] of figs) {
+      if (f.dying || !f.group.visible) continue;
+      const r = figScreenBox(f); if (!r) continue;
+      const cx = (r.x0 + r.x1) / 2, hw = (r.x1 - r.x0) * 0.35;
+      if (x < cx - hw || x > cx + hw || y < r.y0 || y > r.y1) continue;
+      if (r.y1 > by) { by = r.y1; best = uid; }
+    }
+    return best;
+  }
   function figureStats(f: Fig) {
     const c = f.c3d, cv = canvas.getBoundingClientRect();
     const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', currentClip: c?.currentClip ? c.currentClip() : '', parts: c?.partInfo ? c.partInfo().map((x) => ({ ...x })) : [], animationLog: c ? [...c.log] : [], ...(c && c.ballInfo ? { ball: c.ballInfo(), effects: c.effects!() } : {}), items: c ? c.items.map((i) => ({ ...i })) : [], flying: c?.flying ? { ...c.flying } : null, lift: (c?.lift || 0) / (c?.boardK || 1), boardLift: c?.lift || 0, swayNowDeg: c?.swayNowDeg || 0, groundShadow: !!c?.groundShadow, animWeight: c?.animWeight ? +c.animWeight().toFixed(2) : null, poseDelta: c?.poseDelta ? +c.poseDelta().toFixed(3) : null, diag: c?.diag ? c.diag() : null, moving: !!(f.path && f.path.length), packed: c?.packRoles ? [...c.packRoles] : [] };
@@ -1581,7 +1608,7 @@ const _embV = new THREE.Vector3();
   }
 
   const api: BoardView = {
-    is3D: true, setCarry, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setCarry, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       disposed = true; for (const ev of inputEvs) window.removeEventListener(ev, onInput, true); window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);
       cancelAnimationFrame(raf);

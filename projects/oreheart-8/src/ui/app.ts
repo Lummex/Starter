@@ -3803,7 +3803,12 @@ export class App {
     const labUid = lab ? (lab.closest('.token') as El | null)?.dataset.uid : null;
     if (labUid) return st.board.creatures.find((c: any) => c.uid === labUid) || null;
     const c = this.cellAt(e.clientX, e.clientY);
-    return c ? st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col) || null : null;
+    return (c ? st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col) : null) || this.figureAtEvent(e);
+  }
+  /** Oct 31: the creature whose 3D figure is drawn under the pointer (units are 3x and cover the squares behind them), or null. */
+  figureAtEvent(e: { clientX: number; clientY: number }): any {
+    const uid = this.view?.unitAt?.(e.clientX, e.clientY);
+    return uid ? this.game.state?.board.creatures.find((c: any) => c.uid === uid) || null : null;
   }
   /** Owner (Oct 25): left-click a unit to use it: its moves, attacks, mining and aimed abilities light up; click one to do it. */
   selectUnit(cr: any) {
@@ -4039,13 +4044,15 @@ export class App {
       const unitPick = !!(this.pick as any).unit;
       { // Round 28: a unit is selected and a square it can't reach this turn was clicked: give it an order
         const pu = unitPick ? st.board.creatures.find((c: any) => c.uid === (this.pick as any).unit) : null;
-        if (pu && this.orderTime(pu) && this.orderFor(pu, cell)) { this.pick = null; this.clearGlow(); this.orderAt(pu, cell); return; } }
+        const onFig = !st.board.creatures.some((c: any) => c.row === cell.row && c.col === cell.col) ? this.figureAtEvent(e) : null; // a tap on another of your units' bodies selects it, not an order behind it
+        if (pu && !(onFig && onFig.owner === 'player' && onFig.uid !== pu.uid) && this.orderTime(pu) && this.orderFor(pu, cell)) { this.pick = null; this.clearGlow(); this.orderAt(pu, cell); return; } }
       this.pick = null; this.clearGlow();
       // a unit was selected: clicking another of your units selects that one instead; clicking elsewhere just deselects
-      const other = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col);
+      const other = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col) || this.figureAtEvent(e);
       if (!(unitPick && other && other.owner === 'player')) { if (!unitPick) this.flash('Cancelled'); return; }
     }
-    const cr = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col);
+    // Oct 31 (Ken: "I can't move any of the characters"): units stand 3x tall over the squares behind them, so a tap on a unit's body counts as that unit
+    const cr = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col) || this.figureAtEvent(e);
     if (!cr) { if (e.pointerType !== 'mouse' || e.button === 0) this.startPan(e); return; }
     this.selectedUid = cr.uid; // round 11: the tapped creature counts as selected (Esc clears it)
     const card = CARDS[cr.cardId];
