@@ -10,6 +10,7 @@ Every file in art/sound/out/ (39 files) was **synthesized from scratch** by Brus
 | UI | ui-click, ui-tick, ui-chime, card-draw, card-play | synthesized (sounds.py) | CC0, project-owned |
 | Board | summon, step-goblin/gnome/dwarf, melee, ranged, bonk-1..3, clink-1..3, thud, mine-pick, shatter, defeat-poof, commander-hit, kaboom, turn-start | synthesized | CC0, project-owned |
 | Stingers | win, lose | synthesized | CC0, project-owned |
+| Ranged (Oct 31) | shot-rifle, shot-cannon, throw-whoosh, cast-zap, cast-hex, fireball-whoosh, bowl-roll, skull-crack, book-thud, zap-hit, fire-burst, pins-scatter | synthesized | CC0, project-owned |
 | Spells | spell-<id> for all 13 spells | synthesized | CC0, project-owned |
 | Sample reel | sample-reel.mp3 | the files above, back to back | CC0, project-owned |
 

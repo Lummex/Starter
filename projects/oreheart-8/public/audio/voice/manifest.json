@@ -9,7 +9,8 @@
 "vo-goblin-scrounger-select-2",
 "vo-goblin-scrounger-select-3"
 ],
-"special":"vo-goblin-scrounger-special"
+"special":"vo-goblin-scrounger-special",
+"special_when":"mines crystals"
 },
 "goblin-scrapper":{
 "voice":"gob-brute",
@@ -18,7 +19,8 @@
 "vo-goblin-scrapper-select-2",
 "vo-goblin-scrapper-select-3"
 ],
-"special":"vo-goblin-scrapper-special"
+"special":"vo-goblin-scrapper-special",
+"special_when":"bowls / junk boost"
 },
 "goblin-slinger":{
 "voice":"gob-salty",
@@ -27,7 +29,8 @@
 "vo-goblin-slinger-select-2",
 "vo-goblin-slinger-select-3"
 ],
-"special":"vo-goblin-slinger-special"
+"special":"vo-goblin-slinger-special",
+"special_when":"ranged throw"
 },
 "goblin-bomber":{
 "voice":"gob-maniac",
@@ -36,7 +39,8 @@
 "vo-goblin-bomber-select-2",
 "vo-goblin-bomber-select-3"
 ],
-"special":"vo-goblin-bomber-special"
+"special":"vo-goblin-bomber-special",
+"special_when":"death knock-back"
 },
 "goblin-sneak":{
 "voice":"gob-sneak",
@@ -45,7 +49,8 @@
 "vo-goblin-sneak-select-2",
 "vo-goblin-sneak-select-3"
 ],
-"special":"vo-goblin-sneak-special"
+"special":"vo-goblin-sneak-special",
+"special_when":"thief steal"
 },
 "wolf-rider":{
 "voice":"gob-maniac",
@@ -54,16 +59,17 @@
 "vo-wolf-rider-select-2",
 "vo-wolf-rider-select-3"
 ],
-"special":"vo-wolf-rider-special"
+"special":"vo-wolf-rider-special",
+"special_when":"haste rush"
 },
 "grubnaks-big-boss-troll":{
 "voice":"gob-brute",
 "select":[
 "vo-grubnaks-big-boss-troll-select-1",
-"vo-grubnaks-big-boss-troll-select-2",
-"vo-grubnaks-big-boss-troll-select-3"
+"vo-grubnaks-big-boss-troll-select-2"
 ],
-"special":"vo-grubnaks-big-boss-troll-special"
+"special":"vo-grubnaks-big-boss-troll-special",
+"special_when":"rally"
 },
 "shard-guzzler":{
 "voice":"gob-maniac",
@@ -72,7 +78,8 @@
 "vo-shard-guzzler-select-2",
 "vo-shard-guzzler-select-3"
 ],
-"special":"vo-shard-guzzler-special"
+"special":"vo-shard-guzzler-special",
+"special_when":"rocket"
 },
 "goblin-grunt":{
 "voice":"gob-brute",
@@ -89,7 +96,8 @@
 "vo-goblin-pebbler-select-2",
 "vo-goblin-pebbler-select-3"
 ],
-"special":"vo-goblin-pebbler-special"
+"special":"vo-goblin-pebbler-special",
+"special_when":"bonk hit"
 },
 "goblin-smith-miner":{
 "voice":"gob-salty",
@@ -98,7 +106,8 @@
 "vo-goblin-smith-miner-select-2",
 "vo-goblin-smith-miner-select-3"
 ],
-"special":"vo-goblin-smith-miner-special"
+"special":"vo-goblin-smith-miner-special",
+"special_when":"smith upgrade"
 },
 "rotgut-grenadier":{
 "voice":"gob-brute",
@@ -107,7 +116,8 @@
 "vo-rotgut-grenadier-select-2",
 "vo-rotgut-grenadier-select-3"
 ],
-"special":"vo-rotgut-grenadier-special"
+"special":"vo-rotgut-grenadier-special",
+"special_when":"smack attack"
 },
 "shiv-rat":{
 "voice":"gob-sneak",
@@ -116,7 +126,8 @@
 "vo-shiv-rat-select-2",
 "vo-shiv-rat-select-3"
 ],
-"special":"vo-shiv-rat-special"
+"special":"vo-shiv-rat-special",
+"special_when":"sneak attack"
 },
 "skullbasher-rusher":{
 "voice":"gob-brute",
@@ -125,7 +136,8 @@
 "vo-skullbasher-rusher-select-2",
 "vo-skullbasher-rusher-select-3"
 ],
-"special":"vo-skullbasher-rusher-special"
+"special":"vo-skullbasher-rusher-special",
+"special_when":"charge"
 },
 "junk-shaman":{
 "voice":"gob-sneak",
@@ -134,7 +146,8 @@
 "vo-junk-shaman-select-2",
 "vo-junk-shaman-select-3"
 ],
-"special":"vo-junk-shaman-special"
+"special":"vo-junk-shaman-special",
+"special_when":"junk boost / spell"
 },
 "blastrat-sapper":{
 "voice":"gob-maniac",
@@ -143,7 +156,8 @@
 "vo-blastrat-sapper-select-2",
 "vo-blastrat-sapper-select-3"
 ],
-"special":"vo-blastrat-sapper-special"
+"special":"vo-blastrat-sapper-special",
+"special_when":"kaboom"
 },
 "grubnak":{
 "voice":"gob-brute",
@@ -152,7 +166,8 @@
 "vo-grubnak-select-2",
 "vo-grubnak-select-3"
 ],
-"special":"vo-grubnak-special"
+"special":"vo-grubnak-special",
+"special_when":"Commander spell"
 },
 "skreeka":{
 "voice":"gob-queen",
@@ -161,7 +176,8 @@
 "vo-skreeka-select-2",
 "vo-skreeka-select-3"
 ],
-"special":"vo-skreeka-special"
+"special":"vo-skreeka-special",
+"special_when":"Commander spell"
 },
 "gnome-prospector":{
 "voice":"gno-kind",
@@ -170,7 +186,8 @@
 "vo-gnome-prospector-select-2",
 "vo-gnome-prospector-select-3"
 ],
-"special":"vo-gnome-prospector-special"
+"special":"vo-gnome-prospector-special",
+"special_when":"mines crystals"
 },
 "gnome-tinker":{
 "voice":"gno-kind",
@@ -179,7 +196,8 @@
 "vo-gnome-tinker-select-2",
 "vo-gnome-tinker-select-3"
 ],
-"special":"vo-gnome-tinker-special"
+"special":"vo-gnome-tinker-special",
+"special_when":"fix-it shield"
 },
 "spark-gnome":{
 "voice":"gno-zappy",
@@ -188,7 +206,8 @@
 "vo-spark-gnome-select-2",
 "vo-spark-gnome-select-3"
 ],
-"special":"vo-spark-gnome-special"
+"special":"vo-spark-gnome-special",
+"special_when":"ranged zap"
 },
 "clockwork-beetle":{
 "voice":"gno-clever",
@@ -197,7 +216,8 @@
 "vo-clockwork-beetle-select-2",
 "vo-clockwork-beetle-select-3"
 ],
-"special":"vo-clockwork-beetle-special"
+"special":"vo-clockwork-beetle-special",
+"special_when":"armoured block"
 },
 "gnome-illusionist":{
 "voice":"gno-zappy",
@@ -206,7 +226,8 @@
 "vo-gnome-illusionist-select-2",
 "vo-gnome-illusionist-select-3"
 ],
-"special":"vo-gnome-illusionist-special"
+"special":"vo-gnome-illusionist-special",
+"special_when":"blink"
 },
 "gyrocopter-ace":{
 "voice":"gno-chipper",
@@ -215,7 +236,8 @@
 "vo-gyrocopter-ace-select-2",
 "vo-gyrocopter-ace-select-3"
 ],
-"special":"vo-gyrocopter-ace-special"
+"special":"vo-gyrocopter-ace-special",
+"special_when":"flying attack"
 },
 "the-great-steam-golem":{
 "voice":"gno-kind",
@@ -224,7 +246,8 @@
 "vo-the-great-steam-golem-select-2",
 "vo-the-great-steam-golem-select-3"
 ],
-"special":"vo-the-great-steam-golem-special"
+"special":"vo-the-great-steam-golem-special",
+"special_when":"overload"
 },
 "overclocked-conduit":{
 "voice":"gno-chipper",
@@ -233,7 +256,8 @@
 "vo-overclocked-conduit-select-2",
 "vo-overclocked-conduit-select-3"
 ],
-"special":"vo-overclocked-conduit-special"
+"special":"vo-overclocked-conduit-special",
+"special_when":"eater conduit"
 },
 "gnome-cogger":{
 "voice":"gno-zappy",
@@ -242,7 +266,8 @@
 "vo-gnome-cogger-select-2",
 "vo-gnome-cogger-select-3"
 ],
-"special":"vo-gnome-cogger-special"
+"special":"vo-gnome-cogger-special",
+"special_when":"shockwave"
 },
 "gnome-widget":{
 "voice":"gno-chipper",
@@ -251,7 +276,8 @@
 "vo-gnome-widget-select-2",
 "vo-gnome-widget-select-3"
 ],
-"special":"vo-gnome-widget-special"
+"special":"vo-gnome-widget-special",
+"special_when":"punch"
 },
 "gnome-smith-miner":{
 "voice":"gno-chipper",
@@ -260,7 +286,8 @@
 "vo-gnome-smith-miner-select-2",
 "vo-gnome-smith-miner-select-3"
 ],
-"special":"vo-gnome-smith-miner-special"
+"special":"vo-gnome-smith-miner-special",
+"special_when":"smith upgrade"
 },
 "hexwright-apprentice":{
 "voice":"gno-zappy",
@@ -269,7 +296,8 @@
 "vo-hexwright-apprentice-select-2",
 "vo-hexwright-apprentice-select-3"
 ],
-"special":"vo-hexwright-apprentice-special"
+"special":"vo-hexwright-apprentice-special",
+"special_when":"ranged hex"
 },
 "gearward-sentinel":{
 "voice":"gno-kind",
@@ -278,7 +306,8 @@
 "vo-gearward-sentinel-select-2",
 "vo-gearward-sentinel-select-3"
 ],
-"special":"vo-gearward-sentinel-special"
+"special":"vo-gearward-sentinel-special",
+"special_when":"guard / assist"
 },
 "runic-siphoner":{
 "voice":"gno-clever",
@@ -287,7 +316,8 @@
 "vo-runic-siphoner-select-2",
 "vo-runic-siphoner-select-3"
 ],
-"special":"vo-runic-siphoner-special"
+"special":"vo-runic-siphoner-special",
+"special_when":"siphon"
 },
 "phase-stalker":{
 "voice":"gno-chipper",
@@ -296,7 +326,8 @@
 "vo-phase-stalker-select-2",
 "vo-phase-stalker-select-3"
 ],
-"special":"vo-phase-stalker-special"
+"special":"vo-phase-stalker-special",
+"special_when":"plow"
 },
 "glyphshield-warden":{
 "voice":"gno-kind",
@@ -305,7 +336,8 @@
 "vo-glyphshield-warden-select-2",
 "vo-glyphshield-warden-select-3"
 ],
-"special":"vo-glyphshield-warden-special"
+"special":"vo-glyphshield-warden-special",
+"special_when":"glyph shield / ward"
 },
 "sproingle":{
 "voice":"gno-clever",
@@ -314,7 +346,8 @@
 "vo-sproingle-select-2",
 "vo-sproingle-select-3"
 ],
-"special":"vo-sproingle-special"
+"special":"vo-sproingle-special",
+"special_when":"Commander spell"
 },
 "sprocket":{
 "voice":"gno-lady",
@@ -323,7 +356,8 @@
 "vo-sprocket-select-2",
 "vo-sprocket-select-3"
 ],
-"special":"vo-sprocket-special"
+"special":"vo-sprocket-special",
+"special_when":"Commander spell"
 },
 "dwarf-miner":{
 "voice":"dwa-sarge",
@@ -332,7 +366,8 @@
 "vo-dwarf-miner-select-2",
 "vo-dwarf-miner-select-3"
 ],
-"special":"vo-dwarf-miner-special"
+"special":"vo-dwarf-miner-special",
+"special_when":"riot shield"
 },
 "shieldbeard":{
 "voice":"dwa-vet",
@@ -341,7 +376,8 @@
 "vo-shieldbeard-select-2",
 "vo-shieldbeard-select-3"
 ],
-"special":"vo-shieldbeard-special"
+"special":"vo-shieldbeard-special",
+"special_when":"guard / corpsman heal"
 },
 "axe-thrower":{
 "voice":"dwa-recruit",
@@ -350,7 +386,8 @@
 "vo-axe-thrower-select-2",
 "vo-axe-thrower-select-3"
 ],
-"special":"vo-axe-thrower-special"
+"special":"vo-axe-thrower-special",
+"special_when":"ranged hobble"
 },
 "ironhammer-berserker":{
 "voice":"dwa-vet",
@@ -359,7 +396,8 @@
 "vo-ironhammer-berserker-select-2",
 "vo-ironhammer-berserker-select-3"
 ],
-"special":"vo-ironhammer-berserker-special"
+"special":"vo-ironhammer-berserker-special",
+"special_when":"grit"
 },
 "brewmaster":{
 "voice":"dwa-jolly",
@@ -368,7 +406,8 @@
 "vo-brewmaster-select-2",
 "vo-brewmaster-select-3"
 ],
-"special":"vo-brewmaster-special"
+"special":"vo-brewmaster-special",
+"special_when":"brew heal"
 },
 "ram-rider":{
 "voice":"dwa-recruit",
@@ -377,7 +416,8 @@
 "vo-ram-rider-select-2",
 "vo-ram-rider-select-3"
 ],
-"special":"vo-ram-rider-special"
+"special":"vo-ram-rider-special",
+"special_when":"ram charge"
 },
 "queen-brunhilda-stonebeard":{
 "voice":"dwa-queen",
@@ -386,7 +426,8 @@
 "vo-queen-brunhilda-stonebeard-select-2",
 "vo-queen-brunhilda-stonebeard-select-3"
 ],
-"special":"vo-queen-brunhilda-stonebeard-special"
+"special":"vo-queen-brunhilda-stonebeard-special",
+"special_when":"blocks a big hit"
 },
 "crystal-drunk-delver":{
 "voice":"dwa-jolly",
@@ -395,7 +436,8 @@
 "vo-crystal-drunk-delver-select-2",
 "vo-crystal-drunk-delver-select-3"
 ],
-"special":"vo-crystal-drunk-delver-special"
+"special":"vo-crystal-drunk-delver-special",
+"special_when":"delver bank"
 },
 "dwarf-pickman":{
 "voice":"dwa-vet",
@@ -412,7 +454,8 @@
 "vo-dwarf-stoneback-select-2",
 "vo-dwarf-stoneback-select-3"
 ],
-"special":"vo-dwarf-stoneback-special"
+"special":"vo-dwarf-stoneback-special",
+"special_when":"enforcer"
 },
 "dwarf-smith-miner":{
 "voice":"dwa-jolly",
@@ -421,7 +464,8 @@
 "vo-dwarf-smith-miner-select-2",
 "vo-dwarf-smith-miner-select-3"
 ],
-"special":"vo-dwarf-smith-miner-special"
+"special":"vo-dwarf-smith-miner-special",
+"special_when":"smith upgrade"
 },
 "oathbound-pikeman":{
 "voice":"dwa-recruit",
@@ -430,7 +474,8 @@
 "vo-oathbound-pikeman-select-2",
 "vo-oathbound-pikeman-select-3"
 ],
-"special":"vo-oathbound-pikeman-special"
+"special":"vo-oathbound-pikeman-special",
+"special_when":"overwatch shot"
 },
 "deepforge-crossbowman":{
 "voice":"dwa-sarge",
@@ -439,7 +484,8 @@
 "vo-deepforge-crossbowman-select-2",
 "vo-deepforge-crossbowman-select-3"
 ],
-"special":"vo-deepforge-crossbowman-special"
+"special":"vo-deepforge-crossbowman-special",
+"special_when":"ranged shot"
 },
 "barrelback-courier":{
 "voice":"dwa-jolly",
@@ -448,7 +494,8 @@
 "vo-barrelback-courier-select-2",
 "vo-barrelback-courier-select-3"
 ],
-"special":"vo-barrelback-courier-special"
+"special":"vo-barrelback-courier-special",
+"special_when":"haste"
 },
 "rune-splitter":{
 "voice":"dwa-sarge",
@@ -457,7 +504,8 @@
 "vo-rune-splitter-select-2",
 "vo-rune-splitter-select-3"
 ],
-"special":"vo-rune-splitter-special"
+"special":"vo-rune-splitter-special",
+"special_when":"charge / split"
 },
 "grimhold-ravager":{
 "voice":"dwa-vet",
@@ -466,7 +514,8 @@
 "vo-grimhold-ravager-select-2",
 "vo-grimhold-ravager-select-3"
 ],
-"special":"vo-grimhold-ravager-special"
+"special":"vo-grimhold-ravager-special",
+"special_when":"brawler double"
 },
 "borgo":{
 "voice":"dwa-sarge",
@@ -475,7 +524,8 @@
 "vo-borgo-select-2",
 "vo-borgo-select-3"
 ],
-"special":"vo-borgo-special"
+"special":"vo-borgo-special",
+"special_when":"Commander spell"
 },
 "grumblebeard":{
 "voice":"dwa-vet",
@@ -484,7 +534,8 @@
 "vo-grumblebeard-select-2",
 "vo-grumblebeard-select-3"
 ],
-"special":"vo-grumblebeard-special"
+"special":"vo-grumblebeard-special",
+"special_when":"Commander spell"
 }
 },
 "voices":{
@@ -594,5 +645,249 @@
 ]
 }
 },
-"present":[]
+"present":[
+"vo-axe-thrower-select-1",
+"vo-axe-thrower-select-2",
+"vo-axe-thrower-select-3",
+"vo-axe-thrower-special",
+"vo-barrelback-courier-select-1",
+"vo-barrelback-courier-select-2",
+"vo-barrelback-courier-select-3",
+"vo-barrelback-courier-special",
+"vo-blastrat-sapper-select-1",
+"vo-blastrat-sapper-select-2",
+"vo-blastrat-sapper-select-3",
+"vo-blastrat-sapper-special",
+"vo-borgo-select-1",
+"vo-borgo-select-2",
+"vo-borgo-select-3",
+"vo-borgo-special",
+"vo-brewmaster-select-1",
+"vo-brewmaster-select-2",
+"vo-brewmaster-select-3",
+"vo-brewmaster-special",
+"vo-clockwork-beetle-select-1",
+"vo-clockwork-beetle-select-2",
+"vo-clockwork-beetle-select-3",
+"vo-clockwork-beetle-special",
+"vo-crystal-drunk-delver-select-1",
+"vo-crystal-drunk-delver-select-2",
+"vo-crystal-drunk-delver-select-3",
+"vo-crystal-drunk-delver-special",
+"vo-deepforge-crossbowman-select-1",
+"vo-deepforge-crossbowman-select-2",
+"vo-deepforge-crossbowman-select-3",
+"vo-deepforge-crossbowman-special",
+"vo-dwa-jolly-hurt-1",
+"vo-dwa-jolly-hurt-2",
+"vo-dwa-queen-hurt-1",
+"vo-dwa-queen-hurt-2",
+"vo-dwa-recruit-hurt-1",
+"vo-dwa-recruit-hurt-2",
+"vo-dwa-sarge-hurt-1",
+"vo-dwa-sarge-hurt-2",
+"vo-dwa-vet-hurt-1",
+"vo-dwa-vet-hurt-2",
+"vo-dwarf-miner-select-1",
+"vo-dwarf-miner-select-2",
+"vo-dwarf-miner-select-3",
+"vo-dwarf-miner-special",
+"vo-dwarf-pickman-select-1",
+"vo-dwarf-pickman-select-2",
+"vo-dwarf-pickman-select-3",
+"vo-dwarf-smith-miner-select-1",
+"vo-dwarf-smith-miner-select-2",
+"vo-dwarf-smith-miner-select-3",
+"vo-dwarf-smith-miner-special",
+"vo-dwarf-stoneback-select-1",
+"vo-dwarf-stoneback-select-2",
+"vo-dwarf-stoneback-select-3",
+"vo-dwarf-stoneback-special",
+"vo-gearward-sentinel-select-1",
+"vo-gearward-sentinel-select-2",
+"vo-gearward-sentinel-select-3",
+"vo-gearward-sentinel-special",
+"vo-glyphshield-warden-select-1",
+"vo-glyphshield-warden-select-2",
+"vo-glyphshield-warden-select-3",
+"vo-glyphshield-warden-special",
+"vo-gno-chipper-hurt-1",
+"vo-gno-chipper-hurt-2",
+"vo-gno-clever-hurt-1",
+"vo-gno-clever-hurt-2",
+"vo-gno-kind-hurt-1",
+"vo-gno-kind-hurt-2",
+"vo-gno-lady-hurt-1",
+"vo-gno-lady-hurt-2",
+"vo-gno-zappy-hurt-1",
+"vo-gno-zappy-hurt-2",
+"vo-gnome-cogger-select-1",
+"vo-gnome-cogger-select-2",
+"vo-gnome-cogger-select-3",
+"vo-gnome-cogger-special",
+"vo-gnome-illusionist-select-1",
+"vo-gnome-illusionist-select-2",
+"vo-gnome-illusionist-select-3",
+"vo-gnome-illusionist-special",
+"vo-gnome-prospector-select-1",
+"vo-gnome-prospector-select-2",
+"vo-gnome-prospector-select-3",
+"vo-gnome-prospector-special",
+"vo-gnome-smith-miner-select-1",
+"vo-gnome-smith-miner-select-2",
+"vo-gnome-smith-miner-select-3",
+"vo-gnome-smith-miner-special",
+"vo-gnome-tinker-select-1",
+"vo-gnome-tinker-select-2",
+"vo-gnome-tinker-select-3",
+"vo-gnome-tinker-special",
+"vo-gnome-widget-select-1",
+"vo-gnome-widget-select-2",
+"vo-gnome-widget-select-3",
+"vo-gnome-widget-special",
+"vo-gob-brute-hurt-1",
+"vo-gob-brute-hurt-2",
+"vo-gob-maniac-hurt-1",
+"vo-gob-maniac-hurt-2",
+"vo-gob-queen-hurt-1",
+"vo-gob-queen-hurt-2",
+"vo-gob-salty-hurt-1",
+"vo-gob-salty-hurt-2",
+"vo-gob-sneak-hurt-1",
+"vo-gob-sneak-hurt-2",
+"vo-goblin-bomber-select-1",
+"vo-goblin-bomber-select-2",
+"vo-goblin-bomber-select-3",
+"vo-goblin-bomber-special",
+"vo-goblin-grunt-select-1",
+"vo-goblin-grunt-select-2",
+"vo-goblin-grunt-select-3",
+"vo-goblin-pebbler-select-1",
+"vo-goblin-pebbler-select-2",
+"vo-goblin-pebbler-select-3",
+"vo-goblin-pebbler-special",
+"vo-goblin-scrapper-select-1",
+"vo-goblin-scrapper-select-2",
+"vo-goblin-scrapper-select-3",
+"vo-goblin-scrapper-special",
+"vo-goblin-scrounger-select-1",
+"vo-goblin-scrounger-select-2",
+"vo-goblin-scrounger-select-3",
+"vo-goblin-scrounger-special",
+"vo-goblin-slinger-select-1",
+"vo-goblin-slinger-select-2",
+"vo-goblin-slinger-select-3",
+"vo-goblin-slinger-special",
+"vo-goblin-smith-miner-select-1",
+"vo-goblin-smith-miner-select-2",
+"vo-goblin-smith-miner-select-3",
+"vo-goblin-smith-miner-special",
+"vo-goblin-sneak-select-1",
+"vo-goblin-sneak-select-2",
+"vo-goblin-sneak-select-3",
+"vo-goblin-sneak-special",
+"vo-grimhold-ravager-select-1",
+"vo-grimhold-ravager-select-2",
+"vo-grimhold-ravager-select-3",
+"vo-grimhold-ravager-special",
+"vo-grubnak-select-1",
+"vo-grubnak-select-2",
+"vo-grubnak-select-3",
+"vo-grubnak-special",
+"vo-grubnaks-big-boss-troll-select-1",
+"vo-grubnaks-big-boss-troll-select-2",
+"vo-grubnaks-big-boss-troll-special",
+"vo-grumblebeard-select-1",
+"vo-grumblebeard-select-2",
+"vo-grumblebeard-select-3",
+"vo-grumblebeard-special",
+"vo-gyrocopter-ace-select-1",
+"vo-gyrocopter-ace-select-2",
+"vo-gyrocopter-ace-select-3",
+"vo-gyrocopter-ace-special",
+"vo-hexwright-apprentice-select-1",
+"vo-hexwright-apprentice-select-2",
+"vo-hexwright-apprentice-select-3",
+"vo-hexwright-apprentice-special",
+"vo-ironhammer-berserker-select-1",
+"vo-ironhammer-berserker-select-2",
+"vo-ironhammer-berserker-select-3",
+"vo-ironhammer-berserker-special",
+"vo-junk-shaman-select-1",
+"vo-junk-shaman-select-2",
+"vo-junk-shaman-select-3",
+"vo-junk-shaman-special",
+"vo-oathbound-pikeman-select-1",
+"vo-oathbound-pikeman-select-2",
+"vo-oathbound-pikeman-select-3",
+"vo-oathbound-pikeman-special",
+"vo-overclocked-conduit-select-1",
+"vo-overclocked-conduit-select-2",
+"vo-overclocked-conduit-select-3",
+"vo-overclocked-conduit-special",
+"vo-phase-stalker-select-1",
+"vo-phase-stalker-select-2",
+"vo-phase-stalker-select-3",
+"vo-phase-stalker-special",
+"vo-queen-brunhilda-stonebeard-select-1",
+"vo-queen-brunhilda-stonebeard-select-2",
+"vo-queen-brunhilda-stonebeard-select-3",
+"vo-queen-brunhilda-stonebeard-special",
+"vo-ram-rider-select-1",
+"vo-ram-rider-select-2",
+"vo-ram-rider-select-3",
+"vo-ram-rider-special",
+"vo-rotgut-grenadier-select-1",
+"vo-rotgut-grenadier-select-2",
+"vo-rotgut-grenadier-select-3",
+"vo-rotgut-grenadier-special",
+"vo-rune-splitter-select-1",
+"vo-rune-splitter-select-2",
+"vo-rune-splitter-select-3",
+"vo-rune-splitter-special",
+"vo-runic-siphoner-select-1",
+"vo-runic-siphoner-select-2",
+"vo-runic-siphoner-select-3",
+"vo-runic-siphoner-special",
+"vo-shard-guzzler-select-1",
+"vo-shard-guzzler-select-2",
+"vo-shard-guzzler-select-3",
+"vo-shard-guzzler-special",
+"vo-shieldbeard-select-1",
+"vo-shieldbeard-select-2",
+"vo-shieldbeard-select-3",
+"vo-shieldbeard-special",
+"vo-shiv-rat-select-1",
+"vo-shiv-rat-select-2",
+"vo-shiv-rat-select-3",
+"vo-shiv-rat-special",
+"vo-skreeka-select-1",
+"vo-skreeka-select-2",
+"vo-skreeka-select-3",
+"vo-skreeka-special",
+"vo-skullbasher-rusher-select-1",
+"vo-skullbasher-rusher-select-2",
+"vo-skullbasher-rusher-select-3",
+"vo-skullbasher-rusher-special",
+"vo-spark-gnome-select-1",
+"vo-spark-gnome-select-2",
+"vo-spark-gnome-select-3",
+"vo-spark-gnome-special",
+"vo-sprocket-select-1",
+"vo-sprocket-select-2",
+"vo-sprocket-select-3",
+"vo-sprocket-special",
+"vo-sproingle-select-1",
+"vo-sproingle-select-2",
+"vo-sproingle-select-3",
+"vo-sproingle-special",
+"vo-the-great-steam-golem-select-1",
+"vo-the-great-steam-golem-select-2",
+"vo-the-great-steam-golem-select-3",
+"vo-the-great-steam-golem-special",
+"vo-wolf-rider-select-1",
+"vo-wolf-rider-select-2",
+"vo-wolf-rider-select-3",
+"vo-wolf-rider-special"
+]
 }

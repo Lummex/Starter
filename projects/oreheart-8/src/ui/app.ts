@@ -3495,7 +3495,7 @@ export class App {
         const wait = Math.max(0, this.view.blowDelay?.(e.uid) || 0); // Oct 30: the pop-up lands with the blow
         if (tgt) { if (wait) setTimeout(() => this.pop(word, tgt.row, tgt.col), wait); else this.pop(word, tgt.row, tgt.col); }
       } else if (e.type === 'move' && e.knock && e.to && !events.some((x: any, j: number) => j > events.indexOf(e) && x.type === 'move' && x.knock && x.uid === e.uid)) this.pop('knockback', e.to.row, e.to.col);
-      if ((e.type === 'abilityUsed' || e.type === 'steal') && e.uid) { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) audio.unitSpecial(c.cardId, c.uid); } // Oct 31: its special line
+      { const su = !e.commander && (e.creatureUid || e.uid), c = su ? st.board.creatures.find((x: any) => x.uid === su) : null; if (c) audio.unitEvent(c.cardId, c.uid, e.type, CARDS[c.cardId]?.abilities || [], !!e.ranged); } // Oct 31: a unit's special line when it does its special (audio.ts isSpecialEvent)
       if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('stolen', c.row, c.col); this.unitSay('unit-mine-now', c.row, c.col, true); } }
       else if (e.type === 'poisoned') this.pop('poisoned', e.row, e.col);
       else if (e.type === 'drunk') { this.pop('hic', e.row, e.col); this.unitSay('unit-hic', e.row, e.col); }

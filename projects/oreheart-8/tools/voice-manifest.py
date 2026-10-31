@@ -27,6 +27,7 @@ units = {}
 for uid, u in spec['units'].items():
     e = {'voice': u['voice'], 'select': [take(p) for p in u.get('select') or []]}
     if u.get('special'): e['special'] = take(u['special'])
+    if u.get('special_when'): e['special_when'] = u['special_when']
     units[uid] = e
 voices = {}
 for vid, v in spec['voices'].items():

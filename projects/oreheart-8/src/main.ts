@@ -6,7 +6,7 @@ import { App } from './ui/app';
 import { CARDS, COMMANDERS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
 import { spellFxLog, spellFxNow, spellFxAt, setSpellFxEnabled, SPELL_FX_SPEC, fxPhone, fxLayerUrl, FX_LAYERS } from './ui/spell-fx';
-import { audio } from './ui/audio';
+import { audio, VOICE } from './ui/audio';
 import { getHighlights, getRings } from './ui/fx-settings';
 import { pictureOf, rarityKey, commanderPortrait, INTERNAL_ABILITY } from './ui/app';
 import cardFormat from '../public/art/card-format/format.json';
@@ -125,7 +125,8 @@ if (test) {
     getSelected: () => app.selectedUid,
     getAudioState: () => audio.state(),
     setVoicesOn: (on: boolean) => audio.setVoicesOn(on), // Oct 31: unit voices switch (off until Ken approves the reel)
-    voiceEvent: (ev: 'select' | 'hurt' | 'attack' | 'special', unit: string, who: string, big?: boolean) => audio.speak(ev, unit, who, !!big),
+    voiceEvent: (ev: 'select' | 'hurt' | 'special', unit: string, who: string, big?: boolean) => audio.speak(ev, unit, who, !!big),
+    setVoiceRules: (r: any) => { Object.assign(VOICE, r); return { ...VOICE }; }, // checks only: shorten the voice cooldown / gap
     playSfx: (name: string, faction?: string) => audio.play(name, faction),
     playSpellSound: (id: string) => audio.spell(id),
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
