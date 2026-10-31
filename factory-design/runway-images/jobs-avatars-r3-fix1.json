@@ -1,0 +1,19 @@
+{
+ "jobs": [
+  {
+   "id": "avatar-undead-banshee-v2",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft ghostly teal-green glow; no text, no frame. Spooky but cute and friendly, cartoonish, absolutely no gore, no blood, no exposed organs. She is genuinely beautiful and attractive in a tasteful, fully-clothed heroic fantasy way. Kid-friendly, fully clothed. Character: a beautiful friendly banshee: glowing pale-teal translucent skin, long flowing white hair floating upward, a silver circlet, a high-necked flowing gown with a lace collar up to the chin, singing softly with a calm smile",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-undead.jpg",
+     "tag": "avatar"
+    }
+   ]
+  }
+ ]
+}
