@@ -35,6 +35,30 @@ export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-
 for (const id of SPELL_SOUNDS) SFX['spell:' + id] = D('spell-' + id, 1, 0);
 const OLD_SPELL: Record<string, string> = { fireball: 'fireball', 'meteor-strike': 'meteor', 'healing-light': 'heal', 'second-wind': 'heal', 'shield-bubble': 'bubble' };
 const MAX_VOICES = 3;
+/** Ken's switch for the unit voices: off until he approves Brush's voice reel (the old grunts play meanwhile). The checks turn it on with oreheart.setVoicesOn(true). */
+export const VOICES_ON = false;
+/** Ken's voice rules (studio/voice-spec.json v2, Oct 31): 8 s per unit, one voice at a time, 1.2 s between voices, hurt 35 % (always on a big hit),
+ * priority special > big-hit hurt > select > hurt (a higher one may cut a lower one after 0.2 s), playbackRate range, volume per event. */
+export const VOICE = { unitCooldownMs: 8000, gapMs: 1200, cutAfterMs: 200, hurtChance: 0.35, rate: [0.98, 1.02], vol: { select: 0.85, special: 0.9, hurt: 0.8 }, prio: { hurt: 1, select: 2, bigHurt: 3, special: 4 } };
+export const voiceUrl = (name: string, ext = 'ogg') => `/audio/voice/${name}.${ext}`;
+type VoiceEv = 'select' | 'hurt' | 'special';
+type VoiceMan = { units: Record<string, { voice: string; select: string[]; special?: string; special_when?: string }>; voices: Record<string, { hurt: string[] }>; present: string[] };
+/** Test hook entry (getAudioState().voice.log): every voice event, played or skipped and why. */
+export type VoicePlay = { event: VoiceEv; unit: string; who: string; big: boolean; prio: number; line: string | null; file: string | null; rate: number; from: 'file' | 'fallback' | 'muted' | 'locked' | 'none'; skipped: string | null; stopped: string | null; t: number; played: boolean };
+/** Game events that are a unit's special (voice-spec units[id].special_when): any ability use, a steal, a bowl; mining for the gatherers,
+ * an upgrade for the smiths, a block for the shield units; and the attacks that ARE the ability (smack, backstab, charge, overload, ...). Plain attacks and shots never speak. */
+const SPECIAL_ATTACK = ['smack', 'charge', 'overload', 'enforcer', 'brawler', 'overwatch', 'splitter', 'flying'];
+export function isSpecialEvent(type: string, abilities: string[], ranged: boolean): boolean {
+  switch (type) {
+    case 'abilityUsed': case 'steal': case 'bowl': return true;
+    case 'mine': return abilities.includes('gather');
+    case 'minerUpgrade': return abilities.includes('smith');
+    case 'shieldBlock': return abilities.some((a) => a === 'riotShield' || a === 'armored' || a === 'unbreakable' || a === 'glyphShield');
+    case 'ward': return abilities.includes('ward');
+    case 'attack': return abilities.some((a) => SPECIAL_ATTACK.includes(a)) || (abilities.includes('sneaky') && !ranged);
+    default: return false;
+  }
+}
 /** Test hook entry: which key/file played, from the file or the synth fallback, its playbackRate and volume. */
 export type SfxPlay = { key: string; file: string | null; from: 'file' | 'synth' | 'muted' | 'locked'; rate: number; vol: number; voices: number; t: number; played: boolean; punch?: { key: string; file: string | null; from: string; rate: number } | null };
 
@@ -67,7 +91,7 @@ class AudioEngine {
         void this.ctx.resume();
       } catch { this.ctx = null; }
       this.musicTick();
-      setTimeout(() => this.loadSfx(), 300); // lazy: the sound files load after the first gesture, never slowing the menu
+      setTimeout(() => { this.loadSfx(); this.loadVoices(); }, 300); // lazy: the sound files load after the first gesture, never slowing the menu
       for (const e of ['pointerdown', 'keydown', 'click', 'touchstart']) window.removeEventListener(e, unlock, true);
     };
     for (const e of ['pointerdown', 'keydown', 'click', 'touchstart']) window.addEventListener(e, unlock, true);
@@ -119,7 +143,7 @@ class AudioEngine {
   }
 
   sfxLog: { name: string; src: string; screen: string; t: number; played: boolean }[] = [];
-  state() { return { sfxLog: this.sfxLog.slice(), sfx: this.sfxState(), unlocked: this.unlocked, muted: this.muted, sfxVolume: this.sfx, musicVolume: this.music, voiceVolume: this.voice, music: this.musicState(), log: this.musicLog.slice() }; }
+  state() { return { sfxLog: this.sfxLog.slice(), sfx: this.sfxState(), unlocked: this.unlocked, muted: this.muted, sfxVolume: this.sfx, musicVolume: this.music, voiceVolume: this.voice, music: this.musicState(), log: this.musicLog.slice(), voice: this.voiceState() }; }
   applyVolumes() {
     if (!this.sfxGain || !this.voiceGain) return;
     this.sfxGain.gain.value = this.muted ? 0 : (this.sfx / 100) * 0.7;
@@ -187,14 +211,14 @@ class AudioEngine {
     if (PUNCH_FOR[name] && e.played) e.punch = this.punch(PUNCH_FOR[name]);
   }
   private heavyAt = -1e9;
-  /** The punch layer under a hit. A Commander hit gets only the heavy punch: its board bonk and its stronghold sound land within a few ms of each other. */
+  /** The punch layer under a hit. A Commander hit gets only the heavy punch: its board bonk and its stronghold sound land close together (up to a few frames apart on a slow phone). */
   private punch(key: string) {
     const now = performance.now();
-    if (key === 'punch' && now - this.heavyAt < 250) return null;
+    if (key === 'punch' && now - this.heavyAt < 600) return null;
     if (key === 'punch-heavy') {
       this.heavyAt = now;
       const c = this.ctx, vs = this.voices.punch || [];
-      if (c) for (const v of vs.slice()) if (c.currentTime - v.t < 0.25) { try { v.src.stop(); } catch { /* ended */ } }
+      if (c) for (const v of vs.slice()) if (c.currentTime - v.t < 0.6) { try { v.src.stop(); } catch { /* ended */ } }
     }
     const p = this.playKey(key, () => { /* no synth punch: the hit's own sound carries it until the file loads */ }, true);
     return { key, file: p.file, from: p.from === 'synth' ? 'none' : p.from, rate: p.rate }; // logged on the hit's own entry (sfxState().plays[i].punch)
@@ -291,8 +315,132 @@ class AudioEngine {
     }
   }
 
-  /** Gibberish grunts and cackles. */
+  // ------------------------------------------------------------ unit voices (Oct 31, Brush's voice-spec v2)
+  // Ken: "Just when you click them. Or when they get hit. Or when they do something special. Not overdone. Tasteful. Pleasing. Not repetitive
+  // and annoying. No idle talk." Lines: studio/voice-spec.json -> public/audio/voice/ (tools/voice-manifest.py); they load per unit once it is on the board.
+  voicesOn = VOICES_ON;
+  private vMan: VoiceMan | null = null;
+  private vManState: 'none' | 'loading' | 'ok' | 'error' = 'none';
+  private vBufs = new Map<string, AudioBuffer>();
+  private vFiles: Record<string, 'loading' | 'ok' | 'error'> = {};
+  private vWant = new Set<string>();
+  /** The voice playing (or the last one: its end time drives the 1.2 s gap). Times in performance.now() ms. */
+  private vCur: { src: AudioBufferSourceNode | null; who: string; line: string | null; event: VoiceEv; prio: number; start: number; end: number } | null = null;
+  private vSpokeAt: Record<string, number> = {};
+  private vBags: Record<string, { bag: string[]; last: string | null }> = {};
+  voiceLog: VoicePlay[] = [];
+  /** Test hook / Ken's switch: voices on or off (off = the old grunts, exactly as before). */
+  setVoicesOn(on: boolean) { this.voicesOn = on; if (on) this.loadVoices(); }
+  private loadVoices() {
+    if (!this.voicesOn || !this.ctx || this.vManState !== 'none') return;
+    this.vManState = 'loading';
+    fetch(voiceUrl('manifest', 'json')).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+      .then((m: VoiceMan) => { this.vMan = m; this.vManState = 'ok'; for (const u of this.vWant) this.loadUnit(u); })
+      .catch(() => { this.vManState = 'error'; });
+  }
+  /** A unit (card id or Commander id) is on the board: fetch its lines in the background. */
+  voicePreload(unit: string) {
+    if (!unit || this.vWant.has(unit)) return;
+    this.vWant.add(unit);
+    if (this.vManState === 'ok') this.loadUnit(unit); else this.loadVoices();
+  }
+  private unitLines(unit: string) {
+    const u = this.vMan?.units[unit], v = u ? this.vMan!.voices[u.voice] : undefined;
+    return { select: u?.select || [], hurt: v?.hurt || [], special: u?.special ? [u.special] : [] };
+  }
+  private loadUnit(unit: string) {
+    const c = this.ctx, m = this.vMan;
+    if (!c || !m) return;
+    const L = this.unitLines(unit), have = new Set(m.present || []);
+    for (const n of [...L.select, ...L.hurt, ...L.special]) {
+      if (this.vFiles[n] || !have.has(n)) continue;
+      this.vFiles[n] = 'loading';
+      fetch(voiceUrl(n)).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.arrayBuffer(); })
+        .then((ab) => new Promise<AudioBuffer>((res, rej) => c.decodeAudioData(ab, res, rej)))
+        .then((b) => { this.vBufs.set(n, b); this.vFiles[n] = 'ok'; })
+        .catch(() => { this.vFiles[n] = 'error'; });
+    }
+  }
+  /** Shuffle-bag per unit and pool: every line once before any repeats; the last line of a cycle is never the first of the next. */
+  private fromBag(key: string, pool: string[]): string {
+    const b = (this.vBags[key] ||= { bag: [], last: null });
+    if (!b.bag.length) {
+      b.bag = pool.slice();
+      for (let i = b.bag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b.bag[i], b.bag[j]] = [b.bag[j], b.bag[i]]; }
+      if (b.bag.length > 1 && b.bag[b.bag.length - 1] === b.last) [b.bag[0], b.bag[b.bag.length - 1]] = [b.bag[b.bag.length - 1], b.bag[0]]; // pop() takes from the end
+    }
+    b.last = b.bag.pop()!;
+    return b.last;
+  }
+  private vBusy(now = performance.now()) { return !!(this.vCur && now < this.vCur.end); }
+  /** One voice event. Returns false when voices are off (the caller then does what it did before). */
+  speak(event: VoiceEv, unit: string, who: string, big = false): boolean {
+    if (!this.voicesOn) return false;
+    const now = performance.now();
+    const prio = event === 'special' ? VOICE.prio.special : event === 'select' ? VOICE.prio.select : big ? VOICE.prio.bigHurt : VOICE.prio.hurt;
+    const e: VoicePlay = { event, unit, who, big, prio, line: null, file: null, rate: 1, from: 'none', skipped: null, stopped: null, t: Math.round(now), played: false };
+    const log = () => { this.voiceLog.push(e); if (this.voiceLog.length > 200) this.voiceLog.shift(); return true; };
+    if (!this.ok() || !this.voiceGain) { e.from = this.muted ? 'muted' : 'locked'; return log(); }
+    this.voicePreload(unit);
+    const skip = (why: string) => { e.skipped = why; return log(); };
+    if (now - (this.vSpokeAt[who] ?? -1e9) < VOICE.unitCooldownMs) return skip('cooldown'); // 8 s per unit (re-clicks too)
+    if (event === 'hurt' && !big && Math.random() >= VOICE.hurtChance) return skip('chance');
+    const cur = this.vCur, busy = this.vBusy(now), inGap = !busy && !!cur && now < cur.end + VOICE.gapMs;
+    if (busy || inGap) { // one voice at a time, 1.2 s apart; a higher priority may cut a lower one once it has played 0.2 s
+      if (!(prio > cur!.prio && (!busy || now - cur!.start >= VOICE.cutAfterMs))) return skip(busy ? 'busy' : 'gap');
+    }
+    const pool = event === 'select' ? this.unitLines(unit).select : event === 'hurt' ? this.unitLines(unit).hurt : this.unitLines(unit).special;
+    if (this.vMan && !pool.length) return skip('no-line');
+    const line = pool.length ? this.fromBag(who + '|' + event, pool) : null;
+    if (busy && cur) { e.stopped = cur.line || 'grunt'; try { cur.src?.stop(); } catch { /* ended */ } }
+    const c = this.ctx!, buf = line ? this.vBufs.get(line) : undefined;
+    e.line = line; e.file = line ? voiceUrl(line) : null;
+    if (buf) {
+      const rate = VOICE.rate[0] + Math.random() * (VOICE.rate[1] - VOICE.rate[0]);
+      const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
+      const g = c.createGain(); g.gain.value = VOICE.vol[event];
+      src.connect(g).connect(this.voiceGain); // the Voices slider and mute apply
+      const v = { src, who, line, event, prio, start: now, end: now + (buf.duration / rate) * 1000 };
+      src.onended = () => { if (this.vCur === v) v.end = Math.min(v.end, performance.now()); try { g.disconnect(); } catch { /* gone */ } };
+      src.start(); this.vCur = v;
+      Object.assign(e, { rate, from: 'file' });
+    } else { // not loaded yet (or no file): the old grunt stands in
+      this.grunt(event === 'hurt' ? 'sulk' : event === 'select' ? 'grunt' : 'yell');
+      this.vCur = { src: null, who, line, event, prio, start: now, end: now + 350 };
+      e.from = 'fallback';
+    }
+    e.played = true;
+    this.vSpokeAt[who] = now;
+    return log();
+  }
+  /** The player clicks one of their own units (or their Commander). */
+  unitSelect(unit: string, who: string) { this.speak('select', unit, who); }
+  /** A unit was damaged and survives (never on death); delayMs = when the blow lands. big = half its max Health or more. */
+  unitHurt(unit: string, who: string, big: boolean, delayMs = 0) { if (this.voicesOn) { if (delayMs > 0) setTimeout(() => this.speak('hurt', unit, who, big), delayMs); else this.speak('hurt', unit, who, big); } }
+  /** An attack starts (the swing). No attack shouts (voice-spec v2); voices off: the old yell. */
+  unitAttack(_unit: string, _who: string, grunt: boolean) { if (!this.voicesOn && grunt) this.grunt('yell'); }
+  /** A game event by a unit: its special line when the event is its special (isSpecialEvent). */
+  unitEvent(unit: string, who: string, type: string, abilities: string[], ranged = false) { if (this.voicesOn && isSpecialEvent(type, abilities, ranged)) this.speak('special', unit, who); }
+  /** A poke (any tap on a unit): the old grunt only while voices are off; with voices on the click plays a select line instead. */
+  pokeGrunt(kind: 'grunt' | 'cackle' | 'stomp') { if (!this.voicesOn) this.grunt(kind); }
+  /** A Commander's emote. Voices on: a flinch is a hurt line, a cast its special line ("Commander spell"); Grubnak keeps his grunts for the rest. */
+  commanderEmote(id: string, side: string, kind: string, big = false) {
+    if (this.voicesOn && kind === 'flinch') this.speak('hurt', id, 'cmd:' + side, big);
+    else if (this.voicesOn && kind === 'cast') this.speak('special', id, 'cmd:' + side);
+    else if (id === 'grubnak') this.voiceLine(kind === 'cheer' ? 'laugh' : kind === 'groan' ? 'sulk' : kind === 'flinch' ? 'yell' : 'grunt');
+  }
+  voiceState() {
+    const now = performance.now(), cur = this.vCur;
+    return { on: this.voicesOn, manifest: this.vManState, units: [...this.vWant], files: { ...this.vFiles }, loaded: this.vBufs.size, gain: this.voiceGain ? this.voiceGain.gain.value : null,
+      playing: cur && now < cur.end ? { who: cur.who, line: cur.line, event: cur.event, prio: cur.prio } : null, log: this.voiceLog.slice(), rules: VOICE };
+  }
+
+  /** Gibberish grunts and cackles (with voices on they wait their turn: one voice at a time). */
   voiceLine(kind: 'grunt' | 'cackle' | 'stomp' | 'laugh' | 'sulk' | 'yell') {
+    if (this.voicesOn && this.vBusy()) return;
+    this.grunt(kind);
+  }
+  private grunt(kind: 'grunt' | 'cackle' | 'stomp' | 'laugh' | 'sulk' | 'yell') {
     if (!this.ok() || !this.voiceGain) return;
     const n = kind === 'cackle' || kind === 'laugh' ? 6 : kind === 'yell' ? 3 : 2;
     const base = kind === 'laugh' ? 140 : kind === 'sulk' ? 110 : 190;

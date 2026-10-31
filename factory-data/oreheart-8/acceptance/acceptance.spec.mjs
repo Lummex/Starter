@@ -12521,3 +12521,250 @@ test('AC502: the computer waits until its projectile has landed before its next 
     for (const p of after) expect(p.at, `${p.type} waited for the ${shot.unit}'s ${shot.file} to land`).toBeGreaterThanOrEqual(shot.landedAt);
   }
 });
+
+// ---------- Oct 31: unit voices and punches (Ken: units speak when clicked, "hey, watch it", per-faction voices; realistic punches, grunts and ouch) ----------
+// Brush's studio/voice-spec.json v2 -> /audio/voice/ (manifest.json lists every line; `present` = the files shipped). Ken: "Just when you click them.
+// Or when they get hit. Or when they do something special. Not overdone ... No idle talk." Rules: 8 s per unit (a re-click inside 8 s plays nothing),
+// one voice at a time, 1.2 s between voices, hurt 35 % (always on a big hit = half its max Health or more, never on death), shuffle-bag per unit and
+// pool, priority special > big-hit hurt > select > hurt (a higher one may cut a lower one after 0.2 s), no attack shouts. The voices sit behind one
+// switch (VOICES_ON in audio.ts, off until Ken approves the reel); these checks turn it on. A line whose file is missing plays the old grunt ('fallback').
+const voiceState = async (page) => (await page.evaluate(async () => await window.oreheart.getAudioState())).voice;
+const voiceLogFor = async (page, who, from = 0) => (await voiceState(page)).log.filter((e) => e.who === who && e.t >= from);
+const vNow = (page) => page.evaluate(() => Math.round(performance.now()));
+const voiceQuiet = (page) => expect.poll(async () => (await voiceState(page)).playing, { message: 'no voice playing', timeout: 8000 }).toBe(null);
+async function voicesReady(page, request) {
+  await page.evaluate(() => window.oreheart.setVoicesOn(true));
+  await page.mouse.click(5, 5); // first gesture unlocks audio; the manifest and the lines load after it
+  await expect.poll(async () => (await voiceState(page)).manifest, { message: 'voice manifest loaded', timeout: 15000 }).toBe('ok');
+  const r = await request.get('/audio/voice/manifest.json');
+  expect(r.status()).toBe(200);
+  return await r.json();
+}
+const linesOf = (man, unit) => { const u = man.units[unit], v = man.voices[u.voice]; return { select: u.select, hurt: v.hurt, special: u.special ? [u.special] : [] }; };
+const expectVoiced = (man, e, pool, what) => {
+  expect(e, what).toBeTruthy();
+  expect(e.played, `${what} played (${e.skipped})`).toBe(true);
+  expect(pool, `${what}: one of the unit's lines`).toContain(e.line);
+  if (man.present.includes(e.line)) {
+    expect(e.from, `${what}: ${e.line} plays from its file`).toBe('file');
+    expect(e.file).toBe(`/audio/voice/${e.line}.ogg`);
+    expect(e.rate).toBeGreaterThanOrEqual(0.98 - 1e-6); expect(e.rate).toBeLessThanOrEqual(1.02 + 1e-6);
+  } else expect(e.from, `${what}: ${e.line} is not shipped yet, so the grunt stands in`).toBe('fallback');
+};
+const unitLoaded = async (page, unit, man) => { const want = [...linesOf(man, unit).select, ...linesOf(man, unit).hurt, ...linesOf(man, unit).special].filter((n) => man.present.includes(n)); await expect.poll(async () => { const f = (await voiceState(page)).files; return want.every((n) => f[n] === 'ok'); }, { message: `${unit}'s lines decoded`, timeout: 15000 }).toBe(true); };
+
+for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 1080 } } }, { name: 'phone 844x390', use: { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true } }]) {
+  test.describe(`unit voices ${dev.name}`, () => {
+    test.use(dev.use);
+    test(`AC510: clicking your own unit plays one of its select lines through the Voice bus; 8 s per unit, one voice at a time, shuffle-bag, priority cuts, the Voices slider at 0 silences it, a Commander click speaks (${dev.name})`, async ({ page, request }) => {
+      test.setTimeout(150000);
+      const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+      await start(page, quiet({ playerHand: [], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 9 }, { cardId: 'goblin-sneak', owner: 'player', row: 6, col: 5 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 9 }] }));
+      await done(page);
+      const man = await voicesReady(page, request);
+      // every unit has a voice, 2-3 select lines and (most) a special line; every voice 2 hurt lines; no attack shouts any more
+      expect(Object.keys(man.units).length).toBeGreaterThanOrEqual(54);
+      for (const [id, u] of Object.entries(man.units)) { expect(u.select.length, `${id} select lines`).toBeGreaterThanOrEqual(2); expect(man.voices[u.voice], `${id} voice`).toBeTruthy(); }
+      for (const [id, v] of Object.entries(man.voices)) { expect(v.hurt.length, `${id} hurt lines`).toBe(2); expect(v.attack, `${id}: no attack shouts`).toBeFalsy(); }
+      for (const f of man.present.slice(0, 5)) { const r = await request.get(`/audio/voice/${f}.ogg`); expect(r.status(), f).toBe(200); expect((await r.body()).subarray(0, 4).toString('latin1')).toBe('OggS'); }
+      let s = await getState(page);
+      const A = at(s, 6, 9), B = at(s, 6, 5), E = at(s, 2, 9);
+      // lazy: the units on the board are queued and only their lines load
+      await expect.poll(async () => (await voiceState(page)).units).toEqual(expect.arrayContaining(['goblin-scrapper', 'goblin-sneak', 'dwarf-pickman', 'grubnak']));
+      await unitLoaded(page, 'goblin-scrapper', man); await unitLoaded(page, 'goblin-sneak', man); await unitLoaded(page, 'grubnak', man);
+      expect(Object.keys((await voiceState(page)).files).length, 'only the lines of units on the board load').toBeLessThan(Math.max(30, man.present.length / 4));
+      const fig = async (u) => (await renderStats(page)).figures.find((f) => f.uid === u.uid);
+      await expect.poll(async () => ((await fig(A))?.screenBox?.height || 0), { timeout: 15000 }).toBeGreaterThan(20);
+      await expect.poll(async () => ((await fig(B))?.screenBox?.height || 0), { timeout: 15000 }).toBeGreaterThan(20);
+      const body = async (u) => { const sb = (await fig(u)).screenBox; return { x: sb.x + sb.width / 2, y: sb.y + sb.height * 0.4 }; };
+      const tap = (p) => (dev.use.hasTouch ? page.touchscreen.tap(p.x, p.y) : page.mouse.click(p.x, p.y));
+      // 1) a click plays one of its select lines (from its file, through the voice bus)
+      const t0 = await vNow(page);
+      await tap(await body(A));
+      await expect.poll(async () => (await voiceLogFor(page, A.uid, t0)).length, { message: 'the click spoke' }).toBeGreaterThan(0);
+      const e1 = (await voiceLogFor(page, A.uid, t0))[0];
+      expect(e1).toMatchObject({ event: 'select', unit: 'goblin-scrapper' });
+      expectVoiced(man, e1, linesOf(man, 'goblin-scrapper').select, 'click');
+      // 2) another unit clicked while the line plays (or within 1.2 s of it) waits: one voice at a time, no cut-offs between clicks
+      const t2 = await vNow(page);
+      await tap(await sqCenter(page, 6, 5));
+      await expect.poll(async () => (await voiceLogFor(page, B.uid, t2)).length).toBeGreaterThan(0);
+      const e3 = (await voiceLogFor(page, B.uid, t2))[0];
+      expect(e3.played, 'a second click right after the first stays quiet').toBe(false);
+      expect(['busy', 'gap']).toContain(e3.skipped);
+      // 3) clicking the first unit again inside 8 s plays nothing
+      await page.waitForTimeout(600);
+      const t1 = await vNow(page);
+      await tap(await sqCenter(page, 6, 9)); // its square (a tap on the body of a selected unit can be a move order)
+      await expect.poll(async () => (await voiceLogFor(page, A.uid, t1)).length).toBeGreaterThan(0);
+      expect((await voiceLogFor(page, A.uid, t1))[0]).toMatchObject({ played: false, skipped: 'cooldown' });
+      // 4) an enemy click says nothing (own units only)
+      await page.waitForTimeout(2000);
+      const tE = await vNow(page);
+      await tap(await body(E)); /* the first tap only drops the selection */
+      await page.waitForTimeout(600);
+      await tap(await body(E));
+      await page.waitForTimeout(400);
+      expect((await voiceLogFor(page, E.uid, tE)).length, 'no line for an enemy').toBe(0);
+      await page.keyboard.press('Escape');
+      // 5) shuffle-bag: every line once before any repeats, never the same line twice in a row (cooldown and gap shortened for the check only)
+      await page.evaluate(() => window.oreheart.setVoiceRules({ unitCooldownMs: 0, gapMs: 0 }));
+      for (let i = 0; i < 7; i++) { await voiceQuiet(page); await page.evaluate((a) => window.oreheart.voiceEvent('select', 'goblin-scrapper', a), A.uid); }
+      const draws = (await voiceLogFor(page, A.uid)).filter((e) => e.event === 'select' && e.played).map((e) => e.line);
+      const P = linesOf(man, 'goblin-scrapper').select;
+      expect(draws.length).toBe(8);
+      for (let i = 1; i < draws.length; i++) expect(draws[i], `line ${i + 1} is not line ${i} again`).not.toBe(draws[i - 1]);
+      for (let k = 0; k + P.length <= draws.length; k += P.length) expect([...draws.slice(k, k + P.length)].sort(), `cycle ${k / P.length + 1} plays every line once`).toEqual([...P].sort());
+      // 6) priority: a special cuts a select only after 0.2 s; a hurt (even a big hit) never cuts a special
+      await voiceQuiet(page);
+      const pr = await page.evaluate(async ([a, b]) => {
+        const ev = window.oreheart.voiceEvent;
+        ev('select', 'goblin-scrapper', a); ev('special', 'goblin-sneak', b); // at once: too early to cut
+        await new Promise((r) => setTimeout(r, 300));
+        ev('special', 'goblin-sneak', b); // after 0.2 s: the special cuts the select
+        ev('hurt', 'dwarf-pickman', 'x-big', true); ev('select', 'goblin-scrapper', 'x-sel');
+        return (await window.oreheart.getAudioState()).voice;
+      }, [A.uid, B.uid]);
+      const sp = pr.log.filter((e) => e.who === B.uid && e.event === 'special');
+      const sel = pr.log.filter((e) => e.who === A.uid && e.event === 'select').pop();
+      expect(sp.slice(-2).map((e) => e.skipped)).toEqual(['busy', null]);
+      expect(sp[sp.length - 1].stopped, 'the special stopped the select').toBe(sel.line);
+      expectVoiced(man, sp[sp.length - 1], linesOf(man, 'goblin-sneak').special, 'special');
+      expect(pr.log.filter((e) => e.who === 'x-big').pop()).toMatchObject({ played: false, skipped: 'busy' });
+      expect(pr.log.filter((e) => e.who === 'x-sel').pop()).toMatchObject({ played: false, skipped: 'busy' });
+      expect(pr.playing && pr.playing.who).toBe(B.uid);
+      // the 1.2 s gap: a select right after a line ends waits; a big-hit hurt (higher) may go
+      await page.evaluate(() => window.oreheart.setVoiceRules({ unitCooldownMs: 8000, gapMs: 1200 }));
+      await voiceQuiet(page); await page.waitForTimeout(1300);
+      await page.evaluate(() => window.oreheart.voiceEvent('select', 'goblin-scrapper', 'g-a'));
+      await voiceQuiet(page);
+      const gp = await page.evaluate(() => { const ev = window.oreheart.voiceEvent; ev('select', 'goblin-scrapper', 'g-sel'); ev('hurt', 'dwarf-pickman', 'g-big', true); return true; });
+      expect(gp).toBe(true);
+      let v = await voiceState(page);
+      expect(v.log.filter((e) => e.who === 'g-a').pop()).toMatchObject({ played: true });
+      expect(v.log.filter((e) => e.who === 'g-sel').pop()).toMatchObject({ played: false, skipped: 'gap' });
+      expect(v.log.filter((e) => e.who === 'g-big').pop()).toMatchObject({ played: true, big: true });
+      // 7) a click on your Commander (his stronghold square) plays a Commander line
+      await voiceQuiet(page); await page.waitForTimeout(1300);
+      const tc = await vNow(page);
+      await tap(await sqCenter(page, 7, 2));
+      await expect.poll(async () => (await voiceLogFor(page, 'cmd:player', tc)).length, { message: 'Commander spoke' }).toBeGreaterThan(0);
+      const ec = (await voiceLogFor(page, 'cmd:player', tc))[0];
+      expect(ec.unit).toBe('grubnak');
+      expectVoiced(man, ec, linesOf(man, 'grubnak').select, 'Commander click');
+      // 8) the switch off = the old behaviour: no voice lines at all
+      await page.evaluate(() => window.oreheart.setVoicesOn(false));
+      const n0 = (await voiceState(page)).log.length;
+      await tap(await body(B));
+      await page.waitForTimeout(400);
+      expect((await voiceState(page)).log.length, 'voices off: nothing logged').toBe(n0);
+      // 9) the Voices slider (Settings) at 0 silences them: the voice bus is 0 and a click's line plays through it, inaudibly
+      await openMenu(page);
+      await page.getByRole('button', { name: 'Settings', exact: true }).click();
+      await page.getByLabel('Voices', { exact: true }).fill('0');
+      await start(page, quiet({ playerHand: [], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 9 }] }));
+      await done(page);
+      await voicesReady(page, request);
+      await expect.poll(async () => (await voiceState(page)).gain).toBe(0);
+      const u = at(await getState(page), 6, 9);
+      await expect.poll(async () => (((await renderStats(page)).figures.find((f) => f.uid === u.uid) || {}).screenBox || {}).height || 0, { timeout: 15000 }).toBeGreaterThan(20);
+      const t9 = await vNow(page);
+      await tap(await body(u));
+      await expect.poll(async () => (await voiceLogFor(page, u.uid, t9)).length).toBeGreaterThan(0);
+      expect((await voiceLogFor(page, u.uid, t9))[0]).toMatchObject({ event: 'select', played: true });
+      expect((await voiceState(page)).gain, 'the Voices slider at 0').toBe(0);
+      expect(errors).toEqual([]);
+    });
+
+    test(`AC511: hurt lines 35 % of hits (always on a big hit, never on death); no attack shouts; a special ability speaks; hits layer punches: plain = punch-1..3, armoured = punch-armour, Commander = punch-heavy (${dev.name})`, async ({ page, request }) => {
+      test.setTimeout(120000);
+      const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+      await start(page, quiet({ playerHand: [], board: [
+        { cardId: 'goblin-grunt', owner: 'player', row: 4, col: 9 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 3, col: 9 },
+        { cardId: 'wolf-rider', owner: 'player', row: 4, col: 11 }, { cardId: 'clockwork-beetle', owner: 'opponent', row: 3, col: 11 },
+        { cardId: 'goblin-grunt', owner: 'player', row: 2, col: 12 },
+        { cardId: 'goblin-sneak', owner: 'player', row: 6, col: 7 }, { cardId: 'goblin-scrounger', owner: 'opponent', row: 5, col: 7 },
+      ] }));
+      await done(page);
+      const man = await voicesReady(page, request);
+      await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 51 sound files decoded (with the 12 projectile sounds)', timeout: 20000 }).toBe(51);
+      await expect.poll(async () => (await sfxState(page)).punchLoaded, { message: 'all 6 punch files decoded', timeout: 20000 }).toBe(6);
+      await unitLoaded(page, 'goblin-sneak', man); await unitLoaded(page, 'dwarf-pickman', man);
+      // --- the hurt rule, through the voice hook: 35 % of small hits get a line, every big hit does
+      await page.evaluate(() => { const ev = window.oreheart.voiceEvent; for (let i = 0; i < 180; i++) ev('hurt', 'goblin-grunt', 'h' + i, false); for (let i = 0; i < 20; i++) ev('hurt', 'goblin-grunt', 'b' + i, true); });
+      let v = await voiceState(page);
+      const small = v.log.filter((e) => /^h\d+$/.test(e.who)), big = v.log.filter((e) => /^b\d+$/.test(e.who));
+      expect(small.length).toBe(180);
+      const passed = small.filter((e) => e.skipped !== 'chance').length / small.length;
+      expect(passed, 'a small hit speaks only sometimes (~35 %)').toBeGreaterThan(0.2);
+      expect(passed).toBeLessThan(0.5);
+      expect(big.every((e) => e.skipped !== 'chance'), 'a big hit always gets its line (unless another voice is playing)').toBe(true);
+      expect(v.log.every((e) => e.played ? e.skipped === null : !!e.skipped), 'every event is played or skipped with a reason').toBe(true);
+      expect(v.log.filter((e) => e.played).length, 'one voice at a time: the rest of the burst waited').toBeLessThanOrEqual(2);
+      // the same unit hit again inside 8 s says nothing
+      await voiceQuiet(page); await page.waitForTimeout(1300);
+      await page.evaluate(async () => { const ev = window.oreheart.voiceEvent; ev('hurt', 'goblin-grunt', 'same', true); await new Promise((r) => setTimeout(r, 2600)); ev('hurt', 'goblin-grunt', 'same', true); });
+      const same = (await voiceState(page)).log.filter((e) => e.who === 'same');
+      expectVoiced(man, same[0], linesOf(man, 'goblin-grunt').hurt, 'hurt line');
+      expect(same[1]).toMatchObject({ played: false, skipped: 'cooldown' });
+      // --- the real game
+      await voiceQuiet(page); await page.waitForTimeout(1300);
+      let s = await getState(page);
+      const grunt = at(s, 4, 9), pick = at(s, 3, 9), wolf = at(s, 4, 11), g2 = at(s, 2, 12), gren = at(s, 6, 7), peb = at(s, 5, 7);
+      const L = await legal(page);
+      const a0 = L.find((a) => a.type === 'attack' && a.creatureUid === gren.uid && sameTarget(a.target, 5, 7));
+      const a1 = L.find((a) => a.type === 'attack' && a.creatureUid === grunt.uid && sameTarget(a.target, 3, 9));
+      const a2 = L.find((a) => a.type === 'attack' && a.creatureUid === wolf.uid && sameTarget(a.target, 3, 11));
+      const a3 = L.find((a) => a.type === 'attack' && a.creatureUid === g2.uid && a.target.commander === 'opponent');
+      expect(a0 && a1 && a2 && a3, 'the four attacks are legal').toBeTruthy();
+      const hits = async (from) => (await sfxState(page)).plays.filter((p) => p.t >= from && ['bonk', 'clink', 'stronghold'].includes(p.key));
+      // 0) the Sneak's backstab (a sneaky melee attack) IS its special: it says its special line; the Scrounger it defeats says nothing (never on death)
+      let t0 = await vNow(page);
+      expect((await act(page, a0)).ok).toBe(true);
+      await expect.poll(async () => (await voiceLogFor(page, gren.uid, t0)).some((e) => e.event === 'special'), { message: 'the backstab spoke', timeout: 5000 }).toBe(true);
+      expectVoiced(man, (await voiceLogFor(page, gren.uid, t0)).find((e) => e.event === 'special'), linesOf(man, 'goblin-sneak').special, 'backstab special');
+      expect((await getState(page)).board.creatures.some((c) => c.uid === peb.uid), 'the scrounger is defeated').toBe(false);
+      await page.waitForTimeout(1500);
+      expect((await voiceLogFor(page, peb.uid, t0)).length, 'no line on death').toBe(0);
+      // 1) plain hit: the bonk carries a punch-1..3 layer; the surviving defender gets its 35 % hurt chance; a plain attack never shouts
+      await voiceQuiet(page); await page.waitForTimeout(1300);
+      t0 = await vNow(page);
+      expect((await act(page, a1)).ok).toBe(true);
+      await expect.poll(async () => (await hits(t0)).some((p) => p.key === 'bonk'), { timeout: 8000 }).toBe(true);
+      let h = (await hits(t0)).find((p) => p.key === 'bonk');
+      expect(h.punch, 'plain hit has a punch layer').toBeTruthy();
+      expect(h.punch.key).toBe('punch');
+      expect(['/audio/sfx/punch-1.ogg', '/audio/sfx/punch-2.ogg', '/audio/sfx/punch-3.ogg']).toContain(h.punch.file);
+      expect(h.punch.from).toBe('file');
+      expect(at(await getState(page), 3, 9), 'the pickman survives').toBeTruthy();
+      await expect.poll(async () => (await voiceLogFor(page, pick.uid, t0)).some((e) => e.event === 'hurt'), { message: 'the surviving defender had its hurt chance', timeout: 5000 }).toBe(true);
+      const hv = (await voiceLogFor(page, pick.uid, t0)).find((e) => e.event === 'hurt');
+      expect(hv.big, '2 damage on 6 Health is not a big hit').toBe(false);
+      if (hv.played) expectVoiced(man, hv, linesOf(man, 'dwarf-pickman').hurt, 'defender hurt'); else expect(['chance', 'busy', 'gap'], 'skipped by the 35 % rule or another voice (the strike-back)').toContain(hv.skipped);
+      expect((await voiceLogFor(page, grunt.uid, t0)).filter((e) => e.event !== 'hurt').length, 'no attack shout (only the strike-back may make it say ouch)').toBe(0);
+      // 2) armoured hit: the clink carries punch-armour-1/2
+      await page.waitForTimeout(1500);
+      t0 = await vNow(page);
+      expect((await act(page, a2)).ok).toBe(true);
+      await expect.poll(async () => (await hits(t0)).some((p) => p.key === 'clink'), { timeout: 8000 }).toBe(true);
+      h = (await hits(t0)).find((p) => p.key === 'clink');
+      expect(h.punch && h.punch.key).toBe('punch-armour');
+      expect(['/audio/sfx/punch-armour-1.ogg', '/audio/sfx/punch-armour-2.ogg']).toContain(h.punch.file);
+      expect(h.punch.from).toBe('file');
+      // 3) a Commander hit: punch-heavy only (no light punch on top)
+      await page.waitForTimeout(1500);
+      t0 = await vNow(page);
+      expect((await act(page, a3)).ok).toBe(true);
+      await expect.poll(async () => (await hits(t0)).some((p) => p.key === 'stronghold'), { timeout: 8000 }).toBe(true);
+      await page.waitForTimeout(500);
+      const ch = await hits(t0);
+      h = ch.find((p) => p.key === 'stronghold');
+      expect(h.punch && h.punch.key).toBe('punch-heavy');
+      expect(h.punch.file).toBe('/audio/sfx/punch-heavy.ogg');
+      expect(h.punch.from).toBe('file');
+      expect(ch.filter((p) => p.punch && p.punch.key === 'punch' && p.punch.from === 'file' && p.t >= h.t).length, 'no light punch after the heavy one on the Commander blow (one just before it is stopped)').toBe(0);
+      expect((await voiceState(page)).log.some((e) => e.event === 'attack'), 'no attack shouts at all').toBe(false);
+      expect(errors).toEqual([]);
+    });
+  });
+}
