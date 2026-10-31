@@ -53,7 +53,13 @@ async function start() {
   }
 
   const who = await rpc<{ admin: boolean; aal: string }>('am_i_admin').catch(() => ({ admin: false, aal: '' }));
-  if (!who.admin) { notAdminPage(signOut); return; }
+  if (!who.admin) {
+    // A non-admin has no use for a 2-step factor here; remove it (allowed now, we are at aal2) so the login can enrol its own later.
+    const { data: fl } = await auth.mfa.listFactors();
+    for (const f of fl?.all ?? []) if (f.factor_type === 'totp') await auth.mfa.unenroll({ factorId: f.id }).catch(() => null);
+    notAdminPage(signOut);
+    return;
+  }
   me = session.user.email ?? '';
   for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, armIdle, { passive: true });
   armIdle();

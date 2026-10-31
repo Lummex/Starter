@@ -21,7 +21,7 @@ Not tested by the builder: no local Supabase or browser was available while buil
 ## Notes
 - `parent-notice-draft.json` was missing on the branch, so `src/content/parent-notice.json` was written from the brief (version `2026-10-28-draft`, shape `{version,title,sections,lawyer_review}`).
 - Avatar list: players cannot read `settings`, so `src/content/avatar-cards.json` holds a copy of `settings.avatar_cards`.
-- `dist/` of the game is about 161 MB (mostly `public/models`, 115 MB, and `public/art`, 34 MB), which is above the 95 MB limit; this size comes from earlier rounds' art and models, not from this round (online adds about 250 KB, loaded only when online). Admin `dist/` is small.
+- `dist/` of the game is about 161 MB (mostly `public/models`, 115 MB, and `public/art`, 34 MB), which fits the 250 MB limit (owner, Oct 31); this size comes from earlier rounds' art and models, not from this round (online adds about 250 KB, loaded only when online). Admin `dist/` is small.
 
 ## Editor updates needed
 New screens in the menu style that Ledger should add to the menu editor: login, age question, create account (13+ and under-13), check your email / ask your parent, waiting for parent, parent withdrew, avatar picker, welcome, profile, ban, forgot password, set a new password, wrong server, can't reach the server, Contact us, parent consent and withdraw pages, the TEST SERVER bar (#1E5AA8, white text, 24 px), the Profile button and the "Offline — Sign in" chip. Layout, colors and sizes are in `src/net/net.css`.
@@ -36,6 +36,7 @@ update public.settings set value = '"production"' where key = 'server_kind';
 Have a lawyer review the parent-consent notice, privacy wording and email texts before real children use the game.
 
 ## Changes made
+- projects/oreheart-admin/src/main.ts (Oct 31): when a signed-in login passes 2-step but is not an admin, its TOTP factor is removed before "Not an admin" shows, so that login can enrol a new factor later (fixes AC518 "AAL2 required to enroll a new factor"). Admins are untouched.
 - supabase/functions/send-outbox/index.ts: new Edge Function (POST only, secret key checked inside, up to 50 unsent rows, Resend or OUTBOX_MODE=log, strips token/revoke_token after sending, retries up to 5 attempts).
 - supabase/config.toml: added [auth.rate_limit] email_sent / sign_up_sign_in / token_verifications = 1000; [auth.email] max_frequency = "1s"; [functions.send-outbox] verify_jwt = false.
 - supabase/migrations/20261031000001_schedule_send_outbox.sql: new; pg_cron + pg_net every-minute schedule inside a DO block that only raises notices if extensions or settings (app.settings.send_outbox_url / send_outbox_key) are missing.
