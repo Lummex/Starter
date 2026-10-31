@@ -1,0 +1,19 @@
+{
+ "jobs": [
+  {
+   "id": "avatar-dwarf-forgemaster",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft blue and warm gold glow; no text, no frame. Dwarf colours: blue with gold trim (gold gear emblem). He is genuinely handsome and heroic-looking. Kid-friendly, fully clothed. Character: a Black dwarf forgemaster: dark brown skin, a thick black beard braided with gold rings, a blue-and-gold armoured collar with a gold gear emblem, a warm proud smile",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-dwarf.jpg",
+     "tag": "avatar"
+    }
+   ]
+  }
+ ]
+}
