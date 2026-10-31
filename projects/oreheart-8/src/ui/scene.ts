@@ -461,9 +461,10 @@ const _embV = new THREE.Vector3();
    *  the hands, muzzle forward); the idle look comes back when the clip ends */
   const AIM_LOOKS: Record<string, { part: string; look: { pos: number[]; rot: number[]; scale: number[] } }> = {
     'oathbound-pikeman': { part: 'rifle', look: { pos: [-5.353, 31.233, 9.094], rot: [27.958, -50.996, -61.011], scale: [79.958, 79.958, 79.958] } },
-    'deepforge-crossbowman': { part: 'crystal-gun', look: { pos: [7.948, 9.685, 9.035], rot: [19.84, -33.256, -78.576], scale: [33.508, 33.508, 33.508] } },
+    'deepforge-crossbowman': { part: 'crystal-gun', look: { pos: [10.588, 10.034, 5.079], rot: [-18.195, -36.931, -99.64], scale: [33.508, 33.508, 33.508] } }, // Ledger's grip A: ~12 deg off in the game (was ~42)
   };
   const aimLog: { uid: string; cardId: string; part: string; on: number; off: number }[] = [];
+  if (testMode) { (window as any).__aimLooks = AIM_LOOKS; (window as any).__aimNow = () => aimNow(); } // test-only: try aim grips, read the aim quickly
   /** test probe: for every aiming shooter, the angle (deg, on the ground plane) between its gun's long axis and the line to its facing target */
   function aimNow() {
     const out: any[] = [];
