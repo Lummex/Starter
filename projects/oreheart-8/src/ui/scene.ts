@@ -2,7 +2,7 @@
 import { ringColor, getRings } from './fx-settings';
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
-import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, type C3D } from './creature3d';
+import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, standingBox, type C3D } from './creature3d';
 import { stagePlow, plowFrame } from './plow';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D, loadCommander3d, makeCommander3d, commander3dReady, commanderIds3d } from './grubnak3d';
 import { makeMineFx, MineFx } from './mineFx';
@@ -75,8 +75,10 @@ const SYMBOL: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: 
 const MINE_FACTION: Record<string, string> = { goblins: '#3ee06a', gnomes: '#9b4dff', dwarves: '#2f5fd8' };
 const hexOf = (id: string | null) => (id && id !== 'white' ? COLORS[id].hex : COLORS.neutral.hex);
 const CMD_H = 2.4, CREATURE_H = 1.1;
-/** Ken (Oct 31 playtest): "the sizes of the units are way too small ... triple the size". Every unit's board size = its Studio height x this (owner layout characterSizes.creatures). Rings stay square-sized. */
+/** Ken (Oct 31): real-world heights (Ledger's table) replace the 3x rule. A unit's standing body is its table height x this (owner layout characterSizes.creatures, back to 1). Rings stay square-sized. */
 const UNIT_K = Math.max(0.2, +((ownerLayoutJson as any).characterSizes?.creatures ?? 1) || 1);
+/** Ken (Oct 31): a unit without a 3D model (stand-in) is 0.9 squares x creatures tall, no softening */
+const STANDIN_H = 0.9;
 /** Height of the solid meshes in a group (sprites, beams and transparent effects ignored), in world units. */
 function measureBox(o: THREE.Object3D): THREE.Box3 {
   const b = new THREE.Box3();
@@ -585,7 +587,7 @@ const _embV = new THREE.Vector3();
     g.scale.setScalar(1);
     g.updateMatrixWorld(true);
     const nat = (g as any).userData.c3d ? 0 : measureHeight(g);
-    if (nat > 0.05) baseScale = (CREATURE_H / nat) * (card.rarity === 'Collector' ? 1.1 : 1) * UNIT_K;
+    if (nat > 0.05) baseScale = (STANDIN_H / nat) * UNIT_K;
     else if (!(g as any).userData.c3d) baseScale *= UNIT_K;
     g.scale.setScalar(baseScale);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 6, 24), ringMat());
@@ -722,7 +724,7 @@ const _embV = new THREE.Vector3();
       const f = figs.get(uid);
       if (!f || f.dying) { e.group.visible = false; continue; }
       e.group.visible = true;
-      const top = (f.c3d ? (f.c3d.boardH ?? f.c3d.height) + (f.c3d.lift || 0) : CREATURE_H * UNIT_K) + 0.28;
+      const top = (f.c3d ? (f.c3d.boardH ?? f.c3d.height) + (f.c3d.lift || 0) : STANDIN_H * UNIT_K) + 0.28;
       e.group.position.set(f.group.position.x, f.group.position.y + top, f.group.position.z);
     }
   }
@@ -1375,7 +1377,7 @@ const _embV = new THREE.Vector3();
           inKb = true;
           if (t < b.fly) { const e = t / b.fly; g.position.lerpVectors(b.from, b.land, e); kbY = 4 * b.h * e * (1 - e); g.rotation.x = -b.spin * Math.PI * 2 * easeIO(e); }
           else if (t < down) {
-            if (!b.landed) { b.landed = true; spawnFx('dust', b.land, 6); audio.play('thud'); sticker('dizzy-stars-' + (1 + Math.floor(Math.random() * 3)), b.land.clone().setY((f.c3d?.heightSpaces || 1) * 0.95), 0.5, 900); }
+            if (!b.landed) { b.landed = true; spawnFx('dust', b.land, 6); audio.play('thud'); sticker('dizzy-stars-' + (1 + Math.floor(Math.random() * 3)), b.land.clone().setY((f.c3d?.boardH || 1) * 0.95), 0.5, 900); }
             g.position.copy(b.land); g.rotation.x = 0;
             const s = Math.sin(Math.PI * (t - b.fly) / 230); g.scale.set(f.baseScale * (1 + 0.12 * s), f.baseScale * (1 - 0.2 * s), f.baseScale * (1 + 0.12 * s));
           } else if (t < up) { const e = easeIO((t - down) / 300); g.scale.setScalar(f.baseScale); g.position.lerpVectors(b.land, f.target, e); kbY = Math.sin(e * Math.PI) * 0.14; }
@@ -1574,7 +1576,7 @@ const _embV = new THREE.Vector3();
   }
   function figureStats(f: Fig) {
     const c = f.c3d, cv = canvas.getBoundingClientRect();
-    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', currentClip: c?.currentClip ? c.currentClip() : '', parts: c?.partInfo ? c.partInfo().map((x) => ({ ...x })) : [], animationLog: c ? [...c.log] : [], ...(c && c.ballInfo ? { ball: c.ballInfo(), effects: c.effects!() } : {}), items: c ? c.items.map((i) => ({ ...i })) : [], flying: c?.flying ? { ...c.flying } : null, lift: (c?.lift || 0) / (c?.boardK || 1), boardLift: c?.lift || 0, swayNowDeg: c?.swayNowDeg || 0, groundShadow: !!c?.groundShadow, animWeight: c?.animWeight ? +c.animWeight().toFixed(2) : null, poseDelta: c?.poseDelta ? +c.poseDelta().toFixed(3) : null, diag: c?.diag ? c.diag() : null, moving: !!(f.path && f.path.length), packed: c?.packRoles ? [...c.packRoles] : [] };
+    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, studioHeight: c?.studioHeight ?? null, boardH: c?.boardH ?? null, natural: c?.natural ?? null, standH: c?.char ? (() => { const sb = standingBox(c.char!, new THREE.Box3()); return +(sb.max.y - sb.min.y).toFixed(3); })() : null, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', currentClip: c?.currentClip ? c.currentClip() : '', parts: c?.partInfo ? c.partInfo().map((x) => ({ ...x })) : [], animationLog: c ? [...c.log] : [], ...(c && c.ballInfo ? { ball: c.ballInfo(), effects: c.effects!() } : {}), items: c ? c.items.map((i) => { const o = c.partObject?.(i.name); let size = 0; if (o) { const ib = new THREE.Box3().setFromObject(o, true); if (!ib.isEmpty()) size = +ib.getSize(new THREE.Vector3()).length().toFixed(3); } return { ...i, size }; }) : [], flying: c?.flying ? { ...c.flying } : null, lift: (c?.lift || 0) / (c?.boardK || 1), boardLift: c?.lift || 0, swayNowDeg: c?.swayNowDeg || 0, groundShadow: !!c?.groundShadow, animWeight: c?.animWeight ? +c.animWeight().toFixed(2) : null, poseDelta: c?.poseDelta ? +c.poseDelta().toFixed(3) : null, diag: c?.diag ? c.diag() : null, moving: !!(f.path && f.path.length), packed: c?.packRoles ? [...c.packRoles] : [] };
     const b = c ? skinBox(f.group, new THREE.Box3()) : new THREE.Box3().setFromObject(f.group);
     if (b.isEmpty()) { base.screenBox = { x: 0, y: 0, width: 0, height: 0 }; return base; }
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
@@ -1601,7 +1603,7 @@ const _embV = new THREE.Vector3();
             projectiles: [], projectileLog: [],
             canvas: canvasInfo(),
             missingClips: missingClipList.map((m) => ({ ...m })),
-            commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? (cm.g3d.files?.source || 'grubnak.glb') : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? (cm.g3d.files?.fortress || 'grubnak-fortress.glb') : '', scepter: cm.g3d ? (cm.g3d.files?.scepter ?? 'grubnak-scepter.glb') : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
+            commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? (cm.g3d.files?.source || 'grubnak.glb') : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? (cm.g3d.files?.fortress || 'grubnak-fortress.glb') : '', scepter: cm.g3d ? (cm.g3d.files?.scepter ?? 'grubnak-scepter.glb') : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, items: (((cm.g3d as any)?.items || []) as { name: string; bone: string; obj: THREE.Object3D | null }[]).map((i) => { let o: THREE.Object3D | null = i.obj, vis = !!o, size = 0; while (o) { if (!o.visible) vis = false; o = o.parent; } if (i.obj) { const ib = new THREE.Box3().setFromObject(i.obj, true); if (!ib.isEmpty()) size = +ib.getSize(new THREE.Vector3()).length().toFixed(3); } return { name: i.name, bone: i.bone, visible: vis, size }; }), animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
             strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => { const cl = m.group.userData.cell || { row: 0, col: 0 }, bx = mineBox(cl.row, cl.col), cv = canvas.getBoundingClientRect(); return { row: cl.row, col: cl.col, screenBox: { x: bx.x + cv.left, y: bx.y + cv.top, width: bx.width, height: bx.height }, effects: mineFx[i].stats(), source: m.group.userData.mineModel === 'crystal-node' ? 'model:crystal-node.glb' : 'code:buildMineModel', ring: false, decal: { kind: 'glow-rubble', flat: true, color: m.group.userData.decalHex || m.group.userData.tintHex || '#ffffff' }, tiltDeg: (Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z)) * 180 / Math.PI, tilt: Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z), baseY: new THREE.Box3().setFromObject(m.crystals).min.y - m.group.position.y, scale: m.group.scale.x, parts: ['rubble', 'pedestal', 'banner', 'crystal'], shards: 11, pulsing: true, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' }; }), mineModel: 'code-built', crystalFlow: { shards: flowShown, streams: flowOwner.filter((o) => o && o !== 'neutral').length, swirls: flowOwner.filter((o) => !o || o === 'neutral').length, shape: 'faceted', path: 's-curve', target: 'bank' },
           });

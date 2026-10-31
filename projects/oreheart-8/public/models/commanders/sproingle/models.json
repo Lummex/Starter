@@ -4,12 +4,16 @@
  "commander": "sproingle",
  "files": {
   "char": "char.glb",
-  "sceptre": null,
+  "sceptre": "staff.glb",
   "throne": null
  },
  "clips": {},
  "notes": "Moves come from the shared biped pack. Height = default until Ledger saves it from Ken's Studio setup.",
  "fileSizes": {
-  "char.glb": 3329908
+  "char.glb": 3329908,
+  "staff.glb": 777624
+ },
+ "props": {
+  "staff.glb": "Knobbin's crystal staff (Studio model sproingle-staff, copied Oct 31 unchanged); held in the right hand by the grip rule until Ledger saves a Studio placement"
  }
 }

@@ -165,10 +165,11 @@ function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress:
 const EMOTE_FALLBACK: Record<string, string> = { laugh: 'attack', point: 'attack', celebrate: 'attack', cast: 'attack', taunt: 'attack', cheer: 'attack', surprised: 'hit', flinch: 'hit', walk: 'idle' };
 /** per Commander: model folder, files and how tall he stands (board squares) on top of his stronghold */
 type Look = { bone: string; pos: [number, number, number]; rot: [number, number, number]; scale: [number, number, number] };
-const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortress: string; scepter: string }; figH: number; keepK: number; deck: number; sceptre: { len: number; grip: number; rot: [number, number, number] }; prop?: { file: string; look: Look } }> = {
+const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortress: string; scepter: string }; figH: number; keepK: number; deck: number; sceptre: { len: number; grip: number; rot: [number, number, number]; upright?: boolean }; prop?: { file: string; look: Look } }> = {
   borgo: { base: '/models/commanders/borgo/', files: { source: 'borgo.glb', fortress: 'dwarf-stronghold', scepter: 'borgo-sceptre.glb' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
   // Oct 30 (Clay): rigged, rest pose only; every move comes from the shared pack. figH = Ken's Studio body scale (Ledger) x 0.8, the same conversion as Borgo's.
-  sproingle: { base: '/models/commanders/sproingle/', files: { source: 'sproingle.glb', fortress: 'gnome-stronghold', scepter: '' }, figH: 0.72, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
+  // Ken (Oct 31): "The gnome commander doesn't have his staff." Knobbin's crystal staff (Studio model sproingle-staff) in his right hand by the grip rule until Ledger saves a placement
+  sproingle: { base: '/models/commanders/sproingle/', files: { source: 'sproingle.glb', fortress: 'gnome-stronghold', scepter: 'staff.glb' }, figH: 0.72, keepK: 1.1, deck: 0.71, sceptre: { len: 0.95, grip: 0.42, rot: [0, 0, 0], upright: true } },
   skreeka: { base: '/models/commanders/skreeka/', files: { source: 'skreeka.glb', fortress: 'goblin-stronghold', scepter: '' }, figH: 1.2, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
   sprocket: { base: '/models/commanders/sprocket/', files: { source: 'sprocket.glb', fortress: 'gnome-stronghold', scepter: '' }, figH: 0.68, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] }, prop: { file: 'wrench.glb', look: { bone: 'RightHand', pos: [-2.293, 7.176, 7.017], rot: [-16.36, -20.67, 135.98], scale: [15.776, 15.776, 15.776] } } },
   grumblebeard: { base: '/models/commanders/grumblebeard/', files: { source: 'grumblebeard.glb', fortress: 'dwarf-stronghold', scepter: '' }, figH: 0.84, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] }, prop: { file: 'hammer.glb', look: { bone: 'RightHand', pos: [-4.807, -4.132, 0.907], rot: [-3.17, -47.48, 163.5], scale: [44.699, 44.699, 44.699] } } },
@@ -233,8 +234,10 @@ export function makeCommander3d(id: string, a: G3DAssets, keep: THREE.Object3D, 
   ch.updateMatrixWorld(true);
   const cb0 = box(ch), H0 = cb0.max.y - cb0.min.y;
   let scepterBone = '';
-  if (a.scepter) scepterBone = attachPart(ch, { name: 'scepter', file: '', bone: ['RightHand'], len: cfg.sceptre.len, grip: cfg.sceptre.grip, rot: cfg.sceptre.rot, axis: 'y' }, a.scepter, H0, () => {});
-  if (a.prop && cfg.prop) { const bn = ch.getObjectByName(cfg.prop.look.bone); if (bn) { const p = a.prop.clone(true); const L = cfg.prop.look; p.position.set(...L.pos); p.rotation.set(...(L.rot.map((d) => THREE.MathUtils.degToRad(d)) as [number, number, number]), 'XYZ'); p.scale.set(...L.scale); p.traverse((o: any) => { if (o.isMesh) o.frustumCulled = false; }); bn.add(p); scepterBone = scepterBone || bn.name; } } // Ken's Studio placement (Ledger)
+  const items: { name: string; bone: string; obj: THREE.Object3D | null }[] = []; // Oct 31 test hook: the items a Commander carries
+  const lastChild = (bn: string) => { const o = ch.getObjectByName(bn); return o && o.children.length ? o.children[o.children.length - 1] : null; };
+  if (a.scepter) { scepterBone = attachPart(ch, { name: 'scepter', file: '', bone: ['RightHand'], len: cfg.sceptre.len, grip: cfg.sceptre.grip, rot: cfg.sceptre.rot, axis: 'y', upright: (cfg.sceptre as any).upright }, a.scepter, H0, () => {}); if (scepterBone) items.push({ name: cfg.files.scepter.replace(/\.glb$/, ''), bone: scepterBone, obj: lastChild(scepterBone) }); }
+  if (a.prop && cfg.prop) { const bn = ch.getObjectByName(cfg.prop.look.bone); if (bn) { const p = a.prop.clone(true); const L = cfg.prop.look; p.position.set(...L.pos); p.rotation.set(...(L.rot.map((d) => THREE.MathUtils.degToRad(d)) as [number, number, number]), 'XYZ'); p.scale.set(...L.scale); p.traverse((o: any) => { if (o.isMesh) o.frustumCulled = false; }); bn.add(p); scepterBone = scepterBone || bn.name; items.push({ name: cfg.prop.file.replace(/\.glb$/, ''), bone: bn.name, obj: p }); } } // Ken's Studio placement (Ledger)
   m0.stopAllAction(); m0.uncacheRoot(ch);
   const sc = new THREE.Group(); sc.scale.setScalar((cfg.figH * gk * size) / Math.max(H0, 0.01));
   ch.position.set(-(cb0.min.x + cb0.max.x) / 2, -cb0.min.y, -(cb0.min.z + cb0.max.z) / 2);
@@ -246,5 +249,6 @@ export function makeCommander3d(id: string, a: G3DAssets, keep: THREE.Object3D, 
   group.add(figure);
   const g = finish(a, group, figure, keep, ch, scepterBone);
   g.files = cfg.files;
+  (g as any).items = items;
   return g;
 }

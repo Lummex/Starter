@@ -14,9 +14,12 @@
   "defeat": 8
  },
  "rigged": true,
- "parts": [],
- "notes": "Owner sheet note: Don't render his bag we already have a known bag. Character only for now (owner, Oct 25: accessories come later).",
+ "parts": [
+  "pickaxe"
+ ],
+ "notes": "Owner sheet note: Don't render his bag we already have a known bag. Character only for now (owner, Oct 25: accessories come later). Oct 31: Clay's silver pickaxe (models/accessories-oct30/gnome-smith-miner/pickaxe.glb) copied unchanged; held by the grip rule until Ledger re-places it on this body.",
  "fileSizes": {
-  "char.glb": 5640212
+  "char.glb": 5640212,
+  "pickaxe.glb": 727520
  }
 }
