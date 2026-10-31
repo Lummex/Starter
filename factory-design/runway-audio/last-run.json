@@ -1,81 +1,65 @@
 {
- "at": "2026-10-31T10:59:28.691Z",
- "made": 19,
+ "at": "2026-10-31T11:51:39.294Z",
+ "made": 15,
  "results": [
   {
-   "id": "batch-gob-scrappy-1",
+   "id": "b2-gob-salty",
    "ok": true
   },
   {
-   "id": "batch-gob-big-1",
+   "id": "b2-gob-brute",
    "ok": true
   },
   {
-   "id": "batch-gob-big-2",
+   "id": "b2-gob-sneak",
    "ok": true
   },
   {
-   "id": "batch-gob-sly-1",
+   "id": "b2-gob-maniac",
    "ok": true
   },
   {
-   "id": "batch-gob-crazy-1",
+   "id": "b2-gob-queen",
    "ok": true
   },
   {
-   "id": "batch-gob-queen-1",
+   "id": "b2-gno-chipper",
    "ok": true
   },
   {
-   "id": "batch-gno-quick-1",
+   "id": "b2-gno-clever",
    "ok": true
   },
   {
-   "id": "batch-gno-quick-2",
+   "id": "b2-gno-zappy",
    "ok": true
   },
   {
-   "id": "batch-gno-prim-1",
+   "id": "b2-gno-kind",
    "ok": true
   },
   {
-   "id": "batch-gno-boom-1",
+   "id": "b2-gno-lady",
    "ok": true
   },
   {
-   "id": "batch-gno-steady-1",
+   "id": "b2-dwa-sarge",
    "ok": true
   },
   {
-   "id": "batch-gno-steady-2",
+   "id": "b2-dwa-vet",
    "ok": true
   },
   {
-   "id": "batch-gno-lady-1",
+   "id": "b2-dwa-recruit",
    "ok": true
   },
   {
-   "id": "batch-dwa-sarge-1",
+   "id": "b2-dwa-jolly",
    "ok": true
   },
   {
-   "id": "batch-dwa-sarge-2",
-   "ok": true
-  },
-  {
-   "id": "batch-dwa-gruff-1",
-   "ok": true
-  },
-  {
-   "id": "batch-dwa-young-1",
-   "ok": true
-  },
-  {
-   "id": "batch-dwa-jolly-1",
-   "ok": true
-  },
-  {
-   "id": "batch-dwa-queen-1",
+   "id": "b2-dwa-queen",
    "ok": true
   }
  ]
