@@ -13230,3 +13230,230 @@ test.describe('AC520 phone touch', () => {
     expect((await getState(page)).activePlayer, 'all during the computer\'s turn').toBe('opponent');
   });
 });
+// Ken (Oct 31): "I'd also like an auto arrange button. On the cards in your hand, just to the left-hand side ... arrange from highest to lowest
+// ... crystal cost. Or ... groups all the spells together, it groups all the range together ... without having to move them around so much."
+const SORT_HAND = ['battle-cry', 'goblin-scrounger', 'wolf-rider', 'goblin-slinger', 'crystal-cluster', 'goblin-scrapper', 'goblin-smith-miner', 'fireball'];
+// Miners 0, melee fighters 1, ranged fighters 2, spells 3, crystals / other 4 (cards.json: role Gatherer/Smith, ability 'ranged')
+const SORT_KIND = { 'goblin-scrounger': 0, 'goblin-smith-miner': 0, 'wolf-rider': 1, 'goblin-scrapper': 1, 'goblin-pebbler': 1, 'goblin-grunt': 1, 'goblin-slinger': 2, 'battle-cry': 3, fireball: 3, 'crystal-cluster': 4, 'soul-shard': 4 };
+const sortHandCards = (page) => page.evaluate(() => [...document.querySelectorAll('.hand .hand-card:not(.popclone)')].map((e) => ({ uid: e.dataset.uid, id: e.dataset.cardId, cost: Number(e.dataset.cost) })));
+const sortExpected = (cards, mode) => cards.map((c, i) => ({ ...c, i })).sort((a, b) => (mode === 'type' ? SORT_KIND[a.id] - SORT_KIND[b.id] || b.cost - a.cost : mode === 'costAsc' ? a.cost - b.cost : b.cost - a.cost) || a.i - b.i).map((c) => c.uid);
+const isSorted = (cards, mode) => {
+  for (let k = 1; k < cards.length; k++) {
+    const a = cards[k - 1], b = cards[k];
+    if (mode === 'costDesc' && a.cost < b.cost) return false;
+    if (mode === 'costAsc' && a.cost > b.cost) return false;
+    if (mode === 'type' && (SORT_KIND[a.id] > SORT_KIND[b.id] || (SORT_KIND[a.id] === SORT_KIND[b.id] && a.cost < b.cost))) return false;
+  }
+  return true;
+};
+const SORT_LABEL = { costDesc: 'By cost (high to low)', costAsc: 'By cost (low to high)', type: 'By type' };
+const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+test('AC521: a silver Sort button sits just left of the hand (never over a card) and opens a drop-up with the three sorts', async ({ page }) => {
+  test.setTimeout(90000);
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  for (const [W, H] of [[1920, 1080], [844, 390]]) {
+    await page.setViewportSize({ width: W, height: H });
+    await start(page, quiet({ playerHand: SORT_HAND, playerCrystals: 6 }));
+    await page.waitForTimeout(900);
+    const sb = page.getByRole('button', { name: 'Sort hand', exact: true });
+    await expect(sb, `${W}x${H}: the Sort button shows`).toBeVisible();
+    const b = await sb.boundingBox();
+    const cards = await page.evaluate(() => [...document.querySelectorAll('.hand .hand-card:not(.popclone):not(.offhand)')].map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }));
+    expect(cards.length).toBe(SORT_HAND.length);
+    const firstLeft = Math.min(...cards.map((c) => c.x));
+    expect(b.x + b.width, `${W}x${H}: the button is left of the first card`).toBeLessThanOrEqual(firstLeft);
+    for (const c of cards) expect(overlaps(b, c), `${W}x${H}: the button never covers a card`).toBe(false);
+    expect(b.y + b.height, `${W}x${H}: fully on screen`).toBeLessThanOrEqual(H);
+    expect(b.x).toBeGreaterThanOrEqual(0);
+    expect(b.width, `${W}x${H}: big enough to tap`).toBeGreaterThanOrEqual(32);
+    // beside the hand: level with the cards' visible strip
+    const strip = Math.min(...cards.map((c) => c.y));
+    expect(b.y + b.height / 2, `${W}x${H}: level with the hand`).toBeGreaterThan(strip);
+    // not over the Flow crystal's picture
+    const gem = await page.locator('[data-role=player-flow-crystal]').boundingBox();
+    if (gem) expect(b.x, `${W}x${H}: right of the Flow crystal`).toBeGreaterThanOrEqual(gem.x + gem.width - 2);
+    // silver look: the same silver as the theme, a round medallion
+    const look = await sb.evaluate((e) => { const s = getComputedStyle(e); return { bg: s.backgroundImage, r: s.borderRadius }; });
+    expect(look.bg).toContain('conic-gradient');
+    expect(look.r).toBe('50%');
+    // click: a drop-up above the button with the three sorts
+    await sb.click();
+    const up = page.getByRole('group', { name: 'Sort hand choices', exact: true });
+    await expect(up).toBeVisible();
+    for (const l of Object.values(SORT_LABEL)) await expect(up.getByRole('button', { name: l, exact: true })).toBeVisible();
+    await expect(up.getByRole('button')).toHaveCount(3);
+    const ub = await up.boundingBox();
+    expect(ub.y + ub.height, `${W}x${H}: the drop-up opens upward`).toBeLessThanOrEqual(b.y + 2);
+    expect(ub.y, `${W}x${H}: the drop-up fits on screen`).toBeGreaterThanOrEqual(0);
+    expect(ub.x).toBeGreaterThanOrEqual(0);
+    expect(ub.x + ub.width).toBeLessThanOrEqual(W);
+    const frame = await up.getByRole('button', { name: 'By type', exact: true }).evaluate((e) => getComputedStyle(e).borderImageSource);
+    expect(frame, 'silver gem buttons, like the Done drop-up').toMatch(/\/art\/ui\/silver\/btn-/);
+    await expect(sb).toHaveAttribute('aria-expanded', 'true');
+    // a click elsewhere closes it, nothing changes
+    await page.mouse.click(W / 2, H * 0.35);
+    await expect(up).toBeHidden();
+    await expect(sb).toHaveAttribute('aria-expanded', 'false');
+    await expect(sb).toHaveAttribute('data-sort', '');
+    // the button again closes it
+    await sb.click(); await expect(up).toBeVisible();
+    await sb.click(); await expect(up).toBeHidden();
+  }
+  // keyboard: a real button; Enter opens with the first choice focused, Escape closes and returns to the button
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  const sb = page.getByRole('button', { name: 'Sort hand', exact: true });
+  await sb.focus();
+  await page.keyboard.press('Enter');
+  const up = page.getByRole('group', { name: 'Sort hand choices', exact: true });
+  await expect(up).toBeVisible();
+  await expect(up.getByRole('button', { name: SORT_LABEL.costDesc, exact: true })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(up).toBeHidden();
+  await expect(sb).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
+test('AC522: each sort orders the hand, stays on for drawn cards, and dragging a card by hand returns to manual order', async ({ page }) => {
+  test.setTimeout(120000);
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await start(page, { ...quiet({ playerHand: SORT_HAND, playerCrystals: 0, playerDeck: Array(12).fill('goblin-slinger') }), firstPlayer: 'player' });
+  await page.waitForTimeout(900);
+  const s0 = await getState(page);
+  const engine0 = s0.players.player.hand.map((c) => c.uid);
+  const before = await sortHandCards(page);
+  expect(before.map((c) => c.uid), 'no sort chosen: the hand shows the game order').toEqual(engine0);
+  const sb = page.getByRole('button', { name: 'Sort hand', exact: true });
+  const up = page.getByRole('group', { name: 'Sort hand choices', exact: true });
+  for (const mode of ['costDesc', 'costAsc', 'type']) {
+    await sb.click();
+    await up.getByRole('button', { name: SORT_LABEL[mode], exact: true }).click();
+    await expect(up, 'choosing closes the drop-up').toBeHidden();
+    await expect(sb, 'the button shows which sort is on').toHaveAttribute('data-sort', mode);
+    const now = await sortHandCards(page);
+    expect(now.map((c) => c.uid), `${mode}: the hand is sorted (ties keep their order)`).toEqual(sortExpected(before, mode));
+    expect(isSorted(now, mode)).toBe(true);
+    // the game's own hand is untouched (display order only)
+    expect((await getState(page)).players.player.hand.map((c) => c.uid)).toEqual(engine0);
+    await sb.click();
+    await expect(up.getByRole('button', { name: SORT_LABEL[mode], exact: true }), 'the chosen sort is marked').toHaveAttribute('aria-pressed', 'true');
+    for (const o of Object.keys(SORT_LABEL).filter((x) => x !== mode)) await expect(up.getByRole('button', { name: SORT_LABEL[o], exact: true })).toHaveAttribute('aria-pressed', 'false');
+    await page.keyboard.press('Escape');
+    await expect(up).toBeHidden();
+  }
+  const typed = (await sortHandCards(page)).map((c) => c.id);
+  expect(typed.slice(0, 2).every((id) => SORT_KIND[id] === 0), 'Miners first').toBe(true);
+  expect(typed[typed.length - 1], 'crystals last').toBe('crystal-cluster');
+  // a drawn card slots into the sort: pass to the player's next turn (the deck is all Skullflingers, a ranged fighter)
+  const n0 = before.length;
+  for (let i = 0; i < 8; i++) {
+    const s = await getState(page);
+    if (s.activePlayer === 'player' && s.turn > s0.turn && s.phase === 'deploy') break;
+    const r = await act(page, { type: 'done' });
+    expect(r.ok, JSON.stringify(r)).toBe(true);
+  }
+  const s1 = await getState(page);
+  expect(s1.players.player.hand.length, 'a card was drawn').toBe(n0 + 1);
+  await page.waitForTimeout(900);
+  await expect(sb).toHaveAttribute('data-sort', 'type');
+  const drawn = await sortHandCards(page);
+  expect(drawn.length).toBe(n0 + 1);
+  expect(isSorted(drawn, 'type'), 'the drawn card took its place in the sort: ' + drawn.map((c) => c.id).join(',')).toBe(true);
+  const slingers = drawn.map((c, i) => (c.id === 'goblin-slinger' ? i : -1)).filter((i) => i >= 0);
+  expect(slingers.length).toBe(2);
+  expect(slingers[1] - slingers[0], 'the new Skullflinger sits with the other ranged fighter').toBe(1);
+  expect(slingers[1], 'not simply added at the end').toBeLessThan(drawn.length - 1);
+  // dragging a card by hand: back to manual order (the order the player saw, with the dragged card moved)
+  const hand = page.getByLabel('Your hand', { exact: true });
+  const firstId = drawn[0].id, firstUid = drawn[0].uid;
+  const first = hand.locator(`.hand-card[data-uid="${firstUid}"]`);
+  const lastCard = hand.locator(`.hand-card[data-uid="${drawn[drawn.length - 1].uid}"]`);
+  const p = await raiseHandAt(page, first);
+  const lb = await lastCard.boundingBox();
+  await page.mouse.down();
+  await page.mouse.move(lb.x + lb.width * 0.8, p.y, { steps: 20 });
+  await page.waitForTimeout(300);
+  await page.mouse.up();
+  await expect(sb, 'a manual drag clears the sort mark').toHaveAttribute('data-sort', '');
+  const manual = drawn.slice(1).map((c) => c.uid).concat(firstUid);
+  await expect.poll(async () => (await sortHandCards(page)).map((c) => c.uid)).toEqual(manual);
+  expect((await getState(page)).players.player.hand.map((c) => c.uid), 'the manual order is the game order, as before').toEqual(manual);
+  expect(firstId).toBeTruthy();
+  // the next drawn card no longer re-sorts the hand
+  await sb.click();
+  for (const l of Object.values(SORT_LABEL)) await expect(up.getByRole('button', { name: l, exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});
+
+test('AC523: on a phone (touch) the Sort button and its choices work by tap, and the cards glide to their new places', async ({ browser }) => {
+  test.setTimeout(90000);
+  const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
+  const page = await ctx.newPage();
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await start(page, quiet({ playerHand: SORT_HAND, playerCrystals: 6 }));
+  await page.waitForTimeout(900);
+  const sb = page.getByRole('button', { name: 'Sort hand', exact: true });
+  const up = page.getByRole('group', { name: 'Sort hand choices', exact: true });
+  await sb.tap();
+  await expect(up).toBeVisible();
+  // a tap elsewhere closes it
+  await page.touchscreen.tap(422, 60);
+  await expect(up).toBeHidden();
+  await sb.tap();
+  await expect(up).toBeVisible();
+  const before = await sortHandCards(page);
+  // log the hand's glide animations (kept so they can be scrubbed after they finish)
+  await page.evaluate(() => {
+    window.__sortAnims = [];
+    const orig = Element.prototype.animate;
+    Element.prototype.animate = function (...a) { const an = orig.apply(this, a); if (this.classList && this.classList.contains('hand-card')) window.__sortAnims.push({ el: this, an }); return an; };
+  });
+  const lefts0 = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.hand .hand-card:not(.popclone)')].map((e) => [e.dataset.uid, parseFloat(getComputedStyle(e).left)])));
+  await up.getByRole('button', { name: SORT_LABEL.costAsc, exact: true }).tap();
+  await expect(up).toBeHidden();
+  await expect(sb).toHaveAttribute('data-sort', 'costAsc');
+  expect((await sortHandCards(page)).map((c) => c.uid)).toEqual(sortExpected(before, 'costAsc'));
+  // the cards move through in-between places: scrub each glide and read the card's left edge at its start, middle and end
+  const glides = await page.evaluate((l0) => (window.__sortAnims || []).map(({ el, an }) => {
+    const d = Number(an.effect.getComputedTiming().duration) || 0;
+    an.pause();
+    const at = (t) => { an.currentTime = t; return parseFloat(getComputedStyle(el).left); };
+    const r = { uid: el.dataset.uid, d, from: l0[el.dataset.uid], a: at(0), m: at(d / 2), b: at(d) };
+    an.finish();
+    r.end = parseFloat(getComputedStyle(el).left);
+    return r;
+  }), lefts0);
+  const moved = Object.keys(lefts0).length;
+  expect(glides.length, 'the cards that change places glide (no jump)').toBeGreaterThanOrEqual(Math.min(3, moved));
+  for (const g of glides) {
+    expect(g.d, 'a smooth glide, not a flash').toBeGreaterThanOrEqual(250);
+    expect(Math.abs(g.a - g.from), 'it starts where the card was').toBeLessThan(3);
+    expect(Math.abs(g.b - g.end), 'it ends at the new place').toBeLessThan(3);
+    const lo = Math.min(g.a, g.end), hi = Math.max(g.a, g.end);
+    if (hi - lo > 8) { expect(g.m, 'half way it is in between').toBeGreaterThan(lo + 2); expect(g.m).toBeLessThan(hi - 2); }
+  }
+  // also with real frames: right after a new sort, a card is seen somewhere between its old and new place
+  const seen = await page.evaluate(async () => {
+    const sbt = document.querySelector('.hand-sort-btn');
+    sbt.click();
+    const item = [...document.querySelectorAll('.hand-sort-up button')].find((b) => b.textContent.includes('high to low'));
+    const old = Object.fromEntries([...document.querySelectorAll('.hand .hand-card:not(.popclone)')].map((e) => [e.dataset.uid, parseFloat(getComputedStyle(e).left)]));
+    item.click();
+    const samples = [];
+    const t0 = performance.now();
+    while (performance.now() - t0 < 1200) {
+      await new Promise((r) => requestAnimationFrame(r));
+      samples.push(Object.fromEntries([...document.querySelectorAll('.hand .hand-card:not(.popclone)')].map((e) => [e.dataset.uid, parseFloat(getComputedStyle(e).left)])));
+    }
+    const last = samples[samples.length - 1];
+    let mid = 0;
+    for (const u of Object.keys(old)) { const lo = Math.min(old[u], last[u]), hi = Math.max(old[u], last[u]); if (hi - lo < 8) continue; if (samples.some((s) => s[u] > lo + 2 && s[u] < hi - 2)) mid++; }
+    return { mid, frames: samples.length };
+  });
+  if (seen.frames >= 4) expect(seen.mid, `cards seen in between (${seen.frames} frames)`).toBeGreaterThan(0);
+  await expect(sb).toHaveAttribute('data-sort', 'costDesc');
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
