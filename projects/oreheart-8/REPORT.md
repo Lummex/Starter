@@ -59,3 +59,15 @@ Have a lawyer review the parent-consent notice, privacy wording and email texts 
 - No game rule, number or layout changed. Only the checks were rewritten (AC528, AC530, AC503, AC518).
 - AC528: the game `dist/` limit is now 250 MB (about 161 MB, so it fits); admin `dist/` stays under 2 MB. The older "above 95 MB" notes above are out of date.
 - AC530 reads this file (`projects/oreheart-8/REPORT.md`).
+
+## dist/ sizes
+- Game `dist/`: about 156 MB (limit 250 MB). Admin `dist/`: about 264 KB (limit 2 MB, no game art). The game calls no `admin_` function except `am_i_admin`.
+
+## Status summary (Done / Partly / Not started)
+- B1 Done, B2 Done, B3 Done, B4 Done, B5 Done, B6 Done, B7 Done, B8 Done, B9 Done, B10 Done, B11 Done (B1–B11 all Done; none Partly, none Not started).
+- Part C (admin site): Done. Part D (send-outbox Edge Function and schedule): Done.
+
+## Oct 31 notes
+- AC503: an offline / `?test=1` match makes no `/rest/v1/` request (online code is disabled without `online=1`); no code change needed.
+- AC518: the "AAL2 required to enroll a new factor" refusal is Supabase Auth's own rule (a user with a verified 2-step factor must be at AAL2 to add another); `max_enrolled_factors` is already 10 and there is no config switch for it. No change to `supabase/` or the admin site this round. The check must enrol before the admin-site 2-step or sign in at AAL2.
+- No changes were made to `supabase/` or the admin site this round.
