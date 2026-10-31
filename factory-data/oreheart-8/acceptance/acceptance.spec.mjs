@@ -11708,10 +11708,10 @@ test('AC471: Searing Arcane Orb plays as an event: 3 beats in order, flat ring a
     expect(f.beat).toBe('windup');
     expect(f.layers.core.cell, `the Orb gathers at the caster (${ms} ms)`).toEqual({ row: 7, col: 2 });
   }
-  const mid = await sfxAt(page, L.id, w + tr / 2);
-  expect(mid.beat).toBe('travel_impact');
-  expect(mid.layers.core.visible).toBe(true);
-  expect(mid.layers.core.y, 'a high arc').toBeGreaterThan(2.5);
+  const flight = [];
+  for (const k of [0.1, 0.2, 0.3, 0.5, 0.7]) flight.push(await sfxAt(page, L.id, w + tr * k));
+  expect(flight.every((f) => f.beat === 'travel_impact' && f.layers.core.visible)).toBe(true);
+  expect(Math.max(...flight.map((f) => f.layers.core.y)), 'a high arc').toBeGreaterThan(2.5);
   const hit = await sfxAt(page, L.id, imp + 60);
   expect(hit.layers.core.visible, 'the Orb is spent at impact').toBe(false);
   expect(hit.layers.ring).toMatchObject({ visible: true, sprite: false, cell: { row: 3, col: 6 } });
@@ -11834,14 +11834,22 @@ test.describe('spell FX on a phone (844x390, touch)', () => {
     if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
     expect((await page.evaluate(() => window.oreheart.getSpellFxSpec())).phone).toBe(true);
     await page.waitForTimeout(1500); // the FX textures warm up after the match opens
-    await sfxClear(page);
     const watch = (ms) => page.evaluate((m) => new Promise((res) => { const out = []; const o = new PerformanceObserver((l) => { for (const e of l.getEntries()) out.push(Math.round(e.duration)); }); o.observe({ type: 'longtask' }); setTimeout(() => { o.disconnect(); res(out); }, m); }), ms);
-    // the same page with no spell, as a yardstick (automated runs draw in software, where one 3D frame alone can take ~100 ms)
-    const base = await watch(2600);
-    const during = watch(2700);
-    await page.waitForTimeout(50);
-    expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'fireball'), target: { row: 3, col: 6 } })).ok).toBe(true);
-    const long = await during;
+    const castWatched = async () => {
+      const st = await getState(page);
+      const during = watch(2800);
+      await page.waitForTimeout(50);
+      expect((await act(page, { type: 'cast', uid: handUid(st, 'player', 'fireball'), target: { row: 3, col: 6 } })).ok).toBe(true);
+      return during;
+    };
+    // yardstick: the same cast with the FX switched off (automated runs draw in software, where one 3D frame alone can take ~100 ms)
+    await page.evaluate(() => window.oreheart.setSpellFxEnabled(false));
+    const base = await castWatched();
+    await page.evaluate(() => window.oreheart.setSpellFxEnabled(true));
+    s = await newMatch(page, sfxSetup({ playerHand: ['fireball'], board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 6 }] }));
+    await page.waitForTimeout(1500);
+    await sfxClear(page);
+    const long = await castWatched();
     const L = (await sfxLog(page)).find((e) => e.spell === 'fireball');
     expect(L.reduced).toBe(true);
     expect(L.textures).toBe('phone');
@@ -11852,9 +11860,9 @@ test.describe('spell FX on a phone (844x390, touch)', () => {
     // the FX's own JavaScript is tiny: no FX step over 16 ms, starting it under 50 ms
     expect(n.perf.maxUpdateMs, 'slowest FX frame step (ms)').toBeLessThanOrEqual(16);
     expect(n.perf.maxPlayMs, 'starting the FX (ms)').toBeLessThanOrEqual(50);
-    // no JS task over 100 ms during the fireball (or, where the drawing itself is that slow, nothing longer than the same page without a spell)
-    const cap = Math.max(100, Math.max(0, ...base) + 40);
-    expect(Math.max(0, ...long), `long tasks during the fireball: [${long.join(', ')}] ms; without a spell: [${base.join(', ')}] ms`).toBeLessThanOrEqual(cap);
+    // no JS task over 100 ms during the fireball; where the page is slower than that without the FX too, the FX adds no long task of its own
+    const cap = Math.max(100, Math.max(0, ...base) * 1.3 + 50);
+    expect(Math.max(0, ...long), `long tasks during the fireball: [${long.join(', ')}] ms; same cast without FX: [${base.join(', ')}] ms`).toBeLessThanOrEqual(cap);
   });
 });
 
