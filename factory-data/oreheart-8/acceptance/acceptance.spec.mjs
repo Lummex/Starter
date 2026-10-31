@@ -4397,7 +4397,8 @@ test('AC146: Choose Your Commander: big glowing Commander cards that stand out, 
       expect(gap, `${at} cards ${a}/${b} sit close`).toBeLessThanOrEqual(W * 0.06 + 1);
     }
     const stack = deckRow(page).getByRole('button', { name: 'Goblin Warband, 60 cards, ready', exact: true });
-    expect((await box(stack)).height, `${at} deck stack size`).toBeGreaterThanOrEqual(H * 0.15);
+    // owner check change (Ken, Oct 31, via Forge: the deck picker is a list on the right-hand side with room for four named starter decks): a deck row, not a big stack
+    expect((await box(stack)).height, `${at} deck entry size`).toBeGreaterThanOrEqual(34);
     const glow = (n) => page.getByRole('button', { name: n, exact: true }).evaluate((e) => {
       for (const x of [e, ...e.querySelectorAll('*')]) {
         const c = getComputedStyle(x);
@@ -4407,11 +4408,12 @@ test('AC146: Choose Your Commander: big glowing Commander cards that stand out, 
     });
     for (const n of COMMANDERS) expect(await glow(n), `${at} ${n} glows`).not.toBeNull();
     expect(await glow(COMMANDERS[0]), `${at} selected glows strongest`).not.toBe(await glow(COMMANDERS[1]));
-    const blurred = await page.evaluate(() => [...document.querySelectorAll('*')].some((e) => {
+    // owner check change (Ken, Oct 31): "the background box that the commander cards sit in, I don't want that. Just take that out." -> no dimmed/blurred wall behind the cards any more
+    const blurred = await page.evaluate(() => [...document.querySelectorAll('[data-screen="select"] *')].some((e) => {
       const c = getComputedStyle(e);
       return /blur\(/.test(c.backdropFilter || c.webkitBackdropFilter || '') || /blur\(/.test(c.filter);
     }));
-    expect(blurred, `${at} dimmed/blurred wall behind the cards`).toBe(true);
+    expect(blurred, `${at} no dimmed/blurred wall behind the cards`).toBe(false);
     const fb = await box(page.getByRole('button', { name: 'Fight!', exact: true }));
     expect(fb.y + fb.height, `${at} Fight! on-screen`).toBeLessThanOrEqual(H + 1);
     if (W === 1280) expect(await px(page.getByRole('heading', { name: 'Choose Your Commander' })), 'heading 2x').toBeGreaterThanOrEqual(28);
@@ -6187,7 +6189,8 @@ test('AC205: every deck entry on Choose Your Commander has the same size, also f
   }
 });
 
-test('AC206: choosing a Commander hides the other two and shows only his decks; Change Commander, Esc and a second click bring the row back', async ({ page }) => {
+// owner check change (Ken, Oct 31): "when you click the goblin king, I don't want his 3D image to pop up anymore. Just leave it his card, selected, and put arrows on either side of the card so you can page through the commanders. Instead of [the] change commander [button], just have the arrows ... Forward and back."
+test('AC206: choosing a Commander hides the other two and shows only his decks; the arrows page on, Esc brings the row back, a second click keeps him selected', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await toSelect(page);
   for (const n of COMMANDERS) await expect(page.getByRole('button', { name: n, exact: true })).toBeVisible();
@@ -6198,33 +6201,34 @@ test('AC206: choosing a Commander hides the other two and shows only his decks; 
   await page.getByRole('button', { name: COMMANDERS[1], exact: true }).hover();
   await expect.poll(async () => { const x = await w(); return x[1] > w0[1] + 1 && x[0] < w0[0] - 0.5 && x[2] < w0[2] - 0.5; }, { message: 'hover grow/shrink' }).toBe(true);
   const grub = page.getByRole('button', { name: COMMANDERS[0], exact: true });
-  const focus = async () => {
-    await grub.click();
+  const focused = async () => {
     await expect(page.getByRole('button', { name: COMMANDERS[1], exact: true })).toBeHidden();
     await expect(page.getByRole('button', { name: COMMANDERS[2], exact: true })).toBeHidden();
     await expect(grub).toBeVisible();
     await expect(grub).toHaveAttribute('aria-pressed', 'true');
     expect((await selectState(page)).mode).toBe('focused');
-    await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Previous commander', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Next commander', exact: true })).toBeVisible();
     await expect(deckRow(page).getByRole('button', { name: 'Goblin Warband, 60 cards, ready', exact: true })).toBeVisible();
     await expect(deckRow(page).getByRole('button', { name: /^(Gnome|Dwarf) / })).toHaveCount(0);
   };
   const backToRow = async (how) => {
     for (const n of COMMANDERS) await expect(page.getByRole('button', { name: n, exact: true }), how).toBeVisible();
     expect((await selectState(page)).mode, how).toBe('row');
-    await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toHaveCount(0);
   };
-  await focus();
-  await page.getByRole('button', { name: 'Change Commander', exact: true }).click();
-  await backToRow('Change Commander');
-  await focus();
+  await grub.click();
+  await focused();
+  await grub.click(); // a second click leaves his card selected
+  await focused();
   await page.keyboard.press('Escape');
   await backToRow('Esc');
-  await focus();
   await grub.click();
-  await backToRow('second click');
-  await page.getByRole('button', { name: COMMANDERS[1], exact: true }).click();
+  await focused();
+  await page.getByRole('button', { name: 'Next commander', exact: true }).click();
   expect((await selectState(page)).commanderId).toBe('sproingle');
+  await expect(page.getByRole('button', { name: COMMANDERS[1], exact: true })).toBeVisible();
+  await expect(grub).toBeHidden();
   await expect(deckRow(page).getByRole('button', { name: 'Gnome Warband, 60 cards, ready', exact: true })).toBeVisible();
   await expect(deckRow(page).getByRole('button', { name: /^(Goblin|Dwarf) / })).toHaveCount(0);
   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
@@ -6232,12 +6236,14 @@ test('AC206: choosing a Commander hides the other two and shows only his decks; 
   expect(s.players.player.commanderId).toBe('sproingle');
 });
 
-test('AC207: Grubnak\'s 3D model pops up in front of his card when he is chosen', async ({ page, request }) => {
-  test.skip(!(await grubnakModels(request)), 'no Grubnak models.json');
+// owner check change (Ken, Oct 31): "when you click the goblin king, I don't want his 3D image to pop up anymore. Just leave it his card, selected, and put arrows on either side of the card so you can page through the commanders. Instead of [the] change commander [button], just have the arrows ... Forward and back."
+test('AC207: choosing Grubnak shows only his card, selected: no 3D model pops up', async ({ page }) => {
   await toSelect(page);
   await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
-  await expect.poll(async () => { const m = (await selectState(page)).model; return !!(m && m.shown && /grubnak\.glb$/.test(m.source)); }, { timeout: 15000 }).toBe(true);
-  await expect(page.locator('canvas:visible').first()).toBeVisible();
+  await page.waitForTimeout(1500);
+  expect((await selectState(page)).model).toBeNull();
+  await expect(page.locator('[data-screen="select"] canvas')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: COMMANDERS[0], exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('AC208: Fight! sits bottom-right in both states at 1920x1080 and 844x390', async ({ page }) => {
@@ -6252,7 +6258,7 @@ test('AC208: Fight! sits bottom-right in both states at 1920x1080 and 844x390', 
     };
     await check('row');
     await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Next commander', exact: true })).toBeVisible(); // owner check change (Ken, Oct 31): arrows replace Change Commander
     await check('focused');
     await expect(page.getByRole('button', { name: /in 3D/ })).toHaveCount(0);
   }
@@ -8116,10 +8122,7 @@ test('AC282: Choose Your Commander and the Deck Builder viewer show the seated G
   await tile.click();
   await expect(page.getByRole('dialog', { name: COMMANDERS[0], exact: true }).getByLabel('3D model', { exact: true })).toBeVisible();
   await expect.poll(async () => (await page.evaluate(async () => await window.oreheart.getViewerState())).source, { timeout: 15000 }).toMatch(/grubnak\.glb$/);
-  await page.goto('/?test=1');
-  await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
-  await expect.poll(async () => { const m = (await selectState(page)).model; return !!(m && m.shown && /grubnak\.glb$/.test(m.source)); }, { timeout: 15000 }).toBe(true);
+  // owner check change (Ken, Oct 31): no 3D pop-up on Choose Your Commander any more ("I don't want his 3D image to pop up anymore"); AC207 checks it stays away
 });
 
 
@@ -9434,7 +9437,7 @@ test.describe('round 17 fixes at 844x390', () => {
   test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
   test('AC346: Choose Your Commander fits a phone with nothing overlapping or cut off', async ({ page }) => {
     await toSelect(page);
-    const names = ['Fight!', 'Back', 'Easy', 'Normal', 'Hard', ...MODES, 'Remove Goblin Warband', 'Copy Goblin Warband to my decks'];
+    const names = ['Fight!', 'Back', 'Easy', 'Normal', 'Hard', ...MODES, 'Remove Goblin Warband', 'Copy Goblin Warband to my decks', 'Previous commander', 'Next commander', ...COMMANDERS];
     const boxes = {};
     for (const n of names) {
       const b = await page.getByRole('button', { name: n, exact: true }).boundingBox();
@@ -11103,4 +11106,142 @@ test('AC424: the computer opponent thinks in a Web Worker in a live match: the w
   await page.evaluate(async () => await window.oreheart.newMatch({ mode: 'standard', ai: true, difficulty: 'hard', seed: 5, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { firstPlayer: 'opponent' } }));
   expect((await page.evaluate(async () => await window.oreheart.getAiInfo())).worker).toBe(false);
   expect((await getState(page)).activePlayer).toBe('player');
+});
+
+// ---------- Oct 31 playtest (Ken): Choose Your Commander (AC460–AC464) ----------
+// Ken: "the background box that the commander cards sit in, I don't want that. Just take that out. And when you click the goblin king, I don't want
+// his 3D image to pop up anymore. Just leave it his card, selected, and put arrows on either side of the card so you can page through the commanders.
+// Instead of [the] change commander [button], just have the arrows ... Forward and back. I would also like the game mode, standard ... comp versus comp
+// ... on the right-hand side. And the fight doesn't fit inside the button that it's in. It looks awkward."
+// Forge (Ken approved): the deck picker sits on the right-hand side under the game modes, with room for four named starter decks.
+const SEL_SIZES = [[1920, 1080], [844, 390]];
+const cardPanelProblems = (page) => page.evaluate(() => {
+  const zone = document.querySelector('[data-menu-piece="cCards"]');
+  if (!zone) return ['no cCards box'];
+  const bad = [];
+  if (document.querySelector('[data-screen="select"] .cmd-wall')) bad.push('cmd-wall element');
+  for (const e of [zone, ...zone.querySelectorAll('*')]) {
+    if (e.closest('.cmd-card,.cmd-arrow')) continue;
+    const c = getComputedStyle(e);
+    const alpha = (c.backgroundColor.match(/rgba?\(([^)]+)\)/) || [0, '0,0,0,0'])[1].split(',').map(Number)[3];
+    if (!(alpha === 0 || c.backgroundColor === 'transparent')) bad.push(`${e.className} background ${c.backgroundColor}`);
+    if (c.backgroundImage !== 'none') bad.push(`${e.className} background-image`);
+    if (/blur\(/.test(c.backdropFilter || c.webkitBackdropFilter || '')) bad.push(`${e.className} backdrop blur`);
+    if (c.boxShadow !== 'none') bad.push(`${e.className} box-shadow`);
+  }
+  return bad;
+});
+
+test('AC460: Choose Your Commander has no panel behind the Commander cards (row and chosen, 1920x1080 and 844x390)', async ({ page }) => {
+  for (const [W, H] of SEL_SIZES) {
+    await page.setViewportSize({ width: W, height: H });
+    await toSelect(page);
+    expect(await cardPanelProblems(page), `${W}x${H} row`).toEqual([]);
+    await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
+    expect(await cardPanelProblems(page), `${W}x${H} chosen`).toEqual([]);
+  }
+});
+
+test('AC461: clicking a Commander card opens no 3D viewer or pop-up; his card stays selected', async ({ page }) => {
+  for (const [W, H] of SEL_SIZES) {
+    await page.setViewportSize({ width: W, height: H });
+    for (const n of COMMANDERS) {
+      await toSelect(page);
+      const card = page.getByRole('button', { name: n, exact: true });
+      await card.click();
+      await page.waitForTimeout(800);
+      await expect(card, `${W}x${H} ${n}`).toBeVisible();
+      await expect(card).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.getByRole('dialog')).toHaveCount(0);
+      await expect(page.locator('[data-screen="select"] canvas, [data-screen="select"] .viewer3d, .cmd-stage')).toHaveCount(0);
+      expect((await selectState(page)).model).toBeNull();
+    }
+  }
+});
+
+test('AC462: the Previous / Next commander arrows sit either side of the card and page through the Commanders, wrapping, also with the keyboard', async ({ page }) => {
+  const IDS = ['grubnak', 'sproingle', 'borgo'];
+  for (const [W, H] of SEL_SIZES) {
+    await page.setViewportSize({ width: W, height: H });
+    await page.goto('/?test=1');
+    await page.evaluate(() => localStorage.removeItem('oreheart.picks'));
+    await toSelect(page);
+    await expect(page.getByRole('button', { name: 'Change Commander', exact: true })).toHaveCount(0);
+    const prev = page.getByRole('button', { name: 'Previous commander', exact: true });
+    const next = page.getByRole('button', { name: 'Next commander', exact: true });
+    for (const a of [prev, next]) { await expect(a).toBeVisible(); expect(await a.evaluate((e) => e.tagName)).toBe('BUTTON'); }
+    await page.getByRole('button', { name: COMMANDERS[0], exact: true }).click();
+    const shows = async (i, how) => {
+      expect((await selectState(page)).commanderId, how).toBe(IDS[i]);
+      const card = page.getByRole('button', { name: COMMANDERS[i], exact: true });
+      await expect(card, how).toBeVisible();
+      await expect(card, how).toHaveAttribute('aria-pressed', 'true');
+      for (let j = 0; j < 3; j++) if (j !== i) await expect(page.getByRole('button', { name: COMMANDERS[j], exact: true }), how).toBeHidden();
+      const c = await box(card), p = await box(prev), n = await box(next);
+      expect(p.x + p.width, `${W}x${H} ${how} previous arrow left of the card`).toBeLessThanOrEqual(c.x + 1);
+      expect(n.x, `${W}x${H} ${how} next arrow right of the card`).toBeGreaterThanOrEqual(c.x + c.width - 1);
+      for (const a of [p, n]) expect(a.y < c.y + c.height && a.y + a.height > c.y, `${W}x${H} ${how} arrow beside the card`).toBe(true);
+      for (const a of [p, n]) expect(a.width >= 40 && a.height >= 40, `${W}x${H} arrow big enough to tap`).toBe(true);
+    };
+    await shows(0, 'start');
+    await next.click(); await shows(1, 'next 1');
+    await next.click(); await shows(2, 'next 2');
+    await next.click(); await shows(0, 'next wraps');
+    await prev.click(); await shows(2, 'previous wraps');
+    await expect(deckRow(page).getByRole('button', { name: 'Dwarf Warband, 60 cards, ready', exact: true })).toBeVisible();
+    await page.keyboard.press('ArrowRight'); await shows(0, 'ArrowRight wraps');
+    await page.keyboard.press('ArrowLeft'); await shows(2, 'ArrowLeft wraps');
+    await page.keyboard.press('ArrowLeft'); await shows(1, 'ArrowLeft');
+    expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1 && document.documentElement.scrollWidth <= innerWidth + 1), `${W}x${H} no page scroll`).toBe(true);
+  }
+});
+
+test('AC463: the game modes sit in the right third of the screen, with the deck picker under them (room for four starter decks), at 1920x1080 and 844x390', async ({ page }) => {
+  for (const [W, H] of SEL_SIZES) {
+    await page.setViewportSize({ width: W, height: H });
+    await toSelect(page);
+    const g = await box(page.getByRole('group', { name: 'Game mode', exact: true }));
+    expect(g.x, `${W}x${H} mode group in the right third`).toBeGreaterThanOrEqual(W * 2 / 3 - 1);
+    expect(g.x + g.width, `${W}x${H} mode group on screen`).toBeLessThanOrEqual(W + 1);
+    for (const m of MODES) {
+      const b = await box(page.getByRole('button', { name: m, exact: true }));
+      expect(b.x >= W * 2 / 3 - 1 && b.x + b.width <= W + 1 && b.y >= -1 && b.y + b.height <= H + 1, `${W}x${H} ${m} in the right third, on screen`).toBe(true);
+    }
+    const d = await box(deckRow(page));
+    expect(d.x, `${W}x${H} deck picker in the right third`).toBeGreaterThanOrEqual(W * 2 / 3 - 1);
+    expect(d.y, `${W}x${H} deck picker under the modes`).toBeGreaterThanOrEqual(g.y + g.height - 1);
+    expect(d.y + d.height, `${W}x${H} deck picker on screen`).toBeLessThanOrEqual(H + 1);
+    const fit = await deckRow(page).evaluate((list) => {
+      const rows = [...list.querySelectorAll('.dslot')];
+      const r0 = rows[0].getBoundingClientRect(), r1 = rows[1].getBoundingClientRect();
+      return Math.floor((list.clientHeight + (r1.top - r0.bottom)) / (r1.top - r0.top));
+    });
+    expect(fit, `${W}x${H} four deck rows fit`).toBeGreaterThanOrEqual(4);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1), `${W}x${H} no page scroll`).toBe(true);
+  }
+});
+
+test('AC464: Fight! and the other silver buttons on Choose Your Commander hold their text inside the button with at least 6 px to spare', async ({ page }) => {
+  const textInside = (loc) => loc.evaluate((e) => {
+    const r = document.createRange(); r.selectNodeContents(e);
+    const t = r.getBoundingClientRect(), b = e.getBoundingClientRect();
+    return { l: t.left - b.left, r: b.right - t.right, t: t.top - b.top, b: b.bottom - t.bottom, tw: t.width, th: t.height, sw: e.scrollWidth, cw: e.clientWidth };
+  });
+  for (const [W, H] of SEL_SIZES) {
+    await page.setViewportSize({ width: W, height: H });
+    await toSelect(page);
+    await page.mouse.move(1, 1);
+    // the phone keeps the mode / difficulty choices as plain text (no frames); Fight! is framed at both sizes
+    const names = W > 1000 ? ['Fight!', ...MODES, 'Easy', 'Normal', 'Hard'] : ['Fight!'];
+    for (const n of names) {
+      const btnLoc = page.getByRole('button', { name: n, exact: true });
+      const p = await textInside(btnLoc);
+      expect(p.tw, `${W}x${H} ${n} has text`).toBeGreaterThan(0);
+      for (const k of ['l', 'r', 't', 'b']) expect(p[k], `${W}x${H} ${n} text padding ${k}`).toBeGreaterThanOrEqual(6);
+      expect(p.sw, `${W}x${H} ${n} no overflow`).toBeLessThanOrEqual(p.cw + 1);
+      const b = await box(btnLoc);
+      expect(b.x >= -1 && b.y >= -1 && b.x + b.width <= W + 1 && b.y + b.height <= H + 1, `${W}x${H} ${n} on screen`).toBe(true);
+    }
+    expect(await unframed(page, ['Fight!']), `${W}x${H} Fight! keeps the silver art`).toEqual([]);
+  }
 });
