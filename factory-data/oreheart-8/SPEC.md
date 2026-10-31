@@ -61,7 +61,7 @@ Online checks use `?test=1&online=1`, the local Supabase and their own new users
 - **AC500** `supabase/tests/run-supabase.sh` passes (run by the factory; the Playwright check confirms the test files are present).
 - **AC501** `?test=1` (no `online=1`) shows the main menu directly with no login screen and `window.oreheart` present; no TEST SERVER bar.
 - **AC502** `tests/online.test.ts` (vitest) covers the `onlineEnabled` false cases; `src/net/online.ts` and `src/net/env-guard.ts` exist.
-- **AC503** Play offline (practice) opens the main menu; a vs-computer match starts with local decks and makes no `/rest/v1/` request.
+- **AC503** Play offline (practice) opens the main menu with the "Offline — Sign in" chip; a match started the same way as the other match checks (`?test=1` hooks, `newMatch`) and played past Done makes no `/rest/v1/` request.
 - **AC504** Login screen shows Sign in, Create account, Forgot password?, Play offline (practice); every button ≥ 44 px and on screen at 1920×1080, 1366×768, 844×390.
 - **AC505** 13+ sign-up → "Check your email" → confirmation email arrives → after confirming, signing in shows Choose your avatar → Welcome → main menu with Profile.
 - **AC506** Username messages for `ab`, `Grubnak`, a used name in other capitals and a bad word; Create account disabled until name OK and passwords match.
@@ -76,7 +76,7 @@ Online checks use `?test=1&online=1`, the local Supabase and their own new users
 - **AC515** A player's direct writes to wallets, transactions, other decks, roles, own profile, card tables and admin functions are refused / change nothing.
 - **AC516** A player reads their own profiles, wallets, decks rows and no one else's.
 - **AC517** Logged out, tables and non-public functions are refused; the five public functions work.
-- **AC518** A non-admin on the back counter sees "Not an admin" after 2-step; admin functions refuse their login.
+- **AC518** A non-admin on the back counter sees "Not an admin" after 2-step; a second TOTP enrolment for that login succeeds (the check prints the enrol error if not) and admin functions still refuse their login.
 - **AC519** Admin with password only goes to 2-step setup; aal1 `admin_list_players` refused; a wrong code shows an error; the right code opens the back counter.
 - **AC520** The back counter player list finds test players by username and email part and shows $0.00 money spent; paging works.
 - **AC521** Player cards with unique ids; the card link opens Card lookup with first owner and origin.
@@ -86,9 +86,9 @@ Online checks use `?test=1&online=1`, the local Supabase and their own new users
 - **AC525** Audit log lists actions newest first; players can't read or change `admin_audit`.
 - **AC526** Admin site: X-Frame-Options DENY, CSP frame-ancestors 'none', X-Robots-Tag noindex (served or in `vercel.json`); robots.txt disallows all.
 - **AC527** Secret scan passes on the repo and both `dist/` folders.
-- **AC528** Game `dist/` < 95 MB, admin `dist/` < 2 MB.
+- **AC528** Game `dist/` < 250 MB (same limit as AC90; owner, Oct 31), admin `dist/` < 2 MB.
 - **AC529** Game JS calls no `admin_` function except `am_i_admin`; admin JS has no game art.
-- **AC530** REPORT.md has Ken's SQL lines, the lawyer reminder, Editor updates needed and Done/Partly/Not started for B1–B11, C, D.
+- **AC530** `projects/oreheart-8/REPORT.md` (the game's own report, not the factory's) has Ken's SQL lines, the lawyer reminder, Editor updates needed and Done/Partly/Not started for B1–B11, C, D.
 - **AC531** Age question: empty Month/Year, no hint; sign-up traffic never contains the birth year; going back and choosing another year within 24 h shows the first path.
 - **AC532** Under-13 form has "Parent or guardian's email" and no "Email"; sign-up stores under_13 / pending and queues a `parent_consent_request` to that email.
 - **AC533** Pending child sees "Waiting for your parent or guardian"; save_deck/set_avatar/import refused with "waiting for a parent"; Play offline works.
@@ -110,6 +110,7 @@ Online checks use `?test=1&online=1`, the local Supabase and their own new users
 Coins shop, packs, card ownership grey-out (Phase B), ranked play (Phase C), donations (Phase D), trading, chat. Real email delivery and the captcha are not exercised by the checks (local `OUTBOX_MODE=log`, no captcha key). The "production build vs test server" case can't be built in the checks; it is covered by unit tests of the shared env-guard logic. The parent notice is a draft and must be reviewed by a lawyer before launch.
 
 ## Assumptions (Online Phase A)
+- **Round of Oct 31 (owner: "fix the checks, not the game"):** 4 checks rewritten, none removed or added. AC528: game size limit 250 MB (was 95 MB; matches AC90), admin still < 2 MB. AC530: reads only `projects/oreheart-8/REPORT.md`. AC503: after Play offline, the match starts with `openTest` then `newMatch` and presses Done once; it asserts no `/rest/v1/` request. AC518: asserts the TOTP enrol error is null and prints it. The 13 older look-and-feel failures are left alone. No game rule, number or layout changes. The old "keep `dist/` under 95 MB" lines in earlier rounds below are replaced by 250 MB.
 - Exact on-screen texts and labels above were chosen where the brief gave none (field labels, "Send link", "Save password", "Continue", "Imported N decks" + OK, "Avatars" group, Contact form labels).
 - `emailRedirectTo` / `redirectTo` keep the page's query (`?test=1&online=1`) instead of only the origin, so links land back in the same mode; the config already allows `http://127.0.0.1:4173/**`.
 - Checks create most users with the local admin API (already confirmed) and set their own parent-link tokens by writing the token's sha256 into `parental_consents` from the test runner, so they never race the outbox sender; only the email checks (AC505, AC507, AC508) use the mail catcher.

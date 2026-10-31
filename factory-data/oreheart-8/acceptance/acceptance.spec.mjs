@@ -12184,7 +12184,8 @@ test('AC527: secret scan passes on the repo and both dist folders', async () => 
 test('AC528 + AC529: dist sizes; the game calls no admin_ function except am_i_admin; admin has no game art', async () => {
   const { fs, path, dir, admin } = await adminDir();
   const size = (d) => walk(fs, path, d).reduce((s, f) => s + fs.statSync(f).size, 0);
-  expect(size(path.join(dir, 'dist'))).toBeLessThan(95 * 1024 * 1024);
+  // Owner (Oct 31): the game size limit is 250 MB (same as AC90), not 95 MB; the admin site stays under 2 MB
+  expect(size(path.join(dir, 'dist'))).toBeLessThan(250 * 1000 * 1000);
   const adminFiles = walk(fs, path, path.join(admin, 'dist'));
   expect(adminFiles.length).toBeGreaterThan(0);
   expect(size(path.join(admin, 'dist'))).toBeLessThan(2 * 1024 * 1024);
@@ -12196,9 +12197,9 @@ test('AC528 + AC529: dist sizes; the game calls no admin_ function except am_i_a
 
 test('AC530: REPORT.md has Ken\'s SQL lines, the lawyer reminder, editor updates and the status list', async () => {
   const { fs, path, repo } = await adminDir();
-  const candidates = [path.join(repo, 'factory-data/oreheart-8/REPORT.md'), path.join(repo, 'projects/oreheart-8/REPORT.md')];
-  const f = candidates.find((p) => fs.existsSync(p));
-  expect(f, 'REPORT.md').toBeTruthy();
+  // Owner (Oct 31): read the game's own report, never the factory's report
+  const f = path.join(repo, 'projects/oreheart-8/REPORT.md');
+  expect(fs.existsSync(f), 'projects/oreheart-8/REPORT.md').toBe(true);
   const r = fs.readFileSync(f, 'utf8');
   expect(r).toMatch(/Ken's SQL lines/);
   expect(r).toContain("insert into public.roles (user_id, role, granted_by) select id, 'admin', id from auth.users where email = 'KEN-ADMIN-EMAIL-HERE';");
@@ -12230,13 +12231,15 @@ test('AC503: Play offline (practice) opens the menu and a vs-computer match make
   await page.getByRole('button', { name: 'Play offline (practice)', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
   await expect(page.getByText('Offline — Sign in')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+  // Owner (Oct 31): start the match like every other match test (openTest, then newMatch), then press Done;
+  // the point is that no /rest/v1/ request happens while playing offline
   const rest = [];
   page.on('request', (r) => { if (r.url().includes('/rest/v1/')) rest.push(r.url()); });
-  await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
-  const s = await newMatch(page, { seed: 5 });
+  await openTest(page, 5);
+  const s = await newMatch(page);
   expect(s.players.length).toBe(2);
-  await done(page, 2);
+  await done(page);
   expect(rest).toEqual([]);
   expect(errors).toEqual([]);
 });
@@ -12768,7 +12771,8 @@ test('AC518: a non-admin sees "Not an admin" after 2-step and is refused by admi
   await adminSiteSetup2Step(page);
   await expect(page.getByText('Not an admin')).toBeVisible({ timeout: 15000 });
   const c = await loginApi(u);
-  const { data: f } = await c.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'g' + letters(6) });
+  const { data: f, error: enrollError } = await c.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'g' + letters(6) });
+  expect(enrollError, 'TOTP enroll error: ' + JSON.stringify(enrollError && { message: enrollError.message, code: enrollError.code, status: enrollError.status })).toBeNull();
   await c.auth.mfa.challengeAndVerify({ factorId: f.id, code: await totpCode(f.totp.secret) });
   expect((await c.rpc('admin_list_players', {})).error).not.toBeNull();
 });
