@@ -13882,3 +13882,24 @@ test('AC541: the dwarf and gnome arenas: their paintings and layouts load, every
   await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'borgo', opponentCommander: 'sproingle', setup: { firstPlayer: 'player' } }));
   await expect.poll(async () => (await renderStats(page)).arena?.faction, { timeout: 20000 }).toBe('goblins');
 });
+
+// Ken (Nov 1): Brush's final 74 avatars; 8 are mature and show only to their owner on a 16+ account, everyone else sees the safe stand-in, with no wording about it; rivals never take a mature one
+test('AC542: all 74 avatars are in the game; offline, a mature pick shows its safe stand-in on the plate (no age wording anywhere); no rival has a mature avatar', async ({ page }) => {
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const all = await page.evaluate(() => window.oreheart.avatars());
+  expect(all.length).toBe(74);
+  expect(all.filter((a) => a.shipped).length, 'every avatar painted').toBe(74);
+  const mature = all.filter((a) => a.mature);
+  expect(mature.length).toBe(8);
+  for (const a of mature) expect(all.find((x) => x.id === a.safe_fallback && !x.mature && x.race === a.race), `${a.id}: a safe stand-in of the same race`).toBeTruthy();
+  const R = await page.evaluate(() => window.oreheart.roster());
+  for (const r of R) expect(mature.map((a) => a.id), `${r.name}: no mature avatar`).not.toContain(r.avatar);
+  await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [] } }));
+  const av = await page.evaluate(() => { const e = document.querySelector('.match .o-plate.o-you .o-av'); return { pick: e.dataset.avatar, shown: e.dataset.shown, bg: getComputedStyle(e).backgroundImage }; });
+  expect(av.pick, 'Ken\'s pick stays the pick').toBe('goblin-goggle-rogue');
+  expect(av.shown, 'offline the plate shows its safe stand-in').toBe('goblin-girl');
+  expect(av.bg).toContain('/art/avatars/goblin-girl.webp');
+  const text = await page.evaluate(() => document.body.innerText.toLowerCase());
+  for (const w of ['mature', 'age restricted', '16+', 'adult']) expect(text, `no "${w}" wording`).not.toContain(w);
+});
