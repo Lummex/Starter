@@ -1,69 +1,81 @@
 {
- "at": "2026-10-31T10:40:46.521Z",
- "made": 16,
+ "at": "2026-10-31T10:59:28.691Z",
+ "made": 19,
  "results": [
   {
-   "id": "cand-grungle",
+   "id": "batch-gob-scrappy-1",
    "ok": true
   },
   {
-   "id": "cand-monster",
+   "id": "batch-gob-big-1",
    "ok": true
   },
   {
-   "id": "cand-pip",
+   "id": "batch-gob-big-2",
    "ok": true
   },
   {
-   "id": "cand-xylar",
+   "id": "batch-gob-sly-1",
    "ok": true
   },
   {
-   "id": "cand-ragnar",
+   "id": "batch-gob-crazy-1",
    "ok": true
   },
   {
-   "id": "cand-rusty",
+   "id": "batch-gob-queen-1",
    "ok": true
   },
   {
-   "id": "cand-brodie",
+   "id": "batch-gno-quick-1",
    "ok": true
   },
   {
-   "id": "cand-clint",
+   "id": "batch-gno-quick-2",
    "ok": true
   },
   {
-   "id": "cand-bernard",
+   "id": "batch-gno-prim-1",
    "ok": true
   },
   {
-   "id": "cand-malachi",
+   "id": "batch-gno-boom-1",
    "ok": true
   },
   {
-   "id": "cand-mabel",
+   "id": "batch-gno-steady-1",
    "ok": true
   },
   {
-   "id": "cand-myrna",
+   "id": "batch-gno-steady-2",
    "ok": true
   },
   {
-   "id": "cand-kirk",
+   "id": "batch-gno-lady-1",
    "ok": true
   },
   {
-   "id": "cand-billy",
+   "id": "batch-dwa-sarge-1",
    "ok": true
   },
   {
-   "id": "cand-wanda",
+   "id": "batch-dwa-sarge-2",
    "ok": true
   },
   {
-   "id": "cand-elliot",
+   "id": "batch-dwa-gruff-1",
+   "ok": true
+  },
+  {
+   "id": "batch-dwa-young-1",
+   "ok": true
+  },
+  {
+   "id": "batch-dwa-jolly-1",
+   "ok": true
+  },
+  {
+   "id": "batch-dwa-queen-1",
    "ok": true
   }
  ]
