@@ -22,7 +22,8 @@ const CONSENT_TEXT: Record<string, [string, string]> = {
   approved: ['Under 13: parent approved', 'ok'],
   revoked: ['Under 13: approval withdrawn', 'bad'],
 };
-// Age group (Ken, Oct 31): back-counter only; players are never told. 16+ may see and pick the mature avatars.
+// Age group (Ken, Oct 31): stored so the game can hide mature avatars from under-16s; nobody is shown a restricted label,
+// not even here. The one audited setting sits at the bottom of the player page for support and test accounts only.
 const AGE_TEXT: Record<string, string> = { '16_plus': '16+', '13_plus': '13 to 15 (or unconfirmed)', under_13: 'Under 13' };
 export const ageLabel = (g: string) => AGE_TEXT[g] ?? g;
 
@@ -180,7 +181,6 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
           h('dt', {}, 'Joined'), h('dd', {}, fmtDate(d.profile.created_at)),
           h('dt', {}, 'Last seen'), h('dd', {}, fmtDate(d.profile.last_seen_at)),
           h('dt', {}, 'Age / parent'), h('dd', {}, consentLabel(d.profile.consent_status)),
-          h('dt', {}, 'Age group'), h('dd', { 'data-testid': 'player-age-group' }, ageLabel(d.profile.age_group)),
           h('dt', {}, 'Avatar card'), h('dd', {}, d.profile.avatar ?? '—'),
           h('dt', {}, 'Coins'), h('dd', { 'data-testid': 'player-coins' }, fmtNum(d.coins)),
           h('dt', {}, 'Money spent'), h('dd', { 'data-testid': 'player-money' }, fmtMoney(d.money_spent_cents)),
@@ -189,8 +189,7 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
           h('dt', {}, 'Player id'), h('dd', { class: 'mono' }, d.profile.id))),
       h('section', { class: 'card' }, h('h2', {}, d.ban ? 'Unban' : 'Ban'), banForm),
       h('section', { class: 'card' }, h('h2', {}, 'Grant coins'), grantForm),
-      h('section', { class: 'card' }, h('h2', {}, 'Rename'), renameForm),
-      h('section', { class: 'card' }, h('h2', {}, 'Age group'), ageForm)),
+      h('section', { class: 'card' }, h('h2', {}, 'Rename'), renameForm)),
     ...(consentCard ? [consentCard] : []),
     h('section', { class: 'card' }, h('h2', {}, `Decks (${d.decks.length})`),
       table(['Name', 'Commander', 'Cards', 'From', 'Updated'], d.decks.map((x) => [x.name, x.commander ?? '—', fmtNum(x.cards), x.source, fmtDate(x.updated_at)]), 'deck-table')),
@@ -213,4 +212,5 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
       table(['Banned', 'Until', 'Reason', 'Lifted', 'Lift reason'], d.bans.map((b) => [fmtDate(b.created_at), b.expires_at ? fmtDate(b.expires_at) : 'permanent', b.reason, fmtDate(b.lifted_at), b.lift_reason ?? '—']))),
     h('section', { class: 'card' }, h('h2', {}, 'Admin actions on this player'),
       table(['When', 'Admin', 'Action', 'Before', 'After', 'Reason'], audit.map((a) => [fmtDate(a.created_at), a.admin_name ?? '—', a.action, changeView(a.before), changeView(a.after), a.reason]))));
+  root.append(h('details', { class: 'small', 'data-testid': 'age-group-details' }, h('summary', {}, 'Age group (support only)'), ageForm));
 }
