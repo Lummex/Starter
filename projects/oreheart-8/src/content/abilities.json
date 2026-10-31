@@ -106,5 +106,9 @@
  "brew": {
   "name": "Brew",
   "text": "Once per turn, at any time (even on the enemy's turn): heal an adjacent wounded dwarf. If that dwarf would die, it survives with 1 Health instead. It becomes Drunk for 2 rounds. Drunk dwarves can't be healed."
+ },
+ "riotShield": {
+  "name": "Riot Shield",
+  "text": "Enemies next to it must attack it first. It takes 1 less damage from every hit, and nothing can knock it back, bowl it, lift it or shove it."
  }
 }

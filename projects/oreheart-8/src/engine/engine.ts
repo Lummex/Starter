@@ -32,6 +32,7 @@ const FACE: Record<string, string> = { '-1,0': 'N', '-1,1': 'NE', '0,1': 'E', '1
 /** Turn `c` toward a square (never changes when the square is its own). */
 const faceTo = (c: any, row: number, col: number) => { const k = sgn(row - c.row) + ',' + sgn(col - c.col); if (FACE[k]) c.facing = FACE[k]; };
 function knock(s: any, c: any, dr: number, dc: number, n: number, ev: any[]) {
+  if (has(c, 'riotShield')) return; // Ken (Oct 31): the Riot Shield Bearer is an immovable object: nothing knocks, bowls, shoves or lifts it
   for (let i = 0; i < n; i++) {
     const row = c.row + dr, col = c.col + dc;
     if (!emptyCell(s, row, col)) break;
@@ -55,7 +56,7 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
   const maxHealth = card.health + (bh ? bh.amount : 0);
   const c = {
     uid: uid || 'u' + s.nextUid++, cardId, owner, row, col, attack: card.attack, health: maxHealth - damage, maxHealth,
-    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: card.abilities?.includes('riotShield') ? s.turn + 6 : 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0, drunk: 0, brewSave: false, brewTurn: 0, facing: owner === 'player' ? 'N' : 'S',
+    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0, drunk: 0, brewSave: false, brewTurn: 0, facing: owner === 'player' ? 'N' : 'S',
   };
   s.board.creatures.push(c);
   return c;
@@ -442,9 +443,9 @@ function damageCommander(s: any, who: Side, n: number, ev: any[]) {
 
 function hurt(s: any, c: any, amount: number, ev: any[], raw = false) {
   let d = amount;
-  if ((has(c, 'riotShield') && s.turn < c.lockedUntil) || s.turn < (c.wardUntil || 0)) d = 0;
+  if (s.turn < (c.wardUntil || 0)) d = 0;
   if (!raw) {
-    if (has(c, 'armored')) d = Math.max(0, d - 1);
+    if (has(c, 'armored') || has(c, 'riotShield')) d = Math.max(0, d - 1); // Ken (Oct 31): Riot Shield = a lot of blocking, a fair wall (1 less from every hit)
     if (has(c, 'unbreakable')) d = Math.min(d, 3);
     if ((c.bubbles > 0 || c.bubble) && d > 0) { c.bubbles = Math.max(0, (c.bubbles || 1) - 1); c.bubble = c.bubbles > 0; d = 0; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col, left: c.bubbles }); } // stacking: one bubble per blocked hit
     if (c.shield > 0 && d > 0) { const b = Math.min(c.shield, d); c.shield -= b; d -= b; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col, amount: b }); }
@@ -483,7 +484,6 @@ function defeat(s: any, c: any, ev: any[]) {
 // Ken (Oct 30, approved stacking plan): the same lasting effect adds up; the clock keeps the longer; caps in game-config
 const STACK_CAP = () => CONFIG.stackCap ?? 3, AURA_CAP = () => CONFIG.auraStackCap ?? 2, ROOT_CAP = () => CONFIG.rootStackCap ?? 2;
 /** a Riot Shield Bearer behind its shield (can't be lifted, hurt or act) */
-const riotUp = (s: any, o: any) => has(o, 'riotShield') && s.turn < (o.lockedUntil || 0);
 const ADV = (a: string, d: string) => FACTIONS[a]?.beats === d;
 /** Junk Shaman's situational +1 Attack for adjacent Goblins on their owner's turn. */
 export function junkBonus(s: any, c: any): number {
@@ -528,7 +528,7 @@ export function attackTargets(s: any, c: any): any[] {
     return out;
   }
   const adj = s.board.creatures.filter((o: any) => o.owner === enemy && cheb(o, c) === 1);
-  const guards = adj.filter((o: any) => has(o, 'guard'));
+  const guards = adj.filter((o: any) => has(o, 'guard') || has(o, 'riotShield')); // Riot Shield (Ken, Oct 31): it stands in the way, so enemies beside it must hit it first
   if (guards.length) guards.forEach((g: any) => out.push({ row: g.row, col: g.col }));
   else {
     adj.forEach((o: any) => out.push({ row: o.row, col: o.col }));
@@ -611,7 +611,7 @@ export function abilityActions(s: any, who: Side): any[] {
     if (has(c, 'plow') && ok) for (const [dr, dc] of D4) for (let dist = 1; dist <= 7; dist++) { const r = c.row + dr * dist, cl = c.col + dc * dist; if (!inBounds(r, cl) || isStronghold(r, cl) || isSite(s, r, cl)) break; mk('plow', { dr, dc, dist }); }
     if (has(c, 'ramMove') && ok) for (const [dr, dc] of DIRS8) { const e = runLine(s, c, dr, dc); for (let k = 1; k <= e.steps; k++) mk('ramMove', { target: { row: c.row + dr * k, col: c.col + dc * k } }); }
     if (has(c, 'shaman') && !c.hasAttacked && canAct(s, c))
-      for (const o of s.board.creatures) if (o !== c && cheb(o, c) <= 5 && !riotUp(s, o)) // fix: o.riotShield never existed, so a shielded Riot Shield Bearer could be lifted
+      for (const o of s.board.creatures) if (o !== c && cheb(o, c) <= 5 && !has(o, 'riotShield')) // Riot Shield (Ken, Oct 31): the Bearer is immovable, never lifted
         for (let r = 1; r <= H; r++) for (let cl = 1; cl <= W; cl++) if (cheb({ row: r, col: cl }, c) <= 5 && emptyCell(s, r, cl)) mk('shaman', { from: { row: o.row, col: o.col }, target: { row: r, col: cl } });
     if (has(c, 'rocket') && ok) for (let r = 1; r <= H; r++) for (let cl = 1; cl <= W; cl++) if (emptyCell(s, r, cl)) mk('rocket', { target: { row: r, col: cl } });
     if (has(c, 'ward') && c.wardTurn !== s.turn && canAct(s, c)) for (const o of s.board.creatures) if (o.owner === who && o !== c) mk('ward', { target: { row: o.row, col: o.col } });
@@ -641,7 +641,7 @@ function runAbility(s: any, l: any, who: Side, ev: any[]) {
       const path: { row: number; col: number }[] = [];
       const hits: any[] = [];
       for (let r = c.row + l.dr, cl = c.col + l.dc; inBounds(r, cl) && !isStronghold(r, cl) && !isSite(s, r, cl); r += l.dr, cl += l.dc) path.push({ row: r, col: cl });
-      const line = path.map((p) => creatureAt(s, p.row, p.col)).filter(Boolean);
+      const line = path.map((p) => creatureAt(s, p.row, p.col)).filter(Boolean).filter((o: any) => !has(o, 'riotShield')); // Riot Shield (Ken, Oct 31): immovable
       for (const o of line) {
         const from = { row: o.row, col: o.col };
         const side = rint(s, 0, 1) ? 1 : -1, n = rint(s, 1, 2);
@@ -718,7 +718,7 @@ export function summonSpaces(s: any, p: Side, card: any): { row: number; col: nu
 /** Mines `c` can mine this turn (one action: afterwards it can't move or attack). */
 export function mineTargets(s: any, c: any): { row: number; col: number }[] {
   // Riot Shield (Ken, Oct 31 dwarf rebalance): a shielded Riot Shield Bearer can't move or attack, but it can still mine
-  if (c.hasMoved || c.hasAttacked || c.hasMined || (s.turn < c.lockedUntil && !has(c, 'riotShield'))) return [];
+  if (c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil) return [];
   if (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) return [];
   return s.sites.filter((x: any) => cheb(c, x) <= 1).map((x: any) => ({ row: x.row, col: x.col }));
 }
@@ -726,7 +726,7 @@ export function mineTargets(s: any, c: any): { row: number; col: number }[] {
 /** Spaces `c` can move to; a space held by one of its own creatures is a swap. */
 export function moveDests(s: any, c: any): { row: number; col: number }[] {
   // Riot Shield (Ken, Oct 31 dwarf rebalance): the shield stops attacking and dying, not walking: a Bearer can walk to a mine and dig while shielded
-  if (s.turn < (c.rootUntil || 0) || c.hasMoved || c.hasAttacked || c.hasMined || (s.turn < c.lockedUntil && !has(c, 'riotShield')) || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId]))) return [];
+  if (s.turn < (c.rootUntil || 0) || c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId]))) return [];
   const m = maxMove(c);
   const out: any[] = [];
   for (let dr = -m; dr <= m; dr++) for (let dc = -m; dc <= m; dc++) {
@@ -1475,13 +1475,13 @@ const MOVE_TYPES = ['summon', 'cast', 'playCrystal', 'minerUpgrade', 'mineAt', '
 export function shamanLiftTargets(state: any, shamanUid: string): any[] {
   const c = state.board.creatures.find((x: any) => x.uid === shamanUid);
   if (!c || !has(c, 'shaman')) return [];
-  return state.board.creatures.filter((o: any) => o !== c && cheb(o, c) <= 5 && !riotUp(state, o));
+  return state.board.creatures.filter((o: any) => o !== c && cheb(o, c) <= 5 && !has(o, 'riotShield'));
 }
 /** Empty squares within 5 of the Shaman where the chosen target may land. */
 export function shamanLandingSquares(state: any, shamanUid: string, targetUid: string): { row: number; col: number }[] {
   const c = state.board.creatures.find((x: any) => x.uid === shamanUid);
   const o = state.board.creatures.find((x: any) => x.uid === targetUid);
-  if (!c || !o || o === c || !has(c, 'shaman') || cheb(o, c) > 5 || riotUp(state, o)) return [];
+  if (!c || !o || o === c || !has(c, 'shaman') || cheb(o, c) > 5 || has(o, 'riotShield')) return [];
   const out: { row: number; col: number }[] = [];
   for (let r = 1; r <= H; r++) for (let cl = 1; cl <= W; cl++) if (cheb({ row: r, col: cl }, c) <= 5 && emptyCell(state, r, cl)) out.push({ row: r, col: cl });
   return out;
@@ -1503,5 +1503,5 @@ export function applyAction(state: any, action: any): { ok: boolean; state: any;
 
 /** True when a creature has acted this turn, or cannot act yet (shown darker in the UI). */
 export function isActed(s: any, c: any): boolean {
-  return c.hasMoved || c.hasAttacked || c.hasMined || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) || (s.turn < c.lockedUntil && !has(c, 'riotShield')); // Oct 31: a shielded Riot Shield Bearer can still walk and mine, so it is not spent
+  return c.hasMoved || c.hasAttacked || c.hasMined || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) || s.turn < c.lockedUntil;
 }

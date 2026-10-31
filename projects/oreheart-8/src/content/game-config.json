@@ -8,7 +8,7 @@
  "basicGatherers": {
   "goblins": "goblin-scrounger",
   "gnomes": "gnome-prospector",
-  "dwarves": "dwarf-miner"
+  "dwarves": "dwarf-smith-miner"
  },
  "gathererFlow": 2,
   "minedPerBonusCard": 4,

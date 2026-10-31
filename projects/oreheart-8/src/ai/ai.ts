@@ -99,7 +99,7 @@ function scoreCast(s: any, who: string, a: any): number {
     case 'damage': {
       if (a.target.commander) return s.players[foe].health <= card.params.amount ? 10000 : s.players[foe].health <= 8 ? 40 : 18;
       if (!t) return 0;
-      const kills = t.health <= card.params.amount - (CARDS[t.cardId].abilities?.includes('armored') ? 1 : 0);
+      const kills = t.health <= card.params.amount - (CARDS[t.cardId].abilities?.includes('armored') || CARDS[t.cardId].abilities?.includes('riotShield') ? 1 : 0);
       return kills ? 50 + CARDS[t.cardId].cost * 6 : 5;
     }
     case 'poison': return !t ? 0 : !t.poison ? 8 + CARDS[t.cardId].cost * 3 : (t.poisonStacks || 1) < (CONFIG.stackCap ?? 3) ? Math.round((8 + CARDS[t.cardId].cost * 3) / 2) : 0; // stacking (Ken, Oct 30): a second dagger is worth about half
@@ -165,13 +165,12 @@ function unitVal(s: any, c: any, minerRank: number): number {
 /** Damage `u` would actually take from these hits next turn (Ward, Riot Shield, bubbles, Shield, Armored, Unbreakable). */
 function effectiveDamage(s: any, u: any, hits: number[]): number {
   if ((u.wardUntil || 0) > s.turn + 1) return 0;
-  if (ab(u, 'riotShield') && s.turn + 1 < (u.lockedUntil || 0)) return 0;
   const list = hits.slice().sort((a, b) => b - a);
   let bub = u.bubbles || (u.bubble ? 1 : 0);
   while (bub-- > 0 && list.length) list.shift();
   let shield = u.shield || 0, tot = 0;
   for (let d of list) {
-    if (ab(u, 'armored')) d = Math.max(0, d - 1);
+    if (ab(u, 'armored') || ab(u, 'riotShield')) d = Math.max(0, d - 1); // Riot Shield (Oct 31) blocks 1 of every hit, like Armored
     if (ab(u, 'unbreakable')) d = Math.min(d, 3);
     const b = Math.min(shield, d); shield -= b; d -= b;
     tot += d;
