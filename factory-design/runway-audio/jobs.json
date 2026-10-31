@@ -1,134 +1,146 @@
 {
  "voices": {
-  "Grungle": {
+  "gob-scrappy": {
    "preset": "Grungle"
   },
-  "Monster": {
+  "gob-big": {
    "preset": "Monster"
   },
-  "Pip": {
-   "preset": "Pip"
-  },
-  "Xylar": {
-   "preset": "Xylar"
-  },
-  "Ragnar": {
-   "preset": "Ragnar"
-  },
-  "Rusty": {
-   "preset": "Rusty"
-  },
-  "Brodie": {
-   "preset": "Brodie"
-  },
-  "Clint": {
-   "preset": "Clint"
-  },
-  "Bernard": {
-   "preset": "Bernard"
-  },
-  "Malachi": {
+  "gob-sly": {
    "preset": "Malachi"
   },
-  "Mabel": {
-   "preset": "Mabel"
+  "gob-crazy": {
+   "preset": "Rusty"
   },
-  "Myrna": {
-   "preset": "Myrna"
-  },
-  "Kirk": {
-   "preset": "Kirk"
-  },
-  "Billy": {
-   "preset": "Billy"
-  },
-  "Wanda": {
+  "gob-queen": {
    "preset": "Wanda"
   },
-  "Elliot": {
+  "gno-quick": {
+   "preset": "Pip"
+  },
+  "gno-prim": {
    "preset": "Elliot"
+  },
+  "gno-boom": {
+   "preset": "Xylar"
+  },
+  "gno-steady": {
+   "preset": "Brodie"
+  },
+  "gno-lady": {
+   "preset": "Myrna"
+  },
+  "dwa-sarge": {
+   "preset": "Clint"
+  },
+  "dwa-gruff": {
+   "preset": "Kirk"
+  },
+  "dwa-young": {
+   "preset": "Billy"
+  },
+  "dwa-jolly": {
+   "preset": "Bernard"
+  },
+  "dwa-queen": {
+   "preset": "Mabel"
   }
  },
  "lines": [
   {
-   "id": "cand-grungle",
-   "voice": "Grungle",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gob-scrappy-1",
+   "voice": "gob-scrappy",
+   "text": "Ooh, shiny! <break time=\"1.3s\" /> Mine! Also mine! <break time=\"1.3s\" /> I dig, you pay. <break time=\"1.3s\" /> Whatcha got there? <break time=\"1.3s\" /> Skull delivery! <break time=\"1.3s\" /> Free shipping! <break time=\"1.3s\" /> Heads up! <break time=\"1.3s\" /> Got one with your name on it. <break time=\"1.3s\" /> Knock knock! <break time=\"1.3s\" /> Bonk time! <break time=\"1.3s\" /> Bones go clack! <break time=\"1.3s\" /> Who's there? Me! <break time=\"1.3s\" /> I can fix that. Probably. <break time=\"1.3s\" /> More sparks! <break time=\"1.3s\" /> Pass the hammer. <break time=\"1.3s\" /> Made it from a boot! <break time=\"1.3s\" /> The junk speaks... <break time=\"1.3s\" /> Spirits say: clang. <break time=\"1.3s\" /> Rattle rattle! <break time=\"1.3s\" /> I see shiny futures. <break time=\"1.3s\" /> Ow! Hey! <break time=\"1.3s\" /> Oof! Cheater! <break time=\"1.3s\" /> Hyaaah! <break time=\"1.3s\" /> Oi! Watch it!"
   },
   {
-   "id": "cand-monster",
-   "voice": "Monster",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gob-big-1",
+   "voice": "gob-big",
+   "text": "Strike! <break time=\"1.3s\" /> I bowl, you fall. <break time=\"1.3s\" /> Seven-ten split? Easy. <break time=\"1.3s\" /> Who wants a game? <break time=\"1.3s\" /> Me play goblin-ball. <break time=\"1.3s\" /> Me hit hard. <break time=\"1.3s\" /> Who wants tackle? <break time=\"1.3s\" /> Me not dumb. Me sporty. <break time=\"1.3s\" /> Huh? <break time=\"1.3s\" /> Me ready. Probably. <break time=\"1.3s\" /> Bucket on. Let's go. <break time=\"1.3s\" /> What we doing? <break time=\"1.3s\" /> Soup's on! <break time=\"1.3s\" /> Taste this! <break time=\"1.3s\" /> Extra crunchy! <break time=\"1.3s\" /> Dinner is served... hot! <break time=\"1.3s\" /> Head first! <break time=\"1.3s\" /> Thinking is for helmets! <break time=\"1.3s\" /> CHARGE! <break time=\"1.3s\" /> Smash now, think never! <break time=\"1.3s\" /> I am the KING of the Junkpile! <break time=\"1.3s\" /> Bow, minions! <break time=\"1.3s\" /> Bring me shinies!"
   },
   {
-   "id": "cand-pip",
-   "voice": "Pip",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gob-big-2",
+   "voice": "gob-big",
+   "text": "Grubnak never loses. Mostly. <break time=\"1.3s\" /> Owww... that tickled. <break time=\"1.3s\" /> Ugh! Mean! <break time=\"1.3s\" /> Grrraaah! <break time=\"1.3s\" /> Hey! Me busy!"
   },
   {
-   "id": "cand-xylar",
-   "voice": "Xylar",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gob-sly-1",
+   "voice": "gob-sly",
+   "text": "Shhh... <break time=\"1.3s\" /> You didn't see me. <break time=\"1.3s\" /> Pockets look heavy... <break time=\"1.3s\" /> Sneaky sneaky. <break time=\"1.3s\" /> Squeak. <break time=\"1.3s\" /> Tiny knife, big trouble. <break time=\"1.3s\" /> Shhh... cheese? <break time=\"1.3s\" /> Small but sharp. <break time=\"1.3s\" /> Eep! Not the face! <break time=\"1.3s\" /> Ouchies! <break time=\"1.3s\" /> Hehehe, gotcha! <break time=\"1.3s\" /> Excuse me... hehe."
   },
   {
-   "id": "cand-ragnar",
-   "voice": "Ragnar",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gob-crazy-1",
+   "voice": "gob-crazy",
+   "text": "Fight me! <break time=\"1.3s\" /> Fists first, questions never! <break time=\"1.3s\" /> Who wants a knuckle sandwich? <break time=\"1.3s\" /> Put 'em up! <break time=\"1.3s\" /> Yeehaw! <break time=\"1.3s\" /> Faster, Fluffy! <break time=\"1.3s\" /> Ramp? Where's the ramp? <break time=\"1.3s\" /> Hold on to your ears! <break time=\"1.3s\" /> Light the fuse! <break time=\"1.3s\" /> To the moon! <break time=\"1.3s\" /> Short fuse, big boom! <break time=\"1.3s\" /> Countdown? Nah. <break time=\"1.3s\" /> For the Horde! <break time=\"1.3s\" /> Big bang coming! <break time=\"1.3s\" /> Hugs for the barrel! <break time=\"1.3s\" /> Is it hot in here? <break time=\"1.3s\" /> Ow! Wahaha! <break time=\"1.3s\" /> Yeowch! <break time=\"1.3s\" /> Wa-hoooo! <break time=\"1.3s\" /> Hey, watch it!"
   },
   {
-   "id": "cand-rusty",
-   "voice": "Rusty",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gob-queen-1",
+   "voice": "gob-queen",
+   "text": "Ooh, give me that! <break time=\"1.3s\" /> Shinies for the queen! <break time=\"1.3s\" /> Hands off my hoard! <break time=\"1.3s\" /> Mine, mine, all mine! <break time=\"1.3s\" /> How DARE you! <break time=\"1.3s\" /> Ow! My crown! <break time=\"1.3s\" /> Off with his shinies! <break time=\"1.3s\" /> Excuse ME?"
   },
   {
-   "id": "cand-brodie",
-   "voice": "Brodie",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gno-quick-1",
+   "voice": "gno-quick",
+   "text": "Wings up! <break time=\"1.3s\" /> Taking off! <break time=\"1.3s\" /> Looks small from up here! <break time=\"1.3s\" /> Flap, flap, zoom! <break time=\"1.3s\" /> Four arms, zero breaks! <break time=\"1.3s\" /> Overclocking! <break time=\"1.3s\" /> Mining at max speed! <break time=\"1.3s\" /> Beep boop, dig dig! <break time=\"1.3s\" /> Little fists, big punch! <break time=\"1.3s\" /> Hi-yah! <break time=\"1.3s\" /> Ready to rumble! <break time=\"1.3s\" /> Watch the gloves! <break time=\"1.3s\" /> Arc welding! <break time=\"1.3s\" /> Upgrade time! <break time=\"1.3s\" /> Sparks and science! <break time=\"1.3s\" /> One gizmo, coming up! <break time=\"1.3s\" /> Plow coming through! <break time=\"1.3s\" /> Beep beep! <break time=\"1.3s\" /> Clear the road! <break time=\"1.3s\" /> Full steam ahead! <break time=\"1.3s\" /> Ouch! Recalibrating! <break time=\"1.3s\" /> Ow ow ow! <break time=\"1.3s\" /> Hi-yah!"
   },
   {
-   "id": "cand-clint",
-   "voice": "Clint",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gno-quick-2",
+   "voice": "gno-quick",
+   "text": "Excuse me!"
   },
   {
-   "id": "cand-bernard",
-   "voice": "Bernard",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gno-prim-1",
+   "voice": "gno-prim",
+   "text": "Click. Whirr. <break time=\"1.3s\" /> Gears engaged. <break time=\"1.3s\" /> Scuttling forward. <break time=\"1.3s\" /> Clackety clack. <break time=\"1.3s\" /> Now you see me... <break time=\"1.3s\" /> Which one is real? <break time=\"1.3s\" /> Mirror, mirror! <break time=\"1.3s\" /> Ta-da! <break time=\"1.3s\" /> Fascinating soul energy. <break time=\"1.3s\" /> For science! <break time=\"1.3s\" /> Siphoning... <break time=\"1.3s\" /> Hold still, please. <break time=\"1.3s\" /> I am Knobbin the Gnomeificent! <break time=\"1.3s\" /> Everything is fixable. <break time=\"1.3s\" /> Especially you. <break time=\"1.3s\" /> Brilliance is my burden. <break time=\"1.3s\" /> Most rude! <break time=\"1.3s\" /> Ow! Unscientific! <break time=\"1.3s\" /> Have at you! <break time=\"1.3s\" /> Pardon me!"
   },
   {
-   "id": "cand-malachi",
-   "voice": "Malachi",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gno-boom-1",
+   "voice": "gno-boom",
+   "text": "Feel the storm! <break time=\"1.3s\" /> Zap zap! <break time=\"1.3s\" /> It's electrifying! <break time=\"1.3s\" /> Hair standing up? That's me. <break time=\"1.3s\" /> Shockwave incoming! <break time=\"1.3s\" /> Bzzt! <break time=\"1.3s\" /> Volts for everyone! <break time=\"1.3s\" /> Charged and ready! <break time=\"1.3s\" /> I read the manual! Mostly. <break time=\"1.3s\" /> Hex, hex! <break time=\"1.3s\" /> Watch this spell! <break time=\"1.3s\" /> Oops. I mean... ta-da! <break time=\"1.3s\" /> Zap! Ow! <break time=\"1.3s\" /> Eek! <break time=\"1.3s\" /> Ka-zing! <break time=\"1.3s\" /> Oh! Hello!"
   },
   {
-   "id": "cand-mabel",
-   "voice": "Mabel",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gno-steady-1",
+   "voice": "gno-steady",
+   "text": "Patience finds the gems. <break time=\"1.3s\" /> La-la-la, crystals! <break time=\"1.3s\" /> Every rock sings. <break time=\"1.3s\" /> Digging, gently. <break time=\"1.3s\" /> Stay behind me! <break time=\"1.3s\" /> Nobody gets hurt on my watch. <break time=\"1.3s\" /> Shields up! <break time=\"1.3s\" /> I'll fix you right up. <break time=\"1.3s\" /> STEAM. POWER. <break time=\"1.3s\" /> Big. Strong. Polite. <break time=\"1.3s\" /> Boiler at full! <break time=\"1.3s\" /> Stomp, stomp. <break time=\"1.3s\" /> Guarding. <break time=\"1.3s\" /> None shall pass. <break time=\"1.3s\" /> Gears locked. <break time=\"1.3s\" /> I've got your back. <break time=\"1.3s\" /> The glyphs protect. <break time=\"1.3s\" /> Warded! <break time=\"1.3s\" /> Behind the runes! <break time=\"1.3s\" /> Safe and sound. <break time=\"1.3s\" /> Oof. Holding! <break time=\"1.3s\" /> Ow. Dented. <break time=\"1.3s\" /> Hup!"
   },
   {
-   "id": "cand-myrna",
-   "voice": "Myrna",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gno-steady-2",
+   "voice": "gno-steady",
+   "text": "Excuse me, please."
   },
   {
-   "id": "cand-kirk",
-   "voice": "Kirk",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-gno-lady-1",
+   "voice": "gno-lady",
+   "text": "Betty Fizzlebottom, darling! <break time=\"1.3s\" /> Let there be light! <break time=\"1.3s\" /> Shine, my dears! <break time=\"1.3s\" /> Sparkle, sparkle! <break time=\"1.3s\" /> Well, I never! <break time=\"1.3s\" /> Oh, fiddlesticks! <break time=\"1.3s\" /> Sparkle time! <break time=\"1.3s\" /> Yes, darling?"
   },
   {
-   "id": "cand-billy",
-   "voice": "Billy",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-dwa-sarge-1",
+   "voice": "dwa-sarge",
+   "text": "Move along! <break time=\"1.3s\" /> Shield up! Stand back! <break time=\"1.3s\" /> Nothing to see here! <break time=\"1.3s\" /> Halt! Rock inspection! <break time=\"1.3s\" /> By the oath! <break time=\"1.3s\" /> Law of the Anvil! <break time=\"1.3s\" /> You are under arrest! <break time=\"1.3s\" /> Order will be kept! <break time=\"1.3s\" /> Target sighted! <break time=\"1.3s\" /> Locked and loaded! <break time=\"1.3s\" /> Big bang, coming up! <break time=\"1.3s\" /> Hold fire... FIRE! <break time=\"1.3s\" /> Open up! Anvil police! <break time=\"1.3s\" /> Knock knock! <break time=\"1.3s\" /> Door's coming down! <break time=\"1.3s\" /> I have the key. It's a ram. <break time=\"1.3s\" /> Thane Borgo, at your service! <break time=\"1.3s\" /> We were here first! <break time=\"1.3s\" /> Get off our rock! <break time=\"1.3s\" /> Dwarves, hold the line! <break time=\"1.3s\" /> Argh! Assault on an officer!"
   },
   {
-   "id": "cand-wanda",
-   "voice": "Wanda",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-dwa-sarge-2",
+   "voice": "dwa-sarge",
+   "text": "Oof! Noted! <break time=\"1.3s\" /> Hrraah! <break time=\"1.3s\" /> Hey, watch it!"
   },
   {
-   "id": "cand-elliot",
-   "voice": "Elliot",
-   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+   "id": "batch-dwa-gruff-1",
+   "voice": "dwa-gruff",
+   "text": "Behind the wall. <break time=\"1.3s\" /> I hold. <break time=\"1.3s\" /> Medic on duty. <break time=\"1.3s\" /> Hmph. Ready. <break time=\"1.3s\" /> RAAAH! <break time=\"1.3s\" /> More! <break time=\"1.3s\" /> Bring it on! <break time=\"1.3s\" /> I am just getting warm. <break time=\"1.3s\" /> Hit me again. <break time=\"1.3s\" /> Is that all? <break time=\"1.3s\" /> Big back, big heart. <break time=\"1.3s\" /> I like it. <break time=\"1.3s\" /> Brawl time. <break time=\"1.3s\" /> Two fists, no waiting. <break time=\"1.3s\" /> Who's next? <break time=\"1.3s\" /> Hrrmph. Fight me. <break time=\"1.3s\" /> I'm still here. <break time=\"1.3s\" /> Back in my day... <break time=\"1.3s\" /> Unkillable. Obviously. <break time=\"1.3s\" /> Grumble grumble. <break time=\"1.3s\" /> Hmph. Felt that. <break time=\"1.3s\" /> Grr... ow. <break time=\"1.3s\" /> Hrrmph! <break time=\"1.3s\" /> What."
+  },
+  {
+   "id": "batch-dwa-young-1",
+   "voice": "dwa-young",
+   "text": "Grudge noted! <break time=\"1.3s\" /> Axe incoming! <break time=\"1.3s\" /> Hold still! <break time=\"1.3s\" /> Right between the eyes! <break time=\"1.3s\" /> Ram ready! <break time=\"1.3s\" /> Coming through! <break time=\"1.3s\" /> Lower the horns! <break time=\"1.3s\" /> Thunder and hooves! <break time=\"1.3s\" /> Eyes up. <break time=\"1.3s\" /> I've got the high ground. <break time=\"1.3s\" /> Watch here! <break time=\"1.3s\" /> Nothing gets past me. <break time=\"1.3s\" /> Ow! I am fine, sir! <break time=\"1.3s\" /> Ugh! Stand firm! <break time=\"1.3s\" /> For the Anvil! <break time=\"1.3s\" /> Yes, sir!"
+  },
+  {
+   "id": "batch-dwa-jolly-1",
+   "voice": "dwa-jolly",
+   "text": "Doctor's orders: one pint! <break time=\"1.3s\" /> Bottoms up! <break time=\"1.3s\" /> Cheers! <break time=\"1.3s\" /> Who needs a brew? <break time=\"1.3s\" /> Hic! Shiny... <break time=\"1.3s\" /> Just one more gem! <break time=\"1.3s\" /> The cave is spinning! <break time=\"1.3s\" /> Crunchy! Hic! <break time=\"1.3s\" /> Hammer and anvil! <break time=\"1.3s\" /> Forged with love! <break time=\"1.3s\" /> Clang clang! <break time=\"1.3s\" /> Upgrade, lad? <break time=\"1.3s\" /> Special delivery! <break time=\"1.3s\" /> Mind the barrel! <break time=\"1.3s\" /> Signed, sealed, delivered! <break time=\"1.3s\" /> Express service! <break time=\"1.3s\" /> Oof! Spilled me ale! <break time=\"1.3s\" /> Ow! Hahaha! <break time=\"1.3s\" /> Ha-HAA! <break time=\"1.3s\" /> Eh? Who's that?"
+  },
+  {
+   "id": "batch-dwa-queen-1",
+   "voice": "dwa-queen",
+   "text": "Kneel! <break time=\"1.3s\" /> The Queen commands! <break time=\"1.3s\" /> Unbreakable! <break time=\"1.3s\" /> Do not test me. <break time=\"1.3s\" /> You will regret that! <break time=\"1.3s\" /> Hmph! A scratch. <break time=\"1.3s\" /> For the Order! <break time=\"1.3s\" /> Speak."
   }
  ],
  "sfx": []
