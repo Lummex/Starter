@@ -13846,11 +13846,11 @@ test('AC535: no cheating: the computer\'s choice is the same when the player\'s 
 
 // Ken (Oct 31): three arenas, one per faction. The dwarf (Giant Anvil over a lava lake) and gnome (Floating Clockwork Disc over a crystal lake) arenas are Ledger's layouts
 // over Brush's paintings; the match picks the player's or the opponent's faction arena 50-50 and the music follows (test pages keep Skullfang unless a check forces the pick).
-const ARENA_SET = { goblins: ['skullfang-swamp-background.jpg', 'skullfang-arena.png', 54], dwarves: ['dwarf-background.jpg', 'dwarf-arena.png', 43], gnomes: ['gnome-background.jpg', 'gnome-arena.png', 42] };
+const ARENA_SET = { goblins: ['skullfang-swamp-background.jpg', 'skullfang-arena.png', 54], dwarves: ['dwarf-background.jpg', 'dwarf-arena.png', 43], gnomes: ['gnome-background.jpg', 'gnome-arena.png', 39] }; // Oct 31: Ledger's jets and swirls replaced the beam and ring glows (39)
 test('AC541: the dwarf and gnome arenas: their paintings and layouts load, every effect draws with no errors, the pieces stand on the painted floor, the music is the arena\'s; a test match without a forced pick keeps Skullfang', async ({ page, request }) => {
   test.setTimeout(180000);
   for (const [f, [bg, pic, n]] of Object.entries(ARENA_SET)) for (const u of [bg, pic]) { const r = await request.get('/art/arena/' + u); expect(r.status(), u).toBe(200); }
-  for (const u of ['dwarf-arena-layout.json', 'gnome-arena-layout.json']) { const r = await request.get('/art/arena/' + u); expect(r.ok(), u).toBe(true); expect((await r.json()).effects.length).toBeGreaterThan(40); }
+  for (const u of ['dwarf-arena-layout.json', 'gnome-arena-layout.json']) { const r = await request.get('/art/arena/' + u); expect(r.ok(), u).toBe(true); expect((await r.json()).effects.length).toBeGreaterThan(35); }
   await page.goto('/?test=1&seed=7');
   await page.waitForFunction(() => !!window.oreheart);
   let first = true;
@@ -13867,6 +13867,7 @@ test('AC541: the dwarf and gnome arenas: their paintings and layouts load, every
     expect(st.arena.errors, `${faction}: no arena errors`).toEqual([]);
     expect(st.arena.effects, `${faction}: every layout effect built`).toBe(n);
     expect(st.arena.skippedTypes.filter((x) => x !== 'flow'), `${faction}: no unknown effect types`).toEqual([]);
+    if (faction === 'gnomes') { const d0 = await arenaInfo(page); expect(d0.effects.filter((e) => e.type === 'jet').length, 'the 3 pylon jets').toBe(3); expect(d0.effects.filter((e) => e.type === 'swirl').length, 'the 3 water swirls').toBe(3); }
     const d = await arenaInfo(page);
     expect(d.background.src).toBe('/art/arena/' + bg);
     expect(d.faction).toBe(faction);
