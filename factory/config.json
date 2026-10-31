@@ -10,6 +10,9 @@
     "reviewer": 1,
     "maxPerRun": 20
   },
+  "budgetsByIssue": {
+    "12": { "maxPerRun": 40, "builderPerRound": 15 }
+  },
   "maxBuildRounds": 5,
   "port": 4173,
   "projects": {

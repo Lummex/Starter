@@ -6,6 +6,9 @@ import path from 'node:path';
 export const ROOT = process.cwd();
 export const FACTORY = path.join(ROOT, 'factory');
 export const config = JSON.parse(fs.readFileSync(path.join(FACTORY, 'config.json'), 'utf8'));
+// Bigger (or smaller) budgets for one issue only: config.json "budgetsByIssue": { "<issue number>": { maxPerRun, builderPerRound, ... } }.
+const issueBudgets = (config.budgetsByIssue || {})[String(process.env.ISSUE_NUMBER || '')];
+if (issueBudgets) Object.assign(config.budgetsUsd, issueBudgets);
 export const FAKE = process.env.FACTORY_FAKE === '1'; // local testing: no GitHub/Vercel/Claude calls
 
 export const STATUS_LABELS = [
