@@ -2033,7 +2033,8 @@ test('AC49: a Crystal card played alone in the Respond window keeps it open and 
   expect(total(s.players.player.crystals) + total(s.players.player.bank)).toBe(0);
 });
 
-test('AC50: Smith Miners never Tunnel; the Tunnel! tag shows from turn 1 (Round 10)', async ({ page }) => {
+// owner check change (Ken, Oct 31): "On the cards with special abilities, like tunnel, you have it over the card, just remove that." -- no Tunnel! tag on any card now
+test('AC50: Smith Miners never Tunnel; no Tunnel! tag is drawn over the cards (Round 10; owner change Oct 31)', async ({ page }) => {
   const hand = { playerHand: ['goblin-smith-miner', 'goblin-scrounger'], playerCrystals: 5 };
   let s = await start(page, { ai: false, setup: { ...hand } });
   const smith = handUid(s, 'player', 'goblin-smith-miner');
@@ -2042,7 +2043,7 @@ test('AC50: Smith Miners never Tunnel; the Tunnel! tag shows from turn 1 (Round 
   expect(summons.some((a) => a.uid === smith && a.row === 7)).toBe(true);
   expect((await act(page, { type: 'summon', uid: smith, row: 3, col: 3 })).ok).toBe(false);
   const hb = page.getByLabel('Your hand', { exact: true });
-  await expect(hb.getByRole('button', { name: 'Goblin Miner', exact: true })).toContainText('Tunnel!');
+  await expect(hb.getByRole('button', { name: 'Goblin Miner', exact: true })).not.toContainText('Tunnel!');
   await expect(hb.getByRole('button', { name: 'Scrapsmith Miner', exact: true })).not.toContainText('Tunnel!');
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 3, col: 3 })).ok).toBe(true);
 });
@@ -7370,7 +7371,8 @@ test('AC253: several Crystal cards in one turn, in Deploy and Action, never endi
 test('AC254: Tunnel from turn 1 — drag-and-drop next to a mine works and the AI uses the same rule', async ({ page }) => {
   let s = await start(page, quiet({ playerHand: ['goblin-scrounger'], playerCrystals: 5 }));
   await page.waitForTimeout(1000);
-  await expect(page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Goblin Miner', exact: true })).toContainText('Tunnel!');
+  // owner check change (Ken, Oct 31): "Remove all those special ability ... overlays" -- the card shows no Tunnel! tag any more
+  await expect(page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Goblin Miner', exact: true })).not.toContainText('Tunnel!');
   const card = await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox();
   const t = await sq2s(page, 5, 5); // next to M2 (4,4) and M3 (4,6)
   await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08);
@@ -11224,6 +11226,48 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       for (const d of moving) { expect(d, 'hand motion duration (ms)').toBeGreaterThanOrEqual(120); expect(d).toBeLessThanOrEqual(220); }
       expect((await handHover(page)).popMs).toBeGreaterThanOrEqual(120);
       expect((await handHover(page)).popMs).toBeLessThanOrEqual(220);
+    });
+  });
+}
+
+// Ken (Oct 31): "On the cards with special abilities, like tunnel, you have it over the card, just remove that. Remove all those special
+// ability ... overlays. On the cards." No tag or badge is layered over a card face anywhere (hand, close-up, Deck Builder); the card's own
+// face (.ohcard, which carries the printed text) stays. Only the play glow may sit with it.
+const strayOverlays = (loc) => loc.evaluateAll((cards) => {
+  const out = [];
+  for (const card of cards) for (const k of card.children) {
+    if (k.classList.contains('ohcard') || k.hasAttribute('data-card-glow') || k.classList.contains('drag-id') || k.classList.contains('pop-hit')) continue;
+    const cs = getComputedStyle(k), r = k.getBoundingClientRect();
+    if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0 || r.width < 1 || r.height < 1) continue;
+    out.push(`${card.getAttribute('aria-label') || card.dataset.cardId || '?'}: ${k.className || k.tagName} "${(k.textContent || '').trim().slice(0, 20)}"`);
+  }
+  return out;
+});
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`Oct 31 Ken no ability overlays ${W}x${H}`, () => {
+    test.use({ viewport: { width: W, height: H } });
+    test(`AC443: no ability tag (Tunnel! or any other) is drawn over cards in the hand, the close-up or the Deck Builder (${W}x${H})`, async ({ page }) => {
+      await start(page, hk31({ playerHand: ['goblin-scrounger', 'goblin-smith-miner', 'goblin-scrapper', 'fireball', 'soul-shard'], playerCrystals: 5 }));
+      await page.waitForTimeout(600);
+      const hand = page.getByLabel('Your hand', { exact: true });
+      await expect(hand.locator('.hand-card[data-card-id]')).toHaveCount(5);
+      expect(await strayOverlays(hand.locator('.hand-card')), 'hand').toEqual([]);
+      await expect(page.locator('.tunnel-tag')).toHaveCount(0);
+      await expect(hand.getByRole('button', { name: 'Goblin Miner', exact: true })).not.toContainText('Tunnel!');
+      // the close-up of the Tunnel card
+      await hand.locator('button:has([data-card-id="goblin-scrounger"])').first().click();
+      const view = page.getByRole('dialog').filter({ has: page.locator('[data-card-id="goblin-scrounger"]') });
+      await expect(view).toBeVisible();
+      expect(await strayOverlays(view.locator('.hand-card')), 'close-up').toEqual([]);
+      await expect(view).not.toContainText('Tunnel!');
+      await page.keyboard.press('Escape');
+      // the Deck Builder's card faces
+      await openDecks(page);
+      const tile = allCards(page).getByRole('button', { name: 'Goblin Miner', exact: true });
+      await expect(tile).toBeVisible();
+      expect(await strayOverlays(allCards(page).locator('.hand-card')), 'deck builder').toEqual([]);
+      await expect(page.locator('.tunnel-tag')).toHaveCount(0);
+      await expect(tile).not.toContainText('Tunnel!');
     });
   });
 }

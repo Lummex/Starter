@@ -3001,8 +3001,9 @@ export class App {
       const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
-        playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null,
-        tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
+        playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null);
+      // Ken (Oct 31): "On the cards with special abilities, like tunnel, you have it over the card, just remove that. Remove all those
+      // special ability ... overlays." The Round 10 'Tunnel!' tag is gone; the card's own text still says what it does.
       (el.querySelector('.ohcard') || el.firstElementChild)?.setAttribute('data-card-id', c.id);
       el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { if (this.lastPtr.down || this.noHand || el.classList.contains('popped') || this.hitCard(e.clientX, e.clientY) !== el || this.r.hand?.querySelector('.hand-card.popped:not(.popclone)')) return; this.openHand(true); this.popCard(el, true); } });
       el.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.popCard(el, false); });
