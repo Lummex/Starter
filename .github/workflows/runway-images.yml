@@ -1,0 +1,48 @@
+name: Runway — images (avatars, icons)
+
+# Runs when Claude adds a jobs file in factory-design/runway-images/, or by hand (Actions → this workflow → Run workflow).
+# Makes each picture ONCE; finished ones are skipped.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'factory-design/runway-images/jobs*.json'
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Only these ids (comma separated). Leave empty for every unfinished job'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: runway-images
+  cancel-in-progress: false
+
+jobs:
+  images:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Make the pictures
+        env:
+          RUNWAY_API_KEY: ${{ secrets.RUNWAYKEY }}
+          ONLY: ${{ github.event.inputs.only }}
+        run: node factory/scripts/runway-images.mjs
+      - name: Save the pictures to GitHub
+        if: always()
+        run: |
+          git config user.name "factory-bot"
+          git config user.email "factory-bot@users.noreply.github.com"
+          git add factory-design/runway-images/out factory-design/runway-images/last-run.json || true
+          if git diff --cached --quiet; then echo "nothing to save"; exit 0; fi
+          git commit -q -m "Runway: new pictures"
+          for i in 1 2 3 4 5; do git pull -q --rebase origin main && git push -q origin HEAD:main && exit 0; sleep 15; done
+          exit 1
