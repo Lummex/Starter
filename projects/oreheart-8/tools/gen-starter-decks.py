@@ -5,6 +5,7 @@
 #   B "Arcane Hoard": 50% Miners, 25% spells, 25% fighters          -> 30 Miners, 15 spells, 15 fighters
 #   C "Expedition":   40% Miners, 15% spells, 10% Crystal, 35% fighters -> 24 Miners, 9 spells, 6 Crystal cards, 21 fighters
 #   D "Warband":      "really well thought out and balanced and overpowered", at least 20 Miners (the default deck)
+#   Ken, Oct 31 (later): "there's still not enough miners in the deck": the Warband now carries 30 Miners (half the deck), never under 28
 # Only enabled cards, the copy limits (Rare / Ultra Rare / Collector max 3), at most 20 Crystal cards, faction spells only.
 import json, sys
 sys.stdout.reconfigure(encoding='utf-8')
@@ -14,7 +15,7 @@ BASIC = CFG['basicGatherers']
 FNAME = {'goblins': 'Goblin', 'gnomes': 'Gnome', 'dwarves': 'Dwarf'}
 FKEY = {'goblins': 'goblin', 'gnomes': 'gnome', 'dwarves': 'dwarf'}
 STYLE_NAME = {'warband': 'Warband', 'mine-rush': 'Mine Rush', 'arcane-hoard': 'Arcane Hoard', 'expedition': 'Expedition'}
-SHAPE = {'mine-rush': (45, 15, 0, 0), 'arcane-hoard': (30, 15, 15, 0), 'expedition': (24, 21, 9, 6), 'warband': (22, 26, 8, 4)}  # miners, fighters, spells, crystals
+SHAPE = {'mine-rush': (45, 15, 0, 0), 'arcane-hoard': (30, 15, 15, 0), 'expedition': (24, 21, 9, 6), 'warband': (30, 20, 6, 4)}  # miners, fighters, spells, crystals
 
 def is_miner(c):
     return c['type'] == 'creature' and (c['role'] in ('Gatherer', 'Smith') or c['id'] in BASIC.values())
@@ -31,9 +32,9 @@ D = {
                    'goblin-grunt': 5, 'blastrat-sapper': 2, 'goblin-bomber': 2, 'goblin-sneak': 3, 'goblin-slinger': 3, 'skullbasher-rusher': 3, 'goblin-scrapper': 2, 'grubnaks-big-boss-troll': 1,
                    'venom-shiv': 3, 'tunnel-rush': 2, 'hold-it': 2, 'fizzle': 1, 'healing-light': 1,
                    'soul-shard': 2, 'crystal-cluster': 2, 'glowing-geode': 1, 'heart-of-the-fallen': 1},
-  'warband':      {'goblin-scrounger': 15, 'goblin-smith-miner': 7,
-                   'goblin-grunt': 6, 'goblin-sneak': 3, 'goblin-bomber': 3, 'goblin-slinger': 4, 'skullbasher-rusher': 3, 'shiv-rat': 2, 'goblin-scrapper': 2, 'grubnaks-big-boss-troll': 2, 'wolf-rider': 1,
-                   'venom-shiv': 3, 'hold-it': 2, 'fizzle': 2, 'tunnel-rush': 1,
+  'warband':      {'goblin-scrounger': 22, 'goblin-smith-miner': 8,
+                   'goblin-grunt': 5, 'goblin-sneak': 2, 'goblin-bomber': 2, 'goblin-slinger': 3, 'skullbasher-rusher': 3, 'shiv-rat': 1, 'goblin-scrapper': 1, 'grubnaks-big-boss-troll': 2, 'wolf-rider': 1,
+                   'venom-shiv': 2, 'hold-it': 2, 'fizzle': 1, 'tunnel-rush': 1,
                    'crystal-cluster': 2, 'glowing-geode': 1, 'heart-of-the-fallen': 1},
  },
  'gnomes': {
@@ -46,9 +47,9 @@ D = {
                    'gearward-sentinel': 6, 'gnome-widget': 5, 'hexwright-apprentice': 4, 'spark-gnome': 3, 'clockwork-beetle': 2, 'gnome-cogger': 1,
                    'fireball': 3, 'spell-snap': 2, 'meteor-strike': 1, 'fizzle': 2, 'healing-light': 1,
                    'soul-shard': 2, 'crystal-cluster': 2, 'glowing-geode': 1, 'heart-of-the-fallen': 1},
-  'warband':      {'gnome-prospector': 17, 'gnome-smith-miner': 5,  # cheap Miners only: the 5-cost Aethervein slowed the gnome opening (sims, Oct 31)
-                   'gearward-sentinel': 7, 'gnome-widget': 6, 'hexwright-apprentice': 4, 'spark-gnome': 3, 'gnome-tinker': 2, 'clockwork-beetle': 2, 'gnome-cogger': 2,
-                   'fireball': 3, 'spell-snap': 2, 'fizzle': 2, 'meteor-strike': 1,
+  'warband':      {'gnome-prospector': 24, 'gnome-smith-miner': 6,  # cheap Miners only: the 5-cost Aethervein slowed the gnome opening (sims, Oct 31)
+                   'gearward-sentinel': 5, 'gnome-widget': 4, 'hexwright-apprentice': 3, 'spark-gnome': 2, 'clockwork-beetle': 1, 'gnome-cogger': 2,  # spell-heavier than the other Warbands: Knobbin's discount is the gnomes' edge (sims, Oct 31: 49/51 vs goblins)
+                   'fireball': 3, 'meteor-strike': 2, 'spell-snap': 2, 'fizzle': 1, 'healing-light': 1,
                    'crystal-cluster': 2, 'glowing-geode': 1, 'heart-of-the-fallen': 1},
  },
  'dwarves': {
@@ -62,9 +63,9 @@ D = {
                    'dwarf-miner': 4, 'dwarf-stoneback': 4, 'deepforge-crossbowman': 4, 'barrelback-courier': 3, 'shieldbeard': 2, 'oathbound-pikeman': 1, 'grimhold-ravager': 2, 'rune-splitter': 1,
                    'shield-bubble': 3, 'battle-cry': 3, 'second-wind': 1, 'fizzle': 1, 'healing-light': 1,
                    'soul-shard': 2, 'crystal-cluster': 2, 'glowing-geode': 1, 'heart-of-the-fallen': 1},
-  'warband':      {'dwarf-smith-miner': 19, 'crystal-drunk-delver': 3,
-                   'dwarf-miner': 4, 'dwarf-stoneback': 5, 'deepforge-crossbowman': 5, 'barrelback-courier': 4, 'shieldbeard': 2, 'oathbound-pikeman': 2, 'grimhold-ravager': 2, 'rune-splitter': 1, 'ironhammer-berserker': 1,
-                   'battle-cry': 3, 'shield-bubble': 2, 'fizzle': 2, 'second-wind': 1,
+  'warband':      {'dwarf-smith-miner': 27, 'crystal-drunk-delver': 3,
+                   'dwarf-miner': 4, 'dwarf-stoneback': 4, 'deepforge-crossbowman': 4, 'barrelback-courier': 3, 'shieldbeard': 1, 'oathbound-pikeman': 1, 'grimhold-ravager': 2, 'rune-splitter': 1,
+                   'battle-cry': 3, 'shield-bubble': 2, 'fizzle': 1,
                    'crystal-cluster': 2, 'glowing-geode': 1, 'heart-of-the-fallen': 1},
  },
 }
@@ -95,7 +96,8 @@ for fac in ['goblins', 'gnomes', 'dwarves']:
             lim = CFG['copyLimits'].get(CARDS[cid]['rarity'])
             assert lim is None or n <= lim, (fac, style, cid, n, 'over copy limit', lim)
         assert len(cards) == 60, (fac, style, len(cards))
-        assert (miners, fighters, spells, crystals) == SHAPE[style], (fac, style, (miners, fighters, spells, crystals), SHAPE[style])
+        shape = (30, 17, 9, 4) if (fac, style) == ('gnomes', 'warband') else SHAPE[style]  # the Gnome Warband trades 3 fighters for 3 spells (Knobbin's discount; sims, Oct 31)
+        assert (miners, fighters, spells, crystals) == shape, (fac, style, (miners, fighters, spells, crystals), shape)
         assert crystals <= CFG['crystalCardLimit']
         assert counts.get(BASIC[fac], 0) >= 5, (fac, style, 'the engine\'s opening-hand rescue looks for the basic Miner')
         deck_id = f'{FKEY[fac]}-{style}'
