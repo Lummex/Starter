@@ -1,0 +1,199 @@
+{
+ "jobs": [
+  {
+   "id": "avatar-gnome-inventor",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft purple and light-blue glow; no text, no frame. All metal is polished SILVER (never gold); colours dark purple and light blue. He is genuinely handsome and heroic-looking. Kid-friendly, fully clothed. Character: a Black gnome inventor man: dark brown skin, a neat short black beard, silver goggles pushed up on his forehead, a dark purple coat with a small silver eye pin, a clever confident grin",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-gnome.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-troll-blacksmith",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft mossy green and amber glow; no text, no frame. A big fantasy troll: tusks, long nose, pointed ears, thick hair, chunky and comic. An ordinary, average-looking face, nothing glamorous, but likeable. Kid-friendly, fully clothed. Character: a burly troll blacksmith: grey-blue skin, thick tusks, a soot-smudged face, a leather apron and a bandana, a friendly tired smile",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-troll.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-troll-witch-doctor",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft mossy green and amber glow; no text, no frame. A big fantasy troll: tusks, long nose, pointed ears, thick hair, chunky and comic. Comically ugly in a lovable cartoon way: warts, wonky teeth, lumpy nose, mismatched eyes; funny, never scary or mean. Kid-friendly, fully clothed. Character: a comically ugly troll witch doctor: green warty skin, an enormous droopy nose, one eye bigger than the other, a wooden mask pushed up on his head, bone beads, a goofy cackle",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-troll.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-troll-princess",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft mossy green and amber glow; no text, no frame. A big fantasy troll: tusks, long nose, pointed ears, thick hair, chunky and comic. She is genuinely beautiful and attractive in a tasteful, fully-clothed heroic fantasy way. Kid-friendly, fully clothed. Character: a beautiful young troll princess: soft teal skin, tiny elegant tusks, long silver-white braided hair, a crown of carved bone and moss-green gems, a gentle confident smile",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-troll.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-undead-skeleton-pirate",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft ghostly teal-green glow; no text, no frame. Spooky but cute and friendly, cartoonish, absolutely no gore, no blood, no exposed organs. Comically ugly in a lovable cartoon way: warts, wonky teeth, lumpy nose, mismatched eyes; funny, never scary or mean. Kid-friendly, fully clothed. Character: a goofy skeleton pirate: a cartoon skull with a crooked grin and one gold tooth, an eyepatch over one glowing teal eye-light, a battered tricorn hat with a feather, a small crab sitting on his shoulder",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-undead.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-undead-banshee",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft ghostly teal-green glow; no text, no frame. Spooky but cute and friendly, cartoonish, absolutely no gore, no blood, no exposed organs. She is genuinely beautiful and attractive in a tasteful, fully-clothed heroic fantasy way. Kid-friendly, fully clothed. Character: a beautiful friendly banshee: glowing pale-teal translucent skin, long flowing white hair floating upward, a silver circlet, singing softly with a calm smile",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-undead.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-goblin-charmer",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft toxic green glow; no text, no frame. Glamorous, alluring adult (over 21), confident flirty smile, stylish form-fitting fantasy outfit, tasteful, no nudity. Character: a dashing goblin rogue-charmer: green skin, big pointed ears with gold hoops, slicked back black hair, a thin moustache, an open-collared crimson shirt under a fitted leather vest, a roguish wink",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-goblin.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-gnome-enchantress",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft purple and light-blue glow; no text, no frame. All metal is polished SILVER (never gold); colours dark purple and light blue. Glamorous, alluring adult (over 21), confident flirty smile, stylish form-fitting fantasy outfit, tasteful, no nudity. Character: a gnome enchantress woman: long glossy lavender hair, a fitted dark purple velvet gown with a silver corset-style bodice and silver filigree, a silver eye pendant, a sultry knowing smile",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-gnome.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-dwarf-valkyrie",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft blue and warm gold glow; no text, no frame. Dwarf colours: blue with gold trim (gold gear emblem). Glamorous, alluring adult (over 21), confident flirty smile, stylish form-fitting fantasy outfit, tasteful, no nudity. Character: a dwarf valkyrie woman: long copper-red braids, fitted blue-and-gold armour that hugs her figure, a winged helmet, gold gear emblem, a bold flirty smirk",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-dwarf.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-human-sorceress",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft warm amber glow; no text, no frame. Glamorous, alluring adult (over 21), confident flirty smile, stylish form-fitting fantasy outfit, tasteful, no nudity. Character: a human sorceress: long wavy black hair, smoky eyes, a fitted deep-red silk gown with gold embroidery and long sleeves, a glowing ruby pendant, a seductive confident smile",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-human.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-human-corsair",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft warm amber glow; no text, no frame. Glamorous, alluring adult (over 21), confident flirty smile, stylish form-fitting fantasy outfit, tasteful, no nudity. Character: a dashing human pirate captain: tanned skin, stubble, long dark hair, a wide feathered captain hat, a loose white shirt open at the collar under a fitted long coat, a charming cocky grin",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-human.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-undead-countess",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft ghostly teal-green glow; no text, no frame. Spooky but cute and friendly, cartoonish, absolutely no gore, no blood, no exposed organs. Glamorous, alluring adult (over 21), confident flirty smile, stylish form-fitting fantasy outfit, tasteful, no nudity. Character: a glamorous cartoon vampire countess: pale skin, sleek black hair in an elegant updo, red lips, tiny fangs in a teasing smile (no blood), a fitted black-and-crimson gown with a high lace collar",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-undead.jpg",
+     "tag": "avatar"
+    }
+   ]
+  },
+  {
+   "id": "avatar-troll-huntress",
+   "prompt": "Original player avatar portrait of a NEW character for a fantasy card game, painted exactly in the style of @style (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky cartoon-exaggerated proportions, humour in the face). Same portrait format, framing, lighting and finish as @avatar, but a different character. Head-and-shoulders bust, centred, slightly turned, looking at the viewer, face large and clear; plain dark backdrop with a soft mossy green and amber glow; no text, no frame. A big fantasy troll: tusks, long nose, pointed ears, thick hair, chunky and comic. Glamorous, alluring adult (over 21), confident flirty smile, stylish form-fitting fantasy outfit, tasteful, no nudity. Character: a gorgeous troll huntress woman: teal skin, small elegant tusks, long wild auburn hair, glowing tribal paint, fitted leather-and-fur hunting armour, a confident flirty smile",
+   "ratio": "1080:1080",
+   "refs": [
+    {
+     "file": "refs/avatar-style.jpg",
+     "tag": "style"
+    },
+    {
+     "file": "refs/avatar-troll.jpg",
+     "tag": "avatar"
+    }
+   ]
+  }
+ ]
+}
