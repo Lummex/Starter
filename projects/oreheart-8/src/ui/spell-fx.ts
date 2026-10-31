@@ -185,13 +185,18 @@ export function createSpellFx(host: SpellFxHost) {
     // camera right (for the swipe's screen edge and the word's offset)
     right.setFromMatrixColumn(camera.matrixWorld, 0).setY(0).normalize();
     const hitP = destP || toP;
-    const startP = s.path === 'sky_fall' ? hitP.clone().add(new THREE.Vector3(3.5, 11, -5))
+    // Oct 31 (Ken: "the fireball and the meteor both need to come from like a random part from the top down. Not from the ground up."):
+    // a sky fall starts high above the target from a random direction on the far side, so it enters from the top of the screen, a new one each cast
+    const skyA = (Math.random() * 2 - 1) * 1.15, skyR = 4 + Math.random() * 3.5, skyH = 9.5 + Math.random() * 3;
+    const skyOff = new THREE.Vector3(Math.sin(skyA) * skyR, skyH, -Math.cos(skyA) * skyR);
+    const startP = s.path === 'sky_fall' ? hitP.clone().add(skyOff)
       : s.path === 'drop_in' ? hitP.clone().add(new THREE.Vector3(0, 5, 0))
       : s.path === 'swipe' ? hitP.clone().addScaledVector(right, 7).setY(hitP.y + 0.6)
       : s.path === 'burrow' ? toGround.clone().setY(0.15)
       : fromP.clone();
     // windup: at the caster, except the counters that pop at their target and the burrow that opens under the unit
-    const windAt = b0.where === 'target' || s.path === 'burrow' ? (s.path === 'burrow' ? toGround.clone().setY(0.45) : toP.clone()) : s.path === 'at_caster' ? toP.clone() : fromP.clone();
+    const windAt = s.path === 'sky_fall' ? startP.clone() // gathers up in the sky, never at the Stronghold
+      : b0.where === 'target' || s.path === 'burrow' ? (s.path === 'burrow' ? toGround.clone().setY(0.45) : toP.clone()) : s.path === 'at_caster' ? toP.clone() : fromP.clone();
     const t0 = now + Math.max(0, req.delay || 0);
     const aspect: Record<string, number> = {};
     for (const l of FX_LAYERS) { const px = s.layers[l][phone ? 'px_phone' : 'px']; aspect[l] = px[1] / px[0]; }
@@ -239,7 +244,7 @@ export function createSpellFx(host: SpellFxHost) {
     if (s.target === 'area_3x3' && req.target) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) covered.push({ row: req.target.row + dr, col: req.target.col + dc });
     fx.log = {
       id: fx.id, spell: req.spell, name: s.name, kind: req.kind || 'cast', caster: req.caster, from: { ...req.from }, target: req.target ? { ...req.target } : null, to: req.to ? { ...req.to } : null,
-      path: s.path, startedAt: Math.round(t0), delayMs: Math.round(req.delay || 0), totalMs: total,
+      path: s.path, sky: s.path === 'sky_fall' ? { dx: +skyOff.x.toFixed(2), dy: +skyOff.y.toFixed(2), dz: +skyOff.z.toFixed(2) } : null, startedAt: Math.round(t0), delayMs: Math.round(req.delay || 0), totalMs: total,
       beats: [{ beat: b0.beat, startMs: 0, ms: w, share: sh(w) }, { beat: b1.beat, startMs: w, ms: ti, share: sh(ti) }, { beat: b2.beat, startMs: w + ti, ms: af, share: sh(af) }],
       impactMs: impact, layers: [...FX_LAYERS], files: FX_LAYERS.map((l) => url(req.spell, l)),
       ring: { flat: true, at: host.cellOf(destP || toGround), scaleSquares: ringA?.scale || null, ms: ringA?.ms || 0 },

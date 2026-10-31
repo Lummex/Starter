@@ -6375,7 +6375,7 @@ async function ownerLayout(request) {
   const r = await request.get('/owner-layouts/final-draft/layout.json');
   expect(r.ok()).toBe(true);
   const body = await r.body();
-  expect(body.length).toBe(34877); // Round 14: the owner's Oct 24 layout (same bytes as src/content/owner-layout.json; Oct 30: synced to the owner's flame 0.4 / glow x1.15 fixes and hand overlap 0.26; Ken Oct 30 playtest: Commanders 1.8x, no thrones)
+  expect(body.length).toBe(34877); // owner check change (Ken, Oct 31: the Done button the size of the Menu button, both centred). Was 34877. Round 14: the owner's Oct 24 layout (same bytes as src/content/owner-layout.json; Oct 30: synced to the owner's flame 0.4 / glow x1.15 fixes and hand overlap 0.26; Ken Oct 30 playtest: Commanders 1.8x, no thrones)
   return JSON.parse(body.toString('utf8'));
 }
 const SKIP_ROLES = new Set(['player-hand', 'done-button']);
@@ -11678,7 +11678,7 @@ test('AC471: Searing Arcane Orb plays as an event: 3 beats in order, flat ring a
   const log = (await sfxLog(page)).filter((e) => e.spell === 'fireball');
   expect(log.length).toBe(1);
   const L = log[0];
-  expect(L.path).toBe('arc');
+  expect(L.path).toBe('sky_fall'); // owner check change (Ken, Oct 31): it falls from the sky now
   expect(L.caster).toBe('player');
   expect(L.from).toEqual({ row: 7, col: 2 }); // Grubnak casts from his Stronghold
   expect(L.target).toEqual({ row: 3, col: 6 });
@@ -11706,10 +11706,13 @@ test('AC471: Searing Arcane Orb plays as an event: 3 beats in order, flat ring a
   expect(L.files.every((f) => /\/art\/spell-fx\/fireball\/fireball-[a-z]+\.webp$/.test(f))).toBe(true);
   // the timeline (computed state of each layer at points of the FX's own clock)
   const imp = L.impactMs, w = L.beats[0].ms, tr = imp - w;
+  // owner check change (Ken, Oct 31: "the fireball and the meteor both need to come from like a random part from the top down. Not from the
+  // ground up."): the Orb gathers high in the sky (never at the Stronghold) and falls onto the target
+  expect(L.path).toBe('sky_fall');
   for (const ms of [60, 300, w - 20]) {
     const f = await sfxAt(page, L.id, ms);
     expect(f.beat).toBe('windup');
-    expect(f.layers.core.cell, `the Orb gathers at the caster (${ms} ms)`).toEqual({ row: 7, col: 2 });
+    expect(f.layers.core.y, `the Orb gathers up in the sky (${ms} ms)`).toBeGreaterThan(6);
   }
   const flight = [];
   for (const k of [0.1, 0.2, 0.3, 0.5, 0.7]) flight.push(await sfxAt(page, L.id, w + tr * k));
@@ -12086,4 +12089,53 @@ test('AC481: the mining CLINK sits above the crystal being mined, not on the min
   const clink = page.locator('.fx .pop-img[data-pop="clink"]').first();
   await expect(clink).toBeAttached({ timeout: 3000 });
   expect([await clink.getAttribute('data-row'), await clink.getAttribute('data-col')], 'the CLINK is on the mine').toEqual([String(mine.row), String(mine.col)]);
+});
+
+// Ken: "the fireball and the meteor both need to come from like a random part from the top down. Not from the ground up."
+test('AC482: the Fireball and the Starfall meteor fall from high above, from a different direction each cast, and never rise from the ground or the Stronghold', async ({ page }) => {
+  test.setTimeout(90000);
+  const skies = [];
+  for (const [spell, i] of [['fireball', 0], ['fireball', 1], ['fireball', 2], ['meteor-strike', 0], ['meteor-strike', 1]]) {
+    let s = await start(page, sfxSetup({ playerHand: [spell], board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 6 }] }));
+    await page.evaluate(() => window.oreheart.clearSpellFxLog());
+    expect((await act(page, { type: 'cast', uid: handUid(s, 'player', spell), target: { row: 3, col: 6 } })).ok).toBe(true);
+    let L = null;
+    await expect.poll(async () => { L = (await sfxLog(page)).find((e) => e.spell === spell); return !!L; }, { timeout: 8000 }).toBe(true);
+    expect(L.path, `${spell} falls from the sky`).toBe('sky_fall');
+    expect(L.sky.dy, `${spell} starts high above`).toBeGreaterThan(8);
+    expect(L.sky.dz, `${spell} comes in from the far side (the top of the screen)`).toBeLessThan(0);
+    const w = L.beats[0].ms, imp = L.impactMs;
+    const ys = [];
+    for (const ms of [30, w - 20, w + 10, w + (imp - w) * 0.5, imp - 30]) { const f = await sfxAt(page, L.id, ms); if (f.layers.core.visible) ys.push(f.layers.core.y); }
+    expect(ys.length, `${spell}: the core is seen on its way`).toBeGreaterThanOrEqual(2);
+    for (let k = 1; k < ys.length; k++) expect(ys[k], `${spell}: it only ever goes DOWN (${ys.join(', ')})`).toBeLessThanOrEqual(ys[k - 1] + 0.01);
+    expect(Math.min(...ys), `${spell}: it is never down at the Stronghold before it lands`).toBeGreaterThan(0.3);
+    skies.push(`${L.sky.dx},${L.sky.dz}`);
+  }
+  expect(new Set(skies).size, `a different direction each cast (${skies.join(' | ')})`).toBeGreaterThanOrEqual(4);
+});
+
+// Ken: "the done button and the menu button. They're still not centered. And the done button is a little too big. It should be more the size of the menu button."
+test('AC483: the Done button is the size of the Menu button, both have their contents centred, and Done stays clear of the deck pile', async ({ page }) => {
+  for (const [W, H] of [[1920, 1080], [844, 390]]) {
+    await page.setViewportSize({ width: W, height: H });
+    await start(page, { ai: false, skipMulligan: true, setup: { firstPlayer: 'player' } });
+    await expect(page.getByRole('button', { name: 'Done', exact: true })).toBeVisible();
+    const m = await page.evaluate(() => {
+      const r = (e) => { const b = e.getBoundingClientRect(); return { x0: b.left, x1: b.right, y0: b.top, y1: b.bottom, w: b.width, h: b.height }; };
+      const text = (e) => { const tn = [...e.querySelectorAll('*'), e].flatMap((x) => [...x.childNodes]).find((n) => n.nodeType === 3 && n.textContent.trim()); const rg = document.createRange(); rg.selectNodeContents(tn); return r(rg); };
+      const menu = document.querySelector('.match .o-menu .menu-btn'), done = document.querySelector('.match .btn.o-text.done-btn');
+      const icon = getComputedStyle(done, '::before'), iw = parseFloat(icon.width) || 0, gap = parseFloat(getComputedStyle(done).columnGap) || 0;
+      const deck = document.querySelector('.match [aria-label="Your deck"]');
+      return { menu: r(menu), done: r(done), mt: text(menu), dt: text(done), iw, gap, deck: deck ? r(deck) : null };
+    });
+    expect(Math.abs(m.done.w - m.menu.w), `${W}x${H}: Done ${Math.round(m.done.w)} px wide, Menu ${Math.round(m.menu.w)}`).toBeLessThanOrEqual(2);
+    expect(Math.abs(m.done.h - m.menu.h), `${W}x${H}: Done ${Math.round(m.done.h)} px tall, Menu ${Math.round(m.menu.h)}`).toBeLessThanOrEqual(2);
+    const mc = (m.mt.x0 + m.mt.x1) / 2, bc = (m.menu.x0 + m.menu.x1) / 2;
+    expect(Math.abs(mc - bc), `${W}x${H}: Menu's word is centred`).toBeLessThanOrEqual(m.menu.w * 0.04);
+    const g0 = m.dt.x0 - m.iw - m.gap, dc = (g0 + m.dt.x1) / 2, dbc = (m.done.x0 + m.done.x1) / 2;
+    expect(Math.abs(dc - dbc), `${W}x${H}: Done's icon and word are centred together`).toBeLessThanOrEqual(m.done.w * 0.04);
+    for (const [t, b, n] of [[m.mt, m.menu, 'Menu'], [m.dt, m.done, 'Done']]) expect(Math.abs((t.y0 + t.y1) / 2 - (b.y0 + b.y1) / 2), `${W}x${H}: ${n} is centred top to bottom`).toBeLessThanOrEqual(b.h * 0.12);
+    if (m.deck) expect(m.done.x0 - m.done.w * 0.3, `${W}x${H}: Done's left gem stays clear of the deck pile`).toBeGreaterThanOrEqual(m.deck.x1 - 1);
+  }
 });
