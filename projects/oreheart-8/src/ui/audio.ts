@@ -35,16 +35,18 @@ export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-
 for (const id of SPELL_SOUNDS) SFX['spell:' + id] = D('spell-' + id, 1, 0);
 const OLD_SPELL: Record<string, string> = { fireball: 'fireball', 'meteor-strike': 'meteor', 'healing-light': 'heal', 'second-wind': 'heal', 'shield-bubble': 'bubble' };
 const MAX_VOICES = 3;
-/** Ken's switch for the unit voices: off until he approves Brush's voice reel (the old grunts play meanwhile). The checks turn it on with oreheart.setVoicesOn(true). */
-export const VOICES_ON = false;
+/** Ken's switch for the unit voices. ON since Oct 31 (Ken: "the voices are all right"); false puts the old grunts back exactly as before. */
+export const VOICES_ON = true;
 /** Ken's voice rules (studio/voice-spec.json v2, Oct 31): 8 s per unit, one voice at a time, 1.2 s between voices, hurt 35 % (always on a big hit),
  * priority special > big-hit hurt > select > hurt (a higher one may cut a lower one after 0.2 s), playbackRate range, volume per event. */
 export const VOICE = { unitCooldownMs: 8000, gapMs: 1200, cutAfterMs: 200, hurtChance: 0.35, rate: [0.98, 1.02], vol: { select: 0.85, special: 0.9, hurt: 0.8 }, prio: { hurt: 1, select: 2, bigHurt: 3, special: 4 } };
 export const voiceUrl = (name: string, ext = 'ogg') => `/audio/voice/${name}.${ext}`;
 type VoiceEv = 'select' | 'hurt' | 'special';
-type VoiceMan = { units: Record<string, { voice: string; select: string[]; special?: string; special_when?: string }>; voices: Record<string, { hurt: string[] }>; present: string[] };
+type VoiceMan = { units: Record<string, { voice: string; select: string[]; special?: string; special_when?: string }>; voices: Record<string, { hurt: string[] }>; present: string[];
+  /** Ken, Oct 31 ("a little inconsistent in volume. Some are really quiet"): one linear gain per line, from tools/voice-loudness.mjs, so every line plays at the same loudness. */
+  gain?: { target_lufs: number; lines: Record<string, number> } };
 /** Test hook entry (getAudioState().voice.log): every voice event, played or skipped and why. */
-export type VoicePlay = { event: VoiceEv; unit: string; who: string; big: boolean; prio: number; line: string | null; file: string | null; rate: number; from: 'file' | 'fallback' | 'muted' | 'locked' | 'none'; skipped: string | null; stopped: string | null; t: number; played: boolean };
+export type VoicePlay = { event: VoiceEv; unit: string; who: string; big: boolean; prio: number; line: string | null; file: string | null; rate: number; from: 'file' | 'fallback' | 'muted' | 'locked' | 'none'; skipped: string | null; stopped: string | null; gain?: number; t: number; played: boolean };
 /** Game events that are a unit's special (voice-spec units[id].special_when): any ability use, a steal, a bowl; mining for the gatherers,
  * an upgrade for the smiths, a block for the shield units; and the attacks that ARE the ability (smack, backstab, charge, overload, ...). Plain attacks and shots never speak. */
 const SPECIAL_ATTACK = ['smack', 'charge', 'overload', 'enforcer', 'brawler', 'overwatch', 'splitter', 'flying'];
@@ -82,7 +84,10 @@ class AudioEngine {
         this.sfxGain = this.ctx.createGain();
         this.voiceGain = this.ctx.createGain();
         this.sfxGain.connect(this.ctx.destination);
-        this.voiceGain.connect(this.ctx.destination);
+        // Oct 31: a limiter after the Voices volume, so lines evened out to one loud level can never clip on a stray peak (it only acts above -3 dBFS)
+        const lim = this.ctx.createDynamicsCompressor();
+        lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.12;
+        this.voiceGain.connect(lim); lim.connect(this.ctx.destination);
         this.applyVolumes();
         const b = this.ctx.createBuffer(1, this.ctx.sampleRate, this.ctx.sampleRate);
         const d = b.getChannelData(0);
@@ -400,7 +405,8 @@ class AudioEngine {
     if (buf) {
       const rate = VOICE.rate[0] + Math.random() * (VOICE.rate[1] - VOICE.rate[0]);
       const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
-      const g = c.createGain(); g.gain.value = VOICE.vol[event];
+      const lg = (line && this.vMan?.gain?.lines?.[line]) || 1; // the line's own loudness gain (every line the same loudness)
+      const g = c.createGain(); g.gain.value = VOICE.vol[event] * lg; e.gain = +lg.toFixed(3);
       src.connect(g).connect(this.voiceGain); // the Voices slider and mute apply
       const v = { src, who, line, event, prio, start: now, end: now + (buf.duration / rate) * 1000 };
       src.onended = () => { if (this.vCur === v) v.end = Math.min(v.end, performance.now()); try { g.disconnect(); } catch { /* gone */ } };

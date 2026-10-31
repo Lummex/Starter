@@ -12794,3 +12794,38 @@ test('AC512: each unit the Bowler\'s ball knocks over gets a bonk with the heavy
     expect(b.punch.file).toBe('/audio/sfx/punch-heavy.ogg');
   }
 });
+
+// Ken (Oct 31): "the voices are all right. They're a little inconsistent in volume. Some are really quiet."
+test('AC513: the unit voices are on, and every line plays at the same loudness (a per-line gain from the manifest, a limiter on the voice bus)', async ({ page, request }) => {
+  test.setTimeout(90000);
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  const man = await (await request.get('/audio/voice/manifest.json')).json();
+  expect(man.gain && man.gain.target_lufs, 'the manifest carries the loudness target').toBeLessThan(-8);
+  const lines = man.gain.lines, present = man.present;
+  expect(present.length, 'a voice line for (nearly) every spec line').toBeGreaterThan(230);
+  for (const n of present) {
+    expect(lines[n], `${n} has a loudness gain`).toBeGreaterThan(0);
+    expect(lines[n], `${n}: a boost never past +45 dB`).toBeLessThanOrEqual(178);
+  }
+  expect(Object.keys(lines).length, 'a gain for every line that can play').toBe(present.length);
+  expect(man.defective.every((n) => !present.includes(n)), 'a silent line is never played').toBe(true);
+  // the quiet lines are boosted a lot, the loud ones hardly at all: one loudness for all
+  const g = present.map((n) => lines[n]);
+  expect(Math.max(...g) / Math.min(...g), 'the lines needed very different gains (the quiet ones were really quiet)').toBeGreaterThan(20);
+  // in the game: voices are on by default, and a played line carries its gain
+  await start(page, quiet({ playerHand: [], board: [{ cardId: 'dwarf-pickman', owner: 'player', row: 5, col: 7 }, { cardId: 'goblin-grunt', owner: 'opponent', row: 2, col: 7 }] }));
+  await page.mouse.click(5, 5); // unlock audio
+  expect((await page.evaluate(async () => (await window.oreheart.getAudioState()).voice.on)), 'voices are on by default').toBe(true);
+  await page.evaluate(() => window.oreheart.setVoiceRules && window.oreheart.setVoiceRules({ unitCooldownMs: 0, gapMs: 0 }));
+  await expect.poll(async () => (await page.evaluate(async () => (await window.oreheart.getAudioState()).voice)).loaded, { timeout: 15000, message: 'the unit lines load' }).toBeGreaterThan(0);
+  const played = [];
+  for (let i = 0; i < 6; i++) {
+    await page.evaluate(() => window.oreheart.voiceEvent('select', 'dwarf-pickman', 'pick-' + Math.random(), false));
+    const e = (await page.evaluate(async () => (await window.oreheart.getAudioState()).voice.log)).pop();
+    if (e && e.played !== false && e.from === 'file') played.push(e);
+    await page.waitForTimeout(120);
+  }
+  expect(played.length, 'select lines played from files').toBeGreaterThan(0);
+  for (const e of played) expect(e.gain, `${e.line} played with its manifest gain`).toBeCloseTo(lines[e.line], 2);
+  expect(errors).toEqual([]);
+});
