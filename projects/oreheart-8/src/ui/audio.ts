@@ -35,6 +35,10 @@ export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-
 for (const id of SPELL_SOUNDS) SFX['spell:' + id] = D('spell-' + id, 1, 0);
 const OLD_SPELL: Record<string, string> = { fireball: 'fireball', 'meteor-strike': 'meteor', 'healing-light': 'heal', 'second-wind': 'heal', 'shield-bubble': 'bubble' };
 const MAX_VOICES = 3;
+/** Arena -> its match music (file name in /audio/music/ without .mp3). */
+export const ARENA_MUSIC: Record<string, { match: string }> = { skullfang: { match: 'first-fight' }, gnome: { match: 'gnome-spellcaster' } };
+/** The arena a match is played in: against the gnome Commander it is the gnome arena (once Brush's arena is built it will be chosen by the arena itself). */
+export const arenaOf = (opponentFaction?: string) => (opponentFaction === 'gnomes' ? 'gnome' : 'skullfang');
 /** Oct 31 (Ken: "cut down a little bit on the noises ... not so much twinkling and stuff going on"): Brush's mix_rules (studio/sound-spec.json).
  *  Few, meaningful sounds: at most 3 effects at once (the lowest priority is dropped, or the newcomer when it is lower than all playing), a minimum gap per sound,
  *  a spell or kaboom mutes everything below a summon for 0.6 s, at most 2 footsteps sounding, a card's summon waits 0.35 s behind its card sound,
@@ -58,11 +62,9 @@ export const VOICES_ON = true;
 export const VOICE = { unitCooldownMs: 8000, gapMs: 1200, cutAfterMs: 200, hurtChance: 0.35, rate: [0.98, 1.02], vol: { select: 0.85, special: 0.9, hurt: 0.8 }, prio: { hurt: 1, select: 2, bigHurt: 3, special: 4 } };
 export const voiceUrl = (name: string, ext = 'ogg') => `/audio/voice/${name}.${ext}`;
 type VoiceEv = 'select' | 'hurt' | 'special';
-type VoiceMan = { units: Record<string, { voice: string; select: string[]; special?: string; special_when?: string }>; voices: Record<string, { hurt: string[] }>; present: string[];
-  /** Ken, Oct 31 ("a little inconsistent in volume. Some are really quiet"): one linear gain per line, from tools/voice-loudness.mjs, so every line plays at the same loudness. */
-  gain?: { target_lufs: number; lines: Record<string, number> } };
+type VoiceMan = { units: Record<string, { voice: string; select: string[]; special?: string; special_when?: string }>; voices: Record<string, { hurt: string[] }>; present: string[] };
 /** Test hook entry (getAudioState().voice.log): every voice event, played or skipped and why. */
-export type VoicePlay = { event: VoiceEv; unit: string; who: string; big: boolean; prio: number; line: string | null; file: string | null; rate: number; from: 'file' | 'fallback' | 'muted' | 'locked' | 'none'; skipped: string | null; stopped: string | null; gain?: number; t: number; played: boolean };
+export type VoicePlay = { event: VoiceEv; unit: string; who: string; big: boolean; prio: number; line: string | null; file: string | null; rate: number; from: 'file' | 'fallback' | 'muted' | 'locked' | 'none'; skipped: string | null; stopped: string | null; t: number; played: boolean };
 /** Game events that are a unit's special (voice-spec units[id].special_when): any ability use, a steal, a bowl; mining for the gatherers,
  * an upgrade for the smiths, a block for the shield units; and the attacks that ARE the ability (smack, backstab, charge, overload, ...). Plain attacks and shots never speak. */
 const SPECIAL_ATTACK = ['smack', 'charge', 'overload', 'enforcer', 'brawler', 'overwatch', 'splitter', 'flying'];
@@ -124,9 +126,19 @@ class AudioEngine {
   private tracks: Record<string, HTMLAudioElement> = {};
   private fadeT: any = null;
   private starts: Record<string, number> = {};
+  /** Oct 31 (Ken's Gnome Spellcaster): the match music belongs to the arena. The goblin Skullfang arena keeps First Fight; the gnome arena plays Gnome Spellcaster.
+   *  The gnome arena itself is not built yet, so until then any match against the gnome Commander gets the gnome music. The menu music stays Tense Cycle. */
+  private matchTrack = ARENA_MUSIC.skullfang.match;
+  setMatchArena(arena: string) {
+    const n = (ARENA_MUSIC[arena] || ARENA_MUSIC.skullfang).match;
+    if (n === this.matchTrack) return;
+    this.matchTrack = n;
+    const old = this.tracks.match;
+    if (old) { try { old.pause(); } catch { /* gone */ } old.removeAttribute('src'); delete this.tracks.match; delete this.starts.match; }
+  }
   private trackEl(k: 'menu' | 'match') {
     if (!this.tracks[k]) {
-      const a = new Audio(k === 'menu' ? '/audio/music/tense-cycle.mp3' : '/audio/music/first-fight.mp3');
+      const a = new Audio(k === 'menu' ? '/audio/music/tense-cycle.mp3' : `/audio/music/${this.matchTrack}.mp3`);
       a.loop = true; a.preload = 'auto'; a.volume = 0;
       this.tracks[k] = a;
       a.addEventListener('play', () => { this.starts[k] = (this.starts[k] || 0) + 1; });
@@ -142,7 +154,7 @@ class AudioEngine {
       track: this.unlocked ? this.trackName(this.musicMode) : null, playing: !!cur && !cur.paused, gain: this.muted || !this.musicOn ? 0 : (this.music / 100) * 0.5, crossfadeMs: 1500, startCount: this.starts[this.musicMode] || 0 };
   }
   musicLog: { track: string; fadeMs: number }[] = [];
-  private trackName(m: 'menu' | 'match') { return m === 'match' ? 'first-fight' : 'tense-cycle'; }
+  private trackName(m: 'menu' | 'match') { return m === 'match' ? this.matchTrack : 'tense-cycle'; }
   setMusicMode(m: 'menu' | 'match') { if (m !== this.musicMode || !this.musicLog.length) this.musicLog.push({ track: this.trackName(m), fadeMs: 1500 }); this.musicMode = m; this.musicTick(); }
   setMusic(v: number) { this.music = v; localStorage.setItem('oreheart.musicVolume', String(v)); this.musicTick(); }
   setMusicOn(on: boolean) { this.musicOn = on; localStorage.setItem('oreheart.musicOff', on ? '0' : '1'); this.musicTick(); }
@@ -465,8 +477,7 @@ class AudioEngine {
     if (buf) {
       const rate = VOICE.rate[0] + Math.random() * (VOICE.rate[1] - VOICE.rate[0]);
       const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
-      const lg = (line && this.vMan?.gain?.lines?.[line]) || 1; // the line's own loudness gain (every line the same loudness)
-      const g = c.createGain(); g.gain.value = VOICE.vol[event] * lg; e.gain = +lg.toFixed(3);
+      const g = c.createGain(); g.gain.value = VOICE.vol[event]; // Brush re-levelled every clip to about -15 LUFS (peaks -1.5 to -3 dB): no per-line gain
       src.connect(g).connect(this.voiceGain); // the Voices slider and mute apply
       const v = { src, who, line, event, prio, start: now, end: now + (buf.duration / rate) * 1000 };
       src.onended = () => { if (this.vCur === v) v.end = Math.min(v.end, performance.now()); try { g.disconnect(); } catch { /* gone */ } };

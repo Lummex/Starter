@@ -11,7 +11,7 @@ import { STANCES } from '../ai/stances';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters } from './decks';
 import { brewActions, flowShardCount, deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
-import { audio } from './audio';
+import { audio, arenaOf } from './audio';
 import { getHighlights, setHighlights, resetHighlights, getRings, setRings, resetRings, edgeOf, glowOf, mainOf, ringColor, applyHighlightVars } from './fx-settings';
 import { loadGrubnak3d } from './grubnak3d';
 import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
@@ -1171,6 +1171,7 @@ export class App {
   showMatch() {
     this.handKey = ''; this.fitKey = '';
     this.clear();
+    audio.setMatchArena(arenaOf(this.game.state.players.opponent.faction)); /* Oct 31: the match music belongs to the arena */
     audio.setMusicMode('match');
     const r = this.r;
     const fcol = FACTIONS[this.game.state.players.player.faction].crystal;

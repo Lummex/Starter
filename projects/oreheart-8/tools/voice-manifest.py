@@ -39,15 +39,6 @@ for f in os.listdir(out):  # drop files of lines no longer in the spec
     if f.endswith('.ogg') and f[:-4] not in want: os.remove(os.path.join(out, f))
 present = sorted(f[:-4] for f in os.listdir(out) if f.endswith('.ogg'))
 man = {'version': spec.get('version'), 'made_by': spec.get('made_by'), 'units': units, 'voices': voices, 'present': present}
-old = os.path.join(out, 'manifest.json')  # keep the loudness gains (tools/voice-loudness.mjs) of lines that are still there; new lines need measuring
-if os.path.exists(old):
-    try:
-        prev = json.load(open(old, encoding='utf-8'))
-        if prev.get('gain'):
-            man['gain'] = {**prev['gain'], 'lines': {k: g for k, g in prev['gain']['lines'].items() if k in want}}
-            man['defective'] = [n for n in prev.get('defective', []) if n in want]
-            man['present'] = [n for n in present if n not in man['defective']]
-    except Exception: pass
 json.dump(man, open(os.path.join(out, 'manifest.json'), 'w', encoding='utf-8', newline='\n'), indent=0, separators=(',', ':'))
 lic = os.path.join(root, 'art', 'sound', 'LICENSES.md')
 if os.path.exists(lic): shutil.copyfile(lic, os.path.join(out, 'LICENSES.md'))

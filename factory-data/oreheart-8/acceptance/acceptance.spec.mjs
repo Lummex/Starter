@@ -6653,10 +6653,12 @@ test('AC223: menu music on menus, match music in matches, crossfades, Mute silen
   await expect.poll(async () => (await audio()).music.track).toBe('tense-cycle');
   expect((await audio()).unlocked).toBe(true);
   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
-  await expect.poll(async () => (await audio()).music.track).toBe('first-fight');
+  await expect.poll(async () => (await getState(page)).players?.opponent?.faction).toBeTruthy();
+  const matchTrack = await (async () => ((await getState(page)).players.opponent.faction === 'gnomes' ? 'gnome-spellcaster' : 'first-fight'))(); // owner change (Oct 31): the match music belongs to the arena: First Fight, or Gnome Spellcaster against the gnome Commander
+  await expect.poll(async () => (await audio()).music.track).toBe(matchTrack);
   let a = await audio();
   let last = a.log[a.log.length - 1];
-  expect(last.track).toBe('first-fight');
+  expect(last.track).toBe(matchTrack);
   expect(last.fadeMs).toBeGreaterThanOrEqual(1000); expect(last.fadeMs).toBeLessThanOrEqual(2000);
   const mull = page.getByRole('dialog', { name: 'Mulligan' });
   if (await mull.isVisible()) await mull.getByRole('button', { name: 'Keep Hand' }).click();
@@ -7544,7 +7546,8 @@ test.describe('round 11 at 1920x1080', () => {
     await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
     await check();
     await page.getByRole('button', { name: 'Fight!', exact: true }).click();
-    await expect.poll(async () => (await audioState(page)).music.track, { timeout: 10000 }).toBe('first-fight');
+    await expect.poll(async () => (await getState(page)).players?.opponent?.faction).toBeTruthy();
+    await expect.poll(async () => (await audioState(page)).music.track, { timeout: 10000 }).toBe(await (async () => ((await getState(page)).players.opponent.faction === 'gnomes' ? 'gnome-spellcaster' : 'first-fight'))()); // Oct 31: First Fight, or Gnome Spellcaster against the gnome Commander
   });
 
   test('AC259: main menu button words are white, bold and styled as in menus.json', async ({ page }) => {
@@ -12797,38 +12800,38 @@ test('AC512: each unit the Bowler\'s ball knocks over gets a bonk with the heavy
   }
 });
 
-// Ken (Oct 31): "the voices are all right. They're a little inconsistent in volume. Some are really quiet."
-test('AC513: the unit voices are on, and every line plays at the same loudness (a per-line gain from the manifest, a limiter on the voice bus)', async ({ page, request }) => {
-  test.setTimeout(90000);
+// Ken (Oct 31): "the voices are all right. They're a little inconsistent in volume. Some are really quiet." Brush re-levelled every clip (about -15 LUFS, peaks -1.5 to -3 dB)
+test('AC513: the unit voices are on, every clip is levelled the same (no per-line boosts), all 243 lines play, and the voice bus has its limiter', async ({ page, request }) => {
+  test.setTimeout(120000);
   const errors = []; page.on('pageerror', (e) => errors.push(e.message));
   const man = await (await request.get('/audio/voice/manifest.json')).json();
-  expect(man.gain && man.gain.target_lufs, 'the manifest carries the loudness target').toBeLessThan(-8);
-  const lines = man.gain.lines, present = man.present;
-  expect(present.length, 'a voice line for (nearly) every spec line').toBeGreaterThan(230);
-  for (const n of present) {
-    expect(lines[n], `${n} has a loudness gain`).toBeGreaterThan(0);
-    expect(lines[n], `${n}: a boost never past +45 dB`).toBeLessThanOrEqual(178);
-  }
-  expect(Object.keys(lines).length, 'a gain for every line that can play').toBe(present.length);
-  expect(man.defective.every((n) => !present.includes(n)), 'a silent line is never played').toBe(true);
-  // the quiet lines are boosted a lot, the loud ones hardly at all: one loudness for all
-  const g = present.map((n) => lines[n]);
-  expect(Math.max(...g) / Math.min(...g), 'the lines needed very different gains (the quiet ones were really quiet)').toBeGreaterThan(20);
-  // in the game: voices are on by default, and a played line carries its gain
+  expect(man.gain, 'no per-line loudness gain any more').toBeUndefined();
+  expect(man.defective, 'no silent clip is skipped any more').toBeUndefined();
+  expect(man.present.length, 'every spec line has its clip').toBe(243);
+  expect(man.present, 'the goblin Smith Miner special works now').toContain('vo-goblin-smith-miner-special');
   await start(page, quiet({ playerHand: [], board: [{ cardId: 'dwarf-pickman', owner: 'player', row: 5, col: 7 }, { cardId: 'goblin-grunt', owner: 'opponent', row: 2, col: 7 }] }));
-  await page.mouse.click(5, 5); // unlock audio
+  await page.mouse.click(5, 5);
+  // every clip decodes and peaks between -9 and 0 dBFS (Brush's levelling: loudness within about 3 dB of the median), so none is "really quiet"
+  const peaks = await page.evaluate(async (names) => {
+    const ctx = new AudioContext(); const out = {};
+    for (const n of names) {
+      const buf = await ctx.decodeAudioData(await (await fetch('/audio/voice/' + n + '.ogg')).arrayBuffer());
+      let pk = 0; const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > pk) pk = a; }
+      out[n] = 20 * Math.log10(pk || 1e-9);
+    }
+    return out;
+  }, man.present);
+  const vals = Object.values(peaks);
+  expect(Math.min(...vals), 'the quietest clip still peaks above -9 dBFS (Brush measured -7.8 at worst; the median is about -2.5)').toBeGreaterThan(-9);
+  expect(Math.max(...vals), 'no clip peaks above 0 dBFS').toBeLessThan(0);
+  // in the game: voices are on by default and a line plays at its plain event volume
   expect((await page.evaluate(async () => (await window.oreheart.getAudioState()).voice.on)), 'voices are on by default').toBe(true);
   await page.evaluate(() => window.oreheart.setVoiceRules && window.oreheart.setVoiceRules({ unitCooldownMs: 0, gapMs: 0 }));
   await expect.poll(async () => (await page.evaluate(async () => (await window.oreheart.getAudioState()).voice)).loaded, { timeout: 15000, message: 'the unit lines load' }).toBeGreaterThan(0);
-  const played = [];
-  for (let i = 0; i < 6; i++) {
-    await page.evaluate(() => window.oreheart.voiceEvent('select', 'dwarf-pickman', 'pick-' + Math.random(), false));
-    const e = (await page.evaluate(async () => (await window.oreheart.getAudioState()).voice.log)).pop();
-    if (e && e.played !== false && e.from === 'file') played.push(e);
-    await page.waitForTimeout(120);
-  }
-  expect(played.length, 'select lines played from files').toBeGreaterThan(0);
-  for (const e of played) expect(e.gain, `${e.line} played with its manifest gain`).toBeCloseTo(lines[e.line], 2);
+  await page.evaluate(() => window.oreheart.voiceEvent('select', 'dwarf-pickman', 'pick-' + Math.random(), false));
+  const e = (await page.evaluate(async () => (await window.oreheart.getAudioState()).voice.log)).pop();
+  expect(e.from, 'a select line played from its file').toBe('file');
+  expect(e.gain, 'no per-line gain is applied').toBeUndefined();
   expect(errors).toEqual([]);
 });
 
@@ -12950,4 +12953,26 @@ test('AC526: a real action button (Menu, a menu item) clicks, a toggle switch in
   await sw.click();
   await expect(sw).not.toHaveAttribute('aria-checked', was);
   expect(await clicks(), 'a toggle switch makes no click').toBe(c0);
+});
+
+// Ken (Oct 31): his Gnome Spellcaster is the gnome arena's music; the goblin Skullfang arena keeps First Fight, the menus keep Tense Cycle
+test('AC527: the match music belongs to the arena: First Fight in a goblin-arena match, Gnome Spellcaster against the gnome Commander, Tense Cycle in the menus; the file is served', async ({ page, request }) => {
+  test.setTimeout(90000);
+  const r = await request.get('/audio/music/gnome-spellcaster.mp3');
+  expect(r.status()).toBe(200);
+  expect((await r.body()).length, 'Ken\'s file as given').toBeGreaterThan(1900000);
+  const music = async () => (await page.evaluate(async () => await window.oreheart.getAudioState())).music;
+  await start(page, { ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [] } });
+  await page.mouse.click(5, 5);
+  await expect.poll(async () => (await music()).track, { timeout: 10000 }).toBe('first-fight');
+  await start(page, { ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'sproingle', setup: { opponentHand: [] } });
+  await page.mouse.click(5, 5); // a new page: the first tap unlocks audio again
+  await expect.poll(async () => (await music()).track, { timeout: 10000, message: 'against the gnome Commander the match plays Gnome Spellcaster' }).toBe('gnome-spellcaster');
+  await expect.poll(async () => (await music()).playing, { timeout: 10000 }).toBe(true);
+  const m = await music();
+  expect(m.gain, 'at the same music volume as before').toBeCloseTo((m.volume / 100) * 0.5, 3);
+  // and back: a goblin-arena match again plays First Fight
+  await start(page, { ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [] } });
+  await page.mouse.click(5, 5);
+  await expect.poll(async () => (await music()).track, { timeout: 10000 }).toBe('first-fight');
 });
