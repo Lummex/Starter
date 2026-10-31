@@ -1,29 +1,23 @@
 ## What was built
-This round was a clean-up of the Oreheart card battle game: making the last round's new features (card dragging, "Done" pop-up, mine emblems, full-screen sharpness and more) work, and fixing older broken checks. No new features or rule changes were intended.
+This round added player accounts to Oreheart: a login screen, sign-up with a "When were you born?" question (under-13s need a parent's email approval), server-saved decks, a Profile, and a Contact us form. It also adds a "Play offline (practice)" option that works like the game does today. A small email sender for parent approvals and the admin back counter are meant to go with it.
 
 ## Try these things
-- On the main menu, hover and click Play, then pick a Commander and deck and start a match.
-- Drag a card from your hand onto a lit square on the board and see if it plays there.
-- Hover over your hand: the cards should rise and neighbours should move aside.
-- Click "Done" without making a move and see whether a "go back / continue" pop-up appears.
-- Click a crystal mine with a Miner next to it, and try the Menu in the top-left.
-- Open the preview on a phone held sideways and play a few turns.
+- Open the preview and look for the login screen. Check that "Play offline (practice)" opens the normal menu.
+- Start a vs-computer match offline and play a few turns.
+- Try creating an account, once with an adult birth date and once with an under-13 date.
+- Open Deck Builder after signing in, then check that your deck is still there after you sign out and back in.
+- Open Profile and the Contact us form.
+- On a phone held sideways, check that the menu and match fit the screen.
 
 ## Automated checks
-423 of 463 checks passed. 40 failed. Many relate to Round 26's own new items:
-- Dragged card staying centered on the pointer and shrinking onto the square.
-- The "Done" drop-up.
-- The mine emblem and pickaxe badge.
-- Sharp full-screen drawing, and smaller speech bubbles.
-- The round ability buttons, the Card Comp watch bar, the Mine Control stance, mulligan layout and some model animations.
-
-The rest are older checks (mine tapping, fonts, menu list, card close-ups). The builder says some of these checks are outdated or time out on a slow test machine, but I couldn't confirm that.
+553 of 570 checks passed. 17 failed:
+- **Account-related (4):** one check says "Play offline" may still talk to the server. A non-admin may not be refused properly in the admin site. The file-size check and the owner-notes check (SQL lines, lawyer reminder) also failed. These are the ones that matter most for this launch.
+- **Older look-and-feel checks (13):** 3D mines and figures, black bars at some window shapes, hand tucking, a double-tap on phones, the Gnome Plow, and the Starfall spell. The spec said these were already failing and not to be worked on.
 
 ## Things to know
-- The screenshots show the menu and match looking finished and styled. No page errors were recorded. The phone match screenshot looks cramped: a large card close-up covers much of the board, and the "Tunnel" label is cut off.
-- The match screenshot shows three white mines with "+0/+0" labels and no units yet. That fits the very start of a match.
-- The builder's notes are old and don't cover this round's work.
-- The previous test file reports the Menu holding two extra items ("Square highlights", "Windowed"), which contradicts the owner's six-item menu.
+- The screenshots (home, menu, match, desktop and phone) look fine. The intro logo shows first, and the board, hand and buttons are styled and readable.
+- The screenshots show only the offline game. The login screen and sign-up flow were never captured, so I couldn't check them visually.
+- The builder's notes are from an earlier round and say nothing about this round's account work.
 
 ## Recommendation
-Request changes: 40 of 463 checks still fail, including several of this round's own headline features, so the build did not meet its goal.
+Request changes: the account and admin checks failed, and the offline mode may still contact the server. The login screens haven't been seen.
