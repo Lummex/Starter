@@ -10439,7 +10439,9 @@ test.describe('round 26 at 1920x1080', () => {
     expect(r.cls, 'no class changes while holding still').toEqual(sweep);
   });
 
-  test('AC391/AC396: Skullflinger plays his normal attack clip, no flying skull is created, the hit lands', async ({ page }) => {
+  // owner check change (Ken, Oct 31): "all range need like a shooting animation ... a skull flying and hitting them ... the projectile actually flying out".
+  // Was: no flying skull (Round 26). Now his throw clip (Spring's pack v5 biped-throw-01) plays and Clay's 3D skull flies to the target.
+  test('AC391/AC396: Skullflinger plays his throw clip, a 3D skull flies to the target, the hit lands', async ({ page }) => {
     test.setTimeout(60000);
     await start(page, quiet({ board: [
       { cardId: 'goblin-slinger', owner: 'player', row: 6, col: 5 },
@@ -10454,13 +10456,8 @@ test.describe('round 26 at 1920x1080', () => {
     expect(atk).toBeTruthy();
     expect((await act(page, atk)).ok).toBe(true);
     expect(at(await getState(page), 3, 5).health).toBe(troll.health - sl.attack);
-    await expect.poll(async () => ((await renderStats(page)).creatureAnimLog || []).some((e) => e.uid === sl.uid && e.anim === 'attack' && ['OH_Attack', 'Skull_Throw'].includes(e.clip)), { timeout: 10000 }).toBe(true);
-    for (let k = 0; k < 6; k++) {
-      const st = await renderStats(page);
-      expect((st.projectiles || []).filter((p) => p.shooterUid === sl.uid), 'no flying skull').toEqual([]);
-      expect((st.projectileLog || []).filter((p) => p.shooterUid === sl.uid)).toEqual([]);
-      await page.waitForTimeout(250);
-    }
+    await expect.poll(async () => ((await renderStats(page)).creatureAnimLog || []).some((e) => e.uid === sl.uid && e.anim === 'attack' && e.clip === 'biped-throw-01'), { timeout: 10000 }).toBe(true);
+    await expect.poll(async () => ((await renderStats(page)).projectileLog || []).some((p) => p.shooterUid === sl.uid && p.file === 'skull.glb' && p.landedAt > 0), { timeout: 10000, message: 'a skull flies and lands' }).toBe(true);
     await expect.poll(async () => ((await renderStats(page)).creatureAnimLog || []).some((e) => e.uid === troll.uid && e.anim === 'hit'), { timeout: 5000 }).toBe(true);
   });
 });
@@ -12137,5 +12134,155 @@ test('AC483: the Done button is the size of the Menu button, both have their con
     expect(Math.abs(dc - dbc), `${W}x${H}: Done's icon and word are centred together`).toBeLessThanOrEqual(m.done.w * 0.04);
     for (const [t, b, n] of [[m.mt, m.menu, 'Menu'], [m.dt, m.done, 'Done']]) expect(Math.abs((t.y0 + t.y1) / 2 - (b.y0 + b.y1) / 2), `${W}x${H}: ${n} is centred top to bottom`).toBeLessThanOrEqual(b.h * 0.12);
     if (m.deck) expect(m.done.x0 - m.done.w * 0.3, `${W}x${H}: Done's left gem stays clear of the deck pile`).toBeGreaterThanOrEqual(m.deck.x1 - 1);
+  }
+});
+
+// ---------- Oct 31 (Ken): real ranged attacks with flying 3D projectiles ----------
+// "Oathbound Overwatch is essentially a sniper ... He should have like a shooting animation. So all range need like a shooting animation ... the
+// projectile actually flying out ... skull ... bullet ... arrow ... spell type object. Only melee do melee type moves. Any range, stay in place and do
+// their attack, and their projectile comes out. And ... the bowler, the bowling ball should come out and roll across the screen, the 3D bowling ball."
+// Ledger's table (studio/ranged-attacks.json), Spring's pack v5 ranged clips (release events), Clay's projectile GLBs (public/models/projectiles/).
+const AC500_SHOTS = [
+  ['oathbound-pikeman', 'biped-ranged-rifle-01', 1.1333, 'bullet.glb', 'straight', 'muzzle'],
+  ['deepforge-crossbowman', 'biped-ranged-cannon-01', 0.9333, 'crystal-shot.glb', 'straight', 'muzzle'],
+  ['goblin-slinger', 'biped-throw-01', 0.6333, 'skull.glb', 'arc', 'hand'],
+  ['axe-thrower', 'biped-throw-01', 0.6333, 'grudge-book.glb', 'arc', 'hand'],
+  ['spark-gnome', 'biped-ranged-cast-01', 1.0333, 'lightning-orb.glb', 'magic', 'muzzle'],
+  ['hexwright-apprentice', 'biped-ranged-cast-hand-01', 0.8, 'hex-bolt.glb', 'magic', 'hand'],
+  ['gyrocopter-ace', 'biped-ranged-cast-hand-01', 0.8, 'fireball.glb', 'arc', 'hand'],
+];
+const ac500Shot = async (page, uid) => ((await renderStats(page)).projectileLog || []).filter((p) => p.shooterUid === uid && p.landedAt > 0).pop() || null;
+for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone', width: 844, height: 390 }]) {
+  test.describe(`AC500 (${vp.name})`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+    test(`AC500: every ranged unit stays on its square, plays its ranged clip and its projectile flies from the launch point to the target; the hit starts on arrival; melee still lunges (${vp.name})`, async ({ page }) => {
+      test.setTimeout(240000);
+      const board = [];
+      AC500_SHOTS.forEach(([id], i) => { board.push({ cardId: id, owner: 'player', row: 5, col: 7 + i }); board.push({ cardId: 'grubnaks-big-boss-troll', owner: 'opponent', row: 3, col: 7 + i }); });
+      board.push({ cardId: 'goblin-grunt', owner: 'player', row: 6, col: 3 }, { cardId: 'grubnaks-big-boss-troll', owner: 'opponent', row: 5, col: 3 });
+      await start(page, quiet({ board }));
+      if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+      let s = await getState(page);
+      for (const [id] of AC500_SHOTS) { const c = s.board.creatures.find((x) => x.cardId === id); await expect.poll(async () => (await r22Fig(page, c.uid)).source, { timeout: 40000 }).toBe(`${id}.glb`); }
+      s = await toAction(page);
+      for (const [id, clip, rel, file, style, launch] of AC500_SHOTS) {
+        s = await getState(page);
+        const me = s.board.creatures.find((x) => x.cardId === id), foe = at(s, 3, me.col);
+        const a = (await legal(page)).find((x) => x.type === 'attack' && x.creatureUid === me.uid && x.target && x.target.row === 3 && x.target.col === me.col);
+        expect(a, `${id}: can shoot the troll 2 squares ahead`).toBeTruthy();
+        const t0 = await page.evaluate(() => performance.now());
+        expect((await act(page, a)).ok).toBe(true);
+        await expect.poll(async () => !!(await ac500Shot(page, me.uid)), { timeout: 15000, message: `${id}: its projectile lands` }).toBe(true);
+        const L = await ac500Shot(page, me.uid);
+        expect(L.file, `${id} fires ${file}`).toBe(file);
+        expect(L.style, `${id}: ${style} flight`).toBe(style);
+        expect(L.launch, `${id}: launch point`).toBe(launch);
+        expect(L.clip, `${id} plays its ranged clip`).toBe(clip);
+        expect(Math.abs(L.releaseTime - rel), `${id}: release event at ${rel} s into the clip`).toBeLessThan(0.01);
+        expect(L.spawnedAt, `${id}: the projectile appears at the release, not before`).toBeGreaterThanOrEqual(L.releaseAt - 2);
+        expect(L.releaseAt, `${id}: released after the clip started`).toBeGreaterThan(t0);
+        expect(L.boneDist, `${id}: spawns at its launch bone (${L.launchBone})`).toBeLessThanOrEqual(launch === 'hand' ? 0.05 : 1.7);
+        expect(L.bodyDrift, `${id}: stays on its square (no step, no lunge)`).toBeLessThanOrEqual(0.08);
+        expect(L.targetUid, `${id}: flies at the troll`).toBe(foe.uid);
+        expect(Math.hypot(L.end[0] - L.target[0], L.end[1] - L.target[1], L.end[2] - L.target[2]), `${id}: arrives at the target`).toBeLessThan(0.05);
+        expect(L.arriveAt, `${id}: it flies (arrival after release)`).toBeGreaterThan(L.releaseAt + 100);
+        const st = await renderStats(page);
+        const atk = (st.attackLog || []).filter((x) => x.uid === me.uid).pop();
+        expect(atk && atk.kind, `${id}: staged as a shot`).toBe('shot');
+        expect(atk.lunge, `${id}: no lunge`).toBe(0);
+        expect(atk.blowAt, `${id}: the blow is the arrival`).toBe(L.arriveAt);
+        const log = st.creatureAnimLog || [];
+        expect(log.some((e) => e.uid === me.uid && e.anim === 'attack' && e.clip === clip && e.at >= t0 - 5), `${id}: plays ${clip}`).toBe(true);
+        const hits = log.filter((e) => e.uid === foe.uid && ['hit', 'knockback'].includes(e.anim) && e.at >= t0 - 5);
+        expect(hits.length, `${id}: the troll reacts`).toBeGreaterThan(0);
+        for (const h of hits) expect(h.at, `${id}: the troll's ${h.anim} starts when the projectile arrives, not before`).toBeGreaterThanOrEqual(L.arriveAt - 2);
+      }
+      // melee keeps its lunge
+      s = await getState(page);
+      const grunt = at(s, 6, 3);
+      const m = (await legal(page)).find((x) => x.type === 'attack' && x.creatureUid === grunt.uid);
+      expect(m, 'the grunt can hit the troll next to it').toBeTruthy();
+      expect((await act(page, m)).ok).toBe(true);
+      const ml = ((await renderStats(page)).attackLog || []).filter((x) => x.uid === grunt.uid).pop();
+      expect(ml && ml.kind, 'melee is staged as melee').toBe('melee');
+      expect(ml.lunge, 'melee still steps in to swing').toBeGreaterThan(0.3);
+      expect(((await renderStats(page)).projectileLog || []).some((p) => p.shooterUid === grunt.uid), 'melee fires nothing').toBe(false);
+    });
+  });
+}
+
+for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone', width: 844, height: 390 }]) {
+  test.describe(`AC501 (${vp.name})`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+    test(`AC501: the Bowler's 3D bowling ball leaves his hand at the bottom of his swing and rolls along the ground to the targets, knocking them over as it reaches them (${vp.name})`, async ({ page }) => {
+      test.setTimeout(120000);
+      await start(page, quiet({ playerCrystals: 6, board: [
+        { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 8 },
+        { cardId: 'goblin-grunt', owner: 'opponent', row: 3, col: 8 },
+        { cardId: 'goblin-scrounger', owner: 'opponent', row: 2, col: 8 },
+      ] }));
+      if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+      let s = await getState(page);
+      const me = at(s, 6, 8), g1 = at(s, 3, 8), g2 = at(s, 2, 8);
+      await expect.poll(async () => (await r22Fig(page, me.uid)).source, { timeout: 40000 }).toBe('goblin-scrapper.glb');
+      s = await toAction(page);
+      const t0 = await page.evaluate(() => performance.now());
+      expect((await act(page, { type: 'ability', creatureUid: me.uid, ability: 'strike', target: { row: 5, col: 8 } })).ok).toBe(true);
+      await expect.poll(async () => !!(await ac500Shot(page, me.uid)), { timeout: 15000, message: 'the ball finishes its roll' }).toBe(true);
+      const L = await ac500Shot(page, me.uid);
+      expect(L.file).toBe('bowling-ball.glb');
+      expect(L.style).toBe('roll');
+      expect(L.clip, 'his own bowl swing').toBe('OH_Special');
+      expect(Math.abs(L.releaseTime - 0.7667), 'the ball leaves at ball_release (frame 23)').toBeLessThan(0.01);
+      expect(L.spawnedAt).toBeGreaterThanOrEqual(L.releaseAt - 2);
+      expect(L.boneDist, 'the rolled ball starts where the held ball was, in his hand').toBeLessThanOrEqual(0.6);
+      expect(L.path.length, 'rolls through the line').toBeGreaterThanOrEqual(4);
+      expect(L.minY, 'never sinks into the ground').toBeGreaterThanOrEqual(-0.01);
+      expect(L.maxY, 'stays on the ground (rolls, never flies)').toBeLessThanOrEqual(0.05);
+      expect(L.spin, 'it spins as it rolls').toBeGreaterThan(3);
+      const last = L.path[L.path.length - 1];
+      expect(Math.hypot(L.end[0] - last[0], L.end[2] - last[2]), 'rolls to the end of its line').toBeLessThan(0.05);
+      const log = (await renderStats(page)).creatureAnimLog || [];
+      expect(log.some((e) => e.uid === me.uid && e.anim === 'special' && e.clip === 'OH_Special' && e.at >= t0 - 5), 'plays OH_Special').toBe(true);
+      for (const [u, row] of [[g1, 3], [g2, 2]]) {
+        const e = log.find((x) => x.uid === u.uid && x.anim === 'bowled' && x.at >= t0 - 5);
+        expect(e, `the unit on row ${row} is bowled over`).toBeTruthy();
+        expect(e.at, `row ${row}: knocked over when the ball reaches its square (${L.pathAt[5 - row]}), not at the throw`).toBeGreaterThanOrEqual(L.pathAt[5 - row] - 62);
+      }
+      expect(L.pathAt[3], 'the ball reaches the farther unit later').toBeGreaterThan(L.pathAt[2]);
+      // the held ball is back in his hand after the roll
+      await expect.poll(async () => (await r22Fig(page, me.uid)).ball?.state, { timeout: 10000 }).toBe('hand');
+      expect(((await r22Fig(page, me.uid)).items || []).find((i) => i.name === 'bowling-ball')?.visible, 'his ball is back').toBe(true);
+    });
+  });
+}
+
+test('AC502: the computer waits until its projectile has landed before its next action (no action while a shot flies)', async ({ page }) => {
+  test.setTimeout(150000);
+  await page.goto('/?test=1&seed=5&aiworker=1&fx=1');
+  await page.waitForFunction(() => !!window.oreheart);
+  await page.evaluate(async () => await window.oreheart.newMatch({ mode: 'standard', ai: true, difficulty: 'hard', seed: 5, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false,
+    mines: [{ row: 4, col: 2 }, { row: 4, col: 4 }, { row: 4, col: 6 }],
+    setup: { firstPlayer: 'player', opponentCrystals: 0, opponentHand: [],
+      board: [{ cardId: 'oathbound-pikeman', owner: 'opponent', row: 2, col: 7 }, { cardId: 'deepforge-crossbowman', owner: 'opponent', row: 3, col: 10 },
+        { cardId: 'shiv-rat', owner: 'player', row: 5, col: 10 }, { cardId: 'shiv-rat', owner: 'player', row: 6, col: 5 }] } }));
+  await done(page, 2); // the player passes; the computer's snipers shoot on its turn
+  // sample the computer's pacing while its turn plays: whenever a shot is in the air, the board says busy
+  const samples = [];
+  for (let i = 0; i < 400; i++) {
+    const r = await page.evaluate(async () => { const st = await window.oreheart.getState(); const p = await window.oreheart.getAiPace(); const rs = await window.oreheart.getRenderStats(); return { done: st.activePlayer === 'player' && st.priority === 'player' && st.turn >= 3, busy: p.busy, flying: (rs.projectiles || []).length, t: performance.now() }; });
+    samples.push(r);
+    if (r.done) break;
+    await page.waitForTimeout(150);
+  }
+  expect(samples[samples.length - 1].done, 'the computer finished its turn').toBe(true);
+  for (const x of samples) if (x.flying) expect(x.busy, 'a projectile in the air keeps the board busy').not.toBe('');
+  const { paceLog } = await page.evaluate(async () => await window.oreheart.getAiPace());
+  const log = (await renderStats(page)).projectileLog || [];
+  expect(log.length, 'the computer shot at least once').toBeGreaterThan(0);
+  for (const p of paceLog) expect(['', 'target'], `${p.type} was played while '${p.busyAtApply}' was still going`).toContain(p.busyAtApply);
+  for (const shot of log) {
+    const after = paceLog.filter((p) => p.at > shot.releaseAt);
+    for (const p of after) expect(p.at, `${p.type} waited for the ${shot.unit}'s ${shot.file} to land`).toBeGreaterThanOrEqual(shot.landedAt);
   }
 });

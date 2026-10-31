@@ -710,7 +710,7 @@ const _embV = new THREE.Vector3();
     let d = 0, prev = start;
     for (const q of pts) { d += prev.distanceTo(q); prev = q; pathAt.push(releaseAt + (d / spec.speed) * 1000); }
     proj.fire({ shooterUid: e.uid, unit: bf?.cardId || 'goblin-scrapper', clip: bf?.c3d?.clipOf?.('special') || '', spec, releaseTime: relMs / 1000, releaseAt, arriveAt: pathAt[pathAt.length - 1], to: pts[pts.length - 1].clone(), path: pts, pathAt,
-      launch: () => (bf && figs.get(bf.uid) === bf ? launchPoint(bf, spec, pts[0]) : { pos: start.clone().setY(0.3), bone: start.clone().setY(0.3) }),
+      launch: () => (bf && figs.get(bf.uid) === bf ? launchPoint(bf, spec, pts[0]) : { pos: start.clone().setY(0.3), bone: start.clone().setY(0.3), drift: 0 }),
       onSpawn: () => { bf?.c3d?.ballHide?.(true); spawnFx('dust', start, 4); audio.play('melee'); },
       onLand: () => { bf?.c3d?.ballHide?.(false); } });
     for (const h of e.hits || []) {
@@ -739,7 +739,7 @@ const _embV = new THREE.Vector3();
     if (toward) return a.distanceToSquared(toward) < b2.distanceToSquared(toward) ? a : b2; // a staff: the end nearer the target
     return a.distanceToSquared(hand) > b2.distanceToSquared(hand) ? a : b2;
   }
-  function launchPoint(f: Fig, s: ShotSpec, toPt: THREE.Vector3): { pos: THREE.Vector3; bone: THREE.Vector3; size?: number } {
+  function launchPoint(f: Fig, s: ShotSpec, toPt: THREE.Vector3): { pos: THREE.Vector3; bone: THREE.Vector3; size?: number; drift: number } {
     const c = f.c3d;
     f.group.updateMatrixWorld(true);
     const bone = c?.char?.getObjectByName(s.bone) || null;
@@ -755,7 +755,7 @@ const _embV = new THREE.Vector3();
         else if (s.launch === 'muzzle') pos.copy(farEnd(part, bp, s.tip === 'toward' ? toPt : null));
       }
     }
-    return { pos, bone: bp, size };
+    return { pos, bone: bp, size, drift: Math.hypot(f.group.position.x - f.target.x, f.group.position.z - f.target.z) }; // drift: how far the body is off its square at the release (a shooter stays put)
   }
   /** test hook: every attack staged (shot or melee, and how far it stepped in) */
   const attackLog: { uid: string; cardId: string; kind: string; lunge: number; at: number; blowAt: number }[] = [];

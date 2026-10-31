@@ -63,7 +63,7 @@ export interface ShotRequest {
   /** performance.now() ms */ releaseAt: number; arriveAt: number;
   to: THREE.Vector3; targetUid?: string;
   /** a roll: the squares it rolls through (world, on the ground) and when it reaches each one */ path?: THREE.Vector3[]; pathAt?: number[];
-  launch(): { pos: THREE.Vector3; bone: THREE.Vector3; size?: number } | null;
+  launch(): { pos: THREE.Vector3; bone: THREE.Vector3; size?: number; drift?: number } | null;
   onSpawn?(): void; onLand?(): void;
 }
 interface Live {
@@ -129,6 +129,7 @@ export function createProjectiles(scene: THREE.Scene, fx: (kind: 'dust' | 'stars
     }
     L.log.spawnedAt = Math.round(now); L.log.spawn = arr(pos); L.log.bonePos = la ? arr(la.bone) : null; L.log.size = +size.toFixed(3);
     L.log.boneDist = la ? +la.bone.distanceTo(pos).toFixed(3) : null;
+    L.log.bodyDrift = la && la.drift !== undefined ? +la.drift.toFixed(3) : null;
     r.onSpawn?.();
   };
   const land = (L: Live, now: number) => {
