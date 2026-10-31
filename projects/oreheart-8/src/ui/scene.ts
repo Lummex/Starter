@@ -11,7 +11,7 @@ import { createSpellFx, fxImpactMs, type SpellFxRequest } from './spell-fx';
 import { SPELL_VISUALS } from '../content/spell-visuals';
 import { mineEmblemUrl } from './cardfmt';
 import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
-import { audio } from './audio';
+import { audio, SHOT_SOUNDS } from './audio';
 import baseLayoutJson from '../content/arena-layout.json';
 import ownerLayoutJson from '../content/owner-layout.json';
 // Round 9a: the owner's final layout carries the full effect list (57); the painting data is identical
@@ -763,10 +763,11 @@ const _embV = new THREE.Vector3();
     const pathAt: number[] = [];
     let d = 0, prev = start;
     for (const q of pts) { d += prev.distanceTo(q); prev = q; pathAt.push(releaseAt + (d / spec.speed) * 1000); }
+    let rollSnd: { stop(ms?: number): void } | null = null; // Brush: the roll loops, then fades ~0.15 s on impact
     proj.fire({ shooterUid: e.uid, unit: bf?.cardId || 'goblin-scrapper', clip: bf?.c3d?.clipOf?.('special') || '', spec, releaseTime: relMs / 1000, releaseAt, arriveAt: pathAt[pathAt.length - 1], to: pts[pts.length - 1].clone(), path: pts, pathAt,
       launch: () => (bf && figs.get(bf.uid) === bf ? launchPoint(bf, spec, pts[0]) : { pos: start.clone().setY(0.3), bone: start.clone().setY(0.3), drift: 0 }),
-      onSpawn: () => { bf?.c3d?.ballHide?.(true); spawnFx('dust', start, 4); audio.play('melee'); },
-      onLand: () => { bf?.c3d?.ballHide?.(false); } });
+      onSpawn: () => { bf?.c3d?.ballHide?.(true); spawnFx('dust', start, 4); audio.play('melee'); rollSnd = audio.loop('bowl-roll'); },
+      onLand: () => { bf?.c3d?.ballHide?.(false); rollSnd?.stop(150); } });
     for (const h of e.hits || []) {
       const f = figs.get(h.id ?? h.uid);
       if (!f) continue;
@@ -774,7 +775,7 @@ const _embV = new THREE.Vector3();
       let idx = path.findIndex((p) => h.from && p.row === h.from.row && p.col === h.from.col);
       if (idx < 0) idx = 0;
       const t = pathAt[idx] - 60; // knocked over as the ball reaches it
-      f.bowl = { t0: t, from: from2, to: h.to ? world(h.to.row, h.to.col) : f.target.clone() }; f.bowledT = t; setTimeout(() => audio.play('bonk'), Math.max(0, t - now)); // Round 28b: bowled-over clip (bonk as the ball reaches it)
+      f.bowl = { t0: t, from: from2, to: h.to ? world(h.to.row, h.to.col) : f.target.clone() }; f.bowledT = t; setTimeout(() => { audio.play('bonk'); audio.play('pins-scatter'); }, Math.max(0, t - now)); // Round 28b: bowled-over clip (bonk as the ball reaches it)
       f.group.position.copy(from2);
     }
   }
@@ -1068,7 +1069,8 @@ const _embV = new THREE.Vector3();
         aimGrip(f, t0, t0 + f.atkMs + 150, now);
         const sh = shot, ff = f;
         proj.fire({ shooterUid: f.uid, unit: f.cardId, clip: f.c3d?.clipOf?.('attack') || '', spec: shot, releaseTime: clipRel, releaseAt, arriveAt: f.blowAt, to: toPt, targetUid: def?.uid,
-          launch: () => launchPoint(ff, sh, toPt), onSpawn: () => audio.play('ranged') });
+          launch: () => launchPoint(ff, sh, toPt), onSpawn: () => audio.play(SHOT_SOUNDS[ff.cardId]?.fire || 'ranged'),
+          onLand: () => { const h = SHOT_SOUNDS[ff.cardId]?.hit; if (h) audio.play(h); } });
       } else if (ranged) { f.lunge = dir.clone().normalize().multiplyScalar(-0.12); f.lungeT = t0 + imp - 40; f.lungeDur = 300; }
       else { f.lunge = dir.clone().multiplyScalar(0.42); f.lungeT = t0; f.lungeDur = LUNGE_MS; }
       blowAt = Math.max(blowAt, f.blowAt); strikers.add(f.uid);

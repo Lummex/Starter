@@ -12225,6 +12225,10 @@ test('AC483: the Done button is the size of the Menu button, both have their con
 const SFX_SPEC = {
   click: [['ui-click'], 0.7, 0.5], tick: [['ui-tick'], 0.6, 0.3], chime: [['ui-chime'], 0.7, 0], draw: [['card-draw'], 0.7, 1], cardPlay: [['card-play'], 0.8, 0.7],
   summon: [['summon'], 0.85, 0.5], 'step:goblins': [['step-goblin'], 0.5, 1.5], 'step:gnomes': [['step-gnome'], 0.5, 1.5], 'step:dwarves': [['step-dwarf'], 0.55, 1.2],
+  // Oct 31 (Brush): the projectile sounds
+  'shot-rifle': [['shot-rifle'], 0.9, 0.8], 'shot-cannon': [['shot-cannon'], 1, 0.5], 'throw-whoosh': [['throw-whoosh'], 0.8, 1.5], 'cast-zap': [['cast-zap'], 0.85, 1],
+  'cast-hex': [['cast-hex'], 0.8, 1], 'fireball-whoosh': [['fireball-whoosh'], 0.85, 1], 'bowl-roll': [['bowl-roll'], 0.6, 0], 'skull-crack': [['skull-crack'], 0.9, 1],
+  'book-thud': [['book-thud'], 0.9, 1], 'zap-hit': [['zap-hit'], 0.9, 1], 'fire-burst': [['fire-burst'], 0.9, 0.8], 'pins-scatter': [['pins-scatter'], 0.95, 0.8],
   melee: [['melee'], 0.9, 1], ranged: [['ranged'], 0.85, 1], bonk: [['bonk-1', 'bonk-2', 'bonk-3'], 0.9, 1], clink: [['clink-1', 'clink-2', 'clink-3'], 0.85, 0.8],
   thud: [['thud'], 0.85, 1], pick: [['mine-pick'], 0.8, 1], shatter: [['shatter'], 0.85, 0.5], 'defeat-poof': [['defeat-poof'], 0.85, 0.8],
   stronghold: [['commander-hit'], 1, 0.5], kaboom: [['kaboom'], 1, 0.5], 'turn-start': [['turn-start'], 0.85, 0], win: [['win'], 1, 0], lose: [['lose'], 1, 0],
@@ -12234,7 +12238,7 @@ for (const id of SFX_SPELLS) SFX_SPEC['spell:' + id] = [['spell-' + id], 1, 0];
 const sfxState = async (page) => (await page.evaluate(async () => await window.oreheart.getAudioState())).sfx;
 async function sfxReady(page) {
   await page.mouse.click(5, 5); // first gesture unlocks audio; the files load after it
-  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 39 sound files decoded', timeout: 20000 }).toBe(39);
+  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 51 sound files decoded (39 + the 12 projectile sounds, Oct 31)', timeout: 20000 }).toBe(51);
 }
 const playKey = (page, key) => page.evaluate((k) => {
   if (k.startsWith('spell:')) window.oreheart.playSpellSound(k.slice(6));
@@ -12368,6 +12372,9 @@ const AC500_SHOTS = [
   ['hexwright-apprentice', 'biped-ranged-cast-hand-01', 0.8, 'hex-bolt.glb', 'magic', 'hand'],
   ['gyrocopter-ace', 'biped-ranged-cast-hand-01', 0.8, 'fireball.glb', 'arc', 'hand'],
 ];
+// Oct 31 (Brush): each shooter's firing sound at the release, its impact sound on landing
+const AC500_SND = { 'oathbound-pikeman': ['shot-rifle'], 'deepforge-crossbowman': ['shot-cannon'], 'goblin-slinger': ['throw-whoosh', 'skull-crack'], 'axe-thrower': ['throw-whoosh', 'book-thud'],
+  'spark-gnome': ['cast-zap', 'zap-hit'], 'hexwright-apprentice': ['cast-hex', 'zap-hit'], 'gyrocopter-ace': ['fireball-whoosh', 'fire-burst'] };
 const ac500Shot = async (page, uid) => ((await renderStats(page)).projectileLog || []).filter((p) => p.shooterUid === uid && p.landedAt > 0).pop() || null;
 for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone', width: 844, height: 390 }]) {
   test.describe(`AC500 (${vp.name})`, () => {
@@ -12413,6 +12420,10 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
         const hits = log.filter((e) => e.uid === foe.uid && ['hit', 'knockback'].includes(e.anim) && e.at >= t0 - 5);
         expect(hits.length, `${id}: the troll reacts`).toBeGreaterThan(0);
         for (const h of hits) expect(h.at, `${id}: the troll's ${h.anim} starts when the projectile arrives, not before`).toBeGreaterThanOrEqual(L.arriveAt - 2);
+        const [fire, hit] = AC500_SND[id], plays = (await sfxState(page)).plays.filter((p) => p.t >= t0 - 5);
+        expect(plays.some((p) => p.key === fire && Math.abs(p.t - L.spawnedAt) <= 60), `${id}: ${fire} at the release`).toBe(true);
+        expect(plays.some((p) => p.key === 'ranged'), `${id}: its own firing sound replaces the generic one`).toBe(false);
+        if (hit) expect(plays.some((p) => p.key === hit && Math.abs(p.t - L.landedAt) <= 60), `${id}: ${hit} on landing`).toBe(true);
       }
       // melee keeps its lunge
       s = await getState(page);
@@ -12467,6 +12478,13 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
         expect(e.at, `row ${row}: knocked over when the ball reaches its square (${L.pathAt[5 - row]}), not at the throw`).toBeGreaterThanOrEqual(L.pathAt[5 - row] - 62);
       }
       expect(L.pathAt[3], 'the ball reaches the farther unit later').toBeGreaterThan(L.pathAt[2]);
+      // Oct 31 (Brush): the roll loops while the ball rolls and fades on impact; pins scatter as each unit is bowled over
+      await expect.poll(async () => ((await sfxState(page)).plays.find((p) => p.key === 'bowl-roll' && p.t >= t0 - 5) || {}).stoppedAt || 0, { timeout: 5000 }).toBeGreaterThan(0);
+      const sp = (await sfxState(page)).plays.filter((p) => p.t >= t0 - 5), roll = sp.find((p) => p.key === 'bowl-roll');
+      expect(roll.loop, 'the roll sound loops').toBe(true);
+      expect(Math.abs(roll.t - L.spawnedAt), 'the roll starts as the ball leaves his hand').toBeLessThanOrEqual(60);
+      expect(Math.abs(roll.stoppedAt - L.landedAt), 'the roll stops on impact').toBeLessThanOrEqual(60);
+      expect(sp.filter((p) => p.key === 'pins-scatter').length, 'pins scatter for each unit bowled over').toBeGreaterThanOrEqual(2);
       // the held ball is back in his hand after the roll
       await expect.poll(async () => (await r22Fig(page, me.uid)).ball?.state, { timeout: 10000 }).toBe('hand');
       expect(((await r22Fig(page, me.uid)).items || []).find((i) => i.name === 'bowling-ball')?.visible, 'his ball is back').toBe(true);

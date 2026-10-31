@@ -17,6 +17,16 @@ export const SFX: Record<string, SfxDef> = {
   stronghold: D('commander-hit', 1, 0.5), kaboom: D('kaboom', 1, 0.5), 'turn-start': D('turn-start', 0.85 * 0.6, 0), win: D('win', 1, 0), lose: D('lose', 1, 0),
   // Oct 31 (Ken: "realistic punches"): layered under the hit sounds inside play() (studio/voice-spec.json "punches")
   punch: D(['punch-1', 'punch-2', 'punch-3'], 0.8, 1), 'punch-armour': D(['punch-armour-1', 'punch-armour-2'], 0.8, 1), 'punch-heavy': D('punch-heavy', 0.9, 1),
+  // Oct 31 (Brush, studio/sound-spec.json): each projectile's own firing sound at its release and impact sound on landing
+  'shot-rifle': D('shot-rifle', 0.9, 0.8), 'shot-cannon': D('shot-cannon', 1, 0.5), 'throw-whoosh': D('throw-whoosh', 0.8, 1.5), 'cast-zap': D('cast-zap', 0.85, 1),
+  'cast-hex': D('cast-hex', 0.8, 1), 'fireball-whoosh': D('fireball-whoosh', 0.85, 1), 'bowl-roll': D('bowl-roll', 0.6, 0), 'skull-crack': D('skull-crack', 0.9, 1),
+  'book-thud': D('book-thud', 0.9, 1), 'zap-hit': D('zap-hit', 0.9, 1), 'fire-burst': D('fire-burst', 0.9, 0.8), 'pins-scatter': D('pins-scatter', 0.95, 0.8),
+};
+/** Which firing (at the release) and impact (on landing) sound each shooter's projectile plays; the hit's bonk/clink and punch still play under it. */
+export const SHOT_SOUNDS: Record<string, { fire: string; hit?: string }> = {
+  'oathbound-pikeman': { fire: 'shot-rifle' }, 'deepforge-crossbowman': { fire: 'shot-cannon' },
+  'goblin-slinger': { fire: 'throw-whoosh', hit: 'skull-crack' }, 'axe-thrower': { fire: 'throw-whoosh', hit: 'book-thud' },
+  'spark-gnome': { fire: 'cast-zap', hit: 'zap-hit' }, 'hexwright-apprentice': { fire: 'cast-hex', hit: 'zap-hit' }, 'gyrocopter-ace': { fire: 'fireball-whoosh', hit: 'fire-burst' },
 };
 /** Which punch layer goes under which hit sound: bonk = unarmoured hit, clink = armoured hit, stronghold = a Commander hit. */
 export const PUNCH_FOR: Record<string, string> = { bonk: 'punch', clink: 'punch-armour', stronghold: 'punch-heavy' };
@@ -218,7 +228,7 @@ class AudioEngine {
     const vs = (this.voices[key] ||= []);
     while (vs.length >= MAX_VOICES) { const old = vs.shift()!; try { old.src.stop(); } catch { /* already ended */ } } // steal the oldest
     const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
-    const g = c.createGain(); g.gain.value = vol;
+    const g = c.createGain(); g.gain.value = vol; (src as any).__g = g;
     src.connect(g).connect(this.sfxGain!); // through sfxGain: the volume slider and mute still apply
     const v = { src, t: c.currentTime };
     vs.push(v);
@@ -227,6 +237,22 @@ class AudioEngine {
     Object.assign(e, { from: 'file', rate, vol, voices: vs.length, played: true });
     log();
     return e;
+  }
+
+  /** A looping effect (the Bowler's rolling ball): starts now, stop(ms) fades it out. Logged like any play (loop: true, stoppedAt). */
+  loop(key: string): { stop(fadeMs?: number): void } {
+    const e: any = this.playKey(key, () => { /* no synth loop */ });
+    const vs = this.voices[key] || [], v = e.from === 'file' ? vs[vs.length - 1] : null;
+    e.loop = true;
+    if (v) v.src.loop = true;
+    let done = false;
+    return { stop: (fadeMs = 150) => {
+      if (done) return; done = true; e.stoppedAt = Math.round(performance.now());
+      if (!v || !this.ctx) return;
+      const g = (v.src as any).__g as GainNode | undefined, t = this.ctx.currentTime;
+      if (g) { g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + fadeMs / 1000); }
+      try { v.src.stop(t + fadeMs / 1000 + 0.02); } catch { /* ended */ }
+    } };
   }
 
   /** The old synthesized effects: the fallback until a file has loaded. */
