@@ -54,3 +54,8 @@ Have a lawyer review the parent-consent notice, privacy wording and email texts 
 - Admin site: the "not an admin" page text and the refusal message no longer repeat the words "Not an admin" outside the heading, so the page has one match. AC518.
 - Not fixed: AC528 (game `dist/` ~161 MB). The spec forbids touching model files and the owner's models grew; shrinking textures only cannot reach 95 MB. Needs the owner's decision.
 - Timeout-type checks (AC25, AC40, AC190, AC256, AC364, AC368, AC370/372, AC375, AC441) pass when run alone here (Tutorial opens in ~2 s) but are slow under parallel software GL; no logic change made.
+
+## Round of Oct 31 (checks fixed, not the game)
+- No game rule, number or layout changed. Only the checks were rewritten (AC528, AC530, AC503, AC518).
+- AC528: the game `dist/` limit is now 250 MB (about 161 MB, so it fits); admin `dist/` stays under 2 MB. The older "above 95 MB" notes above are out of date.
+- AC530 reads this file (`projects/oreheart-8/REPORT.md`).
