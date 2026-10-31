@@ -12,6 +12,7 @@ import { pictureOf, rarityKey, commanderPortrait, INTERNAL_ABILITY } from './ui/
 import cardFormat from '../public/art/card-format/format.json';
 import { ohCardEl, ohCardHTML, fitCardText, commanderCard } from './ui/cardfmt';
 import { hasCreature3dSlug } from './ui/creature3d';
+import { predictHit } from './ai/ai';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
@@ -63,6 +64,8 @@ if (test) {
     setSpeed: (n: number) => { game.setSpeed(n); app.refreshModeUi(); },
     setPaused: (p: boolean) => { game.setPaused(p); app.refreshModeUi(); },
     previewAttack: (uid: string, target: any) => (game.state ? previewAttack(game.state, uid, target) : null),
+    /** Oct 31: the computer's own damage prediction for a hit by `uid` on the creature at target {row, col} (ai.ts predictHit) */
+    aiHitPrediction: (uid: string, target: any) => { const s: any = game.state; const c = s?.board.creatures.find((x: any) => x.uid === uid); const t = s?.board.creatures.find((x: any) => x.row === target?.row && x.col === target?.col); return c && t ? predictHit(s, c, t) : null; },
     tutorialAction: () => (game.state ? tutorialAction(game.state) : null),
     getCard: (id: string) => {
       const c: any = CARDS[id];

@@ -485,6 +485,8 @@ function defeat(s: any, c: any, ev: any[]) {
 const STACK_CAP = () => CONFIG.stackCap ?? 3, AURA_CAP = () => CONFIG.auraStackCap ?? 2, ROOT_CAP = () => CONFIG.rootStackCap ?? 2;
 /** a Riot Shield Bearer behind its shield (can't be lifted, hurt or act) */
 const ADV = (a: string, d: string) => FACTIONS[a]?.beats === d;
+/** Ken (Oct 31): the faction triangle's +1 never applies when the creature being hit is a Miner (Gatherer or Smith). Shared by the engine and the computer's damage predictions. */
+export const typeBonus = (attackerCard: any, targetCard: any) => (targetCard && !isMiner(targetCard) && ADV(attackerCard.faction, targetCard.faction) ? CONFIG.typeAdvantageBonus : 0);
 /** Junk Shaman's situational +1 Attack for adjacent Goblins on their owner's turn. */
 export function junkBonus(s: any, c: any): number {
   if (CARDS[c.cardId].faction !== 'goblins' || s.activePlayer !== c.owner) return 0;
@@ -499,7 +501,7 @@ export function atkValue(s: any, c: any, target?: any) {
   if (has(c, 'brawler') && c.lastFight != null && s.turn - c.lastFight <= 2) v *= 2;
   if (has(c, 'rage') && c.health * 2 < c.maxHealth) v += CONFIG.rageBonus;
   v += Math.min(AURA_CAP(), s.flags.battleCryN?.[c.owner] ?? (s.flags.battleCry === c.owner ? 1 : 0)); // stacking: +1 per Thunderhorn Blast this turn, up to +2
-  if (target && ADV(card.faction, CARDS[target.cardId].faction)) v += CONFIG.typeAdvantageBonus;
+  if (target) v += typeBonus(card, CARDS[target.cardId]); /* Ken, Oct 31: no triangle bonus against Miners */
   return Math.max(0, v);
 }
 

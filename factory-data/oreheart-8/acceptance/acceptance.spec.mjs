@@ -9455,6 +9455,7 @@ test('AC340: Aggressive — a Fighter next to the enemy Commander hits it; a far
 test('AC341: Mine Control — a Miner attacks an adjacent enemy Miner only if it survives, and mines when crystals are low', async ({ page }) => {
   // mines at (4,2), (4,4), (4,6); our Miner at (5,4) beside mine (4,4); the enemy Miner at (5,5)
   // Rule check (Oct 28): Dwarves beat Goblins (+1 type advantage), so the enemy Miner strikes back for 2; Shield 2 is what lets a 1-Health Goblin Miner survive the trade
+  // Ken, Oct 31: no triangle bonus against Miners: the strike back on our Goblin Miner is now 1, so Shield 2 still covers it and the 1/1 vs 1/1 trade below still kills it
   const board = (shield) => [P('goblin-scrounger', 5, 4, shield ? { shield: 2 } : {}), O('dwarf-smith-miner', 5, 5)];
   const base = { playerDeck: SHARDS, opponentDeck: SHARDS, playerCrystals: 16, playerHand: ['goblin-scrounger', 'goblin-pebbler'] };
   // survives the strike back (Shield 2 against a 2-damage counter) and has plenty of crystals -> attacks
@@ -12975,4 +12976,83 @@ test('AC527: the match music belongs to the arena: First Fight in a goblin-arena
   await start(page, { ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [] } });
   await page.mouse.click(5, 5);
   await expect.poll(async () => (await music()).track, { timeout: 10000 }).toBe('first-fight');
+});
+// ---------- AC514-AC516 (Ken, Oct 31: no triangle bonus against Miners) ----------
+// The faction triangle (+1: dwarves hit goblins, gnomes hit dwarves, goblins hit gnomes) no longer applies when the creature being hit is a Miner
+// (role Gatherer or Smith, which includes every faction's basic Miner). Every other fight keeps it. A hit on a Commander's Stronghold never had it and still doesn't.
+const TRI = {
+  dwarves: { cmd: 'borgo', atk: 'dwarf-pickman' },
+  gnomes: { cmd: 'sproingle', atk: 'gnome-tinker' },
+  goblins: { cmd: 'grubnak', atk: 'goblin-grunt' },
+};
+// attacker faction -> the faction it beats, a Miner of that faction and a Fighter of that faction
+const TRI_FIGHTS = [
+  { a: 'dwarves', d: 'goblins', miner: 'goblin-scrounger', fighter: 'goblin-grunt' },
+  { a: 'gnomes', d: 'dwarves', miner: 'dwarf-smith-miner', fighter: 'dwarf-pickman' },
+  { a: 'goblins', d: 'gnomes', miner: 'gnome-prospector', fighter: 'gnome-tinker' },
+];
+// two attackers of faction f.a, each next to one target only: the Miner at (4,8), the Fighter at (4,11); a third attacker beside the enemy Stronghold (1,12)
+const triStart = (page, f, shield) => start(page, {
+  ai: false, playerCommander: TRI[f.a].cmd, opponentCommander: TRI[f.d].cmd,
+  setup: { playerHand: [], opponentHand: [], board: [
+    P(TRI[f.a].atk, 5, 8), O(f.miner, 4, 8, shield ? { shield } : {}),
+    P(TRI[f.a].atk, 5, 11), O(f.fighter, 4, 11, shield ? { shield } : {}),
+    P(TRI[f.a].atk, 2, 13),
+  ] },
+});
+const soak = (c) => (c ? c.health + (c.shield || 0) : 0);
+// real attacks (targets behind Shield 5 so the whole hit shows): returns what each target and the Commander lost, and each attacker's plain Attack
+async function triFight(page, f) {
+  let s = await triStart(page, f, 5);
+  await done(page);
+  s = await getState(page);
+  const a1 = at(s, 5, 8), a2 = at(s, 5, 11), a3 = at(s, 2, 13);
+  const m0 = soak(at(s, 4, 8)), f0 = soak(at(s, 4, 11)), hp0 = s.players.opponent.health;
+  expect((await act(page, { type: 'attack', creatureUid: a1.uid, target: { row: 4, col: 8 } })).ok).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: a2.uid, target: { row: 4, col: 11 } })).ok).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: a3.uid, target: { commander: 'opponent' } })).ok).toBe(true);
+  const s2 = await getState(page);
+  return { plain: [a1.attack, a2.attack, a3.attack], miner: m0 - soak(at(s2, 4, 8)), fighter: f0 - soak(at(s2, 4, 11)), commander: hp0 - s2.players.opponent.health, minerSurvived: !!at(s2, 4, 8) };
+}
+
+test('AC514: Ken, Oct 31 — a dwarf hits a goblin Miner for its plain Attack, but a goblin Fighter for Attack +1', async ({ page }) => {
+  const r = await triFight(page, TRI_FIGHTS[0]);
+  expect((await page.evaluate(() => window.oreheart.getConfig())).typeAdvantageBonus, 'the triangle bonus itself is unchanged').toBe(1);
+  expect(r.minerSurvived, 'Shield 5 soaks the hit so the whole damage shows').toBe(true);
+  expect(r.miner, 'no triangle bonus against a Miner').toBe(r.plain[0]);
+  expect(r.fighter, 'the triangle bonus still applies against a Fighter').toBe(r.plain[1] + 1);
+});
+
+test('AC515: Ken, Oct 31 — the same for gnomes vs dwarves (a Smith Miner) and goblins vs gnomes; a Commander hit is unchanged', async ({ page }) => {
+  for (const f of TRI_FIGHTS) {
+    const r = await triFight(page, f);
+    expect(r.miner, `${f.a} hitting a ${f.d} Miner (${f.miner}): plain Attack`).toBe(r.plain[0]);
+    expect(r.fighter, `${f.a} hitting a ${f.d} Fighter (${f.fighter}): Attack +1`).toBe(r.plain[1] + 1);
+    // a Stronghold hit removes exactly the attacker's Attack (it never carried the triangle bonus; this change leaves it alone)
+    expect(r.commander, `${f.a} hitting the ${f.d} Commander`).toBe(r.plain[2]);
+  }
+});
+
+test('AC516: Ken, Oct 31 — the computer predicts the same damage the engine deals (Miner and non-Miner targets, all three match-ups)', async ({ page }) => {
+  for (const f of TRI_FIGHTS) {
+    let s = await triStart(page, f, 0);
+    await done(page);
+    s = await getState(page);
+    const a1 = at(s, 5, 8), a2 = at(s, 5, 11);
+    const q = (uid, row, col) => page.evaluate(([u, t]) => ({ ai: window.oreheart.aiHitPrediction(u, t), pv: window.oreheart.previewAttack(u, t) }), [uid, { row, col }]);
+    const m = await q(a1.uid, 4, 8), fi = await q(a2.uid, 4, 11);
+    expect(m.ai, `${f.a} -> ${f.d} Miner: the computer predicts the plain Attack`).toBe(a1.attack);
+    expect(m.pv.youDeal, `${f.a} -> ${f.d} Miner: the engine deals what the computer predicts`).toBe(m.ai);
+    expect(fi.ai, `${f.a} -> ${f.d} Fighter: the computer predicts Attack +1`).toBe(a2.attack + 1);
+    expect(fi.pv.youDeal, `${f.a} -> ${f.d} Fighter: the engine deals what the computer predicts`).toBe(fi.ai);
+    // and the real hit matches the prediction
+    const before = at(s, 4, 11).health;
+    expect((await act(page, { type: 'attack', creatureUid: a2.uid, target: { row: 4, col: 11 } })).ok).toBe(true);
+    const after = at(await getState(page), 4, 11);
+    if (after) expect(before - after.health, 'the real hit = the prediction').toBe(fi.ai);
+    else expect(fi.ai, 'the prediction was enough to defeat it').toBeGreaterThanOrEqual(before);
+  }
+  // the computer's own audit still agrees with the engine (nothing it chose was refused)
+  const audit = await page.evaluate(() => window.oreheart.getAiAudit());
+  expect(audit.refused).toBe(0);
 });

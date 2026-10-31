@@ -660,3 +660,42 @@ describe('round 10 rules', () => {
     expect(s.players.player.bank).toBe(4);
   });
 });
+
+// Ken, Oct 31: no triangle bonus against Miners (the +1 for dwarves > goblins > gnomes > dwarves skips a Miner target: role Gatherer or Smith)
+describe('faction triangle vs Miners (Ken, Oct 31)', () => {
+  const CMD: Record<string, string> = { dwarves: 'borgo', gnomes: 'sproingle', goblins: 'grubnak' };
+  const ATK: Record<string, string> = { dwarves: 'dwarf-pickman', gnomes: 'gnome-tinker', goblins: 'goblin-grunt' };
+  const FIGHTS = [
+    { a: 'dwarves', d: 'goblins', miner: 'goblin-scrounger', fighter: 'goblin-grunt' },
+    { a: 'gnomes', d: 'dwarves', miner: 'dwarf-smith-miner', fighter: 'dwarf-pickman' },
+    { a: 'goblins', d: 'gnomes', miner: 'gnome-prospector', fighter: 'gnome-tinker' },
+  ];
+  const soak = (c: any) => (c ? c.health + (c.shield || 0) : 0);
+  for (const f of FIGHTS) it(`${f.a} hit a ${f.d} Miner for their plain Attack, a ${f.d} Fighter for +1; a Commander hit is unchanged`, () => {
+    expect(CONFIG.typeAdvantageBonus).toBe(1);
+    expect(isMiner(CARDS[f.miner])).toBe(true);
+    expect(isMiner(CARDS[f.fighter])).toBe(false);
+    let s = createMatch({ playerCommander: CMD[f.a], opponentCommander: CMD[f.d], factionLock: false, mines: MINES,
+      setup: { opponentHand: [], board: [P(ATK[f.a], 6, 8), O(f.miner, 5, 8, { shield: 5 }), P(ATK[f.a], 6, 12), O(f.fighter, 5, 12, { shield: 5 }), P(ATK[f.a], 2, 13)], opponentHealth: 20 } });
+    s = done(s);
+    const a1 = at(s, 6, 8), a2 = at(s, 6, 12), a3 = at(s, 2, 13);
+    expect(atkValue(s, a1, at(s, 5, 8))).toBe(a1.attack);
+    expect(atkValue(s, a2, at(s, 5, 12))).toBe(a2.attack + 1);
+    const m0 = soak(at(s, 5, 8)), f0 = soak(at(s, 5, 12));
+    s = act(s, { type: 'attack', creatureUid: a1.uid, target: { row: 5, col: 8 } });
+    s = act(s, { type: 'attack', creatureUid: a2.uid, target: { row: 5, col: 12 } });
+    s = act(s, { type: 'attack', creatureUid: a3.uid, target: { commander: 'opponent' } });
+    expect(m0 - soak(at(s, 5, 8))).toBe(a1.attack);
+    expect(f0 - soak(at(s, 5, 12))).toBe(a2.attack + 1);
+    expect(s.players.opponent.health).toBe(20 - a3.attack);
+  });
+  it('a strike back that lands on a Miner gets no triangle bonus either', () => {
+    // a dwarf Anvilsworn Miner hits a gnome Aegis Tinkerer: gnomes beat dwarves, but the strike back lands on a Miner, so it is the plain Attack
+    let s = createMatch({ playerCommander: 'borgo', opponentCommander: 'sproingle', factionLock: false, mines: MINES,
+      setup: { opponentHand: [], board: [P('dwarf-smith-miner', 6, 8, { shield: 5 }), O('gnome-tinker', 5, 8)] } });
+    s = done(s);
+    const m0 = soak(at(s, 6, 8));
+    s = act(s, { type: 'attack', creatureUid: at(s, 6, 8).uid, target: { row: 5, col: 8 } });
+    expect(m0 - soak(at(s, 6, 8))).toBe(CARDS['gnome-tinker'].attack);
+  });
+});
