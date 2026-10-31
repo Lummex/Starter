@@ -191,8 +191,8 @@ test('AC5: window.oreheart only in test mode; seeds are deterministic', async ({
 
 // ---------- AC6 ----------
 for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
-  // Owner check change (Ken, Oct 30: 60-card starter decks): 48 creatures (about 12 Miners), 7 spells, 5 Crystal cards
-  test(`AC6: ${cmd} Warband starter deck is 60 cards: about a fifth Miners, 48 creatures, 7 spells, 5 Crystal cards`, async ({ page }) => {
+  // Owner check change (Ken, Oct 31: four 60-card starter decks per faction): the Warband (default) is 22 Miners + 26 fighters, 8 spells, 4 Crystal cards
+  test(`AC6: ${cmd} Warband starter deck is 60 cards: 22 Miners, 48 creatures, 8 spells, 4 Crystal cards`, async ({ page }) => {
     const s = await start(page, { playerCommander: cmd, ai: false, firstPlayer: 'player' });
     expect(s.phase).toBe('mulligan');
     const p = s.players.player;
@@ -201,19 +201,22 @@ for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
     expect(p.hand.length).toBe(5);
     const all = [...p.deck, ...p.hand].map((c) => c.cardId);
     expect(all.length).toBe(60);
-    expect(all.filter((id) => CRYSTALS.has(id)).length).toBe(5);
-    expect(all.filter((id) => SPELLS.has(id)).length).toBe(7);
+    expect(all.filter((id) => CRYSTALS.has(id)).length).toBe(4);
+    expect(all.filter((id) => SPELLS.has(id)).length).toBe(8);
     expect(all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id)).length).toBe(48);
     const counts = {};
     for (const id of all) counts[id] = (counts[id] || 0) + 1;
     for (const [id, n] of Object.entries(counts)) if (LIMITED.has(id)) expect(n, id).toBeLessThanOrEqual(3);
-    // Ken, Oct 30: 8 basic + 4 Smith Miners (goblins, gnomes); Dwarves keep 5 Riot Shield Bearers (config basic, opening-hand rescue) + 4 Anvilsworn
+    // Ken, Oct 31: basic + Smith Miners goblins 15 + 7, gnomes 17 + 5, dwarves 14 + 5 (+3 Gemdrunk Deepdelver); 22 Miners in all
     const basic = { grubnak: 'goblin-scrounger', sproingle: 'gnome-prospector', borgo: 'dwarf-miner' }[cmd];
-    expect(counts[basic] || 0).toBe(cmd === 'borgo' ? 5 : 8);
+    expect(counts[basic] || 0).toBe({ grubnak: 15, sproingle: 17, borgo: 14 }[cmd]);
     const smith = { grubnak: 'goblin-smith-miner', sproingle: 'gnome-smith-miner', borgo: 'dwarf-smith-miner' }[cmd];
-    expect(counts[smith]).toBe(4);
-    for (const id of NEW_BY_FACTION[cmd]) expect(counts[id] || 0, id).toBeGreaterThanOrEqual(1);
-    const creatureIds = all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id) && id !== basic && id !== smith);
+    expect(counts[smith]).toBe(cmd === 'grubnak' ? 7 : 5);
+    const extra = { grubnak: null, sproingle: null, borgo: 'crystal-drunk-delver' }[cmd];
+    if (extra) expect(counts[extra] || 0, extra).toBe(3);
+    // (the old "every new card at least once" rule is gone with the Oct 31 decks; at least two of the faction's new cards still appear)
+    expect(NEW_BY_FACTION[cmd].filter((id) => (counts[id] || 0) >= 1).length).toBeGreaterThanOrEqual(2);
+    const creatureIds = all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id) && id !== basic && id !== smith && id !== extra);
     const costs = await page.evaluate(async (ids) => {
       const out = [];
       for (const id of ids) out.push((await window.oreheart.getCard(id)).cost);
@@ -332,7 +335,7 @@ test('AC9: one crystal type — every card costs plain crystals, Flow is a singl
   expect((await getState(page)).players.player.crystals).toBe(5);
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'spark-gnome'), row: 7, col: 3 })).ok).toBe(true);
   s = await getState(page);
-  expect(s.players.player.crystals).toBe(0); // 6 - 1 - 5
+  expect(s.players.player.crystals).toBe(1); // 6 - 1 - 4 (owner change, Ken, Oct 31 rebalance: Stormcaller Savant costs 4)
   // a Gnome player can pay a Goblin card at full value (decks may mix factions)
   s = await newMatch(page, { ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { playerHand: ['goblin-slinger'], playerCrystals: 4 } });
   expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true);
@@ -525,10 +528,11 @@ test('AC10: back-row summoning, Grubnak discount, summoning sickness, Mangewolf 
   const wolf = handUid(s, 'player', 'wolf-rider');
   const summons = (await legal(page)).filter((a) => a.type === 'summon');
   expect(summons.length).toBeGreaterThan(0);
-  // Round 11: non-Miners summon on the back row only; basic Miners may also Tunnel next to any mine (R10.13)
+  // Round 11: non-Miners summon on the back row only.
+  // Owner check change (Ken, Oct 31: Tunnel only beside a mine your side owns): on turn 1 no mine is owned, so the basic Miner is back row only too
   expect(summons.filter((a) => a.uid !== scrounger).every((a) => a.row === 7)).toBe(true);
   const nextToMine = (a) => s.sites.some((m) => Math.max(Math.abs(m.row - a.row), Math.abs(m.col - a.col)) === 1);
-  expect(summons.filter((a) => a.uid === scrounger).every((a) => a.row === 7 || nextToMine(a))).toBe(true);
+  expect(summons.filter((a) => a.uid === scrounger).every((a) => a.row === 7)).toBe(true);
   expect(summons.some((a) => a.uid === scrapper && a.row === 7 && a.col === 1)).toBe(true);
   expect(summons.some((a) => a.row === 7 && a.col === 2)).toBe(false); // Round 3a: player Stronghold at (7,2)
   expect(summons.some((a) => a.uid === scrounger && a.row === 3 && !nextToMine(a))).toBe(false);
@@ -587,28 +591,45 @@ test('AC10: Unique card limited to one on the battlefield; Borgo +1 Health', asy
 });
 
 // ---------- AC11 ----------
-test('AC11: Tunnel works from turn 1 on every empty space next to any mine (Round 10)', async ({ page }) => {
+// Owner check change (Ken, Oct 31: Tunnel only beside a mine your side owns). Was: Tunnel from turn 1 next to any mine (Round 10).
+test('AC11: Tunnel only onto empty spaces next to a mine your side owns; nothing beside a neutral or enemy mine (Ken, Oct 31)', async ({ page }) => {
   const hand = { playerHand: ['goblin-scrounger'], playerCrystals: 5 };
+  const near = (m, r, c) => Math.max(Math.abs(m.row - r), Math.abs(m.col - c)) === 1;
+  const siteAt = (s, m) => s.sites.find((x) => x.row === m.row && x.col === m.col);
+  const tunnelSummons = async (s) => {
+    const uid = s.players.player.hand[0].uid;
+    const summons = (await legal(page)).filter((a) => a.type === 'summon' && a.uid === uid);
+    return { uid, summons, has: (r, c) => summons.some((a) => a.row === r && a.col === c) };
+  };
+  // turn 1, no mine owned: back row only, no Tunnel squares at all
   let s = await start(page, { ai: false, setup: { ...hand } });
   expect(s.sites.every((x) => x.controller === null)).toBe(true);
-  const uid = s.players.player.hand[0].uid;
-  const summons = (await legal(page)).filter((a) => a.type === 'summon' && a.uid === uid);
-  const has = (r, c) => summons.some((a) => a.row === r && a.col === c);
-  const st = [s.strongholds.player, s.strongholds.opponent];
-  for (const m of s.sites) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-    const r = m.row + dr, c = m.col + dc;
-    if ((!dr && !dc) || r < 1 || r > 7 || c < 1 || c > 13) continue;
-    if (s.sites.some((x) => x.row === r && x.col === c) || st.some((x) => x.row === r && x.col === c) || at(s, r, c)) continue;
-    expect(has(r, c), `tunnel ${r},${c}`).toBe(true);
-  }
-  expect(has(3, 8)).toBe(false); // not next to a mine, not the back row
-  expect((await act(page, { type: 'summon', uid, row: 3, col: 3 })).ok).toBe(true);
-  s = await getState(page);
-  expect(at(s, 3, 3).cardId).toBe('goblin-scrounger');
-  // still works while ahead on mines
+  let t = await tunnelSummons(s);
+  expect(t.summons.length).toBeGreaterThan(0);
+  expect(t.summons.every((a) => a.row === 7), JSON.stringify(t.summons.filter((a) => a.row !== 7))).toBe(true);
+  expect((await act(page, { type: 'summon', uid: t.uid, row: 3, col: 3 })).ok).toBe(false);
+  // the player owns M3: every empty space around M3 is offered, none that is only beside M1 or M2
   s = await newMatch(page, { ai: false, setup: { ...hand, board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 7, minedMine: M3 }] } });
-  expect(s.sites[2].controller).toBe('player');
-  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 5, col: 4 })).ok).toBe(true);
+  expect(siteAt(s, M3).controller).toBe('player');
+  expect(siteAt(s, M1).controller).toBe(null);
+  expect(siteAt(s, M2).controller).toBe(null);
+  t = await tunnelSummons(s);
+  const st = [s.strongholds.player, s.strongholds.opponent];
+  for (let r = 1; r <= 7; r++) for (let c = 1; c <= 13; c++) {
+    if (s.sites.some((x) => x.row === r && x.col === c) || st.some((x) => x.row === r && x.col === c) || at(s, r, c) || r === 7) continue;
+    if (near(M3, r, c)) expect(t.has(r, c), `tunnel beside the owned mine ${r},${c}`).toBe(true);
+    else expect(t.has(r, c), `no tunnel at ${r},${c} (not beside an owned mine)`).toBe(false);
+  }
+  expect((await act(page, { type: 'summon', uid: t.uid, row: 5, col: 4 })).ok).toBe(false); // beside M2 only
+  expect((await act(page, { type: 'summon', uid: t.uid, row: 5, col: 6 })).ok).toBe(true); // beside M3
+  s = await getState(page);
+  expect(at(s, 5, 6).cardId).toBe('goblin-scrounger');
+  // an enemy-owned mine offers nothing
+  s = await newMatch(page, { ai: false, setup: { ...hand, board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 1, minedMine: M1 }] } });
+  expect(siteAt(s, M1).controller).toBe('opponent');
+  t = await tunnelSummons(s);
+  expect(t.summons.every((a) => a.row === 7)).toBe(true);
+  expect((await act(page, { type: 'summon', uid: t.uid, row: 5, col: 2 })).ok).toBe(false);
 });
 
 // ---------- AC12 ----------
@@ -1278,8 +1299,9 @@ test('AC25: tutorial steps start at summon and advance after a back-row summon',
   await expect(page.getByLabel('Tutorial tip', { exact: true })).toBeVisible();
   const summons = (await legal(page)).filter((a) => a.type === 'summon');
   expect(summons.length).toBeGreaterThan(0);
-  // Round 11: back row, or (basic Miners, Tunnel any time) a space next to a mine
-  const nextToMine = (a) => s.sites.some((m) => Math.max(Math.abs(m.row - a.row), Math.abs(m.col - a.col)) === 1);
+  // Round 11: back row, or (basic Miners) Tunnel onto a space next to a mine.
+  // Owner check change (Ken, Oct 31: Tunnel only beside a mine your side owns): only beside a mine the player owns
+  const nextToMine = (a) => s.sites.some((m) => m.controller === 'player' && Math.max(Math.abs(m.row - a.row), Math.abs(m.col - a.col)) === 1);
   expect(summons.every((a) => a.row === 7 || nextToMine(a))).toBe(true);
   const backRow = summons.find((a) => a.row === 7);
   expect(backRow).toBeTruthy();
@@ -1307,7 +1329,7 @@ test('AC26: printed creature Health is at most 6', async ({ page }) => {
 // ---------- AC27 ----------
 const COSTS = {
   'goblin-scrounger': 1, 'goblin-scrapper': 6, 'goblin-slinger': 4, 'goblin-bomber': 3, 'goblin-sneak': 3, 'wolf-rider': 8,
-  'grubnaks-big-boss-troll': 7, 'gnome-prospector': 1, 'gnome-tinker': 4, 'spark-gnome': 5, 'clockwork-beetle': 6,
+  'grubnaks-big-boss-troll': 7, 'gnome-prospector': 1, 'gnome-tinker': 4, 'spark-gnome': 4, 'clockwork-beetle': 6,
   'gnome-illusionist': 6, 'gyrocopter-ace': 8, 'the-great-steam-golem': 10, 'dwarf-miner': 2, 'shieldbeard': 6,
   'axe-thrower': 6, 'ironhammer-berserker': 7, 'brewmaster': 6, 'ram-rider': 10, 'queen-brunhilda-stonebeard': 10,
   'shard-guzzler': 6, 'overclocked-conduit': 5, 'crystal-drunk-delver': 7,
@@ -1810,8 +1832,9 @@ test('AC45: Miner names, roles and badges', async ({ page }) => {
   });
   expect(cards['goblin-scrounger'].name).toBe('Goblin Miner');
   expect(cards['gnome-prospector'].name).toBe('Gemsinger Miner');
-  expect(cards['dwarf-miner'].name).toBe('Riot Shield Bearer'); // Round 12c: owner made it a Fighter
-  expect(cards['dwarf-miner'].role).toBe('fighter');
+  expect(cards['dwarf-miner'].name).toBe('Riot Shield Bearer');
+  // Owner check change (Ken, Oct 31 dwarf rebalance): the Riot Shield Bearer is the dwarves' real basic Miner again (was a Fighter since Round 12c)
+  expect(cards['dwarf-miner'].role).toBe('gatherer');
   for (const [id, name, faction] of [['goblin-smith-miner', 'Scrapsmith Miner', 'goblins'], ['gnome-smith-miner', 'Arcsmith Miner', 'gnomes'], ['dwarf-smith-miner', 'Anvilsworn Miner', 'dwarves']]) {
     expect(cards[id].name).toBe(name);
     expect(cards[id].faction).toBe(faction);
@@ -2033,16 +2056,24 @@ test('AC49: a Crystal card played alone in the Respond window keeps it open and 
   expect(total(s.players.player.crystals) + total(s.players.player.bank)).toBe(0);
 });
 
-// owner check change (Ken, Oct 31): "On the cards with special abilities, like tunnel, you have it over the card, just remove that." -- no Tunnel! tag on any card now
-test('AC50: Smith Miners never Tunnel; no Tunnel! tag is drawn over the cards (Round 10; owner change Oct 31)', async ({ page }) => {
+// Owner check changes (Ken, Oct 31): Tunnel only beside a mine your side owns (AI desk), and "On the cards with special abilities,
+// like tunnel, you have it over the card, just remove that." -- so no Tunnel! tag is drawn on any card, owned mine or not.
+test('AC50: Smith Miners never Tunnel; a basic Miner Tunnels only beside a mine the player owns; no Tunnel! tag on any card (Ken, Oct 31)', async ({ page }) => {
   const hand = { playerHand: ['goblin-smith-miner', 'goblin-scrounger'], playerCrystals: 5 };
   let s = await start(page, { ai: false, setup: { ...hand } });
+  const hb = page.getByLabel('Your hand', { exact: true });
+  await expect(hb.getByRole('button', { name: 'Goblin Miner', exact: true })).toBeVisible();
+  await expect(hb.getByRole('button', { name: 'Goblin Miner', exact: true })).not.toContainText('Tunnel!');
+  await expect(hb.getByRole('button', { name: 'Scrapsmith Miner', exact: true })).not.toContainText('Tunnel!');
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 3, col: 3 })).ok).toBe(false);
+  // the player owns M2 (4,4): (3,3) is beside it
+  s = await newMatch(page, { ai: false, setup: { ...hand, board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 4, minedMine: M2 }] } });
+  expect(s.sites.find((x) => x.row === M2.row && x.col === M2.col).controller).toBe('player');
   const smith = handUid(s, 'player', 'goblin-smith-miner');
   const summons = (await legal(page)).filter((a) => a.type === 'summon');
   expect(summons.some((a) => a.uid === smith && a.row === 3 && a.col === 3)).toBe(false);
   expect(summons.some((a) => a.uid === smith && a.row === 7)).toBe(true);
   expect((await act(page, { type: 'summon', uid: smith, row: 3, col: 3 })).ok).toBe(false);
-  const hb = page.getByLabel('Your hand', { exact: true });
   await expect(hb.getByRole('button', { name: 'Goblin Miner', exact: true })).not.toContainText('Tunnel!');
   await expect(hb.getByRole('button', { name: 'Scrapsmith Miner', exact: true })).not.toContainText('Tunnel!');
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 3, col: 3 })).ok).toBe(true);
@@ -2398,7 +2429,7 @@ const NEW_CARDS = {
   'skullbasher-rusher': ['Skullbasher Rusher', 'goblins', 'Uncommon', 6, 2, 2, /Charge/],
   'junk-shaman': ['Junk Shaman', 'goblins', 'Uncommon', 5, 1, 3, /\+1 Attack/],
   'blastrat-sapper': ['SewerSlide Bomber', 'goblins', 'Uncommon', 4, 2, 1, /Ka-boom/i],
-  'hexwright-apprentice': ['Hexslinger Apprentice', 'gnomes', 'Common', 4, 1, 2, /Ranged/],
+  'hexwright-apprentice': ['Hexslinger Apprentice', 'gnomes', 'Common', 3, 1, 2, /Ranged/], // owner change (Ken, Oct 31 rebalance): cost 4 -> 3
   'gearward-sentinel': ['Gearward Sentinel', 'gnomes', 'Common', 6, 1, 4, /Guard/],
   'runic-siphoner': ['Soul Stone Siphoner', 'gnomes', 'Uncommon', 5, 2, 2, /Bank/],
   'phase-stalker': ['Gnome Plow', 'gnomes', 'Uncommon', 6, 2, 3, /Blink/],
@@ -2612,7 +2643,8 @@ test('AC72: select screen — Commander cards, deck stacks, difficulty and Fight
   const stacks = deckRow(page).getByRole('button', { name: /cards, (ready|not ready)$/ });
   await expect(stacks.first()).toHaveAccessibleName('Goblin Warband, 60 cards, ready');
   // Round 8b: only the selected Commander's decks (Grubnak by default)
-  for (const f of ['Goblin', 'Gnome', 'Dwarf']) for (const st of ['Warband', 'Arcane Hoard', 'Horde']) {
+  // Owner check change (Ken, Oct 31): four starter styles per faction
+  for (const f of ['Goblin', 'Gnome', 'Dwarf']) for (const st of ['Warband', 'Mine Rush', 'Arcane Hoard', 'Expedition']) {
     await expect(deckRow(page).getByRole('button', { name: `${f} ${st}, 60 cards, ready`, exact: true })).toHaveCount(f === 'Goblin' ? 1 : 0);
   }
   await expect(deckRow(page).getByRole('button', { name: 'Miner Rush, 50 cards, ready', exact: true })).toHaveCount(1);
@@ -3082,15 +3114,16 @@ test('AC407: the computer redraws a hand with no affordable fighter and keeps a 
     return { before, ids: s0.players.opponent.hand.map((c) => c.cardId), after: s.players.opponent.hand.map((c) => c.uid), m: s.players.opponent.mulligans };
   };
   // Owner check change (Ken, Oct 30: 60-card starter decks): new seeds for the new Dwarf Warband.
-  // seed 7: Smith Miners + a Riot Shield Bearer (the Dwarf basic Miner) + Crystal cards: no fighter at all -> redraw
-  const r1 = await run(7);
-  expect(r1.ids.filter((id) => !/miner/.test(id)).every((id) => ['crystal-cluster', 'glowing-geode'].includes(id)), JSON.stringify(r1.ids)).toBe(true);
+  // Owner check change (Ken, Oct 31: new Dwarf Warband): new seeds again.
+  // seed 41: Riot Shield Bearers, an Anvilsworn and two Gemdrunk Deepdelvers (Miners, cost 7): no fighter at all -> redraw
+  const r1 = await run(41);
+  expect(r1.ids.filter((id) => !/miner|delver/.test(id)).every((id) => ['crystal-cluster', 'glowing-geode'].includes(id)), JSON.stringify(r1.ids)).toBe(true);
   expect(r1.m).toBe(1);
   expect(r1.after.slice(0, 5)).not.toEqual(r1.before);
   // a full redraw, not a swap: the old rule swapped only the two dear cards and kept the three Miners in hand
   expect(r1.before.filter((u) => r1.after.includes(u)).length).toBeLessThan(3);
-  // seed 16: Miners + Barrelback Courier (5) -> keep (the hand stays, plus the second player's extra card)
-  const r3 = await run(16);
+  // seed 46: Miners + Barrelback Courier (5) -> keep (the hand stays, plus the second player's extra card)
+  const r3 = await run(46);
   expect(r3.ids).toContain('barrelback-courier');
   expect(r3.m).toBe(0);
   expect(r3.after.slice(0, r3.before.length)).toEqual(r3.before);
@@ -3495,13 +3528,14 @@ test('AC111: decks of 50 to 100 cards and at most 20 Crystal cards', async ({ pa
   await expect(page.getByLabel('Deck problems', { exact: true })).toContainText('Deck is legal');
 });
 
-const STYLES = { warband: 'Warband', 'arcane-hoard': 'Arcane Hoard', horde: 'Horde' };
+// Owner check change (Ken, Oct 31): four 60-card starter decks per faction, in the deck-picker order Warband, Mine Rush, Arcane Hoard, Expedition
+const STYLES = { warband: 'Warband', 'mine-rush': 'Mine Rush', 'arcane-hoard': 'Arcane Hoard', expedition: 'Expedition' };
 const FACTIONS = { goblin: 'Goblin', gnome: 'Gnome', dwarf: 'Dwarf' };
-// Owner check change (Ken, Oct 30: 60-card starter decks)
-test('AC112/AC128: nine legal 60-card starter decks: Warband, Arcane Hoard and Horde for each faction', async ({ page }) => {
+// Owner check change (Ken, Oct 30: 60-card starter decks; Oct 31: twelve decks, four styles, Miners at least a third)
+test('AC112/AC128: twelve legal 60-card starter decks: Warband, Mine Rush, Arcane Hoard and Expedition for each faction', async ({ page }) => {
   await openTest(page);
   const decks = await page.evaluate(async () => await window.oreheart.listStarterDecks());
-  expect(decks.length).toBe(9);
+  expect(decks.length).toBe(12);
   const ids = new Set(decks.flatMap((d) => d.cards));
   const info = await cardInfo(page, [...ids]);
   for (const [f, fname] of Object.entries(FACTIONS)) for (const [st, sname] of Object.entries(STYLES)) {
@@ -3517,15 +3551,17 @@ test('AC112/AC128: nine legal 60-card starter decks: Warband, Arcane Hoard and H
     const crystals = of((c) => c.type === 'crystal');
     const miners = of((c) => c.type === 'creature' && (c.role === 'gatherer' || c.role === 'smith'));
     const counters = of((c) => c.type === 'spell' && c.speed === 'counter');
-    const want = { warband: [48, 7, 5], 'arcane-hoard': [40, 14, 6], horde: [56, 0, 4] }[st];
-    expect([creatures, spells, crystals], d.id).toEqual(want);
-    expect(miners, `${d.id} Miners`).toBeGreaterThanOrEqual(5); // Ken, Oct 30: Miners about 10-12 of 60, not half the deck
-    expect(miners, `${d.id} Miners`).toBeLessThanOrEqual(12);
+    // [creatures, spells, Crystal cards, Miners] (Ken, Oct 31)
+    const want = { warband: [48, 8, 4, 22], 'mine-rush': [60, 0, 0, 45], 'arcane-hoard': [45, 15, 0, 30], expedition: [45, 9, 6, 24] }[st];
+    expect([creatures, spells, crystals, miners], d.id).toEqual(want);
+    expect(miners, `${d.id} Miners`).toBeGreaterThanOrEqual(20); // Ken, Oct 31: Miners at least a third of every starter deck
     const basic = { goblin: 'goblin-scrounger', gnome: 'gnome-prospector', dwarf: 'dwarf-miner' }[f]; // config basicGatherers
     const nb = d.cards.filter((id) => id === basic).length;
-    if (f === 'dwarf') expect(nb, `${d.id} basic Miners`).toBe(5); else expect(nb, `${d.id} basic Miners`).toBeGreaterThanOrEqual(7);
+    expect(nb, `${d.id} basic Miners`).toBeGreaterThanOrEqual(5);
+    if (st === 'warband') expect(nb, `${d.id} basic Miners`).toBe({ goblin: 15, gnome: 17, dwarf: 14 }[f]);
     const ns = d.cards.filter((id) => id === `${f}-smith-miner`).length;
-    expect(ns >= 3 && ns <= 4, `${d.id} Smith Miners (${ns})`).toBe(true);
+    expect(ns, `${d.id} Smith Miners`).toBeGreaterThanOrEqual(3);
+    if (st === 'warband') expect(ns, `${d.id} Smith Miners`).toBe(f === 'goblin' ? 7 : 5);
     const faction = { goblin: 'goblins', gnome: 'gnomes', dwarf: 'dwarves' }[f];
     for (const id of d.cards) if (info[id].type === 'spell') expect([faction, null, 'neutral'], `${d.id} ${id}`).toContain(info[id].faction ?? null);
     const cmd = { goblin: 'grubnak', gnome: 'sproingle', dwarf: 'borgo' }[f];
@@ -3535,11 +3571,11 @@ test('AC112/AC128: nine legal 60-card starter decks: Warband, Arcane Hoard and H
   }
 });
 
-// New check (Ken, Oct 30: 60-card starter decks)
+// New check (Ken, Oct 30: 60-card starter decks); owner check change (Ken, Oct 31): twelve decks
 test('AC417: every starter deck is exactly 60 cards, legal for its Commander, and a match deals from it', async ({ page }) => {
   await openTest(page);
   const decks = await page.evaluate(async () => await window.oreheart.listStarterDecks());
-  expect(decks.length).toBe(9);
+  expect(decks.length).toBe(12);
   for (const d of decks) {
     expect(d.cards.length, d.id).toBe(60);
     const cmd = { goblins: 'grubnak', gnomes: 'sproingle', dwarves: 'borgo' }[d.faction];
@@ -3547,20 +3583,21 @@ test('AC417: every starter deck is exactly 60 cards, legal for its Commander, an
     expect(v.problems, `${d.id} with ${cmd}`).toEqual([]);
     expect(v.legal, d.id).toBe(true);
   }
-  const s = await newMatch(page, { ai: false, playerCommander: 'borgo', opponentCommander: 'sproingle', playerDeckId: 'dwarf-arcane-hoard', opponentDeckId: 'gnome-horde' });
+  const s = await newMatch(page, { ai: false, playerCommander: 'borgo', opponentCommander: 'sproingle', playerDeckId: 'dwarf-arcane-hoard', opponentDeckId: 'gnome-expedition' });
   expect(s.players.player.deck.length + s.players.player.hand.length).toBe(60);
   expect(s.players.opponent.deck.length + s.players.opponent.hand.length).toBe(60);
 });
 
-test('AC113: matches use the chosen starter decks; the opponent deck can be any of the three', async ({ page }) => {
+// Owner check change (Ken, Oct 31): four styles per faction ("Horde" is gone)
+test('AC113: matches use the chosen starter decks; the opponent deck can be any of the four', async ({ page }) => {
   await openTest(page);
   const decks = await page.evaluate(async () => await window.oreheart.listStarterDecks());
   const sorted = (a) => [...a].sort();
   const deckOf = (s, side) => sorted([...s.players[side].deck, ...s.players[side].hand].map((c) => c.cardId));
-  let s = await newMatch(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', playerDeckId: 'goblin-horde', opponentDeckId: 'dwarf-arcane-hoard' });
-  expect(s.players.player.deckId).toBe('goblin-horde');
+  let s = await newMatch(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', playerDeckId: 'goblin-expedition', opponentDeckId: 'dwarf-arcane-hoard' });
+  expect(s.players.player.deckId).toBe('goblin-expedition');
   expect(s.players.opponent.deckId).toBe('dwarf-arcane-hoard');
-  expect(deckOf(s, 'player')).toEqual(sorted(decks.find((d) => d.id === 'goblin-horde').cards));
+  expect(deckOf(s, 'player')).toEqual(sorted(decks.find((d) => d.id === 'goblin-expedition').cards));
   expect(deckOf(s, 'opponent')).toEqual(sorted(decks.find((d) => d.id === 'dwarf-arcane-hoard').cards));
   s = await newMatch(page, { ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak' });
   expect(s.players.player.deckId).toBe('gnome-warband');
@@ -3630,25 +3667,27 @@ test.describe('both hands at 844x390', () => {
     expect(inView(face)).toBe(true);
   });
 
-  test('AC117: the deck picker shows the nine starter decks as named stacks', async ({ page }, testInfo) => {
+  // Owner check change (Ken, Oct 31): four starter stacks per faction, in the order Warband, Mine Rush, Arcane Hoard, Expedition
+  test('AC117: the deck picker shows the starter decks as named stacks', async ({ page }, testInfo) => {
     await page.goto('/?test=1&seed=5');
     await page.getByRole('button', { name: 'Play', exact: true }).click();
     await page.getByRole('button', { name: 'Knobbin the Gnomeificent', exact: true }).click();
     const row = page.getByLabel('Deck choice', { exact: true });
     const stacks = row.getByRole('button', { name: /, 60 cards, ready$/ });
     await expect(stacks.first()).toHaveAccessibleName('Gnome Warband, 60 cards, ready');
-    await expect(stacks.nth(1)).toHaveAccessibleName('Gnome Arcane Hoard, 60 cards, ready');
-    await expect(stacks.nth(2)).toHaveAccessibleName('Gnome Horde, 60 cards, ready');
-    await expect(row.getByRole('button', { name: 'Goblin Horde, 60 cards, ready', exact: true })).toHaveCount(0); // Round 8b: only his decks
+    await expect(stacks.nth(1)).toHaveAccessibleName('Gnome Mine Rush, 60 cards, ready');
+    await expect(stacks.nth(2)).toHaveAccessibleName('Gnome Arcane Hoard, 60 cards, ready');
+    await expect(stacks.nth(3)).toHaveAccessibleName('Gnome Expedition, 60 cards, ready');
+    await expect(row.getByRole('button', { name: 'Goblin Expedition, 60 cards, ready', exact: true })).toHaveCount(0); // Round 8b: only his decks
     await expect(row.getByRole('button', { name: 'Dwarf Arcane Hoard, 60 cards, ready', exact: true })).toHaveCount(0);
     await expect(row.locator('img[src*="deck-menu"]').first()).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('deck-picker-844x390.png') });
-    await row.getByRole('button', { name: 'Gnome Horde, 60 cards, ready', exact: true }).click();
-    await expect(row.getByRole('button', { name: 'Gnome Horde, 60 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await row.getByRole('button', { name: 'Gnome Expedition, 60 cards, ready', exact: true }).click();
+    await expect(row.getByRole('button', { name: 'Gnome Expedition, 60 cards, ready', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Fight!', exact: true }).click();
     await page.getByRole('button', { name: 'Keep Hand' }).click();
     const s = await page.evaluate(async () => await window.oreheart.getState());
-    expect(s.players.player.deckId).toBe('gnome-horde');
+    expect(s.players.player.deckId).toBe('gnome-expedition');
   });
 });
 
@@ -3984,7 +4023,8 @@ const deckPile = (page) => page.getByLabel('Deck pile', { exact: true });
 const myDecks = (page) => page.getByLabel('My decks', { exact: true });
 const deckName = (page) => deckPile(page).locator('[data-part="deck-name"]');
 const deckSize = (page) => deckPile(page).locator('[data-part="deck-size"]');
-const STARTERS = ['Goblin', 'Gnome', 'Dwarf'].flatMap((f) => ['Warband', 'Arcane Hoard', 'Horde'].map((st) => `${f} ${st}`));
+// Owner check change (Ken, Oct 31): four starter decks per faction ("Horde" is gone)
+const STARTERS = ['Goblin', 'Gnome', 'Dwarf'].flatMap((f) => ['Warband', 'Mine Rush', 'Arcane Hoard', 'Expedition'].map((st) => `${f} ${st}`));
 const px = async (loc, prop = 'fontSize') => loc.evaluate((e, p) => parseFloat(getComputedStyle(e)[p]), prop);
 const box = async (loc) => loc.boundingBox();
 async function toTitle(page) {
@@ -4328,13 +4368,14 @@ test('AC144: starter decks can be removed (in-game confirm) and restored; at lea
     await dlg.getByRole('button', { name: 'Remove', exact: true }).click();
     await expect(row.getByRole('button', { name: `${name}, 60 cards, ready`, exact: true })).toHaveCount(0);
   };
-  await row.getByRole('button', { name: 'Remove Goblin Horde', exact: true }).click();
+  // Owner check change (Ken, Oct 31): four starter decks per faction; "Goblin Expedition" replaces "Goblin Horde"
+  await row.getByRole('button', { name: 'Remove Goblin Expedition', exact: true }).click();
   await page.getByRole('dialog', { name: 'Remove deck?' }).getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(row.getByRole('button', { name: 'Goblin Horde, 60 cards, ready', exact: true })).toHaveCount(1);
-  await removeDeck('Goblin Horde');
+  await expect(row.getByRole('button', { name: 'Goblin Expedition, 60 cards, ready', exact: true })).toHaveCount(1);
+  await removeDeck('Goblin Expedition');
   await page.reload();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(row.getByRole('button', { name: 'Goblin Horde, 60 cards, ready', exact: true })).toHaveCount(0);
+  await expect(row.getByRole('button', { name: 'Goblin Expedition, 60 cards, ready', exact: true })).toHaveCount(0);
   await expect(row.getByRole('button', { name: 'Goblin Warband, 60 cards, ready', exact: true })).toHaveCount(1);
   // Restore from Settings
   await toTitle(page);
@@ -4342,14 +4383,14 @@ test('AC144: starter decks can be removed (in-game confirm) and restored; at lea
   await page.getByRole('button', { name: 'Restore starter decks', exact: true }).click();
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  await expect(row.getByRole('button', { name: 'Goblin Horde, 60 cards, ready', exact: true })).toHaveCount(1);
-  // Round 8b: per Commander, his last deck can't be removed
-  for (const st of ['Goblin Warband', 'Goblin Arcane Hoard']) await removeDeck(st);
-  await expect(row.getByRole('button', { name: 'Remove Goblin Horde', exact: true })).toBeDisabled();
-  await expect(row.getByRole('button', { name: 'Goblin Horde, 60 cards, ready', exact: true })).toHaveCount(1);
+  await expect(row.getByRole('button', { name: 'Goblin Expedition, 60 cards, ready', exact: true })).toHaveCount(1);
+  // Round 8b: per Commander, his last deck can't be removed (Oct 31: four decks, so remove three)
+  for (const st of ['Goblin Warband', 'Goblin Mine Rush', 'Goblin Arcane Hoard']) await removeDeck(st);
+  await expect(row.getByRole('button', { name: 'Remove Goblin Expedition', exact: true })).toBeDisabled();
+  await expect(row.getByRole('button', { name: 'Goblin Expedition, 60 cards, ready', exact: true })).toHaveCount(1);
   // Restore from the deck picker
   await page.getByRole('button', { name: 'Restore starter decks', exact: true }).click();
-  for (const st of STARTERS.slice(0, 3)) await expect(row.getByRole('button', { name: `${st}, 60 cards, ready`, exact: true })).toHaveCount(1);
+  for (const st of STARTERS.slice(0, 4)) await expect(row.getByRole('button', { name: `${st}, 60 cards, ready`, exact: true })).toHaveCount(1);
 });
 
 test('AC145: Copy to my decks makes an editable saved copy and leaves the starter deck unchanged; my decks can be removed', async ({ page }) => {
@@ -7374,8 +7415,10 @@ test('AC253: several Crystal cards in one turn, in Deploy and Action, never endi
   expect(`${card.shortText} ${card.longText}`.toLowerCase()).not.toMatch(/(once|one) per (round|turn)/);
 });
 
-test('AC254: Tunnel from turn 1 — drag-and-drop next to a mine works and the AI uses the same rule', async ({ page }) => {
-  let s = await start(page, quiet({ playerHand: ['goblin-scrounger'], playerCrystals: 5 }));
+// Owner check change (Ken, Oct 31: Tunnel only beside a mine your side owns): each side first owns a mine (a creature that mined it)
+test('AC254: Tunnel — drag-and-drop next to an owned mine works and the AI uses the same rule', async ({ page }) => {
+  let s = await start(page, quiet({ playerHand: ['goblin-scrounger'], playerCrystals: 5, board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 7, minedMine: M3 }] }));
+  expect(s.sites.find((x) => x.row === M3.row && x.col === M3.col).controller).toBe('player');
   await page.waitForTimeout(1000);
   // owner check change (Ken, Oct 31): "Remove all those special ability ... overlays" -- the card shows no Tunnel! tag any more
   await expect(page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Goblin Miner', exact: true })).not.toContainText('Tunnel!');
@@ -7386,8 +7429,10 @@ test('AC254: Tunnel from turn 1 — drag-and-drop next to a mine works and the A
   await page.mouse.move(t.x, t.y, { steps: 15 });
   await page.mouse.up();
   await expect.poll(async () => at(await getState(page), 5, 5)?.cardId).toBe('goblin-scrounger');
-  // opponent side: summon next to a mine on its turn 1
-  s = await newMatch(page, { ...quiet({ opponentHand: ['dwarf-miner'], opponentCrystals: 5 }), firstPlayer: 'opponent' });
+  // opponent side: summon next to a mine it owns, on its turn 1; beside a mine it doesn't own is refused
+  s = await newMatch(page, { ...quiet({ opponentHand: ['dwarf-miner'], opponentCrystals: 5, board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 5, col: 4, minedMine: M2 }] }), firstPlayer: 'opponent' });
+  expect(s.sites.find((x) => x.row === M2.row && x.col === M2.col).controller).toBe('opponent');
+  expect((await act(page, { type: 'summon', uid: s.players.opponent.hand[0].uid, row: 3, col: 7 })).ok).toBe(false); // beside M3 (neutral)
   expect((await act(page, { type: 'summon', uid: s.players.opponent.hand[0].uid, row: 3, col: 4 })).ok).toBe(true);
 });
 
@@ -8158,7 +8203,7 @@ test('AC285: Betty Fizzlebottom is archived: not on Choose Your Commander and no
   await openTest(page);
   const decks = await page.evaluate(async () => await window.oreheart.listStarterDecks());
   for (const d of decks) expect(d.commanderId ?? d.commander ?? '', d.id).not.toBe('sprocket');
-  expect(decks.length).toBe(9);
+  expect(decks.length).toBe(12); // owner check change (Ken, Oct 31): four starter decks per faction
 });
 
 test('AC286: per-card Ranged ranges: Skullflinger 6, Gyronaut 2, Gunner 7, Hexslinger any distance but not through allies', async ({ page }) => {
@@ -8387,7 +8432,8 @@ test('AC301: Unweave cancels any enemy spell; Snuff Out only spells costing 3 or
   expect(at(s, 6, 9).health).toBe(hp);
 });
 
-test('AC302: Riot Shield Bearer can\'t move or attack and can\'t die for its first 3 turns', async ({ page }) => {
+// Owner check change (Ken, Oct 31 dwarf rebalance): the shield stops attacking and dying, not walking: a shielded Bearer may move (and mine)
+test('AC302: Riot Shield Bearer can\'t attack and can\'t die for its first 3 turns, but it can still move', async ({ page }) => {
   let s = await start(page, q12({ playerHand: ['dwarf-miner'], playerCrystals: 2, board: [O('ram-rider', 6, 9)] }, { playerCommander: 'borgo' }));
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'dwarf-miner'), row: 7, col: 9 })).ok).toBe(true);
   await passTurn(page);
@@ -8401,7 +8447,9 @@ test('AC302: Riot Shield Bearer can\'t move or attack and can\'t die for its fir
     await done(page); // end opponent's Action
     s = await toAction(page);
     const mine = at(s, 7, 9).uid;
-    expect((await legal(page)).some((a) => (a.type === 'move' || a.type === 'attack') && a.creatureUid === mine)).toBe(false);
+    const acts = await legal(page);
+    expect(acts.some((a) => a.type === 'attack' && a.creatureUid === mine), 'no attack while shielded').toBe(false);
+    expect(acts.some((a) => a.type === 'move' && a.creatureUid === mine), 'it can walk while shielded').toBe(true);
     await done(page);
   }
 });
@@ -10711,7 +10759,9 @@ test('AC405: the stacking cards say so, and a stacked poison shows x2', async ({
 // Owner rule (Ken, Oct 30): Miners "can't attack their first turn, but they can mine their first turn"; from the owner's next turn on they attack like any creature.
 test('AC409: a Miner summoned this turn can mine but not attack; from its next turn it attacks with normal strike-back', async ({ page }) => {
   // mine at (4,4); Tunnel lets the Goblin Miner come down at (5,4), beside the mine and beside an enemy Boneknocker (1/2) at (5,5)
-  let s = await start(page, quiet({ playerDeck: SHARDS, opponentDeck: SHARDS, playerHand: ['goblin-scrounger'], playerCrystals: 5, board: [O('goblin-pebbler', 5, 5)] }));
+  // Owner check change (Ken, Oct 31: Tunnel only beside a mine your side owns): a player Scrapper at (3,4) has mined (4,4), so the player owns it
+  let s = await start(page, quiet({ playerDeck: SHARDS, opponentDeck: SHARDS, playerHand: ['goblin-scrounger'], playerCrystals: 5, board: [O('goblin-pebbler', 5, 5), P('goblin-scrapper', 3, 4, { minedMine: { row: 4, col: 4 } })] }));
+  expect(s.sites.find((x) => x.row === 4 && x.col === 4).controller).toBe('player');
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 5, col: 4 })).ok).toBe(true);
   s = await getState(page);
   const uid = at(s, 5, 4).uid;
@@ -10780,7 +10830,7 @@ test('AC411: the Miner cards say "Can\'t attack the turn it\'s played" and no ca
     expect(c.longText, id).toMatch(/can mine or move that turn, but can't attack until its next turn/);
     expect(c.longText, id).not.toMatch(/never attack/i);
   }
-  const bearer = await card('dwarf-miner'); // Riot Shield Bearer is a Fighter (Round 12c): its text is untouched
+  const bearer = await card('dwarf-miner'); // Riot Shield Bearer (a Miner again since Oct 31): its short text keeps the Riot Shield
   expect(bearer.text).toMatch(/Riot Shield/);
   expect(bearer.text).not.toMatch(/turn it's played/);
 

@@ -22,6 +22,8 @@ const isSite = (s: any, row: number, col: number) => s.sites.some((x: any) => x.
 const inBounds = (row: number, col: number) => row >= 1 && row <= H && col >= 1 && col <= W;
 export const emptyCell = (s: any, row: number, col: number) => inBounds(row, col) && !isStronghold(row, col) && !isSite(s, row, col) && !creatureAt(s, row, col);
 const nearSite = (s: any, row: number, col: number) => s.sites.some((x: any) => cheb({ row, col }, x) <= 1 && !(x.row === row && x.col === col));
+/** Tunnel rule (Ken, Oct 31: "only if your faction owns the crystal mine"): a space beside a mine that `p` currently owns. */
+const nearOwnedSite = (s: any, p: Side, row: number, col: number) => s.sites.some((x: any) => x.controller === p && cheb({ row, col }, x) <= 1 && !(x.row === row && x.col === col));
 const adjacentCreatures = (s: any, c: any) => s.board.creatures.filter((o: any) => o !== c && cheb(o, c) === 1);
 const sgn = Math.sign;
 const rint = (s: any, a: number, b: number) => a + Math.floor(nextRand(s) * (b - a + 1));
@@ -171,7 +173,7 @@ export function createMatch(opts: any = {}) {
     else if (who === 'player' && opts.playerDeck && !opts.playerDeckId) { pl.deckId = null; pl.deck = shuffle(s, opts.playerDeck.map((id: string) => makeCard(s, id))); }
     else {
       let id = who === 'player' ? opts.playerDeckId : opts.opponentDeckId;
-      if (!id || !STARTER_DECKS[id]) id = who === 'opponent' && !opts.testMode && !opts.setup ? STARTER_DECK_LIST.filter((d) => d.faction === pl.faction)[Math.floor(nextRand(s) * 3)].id : warbandOf(pl.faction);
+      if (!id || !STARTER_DECKS[id]) { const mine = STARTER_DECK_LIST.filter((d) => d.faction === pl.faction); id = who === 'opponent' && !opts.testMode && !opts.setup ? mine[Math.floor(nextRand(s) * mine.length)].id : warbandOf(pl.faction); }
       pl.deckId = id;
       pl.deck = shuffle(s, STARTER_DECKS[id].map((cid: string) => makeCard(s, cid)));
     }
@@ -708,20 +710,23 @@ export function summonSpaces(s: any, p: Side, card: any): { row: number; col: nu
   const back = CONFIG.backRow[p], front = CONFIG.frontRow[p];
   for (const col of rowCells(back)) add(back, col);
   if (out.length === 0) for (const col of rowCells(front)) add(front, col);
-  if (card.abilities?.includes('tunnel')) for (let r = 1; r <= H; r++) for (let c = 1; c <= W; c++) if (nearSite(s, r, c)) add(r, c);
+  // Tunnel (Ken, Oct 31): a basic Miner can also come up on any empty space beside a mine its own side owns right now (never beside a neutral or enemy mine)
+  if (card.abilities?.includes('tunnel')) for (let r = 1; r <= H; r++) for (let c = 1; c <= W; c++) if (nearOwnedSite(s, p, r, c)) add(r, c);
   return out;
 }
 
 /** Mines `c` can mine this turn (one action: afterwards it can't move or attack). */
 export function mineTargets(s: any, c: any): { row: number; col: number }[] {
-  if (c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil) return [];
+  // Riot Shield (Ken, Oct 31 dwarf rebalance): a shielded Riot Shield Bearer can't move or attack, but it can still mine
+  if (c.hasMoved || c.hasAttacked || c.hasMined || (s.turn < c.lockedUntil && !has(c, 'riotShield'))) return [];
   if (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) return [];
   return s.sites.filter((x: any) => cheb(c, x) <= 1).map((x: any) => ({ row: x.row, col: x.col }));
 }
 
 /** Spaces `c` can move to; a space held by one of its own creatures is a swap. */
 export function moveDests(s: any, c: any): { row: number; col: number }[] {
-  if (s.turn < (c.rootUntil || 0) || c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId]))) return [];
+  // Riot Shield (Ken, Oct 31 dwarf rebalance): the shield stops attacking and dying, not walking: a Bearer can walk to a mine and dig while shielded
+  if (s.turn < (c.rootUntil || 0) || c.hasMoved || c.hasAttacked || c.hasMined || (s.turn < c.lockedUntil && !has(c, 'riotShield')) || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId]))) return [];
   const m = maxMove(c);
   const out: any[] = [];
   for (let dr = -m; dr <= m; dr++) for (let dc = -m; dc <= m; dc++) {
@@ -1498,5 +1503,5 @@ export function applyAction(state: any, action: any): { ok: boolean; state: any;
 
 /** True when a creature has acted this turn, or cannot act yet (shown darker in the UI). */
 export function isActed(s: any, c: any): boolean {
-  return c.hasMoved || c.hasAttacked || c.hasMined || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) || s.turn < c.lockedUntil;
+  return c.hasMoved || c.hasAttacked || c.hasMined || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) || (s.turn < c.lockedUntil && !has(c, 'riotShield')); // Oct 31: a shielded Riot Shield Bearer can still walk and mine, so it is not spent
 }

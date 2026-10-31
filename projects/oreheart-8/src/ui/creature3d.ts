@@ -96,7 +96,7 @@ const PARTS: Record<string, PartCfg[]> = {
   // owner (Oct 25): Gnome and Dwarf models, character only for now (the owner adds their items with the Model Editor later)
   'axe-thrower': [{ name: 'shield', file: 'shield.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-12.652, 21.111, 0.103], rot: [-58.52, 43.389, -47.797], scale: [17, 17, 17] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'barrelback-courier': [{ name: 'barrel-pack', file: 'barrel-pack.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [3.631, 13.995, -18.271], rot: [-160.68, -0.629, 176.305], scale: [28.026, 28.026, 28.026] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
-  'brewmaster': [{ name: 'keg-pack', file: 'keg-pack.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [3.052, 10.711, -23.178], rot: [-167.137, 7.3, 175.685], scale: [24.348, 24.348, 24.348] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
+  'brewmaster': [{ name: 'keg-pack', file: 'keg-pack.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [3.052, 10.711, -23.178], rot: [-167.137, 7.3, 175.685], scale: [24.348, 24.348, 24.348] } }, { name: 'crystal-hammer', file: 'crystal-hammer.glb', bone: ['RightHand'], len: 0.62, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-1.052, -9.509, 13.195], rot: [-56.678, -33.528, 175.56], scale: [32.597, 32.597, 32.597] } }], /* Oct 31: Brewlord's crystal hammer, Ledger's card-matched placement */ // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'clockwork-beetle': [],
   'crystal-drunk-delver': [
     { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-11.916, 9.542, 10.035], rot: [-47.527, 43.36, 126.79], scale: [29.769, 29.769, 29.769] } },
@@ -110,18 +110,18 @@ const PARTS: Record<string, PartCfg[]> = {
   // Ken (Oct 31): "A lot of the characters don't have their equipment". The Gearward Sentinel, Aethervein and Arcsmith items have no Studio placement yet,
   // so they use the default grip rule (auto: true) until Ledger saves one; the Gemsinger's pickaxe is Ken's Studio WORLD placement, fixed to the right hand.
   'gearward-sentinel': [
-    { name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.15, rot: [0, 0, 0], auto: true, upright: true },
-    { name: 'gear-shield', file: 'gear-shield.glb', bone: ['LeftForeArm', 'LeftHand'], len: 0.5, grip: 0.5, rot: [0, 0, 0], auto: true, upright: true },
+    { name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.15, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-4.731, -5.715, 11.972], rot: [-154.482, 19.625, 141.716], scale: [31.299, 31.299, 31.299] } }, // Oct 31: Ledger's card-matched placement (studio/gear-placements-oct31.json), replaces the grip rule
+    { name: 'gear-shield', file: 'gear-shield.glb', bone: ['LeftForeArm', 'LeftHand'], len: 0.5, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [-9.104, 10.729, -4.349], rot: [-131.803, -68.334, 80.845], scale: [32.632, 32.632, 32.632] } },
   ],
   'gnome-prospector': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [180, 0, 0], world: { bone: 'RightHand', body: 0.37, pos: [-0.121, 0.2512, 0.1576], rot: [40.781, -43.817, 94.144], scale: 0.1846 } }], // Ken's Studio setup (Gemsinger, silver): world item at body scale 0.37
   'overclocked-conduit': [
-    { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], auto: true, upright: true },
-    { name: 'pickaxe-2', file: 'pickaxe.glb', bone: ['LeftHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], auto: true, upright: true }, // the card holds two pickaxes (Studio note: one in each hand)
+    { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-17.434, -14.198, 11.876], rot: [110.046, 53.172, 138.115], scale: [40, 40, 40] } }, // Oct 31: Ledger's card-matched placement (studio/gear-placements-oct31.json), replaces the grip rule
+    { name: 'pickaxe-2', file: 'pickaxe.glb', bone: ['LeftHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-4.556, -3.569, 24.76], rot: [118.329, -2.518, 101.853], scale: [40, 40, 40] } }, // the card holds two pickaxes (Studio note: one in each hand)
   ],
   'glyphshield-warden': [{ name: 'shield', file: 'shield.glb', bone: ['LeftForeArm'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [-0.289, 25.921, 0.524], rot: [-114.616, -54.523, 103.055], scale: [28.912, 28.912, 28.912] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'gnome-cogger': [{ name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-16.476, -10.052, 6.626], rot: [-106.963, -35.01, 84.605], scale: [32.833, 32.833, 32.833] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'gnome-illusionist': [],
-  'gnome-smith-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], auto: true, upright: true }], // Oct 31: Clay's silver pickaxe; Ken's Studio placement is on the old Mixamo body, so the grip rule until Ledger re-places it
+  'gnome-smith-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-9.388, -3.677, 18.983], rot: [-85.729, -27.913, 154.305], scale: [32.614, 32.614, 32.614] } }], // Oct 31: Ledger's card-matched placement (studio/gear-placements-oct31.json), replaces the grip rule // Oct 31: Clay's silver pickaxe; Ken's Studio placement is on the old Mixamo body, so the grip rule until Ledger re-places it
   'gnome-tinker': [
     { name: 'scepter', file: 'scepter.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-5.106, 4.336, 10.391], rot: [-91.862, 22.237, 178.441], scale: [29.826, 29.826, 29.826] } },
     { name: 'crystal-shield', file: 'crystal-shield.glb', bone: ['LeftForeArm'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [-6.589, 20.19, 0.021], rot: [-110.166, -61.024, 179.49], scale: [29.536, 29.536, 29.536] } },

@@ -18,7 +18,7 @@ function run(choose: any, opts: any, passive: boolean, diff = 'normal') {
 const ac21 = { skipMulligan: true, firstPlayer: 'player', opponentCommander: 'grubnak', playerCommander: 'sproingle' };
 console.log('AC21 old', JSON.stringify(run(oldC, ac21, true)), 'new', JSON.stringify(run(newC, ac21, true)));
 console.log('AC21-hard new', JSON.stringify(run(newC, ac21, true, 'hard')));
-for (const st of ['warband', 'arcane-hoard', 'horde']) {
+for (const st of ['warband', 'mine-rush', 'arcane-hoard', 'expedition']) {
   const o = { skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'sproingle', playerDeckId: `goblin-${st}`, opponentDeckId: `gnome-${st}` };
   console.log('AC114', st, 'old', JSON.stringify(run(oldC, o, false)), 'new', JSON.stringify(run(newC, o, false)));
 }
