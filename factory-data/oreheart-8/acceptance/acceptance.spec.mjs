@@ -11145,6 +11145,8 @@ test.describe('Oct 31 Ken hand double-tap 844x390', () => {
   test('AC441: a double tap (taps 300 ms apart) on a hand creature lights its squares; a tap on one deploys it (844x390 touch)', async ({ page }) => {
     await hk31Play(page, 844, 390, true);
   });
+});
+
 // Oct 31 (Anvil). Ken: "it goes through like spurts of lag. Especially like when you mine or make a lot of movements." Cause: fitHand (window size)
 // and renderHand (cards) shared one cache key, so EVERY action threw the whole hand away and rebuilt it (60 ms of the 80 ms a mine action cost).
 test('AC425: a mine action or a move no longer rebuilds the hand: the same card elements stay, and the action returns quickly', async ({ page }) => {
