@@ -1,0 +1,50 @@
+name: Supabase — key check (test only)
+# Read-only. Checks that the Supabase secrets are set and work against the TEST project.
+# Never touches the real project's database and changes nothing. Manual run only.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: supabase-test
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REAL_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      TEST_REF: ${{ secrets.SUPABASE_TEST_PROJECT_REF }}
+      REAL_PW: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      TEST_PW: ${{ secrets.SUPABASE_TEST_DB_PASSWORD }}
+    steps:
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 1. Secret names are set (values never printed)
+        run: |
+          ok=1
+          for n in SUPABASE_ACCESS_TOKEN REAL_REF TEST_REF REAL_PW TEST_PW; do
+            v="${!n}"
+            if [ -z "$v" ]; then echo "FAIL $n is empty"; ok=0; else echo "ok   $n set (${#v} chars)"; fi
+          done
+          [ "$REAL_REF" = "zzqyzlerjyjzutbzdsgk" ] && echo "ok   SUPABASE_PROJECT_REF = real OreHeart project" || { echo "FAIL SUPABASE_PROJECT_REF is not the real project ref"; ok=0; }
+          [ "$TEST_REF" = "cmwzdcqfydsdiraynafn" ] && echo "ok   SUPABASE_TEST_PROJECT_REF = Orehart-test project" || { echo "FAIL SUPABASE_TEST_PROJECT_REF is not the test project ref"; ok=0; }
+          [ "$REAL_PW" != "$TEST_PW" ] && echo "ok   real and test DB passwords differ" || { echo "FAIL real and test DB passwords are the same"; ok=0; }
+          [ "$ok" = 1 ]
+
+      - name: 2. Access token works (lists projects, read-only)
+        run: |
+          out=$(supabase projects list 2>&1) || { echo "FAIL token rejected:"; echo "$out" | head -5; exit 1; }
+          echo "ok   token accepted"
+          echo "$out" | grep -q "$REAL_REF" && echo "ok   token can see the real project" || echo "FAIL token cannot see the real project"
+          echo "$out" | grep -q "$TEST_REF" && echo "ok   token can see the test project" || { echo "FAIL token cannot see the test project"; exit 1; }
+
+      - name: 3. Test DB password works (link + read-only migration list, TEST only)
+        run: |
+          supabase init --yes >/dev/null 2>&1 || supabase init
+          supabase link --project-ref "$TEST_REF" -p "$TEST_PW" 2>&1 | sed 's/postgres.*@/postgres:***@/' && echo "ok   linked to test project"
+          supabase migration list --linked -p "$TEST_PW" 2>&1 | sed 's/postgres.*@/postgres:***@/'
+          echo "ok   test DB password accepted (read-only query ran)"
