@@ -13477,3 +13477,61 @@ test('AC523: on a phone (touch) the Sort button and its choices work by tap, and
   expect(errors).toEqual([]);
   await ctx.close();
 });
+
+// Ken (Oct 31): "where it says your commander's name, that's where I want the player name. And maybe the commander just underneath it real small. Make it look nice,
+// make it fit in. And that'd be for the player and the opposing player. And go ahead and create fake AI players. So it'll look like you're playing a real player."
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test(`AC528: both name plates show the player's name big and the Commander small with it; the computer gets a believable name for the whole match; nothing is cut off or covered (${W}x${H})`, async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: W, height: H });
+    await page.goto('/?test=1&seed=11');
+    await page.waitForFunction(() => !!window.oreheart);
+    await page.evaluate(() => localStorage.removeItem('oreheart.playerName'));
+    expect(await page.evaluate(() => window.oreheart.getPlayerName()), 'no saved name: "Player"').toBe('Player');
+    const names = await page.evaluate(() => window.oreheart.aiNames());
+    const all = [].concat(...Object.values(names));
+    expect(all.length, 'about 150 made-up names').toBeGreaterThanOrEqual(150);
+    expect(new Set(all).size, 'no duplicates').toBe(all.length);
+    for (const n of all) expect(n, 'a gamer-style name: letters, digits and underscores, short').toMatch(/^[A-Za-z][A-Za-z0-9_]{2,19}$/);
+    await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'sproingle', setup: { firstPlayer: 'player' } }));
+    const opp = await page.evaluate(() => window.oreheart.getOpponentName());
+    expect(all, 'the opponent name comes from the list').toContain(opp);
+    const read = () => page.evaluate(() => [...document.querySelectorAll('.match .o-plate')].map((e) => {
+      const r = (s) => { const k = e.querySelector(s); const b = k.getBoundingClientRect(); return { x0: b.left, x1: b.right, y0: b.top, y1: b.bottom, fs: parseFloat(getComputedStyle(k).fontSize), text: k.textContent }; };
+      return { side: e.classList.contains('o-enemy') ? 'enemy' : 'you', role: e.dataset.hudRole || e.dataset.role, pn: r('.o-pn'), cm: r('.o-cm'), av: r('.o-av') };
+    }));
+    await expect.poll(async () => (await read()).length).toBe(2);
+    const plates = await read();
+    const you = plates.find((p) => p.side === 'you'), en = plates.find((p) => p.side === 'enemy');
+    expect(you.pn.text).toBe('Player');
+    expect(you.cm.text).toContain('Grubnak Rotgut');
+    expect(en.pn.text).toBe(opp);
+    expect(en.cm.text).toContain('Knobbin');
+    for (const p of [you, en]) {
+      expect(p.pn.y0, `${p.side}: the name is not cut off at the top`).toBeGreaterThanOrEqual(-1);
+      expect(p.pn.y1, `${p.side}: the name is on screen`).toBeLessThanOrEqual(H);
+      expect(p.av.x1 - p.av.x0, `${p.side}: the round avatar spot`).toBeGreaterThan(10);
+      if (H > 500) {
+        expect(p.cm.fs, `${p.side}: the Commander is small`).toBeLessThan(p.pn.fs * 0.6);
+        expect(p.cm.y0, `${p.side}: the Commander sits underneath the name`).toBeGreaterThanOrEqual(p.pn.y1 - 3);
+      } else {
+        expect(p.cm.fs, `${p.side}: still readable on a phone (14 px)`).toBeGreaterThanOrEqual(13.5);
+        expect(Math.abs((p.cm.y0 + p.cm.y1) / 2 - (p.pn.y0 + p.pn.y1) / 2), `${p.side}: on a phone the Commander follows the name on the same line`).toBeLessThanOrEqual(4);
+      }
+    }
+    // the Flow words under the plates stay clear (the text boxes may touch, the words must not overlap)
+    const flows = await page.evaluate(() => ['player-flow-label', 'enemy-flow-label'].map((r) => { const e = document.querySelector(`.match [data-role="${r}"] span, .match [data-role="${r}"]`); const g = document.createRange(); g.selectNodeContents(e); const b = g.getBoundingClientRect(); return { x0: b.left, x1: b.right, y0: b.top + b.height * 0.25, y1: b.bottom }; })); // the word's ink starts about a quarter down its line box
+    const hit = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+    for (const p of [you, en]) for (const f of flows) for (const k of ['pn', 'cm']) expect(hit({ ...p[k], y1: p[k].y1 - (p[k].y1 - p[k].y0) * 0.15 }, f), `${p.side} ${k} clear of a Flow word`).toBe(false);
+    // the same opponent name for the whole match
+    await page.evaluate(() => window.oreheart.act({ type: 'done' }));
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(() => window.oreheart.getOpponentName())).toBe(opp);
+    expect((await read()).find((p) => p.side === 'enemy').pn.text).toBe(opp);
+    // a saved name shows on your plate (Online Phase A will feed the username the same way)
+    await page.evaluate(() => window.oreheart.setPlayerName('KenTheBrave'));
+    await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'borgo', opponentCommander: 'grubnak', setup: { firstPlayer: 'player' } }));
+    await expect.poll(async () => ((await read()).find((p) => p.side === 'you') || {}).pn?.text).toBe('KenTheBrave');
+    await page.evaluate(() => window.oreheart.setPlayerName(''));
+  });
+}

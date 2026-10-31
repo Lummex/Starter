@@ -12,6 +12,7 @@ import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenS
 import { brewActions, flowShardCount, deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
 import { audio, pickArena } from './audio';
+import { getPlayerName, pickAiName } from './players';
 import { getHighlights, setHighlights, resetHighlights, getRings, setRings, resetRings, edgeOf, glowOf, mainOf, ringColor, applyHighlightVars } from './fx-settings';
 import { loadGrubnak3d } from './grubnak3d';
 import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
@@ -1142,6 +1143,7 @@ export class App {
     const state = this.game.newMatch(o);
     applyHighlightVars(this.game.state.players.player.faction);
     this.arenaFaction = ''; this.pickMatchArena(o.seed); /* a new match: a new arena pick */
+    this.pickOpponentName(o.seed); /* and a new opponent name */
     this.showMatch();
     this.update(this.game.state, []);
     return state;
@@ -1158,12 +1160,22 @@ export class App {
     return this.arenaFaction;
   }
 
+  /** Ken, Oct 31: "create fake AI players. So it'll look like you're playing a real player." One believable name per match (seeded in test pages). */
+  aiName = '';
+  pickOpponentName(seed?: number): string {
+    let s = ((this.test ? (seed ?? this.seed ?? 1) : Math.floor(Math.random() * 2 ** 31)) | 0) ^ 0x5bd1e995;
+    const rand = () => { s = (s + 0x6d2b79f5) | 0; let x = Math.imul(s ^ (s >>> 15), 1 | s); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+    this.aiName = pickAiName(this.game.state.players.opponent.faction, rand);
+    return this.aiName;
+  }
+
   beginTutorial() {
     this.lastTutorial = true;
     this.fxLog = [];
     const state = this.game.startTutorial();
     applyHighlightVars(this.game.state.players.player.faction);
     this.arenaFaction = ''; this.pickMatchArena();
+    this.pickOpponentName();
     this.showMatch();
     this.update(this.game.state, []);
     return state;
@@ -1387,6 +1399,21 @@ export class App {
   }
   onResize = () => { this.layout(); };
   /** Short title shown; the rest of the full display name stays in the text for screen readers. */
+  /** Ken, Oct 31: the name plate shows the PLAYER's name big and the Commander's name small underneath, with a round avatar spot beside it
+   *  (a placeholder with the first letter until Brush's avatars plug in: data-avatar on .o-av). */
+  setPlate(el: El, player: string, commander: string, faction: string, side: 'player' | 'enemy') {
+    const key = player + '|' + commander + '|' + faction;
+    if (el.dataset.plate === key) return;
+    el.dataset.plate = key; el.dataset.full = commander; el.dataset.player = player;
+    el.classList.add('o-plate', side === 'enemy' ? 'o-enemy' : 'o-you');
+    const m = commander.match(/^(.*?)(,| the )(.*)$/);
+    const av = h('span', { class: 'o-av', 'aria-hidden': 'true', 'data-avatar': '', 'data-initial': (player.match(/[A-Za-z0-9]/) || ['?'])[0].toUpperCase(), style: `--av-fill:${faction === 'gnomes' ? '#4a2f7a' : faction === 'dwarves' ? '#284f8a' : '#3d6b2c'}` }); /* the letter is drawn by CSS (::before), so the plate's first text is the player's name */
+    const words = h('span', { class: 'o-pl' },
+      h('span', { class: 'o-pn', title: player }, player),
+      h('span', { class: 'o-cm' }, m ? m[1] : commander, m ? h('span', { class: 'sr-only' }, m[2] + m[3]) : ('' as any)));
+    if (side === 'enemy') el.replaceChildren(words, av); else el.replaceChildren(av, words);
+    el.setAttribute('aria-label', `${side === 'enemy' ? 'Opponent' : 'You'}: ${player}, Commander ${commander}`);
+  }
   setCmdName(el: El, full: string) {
     if (el.dataset.full === full) return;
     el.dataset.full = full;
@@ -2292,8 +2319,8 @@ export class App {
     r.crBank.textContent = String(me.bank);
     r.eFlow.textContent = String(en.crystals);
     r.eBank.textContent = String(en.bank);
-    this.setCmdName(r.myName, COMMANDERS[me.commanderId]?.name || '');
-    this.setCmdName(r.eName, COMMANDERS[en.commanderId]?.name || '');
+    this.setPlate(r.myName, getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player');
+    this.setPlate(r.eName, this.aiName || 'Opponent', COMMANDERS[en.commanderId]?.name || '', en.faction, 'enemy');
     audio.voicePreload(me.commanderId); audio.voicePreload(en.commanderId); // Oct 31: the Commanders' voice lines (loads once)
     r.income.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')}`;
     r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;

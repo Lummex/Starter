@@ -113,6 +113,7 @@ export function applyOwnerHud(match: El, r: any, hk: HudHooks) {
   const wordP = document.createElement('span'); wordP.textContent = 'Flow'; textPiece(wordP, 'player-flow-label');
   textPiece(r.income, 'player-next-flow');
   textPiece(r.eName, 'enemy-name');
+  r.eName.classList.add('o-name');
   const wordE = document.createElement('span'); wordE.textContent = 'Flow'; textPiece(wordE, 'enemy-flow-label');
   textPiece(r.eNext, 'enemy-next-flow');
   // phase pieces: the children of the phase element are placed individually

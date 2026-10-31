@@ -3,6 +3,7 @@ import './ui/theme-silver.css'; // Ken (Oct 30): silver UI theme, loads after st
 import { startSilverFrames } from './ui/theme-silver';
 import { Game } from './game';
 import { App } from './ui/app';
+import { getPlayerName, setPlayerName, AI_NAMES } from './ui/players';
 import { CARDS, COMMANDERS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
 import { spellFxLog, spellFxNow, spellFxAt, setSpellFxEnabled, SPELL_FX_SPEC, fxPhone, fxLayerUrl, FX_LAYERS } from './ui/spell-fx';
@@ -129,6 +130,7 @@ if (test) {
     getAudioState: () => audio.state(),
     setVoicesOn: (on: boolean) => audio.setVoicesOn(on), // Oct 31: unit voices switch (off until Ken approves the reel)
     voiceEvent: (ev: 'select' | 'hurt' | 'special', unit: string, who: string, big?: boolean) => audio.speak(ev, unit, who, !!big),
+    getPlayerName: () => getPlayerName(), setPlayerName: (n: string) => setPlayerName(n), getOpponentName: () => app.aiName, aiNames: () => AI_NAMES, // Oct 31: the name plates (Online Phase A feeds the username via setPlayerNameProvider)
     setArenaPick: (who: '' | 'player' | 'opponent') => { app.arenaForce = who; return who; }, // checks only: force which faction's arena (and music) the next match uses
     setMixRules: (r: any) => { Object.assign(MIX, r); return { ...MIX }; }, // checks only: {enabled:false} plays every sound as asked (the sound-file checks), default is Brush's mix rules
     setVoiceRules: (r: any) => { Object.assign(VOICE, r); return { ...VOICE }; }, // checks only: shorten the voice cooldown / gap

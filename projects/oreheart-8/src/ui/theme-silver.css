@@ -301,3 +301,26 @@ html body .menu-panel.done-dropup.hand-sort-up .row .btn.btn{width:86%;font-size
 html body #app .match .hand-sort-up .row .btn.btn[aria-pressed=true]{color:#cfe6ff!important;-webkit-text-fill-color:#cfe6ff!important;text-shadow:0 0 .4em #5aa9ff,0 0 .9em #2d6fd8,0 1px 2px #000!important}
 html body #app .match .hand-sort-up .row .btn.btn[aria-pressed=true]::before{content:"";display:inline-block;width:.8em;height:.8em;margin-right:.35em;vertical-align:-.05em;background:url(/art/ui/silver/gem-neutral-96.webp) center/contain no-repeat;filter:drop-shadow(0 0 3px #5aa9ff)}
 @media (max-height:480px){html body .menu-panel.done-dropup.hand-sort-up{padding:1vh 1.6vw 1.6vh!important}html body .menu-panel.done-dropup.hand-sort-up .row .btn.btn{--sv-h:38px}}
+
+/* Oct 31 (Ken): name plates: the player's name big where the Commander's name was, the Commander small underneath, a round avatar spot beside it */
+html body #app .match .o-text.o-plate{gap:.3em;overflow:visible}
+html body #app .match .o-plate .o-av{flex:0 0 auto;width:1.22em;height:1.22em;border-radius:50%;display:grid;place-items:center;font-size:1em;font-style:normal;
+  background:radial-gradient(circle at 34% 28%,#ffffff55 0,#ffffff00 46%),var(--av-fill,#3a4656);border:.07em solid #d6dde6;
+  box-shadow:0 0 0 .045em #0d1219,0 .05em .22em #000b,inset 0 0 .18em #000a}
+html body #app .match .o-plate .o-av::before{content:attr(data-initial);font-size:.56em;font-weight:800;font-style:normal;color:#f1f5f9;text-shadow:0 1px 1px #000}
+html body #app .match .o-plate .o-pl{display:flex;flex-direction:column;justify-content:center;min-width:0;line-height:1}
+html body #app .match .o-plate.o-enemy .o-pl{align-items:flex-end;text-align:right}
+html body #app .match .o-plate .o-pn{display:block;max-width:9.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:.95;padding-right:.08em}
+html body #app .match .o-plate .o-cm{display:block;font-size:max(10px,.44em);font-style:normal;font-weight:600;letter-spacing:.05em;line-height:1;color:#c9d3df;opacity:.92;margin-top:.1em;white-space:nowrap;
+  text-shadow:0 1px 2px #000,0 0 .3em #000}
+/* the opponent's plate sits at the top edge: its two lines are nudged down so the name is never cut off */
+html body #app .match .o-plate.o-enemy>*{translate:0 .14em}
+html body #app .match .o-plate.o-enemy .o-cm{margin-top:.02em}
+/* phone height: every text stays at least 14 px (AC158), so the plates go on ONE line: the name, then the Commander in lighter silver */
+@media (max-height:500px){
+  html body #app .match .o-plate .o-pl{flex-direction:row;align-items:baseline;gap:.4em}
+  html body #app .match .o-plate .o-cm{font-size:max(14px,.44em);margin-top:0;letter-spacing:.02em;color:#b9c4d1}
+  html body #app .match .o-plate.o-enemy>*{translate:0 .1em}
+  html body #app .match .o-plate .o-pn{max-width:7.5em;flex:0 0 auto}
+  html body #app .match .o-plate .o-cm{flex:0 1 auto;min-width:2.5em;overflow:hidden;text-overflow:ellipsis}
+}
