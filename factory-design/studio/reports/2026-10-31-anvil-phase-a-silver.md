@@ -7,3 +7,8 @@ Ken: "I like the login. The theme is gold and not the silver. So that needs to b
 - Checked at 1600x900 and 844x390 against a local stand-in server: all buttons on screen, at least 44 px, no clipped text, no gold colours.
 - Preview: https://oreheart-8-kevvp2ufr-lummex.vercel.app (Factory — preview only #52); live check: silver login, TEST SERVER bar, connected to the test server.
 - Avatars today: the picker shows card art. List = projects/oreheart-8/src/content/avatar-cards.json (65 card ids) and the server's matching settings row `avatar_cards`; picture = pictureOf(card) = /art/cards/<id>.webp (or the owner art path); tiles are 84 px tall, cover-cropped, and 96x96 on Profile.
+
+## Avatars (Ken: "Implement the avatars.")
+- factory/issue-12 0d908b9: Brush's painted portraits in the picker (circles in silver rings, grouped by race, race filter; Goggle Rogue first) and in Profile (with a new "Change avatar" button). 16 of 61 pictures are in; the rest appear when their files are dropped into public/art/avatars.
+- TEST database: migration 20261031000002 (portrait ids allowed) applied by "Supabase — deploy" #2 after its throwaway-copy tests; 221/221 checks pass locally.
+- Preview: https://oreheart-8-p712qsvvt-lummex.vercel.app (Factory — preview only #54).
