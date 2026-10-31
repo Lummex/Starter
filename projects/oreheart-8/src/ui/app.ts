@@ -4101,8 +4101,9 @@ export class App {
     if (!this.orderTime(cr)) { this.unitActAt(cr, c); return; }
     this.orderAt(cr, c);
   }
-  /** Orders are given in the player's own Action phase, to the player's own units. */
-  orderTime(cr: any) { const st = this.game.state; return !!cr && cr.owner === 'player' && this.ordersAllowed(st) && st.phase === 'action' && st.activePlayer === 'player' && st.priority === 'player' && !st.pendingResponse; }
+  /** Ken, Oct 31: orders can be drawn at any time (every phase, the computer's turn too) for the player's own units. Outside the player's own
+   *  Action phase they are only stored and drawn (setOrder walks nothing then); they walk when the player's Action phase starts (maybeRunOrders). */
+  orderTime(cr: any) { const st = this.game.state; return !!cr && cr.owner === 'player' && this.ordersAllowed(st) && st.phase !== 'mulligan'; }
   orderAt(cr: any, c: { row: number; col: number }) {
     const o = this.orderFor(cr, c);
     if (!o) { this.flash('No path there'); return; }
@@ -4176,6 +4177,8 @@ export class App {
   orderPlans: { o: Order; p: OrderPlan; pv: boolean }[] = [];
   orderHover: string | null = null;
   orderFocus: string | null = null;
+  /** Ken, Oct 31: a unit tapped when it has no move this turn (e.g. during the computer's turn); the next square tapped gives it an order */
+  orderPick: string | null = null;
   orderFlashUid: string | null = null;
   orderFlashT: any = null;
   setOrderHover(uid: string | null) {
@@ -4188,7 +4191,7 @@ export class App {
     this.orderFlashT = setTimeout(() => { if (this.orderFlashUid === uid) { this.orderFlashUid = null; this.drawOrders(); } }, 2200);
   }
   /** Which orders show their route right now. */
-  orderShown(uid: string, pv: boolean) { return pv || uid === this.orderHover || uid === this.orderFocus || uid === this.orderFlashUid || uid === (this.pick as any)?.unit; }
+  orderShown(uid: string, pv: boolean) { return pv || uid === this.orderHover || uid === this.orderFocus || uid === this.orderFlashUid || uid === this.orderPick || uid === (this.pick as any)?.unit; }
   /** Draws the shown routes on the SVG layer: a hand-drawn curved chalk line, an X at the end (a circle around a chased unit), plus the 'N turns' label. */
   drawOrders() {
     const svg = this.r.orderSvg as SVGSVGElement | undefined, view = this.view, st = this.game.state;
@@ -4251,6 +4254,13 @@ export class App {
     const lab = (e.target as El).closest?.('.tk-stats');
     const labUid = lab ? (lab.closest('.token') as El | null)?.dataset.uid : null;
     const cell = labUid ? (() => { const c0 = st.board.creatures.find((c: any) => c.uid === labUid); return c0 ? { row: c0.row, col: c0.col } : null; })() : this.cellAt(e.clientX, e.clientY);
+    { /* Ken, Oct 31: a unit tapped with no move this turn, then another square: a stored order (it walks in your next Action phase) */
+      const op = this.orderPick; this.orderPick = null;
+      const pu = op && cell && !this.pick ? st.board.creatures.find((c: any) => c.uid === op) : null;
+      if (pu && cell) {
+        const onFig = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col) || this.figureAtEvent(e);
+        if (!(onFig && onFig.owner === 'player') && this.orderTime(pu) && this.orderFor(pu, cell)) { this.orderAt(pu, cell); return; }
+      } }
     if (!cell && (this.pick as any)?.hand && (e.pointerType !== 'mouse' || e.button === 0)) { this.cancelHandPick(); return; } // Oct 30 Ken playtest: empty space cancels a double-tap play
     if (!cell) { if (!this.pick && (e.pointerType !== 'mouse' || e.button === 0)) this.startPan(e); return; }
     if (this.pick) {
@@ -4299,7 +4309,8 @@ export class App {
         this.setGlow(legal.filter((a: any) => a.type === 'attack').map((a: any) => this.cellOfTarget(a.target)), 'glow-attack');
         this.setGlow(legal.filter((a: any) => a.type === 'mine').map((a: any) => ({ row: a.row, col: a.col })), 'glow-mine');
         this.setGlow(legal.filter((a: any) => a.type === 'ability' && this.abilityCell(a, cr)).map((a: any) => this.abilityCell(a, cr)!), 'glow-swap');
-        if (!legal.some((a: any) => a.type === 'move' || (a.type === 'ability' && this.abilityCell(a, cr)) || a.type === 'attack' || a.type === 'mine')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves, attacks OR mines)' : 'Creatures move and attack in the Action phase');
+        const offTurn = this.game.state.activePlayer !== 'player' || this.game.state.phase !== 'action'; /* Ken, Oct 31: off-turn drags give stored orders, no warning */
+        if (!(offTurn && this.orderTime(cr)) && !legal.some((a: any) => a.type === 'move' || (a.type === 'ability' && this.abilityCell(a, cr)) || a.type === 'attack' || a.type === 'mine')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves, attacks OR mines)' : 'Creatures move and attack in the Action phase');
         return true;
       },
       onDrop: (c) => { if (c) this.unitDropAt(cr, c); },
@@ -4310,6 +4321,7 @@ export class App {
           audio.unitSelect(cr.cardId, cr.uid); // Oct 31 (Ken): units speak when clicked
           this.abilityMenu(cr);
           this.selectUnit(cr);
+          this.orderPick = !this.pick && this.orderTime(cr) && maxMove(cr) ? cr.uid : null; /* Ken, Oct 31: tap a square next to give it an order */
           if (this.orders.has(cr.uid)) { this.orderFocus = cr.uid; this.drawOrders(); }
           if (!this.pick && !document.querySelector('.ability-menu')) {
             if (e.pointerType !== 'mouse' && this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);
