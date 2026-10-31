@@ -6487,7 +6487,8 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       const hh = await handHover(page);
       expect(hh.raisedIndex).toBe(2);
       expect(hh.popScale).toBeCloseTo(1.6, 2);
-      expect(hh.popMs).toBeGreaterThanOrEqual(400); expect(hh.popMs).toBeLessThanOrEqual(500);
+      // owner check change (Ken, Oct 31): "It looks jerky, and blurry. Play with the speed some" -- the rise is now a short ease (was 400-500 ms)
+      expect(hh.popMs).toBeGreaterThanOrEqual(120); expect(hh.popMs).toBeLessThanOrEqual(220);
       const l = await cards.nth(1).boundingBox(), r = await cards.nth(3).boundingBox();
       expect(l.x).toBeLessThan(rest[1].x - 2);
       expect(r.x).toBeGreaterThan(rest[3].x + 2);
@@ -11174,3 +11175,55 @@ test('AC425: a mine action or a move no longer rebuilds the hand: the same card 
   // a real hand change still rebuilds it: summoning a card next turn removes that card
   await page.waitForTimeout(300);
 });
+
+// Ken (Oct 31): "when you go to shuffle through them, there's like a card in the background ... two cards shifted offset. And when you
+// slide through the cards, it doesn't feel smooth ... It looks jerky, and blurry. Play with the speed some, the spacing is fine".
+// The second card was the raised card's helper copy (.popclone) sliding in behind it from the old spot. With real motion on (test
+// mode's no-animation switch removed), every frame while the pointer slides across the hand must show ONE card per hand card: the
+// helper copy sits exactly on its card and only paints the strip the card leaves out; every hand motion is a 120-220 ms ease.
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`Oct 31 Ken smooth hand ${W}x${H}`, () => {
+    test.use({ viewport: { width: W, height: H } });
+    test(`AC442: sliding across the hand shows one card per hand card in every frame (no offset second card), eased 120-220 ms (${W}x${H})`, async ({ page }) => {
+      await start(page, hk31({ playerHand: ['goblin-scrounger', 'goblin-scrapper', 'fireball', 'goblin-grunt', 'shiv-rat', 'soul-shard', 'goblin-pebbler'], playerCrystals: 3 }));
+      await page.evaluate(() => { document.body.classList.remove('test'); window.__app.test = false; });
+      await page.waitForTimeout(1200);
+      const cards = page.getByLabel('Your hand', { exact: true }).locator('.hand-card:not(.popclone)');
+      const n = await cards.count();
+      expect(n).toBe(7);
+      const boxes = []; for (let i = 0; i < n; i++) boxes.push(await cards.nth(i).boundingBox());
+      await page.evaluate(() => {
+        window.__ac442 = { frames: 0, bad: [], durs: new Set() }; const t0 = performance.now();
+        const f = () => {
+          const S = window.__ac442, hand = document.querySelector('.hand');
+          const real = [...hand.querySelectorAll('.hand-card:not(.popclone)')], clones = [...hand.querySelectorAll('.hand-card.popclone')];
+          const pops = real.filter((e) => e.classList.contains('popped'));
+          S.frames++;
+          if (clones.length > pops.length) S.bad.push(`${Math.round(performance.now() - t0)} ms: ${clones.length} helper copies for ${pops.length} raised cards`);
+          for (const c of clones) {
+            const p = pops[0], a = c.getBoundingClientRect(), b = p && p.getBoundingClientRect();
+            const off = b ? Math.max(Math.abs(a.left - b.left), Math.abs(a.top - b.top), Math.abs(a.width - b.width)) : 999;
+            if (off > 1.5) S.bad.push(`${Math.round(performance.now() - t0)} ms: helper copy ${Math.round(off)} px off its card`);
+            if (getComputedStyle(c).clipPath === 'none') S.bad.push('helper copy paints the whole card');
+          }
+          for (const e of real) for (const d of getComputedStyle(e).transitionDuration.split(',')) S.durs.add(parseFloat(d) * (/ms/.test(d) ? 1 : 1000));
+          if (performance.now() - t0 < 3500) requestAnimationFrame(f);
+        };
+        requestAnimationFrame(f);
+      });
+      const y = H - 6;
+      await page.mouse.move(boxes[1].x + 8, y, { steps: 3 });
+      await page.waitForTimeout(700);
+      for (let i = 2; i < 6; i++) { await page.mouse.move(boxes[i].x + 8, y, { steps: 5 }); await page.waitForTimeout(260); }
+      await page.waitForTimeout(400);
+      const r = await page.evaluate(() => ({ frames: window.__ac442.frames, bad: window.__ac442.bad.slice(0, 6), durs: [...window.__ac442.durs] }));
+      expect(r.frames, 'frames sampled').toBeGreaterThan(5);
+      expect(r.bad, 'one card per hand card in every frame').toEqual([]);
+      const moving = r.durs.filter((d) => d > 0);
+      expect(moving.length, 'the hand cards move with a transition').toBeGreaterThan(0);
+      for (const d of moving) { expect(d, 'hand motion duration (ms)').toBeGreaterThanOrEqual(120); expect(d).toBeLessThanOrEqual(220); }
+      expect((await handHover(page)).popMs).toBeGreaterThanOrEqual(120);
+      expect((await handHover(page)).popMs).toBeLessThanOrEqual(220);
+    });
+  });
+}

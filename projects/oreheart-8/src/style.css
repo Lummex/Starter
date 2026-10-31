@@ -1907,3 +1907,13 @@ body.test .speech{animation-name:ohSayFlat}
 /* 4: Escape closes the big card view from anywhere (app.ts); no Close button by the round 10 rule (AC250) */
 /* 7: the turn text and the countdown digit stay out of the Done drop-up and out of dialogs */
 body:has(.done-dropup) .match .phase,body:has(.done-dropup) .match .countdown,.match:has(> .overlay) .countdown{visibility:hidden}
+/* Ken (Oct 31 playtest, hand): "when you slide through the cards, it doesn't feel smooth ... jerky, and blurry. Play with the speed some, the spacing is fine".
+   One short ease-out for every hand motion (the raised card, its helper copy, neighbours stepping aside, the focus window sliding); positions are unchanged.
+   No will-change on the raised card: Chrome keeps a will-change layer at its old raster scale, so the enlarged card's text looked soft. */
+.match .hand{--hand-ms:160ms;--hand-ease:cubic-bezier(.22,.61,.36,1)}
+.match .hand .hand-card.popped,.match .hand .hand-card.popped:not(.popclone),.match .hand .hand-card.popped.popclone{transition-property:transform,translate,scale!important;transition-duration:var(--hand-ms)!important;transition-timing-function:var(--hand-ease)!important;will-change:auto!important}
+.match .hand .hand-card:not(.popped):not(.dragging):not(.popclone){transition-property:transform,translate,scale,left!important;transition-duration:var(--hand-ms)!important;transition-timing-function:var(--hand-ease)!important}
+/* the helper copy paints only what the raised card leaves out for the pointer: its bottom strip (clip 23 %, with a hair of overlap) and the
+   shadow / glow around the card; the hole over the rest of the card means there is never a second card to see */
+.match .hand .hand-card.popclone{clip-path:polygon(evenodd,-30% -30%,130% -30%,130% 130%,-30% 130%,-30% -30%,0% 0%,0% 76.5%,100% 76.5%,100% 0%,0% 0%,-30% -30%)!important}
+.test .match .hand .hand-card,.test .match .hand .hand-card.popped,.test .match .hand .hand-card.popped:not(.popclone),.test .match .hand .hand-card.popped.popclone,.test .match .hand .hand-card:not(.popped):not(.dragging):not(.popclone){transition:none!important}
