@@ -12,11 +12,16 @@ const mine = (s: any, r: number, c: number, row: number, col: number) => act(s, 
 const pool = (s: any, w = 'player') => s.players[w].crystals;
 const total = (s: any, w = 'player') => s.players[w].crystals as number;
 
+// Owner check change (Ken, Oct 31: Miners are half the Warband): ONE place for the Warband mix: 30 Miners / 20 Fighters / 6 spells / 4 Crystal cards.
+// Owner check change (Ken, Oct 31 dwarf fix): the Anvilsworn Miner (dwarf-smith-miner) is the dwarves' basic Miner, so basic and Smith are one card for dwarves.
+const WARBAND = { creatures: 50, spells: 6, crystals: 4, miners: 30, basic: { goblins: 22, gnomes: 24, dwarves: 27 }, smith: { goblins: 8, gnomes: 6, dwarves: 27 } };
+const DWARF_FIX = { bearerCost: 4, anvilswornCost: 2 }; // may still move after Anvil's balance sims
+
 describe('content and board', () => {
-  it('Warband starter decks: 48 creatures, 8 spells incl. Fizzle, 4 Crystal cards (Ken, Oct 31: four 60-card decks per faction)', () => {
+  it('Warband starter decks: 50 creatures, 6 spells incl. Fizzle, 4 Crystal cards (Ken, Oct 31: Miners are half the Warband)', () => {
     for (const deck of Object.entries(STARTER_DECKS).filter(([k]) => k.endsWith('-warband')).map(([, v]) => v)) {
       const t = (ty: string) => deck.filter((id) => CARDS[id].type === ty).length;
-      expect([t('creature'), t('spell'), t('crystal')]).toEqual([48, 8, 4]);
+      expect([t('creature'), t('spell'), t('crystal')]).toEqual([WARBAND.creatures, WARBAND.spells, WARBAND.crystals]);
       expect(deck).toContain('fizzle');
     }
     expect([CONFIG.boardWidth, CONFIG.boardHeight, CONFIG.mineCount]).toEqual([13, 7, 3]);
@@ -143,9 +148,11 @@ describe('economy extras', () => {
 
 describe('revision 6', () => {
   const B = (g = 0, w = 0) => g + w;
-  it('warband starter decks: basic Miners and Smith Miners (Ken, Oct 31: 15/7 goblins, 17/5 gnomes, 14/5 dwarves)', () => {
-    const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner'], gnomes: ['gnome-prospector', 'gnome-smith-miner'], dwarves: ['dwarf-miner', 'dwarf-smith-miner'] };
-    const want: any = { goblins: [15, 7], gnomes: [17, 5], dwarves: [14, 5] };
+  it('warband starter decks: basic Miners and Smith Miners (Ken, Oct 31: Miners are half the Warband; the Anvilsworn is the dwarves\' basic Miner)', () => {
+    // Owner check change (Ken, Oct 31 dwarf fix): dwarves' basic Miner = dwarf-smith-miner (config basicGatherers), the same card as their Smith Miner
+    expect(CONFIG.basicGatherers.dwarves).toBe('dwarf-smith-miner');
+    const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner'], gnomes: ['gnome-prospector', 'gnome-smith-miner'], dwarves: ['dwarf-smith-miner', 'dwarf-smith-miner'] };
+    const want: any = Object.fromEntries(['goblins', 'gnomes', 'dwarves'].map((f) => [f, [(WARBAND.basic as any)[f], (WARBAND.smith as any)[f]]]));
     for (const [f, [b, sm]] of Object.entries<any>(pairs)) {
       expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === b).length).toBe(want[f][0]);
       expect(STARTER_DECKS[f.replace(/s$/, '').replace('dwarve', 'dwarf') + '-warband'].filter((x) => x === sm).length).toBe(want[f][1]);
@@ -218,15 +225,18 @@ describe('revision 6', () => {
     const r = act(s, legalActions(s).find((a: any) => a.type === 'summon'));
     expect(r.players.player.bank).toBe(0);
   });
-  it('a free Riot Shield Bearer (the dwarves\' basic Miner) counts as the Miner on the battlefield: never a second free one (Ken, Oct 31)', () => {
-    let s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { playerHand: ['dwarf-miner', 'dwarf-miner', 'dwarf-miner'], playerCrystals: 0 } });
+  // Owner check change (Ken, Oct 31 dwarf fix): the free Miner when broke is the Anvilsworn Miner, the dwarves' basic Miner; a Riot Shield Bearer is never free
+  it('a free Anvilsworn Miner (the dwarves\' basic Miner) counts as the Miner on the battlefield: never a second free one; a Bearer is never free (Ken, Oct 31)', () => {
+    let s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { playerHand: ['dwarf-smith-miner', 'dwarf-smith-miner', 'dwarf-smith-miner', 'dwarf-miner'], playerCrystals: 0 } });
     const summons = (st: any) => legalActions(st).filter((a: any) => a.type === 'summon');
+    const bearer = s.players.player.hand.find((c: any) => c.cardId === 'dwarf-miner').uid;
     expect(summons(s).length).toBeGreaterThan(0);
+    expect(summons(s).some((a: any) => a.uid === bearer)).toBe(false);
     s = act(s, summons(s)[0]);
     if (s.pendingResponse) s = act(s, { type: 'pass' });
-    expect(s.board.creatures.filter((c: any) => c.cardId === 'dwarf-miner').length).toBe(1);
+    expect(s.board.creatures.filter((c: any) => c.cardId === 'dwarf-smith-miner').length).toBe(1);
     expect(s.players.player.crystals + s.players.player.bank).toBe(0);
-    expect(summons(s).length).toBe(0); // the second Bearer costs 2 and the side is broke
+    expect(summons(s).length).toBe(0); // the second Anvilsworn costs DWARF_FIX.anvilswornCost and the side is broke
   });
   it('Tunnel only beside a mine your side owns (Ken, Oct 31)', () => {
     const near = (s: any) => legalActions(s).filter((a: any) => a.type === 'summon' && a.row < 7);
@@ -252,29 +262,56 @@ describe('revision 6', () => {
     s = mk({ playerHand: ['goblin-smith-miner'], playerCrystals: B(2), board: owner('player') });
     expect(near(s).length).toBe(0);
   });
-  it('Riot Shield Bearer is the dwarves\' basic Miner: walks and mines (2) while shielded, never attacks or dies then (Ken, Oct 31)', () => {
-    expect(CARDS['dwarf-miner'].role).toBe('Gatherer');
-    expect(isMiner(CARDS['dwarf-miner'])).toBe(true);
-    // from hand (Borgo, 2 crystals): back row, shield up for 3 turns
-    let s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { playerHand: ['dwarf-miner'], playerCrystals: 2 } });
-    s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 });
-    expect(at(s, 7, 1).lockedUntil).toBe(s.turn + 6);
-    // on the board beside the mine at 3,6, shield up, 1 Health left, an enemy Grunt next to it
-    s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { board: [P('dwarf-miner', 2, 5, { lockedUntil: 10, damage: 5 }), O('goblin-grunt', 2, 4)] } });
+  // Owner check change (Ken, Oct 31 dwarf fix: the Riot Shield Bearer is a wall, not the Miner)
+  it('Riot Shield Bearer is a wall: Fighter, not a Miner, enemies beside it must hit it, 1 less from every hit, never moved or lifted, attacks on turn 2, can die (Ken, Oct 31)', () => {
+    expect(CARDS['dwarf-miner'].role).toBe('Fighter');
+    expect(isMiner(CARDS['dwarf-miner'])).toBe(false);
+    expect([CARDS['dwarf-miner'].cost, CARDS['dwarf-miner'].attack, CARDS['dwarf-miner'].health, CARDS['dwarf-miner'].move]).toEqual([DWARF_FIX.bearerCost, 1, 5, 1]);
+    expect(CARDS['dwarf-miner'].abilities).toEqual(['riotShield']);
+    expect(isMiner(CARDS['dwarf-smith-miner'])).toBe(true);
+    // Guard: a Grunt beside the Bearer and an Ironjaw Big Back may only hit the Bearer
+    let s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], board: [P('goblin-grunt', 6, 9), O('dwarf-miner', 5, 9), O('dwarf-pickman', 6, 10)] } });
+    s = done(s);
+    const targets = legalActions(s).filter((a: any) => a.type === 'attack' && a.creatureUid === at(s, 6, 9).uid).map((a: any) => a.target);
+    expect(targets).toEqual([{ row: 5, col: 9 }]);
+    // 1 less from every hit: a 4-Attack Ram Rider does 3
+    s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], board: [P('ram-rider', 6, 9), O('dwarf-miner', 5, 9)] } });
+    s = done(s);
+    s = act(s, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 5, col: 9 } });
+    expect(at(s, 5, 9).health).toBe(5 - 3);
+    // never knocked: an Enforcer (Granite Oathkeeper) hits it; the Bearer stays, the plain unit beside the same Enforcer is knocked
+    s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], board: [P('dwarf-stoneback', 6, 9), O('dwarf-miner', 5, 9), O('dwarf-pickman', 6, 10)] } });
+    s = done(s);
+    s = act(s, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 5, col: 9 } });
+    expect(at(s, 5, 9)?.cardId).toBe('dwarf-miner');
+    expect(at(s, 5, 9).health).toBe(5); // the 1-Attack hit did 0
+    expect(at(s, 6, 10)?.cardId).not.toBe('dwarf-pickman');
+    // never lifted: the Junk Shaman offers no lift for it, with no shield clock at all
+    s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], playerCrystals: 9, board: [P('junk-shaman', 6, 9), O('dwarf-miner', 4, 9), O('dwarf-pickman', 4, 11)] } });
+    expect(at(s, 4, 9).lockedUntil).toBe(0);
+    s = done(s);
+    const lifts = legalActions(s).filter((a: any) => a.type === 'ability' && a.ability === 'shaman');
+    expect(lifts.some((a: any) => a.from && a.from.row === 4 && a.from.col === 11)).toBe(true);
+    expect(lifts.some((a: any) => a.from && a.from.row === 4 && a.from.col === 9)).toBe(false);
+    // played from hand: no lock, no attack that turn, attacks (1 damage) on its second turn
+    s = createMatch({ playerCommander: 'borgo', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], playerHand: ['dwarf-miner'], playerCrystals: DWARF_FIX.bearerCost, board: [O('dwarf-pickman', 6, 9)] } });
+    s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 9 });
+    if (s.pendingResponse) s = act(s, { type: 'pass' });
+    expect(at(s, 7, 9).lockedUntil).toBe(0);
     s = done(s); // -> Action
-    const b = at(s, 2, 5);
-    const mineActs = legalActions(s).filter((a: any) => a.creatureUid === b.uid);
-    expect(mineActs.some((a: any) => a.type === 'move')).toBe(true);
-    expect(mineActs.some((a: any) => a.type === 'mine' && a.row === 3 && a.col === 6)).toBe(true);
-    expect(mineActs.some((a: any) => a.type === 'attack')).toBe(false);
-    expect(isActed(s, b)).toBe(false);
-    const before = incomePreview(s, 'player');
-    s = mine(s, 2, 5, 3, 6);
-    expect(incomePreview(s, 'player') - before).toBe(2);
-    s = done(s, 2); // end Action -> the opponent's Deploy -> its Action
-    s = act(s, { type: 'attack', creatureUid: at(s, 2, 4).uid, target: { row: 2, col: 5 } });
-    expect(at(s, 2, 5)?.cardId).toBe('dwarf-miner');
-    expect(at(s, 2, 5).health).toBeGreaterThanOrEqual(1);
+    const b = at(s, 7, 9).uid;
+    expect(legalActions(s).some((a: any) => a.type === 'attack' && a.creatureUid === b)).toBe(false);
+    s = done(s, 3); // end Action, the opponent's Deploy and Action
+    s = done(s); // -> the player's Action
+    expect(legalActions(s).some((a: any) => a.type === 'attack' && a.creatureUid === b)).toBe(true);
+    const hp = at(s, 6, 9).health;
+    s = act(s, { type: 'attack', creatureUid: b, target: { row: 6, col: 9 } });
+    expect(at(s, 6, 9).health).toBe(hp - 1);
+    // it can die: 1 Health left, a Ram Rider finishes it
+    s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], board: [P('ram-rider', 6, 9), O('dwarf-miner', 5, 9, { damage: 4 })] } });
+    s = done(s);
+    s = act(s, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 5, col: 9 } });
+    expect(at(s, 5, 9)).toBeFalsy();
   });
 });
 
@@ -507,10 +544,12 @@ describe('Round 3a', () => {
 
 describe('round 4', () => {
   it('twelve 60-card starter decks: Miners at least a third, four style mixes, legal for their Commander (Ken, Oct 31)', () => {
-    const mix: any = { warband: [48, 8, 4], 'mine-rush': [60, 0, 0], 'arcane-hoard': [45, 15, 0], expedition: [45, 9, 6] };
+    // Owner check change (Ken, Oct 31: Miners are half the Warband)
+    const mix: any = { warband: [WARBAND.creatures, WARBAND.spells, WARBAND.crystals], 'mine-rush': [60, 0, 0], 'arcane-hoard': [45, 15, 0], expedition: [45, 9, 6] };
     expect(STARTER_DECK_LIST.length).toBe(12);
     for (const f of ['goblins', 'gnomes', 'dwarves']) expect(STARTER_DECK_LIST.filter((d) => d.faction === f).map((d) => d.style)).toEqual(['warband', 'mine-rush', 'arcane-hoard', 'expedition']);
-    const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner', 'grubnak'], gnomes: ['gnome-prospector', 'gnome-smith-miner', 'sproingle'], dwarves: ['dwarf-miner', 'dwarf-smith-miner', 'borgo'] };
+    // Owner check change (Ken, Oct 31 dwarf fix): the Anvilsworn Miner is the dwarves' basic Miner (and their Smith Miner)
+    const pairs: any = { goblins: ['goblin-scrounger', 'goblin-smith-miner', 'grubnak'], gnomes: ['gnome-prospector', 'gnome-smith-miner', 'sproingle'], dwarves: ['dwarf-smith-miner', 'dwarf-smith-miner', 'borgo'] };
     for (const d of STARTER_DECK_LIST) {
       const [b, sm, cmd] = pairs[d.faction];
       expect(d.cards.length).toBe(60);
