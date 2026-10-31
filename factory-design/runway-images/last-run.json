@@ -1,135 +1,15 @@
 {
- "at": "2026-10-31T23:25:31.308Z",
+ "at": "2026-10-31T23:29:27.089Z",
  "results": [
   {
-   "id": "avatar-troll-blacksmith",
+   "id": "avatar-undead-banshee-v2",
    "status": "done",
    "model": "gen4_image",
    "ratio": "1080:1080",
-   "taskId": "41632bbf-949d-4072-8482-5b9b08e89823",
+   "taskId": "f0bb675f-71e1-4373-883b-b44437eaf03e",
    "credits": 8,
    "usd": 0.08,
-   "at": "2026-10-31T23:22:41.102Z"
-  },
-  {
-   "id": "avatar-troll-witch-doctor",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "e04af269-96c7-4a41-b569-76514f7a5cd9",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:22:46.105Z"
-  },
-  {
-   "id": "avatar-troll-princess",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "5a33125d-1046-4212-87dc-4239cf5d4202",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:23:06.587Z"
-  },
-  {
-   "id": "avatar-gnome-inventor",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "07182065-72f5-40cb-bd57-a737cf39f95a",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:23:06.622Z"
-  },
-  {
-   "id": "avatar-undead-skeleton-pirate",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "e641c84c-789e-465e-90aa-569c88934038",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:23:32.783Z"
-  },
-  {
-   "id": "avatar-undead-banshee",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "af5266c3-17d0-4f52-a866-0213f64cbe77",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:23:42.946Z"
-  },
-  {
-   "id": "avatar-gnome-enchantress",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "f4534924-f9ea-4b2e-85c6-05bc27fa08cf",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:23:58.312Z"
-  },
-  {
-   "id": "avatar-goblin-charmer",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "189f62d1-184d-4ff6-b651-9676dc8dd300",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:24:08.410Z"
-  },
-  {
-   "id": "avatar-human-sorceress",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "eafac4a2-ffb7-4036-95a9-3e4272dbd771",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:24:44.813Z"
-  },
-  {
-   "id": "avatar-dwarf-valkyrie",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "99e5face-6268-42a6-81b2-841436ebb856",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:24:44.880Z"
-  },
-  {
-   "id": "avatar-undead-countess",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "d4a7bad5-78d7-4553-b1b4-58bb5a852612",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:25:10.233Z"
-  },
-  {
-   "id": "avatar-human-corsair",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "f02d7226-bc7d-4d87-95be-c8b32c96446b",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:25:10.293Z"
-  },
-  {
-   "id": "avatar-troll-huntress",
-   "status": "done",
-   "model": "gen4_image",
-   "ratio": "1080:1080",
-   "taskId": "51bd5e52-da4e-4ad0-80f9-337dbb79ba22",
-   "credits": 8,
-   "usd": 0.08,
-   "at": "2026-10-31T23:25:31.308Z"
+   "at": "2026-10-31T23:29:27.089Z"
   }
  ]
 }
