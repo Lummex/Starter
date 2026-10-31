@@ -126,3 +126,11 @@ Editor updates needed: hand.overlap 0.26; DRAG_FX (150 ms, opacity .85, tilt 8°
 
 ## Online Phase A fix (inspector round 1)
 - Plain `/` in an automated browser (WebDriver/headless) without `?online=1` now skips the login flow (`src/net/switch.ts`), so the older checks reach the menu and the Welcome offer again. Real browsers still get the login screen.
+
+## Round 2 fix pass (load-related timeouts)
+Almost every failing check timed out because software-GL pages starved the main thread (7 frames/s, 10 s stats answers).
+In test mode (`?test=1`) `scene.ts` now draws the pixels (front canvas and painted arena) only about every 2 s, on resize, or on the first frame.
+All logic, clips and positions still advance each logic frame (300 ms) by elapsed time, and that throttle no longer scales with draw time.
+`renderer.debug.checkShaderErrors = false` removes blocking shader-link waits.
+Measured locally: 4 parallel tutorial pages load all models in about 7 s (was 10-14 s), and the first render stats at 3840x2160 answer in about 2.4 s (was 13 s).
+Real play (no `?test=1`) is unchanged.
