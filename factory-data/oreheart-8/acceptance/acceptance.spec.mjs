@@ -12829,3 +12829,178 @@ test('AC513: the unit voices are on, and every line plays at the same loudness (
   for (const e of played) expect(e.gain, `${e.line} played with its manifest gain`).toBeCloseTo(lines[e.line], 2);
   expect(errors).toEqual([]);
 });
+
+// ---------- Oct 31 (Ken via Forge): move orders can be drawn at ANY time ----------
+// Ken: "when it's not your turn, I would like you to be able to click and drag and make do the plan moves ... I'd like to be able to arrange
+// my moves during his turn also. So you can move, change, and stop your unit movements with the auto move at any time. During any round."
+// Ken, Oct 31: orders can be drawn at any time. Outside the player's own Action phase an order is only stored and drawn (the arrow shows);
+// the unit does not move and keeps its action. It walks when the player's Action phase starts, exactly like any other standing order.
+// The computer never sees the orders, and its actions and pace are not changed by drawing.
+const ordersOf = (page) => page.evaluate(async () => await window.oreheart.getOrders());
+const ordArrow = (page, uid) => page.evaluate((u) => !!document.querySelector(`.order-svg .ord[data-uid="${u}"]`), uid);
+async function mouseDragSq(page, from, to, steps = 12) {
+  const a = await sq2s(page, from.row, from.col), z = await sq2s(page, to.row, to.col);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  for (let k = 1; k <= steps; k++) await page.mouse.move(a.x + ((z.x - a.x) * k) / steps, a.y + ((z.y - a.y) * k) / steps);
+  await page.mouse.up();
+}
+const unitOf = async (page, uid) => (await getState(page)).board.creatures.find((c) => c.uid === uid);
+const chebTo = (c, q) => Math.max(Math.abs(c.row - q.row), Math.abs(c.col - q.col));
+
+test('AC517: during the computer\'s turn a dragged order is stored and drawn, the unit does not move and keeps its action, and it walks when your turn comes', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await start(page, quiet({ playerHand: [], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 9 }] }));
+  let s = await getState(page);
+  const uid = s.board.creatures.find((c) => c.owner === 'player').uid;
+  await passTurn(page);
+  s = await getState(page);
+  expect(s.activePlayer, 'the computer\'s turn').toBe('opponent');
+  const dest = { row: 3, col: 11 };
+  await mouseDragSq(page, { row: 6, col: 9 }, dest);
+  expect(await ordersOf(page), 'the order is stored').toEqual([{ kind: 'move', uid, dest }]);
+  await expect.poll(() => ordArrow(page, uid), { message: 'the football-play arrow is drawn', timeout: 3000 }).toBe(true);
+  await expect(page.locator(`.tk-cancel[data-uid="${uid}"]`), 'the cancel button shows').toHaveCount(1);
+  s = await getState(page);
+  expect(s.activePlayer, 'still the computer\'s turn').toBe('opponent');
+  let u = await unitOf(page, uid);
+  expect([u.row, u.col], 'the unit did not move').toEqual([6, 9]);
+  expect(u.hasMoved || u.hasAttacked || u.hasMined, 'the unit kept its action').toBeFalsy();
+  // the computer's Action phase: still stored, still not moving
+  await done(page);
+  expect((await getState(page)).phase).toBe('action');
+  u = await unitOf(page, uid);
+  expect([u.row, u.col], 'no walk in the computer\'s Action phase').toEqual([6, 9]);
+  expect((await ordersOf(page)).length).toBe(1);
+  // the player's turn: nothing walks in Deploy, then the Action phase starts and the order walks its first leg
+  await done(page);
+  s = await getState(page);
+  expect([s.activePlayer, s.phase]).toEqual(['player', 'deploy']);
+  u = await unitOf(page, uid);
+  expect([u.row, u.col], 'no walk in the player\'s Deploy phase').toEqual([6, 9]);
+  await done(page);
+  await expect.poll(async () => chebTo(await unitOf(page, uid), dest), { message: 'the unit walked toward the X when your Action phase started', timeout: 8000 }).toBeLessThan(chebTo({ row: 6, col: 9 }, dest));
+  u = await unitOf(page, uid);
+  expect(u.hasMoved, 'the walk used this turn\'s move').toBe(true);
+  if (u.row !== dest.row || u.col !== dest.col) expect(await ordersOf(page), 'the order keeps going on later turns').toEqual([{ kind: 'move', uid, dest }]);
+});
+
+test('AC518: during the computer\'s turn you can change and cancel an order, and the computer plays exactly the same actions with or without your drawing', async ({ page }) => {
+  test.setTimeout(180000);
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto('/?test=1&seed=5&aiworker=1');
+  await page.waitForFunction(() => !!window.oreheart);
+  const setupMatch = () => page.evaluate(async () => { await window.oreheart.newMatch({ mode: 'standard', ai: true, difficulty: 'easy', seed: 5, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', factionLock: false,
+    mines: [{ row: 4, col: 2 }, { row: 4, col: 4 }, { row: 4, col: 6 }],
+    setup: { firstPlayer: 'player', opponentCrystals: 0, opponentHand: [], playerHand: [],
+      board: [{ cardId: 'oathbound-pikeman', owner: 'opponent', row: 2, col: 7 }, { cardId: 'deepforge-crossbowman', owner: 'opponent', row: 3, col: 10 }, { cardId: 'goblin-scrapper', owner: 'opponent', row: 2, col: 3 },
+        { cardId: 'shiv-rat', owner: 'player', row: 5, col: 10 }, { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 5 }] } }); });
+  // plays the player's pass and the computer's whole turn; `during` runs once while the computer's turn is on
+  async function computerTurn(during) {
+    await setupMatch();
+    const scrap = (await getState(page)).board.creatures.find((c) => c.owner === 'player' && c.cardId === 'goblin-scrapper').uid;
+    const tStart = await page.evaluate(() => performance.now());
+    await done(page, 2);
+    const trail = [];
+    let did = false, seen = [];
+    const t0 = Date.now();
+    for (let i = 0; i < 500; i++) {
+      const st = await getState(page);
+      trail.push(`${st.turn}/${st.activePlayer}/${st.phase}`);
+      if (st.activePlayer === 'player' && st.turn >= 3) break;
+      if (during && !did && st.activePlayer === 'opponent') { did = true; seen = await during(scrap); }
+      await page.waitForTimeout(100);
+    }
+    const ms = Date.now() - t0;
+    const st = await getState(page);
+    expect(st.activePlayer === 'player' && st.turn >= 3, 'the computer finished its turn: ' + trail.slice(-5).join(' ')).toBe(true);
+    const pace = (await page.evaluate(async () => await window.oreheart.getAiPace())).paceLog.filter((p) => p.at >= tStart);
+    return { seq: pace.map((p) => `${p.type}:${p.cardId || ''}`), pace, ms, seen,
+      board: st.board.creatures.map((c) => `${c.owner}:${c.cardId}@${c.row},${c.col}:${c.health}`).sort(), players: [st.players.player.health, st.players.opponent.health] };
+  }
+  const base = await computerTurn(null);
+  expect(base.seq.length, 'the computer took actions on its turn').toBeGreaterThan(1);
+  const drawn = await computerTurn(async (uid) => {
+    const seen = [];
+    const d1 = { row: 3, col: 5 }, d2 = { row: 2, col: 1 };
+    await mouseDragSq(page, { row: 6, col: 5 }, d1);
+    seen.push((await getState(page)).activePlayer);
+    expect(await ordersOf(page), 'the order is stored').toEqual([{ kind: 'move', uid, dest: d1 }]);
+    await mouseDragSq(page, { row: 6, col: 5 }, d2);
+    seen.push((await getState(page)).activePlayer);
+    expect(await ordersOf(page), 'the order changed').toEqual([{ kind: 'move', uid, dest: d2 }]);
+    expect((await unitOf(page, uid)).row, 'the unit stayed').toBe(6);
+    await page.locator(`.tk-cancel[data-uid="${uid}"]`).click();
+    seen.push((await getState(page)).activePlayer);
+    expect(await ordersOf(page), 'the order is cancelled').toEqual([]);
+    expect(await ordArrow(page, uid), 'the arrow is gone').toBe(false);
+    return seen;
+  });
+  expect(drawn.seen, 'the drawing, change and cancel all happened during the computer\'s turn').toEqual(['opponent', 'opponent', 'opponent']);
+  expect(drawn.seq, 'the computer played the same actions in the same order').toEqual(base.seq);
+  expect(drawn.board, 'the board ended the same').toEqual(base.board);
+  expect(drawn.players).toEqual(base.players);
+  for (const p of drawn.pace) expect(['', 'target'], `${p.type} was played while '${p.busyAtApply}' was going`).toContain(p.busyAtApply);
+  // the computer's pace: no action waited noticeably longer than without drawing (input never makes the board "busy")
+  for (let i = 0; i < drawn.pace.length; i++) expect(drawn.pace[i].waitMs, `${drawn.seq[i]} waited no longer than without drawing`).toBeLessThanOrEqual(base.pace[i].waitMs + 1500);
+});
+
+test('AC519: in your own Deploy phase orders can be dragged or tapped and are stored without moving; they walk when your Action phase starts', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await start(page, quiet({ playerHand: [], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 9 }, { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 }] }));
+  let s = await getState(page);
+  expect([s.activePlayer, s.phase], 'the player\'s Deploy phase (the Draw phase passes by itself just before)').toEqual(['player', 'deploy']);
+  const a = at(s, 6, 9).uid, b = at(s, 6, 3).uid;
+  const da = { row: 2, col: 11 }, db = { row: 2, col: 2 };
+  await mouseDragSq(page, { row: 6, col: 9 }, da);
+  // click the unit, then click a square: also an order
+  const pb = await sq2s(page, 6, 3), qb = await sq2s(page, db.row, db.col);
+  await page.mouse.click(pb.x, pb.y);
+  await page.mouse.click(qb.x, qb.y);
+  const orders = await ordersOf(page);
+  expect(orders).toContainEqual({ kind: 'move', uid: a, dest: da });
+  expect(orders).toContainEqual({ kind: 'move', uid: b, dest: db });
+  s = await getState(page);
+  expect(s.phase).toBe('deploy');
+  expect([at(s, 6, 9)?.uid, at(s, 6, 3)?.uid], 'nothing moved in Deploy').toEqual([a, b]);
+  expect(at(s, 6, 9).hasMoved || at(s, 6, 3).hasMoved).toBeFalsy();
+  await expect.poll(() => ordArrow(page, b), { message: 'the order just given shows its arrow', timeout: 3000 }).toBe(true);
+  // cancel and redraw in Deploy works too
+  await page.locator(`.tk-cancel[data-uid="${b}"]`).click();
+  expect((await ordersOf(page)).map((o) => o.uid)).toEqual([a]);
+  await mouseDragSq(page, { row: 6, col: 3 }, db);
+  expect((await ordersOf(page)).length).toBe(2);
+  await done(page);
+  await expect.poll(async () => chebTo(await unitOf(page, a), da) < chebTo({ row: 6, col: 9 }, da) && chebTo(await unitOf(page, b), db) < chebTo({ row: 6, col: 3 }, db), { message: 'both walked when the Action phase started', timeout: 8000 }).toBe(true);
+});
+
+test.describe('AC520 phone touch', () => {
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
+  test('AC520: on a phone, touch can draw, change and cancel an order during the computer\'s turn (844x390)', async ({ page }) => {
+    await start(page, quiet({ playerHand: [], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 9 }] }));
+    const uid = (await getState(page)).board.creatures.find((c) => c.owner === 'player').uid;
+    await passTurn(page);
+    expect((await getState(page)).activePlayer).toBe('opponent');
+    const cdp = await page.context().newCDPSession(page);
+    async function touchDrag(from, to, steps = 12) {
+      /* press on the unit's body just above its square (at phone size the stat badge sits on the square itself, as in AC444) */
+      const a0 = await sq2s(page, from.row, from.col), z = await sq2s(page, to.row, to.col), a = { x: a0.x, y: a0.y - 25 };
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: a.x, y: a.y, id: 1 }] });
+      for (let k = 1; k <= steps; k++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: a.x + ((z.x - a.x) * k) / steps, y: a.y + ((z.y - a.y) * k) / steps, id: 1 }] }); await page.waitForTimeout(16); }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    }
+    const d1 = { row: 3, col: 11 }, d2 = { row: 2, col: 8 };
+    await touchDrag({ row: 6, col: 9 }, d1);
+    await expect.poll(() => ordersOf(page), { message: 'a touch drag stored the order', timeout: 3000 }).toEqual([{ kind: 'move', uid, dest: d1 }]);
+    await expect.poll(() => ordArrow(page, uid), { message: 'the arrow is drawn', timeout: 3000 }).toBe(true);
+    await touchDrag({ row: 6, col: 9 }, d2);
+    await expect.poll(() => ordersOf(page), { message: 'a second touch drag changed it', timeout: 3000 }).toEqual([{ kind: 'move', uid, dest: d2 }]);
+    const u = await unitOf(page, uid);
+    expect([u.row, u.col, !!u.hasMoved]).toEqual([6, 9, false]);
+    const x = await page.locator(`.tk-cancel[data-uid="${uid}"]`).boundingBox();
+    expect(x, 'the cancel button is on screen').toBeTruthy();
+    await page.touchscreen.tap(x.x + x.width / 2, x.y + x.height / 2);
+    await expect.poll(() => ordersOf(page), { message: 'a tap on the X cancelled it', timeout: 3000 }).toEqual([]);
+    expect((await getState(page)).activePlayer, 'all during the computer\'s turn').toBe('opponent');
+  });
+});
