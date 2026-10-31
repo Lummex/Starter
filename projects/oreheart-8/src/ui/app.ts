@@ -37,6 +37,14 @@ function homography(p: { x: number; y: number }[], w: number, h: number): string
   return `matrix3d(${a / w},${d / w},0,${g / w},${b / h},${e / h},0,${hh / h},0,0,1,0,${p0.x},${p0.y},0,1)`;
 }
 const FSYM = (f: string) => SYM[FACTIONS[f]?.symbol] || '✦';
+/** Ken (Oct 31): "The gear icon is for the dwarves, and the eye icon is for the gnomes." The icon under a dragged unit is its
+ *  faction's emblem from the owner Card Format (dwarves: blue gear, gnomes: purple eye, goblins: green goblin king). */
+const DRAG_ICON: Record<string, string> = { dwarves: 'gear', gnomes: 'eye', goblins: 'goblin' };
+function dragIcon(f: string, cls: string): HTMLElement {
+  const url = mineEmblemUrl(f);
+  const g = h('div', { class: cls + ' faction-icon', 'data-faction': f, 'data-icon': DRAG_ICON[f] || 'symbol', 'aria-hidden': 'true' }, url ? h('img', { src: url, alt: '', draggable: 'false' }) : FSYM(f));
+  return g;
+}
 const PHASE: Record<string, string> = { deploy: 'Deploy', action: 'Action', mulligan: 'Mulligan', draw: 'Draw', end: 'End', over: 'Over' };
 const ACTIVE = ['deploy', 'action'];
 const BW: number = CONFIG.boardWidth, BH: number = CONFIG.boardHeight;
@@ -907,7 +915,11 @@ export class App {
   }
   /** Oct 30 Ken playtest (hand): a single tap/click opens the card view after a short wait; a second tap/click on the same card
    *  within that wait plays it instead (same as the card view's Play / Cast button: legal squares light up, or it casts at once). */
-  static DBL_MS = 250;
+  // Ken (Oct 31: "when I double click a card in my hand, it doesn't automatically play the card"): 250 ms was shorter than a
+  // normal double-click (Windows allows up to 500 ms), so the second click came after the card view had already opened.
+  static DBL_MS = 380;
+  /** Ken (Oct 31, hand "jerky"): every hand motion (rise, fall, neighbours stepping aside, the focus window sliding) takes this long, ease-out (style.css --hand-ms) */
+  static HAND_MS = 160;
   tapWait: { uid: string; t: any; x: number; y: number; at: number } | null = null;
   touchWasShown = false;
   handTap(hc: any, card: any) {
@@ -1672,6 +1684,9 @@ export class App {
     const halfW = (w * S) / 2, halfH = (hgt * S) / 2;
     const targetX = Math.max(hr.left + halfW + 2, Math.min(hr.right - halfW - 2, cx));
     const targetY = Math.max(hr.bottom, window.innerHeight) - halfH - 1;
+    // Ken (Oct 31: "jerky, and blurry"): the rise starts from where the card is drawn right now (even mid-motion), not a snap
+    const cs0 = getComputedStyle(el);
+    const from = { transform: cs0.transform, translate: cs0.translate, scale: cs0.scale };
     el.classList.add('popped');
     if (el.dataset.fanAngle0 === undefined) el.dataset.fanAngle0 = el.dataset.fanAngle || '0';
     el.dataset.fanAngle = '0';
@@ -1695,20 +1710,31 @@ export class App {
     hand.append(clone);
     el.style.zIndex = '9000';
     el.style.setProperty('--gs', String(S));
-    // translate leads (fast) and the growth follows (slow), so the card never hangs below the screen edge mid-flight
+    // Ken (Oct 31): "there's like a card in the background ... two cards shifted offset ... jerky, and blurry".
+    // The ghost was the pop-out's helper copy (.popclone): it was given the end position at once while the real card was
+    // snapped there with transitions off, so the copy slid in behind it from the old spot. Now the end spot is measured with
+    // transitions off, both go back to where the card is drawn now, and then both move together with one short ease-out;
+    // the copy only paints the bottom strip the real card leaves out (clip), so there is never a second card to see.
+    const cl = (el as any)._clone as El | null;
+    const sync = () => { if (cl) { cl.style.cssText = el.style.cssText; cl.style.zIndex = '8999'; } };
+    el.style.setProperty('transition', 'none', 'important');
     el.style.transform = 'none';
     el.style.translate = `${targetX - cx}px ${targetY - cy}px`;
     el.style.scale = String(S);
+    void el.offsetHeight;
+    let fin = el.style.translate;
     {
-      // land the popped card's bottom on the screen edge (measured with transitions off, so the fan/hand offsets are exact)
-      el.style.setProperty('transition', 'none', 'important'); void el.offsetHeight;
+      // land the popped card's bottom on the screen edge, kept inside the screen sideways, on whole pixels (crisp text at rest)
       const r = el.getBoundingClientRect();
-      const dy = (window.innerHeight - 1) - r.bottom, dx = Math.max(hr.left + 2 - r.left, Math.min(hr.right - 2 - r.right, 0));
-      el.style.translate = `${targetX - cx + dx}px ${targetY - cy + dy}px`;
-      void el.offsetHeight; el.style.removeProperty('transition');
+      let dy = (window.innerHeight - 1) - r.bottom, dx = Math.max(hr.left + 2 - r.left, Math.min(hr.right - 2 - r.right, 0));
+      dx += Math.round(r.left + dx) - (r.left + dx); dy += Math.round(r.top + dy) - (r.top + dy);
+      fin = `${Math.round((targetX - cx + dx) * 100) / 100}px ${Math.round((targetY - cy + dy) * 100) / 100}px`;
     }
-    const cl = (el as any)._clone as El;
-    if (cl) { cl.style.cssText = el.style.cssText; cl.style.zIndex = '8999'; }
+    el.style.transform = from.transform; el.style.translate = from.translate; el.style.scale = from.scale;
+    sync(); void el.offsetHeight; if (cl) void cl.offsetHeight;
+    el.style.removeProperty('transition');
+    el.style.transform = 'none'; el.style.translate = fin; el.style.scale = String(S);
+    sync();
     this.watchPop(el);
   }
 
@@ -1798,11 +1824,11 @@ export class App {
       return { cardId: c.dataset.cardId || (c.querySelector('[data-card-id]') as El | null)?.dataset.cardId || '', cx: r.left + r.width / 2 - dx, cy: r.top + r.height / 2 - dy, width: c.offsetWidth, height: c.offsetHeight,
         rotateDeg: Math.round(Math.atan2(m.b, m.a) * 18000 / Math.PI) / 100, scale: Math.round(Math.hypot(m.a, m.b) * sc * 1000) / 1000 };
     }) : [];
-    if (!clipped.length) return { raised, zone: { x: 0, y: 0, width: 0, height: 0 }, cards: { x: 0, y: 0, width: 0, height: 0 }, raisedIndex: -1, popScale: 1.6, popMs: 450, fan };
+    if (!clipped.length) return { raised, zone: { x: 0, y: 0, width: 0, height: 0 }, cards: { x: 0, y: 0, width: 0, height: 0 }, raisedIndex: -1, popScale: 1.6, popMs: App.HAND_MS, fan };
     const l = Math.min(...clipped.map((r) => r.l)), t = Math.min(...clipped.map((r) => r.t)), r = Math.max(...clipped.map((x) => x.r)), b = Math.max(...clipped.map((x) => x.b));
     const box = { x: l, y: t, width: r - l, height: b - t };
     const raisedIndex = ([...hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).findIndex((c) => c.classList.contains('popped'));
-    return { raised, zone: box, cards: { ...box }, raisedIndex, popScale: 1.6, popMs: 450, fan };
+    return { raised, zone: box, cards: { ...box }, raisedIndex, popScale: 1.6, popMs: App.HAND_MS, fan };
   }
   /** Return every popped card to the fan and tuck the hand; nothing may stay raised. */
   clearPops(except?: El) {
@@ -2078,10 +2104,11 @@ export class App {
       const rot = Math.round(off * per * 100) / 100;
       (c as any)._left = lefts[k];
       c.dataset.fanAngle = String(rot);
-      c.style.transform = `translateY(0px) rotate(${rot}deg)`;
-      c.dataset.fan = c.style.transform;
-      c.style.zIndex = String(k + 1);
+      c.dataset.fan = `translateY(0px) rotate(${rot}deg)`;
       c.dataset.z = String(k + 1);
+      // Ken (Oct 31, "two cards shifted offset"): the raised card keeps its own transform and layer while the focus window moves
+      // (it used to be tilted back to its fan angle under its un-tilted helper copy); it takes the fan values when it goes down
+      if (c !== pop) { c.style.transform = c.dataset.fan; c.style.zIndex = c.dataset.z; }
       // the card's own pointer strip (its visible part; the next card lies over the rest)
       const vis = k === els.length - 1 ? cw : lefts[k + 1] - lefts[k];
       c.style.setProperty('--hl', (cw / 2 + (k === 0 ? 4 : 0)) + 'px');
@@ -2451,13 +2478,15 @@ export class App {
     const cw = Math.max(48, Math.round(hcw * 0.5));
     const row = h('div', { class: 'e-discard-row', role: 'list', 'aria-label': 'Enemy discard pile cards' });
     row.style.setProperty('--dcw', cw + 'px');
-    let moved = false;
+    let moved = false, ix = 0;
     for (const k of pile) {
       const c = CARDS[k.cardId];
       if (!c) continue;
       const b = h('button', { type: 'button', class: 'e-discard-card', role: 'listitem', 'aria-label': c.name, title: c.name },
         h('span', { class: `hand-card static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c)));
       (b.firstChild as El).style.setProperty('--cw', cw + 'px');
+      // Ken (Oct 31): the cards slide out from the left edge, one after another (each starts just off-screen on the left)
+      b.style.setProperty('--dx', (ix + 1) * (cw + 8) + 24 + 'px'); b.style.setProperty('--dd', Math.min(ix, 12) * 28 + 'ms'); ix++;
       b.addEventListener('click', (e: Event) => { e.stopPropagation(); if (moved) { moved = false; return; } this.showCard(c.id); });
       row.append(b);
     }
@@ -2471,6 +2500,11 @@ export class App {
     row.addEventListener('wheel', (e: WheelEvent) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { row.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
     const d = this.dialog('Enemy discard pile', [h('h2', { class: 'e-discard-title' }, `Enemy discard pile (${pile.length})`), row]);
     d.el.classList.add('e-discard-view');
+    { // Ken (Oct 31): no frame, the cards come out at the pile's height
+      const pr = (this.r.eDiscard as El | undefined)?.getBoundingClientRect();
+      if (pr && pr.height) d.el.style.setProperty('--dtop', Math.max(0, Math.round(pr.top - 6)) + 'px');
+      d.el.dataset.frame = 'none';
+    }
     { // Escape closes it whenever it is the top dialog (also after a card close-up on top of it was closed)
       const close0 = d.close, esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape' && this.dialogs[this.dialogs.length - 1] === d.el) { ev.stopPropagation(); d.close(); } };
       d.close = () => { document.removeEventListener('keydown', esc, true); close0(); };
@@ -2909,7 +2943,7 @@ export class App {
     this.clearGlow();
     this.setGlow(legal, 'glow-swap');
     const card = CARDS[tgt.cardId];
-    const ghost = h('div', { class: 'ghost tk lift-ghost', 'aria-hidden': 'true' }, FSYM(card.faction));
+    const ghost = dragIcon(card.faction, 'ghost tk lift-ghost');
     ghost.style.cssText = 'position:fixed;pointer-events:none;z-index:1000;transform:translate(-50%,calc(-50% - 28px));filter:drop-shadow(0 18px 8px #0009)';
     // Owner fix (Ken, Oct 28): on the 3D board the real unit hangs at the pointer instead of the flat ghost
     const carry3d = !!(this.view?.is3D && this.view.setCarry);
@@ -2994,8 +3028,9 @@ export class App {
       const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
-        playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null,
-        tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
+        playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null);
+      // Ken (Oct 31): "On the cards with special abilities, like tunnel, you have it over the card, just remove that. Remove all those
+      // special ability ... overlays." The Round 10 'Tunnel!' tag is gone; the card's own text still says what it does.
       (el.querySelector('.ohcard') || el.firstElementChild)?.setAttribute('data-card-id', c.id);
       el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { if (this.lastPtr.down || this.noHand || el.classList.contains('popped') || this.hitCard(e.clientX, e.clientY) !== el || this.r.hand?.querySelector('.hand-card.popped:not(.popclone)')) return; this.openHand(true); this.popCard(el, true); } });
       el.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.popCard(el, false); });
@@ -4083,7 +4118,7 @@ export class App {
     if (!cr) { if (e.pointerType !== 'mouse' || e.button === 0) this.startPan(e); return; }
     this.selectedUid = cr.uid; // round 11: the tapped creature counts as selected (Esc clears it)
     const card = CARDS[cr.cardId];
-    const ghost = h('div', { class: 'ghost tk' }, FSYM(card.faction));
+    const ghost = dragIcon(card.faction, 'ghost tk');
     const mine = cr.owner === 'player';
     let box: El | null = null;
     const atkAt = (c: { row: number; col: number }) => this.game.legalActions().find((a: any) => a.creatureUid === cr.uid && a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col)));

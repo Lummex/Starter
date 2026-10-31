@@ -1481,7 +1481,7 @@ body .screen .db-deck[data-faction=dwarf] .ds-name{color:#b45cff!important}
 .match .reveal.opp-play{box-shadow:0 0 60px #ffd45acc,0 14px 40px #000;animation:oppPlayIn .22s ease-out;transform-style:preserve-3d}
 @keyframes oppPlayIn{from{transform:translate(-50%,-50%) scale(.55);opacity:.2}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
 /* the enemy discard pile: face-up on the left side, mirrors your deck on the right */
-.match .e-discard{position:absolute;z-index:22;left:max(8px,env(safe-area-inset-left));top:24%;width:clamp(44px,10vh,104px);height:auto;aspect-ratio:1152/1712;padding:0;margin:0;min-width:0;border:0;border-radius:8px;background:none;cursor:pointer;pointer-events:auto;filter:drop-shadow(0 4px 6px #000)}
+.match .e-discard{position:absolute;z-index:22;left:max(8px,env(safe-area-inset-left));top:19%;width:clamp(44px,10vh,104px);height:auto;aspect-ratio:1152/1712;padding:0;margin:0;min-width:0;border:0;border-radius:8px;background:none;cursor:pointer;pointer-events:auto;filter:drop-shadow(0 4px 6px #000)}
 .match .e-discard.empty{border:2px dashed #e3b54a99;background:#0006}
 .match .e-discard .e-discard-top{position:absolute;inset:0;display:block;pointer-events:none}
 .match .e-discard .e-discard-top .hand-card{position:absolute;left:0;top:0;width:100%;--cw:clamp(44px,10vh,104px);transform:none;pointer-events:none;box-shadow:2px 2px 0 #1b1a22,4px 4px 0 #000a!important}
@@ -1907,3 +1907,29 @@ body.test .speech{animation-name:ohSayFlat}
 /* 4: Escape closes the big card view from anywhere (app.ts); no Close button by the round 10 rule (AC250) */
 /* 7: the turn text and the countdown digit stay out of the Done drop-up and out of dialogs */
 body:has(.done-dropup) .match .phase,body:has(.done-dropup) .match .countdown,.match:has(> .overlay) .countdown{visibility:hidden}
+/* Ken (Oct 31 playtest, hand): "when you slide through the cards, it doesn't feel smooth ... jerky, and blurry. Play with the speed some, the spacing is fine".
+   One short ease-out for every hand motion (the raised card, its helper copy, neighbours stepping aside, the focus window sliding); positions are unchanged.
+   No will-change on the raised card: Chrome keeps a will-change layer at its old raster scale, so the enlarged card's text looked soft. */
+.match .hand{--hand-ms:160ms;--hand-ease:cubic-bezier(.22,.61,.36,1)}
+.match .hand .hand-card.popped,.match .hand .hand-card.popped:not(.popclone),.match .hand .hand-card.popped.popclone{transition-property:transform,translate,scale!important;transition-duration:var(--hand-ms)!important;transition-timing-function:var(--hand-ease)!important;will-change:auto!important}
+.match .hand .hand-card:not(.popped):not(.dragging):not(.popclone){transition-property:transform,translate,scale,left!important;transition-duration:var(--hand-ms)!important;transition-timing-function:var(--hand-ease)!important}
+/* the helper copy paints only what the raised card leaves out for the pointer: its bottom strip (clip 23 %, with a hair of overlap) and the
+   shadow / glow around the card; the hole over the rest of the card means there is never a second card to see */
+.match .hand .hand-card.popclone{clip-path:polygon(evenodd,-30% -30%,130% -30%,130% 130%,-30% 130%,-30% -30%,0% 0%,0% 76.5%,100% 76.5%,100% 0%,0% 0%,-30% -30%)!important}
+.test .match .hand .hand-card,.test .match .hand .hand-card.popped,.test .match .hand .hand-card.popped:not(.popclone),.test .match .hand .hand-card.popped.popclone,.test .match .hand .hand-card:not(.popped):not(.dragging):not(.popclone){transition:none!important}
+/* Ken (Oct 31): the icon under a dragged unit is its faction's own emblem (dwarves gear, gnomes eye, goblins goblin king), not the old emoji in a slate disc */
+.ghost.tk.faction-icon{width:56px;height:56px;padding:0;border:0;background:none;opacity:1;filter:drop-shadow(0 4px 6px #000c)}
+.ghost.tk.faction-icon img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+/* Ken (Oct 31): the enemy discard pile sits "up just a touch" (top 24% -> 19%), and "when I click it ... pop out from the left-hand side. Like it's
+   just sliding out. And it doesn't need a frame around it. Just have the cards pop out." No dimming, no panel, no title: the cards slide out from the
+   left edge at the pile's height, one after another; the invisible layer behind them still closes it on a tap outside (and Escape). */
+.overlay.e-discard-view{background:none!important;align-items:flex-start;justify-content:flex-start;padding:var(--dtop,19vh) 0 0 0}
+.overlay.e-discard-view .dialog{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;margin:0;max-width:100vw;width:auto;text-shadow:none}
+html body .overlay.e-discard-view>.dialog:not(.viewer3d):not([aria-label=Mulligan]):not(.respond-dlg){border:0!important;border-image:none!important;padding:0!important;background:none!important}
+.overlay.e-discard-view .dialog::before,.overlay.e-discard-view .dialog::after{content:none!important;display:none!important}
+.overlay.e-discard-view .e-discard-title{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0;padding:0}
+.overlay.e-discard-view .e-discard-row{max-width:calc(100vw - 8px);padding:6px 16px 10px max(8px,env(safe-area-inset-left));gap:8px;scrollbar-width:none}
+.overlay.e-discard-view .e-discard-row::-webkit-scrollbar{display:none}
+.overlay.e-discard-view .e-discard-card{animation:eDiscardSlide .26s cubic-bezier(.22,.61,.36,1) backwards;animation-delay:var(--dd,0ms)}
+.overlay.e-discard-view .e-discard-card .hand-card{filter:drop-shadow(0 4px 6px #000c)}
+@keyframes eDiscardSlide{from{transform:translateX(calc(-1 * var(--dx,300px)));opacity:0}to{transform:none;opacity:1}}

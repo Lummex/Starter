@@ -2033,7 +2033,8 @@ test('AC49: a Crystal card played alone in the Respond window keeps it open and 
   expect(total(s.players.player.crystals) + total(s.players.player.bank)).toBe(0);
 });
 
-test('AC50: Smith Miners never Tunnel; the Tunnel! tag shows from turn 1 (Round 10)', async ({ page }) => {
+// owner check change (Ken, Oct 31): "On the cards with special abilities, like tunnel, you have it over the card, just remove that." -- no Tunnel! tag on any card now
+test('AC50: Smith Miners never Tunnel; no Tunnel! tag is drawn over the cards (Round 10; owner change Oct 31)', async ({ page }) => {
   const hand = { playerHand: ['goblin-smith-miner', 'goblin-scrounger'], playerCrystals: 5 };
   let s = await start(page, { ai: false, setup: { ...hand } });
   const smith = handUid(s, 'player', 'goblin-smith-miner');
@@ -2042,7 +2043,7 @@ test('AC50: Smith Miners never Tunnel; the Tunnel! tag shows from turn 1 (Round 
   expect(summons.some((a) => a.uid === smith && a.row === 7)).toBe(true);
   expect((await act(page, { type: 'summon', uid: smith, row: 3, col: 3 })).ok).toBe(false);
   const hb = page.getByLabel('Your hand', { exact: true });
-  await expect(hb.getByRole('button', { name: 'Goblin Miner', exact: true })).toContainText('Tunnel!');
+  await expect(hb.getByRole('button', { name: 'Goblin Miner', exact: true })).not.toContainText('Tunnel!');
   await expect(hb.getByRole('button', { name: 'Scrapsmith Miner', exact: true })).not.toContainText('Tunnel!');
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 3, col: 3 })).ok).toBe(true);
 });
@@ -6493,7 +6494,8 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       const hh = await handHover(page);
       expect(hh.raisedIndex).toBe(2);
       expect(hh.popScale).toBeCloseTo(1.6, 2);
-      expect(hh.popMs).toBeGreaterThanOrEqual(400); expect(hh.popMs).toBeLessThanOrEqual(500);
+      // owner check change (Ken, Oct 31): "It looks jerky, and blurry. Play with the speed some" -- the rise is now a short ease (was 400-500 ms)
+      expect(hh.popMs).toBeGreaterThanOrEqual(120); expect(hh.popMs).toBeLessThanOrEqual(220);
       const l = await cards.nth(1).boundingBox(), r = await cards.nth(3).boundingBox();
       expect(l.x).toBeLessThan(rest[1].x - 2);
       expect(r.x).toBeGreaterThan(rest[3].x + 2);
@@ -7375,7 +7377,8 @@ test('AC253: several Crystal cards in one turn, in Deploy and Action, never endi
 test('AC254: Tunnel from turn 1 — drag-and-drop next to a mine works and the AI uses the same rule', async ({ page }) => {
   let s = await start(page, quiet({ playerHand: ['goblin-scrounger'], playerCrystals: 5 }));
   await page.waitForTimeout(1000);
-  await expect(page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Goblin Miner', exact: true })).toContainText('Tunnel!');
+  // owner check change (Ken, Oct 31): "Remove all those special ability ... overlays" -- the card shows no Tunnel! tag any more
+  await expect(page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Goblin Miner', exact: true })).not.toContainText('Tunnel!');
   const card = await page.getByLabel('Your hand', { exact: true }).getByRole('button').first().boundingBox();
   const t = await sq2s(page, 5, 5); // next to M2 (4,4) and M3 (4,6)
   await page.mouse.move(card.x + card.width / 2, card.y + card.height * 0.08);
@@ -11108,6 +11111,48 @@ test('AC424: the computer opponent thinks in a Web Worker in a live match: the w
   expect((await getState(page)).activePlayer).toBe('player');
 });
 
+// ---------- Ken (Oct 31 playtest): hand double-click, discard pile, drag icons, no ability overlays, smooth hand (AC440-AC449) ----------
+// Ken (Oct 31): "when I double click a card in my hand, it doesn't automatically play the card". A person's double-click is
+// often ~300 ms apart (the old 250 ms window missed it); two clicks / taps 300 ms apart must play the card.
+const hk31 = (extra) => ({ ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [], ...extra } });
+async function hk31Play(page, W, H, touch) {
+  const s = await start(page, hk31({ playerHand: ['goblin-scrounger', 'goblin-scrapper', 'fireball'], playerCrystals: 3 }));
+  await page.waitForTimeout(600);
+  const card = page.getByLabel('Your hand', { exact: true }).locator('button:has([data-card-id="goblin-scrounger"])').first();
+  const b = await card.boundingBox();
+  const p = { x: b.x + b.width * 0.3, y: Math.min(b.y + 20, H - 5) };
+  if (!touch) { await page.mouse.move(p.x, p.y); await page.waitForTimeout(500); }
+  // the page's clock is held still and moved exactly 300 ms between the two presses, so a slow machine can't stretch or squeeze the gap
+  await page.clock.install();
+  await page.clock.pauseAt(Date.now() + 1000);
+  if (touch) { await page.touchscreen.tap(p.x, p.y); await page.clock.runFor(300); await page.touchscreen.tap(p.x, p.y); }
+  else { await page.mouse.click(p.x, p.y); await page.clock.runFor(300); await page.mouse.click(p.x, p.y); }
+  await page.clock.runFor(600);
+  await page.clock.resume();
+  await page.waitForTimeout(300);
+  expect(await page.getByRole('dialog').count(), 'no card view opened: the double-click plays the card').toBe(0);
+  let hl = [];
+  await expect.poll(async () => { hl = ((await arenaInfo(page)).highlights || []).filter((x) => x.kind === 'summon' || x.kind === 'move'); return hl.length; }).toBeGreaterThan(0);
+  // tap a lit square that sits clear of the hand
+  let target = null;
+  for (const q of hl) { const c = await sqCenter(page, q.row, q.col); if (c.y < H * 0.7 && c.x > W * 0.15 && c.x < W * 0.85 && !at(s, q.row, q.col)) { target = { ...q, ...c }; break; } }
+  expect(target, 'a lit square on screen').toBeTruthy();
+  if (touch) await page.touchscreen.tap(target.x, target.y); else await page.mouse.click(target.x, target.y);
+  await expect.poll(async () => ((at(await getState(page), target.row, target.col)) || {}).cardId).toBe('goblin-scrounger');
+}
+test.describe('Oct 31 Ken hand double-click 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC440: a mouse double-click (clicks 300 ms apart) on a hand creature lights its squares; a click on one deploys it (1920x1080)', async ({ page }) => {
+    await hk31Play(page, 1920, 1080, false);
+  });
+});
+test.describe('Oct 31 Ken hand double-tap 844x390', () => {
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
+  test('AC441: a double tap (taps 300 ms apart) on a hand creature lights its squares; a tap on one deploys it (844x390 touch)', async ({ page }) => {
+    await hk31Play(page, 844, 390, true);
+  });
+});
+
 // Oct 31 (Anvil). Ken: "it goes through like spurts of lag. Especially like when you mine or make a lot of movements." Cause: fitHand (window size)
 // and renderHand (cards) shared one cache key, so EVERY action threw the whole hand away and rebuilt it (60 ms of the 80 ms a mine action cost).
 test('AC425: a mine action or a move no longer rebuilds the hand: the same card elements stay, and the action returns quickly', async ({ page }) => {
@@ -11273,3 +11318,186 @@ test('AC464: Fight! and the other silver buttons on Choose Your Commander hold t
     expect(await unframed(page, ['Fight!']), `${W}x${H} Fight! keeps the silver art`).toEqual([]);
   }
 });
+// Ken (Oct 31): "when you go to shuffle through them, there's like a card in the background ... two cards shifted offset. And when you
+// slide through the cards, it doesn't feel smooth ... It looks jerky, and blurry. Play with the speed some, the spacing is fine".
+// The second card was the raised card's helper copy (.popclone) sliding in behind it from the old spot. With real motion on (test
+// mode's no-animation switch removed), every frame while the pointer slides across the hand must show ONE card per hand card: the
+// helper copy sits exactly on its card and only paints the strip the card leaves out; every hand motion is a 120-220 ms ease.
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`Oct 31 Ken smooth hand ${W}x${H}`, () => {
+    test.use({ viewport: { width: W, height: H } });
+    test(`AC442: sliding across the hand shows one card per hand card in every frame (no offset second card), eased 120-220 ms (${W}x${H})`, async ({ page }) => {
+      await start(page, hk31({ playerHand: ['goblin-scrounger', 'goblin-scrapper', 'fireball', 'goblin-grunt', 'shiv-rat', 'soul-shard', 'goblin-pebbler'], playerCrystals: 3 }));
+      await page.evaluate(() => { document.body.classList.remove('test'); window.__app.test = false; });
+      await page.waitForTimeout(1200);
+      const cards = page.getByLabel('Your hand', { exact: true }).locator('.hand-card:not(.popclone)');
+      const n = await cards.count();
+      expect(n).toBe(7);
+      const boxes = []; for (let i = 0; i < n; i++) boxes.push(await cards.nth(i).boundingBox());
+      await page.evaluate(() => {
+        window.__ac442 = { frames: 0, bad: [], durs: new Set() }; const t0 = performance.now();
+        const f = () => {
+          const S = window.__ac442, hand = document.querySelector('.hand');
+          const real = [...hand.querySelectorAll('.hand-card:not(.popclone)')], clones = [...hand.querySelectorAll('.hand-card.popclone')];
+          const pops = real.filter((e) => e.classList.contains('popped'));
+          S.frames++;
+          if (clones.length > pops.length) S.bad.push(`${Math.round(performance.now() - t0)} ms: ${clones.length} helper copies for ${pops.length} raised cards`);
+          for (const c of clones) {
+            const p = pops[0], a = c.getBoundingClientRect(), b = p && p.getBoundingClientRect();
+            const off = b ? Math.max(Math.abs(a.left - b.left), Math.abs(a.top - b.top), Math.abs(a.width - b.width)) : 999;
+            if (off > 1.5) S.bad.push(`${Math.round(performance.now() - t0)} ms: helper copy ${Math.round(off)} px off its card`);
+            if (getComputedStyle(c).clipPath === 'none') S.bad.push('helper copy paints the whole card');
+          }
+          for (const e of real) for (const d of getComputedStyle(e).transitionDuration.split(',')) S.durs.add(parseFloat(d) * (/ms/.test(d) ? 1 : 1000));
+          if (performance.now() - t0 < 3500) requestAnimationFrame(f);
+        };
+        requestAnimationFrame(f);
+      });
+      const y = H - 6;
+      await page.mouse.move(boxes[1].x + 8, y, { steps: 3 });
+      await page.waitForTimeout(700);
+      for (let i = 2; i < 6; i++) { await page.mouse.move(boxes[i].x + 8, y, { steps: 5 }); await page.waitForTimeout(260); }
+      await page.waitForTimeout(400);
+      const r = await page.evaluate(() => ({ frames: window.__ac442.frames, bad: window.__ac442.bad.slice(0, 6), durs: [...window.__ac442.durs] }));
+      expect(r.frames, 'frames sampled').toBeGreaterThan(5);
+      expect(r.bad, 'one card per hand card in every frame').toEqual([]);
+      const moving = r.durs.filter((d) => d > 0);
+      expect(moving.length, 'the hand cards move with a transition').toBeGreaterThan(0);
+      for (const d of moving) { expect(d, 'hand motion duration (ms)').toBeGreaterThanOrEqual(120); expect(d).toBeLessThanOrEqual(220); }
+      expect((await handHover(page)).popMs).toBeGreaterThanOrEqual(120);
+      expect((await handHover(page)).popMs).toBeLessThanOrEqual(220);
+    });
+  });
+}
+
+// Ken (Oct 31): "On the cards with special abilities, like tunnel, you have it over the card, just remove that. Remove all those special
+// ability ... overlays. On the cards." No tag or badge is layered over a card face anywhere (hand, close-up, Deck Builder); the card's own
+// face (.ohcard, which carries the printed text) stays. Only the play glow may sit with it.
+const strayOverlays = (loc) => loc.evaluateAll((cards) => {
+  const out = [];
+  for (const card of cards) for (const k of card.children) {
+    if (k.classList.contains('ohcard') || k.hasAttribute('data-card-glow') || k.classList.contains('drag-id') || k.classList.contains('pop-hit')) continue;
+    const cs = getComputedStyle(k), r = k.getBoundingClientRect();
+    if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0 || r.width < 1 || r.height < 1) continue;
+    out.push(`${card.getAttribute('aria-label') || card.dataset.cardId || '?'}: ${k.className || k.tagName} "${(k.textContent || '').trim().slice(0, 20)}"`);
+  }
+  return out;
+});
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test.describe(`Oct 31 Ken no ability overlays ${W}x${H}`, () => {
+    test.use({ viewport: { width: W, height: H } });
+    test(`AC443: no ability tag (Tunnel! or any other) is drawn over cards in the hand, the close-up or the Deck Builder (${W}x${H})`, async ({ page }) => {
+      await start(page, hk31({ playerHand: ['goblin-scrounger', 'goblin-smith-miner', 'goblin-scrapper', 'fireball', 'soul-shard'], playerCrystals: 5 }));
+      await page.waitForTimeout(600);
+      const hand = page.getByLabel('Your hand', { exact: true });
+      await expect(hand.locator('.hand-card[data-card-id]')).toHaveCount(5);
+      expect(await strayOverlays(hand.locator('.hand-card')), 'hand').toEqual([]);
+      await expect(page.locator('.tunnel-tag')).toHaveCount(0);
+      await expect(hand.getByRole('button', { name: 'Goblin Miner', exact: true })).not.toContainText('Tunnel!');
+      // the close-up of the Tunnel card
+      await hand.locator('button:has([data-card-id="goblin-scrounger"])').first().click();
+      const view = page.getByRole('dialog').filter({ has: page.locator('[data-card-id="goblin-scrounger"]') });
+      await expect(view).toBeVisible();
+      expect(await strayOverlays(view.locator('.hand-card')), 'close-up').toEqual([]);
+      await expect(view).not.toContainText('Tunnel!');
+      await page.keyboard.press('Escape');
+      // the Deck Builder's card faces
+      await openDecks(page);
+      const tile = allCards(page).getByRole('button', { name: 'Goblin Miner', exact: true });
+      await expect(tile).toBeVisible();
+      expect(await strayOverlays(allCards(page).locator('.hand-card')), 'deck builder').toEqual([]);
+      await expect(page.locator('.tunnel-tag')).toHaveCount(0);
+      await expect(tile).not.toContainText('Tunnel!');
+    });
+  });
+}
+
+// Ken (Oct 31): "The gnomes when you click and drag the unit, it has the gear icon ... The gear icon is for the dwarves, and the eye icon
+// is for the gnomes." The icon that follows a dragged unit is its faction's emblem: dwarves gear, gnomes eye, goblins their goblin king.
+// Mouse at 1920x1080; finger (touch pointer events through the browser's touch input) at 844x390.
+const K31_UNITS = [['goblin-grunt', 'goblins', 'goblin', 6, 4], ['gnome-cogger', 'gnomes', 'eye', 6, 7], ['dwarf-pickman', 'dwarves', 'gear', 6, 10]];
+for (const [W, H, touch] of [[1920, 1080, false], [844, 390, true]]) {
+  test.describe(`Oct 31 Ken drag icons ${W}x${H}`, () => {
+    test.use(touch ? { viewport: { width: W, height: H }, hasTouch: true, isMobile: true } : { viewport: { width: W, height: H } });
+    test(`AC444: dragging a unit shows its own faction emblem: dwarves gear, gnomes eye, goblins goblin (${touch ? 'touch' : 'mouse'} ${W}x${H})`, async ({ page }) => {
+      test.setTimeout(90000);
+      const EMB31 = [];
+      const cdp = touch ? await page.context().newCDPSession(page) : null;
+      const touchAt = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] });
+      for (const [cardId, faction, icon, row, col] of K31_UNITS) {
+        await start(page, hk31({ board: [{ cardId, owner: 'player', row, col }] })); // one unit per match: nothing left over from the last drag
+        await toAction(page);
+        await page.waitForTimeout(800);
+        // press on the unit's body, just above its square (the stat badge with the ability button sits on the square at phone size)
+        const quad = await page.evaluate(([r, c]) => window.oreheart.squareQuad(r, c), [row, col]);
+        const c0 = await sqCenter(page, row, col), topY = Math.min(...quad.map((v) => v.y));
+        const p = { x: c0.x, y: topY - (c0.y - topY) * 0.6 };
+        const q = { x: p.x + 4, y: p.y - (touch ? 24 : 50) }; // a short drag up the board
+        if (touch) { await touchAt('touchStart', p.x, p.y); for (let i = 1; i <= 6; i++) await touchAt('touchMove', p.x + (q.x - p.x) * i / 6, p.y + (q.y - p.y) * i / 6); }
+        else { await page.mouse.move(p.x, p.y); await page.mouse.down(); await page.mouse.move(q.x, q.y, { steps: 6 }); }
+        const g = page.locator('.ghost.tk');
+        await expect(g, `${cardId}: a drag icon follows the ${touch ? 'finger' : 'pointer'}`).toHaveCount(1);
+        await expect(g).toHaveAttribute('data-faction', faction);
+        await expect(g).toHaveAttribute('data-icon', icon);
+        const src = await g.locator('img').getAttribute('src');
+        expect(src, `${cardId}: the emblem picture`).toMatch(/\/art\/card-format\/images\/.+\.webp$/);
+        EMB31.push(src);
+        await expect(g).not.toContainText('⚙');
+        if (touch) await touchAt('touchEnd', q.x, q.y); else await page.mouse.up();
+        await expect(g).toHaveCount(0);
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(500); // two quick touches would count as a double tap
+      }
+      // the three emblems are three different pictures
+      expect(new Set(EMB31).size).toBe(3);
+    });
+  });
+}
+
+// Ken (Oct 31): the enemy discard pile "moved up just a touch. And when I click it ... pop out from the left-hand side. Like it's just sliding
+// out. And it doesn't need a frame around it. Just have the cards pop out." Pile a little higher (was 24 % down); its cards slide out from the
+// left edge at the pile's height with no panel, title or dimming; still scrollable; Escape or a tap outside closes it.
+for (const [W, H, touch] of [[1920, 1080, false], [844, 390, true]]) {
+  test.describe(`Oct 31 Ken discard pile ${W}x${H}`, () => {
+    test.use(touch ? { viewport: { width: W, height: H }, hasTouch: true, isMobile: true } : { viewport: { width: W, height: H } });
+    test(`AC445: the enemy discard pile sits a touch higher; its cards slide out from the left with no frame; Escape / outside closes it (${W}x${H})`, async ({ page }) => {
+      const s = await start(page, { ...hk31({ opponentHand: Array(9).fill('soul-shard') }), firstPlayer: 'opponent' });
+      for (const c of s.players.opponent.hand) expect((await act(page, { type: 'playCrystal', uid: c.uid })).ok).toBe(true);
+      const pile = page.getByRole('button', { name: 'Enemy discard pile', exact: true });
+      await expect(pile).toHaveAttribute('data-count', '9', { timeout: 15000 });
+      const pb = await pile.boundingBox();
+      expect(pb.y / H, 'a touch higher than before (24 %)').toBeLessThan(0.22);
+      expect(pb.y / H).toBeGreaterThan(0.12);
+      expect(pb.x + pb.width / 2).toBeLessThan(W * 0.15);
+      const open = async () => { if (touch) await page.touchscreen.tap(pb.x + pb.width / 2, pb.y + pb.height / 2); else await pile.click(); };
+      await open();
+      const dlg = page.getByRole('dialog', { name: 'Enemy discard pile', exact: true });
+      await expect(dlg).toBeVisible();
+      const cards = dlg.getByRole('list', { name: 'Enemy discard pile cards' }).getByRole('listitem');
+      await expect(cards).toHaveCount(9);
+      const look = await dlg.evaluate((d) => {
+        const ov = d.parentElement, cs = getComputedStyle(d), os = getComputedStyle(ov), h2 = d.querySelector('h2'), hb = h2 && h2.getBoundingClientRect();
+        const card = d.querySelector('[role=listitem]'), ks = getComputedStyle(card);
+        const vis = (pe) => { const c = getComputedStyle(d, pe).content; return c && c !== 'none' && c !== 'normal'; };
+        return { ovBg: os.backgroundImage === 'none' && /rgba\(0, 0, 0, 0\)|transparent/.test(os.backgroundColor), frame: cs.borderImageSource !== 'none' || parseFloat(cs.borderTopWidth) > 0 || cs.boxShadow !== 'none' || cs.backgroundImage !== 'none' || !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor) || vis('::before') || vis('::after'),
+          title: hb ? hb.width > 2 && hb.height > 2 : false, anim: ks.animationName, dur: parseFloat(ks.animationDuration) * 1000 };
+      });
+      expect(look.ovBg, 'no dimming behind the cards').toBe(true);
+      expect(look.frame, 'no frame or panel around the cards').toBe(false);
+      expect(look.title, 'no visible title').toBe(false);
+      expect(look.anim, 'the cards slide out').toBe('eDiscardSlide');
+      expect(look.dur).toBeGreaterThanOrEqual(150); expect(look.dur).toBeLessThanOrEqual(500);
+      const first = await cards.first().boundingBox();
+      expect(first.x, 'they come out at the left edge').toBeLessThan(W * 0.06);
+      expect(Math.abs(first.y - pb.y), 'at the pile\'s height').toBeLessThan(H * 0.08);
+      const ox = await dlg.getByRole('list', { name: 'Enemy discard pile cards' }).evaluate((e) => getComputedStyle(e).overflowX);
+      expect(['auto', 'scroll']).toContain(ox);
+      await page.keyboard.press('Escape');
+      await expect(dlg).toBeHidden();
+      await open();
+      await expect(dlg).toBeVisible();
+      if (touch) await page.touchscreen.tap(W * 0.6, H * 0.75); else await page.mouse.click(W * 0.6, H * 0.75);
+      await expect(dlg).toBeHidden();
+    });
+  });
+}
