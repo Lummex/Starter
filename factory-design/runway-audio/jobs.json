@@ -1,0 +1,135 @@
+{
+ "voices": {
+  "Grungle": {
+   "preset": "Grungle"
+  },
+  "Monster": {
+   "preset": "Monster"
+  },
+  "Pip": {
+   "preset": "Pip"
+  },
+  "Xylar": {
+   "preset": "Xylar"
+  },
+  "Ragnar": {
+   "preset": "Ragnar"
+  },
+  "Rusty": {
+   "preset": "Rusty"
+  },
+  "Brodie": {
+   "preset": "Brodie"
+  },
+  "Clint": {
+   "preset": "Clint"
+  },
+  "Bernard": {
+   "preset": "Bernard"
+  },
+  "Malachi": {
+   "preset": "Malachi"
+  },
+  "Mabel": {
+   "preset": "Mabel"
+  },
+  "Myrna": {
+   "preset": "Myrna"
+  },
+  "Kirk": {
+   "preset": "Kirk"
+  },
+  "Billy": {
+   "preset": "Billy"
+  },
+  "Wanda": {
+   "preset": "Wanda"
+  },
+  "Elliot": {
+   "preset": "Elliot"
+  }
+ },
+ "lines": [
+  {
+   "id": "cand-grungle",
+   "voice": "Grungle",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-monster",
+   "voice": "Monster",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-pip",
+   "voice": "Pip",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-xylar",
+   "voice": "Xylar",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-ragnar",
+   "voice": "Ragnar",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-rusty",
+   "voice": "Rusty",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-brodie",
+   "voice": "Brodie",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-clint",
+   "voice": "Clint",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-bernard",
+   "voice": "Bernard",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-malachi",
+   "voice": "Malachi",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-mabel",
+   "voice": "Mabel",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-myrna",
+   "voice": "Myrna",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-kirk",
+   "voice": "Kirk",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-billy",
+   "voice": "Billy",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-wanda",
+   "voice": "Wanda",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  },
+  {
+   "id": "cand-elliot",
+   "voice": "Elliot",
+   "text": "Hey! Watch it, I'm busy! Hahaha. Ow!"
+  }
+ ],
+ "sfx": []
+}
