@@ -35,8 +35,8 @@ export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-
 for (const id of SPELL_SOUNDS) SFX['spell:' + id] = D('spell-' + id, 1, 0);
 const OLD_SPELL: Record<string, string> = { fireball: 'fireball', 'meteor-strike': 'meteor', 'healing-light': 'heal', 'second-wind': 'heal', 'shield-bubble': 'bubble' };
 const MAX_VOICES = 3;
-/** Arena (named by its faction) -> its match music (file name in /audio/music/ without .mp3). Ken, Oct 31: goblin = First Fight, gnome = Gnome Spellcaster, dwarf = Dwarf Arena Music. */
-export const ARENA_MUSIC: Record<string, { match: string }> = { goblins: { match: 'first-fight' }, gnomes: { match: 'gnome-spellcaster' }, dwarves: { match: 'dwarf-arena' } };
+/** Arena (named by its faction) -> its match music (file name in /audio/music/ without .mp3). Ken, Oct 31: goblin = Goblin Arena Music (First Fight and Tense Cycle no longer play in matches; Tense Cycle stays the menu music), gnome = Gnome Spellcaster, dwarf = Dwarf Arena Music. */
+export const ARENA_MUSIC: Record<string, { match: string }> = { goblins: { match: 'goblin-arena' }, gnomes: { match: 'gnome-spellcaster' }, dwarves: { match: 'dwarf-arena' } };
 /** Ken, Oct 31: "It could be a 50-50. Either use the players or the opponents. Just choose it randomly between the 2 fighting factions." Same faction on both sides = that faction's arena.
  *  `roll` is 0..1: below 0.5 the player's faction, otherwise the opponent's. (The dwarf and gnome arenas are not built yet: the board stays Skullfang, the picked faction's music plays.) */
 export const pickArena = (playerFaction: string, opponentFaction: string, roll: number) => (playerFaction === opponentFaction ? playerFaction : roll < 0.5 ? playerFaction : opponentFaction);
