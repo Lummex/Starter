@@ -1,0 +1,538 @@
+{
+ "version": 1,
+ "pack": "biped-pack-v1",
+ "bodyType": "biped",
+ "fps": 30,
+ "glb": "biped-pack-v1.glb",
+ "skeleton": [
+  "LeftToeBase",
+  "LeftFoot",
+  "LeftLeg",
+  "LeftUpLeg",
+  "RightToeBase",
+  "RightFoot",
+  "RightLeg",
+  "RightUpLeg",
+  "LeftHand",
+  "LeftForeArm",
+  "LeftArm",
+  "LeftShoulder",
+  "head_end",
+  "headfront",
+  "Head",
+  "neck",
+  "RightHand",
+  "RightForeArm",
+  "RightArm",
+  "RightShoulder",
+  "Spine",
+  "Spine01",
+  "Spine02",
+  "Hips"
+ ],
+ "baseRig": "goblin-grunt (Meshy 24-bone), rest pose in the GLB nodes",
+ "packLegLength": 0.42603,
+ "retarget": {
+  "method": "align",
+  "howto": "per bone b, parents first: D = Wpack_now(b) * inv(Wpack_rest(b)); C(b) = shortest rotation turning the unit rest direction (b -> child joint, world) onto the pack rest direction; bones without a child (hands, toes, head_end, headfront) use the parent C; Hips uses identity. Wunit_now(b) = D * C(b) * Wunit_rest(b); local = inv(Wunit_now(parent)) * Wunit_now(b). Hips position = unit rest + (pack hips world offset from rest) * legRatio, in the hips parent space. legRatio = unit leg / packLegLength (LeftUpLeg->LeftLeg->LeftFoot->LeftToeBase joint distances, world). Reference: ohrt-retarget-reference.py (numpy, glTF nodes).",
+  "child": {
+   "Hips": "Spine02",
+   "Spine02": "Spine01",
+   "Spine01": "Spine",
+   "Spine": "neck",
+   "neck": "Head",
+   "Head": "head_end",
+   "LeftShoulder": "LeftArm",
+   "LeftArm": "LeftForeArm",
+   "LeftForeArm": "LeftHand",
+   "RightShoulder": "RightArm",
+   "RightArm": "RightForeArm",
+   "RightForeArm": "RightHand",
+   "LeftUpLeg": "LeftLeg",
+   "LeftLeg": "LeftFoot",
+   "LeftFoot": "LeftToeBase",
+   "RightUpLeg": "RightLeg",
+   "RightLeg": "RightFoot",
+   "RightFoot": "RightToeBase"
+  }
+ },
+ "notes": [
+  "Clips are in place; game moves the unit. walk/run: move at rootSpeed * legRatio (m/s).",
+  "knockback/bowled: move the unit between events launch and land; they end back in base pose.",
+  "defeat clips end lying (up to ~0.4 m off the tile on the pack rig). On the tall golem the lying body floats 4-11% of its height: optional per-unit ground snap for defeat.",
+  "Some units have uneven leg lengths (golem left ankle sits higher in its own Meshy idle), so a foot can hover 2-8% of height during walk/run on those units; optional foot IK later.",
+  "Right hand is the weapon hand; props ride the RightHand bone."
+ ],
+ "clips": [
+  {
+   "name": "biped-idle-01",
+   "kind": "idle",
+   "slot": "idle",
+   "loop": true,
+   "frames": 150,
+   "duration": 5.0,
+   "events": [],
+   "desc": "Proud: chest out, chin up, slow deep breaths"
+  },
+  {
+   "name": "biped-idle-02",
+   "kind": "idle",
+   "slot": "idle",
+   "loop": true,
+   "frames": 96,
+   "duration": 3.2,
+   "events": [],
+   "desc": "Shifty: hunched, head darts left and right"
+  },
+  {
+   "name": "biped-idle-03",
+   "kind": "idle",
+   "slot": "idle",
+   "loop": true,
+   "frames": 180,
+   "duration": 6.0,
+   "events": [],
+   "desc": "Bored slump with a big sigh"
+  },
+  {
+   "name": "biped-idle-04",
+   "kind": "idle",
+   "slot": "idle",
+   "loop": true,
+   "frames": 84,
+   "duration": 2.8,
+   "events": [],
+   "desc": "Twitchy: sharp head and shoulder tics"
+  },
+  {
+   "name": "biped-idle-05",
+   "kind": "idle",
+   "slot": "idle",
+   "loop": true,
+   "frames": 75,
+   "duration": 2.5,
+   "events": [],
+   "desc": "Boxer: fists up, bouncing on the toes"
+  },
+  {
+   "name": "biped-idle-06",
+   "kind": "idle",
+   "slot": "idle",
+   "loop": true,
+   "frames": 165,
+   "duration": 5.5,
+   "events": [],
+   "desc": "Puzzled head-scratcher"
+  },
+  {
+   "name": "biped-idle-07",
+   "kind": "idle",
+   "slot": "idle",
+   "loop": true,
+   "frames": 135,
+   "duration": 4.5,
+   "events": [],
+   "desc": "Sleepy stretcher: leans back, shoulder roll"
+  },
+  {
+   "name": "biped-idle-08",
+   "kind": "idle",
+   "slot": "idle",
+   "loop": true,
+   "frames": 114,
+   "duration": 3.8,
+   "events": [],
+   "desc": "Fidgety: shifts weight foot to foot"
+  },
+  {
+   "name": "biped-idle-09",
+   "kind": "idle",
+   "slot": "idle",
+   "loop": true,
+   "frames": 126,
+   "duration": 4.2,
+   "events": [],
+   "desc": "Grumpy: arms folded, finger tapping, head shake"
+  },
+  {
+   "name": "biped-idle-10",
+   "kind": "idle",
+   "slot": "idle",
+   "loop": true,
+   "frames": 105,
+   "duration": 3.5,
+   "events": [],
+   "desc": "Cocky: smug head toss and shoulder roll"
+  },
+  {
+   "name": "biped-idleBreak-01",
+   "kind": "idleBreak",
+   "slot": "idleBreak",
+   "loop": false,
+   "frames": 84,
+   "duration": 2.8,
+   "events": [],
+   "desc": "Big yawn and stretch"
+  },
+  {
+   "name": "biped-idleBreak-02",
+   "kind": "idleBreak",
+   "slot": "idleBreak",
+   "loop": false,
+   "frames": 78,
+   "duration": 2.6,
+   "events": [],
+   "desc": "Suspicious look-around and shrug"
+  },
+  {
+   "name": "biped-idleBreak-03",
+   "kind": "idleBreak",
+   "slot": "idleBreak",
+   "loop": false,
+   "frames": 72,
+   "duration": 2.4,
+   "events": [],
+   "desc": "Knuckle crack, arms out"
+  },
+  {
+   "name": "biped-idleBreak-04",
+   "kind": "idleBreak",
+   "slot": "idleBreak",
+   "loop": false,
+   "frames": 54,
+   "duration": 1.8,
+   "events": [],
+   "desc": "Sniff and wipe nose"
+  },
+  {
+   "name": "biped-walk-01",
+   "kind": "walk",
+   "slot": "walk",
+   "loop": true,
+   "frames": 32,
+   "duration": 1.0667,
+   "events": [],
+   "desc": "Determined march",
+   "rootSpeed": 0.318
+  },
+  {
+   "name": "biped-walk-02",
+   "kind": "walk",
+   "slot": "walk",
+   "loop": true,
+   "frames": 40,
+   "duration": 1.3333,
+   "events": [],
+   "desc": "Comic waddle / swagger",
+   "rootSpeed": 0.182
+  },
+  {
+   "name": "biped-run-01",
+   "kind": "run",
+   "slot": "run",
+   "loop": true,
+   "frames": 42,
+   "duration": 1.4,
+   "events": [],
+   "desc": "Eager charge run",
+   "rootSpeed": 0.571
+  },
+  {
+   "name": "biped-run-02",
+   "kind": "run",
+   "slot": "run",
+   "loop": true,
+   "frames": 28,
+   "duration": 0.9333,
+   "events": [],
+   "desc": "Panicky scurry, arms flailing",
+   "rootSpeed": 0.514
+  },
+  {
+   "name": "biped-cheer-01",
+   "kind": "cheer",
+   "slot": "cheer",
+   "loop": false,
+   "frames": 56,
+   "duration": 1.8667,
+   "events": [
+    {
+     "name": "peak",
+     "frame": 16,
+     "time": 0.5333
+    }
+   ],
+   "desc": "Victory fist pump with a hop"
+  },
+  {
+   "name": "biped-cheer-02",
+   "kind": "cheer",
+   "slot": "cheer",
+   "loop": false,
+   "frames": 62,
+   "duration": 2.0667,
+   "events": [
+    {
+     "name": "peak",
+     "frame": 16,
+     "time": 0.5333
+    }
+   ],
+   "desc": "Happy arms-up wiggle dance"
+  },
+  {
+   "name": "biped-lifted-01",
+   "kind": "lifted",
+   "slot": "lift",
+   "loop": true,
+   "frames": 54,
+   "duration": 1.8,
+   "events": [],
+   "desc": "Dangling: legs paddling, sheepish"
+  },
+  {
+   "name": "biped-attack-01",
+   "kind": "attack",
+   "slot": "attack",
+   "loop": false,
+   "frames": 38,
+   "duration": 1.2667,
+   "events": [
+    {
+     "name": "windup",
+     "frame": 2,
+     "time": 0.0667
+    },
+    {
+     "name": "hit",
+     "frame": 18,
+     "time": 0.6
+    }
+   ],
+   "desc": "Big overhead smack",
+   "impact": 0.6
+  },
+  {
+   "name": "biped-attack-02",
+   "kind": "attack",
+   "slot": "attack",
+   "loop": false,
+   "frames": 36,
+   "duration": 1.2,
+   "events": [
+    {
+     "name": "windup",
+     "frame": 2,
+     "time": 0.0667
+    },
+    {
+     "name": "hit",
+     "frame": 18,
+     "time": 0.6
+    }
+   ],
+   "desc": "Sideways backhand swat with spin",
+   "impact": 0.6
+  },
+  {
+   "name": "biped-attack-03",
+   "kind": "attack",
+   "slot": "attack",
+   "loop": false,
+   "frames": 32,
+   "duration": 1.0667,
+   "events": [
+    {
+     "name": "windup",
+     "frame": 1,
+     "time": 0.0333
+    },
+    {
+     "name": "hit",
+     "frame": 9,
+     "time": 0.3
+    },
+    {
+     "name": "hit2",
+     "frame": 14,
+     "time": 0.4667
+    }
+   ],
+   "desc": "Quick double bonk",
+   "impact": 0.3
+  },
+  {
+   "name": "biped-attack-04",
+   "kind": "attack",
+   "slot": "attack",
+   "loop": false,
+   "frames": 42,
+   "duration": 1.4,
+   "events": [
+    {
+     "name": "windup",
+     "frame": 2,
+     "time": 0.0667
+    },
+    {
+     "name": "hit",
+     "frame": 17,
+     "time": 0.5667
+    }
+   ],
+   "desc": "Uppercut / golf-swing scoop with a hop",
+   "impact": 0.5667
+  },
+  {
+   "name": "biped-throw-01",
+   "kind": "ranged",
+   "slot": "ranged",
+   "loop": false,
+   "frames": 38,
+   "duration": 1.2667,
+   "events": [
+    {
+     "name": "windup",
+     "frame": 2,
+     "time": 0.0667
+    },
+    {
+     "name": "projectile_release",
+     "frame": 19,
+     "time": 0.6333,
+     "bone": "RightHand"
+    }
+   ],
+   "desc": "Overhand throw",
+   "impact": 0.6333
+  },
+  {
+   "name": "biped-bonk-01",
+   "kind": "hit",
+   "slot": "bonk",
+   "loop": false,
+   "frames": 38,
+   "duration": 1.2667,
+   "events": [
+    {
+     "name": "impact",
+     "frame": 2,
+     "time": 0.0667
+    }
+   ],
+   "desc": "Hit on the head: dizzy head circles"
+  },
+  {
+   "name": "biped-bonk-02",
+   "kind": "hit",
+   "slot": "bonk",
+   "loop": false,
+   "frames": 36,
+   "duration": 1.2,
+   "events": [
+    {
+     "name": "impact",
+     "frame": 2,
+     "time": 0.0667
+    }
+   ],
+   "desc": "Hit in the belly: doubles over, oof"
+  },
+  {
+   "name": "biped-knockback-01",
+   "kind": "knockback",
+   "slot": "knockback",
+   "loop": false,
+   "frames": 86,
+   "duration": 2.8667,
+   "events": [
+    {
+     "name": "launch",
+     "frame": 6,
+     "time": 0.2
+    },
+    {
+     "name": "land",
+     "frame": 28,
+     "time": 0.9333
+    },
+    {
+     "name": "recovered",
+     "frame": 58,
+     "time": 1.9333
+    }
+   ],
+   "desc": "Launched backwards, flips, lands sitting, scrambles up"
+  },
+  {
+   "name": "biped-bowled-01",
+   "kind": "bowled",
+   "slot": "bowled",
+   "loop": false,
+   "frames": 68,
+   "duration": 2.2667,
+   "events": [
+    {
+     "name": "launch",
+     "frame": 4,
+     "time": 0.1333
+    },
+    {
+     "name": "land",
+     "frame": 24,
+     "time": 0.8
+    },
+    {
+     "name": "recovered",
+     "frame": 40,
+     "time": 1.3333
+    }
+   ],
+   "desc": "Bowled over like a pin, spins, pops back up dizzy"
+  },
+  {
+   "name": "biped-death-01",
+   "kind": "defeat",
+   "slot": "death",
+   "loop": false,
+   "frames": 72,
+   "duration": 2.4,
+   "events": [
+    {
+     "name": "ground",
+     "frame": 50,
+     "time": 1.6667
+    },
+    {
+     "name": "poof",
+     "frame": 53,
+     "time": 1.7667
+    }
+   ],
+   "desc": "Dramatic swoon: hand to forehead, topples back",
+   "endsLying": true
+  },
+  {
+   "name": "biped-death-02",
+   "kind": "defeat",
+   "slot": "death",
+   "loop": false,
+   "frames": 62,
+   "duration": 2.0667,
+   "events": [
+    {
+     "name": "ground",
+     "frame": 41,
+     "time": 1.3667
+    },
+    {
+     "name": "poof",
+     "frame": 44,
+     "time": 1.4667
+    }
+   ],
+   "desc": "Comic faint: knees buckle, plops face-down",
+   "endsLying": true
+  }
+ ]
+}

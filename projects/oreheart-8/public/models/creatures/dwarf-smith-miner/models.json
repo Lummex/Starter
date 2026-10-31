@@ -1,0 +1,26 @@
+{
+ "generated": "2026-10-30T05:30:00.000Z",
+ "from": "Model Editor approved sheet (factory-design/design/models/anvilsworn-miner-rig-oct28.glb, meshopt-packed copy round27-shrunk/anvilsworn-miner-rig-oct28-packed.glb)",
+ "actions": {
+  "idle": 0,
+  "walk": 1,
+  "attack": 2,
+  "hit": 3,
+  "defeat": 4,
+  "mine": 5
+ },
+ "rigged": true,
+ "parts": [],
+ "notes": "Anvilsworn Miner, character only for now (accessories Pickaxe + Hammer come later). Ken OK Oct 30: add to the game.",
+ "fileSizes": {
+  "char.glb": 1838332
+ },
+ "clips": {
+  "idle": "Idle",
+  "walk": "Casual_Walk",
+  "attack": "Heavy_Hammer_Swing",
+  "hit": "Hit_Reaction",
+  "defeat": "Dead",
+  "mine": "Charged_Axe_Chop"
+ }
+}

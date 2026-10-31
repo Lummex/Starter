@@ -1,0 +1,53 @@
+{
+ "what": "Stat badge shown under every unit on the board (owner design, Oct 24). Pictures cut from owner-reference.png (binding).",
+ "metalByFaction": {
+  "dwarves": "gold",
+  "gnomes": "silver",
+  "goblins": "rust"
+ },
+ "frame": {
+  "file": "frame-<metal>.webp",
+  "note": "Already contains the heart (Health), the left blue circle with a sword (Attack), the right green circle with a boot (Movement) and a center circle with a pickaxe. Do not use the separate sword/boot icons for these; they are in the frame."
+ },
+ "unitTypeIcon": {
+  "file": "icon-<type>-<metal>.webp",
+  "placeAt": {
+   "xPct": 49.8,
+   "yPct": 72.5,
+   "diameterPctOfFrameWidth": 29.5
+  },
+  "note": "Laid exactly over the frame's center circle so the unit type can change.",
+  "typeByRole": {
+   "Fighter": "sword",
+   "Gatherer": "pickaxe",
+   "Smith": "pickaxe",
+   "Ranged": "bow"
+  },
+  "shield": "spare icon for units whose card says Guard/Shield/defender (owner may assign later)"
+ },
+ "numbers": {
+  "style": "bold white numerals with a thick black outline (about 12% of the digit height) and a soft dark drop shadow, like owner-reference.png top row; font: Russo One (bundled)",
+  "health": {
+   "xPct": 49.5,
+   "yPct": 34.7,
+   "heightPctOfFrameHeight": 18
+  },
+  "attack": {
+   "xPct": 25.5,
+   "yPct": 79.8,
+   "heightPctOfFrameHeight": 15,
+   "anchor": "center"
+  },
+  "movement": {
+   "xPct": 89.1,
+   "yPct": 80.5,
+   "heightPctOfFrameHeight": 15,
+   "anchor": "center"
+  },
+  "note": "Positions are the number's center, in percent of the frame picture's width/height. Numbers are live text so they change with damage, buffs, etc."
+ },
+ "frameSizePx": {
+  "width": 412,
+  "height": 262
+ }
+}

@@ -1,0 +1,110 @@
+{
+ "asset_id": "goblin-bomber",
+ "fps": 30,
+ "clips": {
+  "OH_Idle": {
+   "frames": 72,
+   "duration": 2.4,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Walk": {
+   "frames": 32,
+   "duration": 1.0667,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Attack": {
+   "frames": 36,
+   "duration": 1.2,
+   "loop": false,
+   "events": [
+    {
+     "frame": 22,
+     "name": "hit",
+     "bone": "RightHand",
+     "time": 0.7333
+    }
+   ],
+   "attachments": []
+  },
+  "OH_Death": {
+   "frames": 60,
+   "duration": 2.0,
+   "loop": false,
+   "events": [
+    {
+     "frame": 28,
+     "name": "shockwave",
+     "bone": "RightHand",
+     "time": 0.9333
+    }
+   ],
+   "attachments": []
+  },
+  "OH_Hit": {
+   "frames": 24,
+   "duration": 0.8,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  },
+  "OH_React_Knockback": {
+   "frames": 36,
+   "duration": 1.2,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  },
+  "OH_React_Bonk": {
+   "frames": 36,
+   "duration": 1.2,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  },
+  "OH_React_Bowled": {
+   "frames": 90,
+   "duration": 3.0,
+   "loop": false,
+   "events": [
+    {
+     "frame": 16,
+     "name": "down",
+     "bone": "Hips",
+     "time": 0.5333
+    },
+    {
+     "frame": 72,
+     "name": "up",
+     "bone": "Hips",
+     "time": 2.4
+    }
+   ],
+   "attachments": []
+  },
+  "OH_React_Backstab": {
+   "frames": 60,
+   "duration": 2.0,
+   "loop": false,
+   "events": [
+    {
+     "frame": 3,
+     "name": "hit",
+     "bone": "Spine",
+     "time": 0.1
+    }
+   ],
+   "attachments": []
+  },
+  "OH_React_Lifted": {
+   "frames": 48,
+   "duration": 1.6,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  }
+ }
+}

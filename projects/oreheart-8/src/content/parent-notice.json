@@ -1,0 +1,18 @@
+{
+  "version": "2026-10-28-draft",
+  "title": "Notice for parents and guardians",
+  "sections": [
+    { "heading": "What this is", "text": "{username} would like an Oreheart account. Oreheart is a card battle game. An account lets {username} save decks and, later, play with other players online. Because {username} is under 13, we need your yes before the account can be used online." },
+    { "heading": "What we keep", "text": "We keep the username, your email address (the parent or guardian's), the decks and game progress of the account, and a record of your approval. That is all." },
+    { "heading": "What we do not collect", "text": "We do not ask for a birth date, a photo, a real name, a phone number or a home address. There is no chat and no free text between players." },
+    { "heading": "Who sees what", "text": "Nothing about the account is shared with other people or companies. Other players can only see the username during a game." },
+    { "heading": "Withdrawing approval", "text": "You can withdraw your approval at any time with the link in the confirmation email we send you after you approve. The account then stops working online." },
+    { "heading": "Deleting the account", "text": "To have the account and its data deleted, use the Contact us form: {contact_url}" },
+    { "heading": "Questions", "text": "Please use the Contact us form at {contact_url}. We answer from a no-reply address, so please leave a reply email in the form if you would like an answer." }
+  ],
+  "lawyer_review": [
+    "Check the wording against COPPA (USA) and the local children's privacy rules where the game launches.",
+    "Confirm that email plus a confirmation email is an acceptable way to get verifiable parental consent.",
+    "Confirm the data-retention and deletion promises."
+  ]
+}
