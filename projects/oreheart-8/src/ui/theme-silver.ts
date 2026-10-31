@@ -5,7 +5,7 @@
  * so this keeps `--sv-h` (the button's height in px) on every button; the CSS sizes the caps from it.
  * Setting a custom property never changes the size, so the observer cannot loop; it is only set when it changes.
  */
-const SEL = '.btn, .mb-btn, .o-menu';
+const SEL = '.btn, .mb-btn, .o-menu, .net-btn';
 
 export function startSilverFrames(root: Element = document.documentElement): void {
   if (typeof ResizeObserver === 'undefined' || typeof MutationObserver === 'undefined') return;
