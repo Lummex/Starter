@@ -13535,3 +13535,130 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
     await page.evaluate(() => window.oreheart.setPlayerName(''));
   });
 }
+
+// Ken (Oct 31): "keep them in a list so you can play the same guys over and over again ... give them different skill levels. Or different ranks. You should also have a
+// rank coin. So we need a ranking system. On how well you do. So there should be like a little crystal charm under your avatar that shows your rank. And shows their rank."
+test('AC529: ranks: 10 tiers Stone to Oreheart, divisions III-II-I of 100 points, wins add about 20 (more against a higher rival), losses take about 15, no dropping out of the first 3 tiers', async ({ page }) => {
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const C = await page.evaluate(() => window.oreheart.rankConfig());
+  expect(C.tiers.map((x) => x.name)).toEqual(['Stone', 'Copper', 'Iron', 'Silver', 'Sapphire', 'Emerald', 'Ruby', 'Amethyst', 'Diamond', 'Oreheart']);
+  expect(C.divisions).toEqual(['III', 'II', 'I']);
+  expect(C.pointsPerDivision).toBe(100);
+  const r = (p) => page.evaluate((x) => window.oreheart.rankOf(x), p);
+  expect((await r(0)).label).toBe('Stone III');
+  expect((await r(99)).label).toBe('Stone III');
+  expect((await r(100)).label).toBe('Stone II');
+  expect((await r(299)).label).toBe('Stone I');
+  expect((await r(300)).label).toBe('Copper III');
+  expect((await r(937)).label).toBe('Silver III');
+  expect((await r(937)).inDivision).toBe(37);
+  expect((await r(2699)).label).toBe('Diamond I');
+  expect((await r(2700)).label, 'Oreheart has no divisions').toBe('Oreheart');
+  expect((await r(5000)).label).toBe('Oreheart');
+  const pts = (win, me, rv) => page.evaluate(([a, b, c]) => window.oreheart.rankPoints(a, b, c), [win, me, rv]);
+  expect(await pts(true, 500, 500), 'an even win').toBe(20);
+  expect(await pts(false, 500, 500), 'an even loss').toBe(-15);
+  expect(await pts(true, 500, 900), 'beating a higher rival gives more').toBeGreaterThan(20);
+  expect(await pts(true, 900, 500), 'beating a lower rival gives less').toBeLessThan(20);
+  expect(await pts(false, 500, 900), 'losing to a higher rival costs less').toBeGreaterThan(-15);
+  expect(await pts(true, 0, 2800), 'capped').toBeLessThanOrEqual(35);
+  // the result is saved: a win, then a loss that cannot drop you out of Copper (protected tier)
+  await page.evaluate(() => window.oreheart.setRankPoints(305));
+  await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', difficulty: 'easy', setup: { opponentHand: [] } }));
+  const rv = await page.evaluate(() => window.oreheart.getRival());
+  expect(rv && rv.skill, 'an Easy rival for an Easy match').toBe('easy');
+  expect(rv.commander).toBe('borgo');
+});
+
+test('AC530: 60 recurring rivals (20 per faction) with a name, Commander, style, skill and rank; matchmaking picks the chosen skill near your rank; Play again meets the same rival; your record against them shows on their plate', async ({ page }) => {
+  test.setTimeout(120000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const R = await page.evaluate(() => window.oreheart.roster());
+  const names = [].concat(...Object.values(await page.evaluate(() => window.oreheart.aiNames())));
+  expect(R.length).toBe(60);
+  expect(new Set(R.map((x) => x.id)).size).toBe(60);
+  expect(new Set(R.map((x) => x.name)).size, 'every rival has its own name').toBe(60);
+  for (const f of ['goblins', 'gnomes', 'dwarves']) expect(R.filter((x) => x.faction === f).length, f).toBe(20);
+  for (const x of R) {
+    expect(names, 'names come from the made-up list').toContain(x.name);
+    expect(['easy', 'medium', 'hard']).toContain(x.skill);
+    expect(['Aggressive', 'Mine Control', 'Guard', 'Free-for-all']).toContain(x.style);
+    expect(x.points).toBeGreaterThanOrEqual(0);
+  }
+  const avg = (s) => R.filter((x) => x.skill === s).reduce((a, x) => a + x.points, 0) / R.filter((x) => x.skill === s).length;
+  expect(avg('hard'), 'Hard rivals rank higher than Easy ones').toBeGreaterThan(avg('medium'));
+  expect(avg('medium')).toBeGreaterThan(avg('easy'));
+  // matchmaking: the right skill, the nearest rank, not your own Commander
+  for (const [pts, skill] of [[50, 'easy'], [900, 'normal'], [2400, 'hard']]) {
+    const m = await page.evaluate(([p, s]) => window.oreheart.matchRival(p, s, 'grubnak'), [pts, skill]);
+    expect(m.skill).toBe(skill === 'normal' ? 'medium' : skill);
+    expect(m.commander).not.toBe('grubnak');
+    const pool = R.filter((x) => x.skill === m.skill && x.commander !== 'grubnak');
+    const best = Math.min(...pool.map((x) => Math.abs(x.points - pts)));
+    expect(Math.abs(m.points - pts), 'the nearest rank').toBe(best);
+  }
+  // a real menu match: Fight! picks a rival; Play again meets the same one
+  await page.evaluate(() => { localStorage.removeItem('oreheart.rank'); });
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await expect.poll(async () => !!(await page.evaluate(() => window.oreheart.getRival()))).toBe(true);
+  const first = await page.evaluate(() => window.oreheart.getRival());
+  const st = await getState(page);
+  expect(st.players.opponent.commanderId, 'the rival brings its Commander').toBe(first.commander);
+  const plate = page.locator('.match .o-plate.o-enemy');
+  await expect(plate).toHaveAttribute('title', new RegExp(`${first.name}.*You 0-0`));
+  await expect(plate.locator('.o-pn')).toHaveText(first.name);
+  await expect(plate.locator('.o-charm')).toHaveCount(1);
+  await expect(page.locator('.match .o-plate.o-you .o-charm')).toHaveCount(1);
+  await expect(page.locator('.match .o-plate.o-you')).toHaveAttribute('data-rank', 'Stone III');
+  // give up: a loss recorded against this rival, then Play again: the same rival, now "You 0-1"
+  for (let i = 0; i < 20 && (await getState(page)).phase === 'mulligan'; i++) { await act(page, { type: 'mulligan', redraw: false, uids: [] }); await page.waitForTimeout(300); } // a menu match opens on the mulligan
+  await giveUp(page);
+  await page.getByRole('button', { name: 'Yes, give up' }).click();
+  await expect(page.getByRole('button', { name: 'Play again', exact: true })).toBeVisible({ timeout: 20000 });
+  const rec = await page.evaluate(() => window.oreheart.getRank());
+  expect(rec.losses).toBe(1);
+  expect(rec.rivals[first.id]).toEqual({ w: 0, l: 1 });
+  await expect(page.locator('.end .rank-panel')).toContainText(`vs ${first.name}: 0-1`);
+  await page.getByRole('button', { name: 'Play again', exact: true }).click();
+  await expect.poll(async () => (await page.evaluate(() => window.oreheart.getRival()))?.id).toBe(first.id);
+  await expect(page.locator('.match .o-plate.o-enemy')).toHaveAttribute('title', /You 0-1/);
+});
+
+for (const [W, H] of [[1920, 1080], [844, 390]]) {
+  test(`AC531: a win adds rank points, crossing into the next division shows "Rank up!" with your new charm; both plates carry a rank charm (${W}x${H})`, async ({ page }) => {
+    test.setTimeout(90000);
+    await page.setViewportSize({ width: W, height: H });
+    await page.goto('/?test=1&seed=3');
+    await page.waitForFunction(() => !!window.oreheart);
+    await page.evaluate(() => window.oreheart.setRankPoints(95));
+    await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', difficulty: 'easy',
+      setup: { opponentHand: [], opponentHealth: 1, firstPlayer: 'player', board: [{ cardId: 'goblin-grunt', owner: 'player', row: 2, col: 11 }] } }));
+    const charms = await page.evaluate(() => [...document.querySelectorAll('.match .o-plate .o-charm')].map((c) => { const b = c.getBoundingClientRect(); return { w: b.width, h: b.height, tier: c.dataset.tier, div: c.dataset.div }; }));
+    expect(charms.length, 'a charm on both plates').toBe(2);
+    for (const c of charms) expect(c.w, 'the charm is drawn').toBeGreaterThan(4);
+    const s = await toAction(page);
+    const me = s.board.creatures.find((c) => c.owner === 'player' && c.cardId === 'goblin-grunt');
+    const a = (await legal(page)).find((x) => x.type === 'attack' && x.creatureUid === me.uid && x.target && x.target.commander === 'opponent');
+    expect(a, 'the grunt can hit the enemy stronghold').toBeTruthy();
+    expect((await act(page, a)).ok).toBe(true);
+    await expect(page.getByRole('heading', { name: 'Victory!' })).toBeVisible({ timeout: 20000 });
+    const rr = await page.evaluate(() => window.oreheart.getRankResult());
+    expect(rr.win).toBe(true);
+    expect(rr.delta).toBeGreaterThan(0);
+    expect(rr.before.label).toBe('Stone III');
+    expect(rr.after.label).toBe('Stone II');
+    expect(rr.rankedUp).toBe(true);
+    const panel = page.locator('.end .rank-panel');
+    await expect(panel).toBeVisible();
+    await expect(panel).toContainText('Stone II');
+    await expect(panel).toContainText(`+${rr.delta} RP`);
+    await expect(panel.getByRole('status')).toHaveText('Rank up!');
+    const box = await panel.boundingBox();
+    expect(box.x, 'the rank panel fits on screen').toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(W);
+    expect((await page.evaluate(() => window.oreheart.getRank())).points).toBe(95 + rr.delta);
+  });
+}

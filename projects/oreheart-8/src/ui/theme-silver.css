@@ -324,3 +324,46 @@ html body #app .match .o-plate.o-enemy .o-cm{margin-top:.02em}
   html body #app .match .o-plate .o-pn{max-width:7.5em;flex:0 0 auto}
   html body #app .match .o-plate .o-cm{flex:0 1 auto;min-width:2.5em;overflow:hidden;text-overflow:ellipsis}
 }
+
+
+/* Oct 31 (Ken): the rank charm, a little crystal under each avatar (placeholder gems until Brush paints the real charms) */
+html body #app .match .o-plate .o-av{position:relative}
+html body #app .o-charm{position:absolute;left:50%;bottom:-.34em;translate:-50% 0;width:.56em;height:.56em;pointer-events:none;font-style:normal}
+html body #app .o-charm::before{content:'';position:absolute;inset:0;rotate:45deg;border-radius:.07em;
+  background:linear-gradient(135deg,#ffffff 0%,var(--gem) 38%,var(--gem-dark) 100%);border:.045em solid #eef2f6;box-shadow:0 0 0 .03em #0b0f15,0 .04em .12em #000c,0 0 .26em var(--gem)}
+html body #app .o-charm::after{content:attr(data-div);position:absolute;inset:0;display:grid;place-items:center;font:800 max(7px,.3em)/1 "Alegreya SC",serif;color:#0d1117;text-shadow:0 0 .12em #fff8;letter-spacing:-.03em}
+html body #app .o-charm[data-tier="oreheart"]::before{background:radial-gradient(circle at 35% 30%,#fff 0,#ffd27a 25%,var(--gem) 55%,var(--gem-dark) 100%)}
+/* end screen rank panel */
+html body #app .end .rank-panel{position:relative;display:flex;align-items:center;gap:1.1em;margin:.6em auto 1em;padding:.7em 1.4em .7em 1.1em;border-radius:.6em;width:max-content;max-width:94vw;
+  background:linear-gradient(180deg,#1b2430e6,#0e141ce6);border:2px solid #b9c4d1;box-shadow:0 0 0 1px #000,0 .3em 1em #000a,inset 0 0 .8em #0008;color:#eef3f8;font-family:"Alegreya SC",serif}
+html body #app .end .rank-panel .o-charm.big{position:relative;left:auto;bottom:auto;translate:none;width:2.4em;height:2.4em;font-size:1.4rem;flex:0 0 auto}
+html body #app .end .rank-panel .o-charm.big::after{font-size:.42em}
+html body #app .end .rank-panel .rp-label{font-size:1.5rem;font-weight:800;letter-spacing:.03em}
+html body #app .end .rank-panel .rp-points,html body #app .end .rank-panel .rp-vs{font-size:max(14px,.95rem);color:#c9d3df}
+html body #app .end .rank-panel .rp-delta{font-size:1.6rem;font-weight:800;margin-left:.4em}
+html body #app .end .rank-panel .rp-delta.gain{color:#7dffb0;text-shadow:0 0 .4em #2fd38a88}
+html body #app .end .rank-panel .rp-delta.loss{color:#ff9aa6}
+html body #app .end .rank-panel .rank-up{position:absolute;top:-.9em;right:-.6em;padding:.15em .6em;border-radius:.4em;font-size:1.3rem;font-weight:900;font-style:italic;color:#1a1200;
+  background:linear-gradient(180deg,#fff6c8,#ffd24a 55%,#d99a12);border:2px solid #fff;box-shadow:0 0 .8em #ffd24acc,0 .2em .5em #000a;rotate:6deg;animation:rankUp 1.4s cubic-bezier(.2,1.6,.4,1) both}
+html body #app .end .rank-panel.up .o-charm.big{animation:rankGlow 1.8s ease-out both}
+@keyframes rankUp{0%{scale:.2;opacity:0}40%{scale:1.25;opacity:1}100%{scale:1}}
+@keyframes rankGlow{0%{filter:brightness(2.2) drop-shadow(0 0 1em var(--gem))}100%{filter:none}}
+@media (prefers-reduced-motion:reduce){html body #app .end .rank-panel .rank-up,html body #app .end .rank-panel.up .o-charm.big{animation:none}}
+html body #app .end .rank-panel .rank-up{color:#2a1700!important;text-shadow:0 1px 0 #fff9!important;-webkit-text-fill-color:#2a1700}
+/* phone height: a compact panel so Play again and Menu stay on screen */
+@media (max-height:500px){
+  html body #app .end .rank-panel{margin:.25em auto .4em;padding:.3em .9em .3em .6em;gap:.7em}
+  html body #app .end .rank-panel .o-charm.big{width:1.7em;height:1.7em;font-size:1.1rem}
+  html body #app .end .rank-panel .rp-label{font-size:1.05rem}
+  html body #app .end .rank-panel .rp-delta{font-size:1.15rem}
+  html body #app .end .rank-panel .rank-up{font-size:max(14px,.9rem);top:-.7em}
+  html body #app .end .rank-panel .rp-points{display:none}
+}
+@media (max-height:500px){
+  html body #app .end .rank-panel{margin:.1em auto .2em;padding:.15em .8em .15em .5em}
+  html body #app .end .rank-panel .o-charm.big{width:1.35em;height:1.35em}
+  html body #app .end .rank-panel .rp-text{display:flex;align-items:baseline;gap:.6em}
+  html body #app .end .rank-panel .rp-label{font-size:max(14px,.95rem)}
+}
+@media (max-height:500px){ html body #app .end .rank-panel .rank-up{right:auto;left:-1.2em;top:-.85em;rotate:-6deg} }
+@media (max-height:500px){ html body #app .end .rank-panel .rank-up{left:50%;right:auto;top:-1.25em;translate:-50% 0;rotate:-3deg;padding:.05em .55em} html body #app .end .rank-panel{margin-top:.45em} }

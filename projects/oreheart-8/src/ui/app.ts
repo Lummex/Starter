@@ -13,6 +13,8 @@ import { brewActions, flowShardCount, deckProblems, previewAttack, STARTER_DECK_
 import { createBoardView, createFlatView, BoardView } from './scene';
 import { audio, pickArena } from './audio';
 import { getPlayerName, pickAiName } from './players';
+import { rankOf, load as loadRank, recordResult, recordVs, RankInfo, RankResult } from './rank';
+import { matchRival, rivalById, Rival } from './roster';
 import { getHighlights, setHighlights, resetHighlights, getRings, setRings, resetRings, edgeOf, glowOf, mainOf, ringColor, applyHighlightVars } from './fx-settings';
 import { loadGrubnak3d } from './grubnak3d';
 import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
@@ -803,12 +805,12 @@ export class App {
     sel();
     requestAnimationFrame(() => { row.scrollLeft = 0; });
     const startFn = () => {
-          const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
-          const opp = others[Math.floor(Math.random() * others.length)];
+          const rv = matchRival(loadRank().points, diff, cmd); /* Ken, Oct 31: a recurring rival near your rank, at the difficulty you picked */
+          const opp = rv.commander;
           const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
           const deckId = pick ? '' : deckSel.slice(8);
           try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, mode, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
-          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, mode, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
+          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, mode, rivalId: rv.id, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
     };
     const startBtn = h('div', { class: 'fight-wrap' }, btn('Fight!', 'primary fight-btn', startFn));
     const mainEl = h('main', { class: 'screen setup mb-setup', 'data-screen': 'select' },
@@ -1162,11 +1164,25 @@ export class App {
 
   /** Ken, Oct 31: "create fake AI players. So it'll look like you're playing a real player." One believable name per match (seeded in test pages). */
   aiName = '';
+  rival: Rival | null = null;
+  rankResult: RankResult | null = null;
   pickOpponentName(seed?: number): string {
     let s = ((this.test ? (seed ?? this.seed ?? 1) : Math.floor(Math.random() * 2 ** 31)) | 0) ^ 0x5bd1e995;
     const rand = () => { s = (s + 0x6d2b79f5) | 0; let x = Math.imul(s ^ (s >>> 15), 1 | s); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
-    this.aiName = pickAiName(this.game.state.players.opponent.faction, rand);
+    const st = this.game.state, o = this.lastOptions || {};
+    this.rankResult = null;
+    if (this.lastTutorial || st.tutorial) { this.rival = null; this.aiName = pickAiName(st.players.opponent.faction, rand); return this.aiName; }
+    // Ken, Oct 31: the opponent is one of the recurring rivals: the one this match was made with, else one near your rank playing this Commander
+    const named = o.rivalId ? rivalById(o.rivalId) : null;
+    this.rival = named && named.commander === st.players.opponent.commanderId ? named : matchRival(loadRank().points, this.game.difficulty, st.players.player.commanderId, st.players.opponent.commanderId, rand);
+    this.aiName = this.rival.name;
     return this.aiName;
+  }
+  /** A ranked match: against a rival, not the tutorial or a Comp vs Comp watch. */
+  ranked(st: any = this.game.state) { return !!this.rival && !!st && !st.tutorial && !this.lastTutorial && st.mode !== 'compvscomp' && this.game.mode !== 'compvscomp'; }
+  /** The little crystal charm that shows a rank (placeholder gem until Brush paints the real charms). */
+  charmEl(ri: RankInfo, cls = '') {
+    return h('span', { class: 'o-charm' + (cls ? ' ' + cls : ''), 'data-tier': ri.tierName.toLowerCase(), 'data-div': ri.division, 'aria-hidden': 'true', style: `--gem:${ri.color};--gem-dark:${ri.dark}` });
   }
 
   beginTutorial() {
@@ -1401,8 +1417,8 @@ export class App {
   /** Short title shown; the rest of the full display name stays in the text for screen readers. */
   /** Ken, Oct 31: the name plate shows the PLAYER's name big and the Commander's name small underneath, with a round avatar spot beside it
    *  (a placeholder with the first letter until Brush's avatars plug in: data-avatar on .o-av). */
-  setPlate(el: El, player: string, commander: string, faction: string, side: 'player' | 'enemy') {
-    const key = player + '|' + commander + '|' + faction;
+  setPlate(el: El, player: string, commander: string, faction: string, side: 'player' | 'enemy', rank: RankInfo | null = null, tip = '') {
+    const key = player + '|' + commander + '|' + faction + '|' + (rank ? rank.label : '') + '|' + tip;
     if (el.dataset.plate === key) return;
     el.dataset.plate = key; el.dataset.full = commander; el.dataset.player = player;
     el.classList.add('o-plate', side === 'enemy' ? 'o-enemy' : 'o-you');
@@ -1411,8 +1427,11 @@ export class App {
     const words = h('span', { class: 'o-pl' },
       h('span', { class: 'o-pn', title: player }, player),
       h('span', { class: 'o-cm' }, m ? m[1] : commander, m ? h('span', { class: 'sr-only' }, m[2] + m[3]) : ('' as any)));
+    if (rank) av.append(this.charmEl(rank));
     if (side === 'enemy') el.replaceChildren(words, av); else el.replaceChildren(av, words);
-    el.setAttribute('aria-label', `${side === 'enemy' ? 'Opponent' : 'You'}: ${player}, Commander ${commander}`);
+    el.setAttribute('aria-label', `${side === 'enemy' ? 'Opponent' : 'You'}: ${player}, Commander ${commander}${rank ? `, rank ${rank.label}` : ''}`);
+    if (tip) el.setAttribute('title', tip); else el.removeAttribute('title');
+    el.dataset.tip = tip; el.dataset.rank = rank ? rank.label : '';
   }
   setCmdName(el: El, full: string) {
     if (el.dataset.full === full) return;
@@ -2319,8 +2338,11 @@ export class App {
     r.crBank.textContent = String(me.bank);
     r.eFlow.textContent = String(en.crystals);
     r.eBank.textContent = String(en.bank);
-    this.setPlate(r.myName, getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player');
-    this.setPlate(r.eName, this.aiName || 'Opponent', COMMANDERS[en.commanderId]?.name || '', en.faction, 'enemy');
+    { const my = rankOf(loadRank().points);
+      this.setPlate(r.myName, getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player', my, `${getPlayerName()}: ${my.label}, ${my.inDivision} rank points`);
+      const rv = this.rival, rec = rv ? recordVs(rv.id) : null;
+      this.setPlate(r.eName, this.aiName || 'Opponent', COMMANDERS[en.commanderId]?.name || '', en.faction, 'enemy', rv ? rankOf(rv.points) : null,
+        rv ? `${rv.name}: ${rankOf(rv.points).label} · ${rv.skill === 'easy' ? 'Easy' : rv.skill === 'hard' ? 'Hard' : 'Medium'} · ${rv.style} · You ${rec!.w}-${rec!.l}` : ''); }
     audio.voicePreload(me.commanderId); audio.voicePreload(en.commanderId); // Oct 31: the Commanders' voice lines (loads once)
     r.income.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')}`;
     r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;
@@ -3675,6 +3697,7 @@ export class App {
     }
     if (st.phase === 'over' && !this.endShown) {
       this.endShown = true;
+      if (this.ranked(st) && !this.rankResult && st.winner) this.rankResult = recordResult(st.winner === 'player', this.rival!.id, this.rival!.points); /* Ken, Oct 31: rank points */
       const loser = st.winner === 'player' ? 'opponent' : 'player';
       const esc = FACTIONS[st.players[loser].faction].symbol === 'skull' ? '🚀' : FACTIONS[st.players[loser].faction].symbol === 'gear' ? '💨' : '🕳️';
       const t = this.test ? (this.game.mode === 'compvscomp' ? 4000 : 120) : 1600; // a test-mode Card Comp match ends in an instant: keep its watch bar usable for a few seconds
@@ -3709,6 +3732,20 @@ export class App {
     setTimeout(() => hint.remove(), 1600);
   }
 
+  /** End screen: your rank charm, the points won or lost, and a short "Rank up!" moment when you climb a division. */
+  rankPanel(): any {
+    const rr = this.rankResult, rv = this.rival;
+    if (!rr || !rv) return '';
+    const a = rr.after, top = a.division === '';
+    return h('section', { class: 'rank-panel' + (rr.rankedUp ? ' up' : '') + (rr.rankedDown ? ' down' : ''), 'aria-label': 'Your rank' },
+      this.charmEl(a, 'big'),
+      h('div', { class: 'rp-text' },
+        h('div', { class: 'rp-label' }, a.label),
+        h('div', { class: 'rp-points' }, top ? `${a.inDivision} rank points` : `${a.inDivision} / 100 rank points`),
+        h('div', { class: 'rp-vs' }, `vs ${rv.name}: ${rr.record.w}-${rr.record.l}`)),
+      h('div', { class: 'rp-delta ' + (rr.delta >= 0 ? 'gain' : 'loss') }, `${rr.delta >= 0 ? '+' : ''}${rr.delta} RP`),
+      rr.rankedUp ? h('div', { class: 'rank-up', role: 'status' }, 'Rank up!') : '');
+  }
   showEnd(winner: string) {
     if (!this.game.state || this.game.state.phase !== 'over' || !this.root.querySelector('.match')) return; // left for the menu meanwhile
     const st = this.game.state;
@@ -3733,6 +3770,7 @@ export class App {
       h('h1', { class: 'end-title' }, h('img', { class: 'end-pic', src: `/art/ui/banner-${endBanner(win, st)}.webp`, alt: '', draggable: 'false', 'data-end-level': endBanner(win, st) }), h('span', { class: 'sr-only' }, win ? 'Victory!' : 'Defeat')),
       h('p', {}, win ? 'The enemy Commander fled screaming that this was all part of the plan.' : 'Your Commander escaped at the last second, shouting that this was all part of the plan.'),
       table,
+      this.rankPanel(),
       h('div', { class: 'row' },
         btn(this.game.mode === 'compvscomp' ? 'Rematch' : 'Play again', 'primary', () => { if (this.lastTutorial) this.beginTutorial(); else { const o = { ...this.lastOptions }; this.beginMatch(o); } }),
         btn('Menu', '', () => this.showMenu(), this.game.mode === 'compvscomp' ? { 'aria-label': 'Exit to menu' } : {}))));

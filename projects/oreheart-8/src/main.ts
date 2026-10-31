@@ -4,6 +4,8 @@ import { startSilverFrames } from './ui/theme-silver';
 import { Game } from './game';
 import { App } from './ui/app';
 import { getPlayerName, setPlayerName, AI_NAMES } from './ui/players';
+import { rankOf, pointsFor, load as loadRank, save as saveRank, RANK_CONFIG } from './ui/rank';
+import { ROSTER, matchRival } from './ui/roster';
 import { CARDS, COMMANDERS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
 import { spellFxLog, spellFxNow, spellFxAt, setSpellFxEnabled, SPELL_FX_SPEC, fxPhone, fxLayerUrl, FX_LAYERS } from './ui/spell-fx';
@@ -130,7 +132,10 @@ if (test) {
     getAudioState: () => audio.state(),
     setVoicesOn: (on: boolean) => audio.setVoicesOn(on), // Oct 31: unit voices switch (off until Ken approves the reel)
     voiceEvent: (ev: 'select' | 'hurt' | 'special', unit: string, who: string, big?: boolean) => audio.speak(ev, unit, who, !!big),
-    getPlayerName: () => getPlayerName(), setPlayerName: (n: string) => setPlayerName(n), getOpponentName: () => app.aiName, aiNames: () => AI_NAMES, // Oct 31: the name plates (Online Phase A feeds the username via setPlayerNameProvider)
+    getPlayerName: () => getPlayerName(), setPlayerName: (n: string) => setPlayerName(n), getOpponentName: () => app.aiName, aiNames: () => AI_NAMES,
+    getRank: () => ({ ...loadRank(), rank: rankOf(loadRank().points) }), setRankPoints: (n: number) => { const r = loadRank(); r.points = n; saveRank(r); return rankOf(n); }, // checks + Online Phase C
+    rankOf: (p: number) => rankOf(p), rankPoints: (win: boolean, me: number, rival: number) => pointsFor(win, me, rival), rankConfig: () => RANK_CONFIG,
+    roster: () => ROSTER, getRival: () => app.rival, getRankResult: () => app.rankResult, matchRival: (pts: number, skill: string, pc?: string, oc?: string) => matchRival(pts, skill, pc, oc, () => 0), // Oct 31: the name plates (Online Phase A feeds the username via setPlayerNameProvider)
     setArenaPick: (who: '' | 'player' | 'opponent') => { app.arenaForce = who; return who; }, // checks only: force which faction's arena (and music) the next match uses
     setMixRules: (r: any) => { Object.assign(MIX, r); return { ...MIX }; }, // checks only: {enabled:false} plays every sound as asked (the sound-file checks), default is Brush's mix rules
     setVoiceRules: (r: any) => { Object.assign(VOICE, r); return { ...VOICE }; }, // checks only: shorten the voice cooldown / gap
