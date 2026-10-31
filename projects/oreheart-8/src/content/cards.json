@@ -408,21 +408,19 @@
   "type": "creature",
   "faction": "dwarves",
   "rarity": "Common",
-  "role": "Gatherer",
-  "cost": 2,
+  "role": "Fighter",
+  "cost": 4,
   "attack": 1,
   "health": 5,
   "move": 1,
   "abilities": [
-   "gather",
-   "riotShield",
-   "tunnel"
+   "riotShield"
   ],
   "unique": false,
-  "text": "Mines 2. Tunnel. Riot Shield: 3 turns, can't attack, can't be killed.",
+  "text": "Riot Shield. Enemies next to it must attack it first. Every hit does 1 less. Can't be moved.",
   "flavor": "Has never met a rock he respected",
-  "shortText": "Mines 2. Tunnel. Riot Shield: 3 turns, can't attack, can't be killed.",
-  "longText": "Miner creature. Cost 2, Attack 1, Health 5, Movement 1. The dwarves' basic Miner. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Can't attack the turn it's played; from its next turn on it attacks like any creature. A Miner drag-played onto your own creature gives it +1 Health. Miner: mines 2 crystals from a mine it stands next to (Fighters mine 1). When a basic Miner is defeated, its owner draws a card (not when it is used up as an upgrade). Riot Shield: for its first 3 turns it can't attack and can't be killed by anything; it can still walk and mine. Tunnel: it can be summoned straight onto any empty space next to a mine your side owns right now (never beside a neutral or enemy mine). Example: once your Miners own a mine, Tunnel it in beside that mine (or walk it there) and it digs for 3 turns while nothing can kill it."
+  "shortText": "Riot Shield. Enemies next to it must attack it first. Every hit does 1 less. Can't be moved.",
+  "longText": "Fighter creature. Cost 4, Attack 1, Health 5, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Riot Shield: a wall, not a fighter. Enemies standing next to it must attack it before anything else, so it protects your Miners and your Commander. Every hit it takes does 1 less damage. It is an immovable object: nothing can knock it back, bowl it, lift it or shove it aside. It carries no weapon, so it hits for only 1, and like any Fighter it can mine 1 crystal a turn. Example: Stand it between the enemy and your Miners; a 2-Attack enemy beside it must hit the Bearer and does only 1."
  },
  {
   "id": "shieldbeard",
@@ -1106,17 +1104,18 @@
   "faction": "dwarves",
   "rarity": "Common",
   "role": "Smith",
-  "cost": 2,
+  "cost": 1,
   "attack": 1,
   "health": 1,
   "move": 1,
   "abilities": [
-   "smith"
+   "smith",
+   "tunnel"
   ],
   "unique": false,
-  "text": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
-  "shortText": "Smith Miner. Upgrades a creature: +1 Attack, +1 Health.",
-  "longText": "Smith Miner creature. Cost 2, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner played onto one of your own creatures gives it +1 Attack and +1 Health, with no limit. On an empty back-row space it is summoned as a Miner: it can mine or move that turn, but can't attack until its next turn. Smith: summon it as a Miner, or play it on one of your own creatures for a permanent +1 Attack or +1 Health. Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner."
+  "text": "The dwarves' Miner. Mines 2. Tunnel. Or upgrade a creature: +1 Attack, +1 Health.",
+  "shortText": "The dwarves' Miner. Mines 2. Tunnel. Or upgrade a creature: +1 Attack, +1 Health.",
+  "longText": "Smith Miner creature, the dwarves' basic Miner. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full), or Tunnel it straight onto any empty space next to a mine your side owns right now. On the battlefield it is a Miner: it mines 2 crystals, can mine or move the turn it's played, but can't attack until its next turn. Played onto one of your own creatures instead, it is not summoned: that creature gets +1 Attack and +1 Health for good (no limit). Example: Drag it onto your creature in Deploy for +1 Attack and +1 Health, or onto an empty back-row space to summon a Miner."
  },
  {
   "id": "rotgut-grenadier",

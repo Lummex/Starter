@@ -8,7 +8,7 @@
  "basicGatherers": {
   "goblins": "goblin-scrounger",
   "gnomes": "gnome-prospector",
-  "dwarves": "dwarf-miner"
+  "dwarves": "dwarf-smith-miner"
  },
  "gathererFlow": 2,
   "minedPerBonusCard": 4,
@@ -19,11 +19,11 @@
  "underdogBonus": 2,
  "geodeIncome": 1,
  "starterDeckMix": {
-  "creatures": 48,
-  "spells": 8,
+  "creatures": 50,
+  "spells": 6,
   "crystals": 4,
-  "miners": 22,
-  "note": "Ken, Oct 31: the Warband (default) deck. Miners are at least a third of every starter deck; the four styles are in tools/gen-starter-decks.py"
+  "miners": 30,
+  "note": "Ken, Oct 31: the Warband (default) deck carries 30 Miners (half the deck, never under 28); Miners are at least a third of every other starter deck; the four styles are in tools/gen-starter-decks.py"
  },
  "openingHandSize": 5,
  "secondPlayerExtraCards": 1,
