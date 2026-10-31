@@ -41,3 +41,10 @@ Have a lawyer review the parent-consent notice, privacy wording and email texts 
 - supabase/migrations/20261031000001_schedule_send_outbox.sql: new; pg_cron + pg_net every-minute schedule inside a DO block that only raises notices if extensions or settings (app.settings.send_outbox_url / send_outbox_key) are missing.
 - projects/oreheart-admin/vite.config.ts: preview.headers matching vercel.json; server.headers the same minus the CSP.
 - projects/oreheart-admin: robots.txt already disallows all and `#/card/<bad id>` already shows "That is not a card id." (no change); npm test passes (5 tests).
+
+## Round 3 fixes (inspector results)
+- One-time deck import read the *server* decks instead of the browser's (`net.active` was already on); it now reads `localStorage` (`loadBrowserDecks`). AC512.
+- The Welcome screen now appears only right after choosing an avatar, so a returning account (or a second computer) goes straight to the menu with Profile. AC511, AC514, AC536.
+- Parent page: the full stop-ending link `{contact_url}.` is drawn by CSS, so the page text reads "…Contact us form at We answer…" as in the notice file. AC545.
+- Admin site: the 2-step key (`mfa-secret`) is shown without a collapsed `<details>`. AC518, AC519.
+- Not fixed: AC528 game `dist/` is about 161 MB (limit in this round's spec 95 MB; Round 27 brief raised it to 250 MB; models cannot be shrunk without touching geometry). Timeout-type checks (AC25, AC40, AC190, AC256, AC364, AC370, AC375, AC368, AC441) pass locally but are slow under load; AC503 reads `state.players.length`, but `players` is an object `{player, opponent}` in the engine.

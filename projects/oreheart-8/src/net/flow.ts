@@ -4,7 +4,7 @@ import './net.css';
 import { h, btn, pictureOf } from '../ui/app';
 import type { App } from '../ui/app';
 import { CARDS } from '../engine';
-import { loadDecks as loadLocalDecks } from '../ui/decks';
+import { loadBrowserDecks as loadLocalDecks } from '../ui/decks';
 import type { SavedDeck } from '../ui/decks';
 import { net } from './state';
 import { client, rpc, redirectUrl, myStatus, passwordOk, underThirteen, savedAgeGroup, saveAgeGroup, type Status } from './online';
@@ -325,7 +325,7 @@ function avatarScreen(s: Status) {
       const pic = pictureOf(c);
       return h('button', { type: 'button', class: 'net-avatar', 'aria-label': c.name, title: c.name, onclick: async () => {
         err.textContent = '';
-        try { await rpc('set_avatar', { p_card: id }); s.avatar = id; s.needs_avatar = false; await proceed(s); } catch (e: any) { err.textContent = e.message; }
+        try { await rpc('set_avatar', { p_card: id }); s.avatar = id; s.needs_avatar = false; welcomeScreen(s); } catch (e: any) { err.textContent = e.message; }
       } }, pic ? h('img', { src: pic, alt: '' }) : h('span', {}, c.name));
     }));
   menuShow('avatar', h('h1', {}, 'Choose your avatar'), err, grid);
@@ -373,7 +373,6 @@ async function proceed(s: Status) {
   if (s.consent_status === 'pending') { net.active = false; waitingScreen(s); return; }
   if (s.consent_status === 'revoked') { net.active = false; revokedScreen(); return; }
   if (s.needs_avatar) { avatarScreen(s); return; }
-  if (!localStorage.getItem('oreheart.welcomed.' + s.user_id)) { welcomeScreen(s); return; }
   net.offlineChosen = false;
   net.active = true;
   net.saveDeck = async (id, d) => {
@@ -494,6 +493,8 @@ async function showPage(kind: 'consent' | 'withdraw' | 'contact') {
   if (!info || info.status !== 'pending') { invalid(); return; }
   const contactUrl = location.origin + location.pathname + '?contact=1';
   const fill = (t: string) => t.split('{username}').join(user || '').split('{contact_url}').join(contactUrl);
+  // The link at the end of a sentence is drawn by the style sheet (the sentence's own full stop goes with it).
+  const fillNodes = (t: string): (string | El)[] => fill(t.replace(/\{contact_url\}\./g, '\u0001')).split('\u0001').flatMap((part, i, arr) => (i < arr.length - 1 ? [part, h('a', { class: 'net-cu', href: contactUrl, 'data-url': contactUrl, 'data-end': '.' })] : [part]));
   const draft = /-draft$/.test((parentNotice as any).version);
   const box = h('input', { type: 'checkbox', id: 'parent-agree' }) as HTMLInputElement;
   const approve = nbtn('Approve', async () => {
@@ -510,7 +511,7 @@ async function showPage(kind: 'consent' | 'withdraw' | 'contact') {
     h('h1', {}, `${user} would like an Oreheart account`),
     draft ? h('p', { class: 'net-draft' }, 'DRAFT – lawyer review before launch') : null,
     h('h2', {}, fill((parentNotice as any).title)),
-    ...((parentNotice as any).sections as { heading: string; text: string }[]).map((s) => h('section', { class: 'net-section' }, h('h3', {}, fill(s.heading)), h('p', {}, fill(s.text)))),
+    ...((parentNotice as any).sections as { heading: string; text: string }[]).map((s) => h('section', { class: 'net-section' }, h('h3', {}, fill(s.heading)), h('p', {}, ...fillNodes(s.text)))),
     h('label', { class: 'net-check', for: 'parent-agree' }, box, h('span', {}, "I am this child's parent or guardian and I agree")),
     err, h('div', { class: 'net-actions' }, approve, contactBtn(user)));
 }

@@ -13,6 +13,10 @@ const MAX_DECKS = 5;
 export const maxDecks = () => (net.active ? net.maxDecks : MAX_DECKS);
 export function loadDecks(): SavedDeck[] {
   if (net.active) return net.decks.map((d) => ({ ...d, cards: d.cards.slice() }));
+  return loadBrowserDecks();
+}
+/** The decks kept in this browser, whatever the online state (used for the one-time import). */
+export function loadBrowserDecks(): SavedDeck[] {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || '[]');
     return Array.isArray(v) ? v.filter((d) => d && typeof d.name === 'string' && Array.isArray(d.cards)).slice(0, MAX_DECKS) : [];

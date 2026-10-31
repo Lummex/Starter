@@ -134,3 +134,6 @@ All logic, clips and positions still advance each logic frame (300 ms) by elapse
 `renderer.debug.checkShaderErrors = false` removes blocking shader-link waits.
 Measured locally: 4 parallel tutorial pages load all models in about 7 s (was 10-14 s), and the first render stats at 3840x2160 answer in about 2.4 s (was 13 s).
 Real play (no `?test=1`) is unchanged.
+
+## Round 3 of Online Phase A
+See REPORT.md 'Round 3 fixes'. Changed: src/net/flow.ts (import source, Welcome order, parent link), src/ui/decks.ts (loadBrowserDecks), src/net/net.css, admin src/pages/auth.ts.

@@ -83,8 +83,8 @@ export async function enrolPage(onDone: () => void, onSignOut: () => void) {
   mount(card('Turn on 2-step login',
     h('p', {}, 'The back counter needs 2-step login. Scan this with an authenticator app (Google Authenticator, 1Password, Authy), then type the 6-digit code.'),
     h('img', { src: qrSrc, alt: '2-step QR code', class: 'qr', width: 200, height: 200, 'data-testid': 'mfa-qr' }),
-    h('details', {}, h('summary', {}, 'Can\'t scan? Type this key instead'),
-      h('code', { class: 'secret', 'data-testid': 'mfa-secret' }, data.totp.secret)),
+    h('p', { class: 'small' }, 'Can\'t scan? Type this key instead:'),
+    h('code', { class: 'secret', 'data-testid': 'mfa-secret' }, data.totp.secret),
     form,
     h('p', { class: 'small' }, 'Tip: add the same QR code on a second device as a backup. There are no recovery codes.'),
     h('button', { type: 'button', class: 'link', onclick: onSignOut }, 'Sign out')));

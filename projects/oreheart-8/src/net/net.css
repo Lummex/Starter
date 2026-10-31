@@ -58,3 +58,6 @@ textarea.net-input{min-height:90px;font-family:Arial,sans-serif}
   textarea.net-input{min-height:60px}
   .net-avatars{max-height:62vh}
 }
+
+.net-cu::after { content: attr(data-url) attr(data-end); }
+.net-cu { color: inherit; text-decoration: underline; }
