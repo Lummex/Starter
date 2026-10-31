@@ -138,3 +138,6 @@ Real play (no `?test=1`) is unchanged.
 ## Round 3 of Online Phase A
 See REPORT.md 'Round 3 fixes'. Changed: src/net/flow.ts (import source, Welcome order, parent link), src/ui/decks.ts (loadBrowserDecks), src/net/net.css, admin src/pages/auth.ts.
 - Oct 31 round: checks-only changes; the game was not changed. Game dist limit is 250 MB (AC528).
+
+## Oct 31 (round 3 fix)
+- AC503: `done` before the opening hand is kept now means "keep my hand" (src/engine/engine.ts), so a bare `newMatch()` then Done works. No rule, number or layout change; offline mode makes no /rest/v1/ calls.

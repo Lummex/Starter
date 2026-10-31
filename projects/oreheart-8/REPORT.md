@@ -72,3 +72,6 @@ Have a lawyer review the parent-consent notice, privacy wording and email texts 
 - AC503: an offline / `?test=1` match makes no `/rest/v1/` request (online code is disabled without `online=1`); no code change needed.
 - AC518: the "AAL2 required to enroll a new factor" refusal is Supabase Auth's own rule (a user with a verified 2-step factor must be at AAL2 to add another); `max_enrolled_factors` is already 10 and there is no config switch for it. No change to `supabase/` or the admin site this round. The check must enrol before the admin-site 2-step or sign in at AAL2.
 - No changes were made to `supabase/` or the admin site this round.
+
+## Oct 31 (round 3 fix)
+- AC503: `done` before the opening hand is kept now means "keep my hand" (src/engine/engine.ts), so a bare `newMatch()` then Done works. No rule, number or layout change; offline mode makes no /rest/v1/ calls.

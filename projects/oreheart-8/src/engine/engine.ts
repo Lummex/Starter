@@ -1145,7 +1145,9 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
   if (state.phase === 'over') return fail('The match is over');
   const s = clone(state);
   const ev: any[] = [];
-  const act = normalize(aliasAbility(s, action));
+  let act = normalize(aliasAbility(s, action));
+  // Done before the opening hand was kept means "keep my hand" (so a bare newMatch() followed by Done just plays on)
+  if (act.type === 'done' && s.phase === 'mulligan' && !s.pendingResponse && s.priority && !s.mulliganDone[s.priority]) act = { ...act, type: 'mulligan', uids: [] };
   if (act.type === 'surrender') {
     const who: Side = act.player === 'player' || act.player === 'opponent' ? act.player : s.priority || s.activePlayer;
     s.winner = other(who);
