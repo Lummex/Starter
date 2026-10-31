@@ -11937,3 +11937,24 @@ test('AC476: Desperate Plunder: gems fly from the caster into its Flow counter a
     expect(landed - g.startsAt, `${W}x${H} the flight takes about its own time`).toBeGreaterThanOrEqual(g.flightMs - 40);
   }
 });
+
+// Oct 31 (Ken via Forge): "What happened to the silver Oreheart logo? That we replaced. You went back to the gold one." The silver logo is Ken's
+// Oct 24 brand logo (public/art/logo-wide.webp = the Menu Builder's built-in picture `logo`); the intro and main menu pieces showed the older gold
+// Menu Builder picture (img:025dre / img:zlqfpp). Both now use the silver one.
+test('AC477: the intro and main menu show the silver OREHEART logo (Ken\'s Oct 24 brand logo), never the old gold one', async ({ page }) => {
+  for (const [W, H] of [[1920, 1080], [844, 390]]) {
+    await page.setViewportSize({ width: W, height: H });
+    for (const [url, where] of [['/?test=1&seed=3', 'main menu'], ['/?test=1&seed=3&intro=1', 'intro']]) {
+      await page.goto(url);
+      await page.waitForFunction(() => !!window.oreheart);
+      const img = page.locator('.mb-pc[data-id="mainLogo"] img, .mb-pc[data-id="introLogo"] img').first();
+      await expect(img, `${W}x${H} ${where}: logo shown`).toBeVisible({ timeout: 10000 });
+      await expect.poll(async () => img.evaluate((e) => e.complete && e.naturalWidth), { timeout: 8000 }).toBeGreaterThan(0);
+      const info = await img.evaluate((e) => ({ src: new URL(e.currentSrc || e.src, location.href).pathname, w: e.naturalWidth, h: e.naturalHeight }));
+      expect(info.src, `${W}x${H} ${where}: the silver logo file`).toBe('/art/logo-wide.webp');
+      expect([info.w, info.h], `${W}x${H} ${where}: the silver logo is 1600x533 (the old gold one was 1200x400)`).toEqual([1600, 533]);
+      const gold = await page.evaluate(() => [...document.querySelectorAll('img')].filter((e) => /img-(025dre|zlqfpp)\.webp/.test(e.currentSrc || e.src) && e.offsetParent).length);
+      expect(gold, `${W}x${H} ${where}: no gold logo anywhere on screen`).toBe(0);
+    }
+  }
+});

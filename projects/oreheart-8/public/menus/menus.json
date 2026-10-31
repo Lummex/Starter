@@ -39,7 +39,7 @@
      "w": 73.05,
      "h": 58.44,
      "pic": {
-      "src": "img:025dre",
+      "src": "logo",
       "mode": "picture",
       "fit": "contain"
      },
@@ -204,7 +204,7 @@
      "w": 41.31,
      "h": 29.16,
      "pic": {
-      "src": "img:zlqfpp",
+      "src": "logo",
       "mode": "picture",
       "fit": "contain"
      },
