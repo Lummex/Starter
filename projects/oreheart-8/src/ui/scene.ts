@@ -457,6 +457,44 @@ const _embV = new THREE.Vector3();
   // Oct 30 (Ken's fighting vision): units walk square by square and fights are little comic scenes (timings in ms, snappy)
   const WALK_SPEED = 2.8, RUN_SPEED = 4.0, IMPACT_MELEE = 250, IMPACT_RANGED = 300, LUNGE_MS = 620;
   const impacts: { at: number; to: THREE.Vector3; ranged: boolean; armored: boolean; commander: boolean }[] = [];
+  /** Oct 31 (Ledger, studio/gear-placements-oct31.json aimLooks): while a shooter plays its ranged clip its gun takes an aim grip (barrel along
+   *  the hands, muzzle forward); the idle look comes back when the clip ends */
+  const AIM_LOOKS: Record<string, { part: string; look: { pos: number[]; rot: number[]; scale: number[] } }> = {
+    'oathbound-pikeman': { part: 'rifle', look: { pos: [-5.353, 31.233, 9.094], rot: [27.958, -50.996, -61.011], scale: [79.958, 79.958, 79.958] } },
+    'deepforge-crossbowman': { part: 'crystal-gun', look: { pos: [7.948, 9.685, 9.035], rot: [19.84, -33.256, -78.576], scale: [33.508, 33.508, 33.508] } },
+  };
+  const aimLog: { uid: string; cardId: string; part: string; on: number; off: number }[] = [];
+  /** test probe: for every aiming shooter, the angle (deg, on the ground plane) between its gun's long axis and the line to its facing target */
+  function aimNow() {
+    const out: any[] = [];
+    for (const f of figs.values()) {
+      const a = AIM_LOOKS[f.cardId], part = a && (f.c3d as any)?.partObject?.(a.part);
+      if (!part || !(part.userData as any).aiming) continue;
+      part.updateWorldMatrix(true, true);
+      const bb = new THREE.Box3(); part.traverse((o: any) => { if (o.isMesh) { o.geometry.computeBoundingBox?.(); const g = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld.clone().multiply(new THREE.Matrix4().copy(part.matrixWorld).invert())); bb.union(g); } });
+      const sz = bb.getSize(new THREE.Vector3()), axis = sz.x >= sz.y && sz.x >= sz.z ? new THREE.Vector3(1, 0, 0) : sz.y >= sz.z ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+      const q = new THREE.Quaternion(); part.getWorldQuaternion(q); const w = axis.applyQuaternion(q); w.y = 0; w.normalize();
+      const fwd = new THREE.Vector3(Math.sin(f.faceTo ?? f.group.rotation.y), 0, Math.cos(f.faceTo ?? f.group.rotation.y));
+      const ang = Math.acos(Math.min(1, Math.abs(w.dot(fwd)))) * 180 / Math.PI; // either end of the barrel may be the muzzle
+      out.push({ uid: f.uid, cardId: f.cardId, part: a.part, barrelVsTargetDeg: +ang.toFixed(1) });
+    }
+    return out;
+  }
+  function aimGrip(f: Fig, startAt: number, endAt: number, now: number) {
+    const a = AIM_LOOKS[f.cardId], c3 = f.c3d as any; if (!a || !c3?.partObject) return;
+    const part: THREE.Object3D | null = c3.partObject(a.part); if (!part) return;
+    const ud = part.userData as any;
+    if (!ud.idleLook) ud.idleLook = { pos: part.position.clone(), rot: part.rotation.clone(), scale: part.scale.clone() };
+    const set = (on: boolean) => {
+      if (on) { const L = a.look; part.position.set(L.pos[0], L.pos[1], L.pos[2]); part.rotation.set(THREE.MathUtils.degToRad(L.rot[0]), THREE.MathUtils.degToRad(L.rot[1]), THREE.MathUtils.degToRad(L.rot[2]), 'XYZ'); part.scale.set(L.scale[0], L.scale[1], L.scale[2]); }
+      else { part.position.copy(ud.idleLook.pos); part.rotation.copy(ud.idleLook.rot); part.scale.copy(ud.idleLook.scale); }
+      ud.aiming = on;
+    };
+    clearTimeout(ud.aimOff);
+    setTimeout(() => set(true), Math.max(0, startAt - now));
+    ud.aimOff = setTimeout(() => set(false), Math.max(0, endAt - now));
+    aimLog.push({ uid: f.uid, cardId: f.cardId, part: a.part, on: Math.round(startAt), off: Math.round(endAt) }); if (aimLog.length > 40) aimLog.shift();
+  }
   /** Oct 31 (Ken: "the opposing side plays stuff too fast ... you can't tell anything that he's doing"): what still plays on the board
    *  ('' = calm). The computer's next action waits until this is '' (game.ts aiPace). */
   /** Oct 31: the screen box (board px, the same space as cellRect) of whatever stands on a square: a unit, a crystal mine or a Stronghold.
@@ -1011,6 +1049,7 @@ const _embV = new THREE.Vector3();
         const est = f.target.clone().setY((f.c3d?.boardH ?? 1) * 0.6 + (f.c3d?.lift || 0));
         const flightMs = Math.min(2200, Math.max(120, ((est.distanceTo(toPt) * (shot.style === 'arc' ? 1.15 : 1)) / shot.speed) * 1000));
         f.blowAt = releaseAt + flightMs; f.faceUntil = f.blowAt + 400;
+        aimGrip(f, t0, t0 + f.atkMs + 150, now);
         const sh = shot, ff = f;
         proj.fire({ shooterUid: f.uid, unit: f.cardId, clip: f.c3d?.clipOf?.('attack') || '', spec: shot, releaseTime: clipRel, releaseAt, arriveAt: f.blowAt, to: toPt, targetUid: def?.uid,
           launch: () => launchPoint(ff, sh, toPt), onSpawn: () => audio.play('ranged') });
@@ -1751,7 +1790,7 @@ const _embV = new THREE.Vector3();
             unitRings: [...figs.values()].filter((f) => !f.dying).map((f) => { const rs = getRings(); return { uid: f.uid, side: f.owner, color: f.ringColor || '', greyed: !!f.ringGreyed, thickness: rs.thickness, glow: rs.glow, opacity: rs.opacity }; }),
             figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ ...figureStats(f), uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb), bubble: !!bubbles.get(f.uid)?.on, bubblePops: bubblePops.get(f.uid) || 0, bubbleColor: bubbles.get(f.uid)?.hex || '' })),
             creatureAnimLog: creatureAnimLog.map((e) => ({ ...e })),
-            projectiles: proj.active(), projectileLog: proj.log(), attackLog: attackLog.map((x) => ({ ...x })),
+            projectiles: proj.active(), projectileLog: proj.log(), attackLog: attackLog.map((x) => ({ ...x })), aimLog: aimLog.map((x) => ({ ...x })), aimNow: aimNow(),
             canvas: canvasInfo(),
             missingClips: missingClipList.map((m) => ({ ...m })),
             commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? (cm.g3d.files?.source || 'grubnak.glb') : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? (cm.g3d.files?.fortress || 'grubnak-fortress.glb') : '', scepter: cm.g3d ? (cm.g3d.files?.scepter ?? 'grubnak-scepter.glb') : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, items: (((cm.g3d as any)?.items || []) as { name: string; bone: string; obj: THREE.Object3D | null }[]).map((i) => { let o: THREE.Object3D | null = i.obj, vis = !!o, size = 0; while (o) { if (!o.visible) vis = false; o = o.parent; } if (i.obj) { const ib = new THREE.Box3().setFromObject(i.obj, true); if (!ib.isEmpty()) size = +ib.getSize(new THREE.Vector3()).length().toFixed(3); } return { name: i.name, bone: i.bone, visible: vis, size }; }), animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
