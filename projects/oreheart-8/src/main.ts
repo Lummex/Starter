@@ -35,6 +35,7 @@ if (test) {
     },
     fitText: (el: HTMLElement) => fitCardText(el),
     getState: () => game.getState(),
+    getAiAudit: () => JSON.parse(JSON.stringify((globalThis as any).__aiAudit)),
     legalActions: () => (game.legalActions() as any[]).map((a: any) => (a.type === 'ability' && a.ability === 'shaman' && a.from ? { ...a, ability: 'pickUp', target: { ...a.from }, to: { ...a.target }, from: undefined } : a)).map((a: any) => { if (a.from === undefined) delete a.from; return a; }),
     act: (action: any) => {
       try { return game.act(action, true); } catch (e: any) { return { ok: false, error: String(e && e.message || e) }; }

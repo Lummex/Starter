@@ -78,9 +78,18 @@ const baseCost = (s: any, p: Side, card: any) => {
   if (disc) c = Math.max(Math.min(card.cost, 1), c - disc);
   return c;
 };
-/** A basic Miner is free when Flow + Bank can't pay for it and no Miner stands on the battlefield. */
+/** A basic Miner is free when Flow + Bank can't pay for it and no Miner stands on the battlefield.
+ *  Fix (Ken, Oct 31: "they're putting units they don't even have crystals for out ... multiple"): the faction's basic Miner card itself
+ *  always counts as "a Miner on the battlefield" here, even when the owner made it a Fighter (the dwarves' Riot Shield Bearer, Round 12c),
+ *  and so does one still waiting in an open summon window. Before, a broke Dwarf side got a free Bearer again and again. */
+const basicOnField = (s: any, p: Side) => {
+  const pend = s.pendingResponse;
+  const counts = (cardId: string) => { const k = CARDS[cardId]; return !!k && (isMiner(k) || cardId === basicGatherer(k.faction)); };
+  if (pend && pend.kind === 'summon' && pend.actor === p && pend.card && counts(pend.card.cardId)) return true;
+  return s.board.creatures.some((c: any) => c.owner === p && counts(c.cardId));
+};
 const goesFree = (s: any, p: Side, card: any) =>
-  card.id === basicGatherer(card.faction) && !s.board.creatures.some((c: any) => c.owner === p && isMiner(CARDS[c.cardId])) &&
+  card.id === basicGatherer(card.faction) && !basicOnField(s, p) &&
   funds(s.players[p]) < baseCost(s, p, card);
 export function creatureCost(s: any, p: Side, card: any) {
   return goesFree(s, p, card) ? 0 : baseCost(s, p, card);

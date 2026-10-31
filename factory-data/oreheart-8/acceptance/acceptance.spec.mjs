@@ -11010,3 +11010,63 @@ test('AC421: the pickaxe picture mines; a tap on its padding over a unit behind 
   await page.mouse.click(ib.x + ib.width / 2, ib.y + ib.height / 2);
   await expect.poll(async () => at(await getState(page), M2.row + 1, M2.col).hasMined).toBe(true);
 });
+
+// ---------------------------------------------------------------- Oct 31 (Anvil): the computer plays by the rules
+// Ken: "The opposing team is cheating ... putting units they don't even have crystals for out ... right at my side ... multiple ...
+// They need to have a deck. And play by the rules." Cause: the dwarves' basic Miner card is the Riot Shield Bearer, a Fighter since
+// Round 12c, so the "one free basic Miner when broke and no Miner on the battlefield" rule never saw a Miner on the board and a broke
+// Dwarf side got a free Bearer again and again, each Tunnelling next to any mine. The game now counts the basic Miner card itself,
+// and every computer action goes through a referee (game.ts aiAudit) that refuses anything the player could not do.
+test('AC422: a broke Dwarf side gets exactly ONE free Riot Shield Bearer; the second costs 2 and is refused without crystals', async ({ page }) => {
+  let s = await start(page, { ai: false, setup: { playerHand: ['dwarf-miner', 'dwarf-miner', 'dwarf-miner'], playerCrystals: 0 }, playerCommander: 'borgo', opponentCommander: 'grubnak' });
+  const uids = s.players.player.hand.filter((c) => c.cardId === 'dwarf-miner').map((c) => c.uid);
+  expect(uids.length).toBe(3);
+  const first = (await legal(page)).filter((a) => a.type === 'summon');
+  expect(first.length, 'the first Bearer is free').toBeGreaterThan(0);
+  expect((await act(page, first[0])).ok).toBe(true);
+  s = await getState(page);
+  if (s.pendingResponse) await act(page, { type: 'pass' });
+  s = await getState(page);
+  expect(s.board.creatures.filter((c) => c.cardId === 'dwarf-miner').length).toBe(1);
+  expect(s.players.player.crystals + s.players.player.bank).toEqual(0);
+  expect((await legal(page)).filter((a) => a.type === 'summon').length, 'no second free Bearer').toBe(0);
+  for (const row of [7, 1, 4]) for (const col of [1, 3, 5, 7]) {
+    const r = await act(page, { type: 'summon', uid: uids[1], row, col });
+    expect(r.ok, `a second free Bearer at ${row},${col}`).toBe(false);
+  }
+  // with 2 crystals the second one is paid for, like any card
+  s = await newMatch(page, { ai: false, setup: { playerHand: ['dwarf-miner', 'dwarf-miner'], playerCrystals: 2, board: [{ cardId: 'dwarf-miner', owner: 'player', row: 7, col: 5 }] }, playerCommander: 'borgo', opponentCommander: 'grubnak' });
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true);
+  s = await getState(page);
+  if (s.pendingResponse) await act(page, { type: 'pass' });
+  expect((await getState(page)).players.player.crystals).toEqual(0);
+});
+
+test('AC423: over a whole computer-vs-computer match on every difficulty, every computer action passes the same rule check as the player, every summon is paid, in its deploy zone and from its own deck, and the thinking never touches the match', async ({ page }) => {
+  test.setTimeout(240000);
+  await openTest(page, 5);
+  for (const [i, difficulty] of ['easy', 'normal', 'hard'].entries()) {
+    // test mode + Card Comp vs Card Comp, not paused: the whole match plays out at once and the referee counts every computer action
+    const s = await page.evaluate(async ([d, seed]) => await window.oreheart.newMatch({ mode: 'compvscomp', difficulty: d, seed, skipMulligan: true,
+      playerCommander: ['grubnak', 'borgo', 'sproingle'][seed % 3], opponentCommander: ['borgo', 'sproingle', 'grubnak'][seed % 3] }), [difficulty, 31 + i]);
+    const audit = await page.evaluate(async () => await window.oreheart.getAiAudit());
+    expect(s.difficulty).toBe(difficulty);
+    expect(s.phase === 'over' || s.turn > 20, `${difficulty}: the match played out (turn ${s.turn})`).toBe(true);
+    expect(audit.checked, `${difficulty}: computer actions were refereed`).toBeGreaterThan(50);
+    expect(audit.summons, `${difficulty}: the computer summoned`).toBeGreaterThan(5);
+    expect(audit.refused, `${difficulty}: illegal computer actions refused: ${audit.last}`).toBe(0);
+    expect(audit.unpaid, `${difficulty}: unpaid summons: ${audit.last}`).toBe(0);
+    expect(audit.offZone, `${difficulty}: summons outside the deploy zone: ${audit.last}`).toBe(0);
+    expect(audit.foreign, `${difficulty}: cards not from its own deck: ${audit.last}`).toBe(0);
+    expect(audit.touched, `${difficulty}: the computer's thinking changed the real match: ${audit.last}`).toBe(0);
+  }
+  // the referee really refuses: a forced illegal computer action (a Grunt on the PLAYER's back row with 0 crystals) is counted and never applied
+  const forced = await page.evaluate(async () => {
+    window.__aiForceNext = (st) => ({ type: 'summon', uid: st.players.opponent.hand[0].uid, row: 7, col: 5 });
+    await window.oreheart.newMatch({ mode: 'standard', ai: true, difficulty: 'hard', seed: 9, skipMulligan: true, setup: { firstPlayer: 'opponent', opponentHand: ['goblin-grunt'], opponentCrystals: 0 } });
+    const st = await window.oreheart.getState();
+    return { audit: await window.oreheart.getAiAudit(), grunts: st.board.creatures.filter((c) => c.cardId === 'goblin-grunt').length, turn: st.turn };
+  });
+  expect(forced.audit.refused, 'the forced illegal summon was refused').toBeGreaterThan(0);
+  expect(forced.grunts, 'and never applied').toBe(0);
+});

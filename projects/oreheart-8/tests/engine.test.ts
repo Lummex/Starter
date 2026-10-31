@@ -218,6 +218,16 @@ describe('revision 6', () => {
     const r = act(s, legalActions(s).find((a: any) => a.type === 'summon'));
     expect(r.players.player.bank).toBe(0);
   });
+  it('a free Riot Shield Bearer (the dwarves\' basic Miner, a Fighter) counts as the Miner on the battlefield: never a second free one (Ken, Oct 31)', () => {
+    let s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { playerHand: ['dwarf-miner', 'dwarf-miner', 'dwarf-miner'], playerCrystals: 0 } });
+    const summons = (st: any) => legalActions(st).filter((a: any) => a.type === 'summon');
+    expect(summons(s).length).toBeGreaterThan(0);
+    s = act(s, summons(s)[0]);
+    if (s.pendingResponse) s = act(s, { type: 'pass' });
+    expect(s.board.creatures.filter((c: any) => c.cardId === 'dwarf-miner').length).toBe(1);
+    expect(s.players.player.crystals + s.players.player.bank).toBe(0);
+    expect(summons(s).length).toBe(0); // the second Bearer costs 2 and the side is broke
+  });
   it('Tunnel works from turn 1, any time (round 10)', () => {
     const near = (s: any) => legalActions(s).filter((a: any) => a.type === 'summon' && a.row < 7);
     let s = mk({ playerHand: ['goblin-scrounger'], playerCrystals: B(1) });

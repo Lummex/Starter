@@ -218,7 +218,8 @@ describe('AI Oct 31: Medium is unchanged', () => {
 
 describe('AI Oct 30: Easy is unchanged', () => {
   // recorded with the AI before this upgrade (factory/issue-8 858b9550, 60-card decks): the same seeds must play out step for step the same
-  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 11: { turn: 80, units: 11, steps: 295 }, 12: { turn: 80, units: 16, steps: 445 }, 13: { turn: 80, units: 23, steps: 427 } };
+  // Oct 31 (Anvil): seed 11 re-recorded after the free-Miner fix (a broke Dwarf side no longer gets a free Riot Shield Bearer again and again), the AI is untouched
+  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 11: { turn: 80, units: 5, steps: 289 }, 12: { turn: 80, units: 16, steps: 445 }, 13: { turn: 80, units: 23, steps: 427 } };
   for (const seed of [11, 12, 13]) {
     it('easy vs easy, seed ' + seed, () => {
       let s: any = createMatch({ seed, playerCommander: ['grubnak', 'sproingle', 'borgo'][seed % 3], opponentCommander: ['borgo', 'grubnak', 'sproingle'][seed % 3] });

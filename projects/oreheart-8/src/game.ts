@@ -1,10 +1,48 @@
 // Match controller: owns the engine state, runs the computer opponent, and notifies the UI.
-import { createMatch, applyAction, legalActions, hasMovesLeft, other, CONFIG, brewActions } from './engine';
+import { createMatch, applyAction, legalActions, hasMovesLeft, other, CONFIG, brewActions, CARDS, creatureCost, funds, summonSpaces } from './engine';
 import { aiChoose, makeRand, Rand } from './ai/ai';
 import { stanceChoose, onlyUnit, Stance } from './ai/stances';
 import tutorialJson from './content/tutorial.json';
 
 export type Listener = (state: any, events: any[]) => void;
+
+/** Referee for the computer's actions (Anvil, Oct 31; Ken: "they need to have a deck and play by the rules"). Every action the computer
+ *  picks is checked against the same legalActions() list the player gets before it is applied; an illegal one is REFUSED (counted in
+ *  `refused`) and the computer passes or ends the phase instead. Summons are also checked: paid in full, in the legal deploy zone
+ *  (back row; front row only when the back row is full; Tunnel next to a mine) and a card from that side's own hand and starting deck.
+ *  In test mode the match state is also compared before and after the computer's thinking (`touched`). Probe hook: window.__aiAudit. */
+export const aiAudit = { checked: 0, refused: 0, touched: 0, summons: 0, unpaid: 0, offZone: 0, foreign: 0, last: '' as string };
+(globalThis as any).__aiAudit = aiAudit;
+const canonAction = (a: any) => JSON.stringify(Object.keys(a).filter((k) => a[k] !== undefined && !(k === 'redraw' && !a[k])).sort().reduce((o: any, k) => (o[k] = a[k], o), {}));
+const ownUids: Record<string, Set<string>> = { player: new Set(), opponent: new Set() };
+function auditPick(s: any, a: any, before: string | null): any {
+  aiAudit.checked++;
+  if (before !== null && JSON.stringify(s) !== before) { aiAudit.touched++; aiAudit.last = `turn ${s.turn}: the computer's thinking changed the match state`; }
+  if (!a || !legalActions(s).some((l: any) => canonAction(l) === canonAction(a))) {
+    aiAudit.refused++; aiAudit.last = `turn ${s.turn} ${s.phase}: refused ${JSON.stringify(a)}`;
+    return s.pendingResponse ? { type: 'pass' } : s.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' };
+  }
+  if (a.type === 'summon') {
+    const who = s.priority, pl = s.players[who];
+    const h = pl.hand.find((x: any) => x.uid === a.uid), card = h && CARDS[h.cardId];
+    aiAudit.summons++;
+    if (!h || !ownUids[who].has(h.uid)) { aiAudit.foreign++; aiAudit.last = `turn ${s.turn}: ${who} summoned a card not from its own hand and deck`; }
+    if (card) {
+      const zone = summonSpaces(s, who, card), backFree = zone.some((z) => z.row === CONFIG.backRow[who]);
+      const okRow = a.row === CONFIG.backRow[who] || (!backFree && a.row === CONFIG.frontRow[who]) || card.abilities?.includes('tunnel');
+      if (!okRow || !zone.some((z) => z.row === a.row && z.col === a.col)) { aiAudit.offZone++; aiAudit.last = `turn ${s.turn}: ${who} summoned ${card.id} outside its deploy zone (${a.row},${a.col})`; }
+      if (funds(pl) < creatureCost(s, who, card)) { aiAudit.unpaid++; aiAudit.last = `turn ${s.turn}: ${who} summoned ${card.id} without the crystals`; }
+    }
+  }
+  return a;
+}
+function auditPaid(before: any, a: any, after: any) {
+  if (!a || a.type !== 'summon' || !after) return;
+  const who = before.priority, pl = before.players[who], h = pl.hand.find((x: any) => x.uid === a.uid);
+  if (!h) return;
+  const expect = funds(pl) - creatureCost(before, who, CARDS[h.cardId]);
+  if (funds(after.players[who]) !== expect) { aiAudit.unpaid++; aiAudit.last = `turn ${before.turn}: ${who}'s summon of ${h.cardId} was not paid in full`; }
+}
 
 export class Game {
   state: any = null;
@@ -61,6 +99,8 @@ export class Game {
     this.rand = makeRand(seed + 977);
     this.state = createMatch({ ...options, seed, testMode: this.testMode });
     this.state.difficulty = this.difficulty;
+    for (const w of ['player', 'opponent']) { ownUids[w] = new Set(); for (const h of [...this.state.players[w].deck, ...this.state.players[w].hand]) ownUids[w].add(h.uid); }
+    for (const k of Object.keys(aiAudit)) (aiAudit as any)[k] = typeof (aiAudit as any)[k] === 'number' ? 0 : '';
     this.paused = !!options.paused;
     this.state.mode = this.mode;
     this.emit([{ type: 'newMatch' }]);
@@ -73,11 +113,14 @@ export class Game {
     let n = 0, turn = -1, cnt = 0;
     while (this.state.phase !== 'over' && n++ < 20000) {
       if (turn !== this.state.turn) { turn = this.state.turn; cnt = 0; }
+      const snap = JSON.stringify(this.state);
       let a: any = this.compChoose();
+      a = auditPick(this.state, a, snap);
       if (++cnt > 60 && !this.state.pendingResponse && this.state.phase !== 'mulligan') a = { type: 'done' };
       let r: any = applyAction(this.state, a);
       if (!r.ok) r = applyAction(this.state, this.state.pendingResponse ? { type: 'pass' } : this.state.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' });
       if (!r.ok) break;
+      auditPaid(this.state, a, r.state);
       this.state = r.state;
     }
     this.emit([{ type: 'sync' }]);
@@ -230,11 +273,13 @@ export class Game {
       if (this.paused) { this.afterAction(); return; }
       const st = this.state;
       if (this.aiTurn !== st.turn) { this.aiTurn = st.turn; this.aiCount = 0; }
+      const snap = this.testMode ? JSON.stringify(st) : null;
       let a = this.compChoose();
+      a = auditPick(st, a, snap);
       if (++this.aiCount > 60 && !st.pendingResponse && st.phase !== 'mulligan') a = { type: 'done' };
       let r: any = applyAction(st, a);
       if (!r.ok) r = applyAction(st, st.pendingResponse ? { type: 'pass' } : st.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' });
-      if (r.ok) { this.state = r.state; this.emit(r.events); }
+      if (r.ok) { auditPaid(st, a, r.state); this.state = r.state; this.emit(r.events); }
       this.afterAction();
     }, (st0(this.state) / this.speed) / (this.testMode ? 8 : 1));
   }
@@ -253,11 +298,15 @@ export class Game {
   private aiStep() {
     const s = this.state;
     if (this.aiTurn !== s.turn) { this.aiTurn = s.turn; this.aiCount = 0; }
+    const snap = this.testMode ? JSON.stringify(s) : null;
     let a = this.scripted ? (s.pendingResponse ? { type: 'pass' } : { type: 'done' }) : aiChoose(s, this.difficulty, this.rand);
+    if (this.testMode && (globalThis as any).__aiForceNext) { const f = (globalThis as any).__aiForceNext; delete (globalThis as any).__aiForceNext; a = f(s); } // test hook: the referee must refuse this
+    a = auditPick(s, a, snap);
     if (++this.aiCount > 60 && !s.pendingResponse && s.phase !== 'mulligan') a = { type: 'done' };
     let r = applyAction(s, a);
     if (!r.ok) r = applyAction(s, s.pendingResponse ? { type: 'pass' } : s.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' });
     if (!r.ok) return;
+    auditPaid(s, a, r.state);
     this.state = r.state;
     this.emit(r.events);
   }
