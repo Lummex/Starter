@@ -2178,6 +2178,9 @@ export class App {
     // Ken (Oct 31): the Sort button sits just left of the first card (never over a card): the row starts a button's width later
     const sortB = this.r.handSort as El | undefined;
     const sortW = sortB && !sortB.hidden ? sortB.getBoundingClientRect().width : 0;
+    /* read the button's parent box now, before the cards are written (no extra layout pass) */
+    const sortPar = sortW ? (sortB!.offsetParent as El | null) : null, sortPr = sortPar?.getBoundingClientRect();
+    const sortPsx = sortPar && sortPar.offsetWidth ? sortPr!.width / sortPar.offsetWidth || 1 : 1;
     const sortGap = Math.max(10, Math.round(sortW * 0.3));
     /* how far the first card's tilted top corner reaches left of its box (it turns about 50% 110%) */
     const tiltOut = (deg: number, w: number, hh: number) => { const t = (deg * Math.PI) / 180; return Math.max(0, -(w / 2) + (w / 2) * Math.cos(t) - 1.1 * hh * Math.sin(t)); };
@@ -2244,13 +2247,13 @@ export class App {
     });
     if (pop) this.asideNeighbors(pop);
     if (sortB && sortW) {
-      const par = sortB.offsetParent as El | null, pr = par?.getBoundingClientRect();
-      const psx = par && par.offsetWidth ? pr!.width / par.offsetWidth || 1 : 1;
+      const pr = sortPr, psx = sortPsx;
       const x0 = hb.left + (els.length ? lefts[0] - tiltOut(parseFloat(els[0].dataset.fanAngle || '0') || 0, cw, ch) : spanL) * sx - sortGap - sortW;
       const visTop = baseTop + restY + offTop;
       const y0 = Math.min(H - sortW - 4, (visTop + H) / 2 - sortW / 2);
-      sortB.style.left = ((x0 - (pr ? pr.left : 0)) / psx).toFixed(1) + 'px';
-      sortB.style.top = ((y0 - (pr ? pr.top : 0)) / psx).toFixed(1) + 'px';
+      const sl = ((x0 - (pr ? pr.left : 0)) / psx).toFixed(1) + 'px', st = ((y0 - (pr ? pr.top : 0)) / psx).toFixed(1) + 'px';
+      if (sortB.style.left !== sl) sortB.style.left = sl;
+      if (sortB.style.top !== st) sortB.style.top = st;
     }
     this.restTy = restY;
     if (hand.lastElementChild !== spill) hand.append(spill);
