@@ -460,7 +460,7 @@ const _embV = new THREE.Vector3();
   /** Oct 31 (Ledger, studio/gear-placements-oct31.json aimLooks): while a shooter plays its ranged clip its gun takes an aim grip (barrel along
    *  the hands, muzzle forward); the idle look comes back when the clip ends */
   const AIM_LOOKS: Record<string, { part: string; look: { pos: number[]; rot: number[]; scale: number[] } }> = {
-    'oathbound-pikeman': { part: 'rifle', look: { pos: [-5.353, 31.233, 9.094], rot: [27.958, -50.996, -61.011], scale: [79.958, 79.958, 79.958] } },
+    'oathbound-pikeman': { part: 'rifle', look: { pos: [17.338, 27.565, -5.141], rot: [-46.812, -43.718, -122.654], scale: [79.958, 79.958, 79.958] } }, // Ledger's trimmed grip (Oct 31): ~0 deg off while aiming (was ~48)
     'deepforge-crossbowman': { part: 'crystal-gun', look: { pos: [11.799, 9.341, 3.481], rot: [-32.612, -34.028, -107.773], scale: [33.508, 33.508, 33.508] } }, // Ledger's exact grip (Oct 31): ~1-2 deg off in the game (grip A was ~10, the old one ~42)
   };
   const aimLog: { uid: string; cardId: string; part: string; on: number; off: number }[] = [];
