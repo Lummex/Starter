@@ -12139,3 +12139,117 @@ test('AC483: the Done button is the size of the Menu button, both have their con
     if (m.deck) expect(m.done.x0 - m.done.w * 0.3, `${W}x${H}: Done's left gem stays clear of the deck pile`).toBeGreaterThanOrEqual(m.deck.x1 - 1);
   }
 });
+
+// ---------- Oct 31: Brush's sound files (Ken: "the game sounds good. Implement them.") ----------
+// studio/sound-spec.json: event -> file(s), base volume, random pitch range in semitones (+/- 1.5 dB volume on top)
+const SFX_SPEC = {
+  click: [['ui-click'], 0.7, 0.5], tick: [['ui-tick'], 0.6, 0.3], chime: [['ui-chime'], 0.7, 0], draw: [['card-draw'], 0.7, 1], cardPlay: [['card-play'], 0.8, 0.7],
+  summon: [['summon'], 0.85, 0.5], 'step:goblins': [['step-goblin'], 0.5, 1.5], 'step:gnomes': [['step-gnome'], 0.5, 1.5], 'step:dwarves': [['step-dwarf'], 0.55, 1.2],
+  melee: [['melee'], 0.9, 1], ranged: [['ranged'], 0.85, 1], bonk: [['bonk-1', 'bonk-2', 'bonk-3'], 0.9, 1], clink: [['clink-1', 'clink-2', 'clink-3'], 0.85, 0.8],
+  thud: [['thud'], 0.85, 1], pick: [['mine-pick'], 0.8, 1], shatter: [['shatter'], 0.85, 0.5], 'defeat-poof': [['defeat-poof'], 0.85, 0.8],
+  stronghold: [['commander-hit'], 1, 0.5], kaboom: [['kaboom'], 1, 0.5], 'turn-start': [['turn-start'], 0.85, 0], win: [['win'], 1, 0], lose: [['lose'], 1, 0],
+};
+const SFX_SPELLS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-rush', 'battle-cry', 'healing-light', 'shield-bubble', 'second-wind', 'prospectors-prayer', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex'];
+for (const id of SFX_SPELLS) SFX_SPEC['spell:' + id] = [['spell-' + id], 1, 0];
+const sfxState = async (page) => (await page.evaluate(async () => await window.oreheart.getAudioState())).sfx;
+async function sfxReady(page) {
+  await page.mouse.click(5, 5); // first gesture unlocks audio; the files load after it
+  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 39 sound files decoded', timeout: 20000 }).toBe(39);
+}
+const playKey = (page, key) => page.evaluate((k) => {
+  if (k.startsWith('spell:')) window.oreheart.playSpellSound(k.slice(6));
+  else if (k.startsWith('step:')) window.oreheart.playSfx('step', k.slice(5));
+  else window.oreheart.playSfx(k);
+}, key);
+const lastPlay = async (page) => { const p = (await sfxState(page)).plays; return p[p.length - 1]; };
+
+for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
+  test.describe(`sound files at ${vp.width}x${vp.height}`, () => {
+    test.use({ viewport: vp });
+    test(`AC490: every sound event plays its served OGG through the SFX volume, with random pitch, no repeated bonk and at most 3 voices (${vp.width}x${vp.height})`, async ({ page, request }) => {
+      test.setTimeout(90000);
+      const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+      await start(page, quiet({ playerHand: [] }));
+      await sfxReady(page);
+      let st = await sfxState(page);
+      // every spec event maps to its files under /audio/sfx/, each served (200) and decoded
+      for (const [key, [files]] of Object.entries(SFX_SPEC)) expect(st.map[key], key).toEqual(files.map((f) => `/audio/sfx/${f}.ogg`));
+      for (const f of Object.values(SFX_SPEC).flatMap(([fs]) => fs)) {
+        const r = await request.get(`/audio/sfx/${f}.ogg`);
+        expect(r.status(), f).toBe(200);
+        expect((await r.body()).subarray(0, 4).toString('latin1'), `${f} is OGG`).toBe('OggS');
+        expect(st.files[f], `${f} decoded`).toBe('ok');
+      }
+      // each event plays its file (not the synth fallback), pitch and volume inside the spec's random range
+      for (const [key, [files, vol, semis]] of Object.entries(SFX_SPEC)) {
+        await playKey(page, key);
+        const p = await lastPlay(page);
+        expect(p.key, key).toBe(key);
+        expect(p.from, `${key} from the file`).toBe('file');
+        expect(files.map((f) => `/audio/sfx/${f}.ogg`)).toContain(p.file);
+        expect(p.rate, `${key} playbackRate`).toBeGreaterThanOrEqual(Math.pow(2, -semis / 12) - 1e-6);
+        expect(p.rate, `${key} playbackRate`).toBeLessThanOrEqual(Math.pow(2, semis / 12) + 1e-6);
+        const base = key === 'turn-start' ? vol * 0.6 : vol; // the turn horn plays gently
+        expect(p.vol, `${key} volume`).toBeGreaterThanOrEqual(base * Math.pow(10, -1.5 / 20) - 1e-6);
+        expect(p.vol, `${key} volume`).toBeLessThanOrEqual(base * Math.pow(10, 1.5 / 20) + 1e-6);
+      }
+      // bonk: random of 3, never the same twice in a row over 10 plays
+      const n0 = (await sfxState(page)).plays.length;
+      for (let i = 0; i < 10; i++) await playKey(page, 'bonk');
+      const bonks = (await sfxState(page)).plays.slice(n0).map((p) => p.file);
+      expect(bonks.length).toBe(10);
+      for (let i = 1; i < bonks.length; i++) expect(bonks[i], `bonk ${i} differs from bonk ${i - 1}`).not.toBe(bonks[i - 1]);
+      expect(new Set(bonks).size).toBeGreaterThan(1);
+      // at most 3 voices of one sound: 6 fast kabooms steal the oldest
+      const n1 = (await sfxState(page)).plays.length;
+      await page.evaluate(() => { for (let i = 0; i < 6; i++) window.oreheart.playSfx('kaboom'); });
+      st = await sfxState(page);
+      expect(st.plays.slice(n1).every((p) => p.voices >= 1 && p.voices <= 3)).toBe(true);
+      expect(st.plays.slice(n1).map((p) => p.voices).slice(-3)).toEqual([3, 3, 3]); // the 4th, 5th and 6th each stole the oldest
+      expect(st.active.kaboom).toBeLessThanOrEqual(3);
+      // mute silences them: the SFX bus goes to 0 and nothing plays
+      await page.getByRole('button', { name: 'Mute sound', exact: true }).click();
+      await expect.poll(async () => (await sfxState(page)).gain).toBe(0);
+      await playKey(page, 'melee');
+      expect(await lastPlay(page)).toMatchObject({ key: 'melee', from: 'muted', played: false });
+      await page.getByRole('button', { name: 'Unmute sound', exact: true }).click();
+      // the Sound effects slider scales the same bus the files play through
+      await openMatchMenu(page);
+      await page.getByRole('dialog', { name: 'Match settings' }).getByRole('slider', { name: 'Sound effects volume' }).fill('50');
+      await expect.poll(async () => (await sfxState(page)).gain).toBeCloseTo(0.35, 3);
+      await playKey(page, 'melee');
+      expect(await lastPlay(page)).toMatchObject({ key: 'melee', from: 'file', played: true });
+      await page.getByRole('dialog', { name: 'Match settings' }).getByRole('slider', { name: 'Sound effects volume' }).fill('0');
+      await expect.poll(async () => (await sfxState(page)).gain).toBe(0);
+      expect(errors).toEqual([]);
+    });
+
+    test(`AC491: casting a spell plays its own spell-<id>.ogg when its FX starts (${vp.width}x${vp.height})`, async ({ page }) => {
+      test.setTimeout(60000);
+      await start(page, quiet({ playerHand: ['fireball', 'prospectors-prayer'], playerCrystals: 10, board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 3 }] }));
+      await sfxReady(page);
+      await page.evaluate(() => {
+        window.__fxStart = [];
+        new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.classList && n.classList.contains('fxv-card')) window.__fxStart.push(Math.round(performance.now())); })
+          .observe(document.body, { childList: true, subtree: true });
+      });
+      for (const [id, target] of [['fireball', { row: 3, col: 3 }], ['prospectors-prayer', null]]) {
+        await clearFx(page);
+        await page.evaluate(() => { window.__fxStart = []; });
+        const n0 = (await sfxState(page)).plays.length;
+        const s = await getState(page);
+        const uid = handUid(s, 'player', id);
+        const cast = target ? { type: 'cast', uid, target } : (await legal(page)).find((a) => a.type === 'cast' && a.uid === uid);
+        expect(cast, `${id} can be cast`).toBeTruthy();
+        expect((await act(page, cast)).ok, `${id} cast`).toBe(true);
+        await expect.poll(async () => (await fxLog(page)).some((e) => e.kind === 'effect' && e.cardId === id), { message: `${id} FX` }).toBe(true);
+        await expect.poll(async () => (await sfxState(page)).plays.slice(n0).some((p) => p.key === 'spell:' + id), { message: `${id} sound` }).toBe(true);
+        const p = (await sfxState(page)).plays.slice(n0).find((x) => x.key === 'spell:' + id);
+        expect(p).toMatchObject({ file: `/audio/sfx/spell-${id}.ogg`, from: 'file', played: true });
+        const fx = await page.evaluate(() => window.__fxStart.slice());
+        expect(fx.length, `${id} FX card appeared`).toBeGreaterThan(0);
+        expect(Math.abs(p.t - fx[0]), `${id} sound starts with its FX`).toBeLessThanOrEqual(150);
+      }
+    });
+  });
+}
