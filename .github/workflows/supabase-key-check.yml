@@ -44,7 +44,12 @@ jobs:
 
       - name: 3. Test DB password works (link + read-only migration list, TEST only)
         run: |
+          set -o pipefail
           supabase init --yes >/dev/null 2>&1 || supabase init
-          supabase link --project-ref "$TEST_REF" -p "$TEST_PW" 2>&1 | sed 's/postgres.*@/postgres:***@/' && echo "ok   linked to test project"
-          supabase migration list --linked -p "$TEST_PW" 2>&1 | sed 's/postgres.*@/postgres:***@/'
-          echo "ok   test DB password accepted (read-only query ran)"
+          supabase link --project-ref "$TEST_REF" -p "$TEST_PW" 2>&1 | sed 's/user=postgres\.[^ ]*/user=postgres.***/' || { echo "FAIL could not link to the test project"; exit 1; }
+          echo "ok   linked to test project"
+          if supabase migration list --linked -p "$TEST_PW" 2>&1 | sed 's/user=postgres\.[^ ]*/user=postgres.***/'; then
+            echo "ok   SUPABASE_TEST_DB_PASSWORD accepted (read-only query ran)"
+          else
+            echo "FAIL SUPABASE_TEST_DB_PASSWORD was rejected by the test database"; exit 1
+          fi
