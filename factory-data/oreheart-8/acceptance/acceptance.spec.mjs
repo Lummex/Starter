@@ -10037,7 +10037,7 @@ test('AC366: flying units hover, bob and sway above their square with a ground s
 
 test('AC367: Gnome and Dwarf models have their own heights; the Clockwork Beetle slides when it moves', async ({ page }) => {
   test.setTimeout(45000);
-  const want = { 'dwarf-miner': 0.55, shieldbeard: 0.508, 'gnome-tinker': 0.407, 'spark-gnome': 0.317, 'queen-brunhilda-stonebeard': 0.545, 'ram-rider': 1.06, 'the-great-steam-golem': 2.111, 'clockwork-beetle': 0.706 }; // owner change (Ken, Oct 30): Ken's saved Studio heights (Ledger's table)
+  const want = { 'dwarf-miner': 1.048, shieldbeard: 1.179, 'gnome-tinker': 0.773, 'spark-gnome': 0.799, 'queen-brunhilda-stonebeard': 1.441, 'ram-rider': 1.31, 'the-great-steam-golem': 2.882, 'clockwork-beetle': 0.786 }; // owner check change (Ken, Oct 31): real-world heights (Ledger's table, squares; was the Oct 30 Studio heights). AC430 measures them on the board.
   const ids = Object.keys(want);
   const s = await start(page, quiet({ board: ids.map((cardId, i) => ({ cardId, owner: 'player', row: i < 4 ? 6 : 4, col: 3 + 2 * (i % 4) })) }));
   if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
@@ -11104,3 +11104,67 @@ test('AC424: the computer opponent thinks in a Web Worker in a live match: the w
   expect((await page.evaluate(async () => await window.oreheart.getAiInfo())).worker).toBe(false);
   expect((await getState(page)).activePlayer).toBe('player');
 });
+
+// ---------- Oct 31 (Ken via Ledger): real-world unit heights replace the 3x rule ----------
+// Ledger's table (studio/unit-heights-feet.json): squares tall, crystal mine = 5 ft = 1.31 squares. A unit's standing body (idle pose, feet to the top of the
+// head / helmet, hands and held items not counted; the rider on a mount) stands table x characterSizes.creatures (owner layout) squares tall on the board.
+const UNIT_SQUARES = { 'dwarf-miner': 1.048, 'dwarf-smith-miner': 1.048, 'dwarf-stoneback': 1.074, 'deepforge-crossbowman': 1.14, 'dwarf-pickman': 1.153, 'barrelback-courier': 1.153, 'shieldbeard': 1.179, 'axe-thrower': 1.179, 'brewmaster': 1.179, 'oathbound-pikeman': 1.179, 'ironhammer-berserker': 1.205, 'rune-splitter': 1.205, 'crystal-drunk-delver': 1.218, 'grimhold-ravager': 1.218, 'ram-rider': 1.31, 'queen-brunhilda-stonebeard': 1.441, 'gnome-prospector': 0.655, 'gnome-smith-miner': 0.694, 'gnome-widget': 0.734, 'hexwright-apprentice': 0.76, 'gnome-tinker': 0.773, 'clockwork-beetle': 0.786, 'spark-gnome': 0.799, 'gnome-cogger': 0.812, 'gnome-illusionist': 0.838, 'glyphshield-warden': 0.838, 'phase-stalker': 0.852, 'runic-siphoner': 0.878, 'gyrocopter-ace': 0.917, 'gearward-sentinel': 1.179, 'overclocked-conduit': 1.179, 'the-great-steam-golem': 2.882, 'goblin-scrounger': 0.786, 'goblin-smith-miner': 0.825, 'blastrat-sapper': 0.825, 'goblin-pebbler': 0.852, 'goblin-bomber': 0.865, 'goblin-sneak': 0.865, 'goblin-grunt': 0.865, 'goblin-slinger': 0.891, 'shiv-rat': 0.904, 'skullbasher-rusher': 0.904, 'rotgut-grenadier': 0.93, 'goblin-scrapper': 0.969, 'shard-guzzler': 0.969, 'junk-shaman': 1.009, 'wolf-rider': 1.048, 'grubnaks-big-boss-troll': 1.638 };
+for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone', width: 844, height: 390 }]) {
+  test(`AC430: every unit stands at its real-world table height x creatures (within 8 %); the Troll Tyrant and Arcane Colossus are the tallest; none covers the board (${vp.name})`, async ({ page, request }) => {
+    test.setTimeout(180000);
+    await page.setViewportSize({ width: vp.width, height: vp.height });
+    const lay = await (await request.get('/owner-layouts/final-draft/layout.json')).json();
+    const K = +((lay.characterSizes || {}).creatures ?? 1) || 1;
+    await openTest(page);
+    const ids = Object.keys(UNIT_SQUARES);
+    const sq = []; for (const r of [1, 2, 3, 5, 6, 7]) for (let c = 1; c <= 13; c += 2) sq.push([r, c]);
+    const best = {}, boardTop = {};
+    for (let s = 0; s < ids.length; s += sq.length) {
+      const batch = ids.slice(s, s + sq.length);
+      await page.evaluate(async (bd) => await window.oreheart.newMatch({ mode: 'standard', ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', factionLock: false, mines: [{ row: 4, col: 2 }, { row: 4, col: 6 }, { row: 4, col: 10 }], setup: { opponentHand: [], board: bd } }), batch.map((cardId, i) => ({ cardId, owner: 'player', row: sq[i][0], col: sq[i][1] })));
+      if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+      await expect.poll(async () => ((await renderStats(page)).figures || []).filter((f) => f.standH != null).length, { timeout: 60000 }).toBe(batch.length);
+      // the idle moves: the tallest moment over ~3 s counts (the game scales on the idle's tallest frame)
+      for (let i = 0; i < 12; i++) {
+        for (const f of (await renderStats(page)).figures) { best[f.cardId] = Math.max(best[f.cardId] || 0, f.standH); boardTop[f.cardId] = Math.max(boardTop[f.cardId] || 0, f.boardH || 0, f.standH); }
+        await page.waitForTimeout(250);
+      }
+    }
+    const off = ids.filter((id) => !(Math.abs(best[id] - UNIT_SQUARES[id] * K) <= UNIT_SQUARES[id] * K * 0.08)).map((id) => `${id} ${best[id]} vs ${+(UNIT_SQUARES[id] * K).toFixed(3)}`);
+    expect(off, 'units off their table height').toEqual([]);
+    const tallest = ids.slice().sort((a, b) => best[b] - best[a]).slice(0, 2).sort();
+    expect(tallest).toEqual(['grubnaks-big-boss-troll', 'the-great-steam-golem']);
+    expect(Math.abs(best['gnome-prospector'] - 0.66 * K)).toBeLessThanOrEqual(0.66 * K * 0.08);
+    expect(Math.abs(best['dwarf-miner'] - 1.05 * K)).toBeLessThanOrEqual(1.05 * K * 0.08);
+    expect(Math.max(...Object.values(boardTop)), 'no unit taller than ~2.9 squares').toBeLessThanOrEqual(2.95 * K);
+  });
+}
+
+// ---------- Oct 31 (Ken: "The gnome commander doesn't have his staff. ... the gemslinger miner doesn't have his pickaxe.") ----------
+for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone', width: 844, height: 390 }]) {
+  test(`AC431: units and Commanders carry their gear: Knobbin's staff, the Gemsinger Miner's pickaxe, the Riot Shield Bearer's tower shield (${vp.name})`, async ({ page }) => {
+    test.setTimeout(60000);
+    await page.setViewportSize({ width: vp.width, height: vp.height });
+    await start(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, setup: { opponentHand: [], board: [
+      { cardId: 'gnome-prospector', owner: 'player', row: 6, col: 4 },
+      { cardId: 'dwarf-miner', owner: 'player', row: 6, col: 7 },
+      { cardId: 'overclocked-conduit', owner: 'player', row: 6, col: 10 },
+    ] } });
+    if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+    const item = async (cardId, name) => (((await renderStats(page)).figures.find((f) => f.cardId === cardId) || {}).items || []).find((i) => i.name === name);
+    for (const [cardId, name, bone] of [['gnome-prospector', 'pickaxe', 'RightHand'], ['dwarf-miner', 'tower-shield', 'LeftForeArm'], ['overclocked-conduit', 'pickaxe', 'RightHand'], ['overclocked-conduit', 'pickaxe-2', 'LeftHand']]) {
+      await expect.poll(async () => !!(await item(cardId, name)), { timeout: 30000, message: `${cardId} ${name} attached` }).toBe(true);
+      const it = await item(cardId, name);
+      expect(it.bone, `${cardId} ${name} bone`).toBe(bone);
+      expect(it.visible, `${cardId} ${name} visible`).toBe(true);
+      expect(it.size, `${cardId} ${name} has a real size`).toBeGreaterThan(0.15);
+      expect(it.size, `${cardId} ${name} not giant`).toBeLessThan(2.5);
+    }
+    const staff = async () => ((((await renderStats(page)).commanderModels || []).find((c) => c.commanderId === 'sproingle') || {}).items || []).find((i) => i.name === 'staff');
+    await expect.poll(async () => !!(await staff()), { timeout: 30000, message: "Knobbin's staff attached" }).toBe(true);
+    const st = await staff();
+    expect(st.bone).toBe('RightHand');
+    expect(st.visible).toBe(true);
+    expect(st.size).toBeGreaterThan(0.3);
+  });
+}
