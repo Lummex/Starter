@@ -7148,7 +7148,8 @@ test.describe('round 10 at 1920x1080', () => {
     await page.waitForTimeout(350); // after the quick pop-in
     const b = await theirs.boundingBox();
     expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.05);
-    expect(b.height).toBeGreaterThanOrEqual(H * 0.85);
+    // owner check change (Ken, Oct 31: "make it the same size as the card when it pops out of my hand"): no longer near full height; AC479 checks the pop-out size
+    expect(b.height).toBeGreaterThanOrEqual(H * 0.3);
     await expect(theirs).toHaveCount(0, { timeout: 6000 });
     const pile = page.getByRole('button', { name: 'Enemy discard pile', exact: true });
     const pb = await pile.boundingBox();
@@ -10892,7 +10893,7 @@ test.describe('Oct 30 Ken at 1920x1080', () => {
     await expect(card).toHaveAttribute('data-pinned', 'true');
     await expect(big).toHaveCount(1);
     let b = null; // measured once its quick pop-in is over
-    await expect.poll(async () => { [b] = await visBoxes(big); return b ? b.height : 0; }, { timeout: 3000 }).toBeGreaterThan(closeUp.height * 1.1); // bigger than the close-up (as big as the screen allows)
+    await expect.poll(async () => { [b] = await visBoxes(big); return b ? b.height : 0; }, { timeout: 3000 }).toBeGreaterThan(closeUp.height * 0.4); // owner check change (Ken, Oct 31): the hand pop-out size now (AC479), no longer bigger than the close-up
     expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.03);
     expect(Math.abs(b.y + b.height / 2 - H / 2)).toBeLessThanOrEqual(H * 0.05);
     expect(b.height).toBeLessThanOrEqual(H);
@@ -11166,7 +11167,8 @@ test('AC424: the computer opponent thinks in a Web Worker in a live match: the w
 // often ~300 ms apart (the old 250 ms window missed it); two clicks / taps 300 ms apart must play the card.
 const hk31 = (extra) => ({ ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [], ...extra } });
 async function hk31Play(page, W, H, touch) {
-  const s = await start(page, hk31({ playerHand: ['goblin-scrounger', 'goblin-scrapper', 'fireball'], playerCrystals: 3 }));
+  // owner check change (Ken, Oct 31: Tunnel only beside a mine your side owns): the player owns M2, so the Miner's Tunnel squares light up mid-board, clear of the hand
+  const s = await start(page, hk31({ playerHand: ['goblin-scrounger', 'goblin-scrapper', 'fireball'], playerCrystals: 3, board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 4, minedMine: M2 }] }));
   await page.waitForTimeout(600);
   const card = page.getByLabel('Your hand', { exact: true }).locator('button:has([data-card-id="goblin-scrounger"])').first();
   const b = await card.boundingBox();
@@ -12228,14 +12230,8 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
       test.setTimeout(60000);
       await start(page, quiet({ playerHand: ['fireball', 'prospectors-prayer'], playerCrystals: 10, board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 3 }] }));
       await sfxReady(page);
-      await page.evaluate(() => {
-        window.__fxStart = [];
-        new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.classList && n.classList.contains('fxv-card')) window.__fxStart.push(Math.round(performance.now())); })
-          .observe(document.body, { childList: true, subtree: true });
-      });
       for (const [id, target] of [['fireball', { row: 3, col: 3 }], ['prospectors-prayer', null]]) {
         await clearFx(page);
-        await page.evaluate(() => { window.__fxStart = []; });
         const n0 = (await sfxState(page)).plays.length;
         const s = await getState(page);
         const uid = handUid(s, 'player', id);
@@ -12246,9 +12242,10 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
         await expect.poll(async () => (await sfxState(page)).plays.slice(n0).some((p) => p.key === 'spell:' + id), { message: `${id} sound` }).toBe(true);
         const p = (await sfxState(page)).plays.slice(n0).find((x) => x.key === 'spell:' + id);
         expect(p).toMatchObject({ file: `/audio/sfx/spell-${id}.ogg`, from: 'file', played: true });
-        const fx = await page.evaluate(() => window.__fxStart.slice());
-        expect(fx.length, `${id} FX card appeared`).toBeGreaterThan(0);
-        expect(Math.abs(p.t - fx[0]), `${id} sound starts with its FX`).toBeLessThanOrEqual(150);
+        // Oct 31: the spell FX are 3D now (spell-fx.ts): their own log says when each one started
+        const fx = ((await page.evaluate(() => window.oreheart.getSpellFxLog())) || []).filter((e) => e.spell === id && e.kind !== 'shards');
+        expect(fx.length, `${id} FX started`).toBeGreaterThan(0);
+        expect(Math.abs(p.t - fx[fx.length - 1].startedAt), `${id} sound starts with its FX`).toBeLessThanOrEqual(150);
       }
     });
   });

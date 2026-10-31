@@ -278,4 +278,5 @@ html body #app .mb-setup .cs-extra .setup-actions{gap:clamp(8px,1.4vw,26px)}
    the size of the menu button."): Done and Menu share one frame scale (the same box from the owner layout, the same cap overhang on both sides),
    and their contents (Done's check icon + word, Menu's word) sit centred as one group, horizontally and vertically. */
 html body #app .match :is(.btn.o-text.done-btn,.o-menu .btn.menu-btn).btn.btn{--sv-v:.1;--sv-ox:calc(var(--sv-cap) * .6);--sv-oxl:calc(var(--sv-cap) * .6);padding:0 .15em!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:.18em;text-align:center!important}
+html body #app .match .btn.o-text.done-btn.btn.btn[hidden]{display:none!important} /* the centring must never show a hidden Done (AC156) */
 html body #app .match .btn.o-text.done-btn.btn.btn::before{position:static!important;flex:0 0 auto;transform:none!important;left:auto!important;margin:0!important;width:calc(var(--sv-f) * .5)!important;height:calc(var(--sv-f) * .5)!important}
