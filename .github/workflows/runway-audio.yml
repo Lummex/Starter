@@ -1,0 +1,48 @@
+name: Runway — voices and sound effects
+
+# Started by hand (Actions → this workflow → Run workflow). Makes each line ONCE; finished ones are skipped.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'probe = only list what the API offers (free); run = make the missing files'
+        required: true
+        default: 'probe'
+      only:
+        description: 'Only these line ids or voice ids (comma separated). Leave empty for everything in factory-design/runway-audio/jobs.json'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: runway-videos
+  cancel-in-progress: false
+
+jobs:
+  audio:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Make the audio
+        env:
+          RUNWAY_API_KEY: ${{ secrets.RUNWAYKEY }}
+          MODE: ${{ github.event.inputs.mode }}
+          ONLY: ${{ github.event.inputs.only }}
+        run: node factory/scripts/runway-audio.mjs
+      - name: Save the audio to GitHub
+        if: always() && github.event.inputs.mode == 'run'
+        run: |
+          git config user.name "factory-bot"
+          git config user.email "factory-bot@users.noreply.github.com"
+          git add factory-design/runway-audio || true
+          if git diff --cached --quiet; then echo "nothing to save"; exit 0; fi
+          git commit -q -m "Runway: voices and sound effects"
+          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q origin HEAD:main && exit 0; sleep 15; done
+          exit 1
