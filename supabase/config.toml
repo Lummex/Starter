@@ -1,0 +1,58 @@
+# Supabase CLI settings for the LOCAL test copy only (supabase start).
+# The real project's settings are made by Ken in the Supabase dashboard
+# (see ken-setup-steps.md). No keys or passwords belong in this file.
+project_id = "oreheart"
+
+[api]
+enabled = true
+port = 54321
+# Only "public" is reachable through the API. "private" (internal helpers) never is.
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[studio]
+enabled = true
+port = 54323
+
+# Local mail catcher: confirmation and reset emails land here (tests read them).
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:4173"
+additional_redirect_urls = ["http://127.0.0.1:4173/**", "http://127.0.0.1:4174/**", "http://127.0.0.1:5173/**", "http://127.0.0.1:5174/**"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+minimum_password_length = 10
+password_requirements = "lower_upper_letters_digits"
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+double_confirm_changes = true
+secure_password_change = true
+
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+# Captcha is on in the real project (Cloudflare Turnstile) but off locally,
+# so the automated tests can sign up.
+[auth.captcha]
+enabled = false
