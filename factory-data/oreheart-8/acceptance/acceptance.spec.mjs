@@ -11104,3 +11104,45 @@ test('AC424: the computer opponent thinks in a Web Worker in a live match: the w
   expect((await page.evaluate(async () => await window.oreheart.getAiInfo())).worker).toBe(false);
   expect((await getState(page)).activePlayer).toBe('player');
 });
+
+// ---------- Ken (Oct 31 playtest): hand double-click, discard pile, drag icons, no ability overlays, smooth hand (AC440-AC449) ----------
+// Ken (Oct 31): "when I double click a card in my hand, it doesn't automatically play the card". A person's double-click is
+// often ~300 ms apart (the old 250 ms window missed it); two clicks / taps 300 ms apart must play the card.
+const hk31 = (extra) => ({ ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [], ...extra } });
+async function hk31Play(page, W, H, touch) {
+  const s = await start(page, hk31({ playerHand: ['goblin-scrounger', 'goblin-scrapper', 'fireball'], playerCrystals: 3 }));
+  await page.waitForTimeout(600);
+  const card = page.getByLabel('Your hand', { exact: true }).locator('button:has([data-card-id="goblin-scrounger"])').first();
+  const b = await card.boundingBox();
+  const p = { x: b.x + b.width * 0.3, y: Math.min(b.y + 20, H - 5) };
+  if (!touch) { await page.mouse.move(p.x, p.y); await page.waitForTimeout(500); }
+  // the page's clock is held still and moved exactly 300 ms between the two presses, so a slow machine can't stretch or squeeze the gap
+  await page.clock.install();
+  await page.clock.pauseAt(Date.now() + 1000);
+  if (touch) { await page.touchscreen.tap(p.x, p.y); await page.clock.runFor(300); await page.touchscreen.tap(p.x, p.y); }
+  else { await page.mouse.click(p.x, p.y); await page.clock.runFor(300); await page.mouse.click(p.x, p.y); }
+  await page.clock.runFor(600);
+  await page.clock.resume();
+  await page.waitForTimeout(300);
+  expect(await page.getByRole('dialog').count(), 'no card view opened: the double-click plays the card').toBe(0);
+  let hl = [];
+  await expect.poll(async () => { hl = ((await arenaInfo(page)).highlights || []).filter((x) => x.kind === 'summon' || x.kind === 'move'); return hl.length; }).toBeGreaterThan(0);
+  // tap a lit square that sits clear of the hand
+  let target = null;
+  for (const q of hl) { const c = await sqCenter(page, q.row, q.col); if (c.y < H * 0.7 && c.x > W * 0.15 && c.x < W * 0.85 && !at(s, q.row, q.col)) { target = { ...q, ...c }; break; } }
+  expect(target, 'a lit square on screen').toBeTruthy();
+  if (touch) await page.touchscreen.tap(target.x, target.y); else await page.mouse.click(target.x, target.y);
+  await expect.poll(async () => ((at(await getState(page), target.row, target.col)) || {}).cardId).toBe('goblin-scrounger');
+}
+test.describe('Oct 31 Ken hand double-click 1920x1080', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+  test('AC440: a mouse double-click (clicks 300 ms apart) on a hand creature lights its squares; a click on one deploys it (1920x1080)', async ({ page }) => {
+    await hk31Play(page, 1920, 1080, false);
+  });
+});
+test.describe('Oct 31 Ken hand double-tap 844x390', () => {
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
+  test('AC441: a double tap (taps 300 ms apart) on a hand creature lights its squares; a tap on one deploys it (844x390 touch)', async ({ page }) => {
+    await hk31Play(page, 844, 390, true);
+  });
+});

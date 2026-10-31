@@ -894,7 +894,9 @@ export class App {
   }
   /** Oct 30 Ken playtest (hand): a single tap/click opens the card view after a short wait; a second tap/click on the same card
    *  within that wait plays it instead (same as the card view's Play / Cast button: legal squares light up, or it casts at once). */
-  static DBL_MS = 250;
+  // Ken (Oct 31: "when I double click a card in my hand, it doesn't automatically play the card"): 250 ms was shorter than a
+  // normal double-click (Windows allows up to 500 ms), so the second click came after the card view had already opened.
+  static DBL_MS = 380;
   tapWait: { uid: string; t: any; x: number; y: number; at: number } | null = null;
   touchWasShown = false;
   handTap(hc: any, card: any) {
