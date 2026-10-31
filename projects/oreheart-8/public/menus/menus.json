@@ -53,7 +53,7 @@
       "loop": "none",
       "loopSpeed": 2,
       "loopAmt": 0.91,
-      "loopColor": "#FFD700",
+      "loopColor": "#9FD0FF",
       "crash": {
        "dirt": 2.4,
        "color": "#e18d48",
@@ -89,7 +89,7 @@
       "valign": "center",
       "shadow": 0.8,
       "glow": 0,
-      "glowColor": "#FFD700"
+      "glowColor": "#9FD0FF"
      },
      "anim": {
       "in": "fade",
@@ -101,7 +101,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      }
     },
     {
@@ -135,7 +135,7 @@
       "loop": "blink",
       "loopSpeed": 0.8,
       "loopAmt": 0.6,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": []
     },
@@ -163,7 +163,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": [],
      "opacity": 0.59
@@ -218,7 +218,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": []
     },
@@ -233,7 +233,7 @@
      "text": {
       "content": "Play",
       "size": 4.4,
-      "color": "#ffffff",
+      "color": "#FFFFFF",
       "font": "display",
       "bold": true,
       "italic": false,
@@ -241,13 +241,21 @@
       "valign": "center",
       "shadow": 0.8,
       "glow": 0,
-      "glowColor": "#FFD700"
+      "glowColor": "#9FD0FF"
      },
      "button": {
       "goto": "commander",
-      "hoverColor": "#FFF3B0",
+      "hoverColor": "#FFFFFF",
       "hoverGlow": 1,
-      "hoverGlowColor": "#FFD700"
+      "hoverGlowColor": "#dfe8f7",
+      "skin": true,
+      "skinFac": "neutral",
+      "_plain": {
+       "color": "#ffffff",
+       "hc": "#F4F9FF",
+       "hg": "#9FD0FF",
+       "box": null
+      }
      },
      "anim": {
       "in": "slide",
@@ -259,7 +267,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": []
     },
@@ -274,7 +282,7 @@
      "text": {
       "content": "Deck Builder",
       "size": 4.4,
-      "color": "#ffffff",
+      "color": "#FFFFFF",
       "font": "display",
       "bold": true,
       "italic": true,
@@ -282,13 +290,21 @@
       "valign": "center",
       "shadow": 0.8,
       "glow": 0,
-      "glowColor": "#FFD700"
+      "glowColor": "#9FD0FF"
      },
      "button": {
       "goto": "deck",
-      "hoverColor": "#FFF3B0",
+      "hoverColor": "#FFFFFF",
       "hoverGlow": 1,
-      "hoverGlowColor": "#FFD700"
+      "hoverGlowColor": "#dfe8f7",
+      "skin": true,
+      "skinFac": "neutral",
+      "_plain": {
+       "color": "#ffffff",
+       "hc": "#F4F9FF",
+       "hg": "#9FD0FF",
+       "box": null
+      }
      },
      "anim": {
       "in": "slide",
@@ -300,7 +316,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      }
     },
     {
@@ -314,7 +330,7 @@
      "text": {
       "content": "How to Play",
       "size": 4.4,
-      "color": "#ffffff",
+      "color": "#FFFFFF",
       "font": "display",
       "bold": true,
       "italic": true,
@@ -322,13 +338,21 @@
       "valign": "center",
       "shadow": 0.8,
       "glow": 0,
-      "glowColor": "#FFD700"
+      "glowColor": "#9FD0FF"
      },
      "button": {
       "goto": "",
-      "hoverColor": "#FFF3B0",
+      "hoverColor": "#FFFFFF",
       "hoverGlow": 1,
-      "hoverGlowColor": "#FFD700"
+      "hoverGlowColor": "#dfe8f7",
+      "skin": true,
+      "skinFac": "neutral",
+      "_plain": {
+       "color": "#ffffff",
+       "hc": "#F4F9FF",
+       "hg": "#9FD0FF",
+       "box": null
+      }
      },
      "anim": {
       "in": "slide",
@@ -340,7 +364,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      }
     },
     {
@@ -354,7 +378,7 @@
      "text": {
       "content": "Settings",
       "size": 4.4,
-      "color": "#ffffff",
+      "color": "#FFFFFF",
       "font": "display",
       "bold": true,
       "italic": true,
@@ -362,13 +386,21 @@
       "valign": "center",
       "shadow": 0.8,
       "glow": 0,
-      "glowColor": "#FFD700"
+      "glowColor": "#9FD0FF"
      },
      "button": {
       "goto": "action:settings-sound",
-      "hoverColor": "#FFF3B0",
+      "hoverColor": "#FFFFFF",
       "hoverGlow": 1,
-      "hoverGlowColor": "#FFD700"
+      "hoverGlowColor": "#dfe8f7",
+      "skin": true,
+      "skinFac": "neutral",
+      "_plain": {
+       "color": "#ffffff",
+       "hc": "#F4F9FF",
+       "hg": "#9FD0FF",
+       "box": null
+      }
      },
      "anim": {
       "in": "slide",
@@ -380,7 +412,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      }
     },
     {
@@ -394,7 +426,7 @@
      "text": {
       "content": "Quit",
       "size": 4.4,
-      "color": "#ffffff",
+      "color": "#FFFFFF",
       "font": "display",
       "bold": true,
       "italic": true,
@@ -402,13 +434,21 @@
       "valign": "center",
       "shadow": 0.8,
       "glow": 0,
-      "glowColor": "#FFD700"
+      "glowColor": "#9FD0FF"
      },
      "button": {
       "goto": "action:quit",
-      "hoverColor": "#FFF3B0",
+      "hoverColor": "#FFFFFF",
       "hoverGlow": 1,
-      "hoverGlowColor": "#FFD700"
+      "hoverGlowColor": "#dfe8f7",
+      "skin": true,
+      "skinFac": "neutral",
+      "_plain": {
+       "color": "#ffffff",
+       "hc": "#F4F9FF",
+       "hg": "#9FD0FF",
+       "box": null
+      }
      },
      "anim": {
       "in": "slide",
@@ -420,7 +460,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      }
     }
    ],
@@ -453,7 +493,7 @@
      "text": {
       "content": "Deck Builder",
       "size": 5,
-      "color": "#FFD700",
+      "color": "#E4E9F2",
       "font": "display",
       "bold": true,
       "italic": true,
@@ -461,7 +501,7 @@
       "valign": "center",
       "shadow": 0.8,
       "glow": 0,
-      "glowColor": "#FFD700"
+      "glowColor": "#9FD0FF"
      },
      "anim": {
       "in": "fade",
@@ -473,7 +513,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": []
     },
@@ -490,8 +530,8 @@
       "st": {
        "font": "display",
        "size": 2.2,
-       "color": "#D4A94F",
-       "accent": "#D4A94F",
+       "color": "#B8C4D6",
+       "accent": "#B8C4D6",
        "faction": false,
        "bold": false,
        "italic": false,
@@ -499,9 +539,9 @@
        "spacing": 0,
        "shadow": 0.8,
        "glow": 0,
-       "glowColor": "#FFD700",
+       "glowColor": "#9FD0FF",
        "halo": 0,
-       "haloColor": "#FFD700",
+       "haloColor": "#9FD0FF",
        "haloSize": 20,
        "_for": "filters"
       },
@@ -517,7 +557,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": []
     },
@@ -542,7 +582,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      }
     },
     {
@@ -559,7 +599,7 @@
        "font": "display",
        "size": 2.2,
        "color": "#ffffff",
-       "accent": "#FFD700",
+       "accent": "#E4E9F2",
        "faction": false,
        "bold": false,
        "italic": false,
@@ -567,9 +607,9 @@
        "spacing": 0,
        "shadow": 0.8,
        "glow": 0,
-       "glowColor": "#FFD700",
+       "glowColor": "#9FD0FF",
        "halo": 0,
-       "haloColor": "#FFD700",
+       "haloColor": "#9FD0FF",
        "haloSize": 20,
        "_for": "decklist"
       },
@@ -585,7 +625,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": []
     },
@@ -603,7 +643,7 @@
        "font": "display",
        "size": 2.2,
        "color": "#ffffff",
-       "accent": "#FFD700",
+       "accent": "#E4E9F2",
        "faction": false,
        "bold": false,
        "italic": false,
@@ -611,9 +651,9 @@
        "spacing": 0,
        "shadow": 0.8,
        "glow": 0,
-       "glowColor": "#FFD700",
+       "glowColor": "#9FD0FF",
        "halo": 0,
-       "haloColor": "#FFD700",
+       "haloColor": "#9FD0FF",
        "haloSize": 20,
        "_for": "counts"
       }
@@ -628,7 +668,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      }
     },
     {
@@ -644,8 +684,8 @@
       "st": {
        "font": "display",
        "size": 2.2,
-       "color": "#FFD700",
-       "accent": "#FFD700",
+       "color": "#E4E9F2",
+       "accent": "#E4E9F2",
        "faction": false,
        "bold": true,
        "italic": true,
@@ -653,9 +693,9 @@
        "spacing": 0,
        "shadow": 0.8,
        "glow": 0,
-       "glowColor": "#FFD700",
+       "glowColor": "#9FD0FF",
        "halo": 0,
-       "haloColor": "#FFD700",
+       "haloColor": "#9FD0FF",
        "haloSize": 20,
        "_for": "actions"
       }
@@ -670,7 +710,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": []
     },
@@ -685,7 +725,7 @@
      "text": {
       "content": "Back",
       "size": 6.4,
-      "color": "#ffffff",
+      "color": "#FFFFFF",
       "font": "display",
       "bold": true,
       "italic": true,
@@ -693,13 +733,21 @@
       "valign": "center",
       "shadow": 0.8,
       "glow": 0,
-      "glowColor": "#FFD700"
+      "glowColor": "#9FD0FF"
      },
      "button": {
       "goto": "main",
-      "hoverColor": "#FFF3B0",
+      "hoverColor": "#FFFFFF",
       "hoverGlow": 1,
-      "hoverGlowColor": "#FFD700"
+      "hoverGlowColor": "#dfe8f7",
+      "skin": true,
+      "skinFac": "neutral",
+      "_plain": {
+       "color": "#ffffff",
+       "hc": "#F4F9FF",
+       "hg": "#9FD0FF",
+       "box": null
+      }
      },
      "anim": {
       "in": "slide",
@@ -711,7 +759,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": []
     },
@@ -729,8 +777,8 @@
       "st": {
        "font": "display",
        "size": 2,
-       "color": "#FFD700",
-       "accent": "#FFD700",
+       "color": "#E4E9F2",
+       "accent": "#E4E9F2",
        "faction": true,
        "bold": true,
        "italic": true,
@@ -738,9 +786,9 @@
        "spacing": 0,
        "shadow": 0.8,
        "glow": 0,
-       "glowColor": "#FFD700",
+       "glowColor": "#9FD0FF",
        "halo": 0,
-       "haloColor": "#FFD700",
+       "haloColor": "#9FD0FF",
        "haloSize": 20,
        "_for": "deckpick"
       }
@@ -755,7 +803,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": []
     },
@@ -773,8 +821,8 @@
       "st": {
        "font": "display",
        "size": 2.2,
-       "color": "#D4A94F",
-       "accent": "#FFD700",
+       "color": "#B8C4D6",
+       "accent": "#E4E9F2",
        "faction": false,
        "bold": true,
        "italic": true,
@@ -782,9 +830,9 @@
        "spacing": 0,
        "shadow": 0.8,
        "glow": 0,
-       "glowColor": "#FFD700",
+       "glowColor": "#9FD0FF",
        "halo": 0,
-       "haloColor": "#FFD700",
+       "haloColor": "#9FD0FF",
        "haloSize": 20,
        "_for": "rowslider"
       },
@@ -800,7 +848,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": []
     }
@@ -834,7 +882,7 @@
      "text": {
       "content": "Choose Your Commander",
       "size": 5.2,
-      "color": "#FFD700",
+      "color": "#E4E9F2",
       "font": "display",
       "bold": true,
       "italic": true,
@@ -842,7 +890,7 @@
       "valign": "center",
       "shadow": 0.8,
       "glow": 0,
-      "glowColor": "#FFD700"
+      "glowColor": "#9FD0FF"
      },
      "anim": {
       "in": "fade",
@@ -854,7 +902,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      }
     },
     {
@@ -870,8 +918,8 @@
       "st": {
        "font": "display",
        "size": 2.2,
-       "color": "#D4A94F",
-       "accent": "#FFD700",
+       "color": "#B8C4D6",
+       "accent": "#E4E9F2",
        "faction": false,
        "bold": false,
        "italic": false,
@@ -879,9 +927,9 @@
        "spacing": 0,
        "shadow": 0.8,
        "glow": 0,
-       "glowColor": "#FFD700",
+       "glowColor": "#9FD0FF",
        "halo": 0,
-       "haloColor": "#FFD700",
+       "haloColor": "#9FD0FF",
        "haloSize": 20,
        "_for": "commanders"
       },
@@ -898,7 +946,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      },
      "sounds": []
     },
@@ -915,8 +963,8 @@
       "st": {
        "font": "display",
        "size": 2.2,
-       "color": "#FFD700",
-       "accent": "#FFD700",
+       "color": "#E4E9F2",
+       "accent": "#E4E9F2",
        "faction": true,
        "bold": true,
        "italic": true,
@@ -924,9 +972,9 @@
        "spacing": 0,
        "shadow": 0.8,
        "glow": 0,
-       "glowColor": "#FFD700",
+       "glowColor": "#9FD0FF",
        "halo": 0,
-       "haloColor": "#FFD700",
+       "haloColor": "#9FD0FF",
        "haloSize": 20,
        "_for": "decks"
       }
@@ -941,7 +989,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      }
     },
     {
@@ -955,7 +1003,7 @@
      "text": {
       "content": "Back",
       "size": 3.6,
-      "color": "#FFD700",
+      "color": "#FFFFFF",
       "font": "display",
       "bold": true,
       "italic": true,
@@ -963,13 +1011,21 @@
       "valign": "center",
       "shadow": 0.8,
       "glow": 0,
-      "glowColor": "#FFD700"
+      "glowColor": "#9FD0FF"
      },
      "button": {
       "goto": "main",
-      "hoverColor": "#FFF3B0",
+      "hoverColor": "#FFFFFF",
       "hoverGlow": 1,
-      "hoverGlowColor": "#FFD700"
+      "hoverGlowColor": "#dfe8f7",
+      "skin": true,
+      "skinFac": "neutral",
+      "_plain": {
+       "color": "#E4E9F2",
+       "hc": "#F4F9FF",
+       "hg": "#9FD0FF",
+       "box": null
+      }
      },
      "anim": {
       "in": "slide",
@@ -981,7 +1037,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      }
     },
     {
@@ -995,7 +1051,7 @@
      "text": {
       "content": "Fight!",
       "size": 4.4,
-      "color": "#FFD700",
+      "color": "#FFFFFF",
       "font": "display",
       "bold": true,
       "italic": true,
@@ -1003,13 +1059,21 @@
       "valign": "center",
       "shadow": 0.8,
       "glow": 0,
-      "glowColor": "#FFD700"
+      "glowColor": "#9FD0FF"
      },
      "button": {
       "goto": "action:start-match",
-      "hoverColor": "#FFF3B0",
+      "hoverColor": "#FFFFFF",
       "hoverGlow": 1,
-      "hoverGlowColor": "#FFD700"
+      "hoverGlowColor": "#dfe8f7",
+      "skin": true,
+      "skinFac": "neutral",
+      "_plain": {
+       "color": "#E4E9F2",
+       "hc": "#F4F9FF",
+       "hg": "#9FD0FF",
+       "box": null
+      }
      },
      "anim": {
       "in": "slide",
@@ -1021,7 +1085,7 @@
       "loop": "none",
       "loopSpeed": 1,
       "loopAmt": 1,
-      "loopColor": "#FFD700"
+      "loopColor": "#9FD0FF"
      }
     }
    ],
