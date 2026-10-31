@@ -1,6 +1,7 @@
 // Match controller: owns the engine state, runs the computer opponent, and notifies the UI.
 import { createMatch, applyAction, legalActions, hasMovesLeft, other, CONFIG, brewActions, CARDS, creatureCost, funds, summonSpaces } from './engine';
-import { aiChoose, makeRand, Rand } from './ai/ai';
+import { aiChoose, makeRand, Rand, lastPlan } from './ai/ai';
+import { StyleId, isStyle, planFor } from './ai/styles';
 import { stanceChoose, onlyUnit, Stance } from './ai/stances';
 import tutorialJson from './content/tutorial.json';
 
@@ -55,6 +56,8 @@ export class Game {
   aiBoth = false;
   scripted = false;
   difficulty = 'normal';
+  /** Oct 31: the computer's playstyle for this match (the rival's; styles.ts). 'balanced' = the computer exactly as before. */
+  aiStyle: StyleId = 'balanced';
   private listeners: Listener[] = [];
   private rand: Rand = makeRand(1);
   private aiTimer: any = null;
@@ -80,6 +83,9 @@ export class Game {
   private workerSeed = 1;
   /** Probe: how the computer thought last (worker or main thread) and the worker's last thinking time in ms. */
   aiInfo = { worker: false, lastMs: 0, replies: 0 };
+  setAiStyle(id: string) { if (isStyle(id)) this.aiStyle = id; return this.aiStyle; }
+  /** The computer's plan on the current board (its style, the plan, what it read of the player). On the Worker path the last plan is the one the main thread would read for the same board. */
+  aiPlan(style: StyleId = this.aiStyle) { if (!this.state) return null; const p = planFor(this.state, 'opponent', style); return { style: p.style, plan: p.plan, read: p.read, last: { ...lastPlan } }; }
   /** Oct 31 (Ken: "The opposing side plays stuff too fast ... Give, like, a pause before he does certain things"): the UI tells the
    *  controller when the board is calm and shows the computer's card BEFORE it resolves. Live matches (and ?aiworker=1 tests) only. */
   aiPace: { busy(): string; preview(a: any, st: any): Promise<void> } | null = null;
@@ -117,6 +123,7 @@ export class Game {
     clearTimeout(this.skipTimer);
     if (this.scripted) this.ai = true;
     this.difficulty = options.difficulty === 'easy' ? 'easy' : options.difficulty === 'hard' ? 'hard' : 'normal';
+    this.aiStyle = isStyle(options.aiStyle) ? options.aiStyle : 'balanced';
     const seed = options.seed ?? (this.testMode ? 1 : (Date.now() ^ (Math.random() * 1e9)) | 0);
     this.rand = makeRand(seed + 977);
     this.workerSeed = (seed * 7 + 311) | 0;
@@ -312,7 +319,7 @@ export class Game {
     const id = ++this.reqId;
     this.pendingId = id; this.pendingVersion = this.stateVersion; this.pendingEpoch = this.epoch;
     this.workerSeed = (Math.imul(this.workerSeed, 1103515245) + 12345) | 0;
-    try { w.postMessage({ id, state: this.state, difficulty: this.difficulty, seed: this.workerSeed }); }
+    try { w.postMessage({ id, state: this.state, difficulty: this.difficulty, seed: this.workerSeed, style: this.aiStyle }); }
     catch { this.pendingId = 0; this.workerFailed = true; this.worker = null; this.aiInfo.worker = false; this.afterAction(); }
   }
   private onAiReply(m: any) {
@@ -407,7 +414,7 @@ export class Game {
     const s = this.state;
     if (this.aiTurn !== s.turn) { this.aiTurn = s.turn; this.aiCount = 0; }
     const snap = this.testMode ? JSON.stringify(s) : null;
-    let a = this.scripted ? (s.pendingResponse ? { type: 'pass' } : { type: 'done' }) : aiChoose(s, this.difficulty, this.rand);
+    let a = this.scripted ? (s.pendingResponse ? { type: 'pass' } : { type: 'done' }) : aiChoose(s, this.difficulty, this.rand, undefined, this.aiStyle);
     if (this.testMode && (globalThis as any).__aiForceNext) { const f = (globalThis as any).__aiForceNext; delete (globalThis as any).__aiForceNext; a = f(s); } // test hook: the referee must refuse this
     a = auditPick(s, a, snap);
     if (++this.aiCount > 60 && !s.pendingResponse && s.phase !== 'mulligan') a = { type: 'done' };

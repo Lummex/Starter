@@ -811,7 +811,7 @@ export class App {
           const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
           const deckId = pick ? '' : deckSel.slice(8);
           try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, mode, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
-          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, mode, rivalId: rv.id, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
+          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, mode, rivalId: rv.id, aiStyle: rv.style, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
     };
     const startBtn = h('div', { class: 'fight-wrap' }, btn('Fight!', 'primary fight-btn', startFn));
     const mainEl = h('main', { class: 'screen setup mb-setup', 'data-screen': 'select' },
@@ -1177,13 +1177,16 @@ export class App {
     const named = o.rivalId ? rivalById(o.rivalId) : null;
     this.rival = named && named.commander === st.players.opponent.commanderId ? named : matchRival(loadRank().points, this.game.difficulty, st.players.player.commanderId, st.players.opponent.commanderId, rand);
     this.aiName = this.rival.name;
+    if (!this.test && !o.aiStyle) this.game.setAiStyle(this.rival.style); /* a live match started another way still plays the rival's style; test matches keep 'balanced' unless they ask */
     return this.aiName;
   }
   /** A ranked match: against a rival, not the tutorial or a Comp vs Comp watch. */
   ranked(st: any = this.game.state) { return !!this.rival && !!st && !st.tutorial && !this.lastTutorial && st.mode !== 'compvscomp' && this.game.mode !== 'compvscomp'; }
   /** The little crystal charm that shows a rank (placeholder gem until Brush paints the real charms). */
   charmEl(ri: RankInfo, cls = '') {
-    return h('span', { class: 'o-charm' + (cls ? ' ' + cls : ''), 'data-tier': ri.tierName.toLowerCase(), 'data-div': ri.division, 'aria-hidden': 'true', style: `--gem:${ri.color};--gem-dark:${ri.dark}` });
+    const tier = ri.tierName.toLowerCase(); /* Brush's charms (art/ui/rank-charms): the tier gem, a division pip strip under it (none for Oreheart) */
+    return h('span', { class: 'o-charm' + (cls ? ' ' + cls : '') + (ri.division ? ' has-pip' : ''), 'data-tier': tier, 'data-div': ri.division, 'aria-hidden': 'true',
+      style: `--gem:${ri.color};--gem-dark:${ri.dark};--charm:url(/art/ui/rank-charms/${tier}.webp)${ri.division ? `;--pip:url(/art/ui/rank-charms/division-${ri.division}.webp)` : ''}` });
   }
 
   beginTutorial() {
@@ -2345,7 +2348,7 @@ export class App {
       this.setPlate(r.myName, getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player', my, `${getPlayerName()}: ${my.label}, ${my.inDivision} rank points`, getPlayerAvatar());
       const rv = this.rival, rec = rv ? recordVs(rv.id) : null;
       this.setPlate(r.eName, this.aiName || 'Opponent', COMMANDERS[en.commanderId]?.name || '', en.faction, 'enemy', rv ? rankOf(rv.points) : null,
-        rv ? `${rv.name}: ${rankOf(rv.points).label} · ${rv.skill === 'easy' ? 'Easy' : rv.skill === 'hard' ? 'Hard' : 'Medium'} · ${rv.style} · You ${rec!.w}-${rec!.l}` : '', rv ? rv.avatar : ''); }
+        rv ? `${rv.name}: ${rankOf(rv.points).label} · ${rv.skill === 'easy' ? 'Easy' : rv.skill === 'hard' ? 'Hard' : 'Medium'} · ${rv.styleLabel} · You ${rec!.w}-${rec!.l}` : '', rv ? rv.avatar : ''); }
     audio.voicePreload(me.commanderId); audio.voicePreload(en.commanderId); // Oct 31: the Commanders' voice lines (loads once)
     r.income.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')}`;
     r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;

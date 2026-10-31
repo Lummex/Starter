@@ -372,3 +372,11 @@ html body #app .end .rank-panel .rank-up{color:#2a1700!important;text-shadow:0 1
 /* Oct 31: Brush's avatars inside the silver ring (the letter only shows while there is no picture) */
 html body #app .match .o-plate .o-av.has-img{background-size:cover;background-position:center 18%;background-repeat:no-repeat}
 html body #app .match .o-plate .o-av.has-img::before{content:none}
+
+/* Oct 31: Brush's real rank charms replace the drawn gem: the tier picture, with the division pips in a strip under it */
+html body #app .o-charm{width:.86em;height:.86em;bottom:-.5em;filter:drop-shadow(0 .04em .1em #000c)}
+html body #app .o-charm::before{rotate:0deg;border:0;border-radius:0;box-shadow:none;background:var(--charm) center/contain no-repeat!important}
+html body #app .o-charm::after{content:'';inset:auto 0 -.26em 0;height:.28em;background:var(--pip) center/contain no-repeat;text-shadow:none}
+html body #app .o-charm:not(.has-pip)::after{content:none}
+html body #app .end .rank-panel .o-charm.big{width:2.6em;height:2.6em;margin-bottom:.5em}
+html body #app .end .rank-panel .o-charm.big::after{height:.34em;bottom:-.34em}

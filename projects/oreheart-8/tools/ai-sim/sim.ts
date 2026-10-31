@@ -10,7 +10,11 @@ import * as fs from 'node:fs';
 if (process.env.DECK_FILE) for (const [id, d] of Object.entries(JSON.parse(fs.readFileSync(process.env.DECK_FILE, 'utf8')) as any)) { STARTER_DECKS[id] = (d as any).cards; const e = STARTER_DECK_LIST.find((x) => x.id === id); if (e) e.cards = (d as any).cards; else STARTER_DECK_LIST.push({ id, ...(d as any) }); }
 if (process.env.CARD_TUNE) for (const [id, patch] of Object.entries(JSON.parse(process.env.CARD_TUNE))) Object.assign(CARDS[id], patch as any);
 if (process.env.CONFIG_TUNE) Object.assign(CONFIG, JSON.parse(process.env.CONFIG_TUNE)); // CONFIG_TUNE='{"typeAdvantageBonus":0}': game-config experiments (Oct 31, dwarf fix)
-import { aiChoose as newChoose, makeRand, TUNE } from '../../src/ai/ai';
+import { aiChoose as newChoose, makeRand, TUNE, lastPlan } from '../../src/ai/ai';
+import { isStyle } from '../../src/ai/styles';
+// AI_STYLE_A / AI_STYLE_B (Oct 31, rival playstyles): the playstyle each bot plays ('balanced' = as before). AI_TIME_SCALE scales Hard's wall-clock budgets (0.3 = quick runs).
+const STYLE_A: any = isStyle(process.env.AI_STYLE_A) ? process.env.AI_STYLE_A : 'balanced', STYLE_B: any = isStyle(process.env.AI_STYLE_B) ? process.env.AI_STYLE_B : 'balanced';
+if (process.env.AI_TIME_SCALE) (globalThis as any).__aiTimeScale = +process.env.AI_TIME_SCALE;
 if (process.env.AI_TUNE) Object.assign(TUNE, JSON.parse(process.env.AI_TUNE));
 // AI_TUNE_B: extra overrides for bot B only (applied before each of B's decisions and undone before A's)
 const TUNE_B: any = process.env.AI_TUNE_B ? JSON.parse(process.env.AI_TUNE_B) : null;
@@ -27,7 +31,7 @@ const back = (who: string) => CONFIG.backRow[who];
 
 type Bot = { ai: 'old' | 'new'; diff: string };
 const blank = (): any => ({ abilities: 0, abilityKinds: {} as Record<string, number>, abAvail: {} as Record<string, number>, spells: 0, spellKinds: {} as Record<string, number>, poisonStack: 0,
-  attacks: 0, kills: 0, cmdHits: 0, cmdDamage: 0, captures: 0, moves: 0, chases: 0, summons: 0, mines: 0, minersLost: 0, minerLifeSum: 0, minersBorn: 0, homeShare: [] as number[], fwd: [] as number[], ms: 0, calls: 0, maxMs: 0 });
+  attacks: 0, kills: 0, cmdHits: 0, cmdDamage: 0, captures: 0, moves: 0, chases: 0, summons: 0, mines: 0, minersLost: 0, minerLifeSum: 0, minersBorn: 0, homeShare: [] as number[], fwd: [] as number[], plans: {} as Record<string, number>, planSwitches: 0, lastPlanName: '', ms: 0, calls: 0, maxMs: 0 });
 
 export function playMatch(seed: number, A: Bot, B: Bot, aIsPlayer: boolean, maxTurns = 120) {
   let pc = CMDS[seed % 3], oc = CMDS[Math.floor(seed / 3) % 3];
@@ -78,7 +82,8 @@ export function playMatch(seed: number, A: Bot, B: Bot, aIsPlayer: boolean, maxT
     }
     const t0 = performance.now();
     if (TUNE_B) Object.assign(TUNE, bot === A ? TUNE_A : TUNE_B);
-    let a = (bot.ai === 'new' ? newChoose : oldChoose)(s, bot.diff, rands[who]);
+    let a = bot.ai === 'new' ? newChoose(s, bot.diff, rands[who], undefined, bot === A ? STYLE_A : STYLE_B) : oldChoose(s, bot.diff, rands[who]);
+    if (bot.ai === 'new' && lastPlan.turn === s.turn && (s.phase === 'action' || s.phase === 'deploy')) { const S0 = st[who]; S0.plans[lastPlan.plan] = (S0.plans[lastPlan.plan] || 0) + 1; if (S0.lastPlanName && S0.lastPlanName !== lastPlan.plan) S0.planSwitches++; S0.lastPlanName = lastPlan.plan; }
     const dt = performance.now() - t0;
     if (dt > 1500 && process.env.SLOW) { const la = (globalThis as any).__la ? (globalThis as any).__la(s) : []; const k: Record<string, number> = {}; for (const x of la) k[x.type + (x.ability ? ':' + x.ability : '')] = (k[x.type + (x.ability ? ':' + x.ability : '')] || 0) + 1; console.error('SLOW', Math.round(dt), 'ms seed', seed, 'turn', s.turn, s.phase, 'units', s.board.creatures.length, JSON.stringify(k), '->', a.type, a.ability || ''); }
     st[who].ms += dt; st[who].calls++; if (dt > st[who].maxMs) st[who].maxMs = dt;
@@ -135,6 +140,7 @@ function sum(list: any[]) {
     at6: ['miners', 'units', 'mined', 'hand', 'pool', 'swaps'].map((k) => k + '=' + avg((x) => x.t6?.[k] || 0)).join(' '),
     at12: ['miners', 'units', 'mined', 'hand', 'pool', 'swaps'].map((k) => k + '=' + avg((x) => x.t12?.[k] || 0)).join(' '),
     turnsWithAbilityReady: avg((x) => x.abTurns?.size || 0), turnsAbilityUsed: avg((x) => x.abUsedTurns?.size || 0), readyDecisionsByAbility: kinds('abAvail'),
+    plans: kinds('plans'), planSwitches: avg((x) => x.planSwitches || 0),
   };
 }
 
@@ -150,7 +156,7 @@ for (let i = 0; i < N; i++) {
 }
 const w = (k: string) => res.filter((r) => r.winner === k).length;
 console.log(JSON.stringify({
-  A: `${aiA}-${dA}`, B: `${aiB}-${dB}`, matches: N, winsA: w('A'), winsB: w('B'), unfinished: w(null as any),
+  A: `${aiA}-${dA}-${STYLE_A}`, B: `${aiB}-${dB}-${STYLE_B}`, matches: N, winsA: w('A'), winsB: w('B'), unfinished: w(null as any),
   winRateA: +(100 * w('A') / N).toFixed(1), avgTurns: +(res.reduce((t, r) => t + r.turns, 0) / N).toFixed(1),
   statsA: sum(res.map((r) => r.stA)), statsB: sum(res.map((r) => r.stB)),
 }, null, 1));

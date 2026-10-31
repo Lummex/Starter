@@ -7,6 +7,8 @@ import { getPlayerName, setPlayerName, AI_NAMES } from './ui/players';
 import { rankOf, pointsFor, load as loadRank, save as saveRank, RANK_CONFIG } from './ui/rank';
 import { ROSTER, matchRival } from './ui/roster';
 import { STARTER_DECKS } from './engine';
+import { STYLE_IDS, STYLE_LABEL, planFor } from './ai/styles';
+import { aiChoose, makeRand, TUNE as AI_TUNE } from './ai/ai';
 import { getPlayerAvatar, AVATARS } from './ui/avatars';
 import { CARDS, COMMANDERS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
@@ -137,7 +139,12 @@ if (test) {
     getPlayerName: () => getPlayerName(), setPlayerName: (n: string) => setPlayerName(n), getOpponentName: () => app.aiName, aiNames: () => AI_NAMES,
     getRank: () => ({ ...loadRank(), rank: rankOf(loadRank().points) }), setRankPoints: (n: number) => { const r = loadRank(); r.points = n; saveRank(r); return rankOf(n); }, // checks + Online Phase C
     rankOf: (p: number) => rankOf(p), rankPoints: (win: boolean, me: number, rival: number) => pointsFor(win, me, rival), rankConfig: () => RANK_CONFIG,
-    getPlayerAvatar: () => getPlayerAvatar(), avatars: () => AVATARS, starterDeckCards: (id: string) => (STARTER_DECKS as any)[id] || null,
+    getPlayerAvatar: () => getPlayerAvatar(), avatars: () => AVATARS,
+    // Oct 31 (rival playstyles): the computer's style and plan; aiPlanFor reads a plan for any style on the current board; aiChooseOn runs the computer on a given state (the no-cheating check)
+    aiStyles: () => STYLE_IDS.map((id) => ({ id, label: STYLE_LABEL[id] })), getAiStyle: () => game.aiStyle, setAiStyle: (id: string) => game.setAiStyle(id), aiPlan: () => game.aiPlan(),
+    aiPlanFor: (style: any) => { const p = planFor(game.state, 'opponent', style); return { style: p.style, plan: p.plan, read: p.read }; },
+    aiChooseOn: (state: any, difficulty: string, style: any, seed: number) => aiChoose(state, difficulty, makeRand(seed), undefined, style),
+    setAiTune: (r: any) => { Object.assign(AI_TUNE, r); return { ...AI_TUNE }; }, // checks only (a huge medMs makes Medium deterministic for the no-cheating check) starterDeckCards: (id: string) => (STARTER_DECKS as any)[id] || null,
     roster: () => ROSTER, getRival: () => app.rival, getRankResult: () => app.rankResult, matchRival: (pts: number, skill: string, pc?: string, oc?: string) => matchRival(pts, skill, pc, oc, () => 0), // Oct 31: the name plates (Online Phase A feeds the username via setPlayerNameProvider)
     setArenaPick: (who: '' | 'player' | 'opponent') => { app.arenaForce = who; return who; }, // checks only: force which faction's arena (and music) the next match uses
     setMixRules: (r: any) => { Object.assign(MIX, r); return { ...MIX }; }, // checks only: {enabled:false} plays every sound as asked (the sound-file checks), default is Brush's mix rules

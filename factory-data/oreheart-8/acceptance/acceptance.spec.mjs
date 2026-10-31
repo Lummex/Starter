@@ -13584,7 +13584,8 @@ test('AC530: 60 recurring rivals (20 per faction) with a name, Commander, style,
   for (const x of R) {
     expect(names, 'names come from the made-up list').toContain(x.name);
     expect(['easy', 'medium', 'hard']).toContain(x.skill);
-    expect(['Aggressive', 'Mine Control', 'Guard', 'Free-for-all']).toContain(x.style);
+    expect(['balanced', 'turtle', 'reckless', 'economy', 'rush', 'tricky'], 'a real playstyle (Oct 31)').toContain(x.style);
+    expect(x.styleLabel).toBeTruthy();
     expect(x.points).toBeGreaterThanOrEqual(0);
   }
   const avg = (s) => R.filter((x) => x.skill === s).reduce((a, x) => a + x.points, 0) / R.filter((x) => x.skill === s).length;
@@ -13695,4 +13696,150 @@ test('AC532: holo masks shine only through their white parts; the Rocket Rider i
   const rv = await page.evaluate(() => window.oreheart.getRival());
   const all = await page.evaluate(() => window.oreheart.avatars());
   expect(all.find((x) => x.id === rv.avatar).race, 'a dwarf rival gets a dwarf (or human/undead) avatar').toMatch(/dwarf|undead|human/);
+});
+
+// Ken (Oct 31): the computer "plays like a human with a playstyle (defensive, the most common; reckless; Miner-protector; and so on), reads the player's style
+// from the board, and switches plans when needed", and never cheats (it never sees your hand or deck).
+const STYLE_IDS = ['balanced', 'turtle', 'reckless', 'economy', 'rush', 'tricky'];
+const PLANS = { balanced: ['steady'], turtle: ['hold', 'build', 'counterpush'], reckless: ['allout', 'regroup'], economy: ['build', 'fortify', 'hunt'], rush: ['siege', 'finish', 'hold'], tricky: ['tricks', 'steady'] };
+const BOARD_MID = [ // a mid-game board: both sides have fighters and Miners in play, the computer (opponent, home row 1) to move
+  { cardId: 'goblin-grunt', owner: 'opponent', row: 2, col: 8 }, { cardId: 'skullbasher-rusher', owner: 'opponent', row: 3, col: 7 }, { cardId: 'goblin-slinger', owner: 'opponent', row: 2, col: 10 },
+  { cardId: 'goblin-scrounger', owner: 'opponent', row: 1, col: 6 }, { cardId: 'goblin-scrounger', owner: 'opponent', row: 2, col: 4 },
+  { cardId: 'dwarf-pickman', owner: 'player', row: 5, col: 7 }, { cardId: 'skullbasher-rusher', owner: 'player', row: 4, col: 9 }, { cardId: 'goblin-grunt', owner: 'player', row: 6, col: 5 },
+  { cardId: 'goblin-scrounger', owner: 'player', row: 6, col: 8 }, { cardId: 'goblin-scrounger', owner: 'player', row: 7, col: 5 },
+];
+const aiMatch = (page, extra = {}) => page.evaluate((x) => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'grubnak', ...x }), extra);
+
+test('AC533: six playstyles reach the computer: the roster leans Defensive, a rival\'s style is the one the computer plays, each style has its plans, and two styles choose differently on the same board', async ({ page }) => {
+  test.setTimeout(120000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const styles = await page.evaluate(() => window.oreheart.aiStyles());
+  expect(styles.map((s) => s.id)).toEqual(STYLE_IDS);
+  expect(styles.find((s) => s.id === 'turtle').label).toBe('Defensive');
+  const R = await page.evaluate(() => window.oreheart.roster());
+  for (const f of ['goblins', 'gnomes', 'dwarves']) {
+    const n = {}; for (const r of R.filter((x) => x.faction === f)) n[r.style] = (n[r.style] || 0) + 1;
+    for (const id of STYLE_IDS) expect(n[id] || 0, `${f}: a ${id} rival`).toBeGreaterThan(0);
+    expect(n.turtle, `${f}: Defensive is the most common`).toBe(Math.max(...Object.values(n)));
+  }
+  // a match from the menu: the computer plays the rival's style, and the plate's tooltip names it
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await expect.poll(async () => !!(await page.evaluate(() => window.oreheart.getRival()))).toBe(true);
+  const rv = await page.evaluate(() => window.oreheart.getRival());
+  expect(await page.evaluate(() => window.oreheart.getAiStyle()), 'the computer plays the rival\'s style').toBe(rv.style);
+  await expect(page.locator('.match .o-plate.o-enemy')).toHaveAttribute('title', new RegExp(rv.styleLabel.replace('-', '.')));
+  // a test match asks for nothing: the computer stays 'balanced' (the computer exactly as before)
+  await aiMatch(page);
+  expect(await page.evaluate(() => window.oreheart.getAiStyle())).toBe('balanced');
+  await aiMatch(page, { aiStyle: 'rush' });
+  expect(await page.evaluate(() => window.oreheart.getAiStyle())).toBe('rush');
+  // every style has a plan on a mid-game board, and Defensive and Reckless do not pick the same action every time
+  await aiMatch(page, { setup: { board: BOARD_MID, firstPlayer: 'opponent' } });
+  await page.evaluate(() => window.oreheart.setAiTune({ medMs: 100000 })); // no time cut-off: the same board + seed always gives the same choice
+  for (const id of STYLE_IDS) {
+    const p = await page.evaluate((x) => window.oreheart.aiPlanFor(x), id);
+    expect(PLANS[id], `${id}: ${p.plan}`).toContain(p.plan);
+    expect(p.read, 'the read comes from the visible board').toMatchObject({ forward: expect.any(Number), guards: expect.any(Number) });
+  }
+  // the computer's first turn, decision by decision (the 'balanced' choice is played): in the Action phase the two styles part ways
+  let differs = 0, seen = 0;
+  for (let i = 0; i < 14 && seen < 8; i++) {
+    const s = await getState(page);
+    if (s.priority !== 'opponent' || s.phase === 'over') break;
+    const r = await page.evaluate(([st, sd]) => { const o = window.oreheart; const t = o.aiChooseOn(st, 'normal', 'turtle', sd), k = o.aiChooseOn(st, 'normal', 'reckless', sd), bl = o.aiChooseOn(st, 'normal', 'balanced', sd); o.act(bl); return { phase: st.phase, same: JSON.stringify(t) === JSON.stringify(k) }; }, [s, 5]);
+    if (r.phase === 'action') { seen++; if (!r.same) differs++; }
+  }
+  expect(seen, 'Action-phase decisions compared').toBeGreaterThanOrEqual(3);
+  expect(differs, 'Defensive and Reckless choose differently at least once').toBeGreaterThan(0);
+});
+
+test('AC534: the computer reads the player from the visible board and switches plans: a Defensive rival counter-pushes when you overextend and builds when you turtle, a Reckless one regroups when its Commander is in danger, a Miner-protector fortifies or hunts, a Commander-rusher finishes or holds, a Tricky one plays steady with no tricks in hand', async ({ page }) => {
+  test.setTimeout(120000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const plan = (style) => page.evaluate((x) => window.oreheart.aiPlanFor(x), style);
+  const far = (owner, row, col) => ({ cardId: 'goblin-grunt', owner, row, col });
+  // (a) Defensive: a quiet board = hold
+  await aiMatch(page, { setup: { firstPlayer: 'opponent', board: [far('opponent', 2, 9), far('opponent', 2, 10), far('player', 5, 6), far('player', 4, 7)] } });
+  expect((await plan('turtle')).plan, 'quiet board: hold').toBe('hold');
+  // the player overextends: two fighters across the middle, nobody guarding their Commander (7,2), no rush on ours (1,12)
+  await aiMatch(page, { setup: { firstPlayer: 'opponent', board: [far('opponent', 1, 8), far('opponent', 1, 9), far('player', 2, 5), far('player', 2, 6)] } });
+  const cp = await plan('turtle');
+  expect(cp.read.overextended).toBe(true);
+  expect(cp.plan, 'overextended player: counter-push').toBe('counterpush');
+  // the player turtles: every fighter sits on their back rows
+  await aiMatch(page, { setup: { firstPlayer: 'opponent', board: [far('opponent', 2, 9), far('player', 7, 4), far('player', 7, 5), far('player', 6, 3)] } });
+  expect((await plan('turtle')).plan, 'turtling player: build the economy').toBe('build');
+  // (b) Reckless: all out, until its Commander (6 Health) has two fighters at the door
+  await aiMatch(page, { setup: { firstPlayer: 'opponent', board: [far('opponent', 2, 9), far('player', 5, 6)] } });
+  expect((await plan('reckless')).plan).toBe('allout');
+  await aiMatch(page, { setup: { firstPlayer: 'opponent', opponentHealth: 6, board: [far('opponent', 2, 9), far('player', 2, 11), far('player', 2, 12)] } });
+  const rg = await plan('reckless');
+  expect(rg.read.rush).toBeGreaterThanOrEqual(0.6);
+  expect(rg.plan, 'Commander in danger: regroup').toBe('regroup');
+  // (c) Miner-protector: our Miner with an enemy fighter in reach = fortify; the player holding more mines = hunt
+  await aiMatch(page, { setup: { firstPlayer: 'opponent', board: [{ cardId: 'goblin-scrounger', owner: 'opponent', row: 2, col: 8 }, far('player', 3, 8)] } });
+  const ft = await plan('economy');
+  expect(ft.read.minersInDanger).toBe(1);
+  expect(ft.plan).toBe('fortify');
+  let s0 = await aiMatch(page, { setup: { firstPlayer: 'player', board: [far('opponent', 1, 9)] } });
+  const sites = s0.sites, spot = (x) => [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1]].map(([dr, dc]) => ({ row: x.row + dr, col: x.col + dc })).find((q) => q.row >= 1 && q.row <= 7 && q.col >= 1 && q.col <= 13 && !sites.some((y) => y.row === q.row && y.col === q.col));
+  const miners = sites.slice(0, 2).map((x) => ({ cardId: 'goblin-scrounger', owner: 'player', ...spot(x) }));
+  await aiMatch(page, { setup: { firstPlayer: 'player', board: [far('opponent', 1, 9), ...miners] } });
+  let s = await toAction(page);
+  for (const m of s.board.creatures.filter((c) => c.owner === 'player' && c.cardId === 'goblin-scrounger')) {
+    const a = (await legal(page)).find((x) => x.type === 'mine' && x.creatureUid === m.uid);
+    if (a) expect((await act(page, a)).ok).toBe(true);
+  }
+  const hunt = await plan('economy');
+  expect(hunt.read.mineGap, 'the player holds more mines').toBeGreaterThanOrEqual(1);
+  expect(hunt.plan).toBe('hunt');
+  // (d) Commander-rush: siege; finish when their Commander is low; hold when ours is low and under attack
+  await aiMatch(page, { setup: { firstPlayer: 'opponent', board: [far('opponent', 2, 9), far('player', 5, 6)] } });
+  expect((await plan('rush')).plan).toBe('siege');
+  await aiMatch(page, { setup: { firstPlayer: 'opponent', playerHealth: 5, board: [far('opponent', 2, 9), far('player', 5, 6)] } });
+  expect((await plan('rush')).plan).toBe('finish');
+  await aiMatch(page, { setup: { firstPlayer: 'opponent', opponentHealth: 5, board: [far('opponent', 2, 9), far('player', 2, 11), far('player', 2, 12)] } });
+  expect((await plan('rush')).plan).toBe('hold');
+  // (e) Tricky: tricks while a spell is in hand, steady without
+  await aiMatch(page, { setup: { firstPlayer: 'opponent', opponentHand: ['fireball', 'goblin-grunt'], board: [far('opponent', 2, 9), far('player', 5, 6)] } });
+  expect((await plan('tricky')).plan).toBe('tricks');
+  await aiMatch(page, { setup: { firstPlayer: 'opponent', opponentHand: ['goblin-grunt', 'goblin-grunt'], board: [far('opponent', 2, 9), far('player', 5, 6)] } });
+  expect((await plan('tricky')).plan).toBe('steady');
+});
+
+test('AC535: no cheating: the computer\'s choice is the same when the player\'s hand and deck are replaced with other cards (it reads only the visible board)', async ({ page }) => {
+  test.setTimeout(120000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  await aiMatch(page, { playerCommander: 'borgo', opponentCommander: 'sproingle', setup: { firstPlayer: 'opponent' } });
+  await page.evaluate(() => window.oreheart.setAiTune({ medMs: 100000 }));
+  let compared = 0, decisions = 0;
+  for (const style of ['tricky', 'turtle', 'balanced']) {
+    for (let i = 0; i < 40 && compared < 12; i++) {
+      let s = await getState(page);
+      if (s.phase === 'over') break;
+      if (s.priority !== 'opponent') { // the player's turn: just end it (and pass any Respond window)
+        expect((await act(page, s.pendingResponse ? { type: 'pass' } : { type: 'done' })).ok).toBe(true);
+        continue;
+      }
+      const [a, b] = await page.evaluate(([st, sty, sd]) => {
+        const o = window.oreheart;
+        const scrub = JSON.parse(JSON.stringify(st));
+        const alt = ['fireball', 'dwarf-pickman', 'meteor-strike', 'goblin-grunt', 'gnome-widget', 'healing-light'];
+        scrub.players.player.hand.forEach((h, k) => { h.cardId = alt[k % alt.length]; });
+        scrub.players.player.deck.forEach((h, k) => { h.cardId = alt[(k + 3) % alt.length]; });
+        scrub.players.player.deck.reverse();
+        return [o.aiChooseOn(st, 'normal', sty, sd), o.aiChooseOn(scrub, 'normal', sty, sd)];
+      }, [s, style, 100 + i]);
+      expect(b, `${style}, decision ${i}: the same choice with another hand and deck`).toEqual(a);
+      compared++;
+      const r = await act(page, a);
+      if (!r.ok) await act(page, s.pendingResponse ? { type: 'pass' } : { type: 'done' });
+      decisions++;
+    }
+  }
+  expect(compared, 'enough decisions compared').toBeGreaterThanOrEqual(10);
 });

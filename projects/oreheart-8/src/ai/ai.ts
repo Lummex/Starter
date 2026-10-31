@@ -8,6 +8,7 @@
 // Respond windows opened by a trial action are always answered "pass", and trial actions use a reshuffled random seed so the
 // AI can't foresee knock-back directions.
 import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, nextPool, previewAttack, canRedraw, basicGatherer, typeBonus } from '../engine';
+import { planFor, StyleId, isStyle, StyleW } from './styles';
 
 export type Rand = () => number;
 export function makeRand(seed: number): Rand {
@@ -178,7 +179,8 @@ function effectiveDamage(s: any, u: any, hits: number[]): number {
   return tot;
 }
 
-interface Prm { threatW: number; goalW: number; turnW: number; fwdW: number; rush?: number; mines?: number; econM?: number; cmdM?: number; foeMinerM?: number; raceM?: number; lead?: number; colFwd?: number; earlyMiner?: number; foeM?: number }
+interface Prm { threatW: number; goalW: number; turnW: number; fwdW: number; rush?: number; mines?: number; econM?: number; cmdM?: number; foeMinerM?: number; raceM?: number; lead?: number; colFwd?: number; earlyMiner?: number; foeM?: number;
+  /** Oct 31 (rival playstyles, styles.ts): pressure at the enemy Commander, the pull home, danger to own Miners, a per-fighter bonus for staying near our Commander */ pressM?: number; defM?: number; minerGuard?: number; homeW?: number }
 
 /** Reading the board at the start of each decision (Ken, Oct 30: "react to what I'm doing"):
  *  rush  = how hard the enemy is pushing toward our Commander (enemy fighters within 4 squares, weighted by Attack and closeness), 0..2
@@ -270,6 +272,8 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
   const sites = s.sites;
   const H = CONFIG.boardHeight, W = CONFIG.boardWidth;
   let room: any[] | null = null; // mines with a free square next to them (computed once, only if a Miner needs it)
+  const guardMiners = (P.minerGuard || 1) > 1 ? 5 * ((P.minerGuard || 1) - 1) : 0; // a Miner-protector: enemies near our Miners are prime targets
+  const myMinerList = guardMiners ? mine.filter((m) => isMiner(CARDS[m.cardId])) : null;
   for (const c of mine) {
     const card = CARDS[c.cardId];
     if (isMiner(card)) {
@@ -291,7 +295,8 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
       const fc = CARDS[f.cardId];
       // a rush on our Commander pulls fighters home (and widens the alarm zone); mine domination sends them after Miners
       const dh = cheb(f, myHome);
-      const G = 9 + (isMiner(fc) ? 7 + 4 * mineGap : 0) + (f.health <= c.attack ? 5 : 0) + (dh <= 3 + Math.round(rush) ? TUNE.defG * (1 + rush) : 0) + (isolated.has(f) ? 3 : 0);
+      const G = 9 + (isMiner(fc) ? 7 + 4 * mineGap : 0) + (f.health <= c.attack ? 5 : 0) + (dh <= 3 + Math.round(rush) ? TUNE.defG * (1 + rush) * (P.defM || 1) : 0) + (isolated.has(f) ? 3 : 0)
+        + (guardMiners && !isMiner(fc) && myMinerList!.some((m) => cheb(f, m) <= 2) ? guardMiners : 0);
       const g = G - T * turns(f);
       if (g > best) best = g;
     }
@@ -300,6 +305,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
     v += P.fwdW * Math.min(6, Math.abs(c.row - backRow(me))); // forward, not sideways along the home row
     if (P.colFwd) v += P.colFwd * Math.max(0, 6 - Math.abs(c.col - foeHome.col)); // Hard: and across the board toward the enemy corner
     if (c.row === backRow(me) && s.turn >= 6) v -= 2; // don't clog the summoning row
+    if (P.homeW) v += P.homeW * Math.max(0, 4 - cheb(c, myHome)); // a defensive style: fighters like to stay within reach of their Commander
   }
   // ---- threats: what the enemy can do on its next turn with the units it has now
   if (P.threatW > 0) {
@@ -312,7 +318,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
       }
       if (!hits.length) continue;
       const d = effectiveDamage(s, u, hits);
-      if (d >= u.health) v -= P.threatW * Math.max(0, 0.75 * unitVal(s, u, 9) - 0.5 * payback);
+      if (d >= u.health) v -= P.threatW * (isMiner(CARDS[u.cardId]) ? P.minerGuard || 1 : 1) * Math.max(0, 0.75 * unitVal(s, u, 9) - 0.5 * payback);
       else if (u.poison > 0) v -= P.threatW * d * 1.5;
     }
     let D = 0;
@@ -332,7 +338,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
     v -= P.threatW * D2 * (TUNE.d2Base + 6 * rush);
   }
   // ---- pressure: our units already in position to hit the enemy Commander
-  for (const c of mine) if (!isMiner(CARDS[c.cardId]) && (cheb(c, foeHome) === 1 || (ab(c, 'ranged') && lineReach(s, c, foeHome, rangeOf(c))))) v += c.attack * TUNE.pressW;
+  for (const c of mine) if (!isMiner(CARDS[c.cardId]) && (cheb(c, foeHome) === 1 || (ab(c, 'ranged') && lineReach(s, c, foeHome, rangeOf(c))))) v += c.attack * TUNE.pressW * (P.pressM || 1);
   return v;
 }
 function threatensNow(s: any, c: any, f: any): boolean {
@@ -490,14 +496,16 @@ const replyPool = { key: '', ms: 0 };
 /** Hard's thinking spent this turn (ms), see TUNE.hardTurnMs. Probe hook: window.__aiTurnMs. */
 const hardPool = { key: '', ms: 0, lean: 0 };
 (globalThis as any).__aiTurnMs = hardPool;
-function smartChoose(s: any, hard: boolean, rand: Rand, legal: any[], done: any): any {
-  if (!hard) return smartChooseInner(s, hard, rand, legal, done);
+function smartChoose(s: any, hard: boolean, rand: Rand, legal: any[], done: any, style: StyleId = 'balanced'): any {
+  if (!hard) return smartChooseInner(s, hard, rand, legal, done, style);
   const key = s.turn + ':' + s.priority;
   if (hardPool.key !== key) { hardPool.key = key; hardPool.ms = 0; hardPool.lean = 0; }
   const t = performance.now();
-  try { return smartChooseInner(s, hard, rand, legal, done); } finally { hardPool.ms += performance.now() - t; }
+  try { return smartChooseInner(s, hard, rand, legal, done, style); } finally { hardPool.ms += performance.now() - t; }
 }
-function smartChooseInner(s: any, hard: boolean, rand: Rand, legal: any[], done: any): any {
+/** The last plan the computer followed (test hook: window.oreheart.aiPlan reads it through game.ts; the sim counts plan switches). */
+export const lastPlan = { style: 'balanced' as StyleId, plan: 'steady', turn: 0 };
+function smartChooseInner(s: any, hard: boolean, rand: Rand, legal: any[], done: any, style: StyleId = 'balanced'): any {
   const me = s.priority as string;
   // the per-turn pool: once Hard has spent hardTurnMs this turn it decides lean (plain scoring at Medium speed, no look-ahead, no reply search), past hardTurnMaxMs only a quick glance
   const left = hard ? budgetMs(TUNE.hardTurnMs) - hardPool.ms : Infinity;
@@ -511,6 +519,13 @@ function smartChooseInner(s: any, hard: boolean, rand: Rand, legal: any[], done:
   // the forward push gives way while defending, and every step toward a goal (home, or the enemy Miners) counts more
   P.fwdW = P.fwdW * Math.max(0.2, 1 - 0.5 * P.rush);
   P.goalW = 1 + 0.75 * P.rush;
+  // Oct 31: the rival's playstyle and its current plan (styles.ts; read from the visible board only). 'balanced' leaves every weight as it is.
+  const SP = planFor(s, me, isStyle(style) ? style : 'balanced'), SW: StyleW = SP.w;
+  lastPlan.style = SP.style; lastPlan.plan = SP.plan; lastPlan.turn = s.turn;
+  if (SP.style !== 'balanced') {
+    P.threatW *= SW.threat; P.fwdW *= SW.fwd; P.raceM = (P.raceM || 1) * SW.race; P.cmdM = (P.cmdM || 1) * SW.cmd; P.econM = (P.econM || 1) * SW.econ;
+    P.foeMinerM = (P.foeMinerM || 1) * SW.foeMiner; P.pressM = SW.press; P.defM = SW.guard; P.minerGuard = SW.minerGuard; P.homeW = SW.home;
+  }
   if (hard && s.turn <= TUNE.hardEarlyTurns) P.earlyMiner = TUNE.hardEarlyMiner;
   if (hard && TUNE.hardLeadPush) { let L = 0; for (const c of s.board.creatures) if (!isMiner(CARDS[c.cardId])) L += c.owner === me ? 1 : -1; P.lead = TUNE.hardLeadPush * Math.max(0, Math.min(6, L)); }
   // per-turn priorities: how many enemy Miners sit on mines, and how hard the enemy fighters press our Commander
@@ -563,10 +578,11 @@ function smartChooseInner(s: any, hard: boolean, rand: Rand, legal: any[], done:
       const card = CARDS[pl.hand.find((h: any) => h.uid === a.uid)?.cardId];
       if (card?.effect === 'buffAttack' && !hard) v = scoreCast(s, me, a) > 0 ? 10 + scoreCast(s, me, a) * 0.3 : -5; // Medium: the old rule of thumb
     }
-    if ((a.type === 'ability' || a.type === 'cast') && v > -1) v += TUNE.specialBias; // Ken: use special abilities and spells, not only plain attacks
+    if ((a.type === 'ability' || a.type === 'cast') && v > -1) v += TUNE.specialBias * (a.type === 'cast' ? SW.cast : SW.special); // Ken: use special abilities and spells, not only plain attacks
     if (a.type === 'move') v += TUNE.moveBias;
-    if (a.type === 'mineAt') v += TUNE.mineBonus;
-    else if (a.type === 'mine') v += isMiner(CARDS[s.board.creatures.find((x: any) => x.uid === a.creatureUid)?.cardId] || {}) ? TUNE.mineBonus : hard ? TUNE.hardFighterMine + (s.turn <= TUNE.hardEarlyTurns ? TUNE.hardEarlyFighterMine : 0) : TUNE.fighterMine; // the Crystal Flow is the engine of every turn
+    if (a.type === 'attack' && SW.attack !== 1) v += TUNE.specialBias * (SW.attack - 1); // Reckless: a taste for the fight itself
+    if (a.type === 'mineAt') v += TUNE.mineBonus * SW.mine;
+    else if (a.type === 'mine') v += isMiner(CARDS[s.board.creatures.find((x: any) => x.uid === a.creatureUid)?.cardId] || {}) ? TUNE.mineBonus * SW.mine : hard ? TUNE.hardFighterMine + (s.turn <= TUNE.hardEarlyTurns ? TUNE.hardEarlyFighterMine : 0) : TUNE.fighterMine; // the Crystal Flow is the engine of every turn
     if (P.mines! > 0 || P.rush! > 0) v += priority(a, t);
     if (a.type === 'mine' && P.rush > 0.3) { const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid); if (c && !isMiner(CARDS[c.cardId])) v -= 12 * P.rush; } // a fighter doesn't stop to mine while the Commander is rushed
     scored.push({ v: v + rand() * noise, a, t });
@@ -627,7 +643,7 @@ function smartChooseInner(s: any, hard: boolean, rand: Rand, legal: any[], done:
   return scored[0].a;
 }
 
-export function aiChoose(s: any, difficulty: string, rand: Rand, only?: string[]): any {
+export function aiChoose(s: any, difficulty: string, rand: Rand, only?: string[], style: StyleId = 'balanced'): any {
   const who = s.priority as string;
   const legal = legalActions(s).filter((a: any) => a.type !== 'surrender' && (!only || only.includes(a.type)));
   if (s.phase === 'mulligan') return { type: 'mulligan', redraw: difficulty !== 'easy' && canRedraw(s, who) && wantsRedraw(s, who), uids: [] };
@@ -658,6 +674,6 @@ export function aiChoose(s: any, difficulty: string, rand: Rand, only?: string[]
   }
   if (s.pendingResponse) return pickBest(legal.map((a: any) => [scoreRespond(s, who, a), a]), 0.5) || { type: 'pass' };
 
-  return smartChoose(s, difficulty === 'hard', rand, legal, done);
+  return smartChoose(s, difficulty === 'hard', rand, legal, done, style);
 }
 void FACTIONS;

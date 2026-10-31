@@ -5,11 +5,13 @@ import { COMMANDERS } from '../engine';
 import { AI_NAMES } from './players';
 import { RANK_CONFIG } from './rank';
 import { rivalAvatars } from './avatars';
+import { StyleId, STYLE_LABEL } from '../ai/styles';
 
 export type Skill = 'easy' | 'medium' | 'hard';
-export interface Rival { id: string; name: string; faction: string; commander: string; style: string; skill: Skill; points: number; avatar: string }
-/** Shown on a rival's profile (the computer does not play by styles yet; it is a label for now). */
-export const STYLE_LABELS = ['Aggressive', 'Mine Control', 'Guard', 'Free-for-all'];
+export interface Rival { id: string; name: string; faction: string; commander: string; style: StyleId; styleLabel: string; skill: Skill; points: number; avatar: string }
+/** Ken, Oct 31: the rival's playstyle drives how the computer plays (ai/styles.ts). Defensive is the most common; 20 rivals per faction: 6 Defensive, 4 Balanced, 3 Reckless, 3 Miner-protector, 2 Commander-rush, 2 Tricky. */
+const STYLE_PATTERN: StyleId[] = ['turtle', 'balanced', 'reckless', 'turtle', 'economy', 'rush', 'turtle', 'tricky', 'balanced', 'turtle', 'reckless', 'economy', 'turtle', 'balanced', 'rush', 'turtle', 'tricky', 'reckless', 'economy', 'balanced'];
+export { STYLE_LABEL };
 const SKILLS: Skill[] = ['easy', 'easy', 'easy', 'easy', 'easy', 'easy', 'easy', 'medium', 'medium', 'medium', 'medium', 'medium', 'medium', 'medium', 'hard', 'hard', 'hard', 'hard', 'hard', 'hard'];
 
 function build(): Rival[] {
@@ -28,7 +30,8 @@ function build(): Rival[] {
       const k = per[skill]++;
       // spread each skill's rivals across its band; the three factions are offset a little so their ranks don't line up exactly
       const points = Math.round(lo + ((hi - lo) * (k + 0.25 + fi * 0.25)) / count[skill]);
-      out.push({ id: `${faction}-${i + 1}`, name, faction, commander, style: STYLE_LABELS[(i + fi) % STYLE_LABELS.length], skill, points, avatar: avs.length ? avs[i % avs.length] : '' });
+      const style = STYLE_PATTERN[(i + 7 * fi) % STYLE_PATTERN.length];
+      out.push({ id: `${faction}-${i + 1}`, name, faction, commander, style, styleLabel: STYLE_LABEL[style], skill, points, avatar: avs.length ? avs[i % avs.length] : '' });
     });
   });
   return out;

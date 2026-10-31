@@ -5,9 +5,9 @@
 import { aiChoose, makeRand } from './ai';
 
 self.onmessage = (e: MessageEvent) => {
-  const { id, state, difficulty, seed } = e.data || {};
+  const { id, state, difficulty, seed, style } = e.data || {};
   const t0 = performance.now();
   let action: any = null, error: string | null = null;
-  try { action = aiChoose(state, difficulty, makeRand(seed)); } catch (err: any) { error = String((err && err.message) || err); }
+  try { action = aiChoose(state, difficulty, makeRand(seed), undefined, style); } catch (err: any) { error = String((err && err.message) || err); }
   (self as any).postMessage({ id, action, error, ms: performance.now() - t0 });
 };
