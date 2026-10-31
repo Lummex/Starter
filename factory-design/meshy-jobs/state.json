@@ -245,7 +245,8 @@
   "character": "01a17280-31f1-71ae-98ff-4ff40886f5a4",
   "rig": "01a17282-b10d-7468-9118-213ef1700f4e",
   "anim": "01a17283-814a-7699-afb8-8f48f3945b69",
-  "medic-pack": "01a174dd-8e7f-747a-94a2-a8ccdef1a9b1"
+  "medic-pack": "01a174dd-8e7f-747a-94a2-a8ccdef1a9b1",
+  "shoulder-shield": "01a18b78-4edc-70f1-aab5-8a3a20a331d3"
  },
  "spark-gnome": {
   "character": "01a17280-823e-7272-b792-1a201ad5dc8f",
@@ -267,5 +268,45 @@
   "character": "01a183ac-0822-7576-a9d1-d3b2cd3cebec",
   "rig": "01a183b1-00c5-76cf-bad2-944f84f6f795",
   "anim": "01a183b1-82d1-7749-9675-ce8eebb085f7"
+ },
+ "overclocked-conduit": {
+  "character": "01a1861f-6238-7148-bf0b-44f8fc57bfe9",
+  "rig": "01a18622-0f05-740e-b581-d4302fc0c3f0",
+  "anim": "01a18622-9278-778d-bf39-c145eb30f5e8"
+ },
+ "gemsinger-miner-silver": {
+  "pickaxe": "01a18b1c-6b05-7507-89c7-bbc065d3d1ff",
+  "character": "01a18b1c-6b07-7227-9af1-01e658ee7967",
+  "rig": "01a18b1f-85ad-734a-ba94-9b412f1d0d00"
+ },
+ "overclocked-conduit-silver": {
+  "pickaxe": "01a18b1c-6b06-7273-b447-48e2ba7c4eea",
+  "character": "01a18b1c-6b06-74ec-babe-8414f19193a6",
+  "rig": "01a18b1f-85a9-708c-b9ed-f20d1e04ac21"
+ },
+ "gearward-sentinel-robot": {
+  "mace": "01a18b1c-6b07-75f9-acab-3f535295d49e",
+  "gear-shield": "01a18b1c-6b06-74ed-aa37-c81b4c1b342f",
+  "character": "01a18b1c-6b0b-7463-8948-44351d7d6710",
+  "rig": "01a18b1f-857c-773b-a1a9-bce052b97278"
+ },
+ "cmd-skreeka-rig": {
+  "character": "01a18b57-bd43-77af-8bdb-b6fedda1394f",
+  "rig": "01a18b5a-b81e-707f-b4bc-dc69994c31d3"
+ },
+ "cmd-sprocket-rig": {
+  "character": "01a18b57-bd3f-74a4-95e3-c04b9ca0e13f",
+  "rig": "01a18b5a-1868-7673-9aa8-01ed7b73faf2",
+  "wrench": "01a18b78-4edc-70f0-8f43-48687110d9d7"
+ },
+ "cmd-grumblebeard-rig": {
+  "character": "01a18b57-bd43-74ab-83f2-3f2d5a5f885e",
+  "rig": "01a18b5a-8fd2-7687-acfb-b5e3674235b4"
+ },
+ "cmd-sproingle-rig": {
+  "rig": "01a18b57-bd43-7081-969e-6db0ae687bb5"
+ },
+ "props-batch-1": {
+  "character": "01a18b58-1ca3-729f-ad59-db49bb2923fa"
  }
 }

@@ -116,3 +116,28 @@ Editor updates needed: hand.overlap 0.26; DRAG_FX (150 ms, opacity .85, tilt 8°
 - Commander impatience counts only `advanceIdle` time in automated runs; the Commander's turn animation no longer caps its time step in automated runs (slow software-GL frames).
 - Not changed (checks that no longer match owner rules): AC58 (uses Rocket Rider as a Miner), AC341 (type advantage makes the Miner die), AC318 (ability button now lives in the Round 15 unit badge), AC216 (menu has the later Settings items), AC371 (owner: the dragged card keeps its own shape).
 - Many other failures were timeouts under 4 parallel software-GL pages; they pass when run alone.
+
+## Online Phase A (this round)
+- New `src/net/` (switch, online client, env-guard, state, flow screens, css), `src/content/parent-notice.json`, `avatar-cards.json`.
+- `main.ts` starts the online flow when `onlineEnabled` (or for `?parent_consent=`, `?parent_withdraw=`, `?contact=1`); plain `?test=1` is unchanged.
+- `decks.ts` / `app.ts` use server decks when `net.active`; under-13 has no Rename.
+- Supabase Edge Function `send-outbox`, config rate limits, schedule migration; admin preview headers. See REPORT.md.
+- Not tested against a live Supabase in the build step. dist size is above 95 MB (see REPORT.md).
+
+## Online Phase A fix (inspector round 1)
+- Plain `/` in an automated browser (WebDriver/headless) without `?online=1` now skips the login flow (`src/net/switch.ts`), so the older checks reach the menu and the Welcome offer again. Real browsers still get the login screen.
+
+## Round 2 fix pass (load-related timeouts)
+Almost every failing check timed out because software-GL pages starved the main thread (7 frames/s, 10 s stats answers).
+In test mode (`?test=1`) `scene.ts` now draws the pixels (front canvas and painted arena) only about every 2 s, on resize, or on the first frame.
+All logic, clips and positions still advance each logic frame (300 ms) by elapsed time, and that throttle no longer scales with draw time.
+`renderer.debug.checkShaderErrors = false` removes blocking shader-link waits.
+Measured locally: 4 parallel tutorial pages load all models in about 7 s (was 10-14 s), and the first render stats at 3840x2160 answer in about 2.4 s (was 13 s).
+Real play (no `?test=1`) is unchanged.
+
+## Round 3 of Online Phase A
+See REPORT.md 'Round 3 fixes'. Changed: src/net/flow.ts (import source, Welcome order, parent link), src/ui/decks.ts (loadBrowserDecks), src/net/net.css, admin src/pages/auth.ts.
+- Oct 31 round: checks-only changes; the game was not changed. Game dist limit is 250 MB (AC528).
+
+## Oct 31 (round 3 fix)
+- AC503: `done` before the opening hand is kept now means "keep my hand" (src/engine/engine.ts), so a bare `newMatch()` then Done works. No rule, number or layout change; offline mode makes no /rest/v1/ calls.

@@ -1,0 +1,22 @@
+{
+ "generated": "2026-10-30T04:44:55.023Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "mace": "01a18b1c-6b07-75f9-acab-3f535295d49e",
+  "gear-shield": "01a18b1c-6b06-74ed-aa37-c81b4c1b342f",
+  "character": "01a18b1c-6b0b-7463-8948-44351d7d6710",
+  "rig": "01a18b1f-857c-773b-a1a9-bce052b97278"
+ },
+ "actions": {},
+ "rigged": true,
+ "parts": [
+  "mace",
+  "gear-shield"
+ ],
+ "notes": "Oct 30 remake: the old mesh was the small pink-haired gnome from the card corner, not the silver robot. Views cut from the approved silver robot sheet, steam painted out. Rig only, no stock clips (Forge Oct 30: the shared biped pack gives the moves). Accessories the card shows, once each.",
+ "fileSizes": {
+  "mace.glb": 10628256,
+  "gear-shield.glb": 11074360,
+  "char.glb": 15092728
+ }
+}

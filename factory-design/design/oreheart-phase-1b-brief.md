@@ -6,11 +6,11 @@ Read this brief first, then the full design document: `factory-design/design/ore
 
 ## Owner rule for every round (Oct 25): size budget and safe shrinking
 
-The game is hosted on Vercel's free plan, which rejects uploads over 100 MB. Keep the built `dist/` under **95 MB** (AC90).
+The game is hosted on Vercel Pro (1 GB upload cap). Owner rule (Ken, Oct 29: "set it for 250 megabytes then"): keep the built `dist/` under **250 MB** (AC90).
 - Shrinking is allowed where it doesn't visibly matter: lower texture resolution on small items/props, re-compressing pictures that are shown small. Leave the art as it is now (the owner checked it and it looks fine).
 - **Never** simplify, decimate, weld, re-mesh or re-quantize 3D model geometry, and never touch UVs. That scrambled the goblin textures in Round 21 and looked awful. To make a model smaller, only re-encode its textures at a lower resolution, then look at it rendered next to the original before keeping it.
 - Character models and the owner's main art (logo, banners, card back, card art, commander portraits) must look the same after any shrinking.
-- If the game can't stay under 95 MB without visible loss, stop and ask the owner.
+- Ask the owner before the game goes over 250 MB.
 
 ## Owner rule for every round (Oct 25): the game and the owner's editors must always match
 
@@ -45,7 +45,7 @@ Do NOT touch crystal colors, the badge, ability or status icons, the Card Comp c
 
 ## Round 22 — fix the failing checks, Bowler Brawler's special moves, Crystal Node effects (owner, Oct 25) — built (403/426); owner merged
 
-Keep everything from 8a–21 and the owner's direct changes on the branch. Follow the size rule above (under 95 MB, never re-mesh models). Commit + push after each numbered step.
+Keep everything from 8a–21 and the owner's direct changes on the branch. Follow the size rule above (under 250 MB, never re-mesh models). Commit + push after each numbered step.
 
 **The owner is changing these directly at the same time — do NOT touch them:** the crystal colors/tint on the Crystal Node model, the unit stat badge (including the unit-type icon slot) and the ability icons above units, and status icons over units' heads. Leave that code alone so nothing conflicts.
 

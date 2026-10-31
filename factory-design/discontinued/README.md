@@ -238,3 +238,27 @@ Job from Forge (Ken's request, Oct 28 ~21:05 UTC): back up every file under `fac
 | 88 | `wolf-rider/char.glb` | 6,309,188 | `6e0209985bd90384279443739858edb62c9ce502` | yes |
 | 89 | `wolf-rider/mace.glb` | 10,320,652 | `6d000212efa5e6d739938802b40c6920bc933dcf` | yes |
 | 90 | `wolf-rider/wolf.glb` | 14,635,772 | `ab06d932644921ff1841168ae9085448b8abf3ec` | yes |
+
+---
+
+## 7. Retired from the Oreheart Studio Model Editor, Oct 30 (Wright, Forge approved)
+
+The Studio hit its 256 MB per-version limit. These base64 `.glb.txt` files were copied byte-for-byte (checked with sha256) to `C:/Users/kentu/Documents/Oreheart/models/_discontinued-studio/models/` and removed from the Studio. Nothing was deleted. No library doc, saved setup or animation uses them any more (checked).
+
+| File | Size | Why |
+|---|---|---|
+| overclocked-conduit-oct29 | 3.9 MB | old gold Aethervein, replaced by overclocked-conduit-silver |
+| crystal-node-hd | 12.4 MB | full-detail crystal node, unused |
+| gearward-sentinel-oct25 | 1.4 MB | old wrong gnome model, replaced by gearward-sentinel-robot |
+| goblin-slinger-v3 | 2.0 MB | old Skullflinger with skull throw (removed from the game) |
+| gnome-smith-miner-oct25 | 1.4 MB | not used by any card |
+| gyrocopter-ace-oct25 | 1.0 MB | replaced by gyrocopter-ace-v4 |
+| clockwork-beetle-oct25 | 4.4 MB | replaced by the rigged clockwork-beetle-rig-oct30 |
+| junk-shaman-v4 | 2.7 MB | replaced by the closed-hand junk-shaman-grip-oct30 (animations repointed by Ledger) |
+| grubnak-fortress | 1.7 MB | unused in the Model Editor |
+| grubnak-scepter | 0.9 MB | unused in the Model Editor |
+| shiv-rat-dagger | 0.2 MB | unused in the Model Editor |
+| goblin-smith-miner-hammer | 0.2 MB | unused in the Model Editor |
+| goblin-smith-miner-pickaxe | 0.2 MB | unused in the Model Editor |
+
+Also copied to the same folder as backups only (still in use in the Studio, NOT retired): gemsinger-anim, gemsinger-miner, gemsinger-pickaxe.

@@ -2,6 +2,8 @@ import './style.css';
 import './ui/theme-silver.css'; // Ken (Oct 30): silver UI theme, loads after style.css so its rules win
 import { startSilverFrames } from './ui/theme-silver';
 import { Game } from './game';
+import { onlineEnabled, pageMode } from './net/switch';
+import { net } from './net/state';
 import { App } from './ui/app';
 import { getPlayerName, setPlayerName, AI_NAMES } from './ui/players';
 import { rankOf, pointsFor, load as loadRank, save as saveRank, RANK_CONFIG } from './ui/rank';
@@ -30,7 +32,11 @@ const seed = seedParam != null && seedParam !== '' && !isNaN(+seedParam) ? Math.
 const game = new Game(test);
 const app = new App(document.getElementById('app')!, game, test, test ? seed : undefined);
 const wantIntro = params.get('intro') === '1' || (!test && !sessionStorage.getItem('oreheart.introSeen'));
-if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catch { /* ignore */ } app.showIntro(); } else app.showMenu();
+if (onlineEnabled || pageMode(location.search)) {
+  // Online Phase A: login / parent pages first; the flow ends at the normal main menu
+  import('./net/flow').then((m) => { app.menuHook = m.menuExtras; return m.startOnline(app); });
+} else if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catch { /* ignore */ } app.showIntro(); } else app.showMenu();
+void net;
 
 if (test) (window as any).__app = app;
 if (test) (window as any).__ohCard = (id: string, h = 624) => { const el = ohCardEl(CARDS[id], pictureOf(CARDS[id])); el.style.cssText = `width:${h * 420 / 624}px;height:${h}px;display:inline-block`; return el; };
@@ -144,7 +150,7 @@ if (test) {
     aiStyles: () => STYLE_IDS.map((id) => ({ id, label: STYLE_LABEL[id] })), getAiStyle: () => game.aiStyle, setAiStyle: (id: string) => game.setAiStyle(id), aiPlan: () => game.aiPlan(),
     aiPlanFor: (style: any) => { const p = planFor(game.state, 'opponent', style); return { style: p.style, plan: p.plan, read: p.read }; },
     aiChooseOn: (state: any, difficulty: string, style: any, seed: number) => aiChoose(state, difficulty, makeRand(seed), undefined, style),
-    setAiTune: (r: any) => { Object.assign(AI_TUNE, r); return { ...AI_TUNE }; }, // checks only (a huge medMs makes Medium deterministic for the no-cheating check) starterDeckCards: (id: string) => (STARTER_DECKS as any)[id] || null,
+    setAiTune: (r: any) => { Object.assign(AI_TUNE, r); return { ...AI_TUNE }; }, /* checks only (a huge medMs makes Medium deterministic for the no-cheating check) */ starterDeckCards: (id: string) => (STARTER_DECKS as any)[id] || null,
     roster: () => ROSTER, getRival: () => app.rival, getRankResult: () => app.rankResult, matchRival: (pts: number, skill: string, pc?: string, oc?: string) => matchRival(pts, skill, pc, oc, () => 0), // Oct 31: the name plates (Online Phase A feeds the username via setPlayerNameProvider)
     setArenaPick: (who: '' | 'player' | 'opponent') => { app.arenaForce = who; return who; }, // checks only: force which faction's arena (and music) the next match uses
     setMixRules: (r: any) => { Object.assign(MIX, r); return { ...MIX }; }, // checks only: {enabled:false} plays every sound as asked (the sound-file checks), default is Brush's mix rules

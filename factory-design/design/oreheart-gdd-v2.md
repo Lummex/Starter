@@ -141,7 +141,7 @@ The only resource is **soul crystal** (crystal for short): one kind, shown in yo
 - **Underdog bonus:** if you own no mine at the start of your turn **and the enemy owns at least one**, you get +2 crystals that turn. It never applies while nobody holds a site, so it doesn't speed up the opening.
 - **Miner swap:** once per turn, during your Deploy phase, if you have no Miner in your hand you can discard a card (or none, if your hand is empty) to take your cheapest basic Miner from your deck into your hand, for free. Crystal Eaters don't count as basic Miners.
 - **Free Miner when broke:** if your Flow plus Bank can't pay for a basic Miner and you have no Miner on the battlefield, you can summon one basic Miner for free that turn.
-- **Tunnelers:** each faction's basic Miner has the Tunnel ability (Smith Miners don't); it only works as a comeback, and otherwise every Miner is summoned on your back row like any creature: when the enemy owns more mines than you, they can be summoned straight onto any empty space next to a crystal site instead of your back row.
+- **Tunnelers (Ken, 2026-10-31):** each faction's basic Miner has the Tunnel ability: the Goblin Miner, the Gemsinger Miner and, for the dwarves, the Anvilsworn Miner, which is their Smith Miner and their basic Miner in one (Ken, 2026-10-31 dwarf fix; the other two Smith Miners don't Tunnel). It works only beside a mine your own side owns right now: such a Miner can be summoned straight onto any empty space next to one of your mines instead of your back row, any time. Beside a neutral or enemy-owned mine there is no Tunnel, so your first Miners always start from the back row and walk. The hand card shows a "Tunnel!" tag while you own a mine.
 - **Comeback spells:** cheap spells built to break a lockout (see Desperate Plunder and Burrow Ambush in the spell list).
 - **Ties neutralize a mine:** one creature sneaking in to tie the count turns the mine white, halving the enemy's income from it.
 
@@ -156,11 +156,11 @@ Three factions, each with its own color: Goblins green, Gnomes blue, Dwarves pur
 | Playstyle | Cheap swarms, explosions, poison and tricks | Magic, fireballs, counter-magic, ranged sparks | Big health, heavy hits, war machines, holding ground |
 | Strength | Numbers and speed of play | Support and surprises | Hard to kill |
 | Weakness | Fragile | Weak in close combat | Expensive |
-| Commander | Grubnak Rotgut, King of the Junkpile | Archmagister Sproingle the Unfathomable | Thane Borgo Gravelgrim |
+| Commander | Grubnak Rotgut, King of the Junkpile | Knobbin the Gnomeificent | Thane Borgo Gravelgrim |
 
 **Two kinds of creature in every faction:**
 
-- **Miners:** strong at mining (2 crystals per mining action), no summoning sickness, weak in a fight.
+- **Miners:** strong at mining (2 crystals per mining action), they can mine (or move) the turn they're played but can't attack until their next turn, weak in a fight.
 - **Fighters:** strong in a fight; only 1 crystal per mining action.
 
 **Type advantage:** +1 Attack when Dwarves hit Goblins, Goblins hit Gnomes, or Gnomes hit Dwarves.
@@ -176,7 +176,7 @@ You pick your Commander before each match. Each faction has one starter Commande
 | --- | --- | --- | --- |
 | Grubnak Rotgut, King of the Junkpile | Goblins | Starter | Goblin creatures cost 1 less crystal (minimum 1) |
 | Queen Skreeka, Hoarder of Shinies | Goblins | Booster pack | Gain 1 crystal whenever one of your creatures is defeated (Flow cap still applies) |
-| Archmagister Sproingle the Unfathomable | Gnomes | Starter | Your spells cost 1 less crystal (minimum 1) |
+| Knobbin the Gnomeificent | Gnomes | Starter | Your spells cost 1 less crystal (minimum 1) |
 | Madame Sprocket, Mistress of Gears | Gnomes | Booster pack | At the start of your turn, your creature with the lowest Health gets Shield 1 |
 | Thane Borgo Gravelgrim | Dwarves | Starter | Your creatures get +1 Health |
 | Grumblebeard the Unkillable | Dwarves | Booster pack | Your Commander starts with 25 Health instead of 20 |
@@ -203,10 +203,11 @@ A creature card shows its cost, Attack, Health, movement and one special ability
 
 **Deck rules:** **50 to 100 cards** (owner settings: minimum 50, maximum 100). Common and Uncommon cards have no copy limit; Rare, Ultra Rare and Collector cards are limited to 3 copies each. Especially powerful cards are marked Unique: you can have only one of that card on your battlefield at a time (extra copies wait in your hand). A deck can hold at most **20 Crystal cards** in total, whatever their rarity (owner setting).
 
-**Starter decks** (three per faction, nine in total, **100 cards each**), named per faction (for example "Goblin Warband"). Every starter deck has **50 Miners: 30 of the faction's basic Miner and 20 of its Smith Miner**; the other 50 cards depend on the style (spells are that faction's own plus the shared ones):
-- **Warband** (balanced): 38 Fighters, 7 spells (including counterspells) and 5 Crystal cards.
-- **Arcane Hoard** (spells): 18 Fighters, 24 spells (including counterspells) and 8 Crystal cards.
-- **The Horde** (no spells): 46 Fighters, no spells and 4 Crystal cards.
+**Starter decks** (Ken, 2026-10-31: four per faction, twelve in total, **60 cards each**), named per faction (for example "Goblin Warband"). Miners (the faction's basic Miner and Smith Miner, plus the Deepdelver for Dwarves and the Aethervein for Gnomes; for the dwarves the Anvilsworn Miner is both, and the Riot Shield Bearer is a Fighter wall, never part of the Miner count: Ken, 2026-10-31) are **at least a third of every deck**; the rest is a mix of roles (spells are that faction's own plus the shared ones). The exact lists are generated by `projects/oreheart-8/tools/gen-starter-decks.py` into `starter-decks.json`:
+- **Warband** (the default deck; built to be the strongest): **30 Miners** (half the deck, never under 28: Ken, 2026-10-31, "there's still not enough miners in the deck"), 20 Fighters, 6 spells (including a counterspell) and 4 Crystal cards; the Gnome Warband trades 3 Fighters for 3 more spells (17 Fighters, 9 spells), because Knobbin's spell discount is the gnomes' edge.
+- **Mine Rush** (75% Miners): 45 Miners and 15 Fighters; no spells, no Crystal cards.
+- **Arcane Hoard** (50% Miners, 25% spells): 30 Miners, 15 Fighters and 15 spells.
+- **Expedition** (40% Miners): 24 Miners, 21 Fighters, 9 spells and 6 Crystal cards.
 
 The computer opponent picks among them for variety. Fighters are mostly Commons, with plenty of cheap creatures so there's always something to play; the owner can change the mix in the settings file. The owner can change copy limits, the Crystal card limit and the Unique mark per card to balance the game. Before a match you pick your Commander and your deck.
 
@@ -214,7 +215,7 @@ The computer opponent picks among them for variety. Fighters are mostly Commons,
 
 Every turn runs through the same phases, each with a 50-second timer. For the first 40 seconds no timer is shown; then a big 10-to-0 countdown pops up in the center of the screen, and at 0 the game moves to the next phase (not the end of the whole turn). Both numbers are owner settings. The tutorial has no timer.
 
-**Setup:** pick your Commander and deck. The deck is shuffled and you draw 5 cards. You may mulligan up to **3 times**: shuffle back any cards you don't want and redraw. The first mulligan is free; each later one gives you **1 card fewer** (so your opening hand can go 5 → 5 → 4 → 3). The cards are shown as real card images in one straight row; tap the ones to swap. A coin flip decides who goes first; the first player skips their first draw, and the second player draws 1 extra card.
+**Setup:** pick your Commander and deck. The deck is shuffled and you draw 5 cards. You see them as real card images in one straight row and choose **Keep Hand** or **Redraw Hand**. A redraw shuffles your whole hand back into the deck and draws a completely new hand of the same size (5 cards). You get **one redraw per match**; there is no picking single cards to swap. The computer opponent has the same choice (it redraws when its hand has no Miner or no fighter it can afford early). A coin flip decides who goes first; the first player skips their first draw, and the second player draws 1 extra card.
 
 **Luck:** you draw one card at a time from a shuffled deck, so you never know exactly what's coming. Booster packs add luck to your collection. There is no other randomness.
 
@@ -222,7 +223,7 @@ Every turn runs through the same phases, each with a 50-second timer. For the fi
 
 1. **Draw phase** (automatic): all your creatures heal back to full Health, you draw 1 card (no hand limit), mine colors update, and your crystal pool resets to your Crystal Flow.
 2. **Deploy phase** (timed): drag creature cards onto empty spaces in your back row, play Crystal cards and Smith upgrades, and cast spells (Regular spells work in any phase of your turn, Instants at any time). If your back row is full, you can summon onto the row in front of it; if both are full, the card waits in your hand.
-3. **Action phase** (timed): each of your creatures does **one** thing: **move, attack or mine**. Drag it to an empty space to move, onto an enemy (or the enemy Stronghold) to attack, or onto a mine next to it to mine. Creatures placed this turn can't act unless their ability says so; **Miners have no summoning sickness**: they can move or mine (but not attack) the turn they're placed.
+3. **Action phase** (timed): each of your creatures does **one** thing: **move, attack or mine**. Drag it to an empty space to move, onto an enemy (or the enemy Stronghold) to attack, or onto a mine next to it to mine. Creatures placed this turn can't act unless their ability says so; **Miners can mine (or move) the turn they're placed, but can't attack until their next turn**.
 4. **End phase** (automatic): end-of-turn abilities happen, then it's the other player's turn.
 
 You can tap a "Done" button to finish a phase early. If you still have something you could do, a center pop-up asks "Moves still available! Continue to the next phase?" with Continue and Go back, and names creatures that could still mine (for example "2 miners haven't mined"), since skipping mining costs crystals next turn. It can be turned off in Settings, and never appears when the timer runs out.
@@ -250,7 +251,8 @@ Attacks subtract Attack from Health; a creature at 0 Health is defeated. Every c
 - **Strike back:** a creature hit in melee always strikes back with its own Attack, at the same moment, even if the hit defeats it. Ranged attacks get no strike back. Type advantage also applies to strike backs.
 - **Creatures heal every turn:** a creature's damage lasts until the start of its owner's next turn, then it heals back to full. A ⚔️1 ❤️2 is always a ⚔️1 ❤️2 again on your next turn. Several of your creatures can still team up on one enemy in the same turn, and a creature hurt while attacking stays hurt through the opponent's turn. A damaged creature shows its current Health in red.
 - **Commander damage stays:** the Commander never heals by itself; only cards that say so (like Last Stand) restore its Health, never above its starting Health.
-- **Shield X:** the next X damage to that creature is blocked; a shield lasts until the start of your next turn.
+- **Shield X:** the next X damage to that creature is blocked; a shield lasts until the start of your next turn. Shield from several sources adds up within the turn.
+- **Stacking** (Ken, 2026-10-30): when the same lasting effect lands on a unit that already has it, the strengths add and the clock keeps the longer of the two, shown as a gold x2 / x3 on the effect's icon. Nothing stacks past x3; Thunderhorn Blast, Rally (Troll Tyrant), Junk Boost (Bowler Brawler, Junk Shaman) and Rooted (Grudge Hurler) stop at x2; Ward, Drunk, Riot Shield, Brawler and the Wellspring Geode never stack. Tuning: stackCap 3, auraStackCap 2 and rootStackCap 2 in game-config.
 - **Type advantage:** +1 Attack when Dwarves hit Goblins, Goblins hit Gnomes, or Gnomes hit Dwarves.
 - **Attacking the Commander:** a creature next to the enemy Stronghold can attack the Commander, removing Health equal to its Attack. The Commander never strikes back.
 - **Defeated creatures** go to the discard pile and lose any Smith upgrades.
@@ -264,10 +266,10 @@ Upgrading is done only by playing **Miner cards from your hand onto your own cre
 
 | Miner card played onto one of your creatures | Permanent upgrade |
 | --- | --- |
-| **Basic Miner** (Grubgrabber, Gemsinger, Stonebreaker) | **+1 Health** |
-| **Smith Miner** (Scrapsmith, Arcsmith, Anvilsworn) | **+1 Attack and +1 Health** |
+| **Basic Miner** (Goblin Miner, Gemsinger Miner) | **+1 Health** |
+| **Smith Miner** (Scrapsmith, Arcsmith, Anvilsworn; the Anvilsworn is also the dwarves' basic Miner) | **+1 Attack and +1 Health** |
 
-- **Played onto an empty space** in your back row, either card is summoned as a normal Miner instead (no summoning sickness, mines for 2).
+- **Played onto an empty space** in your back row, either card is summoned as a normal Miner instead (it can mine the turn it's played but can't attack until its next turn; mines for 2).
 - **Played onto one of your own creatures** (any Fighter or Miner, anywhere on the battlefield), it is not summoned: the creature gets the upgrade permanently (it also counts as part of its full Health when it heals) and the Miner card goes to the discard pile.
 - You pay the card's normal cost either way. Upgrades stack with **no limit** (owner setting, to watch in playtests) and are lost when the creature is defeated.
 - **The free Miner can never upgrade:** it is summoned straight onto the battlefield. A basic Miner pulled into your hand by the Miner swap can be used as an upgrade like any other.
@@ -286,108 +288,97 @@ The only way to win is to bring the enemy Commander from 20 Health to 0, which m
 
 ## Starter card list
 
-These 65 cards set the style and balance; the factory expands them into a Core Set of about 120 cards (about 35 per faction plus spells), giving plenty of variety to collect. Move 2 is reserved for Ultra Rare and Collector characters. In the full set the factory also adds Uncommon cards.
+The live card list (66 cards: 16 creatures per faction, 13 spells, 5 Crystal cards), copied from the game's cards.json on 2026-10-30 (Ledger's table update, Ken approved with the stacking plan). Ability text is the game's own short card text. The factory expands these into a Core Set of about 120 cards later.
 
 **Goblins (green crystals)**
-
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Grubgrabber Miner | Common | Miner | 1 | 1 | 1 | 1 | "Scrounger, Taker of Shiny Things." Mines for 2; play onto one of your creatures instead of summoning for a permanent +1 Health; Tunnel (comeback only) |
-| Scrapsmith Miner | Common | Smith Miner | 2 | 1 | 1 | 1 | Smith: play it onto one of your creatures instead of summoning, and that creature permanently gets +1 Attack and +1 Health. Summoned, it's a normal Miner (mines for 2). No Tunnel |
-| Gutripper Brawler | Common | Fighter | 6 | 2 | 3 | 1 | Frenzy: +1 Attack when next to another Goblin |
-| Skullflinger | Common | Fighter | 4 | 1 | 2 | 1 | Ranged |
-| Boomfist Lunatic | Rare | Fighter | 5 | 2 | 2 | 1 | Ka-boom: when defeated, deals 2 damage to all adjacent enemies |
-| Backstab Weasel | Rare | Fighter | 6 | 3 | 2 | 1 | Sneaky: enemies can't strike back at it |
-| Mangewolf Rider | Ultra Rare | Fighter | 9 | 3 | 4 | 2 | Can act the turn it's played |
-| Gutcrusher the Troll Tyrant | Collector | Fighter | 13 | 5 | 6 | 2 | Unique. Rally: all your Goblins get +1 Attack |
-| Snotskull Grunt | Common | Fighter | 3 | 2 | 1 | 1 | No special ability |
-| Boneknocker | Common | Fighter | 3 | 1 | 2 | 1 | No special ability |
-| Rotgut Grenadier | Common | Fighter | 5 | 2 | 2 | 1 | Ranged: attacks up to 2 spaces away |
-| Shiv Rat | Common | Fighter | 4 | 2 | 1 | 1 | Sneaky: enemies can't strike back at it |
-| Skullbasher Rusher | Uncommon | Fighter | 6 | 2 | 2 | 1 | Charge: can move and attack in the same turn |
-| Junk Shaman | Uncommon | Fighter | 5 | 1 | 3 | 1 | At the start of your turn, adjacent Goblins get +1 Attack this turn |
-| Blastrat Sapper | Uncommon | Fighter | 4 | 2 | 1 | 1 | Ka-boom: when defeated, deals 1 damage to all adjacent enemies |
+| Goblin Miner | Common | Gatherer | 1 | 1 | 1 | 1 | Mines 2. Can Tunnel. +1 Health upgrade. Can't attack the turn it's played. |
+| Bowler Brawler | Common | Fighter | 6 | 2 | 3 | 1 | Nearby Goblins get +1 Attack (up to +2 with the Junk Shaman). Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side. |
+| Skullflinger | Common | Fighter | 4 | 1 | 2 | 1 | Ranged. Hits up to 6 spaces away in any direction; no strike back. |
+| Bare Knuckle Lunatic | Rare | Fighter | 3 | 2 | 2 | 1 | When defeated, he knocks all units around him back 1 space. |
+| Backstabbing Thief | Rare | Fighter | 3 | 3 | 2 | 1 | Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats. |
+| Mangewolf Rider | Rare | Fighter | 8 | 3 | 4 | 3 | Can act the turn it's played. |
+| Gronkowski Troll Tyrant | Collector | Fighter | 7 | 5 | 6 | 2 | All your Goblins get +1 Attack. Two Tyrants: +2. |
+| Goblin Rocket Rider | Ultra Rare | Fighter | 6 | 1 | 4 | 1 | Ride a rocket to any space: it explodes in a 3x3 area for damage equal to this card's Attack, then makes one attack. |
+| Snotskull Grunt | Common | Fighter | 3 | 2 | 3 | 1 | Plain and sturdy. No tricks. |
+| Boneknocker | Common | Fighter | 3 | 1 | 2 | 1 | Plain and sturdy. No tricks. Just kneecaps! |
+| Scrapsmith Miner | Uncommon | Smith | 2 | 1 | 1 | 1 | Upgrades a creature: +1 Attack, +1 Health. Draw a card when it dies (not when it dies upgrading). |
+| Goblin Chef | Common | Fighter | 5 | 2 | 2 | 1 | Smack. When this attacks, the target is knocked back 2 spaces. |
+| Shiv Rat | Common | Fighter | 4 | 2 | 1 | 1 | Sneaky. Enemies can't strike back at it. |
+| Skullbasher Rusher | Uncommon | Fighter | 4 | 2 | 2 | 1 | Charge. Moves and attacks in the same turn. |
+| Junk Shaman | Ultra Rare | Ranged | 7 | 1 | 3 | 1 | On your turn, adjacent Goblins get +1 Attack (up to +2 with the Bowler Brawler). Pay 2: move any character within 5 spaces to a space within 5. |
+| SewerSlide Bomber | Uncommon | Fighter | 2 | 2 | 1 | 1 | Ka-boom: 1 damage to adjacent enemies when defeated. Pay 1: he runs in a straight line until he hits something, then explodes. |
 
 **Gnomes (blue crystals)**
-
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Gemsinger Miner | Common | Miner | 1 | 1 | 1 | 1 | "Prospector of Profound Patience." Mines for 2; play onto one of your creatures instead of summoning for a permanent +1 Health; Tunnel (comeback only) |
-| Arcsmith Miner | Common | Smith Miner | 2 | 1 | 1 | 1 | Smith: play it onto one of your creatures instead of summoning, and that creature permanently gets +1 Attack and +1 Health. Summoned, it's a normal Miner (mines for 2). No Tunnel |
-| Aegis Tinkerer | Common | Fighter | 5 | 1 | 3 | 1 | Fix-it: at the start of your turn, each adjacent ally gets Shield 1 |
-| Stormcaller Savant | Common | Fighter | 5 | 2 | 2 | 1 | Ranged |
-| Iron Scarab Automaton | Rare | Fighter | 8 | 2 | 5 | 1 | Armored: takes 1 less damage from every hit |
-| Mirrorveil Illusionist | Rare | Fighter | 6 | 2 | 3 | 1 | Blink: once, swap places with any of your creatures |
-| Thunderwing Gyronaut | Ultra Rare | Fighter | 8 | 3 | 3 | 2 | Flying: moves over other creatures; Ranged |
-| The Arcane Colossus | Collector | Fighter | 13 | 5 | 6 | 2 | Unique. Overload: its attack also hits every enemy next to the target for 1 |
-| Voltwright | Common | Fighter | 3 | 2 | 1 | 1 | No special ability |
-| Hexgear Adept | Common | Fighter | 3 | 1 | 2 | 1 | No special ability |
-| Hexwright Apprentice | Common | Fighter | 4 | 1 | 2 | 1 | Ranged: attacks up to 2 spaces away |
-| Gearward Sentinel | Common | Fighter | 6 | 1 | 4 | 1 | Guard: enemies next to it must attack it first |
-| Runic Siphoner | Uncommon | Fighter | 5 | 2 | 2 | 1 | When it defeats a creature, put 1 crystal in your Bank |
-| Phase Stalker | Uncommon | Fighter | 6 | 2 | 3 | 1 | Blink: once per match, swap places with any of your creatures |
-| Glyphshield Warden | Uncommon | Fighter | 6 | 2 | 3 | 1 | At the start of your turn, it gets Shield 1 |
+| Gemsinger Miner | Common | Gatherer | 1 | 1 | 1 | 1 | Miner: mines 2. Tunnel. +1 Health upgrade. Can't attack the turn it's played. |
+| Aegis Tinkerer | Common | Fighter | 4 | 1 | 3 | 1 | Each turn, adjacent allies get Shield 1. |
+| Stormcaller Savant | Common | Fighter | 4 | 2 | 2 | 1 | Ranged. Hits up to 5 spaces away; no strike back. |
+| Iron Scarab Automaton | Rare | Fighter | 6 | 3 | 5 | 1 | Armored: takes 1 less damage from each hit. |
+| Mirrorveil Illusionist | Rare | Fighter | 6 | 2 | 3 | 1 | Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down). |
+| Thunderwing Gyronaut | Ultra Rare | Fighter | 8 | 3 | 3 | 3 | Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back. |
+| The Arcane Colossus | Collector | Fighter | 10 | 5 | 6 | 2 | Its hits also hurt enemies next to the target. |
+| Overclocked Aethervein | Rare | Gatherer | 5 | 1 | 4 | 1 | Mines extra crystals each turn. Extra Crystal cards freeze it and cost 1 Health. |
+| Voldawright | Rare | Fighter | 5 | 2 | 3 | 1 | Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each. |
+| Brawler Adept | Common | Fighter | 3 | 2 | 2 | 1 | Plain and sturdy. No tricks. Can't cast spells. |
+| Arcsmith Miner | Common | Smith | 2 | 1 | 1 | 1 | Smith Miner. Upgrades a creature: +1 Attack, +1 Health. |
+| Hexslinger Apprentice | Common | Fighter | 3 | 1 | 2 | 1 | Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies. |
+| Gearward Sentinel | Common | Fighter | 4 | 3 | 4 | 1 | Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight. |
+| Soul Stone Siphoner | Uncommon | Fighter | 7 | 5 | 2 | 1 | Defeating a creature gives +1 Bank crystal. May sacrifice an allied creature to gain +1 Bank crystal. |
+| Gnome Plow | Uncommon | Fighter | 6 | 2 | 3 | 1 | Plow (2 crystals): Move in a straight line, never diagonally. Knocks aside all creatures in its path, friend or foe, 1-2 spaces at random. |
+| Glyphshield Warden | Uncommon | Fighter | 6 | 2 | 3 | 1 | Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack. |
 
 **Dwarves (purple crystals)**
-
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Stonebreaker Miner | Common | Miner | 1 | 1 | 1 | 1 | "Has never met a rock he respected." Mines for 2; play onto one of your creatures instead of summoning for a permanent +1 Health; Tunnel (comeback only) |
-| Anvilsworn Miner | Common | Smith Miner | 2 | 1 | 1 | 1 | Smith: play it onto one of your creatures instead of summoning, and that creature permanently gets +1 Attack and +1 Health. Summoned, it's a normal Miner (mines for 2). No Tunnel |
-| Ironwall Shieldbeard | Common | Fighter | 7 | 2 | 4 | 1 | Guard: adjacent enemies must attack it first |
-| Grudge Hurler | Common | Fighter | 6 | 2 | 3 | 1 | Ranged |
-| Bloodbeard Berserker | Rare | Fighter | 8 | 3 | 4 | 1 | Rage: +2 Attack while below half Health |
-| Forgefire Brewlord | Rare | Fighter | 7 | 2 | 4 | 1 | Hearty Ale: at the start of your turn, each adjacent ally gets +1 Health until your next turn |
-| Thunderhorn Ram Rider | Ultra Rare | Fighter | 11 | 4 | 5 | 2 | Charge: can move and attack in the same turn |
-| Queen Brunhilda Ironheart, the Unbroken | Collector | Fighter | 13 | 5 | 6 | 2 | Unique. Unbreakable: never takes more than 3 damage from one hit |
-| Ironjaw Raider | Common | Fighter | 3 | 2 | 1 | 1 | No special ability |
-| Granite Oathkeeper | Common | Fighter | 3 | 1 | 2 | 1 | No special ability |
-| Oathbound Pikeman | Common | Fighter | 6 | 2 | 3 | 1 | Guard: enemies next to it must attack it first |
-| Deepforge Crossbowman | Common | Fighter | 5 | 2 | 2 | 1 | Ranged: attacks up to 2 spaces away |
-| Barrelback Courier | Common | Fighter | 6 | 1 | 3 | 1 | Can act the turn it's played |
-| Rune-Splitter | Uncommon | Fighter | 7 | 3 | 3 | 1 | Armored: takes 1 less damage from every hit |
-| Grimhold Ravager | Uncommon | Fighter | 8 | 3 | 4 | 1 | Rage: +2 Attack while below half Health |
-
-**Commander spells** (cast from your Stronghold; cost soul crystals)
+| Riot Shield Bearer | Common | Fighter | 4 | 1 | 5 | 1 | Riot Shield (Ken, 2026-10-31: "a blocking unit ... an immovable object ... a little bit of damage and a lot of blocking"): enemies next to it must attack it first (like Guard); every hit it takes does 1 less; nothing can knock it back, bowl it, lift it or shove it. No weapon: it hits for 1 and, like any Fighter, mines 1. It is not a Miner and has no Tunnel. |
+| Ironwall Shieldbeard | Common | Fighter | 6 | 2 | 4 | 1 | Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several. |
+| Grudge Hurler | Common | Fighter | 6 | 2 | 3 | 1 | Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn. A second hit holds it one turn longer. |
+| Bloodbeard Berserker | Rare | Fighter | 7 | 2 | 4 | 1 | Grit. Each time it survives an attack, it permanently gains +1 Attack. Every2 enemy's it kills gives it +1 Attack. |
+| Corpsman Brewlord | Rare | Fighter | 6 | 2 | 4 | 1 | Once per turn, any time: heal an adjacent wounded dwarf; a dying dwarf survives at 1 Health. It becomes Drunk for 2 rounds (can't be healed). |
+| Thunderhorn Ram Rider | Ultra Rare | Fighter | 10 | 4 | 5 | 2 | Charge. Moves and attacks in the same turn. Pay 2: Move in any direction, any number of spaces. |
+| Queen Brunhilda | Collector | Fighter | 10 | 5 | 6 | 2 | Takes at most 3 damage from a hit. |
+| Gemdrunk Deepdelver | Rare | Gatherer | 7 | 2 | 5 | 1 | Each Crystal in your bank gives it +1 Attack for good. |
+| Ironjaw Big Back | Common | Fighter | 5 | 1 | 6 | 1 | Tough. Takes a beating and keeps swinging. |
+| Granite Oathkeeper | Common | Fighter | 3 | 1 | 3 | 1 | Enforcer. When it attacks, knocks back all nearby enemies 1-2 spaces at random. |
+| Anvilsworn Miner | Common | Smith | 1 | 1 | 1 | 1 | The dwarves' basic Miner (Ken, 2026-10-31 dwarf fix; pickaxe art): mines 2, Tunnel, free when broke, found by the Miner swap. Or play it onto your own creature: +1 Attack, +1 Health. Cost 1 (was 2): at 2 the dwarves mined half of what the others mined. |
+| Oathbound Overwatch | Common | Fighter | 6 | 2 | 3 | 1 | Sneaky. Can attack any enemy on the board, at any distance. |
+| Marksmen Gunner | Common | Fighter | 5 | 2 | 2 | 1 | Ranged. Fires straight or diagonal up to 7 spaces; no strike back. |
+| Barrelback Courier | Common | Fighter | 5 | 2 | 3 | 1 | Can act the turn it's played. |
+| Door Splitter | Uncommon | Fighter | 7 | 3 | 3 | 1 | Charge. Can charge in any direction, even diagonally. Blasts enemies out of its way. Knocks any unit, friend or foe, back 1, 2 or 3 spaces at random in a random direction. |
+| Grimhold Ravager | Uncommon | Fighter | 7 | 3 | 4 | 1 | Brawler. If it attacked or was attacked last round, its Attack doubles this round. |
 
 **Faction spells:** each faction has three spells of its own, which can only be put in a deck (and cast) when your Commander belongs to that faction; three shared spells can be used by anyone. Goblins fight dirty (poison, ambushes, theft), Gnomes are the magic faction, Dwarves the mechanical one.
 
-| Card | Faction | Rarity | Type | Cost (soul crystals) | Effect |
-| --- | --- | --- | --- | --- | --- |
-| Venom Shiv | Goblins | Uncommon | Regular | 2 | Poison an enemy creature: it takes 1 damage at the start of each of its owner's next 3 turns and can't heal during that time |
-| Rat-Tunnel Ambush | Goblins | Uncommon | Regular | 2 | Move one of your creatures to any empty space next to a crystal site; it can still attack this turn |
-| Pickpocket! | Goblins | Rare | Counterspell | 4 | Cancel an enemy creature as it's summoned; the card goes back to their hand |
-| Searing Arcane Orb | Gnomes | Rare | Regular | 3 | 3 damage to one creature or the enemy Commander |
-| Starfall Cataclysm | Gnomes | Ultra Rare | Regular | 7 | 2 damage to every creature in a 3 × 3 area |
-| Unweave | Gnomes | Rare | Counterspell | 5 | Cancel any enemy spell |
-| Ironclad Bulwark | Dwarves | Uncommon | Instant | 2 | Your creature takes no damage from the next hit this turn |
-| Thunderhorn Blast | Dwarves | Rare | Regular | 4 | All your creatures get +1 Attack this turn |
-| Emergency Repairs | Dwarves | Ultra Rare | Instant | 5 | Your Commander heals 4 |
-| Field Bandage | Shared | Common | Instant | 2 | Heal one of your creatures by 3 right now (useful during the enemy's turn, before your creatures heal) |
-| Snuff Out | Shared | Uncommon | Counterspell | 3 | Cancel an enemy spell that costs 3 or less |
-| Desperate Plunder | Shared | Common | Regular | 1 | Can only be cast if the enemy owns more mines than you: gain 3 crystals of Flow this turn |
+**Spells**
+| Card | Faction | Rarity | Cost | Effect |
+| --- | --- | --- | --- | --- |
+| Desperate Plunder | Shared | Rare | 0 | Spell. Gain 3 Flow each turn while your opponent has more Flow than you. Stackable. Stops once you have more. |
+| Venom Shiv | Goblins | Uncommon | 2 | Spell. Fling a dagger at an enemy: it takes 1 damage each of its next 7 turns; no healing. Stacks: each extra dagger adds 1 damage a turn (up to 3). |
+| Rat-Tunnel Ambush | Goblins | Uncommon | 2 | Spell. Move a creature next to a mine; it can still attack. |
+| Searing Arcane Orb | Gnomes | Rare | 3 | Spell. 3 damage to a creature or Commander. |
+| Thunderhorn Blast | Dwarves | Rare | 3 | Spell. All your creatures get +1 Attack this turn. Stacks once: two Blasts give +2. |
+| Starfall Cataclysm | Gnomes | Ultra Rare | 6 | Spell. 4 damage to everything in a 3×3 area. |
+| Field Bandage | Shared | Common | 2 | Instant. Heal one of your creatures to full health. |
+| Ironclad Bulwark | Dwarves | Uncommon | 2 | Instant. A creature takes no damage from the next hit. Stacks: two Bulwarks block the next two hits. |
+| Emergency Rations | Dwarves | Ultra Rare | 5 | Instant. Heal your Commander or another unit for 4. |
+| Snuff Out | Shared | Uncommon | 3 | Counterspell. Cancel a spell costing 3 or less. |
+| Pickpocket! | Goblins | Rare | 3 | Counterspell. Send a creature being summoned back to hand. |
+| Unweave | Gnomes | Rare | 5 | Counterspell. Cancel any enemy spell. |
+| Hex Reversal | Shared | Ultra Rare | 7 | Counterspell. Cancel a spell, then cast a free copy. |
 
-Hex Reversal (cancel an enemy spell, then cast a free copy) is set aside for a later card set.
-
-**Crystal cards** (free to play; Instant speed; crystals go into your Bank; one per round; at most 20 per deck)
-
+**Crystal cards** (free to play; Instant speed; crystals go into your Bank; at most 20 per deck)
 | Card | Rarity | Effect |
 | --- | --- | --- |
-| Soul Shard | Common | Gain 1 crystal (into your Bank) |
-| Soul Cluster | Uncommon | Gain 2 crystals (into your Bank) |
-| Wellspring Geode | Rare | Place a small crystal beside your Stronghold: +1 Flow every turn for the rest of the match (Unique) |
-| Heart of the Fallen | Ultra Rare | Gain 4 crystals (into your Bank) |
-| Motherlode | Collector | Gain 3 crystals now, and your next creature this turn costs 2 less |
+| Soul Shard | Common | Crystal card. Free. +1 to your Bank. Play any time during your turn. |
+| Soul Cluster | Uncommon | Crystal card. Free. Play any time during your turn. +2 to your Bank. |
+| Wellspring Geode | Collector | Crystal card. +1 Flow every turn, for good. Play anytime during your turn. |
+| Heart of the Fallen | Ultra Rare | Cast any time on your turn. Free. +4 to your Bank. |
+| Motherlode | Collector | Crystal card. Free. +3 to your Bank. Next creature costs 2 less. Play anytime during your turn. |
 
-**Crystal Eaters** are creatures that let you break the one-per-turn rule: while one is on your battlefield, you may play extra Crystal cards in the same turn, but every extra card costs that creature something. The 10-per-deck limit still applies.
-
-| Card | Faction | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Shardguzzler the Bottomless | Goblins | Uncommon | Miner | 5 | 1 | 4 | 1 | Crystal Eater: each extra Crystal card you play this turn deals 2 damage to it |
-| Overclocked Aethervein | Gnomes | Rare | Miner | 5 | 1 | 4 | 1 | Crystal Eater: each extra Crystal card you play this turn means it can't move or attack until your next turn, and it takes 1 damage |
-| Gemdrunk Deepdelver | Dwarves | Rare | Miner | 7 | 2 | 5 | 1 | Crystal Eater: each extra Crystal card you play this turn gives it -1 Attack for the rest of the match |
-
-If a Crystal Eater is defeated by its own drawback, its Commander gasps dramatically.
+The old "Crystal Eater miners" table (Shardguzzler / Overclocked Aethervein / Gemdrunk Deepdelver) is folded into the faction tables above: Goblin Rocket Rider replaced Shardguzzler as a Fighter, Aethervein and Deepdelver are Gatherers.
 
 Spells are powerful Commander magic paid from your soul crystals. Because unspent crystals stay in your pool through the enemy's turn, saving crystals for an Instant or counterspell means not spending them on your own turn. Counterspells are Instants that cancel what the opponent is doing as they do it, using the "Respond?" window. A countered spell or creature still costs its owner the crystals.
 

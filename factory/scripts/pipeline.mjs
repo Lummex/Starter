@@ -3,8 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import {
-  ROOT, FACTORY, config, FAKE, log, sh, git, resolveSlug, fill, setStatus, comment, runUrl,
-  ownerFeedback, runAgent, totalSpent, buildApp, runAcceptance, withServer,
+  ROOT, FACTORY, config, FAKE, log, sh, git, resolveSlug, issueOverrides, projectConfig, fill, setStatus, comment, runUrl,
+  ownerFeedback, runAgent, totalSpent, buildApp, testApp, secretScan, runAcceptance, withServer,
+  startLocalSupabase, stopLocalSupabase,
 } from './lib.mjs';
 
 const issue = process.env.ISSUE_NUMBER;
@@ -12,7 +13,8 @@ const title = process.env.ISSUE_TITLE || `Project ${issue}`;
 const body = process.env.ISSUE_BODY || '';
 if (!issue) throw new Error('ISSUE_NUMBER is required');
 
-const slug = resolveSlug(issue, title);
+const overrides = issueOverrides(body);
+const slug = resolveSlug(issue, title, body);
 const branch = `factory/issue-${issue}`;
 const appRel = `projects/${slug}`;
 const dataRel = `factory-data/${slug}`;
@@ -20,15 +22,58 @@ const appDir = path.join(ROOT, appRel);
 const dataDir = path.join(ROOT, dataRel);
 const accDir = path.join(dataDir, 'acceptance');
 const workDir = fs.mkdtempSync(path.join(process.env.RUNNER_TEMP || os.tmpdir(), 'factory-'));
+// Extra folders this project owns besides projects/<slug>: more apps (built, unit-tested, served on their
+// own port) and plain folders (e.g. supabase/). From factory/config.json "projects".
+const project = projectConfig(slug);
+const extraApps = project.extraApps.filter((a) => a && a.dir);
+const extraDirs = [...project.extraDirs, ...extraApps.map((a) => a.dir)];
+const allowedRels = [appRel, ...extraDirs];
+const extraServers = () => extraApps.filter((a) => fs.existsSync(path.join(ROOT, a.dir, 'dist', 'index.html'))).map((a) => ({ dir: path.join(ROOT, a.dir, 'dist'), port: a.port }));
 // Full check runs are pushed and split across machines by factory-checks.yml (see lib.mjs remoteChecks).
 const REMOTE = { push: () => push(), branch, slug };
 const prompt = (name) => fs.readFileSync(path.join(FACTORY, 'prompts', `${name}.md`), 'utf8');
+let buildEnv = {}; // build-time settings (local Supabase address) once it is running
 
 function commitAll(message) {
-  const paths = [appRel, dataRel].filter((p) => fs.existsSync(path.join(ROOT, p)));
+  const paths = [...allowedRels, dataRel].filter((p) => fs.existsSync(path.join(ROOT, p)));
   if (paths.length) git('add', '-A', ...paths);
   const staged = sh('git', ['diff', '--cached', '--quiet'], { check: false }).status !== 0;
-  if (staged) git('commit', '-q', '-m', message);
+  if (!staged) return;
+  // Never commit a key: scan everything staged first.
+  const scan = secretScan();
+  if (!scan.ok) {
+    sh('git', ['reset', '-q'], { check: false });
+    throw new Error(scan.log);
+  }
+  git('commit', '-q', '-m', message);
+}
+
+// Throws away everything the agent changed in the app folders (used when its work contained a secret).
+function discardAppChanges(base) {
+  const dirs = allowedRels.filter((p) => fs.existsSync(path.join(ROOT, p)));
+  if (!dirs.length) return;
+  sh('git', ['checkout', '-q', base, '--', ...dirs], { check: false });
+  sh('git', ['clean', '-fdq', '-e', 'node_modules', '-e', 'dist', '--', ...dirs], { check: false });
+}
+
+// Builds the app and every extra app (with their unit tests), then scans the built files for keys. Returns { ok, log }.
+function buildEverything() {
+  const b = buildApp(appDir, buildEnv);
+  if (!b.ok) return b;
+  for (const a of extraApps) {
+    const dir = path.join(ROOT, a.dir);
+    if (!fs.existsSync(path.join(dir, 'package.json'))) continue;
+    const eb = buildApp(dir, buildEnv);
+    if (!eb.ok) return { ok: false, log: `${a.dir}: ${eb.log}` };
+    if (a.test !== false) {
+      const t = testApp(dir, buildEnv);
+      if (!t.ok) return t;
+    }
+  }
+  const dists = [appDir, ...extraApps.map((a) => path.join(ROOT, a.dir))].map((d) => path.join(d, 'dist')).filter((d) => fs.existsSync(d)).map((d) => path.relative(ROOT, d));
+  const scan = secretScan(dists);
+  if (!scan.ok) return scan;
+  return { ok: true, log: '' };
 }
 
 // GitHub occasionally answers with a temporary server error; retry with growing pauses before giving up.
@@ -54,11 +99,12 @@ function sleep(seconds) { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),
 // judged against this commit, not HEAD (a builder commit once swallowed the hidden tests' removal).
 const headSha = () => sh('git', ['rev-parse', 'HEAD'], { check: false }).stdout.trim() || 'HEAD';
 
-// Undo anything an agent changed outside the folder it was allowed to touch.
-function confineTo(allowedRel, base = 'HEAD') {
+// Undo anything an agent changed outside the folder(s) it was allowed to touch.
+function confineTo(allowed, base = 'HEAD') {
+  const allowedList = Array.isArray(allowed) ? allowed : [allowed];
   // Tool installs (node_modules, lock files) are never treated as agent changes.
-  const tooling = (f) => /(^|\/)(node_modules|dist)\//.test(f) || f === 'factory/package-lock.json' || f.startsWith('factory/.run-tests/');
-  const inside = (f) => tooling(f) || f === allowedRel || f.startsWith(`${allowedRel}/`);
+  const tooling = (f) => /(^|\/)(node_modules|dist)\//.test(f) || f === 'factory/package-lock.json' || f.startsWith('factory/.run-tests/') || /(^|\/)\.supabase\//.test(f) || f.startsWith('supabase/.temp/') || f.startsWith('supabase/.branches/');
+  const inside = (f) => tooling(f) || allowedList.some((a) => f === a || f.startsWith(`${a}/`));
   const changed = sh('git', ['diff', '--name-only', base], { check: false }).stdout.split('\n').filter(Boolean);
   const reverted = changed.filter((f) => !inside(f));
   if (reverted.length) {
@@ -77,6 +123,23 @@ function confineTo(allowedRel, base = 'HEAD') {
   if (reverted.length + removed.length) log(`reverted out-of-bounds changes: ${[...reverted, ...removed].join(', ')}`);
 }
 
+// Runs the builder with no way to the hidden tests: no copy in the checkout or the test runner's
+// folder, and no git history (older commits hold the tests). .git waits in the locked work folder.
+function withoutTests(fn) {
+  fs.rmSync(accDir, { recursive: true, force: true });
+  fs.rmSync(path.join(FACTORY, '.run-tests'), { recursive: true, force: true });
+  const gitDir = path.join(ROOT, '.git');
+  const hidden = path.join(workDir, 'git');
+  fs.renameSync(gitDir, hidden);
+  fs.chmodSync(workDir, 0o000);
+  try { return fn(); } finally {
+    fs.chmodSync(workDir, 0o700);
+    // If an agent started a new repository meanwhile, the real one replaces it.
+    fs.rmSync(gitDir, { recursive: true, force: true });
+    fs.renameSync(hidden, gitDir);
+  }
+}
+
 function checkoutBranch() {
   if (FAKE) return;
   const exists = sh('git', ['ls-remote', '--exit-code', '--heads', 'origin', branch], { check: false }).status === 0;
@@ -89,9 +152,38 @@ function checkoutBranch() {
     git('checkout', '-q', branch);
     // Pick up factory improvements made on main since this project started.
     sh('git', ['merge', '-q', '--no-edit', '-X', 'theirs', 'origin/main'], { check: false });
+  } else if (overrides.base) {
+    // The issue says where to start from (e.g. the live game's branch): branch off there, plus main's factory.
+    const base = overrides.base;
+    if (sh('git', ['fetch', '-q', 'origin', `${base}:refs/remotes/origin/${base}`], { check: false }).status !== 0) {
+      throw new Error(`The issue says "factory-base: ${base}", but that branch does not exist on GitHub.`);
+    }
+    git('checkout', '-q', '-b', branch, `refs/remotes/origin/${base}`);
+    sh('git', ['merge', '-q', '--no-edit', '-X', 'theirs', 'origin/main'], { check: false });
+    log(`new branch ${branch} started from ${base}`);
   } else {
     git('checkout', '-q', '-b', branch);
   }
+}
+
+// What the planner and builder are told about this project's extra folders and the local database.
+function extraSection() {
+  if (!extraDirs.length && !project.supabase) return '';
+  const lines = ['## This project has more than one folder', ''];
+  lines.push(`- The main app is \`${appRel}\`.`);
+  for (const a of extraApps) lines.push(`- \`${a.dir}\` is a second app (built with \`npm run build\`, unit-tested with \`npm test\`, served on port ${a.port} during the checks). You may change it.`);
+  for (const d of project.extraDirs) lines.push(`- \`${d}\` belongs to this project too (${d === 'supabase' ? 'database migrations, Edge Functions and database tests; add NEW migration files, never edit applied ones' : 'you may change it'}).`);
+  lines.push('- Changes anywhere else are thrown away.');
+  if (project.supabase) {
+    lines.push('', '## Database and login (this project has a Supabase backend)', '',
+      'The usual "no backend, no logins" limit does NOT apply to this project. The checks run against a LOCAL Supabase started by the factory from `supabase/config.toml` (never a real project):',
+      '- The apps are built with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (the local demo key) and `VITE_OREHEART_ENV=test`; no captcha key.',
+      `- The main app is served on http://127.0.0.1:${config.port}${extraApps.map((a) => `, \`${a.dir}\` on http://127.0.0.1:${a.port}`).join('')}.`,
+      '- Tests get `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_TEST_ADMIN_KEY` (local secret key, for test setup only, never in app code), `DB_URL` (psql), `MAIL_URL` (the local mail catcher where confirmation and reset emails land; Mailpit: `GET $MAIL_URL/api/v1/search?query=to:<address>` lists messages and `GET $MAIL_URL/api/v1/message/<ID>` opens one with its HTML/Text; if that answers 404 it is the older Inbucket: `GET $MAIL_URL/api/v1/mailbox/<part-before-@>` and `/api/v1/mailbox/<name>/<id>`; write one helper that tries both), and `FUNCTIONS_URL`.',
+      '- Test helpers: `@supabase/supabase-js` and `otplib` are installed in the test runner. Every test makes its own users with unique emails (e.g. `t-<random>@test.local`) because the checks run in parallel on several machines.',
+      '- Never print a key in logs, reports or screenshots. The secret scan fails the round if a key or the words service_role appear in browser code.');
+  }
+  return lines.join('\n');
 }
 
 async function main() {
@@ -108,7 +200,7 @@ async function main() {
 
   // ---- 1. Plan ----
   fs.rmSync(path.join(dataDir, 'QUESTIONS.md'), { force: true });
-  const vars = { TITLE: title, BODY: body, DATA_DIR: dataRel, APP_DIR: appRel, ACCEPTANCE_DIR: `${dataRel}/acceptance`, FEEDBACK_SECTION: feedbackSection };
+  const vars = { TITLE: title, BODY: body, DATA_DIR: dataRel, APP_DIR: appRel, ACCEPTANCE_DIR: `${dataRel}/acceptance`, FEEDBACK_SECTION: feedbackSection, EXTRA_SECTION: extraSection() };
   const planBase = headSha();
   runAgent('planner', fill(prompt('planner'), vars), config.budgetsUsd.planner);
   confineTo(dataRel, planBase);
@@ -126,6 +218,13 @@ async function main() {
   if (!fs.existsSync(specFile) || testFiles.length === 0) throw new Error('The planner did not produce a spec and acceptance tests.');
   commitAll(`factory: plan for #${issue}`);
 
+  // The local database for the checks (only projects with a supabase/ folder). The migrations are
+  // re-applied before every inspection so a new migration file from the builder is tested too.
+  const useSupabase = project.supabase && fs.existsSync(path.join(ROOT, 'supabase', 'config.toml'));
+  if (useSupabase && !FAKE) buildEnv = startLocalSupabase() || {};
+  const refreshDatabase = () => { if (useSupabase && !FAKE) sh('supabase', ['db', 'reset', '--local'], { cwd: ROOT, stdio: ['ignore', 'inherit', 'inherit'] }); };
+  const local = () => ({ extra: extraServers() });
+
   // ---- 2. Build + inspect loop ----
   let failures = [];
   let result = { passed: 0, total: 0, failures: [] };
@@ -137,13 +236,22 @@ async function main() {
       : '';
     // Hide the acceptance tests from the builder (they're restored from git afterwards).
     const buildBase = headSha();
-    fs.rmSync(accDir, { recursive: true, force: true });
-    runAgent('builder', fill(prompt('builder'), { ...vars, FAILURES_SECTION: failuresSection }), config.budgetsUsd.builderPerRound);
-    confineTo(appRel, buildBase); // also restores the hidden tests
-    commitAll(`factory: build round ${round} for #${issue}`);
+    withoutTests(() => runAgent('builder', fill(prompt('builder'), { ...vars, FAILURES_SECTION: failuresSection }), config.budgetsUsd.builderPerRound));
+    confineTo(allowedRels, buildBase); // also restores the hidden tests
+    try {
+      commitAll(`factory: build round ${round} for #${issue}`);
+    } catch (e) {
+      // A key in the code: nothing of this round is kept; the builder gets the scan result as its failure.
+      discardAppChanges(buildBase);
+      failures = [String(e.message || e)];
+      result = { passed: 0, total: 0, failures, buildFailed: true };
+      log('round discarded by the secret scan', failures[0]);
+      continue;
+    }
 
     log(`inspecting round ${round}`);
-    const b = buildApp(appDir);
+    if (round > 1) refreshDatabase();
+    const b = buildEverything();
     if (!b.ok) {
       failures = [b.log];
       result = { passed: 0, total: 0, failures, buildFailed: true };
@@ -153,11 +261,12 @@ async function main() {
     // Speed-up: the first and last rounds run every check. Rounds in between only re-check
     // what failed last time (minutes instead of a full run); the last round catches anything that broke.
     const quick = lastFull && round > 1 && round < config.maxBuildRounds && lastFull.total > 0 && lastFull.passed < lastFull.total;
-    result = await runAcceptance(appDir, accDir, path.join(workDir, `round-${round}`), quick ? { onlyFailed: true, previous: result.results ? result : lastFull } : { remote: REMOTE });
+    result = await runAcceptance(appDir, accDir, path.join(workDir, `round-${round}`), quick ? { onlyFailed: true, previous: result.results ? result : lastFull, ...local() } : { remote: REMOTE, ...local() });
     log(`round ${round}: ${result.passed}/${result.total} checks passed${result.partial ? ' (quick re-check)' : ''}`);
     if (result.partial && result.total > 0 && result.passed === result.total) {
       log('every re-checked item passed; running the full set to make sure nothing else broke');
-      result = await runAcceptance(appDir, accDir, path.join(workDir, `round-${round}-full`), { remote: REMOTE });
+      refreshDatabase();
+      result = await runAcceptance(appDir, accDir, path.join(workDir, `round-${round}-full`), { remote: REMOTE, ...local() });
       log(`round ${round}: ${result.passed}/${result.total} checks passed (full)`);
     }
     if (!result.partial) lastFull = result;
@@ -169,9 +278,11 @@ async function main() {
   // The report must always come from a full run.
   if (result.partial) {
     log('final full check for the report');
-    result = await runAcceptance(appDir, accDir, path.join(workDir, 'final'), { remote: REMOTE });
+    refreshDatabase();
+    result = await runAcceptance(appDir, accDir, path.join(workDir, 'final'), { remote: REMOTE, ...local() });
     log(`final: ${result.passed}/${result.total} checks passed`);
   }
+  if (useSupabase && !FAKE) stopLocalSupabase();
 
   // ---- 3. Report ----
   const shotsDir = path.join(dataDir, 'screenshots');
@@ -204,6 +315,14 @@ async function main() {
   // ---- 4. Preview deploy ----
   let preview = '';
   if (fs.existsSync(path.join(appDir, 'dist', 'index.html'))) preview = deploy(false);
+  // Extra apps (e.g. the admin site) are only deployed once the owner has made and linked their Vercel
+  // project (a committed .vercel/project.json); otherwise `vercel deploy` would invent a new project.
+  const extraPreviews = [];
+  for (const a of extraApps) {
+    const dir = path.join(ROOT, a.dir);
+    if (!fs.existsSync(path.join(dir, '.vercel', 'project.json')) || !fs.existsSync(path.join(dir, 'dist', 'index.html'))) continue;
+    try { extraPreviews.push(`${a.dir}: ${deploy(false, a.dir, dir)}`); } catch (e) { log(`preview of ${a.dir} skipped:`, e.message); }
+  }
   commitAll(`factory: link Vercel project for #${issue}`);
   push();
   ensurePullRequest();
@@ -216,6 +335,7 @@ async function main() {
     allPassed ? `✅ **Ready for your review.** All ${result.total} automated checks passed.` : `⚠️ **Ready for your review, but some checks failed** (${result.passed} of ${result.total} passed). Read the report before approving.`,
     '',
     preview ? `**👉 Preview: ${preview}**` : '**No preview could be made because the site did not build.** Request changes to try again.',
+    ...extraPreviews.map((p) => `**Also: ${p}**`),
     '',
     report,
     '',
@@ -223,33 +343,34 @@ async function main() {
   ].join('\n'), { type: 'report', preview, passed: result.passed, total: result.total, rounds: round, cost: Number(cost.toFixed(2)), slug });
 }
 
-function deploy(prod) {
+// Deploys one app folder to Vercel (the main app by default; extra apps pass their own rel/dir).
+function deploy(prod, rel = appRel, dir = appDir) {
   if (FAKE) return 'https://example-preview.vercel.app';
   const token = process.env.VERCEL_TOKEN;
   if (!token) throw new Error('VERCEL_TOKEN secret is missing.');
-  fs.rmSync(path.join(appDir, 'node_modules'), { recursive: true, force: true });
+  fs.rmSync(path.join(dir, 'node_modules'), { recursive: true, force: true });
   // Only the factory deploys projects: turn off Vercel's own auto-deploy on every GitHub push
   // (otherwise old project folders show up in Vercel as "Deployment failed").
-  const vjFile = path.join(appDir, 'vercel.json');
+  const vjFile = path.join(dir, 'vercel.json');
   let vj = {};
   try { if (fs.existsSync(vjFile)) vj = JSON.parse(fs.readFileSync(vjFile, 'utf8')) || {}; } catch { vj = null; }
   if (vj && vj.git?.deploymentEnabled !== false) {
     vj.git = { ...(vj.git || {}), deploymentEnabled: false };
     fs.writeFileSync(vjFile, JSON.stringify(vj, null, 2) + '\n');
-    git('add', '-f', path.join(appRel, 'vercel.json'));
+    git('add', '-f', path.join(rel, 'vercel.json'));
   }
   // If Vercel linked this project to the GitHub repo, unlink it: every push would otherwise
   // start an extra Vercel build and use up the free plan's daily deployment limit.
-  if (fs.existsSync(path.join(appDir, '.vercel', 'project.json'))) {
-    sh('npx', ['--yes', 'vercel@latest', 'git', 'disconnect', '--yes', '--token', token], { cwd: appDir, check: false });
+  if (fs.existsSync(path.join(dir, '.vercel', 'project.json'))) {
+    sh('npx', ['--yes', 'vercel@latest', 'git', 'disconnect', '--yes', '--token', token], { cwd: dir, check: false });
   }
   const args =['--yes', 'vercel@latest', 'deploy', '--yes', '--token', token];
   if (prod) args.push('--prod');
-  const r = sh('npx', args, { cwd: appDir, check: false });
+  const r = sh('npx', args, { cwd: dir, check: false });
   const out = (r.stdout || '') + '\n' + (r.stderr || '');
   if (r.status !== 0) {
     // Free-plan limit reached: publish the preview on GitHub Pages instead, so the owner can still test.
-    if (!prod && /resource is limited|api-deployments|rate.?limit|too many|exceeded/i.test(out)) {
+    if (!prod && dir === appDir && /resource is limited|api-deployments|rate.?limit|too many|exceeded/i.test(out)) {
       log('Vercel refused (daily limit); publishing the preview to GitHub Pages instead');
       return deployPages();
     }
@@ -258,7 +379,7 @@ function deploy(prod) {
   const url = (r.stdout.match(/https:\/\/\S+/g) || []).pop();
   if (!url) throw new Error(`Could not find the deployment URL in Vercel's output:\n${out.slice(-2000)}`);
   // Keep the project link so approval deploys to the same Vercel project.
-  if (fs.existsSync(path.join(appDir, '.vercel', 'project.json'))) git('add', '-f', path.join(appRel, '.vercel', 'project.json'));
+  if (fs.existsSync(path.join(dir, '.vercel', 'project.json'))) git('add', '-f', path.join(rel, '.vercel', 'project.json'));
   return url;
 }
 
@@ -313,6 +434,7 @@ function ensurePullRequest() {
 
 main().catch((e) => {
   console.error(e);
+  try { stopLocalSupabase(); } catch {}
   try {
     setStatus(issue, 'factory:failed');
     comment(issue, `🛑 **The factory hit a problem and stopped.**\n\n\`\`\`\n${String(e.message || e).slice(0, 3000)}\n\`\`\`\n\nYou can press **Try again** in the dashboard. [Run log](${runUrl()})`, { type: 'failed' });

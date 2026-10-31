@@ -6,6 +6,9 @@ import path from 'node:path';
 export const ROOT = process.cwd();
 export const FACTORY = path.join(ROOT, 'factory');
 export const config = JSON.parse(fs.readFileSync(path.join(FACTORY, 'config.json'), 'utf8'));
+// Bigger (or smaller) budgets for one issue only: config.json "budgetsByIssue": { "<issue number>": { maxPerRun, builderPerRound, ... } }.
+const issueBudgets = (config.budgetsByIssue || {})[String(process.env.ISSUE_NUMBER || '')];
+if (issueBudgets) Object.assign(config.budgetsUsd, issueBudgets);
 export const FAKE = process.env.FACTORY_FAKE === '1'; // local testing: no GitHub/Vercel/Claude calls
 
 export const STATUS_LABELS = [
@@ -29,8 +32,24 @@ export function slugify(s) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '') || 'site';
 }
 
+// Lines an issue body may carry to steer the factory (owner-written, one per line):
+//   factory-project: oreheart-8      build this existing project folder instead of a new one
+//   factory-base: factory/issue-8    start the new factory branch from this branch (first run only)
+export function issueOverrides(body) {
+  const pick = (key) => (String(body || '').match(new RegExp(`^\\s*${key}:\\s*([\\w./-]+)\\s*$`, 'mi')) || [])[1] || '';
+  return { slug: pick('factory-project'), base: pick('factory-base') };
+}
+
+// Per-project factory settings from config.json ("projects": { "<slug>": { extraApps, extraDirs, supabase } }).
+export function projectConfig(slug) {
+  const p = (config.projects || {})[slug] || {};
+  return { extraApps: p.extraApps || [], extraDirs: p.extraDirs || [], supabase: Boolean(p.supabase) };
+}
+
 // Finds the project folder for an issue (projects/<slug>-<n>), or makes a new slug.
-export function resolveSlug(issue, title) {
+export function resolveSlug(issue, title, body = '') {
+  const o = issueOverrides(body);
+  if (o.slug && fs.existsSync(path.join(ROOT, 'projects', o.slug, 'package.json'))) return o.slug;
   const dir = path.join(ROOT, 'projects');
   if (fs.existsSync(dir)) {
     const hit = fs.readdirSync(dir).find((d) => d.endsWith(`-${issue}`) && fs.statSync(path.join(dir, d)).isDirectory());
@@ -83,7 +102,13 @@ export function runUrl() {
 
 // Owner comments (not from the bot), oldest first: answers to questions and change requests.
 export function ownerFeedback(issue) {
-  const comments = gh('GET', `issues/${issue}/comments?per_page=100`) || [];
+  // GitHub gives at most 100 comments per page; read every page (issue #8 has well over 100).
+  const comments = [];
+  for (let page = 1; page <= 100; page++) {
+    const batch = gh('GET', `issues/${issue}/comments?per_page=100&page=${page}`) || [];
+    comments.push(...batch);
+    if (batch.length < 100) break;
+  }
   return comments
     .filter((c) => c.user?.type !== 'Bot' && !c.body.includes('<!-- factory:'))
     .map((c) => `- (${c.created_at?.slice(0, 10)}) ${c.body.trim()}`)
@@ -128,29 +153,98 @@ export function runAgent(role, prompt, budgetUsd) {
 }
 
 // ---------- Inspection ----------
-export async function withServer(dir, fn) {
+// Serves the built site on config.port; `extra` = [{ dir, port }] serves more built sites beside it
+// (e.g. the admin site on 4174) for as long as `fn` runs.
+export async function withServer(dir, fn, extra = []) {
   const port = String(config.port);
-  const proc = spawn('node', [path.join(FACTORY, 'scripts/serve.mjs'), dir, port], { stdio: 'ignore' });
+  const procs = [spawn('node', [path.join(FACTORY, 'scripts/serve.mjs'), dir, port], { stdio: 'ignore' })];
+  for (const e of extra) procs.push(spawn('node', [path.join(FACTORY, 'scripts/serve.mjs'), e.dir, String(e.port)], { stdio: 'ignore' }));
   try {
-    for (let i = 0; i < 50; i++) {
-      try { await fetch(`http://127.0.0.1:${port}/`); break; } catch { await new Promise((r) => setTimeout(r, 100)); }
+    for (const p of [port, ...extra.map((e) => e.port)]) {
+      for (let i = 0; i < 50; i++) {
+        try { await fetch(`http://127.0.0.1:${p}/`); break; } catch { await new Promise((r) => setTimeout(r, 100)); }
+      }
     }
     return await fn(`http://127.0.0.1:${port}`);
-  } finally { proc.kill(); }
+  } finally { for (const p of procs) p.kill(); }
 }
 
-// Installs + builds the app. Returns { ok, log }.
-export function buildApp(appDir) {
+// Installs + builds the app. `env` adds build-time settings (e.g. the local Supabase address). Returns { ok, log }.
+export function buildApp(appDir, env = {}) {
   if (!fs.existsSync(path.join(appDir, 'package.json'))) {
     return { ok: false, log: `No package.json in ${path.relative(ROOT, appDir)} — the app was not created.` };
   }
   const lock = fs.existsSync(path.join(appDir, 'package-lock.json'));
   const inst = sh('npm', [lock ? 'ci' : 'install', '--no-audit', '--no-fund'], { cwd: appDir, check: false });
   if (inst.status !== 0) return { ok: false, log: `npm install failed:\n${tail(inst.stderr + inst.stdout)}` };
-  const b = sh('npm', ['run', 'build'], { cwd: appDir, check: false });
+  const b = sh('npm', ['run', 'build'], { cwd: appDir, check: false, env: { ...process.env, ...env } });
   if (b.status !== 0) return { ok: false, log: `npm run build failed:\n${tail(b.stdout + b.stderr)}` };
   if (!fs.existsSync(path.join(appDir, 'dist', 'index.html'))) return { ok: false, log: 'Build finished but dist/index.html is missing.' };
   return { ok: true, log: '' };
+}
+
+// Runs the app's own unit tests (`npm test`) when it has a test script. Returns { ok, log }.
+export function testApp(appDir, env = {}) {
+  let pkg = {};
+  try { pkg = JSON.parse(fs.readFileSync(path.join(appDir, 'package.json'), 'utf8')); } catch { return { ok: true, log: '' }; }
+  if (!pkg.scripts || !pkg.scripts.test) return { ok: true, log: '' };
+  const t = sh('npm', ['test', '--silent'], { cwd: appDir, check: false, env: { ...process.env, CI: '1', ...env } });
+  if (t.status !== 0) return { ok: false, log: `npm test failed in ${path.relative(ROOT, appDir)}:\n${tail(t.stdout + t.stderr)}` };
+  return { ok: true, log: '' };
+}
+
+// Refuses secrets in the code: runs factory/scripts/secret-scan.mjs on the repo (no args) or on the given paths.
+// Returns { ok, log }. Never prints a key.
+export function secretScan(paths = []) {
+  const scanner = path.join(FACTORY, 'scripts', 'secret-scan.mjs');
+  if (!fs.existsSync(scanner)) return { ok: true, log: '' };
+  const r = sh('node', [scanner, ...paths], { cwd: ROOT, check: false });
+  if (r.status === 0) return { ok: true, log: '' };
+  return { ok: false, log: `Secret scan failed (a key or the words service_role in browser code). Remove it; keys never go in the code:\n${tail(r.stdout + r.stderr, 40)}` };
+}
+
+// ---------- Local Supabase (for the checks only; never a real project) ----------
+// Starts the Supabase CLI's local stack from supabase/config.toml, applies the migrations + seed, serves
+// the Edge Functions with supabase/functions/.env.test, and puts the local addresses and demo keys into
+// process.env for the builds and the checks. These are the CLI's fixed LOCAL demo values, not secrets,
+// and must never be written to a file in the repo. Returns the build-time settings, or null when the
+// project has no supabase/ folder.
+let functionsProc = null;
+export function startLocalSupabase() {
+  if (!fs.existsSync(path.join(ROOT, 'supabase', 'config.toml'))) return null;
+  log('starting the local Supabase for the checks');
+  sh('supabase', ['start', '-x', 'vector,logflare'], { cwd: ROOT, stdio: ['ignore', 'inherit', 'inherit'] });
+  sh('supabase', ['db', 'reset', '--local'], { cwd: ROOT, stdio: ['ignore', 'inherit', 'inherit'] });
+  const status = sh('supabase', ['status', '-o', 'env'], { cwd: ROOT }).stdout;
+  const get = (...names) => {
+    for (const n of names) {
+      const m = status.match(new RegExp(`^${n}="?([^"\\n]+)"?$`, 'm'));
+      if (m) return m[1].trim();
+    }
+    return '';
+  };
+  const url = get('API_URL') || 'http://127.0.0.1:54321';
+  const anon = get('PUBLISHABLE_KEY', 'ANON_KEY');
+  const secret = get('SECRET_KEY', 'SERVICE_ROLE_KEY');
+  const dbUrl = get('DB_URL') || 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
+  const mail = get('INBUCKET_URL', 'MAILPIT_URL') || 'http://127.0.0.1:54324';
+  if (!anon) throw new Error('supabase status gave no local publishable/anon key');
+  const envFile = path.join(ROOT, 'supabase', 'functions', '.env.test');
+  if (fs.existsSync(path.join(ROOT, 'supabase', 'functions')) && fs.existsSync(envFile)) {
+    functionsProc = spawn('supabase', ['functions', 'serve', '--env-file', envFile, '--no-verify-jwt'], { cwd: ROOT, stdio: 'ignore', detached: true });
+  }
+  const build = { VITE_SUPABASE_URL: url, VITE_SUPABASE_PUBLISHABLE_KEY: anon, VITE_OREHEART_ENV: 'test', VITE_TURNSTILE_SITE_KEY: '' };
+  Object.assign(process.env, {
+    SUPABASE_URL: url, SUPABASE_ANON_KEY: anon, SUPABASE_PUBLISHABLE_KEY: anon, SUPABASE_TEST_ADMIN_KEY: secret,
+    MAIL_URL: mail, DB_URL: dbUrl, FUNCTIONS_URL: `${url}/functions/v1`,
+  });
+  log(`local Supabase ready at ${url} (mail catcher ${mail})`);
+  return build;
+}
+
+export function stopLocalSupabase() {
+  if (functionsProc) { try { process.kill(-functionsProc.pid); } catch { try { functionsProc.kill(); } catch {} } functionsProc = null; }
+  if (fs.existsSync(path.join(ROOT, 'supabase', 'config.toml'))) sh('supabase', ['stop', '--no-backup'], { cwd: ROOT, check: false });
 }
 
 export function tail(s, n = 60) { return stripAnsi(s).trim().split('\n').slice(-n).join('\n'); }
@@ -189,7 +283,7 @@ export async function runAcceptance(appDir, accDir, outDir, opts = {}) {
         cwd: FACTORY, check: false, stdio: ['ignore', 'inherit', 'inherit'],
         env: { ...process.env, ACCEPTANCE_DIR: runDir, RESULTS_JSON: resultsJson, FACTORY_PORT: String(config.port), ...(opts.workers ? { PW_WORKERS: String(opts.workers) } : {}) },
       });
-    });
+    }, opts.extra || []);
   }
   log(`checks took ${Math.round((Date.now() - t0) / 60000)} min${partial ? ` (re-checked only the ${prevFailed.length} that failed last time)` : remoteOk ? ` (split across ${shards} machines)` : ''}`);
   const fresh = readResults(resultsJson);
@@ -199,7 +293,7 @@ export async function runAcceptance(appDir, accDir, outDir, opts = {}) {
     const nFailed = (fresh.results || []).filter((r) => !r.ok).length;
     if (process.env.FACTORY_CONFIRM === '1' && !opts.noConfirm && nFailed > 0 && nFailed <= 40) {
       log(`confirming ${nFailed} failed check(s) with fewer running at once`);
-      return runAcceptance(appDir, accDir, path.join(outDir, 'confirm'), { onlyFailed: true, previous: fresh, workers: 2, noConfirm: true, keepFull: true });
+      return runAcceptance(appDir, accDir, path.join(outDir, 'confirm'), { onlyFailed: true, previous: fresh, workers: 2, noConfirm: true, keepFull: true, extra: opts.extra });
     }
     return fresh;
   }

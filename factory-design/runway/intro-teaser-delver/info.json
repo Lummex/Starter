@@ -1,0 +1,21 @@
+{
+ "id": "intro-teaser-delver",
+ "character": "dwarf-crystal-drunk-delver",
+ "move": "teaser",
+ "prompt": "Epic fantasy game teaser, richly painted dark-fantasy style exactly like the image, same dwarf miner (blue crystal-studded braided beard, miner helmet with a glowing blue gem lamp, blue and brass armour). Deep in a glowing blue crystal mine, he swings his pickaxe with a mighty CLINK into a huge blue crystal, which cracks open in a shower of sparkling shards. He leans in, sniffs it, grins, and takes a big CRUNCH bite of the glowing crystal. His beard and eyes light up bright crystal-blue, he lets out an enormous HIC! hiccup that puffs a cloud of sparkles, giggles, wobbles happily, then raises his pickaxe proudly and staggers sideways. Deadly serious, completely ridiculous, comic and kid-friendly. Audio: pickaxe clink and crystal cracking, a loud crunchy bite, a huge comical hiccup, a deep jolly dwarf giggle, rumbling epic orchestral drum music sting. No speech, no text.",
+ "model": "veo3.1_fast",
+ "ratio": "1280:720",
+ "duration": 8,
+ "taskId": "fb82641c-760c-41ca-8c53-116dda2d8db1",
+ "made": "2026-10-31T09:31:06.578Z",
+ "view": "front",
+ "segments": [
+  {
+   "move": "teaser",
+   "from": 0,
+   "to": 8
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}

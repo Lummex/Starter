@@ -1,36 +1,11 @@
 {
- "at": "2026-10-28T08:17:05.596Z",
+ "at": "2026-10-31T09:31:06.579Z",
  "results": [
   {
-   "id": "goblin-scrapper-idle-bowl",
-   "duration": 6,
+   "id": "intro-teaser-delver",
+   "duration": 8,
    "moves": [
-    "idle",
-    "bowling-attack"
-   ]
-  },
-  {
-   "id": "goblin-scrapper-spin-shot",
-   "duration": 6,
-   "moves": [
-    "ball-spin",
-    "basketball-shot"
-   ]
-  },
-  {
-   "id": "gyrocopter-ace-hover-fly",
-   "duration": 6,
-   "moves": [
-    "hover-idle",
-    "fly-forward"
-   ]
-  },
-  {
-   "id": "gyrocopter-ace-spark-knock",
-   "duration": 6,
-   "moves": [
-    "spark-throw",
-    "knocked-back"
+    "teaser"
    ]
   }
  ]

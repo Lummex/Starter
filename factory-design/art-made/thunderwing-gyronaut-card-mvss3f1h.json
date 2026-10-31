@@ -1,0 +1,13 @@
+{
+  "request": "thunderwing-gyronaut-card-mvss3f1h",
+  "cardId": "gyrocopter-ace",
+  "parent": "thunderwing-gyronaut-card-mvkijjeu",
+  "parentAsset": "45d542c58eed29d9423adfab2fb96294",
+  "kenFeedback": "I want you to take the helicopter part of it off just leave Leave the wings",
+  "method": "Edit of the approved parent picture in Ken's ChatGPT (1 pass: remove rotor blades, rotor mast/back housing and the handle in her right hand; wings kept)",
+  "size": "1024x1536",
+  "studioAsset": "b001b7d1d5e417553eb9cd3c877db7aa",
+  "status": "ready (waiting for Ken in Art Studio)",
+  "madeBy": "Brush",
+  "madeAt": "2026-10-29"
+}

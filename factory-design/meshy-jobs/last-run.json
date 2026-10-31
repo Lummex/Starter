@@ -1,16 +1,16 @@
 {
- "at": "2026-10-28T18:09:58.578Z",
+ "at": "2026-10-30T06:23:44.599Z",
  "results": [
   {
-   "id": "borgo-rig",
-   "sizes": {
-    "char.glb": 15074964
+   "id": "cmd-sprocket-rig",
+   "partsAdded": {
+    "wrench.glb": 10822100
    }
   },
   {
-   "id": "anvilsworn-miner-rig",
-   "sizes": {
-    "char.glb": 15849732
+   "id": "shieldbeard",
+   "partsAdded": {
+    "shoulder-shield.glb": 12074060
    }
   }
  ]

@@ -2,7 +2,7 @@
 // Ken, Oct 31: the player gets goblin-goggle-rogue until Online supplies theirs; every AI rival has a fixed avatar of its own race.
 import AV from '../content/avatars.json';
 
-export interface Avatar { id: string; race: string; label: string; shipped: boolean }
+export interface Avatar { id: string; race: string; gender?: string; label: string; shipped: boolean; mature?: boolean; safe_fallback?: string }
 export const AVATARS: Avatar[] = (AV as any).avatars;
 export const DEFAULT_AVATAR: string = (AV as any).default;
 const shipped = new Set(AVATARS.filter((a) => a.shipped).map((a) => a.id));
@@ -35,3 +35,9 @@ export function rivalAvatars(faction: string): string[] {
   const ids = (r: string) => AVATARS.filter((a) => a.race === r && a.id !== DEFAULT_AVATAR).map((a) => a.id);
   return [...ids(race), ...extra.flatMap(ids)];
 }
+
+/** Mature avatars on the plates: Online Phase A turns this on only for a signed-in 16+ account (src/net/flow.ts). Minimal stand-in for the merge;
+ *  Anvil's arena-oct31 brings the full version (shownAvatar returns a mature avatar's safe_fallback unless allowed; rivals never get mature ones). */
+let matureAllowed = false;
+export function setMatureAllowed(on: boolean) { matureAllowed = !!on; }
+export const isMatureAllowed = () => matureAllowed;

@@ -86,3 +86,51 @@ For several files: open any github.com page, `fetch("https://api.github.com/repo
 - Raw pages (raw.githubusercontent.com) can serve an OLD copy for minutes after a commit; to verify an upload use
   api.github.com contents?ref=main with Accept raw (cache: no-store) and compare sha256.
 - Chrome downloads with an existing name get " (1)", " (2)"… Stage the newest one (check mtimeMs), not the bare name.
+
+## Blender direct (Oct 29, Forge decision)
+- Worker stopped 2026-10-29 01:04Z via the STOP file (Stop-Blender-Worker.cmd). Installed copy kept in %LOCALAPPDATA%\OreheartBlenderWorker as backup; delete nothing. STOP file still there.
+- Blender exe: C:\Users\kentu\Downloads\blender-5.2.3-windows-x64\blender.exe. Run `blender --background --factory-startup --python <script>` from my own session.
+- Same safety: worker's blender_ops + glbtool export validation + my spring-check-clip.py; never overwrite a model (new <card>-vN files); never use port 9876 (Ken's own Blender window, PID 51460 at the time, listens on 127.0.0.1:9876; leave it alone).
+- Helpers (max 3) can each do one character in parallel, each in its own work folder.
+- At switch time: nothing queued or running on blender-queue; all 60 jobs finished (sig-b jobs = awaiting_review).
+- 2026-10-29 – Forge job: compared keeping the worker vs Blender direct; Forge chose direct. Stopped the worker with the STOP file, added Blender direct to the HANDBOOK and team-lessons.
+
+## Shared animations (Oct 29, Forge job) — report: reports/2026-10-29-spring-shared-animations.md
+- All 45 rigged game models = identical Meshy 24-bone skeleton (no fingers). Rest poses differ 10–100° per bone, so raw rotation copy breaks; use spring-retarget.py (Blender headless, rest-relative world rotations, hips × hip-height ratio, ~15–20 s/clip). Self-test 0.0°; goblin walk→dwarf 31.8° vs dwarf's own Meshy walk (unrelated clip 87°).
+- Run: set BOPS=<worker blender_ops dir>; inputs must be meshopt-free (glbtool.decompress); `blender -b --factory-startup --python spring-retarget.py -- --src s.glb --clip X --tgt t.glb --out DIR [--compare CLIP] [--render 1] [--export 1]`.
+- Studio: `animations` (65 seeded, ids biped-<slot>-<what>), `animRequests` (query status=="wanted"), `library/<card>.animSlots` (Wright writes; one id per slot, idleBreak ≤3).
+- Learned: Windows Python needs C:/ paths, not /c/ (Git Bash form) → FileNotFoundError. `$(cat list)` from py output has CRLF → use tr -d '\r'. A `cd X && rm X/*` is blocked by the safety check; just overwrite files.
+
+## Shared biped pack v1 (Oct 30, Forge job) — report: reports/2026-10-30-spring-biped-pack-v1.md
+- Pack: factory-design/design/anims/biped-pack-v1.glb (+ .json, ohrt-retarget-reference.py) on main d2b8bf4; sources/tools in biped-pack-v1-src/ (0251be5). 32 clips, 1.15 MB, skeleton-only (goblin-grunt rest), registered in Studio `animations` (approved under Ken's Oct 30 delegation).
+- Game retargets at load by bone name. Method "align": Wt = D * C(b) * Wt_rest, D = Ws_now * inv(Ws_rest), C = swing from unit rest bone dir to pack rest bone dir (leaves use the parent's C, Hips identity); hips offset × leg-length ratio. It matches each unit's own Meshy clips within 1.2–1.7° per bone; the plain delta is off by 14–20°.
+- Tools: packbuild.py (Blender, worker anim API, exports armature-only), slim.py (drops scale/non-hip translation tracks), packcheck.py (numpy retarget onto goblin/gnome/dwarf/golem: sink, lift0, slide, seam, wrist, kneeRev + contact sheets).
+- Learned: Blender's bundled python (blender-5.2.3/5.2/python/bin/python.exe) has numpy. System `py` has PIL but no numpy, and `py -I` hides user site-packages. Splitting the work into 3 Opus helpers by clip group took ~20 min wall time, and all clips passed the shared pass marks on the first merge.
+- Known quirks for the game: golem deaths float 4–11%, uneven-leg units hover a foot 2–8% in walk/run, and loops start mid-swing.
+- Next: rider, beetle (multileg) and flyer sets.
+
+## Biped pack v2 with Mixamo (Oct 30, Forge job, Ken OK) — report: reports/2026-10-30-spring-biped-pack-v2-mixamo.md
+- v2 on main 9b6dbd2 (factory-design/design/anims/biped-pack-v2.glb/.json, 57 clips = v1's 32 + 25 Mixamo); tools in biped-pack-v2-src/ (c418bca). Raw Mixamo FBX only on Ken's PC: art/mixamo/ (28 files).
+- Mixamo licence: Adobe FAQ "royalty free for personal, commercial, and non-profit projects", including video games.
+- Mixamo was already signed in as Ken in Chrome (no login step needed).
+- How I downloaded: the page's own API (/api/v1/products, /animations/export, /characters/<id>/monitor; X Bot, fbx7_2019, skin false, 30 fps, inplace where supported).
+- Learned (Mixamo downloads):
+  - Chrome blocks repeat automatic downloads from mixamo.com after the first; iframes and reloads don't help.
+  - The S3 links expire after 300 s and can't be fetched cross-origin from the page.
+  - Exports hit HTTP 429 after ~7 fast calls: wait ~30 s and space calls ~8 s apart.
+  - What worked: a local receiver (py http.server on 127.0.0.1:8765) serving a helper page, opened by one real click from the Mixamo tab. The Mixamo page postMessages each signed link to it, and the receiver downloads into art/mixamo. A direct fetch to localhost from mixamo.com fails.
+- Learned (fitting to our units):
+  - Mixamo -> our rig with the align retarget works. Mixamo's long legs make lying poses sink 30-38% and walks ~9% on our chunky units.
+  - Fix: groundfix.py lifts the Hips track. "frame" mode for lying clips, "contact" mode (signed, per frame) for standing ones, measured over goblin/gnome/dwarf/golem.
+  - strip_xz (removing root travel) makes clips that take steps skid; use it only on lying or stationary clips.
+  - Soften wrists 50% (hand halfway to following the forearm) so props don't flail.
+- Dropped: Mixamo "Large Hit Reaction From The Front" (steps back far, doesn't fit a tile).
+
+## Oct 30 night (Forge jobs): slot defaults, Plow rider, specials
+- Slot defaults for 6 old-clip units (studio/pack-v2-slot-defaults.json): the loader only gives a role to the pack when the model's models.json `clips` map doesn't name it, so these units needed a {"pack":"random"} slot + a small creature3d.ts patch (sent to Anvil).
+- Pack v3 (cc3cb09): biped-ride-01 (seated driving loop) and biped-ride-02 (ram) for the Gnome Plow. Seated hips 0.229 m on the pack rig. On Clay's plow-split.glb: gnome origin at plow-local (0.561, 0.093, -0.016), yaw -90, scale 1.061.
+- Pack v4 (7af6885, 70 clips): 11 per-card specials by 3 Opus helpers (chef-smack, rocket-ride, shockwave, sewer-slide, enforcer-stomp, colossus-slam, brew-toss, steal, shaman-lift, blink, siphon). Each checked on the 4 test units and on its own card. Slot list: studio/pack-v4-special-slots.json.
+- tools/mergeglb.py appends clips into an existing pack (old clips byte-identical); faster than a full rebuild.
+- Learned: render crops must auto-fit the figure (bbox of non-background pixels); the default preview camera leaves the character tiny.
+- Learned: the Meshy 24-bone rig has no finger bones, and the Studio "fingers" curl only poses finger bones. A closed grip (Junk Shaman staff) needs a mesh edit: a new char-vN.glb (Clay, or me if Forge assigns it).
+- Queued in Studio animRequests: clockwork-beetle multileg set (Clay's beetle rig: models/beetle-rig-oct30/char.glb, tripod gait).

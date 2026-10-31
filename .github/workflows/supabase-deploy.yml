@@ -1,0 +1,65 @@
+name: Supabase — deploy
+run-name: Supabase deploy ${{ inputs.target }} from ${{ inputs.branch }}
+
+# Applies the database migrations (never the seed) and the email-sender Edge Function to the TEST or the
+# REAL Supabase project. Manual only, owner only. "production" waits for Ken's approve click on the
+# supabase-production environment. Always deploy to test first.
+on:
+  workflow_dispatch:
+    inputs:
+      branch: { description: 'Branch with the supabase/ folder', required: true, default: factory/issue-8 }
+      target: { description: 'test or production', required: true, default: test, type: choice, options: [test, production] }
+      confirm: { description: 'Type DEPLOY to apply', required: true }
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.actor == github.repository_owner && inputs.confirm == 'DEPLOY'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: supabase-${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Secret scan with main's scanner (stop if any key is in the code)
+        run: |
+          git fetch --depth=1 origin main
+          git show origin/main:factory/scripts/secret-scan.mjs > "$RUNNER_TEMP/secret-scan.mjs"
+          node "$RUNNER_TEMP/secret-scan.mjs"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client > /dev/null
+      - name: Test the migrations on a throwaway local copy first
+        run: |
+          [ -f supabase/config.toml ] || { echo "no supabase/config.toml on this branch"; exit 1; }
+          bash supabase/tests/run-supabase.sh
+          supabase stop --no-backup
+      - name: Link and show what would change (dry run)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ inputs.target == 'production' && secrets.SUPABASE_DB_PASSWORD || secrets.SUPABASE_TEST_DB_PASSWORD }}
+          REF: ${{ inputs.target == 'production' && secrets.SUPABASE_PROJECT_REF || secrets.SUPABASE_TEST_PROJECT_REF }}
+        run: |
+          supabase link --project-ref "$REF"
+          echo "## Supabase deploy: ${{ inputs.target }} (branch ${{ inputs.branch }})" >> "$GITHUB_STEP_SUMMARY"
+          supabase db push --dry-run 2>&1 | sed 's/user=postgres\.[^ ]*/user=postgres.***/' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Apply migrations (never the seed) and the email sender
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ inputs.target == 'production' && secrets.SUPABASE_DB_PASSWORD || secrets.SUPABASE_TEST_DB_PASSWORD }}
+          REF: ${{ inputs.target == 'production' && secrets.SUPABASE_PROJECT_REF || secrets.SUPABASE_TEST_PROJECT_REF }}
+        run: |
+          supabase db push 2>&1 | sed 's/user=postgres\.[^ ]*/user=postgres.***/'
+          if [ -d supabase/functions/send-outbox ]; then supabase functions deploy send-outbox --project-ref "$REF"; else echo "no send-outbox function on this branch yet"; fi
+          echo "Applied to ${{ inputs.target }}." >> "$GITHUB_STEP_SUMMARY"

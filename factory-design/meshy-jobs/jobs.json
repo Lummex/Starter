@@ -1,5 +1,5 @@
 {
- "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet). Oct 25: owner asked for all remaining gnome and dwarf models, character only (no accessories yet); Gemsinger Miner and Anvilsworn Miner already exist and are not remade; Overclocked Aethervein waits for a redrawn sheet. Oct 28: owner OK'd re-running Meshy for two models only, WITH a skeleton: anvilsworn-miner-rig (Anvilsworn Miner, card dwarf-smith-miner; old Stonebreaker Miner model had 0 bones) and borgo-rig (Thane Borgo Gravelgrim, cmd-borgo; old model had 0 bones). New ids so the old models are kept.",
+ "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet). Oct 25: owner asked for all remaining gnome and dwarf models, character only (no accessories yet); Gemsinger Miner and Anvilsworn Miner already exist and are not remade; Overclocked Aethervein waits for a redrawn sheet. Oct 28: owner OK'd re-running Meshy for two models only, WITH a skeleton: anvilsworn-miner-rig (Anvilsworn Miner, card dwarf-smith-miner; old Stonebreaker Miner model had 0 bones) and borgo-rig (Thane Borgo Gravelgrim, cmd-borgo; old model had 0 bones). New ids so the old models are kept. Oct 29: Ken approved the Overclocked Aethervein robot sheet (redo, ChatGPT Oct 28) with the note \"He doesn't need the shield drawn\": job overclocked-conduit, character only, no shield.",
  "jobs": [
   {
    "id": "blastrat-sapper",
@@ -1023,6 +1023,10 @@
      "shieldbeard--medic-pack-front.jpg",
      "shieldbeard--medic-pack-side.jpg",
      "shieldbeard--medic-pack-back.jpg"
+    ],
+    "shoulder-shield": [
+     "shieldbeard--shoulder-shield-1.jpg",
+     "shieldbeard--shoulder-shield-2.jpg"
     ]
    },
    "height": 1,
@@ -1033,7 +1037,7 @@
     "hit": 178,
     "defeat": 8
    },
-   "notes": "Owner sheet note: Don't render his hammer. Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): medic-pack; skipped the ones the sheet note says not to render."
+   "notes": "Owner sheet note: Don't render his hammer. Character only for now (owner, Oct 25: accessories come later). Accessories (owner, Oct 25): medic-pack; skipped the ones the sheet note says not to render. Oct 30: shoulder-pad shield added as its own part (props batching failed); place on the right shoulder as on the card."
   },
   {
    "id": "spark-gnome",
@@ -1123,6 +1127,170 @@
     "defeat": 8
    },
    "notes": "Oct 28 rigged remake (owner OK). Views: the Studio's Borgo front/side/back refs (Gear-Crowned Dwarf Commander sheet). Character only: sceptre and throne already exist (borgo-sceptre, borgo-throne)."
+  },
+  {
+   "id": "overclocked-conduit",
+   "name": "Overclocked Aethervein",
+   "faction": "gnomes",
+   "card": "overclocked-conduit",
+   "char": [
+    "overclocked-conduit--char-front.jpg",
+    "overclocked-conduit--char-side.jpg",
+    "overclocked-conduit--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1,
+   "actions": {
+    "idle": 0,
+    "walk": 30,
+    "attack": 128,
+    "hit": 178,
+    "defeat": 8,
+    "mine": 237
+   },
+   "notes": "Oct 29 (Ken approved the robot sheet; note: \"He doesn't need the shield drawn\"). Views cut from the sheet's top row (front/side/back, no shield, steam puffs painted out). Character only: no shield; pickaxe not made yet (accessories later, like the other gnomes). Gatherer, so it gets the mine clip like the miners."
+  },
+  {
+   "id": "gemsinger-miner-silver",
+   "name": "Gemsinger Miner",
+   "faction": "gnomes",
+   "card": "gnome-prospector",
+   "char": [
+    "gemsinger-miner-silver--char-front.jpg",
+    "gemsinger-miner-silver--char-side.jpg",
+    "gemsinger-miner-silver--char-back.jpg"
+   ],
+   "parts": {
+    "pickaxe": [
+     "gemsinger-miner-silver--pickaxe-front.jpg",
+     "gemsinger-miner-silver--pickaxe-angled.jpg",
+     "gemsinger-miner-silver--pickaxe-side.jpg"
+    ]
+   },
+   "height": 1,
+   "actions": {},
+   "notes": "Oct 30 (Forge, Ken delegated approvals). Views cut from the approved SILVER sheet (Sketch). Rig only, no stock clips (Forge Oct 30: the shared biped pack gives the moves). Accessories the card shows, once each."
+  },
+  {
+   "id": "overclocked-conduit-silver",
+   "name": "Overclocked Aethervein",
+   "faction": "gnomes",
+   "card": "overclocked-conduit",
+   "char": [
+    "overclocked-conduit-silver--char-front.jpg",
+    "overclocked-conduit-silver--char-side.jpg",
+    "overclocked-conduit-silver--char-back.jpg"
+   ],
+   "parts": {
+    "pickaxe": [
+     "overclocked-conduit-silver--pickaxe-left.jpg",
+     "overclocked-conduit-silver--pickaxe-right.jpg"
+    ]
+   },
+   "height": 1,
+   "actions": {},
+   "notes": "Oct 30 silver redo (Ken: robot, two arms, no shield, purple + light blue + silver). Views cut from the approved silver sheet. Replaces the Oct 29 brass robot. Rig only, no stock clips (Forge Oct 30: the shared biped pack gives the moves). Accessories the card shows, once each. Card shows no shoulder canisters and no back gem: both painted out of the sheet views (Forge)."
+  },
+  {
+   "id": "gearward-sentinel-robot",
+   "name": "Gearward Sentinel",
+   "faction": "gnomes",
+   "card": "gearward-sentinel",
+   "char": [
+    "gearward-sentinel-robot--char-front.jpg",
+    "gearward-sentinel-robot--char-side.jpg",
+    "gearward-sentinel-robot--char-back.jpg"
+   ],
+   "parts": {
+    "mace": [
+     "gearward-sentinel-robot--mace-side.jpg",
+     "gearward-sentinel-robot--mace-end.jpg"
+    ],
+    "gear-shield": [
+     "gearward-sentinel-robot--shield-front.jpg",
+     "gearward-sentinel-robot--shield-side.jpg",
+     "gearward-sentinel-robot--shield-back.jpg"
+    ]
+   },
+   "height": 1,
+   "actions": {},
+   "notes": "Oct 30 remake: the old mesh was the small pink-haired gnome from the card corner, not the silver robot. Views cut from the approved silver robot sheet, steam painted out. Rig only, no stock clips (Forge Oct 30: the shared biped pack gives the moves). Accessories the card shows, once each."
+  },
+  {
+   "id": "cmd-skreeka-rig",
+   "name": "Queen Skreeka",
+   "faction": "goblins",
+   "card": "cmd-skreeka",
+   "char": [
+    "cmd-skreeka-rig--char-front.jpg",
+    "cmd-skreeka-rig--char-side.jpg",
+    "cmd-skreeka-rig--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1,
+   "actions": {},
+   "notes": "Oct 30 locked Commander, from Sketch's approved sheet (Forge, Ken's delegation). Rig only, no stock clips. Loot sack is part of the body as drawn; ring not made (too small to read)."
+  },
+  {
+   "id": "cmd-sprocket-rig",
+   "name": "Madame Sprocket",
+   "faction": "gnomes",
+   "card": "cmd-sprocket",
+   "char": [
+    "cmd-sprocket-rig--char-front.jpg",
+    "cmd-sprocket-rig--char-side.jpg",
+    "cmd-sprocket-rig--char-back.jpg"
+   ],
+   "parts": {
+    "wrench": [
+     "cmd-sprocket-rig--wrench-1.jpg",
+     "cmd-sprocket-rig--wrench-2.jpg"
+    ]
+   },
+   "height": 1,
+   "actions": {},
+   "notes": "Oct 30 locked Commander, silver metal, from Sketch's approved sheet. Rig only, no stock clips. Wrench added as its own part (props batching failed); crystal is an effect, not made."
+  },
+  {
+   "id": "cmd-grumblebeard-rig",
+   "name": "Old Grumblebeard",
+   "faction": "dwarves",
+   "card": "cmd-grumblebeard",
+   "char": [
+    "cmd-grumblebeard-rig--char-front.jpg",
+    "cmd-grumblebeard-rig--char-side.jpg",
+    "cmd-grumblebeard-rig--char-back.jpg"
+   ],
+   "parts": {},
+   "height": 1,
+   "actions": {},
+   "notes": "Oct 30 locked Commander, from Sketch's approved sheet. Rig only, no stock clips. Gear hammer comes from props-batch-1."
+  },
+  {
+   "id": "cmd-sproingle-rig",
+   "name": "Archmagister Sproingle",
+   "faction": "gnomes",
+   "card": "cmd-sproingle",
+   "model": "cmd-sproingle-rig--model.glb",
+   "char": [],
+   "parts": {},
+   "height": 1,
+   "actions": {},
+   "notes": "Oct 30: RIG the existing Oct 23 Sproingle model (Studio key sproingle; A-pose, already silver/purple), no new mesh, no stock clips."
+  },
+  {
+   "id": "props-batch-1",
+   "name": "Props batch 1",
+   "faction": "mixed",
+   "card": "",
+   "char": [
+    "props-batch-1--sheet.jpg"
+   ],
+   "parts": {},
+   "height": 1,
+   "rig": false,
+   "actions": {},
+   "notes": "Oct 30 (Ken: batch props into one Meshy model). Sketch's sheet with 3 props laid apart, left to right: Madame Sprocket's wrench, Old Grumblebeard's gear hammer, Ironwall Shieldbeard's shoulder shield (place on the right shoulder as on the card). Not rigged. Clay splits it by loose parts in Blender (split_props.py) into wrench / hammer / shoulder-shield GLBs."
   }
  ]
 }

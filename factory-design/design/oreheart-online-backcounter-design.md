@@ -314,3 +314,48 @@ Note from my notes: the factory planner bug (only the first 100 comments of #8 a
 3. Pack defaults: 8 cards = 5 Common, 2 Uncommon, 1 slot with Rare 85% / Ultra Rare 13% / Collector 2%; price 100 coins? Collector cards in packs at all, or donor/event only?
 4. Refund/dispute: take the early-adopter items back or not?
 5. Button wording: "Donate" or "Support Oreheart"?
+
+
+---
+
+## 6. Test server vs real server (Ken: "practice players shouldn't mix with paid players")
+
+- **Two Supabase projects** (both Free while building): **oreheart-test** (previews, Ken's testing, demo data) and **oreheart** (production, real players only). Same migrations in both, deployed by the same "Supabase — deploy" workflow with a `target: test | production` choice. The factory's automated checks use neither: they run on a throwaway local Supabase.
+- **Vercel**: Production environment → the real project's public URL/key; Preview environment → the test project's. Same for the admin site. A new public build setting `VITE_OREHEART_ENV` = `production` (Production) or `test` (Preview).
+- **Double lock**: each database says what it is (`settings.server_kind`, `test` by default; Ken runs one SQL line once on the real project to make it `production`; the back counter can't change it). The game and the back counter call `server_info()` at start and **refuse to run** if the build and the server disagree (e.g. a preview accidentally pointing at the real database). A test-server build shows a blue "TEST SERVER" bar.
+- Accounts never move between the two; a player who signed up on a preview must sign up again on the real game.
+
+## 7. Card tracing (Ken: "a unique card identification number ... so we can trace if anyone's hacking")
+
+- **Every physical card is a row** in `card_instances` with its own id (uuid), the card type (`card_id`), the current owner, the **first owner** (never changes), and **how it was made** (`starter`, `pack`, `admin_grant`, `donation`, `event`, `reward`) with a reference (pack opening id, admin action, ...).
+- **Every change is a row** in `card_history` (append-only, even the database owner can't edit or delete): `created`, `transferred` (a trade), `admin_moved`, `destroyed`, with from/to player, reason, reference and time. Cards are never deleted, only marked `destroyed`.
+- **Only two server functions** make or move cards: `private.card_grant()` (sign-up, packs, grants, rewards) and `private.card_transfer()` (checks the sender really owns the card, locks it, so it can't be traded twice). Players can't call either and can't read card ids at all; the game sees counts per card through `my_collection()`.
+- **Trading (later)**: a trade will be a server function that locks both sides' cards and calls `card_transfer()` for each, in one transaction, with a `trades` row as the reference. Nothing else needs to change.
+- **Back counter**: "Card lookup" (paste a card id → first owner, how they got it, current owner, every account it passed through) and a player's card list (filter by card, each id clickable).
+- Size: 359 starter cards per player → about 3.6 million rows per 10,000 players (~1 GB with history). Fine for Supabase Pro (8 GB); watch it on Free (500 MB ≈ 1,000–1,500 players). If it ever matters, starter cards can become "virtual" until first traded.
+
+## 8. Players under 13 (COPPA) — **Ken: have a lawyer check this before public launch; we are not lawyers**
+
+- **Neutral age question** on Create account: "When were you born?" (month + year), not a yes/no box that hints at the right answer. Only the group (`13_plus` / `under_13`) is kept, never the birth date. The game remembers the answer on that device so going back and changing it doesn't work.
+- **Under 13**: the child gives a username, a password and **a parent's or guardian's email** (we never ask for the child's email). That email becomes the account's login email.
+- **Consent method: "email plus"** (the FTC's commonly used method when data is only used inside the game and not shared): (1) we email the parent a notice (what we collect and why, that nothing is shown to others except the username, how to withdraw) with an **Approve** link; (2) the parent opens it and ticks "I am this child's parent or guardian and I agree"; (3) we send a **second, confirming email** with a link to **withdraw** at any time. The link works only from the parent's mailbox (random 64-character token, only its hash is stored, 7-day expiry, one use).
+- **Until a parent approves, nothing online works** (no deck saving, no avatar, later no matches or packs); the child can play offline practice. Withdrawing stops the account the same way.
+- **Minimum data**: username (checked by the bad-words filter), password, the parent's email, the age group, consent records. No birth date, no photo (avatars are card art), **no free text**: a child's decks get plain names ("Deck 1", "Deck 2"); there is no chat. PvP (Phase C) shows only the username.
+- **Back counter**: players list shows "Under 13: waiting / approved / withdrawn"; the player page shows the parent email, method, notice version, every consent event with time and IP, and a **Withdraw approval** button (audited) for when a parent asks by email. Parent requests to see or delete data are handled by Ken from the Inbox (Contact us form) for now (a delete button comes with account deletion, before launch).
+- The **parent notice** (first draft, `parent-notice-draft.json` / `.md`, "DRAFT – lawyer review before launch") lists exactly what we keep and why, how to withdraw and how data is deleted. Its `version` must match `settings.consent_notice_version`.
+- **No personal email (Ken, Oct 29).** Parents and players reach us through a **Contact us** form (game parent pages, consent-email landing pages, login and profile). Messages are stored server-side (`contact_messages`, RLS on, players can't read them, never deleted, max 5 per sender per hour) and appear in the back counter **Inbox**, where Ken answers (sent from the no-reply address through the email sender) and marks them handled with a note (audited). All automated emails (consent, password reset, answers) come from a no-reply address.
+- **Lawyer check:** COPPA notices normally have to give the operator's contact details (name, address, phone number and/or email). We use a Contact us form plus a no-reply sender instead of a personal email, so the lawyer must confirm whether that is enough or whether a postal address, phone or monitored email must also be shown.
+- Emails come from a small Edge Function that sends the `email_outbox` rows through the email service (Resend); its API key lives only in Supabase Edge Function secrets.
+- For the lawyer: COPPA (US), and GDPR-K/UK Age Appropriate Design Code if EU/UK children play (ages differ by country, 13–16). Also needed before launch: a privacy policy with a children's section, the Contact us form and Inbox (built), and a data deletion process.
+
+## 9. Ranked play (Phase C3 or later — design only)
+
+**Goal (Ken):** every player has a rank that goes up when they win and down when they lose, better players rank higher, ranks reset every quarter, matchmaking pairs evenly ranked players, practice/offline never counts.
+
+- **Rating method: Glicko-2** (hidden): each player has a rating (start 1500), a rating deviation RD (how sure we are; start 350) and a volatility. It is the standard used by many online games and chess sites; it settles new players quickly and is fairer than plain Elo when people play irregularly. Updated by the server after each **ranked** match only (`finish_match()`), never from casual, friend, practice, tutorial or vs-computer games.
+- **Visible rank = tiers** from the conservative rating (rating − 2×RD), so new or long-absent players don't show a rank they haven't proven. Tier names (approved by Forge, Oct 29): **Pebble, Copper, Iron, Silver, Gold, Crystal, Oreheart Champion**, with divisions III–II–I in each except the top. Top tier = top 100 by rating. First **5 placement matches** show "Unranked".
+- **Seasons = calendar quarters** (`2027-Q1` …, table `seasons`). **Soft reset** at the start of each season: new rating = 1500 + (old − 1500) × 0.5, RD raised to at least 250 (so the first games move you fast), 5 placement matches again. Ratings are stored per season (`player_ratings`, already in Phase A), so old seasons stay visible. End-of-season reward (e.g. a card back per highest tier reached) is optional.
+- **Matchmaking (ranked queue)**: pair the closest ratings, starting within ±100 and widening by +50 every 10 s (max ±400); not the same opponent twice in a row when anyone else is waiting; never put two people from the same household/IP together if possible (anti-farming). Both players must be 13+ or approved under-13s.
+- **Anti-abuse**: rewards and rating changes once per match (`idem_key`), no rating change for matches under 3 turns, forfeit = loss, repeated-opponent cap per day, admin can void a match (audited, rating rolled back via a new correction row).
+- **Back counter**: season standings (rank, username, tier, rating, RD, games, W/L), a player's **rank history** (rating after every ranked match, season by season, from a `rating_history` table added in Phase C), and per-season tier counts. Admin can start/end seasons (audited).
+- **Already in Phase A** (to avoid a later migration): tables `seasons` and `player_ratings` (empty, RLS on, players read only their own rating). Phase C adds `rating_history`, the ranked queue mode and the Glicko-2 update in `finish_match()`.

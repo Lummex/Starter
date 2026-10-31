@@ -1,0 +1,66 @@
+{
+ "at": "2026-10-31T11:51:39.294Z",
+ "made": 15,
+ "results": [
+  {
+   "id": "b2-gob-salty",
+   "ok": true
+  },
+  {
+   "id": "b2-gob-brute",
+   "ok": true
+  },
+  {
+   "id": "b2-gob-sneak",
+   "ok": true
+  },
+  {
+   "id": "b2-gob-maniac",
+   "ok": true
+  },
+  {
+   "id": "b2-gob-queen",
+   "ok": true
+  },
+  {
+   "id": "b2-gno-chipper",
+   "ok": true
+  },
+  {
+   "id": "b2-gno-clever",
+   "ok": true
+  },
+  {
+   "id": "b2-gno-zappy",
+   "ok": true
+  },
+  {
+   "id": "b2-gno-kind",
+   "ok": true
+  },
+  {
+   "id": "b2-gno-lady",
+   "ok": true
+  },
+  {
+   "id": "b2-dwa-sarge",
+   "ok": true
+  },
+  {
+   "id": "b2-dwa-vet",
+   "ok": true
+  },
+  {
+   "id": "b2-dwa-recruit",
+   "ok": true
+  },
+  {
+   "id": "b2-dwa-jolly",
+   "ok": true
+  },
+  {
+   "id": "b2-dwa-queen",
+   "ok": true
+  }
+ ]
+}

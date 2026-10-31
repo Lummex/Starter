@@ -1,0 +1,21 @@
+{
+ "id": "intro-test-delver-2",
+ "character": "dwarf-crystal-drunk-delver",
+ "move": "intro-test",
+ "prompt": "The painting comes alive with subtle motion, keeping the exact same richly painted art style, colours, character design and face. The dwarf miner stops swinging, pulls a small glowing blue crystal from his belt pouch, pops it into his mouth and crunches it with a big happy grin, then his eyes go a little dizzy and he sways gently, tipsy and cheerful. Blue crystals sparkle in the background. Camera still. No style change, no cartoon redesign.",
+ "model": "gen4.5",
+ "ratio": "720:1280",
+ "duration": 5,
+ "taskId": "74801a98-ca45-487f-8c10-ae2780bffb09",
+ "made": "2026-10-31T09:22:52.652Z",
+ "view": "front",
+ "segments": [
+  {
+   "move": "intro-test",
+   "from": 0,
+   "to": 5
+  }
+ ],
+ "framesPerMove": 12,
+ "approved": false
+}

@@ -1,0 +1,15 @@
+{
+ "generated": "2026-10-30T05:49:35.385Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a18b57-bd43-77af-8bdb-b6fedda1394f",
+  "rig": "01a18b5a-b81e-707f-b4bc-dc69994c31d3"
+ },
+ "actions": {},
+ "rigged": true,
+ "parts": [],
+ "notes": "Oct 30 locked Commander, from Sketch's approved sheet (Forge, Ken's delegation). Rig only, no stock clips. Loot sack is part of the body as drawn; ring not made (too small to read).",
+ "fileSizes": {
+  "char.glb": 17927248
+ }
+}

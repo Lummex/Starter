@@ -3,8 +3,8 @@
 ## Who I am
 Quality Check. I check each character (model, accessories, animations, editors, game files) with gauge-checklist.md after Spring and Ledger, before Anvil builds. I report; I don't fix. Send fixes back through Forge.
 
-## Rule from Ken (Oct 28): heights are a note, not a fail
-- Height/scale differences between the editor and the game are NOT a fail. Only the final game heights matter (set at the end). Write them as a note only (checklist 1.5 = "Note"). In the Studio Checklist the height line is level "nice", result "not-checked", with "Note only…" text.
+## Heights rule (updated Oct 29)
+- Ken, Oct 28 evening: heights matter again. A height difference vs Ken's Studio setup is a FAIL (checklist 1.5 is Must). The older "heights are only a note" rule is replaced.
 
 ## Every check ends by updating the Studio Checklist (from Forge, Oct 28)
 - Program: https://claude.ai/artifact/KwnPNScc2RjbM98WZ7R79G (Ken's; layout in reports/2026-10-28-wright-studio-checklist.md).
@@ -46,7 +46,17 @@ Quality Check. I check each character (model, accessories, animations, editors, 
 - Card names: gnome-tinker is "Aegis Tinkerer" in cards.json and the editor.
 - Size Oct 28: public/ = 92.6 MB.
 
+## Go-live checks (learned Oct 29)
+- Preview-only runs post their link nowhere public. Get it from the job log: run jobs API -> job id; in my own Chrome tab NAVIGATE to github.com/Lummex/Starter/commit/<run head sha>/checks/<job id>/logs (fetch fails), then search innerText for "oreheart-8-".
+- Size: public/ from the GitHub tree (branch or sha) + JS/CSS sizes fetched from the preview's index.html assets. ~10 KB lower than Anvil's dist figure; both count.
+- Split a go/no-go into a phone helper and a desktop helper (Fable), each in its own built-in-browser tab. Instant left_click_drag doesn't move units on the canvas; helpers must send pointer events with moves in between. Full screen and pinch can't be tested there.
+- Learned: the account spend limit stopped all 3 helpers at once (429). Have helpers write to a file as they go; resume them with SendMessage after the reset.
+- Learned: my first watcher polled an extra API URL by mistake (wasted the shared 60/hour). One call per poll, 5 min apart.
+
 ## Log
 - 2026-10-28: first job (from Forge). Wrote checklist; checked 10 goblins + gyronaut + tinker: 12 FAIL. Report: reports/2026-10-28-gauge-first-check.md.
 - 2026-10-28: loaded the first-check results into the Studio Checklist (12 `checks` docs, 12 `steps.gauge` = failed). Checked on the page for Gyronaut, Shiv Rat, Bare Knuckle Lunatic. Report: reports/2026-10-28-gauge-studio-checklist-load.md.
 - 2026-10-28: full sync check (from Forge, report only). Found the Studio split (own database; bomber approvals, bomber v5, scrapper requests, gyro Runway state, Ledger setups differ). 5 cards out of sync: bomber, scrapper, shiv-rat, gyronaut, tinker. Heights now a note. Report: reports/2026-10-28-gauge-sync-check.md.
+- 2026-10-29: overnight check + go-live GO/NO-GO (from Forge). GO for oreheart-8-7d7yb4xxs (deployment 52tgyqvy8J56HxQLSBc8Xi1txmTg, 3ffab4a). Studio: card frames, flames/glows, menu builder FAIL; slots PASS (35); Aethervein idle face FAIL. 8 cosmetic items for Anvil. 5 helpers. Report: reports/2026-10-29-gauge-go-live-check.md.
+- 2026-10-30: checkpoint go/no-go (from Forge). GO for oreheart-8-rglb39wvz (Ew7vSLruCtGVmPX9QvatJkm3HtmM, fb2f9f6). Walks/fights/idles/double-tap PASS; Commanders too small/hidden, PC hand not fully tucked, gnome Commander card gold, 6 units off the shared pack, Tinkerer pawn. 2 helpers + my GPU recheck. Report: reports/2026-10-30-anvil-batch-ken-playtest.md.
+- Learned 2026-10-30: headless Playwright uses software WebGL (2.5 fps in a match) unless launched with `--use-angle=d3d11 --ignore-gpu-blocklist --enable-gpu` (32-60 fps on Ken's RTX). Put that in every helper brief; motion and double-click results at low fps are worthless. Helpers here can't write files outside the report (hook blocks findings.md), so ask them to keep the record in their final reply.
