@@ -11145,4 +11145,30 @@ test.describe('Oct 31 Ken hand double-tap 844x390', () => {
   test('AC441: a double tap (taps 300 ms apart) on a hand creature lights its squares; a tap on one deploys it (844x390 touch)', async ({ page }) => {
     await hk31Play(page, 844, 390, true);
   });
+// Oct 31 (Anvil). Ken: "it goes through like spurts of lag. Especially like when you mine or make a lot of movements." Cause: fitHand (window size)
+// and renderHand (cards) shared one cache key, so EVERY action threw the whole hand away and rebuilt it (60 ms of the 80 ms a mine action cost).
+test('AC425: a mine action or a move no longer rebuilds the hand: the same card elements stay, and the action returns quickly', async ({ page }) => {
+  await start(page, { ai: false, skipMulligan: true, mines: [{ row: 4, col: 4 }, { row: 4, col: 7 }, { row: 4, col: 10 }], setup: { firstPlayer: 'player', playerCrystals: 6, playerHand: ['goblin-grunt', 'goblin-slinger', 'venom-shiv', 'goblin-scrounger', 'shiv-rat'],
+    board: [{ cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 4 }, { cardId: 'goblin-grunt', owner: 'player', row: 6, col: 6 }, { cardId: 'goblin-slinger', owner: 'player', row: 6, col: 8 }, { cardId: 'dwarf-stoneback', owner: 'opponent', row: 2, col: 5 }] } });
+  await act(page, { type: 'done' });
+  await page.waitForTimeout(600);
+  const mark = async () => page.evaluate(() => { const els = [...document.querySelectorAll('.hand-card:not(.popclone)')]; els.forEach((e, i) => { e.dataset.ac425 = String(i + 1); }); return els.length; });
+  const kept = async () => page.evaluate(() => [...document.querySelectorAll('.hand-card:not(.popclone)')].filter((e) => e.dataset.ac425).length);
+  const s = await getState(page);
+  const miner = s.board.creatures.find((c) => c.cardId === 'goblin-scrounger' && c.owner === 'player');
+  const mine = (await legal(page)).find((a) => a.type === 'mine' && a.creatureUid === miner.uid);
+  expect(mine).toBeTruthy();
+  const n = await mark();
+  expect(n).toBe(5);
+  const t = await page.evaluate(async (a) => { const t0 = performance.now(); const r = await window.oreheart.act(a); return { ok: r.ok, ms: performance.now() - t0 }; }, mine);
+  expect(t.ok).toBe(true);
+  expect(await kept(), 'the hand cards were rebuilt by a mine action').toBe(5);
+  expect(t.ms, 'a mine action took ' + Math.round(t.ms) + ' ms').toBeLessThan(45);
+  const grunt = s.board.creatures.find((c) => c.cardId === 'goblin-grunt' && c.owner === 'player');
+  const mv = (await legal(page)).find((a) => a.type === 'move' && a.creatureUid === grunt.uid && a.row === 5);
+  expect(mv).toBeTruthy();
+  expect((await act(page, mv)).ok).toBe(true);
+  expect(await kept(), 'the hand cards were rebuilt by a move').toBe(5);
+  // a real hand change still rebuilds it: summoning a card next turn removes that card
+  await page.waitForTimeout(300);
 });
