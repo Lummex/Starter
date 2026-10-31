@@ -2,6 +2,8 @@ import './style.css';
 import './ui/theme-silver.css'; // Ken (Oct 30): silver UI theme, loads after style.css so its rules win
 import { startSilverFrames } from './ui/theme-silver';
 import { Game } from './game';
+import { onlineEnabled, pageMode } from './net/switch';
+import { net } from './net/state';
 import { App } from './ui/app';
 import { CARDS, COMMANDERS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
@@ -22,7 +24,11 @@ const seed = seedParam != null && seedParam !== '' && !isNaN(+seedParam) ? Math.
 const game = new Game(test);
 const app = new App(document.getElementById('app')!, game, test, test ? seed : undefined);
 const wantIntro = params.get('intro') === '1' || (!test && !sessionStorage.getItem('oreheart.introSeen'));
-if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catch { /* ignore */ } app.showIntro(); } else app.showMenu();
+if (onlineEnabled || pageMode(location.search)) {
+  // Online Phase A: login / parent pages first; the flow ends at the normal main menu
+  import('./net/flow').then((m) => { app.menuHook = m.menuExtras; return m.startOnline(app); });
+} else if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catch { /* ignore */ } app.showIntro(); } else app.showMenu();
+void net;
 
 if (test) (window as any).__app = app;
 if (test) (window as any).__ohCard = (id: string, h = 624) => { const el = ohCardEl(CARDS[id], pictureOf(CARDS[id])); el.style.cssText = `width:${h * 420 / 624}px;height:${h}px;display:inline-block`; return el; };

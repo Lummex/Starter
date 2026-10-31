@@ -3,13 +3,16 @@ import { ownerBox, freeBox } from './menus';
 import { CARDS, FACTIONS, COMMANDERS, CONFIG, isMiner, deckCounts, deckProblems, basicMiner } from '../engine';
 import { h, btn, combo, App, faceKids, rarityKey, FRAME, commanderPortrait } from './app';
 
-export interface SavedDeck { name: string; cards: string[]; commander?: string }
+import { net } from '../net/state';
+export interface SavedDeck { name: string; cards: string[]; commander?: string; id?: string }
 const CMD_NAMES: Record<string, string> = { grubnak: 'Grubnak', sproingle: 'Sproingle', borgo: 'Borgo' };
 const CMD_BY_NAME: Record<string, string> = { Grubnak: 'grubnak', Sproingle: 'sproingle', Borgo: 'borgo' };
 const KEY = 'oreheart.decks';
 const MAX_DECKS = 5;
 
+export const maxDecks = () => (net.active ? net.maxDecks : MAX_DECKS);
 export function loadDecks(): SavedDeck[] {
+  if (net.active) return net.decks.map((d) => ({ ...d, cards: d.cards.slice() }));
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || '[]');
     return Array.isArray(v) ? v.filter((d) => d && typeof d.name === 'string' && Array.isArray(d.cards)).slice(0, MAX_DECKS) : [];
@@ -129,6 +132,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const listEl = h('ul', { class: 'db-list', 'aria-label': 'Deck cards' });
   const countsEl = h('p', { class: 'db-counts', 'aria-label': 'Deck counts' });
   const chartEl = h('div', { class: 'db-chart', 'aria-label': 'Cost chart', role: 'group' });
+  const alertEl = h('span', { class: 'db-alert', role: 'alert', style: 'display:block;color:#ff8f7a' });
   const probEl = h('ul', { class: 'db-problems', 'aria-label': 'Deck problems' });
   const status = h('p', { class: 'db-status', role: 'status' });
   const limitMsg = h('p', { class: 'db-status' });
@@ -141,7 +145,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   };
   const playBtn = btn('Play', 'db-play', () => { if (!deckProblems(deck, cmdId).length) startWith(deck, cmdId); }) as HTMLButtonElement;
   const syncPlay = () => { const pr = deckProblems(deck, cmdId); playBtn.disabled = pr.length > 0; playBtn.title = pr.length ? pr[0] : 'Start a match with this deck'; playBtn.setAttribute('aria-disabled', pr.length ? 'true' : 'false'); };
-  const newBtn = btn('New Deck', '', () => { if (saved.length >= MAX_DECKS) { status.textContent = ''; limitMsg.textContent = 'You can save up to 5 decks.'; return; } setCur(saved.length); }) as HTMLButtonElement;
+  const newBtn = btn('New Deck', '', () => { if (saved.length >= maxDecks()) { status.textContent = ''; limitMsg.textContent = `You can save up to ${maxDecks()} decks.`; return; } setCur(saved.length); }) as HTMLButtonElement;
 
   const matches = (c: any) => {
     if (query && !smartMatch(c, query)) return false;
@@ -311,8 +315,8 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     const p = deckProblems(deck, cmdId);
     probEl.replaceChildren(...(p.length ? p : ['Deck is legal']).map((m) => h('li', { class: p.length ? 'bad' : 'good' }, m)));
     renderCarousel();
-    const full = saved.length >= MAX_DECKS;
-    limitMsg.textContent = full ? 'You can save up to 5 decks.' : '';
+    const full = saved.length >= maxDecks();
+    limitMsg.textContent = full ? `You can save up to ${maxDecks()} decks.` : '';
     newBtn.disabled = full;
   }
   // ---- deck carousel (saved decks only, plus the "+ New Deck" slot)
@@ -390,8 +394,22 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   function save() {
     let idx = editing;
     if (idx < 0) idx = saved.findIndex((d) => d.name === name);
-    if (idx < 0 && saved.length >= MAX_DECKS) { status.textContent = ''; limitMsg.textContent = 'You can save up to 5 decks.'; return; }
-    const rec = { name, cards: deck.slice(), commander: cmdId };
+    if (idx < 0 && saved.length >= maxDecks()) { status.textContent = ''; limitMsg.textContent = `You can save up to ${maxDecks()} decks.`; return; }
+    const rec: SavedDeck = { name, cards: deck.slice(), commander: cmdId };
+    if (net.active) {
+      // server decks: the server may refuse; the edits stay on screen
+      alertEl.textContent = ''; status.textContent = '';
+      net.saveDeck(idx >= 0 ? saved[idx].id : undefined, rec).then(() => {
+        const prevId = idx >= 0 ? saved[idx].id : undefined;
+        saved = loadDecks();
+        const at = prevId ? saved.findIndex((d) => d.id === prevId) : saved.length - 1;
+        editing = at; cur = at; if (at >= 0) name = saved[at].name;
+        status.textContent = 'Saved';
+        renderDeck();
+        cardsEl.setAttribute('aria-hidden', 'true');
+      }, (e: any) => { alertEl.textContent = e && e.message ? e.message : 'The server refused this deck.'; });
+      return;
+    }
     if (idx >= 0) saved[idx] = rec; else { saved.push(rec); idx = saved.length - 1; }
     editing = idx;
     storeDecks(saved);
@@ -405,7 +423,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   pileEl.append(h('div', { class: 'db-carwrap', 'aria-label': 'My decks', role: 'group' }, btn('◀', 'small scroll', () => setCur(cur - 1), { 'aria-label': 'Previous deck' }), carEl, btn('▶', 'small scroll', () => setCur(cur + 1), { 'aria-label': 'Next deck' })), nameEl, sizeEl);
   const rowLab = h('label', { for: 'cards-per-row' }, 'Cards per row');
     const title = h('h1', { class: 'section cinzel db-title' }, 'Deck Builder');
-  const actions = h('div', { class: 'row db-actions' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), btn('Rename', '', rename), newBtn, playBtn);
+  const actions = h('div', { class: 'row db-actions' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), ...(net.active && net.under13 ? [] : [btn('Rename', '', rename)]), newBtn, playBtn);
   const stage = h('div', { class: 'mb-stage db-stage', 'aria-label': 'Deck panel' },
     ownerBox('deck', 'dTitle', title),
         freeBox(40, 1.8, 22, 5, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), 'db-searchbox'),
@@ -417,7 +435,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     ownerBox('deck', 'dList', h('div', { class: 'db-listwrap' }, probEl, chartEl, h('div', { class: 'db-deck-list', 'aria-label': 'Deck list', role: 'group' }, h('h2', {}, 'Deck list'), listEl)), 'db-listbox'),
     ownerBox('deck', 'dCount', countsEl, 'db-countbox'),
     ownerBox('deck', 'dActions', actions, 'db-actionbox'),
-    freeBox(67, 89.2, 19, 8, h('p', { class: 'db-msgs' }, status, limitMsg), 'db-msgbox'),
+    freeBox(67, 89.2, 19, 8, h('p', { class: 'db-msgs' }, status, limitMsg, alertEl), 'db-msgbox'),
     ownerBox('deck', 'dBack', btn('Back', 'db-back', () => app.showMenu()), 'db-backbox'));
   app.root.append(h('main', { class: 'screen db-screen', 'data-screen': 'deck-builder' }, stage));
   const screen = app.root.querySelector('.db-screen') as HTMLElement;

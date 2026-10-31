@@ -8,7 +8,8 @@ import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost
 import { SPELL_VISUALS } from '../content/spell-visuals';
 import tutorialJson from '../content/tutorial.json';
 import { STANCES } from '../ai/stances';
-import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters } from './decks';
+import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters, maxDecks } from './decks';
+import { net } from '../net/state';
 import { brewActions, flowShardCount, deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
 import { audio } from './audio';
@@ -254,6 +255,7 @@ export function fsWatch(b: HTMLElement, label: () => string = fsLabel): void {
 
 export class App {
   root: El;
+  menuHook?: (s: El) => void;
   game: Game;
   test: boolean;
   seed?: number;
@@ -567,6 +569,7 @@ export class App {
   }
   showMenu() {
     const s = this.menuScreen('main', 'title');
+    this.menuHook?.(s);
     if (!this.test && !localStorage.getItem('oreheart.tutorialSeen')) {
       const d: any = this.dialog('Welcome to Oreheart!', [h('h2', {}, 'Welcome to Oreheart!'),
         h('p', { style: 'text-align:center;margin:0' }, 'New here? A short guided match teaches you the basics.'),
@@ -699,15 +702,17 @@ export class App {
         h('span', { class: 'ds-name', 'aria-hidden': 'true' }, label), h('span', { class: 'ds-n', 'aria-hidden': 'true' }, `${n} cards ${ok ? '✔' : '⚠'}`));
       stacks.push(b);
       const rm = btn('Remove', 'small tx-act', () => confirmRemove(label, () => {
-        if (starterId) setHiddenStarters([...hiddenStarters(), starterId]); else if (savedIdx != null) { decks.splice(savedIdx, 1); storeDecks(decks); }
+        if (starterId) setHiddenStarters([...hiddenStarters(), starterId]); else if (savedIdx != null) { const gone = decks.splice(savedIdx, 1)[0]; if (net.active) { if (gone && gone.id) void net.removeDeck(gone.id).catch((e: any) => { msg.textContent = e.message; }); } else storeDecks(decks); }
         if (deckSel === key || deckSel.startsWith('saved:')) { const first = STARTER_DECK_LIST.find((d) => !hiddenStarters().includes(d.id)); deckSel = first ? 'starter:' + first.id : decks.length ? 'saved:0' : deckSel; }
       }), { 'aria-label': `Remove ${label}` }) as HTMLButtonElement;
       if (visibleCount() <= 1) { rm.disabled = true; rm.setAttribute('aria-disabled', 'true'); }
       const acts: El[] = [rm];
       if (starterId) acts.push(btn('Copy', 'small tx-act', () => {
         const sd: any = STARTER_DECK_LIST.find((x) => x.id === starterId)!;
-        if (decks.length >= 5) { msg.textContent = 'You can save up to 5 decks.'; return; }
-        decks.push({ name: `${label} (copy)`, cards: sd.cards.slice(), commander: FCMD[sd.faction] || 'grubnak' });
+        if (decks.length >= maxDecks()) { msg.textContent = `You can save up to ${maxDecks()} decks.`; return; }
+        const rec = { name: `${label} (copy)`, cards: sd.cards.slice(), commander: FCMD[sd.faction] || 'grubnak' };
+        if (net.active) { net.saveDeck(undefined, rec).then(() => showDecks(this, { focus: net.decks.length - 1 }), (e: any) => { msg.textContent = e.message; }); return; }
+        decks.push(rec);
         storeDecks(decks);
         showDecks(this, { focus: decks.length - 1 });
       }, { 'aria-label': `Copy ${label} to my decks` }));

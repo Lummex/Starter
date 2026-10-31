@@ -39,7 +39,13 @@ enable_signup = true
 minimum_password_length = 10
 password_requirements = "lower_upper_letters_digits"
 
+[auth.rate_limit]
+email_sent = 1000
+sign_up_sign_in = 1000
+token_verifications = 1000
+
 [auth.email]
+max_frequency = "1s"
 enable_signup = true
 enable_confirmations = true
 double_confirm_changes = true
@@ -56,3 +62,6 @@ verify_enabled = true
 # so the automated tests can sign up.
 [auth.captcha]
 enabled = false
+
+[functions.send-outbox]
+verify_jwt = false

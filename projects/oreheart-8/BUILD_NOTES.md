@@ -116,3 +116,10 @@ Editor updates needed: hand.overlap 0.26; DRAG_FX (150 ms, opacity .85, tilt 8°
 - Commander impatience counts only `advanceIdle` time in automated runs; the Commander's turn animation no longer caps its time step in automated runs (slow software-GL frames).
 - Not changed (checks that no longer match owner rules): AC58 (uses Rocket Rider as a Miner), AC341 (type advantage makes the Miner die), AC318 (ability button now lives in the Round 15 unit badge), AC216 (menu has the later Settings items), AC371 (owner: the dragged card keeps its own shape).
 - Many other failures were timeouts under 4 parallel software-GL pages; they pass when run alone.
+
+## Online Phase A (this round)
+- New `src/net/` (switch, online client, env-guard, state, flow screens, css), `src/content/parent-notice.json`, `avatar-cards.json`.
+- `main.ts` starts the online flow when `onlineEnabled` (or for `?parent_consent=`, `?parent_withdraw=`, `?contact=1`); plain `?test=1` is unchanged.
+- `decks.ts` / `app.ts` use server decks when `net.active`; under-13 has no Rename.
+- Supabase Edge Function `send-outbox`, config rate limits, schedule migration; admin preview headers. See REPORT.md.
+- Not tested against a live Supabase in the build step. dist size is above 95 MB (see REPORT.md).
