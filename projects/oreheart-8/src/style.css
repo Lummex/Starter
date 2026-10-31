@@ -450,8 +450,8 @@ h2.section,.dialog h2,.screen h1.section{color:var(--gold2);letter-spacing:.06em
 .hand-card[data-rarity=common]{box-shadow:inset 0 0 0 1px #000,inset 0 0 0 3px #6a6a74,0 4px 10px #000a}
 .hand-card[data-rarity=uncommon]{box-shadow:inset 0 0 0 1px #000,inset 0 0 0 3px #d6dbe8,0 4px 10px #000a}
 .hand-card[data-rarity=rare]{box-shadow:inset 0 0 0 1px #000,inset 0 0 0 3px #e3b54a,0 4px 10px #000a}
-.hand-card[data-rarity=ultra-rare]{box-shadow:inset 0 0 0 1px #000,inset 0 0 0 3px #ffd36b,0 0 14px #ffd36b88,0 4px 10px #000a;animation:shimmer 2.6s linear infinite}
-.hand-card[data-rarity=collector]{box-shadow:inset 0 0 0 1px #000,inset 0 0 0 3px #fff,0 0 16px #b45cff88,0 4px 10px #000a;animation:foil 3s linear infinite}
+.hand-card[data-rarity=ultra-rare]{box-shadow:inset 0 0 0 1px #000,inset 0 0 0 3px #ffd36b,0 0 14px #ffd36b88,0 4px 10px #000a} /* Oct 31: the masked holo replaces the whole-card shimmer */
+.hand-card[data-rarity=collector]{box-shadow:inset 0 0 0 1px #000,inset 0 0 0 3px #fff,0 0 16px #b45cff88,0 4px 10px #000a} /* Oct 31: the masked holo replaces the whole-card hue cycle */
 @keyframes shimmer{50%{filter:brightness(1.25) saturate(1.1)}}
 @keyframes foil{0%{filter:hue-rotate(0)}100%{filter:hue-rotate(360deg)}}
 .hand-card.spell,.hand-card.crystal{background:linear-gradient(#2a2040,#120e1c)!important}

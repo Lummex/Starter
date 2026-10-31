@@ -12253,3 +12253,29 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
     });
   });
 }
+
+// Sketch / Ken: "I don't want the whole card to be holographic, just certain areas ... if it's crystals, the crystals should be holographic ...
+// not the whole card. Definitely not over the text."
+test('AC484: holo shines only through the card picture\'s mask (and the frame crystals), never over the whole card or its text; plain cards get none', async ({ page }) => {
+  await start(page, { ai: false, skipMulligan: true, setup: { firstPlayer: 'player', playerHand: ['grubnaks-big-boss-troll', 'meteor-strike', 'goblin-scrounger'], factionLock: false }, factionLock: false });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(() => [...document.querySelectorAll('.hand .hand-card:not(.popclone)')].map((el) => {
+    const id = el.querySelector('[data-card-id]')?.getAttribute('data-card-id') || '';
+    const holo = el.querySelector('.ohcard .holo'); const cs = holo ? getComputedStyle(holo) : null;
+    const texts = [...el.querySelectorAll('.ohtx')].map((t) => getComputedStyle(t.closest('.ly')).filter + '|' + getComputedStyle(t).filter);
+    return { id, rarity: el.getAttribute('data-rarity'), mask: cs ? (cs.maskImage || cs.webkitMaskImage) : '', inArt: !!holo?.parentElement?.querySelector('img'), cardAnim: getComputedStyle(el).animationName, gems: el.querySelectorAll('.ly.hfx').length, textFilters: texts.filter((x) => x !== 'none|none').length };
+  }));
+  const byId = Object.fromEntries(r.map((x) => [x.id, x]));
+  for (const id of ['grubnaks-big-boss-troll', 'meteor-strike']) {
+    const c = byId[id];
+    expect(c, id).toBeTruthy();
+    expect(c.mask, `${id}: the holo uses its own mask`).toContain(`/art/holo-masks/${id}.webp`);
+    expect(c.inArt, `${id}: the holo sits in the picture layer`).toBe(true);
+    expect(c.cardAnim, `${id}: no whole-card shimmer or hue cycle`).not.toMatch(/shimmer|foil/);
+    expect(c.gems, `${id}: the frame's crystal pieces shine`).toBeGreaterThan(0);
+    expect(c.textFilters, `${id}: no text is tinted`).toBe(0);
+  }
+  const plain = byId['goblin-scrounger'];
+  expect(plain.mask, 'a Common card has no holo').toBe('');
+  expect(plain.gems).toBe(0);
+});

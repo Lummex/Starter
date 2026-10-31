@@ -1,5 +1,6 @@
 import FORMAT from '../../public/art/card-format/format.json';
 import { makeOHRenderer } from './ohrender';
+import HOLO from '../content/holo-masks.json';
 import './ohcard.css';
 
 /** The owner's card format (Art Studio, "Card format final 1.0") drawn by his own renderer: every card face in the game goes through here. */
@@ -7,9 +8,22 @@ const R = makeOHRenderer(FORMAT as any);
 
 export const fitCardText = (el: HTMLElement) => R.fitText(el);
 
+/** Oct 31 (Ken: "I don't want the whole card to be holographic, just certain areas ... if it's crystals, the crystals should be
+ *  holographic ... Definitely not over the text."): the rarities that shine today (Ultra Rare, Collector; Commanders are Collector) shine
+ *  only through Sketch's mask of their picture, plus the frame's crystal pieces; cards without a mask get no holo. */
+const HOLO_IDS = new Set<string>((HOLO as any).ids || []);
+const HOLO_RARITIES = new Set(['Ultra Rare', 'Collector']);
+export function holoMaskOf(card: any): string {
+  if (!card || !HOLO_RARITIES.has(card.rarity)) return '';
+  const id = String(card.id || '');
+  const key = id.startsWith('cmd:') ? 'cmd-' + id.slice(4) : id;
+  return HOLO_IDS.has(key) ? `/art/holo-masks/${key}.webp` : '';
+}
+const withHolo = (card: any) => { const m = holoMaskOf(card); return m ? { ...card, holoMask: m } : card; };
+
 /** HTML string of a card face drawn at `px` height (the CSS makes it fill its parent). */
 export function ohCardHTML(card: any, artUrl: string | null, px = 624): string {
-  return R.cardHTML(card, artUrl || '', px);
+  return R.cardHTML(withHolo(card), artUrl || '', px);
 }
 
 /** Card face element: `.ohcard > .cardc`, sized by its parent; the text shrinks to fit once it has a size. */
