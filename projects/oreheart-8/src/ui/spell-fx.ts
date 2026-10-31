@@ -504,7 +504,8 @@ export function createSpellFx(host: SpellFxHost) {
     if (current === player) current = null;
   }
 
-  const player = { preload, play: (r: SpellFxRequest) => { const p0 = performance.now(), out = play(r); perf.maxPlayMs = Math.max(perf.maxPlayMs, performance.now() - p0); return out; }, update, slowK, syncBuff, shatter, now: nowState, timeline, dispose, phone, get active() { return fxs.length; } };
+  const player = { preload, play: (r: SpellFxRequest) => { const p0 = performance.now(), out = play(r); perf.maxPlayMs = Math.max(perf.maxPlayMs, performance.now() - p0); return out; }, update, slowK, syncBuff, shatter, now: nowState, timeline, dispose, phone, get active() { return fxs.length; },
+    /** Oct 31 (pacing): an FX, flying gems or shards still on screen */ busy: (now: number) => fxs.some((fx) => localT(fx, now) < fx.total) || gems.length > 0 || shards.length > 0 };
   current = player;
   void tmp;
   return player;

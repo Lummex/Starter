@@ -38,6 +38,7 @@ if (test) {
     getState: () => game.getState(),
     getAiAudit: () => JSON.parse(JSON.stringify((globalThis as any).__aiAudit)),
     getAiInfo: () => ({ ...game.aiInfo }),
+    getAiPace: () => JSON.parse(JSON.stringify({ paceLog: game.paceLog, aiLog: app.aiLog, busy: game.aiPace ? game.aiPace.busy() : null })),
     legalActions: () => (game.legalActions() as any[]).map((a: any) => (a.type === 'ability' && a.ability === 'shaman' && a.from ? { ...a, ability: 'pickUp', target: { ...a.from }, to: { ...a.target }, from: undefined } : a)).map((a: any) => { if (a.from === undefined) delete a.from; return a; }),
     act: (action: any) => {
       try { return game.act(action, true); } catch (e: any) { return { ok: false, error: String(e && e.message || e) }; }

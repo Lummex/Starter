@@ -272,8 +272,12 @@ export class App {
   /** Step-by-step visual log (R2.16): one entry per reveal, effect, impact, damage, defeat, bounce, shatter and bomb step. */
   logFx(st: any, events: any[]) {
     const L = (kind: string, d: any = {}) => this.fxLog.push({ kind, ...d });
-    const pop = this.popups;
+    const pop0 = this.popups;
+    let pop = pop0;
+    /** Oct 31: the computer's card was already shown before it resolved */
+    const pre = (e: any) => { const side = e.player ?? e.owner; if (side !== 'opponent') return false; const i = this.preRevealed.indexOf(e.cardId); if (i < 0) return false; this.preRevealed.splice(i, 1); return true; };
     for (const e of events) {
+      pop = pop0 && !(['cast', 'summon', 'playCrystal', 'minerUpgrade'].includes(e.type) && pre(e));
       if (e.type === 'cast') {
         const respondable = st.pendingResponse && st.pendingResponse.responder === 'player' && e.player === 'opponent';
         if (pop && !respondable) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, null, e.player ?? e.owner); }
@@ -321,6 +325,88 @@ export class App {
     this.seed = seed;
     if (test) document.body.classList.add('test');
     root.addEventListener('click', (e) => { if ((e.target as El).closest?.('button')) audio.play('click'); }, true);
+    game.aiPace = { busy: () => this.aiBusy(), preview: (a: any, st: any) => this.aiPreview(a, st) };
+  }
+
+  // ------------------------------------------------------------ Oct 31 (Ken): the computer plays like a person
+  // "The opposing side plays stuff too fast ... a barrage ... he played a card. The card covered my screen. And then he threw a fireball and
+  // blew my stuff up. I didn't even get to see him get blown up." The controller (game.ts paced) waits for aiBusy() to be '', then a beat,
+  // then aiPreview: the card pops up big, is laid aside (or flies onto its square), the target squares light up red, and only then it plays.
+  /** cards whose reveal was already shown before they resolved (their play events don't pop them up again) */
+  preRevealed: string[] = [];
+  aiBusy(): string {
+    if (this.reveals.opponent.length) return 'reveal';
+    if (this.root.querySelector('.ai-target')) return 'target';
+    return this.view?.isBusy?.() || '';
+  }
+  /** the squares an action of the computer is about to hit (a spell's target, its 3x3, a Commander's Stronghold, an attack's target) */
+  aiTargets(a: any, st: any): { row: number; col: number }[] {
+    const t = a.target;
+    if (!t) return [];
+    if (t.commander) { const s = SH[t.commander as 'player' | 'opponent']; return [{ row: s.row, col: s.col }]; }
+    if (typeof t.row !== 'number') return [];
+    const h0 = a.uid ? st.players.opponent.hand.find((x: any) => x.uid === a.uid) : null;
+    const area = h0 && CARDS[h0.cardId]?.effect === 'areaDamage';
+    const out: { row: number; col: number }[] = [];
+    if (area) { for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const r = t.row + dr, c = t.col + dc; if (r >= 1 && r <= BH && c >= 1 && c <= BW) out.push({ row: r, col: c }); } }
+    else out.push({ row: t.row, col: t.col });
+    return out;
+  }
+  /** if any square is off the visible board, go back to the home view so the player sees it */
+  aiShow(cells: { row: number; col: number }[]) {
+    const v = this.view, b = this.r.board as El | undefined;
+    if (!v || !b || !cells.length) return false;
+    const W = b.clientWidth, H = b.clientHeight;
+    const off = cells.some((c) => { const r = v.cellRect(c.row, c.col); return r.x < 0 || r.y < 0 || r.x + r.w > W || r.y + r.h > H; });
+    if (off) { v.recenter(); this.aiLog.push({ kind: 'recenter', at: Math.round(performance.now()) }); }
+    return off;
+  }
+  /** red target markers on the squares (they fade once the effect lands) */
+  aiMark(cells: { row: number; col: number }[], holdMs: number) {
+    const b = this.r.board as El | undefined, v = this.view;
+    if (!b || !v) return;
+    for (const c of cells) {
+      const rc = v.cellRect(c.row, c.col), q = v.cellQuad(c.row, c.col);
+      const el = h('div', { class: 'ai-target', 'aria-hidden': 'true', 'data-row': String(c.row), 'data-col': String(c.col) });
+      el.style.cssText = `position:absolute;left:${rc.x}px;top:${rc.y}px;width:${rc.w}px;height:${rc.h}px;pointer-events:none;z-index:4;` +
+        'background:radial-gradient(closest-side,#ff2a1a55,#ff2a1a22 70%,transparent);box-shadow:inset 0 0 0 3px #ff4a3a,inset 0 0 18px 6px #ff2a1a99;';
+      if (q.length === 4) el.style.clipPath = `polygon(${q.map((p: any) => `${(p.x - rc.x).toFixed(1)}px ${(p.y - rc.y).toFixed(1)}px`).join(',')})`;
+      b.append(el);
+      try { el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.25 }, { opacity: 0.6, offset: 0.6 }, { opacity: 1 }], { duration: 650, iterations: Math.max(1, Math.round(holdMs / 650)) }); } catch { /* old browser */ }
+      setTimeout(() => el.remove(), holdMs);
+    }
+  }
+  /** test probe: the pacing steps (reveal shown, laid aside, target marked, recentred) */
+  aiLog: any[] = [];
+  async aiPreview(a: any, st: any): Promise<void> {
+    if (!st || !a) return;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    if (a.type === 'attack') {
+      const cells = this.aiTargets(a, st);
+      const mine = (a.target?.commander === 'player') || st.board.creatures.some((c: any) => c.owner === 'player' && cells.some((x) => x.row === c.row && x.col === c.col));
+      if (!mine) return;
+      if (this.aiShow(cells)) await sleep(350);
+      this.aiLog.push({ kind: 'target', action: 'attack', cells, at: Math.round(performance.now()) });
+      this.aiMark(cells, 450); await sleep(450);
+      return;
+    }
+    const h0 = a.uid ? st.players.opponent.hand.find((x: any) => x.uid === a.uid) : null;
+    if (!h0) return;
+    const cardId = h0.cardId;
+    const cells = a.type === 'cast' ? this.aiTargets(a, st) : [];
+    if (cells.length && this.aiShow(cells)) await sleep(350);
+    const at = a.type === 'summon' ? { row: a.row, col: a.col } : a.type === 'minerUpgrade' ? (() => { const c = st.board.creatures.find((x: any) => x.uid === a.creatureUid); return c ? { row: c.row, col: c.col } : null; })() : null;
+    const t0 = performance.now();
+    if (this.popups && this.r.board) {
+      this.preRevealed.push(cardId);
+      this.aiLog.push({ kind: 'reveal', cardId, action: a.type, at: Math.round(t0) });
+      await this.reveal(cardId, at, 'opponent');
+      this.aiLog.push({ kind: 'revealGone', cardId, at: Math.round(performance.now()) });
+    }
+    if (cells.length) {
+      this.aiLog.push({ kind: 'target', action: 'cast', cardId, cells, at: Math.round(performance.now()) });
+      this.aiMark(cells, 1600); await sleep(650);
+    }
   }
 
   // ------------------------------------------------------------ graphics setting
@@ -2354,11 +2440,13 @@ export class App {
   /** cards that are still flying to the enemy discard pile (the pile shows them when they land) */
   discardInFlight = 0;
   revealHoldMs() { return localStorage.getItem('oreheart.reveal') === 'fast' ? 600 : 1100; }
-  reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player') {
-    if ((this.test && !this.fxReal) || !this.r.board) return;
-    if (side === 'player') return; // round 11: only the opponent's played cards pop up
+  reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player'): Promise<void> {
+    if ((this.test && !this.fxReal) || !this.r.board) return Promise.resolve();
+    if (side === 'player') return Promise.resolve(); // round 11: only the opponent's played cards pop up
     const c = CARDS[cardId];
-    if (!c) return;
+    if (!c) return Promise.resolve();
+    let gone: () => void = () => {};
+    const goneP = new Promise<void>((res) => { gone = res; });
     const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c));
     const host = this.root.querySelector('.match') as El;
     const list = this.reveals[side];
@@ -2377,7 +2465,7 @@ export class App {
     const toPile = !(c.type === 'creature' && at && this.view);
     if (toPile) { this.discardInFlight++; this.renderEnemyDiscard(); }
     let done = false, landed = false, layAnim: Animation | null = null, layFallback: any = null;
-    const unlist = () => { const i = list.indexOf(el); if (i >= 0) list.splice(i, 1); };
+    const unlist = () => { const i = list.indexOf(el); if (i >= 0) list.splice(i, 1); gone(); };
     const land = () => {
       if (landed) return; landed = true;
       if (toPile) { this.discardInFlight = Math.max(0, this.discardInFlight - 1); this.renderEnemyDiscard(true); }
@@ -2441,6 +2529,8 @@ export class App {
     // about a second in play; automated runs (?test=1, slow software graphics) hold it 3 s so the checks can see it (data-hold-ms = the real time)
     el.dataset.holdMs = String(this.revealHoldMs());
     timer = setTimeout(finish, this.test ? Math.max(3000, this.revealHoldMs()) : this.revealHoldMs());
+    setTimeout(() => gone(), 15000); // never hold the computer's turn if a tab pauses the animation
+    return goneP;
   }
   // ------------------------------------------------------------ Owner (Ken, Oct 30): the enemy discard pile, face-up on the left
   buildEnemyDiscard(match: El) {

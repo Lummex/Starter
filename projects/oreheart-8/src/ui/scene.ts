@@ -35,6 +35,8 @@ export interface BoardView {
   playBowl?(event: any): void;
   /** Oct 30: ms until this unit's attack blow lands (pop-ups wait for it) */
   blowDelay?(uid: string): number;
+  /** Oct 31 (Ken: the computer plays too fast): something on the board is still moving, fighting, dying or casting */
+  isBusy?(): string;
   cellRect(row: number, col: number): Rect;
   resize(): void;
   setCamera(c: { zoom: number; x: number; y: number }): void;
@@ -452,6 +454,25 @@ const _embV = new THREE.Vector3();
   // Oct 30 (Ken's fighting vision): units walk square by square and fights are little comic scenes (timings in ms, snappy)
   const WALK_SPEED = 2.8, RUN_SPEED = 4.0, IMPACT_MELEE = 250, IMPACT_RANGED = 300, LUNGE_MS = 620;
   const impacts: { at: number; to: THREE.Vector3; ranged: boolean; armored: boolean; commander: boolean }[] = [];
+  /** Oct 31 (Ken: "the opposing side plays stuff too fast ... you can't tell anything that he's doing"): what still plays on the board
+   *  ('' = calm). The computer's next action waits until this is '' (game.ts aiPace). */
+  function boardBusy(now: number): string {
+    if (spellFx.busy(now)) return 'spell';
+    if (impacts.length) return 'impact';
+    for (const f of figs.values()) {
+      if (f.dying) return 'dying';
+      if (f.born && now - f.born < 600) return 'summon';
+      if (f.hitAt && f.hitAt > now - 350) return 'hit';
+      if (f.hitT && now - f.hitT < 350) return 'hit';
+      if (f.kb && !f.kb.landed) return 'knock';
+      if (f.shootT && now >= f.shootT - 2000 && now - f.shootT < (f.atkMs || 600) + 250) return 'attack';
+      if (f.abilT && now - f.abilT < (f.abilMs || 1000)) return 'ability';
+      if (f.mineT && now - f.mineT < 900) return 'mine';
+      if (f.path && f.path.length) return 'walk';
+      if (Math.hypot(f.group.position.x - f.target.x, f.group.position.z - f.target.z) > 0.05) return 'walk';
+    }
+    return '';
+  }
   const easeIO = (x: number) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
   /** step in fast, hold the swing, step back */
   const lungeShape = (k: number) => (k < 0.35 ? 1 - (1 - k / 0.35) ** 2 : k < 0.55 ? 1 : 1 - easeIO((k - 0.55) / 0.45));
@@ -608,7 +629,7 @@ const _embV = new THREE.Vector3();
     return { group: g, finished, mats, parts, baseScale };
   }
 
-  const creatureAnimLog: { uid: string; cardId: string; anim: string; clip?: string; gait?: string }[] = [];
+  const creatureAnimLog: { uid: string; cardId: string; anim: string; clip?: string; gait?: string; at?: number }[] = [];
   const asked = new Set<string>();
   const pendingBorn = new Map<string, number>(); // summon time carried over when a token is rebuilt as its 3D model
   // each goblin model is fetched once, only when a unit of it is on the board
@@ -1654,6 +1675,7 @@ const _embV = new THREE.Vector3();
   const api: BoardView = {
     playSpell: (req: SpellFxRequest) => spellFx.play(req),
     spellShards: (at: { row: number; col: number }, countered: string | null) => spellFx.shatter(at, countered),
+    isBusy: () => boardBusy(performance.now()),
     is3D: true, setCarry, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       spellFx.dispose();

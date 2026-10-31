@@ -11958,3 +11958,43 @@ test('AC477: the intro and main menu show the silver OREHEART logo (Ken\'s Oct 2
     }
   }
 });
+
+// ---------- Oct 31 (Ken): the computer plays like a person ----------
+// "The opposing side plays stuff too fast ... a barrage ... he played a card. The card covered my screen. And then he threw a fireball and blew
+// my stuff up. I didn't even get to see him get blown up." Each computer action waits until the board is calm (no walking, attack, hit, death,
+// knock-back, summon, spell FX or card reveal), then a beat; its card pops up and is laid aside BEFORE it resolves; a spell's target squares light up.
+for (const vp of [{ name: 'desktop', width: 1920, height: 1080, touch: false }, { name: 'phone', width: 844, height: 390, touch: true }]) {
+  test.describe(`AC478 (${vp.name})`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch });
+    test(`AC478: the computer's actions never overlap, and its card is shown and laid aside before it resolves (${vp.name})`, async ({ page }) => {
+      test.setTimeout(150000);
+      await page.goto('/?test=1&seed=5&aiworker=1&fx=1');
+      await page.waitForFunction(() => !!window.oreheart);
+      await page.evaluate(async () => await window.oreheart.newMatch({ mode: 'standard', ai: true, difficulty: 'hard', seed: 5, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false,
+        setup: { firstPlayer: 'opponent', opponentCrystals: 12, opponentHand: ['fireball', 'gnome-tinker', 'spark-gnome'],
+          board: [{ cardId: 'goblin-grunt', owner: 'player', row: 4, col: 6 }, { cardId: 'goblin-scrapper', owner: 'player', row: 4, col: 8 }, { cardId: 'gnome-cogger', owner: 'opponent', row: 3, col: 6 }] } }));
+      // the computer's whole first turn, paced
+      for (let i = 0; i < 400; i++) { const s = await getState(page); if (s.activePlayer === 'player' && s.priority === 'player' && s.turn >= 2) break; await page.waitForTimeout(300); }
+      const s = await getState(page);
+      expect(s.activePlayer, 'the computer finished its turn').toBe('player');
+      const { paceLog, aiLog } = await page.evaluate(async () => await window.oreheart.getAiPace());
+      const plays = paceLog.filter((p) => ['summon', 'cast', 'playCrystal', 'minerUpgrade'].includes(p.type));
+      expect(plays.length, 'the computer played cards').toBeGreaterThanOrEqual(2);
+      // no two actions overlap: when each one is played the board is calm (only its own target marker may show)
+      for (const p of paceLog) expect(['', 'target'], `${p.type} ${p.cardId || ''} was played while '${p.busyAtApply}' was still going`).toContain(p.busyAtApply);
+      // actions are one after another with a beat in between
+      for (let i = 1; i < paceLog.length; i++) if (paceLog[i].beatMs) expect(paceLog[i].at - paceLog[i - 1].at, `${paceLog[i].type} came right after ${paceLog[i - 1].type}`).toBeGreaterThanOrEqual(paceLog[i].beatMs - 30);
+      // every card was revealed and gone (laid aside, or landed on its square) before it resolved
+      for (const p of plays) {
+        const gone = aiLog.filter((x) => x.kind === 'revealGone' && x.cardId === p.cardId && x.at <= p.at);
+        expect(gone.length, `${p.cardId}: its reveal was laid aside before it resolved`).toBeGreaterThan(0);
+        expect(p.previewMs, `${p.cardId}: a clear "here's what I'm playing" moment`).toBeGreaterThanOrEqual(900);
+      }
+      // a spell's target lights up before it resolves
+      const casts = plays.filter((p) => p.type === 'cast');
+      for (const p of casts) expect(aiLog.some((x) => x.kind === 'target' && x.cardId === p.cardId && x.at <= p.at), `${p.cardId}: target shown first`).toBe(true);
+      // no reveal is left on screen now
+      await expect(page.locator('.reveal.opp-play')).toHaveCount(0, { timeout: 5000 });
+    });
+  });
+}

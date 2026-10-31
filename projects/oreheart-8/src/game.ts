@@ -80,6 +80,13 @@ export class Game {
   private workerSeed = 1;
   /** Probe: how the computer thought last (worker or main thread) and the worker's last thinking time in ms. */
   aiInfo = { worker: false, lastMs: 0, replies: 0 };
+  /** Oct 31 (Ken: "The opposing side plays stuff too fast ... Give, like, a pause before he does certain things"): the UI tells the
+   *  controller when the board is calm and shows the computer's card BEFORE it resolves. Live matches (and ?aiworker=1 tests) only. */
+  aiPace: { busy(): string; preview(a: any, st: any): Promise<void> } | null = null;
+  /** the computer is waiting for the board / its beat / its card reveal (no new thinking starts meanwhile) */
+  private pacing = false;
+  /** test probe: one entry per paced computer action */
+  paceLog: { type: string; cardId?: string; waitMs: number; beatMs: number; previewMs: number; busyAtApply: string; at: number }[] = [];
 
   constructor(testMode: boolean) {
     this.testMode = testMode;
@@ -274,7 +281,7 @@ export class Game {
       while (this.state.priority === 'opponent' && this.state.phase !== 'over' && n++ < 400) this.aiStep();
       return;
     }
-    if (this.pendingId) return; // the worker is already thinking about this state
+    if (this.pendingId || this.pacing) return; // the worker is already thinking about this state, or the computer is waiting to play
     const ep = this.epoch;
     clearTimeout(this.aiTimer);
     this.aiTimer = setTimeout(() => {
@@ -319,6 +326,44 @@ export class Game {
     let a = m.error ? null : m.action;
     a = auditPick(s, a, null);
     if (++this.aiCount > 60 && !s.pendingResponse && s.phase !== 'mulligan') a = { type: 'done' };
+    if (this.aiPace) { void this.paced(a); return; }
+    this.applyAi(s, a);
+  }
+  /** the beat before a computer action (ms): a little longer before spells and attacks on the player's side */
+  private beatFor(s: any, a: any): number {
+    if (!a || s.phase === 'mulligan' || a.type === 'pass' || a.type === 'gathererSwap') return 0; // nothing to watch
+    if (a.type === 'done') return 350;
+    if (a.type === 'cast') return 900;
+    if (a.type === 'attack' || (a.type === 'ability' && a.target)) return 900;
+    return 650;
+  }
+  /** Oct 31: wait until the board is calm, a short beat, show the card (it is laid aside before it resolves), then play it */
+  private async paced(a: any) {
+    const ep = this.epoch, ver = this.stateVersion, t0 = performance.now();
+    this.pacing = true;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const stale = () => ep !== this.epoch || ver !== this.stateVersion || !this.state || this.state.phase === 'over' || this.state.priority !== 'opponent';
+    try {
+      for (let i = 0; i < 120 && this.aiPace && this.aiPace.busy() && !stale(); i++) await sleep(100); // never more than 12 s
+      while (this.paused && !stale()) await sleep(200);
+      const waitMs = performance.now() - t0;
+      const beat = this.beatFor(this.state, a);
+      if (beat && !stale()) await sleep(beat);
+      let previewMs = 0;
+      if (!stale() && this.aiPace && a && ['summon', 'cast', 'playCrystal', 'minerUpgrade', 'attack'].includes(a.type)) {
+        const p0 = performance.now();
+        await this.aiPace.preview(a, this.state);
+        previewMs = performance.now() - p0;
+      }
+      this.pacing = false;
+      if (stale()) { this.afterAction(); return; } // the player brewed meanwhile or the match moved on: think again
+      this.paceLog.push({ type: a?.type || 'none', cardId: a?.uid ? this.state.players.opponent.hand.find((h: any) => h.uid === a.uid)?.cardId : undefined,
+        waitMs: Math.round(waitMs), beatMs: beat, previewMs: Math.round(previewMs), busyAtApply: this.aiPace ? this.aiPace.busy() : '', at: Math.round(performance.now()) });
+      if (this.paceLog.length > 200) this.paceLog.shift();
+      this.applyAi(this.state, a);
+    } finally { this.pacing = false; }
+  }
+  private applyAi(s: any, a: any) {
     let r = applyAction(s, a);
     if (!r.ok) r = applyAction(s, s.pendingResponse ? { type: 'pass' } : s.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' });
     if (!r.ok) return;
