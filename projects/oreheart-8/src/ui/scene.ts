@@ -493,9 +493,22 @@ const _embV = new THREE.Vector3();
       else { part.position.copy(ud.idleLook.pos); part.rotation.copy(ud.idleLook.rot); part.scale.copy(ud.idleLook.scale); }
       ud.aiming = on;
     };
+    // Ledger, Oct 31: keep the aim look through the whole clip, then blend back to the idle look over ~175 ms instead of a hard snap
+    const BLEND = 175;
+    const blendOut = () => {
+      const p0 = part.position.clone(), q0 = part.quaternion.clone(), s0 = part.scale.clone();
+      const q1 = new THREE.Quaternion().setFromEuler(ud.idleLook.rot), t0 = performance.now(), tok = (ud.aimTok = (ud.aimTok || 0) + 1);
+      const step = () => {
+        if (ud.aimTok !== tok) return;
+        const k = Math.min(1, (performance.now() - t0) / BLEND), e = k * k * (3 - 2 * k);
+        part.position.lerpVectors(p0, ud.idleLook.pos, e); part.quaternion.slerpQuaternions(q0, q1, e); part.scale.lerpVectors(s0, ud.idleLook.scale, e);
+        if (k < 1) requestAnimationFrame(step); else set(false);
+      };
+      requestAnimationFrame(step);
+    };
     clearTimeout(ud.aimOff);
-    setTimeout(() => set(true), Math.max(0, startAt - now));
-    ud.aimOff = setTimeout(() => set(false), Math.max(0, endAt - now));
+    setTimeout(() => { ud.aimTok = (ud.aimTok || 0) + 1; set(true); }, Math.max(0, startAt - now));
+    ud.aimOff = setTimeout(blendOut, Math.max(0, endAt - BLEND - now));
     aimLog.push({ uid: f.uid, cardId: f.cardId, part: a.part, on: Math.round(startAt), off: Math.round(endAt) }); if (aimLog.length > 40) aimLog.shift();
   }
   /** Oct 31 (Ken: "the opposing side plays stuff too fast ... you can't tell anything that he's doing"): what still plays on the board
