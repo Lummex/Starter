@@ -7,7 +7,7 @@
 // Medium adds randomness and the odd second-best pick. No hidden information is used: the opponent's hand and deck are never read,
 // Respond windows opened by a trial action are always answered "pass", and trial actions use a reshuffled random seed so the
 // AI can't foresee knock-back directions.
-import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, nextPool, previewAttack, canRedraw, basicGatherer } from '../engine';
+import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, nextPool, previewAttack, canRedraw, basicGatherer, typeBonus } from '../engine';
 
 export type Rand = () => number;
 export function makeRand(seed: number): Rand {
@@ -216,6 +216,8 @@ export const budgetMs = (ms: number) => ms * ((globalThis as any).__aiTimeScale 
 const cmdVal = (h: number) => h * TUNE.cmdW + Math.min(0, h - 8) * 10;
 
 /** How good the board is for `me` (bigger = better). Reads only public information. */
+/** Ken (Oct 31): the computer's predicted hit on a creature = its Attack plus the engine's own triangle rule (typeBonus: never against a Miner). Probe: window.oreheart.aiHitPrediction */
+export const predictHit = (s: any, c: any, target?: any, base: number = atkValue(s, c)) => (target ? base + typeBonus(CARDS[c.cardId], CARDS[target.cardId]) : base);
 export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, turnW: 7, fwdW: 2.5 }): number {
   const foe = other(me as any);
   if (s.winner) return s.winner === me ? 1e6 : -1e6;
@@ -230,7 +232,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
   const atk = (c: any, target?: any) => {
     let b = atkMemo.get(c);
     if (b === undefined) { b = atkValue(s, c); atkMemo.set(c, b); }
-    return target && FACTIONS[CARDS[c.cardId].faction]?.beats === CARDS[target.cardId].faction ? b + CONFIG.typeAdvantageBonus : b;
+    return predictHit(s, c, target, b); // Ken, Oct 31: same rule as the engine (no triangle bonus against Miners)
   };
   const ready = myTurn ? mine.filter((c) => !c.hasAttacked && !c.hasMined && !(c.hasMoved && !ab(c, 'charge')) && (c.lockedUntil || 0) <= s.turn && !(c.summonedThisTurn && !ab(c, 'haste'))) : [];
   const isolated = new Set(foes.filter((f) => !foes.some((o) => o !== f && cheb(o, f) <= 2)));

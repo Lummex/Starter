@@ -196,7 +196,8 @@ describe('AI Oct 31: Medium is unchanged', () => {
   // recorded on branch ai-oct30b (f3518716) with the decision time budget switched off (the budget makes Medium timing-dependent under load)
   // Oct 31 (decks desk): re-recorded after the content/rule change (twelve new starter decks, Tunnel only beside an owned mine, the Riot Shield Bearer a Miner); the AI is untouched
   // Oct 31 (dwarf fix): re-recorded after the Riot Shield Bearer became a wall and the Anvilsworn the basic Miner (cost 1), with the 30-Miner Warbands; the AI is untouched
-  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 21: { turn: 24, units: 30, steps: 215 }, 23: { turn: 28, units: 38, steps: 279 }, 25: { turn: 34, units: 22, steps: 410 } };
+  // Ken, Oct 31: no triangle bonus against Miners; seed 23 re-recorded after that rule change (21 and 25 play out the same)
+  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 21: { turn: 24, units: 30, steps: 215 }, 23: { turn: 35, units: 33, steps: 387 }, 25: { turn: 34, units: 22, steps: 410 } };
   for (const seed of [21, 23, 25]) {
     it('medium vs medium, seed ' + seed, () => {
       const keep = { medMs: TUNE.medMs, hardMs: TUNE.hardMs };
@@ -224,7 +225,8 @@ describe('AI Oct 30: Easy is unchanged', () => {
   // Oct 31 (Anvil): seed 11 re-recorded after the free-Miner fix (a broke Dwarf side no longer gets a free Riot Shield Bearer again and again), the AI is untouched
   // Oct 31 (decks desk): all three re-recorded after the content/rule change (twelve new starter decks, Tunnel only beside an owned mine, the Riot Shield Bearer a Miner); the AI is untouched
   // Oct 31 (dwarf fix): re-recorded after the Riot Shield Bearer became a wall and the Anvilsworn the basic Miner (cost 1), with the 30-Miner Warbands; the AI is untouched
-  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 11: { turn: 80, units: 39, steps: 559 }, 12: { turn: 80, units: 36, steps: 595 }, 13: { turn: 80, units: 32, steps: 609 } };
+  // Ken, Oct 31: no triangle bonus against Miners; seeds 11 and 12 re-recorded after that rule change (13 plays out the same)
+  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 11: { turn: 80, units: 25, steps: 554 }, 12: { turn: 80, units: 33, steps: 605 }, 13: { turn: 80, units: 32, steps: 609 } };
   for (const seed of [11, 12, 13]) {
     it('easy vs easy, seed ' + seed, () => {
       let s: any = createMatch({ seed, playerCommander: ['grubnak', 'sproingle', 'borgo'][seed % 3], opponentCommander: ['borgo', 'grubnak', 'sproingle'][seed % 3] });
