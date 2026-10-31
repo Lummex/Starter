@@ -35,10 +35,11 @@ export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-
 for (const id of SPELL_SOUNDS) SFX['spell:' + id] = D('spell-' + id, 1, 0);
 const OLD_SPELL: Record<string, string> = { fireball: 'fireball', 'meteor-strike': 'meteor', 'healing-light': 'heal', 'second-wind': 'heal', 'shield-bubble': 'bubble' };
 const MAX_VOICES = 3;
-/** Arena -> its match music (file name in /audio/music/ without .mp3). */
-export const ARENA_MUSIC: Record<string, { match: string }> = { skullfang: { match: 'first-fight' }, gnome: { match: 'gnome-spellcaster' } };
-/** The arena a match is played in: against the gnome Commander it is the gnome arena (once Brush's arena is built it will be chosen by the arena itself). */
-export const arenaOf = (opponentFaction?: string) => (opponentFaction === 'gnomes' ? 'gnome' : 'skullfang');
+/** Arena (named by its faction) -> its match music (file name in /audio/music/ without .mp3). Ken, Oct 31: goblin = First Fight, gnome = Gnome Spellcaster, dwarf = Dwarf Arena Music. */
+export const ARENA_MUSIC: Record<string, { match: string }> = { goblins: { match: 'first-fight' }, gnomes: { match: 'gnome-spellcaster' }, dwarves: { match: 'dwarf-arena' } };
+/** Ken, Oct 31: "It could be a 50-50. Either use the players or the opponents. Just choose it randomly between the 2 fighting factions." Same faction on both sides = that faction's arena.
+ *  `roll` is 0..1: below 0.5 the player's faction, otherwise the opponent's. (The dwarf and gnome arenas are not built yet: the board stays Skullfang, the picked faction's music plays.) */
+export const pickArena = (playerFaction: string, opponentFaction: string, roll: number) => (playerFaction === opponentFaction ? playerFaction : roll < 0.5 ? playerFaction : opponentFaction);
 /** Oct 31 (Ken: "cut down a little bit on the noises ... not so much twinkling and stuff going on"): Brush's mix_rules (studio/sound-spec.json).
  *  Few, meaningful sounds: at most 3 effects at once (the lowest priority is dropped, or the newcomer when it is lower than all playing), a minimum gap per sound,
  *  a spell or kaboom mutes everything below a summon for 0.6 s, at most 2 footsteps sounding, a card's summon waits 0.35 s behind its card sound,
@@ -128,9 +129,11 @@ class AudioEngine {
   private starts: Record<string, number> = {};
   /** Oct 31 (Ken's Gnome Spellcaster): the match music belongs to the arena. The goblin Skullfang arena keeps First Fight; the gnome arena plays Gnome Spellcaster.
    *  The gnome arena itself is not built yet, so until then any match against the gnome Commander gets the gnome music. The menu music stays Tense Cycle. */
-  private matchTrack = ARENA_MUSIC.skullfang.match;
+  private matchTrack = ARENA_MUSIC.goblins.match;
+  arena = 'goblins';
   setMatchArena(arena: string) {
-    const n = (ARENA_MUSIC[arena] || ARENA_MUSIC.skullfang).match;
+    this.arena = ARENA_MUSIC[arena] ? arena : 'goblins';
+    const n = ARENA_MUSIC[this.arena].match;
     if (n === this.matchTrack) return;
     this.matchTrack = n;
     const old = this.tracks.match;
@@ -150,7 +153,7 @@ class AudioEngine {
   musicState() {
     const v = (k: 'menu' | 'match') => { const a = this.tracks[k]; return a ? { playing: !a.paused, volume: a.volume } : { playing: false, volume: 0 }; };
     const cur = this.tracks[this.musicMode];
-    return { mode: this.musicMode, on: this.musicOn, volume: this.music, menu: v('menu'), match: v('match'), muted: this.muted,
+    return { arena: this.arena, mode: this.musicMode, on: this.musicOn, volume: this.music, menu: v('menu'), match: v('match'), muted: this.muted,
       track: this.unlocked ? this.trackName(this.musicMode) : null, playing: !!cur && !cur.paused, gain: this.muted || !this.musicOn ? 0 : (this.music / 100) * 0.5, crossfadeMs: 1500, startCount: this.starts[this.musicMode] || 0 };
   }
   musicLog: { track: string; fadeMs: number }[] = [];

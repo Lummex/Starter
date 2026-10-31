@@ -6654,7 +6654,7 @@ test('AC223: menu music on menus, match music in matches, crossfades, Mute silen
   expect((await audio()).unlocked).toBe(true);
   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
   await expect.poll(async () => (await getState(page)).players?.opponent?.faction).toBeTruthy();
-  const matchTrack = await (async () => ((await getState(page)).players.opponent.faction === 'gnomes' ? 'gnome-spellcaster' : 'first-fight'))(); // owner change (Oct 31): the match music belongs to the arena: First Fight, or Gnome Spellcaster against the gnome Commander
+  const matchTrack = await (async () => ({ goblins: 'first-fight', gnomes: 'gnome-spellcaster', dwarves: 'dwarf-arena' }[(await (async () => (await page.evaluate(async () => await window.oreheart.getAudioState())).music.arena)())]))(); // owner change (Oct 31): the match music belongs to the arena (a 50-50 pick of the two fighting factions): First Fight, Gnome Spellcaster or Dwarf Arena Music
   await expect.poll(async () => (await audio()).music.track).toBe(matchTrack);
   let a = await audio();
   let last = a.log[a.log.length - 1];
@@ -7547,7 +7547,7 @@ test.describe('round 11 at 1920x1080', () => {
     await check();
     await page.getByRole('button', { name: 'Fight!', exact: true }).click();
     await expect.poll(async () => (await getState(page)).players?.opponent?.faction).toBeTruthy();
-    await expect.poll(async () => (await audioState(page)).music.track, { timeout: 10000 }).toBe(await (async () => ((await getState(page)).players.opponent.faction === 'gnomes' ? 'gnome-spellcaster' : 'first-fight'))()); // Oct 31: First Fight, or Gnome Spellcaster against the gnome Commander
+    await expect.poll(async () => (await audioState(page)).music.track, { timeout: 10000 }).toBe(await (async () => ({ goblins: 'first-fight', gnomes: 'gnome-spellcaster', dwarves: 'dwarf-arena' }[(await (async () => (await page.evaluate(async () => await window.oreheart.getAudioState())).music.arena)())]))()); // Oct 31: the arena's music (First Fight, Gnome Spellcaster or Dwarf Arena Music)
   });
 
   test('AC259: main menu button words are white, bold and styled as in menus.json', async ({ page }) => {
@@ -12956,26 +12956,46 @@ test('AC526: a real action button (Menu, a menu item) clicks, a toggle switch in
   expect(await clicks(), 'a toggle switch makes no click').toBe(c0);
 });
 
-// Ken (Oct 31): his Gnome Spellcaster is the gnome arena's music; the goblin Skullfang arena keeps First Fight, the menus keep Tense Cycle
-test('AC527: the match music belongs to the arena: First Fight in a goblin-arena match, Gnome Spellcaster against the gnome Commander, Tense Cycle in the menus; the file is served', async ({ page, request }) => {
-  test.setTimeout(90000);
-  const r = await request.get('/audio/music/gnome-spellcaster.mp3');
-  expect(r.status()).toBe(200);
-  expect((await r.body()).length, 'Ken\'s file as given').toBeGreaterThan(1900000);
+// Ken (Oct 31): his Gnome Spellcaster and Dwarf Arena Music are the gnome and dwarf arenas' music; the goblin Skullfang arena keeps First Fight, the menus keep Tense Cycle.
+// "It could be a 50-50. Either use the players or the opponents. Just choose it randomly between the 2 fighting factions."
+test('AC527: each match is fought in the arena of the player\'s or the opponent\'s faction (50-50) and its music plays: First Fight, Gnome Spellcaster or Dwarf Arena Music; the files are served; same faction = that arena; menus keep Tense Cycle', async ({ page, request }) => {
+  test.setTimeout(150000);
+  for (const [u, min] of [['/audio/music/gnome-spellcaster.mp3', 1900000], ['/audio/music/dwarf-arena.mp3', 1500000]]) {
+    const r = await request.get(u);
+    expect(r.status(), u).toBe(200);
+    expect((await r.body()).length, `${u}: Ken's file as given`).toBeGreaterThan(min);
+  }
   const music = async () => (await page.evaluate(async () => await window.oreheart.getAudioState())).music;
-  await start(page, { ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [] } });
+  const TRACK = { goblins: 'first-fight', gnomes: 'gnome-spellcaster', dwarves: 'dwarf-arena' };
+  const match = async (who, pc, oc, expectArena) => {
+    await page.goto('/?test=1&seed=7');
+    await page.waitForFunction(() => !!window.oreheart);
+    await page.evaluate((w) => window.oreheart.setArenaPick(w), who);
+    await page.evaluate(([a, b]) => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: a, opponentCommander: b, setup: { opponentHand: [] } }), [pc, oc]);
+    await page.mouse.click(5, 5);
+    await expect.poll(async () => (await music()).track, { timeout: 10000, message: `${pc} vs ${oc} (${who}) plays ${TRACK[expectArena]}` }).toBe(TRACK[expectArena]);
+    const m = await music();
+    expect(m.arena).toBe(expectArena);
+    await expect.poll(async () => (await music()).playing, { timeout: 10000 }).toBe(true);
+    expect(m.gain, 'at the same music volume as before').toBeCloseTo((m.volume / 100) * 0.5, 3);
+  };
+  await match('player', 'grubnak', 'borgo', 'goblins');      // goblin player, dwarf opponent: the player's arena
+  await match('opponent', 'grubnak', 'borgo', 'dwarves');    // the opponent's arena
+  await match('player', 'borgo', 'sproingle', 'dwarves');
+  await match('opponent', 'borgo', 'sproingle', 'gnomes');
+  await match('opponent', 'grubnak', 'grubnak', 'goblins');  // the same faction on both sides: that faction's arena
+  await match('opponent', 'sproingle', 'sproingle', 'gnomes');
+  // the menus keep Tense Cycle
+  await page.goto('/?test=1&seed=5');
+  await page.waitForFunction(() => !!window.oreheart);
   await page.mouse.click(5, 5);
-  await expect.poll(async () => (await music()).track, { timeout: 10000 }).toBe('first-fight');
-  await start(page, { ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'sproingle', setup: { opponentHand: [] } });
-  await page.mouse.click(5, 5); // a new page: the first tap unlocks audio again
-  await expect.poll(async () => (await music()).track, { timeout: 10000, message: 'against the gnome Commander the match plays Gnome Spellcaster' }).toBe('gnome-spellcaster');
-  await expect.poll(async () => (await music()).playing, { timeout: 10000 }).toBe(true);
-  const m = await music();
-  expect(m.gain, 'at the same music volume as before').toBeCloseTo((m.volume / 100) * 0.5, 3);
-  // and back: a goblin-arena match again plays First Fight
-  await start(page, { ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [] } });
-  await page.mouse.click(5, 5);
-  await expect.poll(async () => (await music()).track, { timeout: 10000 }).toBe('first-fight');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect.poll(async () => (await music()).track).toBe('tense-cycle');
+  // unforced, the pick follows the faction of one of the two fighters
+  await page.goto('/?test=1&seed=9');
+  await page.waitForFunction(() => !!window.oreheart);
+  await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [] } }));
+  expect(['goblins', 'dwarves']).toContain((await music()).arena);
 });
 // ---------- AC514-AC516 (Ken, Oct 31: no triangle bonus against Miners) ----------
 // The faction triangle (+1: dwarves hit goblins, gnomes hit dwarves, goblins hit gnomes) no longer applies when the creature being hit is a Miner

@@ -11,7 +11,7 @@ import { STANCES } from '../ai/stances';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters } from './decks';
 import { brewActions, flowShardCount, deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
-import { audio, arenaOf } from './audio';
+import { audio, pickArena } from './audio';
 import { getHighlights, setHighlights, resetHighlights, getRings, setRings, resetRings, edgeOf, glowOf, mainOf, ringColor, applyHighlightVars } from './fx-settings';
 import { loadGrubnak3d } from './grubnak3d';
 import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
@@ -1141,9 +1141,21 @@ export class App {
     arenaOpts.extra = (o.setup && o.setup.arenaExtraEffects) || [];
     const state = this.game.newMatch(o);
     applyHighlightVars(this.game.state.players.player.faction);
+    this.arenaFaction = ''; this.pickMatchArena(o.seed); /* a new match: a new arena pick */
     this.showMatch();
     this.update(this.game.state, []);
     return state;
+  }
+
+  /** Ken, Oct 31: each match is fought in the arena of the player's faction or of the opponent's, 50-50. In test pages the roll comes from the seed so checks are repeatable;
+   *  `arenaForce` ('player' | 'opponent') lets a check choose. */
+  arenaFaction = '';
+  arenaForce: '' | 'player' | 'opponent' = '';
+  pickMatchArena(seed?: number): string {
+    const p = this.game.state.players;
+    const roll = this.arenaForce ? (this.arenaForce === 'player' ? 0 : 0.99) : this.test ? ((Math.abs(((seed ?? this.seed ?? 0) | 0)) % 2) ? 0.99 : 0) : Math.random();
+    this.arenaFaction = pickArena(p.player.faction, p.opponent.faction, roll);
+    return this.arenaFaction;
   }
 
   beginTutorial() {
@@ -1151,6 +1163,7 @@ export class App {
     this.fxLog = [];
     const state = this.game.startTutorial();
     applyHighlightVars(this.game.state.players.player.faction);
+    this.arenaFaction = ''; this.pickMatchArena();
     this.showMatch();
     this.update(this.game.state, []);
     return state;
@@ -1177,7 +1190,7 @@ export class App {
   showMatch() {
     this.handKey = ''; this.fitKey = '';
     this.clear();
-    audio.setMatchArena(arenaOf(this.game.state.players.opponent.faction)); /* Oct 31: the match music belongs to the arena */
+    audio.setMatchArena(this.arenaFaction || this.pickMatchArena()); /* Oct 31: the match music belongs to the arena */
     audio.setMusicMode('match');
     const r = this.r;
     const fcol = FACTIONS[this.game.state.players.player.faction].crystal;

@@ -129,6 +129,7 @@ if (test) {
     getAudioState: () => audio.state(),
     setVoicesOn: (on: boolean) => audio.setVoicesOn(on), // Oct 31: unit voices switch (off until Ken approves the reel)
     voiceEvent: (ev: 'select' | 'hurt' | 'special', unit: string, who: string, big?: boolean) => audio.speak(ev, unit, who, !!big),
+    setArenaPick: (who: '' | 'player' | 'opponent') => { app.arenaForce = who; return who; }, // checks only: force which faction's arena (and music) the next match uses
     setMixRules: (r: any) => { Object.assign(MIX, r); return { ...MIX }; }, // checks only: {enabled:false} plays every sound as asked (the sound-file checks), default is Brush's mix rules
     setVoiceRules: (r: any) => { Object.assign(VOICE, r); return { ...VOICE }; }, // checks only: shorten the voice cooldown / gap
     playSfx: (name: string, faction?: string) => audio.play(name, faction),
