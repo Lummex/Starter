@@ -593,6 +593,7 @@ const _embV = new THREE.Vector3();
     return (d / (f.run ? RUN_SPEED : WALK_SPEED)) * 1000;
   }
   const figs = new Map<string, Fig>();
+  let lastChimeAt = -1e9;
   // Owner fix (Ken, Oct 28): Junk Shaman carry. The carried figure hangs just under the pointer, raised above the board
   const CARRY_UP = 0.45;
   let carry: { uid: string; holder: string; pos: THREE.Vector3; h: number } | null = null;
@@ -1123,7 +1124,7 @@ const _embV = new THREE.Vector3();
         f.mineT = now;
         const m = world(e.row, e.col);
         f.faceTo = Math.atan2(m.x - f.target.x, m.z - f.target.z); f.faceUntil = now + 1000;
-        setTimeout(() => { spawnFx('spark', m, 4); audio.play('pick'); audio.play('chime'); }, 220);
+        setTimeout(() => { spawnFx('spark', m, 4); audio.play('pick'); if (now - lastChimeAt > 20000) { lastChimeAt = now; audio.play('chime'); } /* Brush: the chime once in a while, never on every pick */ }, 220);
       } else if (e.type === 'bowl') {
         const bf = figs.get(e.uid) || null;
         let rel = 300;

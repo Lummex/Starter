@@ -2971,7 +2971,7 @@ test('AC88: volume sliders and the match mute button are remembered', async ({ p
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const sfx = page.getByLabel('Sound effects', { exact: true });
   const voices = page.getByLabel('Voices', { exact: true });
-  await expect(sfx).toHaveValue('80');
+  await expect(sfx).toHaveValue('56'); // owner change (Ken, Oct 31: the default effects volume is a little lower; was 80)
   await expect(voices).toHaveValue('80');
   await sfx.fill('35');
   await voices.fill('10');
@@ -12223,14 +12223,14 @@ test('AC483: the Done button is the size of the Menu button, both have their con
 // ---------- Oct 31: Brush's sound files (Ken: "the game sounds good. Implement them.") ----------
 // studio/sound-spec.json: event -> file(s), base volume, random pitch range in semitones (+/- 1.5 dB volume on top)
 const SFX_SPEC = {
-  click: [['ui-click'], 0.7, 0.5], tick: [['ui-tick'], 0.6, 0.3], chime: [['ui-chime'], 0.7, 0], draw: [['card-draw'], 0.7, 1], cardPlay: [['card-play'], 0.8, 0.7],
-  summon: [['summon'], 0.85, 0.5], 'step:goblins': [['step-goblin'], 0.5, 1.5], 'step:gnomes': [['step-gnome'], 0.5, 1.5], 'step:dwarves': [['step-dwarf'], 0.55, 1.2],
+  click: [['ui-click'], 0.7, 0.5], tick: [['ui-tick'], 0.6, 0.3], chime: [['ui-chime'], 0.55, 0], draw: [['card-draw'], 0.7, 1], cardPlay: [['card-play'], 0.8, 0.7],
+  summon: [['summon-1', 'summon-2', 'summon-3'], 0.6, 0.8], 'step:goblins': [['step-goblin'], 0.5, 1.5], 'step:gnomes': [['step-gnome'], 0.5, 1.5], 'step:dwarves': [['step-dwarf'], 0.55, 1.2],
   // Oct 31 (Brush): the projectile sounds
   'shot-rifle': [['shot-rifle'], 0.9, 0.8], 'shot-cannon': [['shot-cannon'], 1, 0.5], 'throw-whoosh': [['throw-whoosh'], 0.8, 1.5], 'cast-zap': [['cast-zap'], 0.85, 1],
-  'cast-hex': [['cast-hex'], 0.8, 1], 'fireball-whoosh': [['fireball-whoosh'], 0.85, 1], 'bowl-roll': [['bowl-roll'], 0.6, 0], 'skull-crack': [['skull-crack'], 0.9, 1],
+  'cast-hex': [['cast-hex'], 0.7, 1], 'fireball-whoosh': [['fireball-whoosh'], 0.85, 1], 'bowl-roll': [['bowl-roll'], 0.6, 0], 'skull-crack': [['skull-crack'], 0.9, 1],
   'book-thud': [['book-thud'], 0.9, 1], 'zap-hit': [['zap-hit'], 0.9, 1], 'fire-burst': [['fire-burst'], 0.9, 0.8], 'pins-scatter': [['pins-scatter'], 0.95, 0.8],
   melee: [['melee'], 0.9, 1], ranged: [['ranged'], 0.85, 1], bonk: [['bonk-1', 'bonk-2', 'bonk-3'], 0.9, 1], clink: [['clink-1', 'clink-2', 'clink-3'], 0.85, 0.8],
-  thud: [['thud'], 0.85, 1], pick: [['mine-pick'], 0.8, 1], shatter: [['shatter'], 0.85, 0.5], 'defeat-poof': [['defeat-poof'], 0.85, 0.8],
+  thud: [['thud'], 0.85, 1], pick: [['mine-pick'], 0.6, 1], shatter: [['shatter'], 0.85, 0.5], 'defeat-poof': [['defeat-poof'], 0.85, 0.8],
   stronghold: [['commander-hit'], 1, 0.5], kaboom: [['kaboom'], 1, 0.5], 'turn-start': [['turn-start'], 0.85, 0], win: [['win'], 1, 0], lose: [['lose'], 1, 0],
 };
 const SFX_SPELLS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-rush', 'battle-cry', 'healing-light', 'shield-bubble', 'second-wind', 'prospectors-prayer', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex'];
@@ -12238,7 +12238,7 @@ for (const id of SFX_SPELLS) SFX_SPEC['spell:' + id] = [['spell-' + id], 1, 0];
 const sfxState = async (page) => (await page.evaluate(async () => await window.oreheart.getAudioState())).sfx;
 async function sfxReady(page) {
   await page.mouse.click(5, 5); // first gesture unlocks audio; the files load after it
-  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 51 sound files decoded (39 + the 12 projectile sounds, Oct 31)', timeout: 20000 }).toBe(51);
+  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 53 sound files decoded (Oct 31: 3 summon variants replace the one summon)', timeout: 20000 }).toBe(53);
 }
 const playKey = (page, key) => page.evaluate((k) => {
   if (k.startsWith('spell:')) window.oreheart.playSpellSound(k.slice(6));
@@ -12687,7 +12687,7 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
       ] }));
       await done(page);
       const man = await voicesReady(page, request);
-      await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 51 sound files decoded (with the 12 projectile sounds)', timeout: 20000 }).toBe(51);
+      await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 53 sound files decoded (with the 12 projectile sounds, 3 summon variants)', timeout: 20000 }).toBe(53);
       await expect.poll(async () => (await sfxState(page)).punchLoaded, { message: 'all 6 punch files decoded', timeout: 20000 }).toBe(6);
       await unitLoaded(page, 'goblin-sneak', man); await unitLoaded(page, 'dwarf-pickman', man);
       // --- the hurt rule, through the voice hook: 35 % of small hits get a line, every big hit does
@@ -12828,4 +12828,32 @@ test('AC513: the unit voices are on, and every line plays at the same loudness (
   expect(played.length, 'select lines played from files').toBeGreaterThan(0);
   for (const e of played) expect(e.gain, `${e.line} played with its manifest gain`).toBeCloseTo(lines[e.line], 2);
   expect(errors).toEqual([]);
+});
+
+// Brush / Ken (Oct 31): summon = 3 "materialize" variants (never the same twice in a row), the mining clink at most once per 0.4 s, the chime not on every pick;
+// Ken: "the sound effects default sound is too high. They should be down a little lower." (starting volume only; a saved volume is kept)
+test('AC524: summon plays 3 variants without repeating, the mining clink is limited to one per 0.4 s, and the default Sound effects volume starts lower while a saved volume is kept', async ({ page, context }) => {
+  test.setTimeout(90000);
+  await start(page, quiet({ playerHand: [] }));
+  await sfxReady(page);
+  const base = (await sfxState(page)).plays.length;
+  for (let i = 0; i < 12; i++) await playKey(page, 'summon');
+  const s = (await sfxState(page)).plays.slice(base).filter((p) => p.key === 'summon').map((p) => p.file);
+  expect(s.length).toBe(12);
+  for (let i = 1; i < s.length; i++) expect(s[i], `summon ${i} differs from summon ${i - 1}`).not.toBe(s[i - 1]);
+  expect(new Set(s).size, 'all three variants are used').toBe(3);
+  expect(s.every((f) => /\/audio\/sfx\/summon-[123]\.ogg$/.test(f))).toBe(true);
+  const n1 = (await sfxState(page)).plays.length;
+  await page.evaluate(() => { for (let i = 0; i < 6; i++) window.oreheart.playSfx('pick'); });
+  expect((await sfxState(page)).plays.slice(n1).filter((p) => p.key === 'pick').length, 'six quick picks make one sound').toBe(1);
+  await page.waitForTimeout(450);
+  await page.evaluate(() => window.oreheart.playSfx('pick'));
+  expect((await sfxState(page)).plays.slice(n1).filter((p) => p.key === 'pick').length, 'a pick 0.45 s later plays again').toBe(2);
+  // default volume: a fresh player starts at 56 (was 80); a saved volume stays as the player set it
+  expect((await page.evaluate(async () => (await window.oreheart.getAudioState()).sfxVolume)), 'fresh start: Sound effects volume 56').toBe(56);
+  await page.evaluate(() => localStorage.setItem('oreheart.sfxVolume', '80'));
+  await page.reload();
+  await start(page, quiet({ playerHand: [] }));
+  expect((await page.evaluate(async () => (await window.oreheart.getAudioState()).sfxVolume)), 'a saved 80 stays 80').toBe(80);
+  await page.evaluate(() => localStorage.removeItem('oreheart.sfxVolume'));
 });

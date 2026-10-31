@@ -10,16 +10,16 @@ const D = (files: string | string[], vol: number, st: number): SfxDef => ({ file
 export const sfxUrl = (file: string) => `/audio/sfx/${file}.ogg`;
 /** Event -> files, from studio/sound-spec.json (Brush, Oct 31). Keys are the audio.play() names; footsteps are step:<faction>, spells spell:<id>. */
 export const SFX: Record<string, SfxDef> = {
-  click: D('ui-click', 0.7, 0.5), tick: D('ui-tick', 0.6, 0.3), chime: D('ui-chime', 0.7, 0), draw: D('card-draw', 0.7, 1), cardPlay: D('card-play', 0.8, 0.7),
-  summon: D('summon', 0.85, 0.5), 'step:goblins': D('step-goblin', 0.5, 1.5), 'step:gnomes': D('step-gnome', 0.5, 1.5), 'step:dwarves': D('step-dwarf', 0.55, 1.2),
+  click: D('ui-click', 0.7, 0.5), tick: D('ui-tick', 0.6, 0.3), chime: D('ui-chime', 0.55, 0), draw: D('card-draw', 0.7, 1), cardPlay: D('card-play', 0.8, 0.7),
+  summon: D(['summon-1', 'summon-2', 'summon-3'], 0.6, 0.8), 'step:goblins': D('step-goblin', 0.5, 1.5), 'step:gnomes': D('step-gnome', 0.5, 1.5), 'step:dwarves': D('step-dwarf', 0.55, 1.2),
   melee: D('melee', 0.9, 1), ranged: D('ranged', 0.85, 1), bonk: D(['bonk-1', 'bonk-2', 'bonk-3'], 0.9, 1), clink: D(['clink-1', 'clink-2', 'clink-3'], 0.85, 0.8),
-  thud: D('thud', 0.85, 1), pick: D('mine-pick', 0.8, 1), shatter: D('shatter', 0.85, 0.5), 'defeat-poof': D('defeat-poof', 0.85, 0.8),
+  thud: D('thud', 0.85, 1), pick: D('mine-pick', 0.6, 1), shatter: D('shatter', 0.85, 0.5), 'defeat-poof': D('defeat-poof', 0.85, 0.8),
   stronghold: D('commander-hit', 1, 0.5), kaboom: D('kaboom', 1, 0.5), 'turn-start': D('turn-start', 0.85 * 0.6, 0), win: D('win', 1, 0), lose: D('lose', 1, 0),
   // Oct 31 (Ken: "realistic punches"): layered under the hit sounds inside play() (studio/voice-spec.json "punches")
   punch: D(['punch-1', 'punch-2', 'punch-3'], 0.8, 1), 'punch-armour': D(['punch-armour-1', 'punch-armour-2'], 0.8, 1), 'punch-heavy': D('punch-heavy', 0.9, 1),
   // Oct 31 (Brush, studio/sound-spec.json): each projectile's own firing sound at its release and impact sound on landing
   'shot-rifle': D('shot-rifle', 0.9, 0.8), 'shot-cannon': D('shot-cannon', 1, 0.5), 'throw-whoosh': D('throw-whoosh', 0.8, 1.5), 'cast-zap': D('cast-zap', 0.85, 1),
-  'cast-hex': D('cast-hex', 0.8, 1), 'fireball-whoosh': D('fireball-whoosh', 0.85, 1), 'bowl-roll': D('bowl-roll', 0.6, 0), 'skull-crack': D('skull-crack', 0.9, 1),
+  'cast-hex': D('cast-hex', 0.7, 1), 'fireball-whoosh': D('fireball-whoosh', 0.85, 1), 'bowl-roll': D('bowl-roll', 0.6, 0), 'skull-crack': D('skull-crack', 0.9, 1),
   'book-thud': D('book-thud', 0.9, 1), 'zap-hit': D('zap-hit', 0.9, 1), 'fire-burst': D('fire-burst', 0.9, 0.8), 'pins-scatter': D('pins-scatter', 0.95, 0.8),
 };
 /** Which firing (at the release) and impact (on landing) sound each shooter's projectile plays; the hit's bonk/clink and punch still play under it. */
@@ -35,6 +35,10 @@ export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-
 for (const id of SPELL_SOUNDS) SFX['spell:' + id] = D('spell-' + id, 1, 0);
 const OLD_SPELL: Record<string, string> = { fireball: 'fireball', 'meteor-strike': 'meteor', 'healing-light': 'heal', 'second-wind': 'heal', 'shield-bubble': 'bubble' };
 const MAX_VOICES = 3;
+/** Oct 31 (Brush: "fires constantly"): the mining clink plays at most once per 0.4 s. */
+const MIN_GAP_MS: Record<string, number> = { pick: 400 };
+/** Ken, Oct 31: "the sound effects default sound is too high": the starting Sound effects volume is 56 (was 80, about -3 dB). A volume the player saved is kept as it is. */
+export const DEFAULT_SFX_VOLUME = 56;
 /** Ken's switch for the unit voices. ON since Oct 31 (Ken: "the voices are all right"); false puts the old grunts back exactly as before. */
 export const VOICES_ON = true;
 /** Ken's voice rules (studio/voice-spec.json v2, Oct 31): 8 s per unit, one voice at a time, 1.2 s between voices, hurt 35 % (always on a big hit),
@@ -67,7 +71,7 @@ export type SfxPlay = { key: string; file: string | null; from: 'file' | 'synth'
 class AudioEngine {
   ctx: AudioContext | null = null;
   unlocked = false;
-  sfx = LS('oreheart.sfxVolume', 80);
+  sfx = LS('oreheart.sfxVolume', DEFAULT_SFX_VOLUME);
   voice = LS('oreheart.voiceVolume', 80);
   muted = localStorage.getItem('oreheart.muted') === '1';
   private sfxGain: GainNode | null = null;
@@ -212,7 +216,10 @@ class AudioEngine {
   }
   /** Plays a named effect: its sound file when loaded, otherwise the old synthesized sound. Unknown names are ignored. */
   /** `punch` overrides the hit's usual punch layer (Forge, Oct 31: a bowled-over unit gets the heavy punch). */
+  private lastAt: Record<string, number> = {};
   play(name: string, faction = 'goblins', punch?: string) {
+    const gap = MIN_GAP_MS[name];
+    if (gap) { const t = performance.now(); if (t - (this.lastAt[name] ?? -1e9) < gap) return; this.lastAt[name] = t; }
     const e = this.playKey(name === 'step' ? 'step:' + faction : name, () => this.synth(name, faction));
     const pk = punch || PUNCH_FOR[name];
     if (pk && e.played) e.punch = this.punch(pk);
