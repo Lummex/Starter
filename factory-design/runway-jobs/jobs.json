@@ -551,6 +551,15 @@
    "duration": 10,
    "ratio": "1280:720",
    "prompt": "Painted dark-fantasy card illustration comes to life, cinematic. The jolly dwarf miner with the blue crystal-studded braided beard and miner helmet lowers his pickaxe, picks a glowing blue crystal from his pouch and chomps it happily; his cheeks glow blue, his eyes go swirly and dizzy, he hiccups and sways in a happy drunken wobble, grinning. Blue crystals glitter and sparkle all around the mine. Keep his face, beard, helmet and outfit exactly as in the picture. Slow gentle camera push-in. Comic and kid-friendly."
+  },
+  {
+   "id": "intro-test-delver-2",
+   "character": "dwarf-crystal-drunk-delver",
+   "move": "intro-test",
+   "image": "intro-test-delver-2--start.jpg",
+   "duration": 5,
+   "ratio": "720:1280",
+   "prompt": "The painting comes alive with subtle motion, keeping the exact same richly painted art style, colours, character design and face. The dwarf miner stops swinging, pulls a small glowing blue crystal from his belt pouch, pops it into his mouth and crunches it with a big happy grin, then his eyes go a little dizzy and he sways gently, tipsy and cheerful. Blue crystals sparkle in the background. Camera still. No style change, no cartoon redesign."
   }
  ]
 }
