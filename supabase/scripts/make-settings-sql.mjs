@@ -27,6 +27,8 @@ const cardIds = cards.map((c) => c.id).sort();
 // card-art avatars stay allowed for players who already picked one).
 const avatarCards = [...new Set([...read('avatars.json').map((a) => a.id), ...cards.filter((c) => !c.disabled).map((c) => c.id)])].sort();
 const commanderIds = commanders.map((c) => c.id).sort();
+// Mature avatars (Ken, Oct 31): avatar id -> safe stand-in of the same race and gender; restricted accounts never see them.
+const avatarMature = Object.fromEntries(read('avatars.json').filter((a) => a.mature && a.safe_fallback).map((a) => [a.id, a.safe_fallback]));
 
 const settings = {
   // Ken, Oct 28: "300 is fine for now". Editable in the back counter (Settings).
@@ -39,6 +41,7 @@ const settings = {
   card_ids: cardIds,
   commander_ids: commanderIds,
   avatar_cards: avatarCards,
+  avatar_mature: avatarMature,
   // Compared after private.normalize_name(): lowercase letters only, look-alikes undone.
   reserved_usernames: ['ken', 'lummex', 'forge', 'root', 'system', 'staff', 'support', 'help', 'official',
     'player', 'guest', 'null', 'undefined', 'grubnak', 'sproingle', 'knobbin', 'borgo', 'skreeka', 'sprocket', 'grumblebeard'],

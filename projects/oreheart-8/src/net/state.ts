@@ -3,6 +3,7 @@ import type { SavedDeck } from '../ui/decks';
 export const net = {
   active: false, // signed in and allowed: decks live on the server
   under13: false,
+  ageGroup: null as string | null, // the signed-in account's stored age group; null when signed out or offline (restricted)
   offlineChosen: false,
   maxDecks: 30,
   decks: [] as SavedDeck[],

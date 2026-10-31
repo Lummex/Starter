@@ -2,17 +2,31 @@
 // (all planned avatars, Ken's Goggle Rogue first); each picture is public/art/avatars/<id>.webp (512 px).
 // The picker shows an avatar as soon as its picture is in that folder, so new pictures just drop in.
 // The server's allowed list (settings avatar_cards) holds every id in avatars.json plus the old card ids.
+// Mature avatars and the age rules: mature.ts / age.ts.
 import LIST from '../content/avatars.json';
 import { CARDS } from '../engine';
 import { pictureOf } from '../ui/app';
+import { net } from './state';
+import { aiAvatars, avatarAsSeenBy, visibleAvatars, type AvatarEntry } from './mature';
 
-export interface Avatar { id: string; race: string; gender: string; label: string }
+export type Avatar = AvatarEntry;
 export const AVATAR_LIST = LIST as Avatar[];
 export const DEFAULT_AVATAR = AVATAR_LIST[0].id; // goblin-goggle-rogue
-export const RACES: [string, string][] = [['goblin', 'Goblins'], ['gnome', 'Gnomes'], ['dwarf', 'Dwarves'], ['human', 'Humans'], ['undead', 'Undead']];
+
+const RACE_LABELS: Record<string, string> = { goblin: 'Goblins', gnome: 'Gnomes', dwarf: 'Dwarves', human: 'Humans', undead: 'Undead', troll: 'Trolls' };
+/** Races in the order they first appear in Brush's list, so a new race (trolls, Oct 31) shows up by itself. */
+export const RACES: [string, string][] = [...new Set(AVATAR_LIST.map((a) => a.race))].map((r) => [r, RACE_LABELS[r] || r.charAt(0).toUpperCase() + r.slice(1) + 's']);
 
 const byId = new Map(AVATAR_LIST.map((a) => [a.id, a]));
 export const avatarById = (id: string | null | undefined) => (id ? byId.get(id) : undefined);
+
+/** The avatars the signed-in player may see and pick (restricted when signed out or offline). */
+export const pickableAvatars = () => visibleAvatars(AVATAR_LIST, net.ageGroup);
+/** Avatars for the computer players: never mature. */
+export const AI_AVATARS = aiAvatars(AVATAR_LIST);
+
+/** Another player's avatar as this viewer should see it (a restricted viewer gets the safe stand-in). */
+export const avatarForViewer = (id: string | null | undefined) => avatarAsSeenBy(AVATAR_LIST, id, net.ageGroup);
 
 /** Picture for a saved avatar: a portrait, an older card-art avatar, or the default portrait. */
 export function avatarPicture(id: string | null | undefined): string {

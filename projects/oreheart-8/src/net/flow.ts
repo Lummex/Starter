@@ -6,11 +6,11 @@ import type { App } from '../ui/app';
 import { loadBrowserDecks as loadLocalDecks } from '../ui/decks';
 import type { SavedDeck } from '../ui/decks';
 import { net } from './state';
-import { client, rpc, redirectUrl, myStatus, passwordOk, underThirteen, savedAgeGroup, saveAgeGroup, type Status } from './online';
+import { client, rpc, redirectUrl, myStatus, passwordOk, ageGroupFor, savedAgeGroup, saveAgeGroup, type Status, type AgeGroup } from './online';
 import { buildKind, mismatch } from './env-guard';
 import { pageMode } from './switch';
 import parentNotice from '../content/parent-notice.json';
-import { AVATAR_LIST, RACES, avatarPicture, avatarName } from './avatars';
+import { RACES, pickableAvatars, avatarPicture, avatarName } from './avatars';
 
 type El = HTMLElement;
 const TURNSTILE = (import.meta as any).env?.VITE_TURNSTILE_SITE_KEY as string | undefined;
@@ -95,7 +95,7 @@ async function serverCheck() {
 }
 
 function offline() {
-  net.active = false; net.offlineChosen = true; status = null;
+  net.active = false; net.offlineChosen = true; net.ageGroup = null; status = null;
   if (checkTimer) { clearInterval(checkTimer); checkTimer = null; }
   app.showMenu();
 }
@@ -152,7 +152,7 @@ function showAge() {
   const year = h('select', { id: 'birth-year', class: 'net-input' }, h('option', { value: '' }, 'Year'), ...Array.from({ length: 101 }, (_, i) => h('option', { value: String(y - i) }, String(y - i)))) as HTMLSelectElement;
   const next = nbtn('Next', () => {
     const saved = savedAgeGroup();
-    const group = saved ?? (underThirteen(+month.value, +year.value) ? 'under_13' : '13_plus');
+    const group = saved ?? ageGroupFor(+month.value, +year.value);
     if (!saved) saveAgeGroup(group);
     showSignUp(group);
   }, 'primary') as HTMLButtonElement;
@@ -166,7 +166,7 @@ function showAge() {
     h('div', { class: 'net-actions' }, next, nbtn('Back', () => showLogin())));
 }
 
-function showSignUp(group: '13_plus' | 'under_13') {
+function showSignUp(group: AgeGroup) {
   const kid = group === 'under_13';
   const user = field('Username', 'su-username', 'text', { maxlength: '32', autocapitalize: 'off', spellcheck: 'false' });
   const email = kid
@@ -285,7 +285,7 @@ function showSetPassword() {
 // ------------------------------------------------------------------ after sign-in
 async function signOut() {
   if (checkTimer) { clearInterval(checkTimer); checkTimer = null; }
-  net.active = false; net.offlineChosen = false; net.decks = []; status = null;
+  net.active = false; net.offlineChosen = false; net.decks = []; net.ageGroup = null; status = null;
   try { await client().auth.signOut(); } catch { /* ignore */ }
   showLogin();
 }
@@ -343,7 +343,7 @@ function avatarScreen(s: Status, back?: () => void) {
   };
   const grid = h('div', { class: 'net-avatars', role: 'group', 'aria-label': 'Avatars' },
     ...RACES.map(([r, label]) => {
-      const tiles = AVATAR_LIST.filter((a) => a.race === r).map((a) => {
+      const tiles = pickableAvatars().filter((a) => a.race === r).map((a) => {
         const img = h('img', { src: avatarPicture(a.id), alt: '', loading: 'eager', decoding: 'async' }) as HTMLImageElement;
         const tile = h('button', { type: 'button', class: 'net-avatar', 'aria-label': a.label, title: a.label, 'aria-pressed': String(s.avatar === a.id), hidden: true, onclick: () => { void pick(a.id); } }, img);
         const show = () => { if (img.naturalWidth > 0) { tile.hidden = false; refresh(); } };
@@ -383,6 +383,7 @@ async function afterSignIn() {
   if (my !== uid) return;
   status = s;
   net.under13 = s.age_group === 'under_13';
+  net.ageGroup = s.age_group;
   if (!checkTimer) checkTimer = setInterval(() => { void recheck(); }, 5 * 60 * 1000);
   await proceed(s);
 }

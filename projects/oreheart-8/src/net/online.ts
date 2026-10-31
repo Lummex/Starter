@@ -31,19 +31,17 @@ export const myStatus = () => rpc<Status>('my_status');
 /** Username rules / password rule shared by the forms. */
 export const passwordOk = (p: string) => p.length >= 10 && /[a-z]/.test(p) && /[A-Z]/.test(p) && /[0-9]/.test(p);
 
-export function underThirteen(month: number, year: number, now = new Date()): boolean {
-  const months = (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month);
-  return months < 13 * 12;
-}
+export { underThirteen, sixteenPlus, ageGroupFor, type AgeGroup } from './age';
+import { AGE_GROUPS, type AgeGroup } from './age';
 
 const GATE = 'oreheart.ageGate';
-export function savedAgeGroup(now = Date.now()): '13_plus' | 'under_13' | null {
+export function savedAgeGroup(now = Date.now()): AgeGroup | null {
   try {
     const v = JSON.parse(localStorage.getItem(GATE) || 'null');
-    if (v && (v.group === '13_plus' || v.group === 'under_13') && typeof v.at === 'number' && now - v.at < 24 * 3600 * 1000) return v.group;
+    if (v && AGE_GROUPS.includes(v.group) && typeof v.at === 'number' && now - v.at < 24 * 3600 * 1000) return v.group;
   } catch { /* ignore */ }
   return null;
 }
-export function saveAgeGroup(group: '13_plus' | 'under_13') {
+export function saveAgeGroup(group: AgeGroup) {
   try { localStorage.setItem(GATE, JSON.stringify({ group, at: Date.now() })); } catch { /* storage unavailable */ }
 }

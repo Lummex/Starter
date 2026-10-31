@@ -3,7 +3,7 @@
   "id": "goblin-goggle-rogue",
   "race": "goblin",
   "gender": "f",
-  "label": "Goggle Rogue (Ken)"
+  "label": "Goggle Rogue"
  },
  {
   "id": "goblin-girl",
@@ -90,22 +90,46 @@
   "label": "Old Professor"
  },
  {
+  "id": "dwarf-woman",
+  "race": "dwarf",
+  "gender": "f",
+  "label": "Shieldmaiden"
+ },
+ {
+  "id": "human-man",
+  "race": "human",
+  "gender": "m",
+  "label": "Knight-Ranger"
+ },
+ {
+  "id": "human-girl",
+  "race": "human",
+  "gender": "f",
+  "label": "Apprentice Wizard"
+ },
+ {
+  "id": "undead-girl",
+  "race": "undead",
+  "gender": "f",
+  "label": "Skeleton Princess"
+ },
+ {
   "id": "gnome-stormmage",
   "race": "gnome",
   "gender": "m",
   "label": "Storm Mage"
  },
  {
-  "id": "gnome-guard",
-  "race": "gnome",
-  "gender": "m",
-  "label": "Gear Guardian"
- },
- {
   "id": "gnome-pilot",
   "race": "gnome",
   "gender": "m",
   "label": "Sky Pilot"
+ },
+ {
+  "id": "gnome-warty-tinker",
+  "race": "gnome",
+  "gender": "m",
+  "label": "Warty Tinker"
  },
  {
   "id": "gnome-kid",
@@ -138,24 +162,6 @@
   "label": "Crystal Singer"
  },
  {
-  "id": "gnome-kid-girl",
-  "race": "gnome",
-  "gender": "f",
-  "label": "Gadget Kid"
- },
- {
-  "id": "gnome-alchemist",
-  "race": "gnome",
-  "gender": "f",
-  "label": "Alchemist"
- },
- {
-  "id": "dwarf-woman",
-  "race": "dwarf",
-  "gender": "f",
-  "label": "Shieldmaiden"
- },
- {
   "id": "dwarf-miner",
   "race": "dwarf",
   "gender": "m",
@@ -168,22 +174,16 @@
   "label": "Elder Thane"
  },
  {
-  "id": "dwarf-smith",
+  "id": "dwarf-lumpy-guard",
   "race": "dwarf",
   "gender": "m",
-  "label": "Forge Smith"
+  "label": "Lumpy Guard"
  },
  {
   "id": "dwarf-kid-boy",
   "race": "dwarf",
   "gender": "m",
   "label": "Young Recruit"
- },
- {
-  "id": "dwarf-guard",
-  "race": "dwarf",
-  "gender": "m",
-  "label": "Anvil Guard"
  },
  {
   "id": "dwarf-brewer",
@@ -210,28 +210,10 @@
   "label": "Rifle Ranger"
  },
  {
-  "id": "dwarf-healer",
-  "race": "dwarf",
-  "gender": "f",
-  "label": "Rune Healer"
- },
- {
   "id": "dwarf-granny",
   "race": "dwarf",
   "gender": "f",
   "label": "Iron Granny"
- },
- {
-  "id": "human-man",
-  "race": "human",
-  "gender": "m",
-  "label": "Knight-Ranger"
- },
- {
-  "id": "human-girl",
-  "race": "human",
-  "gender": "f",
-  "label": "Apprentice Wizard"
  },
  {
   "id": "human-paladin",
@@ -258,12 +240,6 @@
   "label": "Squire Kid"
  },
  {
-  "id": "human-bard",
-  "race": "human",
-  "gender": "m",
-  "label": "Bard"
- },
- {
   "id": "human-archer-girl",
   "race": "human",
   "gender": "f",
@@ -282,22 +258,10 @@
   "label": "Little Explorer"
  },
  {
-  "id": "human-queen",
+  "id": "human-swamp-hag",
   "race": "human",
   "gender": "f",
-  "label": "Queen"
- },
- {
-  "id": "human-merchant",
-  "race": "human",
-  "gender": "f",
-  "label": "Merchant"
- },
- {
-  "id": "undead-girl",
-  "race": "undead",
-  "gender": "f",
-  "label": "Skeleton Princess"
+  "label": "Swamp Hag"
  },
  {
   "id": "undead-knight",
@@ -318,22 +282,10 @@
   "label": "Zombie Farmer"
  },
  {
-  "id": "undead-lich",
-  "race": "undead",
-  "gender": "m",
-  "label": "Lich Lord"
- },
- {
   "id": "undead-vampire",
   "race": "undead",
   "gender": "m",
   "label": "Vampire Count"
- },
- {
-  "id": "undead-pirate",
-  "race": "undead",
-  "gender": "m",
-  "label": "Skeleton Pirate"
  },
  {
   "id": "undead-ghost-lady",
@@ -360,9 +312,51 @@
   "label": "Zombie Punk"
  },
  {
-  "id": "undead-banshee",
-  "race": "undead",
+  "id": "troll-chieftain",
+  "race": "troll",
+  "gender": "m",
+  "label": "Troll Chieftain"
+ },
+ {
+  "id": "troll-bog-brute",
+  "race": "troll",
+  "gender": "m",
+  "label": "Bog Brute"
+ },
+ {
+  "id": "troll-hunter",
+  "race": "troll",
+  "gender": "m",
+  "label": "Troll Hunter"
+ },
+ {
+  "id": "troll-kid",
+  "race": "troll",
+  "gender": "m",
+  "label": "Troll Kid"
+ },
+ {
+  "id": "troll-shaman-woman",
+  "race": "troll",
   "gender": "f",
-  "label": "Banshee"
+  "label": "Troll Shaman"
+ },
+ {
+  "id": "troll-warrior-woman",
+  "race": "troll",
+  "gender": "f",
+  "label": "Troll Warrior"
+ },
+ {
+  "id": "troll-granny",
+  "race": "troll",
+  "gender": "f",
+  "label": "Troll Granny"
+ },
+ {
+  "id": "troll-cave-girl",
+  "race": "troll",
+  "gender": "f",
+  "label": "Cave Girl"
  }
 ]

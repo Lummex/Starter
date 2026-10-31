@@ -194,6 +194,42 @@ select pg_temp.works('set_avatar accepts a painted portrait (Oct 31)', :P1, 'aal
 select pg_temp.ok('portrait stored', (select avatar from public.profiles where id = :P1) = 'goblin-goggle-rogue');
 select pg_temp.works('set_avatar still accepts card art', :P1, 'aal1', $q$ select public.set_avatar('goblin-scrounger') $q$);
 
+-- ========== Mature avatars + 16+ (Ken, Oct 31) ==========
+-- For the test, mark one avatar mature with a safe stand-in (rolled back with everything else).
+update public.settings set value = '{"goblin-girl":"goblin-granny"}'::jsonb where key = 'avatar_mature';
+select pg_temp.ok('a new account is 13_plus unless it said 16_plus',
+  (select age_group from public.profiles where id = :P1) = '13_plus');
+select pg_temp.refused('restricted (13_plus) account cannot save a mature avatar', :P1, 'aal1',
+  $q$ select public.set_avatar('goblin-girl') $q$, 'can''t be an avatar');
+select pg_temp.ok('the refusal says nothing about age',
+  position('age' in (pg_temp.json_as(:P1, 'aal1', $q$ select public.set_avatar('goblin-girl') $q$) ->> 'error')) = 0);
+select pg_temp.ok('restricted viewer sees the safe stand-in for someone else''s mature avatar, real ones untouched',
+  pg_temp.json_as(:P2, 'aal1', $q$ select to_jsonb(public.avatar_as_seen_by('goblin-girl')) $q$) = to_jsonb('goblin-granny'::text)
+  and pg_temp.json_as(:P2, 'aal1', $q$ select to_jsonb(public.avatar_as_seen_by('goblin-sneak')) $q$) = to_jsonb('goblin-sneak'::text)
+  and pg_temp.json_as(:P2, 'aal1', $q$ select to_jsonb(public.avatar_as_seen_by('fizzle')) $q$) = to_jsonb('fizzle'::text));
+select pg_temp.refused('signed-out cannot ask avatar_as_seen_by', null, null, $q$ select public.avatar_as_seen_by('goblin-girl') $q$);
+select pg_temp.refused('players cannot set an age group', :P1, 'aal1', $q$ select public.admin_set_age_group('b0000000-0000-4000-8000-000000000001', '16_plus', 'me') $q$);
+select pg_temp.refused('admin: age group must be 13_plus or 16_plus', :A1, 'aal2', $q$ select public.admin_set_age_group('b0000000-0000-4000-8000-000000000001', 'adult', 'typo') $q$);
+select pg_temp.refused('admin: needs a reason', :A1, 'aal2', $q$ select public.admin_set_age_group('b0000000-0000-4000-8000-000000000001', '16_plus', '') $q$, 'reason');
+select pg_temp.works('admin marks Player_One 16+ with a reason', :A1, 'aal2', $q$ select public.admin_set_age_group('b0000000-0000-4000-8000-000000000001', '16_plus', 'owner confirmed age') $q$);
+select pg_temp.ok('age group change is stored and audited',
+  (select age_group from public.profiles where id = :P1) = '16_plus'
+  and (select count(*) from public.admin_audit where action = 'set_age_group' and target_user = :P1) = 1);
+select pg_temp.works('16+ account saves the mature avatar', :P1, 'aal1', $q$ select public.set_avatar('goblin-girl') $q$);
+select pg_temp.ok('16+ viewer sees the real pick; restricted viewer still sees the stand-in',
+  pg_temp.json_as(:P1, 'aal1', $q$ select to_jsonb(public.avatar_as_seen_by('goblin-girl')) $q$) = to_jsonb('goblin-girl'::text)
+  and pg_temp.json_as(:P2, 'aal1', $q$ select to_jsonb(public.avatar_as_seen_by('goblin-girl')) $q$) = to_jsonb('goblin-granny'::text));
+select pg_temp.works('admin puts Player_One back to 13_plus', :A1, 'aal2', $q$ select public.admin_set_age_group('b0000000-0000-4000-8000-000000000001', '13_plus', 'test') $q$);
+select pg_temp.ok('a now-restricted account loses its mature avatar for the safe stand-in',
+  (select avatar from public.profiles where id = :P1) = 'goblin-granny');
+select pg_temp.works('Player_One back on card art', :P1, 'aal1', $q$ select public.set_avatar('goblin-scrounger') $q$);
+insert into auth.users (id, aud, role, email, raw_user_meta_data, email_confirmed_at) values
+  ('e0000000-0000-4000-8000-000000000016', 'authenticated', 'authenticated', 'adult@test.local', '{"username":"GrownGrub","age_group":"16_plus"}', now());
+select pg_temp.ok('sign-up that said 16_plus is stored as 16_plus (no birth date anywhere)',
+  (select age_group = '16_plus' and consent_status = 'not_needed' from public.profiles where id = 'e0000000-0000-4000-8000-000000000016')
+  and position('birth' in (select raw_user_meta_data::text from auth.users where id = 'e0000000-0000-4000-8000-000000000016')) = 0);
+update public.settings set value = '{}'::jsonb where key = 'avatar_mature';
+
 select pg_temp.works('save_deck: new deck', :P1, 'aal1',
   $q$ select public.save_deck(null, 'Junk Rush', 'grubnak', array['goblin-scrounger','goblin-scrounger','fizzle']) $q$);
 do $$ declare did uuid := (select id from public.decks where user_id = 'b0000000-0000-4000-8000-000000000001' and name = 'Junk Rush');
@@ -335,11 +371,11 @@ insert into public.bans (user_id, reason) values ('a0000000-0000-4000-8000-00000
 select pg_temp.refused('banned admin is refused', 'a0000000-0000-4000-8000-000000000002', 'aal2',
   $q$ select * from public.admin_list_players('', 1, 25) $q$, 'not admin');
 
-select pg_temp.ok('audit log page shows every grant, ban and unban (3)',
-  pg_temp.count_as(:A1, 'aal2', $q$ select * from public.admin_audit_log(1, 50, null) $q$) = 3);
+select pg_temp.ok('audit log page shows every grant, ban, unban and age-group change (3 + 2)',
+  pg_temp.count_as(:A1, 'aal2', $q$ select * from public.admin_audit_log(1, 50, null) $q$) = 5);
 select pg_temp.ok('audit log filter by player',
   pg_temp.count_as(:A1, 'aal2', $q$ select * from public.admin_audit_log(1, 50, 'b0000000-0000-4000-8000-000000000002') $q$) = 0
-  and pg_temp.count_as(:A1, 'aal2', $q$ select * from public.admin_audit_log(1, 50, 'b0000000-0000-4000-8000-000000000001') $q$) = 3);
+  and pg_temp.count_as(:A1, 'aal2', $q$ select * from public.admin_audit_log(1, 50, 'b0000000-0000-4000-8000-000000000001') $q$) = 5);
 
 -- ========== 4b. Card tracing (ids, first owner, history; ready for trading) ==========
 do $$ declare cid uuid := (select id from public.card_instances where owner_id = 'b0000000-0000-4000-8000-000000000001' and card_id = 'fizzle' order by id limit 1);

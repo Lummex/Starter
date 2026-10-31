@@ -22,6 +22,10 @@ const CONSENT_TEXT: Record<string, [string, string]> = {
   approved: ['Under 13: parent approved', 'ok'],
   revoked: ['Under 13: approval withdrawn', 'bad'],
 };
+// Age group (Ken, Oct 31): back-counter only; players are never told. 16+ may see and pick the mature avatars.
+const AGE_TEXT: Record<string, string> = { '16_plus': '16+', '13_plus': '13 to 15 (or unconfirmed)', under_13: 'Under 13' };
+export const ageLabel = (g: string) => AGE_TEXT[g] ?? g;
+
 export function consentLabel(status: string) {
   const [t, c] = CONSENT_TEXT[status] ?? [status, 'muted'];
   return h('span', { class: `pill ${c}`, 'data-testid': 'consent-state' }, t);
@@ -128,6 +132,10 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
 
   // --- Rename ---
   const newName = h('input', { type: 'text', required: true, pattern: '[A-Za-z0-9_]{3,16}', maxlength: 16, value: d.profile.username, 'data-testid': 'rename-name' });
+  const ageSel = h('select', { 'data-testid': 'age-group' }, ...(['13_plus', '16_plus'] as const).map((g) => h('option', { value: g, selected: d.profile.age_group === g }, ageLabel(g))));
+  const ageForm = actionForm('age-group', [h('label', {}, 'Age group (16+ may see the mature avatars; the player is never told)', ageSel)], 'Set age group', 'primary',
+    (reason) => rpc('admin_set_age_group', { p_user: id, p_group: ageSel.value, p_reason: reason }), reload,
+    d.profile.age_group === 'under_13' ? 'Under-13 accounts stay on the parent path' : undefined);
   const renameForm = actionForm('rename', [h('label', {}, 'New username (3–16 letters, numbers, _)', newName)], 'Rename player', 'primary',
     (reason) => rpc('admin_rename_player', { p_user: id, p_new_name: newName.value.trim(), p_reason: reason }), reload);
 
@@ -172,6 +180,7 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
           h('dt', {}, 'Joined'), h('dd', {}, fmtDate(d.profile.created_at)),
           h('dt', {}, 'Last seen'), h('dd', {}, fmtDate(d.profile.last_seen_at)),
           h('dt', {}, 'Age / parent'), h('dd', {}, consentLabel(d.profile.consent_status)),
+          h('dt', {}, 'Age group'), h('dd', { 'data-testid': 'player-age-group' }, ageLabel(d.profile.age_group)),
           h('dt', {}, 'Avatar card'), h('dd', {}, d.profile.avatar ?? '—'),
           h('dt', {}, 'Coins'), h('dd', { 'data-testid': 'player-coins' }, fmtNum(d.coins)),
           h('dt', {}, 'Money spent'), h('dd', { 'data-testid': 'player-money' }, fmtMoney(d.money_spent_cents)),
@@ -180,7 +189,8 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
           h('dt', {}, 'Player id'), h('dd', { class: 'mono' }, d.profile.id))),
       h('section', { class: 'card' }, h('h2', {}, d.ban ? 'Unban' : 'Ban'), banForm),
       h('section', { class: 'card' }, h('h2', {}, 'Grant coins'), grantForm),
-      h('section', { class: 'card' }, h('h2', {}, 'Rename'), renameForm)),
+      h('section', { class: 'card' }, h('h2', {}, 'Rename'), renameForm),
+      h('section', { class: 'card' }, h('h2', {}, 'Age group'), ageForm)),
     ...(consentCard ? [consentCard] : []),
     h('section', { class: 'card' }, h('h2', {}, `Decks (${d.decks.length})`),
       table(['Name', 'Commander', 'Cards', 'From', 'Updated'], d.decks.map((x) => [x.name, x.commander ?? '—', fmtNum(x.cards), x.source, fmtDate(x.updated_at)]), 'deck-table')),
