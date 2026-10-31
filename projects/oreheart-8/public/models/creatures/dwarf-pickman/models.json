@@ -1,0 +1,22 @@
+{
+ "generated": "2026-10-25T09:41:01.211Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a17269-a72f-7443-a09c-c65495079485",
+  "rig": "01a1726d-b559-74bf-8848-1639268be264",
+  "anim": "01a1726e-87f9-7692-8714-e5b5a073e0fd"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "rigged": true,
+ "parts": [],
+ "notes": "Owner sheet note: Don't render enter any of his accessories just the model himself. Character only for now (owner, Oct 25: accessories come later).",
+ "fileSizes": {
+  "char.glb": 5704236
+ }
+}

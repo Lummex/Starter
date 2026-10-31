@@ -1,0 +1,427 @@
+{
+ "format": "oreheart-look-1",
+ "card": "rotgut-grenadier",
+ "cardName": "Goblin Chef",
+ "faction": "goblins",
+ "savedAt": "2026-10-24T22:58:56.730Z",
+ "units": "1 unit = 1 board square. Y is up. Rotations in degrees (X, Y, Z order). localPosition/localRotation/localScale are relative to what the piece is attached to (a bone or another piece); world values are where it is in the scene.",
+ "howToBuild": "Load the main model, scale it to heightSquares. For every part: load its model, attach it to the named bone (or piece) and apply its local position, rotation and scale. Recreate each effect with its type and settings at its attach point. Apply tint/glow/color and hide the listed bones. Play the listed animations; attached parts follow the bones.",
+ "preview": "/_blob/db54d27505318191109ca22fb97ab4d7",
+ "main": {
+  "name": "Goblin Chef",
+  "kind": "model",
+  "attachedTo": "the ground (not attached)",
+  "parent": null,
+  "localPosition": [
+   0,
+   -0.001,
+   0
+  ],
+  "localRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "localScale": 1,
+  "stretch": [
+   1,
+   1,
+   1
+  ],
+  "worldPosition": [
+   0,
+   -0.001,
+   0
+  ],
+  "worldRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "worldScale": 1,
+  "visible": true,
+  "model": {
+   "key": "rotgut-grenadier-v2",
+   "kind": "bundled"
+  },
+  "heightSquares": 1.219,
+  "animations": [
+   "Idle",
+   "Casual_Walk",
+   "Heavy_Hammer_Swing",
+   "Hit_Reaction",
+   "Dead",
+   "Idle (from Grubnak)",
+   "Chest_Pound_Taunt (from Grubnak)",
+   "Call_Gesture (from Grubnak)",
+   "Victory_Fist_Pump (from Grubnak)",
+   "Hit_Reaction_1 (from Grubnak)",
+   "mage_soell_cast (from Grubnak)",
+   "Hit_Reaction (from Grubnak)",
+   "Dead (from Grubnak)"
+  ],
+  "currentAnimation": "Idle",
+  "tint": {
+   "color": "#ffffff",
+   "amt": 0
+  },
+  "glow": {
+   "color": "#ffaa33",
+   "amt": 0
+  },
+  "color": {
+   "br": 0,
+   "co": 1,
+   "sa": 1,
+   "hu": 0,
+   "shine": 0
+  },
+  "hiddenBones": [],
+  "poseTweaks": {},
+  "fingers": {
+   "L": 0,
+   "R": 0,
+   "spread": 0,
+   "axis": "z",
+   "flip": false,
+   "thumb": true
+  }
+ },
+ "parts": [
+  {
+   "name": "Goblin Chef – Goblin Chef spatula",
+   "kind": "model",
+   "attachedTo": "bone \"RightHand\" of Goblin Chef",
+   "parent": {
+    "kind": "bone",
+    "id": 114,
+    "bone": "RightHand",
+    "name": "Goblin Chef"
+   },
+   "localPosition": [
+    18.162,
+    -9.844,
+    27.054
+   ],
+   "localRotationDeg": [
+    35.239,
+    -53.157,
+    -88.87
+   ],
+   "localScale": 43,
+   "stretch": [
+    1,
+    1.46,
+    0.76
+   ],
+   "worldPosition": [
+    -0.365,
+    0.567,
+    -0.061
+   ],
+   "worldRotationDeg": [
+    -21.003,
+    32.5,
+    27.813
+   ],
+   "worldScale": 0.43,
+   "visible": true,
+   "model": {
+    "key": "rotgut-grenadier-v2-spatula",
+    "kind": "bundled"
+   },
+   "heightSquares": 1.213,
+   "animations": [],
+   "currentAnimation": null,
+   "tint": {
+    "color": "#ffffff",
+    "amt": 0
+   },
+   "glow": {
+    "color": "#ffaa33",
+    "amt": 0
+   },
+   "color": {
+    "br": 0,
+    "co": 1,
+    "sa": 1,
+    "hu": 0,
+    "shine": 0
+   },
+   "hiddenBones": [],
+   "poseTweaks": {},
+   "fingers": {
+    "L": 0,
+    "R": 0,
+    "spread": 0,
+    "axis": "z",
+    "flip": false,
+    "thumb": true
+   }
+  }
+ ],
+ "effects": [],
+ "other": [
+  {
+   "name": "Solid part",
+   "kind": "rigid",
+   "attachedTo": "bone \"Hips\" of Goblin Chef",
+   "parent": {
+    "kind": "bone",
+    "id": 114,
+    "bone": "Hips",
+    "name": "Goblin Chef"
+   },
+   "localPosition": [
+    -1.019,
+    -2.215,
+    0.871
+   ],
+   "localRotationDeg": [
+    13.048,
+    0.745,
+    0.592
+   ],
+   "localScale": 43,
+   "stretch": [
+    0.88,
+    0.33,
+    0.66
+   ],
+   "worldPosition": [
+    -0.023,
+    0.303,
+    0.023
+   ],
+   "worldRotationDeg": [
+    -2.401,
+    -32.292,
+    0.062
+   ],
+   "worldScale": 0.378,
+   "visible": true
+  }
+ ],
+ "animationRules": "",
+ "animationRequests": [],
+ "editorScene": {
+  "units": "1 unit = 1 board square; Y is up",
+  "background": "#1a1420",
+  "view": {
+   "light": 1,
+   "reflections": 0.6,
+   "camera": {
+    "position": [
+     -1.464,
+     0.24,
+     4.148
+    ],
+    "target": [
+     -0.002,
+     0.5,
+     0.001
+    ]
+   }
+  },
+  "items": [
+   {
+    "id": 114,
+    "kind": "model",
+    "name": "Goblin Chef",
+    "parent": {
+     "kind": "world"
+    },
+    "position": [
+     0,
+     -0.001,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 1,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "src": {
+     "key": "rotgut-grenadier-v2",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "Idle",
+     "playing": true,
+     "speed": 1,
+     "lock": "xz",
+     "time": 1.23
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "paint": {},
+    "borrowed": [
+     {
+      "from": "b:grubnak",
+      "clip": "Idle",
+      "as": "Idle (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "Chest_Pound_Taunt",
+      "as": "Chest_Pound_Taunt (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "Call_Gesture",
+      "as": "Call_Gesture (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "Victory_Fist_Pump",
+      "as": "Victory_Fist_Pump (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "Hit_Reaction_1",
+      "as": "Hit_Reaction_1 (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "mage_soell_cast",
+      "as": "mage_soell_cast (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "Hit_Reaction",
+      "as": "Hit_Reaction (from Grubnak)"
+     },
+     {
+      "from": "b:grubnak",
+      "clip": "Dead",
+      "as": "Dead (from Grubnak)"
+     }
+    ]
+   },
+   {
+    "id": 115,
+    "kind": "model",
+    "name": "Goblin Chef – Goblin Chef spatula",
+    "parent": {
+     "kind": "bone",
+     "id": 114,
+     "bone": "RightHand"
+    },
+    "position": [
+     18.162,
+     -9.844,
+     27.054
+    ],
+    "rotationDeg": [
+     35.239,
+     -53.157,
+     -88.87
+    ],
+    "scale": 43,
+    "stretch": [
+     1,
+     1.46,
+     0.76
+    ],
+    "visible": true,
+    "src": {
+     "key": "rotgut-grenadier-v2-spatula",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "",
+     "playing": false,
+     "speed": 1,
+     "lock": "xz",
+     "time": 0
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "paint": {},
+    "borrowed": []
+   },
+   {
+    "id": 116,
+    "kind": "rigid",
+    "name": "Solid part",
+    "parent": {
+     "kind": "bone",
+     "id": 114,
+     "bone": "Hips"
+    },
+    "position": [
+     -1.019,
+     -2.215,
+     0.871
+    ],
+    "rotationDeg": [
+     13.048,
+     0.745,
+     0.592
+    ],
+    "scale": 43,
+    "stretch": [
+     0.88,
+     0.33,
+     0.66
+    ],
+    "visible": true
+   }
+  ]
+ }
+}

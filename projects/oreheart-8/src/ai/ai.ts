@@ -1,5 +1,13 @@
 // Computer opponent. Uses only legalActions() and read-only engine helpers; never mutates state.
-import { legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner } from '../engine';
+// Easy: the original weighted-random player (unchanged).
+// Medium ('normal') and Hard (Anvil, Oct 30; Ken: "medium and hard need to be adjusted ... hard needs to be pretty hard"):
+// every legal action is tried on a copy of the state and the result is scored by evaluate() below
+// (Commander health, units, mines and income, poison, threats to its own units and Commander, and a goal for every fighter).
+// Hard also looks one action ahead (e.g. Thunderhorn Blast then attack, damage then finish off) and makes no deliberate mistakes;
+// Medium adds randomness and the odd second-best pick. No hidden information is used: the opponent's hand and deck are never read,
+// Respond windows opened by a trial action are always answered "pass", and trial actions use a reshuffled random seed so the
+// AI can't foresee knock-back directions.
+import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, nextPool, previewAttack, canRedraw, basicGatherer, typeBonus } from '../engine';
 
 export type Rand = () => number;
 export function makeRand(seed: number): Rand {
@@ -35,7 +43,7 @@ function posValue(s: any, who: string, card: any, row: number, col: number, uid?
     const e = sh(foe);
     v -= 2 * cheb(here, e);
     if (cheb(here, e) <= 1) v += 40;
-    if (card.abilities?.includes('ranged') && cheb(here, e) <= 2) v += 30;
+    if (card.abilities?.includes('ranged') && cheb(here, e) <= (card.range ?? 7)) v += 30;
     const adj = SITES.map((x: any, i: number) => ({ x, i })).filter(({ x }) => cheb(here, x) <= 1);
     if (adj.some(({ i }) => s.sites[i].controller !== who)) v += 8;
   }
@@ -43,9 +51,14 @@ function posValue(s: any, who: string, card: any, row: number, col: number, uid?
   return v;
 }
 
-function mulliganUids(s: any, who: string) {
-  const hand = s.players[who].hand;
-  return hand.filter((h: any) => CARDS[h.cardId].type !== 'crystal' && CARDS[h.cardId].cost >= 6).map((h: any) => h.uid);
+/** Ken (Oct 30): the computer keeps or redraws its WHOLE opening hand, once. It redraws when the hand has no Miner
+ *  (nothing to start the Crystal Flow) or no fighter it can afford early (a non-Miner creature costing 5 or less). */
+export function wantsRedraw(s: any, who: string): boolean {
+  const cards = s.players[who].hand.map((h: any) => CARDS[h.cardId]).filter((c: any) => c.type === 'creature');
+  const minerCard = (c: any) => isMiner(c) || c.id === basicGatherer(c.faction);
+  const miner = cards.some(minerCard);
+  const fighter = cards.some((c: any) => !minerCard(c) && c.cost <= 5);
+  return !miner || !fighter;
 }
 
 function scoreRespond(s: any, who: string, a: any): number {
@@ -58,7 +71,15 @@ function scoreRespond(s: any, who: string, a: any): number {
     case 'cancelSpell': return pc && pc.cost >= 4 ? 10 + pc.cost : 0;
     case 'mirror': return pc && pc.cost >= 4 && ['damage', 'areaDamage'].includes(pc.effect) ? 25 : 0;
     case 'cancelSummon': return pc && pc.cost >= 3 ? 8 + pc.cost : 0;
-    case 'shield': return 12;
+    case 'shield': {
+      // a Bulwark is worth spending when the attack would defeat the unit (or hurt a lot); not on a scratch
+      if (pend.kind === 'attack' && pend.creatureUid && pend.target?.row) {
+        const pv: any = previewAttack(s, pend.creatureUid, pend.target);
+        const t = creatureAt(s, pend.target.row, pend.target.col);
+        if (pv && t) return pv.targetDefeated ? 30 + CARDS[t.cardId].cost * 2 : pv.youDeal >= 3 ? 6 : 0;
+      }
+      return 12;
+    }
     case 'heal': {
       const t = creatureAt(s, a.target.row, a.target.col);
       return t && t.maxHealth - t.health >= 2 ? 6 : 0;
@@ -78,9 +99,10 @@ function scoreCast(s: any, who: string, a: any): number {
     case 'damage': {
       if (a.target.commander) return s.players[foe].health <= card.params.amount ? 10000 : s.players[foe].health <= 8 ? 40 : 18;
       if (!t) return 0;
-      const kills = t.health <= card.params.amount - (CARDS[t.cardId].abilities?.includes('armored') ? 1 : 0);
+      const kills = t.health <= card.params.amount - (CARDS[t.cardId].abilities?.includes('armored') || CARDS[t.cardId].abilities?.includes('riotShield') ? 1 : 0);
       return kills ? 50 + CARDS[t.cardId].cost * 6 : 5;
     }
+    case 'poison': return !t ? 0 : !t.poison ? 8 + CARDS[t.cardId].cost * 3 : (t.poisonStacks || 1) < (CONFIG.stackCap ?? 3) ? Math.round((8 + CARDS[t.cardId].cost * 3) / 2) : 0; // stacking (Ken, Oct 30): a second dagger is worth about half
     case 'areaDamage': {
       let v = 0;
       for (const c of s.board.creatures) if (cheb(c, a.target) <= 1) v += (c.owner === who ? -1 : 1) * (CARDS[c.cardId].cost * 3 + (c.health <= 2 ? 10 : 2));
@@ -101,10 +123,514 @@ function scoreCast(s: any, who: string, a: any): number {
   }
 }
 
-export function aiChoose(s: any, difficulty: string, rand: Rand): any {
+// ---------------------------------------------------------------- Medium / Hard: board evaluation
+const ab = (c: any, k: string) => !!CARDS[c.cardId].abilities?.includes(k);
+const backRow = (p: string) => CONFIG.backRow[p];
+const rangeOf = (c: any) => CARDS[c.cardId].range ?? CONFIG.rangedRange ?? 7;
+const isStrongholdCell = (r: number, c: number) => ['player', 'opponent'].some((p) => CONFIG.strongholds[p][0] === r && CONFIG.strongholds[p][1] === c);
+
+/** Straight or diagonal line from a to b within `range`, with nothing in between (the engine's ranged rule). */
+const occCache = new WeakMap<any, Set<number>>();
+const occupied = (s: any, r: number, c: number) => {
+  let o = occCache.get(s.board);
+  if (!o) { o = new Set(s.board.creatures.map((x: any) => x.row * 32 + x.col)); occCache.set(s.board, o); }
+  return o.has(r * 32 + c);
+};
+function lineReach(s: any, a: any, b: any, range: number): boolean {
+  const dr = b.row - a.row, dc = b.col - a.col;
+  if ((dr && dc && Math.abs(dr) !== Math.abs(dc)) || (!dr && !dc)) return false;
+  const n = Math.max(Math.abs(dr), Math.abs(dc));
+  if (n > range) return false;
+  const sr = Math.sign(dr), sc = Math.sign(dc);
+  for (let k = 1; k < n; k++) { const r = a.row + sr * k, c = a.col + sc * k; if (isStrongholdCell(r, c) || occupied(s, r, c)) return false; }
+  return true;
+}
+/** Can enemy unit f hit square/unit `t` on its next turn without help (melee next to it, ranged in line, Charge within reach)? */
+function threatens(s: any, f: any, t: any): boolean {
+  if ((f.lockedUntil || 0) > s.turn + 1 || (f.wardUntil || 0) > s.turn + 1) return false;
+  if (ab(f, 'overwatch')) return true;
+  if (ab(f, 'ranged')) return lineReach(s, f, t, rangeOf(f));
+  const d = cheb(f, t);
+  if (d === 1) return true;
+  if ((ab(f, 'charge') || ab(f, 'ramMove')) && d <= (CARDS[f.cardId].move || 1) + 1 && !((f.rootUntil || 0) > s.turn + 1)) return true;
+  return false;
+}
+function unitVal(s: any, c: any, minerRank: number): number {
+  const card = CARDS[c.cardId];
+  let v = card.cost * 2.5 + c.attack * 2 + c.maxHealth * 1.2;
+  if (isMiner(card)) v += minerRank < 5 ? 6 : 1; // the first few Miners carry the economy; a flood of them doesn't
+  if (c.illusion) v *= 0.5;
+  return v;
+}
+/** Damage `u` would actually take from these hits next turn (Ward, Riot Shield, bubbles, Shield, Armored, Unbreakable). */
+function effectiveDamage(s: any, u: any, hits: number[]): number {
+  if ((u.wardUntil || 0) > s.turn + 1) return 0;
+  const list = hits.slice().sort((a, b) => b - a);
+  let bub = u.bubbles || (u.bubble ? 1 : 0);
+  while (bub-- > 0 && list.length) list.shift();
+  let shield = u.shield || 0, tot = 0;
+  for (let d of list) {
+    if (ab(u, 'armored') || ab(u, 'riotShield')) d = Math.max(0, d - 1); // Riot Shield (Oct 31) blocks 1 of every hit, like Armored
+    if (ab(u, 'unbreakable')) d = Math.min(d, 3);
+    const b = Math.min(shield, d); shield -= b; d -= b;
+    tot += d;
+  }
+  return tot;
+}
+
+interface Prm { threatW: number; goalW: number; turnW: number; fwdW: number; rush?: number; mines?: number; econM?: number; cmdM?: number; foeMinerM?: number; raceM?: number; lead?: number; colFwd?: number; earlyMiner?: number; foeM?: number }
+
+/** Reading the board at the start of each decision (Ken, Oct 30: "react to what I'm doing"):
+ *  rush  = how hard the enemy is pushing toward our Commander (enemy fighters within 4 squares, weighted by Attack and closeness), 0..2
+ *  mines = how far behind we are on mines and Crystal Flow (their next-turn crystals and owned mines vs ours), 0..2 */
+export function readBoard(s: any, me: string): { rush: number; mines: number } {
+  const foe = other(me as any);
+  const home = sh(me);
+  let R = 0;
+  for (const f of s.board.creatures) {
+    if (f.owner !== foe || isMiner(CARDS[f.cardId])) continue;
+    const d = cheb(f, home);
+    if (d <= 4) R += Math.max(1, atkValue(s, f)) * (5 - d) / 4;
+  }
+  const owned = (who: string) => s.sites.filter((x: any) => {
+    let n = 0;
+    for (const c of s.board.creatures) if (c.minedMine && c.minedMine.row === x.row && c.minedMine.col === x.col && cheb(c, x) <= 1) n += c.owner === who ? 1 : -1;
+    return n > 0;
+  }).length;
+  const flowGap = nextPool(s, foe as any) - nextPool(s, me as any);
+  const M = flowGap / 4 + (owned(foe) - owned(me)) * 0.5;
+  return { rush: Math.max(0, Math.min(2, R / 6)), mines: Math.max(0, Math.min(2, M)) };
+}
+/** Tuning knobs (exported so the match simulator can try other values). */
+export const TUNE = { cmdW: 16, pressW: 8, myEcon: 7, foeEcon: 5, specialBias: 3, hardThreat: 0.5, medThreat: 0.4, hardTurn: 6, medTurn: 6, hardFwd: 5.5, medFwd: 4, hardNoise: 4, medNoise: 6, hardMin: 1.5, medMin: 1.5, look: 1, lookW: 0.7, moveBias: 0, medMistake: 0.2, hardMs: 300, medMs: 60, medMoves: 60, defG: 14, react: 1, d2Base: 0, rushThresh: 0.3, mineThresh: 0.75, mineHit: 40, rushHit: 14, mineBonus: 12, fighterMine: 0, swapV: 16, swapMiners: 5,
+  // Hard only (Oct 31): the reply-turn search. reply=0 switches it off (Hard then plays as on Oct 30).
+  reply: 1, replyK: 5, replyMargin: 40, replyW: 0.8, replyMs: 150, replyMySteps: 8, replyFoeSteps: 10, replyMoves: 8, replyDeploy: 1, replyDeployK: 4, replyTurnMs: 700,
+  hardEcon: 1, hardCmd: 1, hardFoeMiner: 1, hardFighterMine: 0, hardRace: 1, hardLeadPush: 0, hardColFwd: 0, hardEarlyMiner: 0, hardEarlyTurns: 8, hardEarlyFighterMine: 0, hardFoeUnit: 1.5,
+  // Hard's thinking per turn (Ken, Oct 31: a slow phone must never stall a turn). hardTurnMs: the pool for the full search (look-ahead and reply search); past it a decision is "lean" (plain scoring, leanMs);
+  // past hardTurnMaxMs only tailMs each. phoneScale shortens every budget on a touch phone, so each decision blocks the screen for less.
+  hardTurnMs: 1200, hardTurnMaxMs: 1800, leanMs: 60, tailMs: 15, phoneScale: 0.6 };
+/** A phone (touch, few cores) or a mobile browser. Every budget below is wall-clock, so a 3-4x slower phone already does less thinking in the same time; this shortens the budgets too. */
+const PHONE = typeof navigator !== 'undefined' && (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '') || ((navigator.maxTouchPoints || 0) > 1 && (navigator.hardwareConcurrency || 8) <= 6));
+/** A time budget in ms for this device (window.__aiTimeScale overrides it, for probes). */
+export const budgetMs = (ms: number) => ms * ((globalThis as any).__aiTimeScale ?? (PHONE ? TUNE.phoneScale : 1));
+const cmdVal = (h: number) => h * TUNE.cmdW + Math.min(0, h - 8) * 10;
+
+/** How good the board is for `me` (bigger = better). Reads only public information. */
+/** Ken (Oct 31): the computer's predicted hit on a creature = its Attack plus the engine's own triangle rule (typeBonus: never against a Miner). Probe: window.oreheart.aiHitPrediction */
+export const predictHit = (s: any, c: any, target?: any, base: number = atkValue(s, c)) => (target ? base + typeBonus(CARDS[c.cardId], CARDS[target.cardId]) : base);
+export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, turnW: 7, fwdW: 2.5 }): number {
+  const foe = other(me as any);
+  if (s.winner) return s.winner === me ? 1e6 : -1e6;
+  const my = s.players[me], fp = s.players[foe];
+  let v = (cmdVal(my.health) - cmdVal(fp.health)) * (P.cmdM || 1);
+  const mine: any[] = [], foes: any[] = [];
+  for (const c of s.board.creatures) (c.owner === me ? mine : foes).push(c);
+  const myTurn = s.activePlayer === me;
+  let mr = 0, fr = 0;
+  // cached per evaluation (big late-game boards have 50+ units): Attack values, ready units, isolated enemies
+  const atkMemo = new Map<any, number>();
+  const atk = (c: any, target?: any) => {
+    let b = atkMemo.get(c);
+    if (b === undefined) { b = atkValue(s, c); atkMemo.set(c, b); }
+    return predictHit(s, c, target, b); // Ken, Oct 31: same rule as the engine (no triangle bonus against Miners)
+  };
+  const ready = myTurn ? mine.filter((c) => !c.hasAttacked && !c.hasMined && !(c.hasMoved && !ab(c, 'charge')) && (c.lockedUntil || 0) <= s.turn && !(c.summonedThisTurn && !ab(c, 'haste'))) : [];
+  const isolated = new Set(foes.filter((f) => !foes.some((o) => o !== f && cheb(o, f) <= 2)));
+  // ---- units
+  for (const c of mine) {
+    v += unitVal(s, c, isMiner(CARDS[c.cardId]) ? mr++ : 0);
+    if (c.poison > 0) { const fut = (c.poisonStacks || 1) * (CONFIG.poisonDamage ?? 1) * Math.min(c.poison, 4); v -= fut >= c.health ? unitVal(s, c, 9) * 0.6 : fut * 3; }
+  }
+  for (const f of foes) {
+    // Hard (Oct 31): enemy units count for more, so a kill always outweighs the lost "go and get it" goal below (killing an adjacent enemy used to score as a loss)
+    v -= unitVal(s, f, isMiner(CARDS[f.cardId]) ? fr++ : 0) * (isMiner(CARDS[f.cardId]) ? P.foeMinerM || 1 : 1) * (P.foeM || 1);
+    if (f.poison > 0) {
+      // poisoned units don't heal: their damage stays, and the poison keeps ticking
+      const fut = (f.poisonStacks || 1) * (CONFIG.poisonDamage ?? 1) * Math.min(f.poison, 4);
+      v += fut >= f.health ? unitVal(s, f, 9) * 0.6 : fut * 3 + (f.maxHealth - f.health) * 3;
+    } else if (myTurn && f.health < f.maxHealth) {
+      // focus fire: a hurt enemy that one of our ready units can still hit this turn is nearly a kill
+      const finisher = ready.some((c) => threatensNow(s, c, f));
+      v += (f.maxHealth - f.health) * (finisher ? 2.5 : 0.2);
+    }
+  }
+  // ---- economy: next turn's crystals for both sides (mining, mine ownership, Geodes, Plunder, underdog)
+  // (own income counts more than the enemy's: mining your first mine also hands the enemy the underdog bonus, which must not scare us off mining)
+  const rush = P.rush || 0, mineGap = P.mines || 0;
+  // when they out-mine us, their income matters more: killing or knocking their Miners off a mine pays
+  v += (P.econM || 1) * (TUNE.myEcon * nextPool(s, me as any) - (TUNE.foeEcon + 4 * mineGap) * nextPool(s, foe as any));
+  for (const x of s.sites) {
+    let n = 0;
+    for (const c of s.board.creatures) if (c.minedMine && c.minedMine.row === x.row && c.minedMine.col === x.col && cheb(c, x) <= 1) n += c.owner === me ? 1 : -1;
+    v += n > 0 ? 6 : n < 0 ? -6 : 0; // owning a mine (more of your creatures mining it than theirs)
+  }
+  v += my.bank * 1.2 + my.crystals * 0.3 + my.hand.length * 2.5;
+  // ---- positions: every fighter heads for its best goal; Miners for a mine
+  const myHome = sh(me), foeHome = sh(foe);
+  const sites = s.sites;
+  const H = CONFIG.boardHeight, W = CONFIG.boardWidth;
+  let room: any[] | null = null; // mines with a free square next to them (computed once, only if a Miner needs it)
+  for (const c of mine) {
+    const card = CARDS[c.cardId];
+    if (isMiner(card)) {
+      if (P.earlyMiner && mr <= 3) v += P.earlyMiner; // Hard, early game: the first three Miners are worth far more than any fighter
+      const near = sites.filter((x: any) => cheb(c, x) <= 1);
+      if (near.length) v += 10 + (near.some((x: any) => x.controller !== foe) ? 3 : 0);
+      else {
+        if (!room) room = sites.filter((x: any) => [-1, 0, 1].some((dr) => [-1, 0, 1].some((dc) => (dr || dc) && !occupied(s, x.row + dr, x.col + dc) && x.row + dr >= 1 && x.row + dr <= H && x.col + dc >= 1 && x.col + dc <= W)));
+        v -= 2.5 * Math.min(...(room!.length ? room! : sites).map((x: any) => cheb(c, x)));
+      }
+      continue;
+    }
+    const reach = ab(c, 'ranged') ? Math.min(rangeOf(c), 7) : 1;
+    const mv = card.move || 1;
+    const turns = (t: any, r = reach) => Math.max(0, Math.ceil((cheb(c, t) - r) / mv));
+    const T = P.turnW;
+    let best = 30 - T * (P.raceM || 1) * turns(foeHome) + (fp.health <= 8 ? 8 : 0) - 8 * rush + (P.lead || 0); // under a rush, racing to their Commander matters less; Hard: a material lead sends the army at the Commander
+    for (const f of foes) {
+      const fc = CARDS[f.cardId];
+      // a rush on our Commander pulls fighters home (and widens the alarm zone); mine domination sends them after Miners
+      const dh = cheb(f, myHome);
+      const G = 9 + (isMiner(fc) ? 7 + 4 * mineGap : 0) + (f.health <= c.attack ? 5 : 0) + (dh <= 3 + Math.round(rush) ? TUNE.defG * (1 + rush) : 0) + (isolated.has(f) ? 3 : 0);
+      const g = G - T * turns(f);
+      if (g > best) best = g;
+    }
+    for (const x of sites) if (x.controller !== me) { const g = 12 + 8 * mineGap - T * Math.max(0, Math.ceil((cheb(c, x) - 1) / mv)); if (g > best) best = g; }
+    v += P.goalW * best;
+    v += P.fwdW * Math.min(6, Math.abs(c.row - backRow(me))); // forward, not sideways along the home row
+    if (P.colFwd) v += P.colFwd * Math.max(0, 6 - Math.abs(c.col - foeHome.col)); // Hard: and across the board toward the enemy corner
+    if (c.row === backRow(me) && s.turn >= 6) v -= 2; // don't clog the summoning row
+  }
+  // ---- threats: what the enemy can do on its next turn with the units it has now
+  if (P.threatW > 0) {
+    for (const u of mine) {
+      const hits: number[] = [];
+      let payback = 0; // melee attackers take our strike back: a unit that kills what hits it is a fair trade, not a blunder
+      for (const f of foes) if (threatens(s, f, u)) {
+        hits.push(atk(f, u));
+        if (cheb(f, u) === 1 && !ab(f, 'ranged') && !ab(f, 'sneaky') && !ab(f, 'overwatch') && atk(u, f) >= f.health) payback = Math.max(payback, unitVal(s, f, 9));
+      }
+      if (!hits.length) continue;
+      const d = effectiveDamage(s, u, hits);
+      if (d >= u.health) v -= P.threatW * Math.max(0, 0.75 * unitVal(s, u, 9) - 0.5 * payback);
+      else if (u.poison > 0) v -= P.threatW * d * 1.5;
+    }
+    let D = 0;
+    for (const f of foes) if (threatens(s, f, myHome)) D += atk(f);
+    if (D >= my.health) v -= P.threatW * 5000;
+    else v -= P.threatW * D * 9;
+    // the turn after: enemy fighters that can step onto a free square beside our Stronghold now and hit next turn.
+    // Blocking those squares, killing the attackers or knocking them back all lower it (that is how a rush is stopped).
+    const free = [];
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const r = myHome.row + dr, c = myHome.col + dc; if ((dr || dc) && r >= 1 && r <= H && c >= 1 && c <= W && !occupied(s, r, c) && !sites.some((x: any) => x.row === r && x.col === c)) free.push({ row: r, col: c }); }
+    let D2 = 0;
+    for (const f of foes) {
+      if (isMiner(CARDS[f.cardId]) || threatens(s, f, myHome)) continue;
+      const mv = CARDS[f.cardId].move || 1;
+      if (ab(f, 'ranged') ? cheb(f, myHome) <= Math.min(rangeOf(f), 7) + mv : free.some((q) => cheb(f, q) <= mv)) D2 += atk(f);
+    }
+    v -= P.threatW * D2 * (TUNE.d2Base + 6 * rush);
+  }
+  // ---- pressure: our units already in position to hit the enemy Commander
+  for (const c of mine) if (!isMiner(CARDS[c.cardId]) && (cheb(c, foeHome) === 1 || (ab(c, 'ranged') && lineReach(s, c, foeHome, rangeOf(c))))) v += c.attack * TUNE.pressW;
+  return v;
+}
+function threatensNow(s: any, c: any, f: any): boolean {
+  if (ab(c, 'overwatch')) return true;
+  if (ab(c, 'ranged')) return lineReach(s, c, f, rangeOf(c));
+  return cheb(c, f) === 1 || (ab(c, 'charge') && !c.hasMoved && cheb(c, f) <= (CARDS[c.cardId].move || 1) + 1);
+}
+
+/** The state after `a` (Respond windows answered "pass"; a reshuffled seed so random knock-backs aren't foreseen). */
+function trial(s: any, a: any, me: string): any | null {
+  if (a.type === 'move') {
+    // moves have no side effects beyond position and swap: do them on a light copy (much faster than applyAction)
+    const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
+    if (!c) return null;
+    const mate = creatureAt(s, a.row, a.col);
+    const creatures = s.board.creatures.map((x: any) => (x === c ? { ...x, row: a.row, col: a.col, hasMoved: true } : x === mate ? { ...x, row: c.row, col: c.col } : x));
+    return { ...s, board: { ...s.board, creatures } };
+  }
+  const r: any = applyAction({ ...s, rng: (Math.imul(s.rng | 0, 1103515245) + 12345 + s.turn) | 0 }, a);
+  if (!r.ok) return null;
+  let t = r.state;
+  for (let i = 0; i < 3 && t.pendingResponse && t.priority !== me; i++) { const q: any = applyAction(t, { type: 'pass' }); if (!q.ok) break; t = q.state; }
+  return t;
+}
+
+/** Abilities can have dozens of targets (Rocket: every empty square). Keep the promising ones: near enemies or the enemy Stronghold. */
+function pruneAbilities(s: any, me: string, legal: any[], rand: Rand, keep: number): any[] {
+  const foe = other(me as any);
+  const foes = s.board.creatures.filter((c: any) => c.owner === foe);
+  const groups: Record<string, any[]> = {};
+  const out: any[] = [];
+  for (const a of legal) {
+    if (a.type !== 'ability') { out.push(a); continue; }
+    (groups[a.ability + ':' + a.creatureUid] ||= []).push(a);
+  }
+  const spot = (a: any) => a.target && typeof a.target.row === 'number' ? a.target : a.from || null;
+  for (const g of Object.values(groups)) {
+    if (g.length <= keep) { out.push(...g); continue; }
+    const d = (a: any) => { const p = spot(a); if (!p) return 0; return Math.min(cheb(p, sh(foe)), ...foes.map((f: any) => cheb(p, f))); };
+    const sorted = g.map((a) => [d(a) + rand() * 0.5, a] as [number, any]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
+    out.push(...sorted.slice(0, keep - 2), ...[0, 1].map(() => sorted[keep - 2 + Math.floor(rand() * (sorted.length - keep + 2))]));
+  }
+  return out;
+}
+
+/** Trim a long action list to the options worth simulating: identical cards in hand count once, area spells only where they hit
+ *  enemies, Miner upgrades only on the best units, the best summoning squares, and a sample of ability targets. */
+function shortlist(s: any, me: string, legal: any[], rand: Rand, hard: boolean): any[] {
+  const foe = other(me as any);
+  const foes = s.board.creatures.filter((c: any) => c.owner === foe);
+  const hand = (uid: string) => s.players[me].hand.find((h: any) => h.uid === uid);
+  const seen = new Set<string>();
+  const out: any[] = [];
+  const summons: Record<string, any[]> = {}, ups: Record<string, any[]> = {}, areas: Record<string, any[]> = {};
+  for (const a of legal) {
+    if (['done', 'pass', 'surrender'].includes(a.type)) continue;
+    const h = a.uid ? hand(a.uid) : null;
+    if (h) { // two copies of the same card in hand give the same options: keep one
+      const key = JSON.stringify({ ...a, uid: h.cardId, crystalUid: undefined });
+      if (seen.has(key)) continue;
+      seen.add(key);
+    }
+    if (a.type === 'ability' && a.ability === 'blink') { const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid); if (!c || c.illusion) continue; } // an illusion re-blinking makes endless illusions (engine bug, reported)
+    if (a.type === 'summon') { (summons[h.cardId] ||= []).push(a); continue; }
+    if (a.type === 'minerUpgrade') { (ups[h.cardId] ||= []).push(a); continue; }
+    if (a.type === 'cast' && h && CARDS[h.cardId].effect === 'areaDamage') { (areas[h.cardId] ||= []).push(a); continue; }
+    out.push(a);
+  }
+  for (const g of Object.values(summons)) {
+    if (g.length <= 10) { out.push(...g); continue; }
+    const card = CARDS[hand(g[0].uid).cardId];
+    out.push(...g.map((a) => [posValue(s, me, card, a.row, a.col) + rand(), a] as [number, any]).sort((x, y) => y[0] - x[0]).slice(0, 10).map((x) => x[1]));
+  }
+  for (const g of Object.values(ups)) {
+    const w = (a: any) => { const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid); return c ? (isMiner(CARDS[c.cardId]) ? 0 : CARDS[c.cardId].cost + c.attack) : -1; };
+    out.push(...g.sort((x, y) => w(y) - w(x)).slice(0, 3));
+  }
+  for (const g of Object.values(areas)) {
+    const hit = (a: any) => foes.filter((f: any) => cheb(f, a.target) <= 1).reduce((t: number, f: any) => t + CARDS[f.cardId].cost, 0) - s.board.creatures.filter((c: any) => c.owner === me && cheb(c, a.target) <= 1).length * 4;
+    out.push(...g.filter((a) => hit(a) > 0).sort((x, y) => hit(y) - hit(x)).slice(0, 6));
+  }
+  return pruneAbilities(s, me, out, rand, hard ? 12 : 8);
+}
+
+// ---------------------------------------------------------------- Hard only (Oct 31): the reply-turn search
+// Ken: Hard should be "pretty hard", aggressive and smart. For its few best-looking options Hard now plays the rest of its own
+// turn out (cheap greedy picks), ends the turn, and plays the player's reply turn with the player's UNITS (moves, attacks,
+// mines, specials; never the player's hand or deck, which are hidden: their Deploy phase is skipped), then judges the board
+// after that reply. An option that looks good now but hands the player a strong reply loses points; a set-up that pays off
+// over the whole turn gains them. Medium and Easy never run this.
+const HARD_P = (): Prm => ({ threatW: TUNE.hardThreat, goalW: 1, turnW: TUNE.hardTurn, fwdW: TUNE.hardFwd, econM: TUNE.hardEcon, cmdM: TUNE.hardCmd, foeMinerM: TUNE.hardFoeMiner, raceM: TUNE.hardRace, colFwd: TUNE.hardColFwd, foeM: TUNE.hardFoeUnit });
+const UNIT_ONLY = ['move', 'attack', 'mine', 'mineAt', 'ability'];
+/** One cheap greedy pick for `who` (no look-ahead): the best option by evaluate(), or null for "done". */
+function lightChoose(st: any, who: string, P: Prm, rand: Rand, unitsOnly: boolean, deadline: number): any | null {
+  const legal = legalActions(st).filter((a: any) => (unitsOnly ? UNIT_ONLY.includes(a.type) : !['done', 'pass', 'surrender', 'gathererSwap'].includes(a.type)));
+  if (!legal.length) return null;
+  const short = shortlist(st, who, legal, rand, false);
+  const moves = short.filter((a) => a.type === 'move').map((a) => { const c = st.board.creatures.find((x: any) => x.uid === a.creatureUid); return [c ? posValue(st, who, CARDS[c.cardId], a.row, a.col) - posValue(st, who, CARDS[c.cardId], c.row, c.col) : 0, a] as [number, any]; }).sort((x, y) => y[0] - x[0]).slice(0, TUNE.replyMoves).map((x) => x[1]);
+  const cands = [...short.filter((a) => a.type !== 'move'), ...moves];
+  const base = evaluate(st, who, P);
+  let best: any = null, bv = TUNE.hardMin;
+  for (const a of cands) {
+    if (a.type === 'playCrystal') return a;
+    const t = trial(st, a, who);
+    if (!t) continue;
+    if (t.winner === who) return a;
+    let v = evaluate(t, who, P) - base;
+    if (a.type === 'mineAt') v += TUNE.mineBonus;
+    else if (a.type === 'mine') v += isMiner(CARDS[st.board.creatures.find((x: any) => x.uid === a.creatureUid)?.cardId] || {}) ? TUNE.mineBonus : TUNE.fighterMine;
+    if ((a.type === 'ability' || a.type === 'cast') && v > -1) v += TUNE.specialBias;
+    if (v > bv) { bv = v; best = a; }
+    if (performance.now() > deadline) break;
+  }
+  return best;
+}
+/** Plays `who`'s current phase greedily for up to `steps` actions (stops at "done", a winner or the deadline). */
+function playout(st: any, who: string, P: Prm, steps: number, rand: Rand, unitsOnly: boolean, deadline: number): any {
+  for (let i = 0; i < steps; i++) {
+    if (st.winner || st.activePlayer !== who || (st.phase !== 'action' && st.phase !== 'deploy')) break;
+    if (st.pendingResponse) { const q: any = applyAction(st, { type: 'pass' }); if (!q.ok) break; st = q.state; continue; }
+    const a = lightChoose(st, who, P, rand, unitsOnly, deadline);
+    if (!a) break;
+    const n = trial(st, a, who);
+    if (!n) break;
+    if ((globalThis as any).__aiReplyDebug) (globalThis as any).__aiReplyDebug.push({ who, turn: st.turn, phase: st.phase, a: [a.type, a.ability || a.creatureUid || a.uid, a.row ?? a.target?.row, a.col ?? a.target?.col], after: evaluate(n, who, P) - evaluate(st, who, P) });
+    st = n;
+    if (performance.now() > deadline) break;
+  }
+  return st;
+}
+/** How the board looks for `me` after the rest of its turn and the player's reply turn, from state `t` (after one candidate action). */
+export function replyValue(t: any, me: string, P: Prm, rand: Rand, deadline: number): number {
+  const foe = other(me as any);
+  let st = t;
+  if (st.phase === 'deploy') { st = playout(st, me, P, TUNE.replyMySteps, rand, false, deadline); if (st.phase === 'deploy' && st.activePlayer === me && !st.winner) { const q: any = applyAction(st, { type: 'done' }); if (q.ok) st = q.state; } }
+  st = playout(st, me, P, TUNE.replyMySteps, rand, false, deadline);
+  // end our turn and skip the player's Deploy (their hand is hidden), to the start of their Action phase
+  for (let g = 0; g < 8 && !st.winner && !(st.phase === 'action' && st.activePlayer === foe && !st.pendingResponse); g++) {
+    const q: any = applyAction(st, st.pendingResponse ? { type: 'pass' } : { type: 'done' });
+    if (!q.ok) break;
+    st = q.state;
+  }
+  if (!st.winner) st = playout(st, foe, HARD_P(), TUNE.replyFoeSteps, rand, true, deadline);
+  // judge the board at the start of our NEXT turn: units heal to full then, poison ticks, income arrives and an empty deck costs Health.
+  // (Judging right after the reply over-counts chip damage that heals anyway.) Only our own deck is touched, never the player's hand.
+  for (let g = 0; g < 8 && !st.winner && !(st.activePlayer === me && st.phase === 'deploy' && !st.pendingResponse); g++) {
+    const q: any = applyAction(st, st.pendingResponse ? { type: 'pass' } : { type: 'done' });
+    if (!q.ok) break;
+    st = q.state;
+  }
+  return evaluate(st, me, P);
+}
+
+const replyPool = { key: '', ms: 0 };
+/** Hard's thinking spent this turn (ms), see TUNE.hardTurnMs. Probe hook: window.__aiTurnMs. */
+const hardPool = { key: '', ms: 0, lean: 0 };
+(globalThis as any).__aiTurnMs = hardPool;
+function smartChoose(s: any, hard: boolean, rand: Rand, legal: any[], done: any): any {
+  if (!hard) return smartChooseInner(s, hard, rand, legal, done);
+  const key = s.turn + ':' + s.priority;
+  if (hardPool.key !== key) { hardPool.key = key; hardPool.ms = 0; hardPool.lean = 0; }
+  const t = performance.now();
+  try { return smartChooseInner(s, hard, rand, legal, done); } finally { hardPool.ms += performance.now() - t; }
+}
+function smartChooseInner(s: any, hard: boolean, rand: Rand, legal: any[], done: any): any {
+  const me = s.priority as string;
+  // the per-turn pool: once Hard has spent hardTurnMs this turn it decides lean (plain scoring at Medium speed, no look-ahead, no reply search), past hardTurnMaxMs only a quick glance
+  const left = hard ? budgetMs(TUNE.hardTurnMs) - hardPool.ms : Infinity;
+  const tail = hard && hardPool.ms >= budgetMs(TUNE.hardTurnMaxMs), lean = tail || (hard && left <= 0);
+  if (lean) hardPool.lean++;
+  const tStart = performance.now();
+  const mood = readBoard(s, me), sharp = hard ? 1 : 0.5; // Medium reacts too, less sharply
+  const P: Prm = hard ? HARD_P() : { threatW: TUNE.medThreat, goalW: 1, turnW: TUNE.medTurn, fwdW: TUNE.medFwd };
+  // react only to a real push or a real gap (small swings are normal play)
+  P.rush = Math.max(0, mood.rush - TUNE.rushThresh) * sharp * TUNE.react; P.mines = Math.max(0, mood.mines - TUNE.mineThresh) * sharp * TUNE.react;
+  // the forward push gives way while defending, and every step toward a goal (home, or the enemy Miners) counts more
+  P.fwdW = P.fwdW * Math.max(0.2, 1 - 0.5 * P.rush);
+  P.goalW = 1 + 0.75 * P.rush;
+  if (hard && s.turn <= TUNE.hardEarlyTurns) P.earlyMiner = TUNE.hardEarlyMiner;
+  if (hard && TUNE.hardLeadPush) { let L = 0; for (const c of s.board.creatures) if (!isMiner(CARDS[c.cardId])) L += c.owner === me ? 1 : -1; P.lead = TUNE.hardLeadPush * Math.max(0, Math.min(6, L)); }
+  // per-turn priorities: how many enemy Miners sit on mines, and how hard the enemy fighters press our Commander
+  const myHome = sh(me), foeSide = other(me as any);
+  const onMines = (st: any) => st.board.creatures.filter((c: any) => c.owner === foeSide && isMiner(CARDS[c.cardId]) && st.sites.some((x: any) => cheb(c, x) <= 1)).length;
+  const pressure = (st: any) => st.board.creatures.reduce((t: number, c: any) => t + (c.owner === foeSide && !isMiner(CARDS[c.cardId]) && cheb(c, myHome) <= 4 ? 5 - cheb(c, myHome) : 0), 0);
+  const nearest = (st: any, c: any, pick: (o: any) => boolean) => { let d = 99; for (const o of st.board.creatures) if (o.owner === foeSide && pick(o)) d = Math.min(d, cheb(o, c)); return d; };
+  const isRusher = (o: any) => !isMiner(CARDS[o.cardId]) && cheb(o, myHome) <= 4;
+  const isMineMiner = (o: any) => isMiner(CARDS[o.cardId]) && s.sites.some((x: any) => cheb(o, x) <= 1);
+  const m0 = P.mines > 0 ? onMines(s) : 0, p0 = P.rush > 0 ? pressure(s) : 0;
+  const priority = (a: any, t: any) => {
+    let b = 0;
+    if (P.mines! > 0) b += (m0 - onMines(t)) * TUNE.mineHit * P.mines!;
+    if (P.rush! > 0) b += (p0 - pressure(t)) * TUNE.rushHit * P.rush!;
+    if (a.type === 'move') {
+      const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
+      if (c && !isMiner(CARDS[c.cardId])) {
+        if (P.mines! > 0) b += (nearest(s, c, isMineMiner) - nearest(s, a, isMineMiner)) * 3 * P.mines!;
+        if (P.rush! > 0) b += (nearest(s, c, isRusher) - nearest(s, a, isRusher)) * 3 * P.rush!;
+      }
+    }
+    return b;
+  };
+  const noise = hard ? TUNE.hardNoise : TUNE.medNoise;
+  const base = evaluate(s, me, P);
+  const pl = s.players[me];
+  // a time budget keeps big late-game boards quick on phones: non-move options first, then moves (most forward first)
+  const t0 = performance.now(), budget = hard ? (tail ? budgetMs(TUNE.tailMs) : lean ? budgetMs(TUNE.leanMs) : Math.min(budgetMs(TUNE.hardMs), left)) : TUNE.medMs;
+  const short = shortlist(s, me, legal, rand, hard);
+  const movesFirst = short.filter((a) => a.type === 'move').map((a) => { const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid); return [c ? posValue(s, me, CARDS[c.cardId], a.row, a.col) - posValue(s, me, CARDS[c.cardId], c.row, c.col) : 0, a] as [number, any]; }).sort((x, y) => y[0] - x[0]).map((x) => x[1]);
+  const cands = [...short.filter((a) => a.type !== 'move'), ...(hard ? movesFirst : movesFirst.slice(0, TUNE.medMoves))];
+  const scored: { v: number; a: any; t: any }[] = [];
+  const handHasMiner = pl.hand.some((h: any) => isMiner(CARDS[h.cardId]));
+  for (const a of cands) {
+    if (a.type === 'playCrystal') { scored.push({ v: 1000 + rand(), a, t: null }); continue; }
+    if (a.type === 'gathererSwap') {
+      const h = a.discardUid ? pl.hand.find((x: any) => x.uid === a.discardUid) : null;
+      const dc = h ? CARDS[h.cardId] : null;
+      const myMiners = s.board.creatures.filter((c: any) => c.owner === me && isMiner(CARDS[c.cardId])).length;
+      // the swap is how a short-on-Miners hand keeps the Crystal Flow growing (60-card decks hold only ~11 Miners)
+      scored.push({ v: !handHasMiner && myMiners < TUNE.swapMiners ? TUNE.swapV - (dc ? (dc.type === 'crystal' ? 0 : dc.cost) : 0) : -1, a, t: null });
+      continue;
+    }
+    if (performance.now() - t0 > budget) break;
+    const t = trial(s, a, me);
+    if (!t) continue;
+    if (t.winner === me) return a; // a match-winning action is always taken, whatever the level
+    let v = evaluate(t, me, P) - base;
+    if (a.type === 'cast') {
+      const card = CARDS[pl.hand.find((h: any) => h.uid === a.uid)?.cardId];
+      if (card?.effect === 'buffAttack' && !hard) v = scoreCast(s, me, a) > 0 ? 10 + scoreCast(s, me, a) * 0.3 : -5; // Medium: the old rule of thumb
+    }
+    if ((a.type === 'ability' || a.type === 'cast') && v > -1) v += TUNE.specialBias; // Ken: use special abilities and spells, not only plain attacks
+    if (a.type === 'move') v += TUNE.moveBias;
+    if (a.type === 'mineAt') v += TUNE.mineBonus;
+    else if (a.type === 'mine') v += isMiner(CARDS[s.board.creatures.find((x: any) => x.uid === a.creatureUid)?.cardId] || {}) ? TUNE.mineBonus : hard ? TUNE.hardFighterMine + (s.turn <= TUNE.hardEarlyTurns ? TUNE.hardEarlyFighterMine : 0) : TUNE.fighterMine; // the Crystal Flow is the engine of every turn
+    if (P.mines! > 0 || P.rush! > 0) v += priority(a, t);
+    if (a.type === 'mine' && P.rush > 0.3) { const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid); if (c && !isMiner(CARDS[c.cardId])) v -= 12 * P.rush; } // a fighter doesn't stop to mine while the Commander is rushed
+    scored.push({ v: v + rand() * noise, a, t });
+  }
+  if (hard && !lean && TUNE.look && s.phase === 'action' && performance.now() - t0 < budget * 0.6) {
+    // look one action ahead for the most promising options: set-ups (Blast, damage, Shield, Ward, knock-backs) that pay off next action
+    const live = scored.filter((x) => x.t && x.t.priority === me && x.t.phase === s.phase && !x.t.winner).sort((x, y) => y.v - x.v);
+    // the 4 best options, plus the best spells and specials: a set-up like Thunderhorn Blast looks useless on its own
+    const top = [...live.slice(0, 4), ...live.slice(4).filter((x) => x.a.type === 'cast' || x.a.type === 'ability').slice(0, 4)];
+    for (const x of top) {
+      if (performance.now() - t0 > budget * 1.5) break;
+      const b0 = evaluate(x.t, me, P);
+      const hand1 = x.t.players[me].hand;
+      const strike = (b: any) => b.type === 'attack' || b.type === 'ability' || (b.type === 'cast' && ['damage', 'poison', 'buffAttack', 'areaDamage'].includes(CARDS[hand1.find((h: any) => h.uid === b.uid)?.cardId]?.effect))
+        || (b.type === 'move' && ab(x.t.board.creatures.find((c: any) => c.uid === b.creatureUid) || { cardId: 'goblin-grunt' }, 'charge'));
+      const follow = shortlist(x.t, me, legalActions(x.t).filter(strike), rand, false);
+      // best follow-up per unit; a set-up (spell or special) is credited with its two best follow-ups (Thunderhorn Blast helps every attacker)
+      const perUnit = new Map<string, number>();
+      for (const b of follow.slice(0, 20)) {
+        const t2 = trial(x.t, b, me);
+        if (!t2) continue;
+        const d = evaluate(t2, me, P) - b0, k = b.creatureUid || b.uid || b.type;
+        if (d > (perUnit.get(k) ?? 0)) perUnit.set(k, d);
+      }
+      const gains = [...perUnit.values()].sort((p, q) => q - p);
+      const setup = x.a.type === 'cast' || x.a.type === 'ability';
+      x.v += TUNE.lookW * ((gains[0] || 0) + (setup ? gains[1] || 0 : 0));
+    }
+  }
+  scored.sort((x, y) => y.v - x.v);
+  const minH = hard ? TUNE.hardMin : TUNE.medMin;
+  // a per-turn pool (replyTurnMs) keeps long late-game turns quick: once it is spent, the rest of the turn uses the plain scoring
+  const poolKey = s.turn + ':' + me;
+  if (replyPool.key !== poolKey) { replyPool.key = poolKey; replyPool.ms = 0; }
+  if (hard && !lean && TUNE.reply && replyPool.ms < budgetMs(TUNE.replyTurnMs) && (s.phase === 'action' || (TUNE.replyDeploy && s.phase === 'deploy')) && scored.length > 1 && scored[0].v > minH) {
+    const r0 = performance.now();
+    // the reply-turn search (see replyValue): re-rank the best few options by the board after the player's reply turn.
+    // The best-looking option keeps its score; the others gain or lose by how much better or worse their reply board is.
+    const K = s.phase === 'deploy' ? TUNE.replyDeployK : TUNE.replyK;
+    const top = scored.slice(0, K).filter((x) => x.t && !x.t.winner && x.v > minH && scored[0].v - x.v <= TUNE.replyMargin);
+    if (top.length > 1) {
+      const deadline = performance.now() + Math.max(0, Math.min(budgetMs(TUNE.replyMs), left - (performance.now() - tStart)));
+      const R: number[] = [];
+      for (const x of top) {
+        if (R.length >= 2 && performance.now() > deadline) break;
+        R.push(replyValue(x.t, me, P, makeRand(s.turn * 131 + 7), deadline)); // the same random stream for every option: a fair comparison
+      }
+      if ((globalThis as any).__aiReplyDebug) (globalThis as any).__aiReplyDebug.push({ R, top: top.map((x) => [x.a.type, x.a.row ?? x.a.target?.row, x.a.col ?? x.a.target?.col, Math.round(x.v)]) });
+      for (let i = 1; i < R.length; i++) top[i].v += TUNE.replyW * (R[i] - R[0]);
+      scored.sort((x, y) => y.v - x.v);
+    }
+    replyPool.ms += performance.now() - r0;
+  }
+  if ((globalThis as any).__aiDebug) (globalThis as any).__aiDebug.push({ turn: s.turn, phase: s.phase, base, top: scored.slice(0, 6).map((x) => [Math.round(x.v * 10) / 10, x.a.type, x.a.ability || x.a.creatureUid || x.a.uid, x.a.row ?? x.a.target?.row, x.a.col ?? x.a.target?.col]) });
+  const min = hard ? TUNE.hardMin : TUNE.medMin;
+  if (!scored.length || scored[0].v <= min) return done;
+  if (!hard && scored.length > 1 && scored[1].v > min && rand() < TUNE.medMistake) return scored[1].a; // Medium makes the odd second-best choice
+  return scored[0].a;
+}
+
+export function aiChoose(s: any, difficulty: string, rand: Rand, only?: string[]): any {
   const who = s.priority as string;
-  const legal = legalActions(s).filter((a: any) => a.type !== 'surrender');
-  if (s.phase === 'mulligan') return { type: 'mulligan', uids: difficulty !== 'easy' ? mulliganUids(s, who) : [] };
+  const legal = legalActions(s).filter((a: any) => a.type !== 'surrender' && (!only || only.includes(a.type)));
+  if (s.phase === 'mulligan') return { type: 'mulligan', redraw: difficulty !== 'easy' && canRedraw(s, who) && wantsRedraw(s, who), uids: [] };
   const pickBest = (scored: [number, any][], min: number) => {
     let best: any = null, bv = min;
     for (const [v, a] of scored) if (v > bv || (v === bv && best && rand() < 0.3)) { best = a; bv = v; }
@@ -114,7 +640,7 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
 
   if (difficulty === 'easy') {
     if (s.pendingResponse) {
-      const r = legal.filter((a: any) => a.type === 'respond');
+      const r = legal.filter((a: any) => a.type === 'respond' || a.ability === 'brew');
       return r.length && rand() < 0.3 ? r[Math.floor(rand() * r.length)] : { type: 'pass' };
     }
     const acts = legal.filter((a: any) => a.type !== 'done' && a.type !== 'gathererSwap');
@@ -126,54 +652,12 @@ export function aiChoose(s: any, difficulty: string, rand: Rand): any {
     return acts[0];
   }
 
+  if (s.pendingResponse) {
+    const bw = legal.find((a: any) => a.ability === 'brew');
+    if (bw) return bw;
+  }
   if (s.pendingResponse) return pickBest(legal.map((a: any) => [scoreRespond(s, who, a), a]), 0.5) || { type: 'pass' };
 
-  const hard = difficulty === 'hard';
-  const scored: [number, any][] = [];
-  for (const a of legal) {
-    if (a.type === 'playCrystal') {
-      const card = CARDS[s.players[who].hand.find((h: any) => h.uid === a.uid).cardId];
-      scored.push([100, a]);
-    } else if (a.type === 'summon') {
-      const h = s.players[who].hand.find((x: any) => x.uid === a.uid);
-      const card = CARDS[h.cardId];
-      scored.push([(card.role === 'Smith' ? 26 : isMiner(card) ? 40 : 40) + card.cost * 2 + posValue(s, who, card, a.row, a.col) * 0.5 + rand(), a]);
-    } else if (a.type === 'gathererSwap') {
-      const h = a.discardUid ? s.players[who].hand.find((x: any) => x.uid === a.discardUid) : null;
-      const dc = h ? CARDS[h.cardId] : null;
-      scored.push([dc ? 30 - (dc.type === 'crystal' ? 0 : dc.cost * 2) - (dc.cost <= 2 ? 10 : 0) : 30, a]);
-    } else if (a.type === 'minerUpgrade') {
-      // upgrade a strong fighter when nothing better can be summoned; Miner cards otherwise come down as Miners
-      const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
-      const cc = CARDS[c.cardId];
-      scored.push([!isMiner(cc) && cc.cost >= 4 ? 28 + cc.cost + rand() : 0, a]);
-    } else if (a.type === 'cast') scored.push([scoreCast(s, who, a), a]);
-    else if (a.type === 'mine') {
-      const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
-      const site = s.sites.find((x: any) => x.row === a.row && x.col === a.col);
-      const enemyOwned = site && site.controller === other(who as any);
-      scored.push([(isMiner(CARDS[c.cardId]) ? (enemyOwned ? 45 : 60) + (hard ? 15 : 0) : (s.turn >= 5 ? 1 : 14)) + rand(), a]);
-    } else if (a.type === 'move') {
-      const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
-      const card = CARDS[c.cardId];
-      const mate = creatureAt(s, a.row, a.col);
-      let v = posValue(s, who, card, a.row, a.col) - posValue(s, who, card, c.row, c.col) + rand() * 0.1;
-      if (mate) {
-        const mc = CARDS[mate.cardId];
-        v += posValue(s, who, mc, c.row, c.col) - posValue(s, who, mc, mate.row, mate.col) - 1;
-      }
-      scored.push([v, a]);
-    } else if (a.type === 'attack') {
-      const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
-      if (a.target.commander) { scored.push([200 + atkValue(s, c) + (s.players[other(who as any)].health <= atkValue(s, c) ? 10000 : 0) + (hard && s.players[other(who as any)].health <= atkValue(s, c) * 2 ? 60 : 0), a]); continue; }
-      const d = creatureAt(s, a.target.row, a.target.col);
-      const dmg = atkValue(s, c, d);
-      const kills = dmg - (CARDS[d.cardId].abilities?.includes('armored') ? 1 : 0) >= d.health;
-      const melee = cheb(c, d) === 1 && !CARDS[c.cardId].abilities?.includes('ranged');
-      const strike = melee && !CARDS[c.cardId].abilities?.includes('sneaky') ? atkValue(s, d, c) : 0;
-      const dies = strike >= c.health;
-      scored.push([dmg * 8 + (kills ? 40 + CARDS[d.cardId].cost * 6 : 0) + (hard && d.health < d.maxHealth ? 12 : 0) + (hard && isMiner(CARDS[d.cardId]) ? 8 : 0) - strike * 6 - (dies ? 10 + CARDS[c.cardId].cost * 8 : 0), a]);
-    }
-  }
-  return pickBest(scored, 0.5) || done;
+  return smartChoose(s, difficulty === 'hard', rand, legal, done);
 }
+void FACTIONS;

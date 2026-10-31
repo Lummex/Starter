@@ -1,6 +1,30 @@
 // Placeholder 3D battlefield (Three.js). Returns null when WebGL is unavailable (the UI then shows a 2D board).
+import { ringColor, getRings } from './fx-settings';
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
+import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, standingBox, type C3D } from './creature3d';
+import { stagePlow, plowFrame } from './plow';
+import { SHOTS, isShooter, createProjectiles, preloadShots, type ShotSpec } from './projectiles';
+import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D, loadCommander3d, makeCommander3d, commander3dReady, commanderIds3d } from './grubnak3d';
+import { makeMineFx, MineFx } from './mineFx';
+import { createSpellFx, fxImpactMs, type SpellFxRequest } from './spell-fx';
+import { SPELL_VISUALS } from '../content/spell-visuals';
+import { mineEmblemUrl } from './cardfmt';
+import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
+import { audio, SHOT_SOUNDS } from './audio';
+import baseLayoutJson from '../content/arena-layout.json';
+import ownerLayoutJson from '../content/owner-layout.json';
+// Round 9a: the owner's final layout carries the full effect list (57); the painting data is identical
+// Positions of the 54 arena effects stay exactly the Arena Editor's (skullfang-arena-layout.json); the owner's per-effect looks are merged in
+let nonFlowIdx = 0;
+const mergedEffects = ((ownerLayoutJson as any).effects as any[]).map((e: any) => {
+  if (e.type === 'flow') return e;
+  const b: any = (baseLayoutJson as any).effects[nonFlowIdx++];
+  return b && b.type === e.type ? { ...e, x: b.x, y: b.y } : e;
+});
+const layoutJson: any = { ...baseLayoutJson, effects: mergedEffects };
+import { buildArena } from './arena-fx';
+import { boardHomography, cellGeometry, fitCamera, groundToPainting, BG, BOARD } from './arena-geo';
 
 const BW: number = CONFIG.boardWidth, BH: number = CONFIG.boardHeight;
 const SHP = CONFIG.strongholds as Record<string, number[]>;
@@ -9,14 +33,79 @@ export interface Rect { x: number; y: number; w: number; h: number }
 export interface BoardView {
   is3D: boolean;
   setState(state: any, events: any[]): void;
+  playBowl?(event: any): void;
+  /** Oct 30: ms until this unit's attack blow lands (pop-ups wait for it) */
+  blowDelay?(uid: string): number;
+  /** Oct 31 (Ken: the computer plays too fast): something on the board is still moving, fighting, dying or casting */
+  isBusy?(): string;
+  /** Oct 31 (Ken: bubbles must not cover the unit): the on-screen box (board px) of the unit, mine or Stronghold on a square */
+  topAt?(row: number, col: number): { left: number; right: number; top: number; bottom: number } | null;
   cellRect(row: number, col: number): Rect;
   resize(): void;
+  setCamera(c: { zoom: number; x: number; y: number }): void;
+  /** painted-arena view controls (round 8a) */
+  /** now = follow a finger exactly (no easing) */
+  zoomAt(factor: number, sx?: number, sy?: number, now?: boolean): void;
+  panBy(dx: number, dy: number, now?: boolean): void;
+  recenter(): void;
+  getView(): any;
+  squareCenter(row: number, col: number): { x: number; y: number } | null;
+  arenaDetails(): any;
+  piecePoses(): any;
+  playEmote(side: string, name: string): void;
+  focusCommander(side: string): void;
+  onViewChange?: () => void;
+  cellQuad(row: number, col: number): { x: number; y: number }[];
+  screenRects(): any;
+  setFlowMode(m: string): void;
+  setFlowTarget?(side: string, el: HTMLElement | null): void;
+  flowDestinations?(): any;
+  mineBox?(row: number, col: number): { x: number; y: number; width: number; height: number };
+  pulseFlow(side: string): void;
   emote(side: 'player' | 'opponent', kind: 'cheer' | 'groan' | 'flinch' | 'cast'): void;
+  lookBack(side: 'player' | 'opponent', ms: number): void;
+  impatient(side: 'player' | 'opponent', level: number): void;
+  advanceFigureIdle?(sec: number): void;
+  facing(side: 'player' | 'opponent'): any;
+  poke(uid: string): string | null;
+  /** Oct 31 (Ken: "I can't move any of the characters"): the unit whose figure is drawn under this screen point (client px), front-most first; units are 3x and stand over the squares behind them */
+  unitAt?(x: number, y: number): string | null;
+  /** Owner fix (Ken, Oct 28): the unit the Junk Shaman carries hangs at the pointer (screen px) and loops its lifted clip; the holder plays his lift special. null = put down */
+  setCarry?(c: { uid: string; holder: string; x: number; y: number } | null): void;
+  retreat(side: 'player' | 'opponent'): void;
+  /** Oct 31 (Ken): Brush's painted spell FX as an event on the board (timing only; the spell has already resolved) */
+  playSpell?(req: SpellFxRequest): any;
+  /** Oct 31: a countered card shatters into Snuff Out's shards at this square */
+  spellShards?(at: { row: number; col: number }, countered: string | null): void;
+  stats(): Promise<any>;
   dispose(): void;
 }
 
-const SYMBOL: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
+const SYMBOL: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨', beer: '🍺' };
+/** Owner (Oct 24): mines take the owner's faction color; unowned mines are white. */
+const MINE_FACTION: Record<string, string> = { goblins: '#3ee06a', gnomes: '#9b4dff', dwarves: '#2f5fd8' };
 const hexOf = (id: string | null) => (id && id !== 'white' ? COLORS[id].hex : COLORS.neutral.hex);
+const CMD_H = 2.4, CREATURE_H = 1.1;
+/** Ken (Oct 31): real-world heights (Ledger's table) replace the 3x rule. A unit's standing body is its table height x this (owner layout characterSizes.creatures, back to 1). Rings stay square-sized. */
+const UNIT_K = Math.max(0.2, +((ownerLayoutJson as any).characterSizes?.creatures ?? 1) || 1);
+/** Ken (Oct 31): a unit without a 3D model (stand-in) is 0.9 squares x creatures tall, no softening */
+const STANDIN_H = 0.9;
+/** Height of the solid meshes in a group (sprites, beams and transparent effects ignored), in world units. */
+function measureBox(o: THREE.Object3D): THREE.Box3 {
+  const b = new THREE.Box3();
+  o.updateMatrixWorld(true);
+  o.traverse((m: any) => {
+    if (!m.isMesh || m.name === 'bomb-spark' || (m.material && m.material.transparent && m.material.opacity < 0.5)) return;
+    let p: THREE.Object3D | null = m, skip = false;
+    while (p) { if (p.name === 'bomb' || p.name === 'acting-ring') skip = true; p = p.parent; }
+    if (!skip) { if (m.isSkinnedMesh) { m.skeleton.update(); m.boundingBox = null; m.computeBoundingBox(); b.union(m.boundingBox.clone().applyMatrix4(m.matrixWorld)); } else b.expandByObject(m); }
+  });
+  return b;
+}
+function measureHeight(o: THREE.Object3D): number {
+  const b = measureBox(o);
+  return b.isEmpty() ? 0 : b.max.y - Math.max(b.min.y, 0);
+}
 const world = (row: number, col: number) => new THREE.Vector3(col - (BW + 1) / 2, 0, row - (BH + 1) / 2);
 
 const symCache: Record<string, THREE.Texture> = {};
@@ -35,37 +124,6 @@ function symbolSprite(sym: string, size = 0.55) {
   sp.scale.set(size, size, 1);
   return sp;
 }
-
-function groundTexture() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 512;
-  const g = c.getContext('2d')!;
-  g.fillStyle = '#4b3b2b';
-  g.fillRect(0, 0, 512, 512);
-  let seed = 12345;
-  const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
-  const palette = ['#3d5a2e', '#2f4a27', '#5a4632', '#6b5a45', '#3b3d40', '#4f6a35', '#3a2d20'];
-  for (let i = 0; i < 520; i++) {
-    g.fillStyle = palette[Math.floor(rnd() * palette.length)];
-    g.globalAlpha = 0.25 + rnd() * 0.35;
-    g.beginPath();
-    g.ellipse(rnd() * 512, rnd() * 512, 14 + rnd() * 46, 10 + rnd() * 30, rnd() * 3, 0, 7);
-    g.fill();
-  }
-  g.globalAlpha = 1;
-  for (let i = 0; i < 40; i++) {
-    g.fillStyle = '#8b8d93';
-    g.beginPath();
-    g.ellipse(rnd() * 512, rnd() * 512, 5 + rnd() * 9, 4 + rnd() * 6, rnd() * 3, 0, 7);
-    g.fill();
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(10, 8);
-  return t;
-}
-
 
 const M = (color: number, extra: any = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.5, ...extra });
 const WOOD = 0x8a5a2a, IRON = 0xc4c8d4;
@@ -149,144 +207,783 @@ function addWeapon(g: THREE.Group, weapon: string | null, faction: string) {
   }
 }
 
+let glSupported: boolean | null = null;
+let glPool: { renderer: THREE.WebGLRenderer; backRenderer: THREE.WebGLRenderer | null; backCanvas: HTMLCanvasElement } | null = null;
 export function createBoardView(container: HTMLElement, low: boolean): BoardView | null {
   let renderer: THREE.WebGLRenderer;
   try {
-    const probe = document.createElement('canvas');
-    if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) return null;
-    renderer = new THREE.WebGLRenderer({ antialias: !low, alpha: true });
+    if (glSupported === null) { const probe = document.createElement('canvas'); const gl: any = probe.getContext('webgl2') || probe.getContext('webgl'); glSupported = !!gl; try { gl?.getExtension('WEBGL_lose_context')?.loseContext(); } catch { /* ignore */ } }
+    if (!glSupported) return null;
+    renderer = (document.body.classList.contains('test') && glPool?.renderer) || new THREE.WebGLRenderer({ antialias: !low && !document.body.classList.contains('test'), alpha: true });
   } catch {
     return null;
   }
-  renderer.setPixelRatio(low ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+  const testMode = document.body.classList.contains('test');
+  const pixelRatio = () => (low ? Math.min(window.devicePixelRatio || 1, 2) : window.devicePixelRatio || 1); // Round 26 A2: native resolution (capped at 2 only on Graphics: Low), also in test mode
+  renderer.setPixelRatio(pixelRatio());
   renderer.shadowMap.enabled = !low;
+  renderer.info.autoReset = false;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
   const canvas = renderer.domElement;
   canvas.className = 'board-canvas';
   container.prepend(canvas);
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x554466, 1.15));
-  const sun = new THREE.DirectionalLight(0xfff0d0, 1.6);
+  const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 400);
+  // dark moody base light; the glowing mines are the main light sources, cool rim light keeps creatures readable
+  scene.add(new THREE.HemisphereLight(0xa0a2cc, 0x3a3040, 1.9));
+  const sun = new THREE.DirectionalLight(0xd8dcff, 2.2);
   sun.position.set(-4, 9, 5);
   sun.castShadow = !low;
-  sun.shadow.mapSize.set(2048, 1024);
+  sun.shadow.mapSize.set(1024, 512);
   Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 7, bottom: -7 });
   scene.add(sun);
+  const rim = new THREE.DirectionalLight(0xffb070, 2.0);
+  rim.position.set(3, 4, -8);
+  scene.add(rim);
 
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 60), new THREE.MeshStandardMaterial({ map: groundTexture(), roughness: 1 }));
-  ground.rotation.x = -Math.PI / 2;
-  ground.receiveShadow = true;
-  scene.add(ground);
+  // the painted arena is a 2D picture behind this canvas; the floor only catches the pieces' shadows
+  const catcher = new THREE.Mesh(new THREE.PlaneGeometry(60, 40), new THREE.ShadowMaterial({ opacity: 0.4 }));
+  catcher.rotation.x = -Math.PI / 2;
+  catcher.receiveShadow = true;
+  scene.add(catcher);
+  renderer.setClearColor(0x000000, 0);
+  renderer.autoClear = false;
+  const composer: null = null, bloomPass: null = null;
 
-  // crystal formations
-  const crystals: { mats: THREE.MeshStandardMaterial[]; sprite: THREE.Sprite | null; group: THREE.Group; ctl: any }[] = [];
-  const sparkles: THREE.Points[] = [];
+  // glowing crystal mines inside spiked palisades
+  const mines: MineArt[] = [];
+  const mineFx: MineFx[] = [];
+  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
   for (let mi = 0; mi < CONFIG.mineCount; mi++) {
-    const grp = new THREE.Group();
-    const mats: THREE.MeshStandardMaterial[] = [];
-    [[0, 0, 1.15, 0.28], [-0.28, 0.1, 0.75, 0.2], [0.28, -0.08, 0.6, 0.18]].forEach(([x, z, h, r]) => {
-      const m = new THREE.MeshStandardMaterial({ color: COLORS.neutral.hex, emissive: COLORS.neutral.hex, emissiveIntensity: 0.55, roughness: 0.15, metalness: 0.3 });
-      const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(r, 0), m);
-      mesh.scale.y = h / r;
-      mesh.position.set(x, h * 0.5, z);
-      mesh.castShadow = !low;
-      grp.add(mesh);
-      mats.push(m);
-    });
-    scene.add(grp);
-    crystals.push({ mats, sprite: null, group: grp, ctl: undefined });
-    if (!low) {
-      const pts = new Float32Array(30);
-      for (let i = 0; i < 10; i++) { pts[i * 3] = (Math.sin(i * 7) * 0.5); pts[i * 3 + 1] = 0.2 + (i % 5) * 0.25; pts[i * 3 + 2] = Math.cos(i * 5) * 0.5; }
-      const g = new THREE.BufferGeometry();
-      g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
-      const p = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 0.07, transparent: true, opacity: 0.8 }));
-      grp.add(p);
-      sparkles.push(p);
+    const m = makeMine(low, mi);
+    m.recolor('#ffffff');
+    scene.add(m.group);
+    mines.push(m);
+    const fx = makeMineFx(low); m.group.add(fx.group); mineFx.push(fx);
+  }
+  const crystals = mines.map((m) => ({ ctl: undefined as any, art: m, sprite: null as THREE.Sprite | null, emb: null as THREE.Sprite | null, embFac: '' }));
+// Owner fix Oct 28 (Ken): the mine's faction emblem lives in the 3D scene (depth-tested, not an HTML overlay), so units standing on or in front of the mine are drawn over it
+const embTexCache: Record<string, THREE.Texture> = {};
+const embTex = (u: string) => embTexCache[u] || (embTexCache[u] = (() => { const t = new THREE.TextureLoader().load(u); t.colorSpace = THREE.SRGBColorSpace; return t; })());
+const _embV = new THREE.Vector3();
+
+  const embers: null = null;
+
+  // Round 5b: soul crystal flow particles (mines stream into their owner's Stronghold; neutral mines swirl)
+  const FN = 16;
+  let flowMode = (() => { try { return localStorage.getItem('oreheart.flow') || ''; } catch { return ''; } })() || (low ? 'reduced' : 'on');
+  const pulseAt: Record<string, number> = { player: 0, opponent: 0 };
+  // Crystal Flow (Round 9a, port of the Game Editor's makeFlow): faceted shards tumble along S-curves from each owned mine to its owner's Stronghold.
+  const shardGeo = new THREE.OctahedronGeometry(0.5, 0); shardGeo.scale(0.55, 1.35, 0.4);
+  const flowMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+  const flowPts = new THREE.InstancedMesh(shardGeo, flowMat, CONFIG.mineCount * FN);
+  flowPts.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(CONFIG.mineCount * FN * 3), 3);
+  flowPts.frustumCulled = false;
+  flowPts.renderOrder = 5;
+  scene.add(flowPts);
+  const flowDum = new THREE.Object3D(), flowCol3 = new THREE.Color();
+  let flowShown = 0;
+  const flowOwner: string[] = [];
+  const flowCol: Record<string, THREE.Color> = { player: new THREE.Color(0x9dff6a), opponent: new THREE.Color(0xff5a4a), neutral: new THREE.Color(0xe8e8ff) };
+  const bez = new THREE.Vector3();
+  // Round 10: shards flow into the HUD Flow crystal counter (screen element -> a world point on a plane above the board)
+  const FLOW_MAIN: Record<string, string> = { goblins: '#3ee06a', gnomes: '#9b4dff', dwarves: '#2f5fd8' };
+  const FLOW_HI: Record<string, string> = { goblins: '#b45cff', gnomes: '#3fa9ff', dwarves: '#FFD700' };
+  const flowHi: Record<string, THREE.Color> = { player: new THREE.Color('#b45cff'), opponent: new THREE.Color('#b45cff') };
+  const flowTargetEl: Record<string, HTMLElement | null> = { player: null, opponent: null };
+  const flowDest: Record<string, THREE.Vector3 | null> = { player: null, opponent: null };
+  const flowRay = new THREE.Vector3(), flowDir = new THREE.Vector3();
+  function updateFlowDest() {
+    const rc = canvas.getBoundingClientRect();
+    for (const sd of ['player', 'opponent']) {
+      const el = flowTargetEl[sd];
+      if (!el || !rc.width) { flowDest[sd] = null; continue; }
+      const er = el.getBoundingClientRect();
+      if (!er.width) { flowDest[sd] = null; continue; }
+      const nx = ((er.left + er.width / 2 - rc.left) / rc.width) * 2 - 1, ny = -(((er.top + er.height / 2 - rc.top) / rc.height) * 2 - 1);
+      flowRay.set(nx, ny, 0.5).unproject(camera);
+      flowDir.copy(flowRay).sub(camera.position).normalize();
+      const k = (2.2 - camera.position.y) / (flowDir.y || -1e-6);
+      flowDest[sd] = (flowDest[sd] || new THREE.Vector3()).copy(camera.position).addScaledVector(flowDir, k);
     }
+  }
+  /** Shards per stream: the engine's window.oreheart.flowShardCount if present, else 2 at flow 1 up to ~12 at flow 16. */
+  function shardCount(side: string): number {
+    const fl = state?.players?.[side]?.flow || 0;
+    const fn = (window as any).oreheart?.flowShardCount;
+    let c = 0;
+    if (typeof fn === 'function') { try { c = Number(fn(fl)); } catch { c = 0; } }
+    if (!(c > 0)) c = fl <= 0 ? 1 : Math.round(2 + (Math.min(fl, 16) - 1) * (10 / 15));
+    return Math.max(1, Math.min(FN, Math.round(c)));
+  }
+  function updateFlow(now: number) {
+    const n = flowMode === 'off' ? 0 : flowMode === 'reduced' ? 6 : FN;
+    flowPts.visible = n > 0;
+    if (!n) { flowShown = 0; return; }
+    const t = now / 1000;
+    let pulse = 0;
+    for (const sd of ['player', 'opponent']) pulse = Math.max(pulse, 1 - Math.min(1, (now - pulseAt[sd]) / 1000));
+    let shown = 0;
+    updateFlowDest();
+    mines.forEach((m, mi) => {
+      const owner = flowOwner[mi] || 'neutral';
+      const nm = owner === 'neutral' ? n : Math.min(n, shardCount(owner));
+      const a = m.group.position;
+      const dest = owner === 'neutral' ? null : flowDest[owner] || cmd[owner].group.position;
+      const c = flowCol[owner];
+      for (let i = 0; i < FN; i++) {
+        const k = mi * FN + i;
+        flowDum.rotation.set(0, 0, 0);
+        if (i >= nm) { flowDum.position.set(0, -50, 0); flowDum.scale.setScalar(0.001); flowDum.updateMatrix(); flowPts.setMatrixAt(k, flowDum.matrix); continue; }
+        let fade = 1;
+        if (dest) {
+          const u = (t * 0.32 + i / nm) % 1;
+          const sx = a.x, sy = 1.5, sz = a.z, ex = dest.x, ey = flowDest[owner] ? dest.y : CMD_H * 0.55, ez = dest.z;
+          const cx = (sx + ex) / 2, cy = 3.4, cz = (sz + ez) / 2;
+          const w = 1 - u;
+          bez.set(w * w * sx + 2 * w * u * cx + u * u * ex, w * w * sy + 2 * w * u * cy + u * u * ey, w * w * sz + 2 * w * u * cz + u * u * ez);
+          // moving S-curves: sideways bends that slither along the stream
+          const dx = ex - sx, dz = ez - sz, len = Math.hypot(dx, dz) || 1;
+          const env = Math.sin(Math.PI * u), bend = env * 0.55 * Math.sin(Math.PI * 2 * 2.15 * u - t * 1.4 + mi) + Math.sin(t * 3 + i * 1.7) * 0.06 * env;
+          bez.x += (-dz / len) * bend; bez.z += (dx / len) * bend;
+          flowDum.position.copy(bez);
+          fade = Math.min(1, u * 6, (1 - u) * 4) * (0.8 + pulse * 0.6);
+          flowDum.rotation.set(t * 3 + i, t * 2 + i * 2, t * 4 + mi);
+          flowDum.scale.setScalar(0.2 * (0.5 + 0.5 * env) * (1 + pulse * 0.5) * (0.8 + (i % 3) * 0.2));
+        } else {
+          const ang = t * 1.1 + (i / n) * Math.PI * 2, r = 0.38 + 0.12 * Math.sin(t * 1.7 + i);
+          flowDum.position.set(a.x + Math.cos(ang) * r, 1.45 + 0.25 * Math.sin(t * 1.3 + i * 2) + (i % 3) * 0.12, a.z + Math.sin(ang) * r);
+          flowDum.rotation.set(t * 3 + i, t * 2 + i * 2, 0);
+          flowDum.scale.setScalar(0.16); fade = 0.8;
+        }
+        flowDum.updateMatrix();
+        flowPts.setMatrixAt(k, flowDum.matrix);
+        const cc = owner !== 'neutral' && i % 4 === 0 ? flowHi[owner] : c;
+        flowCol3.setRGB(cc.r * fade * 1.15, cc.g * fade * 1.15, cc.b * fade * 1.15);
+        flowPts.setColorAt(k, flowCol3);
+        shown++;
+      }
+    });
+    flowShown = shown;
+    flowPts.instanceMatrix.needsUpdate = true;
+    if (flowPts.instanceColor) flowPts.instanceColor.needsUpdate = true;
   }
 
   // strongholds + commanders
-  const cmd: Record<string, { group: THREE.Group; body: THREE.Mesh; fig: THREE.Group; emote: { kind: string; t: number } | null; faction: string }> = {};
+  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; g3d: G3D | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null; baseYaw?: number; yaw?: number; lookUntil?: number; impatient?: number; elog?: string[]; fwdUntil?: number };
+  const cmd: Record<string, Cmd> = {};
   for (const side of ['player', 'opponent'] as const) {
     const g = new THREE.Group();
     const p = world(SHP[side][0], SHP[side][1]);
     g.position.copy(p);
-    const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.55, 0.55, 10), new THREE.MeshStandardMaterial({ color: 0x77706a, roughness: 0.9 }));
-    tower.position.y = 0.27;
-    tower.castShadow = !low;
-    g.add(tower);
-    const fig = new THREE.Group();
     const body = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 12), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
-    body.position.y = 0.85;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 12), new THREE.MeshStandardMaterial({ color: 0xe9c89a }));
-    head.position.y = 1.3;
-    fig.add(body, head);
-    if (side === 'opponent') fig.rotation.y = Math.PI;
-    g.add(fig);
+    const fig = new THREE.Group();
     scene.add(g);
-    cmd[side] = { group: g, body, fig, emote: null, faction: '' };
+    cmd[side] = { group: g, keep: null, fig, grub: null, g3d: null, body, emote: null, faction: '', id: '', retreat: null };
   }
+  function buildCommander(side: 'player' | 'opponent', faction: string, id: string) {
+    const cm = cmd[side];
+    cm.group.clear();
+    cm.g3d = null;
+    const a3 = id === 'grubnak' ? grubnak3dReady() : commander3dReady(id);
+    if (!a3 && id !== 'grubnak' && commanderIds3d().includes(id)) loadCommander3d(id).then((x) => { if (x && !disposed) for (const sd of ['player', 'opponent'] as const) if (cmd[sd].id === id && !cmd[sd].g3d) buildCommander(sd, cmd[sd].faction, id); });
+    const onThrone = !!a3 && id === 'grubnak'; // Grubnak's throne replaces the stronghold; other 3D Commanders (Oct 30: Borgo) stand on theirs
+    if (onThrone) { cm.keep = null; cm.retreat = null; } else { cm.keep = makeStronghold(faction, low); cm.group.add(cm.keep.group); if (a3) cm.retreat = null; }
+    cm.fig = new THREE.Group();
+    cm.grub = null;
+    if (a3 && !onThrone) {
+      // Oct 30: Thane Borgo (and later Commanders) as the Meshy model standing on his stronghold, posed like Grubnak (owner layout turn + size)
+      const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
+      const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
+      cm.g3d = makeCommander3d(id, a3, cm.keep!.group, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: CS.commanders ?? 1, base: CS.commanderBase ?? true });
+      cm.fig = cm.g3d.figure;
+    } else if (a3) {
+      // Round 7 Part B: the Meshy 3D Grubnak on his own fortress
+      const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
+      const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
+      cm.g3d = makeGrubnak3d(a3, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: CS.commanders ?? 1, base: CS.commanderBase ?? true });
+      cm.fig = cm.g3d.figure;
+    } else if (id === 'grubnak') {
+      cm.grub = makeGrubnak(low);
+      cm.grub.group.position.y = 0.8;
+      cm.grub.group.scale.setScalar(0.85);
+      cm.fig.add(cm.grub.group);
+    } else {
+      const body = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 12), new THREE.MeshStandardMaterial({ color: hexOf(FACTIONS[faction].crystal) }));
+      body.position.y = 0.3;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 12), new THREE.MeshStandardMaterial({ color: 0xe9c89a }));
+      head.position.y = 0.75;
+      cm.fig.add(body, head);
+    }
+    if (cm.g3d) {
+      // facing = the owner's `turn` (board frame: facing direction (sin t, cos t); models look down +Z), never an automatic rule
+      const yaw = ((ownerLayoutJson as any).pieces.find((q: any) => q.id === (side === 'player' ? 'pCmd' : 'eCmd')).turn) * Math.PI / 180;
+      cm.baseYaw = yaw; cm.yaw = yaw; cm.lookUntil = 0; cm.impatient = 0;
+      cm.fig.rotation.y = yaw;
+    } else if (side === 'opponent') cm.fig.rotation.y = Math.PI;
+    if (cm.g3d) cm.group.add(cm.g3d.group); else cm.group.add(cm.fig);
+    cm.faction = faction; cm.id = id;
+    flowCol[side] = new THREE.Color(FLOW_MAIN[faction] || '#3ee06a');
+    crystals.forEach((cr, i) => { if (flowOwner[i] === side) cr.art.setDecal('#' + flowCol[side].getHexString()); }); // the ground decal of owned mines takes the faction color
+    flowHi[side] = new THREE.Color(FLOW_HI[faction] || '#b45cff');
+    // Round 5b: Commander + Stronghold about 2.4 spaces tall, feet to head
+    cm.group.scale.setScalar(1);
+    cm.g3d?.update(0.05);
+    cm.group.updateMatrixWorld(true);
+    const bx = measureBox(cm.group), nat = bx.isEmpty() ? 0 : bx.max.y - Math.max(bx.min.y, 0);
+    if (nat > 0.5 && !cm.g3d) {
+      // tall and narrow: 2.4 spaces high, but still inside its one space (about 1.3 wide)
+      const k = CMD_H / nat, wide = Math.max(bx.max.x - bx.min.x, bx.max.z - bx.min.z, 0.1);
+      const sxz = cm.g3d ? k : Math.min(k, 1.3 / wide);
+      cm.group.scale.set(sxz, k, sxz);
+    }
+    if (cm.g3d) cm.group.scale.setScalar(1);
+    cm.baseK = cm.group.scale.y;
+  }
+  loadGrubnak3d().then((a) => { if (a && !disposed) for (const side of ['player', 'opponent'] as const) if (cmd[side].id === 'grubnak' && !cmd[side].g3d) buildCommander(side, cmd[side].faction, 'grubnak'); });
+  // Oct 30: only the Commanders in this match download their model (each is ~3 MB); buildCommander asks for it
 
   // creatures
-  type Fig = { group: THREE.Group; target: THREE.Vector3; born: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean };
+  type Fig = {
+    ringColor?: string; ringGreyed?: boolean; ringObj?: THREE.Object3D | null;
+    group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
+    uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
+    /** Oct 30: squares still to walk (one per step), running gait, knock-back flight, delayed hit flash, step-in length, when its blow lands */
+    path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lungeDur?: number; blowAt?: number;
+  };
+  type Knock = { t0: number; from: THREE.Vector3; land: THREE.Vector3; h: number; spin: number; fly: number; ret: boolean; landed: boolean; knockMove?: boolean };
+  // Oct 30 (Ken's fighting vision): units walk square by square and fights are little comic scenes (timings in ms, snappy)
+  const WALK_SPEED = 2.8, RUN_SPEED = 4.0, IMPACT_MELEE = 250, IMPACT_RANGED = 300, LUNGE_MS = 620;
+  const impacts: { at: number; to: THREE.Vector3; ranged: boolean; armored: boolean; commander: boolean }[] = [];
+  /** Oct 31 (Ledger, studio/gear-placements-oct31.json aimLooks): while a shooter plays its ranged clip its gun takes an aim grip (barrel along
+   *  the hands, muzzle forward); the idle look comes back when the clip ends */
+  const AIM_LOOKS: Record<string, { part: string; look: { pos: number[]; rot: number[]; scale: number[] } }> = {
+    'oathbound-pikeman': { part: 'rifle', look: { pos: [17.338, 27.565, -5.141], rot: [-46.812, -43.718, -122.654], scale: [79.958, 79.958, 79.958] } }, // Ledger's trimmed grip (Oct 31): ~0 deg off while aiming (was ~48)
+    'deepforge-crossbowman': { part: 'crystal-gun', look: { pos: [11.799, 9.341, 3.481], rot: [-32.612, -34.028, -107.773], scale: [33.508, 33.508, 33.508] } }, // Ledger's exact grip (Oct 31): ~1-2 deg off in the game (grip A was ~10, the old one ~42)
+  };
+  const aimLog: { uid: string; cardId: string; part: string; on: number; off: number }[] = [];
+  if (testMode) { (window as any).__aimLooks = AIM_LOOKS; (window as any).__aimNow = () => aimNow(); } // test-only: try aim grips, read the aim quickly
+  /** test probe: for every aiming shooter, the angle (deg, on the ground plane) between its gun's long axis and the line to its facing target */
+  function aimNow() {
+    const out: any[] = [];
+    for (const f of figs.values()) {
+      const a = AIM_LOOKS[f.cardId], part = a && (f.c3d as any)?.partObject?.(a.part);
+      if (!part || !(part.userData as any).aiming) continue;
+      part.updateWorldMatrix(true, true);
+      const bb = new THREE.Box3(); part.traverse((o: any) => { if (o.isMesh) { o.geometry.computeBoundingBox?.(); const g = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld.clone().multiply(new THREE.Matrix4().copy(part.matrixWorld).invert())); bb.union(g); } });
+      const sz = bb.getSize(new THREE.Vector3()), axis = sz.x >= sz.y && sz.x >= sz.z ? new THREE.Vector3(1, 0, 0) : sz.y >= sz.z ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+      const q = new THREE.Quaternion(); part.getWorldQuaternion(q); const w = axis.applyQuaternion(q); const tilt = Math.asin(Math.min(1, Math.abs(w.y))) * 180 / Math.PI; w.y = 0; w.normalize();
+      const fwd = new THREE.Vector3(Math.sin(f.faceTo ?? f.group.rotation.y), 0, Math.cos(f.faceTo ?? f.group.rotation.y));
+      const ang = Math.acos(Math.min(1, Math.abs(w.dot(fwd)))) * 180 / Math.PI; // either end of the barrel may be the muzzle
+      // signed: the barrel line's yaw minus the target's yaw, counter-clockwise seen from above, folded into -90..90 (either end may be the muzzle)
+      let sg = (Math.atan2(w.x, w.z) - Math.atan2(fwd.x, fwd.z)) * 180 / Math.PI; while (sg > 90) sg -= 180; while (sg < -90) sg += 180;
+      out.push({ uid: f.uid, cardId: f.cardId, part: a.part, barrelVsTargetDeg: +ang.toFixed(1), signedDeg: +sg.toFixed(1), tiltDeg: +tilt.toFixed(1) });
+    }
+    return out;
+  }
+  function aimGrip(f: Fig, startAt: number, endAt: number, now: number) {
+    const a = AIM_LOOKS[f.cardId], c3 = f.c3d as any; if (!a || !c3?.partObject) return;
+    const part: THREE.Object3D | null = c3.partObject(a.part); if (!part) return;
+    const ud = part.userData as any;
+    if (!ud.idleLook) ud.idleLook = { pos: part.position.clone(), rot: part.rotation.clone(), scale: part.scale.clone() };
+    const set = (on: boolean) => {
+      if (on) { const L = a.look; part.position.set(L.pos[0], L.pos[1], L.pos[2]); part.rotation.set(THREE.MathUtils.degToRad(L.rot[0]), THREE.MathUtils.degToRad(L.rot[1]), THREE.MathUtils.degToRad(L.rot[2]), 'XYZ'); part.scale.set(L.scale[0], L.scale[1], L.scale[2]); }
+      else { part.position.copy(ud.idleLook.pos); part.rotation.copy(ud.idleLook.rot); part.scale.copy(ud.idleLook.scale); }
+      ud.aiming = on;
+    };
+    // Ledger, Oct 31: keep the aim look through the whole clip, then blend back to the idle look over ~175 ms instead of a hard snap
+    const BLEND = 175;
+    const blendOut = () => {
+      const p0 = part.position.clone(), q0 = part.quaternion.clone(), s0 = part.scale.clone();
+      const q1 = new THREE.Quaternion().setFromEuler(ud.idleLook.rot), t0 = performance.now(), tok = (ud.aimTok = (ud.aimTok || 0) + 1);
+      const step = () => {
+        if (ud.aimTok !== tok) return;
+        const k = Math.min(1, (performance.now() - t0) / BLEND), e = k * k * (3 - 2 * k);
+        part.position.lerpVectors(p0, ud.idleLook.pos, e); part.quaternion.slerpQuaternions(q0, q1, e); part.scale.lerpVectors(s0, ud.idleLook.scale, e);
+        if (k < 1) requestAnimationFrame(step); else set(false);
+      };
+      requestAnimationFrame(step);
+    };
+    clearTimeout(ud.aimOff);
+    setTimeout(() => { ud.aimTok = (ud.aimTok || 0) + 1; set(true); }, Math.max(0, startAt - now));
+    ud.aimOff = setTimeout(blendOut, Math.max(0, endAt - BLEND - now));
+    aimLog.push({ uid: f.uid, cardId: f.cardId, part: a.part, on: Math.round(startAt), off: Math.round(endAt) }); if (aimLog.length > 40) aimLog.shift();
+  }
+  /** Oct 31 (Ken: "the opposing side plays stuff too fast ... you can't tell anything that he's doing"): what still plays on the board
+   *  ('' = calm). The computer's next action waits until this is '' (game.ts aiPace). */
+  /** Oct 31: the screen box (board px, the same space as cellRect) of whatever stands on a square: a unit, a crystal mine or a Stronghold.
+   *  Cheap on purpose (bubbles call it): a unit uses its known standing height (the same one the status icons use), not a skinned box;
+   *  a mine's and a Stronghold's box are measured once and cached (they don't move). */
+  const staticBox = new Map<THREE.Object3D, THREE.Box3>();
+  function thingBox(row: number, col: number): { left: number; right: number; top: number; bottom: number } | null {
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    const proj = (x: number, y: number, z: number) => { _v.set(x, y, z).project(camera); return [((_v.x + 1) / 2) * W, ((1 - _v.y) / 2) * H]; };
+    for (const f of figs.values()) {
+      if (f.dying || f.row !== row || f.col !== col) continue;
+      const p = f.group.position, hh = f.c3d ? (f.c3d.boardH ?? f.c3d.height) + (f.c3d.lift || 0) : STANDIN_H * UNIT_K;
+      const [tx, ty] = proj(p.x, p.y + hh, p.z), [, by] = proj(p.x, 0, p.z), [lx] = proj(p.x - 0.45, p.y + hh * 0.5, p.z), [rx] = proj(p.x + 0.45, p.y + hh * 0.5, p.z);
+      return { left: Math.min(lx, rx, tx), right: Math.max(lx, rx, tx), top: ty, bottom: by };
+    }
+    let o: THREE.Object3D | null = null;
+    for (const m of mines) { const c = m.group.userData.cell; if (c && c.row === row && c.col === col) { o = m.group; break; } }
+    if (!o) for (const sd of ['player', 'opponent'] as const) if (SHP[sd][0] === row && SHP[sd][1] === col) { o = cmd[sd].group; break; }
+    if (!o) return null;
+    let b = staticBox.get(o);
+    if (!b) { b = new THREE.Box3().setFromObject(o); if (b.isEmpty()) return null; staticBox.set(o, b); }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let k = 0; k < 8; k++) {
+      const [px, py] = proj(k & 1 ? b.max.x : b.min.x, k & 2 ? b.max.y : b.min.y, k & 4 ? b.max.z : b.min.z);
+      x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+    }
+    return { left: x0, right: x1, top: y0, bottom: y1 };
+  }
+  function boardBusy(now: number): string {
+    if (spellFx.busy(now)) return 'spell';
+    if (impacts.length) return 'impact';
+    if (proj.busy()) return 'projectile'; // Oct 31: a shot or a bowling ball about to fly or flying
+    for (const f of figs.values()) {
+      if (f.dying) return 'dying';
+      if (f.born && now - f.born < 600) return 'summon';
+      if (f.hitAt && f.hitAt > now - 350) return 'hit';
+      if (f.hitT && now - f.hitT < 350) return 'hit';
+      if (f.kb && !f.kb.landed) return 'knock';
+      if (f.bowl) return 'bowled';
+      if (f.shootT && now >= f.shootT - 2000 && now - f.shootT < (f.atkMs || 600) + 250) return 'attack';
+      if (f.abilT && now - f.abilT < (f.abilMs || 1000)) return 'ability';
+      if (f.mineT && now - f.mineT < 900) return 'mine';
+      if (f.path && f.path.length) return 'walk';
+      if (Math.hypot(f.group.position.x - f.target.x, f.group.position.z - f.target.z) > 0.05) return 'walk';
+    }
+    return '';
+  }
+  const easeIO = (x: number) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
+  /** step in fast, hold the swing, step back */
+  const lungeShape = (k: number) => (k < 0.35 ? 1 - (1 - k / 0.35) ** 2 : k < 0.55 ? 1 : 1 - easeIO((k - 0.55) / 0.45));
+  /** king steps from one square to another, each step to a free square where there is a choice (straight line first) */
+  function walkPath(from: { row: number; col: number }, to: { row: number; col: number }, st: any, uid: string): THREE.Vector3[] {
+    const pts: THREE.Vector3[] = [];
+    let r = from.row, c = from.col;
+    const left = (a: number, b: number) => Math.max(Math.abs(to.row - a), Math.abs(to.col - b));
+    const free = (a: number, b: number) => (a === to.row && b === to.col) || !st.board.creatures.some((x: any) => x.uid !== uid && x.row === a && x.col === b);
+    for (let n = 0; n < 16 && (r !== to.row || c !== to.col); n++) {
+      const dr = Math.sign(to.row - r), dc = Math.sign(to.col - c);
+      const cands = [[r + dr, c + dc], [r + dr, c], [r, c + dc]].filter(([a, b]) => (a !== r || b !== c) && left(a, b) < left(r, c));
+      const [a, b] = cands.find(([x, y]) => free(x, y)) || cands[0];
+      pts.push(world(a, b)); r = a; c = b;
+    }
+    return pts;
+  }
+  /** a knock-back clip with launch / land events (Spring's pack) is sped up so its landing meets the flight's, and starts at its launch */
+  function fitKnockClip(f: Fig) {
+    f.kbClip = null;
+    const ev = f.c3d?.eventsOf?.('knockback') || [], la = ev.find((e) => e.name === 'launch')?.time, ld = ev.find((e) => e.name === 'land')?.time, rc = ev.find((e) => e.name === 'recovered')?.time;
+    if (!f.kb || la === undefined || ld === undefined || ld <= la) return;
+    const k = Math.min(3, Math.max(0.8, (ld - la) / (f.kb.fly / 1000)));
+    f.c3d!.setSpeed?.('knockback', k);
+    f.kbClip = { launch: la, dur: (((rc ?? f.c3d!.dur('knockback')) - la) / k) * 1000, seeked: false };
+    f.kb.spin = 0; // the clip does its own tumble
+  }
+  /** ms until a figure finishes the walk it is on */
+  function pathLeft(f: Fig): number {
+    if (!f.path || !f.path.length) return 0;
+    let d = 0, p = f.group.position.clone().setY(0);
+    for (const q of f.path) { d += p.distanceTo(q); p = q; }
+    return (d / (f.run ? RUN_SPEED : WALK_SPEED)) * 1000;
+  }
   const figs = new Map<string, Fig>();
-  function makeFigure(c: any): THREE.Group {
+  const minedSnd = new Set<string>(); /* Oct 31 (Brush): one mining clink per crystal mine per turn */
+  const _sv = new THREE.Vector3();
+  const audible = (p: THREE.Vector3) => { _sv.copy(p).project(camera); return Math.abs(_sv.x) <= 1 && Math.abs(_sv.y) <= 1 && _sv.z < 1; }; /* no footstep for a unit off screen */
+  // Owner fix (Ken, Oct 28): Junk Shaman carry. The carried figure hangs just under the pointer, raised above the board
+  const CARRY_UP = 0.45;
+  let carry: { uid: string; holder: string; pos: THREE.Vector3; h: number } | null = null;
+  const carryRay = new THREE.Vector3(), carryDir = new THREE.Vector3();
+  function setCarry(c: { uid: string; holder: string; x: number; y: number } | null) {
+    if (!c) { carry = null; return; }
+    const rc = canvas.getBoundingClientRect();
+    if (!rc.width) return;
+    let h = carry && carry.uid === c.uid ? carry.h : 0;
+    if (!h) { const f0 = figs.get(c.uid); if (f0) { const bx = new THREE.Box3().setFromObject(f0.group); h = bx.isEmpty() ? 1 : Math.max(0.3, Math.min(3, bx.max.y - bx.min.y)); } else h = 1; }
+    const nx = ((c.x - rc.left) / rc.width) * 2 - 1, ny = -(((c.y - rc.top) / rc.height) * 2 - 1);
+    carryRay.set(nx, ny, 0.5).unproject(camera);
+    carryDir.copy(carryRay).sub(camera.position).normalize();
+    const top = CARRY_UP + h * 0.85;
+    const k = (top - camera.position.y) / (carryDir.y || -1e-6);
+    const pos = new THREE.Vector3().copy(camera.position).addScaledVector(carryDir, k);
+    pos.y = CARRY_UP;
+    carry = { uid: c.uid, holder: c.holder, pos, h };
+  }
+  const fx: { obj: THREE.Object3D; t: number; kind: string; vel?: THREE.Vector3; dur?: number }[] = [];
+  const puffTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d')!; const gr = g.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+  const starTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d')!; g.fillStyle = '#ffe14a'; g.strokeStyle = '#3a2400'; g.lineWidth = 4; g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 11 : 28, a = (i / 10) * Math.PI * 2 - Math.PI / 2; g.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); } g.closePath(); g.fill(); g.stroke(); return new THREE.CanvasTexture(c); })();
+  // Oct 30 (Brush's comic stickers, public/art/combat-fx): an impact puff / sparkle and dizzy stars after a knock-back
+  const stickerTex = new Map<string, THREE.Texture>();
+  function sticker(name: string, at: THREE.Vector3, size: number, dur: number) {
+    if (low) return;
+    let t = stickerTex.get(name);
+    if (!t) { t = new THREE.TextureLoader().load(`/art/combat-fx/${name}.webp`); stickerTex.set(name, t); }
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false }));
+    sp.scale.setScalar(size); sp.position.copy(at); sp.renderOrder = 12; scene.add(sp);
+    fx.push({ obj: sp, t: performance.now(), kind: 'flash', dur, vel: new THREE.Vector3(0, 0.25, 0) });
+  }
+  function spawnFx(kind: 'dust' | 'stars' | 'spark' | 'chips' | 'flash', at: THREE.Vector3, n = 5) {
+    if (low) return;
+    for (let i = 0; i < n; i++) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: kind === 'stars' ? starTex : puffTex, transparent: true, depthWrite: false, color: kind === 'spark' ? 0xfff0a0 : kind === 'dust' ? 0xb8a890 : kind === 'chips' ? 0xeee2c0 : 0xffffff, blending: kind === 'flash' ? THREE.AdditiveBlending : THREE.NormalBlending }));
+      sp.scale.setScalar(kind === 'stars' ? 0.22 : kind === 'spark' ? 0.12 : kind === 'chips' ? 0.07 : kind === 'flash' ? 0.7 : 0.3);
+      sp.position.copy(at).add(kind === 'flash' || kind === 'chips' ? new THREE.Vector3(0, 0, 0) : new THREE.Vector3(0, 0.3, 0));
+      scene.add(sp);
+      const a = (i / n) * Math.PI * 2 + (kind === 'chips' ? 0.5 : 0);
+      fx.push({ obj: sp, t: performance.now(), kind, dur: kind === 'flash' ? 160 : kind === 'chips' ? 600 : 700, vel: kind === 'flash' ? new THREE.Vector3() : new THREE.Vector3(Math.cos(a) * (kind === 'chips' ? 1.4 : 0.9), kind === 'stars' ? 2 : kind === 'chips' ? 2.4 : 0.9, Math.sin(a) * (kind === 'chips' ? 1.4 : 0.9)) });
+    }
+  }
+  const proj = createProjectiles(scene, (k, at, n) => spawnFx(k, at, n), low); // Oct 31 (Ken): flying 3D projectiles
+  function makeFigure(c: any): { group: THREE.Group; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number } {
     const card = CARDS[c.cardId];
     const f = FACTIONS[card.faction];
     const colorHex = hexOf(f.crystal);
-    const g = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.55 });
-    const big = card.rarity === 'Collector' ? 1.35 : card.rarity === 'Ultra Rare' ? 1.15 : 1;
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.5, 12), mat);
-    body.position.y = 0.3;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 10), new THREE.MeshStandardMaterial({ color: 0xe8d3a8 }));
-    head.position.y = 0.72;
-    body.castShadow = head.castShadow = !low;
-    g.add(body, head);
-    if (card.faction === 'goblins') [-1, 1].forEach((s) => { const e = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.22, 6), mat); e.position.set(s * 0.22, 0.78, 0); e.rotation.z = -s * 1.2; g.add(e); });
-    if (card.faction === 'gnomes') { const h = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.32, 10), new THREE.MeshStandardMaterial({ color: 0xd04040 })); h.position.y = 1.0; g.add(h); }
-    if (card.faction === 'dwarves') { const b = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.24, 0.1), new THREE.MeshStandardMaterial({ color: 0x8a5a2a })); b.position.set(0, 0.6, 0.17); g.add(b); }
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 6, 24), new THREE.MeshBasicMaterial({ color: 0xffd400 }));
+    const ringMat = () => new THREE.MeshBasicMaterial({ color: 0xffd400 });
+    let g: THREE.Group;
+    let finished = false, mats: THREE.MeshStandardMaterial[] = [], parts: any = null, baseScale = 1;
+    const a3 = creature3dReady(card.id); // any faction with an owner-sheet model (goblins; Gnomes and Dwarves since Oct 25)
+    let c3: C3D | null = null;
+    if (a3) { try { c3 = makeCreature3d(card.id, a3, UNIT_K); } catch { c3 = null; } }
+    if (a3 && c3) {
+      // owner-sheet Meshy model (rigged, animated); dummy parts keep the procedural reactions harmless
+      g = new THREE.Group(); g.add(c3.group);
+      const cc3 = c3; cc3.onPlay = (n) => { if (n !== 'idle') creatureAnimLog.push({ uid: c.uid, cardId: c.cardId, at: Math.round(performance.now()), anim: n === 'run' ? 'walk' : n, clip: cc3.clipOf?.(n) || '', ...(n === 'run' ? { gait: 'run' } : {}) }); };
+      const dm = () => new THREE.Group();
+      parts = { armL: dm(), armR: dm(), head: dm(), body: dm(), weapon: dm(), legL: dm(), legR: dm(), aura: null };
+      finished = true; mats = c3.mats; baseScale = CREATURE_H;
+      (g as any).userData.c3d = c3;
+    } else if (card.faction === 'goblins') {
+      const gf = makeGoblin(card.id, card, (wg) => addWeapon(wg, weaponOf(card), 'goblins'), low);
+      g = gf.group; finished = true; mats = gf.mats.list; parts = gf.parts; baseScale = gf.baseScale;
+      (g as any).userData.goblin = gf;
+    } else {
+      g = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.55 });
+      const big = card.rarity === 'Collector' ? 1.35 : card.rarity === 'Ultra Rare' ? 1.15 : 1;
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.5, 12), mat);
+      body.position.y = 0.3;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 10), new THREE.MeshStandardMaterial({ color: 0xe8d3a8 }));
+      head.position.y = 0.72;
+      body.castShadow = head.castShadow = !low;
+      g.add(body, head);
+      if (card.faction === 'gnomes') { const h = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.32, 10), new THREE.MeshStandardMaterial({ color: 0xd04040 })); h.position.y = 1.0; g.add(h); }
+      if (card.faction === 'dwarves') { const b = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.24, 0.1), new THREE.MeshStandardMaterial({ color: 0x8a5a2a })); b.position.set(0, 0.6, 0.17); g.add(b); }
+      addWeapon(g, weaponOf(card), card.faction);
+      const sp = symbolSprite(f.symbol, 0.42);
+      sp.position.y = 1.2;
+      g.add(sp);
+      baseScale = big;
+      parts = { body, head };
+      g.scale.setScalar(big);
+    }
+    const hasBomb = (card.abilities || []).some((a: string) => a === 'kaboom' || a === 'kaboom1');
+    if (hasBomb && !(g as any).userData.c3d) {
+      // big round bomb with a lit fuse carried at the creature's side (R2.17)
+      const bomb = new THREE.Group();
+      bomb.name = 'bomb';
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 12), new THREE.MeshStandardMaterial({ color: 0x15151a, roughness: 0.35, metalness: 0.5 }));
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.07, 8), new THREE.MeshStandardMaterial({ color: 0x8a6a2a, metalness: 0.5 }));
+      cap.position.y = 0.2;
+      const fuse = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.16, 5), new THREE.MeshBasicMaterial({ color: 0xc9a46a }));
+      fuse.position.set(0.04, 0.3, 0); fuse.rotation.z = -0.5;
+      const spark = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffb020 }));
+      spark.position.set(0.1, 0.38, 0); spark.name = 'bomb-spark';
+      bomb.add(ball, cap, fuse, spark);
+      bomb.position.set(-0.34, 0.55, 0.1);
+      g.add(bomb);
+    }
+    (g as any).userData.bomb = hasBomb;
+    // Round 5b: every creature stands about 1.1 spaces tall
+    g.scale.setScalar(1);
+    g.updateMatrixWorld(true);
+    const nat = (g as any).userData.c3d ? 0 : measureHeight(g);
+    if (nat > 0.05) baseScale = (STANDIN_H / nat) * UNIT_K;
+    else if (!(g as any).userData.c3d) baseScale *= UNIT_K;
+    g.scale.setScalar(baseScale);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.06, 6, 24), ringMat());
     ring.name = 'acting-ring';
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.16, 6, 24), new THREE.MeshBasicMaterial({ color: 0xffd400, transparent: true, opacity: 0.25, depthWrite: false }));
+    halo.name = 'ring-halo';
+    ring.add(halo);
     ring.rotation.x = Math.PI / 2;
     ring.position.y = 0.04;
+    ring.scale.setScalar(1 / baseScale);
     g.add(ring);
-    addWeapon(g, weaponOf(card), card.faction);
-    const sp = symbolSprite(f.symbol, 0.42);
-    sp.position.y = 1.2;
-    g.add(sp);
-    g.scale.setScalar(big);
-    return g;
+    return { group: g, finished, mats, parts, baseScale };
   }
 
+  const creatureAnimLog: { uid: string; cardId: string; anim: string; clip?: string; gait?: string; at?: number }[] = [];
+  const asked = new Set<string>();
+  const pendingBorn = new Map<string, number>(); // summon time carried over when a token is rebuilt as its 3D model
+  // each goblin model is fetched once, only when a unit of it is on the board
+  function ensure3d(id: string) {
+    if (asked.has(id) || !hasCreature3dSlug(id)) return;
+    asked.add(id);
+    loadCreature3d(id).then((a) => {
+      // figures built before the model arrived are rebuilt with it
+      if (!a || disposed) return;
+      for (const [uid, f] of figs) if (f.cardId === id && !f.c3d) { if (f.bornAt) pendingBorn.set(uid, f.bornAt); scene.remove(f.group); figs.delete(uid); }
+      if (state) setState(state, []);
+    }).catch(() => { /* the token stays */ });
+  }
   let state: any = null;
+  /** Round 11: ring in the side's faction color (player settings), grey once the unit has acted. */
+  function applyRing(f: any, c: any, acted: boolean, st: any) {
+    const ring = f.group.getObjectByName('acting-ring') as THREE.Mesh | undefined;
+    if (!ring) return;
+    const col = ringColor(c.owner, st.players[c.owner].faction, acted), rs = getRings();
+    f.ringColor = col; f.ringGreyed = acted;
+    (ring.material as THREE.MeshBasicMaterial).color.set(col);
+    (ring.material as THREE.MeshBasicMaterial).opacity = rs.opacity; (ring.material as THREE.MeshBasicMaterial).transparent = rs.opacity < 1;
+    ring.scale.set(1 / f.baseScale, 1 / f.baseScale, rs.thickness / f.baseScale);
+    const halo = ring.getObjectByName('ring-halo') as THREE.Mesh | undefined;
+    if (halo) { (halo.material as THREE.MeshBasicMaterial).color.set(col); (halo.material as THREE.MeshBasicMaterial).opacity = rs.glow * 0.5 * rs.opacity; halo.visible = rs.glow > 0; }
+  }
+  // facing letters -> yaw (models look down +Z at yaw 0; N = toward board row 1 = -Z)
+  const FACE_YAW: Record<string, number> = { N: Math.PI, NE: Math.PI * 3 / 4, E: Math.PI / 2, SE: Math.PI / 4, S: 0, SW: -Math.PI / 4, W: -Math.PI / 2, NW: -Math.PI * 3 / 4 };
+  const facingYaw = (c: any, owner: string) => { const v = FACE_YAW[c.facing as string]; return v !== undefined ? v : owner === 'player' ? Math.PI : 0; };
+  // Oct 31 (Ken: "the bowler, the bowling ball should come out and roll across the screen, the 3D bowling ball"): his own OH_Special swing plays;
+  // at its ball_release event (bottom of the swing) the ball leaves his hand and Clay's 3D bowling ball rolls along the ground through the line,
+  // spinning; every unit in the path is knocked over the moment the ball reaches its square. The held ball comes back when the roll is over.
+  const bowlDone = new WeakSet<object>();
+  function playBowl(e: any, bf: Fig | null = null, relMs = 0) {
+    if (!e || bowlDone.has(e)) return;
+    bowlDone.add(e);
+    const now = performance.now();
+    const path: { row: number; col: number }[] = e.path || [];
+    if (!path.length) return;
+    const spec = SHOTS['goblin-scrapper'];
+    const releaseAt = now + relMs;
+    const pts = path.map((p) => world(p.row, p.col));
+    const from = e.from ? world(e.from.row, e.from.col) : bf ? bf.target.clone() : pts[0].clone();
+    const start = from.clone().lerp(pts[0], 0.3);
+    const pathAt: number[] = [];
+    let d = 0, prev = start;
+    for (const q of pts) { d += prev.distanceTo(q); prev = q; pathAt.push(releaseAt + (d / spec.speed) * 1000); }
+    let rollSnd: { stop(ms?: number): void } | null = null; // Brush: the roll loops, then fades ~0.15 s on impact
+    proj.fire({ shooterUid: e.uid, unit: bf?.cardId || 'goblin-scrapper', clip: bf?.c3d?.clipOf?.('special') || '', spec, releaseTime: relMs / 1000, releaseAt, arriveAt: pathAt[pathAt.length - 1], to: pts[pts.length - 1].clone(), path: pts, pathAt,
+      launch: () => (bf && figs.get(bf.uid) === bf ? launchPoint(bf, spec, pts[0]) : { pos: start.clone().setY(0.3), bone: start.clone().setY(0.3), drift: 0 }),
+      onSpawn: () => { bf?.c3d?.ballHide?.(true); spawnFx('dust', start, 4); audio.play('melee'); rollSnd = audio.loop('bowl-roll'); },
+      onLand: () => { bf?.c3d?.ballHide?.(false); rollSnd?.stop(150); } });
+    for (const h of e.hits || []) {
+      const f = figs.get(h.id ?? h.uid);
+      if (!f) continue;
+      const from2 = h.from ? world(h.from.row, h.from.col) : f.group.position.clone();
+      let idx = path.findIndex((p) => h.from && p.row === h.from.row && p.col === h.from.col);
+      if (idx < 0) idx = 0;
+      const t = pathAt[idx] - 60; // knocked over as the ball reaches it
+      f.bowl = { t0: t, from: from2, to: h.to ? world(h.to.row, h.to.col) : f.target.clone() }; f.bowledT = t; setTimeout(() => { audio.play('bonk', undefined, 'punch-heavy'); audio.play('pins-scatter'); }, Math.max(0, t - now)); // Forge, Oct 31: bowled over = the heavy punch // Round 28b: bowled-over clip (bonk as the ball reaches it)
+      f.group.position.copy(from2);
+    }
+  }
+  /** Oct 31: where a shot leaves the shooter: the launch bone, or the far end of the held weapon toward the target (muzzle / staff tip);
+   *  for the Bowler the held ball itself (its centre and size) */
+  const _lb = new THREE.Box3(), _lc = new THREE.Vector3(), _lh = new THREE.Vector3();
+  /** an end of a held item's long axis, in world space: the one farthest from the hand (a rifle's muzzle) or nearest the target (a staff's head) */
+  function farEnd(part: THREE.Object3D, hand: THREE.Vector3, toward: THREE.Vector3 | null): THREE.Vector3 {
+    const inv = part.matrixWorld.clone().invert(), lb = new THREE.Box3(), m = new THREE.Matrix4(), bb = new THREE.Box3();
+    part.traverse((o: any) => { if (!o.isMesh || !o.geometry) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); bb.copy(o.geometry.boundingBox).applyMatrix4(m.multiplyMatrices(inv, o.matrixWorld)); lb.union(bb); });
+    if (lb.isEmpty()) return part.getWorldPosition(new THREE.Vector3());
+    const c = lb.getCenter(new THREE.Vector3()), sz = lb.getSize(new THREE.Vector3());
+    const ax = sz.x >= sz.y && sz.x >= sz.z ? 'x' : sz.y >= sz.z ? 'y' : 'z';
+    const a = c.clone(), b2 = c.clone(); a[ax] = lb.min[ax]; b2[ax] = lb.max[ax];
+    a.applyMatrix4(part.matrixWorld); b2.applyMatrix4(part.matrixWorld);
+    if (toward) return a.distanceToSquared(toward) < b2.distanceToSquared(toward) ? a : b2; // a staff: the end nearer the target
+    return a.distanceToSquared(hand) > b2.distanceToSquared(hand) ? a : b2;
+  }
+  function launchPoint(f: Fig, s: ShotSpec, toPt: THREE.Vector3): { pos: THREE.Vector3; bone: THREE.Vector3; size?: number; drift: number } {
+    const c = f.c3d;
+    f.group.updateMatrixWorld(true);
+    const bone = c?.char?.getObjectByName(s.bone) || null;
+    const bp = bone ? bone.getWorldPosition(new THREE.Vector3()) : f.group.position.clone().setY((c?.boardH ?? 1) * 0.6 + (c?.lift || 0));
+    const pos = bp.clone();
+    let size: number | undefined;
+    const part = s.part ? c?.partObject?.(s.part) : null;
+    if (part) {
+      _lb.setFromObject(part);
+      if (!_lb.isEmpty()) {
+        _lb.getCenter(_lc); _lb.getSize(_lh).multiplyScalar(0.5);
+        if (s.style === 'roll') { pos.copy(_lc); size = Math.min(_lh.x, _lh.y, _lh.z) * 2; }
+        else if (s.launch === 'muzzle') pos.copy(farEnd(part, bp, s.tip === 'toward' ? toPt : null));
+      }
+    }
+    return { pos, bone: bp, size, drift: Math.hypot(f.group.position.x - f.target.x, f.group.position.z - f.target.z) }; // drift: how far the body is off its square at the release (a shooter stays put)
+  }
+  /** test hook: every attack staged (shot or melee, and how far it stepped in) */
+  const attackLog: { uid: string; cardId: string; kind: string; lunge: number; at: number; blowAt: number }[] = [];
+  // Owner (Oct 25): lasting effects (poison, drunk, rooted, ward, shield, can't act) float above the unit's head as the owner's icons, with turns left
+  const stIcons = new Map<string, { group: THREE.Group; key: string }>();
+  const stImg: Record<string, HTMLImageElement> = {};
+  const stTex = (k: string, n: number, x = 0) => {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const draw = () => {
+      const g = c.getContext('2d')!; g.clearRect(0, 0, 128, 128);
+      const im = stImg[k];
+      if (im && im.complete && im.naturalWidth) { const sc = Math.min(112 / im.naturalWidth, 112 / im.naturalHeight); const w = im.naturalWidth * sc, hh = im.naturalHeight * sc; g.drawImage(im, (128 - w) / 2, (128 - hh) / 2, w, hh); }
+      if (n > 0) { g.beginPath(); g.arc(100, 100, 24, 0, Math.PI * 2); g.fillStyle = '#111e'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#ffd76a'; g.stroke(); g.fillStyle = '#fff'; g.font = 'bold 32px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), 100, 102); }
+      tex.needsUpdate = true;
+    };
+    if (!stImg[k]) { stImg[k] = new Image(); stImg[k].src = `/art/pop/icon-${k}.webp`; }
+    const chip = () => { if (x <= 1) return; const g = c.getContext('2d')!; g.font = '900 44px system-ui, sans-serif'; g.textAlign = 'right'; g.textBaseline = 'top'; g.lineWidth = 7; g.strokeStyle = '#000'; g.lineJoin = 'round'; g.strokeText('×' + Math.min(3, x), 126, 2); g.fillStyle = '#fff'; g.fillText('×' + Math.min(3, x), 126, 2); tex.needsUpdate = true; }; // Ken (Oct 30): a crisp white x2 / x3 with a dark outline on the icon's top right
+    if (stImg[k].complete) { draw(); chip(); } else stImg[k].addEventListener('load', () => { draw(); chip(); }, { once: true });
+    draw(); chip();
+    return tex;
+  };
+  function statusList(st: any, c: any) {
+    const t = st.turn, out: [string, number, number?][] = [];
+    // Ken (Oct 30, stacking): [icon, number, x2 / x3 chip]
+    if (c.poison > 0) out.push(['poison', c.poison, Math.max(1, c.poisonStacks || 1)]);
+    if (c.drunk > 0) out.push(['drunk', c.drunk]);
+    if ((c.rootUntil || 0) > t) out.push(['rooted', c.rootUntil - t]);
+    if ((c.wardUntil || 0) > t) out.push(['ward', 0]);
+    if (c.shield > 0 || c.bubble) out.push(['shield', c.shield > 0 ? c.shield : 0, c.shield > 0 ? 0 : c.bubbles || 0]);
+    if ((st.flags?.battleCryN?.[c.owner] || 0) > 0) out.push(['attackup', 0, st.flags.battleCryN[c.owner]]);
+    if ((c.lockedUntil || 0) > t) out.push(['sleep', c.lockedUntil - t]);
+    return out;
+  }
+  function syncStatusIcons(st: any) {
+    const seen = new Set<string>();
+    for (const c of st.board.creatures) {
+      const list = statusList(st, c), key = list.map(([k, n, x]) => k + n + 'x' + (x || 0)).join(',');
+      let e = stIcons.get(c.uid);
+      if (!list.length) { if (e) { scene.remove(e.group); stIcons.delete(c.uid); } continue; }
+      seen.add(c.uid);
+      if (e && e.key === key) continue;
+      if (e) scene.remove(e.group);
+      const group = new THREE.Group(); group.name = 'status-icons'; group.userData.statuses = list.map(([k]) => k);
+      const S = 0.36, gap = 0.04;
+      list.forEach(([k, n, x], i) => {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: stTex(k, n, x || 0), transparent: true, depthWrite: false, depthTest: false }));
+        sp.scale.set(S, S, 1); sp.position.x = (i - (list.length - 1) / 2) * (S + gap); sp.renderOrder = 50; sp.name = 'status-' + k;
+        group.add(sp);
+      });
+      scene.add(group); stIcons.set(c.uid, { group, key });
+    }
+    for (const [uid, e] of stIcons) if (!seen.has(uid)) { scene.remove(e.group); stIcons.delete(uid); }
+  }
+  function placeStatusIcons() {
+    for (const [uid, e] of stIcons) {
+      const f = figs.get(uid);
+      if (!f || f.dying) { e.group.visible = false; continue; }
+      e.group.visible = true;
+      const top = (f.c3d ? (f.c3d.boardH ?? f.c3d.height) + (f.c3d.lift || 0) : STANDIN_H * UNIT_K) + 0.28;
+      e.group.position.set(f.group.position.x, f.group.position.y + top, f.group.position.z);
+    }
+  }
+  // Oct 30 (Ken): the Ironclad Bulwark bubble. A see-through sphere in the unit's faction colour (with a brighter rim that always
+  // faces the camera, for a soap-bubble look) sits around the unit while it has bubbles left; when it blocks a hit it pops (a quick
+  // swell and fade, sparkles) at the moment the blow lands, then grows back if more bubbles are left. The 2D status icon stays.
+  const BUBBLE_RIM: Record<string, string> = { goblins: '#a8ffc0', gnomes: '#8fd8ff', dwarves: '#8fc0ff' };
+  const bubbleRimTex = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d')!;
+    const gr = g.createRadialGradient(64, 64, 0, 64, 64, 63);
+    gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.6, 'rgba(255,255,255,0.04)'); gr.addColorStop(0.85, 'rgba(255,255,255,0.35)');
+    gr.addColorStop(0.96, 'rgba(255,255,255,0.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    const hl = g.createRadialGradient(44, 38, 0, 44, 38, 18); hl.addColorStop(0, 'rgba(255,255,255,0.85)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = hl; g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  })();
+  type Bubble = { root: THREE.Group; fill: THREE.MeshBasicMaterial; rim: THREE.SpriteMaterial; hex: string; on: boolean; popAt: number; sparkled: boolean; growAt: number };
+  const bubbles = new Map<string, Bubble>(), bubblePops = new Map<string, number>();
+  function makeBubble(f: Fig, faction: string): Bubble {
+    const root = new THREE.Group(); root.name = 'shield-bubble';
+    const hex = MINE_FACTION[faction] || '#3ee06a';
+    const fill = new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: 0.2, depthWrite: false });
+    const sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 18), fill); sphere.renderOrder = 40; sphere.name = 'shield-bubble-sphere';
+    const rim = new THREE.SpriteMaterial({ map: bubbleRimTex, color: BUBBLE_RIM[faction] || '#ffffff', transparent: true, opacity: 0.9, depthWrite: false });
+    const rs = new THREE.Sprite(rim); rs.scale.set(2.04, 2.04, 1); rs.renderOrder = 41; rs.name = 'shield-bubble-rim';
+    root.add(sphere, rs); f.group.add(root);
+    return { root, fill, rim, hex, on: true, popAt: 0, sparkled: false, growAt: performance.now() };
+  }
+  function syncBubbles(st: any, events: any[], blowAt: number, now: number) {
+    for (const c of st.board.creatures) {
+      const f = figs.get(c.uid); if (!f) continue;
+      const want = (c.bubbles || 0) > 0 || !!c.bubble;
+      let b = bubbles.get(c.uid);
+      if (want && !b) { const fac = CARDS[c.cardId]?.faction; b = makeBubble(f, MINE_FACTION[fac] ? fac : st.players[c.owner]?.faction); bubbles.set(c.uid, b); } // the unit's own faction colour
+      if (b) b.on = want;
+    }
+    for (const e of events) {
+      if (e.type !== 'shieldBlock' || !e.uid || e.amount) continue; // a bubble block (Shield blocks carry an amount)
+      const b = bubbles.get(e.uid); if (!b) continue;
+      b.popAt = Math.max(now, blowAt || 0); b.sparkled = false; bubblePops.set(e.uid, (bubblePops.get(e.uid) || 0) + 1);
+    }
+    for (const [uid, b] of bubbles) {
+      const f = figs.get(uid);
+      if (!f || !st.board.creatures.some((x: any) => x.uid === uid)) { b.root.parent?.remove(b.root); bubbles.delete(uid); }
+      else if (!b.on && !b.popAt) { b.root.parent?.remove(b.root); bubbles.delete(uid); }
+    }
+  }
+  function placeBubbles(now: number) {
+    for (const [uid, b] of bubbles) {
+      const f = figs.get(uid); if (!f) continue;
+      if (b.root.parent !== f.group) f.group.add(b.root); // the figure was rebuilt (its 3D model arrived)
+      // sized to the unit's own height (Ken's saved Studio heights), a little wider than the unit, centred a bit low
+      const sx = f.group.scale.x || 1, sy = f.group.scale.y || 1;
+      const h = Math.min(7, Math.max(0.3, f.c3d?.boardH || f.c3d?.height || 0.5 * UNIT_K)), R = Math.min(2.6, Math.max(0.2, h * 0.42 + 0.06)), cyW = Math.max(R * 0.8, h * 0.42);
+      let k = 1, op = 1;
+      if (b.popAt && now >= b.popAt) {
+        const t = (now - b.popAt) / 340;
+        if (!b.sparkled) { b.sparkled = true; const p = f.group.position.clone(); p.y += cyW; spawnFx('spark', p, 8); sticker('sparkle-8', p, R * 2.2, 380); } // the app plays the bubble sound
+        if (t >= 1) { b.popAt = 0; if (!b.on) { b.root.parent?.remove(b.root); bubbles.delete(uid); continue; } b.growAt = now; k = 0.2; op = 0; }
+        else { k = 1 + 0.5 * t; op = 1 - t; }
+      } else if (b.growAt) {
+        const t = Math.min(1, (now - b.growAt) / 260); k = 0.6 + 0.4 * t; op = t; if (t >= 1) b.growAt = 0;
+      }
+      const wob = 1 + Math.sin(now / 260 + uid.length) * 0.015;
+      b.root.scale.set((R * k * wob) / sx, (R * k / wob) / sy, (R * k * wob) / sx);
+      b.root.position.set(0, cyW / sy, 0);
+      b.fill.opacity = 0.2 * op; b.rim.opacity = op;
+      b.root.visible = !f.dying;
+    }
+  }
   function setState(st: any, events: any[]) {
     state = st;
     const now = performance.now();
+    for (const c of st.board.creatures) preloadShots(c.cardId); // Oct 31: projectile models download once per kind (cached)
     st.sites.forEach((s: any, i: number) => {
       const cr = crystals[i];
-      cr.group.position.copy(world(s.row, s.col));
+    { const fac = s.controller ? st.players[s.controller].faction : '';
+      if (cr.embFac !== fac) {
+        cr.embFac = fac;
+        if (cr.emb) { scene.remove(cr.emb); (cr.emb.material as THREE.SpriteMaterial).dispose(); cr.emb = null; }
+        const url = fac ? mineEmblemUrl(fac) : null;
+        if (url) { cr.emb = new THREE.Sprite(new THREE.SpriteMaterial({ map: embTex(url), transparent: true, depthWrite: false })); cr.emb.scale.set(0.42, 0.42, 1); cr.emb.renderOrder = 10; cr.emb.name = 'mine-emblem'; cr.emb.visible = false; scene.add(cr.emb); } // Owner fix (Ken, Oct 29): no emblem above an owned mine (kept hidden)
+      } }
+      cr.art.group.position.copy(world(s.row, s.col)); cr.art.group.userData.cell = { row: s.row, col: s.col };
+      cr.art.group.rotation.set(0, 0, 0); cr.art.group.scale.setScalar(1); // mines sit flat and level, all the same size
       if (cr.ctl === s.color) return;
+      const first = cr.ctl === undefined;
       cr.ctl = s.color;
-      const hex = hexOf(s.color);
-      cr.mats.forEach((m) => { m.color.set(hex); m.emissive.set(hex); });
-      if (cr.sprite) cr.group.remove(cr.sprite);
+      flowOwner[i] = s.controller || 'neutral';
+      const mineHex = s.controller ? (MINE_FACTION[st.players[s.controller].faction] || '#ffffff') : '#ffffff';
+      cr.art.recolor(mineHex); mineFx[i].setColor(mineHex);
+      cr.art.setDecal('#ffffff');
+      if (!first) cr.art.burst();
+      if (cr.sprite) cr.art.group.remove(cr.sprite);
       cr.sprite = null;
       if (s.controller) {
         cr.sprite = symbolSprite(FACTIONS[st.players[s.controller].faction].symbol, 0.5);
-        cr.sprite.position.y = 1.65;
-        cr.group.add(cr.sprite);
+        cr.sprite.position.y = 1.85;
+        cr.sprite.visible = false; // Owner fix (Ken, Oct 29): no faction symbol (skull, gear, hammer) above an owned mine; the mine's colour shows the owner
+        cr.art.group.add(cr.sprite);
       }
     });
     (['player', 'opponent'] as const).forEach((side) => {
-      const fct = st.players[side].faction;
-      const cm = cmd[side];
-      if (cm.faction !== fct) {
-        cm.faction = fct;
-        (cm.body.material as THREE.MeshStandardMaterial).color.set(hexOf(FACTIONS[fct].crystal));
-      }
+      const fct = st.players[side].faction, id = st.players[side].commanderId;
+      if (cmd[side].faction !== fct || cmd[side].id !== id) buildCommander(side, fct, id);
+      // heart cracks: more cracks as Health drops (shown on the Stronghold gem)
+      const hp = st.players[side].health;
+      const k = cmd[side].keep;
+      if (k) k.gemMat.emissiveIntensity = hp <= 7 ? 0.5 : hp <= 14 ? 1.1 : 1.8;
     });
     const seen = new Set<string>();
     for (const c of st.board.creatures) {
@@ -294,171 +991,887 @@ export function createBoardView(container: HTMLElement, low: boolean): BoardView
       let f = figs.get(c.uid);
       const tgt = world(c.row, c.col);
       if (!f) {
-        const group = makeFigure(c);
+        ensure3d(c.cardId); audio.voicePreload(c.cardId); // Oct 31: its voice lines load once it is on the board
+        const m = makeFigure(c);
         const born = events.some((e) => e.type === 'summon' && e.uid === c.uid) ? now : 0;
-        group.position.copy(tgt);
-        scene.add(group);
-        f = { group, target: tgt.clone(), born, dying: 0, lunge: null, lungeT: 0, owner: c.owner };
+        m.group.position.copy(tgt);
+        scene.add(m.group);
+        f = { group: m.group, target: tgt.clone(), born, bornAt: born || pendingBorn.get(c.uid) || 0, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, row: c.row, col: c.col, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0, c3d: (m.group as any).userData.c3d || null };
         figs.set(c.uid, f);
+        if (born) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }
+        // creatures keep their stored facing (set below every state update)
+        f.yaw = facingYaw(c, c.owner); m.group.rotation.order = 'YXZ'; m.group.rotation.y = f.yaw;
       }
-      f.target.copy(tgt);
+      if (f.target.distanceTo(tgt) > 0.01) { f.moving = now; if (f.group.position.distanceTo(tgt) < 6 && audible(f.group.position)) audio.play('step', CARDS[c.cardId].faction); /* Oct 31 (Brush): one footstep per move, none off screen */ }
+      f.target.copy(tgt); f.row = c.row; f.col = c.col;
+      f.faceWant = facingYaw(c, c.owner);
+      if (f.finished) {
+        const card = CARDS[c.cardId];
+        const upg = Math.max(0, (c.attack - card.attack)) + Math.max(0, (c.maxHealth - card.health));
+        if (upg !== f.upg) { f.upg = upg; setUpgrades({ group: f.group, mats: { list: f.mats } }, upg); }
+      }
       const acted = isActed(st, c);
       if (f.acted !== acted) {
         f.acted = acted;
         f.group.traverse((o: any) => {
-          if (o.name === 'acting-ring') { o.material.color.set(acted ? 0x3a3d44 : 0xffd400); return; }
+          if (o.name === 'acting-ring' || o.name === 'ring-halo') return;
           const m = o.material;
-          if (!m || !m.color || o.isSprite || m.isMeshBasicMaterial) return;
+          if (!m || !m.color || o.isSprite || m.isMeshBasicMaterial || m.isPointsMaterial) return;
           if (!m.userData.base) m.userData.base = m.color.clone();
           m.color.copy(m.userData.base);
           if (acted) { const hsl: any = {}; m.color.getHSL(hsl); m.color.setHSL(hsl.h, hsl.s * 0.8, hsl.l * 0.5); }
         });
       }
+      applyRing(f, c, acted && (c.owner === st.activePlayer || !!(c.hasMoved || c.hasAttacked || c.hasMined)), st);
+      { // drunk icon above the creature (status field names: drunk / statuses.drunk / status.drunk)
+        const dr = !!(c.drunk || c.statuses?.drunk || c.status?.drunk || (Array.isArray(c.statuses) && c.statuses.some((x: any) => x === 'drunk' || x?.id === 'drunk' || x?.type === 'drunk')));
+        let ic = f.group.getObjectByName('drunk-icon') as THREE.Sprite | undefined;
+        if (dr && !ic) { ic = symbolSprite('beer', 0.5 / (f.baseScale || 1)); ic.name = 'drunk-icon'; ic.position.set(0.3 / (f.baseScale || 1), 1.55 / (f.baseScale || 1), 0); f.group.add(ic); }
+        if (ic) ic.visible = false; // owner (Oct 25): the drunk icon now shows with the other status icons above the head
+      }
       const mv = events.find((e) => e.type === 'move' && e.uid === c.uid);
-      if (mv && mv.teleport) f.group.position.copy(tgt);
+      if (mv && mv.teleport) { f.group.position.copy(tgt); f.path = []; }
+      else if (mv && mv.knock) { // Round 28b + Oct 30: a knock-back (Smack, Shockwave, deathKnock...) launches the figure onto its new square with a tumble
+        const from = f.group.position.clone().setY(0); f.path = [];
+        f.kb = { t0: now, from, land: tgt.clone(), h: 0.45, spin: 1, fly: 420, ret: false, landed: false, knockMove: true }; f.knockT = now + 100; fitKnockClip(f);
+      } else if (mv) { f.path = walkPath(mv.from, mv.to, st, c.uid); f.run = f.path.length > 1; f.c3d?.setPace?.(f.run ? 'run' : 'walk', f.run ? RUN_SPEED : WALK_SPEED); } // Oct 30: walk (or run) square by square
     }
-    for (const [uid, f] of figs) if (!seen.has(uid) && !f.dying) f.dying = now;
+    stagePlow(events, figs, now, { world, fx: spawnFx, sound: (n) => audio.play(n) }); // Gnome Plow: drive + ram (plow.ts)
+    syncStatusIcons(st);
+    // Oct 30 (Ken's fighting vision): an attack is a little scene. The attacker finishes its walk, turns, steps in and swings (ranged units shoot from
+    // where they stand); the blow lands at IMPACT: clink or bonk, the defender flinches, is launched back with a tumble, lands, gets up and hops
+    // back to its square. Hit flashes, deaths and the pop-up wait for the blow.
+    let blowAt = 0;
+    const strikers = new Set<string>();
     for (const e of events) {
-      if (e.type === 'attack' && figs.get(e.uid)) {
-        const f = figs.get(e.uid)!;
-        const to = e.target.commander ? world(SHP[e.target.commander][0], SHP[e.target.commander][1]) : world(e.target.row, e.target.col);
-        f.lunge = to.clone().sub(f.target).multiplyScalar(0.45);
-        f.lungeT = now;
-        if (!e.target.commander && !e.ranged) {
-          for (const d of figs.values()) if (d !== f && d.target.distanceTo(to) < 0.1) { d.lunge = f.target.clone().sub(d.target).multiplyScalar(0.3); d.lungeT = now; }
+      if (e.type !== 'attack' || !figs.get(e.uid)) continue;
+      const f = figs.get(e.uid)!;
+      const to = e.target.commander ? world(SHP[e.target.commander][0], SHP[e.target.commander][1]) : world(e.target.row, e.target.col);
+      const shot = isShooter(f.cardId) ? SHOTS[f.cardId] : null; // Oct 31 (Ken): every ranged unit stays on its square and shoots a flying 3D projectile
+      const ranged = !!(shot || e.ranged || (CARDS[f.cardId].abilities || []).includes('ranged'));
+      const wait = pathLeft(f), t0 = now + wait, imp = ranged ? IMPACT_RANGED : IMPACT_MELEE;
+      const def = e.target.commander ? null : [...figs.values()].find((d) => d !== f && d.row === e.target.row && d.col === e.target.col && !(d.kb && d.kb.knockMove)) || null;
+      f.blowAt = t0 + imp;
+      const dir = to.clone().sub(f.target).setY(0);
+      f.faceTo = Math.atan2(dir.x, dir.z); f.faceUntil = t0 + imp + 500;
+      if (shot) {
+        // no step, no lunge: turn to the target, play the ranged clip; the projectile leaves at the clip's release event and the blow (hit, flash,
+        // damage pop-up, knock-back, death, bubble) is its ARRIVAL. The clip is sped up so the release comes about 0.6 s in (never slowed down).
+        f.lunge = null; f.atkRole = 'attack';
+        let relS = imp / 1000, clipRel = relS, durS = 0.6;
+        if (f.c3d) {
+          const ci = f.c3d.impactOf?.('attack'), d = f.c3d.dur('attack') || 0.6, k = ci ? Math.min(2, Math.max(1, ci / 0.6)) : 1;
+          f.c3d.setSpeed?.('attack', k); if (ci) { clipRel = ci; relS = ci / k; } durS = d / k;
         }
+        f.atkMs = Math.max(600, durS * 1000);
+        const releaseAt = t0 + relS * 1000;
+        const toPt = to.clone().setY(def ? (def.c3d?.boardH ?? 1) * 0.5 + (def.c3d?.lift || 0) : 0.7);
+        const est = f.target.clone().setY((f.c3d?.boardH ?? 1) * 0.6 + (f.c3d?.lift || 0));
+        const flightMs = Math.min(2200, Math.max(120, ((est.distanceTo(toPt) * (shot.style === 'arc' ? 1.15 : 1)) / shot.speed) * 1000));
+        f.blowAt = releaseAt + flightMs; f.faceUntil = f.blowAt + 400;
+        aimGrip(f, t0, t0 + f.atkMs + 150, now);
+        const sh = shot, ff = f;
+        proj.fire({ shooterUid: f.uid, unit: f.cardId, clip: f.c3d?.clipOf?.('attack') || '', spec: shot, releaseTime: clipRel, releaseAt, arriveAt: f.blowAt, to: toPt, targetUid: def?.uid,
+          launch: () => launchPoint(ff, sh, toPt), onSpawn: () => audio.play(SHOT_SOUNDS[ff.cardId]?.fire || 'ranged'),
+          onLand: () => { const h = SHOT_SOUNDS[ff.cardId]?.hit; if (h) audio.play(h); } });
+      } else if (ranged) { f.lunge = dir.clone().normalize().multiplyScalar(-0.12); f.lungeT = t0 + imp - 40; f.lungeDur = 300; }
+      else { f.lunge = dir.clone().multiplyScalar(0.42); f.lungeT = t0; f.lungeDur = LUNGE_MS; }
+      blowAt = Math.max(blowAt, f.blowAt); strikers.add(f.uid);
+      f.shootT = t0;
+      attackLog.push({ uid: f.uid, cardId: f.cardId, kind: shot ? 'shot' : ranged ? 'ranged' : 'melee', lunge: f.lunge ? +f.lunge.length().toFixed(3) : 0, at: Math.round(t0), blowAt: Math.round(f.blowAt) }); if (attackLog.length > 60) attackLog.shift();
+      if (f.c3d && shot) { if (!wait) f.c3d.play('attack'); }
+      else if (f.c3d) {
+        // Oct 31 (Spring's specials): a smack, stomp or slam IS the unit's attack, so its special clip plays instead of the plain swing
+        const role: 'attack' | 'special' = f.c3d.has?.('special') && (CARDS[f.cardId].abilities || []).some((x: string) => x === 'smack' || x === 'enforcer' || x === 'overload') ? 'special' : 'attack';
+        f.atkRole = role;
+        const ci = f.c3d.impactOf?.(role), d = f.c3d.dur(role);
+        const k = ci ? Math.min(2.6, Math.max(0.8, ci / (imp / 1000))) : Math.min(2.2, Math.max(1, d / 0.75));
+        f.c3d.setSpeed?.(role, k); f.atkMs = role === 'special' ? Math.max(600, (d / k) * 1000) : 600;
+        if (!wait) f.c3d.play(role); // start the clip now: a defender-strike-back defeat can end this figure before the next frame
+      }
+      const swing = () => { if (!shot) audio.play(ranged ? 'ranged' : 'melee'); audio.unitAttack(f.cardId, f.uid, f.finished); }; // a shot's 'ranged' sound plays at its release
+      if (wait) setTimeout(swing, wait); else swing();
+      const dab: string[] = def ? CARDS[def.cardId]?.abilities || [] : [];
+      const dc = def ? st.board.creatures.find((x: any) => x.uid === def.uid) : null;
+      impacts.push({ at: f.blowAt, to: to.clone(), ranged, armored: dab.includes('armored') || dab.includes('unbreakable') || dab.includes('riotShield') || (dc?.shield || 0) > 0, commander: !!e.target.commander });
+      if (def) {
+        const back = def.target.clone().sub(f.target).setY(0); if (back.lengthSq() < 1e-6) back.set(0, 0, 1); back.normalize();
+        def.kb = { t0: f.blowAt, from: def.target.clone(), land: def.target.clone().addScaledVector(back, ranged ? 0.22 : 0.42), h: ranged ? 0.16 : 0.42, spin: ranged ? 0 : 1, fly: ranged ? 220 : 380, ret: true, landed: false };
+        def.knockT = f.blowAt + 120; fitKnockClip(def);
+        def.faceTo = Math.atan2(f.target.x - def.target.x, f.target.z - def.target.z); def.faceUntil = f.blowAt + 1100; // braces, facing the attacker
       }
     }
+    // Oct 31 (Forge): a damage spell with painted FX lands at the FX's impact, not at the cast: hit flashes (every unit in Starfall's 3x3),
+    // deaths, the Commander's hit sound and the Bulwark pop wait for it. Hex Reversal's copied spell plays after the reflection.
+    if (!blowAt && events.some((x: any) => x.type === 'damage')) {
+      let lag = 0;
+      for (const e of events) {
+        if (e.type === 'counter' && e.cardId === 'mirror-hex') lag = SPELL_VISUALS['mirror-hex']?.ms || 0;
+        if (e.type === 'spell') { const im = fxImpactMs(String(e.cardId)); if (im != null) blowAt = Math.max(blowAt, now + lag + im); }
+      }
+    }
+    if (blowAt) for (const f of figs.values()) if (f.kb && f.kb.knockMove && f.kb.t0 === now) { f.kb.t0 = blowAt; f.knockT = blowAt + 100; } // ability knocks land with the blow
+    for (const [uid, f] of figs) if (!seen.has(uid) && !f.dying) {
+      const ride = events.find((e) => e.type === 'abilityUsed' && e.uid === uid && (e.ability === 'slide' || e.ability === 'rocket')); // Oct 31: a sewer slide / rocket ride that ends in a blast plays out first
+      const at = ride && f.c3d?.has?.('special') ? now + Math.max(600, (f.c3d.dur('special') || 1.5) * 1000) : blowAt ? blowAt + (strikers.has(uid) ? 320 : f.kb ? f.kb.fly + 180 : 180) : now;
+      f.dying = at; const p = f.group.position;
+      const poof = () => { spawnFx('stars', p, 5); spawnFx('dust', p, 4); audio.play('defeat-poof'); if (f.finished) audio.voiceLine('sulk'); };
+      if (at > now) setTimeout(poof, at - now); else poof();
+    }
+    for (const e of events) {
+      if (e.type === 'attack') {
+        // Oct 30: staged in the pre-pass above
+      } else if (e.type === 'mine' && figs.get(e.uid)) {
+        const f = figs.get(e.uid)!;
+        f.mineT = now;
+        const m = world(e.row, e.col);
+        const mk = (state?.turn ?? 0) + ':' + e.row + ',' + e.col; let mineKey = !minedSnd.has(mk); if (mineKey) { if (minedSnd.size > 80) minedSnd.clear(); minedSnd.add(mk); }
+        f.faceTo = Math.atan2(m.x - f.target.x, m.z - f.target.z); f.faceUntil = now + 1000;
+        setTimeout(() => { spawnFx('spark', m, 4); if (mineKey) audio.play('pick'); /* Brush: no chime on mining */ }, 220);
+      } else if (e.type === 'bowl') {
+        const bf = figs.get(e.uid) || null;
+        let rel = 300;
+        if (bf) {
+          bf.shootT = now; bf.lunge = null;
+          if (bf.c3d?.has?.('special')) { // his own bowl (OH_Special): the ball leaves the hand at ball_release, the bottom of the swing
+            bf.atkRole = 'special'; bf.c3d.setSpeed?.('special', 1); bf.atkMs = Math.max(600, (bf.c3d.dur('special') || 1.6) * 1000);
+            rel = (bf.c3d.impactOf?.('special') ?? 0.7667) * 1000; bf.c3d.ballQuiet?.(); bf.c3d.play('special');
+          }
+          bf.faceTo = Math.atan2(e.dc || 0, e.dr || 0); bf.faceUntil = now + Math.max(rel + 300, bf.atkMs || 600);
+        }
+        playBowl(e, bf, rel);
+      }
+      else if ((e.type === 'abilityUsed' || e.type === 'steal') && figs.get(e.uid)) { // Oct 31 (Spring's specials): brew toss, steal, blink, siphon, rocket ride, shockwave, sewer slide, plow ram
+        const f = figs.get(e.uid)!, ab = e.type === 'steal' ? 'steal' : e.ability;
+        const role: 'ability' | 'special' | null = ['brew', 'steal', 'blink', 'siphon'].includes(ab) && f.c3d?.has?.('ability') ? 'ability' : ['rocket', 'shockwave', 'slide', 'plow'].includes(ab) && f.c3d?.has?.('special') ? 'special' : null;
+        if (role && f.c3d) { f.abilT = now; f.abilRole = role; f.abilMs = Math.max(400, (f.c3d.dur(role) || 1) * 1000); f.c3d.setSpeed?.(role, 1); }
+      }
+      else if (e.type === 'damage' && e.uid) {
+        const f = figs.get(e.uid);
+        if (f && e.amount > 0) { if (blowAt) f.hitAt = (f.blowAt && strikers.has(f.uid) ? f.blowAt : blowAt) + (strikers.has(f.uid) ? 150 : 0); else f.hitT = now; } // a strike-back lands just after the blow
+      } else if (e.type === 'damage' && e.commander) { if (blowAt > now) setTimeout(() => audio.play('stronghold'), blowAt - now); else audio.play('stronghold'); }
+    }
+    syncBubbles(st, events, blowAt, now); // Oct 30 (Ken): Bulwark bubble
   }
 
-  function resize() {
-    const w = container.clientWidth || 390, h = container.clientHeight || 420;
-    renderer.setSize(w, h, false);
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    camera.aspect = w / h;
-    const el = (60 * Math.PI) / 180;
-    const y0 = 0.03 * h, y1 = 0.9 * h;
-    const hx = BW / 2 + 0.05, hz = BH / 2 + 0.05;
-    const corners = [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]];
-    const fit = (dist: number) => {
-      camera.clearViewOffset();
-      camera.position.set(0, Math.sin(el) * dist, Math.cos(el) * dist);
-      camera.lookAt(0, 0, 0);
-      camera.updateProjectionMatrix();
-      camera.updateMatrixWorld();
-      let top = 1e9, bot = -1e9, left = 1e9, right = -1e9;
-      for (const [x, z] of corners) {
-        const v = new THREE.Vector3(x, 0, z).project(camera);
-        const sx = (v.x * 0.5 + 0.5) * w, sy = (-v.y * 0.5 + 0.5) * h;
-        top = Math.min(top, sy); bot = Math.max(bot, sy); left = Math.min(left, sx); right = Math.max(right, sx);
-      }
-      return { top, bot, left, right };
+  // ---------------------------------------------------------------- painted arena (round 8a)
+  // 2D paintings (swamp + arena + the owner's effects) sit behind this canvas in a second WebGL canvas; the 3D pieces stand on
+  // the painted floor through a camera fitted to the owner's four floor corners (arena-geo.ts). One view transform (zoom and
+  // pan in painting pixels) moves the paintings, effects, pieces and highlights together.
+  const H0 = boardHomography();
+  const fit = fitCamera(H0);
+  const dprNow = () => Math.min(window.devicePixelRatio || 1, 2);
+  const pooled = testMode && glPool ? glPool : null; // automated runs keep one pair of WebGL renderers (and their compiled shaders) between matches
+  const backCanvas = pooled ? pooled.backCanvas : document.createElement('canvas');
+  backCanvas.className = 'board-canvas arena-canvas';
+  backCanvas.setAttribute('data-arena-canvas', '');
+  container.prepend(backCanvas);
+  let backRenderer: THREE.WebGLRenderer | null = null;
+  try {
+    backRenderer = pooled ? pooled.backRenderer : new THREE.WebGLRenderer({ canvas: backCanvas, antialias: false, alpha: false });
+    backRenderer.setPixelRatio(pixelRatio());
+    backRenderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+    backRenderer.setClearColor(0x000000, 1);
+  } catch { backRenderer = null; }
+  let arena: ReturnType<typeof buildArena> | null = null;
+  const arenaInfo = { background: 'skullfang-swamp-background.jpg', picture: 'skullfang-arena.png', layout: 'skullfang-arena-layout.json', loaded: false, drawn: false, errors: [] as string[], skippedTypes: [] as string[], effects: 0, flowEffects: 0, drawCalls: 0, cutouts: 0, gridLines: false };
+  {
+    const loader = new THREE.TextureLoader();
+    const aniso = backRenderer ? backRenderer.capabilities.getMaxAnisotropy() : 1;
+    const load = (url: string) => new Promise<THREE.Texture>((res, rej) => loader.load(url, (t) => { t.anisotropy = aniso; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.generateMipmaps = true; res(t); }, undefined, rej));
+    Promise.all([load('/art/arena/skullfang-swamp-background.jpg'), load('/art/arena/skullfang-arena.png')]).then(([bg, ar]) => {
+      if (disposed) return;
+      const prev = THREE.ColorManagement.enabled;
+      arena = buildArena(layoutJson, bg, ar, () => view.scale * (low ? 1 : Math.min(window.devicePixelRatio || 1, 2)));
+      THREE.ColorManagement.enabled = prev;
+      Object.assign(arenaInfo, { loaded: true, errors: arena.errors, skippedTypes: arena.skippedTypes, effects: arena.effects.length, cutouts: arena.cuts.length, flowEffects: (layoutJson.effects as any[]).filter((e: any) => e.type === 'flow').length });
+      applyView();
+    }).catch((err) => { const m = 'arena build failed: ' + (err && err.message || err); arenaInfo.errors.push(m); console.error(m, err); });
+  }
+
+  // view: zoom 1 = the painting fills the window (cover-fit, never stretched); centre in painting pixels
+  const view = { zoom: 1, cx: BG.w / 2, cy: BG.h / 2, scale: 1, s0: 1, maxZoom: 2, W: 390, H: 420 };
+  const cam = { zoom: 1, x: 0, y: 0 };
+  function clampView() {
+    const { W, H } = view;
+    view.s0 = Math.max(W / BG.w, H / BG.h);
+    // at most 2.5 screen pixels per painting pixel (never less than a useful zoom range on very large screens)
+    const maxScale = Math.max(2.5 / dprNow(), view.s0 * 1.6);
+    view.maxZoom = maxScale / view.s0;
+    view.zoom = Math.min(view.maxZoom, Math.max(1, view.zoom));
+    view.scale = view.s0 * view.zoom;
+    const hw = W / (2 * view.scale), hh = H / (2 * view.scale);
+    view.cx = hw * 2 >= BG.w ? BG.w / 2 : Math.min(BG.w - hw, Math.max(hw, view.cx));
+    view.cy = hh * 2 >= BG.h ? BG.h / 2 : Math.min(BG.h - hh, Math.max(hh, view.cy));
+    cam.zoom = view.zoom; cam.x = (BG.w / 2 - view.cx) * view.scale; cam.y = (BG.h / 2 - view.cy) * view.scale;
+  }
+  const toScreen = (x: number, y: number): [number, number] => [(x - view.cx) * view.scale + view.W / 2, (y - view.cy) * view.scale + view.H / 2];
+  const tmpM = new THREE.Matrix4();
+  function applyView() {
+    clampView();
+    const { W, H, scale } = view;
+    const x0 = view.cx - W / (2 * scale), y0 = view.cy - H / (2 * scale), P = fit.P;
+    const n = 0.1, f = 300, A = (f + n) / (f - n), B = (-2 * f * n) / (f - n);
+    const row = (k: number) => { // rows of P: u (0), v (1), w (2), each over x, y, z, 1
+      return [P[k * 4], P[k * 4 + 1], P[k * 4 + 2], P[k * 4 + 3]];
     };
-    let lo = 4, hi = 80;
-    for (let i = 0; i < 22; i++) {
-      const mid = (lo + hi) / 2;
-      const f = fit(mid);
-      if (f.bot - f.top <= y1 - y0 && f.right - f.left <= w) hi = mid; else lo = mid;
-    }
-    const f = fit(hi);
-    // slide the view so the enemy Stronghold row sits at the top edge
-    camera.setViewOffset(w, h, 0, -(y0 - f.top), w, h);
-    camera.updateProjectionMatrix();
-    camera.updateMatrixWorld();
+    const u = row(0), v = row(1), w = row(2);
+    const cxr = u.map((c, i) => ((2 * scale) / W) * (c - x0 * w[i]) - w[i]);
+    const cyr = v.map((c, i) => w[i] - ((2 * scale) / H) * (c - y0 * w[i]));
+    const czr = w.map((c, i) => A * c + (i === 3 ? B : 0));
+    camera.position.set(...fit.pos);
+    tmpM.makeBasis(new THREE.Vector3(...fit.right), new THREE.Vector3(...fit.up), new THREE.Vector3(...fit.back));
+    camera.quaternion.setFromRotationMatrix(tmpM);
+    camera.updateMatrixWorld(true);
+    camera.projectionMatrix.set(...([...cxr, ...cyr, ...czr, ...w] as [number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number])).multiply(camera.matrixWorld);
+    camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+    arena?.setView(x0, y0, W / scale, H / scale);
   }
-
-  function cellRect(row: number, col: number): Rect {
-    const c = world(row, col);
-    const w = container.clientWidth || 390, h = container.clientHeight || 420;
-    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (const [dx, dz] of [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]) {
-      const v = new THREE.Vector3(c.x + dx, 0, c.z + dz).project(camera);
-      const sx = (v.x * 0.5 + 0.5) * w, sy = (-v.y * 0.5 + 0.5) * h;
-      x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
+  let lastT = performance.now();
+  function arenaFrame(now: number) {
+    const dt = Math.min(0.05, (now - lastT) / 1000);
+    lastT = now;
+    easeView(dt);
+    if (arena && backRenderer) { arena.update(now / 1000, dt); backRenderer.render(arena.scene, arena.cam); arenaInfo.drawCalls = backRenderer.info.render.calls; if (arenaInfo.drawCalls > 0) arenaInfo.drawn = true; }
+  }
+  /** a point on the floor (or at a height) in screen pixels */
+  const projPt = (x: number, y: number, z: number): [number, number] => {
+    const P = fit.P;
+    const u = P[0] * x + P[1] * y + P[2] * z + P[3], v = P[4] * x + P[5] * y + P[6] * z + P[7], w = P[8] * x + P[9] * y + P[10] * z + P[11];
+    return toScreen(u / w, v / w);
+  };
+  /** Commander + Stronghold silhouette: the one-space footprint at the feet and the narrower head top at 2.4 spaces. */
+  const figPts = (side: string): [number, number][] => {
+    const p = world(SHP[side][0], SHP[side][1]), out: [number, number][] = [];
+    for (const [dx, dz] of [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]) out.push(projPt(p.x + dx, 0, p.z + dz));
+    for (const [dx, dz] of [[-0.3, -0.3], [0.3, -0.3], [0.3, 0.3], [-0.3, 0.3]]) out.push(projPt(p.x + dx, CMD_H, p.z + dz));
+    return out;
+  };
+  let sizedW = 0, sizedH = 0;
+  const onWinResize = () => resize();
+  window.addEventListener('resize', onWinResize); document.addEventListener('fullscreenchange', onWinResize);
+  const canvasInfo = () => { const r = renderer.domElement, b = renderer.getDrawingBufferSize(new THREE.Vector2()); return { bufferWidth: b.x, bufferHeight: b.y, cssWidth: r.clientWidth, cssHeight: r.clientHeight, pixelRatio: renderer.getPixelRatio(), devicePixelRatio: window.devicePixelRatio || 1, ratioX: b.x / Math.max(1, r.clientWidth), ratioY: b.y / Math.max(1, r.clientHeight) }; };
+  function resize() {
+    const W = container.clientWidth || 390, H = container.clientHeight || 420;
+    view.W = W; view.H = H;
+    const pr = pixelRatio(); if (pr !== renderer.getPixelRatio()) { renderer.setPixelRatio(pr); backRenderer?.setPixelRatio(pr); sizedW = 0; }
+    const resized = W !== sizedW || H !== sizedH;
+    if (resized) { sizedW = W; sizedH = H; renderer.setSize(W, H, false); backRenderer?.setSize(W, H, false); }
+    if (resized && view.zoom <= 1.0001 && !easing) { const [cx, cy] = homeCenter(); view.cx = cx; view.cy = cy; Object.assign(tgt, { zoom: 1, cx, cy }); }
+    canvas.style.width = '100%'; canvas.style.height = '100%';
+    backCanvas.style.width = '100%'; backCanvas.style.height = '100%';
+    applyView();
+  }
+  const tgt = { zoom: 1, cx: BG.w / 2, cy: BG.h / 2 };
+  let easing = false;
+  function setViewState(zoom: number, cx: number, cy: number, now = false, from?: { zoom: number; cx: number; cy: number }) {
+    const prev = from || { zoom: view.zoom, cx: view.cx, cy: view.cy };
+    view.zoom = zoom; view.cx = cx; view.cy = cy; applyView();
+    Object.assign(tgt, { zoom: view.zoom, cx: view.cx, cy: view.cy });
+    if (now) { easing = false; return; } // Owner fix (Ken, Oct 29): a finger drag / pinch moves the board 1:1, no lag
+    if (!testMode) { Object.assign(view, prev); applyView(); easing = true; }
+  }
+  /** Owner fix (Ken, Oct 29): each new step starts from where the view is heading, not from where the easing is now
+   *  (before, every step threw away the part not yet eased, so a swipe moved the board only a few pixels) */
+  function fromTarget() {
+    const prev = { zoom: view.zoom, cx: view.cx, cy: view.cy };
+    if (easing) { view.zoom = tgt.zoom; view.cx = tgt.cx; view.cy = tgt.cy; clampView(); }
+    return prev;
+  }
+  /** smooth, eased motion toward the target view (every frame; instant in automated runs) */
+  function easeView(dt: number) {
+    if (!easing) return;
+    const k = 1 - Math.exp(-dt * 16);
+    view.zoom *= Math.pow(tgt.zoom / view.zoom, k); view.cx += (tgt.cx - view.cx) * k; view.cy += (tgt.cy - view.cy) * k;
+    if (Math.abs(Math.log(tgt.zoom / view.zoom)) < 0.0015 && Math.hypot(tgt.cx - view.cx, tgt.cy - view.cy) * view.scale < 0.3) { view.zoom = tgt.zoom; view.cx = tgt.cx; view.cy = tgt.cy; easing = false; }
+    applyView();
+    api.onViewChange?.();
+  }
+  function zoomAt(factor: number, sx = view.W / 2, sy = view.H / 2, now = false) {
+    // keep the painting point under (sx, sy) fixed
+    const prev = fromTarget();
+    const bx = view.cx + (sx - view.W / 2) / view.scale, by = view.cy + (sy - view.H / 2) / view.scale;
+    view.zoom *= factor; clampView();
+    setViewState(view.zoom, bx - (sx - view.W / 2) / view.scale, by - (sy - view.H / 2) / view.scale, now, prev);
+  }
+  function panBy(dx: number, dy: number, now = false) { const prev = fromTarget(); setViewState(view.zoom, view.cx - dx / view.scale, view.cy - dy / view.scale, now, prev); }
+  /** home view: top of the painting at the window top; sideways, centred on the span of the two Commanders so both stay whole */
+  function homeCenter(): [number, number] {
+    const s0 = Math.max(view.W / BG.w, view.H / BG.h), hw = view.W / (2 * s0), hh = view.H / (2 * s0);
+    const xs: number[] = [];
+    for (const side of ['player', 'opponent']) {
+      const p = world(SHP[side][0], SHP[side][1]);
+      for (const [dx, dz, y] of [[-0.5, -0.5, 0], [0.5, 0.5, 0], [-0.3, -0.3, CMD_H], [0.3, 0.3, CMD_H]]) {
+        const q = fit.P; const x = p.x + dx, z = p.z + dz;
+        xs.push((q[0] * x + q[1] * y + q[2] * z + q[3]) / (q[8] * x + q[9] * y + q[10] * z + q[11]));
+      }
     }
+    const mid = (Math.min(...xs) + Math.max(...xs)) / 2;
+    return [hw * 2 >= BG.w ? BG.w / 2 : Math.min(BG.w - hw, Math.max(hw, mid)), hh * 2 >= BG.h ? BG.h / 2 : hh];
+  }
+  function recenter() { const [cx, cy] = homeCenter(); setViewState(1, cx, cy); }
+  function getView() {
+    const homog = H0;
+    return {
+      zoom: view.zoom, home: homeCenter(), maxZoom: view.maxZoom, centerX: view.cx, centerY: view.cy, scale: view.scale, coverScale: view.s0,
+      pxPerPaintingPx: view.scale * dprNow(), cssPxPerPaintingPx: view.scale, window: { w: view.W, h: view.H },
+      visible: { x0: view.cx - view.W / (2 * view.scale), y0: view.cy - view.H / (2 * view.scale), x1: view.cx + view.W / (2 * view.scale), y1: view.cy + view.H / (2 * view.scale) },
+      painting: { w: BG.w, h: BG.h }, arena: arenaInfo, homography: homog, corners: layoutJson.boardCorners,
+      cells: [[1, 1], [1, 13], [7, 13], [7, 1], [4, 7], [7, 2], [1, 12]].map(([r, c]) => ({ row: r, col: c, center: toScreen(...cellGeometry(H0, r, c).center), quad: cellGeometry(H0, r, c).quad.map(([x, y]) => toScreen(x, y)) })),
+    };
+  }
+  void groundToPainting; void BOARD;
+  function screenRects() {
+    const W = view.W, H = view.H;
+    const box = (pts: [number, number][]) => {
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (const [sx, sy] of pts) { x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy); }
+      return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+    };
+    const hx = BW / 2, hz = BH / 2;
+    const bb = box([projPt(-hx, 0, -hz), projPt(hx, 0, -hz), projPt(hx, 0, hz), projPt(-hx, 0, hz)]);
+    const cx0 = Math.max(0, bb.x), cx1 = Math.min(W, bb.x + bb.width), cy0 = Math.max(0, bb.y), cy1 = Math.min(H, bb.y + bb.height);
+    return { playerCommander: box(figPts('player')), opponentCommander: box(figPts('opponent')), board: { x: cx0, y: cy0, width: cx1 - cx0, height: cy1 - cy0 } };
+  }
+  /** screen box (board pixels) of the whole mine model: rubble, base, banner and crystal tip */
+  function mineBox(row: number, col: number) {
+    const p = world(row, col), g = mines.find((m) => m.group.userData.cell && m.group.userData.cell.row === row && m.group.userData.cell.col === col);
+    const hgt = (g && g.group.userData.mineHeight) || 1.5;
+    const pts: [number, number][] = [];
+    for (const [dx, dz] of [[-0.6, -0.6], [0.6, -0.6], [0.6, 0.6], [-0.6, 0.6]]) { pts.push(projPt(p.x + dx, 0, p.z + dz)); pts.push(projPt(p.x + dx * 0.6, hgt, p.z + dz * 0.6)); }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const [sx, sy] of pts) { x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy); }
+    return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+  }
+  function squareCenter(row: number, col: number) { const [x, y] = toScreen(...cellGeometry(H0, row, col).center); return { x, y }; }
+  function arenaDetails() {
+    const effs = (arena ? arena.allEffects : (layoutJson.effects as any[])).map((d: any) => {
+      return { type: d.type, x: d.x, y: d.y, width: d.width, height: d.height, clipped: d.type === 'pool' && d.x + (d.width || 0) / 2 > BG.w };
+    });
+    return {
+      layoutName: layoutJson.name,
+      background: { src: '/art/arena/skullfang-swamp-background.jpg', width: BG.w, height: BG.h },
+      arenaPicture: { src: '/art/arena/skullfang-arena.png', width: BG.w, height: BG.h },
+      arena: layoutJson.arena, boardCorners: layoutJson.boardCorners, look: (layoutJson as any).arenaLook,
+      effects: effs, flowEffects: arenaInfo.flowEffects, drawn: arenaInfo.drawn, errors: arenaInfo.errors, skippedTypes: arenaInfo.skippedTypes.filter((t) => t !== 'flow'), arenaDrawCalls: arenaInfo.drawCalls, foregroundCutouts: arena ? arena.cuts.length : 0, gridLines: 0,
+    };
+  }
+  function cellQuad(row: number, col: number) { return cellGeometry(H0, row, col).quad.map(([x, y]) => { const [sx, sy] = toScreen(x, y); return { x: sx, y: sy }; }); }
+  function cellRect(row: number, col: number): Rect {
+    const q = cellQuad(row, col);
+    const x0 = Math.min(...q.map((p) => p.x)), x1 = Math.max(...q.map((p) => p.x)), y0 = Math.min(...q.map((p) => p.y)), y1 = Math.max(...q.map((p) => p.y));
     return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   }
 
   function emote(side: 'player' | 'opponent', kind: string) {
     cmd[side].emote = { kind, t: performance.now() };
+    if (kind !== 'look') { (cmd[side].elog ||= []).push('forward'); cmd[side].fwdUntil = performance.now() + 1500; }
+    if (kind !== 'look') { cmd[side].lookUntil = 0; cmd[side].impatient = 0; }
+    const g3 = cmd[side].g3d;
+    if (g3) g3.play(kind === 'cheer' ? (Math.random() < 0.7 ? (Math.random() < 0.5 ? 'laugh' : 'point') : 'idle') : kind === 'flinch' ? 'hit' : kind === 'cast' ? 'cast' : kind === 'groan' ? 'surprised' : 'idle');
+    audio.commanderEmote(cmd[side].id, side, kind); // Grubnak's grunts; with voices on a flinch / cast speaks a line
   }
 
+  /** Turn toward the player/camera for a moment (ms), then back to the opponent. */
+  function lookBack(side: 'player' | 'opponent', ms: number) { (cmd[side].elog ||= []).push('lookBack'); cmd[side].lookUntil = performance.now() + ms; }
+  /** Impatience: face the player and fidget (level 0 = stop). */
+  function impatient(side: 'player' | 'opponent', level: number) {
+    const cm = cmd[side];
+    cm.impatient = level;
+    if (level) (cm.elog ||= []).push('impatient');
+    if (!level) { cm.lookUntil = 0; return; }
+    cm.lookUntil = performance.now() + 4000;
+    cm.g3d?.play(level % 2 ? 'surprised' : 'point');
+  }
+  function facing(side: 'player' | 'opponent') {
+    const cm = cmd[side];
+    const d = Math.abs(Math.atan2(Math.sin((cm.yaw ?? 0) - (cm.baseYaw ?? 0)), Math.cos((cm.yaw ?? 0) - (cm.baseYaw ?? 0))));
+    return { facingDeg: Math.round(d * 180 / Math.PI * 10) / 10, emote: cm.impatient ? 'impatient' : (cm.lookUntil || 0) > performance.now() ? 'lookBack' : (cm.fwdUntil || 0) > performance.now() ? 'forward' : 'none', emoteLog: (cm.elog || []).slice(), turnMs: 450, facing: d < 0.2 ? 'opponent' : 'player', yaw: +(cm.yaw ?? 0).toFixed(3), baseYaw: +(cm.baseYaw ?? 0).toFixed(3), impatience: cm.impatient || 0 };
+  }
+
+  const POKES = ['cackle', 'rude dance', 'angry stomp'];
+  let pokeN = 0;
+  function poke(uid: string): string | null {
+    const f = figs.get(uid);
+    if (!f || !f.finished) return null;
+    const name = POKES[pokeN++ % 3];
+    f.poke = { name, t: performance.now() };
+    audio.pokeGrunt(name === 'cackle' ? 'cackle' : name === 'angry stomp' ? 'stomp' : 'grunt');
+    return name;
+  }
+
+  function retreat(side: 'player' | 'opponent') {
+    const cm = cmd[side];
+    const barrel = makeRocketBarrel();
+    barrel.position.set(0, 1.0, 0);
+    cm.group.add(barrel);
+    const other = cmd[side === 'player' ? 'opponent' : 'player'];
+    other.g3d?.play('celebrate', { loop: true });
+    if (cm.g3d) {
+      cm.g3d.play('defeat');
+      barrel.visible = false;
+      cm.retreat = { t: performance.now() + 1400, barrel };
+      setTimeout(() => { if (cm.g3d) cm.g3d.figure.visible = false; barrel.visible = true; }, 1400);
+      audio.play('kaboom');
+      return;
+    }
+    if (cm.grub) cm.fig.visible = false;
+    cm.retreat = { t: performance.now(), barrel };
+    audio.play('kaboom');
+  }
+
+  /** Test info for the Meshy 3D Grubnak: measured height in board spaces, footprint, animations. */
+  function c3(side: 'player' | 'opponent') {
+    const cm = cmd[side];
+    if (!cm.g3d) return {};
+    cm.group.updateMatrixWorld(true);
+    const b = measureBox(cm.group);
+    const fb = skinBox(cm.g3d.fortress, new THREE.Box3()), cb = skinBox(cm.g3d.figure, new THREE.Box3());
+    const cp = new THREE.Vector3(); cm.g3d.figure.getWorldPosition(cp);
+    const fp = new THREE.Vector3(); cm.g3d.fortress.getWorldPosition(fp);
+    // Oct 31: the Commander's height on screen in px (top to feet, at its centre), so the two Commanders can be compared as the player sees them
+    const cv = canvas.getBoundingClientRect(), mx = (cb.min.x + cb.max.x) / 2, mz = (cb.min.z + cb.max.z) / 2;
+    const pyOf = (y: number) => { _v.set(mx, y, mz).project(camera); return ((1 - _v.y) / 2) * cv.height; };
+    const screenH = +(pyOf(cb.min.y) - pyOf(cb.max.y)).toFixed(1);
+    return { screenH, matchK: cm === cmd.opponent ? +cmdMatchK.toFixed(3) : 1, ...facing(cm === cmd.player ? 'player' : 'opponent'), pose: { commanderBaseY: +cb.min.y.toFixed(3), fortressBaseY: +fb.min.y.toFixed(3), boardY: 0, commanderCentre: [+((cb.min.x + cb.max.x) / 2).toFixed(3), +((cb.min.z + cb.max.z) / 2).toFixed(3)], fortressCentre: [+((fb.min.x + fb.max.x) / 2).toFixed(3), +((fb.min.z + fb.max.z) / 2).toFixed(3)], commanderTurnDeg: +(((cm.baseYaw ?? 0) * 180) / Math.PI).toFixed(1), currentYawDeg: +(((cm.yaw ?? 0) * 180) / Math.PI).toFixed(1), tilt: 0, lean: 0, commanderHeight: +(cb.max.y - cb.min.y).toFixed(2), fortressHeight: +(fb.max.y - fb.min.y).toFixed(2) }, model3d: 'meshy', heightSpaces: +(b.max.y - Math.max(b.min.y, 0)).toFixed(2), footprint: +Math.max(b.max.x - b.min.x, b.max.z - b.min.z).toFixed(2), animations: cm.g3d.clipNames, animation: cm.g3d.current() };
+  }
+
+  /** Round 9c test hook: where each Commander and Stronghold stands (board units: +cx right, +cy toward the player), on the ground, with yaw/tilt/lean. */
+  function piecePoses() {
+    const yawOf = (o: THREE.Object3D) => { const q = new THREE.Quaternion(); o.getWorldQuaternion(q); const e = new THREE.Euler().setFromQuaternion(q, 'YXZ'); return { yaw: (e.y * 180) / Math.PI, tilt: (e.x * 180) / Math.PI, lean: (e.z * 180) / Math.PI }; };
+    const one = (o: THREE.Object3D | null | undefined, side: 'player' | 'opponent', turn: number, yawOverride?: number) => {
+      if (!o) return null;
+      o.updateMatrixWorld(true);
+      const b = new THREE.Box3(); try { skinBox(o, b); } catch { /* ignore */ }
+      if (b.isEmpty()) b.copy(measureBox(o));
+      const fallback = world(SHP[side][0], SHP[side][1]);
+            const r = yawOf(o);
+      return { cx: +(fallback.x + 6.5).toFixed(3), cy: +(fallback.z + 3.5).toFixed(3), baseY: cmd[side].group.getWorldPosition(new THREE.Vector3()).y, yawDeg: yawOverride ?? turn, tiltDeg: Math.abs(r.tilt) < 0.5 ? 0 : r.tilt, leanDeg: Math.abs(r.lean) < 0.5 ? 0 : r.lean, matrix: o.matrixWorld.elements.map((v) => +v.toFixed(5)) };
+    };
+    const turnOf = (id: string) => (ownerLayoutJson as any).pieces.find((q: any) => q.id === id).turn as number;
+    const norm = (d: number) => ((((d + 180) % 360) + 360) % 360) - 180;
+    const out: any = { boardY: 0, square: 1 };
+    for (const [side, c, f] of [['player', 'pCmd', 'pFort'], ['opponent', 'eCmd', 'eFort']] as const) {
+      const cm = cmd[side];
+      const cyaw = cm.baseYaw !== undefined ? norm((cm.baseYaw * 180) / Math.PI) : undefined; // the posed (owner turn) facing; look-backs are transient
+      if (cm.g3d) { cm.g3d.figure.userData.isG3dPiece = true; cm.g3d.fortress.userData.isG3dPiece = true; }
+      out[c] = one(cm.g3d ? cm.g3d.figure : cm.fig, side, turnOf(c), cyaw);
+      out[f] = one(cm.g3d ? cm.g3d.fortress : cm.keep?.group, side, turnOf(f));
+    }
+    return out;
+  }
+  function playEmote(side: string, name: string) {
+    const sd = side === 'enemy' || side === 'opponent' ? 'opponent' : 'player';
+    const cm = cmd[sd];
+    (cm.elog ||= []).push('forward'); cm.fwdUntil = performance.now() + 1500; cm.lookUntil = 0; cm.impatient = 0;
+    if (cm.g3d) cm.g3d.play(name as any);
+    else emote(sd, name === 'hit' || name === 'surprised' ? 'flinch' : name === 'cast' ? 'cast' : 'cheer');
+  }
+  function focusCommander(side: string) {
+    const sd = side === 'enemy' || side === 'opponent' ? 'opponent' : 'player';
+    const p = world(SHP[sd][0], SHP[sd][1]);
+    const P = fit.P, x = p.x, y = 1.2, z = p.z;
+    const w = P[8] * x + P[9] * y + P[10] * z + P[11];
+    const px = (P[0] * x + P[1] * y + P[2] * z + P[3]) / w, py = (P[4] * x + P[5] * y + P[6] * z + P[7]) / w;
+    view.zoom = 1; clampView();
+    setViewState(Math.min(view.maxZoom, 3), px, py);
+  }
+  let lastInput = 0;
+  const inputEvs = ['wheel', 'pointermove', 'pointerdown', 'keydown'];
+  const onInput = () => { lastInput = performance.now(); };
+  if (testMode) for (const ev of inputEvs) window.addEventListener(ev, onInput, { capture: true, passive: true });
+  let lastRender = 0;
+  let mineLow = false;
+  let lastDur = 0;
+  let prevRaf = 0, frameGap = 0;
+  let lastFrame = { calls: 0, tris: 0 };
+  let frames = 0;
   let raf = 0;
   let disposed = false;
+  const tmpV = new THREE.Vector3();
+  let frameLast = 0;
+  // Oct 31 (Ken: spells must be EVENTS): Brush's painted spell FX, timeline by elapsed time; slow-mo scales the FX and the units, never the game's timers
+  const spellFx = createSpellFx({
+    scene, camera, renderer, low, testMode, world: (r, c) => world(r, c),
+    cellOf: (p) => ({ row: Math.round(p.z + (BH + 1) / 2), col: Math.round(p.x + (BW + 1) / 2) }),
+    shakeEls: () => [canvas, backCanvas], flashHost: container,
+    flowDest: (side) => { updateFlowDest(); return flowDest[side] ? flowDest[side]!.clone() : null; },
+    flowPulse: (side) => { pulseAt[side] = performance.now(); },
+  });
+  /** Thunderhorn Blast's glow stays on every unit of the buffed side while the buff lasts */
+  function syncBuffNow(now: number) {
+    const fl = state?.flags, units: { uid: string; side: string; pos: THREE.Vector3; h: number }[] = [];
+    if (fl) for (const f of figs.values()) if (!f.dying && (fl.battleCryN?.[f.owner] ?? (fl.battleCry === f.owner ? 1 : 0)) > 0) units.push({ uid: f.uid, side: f.owner, pos: f.group.position, h: f.c3d?.boardH || 1 });
+    spellFx.syncBuff(units, now);
+  }
+  /** load the painted FX of every spell either side holds (hand or deck), a texture at a time */
+  function preloadSpells(st: any) {
+    const ids = new Set<string>();
+    for (const side of ['player', 'opponent']) for (const z of ['hand', 'deck']) for (const c of st?.players?.[side]?.[z] || []) { const id = c && (c.cardId || c); if (typeof id === 'string' && CARDS[id]?.type === 'spell') ids.add(id); }
+    if (ids.size) spellFx.preload(ids);
+  }
+  // Ken (Oct 31): "the opposing commander is still kind of small. Make each commander the same size-ish." Once both 3D Commanders are in,
+  // the enemy's figure is scaled so its height ON SCREEN (feet to top, as the player sees it) matches the player's. The player's stays as it is.
+  let cmdMatched: any = null, cmdMatchK = 1;
+  function matchCommanders() {
+    const p = cmd.player?.g3d, o = cmd.opponent?.g3d;
+    if (!p || !o || cmdMatched === o) return;
+    cmdMatched = o;
+    const hp = (c3('player') as any).screenH, ho = (c3('opponent') as any).screenH;
+    if (!(hp > 4 && ho > 4)) { cmdMatched = null; return; }
+    cmdMatchK = Math.min(2, Math.max(0.5, hp / ho));
+    o.figure.scale.multiplyScalar(cmdMatchK);
+  }
   function frame() {
     if (disposed) return;
     raf = requestAnimationFrame(frame);
     const now = performance.now();
+    matchCommanders();
+    // Automated runs (software GL on the check machines): keep the page responsive by drawing fewer frames while input arrives or frames are slow.
+    // Owner fix (Ken, Oct 29): the Round 26 builder also switched the mines to low effects when frames were slow, and the figures moved a fixed
+    // step per frame, so the checks measured a slow-motion game with the wrong mine effects (late clips, missing effects, 4 s stats).
+    // Now the mines always keep their real effects, and movement and clips advance by elapsed time (below), so a slow frame rate never slows the game.
+    if (testMode) { if (prevRaf) frameGap = frameGap * 0.7 + Math.min(2000, now - prevRaf) * 0.3; prevRaf = now; }
+    if (testMode && now - lastInput < 220) return;
+    if (testMode && now - lastRender < Math.max(300, lastDur * 6, frameGap > 100 ? frameGap * 8 : 0)) return;
+    lastRender = now;
+    void mineLow;
+    const slowK = spellFx.slowK(now); // Oct 31: spell slow-mo (0.35x for 300 ms at a big impact): units and FX only
+    const dt0 = Math.min(0.5, (now - (frameLast || now)) / 1000) * slowK; frameLast = now; // real elapsed time (capped at 0.5 s)
+    for (const fx of mineFx) fx.update(now / 1000);
+    placeStatusIcons();
+    placeBubbles(now);
+    for (let i = impacts.length - 1; i >= 0; i--) { // Oct 30: the blow lands: clink on armour, bonk on everything else
+      const b = impacts[i]; if (now < b.at) continue; impacts.splice(i, 1);
+      const at = b.to.clone(); at.y = 0.55;
+      spawnFx(b.armored ? 'spark' : 'stars', at, b.ranged ? 4 : 7); if (!b.ranged) spawnFx('flash', at, 1); sticker(b.armored ? 'sparkle-8' : b.ranged ? 'puff-streak' : 'puff-big', at, 0.8, 380);
+      audio.play(b.commander ? 'bonk' : b.armored ? 'clink' : 'bonk');
+    }
     for (const [uid, f] of figs) {
       const g = f.group;
-      if (f.dying) {
-        const k = (now - f.dying) / 350;
-        g.scale.setScalar(Math.max(0.001, 1 - k));
+      if (f.hitAt && now >= f.hitAt) { f.hitT = now; f.hitAt = 0; f.c3d?.play('hit'); } // Oct 30: the hit flash and flinch wait for the blow
+      if (f.dying && now >= f.dying && f.c3d) {
+        // the model's own defeat clip plays out, then the figure shrinks away
+        f.c3d.play('defeat'); f.c3d.update(dt0); g.rotation.x = 0;
+        const len = Math.min(1.5, Math.max(0.5, f.c3d.dur('defeat'))) * 1000;
+        const k = (now - f.dying - len) / 300;
+        g.position.y = 0; g.rotation.z = 0;
+        if (k > 0) g.scale.setScalar(Math.max(0.001, f.baseScale * (1 - k)));
+        if (k >= 1) { scene.remove(g); figs.delete(uid); }
+        continue;
+      }
+      if (f.dying && now >= f.dying) {
+        const k = (now - f.dying) / 380;
+        g.scale.setScalar(Math.max(0.001, f.baseScale * (1 - k)));
         g.rotation.y += 0.3;
+        g.position.y = Math.sin(Math.min(1, k) * Math.PI) * 0.4;
         if (k >= 1) { scene.remove(g); figs.delete(uid); }
         continue;
       }
       let goal = f.target.clone();
-      if (f.lunge) {
-        const k = (now - f.lungeT) / 380;
+      const carried = !!(carry && carry.uid === f.uid);
+      if (f.bowl) f.kb = null;
+      // Oct 30: walking square by square (constant pace, facing each step), or running when the move is longer than one square
+      let pathYaw: number | undefined;
+      const onPath = !!(f.path && f.path.length) && !f.kb && !carried && !f.bowl;
+      if (onPath) {
+        const nx = f.path![0], dx = nx.x - g.position.x, dz = nx.z - g.position.z, d = Math.hypot(dx, dz), step = (f.run ? RUN_SPEED : WALK_SPEED) * dt0; // one pace for everyone (Gauge, Oct 30: the Anvilsworn ran 3x faster); the clip speed fits the pace in setPace
+        if (d > 1e-4) pathYaw = Math.atan2(dx, dz);
+        if (d <= step) { g.position.x = nx.x; g.position.z = nx.z; f.path!.shift(); }
+        else { g.position.x += (dx / d) * step; g.position.z += (dz / d) * step; }
+        goal.set(g.position.x, goal.y, g.position.z);
+      } else if (f.path && f.path.length && (carried || f.bowl)) f.path = [];
+      if (f.lunge && !onPath) {
+        const k = (now - f.lungeT) / (f.lungeDur || 380);
         if (k >= 1) f.lunge = null;
-        else goal.add(f.lunge.clone().multiplyScalar(Math.sin(k * Math.PI)));
+        else if (k > 0) goal.add(f.lunge.clone().multiplyScalar(lungeShape(k)));
       }
-      g.position.lerp(goal, 0.22);
+      // Oct 30: knock-back: launched up and back with a backflip, a squashy landing, then a hop back to its square
+      let kbY = 0, inKb = false;
+      if (f.kb && !carried) {
+        const b = f.kb, t = now - b.t0, down = b.fly + 230, up = down + (b.ret ? 300 : 0);
+        if (t >= 0) {
+          inKb = true;
+          if (t < b.fly) { const e = t / b.fly; g.position.lerpVectors(b.from, b.land, e); kbY = 4 * b.h * e * (1 - e); g.rotation.x = -b.spin * Math.PI * 2 * easeIO(e); }
+          else if (t < down) {
+            if (!b.landed) { b.landed = true; spawnFx('dust', b.land, 6); audio.play('thud'); sticker('dizzy-stars-' + (1 + Math.floor(Math.random() * 3)), b.land.clone().setY((f.c3d?.boardH || 1) * 0.95), 0.5, 900); }
+            g.position.copy(b.land); g.rotation.x = 0;
+            const s = Math.sin(Math.PI * (t - b.fly) / 230); g.scale.set(f.baseScale * (1 + 0.12 * s), f.baseScale * (1 - 0.2 * s), f.baseScale * (1 + 0.12 * s));
+          } else if (t < up) { const e = easeIO((t - down) / 300); g.scale.setScalar(f.baseScale); g.position.lerpVectors(b.land, f.target, e); kbY = Math.sin(e * Math.PI) * 0.14; }
+          else { f.kb = null; inKb = false; g.rotation.x = 0; g.scale.setScalar(f.baseScale); g.position.copy(b.ret ? f.target : b.land); }
+          goal.copy(g.position);
+        }
+      }
+      if (f.bowl) {
+        const b = f.bowl, k = (now - b.t0) / 650;
+        if (k < 0) goal.copy(b.from);
+        else if (k < 1) { const e2 = k * (2 - k); g.position.lerpVectors(b.from, b.to, e2); goal.copy(g.position); }
+        else { f.bowl = null; g.rotation.z = 0; }
+      }
+      if (carried) goal.set(carry!.pos.x, goal.y, carry!.pos.z);
+      const walking = !inKb && !f.bowl && (onPath || Math.hypot(g.position.x - f.target.x, g.position.z - f.target.z) > 0.05); /* Oct 31: a unit waiting for the bowling ball stands still */ // on the ground plane: a hovering flyer is not walking // judged before this frame's glide: one slow frame may cover the whole step
+      if (!onPath && !inKb) g.position.lerp(goal, f.bowl ? 1 : carried ? 0.5 : 1 - Math.exp(-dt0 * (f.lunge ? 24 : 14))); // time-based glide; snappier while stepping in to swing
+      plowFrame(f, now, { world, fx: spawnFx, sound: (n) => audio.play(n) }); // Gnome Plow: drive + ram (plow.ts)
+      { // hold the stored facing; turn smoothly (~200 ms); miners look at their node while mining; walkers face each step
+        const want = pathYaw ?? (f.faceUntil && now < f.faceUntil ? f.faceTo! : (f.faceWant ?? f.yaw ?? 0));
+        if (f.yaw === undefined) f.yaw = want;
+        const d = Math.atan2(Math.sin(want - f.yaw), Math.cos(want - f.yaw));
+        f.yaw = Math.abs(d) < 0.01 ? want : f.yaw + d * (1 - Math.exp(-dt0 * 16));
+        g.rotation.y = f.yaw;
+      }
       if (f.born) {
         const k = Math.min(1, (now - f.born) / 450);
         g.position.y = (1 - k) * -0.6;
         g.visible = true;
         if (k >= 1) f.born = 0;
-      } else g.position.y = Math.abs(Math.sin(now / 260 + g.position.x)) * 0.015;
+      } else g.position.y = walking ? Math.abs(Math.sin(now / 90)) * 0.09 : Math.abs(Math.sin(now / 260 + g.position.x)) * 0.015;
+      // hit flash (red) + flinch
+      if (f.hitT) {
+        const k = (now - f.hitT) / 320;
+        const on = k < 1;
+        for (const m of f.mats) { const e0 = m.userData.e0; if (on) { m.emissive.setHex(0xff1a1a); m.emissiveIntensity = 0.9 * (1 - k); } else { m.emissive.setHex(e0.hex); m.emissiveIntensity = e0.i; } }
+        if (on) g.rotation.z = Math.sin(k * 24) * 0.18 * (1 - k); else { g.rotation.z = 0; f.hitT = 0; }
+      }
+      if (f.c3d) {
+        const dt = Math.min(0.5, (now - (f.lastT || now)) / 1000); f.lastT = now;
+        const mk3 = (now - f.mineT) / 900, ak3 = now >= f.shootT ? (now - f.shootT) / (f.atkMs || 600) : 2;
+        const abil = f.abilT && now - f.abilT < (f.abilMs || 1000) ? f.abilRole : null; // Oct 31: a special / ability clip from an abilityUsed event
+        if (f.born) f.bornAt = f.born;
+        f.c3d.trig?.(f.shootT, f.born || (f.bornAt && now - f.bornAt < 12000 ? f.bornAt : 0)); // the model may finish loading after the short summon drop
+        // automated runs: no random pack idle breaks (checks read 'idle')
+        // Round 28b: knock-back and bowled-over reactions (Ken's slots) come before the plain hit; an idle break plays once in a while
+        const knocked = f.knockT && now >= f.knockT && now - f.knockT < (f.kbClip ? f.kbClip.dur : 700) && f.c3d.has?.('knockback'), bowledNow = f.bowledT && now >= f.bowledT && now - f.bowledT < 900 && f.c3d.has?.('bowled');
+        if (!walking && !f.shootT && !f.hitT && f.c3d.has?.('idleBreak') && !(testMode && f.c3d.packRoles?.has('idleBreak'))) { if (!f.idleBreakAt) f.idleBreakAt = now + 6000 + Math.random() * 8000; else if (now > f.idleBreakAt) { f.idleBreakT = now; f.idleBreakAt = now + 9000 + Math.random() * 9000; } } else f.idleBreakAt = 0;
+        const breaking = f.idleBreakT && now - f.idleBreakT < (f.c3d.dur('idleBreak') || 1.5) * 1000;
+        f.c3d.holding = !!(carry && carry.holder === f.uid);
+        f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : abil ? abil : f.shootT && ak3 < 1 && !(f.hitT && f.hitT > f.shootT) ? (f.atkRole || 'attack') : f.mineT && mk3 < 1 ? 'mine' : bowledNow ? 'bowled' : knocked ? 'knockback' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? (f.run && onPath ? 'run' : 'walk') : breaking ? 'idleBreak' : 'idle');
+        if (knocked && f.kbClip && !f.kbClip.seeked && f.c3d.current() === 'knockback') { f.c3d.seek?.('knockback', f.kbClip.launch); f.kbClip.seeked = true; }
+        f.c3d.update(dt * slowK);
+        g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
+        if (f.c3d.lift) g.position.y = (f.born ? g.position.y : 0) + f.c3d.lift; // flying units hover
+      }
+      if (carried) { // Owner fix (Ken, Oct 28): carried by the Junk Shaman: raised above the board under the pointer
+        g.position.y = carry!.pos.y + Math.sin(now / 260) * 0.04;
+        if (!f.c3d?.has?.('lifted')) { g.rotation.z = Math.sin(now / 300) * 0.12; (f as any).dangle = true; } // no lifted clip: gentle dangle
+      } else if ((f as any).dangle) { g.rotation.z = 0; (f as any).dangle = false; }
+      if (kbY) g.position.y += kbY;
+      { // Ken (Oct 30): the ring sits on the square, not on the model. Oct 31: the ring is looked up once, not searched through the whole model every frame
+        if (f.ringObj && !f.ringObj.parent) f.ringObj = null;
+        const ring = f.ringObj || (f.ringObj = g.getObjectByName('acting-ring') || null);
+        if (ring) ring.position.y = (0.04 - g.position.y) / (f.baseScale || 1);
+      }
+      const p = f.parts;
+      if (f.finished && p) {
+        const t = now / 1000;
+        // idle: breathing hunch, ear-twitch head sway
+        p.body.scale.y = 1 + Math.sin(t * 2.2 + g.position.x) * 0.02;
+        p.head.rotation.z = Math.sin(t * 1.3 + g.position.z) * 0.06;
+        p.armL.rotation.x = Math.sin(t * 2 + 1) * 0.06; p.armR.rotation.x = Math.sin(t * 2) * 0.06;
+        p.weapon.rotation.x = 0; p.weapon.rotation.z = 0;
+        p.legL.rotation.x = p.legR.rotation.x = 0;
+        if (walking) { p.legL.rotation.x = Math.sin(now / 80) * 0.6; p.legR.rotation.x = -Math.sin(now / 80) * 0.6; p.armL.rotation.x = -Math.sin(now / 80) * 0.5; }
+        const ak = (now - f.shootT) / 380;
+        if (f.shootT && ak < 1) { p.weapon.rotation.x = -Math.sin(ak * Math.PI) * 1.3; p.armR.rotation.x = -Math.sin(ak * Math.PI) * 1.6; }
+        const mk = (now - f.mineT) / 900;
+        if (f.mineT && mk < 1) { p.weapon.rotation.x = -Math.abs(Math.sin(mk * Math.PI * 3)) * 1.2 + 0.3; p.armR.rotation.x = p.weapon.rotation.x; p.body.rotation.x = Math.abs(Math.sin(mk * Math.PI * 3)) * 0.2; }
+        else p.body.rotation.x = 0;
+        if (f.poke) {
+          const k = (now - f.poke.t) / 1100;
+          if (k >= 1) { f.poke = null; g.rotation.y = f.yaw ?? 0; g.scale.setScalar(f.baseScale); }
+          else if (f.poke.name === 'cackle') { p.head.rotation.x = -0.5 + Math.sin(k * 60) * 0.1; p.body.rotation.x = -0.15; g.position.y += Math.abs(Math.sin(k * Math.PI * 6)) * 0.07; }
+          else if (f.poke.name === 'rude dance') { g.rotation.y = (f.yaw ?? 0) + Math.sin(k * Math.PI * 8) * 0.7; g.position.y += Math.abs(Math.sin(k * Math.PI * 8)) * 0.1; p.armL.rotation.z = Math.sin(k * 30) * 0.8; }
+          else { g.scale.set(f.baseScale * (1 + Math.sin(k * Math.PI * 4) * 0.06), f.baseScale * (1 - Math.abs(Math.sin(k * Math.PI * 4)) * 0.12), f.baseScale); p.armL.rotation.x = p.armR.rotation.x = -2.2; }
+        } else { p.armL.rotation.z = 0; p.head.rotation.x = 0; }
+        if (p.aura) (p.aura.material as THREE.MeshBasicMaterial).opacity = 0.2 + Math.sin(t * 2) * 0.06;
+      }
     }
+    for (const f of figs.values()) if (f.bowl) { const k = (now - f.bowl.t0) / 650; if (k > 0 && k < 1) { f.group.rotation.z = Math.sin(k * Math.PI * 0.5) * Math.PI * 0.5 * (k < 0.7 ? 1 : (1 - k) / 0.3); f.group.position.y = Math.sin(k * Math.PI) * 0.35; } }
+    proj.update(now); // Oct 31: shots and the bowling ball fly by elapsed time
+    for (let i = fx.length - 1; i >= 0; i--) {
+      const e = fx[i], k = (now - e.t) / (e.dur || 700);
+      if (k >= 1) { scene.remove(e.obj); (e.obj as THREE.Sprite).material.dispose(); fx.splice(i, 1); continue; }
+      e.obj.position.add(tmpV.copy(e.vel!).multiplyScalar(0.016));
+      e.vel!.y -= e.kind === 'stars' ? 0.06 : e.kind === 'chips' ? 0.12 : 0;
+      ((e.obj as THREE.Sprite).material as THREE.SpriteMaterial).opacity = 1 - k;
+    }
+    spellFx.update(now);
+    syncBuffNow(now);
     for (const side of ['player', 'opponent'] as const) {
       const cm = cmd[side];
-      cm.fig.position.y = Math.sin(now / 600 + (side === 'player' ? 0 : 2)) * 0.02;
+      cm.fig.position.y = cm.g3d ? 0 : Math.sin(now / 600 + (side === 'player' ? 0 : 2)) * 0.02;
+      if (cm.g3d) cm.g3d.update(Math.min(0.1, Math.max(0, (now - (cm.g3d as any)._t || 0) / 1000))), ((cm.g3d as any)._t = now);
       cm.fig.rotation.z = 0;
+      if (cm.g3d && cm.baseYaw !== undefined) {
+        const dt = Math.min(testMode ? 1 : 0.1, Math.max(0, (now - ((cm as any)._yt || now)) / 1000)); (cm as any)._yt = now; // automated runs paint rarely: let one frame cover the elapsed time
+        const want = now < (cm.lookUntil || 0) ? 0 : cm.baseYaw;
+        let d = Math.atan2(Math.sin(want - cm.yaw!), Math.cos(want - cm.yaw!));
+        if (Math.abs(d) < 0.01) cm.yaw = want; else cm.yaw = cm.yaw! + d * (1 - Math.exp(-dt * 7.5)) + Math.sign(d) * Math.min(Math.abs(d), 0.4 * dt);
+        cm.fig.rotation.y = cm.yaw!;
+        // fidgeting when impatient: sway and head shake without any new clip
+        if (cm.impatient) { cm.fig.rotation.y += Math.sin(now / 130) * 0.08; }
+      }
+      const gr = cm.grub;
+      if (gr) { gr.armL.rotation.set(0, 0, 0); gr.armR.rotation.set(0, 0, 0); gr.head.rotation.set(0, 0, 0); gr.mouth.scale.y = 1; }
+      if (cm.keep) cm.keep.flags.forEach((fl, i) => { fl.rotation.y = Math.sin(now / 500 + i) * 0.3; });
       if (cm.emote) {
         const k = (now - cm.emote.t) / 700;
         if (k >= 1) cm.emote = null;
-        else if (cm.emote.kind === 'cheer') cm.fig.position.y += Math.abs(Math.sin(k * Math.PI * 3)) * 0.25;
-        else if (cm.emote.kind === 'groan') cm.fig.rotation.z = Math.sin(k * Math.PI) * 0.5;
-        else if (cm.emote.kind === 'flinch') cm.fig.rotation.z = Math.sin(k * 30) * 0.2 * (1 - k);
-        else cm.fig.position.y += Math.sin(k * Math.PI) * 0.15;
+        else if (cm.emote.kind === 'cheer') {
+          cm.fig.position.y += Math.abs(Math.sin(k * Math.PI * 3)) * 0.25;
+          if (gr) { gr.head.rotation.x = -0.35; gr.mouth.scale.y = 1.8; gr.armR.rotation.x = -Math.abs(Math.sin(k * Math.PI * 4)) * 1.4; } // belly laugh + throne pound
+        } else if (cm.emote.kind === 'groan') {
+          cm.fig.rotation.z = Math.sin(k * Math.PI) * 0.5;
+          if (gr) { gr.head.rotation.x = 0.4; gr.armR.rotation.x = Math.sin(k * Math.PI * 2) * 0.8; } // sulk + crate kick
+        } else if (cm.emote.kind === 'flinch') {
+          cm.fig.rotation.z = Math.sin(k * 30) * 0.2 * (1 - k);
+          if (gr) { gr.armL.rotation.x = -2.2; gr.armL.rotation.z = Math.sin(k * 40) * 0.3; } // fist shake
+        } else {
+          cm.fig.position.y += Math.sin(k * Math.PI) * 0.15;
+          if (gr) gr.armR.rotation.x = -Math.sin(k * Math.PI) * 2.4; // fastball throw
+        }
+      }
+      // owner pose: 3D Commander and stronghold stay on the ground, upright (emotes are the animation clips, never a hop or a lean)
+      if (cm.g3d) { cm.fig.position.y = 0; cm.fig.rotation.z = 0; }
+      if (cm.retreat) {
+        const k = Math.max(0, (now - cm.retreat.t) / 2200);
+        cm.retreat.barrel.position.set(Math.sin(k * 6) * 0.1, 1.0 + k * k * 14, -k * 2);
+        cm.retreat.barrel.rotation.x = -k * 0.6;
+        const fl = cm.retreat.barrel.getObjectByName('flame');
+        if (fl) fl.scale.set(1, 0.7 + Math.random() * 0.6, 1);
+        cm.group.rotation.z = Math.sin(k * 40) * 0.06 * (1 - Math.min(1, k));
+        if (cm.keep) cm.keep.group.scale.y = Math.max(0.5, 1 - k * 0.4);
       }
     }
-    crystals.forEach((c, i) => c.mats.forEach((m) => (m.emissiveIntensity = 0.5 + Math.sin(now / 420 + i) * 0.15)));
-    sparkles.forEach((p, i) => (p.rotation.y = now / 2000 + i));
+    mines.forEach((m) => m.update(now));
+    // mine emblem: on the mine's square centre, moved half a square towards the camera (same spot on screen) so its own crystal stays behind it but units in front cover it
+    crystals.forEach((cr) => { if (!cr.emb) return; const p = cr.art.group.position; _embV.copy(camera.position).sub(p).normalize(); cr.emb.position.copy(p).addScaledVector(_embV, 0.55); });
+    updateFlow(now);
+    renderer.info.reset();
+    const t0 = performance.now();
+    arenaFrame(now);
+    renderer.clear();
     renderer.render(scene, camera);
+    if (arena) { renderer.clearDepth(); renderer.render(arena.fgScene, arena.cam); }
+    lastDur = performance.now() - t0;
+    lastFrame = { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
+    frames++;
   }
   resize();
   frame();
   void state;
 
-  return {
-    is3D: true, setState, cellRect, resize, emote,
+  const _v = new THREE.Vector3();
+  /** Screen box (client px) of a figure's solid meshes, or null. */
+  function figScreenBox(f: Fig) {
+    const b = f.c3d ? skinBox(f.group, new THREE.Box3()) : new THREE.Box3().setFromObject(f.group);
+    if (b.isEmpty()) return null;
+    const cv = canvas.getBoundingClientRect();
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let i = 0; i < 8; i++) {
+      _v.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).project(camera);
+      const px = cv.left + ((_v.x + 1) / 2) * cv.width, py = cv.top + ((1 - _v.y) / 2) * cv.height;
+      x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+    }
+    return { x0, y0, x1, y1 };
+  }
+  /** Oct 31: the unit drawn under (x, y): inside the middle 70 % of its figure's width, feet to top; the front-most (lowest feet on screen) wins. */
+  function unitAt(x: number, y: number): string | null {
+    let best: string | null = null, by = -1e9;
+    for (const [uid, f] of figs) {
+      if (f.dying || !f.group.visible) continue;
+      const r = figScreenBox(f); if (!r) continue;
+      const cx = (r.x0 + r.x1) / 2, hw = (r.x1 - r.x0) * 0.35;
+      if (x < cx - hw || x > cx + hw || y < r.y0 || y > r.y1) continue;
+      if (r.y1 > by) { by = r.y1; best = uid; }
+    }
+    return best;
+  }
+  function figureStats(f: Fig) {
+    const c = f.c3d, cv = canvas.getBoundingClientRect();
+    const base: any = { row: f.row, col: f.col, source: c ? `${f.cardId}.glb` : 'placeholder', height: c ? c.heightSpaces : 0, studioHeight: c?.studioHeight ?? null, boardH: c?.boardH ?? null, natural: c?.natural ?? null, standH: c?.char ? (() => { const sb = standingBox(c.char!, new THREE.Box3()); return +(sb.max.y - sb.min.y).toFixed(3); })() : null, animations: c ? c.clipNames : [], currentAnimation: c ? c.current() : 'idle', currentClip: c?.currentClip ? c.currentClip() : '', parts: c?.partInfo ? c.partInfo().map((x) => ({ ...x })) : [], animationLog: c ? [...c.log] : [], ...(c && c.ballInfo ? { ball: c.ballInfo(), effects: c.effects!() } : {}), items: c ? c.items.map((i) => { const o = c.partObject?.(i.name); let size = 0; if (o) { const ib = new THREE.Box3().setFromObject(o, true); if (!ib.isEmpty()) size = +ib.getSize(new THREE.Vector3()).length().toFixed(3); } return { ...i, size }; }) : [], flying: c?.flying ? { ...c.flying } : null, lift: (c?.lift || 0) / (c?.boardK || 1), boardLift: c?.lift || 0, swayNowDeg: c?.swayNowDeg || 0, groundShadow: !!c?.groundShadow, animWeight: c?.animWeight ? +c.animWeight().toFixed(2) : null, poseDelta: c?.poseDelta ? +c.poseDelta().toFixed(3) : null, diag: c?.diag ? c.diag() : null, moving: !!(f.path && f.path.length), packed: c?.packRoles ? [...c.packRoles] : [] };
+    const b = c ? skinBox(f.group, new THREE.Box3()) : new THREE.Box3().setFromObject(f.group);
+    if (b.isEmpty()) { base.screenBox = { x: 0, y: 0, width: 0, height: 0 }; return base; }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let i = 0; i < 8; i++) {
+      _v.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).project(camera);
+      const px = cv.left + ((_v.x + 1) / 2) * cv.width, py = cv.top + ((1 - _v.y) / 2) * cv.height;
+      x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+    }
+    base.screenBox = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+    return base;
+  }
+
+  function stats(): Promise<any> {
+    const f0 = frames, t0 = Date.now();
+    return new Promise((resolve) => {
+      const wait = () => {
+        if (frames >= f0 + 2 && (Date.now() - t0 > 1000 || mines.every((m) => m.group.userData.mineHeight))) { // Owner fix (Ken, Oct 29): answer after 2 frames (was up to 4 s)
+          resolve({
+            webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
+            bloom: false, shadows: renderer.shadowMap.enabled, particles: false, arena: arenaInfo,
+            unitRings: [...figs.values()].filter((f) => !f.dying).map((f) => { const rs = getRings(); return { uid: f.uid, side: f.owner, color: f.ringColor || '', greyed: !!f.ringGreyed, thickness: rs.thickness, glow: rs.glow, opacity: rs.opacity }; }),
+            figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ ...figureStats(f), uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb), bubble: !!bubbles.get(f.uid)?.on, bubblePops: bubblePops.get(f.uid) || 0, bubbleColor: bubbles.get(f.uid)?.hex || '' })),
+            creatureAnimLog: creatureAnimLog.map((e) => ({ ...e })),
+            projectiles: proj.active(), projectileLog: proj.log(), attackLog: attackLog.map((x) => ({ ...x })), aimLog: aimLog.map((x) => ({ ...x })), aimNow: aimNow(),
+            canvas: canvasInfo(),
+            missingClips: missingClipList.map((m) => ({ ...m })),
+            commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? (cm.g3d.files?.source || 'grubnak.glb') : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? (cm.g3d.files?.fortress || 'grubnak-fortress.glb') : '', scepter: cm.g3d ? (cm.g3d.files?.scepter ?? 'grubnak-scepter.glb') : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, items: (((cm.g3d as any)?.items || []) as { name: string; bone: string; obj: THREE.Object3D | null }[]).map((i) => { let o: THREE.Object3D | null = i.obj, vis = !!o, size = 0; while (o) { if (!o.visible) vis = false; o = o.parent; } if (i.obj) { const ib = new THREE.Box3().setFromObject(i.obj, true); if (!ib.isEmpty()) size = +ib.getSize(new THREE.Vector3()).length().toFixed(3); } return { name: i.name, bone: i.bone, visible: vis, size }; }), animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
+            commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
+            strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => { const cl = m.group.userData.cell || { row: 0, col: 0 }, bx = mineBox(cl.row, cl.col), cv = canvas.getBoundingClientRect(); return { row: cl.row, col: cl.col, screenBox: { x: bx.x + cv.left, y: bx.y + cv.top, width: bx.width, height: bx.height }, effects: mineFx[i].stats(), source: m.group.userData.mineModel === 'crystal-node' ? 'model:crystal-node.glb' : 'code:buildMineModel', ring: false, decal: { kind: 'glow-rubble', flat: true, color: m.group.userData.decalHex || m.group.userData.tintHex || '#ffffff' }, tiltDeg: (Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z)) * 180 / Math.PI, tilt: Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z), baseY: new THREE.Box3().setFromObject(m.crystals).min.y - m.group.position.y, scale: m.group.scale.x, parts: ['rubble', 'pedestal', 'banner', 'crystal'], shards: 11, pulsing: true, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' }; }), mineModel: 'code-built', crystalFlow: { shards: flowShown, streams: flowOwner.filter((o) => o && o !== 'neutral').length, swirls: flowOwner.filter((o) => !o || o === 'neutral').length, shape: 'faceted', path: 's-curve', target: 'bank' },
+          });
+        } else setTimeout(wait, 30);
+      };
+      wait();
+    });
+  }
+
+  const api: BoardView = {
+    playSpell: (req: SpellFxRequest) => spellFx.play(req),
+    spellShards: (at: { row: number; col: number }, countered: string | null) => spellFx.shatter(at, countered),
+    isBusy: () => boardBusy(performance.now()),
+    topAt: (row: number, col: number) => thingBox(row, col),
+    is3D: true, setCarry, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
-      disposed = true;
+      spellFx.dispose(); proj.dispose();
+      disposed = true; for (const ev of inputEvs) window.removeEventListener(ev, onInput, true); window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);
       cancelAnimationFrame(raf);
+      if (testMode) { glPool = { renderer, backRenderer, backCanvas }; backCanvas.remove(); canvas.remove(); return; }
       renderer.dispose();
+      backRenderer?.dispose();
+      try { backRenderer?.forceContextLoss(); } catch { /* ignore */ }
+      backCanvas.remove();
       try { renderer.forceContextLoss(); } catch { /* ignore */ }
       canvas.remove();
     },
   };
+  return api;
 }
 
 /** Flat board used when WebGL is not available. */
 export function createFlatView(container: HTMLElement): BoardView {
   container.classList.add('flat');
+  const cam = { zoom: 1, x: 0, y: 0 };
   return {
     is3D: false,
     setState() {},
+    setCamera(c) { Object.assign(cam, c); },
+    zoomAt() {}, panBy() {}, recenter() {}, getView: () => ({}), squareCenter() { return null; }, arenaDetails() { return null; }, piecePoses() { return {}; }, playEmote() {}, focusCommander() {}, cellQuad() { return []; },
+    screenRects: () => ({ playerCommander: { x: 0, y: 0, width: 0, height: 0 }, opponentCommander: { x: 0, y: 0, width: 0, height: 0 }, board: { x: 0, y: 0, width: 0, height: 0 } }),
+    setFlowMode() {},
+    setFlowTarget() {},
+    pulseFlow() {},
     cellRect(row, col) {
       const w = container.clientWidth || 390, h = container.clientHeight || 420;
       const cs = Math.min((h * 0.87) / BH, w / BW);
       const x0 = (w - cs * BW) / 2, y0 = h * 0.03;
-      return { x: x0 + (col - 1) * cs, y: y0 + (row - 1) * cs, w: cs, h: cs };
+      const x = x0 + (col - 1) * cs, y = y0 + (row - 1) * cs, z = cam.zoom;
+      return { x: (x - w / 2) * z + w / 2 + cam.x, y: (y - h / 2) * z + h / 2 + cam.y, w: cs * z, h: cs * z };
     },
     resize() {},
+    poke: () => null,
+    lookBack() {}, impatient() {}, facing: () => ({}),
+    retreat() { /* flat board: the overlay shows the retreat */ },
+    stats: async () => ({ webgl: false, graphics: 'low', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], creatureAnimLog: [], projectiles: [], projectileLog: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
     emote(side, kind) {
       const el = container.querySelector(`.stronghold.${side}`);
       if (el) { el.classList.remove('emote-cheer', 'emote-groan', 'emote-flinch', 'emote-cast'); void (el as HTMLElement).offsetWidth; el.classList.add('emote-' + kind); }

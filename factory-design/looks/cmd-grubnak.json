@@ -1,0 +1,840 @@
+{
+ "format": "oreheart-look-1",
+ "card": "cmd-grubnak",
+ "cardName": "Grubnak Rotgut Goblin King",
+ "faction": "goblins",
+ "savedAt": "2026-10-24T22:39:22.342Z",
+ "units": "1 unit = 1 board square. Y is up. Rotations in degrees (X, Y, Z order). localPosition/localRotation/localScale are relative to what the piece is attached to (a bone or another piece); world values are where it is in the scene.",
+ "howToBuild": "Load the main model, scale it to heightSquares. For every part: load its model, attach it to the named bone (or piece) and apply its local position, rotation and scale. Recreate each effect with its type and settings at its attach point. Apply tint/glow/color and hide the listed bones. Play the listed animations; attached parts follow the bones.",
+ "preview": "/_blob/93d505fc76b7a6ec9fc1b784920a4d1f",
+ "main": {
+  "name": "Grubnak Rotgut Goblin King",
+  "kind": "model",
+  "attachedTo": "the ground (not attached)",
+  "parent": null,
+  "localPosition": [
+   0,
+   -0.002,
+   0
+  ],
+  "localRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "localScale": 1.8,
+  "stretch": [
+   1,
+   1,
+   1
+  ],
+  "worldPosition": [
+   0,
+   -0.002,
+   0
+  ],
+  "worldRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "worldScale": 1.8,
+  "visible": true,
+  "model": {
+   "key": "grubnak-new",
+   "kind": "bundled"
+  },
+  "heightSquares": 3.823,
+  "animations": [
+   "Chair_Sit_Idle_M",
+   "Chest_Pound_Taunt",
+   "Call_Gesture",
+   "Victory_Fist_Pump",
+   "Hit_Reaction_1",
+   "mage_soell_cast",
+   "Hit_Reaction",
+   "Dead"
+  ],
+  "currentAnimation": "Call_Gesture",
+  "tint": {
+   "color": "#ffffff",
+   "amt": 0
+  },
+  "glow": {
+   "color": "#ffaa33",
+   "amt": 0
+  },
+  "color": {
+   "br": 0,
+   "co": 1,
+   "sa": 1,
+   "hu": 0,
+   "shine": 0
+  },
+  "hiddenBones": [],
+  "poseTweaks": {},
+  "fingers": {
+   "L": 0,
+   "R": 0,
+   "spread": 0,
+   "axis": "z",
+   "flip": false,
+   "thumb": true
+  }
+ },
+ "parts": [
+  {
+   "name": "Grubnak Rotgut Goblin King – Scepter",
+   "kind": "model",
+   "attachedTo": "bone \"RightHand\" of Grubnak Rotgut Goblin King",
+   "parent": {
+    "kind": "bone",
+    "id": 61,
+    "bone": "RightHand",
+    "name": "Grubnak Rotgut Goblin King"
+   },
+   "localPosition": [
+    -2.754,
+    16.04,
+    5.84
+   ],
+   "localRotationDeg": [
+    -117,
+    34,
+    153
+   ],
+   "localScale": 76,
+   "stretch": [
+    0.98,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.861,
+    2.365,
+    -0.707
+   ],
+   "worldRotationDeg": [
+    169.962,
+    -63.702,
+    178.678
+   ],
+   "worldScale": 1.341,
+   "visible": true,
+   "model": {
+    "key": "grubnak-new-scepter",
+    "kind": "bundled"
+   },
+   "heightSquares": 2.721,
+   "animations": [],
+   "currentAnimation": null,
+   "tint": {
+    "color": "#ffffff",
+    "amt": 0
+   },
+   "glow": {
+    "color": "#ffaa33",
+    "amt": 0
+   },
+   "color": {
+    "br": 0,
+    "co": 1,
+    "sa": 1,
+    "hu": 0,
+    "shine": 0
+   },
+   "hiddenBones": [],
+   "poseTweaks": {},
+   "fingers": {
+    "L": 0,
+    "R": 0,
+    "spread": 0,
+    "axis": "z",
+    "flip": false,
+    "thumb": true
+   }
+  }
+ ],
+ "effects": [
+  {
+   "name": "Glow",
+   "kind": "effect",
+   "attachedTo": "\"Grubnak Rotgut Goblin King – Scepter\"",
+   "parent": {
+    "kind": "item",
+    "id": 62,
+    "name": "Grubnak Rotgut Goblin King – Scepter"
+   },
+   "localPosition": [
+    -0.011,
+    0.752,
+    -0.038
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 1.332,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.818,
+    3.384,
+    -0.856
+   ],
+   "worldRotationDeg": [
+    169.962,
+    -63.702,
+    178.678
+   ],
+   "worldScale": 1.786,
+   "visible": true,
+   "effectType": "glow",
+   "settings": {
+    "size": 0.5,
+    "strength": 1.2,
+    "flicker": 1,
+    "light": 2.19,
+    "color": "#8a0f55"
+   },
+   "when": "always"
+  },
+  {
+   "name": "Glow",
+   "kind": "effect",
+   "attachedTo": "\"Grubnak Rotgut Goblin King – Scepter\"",
+   "parent": {
+    "kind": "item",
+    "id": 62,
+    "name": "Grubnak Rotgut Goblin King – Scepter"
+   },
+   "localPosition": [
+    0.11,
+    -0.812,
+    -0.006
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 1.332,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.908,
+    1.288,
+    -0.402
+   ],
+   "worldRotationDeg": [
+    169.962,
+    -63.702,
+    178.678
+   ],
+   "worldScale": 1.786,
+   "visible": true,
+   "effectType": "glow",
+   "settings": {
+    "size": 0.34,
+    "strength": 1.2,
+    "flicker": 0.76,
+    "light": 1.34,
+    "color": "#d00bac"
+   },
+   "when": "always"
+  },
+  {
+   "name": "Twinkles",
+   "kind": "effect",
+   "attachedTo": "\"Grubnak Rotgut Goblin King – Scepter\"",
+   "parent": {
+    "kind": "item",
+    "id": 62,
+    "name": "Grubnak Rotgut Goblin King – Scepter"
+   },
+   "localPosition": [
+    0.07,
+    0.721,
+    0.026
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 1.332,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.945,
+    3.35,
+    -0.791
+   ],
+   "worldRotationDeg": [
+    169.962,
+    -63.702,
+    178.678
+   ],
+   "worldScale": 1.786,
+   "visible": true,
+   "effectType": "twinkle",
+   "settings": {
+    "area": 0.12,
+    "count": 40,
+    "size": 0.07,
+    "speed": 1.5,
+    "color": "#fff6c8"
+   },
+   "when": "always"
+  },
+  {
+   "name": "Twinkles",
+   "kind": "effect",
+   "attachedTo": "\"Grubnak Rotgut Goblin King – Scepter\"",
+   "parent": {
+    "kind": "item",
+    "id": 62,
+    "name": "Grubnak Rotgut Goblin King – Scepter"
+   },
+   "localPosition": [
+    0.127,
+    -0.875,
+    -0.018
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 1.332,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.902,
+    1.207,
+    -0.361
+   ],
+   "worldRotationDeg": [
+    169.962,
+    -63.702,
+    178.678
+   ],
+   "worldScale": 1.786,
+   "visible": true,
+   "effectType": "twinkle",
+   "settings": {
+    "area": 0.07,
+    "count": 12,
+    "size": 0.07,
+    "speed": 1.5,
+    "color": "#fff6c8"
+   },
+   "when": "always"
+  }
+ ],
+ "other": [
+  {
+   "name": "Cut-out box",
+   "kind": "cutbox",
+   "attachedTo": "\"Grubnak Rotgut Goblin King – Scepter\"",
+   "parent": {
+    "kind": "item",
+    "id": 62,
+    "name": "Grubnak Rotgut Goblin King – Scepter"
+   },
+   "localPosition": [
+    -0.21,
+    0.009,
+    0.005
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 0.55,
+   "stretch": [
+    0.75,
+    1.58,
+    0.888
+   ],
+   "worldPosition": [
+    -0.743,
+    2.339,
+    -0.962
+   ],
+   "worldRotationDeg": [
+    169.962,
+    -63.702,
+    178.678
+   ],
+   "worldScale": 0.553,
+   "visible": true
+  },
+  {
+   "name": "Cut-out box",
+   "kind": "cutbox",
+   "attachedTo": "\"Grubnak Rotgut Goblin King – Scepter\"",
+   "parent": {
+    "kind": "item",
+    "id": 62,
+    "name": "Grubnak Rotgut Goblin King – Scepter"
+   },
+   "localPosition": [
+    0.326,
+    -0.024,
+    0.005
+   ],
+   "localRotationDeg": [
+    0,
+    0,
+    0
+   ],
+   "localScale": 0.57,
+   "stretch": [
+    0.56,
+    1.12,
+    0.3
+   ],
+   "worldPosition": [
+    -1.06,
+    2.391,
+    -0.318
+   ],
+   "worldRotationDeg": [
+    169.962,
+    -63.702,
+    178.678
+   ],
+   "worldScale": 0.428,
+   "visible": true
+  },
+  {
+   "name": "Solid part",
+   "kind": "rigid",
+   "attachedTo": "bone \"Hips\" of Grubnak Rotgut Goblin King",
+   "parent": {
+    "kind": "bone",
+    "id": 61,
+    "bone": "Hips",
+    "name": "Grubnak Rotgut Goblin King"
+   },
+   "localPosition": [
+    1.141,
+    -1.489,
+    13.335
+   ],
+   "localRotationDeg": [
+    6.401,
+    0.36,
+    0.322
+   ],
+   "localScale": 17.544,
+   "stretch": [
+    2.5,
+    1,
+    1.73
+   ],
+   "worldPosition": [
+    -0.111,
+    1.249,
+    0.257
+   ],
+   "worldRotationDeg": [
+    -15.405,
+    -31.597,
+    -11.369
+   ],
+   "worldScale": 0.789,
+   "visible": true
+  }
+ ],
+ "animationRules": "",
+ "animationRequests": [],
+ "editorScene": {
+  "units": "1 unit = 1 board square; Y is up",
+  "background": "#1a1420",
+  "view": {
+   "light": 1,
+   "reflections": 0.6,
+   "camera": {
+    "position": [
+     1.926,
+     2.391,
+     9.07
+    ],
+    "target": [
+     -0.172,
+     0.382,
+     -0.138
+    ]
+   }
+  },
+  "items": [
+   {
+    "id": 61,
+    "kind": "model",
+    "name": "Grubnak Rotgut Goblin King",
+    "parent": {
+     "kind": "world"
+    },
+    "position": [
+     0,
+     -0.002,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 1.8,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "src": {
+     "key": "grubnak-new",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "Call_Gesture",
+     "playing": true,
+     "speed": 1,
+     "lock": "xz",
+     "time": 1.83
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "hideCut": 0.5,
+    "paint": {},
+    "borrowed": []
+   },
+   {
+    "id": 62,
+    "kind": "model",
+    "name": "Grubnak Rotgut Goblin King – Scepter",
+    "parent": {
+     "kind": "bone",
+     "id": 61,
+     "bone": "RightHand"
+    },
+    "position": [
+     -2.754,
+     16.04,
+     5.84
+    ],
+    "rotationDeg": [
+     -117,
+     34,
+     153
+    ],
+    "scale": 76,
+    "stretch": [
+     0.98,
+     1,
+     1
+    ],
+    "visible": true,
+    "src": {
+     "key": "grubnak-new-scepter",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "",
+     "playing": false,
+     "speed": 1,
+     "lock": "xz",
+     "time": 0
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "hideCut": 0.5,
+    "paint": {},
+    "borrowed": []
+   },
+   {
+    "id": 64,
+    "kind": "cutbox",
+    "name": "Cut-out box",
+    "parent": {
+     "kind": "item",
+     "id": 62
+    },
+    "position": [
+     -0.21,
+     0.009,
+     0.005
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 0.55,
+    "stretch": [
+     0.75,
+     1.58,
+     0.888
+    ],
+    "visible": true
+   },
+   {
+    "id": 65,
+    "kind": "cutbox",
+    "name": "Cut-out box",
+    "parent": {
+     "kind": "item",
+     "id": 62
+    },
+    "position": [
+     0.326,
+     -0.024,
+     0.005
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 0.57,
+    "stretch": [
+     0.56,
+     1.12,
+     0.3
+    ],
+    "visible": true
+   },
+   {
+    "id": 66,
+    "kind": "rigid",
+    "name": "Solid part",
+    "parent": {
+     "kind": "bone",
+     "id": 61,
+     "bone": "Hips"
+    },
+    "position": [
+     1.141,
+     -1.489,
+     13.335
+    ],
+    "rotationDeg": [
+     6.401,
+     0.36,
+     0.322
+    ],
+    "scale": 17.544,
+    "stretch": [
+     2.5,
+     1,
+     1.73
+    ],
+    "visible": true
+   },
+   {
+    "id": 67,
+    "kind": "effect",
+    "name": "Glow",
+    "parent": {
+     "kind": "item",
+     "id": 62
+    },
+    "position": [
+     -0.011,
+     0.752,
+     -0.038
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 1.332,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "glow",
+    "d": {
+     "size": 0.5,
+     "strength": 1.2,
+     "flicker": 1,
+     "light": 2.19,
+     "color": "#8a0f55"
+    },
+    "when": "always"
+   },
+   {
+    "id": 68,
+    "kind": "effect",
+    "name": "Glow",
+    "parent": {
+     "kind": "item",
+     "id": 62
+    },
+    "position": [
+     0.11,
+     -0.812,
+     -0.006
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 1.332,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "glow",
+    "d": {
+     "size": 0.34,
+     "strength": 1.2,
+     "flicker": 0.76,
+     "light": 1.34,
+     "color": "#d00bac"
+    },
+    "when": "always"
+   },
+   {
+    "id": 69,
+    "kind": "effect",
+    "name": "Twinkles",
+    "parent": {
+     "kind": "item",
+     "id": 62
+    },
+    "position": [
+     0.07,
+     0.721,
+     0.026
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 1.332,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "twinkle",
+    "d": {
+     "area": 0.12,
+     "count": 40,
+     "size": 0.07,
+     "speed": 1.5,
+     "color": "#fff6c8"
+    },
+    "when": "always"
+   },
+   {
+    "id": 70,
+    "kind": "effect",
+    "name": "Twinkles",
+    "parent": {
+     "kind": "item",
+     "id": 62
+    },
+    "position": [
+     0.127,
+     -0.875,
+     -0.018
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 1.332,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "type": "twinkle",
+    "d": {
+     "area": 0.07,
+     "count": 12,
+     "size": 0.07,
+     "speed": 1.5,
+     "color": "#fff6c8"
+    },
+    "when": "always"
+   }
+  ]
+ }
+}

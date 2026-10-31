@@ -1,0 +1,69 @@
+{
+ "asset_id": "gyrocopter-ace",
+ "fps": 30,
+ "clips": {
+  "Idle": {
+   "frames": 120,
+   "duration": 4,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "Casual_Walk": {
+   "frames": 124,
+   "duration": 4.1333,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "Heavy_Hammer_Swing": {
+   "frames": 54,
+   "duration": 1.8,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  },
+  "Hit_Reaction": {
+   "frames": 49,
+   "duration": 1.6333,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  },
+  "Dead": {
+   "frames": 89,
+   "duration": 2.9667,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Hover": {
+   "frames": 90,
+   "duration": 3,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Fly": {
+   "frames": 90,
+   "duration": 3,
+   "loop": true,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Attack": {
+   "frames": 90,
+   "duration": 3,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  },
+  "OH_Hit": {
+   "frames": 90,
+   "duration": 3,
+   "loop": false,
+   "events": [],
+   "attachments": []
+  }
+ }
+}

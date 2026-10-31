@@ -1,0 +1,22 @@
+{
+ "generated": "2026-10-25T10:03:54.974Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a17280-31f1-71ae-98ff-4ff40886f5a4",
+  "rig": "01a17282-b10d-7468-9118-213ef1700f4e",
+  "anim": "01a17283-814a-7699-afb8-8f48f3945b69"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "rigged": true,
+ "parts": [],
+ "notes": "Owner sheet note: Don't render his hammer. Character only for now (owner, Oct 25: accessories come later).",
+ "fileSizes": {
+  "char.glb": 5933732
+ }
+}

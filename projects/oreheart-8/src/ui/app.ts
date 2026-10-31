@@ -1,13 +1,50 @@
+import { arenaOpts } from './arena-fx';
+import { mineEmblemUrl, ohCardEl, ohBackEl, commanderCard } from './cardfmt';
+import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
+import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
-import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other } from '../engine';
+import ownerLayoutJson0 from '../content/owner-layout.json';
+import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other, ABILITY_COST, bankNeeded, movedThisPhase, shamanLiftTargets, shamanLandingSquares, shamanLiftAction, MULLIGAN_REDRAWS } from '../engine';
+import { SPELL_VISUALS } from '../content/spell-visuals';
 import tutorialJson from '../content/tutorial.json';
-import { showDecks, loadDecks, deckLegal } from './decks';
-import { deckProblems, previewAttack } from '../engine';
+import { STANCES } from '../ai/stances';
+import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters } from './decks';
+import { brewActions, flowShardCount, deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
+import { audio, pickArena } from './audio';
+import { getHighlights, setHighlights, resetHighlights, getRings, setRings, resetRings, edgeOf, glowOf, mainOf, ringColor, applyHighlightVars } from './fx-settings';
+import { loadGrubnak3d } from './grubnak3d';
+import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
+import { emptyCell } from '../engine';
+import { planOrder, type Order, type OrderPlan } from '../engine/orders';
+import { runOrders } from './orders-run';
+import { orderSvg, type OrderDrawing } from './order-draw';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
+/** Round 26 drag-card look (mirrored in the editors). */
+const UI_SCALE = { commanderSpeech: 0.65, respond: 1.3 };
+const DRAG_FX = { shrinkMs: 150, shrinkOpacity: 0.85, tiltMax: 8, legal: '#3ee06a', illegal: '#b04040', fit: 0.88 }; // fit (Ken, Oct 28): card over a square keeps its shape, 88% of the square's smaller side
+function homography(p: { x: number; y: number }[], w: number, h: number): string {
+  const [p0, p1, p2, p3] = p;
+  const sx = p0.x - p1.x + p2.x - p3.x, sy = p0.y - p1.y + p2.y - p3.y;
+  let g = 0, hh = 0;
+  if (Math.abs(sx) > 1e-6 || Math.abs(sy) > 1e-6) {
+    const dx1 = p1.x - p2.x, dx2 = p3.x - p2.x, dy1 = p1.y - p2.y, dy2 = p3.y - p2.y, den = dx1 * dy2 - dx2 * dy1;
+    g = (sx * dy2 - dx2 * sy) / den; hh = (dx1 * sy - sx * dy1) / den;
+  }
+  const a = p1.x - p0.x + g * p1.x, b = p3.x - p0.x + hh * p3.x, d = p1.y - p0.y + g * p1.y, e = p3.y - p0.y + hh * p3.y;
+  return `matrix3d(${a / w},${d / w},0,${g / w},${b / h},${e / h},0,${hh / h},0,0,1,0,${p0.x},${p0.y},0,1)`;
+}
 const FSYM = (f: string) => SYM[FACTIONS[f]?.symbol] || '✦';
+/** Ken (Oct 31): "The gear icon is for the dwarves, and the eye icon is for the gnomes." The icon under a dragged unit is its
+ *  faction's emblem from the owner Card Format (dwarves: blue gear, gnomes: purple eye, goblins: green goblin king). */
+const DRAG_ICON: Record<string, string> = { dwarves: 'gear', gnomes: 'eye', goblins: 'goblin' };
+function dragIcon(f: string, cls: string): HTMLElement {
+  const url = mineEmblemUrl(f);
+  const g = h('div', { class: cls + ' faction-icon', 'data-faction': f, 'data-icon': DRAG_ICON[f] || 'symbol', 'aria-hidden': 'true' }, url ? h('img', { src: url, alt: '', draggable: 'false' }) : FSYM(f));
+  return g;
+}
 const PHASE: Record<string, string> = { deploy: 'Deploy', action: 'Action', mulligan: 'Mulligan', draw: 'Draw', end: 'End', over: 'Over' };
 const ACTIVE = ['deploy', 'action'];
 const BW: number = CONFIG.boardWidth, BH: number = CONFIG.boardHeight;
@@ -16,16 +53,76 @@ const shortName = (id: string) => id.toUpperCase();
 /** Font scale (in card-widths) that fits `len` characters of ability text in a card's text box. */
 const textScale = (len: number) => Math.min(0.1, 0.6 / Math.sqrt(Math.max(1, len)));
 /** Full card face (cost, name, art symbol, stats, complete ability text). */
-function faceKids(c: any, cost?: number): El[] {
-  const tf = textScale((c.text || '').length);
-  const kids: (El | null)[] = [
-    h('span', { class: 'cost', 'aria-hidden': 'true' }, c.type === 'crystal' ? '◆' : String(cost ?? c.cost)),
-    h('span', { class: 'nm', 'aria-hidden': 'true' }, c.name),
-    h('span', { class: 'ty', 'aria-hidden': 'true' }, c.type === 'creature' ? FSYM(c.faction) : c.type === 'spell' ? (c.spellKind === 'regular' ? '✨' : '⚡') : '💎'),
-    h('span', { class: 'st', 'aria-hidden': 'true' }, c.type === 'creature' ? `${roleBadge(c)} ⚔️${c.attack}${c.abilities?.includes('ranged') ? '🏹' : ''} ❤️${c.health}` : c.rarity),
-    h('span', { class: 'tx', style: `--tf:${tf.toFixed(4)}` }, c.text || ''),
-  ];
-  return kids.filter(Boolean) as El[];
+const RARITY_KEY: Record<string, string> = { Common: 'common', Uncommon: 'uncommon', Rare: 'rare', 'Ultra Rare': 'ultra-rare', Collector: 'collector' };
+export const rarityKey = (c: any) => RARITY_KEY[c.rarity] || 'common';
+/** Picture path of a card (Goblin creatures have a generated painting). */
+/** Owner-supplied paintings (round 12a) override the generated art. */
+export const OWNER_ART: Record<string, string> = { 'goblin-scrounger': '/art/owner/goblin/goblin-miner-card-art.png', 'goblin-pebbler': '/art/owner/goblin/boneknocker-card-art.png', 'shiv-rat': '/art/owner/goblin/shiv-rat-card-art.png', 'goblin-smith-miner': '/art/owner/goblin/scrapsmith-miner-card-art.png', 'goblin-sneak': '/art/owner/goblin/goblin-sneak-card-art.webp', 'goblin-bomber': '/art/owner/goblin/goblin-bomber-card-art.webp', 'goblin-scrapper': '/art/owner/goblin/goblin-scrapper-card-art.webp', 'grubnaks-big-boss-troll': '/art/owner/goblin/grubnaks-big-boss-troll-card-art.webp', 'junk-shaman': '/art/owner/goblin/junk-shaman-card-art.webp', 'wolf-rider': '/art/owner/goblin/wolf-rider-card-art.webp', 'rotgut-grenadier': '/art/owner/goblin/rotgut-grenadier-card-art.webp', 'shard-guzzler': '/art/owner/goblin/shard-guzzler-card-art.webp', 'blastrat-sapper': '/art/owner/goblin/blastrat-sapper-card-art.webp', 'hold-it': '/art/owner/goblin/hold-it-card-art.webp', 'tunnel-rush': '/art/owner/goblin/tunnel-rush-card-art.webp', 'goblin-grunt': '/art/owner/goblin/goblin-grunt-card-art.webp', 'skullbasher-rusher': '/art/owner/goblin/skullbasher-rusher-card-art.webp', 'goblin-slinger': '/art/owner/goblin/goblin-slinger-card-art.webp', 'gnome-tinker': '/art/owner/gnome/gnome-tinker-card-art.webp', 'gearward-sentinel': '/art/owner/gnome/gearward-sentinel-card-art.webp', 'gnome-prospector': '/art/owner/gnome/gnome-prospector-card-art.webp', 'glyphshield-warden': '/art/owner/gnome/glyphshield-warden-card-art.webp', 'clockwork-beetle': '/art/owner/gnome/clockwork-beetle-card-art.webp', 'gnome-illusionist': '/art/owner/gnome/gnome-illusionist-card-art.webp', 'the-great-steam-golem': '/art/owner/gnome/the-great-steam-golem-card-art.webp', 'spark-gnome': '/art/owner/gnome/spark-gnome-card-art.webp', 'gnome-cogger': '/art/owner/gnome/gnome-cogger-card-art.webp', 'fireball': '/art/owner/gnome/fireball-card-art.webp', 'meteor-strike': '/art/owner/gnome/meteor-strike-card-art.webp', 'spell-snap': '/art/owner/gnome/spell-snap-card-art.webp', 'gnome-smith-miner': '/art/owner/gnome/gnome-smith-miner-card-art.webp', 'axe-thrower': '/art/owner/dwarf/axe-thrower-card-art.webp', 'barrelback-courier': '/art/owner/dwarf/barrelback-courier-card-art.webp', 'brewmaster': '/art/owner/dwarf/brewmaster-card-art.webp', 'crystal-cluster': '/art/owner/neutral/crystal-cluster-card-art.webp', 'crystal-drunk-delver': '/art/owner/dwarf/crystal-drunk-delver-card-art.webp', 'deepforge-crossbowman': '/art/owner/dwarf/deepforge-crossbowman-card-art.webp', 'dwarf-miner': '/art/owner/dwarf/dwarf-miner-card-art.webp', 'dwarf-pickman': '/art/owner/dwarf/dwarf-pickman-card-art.webp', 'dwarf-stoneback': '/art/owner/dwarf/dwarf-stoneback-card-art.webp', 'fizzle': '/art/owner/neutral/fizzle-card-art.webp', 'glowing-geode': '/art/owner/neutral/glowing-geode-card-art.webp', 'gnome-widget': '/art/owner/gnome/gnome-widget-card-art.webp', 'grimhold-ravager': '/art/owner/dwarf/grimhold-ravager-card-art.webp', 'gyrocopter-ace': '/art/owner/gnome/gyrocopter-ace-card-art.webp', 'healing-light': '/art/owner/neutral/healing-light-card-art.webp', 'heart-of-the-fallen': '/art/owner/neutral/heart-of-the-fallen-card-art.webp', 'hexwright-apprentice': '/art/owner/gnome/hexwright-apprentice-card-art.webp', 'ironhammer-berserker': '/art/owner/dwarf/ironhammer-berserker-card-art.webp', 'motherlode': '/art/owner/neutral/motherlode-card-art.webp', 'oathbound-pikeman': '/art/owner/dwarf/oathbound-pikeman-card-art.webp', 'overclocked-conduit': '/art/owner/gnome/overclocked-conduit-card-art.webp', 'phase-stalker': '/art/owner/gnome/phase-stalker-card-art.webp', 'prospectors-prayer': '/art/owner/neutral/prospectors-prayer-card-art.webp', 'queen-brunhilda-stonebeard': '/art/owner/dwarf/queen-brunhilda-stonebeard-card-art.webp', 'ram-rider': '/art/owner/dwarf/ram-rider-card-art.webp', 'rune-splitter': '/art/owner/dwarf/rune-splitter-card-art.webp', 'runic-siphoner': '/art/owner/gnome/runic-siphoner-card-art.webp', 'second-wind': '/art/owner/dwarf/second-wind-card-art.webp', 'shield-bubble': '/art/owner/dwarf/shield-bubble-card-art.webp', 'shieldbeard': '/art/owner/dwarf/shieldbeard-card-art.webp', 'soul-shard': '/art/owner/neutral/soul-shard-card-art.webp', 'venom-shiv': '/art/owner/goblin/venom-shiv-card-art.webp', 'battle-cry': '/art/owner/dwarf/battle-cry-card-art.webp', 'dwarf-smith-miner': '/art/owner/dwarf/dwarf-smith-miner-card-art.webp', 'mirror-hex': '/art/owner/neutral/mirror-hex-card-art.webp' };
+export const commanderPortrait = (id: string) => (id === 'grubnak' ? '/art/owner/goblin/grubnak-on-throne-art.png' : id === 'sproingle' ? '/art/owner/gnome/sproingle-portrait.webp' : id === 'borgo' ? '/art/owner/dwarf/borgo-portrait.webp' : `/art/commanders/${id}.webp`);
+export const pictureOf = (c: any): string | null => (c && OWNER_ART[c.id]) ? OWNER_ART[c.id] : (c && ((c.type === 'creature' && c.faction === 'goblins') || (c.type === 'spell' && !c.disabled)) ? `/art/cards/${c.id}.webp` : null);
+export const FRAME: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
+export const frameKey = (c: any) => (c.type === 'spell' ? `spell-${FRAME[c.faction] || 'shared'}` : FRAME[c.faction] || 'neutral');
+export function typeOf(c: any): { icon: string; name: string } {
+  if (c.type === 'spell') return c.spellKind === 'regular' ? { icon: '🪄', name: 'Spell' } : { icon: '⚡', name: 'Instant' };
+  if (c.type === 'crystal') return { icon: '💎', name: 'Crystal card' };
+  const ab: string[] = c.abilities || [];
+  if (c.role === 'Smith') return { icon: '⚒️', name: 'Smith Miner' };
+  if (isMiner(c)) return { icon: '⛏️', name: 'Miner' };
+  if (ab.includes('kaboom') || ab.includes('kaboom1')) return { icon: '💣', name: 'Bomb' };
+  if (ab.includes('ranged')) return { icon: '🏹', name: 'Ranged' };
+  if (ab.includes('guard')) return { icon: '🛡️', name: 'Guard' };
+  return { icon: '⚔️', name: 'Fighter' };
+}
+/** Round 13: activated abilities that get a round button above their unit (icon, name, text; the cost comes from the engine). */
+const ownerLayoutHand = (ownerLayoutJson0 as any).hud.find((p: any) => p.role === 'player-hand')?.hand;
+/** Owner (Oct 24): comic pop-up pictures (public/art/pop) and speech bubbles (public/art/speech). */
+const POP_WORD: Record<string, string> = { 'KA-BOOM!': 'ka-boom', 'CRUNCH!': 'crunch', 'BLOCK!': 'block', 'POOF!': 'ko', 'STRIKE!': 'strike', 'SHOCKWAVE!': 'shockwave', 'PLOW!': 'plow', 'CHARGE!': 'charge', 'YOINK!': 'yoink', 'WHOOSH!': 'whoosh', 'WARD!': 'ward', 'SACRIFICE!': 'sacrifice', 'BREW!': 'brew', 'BLINK!': 'blink' };
+const HIT_POP: Record<string, string> = {
+  'rotgut-grenadier': 'smack', 'goblin-grunt': 'bonk', 'goblin-pebbler': 'bonk', 'skullbasher-rusher': 'bonk', 'goblin-bomber': 'pow', 'grubnaks-big-boss-troll': 'pow', 'gnome-widget': 'pow',
+  'goblin-sneak': 'stab', 'shiv-rat': 'stab', 'goblin-slinger': 'thwack', 'spark-gnome': 'zap', 'hexwright-apprentice': 'zap', 'deepforge-crossbowman': 'bang', 'gyrocopter-ace': 'fwoosh',
+  'axe-thrower': 'thunk', 'oathbound-pikeman': 'thunk', 'ram-rider': 'charge', 'rune-splitter': 'charge', 'the-great-steam-golem': 'crunch', 'ironhammer-berserker': 'crunch', 'grimhold-ravager': 'crunch',
+};
+const CMD_VOICE: Record<string, string> = { grubnak: 'grubnak', sproingle: 'knobbin', borgo: 'borgo' };
+const CMD_LINES: Record<string, Record<string, string>> = {
+  start: { grubnak: 'lets-crack-some-skulls', knobbin: 'prepare-for-science', borgo: 'for-the-hold' },
+  turn: { grubnak: 'move-it-maggots' },
+  cheer: { grubnak: 'ha', knobbin: 'splendid', borgo: 'aye' },
+  groan: { grubnak: 'ugh', knobbin: 'oh-dear', borgo: 'blast-it' },
+  flinch: { grubnak: 'ow', knobbin: 'ouch', borgo: 'hmph' },
+  cast: { knobbin: 'behold', borgo: 'by-the-anvil' },
+  mine: { grubnak: 'mine', knobbin: 'mine', borgo: 'mine' },
+  lostMine: { grubnak: 'that-was-my-crystal', knobbin: 'that-was-my-crystal', borgo: 'that-was-my-crystal' },
+  impatient: { grubnak: 'any-day-now', knobbin: 'any-day-now', borgo: 'any-day-now' },
+  low: { grubnak: 'part-of-the-plan', knobbin: 'part-of-the-plan', borgo: 'part-of-the-plan' },
+  win: { grubnak: 'told-ya', knobbin: 'told-ya', borgo: 'told-ya' },
+  lose: { grubnak: 'tactical-retreat', knobbin: 'tactical-retreat', borgo: 'tactical-retreat' },
+};
+const MSG_PIC: Record<string, string> = { 'THE CRYSTAL. HAS. FALLEN.': 'msg-the-crystal-has-fallen', 'Tap a target': 'msg-tap-a-target', 'Invalid target': 'msg-invalid-target', 'Cancelled': 'msg-cancelled' };
+export const ABILITY_UI: Record<string, { icon: string; name: string; text: string; burst: string }> = {
+  slide: { icon: '🚀', name: 'Slide', text: 'Runs in a straight line until it hits something, then goes Ka-boom.', burst: 'KA-BOOM!' },
+  bowl: { icon: '🎳', name: 'Strike', text: 'Rolls a bowling ball in a straight line; every creature in its path is knocked back 1–2 spaces.', burst: 'STRIKE!' },
+  shockwave: { icon: '💥', name: 'Shockwave', text: 'Knocks back all adjacent enemies 1 space and deals 1 damage to each.', burst: 'SHOCKWAVE!' },
+  plow: { icon: '🚜', name: 'Plow', text: 'Plows in a straight line, shoving creatures aside.', burst: 'PLOW!' },
+  ramMove: { icon: '🐏', name: 'Ram charge', text: 'Moves any distance in a straight line.', burst: 'CHARGE!' },
+  shaman: { icon: '✋', name: 'Grab', text: 'Picks up any character within 5 spaces and puts it down within 5 spaces of the Shaman.', burst: 'YOINK!' },
+  rocket: { icon: '🚀', name: 'Rocket Ride', text: 'Flies to any space; 3×3 explosion equal to its Attack.', burst: 'WHOOSH!' },
+  ward: { icon: '🛡️', name: 'Ward', text: 'An ally gets Ward for one round.', burst: 'WARD!' },
+  sacrifice: { icon: '🩸', name: 'Sacrifice', text: 'Sacrifice an ally to gain 1 Bank crystal.', burst: 'SACRIFICE!' },
+  brew: { icon: '🍺', name: 'Brew', text: 'Once per turn, even on the enemy turn: heal an adjacent wounded dwarf (it survives lethal damage with 1 Health). It becomes Drunk for 2 rounds.', burst: 'BREW!' },
+  blink: { icon: '✨', name: 'Blink', text: 'Once, swap places with any of your creatures.', burst: 'BLINK!' },
+};
+/** Owner-facing names of the activated abilities (the data-ability attribute); the engine keeps its own names. */
+export const PUB_ABILITY: Record<string, string> = { slide: 'run', bowl: 'strike', shaman: 'pickUp', rocket: 'rocketRide', ramMove: 'gallop' };
+export const INTERNAL_ABILITY: Record<string, string> = Object.fromEntries(Object.entries(PUB_ABILITY).map(([a, b]) => [b, a]));
+export const RARITY_WORD: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Collector' };
+const CRYSTAL_SVG = '<svg viewBox="0 0 24 32" focusable="false" aria-hidden="true" class="rc"><polygon points="12,1 20,10 12,31 4,10" fill="currentColor"/><polygon points="12,1 4,10 12,13" fill="#fff" fill-opacity=".62"/><polygon points="12,1 20,10 12,13" fill="#fff" fill-opacity=".25"/><polygon points="4,10 12,13 12,31" fill="#000" fill-opacity=".18"/><polygon points="20,10 12,13 12,31" fill="#000" fill-opacity=".42"/><polyline points="12,1 20,10 12,31 4,10 12,1" fill="none" stroke="#1a0f06" stroke-width="1.1" stroke-linejoin="round"/><path d="M4,10 L12,13 L20,10 M12,13 L12,31" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".6"/></svg>';
+/** Card face on the owner's faction frame: cost, Attack, Health, Movement, type icon, picture, name, short text, rarity. */
+/** Owner framing of the picture inside the art window: scale s, offset x/y in % of the window. */
+export const artPosStyle = (c: any) => { const a = c?.artPos; if (!a) return null; return `transform:translate(${a.x || 0}%,${a.y || 0}%) scale(${a.s || 1});transform-origin:50% 50%`; };
+export function faceKids(c: any, cost?: number, cur?: { attack?: number; health?: number; move?: number }): El[] {
+  const shown = { ...c, cost: cost ?? c.cost, text: c.shortText || c.text || '' };
+  if (c.type === 'creature' && cur) { if (cur.attack != null) shown.attack = cur.attack; if (cur.health != null) shown.health = cur.health; if (cur.move != null) shown.move = cur.move; }
+  return [ohCardEl(shown, pictureOf(c))];
 }
 const roleBadge = (c: any) => (c.role === 'Smith' ? '⚒️' : isMiner(c) ? '⛏️' : '⚔️');
 const COLOR_HEX: Record<string, string> = { green: '#3ee06a', blue: '#3fa9ff', purple: '#b45cff', white: '#f2f6ff' };
@@ -39,9 +136,130 @@ export function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string
     else e.setAttribute(k, v === true ? '' : String(v));
   }
   for (const k of kids) if (k != null) e.append(k instanceof Node ? k : document.createTextNode(k));
+  if (attrs['data-card-id'] != null) {
+    const face = e.querySelector('.ohcard[data-layout]');
+    if (face) { e.setAttribute('data-layout', face.getAttribute('data-layout')!); e.setAttribute('data-card-format', 'Card format final 1.0'); }
+  }
   return e;
 }
+/** Ornate custom dropdown (ARIA combobox + floating listbox). `sel.value` holds the current choice; `onchange` fires on selection. */
+const METAL: Record<string, string> = { dwarves: 'gold', gnomes: 'silver', goblins: 'rust' };
+export function combo(label: string, id: string, opts: string[], onchange: () => void, asDiv = false) {
+  const state = { value: opts[0] };
+  const cb = h(asDiv ? 'div' : 'button', { ...(asDiv ? { tabindex: '0' } : { type: 'button' }), class: 'combo', id, role: 'combobox', 'aria-label': label, 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-controls': id + '-list' }, opts[0]);
+  let lb: El | null = null;
+  const close = () => { lb?.remove(); lb = null; cb.setAttribute('aria-expanded', 'false'); document.removeEventListener('pointerdown', away, true); };
+  const away = (e: Event) => { if (lb && !lb.contains(e.target as Node) && e.target !== cb) close(); };
+  const pick = (o: string) => { state.value = o; cb.textContent = o; close(); onchange(); cb.focus(); };
+  const open = () => {
+    if (lb) return close();
+    lb = h('ul', { class: 'combo-list', id: id + '-list', role: 'listbox', 'aria-label': label },
+      ...opts.map((o) => h('li', { role: 'option', tabindex: '0', 'aria-selected': String(o === state.value), class: o === state.value ? 'on' : '', onclick: () => pick(o), onkeydown: (e: any) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(o); } else if (e.key === 'Escape') { close(); cb.focus(); } else if (e.key === 'ArrowDown') (e.target.nextElementSibling as El)?.focus(); else if (e.key === 'ArrowUp') (e.target.previousElementSibling as El)?.focus(); } }, o)));
+    const r = cb.getBoundingClientRect();
+    lb.style.left = r.left + 'px'; lb.style.top = r.bottom + 2 + 'px'; lb.style.minWidth = r.width + 'px';
+    document.body.append(lb);
+    const room = window.innerHeight - r.bottom - 8;
+    if (room < 160) { lb.style.top = 'auto'; lb.style.bottom = window.innerHeight - r.top + 2 + 'px'; lb.style.maxHeight = r.top - 8 + 'px'; } else lb.style.maxHeight = room + 'px';
+    cb.setAttribute('aria-expanded', 'true');
+    document.addEventListener('pointerdown', away, true);
+    (lb.querySelector('.on') as El | null)?.focus();
+  };
+  cb.addEventListener('click', open);
+  cb.addEventListener('keydown', (e: any) => { if (asDiv && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open(); } else if (e.key === 'Escape') close(); else if (e.key === 'ArrowDown' && !lb) { e.preventDefault(); open(); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && lb) close(); });
+  return { wrap: h('div', { class: 'f-field' }, h('span', { class: 'f-label', 'aria-hidden': 'true' }, label), cb), sel: state, set: (v: string) => { state.value = v; cb.textContent = v; } };
+}
+/** Round 6a: corner rings and filigree frames are gone; kept as an empty hidden stub so imports stay valid. */
+export function ornament(): El {
+  return h('div', { class: 'ornament-none', 'aria-hidden': 'true', hidden: true });
+}
+const svgEl = (tag: string, attrs: Record<string, string> = {}): El => { const e = document.createElementNS('http://www.w3.org/2000/svg', tag) as unknown as El; for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+/** Owner (Oct 24): the end picture depends on how big the win or loss was, measured by the winning Commander's Health left (out of 20).
+ *  Close (4 or less) -> close-win / so-close; even (5-10) -> victory / defeat (level 1);
+ *  clear (11-16) -> you-won / defeated (level 2); a rout (17+) -> slaughter-victory / crushing-defeat (level 3). */
+export function endBanner(win: boolean, st: any): string {
+  const hp = Math.max(0, Number(st?.players?.[win ? 'player' : 'opponent']?.health ?? 10));
+  if (hp <= 4) return win ? 'close-win' : 'so-close';
+  if (hp <= 10) return win ? 'victory' : 'defeat';
+  if (hp <= 16) return win ? 'you-won' : 'defeated';
+  return win ? 'slaughter-victory' : 'crushing-defeat';
+}
 export const btn = (label: string, cls = '', onclick?: (e: Event) => void, attrs: Record<string, any> = {}) => h('button', { type: 'button', class: 'btn ' + cls, onclick, ...attrs }, label);
+
+const GLOW_COLOR: Record<string, string> = { goblins: '#b45cff', gnomes: '#3fa9ff', dwarves: '#ffcf3a', any: '#fff0c2' };
+export const GLOW_PEAK = 0.9;
+/** Glow opacity (fraction of the peak) at 0/25/50/75/100 % of the thickness, measured from the card edge outward. */
+export const GLOW_PROFILE = [1, 0.62, 0.34, 0.12, 0];
+/** Owner faction colors (round 10): Goblins green, Gnomes purple, Dwarves navy blue. */
+export const FACTION_GLOW: Record<string, string> = { goblins: '#3ee06a', gnomes: '#9b4dff', dwarves: '#2f5fd8' };
+/** Owner fix (Ken, Oct 28): full screen / windowed toggle (in-match Menu + main Settings).
+ *  Uses the browser Fullscreen API; also notices F11 (browser full screen) and Esc. Hidden where full screen is not allowed (e.g. iPhone Safari). */
+export function fsSupported(): boolean {
+  const d: any = document, el: any = document.documentElement;
+  return !!(d.fullscreenEnabled || d.webkitFullscreenEnabled) && !!(el.requestFullscreen || el.webkitRequestFullscreen);
+}
+/** true while the page is in API full screen */
+function fsApi(): boolean { const d: any = document; return !!(d.fullscreenElement || d.webkitFullscreenElement); }
+/** true while the browser fills the whole screen with F11 (no API element) */
+function fsF11(): boolean {
+  if (fsApi()) return false;
+  try { if (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) return true; } catch { /* old browser */ }
+  return window.innerWidth >= screen.width - 1 && window.innerHeight >= screen.height - 1;
+}
+export function fsActive(): boolean { return fsApi() || fsF11(); }
+/** the button shows what a click does: "Full screen" while windowed, "Windowed" while in full screen */
+export function fsLabel(): string { return fsActive() ? 'Windowed' : 'Full screen'; }
+/** switch; returns false when the browser itself is in F11 full screen (only F11 can leave it) */
+export function fsToggle(): boolean {
+  (window as any).__ohFsAsked = true; // the player chose: no more automatic full screen on the first tap
+  const d: any = document, el: any = document.documentElement;
+  if (fsF11()) return false;
+  try {
+    const p: any = fsApi() ? (d.exitFullscreen ? d.exitFullscreen() : d.webkitExitFullscreen && d.webkitExitFullscreen())
+      : (el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen && el.webkitRequestFullscreen());
+    if (p && p.catch) p.catch(() => {});
+  } catch { /* refused: stay as we are */ }
+  return true;
+}
+/** Owner fix (Ken, Oct 29): the first tap of a visit asks for real full screen (R26.A2), now from the start screen on.
+ *  Android Chrome only counts a touch as a user gesture when the finger lifts, so ask on pointerup / click (the old
+ *  pointerdown request was always refused on phones). navigationUI 'hide' also hides Android's nav bar. Asks once. */
+export function fsFirstTap(): void {
+  const w = window as any;
+  if (w.__ohFsAsked || w.__ohFsHooked) return;
+  w.__ohFsHooked = true;
+  const off = () => { document.removeEventListener('pointerup', go, true); document.removeEventListener('click', go, true); };
+  function go() {
+    off();
+    if (w.__ohFsAsked) return;
+    w.__ohFsAsked = true;
+    if (fsApi()) return;
+    try { if (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) return; } catch { /* old browser */ }
+    const el: any = document.documentElement;
+    try { const p: any = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen && el.webkitRequestFullscreen(); if (p && p.catch) p.catch(() => {}); } catch { /* refused */ }
+  }
+  document.addEventListener('pointerup', go, true); document.addEventListener('click', go, true);
+}
+/** keep a button's text in step with the real state (Esc, F11, window resize) */
+export function fsWatch(b: HTMLElement, label: () => string = fsLabel): void {
+  const sync = () => {
+    if (!b.isConnected && (b as any)._fsSeen) { document.removeEventListener('fullscreenchange', sync); document.removeEventListener('webkitfullscreenchange', sync); window.removeEventListener('resize', sync); return; }
+    if (b.isConnected) (b as any)._fsSeen = true;
+    b.textContent = label(); b.setAttribute('aria-pressed', String(fsActive()));
+  };
+  document.addEventListener('fullscreenchange', sync); document.addEventListener('webkitfullscreenchange', sync); window.addEventListener('resize', sync);
+  sync(); setTimeout(sync, 0);
+}
+
+
+/** Oct 31 (Brush mix_rules): the click sound is only for real buttons that start something (Done, Play, menu items, Back), never for toggles, tabs, filters, scroll arrows or card-list buttons. */
+const NO_CLICK_CLASS = /\b(hand-card|dstack|cmd-card|cmd-arrow|card-nav|db-deck|db-cmdcard|recap-line|e-discard|e-discard-card|site-mark|tx-full|cv-close|viewer-anim|sw-btn|tk-cancel)\b|tab|filter|scroll|toggle|chip/;
+export function isActionButton(b: El): boolean {
+  if (b.hasAttribute('aria-pressed') || b.hasAttribute('aria-checked') || b.hasAttribute('aria-selected')) return false;
+  const role = b.getAttribute('role');
+  if (role === 'switch' || role === 'tab' || role === 'listitem' || role === 'option' || role === 'checkbox' || role === 'radio') return false;
+  return !NO_CLICK_CLASS.test(b.className || '');
+}
 
 export class App {
   root: El;
@@ -57,11 +275,53 @@ export class App {
   phaseKey = '';
   endShown = false;
   respondTimer: any = null;
-  pick: { cells: { row: number; col: number }[]; done: (c: { row: number; col: number }) => void } | null = null;
+  fxLog: any[] = [];
+  fxReal = false;
+  get popups() { return localStorage.getItem('oreheart.popups') !== 'off'; }
+  /** Step-by-step visual log (R2.16): one entry per reveal, effect, impact, damage, defeat, bounce, shatter and bomb step. */
+  logFx(st: any, events: any[]) {
+    const L = (kind: string, d: any = {}) => this.fxLog.push({ kind, ...d });
+    const pop0 = this.popups;
+    let pop = pop0;
+    /** Oct 31: the computer's card was already shown before it resolved */
+    const pre = (e: any) => { const side = e.player ?? e.owner; if (side !== 'opponent') return false; const i = this.preRevealed.indexOf(e.cardId); if (i < 0) return false; this.preRevealed.splice(i, 1); return true; };
+    for (const e of events) {
+      pop = pop0 && !(['cast', 'summon', 'playCrystal', 'minerUpgrade'].includes(e.type) && pre(e));
+      if (e.type === 'cast') {
+        const respondable = st.pendingResponse && st.pendingResponse.responder === 'player' && e.player === 'opponent';
+        if (pop && !respondable) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, null, e.player ?? e.owner); }
+      } else if (e.type === 'respond') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, null, e.player ?? e.owner); } }
+      else if (e.type === 'summon') { if (pop) { L('reveal', { cardId: e.cardId, uid: e.uid }); if (this.dialogCard === e.cardId + e.owner) this.dialogCard = ''; else this.reveal(e.cardId, e, e.player ?? e.owner); } }
+      else if (e.type === 'playCrystal') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, null, e.player ?? e.owner); } }
+      else if (e.type === 'minerUpgrade') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, e, e.player ?? e.owner); } }
+      else if (e.type === 'spell') { L('effect', { cardId: e.cardId, visual: SPELL_VISUALS[e.cardId]?.id }); L('impact', { cardId: e.cardId }); }
+      else if (e.type === 'poison') L('poison', { uid: e.uid, amount: 1 });
+      else if (e.type === 'damage') L('damage', { uid: e.uid, amount: e.amount, commander: e.commander });
+      else if (e.type === 'defeat') {
+        L('defeat', { uid: e.uid, cardId: e.cardId });
+        const ab: string[] = CARDS[e.cardId]?.abilities || [];
+        if (ab.includes('kaboom') || ab.includes('kaboom1')) { L('bombDrop', { uid: e.uid }); L('boom', { uid: e.uid }); this.bombBoom(e); }
+      }
+      else if (e.type === 'bounce') L('bounce', { uid: e.uid, cardId: e.cardId });
+      else if (e.type === 'counter' && e.countered) L('shatter', { cardId: e.countered });
+    }
+  }
+  bombBoom(e: any) {
+    if (!this.r.fx || !this.view) return;
+    this.burst('KA-BOOM!', e.row, e.col);
+  }
+  pick: { cells: { row: number; col: number }[]; done: (c: { row: number; col: number }) => void; unit?: string } | null = null;
   handScroll = 0;
   lastOptions: any = {};
   lastTutorial = false;
   handKey = '';
+  /** Ken (Oct 31): the hand's auto-arrange. '' = the player's own (manual) order; otherwise the hand shows sorted (display order only:
+   *  the game's hand order is untouched until the player drags a card, which is the manual reorder as before and clears the sort). */
+  handSortMode: '' | 'costDesc' | 'costAsc' | 'type' = (() => { try { const v = localStorage.getItem('oreheart.handSort') || ''; return (['costDesc', 'costAsc', 'type'].includes(v) ? v : '') as any; } catch { return ''; } })();
+  handSortUp: El | null = null;
+  handSortOff: ((e: Event) => void) | null = null;
+  handSortGlide = false;
+  fitKey = ''; // Oct 31 (Ken: lag spurts when mining / moving): fitHand's own key; it used to share handKey with renderHand, so every action rebuilt the whole hand
   tokens = new Map<string, El>();
   dialogCard = '';
   respStart = 0;
@@ -71,11 +331,97 @@ export class App {
   dialogs: El[] = [];
 
   constructor(root: El, game: Game, test: boolean, seed?: number) {
+    fsFirstTap(); // Owner fix (Ken, Oct 29): full screen from the very first tap ("Click to begin")
     this.root = root;
     this.game = game;
     this.test = test;
+    App.applyDisplay();
+    this.fxReal = test && /[?&]fx=1/.test(location.search);
     this.seed = seed;
     if (test) document.body.classList.add('test');
+    root.addEventListener('click', (e) => { const b = (e.target as El).closest?.('button') as El | null; if (b && isActionButton(b)) audio.play('click'); }, true);
+    game.aiPace = { busy: () => this.aiBusy(), preview: (a: any, st: any) => this.aiPreview(a, st) };
+  }
+
+  // ------------------------------------------------------------ Oct 31 (Ken): the computer plays like a person
+  // "The opposing side plays stuff too fast ... a barrage ... he played a card. The card covered my screen. And then he threw a fireball and
+  // blew my stuff up. I didn't even get to see him get blown up." The controller (game.ts paced) waits for aiBusy() to be '', then a beat,
+  // then aiPreview: the card pops up big, is laid aside (or flies onto its square), the target squares light up red, and only then it plays.
+  /** cards whose reveal was already shown before they resolved (their play events don't pop them up again) */
+  preRevealed: string[] = [];
+  aiBusy(): string {
+    if (this.reveals.opponent.length) return 'reveal';
+    if (this.root.querySelector('.ai-target')) return 'target';
+    return this.view?.isBusy?.() || '';
+  }
+  /** the squares an action of the computer is about to hit (a spell's target, its 3x3, a Commander's Stronghold, an attack's target) */
+  aiTargets(a: any, st: any): { row: number; col: number }[] {
+    const t = a.target;
+    if (!t) return [];
+    if (t.commander) { const s = SH[t.commander as 'player' | 'opponent']; return [{ row: s.row, col: s.col }]; }
+    if (typeof t.row !== 'number') return [];
+    const h0 = a.uid ? st.players.opponent.hand.find((x: any) => x.uid === a.uid) : null;
+    const area = h0 && CARDS[h0.cardId]?.effect === 'areaDamage';
+    const out: { row: number; col: number }[] = [];
+    if (area) { for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const r = t.row + dr, c = t.col + dc; if (r >= 1 && r <= BH && c >= 1 && c <= BW) out.push({ row: r, col: c }); } }
+    else out.push({ row: t.row, col: t.col });
+    return out;
+  }
+  /** if any square is off the visible board, go back to the home view so the player sees it */
+  aiShow(cells: { row: number; col: number }[]) {
+    const v = this.view, b = this.r.board as El | undefined;
+    if (!v || !b || !cells.length) return false;
+    const W = b.clientWidth, H = b.clientHeight;
+    const off = cells.some((c) => { const r = v.cellRect(c.row, c.col); return r.x < 0 || r.y < 0 || r.x + r.w > W || r.y + r.h > H; });
+    if (off) { v.recenter(); this.aiLog.push({ kind: 'recenter', at: Math.round(performance.now()) }); }
+    return off;
+  }
+  /** red target markers on the squares (they fade once the effect lands) */
+  aiMark(cells: { row: number; col: number }[], holdMs: number) {
+    const b = this.r.board as El | undefined, v = this.view;
+    if (!b || !v) return;
+    for (const c of cells) {
+      const rc = v.cellRect(c.row, c.col), q = v.cellQuad(c.row, c.col);
+      const el = h('div', { class: 'ai-target', 'aria-hidden': 'true', 'data-row': String(c.row), 'data-col': String(c.col) });
+      el.style.cssText = `position:absolute;left:${rc.x}px;top:${rc.y}px;width:${rc.w}px;height:${rc.h}px;pointer-events:none;z-index:4;` +
+        'background:radial-gradient(closest-side,#ff2a1a55,#ff2a1a22 70%,transparent);box-shadow:inset 0 0 0 3px #ff4a3a,inset 0 0 18px 6px #ff2a1a99;';
+      if (q.length === 4) el.style.clipPath = `polygon(${q.map((p: any) => `${(p.x - rc.x).toFixed(1)}px ${(p.y - rc.y).toFixed(1)}px`).join(',')})`;
+      b.append(el);
+      try { el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.25 }, { opacity: 0.6, offset: 0.6 }, { opacity: 1 }], { duration: 650, iterations: Math.max(1, Math.round(holdMs / 650)) }); } catch { /* old browser */ }
+      setTimeout(() => el.remove(), holdMs);
+    }
+  }
+  /** test probe: the pacing steps (reveal shown, laid aside, target marked, recentred) */
+  aiLog: any[] = [];
+  async aiPreview(a: any, st: any): Promise<void> {
+    if (!st || !a) return;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    if (a.type === 'attack') {
+      const cells = this.aiTargets(a, st);
+      const mine = (a.target?.commander === 'player') || st.board.creatures.some((c: any) => c.owner === 'player' && cells.some((x) => x.row === c.row && x.col === c.col));
+      if (!mine) return;
+      if (this.aiShow(cells)) await sleep(350);
+      this.aiLog.push({ kind: 'target', action: 'attack', cells, at: Math.round(performance.now()) });
+      this.aiMark(cells, 450); await sleep(450);
+      return;
+    }
+    const h0 = a.uid ? st.players.opponent.hand.find((x: any) => x.uid === a.uid) : null;
+    if (!h0) return;
+    const cardId = h0.cardId;
+    const cells = a.type === 'cast' ? this.aiTargets(a, st) : [];
+    if (cells.length && this.aiShow(cells)) await sleep(350);
+    const at = a.type === 'summon' ? { row: a.row, col: a.col } : a.type === 'minerUpgrade' ? (() => { const c = st.board.creatures.find((x: any) => x.uid === a.creatureUid); return c ? { row: c.row, col: c.col } : null; })() : null;
+    const t0 = performance.now();
+    if (this.popups && this.r.board) {
+      this.preRevealed.push(cardId);
+      this.aiLog.push({ kind: 'reveal', cardId, action: a.type, at: Math.round(t0) });
+      await this.reveal(cardId, at, 'opponent');
+      this.aiLog.push({ kind: 'revealGone', cardId, at: Math.round(performance.now()) });
+    }
+    if (cells.length) {
+      this.aiLog.push({ kind: 'target', action: 'cast', cardId, cells, at: Math.round(performance.now()) });
+      this.aiMark(cells, 1600); await sleep(650);
+    }
   }
 
   // ------------------------------------------------------------ graphics setting
@@ -89,6 +435,60 @@ export class App {
     return b;
   }
 
+  static applyDisplay() {
+    const m = localStorage.getItem('oreheart.display') || 'auto';
+    document.documentElement.dataset.display = m;
+    window.dispatchEvent(new Event('resize'));
+  }
+  /** Owner fix (Ken, Oct 28): Full screen / Windowed switch for the main Settings; shows the current screen mode. */
+  screenButton(): El {
+    if (!fsSupported()) return h('p', { class: 'fs-na' }, 'Full screen: not available on this device');
+    const lab = () => 'Screen: ' + (fsActive() ? 'Full screen' : 'Windowed');
+    const b = btn(lab(), 'fs-btn', () => { if (!fsToggle()) this.fsF11Note(); });
+    fsWatch(b, lab);
+    return b;
+  }
+  fsF11Note() {
+    const c: any = this.dialog('Full screen', [h('h2', {}, 'Full screen'), h('p', {}, 'Your browser is in full screen (F11). Press F11 to go back to a window.'), h('div', { class: 'row' }, btn('OK', '', () => c.close()))]);
+  }
+
+  /** Display mode (R2.9): Auto fills the screen, PC locks 16:9, Phone locks about 19.5:9. */
+  displayModeGroup(): El {
+    const cur = localStorage.getItem('oreheart.display') || 'auto';
+    const fs = h('fieldset', { class: 'display-mode', role: 'radiogroup', 'aria-label': 'Display mode' }, h('legend', {}, 'Display mode'));
+    for (const [v, label] of [['auto', 'Auto'], ['pc', 'PC'], ['phone', 'Phone']]) {
+      const id = `dm-${v}-${Math.random().toString(36).slice(2, 6)}`;
+      const inp = h('input', { type: 'radio', name: 'display-mode', id, value: v, ...(cur === v ? { checked: true } : {}) }) as HTMLInputElement;
+      inp.addEventListener('change', () => { if (inp.checked) { localStorage.setItem('oreheart.display', v); App.applyDisplay(); } });
+      fs.append(h('span', { class: 'dm-opt' }, inp, h('label', { for: id }, label)));
+    }
+    return fs;
+  }
+
+  /** Flow particles (R5b.3): On / Reduced / Off, remembered; Reduced is the default on slow devices. */
+  flowGroup(): El {
+    const cur = localStorage.getItem('oreheart.flow') || (this.low ? 'reduced' : 'on');
+    const fs = h('fieldset', { class: 'display-mode flow-mode', role: 'radiogroup', 'aria-label': 'Flow particles' }, h('legend', {}, 'Flow particles'));
+    for (const [v, label] of [['on', 'On'], ['reduced', 'Reduced'], ['off', 'Off']]) {
+      const id = `fp-${v}-${Math.random().toString(36).slice(2, 6)}`;
+      const inp = h('input', { type: 'radio', name: 'flow-particles', id, value: v, ...(cur === v ? { checked: true } : {}) }) as HTMLInputElement;
+      inp.addEventListener('change', () => { if (inp.checked) { localStorage.setItem('oreheart.flow', v); this.view?.setFlowMode(v); } });
+      fs.append(h('span', { class: 'dm-opt' }, inp, h('label', { for: id }, label)));
+    }
+    return fs;
+  }
+
+  popupsSwitch(): El {
+    const label = 'Card pop-ups';
+    const b = h('button', { type: 'button', class: 'sw-btn', role: 'switch', 'aria-label': label, 'aria-checked': String(this.popups), title: label }, h('span', { class: 'sw-t', 'aria-hidden': 'true' }, this.popups ? 'Pop-ups On' : 'Pop-ups Off'));
+    b.addEventListener('click', () => {
+      localStorage.setItem('oreheart.popups', this.popups ? 'off' : 'on');
+      b.setAttribute('aria-checked', String(this.popups));
+      (b.querySelector('.sw-t') as El).textContent = this.popups ? 'Pop-ups On' : 'Pop-ups Off';
+    });
+    return b;
+  }
+
   revealButton(): El {
     const label = () => 'Card reveals: ' + (localStorage.getItem('oreheart.reveal') === 'fast' ? 'Fast' : 'Normal');
     const b = btn(label(), '', () => {
@@ -98,6 +498,33 @@ export class App {
     return b;
   }
 
+  slider(label: string, id: string, value: number, on: (v: number) => void): El {
+    const inp = h('input', { type: 'range', id, min: '0', max: '100', step: '1', value: String(value) }) as HTMLInputElement;
+    inp.addEventListener('input', () => on(+inp.value));
+    /* Oct 31 (Brush mix_rules): no chime or tick when a volume slider moves */
+    // two labels: the short visible one and a screen-reader one with the full name
+    if (label === 'Sound effects volume') return h('div', { class: 'slider' }, h('label', { for: id }, 'Sound effects'), h('label', { for: id, class: 'sr-only' }, label), inp);
+    return h('div', { class: 'slider' }, h('label', { for: id }, label), inp);
+  }
+
+  get askBank() { return localStorage.getItem('oreheart.askBank') !== 'off'; }
+  askBankButton(): El {
+    const label = () => 'Ask before using banked crystals: ' + (this.askBank ? 'On' : 'Off');
+    const b = btn(label(), '', () => { localStorage.setItem('oreheart.askBank', this.askBank ? 'off' : 'on'); b.textContent = label(); });
+    return b;
+  }
+  /** R26.A3: a payment that would use Bank crystals asks first (never in test mode, for act() or the AI). Calls go() when allowed. */
+  payGate(cost: number, go: () => void) {
+    const st = this.game.state;
+    if (this.test || !st || cost <= 0 || !this.askBank || bankNeeded(st, 'player', cost) <= 0) { go(); return; }
+    const name = 'Use your banked crystals?';
+    const cb = h('input', { type: 'checkbox', id: 'dont-ask-bank' }) as HTMLInputElement;
+    const d: any = this.dialog(name, [h('h2', {}, name),
+      h('label', { for: 'dont-ask-bank', style: 'display:flex;gap:8px;justify-content:center;align-items:center;margin:6px 0' }, cb, "Don't ask again"),
+      h('div', { class: 'row' },
+        btn('Yes', 'primary', () => { if (cb.checked) localStorage.setItem('oreheart.askBank', 'off'); d.close(); go(); }),
+        btn('No', '', () => d.close()))]);
+  }
   remindButton(): El {
     const label = () => 'Moves reminder: ' + (this.remindMoves ? 'On' : 'Off');
     const b = btn(label(), '', () => {
@@ -108,39 +535,131 @@ export class App {
   }
 
   clear() {
+    audio.setMusicMode('menu');
     this.teardownMatch();
     this.root.replaceChildren();
     this.dialogs = [];
   }
 
   // ------------------------------------------------------------ simple screens
-  showMenu() {
+  /** Round 9c: the owner's Intro and Main menu screens (Menu Builder data), drawn by menus.ts. */
+  private menuScreen(id: string, dataScreen: string) {
     this.clear();
-    const s = h('main', { class: 'screen center' },
-      h('h1', { class: 'title' }, 'Oreheart'),
-      h('p', { class: 'tagline' }, 'Goblins, Gnomes and Dwarves fight over the Soul Crystals.'),
-      h('nav', { class: 'stack menu-grid', 'aria-label': 'Main menu' },
-        btn('Play', 'primary', () => this.showSetup()),
-        btn('Tutorial', '', () => this.beginTutorial()),
-        btn('Decks', '', () => showDecks(this)),
-        btn('Rules', '', () => this.showRules()),
-        btn('Settings', '', () => this.showSettings())));
+    const sc = menuScreens.find((m) => m.id === id)!;
+    const s = h('main', { class: 'screen menu-screen mb-screen', 'data-screen': dataScreen, 'aria-label': sc.name });
     this.root.append(s);
+    const handle = drawMenuScreen(s, id, { go: (t) => this.menuGo(t) });
+    (s.querySelector('.mb-root') as HTMLElement).style.animation = `mb-fade ${sc.transition?.ms ?? 400}ms ease-out`;
+    (s as any)._menu = handle;
+    if (id === 'main') {
+      const img = s.querySelector('.mb-pc[data-id="mainLogo"] img') as HTMLImageElement | null;
+      if (img) { const h1 = h('h1', { class: 'logo-h1' }); img.replaceWith(h1); img.alt = 'Oreheart'; h1.append(img); }
+      else s.append(h('h1', { class: 'sr-only' }, 'Oreheart'));
+      const dm = this.displayModeGroup(); dm.classList.add('title-display'); s.append(dm);
+    }
+    return s;
+  }
+  menuGo(t: string) {
+    if (!t) { this.showRules(); return; }
+    if (t === 'intro') this.showIntro();
+    else if (t === 'main') this.showMenu();
+    else if (t === 'commander') this.showSetup();
+    else if (t === 'deck') showDecks(this);
+    else if (t === 'action:settings-sound') this.showSettings();
+    else if (t === 'action:quit') this.showIntro();
+    else if (t === 'action:start-match') this.showSetup();
+  }
+  showIntro() {
+    // real visitors always get the gate (audio needs a click); automated browsers go straight to the intro unless ?begin=1
+    const gated = !audio.unlocked && (new URLSearchParams(location.search).get('begin') === '1' || (!this.test && !navigator.webdriver && !/Headless|Playwright/i.test(navigator.userAgent)));
+    if (!gated) { this.menuScreen('intro', 'intro'); return; }
+    // Browsers block audio until the first click/tap: a short gate, then the intro (crash sound, thunder) and the music can play
+    this.clear();
+    const go = h('button', { type: 'button', class: 'begin-btn', onclick: () => { audio.setMusicMode('menu'); this.menuScreen('intro', 'intro'); } }, 'Click to begin');
+    this.root.append(h('main', { class: 'screen center begin-gate', 'data-screen': 'begin', 'aria-label': 'Begin' },
+      h('div', { class: 'begin-stack', role: 'group', 'aria-label': 'Oreheart deck' }, ...[-14, -7, 0, 7, 14].map((deg, i) => h('div', { class: 'begin-card', 'data-layout': 'back', style: `--r:${deg}deg;--i:${i}` }, ohBackEl()))), h('h1', { class: 'sr-only' }, 'Oreheart'), go));
+    go.focus();
+  }
+  showMenu() {
+    const s = this.menuScreen('main', 'title');
     if (!this.test && !localStorage.getItem('oreheart.tutorialSeen')) {
       const d: any = this.dialog('Welcome to Oreheart!', [h('h2', {}, 'Welcome to Oreheart!'),
         h('p', { style: 'text-align:center;margin:0' }, 'New here? A short guided match teaches you the basics.'),
         h('div', { class: 'row' },
           btn('Start Tutorial', 'primary', () => { localStorage.setItem('oreheart.tutorialSeen', '1'); d.close(); this.beginTutorial(); }),
-          btn('Skip', '', () => { localStorage.setItem('oreheart.tutorialSeen', '1'); d.close(); }))]);
+          btn('Skip', '', () => { localStorage.setItem('oreheart.tutorialSeen', '1'); d.close(); }))], () => s.classList.remove('welcome-on'));
+      s.classList.add('welcome-on');
       d.el.dataset.sticky = '1';
+      d.el.classList.add('welcome');
     }
   }
 
   showSettings() {
     this.clear();
-    this.root.append(h('main', { class: 'screen center' },
+    this.root.append(h('main', { class: 'screen center', 'data-screen': 'settings' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.revealButton(), btn('Back', '', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.askBankButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.screenButton(), this.flowGroup(), this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), ...this.fxPanels(), btn('Back', 'menu-back', () => this.showMenu()))));
+  }
+
+  /** The faction of the last picked Commander (defaults to Goblins): the default highlight / ring colors. */
+  pickedFaction(): string { try { const p = JSON.parse(localStorage.getItem('oreheart.picks') || '{}'); return (COMMANDERS as any)[p.cmd]?.faction || 'goblins'; } catch { return 'goblins'; } }
+  /** Square highlights panel (Settings and the in-match Menu share it and the same saved setting). */
+  highlightPanel(fac: string, onReset: () => void): El {
+    const ctl = (label: string, type: string, attrs: Record<string, any>, on: (v: any, el: HTMLInputElement) => void) => {
+      const id = 'fx-' + label.toLowerCase().replace(/[^a-z]+/g, '-');
+      const inp = h('input', { type, id, ...attrs }) as HTMLInputElement;
+      inp.addEventListener('input', () => on(type === 'checkbox' ? inp.checked : type === 'range' ? +inp.value : inp.value, inp));
+      return h('div', { class: 'slider fx-row' }, h('label', { for: id }, label), inp);
+    };
+    const hv = getHighlights();
+    const hlPrev = h('div', { class: 'hl-prev', 'aria-label': 'Highlight preview', role: 'img' }, h('div', { class: 'cell glow hl-prev-sq' }), h('div', { class: 'cell glow-attack hl-prev-sq' }));
+    const hlSet = (p: any) => { setHighlights(p); applyHighlightVars(fac); };
+    applyHighlightVars(fac);
+    return h('section', { class: 'fx-panel', role: 'region', 'aria-label': 'Square highlights' }, h('h2', { class: 'section' }, 'Square highlights'), hlPrev,
+      ctl('Edge color', 'color', { value: edgeOf(fac) }, (v) => hlSet({ edgeColor: v })),
+      ctl('Glow color', 'color', { value: glowOf(fac) }, (v) => hlSet({ glowColor: v })),
+      ctl('Attack color', 'color', { value: hv.attackColor }, (v) => hlSet({ attackColor: v })),
+      ctl('Strength', 'range', { min: '0.2', max: '1', step: '0.05', value: String(hv.strength) }, (v) => hlSet({ strength: v })),
+      ctl('Glow size', 'range', { min: '4', max: '60', step: '1', value: String(hv.glowSize) }, (v) => hlSet({ glowSize: v })),
+      ctl('Edge thickness', 'range', { min: '1', max: '10', step: '1', value: String(hv.edgeThickness) }, (v) => hlSet({ edgeThickness: v })),
+      ctl('Inner fill', 'range', { min: '0', max: '100', step: '1', value: String(hv.fill) }, (v) => hlSet({ fill: v })),
+      ctl('Pulse', 'checkbox', hv.pulse ? { checked: '' } : {}, (v) => hlSet({ pulse: v })),
+      ctl('Pulse speed', 'range', { min: '0.3', max: '3', step: '0.1', value: String(hv.pulseSpeed) }, (v) => hlSet({ pulseSpeed: v })),
+      btn('Reset to default', '', () => { resetHighlights(); applyHighlightVars(fac); onReset(); }));
+  }
+  fxPanels(): El[] {
+    const fac = this.pickedFaction();
+    const ctl = (label: string, type: string, attrs: Record<string, any>, on: (v: any, el: HTMLInputElement) => void) => {
+      const id = 'fx-' + label.toLowerCase().replace(/[^a-z]+/g, '-');
+      const inp = h('input', { type, id, ...attrs }) as HTMLInputElement;
+      inp.addEventListener('input', () => on(type === 'checkbox' ? inp.checked : type === 'range' ? +inp.value : inp.value, inp));
+      return h('div', { class: 'slider fx-row' }, h('label', { for: id }, label), inp);
+    };
+    // square highlights (shared with the in-match Menu)
+    const hlPanel = this.highlightPanel(fac, () => this.showSettings());
+    // unit rings
+    const rv = getRings();
+    const ringEl = (cls: string) => h('div', { class: 'ring-prev-dot ' + cls });
+    const mine = ringEl('mine'), theirs = ringEl('theirs'), moved = ringEl('moved');
+    const paint = () => {
+      const r = getRings();
+      for (const [el, c] of [[mine, ringColor('player', fac, false)], [theirs, ringColor('opponent', fac === 'goblins' ? 'dwarves' : 'goblins', false)], [moved, ringColor('player', fac, true)]] as [El, string][]) {
+        el.style.borderColor = c; el.style.borderWidth = 2 + r.thickness * 3 + 'px'; el.style.opacity = String(r.opacity); el.style.boxShadow = `0 0 ${r.glow * 24}px ${c}, inset 0 0 ${r.glow * 14}px ${c}`;
+      }
+    };
+    const rgSet = (p: any) => { setRings(p); paint(); };
+    const ringPanel = h('section', { class: 'fx-panel', role: 'region', 'aria-label': 'Unit rings' }, h('h2', { class: 'section' }, 'Unit rings'),
+      h('div', { class: 'ring-prev', 'aria-label': 'Ring preview', role: 'img' }, mine, theirs, moved),
+      ctl('My ring color', 'color', { value: rv.myColor || mainOf(fac) }, (v) => rgSet({ myColor: v })),
+      ctl('Enemy ring color', 'color', { value: rv.enemyColor || '#2f5fd8' }, (v) => rgSet({ enemyColor: v })),
+      ctl('Moved color', 'color', { value: rv.movedColor || '#808080' }, (v) => rgSet({ movedColor: v })),
+      ctl('Grey amount', 'range', { min: '0', max: '1', step: '0.05', value: String(rv.greyAmount) }, (v) => rgSet({ greyAmount: v })),
+      ctl('Ring thickness', 'range', { min: '0.5', max: '3', step: '0.1', value: String(rv.thickness) }, (v) => rgSet({ thickness: v })),
+      ctl('Ring glow', 'range', { min: '0', max: '1', step: '0.05', value: String(rv.glow) }, (v) => rgSet({ glow: v })),
+      ctl('Ring opacity', 'range', { min: '0.2', max: '1', step: '0.05', value: String(rv.opacity) }, (v) => rgSet({ opacity: v })),
+      btn('Reset to default', '', () => { resetRings(); this.showSettings(); }));
+    paint();
+    return [hlPanel, ringPanel];
   }
 
   showSetup() {
@@ -150,60 +669,164 @@ export class App {
     const cmds = (Object.values(COMMANDERS) as any[]).filter((x) => x.playable !== false);
     let cmd = cmds.some((c) => c.id === picks.cmd) ? picks.cmd : 'grubnak';
     let diff = ['easy', 'normal', 'hard'].includes(picks.diff) ? picks.diff : 'normal';
+    let mode = localStorage.getItem('oreheart.mode') || picks.mode || 'standard';
+    if (!['standard', 'cardplay', 'compvscomp'].includes(mode)) mode = 'standard';
+    const modeBtns: El[] = [];
     const decks = loadDecks();
-    // deck index: -1 = starter deck
-    let deckIx = typeof picks.deck === 'string' && picks.deck !== '' ? decks.findIndex((d) => d.name === picks.deck && deckLegal(d)) : -1;
+    const FN: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
+    const warband = () => warbandOf(COMMANDERS[cmd].faction);
+    let deckSel = 'starter:' + warband();
+    if (typeof picks.deck === 'string' && picks.deck !== '') { const i = decks.findIndex((d) => d.name === picks.deck && deckLegal(d, cmd)); if (i >= 0) deckSel = 'saved:' + i; }
+    else if (typeof picks.deckId === 'string' && STARTER_DECKS[picks.deckId]) deckSel = 'starter:' + picks.deckId;
     const cmdBtns: El[] = [], diffBtns: El[] = [], stacks: El[] = [];
     const msg = h('p', { class: 'deck-msg', 'aria-label': 'Deck message', role: 'status' });
+    // Owner (Ken, Oct 30): the background is the hall of the Commander selected, or the one under the pointer / keyboard focus
+    let hallOver = '';
+    const setHall = () => { const s = this.root.querySelector('.screen.setup') as El | null; const f = COMMANDERS[hallOver || cmd]?.faction; const hall = f === 'goblins' || f === 'gnomes' || f === 'dwarves' ? f : 'neutral'; if (s && s.dataset.hall !== hall) s.dataset.hall = hall; };
     const sel = () => {
+      setHall();
       cmdBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === cmd)));
+      modeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === mode)));
       diffBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === diff)));
-      stacks.forEach((b) => b.setAttribute('aria-pressed', String(+(b.dataset.ix as string) === deckIx)));
+      stacks.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.key === deckSel)));
     };
     for (const c of cmds) {
       const f = FACTIONS[c.faction];
-      cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { cmd = c.id; sel(); } },
-        h('span', { class: 'portrait', 'aria-hidden': 'true' }, FSYM(c.faction)),
-        h('span', { class: 'nm' }, c.name),
-        h('span', { class: 'fa' }, `${f.name} · ${f.faith}`),
-        h('span', { class: 'ds' }, c.abilityText)));
+      cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { if (picked && cmd === c.id) return; cmd = c.id; onCmd(); pick(); },
+        onpointerenter: () => { hallOver = c.id; setHall(); }, onpointerleave: () => { if (hallOver === c.id) { hallOver = ''; setHall(); } }, onfocus: () => { hallOver = c.id; setHall(); }, onblur: () => { if (hallOver === c.id) { hallOver = ''; setHall(); } } },
+        h('span', { class: 'portrait-img oh-cmd', 'aria-hidden': 'true' }, ohCardEl(commanderCard(c), commanderPortrait(c.id))),
+        h('span', { class: 'cmd-win' },
+          h('span', { class: 'nm' }, c.name),
+          h('span', { class: 'fa' }, `${f.name} · ${f.faith}`),
+          h('span', { class: 'ds' }, c.abilityText))));
     }
+    for (const [id, label] of [['standard', 'Standard'], ['cardplay', 'Card Play'], ['compvscomp', 'Card Comp vs Card Comp']]) modeBtns.push(btn(label, 'diff mode-btn', () => { mode = id; this.game.setMode(id); try { localStorage.setItem('oreheart.mode', id); } catch { /* storage unavailable */ } sel(); }, { 'data-id': id }));
     for (const d of ['easy', 'normal', 'hard']) diffBtns.push(btn(d[0].toUpperCase() + d.slice(1), 'diff', () => { diff = d; sel(); }, { 'data-id': d }));
-    const stack = (label: string, n: number, ok: boolean, ix: number, onpick: () => void) => {
-      const b = h('button', { type: 'button', class: `dstack${ok ? '' : ' bad'}`, 'data-ix': String(ix), 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', onclick: onpick },
+    const FCMD: Record<string, string> = { goblins: 'grubnak', gnomes: 'sproingle', dwarves: 'borgo' };
+    const visibleCount = () => STARTER_DECK_LIST.filter((d) => d.faction === COMMANDERS[cmd].faction && !hiddenStarters().includes(d.id)).length + decks.filter((d) => !d.commander || d.commander === cmd).length;
+    const confirmRemove = (label: string, doIt: () => void) => {
+      const d: any = this.dialog('Remove deck?', [h('h2', {}, 'Remove deck?'), h('p', { style: 'text-align:center' }, `Remove ${label} from the deck picker?`),
+        h('div', { class: 'row' }, btn('Remove', 'primary', () => { doIt(); d.close(); buildRow(); sel(); }), btn('Cancel', '', () => d.close()))]);
+    };
+    const stack = (label: string, n: number, ok: boolean, key: string, onpick: () => void, starterId?: string, savedIdx?: number) => {
+      const b = h('button', { type: 'button', class: `dstack${ok ? '' : ' bad'}`, 'data-key': key, 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', onclick: onpick },
+        h('img', { class: 'deck-img', src: '/art/deck/deck-menu.png', alt: '', draggable: 'false' }),
         h('span', { class: 'ds-name', 'aria-hidden': 'true' }, label), h('span', { class: 'ds-n', 'aria-hidden': 'true' }, `${n} cards ${ok ? '✔' : '⚠'}`));
       stacks.push(b);
-      return b;
+      const rm = btn('Remove', 'small tx-act', () => confirmRemove(label, () => {
+        if (starterId) setHiddenStarters([...hiddenStarters(), starterId]); else if (savedIdx != null) { decks.splice(savedIdx, 1); storeDecks(decks); }
+        if (deckSel === key || deckSel.startsWith('saved:')) { const first = STARTER_DECK_LIST.find((d) => !hiddenStarters().includes(d.id)); deckSel = first ? 'starter:' + first.id : decks.length ? 'saved:0' : deckSel; }
+      }), { 'aria-label': `Remove ${label}` }) as HTMLButtonElement;
+      if (visibleCount() <= 1) { rm.disabled = true; rm.setAttribute('aria-disabled', 'true'); }
+      const acts: El[] = [rm];
+      if (starterId) acts.push(btn('Copy', 'small tx-act', () => {
+        const sd: any = STARTER_DECK_LIST.find((x) => x.id === starterId)!;
+        if (decks.length >= 5) { msg.textContent = 'You can save up to 5 decks.'; return; }
+        decks.push({ name: `${label} (copy)`, cards: sd.cards.slice(), commander: FCMD[sd.faction] || 'grubnak' });
+        storeDecks(decks);
+        showDecks(this, { focus: decks.length - 1 });
+      }, { 'aria-label': `Copy ${label} to my decks` }));
+      return h('div', { class: 'dslot' }, b, h('div', { class: 'ds-acts' }, ...acts));
     };
     const row = h('div', { class: 'deck-row', 'aria-label': 'Deck choice', role: 'group' });
-    row.append(stack('Starter deck', CONFIG.deckSize, true, -1, () => { deckIx = -1; msg.textContent = ''; sel(); }));
-    decks.forEach((d, i) => {
-      const ok = deckLegal(d);
-      row.append(stack(d.name, d.cards.length, ok, i, () => {
-        if (!ok) { msg.textContent = deckProblems(d.cards.filter((id) => CARDS[id]))[0] || 'This deck is not ready.'; return; }
-        deckIx = i; msg.textContent = ''; sel();
-      }));
+    const buildRow = () => {
+      stacks.length = 0;
+      const fac = COMMANDERS[cmd].faction;
+      const order = ['goblins', 'gnomes', 'dwarves'];
+      const hid = hiddenStarters();
+      void order;
+      const list = STARTER_DECK_LIST.filter((d) => d.faction === fac).filter((d) => !hid.includes(d.id));
+      const items: El[] = list.map((d) => stack(d.name, d.cards.length, true, 'starter:' + d.id, () => { deckSel = 'starter:' + d.id; msg.textContent = ''; sel(); }, d.id));
+      decks.forEach((d, i) => {
+        if (d.commander && d.commander !== cmd) return;
+        const ok = deckLegal(d, cmd);
+        items.push(stack(d.name, d.cards.length, ok, 'saved:' + i, () => {
+          if (!ok) { msg.textContent = deckProblems(d.cards.filter((id) => CARDS[id]), cmd)[0] || 'This deck is not ready.'; return; }
+          deckSel = 'saved:' + i; msg.textContent = ''; sel();
+        }, undefined, i));
+      });
+      items.push(h('div', { class: 'dslot' }, h('button', { type: 'button', class: 'dstack newdeck', onclick: () => showDecks(this) }, '+ New Deck')));
+      row.replaceChildren(...items);
+    };
+    // Owner (Ken, Oct 31): "the background box that the commander cards sit in, I don't want that" (no wall), and "when you click the goblin king,
+    // I don't want his 3D image to pop up anymore. Just leave it his card, selected, and put arrows on either side of the card so you can page
+    // through the commanders. Instead of [the] change commander [button], just have the arrows ... Forward and back."
+    let picked = false;
+    const cmdsEl = h('div', { class: 'cmds' }, ...cmdBtns) as El;
+    // hover grow/shrink follows real pointer movement (a pointer left over a card by an earlier click doesn't count)
+    cmdBtns.forEach((b) => {
+      b.addEventListener('pointermove', () => { if (!b.classList.contains('hov')) { cmdBtns.forEach((o) => o.classList.toggle('hov', o === b)); cmdsEl.classList.add('hovering'); } });
+      b.addEventListener('pointerleave', () => { b.classList.remove('hov'); if (!cmdBtns.some((o) => o.classList.contains('hov'))) cmdsEl.classList.remove('hovering'); });
     });
-    row.append(h('button', { type: 'button', class: 'dstack newdeck', onclick: () => showDecks(this) }, '+ New Deck'));
+    const mainRef: { el: El | null } = { el: null };
+    const pick = () => {
+      picked = true;
+      cmdsEl.classList.add('one');
+      mainRef.el?.setAttribute('data-picked', cmd);
+      cmdBtns.forEach((b) => b.classList.toggle('focus', b.dataset.id === cmd));
+    };
+    const unpick = () => {
+      picked = false;
+      cmdsEl.classList.remove('one');
+      mainRef.el?.removeAttribute('data-picked');
+      cmdBtns.forEach((b) => b.classList.remove('focus'));
+    };
+    // forward / back through the Commanders (wrapping); locked Commanders are never in the list, as before
+    const page = (dir: number) => {
+      const i = Math.max(0, cmds.findIndex((c) => c.id === cmd));
+      cmd = cmds[(i + dir + cmds.length) % cmds.length].id;
+      hallOver = '';
+      onCmd(); pick();
+      (cmdBtns.find((b) => b.dataset.id === cmd) as HTMLElement | undefined)?.classList.remove('hov');
+      cmdsEl.classList.remove('hovering');
+    };
+    const arrow = (dir: number) => h('button', { type: 'button', class: `cmd-arrow ${dir < 0 ? 'prev' : 'next'}`, 'aria-label': dir < 0 ? 'Previous commander' : 'Next commander', onclick: () => page(dir) },
+      h('span', { class: 'cmd-arrow-ico', 'aria-hidden': 'true' })) as El;
+    const pager = h('div', { class: 'cmd-pager' }, arrow(-1), cmdsEl, arrow(1)) as El;
+    const onEsc = (e: KeyboardEvent) => {
+      if (!document.querySelector('[data-screen="select"]')) { document.removeEventListener('keydown', onEsc); return; }
+      if (e.key === 'Escape' && picked) { e.stopPropagation(); unpick(); return; }
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.altKey && !e.ctrlKey && !e.metaKey && !this.dialogs.length) {
+        const t = e.target as HTMLElement | null;
+        if (t && (t.closest('input,textarea,select,[contenteditable],.deck-row,.deck-wrap,[role=slider]'))) return;
+        e.preventDefault(); page(e.key === 'ArrowLeft' ? -1 : 1);
+      }
+    };
+    document.addEventListener('keydown', onEsc);
+    const onCmd = () => {
+      if (deckSel.startsWith('starter:') && !hiddenStarters().includes(warband())) deckSel = 'starter:' + warband();
+      buildRow(); sel();
+    };
+    void FN;
+    buildRow();
     sel();
-    const scroll = (dir: number) => row.scrollBy({ left: dir * 220, behavior: 'smooth' });
-    this.root.append(h('main', { class: 'screen setup' },
-      h('h1', { class: 'section cinzel' }, 'Choose Your Commander'),
-      h('div', { class: 'cmds' }, ...cmdBtns),
-      h('div', { class: 'deck-wrap' },
-        btn('◀', 'small scroll', () => scroll(-1), { 'aria-label': 'Scroll decks left' }), row,
-        btn('▶', 'small scroll', () => scroll(1), { 'aria-label': 'Scroll decks right' })),
-      msg,
-      h('div', { class: 'row setup-actions' },
-        h('div', { class: 'row', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns),
-        btn('Fight!', 'primary', () => {
+    requestAnimationFrame(() => { row.scrollLeft = 0; });
+    const startFn = () => {
           const others = Object.keys(COMMANDERS).filter((k) => k !== cmd && COMMANDERS[k].playable !== false);
           const opp = others[Math.floor(Math.random() * others.length)];
-          const pick = deckIx < 0 ? null : decks[deckIx];
-          try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, deck: pick ? pick.name : '' })); } catch { /* storage unavailable */ }
-          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, ...(pick ? { playerDeck: pick.cards.slice() } : {}) });
-        }),
-        btn('Back', '', () => this.showMenu()))));
+          const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
+          const deckId = pick ? '' : deckSel.slice(8);
+          try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, mode, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
+          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, mode, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
+    };
+    const startBtn = h('div', { class: 'fight-wrap' }, btn('Fight!', 'primary fight-btn', startFn));
+    const mainEl = h('main', { class: 'screen setup mb-setup', 'data-screen': 'select' },
+      h('div', { class: 'mb-stage' },
+        ownerBox('commander', 'cTitle', h('h1', { class: 'section cinzel cs-title' }, 'Choose Your Commander')),
+        ownerBox('commander', 'cCards', pager, 'cs-cards'),
+        // Owner (Ken, Oct 31): "I would also like the game mode, standard ... comp versus comp ... on the right-hand side"; the deck picker sits
+        // right under it as a list (Forge, Ken approved: room for four named starter decks per faction plus the saved decks)
+        freeBox(74, 12, 24.5, 23, [h('span', { class: 'cs-label', 'aria-hidden': 'true' }, 'Game mode'), h('div', { class: 'mode-row', role: 'group', 'aria-label': 'Game mode' }, ...modeBtns)], 'cs-modes'),
+        ownerBox('commander', 'cDecks', h('div', { class: 'deck-wrap' }, h('span', { class: 'cs-label', 'aria-hidden': 'true' }, 'Deck'), row), 'cs-decks'),
+        freeBox(20, 88.2, 60, 11.8, [msg,
+          h('div', { class: 'row setup-actions', role: 'group', 'aria-label': 'Difficulty' },
+            btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }), ...diffBtns)], 'cs-extra'),
+        ownerBox('commander', 'cStart', startBtn, 'cs-start'),
+        ownerBox('commander', 'cBack', btn('Back', 'back-btn', () => this.showMenu()), 'cs-back')));
+    mainRef.el = mainEl as El;
+    this.selState = () => ({ mode: picked ? 'focused' : 'row', commanderId: cmd, model: null }); // Ken, Oct 31: no 3D pop-up on this screen
+    this.root.append(mainEl);
+    setHall();
   }
 
   showRules() {
@@ -220,20 +843,21 @@ export class App {
     const crystals = svg('Picture of three crystals: green for Goblins, blue for Gnomes, purple for Dwarves',
       '<rect width="240" height="110" rx="10" fill="#26232f"/><polygon points="40,20 65,55 40,95 15,55" fill="#3ee06a"/><polygon points="120,20 145,55 120,95 95,55" fill="#3fa9ff"/><polygon points="200,20 225,55 200,95 175,55" fill="#b45cff"/>' +
       '<text x="40" y="106" font-size="9" fill="#f4e9d0" text-anchor="middle">Goblins</text><text x="120" y="106" font-size="9" fill="#f4e9d0" text-anchor="middle">Gnomes</text><text x="200" y="106" font-size="9" fill="#f4e9d0" text-anchor="middle">Dwarves</text>');
-    const combat = svg('Picture of type advantage: Dwarves beat Goblins, Goblins beat Gnomes, Gnomes beat Dwarves',
-      '<rect width="240" height="110" rx="10" fill="#26232f"/><text x="120" y="30" font-size="16" fill="#f4e9d0" text-anchor="middle">🔨 → 💀 → ⚙️ → 🔨</text><text x="120" y="62" font-size="11" fill="#e3b54a" text-anchor="middle">+1 Attack on a type advantage</text><text x="120" y="86" font-size="11" fill="#f4e9d0" text-anchor="middle">Dwarves › Goblins › Gnomes › Dwarves</text>');
+    const combat = svg('Picture of type advantage: Dwarves beat Goblins, Goblins beat Gnomes, Gnomes beat Dwarves, never against Miners',
+      '<rect width="240" height="110" rx="10" fill="#26232f"/><text x="120" y="30" font-size="16" fill="#f4e9d0" text-anchor="middle">🔨 → 💀 → ⚙️ → 🔨</text><text x="120" y="62" font-size="11" fill="#e3b54a" text-anchor="middle">+1 Attack on a type advantage</text><text x="120" y="86" font-size="11" fill="#f4e9d0" text-anchor="middle">Dwarves › Goblins › Gnomes › Dwarves</text><text x="120" y="104" font-size="9" fill="#e3b54a" text-anchor="middle">Never against Miners ⛏️</text>');
     const sec = (t: string, ...k: (string | El)[]) => h('section', {}, h('h2', {}, t), ...k.map((x) => (typeof x === 'string' ? h('p', {}, x) : x)));
-    const s = h('main', { class: 'screen howto' },
+    const s = h('main', { class: 'screen howto', 'data-screen': 'rules' },
       h('h1', { class: 'section cinzel' }, 'Rules'),
       sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
-      sec('The Board', 'A hidden grid 13 spaces wide and 7 deep. The enemy is at the top, you are at the bottom. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
-      sec('Decks and auto-skip', 'The Decks screen on the main menu is a testing deck builder: every card is unlocked and you can save up to 5 decks of 50 cards (Rare, Ultra Rare and Collector cards max 3 copies, at most 10 Crystal cards). Pick a saved deck or the starter deck before a match. Your Deploy phase ends by itself when no card in your hand can be both paid for and placed, and your Action phase ends by itself when no creature can move, attack or mine.', crystals),
+      sec('The Board', 'Your crystal (Flow on the gem, Bank below it) is at the top-left, the enemy crystal at the top, the phase tracker at the top-right, your hand along the bottom and your deck at the bottom-right. A hidden grid 13 spaces wide and 7 deep. Your Stronghold sits in the bottom-left corner (row 7, column 2) and the enemy Stronghold in the top-right corner (row 1, column 12); the mines mirror from corner to corner. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
+      sec('Decks and auto-skip', 'The Decks screen on the main menu is a testing deck builder: every card is unlocked and you can save up to 5 decks of 50 to 100 cards (Rare, Ultra Rare and Collector cards max 3 copies, at most 20 Crystal cards). Pick a saved deck or the starter deck before a match. Your Deploy phase ends by itself when no card in your hand can be both paid for and placed, and your Action phase ends by itself when no creature can move, attack or mine.', crystals),
       sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
-      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (one per round, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
-      sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack. Ranged creatures hit any enemy within 2 spaces in any direction, even over other creatures, and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
+      sec('Mulligan and Camera', 'Before the match you see your opening hand. Keep Hand plays it as it is; Redraw Hand shuffles every card back into your deck and draws a completely new hand of the same size. You get one redraw per match, so look before you choose. The computer gets the same choice. On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and choose Recenter in the Menu (right side) to reset. The Menu also holds Last turn, Mute, the Card pop-ups switch and Surrender. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
+      sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (any number, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
+      sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack, except against Miners: a creature hitting a Miner never gets this bonus. Ranged creatures hit the first enemy up to 7 spaces away in one of the 8 straight directions (they cannot shoot past a unit) and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
       sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals (Flow first, then Bank). Commanders never attack. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet: you can play a Crystal card on its own or together with a counterspell to pay for it. Counterspells cancel spells or summons.'),
-      h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Back', '', () => this.showMenu())));
+      h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Tutorial', 'menu-fwd', () => this.beginTutorial()), btn('Back', 'menu-back', () => this.showMenu())));
     this.root.append(s);
   }
 
@@ -251,7 +875,8 @@ export class App {
     return { close, el: ov };
   }
 
-  showCard(cardId: string, creature?: any) {
+  showCard(cardId: string, creature?: any, hc?: any) {
+    this.clearPops(); this.openHand(false, true);
     const c = CARDS[cardId];
     const rows: [string, string][] = [];
     rows.push(['Type', c.type === 'creature' ? `${FSYM(c.faction)} ${FACTIONS[c.faction].name} creature` : c.type === 'spell' ? ({ regular: 'Spell', instant: 'Instant', counter: 'Counterspell' } as any)[c.spellKind] : 'Crystal card']);
@@ -266,35 +891,286 @@ export class App {
       rows.push(['Role', `${roleBadge(c)} ${c.role === 'Smith' ? 'Smith Miner' : isMiner(c) ? 'Miner' : 'Fighter'}`]);
       if (creature && creature.upgrades.attack + creature.upgrades.health) rows.push(['Miner upgrades', `+${creature.upgrades.attack} Attack, +${creature.upgrades.health} Health`]);
     }
-    const dl = h('dl', {});
+    const dl = h('dl', { class: 'sr-only' });
     for (const [k, v] of rows) dl.append(h('dt', {}, k), h('dd', {}, v));
-    const ab = c.type === 'creature' ? (c.abilities || []).map((a: string) => `${ABILITIES[a].name}: ${ABILITIES[a].text}`).join(' ') : c.text;
-    void ab;
-    const d = this.dialog(c.name, [h('div', { class: 'card-view' }, h('div', { class: 'cv-name' }, c.name), dl, h('p', { class: 'tx' }, c.text || ''),
-      h('div', { class: 'row' }, btn('Close', 'primary', () => d.close())))]);
+    const cur = creature ? { attack: creature.attack, health: creature.health, move: c.move } : undefined;
+    const face = h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, cost, cur));
+    const tx = face.querySelector('.ohtx[data-bind="text"]') as El;
+    const tb = h('button', { type: 'button', class: 'tx-full', 'aria-label': 'Full explanation', title: 'Full explanation' });
+    tb.style.cssText = 'position:absolute;inset:0;background:none;border:0;cursor:pointer;pointer-events:auto;z-index:99;padding:0';
+    (tx?.parentElement || face).append(tb);
+    tb.addEventListener('click', () => this.fullExplanation(c));
+    // round 10: twice the old size, no scroll bar; a click outside the card (or Esc) closes it
+    // Owner (Ken, Oct 30): a small ✕ Close button at the card's top-right corner closes it too
+    // Owner (Oct 25): a hand card's close-up has a button that plays it (legal squares light up, then tap one)
+    let d: any = null;
+    const xb = h('button', { type: 'button', class: 'cv-close', 'aria-label': 'Close', title: 'Close (Esc)' }, '✕');
+    xb.addEventListener('pointerdown', (ev: Event) => ev.stopPropagation());
+    xb.addEventListener('click', (ev: Event) => { ev.stopPropagation(); d?.close(); });
+    const kids: any[] = [h('div', { class: 'card-view-face' }, face, xb), dl];
+    if (hc && this.game.state && this.game.state.phase !== 'over') {
+      const label = c.type === 'spell' ? 'Cast this spell' : c.type === 'crystal' ? 'Play this Crystal' : 'Play this card';
+      const can = this.game.legalActions().some((a: any) => a.uid === hc.uid);
+      const pb = h('button', { type: 'button', class: 'primary play-from-hand' + (can ? '' : ' cant'), 'aria-disabled': String(!can), title: can ? label : this.explain(c) }, label) as HTMLButtonElement;
+      pb.addEventListener('click', (ev) => { ev.stopPropagation(); d?.close(); this.tuckHand(); this.playFromHand(hc, c); setTimeout(() => this.tuckHand(), 0); });
+      kids.push(h('div', { class: 'play-from-hand-row' }, pb));
+    }
+    // right-click on your own unit: its activated abilities as an ability menu under the card
+    if (creature && creature.owner === 'player' && this.game.state && this.game.state.phase !== 'over') {
+      const st = this.game.state;
+      const keys = ((c.abilities || []) as string[]).filter((k) => ABILITY_UI[k]);
+      const ready = new Set(this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === creature.uid).map((a: any) => a.ability));
+      const row = h('div', { class: 'play-from-hand-row ability-row', role: 'group', 'aria-label': 'Abilities' });
+      for (const k of keys) {
+        const ui = ABILITY_UI[k], cost = k === 'blink' ? 1 : ABILITY_COST[k] || 0;
+        const ok = ready.has(k) && st.priority === 'player';
+        const b = h('button', { type: 'button', class: 'primary play-from-hand' + (ok ? '' : ' cant'), 'aria-disabled': String(!ok), title: ui.text }, `${ui.name}${cost ? ` (${cost})` : ''}`) as HTMLButtonElement;
+        b.addEventListener('click', (ev) => { ev.stopPropagation(); if (!ok) { this.flash(ui.text); return; } d?.close(); const cr = this.game.state.board.creatures.find((x: any) => x.uid === creature.uid); if (cr) this.useAbility(cr, k); });
+        row.append(b);
+      }
+      if (keys.length) kids.push(row);
+    }
+    d = this.dialog(c.name, kids);
+    d.el.classList.add('cardview');
+    { // Gauge's check (Oct 30): Escape closes the big card view wherever the focus is (outside tap and the ✕ Close button close it too)
+      const close0 = d.close, esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { ev.stopPropagation(); d.close(); } };
+      d.close = () => { document.removeEventListener('keydown', esc, true); close0(); };
+      document.addEventListener('keydown', esc, true);
+    }
+    if (hc) this.addCardNav(d, hc);
+    return d;
+  }
+  /** Owner fix (Ken, Oct 28): arrows on each side of a hand card's close-up step to the previous / next card in the hand
+   *  (wrapping at the ends); the ← / → keys and a sideways swipe on the card do the same. The Play / Cast button always
+   *  belongs to the card shown, because each step opens that card's own close-up. No arrows with only one card in hand. */
+  addCardNav(d: { close: () => void; el: El }, hc: any) {
+    const handNow = () => ((this.game.state?.players?.player?.hand || []) as any[]);
+    if (handNow().length < 2 || !handNow().some((k) => k.uid === hc.uid)) return;
+    const ov = d.el;
+    let done = false;
+    const cleanup = () => { done = true; document.removeEventListener('keydown', onKey, true); window.removeEventListener('resize', place); };
+    const go = (step: number) => {
+      if (done) return;
+      const cur = handNow();
+      const at = cur.findIndex((k) => k.uid === hc.uid);
+      if (at < 0 || cur.length < 2) return;
+      const next = cur[(at + step + cur.length) % cur.length];
+      cleanup();
+      d.close();
+      this.showCard(next.cardId, undefined, next);
+    };
+    const chevron = (dir: number) => `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="${dir < 0 ? 'M15 4 7 12l8 8' : 'M9 4l8 8-8 8'}" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const mk = (dir: number) => {
+      const b = h('button', { type: 'button', class: `card-nav ${dir < 0 ? 'card-nav-prev' : 'card-nav-next'}`, 'aria-label': dir < 0 ? 'Previous card' : 'Next card', title: dir < 0 ? 'Previous card (←)' : 'Next card (→)' }) as HTMLButtonElement;
+      b.innerHTML = chevron(dir);
+      b.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+      b.addEventListener('click', (ev) => { ev.stopPropagation(); go(dir); });
+      return b;
+    };
+    const prev = mk(-1), nextB = mk(1);
+    ov.append(prev, nextB);
+    const face = ov.querySelector('.card-view-face .hand-card') as HTMLElement | null;
+    // keep the arrows just beside the big card (never off screen)
+    const place = () => {
+      if (!ov.isConnected) { cleanup(); return; }
+      if (!face) return;
+      const r = face.getBoundingClientRect();
+      if (!r.width) return;
+      const bw = prev.offsetWidth || 56, gap = Math.max(10, Math.min(24, innerWidth * 0.015));
+      const top = `${Math.round(r.top + r.height / 2)}px`;
+      prev.style.top = top; nextB.style.top = top;
+      prev.style.left = `${Math.round(Math.max(6, r.left - bw - gap))}px`;
+      nextB.style.left = `${Math.round(Math.min(innerWidth - bw - 6, r.right + gap))}px`;
+      nextB.style.right = 'auto';
+    };
+    requestAnimationFrame(() => requestAnimationFrame(place));
+    setTimeout(place, 300);
+    window.addEventListener('resize', place);
+    const onKey = (e: KeyboardEvent) => {
+      if (!ov.isConnected) { cleanup(); return; }
+      if (this.dialogs[this.dialogs.length - 1] !== ov) return;
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault(); e.stopPropagation();
+      go(e.key === 'ArrowLeft' ? -1 : 1);
+    };
+    document.addEventListener('keydown', onKey, true);
+    // phones: a sideways swipe on the big card (left = next, right = previous)
+    if (face) {
+      let sid = -1, sx = 0, sy = 0;
+      face.style.touchAction = 'pan-y';
+      face.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType === 'mouse') return; sid = e.pointerId; sx = e.clientX; sy = e.clientY; });
+      face.addEventListener('pointercancel', () => { sid = -1; });
+      face.addEventListener('pointerup', (e: PointerEvent) => {
+        if (e.pointerId !== sid) return;
+        sid = -1;
+        const dx = e.clientX - sx, dy = e.clientY - sy;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { e.preventDefault(); go(dx < 0 ? 1 : -1); }
+      });
+    }
+  }
+  /** Slide the hand back down: no raised card, no keyboard focus left on a hand card. */
+  tuckHand() {
+    const a = document.activeElement as HTMLElement | null;
+    if (a && a.closest?.('.hand')) a.blur();
+    this.clearPops(); this.openHand(false, true);
+  }
+  /** Oct 30 Ken playtest (hand): a single tap/click opens the card view after a short wait; a second tap/click on the same card
+   *  within that wait plays it instead (same as the card view's Play / Cast button: legal squares light up, or it casts at once). */
+  // Ken (Oct 31: "when I double click a card in my hand, it doesn't automatically play the card"): 250 ms was shorter than a
+  // normal double-click (Windows allows up to 500 ms), so the second click came after the card view had already opened.
+  static DBL_MS = 380;
+  /** Ken (Oct 31, hand "jerky"): every hand motion (rise, fall, neighbours stepping aside, the focus window sliding) takes this long, ease-out (style.css --hand-ms) */
+  static HAND_MS = 160;
+  tapWait: { uid: string; t: any; x: number; y: number; at: number } | null = null;
+  touchWasShown = false;
+  handTap(hc: any, card: any) {
+    const w = this.tapWait;
+    if (w) { clearTimeout(w.t); this.tapWait = null; }
+    if (w && w.uid === hc.uid) { this.playByDoubleTap(hc, card); return; }
+    // in play mode from a double-tap: tapping the card again (or any hand card) just cancels it
+    if (this.cancelHandPick()) return;
+    if (this.lastPtr.type !== 'mouse') {
+      // Ken / Gauge (Oct 30): on a phone a single tap only raises the hand and selects the card; a tap on the card that is already
+      // selected opens the big view (after the double-tap wait); a double tap plays (as before)
+      const el = this.r.hand?.querySelector(`.hand-card[data-uid="${hc.uid}"]:not(.popclone)`) as El | null;
+      const again = this.touchWasShown && !!el?.classList.contains('sel');
+      this.r.hand?.querySelectorAll('.hand-card.sel').forEach((x: El) => { if (x !== el) x.classList.remove('sel'); });
+      el?.classList.add('sel');
+      this.tapWait = { uid: hc.uid, x: this.lastPtr.x, y: this.lastPtr.y, at: performance.now(), t: setTimeout(() => { this.tapWait = null; if (again && this.game.state?.players?.player?.hand?.some((k: any) => k.uid === hc.uid)) this.showCard(card.id, undefined, hc); }, App.DBL_MS) };
+      return;
+    }
+    this.tapWait = { uid: hc.uid, x: this.lastPtr.x, y: this.lastPtr.y, at: performance.now(), t: setTimeout(() => { this.tapWait = null; if (this.game.state?.players?.player?.hand?.some((k: any) => k.uid === hc.uid)) this.showCard(card.id, undefined, hc); }, App.DBL_MS) };
+  }
+  playByDoubleTap(hc: any, card: any) {
+    if (!this.game.state || this.game.state.phase === 'over') return;
+    this.tuckHand(); this.showHandTouch(false);
+    this.playFromHand(hc, card);
+    if (this.pick && !(this.pick as any).unit) (this.pick as any).hand = hc.uid;
+    setTimeout(() => this.tuckHand(), 0);
+  }
+  /** Leave the play mode started by a double-tap (Escape, the card again, or empty space). */
+  cancelHandPick() {
+    if (!(this.pick as any)?.hand) return false;
+    this.pick = null; this.clearGlow(); this.flash('Cancelled');
+    return true;
+  }
+  handIdle: any = null;
+  /** Oct 30 Ken playtest (hand): on phones a touch on the hand brings it fully up (.shown); it tucks back down on a tap
+   *  off the hand (the board), a swipe down on the hand, or after 4 s without a touch on it. */
+  showHandTouch(on: boolean) {
+    const hand = this.r?.hand as El | undefined;
+    clearTimeout(this.handIdle); this.handIdle = null;
+    if (!hand) return;
+    if (!on) { hand.classList.remove('shown'); hand.querySelectorAll('.hand-card.sel').forEach((x) => x.classList.remove('sel')); this.handFocusTo(null); return; }
+    hand.classList.add('shown');
+    const arm = () => {
+      this.handIdle = setTimeout(() => {
+        this.handIdle = null;
+        if (this.lastPtr.down && this.lastPtr.type !== 'mouse') { arm(); return; } // a finger still on the hand / a card being dragged
+        this.showHandTouch(false);
+      }, 4000);
+    };
+    arm();
+  }
+  /** Play a hand card without dragging: no target = play now; otherwise its legal squares light up and a tap on one plays it. */
+  playFromHand(hc: any, card: any) {
+    const st = this.game.state;
+    if (!st) return;
+    this.pick = null; this.clearGlow();
+    const legal = this.game.legalActions().filter((a: any) => a.uid === hc.uid);
+    if (!legal.length) { this.flash(this.explain(card)); return; }
+    const free = legal.find((a: any) => a.type === 'playCrystal' || (a.type === 'cast' && !a.target));
+    if (free) { const r = this.game.act(free); if (r && !r.ok) this.flash(r.error); return; }
+    const cells: any[] = [], smith: any[] = [];
+    for (const a of legal) {
+      if (a.type === 'summon') cells.push({ row: a.row, col: a.col });
+      else if (a.type === 'minerUpgrade') { const o = st.board.creatures.find((x: any) => x.uid === a.creatureUid); if (o) smith.push({ row: o.row, col: o.col }); }
+      else if (a.type === 'cast' && a.target) cells.push(this.cellOfTarget(a.target));
+    }
+    const all = [...cells, ...smith];
+    if (!all.length) { this.flash(this.explain(card)); return; }
+    this.dragKind = card.type;
+    this.setGlow(cells, 'glow');
+    this.setGlow(smith, 'glow-swap');
+    this.pick = { cells: all, done: (c) => { this.pick = null; this.clearGlow(); this.dropCard(hc, card, c); setTimeout(() => this.tuckHand(), 0); } };
+    this.flash(card.type === 'spell' ? 'Tap a target' : 'Tap a glowing square');
+  }
+  /** Deck builder close-up: the card fills the screen top to bottom; no Close button, no scrollbar; click anywhere or Esc dismisses. */
+  closeUp(cardId: string, withViewer = false) {
+    const isCmd = cardId.startsWith('cmd:');
+    const c = isCmd ? ({ name: COMMANDERS[cardId.slice(4)].name, id: cardId, type: 'commander', faction: 'any' } as any) : CARDS[cardId];
+    const face = isCmd ? h('div', { class: 'cz-img oh-cmd', role: 'img', 'aria-label': c.name, 'data-card-id': cardId }, ohCardEl(commanderCard(COMMANDERS[cardId.slice(4)]), commanderPortrait(cardId.slice(4)))) : h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, c.type === 'crystal' ? 0 : c.cost));
+    const ov = h('div', { class: 'cardzoom', role: 'dialog', 'aria-modal': 'true', 'aria-label': c.name }, face);
+    let stopViewer: (() => void) | null = null, closed = false;
+    const close = () => { closed = true; stopViewer?.(); ov.remove(); document.removeEventListener('keydown', onKey, true); };
+    // round 8b item 14: cards with a 3D model (Grubnak) show it in a viewer beside the card
+    if (withViewer && cardId === 'cmd:grubnak') {
+      void mountGrubnakViewer(ov).then((stop) => {
+        if (!stop) return;
+        if (closed) { stop(); return; }
+        stopViewer = stop; ov.classList.add('with-viewer');
+      });
+    }
+    else if (withViewer && !isCmd && c.type === 'creature') {
+      void mountCreatureViewer(ov, c).then((stop) => {
+        if (!stop) return;
+        if (closed) { stop(); return; }
+        stopViewer = stop; ov.classList.add('with-viewer');
+      });
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+    ov.addEventListener('click', close);
+    document.addEventListener('keydown', onKey, true);
+    document.body.append(ov);
+    return { close, el: ov };
+  }
+  fullExplanation(c: any) {
+    const d: any = this.dialog(`${c.name}: full explanation`, [h('h2', {}, c.name), h('p', { class: 'long-text' }, c.longText || c.text || ''), h('div', { class: 'row' }, btn('Close', 'primary', () => d.close()))]);
+    d.el.addEventListener('pointerdown', (e: any) => { if (e.target.closest('.long-text')) d.close(); });
+    return d;
   }
 
   // ------------------------------------------------------------ match
   beginMatch(options: any = {}) {
+    this.enemyCrystalKey = "";
     const o = { ...options };
     if (o.seed == null && this.test && this.seed != null) o.seed = this.seed;
     this.lastOptions = options;
     this.lastTutorial = false;
+    this.fxLog = [];
+    arenaOpts.extra = (o.setup && o.setup.arenaExtraEffects) || [];
     const state = this.game.newMatch(o);
+    applyHighlightVars(this.game.state.players.player.faction);
+    this.arenaFaction = ''; this.pickMatchArena(o.seed); /* a new match: a new arena pick */
     this.showMatch();
     this.update(this.game.state, []);
     return state;
   }
 
+  /** Ken, Oct 31: each match is fought in the arena of the player's faction or of the opponent's, 50-50. In test pages the roll comes from the seed so checks are repeatable;
+   *  `arenaForce` ('player' | 'opponent') lets a check choose. */
+  arenaFaction = '';
+  arenaForce: '' | 'player' | 'opponent' = '';
+  pickMatchArena(seed?: number): string {
+    const p = this.game.state.players;
+    const roll = this.arenaForce ? (this.arenaForce === 'player' ? 0 : 0.99) : this.test ? ((Math.abs(((seed ?? this.seed ?? 0) | 0)) % 2) ? 0.99 : 0) : Math.random();
+    this.arenaFaction = pickArena(p.player.faction, p.opponent.faction, roll);
+    return this.arenaFaction;
+  }
+
   beginTutorial() {
     this.lastTutorial = true;
+    this.fxLog = [];
     const state = this.game.startTutorial();
+    applyHighlightVars(this.game.state.players.player.faction);
+    this.arenaFaction = ''; this.pickMatchArena();
     this.showMatch();
     this.update(this.game.state, []);
     return state;
   }
 
   teardownMatch() {
+    this.modeUi?.remove(); this.modeUi = null;
     clearInterval(this.timerId);
     clearTimeout(this.respondTimer);
     this.unsub && this.unsub();
@@ -304,70 +1180,148 @@ export class App {
     this.tokens.clear();
     this.r = {};
     this.endShown = false;
+    this.fxStarted = false; this.uidCard.clear(); this.siteOwner.clear();
     this.pick = null;
     this.phaseKey = '';
-    this.handKey = '';
+    this.handKey = ''; this.fitKey = '';
+    this.seenHand = new Set();
   }
 
   showMatch() {
-    this.handKey = '';
+    this.handKey = ''; this.fitKey = '';
     this.clear();
+    audio.setMatchArena(this.arenaFaction || this.pickMatchArena()); /* Oct 31: the match music belongs to the arena */
+    audio.setMusicMode('match');
     const r = this.r;
     const fcol = FACTIONS[this.game.state.players.player.faction].crystal;
-    r.crFlow = h('span', { class: 'cr flow ' + fcol, role: 'img', 'aria-label': 'Your Flow crystals' }, '⛏️ 0');
-    r.crBank = h('span', { class: 'cr bank ' + fcol, role: 'img', 'aria-label': 'Your Bank crystals' }, '🏦 0');
+    void fcol;
+    const crystalHud = (side: 'mine' | 'theirs') => {
+      const you = side === 'mine';
+      const gem = svgEl('svg', { class: 'cry-gem', viewBox: '0 0 100 130', role: 'img', 'aria-label': you ? 'Your soul crystal' : 'Enemy soul crystal' });
+      const gid = 'cg' + side;
+      gem.innerHTML = `<defs><linearGradient id="${gid}a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${you ? '#d8f6ff' : '#ffd0c8'}"/><stop offset=".5" stop-color="${you ? '#3fb4ff' : '#ff4a3a'}"/><stop offset="1" stop-color="${you ? '#1a3f9a' : '#7a1010'}"/></linearGradient><linearGradient id="${gid}b" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${you ? '#8fe0ff' : '#ff9a88'}"/><stop offset="1" stop-color="${you ? '#12306e' : '#5a0a0a'}"/></linearGradient><filter id="${gid}g" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="5"/></filter></defs><polygon points="50,4 88,40 76,118 50,126 24,118 12,40" fill="${you ? '#4fc8ff' : '#ff5a4a'}" filter="url(#${gid}g)" opacity=".7"/><polygon points="50,4 88,40 50,52" fill="url(#${gid}a)"/><polygon points="50,4 12,40 50,52" fill="url(#${gid}b)" opacity=".9"/><polygon points="12,40 50,52 24,118" fill="url(#${gid}a)" opacity=".85"/><polygon points="88,40 50,52 76,118" fill="url(#${gid}b)"/><polygon points="50,52 24,118 50,126 76,118" fill="url(#${gid}a)" opacity=".95"/><polyline points="50,4 50,52 50,126" fill="none" stroke="#ffffff88" stroke-width="1.5"/><polygon points="40,18 52,14 46,34" fill="#fff" opacity=".7"/>`;
+      const flow = h('span', { class: 'cry-flow', 'aria-label': you ? 'Your Flow crystals' : 'Enemy Flow crystals' }, '0');
+      const bankN = h('span', { class: 'cry-bank-n' }, '0');
+      const bank = h('span', { class: 'cry-bank', 'aria-label': you ? 'Your Bank crystals' : 'Enemy Bank crystals' }, bankN);
+      const name = h('span', { class: 'cry-name' }, '');
+      const next = h('span', { class: 'cry-next', 'aria-label': you ? 'Your income next turn' : 'Enemy income next turn' }, 'Next +0');
+      const el = h('div', { class: 'crystal-hud ' + side, role: 'group', 'aria-label': you ? 'Your crystal' : 'Enemy crystal' },
+        h('div', { class: 'cry-inner' },
+          h('div', { class: 'cry-img' }, gem, flow, bank),
+          h('div', { class: 'cry-text' }, name, h('span', { class: 'cry-word' }, 'Flow'), next)));
+      return { el, flow, bank: bankN, name, next };
+    };
+    const yc = crystalHud('mine'), ec = crystalHud('theirs');
+    r.crFlow = yc.flow; r.crBank = yc.bank; r.income = yc.next; r.myName = yc.name;
+    r.eFlow = ec.flow; r.eBank = ec.bank; r.eNext = ec.next; r.eName = ec.name;
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
-    r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, '0');
+    r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-menu-deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
-    r.phase.append(h('div', { class: 'ph-turn' }), h('div', { class: 'ph-name' }));
+    r.phase.append(h('div', { class: 'ph-turn' }), h('div', { class: 'ph-steps' }, ...['draw', 'deploy', 'action', 'end'].map((k) => h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k]), ), ), h('div', { class: 'ph-time' }));
+    (r.phase.querySelector('.ph-steps') as El).replaceChildren(...['draw', 'deploy', 'action', 'end'].flatMap((k, i) => (i ? [h('span', { class: 'ph-sep', 'aria-hidden': 'true' }, '›'), h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k])] : [h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k])])));
     r.timer = h('div', { class: 'countdown', role: 'timer', 'aria-label': 'Phase timer', hidden: true }, '10');
     r.board = h('div', { class: 'board', role: 'application', 'aria-label': 'Battlefield' });
     r.fx = h('div', { class: 'fx' });
     r.myHealth = h('div', { class: 'heart mine', role: 'img', 'aria-label': 'Your Commander health' }, '20');
-    r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, '0');
-    r.income = h('div', { class: 'income', 'aria-label': 'Your income next turn' }, '+0 next turn');
+    r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-menu-deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.done = btn('Done', 'primary done-btn', () => this.pressDone());
+    r.recenter = btn('Recenter', 'recenter-btn', () => { this.resetCam(); this.menuOpen(false); });
     r.swap = btn('Swap for a Miner', 'swap-btn', () => this.startSwap());
     r.swap.hidden = true;
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
-    const menuBtn = btn('Menu', 'menu-btn', () => this.showMatchMenu());
-    r.last = btn('Last turn', 'last-btn', () => this.showLastTurn());
+    r.handLeft = btn('◀', 'hand-scroll left', () => { this.handScroll = Math.max(0, Math.round(this.handScroll) - 3); this.layoutHand(); }, { 'aria-label': 'Scroll hand left' });
+    r.handRight = btn('▶', 'hand-scroll right', () => { this.handScroll = Math.round(this.handScroll) + 3; this.layoutHand(); }, { 'aria-label': 'Scroll hand right' });
+    r.handLeft.hidden = true; r.handRight.hidden = true;
+    r.handSort = h('button', { type: 'button', class: 'hand-sort-btn', 'aria-label': 'Sort hand', 'aria-haspopup': 'true', 'aria-expanded': 'false', title: 'Sort hand' }, h('span', { class: 'hs-ico', 'aria-hidden': 'true' })) as El;
+    r.handSort.addEventListener('click', () => this.toggleHandSortUp());
+    r.handSort.hidden = true;
+    const menuBtn = btn('Menu', 'menu-btn', () => { this.menuPinned = !this.menuPinned; this.menuOpen(this.menuPinned); }, { 'aria-expanded': 'false', 'aria-haspopup': 'menu' });
+    const syncMute = () => {
+      muteBtn.setAttribute('aria-pressed', String(audio.muted)); muteBtn.setAttribute('aria-label', 'Mute'); muteBtn.textContent = audio.muted ? 'Muted' : 'Mute';
+      spk.setAttribute('aria-pressed', String(audio.muted)); spk.setAttribute('aria-label', audio.muted ? 'Unmute sound' : 'Mute sound'); spk.textContent = audio.muted ? '🔇' : '🔊';
+    };
+    const toggleMute = () => { audio.setMuted(!audio.muted); syncMute(); if (!audio.muted) audio.play('click'); };
+    const muteBtn = btn('Mute', 'mute-btn', toggleMute);
+    const spk = btn('🔊', 'spk-btn', toggleMute);
+    syncMute();
+    r.last = btn('Last turn', 'last-btn', () => { this.menuOpen(false); this.showLastTurn(); });
+    const surrenderBtn = btn('Surrender', 'surrender-btn', () => {
+      this.menuOpen(false);
+      const c: any = this.dialog('Surrender this match?', [h('h2', {}, 'Surrender this match?'),
+        h('div', { class: 'row' }, btn('Yes, surrender', 'danger', () => { c.close(); this.game.act({ type: 'surrender' }); }), btn('Cancel', '', () => c.close()))]);
+    });
+    r.menuPanel = h('div', { class: 'menu-panel', id: 'match-menu-panel', hidden: true });
+    r.menuBtn = menuBtn;
+    r.spk = spk;
+    r.menuWrap = h('div', { class: 'hud-menu', 'aria-label': 'Menu controls', role: 'group' }, menuBtn, r.menuPanel);
+    void muteBtn; void surrenderBtn;
     r.tip = h('aside', { class: 'tip', 'aria-label': 'Tutorial tip', hidden: true });
-    const crystals = h('div', { class: 'crystals' }, r.crFlow, r.crBank);
     const match = h('main', { class: 'match' },
       r.board,
-      h('div', { class: 'hud hud-left' }, crystals, r.income,
-        r.swap),
-      h('div', { class: 'hud hud-top' }, r.enemyHand),
-      r.enemyDeck, r.last, r.myDeck,
-      r.phase,
-      h('div', { class: 'hud hud-right' }, r.done, menuBtn),
-      r.tip, r.hand, r.timer);
+      r.swap,
+      r.tip, r.hand, r.handLeft, r.handRight, r.handSort, r.timer);
+    this.closeHandSortUp(); this.syncHandSort();
     this.root.append(match);
+    this.buildModeUi();
+    const ps = this.game.state.players;
+    applyOwnerHud(match, r, {
+      playerFaction: ps.player.faction, enemyFaction: ps.opponent.faction,
+      closeMenu: () => this.menuOpen(false),
+      menuItems: [
+        { label: 'Resume', run: () => {} },
+        { label: 'Settings', run: () => this.matchSettings() },
+        { label: 'Square highlights', run: () => this.matchHighlights() },
+        ...(fsSupported() ? [{ label: fsLabel(), run: () => { if (!fsToggle()) this.fsF11Note(); } }] : []),
+        { label: 'How to play', run: () => this.matchHowTo() },
+        { label: 'Sound Effects', run: () => this.matchVolume('Sound Effects') },
+        { label: 'Background music', run: () => this.matchVolume('Background music') },
+        { label: 'Give up match!', run: () => { const c: any = this.dialog('Give up this match?', [h('h2', {}, 'Give up this match?'), h('div', { class: 'row' }, btn('Yes, give up', 'danger', () => { c.close(); this.game.act({ type: 'surrender' }); }), btn('Cancel', '', () => c.close()))]); } },
+      ],
+    });
+    this.buildEnemyDiscard(match); // Owner (Ken, Oct 30): the enemy discard pile on the left
+    { const fsItem = [...(this.r.menuPanel as El).querySelectorAll('.o-menu-item')].find((b) => /^(Full screen|Windowed)$/.test(b.textContent || '')) as HTMLElement | undefined; if (fsItem) { fsItem.classList.add('fs-toggle'); fsWatch(fsItem); } }
+    document.addEventListener('pointerdown', (e) => { if (this.r.menuWrap?.classList.contains('open') && !(e.target as Element).closest?.('.o-menu')) this.menuOpen(false); }, true);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { this.selectedUid = null; if ((this.pick as any)?.lift) this.cancelLift('Cancelled'); this.cancelHandPick(); } });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.r.menuWrap?.classList.contains('open')) { this.menuOpen(false); this.r.menuBtn?.focus(); } });
     // board layers
     r.cells = new Map<string, El>();
     r.sites = [];
-    r.rings = [];
+    r.rings = []; r.hits = [];
     r.flows = [];
     r.view = null;
     try { this.view = createBoardView(r.board, this.low); } catch { this.view = null; }
     if (!this.view) this.view = createFlatView(r.board);
+    this.view.onViewChange = () => this.layoutSoon();
     for (let row = 1; row <= BH; row++) for (let col = 1; col <= BW; col++) {
       const c = h('div', { class: 'cell', 'data-row': row, 'data-col': col });
       r.cells.set(row + ',' + col, c);
       r.board.append(c);
     }
     (this.game.state.sites as any[]).forEach(({ row, col }, i) => {
-      const ring = h('div', { class: 'mine-ring', 'aria-hidden': 'true' });
+      const ring = h('div', { class: 'mine-decal', 'aria-hidden': 'true' });
+      const hit = h('div', { class: 'mine-hit', 'aria-hidden': 'true', onclick: () => { if (!this.holdFired) this.tapSite(i); } });
+      hit.dataset.row = String(row); hit.dataset.col = String(col); r.hits.push(hit); r.board.append(hit);
       ring.dataset.row = String(row); ring.dataset.col = String(col);
       const fl = h('div', { class: 'mine-flow', role: 'img', 'aria-label': `Mine flow, row ${row}, column ${col}` }, '+0 / +0');
       fl.dataset.row = String(row); fl.dataset.col = String(col);
       r.rings.push(ring); r.flows.push(fl); r.board.append(ring, fl);
-      const m = h('button', { type: 'button', class: 'site-mark', 'aria-label': `Crystal site, row ${row}, column ${col}`, onclick: () => this.tapSite(i) });
+      const m = h('button', { type: 'button', class: 'site-mark', 'aria-label': `Crystal site, row ${row}, column ${col}`, onclick: () => { if (this.sitePass) { this.sitePass = false; return; } this.tapSite(i); } });
       m.dataset.row = String(row); m.dataset.col = String(col);
       m.dataset.readyMiners = '0';
       m.addEventListener('pointerdown', (e) => {
+        // Ken (Oct 31): the pickaxe stays easy to tap, but a unit standing behind the mine stays tappable too. The pickaxe picture itself
+        // and the mine's own spot always mine; the extra tap padding beyond them hands the tap to the board when a unit (its body, square or stat badge) is under the pointer.
+        this.sitePass = false;
+        const pk = (e.target as El).closest?.('.pickaxe') ? m.querySelector('.pk-img') as El | null : null;
+        if (pk) {
+          const b = pk.getBoundingClientRect();
+          const inR = (r: DOMRect) => e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+          const onIcon = inR(b) || inR(m.getBoundingClientRect()); // the picture, or the mine's own spot
+          const st = this.game.state, c = this.cellAt(e.clientX, e.clientY);
+          const unitThere = !!this.figureAtEvent(e) || !!(c && st?.board.creatures.some((x: any) => x.row === c.row && x.col === c.col)) || document.elementsFromPoint(e.clientX, e.clientY).some((x) => (x as El).closest?.('.tk-stats'));
+          if (!onIcon && unitThere) { this.sitePass = true; return; }
+        }
         e.stopPropagation();
         this.holdFired = false;
         clearTimeout(this.holdTimer);
@@ -377,8 +1331,7 @@ export class App {
       m.addEventListener('pointerup', endHold);
       m.addEventListener('pointercancel', endHold);
       m.addEventListener('pointerleave', endHold);
-      m.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') this.openSite(i, 'hover'); });
-      m.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType === 'mouse' && this.siteTipMode === 'hover') this.closeSiteTip(); });
+      // Owner fix (Ken, Oct 28): no info pop-up when the mouse hovers a mine.
       r.sites.push(m); r.board.append(m);
     });
     r.strong = {} as any;
@@ -387,13 +1340,45 @@ export class App {
       r.strong[side] = s; r.board.append(s);
     }
     r.board.append(r.enemyHealth, r.myHealth, r.fx);
+    // Ken (Oct 30 playtest): the order route is drawn like a football play on an SVG layer over the board (shown only on hover / select / drag)
+    r.orderSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); r.orderSvg.setAttribute('class', 'order-svg'); r.orderSvg.setAttribute('aria-hidden', 'true'); r.board.append(r.orderSvg);
     const ro = new ResizeObserver(() => this.layout());
     ro.observe(r.board);
     this.unsub = this.game.subscribe((st, ev) => this.update(st, ev));
-    r.board.addEventListener('pointerdown', (e: PointerEvent) => this.boardPointerDown(e));
+    this.cam = { zoom: 1, x: 0, y: 0 };
+    this.setupCamera();
+    let hoverT: any = null, hoverEl: El | null = null, hoverKey = '';
+    const clearHover = () => { clearTimeout(hoverT); hoverEl?.remove(); hoverEl = null; hoverKey = ''; };
+    r.board.addEventListener('pointermove', (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || e.buttons) { clearHover(); return; }
+      const c = this.cellAt(e.clientX, e.clientY);
+      const cr = c && this.game.state?.board.creatures.find((x: any) => x.row === c.row && x.col === c.col);
+      const key = cr ? cr.uid : '';
+      if (key === hoverKey) return;
+      clearHover(); hoverKey = key;
+      if (!cr || !this.popups) return;
+      hoverT = setTimeout(() => {
+        const card = CARDS[cr.cardId];
+        const rc = this.view!.cellRect(cr.row, cr.col);
+        const el = h('div', { class: `hand-card static hover-card ${card.type} f-${card.faction}`, 'aria-hidden': 'true', 'data-card-id': card.id, 'data-frame': frameKey(card), 'data-rarity': rarityKey(card) }, ...faceKids(card, card.cost, { attack: cr.attack, health: cr.health, move: card.move }));
+        r.board.append(el); hoverEl = el;
+        const bw = r.board.clientWidth, bh = r.board.clientHeight, cw2 = el.offsetWidth, ch2 = el.offsetHeight;
+        el.style.left = Math.max(cw2 / 2 + 4, Math.min(bw - cw2 / 2 - 4, rc.x + rc.w / 2)) + 'px';
+        let top = rc.y - 4;
+        if (top - ch2 < 4) top = rc.y + rc.h + ch2 + 4;
+        el.style.top = Math.max(ch2 + 4, Math.min(bh - 4, top)) + 'px';
+      }, 400);
+    });
+    r.board.addEventListener('pointerleave', clearHover);
+    r.board.addEventListener('pointermove', (e: PointerEvent) => { if (e.pointerType === 'mouse') this.setOrderHover(e.buttons ? null : this.unitAtEvent(e)?.uid ?? null); });
+    r.board.addEventListener('pointerleave', () => this.setOrderHover(null));
+    r.board.addEventListener('pointerdown', clearHover, true);
+    r.board.addEventListener('pointerdown', (e: PointerEvent) => { if (this.touches.size < 2) this.boardPointerDown(e); });
     r.hand.addEventListener('wheel', (e: WheelEvent) => { e.preventDefault(); this.handScroll += (e.deltaY || e.deltaX) / 80; this.layoutHand(); }, { passive: false });
     document.addEventListener('pointerdown', this.tuckOutside, true);
     window.addEventListener('resize', this.onResize);
+    window.addEventListener('resize', () => this.placeEnemyCrystal());
+    setInterval(() => this.placeEnemyCrystal(), 400);
     window.removeEventListener('keydown', this.onKey);
     window.addEventListener('keydown', this.onKey);
     clearInterval(this.timerId);
@@ -401,6 +1386,261 @@ export class App {
     requestAnimationFrame(() => this.layout());
   }
   onResize = () => { this.layout(); };
+  /** Short title shown; the rest of the full display name stays in the text for screen readers. */
+  setCmdName(el: El, full: string) {
+    if (el.dataset.full === full) return;
+    el.dataset.full = full;
+    const m = full.match(/^(.*?)(,| the )(.*)$/);
+    el.replaceChildren(m ? h('span', {}, m[1]) : full, m ? h('span', { class: 'sr-only' }, m[2] + m[3]) : '' as any);
+  }
+  menuPinned = false;
+  flowKey = '';
+  flowTurn = -1;
+  matchSettings() {
+    const mute = btn('Mute', 'mute-btn', () => { audio.setMuted(!audio.muted); mute.setAttribute('aria-pressed', String(audio.muted)); }, { 'aria-pressed': String(audio.muted) });
+    const c: any = this.dialog('Match settings', [h('h2', {}, 'Settings'), h('div', { class: 'stack' },
+      this.popupsSwitch(),
+      btn('Last turn', 'last-btn', () => { c.close(); this.showLastTurn(); }),
+      btn('Recenter', 'recenter-btn', () => { this.resetCam(); c.close(); }),
+      mute,
+      this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)),
+      this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)),
+      btn('Close', '', () => c.close()))]);
+  }
+  /** In-match Menu: the same Square highlights controls as Settings, applied to the board live. */
+  matchHighlights() {
+    const fac = this.game.state.players.player.faction;
+    const c: any = this.dialog('Square highlights', [h('div', { class: 'match-hl' }, this.highlightPanel(fac, () => { c.close(); this.matchHighlights(); })),
+      h('div', { class: 'row' }, btn('Close', '', () => c.close()))]);
+  }
+  matchHowTo() {
+    const c: any = this.dialog('How to play', [h('h2', {}, 'How to play'),
+      h('p', {}, 'Draw, Deploy, Action, End. Drag cards onto your back row to summon. Drag a creature to move or attack. Tap a mine to mine with every ready Miner next to it. Mined Flow resets each turn; Crystal cards go to the Bank and stay. When a basic Miner is defeated you draw a card. Win by taking the enemy Commander to 0 Health.'),
+      h('div', { class: 'row' }, btn('Close', '', () => c.close()))]);
+  }
+  matchVolume(which: 'Sound Effects' | 'Background music') {
+    const c: any = this.dialog(which, [h('h2', {}, which),
+      which === 'Sound Effects' ? h('div', { class: 'stack' }, this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)))
+        : h('div', { class: 'stack' }, this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn(audio.musicOn ? 'Music: On' : 'Music: Off', 'music-toggle', (e) => { audio.setMusicOn(!audio.musicOn); (e.currentTarget as El).textContent = audio.musicOn ? 'Music: On' : 'Music: Off'; })),
+      h('div', { class: 'row' }, btn('Close', '', () => c.close()))]);
+  }
+  menuOpen(on: boolean) {
+    const r = this.r;
+    if (!r.menuPanel) return;
+    if (!on) this.menuPinned = false;
+    r.menuPanel.hidden = !on;
+    r.menuBtn.setAttribute('aria-expanded', String(on));
+    r.menuWrap.classList.toggle('open', on);
+  }
+  modeUi: El | null = null;
+  buildModeUi() {
+    this.modeUi?.remove(); this.modeUi = null;
+    const g = this.game, mode = g.mode;
+    if (mode === 'standard') return;
+    const fac = this.game.state.players.player.faction;
+    const col = (FACTIONS as any)[fac]?.crystal || '#ffd700';
+    const wrap = h('div', { class: 'mode-ui', style: `--stance-glow:${col}` });
+    const col4 = h('div', { class: 'stance-col', role: 'group', 'aria-label': 'Stance' }, ...STANCES.map((st) => btn('', 'stance-btn', () => { g.setStance(st.id); this.refreshModeUi(); }, { 'data-stance': st.id, title: st.desc, 'aria-label': st.label })));
+    col4.querySelectorAll('button').forEach((b, i) => { b.append(h('span', { class: 'st-icon', 'aria-hidden': 'true' }, STANCES[i].icon), h('span', { class: 'st-label' }, STANCES[i].label)); });
+    const bar = mode === 'compvscomp'
+      ? h('div', { class: 'watch-bar', role: 'group', 'aria-label': 'Watch controls' },
+          btn(g.paused ? 'Play' : 'Pause', 'wb-pause', () => { g.setPaused(!g.paused); this.refreshModeUi(); }),
+          ...[1, 2, 4].map((n) => btn(n + '×', 'wb-speed', () => { g.setSpeed(n); this.refreshModeUi(); }, { 'data-speed': n })),
+          btn('Exit', 'wb-exit', () => { g.act({ type: 'surrender' }); this.showMenu(); }, { 'aria-label': 'Exit to menu', title: 'Exit to menu' }))
+      : h('div', { class: 'watch-bar cp-bar', role: 'group', 'aria-label': 'Card Play controls' },
+          btn('1×', 'wb-speed', () => { g.setSpeed(1); this.refreshModeUi(); }, { 'data-speed': 1 }),
+          btn('2×', 'wb-speed', () => { g.setSpeed(2); this.refreshModeUi(); }, { 'data-speed': 2 }));
+    wrap.append(col4, bar);
+    this.root.append(wrap);
+    this.modeUi = wrap;
+    this.refreshModeUi();
+  }
+  refreshModeUi() {
+    const w = this.modeUi, g = this.game;
+    if (!w) return;
+    w.querySelectorAll<El>('.stance-btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.stance === g.stance)));
+    w.querySelectorAll<El>('.wb-speed').forEach((b) => b.setAttribute('aria-pressed', String(+(b.dataset.speed || 1) === g.speed)));
+    const p = w.querySelector('.wb-pause'); if (p) p.textContent = g.paused ? 'Play' : 'Pause';
+  }
+  /** "Done" is shown only during the player's own Deploy/Action phase with priority and no dialog open. */
+  syncDone() {
+    const r = this.r, st = this.game.state;
+    if (!r.done || !st) return;
+    const mine = st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase) && !st.pendingResponse && !this.movesDlg && !this.root.querySelector('.overlay, .dialog');
+    const show = mine && st.mode !== 'compvscomp';
+    r.done.hidden = !show;
+    r.done.disabled = !show;
+  }
+
+  // ------------------------------------------------------------ camera zoom and pan (R2.19)
+  cam = { zoom: 1, x: 0, y: 0 };
+  getCamera() {
+    const v = this.view?.getView?.();
+    const vis = v?.visible;
+    return {
+      ...this.cam, panX: this.cam.x, panY: this.cam.y,
+      scale: v?.scale, minScale: v?.coverScale, maxScale: v ? v.coverScale * v.maxZoom : undefined,
+      view: vis ? { x: vis.x0, y: vis.y0, width: vis.x1 - vis.x0, height: vis.y1 - vis.y0 } : undefined,
+      detail: v,
+    };
+  }
+  getArena() {
+    const d = this.view?.arenaDetails?.();
+    if (!d) return null;
+    const bd = (this.r.board as El).getBoundingClientRect();
+    const dragCard = this.dragKind;
+    const highlights: any[] = [];
+    const hs = getHighlights(), pf = this.game.state.players.player.faction;
+    for (const [k, el] of this.r.cells as Map<string, El>) {
+      const kind = el.classList.contains('glow-attack') ? 'attack' : el.classList.contains('glow-swap') ? 'swap' : el.classList.contains('glow-mine') ? 'mine' : el.classList.contains('glow') ? (dragCard === 'spell' ? 'target' : dragCard ? 'summon' : 'move') : null;
+      if (!kind) continue;
+      const [row, col] = k.split(',').map(Number);
+      const c = this.view!.squareCenter(row, col);
+      if (c) highlights.push({ kind, row, col, color: kind === 'attack' ? hs.attackColor : edgeOf(pf), glowColor: kind === 'attack' ? hs.attackColor : glowOf(pf), style: 'edge-glow', edgeAlpha: Math.min(1, 0.55 + hs.strength * 0.45), centerAlpha: (hs.fill / 100) * hs.strength, fillAlpha: hs.fill / 100, strength: hs.strength, glow: true, glowSize: hs.glowSize, edgeThickness: hs.edgeThickness, center: { x: c.x + bd.left, y: c.y + bd.top } });
+    }
+    return { ...d, highlights };
+  }
+  dragKind = '';
+  selectedUid: string | null = null;
+  /** Test hook: the four screen corners (CSS px) of a board square. */
+  squareQuad(row: number, col: number) {
+    const q = this.view?.cellQuad(row, col);
+    if (!q || !q.length) return null;
+    const bd = (this.r.board as El).getBoundingClientRect();
+    return q.map((p: any) => ({ x: p.x + bd.left, y: p.y + bd.top }));
+  }
+  squareToScreen(row: number, col: number) {
+    const c = this.view?.squareCenter(row, col);
+    if (!c) return null;
+    const bd = (this.r.board as El).getBoundingClientRect();
+    return { x: c.x + bd.left, y: c.y + bd.top };
+  }
+  enemyCrystalKey = '';
+  enemyCrystalLeft = 0;
+  placeEnemyCrystal() {
+    const hud = this.r.board?.isConnected ? (document.querySelector('.crystal-hud.theirs') as HTMLElement | null) : null;
+    const rc: any = this.view?.screenRects();
+    if (!hud || !rc || !rc.opponentCommander.width) return;
+    const W = window.innerWidth, o = rc.opponentCommander;
+    const w = hud.getBoundingClientRect().width || 0;
+    void w;
+    // the HUD is fixed to the screen: it follows the enemy Commander of the home view only, never zooming or panning
+    const key = `${W}x${window.innerHeight}`;
+    if (this.enemyCrystalKey !== key) { this.enemyCrystalKey = key; this.enemyCrystalLeft = Math.max(W * 0.4, Math.min(W * 0.67, o.x - 6)); }
+    const left = this.enemyCrystalLeft;
+    hud.style.left = `${(left / W) * 100}%`;
+  }
+  screenRects() { return this.view ? this.view.screenRects() : null; }
+  layoutQueued = false;
+  handRoom = Infinity;
+  homeRowBottom = 0;
+  restTy: number | null = null;
+  popDelayUntil = 0; // Oct 30 Ken playtest: a card is about to rise once the hand is up
+  /** Round 12a: size the hand so that, raised, it sits entirely below the player's home row (never covering the board). */
+  fitHand() {
+    const m = this.root.querySelector('.match') as El | null;
+    if (!m || !this.view) return;
+    const key = window.innerWidth + 'x' + window.innerHeight;
+    // sized once per window shape, from the home view, so zooming or panning the board never resizes the hand
+    if (this.fitKey === key && m.style.getPropertyValue('--hcw')) return;
+    if (this.fitKey !== key && this.cam && this.cam.zoom && Math.abs(this.cam.zoom - 1) > 0.01 && this.fitKey) return;
+    const bb = (this.r.board as El).getBoundingClientRect();
+    let bottom = 0;
+    for (let col = 1; col <= BW; col++) { const rc = this.view.cellRect(BH, col); bottom = Math.max(bottom, bb.top + rc.y + rc.h); }
+    this.homeRowBottom = bottom; // Oct 30 Ken playtest: the tucked hand rests below the home row (measured in the home view)
+    const vh = window.innerHeight, base = Math.min(vh, window.innerWidth * 0.5625) * 0.2455;
+    this.fitKey = key;
+    // phones (very short windows) keep the big owner-size hand; everywhere else the raised hand, with its hovered card, stays below the home row
+    this.handRoom = Infinity; // Round 14: the owner's layout wins: hovered card pops to ~1.6x
+    const fit = (vh - bottom - 6) / (1.4861 * 1.15);
+    if (vh < 500) { m.style.setProperty('--hcw', Math.round(base) + 'px'); return; }
+    if (!(fit > 0)) { m.style.setProperty('--hcw', Math.round(base) + 'px'); return; }
+    m.style.setProperty('--hcw', Math.round(Math.max(base * 0.97, Math.min(base, fit))) + 'px');
+  }
+  layoutSoon() { if (this.layoutQueued) return; this.layoutQueued = true; requestAnimationFrame(() => { this.layoutQueued = false; this.layout(); }); }
+  syncCam() { const v = this.view?.getView?.(); if (v && v.zoom) this.cam = { zoom: v.zoom, x: ((v.home?.[0] ?? v.painting.w / 2) - v.centerX) * v.scale, y: ((v.home?.[1] ?? v.painting.h / 2) - v.centerY) * v.scale }; }
+  applyCam() { this.syncCam(); this.layout(); }
+  resetCam() { this.view?.recenter(); this.applyCam(); this.refreshWheel(); }
+  /** registering a fresh blocking wheel listener makes Chrome rebuild its wheel hit regions (they go stale after dialogs close), so the wheel always reaches the board */
+  private wheelNoop: (() => void) | null = null;
+  refreshWheel() { setTimeout(() => { if (this.wheelNoop) window.removeEventListener('wheel', this.wheelNoop, true); this.wheelNoop = () => {}; window.addEventListener('wheel', this.wheelNoop, true); }, 60); }
+  zoomBy(f: number, sx?: number, sy?: number) { this.view?.zoomAt(f, sx, sy); this.applyCam(); }
+  panBy(dx: number, dy: number, now = false) { this.view?.panBy(dx, dy, now); this.applyCam(); }
+  startPan(e: PointerEvent) {
+    let lx = e.clientX, ly = e.clientY, moved = false;
+    const x0 = e.clientX, y0 = e.clientY;
+    const move = (ev: PointerEvent) => {
+      if (ev.pointerId !== e.pointerId) return;
+      // Owner fix (Ken, Oct 29): while two fingers pinch, keep this finger's spot so the pan doesn't jump afterwards
+      if (this.touches.size >= 2) { lx = ev.clientX; ly = ev.clientY; return; }
+      if (!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) > 5) { moved = true; lx = x0; ly = y0; }
+      if (moved) { this.panBy(ev.clientX - lx, ev.clientY - ly, true); lx = ev.clientX; ly = ev.clientY; } // 1:1 with the finger / mouse
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+      if (!moved) {
+        const now = Date.now();
+        if (now - this.lastGround < 350) { this.resetCam(); this.lastGround = 0; } else this.lastGround = now;
+      }
+    };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  }
+  lastGround = 0;
+  touches = new Map<number, { x: number; y: number }>();
+  setupCamera() {
+    // a document-level blocking wheel listener makes the browser always deliver wheel events to the board (its hit-region cache goes stale after layout changes)
+    if (!(window as any).__wheelGuard) { (window as any).__wheelGuard = true; window.addEventListener('resize', () => this.refreshWheel()); }
+    const b = this.r.board as El;
+    (b.parentElement as El).addEventListener('wheel', (e: WheelEvent) => {
+      if ((e.target as El).closest?.('.hand,.dialog,.hud,.reveal')) return;
+      e.preventDefault();
+      this.noHand = true; clearTimeout((this as any)._nh); (this as any)._nh = setTimeout(() => { if (!this.lastPtr.down) this.noHand = false; }, 350);
+      const rc = b.getBoundingClientRect();
+      // a mouse wheel (or a trackpad pinch) zooms toward the cursor; a trackpad two-finger scroll pans
+      const wheel = e.ctrlKey || e.deltaMode !== 0 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 40);
+      if (wheel) this.zoomBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : e.deltaMode ? 0.05 : 0.0015)), e.clientX - rc.left, e.clientY - rc.top); // Owner fix (Ken, Oct 29): ~14% per wheel notch (was 4%)
+      else this.panBy(-e.deltaX, -e.deltaY);
+    }, { passive: false });
+    b.addEventListener('contextmenu', (e) => e.preventDefault());
+    b.addEventListener('pointerdown', (e: PointerEvent) => {
+      if (e.pointerType === 'mouse') { if (e.button === 2 && this.unitAtEvent(e)) { e.preventDefault(); return; } if (e.button === 1 || e.button === 2) { e.preventDefault(); this.startPan(e); } return; }
+      this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.touches.size === 2) {
+        const pts = [...this.touches.values()];
+        let d0 = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), mx0 = (pts[0].x + pts[1].x) / 2, my0 = (pts[0].y + pts[1].y) / 2;
+        const move = (ev: PointerEvent) => {
+          if (!this.touches.has(ev.pointerId)) return;
+          this.touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+          const q = [...this.touches.values()];
+          if (q.length < 2) return;
+          const d = Math.hypot(q[0].x - q[1].x, q[0].y - q[1].y), mx = (q[0].x + q[1].x) / 2, my = (q[0].y + q[1].y) / 2;
+          const rc = b.getBoundingClientRect();
+          // Owner fix (Ken, Oct 29): 1:1 pinch. Zoom about the old midpoint, then move it to the new one, both at once (no easing),
+          // so the board point between the fingers stays between them and the zoom follows the finger distance exactly
+          this.view?.zoomAt(d / (d0 || 1), mx0 - rc.left, my0 - rc.top, true);
+          this.view?.panBy(mx - mx0, my - my0, true);
+          d0 = d; mx0 = mx; my0 = my;
+          this.applyCam();
+        };
+        const end = (ev: PointerEvent) => { this.touches.delete(ev.pointerId); if (this.touches.size < 2) { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', end); window.removeEventListener('pointercancel', end); } };
+        window.addEventListener('pointermove', move); window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
+      }
+    }, true);
+    const rm = (e: PointerEvent) => this.touches.delete(e.pointerId);
+    b.addEventListener('pointerup', rm); b.addEventListener('pointercancel', rm);
+    // arrow keys and WASD pan the view
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (!this.r.board?.isConnected || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+      if (document.querySelector('.dialog')) return;
+      const k = e.key.toLowerCase(), step = 60;
+      const d: Record<string, [number, number]> = { arrowleft: [step, 0], a: [step, 0], arrowright: [-step, 0], d: [-step, 0], arrowup: [0, step], w: [0, step], arrowdown: [0, -step], s: [0, -step] };
+      if (!d[k]) return;
+      e.preventDefault();
+      this.panBy(d[k][0], d[k][1]);
+    });
+  }
 
   layout() {
     const r = this.r;
@@ -411,6 +1651,7 @@ export class App {
       this.place(el, row, col);
     }
     r.sites.forEach((m: El) => this.place(m, +m.dataset.row!, +m.dataset.col!));
+    this.fitHand();
     r.rings.forEach((m: El, i: number) => {
       const col = +m.dataset.col!, row = +m.dataset.row!;
       const a = this.view.cellRect(row - 1, col - 1), b = this.view.cellRect(row + 1, col + 1), c = this.view.cellRect(row - 1, col + 1), d = this.view.cellRect(row + 1, col - 1);
@@ -418,148 +1659,672 @@ export class App {
       m.style.left = x0 + 'px'; m.style.top = y0 + 'px'; m.style.width = x1 - x0 + 'px'; m.style.height = y1 - y0 + 'px';
       const f = r.flows[i] as El;
       f.style.left = (x0 + x1) / 2 + 'px'; f.style.top = y0 + 'px';
+      // the whole mine site (crystal, pick icon, banner, base) is clickable: the model's screen box, padded a little
+      const cr = this.view.cellRect(row, col), hit = r.hits[i] as El;
+      const padX = cr.w * 0.25, up = cr.h * 1.5;
+      const mb = this.view.mineBox?.(row, col), sm = r.sites[i] as El;
+      void mb;
+      // round 11: the click area is only the mine's own square (its screen quad), so units standing behind the mine stay selectable
+      { const q = this.view.cellQuad(row, col), xs = q.map((p: any) => p.x), ys = q.map((p: any) => p.y), qx = Math.min(...xs), qy = Math.min(...ys);
+        sm.style.minWidth = '0'; sm.style.minHeight = '0'; sm.style.left = qx + 'px'; sm.style.top = qy + 'px'; sm.style.width = Math.max(...xs) - qx + 'px'; sm.style.height = Math.max(...ys) - qy + 'px'; sm.style.alignItems = 'center';
+        sm.style.clipPath = `polygon(${q.map((p: any) => `${(p.x - qx).toFixed(1)}px ${(p.y - qy).toFixed(1)}px`).join(',')})`; }
+      hit.style.left = cr.x - padX + 'px'; hit.style.top = cr.y - up + 'px'; hit.style.width = cr.w + padX * 2 + 'px'; hit.style.height = cr.h + up + cr.h * 0.1 + 'px';
     });
     this.place(r.strong.player, SH.player.row, SH.player.col);
     this.place(r.strong.opponent, SH.opponent.row, SH.opponent.col);
-    for (const el of this.tokens.values()) this.place(el, +el.dataset.row!, +el.dataset.col!);
+    for (const el of this.tokens.values()) this.placeToken(el, +el.dataset.row!, +el.dataset.col!);
     this.fitHearts();
     this.layoutHand();
+    this.drawOrders();
   }
   /** Heart on the Stronghold's wall facing the camera (bottom of its cell), shrunk so it never covers a creature label. */
   placeHeart(el: El, side: 'player' | 'opponent') {
     const sh = SH[side];
     const rc = this.view!.cellRect(sh.row, sh.col);
-    const s = Math.max(20, Math.min(54, rc.w * 0.8, rc.h * 1.05));
+    const s = Math.max(28, Math.min(54, rc.w * 0.8, rc.h * 1.05));
     el.dataset.size = String(s);
     el.style.width = s + 'px'; el.style.height = s + 'px';
-    el.style.left = rc.x + rc.w / 2 - s / 2 + 'px';
-    el.style.top = rc.y + rc.h - s - 1 + 'px';
-    el.style.fontSize = Math.max(10, s * 0.38) + 'px';
+    // Gauge (Oct 30): the 2.5x Commander filled its square, so the heart sits at the square's outer corner (the player's bottom-left, the enemy's top-right)
+    const out = side === 'player' ? -1 : 1;
+    el.style.left = Math.max(2, Math.min(window.innerWidth - s - 2, rc.x + rc.w / 2 - s / 2 + out * (rc.w * 0.5 + s * 0.65))) + 'px'; // fully outside the stronghold column, over the arena wall, never on a playable square
+    el.style.top = Math.max(2, Math.min(window.innerHeight - s - 2, side === 'player' ? rc.y + rc.h + 2 : rc.y - s - 2)) + 'px'; // just outside the board's bottom / top edge: never over a unit's label
+    el.style.fontSize = Math.max(14, s * 0.4) + 'px';
   }
   fitHearts() {
     const r = this.r;
     if (!r.board || !this.view || !r.myHealth) return;
     this.placeHeart(r.myHealth, 'player');
     this.placeHeart(r.enemyHealth, 'opponent');
-    const labels = [...this.tokens.values()].map((t) => (t.querySelector('.tk-stats') as El).getBoundingClientRect());
+    const labels = [...this.tokens.values()].flatMap((t) => [(t.querySelector('.tk-stats') as El).getBoundingClientRect(), t.getBoundingClientRect()]);
     for (const el of [r.myHealth, r.enemyHealth] as El[]) {
       for (let i = 0; i < 12; i++) {
         const hb = el.getBoundingClientRect();
         if (!labels.some((l) => l.width && hb.left < l.right && hb.right > l.left && hb.top < l.bottom && hb.bottom > l.top)) break;
         const w = el.offsetWidth - 3;
-        if (w < 12) break;
+        if (w < 26) break;
         el.style.width = el.style.height = w + 'px';
         el.style.left = el.offsetLeft + 1.5 + 'px';
         el.style.top = el.offsetTop + 3 + 'px';
       }
     }
   }
+  /** Token boxes are a narrow strip around the figure, so Commander hearts on neighbouring Strongholds never sit under them. */
+  placeToken(el: El, row: number, col: number) {
+    const rc = this.view!.cellRect(row, col);
+    const w = rc.w * 0.5, th = Math.min(rc.h, Math.max(30, rc.h * 0.88));
+    el.style.left = rc.x + (rc.w - w) / 2 + 'px'; el.style.top = rc.y + (rc.h - th) + 'px'; el.style.width = w + 'px'; el.style.height = th + 'px';
+  }
   place(el: El, row: number, col: number) {
     const rc = this.view!.cellRect(row, col);
-    el.style.left = rc.x + 'px'; el.style.top = rc.y + 'px'; el.style.width = rc.w + 'px'; el.style.height = rc.h + 'px';
+    // far-row tap targets are a little bigger than they look
+    const w = el.classList.contains('cell') ? Math.max(rc.w, 38) : rc.w, hh = el.classList.contains('cell') ? Math.max(rc.h, 34) : rc.h;
+    el.style.left = rc.x - (w - rc.w) / 2 + 'px'; el.style.top = rc.y - (hh - rc.h) / 2 + 'px'; el.style.width = w + 'px'; el.style.height = hh + 'px';
+    // highlights follow the painted square exactly (its perspective quad), not its bounding box; only lit squares need the
+    // clip (a clip-path on every one of the 91 squares makes every pan expensive to paint)
+    if (el.classList.contains('cell') && /\b(glow|glow-attack|glow-swap|glow-mine|hover|recap-hl)\b/.test(el.className)) {
+      const q = this.view!.cellQuad(row, col);
+      if (q.length === 4) el.style.clipPath = `polygon(${q.map((p) => `${(p.x - (rc.x - (w - rc.w) / 2)).toFixed(1)}px ${(p.y - (rc.y - (hh - rc.h) / 2)).toFixed(1)}px`).join(',')})`;
+    }
   }
 
   handTimer: any = null;
   /** The hand rests tucked half below the screen edge; hovering (or tapping on phones) slides it up. */
-  openHand(on: boolean) {
-    clearTimeout(this.handTimer);
+  openHand(on: boolean, immediate = false) {
     const hand = this.r.hand as El;
     if (!hand) return;
-    if (on) hand.classList.add('open');
-    else this.handTimer = setTimeout(() => hand.classList.remove('open'), 120);
+    if (!on && immediate) { clearTimeout(this.handTimer); this.handTimer = null; hand.classList.remove('open'); return; }
+    if (on && this.pick && !this.pick.unit && !this.lastPtr.down) return; // tap-to-place: the raised hand must not cover the target squares
+    if (on) { clearTimeout(this.handTimer); this.handTimer = null; hand.classList.remove('tuck'); hand.classList.add('open'); }
+    else if (!this.handTimer) this.handTimer = setTimeout(() => { this.handTimer = null; hand.classList.remove('open'); }, 90);
   }
 
-  /** Pop a hand card out of the fan at 2x size, kept fully on screen. */
+  /** Pop a hand card out of the fan as a big close-up (about 70 % of the screen height) on the very top layer, kept fully on screen. */
   popCard(el: El, on: boolean) {
+    this.installPopSafety();
+    if (on && el.classList.contains('popped')) return;
+    if (on && this.pick && !this.pick.unit && this.lastPtr.type === 'mouse' && !this.lastPtr.down) return; // tap-to-place: hovering the hand must not cover the board
+    if (on) this.clearPops(el);
     if (!on) {
+      // remember where the enlarged card was: a press there right after the hand lowers still grabs that card
+      const cl = (el as any)._clone as El | null;
+      if (cl && cl.isConnected) { const r = cl.getBoundingClientRect(); this.lastPop = { uid: el.dataset.uid || '', l: r.left, t: r.top, r: r.right, b: r.bottom, at: performance.now() }; }
+      (el as any)._ph?.remove(); (el as any)._clone?.remove();
+      (el as any)._ph = (el as any)._clone = null;
       el.classList.remove('popped');
-      (this.r.hand as El)?.classList.remove('has-pop');
+      el.style.removeProperty('--gs');
+      const hd = this.r.hand as El;
+      if (hd && !hd.querySelector('.hand-card.popped:not(.popclone)')) { hd.classList.remove('has-pop'); hd.querySelectorAll('.popclone,.pop-ph').forEach((x) => x.remove()); }
+      el.style.translate = ''; el.style.scale = '';
+      if ((el as any)._left !== undefined) el.style.left = (el as any)._left + 'px'; // Ken (Oct 30): the row may have moved under the raised card (dock focus)
+      if (el.dataset.fanAngle0 !== undefined) { el.dataset.fanAngle = el.dataset.fanAngle0; delete el.dataset.fanAngle0; }
       el.style.transform = el.dataset.fan || '';
       el.style.zIndex = el.dataset.z || '';
+      this.asideNeighbors(null);
       return;
     }
-    if (el.classList.contains('dragging')) return;
+    if (el.classList.contains('dragging') || el.classList.contains('offhand')) return;
+    {
+      // round 10: the hand rests a quarter showing; hovering it raises it first, then a hovered card enlarges
+      const hd0 = this.r.hand as El;
+      if (hd0 && !this.test && !hd0.classList.contains('open')) {
+        this.openHand(true);
+        const p0 = { x: this.lastPtr.x, y: this.lastPtr.y };
+        this.popDelayUntil = performance.now() + 300;
+        setTimeout(() => {
+          this.popDelayUntil = 0;
+          if (!el.isConnected || !hd0.classList.contains('open') || el.classList.contains('popped')) return;
+          // Oct 30 Ken playtest (hand): the hand slides up from its tucked rest under a resting pointer; a pointer that has not moved keeps the card it chose
+          if (this.lastPtr.type === 'mouse' && Math.hypot(this.lastPtr.x - p0.x, this.lastPtr.y - p0.y) > 6 && this.hitCard(this.lastPtr.x, this.lastPtr.y) !== el) return;
+          this.popCard(el, true);
+        }, 280);
+        return;
+      }
+    }
     const host = this.root.querySelector('.match') as El;
     if (!host) return;
     el.dataset.fan = el.dataset.fan || el.style.transform;
     el.dataset.z = el.style.zIndex;
     const hr = host.getBoundingClientRect();
     const hand = this.r.hand as El;
-    const hb = hand.getBoundingClientRect();
     const w = el.offsetWidth, hgt = el.offsetHeight;
+    // the hand is animating up; measure from its un-transformed layout box plus the final (open) offset
+    const ty = new DOMMatrix(getComputedStyle(hand).transform).m42;
+    // measure the hand at its final raised position (no transition) so the popped card lands where the raised hand will be
+    const hadPop = hand.classList.contains('has-pop');
+    hand.style.setProperty('transition', 'none', 'important'); hand.classList.add('has-pop'); void hand.offsetHeight;
+    const hb = hand.getBoundingClientRect();
+    hand.style.removeProperty('transition'); if (!hadPop) hand.classList.remove('has-pop'); void hand.offsetHeight;
+    const openY = -0.03 * w;
     const left = hb.left + (parseFloat(el.style.left) || 0);
+    void ty; void openY;
     const top = hb.top + (el.offsetTop || 0);
-    // centre of the un-fanned card, scale 2 about the centre
-    let dx = 0, dy = 0;
+    const S = Math.max(1, Math.min(1.6, (hr.height - 8) / hgt, (hr.width - 8) / w, this.handRoom / hgt));
     const cx = left + w / 2, cy = top + hgt / 2;
-    const minX = hr.left + w + 2, maxX = hr.right - w - 2;
-    const targetX = Math.max(minX, Math.min(maxX, cx));
-    dx = targetX - cx;
-    const maxY = hr.bottom - hgt - 2, minY = hr.top + hgt + 2;
-    const targetY = Math.max(minY > maxY ? maxY : minY, Math.min(maxY, cy));
-    dy = targetY - cy;
+    const halfW = (w * S) / 2, halfH = (hgt * S) / 2;
+    const targetX = Math.max(hr.left + halfW + 2, Math.min(hr.right - halfW - 2, cx));
+    const targetY = Math.max(hr.bottom, window.innerHeight) - halfH - 1;
+    // Ken (Oct 31: "jerky, and blurry"): the rise starts from where the card is drawn right now (even mid-motion), not a snap
+    const cs0 = getComputedStyle(el);
+    const from = { transform: cs0.transform, translate: cs0.translate, scale: cs0.scale };
     el.classList.add('popped');
+    if (el.dataset.fanAngle0 === undefined) el.dataset.fanAngle0 = el.dataset.fanAngle || '0';
+    el.dataset.fanAngle = '0';
     hand.classList.add('has-pop');
-    el.style.zIndex = '600';
-    el.style.transform = `translate(${dx}px,${dy}px) scale(2)`;
+    this.asideNeighbors(el);
+    // The popped card ignores the pointer; a transparent proxy keeps its resting spot clickable and draggable.
+    const ph = h('span', { class: 'pop-ph', 'aria-hidden': 'true' }) as El;
+    ph.style.cssText = `position:absolute;left:${el.style.left};top:${el.offsetTop}px;width:${w}px;height:${hgt}px;transform:${el.dataset.fan || ''};z-index:${el.dataset.z || 1};pointer-events:auto;cursor:grab`;
+    ph.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') { this.touchWasShown = !!this.r.hand?.classList.contains('shown'); this.openHand(true); this.showHandTouch(true); } }, true);
+    ph.addEventListener('pointerdown', (e: PointerEvent) => (el as any)._down?.(e));
+    (el as any)._ph = ph;
+    hand.append(ph);
+    // Only the top ~77 % of the popped card takes the pointer (clip-path), so the fan's other cards stay hoverable below it;
+    // a pointer-less copy paints the clipped lower part.
+    const clone = el.cloneNode(true) as El;
+    clone.classList.add('popclone');
+    clone.removeAttribute('aria-label'); clone.removeAttribute('data-card-id'); clone.removeAttribute('data-card'); clone.removeAttribute('data-uid');
+    clone.setAttribute('aria-hidden', 'true'); clone.tabIndex = -1;
+    clone.querySelectorAll('[data-card-id]').forEach((x: El) => x.removeAttribute('data-card-id'));
+    (el as any)._clone = clone;
+    hand.append(clone);
+    el.style.zIndex = '9000';
+    el.style.setProperty('--gs', String(S));
+    // Ken (Oct 31): "there's like a card in the background ... two cards shifted offset ... jerky, and blurry".
+    // The ghost was the pop-out's helper copy (.popclone): it was given the end position at once while the real card was
+    // snapped there with transitions off, so the copy slid in behind it from the old spot. Now the end spot is measured with
+    // transitions off, both go back to where the card is drawn now, and then both move together with one short ease-out;
+    // the copy only paints the bottom strip the real card leaves out (clip), so there is never a second card to see.
+    const cl = (el as any)._clone as El | null;
+    const sync = () => { if (cl) { cl.style.cssText = el.style.cssText; cl.style.zIndex = '8999'; } };
+    el.style.setProperty('transition', 'none', 'important');
+    el.style.transform = 'none';
+    el.style.translate = `${targetX - cx}px ${targetY - cy}px`;
+    el.style.scale = String(S);
+    void el.offsetHeight;
+    let fin = el.style.translate;
+    {
+      // land the popped card's bottom on the screen edge, kept inside the screen sideways, on whole pixels (crisp text at rest)
+      const r = el.getBoundingClientRect();
+      let dy = (window.innerHeight - 1) - r.bottom, dx = Math.max(hr.left + 2 - r.left, Math.min(hr.right - 2 - r.right, 0));
+      dx += Math.round(r.left + dx) - (r.left + dx); dy += Math.round(r.top + dy) - (r.top + dy);
+      fin = `${Math.round((targetX - cx + dx) * 100) / 100}px ${Math.round((targetY - cy + dy) * 100) / 100}px`;
+    }
+    el.style.transform = from.transform; el.style.translate = from.translate; el.style.scale = from.scale;
+    sync(); void el.offsetHeight; if (cl) void cl.offsetHeight;
+    el.style.removeProperty('transition');
+    el.style.transform = 'none'; el.style.translate = fin; el.style.scale = String(S);
+    sync();
+    this.watchPop(el);
   }
 
+  /** Test hook: glow state of every card in the player's hand, in hand order. */
+  getHandGlow() {
+    const st = this.game.state;
+    const me = st?.players?.player;
+    if (!me) return [];
+    return me.hand.map((hc: any) => {
+      const c = CARDS[hc.cardId];
+      const el = this.r.hand?.querySelector(`[data-uid="${hc.uid}"]`) as El | null;
+      const g = el?.querySelector('[data-card-glow]') as El | null;
+      const glowing = !!g && getComputedStyle(g).display !== 'none';
+      let t = 0;
+      if (el && g && glowing) { const a = el.getBoundingClientRect(), b = g.getBoundingClientRect(); t = Math.round(((a.left - b.left) + (b.right - a.right) + (a.top - b.top) + (b.bottom - a.bottom)) / 4 * 10) / 10; }
+      return { uid: hc.uid, cardId: hc.cardId, faction: c.faction === 'any' ? 'shared' : c.faction, glowing, popped: !!el?.classList.contains('popped'), thicknessPx: t, opacity: glowing ? GLOW_PEAK : 0, profile: GLOW_PROFILE.map((k) => (glowing ? Math.round(GLOW_PEAK * k * 1000) / 1000 : 0)), color: GLOW_COLOR[c.faction] || GLOW_COLOR.any };
+    });
+  }
+
+  popWatch: ((e: PointerEvent) => void) | null = null;
+  lastPtr = { x: -1, y: -1, type: 'mouse', down: false };
+  popSafety = false;
+  /** Which hand card the point is over (Ken, Oct 30 hand spec): a press on the raised card takes it wherever it is drawn
+   *  (rotation, scale, its 77 % clip; Owner fix Oct 29); everything else is answered from the fixed hover bands (handPick). */
+  hitCard(x: number, y: number, press = false): El | null {
+    if (this.noHand) return null;
+    const pop = this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)') as El | null;
+    if (press && pop && this.drawnAt(pop, x, y)) return pop;
+    return this.handPick(x, y, pop);
+  }
+  /** True when (x, y) lies on the drawn part of `el` (browser hit test: follows its transform and clip-path), even if it ignores the pointer. */
+  drawnAt(el: El, x: number, y: number): boolean {
+    const prev = el.style.getPropertyValue('pointer-events'), prio = el.style.getPropertyPriority('pointer-events');
+    el.style.setProperty('pointer-events', 'auto', 'important');
+    try { return document.elementsFromPoint(x, y).some((e) => e === el || el.contains(e)); }
+    finally { if (prev) el.style.setProperty('pointer-events', prev, prio); else el.style.removeProperty('pointer-events'); }
+  }
+  noHand = false;
+  popPending: { el: El | null; at: number } | null = null;
+  /** Which card should be up now (Ken, Oct 30: no jitter). undefined = keep the raised card. Hover bands are fixed (handPick):
+   *  the raised card keeps a 6 px margin; a neighbour takes over at once; leaving the hand lowers it (at once when clearly away, else after 90 ms). */
+  popTarget(cur: El, x: number, y: number): El | null | undefined {
+    const hit = this.handPick(x, y, cur);
+    if (hit === cur) { this.popPending = null; return undefined; }
+    if (hit) { this.popPending = null; return hit; }
+    const g = this.hg, S = this.handStrips(x), M = 36;
+    if (!g || !S.length || y < g.openTop - 8 || x < S[0].l - M || x > S[S.length - 1].r + M) { this.popPending = null; return null; }
+    const now = performance.now();
+    if (!this.popPending || this.popPending.el !== null) { this.popPending = { el: null, at: now }; return undefined; }
+    if (now - this.popPending.at < 90) return undefined;
+    this.popPending = null;
+    return null;
+  }
+  lastPop: { uid: string; l: number; t: number; r: number; b: number; at: number } | null = null;
+  /** Hover boxes (Ken, Oct 30 hand spec): each card's fixed visible strip (handStrips), from the band top down to the screen edge.
+   *  A card popping out, or its neighbours moving aside, never moves these boxes. */
+  handBoxes(_centred = false): { c: El; l: number; t: number; w: number; h: number; cx: number; cxt?: number; sx: number }[] {
+    const g = this.hg, hand = this.r?.hand as El;
+    if (!g || !hand || !hand.isConnected) return [];
+    const up = hand.classList.contains('open') || hand.classList.contains('has-pop') || hand.classList.contains('shown');
+    const t = up ? g.openTop : g.restTop, vw = window.innerWidth;
+    return this.handStrips(this.handFocusX).filter((q) => q.c.isConnected).map((q) => { const l = Math.max(0, q.l), r = Math.min(vw, q.r); return { c: q.c, l, t, w: Math.max(0, r - l), h: g.H - t, cx: q.cx, cxt: q.cx, sx: g.sx }; });
+  }
+  /** Test hook: union box of the hand's hover boxes. */
+  getHandHoverBox() {
+    const bs = this.handBoxes();
+    if (!bs.length) return null;
+    const l = Math.min(...bs.map((x) => x.l)), t = Math.min(...bs.map((x) => x.t));
+    const r = Math.max(...bs.map((x) => x.l + x.w)), bt = Math.max(...bs.map((x) => x.t + x.h));
+    return { left: l, top: t, width: r - l, height: bt - t, cards: bs.length, raised: !!(this.r?.hand as El)?.classList.contains('open') };
+  }
+  /** Test hook: hover box and the union of the hand cards' visible rectangles (window CSS px). */
+  getHandHover() {
+    const hand = this.r?.hand as El;
+    const rects = hand ? ([...hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).map((c) => c.getBoundingClientRect()) : [];
+    const W = window.innerWidth, H = window.innerHeight;
+    const clipped = rects.map((r) => ({ l: Math.max(0, r.left), t: Math.max(0, r.top), r: Math.min(W, r.right), b: Math.min(H, r.bottom) })).filter((r) => r.r > r.l && r.b > r.t);
+    const raised = !!hand && (hand.classList.contains('open') || hand.classList.contains('has-pop'));
+    const fan = hand ? ([...hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).map((c) => {
+      const r = c.getBoundingClientRect();
+      const m = new DOMMatrix(getComputedStyle(c).transform === 'none' ? undefined : getComputedStyle(c).transform);
+      const sc = parseFloat(getComputedStyle(c).scale) || 1;
+      // the card's slot centre: undo the displacement the rotation about the card's pivot adds to the centre
+      const [ox, oy] = getComputedStyle(c).transformOrigin.split(' ').map(parseFloat);
+      const mx = c.offsetWidth / 2 - ox, my = c.offsetHeight / 2 - oy;
+      const dx = (m.a - 1) * mx + m.c * my, dy = m.b * mx + (m.d - 1) * my;
+      return { cardId: c.dataset.cardId || (c.querySelector('[data-card-id]') as El | null)?.dataset.cardId || '', cx: r.left + r.width / 2 - dx, cy: r.top + r.height / 2 - dy, width: c.offsetWidth, height: c.offsetHeight,
+        rotateDeg: Math.round(Math.atan2(m.b, m.a) * 18000 / Math.PI) / 100, scale: Math.round(Math.hypot(m.a, m.b) * sc * 1000) / 1000 };
+    }) : [];
+    if (!clipped.length) return { raised, zone: { x: 0, y: 0, width: 0, height: 0 }, cards: { x: 0, y: 0, width: 0, height: 0 }, raisedIndex: -1, popScale: 1.6, popMs: App.HAND_MS, fan };
+    const l = Math.min(...clipped.map((r) => r.l)), t = Math.min(...clipped.map((r) => r.t)), r = Math.max(...clipped.map((x) => x.r)), b = Math.max(...clipped.map((x) => x.b));
+    const box = { x: l, y: t, width: r - l, height: b - t };
+    const raisedIndex = ([...hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).findIndex((c) => c.classList.contains('popped'));
+    return { raised, zone: box, cards: { ...box }, raisedIndex, popScale: 1.6, popMs: App.HAND_MS, fan };
+  }
+  /** Return every popped card to the fan and tuck the hand; nothing may stay raised. */
+  clearPops(except?: El) {
+    const hand = this.r?.hand as El;
+    if (!hand) return;
+    hand.querySelectorAll('.hand-card.popped:not(.popclone)').forEach((c) => { if (c !== except) this.popCard(c as El, false); });
+    if (!except) { hand.classList.remove('has-pop'); hand.querySelectorAll('.popclone,.pop-ph').forEach((x) => x.remove()); }
+  }
+  installPopSafety() {
+    if (this.popSafety) return;
+    this.popSafety = true;
+    const retract = () => { this.clearPops(); this.openHand(false, true); };
+    // a native image drag would cancel the pointer stream mid-drag and strand a card drag
+    // R26.A2: the first click/tap of a visit asks the browser for real full screen (once; refusals are ignored)
+    fsFirstTap();
+    document.addEventListener('dragstart', (e) => { if ((e.target as Element)?.closest?.('.hand, .hand-card, .popclone, .dragged-card')) e.preventDefault(); }, true);
+    document.addEventListener('pointermove', (e) => {
+      this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: this.lastPtr.down };
+      // Ken (Oct 30 hand spec): the dock window follows the mouse over the hand
+      if (e.pointerType === 'mouse' && !this.lastPtr.down && !this.noHand && this.r?.hand && !this.root.querySelector('.hand-card.dragging')) {
+        const cur = this.r.hand.querySelector('.hand-card.popped:not(.popclone)') as El | null;
+        this.handFocusTo(this.handPick(e.clientX, e.clientY, cur) ? e.clientX : cur ? this.handFocusX : null);
+      }
+    }, true);
+    document.addEventListener('pointerdown', (e) => {
+      this.lastPtr = { x: e.clientX, y: e.clientY, type: e.pointerType, down: true };
+      { // Oct 30 Ken playtest (hand): the second press of a double-click / double-tap plays the card, even if the hand moved under the finger
+        const tw = this.tapWait;
+        if (tw && (e.pointerType !== 'mouse' || e.button === 0) && !this.dialogs.length && performance.now() - tw.at < App.DBL_MS && Math.hypot(e.clientX - tw.x, e.clientY - tw.y) < 40) {
+          const hc = this.game.state?.players?.player?.hand?.find((k: any) => k.uid === tw.uid);
+          if (hc) { e.stopPropagation(); e.preventDefault(); clearTimeout(tw.t); this.tapWait = null; this.playByDoubleTap(hc, CARDS[hc.cardId]); return; }
+        }
+      }
+      const onHand = !!(e.target as Element)?.closest?.('.hand, .hand-card, .hand-scroll');
+      // a press on the enlarged (hovered) card grabs that card; with none up, the card whose fan slot holds the pointer wins over a neighbour
+      if (e.pointerType === 'mouse' && e.button === 0 && !this.pick && !this.dialogs.length && onHand) {
+        const pop = this.r?.hand?.querySelector('.hand-card.popped:not(.popclone)') as El | null;
+        const tgt = (e.target as Element)?.closest?.('.hand-card:not(.popclone)') as El | null;
+        let want: El | null = null;
+        // the raised card wins where it is drawn; otherwise the same answer the hover pop uses (fixed fan slots), so what rises is what is grabbed
+        want = this.hitCard(e.clientX, e.clientY, true);
+        if (pop && !want) { const b = pop.getBoundingClientRect(); if (e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom) want = pop; }
+        if (want && tgt && tgt !== want && !tgt.classList.contains('offhand')) {
+          const hc = this.game.state?.players?.player?.hand?.find((k: any) => k.uid === want!.dataset.uid);
+          if (hc) { e.stopPropagation(); e.preventDefault(); this.cardPointerDown(e, hc, want); return; }
+        }
+      }
+      // tap-to-place: a tucked hand card resting over a lit square must not swallow the tap on that square
+      if (onHand && this.pick && !this.pick.unit && e.pointerType === 'mouse' && e.button === 0) {
+        const cell = this.cellAt(e.clientX, e.clientY);
+        const p = cell && this.pick.cells.find((c) => c.row === cell.row && c.col === cell.col);
+        if (p) { e.stopPropagation(); e.preventDefault(); this.pick.done(p); return; }
+      }
+      this.noHand = !onHand;
+      const lp = this.lastPop;
+      if (this.noHand && lp && !this.dialogs.length && !(e.target as Element)?.closest?.('.overlay, .cardzoom, [role=dialog]') && e.pointerType === 'mouse' && e.button === 0 && performance.now() - lp.at < 1500 && e.clientX >= lp.l && e.clientX <= lp.r && e.clientY >= lp.t && e.clientY <= lp.b) {
+        const hc = this.game.state?.players?.player?.hand?.find((k: any) => k.uid === lp.uid);
+        const cardEl = this.r?.hand?.querySelector(`.hand-card[data-uid="${lp.uid}"]:not(.popclone)`) as El | null;
+        if (hc && cardEl) { this.noHand = false; this.lastPop = null; this.cardPointerDown(e, hc, cardEl); return; }
+      }
+      if (this.noHand) { this.clearPops(); this.openHand(false, true); }
+    }, true);
+    const up = () => { this.lastPtr.down = false; this.noHand = false; if (this.lastPtr.type !== 'mouse') retract(); };
+    window.addEventListener('pointerup', up, true); window.addEventListener('pointercancel', up, true);
+    window.addEventListener('blur', retract);
+    document.documentElement.addEventListener('mouseleave', retract);
+    document.addEventListener('visibilitychange', retract);
+    setInterval(() => {
+      const hand = this.r?.hand as El;
+      if (!hand || !hand.isConnected) return;
+      const cur = hand.querySelector('.hand-card.popped:not(.popclone)') as El;
+      if (!cur) {
+        const orphan = hand.querySelector('.popclone,.pop-ph'); if (orphan) this.clearPops();
+        // a mouse that has left the hand area tucks it back (nothing may stay raised)
+        if (hand.classList.contains('open') && this.lastPtr.type === 'mouse' && !this.root.querySelector('.hand-card.dragging')) {
+          if (!this.handPick(this.lastPtr.x, this.lastPtr.y)) { this.openHand(false, true); this.handFocusTo(null); }
+        }
+        // a resting mouse over a card that never got its hover event (the card moved under it) still pops that card
+        if (this.lastPtr.type === 'mouse' && this.lastPtr.x >= 0 && !this.lastPtr.down && !this.root.querySelector('.hand-card.dragging') && performance.now() >= this.popDelayUntil) {
+          const hit = this.hitCard(this.lastPtr.x, this.lastPtr.y);
+          if (hit && this.root.querySelector('.match')) { this.openHand(true); this.popCard(hit, true); }
+        }
+        return;
+      }
+      if (this.lastPtr.type === 'mouse') {
+        if (!cur.classList.contains('dragging') && !cur.matches(':focus-visible')) {
+          const t = this.popTarget(cur, this.lastPtr.x, this.lastPtr.y);
+          if (t) { this.openHand(true); this.popCard(t, true); } else if (t === null) retract();
+        }
+      }
+      else if (!this.lastPtr.down) retract();
+    }, 80);
+  }
+  watchPop(first: El) {
+    if (this.popWatch) document.removeEventListener('pointermove', this.popWatch);
+    const fn = (e: PointerEvent) => {
+      const hand = this.r.hand as El;
+      const cur = this.root.querySelector('.hand-card.popped:not(.popclone)') as El;
+      if (!hand || !cur || !cur.isConnected) { document.removeEventListener('pointermove', fn); if (this.popWatch === fn) this.popWatch = null; return; }
+      if (e.pointerType !== 'mouse') return;
+      if (cur.classList.contains('dragging')) return;
+      const hit = this.popTarget(cur, e.clientX, e.clientY);
+      if (hit === undefined) return;
+      // one clean switch: the old card goes down and the new one comes up in the same step
+      if (hit) { this.openHand(true); this.popCard(hit, true); return; }
+      this.popCard(cur, false);
+      document.removeEventListener('pointermove', fn); this.popWatch = null; this.openHand(false, true);
+    };
+    this.popWatch = fn;
+    document.addEventListener('pointermove', fn);
+  }
+
+  /** Ken (Oct 30 hand spec): "I want to be able to identify the cards ... they kind of blend together".
+   *  - raised / straight row: each card shows at least 50 % of its width (gap 0.55 of a card; Ken changed 65 % to 50 %, Oct 30);
+   *  - many cards (about 12-15): a dock-like focus window: about 6 cards around the focus point show at least 55 %, cards further out
+   *    are squeezed tighter; the focus follows the pointer (or a sliding finger), so the cards near it open up;
+   *  - tucked: the top HALF of every card shows above the bottom edge (PC and phone), never over the board or the deck count;
+   *  - a flatter fan (small tilt, no arc).
+   *  Supersedes the Game Editor's hand overlap 0.26 / angle 4 / arc 1.45 (owner-layout.json); those stay as the editor's values. */
+  static HAND = { raised: 0.55, core: 0.58, min: 0.025, coreD: 2.5, fadeD: 3.5, anglePer: 1.4, angleMax: 3.5 };
+  /** The hand's stable geometry (screen px), measured in layoutHand from un-animated numbers only: hover never reads a moving card. */
+  hg: { n: number; els: El[]; cw: number; ch: number; L: number; A: number; spanL: number; sx: number; restTop: number; openTop: number; H: number; dock: boolean } | null = null;
+  /** Screen x the dock window centres on (pointer / finger over the hand), or null = the hand's middle. */
+  handFocusX: number | null = null;
+  /** Gaps (hand px) between neighbouring cards for focus f (card index units). */
+  handGaps(n: number, cw: number, A: number, f: number): number[] {
+    const G = n - 1, K = App.HAND;
+    if (G <= 0) return [];
+    const even = (A - cw) / G;
+    if (even >= Math.min(K.raised, K.core) * cw - 0.5) return Array(G).fill(Math.min(K.raised * cw, even));
+    const w: number[] = []; let sw = 0;
+    for (let g = 0; g < G; g++) {
+      const d = Math.abs(g + 0.5 - f);
+      const t = d <= K.coreD ? 1 : d >= K.fadeD ? 0 : (() => { const u = 1 - (d - K.coreD) / (K.fadeD - K.coreD); return u * u * (3 - 2 * u); })();
+      w.push(t); sw += t;
+    }
+    if (sw >= G - 1e-6) return Array(G).fill(even);
+    let sc = K.core * cw, so = (A - cw - sc * sw) / (G - sw);
+    const smin = K.min * cw;
+    if (so < smin) { so = smin; sc = Math.max(smin, (A - cw - so * (G - sw)) / sw); }
+    return w.map((t) => so + (sc - so) * t);
+  }
+  /** Focus (card index units) for a screen x. */
+  handFocusOf(x: number | null): number {
+    const g = this.hg;
+    if (!g || g.n < 2) return 0;
+    if (x === null || !g.dock) return (g.n - 1) / 2;
+    const x0 = g.L + (g.spanL + g.cw / 2) * g.sx, span = (g.A - g.cw) * g.sx;
+    return Math.max(0, Math.min(1, span > 0 ? (x - x0) / span : 0.5)) * (g.n - 1);
+  }
+  /** Card lefts (hand px) for a focus point. */
+  handLefts(f: number): number[] {
+    const g = this.hg;
+    if (!g || !g.n) return [];
+    const gaps = this.handGaps(g.n, g.cw, g.A, f);
+    const total = g.cw + gaps.reduce((a, b) => a + b, 0);
+    let x = g.spanL + Math.max(0, (g.A - total) / 2);
+    const out = [x];
+    for (const s of gaps) { x += s; out.push(x); }
+    return out;
+  }
+  /** Each card's visible strip (screen px) for the layout the pointer at x produces (a later card lies over an earlier one).
+   *  A pure function of x: the hover answer never depends on where an animated card happens to be. */
+  handStrips(x: number | null): { c: El; l: number; r: number; cx: number }[] {
+    const g = this.hg;
+    if (!g) return [];
+    const lefts = this.handLefts(this.handFocusOf(x));
+    return g.els.map((c, k) => {
+      const l = g.L + lefts[k] * g.sx, r = g.L + (k === g.n - 1 ? lefts[k] + g.cw : lefts[k + 1]) * g.sx;
+      return { c, l: k === 0 ? l - 4 : l, r, cx: g.L + (lefts[k] + g.cw / 2) * g.sx };
+    });
+  }
+  /** Ken (Oct 30) jitter fix: which card the pointer is over, from fixed bands only (no moving card is measured).
+   *  Tucked: the visible top halves (enter at their top edge). Raised: the band reaches up to the raised row (leave a few px above it),
+   *  so raising the hand never moves the hover zone away from a resting pointer. `cur` (the raised card) keeps a 6 px margin. */
+  handPick(x: number, y: number, cur: El | null = null): El | null {
+    const g = this.hg, hand = this.r?.hand as El | undefined;
+    if (!g || !g.n || !hand) return null;
+    const up = hand.classList.contains('open') || hand.classList.contains('has-pop') || hand.classList.contains('shown');
+    const top = up ? g.openTop - 8 : g.restTop - 2;
+    if (y < top || y > g.H + 4) return null;
+    const S = this.handStrips(x);
+    const m = up ? 8 : 0;
+    if (x < S[0].l - m || x > S[S.length - 1].r + m) return null;
+    if (cur) { const s = S.find((q) => q.c === cur); if (s && x >= s.l - 6 && x <= s.r + 6) return cur; }
+    for (const s of S) if (x >= s.l && x < s.r) return s.c;
+    return x < S[0].l ? S[0].c : S[S.length - 1].c;
+  }
+
+  /** Lays the hand out (see App.HAND); up to 15 cards show at once, more scroll (R3.7). */
   layoutHand() {
     const hand = this.r.hand as El;
     if (!hand) return;
-    const cards = [...hand.querySelectorAll('.hand-card')] as El[];
+    this.installPopSafety();
+    const cards = [...hand.querySelectorAll('.hand-card:not(.popclone)')] as El[];
     const n = cards.length;
-    const W = hand.clientWidth || 800;
+    const VIS = 15;
+    // Off-hand cards wait in an invisible clipped strip; if anything scrolls one into view (focus, assistive tech) the fan follows.
+    let spill = hand.querySelector('.hand-spill') as El;
+    if (!spill) {
+      spill = h('div', { class: 'hand-spill', 'aria-hidden': 'false' }) as El;
+      spill.addEventListener('scroll', () => {
+        if (!spill.scrollLeft) return;
+        const sr = spill.getBoundingClientRect();
+        const all = [...hand.querySelectorAll('.hand-card:not(.popclone)')] as El[];
+        const idx = all.findIndex((c) => { if (c.parentElement !== spill) return false; const b = c.getBoundingClientRect(); const m = b.left + b.width / 2; return m >= sr.left && m <= sr.right; });
+        spill.scrollLeft = 0;
+        if (idx >= 0) { this.handScroll = idx - 3; this.layoutHand(); }
+      });
+      hand.append(spill);
+    }
+    const W = hand.clientWidth || 264;
+    const maxScroll = Math.max(0, n - VIS);
+    this.handScroll = Math.max(0, Math.min(maxScroll, this.handScroll));
+    const start = Math.round(this.handScroll);
+    const shown = Math.min(n, VIS);
+    // the room the row may use (hand px): from the player's crystal picture on the left to the player's deck on the right,
+    // so the deck count and the crystal stay readable
+    const hb = hand.getBoundingClientRect();
+    const sx = hand.offsetWidth ? hb.width / hand.offsetWidth || 1 : 1, sy = hand.offsetHeight ? hb.height / hand.offsetHeight || sx : sx;
+    let A = W, spanL = 0;
+    try {
+      const deck = (this.root.querySelector('[data-role=player-deck]') as El | null)?.getBoundingClientRect();
+      if (deck && deck.width && deck.left > hb.left + 0.25 * hb.width) A = Math.min(W, (deck.left - 6 - hb.left) / sx);
+      const gem = (this.root.querySelector('[data-role=player-flow-crystal]') as El | null)?.getBoundingClientRect();
+      if (gem && gem.width && gem.right < hb.left + 0.5 * hb.width) spanL = Math.max(0, (gem.right + 6 - hb.left) / sx);
+    } catch { /* no HUD yet */ }
+    // Ken (Oct 31): the Sort button sits just left of the first card (never over a card): the row starts a button's width later
+    const sortB = this.r.handSort as El | undefined;
+    const sortW = sortB && !sortB.hidden ? sortB.getBoundingClientRect().width : 0;
+    /* read the button's parent box now, before the cards are written (no extra layout pass) */
+    const sortPar = sortW ? (sortB!.offsetParent as El | null) : null, sortPr = sortPar?.getBoundingClientRect();
+    const sortPsx = sortPar && sortPar.offsetWidth ? sortPr!.width / sortPar.offsetWidth || 1 : 1;
+    const sortGap = Math.max(10, Math.round(sortW * 0.3));
+    /* how far the first card's tilted top corner reaches left of its box (it turns about 50% 110%) */
+    const tiltOut = (deg: number, w: number, hh: number) => { const t = (deg * Math.PI) / 180; return Math.max(0, -(w / 2) + (w / 2) * Math.cos(t) - 1.1 * hh * Math.sin(t)); };
+    if (sortW) { const w0 = cards[0]?.offsetWidth || 66, n0 = Math.min(n, VIS), per0 = n0 > 1 ? Math.min(App.HAND.anglePer, (2 * App.HAND.angleMax) / (n0 - 1)) : 0; spanL += (sortW + 2 * sortGap) / sx + tiltOut(-((n0 - 1) / 2) * per0, w0, w0 * 1.5); }
+    A -= spanL;
+    // Ken (Oct 30): every card must stay easy to tell apart: when the room is short (PC, many cards) the hand cards get a little smaller
+    // (never below 86 %) so 6 cards show 55 % each, or the dock window's 6 cards 55 %+ each
+    {
+      const cw0 = parseFloat(getComputedStyle(this.root.querySelector('.match') || hand).getPropertyValue('--hcw')) || cards[0]?.offsetWidth || 66;
+      const K = App.HAND, m = Math.min(shown, VIS);
+      const need = m <= 1 ? 1 : m <= 6 ? 1 + K.raised * (m - 1) : 1 + K.core * Math.min(6, m - 1) + K.min * Math.max(0, m - 7);
+      const k = Math.max(0.86, Math.min(1, A / (need * cw0)));
+      const want = k < 0.999 ? (cw0 * k).toFixed(2) + 'px' : '';
+      if (hand.style.getPropertyValue('--cw') !== want) { if (want) hand.style.setProperty('--cw', want); else hand.style.removeProperty('--cw'); }
+    }
     const cw = cards[0]?.offsetWidth || 66;
-    const spacing = n > 1 ? Math.max(cw * 0.58, Math.min(cw * 0.78, (W - cw * 1.4) / (n - 1))) : cw;
-    const overflow = Math.max(0, (n - 1) * spacing - (W - cw * 1.4));
-    const maxScroll = overflow / 2 / spacing;
-    this.handScroll = Math.max(-maxScroll, Math.min(maxScroll, this.handScroll));
+    const ch = cards[0]?.offsetHeight || cw * 1.4861;
+    let moved = false;
+    const els: El[] = [];
     cards.forEach((c, i) => {
-      const off = i - (n - 1) / 2 - this.handScroll;
-      const x = W / 2 + off * spacing - cw / 2;
-      const t = (off * spacing) / (W / 2);
-      const rot = Math.max(-6, Math.min(6, t * 12));
-      const y = t * t * cw * 0.08;
-      c.style.left = x + 'px';
-      c.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
-      c.dataset.fan = c.style.transform;
-      c.style.zIndex = String(i + 1);
-      c.dataset.z = String(i + 1);
+      const k = i - start;
+      if (k < 0 || k >= VIS) {
+        c.classList.add('offhand'); c.style.left = W + 20 + (i + 1) * (cw + 10) + 'px'; c.style.transform = ''; c.dataset.fan = ''; c.tabIndex = -1;
+        if (c.parentElement !== spill) spill.append(c);
+        return;
+      }
+      if (c.parentElement === spill) { hand.append(c); moved = true; }
+      c.classList.remove('offhand'); c.tabIndex = 0;
+      els.push(c);
     });
+    if (moved) for (const c of cards) if (c.parentElement === hand) hand.append(c);
+    // the hand's own vertical offsets (tucked / raised), from its un-animated top
+    let baseTop = hb.top;
+    try { baseTop = hb.top - new DOMMatrix(getComputedStyle(hand).transform).m42; } catch { /* keep */ }
+    const H = window.innerHeight;
+    const offTop = (els[0]?.offsetTop || 0) * sy;
+    const restY = H - 0.5 * ch * sy - baseTop - offTop; // Ken: "literally halfway down, underneath the screen"
+    const openY = H - 2 - ch * sy - baseTop - offTop;
+    const evenFits = shown < 2 || (A - cw) / (shown - 1) >= Math.min(App.HAND.raised, App.HAND.core) * cw - 0.5;
+    this.hg = { n: els.length, els, cw, ch, L: hb.left, A, spanL, sx, restTop: baseTop + restY + offTop, openTop: baseTop + openY + offTop, H, dock: !evenFits };
+    hand.dataset.hy = '1';
+    void W;
+    hand.style.setProperty('--hy-rest', restY.toFixed(1) + 'px');
+    hand.style.setProperty('--hy-open', openY.toFixed(1) + 'px');
+    const lefts = this.handLefts(this.handFocusOf(this.handFocusX));
+    const pop = hand.querySelector('.hand-card.popped:not(.popclone)') as El | null;
+    const K = App.HAND, per = shown > 1 ? Math.min(K.anglePer, (2 * K.angleMax) / (shown - 1)) : 0;
+    els.forEach((c, k) => {
+      const off = k - (shown - 1) / 2;
+      const rot = Math.round(off * per * 100) / 100;
+      (c as any)._left = lefts[k];
+      c.dataset.fanAngle = String(rot);
+      c.dataset.fan = `translateY(0px) rotate(${rot}deg)`;
+      c.dataset.z = String(k + 1);
+      // Ken (Oct 31, "two cards shifted offset"): the raised card keeps its own transform and layer while the focus window moves
+      // (it used to be tilted back to its fan angle under its un-tilted helper copy); it takes the fan values when it goes down
+      if (c !== pop) { c.style.transform = c.dataset.fan; c.style.zIndex = c.dataset.z; }
+      // the card's own pointer strip (its visible part; the next card lies over the rest)
+      const vis = k === els.length - 1 ? cw : lefts[k + 1] - lefts[k];
+      c.style.setProperty('--hl', (cw / 2 + (k === 0 ? 4 : 0)) + 'px');
+      c.style.setProperty('--hr', (vis - cw / 2) + 'px');
+      if (c === pop) { if (c.dataset.fanAngle0 !== undefined) c.dataset.fanAngle0 = String(rot); c.dataset.fanAngle = '0'; return; } // the raised card stays where it rose; it takes its new spot when it goes down
+      c.style.left = lefts[k] + 'px';
+    });
+    if (pop) this.asideNeighbors(pop);
+    if (sortB && sortW) {
+      const pr = sortPr, psx = sortPsx;
+      const x0 = hb.left + (els.length ? lefts[0] - tiltOut(parseFloat(els[0].dataset.fanAngle || '0') || 0, cw, ch) : spanL) * sx - sortGap - sortW;
+      const visTop = baseTop + restY + offTop;
+      const y0 = Math.min(H - sortW - 4, (visTop + H) / 2 - sortW / 2);
+      const sl = ((x0 - (pr ? pr.left : 0)) / psx).toFixed(1) + 'px', st = ((y0 - (pr ? pr.top : 0)) / psx).toFixed(1) + 'px';
+      if (sortB.style.left !== sl) sortB.style.left = sl;
+      if (sortB.style.top !== st) sortB.style.top = st;
+    }
+    this.restTy = restY;
+    if (hand.lastElementChild !== spill) hand.append(spill);
+    const hl = this.r.handLeft as El, hr = this.r.handRight as El;
+    if (hl) { hl.hidden = !(n > VIS && start > 0); hr.hidden = !(n > VIS && start < maxScroll); }
+    hand.classList.toggle('more-left', start > 0);
+    hand.classList.toggle('more-right', n > VIS && start < maxScroll);
+  }
+  /** Ken (Oct 30): the dock window follows the pointer / finger over the hand; away from it the hand centres again. */
+  handFocusTo(x: number | null) {
+    const g = this.hg;
+    if (!g || !g.dock) { this.handFocusX = x; return; }
+    if (x === this.handFocusX || (x !== null && this.handFocusX !== null && Math.abs(x - this.handFocusX) < 1)) return;
+    this.handFocusX = x;
+    this.layoutHand();
   }
 
   update(st: any, events: any[]) {
     const r = this.r;
     if (!r.board || !st) return;
+    if (events.some((e) => e.type === 'newMatch')) { this.orders.clear(); this.orderPreview = null; this.ordersRunKey = ''; } // Round 28
     const me = st.players.player, en = st.players.opponent;
     this.view && this.view.setState(st, events);
     this.record(st, events);
+    this.logFx(st, events);
     this.setHeart(r.enemyHealth, en.health);
+    this.placeEnemyCrystal();
     this.setHeart(r.myHealth, me.health);
-    r.enemyDeck.replaceChildren(String(en.deck.length));
-    r.myDeck.textContent = String(me.deck.length);
-    r.crFlow.textContent = `⛏️ ${me.crystals}`;
-    r.crBank.textContent = `🏦 ${me.bank}`;
-    const nxt = st.phase === 'mulligan' ? 0 : incomePreview(st, 'player');
-    r.crFlow.dataset.flow = nxt ? `+${nxt}` : '';
-    r.income.textContent = `+${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')} next turn`;
+    (r.enemyDeck.querySelector('.pile-n') as El).textContent = String(en.deck.length);
+    (r.myDeck.querySelector('.pile-n') as El).textContent = String(me.deck.length);
+    r.enemyDeck.style.setProperty('--fill', String(Math.max(0.55, Math.min(1, 0.55 + en.deck.length / 60))));
+    r.myDeck.style.setProperty('--fill', String(Math.max(0.55, Math.min(1, 0.55 + me.deck.length / 60))));
+    this.renderEnemyDiscard(); // Owner (Ken, Oct 30)
+    r.enemyHand.classList.toggle('browsing', st.activePlayer === 'opponent' && st.phase !== 'over' && st.phase !== 'mulligan');
+    r.crFlow.textContent = String(me.crystals);
+    r.crBank.textContent = String(me.bank);
+    r.eFlow.textContent = String(en.crystals);
+    r.eBank.textContent = String(en.bank);
+    this.setCmdName(r.myName, COMMANDERS[me.commanderId]?.name || '');
+    this.setCmdName(r.eName, COMMANDERS[en.commanderId]?.name || '');
+    audio.voicePreload(me.commanderId); audio.voicePreload(en.commanderId); // Oct 31: the Commanders' voice lines (loads once)
+    r.income.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')}`;
+    r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;
+    const pm = `${me.crystals}|${en.crystals}`;
+    if (this.flowKey !== pm && this.flowKey !== '' && st.turn !== this.flowTurn) { this.view?.pulseFlow(st.activePlayer); this.flowPulses[st.activePlayer]++; }
+    { const m = this.root.querySelector('.match'); this.view?.setFlowTarget?.('player', m?.querySelector('[data-role=player-flow-crystal]') as El | null); this.view?.setFlowTarget?.('opponent', m?.querySelector('[data-role=enemy-flow-crystal]') as El | null); }
+    this.cmdBehavior(st);
+    if (st.turn !== this.flowTurn) { this.flowTurn = st.turn; { this.view?.pulseFlow(st.activePlayer); this.flowPulses[st.activePlayer]++; } }
+    this.flowKey = pm;
     // enemy hand arc
     const n = en.hand.length;
     r.enemyHand.replaceChildren();
-    const shown = Math.min(n, 12);
+    const shown = Math.min(n, 6);
     for (let i = 0; i < shown; i++) {
-      const t = shown > 1 ? i / (shown - 1) - 0.5 : 0;
-      const b = h('div', { class: 'back', 'aria-hidden': 'true' });
-      b.style.transform = `rotate(${t * 70}deg)`;
+      const ang = (i - (shown - 1) / 2) * 9;
+      const b = h('div', { class: 'back', 'data-card-back': '', 'data-fan-angle': String(ang), 'aria-hidden': 'true' });
+      b.style.transform = `rotate(${ang}deg)`;
+      b.append(ohBackEl());
       r.enemyHand.append(b);
     }
-    r.enemyHand.append(h('span', { class: 'count' }, String(n)));
     // phase
-    const whose = st.activePlayer === 'player' ? 'YOUR TURN' : 'ENEMY TURN';
+    const whose = st.activePlayer === 'player' ? 'Your turn' : 'Enemy turn';
     r.phase.dataset.side = st.activePlayer === 'player' ? 'you' : 'enemy';
-    (r.phase.querySelector('.ph-turn') as El).textContent = st.phase === 'mulligan' ? 'MULLIGAN' : st.phase === 'over' ? 'MATCH OVER' : whose;
-    (r.phase.querySelector('.ph-name') as El).textContent = st.phase === 'mulligan' || st.phase === 'over' ? '' : PHASE[st.phase];
+    r.phase.dataset.faction = String((st.players as any)[st.activePlayer]?.faction || ''); // Ken, Oct 30: current phase plate in the active side's faction colour
+    (r.phase.querySelector('.ph-turn') as El).textContent = st.phase === 'mulligan' ? 'Mulligan' : st.phase === 'over' ? 'Match over' : `${whose} · Turn ${st.turn}`;
+    r.phase.querySelectorAll('.ph-step').forEach((el: El) => {
+      const order = ['draw', 'deploy', 'action', 'end'], k = el.dataset.phase!, cur = order.indexOf(st.phase);
+      const here = st.phase === k;
+      if (here) el.setAttribute('aria-current', 'step'); else el.removeAttribute('aria-current');
+      el.classList.toggle('done', cur > order.indexOf(k) && cur >= 0);
+    });
     const key = `${st.turn}|${st.phase}|${st.priority}|${st.pendingResponse ? 1 : 0}`;
     if (key !== this.phaseKey) {
       const phaseChanged = !this.phaseKey || key.split('|').slice(0, 2).join() !== this.phaseKey.split('|').slice(0, 2).join();
@@ -568,13 +2333,13 @@ export class App {
         this.deadline = Date.now() + CONFIG.phaseTimerSeconds * 1000;
         this.testLeft = null;
         this.movesDlg && this.movesDlg.close();
-        this.movesDlg = null;
+        this.movesDlg = null; this.closeDropUp();
         this.swapping = false;
         this.queueBanners(st);
       }
     }
     const mine = st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase) && !st.pendingResponse;
-    r.done.disabled = !mine;
+    this.syncDone();
     const canSwap = mine && st.phase === 'deploy' && this.game.legalActions().some((a: any) => a.type === 'gathererSwap');
     r.swap.hidden = !canSwap;
     if (!canSwap) this.swapping = false;
@@ -587,6 +2352,17 @@ export class App {
     this.animate(st, events);
     this.prevCreatures = st.board.creatures.map((c: any) => ({ uid: c.uid, cardId: c.cardId, row: c.row, col: c.col }));
     this.tick();
+    this.renderOrders(st); // Round 28: move orders
+    this.maybeRunOrders(st);
+  }
+  ordersRunKey = '';
+  /** Round 28 (M3, M5): at the start of the player's Action phase every ordered unit walks its path and a chaser attacks when in range. Once per turn. */
+  maybeRunOrders(st: any) {
+    if (!st || st.phase !== 'action' || st.activePlayer !== 'player' || st.priority !== 'player' || st.pendingResponse || !this.orders.size) return;
+    const key = `${st.turn}|${st.seed ?? ''}|${this.game.options?.seed ?? ''}`;
+    if (this.ordersRunKey === key) return;
+    this.ordersRunKey = key;
+    void runOrders(this.game, this.orders, { delayMs: this.test ? 0 : 450, onChange: () => this.renderOrders(this.game.state) });
   }
 
   // ------------------------------------------------------------ enemy turn recap (R9.7)
@@ -599,6 +2375,11 @@ export class App {
     const swapMates = new Set(events.filter((e) => e.type === 'swap').map((e) => e.withUid));
     for (const e of events) {
       if (e.type === 'turnStart') {
+        for (const site of st.sites as any[]) {
+          if (site.controller !== e.player) continue;
+          const mine = e.player === 'player';
+          this.flowLog.push({ side: e.player, from: { row: site.row, col: site.col }, to: mine ? 'player-flow-crystal' : 'enemy-flow-crystal', shards: 'faceted', sBends: 2, flow: st.players[e.player].flow, count: flowShardCount(st.players[e.player].flow), colors: [FACTION_GLOW[this.game.state.players[e.player as 'player'].faction], GLOW_COLOR[this.game.state.players[e.player as 'player'].faction]], toScreen: (() => { const t = this.root.querySelector(`[data-role=${mine ? 'player' : 'enemy'}-flow-crystal]`) as El | null; const b = t?.getBoundingClientRect(); return b ? { x: b.left + b.width / 2, y: b.top + b.height / 2 } : null; })(), at: performance.now() });
+        }
         if (e.player === 'opponent') { this.enemyLog = []; this.recording = true; } else this.recording = false;
         continue;
       }
@@ -671,7 +2452,12 @@ export class App {
     const blocked = this.dialogs.length > 0 || !(r.timer as El).hidden;
     if (blocked) return;
     const text = this.bannerQ.shift()!;
-    this.bannerEl = h('div', { class: 'banner', role: 'status', 'aria-label': 'Phase banner' }, text);
+    // Owner (Oct 24): phase banners are the owner's pictures; the words stay as hidden text
+    const BANNER_PIC: Record<string, string> = { 'YOUR TURN': 'your-turn', 'ENEMY TURN': 'opponents-turn', DEPLOY: 'deploy', ACTION: 'action' };
+    const pic = BANNER_PIC[text];
+    this.bannerEl = pic
+      ? h('div', { class: 'banner banner-img', role: 'status', 'aria-label': 'Phase banner', 'data-banner': pic }, h('img', { src: `/art/ui/banner-${pic}.webp`, alt: '', draggable: 'false' }), h('span', { class: 'sr-only' }, text))
+      : h('div', { class: 'banner', role: 'status', 'aria-label': 'Phase banner' }, text);
     this.root.querySelector('.match')?.append(this.bannerEl);
     this.bannerAt = now;
   }
@@ -682,7 +2468,7 @@ export class App {
   get remindMoves() { return localStorage.getItem('oreheart.movesReminder') !== 'off'; }
   tuckOutside = (e: PointerEvent) => {
     const hand = this.r.hand as El | undefined;
-    if (hand && e.pointerType !== 'mouse' && !hand.contains(e.target as Node)) { clearTimeout(this.handTimer); hand.classList.remove('open'); }
+    if (hand && e.pointerType !== 'mouse' && !hand.contains(e.target as Node)) { clearTimeout(this.handTimer); hand.classList.remove('open'); this.showHandTouch(false); }
   };
   onKey = (_e: KeyboardEvent) => { /* no keyboard shortcuts */ };
 
@@ -698,78 +2484,231 @@ export class App {
     this.r.fx.append(f);
     setTimeout(() => f.remove(), 1700);
   }
-  /** Big card in the middle of the screen, then it drops onto its space (or flies away). */
-  reveal(cardId: string, at?: { row: number; col: number } | null) {
-    if (this.test || !this.r.board) return;
+  /** Owner (Ken, Oct 30): the computer's played card pops up LARGE in the middle of the screen (about 30 % bigger than the
+   *  card close-up, nearly full height on a phone) for about a second, then is laid down: it shrinks, tilts back and slides
+   *  over to the enemy discard pile on the left (a summoned creature drops onto its square instead, as before). Spell and
+   *  ability animations still play underneath. Tap the big card to pin it; tap again to let it go. Only one big card shows
+   *  at a time: a newer one sends the previous one to the pile at once. Your own played cards do not pop up (round 11). */
+  reveals: { player: El[]; opponent: El[] } = { player: [], opponent: [] };
+  /** cards that are still flying to the enemy discard pile (the pile shows them when they land) */
+  discardInFlight = 0;
+  revealHoldMs() { return localStorage.getItem('oreheart.reveal') === 'fast' ? 600 : 1100; }
+  /** the on-screen width of a hand card when it pops out (popCard's own scale), so the computer's card shows at exactly that size */
+  handPopWidth(): number {
+    const host = this.root.querySelector('.match') as El | null, hand = this.r.hand as El | undefined;
+    const hr = host ? host.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight } as DOMRect;
+    const card = hand?.querySelector('.hand-card:not(.popclone)') as El | null;
+    let w = card?.offsetWidth || 0, hgt = card?.offsetHeight || 0;
+    if (!w) { const v = parseFloat(getComputedStyle(host || document.body).getPropertyValue('--hcw')); w = v > 0 ? v : 120; hgt = w * 1712 / 1152; }
+    const S = Math.max(1, Math.min(1.6, (hr.height - 8) / hgt, (hr.width - 8) / w, this.handRoom / hgt));
+    return w * S;
+  }
+  /** the highest point the player's hand reaches: the raised row, and any card popped out of it right now (screen px) */
+  handTopEver(): number {
+    const hand = this.r.hand as El | undefined;
+    if (!hand) return window.innerHeight;
+    let top = window.innerHeight;
+    const had = hand.classList.contains('open');
+    hand.style.setProperty('transition', 'none', 'important'); hand.classList.add('open'); void hand.offsetHeight;
+    hand.querySelectorAll('.hand-card').forEach((c) => { const r = (c as El).getBoundingClientRect(); if (r.width) top = Math.min(top, r.top); });
+    if (!had) hand.classList.remove('open'); void hand.offsetHeight; hand.style.removeProperty('transition');
+    return top;
+  }
+  /** where the computer's card shows: the hand pop-out size, centred in the space above the hand (raised or tucked), under the top HUD */
+  revealSpot(): { w: number; cx: number; cy: number } {
+    const vw = window.innerWidth, vh = window.innerHeight, ratio = 1712 / 1152;
+    const bottom = this.handTopEver() - 10, topY = Math.max(8, vh * 0.02);
+    const avail = Math.max(60, bottom - topY);
+    let w = Math.round(this.handPopWidth());
+    if (w * ratio > avail) w = Math.floor(avail / ratio);
+    w = Math.min(w, Math.floor(vw * 0.6));
+    const hgt = w * ratio;
+    return { w, cx: vw / 2, cy: topY + Math.min(avail, hgt) / 2 + Math.max(0, (avail - hgt) * 0.3) };
+  }
+  reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player'): Promise<void> {
+    if ((this.test && !this.fxReal) || !this.r.board) return Promise.resolve();
+    if (side === 'player') return Promise.resolve(); // round 11: only the opponent's played cards pop up
     const c = CARDS[cardId];
-    const secs = this.revealSeconds();
-    const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true' }, ...faceKids(c));
+    if (!c) return Promise.resolve();
+    let gone: () => void = () => {};
+    const goneP = new Promise<void>((res) => { gone = res; });
+    const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c));
     const host = this.root.querySelector('.match') as El;
+    const list = this.reveals[side];
+    // the newest card takes the middle; any earlier one that is not pinned is laid down now
+    for (const old of [...list]) if (old.dataset.pinned !== 'true') (old as any)._finish?.();
+    const hostR = host.getBoundingClientRect(), vh = window.innerHeight, vw = window.innerWidth;
+    // Oct 31 (Ken): "make it the same size as the card when it pops out of my hand ... I don't want him blocking my cards. Covering my cards.
+    // Ever." The card shows at the hand pop-out size, in the clear space above the player's hand (raised or tucked); smaller only if it can't fit.
+    const spot = this.revealSpot();
+    const cw = spot.w;
+    el.style.setProperty('--cw', cw + 'px');
+    el.classList.add('opp-play');
+    el.dataset.side = side; el.dataset.stage = 'big';
+    el.style.left = spot.cx - hostR.left + 'px';
+    el.style.top = spot.cy - hostR.top + 'px';
+    void vh; void vw;
+    el.style.zIndex = String(5000 + list.length);
+    list.push(el);
     host.append(el);
-    let done = false;
+    const toPile = !(c.type === 'creature' && at && this.view);
+    if (toPile) { this.discardInFlight++; this.renderEnemyDiscard(); }
+    let done = false, landed = false, layAnim: Animation | null = null, layFallback: any = null;
+    const unlist = () => { const i = list.indexOf(el); if (i >= 0) list.splice(i, 1); gone(); };
+    const land = () => {
+      if (landed) return; landed = true;
+      if (toPile) { this.discardInFlight = Math.max(0, this.discardInFlight - 1); this.renderEnemyDiscard(true); }
+    };
     const finish = () => {
-      if (done) return; done = true;
-      let dx = 0, dy = 0;
-      if (at && this.view) {
-        const pc = this.center(at.row, at.col);
-        const br = this.r.board.getBoundingClientRect(), hr = host.getBoundingClientRect(), er = el.getBoundingClientRect();
-        dx = br.left - hr.left + pc.x - (er.left - hr.left + er.width / 2);
-        dy = br.top - hr.top + pc.y - (er.top - hr.top + er.height / 2);
-      }
-      if (c.type === 'creature' && at && this.view) {
-        // drop onto the space, flip, glow, then rise into the 3D creature with a dust puff
+      if (done) return; done = true; clearTimeout(timer);
+      el.dataset.stage = 'laying';
+      const er = el.getBoundingClientRect(), ex = er.left + er.width / 2, ey = er.top + er.height / 2;
+      if (!toPile && at) {
+        // a creature: drop onto its space, flip, glow, then rise into the 3D creature with a dust puff
+        const br = this.r.board.getBoundingClientRect(), pc = this.center(at.row, at.col);
+        const dx = br.left + pc.x - ex, dy = br.top + pc.y - ey, s0 = 75 / cw, s1 = 32 / cw;
         const T = (x: number, y: number, sc: number, ry: number) => `translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) perspective(600px) rotateY(${ry}deg) scale(${sc})`;
         const gl = '0 0 40px #ffd45aaa,0 10px 30px #000', glow = '0 0 70px 22px #fff2a0,0 0 30px 10px #ffd45a';
-        const dur = Math.min(1500, secs * 1000);
+        const dur = 1100;
         const anim = el.animate([
           { transform: T(0, 0, 1, 0), opacity: 1, boxShadow: gl, offset: 0 },
-          { transform: T(dx, dy, 0.42, 0), opacity: 1, boxShadow: gl, offset: 0.35 },
-          { transform: T(dx, dy, 0.42, 180), opacity: 1, boxShadow: glow, offset: 0.6 },
-          { transform: T(dx, dy, 0.42, 360), opacity: 1, boxShadow: glow, offset: 0.75 },
-          { transform: T(dx, dy - 40, 0.18, 360), opacity: 0, boxShadow: glow, offset: 1 },
+          { transform: T(dx, dy, s0, 0), opacity: 1, boxShadow: gl, offset: 0.4 },
+          { transform: T(dx, dy, s0, 180), opacity: 1, boxShadow: glow, offset: 0.62 },
+          { transform: T(dx, dy, s0, 360), opacity: 1, boxShadow: glow, offset: 0.77 },
+          { transform: T(dx, dy - 40, s1, 360), opacity: 0, boxShadow: glow, offset: 1 },
         ], { duration: dur, easing: 'ease-in-out', fill: 'forwards' });
         const puff = h('div', { class: 'dust-puff', 'aria-hidden': 'true' });
-        const pc = this.center(at.row, at.col);
         puff.style.left = `${pc.x}px`; puff.style.top = `${pc.y}px`;
         setTimeout(() => this.r.board?.append(puff), dur * 0.8);
         setTimeout(() => puff.remove(), dur * 0.8 + 700);
-        anim.onfinish = () => el.remove();
+        anim.onfinish = () => { unlist(); el.remove(); };
         return;
       }
-      const anim = el.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.15)`, opacity: 0.2 }], { duration: Math.min(500, secs * 700), easing: 'ease-in', fill: 'forwards' });
-      anim.onfinish = () => el.remove();
+      // lay it down on the enemy discard pile: shrink, tilt back as it slides over, and land flat on the pile
+      const pile = this.r.eDiscard as El | undefined;
+      const pr = pile && pile.getBoundingClientRect();
+      const tx = pr && pr.width ? pr.left + pr.width / 2 : 12 + cw * 0.12, ty = pr && pr.width ? pr.top + pr.height / 2 : vh * 0.3;
+      const s = pr && pr.width ? pr.width / er.width : 0.2;
+      const dx = tx - ex, dy = ty - ey;
+      const T = (x: number, y: number, sc: number, rx: number, rz: number) => `translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) perspective(900px) rotateX(${rx}deg) rotateZ(${rz}deg) scale(${sc})`;
+      const anim = el.animate([
+        { transform: T(0, 0, 1, 0, 0), opacity: 1, offset: 0 },
+        { transform: T(dx * 0.15, dy * 0.15 - 14, 0.86, 8, -4), opacity: 1, offset: 0.2 },
+        { transform: T(dx * 0.7, dy * 0.7 - 10, s * 1.7, 34, -10), opacity: 1, offset: 0.65 },
+        { transform: T(dx, dy, s * 1.08, 18, -3), opacity: 1, offset: 0.88 },
+        { transform: T(dx, dy, s, 0, 0), opacity: 1, offset: 1 },
+      ], { duration: 720, easing: 'cubic-bezier(.45,.05,.4,1)', fill: 'forwards' });
+      anim.onfinish = () => { unlist(); el.remove(); land(); };
+      layAnim = anim;
+      layFallback = setTimeout(() => { if (el.isConnected) { unlist(); el.remove(); } land(); }, 1600); // never leave the pile short (background tabs pause animations)
     };
-    el.addEventListener('pointerdown', finish);
-    setTimeout(finish, secs * 1000);
+    (el as any)._finish = finish;
+    // tap pins the card so it stays readable while play continues; tap again dismisses it (lays it down)
+    let timer: any = null;
+    el.addEventListener('pointerdown', (ev: Event) => {
+      ev.stopPropagation();
+      if (el.dataset.pinned === 'true') { el.dataset.pinned = 'false'; finish(); return; }
+      if (done && layAnim && !landed) { // a tap while it is being laid down grabs it back to the middle, pinned
+        layAnim.onfinish = null; layAnim.cancel(); layAnim = null; clearTimeout(layFallback); done = false; el.dataset.stage = 'big';
+      }
+      if (done) return;
+      clearTimeout(timer);
+      el.dataset.pinned = 'true';
+    });
+    // about a second in play; automated runs (?test=1, slow software graphics) hold it 3 s so the checks can see it (data-hold-ms = the real time)
+    el.dataset.holdMs = String(this.revealHoldMs());
+    timer = setTimeout(finish, this.test ? Math.max(3000, this.revealHoldMs()) : this.revealHoldMs());
+    setTimeout(() => gone(), 15000); // never hold the computer's turn if a tab pauses the animation
+    return goneP;
   }
-  spellFx(e: any) {
-    if (!this.r.fx || !this.view) return;
-    const card = CARDS[e.cardId];
-    const sh = SH[e.player as 'player' | 'opponent'];
-    const t = e.target && e.target.row ? e.target : e.target && e.target.commander ? SH[e.target.commander as 'player' | 'opponent'] : null;
-    const spawn = (cls: string, text: string, row: number, col: number, ms = 1100) => {
-      const p = this.center(row, col);
-      const f = h('div', { class: 'fx-' + cls, 'aria-hidden': 'true' }, text);
-      f.style.left = p.x + 'px'; f.style.top = p.y + 'px';
-      this.r.fx.append(f);
-      setTimeout(() => f.remove(), ms);
-    };
-    switch (card.effect) {
-      case 'damage': if (t) { spawn('orb', '🔥', t.row, t.col, 900); spawn('boom', 'KA-BOOM!', t.row, t.col); } break;
-      case 'areaDamage': if (t) {
-        spawn('meteor', '☄️', t.row, t.col, 1000);
-        this.r.board.classList.remove('shake'); void this.r.board.offsetWidth; this.r.board.classList.add('shake');
-        setTimeout(() => this.r.board.classList.remove('shake'), 800);
-      } break;
-      case 'shield': if (t) spawn('bubble', '', t.row, t.col, 1400); break;
-      case 'heal': case 'healCommander': if (t) spawn('beam', '✨', t.row, t.col, 1200); break;
-      case 'buffAttack': { const f = h('div', { class: 'fx-redglow', 'aria-hidden': 'true' }); this.r.fx.append(f); setTimeout(() => f.remove(), 1300); break; }
-      case 'gainCrystals': spawn('beam', '💎', sh.row, sh.col, 1200); break;
-      default: spawn('beam', '✨', sh.row, sh.col, 1000);
+  // ------------------------------------------------------------ Owner (Ken, Oct 30): the enemy discard pile, face-up on the left
+  buildEnemyDiscard(match: El) {
+    const b = h('button', { type: 'button', class: 'e-discard empty', 'aria-label': 'Enemy discard pile', title: 'The computer\'s used cards (tap to look through them)', 'data-count': '0' },
+      h('span', { class: 'e-discard-top', 'aria-hidden': 'true' }), h('span', { class: 'e-discard-n', 'aria-hidden': 'true' }, '0')) as HTMLButtonElement;
+    b.addEventListener('pointerdown', (e: Event) => e.stopPropagation());
+    b.addEventListener('click', (e: Event) => { e.stopPropagation(); this.showEnemyDiscard(); });
+    this.r.eDiscard = b; this.discardInFlight = 0;
+    match.append(b);
+  }
+  renderEnemyDiscard(thud = false) {
+    const el = this.r.eDiscard as El | undefined, st = this.game.state;
+    if (!el || !st) return;
+    const pile = (st.players.opponent.discard || []) as any[];
+    const shown = Math.max(0, pile.length - this.discardInFlight);
+    const top = shown ? pile[shown - 1] : null;
+    (el.querySelector('.e-discard-n') as El).textContent = String(shown);
+    el.dataset.count = String(shown);
+    el.classList.toggle('empty', !shown);
+    const slot = el.querySelector('.e-discard-top') as El;
+    if ((slot.dataset.cardId || '') !== (top?.cardId || '')) {
+      slot.dataset.cardId = top?.cardId || '';
+      const c = top && CARDS[top.cardId];
+      slot.replaceChildren(...(c ? [h('span', { class: `hand-card static ${c.type} f-${c.faction}`, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c))] : []));
     }
+    el.dataset.top = top?.cardId || '';
+    if (thud) { el.classList.remove('thud'); void el.offsetWidth; el.classList.add('thud'); }
   }
-  shatter(player: string) {
-    const sh = SH[player === 'player' ? 'opponent' : 'player'];
+  /** the enemy discard pile fanned out: cards at about half the hand size, newest first, scroll or drag sideways; tap one for its close-up */
+  showEnemyDiscard() {
+    const st = this.game.state;
+    if (!st) return;
+    const pile = ((st.players.opponent.discard || []) as any[]).slice(0, Math.max(0, st.players.opponent.discard.length - this.discardInFlight)).reverse();
+    const hcw = parseFloat(getComputedStyle(this.r.hand || document.body).getPropertyValue('--hcw')) || Math.min(150, innerHeight * 0.3);
+    const cw = Math.max(48, Math.round(hcw * 0.5));
+    const row = h('div', { class: 'e-discard-row', role: 'list', 'aria-label': 'Enemy discard pile cards' });
+    row.style.setProperty('--dcw', cw + 'px');
+    let moved = false, ix = 0;
+    for (const k of pile) {
+      const c = CARDS[k.cardId];
+      if (!c) continue;
+      const b = h('button', { type: 'button', class: 'e-discard-card', role: 'listitem', 'aria-label': c.name, title: c.name },
+        h('span', { class: `hand-card static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c)));
+      (b.firstChild as El).style.setProperty('--cw', cw + 'px');
+      // Ken (Oct 31): the cards slide out from the left edge, one after another (each starts just off-screen on the left)
+      b.style.setProperty('--dx', (ix + 1) * (cw + 8) + 24 + 'px'); b.style.setProperty('--dd', Math.min(ix, 12) * 28 + 'ms'); ix++;
+      b.addEventListener('click', (e: Event) => { e.stopPropagation(); if (moved) { moved = false; return; } this.showCard(c.id); });
+      row.append(b);
+    }
+    if (!pile.length) row.append(h('p', { class: 'e-discard-none' }, 'The computer has not used any cards yet.'));
+    // drag (mouse or finger) or wheel to scroll sideways, like the hand
+    let sx = 0, sl = 0, pid = -1;
+    row.addEventListener('pointerdown', (e: PointerEvent) => { pid = e.pointerId; sx = e.clientX; sl = row.scrollLeft; moved = false; });
+    row.addEventListener('pointermove', (e: PointerEvent) => { if (e.pointerId !== pid) return; const dx = e.clientX - sx; if (Math.abs(dx) > 6) moved = true; if (moved) row.scrollLeft = sl - dx; });
+    const stop = (e: PointerEvent) => { if (e.pointerId === pid) pid = -1; };
+    row.addEventListener('pointerup', stop); row.addEventListener('pointercancel', stop);
+    row.addEventListener('wheel', (e: WheelEvent) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { row.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+    const d = this.dialog('Enemy discard pile', [h('h2', { class: 'e-discard-title' }, `Enemy discard pile (${pile.length})`), row]);
+    d.el.classList.add('e-discard-view');
+    { // Ken (Oct 31): no frame, the cards come out at the pile's height
+      const pr = (this.r.eDiscard as El | undefined)?.getBoundingClientRect();
+      if (pr && pr.height) d.el.style.setProperty('--dtop', Math.max(0, Math.round(pr.top - 6)) + 'px');
+      d.el.dataset.frame = 'none';
+    }
+    { // Escape closes it whenever it is the top dialog (also after a card close-up on top of it was closed)
+      const close0 = d.close, esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape' && this.dialogs[this.dialogs.length - 1] === d.el) { ev.stopPropagation(); d.close(); } };
+      d.close = () => { document.removeEventListener('keydown', esc, true); close0(); };
+      document.addEventListener('keydown', esc, true);
+    }
+    return d;
+  }
+  /** Oct 31 (Ken: "make it like an event ... completely serious, but absolutely ridiculous"): Brush's painted spell FX play in the 3D
+   *  board scene (spell-fx.ts), from the caster's Stronghold (the Commander casts) to the target. Timing only: the spell has already resolved. */
+  spellFx(e: any, o: { delay?: number; to?: any; kind?: 'cast' | 'counter' | 'replay'; countered?: string | null; at?: { row: number; col: number } | null; atCommander?: boolean } = {}) {
+    const v = this.view;
+    if (!v || !v.playSpell || !SPELL_VISUALS[e.cardId]) return;
+    const side = (e.player === 'opponent' ? 'opponent' : 'player') as 'player' | 'opponent';
+    const sh = SH[side];
+    const cmdT = !o.at && e.target && e.target.commander ? SH[e.target.commander as 'player' | 'opponent'] : null;
+    const tc = o.at || (e.target && e.target.row ? e.target : cmdT);
+    const st = this.game.state;
+    const units = e.cardId === 'battle-cry' ? (st?.board?.creatures || []).filter((c: any) => c.owner === side).map((c: any) => ({ uid: c.uid, row: c.row, col: c.col })) : undefined;
+    v.playSpell({ spell: e.cardId, caster: side, from: { row: sh.row, col: sh.col }, target: tc ? { row: tc.row, col: tc.col } : null, to: o.to ? { row: o.to.row, col: o.to.col } : null,
+      fromH: 1.8, targetH: cmdT || o.atCommander ? 1.5 : 0.7, delay: o.delay || 0, kind: o.kind || 'cast', countered: o.countered ?? null, units });
+  }
+  /** A countered card shatters (Oct 31: into Snuff Out's painted shards, in the 3D scene) at the countered card's square. */
+  shatter(player: string, at?: { row: number; col: number } | null, countered: string | null = null) {
+    const sh = at || SH[player === 'player' ? 'opponent' : 'player'];
+    if (this.view?.spellShards) { this.view.spellShards({ row: sh.row, col: sh.col }, countered); return; }
     const p = this.center(sh.row, sh.col);
     for (let i = 0; i < 8; i++) {
       const f = h('div', { class: 'fx-shard', 'aria-hidden': 'true' });
@@ -780,17 +2719,29 @@ export class App {
     }
   }
 
+  /** R26.A6: Done ends the phase silently after any move; with none made (and moves left) a drop-up asks first. */
+  dropUp: El | null = null;
+  dropOff: ((e: Event) => void) | null = null;
+  closeDropUp() { this.dropUp?.remove(); this.dropUp = null; if (this.dropOff) { document.removeEventListener('pointerdown', this.dropOff, true); this.dropOff = null; } }
   pressDone() {
     const st = this.game.state;
-    if (!st || this.movesDlg) return;
-    if (this.remindMoves && hasMovesLeft(st)) {
-      const name = 'Moves still available! Continue to the next phase?';
-      const miners = new Set(this.game.legalActions().filter((a: any) => a.type === 'mine').map((a: any) => a.creatureUid)).size;
-      const d: any = this.dialog(name, [h('h2', {}, name),
-        miners ? h('p', { class: 'miners-note', style: 'text-align:center;margin:0' }, miners === 1 ? "1 miner hasn't mined" : `${miners} miners haven't mined`) : null as any,
-        h('div', { class: 'row' }, btn('Continue', 'primary', () => { d.close(); this.movesDlg = null; this.game.act({ type: 'done' }); }),
-          btn('Go back', '', () => { d.close(); this.movesDlg = null; }))], () => { this.movesDlg = null; });
-      this.movesDlg = d;
+    if (!st) return;
+    if (this.dropUp) { this.closeDropUp(); return; }
+    if (this.movesDlg) return;
+    if (this.remindMoves && !movedThisPhase(st) && hasMovesLeft(st)) {
+      const txt = "Moves still available (miners haven't mined). Continue to the next phase?";
+      const up: El = h('div', { class: 'menu-panel done-dropup', role: 'dialog', 'aria-label': 'Moves still available' },
+        h('p', { class: 'dropup-text' }, txt),
+        h('div', { class: 'row' }, btn('Continue', 'primary', () => { this.closeDropUp(); this.game.act({ type: 'done' }); }), btn('Go back', '', () => this.closeDropUp())));
+      const db = this.r.done as El, bb = db.getBoundingClientRect();
+      up.style.left = Math.max(4, Math.min(window.innerWidth - 4 - 340, bb.left + bb.width / 2 - 170)) + 'px';
+      up.style.bottom = (window.innerHeight - bb.top + 4) + 'px';
+      document.body.append(up);
+      this.dropUp = up;
+      const off = (e: Event) => { if (!up.contains(e.target as Node) && e.target !== db && !db.contains(e.target as Node)) { this.closeDropUp(); document.removeEventListener('pointerdown', off, true); } };
+      this.dropOff = off;
+      document.addEventListener('pointerdown', off, true);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.closeDropUp(); }, { once: true });
     } else this.game.act({ type: 'done' });
   }
   startSwap() {
@@ -844,7 +2795,7 @@ export class App {
   testLeft: number | null = null;
   lastTick = Date.now();
   timedNow(st: any) {
-    return !st.tutorial && st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase);
+    return !st.tutorial && st.mode !== 'compvscomp' && !(st.mode === 'cardplay' && st.phase === 'action') && st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase);
   }
   setPhaseTimeLeft(n: number) {
     const st = this.game.state;
@@ -868,7 +2819,10 @@ export class App {
     const left = frozen ? (this.testLeft ?? total) : Math.max(0, Math.ceil((this.deadline - now) / 1000));
     const show = timed && left <= CONFIG.countdownSeconds && !st.pendingResponse;
     r.timer.hidden = !show;
-    if (show) r.timer.textContent = String(left);
+    const pt = r.phase?.querySelector('.ph-time') as El | null;
+    if (pt) pt.textContent = timed && !st.pendingResponse ? `${left}s left` : '';
+    this.syncDone();
+    if (show) { if (r.timer.textContent !== String(left) && left <= 5 && st.activePlayer === 'player') audio.play('tick'); /* Oct 31: only the last 5 s of YOUR phase */ r.timer.textContent = String(left); }
     if (!frozen && timed && left <= 0 && !st.pendingResponse) {
       this.deadline = now + total * 1000;
       this.game.act({ type: 'done' });
@@ -881,28 +2835,91 @@ export class App {
     const step = st.tutorial.step;
     tip.hidden = false;
     tip.dataset.step = step;
-    tip.replaceChildren(h('div', { class: 'tip-text' }, (tutorialJson as any).tips[step] || ''),
+    // Owner fix (Ken, Oct 29): on phones the tip covered the board and hand. Drag it anywhere (body or grip), or shrink it to a small tab.
+    this.tipMovable(tip);
+    tip.classList.toggle('tip-small', this.tipMin);
+    tip.replaceChildren(
+      h('div', { class: 'tip-bar' }, h('span', { class: 'tip-grip', 'aria-hidden': 'true' }, '⠿ Tip'),
+        btn(this.tipMin ? '▢' : '–', 'tip-min', (e) => { e.stopPropagation(); this.tipMin = !this.tipMin; this.renderTip(this.game.state); }, { 'aria-label': this.tipMin ? 'Show tip' : 'Shrink tip' })),
+      h('div', { class: 'tip-text' }, (tutorialJson as any).tips[step] || ''),
       btn('Skip Tutorial', 'tip-skip', () => this.showMenu()));
+    this.tipPlace(tip);
+  }
+  tipMin = false;
+  /** where the player put the tip, as a fraction of the match area (null = the normal spot) */
+  tipPos: { x: number; y: number } | null = null;
+  tipPlace(tip: El) {
+    const par = tip.offsetParent as HTMLElement | null;
+    if (!this.tipPos || !par) return;
+    const pw = par.clientWidth, ph = par.clientHeight, tw = tip.offsetWidth, th = tip.offsetHeight;
+    const x = Math.max(0, Math.min(pw - tw, this.tipPos.x * pw)), y = Math.max(0, Math.min(ph - th, this.tipPos.y * ph));
+    tip.style.transform = 'none'; tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  tipMovable(tip: El) {
+    if ((tip as any)._movable) return;
+    (tip as any)._movable = true;
+    let drag: { id: number; sx: number; sy: number; x0: number; y0: number; k: number; moved: boolean } | null = null;
+    tip.addEventListener('pointerdown', (e: PointerEvent) => {
+      e.stopPropagation();
+      if ((e.target as Element)?.closest?.('button')) return;
+      const par = tip.offsetParent as HTMLElement | null;
+      if (!par) return;
+      const pr = par.getBoundingClientRect(), tr = tip.getBoundingClientRect();
+      const k = par.clientWidth ? pr.width / par.clientWidth : 1; // the match area may be scaled (letterbox)
+      drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, x0: (tr.left - pr.left) / k, y0: (tr.top - pr.top) / k, k, moved: false };
+      try { tip.setPointerCapture(e.pointerId); } catch { /* old browser */ }
+      e.preventDefault();
+    });
+    tip.addEventListener('pointermove', (e: PointerEvent) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = (e.clientX - drag.sx) / drag.k, dy = (e.clientY - drag.sy) / drag.k;
+      if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+      drag.moved = true; tip.classList.add('tip-drag');
+      const par = tip.offsetParent as HTMLElement | null;
+      if (!par) return;
+      this.tipPos = { x: (drag.x0 + dx) / par.clientWidth, y: (drag.y0 + dy) / par.clientHeight };
+      this.tipPlace(tip);
+    });
+    const end = (e: PointerEvent) => { if (!drag || e.pointerId !== drag.id) return; drag = null; tip.classList.remove('tip-drag'); };
+    tip.addEventListener('pointerup', end); tip.addEventListener('pointercancel', end);
+    for (const t of ['click', 'mousedown', 'touchstart'] as const) tip.addEventListener(t, (e) => { if (!(e.target as Element)?.closest?.('button')) e.stopPropagation(); });
+    window.addEventListener('resize', () => { if (tip.isConnected) this.tipPlace(tip); });
   }
 
   renderSites(st: any) {
     st.sites.forEach((s: any, i: number) => {
       const m = this.r.sites[i] as El;
-      const sym = s.controller ? FSYM(st.players[s.controller].faction) : '';
+      const fac = s.controller ? st.players[s.controller].faction : '';
+      const emb = fac ? mineEmblemUrl(fac) : null;
+      const mkEmb = () => (emb ? h('img', { class: 'mine-emblem', 'data-mine-emblem': fac, alt: '', draggable: 'false', src: emb, style: this.view?.is3D ? 'visibility:hidden' : null }) : ''); // Owner fix Oct 28: in 3D the emblem is drawn in the scene under the units (scene.ts); this hidden copy only keeps the layout and markers
       const myAction = st.phase === 'action' && st.priority === 'player' && st.activePlayer === 'player' && !st.pendingResponse;
       const n = myAction ? readyMinersAt(st, 'player', s).length : 0;
       m.dataset.readyMiners = String(n);
       m.classList.toggle('ready', n > 0);
-      const mk = n > 0 ? `x${n}` : this.view?.is3D ? sym : '💎' + sym;
+      const mk = (n > 0 ? `x${n}` : 'o') + ':' + fac;
       if (m.dataset.mk !== mk) {
         m.dataset.mk = mk;
-        if (n > 0) m.replaceChildren(h('span', { class: 'pickaxe', 'aria-hidden': 'true' }, h('i', { class: 'pk-h' }), h('i', { class: 'pk-head' }), h('i', { class: 'pk-spark' })), `×${n}`);
-        else m.textContent = this.view?.is3D ? sym : '💎' + sym;
+        if (n > 0) m.replaceChildren(h('span', { class: 'pickaxe', 'data-mine-badge': '', 'aria-hidden': 'true' }, h('img', { class: 'pk-img', src: '/art/ui/mine-all-pickaxe.webp', alt: '', draggable: 'false' })), mkEmb(), `×${n}`);
+        else m.replaceChildren(...(this.view?.is3D ? [] : ['💎']), mkEmb());
       }
       m.style.color = COLOR_HEX[s.color] || COLOR_HEX.white;
       const ring = this.r.rings[i] as El;
-      ring.style.setProperty('--mine', COLOR_HEX[s.color] || COLOR_HEX.white);
+      ring.style.setProperty('--mine', s.controller ? FACTION_GLOW[this.game.state.players[s.controller].faction] : COLOR_HEX[s.color] || COLOR_HEX.white);
       this.r.flows[i].textContent = `+${s.flow.player} / +${s.flow.opponent}`;
+    });
+    this.fitMineBadges();
+  }
+  /** R26.A5: keep every pickaxe badge fully inside the window. */
+  fitMineBadges() {
+    requestAnimationFrame(() => {
+      for (const b of this.root.querySelectorAll('[data-mine-badge]') as any as El[]) {
+        b.style.translate = '';
+        const r = b.getBoundingClientRect(); if (!r.width) continue;
+        const pad = 4;
+        const dx = r.left < pad ? pad - r.left : r.right > window.innerWidth - pad ? window.innerWidth - pad - r.right : 0;
+        const dy = r.top < pad ? pad - r.top : r.bottom > window.innerHeight - pad ? window.innerHeight - pad - r.bottom : 0;
+        if (dx || dy) b.style.translate = `${dx}px ${dy}px`;
+      }
     });
   }
 
@@ -915,20 +2932,46 @@ export class App {
       if (!el) {
         el = h('div', { class: `token f-${card.faction} ${c.owner === 'player' ? 'mine' : 'theirs'}`, role: 'img' },
           h('div', { class: 'tk-body', 'data-sym': FSYM(card.faction), 'aria-hidden': 'true' }),
-          h('div', { class: 'tk-stats' }, h('span', { class: 'a' }), ' ', h('span', { class: 'h' }), ' ', h('span', { class: 'm' }), h('span', { class: 'sh' })), h('div', { class: 'pips', 'aria-hidden': 'true' }));
+          h('div', { class: 'tk-stats' }, h('div', { 'data-unit-badge': '', 'data-metal': METAL[card.faction] || 'gold', 'data-type': isMiner(card) ? 'pickaxe' : card.abilities?.includes('ranged') ? 'bow' : 'sword', role: 'img' },
+            h('img', { class: 'ub-frame', alt: '', draggable: 'false', src: `/art/ui/badges/frame-${METAL[card.faction] || 'gold'}.webp` }),
+            h('img', { class: 'ub-icon', alt: '', draggable: 'false', src: `/art/ui/badges/icon-${isMiner(card) ? 'pickaxe' : card.abilities?.includes('ranged') ? 'bow' : 'sword'}-${METAL[card.faction] || 'gold'}.webp` }),
+            h('span', { class: 'ub-n ub-h', 'data-stat': 'health', 'aria-hidden': 'true' }), h('span', { class: 'ub-n ub-a', 'data-stat': 'attack', 'aria-hidden': 'true' }), h('span', { class: 'ub-n ub-m', 'data-stat': 'movement', 'aria-hidden': 'true' })), h('span', { class: 'a' }), ' ', h('span', { class: 'h' }), ' ', h('span', { class: 'm' }), h('span', { class: 'sh' })), h('div', { class: 'pips', 'aria-hidden': 'true' }));
         this.tokens.set(c.uid, el);
         this.r.board.insertBefore(el, this.r.fx);
       }
       el.dataset.uid = c.uid; el.dataset.row = String(c.row); el.dataset.col = String(c.col);
-      (el.querySelector('.a') as El).textContent = `⚔️${c.attack + junkBonus(st, c)}`;
-      (el.querySelector('.h') as El).textContent = `❤️${c.health}`;
-      (el.querySelector('.m') as El).textContent = `👟${maxMove(c)}${isMiner(CARDS[c.cardId]) ? ' ⛏️' : ''}${CARDS[c.cardId].abilities?.includes('ranged') ? ' 🏹' : ''}`;
+      const printed: any = CARDS[c.cardId];
+      const atkNow = c.attack + junkBonus(st, c);
+      const aEl = el.querySelector('.a') as El, hEl = el.querySelector('.h') as El, mEl = el.querySelector('.m') as El;
+      aEl.textContent = String(atkNow); aEl.dataset.buff = String(atkNow > printed.attack);
+      hEl.textContent = String(c.health); hEl.dataset.buff = String(c.health > printed.health);
+      mEl.textContent = String(maxMove(c));
+      { const bd = el.querySelector('[data-unit-badge]') as El, sv = (k: string, v: number, buff: boolean) => { const n = bd.querySelector(`[data-stat=${k}]`) as El; if (n.textContent !== String(v)) n.textContent = String(v); n.dataset.buff = String(buff); };
+        sv('attack', atkNow, atkNow > printed.attack); sv('health', c.health, c.health > printed.health); sv('movement', maxMove(c), false);
+        bd.dataset.damaged = String(c.health < c.maxHealth); bd.setAttribute('aria-label', `Attack ${atkNow}, Health ${c.health}, Movement ${maxMove(c)}`); }
+      aEl.title = 'Attack'; hEl.title = 'Health'; mEl.title = 'Movement';
+      el.dataset.extras = `${isMiner(printed) ? '⛏️' : ''}${printed.abilities?.includes('ranged') ? '🏹' : ''}`;
       el.dataset.mining = String(!!c.minedMine);
       const up = c.upgrades.attack + c.upgrades.health;
       el.dataset.upgrades = String(up);
       (el.querySelector('.pips') as El).textContent = up ? '●'.repeat(Math.min(up, 8)) : '';
       const sh = el.querySelector('.sh') as El;
-      sh.textContent = c.shield > 0 ? ` 🛡${c.shield}` : '';
+      // Owner (Oct 24): the pickaxe/bow already shows in the stat badge, so it is no longer drawn again beside it (kept as hidden text for screen readers)
+      let ex = el.querySelector('.tk-extra') as El | null;
+      if (!ex) { ex = h('span', { class: 'tk-extra sr-only' }) as El; el.append(ex); }
+      ex.textContent = el.dataset.extras || '';
+      sh.textContent = c.shield > 0 ? `🛡${c.shield}` : '';
+      el.dataset.poison = String(c.poison || 0);
+      el.dataset.drunk = String(c.drunk || 0);
+      el.dataset.facing = String(c.facing || "");
+      let pm = el.querySelector('.poison-mark') as El | null;
+      if (c.poison > 0) {
+        if (!pm) { pm = h('span', { class: 'poison-mark', role: 'img' }); sh.after(pm); }
+        const px = Math.max(1, c.poisonStacks || 1); // Oct 30 stacking: "💧7 x2"
+        pm.setAttribute('aria-label', px > 1 ? `Poisoned x${px}: ${px} damage a turn, ${c.poison} turns left` : `Poisoned, ${c.poison} turns left`);
+        pm.textContent = px > 1 ? `💧${c.poison} x${px}` : `💧${c.poison}`;
+      } else if (pm) pm.remove();
+      this.renderStatusIcons(st, c, el);
       el.dataset.damaged = String(c.health < c.maxHealth);
       el.dataset.acted = String(isActed(st, c));
       el.setAttribute("aria-label", `${card.name}, row ${c.row}, column ${c.col}`);
@@ -940,43 +2983,286 @@ export class App {
         alias.dataset.damaged = el.dataset.damaged;
         alias.textContent = `⚔️${c.attack} ❤️${c.health}`;
       }
-      el.title = `${card.name}: Attack ${c.attack}, Health ${c.health}/${c.maxHealth}${c.shield > 0 ? `, Shield ${c.shield}` : ''}`;
-      this.place(el, c.row, c.col);
+      el.title = `${card.name}: Attack ${c.attack}, Health ${c.health}/${c.maxHealth}${c.shield > 0 ? `, Shield ${c.shield}` : ''}${c.poison > 0 ? `, Poisoned for ${c.poison} more turns` : ''}`;
+      this.placeToken(el, c.row, c.col);
     }
     for (const [uid, el] of this.tokens) if (!seen.has(uid)) { el.remove(); this.tokens.delete(uid); }
+    this.renderAbilityButtons(st);
     this.fitHearts();
+  }
+
+  /** Round 13: a small round icon above every unit with an activated ability; lit when it is your turn and the ability can be used. */
+  /** Owner (Oct 25): lasting effects show as the owner's icons above the unit's head for as long as they last (with turns left when known). */
+  renderStatusIcons(st: any, c: any, el: El) {
+    const t = st.turn;
+    const list: { k: string; n: number; label: string; x?: number }[] = [];
+    // Ken (Oct 30, stacking): a stacked effect shows a gold x2 / x3 chip on its icon
+    const ps = c.poison > 0 ? Math.max(1, c.poisonStacks || 1) : 0, bs = c.bubbles > 1 ? c.bubbles : 0, bc = st.flags?.battleCryN?.[c.owner] || 0;
+    if (c.poison > 0) list.push({ k: 'poison', n: c.poison, x: ps, label: ps > 1 ? `Poisoned x${ps}: ${ps} damage a turn, ${c.poison} turn${c.poison > 1 ? 's' : ''} left` : `Poisoned, ${c.poison} turn${c.poison > 1 ? 's' : ''} left` });
+    if (c.drunk > 0) list.push({ k: 'drunk', n: c.drunk, label: `Drunk, ${c.drunk} turn${c.drunk > 1 ? 's' : ''} left` });
+    if ((c.rootUntil || 0) > t) list.push({ k: 'rooted', n: c.rootUntil - t, label: "Rooted: can't move" });
+    if ((c.wardUntil || 0) > t) list.push({ k: 'ward', n: 0, label: 'Warded: takes no damage' });
+    if (c.shield > 0 || c.bubble) list.push({ k: 'shield', n: c.shield > 0 ? c.shield : 0, x: c.shield > 0 ? 0 : bs, label: c.shield > 0 ? `Shield ${c.shield}` : bs > 1 ? `Shield bubble x${bs}: blocks the next ${bs} hits` : 'Shield bubble' });
+    if (bc > 0) list.push({ k: 'attackup', n: 0, x: bc, label: `+${bc} Attack this turn` });
+    if ((c.lockedUntil || 0) > t) list.push({ k: 'sleep', n: c.lockedUntil - t, label: `Can't attack for ${c.lockedUntil - t} more turn${c.lockedUntil - t > 1 ? 's' : ''}` }); // Oct 31: a shielded Bearer can still walk and mine
+    let box = el.querySelector('.st-icons') as El | null;
+    const key = list.map((x) => x.k + x.n + 'x' + (x.x || 0)).join(',');
+    if (!list.length) { box?.remove(); return; }
+    if (!box) { box = h('div', { class: 'st-icons', role: 'group', 'aria-label': 'Status' }) as El; el.append(box); }
+    if (box.dataset.key === key) return;
+    box.dataset.key = key;
+    box.replaceChildren(...list.map((x) => h('span', { class: 'st-ic', 'data-status': x.k, role: 'img', 'aria-label': x.label, title: x.label },
+      h('img', { src: `/art/pop/icon-${x.k}.webp`, alt: '', draggable: 'false' }), x.n > 0 ? h('b', { 'aria-hidden': 'true' }, String(x.n)) : '',
+      (x.x || 0) > 1 ? h('span', { class: 'st-stack', 'data-stack': String(x.x), 'aria-hidden': 'true' }, `×${Math.min(3, x.x!)}`) : '')));  // Ken (Oct 30): a plain white ×2 / ×3 on the icon
+  }
+  renderAbilityButtons(st: any) {
+    const live = st.phase !== 'over' && st.phase !== 'mulligan';
+    const legal: any[] = [...(live ? brewActions(st, 'player') : []), ...(live && st.priority === 'player' ? this.game.legalActions().filter((a: any) => a.type === 'ability' && (a.ability === 'brew' || (st.activePlayer === 'player' && st.phase === 'action'))) : [])];
+    for (const c of st.board.creatures) {
+      const el = this.tokens.get(c.uid);
+      if (!el) continue;
+      const keys = ((CARDS[c.cardId].abilities || []) as string[]).filter((k) => ABILITY_UI[k]);
+      el.querySelectorAll('.ab-btn').forEach((b) => { if (!keys.some((k) => (PUB_ABILITY[k] || k) === (b as El).dataset.ability)) b.remove(); });
+      keys.forEach((k, i) => {
+        const ui = ABILITY_UI[k], cost = k === 'blink' ? 1 : ABILITY_COST[k] || 0;
+        let b = el.querySelector(`.ab-btn[data-ability="${PUB_ABILITY[k] || k}"]`) as El | null;
+        if (!b) {
+          b = h('button', { type: 'button', class: 'ab-btn', 'data-ability': PUB_ABILITY[k] || k, 'data-creature-uid': c.uid }, h('span', { 'aria-hidden': 'true' }, ui.icon)) as El;
+          let picking = false;
+          // while a target is being chosen the button may sit over a target square: let that press reach the board
+          b.addEventListener('pointerdown', (e) => { picking = !!this.pick; if (!picking) e.stopPropagation(); });
+          const showTip = () => {
+            this.hideAbilityTip();
+            const tip = h('div', { role: 'tooltip', class: 'ab-tip', id: 'ab-tip' }, b!.getAttribute('aria-label') || '') as El;
+            const r = b!.getBoundingClientRect();
+            tip.style.cssText = `position:fixed;left:${r.left + r.width / 2}px;top:${Math.max(4, r.top - 8)}px;transform:translate(-50%,-100%);z-index:9999;max-width:min(320px,90vw);padding:6px 10px;background:#000c;border:1px solid #c9a24b;border-radius:8px;color:#fff;font-size:max(14px,1.6vh);pointer-events:none;text-align:center`;
+            document.body.append(tip);
+            b!.setAttribute('aria-describedby', 'ab-tip');
+          };
+          b.addEventListener('pointerenter', showTip); b.addEventListener('focus', showTip);
+          b.addEventListener('pointerleave', () => this.hideAbilityTip()); b.addEventListener('blur', () => this.hideAbilityTip());
+          b.addEventListener('click', (e) => { e.stopPropagation(); this.hideAbilityTip(); if (picking) { picking = false; return; } const cr = this.game.state.board.creatures.find((x: any) => x.uid === c.uid); if (cr) this.useAbility(cr, k); });
+          // Owner (Oct 25): the ability icon takes the place of the unit-type icon in the stat badge
+          const bd = el.querySelector('[data-unit-badge]') as El | null;
+          (bd || el).append(b);
+          if (bd) bd.dataset.ability = PUB_ABILITY[k] || k;
+        }
+        const mineUnit = c.owner === 'player';
+        const ok = mineUnit && legal.some((a: any) => a.creatureUid === c.uid && a.ability === k);
+        b.dataset.ready = String(ok); b.dataset.icon = ui.icon;
+        b.classList.toggle('off', !ok);
+        b.setAttribute('aria-disabled', String(!ok));
+        b.style.setProperty('--ox', (i - (keys.length - 1) / 2) * 120 + '%');
+        // shimmer only when it can be used right now (your unit, your turn, enough crystals); otherwise it just looks like a normal badge icon
+        b.classList.toggle('ready', ok);
+        const label = `${CARDS[c.cardId].name}: ${ui.name} (${cost || 'free'}) ${cost ? 'crystal' + (cost > 1 ? 's' : '') + '. ' : '. '}${ui.text}`;
+        b.title = label; b.setAttribute('aria-label', label);
+      });
+    }
+  }
+  // ---- R26.A9: Junk Shaman lift, the player picks the landing square
+  lift: { shamanUid: string; targetUid: string | null; legal: { row: number; col: number }[]; hover: { row: number; col: number } | null; ghost?: El; stop?: () => void } | null = null;
+  getLiftState() {
+    const l = this.lift;
+    if (l) return { active: true, shamanUid: l.shamanUid, targetUid: l.targetUid, legalSquares: l.legal.map((c) => ({ ...c })), hover: l.hover ? { ...l.hover } : null };
+    const pk: any = this.pick;
+    if (pk && pk.lift) return { active: true, shamanUid: pk.lift as string, targetUid: null, legalSquares: [], hover: null };
+    return { active: false, shamanUid: null, targetUid: null, legalSquares: [], hover: null };
+  }
+  cancelLift(msg = '') {
+    const l = this.lift;
+    if ((this.pick as any)?.lift) { this.pick = null; this.clearGlow(); }
+    if (!l) return;
+    l.stop && l.stop();
+    this.lift = null; this.clearGlow();
+    if (msg) this.flash(msg);
+  }
+  startLift(cr: any) {
+    const st = this.game.state;
+    const targets = shamanLiftTargets(st, cr.uid);
+    if (!targets.length) { this.flash('Junk Shaman: nobody within 5 spaces to lift'); return; }
+    const cells = targets.filter((t: any) => shamanLandingSquares(st, cr.uid, t.uid).length).map((t: any) => ({ row: t.row, col: t.col }));
+    if (!cells.length) { this.flash('Junk Shaman: nowhere to land'); return; }
+    this.pick = { cells, lift: cr.uid, done: (cell: any) => {
+      this.pick = null; this.clearGlow();
+      const tgt = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col);
+      if (tgt) this.beginLandingPick(cr, tgt);
+    } } as any;
+    this.setGlow(cells, 'glow-swap');
+    this.flash('Junk Shaman: choose a character to lift');
+  }
+  beginLandingPick(cr: any, tgt: any) {
+    const st = this.game.state;
+    const legal = shamanLandingSquares(st, cr.uid, tgt.uid);
+    const l: NonNullable<App['lift']> = { shamanUid: cr.uid, targetUid: tgt.uid, legal, hover: null };
+    this.lift = l;
+    this.clearGlow();
+    this.setGlow(legal, 'glow-swap');
+    const card = CARDS[tgt.cardId];
+    const ghost = dragIcon(card.faction, 'ghost tk lift-ghost');
+    ghost.style.cssText = 'position:fixed;pointer-events:none;z-index:1000;transform:translate(-50%,calc(-50% - 28px));filter:drop-shadow(0 18px 8px #0009)';
+    // Owner fix (Ken, Oct 28): on the 3D board the real unit hangs at the pointer instead of the flat ghost
+    const carry3d = !!(this.view?.is3D && this.view.setCarry);
+    if (carry3d) ghost.style.display = 'none';
+    document.body.append(ghost); l.ghost = ghost;
+    this.tokens.get(tgt.uid)?.classList.add('lifted');
+    const hl = (c: { row: number; col: number } | null) => {
+      for (const el of this.r.cells.values() as Iterable<El>) el.classList.remove('hover', 'lift-hover');
+      l.hover = c;
+      if (c) this.r.cells.get(c.row + ',' + c.col)?.classList.add('hover', ...(legal.some((q) => q.row === c.row && q.col === c.col) ? ['lift-hover'] : []));
+    };
+    const mv = (e: PointerEvent) => { ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px'; if (carry3d) this.view?.setCarry?.({ uid: tgt.uid, holder: cr.uid, x: e.clientX, y: e.clientY }); hl(this.cellAt(e.clientX, e.clientY)); };
+    const down = (e: PointerEvent) => {
+      if ((e.target as El)?.closest?.('.dialog,.overlay,.hud-menu,.menu-panel')) return;
+      e.preventDefault(); e.stopPropagation();
+      if (e.button === 2) { this.cancelLift('Cancelled'); return; }
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      const c = this.cellAt(e.clientX, e.clientY);
+      if (!c) return;
+      if (c.row === cr.row && c.col === cr.col) { this.cancelLift('Cancelled'); return; }
+      if (!legal.some((q) => q.row === c.row && q.col === c.col)) return; // illegal square: nothing happens
+      const action = shamanLiftAction(this.game.state, cr.uid, tgt.uid, c);
+      this.cancelLift();
+      this.payGate(2, () => { const r = this.game.act(action); if (r && !r.ok) this.flash(r.error!); });
+    };
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); this.cancelLift('Cancelled'); } };
+    const ctx = (e: Event) => { e.preventDefault(); this.cancelLift('Cancelled'); };
+    document.addEventListener('pointermove', mv, true); document.addEventListener('pointerdown', down, true);
+    document.addEventListener('keydown', key, true); document.addEventListener('contextmenu', ctx, true);
+    l.stop = () => {
+      document.removeEventListener('pointermove', mv, true); document.removeEventListener('pointerdown', down, true);
+      document.removeEventListener('keydown', key, true); document.removeEventListener('contextmenu', ctx, true);
+      ghost.remove(); this.tokens.get(tgt.uid)?.classList.remove('lifted'); if (carry3d) this.view?.setCarry?.(null);
+    };
+    const p = this.squareToScreen(tgt.row, tgt.col);
+    if (p) { ghost.style.left = p.x + 'px'; ghost.style.top = p.y + 'px'; if (carry3d) this.view?.setCarry?.({ uid: tgt.uid, holder: cr.uid, x: p.x, y: p.y }); }
+    this.flash('Click a lit square to drop it there (Esc cancels)');
+  }
+  /** Click an ability button: no target = fire; otherwise light up the squares it can go to and wait for a click. */
+  hideAbilityTip() { document.getElementById('ab-tip')?.remove(); }
+  useAbility(cr: any, k: string) {
+    const ui = ABILITY_UI[k];
+    if (this.game.state.priority !== 'player' || (this.game.state.phase !== 'action' && k !== 'brew')) { this.flash('Abilities are used in your Action phase'); return; }
+    const opts = this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === cr.uid && a.ability === k);
+    if (!opts.length) { this.flash(`${ui.name}: not available (needs crystals, or already used this turn)`); return; }
+    this.pick = null; this.clearGlow();
+    if (k === 'shaman') { this.startLift(cr); return; }
+    const cellOf = (a: any) => this.abilityCell(a, cr) || a.target || null;
+    if (!opts.some(cellOf)) { const r = this.game.act(opts[0]); if (!r.ok) this.flash(r.error!); return; }
+    const cells = opts.map(cellOf).filter(Boolean) as { row: number; col: number }[];
+    this.pick = { cells, done: (cell) => {
+      this.pick = null; this.clearGlow();
+      const here = opts.filter((a: any) => { const q = cellOf(a); return q && q.row === cell.row && q.col === cell.col; });
+      const a = k === 'shaman' ? this.bestShaman(here, cr) : here[0];
+      if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); }
+    } };
+    this.setGlow(cells, 'glow-swap');
+    this.flash(`${ui.name}: choose a square`);
   }
 
   renderHand(st: any) {
     const me = st.players.player;
     const hand = this.r.hand as El;
     const tot = funds(me);
-    const tunnel = sitesControlled(st, 'opponent') > sitesControlled(st, 'player');
+    const tunnel = st.sites.some((x: any) => x.controller === 'player'); // Ken (Oct 31): Tunnel only beside a mine your side owns. No Tunnel! tag is drawn any more (Ken: remove ability overlays); this only re-keys the hand when ownership changes
     const hidden = st.phase === 'mulligan';
     const costOf = (c: any) => (c.type === 'creature' ? creatureCost(st, 'player', c) : c.type === 'spell' ? spellCost(st, 'player', c) : 0);
     const affordable = (c: any) => (c.type === 'creature' ? tot >= costOf(c) : c.type === 'spell' ? tot >= costOf(c) : true);
-    const key = hidden ? 'x' : me.hand.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId]) + ':' + tunnel).join(',');
+    const playableUids = new Set<string>();
+    if (!hidden && st.priority === 'player') for (const a of this.game.legalActions() as any[]) if (a.uid && a.type !== 'pass' && a.type !== 'done') playableUids.add(a.uid);
+    const shown = hidden ? me.hand : this.sortedHand(me.hand, costOf);
+    if (this.r.handSort) { const hs = this.r.handSort as El, hide = hidden || !me.hand.length; if (hs.hidden !== hide) { hs.hidden = hide; if (hide) this.closeHandSortUp(); } }
+    const key = hidden ? 'x' : this.handSortMode + '|' + shown.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId]) + ':' + tunnel + ':' + (playableUids.has(hc.uid) ? 1 : 0)).join(',');
     if (key === this.handKey) return;
     this.handKey = key;
+    const wasUp = (hand.querySelector('.hand-card.popped:not(.popclone)') as El | null)?.dataset.uid || ''; // Ken (Oct 30, no flicker): a rebuilt hand keeps the raised card up
+    const oldLefts = new Map<string, number>();
+    if (this.handSortMode || this.handSortGlide) for (const c of hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)') as NodeListOf<El>) if (typeof (c as any)._left === 'number') oldLefts.set(c.dataset.uid || '', (c as any)._left);
+    this.handSortGlide = false;
+    this.clearPops();
     hand.replaceChildren();
     if (hidden) return;
-    for (const hc of me.hand) {
+    let dealN = 0;
+    for (const hc of shown) {
       const c = CARDS[hc.cardId];
       const cost = costOf(c);
-      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-card': c.id },
+      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), 'data-cost': String(cost), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
-        tunnel && c.abilities?.includes('tunnel') ? h('span', { class: 'tunnel-tag' }, 'Tunnel!') : null);
-      el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { this.openHand(true); this.popCard(el, true); } });
-      el.addEventListener('pointerleave', (e: PointerEvent) => { this.popCard(el, false); if (e.pointerType === 'mouse') this.openHand(false); });
-      el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.openHand(true); }, true);
-      el.addEventListener('focus', () => this.popCard(el, true));
+        playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null);
+      // Ken (Oct 31): "On the cards with special abilities, like tunnel, you have it over the card, just remove that. Remove all those
+      // special ability ... overlays." The Round 10 'Tunnel!' tag is gone; the card's own text still says what it does.
+      (el.querySelector('.ohcard') || el.firstElementChild)?.setAttribute('data-card-id', c.id);
+      el.addEventListener('pointerenter', (e: PointerEvent) => { if (e.pointerType === 'mouse') { if (this.lastPtr.down || this.noHand || el.classList.contains('popped') || this.hitCard(e.clientX, e.clientY) !== el || this.r.hand?.querySelector('.hand-card.popped:not(.popclone)')) return; this.openHand(true); this.popCard(el, true); } });
+      el.addEventListener('pointerleave', (e: PointerEvent) => { if (e.pointerType !== 'mouse') this.popCard(el, false); });
+      el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType !== 'mouse') { this.touchWasShown = !!this.r.hand?.classList.contains('shown'); this.handFocusTo(e.clientX); this.openHand(true); this.showHandTouch(true); } }, true);
+      el.addEventListener('focus', () => { if (el.matches(':focus-visible')) this.popCard(el, true); });
       el.addEventListener('blur', () => this.popCard(el, false));
       el.addEventListener('pointerdown', (e: PointerEvent) => this.cardPointerDown(e, hc, el));
+      (el as any)._down = (e: PointerEvent) => this.cardPointerDown(e, hc, el);
       el.addEventListener('click', (e: MouseEvent) => { if (e.detail === 0) this.showCard(c.id); });
+      if (!this.seenHand.has(hc.uid)) { this.seenHand.add(hc.uid); const d = dealN++ * 130; el.classList.add('dealt'); el.style.animationDelay = d + 'ms'; this.dealLog.push({ uid: hc.uid, delayMs: d, startMs: performance.now() + d, durationMs: 700 } as any); setTimeout(() => el.classList.remove('dealt'), d + 760); }
       hand.append(el);
     }
     this.layoutHand();
+    // sorted hand: the cards glide from where they were to their new places (a script animation, so it also runs in test pages)
+    if (oldLefts.size) for (const c of hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)') as NodeListOf<El>) {
+      const o = oldLefts.get(c.dataset.uid || ''), nx = (c as any)._left;
+      if (o === undefined || typeof nx !== 'number' || Math.abs(o - nx) < 1 || c.classList.contains('popped')) continue;
+      try { c.animate([{ left: o + 'px', offset: 0 }], { duration: 360, easing: 'cubic-bezier(.25,.8,.3,1)' }); } catch { /* no Web Animations */ }
+    }
+    if (wasUp && this.lastPtr.type === 'mouse' && !this.lastPtr.down && hand.classList.contains('open')) {
+      const again = this.handPick(this.lastPtr.x, this.lastPtr.y);
+      if (again && again.dataset.uid === wasUp) this.popCard(again, true);
+    }
+  }
+  /** Test hook: every owner-layout piece with its box, plus theme info. */
+  getHud() {
+    const m = this.root.querySelector('.match') as El | null;
+    if (!m) return null;
+    const pieces: any = {};
+    m.querySelectorAll('[data-role]').forEach((e: El) => { const b = e.getBoundingClientRect(); pieces[e.dataset.role!] = { x: b.left, y: b.top, w: b.width, h: b.height, text: e.textContent, rotation: getComputedStyle(e).rotate, hidden: !!(e as any).hidden }; });
+    const ps = this.game.state.players;
+    return { width: m.clientWidth, height: m.clientHeight, pieces, themes: { player: { faction: ps.player.faction, hasTheme: hasTheme(ps.player.faction) }, opponent: { faction: ps.opponent.faction, hasTheme: hasTheme(ps.opponent.faction) } },
+      bankPictures: { player: (m.querySelector('[data-role=player-bank] img') as HTMLImageElement | null)?.getAttribute('src'), opponent: (m.querySelector('[data-role=enemy-bank] img') as HTMLImageElement | null)?.getAttribute('src') },
+      gemPictures: { player: (m.querySelector('[data-role=player-flow-crystal] img') as HTMLImageElement | null)?.getAttribute('src'), opponent: (m.querySelector('[data-role=enemy-flow-crystal] img') as HTMLImageElement | null)?.getAttribute('src') },
+      cornerFrames: m.querySelectorAll('.o-frame').length,
+      bankBadgeOnCrystal: !!m.querySelector('.o-gem .o-bank-n, .o-gem .cry-bank'),
+      menu: { open: m.querySelector('.o-menu')?.classList.contains('open') || false, items: [...m.querySelectorAll('.o-menu-item')].map((x) => x.textContent) } };
+  }
+  flowLog: any[] = [];
+  flowPulses: Record<string, number> = { player: 0, opponent: 0 };
+  getFlowStreams() { const now = performance.now(); const strip = ({ at, ...r }: any) => ({ ...r, toPoint: r.toScreen ?? null, pulses: this.flowPulses[r.side] || 0 }); const log = this.flowLog.map(strip); return { active: this.flowLog.filter((f) => now - f.at < 2500).map(strip), log, targets: this.view?.flowDestinations?.() ?? null, pulses: { ...this.flowPulses } }; }
+  getDealLog() { return this.dealLog.map((d: any) => ({ uid: d.uid, startMs: d.startMs, durationMs: d.durationMs })); }
+  getHudLayout() { const m = this.root.querySelector('.match') as any; return m?._hudInfo ? m._hudInfo() : null; }
+  getTheme(side: 'player' | 'opponent') {
+    const m = this.root.querySelector('.match') as El | null;
+    const f = this.game.state.players[side === 'player' ? 'player' : 'opponent'].faction as string;
+    const id = ({ goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' } as any)[f] || f;
+    const hudSide = side === 'player' ? 'player' : 'enemy';
+    return { faction: id, placeholder: !hasTheme(f),
+      crystalSrc: (m?.querySelector(`[data-role=${hudSide}-flow-crystal] img`) as HTMLImageElement | null)?.getAttribute('src') || null,
+      bankSrc: (m?.querySelector(`[data-role=${hudSide}-bank] img`) as HTMLImageElement | null)?.getAttribute('src') || null,
+      cornerFrames: side === 'player' ? (m?.querySelectorAll('[data-corner-frame]').length || 0) : 0 };
+  }
+  /** Round 9a: drawn cards slide up from below the screen one after another (700 ms each, 130 ms apart). */
+  seenHand = new Set<string>();
+  dealLog: { uid: string; delayMs: number; startMs?: number; durationMs: number }[] = [];
+  getDealState() { return { log: this.dealLog.slice(-20), dealing: !!this.r.hand?.querySelector('.hand-card.dealt') }; }
+  /** The neighbors of the raised card move aside (12 % of a card width). */
+  asideNeighbors(el: El | null) {
+    const hand = this.r.hand as El;
+    if (!hand) return;
+    const cards = [...hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[];
+    const idx = el ? cards.indexOf(el) : -1;
+    cards.forEach((c) => { (c as any)._ra = null; });
+    // Ken (Oct 30 hand spec): the raised card's neighbours step aside a little (looks only); the hover strips never move with them
+    cards.forEach((c, i) => {
+      if (c === el) return;
+      const base = el ? 'translateY(0px)' : c.dataset.fan || ''; // raised hand: the fan's curve is flattened
+      c.style.transform = idx < 0 || !el ? base : `${base} translateX(${(i < idx ? -1 : 1) * c.offsetWidth * 0.12 * (1 / Math.max(1, Math.abs(i - idx) * 0.8))}px)`;
+      c.dataset.aside = idx < 0 ? '' : i < idx ? 'left' : 'right';
+    });
   }
 
   // ------------------------------------------------------------ dialogs driven by state
@@ -984,6 +3270,7 @@ export class App {
   respDlg: { close: () => void } | null = null;
   handleDialogs(st: any) {
     const needMull = st.phase === 'mulligan' && st.priority === 'player' && !st.mulliganDone.player;
+    if (needMull && this.mullDlg && (this.mullDlg as any).el.dataset.mulligans !== String(st.players.player.mulligans || 0)) { this.mullDlg.close(); this.mullDlg = null; }
     if (needMull && !this.mullDlg) this.openMulligan(st);
     if (!needMull && this.mullDlg) { this.mullDlg.close(); this.mullDlg = null; }
     const needResp = !!st.pendingResponse && st.pendingResponse.responder === 'player' && st.phase !== 'over';
@@ -1000,20 +3287,21 @@ export class App {
 
   openMulligan(st: any) {
     const selected = new Set<string>();
-    const wrap = h('div', { class: 'mull-hand' });
     const hand = st.players.player.hand;
+    // Ken (Oct 30): no picking cards. Keep Hand, or Redraw Hand = the whole hand goes back and a new one of the same size is drawn, once per match.
+    const wrap = h('div', { class: 'mull-hand', style: `--n:${Math.max(5, hand.length)}` });
+    const left = Math.max(0, MULLIGAN_REDRAWS - (st.players.player.mulligans || 0));
     for (const hc of hand) {
       const c = CARDS[hc.cardId];
-      const b = h('button', { type: 'button', class: 'mull-card', 'aria-pressed': 'false', 'aria-label': c.name, 'data-uid': hc.uid, onclick: () => {
-        if (selected.has(hc.uid)) selected.delete(hc.uid); else selected.add(hc.uid);
-        b.setAttribute('aria-pressed', String(selected.has(hc.uid)));
-      } }, h('span', { 'aria-hidden': 'true' }, String(c.type === 'crystal' ? '◆' : c.cost)), h('span', { 'aria-hidden': 'true' }, c.name), h('span', { 'aria-hidden': 'true' }, c.type === 'creature' ? `${c.attack}/${c.health}` : c.type === 'spell' ? '✨' : '💎'), h('span', { class: 'tx', style: `--tf:${Math.min(0.075, textScale((c.text || '').length) * 0.8)}` }, c.text || ''));
-      wrap.append(b);
+      const face = h('div', { class: `hand-card static ${c.type} f-${c.faction}`, 'aria-hidden': 'true', 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c));
+      wrap.append(h('div', { class: 'mull-card', role: 'img', 'aria-label': c.name, 'data-uid': hc.uid, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, face));
     }
-    const go = (uids: string[]) => this.game.act({ type: 'mulligan', uids });
-    const d = this.dialog('Mulligan', [h('h2', {}, 'Mulligan'), h('p', { style: 'text-align:center;margin:0 0 10px' }, 'Tap cards you want to shuffle back and redraw.'), wrap,
-      h('div', { class: 'row' }, btn('Keep Hand', 'primary', () => go([])), btn('Redraw Selected', '', () => go([...selected])))]);
+    const go = (redraw: boolean) => this.game.act({ type: 'mulligan', redraw, uids: [] });
+    const redraw = btn('Redraw Hand', '', () => go(true), { disabled: left <= 0 });
+    const d = this.dialog('Mulligan', [h('h2', {}, 'Mulligan'), h('p', { class: 'mull-left', style: 'text-align:center;margin:0 0 10px' }, `Redraws left: ${left}`), h('p', { class: 'mull-hint', style: 'text-align:center;margin:0 0 6px' }, `Keep this hand, or redraw it: every card goes back into your deck and you draw ${hand.length} new ones (once per match).`), wrap,
+      h('div', { class: 'row' }, btn('Keep Hand', 'primary', () => go(false)), redraw)]);
     d.el.dataset.sticky = '1';
+    d.el.dataset.mulligans = String(st.players.player.mulligans || 0);
     this.mullDlg = d;
   }
 
@@ -1069,6 +3357,7 @@ export class App {
     const d = this.dialog('Respond?', [h('h2', {}, 'Respond?'), bar, cardBox, h('p', { class: 'resp-what', style: 'text-align:center;margin:0 0 6px' }, what),
       h('div', { class: 'menu-list' }, ...buttons, btn('Let it happen', 'primary', () => { finish(); this.game.act({ type: 'pass' }); }))]);
     d.el.dataset.sticky = '1';
+    d.el.firstElementChild?.classList.add('respond-dlg');
     this.respDlg = d;
     clearTimeout(this.respondTimer);
     if (!this.test) {
@@ -1082,7 +3371,7 @@ export class App {
     }
   }
 
-  showMatchMenu() {
+  showMatchMenuOld() {
     const d: any = this.dialog('Menu', [h('h2', {}, 'Menu'), h('div', { class: 'menu-list' },
       btn('Resume', 'primary', () => d.close()),
       btn('Surrender', 'danger', () => {
@@ -1104,6 +3393,88 @@ export class App {
     this.r.fx.append(f);
     setTimeout(() => f.remove(), 1000);
   }
+  popStack = new Map<string, { n: number; t: number }>();
+  uidCard = new Map<string, string>();
+  /** Owner (Oct 24): a comic pop-up picture over a board square (it pops, holds, then fades). */
+  pop(name: string, row: number, col: number, label = '') {
+    if (!this.r.fx || !this.view) return;
+    const f = h('div', { class: 'pop-img', 'aria-hidden': 'true', 'data-pop': name, 'data-row': String(row), 'data-col': String(col) }, h('img', { src: `/art/pop/${name}.webp`, alt: '', draggable: 'false' }), label ? h('span', { class: 'sr-only' }, label) : '');
+    f.style.setProperty('--rot', `${(Math.random() * 10 - 5).toFixed(1)}deg`);
+    // Oct 31 (Ken): "the whack and stuff, it should be visible for a little bit longer, and then like float up ... I don't want it covering any of
+    // the chat bubbles or anything covering the unit that it's happening to" -- above the unit (or mine), never on another bubble, 1.5 s, floats up
+    const w = Math.min(50, Math.max(24, 0.0285 * window.innerWidth)) * 1.3;
+    this.placeBubble(f, row, col, w, w * 0.8, 1500, 'center');
+    setTimeout(() => f.remove(), 1500);
+  }
+  speechAt = { player: 0, opponent: 0 } as Record<string, number>;
+  /** Owner (Oct 24): a Commander says a line (picture) above its stronghold; one line at a time per side. */
+  say(side: 'player' | 'opponent', what: string, priority = false) {
+    const st = this.game?.state; if (!st || !this.r.fx || !this.view) return;
+    const voice = CMD_VOICE[st.players[side]?.commanderId]; const line = voice && CMD_LINES[what]?.[voice];
+    if (!line) return;
+    const now = performance.now(); if (!priority && now - (this.speechAt[side] || 0) < 2600) return;
+    this.speechAt[side] = now;
+    this.r.fx.querySelectorAll(`.speech[data-side="${side}"]`).forEach((x: El) => x.remove());
+    const f = h('div', { class: 'speech cmd-speech', role: 'img', 'aria-label': 'Commander speech', 'data-side': side, 'data-line': `${voice}-${line}` }, h('img', { src: `/art/speech/${voice}-${line}.webp`, alt: '', draggable: 'false' }));
+    const w = Math.min(200, Math.max(100, 0.11 * window.innerWidth)) * 0.65;
+    this.placeBubble(f, SH[side].row, SH[side].col, w, w * 0.75, 2400, 'bottom');
+    setTimeout(() => f.remove(), 2400);
+  }
+  /** Test hook (R26.A4): show a commander bubble now. */
+  showCommanderSpeech(side: string, _text?: string) {
+    const sd = side === 'opponent' || side === 'enemy' ? 'opponent' : 'player';
+    const st = this.game?.state; if (!st) return;
+    const voice = CMD_VOICE[st.players[sd]?.commanderId];
+    const what = Object.keys(CMD_LINES).find((k) => (CMD_LINES as any)[k]?.[voice]);
+    if (what) { this.speechAt[sd] = 0; this.say(sd, what, true); }
+  }
+  /** Test hook (R26.A4/A8): current UI scales; unscaledWidth = size at the previous build's scale 1. */
+  getUiScales() {
+    const sp = document.querySelector('.cmd-speech img') as El | null;
+    const rd = document.querySelector('.dialog.respond-dlg') as El | null;
+    return {
+      commanderSpeech: { scale: UI_SCALE.commanderSpeech, unscaledWidth: sp ? sp.offsetWidth / UI_SCALE.commanderSpeech : 0 }, // layout width: the pop animation's scale must not leak into the reference
+      respond: { scale: UI_SCALE.respond, unscaledWidth: rd ? rd.getBoundingClientRect().width / UI_SCALE.respond : 0, unscaledHeight: rd ? rd.getBoundingClientRect().height / UI_SCALE.respond : 0 },
+    };
+  }
+  unitSayAt = 0;
+  /** A unit says a short line (picture) above its square; rare so the board stays readable. */
+  unitSay(name: string, row: number, col: number, force = false) {
+    if (!this.r.fx || !this.view) return;
+    const now = performance.now(); if (!force && now - this.unitSayAt < 3000) return; this.unitSayAt = now;
+    const f = h('div', { class: 'speech unit-speech', 'aria-hidden': 'true', 'data-line': name, 'data-row': String(row), 'data-col': String(col) }, h('img', { src: `/art/speech/${name}.webp`, alt: '', draggable: 'false' }));
+    const w = Math.min(110, Math.max(56, 0.06 * window.innerWidth));
+    this.placeBubble(f, row, col, w, w * 0.75, 1800, 'bottom');
+    setTimeout(() => f.remove(), 1800);
+  }
+  /** Oct 31 (Ken: "two or three chat bubbles going on at the same time ... no chat bubble completely overlays [another]"): every comic word and
+   *  speech bubble goes ABOVE the unit, mine or Stronghold on its square (never on it), and never on another bubble still showing: it steps up,
+   *  or to either side, until it is clear. `anchor` = how the element is centred by its CSS transform (pop: -50% -50%, speech: -50% -100%). */
+  bubbles: { el: El; x0: number; y0: number; x1: number; y1: number; until: number }[] = [];
+  placeBubble(f: El, row: number, col: number, w: number, hgt: number, life: number, anchor: 'center' | 'bottom') {
+    const fx = this.r.fx as El, now = performance.now();
+    this.bubbles = this.bubbles.filter((b) => b.until > now && b.el.isConnected);
+    const t = this.view?.topAt?.(row, col) || null, c = this.center(row, col), rc = this.view!.cellRect(row, col);
+    const ax = t ? (t.left + t.right) / 2 : c.x, top = t ? t.top : c.y - rc.h * 0.9;
+    const W = fx.clientWidth || window.innerWidth, H = fx.clientHeight || window.innerHeight, gap = 3;
+    const clear = (x0: number, y0: number) => this.bubbles.every((b) => x0 + w <= b.x0 || x0 >= b.x1 || y0 + hgt <= b.y0 || y0 >= b.y1);
+    let best: [number, number] | null = null;
+    for (let k = 0; k < 8 && !best; k++) {
+      const y = top - gap - hgt - k * (hgt * 0.85 + gap);
+      for (const dx of [0, w * 0.75, -w * 0.75, w * 1.5, -w * 1.5]) {
+        const x0 = Math.min(W - w - 2, Math.max(2, ax - w / 2 + dx)), y0 = Math.max(2, y);
+        if (clear(x0, y0)) { best = [x0, y0]; break; }
+      }
+    }
+    if (!best) best = [Math.min(W - w - 2, Math.max(2, ax - w / 2)), Math.max(2, top - gap - hgt)];
+    const [x0, y0] = best;
+    f.style.left = x0 + w / 2 + 'px';
+    f.style.top = (anchor === 'center' ? y0 + hgt / 2 : y0 + hgt) + 'px';
+    f.dataset.box = `${Math.round(x0)},${Math.round(y0)},${Math.round(w)},${Math.round(hgt)}`;
+    fx.append(f);
+    this.bubbles.push({ el: f, x0, y0, x1: x0 + w, y1: y0 + hgt, until: now + life });
+  }
+  fxStarted = false; lowSaid = { player: false, opponent: false } as Record<string, boolean>; siteOwner = new Map<string, string>();
   /** Red damage number over a Commander's heart, and the heart shakes. */
   heartPop(owner: string, amount: number) {
     const el = (owner === 'player' ? this.r.myHealth : this.r.enemyHealth) as El;
@@ -1115,32 +3486,128 @@ export class App {
     el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit');
   }
   burst(text: string, row: number, col: number) {
-    const p = this.center(row, col);
-    const f = h('div', { class: 'burst' }, text);
-    f.style.left = p.x + 'px'; f.style.top = p.y - 10 + 'px';
-    this.r.fx.append(f);
-    setTimeout(() => f.remove(), 900);
+    if (POP_WORD[text]) { this.pop(POP_WORD[text], row, col, text); return; }
+    const f = h('div', { class: 'burst', 'data-row': String(row), 'data-col': String(col) }, text);
+    const fs = 22.4;
+    this.placeBubble(f, row, col, text.length * fs * 0.62 + 8, fs * 1.4, 1400, 'center');
+    setTimeout(() => f.remove(), 1400);
+  }
+  // Commander behaviour (round 8b): faces the opponent, looks back at the player, gets impatient when the player idles
+  bhv = { key: '', lastAct: Date.now(), level: 0, nextLook: new URLSearchParams(location.search).get('test') === '1' ? Infinity : Date.now() + 20000 + Math.random() * 20000, timer: 0 as any, bound: false, idleAcc: 0, lastTick: Date.now(), lookKey: '', keyAt: Date.now() };
+  idleMs = 20000;
+  cmdBehavior(st: any) {
+    const b = this.bhv;
+    if (!b.bound) {
+      b.bound = true;
+      document.addEventListener('pointerdown', () => this.playerActed(), true);
+      document.addEventListener('keydown', () => this.playerActed(), true);
+      b.timer = setInterval(() => this.cmdTick(), 500);
+    }
+    const key = `${st.turn}|${st.activePlayer}|${st.phase}`;
+    if (key !== b.key) {
+      b.key = key; b.keyAt = Date.now();
+      this.playerActed();
+      if (st.activePlayer === 'player' && st.phase === 'deploy') setTimeout(() => { if (this.bhv.key === key && this.bhv.level === 0) this.view?.lookBack('player', 1800); }, 3000);
+    }
+  }
+  selState: () => any = () => ({ mode: 'row', commanderId: '', model: null });
+  advanceIdle(seconds: number) { this.bhv.lastAct -= seconds * 1000; this.bhv.idleAcc += seconds * 1000; this.cmdTick(); this.view?.advanceFigureIdle?.(seconds); }
+  playerActed() {
+    const b = this.bhv;
+    b.lastAct = Date.now(); b.idleAcc = 0;
+    if (b.level) { b.level = 0; this.view?.impatient('player', 0); }
+  }
+  cmdTick() {
+    const st = this.game?.state;
+    const v = this.view;
+    if (!st || !v || !this.root.querySelector('.match')) return;
+    const b = this.bhv, now = Date.now();
+    // idle time only counts in slices of at most 1 s per tick, so a stalled/slow page (loading models, busy CPU) never turns into early impatience
+    const sl = Math.min(1000, Math.max(0, now - b.lastTick)); b.lastTick = now;
+    const mine = st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') && !st.pendingResponse && !document.querySelector('[role="dialog"][aria-label="Mulligan"]');
+    if (!mine) { b.lastAct = now; b.idleAcc = 0; if (b.level) { b.level = 0; v.impatient('player', 0); } return; }
+    if (!this.test) b.idleAcc += sl; // automated runs only count idle time that advanceIdle() adds, so a slow page never turns into early impatience
+    const idle = this.test ? b.idleAcc : Math.min(now - b.lastAct, b.idleAcc);
+    // one look-back ~3 s into each of the player's turns (any phase), then every 20-40 s
+    if (!b.level && b.lookKey !== b.key && now - b.keyAt >= 3000) { b.lookKey = b.key; v.lookBack('player', 1800); }
+    const need = this.idleMs + b.level * 15000;
+    if (idle >= need) { b.level++; v.impatient('player', b.level); if (b.level === 1) this.say('player', 'impatient', true); }
+    else if (!b.level && now >= b.nextLook) { b.nextLook = now + 20000 + Math.random() * 20000; v.lookBack('player', 1800); }
   }
   emote(side: string, kind: any) {
     this.view && this.view.emote(side as any, kind);
+    if (side === 'player' || side === 'opponent') this.say(side, kind);
   }
   animate(st: any, events: any[]) {
     if (!this.view || !this.r.fx) return;
+    for (const c of st.board?.creatures || []) this.uidCard.set(c.uid, c.cardId);
+    if (!this.fxStarted && st.phase !== 'mulligan') {
+      this.fxStarted = true; this.lowSaid = { player: false, opponent: false };
+      for (const x of st.sites || []) this.siteOwner.set(x.row + ',' + x.col, x.controller || '');
+      this.say('player', 'start', true); setTimeout(() => this.say('opponent', 'start', true), 1400);
+    }
+    let replayDelay = 0; // Oct 31: Hex Reversal's copied spell plays back after the reflection
+    let drewSnd = false; /* Oct 31 (Brush): one draw sound for a multi-draw */
     for (const e of events) {
+      // owner (Oct 24): comic pop-ups and speech bubbles
+      if (e.type === 'attack' && e.target) {
+        const cid = this.uidCard.get(e.uid) || '', ab: string[] = CARDS[cid]?.abilities || [];
+        const tgt = e.target.commander ? SH[e.target.commander as 'player' | 'opponent'] : e.target;
+        const def = e.target.commander ? null : st.board.creatures.find((c: any) => c.row === e.target.row && c.col === e.target.col);
+        const dab: string[] = def ? CARDS[def.cardId]?.abilities || [] : [];
+        const word = ab.includes('sneaky') && !e.ranged ? 'backstabbed' : def && (dab.includes('armored') || dab.includes('unbreakable') || dab.includes('riotShield') || def.shield > 0) ? 'clang' : HIT_POP[cid] || (e.ranged ? 'thwack' : 'whack');
+        const wait = Math.max(0, this.view.blowDelay?.(e.uid) || 0); // Oct 30: the pop-up lands with the blow
+        if (tgt) { if (wait) setTimeout(() => this.pop(word, tgt.row, tgt.col), wait); else this.pop(word, tgt.row, tgt.col); }
+      } else if (e.type === 'move' && e.knock && e.to && !events.some((x: any, j: number) => j > events.indexOf(e) && x.type === 'move' && x.knock && x.uid === e.uid)) this.pop('knockback', e.to.row, e.to.col);
+      { const su = !e.commander && (e.creatureUid || e.uid), c = su ? st.board.creatures.find((x: any) => x.uid === su) : null; if (c) audio.unitEvent(c.cardId, c.uid, e.type, CARDS[c.cardId]?.abilities || [], !!e.ranged); } // Oct 31: a unit's special line when it does its special (audio.ts isSpecialEvent)
+      if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('stolen', c.row, c.col); this.unitSay('unit-mine-now', c.row, c.col, true); } }
+      else if (e.type === 'poisoned') this.pop('poisoned', e.row, e.col);
+      else if (e.type === 'drunk') { this.pop('hic', e.row, e.col); this.unitSay('unit-hic', e.row, e.col); }
+      else if (e.type === 'brewSave') this.pop('saved', e.row, e.col);
+      else if (e.type === 'ward') this.pop('ward', e.row, e.col);
+      else if (e.type === 'heal' && e.amount > 0 && e.row) this.pop('heal', e.row, e.col);
+      else if (e.type === 'mine' && e.uid) { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('clink', typeof e.row === 'number' ? e.row : c.row, typeof e.col === 'number' ? e.col : c.col); /* Oct 31 (Ken): the clanks need to be on the crystal, not on the player */ if (c.owner === 'player' && Math.random() < 0.3) this.unitSay('unit-shiny', c.row, c.col); } }
+      else if (e.type === 'minerUpgrade' && e.row) { this.pop('upgrade', e.row, e.col); this.unitSay('unit-good-as-new', e.row, e.col, true); }
+      else if (e.type === 'summon' && e.owner === 'player' && !e.illusion && e.row) this.unitSay(Math.random() < 0.5 ? 'unit-reporting' : 'unit-ready', e.row, e.col);
+      else if (e.type === 'abilityUsed' && e.ability === 'brew') this.unitSay('unit-bottoms-up', e.row, e.col, true);
+      else if (e.type === 'abilityUsed' && e.ability === 'slide') this.unitSay('unit-uh-oh', e.row, e.col, true);
+      else if (e.type === 'fizzle') { const sd = st.activePlayer === 'player' ? 'player' : 'opponent'; this.pop('fizzle', SH[sd].row, SH[sd].col); }
+      else if (e.type === 'turnStart' && e.player === 'player') { audio.play('turn-start'); if (e.turn > 1) this.say('player', 'turn'); } // Oct 31: gentle war horn
+      else if (e.type === 'bonusDraw') {
+        const why = [e.fromMining ? `${e.mined} crystals mined` : '', e.allMines ? 'all 3 mines' : ''].filter(Boolean).join(' + ');
+        const who = e.player === 'player' ? 'You draw' : 'Opponent draws';
+        setTimeout(() => this.flash(`${who} +${e.cards} card${e.cards > 1 ? 's' : ''} (${why})`), 900);
+      }
+      else if (e.type === 'siteControl') {
+        const k = e.row + ',' + e.col, was = this.siteOwner.get(k) || '', now = e.controller || '';
+        this.siteOwner.set(k, now);
+        if (now && now !== was) { this.say(now, 'mine', true); if (was) setTimeout(() => this.say(was as any, 'lostMine', true), 900); }
+      } else if (e.type === 'damage' && e.commander) {
+        const side = e.commander as 'player' | 'opponent';
+        if (!this.lowSaid[side] && st.players[side].health > 0 && st.players[side].health <= 5) { this.lowSaid[side] = true; setTimeout(() => this.say(side, 'low', true), 1200); }
+      }
       if (e.type === 'damage') {
         const owner = e.commander;
         if (owner) {
           const row = SH[owner as 'player' | 'opponent'].row, col = SH[owner as 'player' | 'opponent'].col;
           this.heartPop(owner, e.amount);
-          this.burst(e.amount >= 3 ? 'KA-BOOM!' : 'CRUNCH!', row, col);
+          if (e.amount >= 3) this.burst(e.amount >= 5 ? 'KA-BOOM!' : 'CRUNCH!', row, col);
           this.emote(owner, 'flinch');
           this.emote(owner === 'player' ? 'opponent' : 'player', 'cheer');
         } else if (e.amount > 0) {
+          { const hc = st.board.creatures.find((c: any) => c.uid === e.uid), atk = events.find((x: any) => x.type === 'attack'); if (hc) audio.unitHurt(hc.cardId, hc.uid, e.amount * 2 >= (CARDS[hc.cardId]?.health || 99), Math.max(0, (atk && this.view?.blowDelay?.(atk.uid)) || 0)); } /* Oct 31: a surviving unit says ouch (sometimes) */
           this.floatText('-' + e.amount, 'dmg', e.row, e.col);
-          if (e.amount >= 3) this.burst('KA-BOOM!', e.row, e.col);
+          if (e.amount >= 3) this.burst('CRUNCH!', e.row, e.col);
         }
+      } else if (e.type === 'abilityUsed' && ABILITY_UI[e.ability]) {
+        this.burst(ABILITY_UI[e.ability].burst, e.row, e.col);
+      } else if (e.type === 'draw' && (e.player === 'player' || e.owner === 'player')) {
+        if (!drewSnd) { drewSnd = true; audio.play('draw'); }
       } else if (e.type === 'shieldBlock') {
+        audio.play('clink'); // Oct 31: armoured clink (Brush's files)
         this.burst('BLOCK!', e.row, e.col);
+      } else if (e.type === 'poison') {
+        this.floatText('☠ 1', 'dmg', e.row, e.col);
       } else if (e.type === 'heal' && e.amount > 0) {
         if (e.row) this.floatText('+' + e.amount, 'heal', e.row, e.col);
         else this.floatText('+' + e.amount, 'heal', SH[e.commander as 'player' | 'opponent'].row, SH[e.commander as 'player' | 'opponent'].col);
@@ -1150,17 +3617,29 @@ export class App {
         this.emote(e.owner === 'player' ? 'opponent' : 'player', 'cheer');
       } else if (e.type === 'cast') {
         this.callout(e.player, e.cardId);
-        const respondable = st.pendingResponse && st.pendingResponse.responder === 'player' && e.player === 'opponent';
-        if (!respondable) this.reveal(e.cardId);
       } else if (e.type === 'respond') {
         this.callout(e.player, e.cardId);
-      } else if (e.type === 'counter') this.shatter(e.player);
-      else if (e.type === 'spell') { this.emote(e.player, 'cast'); this.spellFx(e); }
+      } else if (e.type === 'counter') {
+        audio.play('shatter');
+        if (e.cardId) { // a counter card: the countered card shatters where it was played (a summon's square, else the caster's Stronghold) and the counter's FX lands on it
+          const bo = e.ckind === 'summon' ? events.find((x: any) => x.type === 'bounce' && x.row) : null;
+          const at = bo ? { row: bo.row, col: bo.col } : SH[e.player === 'player' ? 'opponent' : 'player'];
+          this.shatter(e.player, at, e.countered || null);
+          this.spellFx({ cardId: e.cardId, player: e.player, target: null }, { at, atCommander: !bo, kind: 'counter', countered: e.countered || null });
+          audio.spell(String(e.cardId)); // Oct 31: the counter spell's own sound, with its FX
+          if (e.cardId === 'mirror-hex') replayDelay = SPELL_VISUALS['mirror-hex']?.ms || 0;
+        }
+      }
+      else if (e.type === 'spell') {
+        const mv = e.cardId === 'tunnel-rush' ? events.slice(events.indexOf(e) + 1).find((x: any) => x.type === 'move' && x.teleport) : null;
+        this.emote(e.player, 'cast'); this.spellFx(e, { delay: replayDelay, to: mv ? mv.to : null, kind: replayDelay ? 'replay' : 'cast' });
+        const id = String(e.cardId);
+        audio.spell(id); // Oct 31: each spell's own file (spell-<id>.ogg), starting with its FX
+      }
       else if (e.type === 'summon') {
-        if (this.dialogCard === e.cardId + e.owner) this.dialogCard = ''; else this.reveal(e.cardId, e);
-      } else if (e.type === 'playCrystal') this.reveal(e.cardId);
+        if (e.owner === 'player') audio.play('cardPlay'); /* Oct 31 (Brush): own cards only; the summon sound follows 0.35 s later */
+      } else if (e.type === 'playCrystal') { if (e.player === 'player') audio.play('cardPlay'); }
       else if (e.type === 'minerUpgrade') {
-        this.reveal(e.cardId, e);
         this.floatText(`+${e.attack ? '1 ATK ' : ''}+1 HP ✨`, 'heal', e.row, e.col);
       }
       else if (e.type === 'savings' && e.player === 'player') this.bankFly(e.amount);
@@ -1171,8 +3650,11 @@ export class App {
       this.endShown = true;
       const loser = st.winner === 'player' ? 'opponent' : 'player';
       const esc = FACTIONS[st.players[loser].faction].symbol === 'skull' ? '🚀' : FACTIONS[st.players[loser].faction].symbol === 'gear' ? '💨' : '🕳️';
-      const t = this.test ? 120 : 1600;
-      const ov = h('div', { class: 'retreat', 'aria-hidden': 'true' }, h('div', { class: 'big' }, 'KA-BOOM!'), h('div', { class: 'esc' }, esc));
+      const t = this.test ? (this.game.mode === 'compvscomp' ? 4000 : 120) : 1600; // a test-mode Card Comp match ends in an instant: keep its watch bar usable for a few seconds
+      this.view?.retreat(loser);
+      audio.play(st.winner === 'player' ? 'win' : 'lose');
+      this.say(st.winner, 'win', true); this.say(loser as any, 'lose', true);
+      const ov = h('div', { class: 'retreat', 'aria-hidden': 'true' }, h('img', { class: 'retreat-result', src: `/art/ui/banner-${endBanner(st.winner === 'player', st)}.webp`, alt: '', draggable: 'false' }), h('div', { class: 'esc' }, st.players[loser].commanderId === 'grubnak' ? '' : esc));
       this.root.querySelector('.match')?.append(ov);
       const winner = st.winner;
       setTimeout(() => this.showEnd(winner), t);
@@ -1194,13 +3676,14 @@ export class App {
     const r = this.r;
     if (!r.board) return;
     r.board.querySelectorAll('.hint').forEach((x: El) => x.remove());
-    const hint = h('div', { class: 'hint', role: 'status' }, text);
+    const pic = MSG_PIC[text];
+    const hint = pic ? h('div', { class: 'hint hint-pic', role: 'status' }, h('img', { src: `/art/speech/${pic}.webp`, alt: '', draggable: 'false' }), h('span', { class: 'sr-only' }, text)) : h('div', { class: 'hint', role: 'status' }, text);
     r.board.append(hint);
     setTimeout(() => hint.remove(), 1600);
   }
 
   showEnd(winner: string) {
-    if (!this.game.state || this.game.state.phase !== 'over') return;
+    if (!this.game.state || this.game.state.phase !== 'over' || !this.root.querySelector('.match')) return; // left for the menu meanwhile
     const st = this.game.state;
     this.clear();
     const win = winner === 'player';
@@ -1220,12 +3703,12 @@ export class App {
       rowOf('Turns', String(st.turn)),
       rowOf('MVP', mvp));
     this.root.append(h('main', { class: 'screen center end' },
-      h('h1', {}, win ? 'Victory!' : 'Defeat'),
+      h('h1', { class: 'end-title' }, h('img', { class: 'end-pic', src: `/art/ui/banner-${endBanner(win, st)}.webp`, alt: '', draggable: 'false', 'data-end-level': endBanner(win, st) }), h('span', { class: 'sr-only' }, win ? 'Victory!' : 'Defeat')),
       h('p', {}, win ? 'The enemy Commander fled screaming that this was all part of the plan.' : 'Your Commander escaped at the last second, shouting that this was all part of the plan.'),
       table,
       h('div', { class: 'row' },
-        btn('Play again', 'primary', () => { if (this.lastTutorial) this.beginTutorial(); else { const o = { ...this.lastOptions }; this.beginMatch(o); } }),
-        btn('Menu', '', () => this.showMenu()))));
+        btn(this.game.mode === 'compvscomp' ? 'Rematch' : 'Play again', 'primary', () => { if (this.lastTutorial) this.beginTutorial(); else { const o = { ...this.lastOptions }; this.beginMatch(o); } }),
+        btn('Menu', '', () => this.showMenu(), this.game.mode === 'compvscomp' ? { 'aria-label': 'Exit to menu' } : {}))));
   }
 
   // ------------------------------------------------------------ board geometry / hit testing
@@ -1245,30 +3728,35 @@ export class App {
     for (const c of cells) {
       const row = c.row;
       const col = c.col;
-      this.r.cells.get(row + ',' + col)?.classList.add(cls);
+      const el = this.r.cells.get(row + ',' + col) as El | undefined;
+      if (el) { el.classList.add(cls); el.style.setProperty('--pfc', FACTION_GLOW[(this.game.state.players.player.faction as string)] || '#3ee06a'); this.place(el, row, col); }
     }
   }
   clearGlow() {
-    for (const el of this.r.cells.values() as Iterable<El>) el.classList.remove('glow', 'glow-attack', 'glow-swap', 'glow-mine', 'hover');
+    this.dragKind = '';
+    for (const el of this.r.cells.values() as Iterable<El>) { if (el.style.clipPath) el.style.clipPath = ''; el.classList.remove('glow', 'glow-attack', 'glow-swap', 'glow-mine', 'hover'); }
     this.r.board.classList.remove('drop-any');
+    this.drawOrders();
   }
   cellOfTarget(t: any) { return t.commander ? SH[t.commander as 'player' | 'opponent'] : { row: t.row, col: t.col }; }
 
   // ------------------------------------------------------------ pointer interactions
-  drag(e: PointerEvent, opts: { ghost: El; onStart: () => boolean | void; onDrop: (cell: { row: number; col: number } | null, x: number, y: number) => void; onTap: () => void; touchSwipe?: (dx: number) => void; onHover?: (cell: { row: number; col: number } | null, x: number, y: number) => void; onEnd?: () => void }) {
+  drag(e: PointerEvent, opts: { ghost: El; onStart: () => boolean | void; onDrop: (cell: { row: number; col: number } | null, x: number, y: number) => void; onTap: () => void; touchSwipe?: (dx: number) => void; touchDown?: () => void; onHover?: (cell: { row: number; col: number } | null, x: number, y: number) => void; onEnd?: () => void; manualHand?: boolean; onMove?: (dx: number, x: number, y: number) => void }) {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     const x0 = e.clientX, y0 = e.clientY;
-    let dragging = false, swiping = false, lastX = x0;
+    let dragging = false, swiping = false, swipedDown = false, lastX = x0;
     const move = (ev: PointerEvent) => {
       const dx = ev.clientX - x0, dy = ev.clientY - y0;
       if (!dragging && !swiping && Math.hypot(dx, dy) > 8) {
         if (ev.pointerType !== 'mouse' && opts.touchSwipe && Math.abs(dx) > Math.abs(dy)) swiping = true;
-        else if (opts.onStart() !== false) { dragging = true; this.r.hand?.classList.add('away'); opts.ghost.style.left = ev.clientX + 'px'; document.body.append(opts.ghost); }
+        else if (ev.pointerType !== 'mouse' && opts.touchDown && dy > Math.abs(dx)) { swipedDown = true; swiping = true; opts.touchDown(); } // Oct 30 Ken playtest: a swipe down on the hand tucks it
+        else if (opts.onStart() !== false) { dragging = true; if (!opts.manualHand) this.r.hand?.classList.add('away'); opts.ghost.style.left = ev.clientX + 'px'; opts.ghost.style.top = ev.clientY + 'px'; document.body.append(opts.ghost); lastX = ev.clientX; }
         else cleanup();
       }
-      if (swiping) { opts.touchSwipe!(ev.clientX - lastX); lastX = ev.clientX; }
+      if (swiping && !swipedDown) { opts.touchSwipe!(ev.clientX - lastX); lastX = ev.clientX; }
       if (dragging) {
         opts.ghost.style.left = ev.clientX + 'px'; opts.ghost.style.top = ev.clientY + 'px';
+        opts.onMove && opts.onMove(ev.clientX - lastX, ev.clientX, ev.clientY); lastX = ev.clientX;
         const c = this.cellAt(ev.clientX, ev.clientY);
         for (const el of this.r.cells.values() as Iterable<El>) el.classList.remove('hover');
         if (c) this.r.cells.get(c.row + ',' + c.col)?.classList.add('hover');
@@ -1300,6 +3788,52 @@ export class App {
     window.addEventListener('pointercancel', up2);
   }
 
+  dragFx: any = null;
+  /** Test hook (Round 26): the dragged hand card (centre, corners, width, legal) or null. */
+  getDragCard() {
+    const f = this.dragFx;
+    if (!f || !f.corners.length) return null;
+    const xs = f.corners.map((p: any) => p.x), ys = f.corners.map((p: any) => p.y);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const g = document.querySelector('.dragged-card') as El | null;
+    return { cardId: g?.dataset.cardId, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, pointer: { x: f.px, y: f.py }, width: x1 - x0, height: y1 - y0, startWidth: f.startW, corners: f.corners.map((p: any) => ({ ...p })), opacity: g ? parseFloat(g.style.opacity || '1') : 1, legal: f.legal, highlight: f.cell ? { row: f.cell.row, col: f.cell.col, legal: f.legal } : null, shrink: f.s, upgrade: f.upg ? { creatureUid: f.upg.creatureUid, badge: !!f.badge?.isConnected } : null };
+  }
+  /** Corners of a board square ordered TL, TR, BR, BL. */
+  sortedQuad(row: number, col: number) {
+    const q = this.squareQuad(row, col);
+    if (!q || q.length < 4) return null;
+    const byY = [...q].sort((a: any, b: any) => a.y - b.y);
+    const top = byY.slice(0, 2).sort((a: any, b: any) => a.x - b.x), bot = byY.slice(2, 4).sort((a: any, b: any) => a.x - b.x);
+    return [top[0], top[1], bot[1], bot[0]];
+  }
+  /** Owner fix (Ken, Oct 28): where the dragged card sits over a square (TL, TR, BR, BL). It keeps the card's own shape
+   *  (no stretching), is DRAG_FX.fit of the square's smaller on-screen side, centred, and follows the square's perspective. */
+  cardInSquare(q: { x: number; y: number }[], W: number, H: number) {
+    const [tl, tr, br, bl] = q;
+    const len = (a: any, b: any) => Math.hypot(b.x - a.x, b.y - a.y);
+    const sqW = (len(tl, tr) + len(bl, br)) / 2, sqH = (len(tl, bl) + len(tr, br)) / 2;
+    if (!W || !H || !sqW || !sqH) return q.map((p) => ({ ...p }));
+    const k = DRAG_FX.fit * Math.min(sqW / W, sqH / H);
+    const hu = (W * k / sqW) / 2, hv = (H * k / sqH) / 2;
+    const at = (u: number, v: number) => ({
+      x: (1 - u) * (1 - v) * tl.x + u * (1 - v) * tr.x + u * v * br.x + (1 - u) * v * bl.x,
+      y: (1 - u) * (1 - v) * tl.y + u * (1 - v) * tr.y + u * v * br.y + (1 - u) * v * bl.y,
+    });
+    return [at(0.5 - hu, 0.5 - hv), at(0.5 + hu, 0.5 - hv), at(0.5 + hu, 0.5 + hv), at(0.5 - hu, 0.5 + hv)];
+  }
+  /** Square nearest to the pointer while it is over the board (gaps keep the nearest square). */
+  nearestCell(x: number, y: number): { row: number; col: number } | null {
+    const bb = (this.r.board as El).getBoundingClientRect();
+    if (x < bb.left || x > bb.right || y < bb.top || y > bb.bottom) return null;
+    const c = this.cellAt(x, y); if (c) return c;
+    let best: any = null, bd = 1e9;
+    for (let row = 1; row <= BH; row++) for (let col = 1; col <= BW; col++) {
+      const p = this.squareToScreen(row, col); if (!p) continue;
+      const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = { row, col }; }
+    }
+    return best;
+  }
+
   cardPointerDown(e: PointerEvent, hc: any, el: El) {
     if (e.pointerType !== 'mouse') {
       const t = setTimeout(() => this.popCard(el, true), 180);
@@ -1308,15 +3842,117 @@ export class App {
     }
     const st = this.game.state;
     const card = CARDS[hc.cardId];
-    const ghost = h('div', { class: 'ghost' }, card.type === 'creature' ? FSYM(card.faction) : card.type === 'spell' ? '✨' : '💎');
+    // round 11: the drag shows the real card face, floating and tilting with the movement
+    const ghost = h('div', { class: `hand-card static dragged-card ${card.type} f-${card.faction}`, role: 'group', 'aria-label': 'Dragged card', 'data-tilt': '0', 'data-card-id': card.id, 'data-frame': frameKey(card), 'data-rarity': rarityKey(card) }, h('span', { class: 'drag-id', 'aria-hidden': 'true', 'data-card-id': card.id, style: 'position:absolute;width:0;height:0;overflow:hidden' }), ...faceKids(card, card.type === 'crystal' ? 0 : card.cost));
+    let tilt = 0, mode: 'reorder' | 'play' | '' = '';
+    // reordering while the pointer stays near its grab height / inside the raised hand; moving clearly above both = playing the card
+    let homeBottom = -Infinity;
+    try { for (let c = 1; c <= 13; c++) for (const q of this.squareQuad(7, c) as any[]) homeBottom = Math.max(homeBottom, q.y); } catch { /* no board yet */ }
+    const handTop = (this.r.hand as El).getBoundingClientRect().top - 12, startY = e.clientY, startX = e.clientX;
+    // the hand may overlap the home row: only the horizontal span of the fan counts as "in the hand"
+    const fan = ([...(this.r.hand as El).querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).map((c) => c.getBoundingClientRect());
+    const fanL = Math.min(...fan.map((b) => b.left)) - 24, fanR = Math.max(...fan.map((b) => b.right)) + 24;
+    const inFan = (x: number) => x >= fanL && x <= fanR;
+    // round 12a: a pointer over the board that is not inside the hand band is always a play drag (grab height no longer decides)
+    const overBoard = (x: number, y: number) => { const bb = (this.r.board as El).getBoundingClientRect(); return (y < handTop || !inFan(x)) && x >= bb.left && x <= bb.right && y >= bb.top && y <= bb.bottom; };
+    // a legal target square under the pointer always means "play", even where the hand overlaps the home row
+    const overLegal = (x: number, y: number) => { const c = this.cellAt(x, y); return !!c && [...plan.cells, ...plan.smith].some((q: any) => q && q.row === c.row && q.col === c.col); };
+    // Owner fix (Ken, Oct 29, R26 A1): a square above the home row is always the board, even inside the raised hand's band, so an illegal square there shows its red outline instead of a hand reorder
+    const overUpperBoard = (x: number, y: number) => { const c = this.cellAt(x, y); return !!c && c.row < 7; };
+    const inReorder = (y: number, x = 0) => Math.hypot(x - startX, y - startY) < 25 || !overLegal(x, y) && !overUpperBoard(x, y) && ((y >= handTop && inFan(x)) || (Math.abs(y - startY) < 45 && !overBoard(x, y)));
+    let plan: { cells: any[]; smith: any[]; any: boolean } = { cells: [], smith: [], any: false };
+    const setMode = (m: 'reorder' | 'play') => {
+      if (m === mode) return;
+      mode = m;
+      const hd = this.r.hand as El;
+      this.clearGlow();
+      if (m === 'reorder') { hd.classList.remove('away'); hd.classList.add('open'); return; } // Round 11: reordering inside the hand keeps it up (Ken, Oct 30: the tucked rest is now half down)
+      hd.classList.remove('open'); hd.classList.add('away'); // tuck the hand away over the board
+      this.dragKind = card.type;
+      this.setGlow(plan.cells, 'glow');
+      this.setGlow(plan.smith, 'glow-swap');
+      if (plan.any) this.r.board.classList.add('drop-any');
+    };
+    // A1 (Round 26): the pointer stays at the card centre; over a square the card shrinks (matrix3d) onto that square's quad
+    const fx: any = { px: e.clientX, py: e.clientY, tilt: 0, s: 0, tgt: 0, q: null, qt: null, cell: null, legal: false, t: performance.now(), done: false, raf: 0, hl: null, corners: [] as any[], W: 0, H: 0, startW: 0, upg: null, badge: null };
+    let legalAll: any[] = [];
+    // Ken (Oct 30): "I want there to be the upgrade pop-up on the mouse cursor when you're hovering over a character to upgrade."
+    const showUpgrade = (a: any) => {
+      const uid = a ? a.creatureUid : '';
+      for (const [k, t] of this.tokens) (t as El).classList.toggle('upgrade-target', k === uid);
+      if (!a) { fx.badge?.remove(); fx.badge = null; return; }
+      if (!fx.badge) { fx.badge = h('div', { class: 'upgrade-badge', role: 'status', 'aria-label': 'Upgrade' }, 'UPGRADE \u25B2') as El; document.body.append(fx.badge); }
+    };
+    const fxRender = () => {
+      if (fx.done || !ghost.isConnected) return;
+      const now = performance.now(), dt = Math.min(100, now - fx.t); fx.t = now;
+      if (now - (fx.lastMove || 0) > 60) { tilt *= Math.exp(-dt / 120); fx.tilt = tilt; ghost.dataset.tilt = tilt.toFixed(2); } // Owner fix (Ken, Oct 29, R26 A1): the gentle tilt eases back to level once the pointer rests
+      const W = ghost.offsetWidth, H = ghost.offsetHeight;
+      if (!W || !H) return;
+      if (!fx.startW) { fx.startW = W; ghost.style.setProperty('width', W + 'px', 'important'); ghost.style.setProperty('height', H + 'px', 'important'); } // Owner fix (Ken, Oct 29, R26 A1.4): the held size is frozen at the grab, so the card grows back to exactly that size (the hand's own sizing changes while it tucks away)
+      fx.W = W; fx.H = H;
+      const step = dt / DRAG_FX.shrinkMs;
+      fx.s = fx.tgt > fx.s ? Math.min(fx.tgt, fx.s + step) : Math.max(fx.tgt, fx.s - step);
+      const qc = fx.qt ? this.cardInSquare(fx.qt, W, H) : null; // Owner fix (Ken, Oct 28): the card keeps its shape inside the square, it no longer stretches to the square
+      if (qc) { if (!fx.q) fx.q = qc.map((p: any) => ({ ...p })); else { const k = 1 - Math.exp(-dt / 35); fx.q = fx.q.map((p: any, i: number) => ({ x: p.x + (qc[i].x - p.x) * k, y: p.y + (qc[i].y - p.y) * k })); } }
+      if (!fx.qt && fx.s === 0) fx.q = null;
+      const a = fx.tilt * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+      const free = [[-W / 2, -H / 2], [W / 2, -H / 2], [W / 2, H / 2], [-W / 2, H / 2]].map(([x, y]) => ({ x: fx.px + x * ca - y * sa, y: fx.py + x * sa + y * ca }));
+      const e = fx.s * fx.s * (3 - 2 * fx.s);
+      const cs = fx.q ? free.map((p, i) => ({ x: p.x + (fx.q[i].x - p.x) * e, y: p.y + (fx.q[i].y - p.y) * e })) : free;
+      fx.corners = cs;
+      ghost.style.transform = homography(cs, W, H);
+      ghost.style.opacity = String(1 - (1 - DRAG_FX.shrinkOpacity) * e);
+      ghost.dataset.shrink = e.toFixed(2);
+      // outline of the square under the card
+      if (fx.badge) { const ys = cs.map((p: any) => p.y), xs = cs.map((p: any) => p.x); fx.badge.style.left = ((Math.min(...xs) + Math.max(...xs)) / 2).toFixed(1) + 'px'; fx.badge.style.top = Math.max(24, Math.min(...ys) - 6).toFixed(1) + 'px'; }
+      if (fx.qt) {
+        if (!fx.hl) { fx.hl = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); fx.hl.setAttribute('class', 'drag-square-hl'); fx.hl.setAttribute('aria-hidden', 'true'); fx.hl.append(document.createElementNS('http://www.w3.org/2000/svg', 'polygon')); document.body.append(fx.hl); }
+        fx.hl.dataset.legal = fx.legal ? '1' : '0';
+        fx.hl.dataset.upgrade = fx.upg ? '1' : '0';
+        fx.hl.dataset.cell = fx.cell ? fx.cell.row + ',' + fx.cell.col : '';
+        const poly = fx.hl.firstChild as SVGElement;
+        poly.setAttribute('points', fx.qt.map((p: any) => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' '));
+        poly.setAttribute('stroke', fx.legal ? (FACTION_GLOW[this.game.state.players.player.faction as string] || DRAG_FX.legal) : DRAG_FX.illegal);
+        poly.setAttribute('fill', fx.legal ? 'rgba(62,224,106,.12)' : 'rgba(176,64,64,.14)');
+      } else if (fx.hl) { fx.hl.remove(); fx.hl = null; }
+    };
     this.drag(e, {
       ghost,
-      touchSwipe: (dx) => { this.handScroll -= dx / 40; this.layoutHand(); },
+      manualHand: true,
+      touchSwipe: (dx) => { if (this.hg?.dock) this.handFocusTo(this.lastPtr.x); else { this.handScroll -= dx / 40; this.layoutHand(); } }, // Ken (Oct 30): the finger slides the dock window
+      touchDown: () => { this.clearPops(); this.openHand(false, true); this.showHandTouch(false); },
+      onMove: (dx, px, y) => {
+        tilt = Math.max(-DRAG_FX.tiltMax, Math.min(DRAG_FX.tiltMax, tilt * 0.8 + dx * 0.3)); fx.lastMove = performance.now();
+        ghost.dataset.tilt = tilt.toFixed(2);
+        setMode(inReorder(y, px) || !(plan.cells.length || plan.smith.length || plan.any) ? 'reorder' : 'play'); // an unplayable card can only be reordered
+        fx.px = px; fx.py = y; fx.tilt = tilt;
+        if (mode === 'play') {
+          let n = this.nearestCell(px, y);
+          // the same answer the drop will give: an upgrade only when the pointer is on that unit (or its square)
+          const up = plan.smith.length ? this.upgradeAt(legalAll, n, px, y) : null;
+          const tgt = up && this.game.state.board.creatures.find((c: any) => c.uid === up.creatureUid);
+          if (tgt) n = { row: tgt.row, col: tgt.col };
+          fx.upg = tgt ? up : null;
+          fx.cell = n;
+          fx.legal = !!n && (!!tgt || plan.any || plan.cells.some((q: any) => q && q.row === n!.row && q.col === n!.col));
+          const q = n && this.sortedQuad(n.row, n.col);
+          fx.qt = q || null; fx.tgt = q ? 1 : 0;
+        } else { fx.cell = null; fx.legal = false; fx.qt = null; fx.tgt = 0; fx.upg = null; }
+        showUpgrade(fx.upg);
+        fxRender();
+      },
+      onEnd: () => { fx.done = true; cancelAnimationFrame(fx.raf); fx.hl?.remove(); showUpgrade(null); if (this.dragFx === fx) this.dragFx = null; },
       onStart: () => {
         if (this.pick || this.respDlg) return false;
+        fx.px = e.clientX; fx.py = e.clientY; this.dragFx = fx;
+        const loop = () => { if (fx.done) return; fxRender(); fx.raf = requestAnimationFrame(loop); };
+        fx.raf = requestAnimationFrame(loop);
         this.popCard(el, false);
+        this.clearPops(); this.openHand(false, true); (this.r.hand as El).classList.add('tuck'); // R23.2: the rest of the hand tucks the moment a card is grabbed, until the pointer hovers it again
         el.classList.add('dragging');
         const legal = this.game.legalActions().filter((a: any) => a.uid === hc.uid);
+        legalAll = legal;
         if (!legal.length) { this.flash(this.explain(card)); }
         const cells: any[] = [];
         const smithCells: any[] = [];
@@ -1327,12 +3963,15 @@ export class App {
           else if (a.type === 'cast') { if (!a.target) any = true; else if (!a.to || true) cells.push(this.cellOfTarget(a.target)); }
           else if (a.type === 'playCrystal') any = true;
         }
-        this.setGlow(cells, 'glow');
-        this.setGlow(smithCells, 'glow-swap');
-        if (any) this.r.board.classList.add('drop-any');
+        plan = { cells, smith: smithCells, any };
+        setMode('reorder');
         return true;
       },
-      onDrop: (cell, x, y) => { if (cell && cell.row) this.dropCard(hc, card, cell, x, y); },
+      onDrop: (cell, x, y) => {
+        if (mode === 'reorder') { this.reorderHand(hc.uid, x); return; }
+        if (fx.cell) cell = fx.cell; // Ken (Oct 30): the drop lands where the highlight showed (the square under the pointer, or the unit it marked UPGRADE)
+        if (cell && (cell.row || plan.smith.length)) this.dropCard(hc, card, cell, x, y);
+      },
       onTap: () => {
         if (this.swapping) {
           this.swapping = false;
@@ -1340,10 +3979,101 @@ export class App {
           if (a) this.game.act(a);
           return;
         }
-        this.showCard(card.id);
+        this.handTap(hc, card);
       },
     });
     void st;
+  }
+
+  /** Round 11: drop a dragged hand card at pointer x: it takes the place among the other cards (order kept for the match). */
+  reorderHand(uid: string, x: number) {
+    const hand = this.game.state?.players?.player?.hand as any[] | undefined;
+    if (!hand) return;
+    const others = ([...(this.r.hand as El).querySelectorAll('.hand-card:not(.popclone):not(.offhand)')] as El[]).filter((c) => c.dataset.uid !== uid);
+    let idx = 0;
+    for (const c of others) { const b = c.getBoundingClientRect(); if (x > b.left + b.width / 2) idx++; }
+    const from = hand.findIndex((k) => k.uid === uid);
+    if (from < 0) return;
+    const rest = hand.filter((k) => k.uid !== uid);
+    const ordered = others.map((c) => rest.find((k) => k.uid === c.dataset.uid)).filter(Boolean) as any[];
+    const tail = rest.filter((k) => !ordered.includes(k));
+    ordered.splice(Math.min(idx, ordered.length), 0, hand[from]);
+    const next = [...ordered, ...tail];
+    if (this.handSortMode) this.setHandSort('', false);
+    if (next.every((k, i) => k === hand[i])) { this.handKey = ''; this.update(this.game.state, []); return; }
+    hand.splice(0, hand.length, ...next);
+    this.handKey = '';
+    this.update(this.game.state, []);
+  }
+
+  /** Ken (Oct 31) auto-arrange: the hand's display order for the chosen sort (stable: ties keep the player's own order).
+   *  By type: Miners, melee fighters, ranged fighters, spells, crystals / other; each group by cost, high to low. */
+  static handKind(c: any): number {
+    if (!c) return 4;
+    if (c.type === 'creature') { if (c.role === 'Gatherer' || c.role === 'Smith') return 0; if (c.role === 'Ranged' || (c.abilities || []).includes('ranged')) return 2; return 1; }
+    return c.type === 'spell' ? 3 : 4;
+  }
+  sortedHand(hand: any[], costOf: (c: any) => number): any[] {
+    const m = this.handSortMode;
+    if (!m) return hand;
+    const keyed = hand.map((hc, i) => { const c = CARDS[hc.cardId]; return { hc, i, cost: costOf(c), kind: App.handKind(c) }; });
+    keyed.sort((a, b) => (m === 'type' ? a.kind - b.kind || b.cost - a.cost : m === 'costAsc' ? a.cost - b.cost : b.cost - a.cost) || a.i - b.i);
+    return keyed.map((k) => k.hc);
+  }
+  static HAND_SORTS: { mode: 'costDesc' | 'costAsc' | 'type'; label: string }[] = [
+    { mode: 'costDesc', label: 'By cost (high to low)' },
+    { mode: 'costAsc', label: 'By cost (low to high)' },
+    { mode: 'type', label: 'By type' },
+  ];
+  /** Chooses a sort ('' = manual order). With redraw, the hand glides into the new order. */
+  setHandSort(mode: '' | 'costDesc' | 'costAsc' | 'type', redraw = true) {
+    if (mode === '' && this.handSortMode) {
+      // back to manual: the order the player sees becomes their own order (like a manual reorder)
+      const hand = this.game.state?.players?.player?.hand as any[] | undefined;
+      const els = [...((this.r.hand as El | undefined)?.querySelectorAll('.hand-card:not(.popclone)') || [])] as El[];
+      if (hand && els.length) {
+        const seen = els.map((c) => hand.find((k) => k.uid === c.dataset.uid)).filter(Boolean) as any[];
+        const next = [...seen, ...hand.filter((k) => !seen.includes(k))];
+        if (next.length === hand.length && !next.every((k, i) => k === hand[i])) hand.splice(0, hand.length, ...next);
+      }
+    }
+    this.handSortMode = mode;
+    try { if (mode) localStorage.setItem('oreheart.handSort', mode); else localStorage.removeItem('oreheart.handSort'); } catch { /* private window */ }
+    this.syncHandSort();
+    if (redraw && this.game.state) { this.handSortGlide = true; this.handKey = ''; this.update(this.game.state, []); }
+  }
+  /** The Sort button shows which sort is on (its icon and a lit ring); the drop-up marks the chosen line. */
+  syncHandSort() {
+    const b = this.r?.handSort as El | undefined;
+    const m = this.handSortMode, lab = App.HAND_SORTS.find((s) => s.mode === m)?.label;
+    if (b) { b.dataset.sort = m; b.classList.toggle('on', !!m); b.title = lab ? 'Sort hand: ' + lab.toLowerCase() : 'Sort hand'; }
+    for (const it of (this.handSortUp?.querySelectorAll('[data-sort]') || []) as NodeListOf<El>) it.setAttribute('aria-pressed', String(it.dataset.sort === m));
+  }
+  closeHandSortUp() {
+    this.handSortUp?.remove(); this.handSortUp = null;
+    if (this.handSortOff) { document.removeEventListener('pointerdown', this.handSortOff, true); document.removeEventListener('keydown', this.handSortOff, true); this.handSortOff = null; }
+    (this.r?.handSort as El | undefined)?.setAttribute('aria-expanded', 'false');
+  }
+  toggleHandSortUp() {
+    if (this.handSortUp) { this.closeHandSortUp(); return; }
+    const b = this.r.handSort as El, par = (b.offsetParent || b.parentElement) as El | null;
+    if (!par) return;
+    const items = App.HAND_SORTS.map((s) => btn(s.label, 'hs-item', () => { this.closeHandSortUp(); this.setHandSort(s.mode); b.focus({ preventScroll: true }); }, { 'data-sort': s.mode, 'aria-pressed': String(this.handSortMode === s.mode) }) as El);
+    const up: El = h('div', { class: 'menu-panel done-dropup hand-sort-up', role: 'group', 'aria-label': 'Sort hand choices' }, h('p', { class: 'dropup-text' }, 'Sort your hand'), h('div', { class: 'row' }, ...items));
+    par.append(up);
+    const bb = b.getBoundingClientRect(), pr = par.getBoundingClientRect(), psx = par.offsetWidth ? pr.width / par.offsetWidth || 1 : 1;
+    up.style.left = Math.max(4, (bb.left - pr.left) / psx - 6) + 'px';
+    up.style.bottom = Math.max(4, (pr.bottom - bb.top) / psx + 8) + 'px';
+    this.handSortUp = up;
+    b.setAttribute('aria-expanded', 'true');
+    const off = (e: Event) => {
+      if (e.type === 'keydown') { if ((e as KeyboardEvent).key === 'Escape') { this.closeHandSortUp(); b.focus({ preventScroll: true }); } return; }
+      if (!up.contains(e.target as Node) && e.target !== b && !b.contains(e.target as Node)) this.closeHandSortUp();
+    };
+    this.handSortOff = off;
+    document.addEventListener('pointerdown', off, true);
+    document.addEventListener('keydown', off, true);
+    if (b.matches(':focus-visible')) (items.find((i) => i.getAttribute('aria-pressed') === 'true') || items[0]).focus({ preventScroll: true });
   }
 
   explain(card: any) {
@@ -1354,22 +4084,16 @@ export class App {
     return "You can't play that right now";
   }
 
-  dropCard(hc: any, card: any, cell: { row: number; col: number }, x?: number, y?: number) {
+  dropCard(hc: any, card: any, cell: { row: number; col: number }, x?: number, y?: number, asked = false) {
+    if (!asked && (card.type === 'creature' || card.type === 'spell')) {
+      const st0 = this.game.state;
+      const cost = card.type === 'creature' ? creatureCost(st0, 'player', card) : spellCost(st0, 'player', card);
+      if (this.game.legalActions().some((a: any) => a.uid === hc.uid && a.type !== 'minerUpgrade')) { this.payGate(cost, () => this.dropCard(hc, card, cell, x, y, true)); return; }
+    }
     const legal = this.game.legalActions().filter((a: any) => a.uid === hc.uid);
     if (!legal.length) { this.flash(this.explain(card)); return; }
-    const ups = legal.filter((a: any) => a.type === 'minerUpgrade');
-    if (ups.length) {
-      let own = this.game.state.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col && c.owner === 'player');
-      if (!own && x != null && y != null) {
-        // the stat badge hangs below a token: a drop on the figure or its badge counts as a drop on that creature
-        for (const [uid, el] of this.tokens) {
-          const c = this.game.state.board.creatures.find((k: any) => k.uid === uid);
-          if (!c || c.owner !== 'player') continue;
-          const r = el.getBoundingClientRect();
-          if (x >= r.left - 16 && x <= r.right + 16 && y >= r.top - 16 && y <= r.bottom + 16) { own = c; break; }
-        }
-      }
-      const up = own && ups.find((a: any) => a.creatureUid === own.uid);
+    if (legal.some((a: any) => a.type === 'minerUpgrade')) {
+      const up = this.upgradeAt(legal, cell, x ?? NaN, y ?? NaN);
       if (up) { const r = this.game.act(up); if (r && !r.ok) this.flash(r.error); return; }
     }
     const t = legal.find((a: any) => a.type !== 'minerUpgrade')?.type || legal[0].type;
@@ -1390,28 +4114,306 @@ export class App {
     }
   }
 
+  /** Ken (Oct 30): "I just put a tunneling goblin out right underneath my cook goblin, and it upgraded my cook goblin."
+   *  The Miner upgrade a drop at (x, y) on square `cell` would make, or null: a unit standing on that square; else, only when that
+   *  square is not a legal place to deploy, a unit whose figure box or stat badge the pointer is really on (no near-miss radius). */
+  upgradeAt(legal: any[], cell: { row: number; col: number } | null, x: number, y: number): any | null {
+    const st = this.game.state;
+    const ups = legal.filter((a: any) => a.type === 'minerUpgrade');
+    if (!st || !ups.length || !cell) return null;
+    const on = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col && c.owner === 'player');
+    if (on) return ups.find((a: any) => a.creatureUid === on.uid) || null;
+    if (legal.some((a: any) => a.type === 'summon' && a.row === cell.row && a.col === cell.col)) return null;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    for (const [uid, el] of this.tokens) {
+      const a = ups.find((q: any) => q.creatureUid === uid);
+      if (!a) continue;
+      for (const b of [el.getBoundingClientRect(), (el.querySelector('.tk-stats') as El | null)?.getBoundingClientRect()]) if (b && b.width && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom) return a;
+    }
+    return null;
+  }
+  /** The creature under a pointer event (its square or its stat badge), if any. */
+  unitAtEvent(e: PointerEvent | MouseEvent): any {
+    const st = this.game.state;
+    if (!st || !this.r.board) return null;
+    const lab = (e.target as El)?.closest?.('.tk-stats');
+    const labUid = lab ? (lab.closest('.token') as El | null)?.dataset.uid : null;
+    if (labUid) return st.board.creatures.find((c: any) => c.uid === labUid) || null;
+    const c = this.cellAt(e.clientX, e.clientY);
+    return (c ? st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col) : null) || this.figureAtEvent(e);
+  }
+  /** Oct 31: set when a tap on the pickaxe's padding went to the unit under it (the site mark then skips its click) */
+  sitePass = false;
+  /** Oct 31: the creature whose 3D figure is drawn under the pointer (units are 3x and cover the squares behind them), or null. */
+  figureAtEvent(e: { clientX: number; clientY: number }): any {
+    const uid = this.view?.unitAt?.(e.clientX, e.clientY);
+    return uid ? this.game.state?.board.creatures.find((c: any) => c.uid === uid) || null : null;
+  }
+  /** Owner (Oct 25): left-click a unit to use it: its moves, attacks, mining and aimed abilities light up; click one to do it. */
+  selectUnit(cr: any) {
+    const st = this.game.state;
+    this.pick = null; this.clearGlow();
+    if (this.respDlg) return;
+    const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
+    const isMove = (a: any) => a.type === 'move';
+    const swapAt = (a: any) => st.board.creatures.some((o: any) => o.row === a.row && o.col === a.col);
+    const groups: [any[], string][] = [
+      [legal.filter((a: any) => isMove(a) && !swapAt(a)).map((a: any) => ({ row: a.row, col: a.col })), 'glow'],
+      [legal.filter((a: any) => isMove(a) && swapAt(a)).map((a: any) => ({ row: a.row, col: a.col })), 'glow-swap'],
+      [legal.filter((a: any) => a.type === 'attack').map((a: any) => this.cellOfTarget(a.target)), 'glow-attack'],
+      [legal.filter((a: any) => a.type === 'mine').map((a: any) => ({ row: a.row, col: a.col })), 'glow-mine'],
+      [legal.filter((a: any) => a.type === 'ability' && this.abilityCell(a, cr)).map((a: any) => this.abilityCell(a, cr)!), 'glow-swap'],
+    ];
+    const cells = groups.flatMap((g) => g[0]);
+    if (!cells.length) return;
+    for (const [c, cls] of groups) this.setGlow(c, cls);
+    const uid = cr.uid;
+    this.pick = { cells, unit: uid, done: (c: any) => {
+      this.pick = null; this.clearGlow();
+      const cur = this.game.state.board.creatures.find((x: any) => x.uid === uid);
+      if (cur) this.unitActAt(cur, c);
+    } } as any;
+    this.drawOrders();
+  }
+  // ------------------------------------------------------------ Round 28: move orders (UI only; the start-of-turn walk lives in orders-run.ts)
+  orders = new Map<string, Order>();
+  orderPreview: Order | null = null;
+  getOrders(): Order[] { return [...this.orders.values()].map((o) => JSON.parse(JSON.stringify(o))); }
+  /** Orders exist only for the player's own units, never in the tutorial or in Comp vs Comp. */
+  ordersAllowed(st: any = this.game.state) { return !!st && !st.tutorial && st.mode !== 'compvscomp' && this.game.mode !== 'compvscomp' && st.phase !== 'over'; }
+  setOrder(o: Order) {
+    const st = this.game.state;
+    const c = st?.board.creatures.find((x: any) => x.uid === o?.uid);
+    if (!c || c.owner !== 'player' || !this.ordersAllowed(st)) return false;
+    const order: Order = JSON.parse(JSON.stringify(o));
+    this.orders.set(o.uid, order);
+    this.renderOrders(st);
+    // Ken (Oct 30): an order given in your own Action phase walks its first leg right away (it uses this unit's move, like a normal move);
+    // later legs happen by themselves on your next turns
+    if (st.phase === 'action' && st.activePlayer === 'player' && st.priority === 'player' && !st.pendingResponse) {
+      const one = new Map([[o.uid, order]]);
+      void runOrders(this.game, one, { delayMs: 0, onChange: () => this.renderOrders(this.game.state) }).then(() => {
+        if (!one.has(o.uid) && this.orders.get(o.uid) === order) { this.orders.delete(o.uid); this.renderOrders(this.game.state); }
+      });
+    }
+    return true;
+  }
+  cancelOrder(uid: string) { const had = this.orders.delete(uid); this.renderOrders(this.game.state); return had; }
+  orderPlan(uid: string): OrderPlan | null { const o = this.orders.get(uid); return o && this.game.state ? planOrder(this.game.state, o) : null; }
+  /** The order a unit dropped (or clicked) on square c would get: chase an enemy standing there, else walk there. null = not an order square. */
+  orderFor(cr: any, c: { row: number; col: number } | null): Order | null {
+    const st = this.game.state;
+    if (!c || !c.row || !cr || cr.owner !== 'player' || !this.ordersAllowed(st)) return null;
+    if (c.row === cr.row && c.col === cr.col) return null;
+    const there = st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col);
+    if (there) return there.owner !== cr.owner ? { kind: 'chase', uid: cr.uid, targetUid: there.uid } : null;
+    return emptyCell(st, c.row, c.col) ? { kind: 'move', uid: cr.uid, dest: { row: c.row, col: c.col } } : null;
+  }
+  /** Is there a normal legal action (attack, mine, move, aimed ability) for this unit on square c? Same matching as unitActAt. */
+  unitHasActionAt(cr: any, c: { row: number; col: number }) {
+    if (!c || !c.row) return false;
+    return this.game.legalActions().some((a: any) => a.creatureUid === cr.uid && (
+      (a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col))) ||
+      ((a.type === 'move' || a.type === 'mine') && a.row === c.row && a.col === c.col) ||
+      (a.type === 'ability' && (() => { const q = this.abilityCell(a, cr); return !!q && q.row === c.row && q.col === c.col; })())));
+  }
+  /** A unit dropped or clicked onto c: a legal action works exactly as before (and replaces the unit's order); anywhere else gives it an order. */
+  unitDropAt(cr: any, c: { row: number; col: number } | null) {
+    if (!c || !c.row) return;
+    const st = this.game.state;
+    if (this.unitHasActionAt(cr, c)) { if (this.orders.delete(cr.uid)) this.renderOrders(st); this.unitActAt(cr, c); return; }
+    if (!this.orderTime(cr)) { this.unitActAt(cr, c); return; }
+    this.orderAt(cr, c);
+  }
+  /** Ken, Oct 31: orders can be drawn at any time (every phase, the computer's turn too) for the player's own units. Outside the player's own
+   *  Action phase they are only stored and drawn (setOrder walks nothing then); they walk when the player's Action phase starts (maybeRunOrders). */
+  orderTime(cr: any) { const st = this.game.state; return !!cr && cr.owner === 'player' && this.ordersAllowed(st) && st.phase !== 'mulligan'; }
+  orderAt(cr: any, c: { row: number; col: number }) {
+    const o = this.orderFor(cr, c);
+    if (!o) { this.flash('No path there'); return; }
+    if (!maxMove(cr)) { this.flash('This creature cannot move'); return; }
+    this.setOrder(o);
+    this.flashOrder(o.uid);
+    if (planOrder(this.game.state, o).blocked) this.flash('No path there right now');
+  }
+  /** Live path preview while a unit is being dragged (null clears it). */
+  previewOrder(o: Order | null) {
+    const same = JSON.stringify(o) === JSON.stringify(this.orderPreview);
+    this.orderPreview = o;
+    if (!same) this.renderOrders(this.game.state);
+  }
+  /** Marks every standing order on its squares (.path / .path-end, invisible markers since Ken's Oct 30 playtest), the turn count at the end,
+   *  and the marker + ✕ cancel button on the unit; drawOrders() draws the visible football-play route for the shown ones. */
+  renderOrders(st: any) {
+    if (!this.r.cells) return;
+    for (const el of this.r.cells.values() as Iterable<El>) {
+      if (el.classList.contains('path') || el.classList.contains('path-end')) { el.classList.remove('path', 'path-end', 'path-preview', 'path-blocked', 'path-show'); delete el.dataset.turns; delete el.dataset.uid; el.querySelector('.path-label')?.remove(); }
+    }
+    this.orderPlans = [];
+    if (!st || !this.ordersAllowed(st)) { this.orders.clear(); this.orderPreview = null; }
+    const plans: [Order, OrderPlan, boolean][] = [];
+    if (st) for (const [uid, o] of [...this.orders]) {
+      const c = st.board.creatures.find((x: any) => x.uid === uid);
+      const p = c && c.owner === 'player' ? planOrder(st, o) : null;
+      if (!p || p.done) { this.orders.delete(uid); continue; }
+      if (this.orderPreview && this.orderPreview.uid === uid) continue; // the live preview stands in for it while dragging
+      plans.push([o, p, false]);
+    }
+    if (st && this.orderPreview) { const p = planOrder(st, this.orderPreview); if (!p.done) plans.push([this.orderPreview, p, true]); }
+    const pfc = FACTION_GLOW[(st?.players.player.faction as string)] || '#3ee06a';
+    const cellEl = (q: { row: number; col: number }) => this.r.cells.get(q.row + ',' + q.col) as El | undefined;
+    for (const [o, p, pv] of plans) {
+      for (const q of p.path) { const el = cellEl(q); if (el) { el.classList.add('path'); if (pv) el.classList.add('path-preview'); el.style.setProperty('--pfc', pfc); } }
+      const tgt = o.kind === 'chase' ? st.board.creatures.find((x: any) => x.uid === o.targetUid) : null;
+      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
+      const end = endQ && cellEl(endQ);
+      if (!end) continue;
+      this.orderPlans.push({ o, p, pv });
+      end.dataset.uid = o.uid;
+      end.classList.add('path-end'); end.classList.toggle('path', !p.blocked); end.classList.toggle('path-preview', pv); end.classList.toggle('path-blocked', p.blocked); end.style.setProperty('--pfc', pfc);
+      const n = p.turns;
+      const text = p.blocked || !isFinite(n) ? 'Blocked' : o.kind === 'chase' ? 'Chase' : `${n} turn${n === 1 ? '' : 's'}`;
+      if (isFinite(n)) end.dataset.turns = String(n);
+      end.querySelector('.path-label')?.remove();
+      end.append(h('span', { class: 'path-label', role: 'status', 'data-kind': o.kind, title: o.kind === 'chase' && isFinite(n) && !p.blocked ? `Chase: ${n} turn${n === 1 ? '' : 's'} to reach` : text }, text));
+    }
+    // the ordered units' markers
+    for (const [uid, el] of this.tokens) {
+      const o = this.orders.get(uid);
+      let m = el.querySelector('.tk-order') as El | null;
+      if (!o) { m?.remove(); continue; }
+      if (!m) {
+        const b = h('button', { type: 'button', class: 'tk-cancel', 'aria-label': 'Cancel order', title: 'Cancel order', 'data-uid': uid }, '✕') as El;
+        const stop = (e: Event) => { e.stopPropagation(); };
+        b.addEventListener('pointerdown', stop);
+        b.addEventListener('pointerup', stop);
+        b.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); this.cancelOrder(uid); });
+        m = h('div', { class: 'tk-order', 'data-uid': uid }, h('span', { class: 'tk-order-mark', 'aria-hidden': 'true' }, '➜'), b) as El;
+        el.append(m);
+      }
+      m.dataset.kind = o.kind;
+      const mk = m.querySelector('.tk-order-mark') as El, sym = o.kind === 'chase' ? '⚔' : '➜';
+      if (mk.textContent !== sym) mk.textContent = sym;
+    }
+    this.drawOrders();
+  }
+  // Ken (Oct 30 playtest): routes are hidden at rest; shown while a mouse hovers the unit, while it is selected / just tapped, while dragging a new order, and briefly after giving one
+  orderPlans: { o: Order; p: OrderPlan; pv: boolean }[] = [];
+  orderHover: string | null = null;
+  orderFocus: string | null = null;
+  /** Ken, Oct 31: a unit tapped when it has no move this turn (e.g. during the computer's turn); the next square tapped gives it an order */
+  orderPick: string | null = null;
+  orderFlashUid: string | null = null;
+  orderFlashT: any = null;
+  setOrderHover(uid: string | null) {
+    if (uid === this.orderHover) return;
+    const old = this.orderHover; this.orderHover = uid;
+    if ((old && this.orders.has(old)) || (uid && this.orders.has(uid))) this.drawOrders();
+  }
+  flashOrder(uid: string) {
+    clearTimeout(this.orderFlashT); this.orderFlashUid = uid; this.drawOrders();
+    this.orderFlashT = setTimeout(() => { if (this.orderFlashUid === uid) { this.orderFlashUid = null; this.drawOrders(); } }, 2200);
+  }
+  /** Which orders show their route right now. */
+  orderShown(uid: string, pv: boolean) { return pv || uid === this.orderHover || uid === this.orderFocus || uid === this.orderFlashUid || uid === this.orderPick || uid === (this.pick as any)?.unit; }
+  /** Draws the shown routes on the SVG layer: a hand-drawn curved chalk line, an X at the end (a circle around a chased unit), plus the 'N turns' label. */
+  drawOrders() {
+    const svg = this.r.orderSvg as SVGSVGElement | undefined, view = this.view, st = this.game.state;
+    if (!svg || !view || !this.r.cells) return;
+    const shown = st ? this.orderPlans.filter((x) => this.orderShown(x.o.uid, x.pv)) : [];
+    const showUids = new Set(shown.map((x) => x.o.uid));
+    for (const el of this.r.cells.values() as Iterable<El>) if (el.classList.contains('path-end')) el.classList.toggle('path-show', showUids.has(el.dataset.uid || ''));
+    if (!shown.length) { if (svg.firstChild) svg.replaceChildren(); return; }
+    const centre = (row: number, col: number) => {
+      const q = view.cellQuad?.(row, col) || [];
+      if (q.length) return { x: q.reduce((a: number, p: any) => a + p.x, 0) / q.length, y: q.reduce((a: number, p: any) => a + p.y, 0) / q.length };
+      const rc = view.cellRect(row, col); return { x: rc.x + rc.w / 2, y: rc.y + rc.h / 2 };
+    };
+    const bw = this.r.board.clientWidth, bh = this.r.board.clientHeight;
+    svg.setAttribute('viewBox', `0 0 ${bw} ${bh}`);
+    let html = '';
+    for (const { o, p, pv } of shown) {
+      const c = st.board.creatures.find((x: any) => x.uid === o.uid);
+      const tgt = o.kind === 'chase' ? st.board.creatures.find((x: any) => x.uid === o.targetUid) : null;
+      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
+      if (!c || !endQ) continue;
+      const rc = view.cellRect(endQ.row, endQ.col);
+      const sq = [{ row: c.row, col: c.col }, ...p.path];
+      if (o.kind === 'move' && (p.blocked || !p.path.length)) sq.push(endQ);
+      const d: OrderDrawing = { uid: o.uid, kind: o.kind, pts: sq.map((q) => centre(q.row, q.col)), end: centre(endQ.row, endQ.col), cw: rc.w, ch: rc.h, preview: pv, blocked: p.blocked };
+      if (o.kind === 'chase') d.pts.push(d.end);
+      html += orderSvg(d);
+    }
+    svg.innerHTML = html;
+  }
+  /** Do what a unit dropped (or clicked) onto square c means: attack, mine, move or an aimed ability. */
+  unitActAt(cr: any, c: { row: number; col: number }) {
+    if (!c || !c.row) return;
+    const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
+    const atk = legal.find((a: any) => a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col)));
+    const mv = legal.find((a: any) => a.type === 'move' && a.row === c.row && a.col === c.col);
+    const mn = legal.find((a: any) => a.type === 'mine' && a.row === c.row && a.col === c.col);
+    const ab = legal.filter((a: any) => a.type === 'ability' && this.abilityCell(a, cr));
+    const abHere = ab.filter((a: any) => { const q = this.abilityCell(a, cr)!; return q.row === c.row && q.col === c.col; });
+    const abPick = (a0: any) => (a0.ability === 'shaman' ? this.bestShaman(abHere.filter((x: any) => x.ability === 'shaman'), cr) : a0);
+    const a = atk || mn || mv || (abHere[0] ? abPick(abHere[0]) : null);
+    if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); } else this.flash("Can't go there");
+  }
+
   boardPointerDown(e: PointerEvent) {
     const st = this.game.state;
     if (!st) return;
+    if (this.orderFocus) { this.orderFocus = null; this.drawOrders(); } // Ken (Oct 30): a route stays shown only for the unit just tapped
+    // Owner (Oct 25): the right mouse button opens a unit's card (and its ability menu); the left button uses units
+    if (e.pointerType === 'mouse' && e.button === 2) {
+      const u = this.unitAtEvent(e);
+      if (u) {
+        e.preventDefault();
+        this.view?.poke(u.uid);
+        if (u.owner === 'player') this.abilityMenu(u);
+        if (!this.dialogs.length) this.showCard(u.cardId, u);
+      }
+      return;
+    }
     const lab = (e.target as El).closest?.('.tk-stats');
     const labUid = lab ? (lab.closest('.token') as El | null)?.dataset.uid : null;
     const cell = labUid ? (() => { const c0 = st.board.creatures.find((c: any) => c.uid === labUid); return c0 ? { row: c0.row, col: c0.col } : null; })() : this.cellAt(e.clientX, e.clientY);
-    if (!cell) return;
+    { /* Ken, Oct 31: a unit tapped with no move this turn, then another square: a stored order (it walks in your next Action phase) */
+      const op = this.orderPick; this.orderPick = null;
+      const pu = op && cell && !this.pick ? st.board.creatures.find((c: any) => c.uid === op) : null;
+      if (pu && cell) {
+        const onFig = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col) || this.figureAtEvent(e);
+        if (!(onFig && onFig.owner === 'player') && this.orderTime(pu) && this.orderFor(pu, cell)) { this.orderAt(pu, cell); return; }
+      } }
+    if (!cell && (this.pick as any)?.hand && (e.pointerType !== 'mouse' || e.button === 0)) { this.cancelHandPick(); return; } // Oct 30 Ken playtest: empty space cancels a double-tap play
+    if (!cell) { if (!this.pick && (e.pointerType !== 'mouse' || e.button === 0)) this.startPan(e); return; }
     if (this.pick) {
       const p = this.pick.cells.find((c) => c.row === cell.row && c.col === cell.col);
-      if (p) this.pick.done(p); else { this.pick = null; this.clearGlow(); this.flash('Cancelled'); }
-      return;
+      if (p) { if ((this.pick as any).unit && this.orders.delete((this.pick as any).unit)) this.renderOrders(st); this.pick.done(p); return; }
+      const unitPick = !!(this.pick as any).unit;
+      { // Round 28: a unit is selected and a square it can't reach this turn was clicked: give it an order
+        const pu = unitPick ? st.board.creatures.find((c: any) => c.uid === (this.pick as any).unit) : null;
+        const onFig = !st.board.creatures.some((c: any) => c.row === cell.row && c.col === cell.col) ? this.figureAtEvent(e) : null; // a tap on another of your units' bodies selects it, not an order behind it
+        if (pu && !(onFig && onFig.owner === 'player' && onFig.uid !== pu.uid) && this.orderTime(pu) && this.orderFor(pu, cell)) { this.pick = null; this.clearGlow(); this.orderAt(pu, cell); return; } }
+      this.pick = null; this.clearGlow();
+      // a unit was selected: clicking another of your units selects that one instead; clicking elsewhere just deselects
+      const other = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col) || this.figureAtEvent(e);
+      if (!(unitPick && other && other.owner === 'player')) { if (!unitPick) this.flash('Cancelled'); return; }
     }
-    const cr = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col);
-    if (!cr) return;
+    // Oct 31 (Ken: "I can't move any of the characters"): units stand 3x tall over the squares behind them, so a tap on a unit's body counts as that unit
+    const cr = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col) || this.figureAtEvent(e);
+    if (!cr && cell.row === SH.player.row && cell.col === SH.player.col && (e.pointerType !== 'mouse' || e.button === 0)) audio.unitSelect(st.players.player.commanderId, 'cmd:player'); // Oct 31: a click on your Commander's square: a Commander line
+    if (!cr) { if (e.pointerType !== 'mouse' || e.button === 0) this.startPan(e); return; }
+    this.selectedUid = cr.uid; // round 11: the tapped creature counts as selected (Esc clears it)
     const card = CARDS[cr.cardId];
-    const ghost = h('div', { class: 'ghost tk' }, FSYM(card.faction));
+    const ghost = dragIcon(card.faction, 'ghost tk');
     const mine = cr.owner === 'player';
     let box: El | null = null;
     const atkAt = (c: { row: number; col: number }) => this.game.legalActions().find((a: any) => a.creatureUid === cr.uid && a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col)));
     this.drag(e, {
       ghost,
       onHover: (c, x, y) => {
+        if (mine) this.previewOrder(c && this.orderTime(cr) && !this.unitHasActionAt(cr, c) ? this.orderFor(cr, c) : null); // Round 28: path preview
         const a = mine && c ? atkAt(c) : null;
         const pv: any = a ? previewAttack(this.game.state, cr.uid, a.target) : null;
         if (!pv) { box?.remove(); box = null; return; }
@@ -1420,7 +4422,7 @@ export class App {
         box.replaceChildren(`You deal ${pv.youDeal} / You take ${pv.youTake}`, ...(dead ? [h('span', { class: 'skull' }, ` ${pv.targetDefeated ? '💀' : ''}${pv.attackerDefeated ? '💀' : ''}`)] : []));
         box.style.left = x + 'px'; box.style.top = y + 'px';
       },
-      onEnd: () => { box?.remove(); box = null; },
+      onEnd: () => { box?.remove(); box = null; if (this.orderPreview) this.previewOrder(null); },
       onStart: () => {
         if (!mine || this.respDlg) return false;
         const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
@@ -1430,29 +4432,63 @@ export class App {
         this.setGlow(legal.filter((a: any) => isMove(a) && swapAt(a)).map((a: any) => ({ row: a.row, col: a.col })), 'glow-swap');
         this.setGlow(legal.filter((a: any) => a.type === 'attack').map((a: any) => this.cellOfTarget(a.target)), 'glow-attack');
         this.setGlow(legal.filter((a: any) => a.type === 'mine').map((a: any) => ({ row: a.row, col: a.col })), 'glow-mine');
-        if (!legal.some((a: any) => a.type === 'move' || a.type === 'attack' || a.type === 'mine')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves, attacks OR mines)' : 'Creatures move and attack in the Action phase');
+        this.setGlow(legal.filter((a: any) => a.type === 'ability' && this.abilityCell(a, cr)).map((a: any) => this.abilityCell(a, cr)!), 'glow-swap');
+        const offTurn = this.game.state.activePlayer !== 'player' || this.game.state.phase !== 'action'; /* Ken, Oct 31: off-turn drags give stored orders, no warning */
+        if (!(offTurn && this.orderTime(cr)) && !legal.some((a: any) => a.type === 'move' || (a.type === 'ability' && this.abilityCell(a, cr)) || a.type === 'attack' || a.type === 'mine')) this.flash(st.phase === 'action' ? 'This creature cannot act now (each creature moves, attacks OR mines)' : 'Creatures move and attack in the Action phase');
         return true;
       },
-      onDrop: (c) => {
-        if (!c || !c.row) return;
-        const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
-        const atk = legal.find((a: any) => a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col)));
-        const mv = legal.find((a: any) => a.type === 'move' && a.row === c.row && a.col === c.col);
-        const mn = legal.find((a: any) => a.type === 'mine' && a.row === c.row && a.col === c.col);
-        const a = atk || mn || mv;
-        if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); } else this.flash("Can't go there");
-      },
+      onDrop: (c) => { if (c) this.unitDropAt(cr, c); },
       onTap: () => {
-        const now = Date.now();
-        if (this.lastTap.uid === cr.uid && now - this.lastTap.t < 380) {
-          clearTimeout(this.tapTimer);
-          this.lastTap = { uid: '', t: 0 };
-          this.showCard(cr.cardId, cr);
-          return;
-        }
-        this.lastTap = { uid: cr.uid, t: now };
-        clearTimeout(this.tapTimer);
+        this.view?.poke(cr.uid);
+        // Owner (Oct 25): a left click uses the unit; the card opens with the right button (a touch tap on an enemy still shows its card)
+        if (mine) {
+          audio.unitSelect(cr.cardId, cr.uid); // Oct 31 (Ken): units speak when clicked
+          this.abilityMenu(cr);
+          this.selectUnit(cr);
+          this.orderPick = !this.pick && this.orderTime(cr) && maxMove(cr) ? cr.uid : null; /* Ken, Oct 31: tap a square next to give it an order */
+          if (this.orders.has(cr.uid)) { this.orderFocus = cr.uid; this.drawOrders(); }
+          if (!this.pick && !document.querySelector('.ability-menu')) {
+            if (e.pointerType !== 'mouse' && this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);
+            else this.flash(st.phase === 'action' && st.priority === 'player' ? 'This creature cannot act now' : 'Creatures move and attack in your Action phase');
+          }
+        } else if (e.pointerType !== 'mouse' && this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);
       },
     });
+  }
+
+  /** Board cell a special ability is aimed at when dragging its creature (null = chosen from the tap menu). */
+  abilityCell(a: any, cr: any): { row: number; col: number } | null {
+    switch (a.ability) {
+      case 'slide': case 'ramMove': case 'rocket': return a.target;
+      case 'bowl': return { row: cr.row + a.dr, col: cr.col + a.dc };
+      case 'plow': return { row: cr.row + a.dr * a.dist, col: cr.col + a.dc * a.dist };
+      case 'shaman': return a.from;
+      default: return null;
+    }
+  }
+  /** Junk Shaman: drop on a character; ally goes toward the enemy Stronghold, enemy is yanked away from it. */
+  bestShaman(opts: any[], cr: any): any {
+    const st = this.game.state;
+    const src = st.board.creatures.find((o: any) => o.row === opts[0]?.from.row && o.col === opts[0]?.from.col);
+    const eh = SH.opponent;
+    const d = (q: any) => Math.max(Math.abs(q.row - eh.row), Math.abs(q.col - eh.col));
+    const ally = src && src.owner === cr.owner;
+    return opts.slice().sort((x: any, y: any) => (ally ? d(x.target) - d(y.target) : d(y.target) - d(x.target)))[0];
+  }
+  /** Tap menu for abilities that are not aimed by dragging (Shockwave, Ward, Sacrifice). */
+  abilityMenu(cr: any) {
+    document.querySelector('.ability-menu')?.remove();
+    if (this.game.state.phase !== 'action' || this.game.state.priority !== 'player') return;
+    const opts = this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === cr.uid && ['shockwave', 'ward', 'sacrifice'].includes(a.ability));
+    if (!opts.length) return;
+    const NAME: Record<string, string> = { shockwave: 'Shockwave (1)', ward: 'Ward an ally (2)', sacrifice: 'Sacrifice an ally (+1 Bank)' };
+    const menu = h('div', { class: 'ability-menu', role: 'menu', 'aria-label': 'Abilities' });
+    for (const a of opts.slice(0, 8)) {
+      const t = a.target ? this.game.state.board.creatures.find((o: any) => o.row === a.target.row && o.col === a.target.col) : null;
+      const label = NAME[a.ability] + (t ? ` — ${CARDS[t.cardId].name} (${t.row},${t.col})` : '');
+      menu.append(h('button', { type: 'button', role: 'menuitem', class: 'txtbtn', onclick: () => { menu.remove(); const r = this.game.act(a); if (!r.ok) this.flash(r.error!); } }, label));
+    }
+    menu.append(h('button', { type: 'button', class: 'txtbtn', onclick: () => menu.remove() }, 'Cancel'));
+    document.body.append(menu);
   }
 }
