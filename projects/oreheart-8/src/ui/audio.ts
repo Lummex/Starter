@@ -206,9 +206,11 @@ class AudioEngine {
       gain: this.sfxGain ? this.sfxGain.gain.value : null, maxVoices: MAX_VOICES, active };
   }
   /** Plays a named effect: its sound file when loaded, otherwise the old synthesized sound. Unknown names are ignored. */
-  play(name: string, faction = 'goblins') {
+  /** `punch` overrides the hit's usual punch layer (Forge, Oct 31: a bowled-over unit gets the heavy punch). */
+  play(name: string, faction = 'goblins', punch?: string) {
     const e = this.playKey(name === 'step' ? 'step:' + faction : name, () => this.synth(name, faction));
-    if (PUNCH_FOR[name] && e.played) e.punch = this.punch(PUNCH_FOR[name]);
+    const pk = punch || PUNCH_FOR[name];
+    if (pk && e.played) e.punch = this.punch(pk);
   }
   private heavyAt = -1e9;
   /** The punch layer under a hit. A Commander hit gets only the heavy punch: its board bonk and its stronghold sound land close together (up to a few frames apart on a slow phone). */

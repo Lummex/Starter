@@ -12768,3 +12768,29 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
     });
   });
 }
+
+// Forge (Oct 31): "a bowled-over unit gets the HEAVY punch"
+test('AC512: each unit the Bowler\'s ball knocks over gets a bonk with the heavy punch, and pins scatter', async ({ page }) => {
+  test.setTimeout(120000);
+  await start(page, quiet({ playerCrystals: 6, board: [
+    { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 8 },
+    { cardId: 'goblin-grunt', owner: 'opponent', row: 3, col: 8 },
+    { cardId: 'goblin-scrounger', owner: 'opponent', row: 2, col: 8 },
+  ] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await sfxReady(page);
+  let s = await getState(page);
+  const me = at(s, 6, 8);
+  await expect.poll(async () => (await r22Fig(page, me.uid)).source, { timeout: 40000 }).toBe('goblin-scrapper.glb');
+  s = await toAction(page);
+  const t0 = await page.evaluate(() => performance.now());
+  expect((await act(page, { type: 'ability', creatureUid: me.uid, ability: 'strike', target: { row: 5, col: 8 } })).ok).toBe(true);
+  await expect.poll(async () => (await sfxState(page)).plays.filter((p) => p.key === 'pins-scatter' && p.t >= t0 - 5).length, { timeout: 15000, message: 'pins scatter for both units' }).toBeGreaterThanOrEqual(2);
+  const sp = (await sfxState(page)).plays.filter((p) => p.t >= t0 - 5);
+  const bonks = sp.filter((p) => p.key === 'bonk' && sp.some((q) => q.key === 'pins-scatter' && Math.abs(q.t - p.t) <= 30));
+  expect(bonks.length, 'a bonk for each unit bowled over').toBeGreaterThanOrEqual(2);
+  for (const b of bonks) {
+    expect(b.punch && b.punch.key, 'bowled over = the heavy punch').toBe('punch-heavy');
+    expect(b.punch.file).toBe('/audio/sfx/punch-heavy.ogg');
+  }
+});

@@ -775,7 +775,7 @@ const _embV = new THREE.Vector3();
       let idx = path.findIndex((p) => h.from && p.row === h.from.row && p.col === h.from.col);
       if (idx < 0) idx = 0;
       const t = pathAt[idx] - 60; // knocked over as the ball reaches it
-      f.bowl = { t0: t, from: from2, to: h.to ? world(h.to.row, h.to.col) : f.target.clone() }; f.bowledT = t; setTimeout(() => { audio.play('bonk'); audio.play('pins-scatter'); }, Math.max(0, t - now)); // Round 28b: bowled-over clip (bonk as the ball reaches it)
+      f.bowl = { t0: t, from: from2, to: h.to ? world(h.to.row, h.to.col) : f.target.clone() }; f.bowledT = t; setTimeout(() => { audio.play('bonk', undefined, 'punch-heavy'); audio.play('pins-scatter'); }, Math.max(0, t - now)); // Forge, Oct 31: bowled over = the heavy punch // Round 28b: bowled-over clip (bonk as the ball reaches it)
       f.group.position.copy(from2);
     }
   }
