@@ -10,9 +10,38 @@ import animSlotsJson from '../content/anim-slots.json';
 import unitHeightsJson from '../content/unit-heights.json';
 /** Ken (Oct 30): every unit at the height he saved in Oreheart Studio (Ledger's table, board squares; mounts = rider + mount); beats LOOKS and the faction defaults */
 export const HEIGHTS: Record<string, number> = Object.fromEntries(Object.entries(unitHeightsJson as Record<string, unknown>).filter(([k, v]) => !k.startsWith('_') && typeof v === 'number')) as Record<string, number>;
+/** Ken (Oct 31, Ledger's table `_table` in unit-heights.json): real-world heights in board squares (mine = 5 ft = 1.31 squares). A unit's standing body
+ *  (idle pose, feet to the top of the head / helmet; the rider on a mount) is exactly this x characterSizes.creatures tall on the board. Replaces the Studio heights above. */
+export const TABLE_H: Record<string, number> = Object.fromEntries(Object.entries((((unitHeightsJson as any)._table || {}).units || {}) as Record<string, { squares: number }>).map(([k, v]) => [k, +v.squares])) as Record<string, number>;
+/** bones that don't count for standing height: hands, forearms and fingers (a raised arm, weapon or staff), and anything named as a weapon or prop */
+const NOT_STANDING = /hand|forearm|finger|thumb|index|middle|ring|pinky|weapon|prop/i;
+/** Ledger (Oct 31): the standing box of a body as posed now, in world space. Every skinned vertex counts except those mostly bound to a hand / forearm / finger
+ *  bone; attached items (plain meshes) are ignored when the body is skinned; an unskinned body (the Iron Scarab) counts whole. */
+export function standingBox(o: THREE.Object3D, into = new THREE.Box3()): THREE.Box3 {
+  o.updateMatrixWorld(true);
+  let skinned = false; o.traverse((m: any) => { if (m.isSkinnedMesh) skinned = true; });
+  const v = new THREE.Vector3();
+  o.traverse((m: any) => {
+    if (!m.isMesh || m.userData?.shadow) return;
+    if (!m.isSkinnedMesh) { if (!skinned) into.expandByObject(m, true); return; }
+    const pos = m.geometry.attributes.position, si = m.geometry.attributes.skinIndex, sw = m.geometry.attributes.skinWeight;
+    if (!pos || !si || !sw) return;
+    m.skeleton.update();
+    const bad: boolean[] = m.skeleton.bones.map((b: THREE.Bone) => NOT_STANDING.test(b.name));
+    for (let i = 0; i < pos.count; i++) {
+      let bi = si.getX(i), bw = sw.getX(i);
+      if (sw.getY(i) > bw) { bw = sw.getY(i); bi = si.getY(i); }
+      if (sw.getZ(i) > bw) { bw = sw.getZ(i); bi = si.getZ(i); }
+      if (sw.getW(i) > bw) { bw = sw.getW(i); bi = si.getW(i); }
+      if (bad[bi]) continue;
+      v.fromBufferAttribute(pos, i); m.applyBoneTransform(i, v); v.applyMatrix4(m.matrixWorld); into.expandByPoint(v);
+    }
+  });
+  return into;
+}
 
 export type CreatureAnim = 'idle' | 'walk' | 'run' | 'attack' | 'mine' | 'hit' | 'defeat' | 'lifted' | 'special' | 'ability' | 'knockback' | 'bowled' | 'idleBreak';
-export interface PartCfg { file: string; bone: string[]; /** target length as a fraction of the character height */ len: number; /** point along the long axis (0 bottom .. 1 top) that sits on the bone */ grip: number; rot: [number, number, number]; pos?: [number, number, number]; name: string; axis?: 'x' | 'y' | 'z'; /** owner look (Model Editor): exact bone-local transform of the raw part */ look?: LookPart; /** a mount standing under the rider */ mount?: boolean }
+export interface PartCfg { file: string; bone: string[]; /** target length as a fraction of the character height */ len: number; /** point along the long axis (0 bottom .. 1 top) that sits on the bone */ grip: number; rot: [number, number, number]; pos?: [number, number, number]; name: string; axis?: 'x' | 'y' | 'z'; /** owner look (Model Editor): exact bone-local transform of the raw part */ look?: LookPart; /** a mount standing under the rider */ mount?: boolean; /** Ken's Studio placement of a WORLD item (not bone-parented): Studio position / rotation (deg, XYZ) / scale with the body at the origin scaled by `body`; the game fixes it to `bone` in the rest pose so it follows the hand */ world?: { bone: string; body: number; pos: [number, number, number]; rot: [number, number, number]; scale: number }; /** true = no Studio placement yet: placed by the default grip rule until Ledger saves one */ auto?: boolean; /** Oct 31: hold the item upright in the character's own frame (as modelled, long axis up) at the hand, measured in the idle pose; `rot` is then an extra turn in that frame */ upright?: boolean }
 export interface LookPart { bone: string; pos: [number, number, number]; rot: [number, number, number]; scale: [number, number, number] }
 /** owner looks (factory-design/looks/*.json): height in squares + stretch of the main model */
 export const LOOKS: Record<string, { height: number; stretch: [number, number, number] }> = {
@@ -77,13 +106,21 @@ const PARTS: Record<string, PartCfg[]> = {
   'dwarf-pickman': [],
   'dwarf-smith-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-6.164, 15.149, 10.053], rot: [-66.649, 52.929, 128.399], scale: [38, 38, 38] } }, { name: 'hammer', file: 'hammer.glb', bone: ['Hips'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [10.074, 4.349, -12.19], rot: [19.81, -0.33, -120.23], scale: [15.769, 15.769, 15.769] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'dwarf-stoneback': [{ name: 'hammer', file: 'hammer.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-7.435, 10.978, 9.103], rot: [127.903, -62.14, 44.02], scale: [31.335, 31.335, 31.335] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
-  'gearward-sentinel': [],
-  'gnome-prospector': [], // Oct 30 (Clay): new Meshy model, moves from the shared pack; pickaxe waits for Ken's Studio setup
-  'overclocked-conduit': [], // Oct 30 (Clay): the robot, moves from the shared pack; two pickaxes wait for Ken's Studio setup
+  // Ken (Oct 31): "A lot of the characters don't have their equipment". The Gearward Sentinel, Aethervein and Arcsmith items have no Studio placement yet,
+  // so they use the default grip rule (auto: true) until Ledger saves one; the Gemsinger's pickaxe is Ken's Studio WORLD placement, fixed to the right hand.
+  'gearward-sentinel': [
+    { name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.15, rot: [0, 0, 0], auto: true, upright: true },
+    { name: 'gear-shield', file: 'gear-shield.glb', bone: ['LeftForeArm', 'LeftHand'], len: 0.5, grip: 0.5, rot: [0, 0, 0], auto: true, upright: true },
+  ],
+  'gnome-prospector': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [180, 0, 0], world: { bone: 'RightHand', body: 0.37, pos: [-0.121, 0.2512, 0.1576], rot: [40.781, -43.817, 94.144], scale: 0.1846 } }], // Ken's Studio setup (Gemsinger, silver): world item at body scale 0.37
+  'overclocked-conduit': [
+    { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], auto: true, upright: true },
+    { name: 'pickaxe-2', file: 'pickaxe.glb', bone: ['LeftHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], auto: true, upright: true }, // the card holds two pickaxes (Studio note: one in each hand)
+  ],
   'glyphshield-warden': [{ name: 'shield', file: 'shield.glb', bone: ['LeftForeArm'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [-0.289, 25.921, 0.524], rot: [-114.616, -54.523, 103.055], scale: [28.912, 28.912, 28.912] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'gnome-cogger': [{ name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-16.476, -10.052, 6.626], rot: [-106.963, -35.01, 84.605], scale: [32.833, 32.833, 32.833] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'gnome-illusionist': [],
-  'gnome-smith-miner': [],
+  'gnome-smith-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], auto: true, upright: true }], // Oct 31: Clay's silver pickaxe; Ken's Studio placement is on the old Mixamo body, so the grip rule until Ledger re-places it
   'gnome-tinker': [
     { name: 'scepter', file: 'scepter.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-5.106, 4.336, 10.391], rot: [-91.862, 22.237, 178.441], scale: [29.826, 29.826, 29.826] } },
     { name: 'crystal-shield', file: 'crystal-shield.glb', bone: ['LeftForeArm'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [-6.589, 20.19, 0.021], rot: [-110.166, -61.024, 179.49], scale: [29.536, 29.536, 29.536] } },
@@ -284,6 +321,8 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
         if (!r.ok) return null;
         const info = await r.json();
         const gl = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+        // Oct 31: the items download alongside the body (they used to wait for it, so a unit with gear came up later)
+        const partP = PARTS[id].map((pc) => gl.loadAsync(base + pc.file).then((g) => [pc.name, g.scene] as [string, THREE.Object3D]).catch(() => null /* part missing: the figure still works */));
         const c = await gl.loadAsync(base + 'char.glb');
         const names = Object.keys(info.actions || {});
         const clips: Record<string, THREE.AnimationClip> = {};
@@ -319,7 +358,7 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
     let events: any = null;
         if (info.clips) { try { const er = await fetch(base + 'events.json'); if (er.ok) events = await er.json(); } catch { /* no events file */ } }
         const parts: Record<string, THREE.Object3D> = {};
-        for (const pc of PARTS[id]) { try { parts[pc.name] = (await gl.loadAsync(base + pc.file)).scene; } catch { /* part missing: the figure still works */ } }
+        for (const r of await Promise.all(partP)) if (r) parts[r[0]] = r[1];
         const a = { char: c.scene, clips, parts, info, events, shared, picked, packFree };
         ready.set(id, a);
         return a;
@@ -338,15 +377,14 @@ export interface C3D {
   /** Owner fix (Oct 28): true when the model has this clip */ has?: (n: string) => boolean;
   /** Oct 30: where the attack blow lands (s into the clip, if known) and a clip speed setter */ impactOf?: (n: string) => number | undefined; setSpeed?: (n: string, k: number) => void; gaitSpeed?: (n: string) => number | undefined; setPace?: (n: string, pace: number) => void; eventsOf?: (n: string) => { name: string; time: number }[]; packRoles?: Set<string>; animWeight?: () => number; /** Oct 31: true while the Junk Shaman carries a unit (his special loops its lift segment) */ holding?: boolean; poseDelta?: () => number; diag?: () => any; seek?: (n: string, t: number) => void;
   clipNames: string[]; held: string[]; worn: string[]; height: number; boardH?: number; boardK?: number;
-  /** height in board squares (owner look or default) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
+  /** Oct 31: the older Studio height (heightSpaces before the real-world table), the model's natural standing / whole-box height (model units), and the body object (for measuring) */ studioHeight?: number; natural?: { standing: number; box: number }; char?: THREE.Object3D;
+  /** Oct 31: the unit's height in squares (Ledger's real-world table; on the board x characterSizes.creatures) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
   /** Bowler Brawler only: hand-keyed special moves, ball hooks, flame effect */ special?: (n: 'bowl' | 'spinBall' | 'basketShot') => void; trig?: (shootT: number, born: number) => void; advanceIdle?: (sec: number) => void; ballInfo?: () => any; effects?: () => any[];
 }
 
 /** Instances one figure: the model stands on y = 0, centred, normalised to height 1 (the scene scales it to the board). */
-/** Board size: Studio height x k, softened above 1.8 squares so the giants (Troll, Golem) stay the biggest without swallowing the board (Ken, Oct 31). */
-export const BOARD_KNEE = 1.8, BOARD_SOFT = 0.35;
-export const boardScale = (h: number, k: number) => { const bh = h * k; return (bh > BOARD_KNEE && k > 1 ? BOARD_KNEE + (bh - BOARD_KNEE) * BOARD_SOFT : bh) / Math.max(h, 1e-4); };
-/** `k` = the board size factor (owner layout characterSizes.creatures; Ken, Oct 31: units 3x). heightSpaces stays the Studio height; boardH is the height on the board. */
+/** `k` = the board size factor (owner layout characterSizes.creatures, 1). Ken (Oct 31): real-world heights replace the 3x rule and its soft cap:
+ *  the standing body is TABLE_H x k squares tall (measured in the idle pose); boardH is the figure's top on the board (rider or mount). */
 export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   const ch = skeletonClone(a.char) as THREE.Object3D;
   const mats: THREE.MeshStandardMaterial[] = [];
@@ -358,6 +396,8 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
     }
   });
   prep(ch);
+  ch.updateMatrixWorld(true);
+  const restW = new Map<string, THREE.Matrix4>(); for (const pc of PARTS[id] || []) if (pc.world) { const bn = ch.getObjectByName(pc.world.bone); if (bn) restW.set(pc.world.bone, bn.matrixWorld.clone()); } // rest pose, before any clip plays
   // test hook (Oct 30 T-pose hunt): the bind pose, captured before any clip plays; poseDelta() = mean bone rotation away from it (radians); ~0 = T-pose showing
   const restQ = new Map<string, THREE.Quaternion>(); ch.traverse((o: any) => { if (o.isBone && !restQ.has(o.name)) restQ.set(o.name, o.quaternion.clone()); });
   const held: string[] = [], worn: string[] = [];
@@ -421,8 +461,29 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   // stand on the ground, centred, height 1
   const b = skinBox(ch, new THREE.Box3());
   const bodyH = Math.max(0.01, b.max.y - b.min.y);
+  // Ken (Oct 31, Ledger): the body's real standing height in the idle pose: feet to the top of the head / helmet (hands, forearms and held items not counted).
+  // The idle is sampled across its loop and the tallest moment counts (an idle that sways or dips doesn't shrink the unit); feet from the first frame.
+  const sb = standingBox(ch, new THREE.Box3());
+  let standH = Math.max(0.01, sb.max.y - sb.min.y);
+  { const ac = actions.idle, dur = ac ? ac.getClip().duration : 0;
+    if (ac && dur > 0.05) { for (let i = 1; i < 8; i++) { mixer.setTime((dur * i) / 8); const s = standingBox(ch, new THREE.Box3()); standH = Math.max(standH, s.max.y - s.min.y); } mixer.setTime(0); started = 0; } }
   for (const pc of PARTS[id]) {
     const src = a.parts[pc.name]; if (!src || pc.mount) continue;
+    if (pc.world) {
+      const bone = ch.getObjectByName(pc.world.bone), bw = restW.get(pc.world.bone);
+      if (!bone || !bw) continue;
+      const part = src.clone(true); prep(part);
+      const w = pc.world, D = THREE.MathUtils.degToRad;
+      const W = new THREE.Matrix4().compose(new THREE.Vector3(...w.pos), new THREE.Quaternion().setFromEuler(new THREE.Euler(D(w.rot[0]), D(w.rot[1]), D(w.rot[2]), 'XYZ')), new THREE.Vector3(w.scale, w.scale, w.scale));
+      W.premultiply(new THREE.Matrix4().makeScale(1 / w.body, 1 / w.body, 1 / w.body)); // Studio world -> the raw model (the Studio body sits at the origin, scaled by w.body)
+      bw.clone().invert().multiply(W).decompose(part.position, part.quaternion, part.scale);
+      bone.add(part);
+      const rd = new THREE.Euler().setFromQuaternion(part.quaternion, 'XYZ');
+      partInfo.push({ name: pc.name, file: pc.file, bone: bone.name, pos: part.position.toArray().map((x) => +x.toFixed(3)), rot: [rd.x, rd.y, rd.z], rotDeg: [rd.x, rd.y, rd.z].map((x) => +THREE.MathUtils.radToDeg(x).toFixed(2)), scale: part.scale.toArray().map((x) => +x.toFixed(3)), loaded: true });
+      addItem(pc.name, bone.name, true, part);
+      (/Hand/.test(bone.name) ? held : worn).push(pc.name);
+      continue;
+    }
     if (pc.look) {
       const bone = ch.getObjectByName(pc.look.bone);
       if (!bone) continue;
@@ -440,9 +501,10 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   }
   const root = new THREE.Group();
   const sc = new THREE.Group();
-  const k = 1 / bodyH;
-  ch.position.set(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
-  let heightSpaces = HEIGHTS[id] ?? (look ? look.height : DEFAULT_H[id] || 1.1), kk = k0;
+  const k = 1 / standH; // the standing body is 1 tall inside `sc` (Oct 31: was the whole box, so a raised weapon shrank the unit)
+  ch.position.set(-(b.min.x + b.max.x) / 2, -sb.min.y, -(b.min.z + b.max.z) / 2);
+  const studioH = HEIGHTS[id] ?? (look ? look.height : DEFAULT_H[id] || 1.1);
+  let heightSpaces = TABLE_H[id] ?? studioH; const kk = k0;
   const st = look ? look.stretch : [1, 1, 1];
   sc.scale.set(k * st[0], k * st[1], k * st[2]);
   sc.add(ch); root.add(sc);
@@ -463,12 +525,20 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
     sc.position.y = seat; sc.position.z = -0.02;
     root.userData.mount = true;
     addItem(mt.name, 'ground', false, holder);
-    const total = seat + 0.8;
-    root.scale.setScalar(1 / total);
-    heightSpaces = HEIGHTS[id] ?? (DEFAULT_H[id] || 1.35);
-    kk = boardScale(heightSpaces, k0);
-    root.scale.setScalar(heightSpaces / 1.1 / total * kk);
-  } else { kk = boardScale(heightSpaces, k0); root.scale.setScalar(heightSpaces / 1.1 * kk); }
+    if (!(id in TABLE_H)) heightSpaces = HEIGHTS[id] ?? (DEFAULT_H[id] || 1.35);
+  }
+  // Ken (Oct 31): MEASURED, not the old scale multiplied: the standing body (the rider, on a mount or the plow) is heightSpaces x k0 squares tall on the board;
+  // the mount follows. The scene shows every 3D figure at CREATURE_H = 1.1, hence the / 1.1.
+  root.scale.setScalar(1); root.updateMatrixWorld(true);
+  const chS = new THREE.Vector3(); ch.matrixWorld.decompose(new THREE.Vector3(), new THREE.Quaternion(), chS);
+  const riderH = Math.max(1e-4, standH * chS.y); // the standing body's height in root units
+  root.scale.setScalar((heightSpaces * k0) / 1.1 / riderH);
+  root.updateMatrixWorld(true);
+  const chBoard = (heightSpaces * k0) / standH; // model units -> board squares
+  // the figure's top on the board (status icons, Bulwark bubble): the standing body, or the mount when it is taller
+  let figTop = standingBox(ch, new THREE.Box3()).max.y;
+  for (const it of items) if (it.bone === 'ground') { const o = objs.get(it.name); if (o) figTop = Math.max(figTop, skinBox(o, new THREE.Box3()).max.y); }
+  const boardH = Math.max(figTop * 1.1, heightSpaces * k0);
   // Round 23: flying units (a saved look's `flying`, or the Gyronaut defaults) hover, bob, sway and keep a soft ground shadow
   const flyCfg: any = (look as any)?.flying || (id === 'gyrocopter-ace' ? { hoverSquares: 0.7, floatSquares: 0.06, floatsPerSecond: 0.6, swayDeg: 3, groundShadow: true, source: 'default' } /* Ken (Oct 30): hover twice as high */ : null);
   let flyT = 0, shadow: THREE.Mesh | null = null;
@@ -482,14 +552,14 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
       shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.01; shadow.renderOrder = 1; shadow.userData.shadow = true; root.add(shadow);
     }
   }
-  const rig = ballRec ? makeBallRig(ch, root, ballRec, out, log, () => cur, () => heightSpaces) : null;
+  const rig = ballRec ? makeBallRig(ch, root, ballRec, out, log, () => cur, () => heightSpaces * k0) : null;
   // Owner fix (Ken, Oct 28): while the Shaman carries a unit his special loops between its lift_start and lift_end events (he holds the lift)
   const holdSeg = (): [number, number] => { const ac = actions.special; const cn = ac ? ac.getClip().name : ''; const d = ac ? ac.getClip().duration || 1 : 1; const ev: any[] = [...((a.events as any)?.clips?.[cn]?.events || []), ...((sh?.events[cn]) || [])]; const s0 = ev.find((e: any) => e.name === 'lift_start' || e.name === 'lift')?.time; const s1 = ev.find((e: any) => e.name === 'lift_end' || e.name === 'drop')?.time; return [typeof s0 === 'number' ? s0 : d * 0.3, typeof s1 === 'number' ? s1 : d * 0.8]; };
   randomIdle();
   /** Oct 30: seconds into a clip where the blow lands (pack metadata, or an impact/hit/contact event in events.json) */
   out.impactOf = (n: string): number | undefined => { const cl = actions[resolve(n)]?.getClip(); if (!cl) return undefined; if (sh?.impact[cl.name] !== undefined) return sh.impact[cl.name]; const ev: any[] = [...((a.events as any)?.clips?.[cl.name]?.events || []), ...((a.info?.events?.[cl.name]) || [])]; const e = ev.find((x: any) => /impact|hit|contact|strike|release/i.test(x.name || '')); return typeof e?.time === 'number' ? e.time : undefined; };
   /** Oct 30: walk / run pace from the pack (rootSpeed x leg ratio), in board squares per second */
-  out.gaitSpeed = (n: string) => { const cl = actions[resolve(n)]?.getClip(); const sp = cl ? (sh?.speed[cl.name] ?? a.info?.gait?.[n]) : undefined; return sp ? (sp / bodyH) * heightSpaces : undefined; };
+  out.gaitSpeed = (n: string) => { const cl = actions[resolve(n)]?.getClip(); const sp = cl ? (sh?.speed[cl.name] ?? a.info?.gait?.[n]) : undefined; return sp ? sp * chBoard : undefined; };
   /** Oct 30: the pack's timed events of the clip playing this role (launch / land / recovered, hit, ground...) */
   out.packRoles = packRoles;
   out.poseDelta = () => { let n = 0, t = 0; ch.traverse((o: any) => { if (o.isBone && restQ.has(o.name)) { n++; t += 2 * Math.acos(Math.min(1, Math.abs(o.quaternion.dot(restQ.get(o.name)!)))); } }); return n ? t / n : 0; };
@@ -502,7 +572,7 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   out.setPace = (n: string, pace: number) => { const g = out.gaitSpeed?.(n); const ac = actions[resolve(n)]; if (ac) ac.timeScale = g ? Math.min(1.8, Math.max(0.6, pace / g)) : 1; };
   out.holding = false;
   out.setSpeed = (n: string, k: number) => { const ac = actions[resolve(n)]; if (ac) ac.timeScale = k; };
-  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (cur === 'special' && actions.special && out.holding) { const sg = holdSeg(); if (!actions.special.isRunning()) { actions.special.reset(); actions.special.play(); } if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = (flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares) * kk; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, boardH: heightSpaces * kk, boardK: kk, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
+  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { mixer.update(dt); if (cur === 'special' && actions.special && out.holding) { const sg = holdSeg(); if (!actions.special.isRunning()) { actions.special.reset(); actions.special.play(); } if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = (flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares) * kk; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, studioHeight: studioH, boardH, boardK: kk, natural: { standing: +standH.toFixed(4), box: +bodyH.toFixed(4) }, char: ch, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
   if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }
   return out;
 }
@@ -530,6 +600,7 @@ export function attachPart(ch: THREE.Object3D, pc: PartCfg, src: THREE.Object3D,
   const ws = new THREE.Vector3(); bone.matrixWorld.decompose(new THREE.Vector3(), new THREE.Quaternion(), ws);
   hold.scale.setScalar(k / Math.max(ws.x, 1e-6));
   hold.rotation.set(THREE.MathUtils.degToRad(pc.rot[0]), THREE.MathUtils.degToRad(pc.rot[1]), THREE.MathUtils.degToRad(pc.rot[2]));
+  if (pc.upright) { const bq = new THREE.Quaternion(), cq = new THREE.Quaternion(); bone.getWorldQuaternion(bq); ch.getWorldQuaternion(cq); hold.quaternion.premultiply(bq.invert().multiply(cq)); } // the character's frame, whatever the hand's pose
   if (pc.pos) hold.position.set(pc.pos[0] * H / Math.max(ws.x, 1e-6), pc.pos[1] * H / Math.max(ws.x, 1e-6), pc.pos[2] * H / Math.max(ws.x, 1e-6));
   const ov = (globalThis as any).__tune?.[pc.name]; if (ov) { hold.position.set(ov[0] * H / Math.max(ws.x, 1e-6), ov[1] * H / Math.max(ws.x, 1e-6), ov[2] * H / Math.max(ws.x, 1e-6)); if (ov[3] !== undefined) hold.rotation.set(THREE.MathUtils.degToRad(ov[3]), THREE.MathUtils.degToRad(ov[4]), THREE.MathUtils.degToRad(ov[5])); }
   bone.add(hold);

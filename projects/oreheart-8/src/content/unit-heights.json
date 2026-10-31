@@ -59,5 +59,203 @@
   "phase-stalker": "gnome+plow TOTAL (Studio summary 0.48)",
   "shard-guzzler": "body only 0.54; with the rocket the Studio summary is 0.79",
   "gyrocopter-ace": "body only (0.29); hover lift comes from the flying config"
+ },
+ "_table": {
+  "_readme": "Ken (Oct 31): real-world unit heights (Ledger, studio/unit-heights-feet.json). On the board a unit stands squares x characterSizes.creatures (owner layout, 1) squares tall: idle pose, feet to the top of the head/helmet, hands and held items not counted. Mounts: the rider is this tall, the mount follows. Crystal mine = 5 ft = 1.31 squares. The top-level numbers above are the older Studio heights (heightSpaces), kept for the editors.",
+  "feetToSquares": 0.262,
+  "units": {
+   "dwarf-miner": {
+    "feet": 4.0,
+    "squares": 1.048
+   },
+   "dwarf-smith-miner": {
+    "feet": 4.0,
+    "squares": 1.048
+   },
+   "dwarf-stoneback": {
+    "feet": 4.1,
+    "squares": 1.074
+   },
+   "deepforge-crossbowman": {
+    "feet": 4.35,
+    "squares": 1.14
+   },
+   "dwarf-pickman": {
+    "feet": 4.4,
+    "squares": 1.153
+   },
+   "barrelback-courier": {
+    "feet": 4.4,
+    "squares": 1.153
+   },
+   "shieldbeard": {
+    "feet": 4.5,
+    "squares": 1.179
+   },
+   "axe-thrower": {
+    "feet": 4.5,
+    "squares": 1.179
+   },
+   "brewmaster": {
+    "feet": 4.5,
+    "squares": 1.179
+   },
+   "oathbound-pikeman": {
+    "feet": 4.5,
+    "squares": 1.179
+   },
+   "ironhammer-berserker": {
+    "feet": 4.6,
+    "squares": 1.205
+   },
+   "rune-splitter": {
+    "feet": 4.6,
+    "squares": 1.205
+   },
+   "crystal-drunk-delver": {
+    "feet": 4.65,
+    "squares": 1.218
+   },
+   "grimhold-ravager": {
+    "feet": 4.65,
+    "squares": 1.218
+   },
+   "ram-rider": {
+    "feet": 5.0,
+    "squares": 1.31
+   },
+   "queen-brunhilda-stonebeard": {
+    "feet": 5.5,
+    "squares": 1.441
+   },
+   "gnome-prospector": {
+    "feet": 2.5,
+    "squares": 0.655
+   },
+   "gnome-smith-miner": {
+    "feet": 2.65,
+    "squares": 0.694
+   },
+   "gnome-widget": {
+    "feet": 2.8,
+    "squares": 0.734
+   },
+   "hexwright-apprentice": {
+    "feet": 2.9,
+    "squares": 0.76
+   },
+   "gnome-tinker": {
+    "feet": 2.95,
+    "squares": 0.773
+   },
+   "clockwork-beetle": {
+    "feet": 3.0,
+    "squares": 0.786
+   },
+   "spark-gnome": {
+    "feet": 3.05,
+    "squares": 0.799
+   },
+   "gnome-cogger": {
+    "feet": 3.1,
+    "squares": 0.812
+   },
+   "gnome-illusionist": {
+    "feet": 3.2,
+    "squares": 0.838
+   },
+   "glyphshield-warden": {
+    "feet": 3.2,
+    "squares": 0.838
+   },
+   "phase-stalker": {
+    "feet": 3.25,
+    "squares": 0.852
+   },
+   "runic-siphoner": {
+    "feet": 3.35,
+    "squares": 0.878
+   },
+   "gyrocopter-ace": {
+    "feet": 3.5,
+    "squares": 0.917
+   },
+   "gearward-sentinel": {
+    "feet": 4.5,
+    "squares": 1.179
+   },
+   "overclocked-conduit": {
+    "feet": 4.5,
+    "squares": 1.179
+   },
+   "the-great-steam-golem": {
+    "feet": 11.0,
+    "squares": 2.882
+   },
+   "goblin-scrounger": {
+    "feet": 3.0,
+    "squares": 0.786
+   },
+   "goblin-smith-miner": {
+    "feet": 3.15,
+    "squares": 0.825
+   },
+   "blastrat-sapper": {
+    "feet": 3.15,
+    "squares": 0.825
+   },
+   "goblin-pebbler": {
+    "feet": 3.25,
+    "squares": 0.852
+   },
+   "goblin-bomber": {
+    "feet": 3.3,
+    "squares": 0.865
+   },
+   "goblin-sneak": {
+    "feet": 3.3,
+    "squares": 0.865
+   },
+   "goblin-grunt": {
+    "feet": 3.3,
+    "squares": 0.865
+   },
+   "goblin-slinger": {
+    "feet": 3.4,
+    "squares": 0.891
+   },
+   "shiv-rat": {
+    "feet": 3.45,
+    "squares": 0.904
+   },
+   "skullbasher-rusher": {
+    "feet": 3.45,
+    "squares": 0.904
+   },
+   "rotgut-grenadier": {
+    "feet": 3.55,
+    "squares": 0.93
+   },
+   "goblin-scrapper": {
+    "feet": 3.7,
+    "squares": 0.969
+   },
+   "shard-guzzler": {
+    "feet": 3.7,
+    "squares": 0.969
+   },
+   "junk-shaman": {
+    "feet": 3.85,
+    "squares": 1.009
+   },
+   "wolf-rider": {
+    "feet": 4.0,
+    "squares": 1.048
+   },
+   "grubnaks-big-boss-troll": {
+    "feet": 6.25,
+    "squares": 1.638
+   }
+  }
  }
 }
