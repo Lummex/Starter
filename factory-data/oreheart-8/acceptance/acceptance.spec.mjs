@@ -11070,3 +11070,37 @@ test('AC423: over a whole computer-vs-computer match on every difficulty, every 
   expect(forced.audit.refused, 'the forced illegal summon was refused').toBeGreaterThan(0);
   expect(forced.grunts, 'and never applied').toBe(0);
 });
+
+// ---------------------------------------------------------------- Oct 31 (Anvil): the computer thinks off the main thread
+// Ken: "The game seems kind of stuttery and laggy." Hard's search (up to 1.2 s a turn in 50-300 ms chunks) ran on the main thread and
+// froze the animation on every chunk. In a live match the thinking now runs in a Web Worker (game.ts aiWorker / ai.worker.ts) and the
+// answer is applied when it comes back; test mode keeps the synchronous path so replays stay the same. ?aiworker=1 forces the worker.
+test('AC424: the computer opponent thinks in a Web Worker in a live match: the worker answers, its moves are applied and pass the referee', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.goto('/?test=1&seed=5&aiworker=1');
+  await page.waitForFunction(() => !!window.oreheart);
+  await page.evaluate(async () => await window.oreheart.newMatch({ mode: 'standard', ai: true, difficulty: 'hard', seed: 5, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { firstPlayer: 'opponent' } }));
+  // the opponent's whole first turn is played by worker answers: wait until it is the player's turn
+  let info = null, trail = [];
+  for (let i = 0; i < 200; i++) {
+    const s0 = await getState(page); info = await page.evaluate(async () => await window.oreheart.getAiInfo());
+    trail.push(`${s0.turn}/${s0.phase}/${s0.priority}/r${info.replies}`);
+    if (s0.activePlayer === 'player' && s0.priority === 'player' && s0.turn >= 2) break;
+    await page.waitForTimeout(300);
+  }
+  const why = () => `trail: ${trail.filter((x, i) => i === 0 || x !== trail[i - 1]).join(' > ')}`;
+  const audit = await page.evaluate(async () => await window.oreheart.getAiAudit());
+  const s = await getState(page);
+  expect(info.worker, 'the worker was used; ' + why()).toBe(true);
+  expect(info.replies, 'the worker answered; ' + why()).toBeGreaterThan(1);
+  expect(audit.checked).toBeGreaterThan(1);
+  expect(audit.refused, `refused: ${audit.last}`).toBe(0);
+  expect(s.turn).toBe(2);
+  expect(s.board.creatures.some((c) => c.owner === 'opponent'), 'the computer deployed through the worker').toBe(true);
+  // without the flag a test-mode page keeps the synchronous path (replay checks depend on it)
+  await page.goto('/?test=1&seed=5');
+  await page.waitForFunction(() => !!window.oreheart);
+  await page.evaluate(async () => await window.oreheart.newMatch({ mode: 'standard', ai: true, difficulty: 'hard', seed: 5, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { firstPlayer: 'opponent' } }));
+  expect((await page.evaluate(async () => await window.oreheart.getAiInfo())).worker).toBe(false);
+  expect((await getState(page)).activePlayer).toBe('player');
+});

@@ -434,7 +434,7 @@ const _embV = new THREE.Vector3();
 
   // creatures
   type Fig = {
-    ringColor?: string; ringGreyed?: boolean;
+    ringColor?: string; ringGreyed?: boolean; ringObj?: THREE.Object3D | null;
     group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
     /** Oct 30: squares still to walk (one per step), running gait, knock-back flight, delayed hit flash, step-in length, when its blow lands */
@@ -1436,7 +1436,11 @@ const _embV = new THREE.Vector3();
         if (!f.c3d?.has?.('lifted')) { g.rotation.z = Math.sin(now / 300) * 0.12; (f as any).dangle = true; } // no lifted clip: gentle dangle
       } else if ((f as any).dangle) { g.rotation.z = 0; (f as any).dangle = false; }
       if (kbY) g.position.y += kbY;
-      { const ring = g.getObjectByName('acting-ring'); if (ring) ring.position.y = (0.04 - g.position.y) / (f.baseScale || 1); } // Ken (Oct 30): the ring sits on the square, not on the model
+      { // Ken (Oct 30): the ring sits on the square, not on the model. Oct 31: the ring is looked up once, not searched through the whole model every frame
+        if (f.ringObj && !f.ringObj.parent) f.ringObj = null;
+        const ring = f.ringObj || (f.ringObj = g.getObjectByName('acting-ring') || null);
+        if (ring) ring.position.y = (0.04 - g.position.y) / (f.baseScale || 1);
+      }
       const p = f.parts;
       if (f.finished && p) {
         const t = now / 1000;

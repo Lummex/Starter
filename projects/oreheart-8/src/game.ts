@@ -44,6 +44,9 @@ function auditPaid(before: any, a: any, after: any) {
   if (funds(after.players[who]) !== expect) { aiAudit.unpaid++; aiAudit.last = `turn ${before.turn}: ${who}'s summon of ${h.cardId} was not paid in full`; }
 }
 
+/** Test hook: ?aiworker=1 makes a test-mode page think in the worker too (hidden check for the live path). */
+const FORCE_WORKER = typeof location !== 'undefined' && /[?&]aiworker=1(&|$)/.test(location.search);
+
 export class Game {
   state: any = null;
   options: any = {};
@@ -65,6 +68,18 @@ export class Game {
   lastStanceChoice: any = null;
   autoSkip = true;
   private skipTimer: any = null;
+  // Oct 31 (Ken: "stuttery and laggy"): in a live match the computer thinks in a Web Worker, so Hard's search never freezes the drawing.
+  // Test mode keeps the synchronous path (replays stay step for step the same). If the worker can't start, the old path is used.
+  private worker: Worker | null = null;
+  private workerFailed = false;
+  private pendingId = 0;
+  private pendingVersion = 0;
+  private pendingEpoch = 0;
+  private reqId = 0;
+  private stateVersion = 0;
+  private workerSeed = 1;
+  /** Probe: how the computer thought last (worker or main thread) and the worker's last thinking time in ms. */
+  aiInfo = { worker: false, lastMs: 0, replies: 0 };
 
   constructor(testMode: boolean) {
     this.testMode = testMode;
@@ -97,6 +112,8 @@ export class Game {
     this.difficulty = options.difficulty === 'easy' ? 'easy' : options.difficulty === 'hard' ? 'hard' : 'normal';
     const seed = options.seed ?? (this.testMode ? 1 : (Date.now() ^ (Math.random() * 1e9)) | 0);
     this.rand = makeRand(seed + 977);
+    this.workerSeed = (seed * 7 + 311) | 0;
+    this.pendingId = 0; this.stateVersion++;
     this.state = createMatch({ ...options, seed, testMode: this.testMode });
     this.state.difficulty = this.difficulty;
     for (const w of ['player', 'opponent']) { ownUids[w] = new Set(); for (const h of [...this.state.players[w].deck, ...this.state.players[w].hand]) ownUids[w].add(h.uid); }
@@ -217,6 +234,7 @@ export class Game {
     try { r = applyAction(this.state, action); } catch (e: any) { return { ok: false, error: String(e && e.message || e) }; }
     if (!r.ok) return { ok: false, error: r.error };
     this.state = r.state;
+    this.stateVersion++;
     this.emit(r.events);
     this.afterAction();
     return { ok: true, events: JSON.parse(JSON.stringify(r.events)) };
@@ -251,19 +269,64 @@ export class Game {
     }
     this.scheduleAutoSkip();
     if (!this.ai || !this.state || this.state.phase === 'over' || this.state.priority !== 'opponent') return;
-    if (this.testMode) {
+    if (this.testMode && !FORCE_WORKER) {
       let n = 0;
       while (this.state.priority === 'opponent' && this.state.phase !== 'over' && n++ < 400) this.aiStep();
       return;
     }
+    if (this.pendingId) return; // the worker is already thinking about this state
     const ep = this.epoch;
     clearTimeout(this.aiTimer);
     this.aiTimer = setTimeout(() => {
       if (ep !== this.epoch) return;
       if (this.paused) { this.afterAction(); return; }
+      if (!this.scripted && this.aiWorker()) { this.aiAsk(); return; }
       this.aiStep();
       this.afterAction();
     }, this.state.phase === 'mulligan' ? 200 : 650);
+  }
+
+  /** The thinking worker (live matches only); null when workers are unavailable or it failed once. */
+  private aiWorker(): Worker | null {
+    if (this.worker) return this.worker;
+    if (this.workerFailed || (this.testMode && !FORCE_WORKER) || typeof Worker === 'undefined') return null;
+    try {
+      const w = new Worker(new URL('./ai/ai.worker.ts', import.meta.url), { type: 'module' });
+      w.onmessage = (e: MessageEvent) => this.onAiReply(e.data);
+      w.onerror = () => { this.workerFailed = true; try { w.terminate(); } catch { /* ignore */ } this.worker = null; this.pendingId = 0; this.aiInfo.worker = false; this.afterAction(); };
+      this.worker = w;
+      this.aiInfo.worker = true;
+      return w;
+    } catch { this.workerFailed = true; return null; }
+  }
+  /** Posts the match state to the worker; the answer is applied in onAiReply. */
+  private aiAsk() {
+    const w = this.worker!;
+    const id = ++this.reqId;
+    this.pendingId = id; this.pendingVersion = this.stateVersion; this.pendingEpoch = this.epoch;
+    this.workerSeed = (Math.imul(this.workerSeed, 1103515245) + 12345) | 0;
+    try { w.postMessage({ id, state: this.state, difficulty: this.difficulty, seed: this.workerSeed }); }
+    catch { this.pendingId = 0; this.workerFailed = true; this.worker = null; this.aiInfo.worker = false; this.afterAction(); }
+  }
+  private onAiReply(m: any) {
+    if (!m || m.id !== this.pendingId) return; // an old answer (new match, or the state moved on)
+    this.pendingId = 0;
+    this.aiInfo.lastMs = m.ms || 0; this.aiInfo.replies++;
+    if (this.pendingEpoch !== this.epoch || !this.state || this.state.phase === 'over' || this.state.priority !== 'opponent') return;
+    if (this.pendingVersion !== this.stateVersion) { this.afterAction(); return; } // the player acted meanwhile (a brew): think again
+    const s = this.state;
+    if (this.aiTurn !== s.turn) { this.aiTurn = s.turn; this.aiCount = 0; }
+    let a = m.error ? null : m.action;
+    a = auditPick(s, a, null);
+    if (++this.aiCount > 60 && !s.pendingResponse && s.phase !== 'mulligan') a = { type: 'done' };
+    let r = applyAction(s, a);
+    if (!r.ok) r = applyAction(s, s.pendingResponse ? { type: 'pass' } : s.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' });
+    if (!r.ok) return;
+    auditPaid(s, a, r.state);
+    this.state = r.state;
+    this.stateVersion++;
+    this.emit(r.events);
+    this.afterAction();
   }
 
   private scheduleComp() {
