@@ -461,7 +461,7 @@ const _embV = new THREE.Vector3();
    *  the hands, muzzle forward); the idle look comes back when the clip ends */
   const AIM_LOOKS: Record<string, { part: string; look: { pos: number[]; rot: number[]; scale: number[] } }> = {
     'oathbound-pikeman': { part: 'rifle', look: { pos: [-5.353, 31.233, 9.094], rot: [27.958, -50.996, -61.011], scale: [79.958, 79.958, 79.958] } },
-    'deepforge-crossbowman': { part: 'crystal-gun', look: { pos: [10.588, 10.034, 5.079], rot: [-18.195, -36.931, -99.64], scale: [33.508, 33.508, 33.508] } }, // Ledger's grip A: ~12 deg off in the game (was ~42)
+    'deepforge-crossbowman': { part: 'crystal-gun', look: { pos: [11.799, 9.341, 3.481], rot: [-32.612, -34.028, -107.773], scale: [33.508, 33.508, 33.508] } }, // Ledger's exact grip (Oct 31): ~1-2 deg off in the game (grip A was ~10, the old one ~42)
   };
   const aimLog: { uid: string; cardId: string; part: string; on: number; off: number }[] = [];
   if (testMode) { (window as any).__aimLooks = AIM_LOOKS; (window as any).__aimNow = () => aimNow(); } // test-only: try aim grips, read the aim quickly
@@ -474,10 +474,12 @@ const _embV = new THREE.Vector3();
       part.updateWorldMatrix(true, true);
       const bb = new THREE.Box3(); part.traverse((o: any) => { if (o.isMesh) { o.geometry.computeBoundingBox?.(); const g = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld.clone().multiply(new THREE.Matrix4().copy(part.matrixWorld).invert())); bb.union(g); } });
       const sz = bb.getSize(new THREE.Vector3()), axis = sz.x >= sz.y && sz.x >= sz.z ? new THREE.Vector3(1, 0, 0) : sz.y >= sz.z ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
-      const q = new THREE.Quaternion(); part.getWorldQuaternion(q); const w = axis.applyQuaternion(q); w.y = 0; w.normalize();
+      const q = new THREE.Quaternion(); part.getWorldQuaternion(q); const w = axis.applyQuaternion(q); const tilt = Math.asin(Math.min(1, Math.abs(w.y))) * 180 / Math.PI; w.y = 0; w.normalize();
       const fwd = new THREE.Vector3(Math.sin(f.faceTo ?? f.group.rotation.y), 0, Math.cos(f.faceTo ?? f.group.rotation.y));
       const ang = Math.acos(Math.min(1, Math.abs(w.dot(fwd)))) * 180 / Math.PI; // either end of the barrel may be the muzzle
-      out.push({ uid: f.uid, cardId: f.cardId, part: a.part, barrelVsTargetDeg: +ang.toFixed(1) });
+      // signed: the barrel line's yaw minus the target's yaw, counter-clockwise seen from above, folded into -90..90 (either end may be the muzzle)
+      let sg = (Math.atan2(w.x, w.z) - Math.atan2(fwd.x, fwd.z)) * 180 / Math.PI; while (sg > 90) sg -= 180; while (sg < -90) sg += 180;
+      out.push({ uid: f.uid, cardId: f.cardId, part: a.part, barrelVsTargetDeg: +ang.toFixed(1), signedDeg: +sg.toFixed(1), tiltDeg: +tilt.toFixed(1) });
     }
     return out;
   }
