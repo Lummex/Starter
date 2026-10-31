@@ -144,7 +144,8 @@ if (test) {
     aiStyles: () => STYLE_IDS.map((id) => ({ id, label: STYLE_LABEL[id] })), getAiStyle: () => game.aiStyle, setAiStyle: (id: string) => game.setAiStyle(id), aiPlan: () => game.aiPlan(),
     aiPlanFor: (style: any) => { const p = planFor(game.state, 'opponent', style); return { style: p.style, plan: p.plan, read: p.read }; },
     aiChooseOn: (state: any, difficulty: string, style: any, seed: number) => aiChoose(state, difficulty, makeRand(seed), undefined, style),
-    setAiTune: (r: any) => { Object.assign(AI_TUNE, r); return { ...AI_TUNE }; }, // checks only (a huge medMs makes Medium deterministic for the no-cheating check) starterDeckCards: (id: string) => (STARTER_DECKS as any)[id] || null,
+    setAiTune: (r: any) => { Object.assign(AI_TUNE, r); return { ...AI_TUNE }; }, /* checks only: a huge medMs makes Medium deterministic for the no-cheating check */
+    starterDeckCards: (id: string) => (STARTER_DECKS as any)[id] || null,
     roster: () => ROSTER, getRival: () => app.rival, getRankResult: () => app.rankResult, matchRival: (pts: number, skill: string, pc?: string, oc?: string) => matchRival(pts, skill, pc, oc, () => 0), // Oct 31: the name plates (Online Phase A feeds the username via setPlayerNameProvider)
     setArenaPick: (who: '' | 'player' | 'opponent') => { app.arenaForce = who; return who; }, // checks only: force which faction's arena (and music) the next match uses
     setMixRules: (r: any) => { Object.assign(MIX, r); return { ...MIX }; }, // checks only: {enabled:false} plays every sound as asked (the sound-file checks), default is Brush's mix rules
