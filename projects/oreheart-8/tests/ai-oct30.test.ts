@@ -195,7 +195,8 @@ describe("AI Oct 31: Hard plays out the player's reply turn", () => {
 describe('AI Oct 31: Medium is unchanged', () => {
   // recorded on branch ai-oct30b (f3518716) with the decision time budget switched off (the budget makes Medium timing-dependent under load)
   // Oct 31 (decks desk): re-recorded after the content/rule change (twelve new starter decks, Tunnel only beside an owned mine, the Riot Shield Bearer a Miner); the AI is untouched
-  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 21: { turn: 24, units: 27, steps: 207 }, 23: { turn: 34, units: 41, steps: 364 }, 25: { turn: 28, units: 40, steps: 336 } };
+  // Oct 31 (dwarf fix): re-recorded after the Riot Shield Bearer became a wall and the Anvilsworn the basic Miner (cost 1), with the 30-Miner Warbands; the AI is untouched
+  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 21: { turn: 24, units: 30, steps: 215 }, 23: { turn: 28, units: 38, steps: 279 }, 25: { turn: 34, units: 22, steps: 410 } };
   for (const seed of [21, 23, 25]) {
     it('medium vs medium, seed ' + seed, () => {
       const keep = { medMs: TUNE.medMs, hardMs: TUNE.hardMs };
@@ -222,7 +223,8 @@ describe('AI Oct 30: Easy is unchanged', () => {
   // recorded with the AI before this upgrade (factory/issue-8 858b9550, 60-card decks): the same seeds must play out step for step the same
   // Oct 31 (Anvil): seed 11 re-recorded after the free-Miner fix (a broke Dwarf side no longer gets a free Riot Shield Bearer again and again), the AI is untouched
   // Oct 31 (decks desk): all three re-recorded after the content/rule change (twelve new starter decks, Tunnel only beside an owned mine, the Riot Shield Bearer a Miner); the AI is untouched
-  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 11: { turn: 80, units: 29, steps: 513 }, 12: { turn: 80, units: 27, steps: 526 }, 13: { turn: 80, units: 20, steps: 540 } };
+  // Oct 31 (dwarf fix): re-recorded after the Riot Shield Bearer became a wall and the Anvilsworn the basic Miner (cost 1), with the 30-Miner Warbands; the AI is untouched
+  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 11: { turn: 80, units: 39, steps: 559 }, 12: { turn: 80, units: 36, steps: 595 }, 13: { turn: 80, units: 32, steps: 609 } };
   for (const seed of [11, 12, 13]) {
     it('easy vs easy, seed ' + seed, () => {
       let s: any = createMatch({ seed, playerCommander: ['grubnak', 'sproingle', 'borgo'][seed % 3], opponentCommander: ['borgo', 'grubnak', 'sproingle'][seed % 3] });

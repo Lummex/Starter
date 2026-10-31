@@ -80,15 +80,16 @@ async function openMenu(page) {
 
 // Owner check change (Ken, Oct 31 dwarf fix: the Riot Shield Bearer is a wall, the Anvilsworn Miner is the dwarves' basic Miner).
 // ONE place for the dwarf costs that may still move after Anvil's balance sims (Bearer 3-5, Anvilsworn 1-2).
-const DWARF_FIX = { bearerCost: 4, anvilswornCost: 2 };
+const DWARF_FIX = { bearerCost: 4, anvilswornCost: 1 }; // final after the sims (Anvil, Oct 31): the Anvilsworn costs 1
 // Owner check change (Ken, Oct 31: Miners are half the Warband): ONE place for the Warband (default) deck mix of every faction.
-// 30 Miners / 20 Fighters / 6 spells / 4 Crystal cards. For dwarves the basic Miner and the Smith Miner are the SAME card (Anvilsworn).
+// 30 Miners; goblins and dwarves 20 Fighters / 6 spells, gnomes 17 Fighters / 9 spells (spell-heavier on purpose); 4 Crystal cards.
+// For dwarves the basic Miner and the Smith Miner are the SAME card (Anvilsworn).
 const WARBAND = {
-  creatures: 50, spells: 6, crystals: 4, miners: 30,
+  creatures: { goblin: 50, gnome: 47, dwarf: 50 }, spells: { goblin: 6, gnome: 9, dwarf: 6 }, crystals: 4, miners: 30,
   basic: { goblin: 22, gnome: 24, dwarf: 27 },
   smith: { goblin: 8, gnome: 6, dwarf: 27 }, // dwarf-smith-miner IS the dwarf basic Miner
   extra: { goblin: 0, gnome: 0, dwarf: 3 }, // Gemdrunk Deepdelvers
-  cheapFloor: { goblin: 16, gnome: 16, dwarf: 4 }, // fighters costing 4 or less (dwarf cards are expensive by design)
+  cheapFloor: { goblin: 16, gnome: 14, dwarf: 4 }, // fighters costing 4 or less (gnomes: 17 fighters, spell-heavier; dwarf cards are expensive by design)
 };
 const BASIC_MINER = { goblin: 'goblin-scrounger', gnome: 'gnome-prospector', dwarf: 'dwarf-smith-miner' }; // game-config basicGatherers
 const CMD_F = { grubnak: 'goblin', sproingle: 'gnome', borgo: 'dwarf' };
@@ -206,8 +207,8 @@ test('AC5: window.oreheart only in test mode; seeds are deterministic', async ({
 // ---------- AC6 ----------
 for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
   // Owner check change (Ken, Oct 31: four 60-card starter decks per faction): the Warband (default) is 22 Miners + 26 fighters, 8 spells, 4 Crystal cards
-  // Owner check change (Ken, Oct 31: Miners are half the Warband): 30 Miners + 20 fighters, 6 spells, 4 Crystal cards (numbers in WARBAND at the top)
-  test(`AC6: ${cmd} Warband starter deck is 60 cards: ${WARBAND.miners} Miners, ${WARBAND.creatures} creatures, ${WARBAND.spells} spells, ${WARBAND.crystals} Crystal cards`, async ({ page }) => {
+  // Owner check change (Ken, Oct 31: Miners are half the Warband): 30 Miners; creatures/spells per faction (numbers in WARBAND at the top)
+  test(`AC6: ${cmd} Warband starter deck is 60 cards: ${WARBAND.miners} Miners, ${WARBAND.creatures[CMD_F[cmd]]} creatures, ${WARBAND.spells[CMD_F[cmd]]} spells, ${WARBAND.crystals} Crystal cards`, async ({ page }) => {
     const s = await start(page, { playerCommander: cmd, ai: false, firstPlayer: 'player' });
     expect(s.phase).toBe('mulligan');
     const p = s.players.player;
@@ -217,8 +218,8 @@ for (const cmd of ['grubnak', 'sproingle', 'borgo']) {
     const all = [...p.deck, ...p.hand].map((c) => c.cardId);
     expect(all.length).toBe(60);
     expect(all.filter((id) => CRYSTALS.has(id)).length).toBe(WARBAND.crystals);
-    expect(all.filter((id) => SPELLS.has(id)).length).toBe(WARBAND.spells);
-    expect(all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id)).length).toBe(WARBAND.creatures);
+    expect(all.filter((id) => SPELLS.has(id)).length).toBe(WARBAND.spells[CMD_F[cmd]]);
+    expect(all.filter((id) => !SPELLS.has(id) && !CRYSTALS.has(id)).length).toBe(WARBAND.creatures[CMD_F[cmd]]);
     const counts = {};
     for (const id of all) counts[id] = (counts[id] || 0) + 1;
     for (const [id, n] of Object.entries(counts)) if (LIMITED.has(id)) expect(n, id).toBeLessThanOrEqual(3);
@@ -3139,16 +3140,23 @@ test('AC407: the computer redraws a hand with no affordable fighter and keeps a 
   };
   // Owner check change (Ken, Oct 30: 60-card starter decks): new seeds for the new Dwarf Warband.
   // Owner check change (Ken, Oct 31: new Dwarf Warband): new seeds again.
-  // seed 41: Riot Shield Bearers, an Anvilsworn and two Gemdrunk Deepdelvers (Miners, cost 7): no fighter at all -> redraw
+  // Owner check change (Ken, Oct 31 dwarf fix: the Bearer is a Fighter, the Anvilsworn the basic Miner; 30-Miner Warband): new seeds again.
+  // seed 41: five Anvilsworn Miners: no fighter at all -> redraw
   const r1 = await run(41);
-  expect(r1.ids.filter((id) => !/miner|delver/.test(id)).every((id) => ['crystal-cluster', 'glowing-geode'].includes(id)), JSON.stringify(r1.ids)).toBe(true);
+  expect(r1.ids.every((id) => id === 'dwarf-smith-miner'), JSON.stringify(r1.ids)).toBe(true);
   expect(r1.m).toBe(1);
   expect(r1.after.slice(0, 5)).not.toEqual(r1.before);
   // a full redraw, not a swap: the old rule swapped only the two dear cards and kept the three Miners in hand
   expect(r1.before.filter((u) => r1.after.includes(u)).length).toBeLessThan(3);
-  // seed 46: Miners + Barrelback Courier (5) -> keep (the hand stays, plus the second player's extra card)
-  const r3 = await run(46);
+  // seed 37: two Riot Shield Bearers, a Granite Oathkeeper and two cost-7 fighters, no Miner (the Bearer is not one) -> redraw
+  const r2 = await run(37);
+  expect(r2.ids.filter((id) => id === 'dwarf-miner').length, JSON.stringify(r2.ids)).toBe(2);
+  expect(r2.ids.some((id) => /smith-miner|delver/.test(id))).toBe(false);
+  expect(r2.m).toBe(1);
+  // seed 1: two Anvilsworns, a Deepdelver, a Bearer (4) and a Barrelback Courier (5) -> keep (the hand stays, plus the second player's extra card)
+  const r3 = await run(1);
   expect(r3.ids).toContain('barrelback-courier');
+  expect(r3.ids).toContain('dwarf-smith-miner');
   expect(r3.m).toBe(0);
   expect(r3.after.slice(0, r3.before.length)).toEqual(r3.before);
 });
@@ -3156,7 +3164,8 @@ test('AC407: the computer redraws a hand with no affordable fighter and keeps a 
 // Owner check change (Ken, Oct 30 mulligan rule): the screen keeps its one straight row, but the cards are not tapped any more;
 // the buttons are Keep Hand and Redraw Hand, and it counts "Redraws left: 1".
 test('AC95: the Mulligan screen shows one straight row, Keep Hand / Redraw Hand, and Redraws left: 1', async ({ page }) => {
-  await page.goto('/?test=1&seed=4'); // Ken, Oct 30 (60-card starter decks): seed 7 now puts the player second; seed 4 has the player first
+  // Owner check change (Ken, Oct 31: Miners are half the Warband): the new decks move the random first player; seed 4 now puts the player second, seed 1 has the player first
+  await page.goto('/?test=1&seed=1'); // Ken, Oct 30 (60-card starter decks): seed 7 now puts the player second
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Grubnak Rotgut, Goblin King' }).click();
   await page.getByRole('button', { name: 'Fight!', exact: true }).click();
@@ -3576,7 +3585,7 @@ test('AC112/AC128: twelve legal 60-card starter decks: Warband, Mine Rush, Arcan
     const miners = of((c) => c.type === 'creature' && (c.role === 'gatherer' || c.role === 'smith'));
     const counters = of((c) => c.type === 'spell' && c.speed === 'counter');
     // [creatures, spells, Crystal cards, Miners] (Ken, Oct 31); Owner check change (Ken, Oct 31: Miners are half the Warband): Warband from WARBAND at the top
-    const want = { warband: [WARBAND.creatures, WARBAND.spells, WARBAND.crystals, WARBAND.miners], 'mine-rush': [60, 0, 0, 45], 'arcane-hoard': [45, 15, 0, 30], expedition: [45, 9, 6, 24] }[st];
+    const want = { warband: [WARBAND.creatures[f], WARBAND.spells[f], WARBAND.crystals, WARBAND.miners], 'mine-rush': [60, 0, 0, 45], 'arcane-hoard': [45, 15, 0, 30], expedition: [45, 9, 6, 24] }[st];
     expect([creatures, spells, crystals, miners], d.id).toEqual(want);
     expect(miners, `${d.id} Miners`).toBeGreaterThanOrEqual(20); // Ken, Oct 31: Miners at least a third of every starter deck
     // Owner check change (Ken, Oct 31 dwarf fix): the Anvilsworn Miner is the dwarves' basic Miner (config basicGatherers)

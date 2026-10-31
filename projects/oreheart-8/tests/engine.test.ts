@@ -14,14 +14,17 @@ const total = (s: any, w = 'player') => s.players[w].crystals as number;
 
 // Owner check change (Ken, Oct 31: Miners are half the Warband): ONE place for the Warband mix: 30 Miners / 20 Fighters / 6 spells / 4 Crystal cards.
 // Owner check change (Ken, Oct 31 dwarf fix): the Anvilsworn Miner (dwarf-smith-miner) is the dwarves' basic Miner, so basic and Smith are one card for dwarves.
-const WARBAND = { creatures: 50, spells: 6, crystals: 4, miners: 30, basic: { goblins: 22, gnomes: 24, dwarves: 27 }, smith: { goblins: 8, gnomes: 6, dwarves: 27 } };
-const DWARF_FIX = { bearerCost: 4, anvilswornCost: 2 }; // may still move after Anvil's balance sims
+// creatures/spells per faction: the gnome Warband is spell-heavier on purpose (47 creatures, 9 spells)
+const WARBAND = { creatures: { goblins: 50, gnomes: 47, dwarves: 50 } as any, spells: { goblins: 6, gnomes: 9, dwarves: 6 } as any, crystals: 4, miners: 30, basic: { goblins: 22, gnomes: 24, dwarves: 27 }, smith: { goblins: 8, gnomes: 6, dwarves: 27 } };
+const DWARF_FIX = { bearerCost: 4, anvilswornCost: 1 }; // final after Anvil's balance sims (Oct 31)
 
 describe('content and board', () => {
-  it('Warband starter decks: 50 creatures, 6 spells incl. Fizzle, 4 Crystal cards (Ken, Oct 31: Miners are half the Warband)', () => {
-    for (const deck of Object.entries(STARTER_DECKS).filter(([k]) => k.endsWith('-warband')).map(([, v]) => v)) {
+  it('Warband starter decks: 50 creatures / 6 spells (gnomes 47 / 9) incl. Fizzle, 4 Crystal cards (Ken, Oct 31: Miners are half the Warband)', () => {
+    for (const [k, deck] of Object.entries(STARTER_DECKS).filter(([k]) => k.endsWith('-warband'))) {
+      const f = ({ goblin: 'goblins', gnome: 'gnomes', dwarf: 'dwarves' } as any)[k.split('-')[0]];
       const t = (ty: string) => deck.filter((id) => CARDS[id].type === ty).length;
-      expect([t('creature'), t('spell'), t('crystal')]).toEqual([WARBAND.creatures, WARBAND.spells, WARBAND.crystals]);
+      expect([t('creature'), t('spell'), t('crystal')]).toEqual([WARBAND.creatures[f], WARBAND.spells[f], WARBAND.crystals]);
+      expect(deck.filter((id) => CARDS[id].type === 'creature' && (CARDS[id].role === 'Gatherer' || CARDS[id].role === 'Smith')).length).toBe(WARBAND.miners);
       expect(deck).toContain('fizzle');
     }
     expect([CONFIG.boardWidth, CONFIG.boardHeight, CONFIG.mineCount]).toEqual([13, 7, 3]);
@@ -545,7 +548,7 @@ describe('Round 3a', () => {
 describe('round 4', () => {
   it('twelve 60-card starter decks: Miners at least a third, four style mixes, legal for their Commander (Ken, Oct 31)', () => {
     // Owner check change (Ken, Oct 31: Miners are half the Warband)
-    const mix: any = { warband: [WARBAND.creatures, WARBAND.spells, WARBAND.crystals], 'mine-rush': [60, 0, 0], 'arcane-hoard': [45, 15, 0], expedition: [45, 9, 6] };
+    const mix: any = { warband: null, 'mine-rush': [60, 0, 0], 'arcane-hoard': [45, 15, 0], expedition: [45, 9, 6] };
     expect(STARTER_DECK_LIST.length).toBe(12);
     for (const f of ['goblins', 'gnomes', 'dwarves']) expect(STARTER_DECK_LIST.filter((d) => d.faction === f).map((d) => d.style)).toEqual(['warband', 'mine-rush', 'arcane-hoard', 'expedition']);
     // Owner check change (Ken, Oct 31 dwarf fix): the Anvilsworn Miner is the dwarves' basic Miner (and their Smith Miner)
@@ -553,15 +556,16 @@ describe('round 4', () => {
     for (const d of STARTER_DECK_LIST) {
       const [b, sm, cmd] = pairs[d.faction];
       expect(d.cards.length).toBe(60);
+      const want = d.style === 'warband' ? [WARBAND.creatures[d.faction], WARBAND.spells[d.faction], WARBAND.crystals] : mix[d.style];
       expect(d.cards.filter((x) => x === b).length).toBeGreaterThanOrEqual(5); // engine's opening-hand rescue looks for the basic Miner
       expect(d.cards.filter((x) => x === sm).length).toBeGreaterThanOrEqual(3);
       const miners = d.cards.filter((x) => CARDS[x].role === 'Gatherer' || CARDS[x].role === 'Smith' || x === b).length;
       expect(miners).toBeGreaterThanOrEqual(20);
-      expect(d.cards.filter((x) => CARDS[x].type === 'creature').length).toBe(mix[d.style][0]);
+      expect(d.cards.filter((x) => CARDS[x].type === 'creature').length).toBe(want[0]);
       const fighters = d.cards.filter((x) => CARDS[x].type === 'creature' && CARDS[x].role !== 'Gatherer' && CARDS[x].role !== 'Smith').length;
       const spells = d.cards.filter((x) => CARDS[x].type === 'spell').length;
       const crystals = d.cards.filter((x) => CARDS[x].type === 'crystal').length;
-      expect([spells, crystals]).toEqual(mix[d.style].slice(1));
+      expect([spells, crystals]).toEqual(want.slice(1));
       expect(fighters).toBeGreaterThan(0);
       expect(validateDeck(d.cards, cmd).legal).toBe(true);
     }
