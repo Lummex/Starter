@@ -1,4 +1,127 @@
-# OreHeart — Build Spec (Phase 1B, Round 26 finish — owner edits, model clips, failing checks)
+# OreHeart — Build Spec (Online Phase A: login, sign-up, parent consent, server decks, back counter)
+
+> **This run is Online Phase A.** Read this section first, then `factory-design/design/oreheart-online-phase-a-brief.md` (it wins where anything differs), then the design file sections 6–9. Everything further down ("Earlier rounds") is still valid and still checked, but only with `?test=1` (no `online=1`). **Change nothing in the game that is not listed here** (no rules, cards, numbers, layout positions, test hooks). The 40 checks that failed last round belong to Rounds 27/28: don't break them further, but don't spend this round on them.
+
+## Summary
+Oreheart gets player accounts. When the game is built with the Supabase settings, it opens on a login screen where players sign in, create an account (with a neutral "When were you born?" question; under-13s need a parent's email approval), or choose "Play offline (practice)", which is the game exactly as it is today. Signed-in players keep their decks on the server, see a Profile, get banned/approved messages, and can use a Contact us form; the owner (Ken) controls everything from the already-built back counter (`projects/oreheart-admin`), and a small Edge Function sends the parent emails.
+
+## Pages & features (Online Phase A)
+
+**O0. Where things live.** Game: `projects/oreheart-8` (new code under `src/net/` and new screens; `src/ui/decks.ts` gets a server mode). Database: `supabase/` (already done; new migrations only). Admin site: `projects/oreheart-admin` (already done; change only to fix a failing check). Email sender: `supabase/functions/send-outbox/index.ts` (new). Keys only through `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_TURNSTILE_SITE_KEY`, `VITE_OREHEART_ENV`. Never a secret key or the word service_role in either app's code.
+
+**O1. Online switch (B1).** `src/net/online.ts` exports `onlineEnabled = Boolean(url && key) && !(test && !online)` (`test` = `?test=1`, `online` = `?online=1`). When false, nothing online loads and the game starts exactly as today (with `?test=1`: straight to the main menu, every `window.oreheart` hook unchanged). A vitest test in `projects/oreheart-8/tests/online.test.ts` covers the three "false" cases (AC502). With `?test=1&online=1` the game behaves like test mode (no intro, no tutorial offer, `window.oreheart` present) **plus** everything online below.
+
+**O2. Server check first (B10).** Copy `projects/oreheart-admin/src/env-guard.ts` to `src/net/env-guard.ts` (same logic; add `tests/env-guard.test.ts`). Before the login screen call `server_info()`. Build says `production` and server says `test` (or the other way round) → full screen heading **"Wrong server"**, a one-line explanation and only **Play offline (practice)**; never a login form. Server not reachable → **"Can't reach the server"** with **Try again** and **Play offline (practice)**. On a test server every menu screen (login, create account, main menu, profile…; not during a match) shows a thin blue bar at the very top with exactly **"TEST SERVER — practice accounts only"**.
+
+**O3. Login screen (B2).** Shown when `onlineEnabled` and there is no saved session. Same look as the main menu. Heading **"Sign in"**. Fields labelled **"Email"** and **"Password"** (real `<label>`s), captcha box only when `VITE_TURNSTILE_SITE_KEY` is set, button **"Sign in"**. Below: buttons **"Create account"**, **"Forgot password?"**, **"Play offline (practice)"** and **"Contact us"**. Every button ≥ 44 px tall and fully on screen at 1920×1080, 1366×768 and 844×390. Errors (shown as text in the form, role `alert`): wrong password → **"Wrong email or password."**; unconfirmed email → **"Please confirm your email first"** plus a **"Send the email again"** button (calls `auth.resend({type:'signup'})`, then shows **"We sent the email again."**). With a saved session the login screen is skipped. Reloading keeps the player signed in.
+
+**O4. Create account (B3).**
+1. First screen heading **"When were you born?"**: two native `<select>`s labelled **"Month"** and **"Year"**, both starting on an empty placeholder option ("Month" / "Year", no year pre-selected, no hint text about age), button **"Next"** (disabled until both chosen) and **"Back"** (to login). Under 13 from today's date → under-13 form, otherwise the 13+ form. Save `oreheart.ageGate` in localStorage as JSON `{"group":"13_plus"|"under_13","at":<ms>}`; for 24 hours any later answer on this device shows the saved group's form again. The birth month/year is never sent anywhere or stored; only `age_group`.
+2. 13+ form: **"Username"**, **"Email"**, **"Password"**, **"Confirm password"**, captcha (when set), button **"Create account"**, button **"Back"** (to the age question).
+3. Under-13 form: **"Username"**, **"Parent or guardian's email"** (with the help text "We'll ask your parent or guardian to say yes before you can play online."), **"Password"**, **"Confirm password"**, captcha, **"Create account"**, **"Back"**. No field labelled "Email", no other fields.
+4. Username: while typing (400 ms debounce) call `username_available` and show the server's problem text under the field: "Use 3 to 16 letters, numbers or _." / "That name is reserved." / "Please pick a different name." / "That name is taken.". Password rule: ≥ 10 characters with lower case, upper case and a number; show "Passwords don't match." when the confirm differs. The **Create account** button stays disabled until the name is OK, the password follows the rule and both passwords match.
+5. `auth.signUp({email, password, options:{data:{username, age_group}, captchaToken, emailRedirectTo}})` with `emailRedirectTo` = this page's address without the hash (origin + path + the current query, so `?test=1&online=1` survives). Then heading **"Check your email"** (13+) or **"Ask your parent or guardian to check their email"** with "We sent them two emails: one to confirm the address, one to say yes." (under 13). Both have **"Send again"** and **"Back to sign in"**. "Database error saving new user" → back to the form with "That name is taken.".
+
+**O5. After sign-in (B4).** Order: ban check (O9) → consent → avatar → welcome → import (O7.4) → main menu.
+- `consent_status = 'pending'` → heading **"Waiting for your parent or guardian"**, buttons **"Send the email again"** (`resend_parent_consent`; success "We sent the email again."; a refusal shows the server's message, e.g. "please wait a few minutes before sending again"), **"Sign out"**, **"Play offline (practice)"**.
+- `revoked` → heading **"A parent withdrew approval for this account."** + **"Sign out"** + **"Play offline (practice)"**.
+- `needs_avatar` → heading **"Choose your avatar"**: a group labelled **"Avatars"** of buttons, one per card in `settings.avatar_cards` (read via `my_status`/a public list; image = `pictureOf(card)`, button accessible name = the card's display name). Click → `set_avatar`.
+- Then heading **"Welcome to the Skullfang Arena, <username>!"** with "Your starter decks are ready." and button **"Continue"** → main menu (shown only once per account per browser).
+
+**O6. Forgot password (B5).** **"Forgot password?"** → heading **"Forgot password"**, field **"Email"**, button **"Send link"** → always **"If that email has an account, we sent a link."**. `redirectTo` as in O4.5. When the game opens with a recovery link (`PASSWORD_RECOVERY`), it shows heading **"Set a new password"** (fields **"New password"**, **"Confirm password"**, button **"Save password"**) above everything else, even without `?test=1`, then goes to the menu.
+
+**O7. Server decks (B6).** When signed in and allowed: the Deck Builder loads/saves the player's decks from the `decks` table via `save_deck` / `delete_deck` (same screens, buttons, "Saved" message and deck problems as today). Starter decks stay read-only templates. Under-13 players: no **Rename** button and no deck-name field; decks show the server's name ("Deck 1"…). A refused save shows the server's message text inside the Deck Builder (in the "Deck problems" area or a role `alert` line) and keeps every edit on screen. **One-time import**: first allowed login on a browser with local decks (`oreheart.decks`) while `decks_imported` is false → `import_local_decks` once → message **"Imported N decks"** (+ "Skipped <name>: <problem>" lines) with an **OK** button. Local decks stay in localStorage for offline play. vs-computer and Card Comp matches can pick server decks in the normal deck picker.
+
+**O8. Profile (B7).** Main menu (signed in only) gets an extra button **"Profile"** (after Play…Quit; the five existing buttons keep their order). Profile screen: heading **"Profile"**, avatar card art, username, "Joined <date>", **"No online matches yet"**, buttons **"Contact us"**, **"Sign out"** (→ login screen) and **"Back"**. A small chip **"Offline — Sign in"** shows on the main menu when the player chose Play offline; it returns to the login screen.
+
+**O9. Ban (B8).** On start and every 5 minutes call `my_status()`. If banned: heading **"Your account is banned until <date, local time>."** (or **"Your account is banned."** if permanent), the reason on the next line, buttons **"Sign out"** and **"Play offline (practice)"**.
+
+**O10. Play offline (B9).** Opens the normal main menu; tutorial, vs computer, Card Comp and Deck Builder work exactly as today with local decks; no request to `/rest/v1/` while playing offline.
+
+**O11. Parent pages (B3c).** Plain pages, no login, game menus hidden:
+- `?parent_consent=<token>`: `parent_consent_info` → heading **"<username> would like an Oreheart account"**, the parent notice from `src/content/parent-notice.json` (every section heading and text; the `lawyer_review` list is not shown; a visible **"DRAFT – lawyer review before launch"** line while `version` ends in `-draft`), a checkbox **"I am this child's parent or guardian and I agree"**, button **"Approve"** (disabled until ticked) → `parent_give_consent(token,true)` → **"Thank you. <username> can now play online. We sent you a confirmation email with a link to withdraw at any time."** Expired → **"This link has expired. Ask your child to press Send again in the game."** Invalid/used → **"This link is not valid any more."**
+- `?parent_withdraw=<token>`: heading **"Withdraw approval"**, button **"Withdraw approval"** → `parent_revoke_consent` → **"Done. The account can't play online any more. To delete it, use the Contact us form."**; bad link → "This link is not valid any more."
+- Every parent page has a **"Contact us"** button that opens O12 with the child's username pre-filled.
+- `parent-notice.json` = the prepared draft copied unchanged (shape `{version, title, sections:[{heading, text}], lawyer_review:[…]}`; `version` = `2026-10-28-draft` = `settings.consent_notice_version`). `{username}` and `{contact_url}` (this site's `?contact=1`) are filled in. If `parent-notice-draft.json` can't be found on the branch, write it from B3c.1 with that shape and say so in REPORT.md.
+- No email address appears anywhere in the game (pages, built JS, placeholders) or in outbox emails, except the recipient's own address.
+
+**O12. Contact us (B11).** `?contact=1` (also opened from the login screen, Profile and parent pages): heading **"Contact us"**, select **"Topic"** (options Parent request, Delete an account, Question, Problem, Other), textarea **"Message"**, **"Reply email (optional)"** (pre-filled when signed in), **"Your name (optional)"**, **"Player name (optional)"** (pre-filled from parent pages), captcha when set, button **"Send"**, button **"Back"**. Success → **"Thanks, we got your message. If you gave an email, we'll answer from a no-reply address."** A refusal shows the server's message under the form (role `alert`) and keeps everything typed. No placeholder looks like an email address.
+
+**O13. Email sender (Part D).** `supabase/functions/send-outbox/index.ts` (Deno) exactly as brief Part D: up to 50 unsent rows (`attempts < 5`, oldest first), Resend HTTP API with `RESEND_API_KEY`, `EMAIL_FROM`, `SITE_URL` from Edge Function secrets; `OUTBOX_MODE=log` logs and marks sent without calling Resend. After sending, strip `token` / `revoke_token` from `payload` (keep `username`, `kind`, `sent_at`). Every email ends with "This address can't receive replies — use the Contact us form: SITE_URL/?contact=1". A POST with the project's secret key (as `Authorization: Bearer` and `apikey`) runs one batch and answers 200 JSON `{sent, failed}`; set `[functions.send-outbox] verify_jwt = false` in `supabase/config.toml` and check the key inside the function so both key formats work. A new migration schedules it every minute with `pg_cron` (skip quietly if `pg_cron`/`pg_net` or the URL setting is missing locally).
+
+**O14. Local test settings.** In `supabase/config.toml` (local copy only) raise the auth rate limits so parallel checks don't trip them: `[auth.rate_limit] email_sent = 1000`, `sign_up_sign_in = 1000`, `token_verifications = 1000`, and `[auth.email] max_frequency = "1s"`. List the change in REPORT.md.
+
+**O15. Admin site (Part C).** Already built; keep. Only fix what a check proves broken (e.g. the security headers for AC526 must also be sent by the local preview server: add `preview.headers` in `projects/oreheart-admin/vite.config.ts` matching `vercel.json`).
+
+## Look & feel (Online Phase A)
+Every new game screen uses the main-menu style from `menus.ts`: dark iron panels, gold `#FFD700` headings, brown-gold `#D4A94F` text, Alegreya SC. Centered panel, max 560 px wide, scrolls inside itself on short screens; works with mouse and touch at 1920×1080, 1366×768 and 844×390 landscape; every button ≥ 44 px tall. The test-server bar is a thin (≈24 px) blue strip (`#1E5AA8`, white text) across the top. Parent and Contact pages are calm and readable (plain text on a dark panel, no game art except the logo). No new pictures, icons, sounds or fonts; avatars are existing card art.
+
+## Acceptance criteria (Online Phase A)
+Online checks use `?test=1&online=1`, the local Supabase and their own new users.
+- **AC500** `supabase/tests/run-supabase.sh` passes (run by the factory; the Playwright check confirms the test files are present).
+- **AC501** `?test=1` (no `online=1`) shows the main menu directly with no login screen and `window.oreheart` present; no TEST SERVER bar.
+- **AC502** `tests/online.test.ts` (vitest) covers the `onlineEnabled` false cases; `src/net/online.ts` and `src/net/env-guard.ts` exist.
+- **AC503** Play offline (practice) opens the main menu; a vs-computer match starts with local decks and makes no `/rest/v1/` request.
+- **AC504** Login screen shows Sign in, Create account, Forgot password?, Play offline (practice); every button ≥ 44 px and on screen at 1920×1080, 1366×768, 844×390.
+- **AC505** 13+ sign-up → "Check your email" → confirmation email arrives → after confirming, signing in shows Choose your avatar → Welcome → main menu with Profile.
+- **AC506** Username messages for `ab`, `Grubnak`, a used name in other capitals and a bad word; Create account disabled until name OK and passwords match.
+- **AC507** Wrong password → "Wrong email or password."; unconfirmed → "Please confirm your email first" + Send the email again (an email arrives).
+- **AC508** Forgot password → email → link opens "Set a new password" → new password works, old fails.
+- **AC509** A new account has 359 starter card instances (60 kinds, unique ids, first owner = player, history rows), `my_collection` matches `starter_collection`, the wallet equals the one `signup_bonus` ledger row.
+- **AC510** Reload keeps the player signed in; Sign out returns to the login screen.
+- **AC511** A deck saved in the Deck Builder is there in a second, fresh browser context after signing in.
+- **AC512** 2 local decks are imported once ("Imported 2 decks"); not again on the next login; still in localStorage.
+- **AC513** `save_deck` with an unknown card is refused; a refused save in the builder shows the server's message and keeps the edits.
+- **AC514** A vs-computer match starts with a server deck.
+- **AC515** A player's direct writes to wallets, transactions, other decks, roles, own profile, card tables and admin functions are refused / change nothing.
+- **AC516** A player reads their own profiles, wallets, decks rows and no one else's.
+- **AC517** Logged out, tables and non-public functions are refused; the five public functions work.
+- **AC518** A non-admin on the back counter sees "Not an admin" after 2-step; admin functions refuse their login.
+- **AC519** Admin with password only goes to 2-step setup; aal1 `admin_list_players` refused; a wrong code shows an error; the right code opens the back counter.
+- **AC520** The back counter player list finds test players by username and email part and shows $0.00 money spent; paging works.
+- **AC521** Player cards with unique ids; the card link opens Card lookup with first owner and origin.
+- **AC522** Grant coins: empty reason refused; 75 with a reason (sent twice, same key) adds exactly 75; audit shows it.
+- **AC523** Ban 3 days: `save_deck` refused and the game shows "Your account is banned until" + reason; unban: saving works; both audited.
+- **AC524** Ban without reason refused; admin can't ban self or another admin.
+- **AC525** Audit log lists actions newest first; players can't read or change `admin_audit`.
+- **AC526** Admin site: X-Frame-Options DENY, CSP frame-ancestors 'none', X-Robots-Tag noindex (served or in `vercel.json`); robots.txt disallows all.
+- **AC527** Secret scan passes on the repo and both `dist/` folders.
+- **AC528** Game `dist/` < 95 MB, admin `dist/` < 2 MB.
+- **AC529** Game JS calls no `admin_` function except `am_i_admin`; admin JS has no game art.
+- **AC530** REPORT.md has Ken's SQL lines, the lawyer reminder, Editor updates needed and Done/Partly/Not started for B1–B11, C, D.
+- **AC531** Age question: empty Month/Year, no hint; sign-up traffic never contains the birth year; going back and choosing another year within 24 h shows the first path.
+- **AC532** Under-13 form has "Parent or guardian's email" and no "Email"; sign-up stores under_13 / pending and queues a `parent_consent_request` to that email.
+- **AC533** Pending child sees "Waiting for your parent or guardian"; save_deck/set_avatar/import refused with "waiting for a parent"; Play offline works.
+- **AC534** Consent page shows username + notice; Approve disabled until ticked; after Approve the child can save, a `parent_consent_confirmed` email is queued, the link can't be reused.
+- **AC535** Withdraw link withdraws approval; the child sees "A parent withdrew approval for this account."; saving refused.
+- **AC536** Under-13 deck "Sam Smith Ohio" is stored as "Deck 1"; no Rename in the builder.
+- **AC537** Expired link shows the expired message; Send the email again makes a new working link, the old one stops; a second resend is refused.
+- **AC538** Players/anon can't read or change consents, consent events or outbox; after send-outbox runs, sent payloads hold no tokens.
+- **AC539** Admin rename: bad names refused with the server reason; good name works, shows in the game Profile, audited old → new.
+- **AC540** A bad word added in Settings blocks sign-up names with it at once; entries with spaces/digits refused; audited.
+- **AC541** Sign-up coins 250 → next new player gets 250; earlier players keep theirs.
+- **AC542** Under-13 state in the player list/detail; admin Withdraw approval blocks the account and is audited; no consent token in admin responses.
+- **AC543** Card lookup shows first owner, origin, current owner, history; a transfer shows both owners; invalid id refused.
+- **AC544** Game shows the TEST SERVER bar; `admin_set_setting('server_kind')` is refused; the wrong-server logic is unit-tested in both apps.
+- **AC545** Consent page shows every notice section, the DRAFT marker, the username and a Contact us that pre-fills the player name; no email address on the page or in the built game JS.
+- **AC546** Contact us → Inbox: a logged-out message appears in the admin inbox; answering it queues a `contact_reply` to the reply email, moves it to handled and is audited; too many messages are refused; players/anon can't read `contact_messages`. The game form shows success and keeps typed text on a refusal.
+
+## Out of scope / limitations (Online Phase A)
+Coins shop, packs, card ownership grey-out (Phase B), ranked play (Phase C), donations (Phase D), trading, chat. Real email delivery and the captcha are not exercised by the checks (local `OUTBOX_MODE=log`, no captcha key). The "production build vs test server" case can't be built in the checks; it is covered by unit tests of the shared env-guard logic. The parent notice is a draft and must be reviewed by a lawyer before launch.
+
+## Assumptions (Online Phase A)
+- Exact on-screen texts and labels above were chosen where the brief gave none (field labels, "Send link", "Save password", "Continue", "Imported N decks" + OK, "Avatars" group, Contact form labels).
+- `emailRedirectTo` / `redirectTo` keep the page's query (`?test=1&online=1`) instead of only the origin, so links land back in the same mode; the config already allows `http://127.0.0.1:4173/**`.
+- Checks create most users with the local admin API (already confirmed) and set their own parent-link tokens by writing the token's sha256 into `parental_consents` from the test runner, so they never race the outbox sender; only the email checks (AC505, AC507, AC508) use the mail catcher.
+- AC543's card move is simulated by the test runner writing the instance owner and a `transferred` history row (the same rows `private.card_transfer()` writes).
+- The Contact us rate limit is per IP from `x-forwarded-for`; checks send their own fake IP header so parallel tests don't share a limit.
+- Test cleanup this round: no old tests removed (the brief requires every existing check to keep passing with `?test=1`); 47 new tests were added for AC500–AC546. The Profile button only exists when signed in, so AC1's "exactly five buttons" stays true in `?test=1`.
+
+---
+
+# Earlier rounds (still valid and checked with `?test=1`)
+
+## Previous round title: OreHeart — Build Spec (Phase 1B, Round 26 finish — owner edits, model clips, failing checks)
 
 ## Summary
 

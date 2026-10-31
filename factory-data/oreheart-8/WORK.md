@@ -1,35 +1,26 @@
-# Round 26 finish: make Round 26 work, fix the failing checks
+# Online Phase A: login, sign-up, parent consent, server decks, email sender
 
-Read "This run (Round 26 finish)" at the top of SPEC.md, then `factory-design/design/oreheart-round-26-combined-brief.md`. No new features, and no rule or card-number changes. Last run: 400/463 passed. Fix the game, not the checks. dist must stay under 95 MB (AC90). Never touch model geometry or UVs. Put every value you choose in REPORT.md under "Editor updates needed".
+Read "Online Phase A" at the top of SPEC.md, then `factory-design/design/oreheart-online-phase-a-brief.md` (it wins where they differ). `supabase/` and `projects/oreheart-admin/` are done: change them only to fix a failing check, and list each change in REPORT.md. `?test=1` without `online=1` must behave exactly as today. Never put a secret key or the word service_role in either app. Don't edit the acceptance tests and don't run git.
 
-Checks the planner changed: AC358 (the drag part was removed because it contradicted the centered drag in R26 A1) and AC265 (tilt is now ≤ 8° and may be 0). Every other failing check is still valid.
+Priority (stop cleanly at a working state): offline/`?test=1` unchanged + secret scan + server guard → B1–B5 → Part D + Contact us → server decks → B7–B9 → admin checks → polish.
 
-Priority: the two root causes (hand hover pop, 16:9 frame) → Round 26 items → everything else.
-
-## Interface
-- ROOT CAUSE 1: hovering a hand card no longer pops it to `popScale` 1.6 (33.81 % card → about 54 % of the height), only one card at a time, and it always retracts. This was probably broken by the A10 flicker fix (`popTarget`, `handBoxes`, 90 ms hold). Restore the pop without bringing back the flicker (AC389 must still pass). Affects AC59, AC164, AC174, AC218, AC272, AC347, AC364, AC365. `src/ui/app.ts` layoutHand/pointerenter, `style.css`.
-- ROOT CAUSE 2: on computer windows the match must keep the owner's 16:9 letterbox (`#app` aspect 16:9, never stretched). The R26 "fills the window" change broke this. The arena cover-fit runs inside that frame. Affects AC24b, AC149, AC150, AC190, AC191, AC192, AC200.
-- A1 drag card: centered on the pointer, shrinks onto the square, grows back to its starting width (±5 %) over the hand. `getDragCard()` must return the pointer and box (AC370–AC373, AC358 no NaN). Hand overlap 0.26 from owner-layout, every card fully on screen at 1920×1080, 1366×768 and 844×390 (AC374, AC347). Hand reorder and drag-to-play with real pointer events must still work: the Goblin Miner drag places the Miner and not its neighbour (AC264, AC265, AC269).
-- A6 Done drop-up: no move this phase → drop-up above Done, "Go back" keeps the phase and "Continue" ends it (AC31, AC383, AC384).
-- A2: the first click calls `requestFullscreen` once (AC376).
-- A5: the pickaxe badge `data-mine-badge` shows the right text and is never covered (AC381). A7: a controlled mine shows the faction emblem `<img>` (AC385).
-- AC326: `enemy-deck-count` italic must follow owner-layout (false).
-- AC318: the ability button sits above the unit (below the computed y).
-- AC345: the four stance buttons are fully on screen at the right edge (Aggressive was at x = 2062 at 1920 wide).
-- AC95, AC134, AC148, AC176, AC206, AC256, AC261: these time out on locators (Mulligan click, hover, Change Commander). Find what is covering or missing (probably the hand/fullscreen changes) and fix it.
+The 40 checks that failed last round belong to Rounds 27/28. Don't make them worse, and don't work on them this round.
 
 ## Rules & cards
-- A9 Junk Shaman lift: the highlighted squares must equal the engine `pickUp` legal destinations exactly (67 squares were lit and 1 was expected). Pay 2 crystals (AC387, AC388).
-- AC341 Mine Control stance: a Miner next to an enemy Miner it can beat and survive attacks instead of mining. Check the GDD stance text and fix the AI.
-- AC58: tapping a mine (and the `mineAt` action) mines with all ready Miners next to it (2 expected, 1 happened).
-- AC40, AC110: random mines must stay corner-mirrored, fair, away from both Strongholds and never on the same square for every seed tested.
+- `src/net/online.ts` (supabase-js v2, `onlineEnabled`, session kept), `src/net/env-guard.ts` copied from the admin site, plus vitest `tests/online.test.ts` and `tests/env-guard.test.ts`. ACs: AC501, AC502, AC544.
+- Start-up flow: server check → login or session → ban, then consent, then avatar, then welcome, then one-time import → menu. Call `my_status` every 5 minutes. `?test=1&online=1` = test mode plus online. ACs: AC503, AC505, AC510, AC523, AC533, AC535.
+- Auth calls: signUp with `{username, age_group}` and the redirect keeping the query, resend, reset, and `PASSWORD_RECOVERY` → set a new password (also without `?test=1`). Map server errors to the SPEC texts. ACs: AC505–AC508, AC531, AC532.
+- Server decks in `src/ui/decks.ts`: load from `decks`, save with `save_deck`/`delete_deck`, show the server's refusal in the builder and keep the edits. Under 13: no Rename. Import once from `oreheart.decks`. The match deck picker ("Deck choice") lists server decks. ACs: AC511–AC514, AC536.
 
-## 3D & visuals
-- A2 pixel ratio: `setPixelRatio(devicePixelRatio)`, resize on window and fullscreen changes, `getRenderStats().canvas` hook, no scroll bars at 2560×1080 or 3840×2160 (AC375 ×2). `src/ui/scene.ts`.
-- B12 parts: copy every `partsTableLook` from `factory-design/design/models/editor-setups-2026-10-28.json` into `PARTS` exactly (goblin-grunt failed), along with the parts GLBs. `figures[].parts` (AC390, AC392, AC393).
-- B13/B14: gyrocopter-ace and gnome-tinker get their gear, `events.json` and a clips map whose clips exist in the GLB (AC394).
-- AC196/AC197: the Commander faces the opponent and returns after a look-back. Impatience starts only after about 20 s idle (it started before 10 s).
-- AC361: Bowler Brawler's basketball shot lands dead (0 bounces).
+## Interface
+- New screens in the menu style, using the exact SPEC texts and labels: login, age question (empty Month/Year selects, saved in `oreheart.ageGate`), 13+ and under-13 forms with a live username check, Check your email / Ask your parent, Forgot password / Set a new password, Waiting / Withdrawn, Choose your avatar (the "Avatars" group, card art only), Welcome, Profile button and screen, ban screen, Wrong server / Can't reach the server, the "Offline — Sign in" chip, and the blue TEST SERVER bar. Buttons are at least 44 px tall and fit at 844×390. ACs: AC503–AC510, AC523, AC531–AC537, AC539, AC544.
+- Parent pages `?parent_consent=` and `?parent_withdraw=`: the notice from `src/content/parent-notice.json` with the DRAFT marker, the checkbox, Approve, and the expired and invalid texts. Contact us pre-fills the child's name. ACs: AC534, AC535, AC537, AC545.
+- Contact us page `?contact=1`: Topic, Message, the three optional fields and Send. Show refusals in a role `alert` and keep what was typed. No email address anywhere in the game, including placeholders. ACs: AC545, AC546.
 
 ## Other
-- Run the full suite. REPORT.md: each item marked Done/Partly/Not started, Editor updates needed, dist size, the real cause of both root causes, and missing clips.
+- `supabase/functions/send-outbox/index.ts` (Part D): `OUTBOX_MODE=log`, remove tokens after sending, return 200 `{sent, failed}` to a POST with the secret key. Add `[functions.send-outbox] verify_jwt = false` and a NEW pg_cron migration that is skipped quietly when not available locally. ACs: AC538, AC546.
+- `supabase/config.toml` (local copy): raise `[auth.rate_limit]` email_sent, sign_up_sign_in and token_verifications to 1000, and set `[auth.email] max_frequency = "1s"`, because the parallel email checks would otherwise hit limits. ACs: AC505, AC507, AC508.
+- Admin site: send the security headers from the local preview too (`preview.headers` in `vite.config.ts`, matching `vercel.json`). Check that `#/card/<bad id>` shows "That is not a card id." ACs: AC526, AC543.
+- If `parent-notice-draft.json` is missing on the branch, create `src/content/parent-notice.json` (version `2026-10-28-draft`, `{title, sections:[{heading,text}], lawyer_review}`) and say so in REPORT.md. AC: AC545.
+- Run the secret scan on the repo and both `dist/` folders. Keep the game `dist/` under 95 MB and the admin `dist/` under 2 MB. ACs: AC527–AC529.
+- REPORT.md: Ken's SQL lines (exact), the lawyer reminder, Editor updates needed, `dist/` sizes, Done/Partly/Not started for B1–B11 and Parts C and D, and every change made to `supabase/` or the admin site. AC: AC530.

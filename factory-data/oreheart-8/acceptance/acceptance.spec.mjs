@@ -11998,3 +11998,1044 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080, touch: false }, 
     });
   });
 }
+
+// =====================================================================
+// Online Phase A (AC500–AC546) — local Supabase, every test makes its own users
+// =====================================================================
+const SB_URL = process.env.SUPABASE_URL;
+const SB_ANON = process.env.SUPABASE_ANON_KEY;
+const SB_TEST_ADMIN = process.env.SUPABASE_TEST_ADMIN_KEY; // test-runner only, never in app code
+const MAIL_URL = (process.env.MAIL_URL || '').replace(/\/$/, '');
+const ADMIN_SITE = 'http://127.0.0.1:4174';
+const ONLINE = '/?test=1&online=1';
+const PW = 'Goodpass123x';
+const letters = (n) => Array.from({ length: n }, () => 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]).join('');
+const newEmail = () => `t-${letters(12)}@test.local`;
+const newName = () => 'T' + letters(11);
+const needDb = () => test.skip(!SB_URL || !SB_ANON || !SB_TEST_ADMIN, 'local Supabase not configured');
+const fakeIp = () => `10.${1 + Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 255)}.${1 + Math.floor(Math.random() * 250)}`;
+async function sbClient(key, headers) {
+  const { createClient } = await import('@supabase/supabase-js');
+  return createClient(SB_URL, key, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }, global: headers ? { headers } : undefined });
+}
+const anonDb = (headers) => sbClient(SB_ANON, headers);
+const runnerDb = () => sbClient(SB_TEST_ADMIN);
+async function makeUser({ age = '13_plus', confirmed = true, username = newName(), email = newEmail() } = {}) {
+  const db = await runnerDb();
+  const { data, error } = await db.auth.admin.createUser({ email, password: PW, email_confirm: confirmed, user_metadata: { username, age_group: age } });
+  expect(error, error && error.message).toBeNull();
+  return { id: data.user.id, email, username, password: PW };
+}
+async function loginApi(u) {
+  const c = await anonDb();
+  const { error } = await c.auth.signInWithPassword({ email: u.email, password: u.password });
+  expect(error, error && error.message).toBeNull();
+  return c;
+}
+const sha256 = async (t) => (await import('node:crypto')).createHash('sha256').update(t, 'utf8').digest('hex');
+// sets a parent-link token we know (only its hash is stored), so tests never race the outbox sender
+async function setConsentToken(u, { expired = false, revoke = false } = {}) {
+  const tok = letters(40);
+  const db = await runnerDb();
+  const patch = revoke
+    ? { revoke_token_hash: await sha256(tok) }
+    : { request_token_hash: await sha256(tok), request_expires_at: new Date(Date.now() + (expired ? -3600e3 : 6 * 864e5)).toISOString() };
+  if (expired) patch.request_sent_at = new Date(Date.now() - 3600e3).toISOString();
+  const { error } = await db.from('parental_consents').update(patch).eq('user_id', u.id);
+  expect(error, error && error.message).toBeNull();
+  return tok;
+}
+async function approveChild(u) {
+  const tok = await setConsentToken(u);
+  const { error } = await (await anonDb()).rpc('parent_give_consent', { p_token: tok, p_agree: true });
+  expect(error, error && error.message).toBeNull();
+}
+const GOBLIN_DECK = Array(25).fill('goblin-scrounger').concat(Array(25).fill('shiv-rat'));
+async function totpCode(secret) {
+  const m = await import('otplib');
+  if (m.authenticator) return m.authenticator.generate(secret);
+  if (m.generateSync) return m.generateSync({ secret });
+  return await m.generate({ secret });
+}
+async function makeAdmin() {
+  const u = await makeUser();
+  const { error } = await (await runnerDb()).from('roles').insert({ user_id: u.id, role: 'admin', granted_by: u.id });
+  expect(error, error && error.message).toBeNull();
+  const c = await loginApi(u);
+  const { data: f, error: e1 } = await c.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'f' + letters(6) });
+  expect(e1, e1 && e1.message).toBeNull();
+  const { error: e2 } = await c.auth.mfa.challengeAndVerify({ factorId: f.id, code: await totpCode(f.totp.secret) });
+  expect(e2, e2 && e2.message).toBeNull();
+  return { ...u, c };
+}
+async function auditRows(targetId) {
+  const { data } = await (await runnerDb()).from('admin_audit').select('*').eq('target_user', targetId).order('id', { ascending: false });
+  return data || [];
+}
+// mail catcher: Mailpit first, Inbucket as fallback; returns [{text, html}]
+async function mailsTo(request, email) {
+  const out = [];
+  const r = await request.get(`${MAIL_URL}/api/v1/search?query=${encodeURIComponent('to:' + email)}`);
+  if (r.status() !== 404 && r.ok()) {
+    for (const m of (await r.json()).messages || []) {
+      const one = await (await request.get(`${MAIL_URL}/api/v1/message/${m.ID}`)).json();
+      out.push({ text: one.Text || '', html: one.HTML || '' });
+    }
+    return out;
+  }
+  const box = email.split('@')[0];
+  const list = await request.get(`${MAIL_URL}/api/v1/mailbox/${box}`);
+  if (!list.ok()) return out;
+  for (const m of await list.json()) {
+    const one = await (await request.get(`${MAIL_URL}/api/v1/mailbox/${box}/${m.id}`)).json();
+    out.push({ text: (one.body && one.body.text) || '', html: (one.body && one.body.html) || '' });
+  }
+  return out;
+}
+async function waitMailLink(request, email, kind, already = 0) {
+  let link = null;
+  await expect.poll(async () => {
+    const mails = await mailsTo(request, email);
+    if (mails.length <= already) return null;
+    const body = (mails[mails.length - 1].html + ' ' + mails[mails.length - 1].text).replace(/&amp;/g, '&');
+    const all = [...body.matchAll(/https?:\/\/[^\s"'<>]+/g)].map((m) => m[0]);
+    link = all.find((l) => l.includes('/auth/v1/verify') && l.includes(kind)) || all.find((l) => l.includes('/auth/v1/verify')) || null;
+    return link;
+  }, { timeout: 20000, message: `email for ${email}` }).not.toBeNull();
+  return link;
+}
+async function gameSignIn(page, u, url = ONLINE) {
+  await page.goto(url);
+  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible({ timeout: 15000 });
+  await page.getByLabel('Email', { exact: true }).fill(u.email);
+  await page.getByLabel('Password', { exact: true }).fill(u.password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+}
+// signs in and walks avatar + welcome until the main menu shows
+async function gameToMenu(page, u, url = ONLINE) {
+  await gameSignIn(page, u, url);
+  const menuH = page.getByRole('button', { name: 'Profile', exact: true });
+  const avatar = page.getByRole('heading', { name: 'Choose your avatar' });
+  await expect(menuH.or(avatar)).toBeVisible({ timeout: 15000 });
+  if (await avatar.isVisible()) {
+    await page.getByRole('group', { name: 'Avatars' }).getByRole('button').first().click();
+    await expect(page.getByRole('heading', { name: /^Welcome to the Skullfang Arena/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  }
+  const imported = page.getByText(/^Imported \d+ decks?/);
+  if (await imported.isVisible().catch(() => false)) await page.getByRole('button', { name: 'OK', exact: true }).click();
+  await expect(menuH).toBeVisible();
+}
+async function adminDir() {
+  const { fs, path, dir } = await appDir();
+  return { fs, path, dir, admin: path.resolve(dir, '../oreheart-admin'), repo: path.resolve(dir, '../..') };
+}
+async function adminSiteSignIn(page, u) {
+  await page.goto(ADMIN_SITE + '/');
+  await page.getByLabel('Email', { exact: true }).fill(u.email);
+  await page.getByLabel('Password', { exact: true }).fill(u.password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+}
+async function adminSiteSetup2Step(page, wrongFirst = false) {
+  const secretEl = page.locator('[data-testid=mfa-secret]');
+  await expect(secretEl).toBeVisible({ timeout: 15000 });
+  const secret = (await secretEl.innerText()).replace(/\s+/g, '');
+  const code = page.getByLabel('Code from the app');
+  if (wrongFirst) {
+    await code.fill('000000');
+    await page.getByRole('button', { name: 'Turn on 2-step', exact: true }).click();
+    await expect(page.getByText(/That code did not work/)).toBeVisible();
+  }
+  await code.fill(await totpCode(secret));
+  await page.getByRole('button', { name: 'Turn on 2-step', exact: true }).click();
+}
+
+// ---------- files, keys, size ----------
+test('AC500: the database checks are present (run by the factory with run-supabase.sh)', async () => {
+  const { fs, path, repo } = await adminDir();
+  expect(fs.existsSync(path.join(repo, 'supabase/tests/run-supabase.sh'))).toBe(true);
+  const sql = fs.readFileSync(path.join(repo, 'supabase/tests/phase_a_security.test.sql'), 'utf8');
+  expect(sql.length).toBeGreaterThan(1000);
+});
+
+test('AC502 + AC544: online switch and env-guard files and their unit tests exist', async () => {
+  const { fs, path, dir, admin } = await adminDir();
+  expect(fs.existsSync(path.join(dir, 'src/net/online.ts'))).toBe(true);
+  expect(fs.readFileSync(path.join(dir, 'src/net/online.ts'), 'utf8')).toMatch(/onlineEnabled/);
+  expect(fs.existsSync(path.join(dir, 'src/net/env-guard.ts'))).toBe(true);
+  const tests = walk(fs, path, path.join(dir, 'tests')).filter((f) => /\.test\.[mc]?[jt]s$/.test(f)).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+  expect(tests).toMatch(/onlineEnabled/);
+  expect(tests).toMatch(/env-guard/);
+  expect(fs.existsSync(path.join(admin, 'src/env-guard.test.ts'))).toBe(true);
+});
+
+test('AC527: secret scan passes on the repo and both dist folders', async () => {
+  const { fs, path, dir, admin, repo } = await adminDir();
+  const scan = path.join(repo, 'factory/scripts/secret-scan.mjs');
+  test.skip(!fs.existsSync(scan), 'secret scan script not in this checkout');
+  const { execFileSync } = await import('node:child_process');
+  for (const args of [[], [path.join(dir, 'dist')], [path.join(admin, 'dist')]]) {
+    let ok = true; let out = '';
+    try { execFileSync(process.execPath, [scan, ...args], { cwd: repo, stdio: 'pipe', timeout: 60000 }); } catch (e) { ok = false; out = String(e.stdout || '') + String(e.stderr || ''); }
+    expect(ok, `secret scan ${args.join(' ') || 'repo'}: ${out.slice(0, 800)}`).toBe(true);
+  }
+});
+
+test('AC528 + AC529: dist sizes; the game calls no admin_ function except am_i_admin; admin has no game art', async () => {
+  const { fs, path, dir, admin } = await adminDir();
+  const size = (d) => walk(fs, path, d).reduce((s, f) => s + fs.statSync(f).size, 0);
+  expect(size(path.join(dir, 'dist'))).toBeLessThan(95 * 1024 * 1024);
+  const adminFiles = walk(fs, path, path.join(admin, 'dist'));
+  expect(adminFiles.length).toBeGreaterThan(0);
+  expect(size(path.join(admin, 'dist'))).toBeLessThan(2 * 1024 * 1024);
+  expect(adminFiles.filter((f) => /\.(glb|png|jpe?g|webp|mp3|ogg|wav)$/i.test(f) && !/favicon/i.test(f))).toEqual([]);
+  const js = walk(fs, path, path.join(dir, 'dist')).filter((f) => f.endsWith('.js')).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+  const adminCalls = [...new Set([...js.matchAll(/['"`](admin_[a-z_]+)['"`]/g)].map((m) => m[1]))].filter((n) => n !== 'am_i_admin');
+  expect(adminCalls).toEqual([]);
+});
+
+test('AC530: REPORT.md has Ken\'s SQL lines, the lawyer reminder, editor updates and the status list', async () => {
+  const { fs, path, repo } = await adminDir();
+  const candidates = [path.join(repo, 'factory-data/oreheart-8/REPORT.md'), path.join(repo, 'projects/oreheart-8/REPORT.md')];
+  const f = candidates.find((p) => fs.existsSync(p));
+  expect(f, 'REPORT.md').toBeTruthy();
+  const r = fs.readFileSync(f, 'utf8');
+  expect(r).toMatch(/Ken's SQL lines/);
+  expect(r).toContain("insert into public.roles (user_id, role, granted_by) select id, 'admin', id from auth.users where email = 'KEN-ADMIN-EMAIL-HERE';");
+  expect(r).toContain("update public.settings set value = '\"production\"' where key = 'server_kind';");
+  expect(r).toMatch(/lawyer/i);
+  expect(r).toMatch(/Editor updates needed/);
+  for (const b of ['B1', 'B6', 'B11', 'Part C', 'Part D']) expect(r).toContain(b);
+  expect(r).toMatch(/Done|Partly|Not started/);
+});
+
+// ---------- offline and existing behaviour ----------
+test('AC501: ?test=1 without online=1 goes straight to the menu with hooks and no login or test bar', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/?test=1');
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+  expect(await page.evaluate(() => !!window.oreheart)).toBe(true);
+  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toHaveCount(0);
+  await expect(page.getByText('TEST SERVER — practice accounts only')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Profile', exact: true })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('AC503: Play offline (practice) opens the menu and a vs-computer match makes no /rest/v1/ request', async ({ page }) => {
+  needDb();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(ONLINE);
+  await page.getByRole('button', { name: 'Play offline (practice)', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+  await expect(page.getByText('Offline — Sign in')).toBeVisible();
+  const rest = [];
+  page.on('request', (r) => { if (r.url().includes('/rest/v1/')) rest.push(r.url()); });
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+  const s = await newMatch(page, { seed: 5 });
+  expect(s.players.length).toBe(2);
+  await done(page, 2);
+  expect(rest).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+// ---------- sign-up and login ----------
+for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }, { width: 844, height: 390 }]) {
+  test.describe(`login screen ${vp.width}x${vp.height}`, () => {
+    test.use({ viewport: vp });
+    test(`AC504: login screen buttons are present, ≥44 px and on screen at ${vp.width}x${vp.height}`, async ({ page }) => {
+      needDb();
+      await page.goto(ONLINE);
+      await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible({ timeout: 15000 });
+      await expect(page.getByRole('button', { name: 'Play', exact: true })).toHaveCount(0);
+      await expect(page.getByText('TEST SERVER — practice accounts only')).toBeVisible();
+      for (const n of ['Sign in', 'Create account', 'Forgot password?', 'Play offline (practice)']) {
+        const b = page.getByRole('button', { name: n, exact: true });
+        await b.scrollIntoViewIfNeeded();
+        const box = await b.boundingBox();
+        expect(box, n).toBeTruthy();
+        expect(box.height, `${n} height`).toBeGreaterThanOrEqual(44);
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.y).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(vp.width + 1);
+        expect(box.y + box.height).toBeLessThanOrEqual(vp.height + 1);
+      }
+    });
+  });
+}
+
+async function openAgeQuestion(page) {
+  await page.goto(ONLINE);
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'When were you born?' })).toBeVisible();
+}
+async function answerAge(page, yearsAgo) {
+  const y = String(new Date().getFullYear() - yearsAgo);
+  await page.getByLabel('Month', { exact: true }).selectOption({ index: 1 });
+  await page.getByLabel('Year', { exact: true }).selectOption(y);
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  return y;
+}
+
+test('AC505: 13+ sign-up, confirmation email, then avatar, welcome and menu', async ({ page, request }) => {
+  needDb();
+  test.setTimeout(60000);
+  const u = { email: newEmail(), username: newName(), password: PW };
+  await openAgeQuestion(page);
+  await answerAge(page, 20);
+  await page.getByLabel('Username', { exact: true }).fill(u.username);
+  await page.getByLabel('Email', { exact: true }).fill(u.email);
+  await page.getByLabel('Password', { exact: true }).fill(PW);
+  await page.getByLabel('Confirm password', { exact: true }).fill(PW);
+  const create = page.getByRole('button', { name: 'Create account', exact: true });
+  await expect(create).toBeEnabled({ timeout: 5000 });
+  await create.click();
+  await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: 'Send again', exact: true })).toBeVisible();
+  const link = await waitMailLink(request, u.email, 'signup');
+  await page.goto(link);
+  await page.context().clearCookies();
+  await page.evaluate(() => localStorage.clear()).catch(() => {});
+  await gameSignIn(page, u);
+  await expect(page.getByRole('heading', { name: 'Choose your avatar' })).toBeVisible({ timeout: 15000 });
+  await page.getByRole('group', { name: 'Avatars' }).getByRole('button').first().click();
+  await expect(page.getByRole('heading', { name: `Welcome to the Skullfang Arena, ${u.username}!` })).toBeVisible();
+  await expect(page.getByText('Your starter decks are ready.')).toBeVisible();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Profile', exact: true })).toBeVisible();
+});
+
+test('AC506: username messages and the Create account button rule', async ({ page }) => {
+  needDb();
+  const taken = await makeUser();
+  await openAgeQuestion(page);
+  await answerAge(page, 20);
+  const name = page.getByLabel('Username', { exact: true });
+  const create = page.getByRole('button', { name: 'Create account', exact: true });
+  const cases = [['ab', 'Use 3 to 16 letters, numbers or _.'], ['Grubnak', 'That name is reserved.'],
+    [taken.username.toLowerCase(), 'That name is taken.'], ['xShitx' + letters(3), 'Please pick a different name.']];
+  await page.getByLabel('Email', { exact: true }).fill(newEmail());
+  await page.getByLabel('Password', { exact: true }).fill(PW);
+  await page.getByLabel('Confirm password', { exact: true }).fill(PW);
+  for (const [n, msg] of cases) {
+    await name.fill(n);
+    await expect(page.getByText(msg, { exact: true })).toBeVisible({ timeout: 5000 });
+    await expect(create).toBeDisabled();
+  }
+  await name.fill(newName());
+  await page.getByLabel('Confirm password', { exact: true }).fill(PW + 'x');
+  await expect(page.getByText("Passwords don't match.")).toBeVisible();
+  await expect(create).toBeDisabled();
+  await page.getByLabel('Confirm password', { exact: true }).fill(PW);
+  await expect(create).toBeEnabled({ timeout: 5000 });
+});
+
+test('AC507: wrong password and unconfirmed email messages; Send the email again sends one', async ({ page, request }) => {
+  needDb();
+  const u = await makeUser();
+  await gameSignIn(page, { ...u, password: 'Wrongpass999' });
+  await expect(page.getByText('Wrong email or password.')).toBeVisible({ timeout: 10000 });
+  const v = await makeUser({ confirmed: false });
+  await page.getByLabel('Email', { exact: true }).fill(v.email);
+  await page.getByLabel('Password', { exact: true }).fill(v.password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByText(/Please confirm your email first/)).toBeVisible({ timeout: 10000 });
+  await page.getByRole('button', { name: 'Send the email again', exact: true }).click();
+  await expect(page.getByText('We sent the email again.')).toBeVisible({ timeout: 10000 });
+  await waitMailLink(request, v.email, 'signup');
+});
+
+test('AC508: forgot password email opens Set a new password; new works, old fails', async ({ page, request }) => {
+  needDb();
+  test.setTimeout(60000);
+  const u = await makeUser();
+  await page.goto(ONLINE);
+  await page.getByRole('button', { name: 'Forgot password?', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Forgot password' })).toBeVisible();
+  await page.getByLabel('Email', { exact: true }).fill(u.email);
+  await page.getByRole('button', { name: 'Send link', exact: true }).click();
+  await expect(page.getByText('If that email has an account, we sent a link.')).toBeVisible({ timeout: 10000 });
+  const link = await waitMailLink(request, u.email, 'recovery');
+  await page.goto(link);
+  await expect(page.getByRole('heading', { name: 'Set a new password' })).toBeVisible({ timeout: 20000 });
+  const NEW = 'Newpass456Yz';
+  await page.getByLabel('New password', { exact: true }).fill(NEW);
+  await page.getByLabel('Confirm password', { exact: true }).fill(NEW);
+  await page.getByRole('button', { name: 'Save password', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Set a new password' })).toBeHidden({ timeout: 15000 });
+  const c = await anonDb();
+  expect((await c.auth.signInWithPassword({ email: u.email, password: PW })).error).not.toBeNull();
+  expect((await c.auth.signInWithPassword({ email: u.email, password: NEW })).error).toBeNull();
+});
+
+test('AC509: new account has 359 traceable starter cards, matching collection and sign-up coins', async () => {
+  needDb();
+  const u = await makeUser();
+  const db = await runnerDb();
+  const { data: cards } = await db.from('card_instances').select('id,card_id,owner_id,original_owner_id,origin').eq('original_owner_id', u.id).limit(1000);
+  expect(cards.length).toBe(359);
+  expect(new Set(cards.map((c) => c.id)).size).toBe(359);
+  expect(new Set(cards.map((c) => c.card_id)).size).toBe(60);
+  expect(cards.every((c) => c.origin === 'starter' && c.owner_id === u.id)).toBe(true);
+  const { count } = await db.from('card_history').select('id', { count: 'exact', head: true }).eq('to_user', u.id).eq('event', 'created');
+  expect(count).toBe(359);
+  const { data: st } = await db.from('settings').select('value').eq('key', 'starter_collection').single();
+  const c = await loginApi(u);
+  const { data: col, error } = await c.rpc('my_collection');
+  expect(error).toBeNull();
+  const got = Object.fromEntries(col.map((r) => [r.card_id, r.count]));
+  expect(got).toEqual(st.value);
+  const { data: w } = await db.from('wallets').select('coins').eq('user_id', u.id).single();
+  const { data: tx } = await db.from('transactions').select('delta,reason').eq('user_id', u.id).eq('reason', 'signup_bonus');
+  expect(tx.length).toBe(1);
+  expect(w.coins).toBe(tx[0].delta);
+  expect([300, 250]).toContain(w.coins); // AC541 may briefly set 250
+});
+
+test('AC510: reload keeps the player signed in; Sign out returns to the login screen', async ({ page }) => {
+  needDb();
+  const u = await makeUser();
+  await gameToMenu(page, u);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Profile', exact: true })).toBeVisible({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Profile', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible();
+  await expect(page.getByText(u.username)).toBeVisible();
+  await expect(page.getByText('No online matches yet')).toBeVisible();
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible({ timeout: 15000 });
+});
+
+test('AC531: age question is neutral, birth year never sent, first answer remembered', async ({ page }) => {
+  needDb();
+  const bodies = [];
+  page.on('request', (r) => { if (SB_URL && r.url().startsWith(SB_URL.replace('localhost', '127.0.0.1')) || r.url().includes(':54321')) bodies.push(r.postData() || ''); });
+  await openAgeQuestion(page);
+  await expect(page.getByLabel('Year', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Month', { exact: true })).toHaveValue('');
+  await expect(page.getByText(/\b13\b|thirteen|old enough/i)).toHaveCount(0);
+  const year = await answerAge(page, 20);
+  await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
+  const gate = await page.evaluate(() => localStorage.getItem('oreheart.ageGate'));
+  expect(gate).toContain('13_plus');
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'When were you born?' })).toBeVisible();
+  await answerAge(page, 8);
+  await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Parent or guardian's email")).toHaveCount(0);
+  const u = { username: newName(), email: newEmail() };
+  await page.getByLabel('Username', { exact: true }).fill(u.username);
+  await page.getByLabel('Email', { exact: true }).fill(u.email);
+  await page.getByLabel('Password', { exact: true }).fill(PW);
+  await page.getByLabel('Confirm password', { exact: true }).fill(PW);
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible({ timeout: 15000 });
+  const all = bodies.join('\n');
+  expect(all).toContain('13_plus');
+  expect(all).not.toContain(year);
+  expect(all).not.toMatch(/birth/i);
+});
+
+// ---------- under 13 ----------
+test('AC532: under-13 form asks only for a parent email; sign-up is pending with a parent email queued', async ({ page }) => {
+  needDb();
+  await openAgeQuestion(page);
+  await answerAge(page, 8);
+  await expect(page.getByLabel("Parent or guardian's email")).toBeVisible();
+  await expect(page.getByText("We'll ask your parent or guardian to say yes before you can play online.")).toBeVisible();
+  await expect(page.getByLabel('Email', { exact: true })).toHaveCount(0);
+  const u = { username: newName(), email: newEmail() };
+  await page.getByLabel('Username', { exact: true }).fill(u.username);
+  await page.getByLabel("Parent or guardian's email").fill(u.email);
+  await page.getByLabel('Password', { exact: true }).fill(PW);
+  await page.getByLabel('Confirm password', { exact: true }).fill(PW);
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Ask your parent or guardian to check their email' })).toBeVisible({ timeout: 15000 });
+  const db = await runnerDb();
+  const { data: p } = await db.from('profiles').select('id,age_group,consent_status').eq('username', u.username).single();
+  expect(p.age_group).toBe('under_13');
+  expect(p.consent_status).toBe('pending');
+  const { data: ob } = await db.from('email_outbox').select('kind,to_email').eq('user_id', p.id);
+  expect(ob.some((r) => r.kind === 'parent_consent_request' && r.to_email.toLowerCase() === u.email)).toBe(true);
+});
+
+test('AC533: waiting child sees the waiting screen; server refuses play actions; offline works', async ({ page }) => {
+  needDb();
+  const u = await makeUser({ age: 'under_13' });
+  const c = await loginApi(u);
+  for (const [fn, args] of [['save_deck', { p_id: null, p_name: 'A', p_commander: 'grubnak', p_cards: GOBLIN_DECK }], ['set_avatar', { p_card: 'axe-thrower' }], ['import_local_decks', { p_decks: [] }]]) {
+    const { error } = await c.rpc(fn, args);
+    expect(error && error.message, fn).toMatch(/waiting for a parent/);
+  }
+  await gameSignIn(page, u);
+  await expect(page.getByRole('heading', { name: 'Waiting for your parent or guardian' })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: 'Send the email again', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Play offline (practice)', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+});
+
+test('AC534: parent consent page approves once; the child can then save; confirmation queued', async ({ page }) => {
+  needDb();
+  const u = await makeUser({ age: 'under_13' });
+  const tok = await setConsentToken(u);
+  await page.goto(`/?parent_consent=${tok}`);
+  await expect(page.getByRole('heading', { name: `${u.username} would like an Oreheart account` })).toBeVisible({ timeout: 15000 });
+  const approve = page.getByRole('button', { name: 'Approve', exact: true });
+  await expect(approve).toBeDisabled();
+  await page.getByLabel("I am this child's parent or guardian and I agree").check();
+  await approve.click();
+  await expect(page.getByText(`Thank you. ${u.username} can now play online.`)).toBeVisible({ timeout: 10000 });
+  const c = await loginApi(u);
+  const { error } = await c.rpc('save_deck', { p_id: null, p_name: 'Mine', p_commander: 'grubnak', p_cards: GOBLIN_DECK });
+  expect(error).toBeNull();
+  const { data: ob } = await (await runnerDb()).from('email_outbox').select('kind').eq('user_id', u.id);
+  expect(ob.map((r) => r.kind)).toContain('parent_consent_confirmed');
+  await page.goto(`/?parent_consent=${tok}`);
+  await expect(page.getByText('This link is not valid any more.')).toBeVisible({ timeout: 10000 });
+});
+
+test('AC535: withdraw link blocks the child again', async ({ page }) => {
+  needDb();
+  const u = await makeUser({ age: 'under_13' });
+  await approveChild(u);
+  const rtok = await setConsentToken(u, { revoke: true });
+  await page.goto(`/?parent_withdraw=${rtok}`);
+  await page.getByRole('button', { name: 'Withdraw approval', exact: true }).click();
+  await expect(page.getByText("Done. The account can't play online any more.")).toBeVisible({ timeout: 10000 });
+  const c = await loginApi(u);
+  const { error } = await c.rpc('save_deck', { p_id: null, p_name: 'A', p_commander: 'grubnak', p_cards: GOBLIN_DECK });
+  expect(error && error.message).toMatch(/withdrew approval/);
+  await gameSignIn(page, u);
+  await expect(page.getByRole('heading', { name: 'A parent withdrew approval for this account.' })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: 'Play offline (practice)', exact: true })).toBeVisible();
+});
+
+test('AC536: under-13 deck names are plain and the builder has no Rename', async ({ page }) => {
+  needDb();
+  const u = await makeUser({ age: 'under_13' });
+  await approveChild(u);
+  const c = await loginApi(u);
+  const { data: id, error } = await c.rpc('save_deck', { p_id: null, p_name: 'Sam Smith Ohio', p_commander: 'grubnak', p_cards: GOBLIN_DECK });
+  expect(error).toBeNull();
+  const { data: d } = await (await runnerDb()).from('decks').select('name').eq('id', id).single();
+  expect(d.name).toBe('Deck 1');
+  await gameToMenu(page, u);
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Rename', exact: true })).toHaveCount(0);
+  await expect(page.getByText('Sam Smith Ohio')).toHaveCount(0);
+});
+
+test('AC537: expired link message; resend makes a new link; second resend refused', async ({ page }) => {
+  needDb();
+  const u = await makeUser({ age: 'under_13' });
+  const old = await setConsentToken(u, { expired: true });
+  await page.goto(`/?parent_consent=${old}`);
+  await expect(page.getByText(/This link has expired\. Ask your child to press Send again in the game\./)).toBeVisible({ timeout: 15000 });
+  const db = await runnerDb();
+  const before = (await db.from('email_outbox').select('id').eq('user_id', u.id).eq('kind', 'parent_consent_request')).data.length;
+  await gameSignIn(page, u);
+  await expect(page.getByRole('heading', { name: 'Waiting for your parent or guardian' })).toBeVisible({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Send the email again', exact: true }).click();
+  await expect(page.getByText('We sent the email again.')).toBeVisible({ timeout: 10000 });
+  await expect.poll(async () => (await db.from('email_outbox').select('id').eq('user_id', u.id).eq('kind', 'parent_consent_request')).data.length).toBe(before + 1);
+  const anon = await anonDb();
+  expect((await anon.rpc('parent_give_consent', { p_token: old, p_agree: true })).error).not.toBeNull();
+  await page.getByRole('button', { name: 'Send the email again', exact: true }).click();
+  await expect(page.getByText(/please wait a few minutes/i)).toBeVisible({ timeout: 10000 });
+  const fresh = await setConsentToken(u); // the new link the email carries works the same way
+  const info = await anon.rpc('parent_consent_info', { p_token: fresh });
+  expect(info.error).toBeNull();
+  expect(JSON.stringify(info.data)).toContain(u.username);
+});
+
+test('AC538: consent tables and outbox are closed to players and anon; sent payloads hold no tokens', async ({ request }) => {
+  needDb();
+  const u = await makeUser({ age: 'under_13' });
+  const player = await loginApi(u);
+  const anon = await anonDb();
+  for (const cl of [player, anon]) {
+    for (const t of ['parental_consents', 'consent_events', 'email_outbox']) {
+      const r = await cl.from(t).select('*').limit(5);
+      expect(r.error !== null || r.data.length === 0, `${t} readable`).toBe(true);
+      const ins = await cl.from(t).insert({ user_id: u.id });
+      expect(ins.error, `${t} insert`).not.toBeNull();
+    }
+    const up = await cl.from('email_outbox').update({ to_email: 'x@test.local' }).eq('user_id', u.id).select();
+    expect(up.error !== null || up.data.length === 0).toBe(true);
+  }
+  const fnBase = (process.env.FUNCTIONS_URL || `${SB_URL}/functions/v1`).replace(/\/$/, '');
+  const res = await request.post(`${fnBase}/send-outbox`, { headers: { Authorization: `Bearer ${SB_TEST_ADMIN}`, apikey: SB_TEST_ADMIN, 'Content-Type': 'application/json' }, data: {} });
+  expect(res.status(), 'send-outbox answers').toBeLessThan(300);
+  const db = await runnerDb();
+  await expect.poll(async () => (await db.from('email_outbox').select('sent_at').eq('user_id', u.id).eq('kind', 'parent_consent_request')).data.every((r) => r.sent_at), { timeout: 20000 }).toBe(true);
+  const { data: sent } = await db.from('email_outbox').select('payload').not('sent_at', 'is', null).limit(200);
+  for (const r of sent) { expect(r.payload).not.toHaveProperty('token'); expect(r.payload).not.toHaveProperty('revoke_token'); }
+});
+
+test('AC545: consent page shows the whole draft notice, DRAFT marker, Contact us; no email address anywhere', async ({ page }) => {
+  needDb();
+  const { fs, path, dir } = await adminDir();
+  const notice = JSON.parse(fs.readFileSync(path.join(dir, 'src/content/parent-notice.json'), 'utf8'));
+  expect(notice.version).toBe('2026-10-28-draft');
+  const u = await makeUser({ age: 'under_13' });
+  const tok = await setConsentToken(u);
+  await page.goto(`/?parent_consent=${tok}`);
+  await expect(page.getByRole('heading', { name: `${u.username} would like an Oreheart account` })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText(/DRAFT – lawyer review before launch/)).toBeVisible();
+  const body = await page.locator('body').innerText();
+  const norm = (s) => s.replace(/\{username\}/g, u.username).replace(/\{contact_url\}[^\s]*/g, '').replace(/\s+/g, ' ').trim();
+  for (const s of notice.sections) {
+    expect(body.replace(/\s+/g, ' ')).toContain(norm(s.heading));
+    expect(body.replace(/\s+/g, ' ')).toContain(norm(s.text).slice(0, 60));
+  }
+  for (const item of notice.lawyer_review || []) expect(body).not.toContain(typeof item === 'string' ? item.slice(0, 60) : JSON.stringify(item).slice(0, 60));
+  const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.(?:com|org|net|cards|io|dev|co|uk|de|app|local|email)\b/;
+  expect(body).not.toMatch(EMAIL);
+  await page.getByRole('button', { name: 'Contact us', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Contact us', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Player name (optional)')).toHaveValue(u.username);
+  const js = walk(fs, path, path.join(dir, 'dist')).filter((f) => f.endsWith('.js')).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+  const hit = js.match(EMAIL);
+  expect(hit && hit[0], 'email address in built game JS').toBeFalsy();
+});
+
+// ---------- server decks ----------
+test('AC511: a deck saved in the Deck Builder is there on another computer', async ({ page, browser }) => {
+  needDb();
+  test.setTimeout(60000);
+  const u = await makeUser();
+  await gameToMenu(page, u);
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+  await addCard(page, 'Shiv Rat', 3);
+  const deckName = 'Srv ' + letters(6);
+  await renameDeck(page, deckName);
+  await saveDeck(page);
+  const c = await loginApi(u);
+  await expect.poll(async () => ((await c.from('decks').select('name,cards').eq('user_id', u.id)).data || []).map((d) => d.name)).toContain(deckName);
+  const { data: rows } = await c.from('decks').select('name,cards,commander').eq('name', deckName);
+  expect(rows[0].cards.filter((x) => x === 'shiv-rat').length).toBe(3);
+  const ctx2 = await browser.newContext();
+  const p2 = await ctx2.newPage();
+  await gameToMenu(p2, u);
+  await p2.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  await expect(p2.getByText(deckName).first()).toBeVisible({ timeout: 10000 });
+  await ctx2.close();
+});
+
+test('AC512: local decks are imported once and stay in the browser', async ({ page }) => {
+  needDb();
+  const u = await makeUser();
+  const local = [{ name: 'Local A', commander: 'grubnak', cards: GOBLIN_DECK }, { name: 'Local B', commander: 'grubnak', cards: GOBLIN_DECK.slice(0, 50) }];
+  await page.addInitScript((d) => { if (!localStorage.getItem('oreheart.decks')) localStorage.setItem('oreheart.decks', JSON.stringify(d)); }, local);
+  await gameSignIn(page, u);
+  const avatar = page.getByRole('heading', { name: 'Choose your avatar' });
+  await expect(avatar).toBeVisible({ timeout: 15000 });
+  await page.getByRole('group', { name: 'Avatars' }).getByRole('button').first().click();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(page.getByText(/^Imported 2 decks/)).toBeVisible({ timeout: 20000 });
+  await page.getByRole('button', { name: 'OK', exact: true }).click().catch(() => {});
+  const c = await loginApi(u);
+  const names = () => c.from('decks').select('name').eq('user_id', u.id).then((r) => r.data.map((d) => d.name).sort());
+  expect(await names()).toEqual(['Local A', 'Local B']);
+  const st = await c.rpc('my_status');
+  expect(st.data.decks_imported).toBe(true);
+  await page.goto(ONLINE);
+  await page.getByRole('button', { name: 'Profile', exact: true }).click();
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  const imports = [];
+  page.on('request', (r) => { if (r.url().includes('import_local_decks')) imports.push(r.url()); });
+  await gameToMenu(page, u);
+  expect(imports).toEqual([]);
+  expect(await names()).toEqual(['Local A', 'Local B']);
+  const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('oreheart.decks') || '[]').map((d) => d.name));
+  expect(kept).toEqual(['Local A', 'Local B']);
+});
+
+test('AC513: server refuses unknown cards; the builder shows the refusal and keeps edits', async ({ page }) => {
+  needDb();
+  const u = await makeUser();
+  const c = await loginApi(u);
+  const { error } = await c.rpc('save_deck', { p_id: null, p_name: 'Bad', p_commander: 'grubnak', p_cards: ['not-a-card-xyz'] });
+  expect(error && error.message).toMatch(/Unknown card/);
+  await gameToMenu(page, u);
+  await page.route('**/rest/v1/rpc/save_deck', (route) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message: 'Unknown card: zz-test-card', details: null, hint: null }) }));
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  await addCard(page, 'Shiv Rat', 2);
+  const deckName = 'Keep ' + letters(5);
+  await renameDeck(page, deckName);
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByText(/Unknown card: zz-test-card/)).toBeVisible({ timeout: 10000 });
+  await expect(page.getByLabel('Deck pile', { exact: true })).toContainText(deckName);
+  await expect(deckList(page)).toContainText('2 × Shiv Rat');
+});
+
+test('AC514: a vs-computer match starts with a server deck', async ({ page }) => {
+  needDb();
+  const u = await makeUser();
+  const c = await loginApi(u);
+  const deckName = 'Srv ' + letters(6);
+  expect((await c.rpc('save_deck', { p_id: null, p_name: deckName, p_commander: 'grubnak', p_cards: GOBLIN_DECK })).error).toBeNull();
+  await gameToMenu(page, u);
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
+  await page.getByRole('button', { name: 'Grubnak Rotgut, Goblin King' }).click();
+  const row = deckRow(page);
+  await expect(row.getByText(deckName).first()).toBeVisible({ timeout: 10000 });
+  await row.getByText(deckName).first().click();
+  await page.getByRole('button', { name: 'Normal', exact: true }).click();
+  await page.getByRole('button', { name: 'Fight!', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Mulligan' })).toBeVisible({ timeout: 20000 });
+  const s = await getState(page);
+  expect(s.players.length).toBe(2);
+});
+
+// ---------- a normal player calling the API ----------
+test('AC515: player direct writes are refused and change nothing', async () => {
+  needDb();
+  const a = await makeUser(); const b = await makeUser();
+  const ca = await loginApi(a); const cb = await loginApi(b);
+  const { data: bDeck } = await cb.rpc('save_deck', { p_id: null, p_name: 'B deck', p_commander: 'grubnak', p_cards: GOBLIN_DECK });
+  const db = await runnerDb();
+  const coinsBefore = (await db.from('wallets').select('coins').eq('user_id', a.id).single()).data.coins;
+  const refusedOr0 = (r) => r.error !== null || (Array.isArray(r.data) && r.data.length === 0);
+  expect(refusedOr0(await ca.from('wallets').update({ coins: 999999 }).eq('user_id', a.id).select())).toBe(true);
+  expect((await ca.from('transactions').insert({ user_id: a.id, delta: 5, reason: 'admin_grant', idem_key: 'k' + letters(10), balance_after: 5 })).error).not.toBeNull();
+  expect((await ca.from('decks').insert({ user_id: b.id, name: 'x', cards: [] })).error).not.toBeNull();
+  expect(refusedOr0(await ca.from('decks').update({ name: 'hacked' }).eq('id', bDeck).select())).toBe(true);
+  expect(refusedOr0(await ca.from('decks').delete().eq('id', bDeck).select())).toBe(true);
+  expect((await ca.rpc('save_deck', { p_id: bDeck, p_name: 'hacked', p_commander: 'grubnak', p_cards: GOBLIN_DECK })).error).not.toBeNull();
+  expect((await ca.rpc('delete_deck', { p_id: bDeck })).error).not.toBeNull();
+  expect((await ca.from('roles').insert({ user_id: a.id, role: 'admin', granted_by: a.id })).error).not.toBeNull();
+  for (const t of ['roles', 'admin_audit', 'settings']) { const r = await ca.from(t).select('*').limit(3); expect(r.error !== null || r.data.length === 0, t).toBe(true); }
+  expect(refusedOr0(await ca.from('profiles').update({ username: 'Hax' + letters(5) }).eq('id', a.id).select())).toBe(true);
+  expect(refusedOr0(await ca.from('profiles').update({ consent_status: 'approved' }).eq('id', a.id).select())).toBe(true);
+  { const r = await ca.from('card_instances').select('id').limit(3); expect(r.error !== null || r.data.length === 0).toBe(true); }
+  expect(refusedOr0(await ca.from('card_instances').update({ owner_id: b.id }).eq('original_owner_id', a.id).select())).toBe(true);
+  expect((await ca.from('card_history').insert({ card_instance_id: '00000000-0000-0000-0000-000000000000', event: 'created' })).error).not.toBeNull();
+  for (const [fn, args] of [['admin_grant_coins', { p_user: a.id, p_amount: 5, p_reason: 'test', p_idem_key: 'k' + letters(10) }], ['admin_ban', { p_user: b.id, p_reason: 'test' }], ['admin_list_players', {}], ['admin_rename_player', { p_user: b.id, p_new_name: 'Zz' + letters(6), p_reason: 'test' }], ['admin_set_setting', { p_key: 'max_decks', p_value: 99, p_reason: 'test' }], ['admin_card_lookup', { p_instance: '00000000-0000-0000-0000-000000000000' }]]) {
+    expect((await ca.rpc(fn, args)).error, fn).not.toBeNull();
+  }
+  expect((await db.from('wallets').select('coins').eq('user_id', a.id).single()).data.coins).toBe(coinsBefore);
+  const { data: bd } = await db.from('decks').select('name').eq('id', bDeck).single();
+  expect(bd.name).toBe('B deck');
+  const { data: ap } = await db.from('profiles').select('username,consent_status').eq('id', a.id).single();
+  expect(ap.username).toBe(a.username);
+  expect((await db.from('roles').select('user_id').eq('user_id', a.id)).data.length).toBe(0);
+});
+
+test('AC516: a player reads only their own profile, wallet and decks', async () => {
+  needDb();
+  const a = await makeUser(); const b = await makeUser();
+  const ca = await loginApi(a); const cb = await loginApi(b);
+  await cb.rpc('save_deck', { p_id: null, p_name: 'B deck', p_commander: 'grubnak', p_cards: GOBLIN_DECK });
+  await ca.rpc('save_deck', { p_id: null, p_name: 'A deck', p_commander: 'grubnak', p_cards: GOBLIN_DECK });
+  for (const [t, col] of [['profiles', 'id'], ['wallets', 'user_id'], ['decks', 'user_id']]) {
+    const { data, error } = await ca.from(t).select('*');
+    expect(error, t).toBeNull();
+    expect(data.length, t).toBeGreaterThan(0);
+    expect(data.every((r) => r[col] === a.id), `${t} only own rows`).toBe(true);
+  }
+});
+
+test('AC517: logged out, only the public functions work', async () => {
+  needDb();
+  const anon = await anonDb();
+  for (const t of ['profiles', 'wallets', 'transactions', 'decks', 'card_instances', 'card_history', 'roles', 'bans', 'settings', 'admin_audit', 'player_stats', 'contact_messages']) {
+    const r = await anon.from(t).select('*').limit(3);
+    expect(r.error !== null || r.data.length === 0, t).toBe(true);
+  }
+  for (const fn of ['my_status', 'my_collection', 'resend_parent_consent', 'am_i_admin', 'admin_list_players']) expect((await anon.rpc(fn)).error, fn).not.toBeNull();
+  expect((await anon.rpc('save_deck', { p_id: null, p_name: 'x', p_commander: 'grubnak', p_cards: [] })).error).not.toBeNull();
+  expect((await anon.rpc('username_available', { p_username: newName() })).data.ok).toBe(true);
+  expect((await anon.rpc('server_info')).data.server_kind).toBe('test');
+  const info = await anon.rpc('parent_consent_info', { p_token: letters(30) });
+  expect(info.error === null || !/permission denied/i.test(info.error.message)).toBe(true);
+});
+
+// ---------- back counter ----------
+test('AC518: a non-admin sees "Not an admin" after 2-step and is refused by admin functions', async ({ page }) => {
+  needDb();
+  const u = await makeUser();
+  await adminSiteSignIn(page, u);
+  await adminSiteSetup2Step(page);
+  await expect(page.getByText('Not an admin')).toBeVisible({ timeout: 15000 });
+  const c = await loginApi(u);
+  const { data: f } = await c.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'g' + letters(6) });
+  await c.auth.mfa.challengeAndVerify({ factorId: f.id, code: await totpCode(f.totp.secret) });
+  expect((await c.rpc('admin_list_players', {})).error).not.toBeNull();
+});
+
+test('AC519 + AC520: admin password-only goes to 2-step; then the player list finds players and shows money spent', async ({ page }) => {
+  needDb();
+  test.setTimeout(60000);
+  const u = await makeUser();
+  await (await runnerDb()).from('roles').insert({ user_id: u.id, role: 'admin', granted_by: u.id });
+  const aal1 = await loginApi(u);
+  expect((await aal1.rpc('admin_list_players', {})).error.message).toMatch(/2-step login required/);
+  const target = await makeUser();
+  await adminSiteSignIn(page, u);
+  await adminSiteSetup2Step(page, true);
+  await expect(page.getByRole('link', { name: 'Players' }).or(page.getByRole('button', { name: 'Players' })).first()).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('[data-testid=test-banner]')).toBeVisible();
+  const search = page.getByLabel('Search players');
+  await search.fill(target.username.slice(2, 10));
+  await search.press('Enter');
+  await expect(page.locator('[data-testid=player-link]', { hasText: target.username })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText('$0.00').first()).toBeVisible();
+  await search.fill(target.email.split('@')[0]);
+  await search.press('Enter');
+  await expect(page.locator('[data-testid=player-link]', { hasText: target.username })).toBeVisible({ timeout: 10000 });
+});
+
+test('AC520: admin list paging works with more than 25 players', async () => {
+  needDb();
+  const ad = await makeAdmin();
+  for (let i = 0; i < 3; i++) await makeUser();
+  const p1 = await ad.c.rpc('admin_list_players', { p_search: '', p_page: 1, p_page_size: 2 });
+  const p2 = await ad.c.rpc('admin_list_players', { p_search: '', p_page: 2, p_page_size: 2 });
+  expect(p1.error).toBeNull(); expect(p2.error).toBeNull();
+  expect(JSON.stringify(p1.data)).not.toEqual(JSON.stringify(p2.data));
+});
+
+test('AC521 + AC543: player cards have ids; Card lookup shows owners, origin and history; transfer shows both owners', async ({ page }) => {
+  needDb();
+  const ad = await makeAdmin();
+  const u = await makeUser(); const v = await makeUser();
+  const pc = await ad.c.rpc('admin_player_cards', { p_user: u.id });
+  expect(pc.error).toBeNull();
+  const db = await runnerDb();
+  const { data: inst } = await db.from('card_instances').select('id').eq('original_owner_id', u.id).limit(1).single();
+  expect(JSON.stringify(pc.data)).toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/);
+  const look = await ad.c.rpc('admin_card_lookup', { p_instance: inst.id });
+  expect(look.error).toBeNull();
+  expect(JSON.stringify(look.data)).toContain('starter');
+  expect(JSON.stringify(look.data)).toContain(u.username);
+  // move it as the trading code would, then both owners show
+  await db.from('card_instances').update({ owner_id: v.id }).eq('id', inst.id);
+  await db.from('card_history').insert({ card_instance_id: inst.id, event: 'transferred', from_user: u.id, to_user: v.id, reason: 'trade' });
+  const look2 = JSON.stringify((await ad.c.rpc('admin_card_lookup', { p_instance: inst.id })).data);
+  expect(look2).toContain(u.username); expect(look2).toContain(v.username);
+  expect((await ad.c.rpc('admin_card_lookup', { p_instance: '00000000-0000-0000-0000-000000000000' })).error).not.toBeNull();
+  // UI: card link from the player page opens Card lookup
+  const w = await makeUser(); await (await runnerDb()).from('roles').insert({ user_id: w.id, role: 'admin', granted_by: w.id });
+  await adminSiteSignIn(page, w);
+  await adminSiteSetup2Step(page);
+  await page.goto(`${ADMIN_SITE}/#/player/${v.id}`);
+  await expect(page.locator('[data-testid=player-name]')).toContainText(v.username, { timeout: 15000 });
+  await page.locator('[data-testid=card-link]').first().click();
+  await expect(page.getByText('starter').first()).toBeVisible({ timeout: 10000 });
+  await page.goto(`${ADMIN_SITE}/#/card/not-a-card`);
+  await expect(page.getByText('That is not a card id.')).toBeVisible({ timeout: 10000 });
+});
+
+test('AC522: grant coins needs a reason, is idempotent and audited', async () => {
+  needDb();
+  const ad = await makeAdmin(); const u = await makeUser();
+  const db = await runnerDb();
+  const coins = async () => (await db.from('wallets').select('coins').eq('user_id', u.id).single()).data.coins;
+  const before = await coins();
+  expect((await ad.c.rpc('admin_grant_coins', { p_user: u.id, p_amount: 75, p_reason: '', p_idem_key: 'k' + letters(12) })).error).not.toBeNull();
+  const key = 'k' + letters(12);
+  expect((await ad.c.rpc('admin_grant_coins', { p_user: u.id, p_amount: 75, p_reason: 'test gift', p_idem_key: key })).error).toBeNull();
+  await ad.c.rpc('admin_grant_coins', { p_user: u.id, p_amount: 75, p_reason: 'test gift', p_idem_key: key });
+  expect(await coins()).toBe(before + 75);
+  const a = await auditRows(u.id);
+  expect(a.some((r) => r.reason === 'test gift' && r.before && r.after)).toBe(true);
+});
+
+test('AC523: ban for 3 days blocks saving and shows the ban message; unban restores; both audited', async ({ page }) => {
+  needDb();
+  const ad = await makeAdmin(); const u = await makeUser();
+  const until = new Date(Date.now() + 3 * 864e5).toISOString();
+  expect((await ad.c.rpc('admin_ban', { p_user: u.id, p_reason: 'rude names test', p_expires_at: until })).error).toBeNull();
+  const c = await loginApi(u);
+  expect((await c.rpc('save_deck', { p_id: null, p_name: 'A', p_commander: 'grubnak', p_cards: GOBLIN_DECK })).error.message).toMatch(/banned until/);
+  await gameSignIn(page, u);
+  await expect(page.getByRole('heading', { name: /^Your account is banned until / })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText('rude names test')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Play offline (practice)', exact: true })).toBeVisible();
+  expect((await ad.c.rpc('admin_unban', { p_user: u.id, p_reason: 'served time' })).error).toBeNull();
+  expect((await c.rpc('save_deck', { p_id: null, p_name: 'A', p_commander: 'grubnak', p_cards: GOBLIN_DECK })).error).toBeNull();
+  const reasons = (await auditRows(u.id)).map((r) => r.reason);
+  expect(reasons).toContain('rude names test'); expect(reasons).toContain('served time');
+});
+
+test('AC524: ban needs a reason; admins cannot ban themselves or other admins', async () => {
+  needDb();
+  const ad = await makeAdmin(); const ad2 = await makeAdmin(); const u = await makeUser();
+  expect((await ad.c.rpc('admin_ban', { p_user: u.id, p_reason: '' })).error).not.toBeNull();
+  expect((await ad.c.rpc('admin_ban', { p_user: ad.id, p_reason: 'self test' })).error).not.toBeNull();
+  expect((await ad.c.rpc('admin_ban', { p_user: ad2.id, p_reason: 'other admin' })).error).not.toBeNull();
+});
+
+test('AC525: audit log is newest first and players cannot change it', async () => {
+  needDb();
+  const ad = await makeAdmin(); const u = await makeUser();
+  await ad.c.rpc('admin_grant_coins', { p_user: u.id, p_amount: 5, p_reason: 'first one', p_idem_key: 'k' + letters(12) });
+  await ad.c.rpc('admin_grant_coins', { p_user: u.id, p_amount: 5, p_reason: 'second one', p_idem_key: 'k' + letters(12) });
+  const log = await ad.c.rpc('admin_audit_log', { p_page: 1, p_page_size: 50, p_target: u.id });
+  expect(log.error).toBeNull();
+  const s = JSON.stringify(log.data);
+  expect(s.indexOf('second one')).toBeGreaterThanOrEqual(0);
+  expect(s.indexOf('second one')).toBeLessThan(s.indexOf('first one'));
+  const pl = await loginApi(u);
+  const del = await pl.from('admin_audit').delete().eq('target_user', u.id).select();
+  expect(del.error !== null || del.data.length === 0).toBe(true);
+  expect((await auditRows(u.id)).length).toBe(2);
+});
+
+test('AC526: admin site security headers and robots.txt', async ({ request }) => {
+  const res = await request.get(ADMIN_SITE + '/');
+  expect(res.ok()).toBe(true);
+  const h = res.headers();
+  let headersOk = (h['x-frame-options'] || '').toUpperCase() === 'DENY' && /frame-ancestors 'none'/.test(h['content-security-policy'] || '') && /noindex/.test(h['x-robots-tag'] || '');
+  if (!headersOk) {
+    const { fs, path, admin } = await adminDir();
+    const v = fs.readFileSync(path.join(admin, 'vercel.json'), 'utf8');
+    headersOk = /X-Frame-Options/i.test(v) && /DENY/.test(v) && /frame-ancestors 'none'/.test(v) && /noindex/.test(v);
+  }
+  expect(headersOk).toBe(true);
+  const robots = await (await request.get(ADMIN_SITE + '/robots.txt')).text();
+  expect(robots).toMatch(/User-agent:\s*\*/i);
+  expect(robots).toMatch(/Disallow:\s*\/\s*$/im);
+});
+
+test('AC539: admin rename refuses bad names and shows the new name in the game', async ({ page }) => {
+  needDb();
+  const ad = await makeAdmin(); const u = await makeUser(); const other = await makeUser();
+  for (const bad of [other.username.toUpperCase(), 'Grubnak', 'xshitx' + letters(3)]) expect((await ad.c.rpc('admin_rename_player', { p_user: u.id, p_new_name: bad, p_reason: 'test rename' })).error, bad).not.toBeNull();
+  const nn = 'R' + letters(10);
+  expect((await ad.c.rpc('admin_rename_player', { p_user: u.id, p_new_name: nn, p_reason: 'test rename' })).error).toBeNull();
+  await gameToMenu(page, u);
+  await page.getByRole('button', { name: 'Profile', exact: true }).click();
+  await expect(page.getByText(nn)).toBeVisible();
+  const a = JSON.stringify(await auditRows(u.id));
+  expect(a).toContain(u.username); expect(a).toContain(nn);
+});
+
+test('AC540: a bad word added in Settings blocks names at once; bad entries refused; audited', async () => {
+  needDb();
+  const ad = await makeAdmin();
+  const db = await runnerDb();
+  const word = 'zq' + letters(6);
+  const cur = (await db.from('settings').select('value').eq('key', 'blocked_words').single()).data.value;
+  try {
+    expect((await ad.c.rpc('admin_set_setting', { p_key: 'blocked_words', p_value: [...cur, 'two words'], p_reason: 'test words' })).error).not.toBeNull();
+    expect((await ad.c.rpc('admin_set_setting', { p_key: 'blocked_words', p_value: [...cur, 'abc123'], p_reason: 'test words' })).error).not.toBeNull();
+    expect((await ad.c.rpc('admin_set_setting', { p_key: 'blocked_words', p_value: [...cur, word], p_reason: 'test words' })).error).toBeNull();
+    const r = await (await anonDb()).rpc('username_available', { p_username: 'A' + word });
+    expect(r.data.ok).toBe(false);
+    expect(r.data.problem).toBe('Please pick a different name.');
+    const { data: au } = await db.from('admin_audit').select('before,after,reason').eq('admin_id', ad.id).eq('reason', 'test words');
+    expect(JSON.stringify(au)).toContain(word);
+  } finally {
+    const now = (await db.from('settings').select('value').eq('key', 'blocked_words').single()).data.value;
+    await ad.c.rpc('admin_set_setting', { p_key: 'blocked_words', p_value: now.filter((w) => w !== word), p_reason: 'test cleanup' });
+  }
+});
+
+test('AC541: sign-up coins setting applies to new players only', async () => {
+  needDb();
+  const ad = await makeAdmin();
+  const db = await runnerDb();
+  const coins = async (u) => (await db.from('wallets').select('coins').eq('user_id', u.id).single()).data.coins;
+  const early = await makeUser();
+  const earlyCoins = await coins(early);
+  try {
+    expect((await ad.c.rpc('admin_set_setting', { p_key: 'signup_bonus_coins', p_value: 250, p_reason: 'test coins' })).error).toBeNull();
+    const late = await makeUser();
+    expect(await coins(late)).toBe(250);
+    expect(await coins(early)).toBe(earlyCoins);
+  } finally {
+    await ad.c.rpc('admin_set_setting', { p_key: 'signup_bonus_coins', p_value: 300, p_reason: 'test cleanup' });
+  }
+});
+
+test('AC542: under-13 state for the admin; admin withdraw blocks and is audited; no tokens shown', async () => {
+  needDb();
+  const ad = await makeAdmin(); const u = await makeUser({ age: 'under_13' });
+  const list = JSON.stringify((await ad.c.rpc('admin_list_players', { p_search: u.username })).data);
+  expect(list).toContain(u.username);
+  expect(list).toMatch(/pending|waiting/i);
+  await approveChild(u);
+  const det = await ad.c.rpc('admin_player_detail', { p_user: u.id });
+  const s = JSON.stringify(det.data);
+  expect(s).toContain(u.email); expect(s).toContain('email_plus'); expect(s).toContain('2026-10-28-draft'); expect(s).toContain('approved');
+  expect(s).not.toMatch(/token/i);
+  expect((await ad.c.rpc('admin_revoke_consent', { p_user: u.id, p_reason: '' })).error).not.toBeNull();
+  expect((await ad.c.rpc('admin_revoke_consent', { p_user: u.id, p_reason: 'parent asked by form' })).error).toBeNull();
+  const c = await loginApi(u);
+  expect((await c.rpc('save_deck', { p_id: null, p_name: 'A', p_commander: 'grubnak', p_cards: GOBLIN_DECK })).error).not.toBeNull();
+  expect((await auditRows(u.id)).map((r) => r.reason)).toContain('parent asked by form');
+});
+
+test('AC544: the game shows the TEST SERVER bar; server_kind cannot be changed', async ({ page }) => {
+  needDb();
+  await page.goto(ONLINE);
+  await expect(page.getByText('TEST SERVER — practice accounts only', { exact: true })).toBeVisible({ timeout: 15000 });
+  const bar = await page.getByText('TEST SERVER — practice accounts only', { exact: true }).boundingBox();
+  expect(bar.y).toBeLessThan(60);
+  await expect(page.getByRole('heading', { name: 'Wrong server' })).toHaveCount(0);
+  const ad = await makeAdmin();
+  expect((await ad.c.rpc('admin_set_setting', { p_key: 'server_kind', p_value: 'production', p_reason: 'test' })).error).not.toBeNull();
+});
+
+test('AC546: Contact us reaches the Inbox; answer queues a reply; rate limit; closed to players', async ({ page }) => {
+  needDb();
+  const ip = fakeIp();
+  const parent = await anonDb({ 'x-forwarded-for': ip });
+  const reply = newEmail(); const child = newName(); const msg = 'Please delete my child account ' + letters(8);
+  const r1 = await parent.rpc('contact_submit', { p_topic: 'delete_account', p_message: msg, p_reply_email: reply, p_name: 'A Parent', p_child_username: child });
+  expect(r1.error).toBeNull();
+  const ad = await makeAdmin();
+  const inbox = await ad.c.rpc('admin_inbox', { p_status: 'new', p_page: 1, p_page_size: 200 });
+  const s = JSON.stringify(inbox.data);
+  expect(s).toContain(msg); expect(s).toContain(reply); expect(s).toContain(child);
+  const id = r1.data.id;
+  expect((await ad.c.rpc('admin_inbox_mark', { p_id: id, p_status: 'handled', p_note: 'deleted it', p_reply: 'Done, the account is gone.' })).error).toBeNull();
+  const db = await runnerDb();
+  const { data: ob } = await db.from('email_outbox').select('kind,to_email').eq('to_email', reply);
+  expect(ob.map((r) => r.kind)).toContain('contact_reply');
+  expect((await db.from('contact_messages').select('status').eq('id', id).single()).data.status).toBe('handled');
+  expect(JSON.stringify((await ad.c.rpc('admin_audit_log', { p_page: 1, p_page_size: 50 })).data)).toContain('deleted it');
+  let refused = null;
+  for (let i = 0; i < 6 && !refused; i++) {
+    const r = await parent.rpc('contact_submit', { p_topic: 'question', p_message: 'Hello there ' + i, p_reply_email: null, p_name: null, p_child_username: null });
+    if (r.error) refused = r.error.message;
+  }
+  expect(refused).toMatch(/too many messages/);
+  const pl = await loginApi(await makeUser());
+  for (const cl of [pl, await anonDb()]) { const r = await cl.from('contact_messages').select('*').limit(3); expect(r.error !== null || r.data.length === 0).toBe(true); }
+  // the game form: refusal keeps the text, success shows the thanks line
+  await page.goto('/?contact=1');
+  await expect(page.getByRole('heading', { name: 'Contact us', exact: true })).toBeVisible({ timeout: 15000 });
+  await page.getByLabel('Topic', { exact: true }).selectOption({ label: 'Question' });
+  await page.getByLabel('Message', { exact: true }).fill('hey');
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.getByRole('alert').first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByLabel('Message', { exact: true })).toHaveValue('hey');
+  await page.getByLabel('Message', { exact: true }).fill('A real question about decks ' + letters(5));
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.getByText("Thanks, we got your message. If you gave an email, we'll answer from a no-reply address.").or(page.getByText(/too many messages/))).toBeVisible({ timeout: 10000 });
+});
+
+test.describe('online on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test('AC504: login page loads on a phone-size viewport with no page errors', async ({ page }) => {
+    needDb();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(ONLINE);
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(300);
+    expect(errors).toEqual([]);
+  });
+});
