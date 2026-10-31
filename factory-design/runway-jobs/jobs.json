@@ -542,6 +542,15 @@
     }
    ],
    "prompt": "Small cartoon gnome girl pilot, blue ponytail, goggles on her forehead, with a propeller and two bat-like mechanical wings on a backpack on her BACK (propeller behind her shoulders, never on her head). Front view. Two parts. She hovers just above the floor the whole time, propeller spinning, wings flapping slowly. Part 1 (0-3 s), spark toss: she pulls her right hand back by her shoulder, a small glowing spark appears in her palm, she pushes the arm forward toward the camera and lets it go, then returns to hover. Part 2 (3-6 s), bumped back: like a gust of wind, her chest and head tip back, arms swing out, she dips lower and the wings pause, then she recovers to the start hover pose so it loops. Only body and limbs move. Face frozen, lips still, no blinking. Camera locked, full body in frame, plain grey background. Smooth 3D cartoon game animation."
+  },
+  {
+   "id": "intro-test-delver",
+   "character": "dwarf-crystal-drunk-delver",
+   "move": "intro-test",
+   "image": "intro-test-delver--start.jpg",
+   "duration": 10,
+   "ratio": "1280:720",
+   "prompt": "Painted dark-fantasy card illustration comes to life, cinematic. The jolly dwarf miner with the blue crystal-studded braided beard and miner helmet lowers his pickaxe, picks a glowing blue crystal from his pouch and chomps it happily; his cheeks glow blue, his eyes go swirly and dizzy, he hiccups and sways in a happy drunken wobble, grinning. Blue crystals glitter and sparkle all around the mine. Keep his face, beard, helmet and outfit exactly as in the picture. Slow gentle camera push-in. Comic and kid-friendly."
   }
  ]
 }
