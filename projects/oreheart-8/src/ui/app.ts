@@ -294,6 +294,7 @@ export class App {
   lastOptions: any = {};
   lastTutorial = false;
   handKey = '';
+  fitKey = ''; // Oct 31 (Ken: lag spurts when mining / moving): fitHand's own key; it used to share handKey with renderHand, so every action rebuilt the whole hand
   tokens = new Map<string, El>();
   dialogCard = '';
   respStart = 0;
@@ -1044,12 +1045,12 @@ export class App {
     this.fxStarted = false; this.uidCard.clear(); this.siteOwner.clear();
     this.pick = null;
     this.phaseKey = '';
-    this.handKey = '';
+    this.handKey = ''; this.fitKey = '';
     this.seenHand = new Set();
   }
 
   showMatch() {
-    this.handKey = '';
+    this.handKey = ''; this.fitKey = '';
     this.clear();
     audio.setMusicMode('match');
     const r = this.r;
@@ -1398,14 +1399,14 @@ export class App {
     if (!m || !this.view) return;
     const key = window.innerWidth + 'x' + window.innerHeight;
     // sized once per window shape, from the home view, so zooming or panning the board never resizes the hand
-    if (this.handKey === key && m.style.getPropertyValue('--hcw')) return;
-    if (this.handKey !== key && this.cam && this.cam.zoom && Math.abs(this.cam.zoom - 1) > 0.01 && this.handKey) return;
+    if (this.fitKey === key && m.style.getPropertyValue('--hcw')) return;
+    if (this.fitKey !== key && this.cam && this.cam.zoom && Math.abs(this.cam.zoom - 1) > 0.01 && this.fitKey) return;
     const bb = (this.r.board as El).getBoundingClientRect();
     let bottom = 0;
     for (let col = 1; col <= BW; col++) { const rc = this.view.cellRect(BH, col); bottom = Math.max(bottom, bb.top + rc.y + rc.h); }
     this.homeRowBottom = bottom; // Oct 30 Ken playtest: the tucked hand rests below the home row (measured in the home view)
     const vh = window.innerHeight, base = Math.min(vh, window.innerWidth * 0.5625) * 0.2455;
-    this.handKey = key;
+    this.fitKey = key;
     // phones (very short windows) keep the big owner-size hand; everywhere else the raised hand, with its hovered card, stays below the home row
     this.handRoom = Infinity; // Round 14: the owner's layout wins: hovered card pops to ~1.6x
     const fit = (vh - bottom - 6) / (1.4861 * 1.15);
