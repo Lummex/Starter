@@ -10946,7 +10946,7 @@ test('AC419: the Gnome Plow is a gnome seated on his plow: the plow is its mount
   const f0 = await fig();
   expect(f0.items.map((i) => i.name + '@' + i.bone)).toContain('plow@ground');
   expect(f0.poseDelta, 'not in its bind pose').toBeGreaterThan(0.05);
-  expect(Math.abs(f0.height - 0.48)).toBeLessThanOrEqual(0.08);
+  expect(Math.abs(f0.height - 0.852), 'owner check change (Ken via Ledger, Oct 31): height is the real-world table value (3.25 ft = 0.852 squares), not the old Studio 0.48').toBeLessThanOrEqual(0.08);
   const rig = () => page.evaluate(() => { const r = window.__plowRigs || []; return r.length ? JSON.parse(JSON.stringify(r[r.length - 1])) : null; });
   const r0 = await rig();
   expect(r0, 'plow rig').toBeTruthy();
