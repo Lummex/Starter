@@ -116,7 +116,7 @@ export function challengePage(factorId: string, onDone: () => void, onSignOut: (
 
 export function notAdminPage(onSignOut: () => void) {
   mount(card('Not an admin',
-    h('p', { 'data-testid': 'not-admin' }, 'This account is not an admin, so the back counter is closed to it.'),
+    h('p', { 'data-testid': 'not-admin' }, 'This account has no access, so the back counter is closed to it.'),
     h('button', { type: 'button', class: 'primary', onclick: onSignOut }, 'Sign out')));
 }
 

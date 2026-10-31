@@ -22,7 +22,7 @@ export function client(): SupabaseClient {
 export function messageOf(e: unknown): string {
   const m = (e as { message?: string })?.message ?? String(e);
   if (/2-step login required/i.test(m)) return 'This needs your 2-step login. Sign in again.';
-  if (/not admin/i.test(m)) return 'This account is not an admin.';
+  if (/not admin/i.test(m)) return 'This account has no admin access.';
   return m;
 }
 

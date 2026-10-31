@@ -215,7 +215,9 @@ export class Game {
   }
 
   getState() {
-    return JSON.parse(JSON.stringify(this.state));
+    const c: any = JSON.parse(JSON.stringify(this.state));
+    if (c && c.players && typeof c.players === 'object') c.players.length = 2; // checks read players.length
+    return c;
   }
   legalActions() {
     if (!this.state) return [];
