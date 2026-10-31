@@ -1,6 +1,7 @@
 // Sound effects and Goblin voices. Nothing is created until the first user gesture.
 // Oct 31 (Ken: "upgrade the sound"): effects play Brush's files in /audio/sfx/ (studio/sound-spec.json); the old synthesized
 // sound plays until a file has loaded (or if it fails to decode). Voices (voiceLine) stay synthesized.
+// Oct 31 (Ken: "realistic punches"): every bonk / clink / Commander hit also plays a punch layer (punch-*.ogg, PUNCH_FOR).
 const LS = (k: string, d: number) => { const v = parseInt(localStorage.getItem(k) || '', 10); return isNaN(v) ? d : Math.max(0, Math.min(100, v)); };
 
 /** One sound event: its files in /audio/sfx/ (random pick when several), base volume, random pitch range (+/- semitones). */
@@ -14,14 +15,18 @@ export const SFX: Record<string, SfxDef> = {
   melee: D('melee', 0.9, 1), ranged: D('ranged', 0.85, 1), bonk: D(['bonk-1', 'bonk-2', 'bonk-3'], 0.9, 1), clink: D(['clink-1', 'clink-2', 'clink-3'], 0.85, 0.8),
   thud: D('thud', 0.85, 1), pick: D('mine-pick', 0.8, 1), shatter: D('shatter', 0.85, 0.5), 'defeat-poof': D('defeat-poof', 0.85, 0.8),
   stronghold: D('commander-hit', 1, 0.5), kaboom: D('kaboom', 1, 0.5), 'turn-start': D('turn-start', 0.85 * 0.6, 0), win: D('win', 1, 0), lose: D('lose', 1, 0),
+  // Oct 31 (Ken: "realistic punches"): layered under the hit sounds inside play() (studio/voice-spec.json "punches")
+  punch: D(['punch-1', 'punch-2', 'punch-3'], 0.8, 1), 'punch-armour': D(['punch-armour-1', 'punch-armour-2'], 0.8, 1), 'punch-heavy': D('punch-heavy', 0.9, 1),
 };
+/** Which punch layer goes under which hit sound: bonk = unarmoured hit, clink = armoured hit, stronghold = a Commander hit. */
+export const PUNCH_FOR: Record<string, string> = { bonk: 'punch', clink: 'punch-armour', stronghold: 'punch-heavy' };
 /** All 13 spells have their own file, started together with the spell FX. */
 export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-rush', 'battle-cry', 'healing-light', 'shield-bubble', 'second-wind', 'prospectors-prayer', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex'];
 for (const id of SPELL_SOUNDS) SFX['spell:' + id] = D('spell-' + id, 1, 0);
 const OLD_SPELL: Record<string, string> = { fireball: 'fireball', 'meteor-strike': 'meteor', 'healing-light': 'heal', 'second-wind': 'heal', 'shield-bubble': 'bubble' };
 const MAX_VOICES = 3;
 /** Test hook entry: which key/file played, from the file or the synth fallback, its playbackRate and volume. */
-export type SfxPlay = { key: string; file: string | null; from: 'file' | 'synth' | 'muted' | 'locked'; rate: number; vol: number; voices: number; t: number; played: boolean };
+export type SfxPlay = { key: string; file: string | null; from: 'file' | 'synth' | 'muted' | 'locked'; rate: number; vol: number; voices: number; t: number; played: boolean; punch?: { key: string; file: string | null; from: string; rate: number } | null };
 
 class AudioEngine {
   ctx: AudioContext | null = null;
@@ -163,23 +168,37 @@ class AudioEngine {
   sfxState() {
     const active: Record<string, number> = {};
     for (const [k, v] of Object.entries(this.voices)) if (v.length) active[k] = v.length;
-    return { plays: this.sfxPlays.slice(), files: { ...this.fileState }, loaded: this.bufs.size, map: Object.fromEntries(Object.entries(SFX).map(([k, d]) => [k, d.files.map(sfxUrl)])),
+    return { plays: this.sfxPlays.slice(), files: { ...this.fileState }, loaded: [...this.bufs.keys()].filter((n) => !n.startsWith('punch')).length, punchLoaded: [...this.bufs.keys()].filter((n) => n.startsWith('punch')).length, map: Object.fromEntries(Object.entries(SFX).map(([k, d]) => [k, d.files.map(sfxUrl)])),
       gain: this.sfxGain ? this.sfxGain.gain.value : null, maxVoices: MAX_VOICES, active };
   }
   /** Plays a named effect: its sound file when loaded, otherwise the old synthesized sound. Unknown names are ignored. */
   play(name: string, faction = 'goblins') {
-    this.playKey(name === 'step' ? 'step:' + faction : name, () => this.synth(name, faction));
+    const e = this.playKey(name === 'step' ? 'step:' + faction : name, () => this.synth(name, faction));
+    if (PUNCH_FOR[name] && e.played) e.punch = this.punch(PUNCH_FOR[name]);
+  }
+  private heavyAt = -1e9;
+  /** The punch layer under a hit. A Commander hit gets only the heavy punch: its board bonk and its stronghold sound land within a few ms of each other. */
+  private punch(key: string) {
+    const now = performance.now();
+    if (key === 'punch' && now - this.heavyAt < 250) return null;
+    if (key === 'punch-heavy') {
+      this.heavyAt = now;
+      const c = this.ctx, vs = this.voices.punch || [];
+      if (c) for (const v of vs.slice()) if (c.currentTime - v.t < 0.25) { try { v.src.stop(); } catch { /* ended */ } }
+    }
+    const p = this.playKey(key, () => { /* no synth punch: the hit's own sound carries it until the file loads */ }, true);
+    return { key, file: p.file, from: p.from === 'synth' ? 'none' : p.from, rate: p.rate }; // logged on the hit's own entry (sfxState().plays[i].punch)
   }
   /** A spell's own sound (spell-<id>.ogg), started at the same moment as its FX; a generic sound for unknown spells. */
   spell(id: string) {
     const key = 'spell:' + id;
     this.playKey(SFX[key] ? key : 'spell', () => this.synth(OLD_SPELL[id] || 'spell'));
   }
-  private playKey(key: string, fallback: () => void) {
+  private playKey(key: string, fallback: () => void, quiet = false): SfxPlay {
     const def = SFX[key];
     const e: SfxPlay = { key, file: null, from: 'synth', rate: 1, vol: 0, voices: 0, t: Math.round(performance.now()), played: false };
-    const log = () => { this.sfxPlays.push(e); if (this.sfxPlays.length > 300) this.sfxPlays.shift(); };
-    if (!this.ok()) { e.from = this.muted ? 'muted' : 'locked'; log(); return; }
+    const log = () => { if (quiet) return; this.sfxPlays.push(e); if (this.sfxPlays.length > 300) this.sfxPlays.shift(); };
+    if (!this.ok()) { e.from = this.muted ? 'muted' : 'locked'; log(); return e; }
     let file: string | null = null;
     if (def) {
       let i = 0;
@@ -193,7 +212,7 @@ class AudioEngine {
       e.file = sfxUrl(file);
     }
     const buf = file ? this.bufs.get(file) : undefined;
-    if (!def || !buf) { fallback(); e.played = true; log(); return; }
+    if (!def || !buf) { fallback(); e.played = true; log(); return e; }
     const c = this.ctx!;
     const rate = Math.pow(2, ((Math.random() * 2 - 1) * def.st) / 12), vol = def.vol * Math.pow(10, ((Math.random() * 2 - 1) * 1.5) / 20);
     const vs = (this.voices[key] ||= []);
@@ -207,6 +226,7 @@ class AudioEngine {
     src.start();
     Object.assign(e, { from: 'file', rate, vol, voices: vs.length, played: true });
     log();
+    return e;
   }
 
   /** The old synthesized effects: the fallback until a file has loaded. */
