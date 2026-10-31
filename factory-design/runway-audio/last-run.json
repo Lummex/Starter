@@ -1,0 +1,70 @@
+{
+ "at": "2026-10-31T10:40:46.521Z",
+ "made": 16,
+ "results": [
+  {
+   "id": "cand-grungle",
+   "ok": true
+  },
+  {
+   "id": "cand-monster",
+   "ok": true
+  },
+  {
+   "id": "cand-pip",
+   "ok": true
+  },
+  {
+   "id": "cand-xylar",
+   "ok": true
+  },
+  {
+   "id": "cand-ragnar",
+   "ok": true
+  },
+  {
+   "id": "cand-rusty",
+   "ok": true
+  },
+  {
+   "id": "cand-brodie",
+   "ok": true
+  },
+  {
+   "id": "cand-clint",
+   "ok": true
+  },
+  {
+   "id": "cand-bernard",
+   "ok": true
+  },
+  {
+   "id": "cand-malachi",
+   "ok": true
+  },
+  {
+   "id": "cand-mabel",
+   "ok": true
+  },
+  {
+   "id": "cand-myrna",
+   "ok": true
+  },
+  {
+   "id": "cand-kirk",
+   "ok": true
+  },
+  {
+   "id": "cand-billy",
+   "ok": true
+  },
+  {
+   "id": "cand-wanda",
+   "ok": true
+  },
+  {
+   "id": "cand-elliot",
+   "ok": true
+  }
+ ]
+}
