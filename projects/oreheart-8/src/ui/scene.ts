@@ -933,7 +933,7 @@ const _embV = new THREE.Vector3();
       let f = figs.get(c.uid);
       const tgt = world(c.row, c.col);
       if (!f) {
-        ensure3d(c.cardId);
+        ensure3d(c.cardId); audio.voicePreload(c.cardId); // Oct 31: its voice lines load once it is on the board
         const m = makeFigure(c);
         const born = events.some((e) => e.type === 'summon' && e.uid === c.uid) ? now : 0;
         m.group.position.copy(tgt);
@@ -1029,7 +1029,7 @@ const _embV = new THREE.Vector3();
         f.c3d.setSpeed?.(role, k); f.atkMs = role === 'special' ? Math.max(600, (d / k) * 1000) : 600;
         if (!wait) f.c3d.play(role); // start the clip now: a defender-strike-back defeat can end this figure before the next frame
       }
-      const swing = () => { if (!shot) audio.play(ranged ? 'ranged' : 'melee'); if (f.finished) audio.voiceLine('yell'); }; // a shot's 'ranged' sound plays at its release
+      const swing = () => { if (!shot) audio.play(ranged ? 'ranged' : 'melee'); audio.unitAttack(f.cardId, f.uid, f.finished); }; // a shot's 'ranged' sound plays at its release
       if (wait) setTimeout(swing, wait); else swing();
       const dab: string[] = def ? CARDS[def.cardId]?.abilities || [] : [];
       const dc = def ? st.board.creatures.find((x: any) => x.uid === def.uid) : null;
@@ -1308,7 +1308,7 @@ const _embV = new THREE.Vector3();
     if (kind !== 'look') { cmd[side].lookUntil = 0; cmd[side].impatient = 0; }
     const g3 = cmd[side].g3d;
     if (g3) g3.play(kind === 'cheer' ? (Math.random() < 0.7 ? (Math.random() < 0.5 ? 'laugh' : 'point') : 'idle') : kind === 'flinch' ? 'hit' : kind === 'cast' ? 'cast' : kind === 'groan' ? 'surprised' : 'idle');
-    if (cmd[side].id === 'grubnak') audio.voiceLine(kind === 'cheer' ? 'laugh' : kind === 'groan' ? 'sulk' : kind === 'flinch' ? 'yell' : 'grunt');
+    audio.commanderEmote(cmd[side].id, side, kind); // Grubnak's grunts; with voices on a flinch / cast speaks a line
   }
 
   /** Turn toward the player/camera for a moment (ms), then back to the opponent. */
@@ -1335,7 +1335,7 @@ const _embV = new THREE.Vector3();
     if (!f || !f.finished) return null;
     const name = POKES[pokeN++ % 3];
     f.poke = { name, t: performance.now() };
-    audio.voiceLine(name === 'cackle' ? 'cackle' : name === 'angry stomp' ? 'stomp' : 'grunt');
+    audio.pokeGrunt(name === 'cackle' ? 'cackle' : name === 'angry stomp' ? 'stomp' : 'grunt');
     return name;
   }
 

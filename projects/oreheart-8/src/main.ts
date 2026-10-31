@@ -124,6 +124,8 @@ if (test) {
     getRingSettings: () => getRings(),
     getSelected: () => app.selectedUid,
     getAudioState: () => audio.state(),
+    setVoicesOn: (on: boolean) => audio.setVoicesOn(on), // Oct 31: unit voices switch (off until Ken approves the reel)
+    voiceEvent: (ev: 'select' | 'hurt' | 'attack' | 'special', unit: string, who: string, big?: boolean) => audio.speak(ev, unit, who, !!big),
     playSfx: (name: string, faction?: string) => audio.play(name, faction),
     playSpellSound: (id: string) => audio.spell(id),
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),

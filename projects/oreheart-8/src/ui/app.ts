@@ -2242,6 +2242,7 @@ export class App {
     r.eBank.textContent = String(en.bank);
     this.setCmdName(r.myName, COMMANDERS[me.commanderId]?.name || '');
     this.setCmdName(r.eName, COMMANDERS[en.commanderId]?.name || '');
+    audio.voicePreload(me.commanderId); audio.voicePreload(en.commanderId); // Oct 31: the Commanders' voice lines (loads once)
     r.income.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')}`;
     r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;
     const pm = `${me.crystals}|${en.crystals}`;
@@ -3494,7 +3495,8 @@ export class App {
         const wait = Math.max(0, this.view.blowDelay?.(e.uid) || 0); // Oct 30: the pop-up lands with the blow
         if (tgt) { if (wait) setTimeout(() => this.pop(word, tgt.row, tgt.col), wait); else this.pop(word, tgt.row, tgt.col); }
       } else if (e.type === 'move' && e.knock && e.to && !events.some((x: any, j: number) => j > events.indexOf(e) && x.type === 'move' && x.knock && x.uid === e.uid)) this.pop('knockback', e.to.row, e.to.col);
-      else if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('stolen', c.row, c.col); this.unitSay('unit-mine-now', c.row, c.col, true); } }
+      if ((e.type === 'abilityUsed' || e.type === 'steal') && e.uid) { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) audio.unitSpecial(c.cardId, c.uid); } // Oct 31: its special line
+      if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('stolen', c.row, c.col); this.unitSay('unit-mine-now', c.row, c.col, true); } }
       else if (e.type === 'poisoned') this.pop('poisoned', e.row, e.col);
       else if (e.type === 'drunk') { this.pop('hic', e.row, e.col); this.unitSay('unit-hic', e.row, e.col); }
       else if (e.type === 'brewSave') this.pop('saved', e.row, e.col);
@@ -3529,6 +3531,7 @@ export class App {
           this.emote(owner, 'flinch');
           this.emote(owner === 'player' ? 'opponent' : 'player', 'cheer');
         } else if (e.amount > 0) {
+          { const hc = st.board.creatures.find((c: any) => c.uid === e.uid), atk = events.find((x: any) => x.type === 'attack'); if (hc) audio.unitHurt(hc.cardId, hc.uid, e.amount * 2 >= (CARDS[hc.cardId]?.health || 99), Math.max(0, (atk && this.view?.blowDelay?.(atk.uid)) || 0)); } /* Oct 31: a surviving unit says ouch (sometimes) */
           this.floatText('-' + e.amount, 'dmg', e.row, e.col);
           if (e.amount >= 3) this.burst('CRUNCH!', e.row, e.col);
         }
@@ -4254,6 +4257,7 @@ export class App {
     }
     // Oct 31 (Ken: "I can't move any of the characters"): units stand 3x tall over the squares behind them, so a tap on a unit's body counts as that unit
     const cr = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col) || this.figureAtEvent(e);
+    if (!cr && cell.row === SH.player.row && cell.col === SH.player.col && (e.pointerType !== 'mouse' || e.button === 0)) audio.unitSelect(st.players.player.commanderId, 'cmd:player'); // Oct 31: a click on your Commander's square: a Commander line
     if (!cr) { if (e.pointerType !== 'mouse' || e.button === 0) this.startPan(e); return; }
     this.selectedUid = cr.uid; // round 11: the tapped creature counts as selected (Esc clears it)
     const card = CARDS[cr.cardId];
@@ -4292,6 +4296,7 @@ export class App {
         this.view?.poke(cr.uid);
         // Owner (Oct 25): a left click uses the unit; the card opens with the right button (a touch tap on an enemy still shows its card)
         if (mine) {
+          audio.unitSelect(cr.cardId, cr.uid); // Oct 31 (Ken): units speak when clicked
           this.abilityMenu(cr);
           this.selectUnit(cr);
           if (this.orders.has(cr.uid)) { this.orderFocus = cr.uid; this.drawOrders(); }
