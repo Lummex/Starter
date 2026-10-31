@@ -37,6 +37,14 @@ function homography(p: { x: number; y: number }[], w: number, h: number): string
   return `matrix3d(${a / w},${d / w},0,${g / w},${b / h},${e / h},0,${hh / h},0,0,1,0,${p0.x},${p0.y},0,1)`;
 }
 const FSYM = (f: string) => SYM[FACTIONS[f]?.symbol] || '✦';
+/** Ken (Oct 31): "The gear icon is for the dwarves, and the eye icon is for the gnomes." The icon under a dragged unit is its
+ *  faction's emblem from the owner Card Format (dwarves: blue gear, gnomes: purple eye, goblins: green goblin king). */
+const DRAG_ICON: Record<string, string> = { dwarves: 'gear', gnomes: 'eye', goblins: 'goblin' };
+function dragIcon(f: string, cls: string): HTMLElement {
+  const url = mineEmblemUrl(f);
+  const g = h('div', { class: cls + ' faction-icon', 'data-faction': f, 'data-icon': DRAG_ICON[f] || 'symbol', 'aria-hidden': 'true' }, url ? h('img', { src: url, alt: '', draggable: 'false' }) : FSYM(f));
+  return g;
+}
 const PHASE: Record<string, string> = { deploy: 'Deploy', action: 'Action', mulligan: 'Mulligan', draw: 'Draw', end: 'End', over: 'Over' };
 const ACTIVE = ['deploy', 'action'];
 const BW: number = CONFIG.boardWidth, BH: number = CONFIG.boardHeight;
@@ -2916,7 +2924,7 @@ export class App {
     this.clearGlow();
     this.setGlow(legal, 'glow-swap');
     const card = CARDS[tgt.cardId];
-    const ghost = h('div', { class: 'ghost tk lift-ghost', 'aria-hidden': 'true' }, FSYM(card.faction));
+    const ghost = dragIcon(card.faction, 'ghost tk lift-ghost');
     ghost.style.cssText = 'position:fixed;pointer-events:none;z-index:1000;transform:translate(-50%,calc(-50% - 28px));filter:drop-shadow(0 18px 8px #0009)';
     // Owner fix (Ken, Oct 28): on the 3D board the real unit hangs at the pointer instead of the flat ghost
     const carry3d = !!(this.view?.is3D && this.view.setCarry);
@@ -4091,7 +4099,7 @@ export class App {
     if (!cr) { if (e.pointerType !== 'mouse' || e.button === 0) this.startPan(e); return; }
     this.selectedUid = cr.uid; // round 11: the tapped creature counts as selected (Esc clears it)
     const card = CARDS[cr.cardId];
-    const ghost = h('div', { class: 'ghost tk' }, FSYM(card.faction));
+    const ghost = dragIcon(card.faction, 'ghost tk');
     const mine = cr.owner === 'player';
     let box: El | null = null;
     const atkAt = (c: { row: number; col: number }) => this.game.legalActions().find((a: any) => a.creatureUid === cr.uid && a.type === 'attack' && ((a.target.commander && c.row === SH[a.target.commander as 'player' | 'opponent'].row && c.col === SH[a.target.commander as 'player' | 'opponent'].col) || (a.target.row === c.row && a.target.col === c.col)));

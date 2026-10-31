@@ -11271,3 +11271,45 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
     });
   });
 }
+
+// Ken (Oct 31): "The gnomes when you click and drag the unit, it has the gear icon ... The gear icon is for the dwarves, and the eye icon
+// is for the gnomes." The icon that follows a dragged unit is its faction's emblem: dwarves gear, gnomes eye, goblins their goblin king.
+// Mouse at 1920x1080; finger (touch pointer events through the browser's touch input) at 844x390.
+const K31_UNITS = [['goblin-grunt', 'goblins', 'goblin', 6, 4], ['gnome-cogger', 'gnomes', 'eye', 6, 7], ['dwarf-pickman', 'dwarves', 'gear', 6, 10]];
+for (const [W, H, touch] of [[1920, 1080, false], [844, 390, true]]) {
+  test.describe(`Oct 31 Ken drag icons ${W}x${H}`, () => {
+    test.use(touch ? { viewport: { width: W, height: H }, hasTouch: true, isMobile: true } : { viewport: { width: W, height: H } });
+    test(`AC444: dragging a unit shows its own faction emblem: dwarves gear, gnomes eye, goblins goblin (${touch ? 'touch' : 'mouse'} ${W}x${H})`, async ({ page }) => {
+      test.setTimeout(90000);
+      const EMB31 = [];
+      const cdp = touch ? await page.context().newCDPSession(page) : null;
+      const touchAt = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] });
+      for (const [cardId, faction, icon, row, col] of K31_UNITS) {
+        await start(page, hk31({ board: [{ cardId, owner: 'player', row, col }] })); // one unit per match: nothing left over from the last drag
+        await toAction(page);
+        await page.waitForTimeout(800);
+        // press on the unit's body, just above its square (the stat badge with the ability button sits on the square at phone size)
+        const quad = await page.evaluate(([r, c]) => window.oreheart.squareQuad(r, c), [row, col]);
+        const c0 = await sqCenter(page, row, col), topY = Math.min(...quad.map((v) => v.y));
+        const p = { x: c0.x, y: topY - (c0.y - topY) * 0.6 };
+        const q = { x: p.x + 4, y: p.y - (touch ? 24 : 50) }; // a short drag up the board
+        if (touch) { await touchAt('touchStart', p.x, p.y); for (let i = 1; i <= 6; i++) await touchAt('touchMove', p.x + (q.x - p.x) * i / 6, p.y + (q.y - p.y) * i / 6); }
+        else { await page.mouse.move(p.x, p.y); await page.mouse.down(); await page.mouse.move(q.x, q.y, { steps: 6 }); }
+        const g = page.locator('.ghost.tk');
+        await expect(g, `${cardId}: a drag icon follows the ${touch ? 'finger' : 'pointer'}`).toHaveCount(1);
+        await expect(g).toHaveAttribute('data-faction', faction);
+        await expect(g).toHaveAttribute('data-icon', icon);
+        const src = await g.locator('img').getAttribute('src');
+        expect(src, `${cardId}: the emblem picture`).toMatch(/\/art\/card-format\/images\/.+\.webp$/);
+        EMB31.push(src);
+        await expect(g).not.toContainText('⚙');
+        if (touch) await touchAt('touchEnd', q.x, q.y); else await page.mouse.up();
+        await expect(g).toHaveCount(0);
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(500); // two quick touches would count as a double tap
+      }
+      // the three emblems are three different pictures
+      expect(new Set(EMB31).size).toBe(3);
+    });
+  });
+}
