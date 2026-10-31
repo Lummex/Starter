@@ -192,175 +192,175 @@
    "id": "dwarf-brewer",
    "race": "dwarf",
    "label": "Brewmaster",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "dwarf-queen",
    "race": "dwarf",
    "label": "Hall Queen",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "dwarf-kid-girl",
    "race": "dwarf",
    "label": "Little Digger",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "dwarf-gunner",
    "race": "dwarf",
    "label": "Rifle Ranger",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "dwarf-granny",
    "race": "dwarf",
    "label": "Iron Granny",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "human-paladin",
    "race": "human",
    "label": "Paladin",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "human-rogue",
    "race": "human",
    "label": "Rogue",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "human-old-wizard",
    "race": "human",
    "label": "Old Wizard",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "human-kid-boy",
    "race": "human",
    "label": "Squire Kid",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "human-archer-girl",
    "race": "human",
    "label": "Archer",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "human-warrior-woman",
    "race": "human",
    "label": "Warrior",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "human-kid-girl",
    "race": "human",
    "label": "Little Explorer",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "human-swamp-hag",
    "race": "human",
    "label": "Swamp Hag",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "undead-knight",
    "race": "undead",
    "label": "Skeleton Knight",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "undead-ghost-boy",
    "race": "undead",
    "label": "Ghost Kid",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "undead-zombie-farmer",
    "race": "undead",
    "label": "Zombie Farmer",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "undead-vampire",
    "race": "undead",
    "label": "Vampire Count",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "undead-ghost-lady",
    "race": "undead",
    "label": "Ghost Lady",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "undead-mummy-girl",
    "race": "undead",
    "label": "Mummy Kid",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "undead-witch",
    "race": "undead",
    "label": "Bone Witch",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "undead-zombie-girl",
    "race": "undead",
    "label": "Zombie Punk",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "troll-chieftain",
    "race": "troll",
    "label": "Troll Chieftain",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "troll-bog-brute",
    "race": "troll",
    "label": "Bog Brute",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "troll-hunter",
    "race": "troll",
    "label": "Troll Hunter",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "troll-kid",
    "race": "troll",
    "label": "Troll Kid",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "troll-shaman-woman",
    "race": "troll",
    "label": "Troll Shaman",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "troll-warrior-woman",
    "race": "troll",
    "label": "Troll Warrior",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "troll-granny",
    "race": "troll",
    "label": "Troll Granny",
-   "shipped": false
+   "shipped": true
   },
   {
    "id": "troll-cave-girl",
    "race": "troll",
    "label": "Cave Girl",
-   "shipped": false
+   "shipped": true
   }
  ]
 }
