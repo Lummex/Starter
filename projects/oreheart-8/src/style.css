@@ -64,7 +64,8 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .fx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .float{position:absolute;transform:translate(-50%,-50%);font-family:"Alegreya SC",serif;font-weight:400;font-size:1.3rem;color:#fff;text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000;animation:floatup 1s forwards;white-space:nowrap}
 .float.dmg{color:#ff6a5a}.float.heal{color:#6aff8a}
-.burst{position:absolute;transform:translate(-50%,-50%) rotate(-8deg);font-family:"Alegreya SC",serif;font-weight:400;font-size:1.4rem;color:#ffe14a;-webkit-text-stroke:2px #8a1a0a;text-shadow:3px 3px 0 #000;animation:burst .9s forwards;white-space:nowrap}
+.burst{position:absolute;transform:translate(-50%,-50%) rotate(-8deg);font-family:"Alegreya SC",serif;font-weight:400;font-size:1.4rem;color:#ffe14a;-webkit-text-stroke:2px #8a1a0a;text-shadow:3px 3px 0 #000;animation:burst .9s forwards,ohFloat 1.4s ease-out forwards;white-space:nowrap}
+@keyframes ohFloat{0%,65%{translate:0 0;opacity:1}100%{translate:0 -30px;opacity:0}}
 @keyframes floatup{from{opacity:1;margin-top:0}to{opacity:0;margin-top:-50px}}
 @keyframes burst{0%{transform:translate(-50%,-50%) rotate(-8deg) scale(.3);opacity:0}25%{transform:translate(-50%,-50%) rotate(-8deg) scale(1.15);opacity:1}100%{transform:translate(-50%,-70%) rotate(-8deg) scale(1);opacity:0}}
 .tip[hidden]{display:none}
@@ -1727,9 +1728,9 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 /* Owner (Oct 24): the end-of-match pop-up shows the result picture */
 .retreat .retreat-result{display:block;width:min(80vw,900px);max-height:44vh;height:auto;object-fit:contain;filter:drop-shadow(0 8px 18px #000c);animation:ohEndPop .6s ease-out both}
 /* Owner (Oct 24): comic pop-ups and speech bubbles */
-.pop-img{position:absolute;z-index:40;pointer-events:none;transform:translate(-50%,-50%) rotate(var(--rot,0deg));animation:ohPop 1.15s ease-out both;filter:drop-shadow(0 3px 6px #000a)}
+.pop-img{position:absolute;z-index:40;pointer-events:none;transform:translate(-50%,-50%) rotate(var(--rot,0deg));animation:ohPop 1.5s ease-out both;filter:drop-shadow(0 3px 6px #000a)}
 .pop-img img{display:block;width:clamp(24px,2.85vw,50px);height:auto}
-@keyframes ohPop{0%{opacity:0;transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(.3)}16%{opacity:1;transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1.15)}28%{transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1)}75%{opacity:1;transform:translate(-50%,-62%) rotate(var(--rot,0deg)) scale(1)}100%{opacity:0;transform:translate(-50%,-80%) rotate(var(--rot,0deg)) scale(.95)}}
+@keyframes ohPop{0%{opacity:0;transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(.3)}16%{opacity:1;transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1.15)}28%{transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1)}70%{opacity:1;transform:translate(-50%,calc(-50% - 10px)) rotate(var(--rot,0deg)) scale(1)}100%{opacity:0;transform:translate(-50%,calc(-50% - 34px)) rotate(var(--rot,0deg)) scale(.96)}}
 .speech{position:absolute;z-index:330;pointer-events:none;transform:translate(-50%,-100%);animation:ohSay 2.4s ease-out both;filter:drop-shadow(0 4px 8px #000b)}
 .speech img{display:block;width:clamp(100px,11vw,200px);height:auto}
 .unit-speech{animation-duration:1.8s}.unit-speech img{width:clamp(56px,6vw,110px)}

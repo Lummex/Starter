@@ -58,7 +58,7 @@ export function fxImpactMs(spell: string): number | null {
   if (!s || !fxEnabled) return null;
   const [b0, b1] = s.beats;
   const moving = !['at_caster', 'at_target'].includes(s.path);
-  return b0.ms + Math.round(b1.ms * (moving ? 0.4 : 0.15));
+  return b0.ms + Math.round(b1.travel_ms ?? b1.ms * (moving ? 0.4 : 0.15));
 }
 export function spellFxNow(): any { return current ? current.now() : { active: [], buffGlows: [] }; }
 export function spellFxAt(id: number, ms: number): any { return current ? current.timeline(id, ms) : null; }
@@ -93,7 +93,7 @@ export interface SpellFxRequest {
 
 interface LayerState { visible: boolean; pos: THREE.Vector3; scale: number; alpha: number; rot: number }
 interface Fx {
-  id: number; spell: string; s: any; req: SpellFxRequest; t0: number; total: number; w: number; ti: number; af: number; impact: number; travel: number;
+  id: number; spell: string; s: any; req: SpellFxRequest; t0: number; total: number; /** Oct 31: the FX stays until its sound word has popped, held and faded (may outlast `total`) */ life: number; w: number; ti: number; af: number; impact: number; travel: number;
   fromP: THREE.Vector3; toP: THREE.Vector3; toGround: THREE.Vector3; destP: THREE.Vector3 | null; startP: THREE.Vector3; windAt: THREE.Vector3;
   act: Record<string, any>[]; objs: Partial<Record<Layer, THREE.Object3D>>; aspect: Record<string, number>; log: any; done: boolean;
 }
@@ -173,7 +173,7 @@ export function createSpellFx(host: SpellFxHost) {
     const [b0, b1, b2] = s.beats;
     const w = b0.ms, ti = b1.ms, af = b2.ms, total = w + ti + af;
     const moving = !['at_caster', 'at_target'].includes(s.path);
-    const travel = Math.round(ti * (moving ? 0.4 : 0.15));
+    const travel = Math.round(b1.travel_ms ?? ti * (moving ? 0.4 : 0.15)); // Oct 31: a spell may set its own flight time (Fireball 0.8 s)
     const impact = w + travel;
     const fromG = host.world(req.from.row, req.from.col);
     const tgtCell = s.path === 'at_caster' || !req.target ? req.from : req.target;
@@ -195,7 +195,7 @@ export function createSpellFx(host: SpellFxHost) {
     const t0 = now + Math.max(0, req.delay || 0);
     const aspect: Record<string, number> = {};
     for (const l of FX_LAYERS) { const px = s.layers[l][phone ? 'px_phone' : 'px']; aspect[l] = px[1] / px[0]; }
-    const fx: Fx = { id: nextId++, spell: req.spell, s, req, t0, total, w, ti, af, impact, travel, fromP, toP, toGround, destP, startP, windAt, act: [], objs: {}, aspect, log: null, done: false };
+    const fx: Fx = { id: nextId++, spell: req.spell, s, req, t0, total, life: total, w, ti, af, impact, travel, fromP, toP, toGround, destP, startP, windAt, act: [], objs: {}, aspect, log: null, done: false };
     // objects
     for (const l of FX_LAYERS) {
       const add = l === 'glow' || l === 'ring' || l === 'particles';
@@ -232,6 +232,7 @@ export function createSpellFx(host: SpellFxHost) {
     }
     const word = beatAct(s, 1, 'word'), wordAf = beatAct(s, 2, 'word');
     const hold = Math.max(600, +(wordAf?.hold_ms ?? 600));
+    fx.life = Math.max(total, impact + POP_MS + hold + FADE_MS);
     const ringA = beatAct(s, 1, 'ring');
     const sh = (n: number) => Math.round((n / total) * 1000) / 1000;
     const covered: { row: number; col: number }[] = [];
@@ -264,7 +265,7 @@ export function createSpellFx(host: SpellFxHost) {
   /** where the core is during travel (k = 0..1) */
   function pathPos(fx: Fx, k: number, out: THREE.Vector3) {
     const p = fx.s.path, to = fx.destP || fx.toP;
-    if (p === 'arc') { const e = ease.outCubic(k); out.lerpVectors(fx.fromP, to, e); out.y += Math.sin(Math.PI * e) * (1.6 + 0.22 * fx.fromP.distanceTo(to)); }
+    if (p === 'arc') { const e = 0.55 * k + 0.45 * k * k; /* Oct 31 (Ken): it speeds INTO the target and crashes; no slowing hang before the boom */ out.lerpVectors(fx.fromP, to, e); out.y += Math.sin(Math.PI * e) * (1.6 + 0.22 * fx.fromP.distanceTo(to)); }
     else if (p === 'sky_fall' || p === 'drop_in') out.lerpVectors(fx.startP, to, ease.inQuad(k));
     else if (p === 'throw') { const e = ease.outCubic(k); out.lerpVectors(fx.fromP, to, e); out.y += Math.sin(Math.PI * e) * 0.35; }
     else if (p === 'burrow') { out.lerpVectors(fx.startP, to, ease.outCubic(k)); out.y = 0.15; }
@@ -279,7 +280,7 @@ export function createSpellFx(host: SpellFxHost) {
     const hitP = fx.destP || fx.toP;
     const st: LayerState = { visible: false, pos: new THREE.Vector3(), scale: 0, alpha: 0, rot: 0 };
     const a0 = beatAct(s, 0, l), a1 = beatAct(s, 1, l), a2 = beatAct(s, 2, l);
-    if (t < 0 || t >= fx.total) return st;
+    if (t < 0 || t >= (l === 'word' ? fx.life : fx.total)) return st;
     if (l === 'core') {
       const sw = a0?.scale || [0, 1], sm = a1?.scale || [sw[1], sw[1]];
       const hideAtImpact = /hide/.test(a1?.then || '');
@@ -456,7 +457,7 @@ export function createSpellFx(host: SpellFxHost) {
     updates++;
     for (let i = fxs.length - 1; i >= 0; i--) {
       const fx = fxs[i];
-      if (localT(fx, now) >= fx.total) { drop(fx); fxs.splice(i, 1); past.push(fx); if (past.length > 24) past.shift(); continue; }
+      if (localT(fx, now) >= fx.life) { drop(fx); fxs.splice(i, 1); past.push(fx); if (past.length > 24) past.shift(); continue; }
       apply(fx, now);
     }
     for (let i = slowWins.length - 1; i >= 0; i--) if (now > slowWins[i][1] + 10000) slowWins.splice(i, 1);
@@ -484,7 +485,7 @@ export function createSpellFx(host: SpellFxHost) {
     const now = performance.now();
     return {
       at: now, slowK: slowK(now), updates, perf: { ...perf },
-      active: fxs.filter((fx) => localT(fx, now) < fx.total).map((fx) => { const t = localT(fx, now); return { id: fx.id, spell: fx.spell, localMs: Math.round(t), realMs: Math.round(now - fx.t0), beat: beatAt(fx, t), layers: probeLayers(fx, t) }; }),
+      active: fxs.filter((fx) => localT(fx, now) < fx.life).map((fx) => { const t = localT(fx, now); return { id: fx.id, spell: fx.spell, localMs: Math.round(t), realMs: Math.round(now - fx.t0), beat: beatAt(fx, t), layers: probeLayers(fx, t) }; }),
       buffGlows: buffInfo.map((b) => ({ ...b, visible: !!buffGlows.get(b.uid)?.visible, alpha: Math.round((buffGlows.get(b.uid)?.material.opacity || 0) * 1000) / 1000 })),
       shards: shards.map((s) => s.objs.length),
     };

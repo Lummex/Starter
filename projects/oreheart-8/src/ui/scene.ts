@@ -37,6 +37,8 @@ export interface BoardView {
   blowDelay?(uid: string): number;
   /** Oct 31 (Ken: the computer plays too fast): something on the board is still moving, fighting, dying or casting */
   isBusy?(): string;
+  /** Oct 31 (Ken: bubbles must not cover the unit): the on-screen box (board px) of the unit, mine or Stronghold on a square */
+  topAt?(row: number, col: number): { left: number; right: number; top: number; bottom: number } | null;
   cellRect(row: number, col: number): Rect;
   resize(): void;
   setCamera(c: { zoom: number; x: number; y: number }): void;
@@ -456,6 +458,32 @@ const _embV = new THREE.Vector3();
   const impacts: { at: number; to: THREE.Vector3; ranged: boolean; armored: boolean; commander: boolean }[] = [];
   /** Oct 31 (Ken: "the opposing side plays stuff too fast ... you can't tell anything that he's doing"): what still plays on the board
    *  ('' = calm). The computer's next action waits until this is '' (game.ts aiPace). */
+  /** Oct 31: the screen box (board px, the same space as cellRect) of whatever stands on a square: a unit, a crystal mine or a Stronghold.
+   *  Cheap on purpose (bubbles call it): a unit uses its known standing height (the same one the status icons use), not a skinned box;
+   *  a mine's and a Stronghold's box are measured once and cached (they don't move). */
+  const staticBox = new Map<THREE.Object3D, THREE.Box3>();
+  function thingBox(row: number, col: number): { left: number; right: number; top: number; bottom: number } | null {
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    const proj = (x: number, y: number, z: number) => { _v.set(x, y, z).project(camera); return [((_v.x + 1) / 2) * W, ((1 - _v.y) / 2) * H]; };
+    for (const f of figs.values()) {
+      if (f.dying || f.row !== row || f.col !== col) continue;
+      const p = f.group.position, hh = f.c3d ? (f.c3d.boardH ?? f.c3d.height) + (f.c3d.lift || 0) : STANDIN_H * UNIT_K;
+      const [tx, ty] = proj(p.x, p.y + hh, p.z), [, by] = proj(p.x, 0, p.z), [lx] = proj(p.x - 0.45, p.y + hh * 0.5, p.z), [rx] = proj(p.x + 0.45, p.y + hh * 0.5, p.z);
+      return { left: Math.min(lx, rx, tx), right: Math.max(lx, rx, tx), top: ty, bottom: by };
+    }
+    let o: THREE.Object3D | null = null;
+    for (const m of mines) { const c = m.group.userData.cell; if (c && c.row === row && c.col === col) { o = m.group; break; } }
+    if (!o) for (const sd of ['player', 'opponent'] as const) if (SHP[sd][0] === row && SHP[sd][1] === col) { o = cmd[sd].group; break; }
+    if (!o) return null;
+    let b = staticBox.get(o);
+    if (!b) { b = new THREE.Box3().setFromObject(o); if (b.isEmpty()) return null; staticBox.set(o, b); }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let k = 0; k < 8; k++) {
+      const [px, py] = proj(k & 1 ? b.max.x : b.min.x, k & 2 ? b.max.y : b.min.y, k & 4 ? b.max.z : b.min.z);
+      x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+    }
+    return { left: x0, right: x1, top: y0, bottom: y1 };
+  }
   function boardBusy(now: number): string {
     if (spellFx.busy(now)) return 'spell';
     if (impacts.length) return 'impact';
@@ -1676,6 +1704,7 @@ const _embV = new THREE.Vector3();
     playSpell: (req: SpellFxRequest) => spellFx.play(req),
     spellShards: (at: { row: number; col: number }, countered: string | null) => spellFx.shatter(at, countered),
     isBusy: () => boardBusy(performance.now()),
+    topAt: (row: number, col: number) => thingBox(row, col),
     is3D: true, setCarry, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       spellFx.dispose();

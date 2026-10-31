@@ -11686,9 +11686,12 @@ test('AC471: Searing Arcane Orb plays as an event: 3 beats in order, flat ring a
   expect(L.beats[0].startMs).toBe(0);
   expect(L.beats[1].startMs).toBe(L.beats[0].ms);
   expect(L.beats[2].startMs).toBe(L.beats[0].ms + L.beats[1].ms);
-  for (const [i, sh] of [[0, 0.25], [1, 0.35], [2, 0.4]]) expect(Math.abs(L.beats[i].share - sh), `beat ${i} share`).toBeLessThanOrEqual(0.02);
+  // owner check change (Ken, Oct 31: "I want the fireball to crash a little sooner. Or a little slower."): a slower, clear 0.8 s arc and the crash at about 1.2 s; the whole Orb about 1.8 s
+  expect(L.impactMs, 'the crash lands at about 1.2 s').toBeGreaterThanOrEqual(1100);
+  expect(L.impactMs).toBeLessThanOrEqual(1300);
+  expect(L.impactMs - L.beats[0].ms, 'a visible flight').toBeGreaterThanOrEqual(700);
   expect(L.totalMs).toBeGreaterThanOrEqual(1600);
-  expect(L.totalMs).toBeLessThanOrEqual(2500);
+  expect(L.totalMs).toBeLessThanOrEqual(1900);
   expect(L.layers).toEqual(SFX_LAYERS);
   expect(L.slowmo).toEqual({ factor: 0.35, ms: 300, atMs: L.impactMs });
   expect(L.shake.px).toBeGreaterThan(0);
@@ -11998,3 +12001,89 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080, touch: false }, 
     });
   });
 }
+
+// ---------- Oct 31 (Ken's playtest of the pacing preview) ----------
+// Ken: "while the card is up, on the center of the screen that he's playing, it's too big ... make it the same size as the card when it pops out of
+// my hand ... I don't want him blocking my cards. Covering my cards. Ever."
+for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone', width: 844, height: 390 }]) {
+  test.describe(`AC479 (${vp.name})`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+    test(`AC479: the computer's card shows at the hand pop-out size and never covers the player's hand, tucked or raised (${vp.name})`, async ({ page }) => {
+      await page.goto('/?test=1&seed=3&fx=1');
+      await page.waitForFunction(() => !!window.oreheart);
+      await page.evaluate(async () => await window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player', playerHand: ['goblin-grunt', 'goblin-slinger', 'fireball', 'goblin-bomber', 'shiv-rat', 'goblin-sneak'] } }));
+      await page.waitForTimeout(800);
+      // the player's pop-out size: hover a hand card (it rises and enlarges), as AC164 does
+      const card = page.getByLabel('Your hand', { exact: true }).getByRole('button', { name: 'Searing Arcane Orb', exact: true });
+      const b0 = await card.boundingBox();
+      await page.mouse.move(b0.x + b0.width / 2, Math.min(vp.height - 4, b0.y + 10));
+      await expect.poll(async () => (await card.boundingBox()).width, { timeout: 5000 }).toBeGreaterThan(b0.width * 1.15);
+      await page.waitForTimeout(500);
+      const popW = (await card.boundingBox()).width;
+      await page.mouse.move(vp.width / 2, vp.height * 0.3); await page.waitForTimeout(600);
+      expect(popW, 'a hand card pops out').toBeGreaterThan(40);
+      for (const raised of [false, true]) {
+        const r = await page.evaluate(async (raised) => {
+          const a = window.__app; a.openHand(raised, !raised); await new Promise((res) => setTimeout(res, 450));
+          void a.reveal('fireball', null, 'opponent'); await new Promise((res) => setTimeout(res, 450));
+          const rv = document.querySelector('.reveal.opp-play'); const b = rv.getBoundingClientRect();
+          const hand = [...document.querySelectorAll('.hand .hand-card')].map((c) => c.getBoundingClientRect()).filter((x) => x.width);
+          const hit = hand.filter((x) => x.left < b.right && x.right > b.left && x.top < b.bottom && x.bottom > b.top).length;
+          rv._finish?.(); await new Promise((res) => setTimeout(res, 900));
+          return { w: b.width, top: b.top, bottom: b.bottom, hit, cards: hand.length };
+        }, raised);
+        expect(r.cards, 'the hand is there').toBeGreaterThan(0);
+        expect(r.hit, `${vp.name}, hand ${raised ? 'raised' : 'tucked'}: the computer's card covers none of the player's cards`).toBe(0);
+        expect(r.w, `${vp.name}: not bigger than the pop-out (${Math.round(popW)} px)`).toBeLessThanOrEqual(popW * 1.04);
+        if (vp.name === 'desktop') expect(r.w, `${vp.name}: the same size as the pop-out (${Math.round(popW)} px)`).toBeGreaterThanOrEqual(popW * 0.96);
+        expect(r.top).toBeGreaterThanOrEqual(0);
+      }
+    });
+  });
+}
+
+// Ken: "chat bubbles on top of each other ... no chat bubble completely overlays [another] ... the whack and stuff, it should be visible for a little
+// bit longer, and then like float up ... I don't want it covering any of the chat bubbles or anything covering the unit that it's happening to"
+test('AC480: comic words and speech bubbles never overlap each other, sit above the unit (never on it), and stay about 1.5 s', async ({ page }) => {
+  for (const [W, H] of [[1920, 1080], [844, 390]]) {
+    await page.setViewportSize({ width: W, height: H });
+    await start(page, { ai: false, skipMulligan: true, setup: { firstPlayer: 'player', board: [{ cardId: 'goblin-grunt', owner: 'player', row: 5, col: 6 }, { cardId: 'dwarf-stoneback', owner: 'opponent', row: 4, col: 6 }, { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 7 }] } });
+    await expect.poll(async () => ((await renderStats(page)).figures || []).filter((f) => f.model === 'finished').length, { timeout: 30000 }).toBeGreaterThanOrEqual(3);
+    const r = await page.evaluate(async () => {
+      const a = window.__app;
+      a.pop('whack', 5, 6); a.pop('bonk', 5, 6); a.pop('clang', 4, 6); a.unitSay('unit-reporting', 5, 6, true); a.burst('CRUNCH!', 5, 7); a.pop('bonk', 5, 7); a.pop('whack', 4, 6);
+      await new Promise((res) => setTimeout(res, 300));
+      const els = [...document.querySelectorAll('.fx .pop-img, .fx .speech, .fx .burst')];
+      const boxes = els.map((e) => { const [x, y, w, h] = (e.dataset.box || '0,0,0,0').split(',').map(Number); return { x0: x, y0: y, x1: x + w, y1: y + h, row: +e.dataset.row || 0, col: +e.dataset.col || 0, kind: e.className }; });
+      const tops = {}; for (const k of ['5,6', '4,6', '5,7']) { const [rr, cc] = k.split(',').map(Number); tops[k] = a.view.topAt(rr, cc); }
+      await new Promise((res) => setTimeout(res, 1000));
+      const stillAt1300 = [...document.querySelectorAll('.fx .pop-img')].length;
+      return { boxes, tops, stillAt1300 };
+    });
+    expect(r.boxes.length).toBeGreaterThanOrEqual(7);
+    for (let i = 0; i < r.boxes.length; i++) for (let j = i + 1; j < r.boxes.length; j++) {
+      const a = r.boxes[i], b = r.boxes[j];
+      const ov = Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+      expect(ov, `${W}x${H}: ${a.kind} and ${b.kind} overlap`).toBe(0);
+    }
+    for (const b of r.boxes) {
+      const t = r.tops[`${b.row},${b.col}`];
+      if (t) expect(b.y1, `${W}x${H}: a ${b.kind} covers the unit it is about (box bottom ${Math.round(b.y1)} below its top ${Math.round(t.top)})`).toBeLessThanOrEqual(t.top + 2);
+    }
+    expect(r.stillAt1300, `${W}x${H}: the words are still readable after 1.3 s`).toBeGreaterThan(0);
+  }
+});
+
+// Ken: "on the clink animation when they do the mining, it needs to be on the object they're hitting ... the clanks need to be on the crystal. Not on the player."
+test('AC481: the mining CLINK sits above the crystal being mined, not on the miner', async ({ page }) => {
+  await start(page, { ai: false, skipMulligan: true, mines: [{ row: 4, col: 4 }, { row: 4, col: 7 }, { row: 4, col: 10 }], setup: { firstPlayer: 'player', board: [{ cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 4 }] } });
+  await act(page, { type: 'done' });
+  const s = await getState(page);
+  const miner = s.board.creatures.find((c) => c.cardId === 'goblin-scrounger');
+  const mine = (await legal(page)).find((a) => a.type === 'mine' && a.creatureUid === miner.uid);
+  expect(mine).toBeTruthy();
+  expect((await act(page, mine)).ok).toBe(true);
+  const clink = page.locator('.fx .pop-img[data-pop="clink"]').first();
+  await expect(clink).toBeAttached({ timeout: 3000 });
+  expect([await clink.getAttribute('data-row'), await clink.getAttribute('data-col')], 'the CLINK is on the mine').toEqual([String(mine.row), String(mine.col)]);
+});

@@ -2440,6 +2440,38 @@ export class App {
   /** cards that are still flying to the enemy discard pile (the pile shows them when they land) */
   discardInFlight = 0;
   revealHoldMs() { return localStorage.getItem('oreheart.reveal') === 'fast' ? 600 : 1100; }
+  /** the on-screen width of a hand card when it pops out (popCard's own scale), so the computer's card shows at exactly that size */
+  handPopWidth(): number {
+    const host = this.root.querySelector('.match') as El | null, hand = this.r.hand as El | undefined;
+    const hr = host ? host.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight } as DOMRect;
+    const card = hand?.querySelector('.hand-card:not(.popclone)') as El | null;
+    let w = card?.offsetWidth || 0, hgt = card?.offsetHeight || 0;
+    if (!w) { const v = parseFloat(getComputedStyle(host || document.body).getPropertyValue('--hcw')); w = v > 0 ? v : 120; hgt = w * 1712 / 1152; }
+    const S = Math.max(1, Math.min(1.6, (hr.height - 8) / hgt, (hr.width - 8) / w, this.handRoom / hgt));
+    return w * S;
+  }
+  /** the highest point the player's hand reaches: the raised row, and any card popped out of it right now (screen px) */
+  handTopEver(): number {
+    const hand = this.r.hand as El | undefined;
+    if (!hand) return window.innerHeight;
+    let top = window.innerHeight;
+    const had = hand.classList.contains('open');
+    hand.style.setProperty('transition', 'none', 'important'); hand.classList.add('open'); void hand.offsetHeight;
+    hand.querySelectorAll('.hand-card').forEach((c) => { const r = (c as El).getBoundingClientRect(); if (r.width) top = Math.min(top, r.top); });
+    if (!had) hand.classList.remove('open'); void hand.offsetHeight; hand.style.removeProperty('transition');
+    return top;
+  }
+  /** where the computer's card shows: the hand pop-out size, centred in the space above the hand (raised or tucked), under the top HUD */
+  revealSpot(): { w: number; cx: number; cy: number } {
+    const vw = window.innerWidth, vh = window.innerHeight, ratio = 1712 / 1152;
+    const bottom = this.handTopEver() - 10, topY = Math.max(8, vh * 0.02);
+    const avail = Math.max(60, bottom - topY);
+    let w = Math.round(this.handPopWidth());
+    if (w * ratio > avail) w = Math.floor(avail / ratio);
+    w = Math.min(w, Math.floor(vw * 0.6));
+    const hgt = w * ratio;
+    return { w, cx: vw / 2, cy: topY + Math.min(avail, hgt) / 2 + Math.max(0, (avail - hgt) * 0.3) };
+  }
   reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player'): Promise<void> {
     if ((this.test && !this.fxReal) || !this.r.board) return Promise.resolve();
     if (side === 'player') return Promise.resolve(); // round 11: only the opponent's played cards pop up
@@ -2453,12 +2485,16 @@ export class App {
     // the newest card takes the middle; any earlier one that is not pinned is laid down now
     for (const old of [...list]) if (old.dataset.pinned !== 'true') (old as any)._finish?.();
     const hostR = host.getBoundingClientRect(), vh = window.innerHeight, vw = window.innerWidth;
-    const cw = Math.round(Math.min(vw * 0.6, (vh * 0.95) / (1712 / 1152)));
+    // Oct 31 (Ken): "make it the same size as the card when it pops out of my hand ... I don't want him blocking my cards. Covering my cards.
+    // Ever." The card shows at the hand pop-out size, in the clear space above the player's hand (raised or tucked); smaller only if it can't fit.
+    const spot = this.revealSpot();
+    const cw = spot.w;
     el.style.setProperty('--cw', cw + 'px');
     el.classList.add('opp-play');
     el.dataset.side = side; el.dataset.stage = 'big';
-    el.style.left = vw / 2 - hostR.left + 'px';
-    el.style.top = vh / 2 - hostR.top + 'px';
+    el.style.left = spot.cx - hostR.left + 'px';
+    el.style.top = spot.cy - hostR.top + 'px';
+    void vh; void vw;
     el.style.zIndex = String(5000 + list.length);
     list.push(el);
     host.append(el);
@@ -3298,13 +3334,13 @@ export class App {
   /** Owner (Oct 24): a comic pop-up picture over a board square (it pops, holds, then fades). */
   pop(name: string, row: number, col: number, label = '') {
     if (!this.r.fx || !this.view) return;
-    const p = this.center(row, col), key = row + ',' + col, now = performance.now();
-    const st = this.popStack.get(key); const n = st && now - st.t < 700 ? st.n + 1 : 0; this.popStack.set(key, { n, t: now });
-    const f = h('div', { class: 'pop-img', 'aria-hidden': 'true', 'data-pop': name }, h('img', { src: `/art/pop/${name}.webp`, alt: '', draggable: 'false' }), label ? h('span', { class: 'sr-only' }, label) : '');
-    f.style.left = p.x + (n % 2 ? 8 : -5) * Math.min(n, 2) + 'px'; f.style.top = p.y - 14 - n * 14 + 'px';
-    f.style.setProperty('--rot', `${(Math.random() * 14 - 7).toFixed(1)}deg`);
-    this.r.fx.append(f);
-    setTimeout(() => f.remove(), 1150);
+    const f = h('div', { class: 'pop-img', 'aria-hidden': 'true', 'data-pop': name, 'data-row': String(row), 'data-col': String(col) }, h('img', { src: `/art/pop/${name}.webp`, alt: '', draggable: 'false' }), label ? h('span', { class: 'sr-only' }, label) : '');
+    f.style.setProperty('--rot', `${(Math.random() * 10 - 5).toFixed(1)}deg`);
+    // Oct 31 (Ken): "the whack and stuff, it should be visible for a little bit longer, and then like float up ... I don't want it covering any of
+    // the chat bubbles or anything covering the unit that it's happening to" -- above the unit (or mine), never on another bubble, 1.5 s, floats up
+    const w = Math.min(50, Math.max(24, 0.0285 * window.innerWidth)) * 1.3;
+    this.placeBubble(f, row, col, w, w * 0.8, 1500, 'center');
+    setTimeout(() => f.remove(), 1500);
   }
   speechAt = { player: 0, opponent: 0 } as Record<string, number>;
   /** Owner (Oct 24): a Commander says a line (picture) above its stronghold; one line at a time per side. */
@@ -3315,10 +3351,9 @@ export class App {
     const now = performance.now(); if (!priority && now - (this.speechAt[side] || 0) < 2600) return;
     this.speechAt[side] = now;
     this.r.fx.querySelectorAll(`.speech[data-side="${side}"]`).forEach((x: El) => x.remove());
-    const p = this.center(SH[side].row, SH[side].col);
     const f = h('div', { class: 'speech cmd-speech', role: 'img', 'aria-label': 'Commander speech', 'data-side': side, 'data-line': `${voice}-${line}` }, h('img', { src: `/art/speech/${voice}-${line}.webp`, alt: '', draggable: 'false' }));
-    f.style.left = p.x + 'px'; f.style.top = p.y - 70 + 'px';
-    this.r.fx.append(f);
+    const w = Math.min(200, Math.max(100, 0.11 * window.innerWidth)) * 0.65;
+    this.placeBubble(f, SH[side].row, SH[side].col, w, w * 0.75, 2400, 'bottom');
     setTimeout(() => f.remove(), 2400);
   }
   /** Test hook (R26.A4): show a commander bubble now. */
@@ -3343,11 +3378,37 @@ export class App {
   unitSay(name: string, row: number, col: number, force = false) {
     if (!this.r.fx || !this.view) return;
     const now = performance.now(); if (!force && now - this.unitSayAt < 3000) return; this.unitSayAt = now;
-    const p = this.center(row, col);
-    const f = h('div', { class: 'speech unit-speech', 'aria-hidden': 'true', 'data-line': name }, h('img', { src: `/art/speech/${name}.webp`, alt: '', draggable: 'false' }));
-    f.style.left = p.x + 'px'; f.style.top = p.y - 52 + 'px';
-    this.r.fx.append(f);
+    const f = h('div', { class: 'speech unit-speech', 'aria-hidden': 'true', 'data-line': name, 'data-row': String(row), 'data-col': String(col) }, h('img', { src: `/art/speech/${name}.webp`, alt: '', draggable: 'false' }));
+    const w = Math.min(110, Math.max(56, 0.06 * window.innerWidth));
+    this.placeBubble(f, row, col, w, w * 0.75, 1800, 'bottom');
     setTimeout(() => f.remove(), 1800);
+  }
+  /** Oct 31 (Ken: "two or three chat bubbles going on at the same time ... no chat bubble completely overlays [another]"): every comic word and
+   *  speech bubble goes ABOVE the unit, mine or Stronghold on its square (never on it), and never on another bubble still showing: it steps up,
+   *  or to either side, until it is clear. `anchor` = how the element is centred by its CSS transform (pop: -50% -50%, speech: -50% -100%). */
+  bubbles: { el: El; x0: number; y0: number; x1: number; y1: number; until: number }[] = [];
+  placeBubble(f: El, row: number, col: number, w: number, hgt: number, life: number, anchor: 'center' | 'bottom') {
+    const fx = this.r.fx as El, now = performance.now();
+    this.bubbles = this.bubbles.filter((b) => b.until > now && b.el.isConnected);
+    const t = this.view?.topAt?.(row, col) || null, c = this.center(row, col), rc = this.view!.cellRect(row, col);
+    const ax = t ? (t.left + t.right) / 2 : c.x, top = t ? t.top : c.y - rc.h * 0.9;
+    const W = fx.clientWidth || window.innerWidth, H = fx.clientHeight || window.innerHeight, gap = 3;
+    const clear = (x0: number, y0: number) => this.bubbles.every((b) => x0 + w <= b.x0 || x0 >= b.x1 || y0 + hgt <= b.y0 || y0 >= b.y1);
+    let best: [number, number] | null = null;
+    for (let k = 0; k < 8 && !best; k++) {
+      const y = top - gap - hgt - k * (hgt * 0.85 + gap);
+      for (const dx of [0, w * 0.75, -w * 0.75, w * 1.5, -w * 1.5]) {
+        const x0 = Math.min(W - w - 2, Math.max(2, ax - w / 2 + dx)), y0 = Math.max(2, y);
+        if (clear(x0, y0)) { best = [x0, y0]; break; }
+      }
+    }
+    if (!best) best = [Math.min(W - w - 2, Math.max(2, ax - w / 2)), Math.max(2, top - gap - hgt)];
+    const [x0, y0] = best;
+    f.style.left = x0 + w / 2 + 'px';
+    f.style.top = (anchor === 'center' ? y0 + hgt / 2 : y0 + hgt) + 'px';
+    f.dataset.box = `${Math.round(x0)},${Math.round(y0)},${Math.round(w)},${Math.round(hgt)}`;
+    fx.append(f);
+    this.bubbles.push({ el: f, x0, y0, x1: x0 + w, y1: y0 + hgt, until: now + life });
   }
   fxStarted = false; lowSaid = { player: false, opponent: false } as Record<string, boolean>; siteOwner = new Map<string, string>();
   /** Red damage number over a Commander's heart, and the heart shakes. */
@@ -3362,11 +3423,10 @@ export class App {
   }
   burst(text: string, row: number, col: number) {
     if (POP_WORD[text]) { this.pop(POP_WORD[text], row, col, text); return; }
-    const p = this.center(row, col);
-    const f = h('div', { class: 'burst' }, text);
-    f.style.left = p.x + 'px'; f.style.top = p.y - 10 + 'px';
-    this.r.fx.append(f);
-    setTimeout(() => f.remove(), 900);
+    const f = h('div', { class: 'burst', 'data-row': String(row), 'data-col': String(col) }, text);
+    const fs = 22.4;
+    this.placeBubble(f, row, col, text.length * fs * 0.62 + 8, fs * 1.4, 1400, 'center');
+    setTimeout(() => f.remove(), 1400);
   }
   // Commander behaviour (round 8b): faces the opponent, looks back at the player, gets impatient when the player idles
   bhv = { key: '', lastAct: Date.now(), level: 0, nextLook: new URLSearchParams(location.search).get('test') === '1' ? Infinity : Date.now() + 20000 + Math.random() * 20000, timer: 0 as any, bound: false, idleAcc: 0, lastTick: Date.now(), lookKey: '', keyAt: Date.now() };
@@ -3440,7 +3500,7 @@ export class App {
       else if (e.type === 'brewSave') this.pop('saved', e.row, e.col);
       else if (e.type === 'ward') this.pop('ward', e.row, e.col);
       else if (e.type === 'heal' && e.amount > 0 && e.row) this.pop('heal', e.row, e.col);
-      else if (e.type === 'mine' && e.uid) { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('clink', c.row, c.col); if (c.owner === 'player' && Math.random() < 0.3) this.unitSay('unit-shiny', c.row, c.col); } }
+      else if (e.type === 'mine' && e.uid) { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('clink', typeof e.row === 'number' ? e.row : c.row, typeof e.col === 'number' ? e.col : c.col); /* Oct 31 (Ken): the clanks need to be on the crystal, not on the player */ if (c.owner === 'player' && Math.random() < 0.3) this.unitSay('unit-shiny', c.row, c.col); } }
       else if (e.type === 'minerUpgrade' && e.row) { this.pop('upgrade', e.row, e.col); this.unitSay('unit-good-as-new', e.row, e.col, true); }
       else if (e.type === 'summon' && e.owner === 'player' && !e.illusion && e.row) this.unitSay(Math.random() < 0.5 ? 'unit-reporting' : 'unit-ready', e.row, e.col);
       else if (e.type === 'abilityUsed' && e.ability === 'brew') this.unitSay('unit-bottoms-up', e.row, e.col, true);
