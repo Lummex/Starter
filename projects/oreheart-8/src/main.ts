@@ -124,6 +124,8 @@ if (test) {
     getRingSettings: () => getRings(),
     getSelected: () => app.selectedUid,
     getAudioState: () => audio.state(),
+    playSfx: (name: string, faction?: string) => audio.play(name, faction),
+    playSpellSound: (id: string) => audio.spell(id),
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
     getFxLog: () => JSON.parse(JSON.stringify((app as any).fxLog)),
     clearFxLog: () => { (app as any).fxLog = []; },

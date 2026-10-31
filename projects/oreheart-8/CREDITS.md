@@ -13,7 +13,7 @@ Everything in the game is made in code or generated for this project. There are 
 
 ## Made in code
 - 3D figures, Strongholds, mines, ground and effects (`src/ui/art.ts`, `src/ui/scene.ts`) use Three.js (MIT, https://threejs.org/) with procedural geometry and canvas textures.
-- All sound effects and Goblin / Grubnak voice grunts are synthesized at run time with the Web Audio API (`src/ui/audio.ts`). No audio files; no music.
+- Sound effects (Oct 31): `public/audio/sfx/*.ogg`, 39 files synthesized from scratch for Oreheart by the studio (Brush) with the project's own code; CC0 1.0, project-owned (see `public/audio/sfx/LICENSES.md`). Goblin / Grubnak voice grunts are still synthesized at run time with the Web Audio API (`src/ui/audio.ts`). Music and the menu sound are Ken's own files.
 
 ## Round 2 additions
 - Card frames `public/art/frames/*.webp`: the owner's `card-frame-goblin/gnome/dwarf.jpg` (neutral is a grey recolor made in code).

@@ -719,7 +719,7 @@ const _embV = new THREE.Vector3();
       const from = h.from ? world(h.from.row, h.from.col) : f.group.position.clone();
       let idx = path.findIndex((p) => h.from && p.row === h.from.row && p.col === h.from.col);
       if (idx < 0) idx = 0;
-      f.bowl = { t0: now + idx * per, from, to: h.to ? world(h.to.row, h.to.col) : f.target.clone() }; f.bowledT = now + idx * per; // Round 28b: bowled-over clip
+      f.bowl = { t0: now + idx * per, from, to: h.to ? world(h.to.row, h.to.col) : f.target.clone() }; f.bowledT = now + idx * per; setTimeout(() => audio.play('bonk'), idx * per); // Round 28b: bowled-over clip
       f.group.position.copy(from);
     }
   }

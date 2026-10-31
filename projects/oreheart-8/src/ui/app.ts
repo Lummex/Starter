@@ -3506,7 +3506,7 @@ export class App {
       else if (e.type === 'abilityUsed' && e.ability === 'brew') this.unitSay('unit-bottoms-up', e.row, e.col, true);
       else if (e.type === 'abilityUsed' && e.ability === 'slide') this.unitSay('unit-uh-oh', e.row, e.col, true);
       else if (e.type === 'fizzle') { const sd = st.activePlayer === 'player' ? 'player' : 'opponent'; this.pop('fizzle', SH[sd].row, SH[sd].col); }
-      else if (e.type === 'turnStart' && e.player === 'player' && e.turn > 1) this.say('player', 'turn');
+      else if (e.type === 'turnStart' && e.player === 'player') { audio.play('turn-start'); if (e.turn > 1) this.say('player', 'turn'); } // Oct 31: gentle war horn
       else if (e.type === 'bonusDraw') {
         const why = [e.fromMining ? `${e.mined} crystals mined` : '', e.allMines ? 'all 3 mines' : ''].filter(Boolean).join(' + ');
         const who = e.player === 'player' ? 'You draw' : 'Opponent draws';
@@ -3537,7 +3537,7 @@ export class App {
       } else if (e.type === 'draw' && (e.player === 'player' || e.owner === 'player')) {
         audio.play('draw');
       } else if (e.type === 'shieldBlock') {
-        audio.play('bubble');
+        audio.play('clink'); // Oct 31: armoured clink (Brush's files)
         this.burst('BLOCK!', e.row, e.col);
       } else if (e.type === 'poison') {
         this.floatText('☠ 1', 'dmg', e.row, e.col);
@@ -3559,6 +3559,7 @@ export class App {
           const at = bo ? { row: bo.row, col: bo.col } : SH[e.player === 'player' ? 'opponent' : 'player'];
           this.shatter(e.player, at, e.countered || null);
           this.spellFx({ cardId: e.cardId, player: e.player, target: null }, { at, atCommander: !bo, kind: 'counter', countered: e.countered || null });
+          audio.spell(String(e.cardId)); // Oct 31: the counter spell's own sound, with its FX
           if (e.cardId === 'mirror-hex') replayDelay = SPELL_VISUALS['mirror-hex']?.ms || 0;
         }
       }
@@ -3566,7 +3567,7 @@ export class App {
         const mv = e.cardId === 'tunnel-rush' ? events.slice(events.indexOf(e) + 1).find((x: any) => x.type === 'move' && x.teleport) : null;
         this.emote(e.player, 'cast'); this.spellFx(e, { delay: replayDelay, to: mv ? mv.to : null, kind: replayDelay ? 'replay' : 'cast' });
         const id = String(e.cardId);
-        audio.play(id === 'fireball' ? 'fireball' : id === 'meteor-strike' ? 'meteor' : id === 'healing-light' || id === 'second-wind' ? 'heal' : id === 'shield-bubble' ? 'bubble' : 'spell');
+        audio.spell(id); // Oct 31: each spell's own file (spell-<id>.ogg), starting with its FX
       }
       else if (e.type === 'summon') {
         audio.play('cardPlay');

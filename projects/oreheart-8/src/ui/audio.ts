@@ -1,5 +1,27 @@
-// Sound effects and Goblin voices, synthesized with Web Audio (no files). Nothing is created until the first user gesture.
+// Sound effects and Goblin voices. Nothing is created until the first user gesture.
+// Oct 31 (Ken: "upgrade the sound"): effects play Brush's files in /audio/sfx/ (studio/sound-spec.json); the old synthesized
+// sound plays until a file has loaded (or if it fails to decode). Voices (voiceLine) stay synthesized.
 const LS = (k: string, d: number) => { const v = parseInt(localStorage.getItem(k) || '', 10); return isNaN(v) ? d : Math.max(0, Math.min(100, v)); };
+
+/** One sound event: its files in /audio/sfx/ (random pick when several), base volume, random pitch range (+/- semitones). */
+type SfxDef = { files: string[]; vol: number; st: number };
+const D = (files: string | string[], vol: number, st: number): SfxDef => ({ files: Array.isArray(files) ? files : [files], vol, st });
+export const sfxUrl = (file: string) => `/audio/sfx/${file}.ogg`;
+/** Event -> files, from studio/sound-spec.json (Brush, Oct 31). Keys are the audio.play() names; footsteps are step:<faction>, spells spell:<id>. */
+export const SFX: Record<string, SfxDef> = {
+  click: D('ui-click', 0.7, 0.5), tick: D('ui-tick', 0.6, 0.3), chime: D('ui-chime', 0.7, 0), draw: D('card-draw', 0.7, 1), cardPlay: D('card-play', 0.8, 0.7),
+  summon: D('summon', 0.85, 0.5), 'step:goblins': D('step-goblin', 0.5, 1.5), 'step:gnomes': D('step-gnome', 0.5, 1.5), 'step:dwarves': D('step-dwarf', 0.55, 1.2),
+  melee: D('melee', 0.9, 1), ranged: D('ranged', 0.85, 1), bonk: D(['bonk-1', 'bonk-2', 'bonk-3'], 0.9, 1), clink: D(['clink-1', 'clink-2', 'clink-3'], 0.85, 0.8),
+  thud: D('thud', 0.85, 1), pick: D('mine-pick', 0.8, 1), shatter: D('shatter', 0.85, 0.5), 'defeat-poof': D('defeat-poof', 0.85, 0.8),
+  stronghold: D('commander-hit', 1, 0.5), kaboom: D('kaboom', 1, 0.5), 'turn-start': D('turn-start', 0.85 * 0.6, 0), win: D('win', 1, 0), lose: D('lose', 1, 0),
+};
+/** All 13 spells have their own file, started together with the spell FX. */
+export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-rush', 'battle-cry', 'healing-light', 'shield-bubble', 'second-wind', 'prospectors-prayer', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex'];
+for (const id of SPELL_SOUNDS) SFX['spell:' + id] = D('spell-' + id, 1, 0);
+const OLD_SPELL: Record<string, string> = { fireball: 'fireball', 'meteor-strike': 'meteor', 'healing-light': 'heal', 'second-wind': 'heal', 'shield-bubble': 'bubble' };
+const MAX_VOICES = 3;
+/** Test hook entry: which key/file played, from the file or the synth fallback, its playbackRate and volume. */
+export type SfxPlay = { key: string; file: string | null; from: 'file' | 'synth' | 'muted' | 'locked'; rate: number; vol: number; voices: number; t: number; played: boolean };
 
 class AudioEngine {
   ctx: AudioContext | null = null;
@@ -30,6 +52,7 @@ class AudioEngine {
         void this.ctx.resume();
       } catch { this.ctx = null; }
       this.musicTick();
+      setTimeout(() => this.loadSfx(), 300); // lazy: the sound files load after the first gesture, never slowing the menu
       for (const e of ['pointerdown', 'keydown', 'click', 'touchstart']) window.removeEventListener(e, unlock, true);
     };
     for (const e of ['pointerdown', 'keydown', 'click', 'touchstart']) window.addEventListener(e, unlock, true);
@@ -81,7 +104,7 @@ class AudioEngine {
   }
 
   sfxLog: { name: string; src: string; screen: string; t: number; played: boolean }[] = [];
-  state() { return { sfxLog: this.sfxLog.slice(), unlocked: this.unlocked, muted: this.muted, sfxVolume: this.sfx, musicVolume: this.music, voiceVolume: this.voice, music: this.musicState(), log: this.musicLog.slice() }; }
+  state() { return { sfxLog: this.sfxLog.slice(), sfx: this.sfxState(), unlocked: this.unlocked, muted: this.muted, sfxVolume: this.sfx, musicVolume: this.music, voiceVolume: this.voice, music: this.musicState(), log: this.musicLog.slice() }; }
   applyVolumes() {
     if (!this.sfxGain || !this.voiceGain) return;
     this.sfxGain.gain.value = this.muted ? 0 : (this.sfx / 100) * 0.7;
@@ -117,8 +140,77 @@ class AudioEngine {
     s.start(t); s.stop(t + dur + 0.05);
   }
 
-  /** Plays a named effect. Unknown names are ignored. */
+  // ------------------------------------------------------------ sound files (Oct 31)
+  private bufs = new Map<string, AudioBuffer>();
+  private fileState: Record<string, 'loading' | 'ok' | 'error'> = {};
+  private voices: Record<string, { src: AudioBufferSourceNode; t: number }[]> = {};
+  private lastVariant: Record<string, number> = {};
+  private sfxLoading = false;
+  sfxPlays: SfxPlay[] = [];
+  /** Fetches and decodes every sound file once and caches the buffers. */
+  loadSfx() {
+    if (this.sfxLoading || !this.ctx) return;
+    this.sfxLoading = true;
+    const c = this.ctx;
+    for (const n of [...new Set(Object.values(SFX).flatMap((d) => d.files))]) {
+      this.fileState[n] = 'loading';
+      fetch(sfxUrl(n)).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.arrayBuffer(); })
+        .then((ab) => new Promise<AudioBuffer>((res, rej) => c.decodeAudioData(ab, res, rej)))
+        .then((b) => { this.bufs.set(n, b); this.fileState[n] = 'ok'; })
+        .catch(() => { this.fileState[n] = 'error'; });
+    }
+  }
+  sfxState() {
+    const active: Record<string, number> = {};
+    for (const [k, v] of Object.entries(this.voices)) if (v.length) active[k] = v.length;
+    return { plays: this.sfxPlays.slice(), files: { ...this.fileState }, loaded: this.bufs.size, map: Object.fromEntries(Object.entries(SFX).map(([k, d]) => [k, d.files.map(sfxUrl)])),
+      gain: this.sfxGain ? this.sfxGain.gain.value : null, maxVoices: MAX_VOICES, active };
+  }
+  /** Plays a named effect: its sound file when loaded, otherwise the old synthesized sound. Unknown names are ignored. */
   play(name: string, faction = 'goblins') {
+    this.playKey(name === 'step' ? 'step:' + faction : name, () => this.synth(name, faction));
+  }
+  /** A spell's own sound (spell-<id>.ogg), started at the same moment as its FX; a generic sound for unknown spells. */
+  spell(id: string) {
+    const key = 'spell:' + id;
+    this.playKey(SFX[key] ? key : 'spell', () => this.synth(OLD_SPELL[id] || 'spell'));
+  }
+  private playKey(key: string, fallback: () => void) {
+    const def = SFX[key];
+    const e: SfxPlay = { key, file: null, from: 'synth', rate: 1, vol: 0, voices: 0, t: Math.round(performance.now()), played: false };
+    const log = () => { this.sfxPlays.push(e); if (this.sfxPlays.length > 300) this.sfxPlays.shift(); };
+    if (!this.ok()) { e.from = this.muted ? 'muted' : 'locked'; log(); return; }
+    let file: string | null = null;
+    if (def) {
+      let i = 0;
+      if (def.files.length > 1) { // random variant, never the same one twice in a row
+        const last = this.lastVariant[key];
+        i = Math.floor(Math.random() * (def.files.length - (last === undefined ? 0 : 1)));
+        if (last !== undefined && i >= last) i++;
+        this.lastVariant[key] = i;
+      }
+      file = def.files[i];
+      e.file = sfxUrl(file);
+    }
+    const buf = file ? this.bufs.get(file) : undefined;
+    if (!def || !buf) { fallback(); e.played = true; log(); return; }
+    const c = this.ctx!;
+    const rate = Math.pow(2, ((Math.random() * 2 - 1) * def.st) / 12), vol = def.vol * Math.pow(10, ((Math.random() * 2 - 1) * 1.5) / 20);
+    const vs = (this.voices[key] ||= []);
+    while (vs.length >= MAX_VOICES) { const old = vs.shift()!; try { old.src.stop(); } catch { /* already ended */ } } // steal the oldest
+    const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate;
+    const g = c.createGain(); g.gain.value = vol;
+    src.connect(g).connect(this.sfxGain!); // through sfxGain: the volume slider and mute still apply
+    const v = { src, t: c.currentTime };
+    vs.push(v);
+    src.onended = () => { const k = vs.indexOf(v); if (k >= 0) vs.splice(k, 1); try { g.disconnect(); } catch { /* gone */ } };
+    src.start();
+    Object.assign(e, { from: 'file', rate, vol, voices: vs.length, played: true });
+    log();
+  }
+
+  /** The old synthesized effects: the fallback until a file has loaded. */
+  private synth(name: string, faction = 'goblins') {
     if (!this.ok()) return;
     switch (name) {
       case 'click': this.tone(520, 380, 0.07, 'square', 0.15); break;
@@ -145,6 +237,10 @@ class AudioEngine {
       case 'defeat-poof': this.tone(500, 200, 0.2, 'triangle', 0.3); this.noise(0.2, 2000, 1, 0.25); break;
       case 'win': [523, 659, 784, 1047].forEach((f, i) => this.tone(f, f, 0.3, 'triangle', 0.3, i * 0.14)); break;
       case 'lose': [392, 330, 262, 196].forEach((f, i) => this.tone(f, f * 0.98, 0.35, 'sawtooth', 0.2, i * 0.2)); break;
+      case 'bonk': this.tone(700, 180, 0.18, 'sine', 0.45); this.noise(0.06, 1500, 2, 0.3); break;
+      case 'clink': this.tone(2200, 2000, 0.25, 'triangle', 0.2); this.noise(0.05, 6000, 2, 0.25, 0, 'highpass'); break;
+      case 'thud': this.noise(0.25, 300, 1, 0.6, 0, 'lowpass', 80); this.tone(90, 40, 0.2, 'sine', 0.5); break;
+      case 'turn-start': this.tone(220, 220, 0.6, 'sawtooth', 0.12); this.tone(330, 330, 0.5, 'sawtooth', 0.08, 0.15); break;
       default: break;
     }
   }
