@@ -1,6 +1,6 @@
 # Automated check results
 
-553 of 570 checks passed after 5 build round(s).
+554 of 570 checks passed after 5 build round(s).
 
 - ✅ landscape phone viewport 844x390 › AC24: menu and full-screen match fit a 844x390 landscape phone
 - ✅ landscape phone viewport 740x360 › AC24: menu and full-screen match fit a 740x360 landscape phone
@@ -58,7 +58,7 @@
 - ✅ AC22: hand cards are buttons and open a card view
 - ✅ AC23: illegal actions are rejected and state is unchanged
 - ✅ AC25: first visit offers the tutorial; Skip is remembered
-- ✅ AC25: Tutorial button opens the guided match with tips and Skip Tutorial
+- ❌ AC25: Tutorial button opens the guided match with tips and Skip Tutorial
 - ✅ AC25: tutorial steps start at summon and advance after a back-row summon
 - ✅ AC26: printed creature Health is at most 6
 - ✅ AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 for 1
@@ -205,7 +205,7 @@
 - ✅ AC145: Copy to my decks makes an editable saved copy and leaves the starter deck unchanged; my decks can be removed
 - ✅ AC146: Choose Your Commander: big glowing Commander cards that stand out, big decks and text, filling the screen
 - ✅ AC149: the cover-fit painted view keeps both Commanders whole at every window shape (Round 8a)
-- ❌ AC150: no black bars at any window shape
+- ✅ AC150: no black bars at any window shape
 - ✅ AC152: Flow and bank numbers sit on both crystals with name, Flow and Next beside them
 - ✅ AC153: the phase tracker shows whose turn, the turn number and the current phase
 - ✅ AC154: the match Menu hides its items until hovered or tapped; Mute and Recenter work
@@ -250,7 +250,7 @@
 - ✅ AC176: the owner's card back and deck-pile pictures are used exactly
 - ✅ AC177: a popped card keeps the at-rest glow thickness and opacity
 - ✅ AC178: glow colors contrast with each faction frame
-- ❌ AC179: crystal mines are about 1.3 spaces tall and fit inside their square (owner, Oct 24)
+- ✅ AC179: crystal mines are about 1.3 spaces tall and fit inside their square (owner, Oct 24)
 - ✅ AC180: Grubnak model files are saved once with models.json; the game never calls Meshy
 - ✅ AC181: Grubnak is the Meshy model on his fortress with the scepter, about 2.4 tall, idling
 - ✅ AC182: Grubnak plays cast, defeat and celebrate at the right moments
@@ -438,7 +438,7 @@
 - ✅ round 23 hand at 1366x768 › AC365: the hand tucks within about a third of a second when the mouse leaves it, also onto the enlarged card (1366x768)
 - ❌ round 26 at 1920x1080 › AC370/AC372: the dragged card stays centered on the pointer; the square under it is highlighted; it grows back over the hand
 - ✅ round 26 at 1920x1080 › AC371: 300 ms after stopping over a square the card takes that square's on-screen shape (near and far square)
-- ✅ round 26 at 1920x1080 › AC373: dropping on a highlighted legal square plays the card there exactly as before
+- ❌ round 26 at 1920x1080 › AC373: dropping on a highlighted legal square plays the card there exactly as before
 - ❌ round 26 at 1920x1080 › AC375: the 3D canvas draws at the device pixel ratio; no scroll bars at 1920x1080, 2560x1080 and 3840x2160
 - ✅ round 26 at 1920x1080 › AC377: a payment that needs the Bank asks first; Yes pays Flow then Bank, No cancels
 - ✅ round 26 at 1920x1080 › AC378: with enough Flow there is no question and the Bank is unchanged
@@ -509,7 +509,7 @@
 - ✅ Oct 31 Ken drag icons 844x390 › AC444: dragging a unit shows its own faction emblem: dwarves gear, gnomes eye, goblins goblin (touch 844x390)
 - ✅ Oct 31 Ken discard pile 1920x1080 › AC445: the enemy discard pile sits a touch higher; its cards slide out from the left with no frame; Escape / outside closes it (1920x1080)
 - ✅ Oct 31 Ken discard pile 844x390 › AC445: the enemy discard pile sits a touch higher; its cards slide out from the left with no frame; Escape / outside closes it (844x390)
-- ✅ spell FX on a phone (844x390, touch) › AC473: phones load the -m files, the FX still plays, and no JS task over 100 ms during a fireball
+- ❌ spell FX on a phone (844x390, touch) › AC473: phones load the -m files, the FX still plays, and no JS task over 100 ms during a fireball
 - ✅ AC478 (desktop) › AC478: the computer's actions never overlap, and its card is shown and laid aside before it resolves (desktop)
 - ✅ AC478 (phone) › AC478: the computer's actions never overlap, and its card is shown and laid aside before it resolves (phone)
 - ✅ login screen 1920x1080 › AC504: login screen buttons are present, ≥44 px and on screen at 1920x1080
@@ -523,7 +523,7 @@
 - ✅ AC431: units and Commanders carry their gear: Knobbin's staff, the Gemsinger Miner's pickaxe, the Riot Shield Bearer's tower shield (phone)
 - ✅ AC470: every spell has its six painted FX layers on disk, PC and phone sets, and the FX spec is loaded
 - ✅ AC471: Searing Arcane Orb plays as an event: 3 beats in order, flat ring at the target, slow-mo, light shake, the FWOOSH! word pops and holds; the match goes on
-- ✅ AC472: Starfall covers the 3x3, Venom Shiv is thrown at its target, Thunderhorn glow stays on each buffed unit while the buff lasts, countered cards shatter into shards
+- ❌ AC472: Starfall covers the 3x3, Venom Shiv is thrown at its target, Thunderhorn glow stays on each buffed unit while the buff lasts, countered cards shatter into shards
 - ✅ AC474: the emoji glyph spell FX are gone: no glyph sticker on a cast
 - ❌ AC475: Starfall Cataclysm: every unit in the 3x3 is hit at the meteor's impact, none before it
 - ✅ AC476: Desperate Plunder: gems fly from the caster into its Flow counter at impact and land
@@ -531,11 +531,11 @@
 - ✅ AC500: the database checks are present (run by the factory with run-supabase.sh)
 - ✅ AC502 + AC544: online switch and env-guard files and their unit tests exist
 - ✅ AC527: secret scan passes on the repo and both dist folders
-- ❌ AC528 + AC529: dist sizes; the game calls no admin_ function except am_i_admin; admin has no game art
-- ❌ AC530: REPORT.md has Ken's SQL lines, the lawyer reminder, editor updates and the status list
+- ✅ AC528 + AC529: dist sizes; the game calls no admin_ function except am_i_admin; admin has no game art
+- ✅ AC530: REPORT.md has Ken's SQL lines, the lawyer reminder, editor updates and the status list
 - ✅ AC501: ?test=1 without online=1 goes straight to the menu with hooks and no login or test bar
-- ❌ AC503: Play offline (practice) opens the menu and a vs-computer match makes no /rest/v1/ request
-- ✅ AC505: 13+ sign-up, confirmation email, then avatar, welcome and menu
+- ✅ AC503: Play offline (practice) opens the menu and a vs-computer match makes no /rest/v1/ request
+- ❌ AC505: 13+ sign-up, confirmation email, then avatar, welcome and menu
 - ✅ AC506: username messages and the Create account button rule
 - ✅ AC507: wrong password and unconfirmed email messages; Send the email again sends one
 - ✅ AC508: forgot password email opens Set a new password; new works, old fails
@@ -557,7 +557,7 @@
 - ✅ AC515: player direct writes are refused and change nothing
 - ✅ AC516: a player reads only their own profile, wallet and decks
 - ✅ AC517: logged out, only the public functions work
-- ❌ AC518: a non-admin sees "Not an admin" after 2-step and is refused by admin functions
+- ✅ AC518: a non-admin sees "Not an admin" after 2-step and is refused by admin functions
 - ✅ AC519 + AC520: admin password-only goes to 2-step; then the player list finds players and shows money spent
 - ✅ AC520: admin list paging works with more than 25 players
 - ✅ AC521 + AC543: player cards have ids; Card lookup shows owners, origin and history; transfer shows both owners
@@ -576,6 +576,19 @@
 ## Failures
 
 ```
+✗ AC25: Tutorial button opens the guided match with tips and Skip Tutorial
+TimeoutError: locator.click: Timeout 10000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: 'Skip Tutorial' })
+    - locator resolved to <button type="button" class="btn tip-skip">Skip Tutorial</button>
+  - attempting click action
+    - waiting for element to be visible, enabled and stable
+    - element is visible, enabled and stable
+    - scrolling into view if needed
+    - done scrolling
+
+
+  1283 |   await expect(tip).toBeVisible();
 ✗ AC84: finished Goblin figures, Grubnak, Strongholds and mines on the battlefield
 Error: gnome-prospector
 
@@ -589,71 +602,43 @@ Received: "placeholder"
 > 2897 |     expect(f.model, f.cardId).toBe(c.cardId.startsWith('gnome') && !GD_MODELS.includes(c.cardId) ? 'placeholder' : 'finished'); // owner change (Ken, Oct 30): the Gemsinger Miner has its 3D model
        |                               ^
   2898 |   }
-✗ AC150: no black bars at any window shape
-TimeoutError: locator.boundingBox: Timeout 10000ms exceeded.
-Call log:
-  - waiting for getByLabel('Battlefield', { exact: true })
-    - locator resolved to visible <div class="board" role="application" aria-label="Battlefield">…</div>
-
-
-  4553 |     await page.setViewportSize({ width: W, height: H });
-  4554 |     await page.waitForTimeout(800);
-> 4555 |     const bf = await page.getByLabel('Battlefield', { exact: true }).boundingBox();
-       |                                                                      ^
-  4556 |     expect(bf.x <= 1 && bf.y <= 1 && bf.width >= W - 2 && bf.height >= H - 2, `${W}x${H} battlefield fills the window`).toBe(true);
-  4557 |     expect(await blackEdges(page), `${W}x${H} black bars`).toEqual([]);
 ✗ round 9c arena › AC228: the arena canvas draws every frame and the screen center is not the plain board color
 Error: arena draw calls in window 0
 
 expect(received).toBeGreaterThan(expected)
 
-Expected: > 1290
-Received:   1290
+Expected: > 1292
+Received:   1292
 
   6747 |       expect(a, 'canvas[data-arena-canvas] exists').toBeGreaterThanOrEqual(0);
   6748 |       await page.waitForTimeout(500);
 > 6749 |       expect(await arenaDraws(page), `arena draw calls in window ${i}`).toBeGreaterThan(a);
        |                                                                         ^
   6750 |     }
-✗ AC179: crystal mines are about 1.3 spaces tall and fit inside their square (owner, Oct 24)
-Error: expect(received).toBeLessThanOrEqual(expected)
-
-Expected: <= 1.45
-Received:    2.4819999999999998
-
-  5444 |   for (const m of r.mineModels) {
-  5445 |     expect(m.height).toBeGreaterThanOrEqual(1.1);
-> 5446 |     expect(m.height).toBeLessThanOrEqual(1.45);
-       |                      ^
-  5447 |   }
-  5448 | });
-  5449 |
 ✗ AC231: the stronghold never moves; Grubnak emotes in place and returns to his turn
-Error: expect(received).toEqual(expected) // deep equality
+Error: stronghold moved during laugh
 
-- Expected  - 5
-+ Received  + 5
+expect(received).toEqual(expected) // deep equality
 
-@@ -1,17 +1,17 @@
+- Expected  - 8
++ Received  + 8
+
   Array [
 -   0.89513,
--   0,
--   0,
-+   1.06252,
++   -0.65393,
     0,
++   -0.44108,
 ✗ round 23 hand at 1920x1080 › AC364: grabbing a card tucks the rest of the hand, and it stays tucked after a play or a cancel (1920x1080)
-Error: rest of the hand tucks once a card is grabbed
-
-expect(received).toBe(expected) // Object.is equality
-
-Expected: true
-Received: false
-
-Call Log:
-- Timeout 1200ms exceeded while waiting on the predicate
+Error: Timeout 1200ms exceeded while waiting on the predicate
 
   10016 |       await page.mouse.move(from.x, from.y - 30, { steps: 3 });
   10017 |       await page.mouse.move((from.x + target.x) / 2, (from.y + target.y) / 2, { steps: 5 });
+> 10018 |       await expect.poll(tuckedOk, { message: 'rest of the hand tucks once a card is grabbed', timeout: 1200 }).toBe(true);
+        |       ^
+  10019 |       await page.mouse.move(target.x, target.y, { steps: 5 });
+  10020 |       expect(await tuckedOk()).toBe(true);
+  10021 |       await page.mouse.up();
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:10018:7
 ✗ round 23 hand at 1366x768 › AC364: grabbing a card tucks the rest of the hand, and it stays tucked after a play or a cancel (1366x768)
 Error: rest of the hand tucks once a card is grabbed
 
@@ -673,13 +658,24 @@ Error: grows back over the hand
 expect(received).toBeLessThanOrEqual(expected)
 
 Expected: <= 0.05
-Received:    0.4583333316343901
+Received:    0.45833333229445733
 
 Call Log:
 - Timeout 2000ms exceeded while waiting on the predicate
 
   10186 |     await page.mouse.move(from.x, handY, { steps: 8 });
   10187 |     await page.waitForTimeout(300);
+✗ round 26 at 1920x1080 › AC373: dropping on a highlighted legal square plays the card there exactly as before
+Error: Timeout 3000ms exceeded while waiting on the predicate
+
+  10230 |     expect((await dragCard(page)).highlight).toMatchObject({ row: 7, col: 6, legal: true });
+  10231 |     await page.mouse.up();
+> 10232 |     await expect.poll(async () => { const c = at(await getState(page), 7, 6); return c && c.cardId; }, { timeout: 3000 }).toBe('goblin-scrounger');
+        |     ^
+  10233 |     const s = await getState(page);
+  10234 |     expect(s.players.player.hand.length).toBe(before.players.player.hand.length - 1);
+  10235 |     expect(s.players.player.crystals).toBe(before.players.player.crystals - 1);
+    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:10232:5
 ✗ round 26 at 1920x1080 › AC375: the 3D canvas draws at the device pixel ratio; no scroll bars at 1920x1080, 2560x1080 and 3840x2160
 Error: Timeout 5000ms exceeded while waiting on the predicate
 
@@ -730,6 +726,32 @@ Call Log:
   11009 |   expect((await act(page, mv)).ok).toBe(true);
 > 11010 |   await expect.poll(async () => Math.abs((await rig()).wheelTurns - turns0), { timeout: 8000 }).toBeGreaterThan(0.3); // the wheels roll along the ground
         |   ^
+✗ spell FX on a phone (844x390, touch) › AC473: phones load the -m files, the FX still plays, and no JS task over 100 ms during a fireball
+Error: long tasks during the fireball: [90, 2975] ms; same cast without FX: [107, 90] ms
+
+expect(received).toBeLessThanOrEqual(expected)
+
+Expected: <= 189.1
+Received:    2975
+
+  11863 |     // no JS task over 100 ms during the fireball; where the page is slower than that without the FX too, the FX adds no long task of its own
+  11864 |     const cap = Math.max(100, Math.max(0, ...base) * 1.3 + 50);
+> 11865 |     expect(Math.max(0, ...long), `long tasks during the fireball: [${long.join(', ')}] ms; same cast without FX: [${base.join(', ')}] ms`).toBeLessThanOrEqual(cap);
+        |                                                                                                                                            ^
+  11866 |   });
+✗ AC472: Starfall covers the 3x3, Venom Shiv is thrown at its target, Thunderhorn glow stays on each buffed unit while the buff lasts, countered cards shatter into shards
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 0
+Received: 1
+
+Call Log:
+- Timeout 5000ms exceeded while waiting on the predicate
+
+  11763 |   expect(f.layers.ring.scale, 'the ring grows over the whole 3x3').toBeGreaterThanOrEqual(3);
+  11764 |   expect(f.layers.ring.cell).toEqual({ row: 3, col: 6 });
+> 11765 |   await expect.poll(async () => (await sfxNow(page)).active.length, { timeout: 5000 }).toBe(0);
+        |   ^
 ✗ AC475: Starfall Cataclysm: every unit in the 3x3 is hit at the meteor's impact, none before it
 Error: every unit in the 3x3 reacts
 
@@ -743,54 +765,17 @@ Call Log:
 
   11909 |   const impactAt = fx.startedAt + fx.impactMs;
   11910 |   const hitAt = async () => { const log = (await renderStats(page)).creatureAnimLog || []; return foes.map((c) => { const e = log.find((x) => x.uid === c.uid && (x.anim === 'hit' || x.anim === 'defeat' || x.anim === 'knockback')); return e ? e.at : 0; }); };
-✗ AC528 + AC529: dist sizes; the game calls no admin_ function except am_i_admin; admin has no game art
-Error: expect(received).toBeLessThan(expected)
+✗ AC505: 13+ sign-up, confirmation email, then avatar, welcome and menu
+Error: expect(locator).toBeVisible() failed
 
-Expected: < 99614720
-Received:   160910771
+Locator: getByRole('heading', { name: 'Sign in', exact: true })
+Expected: visible
+Timeout: 15000ms
+Error: element(s) not found
 
-  12185 |   const { fs, path, dir, admin } = await adminDir();
-  12186 |   const size = (d) => walk(fs, path, d).reduce((s, f) => s + fs.statSync(f).size, 0);
-> 12187 |   expect(size(path.join(dir, 'dist'))).toBeLessThan(95 * 1024 * 1024);
-        |                                        ^
-  12188 |   const adminFiles = walk(fs, path, path.join(admin, 'dist'));
-  12189 |   expect(adminFiles.length).toBeGreaterThan(0);
-  12190 |   expect(size(path.join(admin, 'dist'))).toBeLessThan(2 * 1024 * 1024);
-✗ AC530: REPORT.md has Ken's SQL lines, the lawyer reminder, editor updates and the status list
-Error: expect(received).toMatch(expected)
+Call log:
+  - Expect "toBeVisible" with timeout 15000ms
+  - waiting for getByRole('heading', { name: 'Sign in', exact: true })
 
-Expected pattern: /Ken's SQL lines/
-Received string:  "## What was built
-This round was a clean-up of the Oreheart card battle game: making the last round's new features (card dragging, \"Done\" pop-up, mine emblems, full-screen sharpness and more) work, and fixing older broken checks. No new features or rule changes were intended.·
-## Try these things
-- On the main menu, hover and click Play, then pick a Commander and deck and start a match.
-- Drag a card from your hand onto a lit square on the board and see if it plays there.
-- Hover over your hand: the cards should rise and neighbours should move aside.
-- Click \"Done\" without making a move and see whether a \"go back / continue\" pop-up appears.
-- Click a crystal mine with a Miner next to it, and try the Menu in the top-left.
-- Open the preview on a phone held sideways and play a few turns.·
-✗ AC503: Play offline (practice) opens the menu and a vs-computer match makes no /rest/v1/ request
-Error: {"ok":false,"error":"Illegal action: done"}
 
-expect(received).toBe(expected) // Object.is equality
-
-Expected: true
-Received: false
-
-  34 |   for (let i = 0; i < n; i++) {
-  35 |     const r = await act(page, { type: 'done' });
-> 36 |     expect(r.ok, JSON.stringify(r)).toBe(true);
-     |                                     ^
-  37 |   }
-✗ AC518: a non-admin sees "Not an admin" after 2-step and is refused by admin functions
-TypeError: Cannot read properties of null (reading 'id')
-
-  12770 |   const c = await loginApi(u);
-  12771 |   const { data: f } = await c.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'g' + letters(6) });
-> 12772 |   await c.auth.mfa.challengeAndVerify({ factorId: f.id, code: await totpCode(f.totp.secret) });
-        |                                                     ^
-  12773 |   expect((await c.rpc('admin_list_players', {})).error).not.toBeNull();
-  12774 | });
-  12775 |
-    at /home/runner/work/Starter/Starter/factory/.run-tests/acceptance.spec.mjs:12772:53
 ```
