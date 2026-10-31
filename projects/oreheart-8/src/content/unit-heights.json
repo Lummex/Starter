@@ -257,5 +257,298 @@
     "squares": 1.638
    }
   }
+ },
+ "_measured": {
+  "_readme": "Snapshot measured in the game (headless Chromium, Oct 31, characterSizes.creatures = 1). natural = the body standing height in its own model units (idle sampled over its loop, tallest frame; hands, forearms, fingers and items not counted) and the whole posed box at idle frame 0; board = the standing height measured on the board at one moment of the idle. The game measures every figure itself when it is built (a unit picks a random shared idle, so natural varies by a few %); these numbers are for the editors and reports, the scale comes from _table.",
+  "units": {
+   "axe-thrower": {
+    "naturalStanding": 1.0163,
+    "naturalBox": 1.0033,
+    "squares": 1.179,
+    "board": 1.179
+   },
+   "barrelback-courier": {
+    "naturalStanding": 1.0221,
+    "naturalBox": 1.0038,
+    "squares": 1.153,
+    "board": 1.129
+   },
+   "blastrat-sapper": {
+    "naturalStanding": 1.0351,
+    "naturalBox": 1.0194,
+    "squares": 0.825,
+    "board": 0.824
+   },
+   "brewmaster": {
+    "naturalStanding": 1.0426,
+    "naturalBox": 0.9949,
+    "squares": 1.179,
+    "board": 1.156
+   },
+   "clockwork-beetle": {
+    "naturalStanding": 1.4872,
+    "naturalBox": 1.4712,
+    "squares": 0.786,
+    "board": 0.785
+   },
+   "crystal-drunk-delver": {
+    "naturalStanding": 0.9703,
+    "naturalBox": 0.9658,
+    "squares": 1.218,
+    "board": 1.182
+   },
+   "deepforge-crossbowman": {
+    "naturalStanding": 1.0745,
+    "naturalBox": 1.0654,
+    "squares": 1.14,
+    "board": 1.124
+   },
+   "dwarf-miner": {
+    "naturalStanding": 1.0967,
+    "naturalBox": 1.0888,
+    "squares": 1.048,
+    "board": 1.041
+   },
+   "dwarf-pickman": {
+    "naturalStanding": 0.9624,
+    "naturalBox": 0.9624,
+    "squares": 1.153,
+    "board": 1.142
+   },
+   "dwarf-smith-miner": {
+    "naturalStanding": 1.0061,
+    "naturalBox": 0.9782,
+    "squares": 1.048,
+    "board": 1.026
+   },
+   "dwarf-stoneback": {
+    "naturalStanding": 1.0062,
+    "naturalBox": 1.0057,
+    "squares": 1.074,
+    "board": 1.074
+   },
+   "gearward-sentinel": {
+    "naturalStanding": 1.0699,
+    "naturalBox": 1.028,
+    "squares": 1.179,
+    "board": 1.159
+   },
+   "glyphshield-warden": {
+    "naturalStanding": 1.0059,
+    "naturalBox": 1.0054,
+    "squares": 0.838,
+    "board": 0.838
+   },
+   "gnome-cogger": {
+    "naturalStanding": 1.0931,
+    "naturalBox": 1.0813,
+    "squares": 0.812,
+    "board": 0.81
+   },
+   "gnome-illusionist": {
+    "naturalStanding": 0.9792,
+    "naturalBox": 0.9792,
+    "squares": 0.838,
+    "board": 0.808
+   },
+   "gnome-prospector": {
+    "naturalStanding": 0.9666,
+    "naturalBox": 0.9645,
+    "squares": 0.655,
+    "board": 0.64
+   },
+   "gnome-smith-miner": {
+    "naturalStanding": 1.0249,
+    "naturalBox": 1.005,
+    "squares": 0.694,
+    "board": 0.683
+   },
+   "gnome-tinker": {
+    "naturalStanding": 1.043,
+    "naturalBox": 1.0178,
+    "squares": 0.773,
+    "board": 0.772
+   },
+   "gnome-widget": {
+    "naturalStanding": 1.0234,
+    "naturalBox": 1.016,
+    "squares": 0.734,
+    "board": 0.734
+   },
+   "goblin-bomber": {
+    "naturalStanding": 0.9755,
+    "naturalBox": 0.9755,
+    "squares": 0.865,
+    "board": 0.81
+   },
+   "goblin-grunt": {
+    "naturalStanding": 1.0057,
+    "naturalBox": 1.0041,
+    "squares": 0.865,
+    "board": 0.839
+   },
+   "goblin-pebbler": {
+    "naturalStanding": 1.0312,
+    "naturalBox": 1.0266,
+    "squares": 0.852,
+    "board": 0.851
+   },
+   "goblin-scrapper": {
+    "naturalStanding": 1.0403,
+    "naturalBox": 1.0023,
+    "squares": 0.969,
+    "board": 0.944
+   },
+   "goblin-scrounger": {
+    "naturalStanding": 1.0209,
+    "naturalBox": 0.982,
+    "squares": 0.786,
+    "board": 0.782
+   },
+   "goblin-slinger": {
+    "naturalStanding": 1.0343,
+    "naturalBox": 1.0109,
+    "squares": 0.891,
+    "board": 0.842
+   },
+   "goblin-smith-miner": {
+    "naturalStanding": 1.0594,
+    "naturalBox": 0.965,
+    "squares": 0.825,
+    "board": 0.809
+   },
+   "goblin-sneak": {
+    "naturalStanding": 1.0383,
+    "naturalBox": 1.0085,
+    "squares": 0.865,
+    "board": 0.858
+   },
+   "grimhold-ravager": {
+    "naturalStanding": 0.9855,
+    "naturalBox": 0.9855,
+    "squares": 1.218,
+    "board": 1.154
+   },
+   "grubnaks-big-boss-troll": {
+    "naturalStanding": 1.6241,
+    "naturalBox": 1.5789,
+    "squares": 1.638,
+    "board": 1.611
+   },
+   "gyrocopter-ace": {
+    "naturalStanding": 1.0441,
+    "naturalBox": 1.0432,
+    "squares": 0.917,
+    "board": 0.91
+   },
+   "hexwright-apprentice": {
+    "naturalStanding": 1.0389,
+    "naturalBox": 1.0377,
+    "squares": 0.76,
+    "board": 0.758
+   },
+   "ironhammer-berserker": {
+    "naturalStanding": 1.0411,
+    "naturalBox": 1.0411,
+    "squares": 1.205,
+    "board": 1.204
+   },
+   "junk-shaman": {
+    "naturalStanding": 1.0727,
+    "naturalBox": 1.0727,
+    "squares": 1.009,
+    "board": 0.958
+   },
+   "oathbound-pikeman": {
+    "naturalStanding": 1.0108,
+    "naturalBox": 1.0108,
+    "squares": 1.179,
+    "board": 1.176
+   },
+   "overclocked-conduit": {
+    "naturalStanding": 0.9915,
+    "naturalBox": 0.9863,
+    "squares": 1.179,
+    "board": 1.09
+   },
+   "phase-stalker": {
+    "naturalStanding": 0.895,
+    "naturalBox": 0.8862,
+    "squares": 0.852,
+    "board": 0.852
+   },
+   "queen-brunhilda-stonebeard": {
+    "naturalStanding": 1.0289,
+    "naturalBox": 1.0263,
+    "squares": 1.441,
+    "board": 1.437
+   },
+   "ram-rider": {
+    "naturalStanding": 0.9991,
+    "naturalBox": 0.9991,
+    "squares": 1.31,
+    "board": 1.282
+   },
+   "rotgut-grenadier": {
+    "naturalStanding": 1.0261,
+    "naturalBox": 1.0032,
+    "squares": 0.93,
+    "board": 0.907
+   },
+   "rune-splitter": {
+    "naturalStanding": 1.0189,
+    "naturalBox": 0.9969,
+    "squares": 1.205,
+    "board": 1.203
+   },
+   "runic-siphoner": {
+    "naturalStanding": 1.0134,
+    "naturalBox": 1.0065,
+    "squares": 0.878,
+    "board": 0.873
+   },
+   "shard-guzzler": {
+    "naturalStanding": 1.0307,
+    "naturalBox": 1.0064,
+    "squares": 0.969,
+    "board": 0.939
+   },
+   "shieldbeard": {
+    "naturalStanding": 1.02,
+    "naturalBox": 0.9879,
+    "squares": 1.179,
+    "board": 1.156
+   },
+   "shiv-rat": {
+    "naturalStanding": 0.9094,
+    "naturalBox": 0.9094,
+    "squares": 0.904,
+    "board": 0.898
+   },
+   "skullbasher-rusher": {
+    "naturalStanding": 1.0139,
+    "naturalBox": 1.0139,
+    "squares": 0.904,
+    "board": 0.842
+   },
+   "spark-gnome": {
+    "naturalStanding": 1.0232,
+    "naturalBox": 1.0231,
+    "squares": 0.799,
+    "board": 0.79
+   },
+   "the-great-steam-golem": {
+    "naturalStanding": 1.8381,
+    "naturalBox": 1.8296,
+    "squares": 2.882,
+    "board": 2.806
+   },
+   "wolf-rider": {
+    "naturalStanding": 1.0241,
+    "naturalBox": 1.0219,
+    "squares": 1.048,
+    "board": 0.984
+   }
+  }
  }
 }

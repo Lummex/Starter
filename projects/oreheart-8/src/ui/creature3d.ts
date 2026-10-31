@@ -28,7 +28,8 @@ export function standingBox(o: THREE.Object3D, into = new THREE.Box3()): THREE.B
     if (!pos || !si || !sw) return;
     m.skeleton.update();
     const bad: boolean[] = m.skeleton.bones.map((b: THREE.Bone) => NOT_STANDING.test(b.name));
-    for (let i = 0; i < pos.count; i++) {
+    const step = Math.max(1, Math.floor(pos.count / 4000)); // ~4000 samples per mesh keep it quick (the Studio editor samples the same way)
+    for (let i = 0; i < pos.count; i += step) {
       let bi = si.getX(i), bw = sw.getX(i);
       if (sw.getY(i) > bw) { bw = sw.getY(i); bi = si.getY(i); }
       if (sw.getZ(i) > bw) { bw = sw.getZ(i); bi = si.getZ(i); }
