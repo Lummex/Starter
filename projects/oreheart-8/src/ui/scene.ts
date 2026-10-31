@@ -6,7 +6,8 @@ import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missin
 import { stagePlow, plowFrame } from './plow';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D, loadCommander3d, makeCommander3d, commander3dReady, commanderIds3d } from './grubnak3d';
 import { makeMineFx, MineFx } from './mineFx';
-import { createSpellFx, type SpellFxRequest } from './spell-fx';
+import { createSpellFx, fxImpactMs, type SpellFxRequest } from './spell-fx';
+import { SPELL_VISUALS } from '../content/spell-visuals';
 import { mineEmblemUrl } from './cardfmt';
 import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
 import { audio } from './audio';
@@ -542,7 +543,7 @@ const _embV = new THREE.Vector3();
     if (a3 && c3) {
       // owner-sheet Meshy model (rigged, animated); dummy parts keep the procedural reactions harmless
       g = new THREE.Group(); g.add(c3.group);
-      const cc3 = c3; cc3.onPlay = (n) => { if (n !== 'idle') creatureAnimLog.push({ uid: c.uid, cardId: c.cardId, anim: n === 'run' ? 'walk' : n, clip: cc3.clipOf?.(n) || '', ...(n === 'run' ? { gait: 'run' } : {}) }); };
+      const cc3 = c3; cc3.onPlay = (n) => { if (n !== 'idle') creatureAnimLog.push({ uid: c.uid, cardId: c.cardId, at: Math.round(performance.now()), anim: n === 'run' ? 'walk' : n, clip: cc3.clipOf?.(n) || '', ...(n === 'run' ? { gait: 'run' } : {}) }); };
       const dm = () => new THREE.Group();
       parts = { armL: dm(), armR: dm(), head: dm(), body: dm(), weapon: dm(), legL: dm(), legR: dm(), aura: null };
       finished = true; mats = c3.mats; baseScale = CREATURE_H;
@@ -932,6 +933,15 @@ const _embV = new THREE.Vector3();
         def.faceTo = Math.atan2(f.target.x - def.target.x, f.target.z - def.target.z); def.faceUntil = f.blowAt + 1100; // braces, facing the attacker
       }
     }
+    // Oct 31 (Forge): a damage spell with painted FX lands at the FX's impact, not at the cast: hit flashes (every unit in Starfall's 3x3),
+    // deaths, the Commander's hit sound and the Bulwark pop wait for it. Hex Reversal's copied spell plays after the reflection.
+    if (!blowAt && events.some((x: any) => x.type === 'damage')) {
+      let lag = 0;
+      for (const e of events) {
+        if (e.type === 'counter' && e.cardId === 'mirror-hex') lag = SPELL_VISUALS['mirror-hex']?.ms || 0;
+        if (e.type === 'spell') { const im = fxImpactMs(String(e.cardId)); if (im != null) blowAt = Math.max(blowAt, now + lag + im); }
+      }
+    }
     if (blowAt) for (const f of figs.values()) if (f.kb && f.kb.knockMove && f.kb.t0 === now) { f.kb.t0 = blowAt; f.knockT = blowAt + 100; } // ability knocks land with the blow
     for (const [uid, f] of figs) if (!seen.has(uid) && !f.dying) {
       const ride = events.find((e) => e.type === 'abilityUsed' && e.uid === uid && (e.ability === 'slide' || e.ability === 'rocket')); // Oct 31: a sewer slide / rocket ride that ends in a blast plays out first
@@ -1304,6 +1314,8 @@ const _embV = new THREE.Vector3();
     scene, camera, renderer, low, testMode, world: (r, c) => world(r, c),
     cellOf: (p) => ({ row: Math.round(p.z + (BH + 1) / 2), col: Math.round(p.x + (BW + 1) / 2) }),
     shakeEls: () => [canvas, backCanvas], flashHost: container,
+    flowDest: (side) => { updateFlowDest(); return flowDest[side] ? flowDest[side]!.clone() : null; },
+    flowPulse: (side) => { pulseAt[side] = performance.now(); },
   });
   /** Thunderhorn Blast's glow stays on every unit of the buffed side while the buff lasts */
   function syncBuffNow(now: number) {

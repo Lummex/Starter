@@ -11888,3 +11888,52 @@ test('AC474: the emoji glyph spell FX are gone: no glyph sticker on a cast', asy
     expect((await sfxLog(page)).some((e) => e.spell === id), `${id} played its painted FX`).toBe(true);
   }
 });
+
+// ---------- Oct 31 (Forge): the two spell FX leftovers ----------
+// Starfall: the units in the 3x3 take their hit flash when the meteor LANDS (the FX's impact), not at the cast. Desperate Plunder: gems fly from the
+// caster into that side's Flow counter at impact and pulse it on landing.
+test('AC475: Starfall Cataclysm: every unit in the 3x3 is hit at the meteor\'s impact, none before it', async ({ page }) => {
+  test.setTimeout(90000);
+  await start(page, { ai: false, skipMulligan: true, playerCommander: 'sproingle', opponentCommander: 'grubnak', mines: [{ row: 3, col: 3 }, { row: 4, col: 7 }, { row: 5, col: 11 }],
+    setup: { firstPlayer: 'player', playerCrystals: 9, playerHand: ['meteor-strike'], factionLock: false,
+      board: [{ cardId: 'goblin-grunt', owner: 'opponent', row: 2, col: 5 }, { cardId: 'goblin-scrapper', owner: 'opponent', row: 2, col: 6 }, { cardId: 'goblin-sneak', owner: 'opponent', row: 3, col: 6 }] }, factionLock: false });
+  const s0 = await getState(page);
+  const foes = s0.board.creatures.filter((c) => c.owner === 'opponent');
+  await expect.poll(async () => { const f = ((await renderStats(page)).figures || []).filter((x) => foes.some((c) => c.uid === x.uid)); return f.length === 3 && f.every((x) => x.model === 'finished'); }, { timeout: 45000 }).toBe(true);
+  const cast = (await legal(page)).find((a) => a.type === 'cast' && a.target && a.target.row === 2 && a.target.col === 6) || (await legal(page)).find((a) => a.type === 'cast' && a.target && a.target.row === 3 && a.target.col === 6);
+  expect(cast, 'Starfall can target the middle of the three').toBeTruthy();
+  await page.evaluate(() => window.oreheart.clearSpellFxLog());
+  expect((await act(page, cast)).ok).toBe(true);
+  let fx = null;
+  await expect.poll(async () => { fx = ((await page.evaluate(() => window.oreheart.getSpellFxLog())) || []).find((x) => x.spell === 'meteor-strike' && x.kind === 'cast'); return !!fx; }, { timeout: 8000 }).toBe(true);
+  const impactAt = fx.startedAt + fx.impactMs;
+  const hitAt = async () => { const log = (await renderStats(page)).creatureAnimLog || []; return foes.map((c) => { const e = log.find((x) => x.uid === c.uid && (x.anim === 'hit' || x.anim === 'defeat' || x.anim === 'knockback')); return e ? e.at : 0; }); };
+  await expect.poll(async () => (await hitAt()).every((t) => t > 0), { timeout: 15000, message: 'every unit in the 3x3 reacts' }).toBe(true);
+  const at = await hitAt();
+  for (const [i, t] of at.entries()) {
+    expect(t, `${foes[i].cardId} was hit ${Math.round(impactAt - t)} ms BEFORE the meteor landed`).toBeGreaterThanOrEqual(impactAt - 40);
+    expect(t - impactAt, `${foes[i].cardId} reacted long after the impact`).toBeLessThan(2500);
+  }
+});
+
+test('AC476: Desperate Plunder: gems fly from the caster into its Flow counter at impact and land', async ({ page }) => {
+  test.setTimeout(60000);
+  for (const [W, H] of [[1920, 1080], [844, 390]]) {
+    await page.setViewportSize({ width: W, height: H });
+    await start(page, { ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo',
+      setup: { firstPlayer: 'player', playerCrystals: 9, playerHand: ['prospectors-prayer'], factionLock: false }, factionLock: false });
+    const cast = (await legal(page)).find((a) => a.type === 'cast');
+    expect(cast, 'Desperate Plunder can be cast').toBeTruthy();
+    await page.evaluate(() => window.oreheart.clearSpellFxLog());
+    expect((await act(page, cast)).ok).toBe(true);
+    let fx = null;
+    await expect.poll(async () => { fx = ((await page.evaluate(() => window.oreheart.getSpellFxLog())) || []).find((x) => x.spell === 'prospectors-prayer' && x.kind === 'cast'); return !!(fx && fx.gems); }, { timeout: 8000 }).toBe(true);
+    const g = fx.gems;
+    expect(g.to, `${W}x${H} into the caster's Flow counter`).toBe('player-flow-crystal');
+    expect(g.count, `${W}x${H} a handful of gems`).toBeGreaterThanOrEqual(5);
+    expect(Math.abs(g.startsAt - (fx.startedAt + fx.impactMs)), `${W}x${H} the gems leave at impact`).toBeLessThanOrEqual(5);
+    await expect.poll(async () => (((await page.evaluate(() => window.oreheart.getSpellFxLog())) || []).find((x) => x.id === fx.id)?.gems?.landedAt) || 0, { timeout: 12000, message: 'the gems land' }).toBeGreaterThan(0);
+    const landed = ((await page.evaluate(() => window.oreheart.getSpellFxLog())) || []).find((x) => x.id === fx.id).gems.landedAt;
+    expect(landed - g.startsAt, `${W}x${H} the flight takes about its own time`).toBeGreaterThanOrEqual(g.flightMs - 40);
+  }
+});

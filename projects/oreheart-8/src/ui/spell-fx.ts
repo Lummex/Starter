@@ -51,6 +51,15 @@ let current: SpellFxPlayer | null = null;
 /** test hook: off = cast spells play no FX (a yardstick for the performance check) */
 let fxEnabled = true;
 export function setSpellFxEnabled(v: boolean) { fxEnabled = !!v; }
+/** Oct 31: ms from the start of a spell's FX to its impact (same math as play()); null when the spell has no painted FX or FX are off.
+ *  The scene times the spell's hit flashes, deaths and bubble pops to this, so Starfall's 3x3 flashes as the meteor lands. */
+export function fxImpactMs(spell: string): number | null {
+  const s = SPELL_FX_SPEC.spells[spell];
+  if (!s || !fxEnabled) return null;
+  const [b0, b1] = s.beats;
+  const moving = !['at_caster', 'at_target'].includes(s.path);
+  return b0.ms + Math.round(b1.ms * (moving ? 0.4 : 0.15));
+}
 export function spellFxNow(): any { return current ? current.now() : { active: [], buffGlows: [] }; }
 export function spellFxAt(id: number, ms: number): any { return current ? current.timeline(id, ms) : null; }
 
@@ -98,6 +107,9 @@ export interface SpellFxHost {
   /** elements that shake (both board canvases) and the element the tint flash covers */
   shakeEls(): HTMLElement[];
   flashHost: HTMLElement;
+  /** Oct 31: a world point just under a side's HUD Flow counter (Prospector's Prayer gems fly there), and a pulse when they land */
+  flowDest?(side: 'player' | 'opponent'): THREE.Vector3 | null;
+  flowPulse?(side: 'player' | 'opponent'): void;
 }
 export type SpellFxPlayer = ReturnType<typeof createSpellFx>;
 
@@ -239,6 +251,7 @@ export function createSpellFx(host: SpellFxHost) {
       reduced: phone, textures: phone ? 'phone' : 'pc', blend: { glow: 'additive', ring: 'additive', particles: 'additive', core: 'normal', debris: 'normal', word: 'normal' },
       countered: req.countered || null, units: (req.units || []).map((u) => u.uid),
     };
+    if (req.spell === 'prospectors-prayer' && (req.kind || 'cast') !== 'counter') gemsAt(req.caster, (destP || toP).clone(), impactReal, fx.log);
     spellFxLog.push(fx.log);
     fxs.push(fx);
     if (req.spell === 'battle-cry') for (const u of req.units || []) {
@@ -396,6 +409,43 @@ export function createSpellFx(host: SpellFxHost) {
     spellFxLog.push({ kind: 'shards', art: 'fizzle-debris', countered, at: { ...at }, count: n, startedAt: Math.round(t0), file: url('fizzle', 'debris'), reduced: phone, textures: phone ? 'phone' : 'pc' });
   }
 
+  // ---- Prospector's Prayer (Oct 31, Forge): at impact a handful of the spell's own gem particles arc from the caster into that side's Flow counter
+  const GEM_MS = 760, GEM_STAGGER = 70;
+  const gems: { side: 'player' | 'opponent'; t0: number; from: THREE.Vector3; to: THREE.Vector3 | null; objs: THREE.Sprite[]; landed: boolean; log: any }[] = [];
+  function gemsAt(side: 'player' | 'opponent', from: THREE.Vector3, atReal: number, fxLog: any) {
+    const n = phone ? 5 : 8, objs: THREE.Sprite[] = [];
+    for (let i = 0; i < n; i++) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(url('prospectors-prayer', 'debris')), transparent: true, depthWrite: false, depthTest: false, toneMapped: false, opacity: 0 }));
+      sp.scale.set(0.42, 0.42, 1); sp.position.copy(from); sp.renderOrder = 27; sp.name = 'spellfx-prayer-gem'; sp.frustumCulled = false; sp.visible = false; scene.add(sp); objs.push(sp);
+    }
+    const log = { kind: 'gems', spell: 'prospectors-prayer', side, to: side === 'player' ? 'player-flow-crystal' : 'enemy-flow-crystal', count: n, startsAt: Math.round(atReal), flightMs: GEM_MS + GEM_STAGGER * (n - 1), landedAt: 0, file: url('prospectors-prayer', 'debris'), reduced: phone };
+    fxLog.gems = log;
+    gems.push({ side, t0: atReal, from, to: null, objs, landed: false, log });
+  }
+  function updateGems(now: number) {
+    for (let i = gems.length - 1; i >= 0; i--) {
+      const g = gems[i];
+      if (now < g.t0) continue;
+      if (!g.to) g.to = host.flowDest?.(g.side)?.clone() || g.from.clone().add(new THREE.Vector3(g.side === 'player' ? -4 : 4, 3, g.side === 'player' ? 3 : -3)); // aim once, at launch
+      let all = true;
+      g.objs.forEach((o, j) => {
+        const k = cl((now - g.t0 - j * GEM_STAGGER) / GEM_MS);
+        if (k < 1) all = false;
+        o.visible = k > 0 && k < 1;
+        if (!o.visible) return;
+        const e = ease.inQuad(k), sway = Math.sin(j * 1.7) * 0.6 * Math.sin(Math.PI * k);
+        o.position.lerpVectors(g.from, g.to!, e); o.position.y += Math.sin(Math.PI * k) * 1.4; o.position.x += sway;
+        o.material.opacity = Math.min(1, k * 5); o.material.rotation = k * 6 + j;
+        const sc = lerp(0.42, 0.18, e); o.scale.set(sc, sc, 1);
+      });
+      if (all) {
+        if (!g.landed) { g.landed = true; g.log.landedAt = Math.round(now); host.flowPulse?.(g.side); }
+        for (const o of g.objs) { scene.remove(o); o.material.dispose(); }
+        gems.splice(i, 1);
+      }
+    }
+  }
+
   let updates = 0;
   /** JS cost of the FX (ms): the slowest update() and play() so far (test probe) */
   const perf = { maxUpdateMs: 0, maxPlayMs: 0, updates: 0 };
@@ -410,12 +460,13 @@ export function createSpellFx(host: SpellFxHost) {
       apply(fx, now);
     }
     for (let i = slowWins.length - 1; i >= 0; i--) if (now > slowWins[i][1] + 10000) slowWins.splice(i, 1);
+    updateGems(now);
     for (let i = shards.length - 1; i >= 0; i--) {
       const sh = shards[i], k = (now - sh.t0) / 900;
       if (k >= 1) { for (const o of sh.objs) { scene.remove(o); o.material.dispose(); } shards.splice(i, 1); continue; }
       sh.objs.forEach((o, j) => { const d = sh.dirs[j], tt = k * 0.9; o.position.set(sh.at.x + d.x * tt, sh.at.y + d.y * tt - 4.5 * tt * tt, sh.at.z + d.z * tt); o.material.opacity = 1 - k * k; o.material.rotation = k * (j % 2 ? 6 : -6); o.scale.setScalar(0.55 * (1 - k * 0.4)); });
     }
-    if (fxs.length || shards.length) { perf.updates++; perf.maxUpdateMs = Math.max(perf.maxUpdateMs, performance.now() - p0); }
+    if (fxs.length || shards.length || gems.length) { perf.updates++; perf.maxUpdateMs = Math.max(perf.maxUpdateMs, performance.now() - p0); }
   }
 
   const beatAt = (fx: Fx, t: number) => (t < 0 ? 'waiting' : t < fx.w ? 'windup' : t < fx.w + fx.ti ? 'travel_impact' : t < fx.total ? 'aftermath' : 'done');
@@ -449,6 +500,7 @@ export function createSpellFx(host: SpellFxHost) {
     for (const fx of fxs) drop(fx); fxs.length = 0;
     for (const g of buffGlows.values()) { scene.remove(g); g.material.dispose(); } buffGlows.clear();
     for (const sh of shards) for (const o of sh.objs) { scene.remove(o); o.material.dispose(); } shards.length = 0;
+    for (const g of gems) for (const o of g.objs) { scene.remove(o); o.material.dispose(); } gems.length = 0;
     if (current === player) current = null;
   }
 
