@@ -2466,13 +2466,15 @@ export class App {
     const cw = Math.max(48, Math.round(hcw * 0.5));
     const row = h('div', { class: 'e-discard-row', role: 'list', 'aria-label': 'Enemy discard pile cards' });
     row.style.setProperty('--dcw', cw + 'px');
-    let moved = false;
+    let moved = false, ix = 0;
     for (const k of pile) {
       const c = CARDS[k.cardId];
       if (!c) continue;
       const b = h('button', { type: 'button', class: 'e-discard-card', role: 'listitem', 'aria-label': c.name, title: c.name },
         h('span', { class: `hand-card static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c)));
       (b.firstChild as El).style.setProperty('--cw', cw + 'px');
+      // Ken (Oct 31): the cards slide out from the left edge, one after another (each starts just off-screen on the left)
+      b.style.setProperty('--dx', (ix + 1) * (cw + 8) + 24 + 'px'); b.style.setProperty('--dd', Math.min(ix, 12) * 28 + 'ms'); ix++;
       b.addEventListener('click', (e: Event) => { e.stopPropagation(); if (moved) { moved = false; return; } this.showCard(c.id); });
       row.append(b);
     }
@@ -2486,6 +2488,11 @@ export class App {
     row.addEventListener('wheel', (e: WheelEvent) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { row.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
     const d = this.dialog('Enemy discard pile', [h('h2', { class: 'e-discard-title' }, `Enemy discard pile (${pile.length})`), row]);
     d.el.classList.add('e-discard-view');
+    { // Ken (Oct 31): no frame, the cards come out at the pile's height
+      const pr = (this.r.eDiscard as El | undefined)?.getBoundingClientRect();
+      if (pr && pr.height) d.el.style.setProperty('--dtop', Math.max(0, Math.round(pr.top - 6)) + 'px');
+      d.el.dataset.frame = 'none';
+    }
     { // Escape closes it whenever it is the top dialog (also after a card close-up on top of it was closed)
       const close0 = d.close, esc = (ev: KeyboardEvent) => { if (ev.key === 'Escape' && this.dialogs[this.dialogs.length - 1] === d.el) { ev.stopPropagation(); d.close(); } };
       d.close = () => { document.removeEventListener('keydown', esc, true); close0(); };

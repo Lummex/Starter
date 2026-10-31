@@ -11313,3 +11313,51 @@ for (const [W, H, touch] of [[1920, 1080, false], [844, 390, true]]) {
     });
   });
 }
+
+// Ken (Oct 31): the enemy discard pile "moved up just a touch. And when I click it ... pop out from the left-hand side. Like it's just sliding
+// out. And it doesn't need a frame around it. Just have the cards pop out." Pile a little higher (was 24 % down); its cards slide out from the
+// left edge at the pile's height with no panel, title or dimming; still scrollable; Escape or a tap outside closes it.
+for (const [W, H, touch] of [[1920, 1080, false], [844, 390, true]]) {
+  test.describe(`Oct 31 Ken discard pile ${W}x${H}`, () => {
+    test.use(touch ? { viewport: { width: W, height: H }, hasTouch: true, isMobile: true } : { viewport: { width: W, height: H } });
+    test(`AC445: the enemy discard pile sits a touch higher; its cards slide out from the left with no frame; Escape / outside closes it (${W}x${H})`, async ({ page }) => {
+      const s = await start(page, { ...hk31({ opponentHand: Array(9).fill('soul-shard') }), firstPlayer: 'opponent' });
+      for (const c of s.players.opponent.hand) expect((await act(page, { type: 'playCrystal', uid: c.uid })).ok).toBe(true);
+      const pile = page.getByRole('button', { name: 'Enemy discard pile', exact: true });
+      await expect(pile).toHaveAttribute('data-count', '9', { timeout: 15000 });
+      const pb = await pile.boundingBox();
+      expect(pb.y / H, 'a touch higher than before (24 %)').toBeLessThan(0.22);
+      expect(pb.y / H).toBeGreaterThan(0.12);
+      expect(pb.x + pb.width / 2).toBeLessThan(W * 0.15);
+      const open = async () => { if (touch) await page.touchscreen.tap(pb.x + pb.width / 2, pb.y + pb.height / 2); else await pile.click(); };
+      await open();
+      const dlg = page.getByRole('dialog', { name: 'Enemy discard pile', exact: true });
+      await expect(dlg).toBeVisible();
+      const cards = dlg.getByRole('list', { name: 'Enemy discard pile cards' }).getByRole('listitem');
+      await expect(cards).toHaveCount(9);
+      const look = await dlg.evaluate((d) => {
+        const ov = d.parentElement, cs = getComputedStyle(d), os = getComputedStyle(ov), h2 = d.querySelector('h2'), hb = h2 && h2.getBoundingClientRect();
+        const card = d.querySelector('[role=listitem]'), ks = getComputedStyle(card);
+        const vis = (pe) => { const c = getComputedStyle(d, pe).content; return c && c !== 'none' && c !== 'normal'; };
+        return { ovBg: os.backgroundImage === 'none' && /rgba\(0, 0, 0, 0\)|transparent/.test(os.backgroundColor), frame: cs.borderImageSource !== 'none' || parseFloat(cs.borderTopWidth) > 0 || cs.boxShadow !== 'none' || cs.backgroundImage !== 'none' || !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor) || vis('::before') || vis('::after'),
+          title: hb ? hb.width > 2 && hb.height > 2 : false, anim: ks.animationName, dur: parseFloat(ks.animationDuration) * 1000 };
+      });
+      expect(look.ovBg, 'no dimming behind the cards').toBe(true);
+      expect(look.frame, 'no frame or panel around the cards').toBe(false);
+      expect(look.title, 'no visible title').toBe(false);
+      expect(look.anim, 'the cards slide out').toBe('eDiscardSlide');
+      expect(look.dur).toBeGreaterThanOrEqual(150); expect(look.dur).toBeLessThanOrEqual(500);
+      const first = await cards.first().boundingBox();
+      expect(first.x, 'they come out at the left edge').toBeLessThan(W * 0.06);
+      expect(Math.abs(first.y - pb.y), 'at the pile\'s height').toBeLessThan(H * 0.08);
+      const ox = await dlg.getByRole('list', { name: 'Enemy discard pile cards' }).evaluate((e) => getComputedStyle(e).overflowX);
+      expect(['auto', 'scroll']).toContain(ox);
+      await page.keyboard.press('Escape');
+      await expect(dlg).toBeHidden();
+      await open();
+      await expect(dlg).toBeVisible();
+      if (touch) await page.touchscreen.tap(W * 0.6, H * 0.75); else await page.mouse.click(W * 0.6, H * 0.75);
+      await expect(dlg).toBeHidden();
+    });
+  });
+}
