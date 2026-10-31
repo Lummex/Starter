@@ -306,6 +306,12 @@ export class App {
   lastOptions: any = {};
   lastTutorial = false;
   handKey = '';
+  /** Ken (Oct 31): the hand's auto-arrange. '' = the player's own (manual) order; otherwise the hand shows sorted (display order only:
+   *  the game's hand order is untouched until the player drags a card, which is the manual reorder as before and clears the sort). */
+  handSortMode: '' | 'costDesc' | 'costAsc' | 'type' = (() => { try { const v = localStorage.getItem('oreheart.handSort') || ''; return (['costDesc', 'costAsc', 'type'].includes(v) ? v : '') as any; } catch { return ''; } })();
+  handSortUp: El | null = null;
+  handSortOff: ((e: Event) => void) | null = null;
+  handSortGlide = false;
   fitKey = ''; // Oct 31 (Ken: lag spurts when mining / moving): fitHand's own key; it used to share handKey with renderHand, so every action rebuilt the whole hand
   tokens = new Map<string, El>();
   dialogCard = '';
@@ -1204,6 +1210,9 @@ export class App {
     r.handLeft = btn('◀', 'hand-scroll left', () => { this.handScroll = Math.max(0, Math.round(this.handScroll) - 3); this.layoutHand(); }, { 'aria-label': 'Scroll hand left' });
     r.handRight = btn('▶', 'hand-scroll right', () => { this.handScroll = Math.round(this.handScroll) + 3; this.layoutHand(); }, { 'aria-label': 'Scroll hand right' });
     r.handLeft.hidden = true; r.handRight.hidden = true;
+    r.handSort = h('button', { type: 'button', class: 'hand-sort-btn', 'aria-label': 'Sort hand', 'aria-haspopup': 'true', 'aria-expanded': 'false', title: 'Sort hand' }, h('span', { class: 'hs-ico', 'aria-hidden': 'true' })) as El;
+    r.handSort.addEventListener('click', () => this.toggleHandSortUp());
+    r.handSort.hidden = true;
     const menuBtn = btn('Menu', 'menu-btn', () => { this.menuPinned = !this.menuPinned; this.menuOpen(this.menuPinned); }, { 'aria-expanded': 'false', 'aria-haspopup': 'menu' });
     const syncMute = () => {
       muteBtn.setAttribute('aria-pressed', String(audio.muted)); muteBtn.setAttribute('aria-label', 'Mute'); muteBtn.textContent = audio.muted ? 'Muted' : 'Mute';
@@ -1228,7 +1237,8 @@ export class App {
     const match = h('main', { class: 'match' },
       r.board,
       r.swap,
-      r.tip, r.hand, r.handLeft, r.handRight, r.timer);
+      r.tip, r.hand, r.handLeft, r.handRight, r.handSort, r.timer);
+    this.closeHandSortUp(); this.syncHandSort();
     this.root.append(match);
     this.buildModeUi();
     const ps = this.game.state.players;
@@ -2142,6 +2152,13 @@ export class App {
       const gem = (this.root.querySelector('[data-role=player-flow-crystal]') as El | null)?.getBoundingClientRect();
       if (gem && gem.width && gem.right < hb.left + 0.5 * hb.width) spanL = Math.max(0, (gem.right + 6 - hb.left) / sx);
     } catch { /* no HUD yet */ }
+    // Ken (Oct 31): the Sort button sits just left of the first card (never over a card): the row starts a button's width later
+    const sortB = this.r.handSort as El | undefined;
+    const sortW = sortB && !sortB.hidden ? sortB.getBoundingClientRect().width : 0;
+    const sortGap = Math.max(10, Math.round(sortW * 0.3));
+    /* how far the first card's tilted top corner reaches left of its box (it turns about 50% 110%) */
+    const tiltOut = (deg: number, w: number, hh: number) => { const t = (deg * Math.PI) / 180; return Math.max(0, -(w / 2) + (w / 2) * Math.cos(t) - 1.1 * hh * Math.sin(t)); };
+    if (sortW) { const w0 = cards[0]?.offsetWidth || 66, n0 = Math.min(n, VIS), per0 = n0 > 1 ? Math.min(App.HAND.anglePer, (2 * App.HAND.angleMax) / (n0 - 1)) : 0; spanL += (sortW + 2 * sortGap) / sx + tiltOut(-((n0 - 1) / 2) * per0, w0, w0 * 1.5); }
     A -= spanL;
     // Ken (Oct 30): every card must stay easy to tell apart: when the room is short (PC, many cards) the hand cards get a little smaller
     // (never below 86 %) so 6 cards show 55 % each, or the dock window's 6 cards 55 %+ each
@@ -2203,6 +2220,15 @@ export class App {
       c.style.left = lefts[k] + 'px';
     });
     if (pop) this.asideNeighbors(pop);
+    if (sortB && sortW) {
+      const par = sortB.offsetParent as El | null, pr = par?.getBoundingClientRect();
+      const psx = par && par.offsetWidth ? pr!.width / par.offsetWidth || 1 : 1;
+      const x0 = hb.left + (els.length ? lefts[0] - tiltOut(parseFloat(els[0].dataset.fanAngle || '0') || 0, cw, ch) : spanL) * sx - sortGap - sortW;
+      const visTop = baseTop + restY + offTop;
+      const y0 = Math.min(H - sortW - 4, (visTop + H) / 2 - sortW / 2);
+      sortB.style.left = ((x0 - (pr ? pr.left : 0)) / psx).toFixed(1) + 'px';
+      sortB.style.top = ((y0 - (pr ? pr.top : 0)) / psx).toFixed(1) + 'px';
+    }
     this.restTy = restY;
     if (hand.lastElementChild !== spill) hand.append(spill);
     const hl = this.r.handLeft as El, hr = this.r.handRight as El;
@@ -3118,18 +3144,23 @@ export class App {
     const affordable = (c: any) => (c.type === 'creature' ? tot >= costOf(c) : c.type === 'spell' ? tot >= costOf(c) : true);
     const playableUids = new Set<string>();
     if (!hidden && st.priority === 'player') for (const a of this.game.legalActions() as any[]) if (a.uid && a.type !== 'pass' && a.type !== 'done') playableUids.add(a.uid);
-    const key = hidden ? 'x' : me.hand.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId]) + ':' + tunnel + ':' + (playableUids.has(hc.uid) ? 1 : 0)).join(',');
+    const shown = hidden ? me.hand : this.sortedHand(me.hand, costOf);
+    if (this.r.handSort) { const hs = this.r.handSort as El, hide = hidden || !me.hand.length; if (hs.hidden !== hide) { hs.hidden = hide; if (hide) this.closeHandSortUp(); } }
+    const key = hidden ? 'x' : this.handSortMode + '|' + shown.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId]) + ':' + tunnel + ':' + (playableUids.has(hc.uid) ? 1 : 0)).join(',');
     if (key === this.handKey) return;
     this.handKey = key;
     const wasUp = (hand.querySelector('.hand-card.popped:not(.popclone)') as El | null)?.dataset.uid || ''; // Ken (Oct 30, no flicker): a rebuilt hand keeps the raised card up
+    const oldLefts = new Map<string, number>();
+    if (this.handSortMode || this.handSortGlide) for (const c of hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)') as NodeListOf<El>) if (typeof (c as any)._left === 'number') oldLefts.set(c.dataset.uid || '', (c as any)._left);
+    this.handSortGlide = false;
     this.clearPops();
     hand.replaceChildren();
     if (hidden) return;
     let dealN = 0;
-    for (const hc of me.hand) {
+    for (const hc of shown) {
       const c = CARDS[hc.cardId];
       const cost = costOf(c);
-      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
+      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), 'data-cost': String(cost), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null);
@@ -3148,6 +3179,12 @@ export class App {
       hand.append(el);
     }
     this.layoutHand();
+    // sorted hand: the cards glide from where they were to their new places (a script animation, so it also runs in test pages)
+    if (oldLefts.size) for (const c of hand.querySelectorAll('.hand-card:not(.popclone):not(.offhand)') as NodeListOf<El>) {
+      const o = oldLefts.get(c.dataset.uid || ''), nx = (c as any)._left;
+      if (o === undefined || typeof nx !== 'number' || Math.abs(o - nx) < 1 || c.classList.contains('popped')) continue;
+      try { c.animate([{ left: o + 'px', offset: 0 }], { duration: 360, easing: 'cubic-bezier(.25,.8,.3,1)' }); } catch { /* no Web Animations */ }
+    }
     if (wasUp && this.lastPtr.type === 'mouse' && !this.lastPtr.down && hand.classList.contains('open')) {
       const again = this.handPick(this.lastPtr.x, this.lastPtr.y);
       if (again && again.dataset.uid === wasUp) this.popCard(again, true);
@@ -3935,10 +3972,81 @@ export class App {
     const tail = rest.filter((k) => !ordered.includes(k));
     ordered.splice(Math.min(idx, ordered.length), 0, hand[from]);
     const next = [...ordered, ...tail];
-    if (next.every((k, i) => k === hand[i])) return;
+    if (this.handSortMode) this.setHandSort('', false);
+    if (next.every((k, i) => k === hand[i])) { this.handKey = ''; this.update(this.game.state, []); return; }
     hand.splice(0, hand.length, ...next);
     this.handKey = '';
     this.update(this.game.state, []);
+  }
+
+  /** Ken (Oct 31) auto-arrange: the hand's display order for the chosen sort (stable: ties keep the player's own order).
+   *  By type: Miners, melee fighters, ranged fighters, spells, crystals / other; each group by cost, high to low. */
+  static handKind(c: any): number {
+    if (!c) return 4;
+    if (c.type === 'creature') { if (c.role === 'Gatherer' || c.role === 'Smith') return 0; if (c.role === 'Ranged' || (c.abilities || []).includes('ranged')) return 2; return 1; }
+    return c.type === 'spell' ? 3 : 4;
+  }
+  sortedHand(hand: any[], costOf: (c: any) => number): any[] {
+    const m = this.handSortMode;
+    if (!m) return hand;
+    const keyed = hand.map((hc, i) => { const c = CARDS[hc.cardId]; return { hc, i, cost: costOf(c), kind: App.handKind(c) }; });
+    keyed.sort((a, b) => (m === 'type' ? a.kind - b.kind || b.cost - a.cost : m === 'costAsc' ? a.cost - b.cost : b.cost - a.cost) || a.i - b.i);
+    return keyed.map((k) => k.hc);
+  }
+  static HAND_SORTS: { mode: 'costDesc' | 'costAsc' | 'type'; label: string }[] = [
+    { mode: 'costDesc', label: 'By cost (high to low)' },
+    { mode: 'costAsc', label: 'By cost (low to high)' },
+    { mode: 'type', label: 'By type' },
+  ];
+  /** Chooses a sort ('' = manual order). With redraw, the hand glides into the new order. */
+  setHandSort(mode: '' | 'costDesc' | 'costAsc' | 'type', redraw = true) {
+    if (mode === '' && this.handSortMode) {
+      // back to manual: the order the player sees becomes their own order (like a manual reorder)
+      const hand = this.game.state?.players?.player?.hand as any[] | undefined;
+      const els = [...((this.r.hand as El | undefined)?.querySelectorAll('.hand-card:not(.popclone)') || [])] as El[];
+      if (hand && els.length) {
+        const seen = els.map((c) => hand.find((k) => k.uid === c.dataset.uid)).filter(Boolean) as any[];
+        const next = [...seen, ...hand.filter((k) => !seen.includes(k))];
+        if (next.length === hand.length && !next.every((k, i) => k === hand[i])) hand.splice(0, hand.length, ...next);
+      }
+    }
+    this.handSortMode = mode;
+    try { if (mode) localStorage.setItem('oreheart.handSort', mode); else localStorage.removeItem('oreheart.handSort'); } catch { /* private window */ }
+    this.syncHandSort();
+    if (redraw && this.game.state) { this.handSortGlide = true; this.handKey = ''; this.update(this.game.state, []); }
+  }
+  /** The Sort button shows which sort is on (its icon and a lit ring); the drop-up marks the chosen line. */
+  syncHandSort() {
+    const b = this.r?.handSort as El | undefined;
+    const m = this.handSortMode, lab = App.HAND_SORTS.find((s) => s.mode === m)?.label;
+    if (b) { b.dataset.sort = m; b.classList.toggle('on', !!m); b.title = lab ? 'Sort hand: ' + lab.toLowerCase() : 'Sort hand'; }
+    for (const it of (this.handSortUp?.querySelectorAll('[data-sort]') || []) as NodeListOf<El>) it.setAttribute('aria-pressed', String(it.dataset.sort === m));
+  }
+  closeHandSortUp() {
+    this.handSortUp?.remove(); this.handSortUp = null;
+    if (this.handSortOff) { document.removeEventListener('pointerdown', this.handSortOff, true); document.removeEventListener('keydown', this.handSortOff, true); this.handSortOff = null; }
+    (this.r?.handSort as El | undefined)?.setAttribute('aria-expanded', 'false');
+  }
+  toggleHandSortUp() {
+    if (this.handSortUp) { this.closeHandSortUp(); return; }
+    const b = this.r.handSort as El, par = (b.offsetParent || b.parentElement) as El | null;
+    if (!par) return;
+    const items = App.HAND_SORTS.map((s) => btn(s.label, 'hs-item', () => { this.closeHandSortUp(); this.setHandSort(s.mode); b.focus({ preventScroll: true }); }, { 'data-sort': s.mode, 'aria-pressed': String(this.handSortMode === s.mode) }) as El);
+    const up: El = h('div', { class: 'menu-panel done-dropup hand-sort-up', role: 'group', 'aria-label': 'Sort hand choices' }, h('p', { class: 'dropup-text' }, 'Sort your hand'), h('div', { class: 'row' }, ...items));
+    par.append(up);
+    const bb = b.getBoundingClientRect(), pr = par.getBoundingClientRect(), psx = par.offsetWidth ? pr.width / par.offsetWidth || 1 : 1;
+    up.style.left = Math.max(4, (bb.left - pr.left) / psx - 6) + 'px';
+    up.style.bottom = Math.max(4, (pr.bottom - bb.top) / psx + 8) + 'px';
+    this.handSortUp = up;
+    b.setAttribute('aria-expanded', 'true');
+    const off = (e: Event) => {
+      if (e.type === 'keydown') { if ((e as KeyboardEvent).key === 'Escape') { this.closeHandSortUp(); b.focus({ preventScroll: true }); } return; }
+      if (!up.contains(e.target as Node) && e.target !== b && !b.contains(e.target as Node)) this.closeHandSortUp();
+    };
+    this.handSortOff = off;
+    document.addEventListener('pointerdown', off, true);
+    document.addEventListener('keydown', off, true);
+    if (b.matches(':focus-visible')) (items.find((i) => i.getAttribute('aria-pressed') === 'true') || items[0]).focus({ preventScroll: true });
   }
 
   explain(card: any) {
