@@ -1,0 +1,17 @@
+{
+ "requests": [
+  {
+   "id": "avatar-dwarf-forgemaster",
+   "cardName": "Forgemaster",
+   "kind": "avatar",
+   "size": "1024x1024",
+   "n": 1,
+   "references": [
+    "factory-design/art-requests/avatar-ref-style.png",
+    "factory-design/art-requests/avatar-ref-dwarf.png",
+    "factory-design/art-requests/avatar-ref-goblin.png"
+   ],
+   "prompt": "Square portrait 1024x1024. An original player AVATAR portrait for my fantasy card game. The FIRST attached picture is card art: copy its painting style exactly (rich dark-fantasy painting, bold saturated colour, crisp painted detail, dramatic rim light, chunky slightly cartoon-exaggerated proportions, humour in the face). The other attached pictures are approved avatars from the same set: match their portrait format, framing, lighting and finish, but make a NEW, different character (do not copy them). Head-and-shoulders bust, centred, turned slightly to one side and looking at the viewer, the face large and clear in the middle so it still reads as a tiny round icon; plain dark backdrop with a soft blue and warm gold glow behind the head; no text, no frame, no border, no hands covering the face. Dwarf colours: blue with gold trim (gold gear emblem). He is genuinely handsome and heroic-looking. Kid-friendly, fully clothed. Character: a Black dwarf forgemaster: dark brown skin, a thick black beard braided with gold rings, a blue-and-gold armoured collar with a gold gear emblem, a warm proud smile"
+  }
+ ]
+}
