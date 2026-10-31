@@ -1163,8 +1163,8 @@ export class App {
   arenaForce: '' | 'player' | 'opponent' = '';
   pickMatchArena(seed?: number): string {
     const p = this.game.state.players;
-    const roll = this.arenaForce ? (this.arenaForce === 'player' ? 0 : 0.99) : this.test ? ((Math.abs(((seed ?? this.seed ?? 0) | 0)) % 2) ? 0.99 : 0) : Math.random();
-    this.arenaFaction = pickArena(p.player.faction, p.opponent.faction, roll);
+    const roll = this.arenaForce ? (this.arenaForce === 'player' ? 0 : 0.99) : Math.random();
+    this.arenaFaction = this.test && !this.arenaForce ? 'goblins' : pickArena(p.player.faction, p.opponent.faction, roll); /* test pages keep the Skullfang arena unless a check forces the pick */
     return this.arenaFaction;
   }
 
@@ -1327,7 +1327,7 @@ export class App {
     r.rings = []; r.hits = [];
     r.flows = [];
     r.view = null;
-    try { this.view = createBoardView(r.board, this.low); } catch { this.view = null; }
+    try { this.view = createBoardView(r.board, this.low, this.arenaFaction || this.pickMatchArena()); } catch { this.view = null; } /* Oct 31: the picked faction's arena */
     if (!this.view) this.view = createFlatView(r.board);
     this.view.onViewChange = () => this.layoutSoon();
     for (let row = 1; row <= BH; row++) for (let col = 1; col <= BW; col++) {

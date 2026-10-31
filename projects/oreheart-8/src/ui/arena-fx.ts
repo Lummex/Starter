@@ -33,7 +33,7 @@ function homog(P){const [[x0,y0],[x1,y1],[x2,y2],[x3,y3]]=P;const dx1=x1-x2,dx2=
  return (u,v)=>{const w=g*u+h*v+1;return[(a*u+b*v+c)/w,(d*u+e*v+f)/w];};}
 const glowTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);
  gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.3,'rgba(255,255,255,.6)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
-const PAL={flame:[['cCore','Hot center','#fff6c0'],['cMid','Middle flame','#ffb030'],['cTip','Flame tips','#c0300a']],
+const PAL={jet:[['cCore','Hot core','#ffffff'],['cMid','Flame','#6fe8ff'],['cTip','Tail','#2a7bff']],swirl:[['cSwirl','Swirl color','#2fa8ff'],['cHi','Bright arms','#d8fbff']],flame:[['cCore','Hot center','#fff6c0'],['cMid','Middle flame','#ffb030'],['cTip','Flame tips','#c0300a']],
  waterfall:[['cDeep','Deep water','#2f7a0c'],['cLight','Bright streaks','#c6ff3a'],['cFoam','Foam / white water','#f2ffc0'],['cMist','Mist at the bottom','#b8ff7a'],['cGlowW','Glow and splash','#9dff3a']],
  glow:[['cGlow','Glow color','#b07aff']],
  lantern:[['cCore','Flame core','#fff1b8'],['cGlow','Light around it','#ff9a2e']],
@@ -55,7 +55,7 @@ const SLIDERS={flame:[['size','Size',.3,4,.05],['height','Flame height',.3,4,.05
  plant:[['width','Width',10,500,1],['height','Height',10,500,1],['amount','Sway amount',0,30,.1],['speed','Sway speed',.2,3,.05],['gust','Gusts',0,1,.01],['layer','Picture: 0 = arena, 1 = swamp',0,1,1]],
  banner:[['width','Width',10,300,1],['height','Height',20,500,1],['amount','Wave amount',0,14,.1],['speed','Wave speed',.2,3,.05],['shimmer','Shimmer',0,1,.01],['tilt','Tilt',-30,30,1]],
  pool:[['width','Width',20,1200,1],['height','Height',10,600,1],['opacity','Acid glow strength',0,1.2,.01],['speed','Swirl speed',.1,3,.05],['bubbles','Bubbles',0,1,.01],['smoke','Smoke',0,1,.01]]};
-const DEF={flame:{size:1,height:1,strength:1},waterfall:{width:40,length:220,lean:0,speed:1,opacity:.9,glow:.7,splash:1},glow:{radius:90,strength:.6,pulse:.3},lantern:{size:1,strength:.9,flicker:.6,speed:1},eyes:{spacing:16,size:1,strength:1,flicker:.5,blink:.3},testunit:{size:1},plant:{width:80,height:90,amount:4,speed:1,gust:.5,layer:0},fireflies:{width:400,height:200,count:18,size:1,strength:.9,wander:40,speed:1,blink:.7,front:1},shimmer:{width:320,height:90,ripple:3,rsize:30,speed:.6,sparkle:.5,sheen:.5,tint:0,match:.45,soft:.5},banner:{width:60,height:140,amount:4,speed:1,shimmer:.5,tilt:0},pool:{width:260,height:110,opacity:.55,speed:1,bubbles:.5,smoke:.5}};
+const DEF={jet:{length:120,width:30,strength:.8,pulse:.4,speed:1,sparks:.5},swirl:{width:140,height:40,arms:3,twist:6,rings:3,speed:1,strength:.6},flame:{size:1,height:1,strength:1},waterfall:{width:40,length:220,lean:0,speed:1,opacity:.9,glow:.7,splash:1},glow:{radius:90,strength:.6,pulse:.3},lantern:{size:1,strength:.9,flicker:.6,speed:1},eyes:{spacing:16,size:1,strength:1,flicker:.5,blink:.3},testunit:{size:1},plant:{width:80,height:90,amount:4,speed:1,gust:.5,layer:0},fireflies:{width:400,height:200,count:18,size:1,strength:.9,wander:40,speed:1,blink:.7,front:1},shimmer:{width:320,height:90,ripple:3,rsize:30,speed:.6,sparkle:.5,sheen:.5,tint:0,match:.45,soft:.5},banner:{width:60,height:140,amount:4,speed:1,shimmer:.5,tilt:0},pool:{width:260,height:110,opacity:.55,speed:1,bubbles:.5,smoke:.5}};
 
 const effects=[];let nextId=1;
 function makeFlame(d){const root=new THREE.Group();const N=60;const geo=new THREE.BufferGeometry();const pos=new Float32Array(N*3),col=new Float32Array(N*3);
@@ -216,13 +216,47 @@ function makeFireflies(d){const root=new THREE.Group();const N=80,F=[];
    q.h.material.color.set(d.cGlow);q.c.material.color.set(d.cCore);q.h.material.opacity=Math.min(1,d.strength*k*.7);q.c.material.opacity=Math.min(1,d.strength*k);
    q.h.scale.setScalar(22*d.size*q.sz);q.c.scale.setScalar(6*d.size*q.sz);});
   ol.scale.set(d.width+2*d.wander,d.height+1.4*d.wander,1);ol.computeLineDistances();ol.visible=false;}};}
-const MAKERS={fireflies:makeFireflies,shimmer:makeShimmer,plant:makePlant,testunit:makeUnit,banner:makeBanner,flame:makeFlame,waterfall:makeWater,glow:makeGlow,lantern:makeLantern,eyes:makeEyes,pool:makePool};
+// ----- jet + swirl (Ledger 2026-10-31, Ken: gnome pylons are jets holding the disc up; their water swirls must turn) -----
+// jet: a downward exhaust plume from (x,y): flickering particles (hot core -> cyan -> blue), a stretched glow whose length
+// pulses, tiny sparks, and a heat haze sprite. "length" is how far it reaches (background px), "width" its spread.
+function makeJet(d){const root=new THREE.Group();const N=90;const geo=new THREE.BufferGeometry();const pos=new Float32Array(N*3),col=new Float32Array(N*3);
+ geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+ const mat=new THREE.PointsMaterial({size:10,sizeAttenuation:false,map:glowTex,vertexColors:true,transparent:true,depthTest:false,blending:THREE.AdditiveBlending});
+ const pts=new THREE.Points(geo,mat);pts.frustumCulled=false;pts.renderOrder=10;root.add(pts);
+ const plume=spr(9),core=spr(11),haze=spr(8,false);root.add(plume,core,haze);
+ const SP=14,sparks=[...Array(SP)].map(()=>{const s=spr(12);root.add(s);return{s,t:Math.random(),x:0,vx:0,l:1};});
+ const seeds=[...Array(N)].map(()=>({t:Math.random(),a:Math.random()*6.283,r:Math.random(),s:.8+Math.random()*.5}));
+ const C1=new THREE.Color(),C2=new THREE.Color(),C3=new THREE.Color(),T=new THREE.Color();const fl=Candle();
+ return{root,update(time,dt){C1.set(d.cCore);C2.set(d.cMid);C3.set(d.cTip);
+  const f=fl(dt,d.pulse,d.speed);const L=d.length*(1+d.pulse*.18*Math.sin(time*7.3*d.speed+d.id)+.06*(f-1));const W=d.width;
+  seeds.forEach((p,i)=>{p.t+=dt*1.6*d.speed*p.s;if(p.t>1){p.t-=1;p.a=Math.random()*6.283;p.r=Math.random();}const t=p.t;
+   const spread=W*(.25+.75*t)*.5*p.r;pos[i*3]=Math.cos(p.a+time*9)*spread;pos[i*3+1]=-t*L;pos[i*3+2]=2;
+   if(t<.2)T.copy(C1).lerp(C2,t/.2);else T.copy(C2).lerp(C3,(t-.2)/.8);const k=(1-t)*(1-t*.3)*d.strength*f;col[i*3]=k*T.r;col[i*3+1]=k*T.g;col[i*3+2]=k*T.b;});
+  geo.attributes.position.needsUpdate=true;geo.attributes.color.needsUpdate=true;mat.size=Math.max(2,W*.55*pxPerUnit());
+  plume.material.color.copy(C2);plume.material.opacity=Math.min(1,.55*d.strength*f);plume.scale.set(W*1.3,L*1.15,1);plume.position.set(0,-L*.5,0);
+  core.material.color.copy(C1);core.material.opacity=Math.min(1,.9*d.strength*f);core.scale.set(W*.55,L*.45,1);core.position.set(0,-L*.18,1);
+  haze.material.color.copy(C3);haze.material.opacity=.12*d.strength*(.8+.2*Math.sin(time*3.1+d.id));haze.scale.set(W*2.6,L*1.5,1);haze.position.set(0,-L*.55,0);
+  sparks.forEach(o=>{o.t+=dt*d.speed/o.l;if(o.t>1||o.l===1&&o.vx===0){o.t=0;o.l=.35+Math.random()*.5;o.x=(Math.random()-.5)*W*.4;o.vx=(Math.random()-.5)*W*2.2;}
+   const k=o.t;o.s.material.color.copy(k<.3?C1:C2);o.s.material.opacity=d.sparks*(1-k)*.95;o.s.scale.setScalar(3+3*(1-k));
+   o.s.position.set(o.x+o.vx*k,-k*L*(.6+.5*o.l),3);});}};}
+// swirl: rotating spiral ripples on water, centred on (x,y), flattened by width/height for the view angle.
+// The spiral turns faster near the centre; "rings" adds outward-moving ring waves.
+const swirlFS=`varying vec2 vUv;uniform float uTime,uSpeed,uArms,uTwist,uRings,uStr;uniform vec3 uSw,uHi;
+void main(){vec2 q=vUv*2.-1.;float r=length(q);if(r>1.)discard;float a=atan(q.y,q.x);
+ float spin=uTime*uSpeed*(.6+1.6/(r+.25));float s=sin(uArms*(a+spin)+r*uTwist);float arm=smoothstep(.55,1.,s);
+ float ring=smoothstep(.6,1.,sin(r*uRings*6.2832-uTime*uSpeed*3.))*.6;float edge=smoothstep(1.,.65,r)*smoothstep(.04,.2,r);
+ vec3 c=mix(uSw,uHi,arm*.7+ring*.5);gl_FragColor=vec4(c,(arm+ring*.35+.04)*edge*uStr);}`;
+function makeSwirl(d){const root=new THREE.Group();const U={uTime:{value:0},uSpeed:{value:1},uArms:{value:3},uTwist:{value:6},uRings:{value:3},uStr:{value:.6},uSw:{value:new THREE.Color()},uHi:{value:new THREE.Color()}};
+ const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({uniforms:U,vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:swirlFS,transparent:true,depthTest:false,blending:THREE.AdditiveBlending}));m.renderOrder=6;root.add(m);
+ return{root,update(t){m.scale.set(d.width,d.height,1);U.uTime.value=t;U.uSpeed.value=d.speed;U.uArms.value=d.arms;U.uTwist.value=d.twist;U.uRings.value=d.rings;U.uStr.value=d.strength;U.uSw.value.set(d.cSwirl);U.uHi.value.set(d.cHi);}};}
+const MAKERS={jet:makeJet,swirl:makeSwirl,fireflies:makeFireflies,shimmer:makeShimmer,plant:makePlant,testunit:makeUnit,banner:makeBanner,flame:makeFlame,waterfall:makeWater,glow:makeGlow,lantern:makeLantern,eyes:makeEyes,pool:makePool};
 function addEffect(d){d=Object.assign({},DEF[d.type],d);PAL[d.type].forEach(([k,,v])=>{if(!d[k])d[k]=v;});d.id=d.id||nextId++;nextId=Math.max(nextId,d.id+1);
  const fx=MAKERS[d.type](d);fx.d=d;fx.root.position.set(d.x,-d.y,0);scene.add(fx.root);effects.push(fx);return fx;}
 THREE.ColorManagement.enabled = false;
 const skippedTypes = [], errors = [];
 const allEffects = (layout.effects || []).concat(arenaOpts.extra || []);
-allEffects.forEach((d) => {
+allEffects.forEach((d, i) => {
+  if (d.id == null) d.id = i; /* Ledger's jet uses d.id as a phase offset */
   // Types the arena builder does not make (e.g. 'flow', drawn by the Crystal Flow system) are skipped; one bad effect never breaks the arena.
   if (!MAKERS[d.type] || !PAL[d.type]) { if (d.type !== 'flow' && !skippedTypes.includes(d.type)) skippedTypes.push(d.type); else if (d.type === 'flow' && !skippedTypes.includes('flow')) skippedTypes.push('flow'); return; }
   try { addEffect(Object.assign({}, d)); } catch (err) { const m = 'arena effect failed: ' + d.type + ' ' + d.id + ' ' + (err && err.message || err); errors.push(m); console.error(m, err); }
