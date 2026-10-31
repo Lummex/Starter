@@ -5,6 +5,7 @@ import { Game } from './game';
 import { App } from './ui/app';
 import { CARDS, COMMANDERS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
+import { spellFxLog, spellFxNow, spellFxAt, setSpellFxEnabled, SPELL_FX_SPEC, fxPhone, fxLayerUrl, FX_LAYERS } from './ui/spell-fx';
 import { audio } from './ui/audio';
 import { getHighlights, getRings } from './ui/fx-settings';
 import { pictureOf, rarityKey, commanderPortrait, INTERNAL_ABILITY } from './ui/app';
@@ -125,6 +126,16 @@ if (test) {
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
     getFxLog: () => JSON.parse(JSON.stringify((app as any).fxLog)),
     clearFxLog: () => { (app as any).fxLog = []; },
+    /** Oct 31: every painted spell FX played (spell, beats with start times, layers, path, slow-mo, shake, word, reduced = phone set) */
+    getSpellFxLog: () => JSON.parse(JSON.stringify(spellFxLog)),
+    clearSpellFxLog: () => { spellFxLog.length = 0; },
+    /** Oct 31: the live spell FX right now, each layer's computed state (scale in squares, alpha, square, ring normal) and the battle-cry glows */
+    getSpellFxNow: () => JSON.parse(JSON.stringify(spellFxNow())),
+    /** Oct 31: one FX's layers at a point of its own timeline (ms), live or recently finished */
+    getSpellFxAt: (id: number, ms: number) => JSON.parse(JSON.stringify(spellFxAt(id, ms))),
+    setSpellFxEnabled: (v: boolean) => setSpellFxEnabled(v),
+    getSpellFxSpec: () => ({ loaded: !!SPELL_FX_SPEC?.spells, version: SPELL_FX_SPEC?.version, spells: Object.keys(SPELL_FX_SPEC?.spells || {}), phone: fxPhone(),
+      files: Object.fromEntries(Object.keys(SPELL_FX_SPEC?.spells || {}).map((s) => [s, { pc: FX_LAYERS.map((l) => fxLayerUrl(s, l, false)), phone: FX_LAYERS.map((l) => fxLayerUrl(s, l, true)) }])) }),
     getCamera: () => app.getCamera(),
     getArena: () => app.getArena(),
     getPiecePoses: () => (app.view ? app.view.piecePoses() : {}),

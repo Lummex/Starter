@@ -2512,47 +2512,24 @@ export class App {
     }
     return d;
   }
-  spellFx(e: any) {
-    if (!this.r.fx || !this.view) return;
-    const card = CARDS[e.cardId];
-    const sh = SH[e.player as 'player' | 'opponent'];
-    const t = e.target && e.target.row ? e.target : e.target && e.target.commander ? SH[e.target.commander as 'player' | 'opponent'] : null;
-    const spawn = (cls: string, text: string, row: number, col: number, ms = 1100) => {
-      const p = this.center(row, col);
-      const f = h('div', { class: 'fx-' + cls, 'aria-hidden': 'true' }, text);
-      f.style.left = p.x + 'px'; f.style.top = p.y + 'px';
-      this.r.fx.append(f);
-      setTimeout(() => f.remove(), ms);
-    };
-    const v = SPELL_VISUALS[e.cardId];
-    if (!v) return;
-    const target = t || SH[e.player === 'player' ? 'opponent' : 'player'];
-    const from = this.center(sh.row, sh.col);
-    const at = v.fly ? this.center(target.row, target.col) : this.center((t || sh).row, (t || sh).col);
-    // step 1: the card flies out of the caster's Stronghold
-    const chip = h('div', { class: 'fxv-card', 'aria-hidden': 'true' }, v.glyph);
-    chip.style.left = from.x + 'px'; chip.style.top = from.y + 'px';
-    this.r.fx.append(chip);
-    requestAnimationFrame(() => { chip.style.left = (v.fly ? at.x : from.x) + 'px'; chip.style.top = (v.fly ? at.y : from.y - 30) + 'px'; chip.classList.add('go'); });
-    // step 2: it turns into the effect; step 3: the result lands
-    setTimeout(() => {
-      chip.remove();
-      const f = h('div', { class: `fxv fxv-${v.id}`, 'data-visual': v.id, 'aria-hidden': 'true' }, h('span', { class: 'fxv-g' }, v.glyph), h('span', { class: 'fxv-g2' }, v.glyph), h('span', { class: 'fxv-g3' }, v.glyph));
-      const pt = at;
-      f.style.left = pt.x + 'px'; f.style.top = pt.y + 'px';
-      this.r.fx.append(f);
-      if (e.cardId === 'meteor-strike') { this.r.board.classList.remove('shake'); void this.r.board.offsetWidth; this.r.board.classList.add('shake'); setTimeout(() => this.r.board.classList.remove('shake'), 800); }
-      setTimeout(() => {
-        const r = h('div', { class: 'fxv-result', 'aria-hidden': 'true' }, v.land);
-        r.style.left = pt.x + 'px'; r.style.top = pt.y + 'px';
-        this.r.fx.append(r);
-        setTimeout(() => r.remove(), 1100);
-      }, 320);
-      setTimeout(() => f.remove(), v.ms);
-    }, v.fly ? 650 : 450);
+  /** Oct 31 (Ken: "make it like an event ... completely serious, but absolutely ridiculous"): Brush's painted spell FX play in the 3D
+   *  board scene (spell-fx.ts), from the caster's Stronghold (the Commander casts) to the target. Timing only: the spell has already resolved. */
+  spellFx(e: any, o: { delay?: number; to?: any; kind?: 'cast' | 'counter' | 'replay'; countered?: string | null; at?: { row: number; col: number } | null; atCommander?: boolean } = {}) {
+    const v = this.view;
+    if (!v || !v.playSpell || !SPELL_VISUALS[e.cardId]) return;
+    const side = (e.player === 'opponent' ? 'opponent' : 'player') as 'player' | 'opponent';
+    const sh = SH[side];
+    const cmdT = !o.at && e.target && e.target.commander ? SH[e.target.commander as 'player' | 'opponent'] : null;
+    const tc = o.at || (e.target && e.target.row ? e.target : cmdT);
+    const st = this.game.state;
+    const units = e.cardId === 'battle-cry' ? (st?.board?.creatures || []).filter((c: any) => c.owner === side).map((c: any) => ({ uid: c.uid, row: c.row, col: c.col })) : undefined;
+    v.playSpell({ spell: e.cardId, caster: side, from: { row: sh.row, col: sh.col }, target: tc ? { row: tc.row, col: tc.col } : null, to: o.to ? { row: o.to.row, col: o.to.col } : null,
+      fromH: 1.8, targetH: cmdT || o.atCommander ? 1.5 : 0.7, delay: o.delay || 0, kind: o.kind || 'cast', countered: o.countered ?? null, units });
   }
-  shatter(player: string) {
-    const sh = SH[player === 'player' ? 'opponent' : 'player'];
+  /** A countered card shatters (Oct 31: into Snuff Out's painted shards, in the 3D scene) at the countered card's square. */
+  shatter(player: string, at?: { row: number; col: number } | null, countered: string | null = null) {
+    const sh = at || SH[player === 'player' ? 'opponent' : 'player'];
+    if (this.view?.spellShards) { this.view.spellShards({ row: sh.row, col: sh.col }, countered); return; }
     const p = this.center(sh.row, sh.col);
     for (let i = 0; i < 8; i++) {
       const f = h('div', { class: 'fx-shard', 'aria-hidden': 'true' });
@@ -3355,6 +3332,7 @@ export class App {
       for (const x of st.sites || []) this.siteOwner.set(x.row + ',' + x.col, x.controller || '');
       this.say('player', 'start', true); setTimeout(() => this.say('opponent', 'start', true), 1400);
     }
+    let replayDelay = 0; // Oct 31: Hex Reversal's copied spell plays back after the reflection
     for (const e of events) {
       // owner (Oct 24): comic pop-ups and speech bubbles
       if (e.type === 'attack' && e.target) {
@@ -3424,9 +3402,19 @@ export class App {
         this.callout(e.player, e.cardId);
       } else if (e.type === 'respond') {
         this.callout(e.player, e.cardId);
-      } else if (e.type === 'counter') { this.shatter(e.player); audio.play('shatter'); if (e.cardId) this.spellFx({ cardId: e.cardId, player: e.player, target: null }); }
+      } else if (e.type === 'counter') {
+        audio.play('shatter');
+        if (e.cardId) { // a counter card: the countered card shatters where it was played (a summon's square, else the caster's Stronghold) and the counter's FX lands on it
+          const bo = e.ckind === 'summon' ? events.find((x: any) => x.type === 'bounce' && x.row) : null;
+          const at = bo ? { row: bo.row, col: bo.col } : SH[e.player === 'player' ? 'opponent' : 'player'];
+          this.shatter(e.player, at, e.countered || null);
+          this.spellFx({ cardId: e.cardId, player: e.player, target: null }, { at, atCommander: !bo, kind: 'counter', countered: e.countered || null });
+          if (e.cardId === 'mirror-hex') replayDelay = SPELL_VISUALS['mirror-hex']?.ms || 0;
+        }
+      }
       else if (e.type === 'spell') {
-        this.emote(e.player, 'cast'); this.spellFx(e);
+        const mv = e.cardId === 'tunnel-rush' ? events.slice(events.indexOf(e) + 1).find((x: any) => x.type === 'move' && x.teleport) : null;
+        this.emote(e.player, 'cast'); this.spellFx(e, { delay: replayDelay, to: mv ? mv.to : null, kind: replayDelay ? 'replay' : 'cast' });
         const id = String(e.cardId);
         audio.play(id === 'fireball' ? 'fireball' : id === 'meteor-strike' ? 'meteor' : id === 'healing-light' || id === 'second-wind' ? 'heal' : id === 'shield-bubble' ? 'bubble' : 'spell');
       }

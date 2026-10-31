@@ -6,6 +6,7 @@ import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missin
 import { stagePlow, plowFrame } from './plow';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D, loadCommander3d, makeCommander3d, commander3dReady, commanderIds3d } from './grubnak3d';
 import { makeMineFx, MineFx } from './mineFx';
+import { createSpellFx, type SpellFxRequest } from './spell-fx';
 import { mineEmblemUrl } from './cardfmt';
 import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrubnak, makeRocketBarrel, MineArt, GrubnakArt, StrongholdArt } from './art';
 import { audio } from './audio';
@@ -66,6 +67,10 @@ export interface BoardView {
   /** Owner fix (Ken, Oct 28): the unit the Junk Shaman carries hangs at the pointer (screen px) and loops its lifted clip; the holder plays his lift special. null = put down */
   setCarry?(c: { uid: string; holder: string; x: number; y: number } | null): void;
   retreat(side: 'player' | 'opponent'): void;
+  /** Oct 31 (Ken): Brush's painted spell FX as an event on the board (timing only; the spell has already resolved) */
+  playSpell?(req: SpellFxRequest): any;
+  /** Oct 31: a countered card shatters into Snuff Out's shards at this square */
+  spellShards?(at: { row: number; col: number }, countered: string | null): void;
   stats(): Promise<any>;
   dispose(): void;
 }
@@ -1294,6 +1299,24 @@ const _embV = new THREE.Vector3();
   let disposed = false;
   const tmpV = new THREE.Vector3();
   let frameLast = 0;
+  // Oct 31 (Ken: spells must be EVENTS): Brush's painted spell FX, timeline by elapsed time; slow-mo scales the FX and the units, never the game's timers
+  const spellFx = createSpellFx({
+    scene, camera, renderer, low, testMode, world: (r, c) => world(r, c),
+    cellOf: (p) => ({ row: Math.round(p.z + (BH + 1) / 2), col: Math.round(p.x + (BW + 1) / 2) }),
+    shakeEls: () => [canvas, backCanvas], flashHost: container,
+  });
+  /** Thunderhorn Blast's glow stays on every unit of the buffed side while the buff lasts */
+  function syncBuffNow(now: number) {
+    const fl = state?.flags, units: { uid: string; side: string; pos: THREE.Vector3; h: number }[] = [];
+    if (fl) for (const f of figs.values()) if (!f.dying && (fl.battleCryN?.[f.owner] ?? (fl.battleCry === f.owner ? 1 : 0)) > 0) units.push({ uid: f.uid, side: f.owner, pos: f.group.position, h: f.c3d?.boardH || 1 });
+    spellFx.syncBuff(units, now);
+  }
+  /** load the painted FX of every spell either side holds (hand or deck), a texture at a time */
+  function preloadSpells(st: any) {
+    const ids = new Set<string>();
+    for (const side of ['player', 'opponent']) for (const z of ['hand', 'deck']) for (const c of st?.players?.[side]?.[z] || []) { const id = c && (c.cardId || c); if (typeof id === 'string' && CARDS[id]?.type === 'spell') ids.add(id); }
+    if (ids.size) spellFx.preload(ids);
+  }
   // Ken (Oct 31): "the opposing commander is still kind of small. Make each commander the same size-ish." Once both 3D Commanders are in,
   // the enemy's figure is scaled so its height ON SCREEN (feet to top, as the player sees it) matches the player's. The player's stays as it is.
   let cmdMatched: any = null, cmdMatchK = 1;
@@ -1320,7 +1343,8 @@ const _embV = new THREE.Vector3();
     if (testMode && now - lastRender < Math.max(300, lastDur * 6, frameGap > 100 ? frameGap * 8 : 0)) return;
     lastRender = now;
     void mineLow;
-    const dt0 = Math.min(0.5, (now - (frameLast || now)) / 1000); frameLast = now; // real elapsed time (capped at 0.5 s)
+    const slowK = spellFx.slowK(now); // Oct 31: spell slow-mo (0.35x for 300 ms at a big impact): units and FX only
+    const dt0 = Math.min(0.5, (now - (frameLast || now)) / 1000) * slowK; frameLast = now; // real elapsed time (capped at 0.5 s)
     for (const fx of mineFx) fx.update(now / 1000);
     placeStatusIcons();
     placeBubbles(now);
@@ -1429,7 +1453,7 @@ const _embV = new THREE.Vector3();
         f.c3d.holding = !!(carry && carry.holder === f.uid);
         f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : abil ? abil : f.shootT && ak3 < 1 && !(f.hitT && f.hitT > f.shootT) ? (f.atkRole || 'attack') : f.mineT && mk3 < 1 ? 'mine' : bowledNow ? 'bowled' : knocked ? 'knockback' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? (f.run && onPath ? 'run' : 'walk') : breaking ? 'idleBreak' : 'idle');
         if (knocked && f.kbClip && !f.kbClip.seeked && f.c3d.current() === 'knockback') { f.c3d.seek?.('knockback', f.kbClip.launch); f.kbClip.seeked = true; }
-        f.c3d.update(dt);
+        f.c3d.update(dt * slowK);
         g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
         if (f.c3d.lift) g.position.y = (f.born ? g.position.y : 0) + f.c3d.lift; // flying units hover
       }
@@ -1484,6 +1508,8 @@ const _embV = new THREE.Vector3();
       e.vel!.y -= e.kind === 'stars' ? 0.06 : e.kind === 'chips' ? 0.12 : 0;
       ((e.obj as THREE.Sprite).material as THREE.SpriteMaterial).opacity = 1 - k;
     }
+    spellFx.update(now);
+    syncBuffNow(now);
     for (const side of ['player', 'opponent'] as const) {
       const cm = cmd[side];
       cm.fig.position.y = cm.g3d ? 0 : Math.sin(now / 600 + (side === 'player' ? 0 : 2)) * 0.02;
@@ -1614,8 +1640,11 @@ const _embV = new THREE.Vector3();
   }
 
   const api: BoardView = {
-    is3D: true, setCarry, setState, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    playSpell: (req: SpellFxRequest) => spellFx.play(req),
+    spellShards: (at: { row: number; col: number }, countered: string | null) => spellFx.shatter(at, countered),
+    is3D: true, setCarry, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
+      spellFx.dispose();
       disposed = true; for (const ev of inputEvs) window.removeEventListener(ev, onInput, true); window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);
       cancelAnimationFrame(raf);
       if (testMode) { glPool = { renderer, backRenderer, backCanvas }; backCanvas.remove(); canvas.remove(); return; }

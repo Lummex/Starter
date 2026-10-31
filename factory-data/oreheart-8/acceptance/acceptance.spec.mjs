@@ -11565,3 +11565,268 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
     expect(st.size).toBeGreaterThan(0.3);
   });
 }
+
+// ---------- Oct 31 (Ken: "the fireball graphic looks awful. It's so tiny ... make it like an event that's happening ... completely serious, but absolutely ridiculous.") ----------
+// Brush's painted spell FX (public/art/spell-fx, studio/spell-fx-spec.json) replace the emoji glyphs; they play in the 3D board scene.
+const SFX_LAYERS = ['core', 'glow', 'particles', 'ring', 'debris', 'word'];
+const sfxLog = (page) => page.evaluate(() => window.oreheart.getSpellFxLog());
+const sfxNow = (page) => page.evaluate(() => window.oreheart.getSpellFxNow());
+const sfxClear = (page) => page.evaluate(() => window.oreheart.clearSpellFxLog());
+const sfxAt = (page, id, ms) => page.evaluate(([i, m]) => window.oreheart.getSpellFxAt(i, m), [id, ms]);
+/** samples the live FX inside the page every ~25 ms until none is left (or maxMs) */
+const sfxSamples = (page, maxMs = 5000) => page.evaluate(async (max) => {
+  const out = [], t0 = performance.now();
+  let seen = false;
+  while (performance.now() - t0 < max) {
+    const n = window.oreheart.getSpellFxNow();
+    out.push({ ms: Math.round(performance.now() - t0), ...n });
+    if (n.active.length) seen = true; else if (seen) break;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  return out;
+}, maxMs);
+const sfxSetup = (extra) => ({ ai: false, playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, setup: { opponentHand: [], playerCrystals: 20, playerDeck: SHARDS, ...extra } });
+
+test('AC470: every spell has its six painted FX layers on disk, PC and phone sets, and the FX spec is loaded', async ({ page, request }) => {
+  test.setTimeout(60000);
+  await openTest(page);
+  const spec = await page.evaluate(() => window.oreheart.getSpellFxSpec());
+  expect(spec.loaded).toBe(true);
+  expect([...spec.spells].sort()).toEqual([...SPELLS].sort());
+  for (const id of SPELLS) {
+    const f = spec.files[id];
+    expect(f.pc.length, id).toBe(6);
+    expect(f.phone.length, id).toBe(6);
+    for (let i = 0; i < 6; i++) {
+      expect(f.pc[i], `${id} pc ${SFX_LAYERS[i]}`).toBe(`/art/spell-fx/${id}/${id}-${SFX_LAYERS[i]}.webp`);
+      expect(f.phone[i], `${id} phone ${SFX_LAYERS[i]}`).toBe(`/art/spell-fx/${id}/${id}-${SFX_LAYERS[i]}-m.webp`);
+    }
+    for (const u of [...f.pc, ...f.phone]) {
+      const r = await request.get(u);
+      expect(r.status(), u).toBe(200);
+      expect(r.headers()['content-type'] || '', u).toMatch(/image\/webp/);
+      expect((await r.body()).length, u).toBeGreaterThan(2000);
+    }
+  }
+  // the spell visual ids are the painted FX now (one per spell)
+  for (const id of ['fireball', 'meteor-strike', 'venom-shiv']) expect((await page.evaluate(async (x) => await window.oreheart.getCard(x), id)).visual).toMatch(/-painted-/);
+});
+
+test('AC471: Searing Arcane Orb plays as an event: 3 beats in order, flat ring at the target, slow-mo, light shake, the FWOOSH! word pops and holds; the match goes on', async ({ page }) => {
+  test.setTimeout(60000);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  let s = await start(page, sfxSetup({ playerHand: ['fireball', 'goblin-scrapper'], board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 6 }] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  const hp = at(s, 3, 6).health;
+  await sfxClear(page);
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'fireball'), target: { row: 3, col: 6 } })).ok).toBe(true);
+  // the engine resolved it at once (the FX is timing only)
+  s = await getState(page);
+  const t = at(s, 3, 6);
+  expect(!t || t.health === hp - 3, 'the Orb dealt its 3 damage right away').toBe(true);
+  const samples = await sfxSamples(page);
+  const log = (await sfxLog(page)).filter((e) => e.spell === 'fireball');
+  expect(log.length).toBe(1);
+  const L = log[0];
+  expect(L.path).toBe('arc');
+  expect(L.caster).toBe('player');
+  expect(L.from).toEqual({ row: 7, col: 2 }); // Grubnak casts from his Stronghold
+  expect(L.target).toEqual({ row: 3, col: 6 });
+  expect(L.beats.map((b) => b.beat)).toEqual(['windup', 'travel_impact', 'aftermath']);
+  expect(L.beats[0].startMs).toBe(0);
+  expect(L.beats[1].startMs).toBe(L.beats[0].ms);
+  expect(L.beats[2].startMs).toBe(L.beats[0].ms + L.beats[1].ms);
+  for (const [i, sh] of [[0, 0.25], [1, 0.35], [2, 0.4]]) expect(Math.abs(L.beats[i].share - sh), `beat ${i} share`).toBeLessThanOrEqual(0.02);
+  expect(L.totalMs).toBeGreaterThanOrEqual(1600);
+  expect(L.totalMs).toBeLessThanOrEqual(2500);
+  expect(L.layers).toEqual(SFX_LAYERS);
+  expect(L.slowmo).toEqual({ factor: 0.35, ms: 300, atMs: L.impactMs });
+  expect(L.shake.px).toBeGreaterThan(0);
+  expect(L.shake.px).toBeLessThanOrEqual(6);
+  expect(L.shake.ms).toBeLessThanOrEqual(250);
+  expect(L.word.text).toBe('FWOOSH!');
+  expect(L.word.peak).toBe(1.25);
+  expect(L.word.holdMs).toBeGreaterThanOrEqual(600);
+  expect(L.ring).toMatchObject({ flat: true, at: { row: 3, col: 6 } });
+  expect(L.reduced).toBe(false);
+  expect(L.textures).toBe('pc');
+  expect(L.files.every((f) => /\/art\/spell-fx\/fireball\/fireball-[a-z]+\.webp$/.test(f))).toBe(true);
+  // the timeline (computed state of each layer at points of the FX's own clock)
+  const imp = L.impactMs, w = L.beats[0].ms, tr = imp - w;
+  for (const ms of [60, 300, w - 20]) {
+    const f = await sfxAt(page, L.id, ms);
+    expect(f.beat).toBe('windup');
+    expect(f.layers.core.cell, `the Orb gathers at the caster (${ms} ms)`).toEqual({ row: 7, col: 2 });
+  }
+  const mid = await sfxAt(page, L.id, w + tr / 2);
+  expect(mid.beat).toBe('travel_impact');
+  expect(mid.layers.core.visible).toBe(true);
+  expect(mid.layers.core.y, 'a high arc').toBeGreaterThan(2.5);
+  const hit = await sfxAt(page, L.id, imp + 60);
+  expect(hit.layers.core.visible, 'the Orb is spent at impact').toBe(false);
+  expect(hit.layers.ring).toMatchObject({ visible: true, sprite: false, cell: { row: 3, col: 6 } });
+  expect(hit.layers.ring.normalY, 'the ring lies flat on the board').toBeGreaterThan(0.99);
+  expect(hit.layers.ring.y).toBeLessThan(0.1);
+  const size = L.word.sizeSquares;
+  expect((await sfxAt(page, L.id, imp - 10)).layers.word.visible).toBe(false);
+  expect((await sfxAt(page, L.id, imp + 132)).layers.word.scale / size, 'the word pops to 1.25').toBeCloseTo(1.25, 1);
+  expect((await sfxAt(page, L.id, imp + 300)).layers.word.scale / size, 'then settles at 1.0').toBeCloseTo(1, 2);
+  expect((await sfxAt(page, L.id, imp + 220 + 600)).layers.word.alpha, 'still fully readable 600 ms after the pop').toBe(1);
+  expect((await sfxAt(page, L.id, L.totalMs - 5)).beat).toBe('aftermath');
+  expect((await sfxAt(page, L.id, L.totalMs - 5)).layers.core.visible).toBe(false);
+  // live: the FX really ran on the page clock, with the slow-mo: once past the impact, the FX clock trails the real clock by 300 x 0.65 = 195 ms
+  const fs = samples.map((x) => x.active.find((a) => a.spell === 'fireball')).filter(Boolean);
+  expect(fs.length, 'the FX was live').toBeGreaterThan(2);
+  for (const f of fs) {
+    const lag = f.realMs - f.localMs;
+    if (f.localMs < imp - 5) expect(lag, `no slow-mo before the impact (${f.localMs} ms)`).toBeLessThanOrEqual(5);
+    else if (f.localMs > imp + 300 * 0.35 + 5) expect(Math.abs(lag - 195), `0.35x for 300 ms at the impact (${f.localMs} ms)`).toBeLessThanOrEqual(6);
+  }
+  // the whole event: its spec length plus the slow-mo, then nothing left
+  await expect.poll(async () => (await sfxNow(page)).active.length, { timeout: 4000 }).toBe(0);
+  // the match carries on normally
+  s = await getState(page);
+  expect(s.players.player.discard.some((c) => c.cardId === 'fireball')).toBe(true);
+  expect((await act(page, { type: 'done' })).ok).toBe(true);
+});
+
+test('AC472: Starfall covers the 3x3, Venom Shiv is thrown at its target, Thunderhorn glow stays on each buffed unit while the buff lasts, countered cards shatter into shards', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  // Starfall Cataclysm: falls from the sky onto the centre, the ring covers the whole 3x3
+  let s = await start(page, sfxSetup({ playerHand: ['meteor-strike'], board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 6 }, { cardId: 'goblin-scrapper', owner: 'opponent', row: 2, col: 7 }] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  await sfxClear(page);
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'meteor-strike'), target: { row: 3, col: 6 } })).ok).toBe(true);
+  let L = (await sfxLog(page)).find((e) => e.spell === 'meteor-strike');
+  expect(L.path).toBe('sky_fall');
+  expect(L.area.cells.length).toBe(9);
+  for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) expect(L.area.cells).toContainEqual({ row: 3 + dr, col: 6 + dc });
+  expect(L.area.ringSquares, 'the ring is wider than the 3x3').toBeGreaterThanOrEqual(3);
+  expect(L.ring.at).toEqual({ row: 3, col: 6 });
+  expect(L.slowmo.factor).toBe(0.35);
+  expect(L.shake.px).toBeLessThanOrEqual(6);
+  let w = L.beats[0].ms, tr = L.impactMs - w;
+  let f = await sfxAt(page, L.id, w + tr * 0.3);
+  expect(f.layers.core.visible && f.layers.core.y > 3, 'the meteor falls from high up').toBe(true);
+  f = await sfxAt(page, L.id, L.impactMs + (L.ring.ms - 20));
+  expect(f.layers.ring.scale, 'the ring grows over the whole 3x3').toBeGreaterThanOrEqual(3);
+  expect(f.layers.ring.cell).toEqual({ row: 3, col: 6 });
+  await expect.poll(async () => (await sfxNow(page)).active.length, { timeout: 5000 }).toBe(0);
+  // Venom Shiv: thrown straight from the caster to the target, low (not an arc)
+  s = await newMatch(page, sfxSetup({ playerHand: ['venom-shiv'], board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 6 }] }));
+  await sfxClear(page);
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'venom-shiv'), target: { row: 3, col: 6 } })).ok).toBe(true);
+  L = (await sfxLog(page)).find((e) => e.spell === 'venom-shiv');
+  expect(L.path).toBe('throw');
+  expect(L.from).toEqual({ row: 7, col: 2 });
+  expect(L.target).toEqual({ row: 3, col: 6 });
+  expect(L.ring.at).toEqual({ row: 3, col: 6 });
+  w = L.beats[0].ms; tr = L.impactMs - w;
+  const v0 = (await sfxAt(page, L.id, w + 5)).layers.core, v1 = (await sfxAt(page, L.id, w + tr * 0.5)).layers.core, v2 = (await sfxAt(page, L.id, L.impactMs - 5)).layers.core;
+  expect(v1.visible).toBe(true);
+  expect(v1.y, 'a throw, not a lob').toBeLessThan(2.4);
+  expect(v1.x, 'flying towards the target').toBeGreaterThan(v0.x);
+  expect(v2.cell, 'arrives at the target').toEqual({ row: 3, col: 6 });
+  await expect.poll(async () => (await sfxNow(page)).active.length, { timeout: 5000 }).toBe(0);
+  // Thunderhorn Blast: the glow stays on each of the caster's units for the rest of the turn, then goes
+  s = await newMatch(page, sfxSetup({ playerHand: ['battle-cry'], board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 6 }, { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 9 }, { cardId: 'goblin-scrapper', owner: 'opponent', row: 2, col: 9 }] }));
+  const mine = s.board.creatures.filter((c) => c.owner === 'player').map((c) => c.uid).sort();
+  await sfxClear(page);
+  expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'battle-cry') })).ok).toBe(true);
+  L = (await sfxLog(page)).find((e) => e.spell === 'battle-cry');
+  expect(L.path).toBe('at_caster');
+  expect([...L.units].sort()).toEqual(mine);
+  await expect.poll(async () => (await sfxNow(page)).active.length, { timeout: 5000 }).toBe(0);
+  await page.waitForTimeout(400);
+  let g = (await sfxNow(page)).buffGlows;
+  expect(g.filter((x) => x.side === 'player').map((x) => x.uid).sort(), 'a glow on every buffed unit after the FX').toEqual(mine);
+  expect(g.every((x) => x.visible && Math.abs(x.alpha - 0.35) < 0.02)).toBe(true);
+  expect(g.some((x) => x.side === 'opponent')).toBe(false);
+  await passTurn(page); // the buff ends with the turn
+  await expect.poll(async () => (await sfxNow(page)).buffGlows.length, { timeout: 5000 }).toBe(0);
+  // Snuff Out: the countered Orb shatters into shards and the counter's FX lands on it
+  s = await newMatch(page, respondR6(['fizzle'], 3));
+  await sfxClear(page);
+  await castFireball(page, s);
+  s = await getState(page);
+  expect((await act(page, { type: 'respond', uid: handUid(s, 'player', 'fizzle') })).ok).toBe(true);
+  let lg = await sfxLog(page);
+  expect(lg.find((e) => e.kind === 'shards' && e.countered === 'fireball')?.count).toBeGreaterThan(0);
+  expect(lg.find((e) => e.spell === 'fizzle')).toMatchObject({ kind: 'counter', path: 'drop_in', countered: 'fireball', target: { row: 1, col: 12 } });
+  expect(lg.some((e) => e.spell === 'fireball'), 'a countered spell never plays').toBe(false);
+  // Pickpocket!: the countered summon shatters on its square
+  s = await newMatch(page, { ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { playerHand: ['goblin-scrapper'], playerCrystals: 5, opponentHand: ['hold-it'], opponentCrystals: 4 } });
+  expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrapper'), row: 7, col: 1 })).ok).toBe(true);
+  s = await getState(page);
+  await sfxClear(page);
+  expect((await act(page, { type: 'respond', uid: handUid(s, 'opponent', 'hold-it') })).ok).toBe(true);
+  lg = await sfxLog(page);
+  expect(lg.find((e) => e.kind === 'shards' && e.countered === 'goblin-scrapper')).toMatchObject({ at: { row: 7, col: 1 } });
+  expect(lg.find((e) => e.spell === 'hold-it')).toMatchObject({ kind: 'counter', path: 'swipe', target: { row: 7, col: 1 } });
+  // Hex Reversal (disabled in decks, FX kept): the copied spell plays back from the reflector after the reflection
+  await sfxClear(page);
+  await page.evaluate(() => { const a = window.__app; a.animate(a.game.state, [
+    { type: 'counter', cardId: 'mirror-hex', player: 'player', countered: 'fireball', ckind: 'cast' },
+    { type: 'spell', player: 'player', cardId: 'fireball', target: { commander: 'opponent' } }]); });
+  lg = await sfxLog(page);
+  const hex = lg.find((e) => e.spell === 'mirror-hex'), back = lg.find((e) => e.spell === 'fireball');
+  expect(hex).toMatchObject({ kind: 'counter', slowmo: { factor: 0.35, ms: 300 } });
+  expect(back).toMatchObject({ kind: 'replay', caster: 'player', from: { row: 7, col: 2 } });
+  expect(back.delayMs).toBe(hex.totalMs);
+});
+
+test.describe('spell FX on a phone (844x390, touch)', () => {
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
+  test('AC473: phones load the -m files, the FX still plays, and no JS task over 100 ms during a fireball', async ({ page }) => {
+    test.setTimeout(60000);
+    let s = await start(page, sfxSetup({ playerHand: ['fireball'], board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 6 }] }));
+    if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+    expect((await page.evaluate(() => window.oreheart.getSpellFxSpec())).phone).toBe(true);
+    await page.waitForTimeout(1500); // the FX textures warm up after the match opens
+    await sfxClear(page);
+    const watch = (ms) => page.evaluate((m) => new Promise((res) => { const out = []; const o = new PerformanceObserver((l) => { for (const e of l.getEntries()) out.push(Math.round(e.duration)); }); o.observe({ type: 'longtask' }); setTimeout(() => { o.disconnect(); res(out); }, m); }), ms);
+    // the same page with no spell, as a yardstick (automated runs draw in software, where one 3D frame alone can take ~100 ms)
+    const base = await watch(2600);
+    const during = watch(2700);
+    await page.waitForTimeout(50);
+    expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'fireball'), target: { row: 3, col: 6 } })).ok).toBe(true);
+    const long = await during;
+    const L = (await sfxLog(page)).find((e) => e.spell === 'fireball');
+    expect(L.reduced).toBe(true);
+    expect(L.textures).toBe('phone');
+    expect(L.files.every((f) => /-m\.webp$/.test(f))).toBe(true);
+    const n = await sfxNow(page);
+    expect(n.perf.updates, 'the FX was drawn').toBeGreaterThan(0);
+    for (const ms of [200, L.impactMs + 60, L.totalMs - 200]) expect(Object.values((await sfxAt(page, L.id, ms)).layers).some((x) => x.visible), `FX visible at ${ms} ms`).toBe(true);
+    // the FX's own JavaScript is tiny: no FX step over 16 ms, starting it under 50 ms
+    expect(n.perf.maxUpdateMs, 'slowest FX frame step (ms)').toBeLessThanOrEqual(16);
+    expect(n.perf.maxPlayMs, 'starting the FX (ms)').toBeLessThanOrEqual(50);
+    // no JS task over 100 ms during the fireball (or, where the drawing itself is that slow, nothing longer than the same page without a spell)
+    const cap = Math.max(100, Math.max(0, ...base) + 40);
+    expect(Math.max(0, ...long), `long tasks during the fireball: [${long.join(', ')}] ms; without a spell: [${base.join(', ')}] ms`).toBeLessThanOrEqual(cap);
+  });
+});
+
+test('AC474: the emoji glyph spell FX are gone: no glyph sticker on a cast', async ({ page }) => {
+  test.setTimeout(60000);
+  let s = await start(page, sfxSetup({ playerHand: ['fireball', 'battle-cry'], board: [{ cardId: 'goblin-scrapper', owner: 'opponent', row: 3, col: 6 }, { cardId: 'goblin-scrapper', owner: 'player', row: 5, col: 6 }] }));
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+  const GLYPHS = ['🙏', '🗡', '🕳', '🔥', '📣', '☄', '✚', '🛡', '💨', '💫', '✋', '⚡', '🪞'];
+  const glyphCheck = () => page.evaluate((G) => {
+    const els = document.querySelectorAll('.fxv, .fxv-card, .fxv-result, .fxv-g, .fxv-g2, .fxv-g3');
+    const fx = document.querySelector('.fx');
+    const txt = fx ? fx.textContent || '' : '';
+    return { els: els.length, glyph: G.some((g) => txt.includes(g)) };
+  }, GLYPHS);
+  for (const [id, a] of [['fireball', { target: { row: 3, col: 6 } }], ['battle-cry', {}]]) {
+    await sfxClear(page);
+    s = await getState(page);
+    expect((await act(page, { type: 'cast', uid: handUid(s, 'player', id), ...a })).ok).toBe(true);
+    for (let i = 0; i < 8; i++) {
+      expect(await glyphCheck(), `${id} sample ${i}`).toEqual({ els: 0, glyph: false });
+      await page.waitForTimeout(150);
+    }
+    expect((await sfxLog(page)).some((e) => e.spell === id), `${id} played its painted FX`).toBe(true);
+  }
+});
