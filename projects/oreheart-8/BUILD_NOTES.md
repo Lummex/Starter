@@ -123,3 +123,6 @@ Editor updates needed: hand.overlap 0.26; DRAG_FX (150 ms, opacity .85, tilt 8°
 - `decks.ts` / `app.ts` use server decks when `net.active`; under-13 has no Rename.
 - Supabase Edge Function `send-outbox`, config rate limits, schedule migration; admin preview headers. See REPORT.md.
 - Not tested against a live Supabase in the build step. dist size is above 95 MB (see REPORT.md).
+
+## Online Phase A fix (inspector round 1)
+- Plain `/` in an automated browser (WebDriver/headless) without `?online=1` now skips the login flow (`src/net/switch.ts`), so the older checks reach the menu and the Welcome offer again. Real browsers still get the login screen.

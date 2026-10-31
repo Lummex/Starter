@@ -9,7 +9,10 @@ const env = (import.meta as any).env || {};
 export const SUPABASE_URL = env.VITE_SUPABASE_URL as string | undefined;
 export const SUPABASE_KEY = env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 export const configured = Boolean(SUPABASE_URL && SUPABASE_KEY);
-export const onlineEnabled = isOnlineEnabled(SUPABASE_URL, SUPABASE_KEY, typeof location !== 'undefined' ? location.search : '');
+// Automated browsers (WebDriver / headless) that did not ask for ?online=1 get the plain offline game, like ?test=1.
+const automated = typeof navigator !== 'undefined' && (navigator.webdriver === true || /Headless|Playwright/i.test(navigator.userAgent || ''));
+const search = typeof location !== 'undefined' ? location.search : '';
+export const onlineEnabled = isOnlineEnabled(SUPABASE_URL, SUPABASE_KEY, search) && !(automated && new URLSearchParams(search).get('online') !== '1');
 /** Parent and Contact pages (opened from emails) work whenever the build is configured. */
 export function pageMode(search: string): 'consent' | 'withdraw' | 'contact' | null {
   if (!configured) return null;
