@@ -201,14 +201,14 @@ class AudioEngine {
     if (PUNCH_FOR[name] && e.played) e.punch = this.punch(PUNCH_FOR[name]);
   }
   private heavyAt = -1e9;
-  /** The punch layer under a hit. A Commander hit gets only the heavy punch: its board bonk and its stronghold sound land within a few ms of each other. */
+  /** The punch layer under a hit. A Commander hit gets only the heavy punch: its board bonk and its stronghold sound land close together (up to a few frames apart on a slow phone). */
   private punch(key: string) {
     const now = performance.now();
-    if (key === 'punch' && now - this.heavyAt < 250) return null;
+    if (key === 'punch' && now - this.heavyAt < 600) return null;
     if (key === 'punch-heavy') {
       this.heavyAt = now;
       const c = this.ctx, vs = this.voices.punch || [];
-      if (c) for (const v of vs.slice()) if (c.currentTime - v.t < 0.25) { try { v.src.stop(); } catch { /* ended */ } }
+      if (c) for (const v of vs.slice()) if (c.currentTime - v.t < 0.6) { try { v.src.stop(); } catch { /* ended */ } }
     }
     const p = this.playKey(key, () => { /* no synth punch: the hit's own sound carries it until the file loads */ }, true);
     return { key, file: p.file, from: p.from === 'synth' ? 'none' : p.from, rate: p.rate }; // logged on the hit's own entry (sfxState().plays[i].punch)
