@@ -465,13 +465,14 @@ const _embV = new THREE.Vector3();
     group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; fidgetAt?: number; fidgetUntil?: number; fidgetBrk?: boolean; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
     /** Oct 30: squares still to walk (one per step), running gait, knock-back flight, delayed hit flash, step-in length, when its blow lands */
-    path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lastBlowAt?: number; lungeDur?: number; blowAt?: number;
+    flight?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null; path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lastBlowAt?: number; lungeDur?: number; blowAt?: number;
   };
   type Knock = { t0: number; from: THREE.Vector3; land: THREE.Vector3; h: number; spin: number; fly: number; ret: boolean; landed: boolean; knockMove?: boolean };
   // Oct 30 (Ken's fighting vision): units walk square by square and fights are little comic scenes (timings in ms, snappy)
   const WALK_SPEED = 2.8, RUN_SPEED = 4.0, IMPACT_MELEE = 250, IMPACT_RANGED = 300, LUNGE_MS = 620;
   /** Ken, Nov 1: "for each swing I'd like it to play the animation, so you can see the hit and the miss": one attack animation, sound and result per swing, this far apart */
   const SWING_MS = 640;
+  const RIDE_MS = 1500; // Rocket Rider flight: slow climb, arc over, nosedive
   const swingDefs = new Set<string>(); // defenders whose flinch and knock-back follow their own swing results
   const impacts: { at: number; to: THREE.Vector3; ranged: boolean; armored: boolean; commander: boolean }[] = [];
   /** Oct 31 (Ledger, studio/gear-placements-oct31.json aimLooks): while a shooter plays its ranged clip its gun takes an aim grip (barrel along
@@ -1050,7 +1051,11 @@ const _embV = new THREE.Vector3();
         if (ic) ic.visible = false; // owner (Oct 25): the drunk icon now shows with the other status icons above the head
       }
       const mv = events.find((e) => e.type === 'move' && e.uid === c.uid);
-      if (mv && mv.teleport) { f.group.position.copy(tgt); f.path = []; }
+      if (mv && mv.teleport && c.cardId === 'shard-guzzler' && events.some((e) => e.type === 'abilityUsed' && e.uid === c.uid && e.ability === 'rocket')) { // Ken, Nov 1: the Rocket Rider shoots up slowly, arcs over and nosedives onto the target
+        f.flight = { t0: now, from: f.group.position.clone().setY(0), to: tgt.clone() }; f.path = []; audio.play('fireball-whoosh');
+        setTimeout(() => { spawnFx('dust', tgt, 6); spawnFx('stars', tgt, 5); }, RIDE_MS);
+      }
+      else if (mv && mv.teleport) { f.group.position.copy(tgt); f.path = []; }
       else if (mv && mv.knock) { // Round 28b + Oct 30: a knock-back (Smack, Shockwave, deathKnock...) launches the figure onto its new square with a tumble
         const from = f.group.position.clone().setY(0); f.path = [];
         f.kb = { t0: now, from, land: tgt.clone(), h: 0.45, spin: 1, fly: 420, ret: false, landed: false, knockMove: true }; f.knockT = now + 100; fitKnockClip(f);
@@ -1141,6 +1146,7 @@ const _embV = new THREE.Vector3();
     }
     // Oct 31 (Forge): a damage spell with painted FX lands at the FX's impact, not at the cast: hit flashes (every unit in Starfall's 3x3),
     // deaths, the Commander's hit sound and the Bulwark pop wait for it. Hex Reversal's copied spell plays after the reflection.
+    if (!blowAt) { const rr = events.find((e: any) => e.type === 'abilityUsed' && e.ability === 'rocket' && figs.get(e.uid)); if (rr) blowAt = now + RIDE_MS; } // the blast waits for the rocket to land
     if (!blowAt && events.some((x: any) => x.type === 'damage')) {
       let lag = 0;
       for (const e of events) {
@@ -1648,6 +1654,12 @@ const _embV = new THREE.Vector3();
         else if (k < 1) { const e2 = k * (2 - k); g.position.lerpVectors(b.from, b.to, e2); goal.copy(g.position); }
         else { f.bowl = null; g.rotation.z = 0; }
       }
+      if (f.flight) { // Rocket Rider: slow climb, arc over, nosedive (RIDE_MS)
+        const fl = f.flight, k = Math.min(1, (now - fl.t0) / RIDE_MS), H = 3.6;
+        const e = k * k * (3 - 2 * k) * 0.35 + k * k * k * 0.65; // slow at the start, fast at the end
+        g.position.lerpVectors(fl.from, fl.to, e); goal.copy(g.position);
+        if (k >= 1) { f.flight = null; g.rotation.x = 0; }
+      }
       if (carried) goal.set(carry!.pos.x, goal.y, carry!.pos.z);
       const walking = !inKb && !f.bowl && (onPath || Math.hypot(g.position.x - f.target.x, g.position.z - f.target.z) > 0.05); /* Oct 31: a unit waiting for the bowling ball stands still */ // on the ground plane: a hovering flyer is not walking // judged before this frame's glide: one slow frame may cover the whole step
       if (!onPath && !inKb) g.position.lerp(goal, f.bowl ? 1 : carried ? 0.5 : 1 - Math.exp(-dt0 * (f.lunge ? 24 : 14))); // time-based glide; snappier while stepping in to swing
@@ -1665,6 +1677,11 @@ const _embV = new THREE.Vector3();
         g.visible = true;
         if (k >= 1) f.born = 0;
       } else g.position.y = walking ? Math.abs(Math.sin(now / 90)) * 0.09 : Math.abs(Math.sin(now / 260 + g.position.x)) * 0.015;
+      if (f.cardId === 'shard-guzzler' && !f.born) { // Ken, Nov 1: the Rocket Rider rides his rocket, hovering above the floor
+        let y = 0.42 + Math.sin(now / 420 + g.position.x) * 0.05;
+        if (f.flight) { const k = Math.min(1, (now - f.flight.t0) / RIDE_MS); y += 3.6 * Math.pow(Math.sin(Math.PI * k), 0.8); g.rotation.x = k < 0.3 ? -0.2 : -0.2 + (k - 0.3) / 0.7 * 1.7; }
+        g.position.y = y;
+      }
       // hit flash (red) + flinch
       if (f.hitT) {
         const k = (now - f.hitT) / 320;
