@@ -4,7 +4,7 @@
   "sections": [
     { "heading": "What this is", "text": "{username} would like an Oreheart account. Oreheart is a card battle game. An account lets {username} save decks and, later, play with other players online. Because {username} is under 13, we need your yes before the account can be used online." },
     { "heading": "What we keep", "text": "We keep the username, your email address (the parent or guardian's), the decks and game progress of the account, and a record of your approval. That is all." },
-    { "heading": "What we do not collect", "text": "We do not ask for a birth date, a photo, a real name, a phone number or a home address. There is no chat and no free text between players." },
+    { "heading": "What we do not collect", "text": "We do not keep a birth date (the birth month and year are only used on the sign-up screen to work out the age group, and are not sent to us), and we do not ask for a photo, a real name, a phone number or a home address. There is no chat and no free text between players." },
     { "heading": "Who sees what", "text": "Nothing about the account is shared with other people or companies. Other players can only see the username during a game." },
     { "heading": "Withdrawing approval", "text": "You can withdraw your approval at any time with the link in the confirmation email we send you after you approve. The account then stops working online." },
     { "heading": "Deleting the account", "text": "To have the account and its data deleted, use the Contact us form: {contact_url}" },
