@@ -305,10 +305,17 @@ const cuts = layout.foregroundCutouts.map((pts) => {
   const mesh = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(W.map(([x, y]) => new THREE.Vector2(x, -y)))), cutMat);
   mesh.renderOrder = 30; fgScene.add(mesh); return mesh;
 });
+// Ken (Oct 31, Arena Editor): cut-outs can also be cut from the FAR BACKGROUND picture (points in background px, opaque, same look); old layouts have none
+const cutUBg={uTex:bgU.uTex,uI:{value:new THREE.Vector2(IW,IH)},uBright:bgU.uBright,uContrast:bgU.uContrast,uSat:bgU.uSat,uHue:bgU.uHue};
+const cutMatBg=new THREE.ShaderMaterial({uniforms:cutUBg,vertexShader:cutVS,fragmentShader:cutFS.replace(/void main\(\)\{[\s\S]*$/,'uniform vec2 uI;void main(){vec2 w=vec2(vW.x,-vW.y);vec4 t=texture2D(uTex,vec2(w.x/uI.x,1.-w.y/uI.y));gl_FragColor=vec4(adj(t.rgb),1.);}'),transparent:true,depthTest:false});
+const bgCuts = (layout.backgroundCutouts || []).map((pts) => {
+  const mesh = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, -y)))), cutMatBg);
+  mesh.renderOrder = 30; fgScene.add(mesh); return mesh;
+});
 THREE.ColorManagement.enabled = true;
 const H = homog(layout.boardCorners.map(A2W));
 return {
-  scene, fgScene, cam, IW, IH, effects, cuts, skippedTypes, errors, allEffects, homography: H,
+  scene, fgScene, cam, IW, IH, effects, cuts, bgCuts, skippedTypes, errors, allEffects, homography: H,
   setView(x0, y0, w, h) { cam.left = x0; cam.right = x0 + w; cam.top = -y0; cam.bottom = -(y0 + h); cam.updateProjectionMatrix(); },
   update(t, dt) { const cm = THREE.ColorManagement.enabled; THREE.ColorManagement.enabled = false; effects.forEach((f) => f.update(t, dt)); THREE.ColorManagement.enabled = cm; },
 };
