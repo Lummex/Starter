@@ -7,7 +7,7 @@
 // Medium adds randomness and the odd second-best pick. No hidden information is used: the opponent's hand and deck are never read,
 // Respond windows opened by a trial action are always answered "pass", and trial actions use a reshuffled random seed so the
 // AI can't foresee knock-back directions.
-import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, nextPool, previewAttack, canRedraw, basicGatherer, typeBonus } from '../engine';
+import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, nextPool, previewAttack, canRedraw, basicGatherer, typeBonus, expectedSwings } from '../engine';
 import { planFor, StyleId, isStyle, StyleW } from './styles';
 
 export type Rand = () => number;
@@ -100,7 +100,7 @@ function scoreCast(s: any, who: string, a: any): number {
     case 'damage': {
       if (a.target.commander) return s.players[foe].health <= card.params.amount ? 10000 : s.players[foe].health <= 8 ? 40 : 18;
       if (!t) return 0;
-      const kills = t.health <= card.params.amount - (CARDS[t.cardId].abilities?.includes('armored') || CARDS[t.cardId].abilities?.includes('riotShield') ? 1 : 0);
+      const kills = t.health <= card.params.amount; // v2: spells are flat and unblockable
       return kills ? 50 + CARDS[t.cardId].cost * 6 : 5;
     }
     case 'poison': return !t ? 0 : !t.poison ? 8 + CARDS[t.cardId].cost * 3 : (t.poisonStacks || 1) < (CONFIG.stackCap ?? 3) ? Math.round((8 + CARDS[t.cardId].cost * 3) / 2) : 0; // stacking (Ken, Oct 30): a second dagger is worth about half
@@ -219,7 +219,7 @@ const cmdVal = (h: number) => h * TUNE.cmdW + Math.min(0, h - 8) * 10;
 
 /** How good the board is for `me` (bigger = better). Reads only public information. */
 /** Ken (Oct 31): the computer's predicted hit on a creature = its Attack plus the engine's own triangle rule (typeBonus: never against a Miner). Probe: window.oreheart.aiHitPrediction */
-export const predictHit = (s: any, c: any, target?: any, base: number = atkValue(s, c)) => (target ? base + typeBonus(CARDS[c.cardId], CARDS[target.cardId]) : base);
+export const predictHit = (s: any, c: any, target?: any, base: number = atkValue(s, c)) => expectedSwings(target ? base + typeBonus(CARDS[c.cardId], CARDS[target.cardId]) : base, target || null); // v2: what the swings are expected to land
 export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, turnW: 7, fwdW: 2.5 }): number {
   const foe = other(me as any);
   if (s.winner) return s.winner === me ? 1e6 : -1e6;
@@ -236,7 +236,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
     if (b === undefined) { b = atkValue(s, c); atkMemo.set(c, b); }
     return predictHit(s, c, target, b); // Ken, Oct 31: same rule as the engine (no triangle bonus against Miners)
   };
-  const ready = myTurn ? mine.filter((c) => !c.hasAttacked && !c.hasMined && !(c.hasMoved && !ab(c, 'charge')) && (c.lockedUntil || 0) <= s.turn && !(c.summonedThisTurn && !ab(c, 'haste'))) : [];
+  const ready = myTurn ? mine.filter((c) => !c.hasAttacked && !c.hasMined && !((c.movesLeft ?? 1) < 1 && !ab(c, 'charge')) && (c.lockedUntil || 0) <= s.turn && !(c.summonedThisTurn && !ab(c, 'haste'))) : []; // v2: a point left = can still attack
   const isolated = new Set(foes.filter((f) => !foes.some((o) => o !== f && cheb(o, f) <= 2)));
   // ---- units
   for (const c of mine) {
@@ -344,7 +344,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
 function threatensNow(s: any, c: any, f: any): boolean {
   if (ab(c, 'overwatch')) return true;
   if (ab(c, 'ranged')) return lineReach(s, c, f, rangeOf(c));
-  return cheb(c, f) === 1 || (ab(c, 'charge') && !c.hasMoved && cheb(c, f) <= (CARDS[c.cardId].move || 1) + 1);
+  return cheb(c, f) <= Math.max(1, CARDS[c.cardId].move || 1) + (ab(c, 'charge') ? 1 : 0); // v2: a unit walks (points - 1) and still attacks; Charge attacks at 0
 }
 
 /** The state after `a` (Respond windows answered "pass"; a reshuffled seed so random knock-backs aren't foreseen). */
@@ -354,7 +354,7 @@ function trial(s: any, a: any, me: string): any | null {
     const c = s.board.creatures.find((x: any) => x.uid === a.creatureUid);
     if (!c) return null;
     const mate = creatureAt(s, a.row, a.col);
-    const creatures = s.board.creatures.map((x: any) => (x === c ? { ...x, row: a.row, col: a.col, hasMoved: true } : x === mate ? { ...x, row: c.row, col: c.col } : x));
+    const creatures = s.board.creatures.map((x: any) => (x === c ? { ...x, row: a.row, col: a.col, hasMoved: true, movesLeft: Math.max(0, (x.movesLeft ?? 1) - Math.max(Math.abs(a.row - x.row), Math.abs(a.col - x.col))) } : x === mate ? { ...x, row: c.row, col: c.col } : x));
     return { ...s, board: { ...s.board, creatures } };
   }
   const r: any = applyAction({ ...s, rng: (Math.imul(s.rng | 0, 1103515245) + 12345 + s.turn) | 0 }, a);

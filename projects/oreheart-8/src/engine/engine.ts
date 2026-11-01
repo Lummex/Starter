@@ -56,8 +56,9 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
   const maxHealth = card.health + (bh ? bh.amount : 0);
   const c = {
     uid: uid || 'u' + s.nextUid++, cardId, owner, row, col, attack: card.attack, health: maxHealth - damage, maxHealth,
-    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0, drunk: 0, brewSave: false, brewTurn: 0, facing: owner === 'player' ? 'N' : 'S',
+    upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, movesLeft: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0, drunk: 0, brewSave: false, brewTurn: 0, facing: owner === 'player' ? 'N' : 'S',
   };
+  c.movesLeft = movesOf(card); // v2: a summoned unit has its points at once (Miners may move or mine the turn they are played, Haste units may act)
   s.board.creatures.push(c);
   return c;
 }
@@ -342,7 +343,7 @@ function startTurn(s: any, ev: any[]) {
   const cp = s.flags.crystalsPlayed;
   cp[who] = 0;
   s.flags = { battleCry: null, battleCryN: { player: 0, opponent: 0 }, crystalsPlayed: cp, swapped: false, discount: { player: 0, opponent: 0 } };
-  for (const c of s.board.creatures) if (c.owner === who) { c.summonedThisTurn = false; c.hasMoved = false; c.hasAttacked = false; c.movedDistance = 0; }
+  for (const c of s.board.creatures) if (c.owner === who) { c.summonedThisTurn = false; c.hasMoved = false; c.hasAttacked = false; c.movedDistance = 0; c.movesLeft = movesOf(CARDS[c.cardId]); }
   ev.push({ type: 'turnStart', player: who, turn: s.turn });
   // creatures heal to full, lose leftover Shield and expired Hearty Ale
   for (const c of s.board.creatures) {
@@ -441,11 +442,11 @@ function damageCommander(s: any, who: Side, n: number, ev: any[]) {
   }
 }
 
-function hurt(s: any, c: any, amount: number, ev: any[], raw = false) {
+function hurt(s: any, c: any, amount: number, ev: any[], raw = false, swing = false) {
   let d = amount;
   if (s.turn < (c.wardUntil || 0)) d = 0;
   if (!raw) {
-    if (has(c, 'armored') || has(c, 'riotShield')) d = Math.max(0, d - 1); // Ken (Oct 31): Riot Shield = a lot of blocking, a fair wall (1 less from every hit)
+    // v2 (Ken, Nov 1): Armored / Riot Shield no longer take 1 less: they block on a 2 as well (blockFacesOf)
     if (has(c, 'unbreakable')) d = Math.min(d, 3);
     if ((c.bubbles > 0 || c.bubble) && d > 0) { c.bubbles = Math.max(0, (c.bubbles || 1) - 1); c.bubble = c.bubbles > 0; d = 0; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col, left: c.bubbles }); } // stacking: one bubble per blocked hit
     if (c.shield > 0 && d > 0) { const b = Math.min(c.shield, d); c.shield -= b; d -= b; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col, amount: b }); }
@@ -453,7 +454,7 @@ function hurt(s: any, c: any, amount: number, ev: any[], raw = false) {
   if (c.illusion) d = Math.floor(d * 0.65);
   c.health -= d;
   if (c.brewSave && c.health <= 0 && d > 0) { c.health = 1; c.brewSave = false; ev.push({ type: 'brewSave', uid: c.uid, row: c.row, col: c.col }); }
-  ev.push({ type: 'damage', uid: c.uid, row: c.row, col: c.col, amount: d });
+  ev.push({ type: 'damage', uid: c.uid, row: c.row, col: c.col, amount: d, ...(swing ? { swing: true } : {}) });
   return d;
 }
 
@@ -479,6 +480,73 @@ function defeat(s: any, c: any, ev: any[]) {
   }
   if (minerDraw) drawCard(s, c.owner, ev);
 }
+
+// ---------------------------------------------------------------- combat v2 (Ken, Nov 1: swings, block dice and move points)
+// A unit's foot number is its move points: each step costs 1 and the one attack costs 1 and ends its turn (Miners keep 1 foot, so they play as before).
+// Attack N = N swings; each swing rolls a d6 and hits on 3-6. For each hit the defender rolls block dice equal to its CURRENT Health (at most 3);
+// any 1 or 6 blocks the hit (Armored and Riot Shield also block on a 2). A hit that gets through does 1 damage. Commanders never block, but swings at
+// them still roll. Spells and other non-swing damage stay flat. All the numbers live in game-config.json "combat"; dice: 'sure' (test pages) makes every swing land.
+export const COMBAT = (): any => CONFIG.combat || {};
+const d6 = (s: any) => rint(s, 1, 6);
+export const hitChance = (): number => (COMBAT().dice === 'sure' ? 1 : (7 - (COMBAT().hitFrom ?? 3)) / 6);
+const blockFacesOf = (c: any): number[] => {
+  if (COMBAT().dice === 'sure') return [];
+  const f: number[] = COMBAT().blockFaces || [1, 6];
+  const x = COMBAT().armoredExtraFace;
+  return x && (has(c, 'armored') || has(c, 'riotShield')) ? [...f, x] : f;
+};
+/** Block dice one landed hit faces: the defender's current Health, at most blockCap. */
+export const blockDiceOf = (c: any): number => Math.max(0, Math.min(COMBAT().blockCap ?? 3, c.health));
+/** Chance one landed hit is blocked by a defender at this Health. */
+export function blockChance(c: any, health = c.health): number {
+  const n = Math.max(0, Math.min(COMBAT().blockCap ?? 3, health)), p = blockFacesOf(c).length / 6;
+  return 1 - Math.pow(1 - p, n);
+}
+/** Exact odds of `n` swings at `def` (null = a Commander): expected damage and the chance the target drops to 0, with the dice shrinking as Health drops. */
+export function swingOdds(n: number, def: any | null): { deal: number; kill: number } {
+  const ph = hitChance();
+  if (!def) return { deal: n * ph, kill: 0 };
+  // state: (Health left, hits still soaked by Shield X and Bulwark bubbles); a soaked hit costs no Health, the dice stay at the Health
+  const ab0 = Math.max(0, def.shield || 0) + Math.max(0, def.bubbles || (def.bubble ? 1 : 0));
+  const K = (hp: number, ab: number) => hp * 64 + ab;
+  let dist = new Map<number, number>([[K(Math.max(0, def.health), ab0), 1]]);
+  for (let i = 0; i < n; i++) {
+    const nx = new Map<number, number>();
+    for (const [k, p] of dist) {
+      const hp = Math.floor(k / 64), ab = k % 64;
+      if (hp <= 0) { nx.set(k, (nx.get(k) || 0) + p); continue; }
+      const land = ph * (1 - blockChance(def, hp));
+      const hitK = ab > 0 ? K(hp, ab - 1) : K(hp - 1, 0);
+      nx.set(hitK, (nx.get(hitK) || 0) + p * land); nx.set(k, (nx.get(k) || 0) + p * (1 - land));
+    }
+    dist = nx;
+  }
+  let deal = 0, kill = 0;
+  for (const [k, p] of dist) { const hp = Math.floor(k / 64); deal += p * (def.health - hp); if (hp <= 0) kill += p; }
+  return { deal, kill };
+}
+/** Expected damage of `n` swings (the computer's guess and the attack preview). */
+export const expectedSwings = (n: number, def: any | null): number => swingOdds(n, def).deal;
+/** Resolve `n` swings of `att` at `def`: hit roll, block roll, then 1 damage through hurt(). Events: swing {result: miss | block | hit}. */
+function swingsAt(s: any, att: any, def: any, n: number, ev: any[], tag: string) {
+  let landed = 0;
+  for (let i = 0; i < n && def.health > 0; i++) {
+    const base = { type: 'swing', uid: att.uid, targetUid: def.uid, row: def.row, col: def.col, tag, n: i + 1, of: n };
+    if (COMBAT().dice !== 'sure' && d6(s) < (COMBAT().hitFrom ?? 3)) { ev.push({ ...base, result: 'miss' }); continue; }
+    const dice = COMBAT().dice === 'sure' ? 0 : blockDiceOf(def), faces = blockFacesOf(def);
+    let blocked = false;
+    for (let k = 0; k < dice && !blocked; k++) if (faces.includes(d6(s))) blocked = true;
+    if (!blocked && has(def, 'unbreakable') && landed >= 3) blocked = true; // Unbreakable: never more than 3 from one attack
+    if (blocked) { ev.push({ ...base, result: 'block', dice, armored: has(def, 'armored') || has(def, 'riotShield') }); continue; }
+    ev.push({ ...base, result: 'hit', dice });
+    const saved = def.brewSave;
+    if (hurt(s, def, 1, ev, false, true) > 0) landed++;
+    if (saved && !def.brewSave) break; // the Brewlord's save ends the attack: a unit it saves takes no more swings from it
+  }
+  return landed;
+}
+/** Move points a card starts its turn with (its foot number; 1 for every Miner). */
+export const movesOf = (card: any) => (isMiner(card) ? 1 : card.move || 1);
 
 // ---------------------------------------------------------------- combat
 // Ken (Oct 30, approved stacking plan): the same lasting effect adds up; the clock keeps the longer; caps in game-config
@@ -509,7 +577,8 @@ const DIRS8 = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
 const canAct = (s: any, c: any) => (!c.summonedThisTurn || has(c, 'haste')) && s.turn >= c.lockedUntil;
 
 export function attackTargets(s: any, c: any): any[] {
-  if (c.hasAttacked || c.hasMined || !canAct(s, c) || (c.hasMoved && !has(c, 'charge') && !c.rocketed) || s.turn < (c.wardUntil || 0)) return [];
+  // v2: the attack costs 1 move point (Charge may still attack at 0); one attack a turn
+  if (c.hasAttacked || c.hasMined || !canAct(s, c) || ((c.movesLeft ?? 1) < 1 && !has(c, 'charge') && !c.rocketed) || s.turn < (c.wardUntil || 0)) return [];
   const enemy = other(c.owner);
   const sh = stronghold(enemy);
   const out: any[] = [];
@@ -542,10 +611,13 @@ export function attackTargets(s: any, c: any): any[] {
 function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   attacker.hasAttacked = true;
   if (target.commander) faceTo(attacker, stronghold(target.commander).row, stronghold(target.commander).col); else faceTo(attacker, target.row, target.col);
+  attacker.movesLeft = COMBAT().afterAttack === 'keep' ? Math.max(0, (attacker.movesLeft ?? 1) - 1) : 0; // v2: the attack ends the unit's turn
   if (target.commander) {
-    const d = atkValue(s, attacker);
+    const n = atkValue(s, attacker), sq = stronghold(target.commander);
     ev.push({ type: 'attack', uid: attacker.uid, from: { row: attacker.row, col: attacker.col }, target: { commander: target.commander } });
-    damageCommander(s, target.commander, d, ev);
+    let d = 0; // v2: swings at a Commander still roll to hit; Commanders never block
+    for (let i = 0; i < n; i++) { const hit = COMBAT().dice === 'sure' || d6(s) >= (COMBAT().hitFrom ?? 3); ev.push({ type: 'swing', uid: attacker.uid, commander: target.commander, row: sq.row, col: sq.col, result: hit ? 'hit' : 'miss', n: i + 1, of: n, tag: 'attack' }); if (hit) d++; }
+    if (d > 0) damageCommander(s, target.commander, d, ev);
     return;
   }
   const def = creatureAt(s, target.row, target.col);
@@ -554,10 +626,10 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   const pos = { row: def.row, col: def.col };
   const strikes = melee && !has(attacker, 'sneaky') && !has(attacker, 'overwatch');
   const back = strikes ? atkValue(s, def, attacker) : 0;
-  hurt(s, def, atkValue(s, attacker, def), ev);
+  swingsAt(s, attacker, def, atkValue(s, attacker, def), ev, 'attack');
   // Smack knocks the target 2 away before it can strike back
   if (melee && def.health > 0 && has(attacker, 'smack') && attacker.health > 0) knockAway(s, attacker, def, 2, ev);
-  if (strikes && cheb(attacker, def) === 1) { ev.push({ type: 'counter', uid: def.uid }); hurt(s, attacker, back, ev); }
+  if (strikes && cheb(attacker, def) === 1 && def.health > 0) { ev.push({ type: 'counter', uid: def.uid }); if (COMBAT().strikeBackRolls === false) hurt(s, attacker, back, ev); else swingsAt(s, def, attacker, back, ev, 'strikeBack'); } // v2: a strike-back rolls the same way, and only from a defender still standing
   if (has(attacker, 'overload'))
     for (const o of [...s.board.creatures]) if (o.owner === def.owner && o !== def && cheb(o, pos) === 1) hurt(s, o, CONFIG.overloadDamage, ev);
   const sdef = def.health > 0;
@@ -582,7 +654,7 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
       if (!spot) continue;
       ev.push({ type: 'move', uid: g.uid, from: { row: g.row, col: g.col }, to: spot, teleport: true });
       g.row = spot.row; g.col = spot.col;
-      hurt(s, attacker, atkValue(s, g, attacker), ev);
+      swingsAt(s, g, attacker, atkValue(s, g, attacker), ev, 'assist');
       break;
     }
   if (def.health <= 0 && has(attacker, 'siphon')) s.players[attacker.owner].bank += 1;
@@ -728,8 +800,10 @@ export function mineTargets(s: any, c: any): { row: number; col: number }[] {
 /** Spaces `c` can move to; a space held by one of its own creatures is a swap. */
 export function moveDests(s: any, c: any): { row: number; col: number }[] {
   // Riot Shield (Ken, Oct 31 dwarf rebalance): the shield stops attacking and dying, not walking: a Bearer can walk to a mine and dig while shielded
-  if (s.turn < (c.rootUntil || 0) || c.hasMoved || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId]))) return [];
-  const m = maxMove(c);
+  // v2 (Ken, Nov 1): move points: every step costs 1; the attack ends the turn
+  if (s.turn < (c.rootUntil || 0) || c.hasAttacked || c.hasMined || s.turn < c.lockedUntil || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) || (c.movesLeft ?? 1) < 1) return [];
+  const m = c.movesLeft ?? maxMove(c);
+  if (m > 1) return v2MoveDests(s, c, m);
   const out: any[] = [];
   for (let dr = -m; dr <= m; dr++) for (let dc = -m; dc <= m; dc++) {
     if (!dr && !dc) continue;
@@ -1059,21 +1133,17 @@ export function hasMovesLeft(s: any): boolean {
 
 /** Preview of an attack, computed by running the real attack code on a copy of the state. */
 export function previewAttack(state: any, attackerUid: string, target: any) {
-  const s = JSON.parse(JSON.stringify(state));
-  const a = s.board.creatures.find((x: any) => x.uid === attackerUid);
+  // v2 (Ken, Nov 1): the exact odds of the swings and the strike back (Shield, bubbles and Unbreakable are not counted; the dice are)
+  const s = state, a = s.board.creatures.find((x: any) => x.uid === attackerUid);
   if (!a) return null;
   const def = target && target.row ? creatureAt(s, target.row, target.col) : null;
-  const ev: any[] = [];
-  resolveAttack(s, a, target, ev);
-  let youDeal = 0, youTake = 0;
-  for (const e of ev) {
-    if (e.type !== 'damage') continue;
-    if (e.commander) youDeal += e.amount;
-    else if (def && e.uid === def.uid) youDeal += e.amount;
-    else if (e.uid === a.uid) youTake += e.amount;
-  }
-  const alive = (u: string) => s.board.creatures.some((x: any) => x.uid === u);
-  return { youDeal, youTake, targetDefeated: def ? !alive(def.uid) : s.winner === a.owner, attackerDefeated: !alive(a.uid) };
+  const swings = atkValue(s, a, def || undefined), o = swingOdds(swings, def);
+  const melee = !!def && cheb(a, def) === 1 && !has(a, 'ranged') && !has(a, 'sneaky') && !has(a, 'overwatch');
+  const back = melee ? atkValue(s, def, a) : 0, b = melee ? swingOdds(back, a) : { deal: 0, kill: 0 };
+  const alive = 1 - o.kill;
+  const r = (x: number) => Math.round(x * 100) / 100;
+  return { youDeal: r(o.deal), youTake: r(alive * b.deal), targetDefeated: def ? o.kill >= 0.995 : s.players[target.commander].health <= swings && hitChance() >= 1, attackerDefeated: alive * b.kill >= 0.995,
+    swings, back, kill: r(o.kill), die: r(alive * b.kill), melee, commander: !def, sure: COMBAT().dice === 'sure' };
 }
 
 // ---------------------------------------------------------------- apply
@@ -1265,6 +1335,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
         mate.row = from.row; mate.col = from.col;
       }
       c.movedDistance = cheb(c, l);
+      c.movesLeft = Math.max(0, (c.movesLeft ?? 1) - cheb(c, l)); // v2: each step costs a move point
       c.row = l.row; c.col = l.col; c.hasMoved = true;
       break;
     }
@@ -1507,5 +1578,23 @@ export function applyAction(state: any, action: any): { ok: boolean; state: any;
 
 /** True when a creature has acted this turn, or cannot act yet (shown darker in the UI). */
 export function isActed(s: any, c: any): boolean {
-  return c.hasMoved || c.hasAttacked || c.hasMined || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) || s.turn < c.lockedUntil;
+  return c.hasAttacked || c.hasMined || (c.movesLeft ?? 1) < 1 || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) || s.turn < c.lockedUntil; // v2: grey only at 0 points or after the attack
+}
+/** v2: every square reachable in at most m steps over empty squares (a flyer passes over units); your own units at any reached distance are swaps. */
+function v2MoveDests(s: any, c: any, m: number) {
+  const out: any[] = []; const seen = new Set<string>([c.row + ',' + c.col]);
+  let frontier = [{ row: c.row, col: c.col }];
+  for (let step = 1; step <= m && frontier.length; step++) {
+    const next: any[] = [];
+    for (const q of frontier) for (const [dr, dc] of DIRS8) {
+      const row = q.row + dr, col = q.col + dc, k = row + ',' + col;
+      if (seen.has(k) || !inBounds(row, col)) continue;
+      const there = creatureAt(s, row, col);
+      if (emptyCell(s, row, col)) { seen.add(k); out.push({ row, col }); next.push({ row, col }); }
+      else if (there && there.owner === c.owner) { seen.add(k); out.push({ row, col }); if (has(c, 'flying')) next.push({ row, col }); }
+      else if (there && has(c, 'flying')) { seen.add(k); next.push({ row, col }); }
+    }
+    frontier = next;
+  }
+  return out;
 }

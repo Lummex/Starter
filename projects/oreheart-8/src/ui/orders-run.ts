@@ -58,53 +58,70 @@ export async function runOrders(game: Game, orders: Map<string, Order>, opts: Ru
         if (!canAct(game, turn, match)) { log('orders: stopped (phase, turn or match changed)'); break; }
       }
 
-      if (order.kind === 'chase') {
-        const enemy = chaseTarget(game.state, order);
-        if (!enemy) { orders.delete(key); result.done.push(order.uid); changed(); continue; }
-        const attack = attackActionOn(game.state, c, enemy);
-        if (attack) {
-          const r = game.act(attack);
-          if (r.ok) {
-            first = false;
-            result.attacked.push(order.uid); // Ken, Nov 1: the order stays: it keeps attacking turn after turn, follows if the target runs, and goes on to the next target when this one is gone
-            changed();
-            if (game.state && game.state.pendingResponse) { await waitForResponse(game, log); changed(); }
-          } else {
-            log('orders: attack refused for ' + order.uid + ': ' + r.error);
-            result.blocked.push(order.uid);
+      // Combat v2 (Ken, Nov 1): a unit walks as far as its move points allow and a chaser attacks when in reach in the same turn
+      let cur = c, curPlan = plan, legs = 0;
+      while (legs++ < 8 && canAct(game, turn, match)) {
+        if (order.kind === 'chase') {
+          const enemy = chaseTarget(game.state, order);
+          if (!enemy) { orders.delete(key); result.done.push(order.uid); changed(); break; }
+          const attack = attackActionOn(game.state, cur, enemy);
+          if (attack) {
+            const r = game.act(attack);
+            if (r.ok) {
+              first = false;
+              result.attacked.push(order.uid); // Ken, Nov 1: the order stays: it keeps attacking turn after turn, follows if the target runs, and goes on to the next target when this one is gone
+              changed();
+              if (game.state && game.state.pendingResponse) { await waitForResponse(game, log); changed(); }
+            } else {
+              log('orders: attack refused for ' + order.uid + ': ' + r.error);
+              result.blocked.push(order.uid);
+            }
+            break;
           }
-          continue;
         }
+        if (curPlan.blocked) { result.blocked.push(order.uid); break; }
+        const step = nextStep(game.state, cur, curPlan.path);
+        if (!step) { result.blocked.push(order.uid); break; }
+        const r = game.act({ type: 'move', creatureUid: cur.uid, row: step.row, col: step.col });
+        if (!r.ok) { log('orders: move refused for ' + order.uid + ': ' + r.error); result.blocked.push(order.uid); break; }
+        first = false;
+        if (!result.moved.includes(order.uid)) result.moved.push(order.uid);
+        changed();
+        const again = find(order.uid);
+        if (!again) break;
+        if (order.kind === 'move') {
+          let after;
+          try { after = planOrder(game.state, order); } catch { after = null; }
+          if (after && after.done) { orders.delete(key); result.done.push(order.uid); break; }
+          if (!after || after.blocked) break;
+          curPlan = after;
+        } else {
+          try { curPlan = planOrder(game.state, order); } catch { break; }
+          if (curPlan.done) { orders.delete(key); result.done.push(order.uid); changed(); break; }
+        }
+        cur = again;
+        if ((cur.movesLeft ?? 0) < 1) break;
+        if (opts.delayMs > 0) { await sleep(opts.delayMs); if (!canAct(game, turn, match)) break; }
       }
-
-      if (plan.blocked) { result.blocked.push(order.uid); continue; }
-      const step = nextStep(game.state, c, plan.path);
-      if (!step) { result.blocked.push(order.uid); continue; }
-      const r = game.act({ type: 'move', creatureUid: c.uid, row: step.row, col: step.col });
-      if (!r.ok) { log('orders: move refused for ' + order.uid + ': ' + r.error); result.blocked.push(order.uid); continue; }
-      first = false;
-      result.moved.push(order.uid);
-      if (order.kind === 'move') {
-        let after;
-        try { after = planOrder(game.state, order); } catch { after = null; }
-        if (after && after.done) { orders.delete(key); result.done.push(order.uid); }
-      }
-      changed();
     }
     if (opts.stances) for (const [uid, stance] of Array.from(opts.stances.entries())) {
       if (orders.has(uid)) continue; // an order beats the stance
       if (!canAct(game, turn, match)) break;
       const c = find(uid);
       if (!c) { opts.stances.delete(uid); continue; }
-      const a = stanceAction(game.state, c, stance);
-      if (!a) continue;
-      if (!first && opts.delayMs > 0) { await sleep(opts.delayMs); if (!canAct(game, turn, match)) break; }
-      const r = game.act(a);
-      if (!r.ok) { log('stance: refused for ' + uid + ': ' + r.error); continue; }
-      first = false;
-      (a.type === 'attack' ? result.attacked : result.moved).push(uid);
-      changed();
-      if (game.state && game.state.pendingResponse) { await waitForResponse(game, log); changed(); }
+      for (let legs = 0; legs < 4 && canAct(game, turn, match); legs++) { // v2: a stance may walk and then attack in the same turn
+        const cc = find(uid); if (!cc) break;
+        const a = stanceAction(game.state, cc, stance);
+        if (!a) break;
+        if (!first && opts.delayMs > 0) { await sleep(opts.delayMs); if (!canAct(game, turn, match)) break; }
+        const r = game.act(a);
+        if (!r.ok) { log('stance: refused for ' + uid + ': ' + r.error); break; }
+        first = false;
+        if (a.type === 'attack') { result.attacked.push(uid); changed(); if (game.state && game.state.pendingResponse) { await waitForResponse(game, log); changed(); } break; }
+        if (!result.moved.includes(uid)) result.moved.push(uid);
+        changed();
+        if (stance === 'guard') break;
+      }
     }
   } catch (e: any) {
     log('orders: runner error: ' + (e?.message || e));

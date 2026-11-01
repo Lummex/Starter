@@ -108,6 +108,6 @@ export function stanceChoose(s: any, stance: Stance, who: string, difficulty: st
 /** A copy of the state in which only `uid` (of `who`'s units) can still act. */
 export function onlyUnit(s: any, uid: string, who = 'player') {
   const copy = JSON.parse(JSON.stringify(s));
-  for (const c of copy.board.creatures) if (c.owner === who && c.uid !== uid) { c.hasMoved = true; c.hasAttacked = true; c.hasMined = true; }
+  for (const c of copy.board.creatures) if (c.owner === who && c.uid !== uid) { c.hasMoved = true; c.hasAttacked = true; c.hasMined = true; c.movesLeft = 0; }
   return copy;
 }

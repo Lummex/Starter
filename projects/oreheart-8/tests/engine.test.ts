@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { CONFIG as _CFG } from '../src/engine';
+(_CFG as any).combat.dice = 'sure'; // Combat v2 (Nov 1): these older tests pin exact damage, so every swing lands and nothing blocks here (the dice have their own tests)
 import { createMatch, applyAction, legalActions, creatureAt, CARDS, CONFIG, STARTER_DECKS, incomePreview, hasMovesLeft, legalMines, weaponOf, deckProblems, atkValue, validateDeck, STARTER_DECK_LIST, isActed, isMiner } from '../src/engine';
 
 const act = (s: any, a: any) => { const r = applyAction(s, a); if (!r.ok) throw new Error(r.error); return r.state; };
@@ -277,17 +279,17 @@ describe('revision 6', () => {
     s = done(s);
     const targets = legalActions(s).filter((a: any) => a.type === 'attack' && a.creatureUid === at(s, 6, 9).uid).map((a: any) => a.target);
     expect(targets).toEqual([{ row: 5, col: 9 }]);
-    // 1 less from every hit: a 4-Attack Ram Rider does 3
+    // Combat v2 (Nov 1): no '1 less' any more; the Bearer blocks on a 2 as well (dice tests elsewhere). With sure dice a 4-Attack Ram Rider lands 4
     s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], board: [P('ram-rider', 6, 9), O('dwarf-miner', 5, 9)] } });
     s = done(s);
     s = act(s, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 5, col: 9 } });
-    expect(at(s, 5, 9).health).toBe(5 - 3);
+    expect(at(s, 5, 9).health).toBe(5 - 4);
     // never knocked: an Enforcer (Granite Oathkeeper) hits it; the Bearer stays, the plain unit beside the same Enforcer is knocked
     s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], board: [P('dwarf-stoneback', 6, 9), O('dwarf-miner', 5, 9), O('dwarf-pickman', 6, 10)] } });
     s = done(s);
     s = act(s, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 5, col: 9 } });
     expect(at(s, 5, 9)?.cardId).toBe('dwarf-miner');
-    expect(at(s, 5, 9).health).toBe(5); // the 1-Attack hit did 0
+    expect(at(s, 5, 9).health).toBe(4); // v2: the 1-Attack hit lands 1 (sure dice)
     expect(at(s, 6, 10)?.cardId).not.toBe('dwarf-pickman');
     // never lifted: the Junk Shaman offers no lift for it, with no shield clock at all
     s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], playerCrystals: 9, board: [P('junk-shaman', 6, 9), O('dwarf-miner', 4, 9), O('dwarf-pickman', 4, 11)] } });
@@ -405,7 +407,7 @@ describe('revision 7', () => {
     expect(t.players.player.bank).toBe(1);
     let u = mk({ board: [P('rune-splitter', 4, 8), O('goblin-grunt', 4, 9)] });
     u = act(done(u), { type: 'attack', creatureUid: at(u, 4, 8).uid, target: { row: 4, col: 9 } });
-    expect(at(u, 4, 8).health).toBe(1); // round 12c: Door Splitter is no longer Armored
+    expect(at(u, 4, 8).health).toBe(3); // v2 (Nov 1): the Grunt falls to the 3 swings and strikes back no more
     const v = mk({ board: [P('grimhold-ravager', 4, 8, { lastFight: 0 })] });
     expect(atkValue(v, at(v, 4, 8))).toBe(6); // Brawler: doubles after a fight last round
   });
@@ -449,7 +451,7 @@ describe('revision 9', () => {
   it('previewAttack matches the real attack', () => {
     const s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { board: [P('shieldbeard', 4, 3), O('goblin-scrapper', 3, 3)] } });
     const a = at(s, 4, 3);
-    expect(previewAttack(s, a.uid, { row: 3, col: 3 })).toEqual({ youDeal: 3, youTake: 2, targetDefeated: true, attackerDefeated: false });
+    expect(previewAttack(s, a.uid, { row: 3, col: 3 })).toMatchObject({ youDeal: 3, youTake: 0, targetDefeated: true, attackerDefeated: false }); // v2: a defender that falls strikes back no more
   });
   it('tutorial runs to Victory via tutorialAction', () => {
     let s = createMatch({ playerCommander: t.playerCommander, opponentCommander: t.opponentCommander, setup: t.setup, mines: t.mines, tutorial: true, seed: 1 });

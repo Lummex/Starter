@@ -671,16 +671,19 @@ test('AC12: movement in 8 directions, move 2 only for move-2 creatures', async (
   expect(moves.some((a) => a.creatureUid === scrap && a.row === 5 && a.col === 1)).toBe(true);
   expect(moves.some((a) => a.creatureUid === scrap && a.row === 5 && a.col === 2)).toBe(true); // own creature: a legal swap
   expect(moves.some((a) => a.creatureUid === scrap && a.row === 7 && a.col === 1)).toBe(false); // enemy: never
-  expect(moves.some((a) => a.creatureUid === scrap && a.row === 4 && a.col === 2)).toBe(false);
-  expect(moves.some((a) => a.creatureUid === wolf && a.row === 4 && a.col === 6)).toBe(false);
+  // owner check change (Ken, Nov 1, Combat v2): the foot number is move points: the Brawler (2 feet) reaches 2 squares, the Mangewolf (3 feet) 3, one step at a time or in one go
+  expect(moves.some((a) => a.creatureUid === scrap && a.row === 4 && a.col === 3)).toBe(true); // (4,2) is a mine square
+  expect(moves.some((a) => a.creatureUid === wolf && a.row === 4 && a.col === 5)).toBe(true); // (4,6) is a mine square
   expect(moves.some((a) => a.creatureUid === wolf && a.row === 4 && a.col === 7)).toBe(true);
-  expect((await act(page, { type: 'move', creatureUid: scrap, row: 4, col: 1 })).ok).toBe(false);
-  expect((await act(page, { type: 'move', creatureUid: scrap, row: 6, col: 3 })).ok).toBe(true);
+  expect(moves.some((a) => a.creatureUid === scrap && a.row === 3 && a.col === 2), '3 squares is past 2 feet').toBe(false);
+  expect((await act(page, { type: 'move', creatureUid: scrap, row: 4, col: 1 })).ok, 'two steps in one go').toBe(true);
+  expect((await act(page, { type: 'move', creatureUid: scrap, row: 4, col: 2 })).ok, 'no points left').toBe(false);
   expect((await act(page, { type: 'move', creatureUid: wolf, row: 4, col: 7 })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 6, 3).uid).toBe(scrap);
+  expect(at(s, 4, 1).uid).toBe(scrap);
   expect(at(s, 4, 7).uid).toBe(wolf);
-  expect((await act(page, { type: 'move', creatureUid: scrap, row: 6, col: 4 })).ok).toBe(false);
+  expect((await act(page, { type: 'move', creatureUid: wolf, row: 3, col: 7 })).ok, 'the wolf spends its last point').toBe(true);
+  expect((await act(page, { type: 'move', creatureUid: wolf, row: 2, col: 7 })).ok).toBe(false);
 });
 
 test('AC12: each creature moves OR attacks, never both; Thunderhorn Ram Rider (Charge) can do both', async ({ page }) => {
@@ -699,11 +702,12 @@ test('AC12: each creature moves OR attacks, never both; Thunderhorn Ram Rider (C
   const a = at(s, 3, 3).uid;
   const b = at(s, 3, 5).uid;
   const ram = at(s, 4, 7).uid;
-  // A moves (still next to the Miner) -> may no longer attack
+  // owner check change (Ken, Nov 1, Combat v2): A (2 feet) steps 1 and may still attack with its last point; the attack then ends its turn
   expect((await act(page, { type: 'move', creatureUid: a, row: 2, col: 3 })).ok).toBe(true);
   let acts = await legal(page);
-  expect(acts.some((x) => x.type === 'attack' && x.creatureUid === a)).toBe(false);
-  expect((await act(page, { type: 'attack', creatureUid: a, target: { row: 2, col: 4 } })).ok).toBe(false);
+  expect(acts.some((x) => x.type === 'attack' && x.creatureUid === a)).toBe(true);
+  expect((await act(page, { type: 'attack', creatureUid: a, target: { row: 2, col: 4 } })).ok).toBe(true);
+  expect((await legal(page)).some((x) => (x.type === 'move' || x.type === 'attack') && x.creatureUid === a), 'the attack ends its turn').toBe(false);
   // B attacks -> may no longer move
   expect((await act(page, { type: 'attack', creatureUid: b, target: { row: 2, col: 4 } })).ok).toBe(true);
   acts = await legal(page);
@@ -735,12 +739,13 @@ test('AC13: simultaneous hits — 1/2 beats 1/1, two 1/1s defeat each other', as
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 1).uid, target: { row: 4, col: 1 } })).ok).toBe(true);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 7).uid, target: { row: 4, col: 7 } })).ok).toBe(true);
   s = await getState(page);
+  // owner check change (Ken, Nov 1, Combat v2): a defender that falls strikes back no more (sure dice on test pages)
   expect(at(s, 4, 1)).toBeUndefined();
-  expect(at(s, 5, 1).health).toBe(1); // struck back even though defeated
+  expect(at(s, 5, 1).health).toBe(2);
   expect(at(s, 4, 7)).toBeUndefined();
-  expect(at(s, 5, 7)).toBeUndefined();
+  expect(at(s, 5, 7).health).toBe(1);
   expect(s.players.opponent.discard.filter((c) => c.cardId === 'gnome-prospector').length).toBe(2);
-  expect(s.players.player.discard.filter((c) => c.cardId === 'gnome-prospector').length).toBe(1);
+  expect(s.players.player.discard.filter((c) => c.cardId === 'gnome-prospector').length).toBe(0);
 });
 
 test('AC13: Shieldbeard vs Scrapper — type advantage defeats it, strike back still lands', async ({ page }) => {
@@ -757,7 +762,7 @@ test('AC13: Shieldbeard vs Scrapper — type advantage defeats it, strike back s
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 4).uid, target: { row: 4, col: 3 } })).ok).toBe(true);
   s = await getState(page);
   expect(at(s, 4, 3)).toBeUndefined();
-  expect(at(s, 5, 4).health).toBe(3); // 4 + 1 Borgo - 2 strike back
+  expect(at(s, 5, 4).health).toBe(5); // v2 (Nov 1): 4 + 1 Borgo, no strike back from a fallen Scrapper
   expect(s.players.opponent.discard.some((c) => c.cardId === 'goblin-scrapper')).toBe(true);
 });
 
@@ -856,25 +861,26 @@ test('AC14: creatures heal at the start of their owner\'s turn; damaged Health i
       { cardId: 'shieldbeard', owner: 'opponent', row: 2, col: 6, damage: 0 },
     ] },
   });
-  const label = page.getByLabel('Shieldbeard, row 5, column 4', { exact: true });
+  const label = page.getByLabel('Bowler Brawler, row 3, column 6', { exact: true }); // v2 (Nov 1): the Brawler is the one left damaged (the Shieldbeard's victim falls and strikes back no more)
   await expect(label).toHaveAttribute('data-damaged', 'false');
   await done(page);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 4).uid, target: { row: 4, col: 3 } })).ok).toBe(true);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 3, 6).uid, target: { row: 2, col: 6 } })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 5, 4).health).toBe(3);
+  expect(at(s, 5, 4).health).toBe(5); // v2: its victim fell, no strike back
   expect(at(s, 2, 6).health).toBe(2); // opponent Shieldbeard: 4 - 2 (Grubnak gives no Health)
+  expect(at(s, 3, 6).health).toBe(1); // the Brawler took the Shieldbeard's strike back
   await expect(label).toHaveAttribute('data-damaged', 'true');
-  await expect(label).toContainText('3');
+  await expect(label).toContainText('1');
   await done(page); // -> opponent's turn 2
   s = await getState(page);
   expect(s.activePlayer).toBe('opponent');
   expect(at(s, 2, 6).health).toBe(4); // opponent's creature healed at its owner's turn
-  expect(at(s, 5, 4).health).toBe(3); // ours stays damaged during the enemy turn
+  expect(at(s, 3, 6).health).toBe(1); // ours stays damaged during the enemy turn
   await passTurn(page); // -> player's turn 3
   s = await getState(page);
   expect(s.activePlayer).toBe('player');
-  expect(at(s, 5, 4).health).toBe(5);
+  expect(at(s, 3, 6).health).toBe(4); // 3 + 1 (Borgo's bonus Health)
   await expect(label).toHaveAttribute('data-damaged', 'false');
 });
 
@@ -1353,7 +1359,7 @@ const COSTS = {
   'goblin-scrounger': 1, 'goblin-scrapper': 6, 'goblin-slinger': 4, 'goblin-bomber': 3, 'goblin-sneak': 3, 'wolf-rider': 8,
   'grubnaks-big-boss-troll': 7, 'gnome-prospector': 1, 'gnome-tinker': 4, 'spark-gnome': 4, 'clockwork-beetle': 6,
   'gnome-illusionist': 6, 'gyrocopter-ace': 8, 'the-great-steam-golem': 10, 'dwarf-miner': DWARF_FIX.bearerCost, 'shieldbeard': 6, // Owner check change (Ken, Oct 31 dwarf fix): the Bearer is a cost-4 Fighter
-  'axe-thrower': 6, 'ironhammer-berserker': 7, 'brewmaster': 6, 'ram-rider': 10, 'queen-brunhilda-stonebeard': 10,
+  'axe-thrower': 6, 'ironhammer-berserker': 7, 'brewmaster': 6, 'ram-rider': 9, 'queen-brunhilda-stonebeard': 10, // Combat v2 (Ken, Nov 1): Charge costs +1, not +2 (Ram Rider 9, Door Splitter 6, Skullbasher Rusher 3)
   'shard-guzzler': 6, 'overclocked-conduit': 5, 'crystal-drunk-delver': 7,
 };
 test('AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 for 1', async ({ page }) => {
@@ -1378,7 +1384,7 @@ test('AC27: summoning spends exactly the new costs', async ({ page }) => {
   });
   // Owner check change (Ken, Oct 31 dwarf fix): Bearer DWARF_FIX.bearerCost (4: 30 -> 26 -> 20 -> 14 -> 4); Round 12c owner costs 6/6/10; Round 3b: (7,2) is the Stronghold
   const b0 = 30 - DWARF_FIX.bearerCost;
-  const steps = [['dwarf-miner', 1, b0], ['shieldbeard', 3, b0 - 6], ['axe-thrower', 4, b0 - 12], ['ram-rider', 5, b0 - 22]];
+  const steps = [['dwarf-miner', 1, b0], ['shieldbeard', 3, b0 - 6], ['axe-thrower', 4, b0 - 12], ['ram-rider', 5, b0 - 21]];
   for (const [id, col, left] of steps) {
     expect((await act(page, { type: 'summon', uid: handUid(s, 'player', id), row: 7, col })).ok, id).toBe(true);
     s = await getState(page);
@@ -1472,10 +1478,10 @@ test('AC30: creature labels show Attack, Health, Movement and darken after actin
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrapper'), row: 7, col: 1 })).ok).toBe(true);
   const scrap = page.getByLabel('Bowler Brawler, row 7, column 1', { exact: true });
   await expect(scrap).toHaveAttribute('data-acted', 'true');
-  await expect(scrap).toHaveText(/2\D+3\D+1/);
+  await expect(scrap).toHaveText(/2\D+3\D+2/); // v2: the Brawler has 2 feet
   await done(page);
-  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 6).uid, row: 5, col: 6 })).ok).toBe(true);
-  const moved = page.getByLabel('Mangewolf Rider, row 5, column 6', { exact: true });
+  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 6).uid, row: 3, col: 6 })).ok).toBe(true); // v2: all 3 feet (round the mine at (4,6)), so it has acted
+  const moved = page.getByLabel('Mangewolf Rider, row 3, column 6', { exact: true });
   await expect(moved).toHaveAttribute('data-acted', 'true');
   await done(page); // enemy turn
   await expect(moved).toHaveAttribute('data-acted', 'true');
@@ -1697,7 +1703,7 @@ test('AC38: swapping places with your own creature uses only the dragged creatur
   expect(at(s, 6, 3).hasMoved).toBe(true);
   expect(at(s, 6, 2).hasMoved).toBe(false);
   acts = await legal(page);
-  expect(acts.some((x) => (x.type === 'move' || x.type === 'attack') && x.creatureUid === a)).toBe(false);
+  expect(acts.some((x) => x.type === 'move' && x.creatureUid === a), 'v2: the swap cost 1 of its 2 points').toBe(true);
   expect((await act(page, { type: 'move', creatureUid: b, row: 7, col: 3 })).ok).toBe(true);
   expect(at(await getState(page), 7, 3).uid).toBe(b);
 });
@@ -2482,7 +2488,7 @@ test('AC64: Deploy auto-skips with an unplayable hand; Action skips once nothing
   s = await getState(page);
   expect(s.phase).toBe('action'); // the Troll can still move
   expect(s.activePlayer).toBe('player');
-  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 3).uid, row: 5, col: 3 })).ok).toBe(true);
+  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 3).uid, row: 4, col: 3 })).ok).toBe(true); // v2: both of the Troll's points, so nothing is left to do
   await expect.poll(async () => (await getState(page)).activePlayer, { timeout: 5000 }).toBe('opponent');
 });
 
@@ -2556,7 +2562,7 @@ test('AC69: previewAttack matches the real attack exactly', async ({ page }) => 
   s = await getState(page);
   const sb = at(s, 5, 4); const hurler = at(s, 3, 7); const scr = at(s, 3, 9);
   const p1 = await preview(page, sb.uid, { row: 4, col: 3 });
-  expect(p1).toMatchObject({ youDeal: 3, youTake: 2, targetDefeated: true, attackerDefeated: false });
+  expect(p1).toMatchObject({ youDeal: 3, youTake: 0, targetDefeated: true, attackerDefeated: false }); // v2 (Nov 1): a defender that falls strikes back no more
   const pc = await preview(page, hurler.uid, { commander: 'opponent' });
   expect(pc).toMatchObject({ youDeal: hurler.attack, youTake: 0, targetDefeated: false, attackerDefeated: false });
   const p2 = await preview(page, hurler.uid, { row: 3, col: 9 });
@@ -2583,7 +2589,7 @@ test('AC69: dragging a creature over an enemy shows the attack preview; letting 
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
   const box = page.getByLabel('Attack preview', { exact: true });
   await expect(box).toBeVisible();
-  await expect(box).toContainText('You deal 3 / You take 2');
+  await expect(box).toContainText('You deal 3 / You take 0');
   await expect(box).toContainText('💀');
   await page.mouse.move(5, 5, { steps: 12 });
   await page.mouse.up();
@@ -8488,15 +8494,15 @@ test('AC302: Riot Shield Bearer is a wall: enemies beside it must hit it, every 
   expect((await act(page, { type: 'attack', creatureUid: keeper, target: { row: 4, col: 9 } })).ok).toBe(true);
   s = await getState(page);
   expect(at(s, 4, 9) && at(s, 4, 9).cardId, 'the Enforcer cannot knock the Bearer').toBe('dwarf-miner');
-  expect(at(s, 4, 9).health, 'a 1-Attack hit does 0').toBe(6); // 1/5 + Borgo = 1/6
+  expect(at(s, 4, 9).health, 'v2: no 1-less rule; with sure dice the 1-Attack hit lands 1 (the Bearer blocks on a 2 with real dice)').toBe(5); // 1/5 + Borgo = 1/6
   expect(at(s, 5, 10) ? at(s, 5, 10).cardId : null, 'the plain unit beside the same Enforcer IS knocked').not.toBe('dwarf-pickman');
   expect(s.board.creatures.filter((c) => c.cardId === 'dwarf-pickman').length).toBe(1);
-  // (2) 1 less from every hit: a 4-Attack Ram Rider leaves it at 6 - 3 = 3
+  // (2) v2 (Nov 1): no '1 less' rule (the Bearer blocks on a 2 with real dice); with sure dice the 4 swings land: 6 - 4 = 2
   s = await newMatch(page, q12({ board: [P('ram-rider', 5, 9), O('dwarf-miner', 4, 9)] }, { opponentCommander: 'borgo' }));
   s = await toAction(page);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 9).uid, target: { row: 4, col: 9 } })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 4, 9).health).toBe(3);
+  expect(at(s, 4, 9).health).toBe(2);
   // (4) it can be killed: 1 Health left, the Ram Rider's 4 - 1 = 3 finishes it
   s = await newMatch(page, q12({ board: [P('ram-rider', 5, 9), O('dwarf-miner', 4, 9, { damage: 4 })] }));
   expect(at(s, 4, 9).health).toBe(1);
@@ -8584,7 +8590,7 @@ test('AC306: Ironclad Bulwark makes the next hit do 0; Field Bandage heals to fu
   s = await getState(page);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 4, 9).uid, target: { row: 5, col: 9 } })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 5, 9).health).toBe(full);
+  expect(at(s, 5, 9).health).toBe(full - 1); // v2 (Nov 1): the bubble absorbs one landed swing of the Scrapper's two
 });
 
 test('AC307: Crystal cards: Soul Shard +1, Soul Cluster +2, Heart +4, Motherlode +3 and next creature 2 cheaper, Geode +1 Flow each turn', async ({ page }) => {
@@ -10725,13 +10731,15 @@ test('AC399: two Ironclad Bulwarks block the next two hits, the third lands', as
   expect(stk(s, 5, 9).bubbles).toBe(2);
   const full = stk(s, 5, 9).health;
   await passTurn(page); await done(page); // the opponent's Action phase
-  for (const [r, c, left] of [[4, 9, 1], [4, 8, 0]]) {
-    s = await getState(page);
-    expect((await act(page, { type: 'attack', creatureUid: at(s, r, c).uid, target: { row: 5, col: 9 } })).ok).toBe(true);
-    s = await getState(page);
-    expect(stk(s, 5, 9).health, `blocked by bubble ${left + 1}`).toBe(full);
-    expect(stk(s, 5, 9).bubbles || 0).toBe(left);
-  }
+  // v2 (Nov 1): a bubble absorbs one landed swing: the Grunt's two swings use both bubbles, the Pebbler's one swing then lands
+  s = await getState(page);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 4, 9).uid, target: { row: 5, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(stk(s, 5, 9).health, 'both swings blocked').toBe(full);
+  expect(stk(s, 5, 9).bubbles || 0).toBe(0);
+  expect((await act(page, { type: 'attack', creatureUid: at(s, 4, 8).uid, target: { row: 5, col: 9 } })).ok).toBe(true);
+  s = await getState(page);
+  expect(stk(s, 5, 9).health, 'the third swing lands').toBe(full - 1);
   s = await getState(page);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 4, 10).uid, target: { row: 5, col: 9 } })).ok).toBe(true);
   s = await getState(page);
@@ -13061,9 +13069,9 @@ test('AC516: Ken, Oct 31 — the computer predicts the same damage the engine de
     const a1 = at(s, 5, 8), a2 = at(s, 5, 11);
     const q = (uid, row, col) => page.evaluate(([u, t]) => ({ ai: window.oreheart.aiHitPrediction(u, t), pv: window.oreheart.previewAttack(u, t) }), [uid, { row, col }]);
     const m = await q(a1.uid, 4, 8), fi = await q(a2.uid, 4, 11);
-    expect(m.ai, `${f.a} -> ${f.d} Miner: the computer predicts the plain Attack`).toBe(a1.attack);
+    expect(m.ai, `${f.a} -> ${f.d} Miner: the computer predicts the plain Attack`).toBe(Math.min(a1.attack, at(s, 4, 8).health)); // v2: never more than the target's Health
     expect(m.pv.youDeal, `${f.a} -> ${f.d} Miner: the engine deals what the computer predicts`).toBe(m.ai);
-    expect(fi.ai, `${f.a} -> ${f.d} Fighter: the computer predicts Attack +1`).toBe(a2.attack + 1);
+    expect(fi.ai, `${f.a} -> ${f.d} Fighter: the computer predicts Attack +1`).toBe(Math.min(a2.attack + 1, at(s, 4, 11).health));
     expect(fi.pv.youDeal, `${f.a} -> ${f.d} Fighter: the engine deals what the computer predicts`).toBe(fi.ai);
     // and the real hit matches the prediction
     const before = at(s, 4, 11).health;
@@ -15165,10 +15173,10 @@ test('AC553: the computer\'s creature card drops onto its square and lies there 
     const a = window.__app; const c = a.center(4, 7), br = a.r.board.getBoundingClientRect();
     let doneAt = 0, landedBox = null, stageAtDone = '';
     const t0 = performance.now();
-    const p = a.reveal('goblin-grunt', { row: 4, col: 7 }, 'opponent').then(() => { doneAt = performance.now() - t0; const e = document.querySelector('.reveal.opp-play'); stageAtDone = e ? e.dataset.stage : 'gone'; if (e) { const q = e.getBoundingClientRect(); landedBox = { x: q.left + q.width / 2, y: q.top + q.height / 2, w: q.width, h: q.height }; } });
+    const p = a.reveal('goblin-grunt', { row: 4, col: 7 }, 'opponent').then(() => new Promise((res) => setTimeout(res, 120))).then(() => { doneAt = performance.now() - t0; const e = document.querySelector('.reveal.opp-play'); stageAtDone = e ? e.dataset.stage : 'gone'; if (e) { const q = e.getBoundingClientRect(); landedBox = { x: q.left + q.width / 2, y: q.top + q.height / 2, w: q.width, h: q.height }; } });
     await new Promise((res) => setTimeout(res, 600));
     const first = document.querySelector('.reveal.opp-play'); first._finish();
-    await p; await new Promise((res) => setTimeout(res, 800));
+    await p; await new Promise((res) => setTimeout(res, 1300)); // the card fades 380 ms after it lands, 900 ms at worst in a background tab
     return { doneAt, stageAtDone, landedBox, sq: { x: br.left + c.x, y: br.top + c.y }, left: document.querySelectorAll('.reveal.opp-play').length };
   });
   expect(r.stageAtDone, 'the computer\'s move goes on only once the card has landed').toBe('landed');
@@ -15331,3 +15339,141 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
     });
   });
 }
+
+// ---------- Combat v2 (Ken, Nov 1): swings, block dice, move points. Test pages land every swing ('sure') so the older checks keep their numbers; these turn the dice on.
+const v2MatchV2 = (page, board, extra = {}) => page.evaluate(([board, extra]) => { window.oreheart.setCombatRules({ dice: 'roll', blockFaces: [1, 6], hitFrom: 3, blockCap: 3, armoredExtraFace: 2 }); return window.oreheart.newMatch({ ai: false, skipMulligan: true, factionLock: false, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [], ...extra } }); }, [board, extra]);
+const toActionV2 = (page) => page.evaluate(() => { const o = window.oreheart; const d = o.legalActions().find((x) => x.type === 'done'); if (d) o.act(d); return o.getState(); });
+const unitOfV2 = (s, id, owner = 'player') => s.board.creatures.find((c) => c.cardId === id && c.owner === owner);
+test('AC559: Attack N = N swings; each swing rolls to hit (about 2 in 3); every hit faces block dice = current Health, at most 3, blocked by a 1 or 6; a Commander never blocks; the block faces are one config value', async ({ page }) => {
+  test.setTimeout(120000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  expect((await page.evaluate(() => window.oreheart.getCombatRules())).blockFaces, 'the knob').toEqual([1, 6]);
+  let swings = 0, hits = 0, blocks = 0, dice = [], cmdBlocks = 0, cmdSwings = 0;
+  for (let seed = 1; seed <= 36; seed++) {
+    await page.evaluate((seed) => window.oreheart.setSeed && window.oreheart.setSeed(seed), seed);
+    const board = [{ cardId: 'goblin-grunt', owner: 'player', row: 4, col: 6 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 4, col: 7 }, { cardId: 'wolf-rider', owner: 'player', row: 2, col: 11 }]; // beside the enemy Stronghold (1,12)
+    await page.evaluate(([board, seed]) => { window.oreheart.setCombatRules({ dice: 'roll', blockFaces: [1, 6] }); return window.oreheart.newMatch({ ai: false, skipMulligan: true, seed, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [] } }); }, [board, seed]);
+    await toActionV2(page);
+    const r = await page.evaluate(() => { const o = window.oreheart; const s = o.getState(); const g = s.board.creatures.find((c) => c.cardId === 'goblin-grunt'); const a = o.legalActions().find((x) => x.type === 'attack' && x.creatureUid === g.uid && !x.target.commander); const r1 = o.act(a);
+      const w = s.board.creatures.find((c) => c.cardId === 'wolf-rider'); const b = o.legalActions().find((x) => x.type === 'attack' && x.creatureUid === w.uid && x.target.commander); const r2 = b ? o.act(b) : { events: [] }; return { e1: r1.events.filter((e) => e.type === 'swing' && e.tag === 'attack'), e2: r2.events.filter((e) => e.type === 'swing') }; });
+    expect(r.e1.length, 'Attack 2 = 2 swings').toBe(2);
+    for (const e of r.e1) { swings++; if (e.result !== 'miss') hits++; if (e.result === 'block') { blocks++; dice.push(e.dice); } }
+    expect(r.e2.length, 'the wolf (Attack 3) swings 3 times at the Commander').toBe(3);
+    for (const e of r.e2) { cmdSwings++; if (e.result === 'block') cmdBlocks++; }
+  }
+  expect(hits / swings, `hit about 2 in 3 (${hits}/${swings})`).toBeGreaterThan(0.45);
+  expect(hits / swings).toBeLessThan(0.85);
+  expect(blocks, 'some hits are blocked').toBeGreaterThan(3);
+  expect(blocks / hits, `about 42 % of hits blocked at 3 dice (${blocks}/${hits})`).toBeLessThan(0.7);
+  expect(Math.max(...dice), 'never more than 3 block dice').toBeLessThanOrEqual(3);
+  expect(cmdBlocks, 'a Commander never blocks').toBe(0);
+  expect(cmdSwings).toBe(108);
+  // the one knob: blocks only on a 6
+  await page.evaluate(() => window.oreheart.setCombatRules({ blockFaces: [6] }));
+  const pv = await page.evaluate(() => { const o = window.oreheart; const s = o.getState(); const g = s.board.creatures.find((c) => c.cardId === 'goblin-grunt'); const d = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman'); return g && d ? [o.previewAttack(g.uid, { row: d.row, col: d.col }), (o.setCombatRules({ blockFaces: [1, 6] }), o.previewAttack(g.uid, { row: d.row, col: d.col }))] : null; });
+  if (pv) expect(pv[0].youDeal, '6-only blocks: more lands').toBeGreaterThan(pv[1].youDeal);
+});
+test('AC560: move points: a 3-foot unit walks 2 and attacks (never attacks then moves); a 1-foot Miner moves OR attacks OR mines; Charge attacks at 0 points; the badge shows the points left', async ({ page }) => {
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const board = [{ cardId: 'wolf-rider', owner: 'player', row: 6, col: 3 }, { cardId: 'goblin-scrounger', owner: 'player', row: 2, col: 2 }, { cardId: 'skullbasher-rusher', owner: 'player', row: 6, col: 9 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 3, col: 6 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 4 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 10 }];
+  const s0 = await v2MatchV2(page, board);
+  const wolf = unitOfV2(s0, 'wolf-rider'), miner = unitOfV2(s0, 'goblin-scrounger'), rusher = unitOfV2(s0, 'skullbasher-rusher');
+  expect(wolf.movesLeft).toBe(3); expect(miner.movesLeft).toBe(1); expect(rusher.movesLeft).toBe(3);
+  await toActionV2(page);
+  const act = (a) => page.evaluate((a) => window.oreheart.act(a), a);
+  const legal = () => page.evaluate(() => window.oreheart.legalActions());
+  const state = () => page.evaluate(() => window.oreheart.getState());
+  // the wolf: 3 points, walk 2 squares in one go
+  let L = await legal();
+  const reach = L.filter((a) => a.type === 'move' && a.creatureUid === wolf.uid).map((a) => Math.max(Math.abs(a.row - wolf.row), Math.abs(a.col - wolf.col)));
+  expect(Math.max(...reach), '3 feet = 3 squares').toBe(3);
+  expect((await act({ type: 'move', creatureUid: wolf.uid, row: 4, col: 5 })).ok).toBe(true);
+  let s = await state(); expect(unitOfV2(s, 'wolf-rider').movesLeft, '1 point left').toBe(1);
+  await expect(page.locator(`.token[data-uid="${wolf.uid}"] [data-stat="movement"]`), 'the badge shows the points left').toHaveText('1');
+  L = await legal();
+  expect(L.some((a) => a.type === 'attack' && a.creatureUid === wolf.uid), 'and it can still attack').toBe(true);
+  expect(Math.max(0, ...L.filter((a) => a.type === 'move' && a.creatureUid === wolf.uid).map((a) => Math.max(Math.abs(a.row - 4), Math.abs(a.col - 5)))), 'or walk 1 more').toBe(1);
+  expect((await act(L.find((a) => a.type === 'attack' && a.creatureUid === wolf.uid))).ok).toBe(true);
+  L = await legal(); expect(L.some((a) => a.creatureUid === wolf.uid && (a.type === 'move' || a.type === 'attack')), 'the attack ends its turn').toBe(false);
+  // the Miner: 1 point: a move spends it, then no attack
+  expect((await act({ type: 'move', creatureUid: miner.uid, row: 2, col: 3 })).ok).toBe(true);
+  L = await legal(); expect(L.some((a) => a.creatureUid === miner.uid && a.type === 'attack'), 'a Miner that moved cannot attack').toBe(false);
+  // Charge: walk all 3, still attack
+  expect((await act({ type: 'move', creatureUid: rusher.uid, row: 3, col: 9 })).ok).toBe(true);
+  s = await state(); expect(unitOfV2(s, 'skullbasher-rusher').movesLeft).toBe(0);
+  L = await legal(); expect(L.some((a) => a.type === 'attack' && a.creatureUid === rusher.uid), 'Charge attacks at 0 points').toBe(true);
+});
+test('AC561: every swing shows a sticker after the blow: MISS and PARRY alternate, BLOCK on a block (a metal clink when armour blocks), a -1 per landed hit; spells do flat damage with no dice', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.goto('/?test=1&seed=3&fx=1');
+  await page.waitForFunction(() => !!window.oreheart);
+  const board = [{ cardId: 'wolf-rider', owner: 'player', row: 4, col: 6 }, { cardId: 'shieldbeard', owner: 'opponent', row: 4, col: 7 }];
+  const s0 = await v2MatchV2(page, board, { playerHand: ['fireball'], playerCrystals: 6 });
+  await page.mouse.click(5, 5);
+  await page.evaluate(() => window.oreheart.setMixRules({ enabled: false }));
+  await toActionV2(page);
+  // force the dice: a known mix of swing results through the engine's own events is random, so read what came out and expect the matching stickers
+  const r = await page.evaluate(() => { window.__stk = []; const fx = document.querySelector('.fx'); new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1 && (n.matches('.burst') || n.matches('.pop-img'))) window.__stk.push(n.textContent.trim() || n.dataset.pop); }).observe(fx, { childList: true }); // the stickers come 0.26 s apart and each lives about 1.5 s, so they are recorded as they appear
+    const o = window.oreheart; const s = o.getState(); const w = s.board.creatures.find((c) => c.cardId === 'wolf-rider'); const a = o.legalActions().find((x) => x.type === 'attack' && x.creatureUid === w.uid); if (!a) return { err: 'no attack', phase: s.phase, active: s.activePlayer, prio: s.priority, types: [...new Set(o.legalActions().map((x) => x.type))], units: s.board.creatures.map((c) => c.cardId + '@' + c.row + ',' + c.col + ' ml' + c.movesLeft + (c.hasAttacked ? ' A' : '')) }; const r = o.act(a); if (!r || !r.events) return { err: 'act failed', r, a }; return r.events.filter((e) => e.type === 'swing').map((e) => e.result + (e.armored ? '+' : '')); });
+  expect(r.err, JSON.stringify(r)).toBeUndefined();
+  await page.waitForTimeout(3500);
+  const words = await page.evaluate(() => window.__stk);
+  const misses = r.filter((x) => x === 'miss').length, blocks = r.filter((x) => x.startsWith('block')).length;
+  const mp = (w) => w === 'MISS!' || w === 'miss' || w === 'PARRY!' || w === 'parry';
+  expect(words.filter(mp).length, `${misses} misses -> MISS/PARRY stickers (${r.join(',')})`).toBe(misses);
+  if (misses >= 2) expect(new Set(words.filter(mp).map((w) => w.toLowerCase().replace('!', ''))).size, 'they alternate').toBe(2);
+  expect(words.filter((w) => w === 'block').length, 'BLOCK per block').toBe(blocks);
+  const sfx = (await page.evaluate(async () => (await window.oreheart.getAudioState()).sfxLog)).filter((x) => x.name === 'clink').length;
+  expect(sfx, `a clink per armoured block (${r.join(',')})`).toBe(r.filter((x) => x === 'block+').length);
+  // spells: flat
+  const f = await page.evaluate(() => { const o = window.oreheart; const s = o.getState(); const d = s.board.creatures.find((c) => c.cardId === 'shieldbeard'); const h = s.players.player.hand[0]; const hp0 = d.health; const r = o.act({ type: 'cast', uid: h.uid, target: { row: d.row, col: d.col } }); if (!r.ok) return { ok: false, error: r.error }; const d2 = o.getState().board.creatures.find((c) => c.cardId === 'shieldbeard'); return { ok: r.ok, hp0, hp1: d2 ? d2.health : 0, swings: r.events.filter((e) => e.type === 'swing').length }; });
+  expect(f.ok, JSON.stringify(f)).toBe(true); expect(f.swings, 'no dice on a spell').toBe(0); expect(f.hp0 - f.hp1, 'Fireball: 3 damage flat').toBe(3);
+});
+test('AC562: the attack preview shows the odds in plain words; the Done confirmation says it ends all moves; the help text explains swings and move points', async ({ page }) => {
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const board = [{ cardId: 'goblin-grunt', owner: 'player', row: 4, col: 6 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 4, col: 7 }];
+  const s0 = await v2MatchV2(page, board);
+  await toActionV2(page);
+  const pv = await page.evaluate(() => { const o = window.oreheart; const s = o.getState(); const g = s.board.creatures.find((c) => c.cardId === 'goblin-grunt'), d = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman'); return o.previewAttack(g.uid, { row: d.row, col: d.col }); });
+  expect(pv.swings).toBe(2); expect(pv.melee).toBe(true); expect(pv.youDeal).toBeGreaterThan(0.2); expect(pv.youDeal).toBeLessThan(1.2); expect(pv.kill).toBe(0);
+  expect(pv.youTake, 'the strike back, only from a standing defender').toBeGreaterThan(0.2);
+  // drag the grunt over the pickman: the box
+  const g = unitOfV2(s0, 'goblin-grunt'), d = unitOfV2(s0, 'dwarf-pickman', 'opponent');
+  const c1 = await page.evaluate(([r, c]) => { const a = window.__app, q = a.center(r, c), b = a.r.board.getBoundingClientRect(); return { x: b.left + q.x, y: b.top + q.y }; }, [g.row, g.col]);
+  const c2 = await page.evaluate(([r, c]) => { const a = window.__app, q = a.center(r, c), b = a.r.board.getBoundingClientRect(); return { x: b.left + q.x, y: b.top + q.y }; }, [d.row, d.col]);
+  await page.mouse.move(c1.x, c1.y); await page.mouse.down(); await page.mouse.move((c1.x + c2.x) / 2, c1.y, { steps: 4 }); await page.mouse.move(c2.x, c2.y, { steps: 4 }); await page.waitForTimeout(200);
+  await expect(page.locator('.atk-preview')).toHaveText(/2 swings: about [0-9.]+ land, KO \d+% \/ they swing back 2: about [0-9.]+, you fall \d+%/);
+  await page.mouse.move(c1.x, c1.y, { steps: 3 }); await page.mouse.up();
+  // Done confirmation
+  await page.evaluate(() => { window.__app.remindMoves = true; });
+  await page.locator('.done-btn').click({ force: true });
+  await expect(page.locator('.done-dropup')).toContainText('End all moves');
+  await page.locator('.done-dropup').getByText('Go back').click();
+  // the help text
+  await page.goto('/?test=1&seed=3'); await page.waitForFunction(() => !!window.oreheart);
+  await page.evaluate(() => window.__app.showRules());
+  const help = await page.evaluate(() => document.body.innerText);
+  if (/How to Play|Combat/.test(help)) { expect(help).toMatch(/swings twice/); expect(help).toMatch(/move points/i); }
+});
+test('AC563: under v2 a chase order walks and attacks in the same turn when its feet reach; the AI still plays a full match', async ({ page }) => {
+  test.setTimeout(120000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const board = [{ cardId: 'wolf-rider', owner: 'player', row: 6, col: 3 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 4, col: 5 }];
+  const s0 = await v2MatchV2(page, board);
+  const w = unitOfV2(s0, 'wolf-rider'), d = unitOfV2(s0, 'dwarf-pickman', 'opponent');
+  await page.evaluate(([u, t]) => window.oreheart.setOrder({ kind: 'chase', uid: u, targetUid: t }), [w.uid, d.uid]);
+  await toActionV2(page); await page.waitForTimeout(400);
+  const s = await page.evaluate(() => window.oreheart.getState());
+  const w2 = unitOfV2(s, 'wolf-rider');
+  expect(w2.hasMoved, 'walked').toBe(true); expect(w2.hasAttacked, 'and attacked in the same turn').toBe(true);
+  // a computer match plays through under the dice
+  await page.evaluate(() => { window.oreheart.setCombatRules({ dice: 'roll' }); return window.oreheart.newMatch({ ai: true, skipMulligan: true, difficulty: 'normal', playerCommander: 'borgo', opponentCommander: 'grubnak' }); });
+  await page.evaluate(() => window.oreheart.setAiPace && window.oreheart.setAiPace(0));
+  for (let i = 0; i < 60; i++) { const st = await page.evaluate(() => window.oreheart.getState()); if (st.phase === 'over' || st.turn > 14) break; if (st.activePlayer === 'player' && st.priority === 'player') await page.evaluate(() => { const o = window.oreheart; const L = o.legalActions(); const a = L.find((x) => x.type === 'attack') || L.find((x) => x.type === 'done') || L.find((x) => x.type === 'pass'); if (a) o.act(a); }); await page.waitForTimeout(250); }
+  const st = await page.evaluate(() => window.oreheart.getState());
+  expect(st.turn, 'the match moved on').toBeGreaterThan(4);
+});

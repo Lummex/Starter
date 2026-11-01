@@ -82,7 +82,7 @@ export function typeOf(c: any): { icon: string; name: string } {
 /** Round 13: activated abilities that get a round button above their unit (icon, name, text; the cost comes from the engine). */
 const ownerLayoutHand = (ownerLayoutJson0 as any).hud.find((p: any) => p.role === 'player-hand')?.hand;
 /** Owner (Oct 24): comic pop-up pictures (public/art/pop) and speech bubbles (public/art/speech). */
-const POP_WORD: Record<string, string> = { 'KA-BOOM!': 'ka-boom', 'CRUNCH!': 'crunch', 'BLOCK!': 'block', 'POOF!': 'ko', 'STRIKE!': 'strike', 'SHOCKWAVE!': 'shockwave', 'PLOW!': 'plow', 'CHARGE!': 'charge', 'YOINK!': 'yoink', 'WHOOSH!': 'whoosh', 'WARD!': 'ward', 'SACRIFICE!': 'sacrifice', 'BREW!': 'brew', 'BLINK!': 'blink' };
+const POP_WORD: Record<string, string> = { 'MISS!': 'miss', 'PARRY!': 'parry', /* Brush's combat v2 stickers, Nov 1 */ 'KA-BOOM!': 'ka-boom', 'CRUNCH!': 'crunch', 'BLOCK!': 'block', 'POOF!': 'ko', 'STRIKE!': 'strike', 'SHOCKWAVE!': 'shockwave', 'PLOW!': 'plow', 'CHARGE!': 'charge', 'YOINK!': 'yoink', 'WHOOSH!': 'whoosh', 'WARD!': 'ward', 'SACRIFICE!': 'sacrifice', 'BREW!': 'brew', 'BLINK!': 'blink' };
 const HIT_POP: Record<string, string> = {
   'rotgut-grenadier': 'smack', 'goblin-grunt': 'bonk', 'goblin-pebbler': 'bonk', 'skullbasher-rusher': 'bonk', 'goblin-bomber': 'pow', 'grubnaks-big-boss-troll': 'pow', 'gnome-widget': 'pow',
   'goblin-sneak': 'stab', 'shiv-rat': 'stab', 'goblin-slinger': 'thwack', 'spark-gnome': 'zap', 'hexwright-apprentice': 'zap', 'deepforge-crossbowman': 'bang', 'gyrocopter-ace': 'fwoosh',
@@ -864,7 +864,7 @@ export class App {
       sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
       sec('Mulligan and Camera', 'Before the match you see your opening hand. Keep Hand plays it as it is; Redraw Hand shuffles every card back into your deck and draws a completely new hand of the same size. You get one redraw per match, so look before you choose. The computer gets the same choice. On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and choose Recenter in the Menu (right side) to reset. The Menu also holds Last turn, Mute, the Card pop-ups switch and Surrender. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
       sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (any number, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
-      sec('Combat', 'Melee fights are simultaneous: both creatures hit each other at the same moment, so the defender strikes back even if it is defeated. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 Attack, except against Miners: a creature hitting a Miner never gets this bonus. Ranged creatures hit the first enemy up to 7 spaces away in one of the 8 straight directions (they cannot shoot past a unit) and get no strike back. Shield 1 blocks the next 1 damage. A creature that hits the Commander removes exactly its Attack. Damaged creatures show their Health in red.', combat),
+      sec('Combat', 'Attack is swings: a creature with Attack 2 swings twice, and each swing rolls a die that hits on 3 to 6. For every hit the defender rolls block dice equal to its current Health (at most 3), and any 1 or 6 blocks the hit (Armored and Riot Shield also block on a 2). A hit that gets through does 1 damage, so a wounded creature blocks less. In melee the defender then swings back the same way, if it is still standing. Ranged creatures hit the first enemy up to 7 spaces away in one of the 8 straight directions (they cannot shoot past a unit) and get no strike back. Commanders never block, but swings at them still have to hit. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 swing, except against Miners. Spells do their damage straight, with no dice. Shield 1 blocks the next hit that lands. Move points: a creature\'s foot number is how many steps it can take in a turn; the attack costs 1 point and ends its turn, so a 3-foot creature can walk 2 and then attack. Miners have 1. MISS, PARRY and BLOCK pop up over the target so you can see every swing.', combat),
       sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals (Flow first, then Bank). Commanders never attack. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet: you can play a Crystal card on its own or together with a counterspell to pay for it. Counterspells cancel spells or summons.'),
       h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Tutorial', 'menu-fwd', () => this.beginTutorial()), btn('Back', 'menu-back', () => this.showMenu())));
@@ -2334,7 +2334,7 @@ export class App {
   update(st: any, events: any[]) {
     const r = this.r;
     if (!r.board || !st) return;
-    if (events.some((e) => e.type === 'newMatch')) { this.orders.clear(); this.stances.clear(); this.chainFor = null; this.orderPreview = null; this.ordersRunKey = ''; } // Round 28
+    if (events.some((e) => e.type === 'newMatch')) { this.orders.clear(); this.stances.clear(); this.chainFor = null; this.orderPreview = null; this.ordersRunKey = ''; this.missWord = 0; } // Round 28
     const me = st.players.player, en = st.players.opponent;
     this.view && this.view.setState(st, events);
     this.record(st, events);
@@ -2804,7 +2804,7 @@ export class App {
     if (this.dropUp) { this.closeDropUp(); return; }
     if (this.movesDlg) return;
     if (this.remindMoves && !movedThisPhase(st) && hasMovesLeft(st)) {
-      const txt = "Moves still available (miners haven't mined). Continue to the next phase?";
+      const txt = "Moves still available (miners haven't mined). Continue to the next phase? End all moves: creatures with move points left lose them.";
       const up: El = h('div', { class: 'menu-panel done-dropup', role: 'dialog', 'aria-label': 'Moves still available' },
         h('p', { class: 'dropup-text' }, txt),
         h('div', { class: 'row' }, btn('Continue', 'primary', () => { this.closeDropUp(); this.game.act({ type: 'done' }); }), btn('Go back', '', () => this.closeDropUp())));
@@ -3031,7 +3031,7 @@ export class App {
       hEl.textContent = String(c.health); hEl.dataset.buff = String(c.health > printed.health);
       mEl.textContent = String(maxMove(c));
       { const bd = el.querySelector('[data-unit-badge]') as El, sv = (k: string, v: number, buff: boolean) => { const n = bd.querySelector(`[data-stat=${k}]`) as El; if (n.textContent !== String(v)) n.textContent = String(v); n.dataset.buff = String(buff); };
-        sv('attack', atkNow, atkNow > printed.attack); sv('health', c.health, c.health > printed.health); sv('movement', maxMove(c), false);
+        sv('attack', atkNow, atkNow > printed.attack); sv('health', c.health, c.health > printed.health); sv('movement', st.phase === 'action' && st.activePlayer === c.owner && c.movesLeft != null && c.movesLeft < maxMove(c) ? c.movesLeft : maxMove(c), false); // v2: the points left this turn
         bd.dataset.damaged = String(c.health < c.maxHealth); bd.setAttribute('aria-label', `Attack ${atkNow}, Health ${c.health}, Movement ${maxMove(c)}`); }
       aEl.title = 'Attack'; hEl.title = 'Health'; mEl.title = 'Movement';
       el.dataset.extras = `${isMiner(printed) ? '⛏️' : ''}${printed.abilities?.includes('ranged') ? '🏹' : ''}`;
@@ -3491,6 +3491,17 @@ export class App {
     setTimeout(() => f.remove(), 1500);
   }
   speechAt = { player: 0, opponent: 0 } as Record<string, number>;
+  /** v2: misses alternate MISS and PARRY (one counter per match) */
+  missWord = 0;
+  swingShow(sw: any[], word: string, wait: number) {
+    const GAP = 260; let shownHit = false;
+    sw.forEach((x, i) => setTimeout(() => {
+      if (!this.r.fx || !this.view) return;
+      if (x.result === 'miss') this.burst(this.missWord++ % 2 ? 'PARRY!' : 'MISS!', x.row, x.col);
+      else if (x.result === 'block') { this.burst('BLOCK!', x.row, x.col); if (x.armored) audio.play('clink'); } // Ken, Nov 1: a metal clink when the armour blocks
+      else { const w = x.tag === 'attack' ? word : 'whack'; if (!shownHit) { shownHit = true; this.pop(w, x.row, x.col); } if (!x.commander) this.floatText('-1', 'dmg', x.row, x.col); }
+    }, wait + i * GAP));
+  }
   /** Owner (Oct 24): a Commander says a line (picture) above its stronghold; one line at a time per side. */
   say(side: 'player' | 'opponent', what: string, priority = false) {
     const st = this.game?.state; if (!st || !this.r.fx || !this.view) return;
@@ -3678,7 +3689,10 @@ export class App {
         const dab: string[] = def ? CARDS[def.cardId]?.abilities || [] : [];
         const word = ab.includes('sneaky') && !e.ranged ? 'backstabbed' : def && (dab.includes('armored') || dab.includes('unbreakable') || dab.includes('riotShield') || def.shield > 0) ? 'clang' : HIT_POP[cid] || (e.ranged ? 'thwack' : 'whack');
         const wait = Math.max(0, this.view.blowDelay?.(e.uid) || 0); // Oct 30: the pop-up lands with the blow
-        if (tgt) { if (wait) setTimeout(() => this.pop(word, tgt.row, tgt.col), wait); else this.pop(word, tgt.row, tgt.col); }
+        // Combat v2 (Ken, Nov 1): one sticker per swing after the blow lands: MISS / PARRY (alternating), BLOCK, or the hit word with its -1
+        const sw: any[] = []; for (let j = events.indexOf(e) + 1; j < events.length && events[j].type !== 'attack'; j++) if (events[j].type === 'swing') sw.push(events[j]);
+        if (!sw.length) { if (tgt) { if (wait) setTimeout(() => this.pop(word, tgt.row, tgt.col), wait); else this.pop(word, tgt.row, tgt.col); } }
+        else this.swingShow(sw, word, wait);
       } else if (e.type === 'move' && e.knock && e.to && !events.some((x: any, j: number) => j > events.indexOf(e) && x.type === 'move' && x.knock && x.uid === e.uid)) this.pop('knockback', e.to.row, e.to.col);
       { const su = !e.commander && (e.creatureUid || e.uid), c = su ? st.board.creatures.find((x: any) => x.uid === su) : null; if (c) audio.unitEvent(c.cardId, c.uid, e.type, CARDS[c.cardId]?.abilities || [], !!e.ranged); } // Oct 31: a unit's special line when it does its special (audio.ts isSpecialEvent)
       if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) this.pop('stolen', c.row, c.col); }
@@ -3714,8 +3728,7 @@ export class App {
           this.emote(owner === 'player' ? 'opponent' : 'player', 'cheer');
         } else if (e.amount > 0) {
           { const hc = st.board.creatures.find((c: any) => c.uid === e.uid), atk = events.find((x: any) => x.type === 'attack'); if (hc) audio.unitHurt(hc.cardId, hc.uid, e.amount * 2 >= (CARDS[hc.cardId]?.health || 99), Math.max(0, (atk && this.view?.blowDelay?.(atk.uid)) || 0)); } /* Oct 31: a surviving unit says ouch (sometimes) */
-          this.floatText('-' + e.amount, 'dmg', e.row, e.col);
-          if (e.amount >= 3) this.burst('CRUNCH!', e.row, e.col);
+          if (!e.swing) { this.floatText('-' + e.amount, 'dmg', e.row, e.col); if (e.amount >= 3) this.burst('CRUNCH!', e.row, e.col); } // a swing's -1 shows with its sticker (swingShow)
         }
       } else if (e.type === 'abilityUsed' && ABILITY_UI[e.ability]) {
         this.burst(ABILITY_UI[e.ability].burst, e.row, e.col);
@@ -4616,7 +4629,12 @@ export class App {
         if (!pv) { box?.remove(); box = null; return; }
         if (!box) { box = h('div', { class: 'atk-preview', 'aria-label': 'Attack preview', role: 'status' }); document.body.append(box); }
         const dead = pv.targetDefeated || pv.attackerDefeated;
-        box.replaceChildren(`You deal ${pv.youDeal} / You take ${pv.youTake}`, ...(dead ? [h('span', { class: 'skull' }, ` ${pv.targetDefeated ? '💀' : ''}${pv.attackerDefeated ? '💀' : ''}`)] : []));
+        const pct = (p: number) => `${Math.round(p * 100)}%`, sw = (n: number) => `${n} swing${n === 1 ? '' : 's'}`;
+        // v2 (Ken, Nov 1): the odds in plain words; sure dice (test pages) keep the old exact line
+        const txt = pv.sure || pv.swings == null ? `You deal ${pv.youDeal} / You take ${pv.youTake}`
+          : pv.commander ? `${sw(pv.swings)}: about ${pv.youDeal.toFixed(1)} off the Commander`
+          : `${sw(pv.swings)}: about ${pv.youDeal.toFixed(1)} land, KO ${pct(pv.kill)}` + (pv.melee ? ` / they swing back ${pv.back}: about ${pv.youTake.toFixed(1)}, you fall ${pct(pv.die)}` : '');
+        box.replaceChildren(txt, ...(dead ? [h('span', { class: 'skull' }, ` ${pv.targetDefeated ? '💀' : ''}${pv.attackerDefeated ? '💀' : ''}`)] : []));
         box.style.left = x + 'px'; box.style.top = y + 'px';
       },
       onEnd: () => { box?.remove(); box = null; if (this.orderPreview) this.previewOrder(null); },
@@ -4648,7 +4666,7 @@ export class App {
           if (this.orders.has(cr.uid)) { this.orderFocus = cr.uid; this.drawOrders(); }
           if (!this.pick && !document.querySelector('.ability-menu')) {
             if (e.pointerType !== 'mouse' && this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);
-            else this.flash(st.phase === 'action' && st.priority === 'player' ? 'This creature cannot act now' : 'Creatures move and attack in your Action phase');
+            else if (!this.stanceBar) this.flash(st.phase === 'action' && st.priority === 'player' ? 'This creature cannot act now' : 'Creatures move and attack in your Action phase'); // Nov 1: the stance bar is the answer to a tap in Deploy
           }
         } else if (e.pointerType !== 'mouse' && this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);
       },

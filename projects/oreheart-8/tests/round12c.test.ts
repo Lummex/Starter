@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { CONFIG as _CFG } from '../src/engine';
+(_CFG as any).combat.dice = 'sure'; // Combat v2 (Nov 1): these older tests pin exact damage, so every swing lands and nothing blocks here (the dice have their own tests)
 import { CARDS } from '../src/engine/content';
 import { createMatch, applyAction, creatureAt, legalActions } from '../src/engine';
 const MINES = [{ row: 3, col: 6 }, { row: 4, col: 7 }, { row: 5, col: 5 }];

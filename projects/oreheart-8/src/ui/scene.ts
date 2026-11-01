@@ -462,7 +462,7 @@ const _embV = new THREE.Vector3();
   type Fig = {
     ringColor?: string; ringGreyed?: boolean; ringObj?: THREE.Object3D | null;
     group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
-    uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
+    uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; fidgetAt?: number; fidgetUntil?: number; fidgetBrk?: boolean; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
     /** Oct 30: squares still to walk (one per step), running gait, knock-back flight, delayed hit flash, step-in length, when its blow lands */
     path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lungeDur?: number; blowAt?: number;
   };
@@ -1656,8 +1656,22 @@ const _embV = new THREE.Vector3();
         // automated runs: no random pack idle breaks (checks read 'idle')
         // Round 28b: knock-back and bowled-over reactions (Ken's slots) come before the plain hit; an idle break plays once in a while
         const knocked = f.knockT && now >= f.knockT && now - f.knockT < (f.kbClip ? f.kbClip.dur : 700) && f.c3d.has?.('knockback'), bowledNow = f.bowledT && now >= f.bowledT && now - f.bowledT < 900 && f.c3d.has?.('bowled');
-        if (!walking && !f.shootT && !f.hitT && f.c3d.has?.('idleBreak') && !(testMode && f.c3d.packRoles?.has('idleBreak'))) { if (!f.idleBreakAt) f.idleBreakAt = now + 6000 + Math.random() * 8000; else if (now > f.idleBreakAt) { f.idleBreakT = now; f.idleBreakAt = now + 9000 + Math.random() * 9000; } } else f.idleBreakAt = 0;
-        const breaking = f.idleBreakT && now - f.idleBreakT < (f.c3d.dur('idleBreak') || 1.5) * 1000;
+        // Ken (Nov 1): "not the A pose, just like a standing, and then every once in a while they'll move. They'll do their idles or their idle breaks."
+        // At rest the unit stands still on a frame of its idle clip (a random frame per unit); every 8-20 s (per unit, never in sync) it plays one
+        // idle loop or its idle break (picked at random when it has both), then stands still again. Automated runs: no random fidgets (checks read 'idle').
+        const busy = walking || (f.shootT && ak3 < 1.2) || !!f.hitT || (f.mineT && mk3 < 1) || !!abil || !!knocked || !!bowledNow || !!(carry && (carry.uid === f.uid || carry.holder === f.uid));
+        if (busy) { f.fidgetAt = 0; f.fidgetUntil = 0; f.idleBreakT = 0; }
+        else if (!testMode) {
+          if (!f.fidgetAt) f.fidgetAt = now + 8000 + Math.random() * 12000;
+          else if (!f.fidgetUntil && now > f.fidgetAt) {
+            const hasB = !!f.c3d.has?.('idleBreak'), hasI = !!f.c3d.has?.('idle');
+            f.fidgetBrk = hasB && (!hasI || Math.random() < 0.5);
+            f.fidgetUntil = now + (f.c3d.dur(f.fidgetBrk ? 'idleBreak' : 'idle') || 1.5) * 1000;
+            if (f.fidgetBrk) f.idleBreakT = now;
+          } else if (f.fidgetUntil && now > f.fidgetUntil) { f.fidgetUntil = 0; f.idleBreakT = 0; f.fidgetAt = now + 8000 + Math.random() * 12000; }
+        }
+        const breaking = !!(f.fidgetUntil && f.fidgetBrk && f.idleBreakT);
+        f.c3d.rest?.(!testMode && !busy && !(f.fidgetUntil && !f.fidgetBrk)); // automated runs keep the looping idle (the height checks read the standing pose)
         f.c3d.holding = !!(carry && carry.holder === f.uid);
         f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : abil ? abil : f.shootT && ak3 < 1 && !(f.hitT && f.hitT > f.shootT) ? (f.atkRole || 'attack') : f.mineT && mk3 < 1 ? 'mine' : bowledNow ? 'bowled' : knocked ? 'knockback' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? (f.run && onPath ? 'run' : 'walk') : breaking ? 'idleBreak' : 'idle');
         if (knocked && f.kbClip && !f.kbClip.seeked && f.c3d.current() === 'knockback') { f.c3d.seek?.('knockback', f.kbClip.launch); f.kbClip.seeked = true; }

@@ -12,8 +12,8 @@
   "dwarves": "dwarf-smith-miner"
  },
  "gathererFlow": 2,
-  "minedPerBonusCard": 4,
-  "allMinesBonusCards": 1,
+ "minedPerBonusCard": 4,
+ "allMinesBonusCards": 1,
  "fighterFlow": 1,
  "poolCap": 16,
  "savingsPerCrystal": 10,
@@ -89,5 +89,18 @@
  "deckMin": 50,
  "deckMax": 100,
  "rangedRange": 7,
- "plunderFlow": 3
+ "plunderFlow": 3,
+ "combat": {
+  "_note": "Combat v2 (Ken, Nov 1): Attack = swings, each a d6 that hits on hitFrom or more; each landed hit is blocked when any of the defender's block dice (= current Health, at most blockCap) shows a blockFaces number; Armored and Riot Shield also block on armoredExtraFace; Commanders never block; dice 'sure' = every swing lands (test pages only). Change blockFaces to [6] for 6-only blocks.",
+  "dice": "roll",
+  "hitFrom": 3,
+  "blockFaces": [
+   1,
+   6
+  ],
+  "blockCap": 3,
+  "armoredExtraFace": 2,
+  "strikeBackRolls": true,
+  "afterAttack": "end"
+ }
 }

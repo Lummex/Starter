@@ -39,6 +39,7 @@ if (onlineEnabled || pageMode(location.search)) {
 void net;
 
 if (test) (window as any).__app = app;
+if (test) (CONFIG as any).combat.dice = 'sure'; // test pages: every swing lands and nothing blocks, so the older checks keep their exact numbers; the combat v2 checks turn the dice on
 if (test) VOICE.dice = null; // the voice checks need every trigger to pass the dice; AC550 checks the real dice
 if (test) (window as any).__ohCard = (id: string, h = 624) => { const el = ohCardEl(CARDS[id], pictureOf(CARDS[id])); el.style.cssText = `width:${h * 420 / 624}px;height:${h}px;display:inline-block`; return el; };
 if (test) {
@@ -158,6 +159,8 @@ if (test) {
     setMixRules: (r: any) => { Object.assign(MIX, r); return { ...MIX }; }, // checks only: {enabled:false} plays every sound as asked (the sound-file checks), default is Brush's mix rules
     setVoiceRules: (r: any) => { Object.assign(VOICE, r); return { ...VOICE }; }, // checks only: shorten the voice cooldown / gap
     voiceDice: () => VOICE_DICE,
+    setCombatRules: (r: any) => { Object.assign(CONFIG.combat, r); return { ...CONFIG.combat }; }, // checks only: {dice:'roll'} rolls the real dice on a test page, {dice:'sure'} lands every swing
+    getCombatRules: () => ({ ...CONFIG.combat }),
     playSfx: (name: string, faction?: string) => audio.play(name, faction),
     playSpellSound: (id: string) => audio.spell(id),
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),
