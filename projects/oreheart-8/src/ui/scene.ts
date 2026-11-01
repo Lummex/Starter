@@ -1,7 +1,7 @@
 // Placeholder 3D battlefield (Three.js). Returns null when WebGL is unavailable (the UI then shows a 2D board).
 import { ringColor, getRings } from './fx-settings';
 import * as THREE from 'three';
-import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
+import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf, isMiner } from '../engine';
 import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, standingBox, type C3D } from './creature3d';
 import { stagePlow, plowFrame } from './plow';
 import { SHOTS, isShooter, createProjectiles, preloadShots, type ShotSpec } from './projectiles';
@@ -285,7 +285,7 @@ const _embV = new THREE.Vector3();
   const embers: null = null;
 
   // Round 5b: soul crystal flow particles (mines stream into their owner's Stronghold; neutral mines swirl)
-  const FN = 16;
+  const FN = 32; // Ken, Nov 1: twice as many crystals (a mine streams 4 + 4 per Miner on it, up to 32)
   let flowMode = (() => { try { return localStorage.getItem('oreheart.flow') || ''; } catch { return ''; } })() || (low ? 'reduced' : 'on');
   const pulseAt: Record<string, number> = { player: 0, opponent: 0 };
   // Crystal Flow (Round 9a, port of the Game Editor's makeFlow): faceted shards tumble along S-curves from each owned mine to its owner's Stronghold.
@@ -299,6 +299,7 @@ const _embV = new THREE.Vector3();
   const flowDum = new THREE.Object3D(), flowCol3 = new THREE.Color();
   let flowShown = 0;
   const flowOwner: string[] = [];
+  const minersAt: number[] = []; // the owner's Miners working each mine (set in setState)
   const flowCol: Record<string, THREE.Color> = { player: new THREE.Color(0x9dff6a), opponent: new THREE.Color(0xff5a4a), neutral: new THREE.Color(0xe8e8ff) };
   const bez = new THREE.Vector3();
   // Round 10: shards flow into the HUD Flow crystal counter (screen element -> a world point on a plane above the board)
@@ -323,17 +324,16 @@ const _embV = new THREE.Vector3();
       flowDest[sd] = (flowDest[sd] || new THREE.Vector3()).copy(camera.position).addScaledVector(flowDir, k);
     }
   }
-  /** Shards per stream: the engine's window.oreheart.flowShardCount if present, else 2 at flow 1 up to ~12 at flow 16. */
-  function shardCount(side: string): number {
-    const fl = state?.players?.[side]?.flow || 0;
+  /** Shards per stream: the engine's flowShardCount for the Miners on that mine (Ken, Nov 1: the more Miners, the more crystals). */
+  function shardCount(miners: number): number {
     const fn = (window as any).oreheart?.flowShardCount;
     let c = 0;
-    if (typeof fn === 'function') { try { c = Number(fn(fl)); } catch { c = 0; } }
-    if (!(c > 0)) c = fl <= 0 ? 1 : Math.round(2 + (Math.min(fl, 16) - 1) * (10 / 15));
+    if (typeof fn === 'function') { try { c = Number(fn(miners)); } catch { c = 0; } }
+    if (!(c > 0)) c = Math.min(32, 4 + 4 * Math.max(1, miners));
     return Math.max(1, Math.min(FN, Math.round(c)));
   }
   function updateFlow(now: number) {
-    const n = flowMode === 'off' ? 0 : flowMode === 'reduced' ? 6 : FN;
+    const n = flowMode === 'off' ? 0 : flowMode === 'reduced' ? 12 : FN;
     flowPts.visible = n > 0;
     if (!n) { flowShown = 0; return; }
     const t = now / 1000;
@@ -343,7 +343,7 @@ const _embV = new THREE.Vector3();
     if (now - flowDestAt > 400 || flowDestDirty) { flowDestAt = now; flowDestDirty = false; updateFlowDest(); } // Nov 1: reading the layout every frame cost 1.6 ms; the target only moves with the view
     mines.forEach((m, mi) => {
       const owner = flowOwner[mi] || 'neutral';
-      const nm = owner === 'neutral' ? n : Math.min(n, shardCount(owner));
+      const nm = owner === 'neutral' ? Math.min(n, flowMode === 'reduced' ? 6 : 16) : Math.min(n, shardCount(minersAt[mi] || 1));
       const a = m.group.position;
       const dest = owner === 'neutral' ? null : flowDest[owner] || cmd[owner].group.position;
       const c = flowCol[owner];
@@ -360,22 +360,22 @@ const _embV = new THREE.Vector3();
           bez.set(w * w * sx + 2 * w * u * cx + u * u * ex, w * w * sy + 2 * w * u * cy + u * u * ey, w * w * sz + 2 * w * u * cz + u * u * ez);
           // moving S-curves: sideways bends that slither along the stream
           const dx = ex - sx, dz = ez - sz, len = Math.hypot(dx, dz) || 1;
-          const env = Math.sin(Math.PI * u), bend = env * 0.55 * Math.sin(Math.PI * 2 * 2.15 * u - t * 1.4 + mi) + Math.sin(t * 3 + i * 1.7) * 0.06 * env;
+          const env = Math.sin(Math.PI * u), bend = env * 1.25 * Math.sin(Math.PI * 2 * 3 * u - t * 2.2 + mi) + Math.sin(t * 3 + i * 1.7) * 0.12 * env; // Ken, Nov 1: a lot more S-wave, swaying back and forth as it floats in
           bez.x += (-dz / len) * bend; bez.z += (dx / len) * bend;
           flowDum.position.copy(bez);
           fade = Math.min(1, u * 6, (1 - u) * 4) * (0.8 + pulse * 0.6);
           flowDum.rotation.set(t * 3 + i, t * 2 + i * 2, t * 4 + mi);
-          flowDum.scale.setScalar(0.2 * (0.5 + 0.5 * env) * (1 + pulse * 0.5) * (0.8 + (i % 3) * 0.2));
+          flowDum.scale.setScalar(0.32 * (0.55 + 0.45 * env) * (1 + pulse * 0.5) * (0.8 + (i % 3) * 0.2)); // Ken, Nov 1: bigger, so the stream reads
         } else {
-          const ang = t * 1.1 + (i / n) * Math.PI * 2, r = 0.38 + 0.12 * Math.sin(t * 1.7 + i);
+          const ang = t * 1.1 + (i / nm) * Math.PI * 2, r = 0.38 + 0.12 * Math.sin(t * 1.7 + i);
           flowDum.position.set(a.x + Math.cos(ang) * r, 1.45 + 0.25 * Math.sin(t * 1.3 + i * 2) + (i % 3) * 0.12, a.z + Math.sin(ang) * r);
           flowDum.rotation.set(t * 3 + i, t * 2 + i * 2, 0);
           flowDum.scale.setScalar(0.16); fade = 0.8;
         }
         flowDum.updateMatrix();
         flowPts.setMatrixAt(k, flowDum.matrix);
-        const cc = owner !== 'neutral' && i % 4 === 0 ? flowHi[owner] : c;
-        flowCol3.setRGB(cc.r * fade * 1.15, cc.g * fade * 1.15, cc.b * fade * 1.15);
+        const cc = c; // Ken, Nov 1: every crystal in the colour of the team that owns the mine (no accent shards)
+        flowCol3.setRGB((cc.r * 1.5 + 0.1) * fade, (cc.g * 1.5 + 0.1) * fade, (cc.b * 1.5 + 0.1) * fade); // a touch of white so a dark team colour (dwarf blue) still glows
         flowPts.setColorAt(k, flowCol3);
         shown++;
       }
@@ -759,9 +759,10 @@ const _embV = new THREE.Vector3();
     f.ringColor = col; f.ringGreyed = acted;
     (ring.material as THREE.MeshBasicMaterial).color.set(col);
     (ring.material as THREE.MeshBasicMaterial).opacity = rs.opacity; (ring.material as THREE.MeshBasicMaterial).transparent = rs.opacity < 1;
+    ring.visible = !acted; // Ken, Nov 1: once a unit has no moves left its ring disappears instead of greying out
     ring.scale.set(1 / f.baseScale, 1 / f.baseScale, rs.thickness / f.baseScale);
     const halo = ring.getObjectByName('ring-halo') as THREE.Mesh | undefined;
-    if (halo) { (halo.material as THREE.MeshBasicMaterial).color.set(col); (halo.material as THREE.MeshBasicMaterial).opacity = rs.glow * 0.5 * rs.opacity; halo.visible = rs.glow > 0; }
+    if (halo) { (halo.material as THREE.MeshBasicMaterial).color.set(col); (halo.material as THREE.MeshBasicMaterial).opacity = rs.glow * 0.5 * rs.opacity; halo.visible = rs.glow > 0 && !acted; }
   }
   // facing letters -> yaw (models look down +Z at yaw 0; N = toward board row 1 = -Z)
   const FACE_YAW: Record<string, number> = { N: Math.PI, NE: Math.PI * 3 / 4, E: Math.PI / 2, SE: Math.PI / 4, S: 0, SW: -Math.PI / 4, W: -Math.PI / 2, NW: -Math.PI * 3 / 4 };
@@ -969,6 +970,7 @@ const _embV = new THREE.Vector3();
     for (const c of st.board.creatures) preloadShots(c.cardId); // Oct 31: projectile models download once per kind (cached)
     st.sites.forEach((s: any, i: number) => {
       const cr = crystals[i];
+      minersAt[i] = s.controller ? st.board.creatures.filter((c: any) => c.owner === s.controller && isMiner(CARDS[c.cardId]) && Math.max(Math.abs(c.row - s.row), Math.abs(c.col - s.col)) <= 1).length : 0;
     { const fac = s.controller ? st.players[s.controller].faction : '';
       if (cr.embFac !== fac) {
         cr.embFac = fac;
@@ -1091,12 +1093,13 @@ const _embV = new THREE.Vector3();
         f.blowAt = releaseAt + flightMs; f.faceUntil = f.blowAt + 400;
         aimGrip(f, t0, t0 + f.atkMs + 150, now);
         const sh = shot, ff = f;
-        for (let i = 0; i < NS; i++) { const k = i * SWING_MS; // one shot per swing; a miss or a block still flies, only a landed hit makes the thud
+        for (let i = 0; i < 1; i++) { const k = i * SWING_MS; // one shot only (the rest is bleed); a miss or a block still flies, only a landed hit makes the thud
           proj.fire({ shooterUid: f.uid, unit: f.cardId, clip: f.c3d?.clipOf?.('attack') || '', spec: shot, releaseTime: clipRel, releaseAt: releaseAt + k, arriveAt: f.blowAt + k, to: toPt, targetUid: def?.uid,
             launch: () => launchPoint(ff, sh, toPt), onSpawn: () => audio.play(SHOT_SOUNDS[ff.cardId]?.fire || 'ranged'),
             onLand: () => { const h = SHOT_SOUNDS[ff.cardId]?.hit; if (h && result(i) === 'hit') audio.play(h); } }); }
       } else if (ranged) { f.lunge = dir.clone().normalize().multiplyScalar(-0.12); f.lungeT = t0 + imp - 40; f.lungeDur = 300; }
       else { f.lunge = dir.clone().multiplyScalar(0.42); f.lungeT = t0; f.lungeDur = LUNGE_MS; }
+      const NV = ranged || shot ? 1 : NS; // Ken, Nov 1: a ranged unit shoots once (the other points of damage are Bleed, shown as stickers); a melee unit swings once per point
       f.lastBlowAt = f.blowAt + (NS - 1) * SWING_MS;
       blowAt = Math.max(blowAt, f.lastBlowAt); strikers.add(f.uid);
       f.shootT = t0;
@@ -1113,7 +1116,7 @@ const _embV = new THREE.Vector3();
       }
       const swing = () => { if (!shot) audio.play(ranged ? 'ranged' : 'melee'); audio.unitAttack(f.cardId, f.uid, f.finished); }; // a shot's 'ranged' sound plays at its release
       if (wait) setTimeout(swing, wait); else swing();
-      for (let i = 1; i < NS; i++) setTimeout(() => { // the next swing: the attack clip again, its sound, the lunge again
+      for (let i = 1; i < NV; i++) setTimeout(() => { // the next swing: the attack clip again, its sound, the lunge again
         if (!figs.has(f.uid) || f.dying) return;
         const tn = performance.now(); f.shootT = tn;
         if (!shot && !ranged) { f.lunge = dir.clone().multiplyScalar(0.42); f.lungeT = tn; f.lungeDur = LUNGE_MS; } else if (!shot) { f.lunge = dir.clone().normalize().multiplyScalar(-0.12); f.lungeT = tn + imp - 40; f.lungeDur = 300; }
@@ -1122,7 +1125,7 @@ const _embV = new THREE.Vector3();
       const dab: string[] = def ? CARDS[def.cardId]?.abilities || [] : [];
       const dc = def ? st.board.creatures.find((x: any) => x.uid === def.uid) : null;
       const armoredTgt = dab.includes('armored') || dab.includes('unbreakable') || dab.includes('riotShield') || (dc?.shield || 0) > 0;
-      for (let i = 0; i < NS; i++) { // a landed hit thuds (clink on armour); a block by armour clinks; a miss makes no impact at all
+      for (let i = 0; i < NV; i++) { // a landed hit thuds (clink on armour); a block by armour clinks; a miss makes no impact at all
         const r = result(i);
         if (r === 'hit') impacts.push({ at: f.blowAt + i * SWING_MS, to: to.clone(), ranged, armored: armoredTgt, commander: !!e.target.commander });
         else if (r === 'block' && sw[i]?.armored) impacts.push({ at: f.blowAt + i * SWING_MS, to: to.clone(), ranged, armored: true, commander: false });

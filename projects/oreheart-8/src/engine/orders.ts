@@ -92,7 +92,7 @@ export function canAttackFrom(s: any, c: any, at: Cell, enemy: any): boolean {
   // A fresh copy of c on `at`: only geometry (reach, line of sight, guards) decides; this-turn flags are cleared.
   const copy = { ...c, row: at.row, col: at.col, hasMoved: false, hasAttacked: false, hasMined: false, movesLeft: 1, summonedThisTurn: false, lockedUntil: 0, wardUntil: 0, rocketed: false };
   const s2 = { ...s, board: { ...s.board, creatures: s.board.creatures.map((x: any) => (x.uid === c.uid ? copy : x)) } };
-  return attackTargets(s2, copy).some((t: any) => !t.commander && t.row === enemy.row && t.col === enemy.col);
+  return attackTargets(s2, copy).some((t: any) => (enemy.commander ? t.commander === enemy.commander : !t.commander && t.row === enemy.row && t.col === enemy.col));
 }
 
 /** Shortest path to the nearest square from which `enemy` is in attack range (empty path = already in range). null = unreachable. */
@@ -103,7 +103,7 @@ export function chasePath(s: any, c: any, enemy: any): Cell[] | null {
 
 /** The legal attack action of `c` on `enemy` right now, or null. */
 export function attackActionOn(s: any, c: any, enemy: any): any | null {
-  return legalActions(s).find((a: any) => a.type === 'attack' && a.creatureUid === c.uid && a.target && a.target.row === enemy.row && a.target.col === enemy.col) || null;
+  return legalActions(s).find((a: any) => a.type === 'attack' && a.creatureUid === c.uid && a.target && (enemy.commander ? a.target.commander === enemy.commander : a.target.row === enemy.row && a.target.col === enemy.col)) || null;
 }
 
 /** Plan an order against the current state. `done` = nothing left to do (arrived / target gone). */
@@ -128,7 +128,14 @@ export const chaseList = (o: Order): string[] => (o.kind === 'chase' ? [o.target
 /** The first target on the list still on the board (one that died or retreated is skipped), or null when the list is finished. */
 export function chaseTarget(s: any, o: Order): any | null {
   const c = s.board.creatures.find((x: any) => x.uid === o.uid);
-  for (const u of chaseList(o)) { const e = s.board.creatures.find((x: any) => x.uid === u); if (e && (!c || e.owner !== c.owner)) return e; }
+  for (const u of chaseList(o)) {
+    if (u.startsWith('cmd:')) { // Ken, Nov 1: the enemy Commander is a target too: the unit walks to him and hits him every turn until the match ends
+      const side = u.slice(4), sh = s.strongholds?.[side];
+      if (sh && !s.winner && (!c || side !== c.owner)) return { uid: u, commander: side, owner: side, row: sh.row, col: sh.col };
+      continue;
+    }
+    const e = s.board.creatures.find((x: any) => x.uid === u); if (e && (!c || e.owner !== c.owner)) return e;
+  }
   return null;
 }
 

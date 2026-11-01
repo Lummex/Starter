@@ -530,14 +530,15 @@ export const expectedSwings = (n: number, def: any | null): number => swingOdds(
 /** Resolve `n` swings of `att` at `def`: hit roll, block roll, then 1 damage through hurt(). Events: swing {result: miss | block | hit}. */
 function swingsAt(s: any, att: any, def: any, n: number, ev: any[], tag: string) {
   let landed = 0;
+  const shooter = has(att, 'ranged') || has(att, 'overwatch'); // the further points of damage of a shooter are Bleeds: they only roll when the shot itself hit
   for (let i = 0; i < n && def.health > 0; i++) {
     const base = { type: 'swing', uid: att.uid, targetUid: def.uid, row: def.row, col: def.col, tag, n: i + 1, of: n };
-    if (COMBAT().dice !== 'sure' && d6(s) < (COMBAT().hitFrom ?? 3)) { ev.push({ ...base, result: 'miss' }); continue; }
+    if (COMBAT().dice !== 'sure' && d6(s) < (COMBAT().hitFrom ?? 3)) { ev.push({ ...base, result: 'miss' }); if (i === 0 && shooter) break; continue; } // Ken, Nov 1: a ranged unit's first shot is the shot; if it misses (or is blocked) there are no Bleed chances
     const dice = COMBAT().dice === 'sure' ? 0 : blockDiceOf(def), faces = blockFacesOf(def);
     let blocked = false;
     for (let k = 0; k < dice && !blocked; k++) if (faces.includes(d6(s))) blocked = true;
     if (!blocked && has(def, 'unbreakable') && landed >= 3) blocked = true; // Unbreakable: never more than 3 from one attack
-    if (blocked) { ev.push({ ...base, result: 'block', dice, armored: has(def, 'armored') || has(def, 'riotShield') }); continue; }
+    if (blocked) { ev.push({ ...base, result: 'block', dice, armored: has(def, 'armored') || has(def, 'riotShield') }); if (i === 0 && shooter) break; continue; }
     ev.push({ ...base, result: 'hit', dice });
     const saved = def.brewSave;
     if (hurt(s, def, 1, ev, false, true) > 0) landed++;
@@ -554,6 +555,8 @@ const STACK_CAP = () => CONFIG.stackCap ?? 3, AURA_CAP = () => CONFIG.auraStackC
 /** a Riot Shield Bearer behind its shield (can't be lifted, hurt or act) */
 const ADV = (a: string, d: string) => FACTIONS[a]?.beats === d;
 /** Ken (Oct 31): the faction triangle's +1 never applies when the creature being hit is a Miner (Gatherer or Smith). Shared by the engine and the computer's damage predictions. */
+/** Ken, Nov 1: ranged attacks and special abilities: the unit's stock (printed) Attack is never halved; only the buffed points above it are, rounded down. A stock-1 shooter hits for 1, 1, 2, 2, 3, 3 at Attack 1..6; a stock-2 one for 2, 2, 3, 3 at Attack 2..5. */
+export const halfAttack = (c: any, v: number): number => { const d = CARDS[c.cardId].attack; return v <= d ? v : d + Math.floor((v - d) / 2); };
 export const typeBonus = (attackerCard: any, targetCard: any) => (targetCard && !isMiner(targetCard) && ADV(attackerCard.faction, targetCard.faction) ? CONFIG.typeAdvantageBonus : 0);
 /** Junk Shaman's situational +1 Attack for adjacent Goblins on their owner's turn. */
 export function junkBonus(s: any, c: any): number {
@@ -569,6 +572,7 @@ export function atkValue(s: any, c: any, target?: any) {
   if (has(c, 'brawler') && c.lastFight != null && s.turn - c.lastFight <= 2) v *= 2;
   if (has(c, 'rage') && c.health * 2 < c.maxHealth) v += CONFIG.rageBonus;
   v += Math.min(AURA_CAP(), s.flags.battleCryN?.[c.owner] ?? (s.flags.battleCry === c.owner ? 1 : 0)); // stacking: +1 per Thunderhorn Blast this turn, up to +2
+  if (has(c, 'ranged') || has(c, 'overwatch')) v = halfAttack(c, v); // Ken, Nov 1: every ranged unit hits for half its Attack (rounded down; the printed number stays whole)
   if (target) v += typeBonus(card, CARDS[target.cardId]); /* Ken, Oct 31: no triangle bonus against Miners */
   return Math.max(0, v);
 }
@@ -727,11 +731,12 @@ function runAbility(s: any, l: any, who: Side, ev: any[]) {
         hits.push({ id: o.uid, uid: o.uid, from, to: { row: o.row, col: o.col } });
       }
       ev.push({ type: 'bowl', uid: c.uid, from: { row: c.row, col: c.col }, dr: l.dr, dc: l.dc, path, hits });
+      { const bd = halfAttack(c, atkValue(s, c)); for (const h of hits) { const o = s.board.creatures.find((x: any) => x.uid === h.uid); if (o && o.owner !== who) dealDamage(s, o, bd, ev); } } // only enemies are hurt (the ball still knocks friends aside). Ken, Nov 1: "the bowler needs to do 2 damage": every unit the ball hits takes his Attack (halved above the printed number)
       break;
     }
     case 'shockwave':
       c.hasAttacked = true;
-      for (const o of adjacentCreatures(s, c)) if (o.owner !== who) { knockAway(s, c, o, 1, ev); dealDamage(s, o, 1, ev); }
+      for (const o of adjacentCreatures(s, c)) if (o.owner !== who) { knockAway(s, c, o, 1, ev); dealDamage(s, o, halfAttack(c, atkValue(s, c)), ev); } // Nov 1: abilities scale like ranged attacks
       break;
     case 'plow': {
       c.hasAttacked = true;
@@ -759,7 +764,7 @@ function runAbility(s: any, l: any, who: Side, ev: any[]) {
     }
     case 'rocket':
       to(l.target.row, l.target.col, true); c.hasMoved = true; c.rocketed = true;
-      blastAround(s, c, atkValue(s, c), ev);
+      blastAround(s, c, halfAttack(c, atkValue(s, c)), ev); // Nov 1: abilities scale like ranged attacks
       break;
     case 'ward': {
       const o = creatureAt(s, l.target.row, l.target.col);

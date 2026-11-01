@@ -14379,3 +14379,33 @@ test('AC563: under v2 a chase order walks and attacks in the same turn when its 
   const st = await page.evaluate(() => window.oreheart.getState());
   expect(st.turn, 'the match moved on').toBeGreaterThan(4);
 });
+
+// Ken (Nov 1): "let him auto attack the main player also ... click and drag and select the opponent to where they'll attack him every single time"
+test('AC564: dragging a unit onto the enemy Commander gives it a standing chase: it walks to him and attacks him every turn, also in a chain after other targets', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const board = [{ cardId: 'wolf-rider', owner: 'player', row: 5, col: 8 }, { cardId: 'goblin-grunt', owner: 'player', row: 5, col: 4 }];
+  const s0 = await page.evaluate((board) => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [] } }), board);
+  const wolf = s0.board.creatures.find((c) => c.cardId === 'wolf-rider'), grunt = s0.board.creatures.find((c) => c.cardId === 'goblin-grunt');
+  const sh = await page.evaluate(() => window.oreheart.getState().strongholds.opponent);
+  // the real drag: the wolf onto the enemy Stronghold square
+  const pt = (r, c) => page.evaluate(([r, c]) => { const a = window.__app, q = a.center(r, c), b = a.r.board.getBoundingClientRect(); return { x: b.left + q.x, y: b.top + q.y }; }, [r, c]);
+  const a = await pt(wolf.row, wolf.col), b = await pt(sh.row, sh.col);
+  await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 5 }); await page.mouse.move(b.x, b.y, { steps: 5 }); await page.mouse.up();
+  await page.waitForTimeout(300);
+  let orders = await page.evaluate(() => window.oreheart.getOrders());
+  expect(orders.find((o) => o.uid === wolf.uid), 'a chase on the Commander').toMatchObject({ kind: 'chase', targetUid: 'cmd:opponent' });
+  // a second unit by the API, to also check it works from far away over several turns
+  expect(await page.evaluate(([u]) => window.oreheart.setOrder({ kind: 'chase', uid: u, targetUid: 'cmd:opponent' }), [grunt.uid])).toBe(true);
+  let hits = 0, last = (await page.evaluate(() => window.oreheart.getState())).players.opponent.health;
+  for (let turn = 0; turn < 8 && last > 0; turn++) {
+    for (let i = 0; i < 14; i++) { const s = await page.evaluate(() => window.oreheart.getState()); if (s.activePlayer === 'player' && s.phase === 'action') break; await page.evaluate(() => { const o = window.oreheart; const d = o.legalActions().find((x) => x.type === 'done' || x.type === 'pass'); if (d) o.act(d); }); await page.waitForTimeout(80); }
+    await page.waitForTimeout(250);
+    const s = await page.evaluate(() => window.oreheart.getState());
+    if (s.players.opponent.health < last) hits++; last = s.players.opponent.health;
+    await page.evaluate(() => { const o = window.oreheart; const d = o.legalActions().find((x) => x.type === 'done'); if (d) o.act(d); });
+  }
+  expect(hits, 'the Commander is hit again and again without another click').toBeGreaterThanOrEqual(2);
+  expect(last).toBeLessThan(20);
+});
