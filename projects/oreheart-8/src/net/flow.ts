@@ -11,6 +11,11 @@ import { buildKind, mismatch } from './env-guard';
 import { pageMode } from './switch';
 import parentNotice from '../content/parent-notice.json';
 import eula from '../content/eula.json';
+import privacy from '../content/privacy.json';
+import conduct from '../content/conduct.json';
+
+/** A legal text file (eula.json, privacy.json, conduct.json): all three share one shape. */
+type LegalDoc = { version: string; title: string; summary_heading: string; summary: string[]; sections: { heading: string; text: string | string[] }[] };
 import { RACES, pickableAvatars, avatarPicture, avatarName } from './avatars';
 
 type El = HTMLElement;
@@ -187,6 +192,20 @@ function showSignUp(group: AgeGroup) {
   agree.addEventListener('change', () => update());
   const eulaRow = h('div', { class: 'net-eula-row' },
     h('label', { class: 'net-check', for: 'su-eula' }, agree, h('span', {}, 'I agree to the End User License Agreement')), eulaToggle);
+  // Forge (Nov 1): the Privacy Policy and the Code of Conduct are part of the agreement and readable right here too.
+  const docBox = h('div', { class: 'net-eula', hidden: true, tabindex: '0', role: 'region', 'aria-label': 'Privacy Policy and Code of Conduct' });
+  let docOpen: LegalDoc | null = null;
+  const docLink = (doc: LegalDoc) => {
+    const b = h('button', { type: 'button', class: 'net-link', 'aria-expanded': 'false' }, doc.title) as HTMLButtonElement;
+    b.onclick = () => {
+      docOpen = docOpen === doc ? null : doc;
+      docBox.replaceChildren(...(docOpen ? docBody(docOpen) : []));
+      docBox.hidden = !docOpen;
+      for (const x of docRow.querySelectorAll('button')) x.setAttribute('aria-expanded', String(docOpen !== null && x.textContent === docOpen.title));
+    };
+    return b;
+  };
+  const docRow = h('div', { class: 'net-doc-row' }, h('span', {}, 'It includes our'), docLink(privacy), h('span', {}, 'and'), docLink(conduct));
   const update = () => {
     const pOk = passwordOk(pw.input.value);
     const match = pw.input.value === pw2.input.value;
@@ -226,7 +245,7 @@ function showSignUp(group: AgeGroup) {
   update();
   menuShow('signup', h('h1', {}, 'Create account'),
     h('form', { class: 'net-form', onsubmit: (e: Event) => { e.preventDefault(); if (!create.disabled) void submit(); } },
-      user.wrap, email.wrap, pw.wrap, pw2.wrap, eulaRow, eulaBox, cap.el, err),
+      user.wrap, email.wrap, pw.wrap, pw2.wrap, eulaRow, eulaBox, docRow, docBox, cap.el, err),
     h('div', { class: 'net-actions' }, create, nbtn('Back', showAge)));
 }
 
@@ -324,22 +343,26 @@ function revokedScreen() {
     h('div', { class: 'net-actions' }, nbtn('Sign out', () => { void signOut(); }), offlineBtn()));
 }
 
-/** The EULA text (src/content/eula.json) as readable elements; a DRAFT banner while the version says -draft. */
-function eulaBody(): El[] {
-  const draft = /-draft$/.test(eula.version);
+/** A legal text (eula.json, privacy.json, conduct.json) as readable elements; a DRAFT banner while the version says -draft. */
+function docBody(doc: LegalDoc): El[] {
+  const draft = /-draft$/.test(doc.version);
   const paras = (text: string | string[]) => (Array.isArray(text) ? text : [text]).map((p) => h('p', {}, p));
   return [
     ...(draft ? [h('p', { class: 'net-draft' }, 'DRAFT – lawyer review before launch')] : []),
-    // Ken (Oct 31): a plain-English summary first, then the full agreement in the standard order.
-    h('section', { class: 'net-section net-eula-summary' }, h('h3', {}, eula.summary_heading), h('ul', {}, ...eula.summary.map((line) => h('li', {}, line)))),
-    ...(eula.sections as { heading: string; text: string | string[] }[]).map((s) => h('section', { class: 'net-section' }, h('h3', {}, s.heading), ...paras(s.text))),
+    // Ken (Oct 31): a plain-English summary first, then the full text in order.
+    h('section', { class: 'net-section net-eula-summary' }, h('h3', {}, doc.summary_heading), h('ul', {}, ...doc.summary.map((line) => h('li', {}, line)))),
+    ...doc.sections.map((s) => h('section', { class: 'net-section' }, h('h3', {}, s.heading), ...paras(s.text))),
   ];
 }
+const eulaBody = () => docBody(eula);
 
-/** Read-only copy of the agreement (Profile and Contact us link here). */
-function showEula(back: () => void) {
-  menuShow('eula', h('h1', {}, eula.title), ...eulaBody(), h('div', { class: 'net-actions' }, nbtn('Back', back)));
+/** Read-only copy of a legal text (Profile, Contact us and the Agree screen link here). */
+function showDoc(doc: LegalDoc, back: () => void) {
+  menuShow('doc-' + doc.version, h('h1', {}, doc.title), ...docBody(doc), h('div', { class: 'net-actions' }, nbtn('Back', back)));
 }
+const showEula = (back: () => void) => showDoc(eula, back);
+/** The three "read it" buttons used on the Agree screen and in Profile. */
+const docButtons = (back: () => void) => [nbtn('User agreement', () => showDoc(eula, back)), nbtn('Privacy Policy', () => showDoc(privacy, back)), nbtn('Code of Conduct', () => showDoc(conduct, back))];
 
 /** Asked after sign-in when the player has not agreed to the current version (older accounts, or a new text). */
 function eulaGate(s: Status) {
@@ -355,6 +378,7 @@ function eulaGate(s: Status) {
   ok.disabled = true;
   box.addEventListener('change', () => { ok.disabled = !box.checked; });
   menuShow('eula-gate', h('h1', {}, eula.title), h('p', {}, 'Please read this and agree to keep playing online.'), ...eulaBody(),
+    h('p', {}, 'It includes our Privacy Policy and Code of Conduct:'), h('div', { class: 'net-actions' }, ...docButtons(() => eulaGate(s)).slice(1)),
     h('label', { class: 'net-check', for: 'eula-agree' }, box, h('span', {}, 'I agree to the End User License Agreement')),
     err, h('div', { class: 'net-actions' }, ok, nbtn('Sign out', () => { void signOut(); }), offlineBtn()));
 }
@@ -491,7 +515,7 @@ function showProfile() {
       h('div', {}, h('p', { class: 'net-username' }, s.username), joined, h('p', {}, 'No online matches yet'))),
     h('div', { class: 'net-actions' },
       nbtn('Change avatar', () => avatarScreen(s, showProfile)),
-      nbtn('User agreement', () => showEula(showProfile)),
+      ...docButtons(showProfile),
       nbtn('Contact us', () => showContact({ back: showProfile, email: undefined, player: s.username })),
       nbtn('Sign out', () => { void signOut(); }),
       nbtn('Back', () => app.showMenu())));
@@ -535,7 +559,7 @@ export function showContact(o: { back?: () => void; player?: string; email?: str
       h('div', { class: 'net-field' }, h('label', { for: 'ct-topic' }, 'Topic'), topic),
       h('div', { class: 'net-field' }, h('label', { for: 'ct-message' }, 'Message'), message),
       reply.wrap, name.wrap, player.wrap, cap.el, err, note),
-    h('div', { class: 'net-actions' }, send, nbtn('User agreement', () => showEula(() => showContact(o))), nbtn('Back', back)));
+    h('div', { class: 'net-actions' }, send, nbtn('User agreement', () => showEula(() => showContact(o))), nbtn('Privacy Policy', () => showDoc(privacy, () => showContact(o))), nbtn('Back', back)));
 }
 
 async function showPage(kind: 'consent' | 'withdraw' | 'contact') {
