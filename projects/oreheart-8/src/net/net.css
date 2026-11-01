@@ -67,6 +67,7 @@ html body :is(.net-screen .net-btn,.net-btn.net-profile-btn):disabled{border-ima
 .net-eula{max-height:30vh;overflow-y:auto;padding:8px 12px;text-align:left;background:#0c0e15;border:1px solid #6e798f;border-radius:6px;box-shadow:inset 0 1px 3px #000a}
 .net-eula[hidden]{display:none}
 .net-eula .net-section p{font-size:.95rem}
+.net-doc-row{display:flex;flex-wrap:wrap;gap:0 6px;align-items:center;justify-content:center;font-size:.95rem}
 .net-eula-summary{padding:8px 12px;border:1px solid #6e798f;border-radius:6px;background:#ffffff0a}
 .net-eula-summary ul{margin:4px 0 0;padding-left:1.2em}
 .net-eula-summary li{margin:3px 0}

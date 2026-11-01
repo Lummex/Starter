@@ -1,0 +1,81 @@
+{
+  "version": "2026-11-01-draft",
+  "title": "Privacy Policy",
+  "summary_heading": "The short version",
+  "summary": [
+    "We keep what the game needs to run your account and nothing more: your email, username, age group, avatar, decks, cards, coins, game record and rank.",
+    "We never keep your birth date, real name, photo, phone number or home address. There is no chat between players.",
+    "No ads, no trackers, no selling or renting your information. The few companies that help us run the game only see what they need to do their job.",
+    "Playing offline stays on your device. Nothing is sent to us until you sign in.",
+    "Under 13: a parent or guardian gives permission by email first, can see or delete the account's data, and can withdraw permission at any time.",
+    "To see, correct or delete your data, use the Contact us form in the game.",
+    "This short version is only a guide. The full policy below is what counts."
+  ],
+  "sections": [
+    { "heading": "1. Who we are and what this covers", "text": [
+      "This Privacy Policy explains what information Oreheart collects when you play, why, where it is kept, who can see it, how long we keep it, and what you can ask us to do with it. \"Oreheart\" means the Oreheart game and the people who make and run it; \"anyone affiliated with Oreheart\" means Oreheart's owners, staff, contractors, partners and service providers. [LAWYER: fill in the legal name, address and contact email of the company or person responsible for the data (the \"controller\").]",
+      "This policy is part of the End User License Agreement and applies however you play: in a web browser, as an installed web app, on a phone, tablet or PC, online or offline. It is written from what the game and its database actually do today. When the game changes, this policy changes with it, and the version at the top changes."
+    ] },
+    { "heading": "2. Playing offline: nothing leaves your device", "text": [
+      "You can play Oreheart against the computer without an account. In that case nothing is sent to Oreheart. The game saves a few things in your browser's local storage, on your own device only: your settings (sound and music volumes, mute, graphics and display choices, card size, highlights, reminders), whether you have seen the intro and the tutorial, the offline decks you build, your recent card picks and reveals, and, after you tell the sign-up screen your birth month and year, only the resulting age group (under 13, 13 to 15, or 16 and over) together with the time, kept for 24 hours so you are not asked twice. The birth month and year themselves are never saved and never sent.",
+      "You can clear all of this at any time by clearing your browser's site data for the game. We cannot see it."
+    ] },
+    { "heading": "3. What we collect when you have an account", "text": [
+      "When you create an account: your email address (for players under 13, the parent or guardian's email address), a password (our sign-in service stores it in a scrambled form that we cannot read), your username, your age group (under 13, 13 to 15, or 16 and over; worked out on your device from the birth month and year you typed, which are not sent to us), the version of the End User License Agreement you agreed to and when, and, when our bot check is switched on, a one-time token from the bot-check service (see section 6).",
+      "While you play online: the avatar you choose; your decks (name, commander and cards); the cards you own, each with its own identity, where it came from (starter set, pack, reward, event or a grant by the team) and its full ownership history; your coins and every coin movement with its reason; your game record (games, wins, losses, ties, abandoned games, streaks, turns, cards played, creatures defeated, ore mined, sites captured, packs opened, coins earned and spent, and totals by faction and commander); your rank rating for each season; when your account was created and when it was last seen; and account notes the game needs, such as whether your starter decks have been imported. If you ever pay or donate, the total amount is recorded against your account (nothing is payable today).",
+      "When you use the Contact us form: the topic, your message, the reply email and name you choose to give, the child's username for a parent request, your account identity if you are signed in, your internet address (IP address), and our reply if we send one.",
+      "For players under 13: the parent or guardian's email address, the consent request and its status, when it was sent, approved, renewed or withdrawn, the internet address (IP address) used to approve or withdraw it, and a record of each of those events. The approval and withdrawal links in our emails are one-time codes; we keep only a scrambled fingerprint of each code, not the code itself.",
+      "Moderation and support records: if a moderator or the Oreheart team acts on your account (a warning, a rename, a change of age group, coins or cards added or removed, a suspension or ban), we keep a record of what was done, by whom, when, why, and the moderator's internet address and browser. We also keep a copy of every email we send you (what it was and whether it was delivered).",
+      "Technical records: our sign-in service keeps sign-in records (times and internet addresses) in its security logs, and our hosting service keeps short-lived request logs that include internet addresses. We do not use these to track you; they are there to keep the game secure and working."
+    ] },
+    { "heading": "4. What we do not collect", "text": [
+      "We do not keep your birth date, and we do not ask for your real name, a photo, a phone number, a home address, your location, your contacts, or any payment details (nothing is payable today). The game has no chat and no free-text messages between players; other players can see only your username, your avatar and your rank during a match.",
+      "The game contains no advertising, no advertising identifiers, no analytics or tracking scripts, no social-media buttons and no third-party cookies. The only thing the game stores in your browser for your account is your sign-in session, so you stay signed in."
+    ] },
+    { "heading": "5. Why we use it", "text": [
+      "To run your account and let you sign in; to save and show your decks, cards, coins, progress and rank; to run matches, seasons and events fairly; to keep the game safe for everyone, including spotting cheating, bots and abuse (every card's ownership history lets us trace and undo cheating); to answer your Contact us messages; to get and record a parent's permission for players under 13; to keep the records the law requires; and to improve the game by looking at overall numbers, never at you individually.",
+      "[LAWYER: for GDPR and similar laws, add the legal basis for each purpose, for example performance of the agreement, legitimate interests in security and fairness, consent for under-13 accounts, and legal obligation for records.]"
+    ] },
+    { "heading": "6. Who helps us, and who can see your information", "text": [
+      "We do not sell, rent or trade your information, and we do not share it for advertising. A small number of companies process it for us, only to do their job for the game:",
+      "Supabase hosts our database and our sign-in service. Everything in section 3 is stored there. [TODO: name the hosting region once the real project is set up.]",
+      "Vercel hosts the game's website and keeps short-lived request logs.",
+      "Cloudflare provides the bot check on the sign-in and sign-up screens (\"Turnstile\"). When it is switched on, Cloudflare receives your internet address and some browser details to decide whether you are a person. [TODO: say whether it is switched on at launch.]",
+      "Resend sends our emails (parent-consent requests and confirmations, and replies to Contact us messages) and sees the email address and the email content. [TODO: say whether it is switched on at launch.]",
+      "Stripe is planned for voluntary donations in a later phase and is not used today. If and when it is added, this policy will be updated and you will be asked to agree again before any payment is possible. [LAWYER: add the payment wording when that phase is built.]",
+      "The Oreheart team and moderators can see account information in a back-counter site, so they can help players, answer messages and keep the game fair. Every action they take on an account is recorded. We may also share information when the law requires it, to protect players, or with someone who takes over the game, in which case we will tell you where the law requires."
+    ] },
+    { "heading": "7. How long we keep it", "text": [
+      "Account information is kept for as long as your account exists. Parent-consent request links expire after 7 days. Your sign-in session in your browser ends when you sign out.",
+      "Some records are kept even after an account is deleted, without your email address: the ownership history of cards (so cheating can still be traced), consent records for under-13 accounts (to show that permission was given and withdrawn), moderation records, and Contact us messages, which stay in our support inbox. [LAWYER: set a retention period for each of these, and for sign-in and hosting logs, which the services keep for a limited time on their own schedules.]"
+    ] },
+    { "heading": "8. Your choices and rights", "text": [
+      "You can change your avatar in the game, and edit or delete your decks at any time. Your username can be changed by the team on request through the Contact us form.",
+      "To see a copy of the information we hold about you, to correct it, or to have your account and its personal information deleted, use the Contact us form and choose \"Delete my account\" or \"Question\". The Oreheart team handles these requests by hand; there is no automatic button yet. Deleting an account removes your sign-in, email, username, avatar, decks, coins, game record and rank. Section 7 lists what is kept without your email.",
+      "If you are in a region with privacy rights such as access, correction, deletion, portability, objection, or the right to complain to a privacy regulator, you can exercise them through the Contact us form, and we will answer within the time the law allows. [LAWYER: add the regions and rights that apply, where the data is stored and how it is transferred (for example the EU and UK), and the regulator contact details.]"
+    ] },
+    { "heading": "9. Children under 13 (COPPA)", "text": [
+      "Oreheart is a game that children play, and we follow the Children's Online Privacy Protection Act (COPPA) and similar laws. A player who tells us they are under 13 cannot use an account online until a parent or guardian gives permission.",
+      "How permission works: the under-13 player creates the account with the parent or guardian's email address. We email that address a Parent Consent Notice with an approval link. The link expires after 7 days. When the parent approves, we record the approval, the time and the internet address used, and we email a confirmation that includes a withdrawal link.",
+      "What we collect from an under-13 player: the username, the parent's email address, the age group, the agreement version, and the game information in section 3 (avatar, decks, cards, coins, game record and rank). We do not collect a birth date, real name, photo, phone number, address or location, and there is no chat. We never show under-13 players the small set of avatars we mark as mature.",
+      "Parents' rights: a parent or guardian can review the account's information, have it corrected or deleted, and withdraw permission at any time, using the withdrawal link in the confirmation email or the Contact us form (choose \"Parent request\"). Withdrawing permission stops the account working online at once. We do not make a child's participation depend on giving more information than the game needs.",
+      "[LAWYER: confirm this section and the Parent Consent Notice against COPPA's direct-notice and verifiable-consent requirements (email-plus method), and the minimum age in each launch country, for example 16 in parts of the EU under GDPR-K.]"
+    ] },
+    { "heading": "10. Security", "text": [
+      "Your information is stored with services that use encryption in transit and at rest, access to it is limited by role, every change to money, cards, consent and moderation is written to records that cannot be edited, and the Oreheart team signs in to the back counter with two-factor authentication. No system is perfectly secure; if we learn of a breach that affects you, we will tell you and the authorities as the law requires."
+    ] },
+    { "heading": "11. Changes to this policy", "text": [
+      "When this policy changes, the version at the top changes and the game asks you to read and agree to the updated End User License Agreement, which includes this policy, before you play online again. For under-13 accounts, we will ask the parent or guardian again where the law requires it."
+    ] },
+    { "heading": "12. Contact us", "text": [
+      "For any question or request about your information, use the Contact us form in the game. We answer from a no-reply address, so leave a reply email in the form if you would like an answer. [LAWYER: add a postal address and, where required, the contact details of a data protection officer or representative.]"
+    ] }
+  ],
+  "lawyer_review": [
+    "This policy is a DRAFT written by the studio from what the game and database actually do in Online Phase A (profiles, wallets, transactions, card instances and history, decks, player stats and ratings, parental consents and consent events, contact messages, email outbox, admin audit, bans). It is not copied from any other company's policy. A lawyer must review and finish it before launch.",
+    "Fill in every [LAWYER: ...] and [TODO: ...] blank: the controller's legal name and address (1, 12), legal bases (5), the hosting region and which third-party services are switched on at launch (6), retention periods (7), regional rights and transfers (8), COPPA and GDPR-K confirmation (9), and the payments wording when Phase D is built (6).",
+    "Known gap: there is no self-serve deletion yet; deletion is done by hand by the owner in the database, and card history, consent events, admin audit and contact messages keep the account id afterwards. Decide whether contact messages should have the reply email removed on deletion.",
+    "Known gap: Cloudflare Turnstile and Resend only run when their keys are set in the hosting environment; the policy says so. Confirm the launch setup and remove the [TODO]s.",
+    "Keep this policy in step with the code: any new table, column, service or browser storage key that holds personal information must be added here, and the version bumped."
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "version": "2026-11-01-draft",
+  "title": "Code of Conduct",
+  "summary_heading": "The short version",
+  "summary": [
+    "Be kind. Oreheart is deadly serious and completely ridiculous, and it is for everyone, including kids.",
+    "Play fair: no cheating, bots or exploits.",
+    "Keep your username and pictures clean.",
+    "No bullying, hate, threats or grown-up content.",
+    "No buying or selling accounts, cards or coins for real money.",
+    "See a problem? Tell us through Contact us.",
+    "Break the rules and you can be warned, renamed, suspended or banned."
+  ],
+  "sections": [
+    { "heading": "Why we have this", "text": [
+      "Goblins, gnomes and dwarves can be as rude to each other as they like. Players can't. This Code of Conduct says how we treat each other in Oreheart. It is part of the End User License Agreement (see its sections 1 and 6), and it applies to everything you do in the game: your username, your avatar, your decks' names, anything you send us, and how you play."
+    ] },
+    { "heading": "1. Be a good sport", "text": [
+      "Win with a grin, lose with a shrug. Finish your matches; leaving a match before it ends counts as a loss for you. Don't stall on purpose to waste the other player's time, and don't team up with someone to throw matches or farm wins or rewards."
+    ] },
+    { "heading": "2. Play fair", "text": [
+      "No cheats, hacks, bots, scripts, macros, modified game files or anything that plays for you or changes how the game works. No using bugs on purpose to get an advantage, extra cards or coins. If you find a bug, tell us through Contact us instead of using it: that is the kind of thing we reward, not punish.",
+      "No breaking into, scanning, overloading or messing with our servers or anyone's account, and no server copies or fake clients."
+    ] },
+    { "heading": "3. Keep it clean", "text": [
+      "Your username, your deck names and anything you send us must be suitable for a game that children play. That means no swearing, no rude or sexual words or pictures, no hate, no slurs, no violence, no drugs, no politics or religion, no personal information (yours or anyone else's), and no names that pretend to be Oreheart, the Oreheart team, a moderator or another player. A filter blocks the obvious ones; we also change names by hand, and a changed name is noted on the account."
+    ] },
+    { "heading": "4. Be kind to other players", "text": [
+      "There is no chat in Oreheart on purpose, so most of this is simple: no bullying, threatening, harassing, tricking or targeting other players in any way the game allows, and no using your username or avatar to upset anyone. Everyone here is trying to have fun, and some of them are eight years old."
+    ] },
+    { "heading": "5. No real-money trading", "text": [
+      "Cards, coins, packs, decks and accounts are not for sale. Don't buy, sell, trade, rent, give away or advertise accounts, items or boosting for real money or anything of value, inside or outside the game. Items have no cash value, and the only way to get them is to play. If the game ever adds trading between players, it will only be through the game's own screens."
+    ] },
+    { "heading": "6. One account, kept safe", "text": [
+      "One account per player. Keep your password to yourself, don't use anyone else's account, and tell us straight away through Contact us if you think someone has used yours. You are responsible for what happens on your account."
+    ] },
+    { "heading": "7. Tell us about problems", "text": [
+      "If you see cheating, a rude name, a bug, or anything that worries you, tell us through the Contact us form in the game (choose \"Problem\"). Parents and guardians can use \"Parent request\". We read every message. We answer from a no-reply address, so leave a reply email if you would like an answer. Please don't take matters into your own hands."
+    ] },
+    { "heading": "8. What happens if you break the rules", "text": [
+      "Depending on what happened and whether it has happened before, we may: give you a warning; change your username or avatar; remove cards, coins or rewards gained unfairly; suspend your account for a while; or ban it for good. Serious things, like cheating tools, attacks on our servers, real-money trading or anything that puts children at risk, can mean an immediate ban without a warning, as the End User License Agreement says.",
+      "Every one of these steps is written down with the reason. If you think we got it wrong, write to us through Contact us (choose \"Problem\") and we will look again."
+    ] },
+    { "heading": "9. Changes", "text": [
+      "We may update this Code of Conduct as the game grows, for example when new ways to play are added. When it changes, the version at the top changes and the game asks you to agree to the updated End User License Agreement, which includes this code."
+    ] }
+  ],
+  "lawyer_review": [
+    "This Code of Conduct is a DRAFT written by the studio in plain, kid-friendly English, in the game's tone. It is not copied from any other company's rules. A lawyer should check it is consistent with the End User License Agreement (sections 1 Restrictions and 6 Term and termination) and with the Privacy Policy.",
+    "Confirm the sanctions list matches what the back counter can actually do today (warning, rename, age-group change, coins and cards added or removed, suspension, permanent ban; match results cannot yet be undone by the team).",
+    "Whenever the text changes, change the version at the top and bump the End User License Agreement version so players agree again."
+  ]
+}
