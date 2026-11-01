@@ -12849,6 +12849,7 @@ test('AC524: summon plays 3 variants without repeating, the mining clink is limi
   for (let i = 1; i < s.length; i++) expect(s[i], `summon ${i} differs from summon ${i - 1}`).not.toBe(s[i - 1]);
   expect(new Set(s).size, 'all three variants are used').toBe(3);
   expect(s.every((f) => /\/audio\/sfx\/summon-[123]\.ogg$/.test(f))).toBe(true);
+  await page.waitForTimeout(900); // the last summons must end first: the mix allows 3 effects at once and a pick ranks below a summon
   const n1 = (await sfxState(page)).plays.length;
   await page.evaluate(() => { for (let i = 0; i < 6; i++) window.oreheart.playSfx('pick'); });
   expect((await sfxState(page)).plays.slice(n1).filter((p) => p.key === 'pick').length, 'six quick picks make one sound').toBe(1);
