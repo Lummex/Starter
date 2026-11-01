@@ -21,7 +21,15 @@ const bgMat=new THREE.ShaderMaterial({uniforms:bgU,depthTest:false,depthWrite:fa
  vec3 y=toY*c;float ch=cos(uHue),sh=sin(uHue);y=vec3(y.x,y.y*ch-y.z*sh,y.y*sh+y.z*ch);gl_FragColor=vec4(clamp(toR*y,0.,1.),tx.a);}`});
 const bg=new THREE.Mesh(new THREE.PlaneGeometry(1,1),bgMat);bg.renderOrder=0;scene.add(bg);
 const arU=Object.assign({},bgU,{uTex:{value:null}});const arMat=bgMat.clone();arMat.uniforms=arU;arMat.transparent=true;
-const arenaMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),arMat);arenaMesh.renderOrder=1;scene.add(arenaMesh);
+const arenaMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),arMat);arenaMesh.renderOrder=1;
+// Ken, Oct 31 (Arena Editor Layers): every effect, cut-out and the arena picture has a draw order z; anything above layers.units draws over the creatures (fgScene).
+// Old layouts get the editor's defaults (studio/specs/arena-layers-draw-order.md), which give today's order.
+const LAYDEF={arena:100,units:400,cut:500};const LAY=Object.assign({arena:LAYDEF.arena,units:LAYDEF.units},layout.layers||{});
+const ZTY=['banner','plant','swirl','pool','glow','lantern','waterfall','eyes','flame','jet','smokestack','fireflies','shimmer','mist'];
+function isBehind(d){return d.type==='shimmer'||(d.type==='plant'&&d.layer>.5)||((d.type==='fireflies'||d.type==='smokestack'||d.type==='mist')&&!(d.front>.5));}
+function defaultZ(d){const i=Math.max(0,ZTY.indexOf(d.type));return isBehind(d)?10+i*5:LAY.arena+10+i*20;}
+const layerOf=(z)=>z>LAY.units?fgScene:scene;
+const arenaG=new THREE.Group();arenaG.renderOrder=LAY.arena;arenaG.add(arenaMesh);scene.add(arenaG);
 arU.uTex.value = arTex;
 bg.scale.set(IW, IH, 1); bg.position.set(IW / 2, -IH / 2, 0);
 arenaMesh.scale.set(AW * AS, AH * AS, 1); arenaMesh.position.set(AX, -AY, 0);
@@ -33,7 +41,7 @@ function homog(P){const [[x0,y0],[x1,y1],[x2,y2],[x3,y3]]=P;const dx1=x1-x2,dx2=
  return (u,v)=>{const w=g*u+h*v+1;return[(a*u+b*v+c)/w,(d*u+e*v+f)/w];};}
 const glowTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);
  gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.3,'rgba(255,255,255,.6)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
-const PAL={smokestack:[['cSmoke','Smoke (lit side)','#9a948e'],['cShade','Smoke (shadow side)','#4a4643'],['cEmber','Ember glow at the base','#ff7a20']],jet:[['cCore','Hot core','#ffffff'],['cMid','Flame','#6fe8ff'],['cTip','Tail','#2a7bff']],swirl:[['cSwirl','Swirl color','#2fa8ff'],['cHi','Bright arms','#d8fbff']],flame:[['cCore','Hot center','#fff6c0'],['cMid','Middle flame','#ffb030'],['cTip','Flame tips','#c0300a']],
+const PAL={mist:[['cMist','Mist (light side)','#d4e8ff'],['cShade','Mist (shadow side)','#5f82b4']],smokestack:[['cSmoke','Smoke (lit side)','#9a948e'],['cShade','Smoke (shadow side)','#4a4643'],['cEmber','Ember glow at the base','#ff7a20']],jet:[['cCore','Hot core','#ffffff'],['cMid','Flame','#6fe8ff'],['cTip','Tail','#2a7bff']],swirl:[['cSwirl','Swirl color','#2fa8ff'],['cHi','Bright arms','#d8fbff']],flame:[['cCore','Hot center','#fff6c0'],['cMid','Middle flame','#ffb030'],['cTip','Flame tips','#c0300a']],
  waterfall:[['cDeep','Deep water','#2f7a0c'],['cLight','Bright streaks','#c6ff3a'],['cFoam','Foam / white water','#f2ffc0'],['cMist','Mist at the bottom','#b8ff7a'],['cGlowW','Glow and splash','#9dff3a']],
  glow:[['cGlow','Glow color','#b07aff']],
  lantern:[['cCore','Flame core','#fff1b8'],['cGlow','Light around it','#ff9a2e']],
@@ -55,7 +63,7 @@ const SLIDERS={flame:[['size','Size',.3,4,.05],['height','Flame height',.3,4,.05
  plant:[['width','Width',10,500,1],['height','Height',10,500,1],['amount','Sway amount',0,30,.1],['speed','Sway speed',.2,3,.05],['gust','Gusts',0,1,.01],['layer','Picture: 0 = arena, 1 = swamp',0,1,1]],
  banner:[['width','Width',10,300,1],['height','Height',20,500,1],['amount','Wave amount',0,14,.1],['speed','Wave speed',.2,3,.05],['shimmer','Shimmer',0,1,.01],['tilt','Tilt',-30,30,1]],
  pool:[['width','Width',20,1200,1],['height','Height',10,600,1],['opacity','Acid glow strength',0,1.2,.01],['speed','Swirl speed',.1,3,.05],['bubbles','Bubbles',0,1,.01],['smoke','Smoke',0,1,.01]]};
-const DEF={smokestack:{rate:3.5,size:34,growth:3.8,rise:40,height:240,windAngle:0,wind:14,opacity:.85,turbulence:.5,ember:0,front:1},jet:{length:120,width:30,strength:.8,pulse:.4,speed:1,sparks:.5},swirl:{width:140,height:40,arms:3,twist:6,rings:3,speed:1,strength:.6},flame:{size:1,height:1,strength:1},waterfall:{width:40,length:220,lean:0,speed:1,opacity:.9,glow:.7,splash:1},glow:{radius:90,strength:.6,pulse:.3},lantern:{size:1,strength:.9,flicker:.6,speed:1},eyes:{spacing:16,size:1,strength:1,flicker:.5,blink:.3},testunit:{size:1},plant:{width:80,height:90,amount:4,speed:1,gust:.5,layer:0},fireflies:{width:400,height:200,count:18,size:1,strength:.9,wander:40,speed:1,blink:.7,front:1},shimmer:{width:320,height:90,ripple:3,rsize:30,speed:.6,sparkle:.5,sheen:.5,tint:0,match:.45,soft:.5},banner:{width:60,height:140,amount:4,speed:1,shimmer:.5,tilt:0},pool:{width:260,height:110,opacity:.55,speed:1,bubbles:.5,smoke:.5}};
+const DEF={mist:{width:520,height:110,scale:70,speed:1,windAngle:0,opacity:.75,roll:.7,front:0},smokestack:{rate:3.5,size:34,growth:3.8,rise:40,height:240,windAngle:0,wind:14,opacity:.85,turbulence:.5,ember:0,front:1},jet:{length:120,width:30,strength:.8,pulse:.4,speed:1,sparks:.5},swirl:{width:140,height:40,arms:3,twist:6,rings:3,speed:1,strength:.6},flame:{size:1,height:1,strength:1},waterfall:{width:40,length:220,lean:0,speed:1,opacity:.9,glow:.7,splash:1},glow:{radius:90,strength:.6,pulse:.3},lantern:{size:1,strength:.9,flicker:.6,speed:1},eyes:{spacing:16,size:1,strength:1,flicker:.5,blink:.3},testunit:{size:1},plant:{width:80,height:90,amount:4,speed:1,gust:.5,layer:0},fireflies:{width:400,height:200,count:18,size:1,strength:.9,wander:40,speed:1,blink:.7,front:1},shimmer:{width:320,height:90,ripple:3,rsize:30,speed:.6,sparkle:.5,sheen:.5,tint:0,match:.45,soft:.5},banner:{width:60,height:140,amount:4,speed:1,shimmer:.5,tilt:0},pool:{width:260,height:110,opacity:.55,speed:1,bubbles:.5,smoke:.5}};
 
 const effects=[];let nextId=1;
 function makeFlame(d){const root=new THREE.Group();const N=60;const geo=new THREE.BufferGeometry();const pos=new Float32Array(N*3),col=new Float32Array(N*3);
@@ -243,9 +251,9 @@ function makeJet(d){const root=new THREE.Group();const N=90;const geo=new THREE.
 // The spiral turns faster near the centre; "rings" adds outward-moving ring waves.
 const swirlFS=`varying vec2 vUv;uniform float uTime,uSpeed,uArms,uTwist,uRings,uStr;uniform vec3 uSw,uHi;
 void main(){vec2 q=vUv*2.-1.;float r=length(q);if(r>1.)discard;float a=atan(q.y,q.x);
- float spin=uTime*uSpeed*(.6+1.6/(r+.25));float s=sin(uArms*(a+spin)+r*uTwist);float arm=smoothstep(.55,1.,s);
+ float s=sin(uArms*(a-uTime*uSpeed*1.4)+r*uTwist);float arm=smoothstep(-.2,.5,s);
  float ring=smoothstep(.6,1.,sin(r*uRings*6.2832-uTime*uSpeed*3.))*.6;float edge=smoothstep(1.,.65,r)*smoothstep(.04,.2,r);
- vec3 c=mix(uSw,uHi,arm*.7+ring*.5);gl_FragColor=vec4(c,(arm+ring*.35+.04)*edge*uStr);}`;
+ vec3 c=mix(uSw,uHi,arm*.7+ring*.5);gl_FragColor=vec4(c,(arm*.9+ring*.35+.04)*edge*uStr);}`;
 function makeSwirl(d){const root=new THREE.Group();const U={uTime:{value:0},uSpeed:{value:1},uArms:{value:3},uTwist:{value:6},uRings:{value:3},uStr:{value:.6},uSw:{value:new THREE.Color()},uHi:{value:new THREE.Color()}};
  const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({uniforms:U,vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:swirlFS,transparent:true,depthTest:false,blending:THREE.AdditiveBlending}));m.renderOrder=6;root.add(m);
  return{root,update(t){m.scale.set(d.width,d.height,1);U.uTime.value=t;U.uSpeed.value=d.speed;U.uArms.value=d.arms;U.uTwist.value=d.twist;U.uRings.value=d.rings;U.uStr.value=d.strength;U.uSw.value.set(d.cSwirl);U.uHi.value.set(d.cHi);}};}
@@ -279,9 +287,26 @@ function makeSmokestack(d){const root=new THREE.Group();const MAX=36;const P=[];
    p.sh.material.color.copy(S);p.sh.material.opacity=op*.9;p.sh.material.rotation=p.rot;p.sh.scale.setScalar(grow*1.05);p.sh.position.set(x+grow*.1,y-grow*.14,2);
    p.lt.material.color.copy(T);p.lt.material.opacity=op;p.lt.material.rotation=-p.rot*.7;p.lt.scale.setScalar(grow*.8);p.lt.position.set(x-grow*.08,y+grow*.1,2.1);});
   const f=fl(dt,.6,1.2);ember.visible=d.ember>0;ember.renderOrder=front?11.2:.57;ember.material.color.copy(E);ember.material.opacity=Math.min(1,d.ember*f);ember.scale.setScalar(d.size*2.2*(.9+.1*f));ember.position.set(0,d.size*.1,1);}};}
-const MAKERS={smokestack:makeSmokestack,jet:makeJet,swirl:makeSwirl,fireflies:makeFireflies,shimmer:makeShimmer,plant:makePlant,testunit:makeUnit,banner:makeBanner,flame:makeFlame,waterfall:makeWater,glow:makeGlow,lantern:makeLantern,eyes:makeEyes,pool:makePool};
+// Ledger, Oct 31 (Ken: "a rolling smoke on the water effect"): copied exactly from tools/arena-fit/fx-mist.js
+const mistFS=`varying vec2 vUv;uniform float uTime,uSpeed,uScale,uOp,uRoll;uniform vec2 uDir,uAsp;uniform vec3 uLight,uShade;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<3;i++){v+=a*n(p);p*=2.03;a*=.5;}return v;}
+void main(){vec2 p=(vUv-.5)*uAsp/uScale;float t=uTime*uSpeed;vec2 q=p-uDir*t*.55;
+ float a=t*.3*uRoll;mat2 R=mat2(cos(a),-sin(a),sin(a),cos(a));
+ vec2 w=vec2(fbm(q*.9+R*vec2(2.,0.)),fbm(q*.9+R*vec2(0.,2.)+5.));
+ float d=fbm(q+(w-.5)*2.4*uRoll);float d2=fbm(q*1.9-uDir*t*.45+(w-.5)*1.5*uRoll+7.);
+ float m=smoothstep(.26,.62,d*.72+d2*.42);vec2 e=vUv*2.-1.;
+ float edge=(1.-smoothstep(.45,1.,abs(e.x)))*(1.-smoothstep(.25,1.,abs(e.y)));
+ vec3 c=mix(uShade,uLight,smoothstep(.25,.8,d2+.15*(d-.5)));gl_FragColor=vec4(c,m*edge*uOp);}`;
+function makeMist(d){const root=new THREE.Group();const U={uTime:{value:0},uSpeed:{value:1},uScale:{value:70},uOp:{value:.6},uRoll:{value:.6},uDir:{value:new THREE.Vector2(1,0)},uAsp:{value:new THREE.Vector2(1,1)},uLight:{value:new THREE.Color()},uShade:{value:new THREE.Color()}};
+ const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({uniforms:U,vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:mistFS,transparent:true,depthTest:false,depthWrite:false}));m.renderOrder=8;root.add(m);
+ return{root,update(t){m.scale.set(d.width,d.height,1);const wa=d.windAngle*Math.PI/180;U.uTime.value=t;U.uSpeed.value=d.speed;U.uScale.value=d.scale;U.uOp.value=d.opacity;U.uRoll.value=d.roll;
+  U.uDir.value.set(Math.cos(wa),Math.sin(wa));U.uAsp.value.set(d.width,d.height);U.uLight.value.set(d.cMist);U.uShade.value.set(d.cShade);}};}
+const MAKERS={mist:makeMist,smokestack:makeSmokestack,jet:makeJet,swirl:makeSwirl,fireflies:makeFireflies,shimmer:makeShimmer,plant:makePlant,testunit:makeUnit,banner:makeBanner,flame:makeFlame,waterfall:makeWater,glow:makeGlow,lantern:makeLantern,eyes:makeEyes,pool:makePool};
 function addEffect(d){d=Object.assign({},DEF[d.type],d);PAL[d.type].forEach(([k,,v])=>{if(!d[k])d[k]=v;});d.id=d.id||nextId++;nextId=Math.max(nextId,d.id+1);
- const fx=MAKERS[d.type](d);fx.d=d;fx.root.position.set(d.x,-d.y,0);scene.add(fx.root);effects.push(fx);return fx;}
+ if(d.z==null)d.z=defaultZ(d);const extra=new THREE.Group(),realAdd=scene.add;scene.add=function(o){extra.add(o);return scene;};let fx;try{fx=MAKERS[d.type](d);}finally{scene.add=realAdd;}
+ fx.d=d;fx.extra=extra;fx.root.position.set(d.x,-d.y,0);fx.root.renderOrder=extra.renderOrder=d.z;const S=layerOf(d.z);S.add(extra);S.add(fx.root);effects.push(fx);return fx;}
 THREE.ColorManagement.enabled = false;
 const skippedTypes = [], errors = [];
 const allEffects = (layout.effects || []).concat(arenaOpts.extra || []);
@@ -300,22 +325,26 @@ void main(){vec2 w=vec2(vW.x,-vW.y);vec2 a=vec2((w.x-uAr.x)/uAr.z+uAS.x*.5,(w.y-
 const cutU={uTex:arU.uTex,uAr:{value:new THREE.Vector3()},uAS:{value:new THREE.Vector2()},uBright:bgU.uBright,uContrast:bgU.uContrast,uSat:bgU.uSat,uHue:bgU.uHue};
 const cutMat=new THREE.ShaderMaterial({uniforms:cutU,vertexShader:cutVS,fragmentShader:cutFS,transparent:true,depthTest:false});
 cutU.uAr.value.set(AX, AY, AS); cutU.uAS.value.set(AW, AH);
-const cuts = layout.foregroundCutouts.map((pts) => {
+// each cut-out in its own group at its z (arena cut-outs first, then far-background ones; without a z: over the creatures as before)
+const cutGroup = (mesh, z) => { const g = new THREE.Group(); g.renderOrder = z; g.add(mesh); layerOf(z).add(g); return mesh; };
+const nFg = (layout.foregroundCutouts || []).length;
+const cuts = (layout.foregroundCutouts || []).map((pts, i) => {
   const W = pts.map(A2W);
   const mesh = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(W.map(([x, y]) => new THREE.Vector2(x, -y)))), cutMat);
-  mesh.renderOrder = 30; fgScene.add(mesh); return mesh;
+  mesh.renderOrder = 30; const z = (layout.foregroundCutoutsZ || [])[i]; return cutGroup(mesh, z == null ? LAYDEF.cut + i : +z);
 });
 // Ken (Oct 31, Arena Editor): cut-outs can also be cut from the FAR BACKGROUND picture (points in background px, opaque, same look); old layouts have none
 const cutUBg={uTex:bgU.uTex,uI:{value:new THREE.Vector2(IW,IH)},uBright:bgU.uBright,uContrast:bgU.uContrast,uSat:bgU.uSat,uHue:bgU.uHue};
 const cutMatBg=new THREE.ShaderMaterial({uniforms:cutUBg,vertexShader:cutVS,fragmentShader:cutFS.replace(/void main\(\)\{[\s\S]*$/,'uniform vec2 uI;void main(){vec2 w=vec2(vW.x,-vW.y);vec4 t=texture2D(uTex,vec2(w.x/uI.x,1.-w.y/uI.y));gl_FragColor=vec4(adj(t.rgb),1.);}'),transparent:true,depthTest:false});
-const bgCuts = (layout.backgroundCutouts || []).map((pts) => {
+const bgCuts = (layout.backgroundCutouts || []).map((pts, i) => {
   const mesh = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, -y)))), cutMatBg);
-  mesh.renderOrder = 30; fgScene.add(mesh); return mesh;
+  mesh.renderOrder = 30; const z = (layout.backgroundCutoutsZ || [])[i]; return cutGroup(mesh, z == null ? LAYDEF.cut + nFg + i : +z);
 });
 THREE.ColorManagement.enabled = true;
 const H = homog(layout.boardCorners.map(A2W));
 return {
-  scene, fgScene, cam, IW, IH, effects, cuts, bgCuts, skippedTypes, errors, allEffects, homography: H,
+  scene, fgScene, cam, IW, IH, effects, cuts, bgCuts, skippedTypes, errors, allEffects, homography: H, layers: LAY,
+  frontEffects: () => effects.filter((f) => f.d.z > LAY.units).length,
   setView(x0, y0, w, h) { cam.left = x0; cam.right = x0 + w; cam.top = -y0; cam.bottom = -(y0 + h); cam.updateProjectionMatrix(); },
   update(t, dt) { const cm = THREE.ColorManagement.enabled; THREE.ColorManagement.enabled = false; effects.forEach((f) => f.update(t, dt)); THREE.ColorManagement.enabled = cm; },
 };

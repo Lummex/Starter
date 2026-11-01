@@ -13846,7 +13846,7 @@ test('AC535: no cheating: the computer\'s choice is the same when the player\'s 
 
 // Ken (Oct 31): three arenas, one per faction. The dwarf (Giant Anvil over a lava lake) and gnome (Floating Clockwork Disc over a crystal lake) arenas are Ledger's layouts
 // over Brush's paintings; the match picks the player's or the opponent's faction arena 50-50 and the music follows (test pages keep Skullfang unless a check forces the pick).
-const ARENA_SET = { goblins: ['skullfang-swamp-background.jpg', 'skullfang-arena.png', 54], dwarves: ['dwarf-background.jpg', 'dwarf-arena.png', 43], gnomes: ['gnome-background.jpg', 'gnome-arena.png', 39] }; // Oct 31: Ledger's jets and swirls replaced the beam and ring glows (39)
+const ARENA_SET = { goblins: ['skullfang-swamp-background.jpg', 'skullfang-arena.png', 54], dwarves: ['dwarf-background.jpg', 'dwarf-arena.png', 120], gnomes: ['gnome-background.jpg', 'gnome-arena.png', 84] }; // Oct 31: Ken's final layouts (smokestacks, jets, swirls, mist) replaced the beam and ring glows (39)
 test('AC541: the dwarf and gnome arenas: their paintings and layouts load, every effect draws with no errors, the pieces stand on the painted floor, the music is the arena\'s; a test match without a forced pick keeps Skullfang', async ({ page, request }) => {
   test.setTimeout(180000);
   for (const [f, [bg, pic, n]] of Object.entries(ARENA_SET)) for (const u of [bg, pic]) { const r = await request.get('/art/arena/' + u); expect(r.status(), u).toBe(200); }
@@ -13919,7 +13919,7 @@ test('AC548: far-background cut-outs: a layout with a backgroundCutouts polygon 
   await expect.poll(async () => (await renderStats(page)).arena?.drawn, { timeout: 30000 }).toBe(true);
   let st = await renderStats(page);
   expect(st.arena.errors).toEqual([]);
-  expect(st.arena.bgCutouts, 'the shipped gnome layout has none yet').toBe(0);
+  expect(st.arena.bgCutouts, 'the shipped gnome layout has one').toBe(1);
   // Skullfang has no such key and still draws
   await page.evaluate(() => window.oreheart.setArenaPick('player'));
   await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { firstPlayer: 'player' } }));
@@ -13928,4 +13928,37 @@ test('AC548: far-background cut-outs: a layout with a backgroundCutouts polygon 
   st = await renderStats(page);
   expect(st.arena.errors).toEqual([]);
   expect(st.arena.bgCutouts).toBe(0);
+});
+
+// Ken (Oct 31, Arena Editor Layers): the game draws effects and cut-outs in the editor's order: z above layers.units draws over the creatures,
+// cut-outs sit at their own z, and the new rolling mist builds. The dwarf layout's front banners and flames, and the gnome's banners, are over the units.
+test('AC549: arena draw order follows the layout (layers, z, cut-out z); front banners draw over the creatures; mist builds; Skullfang keeps its order', async ({ page, request }) => {
+  test.setTimeout(150000);
+  await page.goto('/?test=1&seed=7');
+  await page.waitForFunction(() => !!window.oreheart);
+  const L = {}; for (const f of ['dwarf', 'gnome']) L[f] = await (await request.get(`/art/arena/${f}-arena-layout.json`)).json();
+  const front = (l) => l.effects.filter((e) => e.z > l.layers.units).length;
+  const vs = { dwarves: ['borgo', 'dwarf'], gnomes: ['sproingle', 'gnome'] };
+  for (const [fac, [oc, f]] of Object.entries(vs)) {
+    await page.evaluate(() => window.oreheart.setArenaPick('opponent'));
+    await page.evaluate((c) => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: c, setup: { firstPlayer: 'player' } }), oc);
+    await page.mouse.click(5, 5);
+    if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+    await expect.poll(async () => (await renderStats(page)).arena?.drawn, { timeout: 30000 }).toBe(true);
+    const st = await renderStats(page);
+    expect(st.arena.faction).toBe(fac);
+    expect(st.arena.errors).toEqual([]);
+    expect(st.arena.layers, `${fac}: the layout's layers`).toEqual(L[f].layers);
+    expect(st.arena.frontEffects, `${fac}: effects over the creatures`).toBe(front(L[f]));
+    expect(st.arena.frontEffects).toBeGreaterThan(0);
+    expect(st.arena.skippedTypes, `${fac}: mist and every other type built`).toEqual([]);
+    expect(st.arena.cameraOk, `${fac}: the 3D camera fits the painted board (the dwarf board's level edges once made it NaN and hid every piece)`).toBe(true);
+  }
+  await page.evaluate(() => window.oreheart.setArenaPick('player'));
+  await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { firstPlayer: 'player' } }));
+  await expect.poll(async () => (await renderStats(page)).arena?.faction, { timeout: 30000 }).toBe('goblins');
+  await expect.poll(async () => (await renderStats(page)).arena?.drawn, { timeout: 30000 }).toBe(true);
+  const st = await renderStats(page);
+  expect(st.arena.layers, 'Skullfang: the default layers').toEqual({ arena: 100, units: 400 });
+  expect(st.arena.frontEffects, 'Skullfang: no effect over the creatures, as before').toBe(0);
 });

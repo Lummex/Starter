@@ -74,7 +74,7 @@ export function fitCamera(H: Mat3): Fit {
   let gx = col([1 / BOARD.cols, 0, 0]), gz = col([0, 1 / BOARD.rows, 0]), g1 = col([0.5, 0.5, 1]);
   const rel = (g: V3): V3 => [g[0] - px * g[2], g[1] - py * g[2], g[2]];
   let f2 = -(rel(gx)[0] * rel(gz)[0] + rel(gx)[1] * rel(gz)[1]) / (rel(gx)[2] * rel(gz)[2]);
-  if (!(f2 > 1e4)) f2 = (BG.h / 2 / Math.tan((48 * Math.PI) / 360)) ** 2;
+  if (!(f2 > 1e4) || !Number.isFinite(f2)) f2 = (BG.h / 2 / Math.tan((48 * Math.PI) / 360)) ** 2; // a board with exactly level top and bottom edges (dwarf arena) has its side vanishing point at infinity: f2 is Infinity/NaN
   const f = Math.sqrt(f2);
   const kin = (g: V3): V3 => { const r = rel(g); return [r[0] / f, r[1] / f, r[2]]; };
   // scale so the x axis is one space per unit; the sign puts the board in front of the camera
