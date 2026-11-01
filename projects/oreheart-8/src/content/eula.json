@@ -1,24 +1,108 @@
 {
-  "version": "2026-10-31-draft",
+  "version": "2026-10-31b-draft",
   "title": "End User License Agreement",
+  "summary_heading": "The short version",
+  "summary": [
+    "We let you play Oreheart for fun. The game stays ours; you get a personal licence to use it.",
+    "Coins, cards, decks and other in-game items are licensed to you, not sold. They have no real-money value, and we may change or reset them.",
+    "One account each, with a kid-friendly name. Under 13 needs a parent's permission first.",
+    "Play fair: no cheating, bots, exploits, taking the game apart, or buying and selling accounts. Breaking the rules can cost you items or your account.",
+    "Online play may change, pause or end. We give the game to you as it is, and our responsibility to you is limited, as far as the law allows.",
+    "Your privacy is covered by our Privacy Policy. Parents of under-13s have their own consent notice.",
+    "This short version is only a guide. The full agreement below is what counts. It is written in plain English on purpose: please read it."
+  ],
   "sections": [
-    { "heading": "What this is", "text": "This is the agreement between you and the Oreheart team about playing Oreheart. By creating an account, or by pressing Agree when we ask, you say yes to everything here. If you don't agree, please don't use an account. You can still play offline for practice." },
-    { "heading": "Your account", "text": "You may have one account. Pick a username that is kind and suitable for a game for kids. Keep your password to yourself, because you are responsible for what happens on your account. If you think someone else is using it, tell us with the Contact us form." },
-    { "heading": "Kids and parents", "text": "If you are under 13, a parent or guardian has to say yes by email before the account can be used online. They can take that yes back at any time. In that case the account stops working online." },
-    { "heading": "Coins, cards and decks have no cash value", "text": "Coins, cards, decks and everything else in the game are for fun only. They are not money, you cannot sell them or trade them for money, and we do not pay anything for them. We may change, rebalance or remove game items, and we may reset progress when we need to keep the game fair." },
-    { "heading": "Play fair", "text": "No cheating, hacking, bots or tools that play for you, no using bugs on purpose, no trying to break or look inside our servers, and no using other people's accounts. No rude, hateful or grown-up names or pictures. Be a good sport: it is a game for everyone, and kids play it." },
-    { "heading": "What we may do", "text": "If someone breaks these rules we may warn them, take away items, change a username, or block the account for a while or for good. Every one of these steps is written down. You can ask us about a decision with the Contact us form." },
-    { "heading": "Donations", "text": "If we ever ask for donations, they are gifts to help us make the game. They are voluntary, they do not buy coins, cards or an advantage, and we will explain the details before anyone is asked for money." },
-    { "heading": "Your privacy", "text": "We keep your username, your email address, your decks, cards and game progress, and a record that you agreed to this agreement. We do not ask for your birth date, a photo, your real name, a phone number or a home address. There is no chat or free text between players, and we do not sell or share your information. To have your account and its data deleted, use the Contact us form." },
-    { "heading": "Our game and your licence", "text": "Oreheart, its art, cards, characters, music and software belong to the Oreheart team. We give you a personal, limited, non-exclusive licence to play the game for fun. You may not copy it, sell it, rent it out, take it apart or use its art and sounds for your own projects without asking." },
-    { "heading": "No promises", "text": "We work hard on Oreheart, but we give it to you as it is. It may have bugs, go down for a while, or change. To the extent the law allows, we are not responsible for lost progress or other losses from using the game. Nothing here takes away rights you have under the law where you live." },
-    { "heading": "Changes to this agreement", "text": "We may update this agreement. When we do, the game asks you to read and agree to the new version before you play online again." },
-    { "heading": "Questions", "text": "Please use the Contact us form in the game. We answer from a no-reply address, so leave a reply email in the form if you would like an answer." }
+    { "heading": "1. Who this agreement is between", "text": [
+      "This End User License Agreement (\"Agreement\") is between you and Oreheart. In this Agreement, \"Oreheart\" means the Oreheart game and the people who make and run it, and \"anyone affiliated with Oreheart\" means Oreheart's owners, staff, contractors, partners, service providers and anyone else who works with or for Oreheart.",
+      "You accept this Agreement when you create an account, press Agree when the game asks, or keep using an account after a new version is shown to you. If you do not agree, do not create or use an account. You can still play the offline practice game without one.",
+      "If you are under 18, you confirm that a parent or guardian has read this Agreement and agrees to it for you. If you are under 13, your parent or guardian has to give their permission by email before your account can go online (see section 5 and the Parent Consent Notice)."
+    ] },
+    { "heading": "2. Your licence to play", "text": [
+      "Oreheart gives you a personal, limited, non-exclusive, non-transferable and revocable licence to install and play the game and use its online services for your own fun, not for business, under this Agreement.",
+      "That is all this Agreement gives you. Oreheart may take the licence back, as explained in section 12, and this Agreement does not give you any ownership of anything in the game."
+    ] },
+    { "heading": "3. The game belongs to Oreheart", "text": [
+      "The game and everything in it, including the software, art, cards, characters, names, stories, music, sounds, animations, text, layouts, the Oreheart name and logos, and any updates, belong to Oreheart or to the people who licensed them to Oreheart. They are protected by copyright, trademark and other laws around the world.",
+      "You may not copy, sell, rent out, lend, publish, share or stream the game's files or art as your own, take the software apart, work out its source code, change it, make something new from it, or use any part of it in your own projects, except where the law gives you a right we cannot take away or Oreheart says yes in writing. Normal screenshots and videos of you playing, shared for fun and not for sale, are fine."
+    ] },
+    { "heading": "4. Coins, cards and other in-game items", "text": [
+      "Coins, cards, decks, avatars, ranks, progress and every other in-game item (\"Items\") are part of the game. You never own them. Oreheart grants you a limited licence to use them inside the game under this Agreement, and that licence ends with your account.",
+      "Items have no real-money value and are not money, property or an investment. You may not sell, buy, trade for money, gift outside the game, or cash out Items, and Oreheart never pays anything for them. Oreheart may change, rebalance, replace, limit, reset or remove any Item at any time, including to fix mistakes, stop cheating or keep the game fair, and does not owe you anything when it does.",
+      "If the game ever lets you trade Items with other players inside the game, those trades are between players, are final, and are only allowed through the game's own trading screens."
+    ] },
+    { "heading": "5. Your account", "text": [
+      "You may have one account. Oreheart may close extra accounts. Your account is for you alone: you may not sell, buy, give away, rent or share it, and you may not use anyone else's.",
+      "Keep your password secret and tell us straight away through the Contact us form if you think someone else has used your account. You are responsible for everything done on your account unless it was caused by something Oreheart did wrong.",
+      "You must give an honest age group when you sign up. If you are under 13, a parent or guardian must say yes by email before the account works online, as described in the Parent Consent Notice, and they can withdraw that permission at any time, which stops the account working online. Oreheart follows the Children's Online Privacy Protection Act (COPPA) and similar laws. [LAWYER: fill in the minimum age in each launch country if it is higher than 13, and link the Parent Consent Notice here.]"
+    ] },
+    { "heading": "6. Rules of play (what you may not do)", "text": [
+      "Oreheart is a game for everyone, and kids play it. You agree that you will not:",
+      "cheat, or use, make or share cheats, hacks, bots, scripts, macros, modified game files or any tool that plays for you, reads the game's memory or changes how it works;",
+      "use a bug, glitch or mistake on purpose to gain an advantage, duplicate Items or harm other players, or hide such a bug when you find it instead of telling us;",
+      "break into, scan, overload, interfere with or try to get around the security of our servers, accounts, checks or anti-cheat;",
+      "take the software apart, decompile, disassemble or reverse engineer it, or copy its data, except where the law gives you that right;",
+      "sell, buy, trade, rent, share or advertise accounts, Items, coins or boosting services for money or anything of value, or run any business through the game;",
+      "pretend to be Oreheart, anyone affiliated with Oreheart, or another player, or claim an official role you do not have;",
+      "use rude, hateful, sexual, violent or otherwise unsuitable names or pictures, or bully, threaten, harass or deceive other players;",
+      "collect other players' information, or use the game or its services in any way that breaks a law, this Agreement or the game's in-game notices.",
+      "Oreheart may use automated and human checks to spot these things. If something looks wrong, Oreheart may ask you to explain through the Contact us form."
+    ] },
+    { "heading": "7. Usernames and anything you send us", "text": [
+      "Your username must be suitable for a game that children play. Oreheart may refuse, block or change any username at any time, including names that are rude, misleading, impersonate someone, or use a reserved word, and the change is noted on your account.",
+      "Anything you send to Oreheart through the game, such as a Contact us message, a bug report, an idea or a suggestion (\"Your Content\"), stays yours, but you give Oreheart and anyone affiliated with Oreheart a free, permanent, worldwide licence to use, copy, change and share it to run, support, promote and improve the game, with no payment to you. You promise that Your Content is yours to give, is not private information about someone else, and does not break any law or this Agreement.",
+      "Oreheart may read, keep and remove Your Content, and may give it to the authorities if the law requires."
+    ] },
+    { "heading": "8. Online services", "text": [
+      "Online play, accounts, the card collection, matchmaking, ranks and any other online features (\"Online Services\") are provided by Oreheart and its service providers. They depend on servers, networks and other things that can fail.",
+      "Oreheart may change, limit, pause, move or end any Online Service, or the whole game, at any time, with or without notice, for example for maintenance, security, cost, legal reasons or because the game has reached the end of its life. Oreheart does not promise that the Online Services will always be available, free of errors or kept running, and does not owe you anything if they change or end, including for Items. Where the law requires it, Oreheart will give reasonable notice before ending the Online Services for good."
+    ] },
+    { "heading": "9. Updates and changes to the game", "text": [
+      "Oreheart may update the game automatically, including the rules, cards, balance, art, features and this Agreement. Updates may add, change or remove things, and you may need the latest version to play online. By keeping an account you agree to receive updates. Game rules and balance are Oreheart's call and are not a promise that any card or strategy will stay the same."
+    ] },
+    { "heading": "10. Your privacy", "text": [
+      "Oreheart's Privacy Policy explains what information the game collects (such as your username, email address, age group, decks, cards and progress, and a record that you agreed to this Agreement), why, and how you can ask for it to be deleted. The Privacy Policy is part of this Agreement. Oreheart does not ask for your birth date, real name, photo, phone number or home address, and does not sell your information. [LAWYER: link the Privacy Policy here and confirm it covers COPPA, GDPR-K and the local rules of each launch country.]",
+      "For players under 13, the Parent Consent Notice sent to the parent or guardian explains the information collected and how to withdraw permission."
+    ] },
+    { "heading": "11. Donations and payments", "text": [
+      "Oreheart is free to play. If Oreheart ever asks for donations, they are voluntary gifts to help make the game, they do not buy Items, coins or any advantage, and they are not refundable except where the law says otherwise. Oreheart will explain the details, including any payment partner's terms, before anyone is asked for money. [LAWYER: review before Phase D adds payments (Stripe terms, refunds, taxes, parental consent for payments by minors).]"
+    ] },
+    { "heading": "12. Ending this agreement", "text": [
+      "You can end this Agreement at any time by asking Oreheart to delete your account through the Contact us form.",
+      "Oreheart may warn you, take away Items, change your username, suspend your account for a while, or close it for good, with or without notice, if Oreheart reasonably believes you have broken this Agreement, cheated, harmed other players or the game, or if the law requires it, or if your account has been unused for a long time (at least 2 years) and Oreheart has told you first where it can. Oreheart keeps a record of each of these steps, and you can ask about a decision through the Contact us form.",
+      "When this Agreement ends, your licence to play online and to use your Items ends, and Items are not refunded or paid out. Sections 3, 4, 7, 13, 14, 15, 16 and 18 keep applying after it ends."
+    ] },
+    { "heading": "13. No promises (disclaimer of warranties)", "text": [
+      "The game, the Online Services and the Items are provided \"as is\" and \"as available\", with all faults. To the fullest extent the law allows, Oreheart and anyone affiliated with Oreheart make no promises or warranties of any kind, spoken, written or implied, including about quality, fitness for a purpose, accuracy, availability, non-infringement, or that the game will be free of bugs, viruses, interruptions or data loss. You use the game at your own risk.",
+      "Some countries and states do not allow some of these exclusions, so some may not apply to you. Nothing in this Agreement takes away rights that the law where you live gives you and does not let you give up."
+    ] },
+    { "heading": "14. Limits on our responsibility (limitation of liability)", "text": [
+      "To the fullest extent the law allows, Oreheart and anyone affiliated with Oreheart are not responsible to you or anyone else for any indirect, special, incidental, consequential, exemplary or punitive loss, or for lost progress, lost Items, lost data, lost profits, or the cost of a replacement game or service, arising from or connected with the game, the Online Services, the Items or this Agreement, however caused, even if told it could happen.",
+      "To the fullest extent the law allows, the total responsibility of Oreheart and anyone affiliated with Oreheart to you for everything connected with the game is limited to the greater of the total amount you have paid Oreheart in the 12 months before the claim and [LAWYER: fill in a fixed amount, for example US$20].",
+      "These limits do not apply to anything the law does not let Oreheart limit, such as responsibility for death or personal injury caused by negligence, fraud, or gross negligence or wilful misconduct, and they do not take away the consumer rights you have under the law where you live."
+    ] },
+    { "heading": "15. You cover us (indemnity)", "text": [
+      "To the extent the law allows, you agree to defend, compensate and hold harmless Oreheart and anyone affiliated with Oreheart from any claim, demand, loss, damage, fine or cost (including reasonable legal fees) made by someone else that comes from your breaking this Agreement, your misuse of the game, Your Content, or your breaking a law or someone else's rights. Oreheart may take over the defence of any such claim at its own cost, and you agree to help. [LAWYER: check whether this section can apply to minors in each launch country; consider limiting it to adult players and parents who accept for their children.]"
+    ] },
+    { "heading": "16. Governing law and disputes", "text": [
+      "This Agreement is governed by the laws of [LAWYER: fill in the state and country], without regard to its conflict-of-law rules, except where the law where you live insists on its own rules and consumer protections, which still apply to you.",
+      "If you have a problem, please tell Oreheart first through the Contact us form; most things can be sorted out that way. If not, you and Oreheart agree that disputes will be heard in the courts of [LAWYER: fill in the place, and decide whether to add arbitration, a class-action waiver and a small-claims option, and whether those are allowed for consumers and minors in each launch country]. You may also have the right to bring a claim in your own local court if the law where you live gives it to you."
+    ] },
+    { "heading": "17. Changes to this agreement", "text": [
+      "Oreheart may change this Agreement from time to time, for example when the game adds new features or the law changes. When the Agreement changes, the version at the top changes and the game asks you to read and agree to the new version before you play online again. If you do not agree, you can stop using your account or ask for it to be deleted. Playing online after agreeing means the new version applies."
+    ] },
+    { "heading": "18. General", "text": [
+      "This Agreement, the Privacy Policy and the Parent Consent Notice are the whole agreement between you and Oreheart about the game and replace anything said before. If a court finds any part of it cannot be enforced, the rest stays in force. If Oreheart does not act on a breach straight away, it can still act later. You may not pass this Agreement or your account to anyone else; Oreheart may pass it to someone who takes over the game, and will tell you where the law requires. Oreheart is not responsible for delays or failures caused by things outside its reasonable control. Section headings are for reading ease only.",
+      "The game is not meant for use in places where the law forbids it, and you are responsible for following the laws where you live, including export laws. [LAWYER: add any country-specific terms (for example EU and UK consumer rights, Australian Consumer Law, Quebec language rules) needed for each launch country.]"
+    ] },
+    { "heading": "19. Contact us", "text": [
+      "Please use the Contact us form in the game for questions, account problems, privacy requests or to appeal a decision. We answer from a no-reply address, so leave a reply email in the form if you would like an answer. [LAWYER: fill in the legal name, postal address and contact email of the company or person behind Oreheart.]"
+    ] }
   ],
   "lawyer_review": [
-    "This whole text is a plain-English placeholder written from what the game really does (Online Phase A). A lawyer must review and rewrite it before launch.",
-    "Check the limits on liability, the governing law and where disputes are heard, and the licence wording for the countries where the game launches.",
-    "Check that the under-13 wording matches the parent notice and COPPA, and the wording about donations before Phase D adds payments (Stripe terms, refunds, taxes).",
-    "Whenever the text changes, change the version at the top. Players are then asked to agree again, and a migration must set the server's eula_version setting (supabase/scripts/make-settings-sql.mjs)."
+    "This text is a DRAFT written by the studio in its own words, following the structure of a standard game EULA (licence grant, ownership, virtual items, restrictions, user content, online services, updates, termination, warranties, liability, indemnity, governing law). It is not copied from any other company's agreement. A lawyer must review and finish it before launch.",
+    "Fill in every [LAWYER: ...] blank: governing law and place for disputes (section 16), the fixed liability amount (14), the legal entity and address (19), the Privacy Policy and Parent Consent Notice links (5, 10), country-specific consumer terms (18), payments wording before Phase D (11), and whether the indemnity (15) and dispute terms (16) can bind minors.",
+    "Check the under-13 wording against the Parent Consent Notice (parent-notice.json) and COPPA, and the under-18 parent-agreement line in section 1.",
+    "The in-game summary at the top is a convenience and says so; confirm that is acceptable, or remove it.",
+    "Whenever the text changes, change the version at the top. Players are then asked to agree again, and a migration must set the server's eula_version setting (supabase/scripts/make-settings-sql.mjs). Keep the -draft suffix until the lawyer signs off; it shows the DRAFT banner."
   ]
 }

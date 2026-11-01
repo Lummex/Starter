@@ -327,9 +327,12 @@ function revokedScreen() {
 /** The EULA text (src/content/eula.json) as readable elements; a DRAFT banner while the version says -draft. */
 function eulaBody(): El[] {
   const draft = /-draft$/.test(eula.version);
+  const paras = (text: string | string[]) => (Array.isArray(text) ? text : [text]).map((p) => h('p', {}, p));
   return [
     ...(draft ? [h('p', { class: 'net-draft' }, 'DRAFT – lawyer review before launch')] : []),
-    ...(eula.sections as { heading: string; text: string }[]).map((s) => h('section', { class: 'net-section' }, h('h3', {}, s.heading), h('p', {}, s.text))),
+    // Ken (Oct 31): a plain-English summary first, then the full agreement in the standard order.
+    h('section', { class: 'net-section net-eula-summary' }, h('h3', {}, eula.summary_heading), h('ul', {}, ...eula.summary.map((line) => h('li', {}, line)))),
+    ...(eula.sections as { heading: string; text: string | string[] }[]).map((s) => h('section', { class: 'net-section' }, h('h3', {}, s.heading), ...paras(s.text))),
   ];
 }
 
