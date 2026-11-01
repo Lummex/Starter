@@ -3487,19 +3487,19 @@ export class App {
     // Oct 31 (Ken): "the whack and stuff, it should be visible for a little bit longer, and then like float up ... I don't want it covering any of
     // the chat bubbles or anything covering the unit that it's happening to" -- above the unit (or mine), never on another bubble, 1.5 s, floats up
     const w = Math.min(50, Math.max(24, 0.0285 * window.innerWidth)) * 1.3;
-    this.placeBubble(f, row, col, w, w * 0.8, 1500, 'center');
-    setTimeout(() => f.remove(), 1500);
+    this.placeBubble(f, row, col, w, w * 0.8, 2100, 'center'); // Ken, Nov 1: 40 % longer (was 1.5 s)
+    setTimeout(() => f.remove(), 2100);
   }
   speechAt = { player: 0, opponent: 0 } as Record<string, number>;
   /** v2: misses alternate MISS and PARRY (one counter per match) */
   missWord = 0;
   swingShow(sw: any[], word: string, wait: number) {
-    const GAP = 260; let shownHit = false;
+    const GAP = this.view?.swingMs || 640; let shownHit = false; // one result per swing, as the scene plays each swing's animation
     sw.forEach((x, i) => setTimeout(() => {
       if (!this.r.fx || !this.view) return;
       if (x.result === 'miss') this.burst(this.missWord++ % 2 ? 'PARRY!' : 'MISS!', x.row, x.col);
-      else if (x.result === 'block') { this.burst('BLOCK!', x.row, x.col); if (x.armored) audio.play('clink'); } // Ken, Nov 1: a metal clink when the armour blocks
-      else { const w = x.tag === 'attack' ? word : 'whack'; if (!shownHit) { shownHit = true; this.pop(w, x.row, x.col); } if (!x.commander) this.floatText('-1', 'dmg', x.row, x.col); }
+      else if (x.result === 'block') this.burst('BLOCK!', x.row, x.col); // the metal clink on an armour block comes from the scene's impact
+      else { const w = x.tag === 'attack' ? word : 'whack'; this.pop(w, x.row, x.col); if (!x.commander) this.floatText('-1', 'dmg', x.row, x.col); } // every landed hit shows its word
     }, wait + i * GAP));
   }
   /** Owner (Oct 24): a Commander says a line (picture) above its stronghold; one line at a time per side. */
@@ -3584,8 +3584,8 @@ export class App {
     if (POP_WORD[text]) { this.pop(POP_WORD[text], row, col, text); return; }
     const f = h('div', { class: 'burst', 'data-row': String(row), 'data-col': String(col) }, text);
     const fs = 22.4;
-    this.placeBubble(f, row, col, text.length * fs * 0.62 + 8, fs * 1.4, 1400, 'center');
-    setTimeout(() => f.remove(), 1400);
+    this.placeBubble(f, row, col, text.length * fs * 0.62 + 8, fs * 1.4, 1960, 'center'); // Ken, Nov 1: 40 % longer (was 1.4 s)
+    setTimeout(() => f.remove(), 1960);
   }
   // Commander behaviour (round 8b): faces the opponent, looks back at the player, gets impatient when the player idles
   bhv = { key: '', lastAct: Date.now(), level: 0, nextLook: new URLSearchParams(location.search).get('test') === '1' ? Infinity : Date.now() + 20000 + Math.random() * 20000, timer: 0 as any, bound: false, idleAcc: 0, lastTick: Date.now(), lookKey: '', keyAt: Date.now() };

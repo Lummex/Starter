@@ -377,7 +377,7 @@ export interface C3D {
   /** flying units */ flying?: { hoverSquares: number; floatSquares: number; floatsPerSecond: number; swayDeg: number; groundShadow: boolean; source: string }; lift?: number; swayNowDeg?: number; groundShadow?: boolean;
   /** Owner fix (Oct 28): true when the model has this clip */ has?: (n: string) => boolean;
   /** Oct 30: where the attack blow lands (s into the clip, if known) and a clip speed setter */ impactOf?: (n: string) => number | undefined; setSpeed?: (n: string, k: number) => void; gaitSpeed?: (n: string) => number | undefined; setPace?: (n: string, pace: number) => void; eventsOf?: (n: string) => { name: string; time: number }[]; packRoles?: Set<string>; animWeight?: () => number; /** Oct 31: true while the Junk Shaman carries a unit (his special loops its lift segment) */ holding?: boolean; poseDelta?: () => number; diag?: () => any; seek?: (n: string, t: number) => void;
-  /** Ken (Nov 1): at rest the unit stands still on a frame of its idle (rest(true) freezes the idle; a frozen figure skips its mixer, so it costs nothing per frame); rest(false) lets the idle loop play */ rest?: (on: boolean) => void;
+  /** Ken (Nov 1): at rest the unit stands still on a frame of its idle (rest(true) freezes the idle; a frozen figure skips its mixer, so it costs nothing per frame); rest(false) lets the idle loop play */ rest?: (on: boolean) => void; replay?: (want: CreatureAnim) => void;
   clipNames: string[]; held: string[]; worn: string[]; height: number; boardH?: number; boardK?: number;
   /** Oct 31: the older Studio height (heightSpaces before the real-world table), the model's natural standing / whole-box height (model units), and the body object (for measuring) */ studioHeight?: number; natural?: { standing: number; box: number }; char?: THREE.Object3D;
   /** Oct 31: the unit's height in squares (Ledger's real-world table; on the board x characterSizes.creatures) */ heightSpaces: number; items: { name: string; bone: string; matchesLook: boolean; visible: boolean }[]; log: string[]; onPlay?: (n: string) => void; dur(n: string): number;
@@ -573,6 +573,7 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   /** Oct 30: play a walk / run clip at the speed that matches a pace in board squares per second (feet stay planted) */
   out.setPace = (n: string, pace: number) => { const g = out.gaitSpeed?.(n); const ac = actions[resolve(n)]; if (ac) ac.timeScale = g ? Math.min(1.8, Math.max(0.6, pace / g)) : 1; };
   out.holding = false;
+  /** Ken, Nov 1: one attack animation per swing: restart the clip that is already playing */ out.replay = (want: CreatureAnim) => { const n = resolve(want), a = actions[n]; if (!a || cur !== n) return; a.reset(); a.play(); started = mixer.time; };
   out.rest = (on: boolean) => { if (on === resting) return; resting = on; const ac = actions.idle; if (ac) ac.paused = on && cur === 'idle'; restHold = 0.35; };
   out.setSpeed = (n: string, k: number) => { const ac = actions[resolve(n)]; if (ac) ac.timeScale = k; };
   Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { if (!(resting && cur === 'idle' && restHold <= 0 && !rig)) mixer.update(dt); restHold -= dt; // Nov 1: a still figure (fades done) skips its mixer: the frozen idle frame stays on the bones
