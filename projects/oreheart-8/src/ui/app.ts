@@ -1,5 +1,6 @@
 import { arenaOpts } from './arena-fx';
 import { mineEmblemUrl, ohCardEl, ohBackEl, commanderCard } from './cardfmt';
+import { recapLines, type RecapTurn } from './recap';
 import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
@@ -21,9 +22,9 @@ import { getHighlights, setHighlights, resetHighlights, getRings, setRings, rese
 import { loadGrubnak3d } from './grubnak3d';
 import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
 import { emptyCell } from '../engine';
-import { planOrder, type Order, type OrderPlan } from '../engine/orders';
+import { planOrder, chaseList, UNIT_STANCES, type Order, type OrderPlan, type Stance as UnitStance } from '../engine/orders';
 import { runOrders } from './orders-run';
-import { orderSvg, type OrderDrawing } from './order-draw';
+import { orderSvg, restTargetSvg, type OrderDrawing } from './order-draw';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -1252,6 +1253,7 @@ export class App {
     r.crFlow = yc.flow; r.crBank = yc.bank; r.income = yc.next; r.myName = yc.name;
     r.eFlow = ec.flow; r.eBank = ec.bank; r.eNext = ec.next; r.eName = ec.name;
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
+    r.recap = this.buildRecap(); this.recapTurns = []; this.uidOwner.clear(); this.prevAt.clear();
     r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-menu-deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
@@ -1747,6 +1749,7 @@ export class App {
     el.style.top = Math.max(2, Math.min(window.innerHeight - s - 2, side === 'player' ? rc.y + rc.h + 2 : rc.y - s - 2)) + 'px'; // just outside the board's bottom / top edge: never over a unit's label
     el.style.fontSize = Math.max(14, s * 0.4) + 'px';
   }
+  heartKey = '';
   fitHearts() {
     const r = this.r;
     if (!r.board || !this.view || !r.myHealth) return;
@@ -2331,7 +2334,7 @@ export class App {
   update(st: any, events: any[]) {
     const r = this.r;
     if (!r.board || !st) return;
-    if (events.some((e) => e.type === 'newMatch')) { this.orders.clear(); this.orderPreview = null; this.ordersRunKey = ''; } // Round 28
+    if (events.some((e) => e.type === 'newMatch')) { this.orders.clear(); this.stances.clear(); this.chainFor = null; this.orderPreview = null; this.ordersRunKey = ''; } // Round 28
     const me = st.players.player, en = st.players.opponent;
     this.view && this.view.setState(st, events);
     this.record(st, events);
@@ -2365,14 +2368,16 @@ export class App {
     this.flowKey = pm;
     // enemy hand arc
     const n = en.hand.length;
-    r.enemyHand.replaceChildren();
     const shown = Math.min(n, 6);
-    for (let i = 0; i < shown; i++) {
-      const ang = (i - (shown - 1) / 2) * 9;
-      const b = h('div', { class: 'back', 'data-card-back': '', 'data-fan-angle': String(ang), 'aria-hidden': 'true' });
-      b.style.transform = `rotate(${ang}deg)`;
-      b.append(ohBackEl());
-      r.enemyHand.append(b);
+    if (r.enemyHand.childElementCount !== shown) { // Nov 1: only when the count changes (the backs were rebuilt on every game action)
+      r.enemyHand.replaceChildren();
+      for (let i = 0; i < shown; i++) {
+        const ang = (i - (shown - 1) / 2) * 9;
+        const b = h('div', { class: 'back', 'data-card-back': '', 'data-fan-angle': String(ang), 'aria-hidden': 'true' });
+        b.style.transform = `rotate(${ang}deg)`;
+        b.append(ohBackEl());
+        r.enemyHand.append(b);
+      }
     }
     // phase
     const whose = st.activePlayer === 'player' ? 'Your turn' : 'Enemy turn';
@@ -2390,7 +2395,13 @@ export class App {
       const phaseChanged = !this.phaseKey || key.split('|').slice(0, 2).join() !== this.phaseKey.split('|').slice(0, 2).join();
       this.phaseKey = key;
       if (phaseChanged) {
-        this.deadline = Date.now() + CONFIG.phaseTimerSeconds * 1000;
+        // Ken, Nov 1: seconds you don't use in a phase carry into your next one (capped); the computer has no bank
+        const mineNow = this.timedNow(st), realClock = !this.test || this.realTimer;
+        if (!this.prevKeyed) this.timeBank = 0;
+        else if (this.bankLost) this.timeBank = 0;
+        else if (this.phaseMine && realClock) this.timeBank = Math.min(CONFIG.bankMaxSeconds, Math.max(0, Math.ceil((this.deadline - Date.now()) / 1000)));
+        this.prevKeyed = true; this.bankLost = false; this.phaseMine = mineNow;
+        this.deadline = Date.now() + (CONFIG.phaseTimerSeconds + (mineNow ? this.timeBank : 0)) * 1000;
         this.testLeft = null;
         this.movesDlg && this.movesDlg.close();
         this.movesDlg = null; this.closeDropUp();
@@ -2418,11 +2429,11 @@ export class App {
   ordersRunKey = '';
   /** Round 28 (M3, M5): at the start of the player's Action phase every ordered unit walks its path and a chaser attacks when in range. Once per turn. */
   maybeRunOrders(st: any) {
-    if (!st || st.phase !== 'action' || st.activePlayer !== 'player' || st.priority !== 'player' || st.pendingResponse || !this.orders.size) return;
+    if (!st || st.phase !== 'action' || st.activePlayer !== 'player' || st.priority !== 'player' || st.pendingResponse || (!this.orders.size && !this.stances.size)) return;
     const key = `${st.turn}|${st.seed ?? ''}|${this.game.options?.seed ?? ''}`;
     if (this.ordersRunKey === key) return;
     this.ordersRunKey = key;
-    void runOrders(this.game, this.orders, { delayMs: this.test ? 0 : 450, onChange: () => this.renderOrders(this.game.state) });
+    void runOrders(this.game, this.orders, { delayMs: this.test ? 0 : 450, stances: this.stances, onChange: () => this.renderOrders(this.game.state) });
   }
 
   // ------------------------------------------------------------ enemy turn recap (R9.7)
@@ -2574,16 +2585,17 @@ export class App {
     if (!had) hand.classList.remove('open'); void hand.offsetHeight; hand.style.removeProperty('transition');
     return top;
   }
-  /** where the computer's card shows: the hand pop-out size, centred in the space above the hand (raised or tucked), under the top HUD */
+  /** where the computer's card shows. Ken, Nov 1: "I like it to pop up in the top left corner. Way too distracting" in the middle: just under the Menu button at the left edge,
+   *  the hand pop-out size at most, never down onto the player's hand or plate (it then lands on the enemy discard pile right below). */
   revealSpot(): { w: number; cx: number; cy: number } {
     const vw = window.innerWidth, vh = window.innerHeight, ratio = 1712 / 1152;
-    const bottom = this.handTopEver() - 10, topY = Math.max(8, vh * 0.02);
+    const menu = this.root.querySelector('.match .menu-btn') as El | null, plate = this.root.querySelector('.match .o-plate.o-you') as El | null;
+    const mr = menu ? menu.getBoundingClientRect() : null, pr = plate ? plate.getBoundingClientRect() : null;
+    const topY = (mr && mr.height ? mr.bottom : Math.max(8, vh * 0.02)) + 6, left = Math.max(6, vw * 0.006);
+    const bottom = Math.min(this.handTopEver(), pr && pr.height ? pr.top : vh) - 8;
     const avail = Math.max(60, bottom - topY);
-    let w = Math.round(this.handPopWidth());
-    if (w * ratio > avail) w = Math.floor(avail / ratio);
-    w = Math.min(w, Math.floor(vw * 0.6));
-    const hgt = w * ratio;
-    return { w, cx: vw / 2, cy: topY + Math.min(avail, hgt) / 2 + Math.max(0, (avail - hgt) * 0.3) };
+    const w = Math.floor(Math.min(this.handPopWidth(), vw * 0.15, avail / ratio));
+    return { w, cx: left + w / 2, cy: topY + (w * ratio) / 2 };
   }
   reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player'): Promise<void> {
     if ((this.test && !this.fxReal) || !this.r.board) return Promise.resolve();
@@ -2595,7 +2607,7 @@ export class App {
     const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c));
     const host = this.root.querySelector('.match') as El;
     const list = this.reveals[side];
-    // the newest card takes the middle; any earlier one that is not pinned is laid down now
+    // the newest card takes the corner; any earlier one that is not pinned is laid down now
     for (const old of [...list]) if (old.dataset.pinned !== 'true') (old as any)._finish?.();
     const hostR = host.getBoundingClientRect(), vh = window.innerHeight, vw = window.innerWidth;
     // Oct 31 (Ken): "make it the same size as the card when it pops out of my hand ... I don't want him blocking my cards. Covering my cards.
@@ -2624,24 +2636,27 @@ export class App {
       el.dataset.stage = 'laying';
       const er = el.getBoundingClientRect(), ex = er.left + er.width / 2, ey = er.top + er.height / 2;
       if (!toPile && at) {
-        // a creature: drop onto its space, flip, glow, then rise into the 3D creature with a dust puff
-        const br = this.r.board.getBoundingClientRect(), pc = this.center(at.row, at.col);
-        const dx = br.left + pc.x - ex, dy = br.top + pc.y - ey, s0 = 75 / cw, s1 = 32 / cw;
-        const T = (x: number, y: number, sc: number, ry: number) => `translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) perspective(600px) rotateY(${ry}deg) scale(${sc})`;
-        const gl = '0 0 40px #ffd45aaa,0 10px 30px #000', glow = '0 0 70px 22px #fff2a0,0 0 30px 10px #ffd45a';
-        const dur = 1100;
+        // Ken, Nov 1: the card drops from the corner onto the centre of its square and lies flat; only then does the unit appear, spawning out of it (the computer's move waits on gone()), and the card fades
+        const br = this.r.board.getBoundingClientRect(), pc = this.center(at.row, at.col), rc = this.view!.cellRect(at.row, at.col);
+        const dx = br.left + pc.x - ex, dy = br.top + pc.y - ey, s0 = Math.max(0.1, (rc.w * 1.05) / cw);
+        const T = (x: number, y: number, sc: number, rx: number) => `translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) perspective(700px) rotateX(${rx}deg) scale(${sc})`;
+        el.style.transformOrigin = '50% 50%'; // lands centred on the square (a hand card pivots on its bottom edge)
         const anim = el.animate([
-          { transform: T(0, 0, 1, 0), opacity: 1, boxShadow: gl, offset: 0 },
-          { transform: T(dx, dy, s0, 0), opacity: 1, boxShadow: gl, offset: 0.4 },
-          { transform: T(dx, dy, s0, 180), opacity: 1, boxShadow: glow, offset: 0.62 },
-          { transform: T(dx, dy, s0, 360), opacity: 1, boxShadow: glow, offset: 0.77 },
-          { transform: T(dx, dy - 40, s1, 360), opacity: 0, boxShadow: glow, offset: 1 },
-        ], { duration: dur, easing: 'ease-in-out', fill: 'forwards' });
-        const puff = h('div', { class: 'dust-puff', 'aria-hidden': 'true' });
-        puff.style.left = `${pc.x}px`; puff.style.top = `${pc.y}px`;
-        setTimeout(() => this.r.board?.append(puff), dur * 0.8);
-        setTimeout(() => puff.remove(), dur * 0.8 + 700);
-        anim.onfinish = () => { unlist(); el.remove(); };
+          { transform: T(0, 0, 1, 0), offset: 0 },
+          { transform: T(dx * 0.62, dy * 0.62 - 26, (1 + s0) / 2, 24), offset: 0.62 },
+          { transform: T(dx, dy, s0, 58), offset: 1 },
+        ], { duration: 520, easing: 'cubic-bezier(.5,.05,.7,1)', fill: 'forwards' });
+        anim.onfinish = () => {
+          el.dataset.stage = 'landed';
+          unlist();
+          const puff = h('div', { class: 'dust-puff', 'aria-hidden': 'true' });
+          puff.style.left = `${pc.x}px`; puff.style.top = `${pc.y}px`;
+          this.r.board?.append(puff);
+          setTimeout(() => puff.remove(), 700);
+          const fade = el.animate([{ opacity: 1, boxShadow: '0 0 70px 22px #fff2a0,0 0 30px 10px #ffd45a', offset: 0.25 }, { opacity: 0 }], { duration: 380, easing: 'ease-out', fill: 'forwards' });
+          fade.onfinish = () => el.remove();
+          setTimeout(() => el.remove(), 900);
+        };
         return;
       }
       // lay it down on the enemy discard pile: shrink, tilt back as it slides over, and land flat on the pile
@@ -2668,7 +2683,7 @@ export class App {
     el.addEventListener('pointerdown', (ev: Event) => {
       ev.stopPropagation();
       if (el.dataset.pinned === 'true') { el.dataset.pinned = 'false'; finish(); return; }
-      if (done && layAnim && !landed) { // a tap while it is being laid down grabs it back to the middle, pinned
+      if (done && layAnim && !landed) { // a tap while it is being laid down grabs it back to the corner, pinned
         layAnim.onfinish = null; layAnim.cancel(); layAnim = null; clearTimeout(layFallback); done = false; el.dataset.stage = 'big';
       }
       if (done) return;
@@ -2853,6 +2868,10 @@ export class App {
 
   // ------------------------------------------------------------ timer
   testLeft: number | null = null;
+  /** banked seconds carried into the player's next timed phase */
+  timeBank = 0; phaseMine = false; prevKeyed = false; bankLost = false;
+  /** checks only: run the real phase clock on a test page */
+  realTimer = false;
   lastTick = Date.now();
   timedNow(st: any) {
     return !st.tutorial && st.mode !== 'compvscomp' && !(st.mode === 'cardplay' && st.phase === 'action') && st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase);
@@ -2875,15 +2894,20 @@ export class App {
     if (st.pendingResponse || this.game.paused) this.deadline += dt;
     const timed = this.timedNow(st);
     const total = CONFIG.phaseTimerSeconds;
-    const frozen = this.test;
+    const frozen = this.test && !this.realTimer;
     const left = frozen ? (this.testLeft ?? total) : Math.max(0, Math.ceil((this.deadline - now) / 1000));
     const show = timed && left <= CONFIG.countdownSeconds && !st.pendingResponse;
     r.timer.hidden = !show;
     const pt = r.phase?.querySelector('.ph-time') as El | null;
-    if (pt) pt.textContent = timed && !st.pendingResponse ? `${left}s left` : '';
+    if (pt) { // the plain phase time, and a small quiet note while banked seconds are left
+      const live = timed && !st.pendingResponse, extra = live ? Math.max(0, left - total) : 0;
+      const label = live ? `${Math.min(left, total)}s left` : '', note = extra ? `+${Math.floor(extra / 60)}:${String(extra % 60).padStart(2, '0')}` : '';
+      if (pt.dataset.lbl !== label + note) { pt.dataset.lbl = label + note; pt.textContent = label; if (note) pt.append(h('span', { class: 'ph-bank', 'aria-label': 'Banked time' }, note)); }
+    }
     this.syncDone();
     if (show) { if (r.timer.textContent !== String(left) && left <= 5 && st.activePlayer === 'player') audio.play('tick'); /* Oct 31: only the last 5 s of YOUR phase */ r.timer.textContent = String(left); }
     if (!frozen && timed && left <= 0 && !st.pendingResponse) {
+      this.bankLost = true;
       this.deadline = now + total * 1000;
       this.game.act({ type: 'done' });
     }
@@ -3048,7 +3072,7 @@ export class App {
     }
     for (const [uid, el] of this.tokens) if (!seen.has(uid)) { el.remove(); this.tokens.delete(uid); }
     this.renderAbilityButtons(st);
-    this.fitHearts();
+    { const key = [...this.tokens.values()].map((t) => t.dataset.row + ',' + t.dataset.col).join(';'); if (key !== this.heartKey) { this.heartKey = key; this.fitHearts(); } } // Nov 1: only when a unit moved (it reads every label's box)
   }
 
   /** Round 13: a small round icon above every unit with an activated ability; lit when it is your turn and the ability can be used. */
@@ -3598,9 +3622,46 @@ export class App {
     this.view && this.view.emote(side as any, kind);
     if (side === 'player' || side === 'opponent') this.say(side, kind);
   }
+  // ---- enemy turn recap (Ken, Nov 1): built from game events only, nothing per frame
+  recapTurns: RecapTurn[] = [];
+  uidOwner = new Map<string, string>();
+  recapAdd(st: any, events: any[]) {
+    const r = this.r; if (!r.recap || !events?.length) return;
+    if (!r.recap.isConnected) this.root.querySelector('.match')?.append(r.recap);
+    const lines = recapLines(events, (u) => this.uidCard.get(u), (u) => this.uidOwner.get(u), (row, col) => { const c = st.board.creatures.find((x: any) => x.row === row && x.col === col); return c ? c.cardId : this.prevAt.get(row + ',' + col); });
+    this.prevAt.clear(); for (const c of st.board?.creatures || []) this.prevAt.set(c.row + ',' + c.col, c.cardId);
+    if (!lines.length) return;
+    let cur = this.recapTurns[this.recapTurns.length - 1];
+    if (!cur || cur.turn !== st.turn) { cur = { turn: st.turn, lines: [] }; this.recapTurns.push(cur); if (this.recapTurns.length > 2) this.recapTurns.shift(); }
+    cur.lines.push(...lines);
+    this.renderRecap();
+  }
+  prevAt = new Map<string, string>();
+  renderRecap() {
+    const box = this.r.recap as El | undefined; if (!box) return;
+    box.hidden = !this.recapTurns.length;
+    const open = this.recapOpen();
+    box.classList.toggle('open', open);
+    (box.querySelector('.recap-tog') as El).setAttribute('aria-expanded', String(open));
+    const list = box.querySelector('.recap-list') as El;
+    list.replaceChildren(...this.recapTurns.flatMap((t) => [h('div', { class: 'recap-turn' }, `Enemy turn ${t.turn}`), ...t.lines.map((l) => {
+      const b = h('button', { type: 'button', class: 'recap-line' }, l.text) as HTMLButtonElement;
+      b.addEventListener('click', (ev: Event) => { ev.stopPropagation(); const live = l.uid ? this.game.state?.board.creatures.find((c: any) => c.uid === l.uid) : null; const cells = live ? [{ row: live.row, col: live.col }] : l.cells; if (cells.length) this.aiMark(cells, 1300); });
+      return b;
+    })]));
+    list.scrollTop = list.scrollHeight;
+  }
+  recapOpen() { const v = localStorage.getItem('oreheart.recap'); return v ? v === 'open' : window.innerHeight >= 500; }
+  buildRecap(): El {
+    const tog = btn('Recap', 'recap-tog', (e: Event) => { e.stopPropagation(); localStorage.setItem('oreheart.recap', this.recapOpen() ? 'closed' : 'open'); this.renderRecap(); }, { 'aria-expanded': 'false' });
+    const box = h('div', { class: 'e-recap', role: 'log', 'aria-label': 'Enemy turn recap' }, tog, h('div', { class: 'recap-list' })) as El;
+    box.hidden = true;
+    return box;
+  }
   animate(st: any, events: any[]) {
     if (!this.view || !this.r.fx) return;
-    for (const c of st.board?.creatures || []) this.uidCard.set(c.uid, c.cardId);
+    for (const c of st.board?.creatures || []) { this.uidCard.set(c.uid, c.cardId); this.uidOwner.set(c.uid, c.owner); }
+    this.recapAdd(st, events);
     if (!this.fxStarted && st.phase !== 'mulligan') {
       this.fxStarted = true; this.lowSaid = { player: false, opponent: false };
       for (const x of st.sites || []) this.siteOwner.set(x.row + ',' + x.col, x.controller || '');
@@ -3620,17 +3681,14 @@ export class App {
         if (tgt) { if (wait) setTimeout(() => this.pop(word, tgt.row, tgt.col), wait); else this.pop(word, tgt.row, tgt.col); }
       } else if (e.type === 'move' && e.knock && e.to && !events.some((x: any, j: number) => j > events.indexOf(e) && x.type === 'move' && x.knock && x.uid === e.uid)) this.pop('knockback', e.to.row, e.to.col);
       { const su = !e.commander && (e.creatureUid || e.uid), c = su ? st.board.creatures.find((x: any) => x.uid === su) : null; if (c) audio.unitEvent(c.cardId, c.uid, e.type, CARDS[c.cardId]?.abilities || [], !!e.ranged); } // Oct 31: a unit's special line when it does its special (audio.ts isSpecialEvent)
-      if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('stolen', c.row, c.col); this.unitSay('unit-mine-now', c.row, c.col, true); } }
+      if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) this.pop('stolen', c.row, c.col); }
       else if (e.type === 'poisoned') this.pop('poisoned', e.row, e.col);
-      else if (e.type === 'drunk') { this.pop('hic', e.row, e.col); this.unitSay('unit-hic', e.row, e.col); }
+      else if (e.type === 'drunk') this.pop('hic', e.row, e.col);
       else if (e.type === 'brewSave') this.pop('saved', e.row, e.col);
       else if (e.type === 'ward') this.pop('ward', e.row, e.col);
       else if (e.type === 'heal' && e.amount > 0 && e.row) this.pop('heal', e.row, e.col);
-      else if (e.type === 'mine' && e.uid) { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('clink', typeof e.row === 'number' ? e.row : c.row, typeof e.col === 'number' ? e.col : c.col); /* Oct 31 (Ken): the clanks need to be on the crystal, not on the player */ if (c.owner === 'player' && Math.random() < 0.3) this.unitSay('unit-shiny', c.row, c.col); } }
-      else if (e.type === 'minerUpgrade' && e.row) { this.pop('upgrade', e.row, e.col); this.unitSay('unit-good-as-new', e.row, e.col, true); }
-      else if (e.type === 'summon' && e.owner === 'player' && !e.illusion && e.row) this.unitSay(Math.random() < 0.5 ? 'unit-reporting' : 'unit-ready', e.row, e.col);
-      else if (e.type === 'abilityUsed' && e.ability === 'brew') this.unitSay('unit-bottoms-up', e.row, e.col, true);
-      else if (e.type === 'abilityUsed' && e.ability === 'slide') this.unitSay('unit-uh-oh', e.row, e.col, true);
+      else if (e.type === 'minerUpgrade' && e.row) this.pop('upgrade', e.row, e.col);
+      // Ken, Nov 1: no chatter over units; Commanders keep their bubbles, status pop-ups stay
       else if (e.type === 'fizzle') { const sd = st.activePlayer === 'player' ? 'player' : 'opponent'; this.pop('fizzle', SH[sd].row, SH[sd].col); }
       else if (e.type === 'turnStart' && e.player === 'player') { audio.play('turn-start'); if (e.turn > 1) this.say('player', 'turn'); } // Oct 31: gentle war horn
       else if (e.type === 'bonusDraw') {
@@ -4274,7 +4332,50 @@ export class App {
     }
     return true;
   }
-  cancelOrder(uid: string) { const had = this.orders.delete(uid); this.renderOrders(this.game.state); return had; }
+  cancelOrder(uid: string) { const had = this.orders.delete(uid); if (this.chainFor === uid) this.chainFor = null; this.renderOrders(this.game.state); return had; }
+  // ---- Ken, Nov 1: chained attack orders: after a chase arrow, tap or drag to more enemies to add them to the unit's list; tap a listed enemy to take it off; tapping anything else ends the chaining
+  chainFor: string | null = null;
+  chainAdd(uid: string, foeUid: string) {
+    const o = this.orders.get(uid); if (!o || o.kind !== 'chase') return false;
+    const list = chaseList(o);
+    if (list.includes(foeUid)) { const left = list.filter((x) => x !== foeUid); if (!left.length) { this.orders.delete(uid); this.chainFor = null; } else { o.targetUid = left[0]; o.then = left.slice(1); } }
+    else o.then = [...(o.then || []), foeUid];
+    this.orderFocus = uid; this.renderOrders(this.game.state);
+    return true;
+  }
+  chainPress(e: PointerEvent, cell: { row: number; col: number } | null) {
+    const st = this.game.state, uid = this.chainFor!;
+    const foeAt = (c: { row: number; col: number } | null) => (c ? st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col && x.owner !== 'player') : null);
+    const foe = foeAt(cell) || (() => { const f = this.figureAtEvent(e); return f && f.owner !== 'player' ? f : null; })();
+    if (!foe || !this.orders.has(uid)) { this.chainFor = null; return false; }
+    this.drag(e, { ghost: dragIcon(CARDS[foe.cardId].faction, 'ghost tk'), onHover: () => {}, onEnd: () => {}, onStart: () => true,
+      onDrop: (c: any) => { const to = foeAt(c); if (to && to.uid !== foe.uid) { if (!chaseList(this.orders.get(uid)!).includes(foe.uid)) this.chainAdd(uid, foe.uid); this.chainAdd(uid, to.uid); } },
+      onTap: () => { this.chainAdd(uid, foe.uid); } });
+    return true;
+  }
+  // ---- Ken, Nov 1: stance per unit, set from a small bar on the selected unit
+  stances = new Map<string, UnitStance>();
+  stanceBar: El | null = null;
+  closeStanceBar() { this.stanceBar?.remove(); this.stanceBar = null; }
+  openStanceBar(cr: any) {
+    this.closeStanceBar();
+    if (!this.orderTime(cr) || !this.r.board) return;
+    const LABEL: Record<string, string> = { hold: 'Hold', guard: 'Guard', aggressive: 'Aggressive' }, TIP: Record<string, string> = { hold: 'Stays put, attacks what comes in range', guard: 'Attacks in range, or steps 1 square to reach an enemy', aggressive: 'Attacks in range, or walks to the nearest enemy' };
+    const cur = this.stances.get(cr.uid) || '';
+    const bar = h('div', { class: 'stance-bar', role: 'group', 'aria-label': 'Stance' }, ...UNIT_STANCES.map((k) => {
+      const b = h('button', { type: 'button', class: 'stance-opt', 'data-stance': k, 'aria-pressed': String(cur === k), title: TIP[k] }, LABEL[k]) as El;
+      b.addEventListener('pointerdown', (ev: Event) => ev.stopPropagation());
+      b.addEventListener('click', (ev: Event) => { ev.stopPropagation(); if (this.stances.get(cr.uid) === k) this.stances.delete(cr.uid); else this.stances.set(cr.uid, k); this.markStances(); this.openStanceBar(cr); });
+      return b;
+    })) as El;
+    const rc = this.view!.cellRect(cr.row, cr.col), bw = this.r.board.clientWidth;
+    bar.style.left = Math.max(70, Math.min(bw - 70, rc.x + rc.w / 2)) + 'px';
+    bar.style.top = Math.min(this.r.board.clientHeight - 30, rc.y + rc.h + 4) + 'px';
+    this.r.board.append(bar);
+    this.stanceBar = bar;
+  }
+  /** a tiny mark on the unit's label (set only when a stance changes or the units change, never per frame) */
+  markStances() { for (const [uid, el] of this.tokens) { const s = this.stances.get(uid); if (s) (el as El).dataset.stance = s; else delete (el as El).dataset.stance; } }
   orderPlan(uid: string): OrderPlan | null { const o = this.orders.get(uid); return o && this.game.state ? planOrder(this.game.state, o) : null; }
   /** The order a unit dropped (or clicked) on square c would get: chase an enemy standing there, else walk there. null = not an order square. */
   orderFor(cr: any, c: { row: number; col: number } | null): Order | null {
@@ -4297,7 +4398,13 @@ export class App {
   unitDropAt(cr: any, c: { row: number; col: number } | null) {
     if (!c || !c.row) return;
     const st = this.game.state;
-    if (this.unitHasActionAt(cr, c)) { if (this.orders.delete(cr.uid)) this.renderOrders(st); this.unitActAt(cr, c); return; }
+    if (this.unitHasActionAt(cr, c)) {
+      const foe = st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col && x.owner !== cr.owner);
+      if (this.orders.delete(cr.uid)) this.renderOrders(st);
+      this.unitActAt(cr, c);
+      if (foe && this.orderTime(cr)) { this.orders.set(cr.uid, { kind: 'chase', uid: cr.uid, targetUid: foe.uid }); this.chainFor = cr.uid; this.renderOrders(this.game.state); this.flashOrder(cr.uid); } // Ken, Nov 1: it stays on them
+      return;
+    }
     if (!this.orderTime(cr)) { this.unitActAt(cr, c); return; }
     this.orderAt(cr, c);
   }
@@ -4310,6 +4417,7 @@ export class App {
     if (!maxMove(cr)) { this.flash('This creature cannot move'); return; }
     this.setOrder(o);
     this.flashOrder(o.uid);
+    this.chainFor = o.kind === 'chase' ? o.uid : null; // Ken, Nov 1: the next enemies tapped are added to its list of targets
     if (planOrder(this.game.state, o).blocked) this.flash('No path there right now');
   }
   /** Live path preview while a unit is being dragged (null clears it). */
@@ -4340,7 +4448,7 @@ export class App {
     const cellEl = (q: { row: number; col: number }) => this.r.cells.get(q.row + ',' + q.col) as El | undefined;
     for (const [o, p, pv] of plans) {
       for (const q of p.path) { const el = cellEl(q); if (el) { el.classList.add('path'); if (pv) el.classList.add('path-preview'); el.style.setProperty('--pfc', pfc); } }
-      const tgt = o.kind === 'chase' ? st.board.creatures.find((x: any) => x.uid === o.targetUid) : null;
+      const tgt = o.kind === 'chase' ? chaseList(o).map((u) => st.board.creatures.find((x: any) => x.uid === u)).find(Boolean) : null;
       const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
       const end = endQ && cellEl(endQ);
       if (!end) continue;
@@ -4371,6 +4479,7 @@ export class App {
       const mk = m.querySelector('.tk-order-mark') as El, sym = o.kind === 'chase' ? '⚔' : '➜';
       if (mk.textContent !== sym) mk.textContent = sym;
     }
+    this.markStances();
     this.drawOrders();
   }
   // Ken (Oct 30 playtest): routes are hidden at rest; shown while a mouse hovers the unit, while it is selected / just tapped, while dragging a new order, and briefly after giving one
@@ -4399,7 +4508,8 @@ export class App {
     const shown = st ? this.orderPlans.filter((x) => this.orderShown(x.o.uid, x.pv)) : [];
     const showUids = new Set(shown.map((x) => x.o.uid));
     for (const el of this.r.cells.values() as Iterable<El>) if (el.classList.contains('path-end')) el.classList.toggle('path-show', showUids.has(el.dataset.uid || ''));
-    if (!shown.length) { if (svg.firstChild) svg.replaceChildren(); return; }
+    const rest = st ? this.orderPlans.filter((x) => x.o.kind === 'chase' && !x.pv && !this.orderShown(x.o.uid, false)) : [];
+    if (!shown.length && !rest.length) { if (svg.firstChild) svg.replaceChildren(); return; }
     const centre = (row: number, col: number) => {
       const q = view.cellQuad?.(row, col) || [];
       if (q.length) return { x: q.reduce((a: number, p: any) => a + p.x, 0) / q.length, y: q.reduce((a: number, p: any) => a + p.y, 0) / q.length };
@@ -4410,15 +4520,24 @@ export class App {
     let html = '';
     for (const { o, p, pv } of shown) {
       const c = st.board.creatures.find((x: any) => x.uid === o.uid);
-      const tgt = o.kind === 'chase' ? st.board.creatures.find((x: any) => x.uid === o.targetUid) : null;
+      const tgt = o.kind === 'chase' ? chaseList(o).map((u) => st.board.creatures.find((x: any) => x.uid === u)).find(Boolean) : null;
       const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
       if (!c || !endQ) continue;
       const rc = view.cellRect(endQ.row, endQ.col);
       const sq = [{ row: c.row, col: c.col }, ...p.path];
       if (o.kind === 'move' && (p.blocked || !p.path.length)) sq.push(endQ);
       const d: OrderDrawing = { uid: o.uid, kind: o.kind, pts: sq.map((q) => centre(q.row, q.col)), end: centre(endQ.row, endQ.col), cw: rc.w, ch: rc.h, preview: pv, blocked: p.blocked };
-      if (o.kind === 'chase') d.pts.push(d.end);
+      if (o.kind === 'chase') {
+        d.pts.push(d.end);
+        // the rest of its list, numbered: every target still on the board
+        d.chain = chaseList(o).map((u) => st.board.creatures.find((x: any) => x.uid === u)).filter(Boolean).slice(1).map((x: any) => centre(x.row, x.col));
+      }
       html += orderSvg(d);
+    }
+    // an ordered chaser at rest only marks its current target, so many chains don't clutter the board
+    for (const { o } of rest) {
+      const tgt = o.kind === 'chase' ? chaseList(o).map((u) => st.board.creatures.find((x: any) => x.uid === u)).find(Boolean) : null;
+      if (tgt) { const rc = view.cellRect(tgt.row, tgt.col); html += restTargetSvg(centre(tgt.row, tgt.col), rc.w, rc.h); }
     }
     svg.innerHTML = html;
   }
@@ -4454,6 +4573,8 @@ export class App {
     const lab = (e.target as El).closest?.('.tk-stats');
     const labUid = lab ? (lab.closest('.token') as El | null)?.dataset.uid : null;
     const cell = labUid ? (() => { const c0 = st.board.creatures.find((c: any) => c.uid === labUid); return c0 ? { row: c0.row, col: c0.col } : null; })() : this.cellAt(e.clientX, e.clientY);
+    this.closeStanceBar();
+    if (this.chainFor && !this.pick) { if (this.chainPress(e, cell)) return; } // Ken, Nov 1: chained attack orders
     { /* Ken, Oct 31: a unit tapped with no move this turn, then another square: a stored order (it walks in your next Action phase) */
       const op = this.orderPick; this.orderPick = null;
       const pu = op && cell && !this.pick ? st.board.creatures.find((c: any) => c.uid === op) : null;
@@ -4522,6 +4643,8 @@ export class App {
           this.abilityMenu(cr);
           this.selectUnit(cr);
           this.orderPick = !this.pick && this.orderTime(cr) && maxMove(cr) ? cr.uid : null; /* Ken, Oct 31: tap a square next to give it an order */
+          this.chainFor = this.orders.get(cr.uid)?.kind === 'chase' ? cr.uid : null;
+          this.openStanceBar(cr);
           if (this.orders.has(cr.uid)) { this.orderFocus = cr.uid; this.drawOrders(); }
           if (!this.pick && !document.querySelector('.ability-menu')) {
             if (e.pointerType !== 'mouse' && this.popups && !this.dialogs.length) this.showCard(cr.cardId, cr);

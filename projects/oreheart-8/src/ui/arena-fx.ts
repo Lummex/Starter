@@ -340,12 +340,48 @@ const bgCuts = (layout.backgroundCutouts || []).map((pts, i) => {
   const mesh = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, -y)))), cutMatBg);
   mesh.renderOrder = 30; const z = (layout.backgroundCutoutsZ || [])[i]; return cutGroup(mesh, z == null ? LAYDEF.cut + nFg + i : +z);
 });
+// Ken, Nov 1 ("a lot of lag"): the arena's glow sprites (lanterns, fireflies, waterfall mist, flame halos) were up to 1,300 draw calls a frame, about half the game's CPU time.
+// Runs of neighbouring glow sprites (same picture, same blending, nothing else between them in the draw order) now draw as one instanced mesh, in the same order, with the same maths as a three.js Sprite.
+// The makers keep writing to their sprites; the sprites just leave the scene and become data. ?nobatch=1 turns this off to compare.
+const spriteVS='attribute vec4 iA;attribute vec4 iB;attribute float iR;varying vec2 vUv;varying vec4 vC;void main(){vUv=uv;vC=iB;vec2 a=position.xy*iA.zw;float c=cos(iR),s=sin(iR);vec4 mv=modelViewMatrix*vec4(iA.xy,0.,1.);mv.xy+=vec2(c*a.x-s*a.y,s*a.x+c*a.y);gl_Position=projectionMatrix*mv;}';
+const spriteFS='uniform sampler2D map;varying vec2 vUv;varying vec4 vC;void main(){vec4 t=texture2D(map,vUv);gl_FragColor=vec4(vC.rgb*t.rgb,vC.a*t.a);}';
+const batches=[];
+if(!location.search.includes('nobatch=1')){
+ effects.forEach((f)=>{try{f.update(0,.016);}catch(e){}}); // some makers only set their draw order in update
+ const items=[];
+ scene.children.forEach((g)=>{if(g.isGroup)g.children.forEach((o)=>items.push({o,g,z:g.renderOrder,ro:o.renderOrder}));});
+ items.sort((a,b)=>a.z-b.z||a.ro-b.ro||a.o.id-b.o.id);
+ const ok=(o)=>o.isSprite&&o.material.map===glowTex&&o.center.x===.5&&o.center.y===.5;
+ let run=null;const runs=[];
+ for(const it of items){
+  if(!ok(it.o)){if(it.o.visible)run=null;continue;} // a hidden editor outline does not break a run
+  if(!run||run.blending!==it.o.material.blending){run={blending:it.o.material.blending,z:it.z,ro:it.ro,list:[]};runs.push(run);}
+  run.list.push(it);
+ }
+ for(const r of runs){
+  if(r.list.length<2)continue;
+  const geo=new THREE.InstancedBufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array([-.5,-.5,0,.5,-.5,0,.5,.5,0,-.5,.5,0]),3));
+  geo.setAttribute('uv',new THREE.BufferAttribute(new Float32Array([0,0,1,0,1,1,0,1]),2));
+  geo.setIndex([0,1,2,0,2,3]);
+  const data=new Float32Array(r.list.length*9),ib=new THREE.InstancedInterleavedBuffer(data,9);ib.setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute('iA',new THREE.InterleavedBufferAttribute(ib,4,0));geo.setAttribute('iB',new THREE.InterleavedBufferAttribute(ib,4,4));geo.setAttribute('iR',new THREE.InterleavedBufferAttribute(ib,1,8));
+  const mesh=new THREE.Mesh(geo,new THREE.ShaderMaterial({uniforms:{map:{value:glowTex}},vertexShader:spriteVS,fragmentShader:spriteFS,transparent:true,depthTest:false,depthWrite:false,blending:r.blending}));
+  mesh.frustumCulled=false;mesh.renderOrder=r.ro;
+  const g=new THREE.Group();g.renderOrder=r.z;g.add(mesh);scene.add(g);
+  const list=r.list.map((it)=>{const root=it.g;root.remove(it.o);return{s:it.o,root};});
+  batches.push({geo,ib,data,list,mesh});
+ }
+}
+const drawBatches=()=>{for(const b of batches){let n=0;const D=b.data;for(const {s,root} of b.list){const m=s.material;if(!s.visible||!(m.opacity>0))continue;const k=n*9;
+  D[k]=root.position.x+s.position.x;D[k+1]=root.position.y+s.position.y;D[k+2]=s.scale.x;D[k+3]=s.scale.y;D[k+4]=m.color.r;D[k+5]=m.color.g;D[k+6]=m.color.b;D[k+7]=m.opacity;D[k+8]=m.rotation;n++;}
+ b.geo.instanceCount=n;b.ib.needsUpdate=true;}};
 THREE.ColorManagement.enabled = true;
 const H = homog(layout.boardCorners.map(A2W));
 return {
   scene, fgScene, cam, IW, IH, effects, cuts, bgCuts, skippedTypes, errors, allEffects, homography: H, layers: LAY,
-  frontEffects: () => effects.filter((f) => f.d.z > LAY.units).length,
+  frontEffects: () => effects.filter((f) => f.d.z > LAY.units).length, batches, spriteBatches: () => batches.length, batchedSprites: () => batches.reduce((a, b) => a + b.list.length, 0),
   setView(x0, y0, w, h) { cam.left = x0; cam.right = x0 + w; cam.top = -y0; cam.bottom = -(y0 + h); cam.updateProjectionMatrix(); },
-  update(t, dt) { const cm = THREE.ColorManagement.enabled; THREE.ColorManagement.enabled = false; effects.forEach((f) => f.update(t, dt)); THREE.ColorManagement.enabled = cm; },
+  update(t, dt) { const cm = THREE.ColorManagement.enabled; THREE.ColorManagement.enabled = false; effects.forEach((f) => f.update(t, dt)); drawBatches(); THREE.ColorManagement.enabled = cm; },
 };
 }

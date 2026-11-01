@@ -307,6 +307,7 @@ const _embV = new THREE.Vector3();
   const flowTargetEl: Record<string, HTMLElement | null> = { player: null, opponent: null };
   const flowDest: Record<string, THREE.Vector3 | null> = { player: null, opponent: null };
   const flowRay = new THREE.Vector3(), flowDir = new THREE.Vector3();
+  let flowDestAt = -1e9, flowDestDirty = true;
   function updateFlowDest() {
     const rc = canvas.getBoundingClientRect();
     for (const sd of ['player', 'opponent']) {
@@ -338,7 +339,7 @@ const _embV = new THREE.Vector3();
     let pulse = 0;
     for (const sd of ['player', 'opponent']) pulse = Math.max(pulse, 1 - Math.min(1, (now - pulseAt[sd]) / 1000));
     let shown = 0;
-    updateFlowDest();
+    if (now - flowDestAt > 400 || flowDestDirty) { flowDestAt = now; flowDestDirty = false; updateFlowDest(); } // Nov 1: reading the layout every frame cost 1.6 ms; the target only moves with the view
     mines.forEach((m, mi) => {
       const owner = flowOwner[mi] || 'neutral';
       const nm = owner === 'neutral' ? n : Math.min(n, shardCount(owner));
@@ -476,6 +477,7 @@ const _embV = new THREE.Vector3();
     'deepforge-crossbowman': { part: 'crystal-gun', look: { pos: [11.799, 9.341, 3.481], rot: [-32.612, -34.028, -107.773], scale: [33.508, 33.508, 33.508] } }, // Ledger's exact grip (Oct 31): ~1-2 deg off in the game (grip A was ~10, the old one ~42)
   };
   const aimLog: { uid: string; cardId: string; part: string; on: number; off: number }[] = [];
+  if (location.search.includes('test=1')) (window as any).__s3d = { scene, renderer, camera, get arena() { return arena; }, get back() { return backRenderer; } }; // test-only: the lag bench and checks read the 3D scene
   if (testMode) { (window as any).__aimLooks = AIM_LOOKS; (window as any).__aimNow = () => aimNow(); } // test-only: try aim grips, read the aim quickly
   /** test probe: for every aiming shooter, the angle (deg, on the ground plane) between its gun's long axis and the line to its facing target */
   function aimNow() {
@@ -1139,7 +1141,7 @@ const _embV = new THREE.Vector3();
         const m = world(e.row, e.col);
         const mk = (state?.turn ?? 0) + ':' + e.row + ',' + e.col; let mineKey = !minedSnd.has(mk); if (mineKey) { if (minedSnd.size > 80) minedSnd.clear(); minedSnd.add(mk); }
         f.faceTo = Math.atan2(m.x - f.target.x, m.z - f.target.z); f.faceUntil = now + 1000;
-        setTimeout(() => { spawnFx('spark', m, 4); if (mineKey) audio.play('pick'); /* Brush: no chime on mining */ }, 220);
+        setTimeout(() => spawnFx('spark', m, 4), 220); // Ken, Nov 1: no clank on the mines
       } else if (e.type === 'bowl') {
         const bf = figs.get(e.uid) || null;
         let rel = 300;
@@ -1196,7 +1198,7 @@ const _embV = new THREE.Vector3();
       const prev = THREE.ColorManagement.enabled;
       arena = buildArena(L, bg, ar, () => view.scale * (low ? 1 : Math.min(window.devicePixelRatio || 1, 2)));
       THREE.ColorManagement.enabled = prev;
-      Object.assign(arenaInfo, { loaded: true, errors: arena.errors, skippedTypes: arena.skippedTypes, effects: arena.effects.length, cutouts: arena.cuts.length, bgCutouts: arena.bgCuts.length, frontEffects: arena.frontEffects(), layers: arena.layers, flowEffects: (L.effects as any[]).filter((e: any) => e.type === 'flow').length });
+      Object.assign(arenaInfo, { loaded: true, errors: arena.errors, skippedTypes: arena.skippedTypes, effects: arena.effects.length, cutouts: arena.cuts.length, bgCutouts: arena.bgCuts.length, frontEffects: arena.frontEffects(), layers: arena.layers, spriteBatches: arena.spriteBatches(), batchedSprites: arena.batchedSprites(), flowEffects: (L.effects as any[]).filter((e: any) => e.type === 'flow').length });
       applyView();
     }).catch((err) => { const m = 'arena build failed: ' + (err && err.message || err); arenaInfo.errors.push(m); console.error(m, err); });
   }
@@ -1238,6 +1240,7 @@ const _embV = new THREE.Vector3();
     camera.projectionMatrix.set(...([...cxr, ...cyr, ...czr, ...w] as [number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number])).multiply(camera.matrixWorld);
     camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
     arena?.setView(x0, y0, W / scale, H / scale);
+    flowDestDirty = true;
   }
   let lastT = performance.now();
   function arenaFrame(now: number) {

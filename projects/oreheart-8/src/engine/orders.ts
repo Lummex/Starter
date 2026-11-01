@@ -6,7 +6,7 @@ import { CARDS } from './content';
 
 export interface Cell { row: number; col: number }
 /** A standing order for one of the player's units. `move`: walk to `dest`. `chase`: follow enemy `targetUid` and attack when in range. */
-export type Order = { kind: 'move'; uid: string; dest: Cell } | { kind: 'chase'; uid: string; targetUid: string };
+export type Order = { kind: 'move'; uid: string; dest: Cell } | { kind: 'chase'; uid: string; targetUid: string; /** Ken, Nov 1: more targets to go after, in order */ then?: string[] };
 /** What an order looks like right now: the squares still to walk (excluding the unit's own square), the turns it takes, and whether it is blocked today. */
 export interface OrderPlan { path: Cell[]; turns: number; blocked: boolean; done: boolean }
 
@@ -116,9 +116,40 @@ export function planOrder(s: any, order: Order): OrderPlan {
     if (!path) return { path: [], turns: Infinity, blocked: true, done: false };
     return { path, turns: turnsFor(c, path), blocked: false, done: false };
   }
-  const enemy = s.board.creatures.find((x: any) => x.uid === order.targetUid);
-  if (!enemy || enemy.owner === c.owner) return { path: [], turns: 0, blocked: false, done: true };
+  const enemy = chaseTarget(s, order);
+  if (!enemy) return { path: [], turns: 0, blocked: false, done: true };
   const path = chasePath(s, c, enemy);
   if (!path) return { path: [], turns: Infinity, blocked: true, done: false };
   return { path, turns: turnsFor(c, path), blocked: false, done: false };
+}
+
+/** Ken, Nov 1: a chase order's whole list of targets, current one first. */
+export const chaseList = (o: Order): string[] => (o.kind === 'chase' ? [o.targetUid, ...(o.then || [])] : []);
+/** The first target on the list still on the board (one that died or retreated is skipped), or null when the list is finished. */
+export function chaseTarget(s: any, o: Order): any | null {
+  const c = s.board.creatures.find((x: any) => x.uid === o.uid);
+  for (const u of chaseList(o)) { const e = s.board.creatures.find((x: any) => x.uid === u); if (e && (!c || e.owner !== c.owner)) return e; }
+  return null;
+}
+
+// Ken, Nov 1: "Smarter without taking the control away": what a unit with no order does by itself at the start of the player's Action phase.
+// All reach comes from the engine's own legal actions, attack targets and moves, so a change to the combat rules carries over. A unit with no stance does nothing by itself.
+export type Stance = 'aggressive' | 'guard' | 'hold';
+export const UNIT_STANCES: Stance[] = ['hold', 'guard', 'aggressive'];
+/** The action a stance takes now, or null. hold: attack what's in range. guard: also step 1 square to reach an enemy just beyond its reach. aggressive: also walk toward the nearest enemy. */
+export function stanceAction(s: any, c: any, stance: Stance): any | null {
+  const acts = legalActions(s).filter((a: any) => a.creatureUid === c.uid);
+  const atk = acts.filter((a: any) => a.type === 'attack' && a.target);
+  if (atk.length) {
+    const hp = (a: any) => { if (a.target.commander) return -1; const e = creatureAt(s, a.target.row, a.target.col); return e ? e.health : 99; };
+    return atk.slice().sort((a: any, b: any) => hp(a) - hp(b))[0]; // the Commander first, then the weakest
+  }
+  if (stance === 'hold' || !acts.some((a: any) => a.type === 'move')) return null;
+  const foes = s.board.creatures.filter((x: any) => x.owner !== c.owner).sort((a: any, b: any) => Math.max(Math.abs(a.row - c.row), Math.abs(a.col - c.col)) - Math.max(Math.abs(b.row - c.row), Math.abs(b.col - c.col)));
+  let best: Cell[] | null = null;
+  for (const e of foes.slice(0, 6)) { const p = chasePath(s, c, e); if (p && p.length && (!best || p.length < best.length)) best = p; }
+  if (!best) return null;
+  if (stance === 'guard' && best.length > 1) return null;
+  const step = stance === 'guard' ? (acts.some((a: any) => a.type === 'move' && a.row === best![0].row && a.col === best![0].col) ? best[0] : null) : nextStep(s, c, best);
+  return step ? { type: 'move', creatureUid: c.uid, row: step.row, col: step.col } : null;
 }

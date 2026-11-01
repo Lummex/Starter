@@ -283,7 +283,8 @@ test('AC7: opening — start with 0 crystals, pool resets to flow, extra card fo
   expect(cfg.fighterFlow).toBe(1);
   expect(cfg.underdogBonus).toBe(2);
   expect(cfg.strongholdIncome || 0).toBe(0);
-  expect(cfg.phaseTimerSeconds).toBe(50);
+  expect(cfg.phaseTimerSeconds).toBe(120); // owner check change (Ken, Nov 1: 2 minutes, with banked time)
+  expect(cfg.bankMaxSeconds).toBe(60);
   expect(cfg.timerHiddenSeconds).toBe(40);
   expect(cfg.countdownSeconds).toBe(10);
   expect(cfg.boardWidth).toBe(13);
@@ -7180,10 +7181,10 @@ test.describe('round 10 at 1920x1080', () => {
     expect((await act(page, { type: 'playCrystal', uid: s.players.opponent.hand[0].uid })).ok).toBe(true);
     const theirs = page.locator('[aria-label="Card reveal"][data-side="opponent"]').first();
     await expect(theirs).toBeVisible();
-    // owner check change (Ken, Oct 30): the computer's card pops up big in the middle, then is laid down on the enemy discard pile at the left
+    // owner check change (Ken, Nov 1: "pop up in the top left corner"): the computer's card shows top-left, then is laid down on the enemy discard pile at the left
     await page.waitForTimeout(350); // after the quick pop-in
     const b = await theirs.boundingBox();
-    expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.05);
+    expect(b.x + b.width / 2).toBeLessThanOrEqual(W * 0.2);
     // owner check change (Ken, Oct 31: "make it the same size as the card when it pops out of my hand"): no longer near full height; AC479 checks the pop-out size
     expect(b.height).toBeGreaterThanOrEqual(H * 0.3);
     await expect(theirs).toHaveCount(0, { timeout: 6000 });
@@ -7684,10 +7685,10 @@ test.describe('round 11 at 1920x1080', () => {
     for (const c of s.players.opponent.hand) expect((await act(page, { type: 'playCrystal', uid: c.uid })).ok).toBe(true);
     const theirs = page.locator('[aria-label="Card reveal"][data-side="opponent"]');
     const vis = (loc) => loc.evaluateAll((els) => els.filter((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden').map((e) => e.getBoundingClientRect().toJSON()));
-    // owner check change (Ken, Oct 30): one big card in the middle at a time; each earlier one is laid down on the enemy discard pile
+    // owner check change (Ken, Nov 1): one big card in the top-left corner at a time; each earlier one is laid down on the enemy discard pile
     const big = page.locator('[aria-label="Card reveal"][data-side="opponent"][data-stage="big"]');
     expect((await vis(big)).length).toBeLessThanOrEqual(1);
-    for (const b of await vis(big)) expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.05);
+    for (const b of await vis(big)) expect(b.x + b.width / 2).toBeLessThanOrEqual(W * 0.2);
     await expect.poll(async () => (await vis(theirs)).length, { timeout: 8000 }).toBe(0);
     await expect(page.getByRole('button', { name: 'Enemy discard pile', exact: true })).toHaveAttribute('data-count', '4');
     s = await newMatch(page, { ...quiet({ playerHand: ['soul-shard'] }), firstPlayer: 'player' });
@@ -10944,7 +10945,7 @@ test.describe('Oct 30 Ken at 1920x1080', () => {
     await expect(dlg).toBeHidden();
   });
 
-  test('AC414: the computer\'s played card pops up big in the middle for about a second, then is laid down on its discard pile', async ({ page }) => {
+  test('AC414: the computer\'s played card pops up in the top-left corner for about a second, then is laid down on its discard pile', async ({ page }) => {
     const W = 1920, H = 1080;
     await page.goto('/?test=1&seed=123&fx=1');
     await page.waitForFunction(() => !!window.oreheart);
@@ -10970,8 +10971,8 @@ test.describe('Oct 30 Ken at 1920x1080', () => {
     await expect(big).toHaveCount(1);
     let b = null; // measured once its quick pop-in is over
     await expect.poll(async () => { [b] = await visBoxes(big); return b ? b.height : 0; }, { timeout: 3000 }).toBeGreaterThan(closeUp.height * 0.4); // owner check change (Ken, Oct 31): the hand pop-out size now (AC479), no longer bigger than the close-up
-    expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.03);
-    expect(Math.abs(b.y + b.height / 2 - H / 2)).toBeLessThanOrEqual(H * 0.05);
+    expect(b.x + b.width / 2, 'owner check change (Ken, Nov 1): the top-left corner, no longer the middle').toBeLessThanOrEqual(W * 0.2);
+    expect(b.y + b.height / 2).toBeLessThanOrEqual(H * 0.45);
     expect(b.height).toBeLessThanOrEqual(H);
     await card.click({ force: true });
     // laid down: it leaves the middle, slides left onto the pile and the pile shows it face-up
@@ -12122,7 +12123,7 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
         expect(r.cards, 'the hand is there').toBeGreaterThan(0);
         expect(r.hit, `${vp.name}, hand ${raised ? 'raised' : 'tucked'}: the computer's card covers none of the player's cards`).toBe(0);
         expect(r.w, `${vp.name}: not bigger than the pop-out (${Math.round(popW)} px)`).toBeLessThanOrEqual(popW * 1.04);
-        if (vp.name === 'desktop') expect(r.w, `${vp.name}: the same size as the pop-out (${Math.round(popW)} px)`).toBeGreaterThanOrEqual(popW * 0.96);
+        // owner check change (Ken, Nov 1): in the top-left corner it stays smaller than the pop-out when that would dominate the screen (AC551)
         expect(r.top).toBeGreaterThanOrEqual(0);
       }
     });
@@ -12170,9 +12171,10 @@ test('AC481: the mining CLINK sits above the crystal being mined, not on the min
   const mine = (await legal(page)).find((a) => a.type === 'mine' && a.creatureUid === miner.uid);
   expect(mine).toBeTruthy();
   expect((await act(page, mine)).ok).toBe(true);
-  const clink = page.locator('.fx .pop-img[data-pop="clink"]').first();
-  await expect(clink).toBeAttached({ timeout: 3000 });
-  expect([await clink.getAttribute('data-row'), await clink.getAttribute('data-col')], 'the CLINK is on the mine').toEqual([String(mine.row), String(mine.col)]);
+  // owner check change (Ken, Nov 1: "the clank on the crystal mines, get rid of that"): no CLINK word and no mine-pick sound
+  await page.waitForTimeout(900);
+  await expect(page.locator('.fx .pop-img[data-pop="clink"]')).toHaveCount(0);
+  expect((await page.evaluate(async () => (await window.oreheart.getAudioState()).sfxLog)).filter((x) => x.name === 'pick').length, 'no clank sound').toBe(0);
 });
 
 // Ken: "the fireball and the meteor both need to come from like a random part from the top down. Not from the ground up."
@@ -12590,19 +12592,19 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
       const e1 = (await voiceLogFor(page, A.uid, t0))[0];
       expect(e1).toMatchObject({ event: 'select', unit: 'goblin-scrapper' });
       expectVoiced(man, e1, linesOf(man, 'goblin-scrapper').select, 'click');
-      // 2) another unit clicked while the line plays (or within 1.2 s of it) waits: one voice at a time, no cut-offs between clicks
+      // 2) owner check change (Ken, Nov 1: a clicked character always speaks): another unit clicked while the line plays speaks at once and cuts it
       const t2 = await vNow(page);
       await tap(await sqCenter(page, 6, 5));
       await expect.poll(async () => (await voiceLogFor(page, B.uid, t2)).length).toBeGreaterThan(0);
       const e3 = (await voiceLogFor(page, B.uid, t2))[0];
-      expect(e3.played, 'a second click right after the first stays quiet').toBe(false);
-      expect(['busy', 'gap']).toContain(e3.skipped);
-      // 3) clicking the first unit again inside 8 s plays nothing
-      await page.waitForTimeout(600);
+      expect(e3.played, 'a click always speaks').toBe(true);
+      // 3) clicking the first unit again inside its short cooldown plays nothing, so spam-clicking doesn't stack voices (the cooldown is stretched for this slow check)
+      await page.evaluate(() => window.oreheart.setVoiceRules({ clickCooldownMs: 60000 }));
       const t1 = await vNow(page);
       await tap(await sqCenter(page, 6, 9)); // its square (a tap on the body of a selected unit can be a move order)
       await expect.poll(async () => (await voiceLogFor(page, A.uid, t1)).length).toBeGreaterThan(0);
       expect((await voiceLogFor(page, A.uid, t1))[0]).toMatchObject({ played: false, skipped: 'cooldown' });
+      await page.evaluate(() => window.oreheart.setVoiceRules({ clickCooldownMs: 1500 }));
       // 4) an enemy click says nothing (own units only)
       await page.waitForTimeout(2000);
       const tE = await vNow(page);
@@ -12613,7 +12615,7 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
       expect((await voiceLogFor(page, E.uid, tE)).length, 'no line for an enemy').toBe(0);
       await page.keyboard.press('Escape');
       // 5) shuffle-bag: every line once before any repeats, never the same line twice in a row (cooldown and gap shortened for the check only)
-      await page.evaluate(() => window.oreheart.setVoiceRules({ unitCooldownMs: 0, gapMs: 0 }));
+      await page.evaluate(() => window.oreheart.setVoiceRules({ unitCooldownMs: 0, gapMs: 0, clickCooldownMs: 0 }));
       for (let i = 0; i < 7; i++) { await voiceQuiet(page); await page.evaluate((a) => window.oreheart.voiceEvent('select', 'goblin-scrapper', a), A.uid); }
       const draws = (await voiceLogFor(page, A.uid)).filter((e) => e.event === 'select' && e.played).map((e) => e.line);
       const P = linesOf(man, 'goblin-scrapper').select;
@@ -12627,7 +12629,7 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
         ev('select', 'goblin-scrapper', a); ev('special', 'goblin-sneak', b); // at once: too early to cut
         await new Promise((r) => setTimeout(r, 300));
         ev('special', 'goblin-sneak', b); // after 0.2 s: the special cuts the select
-        ev('hurt', 'dwarf-pickman', 'x-big', true); ev('select', 'goblin-scrapper', 'x-sel');
+        ev('hurt', 'dwarf-pickman', 'x-big', true); ev('hurt', 'goblin-scrapper', 'x-sel', false);
         return (await window.oreheart.getAudioState()).voice;
       }, [A.uid, B.uid]);
       const sp = pr.log.filter((e) => e.who === B.uid && e.event === 'special');
@@ -12643,7 +12645,7 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
       await voiceQuiet(page); await page.waitForTimeout(1300);
       await page.evaluate(() => window.oreheart.voiceEvent('select', 'goblin-scrapper', 'g-a'));
       await voiceQuiet(page);
-      const gp = await page.evaluate(() => { const ev = window.oreheart.voiceEvent; ev('select', 'goblin-scrapper', 'g-sel'); ev('hurt', 'dwarf-pickman', 'g-big', true); return true; });
+      const gp = await page.evaluate(() => { const ev = window.oreheart.voiceEvent; ev('hurt', 'goblin-scrapper', 'g-sel', false); ev('hurt', 'dwarf-pickman', 'g-big', true); return true; });
       expect(gp).toBe(true);
       let v = await voiceState(page);
       expect(v.log.filter((e) => e.who === 'g-a').pop()).toMatchObject({ played: true });
@@ -12695,15 +12697,12 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
       await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 53 sound files decoded (with the 12 projectile sounds, 3 summon variants)', timeout: 20000 }).toBe(53);
       await expect.poll(async () => (await sfxState(page)).punchLoaded, { message: 'all 6 punch files decoded', timeout: 20000 }).toBe(6);
       await unitLoaded(page, 'goblin-sneak', man); await unitLoaded(page, 'dwarf-pickman', man);
-      // --- the hurt rule, through the voice hook: 35 % of small hits get a line, every big hit does
+      // --- the hurt rule, through the voice hook (owner check change, Ken Nov 1: the 1-in-20 roll replaced the 35 % rule; test pages roll every time, AC550 checks the roll)
       await page.evaluate(() => { const ev = window.oreheart.voiceEvent; for (let i = 0; i < 180; i++) ev('hurt', 'goblin-grunt', 'h' + i, false); for (let i = 0; i < 20; i++) ev('hurt', 'goblin-grunt', 'b' + i, true); });
       let v = await voiceState(page);
       const small = v.log.filter((e) => /^h\d+$/.test(e.who)), big = v.log.filter((e) => /^b\d+$/.test(e.who));
       expect(small.length).toBe(180);
-      const passed = small.filter((e) => e.skipped !== 'chance').length / small.length;
-      expect(passed, 'a small hit speaks only sometimes (~35 %)').toBeGreaterThan(0.2);
-      expect(passed).toBeLessThan(0.5);
-      expect(big.every((e) => e.skipped !== 'chance'), 'a big hit always gets its line (unless another voice is playing)').toBe(true);
+      expect(big.length).toBe(20);
       expect(v.log.every((e) => e.played ? e.skipped === null : !!e.skipped), 'every event is played or skipped with a reason').toBe(true);
       expect(v.log.filter((e) => e.played).length, 'one voice at a time: the rest of the burst waited').toBeLessThanOrEqual(2);
       // the same unit hit again inside 8 s says nothing
@@ -15065,3 +15064,270 @@ test('AC549: arena draw order follows the layout (layers, z, cut-out z); front b
   expect(st.arena.layers, 'Skullfang: the default layers').toEqual({ arena: 100, units: 400 });
   expect(st.arena.frontEffects, 'Skullfang: no effect over the creatures, as before').toBe(0);
 });
+
+// Ken (Nov 1): "a random one to 20 dice roll ... so it just doesn't get super annoying. If I click on a character ... he says his stuff, that's fine": automatic triggers roll a d20 against 1 to 3 hit numbers (about 10 %); clicks always speak, with a short cooldown (test pages skip the dice so the voice checks can hear lines)
+test('AC550: automatic voice triggers roll a 1-20 dice against 1-3 hit numbers (about 10 %); a click always speaks with a short cooldown', async ({ page }) => {
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  await page.mouse.click(5, 5);
+  expect(await page.evaluate(() => window.oreheart.voiceDice()), 'the one place').toEqual({ sides: 20, minHits: 1, maxHits: 3 });
+  await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player' } }));
+  await page.mouse.click(5, 5);
+  const r = await page.evaluate(async () => {
+    const o = window.oreheart, dice = o.voiceDice(); o.setVoiceRules({ dice, unitCooldownMs: 0, gapMs: 0, clickCooldownMs: 0 });
+    for (const ev of ['hurt', 'special']) for (let i = 0; i < 95; i++) o.voiceEvent(ev, 'goblin-grunt', ev + i, ev === 'hurt' && i % 2 === 0);
+    const log = (await o.getAudioState()).voice.log.slice(-190);
+    const passed = log.filter((e) => e.skipped !== 'dice').length, kinds = [...new Set(log.filter((e) => e.skipped === 'dice').map((e) => e.event))].length;
+    o.voiceEvent('select', 'goblin-grunt', 'clicked');
+    const clicks = (await o.getAudioState()).voice.log.filter((e) => e.who === 'clicked');
+    o.setVoiceRules({ clickCooldownMs: 60000 });
+    o.voiceEvent('select', 'goblin-grunt', 'clicked'); o.voiceEvent('select', 'goblin-grunt', 'clicked');
+    const again = (await o.getAudioState()).voice.log.filter((e) => e.who === 'clicked');
+    return { n: log.length, passed, kinds, click: clicks[0], again: again.slice(1).map((e) => e.skipped) };
+  });
+  expect(r.n).toBe(190);
+  expect(r.kinds, 'hurt and special both roll').toBe(2);
+  expect(r.passed, 'about 19 of 190 pass the dice').toBeGreaterThan(3);
+  expect(r.passed).toBeLessThan(45);
+  expect(r.click.skipped, 'a click is never rolled').not.toBe('dice');
+  expect(r.again, 'spam clicks wait').toEqual(['cooldown', 'cooldown']);
+});
+
+// Ken (Nov 1): "when the opposing player plays a card, I no longer want it to pop up over the middle of the screen. I like it to pop up in the top left corner."
+for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone', width: 844, height: 390 }]) {
+  test.describe(`enemy card corner ${vp.name}`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+    test(`AC551: the computer's card shows in the top-left corner under the Menu button, clear of the hand and the player's plate (${vp.name})`, async ({ page }) => {
+      await page.goto('/?test=1&seed=3&fx=1');
+      await page.waitForFunction(() => !!window.oreheart);
+      await page.evaluate(async () => await window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player', playerHand: ['goblin-grunt', 'goblin-slinger', 'fireball', 'goblin-bomber', 'shiv-rat', 'goblin-sneak'] } }));
+      await page.waitForTimeout(800);
+      for (const raised of [false, true]) {
+        const r = await page.evaluate(async (raised) => {
+          const a = window.__app; a.openHand(raised, !raised); await new Promise((res) => setTimeout(res, 450));
+          void a.reveal('fireball', null, 'opponent'); await new Promise((res) => setTimeout(res, 100));
+          const rv = document.querySelector('.reveal.opp-play'); await Promise.all(rv.getAnimations().map((x) => x.finished.catch(() => {}))); const b = rv.getBoundingClientRect();
+          const box = (s) => { const e = document.querySelector(s); const q = e && e.getBoundingClientRect(); return q ? { top: q.top, bottom: q.bottom, left: q.left, right: q.right } : null; };
+          const hand = [...document.querySelectorAll('.hand .hand-card')].map((c) => c.getBoundingClientRect()).filter((x) => x.width);
+          const hit = hand.filter((x) => x.left < b.right && x.right > b.left && x.top < b.bottom && x.bottom > b.top).length;
+          const out = { left: b.left, right: b.right, top: b.top, bottom: b.bottom, w: b.width, hit, menu: box('.match .menu-btn'), plate: box('.match .o-plate.o-you') };
+          rv._finish?.(); await new Promise((res) => setTimeout(res, 900)); return out;
+        }, raised);
+        expect(r.left, 'at the left edge').toBeLessThan(vp.width * 0.03);
+        expect(r.right, 'a corner, not the middle').toBeLessThan(vp.width * 0.22);
+        expect(r.top, 'just under the Menu button').toBeGreaterThanOrEqual(r.menu.bottom);
+        expect(r.hit, 'never over the hand').toBe(0);
+        expect(r.bottom, 'clear of the player plate').toBeLessThanOrEqual(r.plate.top);
+      }
+    });
+  });
+}
+
+// Ken (Nov 1): "when a lot of characters get on the screen, there becomes a lot of lag". The arena's glow sprites draw as a few instanced meshes instead of one draw call each,
+// and it must look the same: the very same frame is drawn both ways and compared, on all three arenas.
+test('AC552: the arena draws its glow sprites in a few batches (far fewer draw calls) and the picture is the same as drawing them one by one, on all three arenas', async ({ page }) => {
+  test.setTimeout(180000);
+  await page.goto('/?test=1&seed=7');
+  await page.waitForFunction(() => !!window.oreheart);
+  for (const [who, oc, fac] of [['player', 'borgo', 'goblins'], ['opponent', 'borgo', 'dwarves'], ['opponent', 'sproingle', 'gnomes']]) {
+    await page.evaluate((w) => window.oreheart.setArenaPick(w), who);
+    await page.evaluate((c) => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: c, setup: { firstPlayer: 'player' } }), oc);
+    await page.mouse.click(5, 5);
+    if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+    await expect.poll(async () => { const s = await renderStats(page); return s.arena?.faction === fac && s.arena?.drawn; }, { timeout: 30000 }).toBe(true);
+    const st = await renderStats(page);
+    expect(st.arena.batchedSprites, `${fac}: glow sprites are batched`).toBeGreaterThan(50);
+    expect(st.arena.spriteBatches, `${fac}: into a few batches`).toBeLessThan(st.arena.batchedSprites / 4);
+    const r = await page.evaluate(async () => {
+      const A = window.__s3d.arena, R = window.__s3d.back, gl = R.getContext(), W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+      const shot = () => { R.render(A.scene, A.cam); const px = new Uint8Array(W * H * 4); gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, px); return px; };
+      A.update(1234.5, 0.016);
+      const calls0 = (shot(), R.info.render.calls), a = shot();
+      for (const b of A.batches) { b.mesh.visible = false; for (const { s, root } of b.list) root.add(s); }
+      const calls1 = (shot(), R.info.render.calls), c = shot();
+      let bad = 0, worst = 0;
+      for (let i = 0; i < a.length; i += 4) { const d = Math.max(Math.abs(a[i] - c[i]), Math.abs(a[i + 1] - c[i + 1]), Math.abs(a[i + 2] - c[i + 2])); if (d > worst) worst = d; if (d > 6) bad++; }
+      for (const b of A.batches) { b.mesh.visible = true; for (const { s, root } of b.list) root.remove(s); }
+      return { calls0, calls1, bad, worst, total: W * H };
+    });
+    expect(r.calls0, `${fac}: batched draw calls vs one by one (${r.calls0} / ${r.calls1})`).toBeLessThan(r.calls1 / 3);
+    expect(r.bad / r.total, `${fac}: the same picture (${r.bad} pixels differ, worst ${r.worst})`).toBeLessThan(0.001);
+  }
+});
+
+// Ken (Nov 1): "the card ... pop down into the center of onto the space of the unit ... I don't want the unit to pop up until the card hits the ground ... it basically spawns out of that card"
+test('AC553: the computer\'s creature card drops onto its square and lies there before the unit exists; the unit then spawns on that square and the card fades', async ({ page }) => {
+  await page.goto('/?test=1&seed=3&fx=1');
+  await page.waitForFunction(() => !!window.oreheart);
+  await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player' } }));
+  await page.waitForTimeout(600);
+  const r = await page.evaluate(async () => {
+    const a = window.__app; const c = a.center(4, 7), br = a.r.board.getBoundingClientRect();
+    let doneAt = 0, landedBox = null, stageAtDone = '';
+    const t0 = performance.now();
+    const p = a.reveal('goblin-grunt', { row: 4, col: 7 }, 'opponent').then(() => { doneAt = performance.now() - t0; const e = document.querySelector('.reveal.opp-play'); stageAtDone = e ? e.dataset.stage : 'gone'; if (e) { const q = e.getBoundingClientRect(); landedBox = { x: q.left + q.width / 2, y: q.top + q.height / 2, w: q.width, h: q.height }; } });
+    await new Promise((res) => setTimeout(res, 600));
+    const first = document.querySelector('.reveal.opp-play'); first._finish();
+    await p; await new Promise((res) => setTimeout(res, 800));
+    return { doneAt, stageAtDone, landedBox, sq: { x: br.left + c.x, y: br.top + c.y }, left: document.querySelectorAll('.reveal.opp-play').length };
+  });
+  expect(r.stageAtDone, 'the computer\'s move goes on only once the card has landed').toBe('landed');
+  expect(Math.abs(r.landedBox.x - r.sq.x), 'on the centre of the square').toBeLessThan(20);
+  expect(Math.abs(r.landedBox.y - r.sq.y)).toBeLessThan(20);
+  expect(r.landedBox.h, 'lying flat: seen from the side it is wider than tall').toBeLessThan(r.landedBox.w * 1.1);
+  expect(r.left, 'then the card goes away').toBe(0);
+});
+
+// Ken (Nov 1): "the timer to 2 minutes ... bank time"; the GDD keeps the quiet screen: only a small +0:35 note shows
+test('AC554: seconds not used in a timed phase carry into the next one (capped at 60), shown as a small note; a phase that runs out banks nothing', async ({ page }) => {
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  await page.evaluate(() => { window.__app.realTimer = true; return window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player' } }); });
+  const r = await page.evaluate(async () => {
+    const a = window.__app, o = window.oreheart; const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    const left0 = Math.round((a.deadline - Date.now()) / 1000);
+    a.deadline = Date.now() + 35000; // 35 s left of the deploy phase
+    o.act(o.legalActions().find((x) => x.type === 'done')); await wait(1500);
+    const bank = a.timeBank, left1 = Math.round((a.deadline - Date.now()) / 1000), note = document.querySelector('.ph-bank')?.textContent || '';
+    a.deadline = Date.now() + 500; await wait(1800); // this phase runs out
+    return { left0, bank, left1, note, bankAfterTimeout: a.timeBank };
+  });
+  expect(r.left0).toBeGreaterThanOrEqual(118);
+  expect(r.bank, '35 s banked').toBeGreaterThanOrEqual(33);
+  expect(r.bank).toBeLessThanOrEqual(35);
+  expect(r.left1, '120 s plus the bank').toBeGreaterThanOrEqual(150);
+  expect(r.note, 'the small note').toMatch(/^\+0:3[0-5]$/);
+  expect(r.bankAfterTimeout, 'running out banks nothing').toBe(0);
+  const capped = await page.evaluate(async () => {
+    const a = window.__app, o = window.oreheart; await new Promise((res) => setTimeout(res, 500));
+    a.deadline = Date.now() + 110000; const d = o.legalActions().find((x) => x.type === 'done'); if (d) o.act(d); await new Promise((res) => setTimeout(res, 800)); return a.timeBank;
+  });
+  expect(capped, 'never more than 60').toBeLessThanOrEqual(60);
+});
+
+// Ken (Nov 1): "The enemy turn recap ... what in the world just happened?"
+for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone', width: 844, height: 390 }]) {
+  test.describe(`recap ${vp.name}`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+    test(`AC555: a short line for each enemy action, collapsible, clear of the hand, plates and enemy card spot; tapping a line lights its square; no chatter over units (${vp.name})`, async ({ page }) => {
+      await page.goto('/?test=1&seed=3');
+      await page.waitForFunction(() => !!window.oreheart);
+      const board = [{ cardId: 'goblin-grunt', owner: 'player', row: 4, col: 6 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 4, col: 7 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 10 }];
+      await page.evaluate((board) => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'opponent', board, opponentHand: ['soul-shard'] } }), board);
+      await page.waitForTimeout(500);
+      await expect(page.locator('.e-recap')).toBeHidden();
+      const go = async (f) => page.evaluate(f);
+      await go(() => { const o = window.oreheart; for (let i = 0; i < 4; i++) { const d = o.legalActions().find((x) => x.type === 'attack' || x.type === 'move'); if (d) { o.act(d); return; } const n = o.legalActions().find((x) => x.type === 'done'); if (n) o.act(n); } });
+      await page.waitForTimeout(400);
+      await expect(page.locator('.e-recap'), 'the recap appears').toBeVisible();
+      if (vp.name === 'phone') { await expect(page.locator('.recap-list'), 'a button on phones').toBeHidden(); await page.locator('.recap-tog').click(); }
+      await expect(page.locator('.recap-line').first()).toBeVisible();
+      expect(await page.locator('.recap-line').first().textContent()).toMatch(/moved|hit/);
+      const boxes = await page.evaluate(() => { const box = (e) => { const q = e && e.getBoundingClientRect(); return q ? { l: q.left, r: q.right, t: q.top, b: q.bottom } : null; }; return { rc: box(document.querySelector('.e-recap')), en: box(document.querySelector('.o-plate.o-enemy')), hand: [...document.querySelectorAll('.hand .hand-card')].map(box), done: box(document.querySelector('.done-btn')) }; });
+      const hit = (a, b) => a && b && a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+      expect(hit(boxes.rc, boxes.en), 'clear of the enemy plate').toBeFalsy();
+      expect(boxes.hand.some((c) => hit(boxes.rc, c)), 'clear of the hand').toBeFalsy();
+      expect(boxes.rc.l, 'on the right side, away from the top-left card spot').toBeGreaterThan(vp.width * 0.6);
+      await page.locator('.recap-line').first().click();
+      await expect(page.locator('.ai-target').first(), 'the square lights up').toBeAttached();
+      await page.locator('.recap-tog').click();
+      await expect(page.locator('.recap-list'), 'collapsible').toBeHidden();
+      await expect(page.locator('.fx .unit-speech'), 'no chatter').toHaveCount(0);
+    });
+  });
+}
+
+// Ken (Nov 1): "I do want them to automatically attack whatever they're chasing ... have them just stay on them"; "multiple targets ... a multiple string of attacks"; "Stance per unit"
+const toMyAction = async (page) => {
+  for (let i = 0; i < 14; i++) {
+    const s = await getState(page);
+    if (s.activePlayer === 'player' && s.phase === 'action') return s;
+    await page.evaluate(() => { const o = window.oreheart; const d = o.legalActions().find((x) => x.type === 'done' || x.type === 'pass'); if (d) o.act(d); });
+    await page.waitForTimeout(60);
+  }
+  return getState(page);
+};
+const leaveAction = (page) => page.evaluate(() => { const o = window.oreheart; const d = o.legalActions().find((x) => x.type === 'done'); if (d) o.act(d); });
+test('AC556: a chase order attacks turn after turn and stays on; when the target is gone the unit goes on to the next on its list; the order ends with the list; no attack move in one turn', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const board = [{ cardId: 'grubnaks-big-boss-troll', owner: 'player', row: 4, col: 6 }, { cardId: 'goblin-scrounger', owner: 'opponent', row: 4, col: 7 }, { cardId: 'goblin-scrounger', owner: 'opponent', row: 1, col: 7 }];
+  const s0 = await page.evaluate((board) => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [] } }), board);
+  const by = (s, o) => s.board.creatures.filter((c) => c.owner === o);
+  const me = by(s0, 'player')[0], foes = by(s0, 'opponent');
+  const near = foes.find((f) => f.row === 4), far = foes.find((f) => f.row === 1);
+  expect(await page.evaluate(([me, a, b]) => window.oreheart.setOrder({ kind: 'chase', uid: me, targetUid: a, then: [b] }), [me.uid, near.uid, far.uid])).toBe(true);
+  let seen = { attacks: 0, movedOn: false };
+  for (let turn = 0; turn < 9; turn++) {
+    const s = await toMyAction(page);
+    await page.waitForTimeout(150);
+    const after = await getState(page);
+    const u = after.board.creatures.find((c) => c.uid === me.uid);
+    expect(u, 'the big troll lives').toBeTruthy();
+    expect(u.hasAttacked && u.hasMoved, 'moves OR attacks, not both').toBeFalsy();
+    if (u.hasAttacked) seen.attacks++;
+    const orders = await page.evaluate(() => window.oreheart.getOrders());
+    const nearAlive = after.board.creatures.some((c) => c.uid === near.uid), farAlive = after.board.creatures.some((c) => c.uid === far.uid);
+    if (!nearAlive && (u.hasMoved || u.hasAttacked)) seen.movedOn = true;
+    if (nearAlive) expect(orders.length, 'the order stays while the target lives').toBe(1);
+    if (!nearAlive && !farAlive) { await page.evaluate(() => window.__app.renderOrders(window.oreheart.getState())); expect((await page.evaluate(() => window.oreheart.getOrders())).length, 'the list is finished: the unit waits for orders').toBe(0); break; }
+    await leaveAction(page); await page.waitForTimeout(60);
+  }
+  expect(seen.attacks, 'attacked by itself').toBeGreaterThan(0);
+  expect(seen.movedOn, 'went on to the second target').toBe(true);
+});
+test('AC557: stances act by themselves at the start of the Action phase: Hold only attacks in range, Guard steps 1 square to reach an enemy, Aggressive walks to the nearest; no stance does nothing; an order beats a stance', async ({ page }) => {
+  test.setTimeout(60000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const run = async (stance, foeCol) => {
+    const board = [{ cardId: 'goblin-grunt', owner: 'player', row: 4, col: 3 }, { cardId: 'goblin-grunt', owner: 'opponent', row: 4, col: foeCol }];
+    const s0 = await page.evaluate((board) => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [] } }), board);
+    const me = s0.board.creatures.find((c) => c.owner === 'player');
+    if (stance) await page.evaluate(([u, k]) => window.__app.stances.set(u, k), [me.uid, stance]);
+    await toMyAction(page); await page.waitForTimeout(150);
+    const u = (await getState(page)).board.creatures.find((c) => c.uid === me.uid);
+    return { col: u.col, attacked: !!u.hasAttacked };
+  };
+  expect(await run(null, 4), 'no stance: as today').toEqual({ col: 3, attacked: false });
+  expect(await run('hold', 4), 'hold: attacks in range').toEqual({ col: 3, attacked: true });
+  expect(await run('hold', 9), 'hold: stays').toEqual({ col: 3, attacked: false });
+  const guardNear = await run('guard', 5);
+  expect(guardNear.col, 'guard: one step to reach it').toBe(4);
+  expect(await run('guard', 10), 'guard: too far, stays').toEqual({ col: 3, attacked: false });
+  const agg = await run('aggressive', 11);
+  expect(agg.col, 'aggressive: walks toward the nearest enemy').toBeGreaterThan(3);
+});
+for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone', width: 844, height: 390 }]) {
+  test.describe(`orders ${vp.name}`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+    test(`AC558: after a chase order, tapping more enemies adds them (numbered), tapping one again removes it, tapping elsewhere stops; the stance bar sets a unit's stance; at rest only the current target is marked (${vp.name})`, async ({ page }) => {
+      await page.goto('/?test=1&seed=3');
+      await page.waitForFunction(() => !!window.oreheart);
+      const board = [{ cardId: 'goblin-grunt', owner: 'player', row: 6, col: 4 }, { cardId: 'goblin-grunt', owner: 'opponent', row: 3, col: 9 }, { cardId: 'goblin-grunt', owner: 'opponent', row: 2, col: 11 }, { cardId: 'goblin-grunt', owner: 'opponent', row: 5, col: 11 }];
+      const s0 = await page.evaluate((board) => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player', board, playerHand: [] } }), board);
+      await page.waitForTimeout(500);
+      const me = s0.board.creatures.find((c) => c.owner === 'player'), foes = s0.board.creatures.filter((c) => c.owner === 'opponent');
+      await page.evaluate(([me, a]) => { window.oreheart.setOrder({ kind: 'chase', uid: me, targetUid: a }); window.__app.chainFor = me; window.__app.orderFocus = me; window.__app.renderOrders(window.oreheart.getState()); }, [me.uid, foes[0].uid]);
+      const tapFoe = async (f) => { const p = await page.evaluate(([r, c]) => { const a = window.__app, q = a.center(r, c), b = a.r.board.getBoundingClientRect(); return { x: b.left + q.x, y: b.top + q.y }; }, [f.row, f.col]); await page.mouse.click(p.x, p.y); await page.waitForTimeout(150); };
+      const list = async () => (await page.evaluate(() => window.oreheart.getOrders()))[0];
+      await tapFoe(foes[1]); await tapFoe(foes[2]);
+      let o = await list();
+      expect([o.targetUid, ...(o.then || [])], 'three targets in order').toEqual([foes[0].uid, foes[1].uid, foes[2].uid]);
+      await expect(page.locator('.ord-num'), 'numbered 1, 2, 3').toHaveCount(3);
+      await tapFoe(foes[1]);
+      o = await list();
+      expect([o.targetUid, ...(o.then || [])], 'tapped again: off the list').toEqual([foes[0].uid, foes[2].uid]);
+      await page.evaluate(() => { window.__app.chainFor = null; window.__app.orderFocus = null; window.__app.orderFlashUid = null; window.__app.orderHover = null; window.__app.drawOrders(); });
+      await expect(page.locator('.ord-rest'), 'at rest only the current target').toHaveCount(1);
+      await expect(page.locator('.ord-num')).toHaveCount(0);
+      await page.evaluate((u) => { const a = window.__app; a.openStanceBar(window.oreheart.getState().board.creatures.find((c) => c.uid === u)); }, me.uid);
+      const bar = page.locator('.stance-bar');
+      await expect(bar).toBeVisible();
+      await bar.locator('[data-stance="guard"]').click();
+      expect(await page.evaluate((u) => window.__app.stances.get(u), me.uid)).toBe('guard');
+      await expect(page.locator(`.token[data-uid="${me.uid}"][data-stance="guard"]`), 'the tiny mark').toHaveCount(1);
+    });
+  });
+}
