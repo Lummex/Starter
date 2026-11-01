@@ -1240,12 +1240,11 @@ const _embV = new THREE.Vector3();
     arena?.setView(x0, y0, W / scale, H / scale);
   }
   let lastT = performance.now();
-  let lastDraw = 0, drawForce = false;
-  function arenaFrame(now: number, draw = true) {
+  function arenaFrame(now: number) {
     const dt = Math.min(0.05, (now - lastT) / 1000);
     lastT = now;
     easeView(dt);
-    if (draw && arena && backRenderer) { arena.update(now / 1000, dt); backRenderer.render(arena.scene, arena.cam); arenaInfo.drawCalls = backRenderer.info.render.calls; if (arenaInfo.drawCalls > 0) arenaInfo.drawn = true; }
+    if (arena && backRenderer) { arena.update(now / 1000, dt); backRenderer.render(arena.scene, arena.cam); arenaInfo.drawCalls = backRenderer.info.render.calls; if (arenaInfo.drawCalls > 0) arenaInfo.drawn = true; }
   }
   /** a point on the floor (or at a height) in screen pixels */
   const projPt = (x: number, y: number, z: number): [number, number] => {
@@ -1269,7 +1268,7 @@ const _embV = new THREE.Vector3();
     view.W = W; view.H = H;
     const pr = pixelRatio(); if (pr !== renderer.getPixelRatio()) { renderer.setPixelRatio(pr); backRenderer?.setPixelRatio(pr); sizedW = 0; }
     const resized = W !== sizedW || H !== sizedH;
-    if (resized) { drawForce = true; sizedW = W; sizedH = H; renderer.setSize(W, H, false); backRenderer?.setSize(W, H, false); }
+    if (resized) { sizedW = W; sizedH = H; renderer.setSize(W, H, false); backRenderer?.setSize(W, H, false); }
     if (resized && view.zoom <= 1.0001 && !easing) { const [cx, cy] = homeCenter(); view.cx = cx; view.cy = cy; Object.assign(tgt, { zoom: 1, cx, cy }); }
     canvas.style.width = '100%'; canvas.style.height = '100%';
     backCanvas.style.width = '100%'; backCanvas.style.height = '100%';
@@ -1546,7 +1545,7 @@ const _embV = new THREE.Vector3();
     // Now the mines always keep their real effects, and movement and clips advance by elapsed time (below), so a slow frame rate never slows the game.
     if (testMode) { if (prevRaf) frameGap = frameGap * 0.7 + Math.min(2000, now - prevRaf) * 0.3; prevRaf = now; }
     if (testMode && now - lastInput < 220) return;
-    if (testMode && now - lastRender < 300) return; // the pixels are drawn far less often (drawDue below); the logic runs on every frame
+    if (testMode && now - lastRender < Math.max(300, lastDur * 6, frameGap > 100 ? frameGap * 8 : 0)) return;
     lastRender = now;
     void mineLow;
     const slowK = spellFx.slowK(now); // Oct 31: spell slow-mo (0.35x for 300 ms at a big impact): units and FX only
@@ -1759,20 +1758,14 @@ const _embV = new THREE.Vector3();
     // mine emblem: on the mine's square centre, moved half a square towards the camera (same spot on screen) so its own crystal stays behind it but units in front cover it
     crystals.forEach((cr) => { if (!cr.emb) return; const p = cr.art.group.position; _embV.copy(camera.position).sub(p).normalize(); cr.emb.position.copy(p).addScaledVector(_embV, 0.55); });
     updateFlow(now);
-    // Automated runs (software GL): the pixels are only redrawn about once a second (or when the size changed or stats are asked for);
-    // all game logic, clips and positions above still advance every frame by elapsed time.
-    const drawDue = !testMode || drawForce || now - lastDraw > Math.max(2000, lastDur * 12);
-    if (drawDue) {
-      drawForce = false; lastDraw = now;
-      renderer.info.reset();
-      const t0 = performance.now();
-      arenaFrame(now);
-      renderer.clear();
-      renderer.render(scene, camera);
-      if (arena) { renderer.clearDepth(); renderer.render(arena.fgScene, arena.cam); }
-      lastDur = performance.now() - t0;
-      lastFrame = { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
-    } else arenaFrame(now, false);
+    renderer.info.reset();
+    const t0 = performance.now();
+    arenaFrame(now);
+    renderer.clear();
+    renderer.render(scene, camera);
+    if (arena) { renderer.clearDepth(); renderer.render(arena.fgScene, arena.cam); }
+    lastDur = performance.now() - t0;
+    lastFrame = { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
     frames++;
   }
   resize();
