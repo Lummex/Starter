@@ -412,3 +412,12 @@ html body :is(#app .btn.back-btn,#app .btn.db-back,#app .btn.menu-back,#app .btn
 /* style B: the main-menu icons sit inside the bar, just right of the silver edge */
 html body #app .mb-pc.mb-btn .mb-inner::before{left:calc(var(--sv-f) * .22)!important}
 html body #app .mb-pc.mb-btn .mb-inner{padding-left:calc(var(--sv-f) * .75)!important;box-sizing:border-box}
+/* Ken, Nov 1: the front menu sits against the right edge: bars solid on the right and fading to the left, icons on the right, text right-aligned */
+html body #app .mb-pc.mb-btn{border-width:0 4px 0 0!important;border-radius:0 3px 3px 0!important;background:linear-gradient(270deg,rgba(6,8,14,.86) 0,rgba(6,8,14,.72) 45%,rgba(6,8,14,0) 100%)!important}
+html body #app .mb-pc.mb-btn:is(:hover,:focus-visible):not(:disabled){background:linear-gradient(270deg,rgba(26,34,56,.92) 0,rgba(22,30,50,.78) 50%,rgba(22,30,50,0) 100%)!important}
+html body #app .mb-pc.mb-btn:active:not(:disabled){background:linear-gradient(270deg,rgba(0,0,0,.95) 0,rgba(0,0,0,.8) 50%,rgba(0,0,0,0) 100%)!important}
+html body #app .mb-pc.mb-btn .mb-inner::before{left:auto!important;right:calc(var(--sv-f) * .22)!important}
+html body #app .mb-pc.mb-btn .mb-inner{padding-left:0!important;padding-right:calc(var(--sv-f) * 1.15)!important;justify-content:flex-end!important;text-align:right!important}
+html body #app .mb-pc.mb-btn .mb-txt{padding-left:0!important;text-align:right!important}
+html body #app .mb-pc.mb-btn .mb-txt{padding-right:calc(var(--sv-f) * 1.15)!important;box-sizing:border-box!important}
+html body #app .mb-pc.mb-btn .mb-txt{white-space:nowrap!important;overflow:visible!important}
