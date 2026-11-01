@@ -21,7 +21,7 @@ describe('Round 28 orders: card assumptions', () => {
   it('cards used here have the expected move/abilities', () => {
     expect(CARDS['goblin-grunt'].move).toBe(2); // Combat v2 (Nov 1): feet = move points
     expect(CARDS['goblin-grunt'].abilities || []).toEqual([]);
-    expect(CARDS['ram-rider'].move).toBe(3);
+    expect(CARDS['ram-rider'].move).toBe(5); // Nov 1: dearer units walk further (Ken)
     expect(CARDS['goblin-slinger'].abilities).toContain('ranged');
     expect(CARDS['gyrocopter-ace'].abilities).toContain('flying');
   });
@@ -38,8 +38,8 @@ describe('Round 28 orders: shortestPath and turns', () => {
     expect(turnsFor(g, p)).toBe(3);
     const p2 = shortestPath(s, r, { row: 2, col: 6 })!;
     expect(p2.length).toBe(5);
-    expect(turnsFor(r, p2)).toBe(2);
-    expect(turnsFor(r, p2.slice(0, 4))).toBe(2);
+    expect(turnsFor(r, p2)).toBe(1);
+    expect(turnsFor(r, p2.slice(0, 4))).toBe(1);
   });
   it('goes around a blocking unit and around a mine', () => {
     const s = mk([P('goblin-grunt', 2, 2), P('goblin-grunt', 2, 3), P('goblin-grunt', 3, 5), O('goblin-grunt', 7, 13)]);
@@ -88,7 +88,7 @@ describe('Round 28 orders: nextStep', () => {
     const r = at(s, 4, 1);
     const p = shortestPath(s, r, { row: 4, col: 5 })!;
     const step = nextStep(s, r, p)!;
-    expect(step).toEqual(p[2]); // v2: 3 feet = 3 squares in one go
+    expect(step).toEqual(p[p.length - 1]); // v2: 5 feet cover the whole 4-square path in one go
     expect(moveDests(s, r)).toContainEqual(step);
     s = act(s, { type: 'move', creatureUid: r.uid, row: step.row, col: step.col });
     const g = at(s, 1, 1);

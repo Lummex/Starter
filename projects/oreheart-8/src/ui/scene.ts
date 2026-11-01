@@ -46,6 +46,8 @@ export interface BoardView {
   playBowl?(event: any): void;
   /** Oct 30: ms until this unit's attack blow lands (pop-ups wait for it) */
   blowDelay?(uid: string): number;
+  /** ms between one swing's result and the next */
+  swingMs?: number;
   /** Oct 31 (Ken: the computer plays too fast): something on the board is still moving, fighting, dying or casting */
   isBusy?(): string;
   /** Oct 31 (Ken: bubbles must not cover the unit): the on-screen box (board px) of the unit, mine or Stronghold on a square */
@@ -463,11 +465,14 @@ const _embV = new THREE.Vector3();
     group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; fidgetAt?: number; fidgetUntil?: number; fidgetBrk?: boolean; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
     /** Oct 30: squares still to walk (one per step), running gait, knock-back flight, delayed hit flash, step-in length, when its blow lands */
-    path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lungeDur?: number; blowAt?: number;
+    path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lastBlowAt?: number; lungeDur?: number; blowAt?: number;
   };
   type Knock = { t0: number; from: THREE.Vector3; land: THREE.Vector3; h: number; spin: number; fly: number; ret: boolean; landed: boolean; knockMove?: boolean };
   // Oct 30 (Ken's fighting vision): units walk square by square and fights are little comic scenes (timings in ms, snappy)
   const WALK_SPEED = 2.8, RUN_SPEED = 4.0, IMPACT_MELEE = 250, IMPACT_RANGED = 300, LUNGE_MS = 620;
+  /** Ken, Nov 1: "for each swing I'd like it to play the animation, so you can see the hit and the miss": one attack animation, sound and result per swing, this far apart */
+  const SWING_MS = 640;
+  const swingDefs = new Set<string>(); // defenders whose flinch and knock-back follow their own swing results
   const impacts: { at: number; to: THREE.Vector3; ranged: boolean; armored: boolean; commander: boolean }[] = [];
   /** Oct 31 (Ledger, studio/gear-placements-oct31.json aimLooks): while a shooter plays its ranged clip its gun takes an aim grip (barrel along
    *  the hands, muzzle forward); the idle look comes back when the clip ends */
@@ -1063,6 +1068,8 @@ const _embV = new THREE.Vector3();
       const shot = isShooter(f.cardId) ? SHOTS[f.cardId] : null; // Oct 31 (Ken): every ranged unit stays on its square and shoots a flying 3D projectile
       const ranged = !!(shot || e.ranged || (CARDS[f.cardId].abilities || []).includes('ranged'));
       const wait = pathLeft(f), t0 = now + wait, imp = ranged ? IMPACT_RANGED : IMPACT_MELEE;
+      const sw: any[] = []; for (let j = events.indexOf(e) + 1; j < events.length && events[j].type !== 'attack'; j++) if (events[j].type === 'swing' && events[j].uid === e.uid && events[j].tag === 'attack') sw.push(events[j]);
+      const NS = Math.max(1, sw.length), result = (i: number): string => sw[i]?.result ?? 'hit';
       const def = e.target.commander ? null : [...figs.values()].find((d) => d !== f && d.row === e.target.row && d.col === e.target.col && !(d.kb && d.kb.knockMove)) || null;
       f.blowAt = t0 + imp;
       const dir = to.clone().sub(f.target).setY(0);
@@ -1084,12 +1091,14 @@ const _embV = new THREE.Vector3();
         f.blowAt = releaseAt + flightMs; f.faceUntil = f.blowAt + 400;
         aimGrip(f, t0, t0 + f.atkMs + 150, now);
         const sh = shot, ff = f;
-        proj.fire({ shooterUid: f.uid, unit: f.cardId, clip: f.c3d?.clipOf?.('attack') || '', spec: shot, releaseTime: clipRel, releaseAt, arriveAt: f.blowAt, to: toPt, targetUid: def?.uid,
-          launch: () => launchPoint(ff, sh, toPt), onSpawn: () => audio.play(SHOT_SOUNDS[ff.cardId]?.fire || 'ranged'),
-          onLand: () => { const h = SHOT_SOUNDS[ff.cardId]?.hit; if (h) audio.play(h); } });
+        for (let i = 0; i < NS; i++) { const k = i * SWING_MS; // one shot per swing; a miss or a block still flies, only a landed hit makes the thud
+          proj.fire({ shooterUid: f.uid, unit: f.cardId, clip: f.c3d?.clipOf?.('attack') || '', spec: shot, releaseTime: clipRel, releaseAt: releaseAt + k, arriveAt: f.blowAt + k, to: toPt, targetUid: def?.uid,
+            launch: () => launchPoint(ff, sh, toPt), onSpawn: () => audio.play(SHOT_SOUNDS[ff.cardId]?.fire || 'ranged'),
+            onLand: () => { const h = SHOT_SOUNDS[ff.cardId]?.hit; if (h && result(i) === 'hit') audio.play(h); } }); }
       } else if (ranged) { f.lunge = dir.clone().normalize().multiplyScalar(-0.12); f.lungeT = t0 + imp - 40; f.lungeDur = 300; }
       else { f.lunge = dir.clone().multiplyScalar(0.42); f.lungeT = t0; f.lungeDur = LUNGE_MS; }
-      blowAt = Math.max(blowAt, f.blowAt); strikers.add(f.uid);
+      f.lastBlowAt = f.blowAt + (NS - 1) * SWING_MS;
+      blowAt = Math.max(blowAt, f.lastBlowAt); strikers.add(f.uid);
       f.shootT = t0;
       attackLog.push({ uid: f.uid, cardId: f.cardId, kind: shot ? 'shot' : ranged ? 'ranged' : 'melee', lunge: f.lunge ? +f.lunge.length().toFixed(3) : 0, at: Math.round(t0), blowAt: Math.round(f.blowAt) }); if (attackLog.length > 60) attackLog.shift();
       if (f.c3d && shot) { if (!wait) f.c3d.play('attack'); }
@@ -1104,14 +1113,27 @@ const _embV = new THREE.Vector3();
       }
       const swing = () => { if (!shot) audio.play(ranged ? 'ranged' : 'melee'); audio.unitAttack(f.cardId, f.uid, f.finished); }; // a shot's 'ranged' sound plays at its release
       if (wait) setTimeout(swing, wait); else swing();
+      for (let i = 1; i < NS; i++) setTimeout(() => { // the next swing: the attack clip again, its sound, the lunge again
+        if (!figs.has(f.uid) || f.dying) return;
+        const tn = performance.now(); f.shootT = tn;
+        if (!shot && !ranged) { f.lunge = dir.clone().multiplyScalar(0.42); f.lungeT = tn; f.lungeDur = LUNGE_MS; } else if (!shot) { f.lunge = dir.clone().normalize().multiplyScalar(-0.12); f.lungeT = tn + imp - 40; f.lungeDur = 300; }
+        f.c3d?.replay?.(f.atkRole || 'attack'); if (!shot) audio.play(ranged ? 'ranged' : 'melee');
+      }, Math.max(0, t0 - now) + i * SWING_MS);
       const dab: string[] = def ? CARDS[def.cardId]?.abilities || [] : [];
       const dc = def ? st.board.creatures.find((x: any) => x.uid === def.uid) : null;
-      impacts.push({ at: f.blowAt, to: to.clone(), ranged, armored: dab.includes('armored') || dab.includes('unbreakable') || dab.includes('riotShield') || (dc?.shield || 0) > 0, commander: !!e.target.commander });
-      if (def) {
+      const armoredTgt = dab.includes('armored') || dab.includes('unbreakable') || dab.includes('riotShield') || (dc?.shield || 0) > 0;
+      for (let i = 0; i < NS; i++) { // a landed hit thuds (clink on armour); a block by armour clinks; a miss makes no impact at all
+        const r = result(i);
+        if (r === 'hit') impacts.push({ at: f.blowAt + i * SWING_MS, to: to.clone(), ranged, armored: armoredTgt, commander: !!e.target.commander });
+        else if (r === 'block' && sw[i]?.armored) impacts.push({ at: f.blowAt + i * SWING_MS, to: to.clone(), ranged, armored: true, commander: false });
+      }
+      const firstHit = Array.from({ length: NS }, (_, i) => i).find((i) => result(i) === 'hit');
+      if (def) { swingDefs.add(def.uid); for (let i = 0; i < NS; i++) if (result(i) === 'hit') setTimeout(() => { if (figs.has(def.uid)) def.hitAt = performance.now(); }, Math.max(0, f.blowAt - now) + i * SWING_MS); }
+      if (def && firstHit != null) {
         const back = def.target.clone().sub(f.target).setY(0); if (back.lengthSq() < 1e-6) back.set(0, 0, 1); back.normalize();
-        def.kb = { t0: f.blowAt, from: def.target.clone(), land: def.target.clone().addScaledVector(back, ranged ? 0.22 : 0.42), h: ranged ? 0.16 : 0.42, spin: ranged ? 0 : 1, fly: ranged ? 220 : 380, ret: true, landed: false };
-        def.knockT = f.blowAt + 120; fitKnockClip(def);
-        def.faceTo = Math.atan2(f.target.x - def.target.x, f.target.z - def.target.z); def.faceUntil = f.blowAt + 1100; // braces, facing the attacker
+        def.kb = { t0: f.blowAt + firstHit * SWING_MS, from: def.target.clone(), land: def.target.clone().addScaledVector(back, ranged ? 0.22 : 0.42), h: ranged ? 0.16 : 0.42, spin: ranged ? 0 : 1, fly: ranged ? 220 : 380, ret: true, landed: false };
+        def.knockT = f.blowAt + firstHit * SWING_MS + 120; fitKnockClip(def);
+        def.faceTo = Math.atan2(f.target.x - def.target.x, f.target.z - def.target.z); def.faceUntil = f.lastBlowAt + 1100; // braces, facing the attacker
       }
     }
     // Oct 31 (Forge): a damage spell with painted FX lands at the FX's impact, not at the cast: hit flashes (every unit in Starfall's 3x3),
@@ -1161,10 +1183,11 @@ const _embV = new THREE.Vector3();
       }
       else if (e.type === 'damage' && e.uid) {
         const f = figs.get(e.uid);
-        if (f && e.amount > 0) { if (blowAt) f.hitAt = (f.blowAt && strikers.has(f.uid) ? f.blowAt : blowAt) + (strikers.has(f.uid) ? 150 : 0); else f.hitT = now; } // a strike-back lands just after the blow
+        if (f && e.amount > 0 && !(swingDefs.has(f.uid) && !strikers.has(f.uid))) { if (blowAt) f.hitAt = (f.lastBlowAt && strikers.has(f.uid) ? f.lastBlowAt : blowAt) + (strikers.has(f.uid) ? 150 : 0); else f.hitT = now; } // a strike-back lands just after the last blow (the defender flinches per landed swing, above)
       } else if (e.type === 'damage' && e.commander) { if (blowAt > now) setTimeout(() => audio.play('stronghold'), blowAt - now); else audio.play('stronghold'); }
     }
     syncBubbles(st, events, blowAt, now); // Oct 30 (Ken): Bulwark bubble
+    swingDefs.clear();
   }
 
   // ---------------------------------------------------------------- painted arena (round 8a)
@@ -1856,7 +1879,7 @@ const _embV = new THREE.Vector3();
   const api: BoardView = {
     playSpell: (req: SpellFxRequest) => spellFx.play(req),
     spellShards: (at: { row: number; col: number }, countered: string | null) => spellFx.shatter(at, countered),
-    isBusy: () => boardBusy(performance.now()),
+    isBusy: () => boardBusy(performance.now()), swingMs: SWING_MS,
     topAt: (row: number, col: number) => thingBox(row, col),
     is3D: true, setCarry, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {

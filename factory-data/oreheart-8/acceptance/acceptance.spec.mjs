@@ -675,15 +675,17 @@ test('AC12: movement in 8 directions, move 2 only for move-2 creatures', async (
   expect(moves.some((a) => a.creatureUid === scrap && a.row === 4 && a.col === 3)).toBe(true); // (4,2) is a mine square
   expect(moves.some((a) => a.creatureUid === wolf && a.row === 4 && a.col === 5)).toBe(true); // (4,6) is a mine square
   expect(moves.some((a) => a.creatureUid === wolf && a.row === 4 && a.col === 7)).toBe(true);
-  expect(moves.some((a) => a.creatureUid === scrap && a.row === 3 && a.col === 2), '3 squares is past 2 feet').toBe(false);
+  expect(moves.some((a) => a.creatureUid === scrap && a.row === 2 && a.col === 1), '4 squares is past 3 feet (Nov 1: the Brawler walks 3)').toBe(false);
   expect((await act(page, { type: 'move', creatureUid: scrap, row: 4, col: 1 })).ok, 'two steps in one go').toBe(true);
-  expect((await act(page, { type: 'move', creatureUid: scrap, row: 4, col: 2 })).ok, 'no points left').toBe(false);
+  expect((await act(page, { type: 'move', creatureUid: scrap, row: 3, col: 1 })).ok, 'its third point').toBe(true);
+  expect((await act(page, { type: 'move', creatureUid: scrap, row: 2, col: 1 })).ok, 'no points left').toBe(false);
   expect((await act(page, { type: 'move', creatureUid: wolf, row: 4, col: 7 })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 4, 1).uid).toBe(scrap);
+  expect(at(s, 3, 1).uid).toBe(scrap);
   expect(at(s, 4, 7).uid).toBe(wolf);
-  expect((await act(page, { type: 'move', creatureUid: wolf, row: 3, col: 7 })).ok, 'the wolf spends its last point').toBe(true);
-  expect((await act(page, { type: 'move', creatureUid: wolf, row: 2, col: 7 })).ok).toBe(false);
+  expect((await act(page, { type: 'move', creatureUid: wolf, row: 3, col: 7 })).ok, 'the wolf (5 feet) has points left').toBe(true);
+  expect((await act(page, { type: 'move', creatureUid: wolf, row: 1, col: 8 })).ok, 'and walks on to its fifth point').toBe(true);
+  expect((await act(page, { type: 'move', creatureUid: wolf, row: 1, col: 9 })).ok, 'then no more').toBe(false);
 });
 
 test('AC12: each creature moves OR attacks, never both; Thunderhorn Ram Rider (Charge) can do both', async ({ page }) => {
@@ -1473,15 +1475,15 @@ test('AC30: creature labels show Attack, Health, Movement and darken after actin
     },
   });
   const wolf = page.getByLabel('Mangewolf Rider, row 6, column 6', { exact: true });
-  await expect(wolf).toHaveText(/3\D+4\D+3/);
+  await expect(wolf).toHaveText(/3\D+4\D+5/); // Nov 1: the Mangewolf walks 5
   await expect(wolf).toHaveAttribute('data-acted', 'false');
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrapper'), row: 7, col: 1 })).ok).toBe(true);
   const scrap = page.getByLabel('Bowler Brawler, row 7, column 1', { exact: true });
   await expect(scrap).toHaveAttribute('data-acted', 'true');
-  await expect(scrap).toHaveText(/2\D+3\D+2/); // v2: the Brawler has 2 feet
+  await expect(scrap).toHaveText(/2\D+3\D+3/); // the Brawler walks 3 (Nov 1)
   await done(page);
-  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 6).uid, row: 3, col: 6 })).ok).toBe(true); // v2: all 3 feet (round the mine at (4,6)), so it has acted
-  const moved = page.getByLabel('Mangewolf Rider, row 3, column 6', { exact: true });
+  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 6).uid, row: 1, col: 6 })).ok).toBe(true); // v2: all 5 feet (round the mine at (4,6)), so it has acted
+  const moved = page.getByLabel('Mangewolf Rider, row 1, column 6', { exact: true });
   await expect(moved).toHaveAttribute('data-acted', 'true');
   await done(page); // enemy turn
   await expect(moved).toHaveAttribute('data-acted', 'true');
@@ -2488,7 +2490,7 @@ test('AC64: Deploy auto-skips with an unplayable hand; Action skips once nothing
   s = await getState(page);
   expect(s.phase).toBe('action'); // the Troll can still move
   expect(s.activePlayer).toBe('player');
-  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 3).uid, row: 4, col: 3 })).ok).toBe(true); // v2: both of the Troll's points, so nothing is left to do
+  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 3).uid, row: 3, col: 3 })).ok).toBe(true); // v2: all 3 of the Troll's points, so nothing is left to do
   await expect.poll(async () => (await getState(page)).activePlayer, { timeout: 5000 }).toBe('opponent');
 });
 
@@ -12429,12 +12431,14 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
         const atk = (st.attackLog || []).filter((x) => x.uid === me.uid).pop();
         expect(atk && atk.kind, `${id}: staged as a shot`).toBe('shot');
         expect(atk.lunge, `${id}: no lunge`).toBe(0);
-        expect(atk.blowAt, `${id}: the blow is the arrival`).toBe(L.arriveAt);
+        expect(atk.blowAt, `${id}: the first blow is the first shot's arrival (later swings fire later shots)`).toBeLessThanOrEqual(L.arriveAt);
+        expect(L.arriveAt - atk.blowAt, `${id}: within the swings' spacing`).toBeLessThan(5 * 700);
         const log = st.creatureAnimLog || [];
         expect(log.some((e) => e.uid === me.uid && e.anim === 'attack' && e.clip === clip && e.at >= t0 - 5), `${id}: plays ${clip}`).toBe(true);
         const hits = log.filter((e) => e.uid === foe.uid && ['hit', 'knockback'].includes(e.anim) && e.at >= t0 - 5);
         expect(hits.length, `${id}: the troll reacts`).toBeGreaterThan(0);
-        for (const h of hits) expect(h.at, `${id}: the troll's ${h.anim} starts when the projectile arrives, not before`).toBeGreaterThanOrEqual(L.arriveAt - 2);
+        const firstArrive = Math.min(L.arriveAt, ...(st.projectileLog || []).filter((p) => p.targetUid === foe.uid && p.arriveAt >= t0 - 5).map((p) => p.arriveAt)); // Nov 1: one shot per swing; the first landed one makes the first reaction
+        for (const h of hits) expect(h.at, `${id}: the troll's ${h.anim} starts when the projectile arrives, not before`).toBeGreaterThanOrEqual(firstArrive - 2);
         const [fire, hit] = AC500_SND[id], plays = (await sfxState(page)).plays.filter((p) => p.t >= t0 - 5);
         expect(plays.some((p) => p.key === fire && Math.abs(p.t - L.spawnedAt) <= 60), `${id}: ${fire} at the release`).toBe(true);
         expect(plays.some((p) => p.key === 'ranged'), `${id}: its own firing sound replaces the generic one`).toBe(false);
@@ -14171,7 +14175,7 @@ test('AC556: a chase order attacks turn after turn and stays on; when the target
     const after = await getState(page);
     const u = after.board.creatures.find((c) => c.uid === me.uid);
     expect(u, 'the big troll lives').toBeTruthy();
-    expect(u.hasAttacked && u.hasMoved, 'moves OR attacks, not both').toBeFalsy();
+    if (u.hasAttacked) expect(u.movesLeft, 'the attack ends the turn (v2: it may walk first)').toBe(0);
     if (u.hasAttacked) seen.attacks++;
     const orders = await page.evaluate(() => window.oreheart.getOrders());
     const nearAlive = after.board.creatures.some((c) => c.uid === near.uid), farAlive = after.board.creatures.some((c) => c.uid === far.uid);
@@ -14278,7 +14282,7 @@ test('AC560: move points: a 3-foot unit walks 2 and attacks (never attacks then 
   const board = [{ cardId: 'wolf-rider', owner: 'player', row: 6, col: 3 }, { cardId: 'goblin-scrounger', owner: 'player', row: 2, col: 2 }, { cardId: 'skullbasher-rusher', owner: 'player', row: 6, col: 9 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 3, col: 6 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 4 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 10 }];
   const s0 = await v2MatchV2(page, board);
   const wolf = unitOfV2(s0, 'wolf-rider'), miner = unitOfV2(s0, 'goblin-scrounger'), rusher = unitOfV2(s0, 'skullbasher-rusher');
-  expect(wolf.movesLeft).toBe(3); expect(miner.movesLeft).toBe(1); expect(rusher.movesLeft).toBe(3);
+  expect(wolf.movesLeft).toBe(5); expect(miner.movesLeft).toBe(1); expect(rusher.movesLeft).toBe(3);
   await toActionV2(page);
   const act = (a) => page.evaluate((a) => window.oreheart.act(a), a);
   const legal = () => page.evaluate(() => window.oreheart.legalActions());
@@ -14286,13 +14290,13 @@ test('AC560: move points: a 3-foot unit walks 2 and attacks (never attacks then 
   // the wolf: 3 points, walk 2 squares in one go
   let L = await legal();
   const reach = L.filter((a) => a.type === 'move' && a.creatureUid === wolf.uid).map((a) => Math.max(Math.abs(a.row - wolf.row), Math.abs(a.col - wolf.col)));
-  expect(Math.max(...reach), '3 feet = 3 squares').toBe(3);
+  expect(Math.max(...reach), '5 feet = 5 squares').toBe(5);
   expect((await act({ type: 'move', creatureUid: wolf.uid, row: 4, col: 5 })).ok).toBe(true);
-  let s = await state(); expect(unitOfV2(s, 'wolf-rider').movesLeft, '1 point left').toBe(1);
-  await expect(page.locator(`.token[data-uid="${wolf.uid}"] [data-stat="movement"]`), 'the badge shows the points left').toHaveText('1');
+  let s = await state(); expect(unitOfV2(s, 'wolf-rider').movesLeft, '3 points left after 2 steps').toBe(3);
+  await expect(page.locator(`.token[data-uid="${wolf.uid}"] [data-stat="movement"]`), 'the badge shows the points left').toHaveText('3');
   L = await legal();
   expect(L.some((a) => a.type === 'attack' && a.creatureUid === wolf.uid), 'and it can still attack').toBe(true);
-  expect(Math.max(0, ...L.filter((a) => a.type === 'move' && a.creatureUid === wolf.uid).map((a) => Math.max(Math.abs(a.row - 4), Math.abs(a.col - 5)))), 'or walk 1 more').toBe(1);
+  expect(Math.max(0, ...L.filter((a) => a.type === 'move' && a.creatureUid === wolf.uid).map((a) => Math.max(Math.abs(a.row - 4), Math.abs(a.col - 5)))), 'or walk 3 more').toBe(3);
   expect((await act(L.find((a) => a.type === 'attack' && a.creatureUid === wolf.uid))).ok).toBe(true);
   L = await legal(); expect(L.some((a) => a.creatureUid === wolf.uid && (a.type === 'move' || a.type === 'attack')), 'the attack ends its turn').toBe(false);
   // the Miner: 1 point: a move spends it, then no attack
@@ -14316,7 +14320,7 @@ test('AC561: every swing shows a sticker after the blow: MISS and PARRY alternat
   const r = await page.evaluate(() => { window.__stk = []; const fx = document.querySelector('.fx'); new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1 && (n.matches('.burst') || n.matches('.pop-img'))) window.__stk.push(n.textContent.trim() || n.dataset.pop); }).observe(fx, { childList: true }); // the stickers come 0.26 s apart and each lives about 1.5 s, so they are recorded as they appear
     const o = window.oreheart; const s = o.getState(); const w = s.board.creatures.find((c) => c.cardId === 'wolf-rider'); const a = o.legalActions().find((x) => x.type === 'attack' && x.creatureUid === w.uid); if (!a) return { err: 'no attack', phase: s.phase, active: s.activePlayer, prio: s.priority, types: [...new Set(o.legalActions().map((x) => x.type))], units: s.board.creatures.map((c) => c.cardId + '@' + c.row + ',' + c.col + ' ml' + c.movesLeft + (c.hasAttacked ? ' A' : '')) }; const r = o.act(a); if (!r || !r.events) return { err: 'act failed', r, a }; return r.events.filter((e) => e.type === 'swing').map((e) => e.result + (e.armored ? '+' : '')); });
   expect(r.err, JSON.stringify(r)).toBeUndefined();
-  await page.waitForTimeout(3500);
+  await page.waitForTimeout(6500); // up to 5 swings, 0.64 s apart
   const words = await page.evaluate(() => window.__stk);
   const misses = r.filter((x) => x === 'miss').length, blocks = r.filter((x) => x.startsWith('block')).length;
   const mp = (w) => w === 'MISS!' || w === 'miss' || w === 'PARRY!' || w === 'parry';
