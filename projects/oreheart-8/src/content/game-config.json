@@ -1,5 +1,6 @@
 {
- "phaseTimerSeconds": 50,
+ "phaseTimerSeconds": 120,
+ "bankMaxSeconds": 60,
  "timerHiddenSeconds": 40,
  "countdownSeconds": 10,
  "respondWindowSeconds": 12,

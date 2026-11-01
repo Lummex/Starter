@@ -60,9 +60,10 @@ export const DEFAULT_SFX_VOLUME = 56;
 export const VOICES_ON = true;
 /** Ken's voice rules (studio/voice-spec.json v2, Oct 31): 8 s per unit, one voice at a time, 1.2 s between voices (the hurt 35 % rule gave way to VOICE_ONE_IN, Nov 1),
  * priority special > big-hit hurt > select > hurt (a higher one may cut a lower one after 0.2 s), playbackRate range, volume per event. */
-/** Ken, Nov 1: "I wanted to just be like random, just every 1 through 20": every unit voice trigger speaks only 1 time in this many. Change this one number to tune how chatty units are. */
-export const VOICE_ONE_IN = 20;
-export const VOICE = { oneIn: VOICE_ONE_IN, unitCooldownMs: 8000, gapMs: 1200, cutAfterMs: 200, rate: [0.98, 1.02], vol: { select: 0.85, special: 0.9, hurt: 0.8 }, prio: { hurt: 1, select: 2, bigHurt: 3, special: 4 } };
+/** Ken, Nov 1: "a random one to 20 dice roll ... so it just doesn't get super annoying": every automatic voice trigger picks 1 to 3 hit numbers, then rolls a 20-sided die; it speaks only on a hit (about 10 %).
+ *  Clicking a character is not rolled: it always speaks, at most once per clickCooldownMs. Tune how chatty units are here. */
+export const VOICE_DICE = { sides: 20, minHits: 1, maxHits: 3 };
+export const VOICE = { dice: VOICE_DICE as typeof VOICE_DICE | null, clickCooldownMs: 1500, unitCooldownMs: 8000, gapMs: 1200, cutAfterMs: 200, rate: [0.98, 1.02], vol: { select: 0.85, special: 0.9, hurt: 0.8 }, prio: { hurt: 1, select: 2, bigHurt: 3, special: 4 } };
 export const voiceUrl = (name: string, ext = 'ogg') => `/audio/voice/${name}.${ext}`;
 type VoiceEv = 'select' | 'hurt' | 'special';
 type VoiceMan = { units: Record<string, { voice: string; select: string[]; special?: string; special_when?: string }>; voices: Record<string, { hurt: string[] }>; present: string[] };
@@ -411,6 +412,7 @@ class AudioEngine {
   /** The voice playing (or the last one: its end time drives the 1.2 s gap). Times in performance.now() ms. */
   private vCur: { src: AudioBufferSourceNode | null; who: string; line: string | null; event: VoiceEv; prio: number; start: number; end: number } | null = null;
   private vSpokeAt: Record<string, number> = {};
+  private vClickAt: Record<string, number> = {};
   private vBags: Record<string, { bag: string[]; last: string | null }> = {};
   voiceLog: VoicePlay[] = [];
   /** Test hook / Ken's switch: voices on or off (off = the old grunts, exactly as before). */
@@ -467,10 +469,15 @@ class AudioEngine {
     if (!this.ok() || !this.voiceGain) { e.from = this.muted ? 'muted' : 'locked'; return log(); }
     this.voicePreload(unit);
     const skip = (why: string) => { e.skipped = why; return log(); };
-    if (VOICE.oneIn > 1 && Math.random() * VOICE.oneIn >= 1) return skip('odds'); // Ken, Nov 1: a random 1 in 20, for every line
-    if (now - (this.vSpokeAt[who] ?? -1e9) < VOICE.unitCooldownMs) return skip('cooldown'); // 8 s per unit (re-clicks too)
+    const click = event === 'select';
+    if (!click && VOICE.dice) { // the dice: pick the hit numbers, then roll
+      const d = VOICE.dice, want = d.minHits + Math.floor(Math.random() * (d.maxHits - d.minHits + 1)), hits = new Set<number>();
+      while (hits.size < want) hits.add(1 + Math.floor(Math.random() * d.sides));
+      if (!hits.has(1 + Math.floor(Math.random() * d.sides))) return skip('dice');
+    }
+    if (click ? now - (this.vClickAt[who] ?? -1e9) < VOICE.clickCooldownMs : now - (this.vSpokeAt[who] ?? -1e9) < VOICE.unitCooldownMs) return skip('cooldown'); // 8 s per unit; a click only waits out its short cooldown
     const cur = this.vCur, busy = this.vBusy(now), inGap = !busy && !!cur && now < cur.end + VOICE.gapMs;
-    if (busy || inGap) { // one voice at a time, 1.2 s apart; a higher priority may cut a lower one once it has played 0.2 s
+    if (!click && (busy || inGap)) { // a click always speaks (it cuts what is playing); otherwise one voice at a time, 1.2 s apart; a higher priority may cut a lower one once it has played 0.2 s
       if (!(prio > cur!.prio && (!busy || now - cur!.start >= VOICE.cutAfterMs))) return skip(busy ? 'busy' : 'gap');
     }
     const pool = event === 'select' ? this.unitLines(unit).select : event === 'hurt' ? this.unitLines(unit).hurt : this.unitLines(unit).special;
@@ -495,6 +502,7 @@ class AudioEngine {
     }
     e.played = true;
     this.vSpokeAt[who] = now;
+    if (click) this.vClickAt[who] = now;
     return log();
   }
   /** The player clicks one of their own units (or their Commander). */

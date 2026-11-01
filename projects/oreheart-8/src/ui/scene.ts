@@ -1140,7 +1140,7 @@ const _embV = new THREE.Vector3();
         const m = world(e.row, e.col);
         const mk = (state?.turn ?? 0) + ':' + e.row + ',' + e.col; let mineKey = !minedSnd.has(mk); if (mineKey) { if (minedSnd.size > 80) minedSnd.clear(); minedSnd.add(mk); }
         f.faceTo = Math.atan2(m.x - f.target.x, m.z - f.target.z); f.faceUntil = now + 1000;
-        setTimeout(() => { spawnFx('spark', m, 4); if (mineKey) audio.play('pick'); /* Brush: no chime on mining */ }, 220);
+        setTimeout(() => spawnFx('spark', m, 4), 220); // Ken, Nov 1: no clank on the mines
       } else if (e.type === 'bowl') {
         const bf = figs.get(e.uid) || null;
         let rel = 300;

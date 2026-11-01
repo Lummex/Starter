@@ -1,5 +1,6 @@
 import { arenaOpts } from './arena-fx';
 import { mineEmblemUrl, ohCardEl, ohBackEl, commanderCard } from './cardfmt';
+import { recapLines, type RecapTurn } from './recap';
 import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
@@ -1247,6 +1248,7 @@ export class App {
     r.crFlow = yc.flow; r.crBank = yc.bank; r.income = yc.next; r.myName = yc.name;
     r.eFlow = ec.flow; r.eBank = ec.bank; r.eNext = ec.next; r.eName = ec.name;
     r.enemyHand = h('div', { class: 'enemy-hand', role: 'img', 'aria-label': 'Enemy hand' });
+    r.recap = this.buildRecap(); this.recapTurns = []; this.uidOwner.clear(); this.prevAt.clear();
     r.enemyDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Enemy deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-menu-deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
@@ -2388,7 +2390,13 @@ export class App {
       const phaseChanged = !this.phaseKey || key.split('|').slice(0, 2).join() !== this.phaseKey.split('|').slice(0, 2).join();
       this.phaseKey = key;
       if (phaseChanged) {
-        this.deadline = Date.now() + CONFIG.phaseTimerSeconds * 1000;
+        // Ken, Nov 1: seconds you don't use in a phase carry into your next one (capped); the computer has no bank
+        const mineNow = this.timedNow(st), realClock = !this.test || this.realTimer;
+        if (!this.prevKeyed) this.timeBank = 0;
+        else if (this.bankLost) this.timeBank = 0;
+        else if (this.phaseMine && realClock) this.timeBank = Math.min(CONFIG.bankMaxSeconds, Math.max(0, Math.ceil((this.deadline - Date.now()) / 1000)));
+        this.prevKeyed = true; this.bankLost = false; this.phaseMine = mineNow;
+        this.deadline = Date.now() + (CONFIG.phaseTimerSeconds + (mineNow ? this.timeBank : 0)) * 1000;
         this.testLeft = null;
         this.movesDlg && this.movesDlg.close();
         this.movesDlg = null; this.closeDropUp();
@@ -2623,24 +2631,27 @@ export class App {
       el.dataset.stage = 'laying';
       const er = el.getBoundingClientRect(), ex = er.left + er.width / 2, ey = er.top + er.height / 2;
       if (!toPile && at) {
-        // a creature: drop onto its space, flip, glow, then rise into the 3D creature with a dust puff
-        const br = this.r.board.getBoundingClientRect(), pc = this.center(at.row, at.col);
-        const dx = br.left + pc.x - ex, dy = br.top + pc.y - ey, s0 = 75 / cw, s1 = 32 / cw;
-        const T = (x: number, y: number, sc: number, ry: number) => `translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) perspective(600px) rotateY(${ry}deg) scale(${sc})`;
-        const gl = '0 0 40px #ffd45aaa,0 10px 30px #000', glow = '0 0 70px 22px #fff2a0,0 0 30px 10px #ffd45a';
-        const dur = 1100;
+        // Ken, Nov 1: the card drops from the corner onto the centre of its square and lies flat; only then does the unit appear, spawning out of it (the computer's move waits on gone()), and the card fades
+        const br = this.r.board.getBoundingClientRect(), pc = this.center(at.row, at.col), rc = this.view!.cellRect(at.row, at.col);
+        const dx = br.left + pc.x - ex, dy = br.top + pc.y - ey, s0 = Math.max(0.1, (rc.w * 1.05) / cw);
+        const T = (x: number, y: number, sc: number, rx: number) => `translate(calc(-50% + ${x}px),calc(-50% + ${y}px)) perspective(700px) rotateX(${rx}deg) scale(${sc})`;
+        el.style.transformOrigin = '50% 50%'; // lands centred on the square (a hand card pivots on its bottom edge)
         const anim = el.animate([
-          { transform: T(0, 0, 1, 0), opacity: 1, boxShadow: gl, offset: 0 },
-          { transform: T(dx, dy, s0, 0), opacity: 1, boxShadow: gl, offset: 0.4 },
-          { transform: T(dx, dy, s0, 180), opacity: 1, boxShadow: glow, offset: 0.62 },
-          { transform: T(dx, dy, s0, 360), opacity: 1, boxShadow: glow, offset: 0.77 },
-          { transform: T(dx, dy - 40, s1, 360), opacity: 0, boxShadow: glow, offset: 1 },
-        ], { duration: dur, easing: 'ease-in-out', fill: 'forwards' });
-        const puff = h('div', { class: 'dust-puff', 'aria-hidden': 'true' });
-        puff.style.left = `${pc.x}px`; puff.style.top = `${pc.y}px`;
-        setTimeout(() => this.r.board?.append(puff), dur * 0.8);
-        setTimeout(() => puff.remove(), dur * 0.8 + 700);
-        anim.onfinish = () => { unlist(); el.remove(); };
+          { transform: T(0, 0, 1, 0), offset: 0 },
+          { transform: T(dx * 0.62, dy * 0.62 - 26, (1 + s0) / 2, 24), offset: 0.62 },
+          { transform: T(dx, dy, s0, 58), offset: 1 },
+        ], { duration: 520, easing: 'cubic-bezier(.5,.05,.7,1)', fill: 'forwards' });
+        anim.onfinish = () => {
+          el.dataset.stage = 'landed';
+          unlist();
+          const puff = h('div', { class: 'dust-puff', 'aria-hidden': 'true' });
+          puff.style.left = `${pc.x}px`; puff.style.top = `${pc.y}px`;
+          this.r.board?.append(puff);
+          setTimeout(() => puff.remove(), 700);
+          const fade = el.animate([{ opacity: 1, boxShadow: '0 0 70px 22px #fff2a0,0 0 30px 10px #ffd45a', offset: 0.25 }, { opacity: 0 }], { duration: 380, easing: 'ease-out', fill: 'forwards' });
+          fade.onfinish = () => el.remove();
+          setTimeout(() => el.remove(), 900);
+        };
         return;
       }
       // lay it down on the enemy discard pile: shrink, tilt back as it slides over, and land flat on the pile
@@ -2852,6 +2863,10 @@ export class App {
 
   // ------------------------------------------------------------ timer
   testLeft: number | null = null;
+  /** banked seconds carried into the player's next timed phase */
+  timeBank = 0; phaseMine = false; prevKeyed = false; bankLost = false;
+  /** checks only: run the real phase clock on a test page */
+  realTimer = false;
   lastTick = Date.now();
   timedNow(st: any) {
     return !st.tutorial && st.mode !== 'compvscomp' && !(st.mode === 'cardplay' && st.phase === 'action') && st.priority === 'player' && st.activePlayer === 'player' && ACTIVE.includes(st.phase);
@@ -2874,15 +2889,20 @@ export class App {
     if (st.pendingResponse || this.game.paused) this.deadline += dt;
     const timed = this.timedNow(st);
     const total = CONFIG.phaseTimerSeconds;
-    const frozen = this.test;
+    const frozen = this.test && !this.realTimer;
     const left = frozen ? (this.testLeft ?? total) : Math.max(0, Math.ceil((this.deadline - now) / 1000));
     const show = timed && left <= CONFIG.countdownSeconds && !st.pendingResponse;
     r.timer.hidden = !show;
     const pt = r.phase?.querySelector('.ph-time') as El | null;
-    if (pt) pt.textContent = timed && !st.pendingResponse ? `${left}s left` : '';
+    if (pt) { // the plain phase time, and a small quiet note while banked seconds are left
+      const live = timed && !st.pendingResponse, extra = live ? Math.max(0, left - total) : 0;
+      const label = live ? `${Math.min(left, total)}s left` : '', note = extra ? `+${Math.floor(extra / 60)}:${String(extra % 60).padStart(2, '0')}` : '';
+      if (pt.dataset.lbl !== label + note) { pt.dataset.lbl = label + note; pt.textContent = label; if (note) pt.append(h('span', { class: 'ph-bank', 'aria-label': 'Banked time' }, note)); }
+    }
     this.syncDone();
     if (show) { if (r.timer.textContent !== String(left) && left <= 5 && st.activePlayer === 'player') audio.play('tick'); /* Oct 31: only the last 5 s of YOUR phase */ r.timer.textContent = String(left); }
     if (!frozen && timed && left <= 0 && !st.pendingResponse) {
+      this.bankLost = true;
       this.deadline = now + total * 1000;
       this.game.act({ type: 'done' });
     }
@@ -3597,9 +3617,46 @@ export class App {
     this.view && this.view.emote(side as any, kind);
     if (side === 'player' || side === 'opponent') this.say(side, kind);
   }
+  // ---- enemy turn recap (Ken, Nov 1): built from game events only, nothing per frame
+  recapTurns: RecapTurn[] = [];
+  uidOwner = new Map<string, string>();
+  recapAdd(st: any, events: any[]) {
+    const r = this.r; if (!r.recap || !events?.length) return;
+    if (!r.recap.isConnected) this.root.querySelector('.match')?.append(r.recap);
+    const lines = recapLines(events, (u) => this.uidCard.get(u), (u) => this.uidOwner.get(u), (row, col) => { const c = st.board.creatures.find((x: any) => x.row === row && x.col === col); return c ? c.cardId : this.prevAt.get(row + ',' + col); });
+    this.prevAt.clear(); for (const c of st.board?.creatures || []) this.prevAt.set(c.row + ',' + c.col, c.cardId);
+    if (!lines.length) return;
+    let cur = this.recapTurns[this.recapTurns.length - 1];
+    if (!cur || cur.turn !== st.turn) { cur = { turn: st.turn, lines: [] }; this.recapTurns.push(cur); if (this.recapTurns.length > 2) this.recapTurns.shift(); }
+    cur.lines.push(...lines);
+    this.renderRecap();
+  }
+  prevAt = new Map<string, string>();
+  renderRecap() {
+    const box = this.r.recap as El | undefined; if (!box) return;
+    box.hidden = !this.recapTurns.length;
+    const open = this.recapOpen();
+    box.classList.toggle('open', open);
+    (box.querySelector('.recap-tog') as El).setAttribute('aria-expanded', String(open));
+    const list = box.querySelector('.recap-list') as El;
+    list.replaceChildren(...this.recapTurns.flatMap((t) => [h('div', { class: 'recap-turn' }, `Enemy turn ${t.turn}`), ...t.lines.map((l) => {
+      const b = h('button', { type: 'button', class: 'recap-line' }, l.text) as HTMLButtonElement;
+      b.addEventListener('click', (ev: Event) => { ev.stopPropagation(); const live = l.uid ? this.game.state?.board.creatures.find((c: any) => c.uid === l.uid) : null; const cells = live ? [{ row: live.row, col: live.col }] : l.cells; if (cells.length) this.aiMark(cells, 1300); });
+      return b;
+    })]));
+    list.scrollTop = list.scrollHeight;
+  }
+  recapOpen() { const v = localStorage.getItem('oreheart.recap'); return v ? v === 'open' : window.innerHeight >= 500; }
+  buildRecap(): El {
+    const tog = btn('Recap', 'recap-tog', (e: Event) => { e.stopPropagation(); localStorage.setItem('oreheart.recap', this.recapOpen() ? 'closed' : 'open'); this.renderRecap(); }, { 'aria-expanded': 'false' });
+    const box = h('div', { class: 'recap', role: 'log', 'aria-label': 'Enemy turn recap' }, tog, h('div', { class: 'recap-list' })) as El;
+    box.hidden = true;
+    return box;
+  }
   animate(st: any, events: any[]) {
     if (!this.view || !this.r.fx) return;
-    for (const c of st.board?.creatures || []) this.uidCard.set(c.uid, c.cardId);
+    for (const c of st.board?.creatures || []) { this.uidCard.set(c.uid, c.cardId); this.uidOwner.set(c.uid, c.owner); }
+    this.recapAdd(st, events);
     if (!this.fxStarted && st.phase !== 'mulligan') {
       this.fxStarted = true; this.lowSaid = { player: false, opponent: false };
       for (const x of st.sites || []) this.siteOwner.set(x.row + ',' + x.col, x.controller || '');
@@ -3619,17 +3676,14 @@ export class App {
         if (tgt) { if (wait) setTimeout(() => this.pop(word, tgt.row, tgt.col), wait); else this.pop(word, tgt.row, tgt.col); }
       } else if (e.type === 'move' && e.knock && e.to && !events.some((x: any, j: number) => j > events.indexOf(e) && x.type === 'move' && x.knock && x.uid === e.uid)) this.pop('knockback', e.to.row, e.to.col);
       { const su = !e.commander && (e.creatureUid || e.uid), c = su ? st.board.creatures.find((x: any) => x.uid === su) : null; if (c) audio.unitEvent(c.cardId, c.uid, e.type, CARDS[c.cardId]?.abilities || [], !!e.ranged); } // Oct 31: a unit's special line when it does its special (audio.ts isSpecialEvent)
-      if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('stolen', c.row, c.col); this.unitSay('unit-mine-now', c.row, c.col, true); } }
+      if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) this.pop('stolen', c.row, c.col); }
       else if (e.type === 'poisoned') this.pop('poisoned', e.row, e.col);
-      else if (e.type === 'drunk') { this.pop('hic', e.row, e.col); this.unitSay('unit-hic', e.row, e.col); }
+      else if (e.type === 'drunk') this.pop('hic', e.row, e.col);
       else if (e.type === 'brewSave') this.pop('saved', e.row, e.col);
       else if (e.type === 'ward') this.pop('ward', e.row, e.col);
       else if (e.type === 'heal' && e.amount > 0 && e.row) this.pop('heal', e.row, e.col);
-      else if (e.type === 'mine' && e.uid) { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) { this.pop('clink', typeof e.row === 'number' ? e.row : c.row, typeof e.col === 'number' ? e.col : c.col); /* Oct 31 (Ken): the clanks need to be on the crystal, not on the player */ if (c.owner === 'player' && Math.random() < 0.3) this.unitSay('unit-shiny', c.row, c.col); } }
-      else if (e.type === 'minerUpgrade' && e.row) { this.pop('upgrade', e.row, e.col); this.unitSay('unit-good-as-new', e.row, e.col, true); }
-      else if (e.type === 'summon' && e.owner === 'player' && !e.illusion && e.row) this.unitSay(Math.random() < 0.5 ? 'unit-reporting' : 'unit-ready', e.row, e.col);
-      else if (e.type === 'abilityUsed' && e.ability === 'brew') this.unitSay('unit-bottoms-up', e.row, e.col, true);
-      else if (e.type === 'abilityUsed' && e.ability === 'slide') this.unitSay('unit-uh-oh', e.row, e.col, true);
+      else if (e.type === 'minerUpgrade' && e.row) this.pop('upgrade', e.row, e.col);
+      // Ken, Nov 1: no chatter over units; Commanders keep their bubbles, status pop-ups stay
       else if (e.type === 'fizzle') { const sd = st.activePlayer === 'player' ? 'player' : 'opponent'; this.pop('fizzle', SH[sd].row, SH[sd].col); }
       else if (e.type === 'turnStart' && e.player === 'player') { audio.play('turn-start'); if (e.turn > 1) this.say('player', 'turn'); } // Oct 31: gentle war horn
       else if (e.type === 'bonusDraw') {
