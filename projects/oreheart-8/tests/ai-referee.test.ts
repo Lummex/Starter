@@ -3,6 +3,8 @@
 // (the same legalActions() list the player gets), every summon must be paid for, land in its legal deploy zone and
 // come from that side's own hand and deck, and the real match state must be untouched by the computer's thinking.
 import { describe, it, expect } from 'vitest';
+import { CONFIG as _CFG } from '../src/engine';
+(_CFG as any).combat.dice = 'sure'; // Combat v2 (Nov 1): these older tests pin exact damage, so every swing lands and nothing blocks here (the dice have their own tests)
 import { createMatch, applyAction, legalActions, CARDS, CONFIG, STARTER_DECK_LIST, creatureCost, funds, summonSpaces } from '../src/engine';
 import { aiChoose, makeRand } from '../src/ai/ai';
 

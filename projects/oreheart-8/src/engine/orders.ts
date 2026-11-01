@@ -79,7 +79,7 @@ export function turnsFor(c: any, path: Cell[]): number {
 export function nextStep(s: any, c: any, path: Cell[]): Cell | null {
   if (!path || !path.length) return null;
   const dests = moveDests(s, c);
-  for (let k = Math.min(maxMove(c) || 0, path.length); k >= 1; k--) {
+  for (let k = Math.min(c.movesLeft ?? (maxMove(c) || 0), path.length); k >= 1; k--) { // v2: as far as the points left allow
     const q = path[k - 1];
     if (creatureAt(s, q.row, q.col)) continue; // never land on (swap with) one of our own units; walk past it on a later step
     if (dests.some((d) => d.row === q.row && d.col === q.col)) return { row: q.row, col: q.col };
@@ -90,7 +90,7 @@ export function nextStep(s: any, c: any, path: Cell[]): Cell | null {
 /** True when `c`, standing on `at`, could attack `enemy` by the normal attack rules (attackTargets). */
 export function canAttackFrom(s: any, c: any, at: Cell, enemy: any): boolean {
   // A fresh copy of c on `at`: only geometry (reach, line of sight, guards) decides; this-turn flags are cleared.
-  const copy = { ...c, row: at.row, col: at.col, hasMoved: false, hasAttacked: false, hasMined: false, summonedThisTurn: false, lockedUntil: 0, wardUntil: 0, rocketed: false };
+  const copy = { ...c, row: at.row, col: at.col, hasMoved: false, hasAttacked: false, hasMined: false, movesLeft: 1, summonedThisTurn: false, lockedUntil: 0, wardUntil: 0, rocketed: false };
   const s2 = { ...s, board: { ...s.board, creatures: s.board.creatures.map((x: any) => (x.uid === c.uid ? copy : x)) } };
   return attackTargets(s2, copy).some((t: any) => !t.commander && t.row === enemy.row && t.col === enemy.col);
 }

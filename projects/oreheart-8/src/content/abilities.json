@@ -37,7 +37,7 @@
  },
  "armored": {
   "name": "Armored",
-  "text": "Takes 1 less damage from every hit."
+  "text": "Blocks on a 1, 2 or 6 (others block only on a 1 or 6)."
  },
  "blink": {
   "name": "Blink",
@@ -61,11 +61,11 @@
  },
  "charge": {
   "name": "Charge",
-  "text": "Can move and attack in the same turn."
+  "text": "Can still attack after spending all its move points."
  },
  "unbreakable": {
   "name": "Unbreakable",
-  "text": "Never takes more than 3 damage from one hit."
+  "text": "Never takes more than 3 damage from one attack."
  },
  "heartyale": {
   "name": "Hearty Ale",
@@ -109,6 +109,6 @@
  },
  "riotShield": {
   "name": "Riot Shield",
-  "text": "Enemies next to it must attack it first. It takes 1 less damage from every hit, and nothing can knock it back, bowl it, lift it or shove it."
+  "text": "Enemies next to it must attack it first. It blocks on a 1, 2 or 6, and nothing can knock it back, bowl it, lift it or shove it."
  }
 }
