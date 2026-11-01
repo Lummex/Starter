@@ -1,0 +1,24 @@
+{
+  "version": "2026-10-31-draft",
+  "title": "End User License Agreement",
+  "sections": [
+    { "heading": "What this is", "text": "This is the agreement between you and the Oreheart team about playing Oreheart. By creating an account, or by pressing Agree when we ask, you say yes to everything here. If you don't agree, please don't use an account. You can still play offline for practice." },
+    { "heading": "Your account", "text": "You may have one account. Pick a username that is kind and suitable for a game for kids. Keep your password to yourself, because you are responsible for what happens on your account. If you think someone else is using it, tell us with the Contact us form." },
+    { "heading": "Kids and parents", "text": "If you are under 13, a parent or guardian has to say yes by email before the account can be used online. They can take that yes back at any time. In that case the account stops working online." },
+    { "heading": "Coins, cards and decks have no cash value", "text": "Coins, cards, decks and everything else in the game are for fun only. They are not money, you cannot sell them or trade them for money, and we do not pay anything for them. We may change, rebalance or remove game items, and we may reset progress when we need to keep the game fair." },
+    { "heading": "Play fair", "text": "No cheating, hacking, bots or tools that play for you, no using bugs on purpose, no trying to break or look inside our servers, and no using other people's accounts. No rude, hateful or grown-up names or pictures. Be a good sport: it is a game for everyone, and kids play it." },
+    { "heading": "What we may do", "text": "If someone breaks these rules we may warn them, take away items, change a username, or block the account for a while or for good. Every one of these steps is written down. You can ask us about a decision with the Contact us form." },
+    { "heading": "Donations", "text": "If we ever ask for donations, they are gifts to help us make the game. They are voluntary, they do not buy coins, cards or an advantage, and we will explain the details before anyone is asked for money." },
+    { "heading": "Your privacy", "text": "We keep your username, your email address, your decks, cards and game progress, and a record that you agreed to this agreement. We do not ask for your birth date, a photo, your real name, a phone number or a home address. There is no chat or free text between players, and we do not sell or share your information. To have your account and its data deleted, use the Contact us form." },
+    { "heading": "Our game and your licence", "text": "Oreheart, its art, cards, characters, music and software belong to the Oreheart team. We give you a personal, limited, non-exclusive licence to play the game for fun. You may not copy it, sell it, rent it out, take it apart or use its art and sounds for your own projects without asking." },
+    { "heading": "No promises", "text": "We work hard on Oreheart, but we give it to you as it is. It may have bugs, go down for a while, or change. To the extent the law allows, we are not responsible for lost progress or other losses from using the game. Nothing here takes away rights you have under the law where you live." },
+    { "heading": "Changes to this agreement", "text": "We may update this agreement. When we do, the game asks you to read and agree to the new version before you play online again." },
+    { "heading": "Questions", "text": "Please use the Contact us form in the game. We answer from a no-reply address, so leave a reply email in the form if you would like an answer." }
+  ],
+  "lawyer_review": [
+    "This whole text is a plain-English placeholder written from what the game really does (Online Phase A). A lawyer must review and rewrite it before launch.",
+    "Check the limits on liability, the governing law and where disputes are heard, and the licence wording for the countries where the game launches.",
+    "Check that the under-13 wording matches the parent notice and COPPA, and the wording about donations before Phase D adds payments (Stripe terms, refunds, taxes).",
+    "Whenever the text changes, change the version at the top. Players are then asked to agree again, and a migration must set the server's eula_version setting (supabase/scripts/make-settings-sql.mjs)."
+  ]
+}

@@ -24,6 +24,7 @@ export const redirectUrl = () => location.origin + location.pathname + location.
 
 export interface Status {
   user_id: string; username: string; avatar: string | null; needs_avatar: boolean; age_group: string;
+  eula_version?: string; needs_eula?: boolean;
   consent_status: string; decks_imported: boolean; coins: number; banned: boolean; ban_expires_at: string | null; ban_reason: string | null;
 }
 export const myStatus = () => rpc<Status>('my_status');

@@ -10,6 +10,7 @@ import { client, rpc, redirectUrl, myStatus, passwordOk, ageGroupFor, savedAgeGr
 import { buildKind, mismatch } from './env-guard';
 import { pageMode } from './switch';
 import parentNotice from '../content/parent-notice.json';
+import eula from '../content/eula.json';
 import { RACES, pickableAvatars, avatarPicture, avatarName } from './avatars';
 
 type El = HTMLElement;
@@ -179,12 +180,19 @@ function showSignUp(group: AgeGroup) {
   const cap = captchaBox();
   let nameOk = false; let seq = 0; let timer: any;
   const create = nbtn('Create account', () => { void submit(); }, 'primary') as HTMLButtonElement;
+  // Ken (Oct 31): everyone must agree to the End User License Agreement; the text is readable right here.
+  const agree = h('input', { type: 'checkbox', id: 'su-eula' }) as HTMLInputElement;
+  const eulaBox = h('div', { class: 'net-eula', hidden: true, tabindex: '0', role: 'region', 'aria-label': eula.title }, ...eulaBody());
+  const eulaToggle = h('button', { type: 'button', class: 'net-link', 'aria-expanded': 'false', onclick: () => { eulaBox.hidden = !eulaBox.hidden; eulaToggle.setAttribute('aria-expanded', String(!eulaBox.hidden)); eulaToggle.textContent = eulaBox.hidden ? 'Read it' : 'Hide it'; } }, 'Read it');
+  agree.addEventListener('change', () => update());
+  const eulaRow = h('div', { class: 'net-eula-row' },
+    h('label', { class: 'net-check', for: 'su-eula' }, agree, h('span', {}, 'I agree to the End User License Agreement')), eulaToggle);
   const update = () => {
     const pOk = passwordOk(pw.input.value);
     const match = pw.input.value === pw2.input.value;
     pw2.msg.textContent = pw2.input.value && !match ? "Passwords don't match." : '';
     pw.msg.textContent = pw.input.value && !pOk ? 'Use at least 10 characters with a lower case letter, an upper case letter and a number.' : '';
-    create.disabled = !(nameOk && pOk && match && pw2.input.value && email.input.value.trim());
+    create.disabled = !(nameOk && pOk && match && pw2.input.value && email.input.value.trim() && agree.checked);
   };
   user.input.addEventListener('input', () => {
     nameOk = false; user.msg.textContent = ''; update();
@@ -205,7 +213,7 @@ function showSignUp(group: AgeGroup) {
   async function submit() {
     err.textContent = '';
     await busy(create, async () => {
-      const { error } = await client().auth.signUp({ email: email.input.value.trim(), password: pw.input.value, options: { data: { username: user.input.value.trim(), age_group: group }, captchaToken: cap.token(), emailRedirectTo: redirectUrl() } });
+      const { error } = await client().auth.signUp({ email: email.input.value.trim(), password: pw.input.value, options: { data: { username: user.input.value.trim(), age_group: group, eula_version: eula.version }, captchaToken: cap.token(), emailRedirectTo: redirectUrl() } });
       cap.reset();
       if (error) {
         if (/database error/i.test(error.message)) { nameOk = false; user.msg.textContent = 'That name is taken.'; }
@@ -218,7 +226,7 @@ function showSignUp(group: AgeGroup) {
   update();
   menuShow('signup', h('h1', {}, 'Create account'),
     h('form', { class: 'net-form', onsubmit: (e: Event) => { e.preventDefault(); if (!create.disabled) void submit(); } },
-      user.wrap, email.wrap, pw.wrap, pw2.wrap, cap.el, err),
+      user.wrap, email.wrap, pw.wrap, pw2.wrap, eulaRow, eulaBox, cap.el, err),
     h('div', { class: 'net-actions' }, create, nbtn('Back', showAge)));
 }
 
@@ -316,6 +324,38 @@ function revokedScreen() {
     h('div', { class: 'net-actions' }, nbtn('Sign out', () => { void signOut(); }), offlineBtn()));
 }
 
+/** The EULA text (src/content/eula.json) as readable elements; a DRAFT banner while the version says -draft. */
+function eulaBody(): El[] {
+  const draft = /-draft$/.test(eula.version);
+  return [
+    ...(draft ? [h('p', { class: 'net-draft' }, 'DRAFT – lawyer review before launch')] : []),
+    ...(eula.sections as { heading: string; text: string }[]).map((s) => h('section', { class: 'net-section' }, h('h3', {}, s.heading), h('p', {}, s.text))),
+  ];
+}
+
+/** Read-only copy of the agreement (Profile and Contact us link here). */
+function showEula(back: () => void) {
+  menuShow('eula', h('h1', {}, eula.title), ...eulaBody(), h('div', { class: 'net-actions' }, nbtn('Back', back)));
+}
+
+/** Asked after sign-in when the player has not agreed to the current version (older accounts, or a new text). */
+function eulaGate(s: Status) {
+  const err = alertEl();
+  const box = h('input', { type: 'checkbox', id: 'eula-agree' }) as HTMLInputElement;
+  const ok = nbtn('Agree', async () => {
+    err.textContent = '';
+    await busy(ok, async () => {
+      try { await rpc('accept_eula', { p_version: eula.version }); s.needs_eula = false; if (status) status.needs_eula = false; void proceed(s); }
+      catch (e: any) { err.textContent = e.message; }
+    });
+  }, 'primary') as HTMLButtonElement;
+  ok.disabled = true;
+  box.addEventListener('change', () => { ok.disabled = !box.checked; });
+  menuShow('eula-gate', h('h1', {}, eula.title), h('p', {}, 'Please read this and agree to keep playing online.'), ...eulaBody(),
+    h('label', { class: 'net-check', for: 'eula-agree' }, box, h('span', {}, 'I agree to the End User License Agreement')),
+    err, h('div', { class: 'net-actions' }, ok, nbtn('Sign out', () => { void signOut(); }), offlineBtn()));
+}
+
 function avatarScreen(s: Status, back?: () => void) {
   const err = alertEl();
   // Ken (Oct 31): painted portraits in circles, grouped by race with a race filter. A portrait shows once its
@@ -401,6 +441,7 @@ async function proceed(s: Status) {
   if (s.banned) { net.active = false; banScreen(s); return; }
   if (s.consent_status === 'pending') { net.active = false; waitingScreen(s); return; }
   if (s.consent_status === 'revoked') { net.active = false; revokedScreen(); return; }
+  if (s.needs_eula) { eulaGate(s); return; }
   if (s.needs_avatar) { avatarScreen(s); return; }
   net.offlineChosen = false;
   net.active = true;
@@ -447,6 +488,7 @@ function showProfile() {
       h('div', {}, h('p', { class: 'net-username' }, s.username), joined, h('p', {}, 'No online matches yet'))),
     h('div', { class: 'net-actions' },
       nbtn('Change avatar', () => avatarScreen(s, showProfile)),
+      nbtn('User agreement', () => showEula(showProfile)),
       nbtn('Contact us', () => showContact({ back: showProfile, email: undefined, player: s.username })),
       nbtn('Sign out', () => { void signOut(); }),
       nbtn('Back', () => app.showMenu())));
@@ -490,7 +532,7 @@ export function showContact(o: { back?: () => void; player?: string; email?: str
       h('div', { class: 'net-field' }, h('label', { for: 'ct-topic' }, 'Topic'), topic),
       h('div', { class: 'net-field' }, h('label', { for: 'ct-message' }, 'Message'), message),
       reply.wrap, name.wrap, player.wrap, cap.el, err, note),
-    h('div', { class: 'net-actions' }, send, nbtn('Back', back)));
+    h('div', { class: 'net-actions' }, send, nbtn('User agreement', () => showEula(() => showContact(o))), nbtn('Back', back)));
 }
 
 async function showPage(kind: 'consent' | 'withdraw' | 'contact') {

@@ -42,6 +42,8 @@ const settings = {
   commander_ids: commanderIds,
   avatar_cards: avatarCards,
   avatar_mature: avatarMature,
+  // The current End User License Agreement version (Ken, Oct 31); players on another version are asked to agree again.
+  eula_version: read('eula.json').version,
   // Compared after private.normalize_name(): lowercase letters only, look-alikes undone.
   reserved_usernames: ['ken', 'lummex', 'forge', 'root', 'system', 'staff', 'support', 'help', 'official',
     'player', 'guest', 'null', 'undefined', 'grubnak', 'sproingle', 'knobbin', 'borgo', 'skreeka', 'sprocket', 'grumblebeard'],
