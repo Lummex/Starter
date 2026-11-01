@@ -1196,7 +1196,7 @@ const _embV = new THREE.Vector3();
       const prev = THREE.ColorManagement.enabled;
       arena = buildArena(L, bg, ar, () => view.scale * (low ? 1 : Math.min(window.devicePixelRatio || 1, 2)));
       THREE.ColorManagement.enabled = prev;
-      Object.assign(arenaInfo, { loaded: true, errors: arena.errors, skippedTypes: arena.skippedTypes, effects: arena.effects.length, cutouts: arena.cuts.length, flowEffects: (L.effects as any[]).filter((e: any) => e.type === 'flow').length });
+      Object.assign(arenaInfo, { loaded: true, errors: arena.errors, skippedTypes: arena.skippedTypes, effects: arena.effects.length, cutouts: arena.cuts.length, bgCutouts: arena.bgCuts.length, flowEffects: (L.effects as any[]).filter((e: any) => e.type === 'flow').length });
       applyView();
     }).catch((err) => { const m = 'arena build failed: ' + (err && err.message || err); arenaInfo.errors.push(m); console.error(m, err); });
   }

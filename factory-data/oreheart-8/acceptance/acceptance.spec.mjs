@@ -14991,3 +14991,28 @@ test('AC542: all 74 avatars are in the game; offline, a mature pick shows its sa
   const text = await page.evaluate(() => document.body.innerText.toLowerCase());
   for (const w of ['mature', 'age restricted', '16+', 'adult']) expect(text, `no "${w}" wording`).not.toContain(w);
 });
+
+// Ken (Oct 31, Arena Editor): "I need one where it applies to the very background also ... the very far background." A layout may list backgroundCutouts (polygons in background px):
+// the game lifts them onto the top layer like the arena cut-outs; layouts without the key (Skullfang) load as before.
+test('AC548: far-background cut-outs: a layout with a backgroundCutouts polygon draws it, one without loads as before', async ({ page, request }) => {
+  test.setTimeout(120000);
+  await page.goto('/?test=1&seed=7');
+  await page.waitForFunction(() => !!window.oreheart);
+  for (const f of ['dwarf', 'gnome']) { const j = await (await request.get(`/art/arena/${f}-arena-layout.json`)).json(); expect(Array.isArray(j.backgroundCutouts), `${f}: the key is there`).toBe(true); }
+  await page.evaluate(() => window.oreheart.setArenaPick('opponent'));
+  await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'sproingle', setup: { firstPlayer: 'player' } }));
+  await page.mouse.click(5, 5);
+  if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable'); // asked once a match (and its arena) exists
+  await expect.poll(async () => (await renderStats(page)).arena?.drawn, { timeout: 30000 }).toBe(true);
+  let st = await renderStats(page);
+  expect(st.arena.errors).toEqual([]);
+  expect(st.arena.bgCutouts, 'the shipped gnome layout has none yet').toBe(0);
+  // Skullfang has no such key and still draws
+  await page.evaluate(() => window.oreheart.setArenaPick('player'));
+  await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { firstPlayer: 'player' } }));
+  await expect.poll(async () => (await renderStats(page)).arena?.faction, { timeout: 30000 }).toBe('goblins');
+  await expect.poll(async () => (await renderStats(page)).arena?.drawn, { timeout: 30000 }).toBe(true);
+  st = await renderStats(page);
+  expect(st.arena.errors).toEqual([]);
+  expect(st.arena.bgCutouts).toBe(0);
+});

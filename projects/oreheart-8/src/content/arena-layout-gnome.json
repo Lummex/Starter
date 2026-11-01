@@ -597,5 +597,6 @@
    "cGlow": "#c46cff"
   }
  ],
- "foregroundCutouts": []
+ "foregroundCutouts": [],
+ "backgroundCutouts": []
 }
