@@ -2,14 +2,22 @@
 // Ken, Oct 31: the player gets goblin-goggle-rogue until Online supplies theirs; every AI rival has a fixed avatar of its own race.
 import AV from '../content/avatars.json';
 
-export interface Avatar { id: string; race: string; label: string; shipped: boolean }
+export interface Avatar { id: string; race: string; gender?: string; label: string; shipped: boolean; mature?: boolean; safe_fallback?: string }
 export const AVATARS: Avatar[] = (AV as any).avatars;
 export const DEFAULT_AVATAR: string = (AV as any).default;
 const shipped = new Set(AVATARS.filter((a) => a.shipped).map((a) => a.id));
 const hash = (s: string) => { let h = 7; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) | 0; return Math.abs(h); };
 
-/** The avatar to show for a planned id: its own picture once Brush has painted it, until then a painted one of the same race (always the same stand-in). */
+/** Ken, Nov 1: a mature avatar shows only to its owner on a 16+ account; signed-out, offline and under-16 viewers see its safe stand-in, with no wording about it anywhere.
+ *  Online Phase A turns this on for a signed-in 16+ account (setMatureAllowed). Offline it is always off. */
+let matureAllowed = false;
+export function setMatureAllowed(on: boolean) { matureAllowed = on; }
+export const isMatureAllowed = () => matureAllowed;
+const byId = new Map(AVATARS.map((a) => [a.id, a]));
+/** The avatar to show for a planned id: its own picture once Brush has painted it (a mature one only when allowed, else its safe stand-in), until then a painted one of the same race. */
 export function shownAvatar(id: string): string {
+  const a = byId.get(id);
+  if (a?.mature && !matureAllowed) { const f = a.safe_fallback || ''; if (f && shipped.has(f)) return f; }
   if (shipped.has(id)) return id;
   const race = AVATARS.find((a) => a.id === id)?.race;
   const same = AVATARS.filter((a) => a.shipped && a.race === race && a.id !== DEFAULT_AVATAR);
@@ -32,6 +40,6 @@ export function getPlayerAvatar(): string {
 export function rivalAvatars(faction: string): string[] {
   const race = faction === 'gnomes' ? 'gnome' : faction === 'dwarves' ? 'dwarf' : 'goblin';
   const extra = faction === 'gnomes' ? ['human', 'undead'] : faction === 'dwarves' ? ['undead', 'human'] : ['troll', 'human'];
-  const ids = (r: string) => AVATARS.filter((a) => a.race === r && a.id !== DEFAULT_AVATAR).map((a) => a.id);
+  const ids = (r: string) => AVATARS.filter((a) => a.race === r && a.id !== DEFAULT_AVATAR && !a.mature).map((a) => a.id); // rivals never take a mature one
   return [...ids(race), ...extra.flatMap(ids)];
 }

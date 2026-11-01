@@ -19,7 +19,9 @@ for a in plan:
         im = Image.open(f).convert('RGBA')
         im.thumbnail((160, 160), Image.LANCZOS)
         im.save(os.path.join(out, a['id'] + '.webp'), 'WEBP', quality=86, method=4)
-    lst.append({'id': a['id'], 'race': a['race'], 'label': a.get('label', a['id']), 'shipped': shipped})
+    e = {'id': a['id'], 'race': a['race'], 'gender': a.get('gender', ''), 'label': a.get('label', a['id']), 'shipped': shipped}
+    if a.get('mature'): e['mature'] = True; e['safe_fallback'] = a.get('safe_fallback', '')  # Ken, Nov 1: shown only to 16+ account owners; everyone else sees the stand-in (no wording about it anywhere)
+    lst.append(e)
 json.dump({'note': 'Brush\'s avatars (art/avatars/avatars.json); tools/avatars-copy.py', 'default': 'goblin-goggle-rogue', 'avatars': lst},
           open(os.path.join(here, '..', 'src', 'content', 'avatars.json'), 'w', encoding='utf-8', newline='\n'), indent=1)
 print('avatars', len(lst), 'shipped', sum(a['shipped'] for a in lst))

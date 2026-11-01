@@ -14,6 +14,8 @@ import { MINE_MODEL, makeMine, makeGoblin, setUpgrades, makeStronghold, makeGrub
 import { audio, SHOT_SOUNDS } from './audio';
 import baseLayoutJson from '../content/arena-layout.json';
 import ownerLayoutJson from '../content/owner-layout.json';
+import dwarfLayoutJson from '../content/arena-layout-dwarf.json';
+import gnomeLayoutJson from '../content/arena-layout-gnome.json';
 // Round 9a: the owner's final layout carries the full effect list (57); the painting data is identical
 // Positions of the 54 arena effects stay exactly the Arena Editor's (skullfang-arena-layout.json); the owner's per-effect looks are merged in
 let nonFlowIdx = 0;
@@ -23,6 +25,14 @@ const mergedEffects = ((ownerLayoutJson as any).effects as any[]).map((e: any) =
   return b && b.type === e.type ? { ...e, x: b.x, y: b.y } : e;
 });
 const layoutJson: any = { ...baseLayoutJson, effects: mergedEffects };
+/** Ken, Oct 31: three arenas, one per faction. The goblin Skullfang arena is the owner layout above; the dwarf (Giant Anvil over a lava lake) and gnome (Floating
+ *  Clockwork Disc over a crystal lake) arenas are Ledger's layouts, same format and picture size. The match picks the player's or the opponent's faction arena 50-50 (app.ts). */
+export const ARENAS: Record<string, { layout: any; background: string; picture: string; layoutFile: string }> = {
+  goblins: { layout: layoutJson, background: 'skullfang-swamp-background.jpg', picture: 'skullfang-arena.png', layoutFile: 'skullfang-arena-layout.json' },
+  dwarves: { layout: dwarfLayoutJson, background: 'dwarf-background.jpg', picture: 'dwarf-arena.png', layoutFile: 'dwarf-arena-layout.json' },
+  gnomes: { layout: gnomeLayoutJson, background: 'gnome-background.jpg', picture: 'gnome-arena.png', layoutFile: 'gnome-arena-layout.json' },
+};
+export const arenaFor = (faction: string) => ARENAS[faction] || ARENAS.goblins;
 import { buildArena } from './arena-fx';
 import { boardHomography, cellGeometry, fitCamera, groundToPainting, BG, BOARD } from './arena-geo';
 
@@ -209,7 +219,8 @@ function addWeapon(g: THREE.Group, weapon: string | null, faction: string) {
 
 let glSupported: boolean | null = null;
 let glPool: { renderer: THREE.WebGLRenderer; backRenderer: THREE.WebGLRenderer | null; backCanvas: HTMLCanvasElement } | null = null;
-export function createBoardView(container: HTMLElement, low: boolean): BoardView | null {
+export function createBoardView(container: HTMLElement, low: boolean, arenaFaction = 'goblins'): BoardView | null {
+  const ARENA = arenaFor(arenaFaction), L: any = ARENA.layout;
   let renderer: THREE.WebGLRenderer;
   try {
     if (glSupported === null) { const probe = document.createElement('canvas'); const gl: any = probe.getContext('webgl2') || probe.getContext('webgl'); glSupported = !!gl; try { gl?.getExtension('WEBGL_lose_context')?.loseContext(); } catch { /* ignore */ } }
@@ -1158,7 +1169,7 @@ const _embV = new THREE.Vector3();
   // 2D paintings (swamp + arena + the owner's effects) sit behind this canvas in a second WebGL canvas; the 3D pieces stand on
   // the painted floor through a camera fitted to the owner's four floor corners (arena-geo.ts). One view transform (zoom and
   // pan in painting pixels) moves the paintings, effects, pieces and highlights together.
-  const H0 = boardHomography();
+  const H0 = boardHomography(L);
   const fit = fitCamera(H0);
   const dprNow = () => Math.min(window.devicePixelRatio || 1, 2);
   const pooled = testMode && glPool ? glPool : null; // automated runs keep one pair of WebGL renderers (and their compiled shaders) between matches
@@ -1174,17 +1185,17 @@ const _embV = new THREE.Vector3();
     backRenderer.setClearColor(0x000000, 1);
   } catch { backRenderer = null; }
   let arena: ReturnType<typeof buildArena> | null = null;
-  const arenaInfo = { background: 'skullfang-swamp-background.jpg', picture: 'skullfang-arena.png', layout: 'skullfang-arena-layout.json', loaded: false, drawn: false, errors: [] as string[], skippedTypes: [] as string[], effects: 0, flowEffects: 0, drawCalls: 0, cutouts: 0, gridLines: false };
+  const arenaInfo = { faction: arenaFaction, background: ARENA.background, picture: ARENA.picture, layout: ARENA.layoutFile, loaded: false, drawn: false, errors: [] as string[], skippedTypes: [] as string[], effects: 0, flowEffects: 0, drawCalls: 0, cutouts: 0, gridLines: false };
   {
     const loader = new THREE.TextureLoader();
     const aniso = backRenderer ? backRenderer.capabilities.getMaxAnisotropy() : 1;
     const load = (url: string) => new Promise<THREE.Texture>((res, rej) => loader.load(url, (t) => { t.anisotropy = aniso; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.generateMipmaps = true; res(t); }, undefined, rej));
-    Promise.all([load('/art/arena/skullfang-swamp-background.jpg'), load('/art/arena/skullfang-arena.png')]).then(([bg, ar]) => {
+    Promise.all([load('/art/arena/' + ARENA.background), load('/art/arena/' + ARENA.picture)]).then(([bg, ar]) => {
       if (disposed) return;
       const prev = THREE.ColorManagement.enabled;
-      arena = buildArena(layoutJson, bg, ar, () => view.scale * (low ? 1 : Math.min(window.devicePixelRatio || 1, 2)));
+      arena = buildArena(L, bg, ar, () => view.scale * (low ? 1 : Math.min(window.devicePixelRatio || 1, 2)));
       THREE.ColorManagement.enabled = prev;
-      Object.assign(arenaInfo, { loaded: true, errors: arena.errors, skippedTypes: arena.skippedTypes, effects: arena.effects.length, cutouts: arena.cuts.length, flowEffects: (layoutJson.effects as any[]).filter((e: any) => e.type === 'flow').length });
+      Object.assign(arenaInfo, { loaded: true, errors: arena.errors, skippedTypes: arena.skippedTypes, effects: arena.effects.length, cutouts: arena.cuts.length, flowEffects: (L.effects as any[]).filter((e: any) => e.type === 'flow').length });
       applyView();
     }).catch((err) => { const m = 'arena build failed: ' + (err && err.message || err); arenaInfo.errors.push(m); console.error(m, err); });
   }
@@ -1316,7 +1327,7 @@ const _embV = new THREE.Vector3();
       zoom: view.zoom, home: homeCenter(), maxZoom: view.maxZoom, centerX: view.cx, centerY: view.cy, scale: view.scale, coverScale: view.s0,
       pxPerPaintingPx: view.scale * dprNow(), cssPxPerPaintingPx: view.scale, window: { w: view.W, h: view.H },
       visible: { x0: view.cx - view.W / (2 * view.scale), y0: view.cy - view.H / (2 * view.scale), x1: view.cx + view.W / (2 * view.scale), y1: view.cy + view.H / (2 * view.scale) },
-      painting: { w: BG.w, h: BG.h }, arena: arenaInfo, homography: homog, corners: layoutJson.boardCorners,
+      painting: { w: BG.w, h: BG.h }, arena: arenaInfo, homography: homog, corners: L.boardCorners,
       cells: [[1, 1], [1, 13], [7, 13], [7, 1], [4, 7], [7, 2], [1, 12]].map(([r, c]) => ({ row: r, col: c, center: toScreen(...cellGeometry(H0, r, c).center), quad: cellGeometry(H0, r, c).quad.map(([x, y]) => toScreen(x, y)) })),
     };
   }
@@ -1345,14 +1356,14 @@ const _embV = new THREE.Vector3();
   }
   function squareCenter(row: number, col: number) { const [x, y] = toScreen(...cellGeometry(H0, row, col).center); return { x, y }; }
   function arenaDetails() {
-    const effs = (arena ? arena.allEffects : (layoutJson.effects as any[])).map((d: any) => {
+    const effs = (arena ? arena.allEffects : (L.effects as any[])).map((d: any) => {
       return { type: d.type, x: d.x, y: d.y, width: d.width, height: d.height, clipped: d.type === 'pool' && d.x + (d.width || 0) / 2 > BG.w };
     });
     return {
-      layoutName: layoutJson.name,
-      background: { src: '/art/arena/skullfang-swamp-background.jpg', width: BG.w, height: BG.h },
-      arenaPicture: { src: '/art/arena/skullfang-arena.png', width: BG.w, height: BG.h },
-      arena: layoutJson.arena, boardCorners: layoutJson.boardCorners, look: (layoutJson as any).arenaLook,
+      layoutName: L.name, faction: arenaFaction,
+      background: { src: '/art/arena/' + ARENA.background, width: BG.w, height: BG.h },
+      arenaPicture: { src: '/art/arena/' + ARENA.picture, width: BG.w, height: BG.h },
+      arena: L.arena, boardCorners: L.boardCorners, look: L.arenaLook,
       effects: effs, flowEffects: arenaInfo.flowEffects, drawn: arenaInfo.drawn, errors: arenaInfo.errors, skippedTypes: arenaInfo.skippedTypes.filter((t) => t !== 'flow'), arenaDrawCalls: arenaInfo.drawCalls, foregroundCutouts: arena ? arena.cuts.length : 0, gridLines: 0,
     };
   }

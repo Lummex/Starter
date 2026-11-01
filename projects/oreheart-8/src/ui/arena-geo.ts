@@ -34,7 +34,7 @@ export function cornersInBackground(l = layout): Pt[] {
   return (l.boardCorners as Pt[]).map(([x, y]) => [centerX + (x - ARENA_PIC.w / 2) * scale, centerY + (y - ARENA_PIC.h / 2) * scale] as Pt);
 }
 
-export const boardHomography = (): Mat3 => homographyMatrix(cornersInBackground());
+export const boardHomography = (l: any = layout): Mat3 => homographyMatrix(cornersInBackground(l));
 /** position on the floor in board spaces (x right, z toward the player) -> background pixels */
 export function groundToPainting(H: Mat3, x: number, z: number): Pt {
   return applyH(H, (x + BOARD.cols / 2) / BOARD.cols, (z + BOARD.rows / 2) / BOARD.rows);
