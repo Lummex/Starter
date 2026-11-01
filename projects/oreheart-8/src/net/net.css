@@ -92,3 +92,10 @@ html body :is(.net-screen .net-btn,.net-btn.net-profile-btn):disabled{border-ima
 .net-cu { color: inherit; text-decoration: underline; }
 /* the two-column login buttons keep their text on one line between the gem caps */
 html body .net-screen .net-grid .net-btn{white-space:nowrap;font-size:1rem;padding-inline:calc(var(--sv-cap) * .6)}
+/* Ken (Oct 31): typing in a field turned it white with white text. Browser autofill paints its own light background
+   over the field; keep the dark field and the light text in every state (typing, focus, autofill, autofill + focus). */
+.net-input{color-scheme:dark}
+.net-input:-webkit-autofill,.net-input:-webkit-autofill:hover,.net-input:-webkit-autofill:focus,.net-input:-webkit-autofill:active{
+  -webkit-text-fill-color:#fff;caret-color:#fff;box-shadow:0 0 0 1000px #0c0e15 inset;transition:background-color 99999s ease-out 0s}
+.net-input:autofill,.net-input:autofill:hover,.net-input:autofill:focus{-webkit-text-fill-color:#fff;box-shadow:0 0 0 1000px #0c0e15 inset}
+.net-input:focus{color:#fff;background:#0c0e15}

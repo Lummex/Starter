@@ -109,3 +109,12 @@ textarea { font: inherit; resize: vertical; }
 .tabs a { text-decoration: none; border-bottom: 2px solid transparent; }
 .tabs a.active { border-color: var(--silver); }
 .message-text { white-space: pre-wrap; overflow-wrap: break-word; background: var(--panel-2); padding: 0.6rem; border-radius: 6px; }
+
+/* Ken (Oct 31): fields must stay dark with light text while typing and when the browser autofills them. */
+input, select, textarea { color-scheme: dark; }
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active,
+select:-webkit-autofill, textarea:-webkit-autofill {
+  -webkit-text-fill-color: var(--text); caret-color: var(--text); box-shadow: 0 0 0 1000px var(--panel-2) inset; transition: background-color 99999s ease-out 0s;
+}
+input:autofill, select:autofill, textarea:autofill { -webkit-text-fill-color: var(--text); box-shadow: 0 0 0 1000px var(--panel-2) inset; }
+input:focus, select:focus, textarea:focus { color: var(--text); background: var(--panel-2); }
