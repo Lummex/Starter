@@ -33,7 +33,7 @@ function homog(P){const [[x0,y0],[x1,y1],[x2,y2],[x3,y3]]=P;const dx1=x1-x2,dx2=
  return (u,v)=>{const w=g*u+h*v+1;return[(a*u+b*v+c)/w,(d*u+e*v+f)/w];};}
 const glowTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);
  gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.3,'rgba(255,255,255,.6)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
-const PAL={jet:[['cCore','Hot core','#ffffff'],['cMid','Flame','#6fe8ff'],['cTip','Tail','#2a7bff']],swirl:[['cSwirl','Swirl color','#2fa8ff'],['cHi','Bright arms','#d8fbff']],flame:[['cCore','Hot center','#fff6c0'],['cMid','Middle flame','#ffb030'],['cTip','Flame tips','#c0300a']],
+const PAL={smokestack:[['cSmoke','Smoke (lit side)','#9a948e'],['cShade','Smoke (shadow side)','#4a4643'],['cEmber','Ember glow at the base','#ff7a20']],jet:[['cCore','Hot core','#ffffff'],['cMid','Flame','#6fe8ff'],['cTip','Tail','#2a7bff']],swirl:[['cSwirl','Swirl color','#2fa8ff'],['cHi','Bright arms','#d8fbff']],flame:[['cCore','Hot center','#fff6c0'],['cMid','Middle flame','#ffb030'],['cTip','Flame tips','#c0300a']],
  waterfall:[['cDeep','Deep water','#2f7a0c'],['cLight','Bright streaks','#c6ff3a'],['cFoam','Foam / white water','#f2ffc0'],['cMist','Mist at the bottom','#b8ff7a'],['cGlowW','Glow and splash','#9dff3a']],
  glow:[['cGlow','Glow color','#b07aff']],
  lantern:[['cCore','Flame core','#fff1b8'],['cGlow','Light around it','#ff9a2e']],
@@ -55,7 +55,7 @@ const SLIDERS={flame:[['size','Size',.3,4,.05],['height','Flame height',.3,4,.05
  plant:[['width','Width',10,500,1],['height','Height',10,500,1],['amount','Sway amount',0,30,.1],['speed','Sway speed',.2,3,.05],['gust','Gusts',0,1,.01],['layer','Picture: 0 = arena, 1 = swamp',0,1,1]],
  banner:[['width','Width',10,300,1],['height','Height',20,500,1],['amount','Wave amount',0,14,.1],['speed','Wave speed',.2,3,.05],['shimmer','Shimmer',0,1,.01],['tilt','Tilt',-30,30,1]],
  pool:[['width','Width',20,1200,1],['height','Height',10,600,1],['opacity','Acid glow strength',0,1.2,.01],['speed','Swirl speed',.1,3,.05],['bubbles','Bubbles',0,1,.01],['smoke','Smoke',0,1,.01]]};
-const DEF={jet:{length:120,width:30,strength:.8,pulse:.4,speed:1,sparks:.5},swirl:{width:140,height:40,arms:3,twist:6,rings:3,speed:1,strength:.6},flame:{size:1,height:1,strength:1},waterfall:{width:40,length:220,lean:0,speed:1,opacity:.9,glow:.7,splash:1},glow:{radius:90,strength:.6,pulse:.3},lantern:{size:1,strength:.9,flicker:.6,speed:1},eyes:{spacing:16,size:1,strength:1,flicker:.5,blink:.3},testunit:{size:1},plant:{width:80,height:90,amount:4,speed:1,gust:.5,layer:0},fireflies:{width:400,height:200,count:18,size:1,strength:.9,wander:40,speed:1,blink:.7,front:1},shimmer:{width:320,height:90,ripple:3,rsize:30,speed:.6,sparkle:.5,sheen:.5,tint:0,match:.45,soft:.5},banner:{width:60,height:140,amount:4,speed:1,shimmer:.5,tilt:0},pool:{width:260,height:110,opacity:.55,speed:1,bubbles:.5,smoke:.5}};
+const DEF={smokestack:{rate:3.5,size:34,growth:3.8,rise:40,height:240,windAngle:0,wind:14,opacity:.85,turbulence:.5,ember:0,front:1},jet:{length:120,width:30,strength:.8,pulse:.4,speed:1,sparks:.5},swirl:{width:140,height:40,arms:3,twist:6,rings:3,speed:1,strength:.6},flame:{size:1,height:1,strength:1},waterfall:{width:40,length:220,lean:0,speed:1,opacity:.9,glow:.7,splash:1},glow:{radius:90,strength:.6,pulse:.3},lantern:{size:1,strength:.9,flicker:.6,speed:1},eyes:{spacing:16,size:1,strength:1,flicker:.5,blink:.3},testunit:{size:1},plant:{width:80,height:90,amount:4,speed:1,gust:.5,layer:0},fireflies:{width:400,height:200,count:18,size:1,strength:.9,wander:40,speed:1,blink:.7,front:1},shimmer:{width:320,height:90,ripple:3,rsize:30,speed:.6,sparkle:.5,sheen:.5,tint:0,match:.45,soft:.5},banner:{width:60,height:140,amount:4,speed:1,shimmer:.5,tilt:0},pool:{width:260,height:110,opacity:.55,speed:1,bubbles:.5,smoke:.5}};
 
 const effects=[];let nextId=1;
 function makeFlame(d){const root=new THREE.Group();const N=60;const geo=new THREE.BufferGeometry();const pos=new Float32Array(N*3),col=new Float32Array(N*3);
@@ -249,7 +249,37 @@ void main(){vec2 q=vUv*2.-1.;float r=length(q);if(r>1.)discard;float a=atan(q.y,
 function makeSwirl(d){const root=new THREE.Group();const U={uTime:{value:0},uSpeed:{value:1},uArms:{value:3},uTwist:{value:6},uRings:{value:3},uStr:{value:.6},uSw:{value:new THREE.Color()},uHi:{value:new THREE.Color()}};
  const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({uniforms:U,vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:swirlFS,transparent:true,depthTest:false,blending:THREE.AdditiveBlending}));m.renderOrder=6;root.add(m);
  return{root,update(t){m.scale.set(d.width,d.height,1);U.uTime.value=t;U.uSpeed.value=d.speed;U.uArms.value=d.arms;U.uTwist.value=d.twist;U.uRings.value=d.rings;U.uStr.value=d.strength;U.uSw.value.set(d.cSwirl);U.uHi.value.set(d.cHi);}};}
-const MAKERS={jet:makeJet,swirl:makeSwirl,fireflies:makeFireflies,shimmer:makeShimmer,plant:makePlant,testunit:makeUnit,banner:makeBanner,flame:makeFlame,waterfall:makeWater,glow:makeGlow,lantern:makeLantern,eyes:makeEyes,pool:makePool};
+// ----- smokestack (Ledger 2026-10-31, Ken: "a smoke effect ... for like a billowing smokestack") -----
+// A thick billowing plume from (x,y): soft puffs keep spawning, rise, swell and roll as they grow, drift with the wind
+// and fade out high up. Each puff = a shaded underside + a lit top, so it reads as volume. Max 36 puffs (72 sprites).
+const smokeTexes=[0,1,2].map(v=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+ let s=7+v*13;const rnd=()=>{s=(s*9301+49297)%233280;return s/233280;};
+ for(let i=0;i<16;i++){const a=rnd()*6.283,r=rnd()*34,x=64+Math.cos(a)*r,y=64+Math.sin(a)*r,R=13+rnd()*17;
+  const gr=g.createRadialGradient(x,y,0,x,y,R);gr.addColorStop(0,'rgba(255,255,255,.9)');gr.addColorStop(.55,'rgba(255,255,255,.55)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);}
+ g.globalCompositeOperation='destination-in';const m=g.createRadialGradient(64,64,30,64,64,63);m.addColorStop(0,'rgba(0,0,0,1)');m.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=m;g.fillRect(0,0,128,128);
+ return new THREE.CanvasTexture(c);});
+function makeSmokestack(d){const root=new THREE.Group();const MAX=36;const P=[];
+ const mk=(o)=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:smokeTexes[0],transparent:true,depthTest:false,depthWrite:false}));s.renderOrder=o;root.add(s);return s;};
+ for(let i=0;i<MAX;i++){const sh=mk(11),lt=mk(11.1);const tx=smokeTexes[i%3];sh.material.map=tx;lt.material.map=tx;
+  P.push({sh,lt,k:2,life:1,rot:0,spin:0,ph:Math.random()*99,sz:.8+Math.random()*.45,ox:0});}
+ const ember=spr(10);root.add(ember);const fl=Candle();let acc=0,warm=false;
+ const C=new THREE.Color(),S=new THREE.Color(),E=new THREE.Color(),T=new THREE.Color();
+ const spawn=(p,k0)=>{p.k=k0;p.life=Math.max(.5,d.height/Math.max(5,d.rise));p.rot=Math.random()*6.283;p.spin=(Math.random()-.5)*(.4+d.turbulence*1.6);p.sz=.8+Math.random()*.45;p.ph=Math.random()*99;p.ox=(Math.random()-.5)*d.size*.4;};
+ return{root,update(t,dt){C.set(d.cSmoke);S.set(d.cShade);E.set(d.cEmber);
+  const life=Math.max(.5,d.height/Math.max(5,d.rise));const n=Math.min(MAX,Math.max(1,Math.round(d.rate*life)));
+  if(!warm){warm=true;for(let i=0;i<n;i++)spawn(P[i],i/n);}
+  acc+=dt*d.rate;while(acc>=1){acc-=1;const p=P.find((q,i)=>i<MAX&&q.k>=1);if(p)spawn(p,0);else break;}
+  const wa=d.windAngle*Math.PI/180,wx=Math.cos(wa)*d.wind,wy=Math.sin(wa)*d.wind;const front=d.front>.5;
+  P.forEach(p=>{if(p.k>=1){p.sh.visible=p.lt.visible=false;return;}p.k+=dt/p.life;const k=Math.min(1,p.k),tt=k*p.life;
+   const grow=d.size*p.sz*(1+(d.growth-1)*Math.sqrt(k));const tur=d.turbulence*grow*.35;
+   const x=p.ox+wx*tt*(.3+k)+tur*Math.sin(t*1.3+p.ph)*k,y=d.rise*tt+wy*tt*(.3+k)+tur*.6*Math.cos(t*1.1+p.ph*1.7)*k;
+   const op=d.opacity*Math.min(1,k/.07)*(1-Math.max(0,(k-.5)/.5))**1.4;p.rot+=p.spin*dt;
+   T.copy(C).lerp(E,d.ember*Math.max(0,1-k*5)*.8);
+   p.sh.visible=p.lt.visible=true;p.sh.renderOrder=front?11:.55;p.lt.renderOrder=front?11.1:.56;
+   p.sh.material.color.copy(S);p.sh.material.opacity=op*.9;p.sh.material.rotation=p.rot;p.sh.scale.setScalar(grow*1.05);p.sh.position.set(x+grow*.1,y-grow*.14,2);
+   p.lt.material.color.copy(T);p.lt.material.opacity=op;p.lt.material.rotation=-p.rot*.7;p.lt.scale.setScalar(grow*.8);p.lt.position.set(x-grow*.08,y+grow*.1,2.1);});
+  const f=fl(dt,.6,1.2);ember.visible=d.ember>0;ember.renderOrder=front?11.2:.57;ember.material.color.copy(E);ember.material.opacity=Math.min(1,d.ember*f);ember.scale.setScalar(d.size*2.2*(.9+.1*f));ember.position.set(0,d.size*.1,1);}};}
+const MAKERS={smokestack:makeSmokestack,jet:makeJet,swirl:makeSwirl,fireflies:makeFireflies,shimmer:makeShimmer,plant:makePlant,testunit:makeUnit,banner:makeBanner,flame:makeFlame,waterfall:makeWater,glow:makeGlow,lantern:makeLantern,eyes:makeEyes,pool:makePool};
 function addEffect(d){d=Object.assign({},DEF[d.type],d);PAL[d.type].forEach(([k,,v])=>{if(!d[k])d[k]=v;});d.id=d.id||nextId++;nextId=Math.max(nextId,d.id+1);
  const fx=MAKERS[d.type](d);fx.d=d;fx.root.position.set(d.x,-d.y,0);scene.add(fx.root);effects.push(fx);return fx;}
 THREE.ColorManagement.enabled = false;
