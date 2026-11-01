@@ -14010,3 +14010,35 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
     });
   });
 }
+
+// Ken (Nov 1): "when a lot of characters get on the screen, there becomes a lot of lag". The arena's glow sprites draw as a few instanced meshes instead of one draw call each,
+// and it must look the same: the very same frame is drawn both ways and compared, on all three arenas.
+test('AC552: the arena draws its glow sprites in a few batches (far fewer draw calls) and the picture is the same as drawing them one by one, on all three arenas', async ({ page }) => {
+  test.setTimeout(180000);
+  await page.goto('/?test=1&seed=7');
+  await page.waitForFunction(() => !!window.oreheart);
+  for (const [who, oc, fac] of [['player', 'borgo', 'goblins'], ['opponent', 'borgo', 'dwarves'], ['opponent', 'sproingle', 'gnomes']]) {
+    await page.evaluate((w) => window.oreheart.setArenaPick(w), who);
+    await page.evaluate((c) => window.oreheart.newMatch({ ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: c, setup: { firstPlayer: 'player' } }), oc);
+    await page.mouse.click(5, 5);
+    if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
+    await expect.poll(async () => { const s = await renderStats(page); return s.arena?.faction === fac && s.arena?.drawn; }, { timeout: 30000 }).toBe(true);
+    const st = await renderStats(page);
+    expect(st.arena.batchedSprites, `${fac}: glow sprites are batched`).toBeGreaterThan(50);
+    expect(st.arena.spriteBatches, `${fac}: into a few batches`).toBeLessThan(st.arena.batchedSprites / 4);
+    const r = await page.evaluate(async () => {
+      const A = window.__s3d.arena, R = window.__s3d.back, gl = R.getContext(), W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+      const shot = () => { R.render(A.scene, A.cam); const px = new Uint8Array(W * H * 4); gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, px); return px; };
+      A.update(1234.5, 0.016);
+      const calls0 = (shot(), R.info.render.calls), a = shot();
+      for (const b of A.batches) { b.mesh.visible = false; for (const { s, root } of b.list) root.add(s); }
+      const calls1 = (shot(), R.info.render.calls), c = shot();
+      let bad = 0, worst = 0;
+      for (let i = 0; i < a.length; i += 4) { const d = Math.max(Math.abs(a[i] - c[i]), Math.abs(a[i + 1] - c[i + 1]), Math.abs(a[i + 2] - c[i + 2])); if (d > worst) worst = d; if (d > 6) bad++; }
+      for (const b of A.batches) { b.mesh.visible = true; for (const { s, root } of b.list) root.remove(s); }
+      return { calls0, calls1, bad, worst, total: W * H };
+    });
+    expect(r.calls0, `${fac}: batched draw calls vs one by one (${r.calls0} / ${r.calls1})`).toBeLessThan(r.calls1 / 3);
+    expect(r.bad / r.total, `${fac}: the same picture (${r.bad} pixels differ, worst ${r.worst})`).toBeLessThan(0.001);
+  }
+});

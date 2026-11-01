@@ -1742,6 +1742,7 @@ export class App {
     el.style.top = Math.max(2, Math.min(window.innerHeight - s - 2, side === 'player' ? rc.y + rc.h + 2 : rc.y - s - 2)) + 'px'; // just outside the board's bottom / top edge: never over a unit's label
     el.style.fontSize = Math.max(14, s * 0.4) + 'px';
   }
+  heartKey = '';
   fitHearts() {
     const r = this.r;
     if (!r.board || !this.view || !r.myHealth) return;
@@ -2360,14 +2361,16 @@ export class App {
     this.flowKey = pm;
     // enemy hand arc
     const n = en.hand.length;
-    r.enemyHand.replaceChildren();
     const shown = Math.min(n, 6);
-    for (let i = 0; i < shown; i++) {
-      const ang = (i - (shown - 1) / 2) * 9;
-      const b = h('div', { class: 'back', 'data-card-back': '', 'data-fan-angle': String(ang), 'aria-hidden': 'true' });
-      b.style.transform = `rotate(${ang}deg)`;
-      b.append(ohBackEl());
-      r.enemyHand.append(b);
+    if (r.enemyHand.childElementCount !== shown) { // Nov 1: only when the count changes (the backs were rebuilt on every game action)
+      r.enemyHand.replaceChildren();
+      for (let i = 0; i < shown; i++) {
+        const ang = (i - (shown - 1) / 2) * 9;
+        const b = h('div', { class: 'back', 'data-card-back': '', 'data-fan-angle': String(ang), 'aria-hidden': 'true' });
+        b.style.transform = `rotate(${ang}deg)`;
+        b.append(ohBackEl());
+        r.enemyHand.append(b);
+      }
     }
     // phase
     const whose = st.activePlayer === 'player' ? 'Your turn' : 'Enemy turn';
@@ -3044,7 +3047,7 @@ export class App {
     }
     for (const [uid, el] of this.tokens) if (!seen.has(uid)) { el.remove(); this.tokens.delete(uid); }
     this.renderAbilityButtons(st);
-    this.fitHearts();
+    { const key = [...this.tokens.values()].map((t) => t.dataset.row + ',' + t.dataset.col).join(';'); if (key !== this.heartKey) { this.heartKey = key; this.fitHearts(); } } // Nov 1: only when a unit moved (it reads every label's box)
   }
 
   /** Round 13: a small round icon above every unit with an activated ability; lit when it is your turn and the ability can be used. */
