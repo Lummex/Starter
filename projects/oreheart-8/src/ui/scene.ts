@@ -1186,7 +1186,7 @@ const _embV = new THREE.Vector3();
     backRenderer.setClearColor(0x000000, 1);
   } catch { backRenderer = null; }
   let arena: ReturnType<typeof buildArena> | null = null;
-  const arenaInfo = { faction: arenaFaction, background: ARENA.background, picture: ARENA.picture, layout: ARENA.layoutFile, loaded: false, drawn: false, errors: [] as string[], skippedTypes: [] as string[], effects: 0, flowEffects: 0, drawCalls: 0, cutouts: 0, gridLines: false };
+  const arenaInfo = { faction: arenaFaction, cameraOk: Number.isFinite(fit.f) && fit.pos.every(Number.isFinite), background: ARENA.background, picture: ARENA.picture, layout: ARENA.layoutFile, loaded: false, drawn: false, errors: [] as string[], skippedTypes: [] as string[], effects: 0, flowEffects: 0, drawCalls: 0, cutouts: 0, gridLines: false };
   {
     const loader = new THREE.TextureLoader();
     const aniso = backRenderer ? backRenderer.capabilities.getMaxAnisotropy() : 1;
@@ -1196,7 +1196,7 @@ const _embV = new THREE.Vector3();
       const prev = THREE.ColorManagement.enabled;
       arena = buildArena(L, bg, ar, () => view.scale * (low ? 1 : Math.min(window.devicePixelRatio || 1, 2)));
       THREE.ColorManagement.enabled = prev;
-      Object.assign(arenaInfo, { loaded: true, errors: arena.errors, skippedTypes: arena.skippedTypes, effects: arena.effects.length, cutouts: arena.cuts.length, bgCutouts: arena.bgCuts.length, flowEffects: (L.effects as any[]).filter((e: any) => e.type === 'flow').length });
+      Object.assign(arenaInfo, { loaded: true, errors: arena.errors, skippedTypes: arena.skippedTypes, effects: arena.effects.length, cutouts: arena.cuts.length, bgCutouts: arena.bgCuts.length, frontEffects: arena.frontEffects(), layers: arena.layers, flowEffects: (L.effects as any[]).filter((e: any) => e.type === 'flow').length });
       applyView();
     }).catch((err) => { const m = 'arena build failed: ' + (err && err.message || err); arenaInfo.errors.push(m); console.error(m, err); });
   }
@@ -1763,7 +1763,7 @@ const _embV = new THREE.Vector3();
     arenaFrame(now);
     renderer.clear();
     renderer.render(scene, camera);
-    if (arena) { renderer.clearDepth(); renderer.render(arena.fgScene, arena.cam); }
+    if (arena) { renderer.clearDepth(); const tm = renderer.toneMapping, oc = renderer.outputColorSpace; renderer.toneMapping = THREE.NoToneMapping; renderer.outputColorSpace = THREE.LinearSRGBColorSpace; renderer.render(arena.fgScene, arena.cam); renderer.toneMapping = tm; renderer.outputColorSpace = oc; } /* the arena's top layer is drawn raw, as on the back canvas and in the editor */
     lastDur = performance.now() - t0;
     lastFrame = { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
     frames++;
