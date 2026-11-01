@@ -197,6 +197,39 @@ select pg_temp.works('set_avatar still accepts card art', :P1, 'aal1', $q$ selec
 -- ========== Mature avatars + 16+ (Ken, Oct 31) ==========
 -- For the test, mark one avatar mature with a safe stand-in (rolled back with everything else).
 update public.settings set value = '{"goblin-girl":"goblin-granny"}'::jsonb where key = 'avatar_mature';
+-- ========== End User License Agreement (Ken, Oct 31) ==========
+select pg_temp.ok('an account made without agreeing is asked to agree (needs_eula) and the current version is shown',
+  (select r ->> 'needs_eula' = 'true' and r ->> 'eula_version' = (select value #>> '{}' from public.settings where key = 'eula_version')
+   from pg_temp.json_as(:P1, 'aal1', 'select public.my_status()') r));
+select pg_temp.refused('a wrong or old version is refused', :P1, 'aal1', $q$ select public.accept_eula('1999-old') $q$, 'changed');
+select pg_temp.refused('signed-out cannot agree', null, null, $q$ select public.accept_eula('x') $q$);
+select pg_temp.works('agreeing to the current version works', :P1, 'aal1',
+  $q$ select public.accept_eula('2026-10-31b-draft') $q$);
+select pg_temp.ok('agreement stored on the account and in the history; needs_eula goes false',
+  (select eula_version = (select value #>> '{}' from public.settings where key = 'eula_version') and eula_accepted_at is not null from public.profiles where id = :P1)
+  and (select count(*) from public.eula_acceptances where user_id = :P1) = 1
+  and (select r ->> 'needs_eula' = 'false' from pg_temp.json_as(:P1, 'aal1', 'select public.my_status()') r));
+select pg_temp.works('agreeing twice changes nothing', :P1, 'aal1',
+  $q$ select public.accept_eula('2026-10-31b-draft') $q$);
+select pg_temp.ok('still one history row', (select count(*) from public.eula_acceptances where user_id = :P1) = 1);
+update public.settings set value = '"2099-new"' where key = 'eula_version';
+select pg_temp.ok('a new EULA version asks everyone again',
+  (select r ->> 'needs_eula' = 'true' from pg_temp.json_as(:P1, 'aal1', 'select public.my_status()') r));
+select pg_temp.works('agreeing to the new version works and adds a history row', :P1, 'aal1', $q$ select public.accept_eula('2099-new') $q$);
+select pg_temp.ok('both versions are kept in the history', (select count(*) from public.eula_acceptances where user_id = :P1) = 2);
+update public.settings set value = '"2026-10-31b-draft"' where key = 'eula_version';
+insert into auth.users (id, aud, role, email, raw_user_meta_data, email_confirmed_at) values
+  ('e0000000-0000-4000-8000-000000000017', 'authenticated', 'authenticated', 'agreed@test.local', '{"username":"AgreedGrub","eula_version":"2026-10-31b-draft"}', now()),
+  ('e0000000-0000-4000-8000-000000000018', 'authenticated', 'authenticated', 'stale@test.local', '{"username":"StaleGrub","eula_version":"1999-old"}', now());
+select pg_temp.ok('sign-up that agreed to the current version is recorded at once',
+  (select eula_version = '2026-10-31b-draft' and eula_accepted_at is not null from public.profiles where id = 'e0000000-0000-4000-8000-000000000017')
+  and (select count(*) from public.eula_acceptances where user_id = 'e0000000-0000-4000-8000-000000000017') = 1);
+select pg_temp.ok('sign-up with an old version is not recorded (asked again at sign-in)',
+  (select eula_version is null from public.profiles where id = 'e0000000-0000-4000-8000-000000000018'));
+select pg_temp.refused('players cannot read the agreement history table', :P1, 'aal1', $q$ select * from public.eula_acceptances $q$);
+select pg_temp.ok('agreement history cannot be deleted or edited (even by the owner)',
+  (select count(*) from (
+     select 1 where (select count(*) from pg_trigger where tgrelid = 'public.eula_acceptances'::regclass and tgname in ('eula_acceptances_append_only', 'eula_acceptances_no_truncate')) = 2) s) = 1);
 select pg_temp.ok('a new account is 13_plus unless it said 16_plus',
   (select age_group from public.profiles where id = :P1) = '13_plus');
 select pg_temp.refused('restricted (13_plus) account cannot save a mature avatar', :P1, 'aal1',

@@ -13865,9 +13865,19 @@ async function sbClient(key, headers) {
 }
 const anonDb = (headers) => sbClient(SB_ANON, headers);
 const runnerDb = () => sbClient(SB_TEST_ADMIN);
+// Owner (Oct 31): everyone agrees to the End User License Agreement; test accounts agree to the current version
+// (src/content/eula.json) when they are made, exactly like the sign-up screen does.
+async function eulaVersion() {
+  const { fs, path, dir } = await appDir();
+  return JSON.parse(fs.readFileSync(path.join(dir, 'src/content/eula.json'), 'utf8')).version;
+}
+// ticks the required "I agree to the End User License Agreement" box on the sign-up screen
+async function agreeEula(page) {
+  await page.getByLabel('I agree to the End User License Agreement').check();
+}
 async function makeUser({ age = '13_plus', confirmed = true, username = newName(), email = newEmail() } = {}) {
   const db = await runnerDb();
-  const { data, error } = await db.auth.admin.createUser({ email, password: PW, email_confirm: confirmed, user_metadata: { username, age_group: age } });
+  const { data, error } = await db.auth.admin.createUser({ email, password: PW, email_confirm: confirmed, user_metadata: { username, age_group: age, eula_version: await eulaVersion() } });
   expect(error, error && error.message).toBeNull();
   return { id: data.user.id, email, username, password: PW };
 }
@@ -14138,6 +14148,8 @@ test('AC505: 13+ sign-up, confirmation email, then avatar, welcome and menu', as
   await page.getByLabel('Password', { exact: true }).fill(PW);
   await page.getByLabel('Confirm password', { exact: true }).fill(PW);
   const create = page.getByRole('button', { name: 'Create account', exact: true });
+  await expect(create, 'Create account needs the agreement ticked').toBeDisabled();
+  await agreeEula(page);
   await expect(create).toBeEnabled({ timeout: 5000 });
   await create.click();
   await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible({ timeout: 15000 });
@@ -14178,6 +14190,8 @@ test('AC506: username messages and the Create account button rule', async ({ pag
   await expect(page.getByText("Passwords don't match.")).toBeVisible();
   await expect(create).toBeDisabled();
   await page.getByLabel('Confirm password', { exact: true }).fill(PW);
+  await expect(create, 'still needs the agreement').toBeDisabled();
+  await agreeEula(page);
   await expect(create).toBeEnabled({ timeout: 5000 });
 });
 
@@ -14281,6 +14295,7 @@ test('AC531: age question is neutral, birth year never sent, first answer rememb
   await page.getByLabel('Email', { exact: true }).fill(u.email);
   await page.getByLabel('Password', { exact: true }).fill(PW);
   await page.getByLabel('Confirm password', { exact: true }).fill(PW);
+  await agreeEula(page);
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible({ timeout: 15000 });
   const all = bodies.join('\n');
@@ -14302,6 +14317,7 @@ test('AC532: under-13 form asks only for a parent email; sign-up is pending with
   await page.getByLabel("Parent or guardian's email").fill(u.email);
   await page.getByLabel('Password', { exact: true }).fill(PW);
   await page.getByLabel('Confirm password', { exact: true }).fill(PW);
+  await agreeEula(page);
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Ask your parent or guardian to check their email' })).toBeVisible({ timeout: 15000 });
   const db = await runnerDb();
