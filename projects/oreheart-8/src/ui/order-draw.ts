@@ -13,6 +13,8 @@ export interface OrderDrawing {
   ch: number;
   preview: boolean;
   blocked: boolean;
+  /** Ken, Nov 1: a chase's next targets after the current one (numbered 2, 3, ...) */
+  chain?: Pt[];
 }
 
 /** A small seeded random generator, so a unit's line keeps the same wobble every redraw (no flicker while panning). */
@@ -76,8 +78,15 @@ export function orderSvg(d: OrderDrawing): string {
     if (pts.length >= 2 && Math.hypot(last.x - d.end.x, last.y - d.end.y) < 1) pts.pop();
     const from = pts[pts.length - 1] || d.end, dx = from.x - d.end.x, dy = from.y - d.end.y, L = Math.hypot(dx / rx, dy / ry);
     if (L > 1.05) pts.push({ x: d.end.x + dx / L, y: d.end.y + dy / L });
-    if (pts.length >= 2) out += chalk(smooth(pts), w, ink);
-    out += chalk(smooth(loop, 0.6), w, d.blocked ? red : ink, ' class="ord-circle"');
+    // Ken, Nov 1: a chase locks on in red, with a target mark
+    if (pts.length >= 2) out += chalk(smooth(pts), w, red);
+    out += chalk(smooth(loop, 0.6), w, red, ' class="ord-circle"');
+    const mark = (p: Pt, n: number) => `<g class="ord-num"><circle cx="${f(p.x)}" cy="${f(p.y - ry * 1.15)}" r="${f(s * 0.17)}" fill="#7a120a" stroke="#ffd9d2" stroke-width="1.5"/><text x="${f(p.x)}" y="${f(p.y - ry * 1.15 + s * 0.065)}" text-anchor="middle" font-size="${f(s * 0.2)}" font-weight="800" fill="#fff">${n}</text></g>`;
+    if (d.chain && d.chain.length) {
+      out += mark(d.end, 1);
+      let from = d.end;
+      d.chain.forEach((p, i) => { out += chalk(`M${f(from.x)},${f(from.y)} L${f(p.x)},${f(p.y)}`, w * 0.7, red, ' stroke-dasharray="7 7" class="ord-next"') + mark(p, i + 2); from = p; });
+    }
   } else {
     if (pts.length >= 2) out += chalk(smooth(pts), w, ink);
     // the X: two slightly bowed strokes
@@ -87,4 +96,9 @@ export function orderSvg(d: OrderDrawing): string {
     out += chalk(s1 + ' ' + s2, w * 1.25, d.blocked ? red : ink, ' class="ord-x"');
   }
   return `<g class="ord" data-uid="${d.uid}" data-kind="${d.kind}"${d.preview ? ' opacity=".85"' : ''}>${out}</g>`;
+}
+
+/** Ken, Nov 1: a chaser at rest only shows a small red ring on its current target. */
+export function restTargetSvg(p: Pt, cw: number, ch: number): string {
+  return `<ellipse class="ord-rest" cx="${f(p.x)}" cy="${f(p.y)}" rx="${f(cw * 0.46)}" ry="${f(Math.max(ch * 0.46, cw * 0.2))}" fill="none" stroke="#ff5a4a" stroke-opacity=".8" stroke-width="2.5"/>`;
 }

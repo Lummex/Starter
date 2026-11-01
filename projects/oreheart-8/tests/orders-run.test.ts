@@ -3,7 +3,7 @@ import { Game } from '../src/game';
 import { runOrders } from '../src/ui/orders-run';
 import { planOrder, nextStep, attackActionOn, type Order } from '../src/engine/orders';
 
-vi.mock('../src/engine/orders', () => ({ planOrder: vi.fn(), nextStep: vi.fn(), attackActionOn: vi.fn() }));
+vi.mock('../src/engine/orders', () => ({ planOrder: vi.fn(), nextStep: vi.fn(), attackActionOn: vi.fn(), stanceAction: vi.fn(), chaseTarget: (s: any, o: any) => s.board.creatures.find((x: any) => x.uid === o.targetUid) || null }));
 const mPlan = vi.mocked(planOrder);
 const mStep = vi.mocked(nextStep);
 const mAttack = vi.mocked(attackActionOn);
@@ -118,7 +118,7 @@ describe('round 28 order runner', () => {
     expect(orders.size).toBe(1);
   });
 
-  it('a chase with an attack available attacks and ends the chase', async () => {
+  it('a chase with an attack available attacks and keeps the order (Ken, Nov 1: it stays on them)', async () => {
     const g = start([{ cardId: 'goblin-grunt', owner: 'opponent', row: 6, col: 3 }]);
     const me = unit(g), foe = unit(g, 'opponent');
     const orders = new Map<string, Order>([[me.uid, { kind: 'chase', uid: me.uid, targetUid: foe.uid }]]);
@@ -126,7 +126,7 @@ describe('round 28 order runner', () => {
     mAttack.mockImplementation((_s: any, c: any, e: any) => ({ type: 'attack', creatureUid: c.uid, target: { row: e.row, col: e.col } }));
     const r = await runOrders(g, orders, OPTS);
     expect(r.attacked).toEqual([me.uid]);
-    expect(orders.size).toBe(0);
+    expect(orders.size).toBe(1);
     expect(unit(g).hasAttacked).toBe(true);
     expect(mStep).not.toHaveBeenCalled();
   });

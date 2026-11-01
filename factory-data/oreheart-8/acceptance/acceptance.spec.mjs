@@ -14113,15 +14113,15 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
       const board = [{ cardId: 'goblin-grunt', owner: 'player', row: 4, col: 6 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 4, col: 7 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 10 }];
       await page.evaluate((board) => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'opponent', board, opponentHand: ['soul-shard'] } }), board);
       await page.waitForTimeout(500);
-      await expect(page.locator('.recap')).toBeHidden();
+      await expect(page.locator('.e-recap')).toBeHidden();
       const go = async (f) => page.evaluate(f);
       await go(() => { const o = window.oreheart; for (let i = 0; i < 4; i++) { const d = o.legalActions().find((x) => x.type === 'attack' || x.type === 'move'); if (d) { o.act(d); return; } const n = o.legalActions().find((x) => x.type === 'done'); if (n) o.act(n); } });
       await page.waitForTimeout(400);
-      await expect(page.locator('.recap'), 'the recap appears').toBeVisible();
+      await expect(page.locator('.e-recap'), 'the recap appears').toBeVisible();
       if (vp.name === 'phone') { await expect(page.locator('.recap-list'), 'a button on phones').toBeHidden(); await page.locator('.recap-tog').click(); }
       await expect(page.locator('.recap-line').first()).toBeVisible();
       expect(await page.locator('.recap-line').first().textContent()).toMatch(/moved|hit/);
-      const boxes = await page.evaluate(() => { const box = (e) => { const q = e && e.getBoundingClientRect(); return q ? { l: q.left, r: q.right, t: q.top, b: q.bottom } : null; }; return { rc: box(document.querySelector('.recap')), en: box(document.querySelector('.o-plate.o-enemy')), hand: [...document.querySelectorAll('.hand .hand-card')].map(box), done: box(document.querySelector('.done-btn')) }; });
+      const boxes = await page.evaluate(() => { const box = (e) => { const q = e && e.getBoundingClientRect(); return q ? { l: q.left, r: q.right, t: q.top, b: q.bottom } : null; }; return { rc: box(document.querySelector('.e-recap')), en: box(document.querySelector('.o-plate.o-enemy')), hand: [...document.querySelectorAll('.hand .hand-card')].map(box), done: box(document.querySelector('.done-btn')) }; });
       const hit = (a, b) => a && b && a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
       expect(hit(boxes.rc, boxes.en), 'clear of the enemy plate').toBeFalsy();
       expect(boxes.hand.some((c) => hit(boxes.rc, c)), 'clear of the hand').toBeFalsy();
@@ -14131,6 +14131,101 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
       await page.locator('.recap-tog').click();
       await expect(page.locator('.recap-list'), 'collapsible').toBeHidden();
       await expect(page.locator('.fx .unit-speech'), 'no chatter').toHaveCount(0);
+    });
+  });
+}
+
+// Ken (Nov 1): "I do want them to automatically attack whatever they're chasing ... have them just stay on them"; "multiple targets ... a multiple string of attacks"; "Stance per unit"
+const toMyAction = async (page) => {
+  for (let i = 0; i < 14; i++) {
+    const s = await getState(page);
+    if (s.activePlayer === 'player' && s.phase === 'action') return s;
+    await page.evaluate(() => { const o = window.oreheart; const d = o.legalActions().find((x) => x.type === 'done' || x.type === 'pass'); if (d) o.act(d); });
+    await page.waitForTimeout(60);
+  }
+  return getState(page);
+};
+const leaveAction = (page) => page.evaluate(() => { const o = window.oreheart; const d = o.legalActions().find((x) => x.type === 'done'); if (d) o.act(d); });
+test('AC556: a chase order attacks turn after turn and stays on; when the target is gone the unit goes on to the next on its list; the order ends with the list; no attack move in one turn', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const board = [{ cardId: 'grubnaks-big-boss-troll', owner: 'player', row: 4, col: 6 }, { cardId: 'goblin-scrounger', owner: 'opponent', row: 4, col: 7 }, { cardId: 'goblin-scrounger', owner: 'opponent', row: 1, col: 7 }];
+  const s0 = await page.evaluate((board) => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [] } }), board);
+  const by = (s, o) => s.board.creatures.filter((c) => c.owner === o);
+  const me = by(s0, 'player')[0], foes = by(s0, 'opponent');
+  const near = foes.find((f) => f.row === 4), far = foes.find((f) => f.row === 1);
+  expect(await page.evaluate(([me, a, b]) => window.oreheart.setOrder({ kind: 'chase', uid: me, targetUid: a, then: [b] }), [me.uid, near.uid, far.uid])).toBe(true);
+  let seen = { attacks: 0, movedOn: false };
+  for (let turn = 0; turn < 9; turn++) {
+    const s = await toMyAction(page);
+    await page.waitForTimeout(150);
+    const after = await getState(page);
+    const u = after.board.creatures.find((c) => c.uid === me.uid);
+    expect(u, 'the big troll lives').toBeTruthy();
+    expect(u.hasAttacked && u.hasMoved, 'moves OR attacks, not both').toBeFalsy();
+    if (u.hasAttacked) seen.attacks++;
+    const orders = await page.evaluate(() => window.oreheart.getOrders());
+    const nearAlive = after.board.creatures.some((c) => c.uid === near.uid), farAlive = after.board.creatures.some((c) => c.uid === far.uid);
+    if (!nearAlive && (u.hasMoved || u.hasAttacked)) seen.movedOn = true;
+    if (nearAlive) expect(orders.length, 'the order stays while the target lives').toBe(1);
+    if (!nearAlive && !farAlive) { await page.evaluate(() => window.__app.renderOrders(window.oreheart.getState())); expect((await page.evaluate(() => window.oreheart.getOrders())).length, 'the list is finished: the unit waits for orders').toBe(0); break; }
+    await leaveAction(page); await page.waitForTimeout(60);
+  }
+  expect(seen.attacks, 'attacked by itself').toBeGreaterThan(0);
+  expect(seen.movedOn, 'went on to the second target').toBe(true);
+});
+test('AC557: stances act by themselves at the start of the Action phase: Hold only attacks in range, Guard steps 1 square to reach an enemy, Aggressive walks to the nearest; no stance does nothing; an order beats a stance', async ({ page }) => {
+  test.setTimeout(60000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const run = async (stance, foeCol) => {
+    const board = [{ cardId: 'goblin-grunt', owner: 'player', row: 4, col: 3 }, { cardId: 'goblin-grunt', owner: 'opponent', row: 4, col: foeCol }];
+    const s0 = await page.evaluate((board) => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [] } }), board);
+    const me = s0.board.creatures.find((c) => c.owner === 'player');
+    if (stance) await page.evaluate(([u, k]) => window.__app.stances.set(u, k), [me.uid, stance]);
+    await toMyAction(page); await page.waitForTimeout(150);
+    const u = (await getState(page)).board.creatures.find((c) => c.uid === me.uid);
+    return { col: u.col, attacked: !!u.hasAttacked };
+  };
+  expect(await run(null, 4), 'no stance: as today').toEqual({ col: 3, attacked: false });
+  expect(await run('hold', 4), 'hold: attacks in range').toEqual({ col: 3, attacked: true });
+  expect(await run('hold', 9), 'hold: stays').toEqual({ col: 3, attacked: false });
+  const guardNear = await run('guard', 5);
+  expect(guardNear.col, 'guard: one step to reach it').toBe(4);
+  expect(await run('guard', 10), 'guard: too far, stays').toEqual({ col: 3, attacked: false });
+  const agg = await run('aggressive', 11);
+  expect(agg.col, 'aggressive: walks toward the nearest enemy').toBeGreaterThan(3);
+});
+for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone', width: 844, height: 390 }]) {
+  test.describe(`orders ${vp.name}`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+    test(`AC558: after a chase order, tapping more enemies adds them (numbered), tapping one again removes it, tapping elsewhere stops; the stance bar sets a unit's stance; at rest only the current target is marked (${vp.name})`, async ({ page }) => {
+      await page.goto('/?test=1&seed=3');
+      await page.waitForFunction(() => !!window.oreheart);
+      const board = [{ cardId: 'goblin-grunt', owner: 'player', row: 6, col: 4 }, { cardId: 'goblin-grunt', owner: 'opponent', row: 3, col: 9 }, { cardId: 'goblin-grunt', owner: 'opponent', row: 2, col: 11 }, { cardId: 'goblin-grunt', owner: 'opponent', row: 5, col: 11 }];
+      const s0 = await page.evaluate((board) => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player', board, playerHand: [] } }), board);
+      await page.waitForTimeout(500);
+      const me = s0.board.creatures.find((c) => c.owner === 'player'), foes = s0.board.creatures.filter((c) => c.owner === 'opponent');
+      await page.evaluate(([me, a]) => { window.oreheart.setOrder({ kind: 'chase', uid: me, targetUid: a }); window.__app.chainFor = me; window.__app.orderFocus = me; window.__app.renderOrders(window.oreheart.getState()); }, [me.uid, foes[0].uid]);
+      const tapFoe = async (f) => { const p = await page.evaluate(([r, c]) => { const a = window.__app, q = a.center(r, c), b = a.r.board.getBoundingClientRect(); return { x: b.left + q.x, y: b.top + q.y }; }, [f.row, f.col]); await page.mouse.click(p.x, p.y); await page.waitForTimeout(150); };
+      const list = async () => (await page.evaluate(() => window.oreheart.getOrders()))[0];
+      await tapFoe(foes[1]); await tapFoe(foes[2]);
+      let o = await list();
+      expect([o.targetUid, ...(o.then || [])], 'three targets in order').toEqual([foes[0].uid, foes[1].uid, foes[2].uid]);
+      await expect(page.locator('.ord-num'), 'numbered 1, 2, 3').toHaveCount(3);
+      await tapFoe(foes[1]);
+      o = await list();
+      expect([o.targetUid, ...(o.then || [])], 'tapped again: off the list').toEqual([foes[0].uid, foes[2].uid]);
+      await page.evaluate(() => { window.__app.chainFor = null; window.__app.orderFocus = null; window.__app.orderFlashUid = null; window.__app.orderHover = null; window.__app.drawOrders(); });
+      await expect(page.locator('.ord-rest'), 'at rest only the current target').toHaveCount(1);
+      await expect(page.locator('.ord-num')).toHaveCount(0);
+      await page.evaluate((u) => { const a = window.__app; a.openStanceBar(window.oreheart.getState().board.creatures.find((c) => c.uid === u)); }, me.uid);
+      const bar = page.locator('.stance-bar');
+      await expect(bar).toBeVisible();
+      await bar.locator('[data-stance="guard"]').click();
+      expect(await page.evaluate((u) => window.__app.stances.get(u), me.uid)).toBe('guard');
+      await expect(page.locator(`.token[data-uid="${me.uid}"][data-stance="guard"]`), 'the tiny mark').toHaveCount(1);
     });
   });
 }
