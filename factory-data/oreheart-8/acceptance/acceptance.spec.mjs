@@ -7180,10 +7180,10 @@ test.describe('round 10 at 1920x1080', () => {
     expect((await act(page, { type: 'playCrystal', uid: s.players.opponent.hand[0].uid })).ok).toBe(true);
     const theirs = page.locator('[aria-label="Card reveal"][data-side="opponent"]').first();
     await expect(theirs).toBeVisible();
-    // owner check change (Ken, Oct 30): the computer's card pops up big in the middle, then is laid down on the enemy discard pile at the left
+    // owner check change (Ken, Nov 1: "pop up in the top left corner"): the computer's card shows top-left, then is laid down on the enemy discard pile at the left
     await page.waitForTimeout(350); // after the quick pop-in
     const b = await theirs.boundingBox();
-    expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.05);
+    expect(b.x + b.width / 2).toBeLessThanOrEqual(W * 0.2);
     // owner check change (Ken, Oct 31: "make it the same size as the card when it pops out of my hand"): no longer near full height; AC479 checks the pop-out size
     expect(b.height).toBeGreaterThanOrEqual(H * 0.3);
     await expect(theirs).toHaveCount(0, { timeout: 6000 });
@@ -7684,10 +7684,10 @@ test.describe('round 11 at 1920x1080', () => {
     for (const c of s.players.opponent.hand) expect((await act(page, { type: 'playCrystal', uid: c.uid })).ok).toBe(true);
     const theirs = page.locator('[aria-label="Card reveal"][data-side="opponent"]');
     const vis = (loc) => loc.evaluateAll((els) => els.filter((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden').map((e) => e.getBoundingClientRect().toJSON()));
-    // owner check change (Ken, Oct 30): one big card in the middle at a time; each earlier one is laid down on the enemy discard pile
+    // owner check change (Ken, Nov 1): one big card in the top-left corner at a time; each earlier one is laid down on the enemy discard pile
     const big = page.locator('[aria-label="Card reveal"][data-side="opponent"][data-stage="big"]');
     expect((await vis(big)).length).toBeLessThanOrEqual(1);
-    for (const b of await vis(big)) expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.05);
+    for (const b of await vis(big)) expect(b.x + b.width / 2).toBeLessThanOrEqual(W * 0.2);
     await expect.poll(async () => (await vis(theirs)).length, { timeout: 8000 }).toBe(0);
     await expect(page.getByRole('button', { name: 'Enemy discard pile', exact: true })).toHaveAttribute('data-count', '4');
     s = await newMatch(page, { ...quiet({ playerHand: ['soul-shard'] }), firstPlayer: 'player' });
@@ -10944,7 +10944,7 @@ test.describe('Oct 30 Ken at 1920x1080', () => {
     await expect(dlg).toBeHidden();
   });
 
-  test('AC414: the computer\'s played card pops up big in the middle for about a second, then is laid down on its discard pile', async ({ page }) => {
+  test('AC414: the computer\'s played card pops up in the top-left corner for about a second, then is laid down on its discard pile', async ({ page }) => {
     const W = 1920, H = 1080;
     await page.goto('/?test=1&seed=123&fx=1');
     await page.waitForFunction(() => !!window.oreheart);
@@ -10970,8 +10970,8 @@ test.describe('Oct 30 Ken at 1920x1080', () => {
     await expect(big).toHaveCount(1);
     let b = null; // measured once its quick pop-in is over
     await expect.poll(async () => { [b] = await visBoxes(big); return b ? b.height : 0; }, { timeout: 3000 }).toBeGreaterThan(closeUp.height * 0.4); // owner check change (Ken, Oct 31): the hand pop-out size now (AC479), no longer bigger than the close-up
-    expect(Math.abs(b.x + b.width / 2 - W / 2)).toBeLessThanOrEqual(W * 0.03);
-    expect(Math.abs(b.y + b.height / 2 - H / 2)).toBeLessThanOrEqual(H * 0.05);
+    expect(b.x + b.width / 2, 'owner check change (Ken, Nov 1): the top-left corner, no longer the middle').toBeLessThanOrEqual(W * 0.2);
+    expect(b.y + b.height / 2).toBeLessThanOrEqual(H * 0.45);
     expect(b.height).toBeLessThanOrEqual(H);
     await card.click({ force: true });
     // laid down: it leaves the middle, slides left onto the pile and the pile shows it face-up
@@ -12122,7 +12122,7 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
         expect(r.cards, 'the hand is there').toBeGreaterThan(0);
         expect(r.hit, `${vp.name}, hand ${raised ? 'raised' : 'tucked'}: the computer's card covers none of the player's cards`).toBe(0);
         expect(r.w, `${vp.name}: not bigger than the pop-out (${Math.round(popW)} px)`).toBeLessThanOrEqual(popW * 1.04);
-        if (vp.name === 'desktop') expect(r.w, `${vp.name}: the same size as the pop-out (${Math.round(popW)} px)`).toBeGreaterThanOrEqual(popW * 0.96);
+        // owner check change (Ken, Nov 1): in the top-left corner it stays smaller than the pop-out when that would dominate the screen (AC551)
         expect(r.top).toBeGreaterThanOrEqual(0);
       }
     });
@@ -12695,15 +12695,12 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
       await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 53 sound files decoded (with the 12 projectile sounds, 3 summon variants)', timeout: 20000 }).toBe(53);
       await expect.poll(async () => (await sfxState(page)).punchLoaded, { message: 'all 6 punch files decoded', timeout: 20000 }).toBe(6);
       await unitLoaded(page, 'goblin-sneak', man); await unitLoaded(page, 'dwarf-pickman', man);
-      // --- the hurt rule, through the voice hook: 35 % of small hits get a line, every big hit does
+      // --- the hurt rule, through the voice hook (owner check change, Ken Nov 1: the 1-in-20 roll replaced the 35 % rule; test pages roll every time, AC550 checks the roll)
       await page.evaluate(() => { const ev = window.oreheart.voiceEvent; for (let i = 0; i < 180; i++) ev('hurt', 'goblin-grunt', 'h' + i, false); for (let i = 0; i < 20; i++) ev('hurt', 'goblin-grunt', 'b' + i, true); });
       let v = await voiceState(page);
       const small = v.log.filter((e) => /^h\d+$/.test(e.who)), big = v.log.filter((e) => /^b\d+$/.test(e.who));
       expect(small.length).toBe(180);
-      const passed = small.filter((e) => e.skipped !== 'chance').length / small.length;
-      expect(passed, 'a small hit speaks only sometimes (~35 %)').toBeGreaterThan(0.2);
-      expect(passed).toBeLessThan(0.5);
-      expect(big.every((e) => e.skipped !== 'chance'), 'a big hit always gets its line (unless another voice is playing)').toBe(true);
+      expect(big.length).toBe(20);
       expect(v.log.every((e) => e.played ? e.skipped === null : !!e.skipped), 'every event is played or skipped with a reason').toBe(true);
       expect(v.log.filter((e) => e.played).length, 'one voice at a time: the rest of the burst waited').toBeLessThanOrEqual(2);
       // the same unit hit again inside 8 s says nothing
@@ -13963,3 +13960,53 @@ test('AC549: arena draw order follows the layout (layers, z, cut-out z); front b
   expect(st.arena.layers, 'Skullfang: the default layers').toEqual({ arena: 100, units: 400 });
   expect(st.arena.frontEffects, 'Skullfang: no effect over the creatures, as before').toBe(0);
 });
+
+// Ken (Nov 1): "they say it like every single time ... I wanted to just be like random, just every 1 through 20": every unit voice trigger is a 1-in-20 roll (test pages roll every time so the voice checks can hear lines)
+test('AC550: every unit voice trigger speaks 1 time in 20 (one number)', async ({ page }) => {
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  await page.mouse.click(5, 5);
+  expect(await page.evaluate(() => window.oreheart.voiceOneIn()), 'the one number').toBe(20);
+  await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player' } }));
+  await page.mouse.click(5, 5);
+  await expect.poll(async () => page.evaluate(async () => { const v = (await window.oreheart.getAudioState()).voice; return !!v; }), { timeout: 5000 }).toBe(true);
+  const r = await page.evaluate(async () => {
+    const o = window.oreheart; o.setVoiceRules({ oneIn: 20, unitCooldownMs: 0, gapMs: 0 });
+    for (const ev of ['select', 'hurt', 'special']) for (let i = 0; i < 66; i++) o.voiceEvent(ev, 'goblin-grunt', ev + i, ev === 'hurt' && i % 2 === 0);
+    const log = (await o.getAudioState()).voice.log.slice(-198);
+    return { n: log.length, passed: log.filter((e) => e.skipped !== 'odds').length, kinds: [...new Set(log.filter((e) => e.skipped === 'odds').map((e) => e.event))].length };
+  });
+  expect(r.n).toBe(198);
+  expect(r.kinds, 'select, hurt and special all roll').toBe(3);
+  expect(r.passed, 'about 10 of 198 pass the roll').toBeLessThan(30);
+});
+
+// Ken (Nov 1): "when the opposing player plays a card, I no longer want it to pop up over the middle of the screen. I like it to pop up in the top left corner."
+for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone', width: 844, height: 390 }]) {
+  test.describe(`enemy card corner ${vp.name}`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+    test(`AC551: the computer's card shows in the top-left corner under the Menu button, clear of the hand and the player's plate (${vp.name})`, async ({ page }) => {
+      await page.goto('/?test=1&seed=3&fx=1');
+      await page.waitForFunction(() => !!window.oreheart);
+      await page.evaluate(async () => await window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player', playerHand: ['goblin-grunt', 'goblin-slinger', 'fireball', 'goblin-bomber', 'shiv-rat', 'goblin-sneak'] } }));
+      await page.waitForTimeout(800);
+      for (const raised of [false, true]) {
+        const r = await page.evaluate(async (raised) => {
+          const a = window.__app; a.openHand(raised, !raised); await new Promise((res) => setTimeout(res, 450));
+          void a.reveal('fireball', null, 'opponent'); await new Promise((res) => setTimeout(res, 100));
+          const rv = document.querySelector('.reveal.opp-play'); await Promise.all(rv.getAnimations().map((x) => x.finished.catch(() => {}))); const b = rv.getBoundingClientRect();
+          const box = (s) => { const e = document.querySelector(s); const q = e && e.getBoundingClientRect(); return q ? { top: q.top, bottom: q.bottom, left: q.left, right: q.right } : null; };
+          const hand = [...document.querySelectorAll('.hand .hand-card')].map((c) => c.getBoundingClientRect()).filter((x) => x.width);
+          const hit = hand.filter((x) => x.left < b.right && x.right > b.left && x.top < b.bottom && x.bottom > b.top).length;
+          const out = { left: b.left, right: b.right, top: b.top, bottom: b.bottom, w: b.width, hit, menu: box('.match .menu-btn'), plate: box('.match .o-plate.o-you') };
+          rv._finish?.(); await new Promise((res) => setTimeout(res, 900)); return out;
+        }, raised);
+        expect(r.left, 'at the left edge').toBeLessThan(vp.width * 0.03);
+        expect(r.right, 'a corner, not the middle').toBeLessThan(vp.width * 0.22);
+        expect(r.top, 'just under the Menu button').toBeGreaterThanOrEqual(r.menu.bottom);
+        expect(r.hit, 'never over the hand').toBe(0);
+        expect(r.bottom, 'clear of the player plate').toBeLessThanOrEqual(r.plate.top);
+      }
+    });
+  });
+}

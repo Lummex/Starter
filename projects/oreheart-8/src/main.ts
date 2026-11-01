@@ -13,7 +13,7 @@ import { getPlayerAvatar, AVATARS } from './ui/avatars';
 import { CARDS, COMMANDERS, CONFIG, ABILITIES, ABILITY_COST, brewActions, abilityStatusMap, flowShardCount, weaponOf, previewAttack, tutorialAction, STARTER_DECK_LIST, validateDeck } from './engine';
 import { SPELL_VISUALS } from './content/spell-visuals';
 import { spellFxLog, spellFxNow, spellFxAt, setSpellFxEnabled, SPELL_FX_SPEC, fxPhone, fxLayerUrl, FX_LAYERS } from './ui/spell-fx';
-import { audio, VOICE, MIX } from './ui/audio';
+import { audio, VOICE, MIX, VOICE_ONE_IN } from './ui/audio';
 import { getHighlights, getRings } from './ui/fx-settings';
 import { pictureOf, rarityKey, commanderPortrait, INTERNAL_ABILITY } from './ui/app';
 import cardFormat from '../public/art/card-format/format.json';
@@ -33,6 +33,7 @@ const wantIntro = params.get('intro') === '1' || (!test && !sessionStorage.getIt
 if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catch { /* ignore */ } app.showIntro(); } else app.showMenu();
 
 if (test) (window as any).__app = app;
+if (test) VOICE.oneIn = 1; // the voice checks need every trigger to roll a hit; AC550 checks the real 1 in 20
 if (test) (window as any).__ohCard = (id: string, h = 624) => { const el = ohCardEl(CARDS[id], pictureOf(CARDS[id])); el.style.cssText = `width:${h * 420 / 624}px;height:${h}px;display:inline-block`; return el; };
 if (test) {
   (window as any).oreheart = {
@@ -150,6 +151,7 @@ if (test) {
     setArenaPick: (who: '' | 'player' | 'opponent') => { app.arenaForce = who; return who; }, // checks only: force which faction's arena (and music) the next match uses
     setMixRules: (r: any) => { Object.assign(MIX, r); return { ...MIX }; }, // checks only: {enabled:false} plays every sound as asked (the sound-file checks), default is Brush's mix rules
     setVoiceRules: (r: any) => { Object.assign(VOICE, r); return { ...VOICE }; }, // checks only: shorten the voice cooldown / gap
+    voiceOneIn: () => VOICE_ONE_IN,
     playSfx: (name: string, faction?: string) => audio.play(name, faction),
     playSpellSound: (id: string) => audio.spell(id),
     getRenderStats: async () => (app.view ? app.view.stats() : { webgl: false, graphics: app.low ? 'low' : 'high', drawCalls: 0, triangles: 0, bloom: false, shadows: false, particles: false, figures: [], commanders: { player: { commanderId: '', model: 'placeholder' }, opponent: { commanderId: '', model: 'placeholder' } }, strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished' }),

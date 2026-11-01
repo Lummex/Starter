@@ -58,9 +58,11 @@ export const gapOf = (key: string) => (/^(melee|bonk|clink|ranged|punch.*)$/.tes
 export const DEFAULT_SFX_VOLUME = 56;
 /** Ken's switch for the unit voices. ON since Oct 31 (Ken: "the voices are all right"); false puts the old grunts back exactly as before. */
 export const VOICES_ON = true;
-/** Ken's voice rules (studio/voice-spec.json v2, Oct 31): 8 s per unit, one voice at a time, 1.2 s between voices, hurt 35 % (always on a big hit),
+/** Ken's voice rules (studio/voice-spec.json v2, Oct 31): 8 s per unit, one voice at a time, 1.2 s between voices (the hurt 35 % rule gave way to VOICE_ONE_IN, Nov 1),
  * priority special > big-hit hurt > select > hurt (a higher one may cut a lower one after 0.2 s), playbackRate range, volume per event. */
-export const VOICE = { unitCooldownMs: 8000, gapMs: 1200, cutAfterMs: 200, hurtChance: 0.35, rate: [0.98, 1.02], vol: { select: 0.85, special: 0.9, hurt: 0.8 }, prio: { hurt: 1, select: 2, bigHurt: 3, special: 4 } };
+/** Ken, Nov 1: "I wanted to just be like random, just every 1 through 20": every unit voice trigger speaks only 1 time in this many. Change this one number to tune how chatty units are. */
+export const VOICE_ONE_IN = 20;
+export const VOICE = { oneIn: VOICE_ONE_IN, unitCooldownMs: 8000, gapMs: 1200, cutAfterMs: 200, rate: [0.98, 1.02], vol: { select: 0.85, special: 0.9, hurt: 0.8 }, prio: { hurt: 1, select: 2, bigHurt: 3, special: 4 } };
 export const voiceUrl = (name: string, ext = 'ogg') => `/audio/voice/${name}.${ext}`;
 type VoiceEv = 'select' | 'hurt' | 'special';
 type VoiceMan = { units: Record<string, { voice: string; select: string[]; special?: string; special_when?: string }>; voices: Record<string, { hurt: string[] }>; present: string[] };
@@ -465,15 +467,15 @@ class AudioEngine {
     if (!this.ok() || !this.voiceGain) { e.from = this.muted ? 'muted' : 'locked'; return log(); }
     this.voicePreload(unit);
     const skip = (why: string) => { e.skipped = why; return log(); };
+    if (VOICE.oneIn > 1 && Math.random() * VOICE.oneIn >= 1) return skip('odds'); // Ken, Nov 1: a random 1 in 20, for every line
     if (now - (this.vSpokeAt[who] ?? -1e9) < VOICE.unitCooldownMs) return skip('cooldown'); // 8 s per unit (re-clicks too)
-    if (event === 'hurt' && !big && Math.random() >= VOICE.hurtChance) return skip('chance');
     const cur = this.vCur, busy = this.vBusy(now), inGap = !busy && !!cur && now < cur.end + VOICE.gapMs;
     if (busy || inGap) { // one voice at a time, 1.2 s apart; a higher priority may cut a lower one once it has played 0.2 s
       if (!(prio > cur!.prio && (!busy || now - cur!.start >= VOICE.cutAfterMs))) return skip(busy ? 'busy' : 'gap');
     }
     const pool = event === 'select' ? this.unitLines(unit).select : event === 'hurt' ? this.unitLines(unit).hurt : this.unitLines(unit).special;
     if (this.vMan && !pool.length) return skip('no-line');
-    const line = pool.length ? this.fromBag(who + '|' + event, pool) : null;
+    const line = pool.length ? this.fromBag(unit + '|' + event, pool) /* one bag per kind of unit: three Miners never repeat each other's line */ : null;
     if (busy && cur) { e.stopped = cur.line || 'grunt'; try { cur.src?.stop(); } catch { /* ended */ } }
     const c = this.ctx!, buf = line ? this.vBufs.get(line) : undefined;
     e.line = line; e.file = line ? voiceUrl(line) : null;

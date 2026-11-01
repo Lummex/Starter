@@ -2569,16 +2569,17 @@ export class App {
     if (!had) hand.classList.remove('open'); void hand.offsetHeight; hand.style.removeProperty('transition');
     return top;
   }
-  /** where the computer's card shows: the hand pop-out size, centred in the space above the hand (raised or tucked), under the top HUD */
+  /** where the computer's card shows. Ken, Nov 1: "I like it to pop up in the top left corner. Way too distracting" in the middle: just under the Menu button at the left edge,
+   *  the hand pop-out size at most, never down onto the player's hand or plate (it then lands on the enemy discard pile right below). */
   revealSpot(): { w: number; cx: number; cy: number } {
     const vw = window.innerWidth, vh = window.innerHeight, ratio = 1712 / 1152;
-    const bottom = this.handTopEver() - 10, topY = Math.max(8, vh * 0.02);
+    const menu = this.root.querySelector('.match .menu-btn') as El | null, plate = this.root.querySelector('.match .o-plate.o-you') as El | null;
+    const mr = menu ? menu.getBoundingClientRect() : null, pr = plate ? plate.getBoundingClientRect() : null;
+    const topY = (mr && mr.height ? mr.bottom : Math.max(8, vh * 0.02)) + 6, left = Math.max(6, vw * 0.006);
+    const bottom = Math.min(this.handTopEver(), pr && pr.height ? pr.top : vh) - 8;
     const avail = Math.max(60, bottom - topY);
-    let w = Math.round(this.handPopWidth());
-    if (w * ratio > avail) w = Math.floor(avail / ratio);
-    w = Math.min(w, Math.floor(vw * 0.6));
-    const hgt = w * ratio;
-    return { w, cx: vw / 2, cy: topY + Math.min(avail, hgt) / 2 + Math.max(0, (avail - hgt) * 0.3) };
+    const w = Math.floor(Math.min(this.handPopWidth(), vw * 0.15, avail / ratio));
+    return { w, cx: left + w / 2, cy: topY + (w * ratio) / 2 };
   }
   reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player'): Promise<void> {
     if ((this.test && !this.fxReal) || !this.r.board) return Promise.resolve();
@@ -2590,7 +2591,7 @@ export class App {
     const el = h('div', { class: `reveal hand-card static ${c.type} f-${c.faction}`, role: 'group', 'aria-label': 'Card reveal', 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c));
     const host = this.root.querySelector('.match') as El;
     const list = this.reveals[side];
-    // the newest card takes the middle; any earlier one that is not pinned is laid down now
+    // the newest card takes the corner; any earlier one that is not pinned is laid down now
     for (const old of [...list]) if (old.dataset.pinned !== 'true') (old as any)._finish?.();
     const hostR = host.getBoundingClientRect(), vh = window.innerHeight, vw = window.innerWidth;
     // Oct 31 (Ken): "make it the same size as the card when it pops out of my hand ... I don't want him blocking my cards. Covering my cards.
@@ -2663,7 +2664,7 @@ export class App {
     el.addEventListener('pointerdown', (ev: Event) => {
       ev.stopPropagation();
       if (el.dataset.pinned === 'true') { el.dataset.pinned = 'false'; finish(); return; }
-      if (done && layAnim && !landed) { // a tap while it is being laid down grabs it back to the middle, pinned
+      if (done && layAnim && !landed) { // a tap while it is being laid down grabs it back to the corner, pinned
         layAnim.onfinish = null; layAnim.cancel(); layAnim = null; clearTimeout(layFallback); done = false; el.dataset.stage = 'big';
       }
       if (done) return;
