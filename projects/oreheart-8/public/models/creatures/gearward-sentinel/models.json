@@ -1,0 +1,16 @@
+{
+ "generated": "2026-10-30",
+ "from": "Clay, Meshy Oct 30 (Forge-approved under Ken's Oct 30 delegation); rest pose only",
+ "actions": {},
+ "rigged": true,
+ "parts": [
+  "gear-shield",
+  "mace"
+ ],
+ "notes": "No clips in the GLB: every move comes from the shared biped pack (public/models/anims). Accessory placement and height wait for Ken's Studio setup (Ledger).",
+ "fileSizes": {
+  "char.glb": 2695496,
+  "gear-shield.glb": 898812,
+  "mace.glb": 883428
+ }
+}

@@ -1,22 +1,29 @@
 ## What was built
-Oreheart is a comic-style fantasy card battle in the browser: you play one full match against a computer opponent (Easy, Normal or Hard), or a guided tutorial. This round (the final test round) adds a visual Deck Builder, a new Commander and deck select screen, a savings rule (10 spare crystals move to the Bank), swinging pickaxes on mines, an attack preview, a "Last turn" recap, and a match-end summary.
+This round added player accounts to Oreheart: a sign-in screen, account creation with a birth-year question, a parent-approval path for under-13s, decks saved on the server, a Profile page and ban handling. "Play offline (practice)" keeps the game working as before. The existing game was not meant to change.
 
 ## Try these things
-- Open the menu, press **Tutorial**, and follow the tips all the way to Victory.
-- Press **Decks**: single-click a card to enlarge it, double-click to add it, try **Auto-fill**, then **Save**.
-- Press **Play**, pick a Commander, pick a deck (or "+ New Deck"), choose **Hard**, then **Fight!**
-- In a match, drag one of your creatures over an enemy and check the "You deal / You take" box. Let go elsewhere to cancel.
-- Finish your turn with 10 or more crystals and watch "+1 banked" fly into the Bank. After the enemy moves, press **Last turn**.
-- Win or surrender, then check the summary and press **Play again**.
+- Open the preview and click through the intro. Check that the main menu shows Play, Deck Builder, How to Play, Settings and Quit.
+- Start a match (Play, then pick a Commander, then Fight!). Drag a card from your hand onto the board.
+- If the preview is connected to the test server, you should see a login screen. Try "Create account" and "Forgot password?".
+- On that login screen, choose "Play offline (practice)" and make sure the game starts normally.
+- Try the Deck Builder: add cards and save a deck.
+- Open the preview on a phone held sideways and check the menu and match fit the screen.
 
 ## Automated checks
-129 of 129 checks passed. No page errors were recorded.
+554 of 570 checks passed. 16 failed:
+- **Sign-up (1):** the 13+ sign-up, confirmation email and welcome flow failed. This is the main feature of this round, so treat it as unproven.
+- **Hand dragging and touch (6):** dragging a card, the hand tucking away, dropping a card on a square, and double-tapping on a phone.
+- **Display (2):** sharpness on high-density screens, and the animated board look.
+- **Visuals and spell effects (5):** Starfall and Venom Shiv effects, phone spell effects, the stronghold and Grubnak movement, and the Gnome Plow model.
+- **Other (2):** the Tutorial button and the Card Comp watch bar.
+
+The builder says many of these are outdated checks or timeouts. I could not confirm that.
 
 ## Things to know
-- The Hard computer opponent's Miner protection and Guard placement is only approximated, so Hard may feel less clever than the spec describes.
-- The builder only checked the pickaxe and Deck Builder layouts in a headless browser at one phone size (844×390).
-- The only screenshots available show the welcome pop-up on the menu (desktop) and the "please rotate your phone" screen (upright phone). Both look fine. I could not see the Deck Builder, select screen or match visually, so please check those yourself in the preview.
-- Visuals are still placeholders and there is no sound.
+- The screenshots show only the offline game, not the new login or sign-up screens. I could not see those.
+- The home, menu and match screens look correct, styled and uncramped on desktop and phone. There were no page errors.
+- The builder's notes say nothing was tested against a live server, and the game download is over 95 MB.
+- The builder left several older failing checks unfixed and called them outdated.
 
 ## Recommendation
-Ready to approve
+Request changes: the new sign-up flow, which is the point of this round, failed its check and was never seen working, and 15 other checks also failed.

@@ -1,0 +1,25 @@
+{
+ "generated": "2026-10-24T10:26:02.927Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "rocket": "01a16d6d-f4cc-7739-be9a-660fd12b44c8",
+  "character": "01a16d6d-f4d2-72fa-887f-5ee39a2abb14",
+  "rig": "01a16d70-9b2d-776b-bdbd-866c99462f11",
+  "anim": "01a16d71-42f9-7129-b75a-d1a2174d0e9c"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [
+  "rocket"
+ ],
+ "notes": "",
+ "fileSizes": {
+  "rocket.glb": 13212972,
+  "char.glb": 5996232
+ }
+}

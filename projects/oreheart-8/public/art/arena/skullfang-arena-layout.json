@@ -1,0 +1,1629 @@
+{
+ "name": "skull arena final draft",
+ "note": "Owner layout from the Arena Editor. Effects x/y and sizes are in background-picture pixels (1672x941, y down). Arena picture: skullfang-arena.png drawn centered at arena.centerX/centerY with arena.scale (its pixel size x scale). boardCorners and foregroundCutouts are in arena-picture pixels (origin top-left of skullfang-arena.png). Board = 13 columns x 7 rows mapped by perspective (homography) onto boardCorners in order top-left, top-right, bottom-right, bottom-left. arenaLook applies to both pictures (brightness add, contrast, saturation, hue degrees). Effect code reference: arena-editor-source.html.",
+ "background": "skullfang-swamp-background.jpg",
+ "arenaPicture": "skullfang-arena.png",
+ "arena": {
+  "centerX": 837,
+  "centerY": 470,
+  "scale": 1
+ },
+ "boardCorners": [
+  [
+   332,
+   190
+  ],
+  [
+   1343,
+   195
+  ],
+  [
+   1501,
+   624
+  ],
+  [
+   165,
+   627
+  ]
+ ],
+ "arenaLook": {
+  "brightness": 0,
+  "contrast": 0.97,
+  "saturation": 1.29,
+  "hue": 1
+ },
+ "effects": [
+  {
+   "type": "flame",
+   "x": 127,
+   "y": 543,
+   "size": 2.75,
+   "height": 1.1,
+   "cCore": "#fff6c0",
+   "cMid": "#ffb030",
+   "cTip": "#c0300a"
+  },
+  {
+   "type": "flame",
+   "x": 1555,
+   "y": 538,
+   "size": 2.6,
+   "height": 1.1,
+   "cCore": "#fff6c0",
+   "cMid": "#ffb030",
+   "cTip": "#c0300a"
+  },
+  {
+   "type": "flame",
+   "x": 357,
+   "y": 100,
+   "size": 1.9,
+   "height": 1,
+   "cCore": "#fff6c0",
+   "cMid": "#ffb030",
+   "cTip": "#c0300a"
+  },
+  {
+   "type": "flame",
+   "x": 1389,
+   "y": 96,
+   "size": 1.8,
+   "height": 1,
+   "cCore": "#fff6c0",
+   "cMid": "#ffb030",
+   "cTip": "#c0300a"
+  },
+  {
+   "type": "glow",
+   "x": 201,
+   "y": 100,
+   "radius": 45,
+   "strength": 1.5,
+   "pulse": 0.5,
+   "cGlow": "#ffb347"
+  },
+  {
+   "type": "glow",
+   "x": 1162,
+   "y": 62,
+   "radius": 43,
+   "strength": 1.18,
+   "pulse": 0.5,
+   "cGlow": "#ffb347"
+  },
+  {
+   "type": "waterfall",
+   "x": 434,
+   "y": 690,
+   "width": 44,
+   "length": 178,
+   "lean": 0,
+   "speed": 1,
+   "opacity": 0.9,
+   "glow": 0.7,
+   "splash": 1,
+   "cDeep": "#2f7a0c",
+   "cLight": "#c6ff3a",
+   "cFoam": "#f2ffc0",
+   "cMist": "#b8ff7a",
+   "cGlowW": "#9dff3a"
+  },
+  {
+   "type": "waterfall",
+   "x": 836,
+   "y": 698,
+   "width": 44,
+   "length": 187,
+   "lean": 4,
+   "speed": 1,
+   "opacity": 0.9,
+   "glow": 0.7,
+   "splash": 1,
+   "cDeep": "#2f7a0c",
+   "cLight": "#c6ff3a",
+   "cFoam": "#f2ffc0",
+   "cMist": "#b8ff7a",
+   "cGlowW": "#9dff3a"
+  },
+  {
+   "type": "waterfall",
+   "x": 1235,
+   "y": 691,
+   "width": 44,
+   "length": 183,
+   "lean": 0,
+   "speed": 1,
+   "opacity": 0.9,
+   "glow": 0.7,
+   "splash": 1,
+   "cDeep": "#2f7a0c",
+   "cLight": "#c6ff3a",
+   "cFoam": "#f2ffc0",
+   "cMist": "#b8ff7a",
+   "cGlowW": "#9dff3a"
+  },
+  {
+   "type": "flame",
+   "x": 1316,
+   "y": 144,
+   "size": 2.25,
+   "height": 0.9,
+   "cCore": "#299e4c",
+   "cMid": "#4bca07",
+   "cTip": "#05b347"
+  },
+  {
+   "type": "flame",
+   "x": 412,
+   "y": 144,
+   "size": 2.25,
+   "height": 0.9,
+   "cCore": "#299e4c",
+   "cMid": "#4bca07",
+   "cTip": "#05b347"
+  },
+  {
+   "type": "glow",
+   "x": 76,
+   "y": 117,
+   "radius": 27,
+   "strength": 0.7,
+   "pulse": 0.9,
+   "cGlow": "#ff9147"
+  },
+  {
+   "type": "glow",
+   "x": 235,
+   "y": 39,
+   "radius": 27,
+   "strength": 0.7,
+   "pulse": 0.84,
+   "cGlow": "#ff9147"
+  },
+  {
+   "type": "glow",
+   "x": 994,
+   "y": 74,
+   "radius": 29,
+   "strength": 0.7,
+   "pulse": 0.43,
+   "cGlow": "#ff9147"
+  },
+  {
+   "type": "glow",
+   "x": 1130,
+   "y": 80,
+   "radius": 24,
+   "strength": 0.7,
+   "pulse": 1,
+   "cGlow": "#ff9147"
+  },
+  {
+   "type": "waterfall",
+   "x": 618,
+   "y": 672,
+   "width": 20,
+   "length": 144,
+   "lean": 0,
+   "speed": 1,
+   "opacity": 0.9,
+   "glow": 0.7,
+   "splash": 1,
+   "cDeep": "#2f7a0c",
+   "cLight": "#c6ff3a",
+   "cFoam": "#f2ffc0",
+   "cMist": "#b8ff7a",
+   "cGlowW": "#9dff3a"
+  },
+  {
+   "type": "waterfall",
+   "x": 1040,
+   "y": 679,
+   "width": 20,
+   "length": 226,
+   "lean": 0,
+   "speed": 1,
+   "opacity": 0.9,
+   "glow": 0.7,
+   "splash": 1.13,
+   "cDeep": "#2f7a0c",
+   "cLight": "#c6ff3a",
+   "cFoam": "#f2ffc0",
+   "cMist": "#b8ff7a",
+   "cGlowW": "#9dff3a"
+  },
+  {
+   "type": "waterfall",
+   "x": 188,
+   "y": 658,
+   "width": 19,
+   "length": 136,
+   "lean": 8,
+   "speed": 1,
+   "opacity": 0.9,
+   "glow": 0.7,
+   "splash": 1.46,
+   "cDeep": "#2f7a0c",
+   "cLight": "#c6ff3a",
+   "cFoam": "#f2ffc0",
+   "cMist": "#b8ff7a",
+   "cGlowW": "#9dff3a"
+  },
+  {
+   "type": "waterfall",
+   "x": 1513,
+   "y": 671,
+   "width": 19,
+   "length": 171,
+   "lean": 26,
+   "speed": 1,
+   "opacity": 0.9,
+   "glow": 0.7,
+   "splash": 1.46,
+   "cDeep": "#2f7a0c",
+   "cLight": "#c6ff3a",
+   "cFoam": "#f2ffc0",
+   "cMist": "#b8ff7a",
+   "cGlowW": "#9dff3a"
+  },
+  {
+   "type": "pool",
+   "x": 1513,
+   "y": 150,
+   "width": 101,
+   "height": 56,
+   "opacity": 0.55,
+   "speed": 1,
+   "bubbles": 0.85,
+   "smoke": 1,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "pool",
+   "x": 1559,
+   "y": 116,
+   "width": 63,
+   "height": 55,
+   "opacity": 0.1,
+   "speed": 1,
+   "bubbles": 0.85,
+   "smoke": 1,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "pool",
+   "x": 276,
+   "y": 249,
+   "width": 101,
+   "height": 56,
+   "opacity": 0.55,
+   "speed": 1,
+   "bubbles": 0.85,
+   "smoke": 1,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "pool",
+   "x": 935,
+   "y": 916,
+   "width": 130,
+   "height": 56,
+   "opacity": 0.55,
+   "speed": 1,
+   "bubbles": 0.85,
+   "smoke": 1,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "pool",
+   "x": 1047,
+   "y": 898,
+   "width": 233,
+   "height": 56,
+   "opacity": 0.55,
+   "speed": 1,
+   "bubbles": 0.85,
+   "smoke": 1,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "pool",
+   "x": 701,
+   "y": 898,
+   "width": 105,
+   "height": 110,
+   "opacity": 0.55,
+   "speed": 1,
+   "bubbles": 0.5,
+   "smoke": 0.5,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "pool",
+   "x": 1625,
+   "y": 815,
+   "width": 94,
+   "height": 56,
+   "opacity": 0.55,
+   "speed": 1,
+   "bubbles": 0.85,
+   "smoke": 1,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "pool",
+   "x": 1668,
+   "y": 366,
+   "width": 94,
+   "height": 101,
+   "opacity": 0.2,
+   "speed": 0.75,
+   "bubbles": 0.62,
+   "smoke": 0.6,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "pool",
+   "x": 1693,
+   "y": 366,
+   "width": 94,
+   "height": 101,
+   "opacity": 0.2,
+   "speed": 0.75,
+   "bubbles": 0.62,
+   "smoke": 0.6,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "pool",
+   "x": 515,
+   "y": 924,
+   "width": 83,
+   "height": 26,
+   "opacity": 0.29,
+   "speed": 1,
+   "bubbles": 0.5,
+   "smoke": 0.5,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "waterfall",
+   "x": 324,
+   "y": 849,
+   "width": 46,
+   "length": 72,
+   "lean": 0,
+   "speed": 0.3,
+   "opacity": 0.9,
+   "glow": 0.7,
+   "splash": 1,
+   "cDeep": "#2f7a0c",
+   "cLight": "#c6ff3a",
+   "cFoam": "#f2ffc0",
+   "cMist": "#b8ff7a",
+   "cGlowW": "#9dff3a"
+  },
+  {
+   "type": "pool",
+   "x": 1472,
+   "y": 249,
+   "width": 63,
+   "height": 55,
+   "opacity": 0.58,
+   "speed": 1,
+   "bubbles": 0.85,
+   "smoke": 1,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "banner",
+   "x": 293,
+   "y": 594,
+   "width": 66,
+   "height": 140,
+   "amount": 4,
+   "speed": 1,
+   "shimmer": 0.5,
+   "tilt": 0,
+   "cSheen": "#ffffff"
+  },
+  {
+   "type": "banner",
+   "x": 1382,
+   "y": 585,
+   "width": 66,
+   "height": 140,
+   "amount": 4,
+   "speed": 1,
+   "shimmer": 0.5,
+   "tilt": 0,
+   "cSheen": "#ffffff"
+  },
+  {
+   "type": "banner",
+   "x": 1544,
+   "y": 287,
+   "width": 59,
+   "height": 131,
+   "amount": 4,
+   "speed": 0.65,
+   "shimmer": 0.11,
+   "tilt": 2,
+   "cSheen": "#ffffff"
+  },
+  {
+   "type": "banner",
+   "x": 1235,
+   "y": 48,
+   "width": 59,
+   "height": 111,
+   "amount": 4,
+   "speed": 0.65,
+   "shimmer": 0.11,
+   "tilt": 2,
+   "cSheen": "#ffffff"
+  },
+  {
+   "type": "banner",
+   "x": 476,
+   "y": 63,
+   "width": 50,
+   "height": 68,
+   "amount": 4,
+   "speed": 0.65,
+   "shimmer": 0.11,
+   "tilt": 9,
+   "cSheen": "#ffffff"
+  },
+  {
+   "type": "banner",
+   "x": 193,
+   "y": 339,
+   "width": 50,
+   "height": 98,
+   "amount": 4,
+   "speed": 1.1,
+   "shimmer": 0.34,
+   "tilt": 2,
+   "cSheen": "#ffffff"
+  },
+  {
+   "type": "lantern",
+   "x": 1245,
+   "y": 18,
+   "size": 0.3,
+   "strength": 0.9,
+   "flicker": 0.6,
+   "speed": 1,
+   "cCore": "#fff1b8",
+   "cGlow": "#ff9a2e"
+  },
+  {
+   "type": "glow",
+   "x": 1278,
+   "y": 34,
+   "radius": 10,
+   "strength": 0.7,
+   "pulse": 0.7,
+   "cGlow": "#ff9147"
+  },
+  {
+   "type": "shimmer",
+   "x": 779,
+   "y": 112,
+   "width": 272,
+   "height": 81,
+   "ripple": 10.7,
+   "rsize": 26,
+   "speed": 0.6,
+   "sparkle": 0.83,
+   "sheen": 0.71,
+   "tint": 0.79,
+   "match": 0.47,
+   "soft": 0.5,
+   "cKey": "#58903a",
+   "cGlint": "#f2ffc0",
+   "cTint": "#9dff3a"
+  },
+  {
+   "type": "waterfall",
+   "x": 610,
+   "y": 808,
+   "width": 11,
+   "length": 82,
+   "lean": -14,
+   "speed": 1,
+   "opacity": 0.9,
+   "glow": 0.7,
+   "splash": 1,
+   "cDeep": "#2f7a0c",
+   "cLight": "#c6ff3a",
+   "cFoam": "#f2ffc0",
+   "cMist": "#b8ff7a",
+   "cGlowW": "#9dff3a"
+  },
+  {
+   "type": "waterfall",
+   "x": 665,
+   "y": 813,
+   "width": 6,
+   "length": 82,
+   "lean": 26,
+   "speed": 1,
+   "opacity": 0.9,
+   "glow": 0.7,
+   "splash": 1,
+   "cDeep": "#2f7a0c",
+   "cLight": "#c6ff3a",
+   "cFoam": "#f2ffc0",
+   "cMist": "#b8ff7a",
+   "cGlowW": "#9dff3a"
+  },
+  {
+   "type": "waterfall",
+   "x": 220,
+   "y": 808,
+   "width": 19,
+   "length": 82,
+   "lean": 8,
+   "speed": 1,
+   "opacity": 0.9,
+   "glow": 0.7,
+   "splash": 1.46,
+   "cDeep": "#2f7a0c",
+   "cLight": "#c6ff3a",
+   "cFoam": "#f2ffc0",
+   "cMist": "#b8ff7a",
+   "cGlowW": "#9dff3a"
+  },
+  {
+   "type": "pool",
+   "x": 214,
+   "y": 801,
+   "width": 78,
+   "height": 26,
+   "opacity": 0.55,
+   "speed": 1,
+   "bubbles": 0.5,
+   "smoke": 0.5,
+   "cSurf": "#7dff2a",
+   "cHi": "#e8ff8a",
+   "cSmoke": "#a8ff9a"
+  },
+  {
+   "type": "plant",
+   "x": 932,
+   "y": 823,
+   "width": 53,
+   "height": 52,
+   "amount": 1.5,
+   "speed": 0.45,
+   "gust": 0.23,
+   "layer": 0
+  },
+  {
+   "type": "plant",
+   "x": 1105,
+   "y": 735,
+   "width": 64,
+   "height": 62,
+   "amount": 1.5,
+   "speed": 0.45,
+   "gust": 0.23,
+   "layer": 0
+  },
+  {
+   "type": "plant",
+   "x": 671,
+   "y": 739,
+   "width": 77,
+   "height": 58,
+   "amount": 1.5,
+   "speed": 0.45,
+   "gust": 0.23,
+   "layer": 0
+  },
+  {
+   "type": "plant",
+   "x": 354,
+   "y": 782,
+   "width": 55,
+   "height": 51,
+   "amount": 1.5,
+   "speed": 0.45,
+   "gust": 0.23,
+   "layer": 0
+  },
+  {
+   "type": "plant",
+   "x": 1316,
+   "y": 822,
+   "width": 32,
+   "height": 28,
+   "amount": 1.5,
+   "speed": 0.45,
+   "gust": 0.23,
+   "layer": 0
+  },
+  {
+   "type": "fireflies",
+   "x": 170,
+   "y": 112,
+   "width": 400,
+   "height": 200,
+   "count": 18,
+   "size": 1,
+   "strength": 0.9,
+   "wander": 40,
+   "speed": 1,
+   "blink": 0.7,
+   "front": 1,
+   "cCore": "#fbffd0",
+   "cGlow": "#38ff7a"
+  },
+  {
+   "type": "fireflies",
+   "x": 972,
+   "y": 36,
+   "width": 338,
+   "height": 60,
+   "count": 19,
+   "size": 0.3,
+   "strength": 0.75,
+   "wander": 0,
+   "speed": 1,
+   "blink": 1,
+   "front": 1,
+   "cCore": "#fbffd0",
+   "cGlow": "#88ff38"
+  },
+  {
+   "type": "fireflies",
+   "x": 1632,
+   "y": 39,
+   "width": 338,
+   "height": 60,
+   "count": 19,
+   "size": 0.3,
+   "strength": 0.75,
+   "wander": 0,
+   "speed": 1,
+   "blink": 1,
+   "front": 1,
+   "cCore": "#fbffd0",
+   "cGlow": "#f2ff38"
+  },
+  {
+   "type": "fireflies",
+   "x": 504,
+   "y": 30,
+   "width": 338,
+   "height": 60,
+   "count": 19,
+   "size": 0.3,
+   "strength": 0.75,
+   "wander": 0,
+   "speed": 1,
+   "blink": 1,
+   "front": 1,
+   "cCore": "#fbffd0",
+   "cGlow": "#ca38ff"
+  },
+  {
+   "type": "fireflies",
+   "x": 60,
+   "y": 372,
+   "width": 338,
+   "height": 60,
+   "count": 19,
+   "size": 0.95,
+   "strength": 0.75,
+   "wander": 0,
+   "speed": 1,
+   "blink": 1,
+   "front": 1,
+   "cCore": "#fbffd0",
+   "cGlow": "#ce43ea"
+  }
+ ],
+ "foregroundCutouts": [
+  [
+   [
+    1498,
+    742
+   ],
+   [
+    1515,
+    753
+   ],
+   [
+    1519,
+    744
+   ],
+   [
+    1522,
+    755
+   ],
+   [
+    1522,
+    761
+   ],
+   [
+    1540,
+    778
+   ],
+   [
+    1586,
+    812
+   ],
+   [
+    1516,
+    917
+   ],
+   [
+    1407,
+    779
+   ]
+  ],
+  [
+   [
+    214,
+    551
+   ],
+   [
+    224,
+    559
+   ],
+   [
+    222,
+    564
+   ],
+   [
+    231,
+    563
+   ],
+   [
+    231,
+    557
+   ],
+   [
+    226,
+    551
+   ],
+   [
+    229,
+    543
+   ],
+   [
+    235,
+    524
+   ],
+   [
+    249,
+    555
+   ],
+   [
+    251,
+    568
+   ],
+   [
+    338,
+    582
+   ],
+   [
+    339,
+    567
+   ],
+   [
+    349,
+    561
+   ],
+   [
+    353,
+    570
+   ],
+   [
+    354,
+    584
+   ],
+   [
+    369,
+    589
+   ],
+   [
+    372,
+    569
+   ],
+   [
+    385,
+    595
+   ],
+   [
+    384,
+    612
+   ],
+   [
+    390,
+    615
+   ],
+   [
+    389,
+    626
+   ],
+   [
+    475,
+    629
+   ],
+   [
+    477,
+    618
+   ],
+   [
+    472,
+    605
+   ],
+   [
+    477,
+    595
+   ],
+   [
+    470,
+    588
+   ],
+   [
+    475,
+    570
+   ],
+   [
+    481,
+    545
+   ],
+   [
+    498,
+    579
+   ],
+   [
+    494,
+    588
+   ],
+   [
+    500,
+    613
+   ],
+   [
+    505,
+    633
+   ],
+   [
+    546,
+    642
+   ],
+   [
+    581,
+    633
+   ],
+   [
+    579,
+    616
+   ],
+   [
+    583,
+    610
+   ],
+   [
+    582,
+    601
+   ],
+   [
+    576,
+    603
+   ],
+   [
+    582,
+    591
+   ],
+   [
+    588,
+    572
+   ],
+   [
+    594,
+    586
+   ],
+   [
+    601,
+    598
+   ],
+   [
+    599,
+    602
+   ],
+   [
+    597,
+    600
+   ],
+   [
+    597,
+    612
+   ],
+   [
+    605,
+    615
+   ],
+   [
+    614,
+    614
+   ],
+   [
+    613,
+    595
+   ],
+   [
+    617,
+    580
+   ],
+   [
+    627,
+    587
+   ],
+   [
+    626,
+    616
+   ],
+   [
+    645,
+    624
+   ],
+   [
+    646,
+    605
+   ],
+   [
+    646,
+    586
+   ],
+   [
+    643,
+    586
+   ],
+   [
+    643,
+    580
+   ],
+   [
+    650,
+    569
+   ],
+   [
+    652,
+    560
+   ],
+   [
+    653,
+    569
+   ],
+   [
+    662,
+    580
+   ],
+   [
+    661,
+    586
+   ],
+   [
+    666,
+    635
+   ],
+   [
+    772,
+    633
+   ],
+   [
+    771,
+    617
+   ],
+   [
+    776,
+    613
+   ],
+   [
+    776,
+    605
+   ],
+   [
+    776,
+    599
+   ],
+   [
+    771,
+    602
+   ],
+   [
+    770,
+    597
+   ],
+   [
+    777,
+    589
+   ],
+   [
+    786,
+    565
+   ],
+   [
+    796,
+    592
+   ],
+   [
+    801,
+    597
+   ],
+   [
+    795,
+    607
+   ],
+   [
+    796,
+    615
+   ],
+   [
+    800,
+    622
+   ],
+   [
+    799,
+    631
+   ],
+   [
+    799,
+    635
+   ],
+   [
+    891,
+    639
+   ],
+   [
+    888,
+    622
+   ],
+   [
+    893,
+    618
+   ],
+   [
+    892,
+    610
+   ],
+   [
+    889,
+    605
+   ],
+   [
+    903,
+    575
+   ],
+   [
+    914,
+    605
+   ],
+   [
+    914,
+    610
+   ],
+   [
+    910,
+    619
+   ],
+   [
+    915,
+    620
+   ],
+   [
+    917,
+    635
+   ],
+   [
+    996,
+    636
+   ],
+   [
+    993,
+    621
+   ],
+   [
+    999,
+    612
+   ],
+   [
+    998,
+    596
+   ],
+   [
+    1009,
+    566
+   ],
+   [
+    1020,
+    599
+   ],
+   [
+    1016,
+    605
+   ],
+   [
+    1019,
+    628
+   ],
+   [
+    1033,
+    616
+   ],
+   [
+    1034,
+    598
+   ],
+   [
+    1032,
+    588
+   ],
+   [
+    1041,
+    576
+   ],
+   [
+    1051,
+    590
+   ],
+   [
+    1047,
+    603
+   ],
+   [
+    1047,
+    620
+   ],
+   [
+    1065,
+    631
+   ],
+   [
+    1067,
+    615
+   ],
+   [
+    1072,
+    613
+   ],
+   [
+    1073,
+    610
+   ],
+   [
+    1073,
+    603
+   ],
+   [
+    1069,
+    598
+   ],
+   [
+    1074,
+    592
+   ],
+   [
+    1083,
+    570
+   ],
+   [
+    1090,
+    594
+   ],
+   [
+    1093,
+    598
+   ],
+   [
+    1092,
+    604
+   ],
+   [
+    1089,
+    603
+   ],
+   [
+    1089,
+    614
+   ],
+   [
+    1092,
+    617
+   ],
+   [
+    1090,
+    636
+   ],
+   [
+    1157,
+    634
+   ],
+   [
+    1163,
+    612
+   ],
+   [
+    1163,
+    599
+   ],
+   [
+    1161,
+    597
+   ],
+   [
+    1160,
+    592
+   ],
+   [
+    1158,
+    589
+   ],
+   [
+    1167,
+    577
+   ],
+   [
+    1177,
+    553
+   ],
+   [
+    1186,
+    588
+   ],
+   [
+    1189,
+    592
+   ],
+   [
+    1189,
+    597
+   ],
+   [
+    1185,
+    598
+   ],
+   [
+    1182,
+    610
+   ],
+   [
+    1186,
+    616
+   ],
+   [
+    1185,
+    638
+   ],
+   [
+    1289,
+    634
+   ],
+   [
+    1287,
+    622
+   ],
+   [
+    1288,
+    611
+   ],
+   [
+    1293,
+    610
+   ],
+   [
+    1294,
+    598
+   ],
+   [
+    1293,
+    595
+   ],
+   [
+    1289,
+    594
+   ],
+   [
+    1296,
+    587
+   ],
+   [
+    1309,
+    564
+   ],
+   [
+    1318,
+    597
+   ],
+   [
+    1313,
+    604
+   ],
+   [
+    1311,
+    612
+   ],
+   [
+    1317,
+    618
+   ],
+   [
+    1330,
+    616
+   ],
+   [
+    1331,
+    608
+   ],
+   [
+    1328,
+    602
+   ],
+   [
+    1322,
+    598
+   ],
+   [
+    1324,
+    590
+   ],
+   [
+    1333,
+    587
+   ],
+   [
+    1334,
+    582
+   ],
+   [
+    1332,
+    578
+   ],
+   [
+    1344,
+    560
+   ],
+   [
+    1350,
+    579
+   ],
+   [
+    1347,
+    583
+   ],
+   [
+    1345,
+    588
+   ],
+   [
+    1352,
+    586
+   ],
+   [
+    1352,
+    583
+   ],
+   [
+    1370,
+    579
+   ],
+   [
+    1374,
+    580
+   ],
+   [
+    1408,
+    570
+   ],
+   [
+    1420,
+    564
+   ],
+   [
+    1426,
+    564
+   ],
+   [
+    1430,
+    561
+   ],
+   [
+    1436,
+    558
+   ],
+   [
+    1438,
+    548
+   ],
+   [
+    1448,
+    528
+   ],
+   [
+    1453,
+    551
+   ],
+   [
+    1453,
+    556
+   ],
+   [
+    1466,
+    550
+   ],
+   [
+    1485,
+    543
+   ],
+   [
+    1493,
+    543
+   ],
+   [
+    1487,
+    549
+   ],
+   [
+    1473,
+    554
+   ],
+   [
+    1452,
+    563
+   ],
+   [
+    1452,
+    575
+   ],
+   [
+    1448,
+    579
+   ],
+   [
+    1443,
+    607
+   ],
+   [
+    1442,
+    623
+   ],
+   [
+    1424,
+    615
+   ],
+   [
+    1429,
+    606
+   ],
+   [
+    1435,
+    577
+   ],
+   [
+    1429,
+    579
+   ],
+   [
+    1405,
+    584
+   ],
+   [
+    1400,
+    590
+   ],
+   [
+    1391,
+    596
+   ],
+   [
+    1382,
+    598
+   ],
+   [
+    1372,
+    594
+   ],
+   [
+    1354,
+    603
+   ],
+   [
+    1350,
+    664
+   ],
+   [
+    1101,
+    669
+   ],
+   [
+    894,
+    667
+   ],
+   [
+    663,
+    655
+   ],
+   [
+    505,
+    663
+   ],
+   [
+    342,
+    664
+   ],
+   [
+    339,
+    597
+   ],
+   [
+    328,
+    596
+   ],
+   [
+    326,
+    603
+   ],
+   [
+    281,
+    602
+   ],
+   [
+    251,
+    601
+   ],
+   [
+    256,
+    648
+   ],
+   [
+    211,
+    628
+   ],
+   [
+    137,
+    617
+   ],
+   [
+    179,
+    552
+   ],
+   [
+    196,
+    556
+   ],
+   [
+    195,
+    563
+   ]
+  ]
+ ]
+}

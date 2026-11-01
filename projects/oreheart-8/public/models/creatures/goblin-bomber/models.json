@@ -1,0 +1,34 @@
+{
+ "generated": "2026-10-24T20:58:46.280Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a16fb1-a3d2-7246-841b-15ea9a8479a9",
+  "rig": "01a16fb4-024f-76f7-94fa-4f697a119576",
+  "anim": "01a16fb4-ad3d-72bd-a2dc-9ea353474c7b"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [],
+ "notes": "",
+ "fileSizes": {
+  "char.glb": 5671012
+ },
+ "clips": {
+  "idle": "OH_Idle",
+  "walk": "OH_Walk",
+  "attack": "OH_Attack",
+  "hit": "OH_Hit",
+  "defeat": "OH_Death",
+  "react_knockback": "OH_React_Knockback",
+  "react_bowled": "OH_React_Bowled",
+  "react_backstab": "OH_React_Backstab",
+  "react_lifted": "OH_React_Lifted",
+  "react_bonk": "OH_React_Bonk"
+ },
+ "clipsNote": "Named clips made by the Blender worker (Oct 26). \"actions\" is unchanged; the game switches to \"clips\" in Round 25."
+}

@@ -1,0 +1,15 @@
+{
+ "generated": "2026-10-30T05:30:00.000Z",
+ "from": "factory-design/design/models/borgo-rig-oct28.glb (meshopt-packed copy round27-shrunk/borgo-rig-oct28-packed.glb) + parts/borgo-sceptre.glb",
+ "commander": "borgo",
+ "files": { "char": "char.glb", "sceptre": "sceptre.glb", "throne": null },
+ "clips": {
+  "idle": "Idle",
+  "walk": "Casual_Walk",
+  "attack": "Heavy_Hammer_Swing",
+  "hit": "Hit_Reaction",
+  "defeat": "Dead"
+ },
+ "notes": "No Borgo throne GLB exists yet, so he stands on the dwarf stronghold. Emotes without their own clip fall back to attack / hit / idle.",
+ "fileSizes": { "char.glb": 1710432, "sceptre.glb": 576524 }
+}

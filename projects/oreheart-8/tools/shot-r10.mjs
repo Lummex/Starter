@@ -1,0 +1,32 @@
+import { chromium } from '/home/runner/work/Starter/Starter/factory/node_modules/playwright/index.mjs';
+const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const errs = [];
+const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
+p.on('pageerror', (e) => errs.push(String(e))); p.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto('http://localhost:4173/?test=1&seed=3'); await p.waitForTimeout(1500);
+await p.evaluate(() => window.oreheart.newMatch({}));
+await p.waitForTimeout(3000); await p.getByRole('button', { name: 'Keep Hand' }).click().catch(() => {}); await p.waitForTimeout(4500);
+await p.screenshot({ path: 'screenshots/r10-rest-1920x1080.png' });
+const info = await p.evaluate(async () => {
+  const hs=[...document.querySelectorAll('.hand')]; const hand = hs.find((x)=>!x.classList.contains('o-hand'))||hs[0]; const hr = hand.getBoundingClientRect();
+  const r = await window.oreheart.getRenderStats();
+  return { handTop: hr.top, vh: innerHeight, mines: r.mineModels?.map((m) => [m.tilt, m.baseY, m.scale]), flow: r.flowDestinations?.() , hit: document.querySelectorAll('.mine-hit').length, ring: document.querySelectorAll('.mine-ring').length };
+});
+console.log(JSON.stringify(info));
+await p.mouse.move(960, 1060); await p.waitForTimeout(700);
+await p.screenshot({ path: 'screenshots/r10-hand-raised-1920x1080.png' });
+await p.mouse.move(960, 300);
+const st = await p.evaluate(() => window.oreheart.getState());
+const acts = await p.evaluate(() => window.oreheart.legalActions());
+console.log(st.phase, acts.length, JSON.stringify(acts.find((a) => a.type === 'summon')));
+const s = acts.find((a) => a.type === 'summon');
+await p.evaluate(() => { window.__app.fxReal = true; });
+if (s) { await p.evaluate((a) => window.oreheart.act(a), s); await p.waitForTimeout(700); await p.screenshot({ path: 'screenshots/r10-popup-right-1920x1080.png' }); }
+await p.evaluate(() => window.__app.showCard('goblin-slinger')); await p.waitForTimeout(400);
+await p.screenshot({ path: 'screenshots/r10-closeup-1920x1080.png' });
+const cu = await p.evaluate(() => { const c = document.querySelector('.cardview .hand-card').getBoundingClientRect(); const d = document.querySelector('.cardview .dialog'); return { w: c.width, h: c.height, close: !!document.querySelector('.cardview .btn'), scroll: d.scrollHeight > d.clientHeight }; });
+console.log(JSON.stringify(cu));
+await p.mouse.click(40, 500); await p.waitForTimeout(300);
+console.log('closed', await p.evaluate(() => !document.querySelector('.cardview')));
+console.log('errors', errs.slice(0, 8));
+await b.close();

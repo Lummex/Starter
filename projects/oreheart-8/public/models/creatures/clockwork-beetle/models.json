@@ -1,0 +1,71 @@
+{
+ "generated": "2026-10-31",
+ "from": "Clay's rig (models/beetle-rig-oct30, 20 bones) + Spring's 8 multi-leg clips (factory-design/design/anims/clockwork-beetle-anim-v1.glb, main 1e5c897); uncompressed (the packer could not be installed here)",
+ "tasks": {
+  "character": "01a17264-7351-73eb-9636-9b35d0371ca7"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 1,
+  "attack": 2,
+  "hit": 3,
+  "defeat": 4
+ },
+ "rigged": true,
+ "parts": [],
+ "notes": "Own skeleton (not the biped pack): no retarget, no ground offset. Flips onto its back when defeated.",
+ "fileSizes": {
+  "char.glb": 5355696
+ },
+ "bodyType": "multileg",
+ "clips": {
+  "idle": "multileg-idle-01",
+  "idles": [
+   "multileg-idle-01",
+   "multileg-idle-02",
+   "multileg-idle-03"
+  ],
+  "walk": "multileg-walk-01",
+  "run": "multileg-run-01",
+  "attack": "multileg-attack-01",
+  "hit": "multileg-bonk-01",
+  "defeat": "multileg-death-01"
+ },
+ "gait": {
+  "walk": 0.303,
+  "run": 0.656
+ },
+ "events": {
+  "multileg-attack-01": [
+   {
+    "name": "windup",
+    "frame": 2,
+    "time": 0.0667
+   },
+   {
+    "name": "hit",
+    "frame": 20,
+    "time": 0.6667
+   }
+  ],
+  "multileg-bonk-01": [
+   {
+    "name": "impact",
+    "frame": 2,
+    "time": 0.0667
+   }
+  ],
+  "multileg-death-01": [
+   {
+    "name": "ground",
+    "frame": 26,
+    "time": 0.8667
+   },
+   {
+    "name": "poof",
+    "frame": 29,
+    "time": 0.9667
+   }
+  ]
+ }
+}

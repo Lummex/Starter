@@ -1,0 +1,362 @@
+[
+ {
+  "id": "goblin-goggle-rogue",
+  "race": "goblin",
+  "gender": "f",
+  "label": "Goggle Rogue"
+ },
+ {
+  "id": "goblin-girl",
+  "race": "goblin",
+  "gender": "f",
+  "label": "Scrappy Rogue"
+ },
+ {
+  "id": "goblin-scrapper-boy",
+  "race": "goblin",
+  "gender": "m",
+  "label": "Junkyard Kid"
+ },
+ {
+  "id": "goblin-bruiser",
+  "race": "goblin",
+  "gender": "m",
+  "label": "Pit Bruiser"
+ },
+ {
+  "id": "goblin-shaman-elder",
+  "race": "goblin",
+  "gender": "m",
+  "label": "Junk Shaman"
+ },
+ {
+  "id": "goblin-tinker",
+  "race": "goblin",
+  "gender": "m",
+  "label": "Rocket Tinker"
+ },
+ {
+  "id": "goblin-sneak",
+  "race": "goblin",
+  "gender": "m",
+  "label": "Shadow Sneak"
+ },
+ {
+  "id": "goblin-chief",
+  "race": "goblin",
+  "gender": "m",
+  "label": "Swamp Chief"
+ },
+ {
+  "id": "goblin-granny",
+  "race": "goblin",
+  "gender": "f",
+  "label": "Junk Granny"
+ },
+ {
+  "id": "goblin-bomber-girl",
+  "race": "goblin",
+  "gender": "f",
+  "label": "Boom Girl"
+ },
+ {
+  "id": "goblin-witch",
+  "race": "goblin",
+  "gender": "f",
+  "label": "Swamp Witch"
+ },
+ {
+  "id": "goblin-kid-girl",
+  "race": "goblin",
+  "gender": "f",
+  "label": "Shiny Seeker"
+ },
+ {
+  "id": "goblin-wolf-rider",
+  "race": "goblin",
+  "gender": "f",
+  "label": "Wolf Rider"
+ },
+ {
+  "id": "gnome-boy",
+  "race": "gnome",
+  "gender": "m",
+  "label": "Young Inventor"
+ },
+ {
+  "id": "gnome-professor",
+  "race": "gnome",
+  "gender": "m",
+  "label": "Old Professor"
+ },
+ {
+  "id": "dwarf-woman",
+  "race": "dwarf",
+  "gender": "f",
+  "label": "Shieldmaiden"
+ },
+ {
+  "id": "human-man",
+  "race": "human",
+  "gender": "m",
+  "label": "Knight-Ranger"
+ },
+ {
+  "id": "human-girl",
+  "race": "human",
+  "gender": "f",
+  "label": "Apprentice Wizard"
+ },
+ {
+  "id": "undead-girl",
+  "race": "undead",
+  "gender": "f",
+  "label": "Skeleton Princess"
+ },
+ {
+  "id": "gnome-stormmage",
+  "race": "gnome",
+  "gender": "m",
+  "label": "Storm Mage"
+ },
+ {
+  "id": "gnome-pilot",
+  "race": "gnome",
+  "gender": "m",
+  "label": "Sky Pilot"
+ },
+ {
+  "id": "gnome-warty-tinker",
+  "race": "gnome",
+  "gender": "m",
+  "label": "Warty Tinker"
+ },
+ {
+  "id": "gnome-kid",
+  "race": "gnome",
+  "gender": "m",
+  "label": "Little Tinker"
+ },
+ {
+  "id": "gnome-illusionist",
+  "race": "gnome",
+  "gender": "f",
+  "label": "Illusionist"
+ },
+ {
+  "id": "gnome-engineer",
+  "race": "gnome",
+  "gender": "f",
+  "label": "Chief Engineer"
+ },
+ {
+  "id": "gnome-grandma",
+  "race": "gnome",
+  "gender": "f",
+  "label": "Clockwork Granny"
+ },
+ {
+  "id": "gnome-crystal-girl",
+  "race": "gnome",
+  "gender": "f",
+  "label": "Crystal Singer"
+ },
+ {
+  "id": "dwarf-miner",
+  "race": "dwarf",
+  "gender": "m",
+  "label": "Crystal Miner"
+ },
+ {
+  "id": "dwarf-thane-elder",
+  "race": "dwarf",
+  "gender": "m",
+  "label": "Elder Thane"
+ },
+ {
+  "id": "dwarf-lumpy-guard",
+  "race": "dwarf",
+  "gender": "m",
+  "label": "Lumpy Guard"
+ },
+ {
+  "id": "dwarf-kid-boy",
+  "race": "dwarf",
+  "gender": "m",
+  "label": "Young Recruit"
+ },
+ {
+  "id": "dwarf-brewer",
+  "race": "dwarf",
+  "gender": "m",
+  "label": "Brewmaster"
+ },
+ {
+  "id": "dwarf-queen",
+  "race": "dwarf",
+  "gender": "f",
+  "label": "Hall Queen"
+ },
+ {
+  "id": "dwarf-kid-girl",
+  "race": "dwarf",
+  "gender": "f",
+  "label": "Little Digger"
+ },
+ {
+  "id": "dwarf-gunner",
+  "race": "dwarf",
+  "gender": "f",
+  "label": "Rifle Ranger"
+ },
+ {
+  "id": "dwarf-granny",
+  "race": "dwarf",
+  "gender": "f",
+  "label": "Iron Granny"
+ },
+ {
+  "id": "human-paladin",
+  "race": "human",
+  "gender": "m",
+  "label": "Paladin"
+ },
+ {
+  "id": "human-rogue",
+  "race": "human",
+  "gender": "m",
+  "label": "Rogue"
+ },
+ {
+  "id": "human-old-wizard",
+  "race": "human",
+  "gender": "m",
+  "label": "Old Wizard"
+ },
+ {
+  "id": "human-kid-boy",
+  "race": "human",
+  "gender": "m",
+  "label": "Squire Kid"
+ },
+ {
+  "id": "human-archer-girl",
+  "race": "human",
+  "gender": "f",
+  "label": "Archer"
+ },
+ {
+  "id": "human-warrior-woman",
+  "race": "human",
+  "gender": "f",
+  "label": "Warrior"
+ },
+ {
+  "id": "human-kid-girl",
+  "race": "human",
+  "gender": "f",
+  "label": "Little Explorer"
+ },
+ {
+  "id": "human-swamp-hag",
+  "race": "human",
+  "gender": "f",
+  "label": "Swamp Hag"
+ },
+ {
+  "id": "undead-knight",
+  "race": "undead",
+  "gender": "m",
+  "label": "Skeleton Knight"
+ },
+ {
+  "id": "undead-ghost-boy",
+  "race": "undead",
+  "gender": "m",
+  "label": "Ghost Kid"
+ },
+ {
+  "id": "undead-zombie-farmer",
+  "race": "undead",
+  "gender": "m",
+  "label": "Zombie Farmer"
+ },
+ {
+  "id": "undead-vampire",
+  "race": "undead",
+  "gender": "m",
+  "label": "Vampire Count"
+ },
+ {
+  "id": "undead-ghost-lady",
+  "race": "undead",
+  "gender": "f",
+  "label": "Ghost Lady"
+ },
+ {
+  "id": "undead-mummy-girl",
+  "race": "undead",
+  "gender": "f",
+  "label": "Mummy Kid"
+ },
+ {
+  "id": "undead-witch",
+  "race": "undead",
+  "gender": "f",
+  "label": "Bone Witch"
+ },
+ {
+  "id": "undead-zombie-girl",
+  "race": "undead",
+  "gender": "f",
+  "label": "Zombie Punk"
+ },
+ {
+  "id": "troll-chieftain",
+  "race": "troll",
+  "gender": "m",
+  "label": "Troll Chieftain"
+ },
+ {
+  "id": "troll-bog-brute",
+  "race": "troll",
+  "gender": "m",
+  "label": "Bog Brute"
+ },
+ {
+  "id": "troll-hunter",
+  "race": "troll",
+  "gender": "m",
+  "label": "Troll Hunter"
+ },
+ {
+  "id": "troll-kid",
+  "race": "troll",
+  "gender": "m",
+  "label": "Troll Kid"
+ },
+ {
+  "id": "troll-shaman-woman",
+  "race": "troll",
+  "gender": "f",
+  "label": "Troll Shaman"
+ },
+ {
+  "id": "troll-warrior-woman",
+  "race": "troll",
+  "gender": "f",
+  "label": "Troll Warrior"
+ },
+ {
+  "id": "troll-granny",
+  "race": "troll",
+  "gender": "f",
+  "label": "Troll Granny"
+ },
+ {
+  "id": "troll-cave-girl",
+  "race": "troll",
+  "gender": "f",
+  "label": "Cave Girl"
+ }
+]

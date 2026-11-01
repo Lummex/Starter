@@ -1,0 +1,13 @@
+import { chromium } from '/home/runner/work/Starter/Starter/factory/node_modules/playwright/index.mjs';
+const [,, w, h, out] = process.argv;
+const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const p = await b.newPage({ viewport: { width: +w, height: +h } });
+await p.goto('http://localhost:4173/?test=1&seed=3&fx=1'); await p.waitForTimeout(1200);
+await p.evaluate(() => window.oreheart.newMatch({}));
+await p.waitForTimeout(2500); await p.getByRole('button', { name: 'Keep Hand' }).click().catch(() => {}); await p.waitForTimeout(2500);
+const r = await p.evaluate(() => { const la = window.oreheart.legalActions(); const out = []; for (let i = 0; i < 3; i++) { const l = window.oreheart.legalActions().filter((a) => a.type === 'play' || a.type === 'summon' || a.type === 'playCard'); if (!l.length) break; out.push(JSON.stringify(l[0]).slice(0, 120)); window.oreheart.act(l[0]); } return { n: la.length, types: [...new Set(la.map((a) => a.type))], out }; });
+console.log(JSON.stringify(r));
+await p.mouse.move(+w / 2, 5);
+await p.waitForTimeout(3500);
+await p.screenshot({ path: out + '.png' });
+await b.close();

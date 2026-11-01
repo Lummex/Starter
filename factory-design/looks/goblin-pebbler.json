@@ -1,0 +1,383 @@
+{
+ "format": "oreheart-look-1",
+ "card": "goblin-pebbler",
+ "cardName": "Boneknocker",
+ "faction": "goblins",
+ "savedAt": "2026-10-24T22:15:16.387Z",
+ "units": "1 unit = 1 board square. Y is up. Rotations in degrees (X, Y, Z order). localPosition/localRotation/localScale are relative to what the piece is attached to (a bone or another piece); world values are where it is in the scene.",
+ "howToBuild": "Load the main model, scale it to heightSquares. For every part: load its model, attach it to the named bone (or piece) and apply its local position, rotation and scale. Recreate each effect with its type and settings at its attach point. Apply tint/glow/color and hide the listed bones. Play the listed animations; attached parts follow the bones.",
+ "preview": "/_blob/13750ccbe8a31b8985134a71e630fa5f",
+ "main": {
+  "name": "Boneknocker",
+  "kind": "model",
+  "attachedTo": "the ground (not attached)",
+  "parent": null,
+  "localPosition": [
+   0,
+   0,
+   0
+  ],
+  "localRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "localScale": 1,
+  "stretch": [
+   1,
+   1,
+   1
+  ],
+  "worldPosition": [
+   0,
+   0,
+   0
+  ],
+  "worldRotationDeg": [
+   0,
+   0,
+   0
+  ],
+  "worldScale": 1,
+  "visible": true,
+  "model": {
+   "key": "goblin-pebbler",
+   "kind": "bundled"
+  },
+  "heightSquares": 1.011,
+  "animations": [
+   "Idle",
+   "Casual_Walk",
+   "Heavy_Hammer_Swing",
+   "Hit_Reaction",
+   "Dead",
+   "_360_Power_Spin_Jump (from Gemsinger Miner (animated))"
+  ],
+  "currentAnimation": "Casual_Walk",
+  "tint": {
+   "color": "#ffffff",
+   "amt": 0
+  },
+  "glow": {
+   "color": "#ffaa33",
+   "amt": 0
+  },
+  "color": {
+   "br": 0,
+   "co": 1,
+   "sa": 1,
+   "hu": 0,
+   "shine": 0
+  },
+  "hiddenBones": [],
+  "poseTweaks": {},
+  "fingers": {
+   "L": 0,
+   "R": 0,
+   "spread": 0,
+   "axis": "z",
+   "flip": false,
+   "thumb": true
+  }
+ },
+ "parts": [
+  {
+   "name": "Boneknocker – Spiked club",
+   "kind": "model",
+   "attachedTo": "bone \"RightHand\" of Boneknocker",
+   "parent": {
+    "kind": "bone",
+    "id": 58,
+    "bone": "RightHand",
+    "name": "Boneknocker"
+   },
+   "localPosition": [
+    -9.231,
+    12.794,
+    2.402
+   ],
+   "localRotationDeg": [
+    27,
+    11,
+    52
+   ],
+   "localScale": 25,
+   "stretch": [
+    1,
+    1,
+    1
+   ],
+   "worldPosition": [
+    -0.196,
+    0.266,
+    0.107
+   ],
+   "worldRotationDeg": [
+    -60.576,
+    -47.117,
+    -170.845
+   ],
+   "worldScale": 0.25,
+   "visible": true,
+   "model": {
+    "key": "goblin-pebbler-club",
+    "kind": "bundled"
+   },
+   "heightSquares": 0.497,
+   "animations": [],
+   "currentAnimation": null,
+   "tint": {
+    "color": "#ffffff",
+    "amt": 0
+   },
+   "glow": {
+    "color": "#ffaa33",
+    "amt": 0
+   },
+   "color": {
+    "br": 0,
+    "co": 1,
+    "sa": 1,
+    "hu": 0,
+    "shine": 0
+   },
+   "hiddenBones": [],
+   "poseTweaks": {},
+   "fingers": {
+    "L": 0,
+    "R": 0,
+    "spread": 0,
+    "axis": "z",
+    "flip": false,
+    "thumb": true
+   }
+  }
+ ],
+ "effects": [],
+ "other": [
+  {
+   "name": "Solid part",
+   "kind": "rigid",
+   "attachedTo": "bone \"Hips\" of Boneknocker",
+   "parent": {
+    "kind": "bone",
+    "id": 58,
+    "bone": "Hips",
+    "name": "Boneknocker"
+   },
+   "localPosition": [
+    0.826,
+    -2.031,
+    13.224
+   ],
+   "localRotationDeg": [
+    8.778,
+    1.407,
+    1.206
+   ],
+   "localScale": 24,
+   "stretch": [
+    1.43,
+    0.53,
+    1.45
+   ],
+   "worldPosition": [
+    -0.013,
+    0.488,
+    0.093
+   ],
+   "worldRotationDeg": [
+    -5.265,
+    -5.056,
+    2.372
+   ],
+   "worldScale": 0.343,
+   "visible": true
+  }
+ ],
+ "editorScene": {
+  "units": "1 unit = 1 board square; Y is up",
+  "background": "#1a1420",
+  "view": {
+   "light": 1,
+   "reflections": 0.6,
+   "camera": {
+    "position": [
+     0.803,
+     0.725,
+     3.082
+    ],
+    "target": [
+     -0.001,
+     0.5,
+     0.001
+    ]
+   }
+  },
+  "items": [
+   {
+    "id": 58,
+    "kind": "model",
+    "name": "Boneknocker",
+    "parent": {
+     "kind": "world"
+    },
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "rotationDeg": [
+     0,
+     0,
+     0
+    ],
+    "scale": 1,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "src": {
+     "key": "goblin-pebbler",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "Casual_Walk",
+     "playing": true,
+     "speed": 1,
+     "lock": "xz",
+     "time": 2.591
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "paint": {},
+    "borrowed": [
+     {
+      "from": "b:gemsinger-anim",
+      "clip": "_360_Power_Spin_Jump",
+      "as": "_360_Power_Spin_Jump (from Gemsinger Miner (animated))"
+     }
+    ]
+   },
+   {
+    "id": 59,
+    "kind": "model",
+    "name": "Boneknocker – Spiked club",
+    "parent": {
+     "kind": "bone",
+     "id": 58,
+     "bone": "RightHand"
+    },
+    "position": [
+     -9.231,
+     12.794,
+     2.402
+    ],
+    "rotationDeg": [
+     27,
+     11,
+     52
+    ],
+    "scale": 25,
+    "stretch": [
+     1,
+     1,
+     1
+    ],
+    "visible": true,
+    "src": {
+     "key": "goblin-pebbler-club",
+     "kind": "bundled"
+    },
+    "anim": {
+     "clip": "",
+     "playing": false,
+     "speed": 1,
+     "lock": "xz",
+     "time": 0
+    },
+    "pose": {},
+    "fingers": {
+     "L": 0,
+     "R": 0,
+     "spread": 0,
+     "axis": "z",
+     "flip": false,
+     "thumb": true
+    },
+    "tint": {
+     "color": "#ffffff",
+     "amt": 0
+    },
+    "glow": {
+     "color": "#ffaa33",
+     "amt": 0
+    },
+    "color": {
+     "br": 0,
+     "co": 1,
+     "sa": 1,
+     "hu": 0,
+     "shine": 0
+    },
+    "slices": [],
+    "hide": [],
+    "paint": {},
+    "borrowed": []
+   },
+   {
+    "id": 60,
+    "kind": "rigid",
+    "name": "Solid part",
+    "parent": {
+     "kind": "bone",
+     "id": 58,
+     "bone": "Hips"
+    },
+    "position": [
+     0.826,
+     -2.031,
+     13.224
+    ],
+    "rotationDeg": [
+     8.778,
+     1.407,
+     1.206
+    ],
+    "scale": 24,
+    "stretch": [
+     1.43,
+     0.53,
+     1.45
+    ],
+    "visible": true
+   }
+  ]
+ }
+}

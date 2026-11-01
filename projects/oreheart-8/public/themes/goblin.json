@@ -1,0 +1,301 @@
+{
+ "faction": "goblin",
+ "note": "Owner Goblin UI theme (from the \"final draft\" layout, 2026-10-20). Everything here is faction-specific: borders/corner frames, Flow crystals, bank, colors. Gnome and Dwarf themes will be imported later by the owner. Pictures are the files in this folder; positions are % of the 16:9 screen.",
+ "cornerFrames": [
+  {
+   "name": "Goblin Crystal Fantasy Overlay Frame",
+   "x": -0.92,
+   "y": -2.24,
+   "w": 19.17,
+   "h": 18.51,
+   "rot": 0,
+   "mirror": false,
+   "flipV": false,
+   "z": -1,
+   "picture": [
+    "img-b6nv6k.webp"
+   ]
+  },
+  {
+   "name": "Goblin Crystal Fantasy Overlay Frame copy",
+   "x": 67.91,
+   "y": 60.48,
+   "w": 42.18,
+   "h": 40.73,
+   "rot": 0,
+   "mirror": false,
+   "flipV": false,
+   "z": -2,
+   "picture": [
+    "img-hbdpqp.webp"
+   ]
+  },
+  {
+   "name": "Goblin Crystal Fantasy Overlay Frame",
+   "x": -0.95,
+   "y": 85.67,
+   "w": 15.72,
+   "h": 15.73,
+   "rot": 0,
+   "mirror": false,
+   "flipV": false,
+   "z": -3,
+   "picture": [
+    "img-ghu1yc.webp"
+   ]
+  }
+ ],
+ "flowCrystal": {
+  "player": {
+   "picture": [
+    "img-prbig7.webp"
+   ],
+   "gem": {
+    "color": "#3d8bff",
+    "value": "0",
+    "numSize": 6,
+    "src": "img:prbig7",
+    "bank": {
+     "show": false,
+     "value": "0",
+     "icon": "",
+     "size": 46,
+     "x": 0,
+     "y": 24,
+     "numSize": 2.6,
+     "numColor": "#ffffff",
+     "ny": 4
+    },
+    "ny": 0,
+    "bankMoved": true
+   }
+  },
+  "opponentPlaceholder": {
+   "picture": [
+    "img-zrfak9.webp"
+   ],
+   "gem": {
+    "color": "#ff3b3b",
+    "value": "0",
+    "numSize": 5,
+    "src": "img:zrfak9",
+    "bank": {
+     "show": false,
+     "value": "0",
+     "icon": "",
+     "size": 46,
+     "x": 0,
+     "y": 24,
+     "numSize": 2.6,
+     "numColor": "#ffffff",
+     "ny": 4
+    },
+    "ny": 0,
+    "bankMoved": true
+   }
+  }
+ },
+ "bank": {
+  "picture": "goblin-bank.png (art/goblin-bank.png)",
+  "numberStyle": {
+   "value": "0",
+   "numSize": 3.4,
+   "numColor": "#ffffff",
+   "nx": 0,
+   "ny": 6,
+   "numGlow": 1.87,
+   "numGlowColor": "#000000",
+   "zoom": 100,
+   "ox": 0,
+   "oy": 0,
+   "style": "goblin"
+  }
+ },
+ "textColors": {
+  "pName": {
+   "color": "#ffffff",
+   "glow": 0,
+   "glowColor": "#128228",
+   "shadow": 0.8,
+   "font": "display",
+   "bold": true,
+   "italic": true
+  },
+  "pFlow": {
+   "color": "#ffffff",
+   "glow": 2,
+   "glowColor": "#000000",
+   "shadow": 0.8,
+   "font": "display",
+   "bold": true,
+   "italic": true
+  },
+  "pNext": {
+   "color": "#ffffff",
+   "glow": 2,
+   "glowColor": "#000000",
+   "shadow": 0.8,
+   "font": "display",
+   "bold": true,
+   "italic": true
+  },
+  "eDeckN": {
+   "color": "#ffffff",
+   "glow": 0,
+   "glowColor": "#FFD700",
+   "shadow": 0.93,
+   "font": "display",
+   "bold": true,
+   "italic": false
+  },
+  "eName": {
+   "color": "#ffffff",
+   "glow": 1.99,
+   "glowColor": "#000000",
+   "shadow": 0.8,
+   "font": "display",
+   "bold": true,
+   "italic": true
+  },
+  "eFlow": {
+   "color": "#ffffff",
+   "glow": 2,
+   "glowColor": "#000000",
+   "shadow": 0.8,
+   "font": "display",
+   "bold": true,
+   "italic": true
+  },
+  "eNext": {
+   "color": "#ffffff",
+   "glow": 0,
+   "glowColor": "#FFD700",
+   "shadow": 0.8,
+   "font": "display",
+   "bold": true,
+   "italic": true
+  },
+  "turn": {
+   "color": "#ffffff",
+   "glow": 2,
+   "glowColor": "#000000",
+   "shadow": 1,
+   "font": "display",
+   "bold": true,
+   "italic": true
+  },
+  "phases": {
+   "color": "#ffffff",
+   "glow": 2,
+   "glowColor": "#000000",
+   "shadow": 1,
+   "font": "display",
+   "bold": true,
+   "italic": true
+  },
+  "timer": {
+   "color": "#ffffff",
+   "glow": 2,
+   "glowColor": "#000000",
+   "shadow": 1,
+   "font": "display",
+   "bold": true,
+   "italic": true
+  },
+  "menu": {
+   "color": "#ffffff",
+   "glow": 2,
+   "glowColor": "#000000",
+   "shadow": 0.93,
+   "font": "display",
+   "bold": true,
+   "italic": true
+  },
+  "pDeckN": {
+   "color": "#ffffff",
+   "glow": 0,
+   "glowColor": "#FFD700",
+   "shadow": 0.8,
+   "font": "display",
+   "bold": true,
+   "italic": false
+  },
+  "done": {
+   "color": "#ffffff",
+   "glow": 0,
+   "glowColor": "#FFD700",
+   "shadow": 1,
+   "font": "display",
+   "bold": true,
+   "italic": true
+  }
+ },
+ "menu": {
+  "dir": "down",
+  "just": "start",
+  "align": "left",
+  "open": "click",
+  "anim": "grow",
+  "speed": 260,
+  "ease": "springy",
+  "stagger": 50,
+  "offset": 0.6,
+  "gap": 2.2,
+  "pad": 1.45,
+  "width": 25,
+  "size": 4.05,
+  "color": "#D4A94F",
+  "font": "display",
+  "bold": true,
+  "italic": true,
+  "shadow": 0.8,
+  "hoverColor": "#FFF3B0",
+  "hoverGlowColor": "#FFD700",
+  "hoverGlow": 1.7,
+  "grow": 1.06,
+  "slide": -1.4,
+  "underline": false,
+  "hlColor": "#FFD700",
+  "hlA": 0,
+  "bg": "#120d16",
+  "bgA": 0.88,
+  "radius": 1.55,
+  "frame": "",
+  "slice": 22,
+  "border": 2.5
+ },
+ "hand": {
+  "glowOn": "all",
+  "glowColor": "#9dff3a",
+  "glow": 0.6,
+  "glowSize": 0.8,
+  "haloOn": "hover",
+  "haloColor": "#FFD700",
+  "halo": 0.35,
+  "haloSize": 22
+ },
+ "crystalFlow": [
+  {
+   "cCore": "#effcff",
+   "cGlow": "#4fb8ff",
+   "cEnd": "#a8e6ff",
+   "count": 10,
+   "speed": 0.4,
+   "arch": 400,
+   "size": 1.2,
+   "spin": 0.7,
+   "waves": 2.15,
+   "wave": 110,
+   "slither": 0.2,
+   "strength": 1.37,
+   "spread": 31.5,
+   "stream": 0.98,
+   "endGlow": 0.8
+  }
+ ],
+ "mineCrystals": {
+  "mineStyle": "new",
+  "mineColor": "#3d8bff",
+  "mineGlow": 1
+ }
+}

@@ -1,0 +1,14 @@
+import { chromium } from '/home/runner/work/Starter/Starter/factory/node_modules/playwright/index.mjs';
+const [,, w, h, out] = process.argv;
+const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const p = await b.newPage({ viewport: { width: +w, height: +h } });
+await p.goto('http://localhost:4173/?test=1&seed=3&fx=1'); await p.waitForTimeout(1200);
+await p.evaluate(() => window.oreheart.newMatch({}));
+await p.waitForTimeout(2500); await p.getByRole('button', { name: 'Keep Hand' }).click().catch(() => {}); await p.waitForTimeout(3500);
+const cards = await p.$$('.hand .hand-card:not(.popclone)');
+const bb = await cards[2].boundingBox();
+await p.mouse.move(bb.x + bb.width / 2, Math.min(bb.y + 30, +h - 10)); await p.waitForTimeout(900);
+await p.screenshot({ path: out + '.png' });
+const r = await p.evaluate(() => { const hd = document.querySelector('.hand').getBoundingClientRect(); const bd = document.querySelector('.cell[data-row="7"][data-col="6"]').getBoundingClientRect(); const cs=[...document.querySelectorAll('.hand .hand-card:not(.popclone)')].map(c=>{const r=c.getBoundingClientRect();return [Math.round(r.left),Math.round(r.right),Math.round(r.top),Math.round(r.bottom)]}); return { hand: [hd.top, hd.bottom], row7: [bd.top, bd.bottom], vw: innerWidth, vh: innerHeight, cs }; });
+console.log(JSON.stringify(r));
+await b.close();

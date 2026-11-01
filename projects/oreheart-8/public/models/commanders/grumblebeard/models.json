@@ -1,0 +1,19 @@
+{
+ "generated": "2026-10-30",
+ "from": "Clay, models/commanders-oct30/game/cmd-grumblebeard.glb (Forge-approved under Ken's Oct 30 delegation); rest pose only",
+ "commander": "grumblebeard",
+ "files": {
+  "char": "char.glb",
+  "sceptre": null,
+  "throne": null
+ },
+ "clips": {},
+ "props": {
+  "hammer.glb": "not placed yet (waits for Ken's Studio setup)"
+ },
+ "notes": "Moves come from the shared biped pack. Height = default until Ledger saves it from Ken's Studio setup.",
+ "fileSizes": {
+  "char.glb": 3108944,
+  "hammer.glb": 1022812
+ }
+}
