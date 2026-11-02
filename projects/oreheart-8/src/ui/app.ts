@@ -23,7 +23,9 @@ import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
 import { emptyCell } from '../engine';
 import { planOrder, chaseList, UNIT_STANCES, type Order, type OrderPlan, type Stance as UnitStance } from '../engine/orders';
 import { runOrders } from './orders-run';
-import { orderSvg, restTargetSvg, questionSvg, guardSvg, guardArrowsSvg, type OrderDrawing } from './order-draw';
+import { orderSvg, restTargetSvg, guardSvg, guardArrowsSvg, type OrderDrawing } from './order-draw';
+/** Ken, Nov 1: Brush's painted unit icons (public/art/ui/unit-icons) */
+const UNIT_ICON = (n: string) => `/art/ui/unit-icons/${n}.webp`;
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -1770,6 +1772,18 @@ export class App {
         el.style.top = el.offsetTop + 3 + 'px';
       }
     }
+  }
+  /** Ken, Nov 1: the upgrade badge sits above the target unit's head (or beside it when there is no room above), never on a small unit's body. */
+  placeUpgradeBadge(b: El, cs: { x: number; y: number }[]) {
+    const c = this.game.state?.board.creatures.find((x: any) => x.uid === b.dataset.uid), W = b.offsetWidth || 110, H = b.offsetHeight || 100, br = this.r.board?.getBoundingClientRect();
+    let box: { left: number; right: number; top: number } | null = null;
+    if (c && br) { const t = this.view?.topAt?.(c.row, c.col); if (t) box = { left: br.left + t.left, right: br.left + t.right, top: br.top + t.top }; }
+    if (!box && c) { const r = this.tokens.get(c.uid)?.getBoundingClientRect(); if (r) box = { left: r.left, right: r.right, top: r.top }; }
+    if (!box) { const xs = cs.map((p) => p.x), ys = cs.map((p) => p.y); box = { left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys) }; }
+    let x = (box.left + box.right) / 2, y = box.top - 4; // bottom centre of the badge
+    if (y - H < 4) { y = Math.min(window.innerHeight - 4, box.top + H); x = box.right + W / 2 + 4; if (x + W / 2 > window.innerWidth - 4) x = box.left - W / 2 - 4; } // no room above: beside the unit
+    x = Math.max(W / 2 + 4, Math.min(window.innerWidth - W / 2 - 4, x));
+    b.style.left = x.toFixed(1) + 'px'; b.style.top = y.toFixed(1) + 'px';
   }
   /** Token boxes are a narrow strip around the figure, so Commander hearts on neighbouring Strongholds never sit under them. */
   placeToken(el: El, row: number, col: number) {
@@ -4032,7 +4046,9 @@ export class App {
       const uid = a ? a.creatureUid : '';
       for (const [k, t] of this.tokens) (t as El).classList.toggle('upgrade-target', k === uid);
       if (!a) { fx.badge?.remove(); fx.badge = null; return; }
-      if (!fx.badge) { fx.badge = h('div', { class: 'upgrade-badge', role: 'status', 'aria-label': 'Upgrade' }, 'UPGRADE \u25B2') as El; document.body.append(fx.badge); }
+      // Ken, Nov 1: "an upgrade graphic instead of the computer generated button": Brush's painted badge, crossfading to its glowing copy
+      if (!fx.badge) { fx.badge = h('div', { class: 'upgrade-badge', role: 'status', 'aria-label': 'Upgrade' }, h('img', { class: 'ub-base', src: UNIT_ICON('upgrade-badge'), alt: '', draggable: 'false' }), h('img', { class: 'ub-ready', src: UNIT_ICON('upgrade-badge-ready'), alt: '', draggable: 'false' })) as El; document.body.append(fx.badge); }
+      fx.badge.dataset.uid = uid;
     };
     const fxRender = () => {
       if (fx.done || !ghost.isConnected) return;
@@ -4056,7 +4072,7 @@ export class App {
       ghost.style.opacity = String(1 - (1 - DRAG_FX.shrinkOpacity) * e);
       ghost.dataset.shrink = e.toFixed(2);
       // outline of the square under the card
-      if (fx.badge) { const ys = cs.map((p: any) => p.y), xs = cs.map((p: any) => p.x); fx.badge.style.left = ((Math.min(...xs) + Math.max(...xs)) / 2).toFixed(1) + 'px'; fx.badge.style.top = Math.max(24, Math.min(...ys) - 6).toFixed(1) + 'px'; }
+      if (fx.badge) this.placeUpgradeBadge(fx.badge, cs);
       if (fx.qt) {
         if (!fx.hl) { fx.hl = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); fx.hl.setAttribute('class', 'drag-square-hl'); fx.hl.setAttribute('aria-hidden', 'true'); fx.hl.append(document.createElementNS('http://www.w3.org/2000/svg', 'polygon')); document.body.append(fx.hl); }
         fx.hl.dataset.legal = fx.legal ? '1' : '0';
@@ -4396,7 +4412,19 @@ export class App {
     this.stanceBar = bar;
   }
   /** a tiny mark on the unit's label (set only when a stance changes or the units change, never per frame) */
-  markStances() { for (const [uid, el] of this.tokens) { const s = this.stances.get(uid); if (s) (el as El).dataset.stance = s; else delete (el as El).dataset.stance; } }
+  markStances() { for (const [uid, el] of this.tokens) { const s = this.stances.get(uid); if (s) (el as El).dataset.stance = s; else delete (el as El).dataset.stance; } this.markIdle(); }
+  idleUids = new Set<string>();
+  /** Ken, Nov 1: "tiny ... in the same area as where the little movement arrow is": a unit of yours with no order, no stance and no mining order
+   *  wears Brush's painted ? (question-plain, about 14 px) at the order mark's spot; the two never show together. */
+  markIdle(idle?: Set<string>) {
+    if (idle) this.idleUids = idle;
+    for (const [uid, el] of this.tokens) {
+      const on = this.idleUids.has(uid) && !this.orders.has(uid) && !this.stances.has(uid);
+      let q = (el as El).querySelector(':scope > .tk-q') as El | null;
+      if (!on) { q?.remove(); continue; }
+      if (!q) { q = h('div', { class: 'tk-q ord-q', 'data-uid': uid, role: 'img', 'aria-label': 'No orders yet', title: 'No orders yet' }, h('img', { src: UNIT_ICON('question-plain'), alt: '', draggable: 'false' })) as El; (el as El).append(q); }
+    }
+  }
   orderPlan(uid: string): OrderPlan | null { const o = this.orders.get(uid); return o && this.game.state ? planOrder(this.game.state, o) : null; }
   /** The order a unit dropped (or clicked) on square c would get: chase an enemy standing there, else walk there. null = not an order square. */
   /** a chase target: an enemy unit, or ("cmd:opponent") the enemy Commander on his Stronghold square */
@@ -4505,17 +4533,20 @@ export class App {
       let m = el.querySelector('.tk-order') as El | null;
       if (!o) { m?.remove(); continue; }
       if (!m) {
-        const b = h('button', { type: 'button', class: 'tk-cancel', 'aria-label': 'Cancel order', title: 'Cancel order', 'data-uid': uid }, '✕') as El;
+        const b = h('button', { type: 'button', class: 'tk-cancel', 'aria-label': 'Cancel order', title: 'Cancel order', 'data-uid': uid }, h('img', { src: UNIT_ICON('cancel'), alt: '', draggable: 'false' })) as El; // Ken, Nov 1: Brush's painted icons
         const stop = (e: Event) => { e.stopPropagation(); };
         b.addEventListener('pointerdown', stop);
         b.addEventListener('pointerup', stop);
         b.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); this.cancelOrder(uid); });
-        m = h('div', { class: 'tk-order', 'data-uid': uid }, h('span', { class: 'tk-order-mark', 'aria-hidden': 'true' }, '➜'), b) as El;
+        m = h('div', { class: 'tk-order', 'data-uid': uid }, h('span', { class: 'tk-order-mark', 'aria-hidden': 'true' }, h('img', { alt: '', draggable: 'false' })), b) as El;
         el.append(m);
       }
       m.dataset.kind = o.kind;
-      const mk = m.querySelector('.tk-order-mark') as El, sym = o.kind === 'chase' ? '⚔' : '➜';
-      if (mk.textContent !== sym) mk.textContent = sym;
+      // Ken, Nov 1: move / chase / shoot (a ranged unit's chase) / mine (a Miner's standing mining order) / swap (a move onto one of your own units)
+      const cr = st?.board.creatures.find((x: any) => x.uid === uid);
+      const icon = o.kind === 'mine' ? 'mine' : o.kind === 'chase' ? ((CARDS[cr?.cardId]?.abilities || []).some((a: string) => a === 'ranged' || a === 'overwatch') ? 'shoot' : 'chase')
+        : cr && st.board.creatures.some((x: any) => x.owner === cr.owner && x.uid !== uid && x.row === o.dest.row && x.col === o.dest.col) ? 'swap' : 'move';
+      if (m.dataset.icon !== icon) { m.dataset.icon = icon; (m.querySelector('.tk-order-mark img') as HTMLImageElement).src = UNIT_ICON(icon); }
     }
     this.markStances();
     this.drawOrders();
@@ -4550,8 +4581,9 @@ export class App {
     // Ken, Nov 1: a unit of yours that has no instruction set (and can still act) wears a yellow highlighter question mark
     const ordered = new Set([...this.orderPlans.map((x) => x.o.uid), ...this.stances.keys()]);
     const guards = st ? st.board.creatures.filter((c: any) => c.owner === 'player' && this.stances.get(c.uid) === 'guard' && this.orderShown(c.uid, false)) : [];
-    const idle = st && !st.winner && st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') ? st.board.creatures.filter((c: any) => c.owner === 'player' && !ordered.has(c.uid) && !isActed(st, c)) : [];
-    if (!shown.length && !rest.length && !idle.length && !guards.length) { if (svg.firstChild) svg.replaceChildren(); return; }
+    const idle = st && !st.winner && st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') ? st.board.creatures.filter((c: any) => c.owner === 'player' && !ordered.has(c.uid) && !this.orders.has(c.uid) && !isActed(st, c)) : [];
+    this.markIdle(new Set(idle.map((c: any) => c.uid))); // Ken, Nov 1: the ? is a tiny painted mark on the unit (questionSvg is no longer drawn)
+    if (!shown.length && !rest.length && !guards.length) { if (svg.firstChild) svg.replaceChildren(); return; }
     const centre = (row: number, col: number) => {
       const q = view.cellQuad?.(row, col) || [];
       if (q.length) return { x: q.reduce((a: number, p: any) => a + p.x, 0) / q.length, y: q.reduce((a: number, p: any) => a + p.y, 0) / q.length };
@@ -4582,8 +4614,16 @@ export class App {
       if (tgt) { const rc = view.cellRect(tgt.row, tgt.col); html += restTargetSvg(centre(tgt.row, tgt.col), rc.w, rc.h); }
     }
     for (const c of guards) { const rc = view.cellRect(c.row, c.col); html += guardSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); const gq = this.guardSquares.get(c.uid); if (gq && gq.squares.length) html += guardArrowsSvg(centre(c.row, c.col), gq.squares.map((q) => centre(q.row, q.col)), rc.w, rc.h, c.uid); }
-    for (const c of idle) { const rc = view.cellRect(c.row, c.col); html += questionSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); }
     svg.innerHTML = html;
+    // Ken, Nov 1: the chain numbers wear Brush's painted red badge (number-blank) instead of the drawn circle
+    for (const c of svg.querySelectorAll('.ord-num circle') as any as SVGCircleElement[]) {
+      const x = +c.getAttribute('cx')!, y = +c.getAttribute('cy')!, d = Math.max(24, +c.getAttribute('r')! * 2.3);
+      const im = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      im.setAttribute('href', UNIT_ICON('number-blank')); im.setAttribute('x', String(x - d / 2)); im.setAttribute('y', String(y - d / 2)); im.setAttribute('width', String(d)); im.setAttribute('height', String(d));
+      c.replaceWith(im);
+      const tx = im.parentNode?.querySelector('text');
+      if (tx) { tx.setAttribute('font-size', String(Math.round(d * 0.5))); tx.setAttribute('y', String(y + d * 0.17)); tx.setAttribute('stroke', '#000'); tx.setAttribute('stroke-width', '2.5'); tx.setAttribute('paint-order', 'stroke'); }
+    }
   }
   /** Do what a unit dropped (or clicked) onto square c means: attack, mine, move or an aimed ability. */
   unitActAt(cr: any, c: { row: number; col: number }) {

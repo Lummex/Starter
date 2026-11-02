@@ -83,12 +83,12 @@ test('AC572: a half-second pause before every swing: the blow lands at least swi
 test('AC573: the ? over a unit with no instruction is small and sits over its shoulder; buttons are solid on the right and fade left', async ({ page }) => {
   await start(page, [P('goblin-grunt', 6, 4), O('goblin-pebbler', 1, 10)]);
   await act(page, { type: 'done' });
-  const q = page.locator('.order-svg .ord-q').first();
+  const q = page.locator('.tk-q[data-uid]').first(); // Nov 1: Brush's tiny question icon on the token, at the order mark's spot
   await expect(q).toHaveCount(1);
   const box = await q.boundingBox();
-  const cell = await page.evaluate(() => window.__app.view.cellRect(6, 4));
-  expect(box.height, 'about a third of the old size').toBeLessThan(cell.h * 0.75);
-  expect(box.x, 'over the right shoulder, off to the side').toBeGreaterThan(cell.x + cell.w * 0.3);
+  expect(box.height, 'tiny').toBeLessThanOrEqual(20);
+  await act(page, { type: 'move', creatureUid: (await getState(page)).board.creatures.find((c) => c.owner === 'player').uid, row: 6, col: 5 });
+  await page.waitForTimeout(400);
   await page.goto('/?test=1'); await page.waitForFunction(() => !!window.oreheart); await page.waitForTimeout(1200);
   if (!(await page.getByRole('button', { name: 'Play', exact: true }).isVisible().catch(() => false))) { await page.mouse.click(600, 300); await page.waitForTimeout(7000); }
   const st = await page.getByRole('button', { name: 'Play', exact: true }).evaluate((e) => { const c = getComputedStyle(e); return { l: parseFloat(c.borderLeftWidth), r: parseFloat(c.borderRightWidth), bg: c.backgroundImage }; });
