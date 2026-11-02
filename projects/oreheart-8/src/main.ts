@@ -62,6 +62,7 @@ if (test) {
     getStance: () => game.getStance(),
     stanceChoice: (uid?: string) => game.stanceChoice(uid),
     getDragCard: () => app.getDragCard(),
+    getGuards: () => Object.fromEntries((app as any).guardSquares || []), // Nov 1: guard arrows (for the checks)
     getOrders: () => app.getOrders(),
     setOrder: (o: any) => app.setOrder(o),
     cancelOrder: (uid: string) => app.cancelOrder(uid),

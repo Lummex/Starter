@@ -59,7 +59,7 @@ export const LESSONS: Lesson[] = [
   { step: 'card', n: 1, pics: ['card-drag'], say: 'Drag a card onto the board.', hand: ['goblin-grunt'], crystals: 3, board: [], action: false, target: { row: 7, col: 6 },
     beats: [{ say: 'Drag this card onto the board.', goal: done, show: (t, st) => (st.phase === 'deploy' ? { from: t.elPt(t.handCard()), to: t.sq(t.lesson.target), at: t.lesson.target } : null) }] },
   // a whole turn, pressing every match control once
-  { step: 'controls', n: 2, pics: ['hand-pointing'], say: 'Your controls.', sub: 'Tap each one I point at.', board: [P('goblin-grunt', 6, 4)], action: false,
+  { step: 'controls', n: 2, pics: ['hand-pointing'], say: 'Your controls.', sub: 'Tap each one I point at.', board: [], action: false,
     beats: [
       { say: 'This is your Flow.', sub: 'It pays for your cards.', tap: (t) => t.app.root?.querySelector('[data-role=player-flow-crystal]') || t.app.r?.crFlow },
       { say: 'Your turn has phases.', sub: 'Each one has a timer.', tap: ctl('phase') },
@@ -284,7 +284,7 @@ export class Tutorial {
    *  only its small Skip button does). Kept in the old "Tutorial tip" element. */
   renderLine(st: any, tip: El) {
     const L = this.lesson, bt = this.beat;
-    const show = (this.mode === 'do' && !!bt) || this.mode === 'yay';
+    const show = this.mode === 'do' && !!bt;
     tip.hidden = !show;
     tip.classList.add('tut-tip');
     if (!show) return;
@@ -295,7 +295,7 @@ export class Tutorial {
     this.tipKey = key;
     tip.dataset.step = L.step;
     tip.dataset.beat = String(this.b);
-    const line = bt || L.beats[L.beats.length - 1];
+    const line = bt!;
     let k = 0;
     const words = (txt: string, cls: string) => h('p', { class: cls }, ...txt.split(' ').flatMap((w, i) => { const s = h('span', { class: 'tut-w' }, w); if (!this.fast) s.style.animationDelay = `${(k++) * 0.13}s`; return i ? [' ', s] : [s]; }) as any);
     const kids: (El | null)[] = [
