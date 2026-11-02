@@ -1,3 +1,6 @@
 screenshots/
 tools/
 tests/
+# the build itself needs the service-worker plugin (Nov 2: Vercel builds failed with "Could not resolve ./tools/sw-plugin.mjs")
+!tools/sw-plugin.mjs
+!tools/sw-template.js
