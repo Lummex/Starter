@@ -23,6 +23,7 @@ import { ohCardEl, ohCardHTML, fitCardText, commanderCard } from './ui/cardfmt';
 import { hasCreature3dSlug } from './ui/creature3d';
 import { predictHit } from './ai/ai';
 import { setDiceMode } from './engine/dice';
+import { initOffline, offlineStatus, downloadAll as offlineDownloadAll } from './ui/offline';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
@@ -32,6 +33,8 @@ if (test) { try { localStorage.removeItem('oreheart.tutorialSeen'); } catch { /*
 const seedParam = params.get('seed');
 const seed = seedParam != null && seedParam !== '' && !isNaN(+seedParam) ? Math.trunc(+seedParam) : 1;
 
+// Offline app (Nov 2): the service worker runs in real play; test pages only with &sw=1, so the hidden checks never serve from a cache by accident
+void initOffline(!test || params.get('sw') === '1');
 const game = new Game(test);
 const app = new App(document.getElementById('app')!, game, test, test ? seed : undefined);
 const wantIntro = params.get('intro') === '1' || (!test && !sessionStorage.getItem('oreheart.introSeen'));
@@ -72,6 +75,7 @@ if (test) {
     stanceChoice: (uid?: string) => game.stanceChoice(uid),
     getDragCard: () => app.getDragCard(),
     getGuards: () => Object.fromEntries((app as any).guardSquares || []), // Nov 1: guard arrows (for the checks)
+    offline: () => offlineStatus(), offlineDownloadAll: () => offlineDownloadAll(), // Nov 2: the offline app's status (for the checks)
     getOrders: () => app.getOrders(),
     setOrder: (o: any) => app.setOrder(o),
     cancelOrder: (uid: string) => app.cancelOrder(uid),
