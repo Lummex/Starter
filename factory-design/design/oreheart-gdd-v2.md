@@ -187,9 +187,9 @@ The factory adds more unlockable Commanders over time in the same style.
 
 A creature card shows its cost, Attack, Health, movement and one special ability. Numbers stay low so the math is easy.
 
-- **Cost** (top-left, in the faction's crystals): Attack + Health, +1 for a small ability (Ranged, Guard, Frenzy, Armored and the like) and +2 for a big one (Flying, Charge, moving 2, acting the turn it's played, Collector powers). A 1/1 costs 1. Gathering and drawbacks add nothing. Example: a 2/2 costs 4, a 2/3 costs 5, a 3/4 costs 7.
+- **Cost** (top-left, in the faction's crystals): Attack + Health + an ability bonus (+1 for a small ability such as Ranged, Guard or Armored; +2 for a big one: Flying, Charge, Haste, Unbreakable, Ramming; Miner abilities add nothing; only the biggest counts), halved and rounded up. Above 10 the total climbs faster: 5 + 2 per point over 10. Lowest 1, highest 12. A 1/1 costs 1, a 2/2 costs 2, a 2/3 with Ranged costs 3, a 3/4 with Guard costs 4, a 5/6 Unbreakable costs 11. Ken can set any card's cost by hand (`costOverride` in cards.json); that wins over the formula. (Ken, Nov 1.)
 - **⚔️ Attack** and **❤️ Health:** Attack 1–5, Health 2–6 (printed on the card; upgrades and abilities can raise it).
-- **Movement:** 1 space per turn; Ultra Rare and Collector characters can move 2.
+- **Move:** follows the cost: cost 1–3 walks 3, 4–6 walks 4, 7 and up walks 5 (never more). Every Miner walks 1. Walls (Riot Shield Bearer, Ironwall Shieldbeard, Gearward Sentinel, Ironjaw Big Back) are 1 Attack / 6 Health and walk 2, slow by design. A hand-set cost never changes a card's feet. (Ken, Nov 1.)
 - **Role:** every card shows its role: **Miner** (⛏️ pickaxe badge, and the word Miner in the name of basic Miners), **Smith Miner** (⚒️ hammer-and-pickaxe badge and a gold "SMITH" banner) or **Fighter** (⚔️ sword badge). On the battlefield, Miners carry a big pickaxe and Smith Miners also a smithing hammer with a little anvil on their back; both show a ⛏️ icon in their floating stats.
 - **Special ability:** every creature has one, in one short line.
 
@@ -294,61 +294,61 @@ The live card list (66 cards: 16 creatures per faction, 13 spells, 5 Crystal car
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Goblin Miner | Common | Gatherer | 1 | 1 | 1 | 1 | Mines 2. Can Tunnel. +1 Health upgrade. Can't attack the turn it's played. |
-| Bowler Brawler | Common | Fighter | 6 | 2 | 3 | 1 | Nearby Goblins get +1 Attack (up to +2 with the Junk Shaman). Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side. |
-| Skullflinger | Common | Fighter | 4 | 1 | 2 | 1 | Ranged. Hits up to 6 spaces away in any direction; no strike back. |
-| Bare Knuckle Lunatic | Rare | Fighter | 3 | 2 | 2 | 1 | When defeated, he knocks all units around him back 1 space. |
-| Backstabbing Thief | Rare | Fighter | 3 | 3 | 2 | 1 | Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats. |
-| Mangewolf Rider | Rare | Fighter | 8 | 3 | 4 | 3 | Can act the turn it's played. |
-| Gronkowski Troll Tyrant | Collector | Fighter | 7 | 5 | 6 | 2 | All your Goblins get +1 Attack. Two Tyrants: +2. |
-| Goblin Rocket Rider | Ultra Rare | Fighter | 6 | 1 | 4 | 1 | Ride a rocket to any space: it explodes in a 3x3 area for damage equal to this card's Attack, then makes one attack. |
-| Snotskull Grunt | Common | Fighter | 3 | 2 | 3 | 1 | Plain and sturdy. No tricks. |
-| Boneknocker | Common | Fighter | 3 | 1 | 2 | 1 | Plain and sturdy. No tricks. Just kneecaps! |
-| Scrapsmith Miner | Uncommon | Smith | 2 | 1 | 1 | 1 | Upgrades a creature: +1 Attack, +1 Health. Draw a card when it dies (not when it dies upgrading). |
-| Goblin Chef | Common | Fighter | 5 | 2 | 2 | 1 | Smack. When this attacks, the target is knocked back 2 spaces. |
-| Shiv Rat | Common | Fighter | 4 | 2 | 1 | 1 | Sneaky. Enemies can't strike back at it. |
-| Skullbasher Rusher | Uncommon | Fighter | 4 | 2 | 2 | 1 | Charge. Moves and attacks in the same turn. |
-| Junk Shaman | Ultra Rare | Ranged | 7 | 1 | 3 | 1 | On your turn, adjacent Goblins get +1 Attack (up to +2 with the Bowler Brawler). Pay 2: move any character within 5 spaces to a space within 5. |
-| SewerSlide Bomber | Uncommon | Fighter | 2 | 2 | 1 | 1 | Ka-boom: 1 damage to adjacent enemies when defeated. Pay 1: he runs in a straight line until he hits something, then explodes. |
+| Bowler Brawler | Common | Fighter | 3 | 2 | 3 | 3 | Nearby Goblins get +1 Attack (up to +2 with the Junk Shaman). Strike (2 crystals): Roll a huge bowling ball in a straight line (front, back, left or right). Like bowling pins, every creature in its path, friend or foe, is knocked 1-2 spaces off to the side. If that side is blocked, it goes to the other side. |
+| Skullflinger | Common | Fighter | 2 | 1 | 2 | 3 | Ranged. Hits up to 6 spaces away in any direction; no strike back. |
+| Bare Knuckle Lunatic | Rare | Fighter | 3 | 2 | 2 | 3 | When defeated, he knocks all units around him back 1 space. |
+| Backstabbing Thief | Rare | Fighter | 3 | 3 | 2 | 3 | Sneaky. Enemies can't strike back at it. Steals 1 crystal shard for every enemy it defeats. |
+| Mangewolf Rider | Rare | Fighter | 5 | 3 | 4 | 4 | Can act the turn it's played. |
+| Gronkowski Troll Tyrant | Collector | Fighter | 9 | 5 | 6 | 5 | All your Goblins get +1 Attack. Two Tyrants: +2. |
+| Goblin Rocket Rider | Ultra Rare | Fighter | 3 | 1 | 4 | 3 | Ride a rocket to any space: it explodes in a 3x3 area for damage equal to this card's Attack, then makes one attack. |
+| Snotskull Grunt | Common | Fighter | 3 | 2 | 3 | 3 | Plain and sturdy. No tricks. |
+| Boneknocker | Common | Fighter | 2 | 1 | 2 | 3 | Plain and sturdy. No tricks. Just kneecaps! |
+| Scrapsmith Miner | Uncommon | Smith | 1 | 1 | 1 | 1 | Upgrades a creature: +1 Attack, +1 Health. Draw a card when it dies (not when it dies upgrading). |
+| Goblin Chef | Common | Fighter | 3 | 2 | 2 | 3 | Smack. When this attacks, the target is knocked back 2 spaces. |
+| Shiv Rat | Common | Fighter | 2 | 2 | 1 | 3 | Sneaky. Enemies can't strike back at it. |
+| Skullbasher Rusher | Uncommon | Fighter | 3 | 2 | 2 | 3 | Charge. Moves and attacks in the same turn. |
+| Junk Shaman | Ultra Rare | Ranged | 3 | 1 | 3 | 3 | On your turn, adjacent Goblins get +1 Attack (up to +2 with the Bowler Brawler). Pay 2: move any character within 5 spaces to a space within 5. |
+| SewerSlide Bomber | Uncommon | Fighter | 2 | 2 | 1 | 3 | Ka-boom: 1 damage to adjacent enemies when defeated. Pay 1: he runs in a straight line until he hits something, then explodes. |
 
 **Gnomes (blue crystals)**
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Gemsinger Miner | Common | Gatherer | 1 | 1 | 1 | 1 | Miner: mines 2. Tunnel. +1 Health upgrade. Can't attack the turn it's played. |
-| Aegis Tinkerer | Common | Fighter | 4 | 1 | 3 | 1 | Each turn, adjacent allies get Shield 1. |
-| Stormcaller Savant | Common | Fighter | 4 | 2 | 2 | 1 | Ranged. Hits up to 5 spaces away; no strike back. |
-| Iron Scarab Automaton | Rare | Fighter | 6 | 3 | 5 | 1 | Armored: takes 1 less damage from each hit. |
-| Mirrorveil Illusionist | Rare | Fighter | 6 | 2 | 3 | 1 | Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down). |
-| Thunderwing Gyronaut | Ultra Rare | Fighter | 8 | 3 | 3 | 3 | Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back. |
-| The Arcane Colossus | Collector | Fighter | 10 | 5 | 6 | 2 | Its hits also hurt enemies next to the target. |
-| Overclocked Aethervein | Rare | Gatherer | 5 | 1 | 4 | 1 | Mines extra crystals each turn. Extra Crystal cards freeze it and cost 1 Health. |
-| Voldawright | Rare | Fighter | 5 | 2 | 3 | 1 | Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each. |
-| Brawler Adept | Common | Fighter | 3 | 2 | 2 | 1 | Plain and sturdy. No tricks. Can't cast spells. |
-| Arcsmith Miner | Common | Smith | 2 | 1 | 1 | 1 | Smith Miner. Upgrades a creature: +1 Attack, +1 Health. |
-| Hexslinger Apprentice | Common | Fighter | 3 | 1 | 2 | 1 | Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies. |
-| Gearward Sentinel | Common | Fighter | 4 | 3 | 4 | 1 | Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight. |
-| Soul Stone Siphoner | Uncommon | Fighter | 7 | 5 | 2 | 1 | Defeating a creature gives +1 Bank crystal. May sacrifice an allied creature to gain +1 Bank crystal. |
-| Gnome Plow | Uncommon | Fighter | 6 | 2 | 3 | 1 | Plow (2 crystals): Move in a straight line, never diagonally. Knocks aside all creatures in its path, friend or foe, 1-2 spaces at random. |
-| Glyphshield Warden | Uncommon | Fighter | 6 | 2 | 3 | 1 | Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack. |
+| Aegis Tinkerer | Common | Fighter | 3 | 1 | 3 | 3 | Each turn, adjacent allies get Shield 1. |
+| Stormcaller Savant | Common | Fighter | 3 | 2 | 2 | 3 | Ranged. Hits up to 5 spaces away; no strike back. |
+| Iron Scarab Automaton | Rare | Fighter | 5 | 3 | 5 | 4 | Armored: takes 1 less damage from each hit. |
+| Mirrorveil Illusionist | Rare | Fighter | 3 | 2 | 3 | 3 | Blink (1 crystal): once, swap places with any of your creatures. Summons an illusion of itself in front. The illusion takes 35% less damage (rounded down). |
+| Thunderwing Gyronaut | Ultra Rare | Fighter | 4 | 3 | 3 | 4 | Flies over other creatures. Ranged. Hurls fireballs and sparks 2 spaces away; no strike back. |
+| The Arcane Colossus | Collector | Fighter | 9 | 5 | 6 | 5 | Its hits also hurt enemies next to the target. |
+| Overclocked Aethervein | Rare | Gatherer | 3 | 1 | 4 | 1 | Mines extra crystals each turn. Extra Crystal cards freeze it and cost 1 Health. |
+| Voldawright | Rare | Fighter | 3 | 2 | 3 | 3 | Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals 1 damage to each. |
+| Brawler Adept | Common | Fighter | 2 | 2 | 2 | 3 | Plain and sturdy. No tricks. Can't cast spells. |
+| Arcsmith Miner | Common | Smith | 1 | 1 | 1 | 1 | Smith Miner. Upgrades a creature: +1 Attack, +1 Health. |
+| Hexslinger Apprentice | Common | Fighter | 2 | 1 | 2 | 3 | Ranged. Hits any distance in straight or diagonal lines. Can't cast through allies. |
+| Gearward Sentinel | Common | Fighter | 4 | 1 | 6 | 2 | Guard. Adjacent enemies must attack it first. After an enemy attacks, teleport next to the attacker's target and assist in the fight. |
+| Soul Stone Siphoner | Uncommon | Fighter | 4 | 5 | 2 | 4 | Defeating a creature gives +1 Bank crystal. May sacrifice an allied creature to gain +1 Bank crystal. |
+| Gnome Plow | Uncommon | Fighter | 3 | 2 | 3 | 3 | Plow (2 crystals): Move in a straight line, never diagonally. Knocks aside all creatures in its path, friend or foe, 1-2 spaces at random. |
+| Glyphshield Warden | Uncommon | Fighter | 3 | 2 | 3 | 3 | Gets Shield 1 at the start of your turn. Pay 2 mana, once per turn: an ally gains a Ward for one round. It takes no damage but can't attack. |
 
 **Dwarves (purple crystals)**
 | Card | Rarity | Role | Cost | ⚔️ | ❤️ | Move | Ability |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Riot Shield Bearer | Common | Fighter | 4 | 1 | 5 | 1 | Riot Shield (Ken, 2026-10-31: "a blocking unit ... an immovable object ... a little bit of damage and a lot of blocking"): enemies next to it must attack it first (like Guard); every hit it takes does 1 less; nothing can knock it back, bowl it, lift it or shove it. No weapon: it hits for 1 and, like any Fighter, mines 1. It is not a Miner and has no Tunnel. |
-| Ironwall Shieldbeard | Common | Fighter | 6 | 2 | 4 | 1 | Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several. |
-| Grudge Hurler | Common | Fighter | 6 | 2 | 3 | 1 | Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn. A second hit holds it one turn longer. |
-| Bloodbeard Berserker | Rare | Fighter | 7 | 2 | 4 | 1 | Grit. Each time it survives an attack, it permanently gains +1 Attack. Every2 enemy's it kills gives it +1 Attack. |
-| Corpsman Brewlord | Rare | Fighter | 6 | 2 | 4 | 1 | Once per turn, any time: heal an adjacent wounded dwarf; a dying dwarf survives at 1 Health. It becomes Drunk for 2 rounds (can't be healed). |
-| Thunderhorn Ram Rider | Ultra Rare | Fighter | 10 | 4 | 5 | 2 | Charge. Moves and attacks in the same turn. Pay 2: Move in any direction, any number of spaces. |
-| Queen Brunhilda | Collector | Fighter | 10 | 5 | 6 | 2 | Takes at most 3 damage from a hit. |
-| Gemdrunk Deepdelver | Rare | Gatherer | 7 | 2 | 5 | 1 | Each Crystal in your bank gives it +1 Attack for good. |
-| Ironjaw Big Back | Common | Fighter | 5 | 1 | 6 | 1 | Tough. Takes a beating and keeps swinging. |
-| Granite Oathkeeper | Common | Fighter | 3 | 1 | 3 | 1 | Enforcer. When it attacks, knocks back all nearby enemies 1-2 spaces at random. |
+| Riot Shield Bearer | Common | Fighter | 4 | 1 | 6 | 2 | Riot Shield (Ken, 2026-10-31: "a blocking unit ... an immovable object ... a little bit of damage and a lot of blocking"): enemies next to it must attack it first (like Guard); every hit it takes does 1 less; nothing can knock it back, bowl it, lift it or shove it. No weapon: it hits for 1 and, like any Fighter, mines 1. It is not a Miner and has no Tunnel. |
+| Ironwall Shieldbeard | Common | Fighter | 4 | 1 | 6 | 2 | Corpsman. Each round, heal up to 7 health among adjacent allies, all on one or split between several. |
+| Grudge Hurler | Common | Fighter | 3 | 2 | 3 | 3 | Ranged 5, but only in straight lines or diagonals. When it damages an enemy, that enemy can't move for the rest of their next turn. A second hit holds it one turn longer. |
+| Bloodbeard Berserker | Rare | Fighter | 4 | 2 | 4 | 4 | Grit. Each time it survives an attack, it permanently gains +1 Attack. Every2 enemy's it kills gives it +1 Attack. |
+| Corpsman Brewlord | Rare | Fighter | 4 | 2 | 4 | 4 | Once per turn, any time: heal an adjacent wounded dwarf; a dying dwarf survives at 1 Health. It becomes Drunk for 2 rounds (can't be healed). |
+| Thunderhorn Ram Rider | Ultra Rare | Fighter | 7 | 4 | 5 | 5 | Charge. Moves and attacks in the same turn. Pay 2: Move in any direction, any number of spaces. |
+| Queen Brunhilda | Collector | Fighter | 11 | 5 | 6 | 5 | Takes at most 3 damage from a hit. |
+| Gemdrunk Deepdelver | Rare | Gatherer | 4 | 2 | 5 | 1 | Each Crystal in your bank gives it +1 Attack for good. |
+| Ironjaw Big Back | Common | Fighter | 4 | 1 | 6 | 2 | Tough. Takes a beating and keeps swinging. |
+| Granite Oathkeeper | Common | Fighter | 3 | 1 | 3 | 3 | Enforcer. When it attacks, knocks back all nearby enemies 1-2 spaces at random. |
 | Anvilsworn Miner | Common | Smith | 1 | 1 | 1 | 1 | The dwarves' basic Miner (Ken, 2026-10-31 dwarf fix; pickaxe art): mines 2, Tunnel, free when broke, found by the Miner swap. Or play it onto your own creature: +1 Attack, +1 Health. Cost 1 (was 2): at 2 the dwarves mined half of what the others mined. |
-| Oathbound Overwatch | Common | Fighter | 6 | 2 | 3 | 1 | Sneaky. Can attack any enemy on the board, at any distance. |
-| Marksmen Gunner | Common | Fighter | 5 | 2 | 2 | 1 | Ranged. Fires straight or diagonal up to 7 spaces; no strike back. |
-| Barrelback Courier | Common | Fighter | 5 | 2 | 3 | 1 | Can act the turn it's played. |
-| Door Splitter | Uncommon | Fighter | 7 | 3 | 3 | 1 | Charge. Can charge in any direction, even diagonally. Blasts enemies out of its way. Knocks any unit, friend or foe, back 1, 2 or 3 spaces at random in a random direction. |
-| Grimhold Ravager | Uncommon | Fighter | 7 | 3 | 4 | 1 | Brawler. If it attacked or was attacked last round, its Attack doubles this round. |
+| Oathbound Overwatch | Common | Fighter | 3 | 2 | 3 | 3 | Sneaky. Can attack any enemy on the board, at any distance. |
+| Marksmen Gunner | Common | Fighter | 3 | 2 | 2 | 3 | Ranged. Fires straight or diagonal up to 7 spaces; no strike back. |
+| Barrelback Courier | Common | Fighter | 4 | 2 | 3 | 4 | Can act the turn it's played. |
+| Door Splitter | Uncommon | Fighter | 4 | 3 | 3 | 4 | Charge. Can charge in any direction, even diagonally. Blasts enemies out of its way. Knocks any unit, friend or foe, back 1, 2 or 3 spaces at random in a random direction. |
+| Grimhold Ravager | Uncommon | Fighter | 4 | 3 | 4 | 4 | Brawler. If it attacked or was attacked last round, its Attack doubles this round. |
 
 **Faction spells:** each faction has three spells of its own, which can only be put in a deck (and cast) when your Commander belongs to that faction; three shared spells can be used by anyone. Goblins fight dirty (poison, ambushes, theft), Gnomes are the magic faction, Dwarves the mechanical one.
 
