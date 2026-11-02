@@ -1934,3 +1934,4 @@ html body .overlay.e-discard-view>.dialog:not(.viewer3d):not([aria-label=Mulliga
 .overlay.e-discard-view .e-discard-card{animation:eDiscardSlide .26s cubic-bezier(.22,.61,.36,1) backwards;animation-delay:var(--dd,0ms)}
 .overlay.e-discard-view .e-discard-card .hand-card{filter:drop-shadow(0 4px 6px #000c)}
 @keyframes eDiscardSlide{from{transform:translateX(calc(-1 * var(--dx,300px)));opacity:0}to{transform:none;opacity:1}}
+.order-svg .ord{filter:drop-shadow(1.5px 3px 2.5px rgba(0,0,0,.55))}

@@ -4550,7 +4550,7 @@ export class App {
       const rc = view.cellRect(endQ.row, endQ.col);
       const sq = [{ row: c.row, col: c.col }, ...p.path];
       if (o.kind === 'move' && (p.blocked || !p.path.length)) sq.push(endQ);
-      const d: OrderDrawing = { uid: o.uid, kind: o.kind, pts: sq.map((q) => centre(q.row, q.col)), end: centre(endQ.row, endQ.col), cw: rc.w, ch: rc.h, preview: pv, blocked: p.blocked };
+      const d: OrderDrawing = { uid: o.uid, kind: o.kind, pts: sq.map((q) => centre(q.row, q.col)), end: centre(endQ.row, endQ.col), cw: rc.w, ch: rc.h, preview: pv, blocked: p.blocked, ranged: !!(CARDS[c.cardId]?.abilities || []).some((a: string) => a === 'ranged' || a === 'overwatch') };
       if (o.kind === 'chase') {
         d.pts.push(d.end);
         // the rest of its list, numbered: every target still on the board
