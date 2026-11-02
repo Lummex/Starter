@@ -20,6 +20,8 @@ if (process.env.AI_TUNE) Object.assign(TUNE, JSON.parse(process.env.AI_TUNE));
 const TUNE_B: any = process.env.AI_TUNE_B ? JSON.parse(process.env.AI_TUNE_B) : null;
 const TUNE_A: any = TUNE_B ? Object.fromEntries(Object.keys(TUNE_B).map((k) => [k, (TUNE as any)[k]])) : null;
 import { aiChoose as oldChoose } from './ai-old';
+import { setDiceMode } from '../../src/engine/dice';
+setDiceMode('seeded'); // the simulators and replays stay repeatable: seeded dice and shuffles (a real match rolls live, see dice.ts)
 
 const CMDS = ['grubnak', 'sproingle', 'borgo'];
 const FAC: Record<string, string> = { grubnak: 'goblins', sproingle: 'gnomes', borgo: 'dwarves' };

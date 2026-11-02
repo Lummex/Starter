@@ -1,4 +1,5 @@
 export * from './engine';
 export * from './content';
-export { nextRand, shuffle } from './rng';
+export { nextRand } from './rng';
+export * from './dice';
 export * from './decks';

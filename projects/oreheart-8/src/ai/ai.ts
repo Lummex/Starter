@@ -7,7 +7,7 @@
 // Medium adds randomness and the odd second-best pick. No hidden information is used: the opponent's hand and deck are never read,
 // Respond windows opened by a trial action are always answered "pass", and trial actions use a reshuffled random seed so the
 // AI can't foresee knock-back directions.
-import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, nextPool, previewAttack, canRedraw, basicGatherer, typeBonus, expectedSwings } from '../engine';
+import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, nextPool, previewAttack, canRedraw, basicGatherer, typeBonus, expectedSwings, withDiceMode } from '../engine';
 import { aiOrderAction } from './orders-ai';
 import { planFor, StyleId, isStyle, StyleW } from './styles';
 
@@ -472,6 +472,9 @@ function playout(st: any, who: string, P: Prm, steps: number, rand: Rand, unitsO
 }
 /** How the board looks for `me` after the rest of its turn and the player's reply turn, from state `t` (after one candidate action). */
 export function replyValue(t: any, me: string, P: Prm, rand: Rand, deadline: number): number {
+  return withDiceMode('seeded', () => replyValueInner(t, me, P, rand, deadline));
+}
+function replyValueInner(t: any, me: string, P: Prm, rand: Rand, deadline: number): number {
   const foe = other(me as any);
   let st = t;
   if (st.phase === 'deploy') { st = playout(st, me, P, TUNE.replyMySteps, rand, false, deadline); if (st.phase === 'deploy' && st.activePlayer === me && !st.winner) { const q: any = applyAction(st, { type: 'done' }); if (q.ok) st = q.state; } }
@@ -644,7 +647,13 @@ function smartChooseInner(s: any, hard: boolean, rand: Rand, legal: any[], done:
   return scored[0].a;
 }
 
+/** The computer's next action. Its thinking tries options on copies of the board (trial/replyValue), and those copies must never
+ *  use or see a real roll: the whole decision runs in 'seeded' dice mode, so every simulated roll comes from the copy's own seed
+ *  (a reshuffled one, see trial) and the live dice are never touched (Anvil, Nov 1; Ken: "so there can be no cheating"). */
 export function aiChoose(s: any, difficulty: string, rand: Rand, only?: string[], style: StyleId = 'balanced'): any {
+  return withDiceMode('seeded', () => aiChooseInner(s, difficulty, rand, only, style));
+}
+function aiChooseInner(s: any, difficulty: string, rand: Rand, only?: string[], style: StyleId = 'balanced'): any {
   const who = s.priority as string;
   // Nov 1 (Ken): in its Action phase the computer first follows its marker orders (orders-ai.ts); the scorer below handles the rest
   if (difficulty !== 'easy' && s.phase === 'action' && !s.pendingResponse && !only) {

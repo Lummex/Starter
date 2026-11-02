@@ -2,6 +2,8 @@
 import { createMatch, applyAction } from '../../src/engine';
 import { aiChoose as newC, makeRand } from '../../src/ai/ai';
 import { aiChoose as oldC } from './ai-old';
+import { setDiceMode } from '../../src/engine/dice';
+setDiceMode('seeded'); // the simulators and replays stay repeatable: seeded dice and shuffles (a real match rolls live, see dice.ts)
 function run(choose: any, opts: any, passive: boolean, diff = 'normal') {
   let s: any = createMatch({ seed: 1, testMode: true, ...opts });
   const rand = makeRand(978); let n = 0, turn = -1, g = 0, ms = 0, calls = 0;
