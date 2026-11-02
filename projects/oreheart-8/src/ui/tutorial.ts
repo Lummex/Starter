@@ -160,7 +160,7 @@ function swingKey(big: boolean) {
   return h('div', { class: 'tut-swings' + (big ? ' big' : '') },
     item('swing-hit', 'HIT', 'hit', [2, 3, 4, 5, 6]),
     item('swing-miss', 'MISS', 'miss', [1]),
-    item('block', 'BLOCK', 'block', [6], big ? '1 die per heart (max 2). Big units: 1. Shields: +1. Commanders: 1.' : undefined));
+    item('block', 'BLOCK', 'block', [6], big ? '1 die per heart (max 2). Big units: 1, and a big attacker takes 1 die away (never below 1). Shields: +1. Commanders: 1.' : undefined));
 }
 
 /** The marker signs (drawn with the same pen as the real orders, order-draw.ts). */

@@ -199,8 +199,8 @@
    "rocket"
   ],
   "unique": false,
-  "text": "Light a rocket and ride it to any space on the field. It explodes in a 3x3 area, hitting every unit there, friend, foe and himself, for damage equal to this card's attack (buffs count half). Then it makes one attack.",
-  "shortText": "Ride a rocket to any space: it explodes in a 3x3 area, hitting every unit there (himself too) for its Attack, then makes one attack.",
+  "text": "Light a rocket and ride it to any space on the field. It explodes in a 3x3 area, hitting every unit there, friend, foe and himself, for damage equal to the Attack it shows. It can even defeat the rider! Then it makes one attack.",
+  "shortText": "Ride a rocket to any space: it explodes in a 3x3 area, hitting every unit there (himself too) for the Attack it shows, then makes one attack.",
   "longText": "Fighter creature. Cost 3, Attack 1, Health 4, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rocket Ride: light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's Attack. Then it makes one attack.",
   "flavor": "Goblin with the short fuse.",
   "artPos": {
@@ -673,9 +673,9 @@
    "shockwave"
   ],
   "unique": false,
-  "text": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals damage equal to this card's Attack to each (buffs count half).",
-  "shortText": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals damage equal to this card's Attack to each (buffs count half).",
-  "longText": "Fighter creature. Cost 3, Attack 2, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals damage equal to this card's Attack to each (buffs count half).",
+  "text": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals damage equal to the Attack it shows to each.",
+  "shortText": "Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals damage equal to the Attack it shows to each.",
+  "longText": "Fighter creature. Cost 3, Attack 2, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Shockwave. Pay 1 crystal: Knocks back all adjacent enemies and deals damage equal to the Attack it shows to each.",
   "artPos": {
    "s": 0.94,
    "x": -3.7,

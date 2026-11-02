@@ -214,6 +214,7 @@ test('TUT9: lesson 7 (fight): HIT 2-6, MISS 1, BLOCK 6 (Combat v3) with dice; on
   expect(await pips('hit')).toEqual([2, 3, 4, 5, 6]);
   expect(await pips('miss')).toEqual([1]);
   expect(await pips('block')).toEqual([6]);
+  await expect(card).toContainText(/takes 1 die away [(]never below 1[)]/);
   await expect(card).toContainText(/2 can't always kill a 2/);
   for (const w of await card.locator('img.tut-pic').all()) expect((await w.boundingBox()).width).toBeGreaterThanOrEqual(240);
   await card.getByRole('button', { name: 'Try it!' }).click();
