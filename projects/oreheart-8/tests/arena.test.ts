@@ -7,7 +7,9 @@ const near = (a: number[], b: number[], eps = 0.01) => a.forEach((v, i) => expec
 
 describe('painted arena (round 8a)', () => {
   it('uses the owner files unchanged', () => {
-    const owner = JSON.parse(fs.readFileSync('../../factory-design/design/references/skullfang-arena-layout.json', 'utf8'));
+    // The owner's reference file sits outside a partial checkout of the repo; the game's served copy (public/art/arena) is compared either way.
+    const ownerRef = '../../factory-design/design/references/skullfang-arena-layout.json';
+    const owner = JSON.parse(fs.readFileSync(fs.existsSync(ownerRef) ? ownerRef : 'public/art/arena/skullfang-arena-layout.json', 'utf8'));
     expect(layout).toEqual(owner);
     expect(layout.effects.length).toBe(54);
     expect(layout.foregroundCutouts.length).toBe(2);

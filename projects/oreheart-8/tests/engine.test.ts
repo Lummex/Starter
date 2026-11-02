@@ -391,7 +391,7 @@ describe('revision 7', () => {
     expect(Object.values(CARDS).filter((x: any) => x.type === 'creature').length).toBe(48);
     expect([weaponOf(c('goblin-scrounger')), weaponOf(c('goblin-smith-miner')), weaponOf(c('shard-guzzler')), weaponOf(c('goblin-scrapper')), weaponOf(c('goblin-slinger')), weaponOf(c('hexwright-apprentice')),
       weaponOf(c('deepforge-crossbowman')), weaponOf(c('axe-thrower')), weaponOf(c('shieldbeard')), weaponOf(c('ram-rider')), weaponOf(c('gyrocopter-ace')), weaponOf(c('the-great-steam-golem')), weaponOf(c('fireball'))])
-      .toEqual(['pick', 'pick-hammer', 'pick', 'sword', 'sling', 'wand', 'crossbow', 'axes', 'sword-shield', 'lance', 'signature'.replace('signature', 'gyro'), 'signature', null]);
+      .toEqual(['pick', 'pick-hammer', 'sword' /* shard-guzzler is now the Goblin Rocket Rider, a Fighter, not a Gatherer */, 'sword', 'sling', 'wand', 'crossbow', 'axes', 'sword-shield', 'lance', 'signature'.replace('signature', 'gyro'), 'signature', null]);
     for (const deck of Object.values(STARTER_DECKS)) {
       for (const id of deck) { const n = deck.filter((x) => x === id).length; if (!/miner|prospector|scrounger/.test(id)) expect(n).toBeLessThanOrEqual(8); }
       expect(deck.filter((id) => CARDS[id].role === 'Smith').length).toBeGreaterThanOrEqual(3);
