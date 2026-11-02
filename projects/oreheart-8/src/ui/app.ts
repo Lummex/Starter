@@ -1239,6 +1239,7 @@ export class App {
   reportMatchEnd(st: any) {
     if (this.matchReported) return;
     this.matchReported = true;
+    if (st && st.mode === 'compvscomp') return; // watching the computer play itself earns nothing (security review, Nov 2)
     const o = { state: JSON.parse(JSON.stringify(st)), events: this.matchEvents.slice(), pvp: !!this.netGame };
     void import('../net/economy').then((m) => m.onMatchEnd(o)).catch(() => { /* the economy layer is optional */ });
   }

@@ -33,6 +33,7 @@ export interface MatchRecord {
   engineVersion: string;
   createdAt: number;
   endedAt: number | null;
+  rewarded?: boolean;     // rewards/stats/quests were paid out (set once the store confirmed it)
 }
 export interface View {
   matchId: string; seq: number; status: 'active' | 'over'; mySide: Seat;

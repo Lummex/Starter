@@ -6,7 +6,7 @@
 // POST { op, ... } with the player's JWT -> { ok, ... } (see factory-design/design/oreheart-pvp-nov2-contract.md part 2.5).
 // Secrets: SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are provided by the platform; nothing is in this file.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
-import { PvpService, setDiceMode, ENGINE_VERSION, DEFAULT_RULES } from './engine.bundle.js';
+import { PvpService, setDiceMode, ENGINE_VERSION, DEFAULT_RULES, summarize } from './engine.bundle.js';
 
 setDiceMode('live'); // every die and shuffle is a fresh secure roll on the server
 
@@ -33,6 +33,12 @@ class SupabaseStore {
       status: r.status, match_id: r.matchId, created_at: new Date(r.createdAt).toISOString(), expires_at: new Date(r.expiresAt).toISOString() };
     const { error } = await this.db.from('rooms').upsert(row, { onConflict: 'code' });
     if (error) throw new Error(error.message);
+  }
+  /** one guest per room: the database swaps 'waiting' -> 'started' in a single statement */
+  async claimRoom(r: any) {
+    const { data, error } = await this.db.rpc('claim_room', { p_code: r.code, p_guest: r.guest.userId, p_guest_deck: { player: r.guest, deck: r.guestDeck }, p_match: r.matchId });
+    if (error) throw new Error(error.message);
+    return data === true;
   }
   async getSavedDeck(userId: string, deckId: string) {
     if (!/^[0-9a-f-]{36}$/i.test(deckId)) return null;
@@ -78,7 +84,8 @@ class SupabaseStore {
   async finished(m: any, summaries: any) {
     const winner = m.result?.winner ? m.players[m.result.winner].userId : null;
     const { error } = await this.db.rpc('pvp_finish', { p_match: m.id, p_winner: winner, p_result: m.result?.winner ?? 'tie', p_end_reason: m.result?.reason ?? 'win', p_turns: m.state?.turn ?? 0, p_summary_a: summaries.a, p_summary_b: summaries.b });
-    if (error) console.error('pvp_finish', error.message); // pvp_finish is idempotent; a failure here is logged, the match itself is already saved as finished
+    if (error) { console.error('pvp_finish', error.message); return false; } // idempotent; the service retries on the next call for this match
+    return true;
   }
   newId() { return crypto.randomUUID(); }
   random() { const u = new Uint32Array(1); crypto.getRandomValues(u); return u[0] / 4294967296; }
@@ -104,11 +111,14 @@ Deno.serve(async (req: Request) => {
   if (gate.error) return json(200, { ok: false, error: gate.error.message });
   const g: any = gate.data || {};
   const user: PlayerInfo = { userId: who.user.id, username: String(g.username || 'Player'), avatar: g.avatar ?? null };
+  const len = Number(req.headers.get('content-length') || 0);
+  if (len > 50_000) return json(413, { ok: false, error: 'too big' });
+  const text = await req.text();
+  if (text.length > 50_000) return json(413, { ok: false, error: 'too big' });
   let body: any = {};
-  try { body = await req.json(); } catch { return json(400, { ok: false, error: 'bad JSON' }); }
-  if (JSON.stringify(body).length > 50_000) return json(413, { ok: false, error: 'too big' });
+  try { body = text ? JSON.parse(text) : {}; } catch { return json(400, { ok: false, error: 'bad JSON' }); }
   const store = new SupabaseStore(createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } }));
-  const service = new PvpService(store, { engineVersion: ENGINE_VERSION, rules: await store.rules() });
+  const service = new PvpService(store, { engineVersion: ENGINE_VERSION, rules: await store.rules(), summarize });
   const out = await service.handle(String(body.op || ''), body, user, Date.now());
   return json(200, out);
 });

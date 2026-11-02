@@ -44,10 +44,12 @@ begin
   perform pg_temp.ok('rooms: a code with I or O is refused by the table', err is not null, coalesce(err, 'accepted'));
 end $$;
 select pg_temp.ok('host and guest see their room; a third player does not',
-  pg_temp.count_as(:PA, 'aal1', $q$ select * from public.rooms where code = 'ABCDEF' $q$) = 1
-  and pg_temp.count_as(:PB, 'aal1', $q$ select * from public.rooms where code = 'ABCDEF' $q$) = 1
-  and pg_temp.count_as(:PC, 'aal1', $q$ select * from public.rooms where code = 'ABCDEF' $q$) = 0
-  and pg_temp.count_as(:PC, 'aal1', $q$ select * from public.rooms $q$) = 1);
+  pg_temp.count_as(:PA, 'aal1', $q$ select code, status from public.rooms where code = 'ABCDEF' $q$) = 1
+  and pg_temp.count_as(:PB, 'aal1', $q$ select code, status from public.rooms where code = 'ABCDEF' $q$) = 1
+  and pg_temp.count_as(:PC, 'aal1', $q$ select code, status from public.rooms where code = 'ABCDEF' $q$) = 0
+  and pg_temp.count_as(:PC, 'aal1', $q$ select code, status from public.rooms $q$) = 1);
+-- Nov 2 review fix: the deck lists in a room are the referee's; a player (even the host) cannot read them through the API
+select pg_temp.refused('rooms: deck lists are not readable by players', :PA, 'aal1', $q$ select host_deck from public.rooms where code = 'ABCDEF' $q$, 'permission denied');
 select pg_temp.refused('player cannot make a room directly', :PA, 'aal1', $q$ insert into public.rooms (code, host, host_deck) values ('ZZZZZZ', 'c0000000-0000-4000-8000-000000000021', '{}') $q$);
 select pg_temp.refused('player cannot join a room directly', :PC, 'aal1', $q$ update public.rooms set guest = 'c0000000-0000-4000-8000-000000000023' $q$);
 
@@ -136,7 +138,7 @@ declare
   coins_a int := (select coins from public.wallets where user_id = a);
   coins_b int := (select coins from public.wallets where user_id = b);
 begin
-  r1 := public.pvp_finish(m, a, 'a', 'win', 9, sa, sb);
+  perform set_config('request.jwt.claims', '{"role":"service_role"}', true); r1 := public.pvp_finish(m, a, 'a', 'win', 9, sa, sb);
   perform pg_temp.ok('pvp_finish: marks the match finished with winner, result, reason, turns, ended_at',
     (select status = 'finished' and winner = a and result = 'a' and end_reason = 'win' and turns = 9 and ended_at is not null from public.matches where id = m)
     and (r1 ->> 'finished')::boolean, r1::text);
@@ -161,7 +163,7 @@ begin
                 where pq.user_id = b and q.kind in ('wins', 'wins_with') and pq.progress > 0)
     and not exists (select 1 from public.player_quests pq join public.quest_defs q on q.id = pq.quest_id
                     where pq.user_id = a and q.kind = 'battles' and pq.progress <> 1));
-  r2 := public.pvp_finish(m, b, 'b', 'surrender', 9, sa, sb);
+  perform set_config('request.jwt.claims', '{"role":"service_role"}', true); r2 := public.pvp_finish(m, b, 'b', 'surrender', 9, sa, sb);
   perform pg_temp.ok('pvp_finish twice: the second call changes nothing and pays nothing',
     (r2 ->> 'repeat')::boolean and not (r2 ->> 'finished')::boolean
     and (select winner = a and result = 'a' and end_reason = 'win' from public.matches where id = m)
@@ -173,7 +175,7 @@ begin
     and (select count(*) from public.quest_reports where ref = 'match:' || m) = 2
     and (select games from public.player_stats where user_id = a) = 1, r2::text);
   insert into public.matches (player_a, player_b, state, status) values (a, b, '{}', 'active') returning id into m2;
-  r3 := public.pvp_finish(m2, a, 'a', 'timeout', 5, null, null);
+  perform set_config('request.jwt.claims', '{"role":"service_role"}', true); r3 := public.pvp_finish(m2, a, 'a', 'timeout', 5, null, null);
   perform pg_temp.ok('pvp_finish: a null summary (abandoned match) still finishes and pays',
     (r3 ->> 'finished')::boolean and (r3 -> 'a' ->> 'coins')::int = 25 and r3 -> 'a' -> 'quests_done' = '[]'::jsonb
     and (select status = 'finished' and end_reason = 'timeout' from public.matches where id = m2), r3::text);

@@ -19,6 +19,12 @@ export class MemoryStore implements Store {
 
   async getRoom(code: string) { const r = this.rooms.get(code); return r ? clone(r) : null; }
   async putRoom(room: Room) { this.rooms.set(room.code, clone(room)); }
+  async claimRoom(room: Room) {
+    const cur = this.rooms.get(room.code);
+    if (!cur || cur.status !== 'waiting' || cur.guest) return false;
+    this.rooms.set(room.code, clone(room));
+    return true;
+  }
   async getSavedDeck(userId: string, deckId: string) { const d = this.savedDecks.get(`${userId}/${deckId}`); return d ? clone(d) : null; }
   async getMatch(id: string) { const m = this.matches.get(id); return m ? clone(m) : null; }
   async insertMatch(m: MatchRecord) { if (this.matches.has(m.id)) throw new Error('duplicate match'); this.matches.set(m.id, clone(m)); }
@@ -39,8 +45,8 @@ export class MemoryStore implements Store {
     return best ? best.id : null;
   }
   async finished(m: MatchRecord, summaries: Summaries) {
-    if (this.finishedCalls.some((f) => f.matchId === m.id)) return; // idempotent, like private.pvp_finish
-    this.finishedCalls.push({ matchId: m.id, summaries: clone(summaries) });
+    if (!this.finishedCalls.some((f) => f.matchId === m.id)) this.finishedCalls.push({ matchId: m.id, summaries: clone(summaries) }); // idempotent, like private.pvp_finish
+    return true;
   }
   newId() { return 'm' + String(++this.ids).padStart(4, '0'); }
   random() { return this.rng(); }

@@ -16,14 +16,14 @@ const bundlePath = resolve(here, '.build/pvp-server.mjs');
 const newest = (dir) => Math.max(0, ...readdirSync(dir).map((f) => statSync(resolve(dir, f)).mtimeMs));
 const srcTime = Math.max(newest(resolve(here, '../src/engine')), newest(resolve(here, '../src/server')), newest(resolve(here, '../src/content')));
 if (!existsSync(bundlePath) || statSync(bundlePath).mtimeMs < srcTime) { console.log('bundling the engine...'); execFileSync(process.execPath, [resolve(here, 'bundle-engine.mjs')], { stdio: 'inherit' }); }
-const { PvpService, MemoryStore, setDiceMode, ENGINE_VERSION } = await import('./.build/pvp-server.mjs');
+const { PvpService, MemoryStore, setDiceMode, ENGINE_VERSION, summarize } = await import('./.build/pvp-server.mjs');
 
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 setDiceMode('live'); // the referee rolls fresh dice, like the real server
 const port = Number(process.argv[2] || process.env.PVP_MOCK_PORT || 4310);
 const store = new MemoryStore(() => { const u = new Uint32Array(1); crypto.getRandomValues(u); return u[0] / 4294967296; });
 store.newId = () => crypto.randomUUID();
-const service = new PvpService(store, { engineVersion: ENGINE_VERSION + '-mock' });
+const service = new PvpService(store, { engineVersion: ENGINE_VERSION + '-mock', summarize });
 const users = new Map();
 const userOf = (name) => {
   const n = String(name || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 16);

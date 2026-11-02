@@ -28,8 +28,10 @@ export interface Store {
   putViews(m: MatchRecord, views: Record<Seat, View>): Promise<void>;
   logMove(mv: MoveLog): Promise<void>;
   activeMatchFor(userId: string): Promise<string | null>;
-  /** called once when a match ends (rewards, stats, quests); must be idempotent on the store side */
-  finished(m: MatchRecord, summaries: Summaries): Promise<void>;
+  /** claims a waiting room for this guest and match in one step; false when someone else got there first (or it expired) */
+  claimRoom(room: Room): Promise<boolean>;
+  /** called when a match ends (rewards, stats, quests); idempotent on the store side; true when it went through (false = retry later) */
+  finished(m: MatchRecord, summaries: Summaries): Promise<boolean>;
   newId(): string;
   random(): number; // [0,1) from a secure source
 }
@@ -79,7 +81,8 @@ export class PvpService {
       }
     } catch (e: any) {
       if (e instanceof ServiceError) return { ok: false, error: e.message };
-      return { ok: false, error: 'Something went wrong on the server: ' + String((e && e.message) || e) };
+      console.error('pvp service', op, String((e && e.message) || e)); // the detail stays in the log, never in a player's screen
+      return { ok: false, error: 'Something went wrong on the server. Try again in a moment.' };
     }
   }
 
@@ -158,8 +161,8 @@ export class PvpService {
     const seed = Math.floor(this.store.random() * 2147483647);
     const m = startMatch(id, room.code, { a: room.host, b: user }, { a: room.hostDeck, b: deck }, now, this.rules, seed, this.engineVersion);
     room.guest = user; room.guestDeck = deck; room.status = 'started'; room.matchId = id;
+    if (!(await this.store.claimRoom(room))) fail('Someone else just joined that code.');
     await this.store.insertMatch(m);
-    await this.store.putRoom(room);
     await this.store.putViews(m, viewsFor(m, [{ type: 'newMatch' }]));
     return { ok: true, matchId: id, view: viewFor(m, 'b', [{ type: 'newMatch' }]) };
   }
@@ -177,6 +180,7 @@ export class PvpService {
 
   /** Applies due timeouts and saves (with the views) when something happened. */
   private async settle(m: MatchRecord, now: number): Promise<void> {
+    if (m.status === 'finished' && !m.rewarded) { await this.afterEnd(m); return; } // a reward call that failed earlier gets another go
     if (m.status !== 'active') return;
     const before = m.seq;
     const events = applyTimeouts(m, now, this.rules);
@@ -187,9 +191,13 @@ export class PvpService {
     await this.afterEnd(m);
   }
 
+  /** Rewards, stats and quests once the match is over; retried on later calls until the store confirms it. */
   private async afterEnd(m: MatchRecord) {
-    if (m.status !== 'finished') return;
-    await this.store.finished(m, { a: this.summarize(m.log, m.state, 'player'), b: this.summarize(m.log, m.state, 'opponent') });
+    if (m.status !== 'finished' || m.rewarded) return;
+    const ok = await this.store.finished(m, { a: this.summarize(m.log, m.state, 'player'), b: this.summarize(m.log, m.state, 'opponent') });
+    if (!ok) return;
+    m.rewarded = true;
+    await this.store.updateMatch(m, m.seq);
   }
 
   async act(body: any, user: PlayerInfo, now: number) {

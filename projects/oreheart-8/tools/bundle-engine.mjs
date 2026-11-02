@@ -25,6 +25,7 @@ export { legalActions, createMatch, applyAction, STARTER_DECK_LIST, STARTER_DECK
 export { setDiceMode, getDiceMode } from '../../src/engine/dice';
 export { mirror } from '../../src/engine/mirror';
 export { presentFor, realAction } from '../../src/engine/view';
+export { summarize } from '../../src/net/quest-summary';
 export const ENGINE_VERSION = ${JSON.stringify(sha)};
 `);
 
