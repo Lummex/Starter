@@ -4,9 +4,9 @@
 // when the enemy is in range, otherwise walks toward it. No new rules: every step is an ordinary legal
 // engine action sent through game.act(). Orders are the player's only; the computer is unchanged.
 import type { Game } from '../game';
-import { planOrder, nextStep, attackActionOn, chaseTarget, stanceAction, type Order, type Stance } from '../engine/orders';
+import { planOrder, nextStep, attackActionOn, chaseTarget, stanceAction, mineActionFor, type Order, type Stance, type Cell } from '../engine/orders';
 
-export interface RunOrdersOptions { delayMs: number; onChange?: () => void; log?: (msg: string) => void; /** units with no order act by their stance after the ordered ones */ stances?: Map<string, Stance> }
+export interface RunOrdersOptions { delayMs: number; onChange?: () => void; log?: (msg: string) => void; /** units with no order act by their stance after the ordered ones */ /** Ken, Nov 1 (guard arrows): the squares each guard watches and its post */ guards?: Map<string, { post: Cell; squares: Cell[] }>; stances?: Map<string, Stance> }
 export interface RunOrdersResult { moved: string[]; attacked: string[]; blocked: string[]; done: string[] }
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -58,6 +58,11 @@ export async function runOrders(game: Game, orders: Map<string, Order>, opts: Ru
         if (!canAct(game, turn, match)) { log('orders: stopped (phase, turn or match changed)'); break; }
       }
 
+      if (order.kind === 'mine' && !plan.path.length) { // Ken, Nov 1: standing next to its mine: mine it (the order stays for next turn)
+        const m = mineActionFor(game.state, c, order.site);
+        if (m) { if (!first && opts.delayMs > 0) await sleep(opts.delayMs); const r = game.act(m); if (r.ok) { first = false; result.attacked.push(order.uid); changed(); } else result.blocked.push(order.uid); }
+        continue;
+      }
       // Combat v2 (Ken, Nov 1): a unit walks as far as its move points allow and a chaser attacks when in reach in the same turn
       let cur = c, curPlan = plan, legs = 0;
       while (legs++ < 8 && canAct(game, turn, match)) {
@@ -98,6 +103,7 @@ export async function runOrders(game: Game, orders: Map<string, Order>, opts: Ru
         } else {
           try { curPlan = planOrder(game.state, order); } catch { break; }
           if (curPlan.done) { orders.delete(key); result.done.push(order.uid); changed(); break; }
+          if (order.kind === 'mine' && !curPlan.path.length) { const m = mineActionFor(game.state, again, order.site); if (m) { const r = game.act(m); if (r.ok) { result.attacked.push(order.uid); changed(); } } break; } // arrived: mine now if it still can
         }
         cur = again;
         if ((cur.movesLeft ?? 0) < 1) break;
@@ -111,7 +117,7 @@ export async function runOrders(game: Game, orders: Map<string, Order>, opts: Ru
       if (!c) { opts.stances.delete(uid); continue; }
       for (let legs = 0; legs < 4 && canAct(game, turn, match); legs++) { // v2: a stance may walk and then attack in the same turn
         const cc = find(uid); if (!cc) break;
-        const a = stanceAction(game.state, cc, stance);
+        const g = opts.guards?.get(uid); const a = stanceAction(game.state, cc, stance, g?.squares, g?.post);
         if (!a) break;
         if (!first && opts.delayMs > 0) { await sleep(opts.delayMs); if (!canAct(game, turn, match)) break; }
         const r = game.act(a);

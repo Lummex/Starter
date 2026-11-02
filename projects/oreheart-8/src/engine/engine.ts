@@ -1412,9 +1412,10 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
 
 // ---- Tutorial (Ken, Nov 1: "explain it to a five-year-old"; the player DOES each thing). One small board per lesson (src/ui/tutorial.ts
 // starts each lesson as its own scripted match with `tutorial: '<step>'`); the engine only notices when the lesson's goal was done.
-// 'order' and 'chain' are drawn marker orders (UI only): the tutorial screen marks them done with markTutorialDone().
-export const TUTORIAL_ORDER = ['card', 'move', 'order', 'chase', 'chain', 'ranged', 'fight', 'commander', 'swap', 'complete'];
-export const TUTORIAL_UI_STEPS = ['order', 'chain'];
+// 'controls', 'order' and 'chain' are taught with the real controls and drawn orders (UI only): the tutorial screen marks them done
+// with markTutorialDone(). Room is kept before 'swap' for Anvil's coming lessons (a standing mining order; guard arrows).
+export const TUTORIAL_ORDER = ['card', 'controls', 'move', 'order', 'chase', 'chain', 'ranged', 'fight', 'commander', 'swap', 'complete'];
+export const TUTORIAL_UI_STEPS = ['controls', 'order', 'chain'];
 export function markTutorialDone(s: any) { if (s && s.tutorial && s.tutorial.step !== 'complete') s.tutorial.done = true; }
 function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
   const t = s.tutorial;
@@ -1448,6 +1449,7 @@ export function tutorialAction(s: any): any | null {
   let a: any = null;
   switch (t.step) {
     case 'card': a = s.phase === 'deploy' ? legal.filter((x: any) => x.type === 'summon').sort(near({ row: 7, col: 7 }))[0] : null; break;
+    case 'controls': if (s.turn > 1) return null; a = { type: 'done' }; break; // a whole turn (the screen also has the player press each control)
     case 'move': a = action ? legal.find((x: any) => x.type === 'move' && t.target && x.row === t.target.row && x.col === t.target.col) || legal.find((x: any) => x.type === 'move') : null; break;
     case 'order': if (unit && t.target) return { type: 'order', order: { kind: 'move', uid: unit.uid, dest: { row: t.target.row, col: t.target.col } } }; break;
     case 'chase': {

@@ -4474,7 +4474,7 @@ export class App {
     for (const [o, p, pv] of plans) {
       for (const q of p.path) { const el = cellEl(q); if (el) { el.classList.add('path'); if (pv) el.classList.add('path-preview'); el.style.setProperty('--pfc', pfc); } }
       const tgt = o.kind === 'chase' ? chaseList(o).map((u) => this.orderUnit(st, u)).find(Boolean) : null;
-      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
+      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : (o.kind === 'mine' ? o.site : o.dest);
       const end = endQ && cellEl(endQ);
       if (!end) continue;
       this.orderPlans.push({ o, p, pv });
@@ -4550,7 +4550,7 @@ export class App {
     for (const { o, p, pv } of shown) {
       const c = st.board.creatures.find((x: any) => x.uid === o.uid);
       const tgt = o.kind === 'chase' ? chaseList(o).map((u) => this.orderUnit(st, u)).find(Boolean) : null;
-      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
+      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : (o.kind === 'mine' ? o.site : o.dest);
       if (!c || !endQ) continue;
       const rc = view.cellRect(endQ.row, endQ.col);
       const sq = [{ row: c.row, col: c.col }, ...p.path];

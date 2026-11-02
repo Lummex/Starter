@@ -119,7 +119,7 @@ export function playMatch(seed: number, A: Bot, B: Bot, aIsPlayer: boolean, maxT
   }
   const pa = aIsPlayer ? 'player' : 'opponent', pb = aIsPlayer ? 'opponent' : 'player';
   st[pa].mined = s.stats?.mined?.[pa] || 0; st[pb].mined = s.stats?.mined?.[pb] || 0;
-  st[pa].hpLeft = s.players[pa].health; st[pb].hpLeft = s.players[pb].health;
+  st[pa].hpLeft = s.players[pa].health; st[pb].hpLeft = s.players[pb].health; st[pa].pool = s.players[pa].crystals + s.players[pa].bank; st[pb].pool = s.players[pb].crystals + s.players[pb].bank; // Nov 1: Flow + Bank left unspent
   st[pa].lost = s.stats?.lost?.[pa] || 0; st[pb].lost = s.stats?.lost?.[pb] || 0;
   const side = (w: string) => (w === (aIsPlayer ? 'player' : 'opponent') ? 'A' : 'B');
   return { winner: s.winner ? side(s.winner) : null, turns: s.turn, stA: st[aIsPlayer ? 'player' : 'opponent'], stB: st[aIsPlayer ? 'opponent' : 'player'] };

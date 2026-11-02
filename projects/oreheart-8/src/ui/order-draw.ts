@@ -3,7 +3,7 @@
 export interface Pt { x: number; y: number }
 export interface OrderDrawing {
   uid: string;
-  kind: 'move' | 'chase';
+  kind: 'move' | 'chase' | 'mine';
   /** screen points (board-relative): the unit's square first, then every path square's centre */
   pts: Pt[];
   /** the X (move) or the circled target's square centre (chase) */
@@ -90,8 +90,9 @@ function pen(poly: V[], w: number, k: number, ph: number, press = 0.2, lo = 0.3)
 const line = (a: V, b: V, n = 8): V[] => Array.from({ length: n + 1 }, (_, i) => ({ x: a.x + ((b.x - a.x) * i) / n, y: a.y + ((b.y - a.y) * i) / n }));
 
 /** the small symbol past the arrow tip, drawn flat at c and s big: a cursive X, a sword (melee) or a bow and arrow (ranged) */
-function symbolStrokes(kind: 'x' | 'sword' | 'bow' | 'swap', c: V, s: number): V[][] {
+function symbolStrokes(kind: 'x' | 'sword' | 'bow' | 'swap' | 'pick', c: V, s: number): V[][] {
   const P = (u: number, v: number): V => ({ x: c.x + u * s, y: c.y + v * s });
+  if (kind === 'pick') return [line(P(-1.1, 1.2), P(0.9, -0.8)), dense([P(0.1, -1.7), P(0.9, -0.9), P(1.8, -0.4)], 6)]; // a pickaxe: handle and curved head
   if (kind === 'swap') { // two curved arrows chasing each other round a circle
     const arc = (a0: number, a1: number): V[] => dense(Array.from({ length: 7 }, (_, i) => { const a = a0 + ((a1 - a0) * i) / 6; return P(Math.cos(a) * 1.25, Math.sin(a) * 1.25); }), 6);
     const head = (a: number, dir: number): V[][] => { const tip = P(Math.cos(a) * 1.25, Math.sin(a) * 1.25), tx = -Math.sin(a) * dir, ty = Math.cos(a) * dir; return [line({ x: tip.x - (tx * 0.7 + ty * 0.55) * s, y: tip.y - (ty * 0.7 - tx * 0.55) * s }, tip, 4), line(tip, { x: tip.x - (tx * 0.7 - ty * 0.55) * s, y: tip.y - (ty * 0.7 + tx * 0.55) * s }, 4)]; };
@@ -109,6 +110,17 @@ function symbolStrokes(kind: 'x' | 'sword' | 'bow' | 'swap', c: V, s: number): V
   return [dense([{ x, y: c.y - 1.4 * s }, { x: x + 1.5 * s, y: c.y }, { x, y: c.y + 1.4 * s }]), line({ x, y: c.y + 1.4 * s }, { x: x - 0.4 * s, y: c.y }, 4), line({ x: x - 0.4 * s, y: c.y }, { x: x + 2.2 * s, y: c.y }), line({ x: x + 1.6 * s, y: c.y - 0.5 * s }, { x: x + 2.2 * s, y: c.y }, 4), line({ x: x + 2.2 * s, y: c.y }, { x: x + 1.6 * s, y: c.y + 0.5 * s }, 4)];
 }
 
+/** the arrowhead: two long barbs curving inward from the tip, sharp, drawn in one go */
+function headPolys(tip: V, ang: number, s: number, w: number, k: number, ph: number): string[] {
+  const hl = s * 0.4;
+  const barb = (side: number): V[] => {
+    const a2 = ang + side * 0.36, e = { x: tip.x - Math.cos(a2) * hl, y: tip.y - Math.sin(a2) * hl }, bend = -side * s * 0.13;
+    const m = { x: (e.x + tip.x) / 2 + Math.sin(ang) * bend, y: (e.y + tip.y) / 2 - Math.cos(ang) * bend };
+    return dense([e, m, tip], 8);
+  };
+  return [pen(barb(-1), w * 0.9, k, ph + 1, 0.12, 0.04), pen(barb(1).reverse(), w * 0.9, k, ph + 2, 0.12, 0.04)];
+}
+
 /** One order as an SVG group. */
 export function orderSvg(d: OrderDrawing): string {
   const r = rng(d.uid + d.kind);
@@ -116,7 +128,7 @@ export function orderSvg(d: OrderDrawing): string {
   const s = Math.min(cw, d.ch * 1.6);
   const w = Math.max(6, Math.min(15, s * 0.17));
   // Ken, Nov 1: green = a move, red = a melee attack, blue = a ranged attack (a blocked move is red)
-  const ink = d.blocked ? '#ff6a58' : d.kind === 'move' ? '#46e05a' : d.ranged ? '#7cb8ff' : '#ff4a3d', ph = r() * 6; // Nov 1: a brighter blue, it was the dimmest colour on the board
+  const ink = d.blocked ? '#ff6a58' : d.kind === 'move' || d.kind === 'mine' ? '#46e05a' : d.ranged ? '#7cb8ff' : '#ff4a3d', ph = r() * 6; // Nov 1: a brighter blue, it was the dimmest colour on the board
   const F = (p: Pt): V => ({ x: p.x, y: p.y / k }); // screen -> flat
   let out = '';
   let pts = d.pts.map(F);
@@ -133,28 +145,24 @@ export function orderSvg(d: OrderDrawing): string {
   }
   const route = dense(pts);
   const polys: string[] = [];
+  const kind: 'x' | 'sword' | 'bow' | 'swap' | 'pick' = d.kind === 'move' ? (d.swap ? 'swap' : 'x') : d.kind === 'mine' ? 'pick' : d.ranged ? 'bow' : 'sword';
+  let ang = 0; const tip: V = route[route.length - 1] || E;
   if (route.length >= 2) {
     polys.push(pen(route, w, k, ph, 0.25));
-    // the arrowhead: back out through the tip in one go (a V that crosses its own line), flat on the board
-    const tip = route[route.length - 1], back = route[Math.max(0, route.length - 6)], ang = Math.atan2(tip.y - back.y, tip.x - back.x), hl = s * 0.4;
-    // two long curved barbs sweeping back from the tip like a swoosh (not straight), tapering to sharp points; drawn in one go (barb in, barb out)
-    const barb = (side: number): V[] => {
-      const a2 = ang + side * 0.36, e = { x: tip.x - Math.cos(a2) * hl, y: tip.y - Math.sin(a2) * hl }, bend = -side * s * 0.13; // curved inward (toward the line), so the head stays sharp, not fat
-      const m = { x: (e.x + tip.x) / 2 + Math.sin(ang) * bend, y: (e.y + tip.y) / 2 - Math.cos(ang) * bend };
-      return dense([e, m, tip], 8);
-    };
-    polys.push(pen(barb(-1), w * 0.9, k, ph + 1, 0.12, 0.04), pen(barb(1).reverse(), w * 0.9, k, ph + 2, 0.12, 0.04));
-    const kind: 'x' | 'sword' | 'bow' | 'swap' = d.kind === 'move' ? (d.swap ? 'swap' : 'x') : d.ranged ? 'bow' : 'sword';
-    const sz = (kind === 'x' ? 0.1 : kind === 'swap' ? 0.095 : 0.11) * s; // Nov 1: sword and bow a third bigger
-    const place = d.kind === 'move' ? { x: tip.x + Math.cos(ang) * s * 0.55 + Math.sin(ang) * s * 0.42, y: tip.y + Math.sin(ang) * s * 0.55 - Math.cos(ang) * s * 0.46 } : { x: E.x + rx * 1.0, y: E.y - rx * 0.95 }; // Nov 1: the X / swap symbol sits off to the side of the tip, clear of the turns label above it
-    for (const st of symbolStrokes(kind, place, sz * 2.2)) polys.push(pen(st, kind === 'x' ? w * 0.85 : w * 0.5, k, ph + 3, 0.2));
+    const back = route[Math.max(0, route.length - 6)]; ang = Math.atan2(tip.y - back.y, tip.x - back.x);
+    polys.push(...headPolys(tip, ang, s, w, k, ph));
   }
+  const symStart = polys.length;
+  const sz = (kind === 'x' ? 0.1 : kind === 'swap' ? 0.095 : kind === 'pick' ? 0.1 : 0.11) * s;
+  // the symbol sits off to the side of the tip, clear of the turns label; a chase's beside the target circle; a standing mining order's beside the Miner
+  const place = d.kind === 'chase' ? { x: E.x + rx * 1.0, y: E.y - rx * 0.95 } : route.length >= 2 ? { x: tip.x + Math.cos(ang) * s * 0.55 + Math.sin(ang) * s * 0.42, y: tip.y + Math.sin(ang) * s * 0.55 - Math.cos(ang) * s * 0.46 } : { x: tip.x + s * 0.45, y: tip.y - s * 0.5 };
+  for (const st of symbolStrokes(kind, place, sz * 2.2)) polys.push(pen(st, kind === 'x' ? w * 0.85 : w * 0.5, k, ph + 3, 0.2));
   if (d.kind === 'chase') {
     const loop: V[] = []; // a bit over one loop, slightly spiralling, like a quick hand-drawn circle
     for (let i = 0; i <= 30; i++) { const t = i / 30, a = a0 + t * (Math.PI * 2 + 0.75), g = 1 + 0.1 * t + 0.04 * Math.sin(3 * a + ph); loop.push({ x: E.x + Math.cos(a) * rx * g, y: E.y + Math.sin(a) * rx * g }); }
     polys.push(pen(loop, w * 0.9, k, ph + 4, 0.25));
   }
-  out += polys.map((q, i) => `<path${d.kind === 'chase' && i === polys.length - 1 ? ' class="ord-circle"' : d.kind === 'move' && i === 3 ? ' class="ord-x"' : ''} d="${q}" fill="${ink}" fill-opacity=".72"/>`).join('');
+  out += polys.map((q, i) => `<path${d.kind === 'chase' && i === polys.length - 1 ? ' class="ord-circle"' : i === symStart ? (d.kind === 'mine' ? ' class="ord-pick"' : ' class="ord-x"') : ''} d="${q}" fill="${ink}" fill-opacity=".72"/>`).join('');
   if (d.kind === 'chase') {
     const ry2 = Math.max(d.ch * 0.5, d.cw * 0.5 * k);
     const mark = (p: Pt, n: number) => `<g class="ord-num"><circle cx="${f(p.x)}" cy="${f(p.y - ry2 * 1.15)}" r="${f(s * 0.17)}" fill="#7a120a" stroke="#ffd9d2" stroke-width="1.5"/><text x="${f(p.x)}" y="${f(p.y - ry2 * 1.15 + s * 0.065)}" text-anchor="middle" font-size="${f(s * 0.2)}" font-weight="800" fill="#fff">${n}</text></g>`;
@@ -176,11 +184,12 @@ export function restTargetSvg(p: Pt, cw: number, ch: number): string {
 
 /** Ken, Nov 1: a unit with no instruction yet wears a yellow highlighter question mark over its head (upright, not flat on the ground). */
 export function questionSvg(p: Pt, cw: number, ch: number, uid: string): string {
-  const r = rng(uid + 'q'), ph = r() * 6, s = Math.min(cw, ch * 1.6) * 0.3;
-  const P = (u: number, v: number): V => ({ x: p.x + u * s, y: p.y - ch * 1.05 + v * s });
+  // Ken, Nov 1 (playtest): "way small ... hovering right above his head or right above their shoulder, somewhere out of the way": a third of the old size, over the right shoulder
+  const r = rng(uid + 'q'), ph = r() * 6, s = Math.min(cw, ch * 1.6) * 0.11, ox = cw * 0.28, oy = ch * 0.95;
+  const P = (u: number, v: number): V => ({ x: p.x + ox + u * s, y: p.y - oy + v * s });
   const hook = dense([P(-0.62, -0.5), P(-0.5, -0.95), P(0, -1.15), P(0.52, -0.92), P(0.58, -0.4), P(0.2, 0.12), P(0.02, 0.45), P(0.02, 0.62)]);
-  const dot: V[] = []; for (let i = 0; i <= 14; i++) { const a = (i / 14) * Math.PI * 2 + 0.4; dot.push({ x: p.x + 0.02 * s + Math.cos(a) * 0.13 * s, y: p.y - ch * 1.05 + 1.08 * s + Math.sin(a) * 0.13 * s }); }
-  const w = s * 0.46;
+  const dot: V[] = []; for (let i = 0; i <= 14; i++) { const a = (i / 14) * Math.PI * 2 + 0.4; dot.push({ x: p.x + ox + 0.02 * s + Math.cos(a) * 0.16 * s, y: p.y - oy + 1.08 * s + Math.sin(a) * 0.16 * s }); }
+  const w = Math.max(2.2, s * 0.5);
   return `<g class="ord-q" data-uid="${uid}"><path d="${pen(hook, w, 1, ph, 0.12)}" fill="#ffe84a" fill-opacity=".85"/><path d="${pen(dot, w * 0.8, 1, ph + 1, 0.05)}" fill="#ffe84a" fill-opacity=".7"/></g>`;
 }
 
@@ -189,4 +198,19 @@ export function guardSvg(p: Pt, cw: number, ch: number, uid: string): string {
   const k = Math.max(0.3, Math.min(1, ch / cw)), r = cw * 0.44, pts: V[] = [], rr = rng(uid + 'g'), a0 = rr() * 6, ph = rr() * 6;
   for (let i = 0; i <= 32; i++) { const t = i / 32, a = a0 + t * (Math.PI * 2 + 0.7), g = 1 + 0.09 * t + 0.03 * Math.sin(3 * a + ph); pts.push({ x: p.x + Math.cos(a) * r * g, y: p.y / k + Math.sin(a) * r * g }); }
   return `<path class="ord-guard" d="${pen(pts, Math.max(4, cw * 0.09), k, ph, 0.25)}" fill="#0a0a10" fill-opacity=".72"/>`;
+}
+
+/** Ken, Nov 1 (guard arrows): black marker arrows from a guarding unit to each square it watches, a small X on each. */
+export function guardArrowsSvg(from: Pt, squares: Pt[], cw: number, ch: number, uid: string): string {
+  const k = Math.max(0.3, Math.min(1, ch / cw)), s = Math.min(cw, ch * 1.6), w = Math.max(4, Math.min(10, s * 0.12)), r = rng(uid + 'ga');
+  const F = (p: Pt): V => ({ x: p.x, y: p.y / k }), A = F(from);
+  let out = '';
+  squares.forEach((q, i) => {
+    const B = F(q), ph = r() * 6, mid = { x: (A.x + B.x) / 2 + (r() - 0.5) * s * 0.18, y: (A.y + B.y) / 2 + (r() - 0.5) * s * 0.18 };
+    const route = dense([A, mid, B], 12), tip = route[route.length - 1], back = route[Math.max(0, route.length - 6)], ang = Math.atan2(tip.y - back.y, tip.x - back.x);
+    const polys = [pen(route, w * 0.8, k, ph, 0.2), ...headPolys(tip, ang, s * 0.7, w * 0.8, k, ph)];
+    for (const st of symbolStrokes('x', { x: B.x, y: B.y }, s * 0.14)) polys.push(pen(st, w * 0.6, k, ph + 2, 0.2));
+    out += polys.map((p) => `<path class="ord-guard-arrow" data-i="${i}" d="${p}" fill="#0a0a10" fill-opacity=".72"/>`).join('');
+  });
+  return out;
 }

@@ -471,7 +471,8 @@ const _embV = new THREE.Vector3();
   // Oct 30 (Ken's fighting vision): units walk square by square and fights are little comic scenes (timings in ms, snappy)
   const WALK_SPEED = 2.8, RUN_SPEED = 4.0, IMPACT_MELEE = 250, IMPACT_RANGED = 300, LUNGE_MS = 620;
   /** Ken, Nov 1: "for each swing I'd like it to play the animation, so you can see the hit and the miss": one attack animation, sound and result per swing, this far apart */
-  const SWING_MS = 640;
+  const SWING_PAUSE = Number((CONFIG as any).combat?.swingPauseMs ?? 500); // Ken, Nov 1: "give them a half second before each attack": a pause before every swing, results only when the swing lands
+  const SWING_MS = 640 + SWING_PAUSE; // one swing: the pause, then the clip; the result (sound, sticker) at the moment it lands
   const RIDE_MS = 1500; // Rocket Rider flight: slow climb, arc over, nosedive
   const swingDefs = new Set<string>(); // defenders whose flinch and knock-back follow their own swing results
   const impacts: { at: number; to: THREE.Vector3; ranged: boolean; armored: boolean; commander: boolean }[] = [];
@@ -1078,7 +1079,7 @@ const _embV = new THREE.Vector3();
       const sw: any[] = []; for (let j = events.indexOf(e) + 1; j < events.length && events[j].type !== 'attack'; j++) if (events[j].type === 'swing' && events[j].uid === e.uid && events[j].tag === 'attack') sw.push(events[j]);
       const NS = Math.max(1, sw.length), result = (i: number): string => sw[i]?.result ?? 'hit';
       const def = e.target.commander ? null : [...figs.values()].find((d) => d !== f && d.row === e.target.row && d.col === e.target.col && !(d.kb && d.kb.knockMove)) || null;
-      f.blowAt = t0 + imp;
+      f.blowAt = t0 + imp + SWING_PAUSE;
       const dir = to.clone().sub(f.target).setY(0);
       f.faceTo = Math.atan2(dir.x, dir.z); f.faceUntil = t0 + imp + 500;
       if (shot) {
@@ -1095,7 +1096,7 @@ const _embV = new THREE.Vector3();
         const toPt = to.clone().setY(def ? (def.c3d?.boardH ?? 1) * 0.5 + (def.c3d?.lift || 0) : 0.7);
         const est = f.target.clone().setY((f.c3d?.boardH ?? 1) * 0.6 + (f.c3d?.lift || 0));
         const flightMs = Math.min(2200, Math.max(120, ((est.distanceTo(toPt) * (shot.style === 'arc' ? 1.15 : 1)) / shot.speed) * 1000));
-        f.blowAt = releaseAt + flightMs; f.faceUntil = f.blowAt + 400;
+        f.blowAt = releaseAt + flightMs + SWING_PAUSE; f.faceUntil = f.blowAt + 400;
         aimGrip(f, t0, t0 + f.atkMs + 150, now);
         const sh = shot, ff = f;
         for (let i = 0; i < 1; i++) { const k = i * SWING_MS; // one shot only (the rest is bleed); a miss or a block still flies, only a landed hit makes the thud

@@ -1949,7 +1949,7 @@ html body .overlay.e-discard-view>.dialog:not(.viewer3d):not([aria-label=Mulliga
 .tut-foot svg{width:100%;height:100%;fill:#555b66;filter:drop-shadow(0 1px 1px #000)}
 .tut-foot.on svg{fill:#7dff8e;filter:drop-shadow(0 0 6px #54ff6a)}
 /* the big picture card */
-.tut-intro{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#05060acc 0,#05060a99 70%);pointer-events:auto;touch-action:none}
+.tut-intro{position:absolute;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#05060acc 0,#05060a99 70%);pointer-events:auto;touch-action:none}
 .tut-card{box-sizing:border-box;max-width:calc(100% - 16px);max-height:calc(100% - 12px);overflow:auto;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 22px 16px;text-align:center;background:linear-gradient(180deg,#262732f5,#121319f5);border:2px solid #c9d2e0;border-radius:18px;box-shadow:0 0 0 1px #000,0 10px 40px #000c,inset 0 1px 0 #ffffff26;animation:tutPop .35s ease-out}
 .tut-card .tut-big-pic{display:block;width:clamp(240px,min(36vw,78vh),560px);height:auto;aspect-ratio:3/2;pointer-events:none;user-select:none}
 .tut-card .tut-say{margin:0;font-size:clamp(1.25rem,2.4vw,2rem);line-height:1.15;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 2px 3px #000}
@@ -1968,21 +1968,23 @@ html body .overlay.e-discard-view>.dialog:not(.viewer3d):not([aria-label=Mulliga
 .tut-swing{margin:0;display:flex;flex-direction:column;align-items:center}
 .tut-swing .tut-pic{display:block;width:clamp(240px,min(27vw,48vh),380px);height:auto;aspect-ratio:3/2;pointer-events:none}
 .tut-swing figcaption{display:flex;flex-direction:column;align-items:center;gap:3px}
-.tut-swing b{font-size:1.25rem;letter-spacing:.04em;-webkit-text-stroke:1px #000;text-shadow:2px 2px 0 #000}
-.tut-swing.hit b{color:#7dff8e}.tut-swing.miss b{color:#d7dbe2}.tut-swing.block b{color:#8fd0ff}
-.tut-swing small{font-size:.78rem;color:#dfe8f7!important;-webkit-text-fill-color:#dfe8f7!important;max-width:260px}
+.tut-swing b{font-size:1.7rem;font-weight:700;letter-spacing:.06em;-webkit-text-stroke:0;text-shadow:0 0 2px #000,2px 2px 0 #000,-1px -1px 0 #000}
+/* Round 15: text outside the cards is plain white, so each result word sits on a coloured pill */
+.tut-swing b{padding:0 12px;border-radius:999px;border:2px solid #0008}.tut-swing.hit b{background:#1f8a35}.tut-swing.miss b{background:#5b6170}.tut-swing.block b{background:#2a64b8}
+.tut-swing small{font-size:.95rem;color:#dfe8f7!important;-webkit-text-fill-color:#dfe8f7!important;max-width:260px}
 .tut-tip .tut-swings{margin:4px 0}
 .tut-tip .tut-swing b{font-size:.95rem}
 .tut-tip .tut-swing small{font-size:.66rem}
 .tut-dice{display:flex;gap:3px}
-.tut-die{display:inline-grid;grid-template:repeat(3,1fr)/repeat(3,1fr);width:22px;height:22px;padding:2px;box-sizing:border-box;background:#f4f1e6;border-radius:5px;box-shadow:0 1px 2px #000,inset 0 -2px 0 #c9c3ad}
-.tut-die i{display:block;margin:auto;width:4px;height:4px;border-radius:50%}
+.tut-die{display:inline-grid;grid-template:repeat(3,1fr)/repeat(3,1fr);width:30px;height:30px;padding:3px;box-sizing:border-box;background:#f4f1e6;border-radius:5px;box-shadow:0 1px 2px #000,inset 0 -2px 0 #c9c3ad}
+.tut-die i{display:block;margin:auto;width:5px;height:5px;border-radius:50%}
 .tut-die i.on{background:#1a1a1a}
 .tut-tip .tut-die{width:18px;height:18px}
 .tut-tip .tut-die i{width:3px;height:3px}
 /* the marker legend */
 .tut-legend{list-style:none;margin:4px 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:8px 14px}
 .tut-legend li{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;border-radius:12px;background:#ffffff0d;border:1px solid #c9d2e055}
+.tut-legend li svg{border-radius:10px;background:radial-gradient(ellipse at center,#a08660 0,#7a6243 75%);box-shadow:inset 0 0 0 1px #0006}
 .tut-legend svg{width:120px;height:90px;overflow:visible}
 .tut-legend span{font-size:1.05rem;color:#fff!important;-webkit-text-fill-color:#fff!important}
 /* the pointing hand, the target ring, the archer's lines */
@@ -1995,7 +1997,7 @@ html body .overlay.e-discard-view>.dialog:not(.viewer3d):not([aria-label=Mulliga
 .tut-lines line{stroke:#5b8dff;stroke-width:5;stroke-linecap:round;stroke-dasharray:10 9;opacity:.85;filter:drop-shadow(0 0 4px #2f5fff)}
 .tut-lines line.hit{stroke:#9ec0ff;stroke-width:7;stroke-dasharray:none}
 /* the "Nice!" stamp */
-.tut-yay{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:70;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;animation:tutYay 1.3s ease-out forwards}
+.tut-yay{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:410;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;animation:tutYay 1.3s ease-out forwards}
 .tut-yay-word{font-family:"Alegreya SC",serif;font-size:clamp(3rem,9vh,6.5rem);line-height:1;color:#ffe14a;-webkit-text-stroke:3px #8a1a0a;text-shadow:5px 5px 0 #000;transform:rotate(-8deg)}
 .tut-yay-sub{font-size:clamp(1.1rem,3vh,1.8rem);padding:6px 16px;border-radius:12px;background:#0d0c11e6;border:2px solid #c9d2e0;color:#fff!important;-webkit-text-fill-color:#fff!important;white-space:nowrap}
 @keyframes tutYay{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}18%{transform:translate(-50%,-50%) scale(1.12);opacity:1}30%{transform:translate(-50%,-50%) scale(1)}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}

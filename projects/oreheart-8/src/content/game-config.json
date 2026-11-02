@@ -101,7 +101,9 @@
   "blockCap": 3,
   "armoredExtraFace": 2,
   "strikeBackRolls": true,
-  "afterAttack": "end"
+  "afterAttack": "end",
+  "swingPauseMs": 500,
+  "_pauseNote": "Ken, Nov 1: milliseconds of pause before every swing (attacks, strike-backs, ranged shots, the computer's too); the hit / miss / block sound and sticker come only when the swing lands."
  },
  "costFormula": {
   "_note": "Ken, Nov 1: cost = Attack + Health + ability bonus, halved and rounded up; above halfUpTo it climbs overPer per point from overBase; cap, min. Bonus: bigBonus for a big ability, smallBonus for any other, 0 for Miner abilities; only the biggest counts. A card's costOverride (in cards.json) wins over the formula. See src/engine/cost.ts and tools/gen-costs.py.",

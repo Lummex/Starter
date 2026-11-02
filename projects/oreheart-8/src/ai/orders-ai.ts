@@ -12,11 +12,11 @@
 // Hard commits more fighters and chains targets; Medium commits fewer and chains nothing. Miners, summons, spells and abilities still come from
 // the scorer in ai.ts, so nothing else about the computer changed.
 import { CARDS, CONFIG, isMiner, legalActions, previewAttack, other } from '../engine';
-import { planOrder, nextStep, attackActionOn, chaseTarget, stanceAction, type Order, type Stance } from '../engine/orders';
+import { planOrder, nextStep, attackActionOn, chaseTarget, stanceAction, type Order, type Stance, type Cell } from '../engine/orders';
 import { planFor, type StyleId } from './styles';
 
 export type AiRole = 'defend' | 'rush' | 'hunt' | 'fortify' | 'regroup' | 'steady';
-export interface AiPlanState { turn: number; key: string; plan: string; orders: Map<string, Order>; stances: Map<string, Stance>; roles: Map<string, AiRole> }
+export interface AiPlanState { turn: number; key: string; plan: string; orders: Map<string, Order>; stances: Map<string, Stance>; roles: Map<string, AiRole>; /** Ken, Nov 1 (guard arrows): home guards watch the squares round the Commander */ guards: Map<string, { post: Cell; squares: Cell[] }> }
 
 const plans = new Map<string, AiPlanState>();
 const cheb = (a: any, b: any) => Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
@@ -28,7 +28,7 @@ const boardKey = (s: any, me: string) => s.turn + '|' + s.phase + '|' + s.player
 
 /** The current plan for a side (test hook via game.aiOrders). */
 export const aiPlanState = (me: string): AiPlanState | null => plans.get(me) || null;
-export const aiPlanSummary = (me: string) => { const p = plans.get(me); return p ? { turn: p.turn, plan: p.plan, orders: [...p.orders.values()], stances: Object.fromEntries(p.stances), roles: Object.fromEntries(p.roles) } : null; };
+export const aiPlanSummary = (me: string) => { const p = plans.get(me); return p ? { turn: p.turn, plan: p.plan, orders: [...p.orders.values()], stances: Object.fromEntries(p.stances), roles: Object.fromEntries(p.roles), guards: Object.fromEntries(p.guards) } : null; };
 
 export function planAiOrders(s: any, me: string, style: StyleId, hard: boolean): AiPlanState {
   const foe = other(me as any) as string, myHome = sh(me), foeHome = sh(foe);
@@ -41,7 +41,8 @@ export function planAiOrders(s: any, me: string, style: StyleId, hard: boolean):
   const foeMinersOnMines = foes.filter((c: any) => isMiner(CARDS[c.cardId]) && s.sites.some((x: any) => cheb(c, x) <= 1));
   const myMiners = s.board.creatures.filter((c: any) => c.owner === me && isMiner(CARDS[c.cardId]));
   const myHealth = s.players[me].health, foeHealth = s.players[foe].health;
-  const orders = new Map<string, Order>(), stances = new Map<string, Stance>(), roles = new Map<string, AiRole>();
+  const orders = new Map<string, Order>(), stances = new Map<string, Stance>(), roles = new Map<string, AiRole>(), guards = new Map<string, { post: Cell; squares: Cell[] }>();
+  const homeRing: Cell[] = []; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if ((dr || dc) && myHome.row + dr >= 1 && myHome.row + dr <= CONFIG.boardHeight && myHome.col + dc >= 1 && myHome.col + dc <= CONFIG.boardWidth) homeRing.push({ row: myHome.row + dr, col: myHome.col + dc });
 
   // 1. defence first: how many fighters turn back
   const byHome = mine.slice().sort((a: any, b: any) => cheb(a, myHome) - cheb(b, myHome));
@@ -57,7 +58,7 @@ export function planAiOrders(s: any, me: string, style: StyleId, hard: boolean):
   for (const c of defenders) {
     roles.set(c.uid, 'defend');
     if (rushers.length) { const chain = hard ? rushers.slice(1, 3).map((r: any) => r.uid) : []; orders.set(c.uid, { kind: 'chase', uid: c.uid, targetUid: rushers[0].uid, ...(chain.length ? { then: chain } : {}) }); }
-    else { stances.set(c.uid, 'guard'); if (cheb(c, myHome) > 2) { const spot = homeSpot(s, c, myHome); if (spot) orders.set(c.uid, { kind: 'move', uid: c.uid, dest: spot }); } }
+    else { stances.set(c.uid, 'guard'); const spot = cheb(c, myHome) > 2 ? homeSpot(s, c, myHome) : null; if (spot) orders.set(c.uid, { kind: 'move', uid: c.uid, dest: spot }); guards.set(c.uid, { post: spot || { row: c.row, col: c.col }, squares: homeRing }); } // a home guard watches the squares round the Commander (guard arrows) and never chases
   }
 
   // 2. offence for the rest
@@ -86,7 +87,13 @@ export function planAiOrders(s: any, me: string, style: StyleId, hard: boolean):
       orders.set(c.uid, { kind: 'chase', uid: c.uid, targetUid: near[0].uid, ...(hard && near.length > 1 ? { then: near.slice(1, 3).map((f: any) => f.uid) } : {}) });
     } else orders.set(c.uid, { kind: 'chase', uid: c.uid, targetUid: 'cmd:' + foe });
   }
-  const st: AiPlanState = { turn: s.turn, key: boardKey(s, me), plan, orders, stances, roles };
+  // Ken, Nov 1: a Miner not yet beside a mine gets a standing mining order to the nearest mine with a free square beside it (the scorer still decides the mining itself)
+  for (const m of myMiners) {
+    if (s.sites.some((x: any) => cheb(m, x) <= 1)) continue;
+    const site = s.sites.slice().sort((a: any, b: any) => cheb(a, m) - cheb(b, m)).find((x: any) => homeSpot(s, m, x));
+    if (site) { orders.set(m.uid, { kind: 'mine', uid: m.uid, site: { row: site.row, col: site.col } }); roles.set(m.uid, 'steady'); }
+  }
+  const st: AiPlanState = { turn: s.turn, key: boardKey(s, me), plan, orders, stances, roles, guards };
   plans.set(me, st);
   return st;
 }
@@ -131,14 +138,19 @@ export function aiOrderAction(s: any, me: string, hard: boolean, style: StyleId 
       if (!p.blocked && p.path.length) { const step = nextStep(s, c, p.path); if (step) offer(10 + (role === 'defend' ? 5 : 0) + (role === 'rush' ? 3 : 0), { type: 'move', creatureUid: c.uid, row: step.row, col: step.col }); }
       continue;
     }
+    if (o?.kind === 'mine') { // walk toward the mine; beside it the scorer mines (it weighs group mining, Mine All and the Flow)
+      const p = planOrder(s, o);
+      if (!p.blocked && p.path.length) { const step = nextStep(s, c, p.path); if (step) offer(6, { type: 'move', creatureUid: c.uid, row: step.row, col: step.col }); }
+      continue;
+    }
     if (o?.kind === 'move') {
       const p = planOrder(s, o);
       if (!p.done && !p.blocked && p.path.length) { const step = nextStep(s, c, p.path); if (step) offer(8, { type: 'move', creatureUid: c.uid, row: step.row, col: step.col }); }
-      const stn = st.stances.get(c.uid); if (stn) { const a = stanceAction(s, c, stn); if (a) offer(a.type === 'attack' ? 25 : 4, a); }
+      const stn = st.stances.get(c.uid), g = st.guards.get(c.uid); if (stn) { const a = stanceAction(s, c, stn, g?.squares, g?.post); if (a) offer(a.type === 'attack' ? 25 : 4, a); }
       continue;
     }
-    const stn = st.stances.get(c.uid);
-    if (stn) { const a = stanceAction(s, c, stn); if (a) offer(a.type === 'attack' ? 25 : 4, a); }
+    const stn = st.stances.get(c.uid), g = st.guards.get(c.uid);
+    if (stn) { const a = stanceAction(s, c, stn, g?.squares, g?.post); if (a) offer(a.type === 'attack' ? 25 : 4, a); }
   }
   return best ? (best as any).a : null;
 }
