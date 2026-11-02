@@ -17,6 +17,8 @@ export interface OrderDrawing {
   chain?: Pt[];
   /** Ken, Nov 1: a chase by a ranged unit ends in a little bow and arrow, by a melee unit in a little sword */
   ranged?: boolean;
+  /** Ken, Nov 1: the move ends on one of your own units: you swap places (two curved arrows in a circle) */
+  swap?: boolean;
 }
 
 /** A small seeded random generator, so a unit's line keeps the same wobble every redraw (no flicker while panning). */
@@ -88,8 +90,13 @@ function pen(poly: V[], w: number, k: number, ph: number, press = 0.2, lo = 0.3)
 const line = (a: V, b: V, n = 8): V[] => Array.from({ length: n + 1 }, (_, i) => ({ x: a.x + ((b.x - a.x) * i) / n, y: a.y + ((b.y - a.y) * i) / n }));
 
 /** the small symbol past the arrow tip, drawn flat at c and s big: a cursive X, a sword (melee) or a bow and arrow (ranged) */
-function symbolStrokes(kind: 'x' | 'sword' | 'bow', c: V, s: number): V[][] {
+function symbolStrokes(kind: 'x' | 'sword' | 'bow' | 'swap', c: V, s: number): V[][] {
   const P = (u: number, v: number): V => ({ x: c.x + u * s, y: c.y + v * s });
+  if (kind === 'swap') { // two curved arrows chasing each other round a circle
+    const arc = (a0: number, a1: number): V[] => dense(Array.from({ length: 7 }, (_, i) => { const a = a0 + ((a1 - a0) * i) / 6; return P(Math.cos(a) * 1.25, Math.sin(a) * 1.25); }), 6);
+    const head = (a: number, dir: number): V[][] => { const tip = P(Math.cos(a) * 1.25, Math.sin(a) * 1.25), tx = -Math.sin(a) * dir, ty = Math.cos(a) * dir; return [line({ x: tip.x - (tx * 0.7 + ty * 0.55) * s, y: tip.y - (ty * 0.7 - tx * 0.55) * s }, tip, 4), line(tip, { x: tip.x - (tx * 0.7 - ty * 0.55) * s, y: tip.y - (ty * 0.7 + tx * 0.55) * s }, 4)]; };
+    return [arc(3.45, 5.95), arc(0.3, 2.8), ...head(5.95, 1), ...head(2.8, 1)];
+  }
   if (kind === 'x') return [
     dense([P(-1, -0.9), P(-0.35, -0.25), P(0.3, 0.4), P(1.05, 1.05), P(1.28, 0.5), P(1.12, -0.3), P(0.95, -1.05)]),
     dense([P(1.05, -1.12), P(0.45, -0.5), P(-0.2, 0.1), P(-0.8, 0.8), P(-1.5, 1.35)]),
@@ -137,8 +144,8 @@ export function orderSvg(d: OrderDrawing): string {
       return dense([e, m, tip], 8);
     };
     polys.push(pen(barb(-1), w * 0.9, k, ph + 1, 0.12, 0.04), pen(barb(1).reverse(), w * 0.9, k, ph + 2, 0.12, 0.04));
-    const kind: 'x' | 'sword' | 'bow' = d.kind === 'move' ? 'x' : d.ranged ? 'bow' : 'sword';
-    const sz = (kind === 'x' ? 0.1 : 0.055) * s;
+    const kind: 'x' | 'sword' | 'bow' | 'swap' = d.kind === 'move' ? (d.swap ? 'swap' : 'x') : d.ranged ? 'bow' : 'sword';
+    const sz = (kind === 'x' ? 0.1 : kind === 'swap' ? 0.085 : 0.055) * s;
     const place = d.kind === 'move' ? { x: tip.x + Math.cos(ang) * s * 0.34 + Math.sin(ang) * s * 0.1, y: tip.y + Math.sin(ang) * s * 0.34 - Math.cos(ang) * s * 0.12 } : { x: E.x + rx * 1.0, y: E.y - rx * 0.95 };
     for (const st of symbolStrokes(kind, place, sz * 2.2)) polys.push(pen(st, kind === 'x' ? w * 0.85 : w * 0.62, k, ph + 3, 0.2));
   }
@@ -175,4 +182,11 @@ export function questionSvg(p: Pt, cw: number, ch: number, uid: string): string 
   const dot: V[] = []; for (let i = 0; i <= 14; i++) { const a = (i / 14) * Math.PI * 2 + 0.4; dot.push({ x: p.x + 0.02 * s + Math.cos(a) * 0.13 * s, y: p.y - ch * 1.05 + 1.08 * s + Math.sin(a) * 0.13 * s }); }
   const w = s * 0.34;
   return `<g class="ord-q" data-uid="${uid}"><path d="${pen(hook, w, 1, ph, 0.12)}" fill="#ffe84a" fill-opacity=".62"/><path d="${pen(dot, w * 0.8, 1, ph + 1, 0.05)}" fill="#ffe84a" fill-opacity=".7"/></g>`;
+}
+
+/** Ken, Nov 1: a unit on the Guard stance wears a black marker circle on the ground (squashed by the board's tilt). */
+export function guardSvg(p: Pt, cw: number, ch: number, uid: string): string {
+  const k = Math.max(0.3, Math.min(1, ch / cw)), r = cw * 0.44, pts: V[] = [], rr = rng(uid + 'g'), a0 = rr() * 6, ph = rr() * 6;
+  for (let i = 0; i <= 32; i++) { const t = i / 32, a = a0 + t * (Math.PI * 2 + 0.7), g = 1 + 0.09 * t + 0.03 * Math.sin(3 * a + ph); pts.push({ x: p.x + Math.cos(a) * r * g, y: p.y / k + Math.sin(a) * r * g }); }
+  return `<path class="ord-guard" d="${pen(pts, Math.max(4, cw * 0.09), k, ph, 0.25)}" fill="#0a0a10" fill-opacity=".72"/>`;
 }

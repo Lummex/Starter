@@ -102,6 +102,8 @@ export function spellCost(s: any, p: Side, card: any) {
   const d = bonusOf(s, p, 'spellDiscount');
   return d ? Math.max(1, card.cost - d.amount) : card.cost;
 }
+/** Ken, Nov 1: the Miner swap's price: 1 Crystal while you have fewer than 3 Miners on the board, 3 Crystals once you have 3 or more (the Miner itself is paid for when you play it). */
+export const swapCost = (s: any, who: Side) => (s.board.creatures.filter((c: any) => c.owner === who && isMiner(CARDS[c.cardId])).length < 3 ? 1 : 3);
 export const canPayCreature = (pl: any, _faction: string, cost: number) => funds(pl) >= cost;
 /** Pays from Flow first, then Bank. */
 function pay(pl: any, cost: number) {
@@ -1104,7 +1106,7 @@ export function legalActions(s: any): any[] {
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of mineTargets(s, c)) out.push({ type: 'mine', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const x of s.sites) if (readyMinersAt(s, who, x).length) out.push({ type: 'mineAt', row: x.row, col: x.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const t of attackTargets(s, c)) out.push({ type: 'attack', creatureUid: c.uid, target: t });
-  if (ph === 'deploy' && !s.flags.swapped && !(pl.lastSwapTurn != null && s.turn - pl.lastSwapTurn < 6) /* Ken, Nov 1: the Miner swap has a penalty: after one, you can't swap again for your next 2 turns (a swap every third turn at most) */ && !pl.hand.some((h: any) => isMiner(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
+  if (ph === 'deploy' && !s.flags.swapped && funds(pl) >= swapCost(s, who) /* Ken, Nov 1: swapping a card for a Miner costs Crystals first (then you still pay for the Miner when you play it) */ && !pl.hand.some((h: any) => isMiner(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
     if (pl.hand.length) for (const h of pl.hand) out.push({ type: 'gathererSwap', discardUid: h.uid });
     else out.push({ type: 'gathererSwap' });
   }
@@ -1388,11 +1390,12 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       break;
     }
     case 'gathererSwap': {
+      pay(pl, swapCost(s, who));
       if (l.discardUid) pl.discard.push(takeHand(l.discardUid));
       const idx = pl.deck.findIndex((d: any) => d.cardId === basicGatherer(pl.faction));
       const g = pl.deck.splice(idx, 1)[0];
       pl.hand.push(g);
-      s.flags.swapped = true; pl.lastSwapTurn = s.turn;
+      s.flags.swapped = true;
       ev.push({ type: 'gathererSwap', player: who, uid: g.uid, cardId: g.cardId });
       break;
     }

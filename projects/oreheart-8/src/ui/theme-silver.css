@@ -424,3 +424,5 @@ html body #app .mb-pc.mb-btn .mb-txt{white-space:nowrap!important;overflow:visib
 /* Ken, Nov 1: the Fight! / Start button at the bottom-right is mirrored: solid on the right, text right-justified, fading to the left */
 html body #app .btn.fight-btn{border-width:0 4px 0 0!important;border-radius:0 3px 3px 0!important;background:linear-gradient(270deg,rgba(6,8,14,.86) 0,rgba(6,8,14,.72) 45%,rgba(6,8,14,0) 100%)!important;text-align:right!important;justify-content:flex-end!important}
 html body #app .btn.fight-btn:is(:hover,:focus-visible):not(:disabled){background:linear-gradient(270deg,rgba(26,34,56,.92) 0,rgba(22,30,50,.78) 50%,rgba(22,30,50,0) 100%)!important}
+/* Ken, Nov 1: "Swap for a Miner" sits on the right: solid on the right, text right-justified, fading to the left */
+html body #app .match .btn.swap-btn{border-width:0 4px 0 0!important;border-radius:0 3px 3px 0!important;background:linear-gradient(270deg,rgba(6,8,14,.86) 0,rgba(6,8,14,.72) 45%,rgba(6,8,14,0) 100%)!important;text-align:right!important;justify-content:flex-end!important}

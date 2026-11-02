@@ -23,7 +23,7 @@ import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
 import { emptyCell } from '../engine';
 import { planOrder, chaseList, UNIT_STANCES, type Order, type OrderPlan, type Stance as UnitStance } from '../engine/orders';
 import { runOrders } from './orders-run';
-import { orderSvg, restTargetSvg, questionSvg, type OrderDrawing } from './order-draw';
+import { orderSvg, restTargetSvg, questionSvg, guardSvg, type OrderDrawing } from './order-draw';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -4534,9 +4534,10 @@ export class App {
     for (const el of this.r.cells.values() as Iterable<El>) if (el.classList.contains('path-end')) el.classList.toggle('path-show', showUids.has(el.dataset.uid || ''));
     const rest = st ? this.orderPlans.filter((x) => x.o.kind === 'chase' && !x.pv && !this.orderShown(x.o.uid, false)) : [];
     // Ken, Nov 1: a unit of yours that has no instruction set (and can still act) wears a yellow highlighter question mark
-    const ordered = new Set(this.orderPlans.map((x) => x.o.uid));
+    const ordered = new Set([...this.orderPlans.map((x) => x.o.uid), ...this.stances.keys()]);
+    const guards = st ? st.board.creatures.filter((c: any) => c.owner === 'player' && this.stances.get(c.uid) === 'guard' && this.orderShown(c.uid, false)) : [];
     const idle = st && !st.winner && st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') ? st.board.creatures.filter((c: any) => c.owner === 'player' && !ordered.has(c.uid) && !isActed(st, c)) : [];
-    if (!shown.length && !rest.length && !idle.length) { if (svg.firstChild) svg.replaceChildren(); return; }
+    if (!shown.length && !rest.length && !idle.length && !guards.length) { if (svg.firstChild) svg.replaceChildren(); return; }
     const centre = (row: number, col: number) => {
       const q = view.cellQuad?.(row, col) || [];
       if (q.length) return { x: q.reduce((a: number, p: any) => a + p.x, 0) / q.length, y: q.reduce((a: number, p: any) => a + p.y, 0) / q.length };
@@ -4553,7 +4554,7 @@ export class App {
       const rc = view.cellRect(endQ.row, endQ.col);
       const sq = [{ row: c.row, col: c.col }, ...p.path];
       if (o.kind === 'move' && (p.blocked || !p.path.length)) sq.push(endQ);
-      const d: OrderDrawing = { uid: o.uid, kind: o.kind, pts: sq.map((q) => centre(q.row, q.col)), end: centre(endQ.row, endQ.col), cw: rc.w, ch: rc.h, preview: pv, blocked: p.blocked, ranged: !!(CARDS[c.cardId]?.abilities || []).some((a: string) => a === 'ranged' || a === 'overwatch') };
+      const d: OrderDrawing = { uid: o.uid, kind: o.kind, pts: sq.map((q) => centre(q.row, q.col)), end: centre(endQ.row, endQ.col), cw: rc.w, ch: rc.h, preview: pv, blocked: p.blocked, ranged: !!(CARDS[c.cardId]?.abilities || []).some((a: string) => a === 'ranged' || a === 'overwatch'), swap: o.kind === 'move' && !!st.board.creatures.find((x: any) => x.owner === c.owner && x.uid !== c.uid && x.row === endQ.row && x.col === endQ.col) };
       if (o.kind === 'chase') {
         d.pts.push(d.end);
         // the rest of its list, numbered: every target still on the board
@@ -4566,6 +4567,7 @@ export class App {
       const tgt = o.kind === 'chase' ? chaseList(o).map((u) => this.orderUnit(st, u)).find(Boolean) : null;
       if (tgt) { const rc = view.cellRect(tgt.row, tgt.col); html += restTargetSvg(centre(tgt.row, tgt.col), rc.w, rc.h); }
     }
+    for (const c of guards) { const rc = view.cellRect(c.row, c.col); html += guardSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); }
     for (const c of idle) { const rc = view.cellRect(c.row, c.col); html += questionSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); }
     svg.innerHTML = html;
   }
