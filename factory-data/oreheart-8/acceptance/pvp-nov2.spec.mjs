@@ -28,10 +28,12 @@ test.afterAll(() => { if (mockProc) { try { mockProc.kill(); } catch { /* gone *
 
 const letters = (n) => Array.from({ length: n }, () => 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]).join('');
 const who = (name) => name + letters(6);
-async function call(user, body) {
-  const r = await fetch(MOCK + '/match', { method: 'POST', headers: { 'content-type': 'application/json', 'x-mock-user': user }, body: JSON.stringify(body) });
+// the API checks play hundreds of moves, so they ask the stand-in server for no minimum Respond window; AC670 checks the real rule with `callAsReal`
+async function call(user, body, extra = { 'x-mock-respond-min': '0' }) {
+  const r = await fetch(MOCK + '/match', { method: 'POST', headers: { 'content-type': 'application/json', 'x-mock-user': user, ...extra }, body: JSON.stringify(body) });
   return r.json();
 }
+const callAsReal = (user, body) => call(user, body, {});
 const viewOf = async (matchId, user) => (await (await fetch(`${MOCK}/debug/views?matchId=${matchId}&user=${user}`)).json()).view;
 const movesOf = async (matchId) => (await (await fetch(`${MOCK}/debug/moves?matchId=${matchId}`)).json()).moves;
 async function startMatch() {
@@ -204,6 +206,39 @@ test('AC606 the clock lives on the server: Done moves the deadline, and a Respon
   }
   expect(sawRespond).toBe(true);
   expect(va.deadline === null || va.deadline !== d0).toBe(true);
+});
+
+test('AC670 no Respond window closes under 2 s: a quick pass straight to the server is refused, the same pass at 2 s goes through, and the attacker sees nothing of it', async () => {
+  test.setTimeout(60_000);
+  const { a, b, matchId } = await startMatch();
+  let va = await viewOf(matchId, a), vb = await viewOf(matchId, b);
+  let opened = 0, attacker = null, responder = null;
+  for (let n = 0; n < 40 && !opened; n++) {
+    const v = engine.legalActions(va.state).length ? va : vb, me = v === va ? a : b, them = v === va ? b : a;
+    const legal = engine.legalActions(v.state).filter((x) => x.type !== 'surrender');
+    const act = legal.find((x) => x.type === 'summon') || legal.find((x) => x.type === 'mulligan') || legal.find((x) => x.type === 'done');
+    const r = await callAsReal(me, { op: 'act', matchId, seq: v.seq, action: act });
+    expect(r.ok, r.error).toBe(true);
+    if (r.view.respondDeadline) { opened = Date.now(); attacker = me; responder = them; }
+    va = await viewOf(matchId, a); vb = await viewOf(matchId, b);
+  }
+  expect(opened, 'a summon opened a window').toBeGreaterThan(0);
+  const seq = va.seq, seenBefore = await viewOf(matchId, attacker);
+  let refused = 0;
+  while (Date.now() - opened < 1500) {
+    const p = await callAsReal(responder, { op: 'act', matchId, seq, action: { type: 'pass' } });
+    expect(p.ok, 'a pass before 2 s').toBe(false);
+    expect(p.tooSoonMs).toBeGreaterThan(0); expect(p.tooSoonMs).toBeLessThanOrEqual(2000);
+    refused++;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  expect(refused).toBeGreaterThan(3);
+  expect(await viewOf(matchId, attacker), 'the attacker sees nothing change').toEqual(seenBefore);
+  expect(JSON.stringify(seenBefore)).not.toContain('respondOpenedAt');
+  await new Promise((r) => setTimeout(r, Math.max(0, opened + 2100 - Date.now())));
+  const ok = await callAsReal(responder, { op: 'act', matchId, seq, action: { type: 'pass' } });
+  expect(ok.ok, ok.error).toBe(true);
+  expect(ok.view.respondDeadline).toBeNull();
 });
 
 test('AC607 a player can be in one match at a time, and a finished match frees them', async () => {

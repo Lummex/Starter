@@ -208,7 +208,7 @@ export class PvpService {
       const before = m.seq;
       const r = playerAction(m, user.userId, seq, body?.action, now, this.rules);
       await this.store.logMove({ matchId: m.id, seq: before, userId: user.userId, action: body?.action ?? null, ok: r.ok, error: r.ok ? null : r.error ?? null, ms: Date.now() - t0 });
-      if (!r.ok) return { ok: false, error: r.error, view: viewFor(m, seat, []) };
+      if (!r.ok) return { ok: false, error: r.error, tooSoonMs: r.tooSoonMs, view: viewFor(m, seat, []) };
       const saved = await this.store.updateMatch(m, before);
       if (!saved) {
         const fresh = await this.store.getMatch(m.id);

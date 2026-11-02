@@ -3647,7 +3647,7 @@ export class App {
     else if (!this.test) { (bar.firstChild as El).style.animationDuration = CONFIG.respondWindowSeconds + 's'; (bar.firstChild as El).style.animationDelay = -((Date.now() - this.respStart) / 1000) + 's'; }
     else (bar.firstChild as El).style.animation = 'none';
     const d = this.dialog('Respond?', [h('h2', {}, 'Respond?'), bar, cardBox, h('p', { class: 'resp-what', style: 'text-align:center;margin:0 0 6px' }, what),
-      h('div', { class: 'menu-list' }, ...buttons.map((b) => { b.classList.add('mframe'); b.style.setProperty('--coin', `url(${MATCH_ART('respond')})`); return b; }), coinOnly(btn('Let it happen', 'primary let-it-btn', () => { finish(); this.game.act({ type: 'pass' }); }), 'let-it-happen', 'Let it happen'))]);
+      h('div', { class: 'menu-list' }, ...buttons.map((b) => { b.classList.add('mframe'); b.style.setProperty('--coin', `url(${MATCH_ART('respond')})`); return b; }), coinOnly(btn('Let it happen', 'primary let-it-btn', () => { finish(); if (this.netGame) this.autoLetItHappen(what); else this.game.act({ type: 'pass' }); }), 'let-it-happen', 'Let it happen'))]);
     d.el.dataset.sticky = '1';
     d.el.firstElementChild?.classList.add('respond-dlg');
     this.respDlg = d;
@@ -3665,11 +3665,12 @@ export class App {
     }
   }
 
-  /** PvP, no counter to play: a small note saying what the enemy is doing, and after a fixed 2 s the pass goes to the server. The board stays usable. */
+  /** PvP, no counter to play, or a holder who chose "Let it happen": a small note saying what the enemy is doing, and 2 s after the window came up here the pass goes to
+   *  the server. Both go by the same moment, so a quick click looks just like holding nothing (Gauge, Nov 2). The board stays usable. */
   private autoLetItHappen(what: string) {
     const note = h('div', { class: 'pvp-resp-note', role: 'status', 'data-testid': 'pvp-auto-pass' }, what);
     document.body.append(note);
-    const ms = (window as any).__pvpAutoPassMs ?? 2000;
+    const ms = Math.max(0, this.respStart + ((window as any).__pvpAutoPassMs ?? 2000) - Date.now());
     const t = setTimeout(() => { if (this.respDlg === d) { d.close(); this.respDlg = null; } this.game.act({ type: 'pass' }); }, ms);
     const d = { auto: true, close: () => { clearTimeout(t); note.remove(); } };
     this.respDlg = d;

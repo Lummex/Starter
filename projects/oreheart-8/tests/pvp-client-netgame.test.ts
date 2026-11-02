@@ -94,6 +94,33 @@ describe('NetGame acts', () => {
     expect(evs[evs.length - 1]).toEqual([{ type: 'sync' }]);
     g.act({ type: 'done' }); await flush(); await flush(); expect(errors).toEqual(['Not your turn']);
   });
+  it('holds an answer to a Respond window until 2 s after the window came up, and waits again when the server says too soon', async () => {
+    const s = deployState();
+    s.pendingResponse = { kind: 'summon', actor: 'opponent', responder: 'player', card: { uid: 'x', cardId: 'shiv-rat' }, target: null };
+    let refuse = 1;
+    const srv = fakeServer((op) => { if (op !== 'act') return { ok: true }; if (refuse-- > 0) return { ok: false, error: 'Too soon', tooSoonMs: 20 }; return { ok: true }; });
+    const g = new NetGame(srv.t, 'm1', makeView(s, 1));
+    g.respondMinMs = 60;
+    const errors: string[] = [];
+    g.onError = (m) => errors.push(m);
+    expect(g.act({ type: 'pass' }).ok).toBe(true);
+    await new Promise((r) => setTimeout(r, 25));
+    expect(srv.calls.filter((c) => c.op === 'act').length).toBe(0); // still held
+    await new Promise((r) => setTimeout(r, 120));
+    expect(srv.calls.filter((c) => c.op === 'act').length).toBe(2); // sent, told too soon, sent again
+    expect(errors).toEqual([]);
+  });
+  it('drops a held pass when the window closed meanwhile', async () => {
+    const s = deployState();
+    s.pendingResponse = { kind: 'summon', actor: 'opponent', responder: 'player', card: { uid: 'x', cardId: 'shiv-rat' }, target: null };
+    const srv = fakeServer(() => ({ ok: true }));
+    const g = new NetGame(srv.t, 'm1', makeView(s, 1));
+    g.respondMinMs = 30;
+    g.act({ type: 'pass' });
+    g.applyView(makeView(deployState(), 2));
+    await new Promise((r) => setTimeout(r, 60));
+    expect(srv.calls.filter((c) => c.op === 'act').length).toBe(0);
+  });
   it('surrender goes to the forfeit op', async () => {
     const s = deployState();
     const srv = fakeServer((op) => (op === 'forfeit' ? { ok: true, view: makeView(s, 2, { status: 'over', result: { won: false, reason: 'surrender' } }) } : { ok: true }));

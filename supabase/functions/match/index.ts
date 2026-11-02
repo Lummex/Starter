@@ -91,10 +91,10 @@ class SupabaseStore {
   random() { const u = new Uint32Array(1); crypto.getRandomValues(u); return u[0] / 4294967296; }
   /** Ken's clock numbers from `settings` (admin-editable), with the game's defaults when unset. */
   async rules() {
-    const keys = ['pvp_phase_seconds', 'pvp_bank_seconds', 'pvp_respond_seconds', 'pvp_timeouts_to_forfeit'];
+    const keys = ['pvp_phase_seconds', 'pvp_bank_seconds', 'pvp_respond_seconds', 'pvp_timeouts_to_forfeit', 'pvp_respond_min_seconds'];
     const { data } = await this.db.from('settings').select('key,value').in('key', keys);
     const get = (k: string, d: number) => { const row = (data || []).find((r: any) => r.key === k); const n = row ? Number(row.value) : NaN; return Number.isFinite(n) && n > 0 ? n : d; };
-    return { phaseSeconds: get('pvp_phase_seconds', DEFAULT_RULES.phaseSeconds), bankSeconds: get('pvp_bank_seconds', DEFAULT_RULES.bankSeconds), respondSeconds: get('pvp_respond_seconds', DEFAULT_RULES.respondSeconds), timeoutsToForfeit: get('pvp_timeouts_to_forfeit', DEFAULT_RULES.timeoutsToForfeit) };
+    return { phaseSeconds: get('pvp_phase_seconds', DEFAULT_RULES.phaseSeconds), bankSeconds: get('pvp_bank_seconds', DEFAULT_RULES.bankSeconds), respondSeconds: get('pvp_respond_seconds', DEFAULT_RULES.respondSeconds), timeoutsToForfeit: get('pvp_timeouts_to_forfeit', DEFAULT_RULES.timeoutsToForfeit), respondMinSeconds: get('pvp_respond_min_seconds', DEFAULT_RULES.respondMinSeconds!) };
   }
 }
 

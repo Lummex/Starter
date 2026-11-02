@@ -16,7 +16,7 @@ const bundlePath = resolve(here, '.build/pvp-server.mjs');
 const newest = (dir) => Math.max(0, ...readdirSync(dir).map((f) => statSync(resolve(dir, f)).mtimeMs));
 const srcTime = Math.max(newest(resolve(here, '../src/engine')), newest(resolve(here, '../src/server')), newest(resolve(here, '../src/content')));
 if (!existsSync(bundlePath) || statSync(bundlePath).mtimeMs < srcTime) { console.log('bundling the engine...'); execFileSync(process.execPath, [resolve(here, 'bundle-engine.mjs')], { stdio: 'inherit' }); }
-const { PvpService, MemoryStore, setDiceMode, ENGINE_VERSION, summarize } = await import('./.build/pvp-server.mjs');
+const { PvpService, MemoryStore, setDiceMode, ENGINE_VERSION, summarize, DEFAULT_RULES, viewsFor } = await import('./.build/pvp-server.mjs');
 
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 setDiceMode('live'); // the referee rolls fresh dice, like the real server
@@ -24,6 +24,8 @@ const port = Number(process.argv[2] || process.env.PVP_MOCK_PORT || 4310);
 const store = new MemoryStore(() => { const u = new Uint32Array(1); crypto.getRandomValues(u); return u[0] / 4294967296; });
 store.newId = () => crypto.randomUUID();
 const service = new PvpService(store, { engineVersion: ENGINE_VERSION + '-mock', summarize });
+// API checks that play hundreds of moves ask for no minimum Respond window with this header; browsers and the real function never have it
+const noMinService = new PvpService(store, { engineVersion: ENGINE_VERSION + '-mock', summarize, rules: { ...DEFAULT_RULES, respondMinSeconds: 0 } });
 const users = new Map();
 const userOf = (name) => {
   const n = String(name || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 16);
@@ -38,6 +40,19 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') return json(res, 204, {});
   if (url.pathname === '/health') return json(res, 200, { ok: true, engine: ENGINE_VERSION, matches: store.matches.size, rooms: store.rooms.size });
   if (url.pathname === '/debug/views' && req.method === 'GET') { const v = store.viewOf(url.searchParams.get('matchId'), 'mock-' + url.searchParams.get('user')); return json(res, 200, { ok: !!v, view: v }); }
+  if (url.pathname === '/debug/give' && req.method === 'GET') { // checks only: puts a card in a player's hand with crystals to pay for it
+    const m = await store.getMatch(url.searchParams.get('matchId'));
+    const u = users.get(url.searchParams.get('user'));
+    const seat = m && u ? (m.players.a.userId === u.userId ? 'a' : m.players.b.userId === u.userId ? 'b' : null) : null;
+    if (!seat) return json(res, 200, { ok: false });
+    const p = m.state.players[seat === 'a' ? 'player' : 'opponent'];
+    p.hand.push({ uid: 'give' + m.seq, cardId: url.searchParams.get('card') });
+    p.bank = 40; m.state.factionLock = false;
+    const before = m.seq++;
+    await store.updateMatch(m, before);
+    await store.putViews(m, viewsFor(m, []));
+    return json(res, 200, { ok: true });
+  }
   if (url.pathname === '/debug/moves' && req.method === 'GET') return json(res, 200, { ok: true, moves: store.moves.filter((m) => m.matchId === url.searchParams.get('matchId')) });
   if (url.pathname !== '/match' || req.method !== 'POST') return json(res, 404, { ok: false, error: 'not found' });
   const user = userOf(req.headers['x-mock-user'] || url.searchParams.get('user'));
@@ -45,7 +60,7 @@ const server = http.createServer(async (req, res) => {
   let body = '';
   for await (const chunk of req) { body += chunk; if (body.length > 200_000) return json(res, 413, { ok: false, error: 'too big' }); }
   let b; try { b = body ? JSON.parse(body) : {}; } catch { return json(res, 400, { ok: false, error: 'bad JSON' }); }
-  const out = await service.handle(String(b.op || ''), b, user, Date.now());
+  const out = await (req.headers['x-mock-respond-min'] === '0' ? noMinService : service).handle(String(b.op || ''), b, user, Date.now());
   json(res, 200, out);
 });
 server.listen(port, '127.0.0.1', () => console.log(`pvp mock server on http://127.0.0.1:${port}/match (engine ${ENGINE_VERSION})`));

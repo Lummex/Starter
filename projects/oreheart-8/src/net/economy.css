@@ -220,7 +220,7 @@ html body .econ-screen .shop-pack .net-btn{padding-inline:calc(var(--sv-cap) * .
 .q-row{padding:clamp(12px,2.6vh,20px) clamp(18px,2.4vw,28px)}
 /* filter chips: the painted phase chip, lit when chosen */
 html body .net-race{border:0 solid transparent;border-radius:0;box-shadow:none;background:none;padding:4px 28px;border-image:url(/art/ui/match/frame-chip.webp) 40 60 fill / 8px 18px stretch;color:#e6ebf5;-webkit-text-fill-color:#e6ebf5}
-html body .net-race:hover,html body .net-race[aria-pressed=true]{border-image-source:url(/art/ui/match/frame-chip-lit.webp);filter:hue-rotate(95deg);box-shadow:none;color:#fff;-webkit-text-fill-color:#fff;text-shadow:0 0 .4em #dfe8f7,0 1px 2px #000}
+html body .net-race:hover,html body .net-race[aria-pressed=true]{border-image-source:url(/art/ui/leftovers/chip-chosen.webp);box-shadow:none;color:#fff;-webkit-text-fill-color:#fff;text-shadow:0 0 .4em #dfe8f7,0 1px 2px #000}
 /* Reroll: a small gem button */
 html body .econ-screen .net-btn.q-reroll{min-height:42px;font-size:.95rem;gap:2px;white-space:nowrap}
 .q-list{gap:clamp(16px,3vh,24px)}
@@ -234,9 +234,9 @@ html body .econ-screen .net-btn.q-reroll{min-height:42px;font-size:.95rem;gap:2p
 .q-dots i.on{background:url(/art/packs/icons/quest-done.webp) center/contain no-repeat;opacity:1}
 /* owned counts: the painted blank coin */
 .col-badge,.db-tile .db-owned{display:grid;place-items:center;min-width:0;width:clamp(34px,3.2vw,46px);height:clamp(34px,3.2vw,46px);padding:0;border:0;border-radius:0;box-shadow:none;background:url(/art/ui/match/count-blank.webp) center/contain no-repeat;font:700 clamp(.78rem,1vw,1rem) "Alegreya SC",Georgia,serif;text-shadow:0 1px 2px #000,0 0 3px #000}
-/* no lock picture yet (asked of Brush): unowned cards are simply greyed */
-.col-lock{display:none}
-.db-tile.unowned .db-owned{display:none}
+/* unowned: greyed, with Brush's painted lock on its coin in the corner (the coin keeps it readable on busy art) */
+.col-lock{left:auto;right:4px;top:4px;transform:none;width:clamp(28px,20%,40px);aspect-ratio:1;font-size:0;background:url(/art/ui/leftovers/lock-coin.webp) center/contain no-repeat;filter:drop-shadow(0 1px 3px #000)}
+html body .db-tile.unowned .db-owned{display:block;left:auto;right:3px;top:3px;bottom:auto;transform:none;width:clamp(24px,20%,34px);height:auto;aspect-ratio:1;font-size:0;color:transparent;-webkit-text-fill-color:transparent;background:url(/art/ui/leftovers/lock-coin.webp) center/contain no-repeat;filter:drop-shadow(0 1px 3px #000)}
 /* FREE and NEW: white on the painted lit chip, readable */
 .shop-free{top:8px;right:-4px;padding:4px 20px;filter:hue-rotate(95deg);color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 2px #000,0 0 4px #000!important;font:italic 700 1rem "Alegreya SC",Georgia,serif;letter-spacing:.02em;background:none;border:0 solid transparent;border-radius:0;box-shadow:0 2px 6px #0007;border-image:url(/art/ui/match/frame-chip-lit.webp) 40 60 fill / 12px 20px stretch}
 .pko-new{padding:2px 16px;filter:hue-rotate(95deg);color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 2px #000,0 0 4px #000!important;font:italic 700 clamp(.72rem,1.7vh,.95rem) "Alegreya SC",Georgia,serif;letter-spacing:.02em;background:none;border:0 solid transparent;border-radius:0;box-shadow:none;border-image:url(/art/ui/match/frame-chip-lit.webp) 40 60 fill / 10px 16px stretch}
@@ -265,6 +265,6 @@ html body .econ-screen .net-btn.pko-leave{position:absolute;left:0;top:50%;trans
   .pko-head{min-height:36px}
   .q-row{padding:10px 18px}
   .shop-pack{padding:10px 12px}
-  .econ-head{padding-top:26px;padding-bottom:6px}
+  .econ-head{padding-top:26px;padding-bottom:6px;background:linear-gradient(#080a10 86%,rgba(8,10,16,0))}
   .econ-screen:not(.pko-screen){--econ-pad:10px}
 }

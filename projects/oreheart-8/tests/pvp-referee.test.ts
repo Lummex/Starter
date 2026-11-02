@@ -270,6 +270,82 @@ describe('PvP referee', () => {
     expect((await store.getMatch(matchId))!.clock.timeouts.b).toBe(2);
   });
 
+  describe('no Respond window closes under 2 s (Gauge, Nov 2: a quick close showed the player held a counter)', () => {
+    async function windowOpen(seed: number, opponentHand: string[]) {
+      const { store, svc, matchId } = await freshMatch(seed);
+      const rec = (await store.getMatch(matchId))!;
+      const setup = { playerHand: ['shiv-rat', 'shiv-rat'], opponentHand, playerCrystals: 40, opponentCrystals: 40, board: [], firstPlayer: 'player' };
+      rec.state = createMatch({ seed: 1, setup, mines: [{ row: 4, col: 2 }, { row: 4, col: 4 }, { row: 4, col: 6 }], factionLock: false, pvp: true });
+      rec.clock.deadline = T0 + 120 * SEC;
+      await store.updateMatch(rec, rec.seq);
+      const v = (await svc.handle('state', { matchId }, alice, T0 + SEC)).view as View;
+      const summon = legalActions(v.state).find((a: any) => a.type === 'summon');
+      const opened = T0 + 2 * SEC;
+      const r = await svc.handle('act', { matchId, seq: v.seq, action: summon }, alice, opened);
+      expect(r.ok, r.error).toBe(true);
+      return { store, svc, matchId, opened, attacker: r.view as View };
+    }
+    it('refuses a quick pass, however often it is tried, and takes the same pass at 2 s', async () => {
+      const { store, svc, matchId, opened, attacker } = await windowOpen(61, []);
+      const before = (await store.getMatch(matchId))!;
+      const seq = before.seq;
+      for (const ms of [0, 1, 500, 1000, 1999]) {
+        const p = await svc.handle('act', { matchId, seq, action: { type: 'pass' } }, bob, opened + ms);
+        expect(p.ok, `pass at ${ms} ms`).toBe(false);
+        expect(p.tooSoonMs).toBe(2000 - ms);
+      }
+      const after = (await store.getMatch(matchId))!;
+      expect(after.seq).toBe(seq);
+      expect(after.state.pendingResponse).toBeTruthy();
+      expect(after.clock.respondDeadline).toBe(before.clock.respondDeadline); // a refused pass moves no clock, so the attacker sees nothing of it
+      expect(store.viewOf(matchId, alice.userId)).toEqual(attacker);
+      const p = await svc.handle('act', { matchId, seq, action: { type: 'pass' } }, bob, opened + 2000);
+      expect(p.ok, p.error).toBe(true);
+      expect((await store.getMatch(matchId))!.state.pendingResponse).toBeNull();
+    });
+    it('goes for every way to answer: a counter waits too, a crystal stays inside the window, and giving up does not wait', async () => {
+      const { store, svc, matchId, opened } = await windowOpen(62, ['hold-it', 'crystal-cluster']);
+      const seq = (await store.getMatch(matchId))!.seq;
+      const legal = legalActions(store.viewOf(matchId, bob.userId)!.state);
+      const counter = legal.find((a: any) => a.type === 'respond');
+      expect(counter, JSON.stringify(legal.map((a: any) => a.type))).toBeTruthy();
+      const quick = await svc.handle('act', { matchId, seq, action: counter }, bob, opened + 100);
+      expect(quick.ok).toBe(false);
+      expect(quick.tooSoonMs).toBe(1900);
+      const crystal = legal.find((a: any) => a.type === 'playCrystal');
+      if (crystal) {
+        const c = await svc.handle('act', { matchId, seq, action: crystal }, bob, opened + 200);
+        expect(c.ok, c.error).toBe(true);
+        const still = await svc.handle('act', { matchId, seq: c.view.seq, action: { type: 'pass' } }, bob, opened + 1900); // the crystal did not restart or end the window
+        expect(still.tooSoonMs).toBe(100);
+      }
+      const seq2 = (await store.getMatch(matchId))!.seq;
+      const giveUp = await svc.handle('act', { matchId, seq: seq2, action: { type: 'surrender' } }, bob, opened + 300);
+      expect(giveUp.ok, giveUp.error).toBe(true);
+      expect((await store.getMatch(matchId))!.status).toBe('finished');
+    });
+    it('gives each new window its own 2 s, and a run-out still comes at 12 s', async () => {
+      const { store, svc, matchId, opened } = await windowOpen(63, []);
+      const seq = (await store.getMatch(matchId))!.seq;
+      expect((await svc.handle('act', { matchId, seq, action: { type: 'pass' } }, bob, opened + 2500)).ok).toBe(true);
+      const v = store.viewOf(matchId, alice.userId)!;
+      const summon = legalActions(v.state).find((a: any) => a.type === 'summon');
+      const second = opened + 3000;
+      const r = await svc.handle('act', { matchId, seq: v.seq, action: summon }, alice, second);
+      expect(r.ok, r.error).toBe(true);
+      expect((await svc.handle('act', { matchId, seq: r.view.seq, action: { type: 'pass' } }, bob, second + 1500)).tooSoonMs).toBe(500);
+      await svc.handle('tick', { matchId }, alice, second + 11 * SEC);
+      expect((await store.getMatch(matchId))!.state.pendingResponse).toBeTruthy();
+      await svc.handle('tick', { matchId }, alice, second + 12 * SEC);
+      expect((await store.getMatch(matchId))!.state.pendingResponse).toBeNull();
+    });
+    it('keeps when the window opened out of both views', async () => {
+      const { store, matchId } = await windowOpen(64, []);
+      expect((await store.getMatch(matchId))!.clock.respondOpenedAt).toBeTruthy();
+      for (const u of [alice, bob]) expect(JSON.stringify(store.viewOf(matchId, u.userId))).not.toContain('respondOpenedAt');
+    });
+  });
+
   it('never applies two moves on one seq (compare-and-swap)', async () => {
     const { store, svc, matchId } = await freshMatch(41);
     const orig = store.updateMatch.bind(store);

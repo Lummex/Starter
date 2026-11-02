@@ -146,6 +146,10 @@ export class NetGame {
   /** ms since epoch (server clock) or null */
   deadline: number | null = null;
   respondDeadline: number | null = null;
+  /** when this browser first saw the Respond window it must answer; answers wait until respondMinMs after that (the server refuses sooner) */
+  private windowSeenAt: number | null = null;
+  private windowSeen = '';
+  respondMinMs = 2000;
   bank = { me: 0, them: 0 };
   timeouts = { me: 0, them: 0 };
   names = { me: '', them: '' };
@@ -186,6 +190,9 @@ export class NetGame {
     this.view = v;
     this.seq = seq;
     const st = clone(v.state);
+    const pend = st.pendingResponse;
+    const key = pend && pend.responder === 'player' ? JSON.stringify([pend.kind, pend.actor, pend.creatureUid ?? null, pend.card?.uid ?? null, pend.target ?? null]) : '';
+    if (key !== this.windowSeen) { this.windowSeen = key; this.windowSeenAt = key ? this.now() : null; }
     if (this.status === 'over' && st.phase !== 'over') { st.phase = 'over'; if (!st.winner && this.result) st.winner = this.result.won ? 'player' : 'opponent'; }
     this.state = st;
     if (!this.queue.length && !this.sending) this.predicted = null;
@@ -300,8 +307,16 @@ export class NetGame {
   /** One act round trip. On refusal the returned view (or a fresh read) puts the board back to the server's. */
   async send(a: any): Promise<{ ok: boolean; error?: string }> {
     let r: any;
-    try { r = await this.t.call('act', { matchId: this.matchId, seq: this.seq, action: a }); }
-    catch { this.log({ action: a, ok: false, error: 'offline', seq: this.seq }); await this.sync(); return { ok: false, error: "Can't reach the server. Try that again." }; }
+    const answers = a.type === 'pass' || a.type === 'respond' || (a.type === 'ability' && a.ability === 'brew');
+    for (let tries = 0; ; tries++) {
+      // Nov 2 (Gauge): no Respond window closes under 2 s, so a quick answer can't show you hold something. It waits here; a clock a little out with the server's gets told how much longer.
+      if (answers && this.windowSeenAt != null) { const left = this.windowSeenAt + this.respondMinMs - this.now(); if (left > 0) await new Promise((res) => setTimeout(res, left)); }
+      if (a.type === 'pass' && !this.windowSeen) return { ok: true }; // the window already closed while this waited (the server passed)
+      try { r = await this.t.call('act', { matchId: this.matchId, seq: this.seq, action: a }); }
+      catch { this.log({ action: a, ok: false, error: 'offline', seq: this.seq }); await this.sync(); return { ok: false, error: "Can't reach the server. Try that again." }; }
+      if (!(r && r.tooSoonMs > 0) || tries >= 3) break;
+      await new Promise((res) => setTimeout(res, r.tooSoonMs + 30));
+    }
     if (r && r.ok) { this.log({ action: a, ok: true, seq: r.view?.seq ?? this.seq }); if (r.view) this.applyView(r.view); return { ok: true }; }
     const error = String(r?.error || 'Refused');
     this.log({ action: a, ok: false, error, seq: this.seq });
@@ -434,11 +449,39 @@ function picker() {
     const c = (COMMANDERS as any)[id];
     const b = h('button', { type: 'button', class: 'pvp-cmd', role: 'radio', 'aria-checked': String(id === cmd), 'aria-label': c.name, 'data-commander': id, 'data-faction': c.faction, title: c.name },
       h('img', { src: portrait(id), alt: '', draggable: 'false' }), h('span', { class: 'pvp-cmd-name', 'aria-hidden': 'true' }, ({ grubnak: 'Grubnak', sproingle: 'Knobbin', borgo: 'Borgo' } as Record<string, string>)[id] || String(c.name).split(/[ ,]/)[0]));
-    b.addEventListener('click', () => { cmd = id; cmdRow.querySelectorAll('.pvp-cmd').forEach((x) => x.setAttribute('aria-checked', String((x as El).dataset.commander === id))); fillDecks(); });
+    b.addEventListener('click', () => { cmd = id; cmdRow.querySelectorAll('.pvp-cmd').forEach((x) => x.setAttribute('aria-checked', String((x as El).dataset.commander === id))); fillDecks(); sel.dispatchEvent(new Event('deckschanged')); });
     cmdRow.append(b);
   }
   fillDecks();
-  const el = h('div', { class: 'pvp-picker' }, cmdRow, h('label', { class: 'pvp-deck-label' }, h('span', {}, 'Deck'), sel));
+  // the deck list, painted (Gauge, Nov 2: open, the browser's own list showed): the real <select> stays underneath and holds the value
+  sel.classList.remove('pvp-deck'); sel.classList.add('pvp-deck-native'); sel.tabIndex = -1; sel.setAttribute('aria-hidden', 'true');
+  const deckBtn = h('button', { type: 'button', class: 'net-input pvp-deck', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-label': 'Deck', 'data-testid': 'pvp-deck-open' });
+  const deckMenu = h('div', { class: 'pvp-deck-menu', role: 'listbox', 'aria-label': 'Deck', hidden: true });
+  const showDeck = () => { deckBtn.textContent = sel.selectedOptions[0]?.textContent || 'Pick a deck'; };
+  const closeDeck = (focus = false) => { deckMenu.hidden = true; deckBtn.setAttribute('aria-expanded', 'false'); if (focus) deckBtn.focus(); };
+  const pickDeck = (v: string) => { sel.value = v; showDeck(); closeDeck(true); };
+  const openDeck = () => {
+    deckMenu.replaceChildren();
+    for (const g of Array.from(sel.querySelectorAll('optgroup'))) {
+      deckMenu.append(h('div', { class: 'pvp-deck-group', role: 'presentation' }, g.label));
+      for (const o of Array.from(g.querySelectorAll('option'))) deckMenu.append(h('button', { type: 'button', class: 'pvp-deck-item', role: 'option', 'aria-selected': String(o.value === sel.value), 'data-deck': o.value, onclick: () => pickDeck(o.value) }, o.textContent));
+    }
+    // fixed, because the panel around it clips; it opens upward and scrolls when the room above is short (a phone)
+    const box = deckBtn.getBoundingClientRect();
+    Object.assign(deckMenu.style, { left: box.left + 'px', minWidth: box.width + 'px', bottom: (window.innerHeight - box.top + 6) + 'px', maxHeight: Math.max(120, box.top - 34) + 'px' });
+    deckMenu.hidden = false; deckBtn.setAttribute('aria-expanded', 'true');
+    ((deckMenu.querySelector('[aria-selected=true]') || deckMenu.querySelector('.pvp-deck-item')) as El | null)?.focus();
+  };
+  deckBtn.addEventListener('click', () => { if (deckMenu.hidden) openDeck(); else closeDeck(); });
+  deckMenu.addEventListener('keydown', (e: KeyboardEvent) => {
+    const items = Array.from(deckMenu.querySelectorAll('.pvp-deck-item')) as El[], at = items.indexOf(document.activeElement as El);
+    if (e.key === 'Escape') { e.stopPropagation(); closeDeck(true); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); items[(at + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length]?.focus(); }
+  });
+  deckMenu.addEventListener('focusout', (e: FocusEvent) => { if (!deckMenu.hidden && !deckMenu.contains(e.relatedTarget as Node) && e.relatedTarget !== deckBtn) closeDeck(); });
+  sel.addEventListener('deckschanged', showDeck);
+  showDeck();
+  const el = h('div', { class: 'pvp-picker' }, cmdRow, h('div', { class: 'pvp-deck-label' }, h('span', {}, 'Deck'), h('div', { class: 'pvp-deck-box' }, deckBtn, deckMenu, sel)));
   return {
     el,
     value(): { commander: string; deckId?: string; cards?: string[] } {

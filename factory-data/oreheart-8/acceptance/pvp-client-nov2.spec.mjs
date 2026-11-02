@@ -364,6 +364,64 @@ test('AC610: holding no counter you can play, there is no Respond dialog and no 
   await closeAll(a, b);
 });
 
+test('AC671: a holder who clicks "Let it happen" at once looks the same as holding nothing: the window lasts at least 2 s for the attacker, no pass is refused', async ({ browser }) => {
+  test.setTimeout(120000);
+  const { a, b } = await pair(browser);
+  await keepHands(a, b);
+  const [me, them] = await whoseTurn(a, b);
+  const v = await view(them);
+  const give = await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/give?matchId=${v.matchId}&user=${encodeURIComponent(v.names.me)}&card=hold-it`);
+  expect((await give.json()).ok).toBe(true);
+  await expect.poll(async () => (await view(them)).state.players.player.hand.some((h) => h.cardId === 'hold-it'), { timeout: 8000 }).toBe(true);
+  const held = await view(them);
+  const summon = (await me.evaluate(async () => await window.oreheart.legalActions())).find((x) => x.type === 'summon');
+  expect(await me.evaluate(async (x) => await window.oreheart.act(x), summon)).toMatchObject({ ok: true });
+  await expect.poll(async () => { const w = await view(me); return !!w.state.pendingResponse; }, { timeout: 8000 }).toBe(true);
+  const t0 = Date.now();
+  const letIt = them.getByRole('button', { name: 'Let it happen' });
+  await letIt.click({ timeout: 8000 });
+  await expect(them.locator('.respond-dlg')).toHaveCount(0);
+  await expect(them.locator('[data-testid=pvp-auto-pass]')).toBeVisible(); // the same note as holding nothing, not a frozen board
+  await expect.poll(async () => (await view(me)).state.pendingResponse, { timeout: 8000, intervals: [50] }).toBeNull();
+  const ms = Date.now() - t0;
+  expect(ms, 'the attacker waited at least about 2 s').toBeGreaterThan(1500);
+  expect(ms).toBeLessThan(5000);
+  expect(held.state.players.player.hand.some((h) => h.cardId === 'hold-it')).toBe(true);
+  const log = await hook(them, 'actLog');
+  expect((log || []).filter((e) => !e.ok), 'no refused answers: ' + JSON.stringify(log)).toEqual([]);
+  await closeAll(a, b);
+});
+
+test('AC672: the deck list opens as a painted list, not the browser\'s, and picking one changes the deck', async ({ browser }) => {
+  test.setTimeout(60000);
+  const a = await openAs(browser, 'deck' + uniq());
+  await atMenu(a);
+  await a.click('[data-testid=pvp-play-friend]');
+  await a.click('[data-testid=pvp-make]');
+  const open = a.locator('[data-testid=pvp-deck-open]');
+  await expect(open).toBeVisible();
+  const first = await open.textContent();
+  await open.click();
+  const items = a.locator('.pvp-deck-item');
+  await expect(a.locator('.pvp-deck-menu')).toBeVisible();
+  expect(await items.count()).toBeGreaterThan(1);
+  const other = items.filter({ hasNotText: first }).first();
+  const name = await other.textContent();
+  await other.click();
+  await expect(a.locator('.pvp-deck-menu')).toBeHidden();
+  await expect(open).toHaveText(name);
+  expect(await a.locator('[data-testid=pvp-deck]').evaluate((e) => e.selectedOptions[0].textContent)).toBe(name);
+  await a.keyboard.press('Enter');
+  await expect(a.locator('.pvp-deck-menu')).toBeVisible();
+  await a.keyboard.press('Escape');
+  await expect(a.locator('.pvp-deck-menu')).toBeHidden();
+  const bg = await open.evaluate((e) => getComputedStyle(e).backgroundImage);
+  expect(bg).toContain('frame-chip');
+  await a.locator('.pvp-cmd[data-commander=borgo]').click();
+  await expect(open).not.toHaveText(name); // another Commander's decks
+  await closeAll(a);
+});
+
 for (const size of [{ width: 1600, height: 900 }, { width: 1280, height: 720 }, { width: 844, height: 390 }]) {
   test(`AC611: the signed-in menu extras sit clear of the logo and the menu words, on screen (${size.width}x${size.height})`, async ({ browser }) => {
     const page = await openAs(browser, 'lay' + uniq(), size);

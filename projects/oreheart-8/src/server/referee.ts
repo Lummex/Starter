@@ -9,11 +9,12 @@ import { presentFor, realAction } from '../engine/view';
 export type Seat = 'a' | 'b';
 export interface PlayerInfo { userId: string; username: string; avatar: string | null }
 export interface DeckChoice { commander: string; cards: string[] | null; deckId: string | null }
-export interface Rules { phaseSeconds: number; bankSeconds: number; respondSeconds: number; timeoutsToForfeit: number; mulliganSeconds?: number }
-export const DEFAULT_RULES: Rules = { phaseSeconds: 120, bankSeconds: 60, respondSeconds: 12, timeoutsToForfeit: 3 };
+export interface Rules { phaseSeconds: number; bankSeconds: number; respondSeconds: number; timeoutsToForfeit: number; mulliganSeconds?: number; respondMinSeconds?: number }
+export const DEFAULT_RULES: Rules = { phaseSeconds: 120, bankSeconds: 60, respondSeconds: 12, timeoutsToForfeit: 3, respondMinSeconds: 2 };
 export interface Clock {
   deadline: number | null;        // ms; the priority holder's clock (null while a Respond window is open or the match is over)
   respondDeadline: number | null; // ms; the responder's clock during a Respond window
+  respondOpenedAt?: number | null; // ms; when this Respond window opened (server only, never in a view): no window closes sooner than respondMinSeconds after it
   frozenLeft: number | null;      // ms left on the main clock while a Respond window is open
   bank: Record<Seat, number>;     // seconds of unused time carried into that player's next phase (Ken: capped at 60)
   timeouts: Record<Seat, number>; // timeouts in a row per player (a timely action resets it)
@@ -83,11 +84,13 @@ export function startMatch(id: string, roomCode: string | null, players: Record<
 
 const holderOf = (s: any): Seat | null => sideSeat(s.priority);
 const phaseMs = (m: MatchRecord, rules: Rules, seat: Seat | null) => (rules.phaseSeconds + (seat ? m.clock.bank[seat] : 0)) * 1000;
+/** Which Respond window this is: a crystal or a side move inside it keeps it the same one. */
+const windowKey = (p: any) => (p ? JSON.stringify([p.kind, p.actor, p.responder, p.creatureUid ?? null, p.card?.uid ?? null, p.target ?? null]) : '');
 
 /** Moves the clock after an accepted action (`timedOut`: the action was the referee's own timeout move for `prevHolder`). */
 function afterChange(m: MatchRecord, prev: any, now: number, rules: Rules, timedOut: boolean) {
   const s = m.state, c = m.clock;
-  if (s.phase === 'over') { c.deadline = null; c.respondDeadline = null; c.frozenLeft = null; return; }
+  if (s.phase === 'over') { c.deadline = null; c.respondDeadline = null; c.respondOpenedAt = null; c.frozenLeft = null; return; }
   const prevHolder = holderOf(prev), holder = holderOf(s);
   const windowBefore = !!prev.pendingResponse, windowNow = !!s.pendingResponse;
   if (!windowBefore && windowNow) {
@@ -95,16 +98,18 @@ function afterChange(m: MatchRecord, prev: any, now: number, rules: Rules, timed
     c.frozenLeft = Math.max(0, (c.deadline ?? now) - now);
     c.deadline = null;
     c.respondDeadline = now + rules.respondSeconds * 1000;
+    c.respondOpenedAt = now;
     return;
   }
   if (windowBefore && windowNow) {
     // still (or again) inside a window (a brew during it, or a new window right away): give the responder a fresh short clock
-    if (s.pendingResponse.responder !== prev.pendingResponse.responder || s.pendingResponse.kind !== prev.pendingResponse.kind) c.respondDeadline = now + rules.respondSeconds * 1000;
+    if (windowKey(s.pendingResponse) !== windowKey(prev.pendingResponse)) { c.respondDeadline = now + rules.respondSeconds * 1000; c.respondOpenedAt = now; }
     return;
   }
   if (windowBefore && !windowNow) {
     // the window closed: the main clock runs on from where it froze; a new phase may have started meanwhile (a counter can't, but be safe)
     c.respondDeadline = null;
+    c.respondOpenedAt = null;
     const left = c.frozenLeft ?? phaseMs(m, rules, holder);
     c.frozenLeft = null;
     const samePhase = prev.phase === s.phase && prev.turn === s.turn && prev.activePlayer === s.activePlayer;
@@ -126,10 +131,10 @@ function endWith(m: MatchRecord, winner: Seat | null, reason: MatchResult['reaso
   m.status = 'finished';
   m.result = { winner, reason };
   m.endedAt = now;
-  m.clock.deadline = null; m.clock.respondDeadline = null; m.clock.frozenLeft = null;
+  m.clock.deadline = null; m.clock.respondDeadline = null; m.clock.respondOpenedAt = null; m.clock.frozenLeft = null;
 }
 
-export interface ActResult { ok: boolean; error?: string; events: any[] }
+export interface ActResult { ok: boolean; error?: string; events: any[]; tooSoonMs?: number }
 
 /** One player's action. On success the record is changed in place (state, seq, clock, log) and the events are returned. */
 export function playerAction(m: MatchRecord, userId: string, seq: number, action: any, now: number, rules: Rules): ActResult {
@@ -149,6 +154,14 @@ export function playerAction(m: MatchRecord, userId: string, seq: number, action
   let r: any;
   try { r = applyAction(s, real); } catch (e: any) { return { ok: false, error: String((e && e.message) || e), events: [] }; }
   if (!r.ok) return { ok: false, error: r.error || 'Illegal action', events: [] };
+  // Nov 2 (Gauge): a window with no counter takes about 2 s, so a window that closes sooner would say its responder holds something.
+  // No answer closes one sooner, whoever sends it and however: refused here with how long is left, so a changed browser gains nothing.
+  // A crystal or the attacker's own side move stays inside the window; only giving up ends it early. The views never show any of this.
+  const openedAt = m.clock.respondOpenedAt;
+  if (s.pendingResponse && real.type !== 'surrender' && openedAt != null && windowKey(r.state.pendingResponse) !== windowKey(s.pendingResponse)) {
+    const left = openedAt + (rules.respondMinSeconds ?? 0) * 1000 - now;
+    if (left > 0) return { ok: false, error: 'Too soon: the Respond window is still open.', events: [], tooSoonMs: left };
+  }
   const prev = s;
   m.state = r.state;
   m.seq++;
