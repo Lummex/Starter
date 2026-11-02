@@ -1700,7 +1700,9 @@ body :not(.ohcard,.ohcard *,.cardc,.cardc *,[data-card-id] *,.hand-card *,.o-tex
 
 /* Owner (Oct 24): stat badge about half the old size with bigger numbers; it sits low in the unit's square and scales with the square (zoom) */
 .match .token{container-type:inline-size}
-.match .token .tk-stats{--bw:max(26px,96cqw)!important;bottom:calc(45% - var(--bw)*.318)!important} /* centred on the square, a little below its middle */
+/* Ken, Nov 1: "bring it down so it just barely covers the bottom where their feet would be ... still in the square": the badge sits at the bottom of the
+   unit's own square (the token box ends at the square's bottom edge), a hair above that edge, overlapping the feet a little; the same spot for every unit size */
+.match .token .tk-stats{--bw:max(26px,96cqw)!important;bottom:calc(var(--bw)*.04)!important}
 .match .token .tk-stats:not(#_w){transform:translate(-50%,0)!important}
 .match [data-unit-badge] .ub-n{-webkit-text-stroke:calc(var(--bw)*.065) #000;text-shadow:0 calc(var(--bw)*.03) calc(var(--bw)*.06) #000c}
 .match [data-unit-badge] .ub-h{font-size:calc(var(--bw)*.262*.18*6.2)}
@@ -1838,10 +1840,15 @@ html[data-desk] #app:not(:has(.match)){width:min(100vw,calc(100dvh * 16 / 9))!im
 .match .hand .hand-card.sel:not(.popped){translate:0 calc(var(--cw) * -.14)}
 .match .hand .hand-card.sel:not(.popped)::after{content:"";position:absolute;inset:-3px;border-radius:calc(var(--cw)*.06);box-shadow:0 0 0 2px #FFD700,0 0 12px 2px #ffd700aa;pointer-events:none;z-index:7}
 /* Ken: while dragging, a drop that would UPGRADE a unit says so on the card and lights that unit in gold (deploy squares stay green) */
-.upgrade-badge{position:fixed;left:0;top:0;z-index:1003;pointer-events:none;transform:translate(-50%,-100%);font-family:"Alegreya SC",serif;font-weight:800;font-size:clamp(13px,2.6vh,20px);letter-spacing:.06em;line-height:1;white-space:nowrap;padding:.34em .75em;border-radius:999px;color:#fff!important;-webkit-text-fill-color:#fff!important;background:linear-gradient(#5a3a08,#1a1003);border:2px solid #FFD700;box-shadow:0 0 14px 4px #ffd700b0,0 2px 6px #000c;text-shadow:0 1px 2px #000!important;font-style:normal!important}
-.drag-square-hl[data-upgrade="1"] polygon{stroke:#FFD700!important;fill:rgba(255,215,0,.22)!important;stroke-width:5;stroke-dasharray:10 6}
+/* Ken, Nov 1: "an upgrade graphic instead of the computer generated button": Brush's painted badge (no text, no gold border or glow), crossfading
+   to its glowing copy for the pulse; placed above the target's head (or beside it) by placeUpgradeBadge */
+.upgrade-badge{position:fixed;left:0;top:0;z-index:1003;pointer-events:none;transform:translate(-50%,-100%);width:clamp(84px,12vh,130px);aspect-ratio:420/390;filter:drop-shadow(0 3px 5px #000a)}
+.upgrade-badge img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:contain;-webkit-user-drag:none;user-select:none}
+.upgrade-badge .ub-ready{opacity:0;animation:ohUpgX .7s ease-in-out infinite alternate}
+@keyframes ohUpgX{from{opacity:0}to{opacity:1}}
+.drag-square-hl[data-upgrade="1"] polygon{stroke:#c0c8d8!important;fill:rgba(192,200,216,.22)!important;stroke-width:5;stroke-dasharray:10 6}
 .token.upgrade-target{z-index:40}
-.token.upgrade-target::after{content:"";position:absolute;left:-30%;right:-30%;bottom:-12%;height:36%;border-radius:50%;border:3px solid #FFD700;box-shadow:0 0 14px 4px #ffd700cc,inset 0 0 10px #ffd70088;pointer-events:none;animation:ohUpg .7s ease-in-out infinite alternate}
+.token.upgrade-target::after{content:"";position:absolute;left:-30%;right:-30%;bottom:-12%;height:36%;border-radius:50%;border:3px solid #c0c8d8;box-shadow:0 0 14px 4px #c0c8d8cc,inset 0 0 10px #c0c8d888;pointer-events:none;animation:ohUpg .7s ease-in-out infinite alternate}
 @keyframes ohUpg{from{opacity:.65}to{opacity:1}}
 /* Owner fix (Ken, Oct 28): arrows beside a hand card's close-up step through the hand (same gold look as Play this card) */
 .overlay.cardview .card-nav{position:fixed;top:50%;transform:translateY(-50%);z-index:2147483001;pointer-events:auto;box-sizing:border-box;width:clamp(52px,6vw,68px);height:clamp(52px,6vw,68px);min-width:0;margin:0;padding:0;display:flex;align-items:center;justify-content:center;font-size:clamp(26px,3.2vw,36px);line-height:1;color:#fff!important;border-radius:50%;border:2px solid #ffe08a!important;background:linear-gradient(#e0a325,#9a5a10)!important;box-shadow:0 6px 18px #000b,0 0 18px #ffcc5588;cursor:pointer;touch-action:manipulation;filter:drop-shadow(0 2px 2px #0007)}
@@ -1888,10 +1895,14 @@ body.test .speech{animation-name:ohSayFlat}
 .cell.path-show .path-label{display:block}
 .cell.path-blocked .path-label{border-color:#ff5a4a;color:#ffd0ca}
 .cell .path-label[data-kind="chase"]{border-color:#ff4a3a;top:calc(50% - max(30px,85%))}
-.token .tk-order{position:absolute;left:100%;top:0;transform:translate(-30%,-30%);display:flex;align-items:center;gap:2px;z-index:31;pointer-events:none}
-.token .tk-order-mark{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 3px;border-radius:999px;background:#0d0c11e6;border:1.5px solid #FFD700;color:#FFD700;font-size:13px;font-weight:800;line-height:1;box-shadow:0 1px 3px #000}
-.token .tk-cancel{pointer-events:auto;touch-action:manipulation;cursor:pointer;width:28px;height:28px;min-width:28px;padding:0;border-radius:50%;border:2px solid #FFD700;background:#120d08;color:#FFD700;font-size:15px;font-weight:900;line-height:1;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 6px #ffd70088,0 2px 4px #000}
-.token .tk-cancel:hover,.token .tk-cancel:focus-visible{background:#FFD700;color:#120d08;outline:0}
+/* Ken, Nov 1: Brush's painted unit icons at 24 px (public/art/ui/unit-icons), no gold borders; the ? (.tk-q) sits exactly where the order mark goes */
+.token .tk-order{position:absolute;left:100%;top:0;transform:translate(-8px,-9px);display:flex;align-items:center;gap:2px;z-index:31;pointer-events:none}
+.token .tk-order-mark{display:block;width:24px;height:24px;flex:none;filter:drop-shadow(0 1px 2px #000c)}
+.token .tk-order-mark img,.token .tk-cancel img,.token .tk-q img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;user-select:none}
+.token .tk-q{position:absolute;left:100%;top:0;transform:translate(-8px,-9px);width:24px;height:28px;display:flex;align-items:center;justify-content:center;z-index:31;pointer-events:none}
+.token .tk-q img{width:14px;height:14px;filter:drop-shadow(0 1px 1px #000)}
+.token .tk-cancel{pointer-events:auto;touch-action:manipulation;cursor:pointer;width:28px;height:28px;min-width:28px;padding:2px;margin:0;border:0;border-radius:50%;background:none;box-shadow:none;display:inline-flex;align-items:center;justify-content:center;filter:drop-shadow(0 1px 2px #000c);transition:filter .12s}
+.token .tk-cancel:hover,.token .tk-cancel:focus-visible{background:none;outline:0;filter:brightness(1.25) drop-shadow(0 1px 2px #000c)}
 
 /* Owner art (Ken, Oct 29): the new front menu picture is bright behind the buttons; a soft dark glow keeps the lettering readable (the picture itself is untouched) */
 .mb-root[data-menu="main"] .mb-dim::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 22% 40% at 50% 57%,rgba(0,0,0,.42) 0,rgba(0,0,0,.22) 55%,transparent 100%)}

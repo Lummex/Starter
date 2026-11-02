@@ -399,9 +399,11 @@ html body #app .match .stance-bar{position:absolute;z-index:60;translate:-50% 0;
 html body #app .match .stance-opt{all:unset;cursor:pointer;padding:2px 7px;border-radius:6px;font:600 clamp(10px,.68vw,13px)/1.2 "Alegreya Sans",system-ui,sans-serif;color:#dfe6ee}
 html body #app .match .stance-opt:hover{background:#ffffff1f}
 html body #app .match .stance-opt[aria-pressed="true"]{background:#d6dde6;color:#10151b}
-html body #app .match [data-stance="hold"] .tk-stats::before{content:"\25A0";font-size:.75em;color:#d6dde6;margin-right:.15em}
-html body #app .match [data-stance="guard"] .tk-stats::before{content:"\25C6";font-size:.75em;color:#7fd3ff;margin-right:.15em}
-html body #app .match [data-stance="aggressive"] .tk-stats::before{content:"\25B2";font-size:.75em;color:#ff7a66;margin-right:.15em}
+/* Ken, Nov 1: the stance marks are Brush's painted icons (anchor / shield / fist), 24 px (smaller on tiny squares) just left of the stat badge */
+html body #app .match [data-stance] .tk-stats::before{content:"";position:absolute;right:calc(100% - var(--bw)*.06);top:50%;transform:translateY(-35%);width:min(24px,calc(var(--bw)*.5));aspect-ratio:1;margin:0;background:center/contain no-repeat;pointer-events:none}
+html body #app .match [data-stance="hold"] .tk-stats::before{background-image:url(/art/ui/unit-icons/hold.webp)}
+html body #app .match [data-stance="guard"] .tk-stats::before{background-image:url(/art/ui/unit-icons/guard.webp)}
+html body #app .match [data-stance="aggressive"] .tk-stats::before{background-image:url(/art/ui/unit-icons/aggressive.webp)}
 
 /* Ken, Nov 1: button frames fade out ("style B", silver edge): solid dark glass on the left with a silver edge, clear on the right so the text runs off it. Icons unchanged. */
 html body :is(#app .btn.back-btn,#app .btn.db-back,#app .btn.menu-back,#app .btn.menu-fwd,#app .btn.fight-btn,#app .btn.diff,#app .btn.mode-btn,#app .db-actions .btn.btn,#app [data-screen=settings] .stack>.btn.btn,#app [data-screen=settings] .fx-panel>.btn.btn,.dialog .row .btn.btn,.dialog .menu-list .btn.btn,.done-dropup .btn.btn,#app .match .btn.o-text.done-btn,#app .match .o-menu .btn.menu-btn,#app .match .btn.swap-btn,#app .mb-pc.mb-btn){border-image:none!important;border-style:solid!important;border-width:0 4px 0 0!important;border-color:#b9c1d6!important;border-radius:0 3px 3px 0!important;text-align:right!important;justify-content:flex-end!important;
