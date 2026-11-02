@@ -38,7 +38,11 @@ void initOffline(!test || params.get('sw') === '1');
 const game = new Game(test);
 const app = new App(document.getElementById('app')!, game, test, test ? seed : undefined);
 const wantIntro = params.get('intro') === '1' || (!test && !sessionStorage.getItem('oreheart.introSeen'));
-if (onlineEnabled || pageMode(location.search)) {
+const pvpMock = test && params.get('pvp') === 'mock';
+if (pvpMock) {
+  // Nov 2 (PvP): test pages against the local mock server (tools/pvp-mock-server.mjs): signed in as ?user=<name>, no Supabase, no login
+  import('./net/flow').then((m) => { app.menuHook = m.menuExtras; return m.startMockPvp(app, (params.get('user') || 'tester').slice(0, 24)); });
+} else if (onlineEnabled || pageMode(location.search)) {
   // Online Phase A: login / parent pages first; the flow ends at the normal main menu
   import('./net/flow').then((m) => { app.menuHook = m.menuExtras; return m.startOnline(app); });
 } else if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catch { /* ignore */ } app.showIntro(); } else app.showMenu();
@@ -57,17 +61,17 @@ if (test) {
       return ohCardHTML(CARDS[id], pictureOf(CARDS[id]), px);
     },
     fitText: (el: HTMLElement) => fitCardText(el),
-    getState: () => game.getState(),
+    getState: () => app.game.getState(), // Nov 2: app.game is the friend match while one is on screen (NetGame), else the computer match
     getAiAudit: () => JSON.parse(JSON.stringify((globalThis as any).__aiAudit)),
     getAiInfo: () => ({ ...game.aiInfo }),
     getAiPace: () => JSON.parse(JSON.stringify({ paceLog: game.paceLog, aiLog: app.aiLog, busy: game.aiPace ? game.aiPace.busy() : null })),
-    legalActions: () => (game.legalActions() as any[]).map((a: any) => (a.type === 'ability' && a.ability === 'shaman' && a.from ? { ...a, ability: 'pickUp', target: { ...a.from }, to: { ...a.target }, from: undefined } : a)).map((a: any) => { if (a.from === undefined) delete a.from; return a; }),
+    legalActions: () => (app.game.legalActions() as any[]).map((a: any) => (a.type === 'ability' && a.ability === 'shaman' && a.from ? { ...a, ability: 'pickUp', target: { ...a.from }, to: { ...a.target }, from: undefined } : a)).map((a: any) => { if (a.from === undefined) delete a.from; return a; }),
     act: (action: any) => {
-      try { return game.act(action, true); } catch (e: any) { return { ok: false, error: String(e && e.message || e) }; }
+      try { return app.game.act(action, true); } catch (e: any) { return { ok: false, error: String(e && e.message || e) }; }
     },
     newMatch: (options: any = {}) => app.beginMatch(options),
     startTutorial: () => app.beginTutorial(),
-    movesLeft: () => game.movesLeft(),
+    movesLeft: () => app.game.movesLeft(),
     setMode: (m: string) => game.setMode(m),
     getMode: () => game.mode,
     setStance: (n: string) => { const r = game.setStance(n); app.refreshModeUi(); return r; },
@@ -202,6 +206,9 @@ if (test) {
     const f = hooks[k];
     hooks[k] = (...a: any[]) => { try { const r = f(...a); return r && typeof r.then === 'function' ? r.catch(() => null) : r; } catch (e) { console.warn('oreheart.' + k, e); return null; } };
   }
+  // Nov 2 (PvP): window.oreheart.pvp = { create, join, view, act, forfeit, tick, seq } (each one guards itself; added after the wrapper because it is an object)
+  const pvpLazy = () => import('./net/pvp').then((m) => m.pvpHooks() as any); // the PvP code stays out of the main bundle; every hook answers a promise
+  hooks.pvp = Object.fromEntries(['create', 'join', 'view', 'act', 'forfeit', 'tick', 'seq', 'matchId', 'code', 'actLog'].map((k) => [k, (...a: any[]) => pvpLazy().then((p) => p[k](...a)).catch(() => null)]));
 }
 
 // "Please rotate" overlay: shown whenever the window is portrait and narrower than 900px.

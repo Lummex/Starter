@@ -45,6 +45,18 @@ const FNAME: Record<string, string> = { goblins: 'Goblins', gnomes: 'Gnomes', dw
 const FSYMS: Record<string, string> = { goblins: '💀', gnomes: '⚙️', dwarves: '🔨', any: '✦' };
 
 export const copyLimit = (id: string): number => CONFIG.copyLimits[CARDS[id]?.rarity] ?? (CARDS[id]?.type === 'crystal' ? 99 : 99);
+
+// Online (contract 4.2): signed in, a deck can only use the copies the player owns (src/net/economy.ts fills this from
+// my_collection). Crystal cards are free and unlimited. Offline nothing changes: no counts, every card unlimited as before.
+let ownedCounts: Record<string, number> | null = null;
+export function setOwnedCounts(m: Record<string, number> | null) { ownedCounts = m ? { ...m } : null; }
+const ownedMode = () => net.active && !!ownedCounts;
+/** Copies owned, or null when ownership doesn't apply (offline, crystal cards). */
+export const ownedOf = (id: string): number | null => (ownedMode() && CARDS[id]?.type !== 'crystal' ? ownedCounts![id] || 0 : null);
+/** The copy limit in the deck builder: the normal limit, capped by the copies owned when signed in. */
+export const deckLimit = (id: string): number => { const o = ownedOf(id); return o == null ? copyLimit(id) : Math.min(copyLimit(id), o); };
+// test pages only: ?test=1&econ=shop|collection|quests|pack loads the economy screens with stand-in data (no database)
+if (typeof location !== 'undefined' && /[?&]test=1(&|$)/.test(location.search) && /[?&]econ=/.test(location.search)) setTimeout(() => { void import('../net/economy'); }, 0);
 const kindOf = (c: any) => (c.type === 'creature' ? (c.role === 'Smith' ? 'Smith Miner' : isMiner(c) ? 'Miner' : 'Fighter') : c.type === 'spell' ? 'Spell' : 'Crystal card');
 
 /** A real card face: cost, name, art, stats, rarity, role and the complete ability text. */
@@ -182,7 +194,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     setTimeout(() => ghost.remove(), 400);
   };
   const lockedFor = (id: string) => { const c = CARDS[id]; return c.faction !== 'any' && c.faction !== COMMANDERS[cmdId].faction; };
-  const addCard = (id: string, from?: DOMRect | null, noFly = false) => { if (lockedFor(id)) { status.textContent = `Only for ${SING[CARDS[id].faction]} Commanders`; return; } if (count(id) >= copyLimit(id)) return; if (!noFly) fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };
+  const addCard = (id: string, from?: DOMRect | null, noFly = false) => { if (lockedFor(id)) { status.textContent = `Only for ${SING[CARDS[id].faction]} Commanders`; return; } if (count(id) >= deckLimit(id)) { const o = ownedOf(id); if (o != null && count(id) >= o) status.textContent = `You own ${o} of ${CARDS[id].name}`; return; } if (!noFly) fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };
   const removeCard = (id: string) => { const i = deck.indexOf(id); if (i >= 0) deck.splice(i, 1); status.textContent = ''; renderDeck(); };
 
   function enlarge(c: any) { app.closeUp(c.id, true); }
@@ -213,7 +225,8 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
   }
   function tile(c: any) {
-    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : ''), 'data-locked': lockedFor(c.id) ? 'true' : null, 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, h('span', { hidden: '' }, c.longText || '')) as any;
+    const own = ownedOf(c.id);
+    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : '') + (own === 0 ? ' unowned' : ''), 'data-owned': own == null ? null : String(own), 'data-locked': lockedFor(c.id) ? 'true' : null, 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, own == null ? null : h('span', { class: 'db-owned', 'aria-label': `You own ${own}` }, own === 0 ? '🔒' : `owned ×${own}`), h('span', { hidden: '' }, c.longText || '')) as any;
     let timer: any = null;
     el.addEventListener('click', () => {
       if (el._dragged) return;
@@ -301,7 +314,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
       const cnt = (li as any)._cnt as HTMLElement;
       const txt = `${n[id]} ×`;
       if (cnt.textContent !== txt) cnt.textContent = txt;
-      (li as any)._plus.disabled = n[id] >= copyLimit(id);
+      (li as any)._plus.disabled = n[id] >= deckLimit(id);
       if (listEl.children[i] !== li) listEl.insertBefore(li, listEl.children[i] || null);
     });
     const c = deckCounts(deck);

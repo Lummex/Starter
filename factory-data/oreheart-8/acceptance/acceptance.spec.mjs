@@ -13922,7 +13922,8 @@ async function approveChild(u) {
   const { error } = await (await anonDb()).rpc('parent_give_consent', { p_token: tok, p_agree: true });
   expect(error, error && error.message).toBeNull();
 }
-const GOBLIN_DECK = Array(25).fill('goblin-scrounger').concat(Array(25).fill('shiv-rat'));
+// Nov 2 (Phase B): a saved deck may only use cards the player OWNS; every account owns the starter collection, so the test deck is the goblin starter deck
+const GOBLIN_DECK = await (async () => { const { fs, path, dir } = await appDir(); return JSON.parse(fs.readFileSync(path.join(dir, 'src/content/starter-decks.json'), 'utf8'))['goblin-warband'].cards.slice(); })();
 async function totpCode(secret) {
   const m = await import('otplib');
   if (m.authenticator) return m.authenticator.generate(secret);

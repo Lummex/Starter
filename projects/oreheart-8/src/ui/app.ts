@@ -4,6 +4,7 @@ import { recapLines, type RecapTurn } from './recap';
 import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
 import { Game } from '../game';
+import type { NetGame } from '../net/pvp';
 import ownerLayoutJson0 from '../content/owner-layout.json';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other, ABILITY_COST, bankNeeded, movedThisPhase, shamanLiftTargets, shamanLandingSquares, shamanLiftAction, MULLIGAN_REDRAWS } from '../engine';
 import { SPELL_VISUALS } from '../content/spell-visuals';
@@ -288,6 +289,12 @@ export class App {
   root: El;
   menuHook?: (s: El) => void;
   game: Game;
+  /** Nov 2 (PvP): the match against a friend (src/net/pvp.ts NetGame) while one is on screen; `offGame` keeps the computer-match Game meanwhile */
+  netGame: NetGame | null = null;
+  offGame: Game | null = null;
+  /** every event of the current match (for onMatchEnd: the quest summary), capped */
+  matchEvents: any[] = [];
+  matchReported = false;
   test: boolean;
   seed?: number;
   view: BoardView | null = null;
@@ -384,7 +391,7 @@ export class App {
     if (!t) return [];
     if (t.commander) { const s = SH[t.commander as 'player' | 'opponent']; return [{ row: s.row, col: s.col }]; }
     if (typeof t.row !== 'number') return [];
-    const h0 = a.uid ? st.players.opponent.hand.find((x: any) => x.uid === a.uid) : null;
+    const h0 = a.uid ? st.players.opponent.hand.find((x: any) => x.uid === a.uid && !x.hidden) : null; // Nov 2 (PvP): the other player's hand is card backs only
     const area = h0 && CARDS[h0.cardId]?.effect === 'areaDamage';
     const out: { row: number; col: number }[] = [];
     if (area) { for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const r = t.row + dr, c = t.col + dc; if (r >= 1 && r <= BH && c >= 1 && c <= BW) out.push({ row: r, col: c }); } }
@@ -429,8 +436,8 @@ export class App {
       this.aiMark(cells, 450); await sleep(450);
       return;
     }
-    const h0 = a.uid ? st.players.opponent.hand.find((x: any) => x.uid === a.uid) : null;
-    if (!h0) return;
+    const h0 = a.uid ? st.players.opponent.hand.find((x: any) => x.uid === a.uid && !x.hidden) : null;
+    if (!h0 || !CARDS[h0.cardId]) return;
     const cardId = h0.cardId;
     const cells = a.type === 'cast' ? this.aiTargets(a, st) : [];
     if (cells.length && this.aiShow(cells)) await sleep(350);
@@ -605,6 +612,7 @@ export class App {
     go.focus();
   }
   showMenu() {
+    this.leaveNet();
     const s = this.menuScreen('main', 'title');
     this.menuHook?.(s);
     if (!this.test && !localStorage.getItem('oreheart.tutorialSeen')) {
@@ -1179,6 +1187,7 @@ export class App {
 
   // ------------------------------------------------------------ match
   beginMatch(options: any = {}) {
+    this.leaveNet();
     this.enemyCrystalKey = "";
     const o = { ...options };
     if (o.seed == null && this.test && this.seed != null) o.seed = this.seed;
@@ -1193,6 +1202,45 @@ export class App {
     this.showMatch();
     this.update(this.game.state, []);
     return state;
+  }
+
+  /** Nov 2 (PvP): a match against a friend. Like beginMatch, but the server owns the match: no newMatch, the board comes from the
+   *  server's view (this player is always engine side 'player'), the clocks are the server's, and there is no computer, rank or Play again. */
+  beginNetMatch(ng: NetGame) {
+    if (this.netGame && this.netGame !== ng) this.leaveNet();
+    if (!this.offGame) this.offGame = this.game;
+    this.netGame = ng;
+    this.game = ng as unknown as Game;
+    ng.onError = (msg) => this.flash(msg);
+    this.enemyCrystalKey = '';
+    this.lastOptions = {};
+    this.lastTutorial = false;
+    this.fxLog = [];
+    this.matchEvents = []; this.matchReported = false;
+    arenaOpts.extra = [];
+    this.rival = null; this.rankResult = null;
+    this.aiName = ng.names.them || 'Your friend';
+    applyHighlightVars(ng.state.players.player.faction);
+    this.arenaFaction = ''; this.pickMatchArena();
+    this.showMatch();
+    this.update(ng.state, [{ type: 'newMatch' }]);
+  }
+  /** Back to the computer-match Game (the friend match keeps running on the server; "Back to your match" re-opens it). */
+  leaveNet() {
+    const ng = this.netGame;
+    if (!ng) return;
+    this.netGame = null;
+    ng.onError = null;
+    if (this.offGame) this.game = this.offGame;
+    this.offGame = null;
+    void import('../net/pvp').then((m) => m.releaseNetGame(ng)).catch(() => ng.stop());
+  }
+  /** Nov 2: the end of EVERY match goes to the economy layer (vs-computer quest progress; PvP only refreshes the coins). */
+  reportMatchEnd(st: any) {
+    if (this.matchReported) return;
+    this.matchReported = true;
+    const o = { state: JSON.parse(JSON.stringify(st)), events: this.matchEvents.slice(), pvp: !!this.netGame };
+    void import('../net/economy').then((m) => m.onMatchEnd(o)).catch(() => { /* the economy layer is optional */ });
   }
 
   /** Ken, Oct 31: each match is fought in the arena of the player's faction or of the opponent's, 50-50. In test pages the roll comes from the seed so checks are repeatable;
@@ -1241,6 +1289,7 @@ export class App {
   }
   /** One tutorial lesson's board (called by tutorial.ts); the arena stays the same for the whole tutorial. */
   startTutorialLesson(opts: any) {
+    this.leaveNet();
     this.lastTutorial = true;
     this.fxLog = [];
     const state = this.game.newMatch(opts);
@@ -1272,6 +1321,7 @@ export class App {
 
   showMatch() {
     this.handKey = ''; this.fitKey = '';
+    this.matchEvents = []; this.matchReported = false; this.netLeft = null; this.netFrozen = null;
     this.clear();
     audio.setMatchArena(this.arenaFaction || this.pickMatchArena()); /* Oct 31: the match music belongs to the arena */
     audio.setMusicMode('match');
@@ -2411,6 +2461,7 @@ export class App {
   update(st: any, events: any[]) {
     const r = this.r;
     if (!r.board || !st) return;
+    for (const e of events) if (e && e.type !== 'newMatch' && e.type !== 'sync' && this.matchEvents.length < 5000) this.matchEvents.push(e); // Nov 2: for onMatchEnd (quest summary)
     if (events.some((e) => e.type === 'newMatch')) { this.orders.clear(); this.stances.clear(); this.guardSquares.clear(); this.chainFor = null; this.orderPreview = null; this.ordersRunKey = ''; this.missWord = 0; } // Round 28
     const me = st.players.player, en = st.players.opponent;
     this.view && this.view.setState(st, events);
@@ -2429,7 +2480,11 @@ export class App {
     r.crBank.textContent = String(me.bank);
     r.eFlow.textContent = String(en.crystals);
     r.eBank.textContent = String(en.bank);
-    { const my = rankOf(loadRank().points);
+    if (this.netGame) { // Nov 2 (PvP): your name, and your friend's name and avatar from the server's view (no rank charms in friend matches)
+      const ng = this.netGame;
+      this.setPlate(r.myName, ng.names.me || getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player', null, '', ng.avatars.me || getPlayerAvatar());
+      this.setPlate(r.eName, ng.names.them || 'Your friend', COMMANDERS[en.commanderId]?.name || '', en.faction, 'enemy', null, '', ng.avatars.them || '');
+    } else { const my = rankOf(loadRank().points);
       this.setPlate(r.myName, getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player', my, `${getPlayerName()}: ${my.label}, ${my.inDivision} rank points`, getPlayerAvatar());
       const rv = this.rival, rec = rv ? recordVs(rv.id) : null;
       this.setPlate(r.eName, this.aiName || 'Opponent', COMMANDERS[en.commanderId]?.name || '', en.faction, 'enemy', rv ? rankOf(rv.points) : null,
@@ -2958,7 +3013,7 @@ export class App {
   }
   setPhaseTimeLeft(n: number) {
     const st = this.game.state;
-    if (!st) return;
+    if (!st || this.netGame) return; // PvP: the server owns the clock
     n = Math.max(0, +n || 0);
     if (n <= 0) { if (st.priority === st.activePlayer && ACTIVE.includes(st.phase) && !st.pendingResponse) this.game.act({ type: 'done' }); return; }
     this.testLeft = n;
@@ -2971,6 +3026,7 @@ export class App {
     const dt = now - this.lastTick;
     this.lastTick = now;
     if (!st || !r.timer) return;
+    if (this.netGame) { this.netTick(st, now); return; }
     if (st.pendingResponse || this.game.paused) this.deadline += dt;
     const timed = this.timedNow(st);
     const total = CONFIG.phaseTimerSeconds;
@@ -2994,12 +3050,42 @@ export class App {
     }
   }
 
+  /** Nov 2 (PvP): the clock comes from the server's view only (deadline = the priority holder's phase time + bank; it is never reset
+   *  here). While a Respond window is open the main clock is frozen on the server, so the bar holds still. A timeout is applied by the
+   *  server (NetGame.maybeTick asks it); the browser never presses Done by itself. */
+  netLeft: number | null = null;
+  netFrozen: number | null = null;
+  netTick(st: any, now: number) {
+    const ng = this.netGame!, r = this.r;
+    const clockPhase = ACTIVE.includes(st.phase) || st.phase === 'mulligan';
+    let left = ng.deadline != null ? Math.max(0, (ng.deadline - now) / 1000) : 0;
+    if (st.pendingResponse) { if (this.netFrozen == null) this.netFrozen = this.netLeft ?? left; left = this.netFrozen; } else this.netFrozen = null;
+    this.netLeft = left;
+    const mineNow = clockPhase && st.priority === 'player' && st.phase !== 'over' && ng.status === 'active';
+    const timed = mineNow && !st.pendingResponse;
+    const whole = Math.ceil(left);
+    const show = timed && whole <= CONFIG.countdownSeconds;
+    r.timer.hidden = !show;
+    const pt = r.phase?.querySelector('.ph-time') as El | null;
+    if (pt) {
+      const total = CONFIG.phaseTimerSeconds, extra = timed ? Math.max(0, whole - total) : 0;
+      const label = timed ? `${Math.min(whole, total)}s left` : '', note = extra ? `+${Math.floor(extra / 60)}:${String(extra % 60).padStart(2, '0')}` : '';
+      if (pt.dataset.lbl !== label + note) { pt.dataset.lbl = label + note; pt.textContent = label; if (note) pt.append(h('span', { class: 'ph-bank', 'aria-label': 'Banked time' }, note)); }
+    }
+    const on = clockPhase && ng.deadline != null && st.phase !== 'over' && ng.status === 'active';
+    this.syncTurnBar(st, timed, left, on);
+    const tb = r.turnBar as El | undefined;
+    if (tb) { const side = st.priority === 'player' ? 'you' : 'them'; if (tb.dataset.side !== side) tb.dataset.side = side; }
+    this.syncDone();
+    if (show) { if (r.timer.textContent !== String(whole) && whole <= 5) audio.play('tick'); r.timer.textContent = String(whole); }
+  }
+
   /** Ken, Nov 1: the Respond window's bar (Brush's frame-progress) at the top, draining with the phase clock on the player's turn. Banked seconds
    *  run down first: the bar stays full and the "+0:35" chip shows them; the 10-to-0 countdown in the middle is unchanged. The computer has no clock, so no bar. */
-  syncTurnBar(st: any, timed: boolean, leftExact: number) {
+  syncTurnBar(st: any, timed: boolean, leftExact: number, onOverride?: boolean) {
     const tb = this.r.turnBar as El | undefined;
     if (!tb) return;
-    const on = !st.tutorial && st.mode !== 'compvscomp' && !(st.mode === 'cardplay' && st.phase === 'action') && st.activePlayer === 'player' && ACTIVE.includes(st.phase);
+    const on = onOverride !== undefined ? onOverride : !st.tutorial && st.mode !== 'compvscomp' && !(st.mode === 'cardplay' && st.phase === 'action') && st.activePlayer === 'player' && ACTIVE.includes(st.phase);
     if (tb.hidden !== !on) tb.hidden = !on;
     if (!on) return;
     const total = CONFIG.phaseTimerSeconds, main = Math.min(total, leftExact), extra = Math.max(0, Math.ceil(leftExact - total));
@@ -3547,7 +3633,10 @@ export class App {
     if (ec) this.dialogCard = ec.id + pend.actor;
     const cardBox = ec ? h('div', { class: `enemy-card hand-card static ${ec.type} f-${ec.faction}` }, ...faceKids(ec)) : null;
     const bar = h('div', { class: 'respond-bar', role: 'progressbar', 'aria-label': 'Respond time left', 'aria-valuemin': '0', 'aria-valuemax': String(CONFIG.respondWindowSeconds), 'aria-valuenow': String(CONFIG.respondWindowSeconds) }, h('div', { class: 'fill' }));
-    if (!this.test) { (bar.firstChild as El).style.animationDuration = CONFIG.respondWindowSeconds + 's'; (bar.firstChild as El).style.animationDelay = -((Date.now() - this.respStart) / 1000) + 's'; }
+    const ng = this.netGame; // Nov 2 (PvP): the bar runs from the server's respondDeadline; the server passes for you when it runs out
+    const netLeft = () => (ng && ng.respondDeadline != null ? Math.max(0, Math.min(CONFIG.respondWindowSeconds, (ng.respondDeadline - Date.now()) / 1000)) : CONFIG.respondWindowSeconds);
+    if (ng) { (bar.firstChild as El).style.animationDuration = CONFIG.respondWindowSeconds + 's'; (bar.firstChild as El).style.animationDelay = -(CONFIG.respondWindowSeconds - netLeft()) + 's'; bar.setAttribute('aria-valuenow', netLeft().toFixed(1)); }
+    else if (!this.test) { (bar.firstChild as El).style.animationDuration = CONFIG.respondWindowSeconds + 's'; (bar.firstChild as El).style.animationDelay = -((Date.now() - this.respStart) / 1000) + 's'; }
     else (bar.firstChild as El).style.animation = 'none';
     const d = this.dialog('Respond?', [h('h2', {}, 'Respond?'), bar, cardBox, h('p', { class: 'resp-what', style: 'text-align:center;margin:0 0 6px' }, what),
       h('div', { class: 'menu-list' }, ...buttons.map((b) => { b.classList.add('mframe'); b.style.setProperty('--coin', `url(${MATCH_ART('respond')})`); return b; }), coinOnly(btn('Let it happen', 'primary let-it-btn', () => { finish(); this.game.act({ type: 'pass' }); }), 'let-it-happen', 'Let it happen'))]);
@@ -3555,7 +3644,9 @@ export class App {
     d.el.firstElementChild?.classList.add('respond-dlg');
     this.respDlg = d;
     clearTimeout(this.respondTimer);
-    if (!this.test) {
+    if (ng) {
+      const iv = setInterval(() => { if (this.respDlg !== d) { clearInterval(iv); return; } bar.setAttribute('aria-valuenow', netLeft().toFixed(1)); }, 100);
+    } else if (!this.test) {
       const t0 = this.respStart;
       const iv = setInterval(() => {
         if (this.respDlg !== d) { clearInterval(iv); return; }
@@ -3899,6 +3990,7 @@ export class App {
     }
     if (st.phase === 'over' && !this.endShown) {
       this.endShown = true;
+      this.reportMatchEnd(st); // Nov 2: every match, vs-computer and PvP
       if (this.ranked(st) && !this.rankResult && st.winner) this.rankResult = recordResult(st.winner === 'player', this.rival!.id, this.rival!.points); /* Ken, Oct 31: rank points */
       const loser = st.winner === 'player' ? 'opponent' : 'player';
       const esc = FACTIONS[st.players[loser].faction].symbol === 'skull' ? '🚀' : FACTIONS[st.players[loser].faction].symbol === 'gear' ? '💨' : '🕳️';
@@ -3948,6 +4040,16 @@ export class App {
       h('div', { class: 'rp-delta ' + (rr.delta >= 0 ? 'gain' : 'loss') }, `${rr.delta >= 0 ? '+' : ''}${rr.delta} RP`),
       rr.rankedUp ? h('div', { class: 'rank-up', role: 'status' }, 'Rank up!') : '');
   }
+  /** Nov 2 (PvP): who you fought, how it ended, and the coins the server paid (if any). */
+  netEndBits(): El {
+    const ng = this.netGame!, res = ng.result;
+    const them = ng.names.them || 'your friend';
+    const why = !res ? '' : res.reason === 'surrender' ? (res.won ? `${them} gave up.` : 'You gave up.') : res.reason === 'timeout' ? (res.won ? `${them} ran out of time.` : 'You ran out of time.') : '';
+    return h('div', { class: 'pvp-end', 'data-result': res ? (res.won ? 'won' : 'lost') : '' },
+      h('p', { class: 'pvp-end-vs' }, `Friend match vs ${them}`),
+      why ? h('p', { class: 'pvp-end-why' }, why) : '',
+      res && res.coins ? h('p', { class: 'pvp-end-coins' }, `+${res.coins} coins`) : '');
+  }
   showEnd(winner: string) {
     if (!this.game.state || this.game.state.phase !== 'over' || !this.root.querySelector('.match')) return; // left for the menu meanwhile
     const st = this.game.state;
@@ -3973,7 +4075,8 @@ export class App {
       h('p', {}, win ? 'The enemy Commander fled screaming that this was all part of the plan.' : 'Your Commander escaped at the last second, shouting that this was all part of the plan.'),
       table,
       this.rankPanel(),
-      h('div', { class: 'row' },
+      this.netGame ? this.netEndBits() : '',
+      this.netGame ? h('div', { class: 'row' }, btn('Back to menu', 'primary', () => this.showMenu())) : h('div', { class: 'row' },
         btn(this.game.mode === 'compvscomp' ? 'Rematch' : 'Play again', 'primary', () => { if (this.lastTutorial) this.beginTutorial(); else { const o = { ...this.lastOptions }; this.beginMatch(o); } }),
         btn('Menu', '', () => this.showMenu(), this.game.mode === 'compvscomp' ? { 'aria-label': 'Exit to menu' } : {}))));
   }
@@ -4427,7 +4530,7 @@ export class App {
   orderPreview: Order | null = null;
   getOrders(): Order[] { return [...this.orders.values()].map((o) => JSON.parse(JSON.stringify(o))); }
   /** The runner never acts in a tutorial match; the tutorial's order lessons hand it a view without the tutorial flag (tutorial.ts). */
-  orderGame() { return this.game.state?.tutorial ? tutorialGame(this.game) : this.game; }
+  orderGame() { if (this.netGame) return this.netGame.ordersGame() as Game; /* PvP: orders plan on the server's state plus the moves on their way */ return this.game.state?.tutorial ? tutorialGame(this.game) : this.game; }
   /** Orders exist only for the player's own units, never in Comp vs Comp (in the tutorial from its order lesson on). */
   ordersAllowed(st: any = this.game.state) { return !!st && (!st.tutorial || tutorialOrders(st)) /* Ken, Nov 1: the tutorial teaches orders from its order lesson on */ && st.mode !== 'compvscomp' && this.game.mode !== 'compvscomp' && st.phase !== 'over'; }
   setOrder(o: Order) {

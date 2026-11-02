@@ -2,7 +2,7 @@
 // avatar, welcome, profile, ban, forgot / set password, Contact us, server decks.
 import './net.css';
 import { economyMenu } from './economy';
-import { pvpMenu } from './pvp';
+import { pvpMenu, bindPvpApp, resumePvp, isMockPvp } from './pvp';
 import { h, btn } from '../ui/app';
 import type { App } from '../ui/app';
 import { loadBrowserDecks as loadLocalDecks } from '../ui/decks';
@@ -83,6 +83,7 @@ async function busy<T>(b: HTMLButtonElement, fn: () => Promise<T>): Promise<T | 
 // ------------------------------------------------------------------ start
 export async function startOnline(a: App, opts: { page?: boolean } = {}) {
   app = a;
+  bindPvpApp(a);
   const page = pageMode(location.search);
   if (page) { await showPage(page); return; }
   void opts;
@@ -506,6 +507,23 @@ async function proceed(s: Status) {
       return;
     }
   }
+  if (await resumePvp()) return; // Nov 2 (PvP): a friend match still running? Straight back into it.
+  app.showMenu();
+}
+
+/** Nov 2 (PvP), test pages only (?test=1&pvp=mock&user=<name>): signed in as <name> against the local mock server
+ *  (tools/pvp-mock-server.mjs), no Supabase, no login. Then the same reconnect and main menu as a real sign-in. */
+let mockSignIn = false;
+export async function startMockPvp(a: App, user: string) {
+  app = a;
+  bindPvpApp(a);
+  if (!isMockPvp()) { app.showMenu(); return; } // only ever on a ?test=1&pvp=mock page
+  mockSignIn = true;
+  status = { user_id: 'mock:' + user, username: user, avatar: null, needs_avatar: false, age_group: 'adult', consent_status: 'not_required', decks_imported: true, coins: 0, banned: false, ban_expires_at: null, ban_reason: null };
+  serverKind = 'test';
+  net.offlineChosen = false; net.under13 = false; net.ageGroup = 'adult'; net.decks = [];
+  net.active = true;
+  if (await resumePvp()) return;
   app.showMenu();
 }
 
@@ -513,7 +531,11 @@ async function proceed(s: Status) {
 export function menuExtras(el: El) {
   const bar = testBar();
   if (bar) el.append(bar);
-  if (net.active && status) { el.append(h('button', { type: 'button', class: 'net-btn net-profile-btn', onclick: showProfile }, 'Profile')); pvpMenu(el); economyMenu(el); }
+  if (net.active && status) {
+    if (!mockSignIn) el.append(h('button', { type: 'button', class: 'net-btn net-profile-btn', onclick: showProfile }, 'Profile'));
+    try { pvpMenu(el); } catch (e) { console.warn('pvpMenu', e); }
+    try { economyMenu(el); } catch (e) { console.warn('economyMenu', e); }
+  }
   else if (net.offlineChosen) el.append(h('button', { type: 'button', class: 'net-chip', onclick: () => { void signOut(); } }, 'Offline — Sign in'));
 }
 

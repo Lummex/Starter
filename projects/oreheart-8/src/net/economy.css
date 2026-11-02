@@ -1,0 +1,210 @@
+/* Coins, packs, collection, quests and the pack opening (contract part 4). Silver kit, no gold. PC first, phones landscape too.
+   Everything that moves animates transform or opacity only. */
+:root{--econ-ink:#e6ebf5;--econ-dim:#9aa3b5;--econ-line:#6e798f;--econ-silver:#cfd6e4}
+
+/* ---------------------------------------------------------------- the screens */
+.econ-screen{z-index:59;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:10px;padding:32px clamp(10px,2.4vw,32px) 12px;overflow-y:auto;overflow-x:hidden;box-sizing:border-box}
+.econ-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between}
+.econ-head h1{margin:0;color:#fff;font-size:clamp(1.4rem,4.2vh,2.2rem);font-style:italic;text-shadow:0 2px 0 #000,0 0 14px #929aab55}
+.econ-head .econ-sub{margin:0;color:var(--econ-dim);font-style:italic;font-size:clamp(.85rem,2.2vh,1.05rem)}
+.econ-head .econ-titles{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+html body .econ-screen .net-btn.econ-back{min-height:42px;font-size:1rem}
+.econ-panel{background:rgba(12,14,24,.82);border:1px solid #a4abb955;border-radius:10px;box-shadow:inset 0 0 0 1px #000a,0 6px 22px #0009}
+.econ-alert{color:#ff9c7a;text-align:center;margin:0;font-style:normal}
+.econ-alert:empty{display:none}
+
+/* ---------------------------------------------------------------- coin chip, menu bar, toast */
+.econ-coins{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:2px 14px 2px 4px;color:#fff;font-size:1.15rem;font-weight:700;font-style:normal;font-family:"Alegreya SC",Georgia,serif;
+  background:linear-gradient(rgba(44,48,60,.94),rgba(16,18,26,.94));border:1px solid #a4abb9;border-radius:22px;box-shadow:inset 0 0 0 1px #000a,0 2px 6px #000a;text-shadow:0 1px 2px #000;white-space:nowrap}
+.econ-coin-img{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 1px 2px #000)}
+.econ-coins-free{display:inline-flex;align-items:center;gap:2px;margin-left:6px;font-size:.95rem;color:#dfe8f7}
+.econ-coins-free[hidden]{display:none}
+.econ-coins-free img{width:28px;height:28px;object-fit:contain}
+.econ-bar{position:absolute;left:14px;top:34px;z-index:41;display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:calc(100% - 200px)}
+.econ-bar .net-btn.econ-menu-btn,.econ-menu-btn{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:3px 14px 3px 8px;font:inherit;font-family:"Alegreya SC",Georgia,serif;font-size:1rem;font-weight:700;font-style:italic;color:#fff;text-shadow:0 1px 2px #000;
+  background:linear-gradient(rgba(58,63,77,.95),rgba(22,24,32,.95));border:1px solid #a4abb9;border-radius:22px;box-shadow:inset 0 0 0 1px #000a,0 2px 6px #000a;cursor:pointer}
+.econ-menu-btn img{width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px #000)}
+.econ-menu-btn[data-econ=collection] img{width:22px;height:30px;object-fit:cover;border-radius:3px}
+.econ-menu-btn:hover,.econ-menu-btn:focus-visible{border-color:#fff;box-shadow:inset 0 0 0 1px #000a,0 0 12px #dfe8f7aa;outline:0}
+.econ-toast{position:fixed;left:50%;top:14%;z-index:9000;display:flex;align-items:center;gap:10px;padding:8px 20px 8px 10px;transform:translateX(-50%);color:#fff;font:700 1.2rem "Alegreya SC",Georgia,serif;text-shadow:0 1px 2px #000;
+  background:linear-gradient(rgba(58,63,77,.97),rgba(22,24,32,.97));border:2px solid #cfd6e4;border-radius:30px;box-shadow:0 0 22px #9fb6e6aa,0 6px 18px #000c;animation:econToastIn .45s cubic-bezier(.2,1.4,.4,1) both;pointer-events:none}
+.econ-toast img{width:44px;height:44px;object-fit:contain}
+.econ-toast.out{opacity:0;transform:translate(-50%,-20px);transition:opacity .5s,transform .5s}
+@keyframes econToastIn{from{opacity:0;transform:translate(-50%,-30px) scale(.8)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+
+/* ---------------------------------------------------------------- shop */
+.shop-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.6vw,22px);align-items:stretch}
+.shop-pack{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 10px 12px;text-align:center}
+.shop-pack h2{margin:0;color:#fff;font-size:clamp(1rem,2.8vh,1.35rem);font-style:italic;text-shadow:0 1px 2px #000}
+.shop-pack .shop-blurb{margin:0;color:var(--econ-dim);font-style:italic;font-size:clamp(.78rem,1.9vh,.95rem);line-height:1.25;min-height:2.5em}
+.shop-art{position:relative;height:clamp(120px,34vh,330px);aspect-ratio:2/3;cursor:pointer;perspective:900px}
+.shop-art .pko-sealed-wrap{position:absolute;inset:0;transition:transform .25s cubic-bezier(.2,.8,.3,1)}
+.shop-pack:hover .shop-art .pko-sealed-wrap{transform:translateY(-4%) rotate(-2deg) scale(1.04)}
+.shop-price{display:flex;align-items:center;justify-content:center;gap:4px;color:#fff;font-weight:700;font-size:1.15rem}
+.shop-price img{width:28px;height:28px}
+.shop-today{margin:0;color:var(--econ-dim);font-size:.85rem}
+.shop-odds{margin:0;color:#c3cad8;font-size:clamp(.72rem,1.8vh,.85rem);line-height:1.25;font-style:normal}
+.shop-pack .net-btn{width:100%;min-height:44px;font-size:1rem;margin-top:auto}
+html body .econ-screen .shop-pack .net-btn{padding-inline:calc(var(--sv-cap) * .55);white-space:nowrap}
+.shop-hint{margin:0;color:#ff9c7a;font-size:.85rem;font-style:italic}
+.shop-free{position:absolute;top:10px;right:-6px;z-index:2;padding:3px 14px;color:#08111f!important;-webkit-text-fill-color:#08111f!important;text-shadow:none!important;font:700 .95rem Arial,sans-serif;letter-spacing:.08em;background:linear-gradient(#f4f8ff,#9fb6e6);border:1px solid #fff;border-radius:3px;box-shadow:0 2px 6px #000a;transform:rotate(8deg)}
+.econ-wallet{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* ---------------------------------------------------------------- collection */
+.col-tools{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:center}
+.col-tools .net-races{gap:4px}
+.col-tools .net-race{min-height:38px;padding:2px 12px;font-size:.92rem}
+.col-count{margin:0;color:#fff;font-size:clamp(.95rem,2.4vh,1.15rem);text-align:center;font-style:italic}
+.col-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(84px,9.5vw,150px),1fr));gap:clamp(6px,1vw,14px);padding:4px}
+.col-card{position:relative;aspect-ratio:420/624;padding:0;border:0;background:none;cursor:zoom-in;border-radius:6px}
+.col-card>.ohcard{position:absolute;inset:0}
+.col-card.unowned>.ohcard{opacity:.45;filter:grayscale(.85)}
+.col-card:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.col-badge{position:absolute;right:-3px;bottom:-3px;z-index:2;min-width:30px;padding:1px 7px;color:#fff;font:700 .95rem Arial,sans-serif;text-align:center;background:linear-gradient(#4a5368,#1d2130);border:1px solid #cfd6e4;border-radius:12px;box-shadow:0 2px 4px #000c}
+.col-lock{position:absolute;left:50%;top:44%;z-index:2;transform:translate(-50%,-50%);font-size:1.6rem;filter:drop-shadow(0 2px 3px #000)}
+.col-zoom{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:#000b;cursor:zoom-out}
+.col-zoom .col-big{height:min(86vh,640px);aspect-ratio:420/624;position:relative}
+.col-zoom .col-big>.ohcard{position:absolute;inset:0}
+
+/* ---------------------------------------------------------------- deck builder, signed in: owned counts */
+.db-tile.unowned .face{opacity:.45;filter:grayscale(.85)}
+.db-tile .db-owned{position:absolute;right:2px;bottom:2px;z-index:21;padding:1px 7px;color:#fff;font:700 .78rem Arial,sans-serif;background:linear-gradient(#4a5368,#1d2130);border:1px solid #cfd6e4;border-radius:10px;box-shadow:0 2px 4px #000c;pointer-events:none}
+.db-tile.unowned .db-owned{left:50%;right:auto;top:44%;bottom:auto;transform:translate(-50%,-50%);padding:0;font-size:1.5rem;background:none;border:0;box-shadow:none;filter:drop-shadow(0 2px 3px #000)}
+
+/* ---------------------------------------------------------------- quests */
+.q-list{display:flex;flex-direction:column;gap:10px;max-width:900px;width:100%;margin:0 auto}
+.q-row{display:grid;grid-template-columns:auto 1fr auto;gap:6px 14px;align-items:center;padding:10px 14px}
+.q-row.done{border-color:#9be09b88}
+.q-icon{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 2px 3px #000)}
+.q-main{display:flex;flex-direction:column;gap:4px;min-width:0;text-align:left}
+.q-name{margin:0;color:#fff;font-size:1.15rem;font-weight:700;font-style:italic;text-shadow:0 1px 2px #000}
+.q-tier{margin-left:8px;padding:0 8px;border:1px solid var(--econ-line);border-radius:10px;font:600 .72rem Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--econ-dim);vertical-align:middle}
+.q-text{margin:0;color:var(--econ-ink);font-style:italic}
+.q-bar{position:relative;height:14px;border-radius:8px;background:#0c0e15;border:1px solid var(--econ-line);overflow:hidden}
+.q-fill{position:absolute;inset:0;transform-origin:0 50%;background:linear-gradient(90deg,#6f86b8,#dfe8f7);transition:transform .6s cubic-bezier(.2,.8,.3,1)}
+.q-row.done .q-fill{background:linear-gradient(90deg,#5fae6a,#c8ffd6)}
+.q-meta{display:flex;gap:12px;flex-wrap:wrap;color:var(--econ-dim);font-size:.85rem}
+.q-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.q-reward{display:inline-flex;align-items:center;gap:4px;color:#fff;font-weight:700;font-size:1.1rem}
+.q-reward img{width:30px;height:30px}
+.q-paid{color:#9be09b;font-weight:700}
+.q-reroll{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:2px 12px 2px 6px;font:inherit;font-size:.9rem;font-style:italic;color:#e6ebf5;background:linear-gradient(rgba(44,48,60,.92),rgba(16,18,26,.92));border:1px solid #6e798f;border-radius:20px;cursor:pointer}
+.q-reroll img{width:28px;height:28px}
+.q-reroll:hover,.q-reroll:focus-visible{border-color:#fff;box-shadow:0 0 10px #dfe8f7aa;outline:0}
+.q-reroll:disabled{opacity:.45;cursor:not-allowed}
+.q-streak{display:flex;align-items:center;justify-content:center;gap:10px;margin:0;padding:8px 14px;color:#fff;font-size:1.05rem;font-style:italic}
+.q-streak img{width:40px;height:40px}
+.q-dots{display:inline-flex;gap:4px}
+.q-dots i{width:12px;height:12px;border-radius:50%;border:1px solid #cfd6e4;background:#0c0e15}
+.q-dots i.on{background:radial-gradient(circle at 40% 35%,#fff,#9fb6e6)}
+
+/* ---------------------------------------------------------------- the pack opening */
+.econ-screen.pko-screen{padding:28px 1.5vw 8px;overflow:hidden;background:radial-gradient(ellipse at 50% 42%,#2b3346 0,#12141c 55%,#07080c 100%)}
+.pko-scene{flex:1;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-columns:100%;gap:6px;user-select:none;-webkit-user-select:none}
+.pko-head{display:flex;align-items:center;justify-content:center;gap:16px}
+.pko-title{margin:0;color:#fff;font-size:clamp(1.2rem,4vh,2rem);font-style:italic;text-shadow:0 2px 0 #000,0 0 18px #9fb6e688}
+.pko-stage,.pko-row{grid-row:2;grid-column:1}
+.pko-stage{position:relative;place-self:center;height:min(62vh,600px);aspect-ratio:2/3;perspective:1100px}
+.pko-stage.pko-gone{visibility:hidden}
+.pko-tilt{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .12s linear;cursor:pointer;outline:0;will-change:transform}
+.pko-tilt:focus-visible .pko-wobble{filter:drop-shadow(0 0 10px #fff)}
+.pko-wobble{position:absolute;inset:0;animation:pkWobble 3.4s ease-in-out infinite;will-change:transform}
+.pko-wobble>img,.pko-wobble>.pko-sealed-wrap,.pko-wobble>.pko-foil{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.pko-wobble>.pko-top{height:auto;aspect-ratio:720/126;transform-origin:100% 5%;will-change:transform,opacity}
+.pko-wobble>.pko-foil-top{height:12%}
+.pko-peek{position:absolute;left:12%;width:76%;top:5%;aspect-ratio:420/624;will-change:transform}
+.pko-peek>.ohcard{position:absolute;inset:0}
+.pko-peek>.ohcard:nth-child(2){transform:translate(3%,2%) rotate(2deg)}
+.pko-aura{position:absolute;inset:-14%;border-radius:50%;background:radial-gradient(closest-side,#e8f2ffcc,#8fb4ff66 45%,#8fb4ff00 75%);opacity:0;pointer-events:none;will-change:transform,opacity}
+.pko-shaking{animation:pkShake .44s linear}
+@keyframes pkWobble{0%,100%{transform:translateY(0) rotate(-.9deg)}50%{transform:translateY(-1.6%) rotate(.9deg)}}
+@keyframes pkShake{0%,100%{transform:translate(0,0)}15%{transform:translate(-2%,.6%) rotate(-2deg)}30%{transform:translate(2%,-.6%) rotate(2deg)}45%{transform:translate(-1.6%,-.3%) rotate(-1.4deg)}60%{transform:translate(1.4%,.5%) rotate(1.2deg)}80%{transform:translate(-.8%,.2%) rotate(-.6deg)}}
+.pko-sealed-wrap{position:relative;overflow:hidden}
+.pko-sealed-wrap>.pko-sealed{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 10px 18px #000c)}
+.pko-main{transition:opacity .08s}
+/* the foil sheen: a bright band slides across, cut to the pack's own wrinkles by Brush's shine mask (transform only) */
+.pko-shine{position:absolute;inset:0;mix-blend-mode:screen;pointer-events:none;overflow:hidden;-webkit-mask-image:var(--mask);mask-image:var(--mask);-webkit-mask-size:100% 100%;mask-size:100% 100%}
+.pko-band{position:absolute;top:0;bottom:0;left:-100%;width:300%;background:linear-gradient(115deg,transparent 36%,rgba(255,255,255,.9) 46%,rgba(190,225,255,.85) 52%,transparent 62%);animation:pkSheen 3.8s ease-in-out infinite;will-change:transform}
+@keyframes pkSheen{0%{transform:translateX(-34%)}55%,100%{transform:translateX(34%)}}
+.pko-css .pko-shine{display:none}
+/* placeholder foil (only if the painting is missing) */
+.pko-foil{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:4px;
+  background:repeating-linear-gradient(90deg,#e9eef7 0 3px,#8d97ab 3px 6px) top/100% 7% no-repeat,repeating-linear-gradient(90deg,#e9eef7 0 3px,#8d97ab 3px 6px) bottom/100% 7% no-repeat,
+  linear-gradient(125deg,#0b1024 10%,var(--tint) 35%,#0b1024 55%,var(--tint) 80%,#0b1024);box-shadow:inset 0 0 30px #000a,0 10px 18px #000c}
+.pko-foil-name{padding:8px 12px;color:#fff;font:700 clamp(1rem,4vh,1.8rem) "Alegreya SC",Georgia,serif;font-style:italic;text-align:center;text-shadow:0 2px 0 #000,0 0 14px #dfe8f7;border-top:2px solid #cfd6e4;border-bottom:2px solid #cfd6e4}
+.pko-foil-body{clip-path:polygon(0 12%,6% 13%,11% 11.5%,17% 13.2%,23% 11.8%,30% 13.4%,36% 12%,43% 13.6%,50% 12.2%,57% 13.8%,63% 12.4%,70% 14%,77% 12.6%,84% 14.2%,91% 12.8%,100% 14.4%,100% 100%,0 100%)}
+.pko-foil-top{clip-path:polygon(0 0,100% 0,100% 100%,91% 85%,84% 100%,77% 88%,70% 100%,63% 86%,57% 100%,50% 85%,43% 100%,36% 86%,30% 100%,23% 84%,17% 100%,11% 82%,6% 100%,0 86%);background-size:100% 58%,0 0,100% 100%;background-position:top,bottom,0 0}
+.pko-shreds{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.pko-shred{position:absolute;object-fit:contain;will-change:transform,opacity;pointer-events:none}
+
+/* the row of cards */
+.pko-row{--cw:min(calc((97vw - 7 * clamp(6px,1vw,14px)) / 8),calc((100vh - 190px) * .673),190px);place-self:center;display:flex;gap:clamp(6px,1vw,14px);justify-content:center;align-items:center;visibility:hidden}
+.pko-scene:is([data-phase=cards],[data-phase=done]) .pko-row{visibility:visible}
+.pko-card{position:relative;flex:none;width:var(--cw);aspect-ratio:420/624;padding:0;margin:0;border:0;background:none;cursor:pointer;perspective:900px;border-radius:5%;will-change:transform,opacity;-webkit-tap-highlight-color:transparent}
+.pko-card:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.pko-flip{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.3,.1,.25,1);will-change:transform}
+.pko-card:not(.flipped):hover .pko-flip{transform:translateY(-4%) rotateY(-8deg)}
+.pko-card.flipped .pko-flip{transform:rotateY(180deg)}
+.pko-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.pko-face>.ohcard{position:absolute;inset:0}
+.pko-front{transform:rotateY(180deg)}
+.pko-unknown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;background:#1b1f2b;border:2px solid #cfd6e4;border-radius:5%;font-size:.8rem;padding:6px;text-align:center}
+.pko-new{position:absolute;left:-6%;top:-3%;z-index:3;padding:2px 9px;color:#08111f!important;-webkit-text-fill-color:#08111f!important;text-shadow:none!important;font:800 clamp(.65rem,1.6vh,.9rem) Arial,sans-serif;letter-spacing:.08em;background:linear-gradient(#ffffff,#b9d4ff);border:1px solid #fff;border-radius:10px;box-shadow:0 0 10px #b9d4ffcc,0 2px 4px #000c;transform:rotate(-10deg) scale(.4);opacity:0;transition:opacity .25s .45s,transform .35s .45s cubic-bezier(.2,1.6,.4,1)}
+.pko-card.flipped .pko-new{opacity:1;transform:rotate(-10deg) scale(1)}
+/* rarity glow, bigger for rarer cards (no gold): Common none, Uncommon soft silver rim, Rare blue-white bloom,
+   Ultra Rare bright violet bloom with sparkles, Collector rainbow shimmer with a short burst */
+.pko-glow{position:absolute;inset:-3%;border-radius:7%;opacity:0;pointer-events:none;transition:opacity .5s .3s;will-change:opacity}
+.pko-card.flipped .pko-glow{opacity:1}
+.pko-r-common .pko-glow{display:none}
+.pko-r-uncommon .pko-glow{box-shadow:0 0 0 2px #e6ebf5cc,0 0 10px 1px #cfd6e499}
+.pko-r-rare .pko-glow{inset:-5%;box-shadow:0 0 0 2px #e8f3ff,0 0 22px 6px #9fd0ffcc,0 0 48px 10px #5aa8ff66}
+.pko-r-ultra-rare .pko-glow{inset:-6%;box-shadow:0 0 0 2px #f1e3ff,0 0 26px 8px #b45cffdd,0 0 60px 16px #8a3dff77}
+.pko-r-ultra-rare.flipped .pko-glow{animation:pkPulse 1.6s ease-in-out .8s infinite}
+.pko-r-collector .pko-glow{inset:-8%;border-radius:9%;overflow:hidden;box-shadow:0 0 0 2px #fff,0 0 34px 10px #ffffff88}
+.pko-r-collector .pko-glow::before{content:"";position:absolute;inset:-60%;background:conic-gradient(#ff5d8f,#ffb35d,#fff36b,#6bff9a,#5dd8ff,#7a6bff,#e05dff,#ff5d8f);filter:blur(10px);opacity:.9;animation:pkSpin 2.6s linear infinite;will-change:transform}
+.pko-r-collector .pko-glow::after{content:"";position:absolute;inset:6%;border-radius:6%;background:#07080c}
+@keyframes pkPulse{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes pkSpin{to{transform:rotate(360deg)}}
+.pko-spark{position:absolute;left:50%;top:50%;z-index:4;width:12px;height:12px;pointer-events:none;background:radial-gradient(circle,#fff 0,#fff 20%,#e3c8ff 45%,transparent 70%);clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);will-change:transform,opacity}
+.pko-r-collector .pko-spark{background:radial-gradient(circle,#fff 0,#fff 20%,#9ff5ff 45%,transparent 70%)}
+.pko-ui{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:84px}
+.pko-hint{margin:0;color:#dfe8f7;font-style:italic;font-size:clamp(.9rem,2.4vh,1.15rem);text-shadow:0 1px 2px #000;min-height:1.3em;text-align:center}
+.pko-ui .net-actions .net-btn{min-width:150px}
+.pko-ui .net-actions .net-btn[hidden]{display:none}
+.pko-scene[data-phase=ripping] .pko-tilt{cursor:default}
+
+/* ---------------------------------------------------------------- phones (landscape, short screens) */
+@media (max-height:480px){
+  .econ-screen{padding:26px 10px 6px;gap:6px}
+  .econ-head h1{font-size:1.25rem}
+  .econ-head .econ-sub{display:none}
+  .econ-coins{min-height:34px;font-size:1rem}
+  .econ-coin-img{width:28px;height:28px}
+  .econ-bar{top:30px;gap:5px}
+  .econ-bar .econ-menu-btn{min-height:36px;font-size:.9rem;padding:2px 10px 2px 6px}
+  .econ-menu-btn img{width:24px;height:24px}
+  .shop-pack{padding:6px 6px 8px;gap:3px}
+  .shop-pack .shop-blurb{display:none}
+  .shop-art{height:clamp(90px,30vh,140px)}
+  .shop-odds{font-size:.68rem}
+  .shop-pack .net-btn{min-height:40px;font-size:.9rem}
+  .q-row{padding:6px 10px;gap:4px 10px}
+  .q-icon{width:38px;height:38px}
+  .q-name{font-size:1rem}
+  .q-text{font-size:.9rem}
+  .econ-screen.pko-screen{padding:24px 8px 4px}
+  .pko-title{font-size:1.1rem}
+  .pko-stage{height:min(58vh,600px)}
+  .pko-row{--cw:min(calc((97vw - 7 * 6px) / 8),calc((100vh - 140px) * .673))}
+  .pko-ui{min-height:58px;gap:2px}
+  .pko-ui .net-actions .net-btn{min-width:120px;min-height:40px;font-size:.95rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .pko-wobble,.pko-band,.pko-r-collector .pko-glow::before,.pko-r-ultra-rare.flipped .pko-glow{animation:none}
+  .pko-flip{transition-duration:.2s}
+  .econ-toast{animation:none}
+}
+/* style.css paints every <p> in the body colour (!important); these few keep their own colour */
+.econ-screen :is(.econ-alert,.shop-hint){color:#ff9c7a!important;-webkit-text-fill-color:#ff9c7a!important}
+.econ-screen :is(.q-name,.col-count,.pko-hint){color:#fff!important;-webkit-text-fill-color:#fff!important}
+.pko-card.flipped{cursor:zoom-in}
