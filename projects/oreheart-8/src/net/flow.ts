@@ -1,6 +1,8 @@
 // Online Phase A screens and start-up flow: server check, login, sign-up (age question first), parent consent,
 // avatar, welcome, profile, ban, forgot / set password, Contact us, server decks.
 import './net.css';
+import { economyMenu } from './economy';
+import { pvpMenu } from './pvp';
 import { h, btn } from '../ui/app';
 import type { App } from '../ui/app';
 import { loadBrowserDecks as loadLocalDecks } from '../ui/decks';
@@ -511,7 +513,7 @@ async function proceed(s: Status) {
 export function menuExtras(el: El) {
   const bar = testBar();
   if (bar) el.append(bar);
-  if (net.active && status) el.append(h('button', { type: 'button', class: 'net-btn net-profile-btn', onclick: showProfile }, 'Profile'));
+  if (net.active && status) { el.append(h('button', { type: 'button', class: 'net-btn net-profile-btn', onclick: showProfile }, 'Profile')); pvpMenu(el); economyMenu(el); }
   else if (net.offlineChosen) el.append(h('button', { type: 'button', class: 'net-chip', onclick: () => { void signOut(); } }, 'Offline — Sign in'));
 }
 
