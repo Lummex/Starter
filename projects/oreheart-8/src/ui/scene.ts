@@ -465,7 +465,7 @@ const _embV = new THREE.Vector3();
     group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; fidgetAt?: number; fidgetUntil?: number; fidgetBrk?: boolean; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
     /** Oct 30: squares still to walk (one per step), running gait, knock-back flight, delayed hit flash, step-in length, when its blow lands */
-    flight?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null; path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lastBlowAt?: number; lungeDur?: number; blowAt?: number;
+    flight?: { t0: number; from: THREE.Vector3; to: THREE.Vector3; ms: number; h: number; fxT?: number; smokeT?: number } | null; squashT?: number; /** the Rocket Rider's hover / flight height this frame */ flyY?: number; path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lastBlowAt?: number; lungeDur?: number; blowAt?: number;
   };
   type Knock = { t0: number; from: THREE.Vector3; land: THREE.Vector3; h: number; spin: number; fly: number; ret: boolean; landed: boolean; knockMove?: boolean };
   // Oct 30 (Ken's fighting vision): units walk square by square and fights are little comic scenes (timings in ms, snappy)
@@ -473,7 +473,19 @@ const _embV = new THREE.Vector3();
   /** Ken, Nov 1: "for each swing I'd like it to play the animation, so you can see the hit and the miss": one attack animation, sound and result per swing, this far apart */
   const SWING_PAUSE = Number((CONFIG as any).combat?.swingPauseMs ?? 500); // Ken, Nov 1: "give them a half second before each attack": a pause before every swing, results only when the swing lands
   const SWING_MS = 640 + SWING_PAUSE; // one swing: the pause, then the clip; the result (sound, sticker) at the moment it lands
-  const RIDE_MS = 1500; // Rocket Rider flight: slow climb, arc over, nosedive
+  const RIDE_MS = 1900; // Rocket Rider flight (every move, and the Rocket Ride): launch, a high arc, a nosedive, a crash
+  const FLY_H = 2.5; // Ken, Nov 1: "flying twenty, thirty feet in the air": as high as the board camera keeps on screen (about two and a half unit heights; 4.6 went off the top at 1920x1080)
+  /** Ken, Nov 1: the rider never walks. Every move is a flight: fire out of the rocket, a smoke trail that lingers and fades, and a comic crash down (flash, smoke ring, stars, a shake, a squash). The move rules are untouched; this is only how it looks. */
+  function launchFlight(f: Fig, to: THREE.Vector3, now: number) {
+    f.flight = { t0: now, from: f.group.position.clone().setY(0), to: to.clone().setY(0), ms: RIDE_MS, h: FLY_H }; f.path = [];
+    audio.play('rocket-launch');
+    const land = to.clone(), uid = f.uid;
+    setTimeout(() => { const ff = figs.get(uid); if (!ff) return; ff.squashT = performance.now(); spawnFx('flash', land, 1); spawnFx('smoke', land, 12); spawnFx('stars', land, 6); spawnFx('dust', land, 6); audio.play('rocket-crash'); shake(10, 420); }, RIDE_MS);
+  }
+  function shake(px: number, ms: number) {
+    if (low) return;
+    for (const el of [canvas, backCanvas]) { try { el.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${px}px,${-px * 0.6}px)` }, { transform: `translate(${-px * 0.8}px,${px * 0.5}px)` }, { transform: `translate(${px * 0.5}px,${-px * 0.3}px)` }, { transform: 'translate(0,0)' }], { duration: ms, easing: 'ease-out' }); } catch { /* old browser */ } }
+  }
   const swingDefs = new Set<string>(); // defenders whose flinch and knock-back follow their own swing results
   const impacts: { at: number; to: THREE.Vector3; ranged: boolean; armored: boolean; commander: boolean }[] = [];
   /** Oct 31 (Ledger, studio/gear-placements-oct31.json aimLooks): while a shooter plays its ranged clip its gun takes an aim grip (barrel along
@@ -648,15 +660,15 @@ const _embV = new THREE.Vector3();
     sp.scale.setScalar(size); sp.position.copy(at); sp.renderOrder = 12; scene.add(sp);
     fx.push({ obj: sp, t: performance.now(), kind: 'flash', dur, vel: new THREE.Vector3(0, 0.25, 0) });
   }
-  function spawnFx(kind: 'dust' | 'stars' | 'spark' | 'chips' | 'flash', at: THREE.Vector3, n = 5) {
+  function spawnFx(kind: 'dust' | 'stars' | 'spark' | 'chips' | 'flash' | 'smoke' | 'fire', at: THREE.Vector3, n = 5) {
     if (low) return;
     for (let i = 0; i < n; i++) {
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: kind === 'stars' ? starTex : puffTex, transparent: true, depthWrite: false, color: kind === 'spark' ? 0xfff0a0 : kind === 'dust' ? 0xb8a890 : kind === 'chips' ? 0xeee2c0 : 0xffffff, blending: kind === 'flash' ? THREE.AdditiveBlending : THREE.NormalBlending }));
-      sp.scale.setScalar(kind === 'stars' ? 0.22 : kind === 'spark' ? 0.12 : kind === 'chips' ? 0.07 : kind === 'flash' ? 0.7 : 0.3);
-      sp.position.copy(at).add(kind === 'flash' || kind === 'chips' ? new THREE.Vector3(0, 0, 0) : new THREE.Vector3(0, 0.3, 0));
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: kind === 'stars' ? starTex : puffTex, transparent: true, depthWrite: false, color: kind === 'smoke' ? 0x8a8a90 : kind === 'fire' ? 0xff8c1a : kind === 'spark' ? 0xfff0a0 : kind === 'dust' ? 0xb8a890 : kind === 'chips' ? 0xeee2c0 : 0xffffff, blending: kind === 'fire' ? THREE.AdditiveBlending : (kind === 'flash' ? THREE.AdditiveBlending : THREE.NormalBlending )}));
+      sp.scale.setScalar(kind === 'smoke' ? 0.3 : kind === 'fire' ? 0.18 : kind === 'stars' ? 0.22 : kind === 'spark' ? 0.12 : kind === 'chips' ? 0.07 : kind === 'flash' ? 0.7 : 0.3);
+      sp.position.copy(at).add(kind === 'flash' || kind === 'chips' || kind === 'smoke' || kind === 'fire' ? new THREE.Vector3(0, 0, 0) : new THREE.Vector3(0, 0.3, 0));
       scene.add(sp);
       const a = (i / n) * Math.PI * 2 + (kind === 'chips' ? 0.5 : 0);
-      fx.push({ obj: sp, t: performance.now(), kind, dur: kind === 'flash' ? 160 : kind === 'chips' ? 600 : 700, vel: kind === 'flash' ? new THREE.Vector3() : new THREE.Vector3(Math.cos(a) * (kind === 'chips' ? 1.4 : 0.9), kind === 'stars' ? 2 : kind === 'chips' ? 2.4 : 0.9, Math.sin(a) * (kind === 'chips' ? 1.4 : 0.9)) });
+      fx.push({ obj: sp, t: performance.now(), kind, dur: kind === 'smoke' ? 1500 : kind === 'fire' ? 220 : kind === 'flash' ? 160 : kind === 'chips' ? 600 : 700, vel: kind === 'smoke' ? new THREE.Vector3((Math.random() - 0.5) * 0.25, 0.22 + Math.random() * 0.1, (Math.random() - 0.5) * 0.25) : kind === 'fire' ? new THREE.Vector3((Math.random() - 0.5) * 0.3, -0.15, (Math.random() - 0.5) * 0.3) : kind === 'flash' ? new THREE.Vector3() : new THREE.Vector3(Math.cos(a) * (kind === 'chips' ? 1.4 : 0.9), kind === 'stars' ? 2 : kind === 'chips' ? 2.4 : 0.9, Math.sin(a) * (kind === 'chips' ? 1.4 : 0.9)) });
     }
   }
   const proj = createProjectiles(scene, (k, at, n) => spawnFx(k, at, n), low); // Oct 31 (Ken): flying 3D projectiles
@@ -1053,10 +1065,10 @@ const _embV = new THREE.Vector3();
       }
       const mv = events.find((e) => e.type === 'move' && e.uid === c.uid);
       if (mv && mv.teleport && c.cardId === 'shard-guzzler' && events.some((e) => e.type === 'abilityUsed' && e.uid === c.uid && e.ability === 'rocket')) { // Ken, Nov 1: the Rocket Rider shoots up slowly, arcs over and nosedives onto the target
-        f.flight = { t0: now, from: f.group.position.clone().setY(0), to: tgt.clone() }; f.path = []; audio.play('fireball-whoosh');
-        setTimeout(() => { spawnFx('dust', tgt, 6); spawnFx('stars', tgt, 5); }, RIDE_MS);
+        launchFlight(f, tgt, now);
       }
       else if (mv && mv.teleport) { f.group.position.copy(tgt); f.path = []; }
+      else if (mv && !mv.knock && c.cardId === 'shard-guzzler') launchFlight(f, tgt, now); // Ken, Nov 1: "I don't want him to walk": every move is a flight
       else if (mv && mv.knock) { // Round 28b + Oct 30: a knock-back (Smack, Shockwave, deathKnock...) launches the figure onto its new square with a tumble
         const from = f.group.position.clone().setY(0); f.path = [];
         f.kb = { t0: now, from, land: tgt.clone(), h: 0.45, spin: 1, fly: 420, ret: false, landed: false, knockMove: true }; f.knockT = now + 100; fitKnockClip(f);
@@ -1655,10 +1667,16 @@ const _embV = new THREE.Vector3();
         else if (k < 1) { const e2 = k * (2 - k); g.position.lerpVectors(b.from, b.to, e2); goal.copy(g.position); }
         else { f.bowl = null; g.rotation.z = 0; }
       }
-      if (f.flight) { // Rocket Rider: slow climb, arc over, nosedive (RIDE_MS)
-        const fl = f.flight, k = Math.min(1, (now - fl.t0) / RIDE_MS), H = 3.6;
+      if (f.flight) { // Rocket Rider: launch, a high arc, a nosedive; fire from the rocket and a smoke trail on the way
+        const fl = f.flight, k = Math.min(1, (now - fl.t0) / fl.ms);
         const e = k * k * (3 - 2 * k) * 0.35 + k * k * k * 0.65; // slow at the start, fast at the end
         g.position.lerpVectors(fl.from, fl.to, e); goal.copy(g.position);
+        const dx = fl.to.x - fl.from.x, dz = fl.to.z - fl.from.z; if (dx * dx + dz * dz > 1e-6) { f.faceTo = Math.atan2(dx, dz); f.faceUntil = now + 300; }
+        if (!low && k < 0.97) {
+          const yy = 0.42 + fl.h * Math.pow(Math.sin(Math.PI * k), 0.8), yaw = f.yaw || 0;
+          if (now - (fl.fxT || 0) > 45) { fl.fxT = now; spawnFx('fire', new THREE.Vector3(g.position.x - Math.sin(yaw) * 0.3, yy - 0.05, g.position.z - Math.cos(yaw) * 0.3), 2); }
+          if (now - (fl.smokeT || 0) > 90) { fl.smokeT = now; spawnFx('smoke', new THREE.Vector3(g.position.x - Math.sin(yaw) * 0.2, yy - 0.1, g.position.z - Math.cos(yaw) * 0.2), 1); }
+        }
         if (k >= 1) { f.flight = null; g.rotation.x = 0; }
       }
       if (carried) goal.set(carry!.pos.x, goal.y, carry!.pos.z);
@@ -1680,8 +1698,9 @@ const _embV = new THREE.Vector3();
       } else g.position.y = walking ? Math.abs(Math.sin(now / 90)) * 0.09 : Math.abs(Math.sin(now / 260 + g.position.x)) * 0.015;
       if (f.cardId === 'shard-guzzler' && !f.born) { // Ken, Nov 1: the Rocket Rider rides his rocket, hovering above the floor
         let y = 0.42 + Math.sin(now / 420 + g.position.x) * 0.05;
-        if (f.flight) { const k = Math.min(1, (now - f.flight.t0) / RIDE_MS); y += 3.6 * Math.pow(Math.sin(Math.PI * k), 0.8); g.rotation.x = k < 0.3 ? -0.2 : -0.2 + (k - 0.3) / 0.7 * 1.7; }
-        g.position.y = y;
+        if (f.flight) { const k = Math.min(1, (now - f.flight.t0) / f.flight.ms); y += f.flight.h * Math.pow(Math.sin(Math.PI * k), 0.8); g.rotation.x = k < 0.3 ? -0.45 : -0.45 + (k - 0.3) / 0.7 * 1.9; } // nose up on the climb, nose down into the crash
+        g.position.y = y; f.flyY = y;
+        if (f.squashT) { const q = (now - f.squashT) / 380; if (q < 1) { const sq = 1 - 0.4 * Math.sin(Math.PI * Math.min(1, q * 1.6)) * (1 - q); g.scale.set(f.baseScale * (2 - sq), f.baseScale * sq, f.baseScale * (2 - sq)); } else { g.scale.setScalar(f.baseScale); f.squashT = 0; } } // the comic squash on landing
       }
       // hit flash (red) + flinch
       if (f.hitT) {
@@ -1719,7 +1738,7 @@ const _embV = new THREE.Vector3();
         f.c3d.play(carry && carry.uid === f.uid ? 'lifted' : carry && carry.holder === f.uid ? 'special' : abil ? abil : f.shootT && ak3 < 1 && !(f.hitT && f.hitT > f.shootT) ? (f.atkRole || 'attack') : f.mineT && mk3 < 1 ? 'mine' : bowledNow ? 'bowled' : knocked ? 'knockback' : f.hitT && now - f.hitT < 320 ? 'hit' : walking ? (f.run && onPath ? 'run' : 'walk') : breaking ? 'idleBreak' : 'idle');
         if (knocked && f.kbClip && !f.kbClip.seeked && f.c3d.current() === 'knockback') { f.c3d.seek?.('knockback', f.kbClip.launch); f.kbClip.seeked = true; }
         f.c3d.update(dt * slowK);
-        g.position.y = f.born ? g.position.y : 0; // the clips carry their own bounce
+        g.position.y = f.born ? g.position.y : (f.flyY || 0); // the clips carry their own bounce; the Rocket Rider keeps his hover / flight height
         if (f.c3d.lift) g.position.y = (f.born ? g.position.y : 0) + f.c3d.lift; // flying units hover
       }
       if (carried) { // Owner fix (Ken, Oct 28): carried by the Junk Shaman: raised above the board under the pointer
@@ -1764,7 +1783,8 @@ const _embV = new THREE.Vector3();
       if (k >= 1) { scene.remove(e.obj); (e.obj as THREE.Sprite).material.dispose(); fx.splice(i, 1); continue; }
       e.obj.position.add(tmpV.copy(e.vel!).multiplyScalar(0.016));
       e.vel!.y -= e.kind === 'stars' ? 0.06 : e.kind === 'chips' ? 0.12 : 0;
-      ((e.obj as THREE.Sprite).material as THREE.SpriteMaterial).opacity = 1 - k;
+      ((e.obj as THREE.Sprite).material as THREE.SpriteMaterial).opacity = (1 - k) * (e.kind === 'smoke' ? 0.55 : 1);
+      if (e.kind === 'smoke') (e.obj as THREE.Sprite).scale.setScalar(0.3 + 0.55 * k); // a puff grows as it thins out
     }
     spellFx.update(now);
     syncBuffNow(now);

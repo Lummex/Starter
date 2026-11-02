@@ -90,7 +90,7 @@ export const LESSONS: Lesson[] = [
     ] },
   { step: 'ranged', n: 6, pics: ['ranged-shot'], say: 'Archers shoot along straight lines.', sub: 'One shot. Extra Attack = Bleed.', board: [P('goblin-slinger', 6, 3), O('dwarf-pickman', 6, 8), O('dwarf-pickman', 3, 9)], action: true, slow: true,
     beats: [{ say: 'Shoot the dwarf on a line.', sub: 'One shot. Extra Attack = Bleed.', goal: done, show: dragUnitTo(firstFoe) }] },
-  { step: 'fight', n: 7, pics: ['swing-hit', 'swing-miss', 'block'], say: 'Each swing rolls a die.', sub: "So a 2 can't always kill a 2.", after: 'See? The dice decide!', board: [P('goblin-grunt', 5, 5), O('barrelback-courier', 4, 5, { damage: 1 })], action: true, slow: true,
+  { step: 'fight', n: 7, pics: ['swing-hit', 'swing-miss', 'block'], say: 'Each swing rolls a die.', sub: "So a 2 can't always kill a 2.", after: 'See? The dice decide!', board: [P('goblin-grunt', 5, 5), O('barrelback-courier', 4, 5, { hp: 2 })], action: true, slow: true,
     beats: [{ say: 'Attack the dwarf.', sub: 'Watch each swing!', goal: done, show: dragUnitTo(firstFoe) }] },
   { step: 'commander', n: 8, pics: ['commander-retreat'], say: 'Hit the enemy Commander!', sub: 'Take him from 20 to 0 to win.', after: 'Keep hitting. At 0 he runs away!', board: [P('goblin-grunt', 2, 11)], action: true, slow: true,
     beats: [{ say: 'Hit the enemy Commander!', sub: 'Drag onto his fortress.', goal: done, show: dragUnitTo(() => ENEMY_SH) }] },
@@ -109,7 +109,7 @@ const STAMPS = ['NICE!', 'GREAT!', 'YES!', 'WOW!', 'SUPER!', 'BOOM!', 'AWESOME!'
 export function lessonOptions(L: Lesson) {
   return {
     playerCommander: 'grubnak', opponentCommander: 'borgo', mines: MINES, seed: 1, difficulty: 'easy', tutorial: L.step, tutorialInfo: L.target ? { target: L.target } : {},
-    setup: { firstPlayer: 'player', board: L.board, playerHand: L.hand || [], playerCrystals: L.crystals || 0, opponentHand: [],
+    setup: { firstPlayer: 'player', board: L.board.map(({ hp: _hp, ...b }) => b), playerHand: L.hand || [], playerCrystals: L.crystals || 0, opponentHand: [],
       playerDeck: L.step === 'swap' ? ['goblin-scrounger', ...many('goblin-grunt', 5)] : many('goblin-grunt', 6), opponentDeck: many('dwarf-pickman', 6) },
   };
 }
@@ -213,6 +213,8 @@ export class Tutorial {
     const L = this.lesson;
     this.mode = 'intro'; this.b = 0; this.tapped = false; this.tipKey = ''; this.autoKey = ''; this.gestureKey = '';
     const st = this.app.startTutorialLesson(lessonOptions(L));
+    // `hp`: the unit's Health in this lesson, whatever its card (and its Commander's bonus) says (lesson 7: "a 2 against a 2")
+    for (const b of L.board) if (b.hp) { const c = this.app.game.state.board.creatures.find((x: any) => x.row === b.row && x.col === b.col); if (c) c.health = Math.min(b.hp, c.maxHealth); }
     if (L.action) this.app.game.act({ type: 'done' });
     this.app.renderTip(this.app.game.state);
     this.startLoop();
@@ -345,7 +347,7 @@ export class Tutorial {
     const wrap = h('div', { class: 'tut-intro', 'data-key': key }, card);
     for (const t of ['pointerdown', 'click', 'mousedown', 'touchstart', 'wheel'] as const) wrap.addEventListener(t, (e) => e.stopPropagation());
     m.append(wrap);
-    (card.querySelector('.tut-go') as El | null)?.focus?.();
+    (card.querySelector('.tut-go') as El | null)?.focus?.({ preventScroll: true });
   }
   complete() {
     const st = this.app.game.state;
@@ -359,8 +361,16 @@ export class Tutorial {
   local(p: Pt | null) {
     const m = this.match;
     if (!m || !p) return null;
-    const r = m.getBoundingClientRect(), k = m.offsetWidth ? r.width / m.offsetWidth : 1;
+    const o = this.layer() || m; // the hand's own layer (it moves with the match area if that is ever scrolled)
+    const r = o.getBoundingClientRect(), k = o.offsetWidth ? r.width / o.offsetWidth : 1;
     return { x: (p.x - r.left) / k, y: (p.y - r.top) / k };
+  }
+  layer(): El | null {
+    const m = this.match;
+    if (!m) return null;
+    let l = m.querySelector(':scope > .tut-layer') as El | null;
+    if (!l) { l = h('div', { class: 'tut-layer', 'aria-hidden': 'true' }); m.append(l); this.gestureKey = ''; }
+    return l;
   }
   sq(c: Cell | null | undefined) { return c ? this.local(this.app.squareToScreen(c.row, c.col)) : null; }
   elPt(el: Element | null | undefined) {
@@ -374,7 +384,7 @@ export class Tutorial {
   cellSize(c: Cell | null | undefined) {
     const q = c ? this.app.squareQuad?.(c.row, c.col) : null;
     if (!q || q.length < 4) return null;
-    const m = this.match, r = m?.getBoundingClientRect(), k = m && m.offsetWidth ? r!.width / m.offsetWidth : 1;
+    const m = this.layer(), r = m?.getBoundingClientRect(), k = m && m.offsetWidth ? r!.width / m.offsetWidth : 1;
     const xs = q.map((p: any) => p.x), ys = q.map((p: any) => p.y);
     return { w: Math.max(30, (Math.max(...xs) - Math.min(...xs)) / k * 0.95), h: Math.max(20, (Math.max(...ys) - Math.min(...ys)) / k * 0.95) };
   }
@@ -389,8 +399,7 @@ export class Tutorial {
   renderPointer(st: any) {
     const m = this.match;
     if (!m) return;
-    let layer = m.querySelector('.tut-layer') as El | null;
-    if (!layer) { layer = h('div', { class: 'tut-layer', 'aria-hidden': 'true' }); m.append(layer); this.gestureKey = ''; }
+    const layer = this.layer()!;
     const on = this.mode === 'do' && !st.pendingResponse;
     const g = on ? this.gesture(st) : null;
     const lines = on && this.lesson.step === 'ranged' ? this.rangedLines(st) : '';
@@ -405,7 +414,7 @@ export class Tutorial {
     const ring = h('div', { class: 'tut-ring' + (g.tap ? ' tap' : '') + (g.el ? ' ctl' : '') });
     ring.style.left = to.x + 'px'; ring.style.top = to.y + 'px';
     let size = g.at ? this.cellSize(g.at) : null;
-    if (!size && g.el) { const r = g.el.getBoundingClientRect(), mm = m.getBoundingClientRect(), k = m.offsetWidth ? mm.width / m.offsetWidth : 1; size = { w: r.width / k + 14, h: Math.min(r.height, window.innerHeight - r.top) / k + 14 }; }
+    if (!size && g.el) { const r = g.el.getBoundingClientRect(), mm = layer.getBoundingClientRect(), k = layer.offsetWidth ? mm.width / layer.offsetWidth : 1; size = { w: r.width / k + 14, h: Math.min(r.height, window.innerHeight - r.top) / k + 14 }; }
     if (size) { ring.style.width = size.w + 'px'; ring.style.height = size.h + 'px'; ring.style.margin = `${-size.h / 2}px 0 0 ${-size.w / 2}px`; }
     const hand = h('img', { class: 'tut-hand', src: PIC('hand-pointing'), alt: '', draggable: 'false' }) as HTMLImageElement;
     layer.append(ring, hand);

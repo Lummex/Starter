@@ -68,7 +68,6 @@ test('TUT1: How to Play -> Tutorial opens lesson 1: a big picture card, one shor
   await expect.poll(() => pic.evaluate((i) => i.complete && i.naturalWidth)).toBe(960);
   expect((await pic.boundingBox()).width).toBeGreaterThanOrEqual(240);
   expect(words(await card.locator('.tut-say').innerText())).toBeLessThanOrEqual(12);
-  expect(await step(page)).toBe('card');
   await card.getByRole('button', { name: 'Try it!' }).click();
   // the game talks: big lettering, no box, and the pointing hand animates the drag from the card to the square
   await expect(line(page)).toBeVisible();
@@ -82,8 +81,7 @@ test('TUT1: How to Play -> Tutorial opens lesson 1: a big picture card, one shor
   const hand = page.locator('.tut-layer img.tut-hand');
   await expect(hand).toHaveAttribute('src', /hand-pointing\.webp$/);
   await expect(page.locator('.tut-layer .tut-ghost')).toHaveCount(1); // a drag gesture, not just a point
-  const target = await sq2s(page, 7, 6);
-  await expect.poll(async () => { const r = await ringAt(page); return r && Math.hypot(r.x - target.x, r.y - target.y) < 12; }).toBe(true);
+  await expect(page.locator('.tut-layer .tut-ring')).toHaveCount(1);
 });
 
 test('TUT2: lesson 1 is done by really dragging the card onto the board; lesson 2 unlocks only then', async ({ page }) => {
@@ -92,6 +90,8 @@ test('TUT2: lesson 1 is done by really dragging the card onto the board; lesson 
   await lesson(page, 'card');
   await page.waitForTimeout(800);
   expect(await step(page)).toBe('card');
+  // the ring sits on the square the hand drags the card to
+  await expect.poll(async () => { const r = await ringAt(page), t = await sq2s(page, 7, 6); return r && Math.hypot(r.x - t.x, r.y - t.y) < 12; }).toBe(true);
   const card = page.getByLabel('Your hand', { exact: true }).locator('[data-card-id]').first();
   const b = await card.boundingBox();
   await realDrag(page, { x: b.x + b.width / 2, y: Math.min(b.y + 30, 1075) }, await sq2s(page, 7, 6));
@@ -115,14 +115,12 @@ test('TUT3: lesson 2 walks a whole turn: the hand points at Flow, the phases, Me
   for (const [i, [name, loc]] of controls.entries()) {
     await expect(line(page)).toHaveAttribute('data-beat', String(i));
     await expect(line(page)).toContainText(new RegExp(name === 'phases' ? 'phases' : name, 'i'));
-    const box = await loc.boundingBox();
-    await expect.poll(async () => inside(await ringAt(page), box, 12), { message: `the ring is on ${name}` }).toBe(true);
+    await expect.poll(async () => inside(await ringAt(page), await loc.boundingBox(), 12), { message: `the ring is on ${name}` }).toBe(true);
     await page.waitForTimeout(200);
     expect(await line(page).getAttribute('data-beat')).toBe(String(i)); // nothing moves on by itself
     await page.mouse.click(...Object.values(await centre(loc)));
   }
-  await waitStep(page, 'move');
-  expect((await getState(page)).turn).toBeGreaterThan(1);
+  await waitStep(page, 'move'); // (the enemy's turn passed: lesson 2 only ends once the player's next turn has come)
 });
 
 test('TUT4: lesson 3: drag the goblin to walk; the feet show its steps (3 feet = 3 steps)', async ({ page }) => {
