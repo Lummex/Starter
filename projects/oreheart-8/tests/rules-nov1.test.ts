@@ -25,6 +25,12 @@ describe('Combat v3 dice (Forge/Ken, Nov 1)', () => {
     expect(blockChance(unit('dwarf-pickman', 6))).toBeCloseTo(1 - Math.pow(5 / 6, 2), 5);
     expect(blockChance(unit('dwarf-miner', 6))).toBeCloseTo(1 - Math.pow(5 / 6, 3), 5);
     expect(commanderBlockChance()).toBeCloseTo(1 / 6, 5);
+    // Ken, Nov 1: a Large attacker (cost 7+) takes one block die away, never below 1
+    const big = unit('ram-rider', 5);
+    expect(blockDiceFor(unit('goblin-grunt', 3), 3, big)).toBe(1);
+    expect(blockDiceFor(unit('goblin-grunt', 1), 1, big)).toBe(1);
+    expect(blockDiceFor(unit('dwarf-miner', 6), 6, big)).toBe(2);
+    expect(blockDiceFor(unit('goblin-grunt', 3), 3, unit('goblin-grunt', 3))).toBe(2);
     (CONFIG as any).combat.dice = 'sure';
     expect(commanderBlockChance()).toBe(0);
   });

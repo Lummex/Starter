@@ -1,6 +1,7 @@
 // Oreheart rules engine. Pure: no DOM, no timers, no Math.random. State is plain JSON data.
 import { CARDS, COMMANDERS, FACTIONS, STARTER_DECKS, STARTER_DECK_LIST, warbandOf, CONFIG } from './content';
 import { nextRand, shuffle } from './rng';
+import { rollDie, randomIndex, randomFloat } from './dice'; // Ken, Nov 1: every die is a fresh roll in real play (seeded only in test mode)
 
 export type Side = 'player' | 'opponent';
 export const other = (p: Side): Side => (p === 'player' ? 'opponent' : 'player');
@@ -26,7 +27,7 @@ const nearSite = (s: any, row: number, col: number) => s.sites.some((x: any) => 
 const nearOwnedSite = (s: any, p: Side, row: number, col: number) => s.sites.some((x: any) => x.controller === p && cheb({ row, col }, x) <= 1 && !(x.row === row && x.col === col));
 const adjacentCreatures = (s: any, c: any) => s.board.creatures.filter((o: any) => o !== c && cheb(o, c) === 1);
 const sgn = Math.sign;
-const rint = (s: any, a: number, b: number) => a + Math.floor(nextRand(s) * (b - a + 1));
+const rint = (s: any, a: number, b: number) => a + randomIndex(s, b - a + 1);
 /** Pushes `c` up to n spaces along (dr,dc); stops at the edge, a mine, a Stronghold or another unit. */
 const FACE: Record<string, string> = { '-1,0': 'N', '-1,1': 'NE', '0,1': 'E', '1,1': 'SE', '1,0': 'S', '1,-1': 'SW', '0,-1': 'W', '-1,-1': 'NW' };
 /** Turn `c` toward a square (never changes when the square is its own). */
@@ -227,7 +228,7 @@ export function createMatch(opts: any = {}) {
 
 
 function finishSetup(s: any, ev: any[]) {
-  const coin = nextRand(s);
+  const coin = randomFloat(s);
   const first: Side = s.firstPlayerOption || (coin < 0.5 ? 'player' : 'opponent');
   s.firstPlayer = first;
   const second = other(first);
@@ -489,27 +490,30 @@ function defeat(s: any, c: any, ev: any[]) {
 // any 1 or 6 blocks the hit (Armored and Riot Shield also block on a 2). A hit that gets through does 1 damage. Commanders never block, but swings at
 // them still roll. Spells and other non-swing damage stay flat. All the numbers live in game-config.json "combat"; dice: 'sure' (test pages) makes every swing land.
 export const COMBAT = (): any => CONFIG.combat || {};
-const d6 = (s: any) => rint(s, 1, 6);
+const d6 = (s: any) => rollDie(s, 6);
 export const hitChance = (): number => (COMBAT().dice === 'sure' ? 1 : (7 - (COMBAT().hitFrom ?? 3)) / 6);
 const blockFacesOf = (_c: any): number[] => (COMBAT().dice === 'sure' ? [] : COMBAT().blockFaces || [6]);
 /** Block dice one landed hit faces (Combat v3, Ken, Nov 1): the defender's current Health, at most blockCap; a unit of cost bigUnitCost or more rolls bigUnitDice whatever its Health; Armored and Riot Shield roll one extra die, at most armoredCap. */
-export const blockDiceFor = (c: any, health: number): number => {
-  const K = COMBAT(), card = CARDS[c.cardId] || {};
+/** A Large unit: cost bigUnitCost (7) or more. It rolls bigUnitDice to block, and its attacks take bigAttackerTakesDie away from the defender's block dice (never below 1). Ken, Nov 1: "bad at blocking, so they're not overpowered, and their attack's kind of harder to block". */
+export const isLarge = (c: any): boolean => { const K = COMBAT(); return K.bigUnitCost != null && ((CARDS[c.cardId] || {}).cost ?? 0) >= K.bigUnitCost; };
+export const blockDiceFor = (c: any, health: number, attacker?: any): number => {
+  const K = COMBAT();
   let n = Math.max(0, Math.min(K.blockCap ?? 2, health));
-  if (K.bigUnitCost != null && (card.cost ?? 0) >= K.bigUnitCost) n = Math.min(n, K.bigUnitDice ?? 1);
+  if (isLarge(c)) n = Math.min(n, K.bigUnitDice ?? 1);
   if (n > 0 && (has(c, 'armored') || has(c, 'riotShield'))) n = Math.min(K.armoredCap ?? 3, n + (K.armoredExtraDie ?? 1));
+  if (n > 0 && attacker && isLarge(attacker)) n = Math.max(1, n - (K.bigAttackerTakesDie ?? 1));
   return n;
 };
-export const blockDiceOf = (c: any): number => blockDiceFor(c, c.health);
-/** Chance one landed hit is blocked by a defender at this Health. */
-export function blockChance(c: any, health = c.health): number {
-  const n = blockDiceFor(c, health), p = blockFacesOf(c).length / 6;
+export const blockDiceOf = (c: any, attacker?: any): number => blockDiceFor(c, c.health, attacker);
+/** Chance one landed hit is blocked by a defender at this Health (against `attacker`, if given: a Large attacker takes a die away). */
+export function blockChance(c: any, health = c.health, attacker?: any): number {
+  const n = blockDiceFor(c, health, attacker), p = blockFacesOf(c).length / 6;
   return 1 - Math.pow(1 - p, n);
 }
 /** Chance a Commander blocks one landed hit (Ken, Nov 1: one die, a 6 blocks). */
 export const commanderBlockChance = (): number => { const K = COMBAT(); if (K.dice === 'sure') return 0; const n = K.commanderBlockDice ?? 0, p = (K.blockFaces || [6]).length / 6; return n ? 1 - Math.pow(1 - p, n) : 0; };
 /** Exact odds of `n` swings at `def` (null = a Commander): expected damage and the chance the target drops to 0, with the dice shrinking as Health drops. */
-export function swingOdds(n: number, def: any | null): { deal: number; kill: number } {
+export function swingOdds(n: number, def: any | null, attacker?: any): { deal: number; kill: number } {
   const ph = hitChance();
   if (!def) return { deal: n * ph * (1 - commanderBlockChance()), kill: 0 };
   // state: (Health left, hits still soaked by Shield X and Bulwark bubbles); a soaked hit costs no Health, the dice stay at the Health
@@ -521,7 +525,7 @@ export function swingOdds(n: number, def: any | null): { deal: number; kill: num
     for (const [k, p] of dist) {
       const hp = Math.floor(k / 64), ab = k % 64;
       if (hp <= 0) { nx.set(k, (nx.get(k) || 0) + p); continue; }
-      const land = ph * (1 - blockChance(def, hp));
+      const land = ph * (1 - blockChance(def, hp, attacker));
       const hitK = ab > 0 ? K(hp, ab - 1) : K(hp - 1, 0);
       nx.set(hitK, (nx.get(hitK) || 0) + p * land); nx.set(k, (nx.get(k) || 0) + p * (1 - land));
     }
@@ -532,7 +536,7 @@ export function swingOdds(n: number, def: any | null): { deal: number; kill: num
   return { deal, kill };
 }
 /** Expected damage of `n` swings (the computer's guess and the attack preview). */
-export const expectedSwings = (n: number, def: any | null): number => swingOdds(n, def).deal;
+export const expectedSwings = (n: number, def: any | null, attacker?: any): number => swingOdds(n, def, attacker).deal;
 /** Resolve `n` swings of `att` at `def`: hit roll, block roll, then 1 damage through hurt(). Events: swing {result: miss | block | hit}. */
 function swingsAt(s: any, att: any, def: any, n: number, ev: any[], tag: string) {
   let landed = 0;
@@ -540,7 +544,7 @@ function swingsAt(s: any, att: any, def: any, n: number, ev: any[], tag: string)
   for (let i = 0; i < n && def.health > 0; i++) {
     const base = { type: 'swing', uid: att.uid, targetUid: def.uid, row: def.row, col: def.col, tag, n: i + 1, of: n };
     if (COMBAT().dice !== 'sure' && d6(s) < (COMBAT().hitFrom ?? 3)) { ev.push({ ...base, result: 'miss' }); if (i === 0 && shooter) break; continue; } // Ken, Nov 1: a ranged unit's first shot is the shot; if it misses (or is blocked) there are no Bleed chances
-    const dice = COMBAT().dice === 'sure' ? 0 : blockDiceOf(def), faces = blockFacesOf(def);
+    const dice = COMBAT().dice === 'sure' ? 0 : blockDiceOf(def, att), faces = blockFacesOf(def);
     let blocked = false;
     for (let k = 0; k < dice && !blocked; k++) if (faces.includes(d6(s))) blocked = true;
     if (!blocked && has(def, 'unbreakable') && landed >= 3) blocked = true; // Unbreakable: never more than 3 from one attack
@@ -561,8 +565,6 @@ const STACK_CAP = () => CONFIG.stackCap ?? 3, AURA_CAP = () => CONFIG.auraStackC
 /** a Riot Shield Bearer behind its shield (can't be lifted, hurt or act) */
 const ADV = (a: string, d: string) => FACTIONS[a]?.beats === d;
 /** Ken (Oct 31): the faction triangle's +1 never applies when the creature being hit is a Miner (Gatherer or Smith). Shared by the engine and the computer's damage predictions. */
-/** Ken, Nov 1: ranged attacks and special abilities: the unit's stock (printed) Attack is never halved; only the buffed points above it are, rounded down. A stock-1 shooter hits for 1, 1, 2, 2, 3, 3 at Attack 1..6; a stock-2 one for 2, 2, 3, 3 at Attack 2..5. */
-export const halfAttack = (c: any, v: number): number => { const d = CARDS[c.cardId].attack; return v <= d ? v : d + Math.floor((v - d) / 2); };
 export const typeBonus = (attackerCard: any, targetCard: any) => (targetCard && !isMiner(targetCard) && ADV(attackerCard.faction, targetCard.faction) ? CONFIG.typeAdvantageBonus : 0);
 /** Junk Shaman's situational +1 Attack for adjacent Goblins on their owner's turn. */
 export function junkBonus(s: any, c: any): number {
@@ -578,7 +580,6 @@ export function atkValue(s: any, c: any, target?: any) {
   if (has(c, 'brawler') && c.lastFight != null && s.turn - c.lastFight <= 2) v *= 2;
   if (has(c, 'rage') && c.health * 2 < c.maxHealth) v += CONFIG.rageBonus;
   v += Math.min(AURA_CAP(), s.flags.battleCryN?.[c.owner] ?? (s.flags.battleCry === c.owner ? 1 : 0)); // stacking: +1 per Thunderhorn Blast this turn, up to +2
-  if (has(c, 'ranged') || has(c, 'overwatch')) v = halfAttack(c, v); // Ken, Nov 1: every ranged unit hits for half its Attack (rounded down; the printed number stays whole)
   if (target) v += typeBonus(card, CARDS[target.cardId]); /* Ken, Oct 31: no triangle bonus against Miners */
   return Math.max(0, v);
 }
@@ -738,12 +739,12 @@ function runAbility(s: any, l: any, who: Side, ev: any[]) {
         hits.push({ id: o.uid, uid: o.uid, from, to: { row: o.row, col: o.col } });
       }
       ev.push({ type: 'bowl', uid: c.uid, from: { row: c.row, col: c.col }, dr: l.dr, dc: l.dc, path, hits });
-      { const bd = halfAttack(c, atkValue(s, c)); for (const h of hits) { const o = s.board.creatures.find((x: any) => x.uid === h.uid); if (o && o.owner !== who) dealDamage(s, o, bd, ev); } } // only enemies are hurt (the ball still knocks friends aside). Ken, Nov 1: "the bowler needs to do 2 damage": every unit the ball hits takes his Attack (halved above the printed number)
+      { const bd = atkValue(s, c); for (const h of hits) { const o = s.board.creatures.find((x: any) => x.uid === h.uid); if (o && o.owner !== who) dealDamage(s, o, bd, ev); } } // only enemies are hurt (the ball still knocks friends aside). Ken, Nov 1: "the bowler needs to do 2 damage": every unit the ball hits takes his Attack (halved above the printed number)
       break;
     }
     case 'shockwave':
       c.hasAttacked = true;
-      for (const o of adjacentCreatures(s, c)) if (o.owner !== who) { knockAway(s, c, o, 1, ev); dealDamage(s, o, halfAttack(c, atkValue(s, c)), ev); } // Nov 1: abilities scale like ranged attacks
+      for (const o of adjacentCreatures(s, c)) if (o.owner !== who) { knockAway(s, c, o, 1, ev); dealDamage(s, o, atkValue(s, c), ev); } // Ken, Nov 1: what it shows is what it does: the shown Attack, no halving
       break;
     case 'plow': {
       c.hasAttacked = true;
@@ -771,7 +772,7 @@ function runAbility(s: any, l: any, who: Side, ev: any[]) {
     }
     case 'rocket':
       to(l.target.row, l.target.col, true); c.hasMoved = true; c.rocketed = true;
-      blastAround(s, c, halfAttack(c, atkValue(s, c)), ev); // Nov 1: abilities scale like ranged attacks
+      blastAround(s, c, atkValue(s, c), ev); // Ken, Nov 1: the shown Attack, no halving; the rider is in it too
       break;
     case 'ward': {
       const o = creatureAt(s, l.target.row, l.target.col);
@@ -1149,9 +1150,9 @@ export function previewAttack(state: any, attackerUid: string, target: any) {
   const s = state, a = s.board.creatures.find((x: any) => x.uid === attackerUid);
   if (!a) return null;
   const def = target && target.row ? creatureAt(s, target.row, target.col) : null;
-  const swings = atkValue(s, a, def || undefined), o = swingOdds(swings, def);
+  const swings = atkValue(s, a, def || undefined), o = swingOdds(swings, def, a);
   const melee = !!def && cheb(a, def) === 1 && !has(a, 'ranged') && !has(a, 'sneaky') && !has(a, 'overwatch');
-  const back = melee ? atkValue(s, def, a) : 0, b = melee ? swingOdds(back, a) : { deal: 0, kill: 0 };
+  const back = melee ? atkValue(s, def, a) : 0, b = melee ? swingOdds(back, a, def) : { deal: 0, kill: 0 };
   const alive = 1 - o.kill;
   const r = (x: number) => Math.round(x * 100) / 100;
   return { youDeal: r(o.deal), youTake: r(alive * b.deal), targetDefeated: def ? o.kill >= 0.995 : s.players[target.commander].health <= swings && hitChance() >= 1, attackerDefeated: alive * b.kill >= 0.995,

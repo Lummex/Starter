@@ -91,7 +91,7 @@
  "rangedRange": 7,
  "plunderFlow": 3,
  "combat": {
-  "_note": "Combat v3 (Ken, Nov 1): Attack = swings, each a d6 that hits on hitFrom or more (2-6 hits, only a 1 misses). Each landed hit is blocked when any of the defender's block dice shows a blockFaces number (a 6): dice = current Health, at most blockCap (2); a unit of cost bigUnitCost (7) or more always rolls bigUnitDice (1); Armored and Riot Shield roll armoredExtraDie (1) more, at most armoredCap (3). Commanders roll commanderBlockDice (1). dice 'sure' = tests: every swing hits, nothing blocks.",
+  "_note": "Combat v3 (Ken, Nov 1): Attack = swings, each a d6 that hits on hitFrom or more (2-6 hits, only a 1 misses). Each landed hit is blocked when any of the defender's block dice shows a blockFaces number (a 6): dice = current Health, at most blockCap (2); a unit of cost bigUnitCost (7) or more always rolls bigUnitDice (1); Armored and Riot Shield roll armoredExtraDie (1) more, at most armoredCap (3). A Large unit's attack takes bigAttackerTakesDie (1) away from the defender's block dice, never below 1 (Ken, Nov 1). Commanders roll commanderBlockDice (1). Ranged attacks and abilities use the shown Attack, no halving (Ken, Nov 1). dice 'sure' = tests: every swing hits, nothing blocks.",
   "dice": "roll",
   "hitFrom": 2,
   "blockFaces": [
@@ -106,6 +106,7 @@
   "armoredCap": 3,
   "bigUnitCost": 7,
   "bigUnitDice": 1,
+  "bigAttackerTakesDie": 1,
   "commanderBlockDice": 1
  },
  "costFormula": {
