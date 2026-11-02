@@ -25,7 +25,7 @@ enabled = true
 port = 54323
 
 # Local mail catcher: confirmation and reset emails land here (tests read them).
-[inbucket]
+[local_smtp]
 enabled = true
 port = 54324
 
