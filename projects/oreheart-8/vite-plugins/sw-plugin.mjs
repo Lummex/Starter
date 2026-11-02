@@ -1,8 +1,9 @@
-// Vite plugin (Nov 2): after `vite build`, write dist/sw.js from tools/sw-template.js with this build's file lists.
+// Vite plugin (Nov 2): after `vite build`, write dist/sw.js from vite-plugins/sw-template.js (not under tools/, which .vercelignore drops from the Vercel build) with this build's file lists.
 // CORE = everything a match needs except the big optional parts; FULL = the 3D models, music and voices (cached as used, or all at once).
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 
 const FULL_PREFIXES = ['/models/', '/audio/music/', '/audio/voice/'];
 const SKIP = (p) => p === '/sw.js' || p.endsWith('.map') || p.startsWith('/screenshots/');
@@ -27,7 +28,7 @@ export function listBuild(dist) {
 
 export function writeServiceWorker(dist, templatePath) {
   const m = listBuild(dist);
-  const sw = fs.readFileSync(templatePath, 'utf8')
+  const sw = fs.readFileSync(templatePath, 'utf8').replace(/\r\n/g, '\n') // one line-ending style whatever the checkout (Windows CRLF or not), so sw.js is the same everywhere
     .replaceAll('__VERSION__', m.version).replaceAll('__CORE__', JSON.stringify(m.core)).replaceAll('__FULL__', JSON.stringify(m.full))
     .replaceAll('__CORE_BYTES__', String(m.coreBytes)).replaceAll('__FULL_BYTES__', String(m.fullBytes));
   fs.writeFileSync(path.join(dist, 'sw.js'), sw);
@@ -41,7 +42,7 @@ export default function oreheartServiceWorker() {
     apply: 'build',
     configResolved(c) { outDir = path.resolve(c.root, c.build.outDir); },
     closeBundle() {
-      const m = writeServiceWorker(outDir, path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), 'sw-template.js'));
+      const m = writeServiceWorker(outDir, path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'sw-template.js'));
       console.log(`[sw] ${m.version}: core ${m.core.length} files ${(m.coreBytes / 1048576).toFixed(1)} MB, full ${Object.keys(m.full).length} files ${(m.fullBytes / 1048576).toFixed(1)} MB`);
     },
   };
