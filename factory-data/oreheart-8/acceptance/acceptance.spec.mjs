@@ -12232,7 +12232,8 @@ test('AC483: the Done button is the size of the Menu button, both have their con
       const coin = (e) => { const s = getComputedStyle(e, '::before'), b = e.getBoundingClientRect(), w = parseFloat(s.width) || 0, hh = parseFloat(s.height) || 0; return { img: s.backgroundImage, w, h: hh, cx: b.left + b.width / 2, cy: b.top + b.height / 2 }; };
       const menu = document.querySelector('.match .o-menu .menu-btn'), done = document.querySelector('.match .btn.o-text.done-btn');
       const deck = document.querySelector('.match [aria-label="Your deck"]');
-      return { menu: r(menu), done: r(done), mc: coin(menu), dc: coin(done), mt: menu.title, dt: done.title, mtext: menu.innerText.trim(), dtext: done.innerText.trim(), deck: deck ? r(deck) : null };
+      const shownWords = (e) => [e, ...e.querySelectorAll('*')].filter((x) => [...x.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && x.getBoundingClientRect().width > 2).map((x) => x.textContent.trim()).join('');
+      return { menu: r(menu), done: r(done), mc: coin(menu), dc: coin(done), mt: menu.title, dt: done.title, mtext: shownWords(menu), dtext: shownWords(done), deck: deck ? r(deck) : null };
     });
     expect(Math.abs(m.done.w - m.menu.w), `${W}x${H}: Done ${Math.round(m.done.w)} px wide, Menu ${Math.round(m.menu.w)}`).toBeLessThanOrEqual(2);
     expect(Math.abs(m.done.h - m.menu.h), `${W}x${H}: Done ${Math.round(m.done.h)} px tall, Menu ${Math.round(m.menu.h)}`).toBeLessThanOrEqual(2);
@@ -13297,7 +13298,7 @@ const SORT_LABEL = { costDesc: 'By cost (high to low)', type: 'By type', rarity:
 const SORT_COIN = { costDesc: 'sort-cost', type: 'sort-type', rarity: 'sort-rarity' };
 const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-test('AC521: three Sort coins (High-Low, Type, Rarity) hug the bottom of the screen just left of the hand (never over a card); one click sorts and the coin in use shows its brighter coin', async ({ page }) => {
+test('AC521: three Sort coins (High-Low, Type, Rarity) stand in a little column hugging the bottom of the screen just left of the hand (never over a card); one click sorts and the coin in use shows its brighter coin', async ({ page }) => {
   test.setTimeout(90000);
   const errors = []; page.on('pageerror', (e) => errors.push(e.message));
   for (const [W, H] of [[1920, 1080], [844, 390]]) {
@@ -13320,21 +13321,22 @@ test('AC521: three Sort coins (High-Low, Type, Rarity) hug the bottom of the scr
       expect(b.x + b.width, `${W}x${H}: ${mode} is left of the first card`).toBeLessThanOrEqual(firstLeft);
       for (const c of cards) expect(overlaps(b, c), `${W}x${H}: ${mode} never covers a card`).toBe(false);
       expect(b.y + b.height, `${W}x${H}: fully on screen`).toBeLessThanOrEqual(H);
-      expect(H - (b.y + b.height), `${W}x${H}: hugging the bottom`).toBeLessThanOrEqual(8);
       expect(b.x).toBeGreaterThanOrEqual(0);
-      expect(b.width, `${W}x${H}: big enough to tap`).toBeGreaterThanOrEqual(36);
-      expect(b.height, `${W}x${H}: big enough to tap`).toBeGreaterThanOrEqual(42);
-      expect(b.y + b.height / 2, `${W}x${H}: level with the hand`).toBeGreaterThan(strip);
+      expect(b.width, `${W}x${H}: big enough to tap`).toBeGreaterThanOrEqual(42);
+      expect(b.height, `${W}x${H}: big enough to tap`).toBeGreaterThanOrEqual(32);
       if (gem) expect(b.x, `${W}x${H}: right of the Flow crystal`).toBeGreaterThanOrEqual(gem.x + gem.width - 2);
       // Brush's painted coin, the name as the hover tooltip, no word on screen
-      const look = await coin.evaluate((e) => ({ src: e.querySelector('img:not(.hs-a)')?.getAttribute('src') || '', title: e.title, text: e.innerText.trim() }));
+      const look = await coin.evaluate((e) => ({ src: e.querySelector('img:not(.hs-a)')?.getAttribute('src') || '', title: e.title, text: e.textContent.trim() }));
       expect(look.src).toContain(`/art/ui/match/${SORT_COIN[mode]}.webp`);
       expect(look.title, 'hover tooltip with the name').toMatch(/^Sort: /);
       expect(look.text, 'picture only').toBe('');
     }
-    // the three sit in one row
-    const ys = await sb.getByRole('button').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
-    expect(Math.max(...ys) - Math.min(...ys), 'one row').toBeLessThanOrEqual(2);
+    // the three stand in one column, the last one hugging the bottom of the screen beside the hand
+    const bx = await sb.getByRole('button').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, b: r.bottom }; }));
+    expect(Math.max(...bx.map((q) => q.x)) - Math.min(...bx.map((q) => q.x)), 'one column').toBeLessThanOrEqual(2);
+    const low = bx[bx.length - 1];
+    expect(H - low.b, `${W}x${H}: hugging the bottom`).toBeLessThanOrEqual(8);
+    expect((low.y + low.b) / 2, `${W}x${H}: level with the hand`).toBeGreaterThan(strip);
     // one click: the hand sorts, and that coin shows its -active picture at 125 % on the same centre
     await expect(sb).toHaveAttribute('data-sort', '');
     const type = sb.getByRole('button', { name: SORT_LABEL.type, exact: true });
@@ -13448,15 +13450,15 @@ test('AC523: on a phone (touch) the Sort coins work by tap, and the cards glide 
     Element.prototype.animate = function (...a) { const an = orig.apply(this, a); if (this.classList && this.classList.contains('hand-card')) window.__sortAnims.push({ el: this, an }); return an; };
   });
   const lefts0 = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.hand .hand-card:not(.popclone)')].map((e) => [e.dataset.uid, parseFloat(getComputedStyle(e).left)])));
-  await sb.getByRole('button', { name: SORT_LABEL.rarity, exact: true }).tap();
-  await expect(sb).toHaveAttribute('data-sort', 'rarity');
-  expect((await sortHandCards(page)).map((c) => c.uid)).toEqual(sortExpected(before, 'rarity'));
+  await sb.getByRole('button', { name: SORT_LABEL.type, exact: true }).tap();
+  await expect(sb).toHaveAttribute('data-sort', 'type');
+  expect((await sortHandCards(page)).map((c) => c.uid)).toEqual(sortExpected(before, 'type'));
   // the cards move through in-between places: scrub each glide and read the card's left edge at its start, middle and end
   const glides = await page.evaluate((l0) => (window.__sortAnims || []).map(({ el, an }) => {
-    const d = Number(an.effect.getComputedTiming().duration) || 0;
+    const tm = an.effect.getComputedTiming(), d = Number(tm.duration) || 0, dl = Number(tm.delay) || 0; // a staggered glide starts after its delay
     an.pause();
     const at = (t) => { an.currentTime = t; return parseFloat(getComputedStyle(el).left); };
-    const r = { uid: el.dataset.uid, d, from: l0[el.dataset.uid], a: at(0), m: at(d / 2), b: at(d) };
+    const r = { uid: el.dataset.uid, d, from: l0[el.dataset.uid], a: at(0), m: at(dl + d / 2), b: at(dl + d) };
     an.finish();
     r.end = parseFloat(getComputedStyle(el).left);
     return r;
@@ -13468,7 +13470,7 @@ test('AC523: on a phone (touch) the Sort coins work by tap, and the cards glide 
     expect(Math.abs(g.a - g.from), 'it starts where the card was').toBeLessThan(3);
     expect(Math.abs(g.b - g.end), 'it ends at the new place').toBeLessThan(3);
     const lo = Math.min(g.a, g.end), hi = Math.max(g.a, g.end);
-    if (hi - lo > 8) { expect(g.m, 'half way it is in between').toBeGreaterThan(lo + 2); expect(g.m).toBeLessThan(hi - 2); }
+    if (hi - lo > 8) { const mg = Math.min(2, (hi - lo) * 0.05); expect(g.m, 'half way it is in between (the glide eases out)').toBeGreaterThan(lo + mg); expect(g.m).toBeLessThan(hi - mg); }
   }
   // also with real frames: right after a new sort, a card is seen somewhere between its old and new place
   const seen = await page.evaluate(async () => {

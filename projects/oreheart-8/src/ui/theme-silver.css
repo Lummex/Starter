@@ -439,7 +439,7 @@ html body :is(#app .btn.back-btn,#app .btn.db-back,#app .btn.menu-back,#app .mat
 html body:not(#_a):not(#_b) #app .match{--mc-hud:clamp(44px,6vh,64px);--mc-small:clamp(36px,4.4vh,48px)}
 
 /* -- picture-only coin buttons -- */
-html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin,html body:not(#_a):not(#_b) #app .mode-ui .btn.mcoin.mcoin,html body:not(#_a):not(#_b) .overlay .dialog .btn.mcoin.mcoin{font-size:0!important;line-height:0!important;letter-spacing:0!important;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:none!important;background:none!important;border:0!important;border-image:none!important;box-shadow:none!important;outline:0;padding:0!important;min-width:0!important;min-height:0!important;cursor:pointer;--csz:78%}
+html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin,html body:not(#_a):not(#_b) #app .mode-ui .btn.mcoin.mcoin,html body:not(#_a):not(#_b) .overlay .dialog .btn.mcoin.mcoin{color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:none!important;background:none!important;border:0!important;border-image:none!important;box-shadow:none!important;outline:0;padding:0!important;min-width:0!important;min-height:0!important;cursor:pointer;--csz:78%}
 html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin::before,html body:not(#_a):not(#_b) #app .mode-ui .btn.mcoin.mcoin::before,html body:not(#_a):not(#_b) .overlay .dialog .btn.mcoin.mcoin::before{content:""!important;display:block!important;position:absolute!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;width:var(--csz)!important;height:var(--csz)!important;aspect-ratio:1;margin:0!important;transform:translate(-50%,-50%)!important;background:var(--coin) center/contain no-repeat!important;border:0!important;border-radius:50%;box-shadow:none!important;filter:drop-shadow(0 2px 3px #000b);transition:filter .15s,transform .12s;pointer-events:none;opacity:1!important;mask:none!important;-webkit-mask:none!important}
 html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin::after,html body:not(#_a):not(#_b) #app .mode-ui .btn.mcoin.mcoin::after,html body:not(#_a):not(#_b) .overlay .dialog .btn.mcoin.mcoin::after{display:none!important;content:none!important}
 html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin:is(:hover,:focus-visible)::before,html body:not(#_a):not(#_b) #app .mode-ui .btn.mcoin.mcoin:is(:hover,:focus-visible)::before,html body:not(#_a):not(#_b) .overlay .dialog .btn.mcoin.mcoin:is(:hover,:focus-visible)::before{filter:brightness(1.18) drop-shadow(0 0 6px #cfe3ffaa) drop-shadow(0 2px 3px #000b)}
@@ -464,11 +464,11 @@ html body:not(#_a):not(#_b) #app .mode-ui .btn.wb-speed.mcoin[aria-pressed=true]
 html body:not(#_a):not(#_b) #app .mode-ui .btn.wb-speed.mcoin[aria-pressed=false]::before{opacity:.72!important}
 html body:not(#_a):not(#_b) #app .mode-ui .stance-btn .st-icon img{display:block;width:clamp(22px,3.4vh,32px);height:auto;filter:drop-shadow(0 1px 2px #000a)}
 
-/* -- the three hand sort coins, hugging the bottom left of the hand -- */
-html body:not(#_a):not(#_b) #app .match .hand-sorts.hand-sort-btn{position:absolute;z-index:29;display:flex;gap:0;width:auto;height:auto;padding:0;margin:0;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;pointer-events:none}
+/* -- the three hand sort coins: a little column hugging the bottom of the screen, where the Sort button was (left of the hand) -- */
+html body:not(#_a):not(#_b) #app .match .hand-sorts.hand-sort-btn{position:absolute;z-index:29;display:flex;flex-direction:column;gap:0;width:auto;height:auto;padding:0;margin:0;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;pointer-events:none}
 html body:not(#_a):not(#_b) #app .match .hand-sorts.hand-sort-btn::after,html body:not(#_a):not(#_b) #app .match .hand-sorts.hand-sort-btn::before{display:none!important;content:none!important}
 html body:not(#_a):not(#_b) #app .match .hand-sorts.hand-sort-btn[hidden]{display:none!important}
-html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin{all:unset;box-sizing:border-box;position:relative;width:max(38px,calc(var(--hs-c) + 4px));height:max(44px,var(--hs-c));cursor:pointer;pointer-events:auto;touch-action:manipulation;--hs-c:clamp(30px,4.2vh,46px)}
+html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin{all:unset;box-sizing:border-box;position:relative;width:max(44px,var(--hs-c));height:max(34px,calc(var(--hs-c) + 4px));cursor:pointer;pointer-events:auto;touch-action:manipulation;--hs-c:clamp(28px,3.8vh,42px)}
 html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin img{position:absolute;left:50%;top:50%;width:var(--hs-c);height:var(--hs-c);transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 2px 3px #000b);transition:filter .15s,transform .12s}
 html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin .hs-a{display:none;width:calc(var(--hs-c) * 1.25);height:calc(var(--hs-c) * 1.25)}
 html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin[aria-pressed=true] .hs-a{display:block}
@@ -486,8 +486,8 @@ html body:not(#_a):not(#_b) #app .match .turn-bar .tb-groove{position:absolute;l
 html body:not(#_a):not(#_b) #app .match .turn-bar .tb-fill{position:absolute;inset:0;transform-origin:left center;background:linear-gradient(#f4f8ff,#a9c3e6 55%,#6f8fbf);box-shadow:inset 0 1px 0 #fff8;transition:transform .12s linear}
 html body:not(#_a):not(#_b) #app .match .turn-bar[data-low=true] .tb-fill{background:linear-gradient(90deg,#ffb347,#ff5a3c);animation:tbPulse .5s ease-in-out infinite alternate}
 html body:not(#_a):not(#_b) #app .match .turn-bar[data-live=false] .tb-fill{filter:grayscale(.5) brightness(.8)}
-html body:not(#_a):not(#_b) #app .match .turn-bar .tb-time{flex:0 0 auto;font-size:calc(var(--tbh) * .82);line-height:1;font-weight:700;text-shadow:0 1px 2px #000,0 0 6px #000c;min-width:2.3em}
-html body:not(#_a):not(#_b) #app .match .turn-bar .tb-bank{flex:0 0 auto;display:inline-flex;align-items:center;padding:.12em .5em;border-radius:999px;font-size:calc(var(--tbh) * .72);line-height:1;font-weight:700;color:#e6f3ff;background:linear-gradient(#24405fe6,#122337e6);box-shadow:0 0 0 1px #bfd9ffaa,0 0 10px #7fc0ffaa;text-shadow:0 1px 2px #000}
+html body:not(#_a):not(#_b) #app .match .turn-bar .tb-time{flex:0 0 auto;font-size:max(14px,calc(var(--tbh) * .82));line-height:1;font-weight:700;text-shadow:0 1px 2px #000,0 0 6px #000c;min-width:2.3em}
+html body:not(#_a):not(#_b) #app .match .turn-bar .tb-bank{flex:0 0 auto;display:inline-flex;align-items:center;padding:.12em .5em;border-radius:999px;font-size:max(14px,calc(var(--tbh) * .72));line-height:1;font-weight:700;color:#e6f3ff;background:linear-gradient(#24405fe6,#122337e6);box-shadow:0 0 0 1px #bfd9ffaa,0 0 10px #7fc0ffaa;text-shadow:0 1px 2px #000}
 html body:not(#_a):not(#_b) #app .match .turn-bar .tb-bank[hidden]{display:none}
 html body:not(#_a):not(#_b) #app .match .turn-bar[data-bank=true] .tb-frame{filter:drop-shadow(0 0 5px #8fd0ffcc) drop-shadow(0 2px 3px #000a)}
 html body:not(#_a):not(#_b) #app .match .turn-bar[data-bank=true] .tb-fill{background:linear-gradient(#f2fbff,#8fd0ff 55%,#3f8fd8)}
@@ -521,7 +521,7 @@ html body:not(#_a):not(#_b) .overlay.cardview .card-nav.card-nav-next::before{ba
 html body:not(#_a):not(#_b) .overlay.cardview .card-nav.card-nav:hover::before{filter:brightness(1.18) drop-shadow(0 0 8px #cfe3ffaa) drop-shadow(0 3px 6px #000c)}
 
 /* -- phase tracker: Brush's chips with the phase coins (the words stay as hidden text); the lit chip takes the active side's faction colour -- */
-html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step.ph-step:not(#_w){--chh:clamp(20px,3.5vh,38px);position:relative;display:block;width:calc(var(--chh) * 316 / 132);height:var(--chh);padding:0!important;font-size:0!important;line-height:0!important;color:transparent!important;-webkit-text-fill-color:transparent!important;text-shadow:none!important;background:none!important;box-shadow:none!important;border:0!important;border-radius:0!important;filter:none!important;opacity:.8}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step.ph-step:not(#_w){--chh:clamp(20px,3.5vh,38px);position:relative;display:block;width:calc(var(--chh) * 316 / 132);height:var(--chh);padding:0!important;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:none!important;background:none!important;box-shadow:none!important;border:0!important;border-radius:0!important;filter:none!important;opacity:.8}
 html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step.ph-step:not(#_w)::before{content:"";position:absolute;inset:0;background:url(/art/ui/match/frame-chip.webp) center/100% 100% no-repeat}
 html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step.ph-step:not(#_w)::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--chh) * .86);height:calc(var(--chh) * .86);transform:translate(-50%,-50%);background:center/contain no-repeat;filter:grayscale(.25) brightness(.95) drop-shadow(0 1px 2px #000a)}
 html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step[data-phase=draw]:not(#_w)::after{background-image:url(/art/ui/match/phase-draw.webp)}
@@ -537,13 +537,14 @@ html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step.done:not(#_w
 html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps{gap:.25em .3em!important}
 
 /* -- Flow and Next: the flow coin for the word, next-income coin + the number -- */
-html body:not(#_a):not(#_b) #app .match :is([data-role=player-flow-label],[data-role=enemy-flow-label]).o-text{font-size:0!important;line-height:0!important;color:transparent!important;-webkit-text-fill-color:transparent!important;text-shadow:none!important}
+html body:not(#_a):not(#_b) #app .match :is([data-role=player-flow-label],[data-role=enemy-flow-label]).o-text{line-height:0!important}
 html body:not(#_a):not(#_b) #app .match :is([data-role=player-flow-label],[data-role=enemy-flow-label]).o-text::before{content:"";display:block;width:clamp(20px,3.8vh,40px);height:clamp(20px,3.8vh,40px);background:url(/art/ui/match/flow.webp) center/contain no-repeat;filter:drop-shadow(0 1px 2px #000b)}
 html body:not(#_a):not(#_b) #app .match .cry-next::before{content:"";display:inline-block;width:1.15em;height:1.15em;margin-right:.18em;vertical-align:-.22em;background:url(/art/ui/match/next-income.webp) center/contain no-repeat;filter:drop-shadow(0 1px 2px #000b)}
 
 /* -- unit stance bar: Brush's stance tray with the painted hold / guard / aggressive icons -- */
-html body:not(#_a):not(#_b) #app .match .stance-bar.stance-bar{--stw:clamp(170px,11vw,230px);width:var(--stw);height:calc(var(--stw) * 145 / 992);display:block;gap:0;padding:0;border:0;border-radius:0;background:url(/art/ui/match/frame-stance-tray.webp) 0 0/100% 100% no-repeat;filter:drop-shadow(0 3px 5px #000b)}
-html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt.stance-opt{all:unset;box-sizing:border-box;position:absolute;top:50%;width:29%;height:max(44px,100%);transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;touch-action:manipulation}
+html body:not(#_a):not(#_b) #app .match .stance-bar.stance-bar{--stw:clamp(150px,9vw,176px);width:var(--stw);height:calc(var(--stw) * 145 / 992);display:block;gap:0;padding:0;border:0;border-radius:0;background:url(/art/ui/match/frame-stance-tray.webp) 0 0/100% 100% no-repeat;filter:drop-shadow(0 3px 5px #000b)}
+html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt.stance-opt{all:unset;box-sizing:border-box;position:absolute;top:50%;width:29%;height:100%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;touch-action:manipulation}
+@media (pointer:coarse){html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt.stance-opt{height:max(40px,100%)}}
 html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt:nth-child(1){left:17.5%}
 html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt:nth-child(2){left:47.5%}
 html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt:nth-child(3){left:77.2%}
@@ -604,3 +605,8 @@ html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="20"] .path-la
 html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="0"] .path-label[data-kind="mine"]{background-image:url(/art/ui/unit-icons/mine.webp)}
 html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="0"] .path-label[data-kind="mine"]::after,html body:not(#_a):not(#_b) #app .match .cell .path-label[data-kind="chase"]::after,html body:not(#_a):not(#_b) #app .match .cell.path-blocked .path-label::after{content:none!important}
 html body:not(#_a):not(#_b) #app .match .cell.path-blocked .path-label{background-image:url(/art/ui/match/blocked.webp)!important}
+/* -- Menu words with Brush's coins beside them; the watch / Card Play speed coins without the drawn box -- */
+html body:not(#_a):not(#_b) #app .match .o-menu-item.mi-coin::before{content:"";display:inline-block;width:1.15em;height:1.15em;margin-right:.45em;vertical-align:-.2em;background:var(--coin) center/contain no-repeat;filter:drop-shadow(0 1px 2px #000b)}
+html body:not(#_a):not(#_b) #app .mode-ui .watch-bar{background:none;box-shadow:none;padding:0;gap:2px}
+html body:not(#_a):not(#_b) .overlay .dialog .btn.mframe.mframe{outline:0}
+html body:not(#_a):not(#_b) .play-from-hand-row .play-from-hand.play-from-hand{--fh:clamp(48px,6.6vh,70px);font-size:clamp(17px,2.2vw,26px)}

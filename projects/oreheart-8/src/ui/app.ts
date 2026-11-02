@@ -29,7 +29,12 @@ const UNIT_ICON = (n: string) => `/art/ui/unit-icons/${n}.webp`;
 /** Ken, Nov 1: "I don't want any of the computer style drawn buttons. I want nice graphic coins" / "use little graphics instead of words": Brush's coins (art/ui/match/README.md) */
 const MATCH_ART = (n: string) => `/art/ui/match/${n}.webp`;
 /** a picture-only control: the coin shows; the word stays its name (screen readers, the checks) and its hover tooltip */
-const coinOnly = <T extends HTMLElement>(b: T, coin: string, word?: string): T => { b.classList.add('mcoin'); b.style.setProperty('--coin', `url(${MATCH_ART(coin)})`); if (word) b.title = word; return b; };
+const coinOnly = <T extends HTMLElement>(b: T, coin: string, word?: string): T => {
+  b.classList.add('mcoin'); b.style.setProperty('--coin', `url(${MATCH_ART(coin)})`); if (word) b.title = word;
+  const t = [...b.childNodes].filter((n) => n.nodeType === 3 && (n.textContent || '').trim()); // the word moves into a visually hidden span (still the name)
+  if (t.length) { const sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = t.map((n) => n.textContent).join(''); t.forEach((n) => n.remove()); b.append(sr); }
+  return b;
+};
 /** the ability coins (they replace the emoji) */
 const AB_COIN: Record<string, string> = { slide: 'ability-slide', bowl: 'ability-strike', shockwave: 'ability-shockwave', plow: 'ability-plow', ramMove: 'ability-ram', shaman: 'ability-grab', rocket: 'ability-rocket', ward: 'ability-ward', sacrifice: 'ability-sacrifice', brew: 'ability-brew', blink: 'ability-blink' };
 /** rarest first for the Rarity sort */
@@ -1272,7 +1277,7 @@ export class App {
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
     r.phase.append(h('div', { class: 'ph-turn' }), h('div', { class: 'ph-steps' }, ...['draw', 'deploy', 'action', 'end'].map((k) => h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k]), ), ), h('div', { class: 'ph-time' }));
-    (r.phase.querySelector('.ph-steps') as El).replaceChildren(...['draw', 'deploy', 'action', 'end'].flatMap((k, i) => (i ? [h('span', { class: 'ph-sep', 'aria-hidden': 'true' }, '›'), h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k])] : [h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k])])));
+    (r.phase.querySelector('.ph-steps') as El).replaceChildren(...['draw', 'deploy', 'action', 'end'].flatMap((k, i) => (i ? [h('span', { class: 'ph-sep', 'aria-hidden': 'true' }, '›'), h('span', { class: 'ph-step', 'data-phase': k, title: PHASE[k] }, h('span', { class: 'sr-only' }, PHASE[k]))] : [h('span', { class: 'ph-step', 'data-phase': k, title: PHASE[k] }, h('span', { class: 'sr-only' }, PHASE[k]))]))); // Ken, Nov 1: Brush's phase coins; the words stay hidden
     r.timer = h('div', { class: 'countdown', role: 'timer', 'aria-label': 'Phase timer', hidden: true }, '10');
     // Ken, Nov 1: "that same progress bar that you have for when you want to respond to a spell being cast, I want that on the timer on the top"
     r.turnBar = h('div', { class: 'turn-bar', role: 'progressbar', 'aria-label': 'Turn time left', 'aria-valuemin': '0', 'aria-valuemax': String(CONFIG.phaseTimerSeconds), 'aria-valuenow': String(CONFIG.phaseTimerSeconds), hidden: true },
@@ -1347,6 +1352,9 @@ export class App {
     });
     this.buildEnemyDiscard(match); // Owner (Ken, Oct 30): the enemy discard pile on the left
     { const fsItem = [...(this.r.menuPanel as El).querySelectorAll('.o-menu-item')].find((b) => /^(Full screen|Windowed)$/.test(b.textContent || '')) as HTMLElement | undefined; if (fsItem) { fsItem.classList.add('fs-toggle'); fsWatch(fsItem); } }
+    for (const fl of match.querySelectorAll('[data-role=player-flow-label],[data-role=enemy-flow-label]') as NodeListOf<El>) { // Ken, Nov 1: the flow coin instead of the word (kept hidden)
+      if (!fl.querySelector('.sr-only')) { const w = fl.textContent || 'Flow'; fl.replaceChildren(h('span', { class: 'sr-only' }, w)); fl.classList.add('flow-coin'); fl.title = w; }
+    }
     { // Ken, Nov 1: Brush's coins beside the Menu words (README "Menu and dialogs")
       const MI: [RegExp, string][] = [[/^Resume/, 'resume'], [/^Settings/, 'settings'], [/^Square highlights/, 'highlights'], [/^(Full screen|Windowed)/, 'full-screen'], [/^How to play/, 'how-to-play'], [/^Sound Effects/, 'sound-on'], [/^Background music/, 'music'], [/^Give up/, 'give-up']];
       for (const b of (this.r.menuPanel as El).querySelectorAll('.o-menu-item') as NodeListOf<El>) { const m = MI.find(([re]) => re.test(b.textContent || '')); if (m) { b.classList.add('mi-coin'); b.style.setProperty('--coin', `url(${MATCH_ART(m[1])})`); } }
@@ -2285,7 +2293,7 @@ export class App {
     /* read the button's parent box now, before the cards are written (no extra layout pass) */
     const sortPar = sortW ? (sortB!.offsetParent as El | null) : null, sortPr = sortPar?.getBoundingClientRect();
     const sortPsx = sortPar && sortPar.offsetWidth ? sortPr!.width / sortPar.offsetWidth || 1 : 1;
-    const sortGap = Math.max(6, Math.round(sortH * 0.18));
+    const sortGap = Math.max(6, Math.round(sortH * 0.12));
     /* how far the first card's tilted top corner reaches left of its box (it turns about 50% 110%) */
     const tiltOut = (deg: number, w: number, hh: number) => { const t = (deg * Math.PI) / 180; return Math.max(0, -(w / 2) + (w / 2) * Math.cos(t) - 1.1 * hh * Math.sin(t)); };
     if (sortW) { const w0 = cards[0]?.offsetWidth || 66, n0 = Math.min(n, VIS), per0 = n0 > 1 ? Math.min(App.HAND.anglePer, (2 * App.HAND.angleMax) / (n0 - 1)) : 0; spanL += (sortW + 2 * sortGap) / sx + tiltOut(-((n0 - 1) / 2) * per0, w0, w0 * 1.5); }
