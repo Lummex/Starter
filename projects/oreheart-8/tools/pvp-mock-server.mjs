@@ -1,0 +1,51 @@
+// Local stand-in for the `match` server function (Anvil, Nov 2): the SAME referee/service code as the real Edge Function,
+// over an in-memory store, so two browser pages can play a whole friend match on this PC without Supabase.
+// Fake sign-in: header `x-mock-user: <name>` (or ?user=<name>). Never deployed; test pages pick it with ?pvp=mock.
+//   node tools/bundle-engine.mjs && node tools/pvp-mock-server.mjs [port]      (default port 4310)
+// Endpoints: POST /match {op, ...} like the real function; GET /health; GET /debug/views?matchId=..&user=.. (checks only).
+import http from 'node:http';
+import { webcrypto } from 'node:crypto';
+import { existsSync, statSync, readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// rebuild the bundle when it is missing or older than the engine/server sources
+const here = dirname(fileURLToPath(import.meta.url));
+const bundlePath = resolve(here, '.build/pvp-server.mjs');
+const newest = (dir) => Math.max(0, ...readdirSync(dir).map((f) => statSync(resolve(dir, f)).mtimeMs));
+const srcTime = Math.max(newest(resolve(here, '../src/engine')), newest(resolve(here, '../src/server')), newest(resolve(here, '../src/content')));
+if (!existsSync(bundlePath) || statSync(bundlePath).mtimeMs < srcTime) { console.log('bundling the engine...'); execFileSync(process.execPath, [resolve(here, 'bundle-engine.mjs')], { stdio: 'inherit' }); }
+const { PvpService, MemoryStore, setDiceMode, ENGINE_VERSION } = await import('./.build/pvp-server.mjs');
+
+if (!globalThis.crypto) globalThis.crypto = webcrypto;
+setDiceMode('live'); // the referee rolls fresh dice, like the real server
+const port = Number(process.argv[2] || process.env.PVP_MOCK_PORT || 4310);
+const store = new MemoryStore(() => { const u = new Uint32Array(1); crypto.getRandomValues(u); return u[0] / 4294967296; });
+store.newId = () => crypto.randomUUID();
+const service = new PvpService(store, { engineVersion: ENGINE_VERSION + '-mock' });
+const users = new Map();
+const userOf = (name) => {
+  const n = String(name || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 16);
+  if (!n) return null;
+  if (!users.has(n)) users.set(n, { userId: 'mock-' + n, username: n, avatar: null });
+  return users.get(n);
+};
+const json = (res, code, body) => { res.writeHead(code, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, GET, OPTIONS' }); res.end(JSON.stringify(body)); };
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, 'http://x');
+  if (req.method === 'OPTIONS') return json(res, 204, {});
+  if (url.pathname === '/health') return json(res, 200, { ok: true, engine: ENGINE_VERSION, matches: store.matches.size, rooms: store.rooms.size });
+  if (url.pathname === '/debug/views' && req.method === 'GET') { const v = store.viewOf(url.searchParams.get('matchId'), 'mock-' + url.searchParams.get('user')); return json(res, 200, { ok: !!v, view: v }); }
+  if (url.pathname === '/debug/moves' && req.method === 'GET') return json(res, 200, { ok: true, moves: store.moves.filter((m) => m.matchId === url.searchParams.get('matchId')) });
+  if (url.pathname !== '/match' || req.method !== 'POST') return json(res, 404, { ok: false, error: 'not found' });
+  const user = userOf(req.headers['x-mock-user'] || url.searchParams.get('user'));
+  if (!user) return json(res, 401, { ok: false, error: 'not signed in' });
+  let body = '';
+  for await (const chunk of req) { body += chunk; if (body.length > 200_000) return json(res, 413, { ok: false, error: 'too big' }); }
+  let b; try { b = body ? JSON.parse(body) : {}; } catch { return json(res, 400, { ok: false, error: 'bad JSON' }); }
+  const out = await service.handle(String(b.op || ''), b, user, Date.now());
+  json(res, 200, out);
+});
+server.listen(port, '127.0.0.1', () => console.log(`pvp mock server on http://127.0.0.1:${port}/match (engine ${ENGINE_VERSION})`));

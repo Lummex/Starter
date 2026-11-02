@@ -54,12 +54,15 @@ jobs:
           supabase link --project-ref "$REF"
           echo "## Supabase deploy: ${{ inputs.target }} (branch ${{ inputs.branch }})" >> "$GITHUB_STEP_SUMMARY"
           supabase db push --dry-run 2>&1 | sed 's/user=postgres\.[^ ]*/user=postgres.***/' | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Apply migrations (never the seed) and the email sender
+      - name: Build the match function's engine bundle (same rules as the game)
+        run: |
+          if [ -f projects/oreheart-8/tools/bundle-engine.mjs ]; then (cd projects/oreheart-8 && npm ci --no-audit --no-fund && node tools/bundle-engine.mjs); else echo "no bundle script on this branch"; fi
+      - name: Apply migrations (never the seed) and the server functions
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ inputs.target == 'production' && secrets.SUPABASE_DB_PASSWORD || secrets.SUPABASE_TEST_DB_PASSWORD }}
           REF: ${{ inputs.target == 'production' && secrets.SUPABASE_PROJECT_REF || secrets.SUPABASE_TEST_PROJECT_REF }}
         run: |
           supabase db push 2>&1 | sed 's/user=postgres\.[^ ]*/user=postgres.***/'
-          if [ -d supabase/functions/send-outbox ]; then supabase functions deploy send-outbox --project-ref "$REF"; else echo "no send-outbox function on this branch yet"; fi
+          for f in supabase/functions/*/; do n=$(basename "$f"); [ -f "$f/index.ts" ] || continue; echo "deploying function $n"; supabase functions deploy "$n" --project-ref "$REF"; done
           echo "Applied to ${{ inputs.target }}." >> "$GITHUB_STEP_SUMMARY"
