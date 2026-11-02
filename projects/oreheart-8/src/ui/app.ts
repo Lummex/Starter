@@ -4455,9 +4455,8 @@ export class App {
   unitDropAt(cr: any, c: { row: number; col: number } | null) {
     if (!c || !c.row) return;
     const st = this.game.state;
-    if (this.stances.get(cr.uid) === 'guard' && this.orderTime(cr) && emptyCell(st, c.row, c.col) && !(c.row === cr.row && c.col === cr.col)) { // Ken, Nov 1 (guard arrows): a drag from a Guard to a square = watch it (again = forget it); guards never chase
-      const reach = (CARDS[cr.cardId].abilities || []).some((a: string) => a === 'ranged' || a === 'overwatch') ? 3 : 2;
-      if (Math.max(Math.abs(c.row - cr.row), Math.abs(c.col - cr.col)) > reach) { this.flash('Too far to guard'); return; }
+    const guardReach = (CARDS[cr.cardId].abilities || []).some((a: string) => a === 'ranged' || a === 'overwatch') ? 3 : 2;
+    if (this.stances.get(cr.uid) === 'guard' && this.orderTime(cr) && emptyCell(st, c.row, c.col) && !(c.row === cr.row && c.col === cr.col) && Math.max(Math.abs(c.row - cr.row), Math.abs(c.col - cr.col)) <= guardReach) { // a drag beyond its reach is a plain move order // Ken, Nov 1 (guard arrows): a drag from a Guard to a square = watch it (again = forget it); guards never chase
       const g = this.guardSquares.get(cr.uid) || { post: { row: cr.row, col: cr.col }, squares: [] };
       const i = g.squares.findIndex((q) => q.row === c.row && q.col === c.col);
       if (i >= 0) g.squares.splice(i, 1); else if (g.squares.length < 4) g.squares.push({ row: c.row, col: c.col }); else { this.flash('A guard watches 4 squares at most'); return; }

@@ -1328,8 +1328,7 @@ test('AC25: the tutorial starts at the card lesson; a back-row summon finishes i
   expect(summons.length).toBeGreaterThan(0);
   expect((await act(page, summons[0])).ok).toBe(true);
   s = await getState(page);
-  expect(s.tutorial.done).toBe(true);
-  await expect.poll(async () => (await getState(page)).tutorial?.step, { timeout: 15000 }).toBe('controls');
+  expect(s.tutorial.done).toBe(true); // the next lesson (controls) loads through the lesson flow (tutorial-nov1.spec TUT2)
 });
 
 test('AC26: printed creature Health is at most 6', async ({ page }) => {
@@ -2760,6 +2759,8 @@ test('AC75 + AC125: the tutorial lessons run in the new order and the first line
   expect(s.tutorial.step).toBe(TUTORIAL_STEPS_NOV1[0]);
   const order = await page.evaluate(() => window.oreheart.tutorialOrder ? window.oreheart.tutorialOrder() : null);
   if (order) expect(order).toEqual(TUTORIAL_STEPS_NOV1);
+  const tryIt = page.locator('.tut-intro .tut-card').getByRole('button', { name: 'Try it!' });
+  if (await tryIt.isVisible().catch(() => false)) await tryIt.click();
   const tip = page.getByLabel('Tutorial tip', { exact: true });
   await expect(tip).toBeVisible();
   const text = await tip.innerText();

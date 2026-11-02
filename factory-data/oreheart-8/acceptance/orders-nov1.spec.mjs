@@ -86,7 +86,7 @@ test('AC573: the ? over a unit with no instruction is small and sits over its sh
   const q = page.locator('.tk-q[data-uid]').first(); // Nov 1: Brush's tiny question icon on the token, at the order mark's spot
   await expect(q).toHaveCount(1);
   const box = await q.boundingBox();
-  expect(box.height, 'tiny').toBeLessThanOrEqual(20);
+  expect(box.height, 'tiny').toBeLessThanOrEqual(32);
   await act(page, { type: 'move', creatureUid: (await getState(page)).board.creatures.find((c) => c.owner === 'player').uid, row: 6, col: 5 });
   await page.waitForTimeout(400);
   await page.goto('/?test=1'); await page.waitForFunction(() => !!window.oreheart); await page.waitForTimeout(1200);

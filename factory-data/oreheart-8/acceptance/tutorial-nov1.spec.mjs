@@ -232,6 +232,17 @@ test('TUT10: lesson 8: hit the enemy Commander once (20 -> less), then the Miner
   const u = await me(page);
   await realDrag(page, await sq2s(page, u.row, u.col), await sq2s(page, 1, 12));
   await expect.poll(async () => (await getState(page)).players.opponent.health).toBeLessThan(20);
+  // Nov 1 (Anvil): two more lessons before the swap: a standing mining order, then guard arrows
+  await waitStep(page, 'mineorder');
+  await page.locator('.tut-intro .tut-card').getByRole('button', { name: 'Try it!' }).click();
+  { const u2 = await me(page); const st2 = await getState(page); const d = (a) => Math.max(Math.abs(a.row - u2.row), Math.abs(a.col - u2.col)); const site = st2.sites.slice().sort((a, b) => d(a) - d(b))[0];
+    await realDrag(page, await sq2s(page, u2.row, u2.col), await sq2s(page, site.row, site.col)); }
+  await waitStep(page, 'guardarrows');
+  await page.locator('.tut-intro .tut-card').getByRole('button', { name: 'Try it!' }).click();
+  { const u3 = await me(page); const p3 = await sq2s(page, u3.row, u3.col); await page.mouse.click(p3.x, p3.y);
+    const guard = page.locator('.stance-bar [data-stance=guard]'); await expect(guard).toBeVisible(); await guard.click();
+    await expect(line(page)).toHaveAttribute('data-beat', '2');
+    await realDrag(page, await sq2s(page, u3.row, u3.col), await sq2s(page, 5, 4)); }
   await waitStep(page, 'swap');
   await page.locator('.tut-intro .tut-card').getByRole('button', { name: 'Try it!' }).click();
   const swap = page.getByRole('button', { name: 'Swap for a Miner', exact: true });
