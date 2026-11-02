@@ -1078,6 +1078,7 @@ export function legalActions(s: any): any[] {
   if (s.phase === 'over' || !s.priority) return [];
   const who: Side = s.priority;
   const pl = s.players[who];
+  if (pl.hand.some((h: any) => h && h.hidden)) return []; // PvP (Nov 2): a player's view hides the other hand; nothing can be worked out for that side
   const out: any[] = [];
   const surrender = { type: 'surrender' };
   if (s.pendingResponse) {
