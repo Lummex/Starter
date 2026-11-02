@@ -96,7 +96,15 @@ export const LESSONS: Lesson[] = [
     beats: [{ say: 'Hit the enemy Commander!', sub: 'Drag onto his fortress.', goal: done, show: dragUnitTo(() => ENEMY_SH) }] },
   // RESERVED for Anvil (Nov 1), once the features land: lesson "a standing mining order" (drag a Miner onto a mine) and lesson "guard arrows".
   // Add each here as a Lesson (with its step also added to TUTORIAL_ORDER in engine.ts, before 'swap'), and renumber `n`.
-  { step: 'swap', n: 9, pics: ['hand-pointing'], say: 'Swap a card for a Miner.', sub: '1 Crystal (3 with 3 Miners).', hand: ['goblin-grunt'], crystals: 1, board: [], action: false,
+  { step: 'mineorder', n: 9, pics: ['hand-pointing'], say: 'Drag your Miner onto a mine.', sub: 'It walks there and mines every turn.', board: [P('goblin-scrounger', 6, 3)], action: true,
+    beats: [{ say: 'Drag the Miner onto the crystal mine.', sub: 'It keeps mining by itself.', goal: (t) => [...t.app.orders.values()].some((o: any) => o.kind === 'mine'), show: dragUnitTo((t) => { const u = t.unit, s = t.app.game.state; if (!u || !s) return null; const d = (a: any) => Math.max(Math.abs(a.row - u.row), Math.abs(a.col - u.col)); return s.sites.slice().sort((a: any, b: any) => d(a) - d(b))[0]; }) }] },
+  { step: 'guardarrows', n: 10, pics: ['hand-pointing'], say: 'A guard watches squares.', sub: 'Black arrows. It never chases.', board: [P('goblin-grunt', 6, 3)], action: true,
+    beats: [
+      { say: 'Tap your goblin.', goal: (t) => !!t.app.stanceBar, show: (t) => (t.unit ? { to: t.sq(t.unit), tap: true, at: t.unit } : null) },
+      { say: 'Pick Guard.', sub: 'It stays and protects.', goal: (t) => !!t.unit && t.app.stances.get(t.unit.uid) === 'guard', show: (t) => { const b = t.app.stanceBar?.querySelector('[data-stance=guard]'); return b ? { to: t.elPt(b), tap: true, el: b } : null; } },
+      { say: 'Drag to a square it should guard.', sub: 'Black arrow = it watches there.', goal: (t) => !!t.unit && (((t.app as any).guardSquares.get(t.unit.uid)?.squares.length) || 0) >= 1, show: dragUnitTo(() => ({ row: 5, col: 4 })) },
+    ] },
+  { step: 'swap', n: 11, pics: ['hand-pointing'], say: 'Swap a card for a Miner.', sub: '1 Crystal (3 with 3 Miners).', hand: ['goblin-grunt'], crystals: 1, board: [], action: false,
     beats: [
       { say: 'Tap Swap for a Miner.', sub: '1 Crystal (3 with 3 Miners).', goal: (t, st) => !!t.app.swapping || done(t, st), show: (t) => { const b = t.app.r?.swap as El | undefined; return b && !b.hidden ? { to: t.elPt(b), tap: true, el: b } : null; } },
       { say: 'Now tap a card to trade.', goal: done, show: (t) => ({ to: t.elPt(t.handCard()), tap: true }) },

@@ -23,7 +23,7 @@ import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
 import { emptyCell } from '../engine';
 import { planOrder, chaseList, UNIT_STANCES, type Order, type OrderPlan, type Stance as UnitStance } from '../engine/orders';
 import { runOrders } from './orders-run';
-import { orderSvg, restTargetSvg, questionSvg, guardSvg, type OrderDrawing } from './order-draw';
+import { orderSvg, restTargetSvg, questionSvg, guardSvg, guardArrowsSvg, type OrderDrawing } from './order-draw';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -2337,7 +2337,7 @@ export class App {
   update(st: any, events: any[]) {
     const r = this.r;
     if (!r.board || !st) return;
-    if (events.some((e) => e.type === 'newMatch')) { this.orders.clear(); this.stances.clear(); this.chainFor = null; this.orderPreview = null; this.ordersRunKey = ''; this.missWord = 0; } // Round 28
+    if (events.some((e) => e.type === 'newMatch')) { this.orders.clear(); this.stances.clear(); this.guardSquares.clear(); this.chainFor = null; this.orderPreview = null; this.ordersRunKey = ''; this.missWord = 0; } // Round 28
     const me = st.players.player, en = st.players.opponent;
     this.view && this.view.setState(st, events);
     this.record(st, events);
@@ -2436,7 +2436,7 @@ export class App {
     const key = `${st.turn}|${st.seed ?? ''}|${this.game.options?.seed ?? ''}`;
     if (this.ordersRunKey === key) return;
     this.ordersRunKey = key;
-    void runOrders(this.orderGame(), this.orders, { delayMs: this.test ? 0 : 450, stances: this.stances, onChange: () => this.renderOrders(this.game.state) });
+    void runOrders(this.orderGame(), this.orders, { delayMs: this.test ? 0 : 450, stances: this.stances, guards: this.guardSquares, onChange: () => this.renderOrders(this.game.state) });
   }
 
   // ------------------------------------------------------------ enemy turn recap (R9.7)
@@ -4374,6 +4374,8 @@ export class App {
   }
   // ---- Ken, Nov 1: stance per unit, set from a small bar on the selected unit
   stances = new Map<string, UnitStance>();
+  /** Ken, Nov 1 (guard arrows): the squares each Guard unit watches, and its post */
+  guardSquares = new Map<string, { post: { row: number; col: number }; squares: { row: number; col: number }[] }>();
   stanceBar: El | null = null;
   closeStanceBar() { this.stanceBar?.remove(); this.stanceBar = null; }
   openStanceBar(cr: any) {
@@ -4384,7 +4386,7 @@ export class App {
     const bar = h('div', { class: 'stance-bar', role: 'group', 'aria-label': 'Stance' }, ...UNIT_STANCES.map((k) => {
       const b = h('button', { type: 'button', class: 'stance-opt', 'data-stance': k, 'aria-pressed': String(cur === k), title: TIP[k] }, LABEL[k]) as El;
       b.addEventListener('pointerdown', (ev: Event) => ev.stopPropagation());
-      b.addEventListener('click', (ev: Event) => { ev.stopPropagation(); if (this.stances.get(cr.uid) === k) this.stances.delete(cr.uid); else this.stances.set(cr.uid, k); this.markStances(); this.openStanceBar(cr); });
+      b.addEventListener('click', (ev: Event) => { ev.stopPropagation(); if (this.stances.get(cr.uid) === k) this.stances.delete(cr.uid); else this.stances.set(cr.uid, k); if (this.stances.get(cr.uid) !== 'guard') this.guardSquares.delete(cr.uid); /* Nov 1: leaving Guard forgets its watched squares */ this.markStances(); this.openStanceBar(cr); });
       return b;
     })) as El;
     const rc = this.view!.cellRect(cr.row, cr.col), bw = this.r.board.clientWidth;
@@ -4409,6 +4411,8 @@ export class App {
     if (c.row === SH.opponent.row && c.col === SH.opponent.col) return { kind: 'chase', uid: cr.uid, targetUid: 'cmd:opponent' }; // Ken, Nov 1: drag onto the enemy Commander: it attacks him every turn
     const there = st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col);
     if (there) return there.owner !== cr.owner ? { kind: 'chase', uid: cr.uid, targetUid: there.uid } : { kind: 'move', uid: cr.uid, dest: { row: c.row, col: c.col } }; // Ken, Nov 1: draw the arrow onto your own unit: they swap places
+    const site = st.sites.find((x: any) => x.row === c.row && x.col === c.col);
+    if (site && isMiner(CARDS[cr.cardId])) return { kind: 'mine', uid: cr.uid, site: { row: site.row, col: site.col } }; // Ken, Nov 1: drag a Miner onto a mine: it walks there and mines every turn until re-ordered
     return emptyCell(st, c.row, c.col) ? { kind: 'move', uid: cr.uid, dest: { row: c.row, col: c.col } } : null;
   }
   /** Is there a normal legal action (attack, mine, move, aimed ability) for this unit on square c? Same matching as unitActAt. */
@@ -4423,10 +4427,19 @@ export class App {
   unitDropAt(cr: any, c: { row: number; col: number } | null) {
     if (!c || !c.row) return;
     const st = this.game.state;
+    if (this.stances.get(cr.uid) === 'guard' && this.orderTime(cr) && emptyCell(st, c.row, c.col) && !(c.row === cr.row && c.col === cr.col)) { // Ken, Nov 1 (guard arrows): a drag from a Guard to a square = watch it (again = forget it); guards never chase
+      const reach = (CARDS[cr.cardId].abilities || []).some((a: string) => a === 'ranged' || a === 'overwatch') ? 3 : 2;
+      if (Math.max(Math.abs(c.row - cr.row), Math.abs(c.col - cr.col)) > reach) { this.flash('Too far to guard'); return; }
+      const g = this.guardSquares.get(cr.uid) || { post: { row: cr.row, col: cr.col }, squares: [] };
+      const i = g.squares.findIndex((q) => q.row === c.row && q.col === c.col);
+      if (i >= 0) g.squares.splice(i, 1); else if (g.squares.length < 4) g.squares.push({ row: c.row, col: c.col }); else { this.flash('A guard watches 4 squares at most'); return; }
+      g.post = { row: cr.row, col: cr.col }; this.guardSquares.set(cr.uid, g); if (this.orders.delete(cr.uid)) this.chainFor = null; this.renderOrders(st); this.flashOrder(cr.uid); return;
+    }
     if (this.unitHasActionAt(cr, c)) {
       const foe = c.row === SH.opponent.row && c.col === SH.opponent.col ? { uid: 'cmd:opponent' } : st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col && x.owner !== cr.owner);
       if (this.orders.delete(cr.uid)) this.renderOrders(st);
       this.unitActAt(cr, c);
+      { const site = st.sites.find((x: any) => x.row === c.row && x.col === c.col); if (site && isMiner(CARDS[cr.cardId]) && this.orderTime(cr)) { this.orders.set(cr.uid, { kind: 'mine', uid: cr.uid, site: { row: site.row, col: site.col } }); this.renderOrders(this.game.state); this.flashOrder(cr.uid); } } // Nov 1: and it keeps mining there every turn
       if (foe && this.orderTime(cr)) { this.orders.set(cr.uid, { kind: 'chase', uid: cr.uid, targetUid: foe.uid }); this.chainFor = cr.uid; this.renderOrders(this.game.state); this.flashOrder(cr.uid); } // Ken, Nov 1: it stays on them
       return;
     }
@@ -4481,7 +4494,7 @@ export class App {
       end.dataset.uid = o.uid;
       end.classList.add('path-end'); end.classList.toggle('path', !p.blocked); end.classList.toggle('path-preview', pv); end.classList.toggle('path-blocked', p.blocked); end.style.setProperty('--pfc', pfc);
       const n = p.turns;
-      const text = p.blocked || !isFinite(n) ? 'Blocked' : o.kind === 'chase' ? 'Chase' : `${n} turn${n === 1 ? '' : 's'}`;
+      const text = p.blocked || !isFinite(n) ? 'Blocked' : o.kind === 'chase' ? 'Chase' : o.kind === 'mine' && !n ? 'Mining' : `${n} turn${n === 1 ? '' : 's'}`;
       if (isFinite(n)) end.dataset.turns = String(n);
       end.querySelector('.path-label')?.remove();
       end.append(h('span', { class: 'path-label', role: 'status', 'data-kind': o.kind, title: o.kind === 'chase' && isFinite(n) && !p.blocked ? `Chase: ${n} turn${n === 1 ? '' : 's'} to reach` : text }, text));
@@ -4568,7 +4581,7 @@ export class App {
       const tgt = o.kind === 'chase' ? chaseList(o).map((u) => this.orderUnit(st, u)).find(Boolean) : null;
       if (tgt) { const rc = view.cellRect(tgt.row, tgt.col); html += restTargetSvg(centre(tgt.row, tgt.col), rc.w, rc.h); }
     }
-    for (const c of guards) { const rc = view.cellRect(c.row, c.col); html += guardSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); }
+    for (const c of guards) { const rc = view.cellRect(c.row, c.col); html += guardSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); const gq = this.guardSquares.get(c.uid); if (gq && gq.squares.length) html += guardArrowsSvg(centre(c.row, c.col), gq.squares.map((q) => centre(q.row, q.col)), rc.w, rc.h, c.uid); }
     for (const c of idle) { const rc = view.cellRect(c.row, c.col); html += questionSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); }
     svg.innerHTML = html;
   }

@@ -1414,8 +1414,8 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
 // starts each lesson as its own scripted match with `tutorial: '<step>'`); the engine only notices when the lesson's goal was done.
 // 'controls', 'order' and 'chain' are taught with the real controls and drawn orders (UI only): the tutorial screen marks them done
 // with markTutorialDone(). Room is kept before 'swap' for Anvil's coming lessons (a standing mining order; guard arrows).
-export const TUTORIAL_ORDER = ['card', 'controls', 'move', 'order', 'chase', 'chain', 'ranged', 'fight', 'commander', 'swap', 'complete'];
-export const TUTORIAL_UI_STEPS = ['controls', 'order', 'chain'];
+export const TUTORIAL_ORDER = ['card', 'controls', 'move', 'order', 'chase', 'chain', 'ranged', 'fight', 'commander', 'mineorder', 'guardarrows', 'swap', 'complete'];
+export const TUTORIAL_UI_STEPS = ['controls', 'order', 'chain', 'mineorder', 'guardarrows'];
 export function markTutorialDone(s: any) { if (s && s.tutorial && s.tutorial.step !== 'complete') s.tutorial.done = true; }
 function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {
   const t = s.tutorial;
@@ -1452,6 +1452,8 @@ export function tutorialAction(s: any): any | null {
     case 'controls': if (s.turn > 1) return null; a = { type: 'done' }; break; // a whole turn (the screen also has the player press each control)
     case 'move': a = action ? legal.find((x: any) => x.type === 'move' && t.target && x.row === t.target.row && x.col === t.target.col) || legal.find((x: any) => x.type === 'move') : null; break;
     case 'order': if (unit && t.target) return { type: 'order', order: { kind: 'move', uid: unit.uid, dest: { row: t.target.row, col: t.target.col } } }; break;
+    case 'mineorder': if (unit && s.sites.length) { const site = s.sites[0]; return { type: 'order', order: { kind: 'mine', uid: unit.uid, site: { row: site.row, col: site.col } } }; } break; // Nov 1: a standing mining order (the UI's setOrder)
+    case 'guardarrows': return null; // UI only: Guard stance + a drag to a square
     case 'chase': {
       a = action ? legal.find((x: any) => x.type === 'attack' && x.creatureUid === unit?.uid && x.target.row) : null;
       if (!a && action && unit && !unit.hasMoved && s.turn === 1 && foes[0]) return { type: 'order', order: { kind: 'chase', uid: unit.uid, targetUid: foes.slice().sort(near(unit))[0].uid } };

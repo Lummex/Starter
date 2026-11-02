@@ -454,19 +454,30 @@ describe('revision 9', () => {
     const pv = previewAttack(s, a.uid, { row: 3, col: 3 });
     expect(pv).toMatchObject({ youTake: 0, targetDefeated: true, attackerDefeated: false }); expect(pv.youDeal).toBeGreaterThanOrEqual(3); // v2: a defender that falls strikes back no more
   });
-  it('tutorial runs to Victory via tutorialAction', () => {
-    let s = createMatch({ playerCommander: t.playerCommander, opponentCommander: t.opponentCommander, setup: t.setup, mines: t.mines, tutorial: true, seed: 1 });
-    const seen: string[] = [];
-    for (let i = 0; i < 200 && s.tutorial.step !== 'complete'; i++) {
-      if (seen[seen.length - 1] !== s.tutorial.step) seen.push(s.tutorial.step);
-      const who = s.priority;
-      const a = who === 'player' ? tutorialAction(s) : s.pendingResponse ? { type: 'pass' } : { type: 'done' };
-      const r = applyAction(s, a);
-      if (!r.ok) throw new Error(JSON.stringify(a) + r.error + ' @' + s.tutorial.step);
-      s = r.state;
+  it('each tutorial lesson can be done through tutorialAction (Nov 1 rebuild: a scripted match per lesson)', () => {
+    const P = (cardId: string, row: number, col: number, x: any = {}) => ({ cardId, owner: 'player', row, col, ...x });
+    const O = (cardId: string, row: number, col: number, x: any = {}) => ({ cardId, owner: 'opponent', row, col, ...x });
+    const M = [{ row: 3, col: 6 }, { row: 4, col: 10 }, { row: 5, col: 6 }];
+    const lessons: [string, any][] = [
+      ['card', { playerHand: ['goblin-grunt'], playerCrystals: 3, board: [] }],
+      ['move', { playerHand: [], board: [P('goblin-grunt', 6, 4)] }],
+      ['ranged', { playerHand: [], board: [P('goblin-slinger', 6, 3), O('dwarf-pickman', 6, 8)] }],
+      ['fight', { playerHand: [], board: [P('goblin-grunt', 5, 5), O('barrelback-courier', 4, 5)] }],
+      ['commander', { playerHand: [], board: [P('goblin-grunt', 2, 11)] }],
+      ['swap', { playerHand: ['goblin-grunt'], playerCrystals: 1, playerDeck: ['goblin-scrounger', 'goblin-grunt'], board: [] }],
+    ];
+    for (const [step, setup] of lessons) {
+      let s: any = createMatch({ playerCommander: 'grubnak', opponentCommander: 'borgo', factionLock: false, mines: M, tutorial: step, seed: 1, setup: { opponentHand: [], firstPlayer: 'player', ...setup } });
+      expect(s.tutorial.step).toBe(step);
+      for (let i = 0; i < 30 && !s.tutorial.done; i++) {
+        const a = s.priority === 'player' ? tutorialAction(s) : s.pendingResponse ? { type: 'pass' } : { type: 'done' };
+        if (!a || a.type === 'order') break;
+        const r = applyAction(s, a);
+        if (!r.ok) throw new Error(step + ': ' + JSON.stringify(a) + ' ' + r.error);
+        s = r.state;
+      }
+      expect(s.tutorial.done, step).toBe(true);
     }
-    expect(seen).toEqual(['summon', 'move', 'mine', 'mineTap', 'spend', 'crystal', 'upgrade', 'swap', 'fight', 'spell', 'savings', 'commander']);
-    expect(s.winner).toBe('player');
   });
 });
 

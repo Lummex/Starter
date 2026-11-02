@@ -1305,42 +1305,33 @@ test('AC25: first visit offers the tutorial; Skip is remembered', async ({ page 
   await expect(offer).toBeHidden();
 });
 
-test('AC25: Tutorial button opens the guided match with tips and Skip Tutorial', async ({ page }) => {
+test('AC25: Tutorial button opens the guided lessons: picture card, Try it!, a spoken line and Skip Tutorial', async ({ page }) => {
   await openMenu(page);
   await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   await page.getByRole('button', { name: 'Tutorial', exact: true }).click();
+  await expect(page.locator('img[src*="card-drag"]').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Try it!' }).click();
   const tip = page.getByLabel('Tutorial tip', { exact: true });
   await expect(tip).toBeVisible();
-  await expect(tip).toContainText(/back row/i);
+  await expect(tip).toContainText(/Drag this card/i, { timeout: 10000 });
   await page.getByRole('button', { name: 'Skip Tutorial' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });
 
-test('AC25: tutorial steps start at summon and advance after a back-row summon', async ({ page }) => {
+test('AC25: the tutorial starts at the card lesson; a back-row summon finishes it and the controls lesson follows', async ({ page }) => {
   await openTest(page);
-  let s = await page.evaluate(async () => {
-    await window.oreheart.startTutorial();
-    return await window.oreheart.getState();
-  });
-  expect(s.tutorial && s.tutorial.step).toBe('summon');
-  expect(s.players.player.crystals).toEqual(ZERO); // the first troop is the free Gatherer
+  let s = await page.evaluate(async () => { await window.oreheart.startTutorial(); return await window.oreheart.getState(); });
+  expect(s.tutorial && s.tutorial.step).toBe('card');
   expect(s.activePlayer).toBe('player');
   expect(s.phase).toBe('deploy');
-  await expect(page.getByLabel('Tutorial tip', { exact: true })).toBeVisible();
   const summons = (await legal(page)).filter((a) => a.type === 'summon');
   expect(summons.length).toBeGreaterThan(0);
-  // Round 11: back row, or (basic Miners) Tunnel onto a space next to a mine.
-  // Owner check change (Ken, Oct 31: Tunnel only beside a mine your side owns): only beside a mine the player owns
-  const nextToMine = (a) => s.sites.some((m) => m.controller === 'player' && Math.max(Math.abs(m.row - a.row), Math.abs(m.col - a.col)) === 1);
-  expect(summons.every((a) => a.row === 7 || nextToMine(a))).toBe(true);
-  const backRow = summons.find((a) => a.row === 7);
-  expect(backRow).toBeTruthy();
-  expect((await act(page, backRow)).ok).toBe(true);
+  expect((await act(page, summons[0])).ok).toBe(true);
   s = await getState(page);
-  expect(s.tutorial.step).toBe('move');
+  expect(s.tutorial.done).toBe(true);
+  await expect.poll(async () => (await getState(page)).tutorial?.step, { timeout: 15000 }).toBe('controls');
 });
 
-// ---------- AC26 ----------
 test('AC26: printed creature Health is at most 6', async ({ page }) => {
   const spaces = [];
   for (const row of [2, 3, 5, 6]) for (let col = 1; col <= 7; col++) spaces.push({ row, col });
@@ -2760,41 +2751,23 @@ test('AC74: match-end summary, Play again with the same choices, and Menu', asyn
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });
 
-const TUTORIAL_STEPS = ['summon', 'move', 'mine', 'mineTap', 'spend', 'crystal', 'upgrade', 'swap', 'fight', 'spell', 'savings', 'commander'];
-const TUTORIAL_WORDS = { summon: /back row/i, mineTap: /Tap the mine/i, spend: /Flow/, crystal: /Bank/, upgrade: /upgrade/i,
-  fight: /You deal/, savings: /banked/i, commander: /Commander/ };
-// Round 3b (AC125): rewritten tips also teach the features added since Phase 1A
-const TUTORIAL_WORDS_3B = { summon: /corner/i, move: /zoom/i, spell: /Full explanation/i, savings: /Last turn/i };
-test('AC75 + AC125: the tutorial runs to the end, teaching only the current rules', async ({ page }) => {
-  test.setTimeout(180000);
+// Nov 1: the tutorial is a chain of scripted lessons (tutorial-nov1.spec.mjs walks every lesson through the real controls)
+const TUTORIAL_STEPS_NOV1 = ['card', 'controls', 'move', 'order', 'chase', 'chain', 'ranged', 'fight', 'commander', 'mineorder', 'guardarrows', 'swap', 'complete'];
+test('AC75 + AC125: the tutorial lessons run in the new order and the first line teaches only current rules', async ({ page }) => {
   await openTest(page);
   await page.evaluate(async () => await window.oreheart.startTutorial());
+  const s = await getState(page);
+  expect(s.tutorial.step).toBe(TUTORIAL_STEPS_NOV1[0]);
+  const order = await page.evaluate(() => window.oreheart.tutorialOrder ? window.oreheart.tutorialOrder() : null);
+  if (order) expect(order).toEqual(TUTORIAL_STEPS_NOV1);
   const tip = page.getByLabel('Tutorial tip', { exact: true });
-  const seen = [];
-  let s;
-  for (let i = 0, actions = 0; i < 600 && actions < 200; i++) {
-    s = await getState(page);
-    if (s.phase === 'over' || s.tutorial.step === 'complete') break;
-    const step = s.tutorial.step;
-    if (!seen.includes(step)) {
-      seen.push(step);
-      if (TUTORIAL_WORDS[step]) await expect(tip).toContainText(TUTORIAL_WORDS[step]);
-      if (TUTORIAL_WORDS_3B[step]) await expect(tip).toContainText(TUTORIAL_WORDS_3B[step]);
-      expect(await tip.innerText()).not.toMatch(/column 7|top of the screen|bottom center/i);
-      expect(await tip.innerText()).not.toMatch(/off-color|Gatherer|Mine All|green crystals?|purple crystals?|blue crystals?|white crystals?/i);
-    }
-    if (s.priority !== 'player') { await page.waitForTimeout(150); continue; }
-    if (s.pendingResponse) { await act(page, { type: 'pass' }); continue; }
-    const a = await page.evaluate(async () => await window.oreheart.tutorialAction());
-    if (!a) break;
-    const r = await act(page, a);
-    expect(r.ok, `${step}: ${JSON.stringify(a)} -> ${JSON.stringify(r)}`).toBe(true);
-    actions++;
-  }
-  expect(seen).toEqual(TUTORIAL_STEPS);
-  await expect.poll(async () => (await getState(page)).tutorial.step, { timeout: 10000 }).toBe('complete');
-  expect((await getState(page)).winner).toBe('player');
-  await expect(page.getByRole('heading', { name: 'Victory!' })).toBeVisible({ timeout: 15000 });
+  await expect(tip).toBeVisible();
+  const text = await tip.innerText();
+  expect(text).not.toMatch(/column 7|top of the screen|bottom center|off-color|Gatherer|Mine All|green crystals?|purple crystals?|blue crystals?|white crystals?/i);
+  const a = await page.evaluate(async () => await window.oreheart.tutorialAction());
+  expect(a && a.type).toBe('summon');
+  expect((await act(page, a)).ok).toBe(true);
+  expect((await getState(page)).tutorial.done).toBe(true);
 });
 
 test('AC76: the Last turn recap lists what the enemy did', async ({ page }) => {
