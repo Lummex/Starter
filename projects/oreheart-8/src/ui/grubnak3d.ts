@@ -27,20 +27,22 @@ export const grubnak3dReady = () => loaded;
 const CMD_PACK_CLIPS = true;
 const CMD_BREAKS = ['biped-idleBreak-01', 'biped-idleBreak-02', 'biped-idleBreak-04'];
 /** Nov 1 (Spring): shared idle breaks for a Commander. A Commander holding a prop keeps its right arm on the idle's first frame, so the prop stays put. */
-function commanderBreaks(sh: { byName: Record<string, THREE.AnimationClip> } | null, idle: THREE.AnimationClip | undefined, holdsProp: boolean): THREE.AnimationClip[] {
+function commanderBreaks(sh: { byName: Record<string, THREE.AnimationClip> } | null, idle: THREE.AnimationClip | undefined, holdsProp: boolean, side: 'Left' | 'Right' = 'Right'): THREE.AnimationClip[] {
   if (!sh) return [];
   const names = holdsProp ? CMD_BREAKS : [...CMD_BREAKS, 'biped-idleBreak-03'];
-  return names.map((n) => sh.byName[n]).filter(Boolean).map((c) => {
-    if (!holdsProp || !idle) return c;
-    const tracks = c.tracks.map((t) => {
-      if (!/^Right(Shoulder|Arm|ForeArm|Hand)\.quaternion$/.test(t.name)) return t;
-      const src = idle.tracks.find((x) => x.name === t.name);
-      if (!src) return t;
-      const v = Array.from(src.values.slice(0, 4));
-      return new THREE.QuaternionKeyframeTrack(t.name, [0, c.duration], [...v, ...v]);
-    });
-    return new THREE.AnimationClip(c.name + '-held', c.duration, tracks);
+  return names.map((n) => sh.byName[n]).filter(Boolean).map((c) => (holdsProp && idle ? holdArm(c, idle, side) : c));
+}
+/** Nov 2 (Spring): the clip with one arm kept on the idle's first frame, so what that hand holds stays put */
+function holdArm(c: THREE.AnimationClip, idle: THREE.AnimationClip, side: 'Left' | 'Right'): THREE.AnimationClip {
+  const arm = new RegExp('^' + side + '(Shoulder|Arm|ForeArm|Hand)\.quaternion$');
+  const tracks = c.tracks.map((t) => {
+    if (!arm.test(t.name)) return t;
+    const src = idle.tracks.find((x) => x.name === t.name);
+    if (!src) return t;
+    const v = Array.from(src.values.slice(0, 4));
+    return new THREE.QuaternionKeyframeTrack(t.name, [0, c.duration], [...v, ...v]);
   });
+  return new THREE.AnimationClip(c.name + '-held', c.duration, tracks);
 }
 
 /** Loads the saved models once; resolves null when they are not shipped (the procedural figure stays). */
@@ -190,8 +192,12 @@ function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress:
 const EMOTE_FALLBACK: Record<string, string> = { laugh: 'attack', point: 'attack', celebrate: 'attack', cast: 'attack', taunt: 'attack', cheer: 'attack', surprised: 'hit', flinch: 'hit', walk: 'idle' };
 /** per Commander: model folder, files and how tall he stands (board squares) on top of his stronghold */
 type Look = { bone: string; pos: [number, number, number]; rot: [number, number, number]; scale: [number, number, number] };
-const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortress: string; scepter: string }; figH: number; keepK: number; deck: number; sceptre: { len: number; grip: number; rot: [number, number, number]; upright?: boolean }; prop?: { file: string; look: Look } }> = {
-  borgo: { base: '/models/commanders/borgo/', files: { source: 'borgo.glb', fortress: 'dwarf-stronghold', scepter: 'borgo-sceptre.glb' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
+const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortress: string; scepter: string }; figH: number; keepK: number; deck: number; sceptre: { len: number; grip: number; rot: [number, number, number]; upright?: boolean }; prop?: { file: string; look: Look }; /** Nov 2 (Spring): fixed pack clips per role instead of random ones */ fixed?: Record<string, string>; /** roles that keep the prop arm still */ hold?: string[] }> = {
+  borgo: { base: '/models/commanders/borgo/', files: { source: 'borgo.glb', fortress: 'dwarf-stronghold', scepter: 'borgo-sceptre.glb' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] },
+    // Nov 2 (Spring): as on his card: the sceptre upright in his LEFT hand, foot on the ground. The old grip rule held it out sideways and its dark shaft vanished, so the head seemed to float.
+    prop: { file: 'sceptre.glb', look: { bone: 'LeftHand', pos: [-3.575, 1.633, 10.306], rot: [-57.54, -9.65, 153.59], scale: [52.514, 52.514, 52.514] } },
+    fixed: { idle: 'biped-idle-01', walk: 'biped-walk-01', attack: 'biped-attack-03', cast: 'biped-attack-03', point: 'biped-attack-03', cheer: 'biped-cheer-01', celebrate: 'biped-cheer-01', laugh: 'biped-cheer-01', taunt: 'biped-cheer-01', hit: 'biped-bonk-01', surprised: 'biped-bonk-01', flinch: 'biped-bonk-01', defeat: 'biped-death-01' },
+    hold: ['idle', 'walk', 'attack', 'cast', 'point', 'cheer', 'celebrate', 'laugh', 'taunt'] },
   // Oct 30 (Clay): rigged, rest pose only; every move comes from the shared pack. figH = Ken's Studio body scale (Ledger) x 0.8, the same conversion as Borgo's.
   // Ken (Oct 31): "The gnome commander doesn't have his staff." Knobbin's crystal staff (Studio model sproingle-staff) in his right hand by the grip rule until Ledger saves a placement
   sproingle: { base: '/models/commanders/sproingle/', files: { source: 'sproingle.glb', fortress: 'gnome-stronghold', scepter: 'staff.glb' }, figH: 0.72, keepK: 1.1, deck: 0.71, sceptre: { len: 1.18, grip: 0.335, rot: [0, 0, 0], upright: true } }, // Oct 31: Ledger's card match (taller than his hat, foot near the floor), still solved upright per load
@@ -222,7 +228,7 @@ export function loadCommander3d(id: string): Promise<G3DAssets | null> {
         if (!r.ok) return null;
         const info = await r.json();
         const gl = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-        const [c, s] = await Promise.all([gl.loadAsync(cfg.base + (info.files?.char || 'char.glb')), info.files?.sceptre ? gl.loadAsync(cfg.base + info.files.sceptre).catch(() => null) : Promise.resolve(null)]);
+        const [c, s] = await Promise.all([gl.loadAsync(cfg.base + (info.files?.char || 'char.glb')), info.files?.sceptre && !cfg.prop ? gl.loadAsync(cfg.base + info.files.sceptre).catch(() => null) : Promise.resolve(null)]);
         const clips: Record<string, THREE.AnimationClip> = {};
         for (const [role, nm] of Object.entries((info.clips || {}) as Record<string, string>)) { const cl = c.animations.find((x) => x.name === nm); if (cl) clips[role] = cl; }
         const sh = await packClipsFor('cmd-' + id, c.scene).catch(() => null);
@@ -230,8 +236,11 @@ export function loadCommander3d(id: string): Promise<G3DAssets | null> {
           if (clips[role] && !CMD_STOCK.test(clips[role].name)) continue;
           const l = sh.byKind[kind] || []; if (l.length) clips[role] = l[Math.floor(Math.random() * l.length)];
         }
+        const propSide = cfg.prop?.look.bone.startsWith('Left') ? 'Left' : 'Right';
+        if (sh && cfg.fixed) for (const [role, nm] of Object.entries(cfg.fixed)) { const cl = sh.byName[nm]; if (cl) clips[role] = cl; }
+        if (cfg.hold && clips.idle) { const idle0 = clips.idle; for (const role of cfg.hold) if (clips[role]) clips[role] = holdArm(clips[role], idle0, propSide); }
         const pr = cfg.prop ? await gl.loadAsync(cfg.base + cfg.prop.file).then((x) => x.scene).catch(() => null) : null;
-        const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info, prop: pr, breaks: CMD_PACK_CLIPS ? commanderBreaks(sh, clips.idle, !!(s || pr)) : [] };
+        const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info, prop: pr, breaks: CMD_PACK_CLIPS ? commanderBreaks(sh, clips.idle, !!(s || pr), propSide) : [] };
         otherLoaded.set(id, a);
         return a;
       } catch {
