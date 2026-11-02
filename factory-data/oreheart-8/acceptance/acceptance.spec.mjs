@@ -7648,7 +7648,8 @@ test.describe('round 11 at 1920x1080', () => {
     expect(ring(r, mineU).greyed).toBe(false);
     expect(ring(r, theirs).color.toLowerCase()).toBe('#2f5fd8'); // Borgo: Dwarf main
     await done(page);
-    expect((await act(page, { type: 'move', creatureUid: mineU, row: 5, col: 6 })).ok).toBe(true);
+    // Nov 1 (feet): the Scrapper has 3 move points now, so it walks until they are spent; the ring goes only then
+    for (let row = 5; row >= 2; row--) { const u = (await getState(page)).board.creatures.find((c) => c.uid === mineU); if (!((u.movesLeft ?? 1) > 0)) break; expect((await act(page, { type: 'move', creatureUid: mineU, row, col: 6 })).ok).toBe(true); }
     await expect.poll(async () => ring(await renderStats10(page), mineU).greyed).toBe(true);
     expect(ring(await renderStats10(page), mineU).color.toLowerCase()).not.toBe('#3ee06a');
     // settings panel
@@ -12267,7 +12268,7 @@ for (const id of SFX_SPELLS) SFX_SPEC['spell:' + id] = [['spell-' + id], 1, 0];
 const sfxState = async (page) => (await page.evaluate(async () => await window.oreheart.getAudioState())).sfx;
 async function sfxReady(page) {
   await page.mouse.click(5, 5); // first gesture unlocks audio; the files load after it
-  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 53 sound files decoded (Oct 31: 3 summon variants replace the one summon)', timeout: 20000 }).toBe(53);
+  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 55 sound files decoded (Oct 31: 3 summon variants; Nov 1: rocket launch and crash)', timeout: 20000 }).toBe(55);
 }
 const playKey = (page, key) => page.evaluate((k) => {
   if (k.startsWith('spell:')) window.oreheart.playSpellSound(k.slice(6));
@@ -12719,7 +12720,7 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
       ] }));
       await done(page);
       const man = await voicesReady(page, request);
-      await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 53 sound files decoded (with the 12 projectile sounds, 3 summon variants)', timeout: 20000 }).toBe(53);
+      await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 55 sound files decoded (with the 12 projectile sounds, 3 summon variants, the 2 rocket sounds)', timeout: 20000 }).toBe(55);
       await expect.poll(async () => (await sfxState(page)).punchLoaded, { message: 'all 6 punch files decoded', timeout: 20000 }).toBe(6);
       await unitLoaded(page, 'goblin-sneak', man); await unitLoaded(page, 'dwarf-pickman', man);
       // --- the hurt rule, through the voice hook (owner check change, Ken Nov 1: the 1-in-20 roll replaced the 35 % rule; test pages roll every time, AC550 checks the roll)
