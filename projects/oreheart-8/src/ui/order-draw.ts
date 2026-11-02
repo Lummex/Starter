@@ -116,7 +116,7 @@ export function orderSvg(d: OrderDrawing): string {
   const s = Math.min(cw, d.ch * 1.6);
   const w = Math.max(6, Math.min(15, s * 0.17));
   // Ken, Nov 1: green = a move, red = a melee attack, blue = a ranged attack (a blocked move is red)
-  const ink = d.blocked ? '#ff6a58' : d.kind === 'move' ? '#46e05a' : d.ranged ? '#5b8dff' : '#ff4a3d', ph = r() * 6;
+  const ink = d.blocked ? '#ff6a58' : d.kind === 'move' ? '#46e05a' : d.ranged ? '#7cb8ff' : '#ff4a3d', ph = r() * 6; // Nov 1: a brighter blue, it was the dimmest colour on the board
   const F = (p: Pt): V => ({ x: p.x, y: p.y / k }); // screen -> flat
   let out = '';
   let pts = d.pts.map(F);
@@ -145,9 +145,9 @@ export function orderSvg(d: OrderDrawing): string {
     };
     polys.push(pen(barb(-1), w * 0.9, k, ph + 1, 0.12, 0.04), pen(barb(1).reverse(), w * 0.9, k, ph + 2, 0.12, 0.04));
     const kind: 'x' | 'sword' | 'bow' | 'swap' = d.kind === 'move' ? (d.swap ? 'swap' : 'x') : d.ranged ? 'bow' : 'sword';
-    const sz = (kind === 'x' ? 0.1 : kind === 'swap' ? 0.085 : 0.08) * s;
-    const place = d.kind === 'move' ? { x: tip.x + Math.cos(ang) * s * 0.5 + Math.sin(ang) * s * 0.12, y: tip.y + Math.sin(ang) * s * 0.5 - Math.cos(ang) * s * 0.14 } : { x: E.x + rx * 1.0, y: E.y - rx * 0.95 };
-    for (const st of symbolStrokes(kind, place, sz * 2.2)) polys.push(pen(st, kind === 'x' ? w * 0.85 : w * 0.42, k, ph + 3, 0.2));
+    const sz = (kind === 'x' ? 0.1 : kind === 'swap' ? 0.095 : 0.11) * s; // Nov 1: sword and bow a third bigger
+    const place = d.kind === 'move' ? { x: tip.x + Math.cos(ang) * s * 0.55 + Math.sin(ang) * s * 0.42, y: tip.y + Math.sin(ang) * s * 0.55 - Math.cos(ang) * s * 0.46 } : { x: E.x + rx * 1.0, y: E.y - rx * 0.95 }; // Nov 1: the X / swap symbol sits off to the side of the tip, clear of the turns label above it
+    for (const st of symbolStrokes(kind, place, sz * 2.2)) polys.push(pen(st, kind === 'x' ? w * 0.85 : w * 0.5, k, ph + 3, 0.2));
   }
   if (d.kind === 'chase') {
     const loop: V[] = []; // a bit over one loop, slightly spiralling, like a quick hand-drawn circle

@@ -356,9 +356,9 @@ test('AC9: one crystal type — every card costs plain crystals, Flow is a singl
   expect((await getState(page)).players.player.crystals).toBe(5);
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'spark-gnome'), row: 7, col: 3 })).ok).toBe(true);
   s = await getState(page);
-  expect(s.players.player.crystals).toBe(1); // 6 - 1 - 4 (owner change, Ken, Oct 31 rebalance: Stormcaller Savant costs 4)
+  expect(s.players.player.crystals).toBe(2); // 6 - 1 - 3 (Ken, Nov 1 cost formula: Stormcaller Savant 2/2 + Ranged costs 3)
   // a Gnome player can pay a Goblin card at full value (decks may mix factions)
-  s = await newMatch(page, { ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { playerHand: ['goblin-slinger'], playerCrystals: 4 } });
+  s = await newMatch(page, { ai: false, playerCommander: 'sproingle', opponentCommander: 'grubnak', setup: { playerHand: ['goblin-slinger'], playerCrystals: 2 } }); // Nov 1: Skullflinger costs 2
   expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true);
   expect((await getState(page)).players.player.crystals).toBe(0);
 });
@@ -562,10 +562,10 @@ test('AC10: back-row summoning, Grubnak discount, summoning sickness, Mangewolf 
   s = await getState(page);
   expect(at(s, 7, 1).cardId).toBe('goblin-scrapper');
   expect(at(s, 7, 1).summonedThisTurn).toBe(true);
-  expect(s.players.player.crystals).toBe(15); // Scrapper 6 - 1 Grubnak
+  expect(s.players.player.crystals).toBe(18); // Nov 1 cost formula: Scrapper 3 - 1 Grubnak
   expect((await act(page, { type: 'summon', uid: wolf, row: 7, col: 3 })).ok).toBe(true);
   s = await getState(page);
-  expect(s.players.player.crystals).toBe(8); // Round 14 data: Mangewolf Rider 8 - 1 Grubnak
+  expect(s.players.player.crystals).toBe(14); // Nov 1 cost formula: Mangewolf Rider 5 - 1 Grubnak
   await done(page); // -> action
   const acts = await legal(page);
   expect(acts.some((a) => (a.type === 'move' || a.type === 'attack') && a.creatureUid === at(s, 7, 1).uid)).toBe(false);
@@ -600,15 +600,15 @@ test('AC10: Unique card limited to one on the battlefield; Borgo +1 Health', asy
   expect((await act(page, { type: 'summon', uid: queen, row: 7, col: 1 })).ok).toBe(false);
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'shieldbeard'), row: 7, col: 4 })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 7, 4).maxHealth).toBe(5);
-  expect(at(s, 7, 4).health).toBe(5);
+  expect(at(s, 7, 4).maxHealth).toBe(7); // Nov 1: the Shieldbeard is a 1/6 wall, + 1 Borgo
+  expect(at(s, 7, 4).health).toBe(7);
   expect(at(s, 6, 7).maxHealth).toBe(7);
-  expect(at(s, 7, 4).attack).toBe(2);
+  expect(at(s, 7, 4).attack).toBe(1);
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'dwarf-miner'), row: 7, col: 3 })).ok).toBe(true);
   s = await getState(page);
   expect(at(s, 7, 3).attack).toBe(1);
-  expect(at(s, 7, 3).maxHealth).toBe(6); // Round 12c: Riot Shield Bearer 1/5 + Borgo = 1/6
-  expect(at(s, 7, 3).health).toBe(6);
+  expect(at(s, 7, 3).maxHealth).toBe(7); // Nov 1: Riot Shield Bearer 1/6 wall + Borgo = 1/7
+  expect(at(s, 7, 3).health).toBe(7);
 });
 
 // ---------- AC11 ----------
@@ -683,8 +683,8 @@ test('AC12: movement in 8 directions, move 2 only for move-2 creatures', async (
   s = await getState(page);
   expect(at(s, 3, 1).uid).toBe(scrap);
   expect(at(s, 4, 7).uid).toBe(wolf);
-  expect((await act(page, { type: 'move', creatureUid: wolf, row: 3, col: 7 })).ok, 'the wolf (5 feet) has points left').toBe(true);
-  expect((await act(page, { type: 'move', creatureUid: wolf, row: 1, col: 8 })).ok, 'and walks on to its fifth point').toBe(true);
+  expect((await act(page, { type: 'move', creatureUid: wolf, row: 3, col: 7 })).ok, 'the wolf (4 feet, Nov 1 cost 5) has points left').toBe(true);
+  expect((await act(page, { type: 'move', creatureUid: wolf, row: 2, col: 8 })).ok, 'and walks on to its fourth point').toBe(true);
   expect((await act(page, { type: 'move', creatureUid: wolf, row: 1, col: 9 })).ok, 'then no more').toBe(false);
 });
 
@@ -757,14 +757,14 @@ test('AC13: Shieldbeard vs Scrapper — type advantage defeats it, strike back s
     opponentCommander: 'grubnak',
     setup: { board: [
       { cardId: 'shieldbeard', owner: 'player', row: 5, col: 4 },
-      { cardId: 'goblin-scrapper', owner: 'opponent', row: 4, col: 3 },
+      { cardId: 'goblin-scrapper', owner: 'opponent', row: 4, col: 3, damage: 1 }, // Nov 1: the Shieldbeard is a 1-Attack wall, so the Scrapper starts at 2 Health: 1 Attack alone would not defeat it, 1 + 1 type advantage does
     ] },
   });
   await done(page);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 4).uid, target: { row: 4, col: 3 } })).ok).toBe(true);
   s = await getState(page);
   expect(at(s, 4, 3)).toBeUndefined();
-  expect(at(s, 5, 4).health).toBe(5); // v2 (Nov 1): 4 + 1 Borgo, no strike back from a fallen Scrapper
+  expect(at(s, 5, 4).health).toBe(7); // v2 (Nov 1): 6 + 1 Borgo, no strike back from a fallen Scrapper
   expect(s.players.opponent.discard.some((c) => c.cardId === 'goblin-scrapper')).toBe(true);
 });
 
@@ -774,15 +774,15 @@ test('AC13: strike back with type advantage defeats the attacker', async ({ page
     playerCommander: 'grubnak',
     opponentCommander: 'borgo',
     setup: { board: [
-      { cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 5 },
+      { cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 5, damage: 1 }, // Nov 1: the Shieldbeard is a 1-Attack wall, so the Scrapper starts at 2 Health: only 1 + 1 type advantage defeats it
       { cardId: 'shieldbeard', owner: 'opponent', row: 2, col: 5 },
     ] },
   });
   await done(page);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 3, 5).uid, target: { row: 2, col: 5 } })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 2, 5).health).toBe(3); // 5 - 2
-  expect(at(s, 3, 5)).toBeUndefined(); // strike back 2 + 1 = 3
+  expect(at(s, 2, 5).health).toBe(5); // 6 + 1 Borgo - 2
+  expect(at(s, 3, 5)).toBeUndefined(); // strike back 1 + 1 = 2
   expect(s.players.player.discard.some((c) => c.cardId === 'goblin-scrapper')).toBe(true);
 });
 
@@ -842,7 +842,7 @@ test('AC13: Ranged shoots up to its card range (Grudge Hurler 5, Skullflinger 6)
   expect(acts.some((a) => a.creatureUid === sling && a.target && a.target.commander === 'opponent')).toBe(true);
   expect((await act(page, { type: 'attack', creatureUid: axe, target: { row: 4, col: 7 } })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 4, 7).health).toBe(3); // Shieldbeard 4 + 1 Borgo - 2
+  expect(at(s, 4, 7).health).toBe(5); // Shieldbeard 6 + 1 Borgo - 2 (Nov 1: a 1/6 wall)
   expect(at(s, 5, 7).health).toBe(4); // Axe Thrower 3 + 1 Borgo, no strike back
   expect((await act(page, { type: 'attack', creatureUid: sling, target: { commander: 'opponent' } })).ok).toBe(true);
   s = await getState(page);
@@ -858,7 +858,7 @@ test('AC14: creatures heal at the start of their owner\'s turn; damaged Health i
     opponentCommander: 'grubnak',
     setup: { playerDeck: SHARDS, opponentDeck: SHARDS, board: [
       { cardId: 'shieldbeard', owner: 'player', row: 5, col: 4 },
-      { cardId: 'goblin-scrapper', owner: 'opponent', row: 4, col: 3 },
+      { cardId: 'goblin-scrapper', owner: 'opponent', row: 4, col: 3, damage: 1 }, // Nov 1: the 1-Attack Shieldbeard (+1 type advantage) still fells a 2-Health Scrapper
       { cardId: 'goblin-scrapper', owner: 'player', row: 3, col: 6 },
       { cardId: 'shieldbeard', owner: 'opponent', row: 2, col: 6, damage: 0 },
     ] },
@@ -869,16 +869,16 @@ test('AC14: creatures heal at the start of their owner\'s turn; damaged Health i
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 4).uid, target: { row: 4, col: 3 } })).ok).toBe(true);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 3, 6).uid, target: { row: 2, col: 6 } })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 5, 4).health).toBe(5); // v2: its victim fell, no strike back
-  expect(at(s, 2, 6).health).toBe(2); // opponent Shieldbeard: 4 - 2 (Grubnak gives no Health)
-  expect(at(s, 3, 6).health).toBe(1); // the Brawler took the Shieldbeard's strike back
+  expect(at(s, 5, 4).health).toBe(7); // v2: its victim fell, no strike back (Nov 1: 6 + 1 Borgo)
+  expect(at(s, 2, 6).health).toBe(4); // opponent Shieldbeard: 6 - 2 (Grubnak gives no Health)
+  expect(at(s, 3, 6).health).toBe(2); // the Brawler (3 + 1 Borgo) took the Shieldbeard's strike back: Nov 1, 1 Attack + 1 type advantage = 2
   await expect(label).toHaveAttribute('data-damaged', 'true');
-  await expect(label).toContainText('1');
+  await expect(label.locator('[data-stat="health"]')).toHaveText('2');
   await done(page); // -> opponent's turn 2
   s = await getState(page);
   expect(s.activePlayer).toBe('opponent');
-  expect(at(s, 2, 6).health).toBe(4); // opponent's creature healed at its owner's turn
-  expect(at(s, 3, 6).health).toBe(1); // ours stays damaged during the enemy turn
+  expect(at(s, 2, 6).health).toBe(6); // opponent's creature healed at its owner's turn
+  expect(at(s, 3, 6).health).toBe(2); // ours stays damaged during the enemy turn
   await passTurn(page); // -> player's turn 3
   s = await getState(page);
   expect(s.activePlayer).toBe('player');
@@ -967,7 +967,7 @@ test('AC17: Searing Arcane Orb deals 3 damage for 3 crystals', async ({ page }) 
   });
   expect((await act(page, { type: 'cast', uid: handUid(s, 'player', 'fireball'), target: { row: 3, col: 4 } })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 3, 4).health).toBe(2);
+  expect(at(s, 3, 4).health).toBe(4); // Nov 1: Shieldbeard 6 + 1 Borgo - 3
   expect(total(s.players.player.crystals)).toBe(0);
   expect(s.players.player.discard.some((c) => c.cardId === 'fireball')).toBe(true);
 });
@@ -1030,7 +1030,7 @@ test('AC18: Snuff Out counters Searing Arcane Orb; crystals still spent', async 
   expect((await act(page, { type: 'respond', uid: fizzle })).ok).toBe(true);
   s = await getState(page);
   expect(s.pendingResponse).toBe(null);
-  expect(at(s, 3, 4).health).toBe(5);
+  expect(at(s, 3, 4).health).toBe(7); // Nov 1: Shieldbeard 6 + 1 Borgo, untouched
   expect(total(s.players.player.crystals)).toBe(0);
   expect(total(s.players.opponent.crystals)).toBe(0);
   expect(s.players.player.discard.some((c) => c.cardId === 'fireball')).toBe(true);
@@ -1056,7 +1056,7 @@ test('AC18: Pickpocket! returns a summoned creature to hand', async ({ page }) =
     opponentCommander: 'borgo',
     setup: {
       playerHand: ['goblin-scrapper'],
-      playerCrystals: 6, // Round 12c: Bowler Brawler costs 6
+      playerCrystals: 3, // Nov 1 cost formula: Bowler Brawler costs 3
       opponentHand: ['hold-it'],
       opponentCrystals: 4,
     },
@@ -1068,7 +1068,7 @@ test('AC18: Pickpocket! returns a summoned creature to hand', async ({ page }) =
   s = await getState(page);
   expect(at(s, 7, 1)).toBeUndefined();
   expect(s.players.player.hand.some((c) => c.cardId === 'goblin-scrapper')).toBe(true);
-  expect(s.players.player.crystals).toBe(1); // Bowler Brawler 6 - 1 Grubnak = 5 spent, still spent
+  expect(s.players.player.crystals).toBe(1); // Bowler Brawler 3 - 1 Grubnak = 2 spent, still spent
 });
 
 const respondSetup = {
@@ -1358,11 +1358,13 @@ test('AC26: printed creature Health is at most 6', async ({ page }) => {
 
 // ---------- AC27 ----------
 const COSTS = {
-  'goblin-scrounger': 1, 'goblin-scrapper': 6, 'goblin-slinger': 4, 'goblin-bomber': 3, 'goblin-sneak': 3, 'wolf-rider': 8,
-  'grubnaks-big-boss-troll': 7, 'gnome-prospector': 1, 'gnome-tinker': 4, 'spark-gnome': 4, 'clockwork-beetle': 6,
-  'gnome-illusionist': 6, 'gyrocopter-ace': 8, 'the-great-steam-golem': 10, 'dwarf-miner': DWARF_FIX.bearerCost, 'shieldbeard': 6, // Owner check change (Ken, Oct 31 dwarf fix): the Bearer is a cost-4 Fighter
-  'axe-thrower': 6, 'ironhammer-berserker': 7, 'brewmaster': 6, 'ram-rider': 9, 'queen-brunhilda-stonebeard': 10, // Combat v2 (Ken, Nov 1): Charge costs +1, not +2 (Ram Rider 9, Door Splitter 6, Skullbasher Rusher 3)
-  'shard-guzzler': 6, 'overclocked-conduit': 5, 'crystal-drunk-delver': 7,
+  // Owner check change (Ken, Nov 1 cost formula): cost = (Attack + Health + ability bonus) / 2 rounded up; above 10 it is 5 + 2 per point; cap 12.
+  // Bonus +2 for Flying/Charge/Haste/Unbreakable/Ramming, +1 for any other ability, 0 for Miner abilities; walls are 1/6 for 4.
+  'goblin-scrounger': 1, 'goblin-scrapper': 3, 'goblin-slinger': 2, 'goblin-bomber': 3, 'goblin-sneak': 3, 'wolf-rider': 5,
+  'grubnaks-big-boss-troll': 9, 'gnome-prospector': 1, 'gnome-tinker': 3, 'spark-gnome': 3, 'clockwork-beetle': 5,
+  'gnome-illusionist': 3, 'gyrocopter-ace': 4, 'the-great-steam-golem': 9, 'dwarf-miner': DWARF_FIX.bearerCost, 'shieldbeard': 4, // the Bearer and the Shieldbeard are 1/6 walls for 4
+  'axe-thrower': 3, 'ironhammer-berserker': 4, 'brewmaster': 4, 'ram-rider': 7, 'queen-brunhilda-stonebeard': 11,
+  'shard-guzzler': 3, 'overclocked-conduit': 3, 'crystal-drunk-delver': 4,
 };
 test('AC27: creature costs match the revision 3 table; basic Gatherers are 1/1 for 1', async ({ page }) => {
   await openTest(page);
@@ -1384,9 +1386,9 @@ test('AC27: summoning spends exactly the new costs', async ({ page }) => {
     playerCommander: 'borgo',
     setup: { playerHand: ['dwarf-miner', 'shieldbeard', 'axe-thrower', 'ram-rider'], playerCrystals: 30 },
   });
-  // Owner check change (Ken, Oct 31 dwarf fix): Bearer DWARF_FIX.bearerCost (4: 30 -> 26 -> 20 -> 14 -> 4); Round 12c owner costs 6/6/10; Round 3b: (7,2) is the Stronghold
+  // Owner check change (Ken, Nov 1 cost formula): Bearer DWARF_FIX.bearerCost (4), Shieldbeard 4, Axe Thrower 3, Ram Rider 7: 30 -> 26 -> 22 -> 19 -> 12; Round 3b: (7,2) is the Stronghold
   const b0 = 30 - DWARF_FIX.bearerCost;
-  const steps = [['dwarf-miner', 1, b0], ['shieldbeard', 3, b0 - 6], ['axe-thrower', 4, b0 - 12], ['ram-rider', 5, b0 - 21]];
+  const steps = [['dwarf-miner', 1, b0], ['shieldbeard', 3, b0 - 4], ['axe-thrower', 4, b0 - 7], ['ram-rider', 5, b0 - 14]];
   for (const [id, col, left] of steps) {
     expect((await act(page, { type: 'summon', uid: handUid(s, 'player', id), row: 7, col })).ok, id).toBe(true);
     s = await getState(page);
@@ -1394,12 +1396,12 @@ test('AC27: summoning spends exactly the new costs', async ({ page }) => {
   }
   s = await newMatch(page, {
     ai: false, playerCommander: 'grubnak',
-    setup: { playerHand: ['goblin-scrounger', 'goblin-scrapper'], playerCrystals: 6 },
+    setup: { playerHand: ['goblin-scrounger', 'goblin-scrapper'], playerCrystals: 3 },
   });
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 7, col: 1 })).ok).toBe(true);
-  expect((await getState(page)).players.player.crystals).toBe(5); // minimum 1
+  expect((await getState(page)).players.player.crystals).toBe(2); // minimum 1
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrapper'), row: 7, col: 3 })).ok).toBe(true);
-  expect((await getState(page)).players.player.crystals).toBe(0); // 6 - 1
+  expect((await getState(page)).players.player.crystals).toBe(0); // Nov 1: 3 - 1
 });
 
 // ---------- AC28 ----------
@@ -1475,15 +1477,15 @@ test('AC30: creature labels show Attack, Health, Movement and darken after actin
     },
   });
   const wolf = page.getByLabel('Mangewolf Rider, row 6, column 6', { exact: true });
-  await expect(wolf).toHaveText(/3\D+4\D+5/); // Nov 1: the Mangewolf walks 5
+  await expect(wolf).toHaveText(/3\D+4\D+4/); // Nov 1 cost formula: the Mangewolf (cost 5) walks 4
   await expect(wolf).toHaveAttribute('data-acted', 'false');
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrapper'), row: 7, col: 1 })).ok).toBe(true);
   const scrap = page.getByLabel('Bowler Brawler, row 7, column 1', { exact: true });
   await expect(scrap).toHaveAttribute('data-acted', 'true');
   await expect(scrap).toHaveText(/2\D+3\D+3/); // the Brawler walks 3 (Nov 1)
   await done(page);
-  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 6).uid, row: 1, col: 6 })).ok).toBe(true); // v2: all 5 feet (round the mine at (4,6)), so it has acted
-  const moved = page.getByLabel('Mangewolf Rider, row 1, column 6', { exact: true });
+  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 6).uid, row: 2, col: 6 })).ok).toBe(true); // v2: all 4 feet (round the mine at (4,6)), so it has acted
+  const moved = page.getByLabel('Mangewolf Rider, row 2, column 6', { exact: true });
   await expect(moved).toHaveAttribute('data-acted', 'true');
   await done(page); // enemy turn
   await expect(moved).toHaveAttribute('data-acted', 'true');
@@ -1624,14 +1626,14 @@ test('AC35: a Gatherer summoned this turn can move or mine but not attack; a Fig
   let s = await start(page, {
     ai: false,
     setup: {
-      playerHand: ['goblin-scrounger', 'goblin-slinger'], playerCrystals: 4,
+      playerHand: ['goblin-scrounger', 'goblin-slinger'], playerCrystals: 2,
       board: [{ cardId: 'gnome-tinker', owner: 'opponent', row: 6, col: 2 }],
     },
   });
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-scrounger'), row: 7, col: 1 })).ok).toBe(true);
   expect((await act(page, { type: 'summon', uid: handUid(s, 'player', 'goblin-slinger'), row: 7, col: 3 })).ok).toBe(true);
   s = await getState(page);
-  expect(s.players.player.crystals).toBe(0); // Scrounger 1 + Slinger 4 - 1 Grubnak
+  expect(s.players.player.crystals).toBe(0); // Nov 1: Scrounger 1 (minimum) + Slinger 2 - 1 Grubnak
   await expect(page.getByLabel('Goblin Miner, row 7, column 1', { exact: true })).toHaveAttribute('data-acted', 'false'); // stays bright
   await expect(page.getByLabel('Skullflinger, row 7, column 3', { exact: true })).toHaveAttribute('data-acted', 'true'); // summoning sickness
   await done(page);
@@ -1865,16 +1867,16 @@ test('AC45: Miner names, roles and badges', async ({ page }) => {
   expect(cards['goblin-scrounger'].name).toBe('Goblin Miner');
   expect(cards['gnome-prospector'].name).toBe('Gemsinger Miner');
   expect(cards['dwarf-miner'].name).toBe('Riot Shield Bearer');
-  // Owner check change (Ken, Oct 31: the Riot Shield Bearer is a wall, not the Miner): a Fighter 1/5, the Anvilsworn Miner is the dwarves' basic Miner
+  // Owner check change (Ken, Oct 31: the Riot Shield Bearer is a wall, not the Miner; Nov 1: walls are 1/6 for 4 and walk 2): the Anvilsworn Miner is the dwarves' basic Miner
   expect(cards['dwarf-miner'].role).toBe('fighter');
-  expect([cards['dwarf-miner'].cost, cards['dwarf-miner'].attack, cards['dwarf-miner'].health, cards['dwarf-miner'].move]).toEqual([DWARF_FIX.bearerCost, 1, 5, 1]);
+  expect([cards['dwarf-miner'].cost, cards['dwarf-miner'].attack, cards['dwarf-miner'].health, cards['dwarf-miner'].move]).toEqual([DWARF_FIX.bearerCost, 1, 6, 2]);
   for (const [id, name, faction] of [['goblin-smith-miner', 'Scrapsmith Miner', 'goblins'], ['gnome-smith-miner', 'Arcsmith Miner', 'gnomes'], ['dwarf-smith-miner', 'Anvilsworn Miner', 'dwarves']]) {
     expect(cards[id].name).toBe(name);
     expect(cards[id].faction).toBe(faction);
     expect(cards[id].role).toBe('smith');
     expect(cards[id].type).toBe('creature');
     // Owner check change (Ken, Oct 31 dwarf fix): the Anvilsworn's cost lives in DWARF_FIX (balance sims may make it 1)
-    expect([cards[id].cost, cards[id].attack, cards[id].health, cards[id].move]).toEqual([id === 'dwarf-smith-miner' ? DWARF_FIX.anvilswornCost : 2, 1, 1, 1]);
+    expect([cards[id].cost, cards[id].attack, cards[id].health, cards[id].move]).toEqual([id === 'dwarf-smith-miner' ? DWARF_FIX.anvilswornCost : 1, 1, 1, 1]); // Nov 1 cost formula: a 1/1 Miner costs 1
   }
   const hand = page.getByLabel('Your hand', { exact: true });
   await expect(hand.getByRole('button', { name: 'Goblin Miner', exact: true })).toContainText('⛏');
@@ -1910,7 +1912,7 @@ test('AC46: Miner upgrades — Smith gives +1 Attack and +1 Health, basic Miner 
   expect(at(s, 6, 3).attack).toBe(base.attack + 1);
   expect(at(s, 6, 3).maxHealth).toBe(base.health + 1);
   expect(at(s, 6, 3).health).toBe(base.health); // was damaged by 1, +1 Health
-  expect(s.players.player.crystals).toBe(8);
+  expect(s.players.player.crystals).toBe(9); // Nov 1: a Smith Miner costs 1
   expect((await act(page, { type: 'minerUpgrade', uid: smiths[1], creatureUid: tinker })).ok).toBe(true);
   s = await getState(page);
   const t = at(s, 6, 3);
@@ -1918,7 +1920,7 @@ test('AC46: Miner upgrades — Smith gives +1 Attack and +1 Health, basic Miner 
   expect(t.maxHealth).toBe(base.health + 2);
   expect(t.upgrades).toEqual({ attack: 2, health: 2 });
   expect(s.board.creatures.length).toBe(1);
-  expect(s.players.player.crystals).toBe(6);
+  expect(s.players.player.crystals).toBe(8);
   expect(s.players.player.discard.filter((c) => c.cardId === 'gnome-smith-miner').length).toBe(2);
   await expect(page.getByLabel('Aegis Tinkerer, row 6, column 3', { exact: true })).toHaveAttribute('data-upgrades', '4');
   // summoned on the back row: a normal Miner that may move this turn
@@ -1926,7 +1928,7 @@ test('AC46: Miner upgrades — Smith gives +1 Attack and +1 Health, basic Miner 
   s = await getState(page);
   const sm = at(s, 7, 1);
   expect(sm.cardId).toBe('gnome-smith-miner');
-  expect(s.players.player.crystals).toBe(4);
+  expect(s.players.player.crystals).toBe(7);
   await done(page);
   expect((await legal(page)).some((a) => a.type === 'move' && a.creatureUid === sm.uid)).toBe(true);
   expect((await legal(page)).some((a) => a.type === 'attack' && a.creatureUid === sm.uid)).toBe(false);
@@ -1987,13 +1989,13 @@ test('AC46: dropping a Smith Miner on your creature upgrades it at once (no choi
 
 test('AC47: Crystal Bank persists, has no cap and is spent after Flow', async ({ page }) => {
   let s = await start(page, { ai: false, playerCommander: 'grubnak', setup: {
-    playerHand: ['goblin-slinger'], playerCrystals: 2, playerBank: 3,
+    playerHand: ['goblin-scrapper'], playerCrystals: 1, playerBank: 3, // Nov 1 cost formula: Bowler Brawler 3 - 1 Grubnak = 2: 1 Flow, then 1 Bank
     playerDeck: SHARDS, opponentDeck: SHARDS,
   } });
   expect(s.players.player.bank).toEqual(3);
-  await expect(page.getByLabel('Your Flow crystals', { exact: true })).toHaveText(/\b2\b/);
+  await expect(page.getByLabel('Your Flow crystals', { exact: true })).toHaveText(/\b1\b/);
   await expect(page.getByLabel('Your Bank crystals', { exact: true })).toHaveText(/\b3\b/);
-  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true); // 4 - 1 Grubnak = 3
+  expect((await act(page, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 1 })).ok).toBe(true); // 3 - 1 Grubnak = 2
   s = await getState(page);
   expect(s.players.player.crystals).toEqual(ZERO);
   expect(s.players.player.bank).toEqual(2);
@@ -2490,7 +2492,7 @@ test('AC64: Deploy auto-skips with an unplayable hand; Action skips once nothing
   s = await getState(page);
   expect(s.phase).toBe('action'); // the Troll can still move
   expect(s.activePlayer).toBe('player');
-  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 3).uid, row: 3, col: 3 })).ok).toBe(true); // v2: all 3 of the Troll's points, so nothing is left to do
+  expect((await act(page, { type: 'move', creatureUid: at(s, 6, 3).uid, row: 1, col: 3 })).ok).toBe(true); // v2: all 5 of the Troll's points (Nov 1: cost 9 walks 5), so nothing is left to do
   await expect.poll(async () => (await getState(page)).activePlayer, { timeout: 5000 }).toBe('opponent');
 });
 
@@ -2553,7 +2555,7 @@ test('AC68: with auto-skip on, a spells-only turn passes by itself', async ({ pa
 
 const previewSetup = { board: [
   { cardId: 'shieldbeard', owner: 'player', row: 5, col: 4 },
-  { cardId: 'goblin-scrapper', owner: 'opponent', row: 4, col: 3 },
+  { cardId: 'goblin-scrapper', owner: 'opponent', row: 4, col: 3, damage: 1 }, // Nov 1: the Shieldbeard is a 1-Attack wall; 1 + 1 type advantage fells a 2-Health Scrapper
   { cardId: 'axe-thrower', owner: 'player', row: 3, col: 7 },
   { cardId: 'goblin-scrounger', owner: 'opponent', row: 3, col: 9 },
 ] };
@@ -2564,7 +2566,7 @@ test('AC69: previewAttack matches the real attack exactly', async ({ page }) => 
   s = await getState(page);
   const sb = at(s, 5, 4); const hurler = at(s, 3, 7); const scr = at(s, 3, 9);
   const p1 = await preview(page, sb.uid, { row: 4, col: 3 });
-  expect(p1).toMatchObject({ youDeal: 3, youTake: 0, targetDefeated: true, attackerDefeated: false }); // v2 (Nov 1): a defender that falls strikes back no more
+  expect(p1).toMatchObject({ youDeal: 2, youTake: 0, targetDefeated: true, attackerDefeated: false }); // v2 (Nov 1): a defender that falls strikes back no more (1 Attack + 1 type advantage)
   const pc = await preview(page, hurler.uid, { commander: 'opponent' });
   expect(pc).toMatchObject({ youDeal: hurler.attack, youTake: 0, targetDefeated: false, attackerDefeated: false });
   const p2 = await preview(page, hurler.uid, { row: 3, col: 9 });
@@ -2591,7 +2593,7 @@ test('AC69: dragging a creature over an enemy shows the attack preview; letting 
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
   const box = page.getByLabel('Attack preview', { exact: true });
   await expect(box).toBeVisible();
-  await expect(box).toContainText('You deal 3 / You take 0');
+  await expect(box).toContainText('You deal 2 / You take 0');
   await expect(box).toContainText('💀');
   await page.mouse.move(5, 5, { steps: 12 });
   await page.mouse.up();
@@ -8375,8 +8377,10 @@ test('AC293: Bowler Brawler shows the owner\'s Strike text', async ({ page }) =>
   const c = await page.evaluate(async () => await window.oreheart.getCard('goblin-scrapper'));
   const all = [c.text, c.shortText, c.longText].join(' ');
   expect(all).toContain('Like bowling pins');
-  expect(all).toContain('off to the side');
-  expect(all).toContain('it goes to the other side');
+  // Owner text change (Nov 1 Bowler/Shockwave text): knocked 1-2 spaces aside, the other side if blocked, hit enemies take the card's Attack
+  expect(all).toContain('knocked 1-2 spaces aside');
+  expect(all).toContain('the other side if blocked');
+  expect(all).toContain("Hit enemies take this card's Attack in damage");
 });
 
 test('AC294: Junk Shaman pays 2 to move any character within 5 to a space within 5 of it', async ({ page }) => {
@@ -8497,17 +8501,17 @@ test('AC302: Riot Shield Bearer is a wall: enemies beside it must hit it, every 
   expect((await act(page, { type: 'attack', creatureUid: keeper, target: { row: 4, col: 9 } })).ok).toBe(true);
   s = await getState(page);
   expect(at(s, 4, 9) && at(s, 4, 9).cardId, 'the Enforcer cannot knock the Bearer').toBe('dwarf-miner');
-  expect(at(s, 4, 9).health, 'v2: no 1-less rule; with sure dice the 1-Attack hit lands 1 (the Bearer blocks on a 2 with real dice)').toBe(5); // 1/5 + Borgo = 1/6
+  expect(at(s, 4, 9).health, 'v2: no 1-less rule; with sure dice the 1-Attack hit lands 1 (the Bearer blocks on a 2 with real dice)').toBe(6); // Nov 1: 1/6 wall + Borgo = 1/7
   expect(at(s, 5, 10) ? at(s, 5, 10).cardId : null, 'the plain unit beside the same Enforcer IS knocked').not.toBe('dwarf-pickman');
   expect(s.board.creatures.filter((c) => c.cardId === 'dwarf-pickman').length).toBe(1);
-  // (2) v2 (Nov 1): no '1 less' rule (the Bearer blocks on a 2 with real dice); with sure dice the 4 swings land: 6 - 4 = 2
+  // (2) v2 (Nov 1): no '1 less' rule (the Bearer blocks on a 2 with real dice); with sure dice the 4 swings land: 7 - 4 = 3 (Nov 1: 1/6 wall + Borgo)
   s = await newMatch(page, q12({ board: [P('ram-rider', 5, 9), O('dwarf-miner', 4, 9)] }, { opponentCommander: 'borgo' }));
   s = await toAction(page);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 9).uid, target: { row: 4, col: 9 } })).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 4, 9).health).toBe(2);
-  // (4) it can be killed: 1 Health left, the Ram Rider's 4 - 1 = 3 finishes it
-  s = await newMatch(page, q12({ board: [P('ram-rider', 5, 9), O('dwarf-miner', 4, 9, { damage: 4 })] }));
+  expect(at(s, 4, 9).health).toBe(3);
+  // (4) it can be killed: 1 Health left (6 - 5 damage), the Ram Rider's 4 - 1 = 3 finishes it
+  s = await newMatch(page, q12({ board: [P('ram-rider', 5, 9), O('dwarf-miner', 4, 9, { damage: 5 })] }));
   expect(at(s, 4, 9).health).toBe(1);
   s = await toAction(page);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 9).uid, target: { row: 4, col: 9 } })).ok).toBe(true);
@@ -10324,38 +10328,38 @@ test.describe('round 26 at 1920x1080', () => {
   });
 
   test('AC377: a payment that needs the Bank asks first; Yes pays Flow then Bank, No cancels', async ({ page }) => {
-    await bankStart(page, 2, 3);
+    await bankStart(page, 1, 3); // Nov 1 cost formula: the Shiv Rat costs 2, so 1 Flow leaves it 1 short
     const dlg = page.getByRole('dialog', { name: 'Use your banked crystals?' });
-    await r26Play(page, 0, 7, 6); // Shiv Rat, cost 4
+    await r26Play(page, 0, 7, 6); // Shiv Rat, cost 2
     await expect(dlg).toBeVisible();
     await dlg.getByRole('button', { name: 'No', exact: true }).click();
     await expect(dlg).toBeHidden();
-    expect(await flowBank(page)).toEqual([2, 3]);
+    expect(await flowBank(page)).toEqual([1, 3]);
     expect((await getState(page)).players.player.hand.length).toBe(2);
     expect(at(await getState(page), 7, 6)).toBeUndefined();
     await r26Play(page, 0, 7, 6);
     await expect(dlg).toBeVisible();
     await dlg.getByRole('button', { name: 'Yes', exact: true }).click();
-    await expect.poll(async () => flowBank(page)).toEqual([0, 1]);
+    await expect.poll(async () => flowBank(page)).toEqual([0, 2]);
     expect(at(await getState(page), 7, 6).cardId).toBe('shiv-rat');
   });
 
   test('AC378: with enough Flow there is no question and the Bank is unchanged', async ({ page }) => {
-    await bankStart(page, 4, 3);
+    await bankStart(page, 2, 3); // Nov 1: Shiv Rat costs 2
     await r26Play(page, 0, 7, 6);
     await expect.poll(async () => flowBank(page)).toEqual([0, 3]);
     await expect(page.getByRole('dialog', { name: 'Use your banked crystals?' })).toHaveCount(0);
   });
 
   test('AC379: "Don\'t ask again" stops the question; the Settings switch brings it back, also after reload', async ({ page }) => {
-    await bankStart(page, 2, 7);
+    await bankStart(page, 1, 7); // Nov 1: Shiv Rat costs 2
     const dlg = page.getByRole('dialog', { name: 'Use your banked crystals?' });
     await r26Play(page, 0, 7, 6);
     await dlg.getByRole('checkbox', { name: "Don't ask again" }).check();
     await dlg.getByRole('button', { name: 'Yes', exact: true }).click();
-    await expect.poll(async () => flowBank(page)).toEqual([0, 5]);
+    await expect.poll(async () => flowBank(page)).toEqual([0, 6]);
     await r26Play(page, 0, 7, 7);
-    await expect.poll(async () => flowBank(page)).toEqual([0, 1]);
+    await expect.poll(async () => flowBank(page)).toEqual([0, 4]);
     await expect(dlg).toHaveCount(0);
     await page.goto('/?test=1');
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
@@ -10365,7 +10369,7 @@ test.describe('round 26 at 1920x1080', () => {
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Ask before using banked crystals: On' })).toBeVisible();
     await page.waitForFunction(() => !!window.oreheart);
-    await newMatch(page, BANK_Q(2, 3));
+    await newMatch(page, BANK_Q(1, 3));
     await page.evaluate(() => { window.__app.test = false; });
     await page.mouse.move(10, 10);
     await r26Play(page, 0, 7, 6);
@@ -14276,7 +14280,7 @@ test('AC560: move points: a 3-foot unit walks 2 and attacks (never attacks then 
   const board = [{ cardId: 'wolf-rider', owner: 'player', row: 6, col: 3 }, { cardId: 'goblin-scrounger', owner: 'player', row: 2, col: 2 }, { cardId: 'skullbasher-rusher', owner: 'player', row: 6, col: 9 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 3, col: 6 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 4 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 10 }];
   const s0 = await v2MatchV2(page, board);
   const wolf = unitOfV2(s0, 'wolf-rider'), miner = unitOfV2(s0, 'goblin-scrounger'), rusher = unitOfV2(s0, 'skullbasher-rusher');
-  expect(wolf.movesLeft).toBe(5); expect(miner.movesLeft).toBe(1); expect(rusher.movesLeft).toBe(3);
+  expect(wolf.movesLeft).toBe(4); expect(miner.movesLeft).toBe(1); expect(rusher.movesLeft).toBe(3); // Nov 1: feet follow cost: the Mangewolf (cost 5) walks 4
   await toActionV2(page);
   const act = (a) => page.evaluate((a) => window.oreheart.act(a), a);
   const legal = () => page.evaluate(() => window.oreheart.legalActions());
@@ -14284,13 +14288,13 @@ test('AC560: move points: a 3-foot unit walks 2 and attacks (never attacks then 
   // the wolf: 3 points, walk 2 squares in one go
   let L = await legal();
   const reach = L.filter((a) => a.type === 'move' && a.creatureUid === wolf.uid).map((a) => Math.max(Math.abs(a.row - wolf.row), Math.abs(a.col - wolf.col)));
-  expect(Math.max(...reach), '5 feet = 5 squares').toBe(5);
+  expect(Math.max(...reach), '4 feet = 4 squares').toBe(4);
   expect((await act({ type: 'move', creatureUid: wolf.uid, row: 4, col: 5 })).ok).toBe(true);
-  let s = await state(); expect(unitOfV2(s, 'wolf-rider').movesLeft, '3 points left after 2 steps').toBe(3);
-  await expect(page.locator(`.token[data-uid="${wolf.uid}"] [data-stat="movement"]`), 'the badge shows the points left').toHaveText('3');
+  let s = await state(); expect(unitOfV2(s, 'wolf-rider').movesLeft, '2 points left after 2 steps').toBe(2);
+  await expect(page.locator(`.token[data-uid="${wolf.uid}"] [data-stat="movement"]`), 'the badge shows the points left').toHaveText('2');
   L = await legal();
   expect(L.some((a) => a.type === 'attack' && a.creatureUid === wolf.uid), 'and it can still attack').toBe(true);
-  expect(Math.max(0, ...L.filter((a) => a.type === 'move' && a.creatureUid === wolf.uid).map((a) => Math.max(Math.abs(a.row - 4), Math.abs(a.col - 5)))), 'or walk 3 more').toBe(3);
+  expect(Math.max(0, ...L.filter((a) => a.type === 'move' && a.creatureUid === wolf.uid).map((a) => Math.max(Math.abs(a.row - 4), Math.abs(a.col - 5)))), 'or walk 2 more').toBe(2);
   expect((await act(L.find((a) => a.type === 'attack' && a.creatureUid === wolf.uid))).ok).toBe(true);
   L = await legal(); expect(L.some((a) => a.creatureUid === wolf.uid && (a.type === 'move' || a.type === 'attack')), 'the attack ends its turn').toBe(false);
   // the Miner: 1 point: a move spends it, then no attack

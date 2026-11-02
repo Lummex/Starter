@@ -8,6 +8,7 @@
 // Respond windows opened by a trial action are always answered "pass", and trial actions use a reshuffled random seed so the
 // AI can't foresee knock-back directions.
 import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, nextPool, previewAttack, canRedraw, basicGatherer, typeBonus, expectedSwings } from '../engine';
+import { aiOrderAction } from './orders-ai';
 import { planFor, StyleId, isStyle, StyleW } from './styles';
 
 export type Rand = () => number;
@@ -645,6 +646,15 @@ function smartChooseInner(s: any, hard: boolean, rand: Rand, legal: any[], done:
 
 export function aiChoose(s: any, difficulty: string, rand: Rand, only?: string[], style: StyleId = 'balanced'): any {
   const who = s.priority as string;
+  // Nov 1 (Ken): in its Action phase the computer first follows its marker orders (orders-ai.ts); the scorer below handles the rest
+  if (difficulty !== 'easy' && s.phase === 'action' && !s.pendingResponse && !only) {
+    // cards and abilities first (a Thunderhorn Blast before the charge, a brew, a bowl): the scorer judges those on their own
+    const legal0 = legalActions(s).filter((a: any) => a.type !== 'surrender');
+    const cards = legal0.filter((a: any) => ['cast', 'playCrystal', 'ability', 'minerUpgrade', 'gathererSwap'].includes(a.type));
+    const done0 = legal0.find((a: any) => a.type === 'done');
+    if (cards.length && done0) { const r = smartChoose(s, difficulty === 'hard', rand, [...cards, done0], done0, isStyle(style) ? style : 'balanced'); if (r && r.type !== 'done') return r; }
+    const oa = aiOrderAction(s, who, difficulty === 'hard', isStyle(style) ? style : 'balanced'); if (oa) return oa;
+  }
   const legal = legalActions(s).filter((a: any) => a.type !== 'surrender' && (!only || only.includes(a.type)));
   if (s.phase === 'mulligan') return { type: 'mulligan', redraw: difficulty !== 'easy' && canRedraw(s, who) && wantsRedraw(s, who), uids: [] };
   const pickBest = (scored: [number, any][], min: number) => {

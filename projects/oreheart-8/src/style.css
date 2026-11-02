@@ -1935,3 +1935,88 @@ html body .overlay.e-discard-view>.dialog:not(.viewer3d):not([aria-label=Mulliga
 .overlay.e-discard-view .e-discard-card .hand-card{filter:drop-shadow(0 4px 6px #000c)}
 @keyframes eDiscardSlide{from{transform:translateX(calc(-1 * var(--dx,300px)));opacity:0}to{transform:none;opacity:1}}
 .order-svg .ord{filter:drop-shadow(1.5px 3px 2.5px rgba(0,0,0,.55))}
+
+/* ===== Tutorial (Ken, Nov 1: graphic, hands-on; src/ui/tutorial.ts). Silver like the rest of the UI. BEGIN tutorial block ===== */
+.match .tip.tut-tip{left:16px;top:96px;transform:none;width:300px;max-width:none;padding:8px 12px 10px;font-size:1rem;line-height:1.2;text-align:center;background:linear-gradient(180deg,#22232cf2,#14151bf2);border:2px solid #c9d2e0;border-radius:14px;box-shadow:0 0 0 1px #0008,0 6px 18px #000a,inset 0 1px 0 #ffffff22;z-index:40}
+.tut-tip .tip-grip{font-size:.78rem}
+.tut-tip .tut-tip-pic{display:block;width:100%;min-width:240px;height:auto;aspect-ratio:3/2;margin:2px auto 4px;pointer-events:none}
+.tut-tip .tut-say{margin:2px 0 0;font-size:1.12rem;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 2px #000}
+.tut-tip .tut-sub,.tut-card .tut-sub{margin:2px 0 0;font-size:.95rem;color:#dfe8f7!important;-webkit-text-fill-color:#dfe8f7!important}
+.tut-tip .tip-skip{margin-top:8px}
+.tut-tip.tip-small .tut-tip-pic,.tut-tip.tip-small .tut-say,.tut-tip.tip-small .tut-sub,.tut-tip.tip-small .tut-feet,.tut-tip.tip-small .tut-swings{display:none}
+.tut-feet{display:flex;justify-content:center;gap:8px;margin:6px 0 0}
+.tut-foot{width:26px;height:34px;display:inline-block}
+.tut-foot svg{width:100%;height:100%;fill:#555b66;filter:drop-shadow(0 1px 1px #000)}
+.tut-foot.on svg{fill:#7dff8e;filter:drop-shadow(0 0 6px #54ff6a)}
+/* the big picture card */
+.tut-intro{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#05060acc 0,#05060a99 70%);pointer-events:auto;touch-action:none}
+.tut-card{box-sizing:border-box;max-width:calc(100% - 16px);max-height:calc(100% - 12px);overflow:auto;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 22px 16px;text-align:center;background:linear-gradient(180deg,#262732f5,#121319f5);border:2px solid #c9d2e0;border-radius:18px;box-shadow:0 0 0 1px #000,0 10px 40px #000c,inset 0 1px 0 #ffffff26;animation:tutPop .35s ease-out}
+.tut-card .tut-big-pic{display:block;width:clamp(240px,min(36vw,78vh),560px);height:auto;aspect-ratio:3/2;pointer-events:none;user-select:none}
+.tut-card .tut-say{margin:0;font-size:clamp(1.25rem,2.4vw,2rem);line-height:1.15;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 2px 3px #000}
+.tut-card .tut-sub{font-size:clamp(1rem,1.6vw,1.35rem)}
+.tut-row{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:6px}
+.tut-row .btn{min-height:44px;min-width:120px;margin:0}
+.tut-row .tut-skip{min-width:0;font-size:.85rem;opacity:.85}
+.tut-dots{display:flex;gap:7px}
+.tut-dots i{width:11px;height:11px;border-radius:50%;background:#3a3d48;border:1.5px solid #9aa4b4}
+.tut-dots i.done{background:#c9d2e0}
+.tut-dots i.now{background:#7dff8e;border-color:#e8fff0;box-shadow:0 0 8px #54ff6a}
+@keyframes tutPop{0%{transform:scale(.85);opacity:0}100%{transform:none;opacity:1}}
+/* lesson 6: the three swing results with their dice */
+.tut-swings{display:flex;gap:6px;justify-content:center}
+.tut-swings.big{gap:10px}
+.tut-swing{margin:0;display:flex;flex-direction:column;align-items:center}
+.tut-swing .tut-pic{display:block;width:clamp(240px,min(27vw,48vh),380px);height:auto;aspect-ratio:3/2;pointer-events:none}
+.tut-swing figcaption{display:flex;flex-direction:column;align-items:center;gap:3px}
+.tut-swing b{font-size:1.25rem;letter-spacing:.04em;-webkit-text-stroke:1px #000;text-shadow:2px 2px 0 #000}
+.tut-swing.hit b{color:#7dff8e}.tut-swing.miss b{color:#d7dbe2}.tut-swing.block b{color:#8fd0ff}
+.tut-swing small{font-size:.78rem;color:#dfe8f7!important;-webkit-text-fill-color:#dfe8f7!important;max-width:260px}
+.tut-tip .tut-swings{margin:4px 0}
+.tut-tip .tut-swing b{font-size:.95rem}
+.tut-tip .tut-swing small{font-size:.66rem}
+.tut-dice{display:flex;gap:3px}
+.tut-die{display:inline-grid;grid-template:repeat(3,1fr)/repeat(3,1fr);width:22px;height:22px;padding:2px;box-sizing:border-box;background:#f4f1e6;border-radius:5px;box-shadow:0 1px 2px #000,inset 0 -2px 0 #c9c3ad}
+.tut-die i{display:block;margin:auto;width:4px;height:4px;border-radius:50%}
+.tut-die i.on{background:#1a1a1a}
+.tut-tip .tut-die{width:18px;height:18px}
+.tut-tip .tut-die i{width:3px;height:3px}
+/* the marker legend */
+.tut-legend{list-style:none;margin:4px 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:8px 14px}
+.tut-legend li{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;border-radius:12px;background:#ffffff0d;border:1px solid #c9d2e055}
+.tut-legend svg{width:120px;height:90px;overflow:visible}
+.tut-legend span{font-size:1.05rem;color:#fff!important;-webkit-text-fill-color:#fff!important}
+/* the pointing hand, the target ring, the archer's lines */
+.tut-layer{position:absolute;inset:0;pointer-events:none;z-index:35;overflow:hidden}
+.tut-hand{position:absolute;left:0;top:0;width:clamp(96px,11vh,150px);height:auto;pointer-events:none;user-select:none;filter:drop-shadow(0 4px 6px #000a);will-change:transform}
+.tut-ring{position:absolute;width:64px;height:40px;margin:-20px 0 0 -32px;border-radius:50%;border:4px solid #7dff8e;box-shadow:0 0 14px #54ff6a,inset 0 0 10px #54ff6a;animation:tutRing 1.1s ease-in-out infinite}
+.tut-ring.tap{border-color:#fff;box-shadow:0 0 14px #fff}
+@keyframes tutRing{0%,100%{transform:scale(.85);opacity:.65}50%{transform:scale(1.12);opacity:1}}
+.tut-lines{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.tut-lines line{stroke:#5b8dff;stroke-width:5;stroke-linecap:round;stroke-dasharray:10 9;opacity:.85;filter:drop-shadow(0 0 4px #2f5fff)}
+.tut-lines line.hit{stroke:#9ec0ff;stroke-width:7;stroke-dasharray:none}
+/* the "Nice!" stamp */
+.tut-yay{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:70;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;animation:tutYay 1.3s ease-out forwards}
+.tut-yay-word{font-family:"Alegreya SC",serif;font-size:clamp(3rem,9vh,6.5rem);line-height:1;color:#ffe14a;-webkit-text-stroke:3px #8a1a0a;text-shadow:5px 5px 0 #000;transform:rotate(-8deg)}
+.tut-yay-sub{font-size:clamp(1.1rem,3vh,1.8rem);padding:6px 16px;border-radius:12px;background:#0d0c11e6;border:2px solid #c9d2e0;color:#fff!important;-webkit-text-fill-color:#fff!important;white-space:nowrap}
+@keyframes tutYay{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}18%{transform:translate(-50%,-50%) scale(1.12);opacity:1}30%{transform:translate(-50%,-50%) scale(1)}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+/* phones and short windows: the reminder box is text only (the pictures stay on the big card, never shown under 240 px) */
+@media (max-height:600px){
+  .match .tip.tut-tip{top:30px;left:8px;width:auto;max-width:250px;padding:4px 10px 6px;font-size:.85rem}
+  .tut-tip .tut-tip-pic{display:none}
+  .tut-tip .tut-say{font-size:.95rem}
+  .tut-tip .tut-sub{font-size:.8rem}
+  .tut-tip .tip-skip{min-height:30px;margin-top:4px;font-size:.72rem}
+  .tut-tip .tut-swing small{display:none}
+  .tut-foot{width:18px;height:24px}
+  .tut-card{padding:8px 14px 10px;gap:4px}
+  .tut-card .tut-big-pic{width:clamp(240px,min(36vw,78vh),560px)}
+  .tut-card .tut-say{font-size:1.2rem}
+  .tut-card .tut-sub{font-size:.95rem}
+  .tut-row .btn{min-height:40px}
+  .tut-swing .tut-pic{width:240px}
+  .tut-swing small{font-size:.66rem;max-width:240px}
+  .tut-legend{grid-template-columns:repeat(6,minmax(100px,1fr));gap:4px 6px}
+  .tut-legend svg{width:90px;height:66px}
+  .tut-legend span{font-size:.8rem}
+}
+/* ===== END tutorial block ===== */

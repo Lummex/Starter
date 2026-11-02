@@ -195,13 +195,13 @@ describe("AI Oct 31: Hard plays out the player's reply turn", () => {
   });
 });
 
-describe('AI Oct 31: Medium is unchanged', () => {
+describe('AI Oct 31 goldens (re-recorded Nov 1 for the marker-order computer)', () => {
   // recorded on branch ai-oct30b (f3518716) with the decision time budget switched off (the budget makes Medium timing-dependent under load)
   // Oct 31 (decks desk): re-recorded after the content/rule change (twelve new starter decks, Tunnel only beside an owned mine, the Riot Shield Bearer a Miner); the AI is untouched
   // Oct 31 (dwarf fix): re-recorded after the Riot Shield Bearer became a wall and the Anvilsworn the basic Miner (cost 1), with the 30-Miner Warbands; the AI is untouched
   // Ken, Oct 31: no triangle bonus against Miners; seed 23 re-recorded after that rule change (21 and 25 play out the same)
   // Ken, Oct 31: 2 Goblin Rocket Riders in the Goblin Warband (for 1 Wolf Rider + 1 Big Boss Troll); seed 25 re-recorded
-  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 21: { turn: 21, units: 23, steps: 217 }, 23: { turn: 24, units: 23, steps: 195 }, 25: { turn: 13, units: 13, steps: 81 } }; // re-recorded Nov 1 for Combat v2 (move points; sure dice here), again for the bigger units' longer feet
+  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 21: { turn: 31, units: 15, steps: 307 }, 23: { turn: 22, units: 26, steps: 189 }, 25: { turn: 11, units: 11, steps: 72 } }; // re-recorded Nov 1 for Combat v2 (move points; sure dice here), again for the bigger units' longer feet
   for (const seed of [21, 23, 25]) {
     it('medium vs medium, seed ' + seed, () => {
       const keep = { medMs: TUNE.medMs, hardMs: TUNE.hardMs };
@@ -273,7 +273,7 @@ function reaction(kind: 'rush' | 'mines', seed: number, turns = 8) {
 describe('AI Oct 30: Hard reacts to the player', () => {
   it('a Commander rush: it turns back and hits the attackers (most cases) and never loses', () => {
     const res = [1, 2, 3, 4, 5, 6, 7, 8].map((seed) => reaction('rush', seed));
-    expect(res.filter((x) => x.lost).length).toBeLessThanOrEqual(3); // v2 (Nov 1): rushes are faster with move points; Hard lost 2 of 8 here (was 0): its defence needs a v2 pass (reported to Forge)
+    expect(res.filter((x) => x.lost).length).toBeLessThanOrEqual(0); // Nov 1: the marker-order defence (orders-ai.ts) turns the rushers back; allowance back to 0 (was 3 of 8 after v2 feete)
     expect(res.filter((x) => x.first != null).length).toBeGreaterThanOrEqual(4);
   });
   it('mine domination: it knocks enemy Miners off the mines within its first three turns', () => {

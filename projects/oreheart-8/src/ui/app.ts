@@ -7,7 +7,7 @@ import { Game } from '../game';
 import ownerLayoutJson0 from '../content/owner-layout.json';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other, ABILITY_COST, bankNeeded, movedThisPhase, shamanLiftTargets, shamanLandingSquares, shamanLiftAction, MULLIGAN_REDRAWS } from '../engine';
 import { SPELL_VISUALS } from '../content/spell-visuals';
-import tutorialJson from '../content/tutorial.json';
+import { Tutorial, tutorialGame, tutorialOrders } from './tutorial';
 import { STANCES } from '../ai/stances';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters } from './decks';
 import { brewActions, flowShardCount, deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
@@ -1190,12 +1190,20 @@ export class App {
       style: `--gem:${ri.color};--gem-dark:${ri.dark};--charm:url(/art/ui/rank-charms/${tier}.webp)${ri.division ? `;--pip:url(/art/ui/rank-charms/division-${ri.division}.webp)` : ''}` });
   }
 
-  beginTutorial() {
+  /** Ken, Nov 1: the tutorial is graphic and hands-on (src/ui/tutorial.ts): one small board per lesson. `step` starts at a lesson (checks). */
+  tut: Tutorial | null = null;
+  beginTutorial(step?: string) {
+    this.lastTutorial = true;
+    if (!this.tut) this.tut = new Tutorial(this);
+    return this.tut.begin(step);
+  }
+  /** One tutorial lesson's board (called by tutorial.ts); the arena stays the same for the whole tutorial. */
+  startTutorialLesson(opts: any) {
     this.lastTutorial = true;
     this.fxLog = [];
-    const state = this.game.startTutorial();
+    const state = this.game.newMatch(opts);
     applyHighlightVars(this.game.state.players.player.faction);
-    this.arenaFaction = ''; this.pickMatchArena();
+    if (!this.arenaFaction) this.pickMatchArena();
     this.pickOpponentName();
     this.showMatch();
     this.update(this.game.state, []);
@@ -2428,7 +2436,7 @@ export class App {
     const key = `${st.turn}|${st.seed ?? ''}|${this.game.options?.seed ?? ''}`;
     if (this.ordersRunKey === key) return;
     this.ordersRunKey = key;
-    void runOrders(this.game, this.orders, { delayMs: this.test ? 0 : 450, stances: this.stances, onChange: () => this.renderOrders(this.game.state) });
+    void runOrders(this.orderGame(), this.orders, { delayMs: this.test ? 0 : 450, stances: this.stances, onChange: () => this.renderOrders(this.game.state) });
   }
 
   // ------------------------------------------------------------ enemy turn recap (R9.7)
@@ -2911,19 +2919,10 @@ export class App {
 
   renderTip(st: any) {
     const tip = this.r.tip as El;
-    if (!st.tutorial) { tip.hidden = true; return; }
-    const step = st.tutorial.step;
-    tip.hidden = false;
-    tip.dataset.step = step;
-    // Owner fix (Ken, Oct 29): on phones the tip covered the board and hand. Drag it anywhere (body or grip), or shrink it to a small tab.
-    this.tipMovable(tip);
-    tip.classList.toggle('tip-small', this.tipMin);
-    tip.replaceChildren(
-      h('div', { class: 'tip-bar' }, h('span', { class: 'tip-grip', 'aria-hidden': 'true' }, '⠿ Tip'),
-        btn(this.tipMin ? '▢' : '–', 'tip-min', (e) => { e.stopPropagation(); this.tipMin = !this.tipMin; this.renderTip(this.game.state); }, { 'aria-label': this.tipMin ? 'Show tip' : 'Shrink tip' })),
-      h('div', { class: 'tip-text' }, (tutorialJson as any).tips[step] || ''),
-      btn('Skip Tutorial', 'tip-skip', () => this.showMenu()));
-    this.tipPlace(tip);
+    if (!tip) return;
+    // Ken, Nov 1: the lesson box, picture cards and pointing hand live in tutorial.ts. Owner fix (Oct 29) kept: the box can be dragged anywhere or shrunk.
+    if (!st || !st.tutorial || !this.tut) { tip.hidden = true; return; }
+    this.tut.render(st, tip);
   }
   tipMin = false;
   /** where the player put the tip, as a fraction of the match area (null = the normal spot) */
@@ -4331,8 +4330,10 @@ export class App {
   orders = new Map<string, Order>();
   orderPreview: Order | null = null;
   getOrders(): Order[] { return [...this.orders.values()].map((o) => JSON.parse(JSON.stringify(o))); }
-  /** Orders exist only for the player's own units, never in the tutorial or in Comp vs Comp. */
-  ordersAllowed(st: any = this.game.state) { return !!st && !st.tutorial && st.mode !== 'compvscomp' && this.game.mode !== 'compvscomp' && st.phase !== 'over'; }
+  /** The runner never acts in a tutorial match; the tutorial's order lessons hand it a view without the tutorial flag (tutorial.ts). */
+  orderGame() { return this.game.state?.tutorial ? tutorialGame(this.game) : this.game; }
+  /** Orders exist only for the player's own units, never in Comp vs Comp (in the tutorial from its order lesson on). */
+  ordersAllowed(st: any = this.game.state) { return !!st && (!st.tutorial || tutorialOrders(st)) /* Ken, Nov 1: the tutorial teaches orders from its order lesson on */ && st.mode !== 'compvscomp' && this.game.mode !== 'compvscomp' && st.phase !== 'over'; }
   setOrder(o: Order) {
     const st = this.game.state;
     const c = st?.board.creatures.find((x: any) => x.uid === o?.uid);
@@ -4344,7 +4345,7 @@ export class App {
     // later legs happen by themselves on your next turns
     if (st.phase === 'action' && st.activePlayer === 'player' && st.priority === 'player' && !st.pendingResponse) {
       const one = new Map([[o.uid, order]]);
-      void runOrders(this.game, one, { delayMs: 0, onChange: () => this.renderOrders(this.game.state) }).then(() => {
+      void runOrders(this.orderGame(), one, { delayMs: 0, onChange: () => this.renderOrders(this.game.state) }).then(() => {
         if (!one.has(o.uid) && this.orders.get(o.uid) === order) { this.orders.delete(o.uid); this.renderOrders(this.game.state); }
       });
     }
@@ -4621,7 +4622,8 @@ export class App {
       { // Round 28: a unit is selected and a square it can't reach this turn was clicked: give it an order
         const pu = unitPick ? st.board.creatures.find((c: any) => c.uid === (this.pick as any).unit) : null;
         const onFig = !st.board.creatures.some((c: any) => c.row === cell.row && c.col === cell.col) ? this.figureAtEvent(e) : null; // a tap on another of your units' bodies selects it, not an order behind it
-        if (pu && !(onFig && onFig.owner === 'player' && onFig.uid !== pu.uid) && this.orderTime(pu) && this.orderFor(pu, cell)) { this.pick = null; this.clearGlow(); this.orderAt(pu, cell); return; } }
+        const onOwn = st.board.creatures.some((c: any) => c.row === cell.row && c.col === cell.col && c.owner === 'player' && c.uid !== pu?.uid); // Nov 1: a TAP on another of your units selects it (a DRAG onto it is the swap)
+        if (pu && !onOwn && !(onFig && onFig.owner === 'player' && onFig.uid !== pu.uid) && this.orderTime(pu) && this.orderFor(pu, cell)) { this.pick = null; this.clearGlow(); this.orderAt(pu, cell); return; } }
       this.pick = null; this.clearGlow();
       // a unit was selected: clicking another of your units selects that one instead; clicking elsewhere just deselects
       const other = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col) || this.figureAtEvent(e);
