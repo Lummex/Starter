@@ -431,3 +431,187 @@ html body #app .match .btn.swap-btn{border-width:0 4px 0 0!important;border-radi
 /* Ken, Nov 1: "on all the buttons ... solid on the right and then fading into nothing ... wherever the icon is, that's where it starts and then the text runs off the transparent side": the icon medallions move to the solid right end, the text runs left from it */
 html body :is(#app .btn.back-btn,#app .btn.db-back,#app .btn.menu-back,#app .match .btn.o-text.done-btn)::before{left:auto!important;right:calc(var(--sv-f) * .08)!important;transform:translateY(-50%)!important}
 html body :is(#app .btn.back-btn,#app .btn.db-back,#app .btn.menu-back,#app .match .btn.o-text.done-btn){padding-left:.4em!important;padding-right:calc(var(--sv-f) * .78)!important}
+
+/* ================= 7. In-match coins and frames (Ken, Nov 1) =================
+   "In-game, I don't want any of the computer style drawn buttons. I want nice graphic coins and stuff." / "use little graphics instead of words".
+   Brush's painted set in public/art/ui/match (README there). Picture-only controls keep their word as the name and hover tooltip.
+   Coins and frames are drawn in ::before / ::after so the buttons themselves stay plain (no box, no border, white text) for the older checks. */
+html body:not(#_a):not(#_b) #app .match{--mc-hud:clamp(44px,6vh,64px);--mc-small:clamp(36px,4.4vh,48px)}
+
+/* -- picture-only coin buttons -- */
+html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin,html body:not(#_a):not(#_b) #app .mode-ui .btn.mcoin.mcoin,html body:not(#_a):not(#_b) .overlay .dialog .btn.mcoin.mcoin{color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:none!important;background:none!important;border:0!important;border-image:none!important;box-shadow:none!important;outline:0;padding:0!important;min-width:0!important;min-height:0!important;cursor:pointer;--csz:78%}
+html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin::before,html body:not(#_a):not(#_b) #app .mode-ui .btn.mcoin.mcoin::before,html body:not(#_a):not(#_b) .overlay .dialog .btn.mcoin.mcoin::before{content:""!important;display:block!important;position:absolute!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;width:var(--csz)!important;height:var(--csz)!important;aspect-ratio:1;margin:0!important;transform:translate(-50%,-50%)!important;background:var(--coin) center/contain no-repeat!important;border:0!important;border-radius:50%;box-shadow:none!important;filter:drop-shadow(0 2px 3px #000b);transition:filter .15s,transform .12s;pointer-events:none;opacity:1!important;mask:none!important;-webkit-mask:none!important}
+html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin::after,html body:not(#_a):not(#_b) #app .mode-ui .btn.mcoin.mcoin::after,html body:not(#_a):not(#_b) .overlay .dialog .btn.mcoin.mcoin::after{display:none!important;content:none!important}
+html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin:is(:hover,:focus-visible)::before,html body:not(#_a):not(#_b) #app .mode-ui .btn.mcoin.mcoin:is(:hover,:focus-visible)::before,html body:not(#_a):not(#_b) .overlay .dialog .btn.mcoin.mcoin:is(:hover,:focus-visible)::before{filter:brightness(1.18) drop-shadow(0 0 6px #cfe3ffaa) drop-shadow(0 2px 3px #000b)}
+html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin:active::before,html body:not(#_a):not(#_b) #app .mode-ui .btn.mcoin.mcoin:active::before,html body:not(#_a):not(#_b) .overlay .dialog .btn.mcoin.mcoin:active::before{transform:translate(-50%,-50%) scale(.92)!important}
+html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin:disabled::before{filter:grayscale(1) brightness(.6)}
+html body:not(#_a):not(#_b) #app .match .btn.mcoin.mcoin[hidden]{display:none!important}
+
+/* Done (bottom right) and Menu (top left): the same size, at the outer end of their layout spots */
+html body:not(#_a):not(#_b) #app .match .btn.o-text.done-btn.mcoin.mcoin.btn,html body:not(#_a):not(#_b) #app .match .o-menu .btn.menu-btn.mcoin.mcoin.btn{width:var(--mc-hud)!important;height:var(--mc-hud)!important;display:block!important}
+html body:not(#_a):not(#_b) #app .match .btn.o-text.done-btn.mcoin.mcoin.btn{left:calc(var(--pl) + var(--pw) - var(--mc-hud))!important;top:calc(var(--pt) + var(--ph) / 2 - var(--mc-hud) / 2)!important}
+html body:not(#_a):not(#_b) #app .match .o-menu .btn.menu-btn.mcoin.mcoin.btn{position:absolute!important;left:0!important;top:calc(50% - var(--mc-hud) / 2)!important;inset:auto;right:auto!important;bottom:auto!important}
+html body:not(#_a):not(#_b) #app .match .btn.o-text.done-btn.mcoin.mcoin.btn[hidden]{display:none!important}
+/* the sound coin, bottom-left corner */
+html body:not(#_a):not(#_b) #app .match .btn.spk-btn.mcoin.mcoin{width:var(--mc-small)!important;height:var(--mc-small)!important;opacity:.92}
+/* Swap for a Miner */
+html body:not(#_a):not(#_b) #app .match .btn.swap-btn.mcoin.mcoin{width:var(--mc-hud)!important;height:var(--mc-hud)!important}
+/* hand scroll */
+html body:not(#_a):not(#_b) #app .match .btn.hand-scroll.mcoin.mcoin{width:44px!important;height:44px!important;border-radius:50%}
+/* Computer vs computer / Card Play bar */
+html body:not(#_a):not(#_b) #app .mode-ui .btn.mcoin.mcoin{position:relative;width:var(--mc-small,44px)!important;height:var(--mc-small,44px)!important;min-width:44px!important;min-height:44px!important}
+html body:not(#_a):not(#_b) #app .mode-ui .btn.wb-speed.mcoin[aria-pressed=true]::before{filter:brightness(1.25) drop-shadow(0 0 7px #d8e8ffdd) drop-shadow(0 2px 3px #000b)}
+html body:not(#_a):not(#_b) #app .mode-ui .btn.wb-speed.mcoin[aria-pressed=false]::before{opacity:.72!important}
+html body:not(#_a):not(#_b) #app .mode-ui .stance-btn .st-icon img{display:block;width:clamp(22px,3.4vh,32px);height:auto;filter:drop-shadow(0 1px 2px #000a)}
+
+/* -- the three hand sort coins: a little column hugging the bottom of the screen, where the Sort button was (left of the hand) -- */
+html body:not(#_a):not(#_b) #app .match .hand-sorts.hand-sort-btn{position:absolute;z-index:29;display:flex;flex-direction:column;gap:0;width:auto;height:auto;padding:0;margin:0;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;pointer-events:none}
+html body:not(#_a):not(#_b) #app .match .hand-sorts.hand-sort-btn::after,html body:not(#_a):not(#_b) #app .match .hand-sorts.hand-sort-btn::before{display:none!important;content:none!important}
+html body:not(#_a):not(#_b) #app .match .hand-sorts.hand-sort-btn[hidden]{display:none!important}
+html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin{all:unset;box-sizing:border-box;position:relative;width:max(44px,var(--hs-c));height:max(34px,calc(var(--hs-c) + 4px));cursor:pointer;pointer-events:auto;touch-action:manipulation;--hs-c:clamp(28px,3.8vh,42px)}
+html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin img{position:absolute;left:50%;top:50%;width:var(--hs-c);height:var(--hs-c);transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 2px 3px #000b);transition:filter .15s,transform .12s}
+html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin .hs-a{display:none;width:calc(var(--hs-c) * 1.25);height:calc(var(--hs-c) * 1.25)}
+html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin[aria-pressed=true] .hs-a{display:block}
+html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin[aria-pressed=true] .hs-c{display:none}
+html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin:is(:hover,:focus-visible) img{filter:brightness(1.18) drop-shadow(0 0 6px #cfe3ffaa) drop-shadow(0 2px 3px #000b)}
+html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin:active img{transform:translate(-50%,-50%) scale(.92)}
+html body:not(#_a):not(#_b) #app .match .hand-sorts .hs-coin:focus-visible{outline:2px solid #dfe8f7;outline-offset:-4px;border-radius:50%}
+
+/* -- turn timer: the Respond window's bar at the top of the screen -- */
+html body:not(#_a):not(#_b) #app .match .turn-bar{--tbh:clamp(16px,2.9vh,32px);position:absolute;z-index:46;top:max(4px,calc(var(--u,60px) * 9 * .014));left:calc((100% - 16 * var(--u,60px)) / 2 + 16 * var(--u,60px) * .2);width:calc(16 * var(--u,60px) * .33);height:calc(var(--tbh) * 1.3);display:flex;align-items:center;gap:calc(var(--tbh) * .25);pointer-events:none;font-family:"Alegreya SC",serif;color:#fff;font-style:normal}
+html body:not(#_a):not(#_b) #app .match .turn-bar[hidden]{display:none}
+html body:not(#_a):not(#_b) #app .match .turn-bar .tb-coin{flex:0 0 auto;width:calc(var(--tbh) * 1.3);height:calc(var(--tbh) * 1.3);filter:drop-shadow(0 2px 3px #000b)}
+html body:not(#_a):not(#_b) #app .match .turn-bar .tb-frame{position:relative;flex:1 1 auto;min-width:40px;height:var(--tbh);box-sizing:border-box;border:0 solid transparent;border-image:url(/art/ui/match/frame-progress.webp) 0 80 fill / 0 calc(var(--tbh) * 80 / 74) stretch;filter:drop-shadow(0 2px 3px #000a)}
+html body:not(#_a):not(#_b) #app .match .turn-bar .tb-groove{position:absolute;left:calc(var(--tbh) * 72 / 74);right:calc(var(--tbh) * 78 / 74);top:36.5%;height:31%;border-radius:999px;overflow:hidden}
+html body:not(#_a):not(#_b) #app .match .turn-bar .tb-fill{position:absolute;inset:0;transform-origin:left center;background:linear-gradient(#f4f8ff,#a9c3e6 55%,#6f8fbf);box-shadow:inset 0 1px 0 #fff8;transition:transform .12s linear}
+html body:not(#_a):not(#_b) #app .match .turn-bar[data-low=true] .tb-fill{background:linear-gradient(90deg,#ffb347,#ff5a3c);animation:tbPulse .5s ease-in-out infinite alternate}
+html body:not(#_a):not(#_b) #app .match .turn-bar[data-live=false] .tb-fill{filter:grayscale(.5) brightness(.8)}
+html body:not(#_a):not(#_b) #app .match .turn-bar .tb-time{flex:0 0 auto;font-size:max(14px,calc(var(--tbh) * .82));line-height:1;font-weight:700;text-shadow:0 1px 2px #000,0 0 6px #000c;min-width:2.3em}
+html body:not(#_a):not(#_b) #app .match .turn-bar .tb-bank{flex:0 0 auto;display:inline-flex;align-items:center;padding:.12em .5em;border-radius:999px;font-size:max(14px,calc(var(--tbh) * .72));line-height:1;font-weight:700;color:#e6f3ff;background:linear-gradient(#24405fe6,#122337e6);box-shadow:0 0 0 1px #bfd9ffaa,0 0 10px #7fc0ffaa;text-shadow:0 1px 2px #000}
+html body:not(#_a):not(#_b) #app .match .turn-bar .tb-bank[hidden]{display:none}
+html body:not(#_a):not(#_b) #app .match .turn-bar[data-bank=true] .tb-frame{filter:drop-shadow(0 0 5px #8fd0ffcc) drop-shadow(0 2px 3px #000a)}
+html body:not(#_a):not(#_b) #app .match .turn-bar[data-bank=true] .tb-fill{background:linear-gradient(#f2fbff,#8fd0ff 55%,#3f8fd8)}
+@keyframes tbPulse{from{filter:brightness(1)}to{filter:brightness(1.45)}}
+/* the old "120s left" words are replaced by the bar (kept for screen readers and the banked note) */
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-time.ph-time{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap}
+/* the 10-to-0 countdown: silver, never gold */
+html body:not(#_a):not(#_b) #app .match .countdown.countdown{color:#f4f7fc!important;-webkit-text-fill-color:#f4f7fc!important;-webkit-text-stroke:3px #7a1010;text-shadow:0 0 18px #ff4a3a88,5px 5px 0 #000a!important}
+
+/* -- the Respond window's time bar in Brush's frame (the fill stays in the groove) -- */
+html body:not(#_a):not(#_b) .dialog.respond-dlg .respond-bar{--rbh:clamp(16px,2.6vh,26px);position:relative;height:var(--rbh);border-radius:0;overflow:visible;background:none;box-sizing:border-box;border:0 solid transparent;border-image:url(/art/ui/match/frame-progress.webp) 0 80 fill / 0 calc(var(--rbh) * 80 / 74) stretch;margin:0 0 8px;filter:drop-shadow(0 2px 3px #000a)}
+html body:not(#_a):not(#_b) .dialog.respond-dlg .respond-bar .fill{position:absolute;left:calc(var(--rbh) * 72 / 74);right:calc(var(--rbh) * 78 / 74);width:auto;top:36.5%;height:31%;border-radius:999px}
+/* the answers: Brush's frame-button with the respond coin in its socket; Let it happen is its coin */
+html body:not(#_a):not(#_b) .overlay .dialog.respond-dlg .menu-list{align-items:flex-end}
+html body:not(#_a):not(#_b) .overlay .dialog.respond-dlg .btn.mcoin.let-it-btn{position:relative;align-self:flex-end;width:clamp(48px,7vh,64px)!important;height:clamp(48px,7vh,64px)!important}
+
+/* -- frame buttons that keep their word: Respond answers, Play this card, the card view's abilities -- */
+html body:not(#_a):not(#_b) .overlay .dialog .btn.mframe.mframe,html body:not(#_a):not(#_b) .play-from-hand-row .play-from-hand.play-from-hand{--fh:clamp(44px,6vh,60px);position:relative;isolation:isolate;box-sizing:border-box;height:var(--fh)!important;min-height:0!important;padding:0 calc(var(--fh) * 1.08) 0 calc(var(--fh) * .9)!important;display:flex!important;align-items:center;justify-content:flex-end;border:0!important;border-radius:0!important;border-image:none!important;background:none!important;box-shadow:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 2px #000,0 0 6px #000c!important;white-space:nowrap;--coin:url(/art/ui/match/done.webp)}
+html body:not(#_a):not(#_b) .overlay .dialog .btn.mframe.mframe::before,html body:not(#_a):not(#_b) .play-from-hand-row .play-from-hand.play-from-hand::before{content:""!important;display:block!important;position:absolute!important;inset:0!important;left:0!important;top:0!important;width:auto!important;height:auto!important;transform:none!important;z-index:-1;margin:0!important;background:none!important;box-sizing:border-box;border:0 solid transparent;border-image:url(/art/ui/match/frame-button.webp) 0 250 0 0 fill / 0 calc(var(--fh) * 250 / 210) 0 0 stretch;pointer-events:none;opacity:1!important;filter:none!important}
+html body:not(#_a):not(#_b) .overlay .dialog .btn.mframe.mframe:is(:hover,:focus-visible)::before,html body:not(#_a):not(#_b) .play-from-hand-row .play-from-hand.play-from-hand:is(:hover,:focus-visible)::before{border-image-source:url(/art/ui/match/frame-button-hover.webp)}
+html body:not(#_a):not(#_b) .overlay .dialog .btn.mframe.mframe:active::before,html body:not(#_a):not(#_b) .play-from-hand-row .play-from-hand.play-from-hand:active::before{border-image-source:url(/art/ui/match/frame-button-pressed.webp)}
+html body:not(#_a):not(#_b) .overlay .dialog .btn.mframe.mframe::after,html body:not(#_a):not(#_b) .play-from-hand-row .play-from-hand.play-from-hand::after{content:""!important;display:block!important;position:absolute!important;right:calc(var(--fh) * .125)!important;left:auto!important;top:12%!important;width:calc(var(--fh) * .76)!important;height:calc(var(--fh) * .76)!important;transform:none!important;margin:0!important;background:var(--coin) center/contain no-repeat!important;border:0!important;box-shadow:none!important;pointer-events:none;filter:drop-shadow(0 1px 2px #000a)}
+html body:not(#_a):not(#_b) .play-from-hand-row .play-from-hand.play-from-hand:hover{filter:brightness(1.1)}
+html body:not(#_a):not(#_b) .play-from-hand-row .play-from-hand.cant{opacity:.6;filter:grayscale(.6)}
+
+/* -- card view arrows: Brush's scroll coins -- */
+html body:not(#_a):not(#_b) .overlay.cardview .card-nav.card-nav{border:0!important;background:none!important;box-shadow:none!important;border-radius:50%;filter:none}
+html body:not(#_a):not(#_b) .overlay.cardview .card-nav.card-nav svg{display:none}
+html body:not(#_a):not(#_b) .overlay.cardview .card-nav.card-nav::before{content:"";position:absolute;inset:4%;background:url(/art/ui/match/scroll-left.webp) center/contain no-repeat;filter:drop-shadow(0 3px 6px #000c);transition:filter .15s}
+html body:not(#_a):not(#_b) .overlay.cardview .card-nav.card-nav-next::before{background-image:url(/art/ui/match/scroll-right.webp)}
+html body:not(#_a):not(#_b) .overlay.cardview .card-nav.card-nav:hover::before{filter:brightness(1.18) drop-shadow(0 0 8px #cfe3ffaa) drop-shadow(0 3px 6px #000c)}
+
+/* -- phase tracker: Brush's chips with the phase coins (the words stay as hidden text); the lit chip takes the active side's faction colour -- */
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step.ph-step:not(#_w){--chh:clamp(20px,3.5vh,38px);position:relative;display:block;width:calc(var(--chh) * 316 / 132);height:var(--chh);padding:0!important;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:none!important;background:none!important;box-shadow:none!important;border:0!important;border-radius:0!important;filter:none!important;opacity:.8}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step.ph-step:not(#_w)::before{content:"";position:absolute;inset:0;background:url(/art/ui/match/frame-chip.webp) center/100% 100% no-repeat}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step.ph-step:not(#_w)::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--chh) * .86);height:calc(var(--chh) * .86);transform:translate(-50%,-50%);background:center/contain no-repeat;filter:grayscale(.25) brightness(.95) drop-shadow(0 1px 2px #000a)}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step[data-phase=draw]:not(#_w)::after{background-image:url(/art/ui/match/phase-draw.webp)}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step[data-phase=deploy]:not(#_w)::after{background-image:url(/art/ui/match/phase-deploy.webp)}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step[data-phase=action]:not(#_w)::after{background-image:url(/art/ui/match/phase-action.webp)}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step[data-phase=end]:not(#_w)::after{background-image:url(/art/ui/match/phase-end.webp)}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step[aria-current=step]:not(#_w){opacity:1}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step[aria-current=step]:not(#_w)::before{background-image:url(/art/ui/match/frame-chip-lit.webp);filter:drop-shadow(0 0 6px var(--phg,#3ee06a))}
+html body:not(#_a):not(#_b) #app .match .o-phase[data-faction=gnomes] .ph-steps .ph-step[aria-current=step]:not(#_w)::before{filter:hue-rotate(150deg) saturate(.9) drop-shadow(0 0 6px #7fc8ff)}
+html body:not(#_a):not(#_b) #app .match .o-phase[data-faction=dwarves] .ph-steps .ph-step[aria-current=step]:not(#_w)::before{filter:hue-rotate(95deg) saturate(1.1) drop-shadow(0 0 6px #2f5fd8)}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step[aria-current=step]:not(#_w)::after{filter:drop-shadow(0 1px 2px #000a)}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps .ph-step.done:not(#_w){opacity:.42}
+html body:not(#_a):not(#_b) #app .match .o-phase .ph-steps{gap:.25em .3em!important}
+
+/* -- Flow and Next: the flow coin for the word, next-income coin + the number -- */
+html body:not(#_a):not(#_b) #app .match :is([data-role=player-flow-label],[data-role=enemy-flow-label]).o-text{line-height:0!important}
+html body:not(#_a):not(#_b) #app .match :is([data-role=player-flow-label],[data-role=enemy-flow-label]).o-text::before{content:"";display:block;width:clamp(20px,3.8vh,40px);height:clamp(20px,3.8vh,40px);background:url(/art/ui/match/flow.webp) center/contain no-repeat;filter:drop-shadow(0 1px 2px #000b)}
+html body:not(#_a):not(#_b) #app .match .cry-next::before{content:"";display:inline-block;width:1.15em;height:1.15em;margin-right:.18em;vertical-align:-.22em;background:url(/art/ui/match/next-income.webp) center/contain no-repeat;filter:drop-shadow(0 1px 2px #000b)}
+
+/* -- unit stance bar: Brush's stance tray with the painted hold / guard / aggressive icons -- */
+html body:not(#_a):not(#_b) #app .match .stance-bar.stance-bar{--stw:clamp(150px,9vw,176px);width:var(--stw);height:calc(var(--stw) * 145 / 992);display:block;gap:0;padding:0;border:0;border-radius:0;background:url(/art/ui/match/frame-stance-tray.webp) 0 0/100% 100% no-repeat;filter:drop-shadow(0 3px 5px #000b)}
+html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt.stance-opt{all:unset;box-sizing:border-box;position:absolute;top:50%;width:29%;height:100%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;touch-action:manipulation}
+@media (pointer:coarse){html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt.stance-opt{height:max(40px,100%)}}
+html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt:nth-child(1){left:17.5%}
+html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt:nth-child(2){left:47.5%}
+html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt:nth-child(3){left:77.2%}
+html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt img{display:block;height:calc(var(--stw) * 145 / 992 * .8);width:auto;opacity:.8;filter:grayscale(.2) drop-shadow(0 1px 2px #000a);transition:filter .15s,opacity .15s,transform .12s}
+html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt:is(:hover,:focus-visible) img{opacity:1;filter:brightness(1.15) drop-shadow(0 0 5px #cfe3ffaa)}
+html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt[aria-pressed=true] img{opacity:1;filter:brightness(1.2) drop-shadow(0 0 6px #e6f1ffdd) drop-shadow(0 1px 2px #000a);transform:scale(1.12)}
+html body:not(#_a):not(#_b) #app .match .stance-bar .stance-opt:active img{transform:scale(.92)}
+
+/* -- ability buttons: Brush's ability coins in the stat badge (no gold ring) -- */
+html body:not(#_a):not(#_b) #app .token .ab-btn.ab-btn{background:none;border:0;box-shadow:none;animation:none;color:transparent}
+html body:not(#_a):not(#_b) #app .token .ab-btn .ab-coin{display:block;width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 1px 2px #000a)}
+html body:not(#_a):not(#_b) #app .token [data-unit-badge] .ab-btn.ab-btn{width:34%;border:0;background:none;box-shadow:none;border-radius:50%;overflow:hidden}
+html body:not(#_a):not(#_b) #app .token [data-unit-badge] .ab-btn.ab-btn.off{border:0;box-shadow:none}
+html body:not(#_a):not(#_b) #app .token [data-unit-badge] .ab-btn.ab-btn.ready{border:0;animation:abShimmerSilver 1.3s ease-in-out infinite}
+@keyframes abShimmerSilver{0%,100%{box-shadow:0 0 calc(var(--bw)*.03) calc(var(--bw)*.01) #cfe3ff99;filter:brightness(1)}50%{box-shadow:0 0 calc(var(--bw)*.09) calc(var(--bw)*.03) #e6f1ff;filter:brightness(1.3)}}
+html body:not(#_a):not(#_b) #app .token .ab-btn.ab-btn:not([data-unit-badge] *){width:max(30px,150%);max-width:38px;box-shadow:0 2px 4px #000}
+html body:not(#_a):not(#_b) #app .token .ab-btn.ab-btn.off:not([data-unit-badge] *){filter:grayscale(1) brightness(.6)}
+
+/* -- status icons: the turns left in Brush's count coin, and the x2 / x3 chip -- */
+html body:not(#_a):not(#_b) #app .token .st-ic b{right:-22%;bottom:-22%;width:62%;min-width:16px;height:auto;aspect-ratio:1;padding:0;border:0;border-radius:0;background:url(/art/ui/match/count-blank.webp) center/contain no-repeat;display:flex;align-items:center;justify-content:center;line-height:1;font-size:clamp(9px,.7vw,13px);text-shadow:0 1px 1px #000}
+html body:not(#_a):not(#_b) #app .token .st-ic .st-stack{top:-26%;right:-26%;width:60%;min-width:16px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:url(/art/ui/match/count-blank.webp) center/contain no-repeat;font-size:clamp(8px,.62vw,12px)}
+
+/* -- upgrade pips (display only): up to 3 small silver pips along the top of the stat badge -- */
+html body:not(#_a):not(#_b) #app .token [data-unit-badge] .ub-pips{position:absolute;left:50%;top:2%;transform:translate(-50%,-100%);display:flex;gap:calc(var(--bw) * .03);pointer-events:none;z-index:3}
+html body:not(#_a):not(#_b) #app .token [data-unit-badge] .ub-pips[data-n="0"]{display:none}
+html body:not(#_a):not(#_b) #app .token [data-unit-badge] .ub-pips i{display:block;width:max(5px,calc(var(--bw) * .09));height:max(5px,calc(var(--bw) * .09));border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffff,#d6dde8 40%,#7d8799 75%,#4a5262);box-shadow:0 0 0 1px #0b0e14,0 0 4px #cfe3ffaa}
+html body:not(#_a):not(#_b) #app .match .token .pips{display:none}
+
+/* -- the selected hand card: a silver edge, never gold -- */
+html body:not(#_a):not(#_b) #app .match .hand .hand-card.sel:not(.popped)::after{box-shadow:0 0 0 2px #e6ecf5,0 0 12px 2px #b9c9e6aa}
+
+/* -- route labels: turns-blank with the number, blocked, chase, mining -- */
+html body:not(#_a):not(#_b) #app .match .cell .path-label{--plz:clamp(26px,3.6vh,38px);width:var(--plz);height:var(--plz);padding:0;border:0;border-radius:50%;box-shadow:none;background:url(/art/ui/match/turns-blank.webp) center/contain no-repeat;font-size:0;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 3px #000b)}
+html body:not(#_a):not(#_b) #app .match .cell.path-show .path-label{display:flex;align-items:center;justify-content:center}
+html body:not(#_a):not(#_b) #app .match .cell .path-label::after{content:"";font:800 calc(var(--plz) * .44)/1 "Russo One",system-ui,sans-serif;color:#fff;-webkit-text-fill-color:#fff;text-shadow:0 1px 2px #000,0 0 3px #000}
+html body:not(#_a):not(#_b) #app .match .cell .path-label[data-kind="chase"]{background-image:url(/art/ui/unit-icons/chase.webp)}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="0"] .path-label::after{content:"0"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="1"] .path-label::after{content:"1"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="2"] .path-label::after{content:"2"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="3"] .path-label::after{content:"3"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="4"] .path-label::after{content:"4"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="5"] .path-label::after{content:"5"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="6"] .path-label::after{content:"6"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="7"] .path-label::after{content:"7"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="8"] .path-label::after{content:"8"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="9"] .path-label::after{content:"9"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="10"] .path-label::after{content:"10"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="11"] .path-label::after{content:"11"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="12"] .path-label::after{content:"12"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="13"] .path-label::after{content:"13"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="14"] .path-label::after{content:"14"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="15"] .path-label::after{content:"15"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="16"] .path-label::after{content:"16"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="17"] .path-label::after{content:"17"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="18"] .path-label::after{content:"18"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="19"] .path-label::after{content:"19"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="20"] .path-label::after{content:"20"}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="0"] .path-label[data-kind="mine"]{background-image:url(/art/ui/unit-icons/mine.webp)}
+html body:not(#_a):not(#_b) #app .match .cell.path-end[data-turns="0"] .path-label[data-kind="mine"]::after,html body:not(#_a):not(#_b) #app .match .cell .path-label[data-kind="chase"]::after,html body:not(#_a):not(#_b) #app .match .cell.path-blocked .path-label::after{content:none!important}
+html body:not(#_a):not(#_b) #app .match .cell.path-blocked .path-label{background-image:url(/art/ui/match/blocked.webp)!important}
+/* -- Menu words with Brush's coins beside them; the watch / Card Play speed coins without the drawn box -- */
+html body:not(#_a):not(#_b) #app .match .o-menu-item.mi-coin::before{content:"";display:inline-block;width:1.15em;height:1.15em;margin-right:.45em;vertical-align:-.2em;background:var(--coin) center/contain no-repeat;filter:drop-shadow(0 1px 2px #000b)}
+html body:not(#_a):not(#_b) #app .mode-ui .watch-bar{background:none;box-shadow:none;padding:0;gap:2px}
+html body:not(#_a):not(#_b) .overlay .dialog .btn.mframe.mframe{outline:0}
+html body:not(#_a):not(#_b) .play-from-hand-row .play-from-hand.play-from-hand{--fh:clamp(48px,6.6vh,70px);font-size:clamp(17px,2.2vw,26px)}
+/* -- the Recap toggle coin, the empty enemy discard slot and its count coin -- */
+html body:not(#_a):not(#_b) #app .match .e-recap .btn.recap-tog.mcoin.mcoin{position:relative;display:inline-block;width:var(--mc-small);height:var(--mc-small)}
+html body:not(#_a):not(#_b) #app .match .e-recap .btn.recap-tog.mcoin[aria-expanded=true]::before{filter:brightness(1.2) drop-shadow(0 0 6px #d8e8ffcc) drop-shadow(0 2px 3px #000b)}
+html body:not(#_a):not(#_b) #app .match .e-discard.empty{border:0;border-radius:0;background:url(/art/ui/match/frame-card-slot.webp) center/100% 100% no-repeat}
+html body:not(#_a):not(#_b) #app .match .e-discard .e-discard-n{border:0;border-radius:0;background:url(/art/ui/match/count-blank.webp) center/contain no-repeat;min-width:0;width:2.1em;height:2.1em;padding:0;display:flex;align-items:center;justify-content:center;right:-.7em;bottom:-.7em}

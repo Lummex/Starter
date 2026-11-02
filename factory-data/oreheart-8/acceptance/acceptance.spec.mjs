@@ -300,6 +300,12 @@ test('AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy t
   await expect(phase).toContainText('Deploy');
   await expect(phase).toContainText(/Your turn/i);
   await expect(timer).toBeHidden();
+  // owner check change (Ken, Nov 1: "that same progress bar that you have for when you want to respond to a spell being cast, I want that on the timer on the top"):
+  // the turn bar shows all through your turn; the big 10-to-0 countdown above still waits for the last 10 seconds
+  const bar = page.getByRole('progressbar', { name: 'Turn time left', exact: true });
+  await expect(bar).toBeVisible();
+  await expect(bar).toHaveAttribute('aria-valuenow', '120');
+  await expect(bar).toContainText('2:00');
   await expect(page.getByLabel('Your Flow crystals', { exact: true })).toHaveText(/\b4\b/);
   await expect(page.getByLabel('Your Bank crystals', { exact: true })).toHaveText(/\b2\b/);
   // Revision 7: one crystal type, no per-color counters
@@ -310,10 +316,31 @@ test('AC8: HUD elements, hidden timer, Done advances Deploy -> Action -> Enemy t
   await doneBtn.click();
   await expect(phase).toContainText('Action');
   await expect(timer).toBeHidden();
+  await expect(bar, 'a fresh phase clock in Action').toBeVisible();
+  await expect(bar).toHaveAttribute('aria-valuenow', '120');
   expect((await getState(page)).phase).toBe('action');
   await doneBtn.click();
   await expect(phase).toContainText(/Enemy turn/i);
   expect((await getState(page)).activePlayer).toBe('opponent');
+  await expect(bar, 'the computer has no clock, so no bar on its turn').toBeHidden();
+  // the bar sits at the top and never covers the phase tracker, the Menu or the enemy deck (PC and phone)
+  for (const [W, H] of [[1920, 1080], [844, 390]]) {
+    await page.setViewportSize({ width: W, height: H });
+    await newMatch(page, { ai: false, skipMulligan: true, setup: { firstPlayer: 'player' } });
+    await expect(bar).toBeVisible();
+    const g = await page.evaluate(() => {
+      const r = (e) => { if (!e) return null; const b = e.getBoundingClientRect(); return b.width ? { x0: b.left, x1: b.right, y0: b.top, y1: b.bottom } : null; };
+      const ph = document.querySelector('[aria-label="Current phase"]');
+      return { bar: r(document.querySelector('.turn-bar')), frame: r(document.querySelector('.turn-bar .tb-frame')), others: [r(ph?.querySelector('.ph-turn')), r(ph?.querySelector('.ph-steps')), ...[...(ph?.querySelectorAll('.ph-step') || [])].map(r), r(document.querySelector('.match .menu-btn')), r(document.querySelector('[data-role=enemy-deck]'))].filter(Boolean),
+        frameImg: getComputedStyle(document.querySelector('.turn-bar .tb-frame')).borderImageSource };
+    });
+    const hit = (a, b) => a.x0 < b.x1 - 1 && b.x0 < a.x1 - 1 && a.y0 < b.y1 - 1 && b.y0 < a.y1 - 1;
+    expect(g.bar.y1, `${W}x${H}: at the top of the screen`).toBeLessThanOrEqual(H * 0.12);
+    expect(g.bar.x0).toBeGreaterThanOrEqual(0);
+    expect(g.bar.x1).toBeLessThanOrEqual(W);
+    for (const o of g.others) expect(hit(g.bar, o), `${W}x${H}: the bar is clear of ${JSON.stringify(o)}`).toBe(false);
+    expect(g.frameImg, 'the Respond window\'s painted bar').toContain('frame-progress');
+  }
 });
 
 // ---------- AC9 (Crystal Flow) ----------
@@ -1529,11 +1556,20 @@ test('AC32: countdown appears only in the last 10 seconds; 0 ends just the phase
   const timer = page.getByLabel('Phase timer', { exact: true });
   const setLeft = (n) => page.evaluate(async (x) => await window.oreheart.setPhaseTimeLeft(x), n);
   await expect(timer).toBeHidden();
+  // owner check change (Ken, Nov 1): the top bar drains with the clock the whole time; the countdown in the middle still starts at 10
+  const bar = page.getByRole('progressbar', { name: 'Turn time left', exact: true });
+  await expect(bar).toBeVisible();
   await setLeft(11);
   await expect(timer).toBeHidden();
+  await expect(bar).toContainText('0:11');
+  await expect(bar).toHaveAttribute('aria-valuenow', '11');
+  await expect(bar).not.toHaveAttribute('data-low', 'true');
+  const fill = (await page.locator('.turn-bar .tb-fill').evaluate((e) => getComputedStyle(e).transform));
+  expect(fill, 'the bar has drained to 11 of 120 seconds').toMatch(/^matrix\(0\.09/);
   await setLeft(10);
   await expect(timer).toBeVisible();
   await expect(timer).toHaveText(/\b10\b/);
+  await expect(bar).toHaveAttribute('data-low', 'true');
   await setLeft(3);
   await expect(timer).toHaveText(/\b3\b/);
   await setLeft(0);
@@ -12185,6 +12221,8 @@ test('AC482: the Fireball and the Starfall meteor fall from high above, from a d
 });
 
 // Ken: "the done button and the menu button. They're still not centered. And the done button is a little too big. It should be more the size of the menu button."
+// owner check change (Ken, Nov 1: "I don't want any of the computer style drawn buttons. I want nice graphic coins" / "use little graphics instead of words"):
+// Done and Menu are Brush's coins, picture only (the word stays the name and the hover tooltip); still the same size, centred, Done clear of the deck pile
 test('AC483: the Done button is the size of the Menu button, both have their contents centred, and Done stays clear of the deck pile', async ({ page }) => {
   for (const [W, H] of [[1920, 1080], [844, 390]]) {
     await page.setViewportSize({ width: W, height: H });
@@ -12192,20 +12230,22 @@ test('AC483: the Done button is the size of the Menu button, both have their con
     await expect(page.getByRole('button', { name: 'Done', exact: true })).toBeVisible();
     const m = await page.evaluate(() => {
       const r = (e) => { const b = e.getBoundingClientRect(); return { x0: b.left, x1: b.right, y0: b.top, y1: b.bottom, w: b.width, h: b.height }; };
-      const text = (e) => { const tn = [...e.querySelectorAll('*'), e].flatMap((x) => [...x.childNodes]).find((n) => n.nodeType === 3 && n.textContent.trim()); const rg = document.createRange(); rg.selectNodeContents(tn); return r(rg); };
+      const coin = (e) => { const s = getComputedStyle(e, '::before'), b = e.getBoundingClientRect(), w = parseFloat(s.width) || 0, hh = parseFloat(s.height) || 0; return { img: s.backgroundImage, w, h: hh, cx: b.left + b.width / 2, cy: b.top + b.height / 2 }; };
       const menu = document.querySelector('.match .o-menu .menu-btn'), done = document.querySelector('.match .btn.o-text.done-btn');
-      const icon = getComputedStyle(done, '::before'), iw = parseFloat(icon.width) || 0, gap = parseFloat(getComputedStyle(done).columnGap) || 0;
       const deck = document.querySelector('.match [aria-label="Your deck"]');
-      return { menu: r(menu), done: r(done), mt: text(menu), dt: text(done), iw, gap, deck: deck ? r(deck) : null };
+      const shownWords = (e) => [e, ...e.querySelectorAll('*')].filter((x) => [...x.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && x.getBoundingClientRect().width > 2).map((x) => x.textContent.trim()).join('');
+      return { menu: r(menu), done: r(done), mc: coin(menu), dc: coin(done), mt: menu.title, dt: done.title, mtext: shownWords(menu), dtext: shownWords(done), deck: deck ? r(deck) : null };
     });
     expect(Math.abs(m.done.w - m.menu.w), `${W}x${H}: Done ${Math.round(m.done.w)} px wide, Menu ${Math.round(m.menu.w)}`).toBeLessThanOrEqual(2);
     expect(Math.abs(m.done.h - m.menu.h), `${W}x${H}: Done ${Math.round(m.done.h)} px tall, Menu ${Math.round(m.menu.h)}`).toBeLessThanOrEqual(2);
-    const mc = (m.mt.x0 + m.mt.x1) / 2, bc = (m.menu.x0 + m.menu.x1) / 2;
-    expect(Math.abs(mc - bc), `${W}x${H}: Menu's word is centred`).toBeLessThanOrEqual(m.menu.w * 0.04);
-    const g0 = m.dt.x0 - m.iw - m.gap, dc = (g0 + m.dt.x1) / 2, dbc = (m.done.x0 + m.done.x1) / 2;
-    expect(Math.abs(dc - dbc), `${W}x${H}: Done's icon and word are centred together`).toBeLessThanOrEqual(m.done.w * 0.04);
-    for (const [t, b, n] of [[m.mt, m.menu, 'Menu'], [m.dt, m.done, 'Done']]) expect(Math.abs((t.y0 + t.y1) / 2 - (b.y0 + b.y1) / 2), `${W}x${H}: ${n} is centred top to bottom`).toBeLessThanOrEqual(b.h * 0.12);
-    if (m.deck) expect(m.done.x0 - m.done.w * 0.3, `${W}x${H}: Done's left gem stays clear of the deck pile`).toBeGreaterThanOrEqual(m.deck.x1 - 1);
+    expect(m.done.w, `${W}x${H}: big enough to tap`).toBeGreaterThanOrEqual(44);
+    expect(m.dc.img, 'Done is the painted done coin').toContain('/art/ui/match/done.webp');
+    expect(m.mc.img, 'Menu is the painted menu coin').toContain('/art/ui/match/menu.webp');
+    expect(m.dc.w, `${W}x${H}: the coin shows`).toBeGreaterThan(m.done.w * 0.6);
+    expect(Math.abs(m.dc.w - m.mc.w), 'the two coins match').toBeLessThanOrEqual(2);
+    expect([m.dtext, m.mtext], 'picture only: no word on screen').toEqual(['', '']);
+    expect([m.dt, m.mt], 'the word is the hover tooltip').toEqual(['Done', 'Menu']);
+    if (m.deck) expect(m.done.x0, `${W}x${H}: Done stays clear of the deck pile`).toBeGreaterThanOrEqual(m.deck.x1 - 1);
   }
 });
 
@@ -13240,82 +13280,90 @@ test.describe('AC520 phone touch', () => {
 const SORT_HAND = ['battle-cry', 'goblin-scrounger', 'wolf-rider', 'goblin-slinger', 'crystal-cluster', 'goblin-scrapper', 'goblin-smith-miner', 'fireball'];
 // Miners 0, melee fighters 1, ranged fighters 2, spells 3, crystals / other 4 (cards.json: role Gatherer/Smith, ability 'ranged')
 const SORT_KIND = { 'goblin-scrounger': 0, 'goblin-smith-miner': 0, 'wolf-rider': 1, 'goblin-scrapper': 1, 'goblin-pebbler': 1, 'goblin-grunt': 1, 'goblin-slinger': 2, 'battle-cry': 3, fireball: 3, 'crystal-cluster': 4, 'soul-shard': 4 };
-const sortHandCards = (page) => page.evaluate(() => [...document.querySelectorAll('.hand .hand-card:not(.popclone)')].map((e) => ({ uid: e.dataset.uid, id: e.dataset.cardId, cost: Number(e.dataset.cost) })));
-const sortExpected = (cards, mode) => cards.map((c, i) => ({ ...c, i })).sort((a, b) => (mode === 'type' ? SORT_KIND[a.id] - SORT_KIND[b.id] || b.cost - a.cost : mode === 'costAsc' ? a.cost - b.cost : b.cost - a.cost) || a.i - b.i).map((c) => c.uid);
+const sortHandCards = (page) => page.evaluate(() => [...document.querySelectorAll('.hand .hand-card:not(.popclone)')].map((e) => ({ uid: e.dataset.uid, id: e.dataset.cardId, cost: Number(e.dataset.cost), rarity: e.dataset.rarity || 'common' })));
+// Ken (Nov 1): By rarity = rarest first, then cost high to low
+const SORT_RARITY = { collector: 0, 'ultra-rare': 1, rare: 2, uncommon: 3, common: 4 };
+const sortExpected = (cards, mode) => cards.map((c, i) => ({ ...c, i })).sort((a, b) => (mode === 'type' ? SORT_KIND[a.id] - SORT_KIND[b.id] || b.cost - a.cost : mode === 'rarity' ? SORT_RARITY[a.rarity] - SORT_RARITY[b.rarity] || b.cost - a.cost : mode === 'costAsc' ? a.cost - b.cost : b.cost - a.cost) || a.i - b.i).map((c) => c.uid);
 const isSorted = (cards, mode) => {
   for (let k = 1; k < cards.length; k++) {
     const a = cards[k - 1], b = cards[k];
     if (mode === 'costDesc' && a.cost < b.cost) return false;
     if (mode === 'costAsc' && a.cost > b.cost) return false;
     if (mode === 'type' && (SORT_KIND[a.id] > SORT_KIND[b.id] || (SORT_KIND[a.id] === SORT_KIND[b.id] && a.cost < b.cost))) return false;
+    if (mode === 'rarity' && (SORT_RARITY[a.rarity] > SORT_RARITY[b.rarity] || (SORT_RARITY[a.rarity] === SORT_RARITY[b.rarity] && a.cost < b.cost))) return false;
   }
   return true;
 };
-const SORT_LABEL = { costDesc: 'By cost (high to low)', costAsc: 'By cost (low to high)', type: 'By type' };
+// owner check change (Ken, Nov 1: "three little icons down towards the bottom ... 3 buttons I can click. Instead of having them menu"): the three sorts are one-click coins
+const SORT_LABEL = { costDesc: 'By cost (high to low)', type: 'By type', rarity: 'By rarity' };
+const SORT_COIN = { costDesc: 'sort-cost', type: 'sort-type', rarity: 'sort-rarity' };
 const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-test('AC521: a silver Sort button sits just left of the hand (never over a card) and opens a drop-up with the three sorts', async ({ page }) => {
+test('AC521: three Sort coins (High-Low, Type, Rarity) stand in a little column hugging the bottom of the screen just left of the hand (never over a card); one click sorts and the coin in use shows its brighter coin', async ({ page }) => {
   test.setTimeout(90000);
   const errors = []; page.on('pageerror', (e) => errors.push(e.message));
   for (const [W, H] of [[1920, 1080], [844, 390]]) {
     await page.setViewportSize({ width: W, height: H });
     await start(page, quiet({ playerHand: SORT_HAND, playerCrystals: 6 }));
     await page.waitForTimeout(900);
-    const sb = page.getByRole('button', { name: 'Sort hand', exact: true });
-    await expect(sb, `${W}x${H}: the Sort button shows`).toBeVisible();
-    const b = await sb.boundingBox();
+    const sb = page.getByRole('group', { name: 'Sort hand', exact: true });
+    await expect(sb, `${W}x${H}: the Sort coins show`).toBeVisible();
+    await expect(sb.getByRole('button'), 'three coins, no drop-up').toHaveCount(3);
+    await expect(page.getByRole('group', { name: 'Sort hand choices', exact: true })).toHaveCount(0);
     const cards = await page.evaluate(() => [...document.querySelectorAll('.hand .hand-card:not(.popclone):not(.offhand)')].map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }));
     expect(cards.length).toBe(SORT_HAND.length);
     const firstLeft = Math.min(...cards.map((c) => c.x));
-    expect(b.x + b.width, `${W}x${H}: the button is left of the first card`).toBeLessThanOrEqual(firstLeft);
-    for (const c of cards) expect(overlaps(b, c), `${W}x${H}: the button never covers a card`).toBe(false);
-    expect(b.y + b.height, `${W}x${H}: fully on screen`).toBeLessThanOrEqual(H);
-    expect(b.x).toBeGreaterThanOrEqual(0);
-    expect(b.width, `${W}x${H}: big enough to tap`).toBeGreaterThanOrEqual(32);
-    // beside the hand: level with the cards' visible strip
     const strip = Math.min(...cards.map((c) => c.y));
-    expect(b.y + b.height / 2, `${W}x${H}: level with the hand`).toBeGreaterThan(strip);
-    // not over the Flow crystal's picture
     const gem = await page.locator('[data-role=player-flow-crystal]').boundingBox();
-    if (gem) expect(b.x, `${W}x${H}: right of the Flow crystal`).toBeGreaterThanOrEqual(gem.x + gem.width - 2);
-    // silver look: the same silver as the theme, a round medallion
-    const look = await sb.evaluate((e) => { const s = getComputedStyle(e); return { bg: s.backgroundImage, r: s.borderRadius }; });
-    expect(look.bg).toContain('conic-gradient');
-    expect(look.r).toBe('50%');
-    // click: a drop-up above the button with the three sorts
-    await sb.click();
-    const up = page.getByRole('group', { name: 'Sort hand choices', exact: true });
-    await expect(up).toBeVisible();
-    for (const l of Object.values(SORT_LABEL)) await expect(up.getByRole('button', { name: l, exact: true })).toBeVisible();
-    await expect(up.getByRole('button')).toHaveCount(3);
-    const ub = await up.boundingBox();
-    expect(ub.y + ub.height, `${W}x${H}: the drop-up opens upward`).toBeLessThanOrEqual(b.y + 2);
-    expect(ub.y, `${W}x${H}: the drop-up fits on screen`).toBeGreaterThanOrEqual(0);
-    expect(ub.x).toBeGreaterThanOrEqual(0);
-    expect(ub.x + ub.width).toBeLessThanOrEqual(W);
-    const frame = await up.getByRole('button', { name: 'By type', exact: true }).evaluate((e) => getComputedStyle(e).backgroundImage);
-    expect(frame, 'the fading frame (Ken, Nov 1), like the Done drop-up').toMatch(/linear-gradient/);
-    await expect(sb).toHaveAttribute('aria-expanded', 'true');
-    // a click elsewhere closes it, nothing changes
-    await page.mouse.click(W / 2, H * 0.35);
-    await expect(up).toBeHidden();
-    await expect(sb).toHaveAttribute('aria-expanded', 'false');
+    for (const mode of Object.keys(SORT_LABEL)) {
+      const coin = sb.getByRole('button', { name: SORT_LABEL[mode], exact: true });
+      await expect(coin).toBeVisible();
+      const b = await coin.boundingBox();
+      expect(b.x + b.width, `${W}x${H}: ${mode} is left of the first card`).toBeLessThanOrEqual(firstLeft);
+      for (const c of cards) expect(overlaps(b, c), `${W}x${H}: ${mode} never covers a card`).toBe(false);
+      expect(b.y + b.height, `${W}x${H}: fully on screen`).toBeLessThanOrEqual(H);
+      expect(b.x).toBeGreaterThanOrEqual(0);
+      expect(b.width, `${W}x${H}: big enough to tap`).toBeGreaterThanOrEqual(42);
+      expect(b.height, `${W}x${H}: big enough to tap`).toBeGreaterThanOrEqual(32);
+      if (gem) expect(b.x, `${W}x${H}: right of the Flow crystal`).toBeGreaterThanOrEqual(gem.x + gem.width - 2);
+      // Brush's painted coin, the name as the hover tooltip, no word on screen
+      const look = await coin.evaluate((e) => ({ src: e.querySelector('img:not(.hs-a)')?.getAttribute('src') || '', title: e.title, text: e.textContent.trim() }));
+      expect(look.src).toContain(`/art/ui/match/${SORT_COIN[mode]}.webp`);
+      expect(look.title, 'hover tooltip with the name').toMatch(/^Sort: /);
+      expect(look.text, 'picture only').toBe('');
+    }
+    // the three stand in one column, the last one hugging the bottom of the screen beside the hand
+    const bx = await sb.getByRole('button').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, b: r.bottom }; }));
+    expect(Math.max(...bx.map((q) => q.x)) - Math.min(...bx.map((q) => q.x)), 'one column').toBeLessThanOrEqual(2);
+    const low = bx[bx.length - 1];
+    expect(H - low.b, `${W}x${H}: hugging the bottom`).toBeLessThanOrEqual(8);
+    expect((low.y + low.b) / 2, `${W}x${H}: level with the hand`).toBeGreaterThan(strip);
+    // one click: the hand sorts, and that coin shows its -active picture at 125 % on the same centre
     await expect(sb).toHaveAttribute('data-sort', '');
-    // the button again closes it
-    await sb.click(); await expect(up).toBeVisible();
-    await sb.click(); await expect(up).toBeHidden();
+    const type = sb.getByRole('button', { name: SORT_LABEL.type, exact: true });
+    const c0 = await type.evaluate((e) => { const r = e.querySelector('.hs-c').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width }; });
+    await type.click();
+    await expect(sb).toHaveAttribute('data-sort', 'type');
+    await expect(type).toHaveAttribute('aria-pressed', 'true');
+    const a = await type.evaluate((e) => { const i = e.querySelector('.hs-a'); const r = i.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width, src: i.getAttribute('src'), shown: getComputedStyle(i).display !== 'none', plain: getComputedStyle(e.querySelector('.hs-c')).display !== 'none' }; });
+    expect(a.shown && !a.plain, 'the active coin replaces the plain one').toBe(true);
+    expect(a.src).toContain('/art/ui/match/sort-type-active.webp');
+    expect(Math.abs(a.w / c0.w - 1.25), `${W}x${H}: 125 % of the coin`).toBeLessThanOrEqual(0.03);
+    expect(Math.abs(a.x - c0.x) + Math.abs(a.y - c0.y), 'same centre').toBeLessThanOrEqual(1.5);
+    for (const o of ['costDesc', 'rarity']) await expect(sb.getByRole('button', { name: SORT_LABEL[o], exact: true })).toHaveAttribute('aria-pressed', 'false');
+    // clicking the coin in use again goes back to your own order
+    await type.click();
+    await expect(sb).toHaveAttribute('data-sort', '');
+    await expect(type).toHaveAttribute('aria-pressed', 'false');
   }
-  // keyboard: a real button; Enter opens with the first choice focused, Escape closes and returns to the button
+  // keyboard: real buttons; Enter on a focused coin sorts
   await page.setViewportSize({ width: 1920, height: 1080 });
-  const sb = page.getByRole('button', { name: 'Sort hand', exact: true });
-  await sb.focus();
+  const sb = page.getByRole('group', { name: 'Sort hand', exact: true });
+  const hi = sb.getByRole('button', { name: SORT_LABEL.costDesc, exact: true });
+  await hi.focus();
   await page.keyboard.press('Enter');
-  const up = page.getByRole('group', { name: 'Sort hand choices', exact: true });
-  await expect(up).toBeVisible();
-  await expect(up.getByRole('button', { name: SORT_LABEL.costDesc, exact: true })).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(up).toBeHidden();
-  await expect(sb).toBeFocused();
+  await expect(sb).toHaveAttribute('data-sort', 'costDesc');
+  await expect(hi).toBeFocused();
   expect(errors).toEqual([]);
 });
 
@@ -13329,24 +13377,20 @@ test('AC522: each sort orders the hand, stays on for drawn cards, and dragging a
   const engine0 = s0.players.player.hand.map((c) => c.uid);
   const before = await sortHandCards(page);
   expect(before.map((c) => c.uid), 'no sort chosen: the hand shows the game order').toEqual(engine0);
-  const sb = page.getByRole('button', { name: 'Sort hand', exact: true });
-  const up = page.getByRole('group', { name: 'Sort hand choices', exact: true });
-  for (const mode of ['costDesc', 'costAsc', 'type']) {
-    await sb.click();
-    await up.getByRole('button', { name: SORT_LABEL[mode], exact: true }).click();
-    await expect(up, 'choosing closes the drop-up').toBeHidden();
-    await expect(sb, 'the button shows which sort is on').toHaveAttribute('data-sort', mode);
+  const sb = page.getByRole('group', { name: 'Sort hand', exact: true });
+  for (const mode of ['costDesc', 'rarity', 'type']) {
+    await sb.getByRole('button', { name: SORT_LABEL[mode], exact: true }).click();
+    await expect(sb, 'the coins show which sort is on').toHaveAttribute('data-sort', mode);
     const now = await sortHandCards(page);
     expect(now.map((c) => c.uid), `${mode}: the hand is sorted (ties keep their order)`).toEqual(sortExpected(before, mode));
     expect(isSorted(now, mode)).toBe(true);
     // the game's own hand is untouched (display order only)
     expect((await getState(page)).players.player.hand.map((c) => c.uid)).toEqual(engine0);
-    await sb.click();
-    await expect(up.getByRole('button', { name: SORT_LABEL[mode], exact: true }), 'the chosen sort is marked').toHaveAttribute('aria-pressed', 'true');
-    for (const o of Object.keys(SORT_LABEL).filter((x) => x !== mode)) await expect(up.getByRole('button', { name: SORT_LABEL[o], exact: true })).toHaveAttribute('aria-pressed', 'false');
-    await page.keyboard.press('Escape');
-    await expect(up).toBeHidden();
+    await expect(sb.getByRole('button', { name: SORT_LABEL[mode], exact: true }), 'the chosen sort is marked').toHaveAttribute('aria-pressed', 'true');
+    for (const o of Object.keys(SORT_LABEL).filter((x) => x !== mode)) await expect(sb.getByRole('button', { name: SORT_LABEL[o], exact: true })).toHaveAttribute('aria-pressed', 'false');
   }
+  const rared = sortExpected(before, 'rarity').map((u) => before.find((c) => c.uid === u));
+  expect(SORT_RARITY[rared[0].rarity], 'By rarity: the rarest card first').toBeLessThanOrEqual(Math.min(...before.map((c) => SORT_RARITY[c.rarity])));
   const typed = (await sortHandCards(page)).map((c) => c.id);
   expect(typed.slice(0, 2).every((id) => SORT_KIND[id] === 0), 'Miners first').toBe(true);
   expect(typed[typed.length - 1], 'crystals last').toBe('crystal-cluster');
@@ -13386,28 +13430,19 @@ test('AC522: each sort orders the hand, stays on for drawn cards, and dragging a
   expect((await getState(page)).players.player.hand.map((c) => c.uid), 'the manual order is the game order, as before').toEqual(manual);
   expect(firstId).toBeTruthy();
   // the next drawn card no longer re-sorts the hand
-  await sb.click();
-  for (const l of Object.values(SORT_LABEL)) await expect(up.getByRole('button', { name: l, exact: true })).toHaveAttribute('aria-pressed', 'false');
-  await page.keyboard.press('Escape');
+  for (const l of Object.values(SORT_LABEL)) await expect(sb.getByRole('button', { name: l, exact: true })).toHaveAttribute('aria-pressed', 'false');
   expect(errors).toEqual([]);
 });
 
-test('AC523: on a phone (touch) the Sort button and its choices work by tap, and the cards glide to their new places', async ({ browser }) => {
+test('AC523: on a phone (touch) the Sort coins work by tap, and the cards glide to their new places', async ({ browser }) => {
   test.setTimeout(90000);
   const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
   const page = await ctx.newPage();
   const errors = []; page.on('pageerror', (e) => errors.push(e.message));
   await start(page, quiet({ playerHand: SORT_HAND, playerCrystals: 6 }));
   await page.waitForTimeout(900);
-  const sb = page.getByRole('button', { name: 'Sort hand', exact: true });
-  const up = page.getByRole('group', { name: 'Sort hand choices', exact: true });
-  await sb.tap();
-  await expect(up).toBeVisible();
-  // a tap elsewhere closes it
-  await page.touchscreen.tap(422, 60);
-  await expect(up).toBeHidden();
-  await sb.tap();
-  await expect(up).toBeVisible();
+  const sb = page.getByRole('group', { name: 'Sort hand', exact: true });
+  await expect(sb).toBeVisible();
   const before = await sortHandCards(page);
   // log the hand's glide animations (kept so they can be scrubbed after they finish)
   await page.evaluate(() => {
@@ -13416,16 +13451,15 @@ test('AC523: on a phone (touch) the Sort button and its choices work by tap, and
     Element.prototype.animate = function (...a) { const an = orig.apply(this, a); if (this.classList && this.classList.contains('hand-card')) window.__sortAnims.push({ el: this, an }); return an; };
   });
   const lefts0 = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.hand .hand-card:not(.popclone)')].map((e) => [e.dataset.uid, parseFloat(getComputedStyle(e).left)])));
-  await up.getByRole('button', { name: SORT_LABEL.costAsc, exact: true }).tap();
-  await expect(up).toBeHidden();
-  await expect(sb).toHaveAttribute('data-sort', 'costAsc');
-  expect((await sortHandCards(page)).map((c) => c.uid)).toEqual(sortExpected(before, 'costAsc'));
+  await sb.getByRole('button', { name: SORT_LABEL.type, exact: true }).tap();
+  await expect(sb).toHaveAttribute('data-sort', 'type');
+  expect((await sortHandCards(page)).map((c) => c.uid)).toEqual(sortExpected(before, 'type'));
   // the cards move through in-between places: scrub each glide and read the card's left edge at its start, middle and end
   const glides = await page.evaluate((l0) => (window.__sortAnims || []).map(({ el, an }) => {
-    const d = Number(an.effect.getComputedTiming().duration) || 0;
+    const tm = an.effect.getComputedTiming(), d = Number(tm.duration) || 0, dl = Number(tm.delay) || 0; // a staggered glide starts after its delay
     an.pause();
     const at = (t) => { an.currentTime = t; return parseFloat(getComputedStyle(el).left); };
-    const r = { uid: el.dataset.uid, d, from: l0[el.dataset.uid], a: at(0), m: at(d / 2), b: at(d) };
+    const r = { uid: el.dataset.uid, d, from: l0[el.dataset.uid], a: at(0), m: at(dl + d / 2), b: at(dl + d) };
     an.finish();
     r.end = parseFloat(getComputedStyle(el).left);
     return r;
@@ -13437,13 +13471,11 @@ test('AC523: on a phone (touch) the Sort button and its choices work by tap, and
     expect(Math.abs(g.a - g.from), 'it starts where the card was').toBeLessThan(3);
     expect(Math.abs(g.b - g.end), 'it ends at the new place').toBeLessThan(3);
     const lo = Math.min(g.a, g.end), hi = Math.max(g.a, g.end);
-    if (hi - lo > 8) { expect(g.m, 'half way it is in between').toBeGreaterThan(lo + 2); expect(g.m).toBeLessThan(hi - 2); }
+    if (hi - lo > 8) { const mg = Math.min(2, (hi - lo) * 0.05); expect(g.m, 'half way it is in between (the glide eases out)').toBeGreaterThan(lo + mg); expect(g.m).toBeLessThan(hi - mg); }
   }
   // also with real frames: right after a new sort, a card is seen somewhere between its old and new place
   const seen = await page.evaluate(async () => {
-    const sbt = document.querySelector('.hand-sort-btn');
-    sbt.click();
-    const item = [...document.querySelectorAll('.hand-sort-up button')].find((b) => b.textContent.includes('high to low'));
+    const item = document.querySelector('.hand-sorts .hs-coin[data-sort="costDesc"]');
     const old = Object.fromEntries([...document.querySelectorAll('.hand .hand-card:not(.popclone)')].map((e) => [e.dataset.uid, parseFloat(getComputedStyle(e).left)]));
     item.click();
     const samples = [];
@@ -14072,14 +14104,19 @@ test('AC554: seconds not used in a timed phase carry into the next one (capped a
     a.deadline = Date.now() + 35000; // 35 s left of the deploy phase
     o.act(o.legalActions().find((x) => x.type === 'done')); await wait(1500);
     const bank = a.timeBank, left1 = Math.round((a.deadline - Date.now()) / 1000), note = document.querySelector('.ph-bank')?.textContent || '';
+    const tb = document.querySelector('.turn-bar'), chip = tb?.querySelector('.tb-bank b')?.textContent || '', chipShown = !!tb && !tb.querySelector('.tb-bank').hidden, banking = tb?.dataset.bank;
     a.deadline = Date.now() + 500; await wait(1800); // this phase runs out
-    return { left0, bank, left1, note, bankAfterTimeout: a.timeBank };
+    return { left0, bank, left1, note, chip, chipShown, banking, bankAfterTimeout: a.timeBank };
   });
   expect(r.left0).toBeGreaterThanOrEqual(118);
   expect(r.bank, '35 s banked').toBeGreaterThanOrEqual(33);
   expect(r.bank).toBeLessThanOrEqual(35);
   expect(r.left1, '120 s plus the bank').toBeGreaterThanOrEqual(150);
   expect(r.note, 'the small note').toMatch(/^\+0:3[0-5]$/);
+  // owner check change (Ken, Nov 1): banked time shows clearly on the top bar while it is in use
+  expect(r.chipShown, 'the bank chip on the bar').toBe(true);
+  expect(r.chip).toMatch(/^\+0:3[0-5]$/);
+  expect(r.banking).toBe('true');
   expect(r.bankAfterTimeout, 'running out banks nothing').toBe(0);
   const capped = await page.evaluate(async () => {
     const a = window.__app, o = window.oreheart; await new Promise((res) => setTimeout(res, 500));
