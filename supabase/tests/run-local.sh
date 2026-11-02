@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs the Phase A database tests on a throwaway local PostgreSQL (no Docker, no Supabase).
+# Runs the Phase A, B and C database tests on a throwaway local PostgreSQL (no Docker, no Supabase).
 # Usage: PG_BIN=/path/to/postgres/bin bash supabase/tests/run-local.sh
 # Uses the local shim to stand in for Supabase's auth schema. The factory instead
 # runs run-supabase.sh against a real local Supabase (supabase start).
@@ -24,3 +24,6 @@ echo "seed: seed.sql"
 "${psql[@]}" -f "$root/seed.sql"
 echo "tests:"
 "${psql[@]}" -f "$here/phase_a_security.test.sql"
+"${psql[@]}" -f "$here/phase_bc_economy.test.sql"
+"${psql[@]}" -f "$here/phase_bc_quests.test.sql"
+"${psql[@]}" -f "$here/phase_bc_pvp.test.sql"
