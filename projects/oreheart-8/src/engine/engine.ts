@@ -475,10 +475,10 @@ function defeat(s: any, c: any, ev: any[]) {
   ev.push({ type: 'defeat', uid: c.uid, cardId: c.cardId, owner: c.owner, row: c.row, col: c.col });
   if (has(c, 'deathKnock')) for (const o of [...s.board.creatures]) if (cheb(o, c) === 1) knockAway(s, c, o, 1, ev);
   if (has(c, 'kaboom1')) {
-    for (const o of [...s.board.creatures]) if (o.owner !== c.owner && cheb(o, c) === 1) dealDamage(s, o, 1, ev);
+    for (const o of [...s.board.creatures]) if (o.uid !== c.uid /* Ken, Nov 1: friend or foe */ && cheb(o, c) === 1) dealDamage(s, o, 1, ev);
   }
   if (has(c, 'kaboom')) {
-    for (const o of [...s.board.creatures]) if (o.owner !== c.owner && cheb(o, c) === 1) dealDamage(s, o, CONFIG.kaboomDamage, ev);
+    for (const o of [...s.board.creatures]) if (o.uid !== c.uid && cheb(o, c) === 1) dealDamage(s, o, CONFIG.kaboomDamage, ev); // Ken, Nov 1: the blast hits every adjacent unit, friend or foe
   }
   if (minerDraw) drawCard(s, c.owner, ev);
 }
@@ -491,23 +491,27 @@ function defeat(s: any, c: any, ev: any[]) {
 export const COMBAT = (): any => CONFIG.combat || {};
 const d6 = (s: any) => rint(s, 1, 6);
 export const hitChance = (): number => (COMBAT().dice === 'sure' ? 1 : (7 - (COMBAT().hitFrom ?? 3)) / 6);
-const blockFacesOf = (c: any): number[] => {
-  if (COMBAT().dice === 'sure') return [];
-  const f: number[] = COMBAT().blockFaces || [1, 6];
-  const x = COMBAT().armoredExtraFace;
-  return x && (has(c, 'armored') || has(c, 'riotShield')) ? [...f, x] : f;
+const blockFacesOf = (_c: any): number[] => (COMBAT().dice === 'sure' ? [] : COMBAT().blockFaces || [6]);
+/** Block dice one landed hit faces (Combat v3, Ken, Nov 1): the defender's current Health, at most blockCap; a unit of cost bigUnitCost or more rolls bigUnitDice whatever its Health; Armored and Riot Shield roll one extra die, at most armoredCap. */
+export const blockDiceFor = (c: any, health: number): number => {
+  const K = COMBAT(), card = CARDS[c.cardId] || {};
+  let n = Math.max(0, Math.min(K.blockCap ?? 2, health));
+  if (K.bigUnitCost != null && (card.cost ?? 0) >= K.bigUnitCost) n = Math.min(n, K.bigUnitDice ?? 1);
+  if (n > 0 && (has(c, 'armored') || has(c, 'riotShield'))) n = Math.min(K.armoredCap ?? 3, n + (K.armoredExtraDie ?? 1));
+  return n;
 };
-/** Block dice one landed hit faces: the defender's current Health, at most blockCap. */
-export const blockDiceOf = (c: any): number => Math.max(0, Math.min(COMBAT().blockCap ?? 3, c.health));
+export const blockDiceOf = (c: any): number => blockDiceFor(c, c.health);
 /** Chance one landed hit is blocked by a defender at this Health. */
 export function blockChance(c: any, health = c.health): number {
-  const n = Math.max(0, Math.min(COMBAT().blockCap ?? 3, health)), p = blockFacesOf(c).length / 6;
+  const n = blockDiceFor(c, health), p = blockFacesOf(c).length / 6;
   return 1 - Math.pow(1 - p, n);
 }
+/** Chance a Commander blocks one landed hit (Ken, Nov 1: one die, a 6 blocks). */
+export const commanderBlockChance = (): number => { const K = COMBAT(); if (K.dice === 'sure') return 0; const n = K.commanderBlockDice ?? 0, p = (K.blockFaces || [6]).length / 6; return n ? 1 - Math.pow(1 - p, n) : 0; };
 /** Exact odds of `n` swings at `def` (null = a Commander): expected damage and the chance the target drops to 0, with the dice shrinking as Health drops. */
 export function swingOdds(n: number, def: any | null): { deal: number; kill: number } {
   const ph = hitChance();
-  if (!def) return { deal: n * ph, kill: 0 };
+  if (!def) return { deal: n * ph * (1 - commanderBlockChance()), kill: 0 };
   // state: (Health left, hits still soaked by Shield X and Bulwark bubbles); a soaked hit costs no Health, the dice stay at the Health
   const ab0 = Math.max(0, def.shield || 0) + Math.max(0, def.bubbles || (def.bubble ? 1 : 0));
   const K = (hp: number, ab: number) => hp * 64 + ab;
@@ -621,8 +625,9 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   if (target.commander) {
     const n = atkValue(s, attacker), sq = stronghold(target.commander);
     ev.push({ type: 'attack', uid: attacker.uid, from: { row: attacker.row, col: attacker.col }, target: { commander: target.commander } });
-    let d = 0; // v2: swings at a Commander still roll to hit; Commanders never block
-    for (let i = 0; i < n; i++) { const hit = COMBAT().dice === 'sure' || d6(s) >= (COMBAT().hitFrom ?? 3); ev.push({ type: 'swing', uid: attacker.uid, commander: target.commander, row: sq.row, col: sq.col, result: hit ? 'hit' : 'miss', n: i + 1, of: n, tag: 'attack' }); if (hit) d++; }
+    let d = 0; // v3 (Ken, Nov 1): swings at a Commander roll to hit, and the Commander rolls commanderBlockDice: a 6 blocks
+    const cmdDice = COMBAT().dice === 'sure' ? 0 : (COMBAT().commanderBlockDice ?? 0), cmdFaces = blockFacesOf(null);
+    for (let i = 0; i < n; i++) { const hit = COMBAT().dice === 'sure' || d6(s) >= (COMBAT().hitFrom ?? 3); let result: string = hit ? 'hit' : 'miss'; if (hit && cmdDice) { let blocked = false; for (let k = 0; k < cmdDice && !blocked; k++) if (cmdFaces.includes(d6(s))) blocked = true; if (blocked) result = 'block'; } ev.push({ type: 'swing', uid: attacker.uid, commander: target.commander, row: sq.row, col: sq.col, result, dice: cmdDice, n: i + 1, of: n, tag: 'attack' }); if (result === 'hit') d++; }
     if (d > 0) damageCommander(s, target.commander, d, ev);
     return;
   }
@@ -699,9 +704,9 @@ export function abilityActions(s: any, who: Side): any[] {
   }
   return out;
 }
-function blastAround(s: any, c: any, dmg: number, ev: any[]) {
+function blastAround(s: any, c: any, dmg: number, ev: any[]) { // Ken, Nov 1: "it is a bomb": the blast hits every unit in its area, friend, foe and the rider himself (it can kill him); the enemy Commander beside it too
   const foe = other(c.owner);
-  for (const o of [...s.board.creatures]) if (o.owner === foe && cheb(o, c) <= 1) dealDamage(s, o, dmg, ev);
+  for (const o of [...s.board.creatures]) if (cheb(o, c) <= 1) dealDamage(s, o, dmg, ev);
   if (!s.winner && cheb(c, stronghold(foe)) <= 1) damageCommander(s, foe, dmg, ev);
 }
 function runAbility(s: any, l: any, who: Side, ev: any[]) {
@@ -1090,7 +1095,7 @@ export function legalActions(s: any): any[] {
   for (const h of pl.hand) {
     const card = CARDS[h.cardId];
     if (card.type === 'creature' && ph === 'deploy') {
-      if (upgradeCard(card) && funds(pl) >= baseCost(s, who, card)) for (const c of s.board.creatures) if (c.owner === who) out.push({ type: 'minerUpgrade', uid: h.uid, creatureUid: c.uid });
+      if (upgradeCard(card) && funds(pl) >= baseCost(s, who, card)) for (const c of s.board.creatures) if (c.owner === who && (c.upgradeCount || 0) < (CONFIG.upgradeCap ?? 3)) out.push({ type: 'minerUpgrade', uid: h.uid, creatureUid: c.uid }); // Ken, Nov 1: at most 3 upgrade cards per creature
       if (!canPayCreature(pl, card.faction, creatureCost(s, who, card))) continue;
       if (card.unique && s.board.creatures.some((c: any) => c.owner === who && c.cardId === card.id)) continue;
       for (const sp of summonSpaces(s, who, card)) out.push({ type: 'summon', uid: h.uid, row: sp.row, col: sp.col });
@@ -1317,7 +1322,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       if (s.flags.discount[who]) s.flags.discount[who] = 0;
       pl.discard.push(h);
       const atk = card.role === 'Smith' ? 1 : 0;
-      c.upgrades.attack += atk; c.upgrades.health += 1;
+      c.upgrades.attack += atk; c.upgrades.health += 1; c.upgradeCount = (c.upgradeCount || 0) + 1;
       c.attack += atk; c.maxHealth += 1; c.health += 1;
       ev.push({ type: 'minerUpgrade', uid: c.uid, cardId: card.id, attack: atk, health: 1, row: c.row, col: c.col });
       break;

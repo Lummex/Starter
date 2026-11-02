@@ -199,8 +199,8 @@
    "rocket"
   ],
   "unique": false,
-  "text": "Light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's attack. Then it makes one attack.",
-  "shortText": "Ride a rocket to any space: it explodes in a 3x3 area for damage equal to this card's Attack, then makes one attack.",
+  "text": "Light a rocket and ride it to any space on the field. It explodes in a 3x3 area, hitting every unit there, friend, foe and himself, for damage equal to this card's attack (buffs count half). Then it makes one attack.",
+  "shortText": "Ride a rocket to any space: it explodes in a 3x3 area, hitting every unit there (himself too) for its Attack, then makes one attack.",
   "longText": "Fighter creature. Cost 3, Attack 1, Health 4, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Rocket Ride: light a rocket and ride it to any space on the field. It explodes in a 3x3 area, dealing damage equal to this card's Attack. Then it makes one attack.",
   "flavor": "Goblin with the short fuse.",
   "artPos": {
@@ -305,9 +305,9 @@
    "armored"
   ],
   "unique": false,
-  "text": "Armored: blocks on a 1, 2 or 6.",
-  "shortText": "Armored: blocks on a 1, 2 or 6.",
-  "longText": "Fighter creature. Cost 5, Attack 3, Health 5, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Armored: blocks on a 1, 2 or 6. Example: A 3-damage hit only deals 2.",
+  "text": "Armored: rolls one extra block die (3 at most).",
+  "shortText": "Armored: rolls one extra block die (3 at most).",
+  "longText": "Fighter creature. Cost 5, Attack 3, Health 5, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Armored: rolls one extra block die (3 at most). Example: A 3-damage hit only deals 2.",
   "artPos": {
    "s": 0.95,
    "x": -1.9,
@@ -1272,9 +1272,9 @@
    "slide"
   ],
   "unique": false,
-  "text": "Ka-boom: 1 damage to adjacent enemies when defeated (upgrades make the blast stronger too). Pay 1 crystal: he runs in a straight or diagonal line until he hits something, then explodes.",
-  "shortText": "Ka-boom: 1 damage to adjacent enemies when defeated. Pay 1: he runs in a straight line until he hits something, then explodes.",
-  "longText": "Fighter creature. Cost 2, Attack 2, Health 1, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ka-boom: 1 damage to adjacent enemies when defeated (upgrades make the blast stronger too). Pay 1 crystal: he runs in a straight or diagonal line until he hits something, then explodes.",
+  "text": "Ka-boom: 1 damage to every adjacent unit, friend or foe, when defeated (upgrades make the blast stronger too). Pay 1 crystal: he runs in a straight or diagonal line until he hits something, then explodes.",
+  "shortText": "Ka-boom: 1 damage to every adjacent unit, friend or foe, when defeated. Pay 1: he runs in a straight line until he hits something, then explodes.",
+  "longText": "Fighter creature. Cost 2, Attack 2, Health 1, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ka-boom: 1 damage to every adjacent unit, friend or foe, when defeated (upgrades make the blast stronger too). Pay 1 crystal: he runs in a straight or diagonal line until he hits something, then explodes.",
   "flavor": "A crazed zealot, happy to go out with a bang for the cause.",
   "artPos": {
    "s": 1.34,

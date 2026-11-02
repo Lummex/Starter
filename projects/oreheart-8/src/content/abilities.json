@@ -37,7 +37,7 @@
  },
  "armored": {
   "name": "Armored",
-  "text": "Blocks on a 1, 2 or 6 (others block only on a 1 or 6)."
+  "text": "Rolls one extra block die (3 at most)."
  },
  "blink": {
   "name": "Blink",
@@ -89,7 +89,7 @@
  },
  "kaboom1": {
   "name": "Ka-boom 1",
-  "text": "When defeated, deals 1 damage to every adjacent enemy creature."
+  "text": "When defeated, deals 1 damage to every adjacent creature, friend or foe."
  },
  "junkBoost": {
   "name": "Junk Boost",
@@ -109,6 +109,6 @@
  },
  "riotShield": {
   "name": "Riot Shield",
-  "text": "Enemies next to it must attack it first. It blocks on a 1, 2 or 6, and nothing can knock it back, bowl it, lift it or shove it."
+  "text": "Enemies next to it must attack it first. It rolls one extra block die (3 at most), and nothing can knock it back, bowl it, lift it or shove it."
  }
 }

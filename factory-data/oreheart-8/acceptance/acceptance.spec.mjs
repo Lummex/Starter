@@ -8390,6 +8390,7 @@ test('AC296: Goblin Rocket Rider rides to any space, explodes 3x3 for its Attack
   expect(at(s, 3, 9).health).toBe(hp - 1);
   expect(at(s, 3, 10).health).toBe(hp - 1);
   expect(at(s, 1, 9).health).toBe(far);
+  expect(at(s, 4, 9).health, 'Ken, Nov 1: the rider is in his own blast').toBe(at(s, 4, 9).maxHealth - 1);
   expect((await act(page, { type: 'attack', creatureUid: at(s, 4, 9).uid, target: { row: 3, col: 9 } })).ok).toBe(true);
   expect((await page.evaluate(async () => await window.oreheart.getCard('shard-guzzler'))).role).toBe('fighter'); // Round 14: owner made it a Fighter
 });
@@ -14218,16 +14219,16 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
 const v2MatchV2 = (page, board, extra = {}) => page.evaluate(([board, extra]) => { window.oreheart.setCombatRules({ dice: 'roll', blockFaces: [1, 6], hitFrom: 3, blockCap: 3, armoredExtraFace: 2 }); return window.oreheart.newMatch({ ai: false, skipMulligan: true, factionLock: false, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [], ...extra } }); }, [board, extra]);
 const toActionV2 = (page) => page.evaluate(() => { const o = window.oreheart; const d = o.legalActions().find((x) => x.type === 'done'); if (d) o.act(d); return o.getState(); });
 const unitOfV2 = (s, id, owner = 'player') => s.board.creatures.find((c) => c.cardId === id && c.owner === owner);
-test('AC559: Attack N = N swings; each swing rolls to hit (about 2 in 3); every hit faces block dice = current Health, at most 3, blocked by a 1 or 6; a Commander never blocks; the block faces are one config value', async ({ page }) => {
+test('AC559: Attack N = N swings; each swing rolls to hit (2-6, about 5 in 6); every hit faces block dice = current Health, at most 2 (walls +1), blocked by a 6; a Commander rolls one block die; the block faces are one config value', async ({ page }) => {
   test.setTimeout(120000);
   await page.goto('/?test=1&seed=3');
   await page.waitForFunction(() => !!window.oreheart);
-  expect((await page.evaluate(() => window.oreheart.getCombatRules())).blockFaces, 'the knob').toEqual([1, 6]);
+  expect((await page.evaluate(() => window.oreheart.getCombatRules())).blockFaces, 'the knob').toEqual([6]); // Combat v3 (Nov 1)
   let swings = 0, hits = 0, blocks = 0, dice = [], cmdBlocks = 0, cmdSwings = 0;
   for (let seed = 1; seed <= 36; seed++) {
     await page.evaluate((seed) => window.oreheart.setSeed && window.oreheart.setSeed(seed), seed);
     const board = [{ cardId: 'goblin-grunt', owner: 'player', row: 4, col: 6 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 4, col: 7 }, { cardId: 'wolf-rider', owner: 'player', row: 2, col: 11 }]; // beside the enemy Stronghold (1,12)
-    await page.evaluate(([board, seed]) => { window.oreheart.setCombatRules({ dice: 'roll', blockFaces: [1, 6] }); return window.oreheart.newMatch({ ai: false, skipMulligan: true, seed, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [] } }); }, [board, seed]);
+    await page.evaluate(([board, seed]) => { window.oreheart.setCombatRules({ dice: 'roll', blockFaces: [6] }); return window.oreheart.newMatch({ ai: false, skipMulligan: true, seed, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [] } }); }, [board, seed]);
     await toActionV2(page);
     const r = await page.evaluate(() => { const o = window.oreheart; const s = o.getState(); const g = s.board.creatures.find((c) => c.cardId === 'goblin-grunt'); const a = o.legalActions().find((x) => x.type === 'attack' && x.creatureUid === g.uid && !x.target.commander); const r1 = o.act(a);
       const w = s.board.creatures.find((c) => c.cardId === 'wolf-rider'); const b = o.legalActions().find((x) => x.type === 'attack' && x.creatureUid === w.uid && x.target.commander); const r2 = b ? o.act(b) : { events: [] }; return { e1: r1.events.filter((e) => e.type === 'swing' && e.tag === 'attack'), e2: r2.events.filter((e) => e.type === 'swing') }; });
@@ -14236,12 +14237,13 @@ test('AC559: Attack N = N swings; each swing rolls to hit (about 2 in 3); every 
     expect(r.e2.length, 'the wolf (Attack 3) swings 3 times at the Commander').toBe(3);
     for (const e of r.e2) { cmdSwings++; if (e.result === 'block') cmdBlocks++; }
   }
-  expect(hits / swings, `hit about 2 in 3 (${hits}/${swings})`).toBeGreaterThan(0.45);
-  expect(hits / swings).toBeLessThan(0.85);
+  expect(hits / swings, `hit about 5 in 6 (${hits}/${swings})`).toBeGreaterThan(0.68);
+  expect(hits / swings).toBeLessThan(0.97);
   expect(blocks, 'some hits are blocked').toBeGreaterThan(3);
-  expect(blocks / hits, `about 42 % of hits blocked at 3 dice (${blocks}/${hits})`).toBeLessThan(0.7);
+  expect(blocks / hits, `about 31 % of hits blocked at 2 dice (${blocks}/${hits})`).toBeLessThan(0.6);
   expect(Math.max(...dice), 'never more than 3 block dice').toBeLessThanOrEqual(3);
-  expect(cmdBlocks, 'a Commander never blocks').toBe(0);
+  expect(cmdBlocks, 'a Commander blocks on a 6 now and then (Nov 1)').toBeGreaterThan(0);
+  expect(cmdBlocks / Math.max(1, cmdSwings)).toBeLessThan(0.4);
   expect(cmdSwings).toBe(108);
   // the one knob: blocks only on a 6
   await page.evaluate(() => window.oreheart.setCombatRules({ blockFaces: [6] }));

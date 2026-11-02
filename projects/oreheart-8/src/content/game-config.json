@@ -91,19 +91,22 @@
  "rangedRange": 7,
  "plunderFlow": 3,
  "combat": {
-  "_note": "Combat v2 (Ken, Nov 1): Attack = swings, each a d6 that hits on hitFrom or more; each landed hit is blocked when any of the defender's block dice (= current Health, at most blockCap) shows a blockFaces number; Armored and Riot Shield also block on armoredExtraFace; Commanders never block; dice 'sure' = every swing lands (test pages only). Change blockFaces to [6] for 6-only blocks.",
+  "_note": "Combat v3 (Ken, Nov 1): Attack = swings, each a d6 that hits on hitFrom or more (2-6 hits, only a 1 misses). Each landed hit is blocked when any of the defender's block dice shows a blockFaces number (a 6): dice = current Health, at most blockCap (2); a unit of cost bigUnitCost (7) or more always rolls bigUnitDice (1); Armored and Riot Shield roll armoredExtraDie (1) more, at most armoredCap (3). Commanders roll commanderBlockDice (1). dice 'sure' = tests: every swing hits, nothing blocks.",
   "dice": "roll",
-  "hitFrom": 3,
+  "hitFrom": 2,
   "blockFaces": [
-   1,
    6
   ],
-  "blockCap": 3,
-  "armoredExtraFace": 2,
+  "blockCap": 2,
   "strikeBackRolls": true,
   "afterAttack": "end",
   "swingPauseMs": 500,
-  "_pauseNote": "Ken, Nov 1: milliseconds of pause before every swing (attacks, strike-backs, ranged shots, the computer's too); the hit / miss / block sound and sticker come only when the swing lands."
+  "_pauseNote": "Ken, Nov 1: milliseconds of pause before every swing (attacks, strike-backs, ranged shots, the computer's too); the hit / miss / block sound and sticker come only when the swing lands.",
+  "armoredExtraDie": 1,
+  "armoredCap": 3,
+  "bigUnitCost": 7,
+  "bigUnitDice": 1,
+  "commanderBlockDice": 1
  },
  "costFormula": {
   "_note": "Ken, Nov 1: cost = Attack + Health + ability bonus, halved and rounded up; above halfUpTo it climbs overPer per point from overBase; cap, min. Bonus: bigBonus for a big ability, smallBonus for any other, 0 for Miner abilities; only the biggest counts. A card's costOverride (in cards.json) wins over the formula. See src/engine/cost.ts and tools/gen-costs.py.",
@@ -136,5 +139,7 @@
   "else": 5,
   "miner": 1
  },
- "wallMove": 2
+ "wallMove": 2,
+ "upgradeCap": 3,
+ "_upgradeNote": "Ken, Nov 1: a creature takes at most upgradeCap Miner-card upgrades (basic or Smith); spells and auras don't count."
 }

@@ -473,6 +473,7 @@ const _embV = new THREE.Vector3();
   /** Ken, Nov 1: "for each swing I'd like it to play the animation, so you can see the hit and the miss": one attack animation, sound and result per swing, this far apart */
   const SWING_PAUSE = Number((CONFIG as any).combat?.swingPauseMs ?? 500); // Ken, Nov 1: "give them a half second before each attack": a pause before every swing, results only when the swing lands
   const SWING_MS = 640 + SWING_PAUSE; // one swing: the pause, then the clip; the result (sound, sticker) at the moment it lands
+  const RING_FLAT = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
   const RIDE_MS = 1900; // Rocket Rider flight (every move, and the Rocket Ride): launch, a high arc, a nosedive, a crash
   const FLY_H = 2.5; // Ken, Nov 1: "flying twenty, thirty feet in the air": as high as the board camera keeps on screen (about two and a half unit heights; 4.6 went off the top at 1920x1080)
   /** Ken, Nov 1: the rider never walks. Every move is a flight: fire out of the rocket, a smoke trail that lingers and fades, and a comic crash down (flash, smoke ring, stars, a shake, a squash). The move rules are untouched; this is only how it looks. */
@@ -1749,7 +1750,7 @@ const _embV = new THREE.Vector3();
       { // Ken (Oct 30): the ring sits on the square, not on the model. Oct 31: the ring is looked up once, not searched through the whole model every frame
         if (f.ringObj && !f.ringObj.parent) f.ringObj = null;
         const ring = f.ringObj || (f.ringObj = g.getObjectByName('acting-ring') || null);
-        if (ring) ring.position.y = (0.04 - g.position.y) / (f.baseScale || 1);
+        if (ring) { ring.position.y = (0.04 - g.position.y) / (f.baseScale || 1); ring.quaternion.copy(g.quaternion).invert().multiply(RING_FLAT); } // Ken, Nov 1: the ring stays flat on the board under a flyer, like a shadow
       }
       const p = f.parts;
       if (f.finished && p) {
