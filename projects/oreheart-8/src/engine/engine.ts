@@ -1583,7 +1583,7 @@ export function applyAction(state: any, action: any): { ok: boolean; state: any;
 export function isActed(s: any, c: any): boolean {
   return c.hasAttacked || c.hasMined || (c.movesLeft ?? 1) < 1 || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) || s.turn < c.lockedUntil; // v2: grey only at 0 points or after the attack
 }
-/** v2: every square reachable in at most m steps over empty squares (a flyer passes over units); your own units at any reached distance are swaps. */
+/** v2: every square reachable in at most m steps over empty squares (a flyer passes over units; anyone walks through their own units, never through enemies); your own units at any reached distance are swaps. */
 function v2MoveDests(s: any, c: any, m: number) {
   const out: any[] = []; const seen = new Set<string>([c.row + ',' + c.col]);
   let frontier = [{ row: c.row, col: c.col }];
@@ -1594,7 +1594,7 @@ function v2MoveDests(s: any, c: any, m: number) {
       if (seen.has(k) || !inBounds(row, col)) continue;
       const there = creatureAt(s, row, col);
       if (emptyCell(s, row, col)) { seen.add(k); out.push({ row, col }); next.push({ row, col }); }
-      else if (there && there.owner === c.owner) { seen.add(k); out.push({ row, col }); if (has(c, 'flying')) next.push({ row, col }); }
+      else if (there && there.owner === c.owner) { seen.add(k); out.push({ row, col }); next.push({ row, col }); } // Ken, Nov 1: you may walk through your own units (never stop on one except to swap), never through enemies
       else if (there && has(c, 'flying')) { seen.add(k); next.push({ row, col }); }
     }
     frontier = next;

@@ -74,13 +74,13 @@ function dense(p: V[], per = 10): V[] {
   return out;
 }
 /** a pen stroke along a flat-space polyline: a polygon whose width follows the hand (eases in and out, a little heavier mid-stroke), squashed onto the board */
-function pen(poly: V[], w: number, k: number, ph: number, press = 0.2): string {
+function pen(poly: V[], w: number, k: number, ph: number, press = 0.2, lo = 0.3): string {
   const n = poly.length; if (n < 2) return '';
   const len: number[] = [0]; for (let i = 1; i < n; i++) len.push(len[i - 1] + Math.hypot(poly[i].x - poly[i - 1].x, poly[i].y - poly[i - 1].y));
   const L = len[n - 1] || 1, A: string[] = [], B: string[] = [];
   for (let i = 0; i < n; i++) {
     const a = poly[Math.max(0, i - 1)], b = poly[Math.min(n - 1, i + 1)], dx = b.x - a.x, dy = b.y - a.y, m = Math.hypot(dx, dy) || 1, t = len[i] / L;
-    const wt = w * (0.3 + 0.7 * smoothstep(t / 0.1)) * (0.3 + 0.7 * smoothstep((1 - t) / 0.16)) * (1 + press * Math.sin(t * Math.PI * 1.6 + ph)) / 2;
+    const wt = w * (lo + (1 - lo) * smoothstep(t / 0.1)) * (lo + (1 - lo) * smoothstep((1 - t) / 0.16)) * (1 + press * Math.sin(t * Math.PI * 1.6 + ph)) / 2;
     A.push(`${f(poly[i].x - (dy / m) * wt)},${f((poly[i].y + (dx / m) * wt) * k)}`); B.push(`${f(poly[i].x + (dy / m) * wt)},${f((poly[i].y - (dx / m) * wt) * k)}`);
   }
   return `M${A.join(' L')} L${B.reverse().join(' L')}Z`;
@@ -129,9 +129,14 @@ export function orderSvg(d: OrderDrawing): string {
   if (route.length >= 2) {
     polys.push(pen(route, w, k, ph, 0.25));
     // the arrowhead: back out through the tip in one go (a V that crosses its own line), flat on the board
-    const tip = route[route.length - 1], back = route[Math.max(0, route.length - 6)], ang = Math.atan2(tip.y - back.y, tip.x - back.x), hl = s * 0.3;
-    const b1 = { x: tip.x - Math.cos(ang - 0.5) * hl, y: tip.y - Math.sin(ang - 0.5) * hl }, b2 = { x: tip.x - Math.cos(ang + 0.5) * hl, y: tip.y - Math.sin(ang + 0.5) * hl };
-    polys.push(pen(dense([b1, { x: (b1.x + tip.x) / 2 + Math.sin(ang) * s * 0.02, y: (b1.y + tip.y) / 2 - Math.cos(ang) * s * 0.02 }, tip]), w * 0.85, k, ph + 1, 0.15), pen(dense([tip, { x: (b2.x + tip.x) / 2 - Math.sin(ang) * s * 0.02, y: (b2.y + tip.y) / 2 + Math.cos(ang) * s * 0.02 }, b2]), w * 0.85, k, ph + 2, 0.15));
+    const tip = route[route.length - 1], back = route[Math.max(0, route.length - 6)], ang = Math.atan2(tip.y - back.y, tip.x - back.x), hl = s * 0.4;
+    // two long curved barbs sweeping back from the tip like a swoosh (not straight), tapering to sharp points; drawn in one go (barb in, barb out)
+    const barb = (side: number): V[] => {
+      const a2 = ang + side * 0.36, e = { x: tip.x - Math.cos(a2) * hl, y: tip.y - Math.sin(a2) * hl }, bend = -side * s * 0.13; // curved inward (toward the line), so the head stays sharp, not fat
+      const m = { x: (e.x + tip.x) / 2 + Math.sin(ang) * bend, y: (e.y + tip.y) / 2 - Math.cos(ang) * bend };
+      return dense([e, m, tip], 8);
+    };
+    polys.push(pen(barb(-1), w * 0.9, k, ph + 1, 0.12, 0.04), pen(barb(1).reverse(), w * 0.9, k, ph + 2, 0.12, 0.04));
     const kind: 'x' | 'sword' | 'bow' = d.kind === 'move' ? 'x' : d.ranged ? 'bow' : 'sword';
     const sz = (kind === 'x' ? 0.1 : 0.055) * s;
     const place = d.kind === 'move' ? { x: tip.x + Math.cos(ang) * s * 0.34 + Math.sin(ang) * s * 0.1, y: tip.y + Math.sin(ang) * s * 0.34 - Math.cos(ang) * s * 0.12 } : { x: E.x + rx * 1.0, y: E.y - rx * 0.95 };
@@ -160,4 +165,14 @@ export function restTargetSvg(p: Pt, cw: number, ch: number): string {
   const k = Math.max(0.3, Math.min(1, ch / cw)), r = cw * 0.4, pts: V[] = [], a0 = 0.6;
   for (let i = 0; i <= 28; i++) { const t = i / 28, a = a0 + t * (Math.PI * 2 + 0.6), g = 1 + 0.08 * t; pts.push({ x: p.x + Math.cos(a) * r * g, y: p.y / k + Math.sin(a) * r * g }); }
   return `<path class="ord-rest" d="${pen(pts, Math.max(3, cw * 0.07), k, 1.3, 0.2)}" fill="#ff4a3d" fill-opacity=".6"/>`;
+}
+
+/** Ken, Nov 1: a unit with no instruction yet wears a yellow highlighter question mark over its head (upright, not flat on the ground). */
+export function questionSvg(p: Pt, cw: number, ch: number, uid: string): string {
+  const r = rng(uid + 'q'), ph = r() * 6, s = Math.min(cw, ch * 1.6) * 0.3;
+  const P = (u: number, v: number): V => ({ x: p.x + u * s, y: p.y - ch * 1.05 + v * s });
+  const hook = dense([P(-0.62, -0.5), P(-0.5, -0.95), P(0, -1.15), P(0.52, -0.92), P(0.58, -0.4), P(0.2, 0.12), P(0.02, 0.45), P(0.02, 0.62)]);
+  const dot: V[] = []; for (let i = 0; i <= 14; i++) { const a = (i / 14) * Math.PI * 2 + 0.4; dot.push({ x: p.x + 0.02 * s + Math.cos(a) * 0.13 * s, y: p.y - ch * 1.05 + 1.08 * s + Math.sin(a) * 0.13 * s }); }
+  const w = s * 0.34;
+  return `<g class="ord-q" data-uid="${uid}"><path d="${pen(hook, w, 1, ph, 0.12)}" fill="#ffe84a" fill-opacity=".62"/><path d="${pen(dot, w * 0.8, 1, ph + 1, 0.05)}" fill="#ffe84a" fill-opacity=".7"/></g>`;
 }

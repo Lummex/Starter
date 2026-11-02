@@ -23,7 +23,7 @@ import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
 import { emptyCell } from '../engine';
 import { planOrder, chaseList, UNIT_STANCES, type Order, type OrderPlan, type Stance as UnitStance } from '../engine/orders';
 import { runOrders } from './orders-run';
-import { orderSvg, restTargetSvg, type OrderDrawing } from './order-draw';
+import { orderSvg, restTargetSvg, questionSvg, type OrderDrawing } from './order-draw';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -4533,7 +4533,10 @@ export class App {
     const showUids = new Set(shown.map((x) => x.o.uid));
     for (const el of this.r.cells.values() as Iterable<El>) if (el.classList.contains('path-end')) el.classList.toggle('path-show', showUids.has(el.dataset.uid || ''));
     const rest = st ? this.orderPlans.filter((x) => x.o.kind === 'chase' && !x.pv && !this.orderShown(x.o.uid, false)) : [];
-    if (!shown.length && !rest.length) { if (svg.firstChild) svg.replaceChildren(); return; }
+    // Ken, Nov 1: a unit of yours that has no instruction set (and can still act) wears a yellow highlighter question mark
+    const ordered = new Set(this.orderPlans.map((x) => x.o.uid));
+    const idle = st && !st.winner && st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') ? st.board.creatures.filter((c: any) => c.owner === 'player' && !ordered.has(c.uid) && !isActed(st, c)) : [];
+    if (!shown.length && !rest.length && !idle.length) { if (svg.firstChild) svg.replaceChildren(); return; }
     const centre = (row: number, col: number) => {
       const q = view.cellQuad?.(row, col) || [];
       if (q.length) return { x: q.reduce((a: number, p: any) => a + p.x, 0) / q.length, y: q.reduce((a: number, p: any) => a + p.y, 0) / q.length };
@@ -4563,6 +4566,7 @@ export class App {
       const tgt = o.kind === 'chase' ? chaseList(o).map((u) => this.orderUnit(st, u)).find(Boolean) : null;
       if (tgt) { const rc = view.cellRect(tgt.row, tgt.col); html += restTargetSvg(centre(tgt.row, tgt.col), rc.w, rc.h); }
     }
+    for (const c of idle) { const rc = view.cellRect(c.row, c.col); html += questionSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); }
     svg.innerHTML = html;
   }
   /** Do what a unit dropped (or clicked) onto square c means: attack, mine, move or an aimed ability. */
