@@ -38,7 +38,7 @@ jobs:
           node "$RUNNER_TEMP/secret-scan.mjs"
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.122.1 # Nov 2: v3.0.0 (out that morning) aims db push at the local copy and wants --yes; stay on 2.x until someone moves this on purpose
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client > /dev/null
       - name: Test the migrations on a throwaway local copy first
         run: |
