@@ -23,6 +23,8 @@ let loading: Promise<G3DAssets | null> | null = null;
 let loaded: G3DAssets | null = null;
 export const grubnak3dReady = () => loaded;
 
+/** Nov 1 (Anvil): one switch for Spring's Commander pack clips (standing idle for Grubnak, idle breaks for all six). Checked: with them off Grubnak looks the same from the board camera, so they stay on for Ken to judge. */
+const CMD_PACK_CLIPS = true;
 const CMD_BREAKS = ['biped-idleBreak-01', 'biped-idleBreak-02', 'biped-idleBreak-04'];
 /** Nov 1 (Spring): shared idle breaks for a Commander. A Commander holding a prop keeps its right arm on the idle's first frame, so the prop stays put. */
 function commanderBreaks(sh: { byName: Record<string, THREE.AnimationClip> } | null, idle: THREE.AnimationClip | undefined, holdsProp: boolean): THREE.AnimationClip[] {
@@ -61,9 +63,9 @@ export function loadGrubnak3d(): Promise<G3DAssets | null> {
         const clip = c.animations.find((a) => a.name === want) || c.animations[GRUBNAK_ANIMS.indexOf(k)];
         if (clip) clips[k] = clip;
       }
-      const sh = await packClipsFor('cmd-grubnak', c.scene).catch(() => null);
-      if (sh?.byName['biped-idle-01']) clips.idle = sh.byName['biped-idle-01']; // Nov 1: no throne any more, so he stands
-      loaded = { char: c.scene, clips, fortress: f.scene, scepter: s ? s.scene : null, info, breaks: commanderBreaks(sh, clips.idle, !!s) };
+      const sh = CMD_PACK_CLIPS ? await packClipsFor('cmd-grubnak', c.scene).catch(() => null) : null; // off together with the clips
+      if (CMD_PACK_CLIPS && sh?.byName['biped-idle-01']) clips.idle = sh.byName['biped-idle-01']; // Nov 1: no throne any more, so he stands
+      loaded = { char: c.scene, clips, fortress: f.scene, scepter: s ? s.scene : null, info, breaks: CMD_PACK_CLIPS ? commanderBreaks(sh, clips.idle, !!s) : [] };
       return loaded;
     } catch {
       return null;
@@ -229,7 +231,7 @@ export function loadCommander3d(id: string): Promise<G3DAssets | null> {
           const l = sh.byKind[kind] || []; if (l.length) clips[role] = l[Math.floor(Math.random() * l.length)];
         }
         const pr = cfg.prop ? await gl.loadAsync(cfg.base + cfg.prop.file).then((x) => x.scene).catch(() => null) : null;
-        const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info, prop: pr, breaks: commanderBreaks(sh, clips.idle, !!(s || pr)) };
+        const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info, prop: pr, breaks: CMD_PACK_CLIPS ? commanderBreaks(sh, clips.idle, !!(s || pr)) : [] };
         otherLoaded.set(id, a);
         return a;
       } catch {
