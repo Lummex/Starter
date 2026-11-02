@@ -15,6 +15,10 @@ export interface OrderDrawing {
   blocked: boolean;
   /** Ken, Nov 1: a chase's next targets after the current one (numbered 2, 3, ...) */
   chain?: Pt[];
+  /** Ken, Nov 1: a chase by a ranged unit ends in a little bow and arrow, by a melee unit in a little sword */
+  ranged?: boolean;
+  /** Ken, Nov 1: the move ends on one of your own units: you swap places (two curved arrows in a circle) */
+  swap?: boolean;
 }
 
 /** A small seeded random generator, so a unit's line keeps the same wobble every redraw (no flicker while panning). */
@@ -52,53 +56,137 @@ function routePoints(d: OrderDrawing, r: () => number): Pt[] {
   return p;
 }
 
-/** Stroke the same path twice: a dark edge underneath, the chalk line on top. */
-function chalk(path: string, w: number, color: string, extra = '') {
-  return `<path d="${path}" fill="none" stroke="#0b0906" stroke-opacity=".82" stroke-width="${f(w + 3.6)}" stroke-linecap="round" stroke-linejoin="round"${extra}/>`
-    + `<path d="${path}" fill="none" stroke="${color}" stroke-width="${f(w)}" stroke-linecap="round" stroke-linejoin="round"${extra}/>`;
+// Ken, Nov 1: the orders are drawn like a see-through dry-erase marker lying on the board: flowing, even-handed pen strokes that swell and ease
+// (pressure) as the hand moves, and everything is drawn flat on the board and squashed by the board's own tilt (the cell's height / width), so
+// the circles, the X, the sword and the bow lie on the ground in perspective. The arrow is one no-lift stroke (line, then back through the tip).
+type V = { x: number; y: number };
+const smoothstep = (a: number) => { const t = Math.max(0, Math.min(1, a)); return t * t * (3 - 2 * t); };
+/** a dense Catmull-Rom polyline through the points (flat space) */
+function dense(p: V[], per = 10): V[] {
+  if (p.length < 2) return p.slice();
+  const out: V[] = [];
+  for (let i = 0; i < p.length - 1; i++) {
+    const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2;
+    for (let k = 0; k < per; k++) {
+      const t = k / per, t2 = t * t, t3 = t2 * t;
+      out.push({ x: 0.5 * (2 * p1.x + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3), y: 0.5 * (2 * p1.y + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3) });
+    }
+  }
+  out.push(p[p.length - 1]);
+  return out;
+}
+/** a pen stroke along a flat-space polyline: a polygon whose width follows the hand (eases in and out, a little heavier mid-stroke), squashed onto the board */
+function pen(poly: V[], w: number, k: number, ph: number, press = 0.2, lo = 0.3): string {
+  const n = poly.length; if (n < 2) return '';
+  const len: number[] = [0]; for (let i = 1; i < n; i++) len.push(len[i - 1] + Math.hypot(poly[i].x - poly[i - 1].x, poly[i].y - poly[i - 1].y));
+  const L = len[n - 1] || 1, A: string[] = [], B: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = poly[Math.max(0, i - 1)], b = poly[Math.min(n - 1, i + 1)], dx = b.x - a.x, dy = b.y - a.y, m = Math.hypot(dx, dy) || 1, t = len[i] / L;
+    const wt = w * (lo + (1 - lo) * smoothstep(t / 0.1)) * (lo + (1 - lo) * smoothstep((1 - t) / 0.16)) * (1 + press * Math.sin(t * Math.PI * 1.6 + ph)) / 2;
+    A.push(`${f(poly[i].x - (dy / m) * wt)},${f((poly[i].y + (dx / m) * wt) * k)}`); B.push(`${f(poly[i].x + (dy / m) * wt)},${f((poly[i].y - (dx / m) * wt) * k)}`);
+  }
+  return `M${A.join(' L')} L${B.reverse().join(' L')}Z`;
+}
+const line = (a: V, b: V, n = 8): V[] => Array.from({ length: n + 1 }, (_, i) => ({ x: a.x + ((b.x - a.x) * i) / n, y: a.y + ((b.y - a.y) * i) / n }));
+
+/** the small symbol past the arrow tip, drawn flat at c and s big: a cursive X, a sword (melee) or a bow and arrow (ranged) */
+function symbolStrokes(kind: 'x' | 'sword' | 'bow' | 'swap', c: V, s: number): V[][] {
+  const P = (u: number, v: number): V => ({ x: c.x + u * s, y: c.y + v * s });
+  if (kind === 'swap') { // two curved arrows chasing each other round a circle
+    const arc = (a0: number, a1: number): V[] => dense(Array.from({ length: 7 }, (_, i) => { const a = a0 + ((a1 - a0) * i) / 6; return P(Math.cos(a) * 1.25, Math.sin(a) * 1.25); }), 6);
+    const head = (a: number, dir: number): V[][] => { const tip = P(Math.cos(a) * 1.25, Math.sin(a) * 1.25), tx = -Math.sin(a) * dir, ty = Math.cos(a) * dir; return [line({ x: tip.x - (tx * 0.7 + ty * 0.55) * s, y: tip.y - (ty * 0.7 - tx * 0.55) * s }, tip, 4), line(tip, { x: tip.x - (tx * 0.7 - ty * 0.55) * s, y: tip.y - (ty * 0.7 + tx * 0.55) * s }, 4)]; };
+    return [arc(3.45, 5.95), arc(0.3, 2.8), ...head(5.95, 1), ...head(2.8, 1)];
+  }
+  if (kind === 'x') return [
+    dense([P(-1, -0.9), P(-0.35, -0.25), P(0.3, 0.4), P(1.05, 1.05), P(1.28, 0.5), P(1.12, -0.3), P(0.95, -1.05)]),
+    dense([P(1.05, -1.12), P(0.45, -0.5), P(-0.2, 0.1), P(-0.8, 0.8), P(-1.5, 1.35)]),
+  ];
+  if (kind === 'sword') { // pointing up and to the right: grip, crossguard, chunky pointed blade
+    const a = -1.1, ca = Math.cos(a), sa = Math.sin(a), Q = (u: number, v: number): V => ({ x: c.x + (ca * u - sa * v) * s * 0.85, y: c.y + (sa * u + ca * v) * s * 0.85 });
+    return [line(Q(-0.4, 0), Q(0.7, 0)), line(Q(0.7, -1), Q(0.7, 1)), dense([Q(0.8, 0.4), Q(3, 0.5), Q(4, 0), Q(3, -0.5), Q(0.8, -0.4), Q(0.8, 0.4)], 6)];
+  }
+  const x = c.x - 0.3 * s; // a bow whose belly faces the target, the arrow nocked and flying the same way
+  return [dense([{ x, y: c.y - 1.4 * s }, { x: x + 1.5 * s, y: c.y }, { x, y: c.y + 1.4 * s }]), line({ x, y: c.y + 1.4 * s }, { x: x - 0.4 * s, y: c.y }, 4), line({ x: x - 0.4 * s, y: c.y }, { x: x + 2.2 * s, y: c.y }), line({ x: x + 1.6 * s, y: c.y - 0.5 * s }, { x: x + 2.2 * s, y: c.y }, 4), line({ x: x + 2.2 * s, y: c.y }, { x: x + 1.6 * s, y: c.y + 0.5 * s }, 4)];
 }
 
 /** One order as an SVG group. */
 export function orderSvg(d: OrderDrawing): string {
   const r = rng(d.uid + d.kind);
-  const s = Math.min(d.cw, d.ch * 1.6);
-  const w = Math.max(2.6, Math.min(7, s * 0.075));
-  const ink = '#f7f2df', red = '#ff5a4a';
-  const pts = routePoints(d, r);
+  const cw = d.cw, k = Math.max(0.3, Math.min(1, d.ch / d.cw)); // the board's tilt: squash on the ground
+  const s = Math.min(cw, d.ch * 1.6);
+  const w = Math.max(6, Math.min(15, s * 0.17));
+  // Ken, Nov 1: green = a move, red = a melee attack, blue = a ranged attack (a blocked move is red)
+  const ink = d.blocked ? '#ff6a58' : d.kind === 'move' ? '#46e05a' : d.ranged ? '#5b8dff' : '#ff4a3d', ph = r() * 6;
+  const F = (p: Pt): V => ({ x: p.x, y: p.y / k }); // screen -> flat
   let out = '';
+  let pts = d.pts.map(F);
+  pts = pts.filter((q, i) => !i || Math.hypot(q.x - pts[i - 1].x, q.y - pts[i - 1].y) > 1);
+  if (pts.length === 2) pts.splice(1, 0, { x: (pts[0].x + pts[1].x) / 2 + (r() - 0.5) * s * 0.1, y: (pts[0].y + pts[1].y) / 2 + (r() - 0.5) * s * 0.1 });
+  const E = F(d.end);
+  let rx = 0, a0 = 0;
   if (d.kind === 'chase') {
-    // the circle around the target: a little over one loop, slightly spiralling, so it reads as drawn by hand
-    const rx = d.cw * 0.5, ry = Math.max(d.ch * 0.5, rx * 0.42), a0 = r() * Math.PI * 2, ph = r() * 6, loop: Pt[] = [];
-    for (let k = 0; k <= 26; k++) {
-      const t = k / 26, a = a0 + t * (Math.PI * 2 + 0.75), g = 1 + 0.1 * t + 0.05 * Math.sin(3 * a + ph);
-      loop.push({ x: d.end.x + Math.cos(a) * rx * g, y: d.end.y + Math.sin(a) * ry * g });
-    }
-    // the route stops at the circle's edge
+    rx = cw * 0.5; a0 = r() * Math.PI * 2; // a circle on the ground (flat), squashed by the tilt
     const last = pts[pts.length - 1];
-    if (pts.length >= 2 && Math.hypot(last.x - d.end.x, last.y - d.end.y) < 1) pts.pop();
-    const from = pts[pts.length - 1] || d.end, dx = from.x - d.end.x, dy = from.y - d.end.y, L = Math.hypot(dx / rx, dy / ry);
-    if (L > 1.05) pts.push({ x: d.end.x + dx / L, y: d.end.y + dy / L });
-    // Ken, Nov 1: a chase locks on in red, with a target mark
-    if (pts.length >= 2) out += chalk(smooth(pts), w, red);
-    out += chalk(smooth(loop, 0.6), w, red, ' class="ord-circle"');
-    const mark = (p: Pt, n: number) => `<g class="ord-num"><circle cx="${f(p.x)}" cy="${f(p.y - ry * 1.15)}" r="${f(s * 0.17)}" fill="#7a120a" stroke="#ffd9d2" stroke-width="1.5"/><text x="${f(p.x)}" y="${f(p.y - ry * 1.15 + s * 0.065)}" text-anchor="middle" font-size="${f(s * 0.2)}" font-weight="800" fill="#fff">${n}</text></g>`;
+    if (pts.length >= 2 && Math.hypot(last.x - E.x, last.y - E.y) < 1) pts.pop();
+    const from = pts[pts.length - 1] || E, dx = from.x - E.x, dy = from.y - E.y, L = Math.hypot(dx, dy) / rx;
+    if (L > 1.05) pts.push({ x: E.x + dx / L, y: E.y + dy / L });
+  }
+  const route = dense(pts);
+  const polys: string[] = [];
+  if (route.length >= 2) {
+    polys.push(pen(route, w, k, ph, 0.25));
+    // the arrowhead: back out through the tip in one go (a V that crosses its own line), flat on the board
+    const tip = route[route.length - 1], back = route[Math.max(0, route.length - 6)], ang = Math.atan2(tip.y - back.y, tip.x - back.x), hl = s * 0.4;
+    // two long curved barbs sweeping back from the tip like a swoosh (not straight), tapering to sharp points; drawn in one go (barb in, barb out)
+    const barb = (side: number): V[] => {
+      const a2 = ang + side * 0.36, e = { x: tip.x - Math.cos(a2) * hl, y: tip.y - Math.sin(a2) * hl }, bend = -side * s * 0.13; // curved inward (toward the line), so the head stays sharp, not fat
+      const m = { x: (e.x + tip.x) / 2 + Math.sin(ang) * bend, y: (e.y + tip.y) / 2 - Math.cos(ang) * bend };
+      return dense([e, m, tip], 8);
+    };
+    polys.push(pen(barb(-1), w * 0.9, k, ph + 1, 0.12, 0.04), pen(barb(1).reverse(), w * 0.9, k, ph + 2, 0.12, 0.04));
+    const kind: 'x' | 'sword' | 'bow' | 'swap' = d.kind === 'move' ? (d.swap ? 'swap' : 'x') : d.ranged ? 'bow' : 'sword';
+    const sz = (kind === 'x' ? 0.1 : kind === 'swap' ? 0.085 : 0.08) * s;
+    const place = d.kind === 'move' ? { x: tip.x + Math.cos(ang) * s * 0.5 + Math.sin(ang) * s * 0.12, y: tip.y + Math.sin(ang) * s * 0.5 - Math.cos(ang) * s * 0.14 } : { x: E.x + rx * 1.0, y: E.y - rx * 0.95 };
+    for (const st of symbolStrokes(kind, place, sz * 2.2)) polys.push(pen(st, kind === 'x' ? w * 0.85 : w * 0.42, k, ph + 3, 0.2));
+  }
+  if (d.kind === 'chase') {
+    const loop: V[] = []; // a bit over one loop, slightly spiralling, like a quick hand-drawn circle
+    for (let i = 0; i <= 30; i++) { const t = i / 30, a = a0 + t * (Math.PI * 2 + 0.75), g = 1 + 0.1 * t + 0.04 * Math.sin(3 * a + ph); loop.push({ x: E.x + Math.cos(a) * rx * g, y: E.y + Math.sin(a) * rx * g }); }
+    polys.push(pen(loop, w * 0.9, k, ph + 4, 0.25));
+  }
+  out += polys.map((q, i) => `<path${d.kind === 'chase' && i === polys.length - 1 ? ' class="ord-circle"' : d.kind === 'move' && i === 3 ? ' class="ord-x"' : ''} d="${q}" fill="${ink}" fill-opacity=".72"/>`).join('');
+  if (d.kind === 'chase') {
+    const ry2 = Math.max(d.ch * 0.5, d.cw * 0.5 * k);
+    const mark = (p: Pt, n: number) => `<g class="ord-num"><circle cx="${f(p.x)}" cy="${f(p.y - ry2 * 1.15)}" r="${f(s * 0.17)}" fill="#7a120a" stroke="#ffd9d2" stroke-width="1.5"/><text x="${f(p.x)}" y="${f(p.y - ry2 * 1.15 + s * 0.065)}" text-anchor="middle" font-size="${f(s * 0.2)}" font-weight="800" fill="#fff">${n}</text></g>`;
     if (d.chain && d.chain.length) {
       out += mark(d.end, 1);
       let from = d.end;
-      d.chain.forEach((p, i) => { out += chalk(`M${f(from.x)},${f(from.y)} L${f(p.x)},${f(p.y)}`, w * 0.7, red, ' stroke-dasharray="7 7" class="ord-next"') + mark(p, i + 2); from = p; });
+      d.chain.forEach((p, i) => { out += `<path class="ord-next" d="M${f(from.x)},${f(from.y)} L${f(p.x)},${f(p.y)}" fill="none" stroke="${ink}" stroke-opacity=".6" stroke-width="${f(w * 0.6)}" stroke-linecap="round" stroke-dasharray="7 7"/>` + mark(p, i + 2); from = p; });
     }
-  } else {
-    if (pts.length >= 2) out += chalk(smooth(pts), w, ink);
-    // the X: two slightly bowed strokes
-    const x = s * 0.2, b = s * 0.035, e = d.end, j = () => (r() - 0.5) * x * 0.18;
-    const s1 = `M${f(e.x - x + j())},${f(e.y - x * 0.7 + j())} Q${f(e.x + b)},${f(e.y - b)} ${f(e.x + x + j())},${f(e.y + x * 0.7 + j())}`;
-    const s2 = `M${f(e.x + x + j())},${f(e.y - x * 0.7 + j())} Q${f(e.x - b)},${f(e.y - b)} ${f(e.x - x + j())},${f(e.y + x * 0.7 + j())}`;
-    out += chalk(s1 + ' ' + s2, w * 1.25, d.blocked ? red : ink, ' class="ord-x"');
   }
   return `<g class="ord" data-uid="${d.uid}" data-kind="${d.kind}"${d.preview ? ' opacity=".85"' : ''}>${out}</g>`;
 }
 
-/** Ken, Nov 1: a chaser at rest only shows a small red ring on its current target. */
+/** Ken, Nov 1: a chaser at rest only shows a small red ring (a marker circle on the ground) on its current target. */
 export function restTargetSvg(p: Pt, cw: number, ch: number): string {
-  return `<ellipse class="ord-rest" cx="${f(p.x)}" cy="${f(p.y)}" rx="${f(cw * 0.46)}" ry="${f(Math.max(ch * 0.46, cw * 0.2))}" fill="none" stroke="#ff5a4a" stroke-opacity=".8" stroke-width="2.5"/>`;
+  const k = Math.max(0.3, Math.min(1, ch / cw)), r = cw * 0.4, pts: V[] = [], a0 = 0.6;
+  for (let i = 0; i <= 28; i++) { const t = i / 28, a = a0 + t * (Math.PI * 2 + 0.6), g = 1 + 0.08 * t; pts.push({ x: p.x + Math.cos(a) * r * g, y: p.y / k + Math.sin(a) * r * g }); }
+  return `<path class="ord-rest" d="${pen(pts, Math.max(3, cw * 0.07), k, 1.3, 0.2)}" fill="#ff4a3d" fill-opacity=".6"/>`;
+}
+
+/** Ken, Nov 1: a unit with no instruction yet wears a yellow highlighter question mark over its head (upright, not flat on the ground). */
+export function questionSvg(p: Pt, cw: number, ch: number, uid: string): string {
+  const r = rng(uid + 'q'), ph = r() * 6, s = Math.min(cw, ch * 1.6) * 0.3;
+  const P = (u: number, v: number): V => ({ x: p.x + u * s, y: p.y - ch * 1.05 + v * s });
+  const hook = dense([P(-0.62, -0.5), P(-0.5, -0.95), P(0, -1.15), P(0.52, -0.92), P(0.58, -0.4), P(0.2, 0.12), P(0.02, 0.45), P(0.02, 0.62)]);
+  const dot: V[] = []; for (let i = 0; i <= 14; i++) { const a = (i / 14) * Math.PI * 2 + 0.4; dot.push({ x: p.x + 0.02 * s + Math.cos(a) * 0.13 * s, y: p.y - ch * 1.05 + 1.08 * s + Math.sin(a) * 0.13 * s }); }
+  const w = s * 0.46;
+  return `<g class="ord-q" data-uid="${uid}"><path d="${pen(hook, w, 1, ph, 0.12)}" fill="#ffe84a" fill-opacity=".85"/><path d="${pen(dot, w * 0.8, 1, ph + 1, 0.05)}" fill="#ffe84a" fill-opacity=".7"/></g>`;
+}
+
+/** Ken, Nov 1: a unit on the Guard stance wears a black marker circle on the ground (squashed by the board's tilt). */
+export function guardSvg(p: Pt, cw: number, ch: number, uid: string): string {
+  const k = Math.max(0.3, Math.min(1, ch / cw)), r = cw * 0.44, pts: V[] = [], rr = rng(uid + 'g'), a0 = rr() * 6, ph = rr() * 6;
+  for (let i = 0; i <= 32; i++) { const t = i / 32, a = a0 + t * (Math.PI * 2 + 0.7), g = 1 + 0.09 * t + 0.03 * Math.sin(3 * a + ph); pts.push({ x: p.x + Math.cos(a) * r * g, y: p.y / k + Math.sin(a) * r * g }); }
+  return `<path class="ord-guard" d="${pen(pts, Math.max(4, cw * 0.09), k, ph, 0.25)}" fill="#0a0a10" fill-opacity=".72"/>`;
 }

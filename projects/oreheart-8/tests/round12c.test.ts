@@ -70,7 +70,7 @@ describe('round 12c active abilities', () => {
   it('Voldawright shockwave and Rocket Rider explosion', () => {
     let s = toAction(mk({ playerCrystals: 3, board: [P('gnome-cogger', 4, 3), O('goblin-grunt', 4, 4)] }));
     s = act(s, abil(s, 'shockwave'));
-    expect(at(s, 4, 5).health).toBe(2);
+    expect(at(s, 4, 5).health).toBe(1); // Nov 1: abilities scale like ranged attacks: the Cogger's stock Attack 2 is not halved (was a flat 1)
     let r = toAction(mk({ playerCrystals: 3, board: [P('shard-guzzler', 6, 3), O('goblin-grunt', 3, 9, { shield: 0 })] }));
     r = act(r, abil(r, 'rocket', { target: { row: 3, col: 10 } }));
     expect(at(r, 3, 9)).toBeDefined();

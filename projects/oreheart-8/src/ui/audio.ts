@@ -20,7 +20,7 @@ export const SFX: Record<string, SfxDef> = {
   // Oct 31 (Brush, studio/sound-spec.json): each projectile's own firing sound at its release and impact sound on landing
   'shot-rifle': D('shot-rifle', 0.9, 0.8), 'shot-cannon': D('shot-cannon', 1, 0.5), 'throw-whoosh': D('throw-whoosh', 0.8, 1.5), 'cast-zap': D('cast-zap', 0.85, 1),
   'cast-hex': D('cast-hex', 0.7, 1), 'fireball-whoosh': D('fireball-whoosh', 0.85, 1), 'bowl-roll': D('bowl-roll', 0.6, 0), 'skull-crack': D('skull-crack', 0.9, 1),
-  'book-thud': D('book-thud', 0.9, 1), 'zap-hit': D('zap-hit', 0.9, 1), 'fire-burst': D('fire-burst', 0.9, 0.8), 'pins-scatter': D('pins-scatter', 0.95, 0.8),
+  'book-thud': D('book-thud', 0.9, 1), 'zap-hit': D('zap-hit', 0.9, 1), 'fire-burst': D('fire-burst', 0.9, 0.8), 'pins-scatter': D('pins-scatter', 0.7, 0.8),
 };
 /** Which firing (at the release) and impact (on landing) sound each shooter's projectile plays; the hit's bonk/clink and punch still play under it. */
 export const SHOT_SOUNDS: Record<string, { fire: string; hit?: string }> = {

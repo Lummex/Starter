@@ -18,8 +18,8 @@ const key = (q: Cell) => q.row + ',' + q.col;
  *  Intermediate squares must be empty (in bounds, no Stronghold, no mine, no creature); a flying unit may pass over creatures.
  *  `dest` itself must be empty. null when there is no path. */
 export function shortestPath(s: any, c: any, dest: Cell): Cell[] | null {
-  if (!dest || (dest.row === c.row && dest.col === c.col) || !emptyCell(s, dest.row, dest.col)) return null;
-  return bfs(s, c, (q) => q.row === dest.row && q.col === dest.col, dest);
+  if (!dest || (dest.row === c.row && dest.col === c.col) || !(emptyCell(s, dest.row, dest.col) || creatureAt(s, dest.row, dest.col)?.owner === c.owner)) return null;
+  return bfs(s, c, (q) => q.row === dest.row && q.col === dest.col, dest, true);
 }
 
 /** Can `c` walk through square q on a multi-turn path? Empty squares always; a flyer also over creatures (never Strongholds, mines or off-board).
@@ -29,13 +29,13 @@ function passable(s: any, c: any, noUnits: any, q: Cell): boolean {
   if (emptyCell(s, q.row, q.col)) return true;
   const o = creatureAt(s, q.row, q.col);
   if (!o || !emptyCell(noUnits, q.row, q.col)) return false;
-  return has(c, 'flying') || (o.owner === c.owner && Math.max(Math.abs(q.row - c.row), Math.abs(q.col - c.col)) > (maxMove(c) || 0));
+  return has(c, 'flying') || o.owner === c.owner; // Ken, Nov 1: anyone walks through their own units (never through enemies)
 }
 
 /** Ken (Oct 30): "always pick the most direct route". Breadth-first by steps (8 directions, so the fewest moves always wins), and among
  *  routes with the same number of steps the one that stays closest to the straight line toward `aim` (no wiggles, no needless detours).
  *  The goal must be an empty square that satisfies `goal`. Path excludes the start. */
-function bfs(s: any, c: any, goal: (q: Cell) => boolean, aim?: Cell): Cell[] | null {
+function bfs(s: any, c: any, goal: (q: Cell) => boolean, aim?: Cell, swapGoal = false): Cell[] | null {
   const noUnits = { ...s, board: { ...s.board, creatures: [] } };
   const start: Cell = { row: c.row, col: c.col };
   const to = aim || start;
@@ -56,7 +56,7 @@ function bfs(s: any, c: any, goal: (q: Cell) => boolean, aim?: Cell): Cell[] | n
       if (!layer.has(k) || d < dev.get(k)!) { layer.set(k, n); dev.set(k, d); prev.set(k, q); }
     }
     for (const k of layer.keys()) seen.add(k);
-    const goals = [...layer.values()].filter((n) => emptyCell(s, n.row, n.col) && goal(n));
+    const goals = [...layer.values()].filter((n) => (emptyCell(s, n.row, n.col) || (swapGoal && creatureAt(s, n.row, n.col)?.owner === c.owner)) && goal(n)); // Ken, Nov 1: a move drawn onto your own unit ends in a swap
     if (goals.length) {
       goals.sort((a, b) => dev.get(key(a))! - dev.get(key(b))! || Math.hypot(a.row - to.row, a.col - to.col) - Math.hypot(b.row - to.row, b.col - to.col));
       const path: Cell[] = [];
@@ -81,7 +81,7 @@ export function nextStep(s: any, c: any, path: Cell[]): Cell | null {
   const dests = moveDests(s, c);
   for (let k = Math.min(c.movesLeft ?? (maxMove(c) || 0), path.length); k >= 1; k--) { // v2: as far as the points left allow
     const q = path[k - 1];
-    if (creatureAt(s, q.row, q.col)) continue; // never land on (swap with) one of our own units; walk past it on a later step
+    if (creatureAt(s, q.row, q.col) && k !== path.length) continue; // never land on (swap with) one of our own units on the way; only the order's own last square may be a swap (Ken, Nov 1)
     if (dests.some((d) => d.row === q.row && d.col === q.col)) return { row: q.row, col: q.col };
   }
   return null;
@@ -92,7 +92,7 @@ export function canAttackFrom(s: any, c: any, at: Cell, enemy: any): boolean {
   // A fresh copy of c on `at`: only geometry (reach, line of sight, guards) decides; this-turn flags are cleared.
   const copy = { ...c, row: at.row, col: at.col, hasMoved: false, hasAttacked: false, hasMined: false, movesLeft: 1, summonedThisTurn: false, lockedUntil: 0, wardUntil: 0, rocketed: false };
   const s2 = { ...s, board: { ...s.board, creatures: s.board.creatures.map((x: any) => (x.uid === c.uid ? copy : x)) } };
-  return attackTargets(s2, copy).some((t: any) => !t.commander && t.row === enemy.row && t.col === enemy.col);
+  return attackTargets(s2, copy).some((t: any) => (enemy.commander ? t.commander === enemy.commander : !t.commander && t.row === enemy.row && t.col === enemy.col));
 }
 
 /** Shortest path to the nearest square from which `enemy` is in attack range (empty path = already in range). null = unreachable. */
@@ -103,7 +103,7 @@ export function chasePath(s: any, c: any, enemy: any): Cell[] | null {
 
 /** The legal attack action of `c` on `enemy` right now, or null. */
 export function attackActionOn(s: any, c: any, enemy: any): any | null {
-  return legalActions(s).find((a: any) => a.type === 'attack' && a.creatureUid === c.uid && a.target && a.target.row === enemy.row && a.target.col === enemy.col) || null;
+  return legalActions(s).find((a: any) => a.type === 'attack' && a.creatureUid === c.uid && a.target && (enemy.commander ? a.target.commander === enemy.commander : a.target.row === enemy.row && a.target.col === enemy.col)) || null;
 }
 
 /** Plan an order against the current state. `done` = nothing left to do (arrived / target gone). */
@@ -128,7 +128,14 @@ export const chaseList = (o: Order): string[] => (o.kind === 'chase' ? [o.target
 /** The first target on the list still on the board (one that died or retreated is skipped), or null when the list is finished. */
 export function chaseTarget(s: any, o: Order): any | null {
   const c = s.board.creatures.find((x: any) => x.uid === o.uid);
-  for (const u of chaseList(o)) { const e = s.board.creatures.find((x: any) => x.uid === u); if (e && (!c || e.owner !== c.owner)) return e; }
+  for (const u of chaseList(o)) {
+    if (u.startsWith('cmd:')) { // Ken, Nov 1: the enemy Commander is a target too: the unit walks to him and hits him every turn until the match ends
+      const side = u.slice(4), sh = s.strongholds?.[side];
+      if (sh && !s.winner && (!c || side !== c.owner)) return { uid: u, commander: side, owner: side, row: sh.row, col: sh.col };
+      continue;
+    }
+    const e = s.board.creatures.find((x: any) => x.uid === u); if (e && (!c || e.owner !== c.owner)) return e;
+  }
   return null;
 }
 

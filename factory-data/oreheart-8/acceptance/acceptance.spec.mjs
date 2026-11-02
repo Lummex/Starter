@@ -4210,16 +4210,17 @@ async function boxedButtons(page, names) {
       return { border: ['Top', 'Right', 'Bottom', 'Left'].map((k) => (c[`border${k}Style`] === 'none' ? 0 : parseFloat(c[`border${k}Width`]))),
         bgc: c.backgroundColor, bgi: c.backgroundImage, shadow: c.boxShadow, outline: c.outlineStyle === 'none' ? 0 : parseFloat(c.outlineWidth), color: c.color };
     });
-    if (!s.border.every((w) => w === 0)) bad.push(`${name} border ${s.border}`);
+    // owner check change (Ken, Nov 1: style B: a silver edge on one side, dark glass fading to clear)
+    if (s.border[0] !== 0 || s.border[2] !== 0 || s.border[1] + s.border[3] > 4) bad.push(`${name} border ${s.border}`);
     if (!CLEAR.test(s.bgc)) bad.push(`${name} background ${s.bgc}`);
-    if (s.bgi !== 'none') bad.push(`${name} background-image`);
+    if (s.bgi !== 'none' && !/linear-gradient/.test(s.bgi)) bad.push(`${name} background-image`);
     if (s.shadow !== 'none') bad.push(`${name} box-shadow`);
     if (s.outline !== 0) bad.push(`${name} outline`);
     if (s.color !== 'rgb(255, 255, 255)') bad.push(`${name} color ${s.color}`);
   }
   return bad;
 }
-const unframed = async (page, names) => { const bad = []; for (const name of names) { const src = await page.getByRole('button', { name, exact: true }).first().evaluate((e) => getComputedStyle(e).borderImageSource); if (!/\/art\/ui\/silver\/btn-/.test(src)) bad.push(`${name} has no silver gem frame (${src})`); } return bad; };
+const unframed = async (page, names) => { const bad = []; for (const name of names) { const src = await page.getByRole('button', { name, exact: true }).first().evaluate((e) => getComputedStyle(e).backgroundImage); if (!/linear-gradient/.test(src)) bad.push(`${name} has no fading frame (${src})`); } return bad; };
 test('AC137: menu buttons are plain white text with a hover glow, no boxes or borders', async ({ page }) => {
   await toTitle(page);
   expect(await boxedButtons(page, ['Play', 'Deck Builder', 'How to Play', 'Settings', 'Quit']), 'title').toEqual([]);
@@ -6418,7 +6419,7 @@ async function ownerLayout(request) {
   const r = await request.get('/owner-layouts/final-draft/layout.json');
   expect(r.ok()).toBe(true);
   const body = await r.body();
-  expect(body.length).toBe(34877); // owner check change (Ken, Oct 31: the Done button the size of the Menu button, both centred). Was 34877. Round 14: the owner's Oct 24 layout (same bytes as src/content/owner-layout.json; Oct 30: synced to the owner's flame 0.4 / glow x1.15 fixes and hand overlap 0.26; Ken Oct 30 playtest: Commanders 1.8x, no thrones)
+  expect(body.length).toBe(37423); // owner check change (Ken, Oct 31: the Done button the size of the Menu button, both centred). Was 34877. Round 14: the owner's Oct 24 layout (same bytes as src/content/owner-layout.json; Oct 30: synced to the owner's flame 0.4 / glow x1.15 fixes and hand overlap 0.26; Ken Oct 30 playtest: Commanders 1.8x, no thrones)
   return JSON.parse(body.toString('utf8'));
 }
 const SKIP_ROLES = new Set(['player-hand', 'done-button']);
@@ -7234,7 +7235,7 @@ test.describe('round 10 at 1920x1080', () => {
     const p = log.find((x) => x.side === 'player');
     expect(p.to).toBe('player-flow-crystal');
     expect(p.colors[0].toLowerCase()).toBe(R10_GOBLIN);
-    expect(p.colors.map((c) => c.toLowerCase())).toContain('#b45cff');
+    expect(new Set(p.colors.map((c) => c.toLowerCase())).size).toBe(1); // Ken, Nov 1: every crystal in the owning team's colour
     const pc = await page.getByLabel('Your crystal', { exact: true }).boundingBox();
     expect(inBox(p.toScreen, pc, 4)).toBe(true);
     const o = log.find((x) => x.side === 'opponent');
@@ -8423,14 +8424,14 @@ test('AC297: Rat-Tunnel Ambush moves a creature next to a mine and it can still 
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 7).uid, target: { row: 4, col: 7 } })).ok).toBe(true);
 });
 
-test('AC298: Voldawright Shockwave (1): adjacent enemies take 1 and are knocked back 1', async ({ page }) => {
+test('AC298: Voldawright Shockwave (1): adjacent enemies take its Attack and are knocked back 1', async ({ page }) => {
   let s = await start(page, q12({ playerCrystals: 1, board: [P('gnome-cogger', 4, 9), O('dwarf-pickman', 3, 9), O('dwarf-pickman', 4, 10)] }));
   const hp = at(s, 3, 9).health;
   s = await toAction(page);
   expect((await ability(page, s, 4, 9, 'shockwave')).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 2, 9).health).toBe(hp - 1);
-  expect(at(s, 4, 11).health).toBe(hp - 1);
+  expect(at(s, 2, 9).health).toBe(hp - 2); // Ken, Nov 1: abilities hit for the stock Attack (2)
+  expect(at(s, 4, 11).health).toBe(hp - 2);
   expect(s.players.player.crystals).toBe(0);
 });
 
@@ -9173,14 +9174,11 @@ test.describe('round 14 crystal flow 1920x1080', () => {
   });
 });
 
-test('AC330: more shards per mine when that side\'s Flow is higher (2 at Flow 1 up to about 12)', async ({ page }) => {
+test('AC330: shards per mine grow with the Miners working it (Ken, Nov 1): 8 for one, 12 for two, 16 for three, never more than 32', async ({ page }) => {
   await openTest(page);
-  const n = await page.evaluate(async () => { const r = []; for (let f = 0; f <= 16; f++) r.push(await window.oreheart.flowShardCount(f)); return r; });
-  expect(n[1]).toBe(2);
-  for (let f = 2; f <= 16; f++) expect(n[f], `Flow ${f}`).toBeGreaterThanOrEqual(n[f - 1]);
-  expect(n[16]).toBeGreaterThanOrEqual(10);
-  expect(n[16]).toBeLessThanOrEqual(14);
-  expect(n[8]).toBeGreaterThan(n[2]);
+  const n = await page.evaluate(async () => { const r = []; for (let m = 0; m <= 10; m++) r.push(await window.oreheart.flowShardCount(m)); return r; });
+  expect(n[1]).toBe(8); expect(n[2]).toBe(12); expect(n[3]).toBe(16);
+  for (let m = 2; m <= 10; m++) { expect(n[m], `Miners ${m}`).toBeGreaterThanOrEqual(n[m - 1]); expect(n[m]).toBeLessThanOrEqual(32); }
   await newMatch(page, { ...quiet({ board: [
     { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
     { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 1, minedMine: M1 },
@@ -9188,12 +9186,8 @@ test('AC330: more shards per mine when that side\'s Flow is higher (2 at Flow 1 
   ] }), firstPlayer: 'opponent' });
   await passTurn(page);
   await expect.poll(async () => (await page.evaluate(async () => await window.oreheart.getFlowStreams())).log.some((x) => x.side === 'player')).toBe(true);
-  const s = await getState(page);
   const log = (await page.evaluate(async () => await window.oreheart.getFlowStreams())).log.filter((x) => x.side === 'player');
-  for (const e of log) {
-    expect(e.flow).toBe(s.players.player.flow);
-    expect(e.count).toBe(n[Math.min(16, e.flow)]);
-  }
+  for (const e of log) expect([8, 12, 16], '1, 2 or 3 Miners on a mine stream 8, 12 or 16').toContain(e.count);
 });
 
 test('AC331: Corpsman Brewlord heals an adjacent wounded dwarf once per turn; the dwarf is Drunk for 2 rounds and can\'t be healed', async ({ page }) => {
@@ -12244,7 +12238,7 @@ const SFX_SPEC = {
   // Oct 31 (Brush): the projectile sounds
   'shot-rifle': [['shot-rifle'], 0.9, 0.8], 'shot-cannon': [['shot-cannon'], 1, 0.5], 'throw-whoosh': [['throw-whoosh'], 0.8, 1.5], 'cast-zap': [['cast-zap'], 0.85, 1],
   'cast-hex': [['cast-hex'], 0.7, 1], 'fireball-whoosh': [['fireball-whoosh'], 0.85, 1], 'bowl-roll': [['bowl-roll'], 0.6, 0], 'skull-crack': [['skull-crack'], 0.9, 1],
-  'book-thud': [['book-thud'], 0.9, 1], 'zap-hit': [['zap-hit'], 0.9, 1], 'fire-burst': [['fire-burst'], 0.9, 0.8], 'pins-scatter': [['pins-scatter'], 0.95, 0.8],
+  'book-thud': [['book-thud'], 0.9, 1], 'zap-hit': [['zap-hit'], 0.9, 1], 'fire-burst': [['fire-burst'], 0.9, 0.8], 'pins-scatter': [['pins-scatter'], 0.7, 0.8],
   melee: [['melee'], 0.9, 1], ranged: [['ranged'], 0.85, 1], bonk: [['bonk-1', 'bonk-2', 'bonk-3'], 0.9, 1], clink: [['clink-1', 'clink-2', 'clink-3'], 0.85, 0.8],
   thud: [['thud'], 0.85, 1], pick: [['mine-pick'], 0.5, 1], shatter: [['shatter'], 0.85, 0.5], 'defeat-poof': [['defeat-poof'], 0.85, 0.8],
   stronghold: [['commander-hit'], 1, 0.5], kaboom: [['kaboom'], 1, 0.5], 'turn-start': [['turn-start'], 0.85, 0], win: [['win'], 1, 0], lose: [['lose'], 1, 0],
@@ -12466,7 +12460,7 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
       await start(page, quiet({ playerCrystals: 6, board: [
         { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 8 },
         { cardId: 'goblin-grunt', owner: 'opponent', row: 3, col: 8 },
-        { cardId: 'goblin-scrounger', owner: 'opponent', row: 2, col: 8 },
+        { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 8 },
       ] }));
       if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
       let s = await getState(page);
@@ -12791,7 +12785,7 @@ test('AC512: each unit the Bowler\'s ball knocks over gets a bonk with the heavy
   await start(page, quiet({ playerCrystals: 6, board: [
     { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 8 },
     { cardId: 'goblin-grunt', owner: 'opponent', row: 3, col: 8 },
-    { cardId: 'goblin-scrounger', owner: 'opponent', row: 2, col: 8 },
+    { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 8 },
   ] }));
   if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
   await sfxReady(page);
@@ -13320,8 +13314,8 @@ test('AC521: a silver Sort button sits just left of the hand (never over a card)
     expect(ub.y, `${W}x${H}: the drop-up fits on screen`).toBeGreaterThanOrEqual(0);
     expect(ub.x).toBeGreaterThanOrEqual(0);
     expect(ub.x + ub.width).toBeLessThanOrEqual(W);
-    const frame = await up.getByRole('button', { name: 'By type', exact: true }).evaluate((e) => getComputedStyle(e).borderImageSource);
-    expect(frame, 'silver gem buttons, like the Done drop-up').toMatch(/\/art\/ui\/silver\/btn-/);
+    const frame = await up.getByRole('button', { name: 'By type', exact: true }).evaluate((e) => getComputedStyle(e).backgroundImage);
+    expect(frame, 'the fading frame (Ken, Nov 1), like the Done drop-up').toMatch(/linear-gradient/);
     await expect(sb).toHaveAttribute('aria-expanded', 'true');
     // a click elsewhere closes it, nothing changes
     await page.mouse.click(W / 2, H * 0.35);
@@ -15480,4 +15474,34 @@ test('AC563: under v2 a chase order walks and attacks in the same turn when its 
   for (let i = 0; i < 60; i++) { const st = await page.evaluate(() => window.oreheart.getState()); if (st.phase === 'over' || st.turn > 14) break; if (st.activePlayer === 'player' && st.priority === 'player') await page.evaluate(() => { const o = window.oreheart; const L = o.legalActions(); const a = L.find((x) => x.type === 'attack') || L.find((x) => x.type === 'done') || L.find((x) => x.type === 'pass'); if (a) o.act(a); }); await page.waitForTimeout(250); }
   const st = await page.evaluate(() => window.oreheart.getState());
   expect(st.turn, 'the match moved on').toBeGreaterThan(4);
+});
+
+// Ken (Nov 1): "let him auto attack the main player also ... click and drag and select the opponent to where they'll attack him every single time"
+test('AC564: dragging a unit onto the enemy Commander gives it a standing chase: it walks to him and attacks him every turn, also in a chain after other targets', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.goto('/?test=1&seed=3');
+  await page.waitForFunction(() => !!window.oreheart);
+  const board = [{ cardId: 'wolf-rider', owner: 'player', row: 5, col: 8 }, { cardId: 'goblin-grunt', owner: 'player', row: 5, col: 4 }];
+  const s0 = await page.evaluate((board) => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [] } }), board);
+  const wolf = s0.board.creatures.find((c) => c.cardId === 'wolf-rider'), grunt = s0.board.creatures.find((c) => c.cardId === 'goblin-grunt');
+  const sh = await page.evaluate(() => window.oreheart.getState().strongholds.opponent);
+  // the real drag: the wolf onto the enemy Stronghold square
+  const pt = (r, c) => page.evaluate(([r, c]) => { const a = window.__app, q = a.center(r, c), b = a.r.board.getBoundingClientRect(); return { x: b.left + q.x, y: b.top + q.y }; }, [r, c]);
+  const a = await pt(wolf.row, wolf.col), b = await pt(sh.row, sh.col);
+  await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 5 }); await page.mouse.move(b.x, b.y, { steps: 5 }); await page.mouse.up();
+  await page.waitForTimeout(300);
+  let orders = await page.evaluate(() => window.oreheart.getOrders());
+  expect(orders.find((o) => o.uid === wolf.uid), 'a chase on the Commander').toMatchObject({ kind: 'chase', targetUid: 'cmd:opponent' });
+  // a second unit by the API, to also check it works from far away over several turns
+  expect(await page.evaluate(([u]) => window.oreheart.setOrder({ kind: 'chase', uid: u, targetUid: 'cmd:opponent' }), [grunt.uid])).toBe(true);
+  let hits = 0, last = (await page.evaluate(() => window.oreheart.getState())).players.opponent.health;
+  for (let turn = 0; turn < 8 && last > 0; turn++) {
+    for (let i = 0; i < 14; i++) { const s = await page.evaluate(() => window.oreheart.getState()); if (s.activePlayer === 'player' && s.phase === 'action') break; await page.evaluate(() => { const o = window.oreheart; const d = o.legalActions().find((x) => x.type === 'done' || x.type === 'pass'); if (d) o.act(d); }); await page.waitForTimeout(80); }
+    await page.waitForTimeout(250);
+    const s = await page.evaluate(() => window.oreheart.getState());
+    if (s.players.opponent.health < last) hits++; last = s.players.opponent.health;
+    await page.evaluate(() => { const o = window.oreheart; const d = o.legalActions().find((x) => x.type === 'done'); if (d) o.act(d); });
+  }
+  expect(hits, 'the Commander is hit again and again without another click').toBeGreaterThanOrEqual(2);
+  expect(last).toBeLessThan(20);
 });

@@ -24,7 +24,7 @@ import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
 import { emptyCell } from '../engine';
 import { planOrder, chaseList, UNIT_STANCES, type Order, type OrderPlan, type Stance as UnitStance } from '../engine/orders';
 import { runOrders } from './orders-run';
-import { orderSvg, restTargetSvg, type OrderDrawing } from './order-draw';
+import { orderSvg, restTargetSvg, questionSvg, guardSvg, type OrderDrawing } from './order-draw';
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -2449,7 +2449,8 @@ export class App {
         for (const site of st.sites as any[]) {
           if (site.controller !== e.player) continue;
           const mine = e.player === 'player';
-          this.flowLog.push({ side: e.player, from: { row: site.row, col: site.col }, to: mine ? 'player-flow-crystal' : 'enemy-flow-crystal', shards: 'faceted', sBends: 2, flow: st.players[e.player].flow, count: flowShardCount(st.players[e.player].flow), colors: [FACTION_GLOW[this.game.state.players[e.player as 'player'].faction], GLOW_COLOR[this.game.state.players[e.player as 'player'].faction]], toScreen: (() => { const t = this.root.querySelector(`[data-role=${mine ? 'player' : 'enemy'}-flow-crystal]`) as El | null; const b = t?.getBoundingClientRect(); return b ? { x: b.left + b.width / 2, y: b.top + b.height / 2 } : null; })(), at: performance.now() });
+          this.flowLog.push({ side: e.player, from: { row: site.row, col: site.col }, to: mine ? 'player-flow-crystal' : 'enemy-flow-crystal', shards: 'faceted', sBends: 2, flow: st.players[e.player].flow, miners: st.board.creatures.filter((c: any) => c.owner === e.player && isMiner(CARDS[c.cardId]) && Math.max(Math.abs(c.row - site.row), Math.abs(c.col - site.col)) <= 1).length, count: flowShardCount(st.board.creatures.filter((c: any) => c.owner === e.player && isMiner(CARDS[c.cardId]) && Math.max(Math.abs(c.row - site.row), Math.abs(c.col - site.col)) <= 1).length), colors: [FACTION_GLOW[this.game.state.players[e.player as 'player'].faction]], // Nov 1: the team colour only, and more crystals the more Miners work the mine
+     toScreen: (() => { const t = this.root.querySelector(`[data-role=${mine ? 'player' : 'enemy'}-flow-crystal]`) as El | null; const b = t?.getBoundingClientRect(); return b ? { x: b.left + b.width / 2, y: b.top + b.height / 2 } : null; })(), at: performance.now() });
         }
         if (e.player === 'opponent') { this.enemyLog = []; this.recording = true; } else this.recording = false;
         continue;
@@ -3493,10 +3494,19 @@ export class App {
   speechAt = { player: 0, opponent: 0 } as Record<string, number>;
   /** v2: misses alternate MISS and PARRY (one counter per match) */
   missWord = 0;
-  swingShow(sw: any[], word: string, wait: number) {
+  swingShow(sw: any[], word: string, wait: number, bleed = false) {
     const GAP = this.view?.swingMs || 640; let shownHit = false; // one result per swing, as the scene plays each swing's animation
+    // Ken, Nov 1: a ranged unit shoots once; every further point of damage is Bleed: it starts at the shot's result and goes up one on each hit, stays on a miss
+    let level = 0, atkIdx = 0;
     sw.forEach((x, i) => setTimeout(() => {
       if (!this.r.fx || !this.view) return;
+      if (bleed && x.tag === 'attack') {
+        if (atkIdx++ > 0) { // the shot (first point) shows its normal result; each further point is a Bleed: a landed one raises the count, a miss or block keeps it (no MISS / PARRY / BLOCK words); the damage itself is instant
+          if (x.result === 'hit') { level++; this.burst(`BLEED ${level}!`, x.row, x.col); if (!x.commander) this.floatText('-1', 'dmg', x.row, x.col); }
+          else if (level > 0) this.burst(`BLEED ${level}`, x.row, x.col);
+          return;
+        }
+      }
       if (x.result === 'miss') this.burst(this.missWord++ % 2 ? 'PARRY!' : 'MISS!', x.row, x.col);
       else if (x.result === 'block') this.burst('BLOCK!', x.row, x.col); // the metal clink on an armour block comes from the scene's impact
       else { const w = x.tag === 'attack' ? word : 'whack'; this.pop(w, x.row, x.col); if (!x.commander) this.floatText('-1', 'dmg', x.row, x.col); } // every landed hit shows its word
@@ -3692,7 +3702,7 @@ export class App {
         // Combat v2 (Ken, Nov 1): one sticker per swing after the blow lands: MISS / PARRY (alternating), BLOCK, or the hit word with its -1
         const sw: any[] = []; for (let j = events.indexOf(e) + 1; j < events.length && events[j].type !== 'attack'; j++) if (events[j].type === 'swing') sw.push(events[j]);
         if (!sw.length) { if (tgt) { if (wait) setTimeout(() => this.pop(word, tgt.row, tgt.col), wait); else this.pop(word, tgt.row, tgt.col); } }
-        else this.swingShow(sw, word, wait);
+        else this.swingShow(sw, word, wait, ab.includes('ranged') || ab.includes('overwatch'));
       } else if (e.type === 'move' && e.knock && e.to && !events.some((x: any, j: number) => j > events.indexOf(e) && x.type === 'move' && x.knock && x.uid === e.uid)) this.pop('knockback', e.to.row, e.to.col);
       { const su = !e.commander && (e.creatureUid || e.uid), c = su ? st.board.creatures.find((x: any) => x.uid === su) : null; if (c) audio.unitEvent(c.cardId, c.uid, e.type, CARDS[c.cardId]?.abilities || [], !!e.ranged); } // Oct 31: a unit's special line when it does its special (audio.ts isSpecialEvent)
       if (e.type === 'steal') { const c = st.board.creatures.find((x: any) => x.uid === e.uid); if (c) this.pop('stolen', c.row, c.col); }
@@ -4358,10 +4368,10 @@ export class App {
   }
   chainPress(e: PointerEvent, cell: { row: number; col: number } | null) {
     const st = this.game.state, uid = this.chainFor!;
-    const foeAt = (c: { row: number; col: number } | null) => (c ? st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col && x.owner !== 'player') : null);
+    const foeAt = (c: { row: number; col: number } | null) => (c ? (c.row === SH.opponent.row && c.col === SH.opponent.col ? { uid: 'cmd:opponent', owner: 'opponent', row: c.row, col: c.col, cardId: st.players.opponent.commanderId } : st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col && x.owner !== 'player')) : null);
     const foe = foeAt(cell) || (() => { const f = this.figureAtEvent(e); return f && f.owner !== 'player' ? f : null; })();
     if (!foe || !this.orders.has(uid)) { this.chainFor = null; return false; }
-    this.drag(e, { ghost: dragIcon(CARDS[foe.cardId].faction, 'ghost tk'), onHover: () => {}, onEnd: () => {}, onStart: () => true,
+    this.drag(e, { ghost: dragIcon(foe.uid === 'cmd:opponent' ? st.players.opponent.faction : CARDS[foe.cardId].faction, 'ghost tk'), onHover: () => {}, onEnd: () => {}, onStart: () => true,
       onDrop: (c: any) => { const to = foeAt(c); if (to && to.uid !== foe.uid) { if (!chaseList(this.orders.get(uid)!).includes(foe.uid)) this.chainAdd(uid, foe.uid); this.chainAdd(uid, to.uid); } },
       onTap: () => { this.chainAdd(uid, foe.uid); } });
     return true;
@@ -4391,12 +4401,18 @@ export class App {
   markStances() { for (const [uid, el] of this.tokens) { const s = this.stances.get(uid); if (s) (el as El).dataset.stance = s; else delete (el as El).dataset.stance; } }
   orderPlan(uid: string): OrderPlan | null { const o = this.orders.get(uid); return o && this.game.state ? planOrder(this.game.state, o) : null; }
   /** The order a unit dropped (or clicked) on square c would get: chase an enemy standing there, else walk there. null = not an order square. */
+  /** a chase target: an enemy unit, or ("cmd:opponent") the enemy Commander on his Stronghold square */
+  orderUnit(st: any, u: string): any {
+    if (u.startsWith('cmd:')) { const side = u.slice(4) as 'player' | 'opponent'; return st.phase === 'over' ? null : { uid: u, row: SH[side].row, col: SH[side].col, commander: side }; }
+    return st.board.creatures.find((x: any) => x.uid === u);
+  }
   orderFor(cr: any, c: { row: number; col: number } | null): Order | null {
     const st = this.game.state;
     if (!c || !c.row || !cr || cr.owner !== 'player' || !this.ordersAllowed(st)) return null;
     if (c.row === cr.row && c.col === cr.col) return null;
+    if (c.row === SH.opponent.row && c.col === SH.opponent.col) return { kind: 'chase', uid: cr.uid, targetUid: 'cmd:opponent' }; // Ken, Nov 1: drag onto the enemy Commander: it attacks him every turn
     const there = st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col);
-    if (there) return there.owner !== cr.owner ? { kind: 'chase', uid: cr.uid, targetUid: there.uid } : null;
+    if (there) return there.owner !== cr.owner ? { kind: 'chase', uid: cr.uid, targetUid: there.uid } : { kind: 'move', uid: cr.uid, dest: { row: c.row, col: c.col } }; // Ken, Nov 1: draw the arrow onto your own unit: they swap places
     return emptyCell(st, c.row, c.col) ? { kind: 'move', uid: cr.uid, dest: { row: c.row, col: c.col } } : null;
   }
   /** Is there a normal legal action (attack, mine, move, aimed ability) for this unit on square c? Same matching as unitActAt. */
@@ -4412,7 +4428,7 @@ export class App {
     if (!c || !c.row) return;
     const st = this.game.state;
     if (this.unitHasActionAt(cr, c)) {
-      const foe = st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col && x.owner !== cr.owner);
+      const foe = c.row === SH.opponent.row && c.col === SH.opponent.col ? { uid: 'cmd:opponent' } : st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col && x.owner !== cr.owner);
       if (this.orders.delete(cr.uid)) this.renderOrders(st);
       this.unitActAt(cr, c);
       if (foe && this.orderTime(cr)) { this.orders.set(cr.uid, { kind: 'chase', uid: cr.uid, targetUid: foe.uid }); this.chainFor = cr.uid; this.renderOrders(this.game.state); this.flashOrder(cr.uid); } // Ken, Nov 1: it stays on them
@@ -4461,7 +4477,7 @@ export class App {
     const cellEl = (q: { row: number; col: number }) => this.r.cells.get(q.row + ',' + q.col) as El | undefined;
     for (const [o, p, pv] of plans) {
       for (const q of p.path) { const el = cellEl(q); if (el) { el.classList.add('path'); if (pv) el.classList.add('path-preview'); el.style.setProperty('--pfc', pfc); } }
-      const tgt = o.kind === 'chase' ? chaseList(o).map((u) => st.board.creatures.find((x: any) => x.uid === u)).find(Boolean) : null;
+      const tgt = o.kind === 'chase' ? chaseList(o).map((u) => this.orderUnit(st, u)).find(Boolean) : null;
       const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
       const end = endQ && cellEl(endQ);
       if (!end) continue;
@@ -4522,7 +4538,11 @@ export class App {
     const showUids = new Set(shown.map((x) => x.o.uid));
     for (const el of this.r.cells.values() as Iterable<El>) if (el.classList.contains('path-end')) el.classList.toggle('path-show', showUids.has(el.dataset.uid || ''));
     const rest = st ? this.orderPlans.filter((x) => x.o.kind === 'chase' && !x.pv && !this.orderShown(x.o.uid, false)) : [];
-    if (!shown.length && !rest.length) { if (svg.firstChild) svg.replaceChildren(); return; }
+    // Ken, Nov 1: a unit of yours that has no instruction set (and can still act) wears a yellow highlighter question mark
+    const ordered = new Set([...this.orderPlans.map((x) => x.o.uid), ...this.stances.keys()]);
+    const guards = st ? st.board.creatures.filter((c: any) => c.owner === 'player' && this.stances.get(c.uid) === 'guard' && this.orderShown(c.uid, false)) : [];
+    const idle = st && !st.winner && st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') ? st.board.creatures.filter((c: any) => c.owner === 'player' && !ordered.has(c.uid) && !isActed(st, c)) : [];
+    if (!shown.length && !rest.length && !idle.length && !guards.length) { if (svg.firstChild) svg.replaceChildren(); return; }
     const centre = (row: number, col: number) => {
       const q = view.cellQuad?.(row, col) || [];
       if (q.length) return { x: q.reduce((a: number, p: any) => a + p.x, 0) / q.length, y: q.reduce((a: number, p: any) => a + p.y, 0) / q.length };
@@ -4533,25 +4553,27 @@ export class App {
     let html = '';
     for (const { o, p, pv } of shown) {
       const c = st.board.creatures.find((x: any) => x.uid === o.uid);
-      const tgt = o.kind === 'chase' ? chaseList(o).map((u) => st.board.creatures.find((x: any) => x.uid === u)).find(Boolean) : null;
+      const tgt = o.kind === 'chase' ? chaseList(o).map((u) => this.orderUnit(st, u)).find(Boolean) : null;
       const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
       if (!c || !endQ) continue;
       const rc = view.cellRect(endQ.row, endQ.col);
       const sq = [{ row: c.row, col: c.col }, ...p.path];
       if (o.kind === 'move' && (p.blocked || !p.path.length)) sq.push(endQ);
-      const d: OrderDrawing = { uid: o.uid, kind: o.kind, pts: sq.map((q) => centre(q.row, q.col)), end: centre(endQ.row, endQ.col), cw: rc.w, ch: rc.h, preview: pv, blocked: p.blocked };
+      const d: OrderDrawing = { uid: o.uid, kind: o.kind, pts: sq.map((q) => centre(q.row, q.col)), end: centre(endQ.row, endQ.col), cw: rc.w, ch: rc.h, preview: pv, blocked: p.blocked, ranged: !!(CARDS[c.cardId]?.abilities || []).some((a: string) => a === 'ranged' || a === 'overwatch'), swap: o.kind === 'move' && !!st.board.creatures.find((x: any) => x.owner === c.owner && x.uid !== c.uid && x.row === endQ.row && x.col === endQ.col) };
       if (o.kind === 'chase') {
         d.pts.push(d.end);
         // the rest of its list, numbered: every target still on the board
-        d.chain = chaseList(o).map((u) => st.board.creatures.find((x: any) => x.uid === u)).filter(Boolean).slice(1).map((x: any) => centre(x.row, x.col));
+        d.chain = chaseList(o).map((u) => this.orderUnit(st, u)).filter(Boolean).slice(1).map((x: any) => centre(x.row, x.col));
       }
       html += orderSvg(d);
     }
     // an ordered chaser at rest only marks its current target, so many chains don't clutter the board
     for (const { o } of rest) {
-      const tgt = o.kind === 'chase' ? chaseList(o).map((u) => st.board.creatures.find((x: any) => x.uid === u)).find(Boolean) : null;
+      const tgt = o.kind === 'chase' ? chaseList(o).map((u) => this.orderUnit(st, u)).find(Boolean) : null;
       if (tgt) { const rc = view.cellRect(tgt.row, tgt.col); html += restTargetSvg(centre(tgt.row, tgt.col), rc.w, rc.h); }
     }
+    for (const c of guards) { const rc = view.cellRect(c.row, c.col); html += guardSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); }
+    for (const c of idle) { const rc = view.cellRect(c.row, c.col); html += questionSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); }
     svg.innerHTML = html;
   }
   /** Do what a unit dropped (or clicked) onto square c means: attack, mine, move or an aimed ability. */

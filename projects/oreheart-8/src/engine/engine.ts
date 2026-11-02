@@ -102,6 +102,8 @@ export function spellCost(s: any, p: Side, card: any) {
   const d = bonusOf(s, p, 'spellDiscount');
   return d ? Math.max(1, card.cost - d.amount) : card.cost;
 }
+/** Ken, Nov 1: the Miner swap's price: 1 Crystal while you have fewer than 3 Miners on the board, 3 Crystals once you have 3 or more (the Miner itself is paid for when you play it). */
+export const swapCost = (s: any, who: Side) => { const n = s.board.creatures.filter((c: any) => c.owner === who && isMiner(CARDS[c.cardId])).length; if (!n && funds(s.players[who]) < 1) return 0; /* a broke side with no Miner on the board swaps free (matches the free Miner rule), or it could never start its economy */ return n < 3 ? 1 : 3; };
 export const canPayCreature = (pl: any, _faction: string, cost: number) => funds(pl) >= cost;
 /** Pays from Flow first, then Bank. */
 function pay(pl: any, cost: number) {
@@ -530,14 +532,15 @@ export const expectedSwings = (n: number, def: any | null): number => swingOdds(
 /** Resolve `n` swings of `att` at `def`: hit roll, block roll, then 1 damage through hurt(). Events: swing {result: miss | block | hit}. */
 function swingsAt(s: any, att: any, def: any, n: number, ev: any[], tag: string) {
   let landed = 0;
+  const shooter = has(att, 'ranged') || has(att, 'overwatch'); // the further points of damage of a shooter are Bleeds: they only roll when the shot itself hit
   for (let i = 0; i < n && def.health > 0; i++) {
     const base = { type: 'swing', uid: att.uid, targetUid: def.uid, row: def.row, col: def.col, tag, n: i + 1, of: n };
-    if (COMBAT().dice !== 'sure' && d6(s) < (COMBAT().hitFrom ?? 3)) { ev.push({ ...base, result: 'miss' }); continue; }
+    if (COMBAT().dice !== 'sure' && d6(s) < (COMBAT().hitFrom ?? 3)) { ev.push({ ...base, result: 'miss' }); if (i === 0 && shooter) break; continue; } // Ken, Nov 1: a ranged unit's first shot is the shot; if it misses (or is blocked) there are no Bleed chances
     const dice = COMBAT().dice === 'sure' ? 0 : blockDiceOf(def), faces = blockFacesOf(def);
     let blocked = false;
     for (let k = 0; k < dice && !blocked; k++) if (faces.includes(d6(s))) blocked = true;
     if (!blocked && has(def, 'unbreakable') && landed >= 3) blocked = true; // Unbreakable: never more than 3 from one attack
-    if (blocked) { ev.push({ ...base, result: 'block', dice, armored: has(def, 'armored') || has(def, 'riotShield') }); continue; }
+    if (blocked) { ev.push({ ...base, result: 'block', dice, armored: has(def, 'armored') || has(def, 'riotShield') }); if (i === 0 && shooter) break; continue; }
     ev.push({ ...base, result: 'hit', dice });
     const saved = def.brewSave;
     if (hurt(s, def, 1, ev, false, true) > 0) landed++;
@@ -554,6 +557,8 @@ const STACK_CAP = () => CONFIG.stackCap ?? 3, AURA_CAP = () => CONFIG.auraStackC
 /** a Riot Shield Bearer behind its shield (can't be lifted, hurt or act) */
 const ADV = (a: string, d: string) => FACTIONS[a]?.beats === d;
 /** Ken (Oct 31): the faction triangle's +1 never applies when the creature being hit is a Miner (Gatherer or Smith). Shared by the engine and the computer's damage predictions. */
+/** Ken, Nov 1: ranged attacks and special abilities: the unit's stock (printed) Attack is never halved; only the buffed points above it are, rounded down. A stock-1 shooter hits for 1, 1, 2, 2, 3, 3 at Attack 1..6; a stock-2 one for 2, 2, 3, 3 at Attack 2..5. */
+export const halfAttack = (c: any, v: number): number => { const d = CARDS[c.cardId].attack; return v <= d ? v : d + Math.floor((v - d) / 2); };
 export const typeBonus = (attackerCard: any, targetCard: any) => (targetCard && !isMiner(targetCard) && ADV(attackerCard.faction, targetCard.faction) ? CONFIG.typeAdvantageBonus : 0);
 /** Junk Shaman's situational +1 Attack for adjacent Goblins on their owner's turn. */
 export function junkBonus(s: any, c: any): number {
@@ -569,6 +574,7 @@ export function atkValue(s: any, c: any, target?: any) {
   if (has(c, 'brawler') && c.lastFight != null && s.turn - c.lastFight <= 2) v *= 2;
   if (has(c, 'rage') && c.health * 2 < c.maxHealth) v += CONFIG.rageBonus;
   v += Math.min(AURA_CAP(), s.flags.battleCryN?.[c.owner] ?? (s.flags.battleCry === c.owner ? 1 : 0)); // stacking: +1 per Thunderhorn Blast this turn, up to +2
+  if (has(c, 'ranged') || has(c, 'overwatch')) v = halfAttack(c, v); // Ken, Nov 1: every ranged unit hits for half its Attack (rounded down; the printed number stays whole)
   if (target) v += typeBonus(card, CARDS[target.cardId]); /* Ken, Oct 31: no triangle bonus against Miners */
   return Math.max(0, v);
 }
@@ -727,11 +733,12 @@ function runAbility(s: any, l: any, who: Side, ev: any[]) {
         hits.push({ id: o.uid, uid: o.uid, from, to: { row: o.row, col: o.col } });
       }
       ev.push({ type: 'bowl', uid: c.uid, from: { row: c.row, col: c.col }, dr: l.dr, dc: l.dc, path, hits });
+      { const bd = halfAttack(c, atkValue(s, c)); for (const h of hits) { const o = s.board.creatures.find((x: any) => x.uid === h.uid); if (o && o.owner !== who) dealDamage(s, o, bd, ev); } } // only enemies are hurt (the ball still knocks friends aside). Ken, Nov 1: "the bowler needs to do 2 damage": every unit the ball hits takes his Attack (halved above the printed number)
       break;
     }
     case 'shockwave':
       c.hasAttacked = true;
-      for (const o of adjacentCreatures(s, c)) if (o.owner !== who) { knockAway(s, c, o, 1, ev); dealDamage(s, o, 1, ev); }
+      for (const o of adjacentCreatures(s, c)) if (o.owner !== who) { knockAway(s, c, o, 1, ev); dealDamage(s, o, halfAttack(c, atkValue(s, c)), ev); } // Nov 1: abilities scale like ranged attacks
       break;
     case 'plow': {
       c.hasAttacked = true;
@@ -759,7 +766,7 @@ function runAbility(s: any, l: any, who: Side, ev: any[]) {
     }
     case 'rocket':
       to(l.target.row, l.target.col, true); c.hasMoved = true; c.rocketed = true;
-      blastAround(s, c, atkValue(s, c), ev);
+      blastAround(s, c, halfAttack(c, atkValue(s, c)), ev); // Nov 1: abilities scale like ranged attacks
       break;
     case 'ward': {
       const o = creatureAt(s, l.target.row, l.target.col);
@@ -1099,7 +1106,7 @@ export function legalActions(s: any): any[] {
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of mineTargets(s, c)) out.push({ type: 'mine', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const x of s.sites) if (readyMinersAt(s, who, x).length) out.push({ type: 'mineAt', row: x.row, col: x.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const t of attackTargets(s, c)) out.push({ type: 'attack', creatureUid: c.uid, target: t });
-  if (ph === 'deploy' && !s.flags.swapped && !pl.hand.some((h: any) => isMiner(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
+  if (ph === 'deploy' && !s.flags.swapped && funds(pl) >= swapCost(s, who) /* Ken, Nov 1: swapping a card for a Miner costs Crystals first (then you still pay for the Miner when you play it) */ && !pl.hand.some((h: any) => isMiner(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
     if (pl.hand.length) for (const h of pl.hand) out.push({ type: 'gathererSwap', discardUid: h.uid });
     else out.push({ type: 'gathererSwap' });
   }
@@ -1385,6 +1392,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       break;
     }
     case 'gathererSwap': {
+      pay(pl, swapCost(s, who));
       if (l.discardUid) pl.discard.push(takeHand(l.discardUid));
       const idx = pl.deck.findIndex((d: any) => d.cardId === basicGatherer(pl.faction));
       const g = pl.deck.splice(idx, 1)[0];
@@ -1580,7 +1588,7 @@ export function applyAction(state: any, action: any): { ok: boolean; state: any;
 export function isActed(s: any, c: any): boolean {
   return c.hasAttacked || c.hasMined || (c.movesLeft ?? 1) < 1 || (c.summonedThisTurn && !has(c, 'haste') && !isMiner(CARDS[c.cardId])) || s.turn < c.lockedUntil; // v2: grey only at 0 points or after the attack
 }
-/** v2: every square reachable in at most m steps over empty squares (a flyer passes over units); your own units at any reached distance are swaps. */
+/** v2: every square reachable in at most m steps over empty squares (a flyer passes over units; anyone walks through their own units, never through enemies); your own units at any reached distance are swaps. */
 function v2MoveDests(s: any, c: any, m: number) {
   const out: any[] = []; const seen = new Set<string>([c.row + ',' + c.col]);
   let frontier = [{ row: c.row, col: c.col }];
@@ -1591,7 +1599,7 @@ function v2MoveDests(s: any, c: any, m: number) {
       if (seen.has(k) || !inBounds(row, col)) continue;
       const there = creatureAt(s, row, col);
       if (emptyCell(s, row, col)) { seen.add(k); out.push({ row, col }); next.push({ row, col }); }
-      else if (there && there.owner === c.owner) { seen.add(k); out.push({ row, col }); if (has(c, 'flying')) next.push({ row, col }); }
+      else if (there && there.owner === c.owner) { seen.add(k); out.push({ row, col }); next.push({ row, col }); } // Ken, Nov 1: you may walk through your own units (never stop on one except to swap), never through enemies
       else if (there && has(c, 'flying')) { seen.add(k); next.push({ row, col }); }
     }
     frontier = next;

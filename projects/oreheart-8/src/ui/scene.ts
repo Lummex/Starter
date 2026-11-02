@@ -1,7 +1,7 @@
 // Placeholder 3D battlefield (Three.js). Returns null when WebGL is unavailable (the UI then shows a 2D board).
 import { ringColor, getRings } from './fx-settings';
 import * as THREE from 'three';
-import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf } from '../engine';
+import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf, isMiner } from '../engine';
 import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, standingBox, type C3D } from './creature3d';
 import { stagePlow, plowFrame } from './plow';
 import { SHOTS, isShooter, createProjectiles, preloadShots, type ShotSpec } from './projectiles';
@@ -286,7 +286,7 @@ const _embV = new THREE.Vector3();
   const embers: null = null;
 
   // Round 5b: soul crystal flow particles (mines stream into their owner's Stronghold; neutral mines swirl)
-  const FN = 16;
+  const FN = 32; // Ken, Nov 1: twice as many crystals (a mine streams 4 + 4 per Miner on it, up to 32)
   let flowMode = (() => { try { return localStorage.getItem('oreheart.flow') || ''; } catch { return ''; } })() || (low ? 'reduced' : 'on');
   const pulseAt: Record<string, number> = { player: 0, opponent: 0 };
   // Crystal Flow (Round 9a, port of the Game Editor's makeFlow): faceted shards tumble along S-curves from each owned mine to its owner's Stronghold.
@@ -300,6 +300,7 @@ const _embV = new THREE.Vector3();
   const flowDum = new THREE.Object3D(), flowCol3 = new THREE.Color();
   let flowShown = 0;
   const flowOwner: string[] = [];
+  const minersAt: number[] = []; // the owner's Miners working each mine (set in setState)
   const flowCol: Record<string, THREE.Color> = { player: new THREE.Color(0x9dff6a), opponent: new THREE.Color(0xff5a4a), neutral: new THREE.Color(0xe8e8ff) };
   const bez = new THREE.Vector3();
   // Round 10: shards flow into the HUD Flow crystal counter (screen element -> a world point on a plane above the board)
@@ -324,17 +325,16 @@ const _embV = new THREE.Vector3();
       flowDest[sd] = (flowDest[sd] || new THREE.Vector3()).copy(camera.position).addScaledVector(flowDir, k);
     }
   }
-  /** Shards per stream: the engine's window.oreheart.flowShardCount if present, else 2 at flow 1 up to ~12 at flow 16. */
-  function shardCount(side: string): number {
-    const fl = state?.players?.[side]?.flow || 0;
+  /** Shards per stream: the engine's flowShardCount for the Miners on that mine (Ken, Nov 1: the more Miners, the more crystals). */
+  function shardCount(miners: number): number {
     const fn = (window as any).oreheart?.flowShardCount;
     let c = 0;
-    if (typeof fn === 'function') { try { c = Number(fn(fl)); } catch { c = 0; } }
-    if (!(c > 0)) c = fl <= 0 ? 1 : Math.round(2 + (Math.min(fl, 16) - 1) * (10 / 15));
+    if (typeof fn === 'function') { try { c = Number(fn(miners)); } catch { c = 0; } }
+    if (!(c > 0)) c = Math.min(32, 4 + 4 * Math.max(1, miners));
     return Math.max(1, Math.min(FN, Math.round(c)));
   }
   function updateFlow(now: number) {
-    const n = flowMode === 'off' ? 0 : flowMode === 'reduced' ? 6 : FN;
+    const n = flowMode === 'off' ? 0 : flowMode === 'reduced' ? 12 : FN;
     flowPts.visible = n > 0;
     if (!n) { flowShown = 0; return; }
     const t = now / 1000;
@@ -344,7 +344,7 @@ const _embV = new THREE.Vector3();
     if (now - flowDestAt > 400 || flowDestDirty) { flowDestAt = now; flowDestDirty = false; updateFlowDest(); } // Nov 1: reading the layout every frame cost 1.6 ms; the target only moves with the view
     mines.forEach((m, mi) => {
       const owner = flowOwner[mi] || 'neutral';
-      const nm = owner === 'neutral' ? n : Math.min(n, shardCount(owner));
+      const nm = owner === 'neutral' ? Math.min(n, flowMode === 'reduced' ? 6 : 16) : Math.min(n, shardCount(minersAt[mi] || 1));
       const a = m.group.position;
       const dest = owner === 'neutral' ? null : flowDest[owner] || cmd[owner].group.position;
       const c = flowCol[owner];
@@ -361,22 +361,22 @@ const _embV = new THREE.Vector3();
           bez.set(w * w * sx + 2 * w * u * cx + u * u * ex, w * w * sy + 2 * w * u * cy + u * u * ey, w * w * sz + 2 * w * u * cz + u * u * ez);
           // moving S-curves: sideways bends that slither along the stream
           const dx = ex - sx, dz = ez - sz, len = Math.hypot(dx, dz) || 1;
-          const env = Math.sin(Math.PI * u), bend = env * 0.55 * Math.sin(Math.PI * 2 * 2.15 * u - t * 1.4 + mi) + Math.sin(t * 3 + i * 1.7) * 0.06 * env;
+          const env = Math.sin(Math.PI * u), bend = env * 1.25 * Math.sin(Math.PI * 2 * 3 * u - t * 2.2 + mi) + Math.sin(t * 3 + i * 1.7) * 0.12 * env; // Ken, Nov 1: a lot more S-wave, swaying back and forth as it floats in
           bez.x += (-dz / len) * bend; bez.z += (dx / len) * bend;
           flowDum.position.copy(bez);
           fade = Math.min(1, u * 6, (1 - u) * 4) * (0.8 + pulse * 0.6);
           flowDum.rotation.set(t * 3 + i, t * 2 + i * 2, t * 4 + mi);
-          flowDum.scale.setScalar(0.2 * (0.5 + 0.5 * env) * (1 + pulse * 0.5) * (0.8 + (i % 3) * 0.2));
+          flowDum.scale.setScalar(0.32 * (0.55 + 0.45 * env) * (1 + pulse * 0.5) * (0.8 + (i % 3) * 0.2)); // Ken, Nov 1: bigger, so the stream reads
         } else {
-          const ang = t * 1.1 + (i / n) * Math.PI * 2, r = 0.38 + 0.12 * Math.sin(t * 1.7 + i);
+          const ang = t * 1.1 + (i / nm) * Math.PI * 2, r = 0.38 + 0.12 * Math.sin(t * 1.7 + i);
           flowDum.position.set(a.x + Math.cos(ang) * r, 1.45 + 0.25 * Math.sin(t * 1.3 + i * 2) + (i % 3) * 0.12, a.z + Math.sin(ang) * r);
           flowDum.rotation.set(t * 3 + i, t * 2 + i * 2, 0);
           flowDum.scale.setScalar(0.16); fade = 0.8;
         }
         flowDum.updateMatrix();
         flowPts.setMatrixAt(k, flowDum.matrix);
-        const cc = owner !== 'neutral' && i % 4 === 0 ? flowHi[owner] : c;
-        flowCol3.setRGB(cc.r * fade * 1.15, cc.g * fade * 1.15, cc.b * fade * 1.15);
+        const cc = c; // Ken, Nov 1: every crystal in the colour of the team that owns the mine (no accent shards)
+        flowCol3.setRGB((cc.r * 1.5 + 0.1) * fade, (cc.g * 1.5 + 0.1) * fade, (cc.b * 1.5 + 0.1) * fade); // a touch of white so a dark team colour (dwarf blue) still glows
         flowPts.setColorAt(k, flowCol3);
         shown++;
       }
@@ -466,13 +466,14 @@ const _embV = new THREE.Vector3();
     group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; fidgetAt?: number; fidgetUntil?: number; fidgetBrk?: boolean; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
     /** Oct 30: squares still to walk (one per step), running gait, knock-back flight, delayed hit flash, step-in length, when its blow lands */
-    path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lastBlowAt?: number; lungeDur?: number; blowAt?: number;
+    flight?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null; path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lastBlowAt?: number; lungeDur?: number; blowAt?: number;
   };
   type Knock = { t0: number; from: THREE.Vector3; land: THREE.Vector3; h: number; spin: number; fly: number; ret: boolean; landed: boolean; knockMove?: boolean };
   // Oct 30 (Ken's fighting vision): units walk square by square and fights are little comic scenes (timings in ms, snappy)
   const WALK_SPEED = 2.8, RUN_SPEED = 4.0, IMPACT_MELEE = 250, IMPACT_RANGED = 300, LUNGE_MS = 620;
   /** Ken, Nov 1: "for each swing I'd like it to play the animation, so you can see the hit and the miss": one attack animation, sound and result per swing, this far apart */
   const SWING_MS = 640;
+  const RIDE_MS = 1500; // Rocket Rider flight: slow climb, arc over, nosedive
   const swingDefs = new Set<string>(); // defenders whose flinch and knock-back follow their own swing results
   const impacts: { at: number; to: THREE.Vector3; ranged: boolean; armored: boolean; commander: boolean }[] = [];
   /** Oct 31 (Ledger, studio/gear-placements-oct31.json aimLooks): while a shooter plays its ranged clip its gun takes an aim grip (barrel along
@@ -760,9 +761,10 @@ const _embV = new THREE.Vector3();
     f.ringColor = col; f.ringGreyed = acted;
     (ring.material as THREE.MeshBasicMaterial).color.set(col);
     (ring.material as THREE.MeshBasicMaterial).opacity = rs.opacity; (ring.material as THREE.MeshBasicMaterial).transparent = rs.opacity < 1;
+    ring.visible = !acted; // Ken, Nov 1: once a unit has no moves left its ring disappears instead of greying out
     ring.scale.set(1 / f.baseScale, 1 / f.baseScale, rs.thickness / f.baseScale);
     const halo = ring.getObjectByName('ring-halo') as THREE.Mesh | undefined;
-    if (halo) { (halo.material as THREE.MeshBasicMaterial).color.set(col); (halo.material as THREE.MeshBasicMaterial).opacity = rs.glow * 0.5 * rs.opacity; halo.visible = rs.glow > 0; }
+    if (halo) { (halo.material as THREE.MeshBasicMaterial).color.set(col); (halo.material as THREE.MeshBasicMaterial).opacity = rs.glow * 0.5 * rs.opacity; halo.visible = rs.glow > 0 && !acted; }
   }
   // facing letters -> yaw (models look down +Z at yaw 0; N = toward board row 1 = -Z)
   const FACE_YAW: Record<string, number> = { N: Math.PI, NE: Math.PI * 3 / 4, E: Math.PI / 2, SE: Math.PI / 4, S: 0, SW: -Math.PI / 4, W: -Math.PI / 2, NW: -Math.PI * 3 / 4 };
@@ -970,6 +972,7 @@ const _embV = new THREE.Vector3();
     for (const c of st.board.creatures) preloadShots(c.cardId); // Oct 31: projectile models download once per kind (cached)
     st.sites.forEach((s: any, i: number) => {
       const cr = crystals[i];
+      minersAt[i] = s.controller ? st.board.creatures.filter((c: any) => c.owner === s.controller && isMiner(CARDS[c.cardId]) && Math.max(Math.abs(c.row - s.row), Math.abs(c.col - s.col)) <= 1).length : 0;
     { const fac = s.controller ? st.players[s.controller].faction : '';
       if (cr.embFac !== fac) {
         cr.embFac = fac;
@@ -1049,7 +1052,11 @@ const _embV = new THREE.Vector3();
         if (ic) ic.visible = false; // owner (Oct 25): the drunk icon now shows with the other status icons above the head
       }
       const mv = events.find((e) => e.type === 'move' && e.uid === c.uid);
-      if (mv && mv.teleport) { f.group.position.copy(tgt); f.path = []; }
+      if (mv && mv.teleport && c.cardId === 'shard-guzzler' && events.some((e) => e.type === 'abilityUsed' && e.uid === c.uid && e.ability === 'rocket')) { // Ken, Nov 1: the Rocket Rider shoots up slowly, arcs over and nosedives onto the target
+        f.flight = { t0: now, from: f.group.position.clone().setY(0), to: tgt.clone() }; f.path = []; audio.play('fireball-whoosh');
+        setTimeout(() => { spawnFx('dust', tgt, 6); spawnFx('stars', tgt, 5); }, RIDE_MS);
+      }
+      else if (mv && mv.teleport) { f.group.position.copy(tgt); f.path = []; }
       else if (mv && mv.knock) { // Round 28b + Oct 30: a knock-back (Smack, Shockwave, deathKnock...) launches the figure onto its new square with a tumble
         const from = f.group.position.clone().setY(0); f.path = [];
         f.kb = { t0: now, from, land: tgt.clone(), h: 0.45, spin: 1, fly: 420, ret: false, landed: false, knockMove: true }; f.knockT = now + 100; fitKnockClip(f);
@@ -1092,12 +1099,13 @@ const _embV = new THREE.Vector3();
         f.blowAt = releaseAt + flightMs; f.faceUntil = f.blowAt + 400;
         aimGrip(f, t0, t0 + f.atkMs + 150, now);
         const sh = shot, ff = f;
-        for (let i = 0; i < NS; i++) { const k = i * SWING_MS; // one shot per swing; a miss or a block still flies, only a landed hit makes the thud
+        for (let i = 0; i < 1; i++) { const k = i * SWING_MS; // one shot only (the rest is bleed); a miss or a block still flies, only a landed hit makes the thud
           proj.fire({ shooterUid: f.uid, unit: f.cardId, clip: f.c3d?.clipOf?.('attack') || '', spec: shot, releaseTime: clipRel, releaseAt: releaseAt + k, arriveAt: f.blowAt + k, to: toPt, targetUid: def?.uid,
             launch: () => launchPoint(ff, sh, toPt), onSpawn: () => audio.play(SHOT_SOUNDS[ff.cardId]?.fire || 'ranged'),
             onLand: () => { const h = SHOT_SOUNDS[ff.cardId]?.hit; if (h && result(i) === 'hit') audio.play(h); } }); }
       } else if (ranged) { f.lunge = dir.clone().normalize().multiplyScalar(-0.12); f.lungeT = t0 + imp - 40; f.lungeDur = 300; }
       else { f.lunge = dir.clone().multiplyScalar(0.42); f.lungeT = t0; f.lungeDur = LUNGE_MS; }
+      const NV = ranged || shot ? 1 : NS; // Ken, Nov 1: a ranged unit shoots once (the other points of damage are Bleed, shown as stickers); a melee unit swings once per point
       f.lastBlowAt = f.blowAt + (NS - 1) * SWING_MS;
       blowAt = Math.max(blowAt, f.lastBlowAt); strikers.add(f.uid);
       f.shootT = t0;
@@ -1114,7 +1122,7 @@ const _embV = new THREE.Vector3();
       }
       const swing = () => { if (!shot) audio.play(ranged ? 'ranged' : 'melee'); audio.unitAttack(f.cardId, f.uid, f.finished); }; // a shot's 'ranged' sound plays at its release
       if (wait) setTimeout(swing, wait); else swing();
-      for (let i = 1; i < NS; i++) setTimeout(() => { // the next swing: the attack clip again, its sound, the lunge again
+      for (let i = 1; i < NV; i++) setTimeout(() => { // the next swing: the attack clip again, its sound, the lunge again
         if (!figs.has(f.uid) || f.dying) return;
         const tn = performance.now(); f.shootT = tn;
         if (!shot && !ranged) { f.lunge = dir.clone().multiplyScalar(0.42); f.lungeT = tn; f.lungeDur = LUNGE_MS; } else if (!shot) { f.lunge = dir.clone().normalize().multiplyScalar(-0.12); f.lungeT = tn + imp - 40; f.lungeDur = 300; }
@@ -1123,7 +1131,7 @@ const _embV = new THREE.Vector3();
       const dab: string[] = def ? CARDS[def.cardId]?.abilities || [] : [];
       const dc = def ? st.board.creatures.find((x: any) => x.uid === def.uid) : null;
       const armoredTgt = dab.includes('armored') || dab.includes('unbreakable') || dab.includes('riotShield') || (dc?.shield || 0) > 0;
-      for (let i = 0; i < NS; i++) { // a landed hit thuds (clink on armour); a block by armour clinks; a miss makes no impact at all
+      for (let i = 0; i < NV; i++) { // a landed hit thuds (clink on armour); a block by armour clinks; a miss makes no impact at all
         const r = result(i);
         if (r === 'hit') impacts.push({ at: f.blowAt + i * SWING_MS, to: to.clone(), ranged, armored: armoredTgt, commander: !!e.target.commander });
         else if (r === 'block' && sw[i]?.armored) impacts.push({ at: f.blowAt + i * SWING_MS, to: to.clone(), ranged, armored: true, commander: false });
@@ -1139,6 +1147,7 @@ const _embV = new THREE.Vector3();
     }
     // Oct 31 (Forge): a damage spell with painted FX lands at the FX's impact, not at the cast: hit flashes (every unit in Starfall's 3x3),
     // deaths, the Commander's hit sound and the Bulwark pop wait for it. Hex Reversal's copied spell plays after the reflection.
+    if (!blowAt) { const rr = events.find((e: any) => e.type === 'abilityUsed' && e.ability === 'rocket' && figs.get(e.uid)); if (rr) blowAt = now + RIDE_MS; } // the blast waits for the rocket to land
     if (!blowAt && events.some((x: any) => x.type === 'damage')) {
       let lag = 0;
       for (const e of events) {
@@ -1646,6 +1655,12 @@ const _embV = new THREE.Vector3();
         else if (k < 1) { const e2 = k * (2 - k); g.position.lerpVectors(b.from, b.to, e2); goal.copy(g.position); }
         else { f.bowl = null; g.rotation.z = 0; }
       }
+      if (f.flight) { // Rocket Rider: slow climb, arc over, nosedive (RIDE_MS)
+        const fl = f.flight, k = Math.min(1, (now - fl.t0) / RIDE_MS), H = 3.6;
+        const e = k * k * (3 - 2 * k) * 0.35 + k * k * k * 0.65; // slow at the start, fast at the end
+        g.position.lerpVectors(fl.from, fl.to, e); goal.copy(g.position);
+        if (k >= 1) { f.flight = null; g.rotation.x = 0; }
+      }
       if (carried) goal.set(carry!.pos.x, goal.y, carry!.pos.z);
       const walking = !inKb && !f.bowl && (onPath || Math.hypot(g.position.x - f.target.x, g.position.z - f.target.z) > 0.05); /* Oct 31: a unit waiting for the bowling ball stands still */ // on the ground plane: a hovering flyer is not walking // judged before this frame's glide: one slow frame may cover the whole step
       if (!onPath && !inKb) g.position.lerp(goal, f.bowl ? 1 : carried ? 0.5 : 1 - Math.exp(-dt0 * (f.lunge ? 24 : 14))); // time-based glide; snappier while stepping in to swing
@@ -1663,6 +1678,11 @@ const _embV = new THREE.Vector3();
         g.visible = true;
         if (k >= 1) f.born = 0;
       } else g.position.y = walking ? Math.abs(Math.sin(now / 90)) * 0.09 : Math.abs(Math.sin(now / 260 + g.position.x)) * 0.015;
+      if (f.cardId === 'shard-guzzler' && !f.born) { // Ken, Nov 1: the Rocket Rider rides his rocket, hovering above the floor
+        let y = 0.42 + Math.sin(now / 420 + g.position.x) * 0.05;
+        if (f.flight) { const k = Math.min(1, (now - f.flight.t0) / RIDE_MS); y += 3.6 * Math.pow(Math.sin(Math.PI * k), 0.8); g.rotation.x = k < 0.3 ? -0.2 : -0.2 + (k - 0.3) / 0.7 * 1.7; }
+        g.position.y = y;
+      }
       // hit flash (red) + flinch
       if (f.hitT) {
         const k = (now - f.hitT) / 320;

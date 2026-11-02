@@ -46,7 +46,7 @@ describe('Round 28 orders: shortestPath and turns', () => {
     const a = at(s, 2, 2);
     const p = shortestPath(s, a, { row: 2, col: 4 })!;
     expect(p.length).toBe(2);
-    expect(has(p, 2, 3)).toBe(false);
+    expect(has(p, 2, 3)).toBe(true); // Ken, Nov 1: it walks straight through its own unit instead of around it
     expect(connected(a, p)).toBe(true);
     const b = at(s, 3, 5);
     const q = shortestPath(s, b, { row: 3, col: 7 })!;
@@ -57,9 +57,9 @@ describe('Round 28 orders: shortestPath and turns', () => {
   it('walled in → null; destination occupied, a mine, or the start → null', () => {
     const s = mk([P('goblin-grunt', 1, 1), P('goblin-grunt', 1, 2), P('goblin-grunt', 2, 1), P('goblin-grunt', 2, 2), O('goblin-grunt', 6, 9)]);
     const g = at(s, 1, 1);
-    expect(shortestPath(s, g, { row: 1, col: 5 })).toBeNull();
+    expect(shortestPath(s, g, { row: 1, col: 5 })!.length).toBe(4); // Ken, Nov 1: own units never wall you in; you walk through them
     const h = at(s, 2, 2);
-    expect(shortestPath(s, h, { row: 1, col: 2 })).toBeNull(); // ally there
+    expect(shortestPath(s, h, { row: 1, col: 2 })).toEqual([{ row: 1, col: 2 }]); // ally there: a move onto your own unit is a swap (Ken, Nov 1)
     expect(shortestPath(s, h, { row: 6, col: 9 })).toBeNull(); // enemy there
     expect(shortestPath(s, h, { row: 3, col: 6 })).toBeNull(); // mine
     expect(shortestPath(s, h, { row: 2, col: 2 })).toBeNull(); // start
@@ -72,8 +72,8 @@ describe('Round 28 orders: shortestPath and turns', () => {
     const p = shortestPath(s, f, { row: 1, col: 3 })!;
     expect(p.length).toBe(2);
     expect(connected(f, p)).toBe(true);
-    // a walking unit in the same pocket has no way out
-    expect(shortestPath(s, { ...at(s, 1, 2), row: 1, col: 1, cardId: 'goblin-grunt' }, { row: 1, col: 3 })).toBeNull();
+    // a walking unit in the same pocket walks through its own units (Ken, Nov 1); enemies would wall it in
+    expect(shortestPath(s, { ...at(s, 1, 2), row: 1, col: 1, cardId: 'goblin-grunt' }, { row: 1, col: 3 })!.length).toBe(2);
     const f2 = at(s, 3, 5);
     const q = shortestPath(s, f2, { row: 3, col: 7 })!;
     expect(q.length).toBe(2);
@@ -149,8 +149,8 @@ describe('Round 28 orders: chase', () => {
 });
 
 describe('Round 28 orders: planOrder', () => {
-  it('move order: plan, arrived → done, walled → blocked', () => {
-    const s = mk([P('goblin-grunt', 4, 1), P('goblin-grunt', 1, 1), P('goblin-grunt', 1, 2), P('goblin-grunt', 2, 1), P('goblin-grunt', 2, 2), O('goblin-grunt', 7, 13)]);
+  it('move order: plan, arrived → done, walled (by enemies) → blocked', () => {
+    const s = mk([P('goblin-grunt', 4, 1), P('goblin-grunt', 1, 1), O('goblin-grunt', 1, 2), O('goblin-grunt', 2, 1), O('goblin-grunt', 2, 2), O('goblin-grunt', 7, 13)]); // Ken, Nov 1: only enemies wall a unit in
     const g = at(s, 4, 1);
     const plan = planOrder(s, { kind: 'move', uid: g.uid, dest: { row: 4, col: 4 } });
     expect(plan).toMatchObject({ turns: 2, blocked: false, done: false }); // v2: 2 feet
@@ -161,7 +161,7 @@ describe('Round 28 orders: planOrder', () => {
     expect(planOrder(s, { kind: 'move', uid: 'nope', dest: { row: 1, col: 5 } }).done).toBe(true);
   });
   it('chase order: target gone → done, unreachable → blocked, otherwise a path', () => {
-    const s = mk([P('goblin-grunt', 4, 1), P('goblin-grunt', 1, 1), P('goblin-grunt', 1, 2), P('goblin-grunt', 2, 1), P('goblin-grunt', 2, 2), O('goblin-grunt', 4, 5)]);
+    const s = mk([P('goblin-grunt', 4, 1), P('goblin-grunt', 1, 1), O('goblin-grunt', 1, 2), O('goblin-grunt', 2, 1), O('goblin-grunt', 2, 2), O('goblin-grunt', 4, 5)]); // Ken, Nov 1: only enemies wall a unit in
     const g = at(s, 4, 1), e = at(s, 4, 5), w = at(s, 1, 1);
     expect(planOrder(s, { kind: 'chase', uid: g.uid, targetUid: 'gone' }).done).toBe(true);
     expect(planOrder(s, { kind: 'chase', uid: g.uid, targetUid: e.uid })).toMatchObject({ turns: 2, blocked: false, done: false }); // v2: 2 feet
@@ -177,11 +177,11 @@ describe('Oct 30 (Ken): always the most direct route', () => {
     const d = shortestPath(s, at(s, 4, 1), { row: 1, col: 4 })!; // a pure diagonal stays on the diagonal
     expect(d).toEqual([{ row: 3, col: 2 }, { row: 2, col: 3 }, { row: 1, col: 4 }]);
   });
-  it('an ally far down the road is no reason to go around (one within this turn\'s reach still is)', () => {
+  it('an ally on the road is never a reason to go around (Ken, Nov 1: you walk through your own units)', () => {
     const s = mk([P('goblin-grunt', 6, 1), P('goblin-grunt', 6, 4), O('goblin-grunt', 1, 13)]);
     const p = shortestPath(s, at(s, 6, 1), { row: 6, col: 6 })!;
     expect(p.every((q) => q.row === 6)).toBe(true);
     const near = mk([P('goblin-grunt', 6, 1), P('goblin-grunt', 6, 2), O('goblin-grunt', 1, 13)]);
-    expect(has(shortestPath(near, at(near, 6, 1), { row: 6, col: 6 })!, 6, 2)).toBe(false);
+    expect(has(shortestPath(near, at(near, 6, 1), { row: 6, col: 6 })!, 6, 2)).toBe(true);
   });
 });
