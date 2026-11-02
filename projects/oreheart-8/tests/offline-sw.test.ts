@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { listBuild, writeServiceWorker } from '../tools/sw-plugin.mjs';
+import { listBuild, writeServiceWorker } from '../vite-plugins/sw-plugin.mjs';
 
 function fakeDist(): string {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'oh-sw-'));
@@ -29,7 +29,7 @@ describe('offline app build (sw-plugin)', () => {
     expect(listBuild(d).version).not.toBe(v1);
   });
   it('writes sw.js with the lists filled in', () => {
-    const d = fakeDist(); const m = writeServiceWorker(d, path.resolve(__dirname, '../tools/sw-template.js'));
+    const d = fakeDist(); const m = writeServiceWorker(d, path.resolve(__dirname, '../vite-plugins/sw-template.js'));
     const sw = fs.readFileSync(path.join(d, 'sw.js'), 'utf8');
     expect(sw).toContain(`const VERSION = '${m.version}'`);
     expect(sw).toContain('"/index.html"'); expect(sw).toContain('"/models/creatures/goblin-grunt/char.glb":[');

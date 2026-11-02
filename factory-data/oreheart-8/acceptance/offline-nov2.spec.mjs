@@ -11,9 +11,9 @@ async function ready(page) {
   return offline(page);
 }
 const swLists = async (page) => page.evaluate(async () => {
-  const t = await (await fetch('/sw.js', { cache: 'no-store' })).text();
+  const t = (await (await fetch('/sw.js', { cache: 'no-store' })).text()).replace(/\r\n/g, '\n'); // Windows line endings must not matter
   const g = (re) => JSON.parse(t.match(re)[1]);
-  return { version: t.match(/const VERSION = '([0-9a-f]+)'/)[1], core: g(/const CORE = (\[[\s\S]*?\]);\n/), full: g(/const FULL = (\{[\s\S]*?\});\s*\/\//) };
+  return { version: t.match(/const VERSION = '([0-9a-f]+)'/)[1], core: g(/const CORE = (\[[\s\S]*?\]);\s*\n/), full: g(/const FULL = (\{[\s\S]*?\});\s*\/\//) };
 });
 const cacheState = async (page) => page.evaluate(async () => {
   const names = await caches.keys();
