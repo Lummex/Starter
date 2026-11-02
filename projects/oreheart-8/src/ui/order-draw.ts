@@ -108,7 +108,8 @@ export function orderSvg(d: OrderDrawing): string {
   const cw = d.cw, k = Math.max(0.3, Math.min(1, d.ch / d.cw)); // the board's tilt: squash on the ground
   const s = Math.min(cw, d.ch * 1.6);
   const w = Math.max(6, Math.min(15, s * 0.17));
-  const ink = d.blocked ? '#ff6a58' : d.kind === 'chase' ? '#ff4a3d' : '#5b8dff', ph = r() * 6;
+  // Ken, Nov 1: green = a move, red = a melee attack, blue = a ranged attack (a blocked move is red)
+  const ink = d.blocked ? '#ff6a58' : d.kind === 'move' ? '#46e05a' : d.ranged ? '#5b8dff' : '#ff4a3d', ph = r() * 6;
   const F = (p: Pt): V => ({ x: p.x, y: p.y / k }); // screen -> flat
   let out = '';
   let pts = d.pts.map(F);
@@ -148,7 +149,7 @@ export function orderSvg(d: OrderDrawing): string {
     if (d.chain && d.chain.length) {
       out += mark(d.end, 1);
       let from = d.end;
-      d.chain.forEach((p, i) => { out += `<path class="ord-next" d="M${f(from.x)},${f(from.y)} L${f(p.x)},${f(p.y)}" fill="none" stroke="#ff4a3d" stroke-opacity=".6" stroke-width="${f(w * 0.6)}" stroke-linecap="round" stroke-dasharray="7 7"/>` + mark(p, i + 2); from = p; });
+      d.chain.forEach((p, i) => { out += `<path class="ord-next" d="M${f(from.x)},${f(from.y)} L${f(p.x)},${f(p.y)}" fill="none" stroke="${ink}" stroke-opacity=".6" stroke-width="${f(w * 0.6)}" stroke-linecap="round" stroke-dasharray="7 7"/>` + mark(p, i + 2); from = p; });
     }
   }
   return `<g class="ord" data-uid="${d.uid}" data-kind="${d.kind}"${d.preview ? ' opacity=".85"' : ''}>${out}</g>`;
