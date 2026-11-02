@@ -213,7 +213,7 @@ The computer opponent picks among them for variety. Fighters are mostly Commons,
 
 ## Turns and phases
 
-Every turn runs through the same phases, each with a 50-second timer. For the first 40 seconds no timer is shown; then a big 10-to-0 countdown pops up in the center of the screen, and at 0 the game moves to the next phase (not the end of the whole turn). Both numbers are owner settings. The tutorial has no timer.
+Every turn runs through the same phases, each with a 2-minute timer. A bar at the top of the screen (the same style as the Respond window's bar) drains with the timer all through your turn, and shows clearly when banked time is being used; the big 10-to-0 countdown still pops up for the last ten seconds. On the computer's turn the bar shows only if it has a timer. (Ken, 2026-11-01; replaces the earlier "no timer shown for the first 40 seconds".)
 
 **Setup:** pick your Commander and deck. The deck is shuffled and you draw 5 cards. You see them as real card images in one straight row and choose **Keep Hand** or **Redraw Hand**. A redraw shuffles your whole hand back into the deck and draws a completely new hand of the same size (5 cards). You get **one redraw per match**; there is no picking single cards to swap. The computer opponent has the same choice (it redraws when its hand has no Miner or no fighter it can afford early). A coin flip decides who goes first; the first player skips their first draw, and the second player draws 1 extra card.
 
@@ -242,7 +242,7 @@ You can tap a "Done" button to finish a phase early. If you still have something
 
 ## Combat
 
-Attacks subtract Attack from Health; a creature at 0 Health is defeated. Every creature can attack in any direction: up, down, left, right or diagonal.
+**Dice (Combat v3, Ken, 2026-11-01).** An attack is one swing per point of Attack. Each swing rolls a die: 2 to 6 hits, only a 1 misses. Every landed hit gives the defender block dice equal to its current Health, at most 2 (a big unit of cost 7 or more always rolls just 1; Armored and Riot Shield roll one extra die, 3 at most). A 6 blocks the hit; a hit that gets through does 1 damage. Commanders roll one block die too. A wounded creature blocks less. Ranged units fire one shot; their further points of Attack are Bleed (each a swing that only shows BLEED n) and nothing bleeds if the shot itself misses. In melee a standing defender swings back once the attack is over. Every creature can attack in any direction: up, down, left, right or diagonal. Rocket Ride's blast and the SewerSlide Bomber's Ka-boom hit every unit in their area, friend, foe and (for the Rocket Rider) himself.
 
 **Fights are simultaneous:** in melee, both creatures hit each other at the same time, so a defender strikes back even if the hit defeats it. A ⚔️1 ❤️2 beats a ⚔️1 ❤️1 and survives; two ⚔️1 ❤️1 creatures defeat each other.
 
@@ -271,9 +271,9 @@ Upgrading is done only by playing **Miner cards from your hand onto your own cre
 
 - **Played onto an empty space** in your back row, either card is summoned as a normal Miner instead (it can mine the turn it's played but can't attack until its next turn; mines for 2).
 - **Played onto one of your own creatures** (any Fighter or Miner, anywhere on the battlefield), it is not summoned: the creature gets the upgrade permanently (it also counts as part of its full Health when it heals) and the Miner card goes to the discard pile.
-- You pay the card's normal cost either way. Upgrades stack with **no limit** (owner setting, to watch in playtests) and are lost when the creature is defeated.
+- You pay the card's normal cost either way. A creature takes **at most 3 upgrade cards** in all (Ken, 2026-11-01; `upgradeCap` in game-config.json); after that it is no longer a target and the game says so. Upgrades are lost when the creature is defeated. Spells and auras are not upgrades.
 - **The free Miner can never upgrade:** it is summoned straight onto the battlefield. A basic Miner pulled into your hand by the Miner swap can be used as an upgrade like any other.
-- While you drag a Miner card, empty summon spaces glow blue and your creatures glow gold. Upgraded creatures show small gold pips for each upgrade.
+- While you drag a Miner card, empty summon spaces glow blue and your creatures glow gold. Upgraded creatures show small silver pips, one per upgrade card (3 at most).
 - There are no walls or ballistas in this version.
 
 ## Winning and losing
