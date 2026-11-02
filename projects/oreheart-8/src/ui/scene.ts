@@ -1771,6 +1771,11 @@ const _embV = new THREE.Vector3();
       const cm = cmd[side];
       cm.fig.position.y = cm.g3d ? 0 : Math.sin(now / 600 + (side === 'player' ? 0 : 2)) * 0.02;
       if (cm.g3d) cm.g3d.update(Math.min(0.1, Math.max(0, (now - (cm.g3d as any)._t || 0) / 1000))), ((cm.g3d as any)._t = now);
+      if (cm.g3d && !testMode) { // Nov 1 (Spring): now and then a Commander fidgets, never in sync
+        if (cm.g3d.current() !== 'idle') (cm as any).breakAt = 0;
+        else if (!(cm as any).breakAt) (cm as any).breakAt = now + 12000 + Math.random() * 18000;
+        else if (now > (cm as any).breakAt) { (cm as any).breakAt = 0; cm.g3d.play('idleBreak'); }
+      }
       cm.fig.rotation.z = 0;
       if (cm.g3d && cm.baseYaw !== undefined) {
         const dt = Math.min(testMode ? 1 : 0.1, Math.max(0, (now - ((cm as any)._yt || now)) / 1000)); (cm as any)._yt = now; // automated runs paint rarely: let one frame cover the elapsed time

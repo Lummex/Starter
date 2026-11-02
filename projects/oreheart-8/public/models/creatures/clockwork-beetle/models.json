@@ -13,14 +13,15 @@
  },
  "rigged": true,
  "parts": [],
- "notes": "Own skeleton (not the biped pack): no retarget, no ground offset. Flips onto its back when defeated.",
+ "notes": "Own skeleton (not the biped pack): no retarget, no ground offset. Flips onto its back when defeated. Nov 1 (Spring): corner claws moved from Body to their leg bones; settled idle (idle-04) and idle break added.",
  "fileSizes": {
-  "char.glb": 5355696
+  "char.glb": 1762768
  },
  "bodyType": "multileg",
  "clips": {
-  "idle": "multileg-idle-01",
+  "idle": "multileg-idle-04",
   "idles": [
+   "multileg-idle-04",
    "multileg-idle-01",
    "multileg-idle-02",
    "multileg-idle-03"
@@ -29,7 +30,8 @@
   "run": "multileg-run-01",
   "attack": "multileg-attack-01",
   "hit": "multileg-bonk-01",
-  "defeat": "multileg-death-01"
+  "defeat": "multileg-death-01",
+  "idleBreak": "multileg-idlebreak-01"
  },
  "gait": {
   "walk": 0.303,

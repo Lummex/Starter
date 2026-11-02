@@ -1,9 +1,9 @@
 {
- "version": 5,
- "pack": "biped-pack-v5",
+ "version": 6,
+ "pack": "biped-pack-v6",
  "bodyType": "biped",
  "fps": 30,
- "glb": "biped-pack-v5.glb",
+ "glb": "biped-pack-v6.glb",
  "skeleton": [
   "LeftToeBase",
   "LeftFoot",
@@ -66,7 +66,8 @@
   "A per-unit ground snap at load (offset so the unit lowest point at frame 0 of biped-idle-01 matches its own Idle) removes the 2-5% hover some units get on Mixamo clips.",
   "v3 adds 2 seated rider clips for the Gnome Plow (kind ride / rideRam). Not in the random pools: pick them by slot. Seated pose on the pack rig: Hips joint 0.229 m above the floor (standing 0.391), toes 0.131 m up, hips 0.042 m back; scale by legRatio. Place the seat under the Hips; no ground offset for these kinds.",
   "v4 adds 11 per-card special moves (kind special / ability, field \"for\" = card). Not in random pools; pick them by slot. rocket-ride ends airborne in a riding pose (rocket prop under the hips); sewer-slide ends prone (on small units it floats 6-7% of height, golem 19%: snap to the floor like defeat). Events per clip; \"impact\" = first gameplay event time.",
-  "v5 adds 7 ranged attack clips (kind ranged, all strictly in place, each with a release {frame,time,bone} = the frame the projectile leaves the hand). biped-throw-01 (v1) is the overhand throw for Skullflinger and Grudge Hurler."
+  "v5 adds 7 ranged attack clips (kind ranged, all strictly in place, each with a release {frame,time,bone} = the frame the projectile leaves the hand). biped-throw-01 (v1) is the overhand throw for Skullflinger and Grudge Hurler.",
+  "v6 adds 5 seated Rocket Rider clips (kind ride / rideHit / rideAttack / special, field \"for\" = shard-guzzler, bodyType rider, never in random pools: pick them by slot) and 1 pickaxe swing (kind mine, field \"for\" = the pickaxe holders). The rider clips are posed against Clay rocket.glb placed on the Hips bone (look in studio/spring-nov1/rocket-ride-look.json): saddle under the hips, legs straddling the body, hands on the bars; no ground offset, the game hovers the figure. biped-mine-pickaxe-01 is a one-shot of 26 frames (0.867 s, fits the 900 ms mine window): overhead wind-up, strike at frame 14 (event hit), rebound; feet planted."
  ],
  "clips": [
   {
@@ -1460,6 +1461,121 @@
    "for": [
     "hexwright-apprentice",
     "gyrocopter-ace"
+   ]
+  },
+  {
+   "name": "biped-rider-launch-01",
+   "kind": "special",
+   "slot": "special",
+   "loop": false,
+   "frames": 44,
+   "duration": 1.4667,
+   "events": [
+    {
+     "name": "windup",
+     "frame": 2,
+     "time": 0.0667
+    },
+    {
+     "name": "launch",
+     "frame": 24,
+     "time": 0.8
+    }
+   ],
+   "impact": 0.0667,
+   "desc": "Rocket Rider launch: seated, strikes a match on the tail, lights the fuse, flinches at the fizz, then WHEEE with both arms up (ends there)",
+   "bodyType": "rider",
+   "for": [
+    "shard-guzzler"
+   ]
+  },
+  {
+   "name": "biped-rider-hover-01",
+   "kind": "ride",
+   "slot": "idle",
+   "loop": true,
+   "frames": 60,
+   "duration": 2.0,
+   "events": [],
+   "desc": "Rocket Rider hover: seated on the saddle, legs straddling the rocket, hands on the bars, gentle bob and sway",
+   "bodyType": "rider",
+   "for": [
+    "shard-guzzler"
+   ]
+  },
+  {
+   "name": "biped-rider-hover-02",
+   "kind": "ride",
+   "slot": "walk",
+   "loop": true,
+   "frames": 30,
+   "duration": 1.0,
+   "events": [],
+   "desc": "Rocket Rider travelling: flat out, chest low over the bars, head tucked, engine shudder",
+   "bodyType": "rider",
+   "for": [
+    "shard-guzzler"
+   ]
+  },
+  {
+   "name": "biped-rider-hit-01",
+   "kind": "rideHit",
+   "slot": "hit",
+   "loop": false,
+   "frames": 30,
+   "duration": 1.0,
+   "events": [],
+   "desc": "Rocket Rider hit: yanked back in the saddle, head snaps up, arms flap, settles",
+   "bodyType": "rider",
+   "for": [
+    "shard-guzzler"
+   ]
+  },
+  {
+   "name": "biped-rider-attack-01",
+   "kind": "rideAttack",
+   "slot": "attack",
+   "loop": false,
+   "frames": 36,
+   "duration": 1.2,
+   "events": [
+    {
+     "name": "hit",
+     "frame": 14,
+     "time": 0.4667
+    }
+   ],
+   "impact": 0.4667,
+   "desc": "Rocket Rider attack: rears back, lunges over the nose and clouts with the right fist",
+   "bodyType": "rider",
+   "for": [
+    "shard-guzzler"
+   ]
+  },
+  {
+   "name": "biped-mine-pickaxe-01",
+   "kind": "mine",
+   "slot": "mine",
+   "loop": false,
+   "frames": 26,
+   "duration": 0.8667,
+   "events": [
+    {
+     "name": "hit",
+     "frame": 14,
+     "time": 0.4667
+    }
+   ],
+   "impact": 0.4667,
+   "desc": "Pickaxe swing: lift overhead, hold, SWING down into the rock, rebound (one-shot, 0.87 s)",
+   "for": [
+    "crystal-drunk-delver",
+    "dwarf-smith-miner",
+    "gnome-prospector",
+    "gnome-smith-miner",
+    "goblin-scrounger",
+    "goblin-smith-miner",
+    "overclocked-conduit"
    ]
   }
  ]

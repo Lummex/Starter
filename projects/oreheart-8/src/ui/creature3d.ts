@@ -74,7 +74,7 @@ const PARTS: Record<string, PartCfg[]> = {
   'goblin-slinger': [{ name: 'skull-mace', file: 'skull-mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-4.733, 9.93, 4.184], rot: [7.674, 57.734, 67.236], scale: [19, 19, 19] } }],
   'goblin-grunt': [{ name: 'frying-pan', file: 'frying-pan.glb', bone: ['RightHand'], len: 0.42, grip: 0.15, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-13.281, 9.76, 19.154], rot: [126.389, -36.031, 38.735], scale: [43.449, 43.449, 43.449] } }],
   'junk-shaman': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.85, grip: 0.4, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [5.156, -7.33, 3.734], rot: [-10.17, -24.8, -150.09], scale: [52.566, 52.566, 52.566] } }], // Ken (Oct 30): upright, hand-gripping (Ledger)
-  'shard-guzzler': [{ name: 'rocket', file: 'rocket.glb', bone: ['Spine02', 'Spine01', 'Spine'], len: 0.55, grip: 0.5, rot: [0, 180, 0], pos: [0, 0, -0.14] }],
+  'shard-guzzler': [{ name: 'rocket', file: 'rocket.glb', bone: ['Hips'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [11.758, -21.387, 8.388], rot: [-168.73, 46.54, 174.06], scale: [50, 50, 50] } }], // Nov 1 (Spring): he rides the rocket (saddle under his Hips, nose forward); assumes the scene's 0.42 hover
   'blastrat-sapper': [{ name: 'bomb', file: 'bomb.glb', bone: ['Spine02', 'Spine01', 'Spine'], len: 0.32, grip: 0.5, rot: [0, 180, 0], pos: [0, -0.02, -0.12] }],
   'skullbasher-rusher': [
     { name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-8.9, 18.747, 8.443], rot: [-8.725, 65.398, 73.206], scale: [36, 36, 36] } },
@@ -156,7 +156,7 @@ interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationCl
 export interface PackClip { clip: THREE.AnimationClip; kind: string; loop: boolean; impact?: number; rootSpeed?: number; events?: { name: string; time: number }[] }
 interface Pack { clips: PackClip[]; rig: Rig }
 export interface SharedSet { byName: Record<string, THREE.AnimationClip>; byKind: Record<string, THREE.AnimationClip[]>; impact: Record<string, number>; speed: Record<string, number>; events: Record<string, { name: string; time: number }[]> }
-export const PACK_URL = '/models/anims/biped-pack-v5'; // Spring's v5 (Oct 31): v4's 70 clips (byte-identical) + 7 ranged clips (kind ranged, each with a `release` {frame, time, bone})
+export const PACK_URL = '/models/anims/biped-pack-v6'; // Spring's v6 (Nov 1): v5's 77 clips (byte-identical) + biped-mine-pickaxe-01 (kind mine) + 5 Rocket Rider ride clips; v5 (Oct 31): v4's 70 clips + 7 ranged clips (kind ranged, each with a `release` {frame, time, bone})
 let packP: Promise<Pack | null> | null = null;
 /** test hook (window.__sharedPack): what the pack loader did */
 export const packInfo = { url: PACK_URL, loaded: false, clips: [] as { name: string; kind: string }[], error: '', units: {} as Record<string, string> };
@@ -349,7 +349,7 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
           if (sl) for (const [role, pick] of Object.entries(sl)) {
             const p = Array.isArray(pick) ? pick[0] : pick;
             if (!p) continue;
-            if (p.none) { delete clips[role]; slotLog.push({ id, role, clip: '', how: 'none' }); continue; }
+            if (p.none) { delete clips[role]; picked.add(role); slotLog.push({ id, role, clip: '', how: 'none' }); continue; } // Nov 1: 'none' also keeps the random pack fill off the role (it falls back to idle / hit)
             if (p.pack === 'random') { delete clips[role]; packFree.add(role); slotLog.push({ id, role, clip: '', how: 'pack-random' }); continue; } // Oct 30 (Spring): a random pack clip of this kind
             if (p.shared) { const sc = shared?.byName[p.clip] || shared?.byName[p.animation]; if (sc) { clips[role] = sc; picked.add(role); slotLog.push({ id, role, clip: sc.name, how: 'shared' }); } else slotLog.push({ id, role, clip: p.clip, how: 'shared-skipped' }); continue; }
             const cl = byName(p.clip);

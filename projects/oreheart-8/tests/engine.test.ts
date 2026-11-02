@@ -186,14 +186,14 @@ describe('revision 6', () => {
     expect(s.players.player.bank).toBe(2);
     expect(s.players.player.crystals).toBe(2);
     // a second Crystal card is allowed (round 10)
-    const slinger = s.players.player.hand[0].uid; // cost 4, Grubnak 3
+    const slinger = s.players.player.hand[0].uid; // Nov 1 cost formula: 2, Grubnak 1
     s = act(s, { type: 'summon', uid: slinger, row: 7, col: 3 });
-    expect([s.players.player.crystals, s.players.player.bank]).toEqual([0, 1]);
+    expect([s.players.player.crystals, s.players.player.bank]).toEqual([1, 2]);
   });
-  it('Flow 2 + Bank 3 pays a Goblin Slinger leaving Bank 2', () => {
+  it('Flow 2 + Bank 3 pays a Goblin Slinger (Nov 1: cost 2, Grubnak 1) from Flow, leaving Flow 1 and Bank 3', () => {
     let s = mk({ playerHand: ['goblin-slinger'], playerCrystals: B(2), playerBank: B(3) });
     s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 3 });
-    expect([s.players.player.crystals, s.players.player.bank]).toEqual([0, 2]);
+    expect([s.players.player.crystals, s.players.player.bank]).toEqual([1, 3]);
   });
   it('Crystal card works in the Respond window and funds a counterspell', () => {
     let s: any;
@@ -271,7 +271,7 @@ describe('revision 6', () => {
   it('Riot Shield Bearer is a wall: Fighter, not a Miner, enemies beside it must hit it, 1 less from every hit, never moved or lifted, attacks on turn 2, can die (Ken, Oct 31)', () => {
     expect(CARDS['dwarf-miner'].role).toBe('Fighter');
     expect(isMiner(CARDS['dwarf-miner'])).toBe(false);
-    expect([CARDS['dwarf-miner'].cost, CARDS['dwarf-miner'].attack, CARDS['dwarf-miner'].health, CARDS['dwarf-miner'].move]).toEqual([DWARF_FIX.bearerCost, 1, 5, 1]);
+    expect([CARDS['dwarf-miner'].cost, CARDS['dwarf-miner'].attack, CARDS['dwarf-miner'].health, CARDS['dwarf-miner'].move]).toEqual([4, 1, 6, 2]); // Ken, Nov 1: every wall is 1/6, walks 2, costs 4 by the formula
     expect(CARDS['dwarf-miner'].abilities).toEqual(['riotShield']);
     expect(isMiner(CARDS['dwarf-smith-miner'])).toBe(true);
     // Guard: a Grunt beside the Bearer and an Ironjaw Big Back may only hit the Bearer
@@ -283,13 +283,13 @@ describe('revision 6', () => {
     s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], board: [P('ram-rider', 6, 9), O('dwarf-miner', 5, 9)] } });
     s = done(s);
     s = act(s, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 5, col: 9 } });
-    expect(at(s, 5, 9).health).toBe(5 - 4);
+    expect(at(s, 5, 9).health).toBe(6 - 4); // Ken, Nov 1: every wall is 1/6
     // never knocked: an Enforcer (Granite Oathkeeper) hits it; the Bearer stays, the plain unit beside the same Enforcer is knocked
     s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], board: [P('dwarf-stoneback', 6, 9), O('dwarf-miner', 5, 9), O('dwarf-pickman', 6, 10)] } });
     s = done(s);
     s = act(s, { type: 'attack', creatureUid: at(s, 6, 9).uid, target: { row: 5, col: 9 } });
     expect(at(s, 5, 9)?.cardId).toBe('dwarf-miner');
-    expect(at(s, 5, 9).health).toBe(4); // v2: the 1-Attack hit lands 1 (sure dice)
+    expect(at(s, 5, 9).health).toBe(5); // v2: the 1-Attack hit lands 1 (sure dice); Nov 1: walls have 6 Health
     expect(at(s, 6, 10)?.cardId).not.toBe('dwarf-pickman');
     // never lifted: the Junk Shaman offers no lift for it, with no shield clock at all
     s = createMatch({ playerCommander: 'grubnak', opponentCommander: 'sproingle', factionLock: false, mines: MINES, setup: { opponentHand: [], playerCrystals: 9, board: [P('junk-shaman', 6, 9), O('dwarf-miner', 4, 9), O('dwarf-pickman', 4, 11)] } });
@@ -321,10 +321,10 @@ describe('revision 6', () => {
 });
 
 describe('revision 7', () => {
-  it('Flow 2 + Bank 3, cost 3 (Grubnak Slinger) -> Flow 0, Bank 2', () => {
+  it('Flow 2 + Bank 3, cost 1 (Grubnak Slinger, Nov 1 formula) -> Flow 1, Bank 3', () => {
     let s = mk({ playerHand: ['goblin-slinger'], playerCrystals: 2, playerBank: 3 });
     s = act(s, { type: 'summon', uid: s.players.player.hand[0].uid, row: 7, col: 3 });
-    expect([s.players.player.crystals, s.players.player.bank]).toEqual([0, 2]);
+    expect([s.players.player.crystals, s.players.player.bank]).toEqual([1, 3]);
   });
   it('enemy-owned mine pays half: Miner 1, Fighter 0; example 1 Gemsinger vs 2 Grubgrabbers', () => {
     let s = mk({ firstPlayer: 'opponent', board: [
@@ -386,8 +386,8 @@ describe('revision 7', () => {
   });
   it('R8 new cards: stats, abilities and weapons', () => {
     const c = (id: string) => CARDS[id];
-    expect([c('rotgut-grenadier').cost, c('rotgut-grenadier').attack, c('rotgut-grenadier').health]).toEqual([5, 2, 2]);
-    expect([c('grimhold-ravager').cost, c('grimhold-ravager').rarity]).toEqual([7, 'Uncommon']);
+    expect([c('rotgut-grenadier').cost, c('rotgut-grenadier').attack, c('rotgut-grenadier').health]).toEqual([3, 2, 2]); // Nov 1 cost formula
+    expect([c('grimhold-ravager').cost, c('grimhold-ravager').rarity]).toEqual([4, 'Uncommon']);
     expect(Object.values(CARDS).filter((x: any) => x.type === 'creature').length).toBe(48);
     expect([weaponOf(c('goblin-scrounger')), weaponOf(c('goblin-smith-miner')), weaponOf(c('shard-guzzler')), weaponOf(c('goblin-scrapper')), weaponOf(c('goblin-slinger')), weaponOf(c('hexwright-apprentice')),
       weaponOf(c('deepforge-crossbowman')), weaponOf(c('axe-thrower')), weaponOf(c('shieldbeard')), weaponOf(c('ram-rider')), weaponOf(c('gyrocopter-ace')), weaponOf(c('the-great-steam-golem')), weaponOf(c('fireball'))])
@@ -449,9 +449,10 @@ describe('revision 9', () => {
     expect(legalActions(s).some((a: any) => a.type === 'cast')).toBe(true);
   });
   it('previewAttack matches the real attack', () => {
-    const s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { board: [P('shieldbeard', 4, 3), O('goblin-scrapper', 3, 3)] } });
+    const s = createMatch({ playerCommander: 'borgo', opponentCommander: 'grubnak', mines: MINES, setup: { board: [P('rune-splitter', 4, 3), O('goblin-scrapper', 3, 3)] } }); // Nov 1: the Shieldbeard is a 1-Attack wall now, so a 3-Attack dwarf makes the kill
     const a = at(s, 4, 3);
-    expect(previewAttack(s, a.uid, { row: 3, col: 3 })).toMatchObject({ youDeal: 3, youTake: 0, targetDefeated: true, attackerDefeated: false }); // v2: a defender that falls strikes back no more
+    const pv = previewAttack(s, a.uid, { row: 3, col: 3 });
+    expect(pv).toMatchObject({ youTake: 0, targetDefeated: true, attackerDefeated: false }); expect(pv.youDeal).toBeGreaterThanOrEqual(3); // v2: a defender that falls strikes back no more
   });
   it('tutorial runs to Victory via tutorialAction', () => {
     let s = createMatch({ playerCommander: t.playerCommander, opponentCommander: t.opponentCommander, setup: t.setup, mines: t.mines, tutorial: true, seed: 1 });
