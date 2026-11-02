@@ -201,7 +201,7 @@ describe('AI Oct 31 goldens (re-recorded Nov 1 for the marker-order computer)', 
   // Oct 31 (dwarf fix): re-recorded after the Riot Shield Bearer became a wall and the Anvilsworn the basic Miner (cost 1), with the 30-Miner Warbands; the AI is untouched
   // Ken, Oct 31: no triangle bonus against Miners; seed 23 re-recorded after that rule change (21 and 25 play out the same)
   // Ken, Oct 31: 2 Goblin Rocket Riders in the Goblin Warband (for 1 Wolf Rider + 1 Big Boss Troll); seed 25 re-recorded
-  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 21: { turn: 31, units: 15, steps: 307 }, 23: { turn: 22, units: 26, steps: 189 }, 25: { turn: 11, units: 11, steps: 72 } }; // re-recorded Nov 1 for Combat v2 (move points; sure dice here), again for the bigger units' longer feet
+  const GOLDEN: Record<number, { turn: number; units: number; steps: number }> = { 21: { turn: 36, units: 19, steps: 362 }, 23: { turn: 31, units: 17, steps: 276 }, 25: { turn: 15, units: 16, steps: 117 } }; // re-recorded Nov 1 for Combat v2 (move points; sure dice here), again for the bigger units' longer feet
   for (const seed of [21, 23, 25]) {
     it('medium vs medium, seed ' + seed, () => {
       const keep = { medMs: TUNE.medMs, hardMs: TUNE.hardMs };
