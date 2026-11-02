@@ -7649,7 +7649,7 @@ test.describe('round 11 at 1920x1080', () => {
     expect(ring(r, theirs).color.toLowerCase()).toBe('#2f5fd8'); // Borgo: Dwarf main
     await done(page);
     // Nov 1 (feet): the Scrapper has 3 move points now, so it walks until they are spent; the ring goes only then
-    for (let row = 5; row >= 2; row--) { const u = (await getState(page)).board.creatures.find((c) => c.uid === mineU); if (!((u.movesLeft ?? 1) > 0)) break; expect((await act(page, { type: 'move', creatureUid: mineU, row, col: 6 })).ok).toBe(true); }
+    { const u = (await getState(page)).board.creatures.find((c) => c.uid === mineU); const feet = Math.min(3, u.movesLeft ?? 1); expect((await act(page, { type: 'move', creatureUid: mineU, row: 6 - feet, col: 6 })).ok).toBe(true); } // one move action spends every move point
     await expect.poll(async () => ring(await renderStats10(page), mineU).greyed).toBe(true);
     expect(ring(await renderStats10(page), mineU).color.toLowerCase()).not.toBe('#3ee06a');
     // settings panel
