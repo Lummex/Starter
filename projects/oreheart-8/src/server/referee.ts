@@ -152,7 +152,7 @@ export function playerAction(m: MatchRecord, userId: string, seq: number, action
   const prev = s;
   m.state = r.state;
   m.seq++;
-  m.clock.timeouts[seat] = 0;
+  if (real.type !== 'pass') m.clock.timeouts[seat] = 0; // a pass proves nothing: the browser answers by itself when you hold no counter
   m.log.push(...r.events);
   afterChange(m, prev, now, rules, false);
   if (m.state.phase === 'over') endWith(m, sideSeat(m.state.winner), real.type === 'surrender' ? 'surrender' : 'win', now);
@@ -164,8 +164,8 @@ export function applyTimeouts(m: MatchRecord, now: number, rules: Rules): any[] 
   const out: any[] = [];
   for (let guard = 0; guard < 8 && m.status === 'active'; guard++) {
     const s = m.state, c = m.clock;
-    let seat: Seat | null = null, action: any = null;
-    if (c.respondDeadline != null && now >= c.respondDeadline && s.pendingResponse) { seat = sideSeat(s.pendingResponse.responder); action = { type: 'pass' }; }
+    let seat: Seat | null = null, action: any = null, respondRunOut = false;
+    if (c.respondDeadline != null && now >= c.respondDeadline && s.pendingResponse) { seat = sideSeat(s.pendingResponse.responder); action = { type: 'pass' }; respondRunOut = true; }
     else if (c.deadline != null && now >= c.deadline && !s.pendingResponse) { seat = holderOf(s); action = s.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' }; }
     if (!seat || !action) break;
     const r = applyAction(s, action);
@@ -179,6 +179,14 @@ export function applyTimeouts(m: MatchRecord, now: number, rules: Rules): any[] 
     m.state = r.state;
     m.seq++;
     m.log.push(...r.events);
+    if (respondRunOut) {
+      // Nov 2 (Gauge): a Respond window running out just means "let it happen". It is never a timeout and never leads to a forfeit:
+      // someone who looks away during the other player's turn can't lose in 36 s. The referee's pass is the only thing that happens.
+      out.push(...r.events);
+      afterChange(m, prev, now, rules, false);
+      if (m.state.phase === 'over') { endWith(m, sideSeat(m.state.winner), 'win', now); break; }
+      continue;
+    }
     const ev = { type: 'timeout', player: seatSide(seat), count: c.timeouts[seat] + 1 };
     out.push(ev, ...r.events);
     m.log.push(ev);

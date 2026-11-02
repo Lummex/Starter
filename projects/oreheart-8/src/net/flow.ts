@@ -533,8 +533,10 @@ export function menuExtras(el: El) {
   if (bar) el.append(bar);
   if (net.active && status) {
     if (!mockSignIn) el.append(h('button', { type: 'button', class: 'net-btn net-profile-btn', onclick: showProfile }, 'Profile'));
-    try { pvpMenu(el); } catch (e) { console.warn('pvpMenu', e); }
-    try { economyMenu(el); } catch (e) { console.warn('economyMenu', e); }
+    const side = h('div', { class: 'menu-side' }); // the right-hand column, clear of the logo at every size
+    el.append(side);
+    try { pvpMenu(side); } catch (e) { console.warn('pvpMenu', e); }
+    try { economyMenu(side); } catch (e) { console.warn('economyMenu', e); }
   }
   else if (net.offlineChosen) el.append(h('button', { type: 'button', class: 'net-chip', onclick: () => { void signOut(); } }, 'Offline — Sign in'));
 }

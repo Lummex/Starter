@@ -226,7 +226,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   }
   function tile(c: any) {
     const own = ownedOf(c.id);
-    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : '') + (own === 0 ? ' unowned' : ''), 'data-owned': own == null ? null : String(own), 'data-locked': lockedFor(c.id) ? 'true' : null, 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, own == null ? null : h('span', { class: 'db-owned', 'aria-label': `You own ${own}` }, own === 0 ? '🔒' : `owned ×${own}`), h('span', { hidden: '' }, c.longText || '')) as any;
+    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : '') + (own === 0 ? ' unowned' : ''), 'data-owned': own == null ? null : String(own), 'data-locked': lockedFor(c.id) ? 'true' : null, 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, own == null ? null : h('span', { class: 'db-owned', 'aria-label': `You own ${own}` }, own === 0 ? '' : `owned ×${own}`), h('span', { hidden: '' }, c.longText || '')) as any;
     let timer: any = null;
     el.addEventListener('click', () => {
       if (el._dragged) return;

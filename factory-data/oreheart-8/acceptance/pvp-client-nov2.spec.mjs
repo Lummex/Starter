@@ -328,3 +328,59 @@ test('AC639: "Back to your match" on the main menu while a match is active re-op
   await ctx.close();
   await closeAll(a, b);
 });
+
+// ---- Gauge's list (Nov 2): Respond pace and the menu layout
+test('AC610: holding no counter you can play, there is no Respond dialog and no click: a small note shows and the browser answers by itself after about 2 s; a window running out is never a timeout', async ({ browser }) => {
+  test.setTimeout(120000);
+  const { a, b } = await pair(browser);
+  await keepHands(a, b);
+  const [me, them] = await whoseTurn(a, b);
+  let autoSeen = 0;
+  for (let i = 0; i < 4 && !autoSeen; i++) {
+    const legal = await me.evaluate(async () => await window.oreheart.legalActions());
+    const summon = legal.find((x) => x.type === 'summon');
+    if (!summon) break;
+    const r = await me.evaluate(async (x) => await window.oreheart.act(x), summon);
+    expect(r && r.ok).toBe(true);
+    await expect.poll(async () => { const v = await view(them); return !!(v.state.pendingResponse && v.state.pendingResponse.responder === 'player'); }, { timeout: 10000 }).toBe(true);
+    const t0 = Date.now();
+    await expect(them.locator('[data-testid=pvp-auto-pass], .respond-dlg').first()).toBeVisible({ timeout: 5000 });
+    if (await them.locator('[data-testid=pvp-auto-pass]').count()) {
+      autoSeen++;
+      await expect(them.locator('.respond-dlg')).toHaveCount(0);
+      await expect.poll(async () => (await view(them)).state.pendingResponse, { timeout: 6000 }).toBeNull();
+      const ms = Date.now() - t0;
+      expect(ms, 'answered by itself after about 2 s').toBeGreaterThan(1200);
+      expect(ms).toBeLessThan(4500);
+      await expect(them.locator('[data-testid=pvp-auto-pass]')).toHaveCount(0);
+      expect((await view(them)).timeouts.me).toBe(0);
+    } else {
+      await them.getByRole('button', { name: 'Let it happen' }).click(); // this hand could respond: the normal dialog, try the next summon
+      await expect.poll(async () => (await view(them)).state.pendingResponse, { timeout: 6000 }).toBeNull();
+    }
+    await expect.poll(async () => (await view(me)).state.pendingResponse, { timeout: 6000 }).toBeNull();
+  }
+  expect(autoSeen, 'at least one window answered by itself').toBeGreaterThan(0);
+  await closeAll(a, b);
+});
+
+for (const size of [{ width: 1600, height: 900 }, { width: 1280, height: 720 }, { width: 844, height: 390 }]) {
+  test(`AC611: the signed-in menu extras sit clear of the logo and the menu words, on screen (${size.width}x${size.height})`, async ({ browser }) => {
+    const page = await openAs(browser, 'lay' + uniq(), size);
+    await atMenu(page);
+    await page.waitForTimeout(600);
+    const r = await page.evaluate(() => {
+      const box = (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, n: (e.textContent || e.dataset.id || '').trim().slice(0, 20) }; };
+      const extras = [...document.querySelectorAll('.menu-side .net-btn, .menu-side .econ-coins')].map(box);
+      const fixed = [...document.querySelectorAll('.mb-pc[data-id=mainLogo], .mb-btn, .title-display')].map(box);
+      return { extras, fixed, w: innerWidth, h: innerHeight };
+    });
+    expect(r.extras.length).toBeGreaterThanOrEqual(5);
+    for (const e of r.extras) {
+      expect(e.l, e.n).toBeGreaterThanOrEqual(0); expect(e.t, e.n).toBeGreaterThanOrEqual(0);
+      expect(e.r, e.n).toBeLessThanOrEqual(r.w); expect(e.b, e.n).toBeLessThanOrEqual(r.h);
+      for (const f of r.fixed) expect(e.l < f.r && f.l < e.r && e.t < f.b && f.t < e.b, e.n + ' overlaps ' + f.n).toBe(false);
+    }
+    await closeAll(page);
+  });
+}

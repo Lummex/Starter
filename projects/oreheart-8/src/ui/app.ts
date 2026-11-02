@@ -3549,7 +3549,9 @@ export class App {
 
   // ------------------------------------------------------------ dialogs driven by state
   mullDlg: { close: () => void } | null = null;
-  respDlg: { close: () => void } | null = null;
+  respDlg: { close: () => void; auto?: boolean } | null = null;
+  /** The real Respond dialog is up (not the 2 s note PvP shows when you hold no counter): the board waits for it. */
+  get respBlocking() { return !!this.respDlg && !this.respDlg.auto; }
   handleDialogs(st: any) {
     const needMull = st.phase === 'mulligan' && st.priority === 'player' && !st.mulliganDone.player;
     if (needMull && this.mullDlg && (this.mullDlg as any).el.dataset.mulligans !== String(st.players.player.mulligans || 0)) { this.mullDlg.close(); this.mullDlg = null; }
@@ -3595,9 +3597,14 @@ export class App {
     const legalAll = this.game.legalActions();
     const legal = legalAll.filter((a: any) => a.type === 'respond');
     const needs = respondNeeds(st, 'player', pend);
+    // Nov 2 (PvP, Forge's call): holding no counter you can play, the browser answers "Let it happen" by itself after a fixed 2 s, with no
+    // dialog and no click, so a busy enemy turn doesn't stop for each summon and attack. A fixed delay so the other player can't tell at once;
+    // holders get the normal dialog and up to the server's 12 s. A Crystal card that could pay for a held counter counts as holding one.
+    const mayCounter = legal.length > 0 || legalAll.some((a: any) => a.type === 'ability' && a.ability === 'brew') || (needs.length > 0 && legalAll.some((a: any) => a.type === 'playCrystal'));
     const tgt = pend.target && pend.target.row ? st.board.creatures.find((c: any) => c.row === pend.target.row && c.col === pend.target.col) : null;
     const tname = tgt ? (tgt.owner === 'player' ? `your ${CARDS[tgt.cardId].name}` : `their ${CARDS[tgt.cardId].name}`) : pend.target && pend.target.commander ? 'your Commander' : '';
     const what = pend.kind === 'summon' ? `Enemy summons ${CARDS[pend.card.cardId].name}.` : pend.kind === 'cast' ? `Enemy casts ${CARDS[pend.card.cardId].name}${tname ? ' at ' + tname : ''}.` : `Enemy attacks ${tname || 'one of your creatures'}.`;
+    if (this.netGame && !mayCounter) { this.autoLetItHappen(what); return; }
     const buttons: El[] = [];
     const finish = () => { this.respDlg && this.respDlg.close(); this.respDlg = null; clearTimeout(this.respondTimer); };
     for (const n of needs) {
@@ -3656,6 +3663,16 @@ export class App {
         if (left <= 0) { clearInterval(iv); finish(); this.game.act({ type: 'pass' }); }
       }, 100);
     }
+  }
+
+  /** PvP, no counter to play: a small note saying what the enemy is doing, and after a fixed 2 s the pass goes to the server. The board stays usable. */
+  private autoLetItHappen(what: string) {
+    const note = h('div', { class: 'pvp-resp-note', role: 'status', 'data-testid': 'pvp-auto-pass' }, what);
+    document.body.append(note);
+    const ms = (window as any).__pvpAutoPassMs ?? 2000;
+    const t = setTimeout(() => { if (this.respDlg === d) { d.close(); this.respDlg = null; } this.game.act({ type: 'pass' }); }, ms);
+    const d = { auto: true, close: () => { clearTimeout(t); note.remove(); } };
+    this.respDlg = d;
   }
 
   showMatchMenuOld() {
@@ -4317,7 +4334,7 @@ export class App {
       },
       onEnd: () => { fx.done = true; cancelAnimationFrame(fx.raf); fx.hl?.remove(); showUpgrade(null); if (this.dragFx === fx) this.dragFx = null; },
       onStart: () => {
-        if (this.pick || this.respDlg) return false;
+        if (this.pick || this.respBlocking) return false;
         fx.px = e.clientX; fx.py = e.clientY; this.dragFx = fx;
         const loop = () => { if (fx.done) return; fxRender(); fx.raf = requestAnimationFrame(loop); };
         fx.raf = requestAnimationFrame(loop);
@@ -4504,7 +4521,7 @@ export class App {
   selectUnit(cr: any) {
     const st = this.game.state;
     this.pick = null; this.clearGlow();
-    if (this.respDlg) return;
+    if (this.respBlocking) return;
     const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
     const isMove = (a: any) => a.type === 'move';
     const swapAt = (a: any) => st.board.creatures.some((o: any) => o.row === a.row && o.col === a.col);
@@ -4894,7 +4911,7 @@ export class App {
       },
       onEnd: () => { box?.remove(); box = null; if (this.orderPreview) this.previewOrder(null); },
       onStart: () => {
-        if (!mine || this.respDlg) return false;
+        if (!mine || this.respBlocking) return false;
         const legal = this.game.legalActions().filter((a: any) => a.creatureUid === cr.uid);
         const isMove = (a: any) => a.type === 'move';
         const swapAt = (a: any) => st.board.creatures.some((o: any) => o.row === a.row && o.col === a.col);

@@ -30,17 +30,17 @@ textarea.net-input{min-height:90px;font-family:Arial,sans-serif}
 /* the game's gem-framed silver button (theme-silver.css section 3): Brush's 1400x240 picture as a border image; its two
    gem caps keep their shape and stay inside the button (no side outset), so the boxes and hit areas stay where they were.
    --sv-h (the button's height) is kept up to date by theme-silver.ts. */
-html body .net-screen .net-btn,html body .net-btn.net-profile-btn{
+html body .net-screen .net-btn,html body .net-btn:is(.net-profile-btn,.econ-menu-btn,.pvp-menu-btn,.pvp-back-btn){
   --sv-v:.08;--sv-f:calc(var(--sv-h,46px) * (1 + 2 * var(--sv-v)));--sv-cap:calc(var(--sv-f) * 1.0417);
   border:0 solid transparent;border-radius:0;
   border-image:var(--sv-n) 0 250 fill / 0 var(--sv-cap) / calc(var(--sv-h,46px) * var(--sv-v)) 0 stretch;
   padding-inline:calc(var(--sv-cap) * .95);
   background:none;box-shadow:none;color:#fff;-webkit-text-fill-color:#fff;text-shadow:0 0 3px #000,0 1px 2px #000;
 }
-html body :is(.net-screen .net-btn,.net-btn.net-profile-btn):is(:hover,:focus-visible,.primary):not(:disabled){border-image-source:var(--sv-hv)}
-html body :is(.net-screen .net-btn,.net-btn.net-profile-btn):is(:hover,:focus-visible):not(:disabled){text-shadow:0 0 .35em var(--sv-glow,#dfe8f7),0 0 .8em #9fb6e6,0 1px 2px #000}
-html body :is(.net-screen .net-btn,.net-btn.net-profile-btn):active:not(:disabled){border-image-source:var(--sv-pr)}
-html body :is(.net-screen .net-btn,.net-btn.net-profile-btn):disabled{border-image-source:var(--sv-dis);opacity:1}
+html body :is(.net-screen .net-btn,.net-btn:is(.net-profile-btn,.econ-menu-btn,.pvp-menu-btn,.pvp-back-btn)):is(:hover,:focus-visible,.primary):not(:disabled){border-image-source:var(--sv-hv)}
+html body :is(.net-screen .net-btn,.net-btn:is(.net-profile-btn,.econ-menu-btn,.pvp-menu-btn,.pvp-back-btn)):is(:hover,:focus-visible):not(:disabled){text-shadow:0 0 .35em var(--sv-glow,#dfe8f7),0 0 .8em #9fb6e6,0 1px 2px #000}
+html body :is(.net-screen .net-btn,.net-btn:is(.net-profile-btn,.econ-menu-btn,.pvp-menu-btn,.pvp-back-btn)):active:not(:disabled){border-image-source:var(--sv-pr)}
+html body :is(.net-screen .net-btn,.net-btn:is(.net-profile-btn,.econ-menu-btn,.pvp-menu-btn,.pvp-back-btn)):disabled{border-image-source:var(--sv-dis);opacity:1}
 .net-chip:focus-visible,.net-avatar:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .net-btn:focus-visible{outline:2px solid #fff;outline-offset:1px}
 .net-avatars{display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow-y:auto;padding:4px 2px}

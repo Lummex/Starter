@@ -10,7 +10,7 @@ import { ohCardEl } from '../ui/cardfmt';
 import { audio } from '../ui/audio';
 import { packArtName, packArt } from './quest-summary';
 export { packArtName, packArt };
-import { econShow, coinChip, isTestPage, type PackInfo, type OpenResult, type PulledCard } from './economy';
+import { econShow, coinChip, backBtn, toast, isTestPage, type PackInfo, type OpenResult, type PulledCard } from './economy';
 
 type El = HTMLElement;
 export type Phase = 'idle' | 'ripping' | 'cards' | 'done';
@@ -70,6 +70,7 @@ interface Opts { pack: PackInfo | null; result: OpenResult; canAgain: () => bool
 const RANK: Record<string, number> = { common: 0, uncommon: 1, rare: 2, 'ultra-rare': 3, collector: 4 };
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+const smallDevice = () => typeof matchMedia !== 'undefined' && matchMedia('(max-height:480px), (pointer:coarse)').matches;
 
 let current: Scene | null = null;
 
@@ -82,6 +83,8 @@ class Scene {
   private stage: El; private tilt: El; private wobble: El; private body: El; private top: El; private sealed: El; private peek: El; private shredBox: El; private row: El;
   private ripBtn: HTMLButtonElement; private flipAllBtn: HTMLButtonElement; private againBtn: HTMLButtonElement; private doneBtn: HTMLButtonElement; private hint: El;
   private skipping = false;
+  private byKey = false;
+  private backBtn: HTMLButtonElement;
   private T: number;
   constructor(private o: Opts) {
     this.cards = o.result.cards.slice(0, 8);
@@ -110,14 +113,18 @@ class Scene {
     this.againBtn = h('button', { type: 'button', class: 'net-btn pko-again', hidden: true, onclick: () => { this.againBtn.disabled = true; o.onAgain(); } }, o.againLabel()) as HTMLButtonElement;
     this.doneBtn = h('button', { type: 'button', class: 'net-btn primary pko-done', hidden: true, onclick: () => { this.close(); o.onDone(); } }, 'Done') as HTMLButtonElement;
     this.hint = h('p', { class: 'pko-hint', 'aria-live': 'polite' }, 'Tap the pack to rip it open');
+    // the way out before the rip. The server has already paid and rolled, so nothing is lost: the cards are in the Collection.
+    this.backBtn = backBtn(() => { this.close(); o.onDone(); toast('Your cards are safe in your Collection.', '/art/packs/icons/free-pack.webp'); }) as HTMLButtonElement;
+    this.backBtn.classList.add('pko-leave');
     const title = h('h1', { class: 'pko-title' }, p?.name || 'Oreheart Pack');
     this.root = econShow('pack', h('div', { class: 'pko-scene', 'data-phase': 'idle', 'data-testid': 'pack-scene' },
-      h('div', { class: 'pko-head' }, title, coinChip()),
+      h('div', { class: 'pko-head' }, this.backBtn, title, coinChip()),
       this.stage, this.row,
       h('div', { class: 'pko-ui' }, this.hint, h('div', { class: 'net-actions' }, this.ripBtn, this.flipAllBtn, this.againBtn, this.doneBtn))));
     this.root.classList.add('pko-screen');
     this.tilt.addEventListener('click', () => { void this.rip(); });
-    this.tilt.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void this.rip(); } });
+    this.tilt.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.byKey = true; void this.rip(); } });
+    this.ripBtn.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') this.byKey = true; });
     // PC: the foil leans toward the mouse and the shine follows it (one transform per pointer move, nothing else)
     this.root.addEventListener('pointermove', (e: PointerEvent) => {
       if (this.phase !== 'idle' || e.pointerType !== 'mouse') return;
@@ -141,7 +148,7 @@ class Scene {
         h('div', { class: 'pko-glow', 'aria-hidden': 'true' }),
         h('div', { class: 'pko-flip' }, h('div', { class: 'pko-face pko-back' }, backFace()), h('div', { class: 'pko-face pko-front' }, front)),
         c.is_new ? h('span', { class: 'pko-new', 'aria-hidden': 'true' }, 'NEW') : null);
-      slot.addEventListener('click', () => { if (slot.dataset.flipped === 'true') { if (card) zoomCard({ ...card, rarity: c.rarity || card.rarity }); return; } if (this.phase === 'cards') this.flip(i); });
+      slot.addEventListener('click', () => { if (slot.dataset.flipped === 'true') { if (card && performance.now() - (+(slot.dataset.flipAt || 0)) > 700) zoomCard({ ...card, rarity: c.rarity || card.rarity }); return; } /* a double tap only flips */ if (this.phase === 'cards') this.flip(i); });
       return slot;
     });
     this.row.append(...this.slots);
@@ -152,26 +159,31 @@ class Scene {
     this.setPhase('ripping');
     this.hint.textContent = '';
     this.ripBtn.hidden = true;
+    this.backBtn.hidden = true;
     this.tilt.style.transform = '';
     const T = this.T;
     play('crinkle', 0.5);
-    // 1. shake and glow
+    // 1. the build-up: the pack strains, shakes harder and harder, the glow swells
     this.wobble.classList.add('pko-shaking');
     const aura = this.wobble.querySelector('.pko-aura') as El;
-    aura.animate([{ opacity: 0, transform: 'scale(.8)' }, { opacity: 1, transform: 'scale(1.08)' }], { duration: 480 * T, fill: 'forwards', easing: 'ease-in' });
-    play('rip', 0.75, 0.04 * T); // Brush: the strip comes free 0.40 s into rip.ogg
-    await wait(440 * T);
+    aura.animate([{ opacity: 0, transform: 'scale(.75)' }, { opacity: 1, transform: 'scale(1.16)' }], { duration: 640 * T, fill: 'forwards', easing: 'ease-in' });
+    play('rip', 0.75, 0.22 * T); // Brush: the strip comes free 0.40 s into rip.ogg
+    await wait(620 * T);
     if (this.skipping) return;
     // 2. the tear: the sealed pack and its shine vanish, the strip swings off around its right end
     this.wobble.classList.remove('pko-shaking');
     this.sealed.style.opacity = '0';
-    this.top.animate([{ transform: 'none', opacity: 1 }, { transform: 'translate(8%,-30%) rotate(-24deg)', opacity: 1, offset: 0.35 }, { transform: 'translate(55%,-160%) rotate(-70deg)', opacity: 0 }], { duration: 700 * T, fill: 'forwards', easing: 'cubic-bezier(.3,.1,.5,1)' });
+    this.tearFlash();
+    this.top.animate([{ transform: 'none', opacity: 1 }, { transform: 'translate(10%,-34%) rotate(-22deg)', opacity: 1, offset: 0.28 }, { transform: 'translate(70%,-40%) rotate(-52deg)', opacity: 1, offset: 0.62 }, { transform: 'translate(135%,120%) rotate(-105deg)', opacity: 0 }], { duration: 950 * T, fill: 'forwards', easing: 'cubic-bezier(.3,.1,.5,1)' });
     aura.animate([{ opacity: 1 }, { opacity: 0.25 }], { duration: 600 * T, fill: 'forwards' });
-    this.shreds(reduced() ? 8 : 30);
-    // 3. a card back rises out of the torn pack
-    this.peek.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-34%)' }], { duration: 380 * T, fill: 'forwards', easing: 'cubic-bezier(.2,.8,.3,1)' });
-    await wait(420 * T);
+    this.shreds(reduced() ? 8 : smallDevice() ? 36 : 64);
+    // 3. a beat with the pack torn open, then a card back rises inside the pack (never up over the title)
+    await wait(240 * T);
     if (this.skipping) return;
+    this.peek.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-6%)' }], { duration: 300 * T, fill: 'forwards', easing: 'cubic-bezier(.2,.8,.3,1)' });
+    await wait(340 * T);
+    if (this.skipping) return;
+    if (!reduced()) this.shreds(smallDevice() ? 8 : 16, true); // a last puff as the cards burst out
     // 4. the eight cards slide out into a row, face down; the empty pack sinks away
     const from = this.peek.getBoundingClientRect();
     this.setPhase('cards'); // the row takes its place now (it was hidden), so its boxes can be measured once
@@ -192,29 +204,45 @@ class Scene {
     this.stage.classList.add('pko-gone');
     this.flipAllBtn.hidden = false;
     this.hint.textContent = 'Tap a card to flip it';
-    this.slots[0]?.focus({ preventScroll: true });
+    if (this.byKey) this.slots[0]?.focus({ preventScroll: true }); // keyboard players land on the first card; a mouse or a finger gets no focus ring
   }
 
-  /** Foil shreds: small sparkly scraps with gravity and spin, about 1.2 s, then gone. */
-  private shreds(n: number) {
+  /** The moment of the tear: a white-hot line runs along the torn edge, a quick flash, the pack jolts. Transform and opacity only. */
+  private tearFlash() {
+    const T = this.T;
+    const line = h('div', { class: 'pko-tearline', 'aria-hidden': 'true' });
+    this.stage.append(line);
+    line.animate([{ transform: 'scaleX(.05)', opacity: 1 }, { transform: 'scaleX(1.25)', opacity: 1, offset: 0.35 }, { transform: 'scaleX(1.4)', opacity: 0 }], { duration: 420 * T, easing: 'ease-out', fill: 'forwards' }).finished.then(() => line.remove(), () => line.remove());
+    if (!reduced()) {
+      const flash = h('div', { class: 'pko-flash', 'aria-hidden': 'true' });
+      this.root.append(flash);
+      flash.animate([{ opacity: 0.42 }, { opacity: 0 }], { duration: 240, easing: 'ease-out', fill: 'forwards' }).finished.then(() => flash.remove(), () => flash.remove());
+      this.tilt.animate([{ transform: 'translateY(2.5%) scale(1.035)' }, { transform: 'translateY(-1%) scale(.99)', offset: 0.45 }, { transform: 'none' }], { duration: 300, easing: 'ease-out' });
+    }
+  }
+
+  /** Foil shreds: sparkly scraps of every size burst from the torn edge, with gravity and spin, about 1.5 s, then gone. */
+  private shreds(n: number, low = false) {
     const box = this.shredBox;
     const r = box.getBoundingClientRect();
     const T = this.T;
+    const tinted = !smallDevice(); // the colour filter costs a little on each scrap: PC only
     for (let i = 0; i < n; i++) {
       const s = h('img', { class: 'pko-shred', src: `/art/packs/shred-${(i % 6) + 1}.webp`, alt: '' });
-      const size = 18 + Math.random() * 26;
+      const big = Math.random() < 0.25;
+      const size = Math.max(20, r.height * (big ? 0.11 + Math.random() * 0.09 : 0.04 + Math.random() * 0.06));
       s.style.width = s.style.height = size.toFixed(0) + 'px';
-      s.style.left = (r.width * (0.18 + Math.random() * 0.64)).toFixed(0) + 'px';
-      s.style.top = (r.height * 0.1).toFixed(0) + 'px';
-      if (i % 3 === 1) s.style.filter = `hue-rotate(${Math.round(Math.random() * 360)}deg) saturate(1.6)`;
+      s.style.left = (r.width * (0.02 + Math.random() * 0.96) - size / 2).toFixed(0) + 'px';
+      s.style.top = (r.height * (low ? 0.2 : 0.09) - size / 2).toFixed(0) + 'px';
+      if (tinted && i % 3 === 1) s.style.filter = `hue-rotate(${Math.round(Math.random() * 360)}deg) saturate(1.6)`;
       box.append(s);
-      const vx = (Math.random() - 0.5) * r.width * 1.3, vy = -(0.35 + Math.random() * 0.55) * r.height, g = r.height * 2.2, spin = (Math.random() - 0.5) * 1080;
+      const vx = (Math.random() - 0.5) * r.width * 2.2, vy = -(0.5 + Math.random() * 0.9) * r.height, g = r.height * 2.4, spin = (Math.random() - 0.5) * 1400;
       const frames: Keyframe[] = [];
       for (let k = 0; k <= 6; k++) {
         const t = k / 6, sec = t * 1.2;
         frames.push({ transform: `translate(${(vx * sec).toFixed(1)}px,${(vy * sec + 0.5 * g * sec * sec).toFixed(1)}px) rotate(${(spin * t).toFixed(0)}deg) rotateX(${(spin * t * 0.7).toFixed(0)}deg)`, opacity: t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3 });
       }
-      const a = s.animate(frames, { duration: (1000 + Math.random() * 400) * T, easing: 'linear', fill: 'forwards' });
+      const a = s.animate(frames, { duration: (1200 + Math.random() * 600) * T, easing: 'linear', fill: 'forwards' });
       a.finished.then(() => s.remove(), () => s.remove());
     }
   }
@@ -223,6 +251,7 @@ class Scene {
     const s = this.slots[i];
     if (!s || s.dataset.flipped === 'true') return;
     s.dataset.flipped = 'true';
+    s.dataset.flipAt = String(performance.now());
     s.classList.add('flipped');
     s.setAttribute('aria-label', s.dataset.name || 'Card');
     this.flipped += 1;

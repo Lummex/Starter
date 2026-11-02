@@ -143,8 +143,8 @@ export function capSummary(s: Summary): Summary {
 
 // ------------------------------------------------------------------ small pure helpers shared by the screens (unit-tested in node)
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector'];
-const pct = (bp: number) => { const v = Math.round(bp) / 100; return (Number.isInteger(v) ? String(v) : v.toFixed(v < 1 ? 2 : 1).replace(/0+$/, '').replace(/\.$/, '')) + ' %'; };
-/** "8 cards: 5 Common, 2 Uncommon, 1 Rare or better: Rare 85 %, Ultra Rare 13 %, Collector 2 %" */
+const pct = (bp: number) => { const v = Math.round(bp) / 100; return (Number.isInteger(v) ? String(v) : v.toFixed(v < 1 ? 2 : 1).replace(/0+$/, '').replace(/\.$/, '')) + '%'; };
+/** "8 cards: 5 Common, 2 Uncommon, 1 Rare or better: Rare 85%, Ultra Rare 13%, Collector 2%" */
 export function oddsWords(slots: { slot_no: number; count: number; odds: Record<string, number> }[]): string {
   const ss = [...(slots || [])].sort((a, b) => a.slot_no - b.slot_no);
   const total = ss.reduce((n, s) => n + (+s.count || 0), 0);

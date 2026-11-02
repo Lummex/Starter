@@ -39,7 +39,7 @@ export async function showQuests(): Promise<void> {
     const done = !!x.done;
     const p = Math.max(0, Math.min(x.target || 1, x.progress || 0));
     const frac = x.target > 0 ? p / x.target : done ? 1 : 0;
-    const reroll = !done && info.reroll_left > 0 ? h('button', { type: 'button', class: 'q-reroll', 'aria-label': `Reroll ${x.name}`, title: 'Swap this quest for another (once a day)' }, h('img', { src: '/art/packs/icons/reroll.webp', alt: '' }), 'Reroll') as HTMLButtonElement : null;
+    const reroll = !done && info.reroll_left > 0 ? h('button', { type: 'button', class: 'net-btn q-reroll', 'aria-label': `Reroll ${x.name}`, title: 'Swap this quest for another (once a day)' }, h('img', { src: '/art/packs/icons/reroll.webp', alt: '' }), 'Reroll') as HTMLButtonElement : null;
     reroll?.addEventListener('click', async () => {
       alert.textContent = '';
       for (const b of document.querySelectorAll<HTMLButtonElement>('.q-reroll')) b.disabled = true;
@@ -55,7 +55,7 @@ export async function showQuests(): Promise<void> {
         h('div', { class: 'q-bar', role: 'progressbar', 'aria-label': `${x.name} progress`, 'aria-valuemin': '0', 'aria-valuemax': String(x.target), 'aria-valuenow': String(p) }, fill),
         h('div', { class: 'q-meta' }, h('span', { class: 'q-progress' }, `${p} / ${x.target}`), done ? null : h('span', {}, daysLeft(x.expires_on, info.today)))),
       h('div', { class: 'q-side' },
-        done ? h('span', { class: 'q-paid', 'aria-label': `Done, ${x.reward} coins paid` }, '✔ +' + x.reward) : h('span', { class: 'q-reward', 'aria-label': `Reward ${x.reward} coins` }, coinIcon(''), '+' + x.reward),
+        done ? h('span', { class: 'q-paid', 'aria-label': `Done, ${x.reward} coins paid` }, h('img', { src: '/art/packs/icons/quest-done.webp', alt: '' }), '+' + x.reward) : h('span', { class: 'q-reward', 'aria-label': `Reward ${x.reward} coins` }, coinIcon(''), '+' + x.reward),
         reroll));
   }
   void refreshCoins();

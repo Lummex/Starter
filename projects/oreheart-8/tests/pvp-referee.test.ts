@@ -222,11 +222,52 @@ describe('PvP referee', () => {
     expect(resumed.state.pendingResponse).toBeNull();
     expect(resumed.clock.respondDeadline).toBeNull();
     expect(resumed.clock.deadline).toBe(now + 13 * SEC + frozen);
-    expect(resumed.clock.timeouts.b).toBe(1);
-    expect(resumed.log.some((e: any) => e.type === 'timeout' && e.player === 'opponent')).toBe(true);
-    // Bob's own view says the fight happened (events of that move) and shows him as 'player'
+    expect(resumed.clock.timeouts.b).toBe(0); // Gauge, Nov 2: a Respond window running out is not a timeout
+    expect(resumed.log.some((e: any) => e.type === 'timeout')).toBe(false);
+  });
+
+  it('never counts a Respond run-out as a timeout: a player who looks away during the enemy turn cannot lose by it', async () => {
+    const { store, svc, matchId } = await freshMatch(32);
+    const rec = (await store.getMatch(matchId))!;
+    const hand = Array(8).fill('shiv-rat');
+    const setup = { playerHand: hand, opponentHand: [], playerCrystals: 40, board: [], firstPlayer: 'player' };
+    rec.state = createMatch({ seed: 1, setup, mines: [{ row: 4, col: 2 }, { row: 4, col: 4 }, { row: 4, col: 6 }], factionLock: false, pvp: true });
+    rec.clock.deadline = T0 + 120 * SEC;
+    await store.updateMatch(rec, rec.seq);
+    let now = T0 + SEC;
+    for (let i = 0; i < 6; i++) { // Alice summons six times; Bob never touches anything, and each 12 s window runs out
+      const v = (await svc.handle('state', { matchId }, alice, now)).view as View;
+      const summon = legalActions(v.state).find((a: any) => a.type === 'summon');
+      expect(summon, 'a summon is legal').toBeTruthy();
+      const r = await svc.handle('act', { matchId, seq: v.seq, action: summon }, alice, now);
+      expect(r.ok, r.error).toBe(true);
+      expect(r.view.respondDeadline).toBeTruthy();
+      now += 13 * SEC;
+      expect((await svc.handle('tick', { matchId }, bob, now)).ok).toBe(true);
+      const m = (await store.getMatch(matchId))!;
+      expect(m.status).toBe('active');
+      expect(m.clock.timeouts.b).toBe(0);
+      expect(m.state.pendingResponse).toBeNull();
+    }
+    expect((await store.getMatch(matchId))!.state.board.creatures.length).toBe(6);
+  });
+
+  it('a pass (the browser answers by itself) does not clear the count of whole phases that ran out', async () => {
+    const { store, svc, matchId } = await freshMatch(33);
+    const rec = (await store.getMatch(matchId))!;
+    const setup = { playerHand: ['shiv-rat'], opponentHand: [], playerCrystals: 40, board: [], firstPlayer: 'player' };
+    rec.state = createMatch({ seed: 1, setup, mines: [{ row: 4, col: 2 }, { row: 4, col: 4 }, { row: 4, col: 6 }], factionLock: false, pvp: true });
+    rec.clock.deadline = T0 + 120 * SEC;
+    rec.clock.timeouts.b = 2; // Bob already let two phases run out
+    await store.updateMatch(rec, rec.seq);
+    const v = (await svc.handle('state', { matchId }, alice, T0 + SEC)).view as View;
+    const summon = legalActions(v.state).find((a: any) => a.type === 'summon');
+    const r = await svc.handle('act', { matchId, seq: v.seq, action: summon }, alice, T0 + SEC);
+    expect(r.ok).toBe(true);
     const vb = store.viewOf(matchId, bob.userId)!;
-    expect(vb.events.some((e: any) => e.type === 'timeout' && e.player === 'player')).toBe(true);
+    const p = await svc.handle('act', { matchId, seq: vb.seq, action: { type: 'pass' } }, bob, T0 + 3 * SEC);
+    expect(p.ok, p.error).toBe(true);
+    expect((await store.getMatch(matchId))!.clock.timeouts.b).toBe(2);
   });
 
   it('never applies two moves on one seq (compare-and-swap)', async () => {

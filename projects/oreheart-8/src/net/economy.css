@@ -20,12 +20,8 @@ html body .econ-screen .net-btn.econ-back{min-height:42px;font-size:1rem}
 .econ-coins-free{display:inline-flex;align-items:center;gap:2px;margin-left:6px;font-size:.95rem;color:#dfe8f7}
 .econ-coins-free[hidden]{display:none}
 .econ-coins-free img{width:28px;height:28px;object-fit:contain}
-.econ-bar{position:absolute;left:14px;top:34px;z-index:41;display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:calc(100% - 200px)}
-.econ-bar .net-btn.econ-menu-btn,.econ-menu-btn{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:3px 14px 3px 8px;font:inherit;font-family:"Alegreya SC",Georgia,serif;font-size:1rem;font-weight:700;font-style:italic;color:#fff;text-shadow:0 1px 2px #000;
-  background:linear-gradient(rgba(58,63,77,.95),rgba(22,24,32,.95));border:1px solid #a4abb9;border-radius:22px;box-shadow:inset 0 0 0 1px #000a,0 2px 6px #000a;cursor:pointer}
 .econ-menu-btn img{width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px #000)}
 .econ-menu-btn[data-econ=collection] img{width:22px;height:30px;object-fit:cover;border-radius:3px}
-.econ-menu-btn:hover,.econ-menu-btn:focus-visible{border-color:#fff;box-shadow:inset 0 0 0 1px #000a,0 0 12px #dfe8f7aa;outline:0}
 .econ-toast{position:fixed;left:50%;top:14%;z-index:9000;display:flex;align-items:center;gap:10px;padding:8px 20px 8px 10px;transform:translateX(-50%);color:#fff;font:700 1.2rem "Alegreya SC",Georgia,serif;text-shadow:0 1px 2px #000;
   background:linear-gradient(rgba(58,63,77,.97),rgba(22,24,32,.97));border:2px solid #cfd6e4;border-radius:30px;box-shadow:0 0 22px #9fb6e6aa,0 6px 18px #000c;animation:econToastIn .45s cubic-bezier(.2,1.4,.4,1) both;pointer-events:none}
 .econ-toast img{width:44px;height:44px;object-fit:contain}
@@ -180,9 +176,6 @@ html body .econ-screen .shop-pack .net-btn{padding-inline:calc(var(--sv-cap) * .
   .econ-head .econ-sub{display:none}
   .econ-coins{min-height:34px;font-size:1rem}
   .econ-coin-img{width:28px;height:28px}
-  .econ-bar{top:30px;gap:5px}
-  .econ-bar .econ-menu-btn{min-height:36px;font-size:.9rem;padding:2px 10px 2px 6px}
-  .econ-menu-btn img{width:24px;height:24px}
   .shop-pack{padding:6px 6px 8px;gap:3px}
   .shop-pack .shop-blurb{display:none}
   .shop-art{height:clamp(90px,30vh,140px)}
@@ -208,3 +201,70 @@ html body .econ-screen .shop-pack .net-btn{padding-inline:calc(var(--sv-cap) * .
 .econ-screen :is(.econ-alert,.shop-hint){color:#ff9c7a!important;-webkit-text-fill-color:#ff9c7a!important}
 .econ-screen :is(.q-name,.col-count,.pko-hint){color:#fff!important;-webkit-text-fill-color:#fff!important}
 .pko-card.flipped{cursor:zoom-in}
+
+/* ================================================================ Gauge list (Nov 2): Ken said no computer-drawn parts. Everything below uses the
+   game's own painted kit: the gem-framed silver buttons (net.css), panel-silver, frame-chip, frame-progress, frame-card-slot and the painted coins. */
+/* the menu's right-hand column: clear of the logo (top left) and the menu words (middle) at PC and phone sizes */
+.menu-side{position:fixed;right:14px;top:49%;z-index:40;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.menu-side .pvp-menu,.menu-side .econ-bar{position:static;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:none}
+.menu-side .net-btn{min-width:210px;min-height:46px;font-size:1.05rem;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.menu-side .net-btn img{width:26px;height:26px;object-fit:contain;filter:drop-shadow(0 1px 2px #000)}
+.menu-side .econ-menu-btn[data-econ=collection] img{width:18px;height:26px;object-fit:cover;border-radius:2px}
+.menu-side .econ-menu-btn:hover,.menu-side .econ-menu-btn:focus-visible{box-shadow:none}
+/* the coin count: a painted coin on the painted chip */
+.econ-coins{border:0 solid transparent;border-radius:0;box-shadow:none;background:none;min-height:44px;padding:2px 22px 2px 10px;border-image:url(/art/ui/match/frame-chip.webp) 40 60 fill / 14px 22px stretch}
+/* panels: the silver gem panel */
+.econ-panel{background:none;border:0 solid transparent;border-radius:0;box-shadow:0 6px 22px #0007;border-image:url(/art/ui/silver/panel-silver.webp) 250 fill / clamp(26px,5vh,44px) / clamp(4px,1vh,8px) stretch}
+.q-row.done{filter:saturate(1.1) brightness(1.06)}
+.shop-pack{padding:clamp(14px,3vh,24px) clamp(12px,1.6vw,20px)}
+.q-row{padding:clamp(12px,2.6vh,20px) clamp(18px,2.4vw,28px)}
+/* filter chips: the painted phase chip, lit when chosen */
+html body .net-race{border:0 solid transparent;border-radius:0;box-shadow:none;background:none;padding:4px 28px;border-image:url(/art/ui/match/frame-chip.webp) 40 60 fill / 8px 18px stretch;color:#e6ebf5;-webkit-text-fill-color:#e6ebf5}
+html body .net-race:hover,html body .net-race[aria-pressed=true]{border-image-source:url(/art/ui/match/frame-chip-lit.webp);filter:hue-rotate(95deg);box-shadow:none;color:#fff;-webkit-text-fill-color:#fff;text-shadow:0 0 .4em #dfe8f7,0 1px 2px #000}
+/* Reroll: a small gem button */
+html body .econ-screen .net-btn.q-reroll{min-height:42px;font-size:.95rem;gap:2px;white-space:nowrap}
+.q-list{gap:clamp(16px,3vh,24px)}
+/* quest bars: the painted progress frame */
+.q-bar{height:clamp(14px,2.4vh,20px);border:0 solid transparent;border-radius:0;background:none;overflow:visible;border-image:url(/art/ui/match/frame-progress.webp) 0 80 fill / 0 18px stretch}
+.q-fill{inset:22% 12px;border-radius:0}
+.q-tier{border:0;padding:0 2px;font:italic 600 .8rem "Alegreya SC",Georgia,serif;letter-spacing:0;text-transform:none}
+.q-paid{display:inline-flex;align-items:center;gap:4px;color:#fff;font-size:1.1rem}
+.q-paid img{width:30px;height:30px}
+.q-dots i{border:0;border-radius:0;width:18px;height:18px;background:url(/art/packs/icons/quest.webp) center/contain no-repeat;opacity:.3}
+.q-dots i.on{background:url(/art/packs/icons/quest-done.webp) center/contain no-repeat;opacity:1}
+/* owned counts: the painted blank coin */
+.col-badge,.db-tile .db-owned{display:grid;place-items:center;min-width:0;width:clamp(34px,3.2vw,46px);height:clamp(34px,3.2vw,46px);padding:0;border:0;border-radius:0;box-shadow:none;background:url(/art/ui/match/count-blank.webp) center/contain no-repeat;font:700 clamp(.78rem,1vw,1rem) "Alegreya SC",Georgia,serif;text-shadow:0 1px 2px #000,0 0 3px #000}
+/* no lock picture yet (asked of Brush): unowned cards are simply greyed */
+.col-lock{display:none}
+.db-tile.unowned .db-owned{display:none}
+/* FREE and NEW: white on the painted lit chip, readable */
+.shop-free{top:8px;right:-4px;padding:4px 20px;filter:hue-rotate(95deg);color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 2px #000,0 0 4px #000!important;font:italic 700 1rem "Alegreya SC",Georgia,serif;letter-spacing:.02em;background:none;border:0 solid transparent;border-radius:0;box-shadow:0 2px 6px #0007;border-image:url(/art/ui/match/frame-chip-lit.webp) 40 60 fill / 12px 20px stretch}
+.pko-new{padding:2px 16px;filter:hue-rotate(95deg);color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 2px #000,0 0 4px #000!important;font:italic 700 clamp(.72rem,1.7vh,.95rem) "Alegreya SC",Georgia,serif;letter-spacing:.02em;background:none;border:0 solid transparent;border-radius:0;box-shadow:none;border-image:url(/art/ui/match/frame-chip-lit.webp) 40 60 fill / 10px 16px stretch}
+/* the scrollbar in silver, not the old gold track */
+.econ-screen{scrollbar-color:#8d97ab #12141c;outline:0}
+.econ-screen::-webkit-scrollbar-track{background:#12141c}
+.econ-screen::-webkit-scrollbar-thumb{background:#8d97ab}
+/* Back stays on screen however far the Collection scrolls */
+.econ-screen:not(.pko-screen){--econ-pad:clamp(10px,2.4vw,32px);padding-top:0}
+.econ-head{position:sticky;top:0;z-index:8;flex:none;margin:0 calc(-1 * var(--econ-pad));padding:32px var(--econ-pad) 12px;background:linear-gradient(rgba(8,10,16,.92),rgba(8,10,16,.72) 72%,rgba(8,10,16,0))}
+/* pack scene */
+.pko-head{position:relative;z-index:6;min-height:46px}
+html body .econ-screen .net-btn.pko-leave{position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:7}
+.pko-leave[hidden]{display:none!important}
+.pko-tearline{position:absolute;left:-6%;right:-6%;top:10.5%;height:clamp(6px,1.6%,12px);border-radius:50%;background:linear-gradient(90deg,#fff0,#fff 18%,#e8f3ff 50%,#fff 82%,#fff0);box-shadow:0 0 22px 8px #bfe0ff;pointer-events:none;opacity:0;will-change:transform,opacity}
+.pko-flash{position:absolute;inset:0;z-index:5;background:#eaf3ff;opacity:0;pointer-events:none;will-change:opacity}
+.pko-shaking{animation:pkStrain .64s cubic-bezier(.4,0,1,1)}
+@keyframes pkStrain{0%{transform:none}12%{transform:translate(-.5%,.2%) rotate(-.6deg)}25%{transform:translate(.7%,-.2%) rotate(.8deg)}38%{transform:translate(-1%,.3%) rotate(-1.1deg)}50%{transform:translate(1.3%,-.3%) rotate(1.4deg)}62%{transform:translate(-1.7%,.4%) rotate(-1.8deg) scale(1.01)}74%{transform:translate(2.2%,-.5%) rotate(2.3deg) scale(1.02)}86%{transform:translate(-2.8%,.6%) rotate(-2.9deg) scale(1.03)}100%{transform:translate(0,-1%) scale(1.05)}}
+@media (max-height:480px){
+  .menu-side{top:auto;bottom:6px;right:8px;flex-direction:row;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:4px 5px;max-width:64vw}
+  .menu-side .pvp-menu,.menu-side .econ-bar{flex-direction:row;gap:5px}
+  .menu-side .net-btn{min-width:0;min-height:36px;font-size:.86rem;padding-inline:calc(var(--sv-cap) * .78)}
+  .menu-side .net-btn img{display:none}
+  .econ-coins{min-height:36px}
+  html body .econ-screen .net-btn.pko-leave{min-height:36px;font-size:.9rem}
+  .pko-head{min-height:36px}
+  .q-row{padding:10px 18px}
+  .shop-pack{padding:10px 12px}
+  .econ-head{padding-top:26px;padding-bottom:6px}
+  .econ-screen:not(.pko-screen){--econ-pad:10px}
+}

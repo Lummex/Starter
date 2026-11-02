@@ -39,7 +39,7 @@ export async function showCollection(): Promise<void> {
     const has = free || n > 0;
     const el = h('button', { type: 'button', class: `col-card${has ? '' : ' unowned'}`, role: 'listitem', 'data-card-id': c.id, 'data-owned': free ? 'free' : String(n), 'data-rarity': rarityKey(c), 'aria-label': `${c.name}: ${free ? 'free' : has ? 'you own ' + n : 'not owned yet'}` },
       ohCardEl(c, pictureOf(c)),
-      free ? h('span', { class: 'col-badge', title: 'Free and unlimited' }, '∞') : has ? h('span', { class: 'col-badge' }, '×' + n) : h('span', { class: 'col-lock', 'aria-hidden': 'true' }, '🔒'));
+      free ? h('span', { class: 'col-badge', title: 'Free and unlimited' }, '∞') : has ? h('span', { class: 'col-badge' }, '×' + n) : h('span', { class: 'col-lock', 'aria-hidden': 'true' }));
     el.addEventListener('click', () => zoom(c));
     return { c, el, has };
   });

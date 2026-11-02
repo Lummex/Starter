@@ -1,7 +1,3 @@
 screenshots/
+tools/
 tests/
-# tools/ stays out of the upload EXCEPT the service-worker plugin the build imports (Nov 2). A negation cannot re-include a file under an
-# ignored DIRECTORY, so the contents are ignored with tools/* and the two files are let back in.
-tools/*
-!tools/sw-plugin.mjs
-!tools/sw-template.js

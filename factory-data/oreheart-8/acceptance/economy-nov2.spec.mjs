@@ -56,7 +56,7 @@ test('AC640: the pack opening screen shows the painted foil pack (sealed, shine,
   expect((await packState(page)).cards).toHaveLength(8);
 });
 
-test('AC641: ripping runs idle -> ripping -> cards: the pack shakes, the top strip tears off (it moves), 20-40 foil shreds fly, and the eight cards come out face down', async ({ page }) => {
+test('AC641: ripping runs idle -> ripping -> cards: the pack shakes, the top strip tears off (it moves), plenty of foil shreds fly, and the eight cards come out face down', async ({ page }) => {
   await openEcon(page, 'pack');
   const seen = await page.evaluate(async () => {
     const out = { phases: [], shreds: 0, topMoved: false, shaking: false, sealedHidden: false };
@@ -81,8 +81,8 @@ test('AC641: ripping runs idle -> ripping -> cards: the pack shakes, the top str
   expect(seen.shaking, 'the pack shakes first').toBe(true);
   expect(seen.topMoved, 'the torn strip flies off').toBe(true);
   expect(seen.sealedHidden, 'the sealed pack gives way to the torn pieces').toBe(true);
-  expect(seen.shreds, 'foil shreds').toBeGreaterThanOrEqual(20);
-  expect(seen.shreds).toBeLessThanOrEqual(40);
+  expect(seen.shreds, 'foil shreds').toBeGreaterThanOrEqual(30);
+  expect(seen.shreds).toBeLessThanOrEqual(100);
   const cards = page.locator('.pko-card');
   await expect(cards).toHaveCount(8);
   for (let i = 0; i < 8; i++) { await expect(cards.nth(i)).toBeVisible(); await expect(cards.nth(i)).toHaveAttribute('data-flipped', 'false'); }
@@ -240,7 +240,7 @@ test('AC650: the Shop shows the four packs (Oreheart, Junkpile, Gizmo, Deepforge
   for (let i = 0; i < 4; i++) {
     await expect(packs.nth(i).locator('.shop-price')).toContainText('100');
     await expect(packs.nth(i).locator('.shop-today')).toHaveText(/^\d+ opened today$/);
-    await expect(packs.nth(i).locator('.shop-odds')).toHaveText('8 cards: 5 Common, 2 Uncommon, 1 Rare or better: Rare 85 %, Ultra Rare 13 %, Collector 2 %');
+    await expect(packs.nth(i).locator('.shop-odds')).toHaveText('8 cards: 5 Common, 2 Uncommon, 1 Rare or better: Rare 85%, Ultra Rare 13%, Collector 2%');
   }
   await expect(page.getByTestId('coin-chip').first()).toContainText('300');
   await expect(packs.first().locator('.shop-free'), 'the free pack ribbon').toHaveText('FREE');
@@ -312,7 +312,7 @@ test('AC653: Daily Quests shows each quest with name, text, a progress bar, the 
   }
   const done = page.locator('.q-row[data-done="true"]');
   await expect(done).toHaveCount(1);
-  await expect(done.locator('.q-paid')).toHaveText(/^✔ \+\d+$/);
+  await expect(done.locator('.q-paid')).toHaveText(/^\+\d+$/);
   await expect(done.locator('.q-reroll')).toHaveCount(0);
   await expect(page.locator('.q-row[data-done="false"]').first()).toContainText(/\d+ days? left|Ends today/);
   await expect(page.locator('.q-row[data-done="false"] .q-reward').first()).toHaveText(/^\+\d+$/);
@@ -460,7 +460,7 @@ test('AC657: a new player has 300 coins and the starter collection; the menu sho
   await expect(page.locator('.col-count')).toHaveText(/^You own [1-9]\d* cards/);
 });
 
-test('AC658: shop_info lists the 4 active packs, each slot\'s odds summing to exactly 100 %; the Shop screen shows them', async ({ page }) => {
+test('AC658: shop_info lists the 4 active packs, each slot\'s odds summing to exactly 100%; the Shop screen shows them', async ({ page }) => {
   needDb();
   const u = await makeUser();
   const c = await loginApi(u);
@@ -619,4 +619,46 @@ test('AC666: decks can only use the copies a player owns: a 5th copy of a card o
   const lim = await page.evaluate(() => window.oreheart.packs.deckLimit('shiv-rat'));
   expect(lim.limit).toBeLessThanOrEqual(4);
   expect(lim.limit).toBe(Math.min(4, lim.copyLimit));
+});
+
+// ---- Gauge's list (Nov 2)
+test('AC667: while an economy screen is up the keyboard can never reach the menu behind it (the menu is inert), and it comes back on Back', async ({ page }) => {
+  await openEcon(page, 'shop');
+  const reached = [];
+  for (let i = 0; i < 24; i++) {
+    await page.keyboard.press('Tab');
+    reached.push(await page.evaluate(() => { const a = document.activeElement; return a && a.closest('[data-screen=title]') ? a.textContent.trim().slice(0, 30) : null; }));
+  }
+  expect(reached.filter(Boolean)).toEqual([]);
+  await expect(page.locator('[data-screen=title]')).toHaveAttribute('inert', '');
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.locator('[data-screen=econ-shop]')).toHaveCount(0);
+  await expect(page.locator('[data-screen=title]')).not.toHaveAttribute('inert', '');
+});
+
+test('AC668: the Collection keeps Back on screen however far it scrolls; a double tap on a pack card flips it and does not zoom; the pack scene has a way out before the rip', async ({ page }) => {
+  await openEcon(page, 'collection');
+  await page.locator('.col-card').first().waitFor();
+  await page.evaluate(() => { const s = document.querySelector('.econ-screen'); s.scrollTop = s.scrollHeight; });
+  const b = await page.getByRole('button', { name: 'Back' }).boundingBox();
+  expect(b.y).toBeGreaterThanOrEqual(0);
+  expect(b.y).toBeLessThan(120);
+  await openEcon(page, 'pack');
+  await expect(page.locator('.pko-leave')).toBeVisible();
+  await page.evaluate(() => window.oreheart.packs.skip());
+  await expect(page.locator('.pko-card').first()).toBeVisible();
+  expect(await page.evaluate(() => document.activeElement && document.activeElement.classList.contains('pko-card')), 'no focus ring forced on a card after a mouse rip').toBe(false);
+  await page.locator('.pko-card').first().dblclick();
+  await expect(page.locator('.pko-card').first()).toHaveAttribute('data-flipped', 'true');
+  await page.waitForTimeout(300);
+  await expect(page.locator('.col-zoom')).toHaveCount(0);
+});
+
+test('AC669: FREE, NEW and the shop text are readable (white on a dark or painted chip), and the odds never split a number from its percent sign', async ({ page }) => {
+  await openEcon(page, 'shop');
+  const fill = await page.locator('.shop-free').first().evaluate((e) => getComputedStyle(e).webkitTextFillColor);
+  expect(fill).toBe('rgb(255, 255, 255)');
+  await expect(page.locator('.shop-odds').first()).toContainText('85%');
+  const pale = await page.locator('.shop-free').first().evaluate((e) => getComputedStyle(e).backgroundImage);
+  expect(pale).toBe('none');
 });

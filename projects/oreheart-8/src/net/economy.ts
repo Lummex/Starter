@@ -192,12 +192,25 @@ export function toast(text: string, icon = '/art/packs/icons/coin-pile.webp') {
 
 // ------------------------------------------------------------------ screens
 export type EconScreen = 'shop' | 'collection' | 'quests' | 'pack';
+/** While an economy screen is up, everything else in the game's root is inert: no keyboard focus, no clicks, nothing read out. */
+function syncInert(root: Element) {
+  const open = !!root.querySelector(':scope > .econ-screen');
+  for (const c of [...root.children] as HTMLElement[]) {
+    if (c.classList.contains('econ-screen')) continue;
+    if (open) { if (!c.hasAttribute('inert')) { c.setAttribute('inert', ''); c.dataset.econInert = '1'; } }
+    else if (c.dataset.econInert) { c.removeAttribute('inert'); delete c.dataset.econInert; }
+  }
+}
+let inertWatch: MutationObserver | null = null;
 /** Puts up one of the economy screens over whatever is showing (the menu stays underneath and comes back on Back). */
 export function econShow(name: string, ...kids: (El | null)[]): El {
   closeEcon();
   const root = document.getElementById('app') || document.body;
-  const main = h('main', { class: 'screen net-screen econ-screen', 'data-screen': 'econ-' + name, 'aria-label': name }, ...kids);
+  const main = h('main', { class: 'screen net-screen econ-screen', 'data-screen': 'econ-' + name, 'aria-label': name, tabindex: '-1' }, ...kids);
   root.append(main);
+  syncInert(root);
+  if (!inertWatch) { inertWatch = new MutationObserver(() => syncInert(root)); inertWatch.observe(root, { childList: true }); } // catches every way a screen closes
+  main.focus({ preventScroll: true });
   return main;
 }
 export function closeEcon() { for (const s of document.querySelectorAll('.econ-screen')) s.remove(); }
@@ -241,7 +254,8 @@ export async function buyPack(pack: PackInfo, onErr?: (msg: string) => void, for
 export function economyMenu(el: El): void {
   if (!net.active) return;
   const b = (label: string, icon: string, kind: EconScreen) => h('button', { type: 'button', class: 'net-btn econ-menu-btn', 'data-econ': kind, onclick: () => { void openScreen(kind); } }, h('img', { src: icon, alt: '' }), h('span', {}, label));
-  el.append(h('div', { class: 'econ-bar', role: 'group', 'aria-label': 'Coins and packs' }, coinChip(),
+  el.prepend(coinChip());
+  el.append(h('div', { class: 'econ-bar', role: 'group', 'aria-label': 'Coins and packs' },
     b('Shop', '/art/packs/icons/free-pack.webp', 'shop'), b('Collection', '/art/ui/oreheart-card-back.webp', 'collection'), b('Quests', '/art/packs/icons/quest.webp', 'quests')));
   void refreshCoins();
   void refreshOwned();

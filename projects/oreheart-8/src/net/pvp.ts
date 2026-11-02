@@ -404,7 +404,7 @@ export async function resumePvp(): Promise<boolean> {
 
 export function showFriend() {
   screen('friend',
-    h('div', { class: 'pvp-hero', 'aria-hidden': 'true' }, h('span', { class: 'pvp-swords' }, '⚔')),
+    h('div', { class: 'pvp-hero', 'aria-hidden': 'true' }, h('img', { class: 'pvp-swords', src: '/art/ui/badges/icon-sword-silver.webp', alt: '' })),
     h('h1', {}, 'Play a friend'),
     h('p', {}, 'Make a secret code and send it to a friend, or type in the code a friend sent you.'),
     h('div', { class: 'net-actions pvp-choice' },

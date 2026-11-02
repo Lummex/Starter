@@ -47,3 +47,17 @@
   .pvp-menu{bottom:8px}
   .pvp-menu .net-btn{min-width:170px}
 }
+
+/* Gauge list (Nov 2): painted parts instead of computer-drawn ones */
+.pvp-swords{width:64px;height:64px;object-fit:contain;border:0;border-radius:0;background:none;box-shadow:none;filter:drop-shadow(0 2px 6px #000)}
+.pvp-letter{border:0;border-radius:0;background:url(/art/ui/match/frame-card-slot.webp) center/100% 100% no-repeat;box-shadow:none}
+.pvp-cmd{border:0;border-radius:0;padding:6px 6px 8px;background:url(/art/ui/match/frame-card-slot.webp) center/100% 100% no-repeat;box-shadow:none}
+.pvp-cmd:hover{filter:brightness(1.12)}
+.pvp-cmd[aria-checked=true]{box-shadow:none;filter:drop-shadow(0 0 10px #dfe8f7) brightness(1.15)}
+.pvp-cmd[aria-checked=true]::after{content:'';top:0;right:0;width:32px;height:32px;border-radius:0;background:url(/art/packs/icons/quest-done.webp) center/contain no-repeat;box-shadow:none}
+/* the deck list: no browser dropdown look */
+.pvp-deck{appearance:none;-webkit-appearance:none;border:0;border-radius:0;box-shadow:none;background:url(/art/ui/match/scroll-right.webp) right 16px center/20px no-repeat,url(/art/ui/match/frame-chip.webp) center/100% 100% no-repeat;padding:6px 44px 6px 26px;color:#fff;cursor:pointer}
+.pvp-deck option{background:#12141c;color:#fff}
+/* PvP, no counter to play: the small note while the browser lets it happen (2 s) */
+.pvp-resp-note{position:fixed;left:50%;top:clamp(46px,9vh,84px);z-index:60;transform:translateX(-50%);max-width:70vw;padding:6px 26px;color:#fff;font:italic 700 clamp(.9rem,2.2vh,1.15rem) "Alegreya SC",Georgia,serif;text-align:center;text-shadow:0 1px 2px #000,0 0 4px #000;pointer-events:none;border:0 solid transparent;border-image:url(/art/ui/match/frame-chip.webp) 40 60 fill / 14px 22px stretch;animation:pvp-note .18s ease-out both}
+@keyframes pvp-note{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translateX(-50%)}}
