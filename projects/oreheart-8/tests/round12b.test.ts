@@ -19,7 +19,10 @@ describe('round 12b-1: Goblin 3D models from the owner sheets', () => {
       expect(Object.keys(info.actions)).toEqual(m.clips);
       const j = glbJson(dir(id) + 'char.glb');
       expect(j.skins?.length).toBeGreaterThan(0);
-      expect(j.animations.length).toBe(m.clips.length);
+      // Oct 26: the Blender worker added named OH_ clips on top of the originals; every clip the game asks for by name must be in the file.
+      expect(j.animations.length).toBeGreaterThanOrEqual(m.clips.length);
+      const names = j.animations.map((a: any) => a.name);
+      for (const c of Object.values(info.clips || {})) expect(names, String(c)).toContain(c);
       for (const p of m.parts) expect(fs.existsSync(dir(id) + p + '.glb')).toBe(true);
     });
   }
@@ -28,6 +31,7 @@ describe('round 12b-1: Goblin 3D models from the owner sheets', () => {
     expect(j.animations[0].name).toBe('Chair_Sit_Idle_M');
     expect(fs.existsSync(dir('grubnak') + 'throne.glb')).toBe(true);
     expect(fs.existsSync(dir('grubnak') + 'scepter-v2.glb' /* Spring, Nov 1: the old staff had a green hand baked in */)).toBe(true);
-    expect(fs.existsSync('public/models/commanders')).toBe(false);
+    // The other Commanders live in public/models/commanders/<id>/ now; only Grubnak's old castle files must stay gone.
+    for (const f of ['grubnak.glb', 'grubnak-fortress.glb', 'grubnak-scepter.glb', 'grubnak']) expect(fs.existsSync('public/models/commanders/' + f), f).toBe(false);
   });
 });
