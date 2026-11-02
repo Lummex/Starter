@@ -3746,7 +3746,7 @@ export class App {
   }
   recapOpen() { const v = localStorage.getItem('oreheart.recap'); return v ? v === 'open' : window.innerHeight >= 500; }
   buildRecap(): El {
-    const tog = btn('Recap', 'recap-tog', (e: Event) => { e.stopPropagation(); localStorage.setItem('oreheart.recap', this.recapOpen() ? 'closed' : 'open'); this.renderRecap(); }, { 'aria-expanded': 'false' });
+    const tog = coinOnly(btn('Recap', 'recap-tog', (e: Event) => { e.stopPropagation(); localStorage.setItem('oreheart.recap', this.recapOpen() ? 'closed' : 'open'); this.renderRecap(); }, { 'aria-expanded': 'false' }), 'recap', 'Recap'); // Ken, Nov 1: Brush's recap coin
     const box = h('div', { class: 'e-recap', role: 'log', 'aria-label': 'Enemy turn recap' }, tog, h('div', { class: 'recap-list' })) as El;
     box.hidden = true;
     return box;

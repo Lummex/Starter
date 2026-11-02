@@ -610,3 +610,8 @@ html body:not(#_a):not(#_b) #app .match .o-menu-item.mi-coin::before{content:"";
 html body:not(#_a):not(#_b) #app .mode-ui .watch-bar{background:none;box-shadow:none;padding:0;gap:2px}
 html body:not(#_a):not(#_b) .overlay .dialog .btn.mframe.mframe{outline:0}
 html body:not(#_a):not(#_b) .play-from-hand-row .play-from-hand.play-from-hand{--fh:clamp(48px,6.6vh,70px);font-size:clamp(17px,2.2vw,26px)}
+/* -- the Recap toggle coin, the empty enemy discard slot and its count coin -- */
+html body:not(#_a):not(#_b) #app .match .e-recap .btn.recap-tog.mcoin.mcoin{position:relative;display:inline-block;width:var(--mc-small);height:var(--mc-small)}
+html body:not(#_a):not(#_b) #app .match .e-recap .btn.recap-tog.mcoin[aria-expanded=true]::before{filter:brightness(1.2) drop-shadow(0 0 6px #d8e8ffcc) drop-shadow(0 2px 3px #000b)}
+html body:not(#_a):not(#_b) #app .match .e-discard.empty{border:0;border-radius:0;background:url(/art/ui/match/frame-card-slot.webp) center/100% 100% no-repeat}
+html body:not(#_a):not(#_b) #app .match .e-discard .e-discard-n{border:0;border-radius:0;background:url(/art/ui/match/count-blank.webp) center/contain no-repeat;min-width:0;width:2.1em;height:2.1em;padding:0;display:flex;align-items:center;justify-content:center;right:-.7em;bottom:-.7em}
