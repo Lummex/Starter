@@ -1104,7 +1104,7 @@ export function legalActions(s: any): any[] {
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of mineTargets(s, c)) out.push({ type: 'mine', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const x of s.sites) if (readyMinersAt(s, who, x).length) out.push({ type: 'mineAt', row: x.row, col: x.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const t of attackTargets(s, c)) out.push({ type: 'attack', creatureUid: c.uid, target: t });
-  if (ph === 'deploy' && !s.flags.swapped && !pl.hand.some((h: any) => isMiner(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
+  if (ph === 'deploy' && !s.flags.swapped && !(pl.lastSwapTurn != null && s.turn - pl.lastSwapTurn < 6) /* Ken, Nov 1: the Miner swap has a penalty: after one, you can't swap again for your next 2 turns (a swap every third turn at most) */ && !pl.hand.some((h: any) => isMiner(CARDS[h.cardId])) && pl.deck.some((d: any) => d.cardId === basicGatherer(pl.faction))) {
     if (pl.hand.length) for (const h of pl.hand) out.push({ type: 'gathererSwap', discardUid: h.uid });
     else out.push({ type: 'gathererSwap' });
   }
@@ -1392,7 +1392,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       const idx = pl.deck.findIndex((d: any) => d.cardId === basicGatherer(pl.faction));
       const g = pl.deck.splice(idx, 1)[0];
       pl.hand.push(g);
-      s.flags.swapped = true;
+      s.flags.swapped = true; pl.lastSwapTurn = s.turn;
       ev.push({ type: 'gathererSwap', player: who, uid: g.uid, cardId: g.cardId });
       break;
     }
