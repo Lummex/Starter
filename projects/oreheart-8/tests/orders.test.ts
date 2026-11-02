@@ -19,7 +19,7 @@ const connected = (start: any, path: any[]) => path.every((q, i) => cheb(q, i ? 
 
 describe('Round 28 orders: card assumptions', () => {
   it('cards used here have the expected move/abilities', () => {
-    expect(CARDS['goblin-grunt'].move).toBe(2); // Combat v2 (Nov 1): feet = move points
+    expect(CARDS['goblin-grunt'].move).toBe(3); // Ken, Nov 1: feet follow the cost (1-3 walks 3)
     expect(CARDS['goblin-grunt'].abilities || []).toEqual([]);
     expect(CARDS['ram-rider'].move).toBe(5); // Nov 1: dearer units walk further (Ken)
     expect(CARDS['goblin-slinger'].abilities).toContain('ranged');
@@ -35,7 +35,7 @@ describe('Round 28 orders: shortestPath and turns', () => {
     expect(p.length).toBe(5);
     expect(p[p.length - 1]).toEqual({ row: 1, col: 6 });
     expect(connected(g, p)).toBe(true);
-    expect(turnsFor(g, p)).toBe(3);
+    expect(turnsFor(g, p)).toBe(2); // 5 squares at 3 feet
     const p2 = shortestPath(s, r, { row: 2, col: 6 })!;
     expect(p2.length).toBe(5);
     expect(turnsFor(r, p2)).toBe(1);
@@ -93,7 +93,7 @@ describe('Round 28 orders: nextStep', () => {
     s = act(s, { type: 'move', creatureUid: r.uid, row: step.row, col: step.col });
     const g = at(s, 1, 1);
     const pg = shortestPath(s, g, { row: 1, col: 4 })!;
-    expect(nextStep(s, g, pg)).toEqual(pg[1]); // v2: 2 feet
+    expect(nextStep(s, g, pg)).toEqual(pg[pg.length - 1]); // 3 feet cover the 3-square path
     // the moved unit cannot move again this turn
     expect(nextStep(s, at(s, step.row, step.col), shortestPath(s, at(s, step.row, step.col), { row: 4, col: 5 })!)).toBeNull();
   });
@@ -153,7 +153,7 @@ describe('Round 28 orders: planOrder', () => {
     const s = mk([P('goblin-grunt', 4, 1), P('goblin-grunt', 1, 1), O('goblin-grunt', 1, 2), O('goblin-grunt', 2, 1), O('goblin-grunt', 2, 2), O('goblin-grunt', 7, 13)]); // Ken, Nov 1: only enemies wall a unit in
     const g = at(s, 4, 1);
     const plan = planOrder(s, { kind: 'move', uid: g.uid, dest: { row: 4, col: 4 } });
-    expect(plan).toMatchObject({ turns: 2, blocked: false, done: false }); // v2: 2 feet
+    expect(plan).toMatchObject({ turns: 1, blocked: false, done: false }); // Nov 1: 3 feet
     expect(plan.path.length).toBe(3);
     expect(planOrder(s, { kind: 'move', uid: g.uid, dest: { row: 4, col: 1 } }).done).toBe(true);
     const w = at(s, 1, 1);
@@ -164,7 +164,7 @@ describe('Round 28 orders: planOrder', () => {
     const s = mk([P('goblin-grunt', 4, 1), P('goblin-grunt', 1, 1), O('goblin-grunt', 1, 2), O('goblin-grunt', 2, 1), O('goblin-grunt', 2, 2), O('goblin-grunt', 4, 5)]); // Ken, Nov 1: only enemies wall a unit in
     const g = at(s, 4, 1), e = at(s, 4, 5), w = at(s, 1, 1);
     expect(planOrder(s, { kind: 'chase', uid: g.uid, targetUid: 'gone' }).done).toBe(true);
-    expect(planOrder(s, { kind: 'chase', uid: g.uid, targetUid: e.uid })).toMatchObject({ turns: 2, blocked: false, done: false }); // v2: 2 feet
+    expect(planOrder(s, { kind: 'chase', uid: g.uid, targetUid: e.uid })).toMatchObject({ turns: 1, blocked: false, done: false }); // Nov 1: 3 feet
     expect(planOrder(s, { kind: 'chase', uid: w.uid, targetUid: e.uid })).toMatchObject({ blocked: true, done: false });
   });
 });

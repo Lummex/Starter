@@ -33,6 +33,7 @@ describe('anim-slots.json (Ken\'s Studio slot choices)', () => {
     expect(peb).toBeTruthy();
     expect(peb.slots.attack.clip).toBe('OH_Attack');
     expect(peb.slots.lifted.clip).toBe('OH_React_Lifted');
-    for (const role of ['idle', 'walk', 'run', 'hit', 'knockback', 'bowled', 'defeat', 'idleBreak']) expect(peb.slots[role], role).toEqual({ pack: 'random', auto: true });
+    for (const role of ['idle', 'walk', 'run', 'hit', 'knockback', 'bowled', 'idleBreak']) expect(peb.slots[role], role).toEqual({ pack: 'random', auto: true });
+    expect(peb.slots.defeat, 'defeat').toEqual({ shared: true, clip: 'biped-death-02', animation: 'biped-death-02', auto: true }); // Nov 1 (Spring): comic faint, pinned
   });
 });

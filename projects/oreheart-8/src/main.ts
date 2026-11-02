@@ -22,9 +22,12 @@ import cardFormat from '../public/art/card-format/format.json';
 import { ohCardEl, ohCardHTML, fitCardText, commanderCard } from './ui/cardfmt';
 import { hasCreature3dSlug } from './ui/creature3d';
 import { predictHit } from './ai/ai';
+import { setDiceMode } from './engine/dice';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
+// Dice (Nov 1): a real match always rolls and shuffles fresh (dice.ts 'live'); only the hidden-check test pages use the seeded dice, so their replays stay step for step the same.
+if (test) setDiceMode('seeded');
 if (test) { try { localStorage.removeItem('oreheart.tutorialSeen'); } catch { /* ignore */ } }
 const seedParam = params.get('seed');
 const seed = seedParam != null && seedParam !== '' && !isNaN(+seedParam) ? Math.trunc(+seedParam) : 1;
@@ -68,6 +71,7 @@ if (test) {
     getStance: () => game.getStance(),
     stanceChoice: (uid?: string) => game.stanceChoice(uid),
     getDragCard: () => app.getDragCard(),
+    getGuards: () => Object.fromEntries((app as any).guardSquares || []), // Nov 1: guard arrows (for the checks)
     getOrders: () => app.getOrders(),
     setOrder: (o: any) => app.setOrder(o),
     cancelOrder: (uid: string) => app.cancelOrder(uid),

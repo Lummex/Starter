@@ -64,7 +64,9 @@
   "goblin-grunt": {
    "slots": {
     "defeat": {
-     "pack": "random",
+     "shared": true,
+     "clip": "biped-death-04",
+     "animation": "biped-death-04",
      "auto": true
     },
     "idle": {
@@ -167,7 +169,9 @@
      "auto": true
     },
     "defeat": {
-     "pack": "random",
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
      "auto": true
     }
    },
@@ -329,7 +333,9 @@
      "auto": true
     },
     "defeat": {
-     "pack": "random",
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
      "auto": true
     }
    },
@@ -419,7 +425,9 @@
      "auto": true
     },
     "defeat": {
-     "pack": "random",
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
      "auto": true
     },
     "ability": {
@@ -464,6 +472,12 @@
     "defeat": {
      "pack": "random",
      "auto": true
+    },
+    "mine": {
+     "shared": true,
+     "clip": "biped-mine-pickaxe-01",
+     "animation": "biped-mine-pickaxe-01",
+     "auto": true
     }
    },
    "candidates": {}
@@ -475,6 +489,12 @@
      "clip": "biped-special-chef-smack",
      "animation": "biped-special-chef-smack",
      "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
+     "auto": true
     }
    },
    "candidates": {}
@@ -483,8 +503,58 @@
    "slots": {
     "special": {
      "shared": true,
-     "clip": "biped-special-rocket-ride",
-     "animation": "biped-special-rocket-ride",
+     "clip": "biped-rider-launch-01",
+     "animation": "biped-rider-launch-01",
+     "auto": true
+    },
+    "idle": {
+     "shared": true,
+     "clip": "biped-rider-hover-01",
+     "animation": "biped-rider-hover-01",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-rider-hover-02",
+     "animation": "biped-rider-hover-02",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-rider-hover-02",
+     "animation": "biped-rider-hover-02",
+     "auto": true
+    },
+    "idleBreak": {
+     "none": true,
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-rider-attack-01",
+     "animation": "biped-rider-attack-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-rider-hit-01",
+     "animation": "biped-rider-hit-01",
+     "auto": true
+    },
+    "knockback": {
+     "shared": true,
+     "clip": "biped-rider-hit-01",
+     "animation": "biped-rider-hit-01",
+     "auto": true
+    },
+    "bowled": {
+     "shared": true,
+     "clip": "biped-rider-hit-01",
+     "animation": "biped-rider-hit-01",
+     "auto": true
+    },
+    "lifted": {
+     "none": true,
      "auto": true
     }
    },
@@ -551,6 +621,12 @@
      "shared": true,
      "clip": "biped-special-shaman-lift",
      "animation": "biped-special-shaman-lift",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
      "auto": true
     }
    },
@@ -675,6 +751,12 @@
      "clip": "biped-throw-01",
      "animation": "biped-throw-01",
      "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-04",
+     "animation": "biped-death-04",
+     "auto": true
     }
    },
    "candidates": {}
@@ -718,6 +800,94 @@
      "shared": true,
      "clip": "biped-ranged-cast-hand-01",
      "animation": "biped-ranged-cast-hand-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "crystal-drunk-delver": {
+   "slots": {
+    "mine": {
+     "shared": true,
+     "clip": "biped-mine-pickaxe-01",
+     "animation": "biped-mine-pickaxe-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "gnome-prospector": {
+   "slots": {
+    "mine": {
+     "shared": true,
+     "clip": "biped-mine-pickaxe-01",
+     "animation": "biped-mine-pickaxe-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "gnome-smith-miner": {
+   "slots": {
+    "mine": {
+     "shared": true,
+     "clip": "biped-mine-pickaxe-01",
+     "animation": "biped-mine-pickaxe-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "goblin-scrounger": {
+   "slots": {
+    "mine": {
+     "shared": true,
+     "clip": "biped-mine-pickaxe-01",
+     "animation": "biped-mine-pickaxe-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "goblin-smith-miner": {
+   "slots": {
+    "mine": {
+     "shared": true,
+     "clip": "biped-mine-pickaxe-01",
+     "animation": "biped-mine-pickaxe-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "overclocked-conduit": {
+   "slots": {
+    "mine": {
+     "shared": true,
+     "clip": "biped-mine-pickaxe-01",
+     "animation": "biped-mine-pickaxe-01",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "shiv-rat": {
+   "slots": {
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-04",
+     "animation": "biped-death-04",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "skullbasher-rusher": {
+   "slots": {
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
      "auto": true
     }
    },

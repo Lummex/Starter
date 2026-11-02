@@ -1,5 +1,6 @@
 // Match controller: owns the engine state, runs the computer opponent, and notifies the UI.
 import { createMatch, applyAction, legalActions, hasMovesLeft, other, CONFIG, brewActions, CARDS, creatureCost, funds, summonSpaces } from './engine';
+import { aiPlanSummary } from './ai/orders-ai';
 import { aiChoose, makeRand, Rand, lastPlan } from './ai/ai';
 import { StyleId, isStyle, planFor } from './ai/styles';
 import { stanceChoose, onlyUnit, Stance } from './ai/stances';
@@ -85,6 +86,8 @@ export class Game {
   aiInfo = { worker: false, lastMs: 0, replies: 0 };
   setAiStyle(id: string) { if (isStyle(id)) this.aiStyle = id; return this.aiStyle; }
   /** The computer's plan on the current board (its style, the plan, what it read of the player). On the Worker path the last plan is the one the main thread would read for the same board. */
+  /** Nov 1: the computer's standing marker orders (test hook) */
+  aiOrders() { return aiPlanSummary('opponent'); }
   aiPlan(style: StyleId = this.aiStyle) { if (!this.state) return null; const p = planFor(this.state, 'opponent', style); return { style: p.style, plan: p.plan, read: p.read, last: { ...lastPlan } }; }
   /** Oct 31 (Ken: "The opposing side plays stuff too fast ... Give, like, a pause before he does certain things"): the UI tells the
    *  controller when the board is calm and shows the computer's card BEFORE it resolves. Live matches (and ?aiworker=1 tests) only. */

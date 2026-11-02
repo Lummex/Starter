@@ -6,10 +6,5 @@ export function nextRand(s: { rng: number }): number {
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
-export function shuffle<T>(s: { rng: number }, arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(nextRand(s) * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
+// Shuffles live in dice.ts now (fresh, secure shuffles in a real match; seeded ones for tests). Re-exported so old imports keep working.
+export { shuffle } from './dice';

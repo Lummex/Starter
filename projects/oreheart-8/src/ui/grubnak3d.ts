@@ -16,11 +16,32 @@ export interface G3DAssets {
   fortress: THREE.Object3D;
   scepter: THREE.Object3D | null;
   info: any;
+  /** Nov 1 (Spring): idle breaks from the shared pack */ breaks?: THREE.AnimationClip[];
 }
 
 let loading: Promise<G3DAssets | null> | null = null;
 let loaded: G3DAssets | null = null;
 export const grubnak3dReady = () => loaded;
+
+/** Nov 1 (Anvil): one switch for Spring's Commander pack clips (standing idle for Grubnak, idle breaks for all six). Checked: with them off Grubnak looks the same from the board camera, so they stay on for Ken to judge. */
+const CMD_PACK_CLIPS = true;
+const CMD_BREAKS = ['biped-idleBreak-01', 'biped-idleBreak-02', 'biped-idleBreak-04'];
+/** Nov 1 (Spring): shared idle breaks for a Commander. A Commander holding a prop keeps its right arm on the idle's first frame, so the prop stays put. */
+function commanderBreaks(sh: { byName: Record<string, THREE.AnimationClip> } | null, idle: THREE.AnimationClip | undefined, holdsProp: boolean): THREE.AnimationClip[] {
+  if (!sh) return [];
+  const names = holdsProp ? CMD_BREAKS : [...CMD_BREAKS, 'biped-idleBreak-03'];
+  return names.map((n) => sh.byName[n]).filter(Boolean).map((c) => {
+    if (!holdsProp || !idle) return c;
+    const tracks = c.tracks.map((t) => {
+      if (!/^Right(Shoulder|Arm|ForeArm|Hand)\.quaternion$/.test(t.name)) return t;
+      const src = idle.tracks.find((x) => x.name === t.name);
+      if (!src) return t;
+      const v = Array.from(src.values.slice(0, 4));
+      return new THREE.QuaternionKeyframeTrack(t.name, [0, c.duration], [...v, ...v]);
+    });
+    return new THREE.AnimationClip(c.name + '-held', c.duration, tracks);
+  });
+}
 
 /** Loads the saved models once; resolves null when they are not shipped (the procedural figure stays). */
 export function loadGrubnak3d(): Promise<G3DAssets | null> {
@@ -33,7 +54,7 @@ export function loadGrubnak3d(): Promise<G3DAssets | null> {
       const [c, f, s] = await Promise.all([
         gl.loadAsync(BASE + 'char.glb'),
         gl.loadAsync(BASE + 'throne.glb'),
-        gl.loadAsync(BASE + 'scepter.glb').catch(() => null),
+        gl.loadAsync(BASE + 'scepter-v2.glb').catch(() => null), // Nov 1 (Spring): the extra baked-in green hand removed
       ]);
       const clips: Record<string, THREE.AnimationClip> = {};
       const names: Record<string, string> = info.clipNames || {};
@@ -42,7 +63,9 @@ export function loadGrubnak3d(): Promise<G3DAssets | null> {
         const clip = c.animations.find((a) => a.name === want) || c.animations[GRUBNAK_ANIMS.indexOf(k)];
         if (clip) clips[k] = clip;
       }
-      loaded = { char: c.scene, clips, fortress: f.scene, scepter: s ? s.scene : null, info };
+      const sh = CMD_PACK_CLIPS ? await packClipsFor('cmd-grubnak', c.scene).catch(() => null) : null; // off together with the clips
+      if (CMD_PACK_CLIPS && sh?.byName['biped-idle-01']) clips.idle = sh.byName['biped-idle-01']; // Nov 1: no throne any more, so he stands
+      loaded = { char: c.scene, clips, fortress: f.scene, scepter: s ? s.scene : null, info, breaks: CMD_PACK_CLIPS ? commanderBreaks(sh, clips.idle, !!s) : [] };
       return loaded;
     } catch {
       return null;
@@ -113,9 +136,9 @@ export function makeGrubnak3d(a: G3DAssets, pose?: OwnerPose): G3D {
   const cb0 = box(ch);
   const H0 = cb0.max.y - cb0.min.y;
   let scepterBone = '';
-  if (a.scepter) {
-    const pcfg = { name: 'scepter', file: '', bone: ['RightHand'], len: 1.05, grip: 0.12, rot: [90, 0, 0] as [number, number, number], axis: 'y' as const };
-    scepterBone = attachPart(ch, pcfg, a.scepter, H0, () => {});
+  if (a.scepter) { // Spring, Nov 1: bone-local grip on the right hand (staff upright, hand wraps the shaft), no more chest-diagonal grip rule
+    const hb = ch.getObjectByName('RightHand');
+    if (hb) { const sp = a.scepter.clone(true); sp.position.set(19.273, -6.143, 6.595); sp.rotation.set(THREE.MathUtils.degToRad(-85.46), THREE.MathUtils.degToRad(44.47), THREE.MathUtils.degToRad(-119.65), 'XYZ'); sp.scale.setScalar(70.993); hb.add(sp); scepterBone = hb.name; }
   }
   m0.stopAllAction(); m0.uncacheRoot(ch);
   const ck = (SEAT.k * tH * size) / Math.max(H0, 0.01);
@@ -133,9 +156,11 @@ function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress:
   const mixer = new THREE.AnimationMixer(ch);
   const actions: Record<string, THREE.AnimationAction> = {};
   for (const k of Object.keys(a.clips)) actions[k] = mixer.clipAction(a.clips[k]);
+  const breaks = (a.breaks || []).map((c) => mixer.clipAction(c));
   let cur = '';
   let back: ReturnType<typeof setTimeout> | null = null;
   const play = (want: GrubnakAnim | string, opts: { loop?: boolean } = {}) => {
+    if (want === 'idleBreak') { if (cur !== 'idle' || !breaks.length) return; actions.idleBreak = breaks[Math.floor(Math.random() * breaks.length)]; }
     // Oct 30: a Commander without a clip for this emote plays a stand-in (attack / hit / idle); Grubnak has every clip, so nothing changes for him
     const name = actions[want] ? want : actions[EMOTE_FALLBACK[want]] ? EMOTE_FALLBACK[want] : actions.idle ? 'idle' : '';
     const next = actions[name];
@@ -206,7 +231,7 @@ export function loadCommander3d(id: string): Promise<G3DAssets | null> {
           const l = sh.byKind[kind] || []; if (l.length) clips[role] = l[Math.floor(Math.random() * l.length)];
         }
         const pr = cfg.prop ? await gl.loadAsync(cfg.base + cfg.prop.file).then((x) => x.scene).catch(() => null) : null;
-        const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info, prop: pr };
+        const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info, prop: pr, breaks: CMD_PACK_CLIPS ? commanderBreaks(sh, clips.idle, !!(s || pr)) : [] };
         otherLoaded.set(id, a);
         return a;
       } catch {

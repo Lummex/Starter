@@ -58,10 +58,12 @@ const DEFAULT_H_SPECIAL: Record<string, number> = { 'grubnaks-big-boss-troll': 1
 const defaultH = (id: string): number | undefined => DEFAULT_H_SPECIAL[id] ?? ({ dwarves: 0.95, gnomes: 0.85 } as Record<string, number>)[(CARDS as any)[id]?.faction];
 const DEFAULT_H = new Proxy({} as Record<string, number>, { get: (_t, id: string) => defaultH(id) });
 /** which parts each creature carries (tuned by eye against the owner's assembled reference) */
+/** Nov 1 (Ledger): Miners holding a pick skip the idles that twist the hand (05, 06, 09). */
+const PICK_HOLDERS = new Set(['goblin-scrounger', 'goblin-smith-miner', 'crystal-drunk-delver', 'dwarf-smith-miner', 'gnome-prospector', 'gnome-smith-miner', 'overclocked-conduit']);
 const PARTS: Record<string, PartCfg[]> = {
   'goblin-scrounger': [
     { name: 'backpack', file: 'backpack.glb', bone: ['Spine02', 'Spine01', 'Spine'], len: 0.36, grip: 0.5, rot: [0, 180, 0], pos: [0, 0, -0.1] },
-    { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.62, grip: 0.3, rot: [180, 0, 0], axis: 'y' },
+    { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.62, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-0.959, 5.833, 9.823], rot: [-60.151, 49.709, 158.171], scale: [34.318, 34.318, 34.318] } }, // Nov 1: Ledger's grip (studio/ledger-nov1): head up, handle through the hand
   ],
   'goblin-pebbler': [{ name: 'club', file: 'club.glb', bone: ['RightHand'], len: 0.55, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-9.231, 12.794, 2.402], rot: [27, 11, 52], scale: [25, 25, 25] } }],
   'goblin-scrapper': [{ name: 'bowling-ball', file: 'bowling-ball.glb', bone: ['RightHand'], len: 0.3, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-3.51, 8.733, -1.595], rot: [50.405, 1.159, 166.638], scale: [23, 23, 23] } }],
@@ -74,7 +76,7 @@ const PARTS: Record<string, PartCfg[]> = {
   'goblin-slinger': [{ name: 'skull-mace', file: 'skull-mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-4.733, 9.93, 4.184], rot: [7.674, 57.734, 67.236], scale: [19, 19, 19] } }],
   'goblin-grunt': [{ name: 'frying-pan', file: 'frying-pan.glb', bone: ['RightHand'], len: 0.42, grip: 0.15, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-13.281, 9.76, 19.154], rot: [126.389, -36.031, 38.735], scale: [43.449, 43.449, 43.449] } }],
   'junk-shaman': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.85, grip: 0.4, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [5.156, -7.33, 3.734], rot: [-10.17, -24.8, -150.09], scale: [52.566, 52.566, 52.566] } }], // Ken (Oct 30): upright, hand-gripping (Ledger)
-  'shard-guzzler': [{ name: 'rocket', file: 'rocket.glb', bone: ['Spine02', 'Spine01', 'Spine'], len: 0.55, grip: 0.5, rot: [0, 180, 0], pos: [0, 0, -0.14] }],
+  'shard-guzzler': [{ name: 'rocket', file: 'rocket.glb', bone: ['Hips'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [11.758, -21.387, 8.388], rot: [-168.73, 46.54, 174.06], scale: [50, 50, 50] } }], // Nov 1 (Spring): he rides the rocket (saddle under his Hips, nose forward); assumes the scene's 0.42 hover
   'blastrat-sapper': [{ name: 'bomb', file: 'bomb.glb', bone: ['Spine02', 'Spine01', 'Spine'], len: 0.32, grip: 0.5, rot: [0, 180, 0], pos: [0, -0.02, -0.12] }],
   'skullbasher-rusher': [
     { name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-8.9, 18.747, 8.443], rot: [-8.725, 65.398, 73.206], scale: [36, 36, 36] } },
@@ -90,7 +92,7 @@ const PARTS: Record<string, PartCfg[]> = {
     { name: 'dagger', file: 'dagger.glb', bone: ['RightHand'], len: 0.4, grip: 0.2, rot: [180, 0, 0], axis: 'y', look: { bone: 'RightHand', pos: [-8.478, 10.344, 13.399], rot: [132.296, -65.655, 54.851], scale: [26, 26, 26] } },
   ],
   'goblin-smith-miner': [
-    { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.55, grip: 0.3, rot: [180, 0, 0], axis: 'y' },
+    { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.55, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-4.705, 7.059, 8.985], rot: [-51.979, 31.325, 142.884], scale: [28.916, 28.916, 28.916] } }, // Nov 1: Ledger's grip (studio/ledger-nov1): head up, handle through the hand
     { name: 'hammer', file: 'hammer.glb', bone: ['LeftHand'], len: 0.4, grip: 0.2, rot: [0, 0, 0], axis: 'y' },
   ],
   // owner (Oct 25): Gnome and Dwarf models, character only for now (the owner adds their items with the Model Editor later)
@@ -113,15 +115,15 @@ const PARTS: Record<string, PartCfg[]> = {
     { name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.5, grip: 0.15, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-4.731, -5.715, 11.972], rot: [-154.482, 19.625, 141.716], scale: [31.299, 31.299, 31.299] } }, // Oct 31: Ledger's card-matched placement (studio/gear-placements-oct31.json), replaces the grip rule
     { name: 'gear-shield', file: 'gear-shield.glb', bone: ['LeftForeArm', 'LeftHand'], len: 0.5, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [-9.104, 10.729, -4.349], rot: [-131.803, -68.334, 80.845], scale: [32.632, 32.632, 32.632] } },
   ],
-  'gnome-prospector': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [180, 0, 0], world: { bone: 'RightHand', body: 0.37, pos: [-0.121, 0.2512, 0.1576], rot: [40.781, -43.817, 94.144], scale: 0.1846 } }], // Ken's Studio setup (Gemsinger, silver): world item at body scale 0.37
+  'gnome-prospector': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [10.745, 3.469, 15.292], rot: [-100.029, 45.762, -162.368], scale: [49.892, 49.892, 49.892] } }], // Nov 1: Ledger's grip (studio/ledger-nov1): head up, handle through the hand
   'overclocked-conduit': [
-    { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-17.434, -14.198, 11.876], rot: [110.046, 53.172, 138.115], scale: [40, 40, 40] } }, // Oct 31: Ledger's card-matched placement (studio/gear-placements-oct31.json), replaces the grip rule
+    { name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-2.893, -1.967, 10.698], rot: [-112.171, -31.428, -157.231], scale: [40, 40, 40] } }, // Nov 1: Ledger's grip (studio/ledger-nov1): head up, handle through the hand
     { name: 'pickaxe-2', file: 'pickaxe.glb', bone: ['LeftHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-4.556, -3.569, 24.76], rot: [118.329, -2.518, 101.853], scale: [40, 40, 40] } }, // the card holds two pickaxes (Studio note: one in each hand)
   ],
   'glyphshield-warden': [{ name: 'shield', file: 'shield.glb', bone: ['LeftForeArm'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [-0.289, 25.921, 0.524], rot: [-114.616, -54.523, 103.055], scale: [28.912, 28.912, 28.912] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'gnome-cogger': [{ name: 'mace', file: 'mace.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-16.476, -10.052, 6.626], rot: [-106.963, -35.01, 84.605], scale: [32.833, 32.833, 32.833] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'gnome-illusionist': [],
-  'gnome-smith-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-9.388, -3.677, 18.983], rot: [-85.729, -27.913, 154.305], scale: [32.614, 32.614, 32.614] } }], // Oct 31: Ledger's card-matched placement (studio/gear-placements-oct31.json), replaces the grip rule // Oct 31: Clay's silver pickaxe; Ken's Studio placement is on the old Mixamo body, so the grip rule until Ledger re-places it
+  'gnome-smith-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.6, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-5.433, 6.908, 11.213], rot: [-51.6, 40.59, 144.35], scale: [32.614, 32.614, 32.614] } }], // Nov 1: Ledger's grip (studio/ledger-nov1): head up, handle through the hand
   'gnome-tinker': [
     { name: 'scepter', file: 'scepter.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-5.106, 4.336, 10.391], rot: [-91.862, 22.237, 178.441], scale: [29.826, 29.826, 29.826] } },
     { name: 'crystal-shield', file: 'crystal-shield.glb', bone: ['LeftForeArm'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftForeArm', pos: [-6.589, 20.19, 0.021], rot: [-110.166, -61.024, 179.49], scale: [29.536, 29.536, 29.536] } },
@@ -156,7 +158,7 @@ interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationCl
 export interface PackClip { clip: THREE.AnimationClip; kind: string; loop: boolean; impact?: number; rootSpeed?: number; events?: { name: string; time: number }[] }
 interface Pack { clips: PackClip[]; rig: Rig }
 export interface SharedSet { byName: Record<string, THREE.AnimationClip>; byKind: Record<string, THREE.AnimationClip[]>; impact: Record<string, number>; speed: Record<string, number>; events: Record<string, { name: string; time: number }[]> }
-export const PACK_URL = '/models/anims/biped-pack-v5'; // Spring's v5 (Oct 31): v4's 70 clips (byte-identical) + 7 ranged clips (kind ranged, each with a `release` {frame, time, bone})
+export const PACK_URL = '/models/anims/biped-pack-v6'; // Spring's v6 (Nov 1): v5's 77 clips (byte-identical) + biped-mine-pickaxe-01 (kind mine) + 5 Rocket Rider ride clips; v5 (Oct 31): v4's 70 clips + 7 ranged clips (kind ranged, each with a `release` {frame, time, bone})
 let packP: Promise<Pack | null> | null = null;
 /** test hook (window.__sharedPack): what the pack loader did */
 export const packInfo = { url: PACK_URL, loaded: false, clips: [] as { name: string; kind: string }[], error: '', units: {} as Record<string, string> };
@@ -349,7 +351,7 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
           if (sl) for (const [role, pick] of Object.entries(sl)) {
             const p = Array.isArray(pick) ? pick[0] : pick;
             if (!p) continue;
-            if (p.none) { delete clips[role]; slotLog.push({ id, role, clip: '', how: 'none' }); continue; }
+            if (p.none) { delete clips[role]; picked.add(role); slotLog.push({ id, role, clip: '', how: 'none' }); continue; } // Nov 1: 'none' also keeps the random pack fill off the role (it falls back to idle / hit)
             if (p.pack === 'random') { delete clips[role]; packFree.add(role); slotLog.push({ id, role, clip: '', how: 'pack-random' }); continue; } // Oct 30 (Spring): a random pack clip of this kind
             if (p.shared) { const sc = shared?.byName[p.clip] || shared?.byName[p.animation]; if (sc) { clips[role] = sc; picked.add(role); slotLog.push({ id, role, clip: sc.name, how: 'shared' }); } else slotLog.push({ id, role, clip: p.clip, how: 'shared-skipped' }); continue; }
             const cl = byName(p.clip);
@@ -426,7 +428,7 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
     const ranged = ((CARDS as any)[id]?.abilities || []).includes('ranged');
     for (const [role, kinds] of [['idle', ['idle']], ['walk', ['walk']], ['run', ['run']], ['idleBreak', ['idleBreak']], ['attack', [ranged ? 'ranged' : 'attack']], ['hit', ['hit']], ['knockback', ['knockback']], ['bowled', ['bowled']], ['defeat', ['defeat']], ['lifted', ['lifted']]] as [string, string[]][]) {
       if (!free(role)) continue;
-      const cl = pick(kinds.flatMap((k) => sh.byKind[k] || []));
+      const cl = pick(kinds.flatMap((k) => sh.byKind[k] || []).filter((c) => !(role === 'idle' && PICK_HOLDERS.has(id) && /^biped-idle-(05|06|09)$/.test(c.name)))); // Nov 1 (Ledger): those three idles twist the hand so any pick points backward
       if (cl) { clips[role] = cl; packRoles.add(role); }
     }
   }

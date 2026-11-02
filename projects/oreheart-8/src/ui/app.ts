@@ -7,7 +7,7 @@ import { Game } from '../game';
 import ownerLayoutJson0 from '../content/owner-layout.json';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other, ABILITY_COST, bankNeeded, movedThisPhase, shamanLiftTargets, shamanLandingSquares, shamanLiftAction, MULLIGAN_REDRAWS } from '../engine';
 import { SPELL_VISUALS } from '../content/spell-visuals';
-import tutorialJson from '../content/tutorial.json';
+import { Tutorial, tutorialGame, tutorialOrders } from './tutorial';
 import { STANCES } from '../ai/stances';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters, maxDecks } from './decks';
 import { net } from '../net/state';
@@ -24,7 +24,23 @@ import { mountGrubnakViewer, mountCreatureViewer } from './viewer3d';
 import { emptyCell } from '../engine';
 import { planOrder, chaseList, UNIT_STANCES, type Order, type OrderPlan, type Stance as UnitStance } from '../engine/orders';
 import { runOrders } from './orders-run';
-import { orderSvg, restTargetSvg, questionSvg, guardSvg, type OrderDrawing } from './order-draw';
+import { orderSvg, restTargetSvg, guardSvg, guardArrowsSvg, type OrderDrawing } from './order-draw';
+/** Ken, Nov 1: Brush's painted unit icons (public/art/ui/unit-icons) */
+const UNIT_ICON = (n: string) => `/art/ui/unit-icons/${n}.webp`;
+/** Ken, Nov 1: "I don't want any of the computer style drawn buttons. I want nice graphic coins" / "use little graphics instead of words": Brush's coins (art/ui/match/README.md) */
+const MATCH_ART = (n: string) => `/art/ui/match/${n}.webp`;
+/** a picture-only control: the coin shows; the word stays its name (screen readers, the checks) and its hover tooltip */
+const coinOnly = <T extends HTMLElement>(b: T, coin: string, word?: string): T => {
+  b.classList.add('mcoin'); b.style.setProperty('--coin', `url(${MATCH_ART(coin)})`); if (word) b.title = word;
+  const t = [...b.childNodes].filter((n) => n.nodeType === 3 && (n.textContent || '').trim()); // the word moves into a visually hidden span (still the name)
+  if (t.length) { const sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = t.map((n) => n.textContent).join(''); t.forEach((n) => n.remove()); b.append(sr); }
+  return b;
+};
+/** the ability coins (they replace the emoji) */
+const AB_COIN: Record<string, string> = { slide: 'ability-slide', bowl: 'ability-strike', shockwave: 'ability-shockwave', plow: 'ability-plow', ramMove: 'ability-ram', shaman: 'ability-grab', rocket: 'ability-rocket', ward: 'ability-ward', sacrifice: 'ability-sacrifice', brew: 'ability-brew', blink: 'ability-blink' };
+/** rarest first for the Rarity sort */
+const RARITY_RANK: Record<string, number> = { collector: 0, 'ultra-rare': 1, rare: 2, uncommon: 3, common: 4 };
+const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 type El = HTMLElement;
 const SYM: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨' };
@@ -324,7 +340,7 @@ export class App {
   handKey = '';
   /** Ken (Oct 31): the hand's auto-arrange. '' = the player's own (manual) order; otherwise the hand shows sorted (display order only:
    *  the game's hand order is untouched until the player drags a card, which is the manual reorder as before and clears the sort). */
-  handSortMode: '' | 'costDesc' | 'costAsc' | 'type' = (() => { try { const v = localStorage.getItem('oreheart.handSort') || ''; return (['costDesc', 'costAsc', 'type'].includes(v) ? v : '') as any; } catch { return ''; } })();
+  handSortMode: '' | 'costDesc' | 'costAsc' | 'type' | 'rarity' = (() => { try { const v = localStorage.getItem('oreheart.handSort') || ''; return (['costDesc', 'type', 'rarity'].includes(v) ? v : '') as any; } catch { return ''; } })();
   handSortUp: El | null = null;
   handSortOff: ((e: Event) => void) | null = null;
   handSortGlide = false;
@@ -864,7 +880,7 @@ export class App {
       sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
       sec('Mulligan and Camera', 'Before the match you see your opening hand. Keep Hand plays it as it is; Redraw Hand shuffles every card back into your deck and draws a completely new hand of the same size. You get one redraw per match, so look before you choose. The computer gets the same choice. On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and choose Recenter in the Menu (right side) to reset. The Menu also holds Last turn, Mute, the Card pop-ups switch and Surrender. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
       sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (any number, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (no limit). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
-      sec('Combat', 'Attack is swings: a creature with Attack 2 swings twice, and each swing rolls a die that hits on 3 to 6. For every hit the defender rolls block dice equal to its current Health (at most 3), and any 1 or 6 blocks the hit (Armored and Riot Shield also block on a 2). A hit that gets through does 1 damage, so a wounded creature blocks less. In melee the defender then swings back the same way, if it is still standing. Ranged creatures hit the first enemy up to 7 spaces away in one of the 8 straight directions (they cannot shoot past a unit) and get no strike back. Commanders never block, but swings at them still have to hit. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 swing, except against Miners. Spells do their damage straight, with no dice. Shield 1 blocks the next hit that lands. Move points: a creature\'s foot number is how many steps it can take in a turn; the attack costs 1 point and ends its turn, so a 3-foot creature can walk 2 and then attack. Miners have 1. MISS, PARRY and BLOCK pop up over the target so you can see every swing.', combat),
+      sec('Combat', 'Attack is swings: a creature with Attack 2 swings twice, and each swing rolls a die that hits on 2 to 6 (only a 1 misses). For every hit the defender rolls block dice equal to its current Health (at most 2; a big unit of cost 7 or more rolls just 1), and a 6 blocks the hit (Armored and Riot Shield roll one extra die, 3 at most). Commanders roll one block die too. A big unit (cost 7 or more) is hard to block: against its attacks the defender rolls one die fewer (never below 1). A hit that gets through does 1 damage, so a wounded creature blocks less. In melee the defender then swings back the same way, if it is still standing. Ranged creatures hit the first enemy up to 7 spaces away in one of the 8 straight directions (they cannot shoot past a unit) and get no strike back. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 swing, except against Miners. Spells do their damage straight, with no dice. Shield 1 blocks the next hit that lands. Move points: a creature\'s foot number is how many steps it can take in a turn; the attack costs 1 point and ends its turn, so a 3-foot creature can walk 2 and then attack. Miners have 1. MISS, PARRY and BLOCK pop up over the target so you can see every swing.', combat),
       sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals (Flow first, then Bank). Commanders never attack. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet: you can play a Crystal card on its own or together with a counterspell to pay for it. Counterspells cancel spells or summons.'),
       h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Tutorial', 'menu-fwd', () => this.beginTutorial()), btn('Back', 'menu-back', () => this.showMenu())));
@@ -934,7 +950,7 @@ export class App {
       for (const k of keys) {
         const ui = ABILITY_UI[k], cost = k === 'blink' ? 1 : ABILITY_COST[k] || 0;
         const ok = ready.has(k) && st.priority === 'player';
-        const b = h('button', { type: 'button', class: 'primary play-from-hand' + (ok ? '' : ' cant'), 'aria-disabled': String(!ok), title: ui.text }, `${ui.name}${cost ? ` (${cost})` : ''}`) as HTMLButtonElement;
+        const b = h('button', { type: 'button', class: 'primary play-from-hand' + (ok ? '' : ' cant'), 'aria-disabled': String(!ok), title: ui.text, style: `--coin:url(${MATCH_ART(AB_COIN[k] || 'ability-blink')})` }, `${ui.name}${cost ? ` (${cost})` : ''}`) as HTMLButtonElement;
         b.addEventListener('click', (ev) => { ev.stopPropagation(); if (!ok) { this.flash(ui.text); return; } d?.close(); const cr = this.game.state.board.creatures.find((x: any) => x.uid === creature.uid); if (cr) this.useAbility(cr, k); });
         row.append(b);
       }
@@ -1195,12 +1211,20 @@ export class App {
       style: `--gem:${ri.color};--gem-dark:${ri.dark};--charm:url(/art/ui/rank-charms/${tier}.webp)${ri.division ? `;--pip:url(/art/ui/rank-charms/division-${ri.division}.webp)` : ''}` });
   }
 
-  beginTutorial() {
+  /** Ken, Nov 1: the tutorial is graphic and hands-on (src/ui/tutorial.ts): one small board per lesson. `step` starts at a lesson (checks). */
+  tut: Tutorial | null = null;
+  beginTutorial(step?: string) {
+    this.lastTutorial = true;
+    if (!this.tut) this.tut = new Tutorial(this);
+    return this.tut.begin(step);
+  }
+  /** One tutorial lesson's board (called by tutorial.ts); the arena stays the same for the whole tutorial. */
+  startTutorialLesson(opts: any) {
     this.lastTutorial = true;
     this.fxLog = [];
-    const state = this.game.startTutorial();
+    const state = this.game.newMatch(opts);
     applyHighlightVars(this.game.state.players.player.faction);
-    this.arenaFaction = ''; this.pickMatchArena();
+    if (!this.arenaFaction) this.pickMatchArena();
     this.pickOpponentName();
     this.showMatch();
     this.update(this.game.state, []);
@@ -1242,7 +1266,7 @@ export class App {
       const bankN = h('span', { class: 'cry-bank-n' }, '0');
       const bank = h('span', { class: 'cry-bank', 'aria-label': you ? 'Your Bank crystals' : 'Enemy Bank crystals' }, bankN);
       const name = h('span', { class: 'cry-name' }, '');
-      const next = h('span', { class: 'cry-next', 'aria-label': you ? 'Your income next turn' : 'Enemy income next turn' }, 'Next +0');
+      const next = h('span', { class: 'cry-next', 'aria-label': you ? 'Your income next turn' : 'Enemy income next turn' }, h('span', { class: 'sr-only' }, 'Next '), '+0');
       const el = h('div', { class: 'crystal-hud ' + side, role: 'group', 'aria-label': you ? 'Your crystal' : 'Enemy crystal' },
         h('div', { class: 'cry-inner' },
           h('div', { class: 'cry-img' }, gem, flow, bank),
@@ -1258,31 +1282,44 @@ export class App {
     r.enemyHealth = h('div', { class: 'heart theirs', role: 'img', 'aria-label': 'Enemy Commander health' }, '20');
     r.phase = h('div', { class: 'phase', role: 'status', 'aria-label': 'Current phase' });
     r.phase.append(h('div', { class: 'ph-turn' }), h('div', { class: 'ph-steps' }, ...['draw', 'deploy', 'action', 'end'].map((k) => h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k]), ), ), h('div', { class: 'ph-time' }));
-    (r.phase.querySelector('.ph-steps') as El).replaceChildren(...['draw', 'deploy', 'action', 'end'].flatMap((k, i) => (i ? [h('span', { class: 'ph-sep', 'aria-hidden': 'true' }, '›'), h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k])] : [h('span', { class: 'ph-step', 'data-phase': k }, PHASE[k])])));
+    (r.phase.querySelector('.ph-steps') as El).replaceChildren(...['draw', 'deploy', 'action', 'end'].flatMap((k, i) => (i ? [h('span', { class: 'ph-sep', 'aria-hidden': 'true' }, '›'), h('span', { class: 'ph-step', 'data-phase': k, title: PHASE[k] }, h('span', { class: 'sr-only' }, PHASE[k]))] : [h('span', { class: 'ph-step', 'data-phase': k, title: PHASE[k] }, h('span', { class: 'sr-only' }, PHASE[k]))]))); // Ken, Nov 1: Brush's phase coins; the words stay hidden
     r.timer = h('div', { class: 'countdown', role: 'timer', 'aria-label': 'Phase timer', hidden: true }, '10');
+    // Ken, Nov 1: "that same progress bar that you have for when you want to respond to a spell being cast, I want that on the timer on the top"
+    r.turnBar = h('div', { class: 'turn-bar', role: 'progressbar', 'aria-label': 'Turn time left', 'aria-valuemin': '0', 'aria-valuemax': String(CONFIG.phaseTimerSeconds), 'aria-valuenow': String(CONFIG.phaseTimerSeconds), hidden: true },
+      h('img', { class: 'tb-coin', src: MATCH_ART('timer'), alt: '', draggable: 'false' }),
+      h('div', { class: 'tb-frame' }, h('div', { class: 'tb-groove' }, h('div', { class: 'tb-fill' }))),
+      h('span', { class: 'tb-time' }, mmss(CONFIG.phaseTimerSeconds)),
+      h('span', { class: 'tb-bank', title: 'Banked time: it runs down first, then the turn clock', hidden: true }, h('span', { class: 'sr-only' }, 'Banked time '), h('b', {}, '')));
     r.board = h('div', { class: 'board', role: 'application', 'aria-label': 'Battlefield' });
     r.fx = h('div', { class: 'fx' });
     r.myHealth = h('div', { class: 'heart mine', role: 'img', 'aria-label': 'Your Commander health' }, '20');
     r.myDeck = h('div', { class: 'pile', role: 'img', 'aria-label': 'Your deck' }, h('img', { class: 'deck-img', src: '/art/deck/deck-menu-deck-pile.png', alt: '', draggable: 'false' }), h('span', { class: 'pile-n' }, '0'));
-    r.done = btn('Done', 'primary done-btn', () => this.pressDone());
+    r.done = coinOnly(btn('Done', 'primary done-btn', () => this.pressDone()), 'done', 'Done');
     r.recenter = btn('Recenter', 'recenter-btn', () => { this.resetCam(); this.menuOpen(false); });
-    r.swap = btn('Swap for a Miner', 'swap-btn', () => this.startSwap());
+    r.swap = coinOnly(btn('Swap for a Miner', 'swap-btn', () => this.startSwap()), 'swap-miner', 'Swap for a Miner');
     r.swap.hidden = true;
     r.hand = h('div', { class: 'hand', role: 'group', 'aria-label': 'Your hand' });
-    r.handLeft = btn('◀', 'hand-scroll left', () => { this.handScroll = Math.max(0, Math.round(this.handScroll) - 3); this.layoutHand(); }, { 'aria-label': 'Scroll hand left' });
-    r.handRight = btn('▶', 'hand-scroll right', () => { this.handScroll = Math.round(this.handScroll) + 3; this.layoutHand(); }, { 'aria-label': 'Scroll hand right' });
+    r.handLeft = coinOnly(btn('', 'hand-scroll left', () => { this.handScroll = Math.max(0, Math.round(this.handScroll) - 3); this.layoutHand(); }, { 'aria-label': 'Scroll hand left' }), 'scroll-left', 'Scroll hand left');
+    r.handRight = coinOnly(btn('', 'hand-scroll right', () => { this.handScroll = Math.round(this.handScroll) + 3; this.layoutHand(); }, { 'aria-label': 'Scroll hand right' }), 'scroll-right', 'Scroll hand right');
     r.handLeft.hidden = true; r.handRight.hidden = true;
-    r.handSort = h('button', { type: 'button', class: 'hand-sort-btn', 'aria-label': 'Sort hand', 'aria-haspopup': 'true', 'aria-expanded': 'false', title: 'Sort hand' }, h('span', { class: 'hs-ico', 'aria-hidden': 'true' })) as El;
-    r.handSort.addEventListener('click', () => this.toggleHandSortUp());
+    // Ken, Nov 1: "three little icons down towards the bottom. In the same area. Hugging the bottom ... 3 buttons I can click. Instead of having them menu"
+    r.handSort = h('div', { class: 'hand-sort-btn hand-sorts', role: 'group', 'aria-label': 'Sort hand', 'data-sort': '' },
+      ...App.HAND_SORTS.map((s) => {
+        const b = h('button', { type: 'button', class: 'hs-coin', 'data-sort': s.mode, 'aria-label': s.label, title: s.tip, 'aria-pressed': 'false' },
+          h('img', { class: 'hs-c', src: MATCH_ART(s.coin), alt: '', draggable: 'false' }), h('img', { class: 'hs-a', src: MATCH_ART(s.coin + '-active'), alt: '', draggable: 'false' })) as El;
+        b.addEventListener('pointerdown', (e) => e.stopPropagation());
+        b.addEventListener('click', (e) => { e.stopPropagation(); this.setHandSort(this.handSortMode === s.mode ? '' : s.mode); });
+        return b;
+      })) as El;
     r.handSort.hidden = true;
-    const menuBtn = btn('Menu', 'menu-btn', () => { this.menuPinned = !this.menuPinned; this.menuOpen(this.menuPinned); }, { 'aria-expanded': 'false', 'aria-haspopup': 'menu' });
+    const menuBtn = coinOnly(btn('Menu', 'menu-btn', () => { this.menuPinned = !this.menuPinned; this.menuOpen(this.menuPinned); }, { 'aria-expanded': 'false', 'aria-haspopup': 'menu' }), 'menu', 'Menu');
     const syncMute = () => {
       muteBtn.setAttribute('aria-pressed', String(audio.muted)); muteBtn.setAttribute('aria-label', 'Mute'); muteBtn.textContent = audio.muted ? 'Muted' : 'Mute';
-      spk.setAttribute('aria-pressed', String(audio.muted)); spk.setAttribute('aria-label', audio.muted ? 'Unmute sound' : 'Mute sound'); spk.textContent = audio.muted ? '🔇' : '🔊';
+      spk.setAttribute('aria-pressed', String(audio.muted)); spk.setAttribute('aria-label', audio.muted ? 'Unmute sound' : 'Mute sound'); spk.textContent = ''; coinOnly(spk, audio.muted ? 'sound-off' : 'sound-on', audio.muted ? 'Unmute sound' : 'Mute sound');
     };
     const toggleMute = () => { audio.setMuted(!audio.muted); syncMute(); if (!audio.muted) audio.play('click'); };
     const muteBtn = btn('Mute', 'mute-btn', toggleMute);
-    const spk = btn('🔊', 'spk-btn', toggleMute);
+    const spk = btn('', 'spk-btn', toggleMute);
     syncMute();
     r.last = btn('Last turn', 'last-btn', () => { this.menuOpen(false); this.showLastTurn(); });
     const surrenderBtn = btn('Surrender', 'surrender-btn', () => {
@@ -1299,7 +1336,7 @@ export class App {
     const match = h('main', { class: 'match' },
       r.board,
       r.swap,
-      r.tip, r.hand, r.handLeft, r.handRight, r.handSort, r.timer);
+      r.tip, r.hand, r.handLeft, r.handRight, r.handSort, r.timer, r.turnBar);
     this.closeHandSortUp(); this.syncHandSort();
     this.root.append(match);
     this.buildModeUi();
@@ -1320,6 +1357,13 @@ export class App {
     });
     this.buildEnemyDiscard(match); // Owner (Ken, Oct 30): the enemy discard pile on the left
     { const fsItem = [...(this.r.menuPanel as El).querySelectorAll('.o-menu-item')].find((b) => /^(Full screen|Windowed)$/.test(b.textContent || '')) as HTMLElement | undefined; if (fsItem) { fsItem.classList.add('fs-toggle'); fsWatch(fsItem); } }
+    for (const fl of match.querySelectorAll('[data-role=player-flow-label],[data-role=enemy-flow-label]') as NodeListOf<El>) { // Ken, Nov 1: the flow coin instead of the word (kept hidden)
+      if (!fl.querySelector('.sr-only')) { const w = fl.textContent || 'Flow'; fl.replaceChildren(h('span', { class: 'sr-only' }, w)); fl.classList.add('flow-coin'); fl.title = w; }
+    }
+    { // Ken, Nov 1: Brush's coins beside the Menu words (README "Menu and dialogs")
+      const MI: [RegExp, string][] = [[/^Resume/, 'resume'], [/^Settings/, 'settings'], [/^Square highlights/, 'highlights'], [/^(Full screen|Windowed)/, 'full-screen'], [/^How to play/, 'how-to-play'], [/^Sound Effects/, 'sound-on'], [/^Background music/, 'music'], [/^Give up/, 'give-up']];
+      for (const b of (this.r.menuPanel as El).querySelectorAll('.o-menu-item') as NodeListOf<El>) { const m = MI.find(([re]) => re.test(b.textContent || '')); if (m) { b.classList.add('mi-coin'); b.style.setProperty('--coin', `url(${MATCH_ART(m[1])})`); } }
+    }
     document.addEventListener('pointerdown', (e) => { if (this.r.menuWrap?.classList.contains('open') && !(e.target as Element).closest?.('.o-menu')) this.menuOpen(false); }, true);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { this.selectedUid = null; if ((this.pick as any)?.lift) this.cancelLift('Cancelled'); this.cancelHandPick(); } });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.r.menuWrap?.classList.contains('open')) { this.menuOpen(false); this.r.menuBtn?.focus(); } });
@@ -1500,15 +1544,16 @@ export class App {
     const col = (FACTIONS as any)[fac]?.crystal || '#ffd700';
     const wrap = h('div', { class: 'mode-ui', style: `--stance-glow:${col}` });
     const col4 = h('div', { class: 'stance-col', role: 'group', 'aria-label': 'Stance' }, ...STANCES.map((st) => btn('', 'stance-btn', () => { g.setStance(st.id); this.refreshModeUi(); }, { 'data-stance': st.id, title: st.desc, 'aria-label': st.label })));
-    col4.querySelectorAll('button').forEach((b, i) => { b.append(h('span', { class: 'st-icon', 'aria-hidden': 'true' }, STANCES[i].icon), h('span', { class: 'st-label' }, STANCES[i].label)); });
+    const ST_PIC: Record<string, string> = { aggressive: UNIT_ICON('chase'), mine: UNIT_ICON('mine'), guard: UNIT_ICON('guard'), free: MATCH_ART('phase-action') };
+    col4.querySelectorAll('button').forEach((b, i) => { const pic = ST_PIC[STANCES[i].id] || ST_PIC[(Object.keys(ST_PIC).find((k) => STANCES[i].id.toLowerCase().includes(k)) || 'free')]; b.append(h('span', { class: 'st-icon', 'aria-hidden': 'true' }, h('img', { src: pic, alt: '', draggable: 'false' })), h('span', { class: 'st-label' }, STANCES[i].label)); });
     const bar = mode === 'compvscomp'
       ? h('div', { class: 'watch-bar', role: 'group', 'aria-label': 'Watch controls' },
-          btn(g.paused ? 'Play' : 'Pause', 'wb-pause', () => { g.setPaused(!g.paused); this.refreshModeUi(); }),
-          ...[1, 2, 4].map((n) => btn(n + '×', 'wb-speed', () => { g.setSpeed(n); this.refreshModeUi(); }, { 'data-speed': n })),
-          btn('Exit', 'wb-exit', () => { g.act({ type: 'surrender' }); this.showMenu(); }, { 'aria-label': 'Exit to menu', title: 'Exit to menu' }))
+          coinOnly(btn(g.paused ? 'Play' : 'Pause', 'wb-pause', () => { g.setPaused(!g.paused); this.refreshModeUi(); }), g.paused ? 'resume' : 'pause', g.paused ? 'Play' : 'Pause'),
+          ...[1, 2, 4].map((n) => coinOnly(btn(n + '×', 'wb-speed', () => { g.setSpeed(n); this.refreshModeUi(); }, { 'data-speed': n }), 'speed-' + n, `Speed ${n}×`)),
+          coinOnly(btn('Exit', 'wb-exit', () => { g.act({ type: 'surrender' }); this.showMenu(); }, { 'aria-label': 'Exit to menu', title: 'Exit to menu' }), 'exit', 'Exit to menu'))
       : h('div', { class: 'watch-bar cp-bar', role: 'group', 'aria-label': 'Card Play controls' },
-          btn('1×', 'wb-speed', () => { g.setSpeed(1); this.refreshModeUi(); }, { 'data-speed': 1 }),
-          btn('2×', 'wb-speed', () => { g.setSpeed(2); this.refreshModeUi(); }, { 'data-speed': 2 }));
+          coinOnly(btn('1×', 'wb-speed', () => { g.setSpeed(1); this.refreshModeUi(); }, { 'data-speed': 1 }), 'speed-1', 'Speed 1×'),
+          coinOnly(btn('2×', 'wb-speed', () => { g.setSpeed(2); this.refreshModeUi(); }, { 'data-speed': 2 }), 'speed-2', 'Speed 2×'));
     wrap.append(col4, bar);
     this.root.append(wrap);
     this.modeUi = wrap;
@@ -1519,7 +1564,7 @@ export class App {
     if (!w) return;
     w.querySelectorAll<El>('.stance-btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.stance === g.stance)));
     w.querySelectorAll<El>('.wb-speed').forEach((b) => b.setAttribute('aria-pressed', String(+(b.dataset.speed || 1) === g.speed)));
-    const p = w.querySelector('.wb-pause'); if (p) p.textContent = g.paused ? 'Play' : 'Pause';
+    const p = w.querySelector('.wb-pause') as El | null; if (p) { p.textContent = g.paused ? 'Play' : 'Pause'; coinOnly(p, g.paused ? 'resume' : 'pause', p.textContent); }
   }
   /** "Done" is shown only during the player's own Deploy/Action phase with priority and no dialog open. */
   syncDone() {
@@ -1767,6 +1812,18 @@ export class App {
         el.style.top = el.offsetTop + 3 + 'px';
       }
     }
+  }
+  /** Ken, Nov 1: the upgrade badge sits above the target unit's head (or beside it when there is no room above), never on a small unit's body. */
+  placeUpgradeBadge(b: El, cs: { x: number; y: number }[]) {
+    const c = this.game.state?.board.creatures.find((x: any) => x.uid === b.dataset.uid), W = b.offsetWidth || 110, H = b.offsetHeight || 100, br = this.r.board?.getBoundingClientRect();
+    let box: { left: number; right: number; top: number } | null = null;
+    if (c && br) { const t = this.view?.topAt?.(c.row, c.col); if (t) box = { left: br.left + t.left, right: br.left + t.right, top: br.top + t.top }; }
+    if (!box && c) { const r = this.tokens.get(c.uid)?.getBoundingClientRect(); if (r) box = { left: r.left, right: r.right, top: r.top }; }
+    if (!box) { const xs = cs.map((p) => p.x), ys = cs.map((p) => p.y); box = { left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys) }; }
+    let x = (box.left + box.right) / 2, y = box.top - 4; // bottom centre of the badge
+    if (y - H < 4) { y = Math.min(window.innerHeight - 4, box.top + H); x = box.right + W / 2 + 4; if (x + W / 2 > window.innerWidth - 4) x = box.left - W / 2 - 4; } // no room above: beside the unit
+    x = Math.max(W / 2 + 4, Math.min(window.innerWidth - W / 2 - 4, x));
+    b.style.left = x.toFixed(1) + 'px'; b.style.top = y.toFixed(1) + 'px';
   }
   /** Token boxes are a narrow strip around the figure, so Commander hearts on neighbouring Strongholds never sit under them. */
   placeToken(el: El, row: number, col: number) {
@@ -2237,11 +2294,11 @@ export class App {
     } catch { /* no HUD yet */ }
     // Ken (Oct 31): the Sort button sits just left of the first card (never over a card): the row starts a button's width later
     const sortB = this.r.handSort as El | undefined;
-    const sortW = sortB && !sortB.hidden ? sortB.getBoundingClientRect().width : 0;
+    const sortBox = sortB && !sortB.hidden ? sortB.getBoundingClientRect() : null, sortW = sortBox ? sortBox.width : 0, sortH = sortBox ? sortBox.height : 0;
     /* read the button's parent box now, before the cards are written (no extra layout pass) */
     const sortPar = sortW ? (sortB!.offsetParent as El | null) : null, sortPr = sortPar?.getBoundingClientRect();
     const sortPsx = sortPar && sortPar.offsetWidth ? sortPr!.width / sortPar.offsetWidth || 1 : 1;
-    const sortGap = Math.max(10, Math.round(sortW * 0.3));
+    const sortGap = Math.max(6, Math.round(sortH * 0.12));
     /* how far the first card's tilted top corner reaches left of its box (it turns about 50% 110%) */
     const tiltOut = (deg: number, w: number, hh: number) => { const t = (deg * Math.PI) / 180; return Math.max(0, -(w / 2) + (w / 2) * Math.cos(t) - 1.1 * hh * Math.sin(t)); };
     if (sortW) { const w0 = cards[0]?.offsetWidth || 66, n0 = Math.min(n, VIS), per0 = n0 > 1 ? Math.min(App.HAND.anglePer, (2 * App.HAND.angleMax) / (n0 - 1)) : 0; spanL += (sortW + 2 * sortGap) / sx + tiltOut(-((n0 - 1) / 2) * per0, w0, w0 * 1.5); }
@@ -2309,8 +2366,7 @@ export class App {
     if (sortB && sortW) {
       const pr = sortPr, psx = sortPsx;
       const x0 = hb.left + (els.length ? lefts[0] - tiltOut(parseFloat(els[0].dataset.fanAngle || '0') || 0, cw, ch) : spanL) * sx - sortGap - sortW;
-      const visTop = baseTop + restY + offTop;
-      const y0 = Math.min(H - sortW - 4, (visTop + H) / 2 - sortW / 2);
+      const y0 = H - sortH - Math.max(2, Math.round(H * 0.004)); // Ken, Nov 1: "Hugging the bottom" 
       const sl = ((x0 - (pr ? pr.left : 0)) / psx).toFixed(1) + 'px', st = ((y0 - (pr ? pr.top : 0)) / psx).toFixed(1) + 'px';
       if (sortB.style.left !== sl) sortB.style.left = sl;
       if (sortB.style.top !== st) sortB.style.top = st;
@@ -2334,7 +2390,7 @@ export class App {
   update(st: any, events: any[]) {
     const r = this.r;
     if (!r.board || !st) return;
-    if (events.some((e) => e.type === 'newMatch')) { this.orders.clear(); this.stances.clear(); this.chainFor = null; this.orderPreview = null; this.ordersRunKey = ''; this.missWord = 0; } // Round 28
+    if (events.some((e) => e.type === 'newMatch')) { this.orders.clear(); this.stances.clear(); this.guardSquares.clear(); this.chainFor = null; this.orderPreview = null; this.ordersRunKey = ''; this.missWord = 0; } // Round 28
     const me = st.players.player, en = st.players.opponent;
     this.view && this.view.setState(st, events);
     this.record(st, events);
@@ -2358,8 +2414,10 @@ export class App {
       this.setPlate(r.eName, this.aiName || 'Opponent', COMMANDERS[en.commanderId]?.name || '', en.faction, 'enemy', rv ? rankOf(rv.points) : null,
         rv ? `${rv.name}: ${rankOf(rv.points).label} · ${rv.skill === 'easy' ? 'Easy' : rv.skill === 'hard' ? 'Hard' : 'Medium'} · ${rv.styleLabel} · You ${rec!.w}-${rec!.l}` : '', rv ? rv.avatar : ''); }
     audio.voicePreload(me.commanderId); audio.voicePreload(en.commanderId); // Oct 31: the Commanders' voice lines (loads once)
-    r.income.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'player')}`;
-    r.eNext.textContent = `Next +${st.phase === 'mulligan' ? 0 : incomePreview(st, 'opponent')}`;
+    for (const [el, who] of [[r.income, 'player'], [r.eNext, 'opponent']] as [El, string][]) { // Ken, Nov 1: the next-income coin + the number; "Next" stays as hidden text
+      const v = `+${st.phase === 'mulligan' ? 0 : incomePreview(st, who as any)}`;
+      if (el.textContent !== 'Next ' + v) el.replaceChildren(h('span', { class: 'sr-only' }, 'Next '), v);
+    }
     const pm = `${me.crystals}|${en.crystals}`;
     if (this.flowKey !== pm && this.flowKey !== '' && st.turn !== this.flowTurn) { this.view?.pulseFlow(st.activePlayer); this.flowPulses[st.activePlayer]++; }
     { const m = this.root.querySelector('.match'); this.view?.setFlowTarget?.('player', m?.querySelector('[data-role=player-flow-crystal]') as El | null); this.view?.setFlowTarget?.('opponent', m?.querySelector('[data-role=enemy-flow-crystal]') as El | null); }
@@ -2433,7 +2491,7 @@ export class App {
     const key = `${st.turn}|${st.seed ?? ''}|${this.game.options?.seed ?? ''}`;
     if (this.ordersRunKey === key) return;
     this.ordersRunKey = key;
-    void runOrders(this.game, this.orders, { delayMs: this.test ? 0 : 450, stances: this.stances, onChange: () => this.renderOrders(this.game.state) });
+    void runOrders(this.orderGame(), this.orders, { delayMs: this.test ? 0 : 450, stances: this.stances, guards: this.guardSquares, onChange: () => this.renderOrders(this.game.state) });
   }
 
   // ------------------------------------------------------------ enemy turn recap (R9.7)
@@ -2905,6 +2963,7 @@ export class App {
       const label = live ? `${Math.min(left, total)}s left` : '', note = extra ? `+${Math.floor(extra / 60)}:${String(extra % 60).padStart(2, '0')}` : '';
       if (pt.dataset.lbl !== label + note) { pt.dataset.lbl = label + note; pt.textContent = label; if (note) pt.append(h('span', { class: 'ph-bank', 'aria-label': 'Banked time' }, note)); }
     }
+    this.syncTurnBar(st, timed, frozen ? left : Math.max(0, (this.deadline - now) / 1000));
     this.syncDone();
     if (show) { if (r.timer.textContent !== String(left) && left <= 5 && st.activePlayer === 'player') audio.play('tick'); /* Oct 31: only the last 5 s of YOUR phase */ r.timer.textContent = String(left); }
     if (!frozen && timed && left <= 0 && !st.pendingResponse) {
@@ -2914,21 +2973,33 @@ export class App {
     }
   }
 
+  /** Ken, Nov 1: the Respond window's bar (Brush's frame-progress) at the top, draining with the phase clock on the player's turn. Banked seconds
+   *  run down first: the bar stays full and the "+0:35" chip shows them; the 10-to-0 countdown in the middle is unchanged. The computer has no clock, so no bar. */
+  syncTurnBar(st: any, timed: boolean, leftExact: number) {
+    const tb = this.r.turnBar as El | undefined;
+    if (!tb) return;
+    const on = !st.tutorial && st.mode !== 'compvscomp' && !(st.mode === 'cardplay' && st.phase === 'action') && st.activePlayer === 'player' && ACTIVE.includes(st.phase);
+    if (tb.hidden !== !on) tb.hidden = !on;
+    if (!on) return;
+    const total = CONFIG.phaseTimerSeconds, main = Math.min(total, leftExact), extra = Math.max(0, Math.ceil(leftExact - total));
+    (tb.querySelector('.tb-fill') as El).style.transform = `scaleX(${(main / total).toFixed(4)})`;
+    const low = timed && Math.ceil(leftExact) <= CONFIG.countdownSeconds, ds = tb.dataset;
+    if (ds.low !== String(low)) ds.low = String(low);
+    if (ds.bank !== String(extra > 0)) ds.bank = String(extra > 0);
+    if (ds.live !== String(timed && !st.pendingResponse)) ds.live = String(timed && !st.pendingResponse);
+    const t = mmss(Math.ceil(main)), te = tb.querySelector('.tb-time') as El;
+    if (te.textContent !== t) { te.textContent = t; tb.setAttribute('aria-valuenow', String(Math.ceil(main))); }
+    const be = tb.querySelector('.tb-bank') as El, bt = '+' + mmss(extra);
+    if (be.hidden !== !extra) be.hidden = !extra;
+    if (extra && (be.lastChild as El).textContent !== bt) (be.lastChild as El).textContent = bt;
+  }
+
   renderTip(st: any) {
     const tip = this.r.tip as El;
-    if (!st.tutorial) { tip.hidden = true; return; }
-    const step = st.tutorial.step;
-    tip.hidden = false;
-    tip.dataset.step = step;
-    // Owner fix (Ken, Oct 29): on phones the tip covered the board and hand. Drag it anywhere (body or grip), or shrink it to a small tab.
-    this.tipMovable(tip);
-    tip.classList.toggle('tip-small', this.tipMin);
-    tip.replaceChildren(
-      h('div', { class: 'tip-bar' }, h('span', { class: 'tip-grip', 'aria-hidden': 'true' }, '⠿ Tip'),
-        btn(this.tipMin ? '▢' : '–', 'tip-min', (e) => { e.stopPropagation(); this.tipMin = !this.tipMin; this.renderTip(this.game.state); }, { 'aria-label': this.tipMin ? 'Show tip' : 'Shrink tip' })),
-      h('div', { class: 'tip-text' }, (tutorialJson as any).tips[step] || ''),
-      btn('Skip Tutorial', 'tip-skip', () => this.showMenu()));
-    this.tipPlace(tip);
+    if (!tip) return;
+    // Ken, Nov 1: the lesson box, picture cards and pointing hand live in tutorial.ts. Owner fix (Oct 29) kept: the box can be dragged anywhere or shrunk.
+    if (!st || !st.tutorial || !this.tut) { tip.hidden = true; return; }
+    this.tut.render(st, tip);
   }
   tipMin = false;
   /** where the player put the tip, as a fraction of the match area (null = the normal spot) */
@@ -3040,6 +3111,12 @@ export class App {
       const up = c.upgrades.attack + c.upgrades.health;
       el.dataset.upgrades = String(up);
       (el.querySelector('.pips') as El).textContent = up ? '●'.repeat(Math.min(up, 8)) : '';
+      { // Ken, Nov 1: up to 3 small silver pips on the stat badge for a Miner's upgrades (attack + health); none at 0
+        const bd = el.querySelector('[data-unit-badge]') as El, n = String(Math.min(3, up));
+        let pp = bd.querySelector(':scope > .ub-pips') as El | null;
+        if (!pp) { pp = h('span', { class: 'ub-pips', 'aria-hidden': 'true' }) as El; bd.append(pp); }
+        if (pp.dataset.n !== n) { pp.dataset.n = n; pp.replaceChildren(...Array.from({ length: +n }, () => h('i', {}))); }
+      }
       const sh = el.querySelector('.sh') as El;
       // Owner (Oct 24): the pickaxe/bow already shows in the stat badge, so it is no longer drawn again beside it (kept as hidden text for screen readers)
       let ex = el.querySelector('.tk-extra') as El | null;
@@ -3112,7 +3189,7 @@ export class App {
         const ui = ABILITY_UI[k], cost = k === 'blink' ? 1 : ABILITY_COST[k] || 0;
         let b = el.querySelector(`.ab-btn[data-ability="${PUB_ABILITY[k] || k}"]`) as El | null;
         if (!b) {
-          b = h('button', { type: 'button', class: 'ab-btn', 'data-ability': PUB_ABILITY[k] || k, 'data-creature-uid': c.uid }, h('span', { 'aria-hidden': 'true' }, ui.icon)) as El;
+          b = h('button', { type: 'button', class: 'ab-btn', 'data-ability': PUB_ABILITY[k] || k, 'data-creature-uid': c.uid }, h('img', { class: 'ab-coin', src: MATCH_ART(AB_COIN[k] || 'ability-blink'), alt: '', draggable: 'false', 'aria-hidden': 'true' })) as El;
           let picking = false;
           // while a target is being chosen the button may sit over a target square: let that press reach the board
           b.addEventListener('pointerdown', (e) => { picking = !!this.pick; if (!picking) e.stopPropagation(); });
@@ -3120,7 +3197,7 @@ export class App {
             this.hideAbilityTip();
             const tip = h('div', { role: 'tooltip', class: 'ab-tip', id: 'ab-tip' }, b!.getAttribute('aria-label') || '') as El;
             const r = b!.getBoundingClientRect();
-            tip.style.cssText = `position:fixed;left:${r.left + r.width / 2}px;top:${Math.max(4, r.top - 8)}px;transform:translate(-50%,-100%);z-index:9999;max-width:min(320px,90vw);padding:6px 10px;background:#000c;border:1px solid #c9a24b;border-radius:8px;color:#fff;font-size:max(14px,1.6vh);pointer-events:none;text-align:center`;
+            tip.style.cssText = `position:fixed;left:${r.left + r.width / 2}px;top:${Math.max(4, r.top - 8)}px;transform:translate(-50%,-100%);z-index:9999;max-width:min(320px,90vw);padding:6px 10px;background:linear-gradient(#1b2029f2,#0b0e14f2);border:1px solid #aeb8c8;box-shadow:0 0 0 1px #0008,0 4px 14px #000a;border-radius:8px;color:#fff;font-size:max(14px,1.6vh);pointer-events:none;text-align:center`;
             document.body.append(tip);
             b!.setAttribute('aria-describedby', 'ab-tip');
           };
@@ -3134,7 +3211,7 @@ export class App {
         }
         const mineUnit = c.owner === 'player';
         const ok = mineUnit && legal.some((a: any) => a.creatureUid === c.uid && a.ability === k);
-        b.dataset.ready = String(ok); b.dataset.icon = ui.icon;
+        b.dataset.ready = String(ok); b.dataset.icon = AB_COIN[k] || ui.icon;
         b.classList.toggle('off', !ok);
         b.setAttribute('aria-disabled', String(!ok));
         b.style.setProperty('--ox', (i - (keys.length - 1) / 2) * 120 + '%');
@@ -3242,6 +3319,18 @@ export class App {
       if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); }
     } };
     this.setGlow(cells, 'glow-swap');
+    if (k === 'rocket') { // Ken, Nov 1: the blast hits friend and foe (and him): hovering a target marks every unit in its 3x3 in red
+      const myPick = this.pick, marked: El[] = [];
+      const clear = () => { for (const el of marked) { el.style.outline = ''; el.style.outlineOffset = ''; } marked.length = 0; };
+      const onMove = (e: PointerEvent) => {
+        if (this.pick !== myPick) { clear(); this.r.board.removeEventListener('pointermove', onMove); return; }
+        clear();
+        const c = this.cellAt(e.clientX, e.clientY); if (!c || !cells.some((q) => q.row === c.row && q.col === c.col)) return;
+        const st = this.game.state;
+        for (const u of st.board.creatures) if (Math.max(Math.abs(u.row - c.row), Math.abs(u.col - c.col)) <= 1) { const el = this.r.cells.get(u.row + ',' + u.col); if (el) { el.style.outline = `3px solid ${u.owner === 'player' ? '#ff2a2a' : '#ff8a3d'}`; el.style.outlineOffset = '-3px'; marked.push(el); } }
+      };
+      this.r.board.addEventListener('pointermove', onMove);
+    }
     this.flash(`${ui.name}: choose a square`);
   }
 
@@ -3440,7 +3529,7 @@ export class App {
     if (!this.test) { (bar.firstChild as El).style.animationDuration = CONFIG.respondWindowSeconds + 's'; (bar.firstChild as El).style.animationDelay = -((Date.now() - this.respStart) / 1000) + 's'; }
     else (bar.firstChild as El).style.animation = 'none';
     const d = this.dialog('Respond?', [h('h2', {}, 'Respond?'), bar, cardBox, h('p', { class: 'resp-what', style: 'text-align:center;margin:0 0 6px' }, what),
-      h('div', { class: 'menu-list' }, ...buttons, btn('Let it happen', 'primary', () => { finish(); this.game.act({ type: 'pass' }); }))]);
+      h('div', { class: 'menu-list' }, ...buttons.map((b) => { b.classList.add('mframe'); b.style.setProperty('--coin', `url(${MATCH_ART('respond')})`); return b; }), coinOnly(btn('Let it happen', 'primary let-it-btn', () => { finish(); this.game.act({ type: 'pass' }); }), 'let-it-happen', 'Let it happen'))]);
     d.el.dataset.sticky = '1';
     d.el.firstElementChild?.classList.add('respond-dlg');
     this.respDlg = d;
@@ -3674,7 +3763,7 @@ export class App {
   }
   recapOpen() { const v = localStorage.getItem('oreheart.recap'); return v ? v === 'open' : window.innerHeight >= 500; }
   buildRecap(): El {
-    const tog = btn('Recap', 'recap-tog', (e: Event) => { e.stopPropagation(); localStorage.setItem('oreheart.recap', this.recapOpen() ? 'closed' : 'open'); this.renderRecap(); }, { 'aria-expanded': 'false' });
+    const tog = coinOnly(btn('Recap', 'recap-tog', (e: Event) => { e.stopPropagation(); localStorage.setItem('oreheart.recap', this.recapOpen() ? 'closed' : 'open'); this.renderRecap(); }, { 'aria-expanded': 'false' }), 'recap', 'Recap'); // Ken, Nov 1: Brush's recap coin
     const box = h('div', { class: 'e-recap', role: 'log', 'aria-label': 'Enemy turn recap' }, tog, h('div', { class: 'recap-list' })) as El;
     box.hidden = true;
     return box;
@@ -4038,7 +4127,9 @@ export class App {
       const uid = a ? a.creatureUid : '';
       for (const [k, t] of this.tokens) (t as El).classList.toggle('upgrade-target', k === uid);
       if (!a) { fx.badge?.remove(); fx.badge = null; return; }
-      if (!fx.badge) { fx.badge = h('div', { class: 'upgrade-badge', role: 'status', 'aria-label': 'Upgrade' }, 'UPGRADE \u25B2') as El; document.body.append(fx.badge); }
+      // Ken, Nov 1: "an upgrade graphic instead of the computer generated button": Brush's painted badge, crossfading to its glowing copy
+      if (!fx.badge) { fx.badge = h('div', { class: 'upgrade-badge', role: 'status', 'aria-label': 'Upgrade' }, h('img', { class: 'ub-base', src: UNIT_ICON('upgrade-badge'), alt: '', draggable: 'false' }), h('img', { class: 'ub-ready', src: UNIT_ICON('upgrade-badge-ready'), alt: '', draggable: 'false' })) as El; document.body.append(fx.badge); }
+      fx.badge.dataset.uid = uid;
     };
     const fxRender = () => {
       if (fx.done || !ghost.isConnected) return;
@@ -4062,7 +4153,7 @@ export class App {
       ghost.style.opacity = String(1 - (1 - DRAG_FX.shrinkOpacity) * e);
       ghost.dataset.shrink = e.toFixed(2);
       // outline of the square under the card
-      if (fx.badge) { const ys = cs.map((p: any) => p.y), xs = cs.map((p: any) => p.x); fx.badge.style.left = ((Math.min(...xs) + Math.max(...xs)) / 2).toFixed(1) + 'px'; fx.badge.style.top = Math.max(24, Math.min(...ys) - 6).toFixed(1) + 'px'; }
+      if (fx.badge) this.placeUpgradeBadge(fx.badge, cs);
       if (fx.qt) {
         if (!fx.hl) { fx.hl = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); fx.hl.setAttribute('class', 'drag-square-hl'); fx.hl.setAttribute('aria-hidden', 'true'); fx.hl.append(document.createElementNS('http://www.w3.org/2000/svg', 'polygon')); document.body.append(fx.hl); }
         fx.hl.dataset.legal = fx.legal ? '1' : '0';
@@ -4173,17 +4264,18 @@ export class App {
   sortedHand(hand: any[], costOf: (c: any) => number): any[] {
     const m = this.handSortMode;
     if (!m) return hand;
-    const keyed = hand.map((hc, i) => { const c = CARDS[hc.cardId]; return { hc, i, cost: costOf(c), kind: App.handKind(c) }; });
-    keyed.sort((a, b) => (m === 'type' ? a.kind - b.kind || b.cost - a.cost : m === 'costAsc' ? a.cost - b.cost : b.cost - a.cost) || a.i - b.i);
+    const keyed = hand.map((hc, i) => { const c = CARDS[hc.cardId]; return { hc, i, cost: costOf(c), kind: App.handKind(c), rar: RARITY_RANK[rarityKey(c)] ?? 4 }; });
+    keyed.sort((a, b) => (m === 'type' ? a.kind - b.kind || b.cost - a.cost : m === 'rarity' ? a.rar - b.rar || b.cost - a.cost : m === 'costAsc' ? a.cost - b.cost : b.cost - a.cost) || a.i - b.i);
     return keyed.map((k) => k.hc);
   }
-  static HAND_SORTS: { mode: 'costDesc' | 'costAsc' | 'type'; label: string }[] = [
-    { mode: 'costDesc', label: 'By cost (high to low)' },
-    { mode: 'costAsc', label: 'By cost (low to high)' },
-    { mode: 'type', label: 'By type' },
+  /** Ken, Nov 1: three one-click sort coins (Brush: sort-cost = High-Low, sort-type, sort-rarity); By rarity: rarest first, then cost high to low */
+  static HAND_SORTS: { mode: 'costDesc' | 'type' | 'rarity'; label: string; tip: string; coin: string }[] = [
+    { mode: 'costDesc', label: 'By cost (high to low)', tip: 'Sort: High-Low (cost)', coin: 'sort-cost' },
+    { mode: 'type', label: 'By type', tip: 'Sort: Type', coin: 'sort-type' },
+    { mode: 'rarity', label: 'By rarity', tip: 'Sort: Rarity', coin: 'sort-rarity' },
   ];
   /** Chooses a sort ('' = manual order). With redraw, the hand glides into the new order. */
-  setHandSort(mode: '' | 'costDesc' | 'costAsc' | 'type', redraw = true) {
+  setHandSort(mode: '' | 'costDesc' | 'costAsc' | 'type' | 'rarity', redraw = true) {
     if (mode === '' && this.handSortMode) {
       // back to manual: the order the player sees becomes their own order (like a manual reorder)
       const hand = this.game.state?.players?.player?.hand as any[] | undefined;
@@ -4199,38 +4291,15 @@ export class App {
     this.syncHandSort();
     if (redraw && this.game.state) { this.handSortGlide = true; this.handKey = ''; this.update(this.game.state, []); }
   }
-  /** The Sort button shows which sort is on (its icon and a lit ring); the drop-up marks the chosen line. */
+  /** The sort in use shows its -active coin (125 %, same centre); clicking it again goes back to your own order. */
   syncHandSort() {
     const b = this.r?.handSort as El | undefined;
-    const m = this.handSortMode, lab = App.HAND_SORTS.find((s) => s.mode === m)?.label;
-    if (b) { b.dataset.sort = m; b.classList.toggle('on', !!m); b.title = lab ? 'Sort hand: ' + lab.toLowerCase() : 'Sort hand'; }
-    for (const it of (this.handSortUp?.querySelectorAll('[data-sort]') || []) as NodeListOf<El>) it.setAttribute('aria-pressed', String(it.dataset.sort === m));
+    const m = this.handSortMode;
+    if (b) { b.dataset.sort = m; b.classList.toggle('on', !!m); for (const it of b.querySelectorAll('.hs-coin') as NodeListOf<El>) it.setAttribute('aria-pressed', String(it.dataset.sort === m)); }
   }
   closeHandSortUp() {
     this.handSortUp?.remove(); this.handSortUp = null;
     if (this.handSortOff) { document.removeEventListener('pointerdown', this.handSortOff, true); document.removeEventListener('keydown', this.handSortOff, true); this.handSortOff = null; }
-    (this.r?.handSort as El | undefined)?.setAttribute('aria-expanded', 'false');
-  }
-  toggleHandSortUp() {
-    if (this.handSortUp) { this.closeHandSortUp(); return; }
-    const b = this.r.handSort as El, par = (b.offsetParent || b.parentElement) as El | null;
-    if (!par) return;
-    const items = App.HAND_SORTS.map((s) => btn(s.label, 'hs-item', () => { this.closeHandSortUp(); this.setHandSort(s.mode); b.focus({ preventScroll: true }); }, { 'data-sort': s.mode, 'aria-pressed': String(this.handSortMode === s.mode) }) as El);
-    const up: El = h('div', { class: 'menu-panel done-dropup hand-sort-up', role: 'group', 'aria-label': 'Sort hand choices' }, h('p', { class: 'dropup-text' }, 'Sort your hand'), h('div', { class: 'row' }, ...items));
-    par.append(up);
-    const bb = b.getBoundingClientRect(), pr = par.getBoundingClientRect(), psx = par.offsetWidth ? pr.width / par.offsetWidth || 1 : 1;
-    up.style.left = Math.max(4, (bb.left - pr.left) / psx - 6) + 'px';
-    up.style.bottom = Math.max(4, (pr.bottom - bb.top) / psx + 8) + 'px';
-    this.handSortUp = up;
-    b.setAttribute('aria-expanded', 'true');
-    const off = (e: Event) => {
-      if (e.type === 'keydown') { if ((e as KeyboardEvent).key === 'Escape') { this.closeHandSortUp(); b.focus({ preventScroll: true }); } return; }
-      if (!up.contains(e.target as Node) && e.target !== b && !b.contains(e.target as Node)) this.closeHandSortUp();
-    };
-    this.handSortOff = off;
-    document.addEventListener('pointerdown', off, true);
-    document.addEventListener('keydown', off, true);
-    if (b.matches(':focus-visible')) (items.find((i) => i.getAttribute('aria-pressed') === 'true') || items[0]).focus({ preventScroll: true });
   }
 
   explain(card: any) {
@@ -4336,8 +4405,10 @@ export class App {
   orders = new Map<string, Order>();
   orderPreview: Order | null = null;
   getOrders(): Order[] { return [...this.orders.values()].map((o) => JSON.parse(JSON.stringify(o))); }
-  /** Orders exist only for the player's own units, never in the tutorial or in Comp vs Comp. */
-  ordersAllowed(st: any = this.game.state) { return !!st && !st.tutorial && st.mode !== 'compvscomp' && this.game.mode !== 'compvscomp' && st.phase !== 'over'; }
+  /** The runner never acts in a tutorial match; the tutorial's order lessons hand it a view without the tutorial flag (tutorial.ts). */
+  orderGame() { return this.game.state?.tutorial ? tutorialGame(this.game) : this.game; }
+  /** Orders exist only for the player's own units, never in Comp vs Comp (in the tutorial from its order lesson on). */
+  ordersAllowed(st: any = this.game.state) { return !!st && (!st.tutorial || tutorialOrders(st)) /* Ken, Nov 1: the tutorial teaches orders from its order lesson on */ && st.mode !== 'compvscomp' && this.game.mode !== 'compvscomp' && st.phase !== 'over'; }
   setOrder(o: Order) {
     const st = this.game.state;
     const c = st?.board.creatures.find((x: any) => x.uid === o?.uid);
@@ -4349,7 +4420,7 @@ export class App {
     // later legs happen by themselves on your next turns
     if (st.phase === 'action' && st.activePlayer === 'player' && st.priority === 'player' && !st.pendingResponse) {
       const one = new Map([[o.uid, order]]);
-      void runOrders(this.game, one, { delayMs: 0, onChange: () => this.renderOrders(this.game.state) }).then(() => {
+      void runOrders(this.orderGame(), one, { delayMs: 0, onChange: () => this.renderOrders(this.game.state) }).then(() => {
         if (!one.has(o.uid) && this.orders.get(o.uid) === order) { this.orders.delete(o.uid); this.renderOrders(this.game.state); }
       });
     }
@@ -4378,6 +4449,8 @@ export class App {
   }
   // ---- Ken, Nov 1: stance per unit, set from a small bar on the selected unit
   stances = new Map<string, UnitStance>();
+  /** Ken, Nov 1 (guard arrows): the squares each Guard unit watches, and its post */
+  guardSquares = new Map<string, { post: { row: number; col: number }; squares: { row: number; col: number }[] }>();
   stanceBar: El | null = null;
   closeStanceBar() { this.stanceBar?.remove(); this.stanceBar = null; }
   openStanceBar(cr: any) {
@@ -4386,9 +4459,9 @@ export class App {
     const LABEL: Record<string, string> = { hold: 'Hold', guard: 'Guard', aggressive: 'Aggressive' }, TIP: Record<string, string> = { hold: 'Stays put, attacks what comes in range', guard: 'Attacks in range, or steps 1 square to reach an enemy', aggressive: 'Attacks in range, or walks to the nearest enemy' };
     const cur = this.stances.get(cr.uid) || '';
     const bar = h('div', { class: 'stance-bar', role: 'group', 'aria-label': 'Stance' }, ...UNIT_STANCES.map((k) => {
-      const b = h('button', { type: 'button', class: 'stance-opt', 'data-stance': k, 'aria-pressed': String(cur === k), title: TIP[k] }, LABEL[k]) as El;
+      const b = h('button', { type: 'button', class: 'stance-opt', 'data-stance': k, 'aria-pressed': String(cur === k), 'aria-label': LABEL[k], title: `${LABEL[k]}: ${TIP[k]}` }, h('img', { src: UNIT_ICON(k), alt: '', draggable: 'false' }), h('span', { class: 'sr-only' }, LABEL[k])) as El;
       b.addEventListener('pointerdown', (ev: Event) => ev.stopPropagation());
-      b.addEventListener('click', (ev: Event) => { ev.stopPropagation(); if (this.stances.get(cr.uid) === k) this.stances.delete(cr.uid); else this.stances.set(cr.uid, k); this.markStances(); this.openStanceBar(cr); });
+      b.addEventListener('click', (ev: Event) => { ev.stopPropagation(); if (this.stances.get(cr.uid) === k) this.stances.delete(cr.uid); else this.stances.set(cr.uid, k); if (this.stances.get(cr.uid) !== 'guard') this.guardSquares.delete(cr.uid); /* Nov 1: leaving Guard forgets its watched squares */ this.markStances(); this.openStanceBar(cr); });
       return b;
     })) as El;
     const rc = this.view!.cellRect(cr.row, cr.col), bw = this.r.board.clientWidth;
@@ -4398,7 +4471,19 @@ export class App {
     this.stanceBar = bar;
   }
   /** a tiny mark on the unit's label (set only when a stance changes or the units change, never per frame) */
-  markStances() { for (const [uid, el] of this.tokens) { const s = this.stances.get(uid); if (s) (el as El).dataset.stance = s; else delete (el as El).dataset.stance; } }
+  markStances() { for (const [uid, el] of this.tokens) { const s = this.stances.get(uid); if (s) (el as El).dataset.stance = s; else delete (el as El).dataset.stance; } this.markIdle(); }
+  idleUids = new Set<string>();
+  /** Ken, Nov 1: "tiny ... in the same area as where the little movement arrow is": a unit of yours with no order, no stance and no mining order
+   *  wears Brush's painted ? (question-plain, about 14 px) at the order mark's spot; the two never show together. */
+  markIdle(idle?: Set<string>) {
+    if (idle) this.idleUids = idle;
+    for (const [uid, el] of this.tokens) {
+      const on = this.idleUids.has(uid) && !this.orders.has(uid) && !this.stances.has(uid);
+      let q = (el as El).querySelector(':scope > .tk-q') as El | null;
+      if (!on) { q?.remove(); continue; }
+      if (!q) { q = h('div', { class: 'tk-q ord-q', 'data-uid': uid, role: 'img', 'aria-label': 'No orders yet', title: 'No orders yet' }, h('img', { src: UNIT_ICON('question-plain'), alt: '', draggable: 'false' })) as El; (el as El).append(q); }
+    }
+  }
   orderPlan(uid: string): OrderPlan | null { const o = this.orders.get(uid); return o && this.game.state ? planOrder(this.game.state, o) : null; }
   /** The order a unit dropped (or clicked) on square c would get: chase an enemy standing there, else walk there. null = not an order square. */
   /** a chase target: an enemy unit, or ("cmd:opponent") the enemy Commander on his Stronghold square */
@@ -4413,6 +4498,8 @@ export class App {
     if (c.row === SH.opponent.row && c.col === SH.opponent.col) return { kind: 'chase', uid: cr.uid, targetUid: 'cmd:opponent' }; // Ken, Nov 1: drag onto the enemy Commander: it attacks him every turn
     const there = st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col);
     if (there) return there.owner !== cr.owner ? { kind: 'chase', uid: cr.uid, targetUid: there.uid } : { kind: 'move', uid: cr.uid, dest: { row: c.row, col: c.col } }; // Ken, Nov 1: draw the arrow onto your own unit: they swap places
+    const site = st.sites.find((x: any) => x.row === c.row && x.col === c.col);
+    if (site && isMiner(CARDS[cr.cardId])) return { kind: 'mine', uid: cr.uid, site: { row: site.row, col: site.col } }; // Ken, Nov 1: drag a Miner onto a mine: it walks there and mines every turn until re-ordered
     return emptyCell(st, c.row, c.col) ? { kind: 'move', uid: cr.uid, dest: { row: c.row, col: c.col } } : null;
   }
   /** Is there a normal legal action (attack, mine, move, aimed ability) for this unit on square c? Same matching as unitActAt. */
@@ -4427,10 +4514,18 @@ export class App {
   unitDropAt(cr: any, c: { row: number; col: number } | null) {
     if (!c || !c.row) return;
     const st = this.game.state;
+    const guardReach = (CARDS[cr.cardId].abilities || []).some((a: string) => a === 'ranged' || a === 'overwatch') ? 3 : 2;
+    if (this.stances.get(cr.uid) === 'guard' && this.orderTime(cr) && emptyCell(st, c.row, c.col) && !(c.row === cr.row && c.col === cr.col) && Math.max(Math.abs(c.row - cr.row), Math.abs(c.col - cr.col)) <= guardReach) { // a drag beyond its reach is a plain move order // Ken, Nov 1 (guard arrows): a drag from a Guard to a square = watch it (again = forget it); guards never chase
+      const g = this.guardSquares.get(cr.uid) || { post: { row: cr.row, col: cr.col }, squares: [] };
+      const i = g.squares.findIndex((q) => q.row === c.row && q.col === c.col);
+      if (i >= 0) g.squares.splice(i, 1); else if (g.squares.length < 4) g.squares.push({ row: c.row, col: c.col }); else { this.flash('A guard watches 4 squares at most'); return; }
+      g.post = { row: cr.row, col: cr.col }; this.guardSquares.set(cr.uid, g); if (this.orders.delete(cr.uid)) this.chainFor = null; this.renderOrders(st); this.flashOrder(cr.uid); return;
+    }
     if (this.unitHasActionAt(cr, c)) {
       const foe = c.row === SH.opponent.row && c.col === SH.opponent.col ? { uid: 'cmd:opponent' } : st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col && x.owner !== cr.owner);
       if (this.orders.delete(cr.uid)) this.renderOrders(st);
       this.unitActAt(cr, c);
+      { const site = st.sites.find((x: any) => x.row === c.row && x.col === c.col); if (site && isMiner(CARDS[cr.cardId]) && this.orderTime(cr)) { this.orders.set(cr.uid, { kind: 'mine', uid: cr.uid, site: { row: site.row, col: site.col } }); this.renderOrders(this.game.state); this.flashOrder(cr.uid); } } // Nov 1: and it keeps mining there every turn
       if (foe && this.orderTime(cr)) { this.orders.set(cr.uid, { kind: 'chase', uid: cr.uid, targetUid: foe.uid }); this.chainFor = cr.uid; this.renderOrders(this.game.state); this.flashOrder(cr.uid); } // Ken, Nov 1: it stays on them
       return;
     }
@@ -4478,14 +4573,14 @@ export class App {
     for (const [o, p, pv] of plans) {
       for (const q of p.path) { const el = cellEl(q); if (el) { el.classList.add('path'); if (pv) el.classList.add('path-preview'); el.style.setProperty('--pfc', pfc); } }
       const tgt = o.kind === 'chase' ? chaseList(o).map((u) => this.orderUnit(st, u)).find(Boolean) : null;
-      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
+      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : (o.kind === 'mine' ? o.site : o.dest);
       const end = endQ && cellEl(endQ);
       if (!end) continue;
       this.orderPlans.push({ o, p, pv });
       end.dataset.uid = o.uid;
       end.classList.add('path-end'); end.classList.toggle('path', !p.blocked); end.classList.toggle('path-preview', pv); end.classList.toggle('path-blocked', p.blocked); end.style.setProperty('--pfc', pfc);
       const n = p.turns;
-      const text = p.blocked || !isFinite(n) ? 'Blocked' : o.kind === 'chase' ? 'Chase' : `${n} turn${n === 1 ? '' : 's'}`;
+      const text = p.blocked || !isFinite(n) ? 'Blocked' : o.kind === 'chase' ? 'Chase' : o.kind === 'mine' && !n ? 'Mining' : `${n} turn${n === 1 ? '' : 's'}`;
       if (isFinite(n)) end.dataset.turns = String(n);
       end.querySelector('.path-label')?.remove();
       end.append(h('span', { class: 'path-label', role: 'status', 'data-kind': o.kind, title: o.kind === 'chase' && isFinite(n) && !p.blocked ? `Chase: ${n} turn${n === 1 ? '' : 's'} to reach` : text }, text));
@@ -4496,17 +4591,20 @@ export class App {
       let m = el.querySelector('.tk-order') as El | null;
       if (!o) { m?.remove(); continue; }
       if (!m) {
-        const b = h('button', { type: 'button', class: 'tk-cancel', 'aria-label': 'Cancel order', title: 'Cancel order', 'data-uid': uid }, '✕') as El;
+        const b = h('button', { type: 'button', class: 'tk-cancel', 'aria-label': 'Cancel order', title: 'Cancel order', 'data-uid': uid }, h('img', { src: UNIT_ICON('cancel'), alt: '', draggable: 'false' })) as El; // Ken, Nov 1: Brush's painted icons
         const stop = (e: Event) => { e.stopPropagation(); };
         b.addEventListener('pointerdown', stop);
         b.addEventListener('pointerup', stop);
         b.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); this.cancelOrder(uid); });
-        m = h('div', { class: 'tk-order', 'data-uid': uid }, h('span', { class: 'tk-order-mark', 'aria-hidden': 'true' }, '➜'), b) as El;
+        m = h('div', { class: 'tk-order', 'data-uid': uid }, h('span', { class: 'tk-order-mark', 'aria-hidden': 'true' }, h('img', { alt: '', draggable: 'false' })), b) as El;
         el.append(m);
       }
       m.dataset.kind = o.kind;
-      const mk = m.querySelector('.tk-order-mark') as El, sym = o.kind === 'chase' ? '⚔' : '➜';
-      if (mk.textContent !== sym) mk.textContent = sym;
+      // Ken, Nov 1: move / chase / shoot (a ranged unit's chase) / mine (a Miner's standing mining order) / swap (a move onto one of your own units)
+      const cr = st?.board.creatures.find((x: any) => x.uid === uid);
+      const icon = o.kind === 'mine' ? 'mine' : o.kind === 'chase' ? ((CARDS[cr?.cardId]?.abilities || []).some((a: string) => a === 'ranged' || a === 'overwatch') ? 'shoot' : 'chase')
+        : cr && st.board.creatures.some((x: any) => x.owner === cr.owner && x.uid !== uid && x.row === o.dest.row && x.col === o.dest.col) ? 'swap' : 'move';
+      if (m.dataset.icon !== icon) { m.dataset.icon = icon; (m.querySelector('.tk-order-mark img') as HTMLImageElement).src = UNIT_ICON(icon); }
     }
     this.markStances();
     this.drawOrders();
@@ -4541,8 +4639,9 @@ export class App {
     // Ken, Nov 1: a unit of yours that has no instruction set (and can still act) wears a yellow highlighter question mark
     const ordered = new Set([...this.orderPlans.map((x) => x.o.uid), ...this.stances.keys()]);
     const guards = st ? st.board.creatures.filter((c: any) => c.owner === 'player' && this.stances.get(c.uid) === 'guard' && this.orderShown(c.uid, false)) : [];
-    const idle = st && !st.winner && st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') ? st.board.creatures.filter((c: any) => c.owner === 'player' && !ordered.has(c.uid) && !isActed(st, c)) : [];
-    if (!shown.length && !rest.length && !idle.length && !guards.length) { if (svg.firstChild) svg.replaceChildren(); return; }
+    const idle = st && !st.winner && st.activePlayer === 'player' && (st.phase === 'deploy' || st.phase === 'action') ? st.board.creatures.filter((c: any) => c.owner === 'player' && !ordered.has(c.uid) && !this.orders.has(c.uid) && !isActed(st, c)) : [];
+    this.markIdle(new Set(idle.map((c: any) => c.uid))); // Ken, Nov 1: the ? is a tiny painted mark on the unit (questionSvg is no longer drawn)
+    if (!shown.length && !rest.length && !guards.length) { if (svg.firstChild) svg.replaceChildren(); return; }
     const centre = (row: number, col: number) => {
       const q = view.cellQuad?.(row, col) || [];
       if (q.length) return { x: q.reduce((a: number, p: any) => a + p.x, 0) / q.length, y: q.reduce((a: number, p: any) => a + p.y, 0) / q.length };
@@ -4554,7 +4653,7 @@ export class App {
     for (const { o, p, pv } of shown) {
       const c = st.board.creatures.find((x: any) => x.uid === o.uid);
       const tgt = o.kind === 'chase' ? chaseList(o).map((u) => this.orderUnit(st, u)).find(Boolean) : null;
-      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : o.dest;
+      const endQ = o.kind === 'chase' ? (tgt ? { row: tgt.row, col: tgt.col } : null) : (o.kind === 'mine' ? o.site : o.dest);
       if (!c || !endQ) continue;
       const rc = view.cellRect(endQ.row, endQ.col);
       const sq = [{ row: c.row, col: c.col }, ...p.path];
@@ -4572,9 +4671,17 @@ export class App {
       const tgt = o.kind === 'chase' ? chaseList(o).map((u) => this.orderUnit(st, u)).find(Boolean) : null;
       if (tgt) { const rc = view.cellRect(tgt.row, tgt.col); html += restTargetSvg(centre(tgt.row, tgt.col), rc.w, rc.h); }
     }
-    for (const c of guards) { const rc = view.cellRect(c.row, c.col); html += guardSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); }
-    for (const c of idle) { const rc = view.cellRect(c.row, c.col); html += questionSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); }
+    for (const c of guards) { const rc = view.cellRect(c.row, c.col); html += guardSvg(centre(c.row, c.col), rc.w, rc.h, c.uid); const gq = this.guardSquares.get(c.uid); if (gq && gq.squares.length) html += guardArrowsSvg(centre(c.row, c.col), gq.squares.map((q) => centre(q.row, q.col)), rc.w, rc.h, c.uid); }
     svg.innerHTML = html;
+    // Ken, Nov 1: the chain numbers wear Brush's painted red badge (number-blank) instead of the drawn circle
+    for (const c of svg.querySelectorAll('.ord-num circle') as any as SVGCircleElement[]) {
+      const x = +c.getAttribute('cx')!, y = +c.getAttribute('cy')!, d = Math.max(24, +c.getAttribute('r')! * 2.3);
+      const im = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      im.setAttribute('href', UNIT_ICON('number-blank')); im.setAttribute('x', String(x - d / 2)); im.setAttribute('y', String(y - d / 2)); im.setAttribute('width', String(d)); im.setAttribute('height', String(d));
+      c.replaceWith(im);
+      const tx = im.parentNode?.querySelector('text');
+      if (tx) { tx.setAttribute('font-size', String(Math.round(d * 0.5))); tx.setAttribute('y', String(y + d * 0.17)); tx.setAttribute('stroke', '#000'); tx.setAttribute('stroke-width', '2.5'); tx.setAttribute('paint-order', 'stroke'); }
+    }
   }
   /** Do what a unit dropped (or clicked) onto square c means: attack, mine, move or an aimed ability. */
   unitActAt(cr: any, c: { row: number; col: number }) {
@@ -4626,7 +4733,8 @@ export class App {
       { // Round 28: a unit is selected and a square it can't reach this turn was clicked: give it an order
         const pu = unitPick ? st.board.creatures.find((c: any) => c.uid === (this.pick as any).unit) : null;
         const onFig = !st.board.creatures.some((c: any) => c.row === cell.row && c.col === cell.col) ? this.figureAtEvent(e) : null; // a tap on another of your units' bodies selects it, not an order behind it
-        if (pu && !(onFig && onFig.owner === 'player' && onFig.uid !== pu.uid) && this.orderTime(pu) && this.orderFor(pu, cell)) { this.pick = null; this.clearGlow(); this.orderAt(pu, cell); return; } }
+        const onOwn = st.board.creatures.some((c: any) => c.row === cell.row && c.col === cell.col && c.owner === 'player' && c.uid !== pu?.uid); // Nov 1: a TAP on another of your units selects it (a DRAG onto it is the swap)
+        if (pu && !onOwn && !(onFig && onFig.owner === 'player' && onFig.uid !== pu.uid) && this.orderTime(pu) && this.orderFor(pu, cell)) { this.pick = null; this.clearGlow(); this.orderAt(pu, cell); return; } }
       this.pick = null; this.clearGlow();
       // a unit was selected: clicking another of your units selects that one instead; clicking elsewhere just deselects
       const other = st.board.creatures.find((c: any) => c.row === cell.row && c.col === cell.col) || this.figureAtEvent(e);

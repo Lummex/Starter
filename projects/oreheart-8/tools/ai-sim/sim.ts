@@ -20,6 +20,8 @@ if (process.env.AI_TUNE) Object.assign(TUNE, JSON.parse(process.env.AI_TUNE));
 const TUNE_B: any = process.env.AI_TUNE_B ? JSON.parse(process.env.AI_TUNE_B) : null;
 const TUNE_A: any = TUNE_B ? Object.fromEntries(Object.keys(TUNE_B).map((k) => [k, (TUNE as any)[k]])) : null;
 import { aiChoose as oldChoose } from './ai-old';
+import { setDiceMode } from '../../src/engine/dice';
+setDiceMode('seeded'); // the simulators and replays stay repeatable: seeded dice and shuffles (a real match rolls live, see dice.ts)
 
 const CMDS = ['grubnak', 'sproingle', 'borgo'];
 const FAC: Record<string, string> = { grubnak: 'goblins', sproingle: 'gnomes', borgo: 'dwarves' };
@@ -119,7 +121,7 @@ export function playMatch(seed: number, A: Bot, B: Bot, aIsPlayer: boolean, maxT
   }
   const pa = aIsPlayer ? 'player' : 'opponent', pb = aIsPlayer ? 'opponent' : 'player';
   st[pa].mined = s.stats?.mined?.[pa] || 0; st[pb].mined = s.stats?.mined?.[pb] || 0;
-  st[pa].hpLeft = s.players[pa].health; st[pb].hpLeft = s.players[pb].health;
+  st[pa].hpLeft = s.players[pa].health; st[pb].hpLeft = s.players[pb].health; st[pa].pool = s.players[pa].crystals + s.players[pa].bank; st[pb].pool = s.players[pb].crystals + s.players[pb].bank; // Nov 1: Flow + Bank left unspent
   st[pa].lost = s.stats?.lost?.[pa] || 0; st[pb].lost = s.stats?.lost?.[pb] || 0;
   const side = (w: string) => (w === (aIsPlayer ? 'player' : 'opponent') ? 'A' : 'B');
   return { winner: s.winner ? side(s.winner) : null, turns: s.turn, stA: st[aIsPlayer ? 'player' : 'opponent'], stB: st[aIsPlayer ? 'opponent' : 'player'] };
@@ -133,7 +135,7 @@ function sum(list: any[]) {
   return {
     abilities: avg((x) => x.abilities), spells: avg((x) => x.spells), poisonStacks: avg((x) => x.poisonStack), attacks: avg((x) => x.attacks), kills: avg((x) => x.kills),
     commanderHits: avg((x) => x.cmdHits), commanderDamage: avg((x) => x.cmdDamage), mineCaptures: avg((x) => x.captures), moves: avg((x) => x.moves), chases: avg((x) => x.chases),
-    summons: avg((x) => x.summons), mines: avg((x) => x.mines), crystalsMined: avg((x) => x.mined), unitsLost: avg((x) => x.lost), hpLeft: avg((x) => x.hpLeft), minersLost: avg((x) => x.minersLost), minersBorn: avg((x) => x.minersBorn), minerLife: avg((x) => (x.minersLost ? x.minerLifeSum / x.minersLost : 0)),
+    summons: avg((x) => x.summons), mines: avg((x) => x.mines), crystalsMined: avg((x) => x.mined), crystalsLeft: avg((x) => x.pool), /* Nov 1: Flow + Bank left unspent at the end */ unitsLost: avg((x) => x.lost), hpLeft: avg((x) => x.hpLeft), minersLost: avg((x) => x.minersLost), minersBorn: avg((x) => x.minersBorn), minerLife: avg((x) => (x.minersLost ? x.minerLifeSum / x.minersLost : 0)),
     fightersInHomeRows: +(100 * avg((x) => mean(x.homeShare))).toFixed(0) + '%', fighterRowsForward: avg((x) => mean(x.fwd)),
     msPerDecision: +(list.reduce((t, x) => t + x.ms, 0) / Math.max(1, list.reduce((t, x) => t + x.calls, 0))).toFixed(2), worstMs: +Math.max(...list.map((x) => x.maxMs)).toFixed(0),
     abilityKinds: kinds('abilityKinds'), spellKinds: kinds('spellKinds'),

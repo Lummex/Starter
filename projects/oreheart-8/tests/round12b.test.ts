@@ -27,7 +27,7 @@ describe('round 12b-1: Goblin 3D models from the owner sheets', () => {
     const j = glbJson(dir('grubnak') + 'char.glb');
     expect(j.animations[0].name).toBe('Chair_Sit_Idle_M');
     expect(fs.existsSync(dir('grubnak') + 'throne.glb')).toBe(true);
-    expect(fs.existsSync(dir('grubnak') + 'scepter.glb')).toBe(true);
+    expect(fs.existsSync(dir('grubnak') + 'scepter-v2.glb' /* Spring, Nov 1: the old staff had a green hand baked in */)).toBe(true);
     expect(fs.existsSync('public/models/commanders')).toBe(false);
   });
 });
