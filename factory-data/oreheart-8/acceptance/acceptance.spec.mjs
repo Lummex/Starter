@@ -7234,7 +7234,7 @@ test.describe('round 10 at 1920x1080', () => {
     const p = log.find((x) => x.side === 'player');
     expect(p.to).toBe('player-flow-crystal');
     expect(p.colors[0].toLowerCase()).toBe(R10_GOBLIN);
-    expect(p.colors.map((c) => c.toLowerCase())).toContain('#b45cff');
+    expect(new Set(p.colors.map((c) => c.toLowerCase())).size).toBe(1); // Ken, Nov 1: every crystal in the owning team's colour
     const pc = await page.getByLabel('Your crystal', { exact: true }).boundingBox();
     expect(inBox(p.toScreen, pc, 4)).toBe(true);
     const o = log.find((x) => x.side === 'opponent');
@@ -9173,14 +9173,11 @@ test.describe('round 14 crystal flow 1920x1080', () => {
   });
 });
 
-test('AC330: more shards per mine when that side\'s Flow is higher (2 at Flow 1 up to about 12)', async ({ page }) => {
+test('AC330: shards per mine grow with the Miners working it (Ken, Nov 1): 8 for one, 12 for two, 16 for three, never more than 32', async ({ page }) => {
   await openTest(page);
-  const n = await page.evaluate(async () => { const r = []; for (let f = 0; f <= 16; f++) r.push(await window.oreheart.flowShardCount(f)); return r; });
-  expect(n[1]).toBe(2);
-  for (let f = 2; f <= 16; f++) expect(n[f], `Flow ${f}`).toBeGreaterThanOrEqual(n[f - 1]);
-  expect(n[16]).toBeGreaterThanOrEqual(10);
-  expect(n[16]).toBeLessThanOrEqual(14);
-  expect(n[8]).toBeGreaterThan(n[2]);
+  const n = await page.evaluate(async () => { const r = []; for (let m = 0; m <= 10; m++) r.push(await window.oreheart.flowShardCount(m)); return r; });
+  expect(n[1]).toBe(8); expect(n[2]).toBe(12); expect(n[3]).toBe(16);
+  for (let m = 2; m <= 10; m++) { expect(n[m], `Miners ${m}`).toBeGreaterThanOrEqual(n[m - 1]); expect(n[m]).toBeLessThanOrEqual(32); }
   await newMatch(page, { ...quiet({ board: [
     { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
     { cardId: 'goblin-scrounger', owner: 'player', row: 3, col: 1, minedMine: M1 },
@@ -9188,12 +9185,8 @@ test('AC330: more shards per mine when that side\'s Flow is higher (2 at Flow 1 
   ] }), firstPlayer: 'opponent' });
   await passTurn(page);
   await expect.poll(async () => (await page.evaluate(async () => await window.oreheart.getFlowStreams())).log.some((x) => x.side === 'player')).toBe(true);
-  const s = await getState(page);
   const log = (await page.evaluate(async () => await window.oreheart.getFlowStreams())).log.filter((x) => x.side === 'player');
-  for (const e of log) {
-    expect(e.flow).toBe(s.players.player.flow);
-    expect(e.count).toBe(n[Math.min(16, e.flow)]);
-  }
+  for (const e of log) expect([8, 12], 'one Miner on a mine streams 8, two stream 12').toContain(e.count);
 });
 
 test('AC331: Corpsman Brewlord heals an adjacent wounded dwarf once per turn; the dwarf is Drunk for 2 rounds and can\'t be healed', async ({ page }) => {
