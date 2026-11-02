@@ -1,5 +1,7 @@
 import { createMatch, applyAction, CARDS } from '../../src/engine';
 import { aiChoose, makeRand } from '../../src/ai/ai';
+import { setDiceMode } from '../../src/engine/dice';
+setDiceMode('seeded'); // the simulators and replays stay repeatable: seeded dice and shuffles (a real match rolls live, see dice.ts)
 const dbg: any[] = []; (globalThis as any).__aiDebug = dbg;
 let s: any = createMatch({ seed: +(process.argv[4] || 3), playerCommander: process.argv[5] || "grubnak", opponentCommander: "sproingle", testMode: true, firstPlayer: 'player' });
 const r = makeRand(5); let n = 0, turn = -1;

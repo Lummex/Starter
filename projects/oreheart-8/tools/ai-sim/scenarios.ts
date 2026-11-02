@@ -1,6 +1,8 @@
 // Reaction scenarios shared by tools/ai-sim/react.ts and tests/ai-oct30.test.ts.
 import { createMatch, legalActions, CONFIG } from '../../src/engine';
 import { makeRand } from '../../src/ai/ai';
+import { setDiceMode } from '../../src/engine/dice';
+setDiceMode('seeded'); // the simulators and replays stay repeatable: seeded dice and shuffles (a real match rolls live, see dice.ts)
 
 export const MINES = [{ row: 3, col: 6 }, { row: 4, col: 10 }, { row: 5, col: 6 }];
 const cheb = (a: any, b: any) => Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));

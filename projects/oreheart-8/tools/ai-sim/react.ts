@@ -6,6 +6,8 @@ import { applyAction, CARDS, isMiner, nextPool } from '../../src/engine';
 import { MINES, HOME, rushBot, mineBot, scenario } from './scenarios';
 import { aiChoose as newChoose, makeRand, TUNE } from '../../src/ai/ai';
 import { aiChoose as oldChoose } from './ai-old';
+import { setDiceMode } from '../../src/engine/dice';
+setDiceMode('seeded'); // the simulators and replays stay repeatable: seeded dice and shuffles (a real match rolls live, see dice.ts)
 if (process.env.AI_TUNE) Object.assign(TUNE, JSON.parse(process.env.AI_TUNE));
 
 const cheb = (a: any, b: any) => Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));

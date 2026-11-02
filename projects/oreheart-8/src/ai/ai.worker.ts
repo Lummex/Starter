@@ -3,6 +3,10 @@
 // The match controller (game.ts) posts the match state here and applies the answer when it comes back; the drawing goes on.
 // Test mode (hidden checks, probes) keeps the old synchronous path, so replays stay step for step the same.
 import { aiChoose, makeRand } from './ai';
+import { setDiceMode } from '../engine/dice';
+
+// The worker only ever runs the computer's private look-ahead on its own copy of the board: seeded dice, never live rolls (aiChoose also switches per call).
+setDiceMode('seeded');
 
 self.onmessage = (e: MessageEvent) => {
   const { id, state, difficulty, seed, style } = e.data || {};
