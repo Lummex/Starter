@@ -157,7 +157,7 @@ export function createMatch(opts: any = {}) {
     players: {}, board: { creatures: [] },
     sites: [] as any[], strongholds: { player: { ...stronghold('player') }, opponent: { ...stronghold('opponent') } },
     pendingResponse: null, factionLock: opts.factionLock !== false, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
-    mulliganDone: { player: false, opponent: false }, tutorial: opts.tutorial ? { step: typeof opts.tutorial === 'string' && TUTORIAL_ORDER.includes(opts.tutorial) ? opts.tutorial : TUTORIAL_ORDER[0], done: false, ...(opts.tutorialInfo || {}) } : null,
+    mulliganDone: { player: false, opponent: false }, pvp: opts.pvp === true, tutorial: opts.tutorial ? { step: typeof opts.tutorial === 'string' && TUTORIAL_ORDER.includes(opts.tutorial) ? opts.tutorial : TUTORIAL_ORDER[0], done: false, ...(opts.tutorialInfo || {}) } : null,
     flags: { battleCry: null, battleCryN: { player: 0, opponent: 0 }, crystalsPlayed: { player: 0, opponent: 0 }, swapped: false, discount: { player: 0, opponent: 0 } },
   };
   const setup = opts.setup;
@@ -176,6 +176,7 @@ export function createMatch(opts: any = {}) {
     const given = setup && setup[who + 'Deck'];
     if (given) pl.deck = given.map((id: string) => makeCard(s, id));
     else if (who === 'player' && opts.playerDeck && !opts.playerDeckId) { pl.deckId = null; pl.deck = shuffle(s, opts.playerDeck.map((id: string) => makeCard(s, id))); }
+    else if (who === 'opponent' && opts.opponentDeck && !opts.opponentDeckId) { pl.deckId = null; pl.deck = shuffle(s, opts.opponentDeck.map((id: string) => makeCard(s, id))); } // Nov 2 (PvP): the other player's own deck list
     else {
       let id = who === 'player' ? opts.playerDeckId : opts.opponentDeckId;
       if (!id || !STARTER_DECKS[id]) { const mine = STARTER_DECK_LIST.filter((d) => d.faction === pl.faction); id = who === 'opponent' && !opts.testMode && !opts.setup ? mine[Math.floor(nextRand(s) * mine.length)].id : warbandOf(pl.faction); }
@@ -1020,7 +1021,8 @@ function runBrew(s: any, l: any, ev: any[], inResponse = false) {
 
 function openWindow(s: any, pend: any, ev: any[]) {
   const responder = other(pend.actor);
-  if (respondActions(s, responder, { ...pend, responder }).length || brewActions(s, responder, pend).length) {
+  // PvP (Nov 2, Forge's call): the window always opens, so the attacker can't tell whether the other player holds a counter
+  if (s.pvp || respondActions(s, responder, { ...pend, responder }).length || brewActions(s, responder, pend).length) {
     s.pendingResponse = { ...pend, responder };
     s.priority = responder;
   } else finishPending(s, pend, ev, false);
@@ -1365,7 +1367,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       if (l.target.row) {
         const tgt = creatureAt(s, l.target.row, l.target.col);
         const resp = other(who);
-        if (respondActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length || brewActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length) {
+        if (s.pvp || respondActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length || brewActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length) {
           s.pendingResponse = { kind: 'attack', actor: who, creatureUid: a.uid, target: l.target, responder: resp };
           s.priority = resp;
           void tgt;
