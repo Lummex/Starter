@@ -18,8 +18,8 @@ const key = (q: Cell) => q.row + ',' + q.col;
  *  Intermediate squares must be empty (in bounds, no Stronghold, no mine, no creature); a flying unit may pass over creatures.
  *  `dest` itself must be empty. null when there is no path. */
 export function shortestPath(s: any, c: any, dest: Cell): Cell[] | null {
-  if (!dest || (dest.row === c.row && dest.col === c.col) || !emptyCell(s, dest.row, dest.col)) return null;
-  return bfs(s, c, (q) => q.row === dest.row && q.col === dest.col, dest);
+  if (!dest || (dest.row === c.row && dest.col === c.col) || !(emptyCell(s, dest.row, dest.col) || creatureAt(s, dest.row, dest.col)?.owner === c.owner)) return null;
+  return bfs(s, c, (q) => q.row === dest.row && q.col === dest.col, dest, true);
 }
 
 /** Can `c` walk through square q on a multi-turn path? Empty squares always; a flyer also over creatures (never Strongholds, mines or off-board).
@@ -29,13 +29,13 @@ function passable(s: any, c: any, noUnits: any, q: Cell): boolean {
   if (emptyCell(s, q.row, q.col)) return true;
   const o = creatureAt(s, q.row, q.col);
   if (!o || !emptyCell(noUnits, q.row, q.col)) return false;
-  return has(c, 'flying') || (o.owner === c.owner && Math.max(Math.abs(q.row - c.row), Math.abs(q.col - c.col)) > (maxMove(c) || 0));
+  return has(c, 'flying') || o.owner === c.owner; // Ken, Nov 1: anyone walks through their own units (never through enemies)
 }
 
 /** Ken (Oct 30): "always pick the most direct route". Breadth-first by steps (8 directions, so the fewest moves always wins), and among
  *  routes with the same number of steps the one that stays closest to the straight line toward `aim` (no wiggles, no needless detours).
  *  The goal must be an empty square that satisfies `goal`. Path excludes the start. */
-function bfs(s: any, c: any, goal: (q: Cell) => boolean, aim?: Cell): Cell[] | null {
+function bfs(s: any, c: any, goal: (q: Cell) => boolean, aim?: Cell, swapGoal = false): Cell[] | null {
   const noUnits = { ...s, board: { ...s.board, creatures: [] } };
   const start: Cell = { row: c.row, col: c.col };
   const to = aim || start;
@@ -56,7 +56,7 @@ function bfs(s: any, c: any, goal: (q: Cell) => boolean, aim?: Cell): Cell[] | n
       if (!layer.has(k) || d < dev.get(k)!) { layer.set(k, n); dev.set(k, d); prev.set(k, q); }
     }
     for (const k of layer.keys()) seen.add(k);
-    const goals = [...layer.values()].filter((n) => emptyCell(s, n.row, n.col) && goal(n));
+    const goals = [...layer.values()].filter((n) => (emptyCell(s, n.row, n.col) || (swapGoal && creatureAt(s, n.row, n.col)?.owner === c.owner)) && goal(n)); // Ken, Nov 1: a move drawn onto your own unit ends in a swap
     if (goals.length) {
       goals.sort((a, b) => dev.get(key(a))! - dev.get(key(b))! || Math.hypot(a.row - to.row, a.col - to.col) - Math.hypot(b.row - to.row, b.col - to.col));
       const path: Cell[] = [];
@@ -81,7 +81,7 @@ export function nextStep(s: any, c: any, path: Cell[]): Cell | null {
   const dests = moveDests(s, c);
   for (let k = Math.min(c.movesLeft ?? (maxMove(c) || 0), path.length); k >= 1; k--) { // v2: as far as the points left allow
     const q = path[k - 1];
-    if (creatureAt(s, q.row, q.col)) continue; // never land on (swap with) one of our own units; walk past it on a later step
+    if (creatureAt(s, q.row, q.col) && k !== path.length) continue; // never land on (swap with) one of our own units on the way; only the order's own last square may be a swap (Ken, Nov 1)
     if (dests.some((d) => d.row === q.row && d.col === q.col)) return { row: q.row, col: q.col };
   }
   return null;

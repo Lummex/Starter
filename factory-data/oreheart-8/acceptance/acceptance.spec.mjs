@@ -4210,16 +4210,17 @@ async function boxedButtons(page, names) {
       return { border: ['Top', 'Right', 'Bottom', 'Left'].map((k) => (c[`border${k}Style`] === 'none' ? 0 : parseFloat(c[`border${k}Width`]))),
         bgc: c.backgroundColor, bgi: c.backgroundImage, shadow: c.boxShadow, outline: c.outlineStyle === 'none' ? 0 : parseFloat(c.outlineWidth), color: c.color };
     });
-    if (!s.border.every((w) => w === 0)) bad.push(`${name} border ${s.border}`);
+    // owner check change (Ken, Nov 1: style B: a silver edge on one side, dark glass fading to clear)
+    if (s.border[0] !== 0 || s.border[2] !== 0 || s.border[1] + s.border[3] > 4) bad.push(`${name} border ${s.border}`);
     if (!CLEAR.test(s.bgc)) bad.push(`${name} background ${s.bgc}`);
-    if (s.bgi !== 'none') bad.push(`${name} background-image`);
+    if (s.bgi !== 'none' && !/linear-gradient/.test(s.bgi)) bad.push(`${name} background-image`);
     if (s.shadow !== 'none') bad.push(`${name} box-shadow`);
     if (s.outline !== 0) bad.push(`${name} outline`);
     if (s.color !== 'rgb(255, 255, 255)') bad.push(`${name} color ${s.color}`);
   }
   return bad;
 }
-const unframed = async (page, names) => { const bad = []; for (const name of names) { const src = await page.getByRole('button', { name, exact: true }).first().evaluate((e) => getComputedStyle(e).borderImageSource); if (!/\/art\/ui\/silver\/btn-/.test(src)) bad.push(`${name} has no silver gem frame (${src})`); } return bad; };
+const unframed = async (page, names) => { const bad = []; for (const name of names) { const src = await page.getByRole('button', { name, exact: true }).first().evaluate((e) => getComputedStyle(e).backgroundImage); if (!/linear-gradient/.test(src)) bad.push(`${name} has no fading frame (${src})`); } return bad; };
 test('AC137: menu buttons are plain white text with a hover glow, no boxes or borders', async ({ page }) => {
   await toTitle(page);
   expect(await boxedButtons(page, ['Play', 'Deck Builder', 'How to Play', 'Settings', 'Quit']), 'title').toEqual([]);
@@ -6418,7 +6419,7 @@ async function ownerLayout(request) {
   const r = await request.get('/owner-layouts/final-draft/layout.json');
   expect(r.ok()).toBe(true);
   const body = await r.body();
-  expect(body.length).toBe(34877); // owner check change (Ken, Oct 31: the Done button the size of the Menu button, both centred). Was 34877. Round 14: the owner's Oct 24 layout (same bytes as src/content/owner-layout.json; Oct 30: synced to the owner's flame 0.4 / glow x1.15 fixes and hand overlap 0.26; Ken Oct 30 playtest: Commanders 1.8x, no thrones)
+  expect(body.length).toBe(37423); // owner check change (Ken, Oct 31: the Done button the size of the Menu button, both centred). Was 34877. Round 14: the owner's Oct 24 layout (same bytes as src/content/owner-layout.json; Oct 30: synced to the owner's flame 0.4 / glow x1.15 fixes and hand overlap 0.26; Ken Oct 30 playtest: Commanders 1.8x, no thrones)
   return JSON.parse(body.toString('utf8'));
 }
 const SKIP_ROLES = new Set(['player-hand', 'done-button']);
@@ -8423,14 +8424,14 @@ test('AC297: Rat-Tunnel Ambush moves a creature next to a mine and it can still 
   expect((await act(page, { type: 'attack', creatureUid: at(s, 5, 7).uid, target: { row: 4, col: 7 } })).ok).toBe(true);
 });
 
-test('AC298: Voldawright Shockwave (1): adjacent enemies take 1 and are knocked back 1', async ({ page }) => {
+test('AC298: Voldawright Shockwave (1): adjacent enemies take its Attack and are knocked back 1', async ({ page }) => {
   let s = await start(page, q12({ playerCrystals: 1, board: [P('gnome-cogger', 4, 9), O('dwarf-pickman', 3, 9), O('dwarf-pickman', 4, 10)] }));
   const hp = at(s, 3, 9).health;
   s = await toAction(page);
   expect((await ability(page, s, 4, 9, 'shockwave')).ok).toBe(true);
   s = await getState(page);
-  expect(at(s, 2, 9).health).toBe(hp - 1);
-  expect(at(s, 4, 11).health).toBe(hp - 1);
+  expect(at(s, 2, 9).health).toBe(hp - 2); // Ken, Nov 1: abilities hit for the stock Attack (2)
+  expect(at(s, 4, 11).health).toBe(hp - 2);
   expect(s.players.player.crystals).toBe(0);
 });
 
@@ -9186,7 +9187,7 @@ test('AC330: shards per mine grow with the Miners working it (Ken, Nov 1): 8 for
   await passTurn(page);
   await expect.poll(async () => (await page.evaluate(async () => await window.oreheart.getFlowStreams())).log.some((x) => x.side === 'player')).toBe(true);
   const log = (await page.evaluate(async () => await window.oreheart.getFlowStreams())).log.filter((x) => x.side === 'player');
-  for (const e of log) expect([8, 12], 'one Miner on a mine streams 8, two stream 12').toContain(e.count);
+  for (const e of log) expect([8, 12, 16], '1, 2 or 3 Miners on a mine stream 8, 12 or 16').toContain(e.count);
 });
 
 test('AC331: Corpsman Brewlord heals an adjacent wounded dwarf once per turn; the dwarf is Drunk for 2 rounds and can\'t be healed', async ({ page }) => {
@@ -12237,7 +12238,7 @@ const SFX_SPEC = {
   // Oct 31 (Brush): the projectile sounds
   'shot-rifle': [['shot-rifle'], 0.9, 0.8], 'shot-cannon': [['shot-cannon'], 1, 0.5], 'throw-whoosh': [['throw-whoosh'], 0.8, 1.5], 'cast-zap': [['cast-zap'], 0.85, 1],
   'cast-hex': [['cast-hex'], 0.7, 1], 'fireball-whoosh': [['fireball-whoosh'], 0.85, 1], 'bowl-roll': [['bowl-roll'], 0.6, 0], 'skull-crack': [['skull-crack'], 0.9, 1],
-  'book-thud': [['book-thud'], 0.9, 1], 'zap-hit': [['zap-hit'], 0.9, 1], 'fire-burst': [['fire-burst'], 0.9, 0.8], 'pins-scatter': [['pins-scatter'], 0.95, 0.8],
+  'book-thud': [['book-thud'], 0.9, 1], 'zap-hit': [['zap-hit'], 0.9, 1], 'fire-burst': [['fire-burst'], 0.9, 0.8], 'pins-scatter': [['pins-scatter'], 0.7, 0.8],
   melee: [['melee'], 0.9, 1], ranged: [['ranged'], 0.85, 1], bonk: [['bonk-1', 'bonk-2', 'bonk-3'], 0.9, 1], clink: [['clink-1', 'clink-2', 'clink-3'], 0.85, 0.8],
   thud: [['thud'], 0.85, 1], pick: [['mine-pick'], 0.5, 1], shatter: [['shatter'], 0.85, 0.5], 'defeat-poof': [['defeat-poof'], 0.85, 0.8],
   stronghold: [['commander-hit'], 1, 0.5], kaboom: [['kaboom'], 1, 0.5], 'turn-start': [['turn-start'], 0.85, 0], win: [['win'], 1, 0], lose: [['lose'], 1, 0],
@@ -12459,7 +12460,7 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
       await start(page, quiet({ playerCrystals: 6, board: [
         { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 8 },
         { cardId: 'goblin-grunt', owner: 'opponent', row: 3, col: 8 },
-        { cardId: 'goblin-scrounger', owner: 'opponent', row: 2, col: 8 },
+        { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 8 },
       ] }));
       if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
       let s = await getState(page);
@@ -12784,7 +12785,7 @@ test('AC512: each unit the Bowler\'s ball knocks over gets a bonk with the heavy
   await start(page, quiet({ playerCrystals: 6, board: [
     { cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 8 },
     { cardId: 'goblin-grunt', owner: 'opponent', row: 3, col: 8 },
-    { cardId: 'goblin-scrounger', owner: 'opponent', row: 2, col: 8 },
+    { cardId: 'dwarf-pickman', owner: 'opponent', row: 2, col: 8 },
   ] }));
   if (!(await renderStats(page)).webgl) test.skip(true, 'WebGL unavailable');
   await sfxReady(page);
@@ -13313,8 +13314,8 @@ test('AC521: a silver Sort button sits just left of the hand (never over a card)
     expect(ub.y, `${W}x${H}: the drop-up fits on screen`).toBeGreaterThanOrEqual(0);
     expect(ub.x).toBeGreaterThanOrEqual(0);
     expect(ub.x + ub.width).toBeLessThanOrEqual(W);
-    const frame = await up.getByRole('button', { name: 'By type', exact: true }).evaluate((e) => getComputedStyle(e).borderImageSource);
-    expect(frame, 'silver gem buttons, like the Done drop-up').toMatch(/\/art\/ui\/silver\/btn-/);
+    const frame = await up.getByRole('button', { name: 'By type', exact: true }).evaluate((e) => getComputedStyle(e).backgroundImage);
+    expect(frame, 'the fading frame (Ken, Nov 1), like the Done drop-up').toMatch(/linear-gradient/);
     await expect(sb).toHaveAttribute('aria-expanded', 'true');
     // a click elsewhere closes it, nothing changes
     await page.mouse.click(W / 2, H * 0.35);

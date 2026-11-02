@@ -103,7 +103,7 @@ export function spellCost(s: any, p: Side, card: any) {
   return d ? Math.max(1, card.cost - d.amount) : card.cost;
 }
 /** Ken, Nov 1: the Miner swap's price: 1 Crystal while you have fewer than 3 Miners on the board, 3 Crystals once you have 3 or more (the Miner itself is paid for when you play it). */
-export const swapCost = (s: any, who: Side) => (s.board.creatures.filter((c: any) => c.owner === who && isMiner(CARDS[c.cardId])).length < 3 ? 1 : 3);
+export const swapCost = (s: any, who: Side) => { const n = s.board.creatures.filter((c: any) => c.owner === who && isMiner(CARDS[c.cardId])).length; if (!n && funds(s.players[who]) < 1) return 0; /* a broke side with no Miner on the board swaps free (matches the free Miner rule), or it could never start its economy */ return n < 3 ? 1 : 3; };
 export const canPayCreature = (pl: any, _faction: string, cost: number) => funds(pl) >= cost;
 /** Pays from Flow first, then Bank. */
 function pay(pl: any, cost: number) {

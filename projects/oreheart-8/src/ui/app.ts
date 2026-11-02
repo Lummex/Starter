@@ -4407,7 +4407,7 @@ export class App {
     if (c.row === cr.row && c.col === cr.col) return null;
     if (c.row === SH.opponent.row && c.col === SH.opponent.col) return { kind: 'chase', uid: cr.uid, targetUid: 'cmd:opponent' }; // Ken, Nov 1: drag onto the enemy Commander: it attacks him every turn
     const there = st.board.creatures.find((x: any) => x.row === c.row && x.col === c.col);
-    if (there) return there.owner !== cr.owner ? { kind: 'chase', uid: cr.uid, targetUid: there.uid } : null;
+    if (there) return there.owner !== cr.owner ? { kind: 'chase', uid: cr.uid, targetUid: there.uid } : { kind: 'move', uid: cr.uid, dest: { row: c.row, col: c.col } }; // Ken, Nov 1: draw the arrow onto your own unit: they swap places
     return emptyCell(st, c.row, c.col) ? { kind: 'move', uid: cr.uid, dest: { row: c.row, col: c.col } } : null;
   }
   /** Is there a normal legal action (attack, mine, move, aimed ability) for this unit on square c? Same matching as unitActAt. */

@@ -145,9 +145,9 @@ export function orderSvg(d: OrderDrawing): string {
     };
     polys.push(pen(barb(-1), w * 0.9, k, ph + 1, 0.12, 0.04), pen(barb(1).reverse(), w * 0.9, k, ph + 2, 0.12, 0.04));
     const kind: 'x' | 'sword' | 'bow' | 'swap' = d.kind === 'move' ? (d.swap ? 'swap' : 'x') : d.ranged ? 'bow' : 'sword';
-    const sz = (kind === 'x' ? 0.1 : kind === 'swap' ? 0.085 : 0.055) * s;
-    const place = d.kind === 'move' ? { x: tip.x + Math.cos(ang) * s * 0.34 + Math.sin(ang) * s * 0.1, y: tip.y + Math.sin(ang) * s * 0.34 - Math.cos(ang) * s * 0.12 } : { x: E.x + rx * 1.0, y: E.y - rx * 0.95 };
-    for (const st of symbolStrokes(kind, place, sz * 2.2)) polys.push(pen(st, kind === 'x' ? w * 0.85 : w * 0.62, k, ph + 3, 0.2));
+    const sz = (kind === 'x' ? 0.1 : kind === 'swap' ? 0.085 : 0.08) * s;
+    const place = d.kind === 'move' ? { x: tip.x + Math.cos(ang) * s * 0.5 + Math.sin(ang) * s * 0.12, y: tip.y + Math.sin(ang) * s * 0.5 - Math.cos(ang) * s * 0.14 } : { x: E.x + rx * 1.0, y: E.y - rx * 0.95 };
+    for (const st of symbolStrokes(kind, place, sz * 2.2)) polys.push(pen(st, kind === 'x' ? w * 0.85 : w * 0.42, k, ph + 3, 0.2));
   }
   if (d.kind === 'chase') {
     const loop: V[] = []; // a bit over one loop, slightly spiralling, like a quick hand-drawn circle
@@ -180,8 +180,8 @@ export function questionSvg(p: Pt, cw: number, ch: number, uid: string): string 
   const P = (u: number, v: number): V => ({ x: p.x + u * s, y: p.y - ch * 1.05 + v * s });
   const hook = dense([P(-0.62, -0.5), P(-0.5, -0.95), P(0, -1.15), P(0.52, -0.92), P(0.58, -0.4), P(0.2, 0.12), P(0.02, 0.45), P(0.02, 0.62)]);
   const dot: V[] = []; for (let i = 0; i <= 14; i++) { const a = (i / 14) * Math.PI * 2 + 0.4; dot.push({ x: p.x + 0.02 * s + Math.cos(a) * 0.13 * s, y: p.y - ch * 1.05 + 1.08 * s + Math.sin(a) * 0.13 * s }); }
-  const w = s * 0.34;
-  return `<g class="ord-q" data-uid="${uid}"><path d="${pen(hook, w, 1, ph, 0.12)}" fill="#ffe84a" fill-opacity=".62"/><path d="${pen(dot, w * 0.8, 1, ph + 1, 0.05)}" fill="#ffe84a" fill-opacity=".7"/></g>`;
+  const w = s * 0.46;
+  return `<g class="ord-q" data-uid="${uid}"><path d="${pen(hook, w, 1, ph, 0.12)}" fill="#ffe84a" fill-opacity=".85"/><path d="${pen(dot, w * 0.8, 1, ph + 1, 0.05)}" fill="#ffe84a" fill-opacity=".7"/></g>`;
 }
 
 /** Ken, Nov 1: a unit on the Guard stance wears a black marker circle on the ground (squashed by the board's tilt). */
