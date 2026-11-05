@@ -38,7 +38,7 @@ jobs:
           node "$RUNNER_TEMP/secret-scan.mjs"
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.122.1 # Nov 2: v3.0.0 aims db push at the local copy and wants --yes; stay on 2.x until someone moves this on purpose
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client > /dev/null
       - name: Test the migrations on a throwaway local copy first
         run: |
@@ -51,15 +51,17 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ inputs.target == 'production' && secrets.SUPABASE_DB_PASSWORD || secrets.SUPABASE_TEST_DB_PASSWORD }}
           REF: ${{ inputs.target == 'production' && secrets.SUPABASE_PROJECT_REF || secrets.SUPABASE_TEST_PROJECT_REF }}
         run: |
+          set -o pipefail # the pipes to sed must not hide a failed push
           supabase link --project-ref "$REF"
           echo "## Supabase deploy: ${{ inputs.target }} (branch ${{ inputs.branch }})" >> "$GITHUB_STEP_SUMMARY"
-          supabase db push --dry-run 2>&1 | sed 's/user=postgres\.[^ ]*/user=postgres.***/' | tee -a "$GITHUB_STEP_SUMMARY"
+          supabase db push --linked --dry-run 2>&1 | sed 's/user=postgres\.[^ ]*/user=postgres.***/' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Apply migrations (never the seed) and the email sender
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ inputs.target == 'production' && secrets.SUPABASE_DB_PASSWORD || secrets.SUPABASE_TEST_DB_PASSWORD }}
           REF: ${{ inputs.target == 'production' && secrets.SUPABASE_PROJECT_REF || secrets.SUPABASE_TEST_PROJECT_REF }}
         run: |
-          supabase db push 2>&1 | sed 's/user=postgres\.[^ ]*/user=postgres.***/'
+          set -o pipefail
+          supabase db push --linked 2>&1 | sed 's/user=postgres\.[^ ]*/user=postgres.***/'
           if [ -d supabase/functions/send-outbox ]; then supabase functions deploy send-outbox --project-ref "$REF"; else echo "no send-outbox function on this branch yet"; fi
           echo "Applied to ${{ inputs.target }}." >> "$GITHUB_STEP_SUMMARY"
