@@ -16,7 +16,7 @@ const bundlePath = resolve(here, '.build/pvp-server.mjs');
 const newest = (dir) => Math.max(0, ...readdirSync(dir).map((f) => statSync(resolve(dir, f)).mtimeMs));
 const srcTime = Math.max(newest(resolve(here, '../src/engine')), newest(resolve(here, '../src/server')), newest(resolve(here, '../src/content')));
 if (!existsSync(bundlePath) || statSync(bundlePath).mtimeMs < srcTime) { console.log('bundling the engine...'); execFileSync(process.execPath, [resolve(here, 'bundle-engine.mjs')], { stdio: 'inherit' }); }
-const { PvpService, MemoryStore, setDiceMode, ENGINE_VERSION, summarize, DEFAULT_RULES, viewsFor } = await import('./.build/pvp-server.mjs');
+const { PvpService, MemoryStore, setDiceMode, ENGINE_VERSION, summarize, DEFAULT_RULES, viewsFor, createMatch } = await import('./.build/pvp-server.mjs');
 
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 setDiceMode('live'); // the referee rolls fresh dice, like the real server
@@ -52,6 +52,21 @@ const server = http.createServer(async (req, res) => {
     await store.updateMatch(m, before);
     await store.putViews(m, viewsFor(m, []));
     return json(res, 200, { ok: true });
+  }
+  if (url.pathname === '/debug/place' && req.method === 'GET') { // checks only: puts a unit of a player's on the board (real coordinates), ready to act
+    const m = await store.getMatch(url.searchParams.get('matchId'));
+    const u = users.get(url.searchParams.get('user'));
+    const seat = m && u ? (m.players.a.userId === u.userId ? 'a' : m.players.b.userId === u.userId ? 'b' : null) : null;
+    if (!seat) return json(res, 200, { ok: false });
+    const side = seat === 'a' ? 'player' : 'opponent', row = Number(url.searchParams.get('row')), col = Number(url.searchParams.get('col'));
+    if (m.state.board.creatures.some((c) => c.row === row && c.col === col) || m.state.sites.some((x) => x.row === row && x.col === col)) return json(res, 200, { ok: false, error: 'square taken' });
+    const made = createMatch({ seed: 1, factionLock: false, setup: { playerHand: [], opponentHand: [], board: [{ owner: side, cardId: url.searchParams.get('card'), row, col }] }, mines: m.state.sites.map((x) => ({ row: x.row, col: x.col })) });
+    const c = made.board.creatures[0]; c.uid = 'place' + m.seq; c.summonedThisTurn = false; c.lockedUntil = 0;
+    m.state.board.creatures.push(c);
+    const before = m.seq++;
+    await store.updateMatch(m, before);
+    await store.putViews(m, viewsFor(m, []));
+    return json(res, 200, { ok: true, uid: c.uid });
   }
   if (url.pathname === '/debug/moves' && req.method === 'GET') return json(res, 200, { ok: true, moves: store.moves.filter((m) => m.matchId === url.searchParams.get('matchId')) });
   if (url.pathname !== '/match' || req.method !== 'POST') return json(res, 404, { ok: false, error: 'not found' });

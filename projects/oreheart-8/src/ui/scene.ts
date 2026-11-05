@@ -877,11 +877,15 @@ const _embV = new THREE.Vector3();
     const draw = () => {
       const g = c.getContext('2d')!; g.clearRect(0, 0, 128, 128);
       const im = stImg[k];
+      if (k === 'armed') { // no painted icon yet: a silver ring with SET (Ken: silver UI, no gold)
+        g.beginPath(); g.arc(64, 64, 50, 0, Math.PI * 2); g.fillStyle = '#1b1f26e6'; g.fill(); g.lineWidth = 7; g.strokeStyle = '#c9d1dc'; g.stroke();
+        g.fillStyle = '#eef2f7'; g.font = '900 36px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('SET', 64, 66);
+      }
       if (im && im.complete && im.naturalWidth) { const sc = Math.min(112 / im.naturalWidth, 112 / im.naturalHeight); const w = im.naturalWidth * sc, hh = im.naturalHeight * sc; g.drawImage(im, (128 - w) / 2, (128 - hh) / 2, w, hh); }
       if (n > 0) { g.beginPath(); g.arc(100, 100, 24, 0, Math.PI * 2); g.fillStyle = '#111e'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#ffd76a'; g.stroke(); g.fillStyle = '#fff'; g.font = 'bold 32px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), 100, 102); }
       tex.needsUpdate = true;
     };
-    if (!stImg[k]) { stImg[k] = new Image(); stImg[k].src = `/art/pop/icon-${k}.webp`; }
+    if (!stImg[k] && k !== 'armed') { stImg[k] = new Image(); stImg[k].src = `/art/pop/icon-${k}.webp`; }
     const chip = () => { if (x <= 1) return; const g = c.getContext('2d')!; g.font = '900 44px system-ui, sans-serif'; g.textAlign = 'right'; g.textBaseline = 'top'; g.lineWidth = 7; g.strokeStyle = '#000'; g.lineJoin = 'round'; g.strokeText('×' + Math.min(3, x), 126, 2); g.fillStyle = '#fff'; g.fillText('×' + Math.min(3, x), 126, 2); tex.needsUpdate = true; }; // Ken (Oct 30): a crisp white x2 / x3 with a dark outline on the icon's top right
     if (stImg[k].complete) { draw(); chip(); } else stImg[k].addEventListener('load', () => { draw(); chip(); }, { once: true });
     draw(); chip();
@@ -897,6 +901,9 @@ const _embV = new THREE.Vector3();
     if (c.shield > 0 || c.bubble) out.push(['shield', c.shield > 0 ? c.shield : 0, c.shield > 0 ? 0 : c.bubbles || 0]);
     if ((st.flags?.battleCryN?.[c.owner] || 0) > 0) out.push(['attackup', 0, st.flags.battleCryN[c.owner]]);
     if ((c.lockedUntil || 0) > t) out.push(['sleep', c.lockedUntil - t]);
+    // PvP armed counters (Nov 4): your own set counters show on the unit (the other player's view never has them)
+    const arm = st.armed && st.armed[c.owner] ? st.armed[c.owner].filter((a: any) => a.target && a.target.row === c.row && a.target.col === c.col).length : 0;
+    if (arm) out.push(['armed', 0, arm]);
     return out;
   }
   function syncStatusIcons(st: any) {

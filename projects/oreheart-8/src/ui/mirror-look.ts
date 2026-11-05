@@ -18,8 +18,8 @@ export const MIRROR_LOOK = {
   mine: '#ff3b4a',
   presets: {
     goblins: { mode: 'snap', hue: 20, sat: 1.5, light: 0.8, key: 75, mask: [0.62, 0.82] } as MirrorPreset,
-    gnomes: { mode: 'turn', hue: -100, sat: 1.4, light: 1, key: 125, mask: [0.2, 0.6] } as MirrorPreset,
-    dwarves: { mode: 'turn', hue: -120, sat: 1.7, light: 1.4, key: 145, mask: [0.2, 0.6] } as MirrorPreset,
+    gnomes: { mode: 'snap', hue: 20, sat: 1.5, light: 0.9, key: 115, mask: [0.25, 0.65] } as MirrorPreset, // Ken, Nov 4: closer to true ruby, like Grubnak
+    dwarves: { mode: 'snap', hue: 20, sat: 1.6, light: 1.15, key: 150, mask: [0.25, 0.65] } as MirrorPreset,
   } as Record<string, MirrorPreset>,
 };
 

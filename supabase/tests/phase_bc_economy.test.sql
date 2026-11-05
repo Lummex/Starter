@@ -261,7 +261,7 @@ end $$;
 select pg_temp.ok('settings: the Phase B/C keys exist with their defaults',
   (select jsonb_object_agg(key, value) from public.settings where key like 'pvp_%' or key like 'quest_%')
   = '{"pvp_win_coins":25,"pvp_loss_coins":10,"pvp_daily_coin_cap":300,"pvp_min_turns":3,"quest_reward_easy":25,"quest_reward_medium":50,
-      "quest_reward_hard":75,"quest_streak_days":7,"pvp_phase_seconds":120,"pvp_bank_seconds":60,"pvp_respond_seconds":12,"pvp_timeouts_to_forfeit":3,"pvp_abandon_seconds":120}'::jsonb);
+      "quest_reward_hard":75,"quest_streak_days":7,"pvp_phase_seconds":120,"pvp_bank_seconds":60,"pvp_respond_seconds":12,"pvp_timeouts_to_forfeit":3,"pvp_abandon_seconds":120,"pvp_attack_mode":"armed"}'::jsonb);
 select pg_temp.works('admin can set pvp_win_coins', :A1, 'aal2', $q$ select public.admin_set_setting('pvp_win_coins', '30', 'test: raise the win reward') $q$);
 select pg_temp.ok('... and it is stored and audited',
   private.setting('pvp_win_coins') = '30'::jsonb

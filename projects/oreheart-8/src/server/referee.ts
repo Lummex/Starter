@@ -9,7 +9,7 @@ import { presentFor, realAction } from '../engine/view';
 export type Seat = 'a' | 'b';
 export interface PlayerInfo { userId: string; username: string; avatar: string | null }
 export interface DeckChoice { commander: string; cards: string[] | null; deckId: string | null }
-export interface Rules { phaseSeconds: number; bankSeconds: number; respondSeconds: number; timeoutsToForfeit: number; mulliganSeconds?: number; respondMinSeconds?: number }
+export interface Rules { phaseSeconds: number; bankSeconds: number; respondSeconds: number; timeoutsToForfeit: number; mulliganSeconds?: number; respondMinSeconds?: number; attackMode?: 'armed' | 'window' }
 export const DEFAULT_RULES: Rules = { phaseSeconds: 120, bankSeconds: 60, respondSeconds: 12, timeoutsToForfeit: 3, respondMinSeconds: 2 };
 export interface Clock {
   deadline: number | null;        // ms; the priority holder's clock (null while a Respond window is open or the match is over)
@@ -72,7 +72,7 @@ export function deckProblem(choice: DeckChoice): string | null {
 
 /** A fresh match between two seated players. `seed` is for the mine layout; every die and shuffle is rolled live. */
 export function startMatch(id: string, roomCode: string | null, players: Record<Seat, PlayerInfo>, decks: Record<Seat, DeckChoice>, now: number, rules: Rules, seed: number, engineVersion: string): MatchRecord {
-  const state = createMatch({ pvp: true, seed, playerCommander: decks.a.commander, opponentCommander: decks.b.commander, ...deckOpts(decks.a, 'player'), ...deckOpts(decks.b, 'opponent') });
+  const state = createMatch({ pvp: true, attackMode: rules.attackMode || 'armed', seed, playerCommander: decks.a.commander, opponentCommander: decks.b.commander, ...deckOpts(decks.a, 'player'), ...deckOpts(decks.b, 'opponent') });
   const m: MatchRecord = {
     id, roomCode, players: clone(players), decks: clone(decks), state, seq: 0, status: 'active',
     clock: { deadline: null, respondDeadline: null, frozenLeft: null, bank: { a: 0, b: 0 }, timeouts: { a: 0, b: 0 } },

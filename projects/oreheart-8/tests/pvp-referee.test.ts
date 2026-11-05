@@ -115,7 +115,7 @@ describe('PvP referee', () => {
         const v = holderIsA ? va : vb, idle = holderIsA ? vb : va;
         const legal = legalActions(v.state).filter((a: any) => a.type !== 'surrender');
         expect(legal.length).toBeGreaterThan(0);
-        const busy = legal.filter((a: any) => a.type !== 'done' && a.type !== 'pass');
+        const busy = legal.filter((a: any) => a.type !== 'done' && a.type !== 'pass' && a.type !== 'disarm'); // disarm stays possible but not preferred, or the random player toggles a counter until the phase clock runs out
         const a = busy.length && rnd() < 0.75 ? busy[Math.floor(rnd() * busy.length)] : legal[Math.floor(rnd() * legal.length)];
         now += 3 * SEC;
         expect(legalActions(idle.state)).toEqual([]); // the idle player's view can't even list moves for the other side (hidden hand)

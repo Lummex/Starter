@@ -156,7 +156,7 @@ export function createMatch(opts: any = {}) {
     turn: 0, activePlayer: 'player', priority: 'player', phase: 'mulligan', winner: null,
     players: {}, board: { creatures: [] },
     sites: [] as any[], strongholds: { player: { ...stronghold('player') }, opponent: { ...stronghold('opponent') } },
-    pendingResponse: null, deployed: [] as any[], factionLock: opts.factionLock !== false, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
+    pendingResponse: null, deployed: [] as any[], armed: { player: [] as any[], opponent: [] as any[] }, attackMode: opts.pvp === true && opts.attackMode === 'armed' ? 'armed' : 'window', factionLock: opts.factionLock !== false, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
     mulliganDone: { player: false, opponent: false }, pvp: opts.pvp === true, tutorial: opts.tutorial ? { step: typeof opts.tutorial === 'string' && TUTORIAL_ORDER.includes(opts.tutorial) ? opts.tutorial : TUTORIAL_ORDER[0], done: false, ...(opts.tutorialInfo || {}) } : null,
     flags: { battleCry: null, battleCryN: { player: 0, opponent: 0 }, crystalsPlayed: { player: 0, opponent: 0 }, swapped: false, discount: { player: 0, opponent: 0 } },
   };
@@ -405,6 +405,7 @@ function startTurn(s: any, ev: any[]) {
 function endTurn(s: any, ev: any[]) {
   s.phase = 'end';
   s.deployed = [];
+  if (s.armed) s.armed[other(s.activePlayer)] = []; // the defender's set counters were for this turn only
   const own = s.players[s.activePlayer];
   const per = CONFIG.savingsPerCrystal;
   if (per && own.crystals >= per) {
@@ -994,6 +995,44 @@ export function respondNeeds(s: any, responder: Side, pend: any): { uid: string;
 }
 
 
+// ---------------------------------------------------------------- Armed counters (PvP, Nov 4)
+/** Instants `who` can set ahead of time on their own turn (Deploy or Action), on any own unit (or the Commander for Second Wind). They last through the enemy's next turn. */
+export function armActions(s: any, who: Side): any[] {
+  const out: any[] = [];
+  if (!s.pvp || s.attackMode !== 'armed' || !s.armed) return out;
+  const pl = s.players[who];
+  const own = s.board.creatures.filter((c: any) => c.owner === who);
+  for (const h of pl.hand) {
+    const card = CARDS[h.cardId];
+    if (!card || card.type !== 'spell' || card.spellKind !== 'instant' || !spellUsable(s, who, card)) continue;
+    const already = s.armed[who].find((x: any) => x.uid === h.uid);
+    if (already) { out.push({ type: 'disarm', uid: h.uid }); continue; }
+    if (card.effect === 'rations') out.push({ type: 'arm', uid: h.uid, target: { commander: who } });
+    for (const c of own) out.push({ type: 'arm', uid: h.uid, target: { row: c.row, col: c.col } });
+  }
+  return out;
+}
+/** An enemy attack is about to land on `target`: the defender's set counters for it fire, in the order they were set, paid now; one that can't be paid stays set. */
+function fireArmed(s: any, def: Side, target: any, ev: any[]) {
+  if (!s.armed || !s.armed[def]) return;
+  const pl = s.players[def];
+  const hits = (t: any) => (target.commander ? !!t.commander && t.commander === target.commander : !t.commander && t.row === target.row && t.col === target.col);
+  for (const a of [...s.armed[def]]) {
+    if (!hits(a.target)) continue;
+    const i = pl.hand.findIndex((h: any) => h.uid === a.uid);
+    if (i < 0) { s.armed[def] = s.armed[def].filter((x: any) => x !== a); continue; }
+    const card = CARDS[pl.hand[i].cardId];
+    const cost = spellCost(s, def, card);
+    if (funds(pl) < cost) continue; // stays set; maybe affordable next time
+    paySpell(pl, pl.faction, cost);
+    const used = pl.hand.splice(i, 1)[0];
+    pl.discard.push(used);
+    s.armed[def] = s.armed[def].filter((x: any) => x !== a);
+    ev.push({ type: 'respond', player: def, cardId: card.id, armed: true });
+    resolveSpell(s, def, card, a.target, null, ev);
+  }
+}
+
 // ---------------------------------------------------------------- Corpsman Brewlord (brew)
 /** Brew targets for `who`: adjacent wounded, sober Dwarves; once per turn per Brewlord, any time. */
 export function brewActions(s: any, who: Side, pend?: any): any[] {
@@ -1125,7 +1164,7 @@ export function legalActions(s: any): any[] {
     }
     seenCards.add(h.uid);
   }
-  if (ph === 'deploy' || ph === 'action') out.push(...crystalPlays(s, who));
+  if (ph === 'deploy' || ph === 'action') out.push(...crystalPlays(s, who), ...armActions(s, who));
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of moveDests(s, c)) out.push({ type: 'move', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const c of s.board.creatures) if (c.owner === who) for (const d of mineTargets(s, c)) out.push({ type: 'mine', creatureUid: c.uid, row: d.row, col: d.col });
   if (ph === 'action') for (const x of s.sites) if (readyMinersAt(s, who, x).length) out.push({ type: 'mineAt', row: x.row, col: x.col });
@@ -1290,6 +1329,18 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       else finishSetup(s, ev);
       break;
     }
+    case 'arm': { // PvP, Ken Nov 4: set an instant ahead of time; it fires by itself when an enemy attack meets it (fireArmed). Secret until then.
+      const h = hand(l.uid);
+      s.armed[who] = s.armed[who].filter((x: any) => x.uid !== l.uid);
+      s.armed[who].push({ uid: h.uid, cardId: h.cardId, target: l.target, turn: s.turn });
+      ev.push({ type: 'arm', player: who, uid: h.uid });
+      break;
+    }
+    case 'disarm': {
+      s.armed[who] = s.armed[who].filter((x: any) => x.uid !== l.uid);
+      ev.push({ type: 'disarm', player: who, uid: l.uid });
+      break;
+    }
     case 'pass': finishPending(s, s.pendingResponse, ev, false); break;
     case 'respond': {
       const pend = s.pendingResponse;
@@ -1393,6 +1444,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       if (l.target.row) {
         const tgt = creatureAt(s, l.target.row, l.target.col);
         const resp = other(who);
+        if (s.pvp && s.attackMode === 'armed') { fireArmed(s, resp, l.target, ev); resolveAttack(s, a, l.target, ev); break; } // Nov 4 (Ken: "smooth, fluid"): no window, the set counters fire now
         if (s.pvp || respondActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length || brewActions(s, resp, { kind: 'attack', actor: who, target: l.target }).length) {
           s.pendingResponse = { kind: 'attack', actor: who, creatureUid: a.uid, target: l.target, responder: resp };
           s.priority = resp;
@@ -1400,6 +1452,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
           break;
         }
       }
+      if (s.pvp && s.attackMode === 'armed' && l.target.commander) fireArmed(s, other(who), l.target, ev);
       resolveAttack(s, a, l.target, ev);
       break;
     }
@@ -1438,7 +1491,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
     case 'done': {
       if (s.phase === 'deploy' && s.pvp && s.deployed && s.deployed.length) {
         // PvP: the one Respond window for everything deployed this phase; the phase moves on when it closes (finishPending)
-        openWindow(s, { kind: 'deploy', actor: who, summons: s.deployed.map((d: any) => ({ uid: d.uid, cardId: d.cardId, row: d.row, col: d.col })) }, ev);
+        openWindow(s, { kind: 'deploy', actor: who, summons: (s.deployed || []).map((d: any) => ({ uid: d.uid, cardId: d.cardId, row: d.row, col: d.col })) }, ev);
         break;
       }
       if (s.phase === 'deploy') s.phase = 'action';

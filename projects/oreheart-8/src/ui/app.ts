@@ -1141,6 +1141,8 @@ export class App {
       if (a.type === 'summon') cells.push({ row: a.row, col: a.col });
       else if (a.type === 'minerUpgrade') { const o = st.board.creatures.find((x: any) => x.uid === a.creatureUid); if (o) smith.push({ row: o.row, col: o.col }); }
       else if (a.type === 'cast' && a.target) cells.push(this.cellOfTarget(a.target));
+      else if (a.type === 'arm') cells.push(this.cellOfTarget(a.target));
+      else if (a.type === 'disarm') { const r = this.game.act(a); if (r && !r.ok) this.flash(r.error); else this.flash('Counter put away'); return; }
     }
     const all = [...cells, ...smith];
     if (!all.length) { this.flash(this.explain(card)); return; }
@@ -3454,7 +3456,8 @@ export class App {
     if (!hidden && st.priority === 'player') for (const a of this.game.legalActions() as any[]) if (a.uid && a.type !== 'pass' && a.type !== 'done') playableUids.add(a.uid);
     const shown = hidden ? me.hand : this.sortedHand(me.hand, costOf);
     if (this.r.handSort) { const hs = this.r.handSort as El, hide = hidden || !me.hand.length; if (hs.hidden !== hide) { hs.hidden = hide; if (hide) this.closeHandSortUp(); } }
-    const key = hidden ? 'x' : this.handSortMode + '|' + shown.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId]) + ':' + tunnel + ':' + (playableUids.has(hc.uid) ? 1 : 0)).join(',');
+    const armedUids = new Set<string>((st.armed && st.armed.player ? st.armed.player : []).map((a: any) => a.uid)); // PvP: counters set ahead of time stay in the hand with a SET badge
+    const key = hidden ? 'x' : this.handSortMode + '|' + shown.map((hc: any) => hc.uid + ':' + affordable(CARDS[hc.cardId]) + ':' + costOf(CARDS[hc.cardId]) + ':' + tunnel + ':' + (playableUids.has(hc.uid) ? 1 : 0) + (armedUids.has(hc.uid) ? 'A' : '')).join(',');
     if (key === this.handKey) return;
     this.handKey = key;
     const wasUp = (hand.querySelector('.hand-card.popped:not(.popclone)') as El | null)?.dataset.uid || ''; // Ken (Oct 30, no flicker): a rebuilt hand keeps the raised card up
@@ -3468,9 +3471,10 @@ export class App {
     for (const hc of shown) {
       const c = CARDS[hc.cardId];
       const cost = costOf(c);
-      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), 'data-cost': String(cost), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
+      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'} ${armedUids.has(hc.uid) ? 'armed' : ''}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), 'data-cost': String(cost), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
+        armedUids.has(hc.uid) ? h('span', { class: 'armed-badge', 'data-armed': '', 'aria-label': 'set as a counter' }, 'SET') : null,
         playableUids.has(hc.uid) ? h('span', { class: 'card-glow', 'data-card-glow': '', 'aria-hidden': 'true' }) : null);
       // Ken (Oct 31): "On the cards with special abilities, like tunnel, you have it over the card, just remove that. Remove all those
       // special ability ... overlays." The Round 10 'Tunnel!' tag is gone; the card's own text still says what it does.
@@ -4456,7 +4460,7 @@ export class App {
   }
 
   dropCard(hc: any, card: any, cell: { row: number; col: number }, x?: number, y?: number, asked = false) {
-    if (!asked && (card.type === 'creature' || card.type === 'spell')) {
+    if (!asked && (card.type === 'creature' || card.type === 'spell') && !this.game.legalActions().some((a: any) => a.uid === hc.uid && (a.type === 'arm' || a.type === 'disarm'))) { // arming costs nothing until it fires
       const st0 = this.game.state;
       const cost = card.type === 'creature' ? creatureCost(st0, 'player', card) : spellCost(st0, 'player', card);
       if (this.game.legalActions().some((a: any) => a.uid === hc.uid && a.type !== 'minerUpgrade')) { this.payGate(cost, () => this.dropCard(hc, card, cell, x, y, true)); return; }
@@ -4469,7 +4473,10 @@ export class App {
     }
     const t = legal.find((a: any) => a.type !== 'minerUpgrade')?.type || legal[0].type;
     const res = (r: any) => { if (r && !r.ok) this.flash(r.error); };
-    if (t === 'summon') {
+    if (t === 'arm') { // PvP: set the instant on that unit (or the Commander); it fires by itself when an enemy attack lands there
+      const a = legal.find((x: any) => x.type === 'arm' && (x.target.commander ? this.cellOfTarget(x.target).row === cell.row && this.cellOfTarget(x.target).col === cell.col : x.target.row === cell.row && x.target.col === cell.col));
+      if (a) { res(this.game.act(a)); this.flash('Counter set'); } else this.flash("Can't set it there");
+    } else if (t === 'summon') {
       const a = legal.find((x: any) => x.row === cell.row && x.col === cell.col);
       if (a) res(this.game.act(a)); else this.flash("Can't summon there");
     } else if (t === 'playCrystal') {

@@ -117,7 +117,7 @@ export function friendlyError(e: unknown): string {
 }
 /** Six letters A–Z without I and O (the server's room codes). Cleans what the player typed. */
 /** Own moves shown before the server answers: none of these can reveal a hidden card, a die or an answer. */
-const OPTIMISTIC = new Set(['summon', 'move', 'playCrystal', 'attack', 'minerUpgrade']);
+const OPTIMISTIC = new Set(['summon', 'move', 'playCrystal', 'attack', 'minerUpgrade', 'arm', 'disarm']);
 export const cleanCode = (s: string) => String(s || '').toUpperCase().replace(/[^A-HJ-NP-Z]/g, '').slice(0, 6);
 export const codeOk = (s: string) => /^[A-HJ-NP-Z]{6}$/.test(s);
 
@@ -170,7 +170,9 @@ export class NetGame {
   /** the state after the moves still on their way (used only to plan the next step of a standing order, never shown) */
   private predicted: any = null;
   /** Nov 4 (Ken: PvP feels laggy): an own move that reveals nothing hidden is shown at once from the local rules; the server's view for that seq then only refreshes */
-  private optimisticSeq: number | null = null;
+  /** Own moves shown on this screen before the server confirmed them, oldest first (Nov 4, boom boom boom: every drop shows at once, however many are still on their way). */
+  private shownAhead: any[] = [];
+  private inflight: { action: any; sentSeq: number } | null = null;
   private unwatch: (() => void) | null = null;
   private clock: any = null;
   private lastTickCall = 0;
@@ -194,8 +196,10 @@ export class NetGame {
     this.readClocks(v);
     if (!fresh && !force) return false;
     this.view = v;
-    const confirmsOwn = fresh && this.optimisticSeq === seq;
-    if (fresh) this.optimisticSeq = null;
+    // a view at or past the seq our in-flight move was sent against means the server took it (a refusal comes back through send() and resets everything)
+    const inf = this.inflight;
+    const confirmsOwn = fresh && !!inf && seq >= inf.sentSeq + 1 && this.shownAhead[0] === inf.action;
+    if (fresh && inf && seq >= inf.sentSeq + 1) { this.inflight = null; this.shownAhead = this.shownAhead.filter((x) => x !== inf.action); }
     this.seq = seq;
     const st = clone(v.state);
     st.pvp = true; // the local rules must open the Respond window the way the server does (the view drops the flag)
@@ -203,8 +207,12 @@ export class NetGame {
     const key = pend && pend.responder === 'player' ? JSON.stringify([pend.kind, pend.actor, pend.creatureUid ?? null, pend.card?.uid ?? null, pend.target ?? null, (pend.summons || []).length]) : '';
     if (key !== this.windowSeen) { this.windowSeen = key; this.windowSeenAt = key ? this.now() : null; }
     if (this.status === 'over' && st.phase !== 'over') { st.phase = 'over'; if (!st.winner && this.result) st.winner = this.result.won ? 'player' : 'opponent'; }
-    this.state = st;
-    if (!this.queue.length && !this.sending) this.predicted = null;
+    // the moves still on their way are laid on top again, so nothing shown here jumps back and forth; one that no longer fits is dropped (the server will refuse it and put the board right)
+    let cur = st; const keep: any[] = [];
+    for (const a of this.shownAhead) { try { const r: any = applyAction(clone(cur), a); if (r && r.ok) { cur = r.state; keep.push(a); } else break; } catch { break; } }
+    this.shownAhead = keep;
+    this.state = cur;
+    this.predicted = !this.queue.length && !this.sending ? null : cur;
     this.emit(fresh && !confirmsOwn ? (Array.isArray(v.events) ? clone(v.events) : []) : [{ type: 'sync' }]);
     return true;
   }
@@ -249,7 +257,7 @@ export class NetGame {
     return c;
   }
   legalActions(): any[] {
-    const s = this.state;
+    const s = this.planState(); // Nov 4 (boom boom boom): with moves still on their way, the next offers count them (no lighting a square a unit just took)
     if (!s || s.phase === 'over' || this.status === 'over') return [];
     try {
       if (s.priority !== 'player') return brewActions(s, 'player').map((a: any) => ({ ...a, player: 'player' }));
@@ -296,9 +304,11 @@ export class NetGame {
     try { const r: any = applyAction(clone(base), a); if (r && !r.ok) return { ok: false, error: r.error }; next = r && r.ok ? r.state : null; shown = r && r.ok ? r.events : []; } catch { next = null; }
     this.predicted = next;
     // show it now: the rules ran here on what this player can see, nothing hidden is in it (dice, draws and answers only come from the server)
-    if (next && OPTIMISTIC.has(a.type) && !this.queue.length && !this.sending && base === this.state) {
-      this.optimisticSeq = this.seq + 1;
+    // armed mode: an attack resolves at once on the server with ITS dice and the hidden counters, so it is not shown early (the answer is one short round trip away)
+    // (base === this.state: nothing unshown is ahead of it, so what is shown stays exactly the shown moves in order)
+    if (next && OPTIMISTIC.has(a.type) && !(a.type === 'attack' && base.attackMode === 'armed') && base === this.state) {
       this.state = next;
+      this.shownAhead.push(a);
       this.emit(shown);
     }
     this.queue.push(a);
@@ -327,6 +337,7 @@ export class NetGame {
       // Nov 2 (Gauge): no Respond window closes under 2 s, so a quick answer can't show you hold something. It waits here; a clock a little out with the server's gets told how much longer.
       if (answers && this.windowSeenAt != null) { const left = this.windowSeenAt + this.respondMinMs - this.now(); if (left > 0) await new Promise((res) => setTimeout(res, left)); }
       if (a.type === 'pass' && !this.windowSeen) return { ok: true }; // the window already closed while this waited (the server passed)
+      this.inflight = { action: a, sentSeq: this.seq };
       try { r = await this.t.call('act', { matchId: this.matchId, seq: this.seq, action: a }); }
       catch { this.log({ action: a, ok: false, error: 'offline', seq: this.seq }); await this.sync(); return { ok: false, error: "Can't reach the server. Try that again." }; }
       if (!(r && r.tooSoonMs > 0) || tries >= 3) break;
@@ -336,7 +347,7 @@ export class NetGame {
     const error = String(r?.error || 'Refused');
     this.log({ action: a, ok: false, error, seq: this.seq });
     this.predicted = null;
-    this.optimisticSeq = null; // the view below (or a fresh read) puts the board back
+    this.inflight = null; this.shownAhead = []; // the view below (or a fresh read) puts the board back
     if (r && r.view) this.applyView(r.view, true); else await this.sync();
     return { ok: false, error };
   }

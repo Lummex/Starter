@@ -489,6 +489,18 @@ select pg_temp.refused('sign-up coins must be a whole number 0-100000', :A1, 'aa
   $q$ select public.admin_set_setting('signup_bonus_coins', '-5', 'test') $q$, '0 to 100000');
 select pg_temp.works('admin changes sign-up coins to 250', :A1, 'aal2',
   $q$ select public.admin_set_setting('signup_bonus_coins', '250', 'pack prices decided') $q$);
+-- PvP attack mode (Nov 4): one word, armed or window
+select pg_temp.ok('pvp_attack_mode starts as armed and is editable',
+  (select value = '"armed"'::jsonb from public.settings where key = 'pvp_attack_mode') and 'pvp_attack_mode' = any (private.editable_settings()));
+select pg_temp.refused('pvp_attack_mode takes only armed or window', :A1, 'aal2',
+  $q$ select public.admin_set_setting('pvp_attack_mode', '"instant"', 'test') $q$, 'armed');
+select pg_temp.refused('pvp_attack_mode refuses a number', :A1, 'aal2',
+  $q$ select public.admin_set_setting('pvp_attack_mode', '1', 'test') $q$, 'armed');
+select pg_temp.works('admin switches pvp_attack_mode back to window', :A1, 'aal2',
+  $q$ select public.admin_set_setting('pvp_attack_mode', '"window"', 'trying the old wait') $q$);
+select pg_temp.ok('pvp_attack_mode is window now, and audited',
+  (select value = '"window"'::jsonb from public.settings where key = 'pvp_attack_mode')
+  and (select count(*) from public.admin_audit where action = 'set_setting' and after ->> 'key' = 'pvp_attack_mode') = 1);
 insert into auth.users (id, aud, role, email, raw_user_meta_data, email_confirmed_at) values
   ('b0000000-0000-4000-8000-000000000004', 'authenticated', 'authenticated', 'p4@test.local', '{"username":"LateJoiner"}', now());
 select pg_temp.ok('a new player gets the new sign-up coins (250)',

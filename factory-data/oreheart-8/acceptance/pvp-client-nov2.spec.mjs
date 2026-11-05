@@ -499,6 +499,86 @@ test('AC678: boom boom boom: three units in a row with no wait between them (dro
   await closeAll(a, b);
 });
 
+test('AC679: armed counters: in PvP an attack resolves at once with no Respond window (under 600 ms on both screens); a counter set ahead of time on the defender fires by itself, paid then, and stays secret until it fires', async ({ browser }) => {
+  test.setTimeout(150000);
+  const { a, b } = await pair(browser);
+  await keepHands(a, b);
+  let [me, them] = await whoseTurn(a, b);
+  const v0 = await view(me);
+  expect(v0.state.attackMode, 'the referee runs the match in armed mode').toBe('armed');
+  // two units face to face in the middle (real coordinates), one each, on free squares
+  const taken = new Set(v0.state.sites.map((x) => x.row + ',' + x.col));
+  let spot = null;
+  for (let r = 3; r <= 5 && !spot; r++) for (let c = 4; c <= 9 && !spot; c++) if (!taken.has(r + ',' + c) && !taken.has(r + ',' + (c + 1))) spot = { r, c };
+  expect(spot).toBeTruthy();
+  const place = async (pg, card, r, c) => { const v = await view(pg); const x = await (await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/place?matchId=${v.matchId}&user=${encodeURIComponent(v.names.me)}&card=${card}&row=${r}&col=${c}`)).json(); expect(x.ok, JSON.stringify(x)).toBe(true); return x.uid; };
+  await place(me, 'goblin-grunt', spot.r, spot.c);
+  await place(them, 'goblin-grunt', spot.r, spot.c + 1);
+  await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/give?matchId=${v0.matchId}&user=${encodeURIComponent((await view(them)).names.me)}&card=shield-bubble`);
+  await expect.poll(async () => (await view(them)).state.board.creatures.length, { timeout: 8000 }).toBe(2);
+  await expect.poll(async () => (await view(me)).state.players.opponent.hand.length, { timeout: 8000 }).toBeGreaterThan(0);
+  // my turn passes with nothing done; the defender's turn: they set Shield Bubble on their unit (costs nothing yet, card stays in hand, I never see it)
+  for (const _ of [1, 2]) { await expect.poll(async () => { const v = await view(me); return v.state.priority === 'player' && !v.state.pendingResponse; }, { timeout: 8000 }).toBe(true); expect(await me.evaluate(async () => await window.oreheart.act({ type: 'done' }))).toMatchObject({ ok: true }); }
+  await expect.poll(async () => { const v = await view(them); return v.state.activePlayer === 'player' && v.state.priority === 'player' && !v.state.pendingResponse; }, { timeout: 10000 }).toBe(true);
+  const armed = await them.evaluate(() => {
+    const st = window.oreheart.getState(); const hand = st.players.player.hand.length, funds = st.players.player.crystals + st.players.player.bank;
+    const arm = window.oreheart.legalActions().find((l) => l.type === 'arm' && l.target && l.target.row && st.board.creatures.some((c) => c.owner === 'player' && c.row === l.target.row && c.col === l.target.col));
+    if (!arm) return { arm: null, legal: window.oreheart.legalActions() };
+    const r = window.oreheart.act(arm);
+    const st2 = window.oreheart.getState();
+    return { arm, ok: r.ok, handAfter: st2.players.player.hand.length, hand, fundsAfter: st2.players.player.crystals + st2.players.player.bank, funds, set: st2.armed.player.length };
+  });
+  expect(armed.arm, 'an arm action on the defender\'s own unit: ' + JSON.stringify(armed.legal || '')).toBeTruthy();
+  expect(armed.ok).toBe(true);
+  expect(armed.handAfter, 'the card stays in the hand').toBe(armed.hand);
+  expect(armed.fundsAfter, 'arming is free until it fires').toBe(armed.funds);
+  expect(armed.set).toBe(1);
+  await expect.poll(() => them.evaluate(() => document.querySelectorAll('.hand-card .armed-badge').length), { timeout: 5000 }).toBeGreaterThan(0);
+  await expect.poll(async () => (await view(them)).state.armed.player.length, { timeout: 8000 }).toBe(1); // the server has it
+  expect((await view(me)).state.armed.opponent, 'secret from the attacker').toEqual([]);
+  // the defender ends their turn (no Done window: nothing deployed); my turn, straight to Action, attack their unit
+  for (const _ of [1, 2]) { await expect.poll(async () => { const v = await view(them); return v.state.priority === 'player' && !v.state.pendingResponse; }, { timeout: 8000 }).toBe(true); expect(await them.evaluate(async () => await window.oreheart.act({ type: 'done' }))).toMatchObject({ ok: true }); }
+  await expect.poll(async () => { const v = await view(me); return v.state.activePlayer === 'player' && v.state.phase === 'deploy' && !v.state.pendingResponse; }, { timeout: 10000 }).toBe(true);
+  expect(await me.evaluate(async () => await window.oreheart.act({ type: 'done' }))).toMatchObject({ ok: true });
+  await expect.poll(async () => (await view(me)).state.phase, { timeout: 8000 }).toBe('action');
+  const theirsHpBefore = (await view(them)).state.board.creatures.find((c) => c.owner === 'player').health;
+  const t = await me.evaluate(async () => {
+    const atk = window.oreheart.legalActions().find((l) => l.type === 'attack');
+    if (!atk) return { atk: null, legal: window.oreheart.legalActions() };
+    const t0 = performance.now();
+    const r = window.oreheart.act(atk);
+    let sawWindow = false, done = 0;
+    while (performance.now() - t0 < 8000) {
+      const st = window.oreheart.getState();
+      if (st.pendingResponse) sawWindow = true;
+      const u = st.board.creatures.find((c) => c.uid === atk.creatureUid);
+      if (u && u.hasAttacked) { done = performance.now() - t0; break; }
+      await new Promise((f) => setTimeout(f, 10));
+    }
+    return { atk, ok: r.ok, sawWindow, ms: Math.round(done) };
+  });
+  expect(t.atk, 'an attack is legal: ' + JSON.stringify(t.legal || '')).toBeTruthy();
+  expect(t.ok).toBe(true);
+  expect(t.sawWindow, 'no Respond window on an attack').toBe(false);
+  expect(t.ms, 'the attack is settled on the attacker\'s screen').toBeGreaterThan(0);
+  expect(t.ms).toBeLessThan(600);
+  // the defender's screen: the counter fired (card gone from the hand, paid), the bubble took the hit, no window either
+  const d = await them.evaluate(async () => {
+    const t0 = performance.now();
+    while (performance.now() - t0 < 8000) { const st = window.oreheart.getState(); if (st.armed.player.length === 0) break; await new Promise((f) => setTimeout(f, 10)); }
+    const st = window.oreheart.getState();
+    return { ms: Math.round(performance.now() - t0), hand: st.players.player.hand.length, set: st.armed.player.length, pend: !!st.pendingResponse, hp: st.board.creatures.find((c) => c.owner === 'player').health, discard: st.players.player.discard.map((c) => c.cardId) };
+  });
+  expect(d.set, 'the counter fired').toBe(0);
+  expect(d.pend).toBe(false);
+  expect(d.discard).toContain('shield-bubble');
+  expect(d.hp, 'the bubble took the hit').toBe(theirsHpBefore);
+  expect((await view(me)).state.pendingResponse).toBeNull();
+  expect((await hook(me, 'actLog')).filter((e) => !e.ok)).toEqual([]);
+  expect((await hook(them, 'actLog')).filter((e) => !e.ok)).toEqual([]);
+  await closeAll(a, b);
+});
+
 test('AC677: a card dropped from the hand spawns its REAL model at once (models load with the hand), and a model still on its way is a shimmer, never a pawn', async ({ browser }) => {
   test.setTimeout(120000);
   const { a, b } = await pair(browser);

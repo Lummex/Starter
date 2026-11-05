@@ -16,6 +16,7 @@ export function viewFor(state: any, side: Side): any {
   them.hand = them.hand.map((_: any, i: number) => ({ uid: 'h:' + i, hidden: true }));
   for (const who of ['player', 'opponent'] as Side[]) v.players[who].deck = v.players[who].deck.map((_: any, i: number) => ({ uid: 'd:' + i, hidden: true }));
   v.rng = 0;
+  if (v.armed) v.armed[other(side)] = []; // what the other player set ahead of time is secret until it fires
   return v;
 }
 
@@ -23,8 +24,9 @@ export function viewFor(state: any, side: Side): any {
 export function eventsFor(events: any[], side: Side): any[] {
   return clone(events).map((e: any) => {
     if (e && e.type === 'draw' && e.player !== side) return { type: 'draw', player: e.player, hidden: true };
+    if (e && (e.type === 'arm' || e.type === 'disarm') && e.player !== side) return null; // a counter set ahead of time is secret until it fires
     return e;
-  });
+  }).filter(Boolean);
 }
 
 /** State and events for a player, mirrored for engine side 'opponent' so every browser plays as 'player'. */

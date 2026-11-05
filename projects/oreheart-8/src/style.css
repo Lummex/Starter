@@ -92,6 +92,8 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .hand-card.f-goblins{border-color:var(--green)}.hand-card.f-gnomes{border-color:var(--blue)}.hand-card.f-dwarves{border-color:var(--purple)}
 .hand-card.spell{background:linear-gradient(#3a2a5a,#22183a)}.hand-card.crystal{background:linear-gradient(#124a3a,#0d2a24)}
 .hand-card.unaff{filter:saturate(.4) brightness(.8)}
+.hand-card .armed-badge{position:absolute;top:7%;left:50%;transform:translateX(-50%);z-index:4;pointer-events:none;background:#1b1f26e6;color:#eef2f7;border:1.5px solid #c9d1dc;border-radius:5px;font:800 11px/1.5 system-ui,sans-serif;letter-spacing:.1em;padding:0 6px;box-shadow:0 1px 4px #0008}
+.hand-card.armed{box-shadow:0 0 0 2px #c9d1dc,0 0 14px #c9d1dc99}
 .hand-card:hover,.hand-card:focus-visible{z-index:200!important;outline:none}
 .hand-card.dragging{opacity:.3}
 .test .hand-card{transition:none}
