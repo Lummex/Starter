@@ -1,5 +1,6 @@
 // Placeholder 3D battlefield (Three.js). Returns null when WebGL is unavailable (the UI then shows a 2D board).
 import { ringColor, getRings } from './fx-settings';
+import { mirrorLook, applyMirrorLook, MIRROR_LOOK } from './mirror-look';
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf, isMiner } from '../engine';
 import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, standingBox, type C3D } from './creature3d';
@@ -771,7 +772,7 @@ const _embV = new THREE.Vector3();
   function applyRing(f: any, c: any, acted: boolean, st: any) {
     const ring = f.group.getObjectByName('acting-ring') as THREE.Mesh | undefined;
     if (!ring) return;
-    const col = ringColor(c.owner, st.players[c.owner].faction, acted), rs = getRings();
+    const col = c.owner === 'opponent' && mirrorLook(st) ? MIRROR_LOOK.ring : ringColor(c.owner, st.players[c.owner].faction, acted), rs = getRings();
     f.ringColor = col; f.ringGreyed = acted;
     (ring.material as THREE.MeshBasicMaterial).color.set(col);
     (ring.material as THREE.MeshBasicMaterial).opacity = rs.opacity; (ring.material as THREE.MeshBasicMaterial).transparent = rs.opacity < 1;
@@ -983,6 +984,7 @@ const _embV = new THREE.Vector3();
   function setState(st: any, events: any[]) {
     state = st;
     const now = performance.now();
+    const mirror = mirrorLook(st); // Nov 4 (Ken): same-faction match -> the opponent's side in ruby on this screen only
     for (const c of st.board.creatures) preloadShots(c.cardId); // Oct 31: projectile models download once per kind (cached)
     st.sites.forEach((s: any, i: number) => {
       const cr = crystals[i];
@@ -1000,7 +1002,7 @@ const _embV = new THREE.Vector3();
       const first = cr.ctl === undefined;
       cr.ctl = s.color;
       flowOwner[i] = s.controller || 'neutral';
-      const mineHex = s.controller ? (MINE_FACTION[st.players[s.controller].faction] || '#ffffff') : '#ffffff';
+      const mineHex = s.controller ? (mirror && s.controller === 'opponent' ? MIRROR_LOOK.mine : MINE_FACTION[st.players[s.controller].faction] || '#ffffff') : '#ffffff';
       cr.art.recolor(mineHex); mineFx[i].setColor(mineHex);
       cr.art.setDecal('#ffffff');
       if (!first) cr.art.burst();
@@ -1048,6 +1050,7 @@ const _embV = new THREE.Vector3();
         scene.add(m.group);
         f = { group: m.group, target: tgt.clone(), born, bornAt: born || pendingBorn.get(c.uid) || 0, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, row: c.row, col: c.col, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0, c3d: (m.group as any).userData.c3d || null };
         figs.set(c.uid, f);
+        if (mirror && c.owner === 'opponent') applyMirrorLook(f.group, mirror, st.players.opponent.faction);
         if (born && !c.ghost) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }
         if (c.ghost) { f.born = 0; f.bornAt = 0; setGhost(f, true); spawnFx('dust', tgt, 3); }
         // creatures keep their stored facing (set below every state update)

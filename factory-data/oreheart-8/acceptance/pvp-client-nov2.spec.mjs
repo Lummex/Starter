@@ -453,6 +453,28 @@ test('AC675: a placed unit stands on its square at once, see-through, on both sc
   await closeAll(a, b);
 });
 
+
+test('AC676: same-faction match: on this screen the opponent units wear ruby rings and your own keep the normal colour; different factions are unchanged (display only, no server)', async ({ page }) => {
+  await page.goto('/?test=1');
+  await page.waitForFunction(() => !!window.oreheart && !!window.oreheart.newMatch);
+  const setup = { playerHand: [], opponentHand: [], board: [{ owner: 'player', cardId: 'goblin-grunt', row: 5, col: 4 }, { owner: 'opponent', cardId: 'goblin-grunt', row: 3, col: 10 }] };
+  const rings = async (opp) => {
+    await page.evaluate(([setup, opp]) => { window.oreheart.newMatch({ playerCommander: 'grubnak', opponentCommander: opp, setup, skipMulligan: true, seed: 3 }); }, [setup, opp]);
+    await expect.poll(async () => (await page.evaluate(async () => (await window.oreheart.getRenderStats()).unitRings)).length, { timeout: 15000 }).toBe(2);
+    const r = await page.evaluate(async () => (await window.oreheart.getRenderStats()).unitRings);
+    return Object.fromEntries(r.map((x) => [x.side, x.color.toLowerCase()]));
+  };
+  const same = await rings('grubnak');
+  expect(same.opponent, 'opponent ring in the mirror look: ' + JSON.stringify(same)).toBe('#ff3b4a');
+  expect(same.player).not.toBe('#ff3b4a');
+  const diff = await rings('borgo');
+  expect(diff.opponent).not.toBe('#ff3b4a');
+  expect(diff.player).toBe(same.player);
+  // the ruby look is a material change on the opponent's figures only
+  const marked = await page.evaluate(() => window.oreheart.figuresNow().length);
+  expect(marked).toBe(2);
+});
+
 test('AC672: the deck list opens as a painted list, not the browser\'s, and picking one changes the deck', async ({ browser }) => {
   test.setTimeout(60000);
   const a = await openAs(browser, 'deck' + uniq());
