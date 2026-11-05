@@ -82,6 +82,14 @@ async function whoseTurn(a, b) {
   }
   throw new Error('nobody holds priority');
 }
+/** A random hand may hold nothing to summon: give this page a creature and crystals (stand-in server only), and wait until both pages have the new move number. */
+async function sureSummon(me, them) {
+  const v = await view(me);
+  await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/give?matchId=${v.matchId}&user=${encodeURIComponent(v.names.me)}&card=goblin-grunt`);
+  await expect.poll(async () => (await view(me)).seq, { timeout: 8000 }).toBeGreaterThan(v.seq);
+  await expect.poll(async () => (await view(them)).seq, { timeout: 8000 }).toBeGreaterThan(v.seq);
+  return (await me.evaluate(async () => await window.oreheart.legalActions())).find((x) => x.type === 'summon');
+}
 async function closeAll(...pages) { for (const p of pages) await p.context().close().catch(() => {}); }
 
 // ---------- checks ----------
@@ -429,12 +437,12 @@ test('AC671: a holder who clicks "Let it happen" at once looks the same as holdi
   await closeAll(a, b);
 });
 
-test('AC675: a placed unit stands on its square at once, see-through, on both screens, before the server or the other player has answered; it turns solid when the Respond window closes', async ({ browser }) => {
+test('AC675: a placed unit stands on its square at once, on both screens, before the server or the other player has answered; it counts as arriving until the Respond window closes', async ({ browser }) => {
   test.setTimeout(120000);
   const { a, b } = await pair(browser);
   await keepHands(a, b);
   const [me, them] = await whoseTurn(a, b);
-  const summon = (await me.evaluate(async () => await window.oreheart.legalActions())).find((x) => x.type === 'summon');
+  const summon = await sureSummon(me, them);
   expect(summon).toBeTruthy();
   // act, then read the board in the SAME breath: no answer from anyone can have arrived yet
   // (figuresNow reads the board this instant; getRenderStats waits for it to settle, which can be after the window)
@@ -442,7 +450,7 @@ test('AC675: a placed unit stands on its square at once, see-through, on both sc
   expect(r.r.ok).toBe(true);
   expect(r.pend, 'the window opened locally at once: ' + JSON.stringify(r)).toBe(true);
   expect(r.figs.length, 'the figure is already on the board').toBe(1);
-  expect(r.figs[0].ghost, 'see-through while the window is open: ' + JSON.stringify(r)).toBe(true);
+  expect(r.figs[0].ghost, 'arriving while the window is open: ' + JSON.stringify(r)).toBe(true);
   expect(r.figs[0].row).toBe(summon.row); expect(r.figs[0].col).toBe(summon.col);
   // the other player sees the arriving unit too (mirrored square), while their window is still open
   const seenByThem = async () => them.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); const st = window.oreheart.getState(); return f ? { ghost: f.ghost, row: f.row, col: f.col, pend: st.pendingResponse && [st.pendingResponse.row, st.pendingResponse.col], onBoard: st.board.creatures.some((c) => c.uid === uid) } : null; }, summon.uid);
@@ -458,6 +466,26 @@ test('AC675: a placed unit stands on its square at once, see-through, on both sc
   await closeAll(a, b);
 });
 
+
+test('AC677: a card dropped from the hand spawns its REAL model at once (models load with the hand), and a model still on its way is a shimmer, never a pawn', async ({ browser }) => {
+  test.setTimeout(120000);
+  const { a, b } = await pair(browser);
+  await keepHands(a, b);
+  const [me, them] = await whoseTurn(a, b);
+  const summon = await sureSummon(me, them);
+  const cardId = await me.evaluate((uid) => window.oreheart.getState().players.player.hand.find((h) => h.uid === uid).cardId, summon.uid);
+  await expect.poll(() => me.evaluate((id) => window.oreheart.modelsReady([id]), cardId), { timeout: 20000 }).toBe(true); // in the hand = already loaded, nothing on the board yet
+  const r = await me.evaluate((x) => { window.oreheart.act(x); return window.oreheart.figuresNow().find((f) => f.uid === x.uid); }, summon);
+  expect(r, 'on the board at the drop').toBeTruthy();
+  expect(r).toMatchObject({ real: true, shimmer: false, ghost: true, born: true });
+  // no second spawn when the window closes: the same figure just turns solid
+  await expect.poll(() => me.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); return f && f.ghost; }, summon.uid), { timeout: 10000 }).toBe(false);
+  expect(await me.evaluate((uid) => window.oreheart.figuresNow().find((f) => f.uid === uid), summon.uid)).toMatchObject({ real: true, shimmer: false, born: false });
+  // the other player: if the model was not there yet it is a shimmer that becomes the real model, never a pawn
+  await expect.poll(() => them.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); return f && (f.real || f.shimmer); }, summon.uid), { timeout: 15000 }).toBe(true);
+  await expect.poll(() => them.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); return f && f.real; }, summon.uid), { timeout: 20000 }).toBe(true);
+  await closeAll(a, b);
+});
 
 test('AC676: same-faction match: on this screen the opponent units wear ruby rings and your own keep the normal colour; different factions are unchanged (display only, no server)', async ({ page }) => {
   await page.goto('/?test=1');

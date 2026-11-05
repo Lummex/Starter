@@ -2934,6 +2934,8 @@ test('AC84: finished Goblin figures, Grubnak, Strongholds and mines on the battl
       { cardId: 'gnome-prospector', owner: 'opponent', row: 0, col: 4 },
     ] },
   });
+  // Nov 4 (Ken): no old procedural figure any more; a model on its way is a shimmer, so wait for the models
+  await expect.poll(async () => ((await page.evaluate(async () => await window.oreheart.getRenderStats())).figures || []).filter((f) => f.model === 'finished').length, { timeout: 25000 }).toBe(3);
   const r = await page.evaluate(async () => await window.oreheart.getRenderStats());
   const s = await getState(page);
   expect(r.figures.length).toBe(3);
@@ -2952,6 +2954,7 @@ test('AC84: finished Goblin figures, Grubnak, Strongholds and mines on the battl
 
 test('AC85: poking a Goblin figure plays a reaction and changes nothing', async ({ page }) => {
   await start(page, { ai: false, setup: { board: [{ cardId: 'goblin-scrapper', owner: 'player', row: 6, col: 3 }] } });
+  await expect.poll(async () => ((await page.evaluate(async () => await window.oreheart.getRenderStats())).figures || [])[0]?.model, { timeout: 25000 }).toBe('finished'); // Nov 4: a shimmer until the model lands
   const before = await getState(page);
   const uid = before.board.creatures[0].uid;
   const seen = new Set();

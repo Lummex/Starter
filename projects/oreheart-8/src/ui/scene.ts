@@ -270,7 +270,7 @@ export function createBoardView(container: HTMLElement, low: boolean, arenaFacti
   // glowing crystal mines inside spiked palisades
   const mines: MineArt[] = [];
   const mineFx: MineFx[] = [];
-  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode) o.commanderLook = () => ({ player: countMirrored(cmd.player.fig), opponent: countMirrored(cmd.opponent.fig) }); if (testMode) o.figuresNow = () => [...figs.values()].map((f) => ({ uid: f.uid, cardId: f.cardId, row: f.row, col: f.col, ghost: !!f.ghost, dying: !!f.dying })); /* checks: the board's figures this instant, no waiting */ if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
+  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode) o.commanderLook = () => ({ player: countMirrored(cmd.player.fig), opponent: countMirrored(cmd.opponent.fig) }); if (testMode) o.modelsReady = (ids: string[]) => ids.every((id) => !!creature3dReady(id)); if (testMode) o.figuresNow = () => [...figs.values()].map((f) => ({ uid: f.uid, cardId: f.cardId, row: f.row, col: f.col, ghost: !!f.ghost, dying: !!f.dying, real: !!f.c3d, shimmer: !!f.group.getObjectByName('arriving-shimmer'), born: !!f.born })); /* checks: the board's figures this instant, no waiting */ if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
   for (let mi = 0; mi < CONFIG.mineCount; mi++) {
     const m = makeMine(low, mi);
     m.recolor('#ffffff');
@@ -697,6 +697,15 @@ const _embV = new THREE.Vector3();
       parts = { armL: dm(), armR: dm(), head: dm(), body: dm(), weapon: dm(), legL: dm(), legR: dm(), aura: null };
       finished = true; mats = c3.mats; baseScale = CREATURE_H;
       (g as any).userData.c3d = c3;
+    } else if (hasCreature3dSlug(card.id)) {
+      // Nov 4 (Ken: "not the old placeholder 3D unit"): a unit whose real model is still on its way is a soft shimmer on the square, never a pawn; the real one spawns up when it lands
+      g = new THREE.Group();
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.3, 0.95, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xcfe4ff, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      col.position.y = 0.48; col.name = 'arriving-shimmer';
+      g.add(col);
+      const dm = () => new THREE.Group();
+      parts = { armL: dm(), armR: dm(), head: dm(), body: dm(), weapon: dm(), legL: dm(), legR: dm(), aura: null };
+      (g as any).userData.marker = true;
     } else if (card.faction === 'goblins') {
       const gf = makeGoblin(card.id, card, (wg) => addWeapon(wg, weaponOf(card), 'goblins'), low);
       g = gf.group; finished = true; mats = gf.mats.list; parts = gf.parts; baseScale = gf.baseScale;
@@ -722,7 +731,7 @@ const _embV = new THREE.Vector3();
       g.scale.setScalar(big);
     }
     const hasBomb = (card.abilities || []).some((a: string) => a === 'kaboom' || a === 'kaboom1');
-    if (hasBomb && !(g as any).userData.c3d) {
+    if (hasBomb && !(g as any).userData.c3d && !(g as any).userData.marker) {
       // big round bomb with a lit fuse carried at the creature's side (R2.17)
       const bomb = new THREE.Group();
       bomb.name = 'bomb';
@@ -761,14 +770,16 @@ const _embV = new THREE.Vector3();
   const asked = new Set<string>();
   const pendingBorn = new Map<string, number>(); // summon time carried over when a token is rebuilt as its 3D model
   // each goblin model is fetched once, only when a unit of it is on the board
+  const respawn = new Set<string>(); // figures that were a shimmer: their real model spawns up when it arrives
   function ensure3d(id: string) {
     if (asked.has(id) || !hasCreature3dSlug(id)) return;
     asked.add(id);
-    loadCreature3d(id).then((a) => {
+    return loadCreature3d(id).then((a) => {
       // figures built before the model arrived are rebuilt with it
       if (!a || disposed) return;
-      for (const [uid, f] of figs) if (f.cardId === id && !f.c3d) { if (f.bornAt) pendingBorn.set(uid, f.bornAt); scene.remove(f.group); figs.delete(uid); }
-      if (state) setState(state, []);
+      let hit = false;
+      for (const [uid, f] of figs) if (f.cardId === id && !f.c3d) { hit = true; respawn.add(uid); if (f.bornAt) pendingBorn.set(uid, f.bornAt); scene.remove(f.group); figs.delete(uid); }
+      if (hit && state) setState(state, []);
     }).catch(() => { /* the token stays */ });
   }
   let state: any = null;
@@ -985,8 +996,27 @@ const _embV = new THREE.Vector3();
       b.root.visible = !f.dying;
     }
   }
+  /** Nov 4 (Ken: "it spawns your unit up, not the old placeholder"): every card in a hand has its model ready before it can be played. On PC the rest of each side's deck
+   *  (or, in PvP where decks are hidden, its faction) follows one by one in idle time so the opponent's reveal is ready too; phones stop at the hand to save memory. */
+  let restQueued = false;
+  function wantModels(st: any) {
+    for (const side of ['player', 'opponent'] as const) for (const x of st.players[side].hand) if (x && x.cardId && CARDS[x.cardId]?.type === 'creature') ensure3d(x.cardId);
+    if (st.pendingResponse?.card?.cardId) ensure3d(st.pendingResponse.card.cardId);
+    if (low || restQueued || (testMode && !location.search.includes('preloadall'))) return;
+    restQueued = true;
+    const rest: string[] = [];
+    for (const side of ['player', 'opponent'] as const) {
+      const pl = st.players[side], known = (pl.deck || []).filter((x: any) => x && x.cardId).map((x: any) => x.cardId);
+      const ids = known.length ? known : Object.keys(CARDS).filter((id) => CARDS[id].faction === pl.faction);
+      for (const id of ids) if (CARDS[id]?.type === 'creature' && !rest.includes(id)) rest.push(id);
+    }
+    const idle = (fn: () => void) => ((window as any).requestIdleCallback ? (window as any).requestIdleCallback(fn, { timeout: 2000 }) : setTimeout(fn, 200));
+    const next = () => { if (disposed || !rest.length) return; const id = rest.shift()!; Promise.resolve(ensure3d(id)).finally(() => idle(next)); };
+    idle(next);
+  }
   function setState(st: any, events: any[]) {
     state = st;
+    wantModels(st);
     const now = performance.now();
     const mirror = mirrorLook(st); // Nov 4 (Ken): same-faction match -> the opponent's side in ruby on this screen only
     for (const c of st.board.creatures) preloadShots(c.cardId); // Oct 31: projectile models download once per kind (cached)
@@ -1029,23 +1059,16 @@ const _embV = new THREE.Vector3();
     });
     const seen = new Set<string>();
     // Nov 4 (Ken: "when I put out a unit, it takes a long time"): in PvP a summon waits for the other player's Respond window, so the
-    // unit stands on its square at once as a see-through "arriving" figure (both players see it; the card is public already) and turns
-    // solid with its landing when the window closes. Its uid is the one the engine will give it, so the figure is simply kept.
+    // real unit spawns on its square at once (both players see it; the card is public already) and gets its ring when the window closes;
+    // countered, it goes back to the hand. Its uid is the one the engine will give it, so the figure is simply kept.
     const pend = st.pendingResponse;
     const ghost = pend && pend.kind === 'summon' && pend.card && pend.row != null ? { uid: pend.card.uid, cardId: pend.card.cardId, owner: pend.actor, row: pend.row, col: pend.col, ghost: true, attack: CARDS[pend.card.cardId]?.attack, maxHealth: CARDS[pend.card.cardId]?.health } : null;
-    const setGhost = (f: Fig, on: boolean) => {
-      if (!!f.ghost === on) return;
-      f.ghost = on;
-      f.group.traverse((o: any) => { const m = o.material; if (!m || o.isSprite || o.name === 'acting-ring' || o.name === 'ring-halo') return; if (on) { m.userData.ghostT = m.transparent; m.userData.ghostO = m.opacity; m.transparent = true; m.opacity = 0.42; m.depthWrite = false; } else { m.transparent = !!m.userData.ghostT; m.opacity = m.userData.ghostO ?? 1; m.depthWrite = true; } });
-    };
+    const setGhost = (f: Fig, on: boolean) => { f.ghost = on; }; // Nov 4 (Ken): no see-through, the real unit spawns up solid at the drop; "ghost" only means the window is still open (no ring, no status work)
     for (const c of ghost ? [...st.board.creatures, ghost] : st.board.creatures) {
       seen.add(c.uid);
       let f = figs.get(c.uid);
       const tgt = world(c.row, c.col);
-      if (f && f.ghost && !c.ghost) { // the arriving unit is real now: solid, dust, the landing hop
-        setGhost(f, false);
-        f.born = now; f.bornAt = now; spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt');
-      }
+      if (f && f.ghost && !c.ghost) setGhost(f, false); // the window closed: it simply is real now (it already spawned at the drop)
       if (!f) {
         ensure3d(c.cardId); audio.voicePreload(c.cardId); // Oct 31: its voice lines load once it is on the board
         const m = makeFigure(c);
@@ -1056,7 +1079,10 @@ const _embV = new THREE.Vector3();
         figs.set(c.uid, f);
         if (mirror && c.owner === 'opponent') applyMirrorLook(f.group, mirror, st.players.opponent.faction);
         if (born && !c.ghost) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }
-        if (c.ghost) { f.born = 0; f.bornAt = 0; setGhost(f, true); spawnFx('dust', tgt, 3); }
+        // Nov 4 (Ken: "when you set the card down, it spawns your unit up"): the drop IS the spawn, same as seeing the other player's card land; only the missing ring says the Respond window is open
+        if (c.ghost) { setGhost(f, true); if (f.finished) { f.born = now; f.bornAt = now; spawnFx('dust', tgt, 6); audio.play('summon'); audio.voiceLine('grunt'); } else { f.born = 0; f.bornAt = 0; } }
+        else if (respawn.has(c.uid) && f.finished) spawnFx('dust', tgt, 4); // a unit already in play (reconnect, match start) just appears: its summon show is not replayed
+        respawn.delete(c.uid);
         // creatures keep their stored facing (set below every state update)
         f.yaw = facingYaw(c, c.owner); m.group.rotation.order = 'YXZ'; m.group.rotation.y = f.yaw;
       }
@@ -1716,6 +1742,7 @@ const _embV = new THREE.Vector3();
         f.yaw = Math.abs(d) < 0.01 ? want : f.yaw + d * (1 - Math.exp(-dt0 * 16));
         g.rotation.y = f.yaw;
       }
+      if (!f.finished) { const sh = f.group.getObjectByName('arriving-shimmer') as THREE.Mesh | undefined; if (sh) (sh.material as THREE.MeshBasicMaterial).opacity = 0.24 + 0.14 * Math.sin(now / 170); }
       if (f.born) {
         const k = Math.min(1, (now - f.born) / 450);
         g.position.y = (1 - k) * -0.6;
