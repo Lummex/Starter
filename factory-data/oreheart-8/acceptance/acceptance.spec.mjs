@@ -4852,7 +4852,7 @@ test('AC159: longer card reveals, ruby hearts with white numbers, Flow particles
     await expect(heart).toBeVisible();
     const r = await heart.evaluate((e) => {
       const els = [e, ...e.querySelectorAll('*')];
-      const ruby = /ruby-heart/.test(e.outerHTML) || els.some((x) => /ruby-heart/.test(getComputedStyle(x).backgroundImage));
+      const ruby = /ruby-heart|leftovers\/heart/.test(e.outerHTML) || els.some((x) => /ruby-heart|leftovers\/heart/.test(getComputedStyle(x).backgroundImage)); // Nov 4: the same ruby with a silver rim
       const num = els.find((x) => x.children.length === 0 && /^\d+$/.test(x.textContent.trim()));
       return { ruby, color: num ? getComputedStyle(num).color : null };
     });
