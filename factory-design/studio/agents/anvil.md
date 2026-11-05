@@ -317,3 +317,11 @@
 - Holder and non-holder must wait from the SAME moment (app.respStart): a hold counted from when the view arrived would still have closed 0.5-1 s sooner than the auto note, which starts after the animations.
 - API checks that play hundreds of moves send header x-mock-respond-min: 0 to the mock; browsers don't. /debug/give on the mock puts a card in a hand (hold-it answers a summon; fizzle only answers spells).
 - Stand-in-server pages can't show the Deck Builder lock (no owned counts): add .unowned and a .db-owned span by hand to look at it.
+
+## Learned Nov 4 (join box, zero start, instant PvP, mirror look; pvp-nov2 8d4d5741)
+- A "nothing happens" report with a relit button means the refusal path ran and the message wasn't seen: put refusals in a box that must be closed, and name the two likely causes in the words (same account in both windows, wrong letters).
+- Supabase edge-logs tell the join story without any secret: the host's `room` poll is pvp_gate+settings+rooms every 2 s; a join adds GET matches x2 (activeMatchFor) before claim_room; a join that stops after GET rooms failed at the code lookup or the own-code check.
+- The SQL editor in the dashboard: find the Monaco "Editor content" textbox with `find` and click its ref before typing, or the text lands in the dashboard search and navigates away; the tab then holds a "Leave site?" dialog that blocks navigate even with force: open a second tab for the next page.
+- Zero start: `starter_collection` and `signup_bonus_coins` are settings; the Phase B migration's "repair" loop re-grants starter cards to profiles that have none, so on a fresh (production) database the settings must be empty BEFORE it runs: this branch's 20261104000001 runs after and only fixes the TEST data; if production is ever deployed, check that loop first.
+- In the view the engine state loses `pvp`; set `st.pvp = true` on the client copy or the local rules resolve summons at once instead of opening the window (optimistic play then disagrees with the server).
+- The pending summon's uid is the hand card's uid (spawn reuses it), so a ghost figure keyed by it is simply kept when the real unit arrives.
