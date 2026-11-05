@@ -344,3 +344,7 @@
 - Queue: `public.pvp_queue_join/pair/leave(uuid...)` and `pvp_rank_of` are service-role doors; `private.assert_referee()` also lets the local test owner through. Service ops `queue`, `leave`, `rank`; `create` takes `practice: true`; `MatchRecord.mode`.
 - In one SELECT, two volatile functions in FROM (join, then pair) may run in either order: one statement per step in SQL tests.
 - Test match ids: the pvp test file already uses ...0002/0003 and \set M2/M3 (...aa/...bb); pick fresh ones.
+
+- Match tiers: `m.tiers[seat]` from `store.tiersOf(user, cards)` (rpc pvp_tiers_of), `view.tiers.me/them`; the app's `tierOf(cardId, owner)` / `withTier(c, owner)`; `tierEntrance(e, tier)` (CSS .tier-entrance in style.css); the scene's `setTierLookup` adds `tier-halo` for tiers 4-5; test hook `window.oreheart.unitTiers()`. Mock: `/debug/tier?matchId&user&card&tier`.
+- Steps by rarity: `private.steps_of(rarity)`, `worth_of_tier(tier, rarity)`, `tier_of_worth(worth, rarity)`; client `stepsFor(rarity, steps)`, `worthOfTier`, `tierOfWorth(worth, steps)`; the test page uses Common [1,3,5,10] (STUB_STEPS).
+- Ports: a mock left running on 4310 makes the rig test the OLD server quietly (the new one dies with EADDRINUSE in /tmp/mock.log). Check /tmp/mock.log's first line (engine sha) after every run; kill with Get-NetTCPConnection + Stop-Process, taskkill from Git Bash did not.
