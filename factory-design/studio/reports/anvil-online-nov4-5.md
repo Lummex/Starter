@@ -1,0 +1,47 @@
+# Anvil: Nov 4 (evening) on pvp-nov2: no-wait PvP, abandoned matches, ruby Commander, real-model drops
+
+Branch pvp-nov2, head 0735710c (includes factory/issue-8 33b4f02c). TEST database only; nothing live.
+
+## PvP feels like playing the computer (b35ac1da)
+Ken: "you just put your units out, boom, boom, boom ... it feels so laggy". The lag was the rule, not the network: every summon handed the turn to the other player for a Respond window, so the NEXT card was locked 2.5-3.5 s per unit (3-4.5 s when the other tab was hidden). Now, in PvP only: a summon lands at once and the next card is open immediately; Done at the end of Deploy opens ONE Respond window for all the units of that phase (2 s minimum, always, so it still hides what the other player holds). Hold It then names one of those units and sends it back to the hand; Fizzle, Spell Snap and Mirror Hex still answer a cast's own window; Shield Bubble, Healing Light and Second Wind still answer attacks. A Done by the clock opens the same window. Vs computer unchanged.
+Measured on the stand-in with two real browsers: drop-to-next-card-playable 0 ms on the network, ~0.14 s of local rules work per card (AC678: three in a row); move-to-next-move 0 ms; attack-to-dice ~2.3-3 s, hidden by the wind-up. The browser also asks the function to run next to the database (East US), which cuts ~0.3 s a call; the function's own trims cut ~0.15 s more.
+
+## Abandoned matches (e0574e01)
+Ken: "if both players disconnect, it should just drop the game and give them both a loss". Every call about a match leaves a presence mark; a sweeper in the database (pg_cron, every minute) ends a match when both players have been away for pvp_abandon_seconds (admin setting, 120): both get a loss and an abandon, no coins, no quest progress, streak reset, records kept, and a returning browser sees "the match was dropped, nobody won". Coming back in time cancels it; one player away keeps the clock/forfeit rules. Our own outage punishes nobody: a sweeper run after a gap of more than 3 minutes ends nothing, and nothing ends while not one player of any active match has been heard from. Ken's stuck match clears within a minute of the deploy. Admin: admin_pvp_sweeper().
+
+## The drop spawns the real unit (de12779c)
+Every card in a hand has its model loaded before it can be played; PC also loads the rest of the deck (or faction) in idle time, phones stop at the hand. The drop is the spawn (hop, dust, sound), no placeholder, no later swap; a model truly not there yet is a soft shimmer. Also covers reconnect and vs-computer.
+
+## Ruby mirror look: Commander too (3cb75cd8)
+Same display-only rule as the units. Grubnak reads ruby; Knobbin reads magenta (pick H) and Borgo dark wine (pick J): a one-line setting each if Ken wants them stronger. The near-side Commander's lean is the same on live (compared side by side).
+
+## Checks
+Unit 313 pass; database 442/442; PvP browser checks 68 pass / 11 skip (database rig); AC84/85/351/361/675/676/677/678 pass. Not run: the full hidden suite; a real two-account match on this build; a real phone. Workflow on this branch now has pipefail and --linked.
+
+## Armed counters: no wait on an attack (68f66654, Nov 5)
+Ken: "the attack wait definitely bugs me ... smooth, fluid, and easy." A per-attack Respond window cost 2.3-3 s per attack. New PvP attack mode `armed` (server setting `pvp_attack_mode`, admin-editable in the Studio, `window` brings the old way back): the defender sets an instant (Shield Bubble, Healing Light, Second Wind) on one of their units during their OWN turn, free until it fires, a SET badge on the card and a silver SET icon over the unit, secret from the other player (views and events hide it), and it fires by itself when an enemy attack lands there (paid then; stays set if it can't be paid), gone at the end of the enemy's turn. An attack now resolves at once with no window; the attacker's screen waits for the server's dice (one round trip, ~0.15-0.3 s East US) instead of showing a guess. Vs-computer play unchanged (`window` mode is the engine default; only the referee asks for `armed`).
+Also: every unit you drop shows at once even while earlier drops are still travelling (the shown-ahead moves are replayed over each server view), and legal offers count the moves in flight. Knobbin and Borgo snap to true ruby like Grubnak (mirror-look presets). Migration 20261104000004 (setting + admin edit), TEST deploy #17.
+Checks: tests/pvp-armed.test.ts (6: offers, fire+pay, elsewhere/expiry, secrecy, unpaid stays, window mode and offline unchanged); AC679 two-browser (attack settled under 600 ms on the attacker's screen, no window, the counter fires on the defender's screen, secret before); AC678 three drops shown at once; vitest 319; SQL 448/448 (5 new on the setting).
+
+## Upgraded cards (5253599c, Nov 5 morning)
+Ken: "the higher the rarity of the cards, the lower the chance of getting the new cards ... a low chance so people get excited ... It should be worth the amount of cards, so you can combine two enhanced cards of the same together and it will equivalent the amount of cards to the next." Looks and bragging rights only; no number or rule on a card changes.
+- Five tiers: Original, Enhanced, Overcharged, Legendary, Mythic. Every card instance has a tier and a worth (copies it stands for). Thresholds (admin setting `upgrade_thresholds`): 2 / 5 / 10 / 20 copies. Combining spends other copies of the same card into one: their worth adds up, the tier follows. Two Enhanced (worth 2 each) make one Enhanced worth 4, one short of Overcharged, as Ken asked. Spent copies stay as rows (status `combined`), every combine is an `upgrade_events` row (append-only), history on both cards. A combine never leaves a deck short, never spends the card itself, and a Mythic takes no more.
+- Pack drops: per card dealt, by its rarity (`upgrade_drop_bp`: Common 2%, Uncommon 1%, Rare 0.5%, Ultra Rare 0.2%, Collector 0.05%), then the tier (`upgrade_drop_tiers`: Enhanced 80%, Overcharged 15%, Legendary 4%, Mythic 1%). A drop arrives with its tier's worth. All three settings are admin-editable with validation (rising thresholds; tiers add to 10000; rarity names only).
+- Art: Brush's 60 cards x 4 tiers (manifest art/card-upgrades-samples/manifest.json) are in the game at 560x840 (public/art/upgrades, 33 MB), kept out of the first-load cache (cached as used, or with the full download).
+- Faces: tiny bare stars at the very bottom edge of every card (one dim star on an Original, 2-5 coloured ones), the tier picture on the face. Pack opening: an upgraded drop gets a tier tag, a tier-coloured glow and screen flash, the sting and a named hint. Collection: each card at its best tier with a tier tag, an "Upgraded" filter, and the Upgrade panel in the close-up (keep one copy, tick the ones to combine, the worth and next tier shown, Combine).
+- Not yet: tiers in a PvP match (the hand and board show the plain art there), a Mythic entrance, the Studio admin pages for the new settings and events.
+Checks: SQL 20 new (drops forced to Mythic, combine chain 2 -> 4 -> 5, deck-short refusal, idempotency, append-only, settings validation); AC680 (forced Mythic drop in the stand-in pack: tag, 5 stars, hint), AC681 (Collection tiers, Upgrade panel combine 1+1 -> Enhanced, filter).
+
+## Modes (5253599c)
+Ken: "a ranked match mode. And an unranked match mode. And a practice match mode."
+- Ranked: an open queue paired by rating (window 100 points, +50 for every 10 s waited; admin settings), Elo K 32 from 1000, a season every quarter (new rows, old ones kept), rank names Scrap < 900, Ore, Crystal 1100+, Gem 1300+, Mythic 1500+. Coins and quests as today. `rating_events` keeps every change.
+- Unranked: the open queue, no rating, coins and quests as today. Friend codes are unchanged (friend mode, coins as today).
+- Practice: "Practice with a friend" makes a code that pays and counts nothing (no coins, quests, rank; the match stays on record). Vs the computer offline is practice already.
+- The queue lives in the database (`pvp_queue`, referee doors only); one call every 2 s keeps a player in it and a closed browser drops out after 15 s; a player in an active match is never paired. The longer wait is seat a.
+- Menu: Ranked match / Unranked match / Play a friend, a rank line ("Ranked: 1000 Ore · season 2026-Q4"). The match screen is the same for every mode.
+- Not yet: a rating change shown at the end of a ranked match (the menu line updates), a leaderboard, admin pages.
+Checks: SQL 16 new (queue join/pair/leave, the window, stale rows, active-match guard, Elo 1016/984, idempotent finish, my_rank, practice pays nothing); vitest pvp-modes 4; AC682 two browsers queue unranked and land in one match, practice code.
+
+## Also
+- The SET status icon had no picture and threw inside every PvP screen update (the hand's SET badge never showed); fixed, lesson in team-lessons.md. Escape closes the Collection close-up from anywhere.
+- The check runner takes a bare pattern (it adds -g itself): my earlier "-g A|B" patterns silently skipped the first test of every list. Everything listed above was re-run with bare patterns.

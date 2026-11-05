@@ -325,3 +325,22 @@
 - Zero start: `starter_collection` and `signup_bonus_coins` are settings; the Phase B migration's "repair" loop re-grants starter cards to profiles that have none, so on a fresh (production) database the settings must be empty BEFORE it runs: this branch's 20261104000001 runs after and only fixes the TEST data; if production is ever deployed, check that loop first.
 - In the view the engine state loses `pvp`; set `st.pvp = true` on the client copy or the local rules resolve summons at once instead of opening the window (optimistic play then disagrees with the server).
 - The pending summon's uid is the hand card's uid (spawn reuses it), so a ghost figure keyed by it is simply kept when the real unit arrives.
+
+## Learned Nov 4 (evening: no-wait PvP, abandoned matches; pvp-nov2 0735710c)
+- When a player says "laggy", measure what they can do NEXT, not how fast the thing they did shows: the per-summon Respond window locked the next card for 2-4 s and looked like network lag.
+- PvP rule changes live in src/engine (s.pvp branches) and ship in the function's engine bundle: the browser and the TEST function must be deployed together or they disagree about the rules.
+- The sweeper is plain SQL on pg_cron; the local shim has no pg_cron, so the schedule is wrapped in a do-block that only notices. Presence is one rpc (pvp_seen) per call, run alongside the real work.
+- PL/pgSQL tests: a function that changes rows and a check of those rows in the same statement see the old snapshot; call the function in its own statement (temp table).
+- Supabase functions.invoke takes a `region` option; running the function next to the database turned 5-7 cross-country hops into local ones. No security setting involved.
+
+## Learned Nov 5 (armed counters; pvp-nov2 68f66654)
+- A "wait" the player feels is often a rule handing priority away; look for a rule change behind a setting before tuning code.
+- NetGame: legalActions() plans on planState(); shownAhead[] replays unsent moves over every server view; inflight {action, sentSeq} confirms by seq. Attacks in armed mode are not shown early (server dice).
+- The mock server has /debug/place (unit on a square, real coordinates) for two-browser checks that need a fight.
+- Admin settings that are a word, not a number, need their own branch in admin_set_setting (int range / word list / enum).
+
+## Learned Nov 5 (upgraded cards, modes; pvp-nov2 5253599c)
+- Card instances: tier + worth; `private.card_grant_tier` for drops; `public.upgrade_card(target, sources[], idem)`; `my_upgrade_info()` / `my_card_copies(card)`. Tier art: `tierArt()` / `tierStars()` in cardfmt.ts, `src/content/upgrade-art.json` lists the painted ids.
+- Queue: `public.pvp_queue_join/pair/leave(uuid...)` and `pvp_rank_of` are service-role doors; `private.assert_referee()` also lets the local test owner through. Service ops `queue`, `leave`, `rank`; `create` takes `practice: true`; `MatchRecord.mode`.
+- In one SELECT, two volatile functions in FROM (join, then pair) may run in either order: one statement per step in SQL tests.
+- Test match ids: the pvp test file already uses ...0002/0003 and \set M2/M3 (...aa/...bb); pick fresh ones.
