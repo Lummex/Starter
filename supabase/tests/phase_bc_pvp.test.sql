@@ -242,6 +242,14 @@ select set_config('request.jwt.claims', '', true);
 create temp table sw4 as select private.sweep_abandoned() as n;
 select pg_temp.ok('sweeper: the next run ends the match both players left',
   (select n from sw4) = 1 and (select end_reason from public.matches where id = :M3) = 'abandoned');
+-- a match from before the presence marks existed (none at all) still ends once its last move is old enough
+insert into public.matches (id, player_a, player_b, state, seq, engine_version, created_at, updated_at)
+  values ('22222222-0000-4000-8000-000000000005', :PA, :PB, '{"turn": 13}', 40, 'test', now() - interval '2 days', now() - interval '2 days');
+delete from public.match_presence where match_id = '22222222-0000-4000-8000-000000000004'; -- no marks anywhere now (the other active match is fresh and mark-less too)
+create temp table sw5 as select private.sweep_abandoned() as n;
+select pg_temp.ok('sweeper: a mark-less match from before the marks ends by its last move; a fresh mark-less match does not',
+  (select n from sw5) = 1 and (select end_reason from public.matches where id = '22222222-0000-4000-8000-000000000005') = 'abandoned'
+  and (select status from public.matches where id = '22222222-0000-4000-8000-000000000004') = 'active');
 update public.settings set value = '600' where key = 'pvp_abandon_seconds';
 select pg_temp.ok('the wait is one admin setting (pvp_abandon_seconds)',
   private.setting('pvp_abandon_seconds') = '600'::jsonb and 'pvp_abandon_seconds' = any (private.editable_settings()));
